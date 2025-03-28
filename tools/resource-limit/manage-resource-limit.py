@@ -16,8 +16,8 @@ from datetime import datetime, timedelta
 
 abspath = os.path.abspath(__file__)
 curr_dir = os.path.dirname(abspath)
-QUERY_PERIOD=7 # 7 days
-STEP="610" # 1/1000 of 7d
+QUERY_PERIOD=7 # days
+STEP="60" # seconds
 
 # Function to get metrics from the Metrics Server
 def get_metrics(namespace, istio=False):
@@ -55,7 +55,8 @@ def get_metrics(namespace, istio=False):
                 cpu = round(float(value[1]))
                 max_cpu = max(max_cpu, cpu)
                 min_cpu = min(min_cpu, cpu)
-            max_cpu = max_cpu * 2
+            min_cpu = int(min_cpu * 0.5)
+            max_cpu = int(max_cpu * 1.2)
             if pod_name in result:
                 result[pod_name][container_name] = {
                     "cpu": {
@@ -90,7 +91,8 @@ def get_metrics(namespace, istio=False):
                 memory = round(float(value[1]))
                 max_memory = max(max_memory, memory)
                 min_memory = min(min_memory, memory)
-            max_memory = max_memory * 2
+            min_memory = int(min_memory * 0.5)
+            max_memory = int(max_memory * 1.2)
             if pod_name in result:
                 result[pod_name][container_name]["memory"] = {
                     "max": max_memory,
@@ -286,6 +288,7 @@ def main():
         pf = start_mimir_gw_port_forwarding()
         try:
             for ns in namespaces:
+                print(f"Getting metrics for namespace: {ns}")
                 resource_config, istio_usage = get_resource_config(ns)
                 if resource_config is None:
                     print(f"Failed to get metrics for namespace: {ns}")
