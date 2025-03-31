@@ -663,13 +663,11 @@ jobs:
         timeout-minutes: 90
         run: |
           mage tarball:onpremFull
-          sudo rm -r repo_archives
           mkdir -p repo_archives
           mv onpremFull_orch-deploy_$(head -1 VERSION).tgz repo_archives/
           cd on-prem-installers
           mage build:all
           export TF_VAR_deploy_tag=$(mage build:debVersion)
-          sudo rm -r ../dist
           mv dist ..
           cd ..
           mage deploy:onPrem
