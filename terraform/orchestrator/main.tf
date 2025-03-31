@@ -240,13 +240,13 @@ resource "null_resource" "copy_local_orch_installer" {
   count = var.use_local_build_artifact ? 1 : 0
 
   depends_on = [
-    data.external.vm_ip_address,
     local_file.env_data_file,
+    null_resource.resize_and_restart_vm
   ]
 
   connection {
     type     = "ssh"
-    host     = data.external.vm_ip_address.result["vm_ssh_host"]
+    host     = local.vmnet_ip0
     port     = var.vm_ssh_port
     user     = var.vm_ssh_user
     password = var.vm_ssh_password

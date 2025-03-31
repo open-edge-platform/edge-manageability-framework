@@ -655,12 +655,24 @@ jobs:
           TF_VAR_intel_release_service_refresh_token: value-not-used
           TF_VAR_deploy_tag: ${{ needs.build-publish.outputs.deb-version }}
           TF_VAR_FILE: ${{ github.workspace }}/terraform/orchestrator/terraform.tfvars
+          TF_VAR_use_local_build_artifact: true
           TF_VAR_vm_vcpu: 24
           TF_VAR_vm_memory: 65536
           TF_VAR_docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
           TF_VAR_docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
         timeout-minutes: 90
-        run: mage deploy:onPrem
+        run: |
+          mage tarball:onpremFull
+          sudo rm -r repo_archives
+          mkdir -p repo_archives
+          mv onpremFull_orch-deploy_$(head -1 VERSION).tgz repo_archives/
+          cd on-prem-installers
+          mage build:all
+          export TF_VAR_deploy_tag=$(mage build:debVersion)
+          sudo rm -r ../dist
+          mv dist ..
+          cd ..
+          mage deploy:onPrem
 
       - name: Verify deployment
         timeout-minutes: 60
