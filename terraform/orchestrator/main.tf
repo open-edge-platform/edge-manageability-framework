@@ -260,32 +260,32 @@ resource "null_resource" "copy_local_orch_installer" {
   }
 
   provisioner "file" {
-    source      = "../${var.working_directory}/${var.local_installers_path}/onprem-argocd-installer_${var.deploy_tag}_amd64.deb"
+    source      = "../../${var.working_directory}/${var.local_installers_path}/onprem-argocd-installer_${var.deploy_tag}_amd64.deb"
     destination = "/home/ubuntu/installers/onprem-argocd-installer_${var.deploy_tag}_amd64.deb"
   }
 
   provisioner "file" {
-    source      = "../${var.working_directory}/${var.local_installers_path}/onprem-config-installer_${var.deploy_tag}_amd64.deb"
+    source      = "../../${var.working_directory}/${var.local_installers_path}/onprem-config-installer_${var.deploy_tag}_amd64.deb"
     destination = "/home/ubuntu/installers/onprem-config-installer_${var.deploy_tag}_amd64.deb"
   }
 
   provisioner "file" {
-    source      = "../${var.working_directory}/${var.local_installers_path}/onprem-gitea-installer_${var.deploy_tag}_amd64.deb"
+    source      = "../../${var.working_directory}/${var.local_installers_path}/onprem-gitea-installer_${var.deploy_tag}_amd64.deb"
     destination = "/home/ubuntu/installers/onprem-gitea-installer_${var.deploy_tag}_amd64.deb"
   }
 
   provisioner "file" {
-    source      = "../${var.working_directory}/${var.local_installers_path}/onprem-ke-installer_${var.deploy_tag}_amd64.deb"
+    source      = "../../${var.working_directory}/${var.local_installers_path}/onprem-ke-installer_${var.deploy_tag}_amd64.deb"
     destination = "/home/ubuntu/installers/onprem-ke-installer_${var.deploy_tag}_amd64.deb"
   }
 
   provisioner "file" {
-    source      = "../${var.working_directory}/${var.local_installers_path}/onprem-orch-installer_${var.deploy_tag}_amd64.deb"
+    source      = "../../${var.working_directory}/${var.local_installers_path}/onprem-orch-installer_${var.deploy_tag}_amd64.deb"
     destination = "/home/ubuntu/installers/onprem-orch-installer_${var.deploy_tag}_amd64.deb"
   }
 
   provisioner "file" {
-    source      = "../${var.working_directory}/${var.local_repo_archives_path}/onpremFull_orch-deploy_${split("\n",data.local_file.version_file.content)[0]}.tgz"
+    source      = "../../${var.working_directory}/${var.local_repo_archives_path}/onpremFull_orch-deploy_${split("\n",data.local_file.version_file.content)[0]}.tgz"
     destination = "/home/ubuntu/repo_archives/onpremFull_orch-deploy_${split("\n",data.local_file.version_file.content)[0]}.tgz"
   }
 }
