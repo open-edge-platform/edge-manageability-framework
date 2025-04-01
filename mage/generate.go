@@ -650,7 +650,8 @@ func removeIntelFromNoProxy() {
 	}
 }
 
-func getImageManifest() ([]string, []string, error) {
+
+func getImageManifest(repoPrefix string) ([]string, []string, error) {
 	removeIntelFromNoProxy()
 
 	manifest, err := getManifest()
@@ -687,13 +688,107 @@ func getImageManifest() ([]string, []string, error) {
 		fmt.Println(component.AppName)
 		fmt.Println(hrEqual)
 		// DBG: fmt.Println("Repo:", component.Repo)
-		if strings.HasPrefix(component.Repo, "oci://registry-rs.edgeorchestration.intel.com/edge-orch") {
+		if strings.HasPrefix(component.Repo, repoPrefix) {
 			chartRemotePath := strings.Join([]string{component.Repo, component.Chart}, "/")
 			err := helmPullImage(chartRemotePath, component.Version, tempDir)
 			if err != nil {
 				fmt.Println("error pulling helm chart for", component.AppName, ": %w", err)
 			}
 			chartLocalPath := filepath.Join(tempDir, filepath.Base(component.Chart)+"-"+component.Version+".tgz")
+			err = helmTemplate(component.AppName, component.ReleaseName, "./"+chartLocalPath,
+				argoValues, filepath.Join(tempDir, component.ReleaseName))
+			if err != nil {
+				fmt.Println("error templating helm chart for", component.AppName, ": %w", err)
+			}
+		} else {
+			fmt.Println("Skipping 3rd party hosted chart")
+			continue
+		}
+	}
+
+	imageList, err := parseTemplatedChartsForImageValues(tempDir)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error parsing templated charts: %w", err)
+	}
+
+	binaryList := []string{}
+	// Add OCI Tarball deployment artifacts
+	tarballRepos := []string{"orchestrator"}
+	tarballVariants := []string{"cloudFull", "onpremFull"}
+	installVariants := []string{"cloudFull"}
+
+	deployTag, err := getDeployTag()
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get tag for deployment artifacts: %w", err)
+	}
+
+	for _, variant := range tarballVariants {
+		for _, repo := range tarballRepos {
+			// buildImageBasePath = ${REGISTRY}"/"${REGISTRY_PROJECT}"/"${SUB_COMPONENT_NAME}"/"${ARTIFACT_TYPE}"
+			// oras push $buildImageBasePath"/"${repo}"/"${VARIANT_LC}":"${TAG}"
+			binaryList = append(binaryList, fmt.Sprintf("%s/%s/%s:%s", binaryBasePath, repo,
+				strings.ToLower(variant), deployTag))
+		}
+	}
+
+	binaryList = append(binaryList, fmt.Sprintf("%s/cloud-orchestrator-installer:%s", binaryBasePath, deployTag))
+
+	// Add OCI installer deployment artifacts
+	for _, installVariant := range installVariants {
+		// buildImageBasePath = ${REGISTRY}"/"${REGISTRY_PROJECT}"/
+		// oras push $buildImageBasePath"/"${repo}"/"${VARIANT_LC}":"${TAG}"
+		imageList = append(imageList, fmt.Sprintf("%s/orchestrator-installer-%s:%s", installBasePath,
+			strings.ToLower(installVariant), deployTag))
+	}
+
+	return imageList, binaryList, nil
+}
+
+// Basically the same as getImageManifest but works only on local copies of helm files with buildall
+func getLocalImageManifest(repoPrefix string) ([]string, []string, error) {
+
+	manifest, err := getManifest()
+	if err != nil {
+		return nil, nil, fmt.Errorf("error creating manifest: %w", err)
+	}
+
+	tempDir, err := os.MkdirTemp(".", "_appimg_*.tmp")
+	if err != nil {
+		return nil, nil, fmt.Errorf("error creating temp folder: %w", err)
+	}
+	fmt.Println("Extracting helmfiles to: ", tempDir)
+	defer os.RemoveAll(tempDir)
+
+	clusterValues, err := loadClusterConfig("bkc")
+	if err != nil {
+		return nil, nil, fmt.Errorf("error loading cluster configuration: %w", err)
+	}
+
+	// save clusterValues to tempDir
+	valuesFilePath := filepath.Join(tempDir, "values.yaml")
+	err = saveValuesFile(valuesFilePath, clusterValues)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error saving cluster values: %w", err)
+	}
+
+	argoValues, err := loadArgoAppValues(tempDir)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error loading argo valueObjects: %w", err)
+	}
+
+	for _, component := range manifest.Components {
+		fmt.Println(hrEqual)
+		fmt.Println(component.AppName)
+		fmt.Println(hrEqual)
+		// DBG: fmt.Println("Repo:", component.Repo)
+		if strings.HasPrefix(component.Repo, repoPrefix) {
+			chartRemotePath := strings.Join([]string{component.Repo, component.Chart}, "/")
+			fmt.Println("** Remote Path: ", chartRemotePath)
+
+			//chartLocalPath := filepath.Join(tempDir, filepath.Base(component.Chart)+"-"+component.Version+".tgz")
+		  chartLocalPath := filepath.Join("buildall/charts/", filepath.Base(component.Chart)+"-"+component.Version+".tgz")
+			fmt.Println("** Local Path: ", chartLocalPath)
+
 			err = helmTemplate(component.AppName, component.ReleaseName, "./"+chartLocalPath,
 				argoValues, filepath.Join(tempDir, component.ReleaseName))
 			if err != nil {
@@ -878,8 +973,8 @@ func buildOnPrem() error {
 	return nil
 }
 
-func (Gen) releaseImageManifest(manifestFilename string) error {
-	imageManifest, binaryManifest, err := getImageManifest()
+func (Gen) releaseImageManifest(manifestFilename string, repoPrefix string) error {
+	imageManifest, binaryManifest, err := getImageManifest(repoPrefix)
 	if err != nil {
 		return fmt.Errorf("error getting image manifest: %w", err)
 	}
@@ -969,8 +1064,8 @@ func (Gen) releaseImageManifest(manifestFilename string) error {
 	return nil
 }
 
-func (Gen) dumpReleaseImageManifest() error {
-	imageManifest, binaryManifest, err := getImageManifest()
+func (Gen) dumpReleaseImageManifest(repoPrefix string) error {
+	imageManifest, binaryManifest, err := getImageManifest(repoPrefix)
 	if err != nil {
 		return fmt.Errorf("error getting image manifest: %w", err)
 	}
@@ -994,6 +1089,62 @@ func (Gen) dumpReleaseImageManifest() error {
 	}
 
 	fmt.Println("")
+	return nil
+}
+
+func (Gen) localReleaseImageManifest(manifestFilename string, repoPrefix string) error {
+	imageManifest, binaryManifest, err := getLocalImageManifest(repoPrefix)
+	if err != nil {
+		return fmt.Errorf("error getting image manifest: %w", err)
+	}
+
+	manifestFile, err := os.Create(manifestFilename)
+	if err != nil {
+		return fmt.Errorf("unable to create manifest file: %w", err)
+	}
+	defer manifestFile.Close()
+
+	_, err = manifestFile.WriteString("\n")
+	if err != nil {
+		return fmt.Errorf("file write error: %w", err)
+	}
+
+	if len(imageManifest) == 0 {
+		_, err = manifestFile.WriteString("images: []\n")
+		if err != nil {
+			return fmt.Errorf("file write error: %w", err)
+		}
+	} else {
+		_, err = manifestFile.WriteString("images:\n")
+		if err != nil {
+			return fmt.Errorf("file write error: %w", err)
+		}
+		for _, imagePath := range imageManifest {
+			_, err = manifestFile.WriteString("  - " + imagePath + "\n")
+			if err != nil {
+				return fmt.Errorf("file write error: %w", err)
+			}
+		}
+	}
+
+	if len(binaryManifest) == 0 {
+		_, err = manifestFile.WriteString("binaries: []\n")
+		if err != nil {
+			return fmt.Errorf("file write error: %w", err)
+		}
+	} else {
+		_, err = manifestFile.WriteString("binaries:\n")
+		if err != nil {
+			return fmt.Errorf("file write error: %w", err)
+		}
+		for _, binaryPath := range binaryManifest {
+			_, err = manifestFile.WriteString("  - " + binaryPath + "\n")
+			if err != nil {
+				return fmt.Errorf("file write error: %w", err)
+			}
+		}
+	}
+
 	return nil
 }
 

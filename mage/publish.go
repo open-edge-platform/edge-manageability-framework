@@ -27,6 +27,7 @@ const (
 	RegistryRepoSubProj          = "common"
 	IntelTiberContainerRegistry  = IntelTiberRegistryRepoURL + "/" + IntelTiberRepository + "/" + RegistryRepoSubProj
 	PublicTiberContainerRegistry = PublicTiberRegistryRepoURL + "/" + IntelTiberRepository + "/" + RegistryRepoSubProj
+	OCIPublicContainerRegistry   = "oci://" + PublicTiberRegistryRepoURL + "/" + IntelTiberRepository
 	IntelTiberChartRegistry      = IntelTiberRegistryRepoURL + "/" + IntelTiberRepository + "/" + RegistryRepoSubProj + "/charts" //nolint: lll
 	IntelTiberFilesRegistry      = IntelTiberRegistryRepoURL + "/" + IntelTiberRepository + "/" + RegistryRepoSubProj + "/files"  //nolint: lll
 	PublicTiberFilesRegistry     = PublicTiberRegistryRepoURL + "/" + IntelTiberRepository + "/" + RegistryRepoSubProj + "/files" //nolint: lll

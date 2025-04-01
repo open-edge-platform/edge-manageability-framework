@@ -1502,12 +1502,17 @@ func (g Gen) DumpReleaseManifest() error {
 
 // Create a Release image manifest file.
 func (g Gen) ReleaseImageManifest(manifestFilename string) error {
-	return g.releaseImageManifest(manifestFilename)
+	return g.releaseImageManifest(manifestFilename, OCIPublicContainerRegistry)
 }
 
 // Print Release image manifest details to stdout.
 func (g Gen) DumpReleaseImageManifest() error {
-	return g.dumpReleaseImageManifest()
+	return g.dumpReleaseImageManifest(OCIPublicContainerRegistry)
+}
+
+// Create a Release image manifest with local charts
+func (g Gen) LocalReleaseImageManifest(manifestFilename string) error {
+	return g.localReleaseImageManifest(manifestFilename, OCIPublicContainerRegistry)
 }
 
 // Create a document showing firewall configurationt.
