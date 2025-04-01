@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+interconnect_manager:
+  useM2MToken: true
+  serviceAccount:
+    create: false
+    name: orch-svc
+  vaultServer: "http://vault.orch-platform.svc.cluster.local:8200"
+  keycloakServer: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
+resources: null

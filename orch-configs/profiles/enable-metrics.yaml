@@ -1,0 +1,15 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+argo:
+  infra-core:
+    enableMetrics: true
+  infra-managers:
+    enableMetrics: true
+  infra-onboarding:
+    enableMetrics: true
+  infra-external:
+    enableMetrics: true
+# Currently unused - note that it is not specifiying the required resources.
+# It must be enabled together other infra profiles.

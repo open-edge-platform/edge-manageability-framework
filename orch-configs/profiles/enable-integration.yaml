@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Includes components that is only needed for Integration AWS deployments (NodePort Traefik)
+# Use either this or enable-local
+
+argo:
+  enabled:
+    aws-eks-metrics-server: true
+    aws-lb-tgb: false
+    aws-lb: false

@@ -1,0 +1,27 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+version: "3.7"
+
+services:
+  traefik:
+    image: "traefik:v2.10.1"
+    container_name: "traefik-router"
+    hostname: "traefik-router"
+    ports:
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./traefik.yml:/traefik.yml:ro"
+      {{- if .IsSandbox }}
+      - "../orch-ca.crt:/orch-ca.crt:ro"
+      - "{{ .SandboxKeyFile }}:/orch-sandbox.tls.key:ro"
+      - "{{ .SandboxCertFile }}:/orch-sandbox.tls.crt:ro"
+      {{ end }}
+    restart: always
+
+networks:
+  default:
+    name: kind
+    external: true

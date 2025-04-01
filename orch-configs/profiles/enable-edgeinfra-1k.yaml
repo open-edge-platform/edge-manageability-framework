@@ -1,0 +1,113 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Includes Edge Infrastructure Manager and UI
+
+# This enables Edge Infrastructure Manager to support 1k edge nodes.
+# It keeps default profiles for most charts: 128Mi/100m and 256Mi/200m.
+# Based on Edge Infrastructure Manager scale tests, increases the resources for:
+# host-manager, telemetry-manager, inventory.
+
+argo:
+  enabled:
+    infra-core: true
+    infra-managers: true
+    infra-external: true
+    infra-onboarding: true
+    web-ui-infra: true
+    web-ui: false
+    copy-keycloak-admin-to-infra: true
+  infra-core:
+    api:
+      resources:
+        requests:
+          memory: "64Mi"
+          cpu: "100m"
+        limits:
+          memory: "64Gi"
+          cpu: "64"
+    exporter:
+      resources:
+        requests:
+          memory: "64Mi"
+          cpu: "100m"
+        limits:
+          memory: "64Gi"
+          cpu: "64"
+    inventory:
+      resources:
+        requests:
+          memory: "128Mi"
+          cpu: "1"
+        limits:
+          memory: "64Gi"
+          cpu: "64"
+    tenant-controller:
+      resources:
+        requests:
+          memory: "64Mi"
+          cpu: "100m"
+        limits:
+          memory: "64Gi"
+          cpu: "64"
+  infra-managers:
+    host-manager:
+      resources:
+        requests:
+          memory: "128Mi"
+          cpu: "600m"
+        limits:
+          memory: "64Gi"
+          cpu: "64"
+    maintenance-manager:
+      resources:
+        requests:
+          memory: "64Mi"
+          cpu: "100m"
+        limits:
+          memory: "64Gi"
+          cpu: "64"
+    telemetry-manager:
+      resources:
+        requests:
+          memory: "128Mi"
+          cpu: "200m"
+        limits:
+          memory: "64Gi"
+          cpu: "64"
+    os-resource-manager:
+      resources:
+        requests:
+          memory: "64Mi"
+          cpu: "100m"
+        limits:
+          memory: "64Gi"
+          cpu: "64"
+    networking-manager:
+      resources:
+        requests:
+          memory: "64Mi"
+          cpu: "100m"
+        limits:
+          memory: "64Gi"
+          cpu: "64"
+  infra-onboarding:
+    onboarding-manager:
+      enabled: true
+      resources:
+        requests:
+          memory: "64Mi"
+          cpu: "100m"
+        limits:
+          memory: "64Gi"
+          cpu: "64"
+    dkam:
+      resources:
+        requests:
+          memory: "64Mi"
+          cpu: "100m"
+        limits:
+          memory: "64Gi"
+          cpu: "64"
+  infra-external: {}

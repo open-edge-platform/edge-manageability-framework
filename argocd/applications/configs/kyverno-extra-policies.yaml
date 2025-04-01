@@ -1,0 +1,42 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+require_ro_rootfs:
+  FailureAction: "Audit"
+  exclude:
+    namespaces: []
+    names: []
+
+# Define namespace & pod (including wildcard) exceptions for restricted cluster policy.
+# These are used for 1st party pods. Exceptions for 3rd party namespaces are defined in cluster policy.
+restrictedPolicyOrch:
+  - namespace: "orch-iam"
+    names:
+      - "iam-umbrella-nexus-api-gw-*"
+  - namespace: "orch-platform"
+    names:
+      - "orchestrator-observability-opentelemetry-collector*"
+      - "orchestrator-observability-opentelemetry-collector-daemonset-agent*"
+      - "loki-backend*"
+      - "orchestrator-observability-loki-gateway*"
+      - "orchestrator-observability-loki-results-cache*"
+      - "orchestrator-observability-loki-chunks-cache*"
+      - "orchestrator-observability-minio*"
+      - "orchestrator-observability-mimir-make-minio-buckets*"
+      - "adm-secret*"
+  - namespace: "orch-infra"
+    names:
+      - "alerting-monitor-alertmanager*"
+      - "onboarding-manager*"
+      - "edgenode-observability-mimir-make-minio-buckets*"
+      - "loki-backend*"
+      - "edgenode-observability-loki-gateway*"
+      - "edgenode-observability-loki-results-cache*"
+      - "edgenode-observability-loki-chunks-cache*"
+      - "edgenode-observability-opentelemetry-collector*"
+      - "edgenode-observability-minio*"
+      - "dkam*"
+  - namespace: "capi-operator-system"
+    names:
+      - "capi-operator-cluster-api-operator*"

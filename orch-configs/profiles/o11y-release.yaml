@@ -1,0 +1,90 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Observability config for release env
+# Use only one o11y-* profile
+argo:
+  o11y:
+    edgeNode:
+      loki:
+        logRetentionPeriod: 360h
+        provisioningLogRetentionPeriod: 744h
+        read:
+          replicas: 3
+          volumeSize: 40Gi
+        replicationFactor: 3
+        write:
+          replicas: 3
+          volumeSize: 40Gi
+        limitsConfig:
+          maxLineSize: "0"
+          logRetentionPeriod: 360h
+      mimir:
+        compactor:
+          volumeSize: 40Gi
+        gateway:
+          replicas: 1
+        distributor:
+          replicas: 1
+          resources:
+            limits:
+              memory: 12Gi
+        ingester:
+          replicas: 3
+          resources:
+            limits:
+              memory: 12Gi
+          volumeSize: 40Gi
+        storeGateway:
+          replicas: 1
+          resources:
+            limits:
+              memory: 4Gi
+          volumeSize: 40Gi
+        querier:
+          replicas: 3
+        ruler:
+          replicas: 2
+        structuredConfig: # TODO use direct structuredConfig
+          ingestionRate: 200000
+          maxGlobalSeriesPerUser: 8000000
+          metricsRetentionPeriod: 360h
+    orchestrator:
+      loki:
+        logRetentionPeriod: 360h
+        read:
+          replicas: 3
+          volumeSize: 40Gi
+        replicationFactor: 3
+        write:
+          replicas: 3
+          volumeSize: 40Gi
+      mimir:
+        compactor:
+          volumeSize: 40Gi
+        distributor:
+          replicas: 1
+          resources:
+            limits:
+              memory: 12Gi
+        ingester:
+          replicas: 3
+          resources:
+            limits:
+              memory: 20Gi
+            requests:
+              cpu: 150m
+              memory: 512Mi
+          volumeSize: 40Gi
+        storeGateway:
+          replicas: 1
+          resources:
+            limits:
+              memory: 4Gi
+            requests:
+              cpu: 100m
+              memory: 512Mi
+          volumeSize: 40Gi
+        structuredConfig: # TODO use direct structuredConfig
+          metricsRetentionPeriod: 360h

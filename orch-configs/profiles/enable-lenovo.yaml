@@ -1,0 +1,66 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+argo:
+  infra-managers:
+    onboarding-manager:
+      enabled: false
+  infra-external:
+    loca:
+      # Default OS password that will be used during provisioning. After provisioning will be done, password authentication on EN will be disabled.
+      # Should follow LOC-A's password restriction:
+      # Contains at least one letter
+      # Contains at least one number
+      # Contain at least 2 of the following:
+      #   a. An upper-case letter
+      #   b. A lower-case letter
+      #   c. A special character($%*.#!@)
+      #   d. Cannot be a repeat or reverse of the corresponding user name
+      #   e. May contain at most 2 consecutive occurrences of the same character. The length of the password should be between 10 and 32 characters.
+      #   vault path, should start with @@@ with vault instance and vault path separated by '/'. For example @@@{{vaultInstance}}/@@@{{vaultPath}}.
+      osPassword: ""
+
+      providerConfig:
+        # Copy and paste the content of: kubectl get secret loca-certificate-tls -n loca -o jsonpath="{.data.ca\.crt}" | base64 -d
+        # into loca_ca_cert. Alternatively, you can get the LOC-A CA using this command: openssl s_client -connect LOCA_IP:443.
+        # Extract the certificate and save it here. The CA certificate is used for REST API calls from Edge Infrastructure
+        # Manager to Lenovo LOC-A.
+        # - name: "LOCA1"
+        #   username: "something" # BASE64 encoded username. Use 'echo -n "username" | base64' to generate it.
+        #   password: "somethingelse" # BASE64 encoded password. Use 'echo -n "password" | base64' to generate it.
+        #   api_endpoint: "https://sc.loca1.lab/api/v1"
+        #   auto_provision: true
+        # Use following fields to configure corresponding fields of Templates that will be created in LOC-A
+        # If not configured, then default value of intel{{#}}.{{ clusterDomain }} will be used instead
+        #   instance_tpl: intel{{#}}
+        #   dns_domain: cluster.onprem
+        #   loca_ca_cert: |
+        #     -----BEGIN CERTIFICATE-----
+        #     MIIBYDCCAQegAwIBAgIRANkLzIEDboebuYRdSG13nhMwCgYIKoZIzj0EAwIwDzEN
+        #     MAsGA1UEAxMETE9DQTAgFw0yMjExMDIxNjEyMjRaGA8yMTIyMTAwOTE2MTIyNFow
+        #     DzENMAsGA1UEAxMETE9DQTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABDm7Snax
+        #     mbPGKi8yoEpbNs3CyY0GAZp6+W9br+KhHwxdy8JmQOcDZp7FFnTnyu/WFBdFrpvY
+        #     IK5g9whLC/WZ4jijQjBAMA4GA1UdDwEB/wQEAwICpDAPBgNVHRMBAf8EBTADAQH/
+        #     MB0GA1UdDgQWBBS9klFV6Z6NVN7uRHbF04lh8P2ryDAKBggqhkjOPQQDAgNHADBE
+        #     AiAWJRigjzQ4tTOjMN1xm28zrHDoMtGiAERNw2OPfp+gSgIgHait0IBXitCpzJYS
+        #     KE8gtR6W+Z9dHBpfbSAqnosLcgQ=
+        #     -----END CERTIFICATE-----
+        # - name: "LOCA2"
+        #   username: "something" # BASE64 encoded username. Use 'echo -n "username" | base64' to generate it.
+        #   password: "somethingelse" # BASE64 encoded password. Use 'echo -n "password" | base64' to generate it.
+        #   api_endpoint: "https://sc.loca2.lab/api/v1"
+        #   auto_provision: true
+        #   instance_tpl: intel{{#}}
+        #   dns_domain: cluster.onprem
+        #   loca_ca_cert: |
+        #     -----BEGIN CERTIFICATE-----
+        #     MIIBYDCCAQegAwIBAgIRANkLzIEDboebuYRdSG13nhMwCgYIKoZIzj0EAwIwDzEN
+        #     MAsGA1UEAxMETE9DQTAgFw0yMjExMDIxNjEyMjRaGA8yMTIyMTAwOTE2MTIyNFow
+        #     DzENMAsGA1UEAxMETE9DQTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABDm7Snax
+        #     mbPGKi8yoEpbNs3CyY0GAZp6+W9br+KhHwxdy8JmQOcDZp7FFnTnyu/WFBdFrpvY
+        #     IK5g9whLC/WZ4jijQjBAMA4GA1UdDwEB/wQEAwICpDAPBgNVHRMBAf8EBTADAQH/
+        #     MB0GA1UdDgQWBBS9klFV6Z6PQVN7uRbF04lh8P2ryDAKBggqhkjOPQQDAgNHADBE
+        #     AiAWJRigjzQ4tTOjMN1xm28zrHDoMtGiAERNw2OPfp+gSgIgHait0IBXitCpzJYS
+        #     KE8gtR6W+Z9dHBpfbSAqnosLcgQ=
+        #     -----END CERTIFICATE-----

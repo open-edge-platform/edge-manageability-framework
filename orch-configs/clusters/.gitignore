@@ -1,0 +1,10 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+*.yaml
+!bkc.yaml
+!dev.yaml
+!dev-minimal.yaml
+!onprem*.yaml
+

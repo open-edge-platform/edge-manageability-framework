@@ -1,0 +1,8 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+match_ignores:
+  ignores:
+    # Ignore Intel CA certificates vendored to the repo as they are needed for internal tests and are not sensitive
+    - rule_name: Visible Base64 Encoded Certificate File

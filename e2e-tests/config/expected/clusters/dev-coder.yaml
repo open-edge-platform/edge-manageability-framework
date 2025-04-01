@@ -1,0 +1,88 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Cluster specific values applied to root-app only
+root:
+  useLocalValues: false
+  clusterValues:
+    - orch-configs/profiles/enable-platform.yaml
+    - orch-configs/profiles/enable-multitenancy.yaml
+    - orch-configs/profiles/enable-o11y.yaml
+    - orch-configs/profiles/enable-kyverno.yaml
+    - orch-configs/profiles/enable-app-orch.yaml
+    - orch-configs/profiles/enable-cluster-orch.yaml
+    - orch-configs/profiles/enable-edgeinfra.yaml
+    - orch-configs/profiles/enable-full-ui.yaml
+    - orch-configs/profiles/ui-dev.yaml
+    - orch-configs/profiles/enable-dev.yaml
+    - orch-configs/profiles/enable-asm.yaml
+    - orch-configs/profiles/enable-sre.yaml
+    - orch-configs/profiles/enable-autoprovision.yaml
+    # proxy group should be specified as the first post-"enable" profile
+    - orch-configs/profiles/proxy-none.yaml
+    - orch-configs/profiles/profile-autocert.yaml
+    - orch-configs/profiles/profile-dev.yaml
+    - orch-configs/profiles/artifact-rs-production-noauth.yaml
+    - orch-configs/profiles/o11y-dev.yaml
+    - orch-configs/profiles/alerting-emails-dev.yaml
+    - orch-configs/profiles/resource-default.yaml
+    - orch-configs/clusters/dev-coder.yaml
+
+# Values applied to both root app and shared among all child apps
+argo:
+  ## Basic cluster information
+  project: dev
+  namespace: dev
+  clusterName: dev
+  # Base domain name for all Orchestrator services. This base domain will be concatenated with a service's subdomain
+  # name to produce the service's domain name. For example, given the domain name of `orchestrator.io`, the Web UI
+  # service will be accessible via `web-ui.orchestrator.io`. Not to be confused with the K8s cluster domain.
+  clusterDomain: kind.internal
+
+  ## Argo CD configs
+  deployRepoURL: "https://github.com/open-edge-platform/edge-manageability-framework"
+  deployRepoRevision: main
+
+  targetServer: "https://kubernetes.default.svc"
+  autosync: true
+
+  o11y:
+    sre:
+      customerLabel: local
+      externalSecretsEnabled: true
+      providerSecretName: sre-secret
+
+  aws:
+    # Account ID and region will be set by deploy.go
+    # region: ""
+    # account: ""
+
+  # # rate limit is applicable to each cluster.
+  # # please see https://doc.traefik.io/traefik/middlewares/http/ratelimit/
+  # traefik:
+  #   rateLimit:
+  #     # When rateLimit section is not specified or average is set to 0 (default setting), rate limiting will be disabled.
+  #     average: 5
+  #     # period, in combination with average, defines the actual maximum rate: average / period
+  #     period: 1m
+  #     # burst is the maximum number of requests allowed to go through in the same arbitrarily small period of time.
+  #     burst: 20
+  #     # If depth is specified, excludedIPs is ignored.
+  #     ipStrategyDepth: 1
+  #     # Contrary to what the name might suggest, this option is not about excluding an IP from the rate limiter,
+  #     # and therefore cannot be used to deactivate rate limiting for some IPs.
+  #     excludedIps:
+  #       - 10.244.0.1
+  #   # Restrict access to Rancher to the specified IP addresses
+  #   rancherIpAllowList:
+  #     - 10.244.0.1
+  #   # Traefik uses the X-Forwarded-For header and take the IP located at the depth position.
+  #   # See https://doc.traefik.io/traefik/middlewares/http/ipallowlist/#ipstrategydepth
+  #   rancherIpAllowListDepth: 0
+
+postCustomTemplateOverwrite:
+  traefik:
+    logs:
+      general:
+        level: DEBUG

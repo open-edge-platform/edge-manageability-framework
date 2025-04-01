@@ -1,0 +1,9 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Enables SRE exporter service, enable it to export SLI metrics
+
+argo:
+  enabled:
+    sre-exporter: true

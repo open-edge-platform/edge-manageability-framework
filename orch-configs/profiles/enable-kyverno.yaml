@@ -1,0 +1,11 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Includes Platform
+# Always enable this
+
+argo:
+  enabled:
+    kyverno-policy: true
+    kyverno: true

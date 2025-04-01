@@ -1,0 +1,80 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Simplified workflow outline used by fake-install.sh to provide a fast "target dummy" script
+# for testing the install command flow. Needs to be kept in sync with the real installer
+# and automation workflow. 
+
+pipeline:
+  cluster_name: cd-pt-0
+  aws_region: us-west-2
+  local_state: ../state
+actions:
+  - output: Select an installation option
+    prompt: "Your selection (default [1]):"
+    response: 1
+  - output: cluster name step
+    prompt: "Enter the name of the cluster []:"
+    response: cd-pt-0
+  - output: "aws region step"
+    prompt: "Specify the AWS region for the cluster (default []):"
+    response: us-west-2
+  - output: "local state step"
+    prompt: "local state path (default []):"
+    response: ../state
+  - output: "Image launch status through to the orchestrator admin container prompt"
+    prompt: "orchestrator-admin:~$"
+    response: launch the timing cryer
+  - output: "on prompt cd to pod-configs"
+    prompt: "orchestrator-admin:pod-configs$"
+    response: cd pod-configs
+  - output: "on prompt start provision.sh config step"
+    prompt: "orchestrator-admin:pod-configs$"
+    response: utils/provision.sh config --aws-account 054305100460 --customer-state-prefix cd-ops --environment $CLUSTER_NAME --parent-domain espdstage.infra-host.com --region $AWS_REGION --email builder@infra-host.com --socks-proxy $socks_proxy --auto-cert --auto
+  - output: "provision config edit step"
+    prompt: "0L, 0C"
+    wait: 2s
+    response: :wq
+  - output: Confirm config save
+    prompt: "to save it and proceed, others to quit:"
+    response: yes
+  - output: "on prompt cd to pod-configs for idempotence"
+    prompt: "orchestrator-admin:pod-configs$"
+    response: cd pod-configs
+  - output: provision.sh install step
+    prompt: "orchestrator-admin:pod-configs$"
+    response: utils/provision.sh install --aws-account 054305100460 --customer-state-prefix cd-ops --environment $CLUSTER_NAME --parent-domain espdstage.infra-host.com --region $AWS_REGION --email builder@infra-host.com --socks-proxy $socks_proxy --auto-cert --auto
+  # Scan for Install Success line. Without success line, a prompt is a failure
+  # Info: Installation completed successfully. Please back up the files in SAVEME directory.
+  - output: |
+      Terraform will perform the following actions
+      will be read during apply
+      data.aws_subnet.public_subnets
+      Successfully configured the backend
+      Terraform used the selected providers to generate the following execution plan
+      Info: Installation completed successfully. Please back up the files in SAVEME directory.
+    prompt: "orchestrator-admin:pod-configs$"
+    response: cd ~
+  - output: "configure cluster"
+    prompt: "orchestrator-admin:~$"
+    response: ./configure-cluster.sh
+  - output: "enter to proceed"
+    prompt: "Press any key to open your editor"
+    response: \n
+  - output: "deploy config edit"
+    prompt: "postCustomTemplateOverwrite"
+    wait: 2s
+    response: :wq
+  - output: "make file step"
+    prompt: "orchestrator-admin:~$"
+    response: make install
+  - output: "installation complete - get argocd password (env)"
+    prompt: "orchestrator-admin:~$"
+    response: 'echo "export ARGO_ADMIN_PASS=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)" > pod-configs/SAVEME/argoauth.env'
+  - output: "installation complete - get argocd password (json)"
+    prompt: "orchestrator-admin:~$"
+    response: 'echo -e "{\n  \"argoAuth\": \"$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)\"\n}" > pod-configs/SAVEME/argoauth.json'
+  - output: "exit installer"
+    prompt: "orchestrator-admin:~$"
+    response: exit

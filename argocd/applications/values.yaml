@@ -1,0 +1,22 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Common values shared among multiple components
+argo:
+  database:
+    databases:
+      - namespace: orch-app
+        name: app-orch-catalog
+      - namespace: orch-platform
+        name: platform-keycloak
+      - namespace: orch-platform
+        name: vault
+      - namespace: orch-infra
+        name: inventory
+      - namespace: orch-infra
+        name: alerting
+      - namespace: orch-iam
+        name: iam-tenancy
+  traefik:
+    tlsOption: "gateway-tls"

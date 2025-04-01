@@ -1,0 +1,21 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Observability config for dev env
+# Use only one o11y-* profile
+
+argo:
+  o11y:
+    edgeNode:
+      loki:
+        logRetentionPeriod: 12h
+      mimir:
+        structuredConfig: # TODO use direct structuredConfig
+          metricsRetentionPeriod: 24h
+    orchestrator:
+      loki:
+        logRetentionPeriod: 12h
+      mimir:
+        structuredConfig: # TODO use direct structuredConfig
+          metricsRetentionPeriod: 24h

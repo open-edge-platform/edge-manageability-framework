@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+export KUBECONFIG=/home/"$USER"/.kube/config
+
+set -e
+
+
+function getSvcIP() {
+  svcIp=$(kubectl get svc -n "$1" "$2" -o yaml | yq '.status.loadBalancer.ingress | .[0] | .ip')
+  if [ "${svcIp}" == "null" ]; then
+    echo "Couldn't get ExternalIp for $2 service in $1 namespace"
+    exit 1
+  fi
+}
+
+#namespace, certificate, service
+function generateNames() {
+  getSvcIP "$1" "$3"
+  yqDnsNames=$(kubectl get certificate -n "$1" "$2" -o yaml | yq '.spec.dnsNames.[]')
+  readarray dnsNames < <(echo "$yqDnsNames")
+  for dnsName in "${dnsNames[@]}"; do
+    echo -n "$svcIp $dnsName"
+  done
+}
+
+#namespace, configmap, service
+function generateNamesConfigMap() {
+  getSvcIP "$1" "$3"
+
+  kubeCmd=$(kubectl get configmap -n "$1" "$2" -o yaml | yq '.data.dnsNames')
+  dnsNames="${kubeCmd/- /}"
+  delimiter=$"\n- "
+  # Use awk to split the string by the multi-character delimiter
+  readarray -t dnsNames < <(awk -v RS="$delimiter" '1' <<< "$dnsNames")
+  for dnsName in "${dnsNames[@]}"; do
+    if [ -z "$dnsName" ]; then
+      continue
+    fi
+    echo "$svcIp $dnsName"
+  done
+}
+
+function generateArgocd() {
+  kubeCmd=$(kubectl get configmap -n orch-gateway kubernetes-docker-internal -o yaml | yq '.data.dnsNames')
+  dnsNames="${kubeCmd/- /}"
+  delimiter=$"\n- "
+  # Use awk to split the string by the multi-character delimiter
+  readarray -t array < <(awk -v RS="$delimiter" '1' <<< "$dnsNames")
+  # retreive the first element which would be the domain
+  domainName=${array[0]}
+  svcIp=$(kubectl get svc -n argocd "argocd-server" -o yaml | yq '.status.loadBalancer.ingress | .[0] | .ip')
+  if [ "${svcIp}" == "null" ]; then
+    echo "Couldn't get ExternalIp for argocd-server service in argocd namespace"
+    exit 1
+  fi
+  echo "$svcIp argocd.$domainName"
+}
+
+generateNames orch-boots tls-boots ingress-nginx-controller
+generateNamesConfigMap orch-gateway kubernetes-docker-internal traefik
+generateArgocd
+
+echo "=========================================================================================="
+echo "Add hosts above to /etc/hosts on node or to corresponding configuration file of DNS server"

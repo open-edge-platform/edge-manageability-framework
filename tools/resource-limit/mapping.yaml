@@ -1,0 +1,258 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# namespace -> pod-prefix -> container -> config
+orch-platform:
+  keycloak-tenant-controller:
+    keycloak-tenant-controller-pod: "argo.resources.keycloakTenantController"
+  loki-backend:
+    loki: "argo.o11y.orchestrator.loki.backend.resources"
+    loki-sc-rules: "argo.o11y.orchestrator.loki.sidecar.resources"
+  loki-read:
+    loki: "argo.o11y.orchestrator.loki.read.resources"
+  loki-write:
+    loki: "argo.o11y.orchestrator.loki.write.resources"
+  mp-prometheus-agent-kube-p-operator:
+    kube-prometheus-stack: "argo.resources.orchestratorPrometheusAgent.prometheusOperator"
+  mp-prometheus-agent-kube-state-metrics:
+    kube-state-metrics: "argo.resources.orchestratorPrometheusAgent.kubeStateMetrics"
+  orchestrator-observability-grafana:
+    grafana: "argo.o11y.orchestrator.grafana.resources"
+    grafana-proxy: "argo.o11y.orchestrator.grafana.grafana_proxy.resources"
+    grafana-sc-dashboard: "argo.o11y.orchestrator.grafana.sidecar.resources"
+  orchestrator-observability-loki-chunks-cache:
+    exporter: "argo.o11y.orchestrator.loki.memcachedExporter.resources"
+    memcached: "argo.o11y.orchestrator.loki.chunksCache.resources"
+  orchestrator-observability-loki-gateway:
+    nginx: "argo.o11y.orchestrator.loki.gateway.resources"
+  orchestrator-observability-loki-results-cache:
+    exporter: "argo.o11y.orchestrator.loki.memcachedExporter.resources"
+    memcached: "argo.o11y.orchestrator.loki.resultsCache.resources"
+  orchestrator-observability-mimir-compactor:
+    compactor: "argo.o11y.orchestrator.mimir.compactor.resources"
+  orchestrator-observability-mimir-distributor:
+    distributor: "argo.o11y.orchestrator.mimir.distributor.resources"
+  orchestrator-observability-mimir-gateway:
+    gateway: "argo.o11y.orchestrator.mimir.gateway.resources"
+  orchestrator-observability-mimir-ingester:
+    ingester: "argo.o11y.orchestrator.mimir.ingester.resources"
+  orchestrator-observability-mimir-querier:
+    querier: "argo.o11y.orchestrator.mimir.querier.resources"
+  orchestrator-observability-mimir-query-frontend:
+    query-frontend: "argo.o11y.orchestrator.mimir.query_frontend.resources"
+  orchestrator-observability-mimir-store-gateway:
+    store-gateway: "argo.o11y.orchestrator.mimir.storeGateway.resources"
+  orchestrator-observability-minio:
+    minio: "argo.o11y.orchestrator.mimir.minio.resources"
+  orchestrator-observability-opentelemetry-collector:
+    opentelemetry-collector: "argo.o11y.orchestrator.opentelemetryCollector.resources"
+    opentelemetry-collector-daemonset: "argo.o11y.orchestrator.opentelemetryCollectorDaemonset.resources"
+  # Resource managed by VPA/HPA
+  # platform-keycloak:
+  #   keycloak: "argo.resources.platformKeycloak"
+  prometheus-mp-prometheus-agent-kube-p-prometheus:
+    prometheus: "argo.resources.orchestratorPrometheusAgent.prometheus.prometheusSpec"
+  reloader-reloader:
+    reloader-reloader: "argo.resources.reloader"
+  rs-proxy:
+    rs-proxy: "argo.resources.rsProxy"
+  rs-proxy-files:
+    rs-proxy: "argo.resources.rsProxy"
+  # Resource managed by VPA/HPA
+  # vault:
+  #   vault: "argo.resources.vault.server"
+  # vault-agent-injector:
+  #   sidecar-injector: "argo.resources.vault.injector"
+cert-manager:
+  cert-manager:
+    cert-manager-controller: "argo.resources.certManager.root"
+    cert-manager-cainjector: "argo.resources.certManager.cainjector"
+    cert-manager-webhook: "argo.resources.certManager.webhook"
+istio-system:
+  # Resource managed by VPA/HPA
+  # istiod:
+  #   discovery: "argo.resources.istiod.polit"
+  kiali:
+    kiali: "argo.resources.kiali.deployment"
+kyverno:
+  kyverno-admission-controller:
+    kyverno: "argo.resources.kuverno.admissionController.container"
+  kyverno-background-controller:
+    controller: "argo.resources.kuverno.backgroundController"
+  kyverno-cleanup-controller:
+    controller: "argo.resources.kuverno.cleanupController"
+  kyverno-reports-controller:
+    controller: "argo.resources.kuverno.reportsController"
+orch-app:
+  vnc-proxy-app-resource-manager:
+    vncproxy: "argo.resources.appResourceManager.vncProxyResources"
+  app-deployment-manager:
+    app-deployment-manager: "argo.resources.appDeploymentManager.adm"
+  app-deployment-api:
+    app-deployment-api: "argo.resources.appDeploymentManager.gateway"
+    app-deployment-api-rest-proxy: "argo.resources.appDeploymentManager.gateway"
+  app-resource-manager:
+    app-resource-manager: "argo.resources.appResourceManager.root"
+    app-resource-manager-rest-proxy: "argo.resources.appResourceManager.root"
+  catalog-service:
+    application-catalog-server: "argo.resources.catalogService"
+    application-catalog-rest-proxy: "argo.resources.catalogService"
+  interconnect-manager:
+    interconnect-manager: "argo.resources.interconnectManager"
+  malware-scanner-clamav:
+    clamav: "argo.resources.malwareScanner"
+  app-orch-tenant-controller:
+    config-provisioner: "argo.resources.appOrchTenantController.configProvisioner"
+orch-boots:
+  ingress-nginx-controller:
+    controller: "argo.resources.ingressNginx.controller.root"
+orch-cluster:
+# TODO: replace with new cluster-orch stack (cm + capi)
+# Resource managed by VPA/HPA
+# orch-database:
+#   postgresql:
+#     postgresql: "argo.resources.postgresql"
+orch-gateway:
+  auth-service:
+    auth-service: "argo.resources.authService"
+  certificate-file-server:
+    certificate-file-server: "argo.resources.certificateFileServer"
+  # Resource managed by VPA/HPA
+  # traefik:
+  #   traefik: "argo.resources.traefik"
+orch-harbor:
+  harbor-oci-core:
+    core: "argo.resources.harborOci.core"
+  harbor-oci-database:
+    database: "argo.resources.harborOci.database.internal.root"
+  harbor-oci-jobservice:
+    jobservice: "argo.resources.harborOci.jobservice"
+  harbor-oci-nginx:
+    nginx: "argo.resources.harborOci.nginx"
+  harbor-oci-portal:
+    portal: "argo.resources.harborOci.portal"
+  harbor-oci-redis:
+    redis: "argo.resources.harborOci.redis"
+  harbor-oci-registry:
+    registry: "argo.resources.harborOci.registry.registry"
+    registryctl: "argo.resources.harborOci.registry.controller"
+  harbor-oci-trivy:
+    trivy: "argo.resources.harborOci.trivy"
+orch-iam:
+  iam-umbrella-nexus-api-gw:
+    iam-umbrella-nexus-api-gw: "argo.resources.iamUmbrella.nexusApiGw"
+  iam-umbrella-tenancy-manager:
+    iam-umbrella-tenancy-manager: "argo.resources.iamUmbrella.tenancyManager"
+orch-infra:
+  alerting-monitor:
+    alertmanager: "argo.o11y.edgeNode.alertingMonitor.alertmanager.resources"
+    alertmanager-configmap-reload: "argo.o11y.edgeNode.alertingMonitor.alertmanager.configmapReload.resources"
+    open-policy-agent: "argo.o11y.edgeNode.alertingMonitor.openPolicyAgent.resources"
+  alerting-monitor-management:
+    management: "argo.resources.alertingMonitor.management"
+  api:
+    api: "argo.infra-core.api.resources"
+  dkam:
+    dkam: "argo.infra-onboarding.dkam.resources"
+  exporter:
+    exporter: "argo.infra-core.exporter.resources"
+  host-manager:
+    host-manager: "argo.infra-managers.host-manager.resources"
+  inventory:
+    inventory: "argo.infra-core.inventory.resources"
+  maintenance-manager:
+    maintenance-manager: "argo.infra-managers.maintenance-manager.resources"
+  network-manager:
+    network-manager: "argo.infra-managers.network-manager.resources"
+  onboarding-manager:
+    onboarding-manager: "argo.infra-onboarding.onboarding-manager.resources"
+  os-resource-manager:
+    os-resource-manager: "argo.infra-managers.os-resource-mManager.resources"
+  telemetry-manager:
+    telemetry-manager: "argo.infra-managers.telemetry-manager.resources"
+  tenant-controller:
+    tenant-controller: "argo.infra-core.tenant-controller.resources"
+  tinkerbell:
+    tinkerbell: "argo.infra-onboarding.tinkerbell.stack.resources"
+  tinkerbell-hegel:
+    tinkerbell-hegel: "argo.infra-onboarding.tinkerbell_hegel.resources"
+  tinkerbell-tink-controller:
+    tinkerbell-tink-controller: "argo.infra-onboarding.tinkerbell_tink.controller.resources"
+  tinkerbell-tink-server:
+    tinkerbell-tink-server: "argo.infra-onboarding.tinkerbell_tink.server.resources"
+  loca-manager:
+    loca-manager: "argo.infra-external.loca.loca-manager.resources"
+  loca-metadata-manager:
+    loca-metadata-manager: "argo.infra-external.loca.loca-metadata-manager.resources"
+  loca-templates-manager:
+    loca-templates-manager: "argo.infra-external.loca.loca-templates-manager.resources"
+  edgenode-observability-grafana:
+    grafana-sc-dashboard: "argo.o11y.edgeNode.grafana.sidecar.resources"
+    grafana: "argo.o11y.edgeNode.grafana.resources"
+    grafana-proxy: "argo.o11y.edgeNode.grafana.grafana_proxy.resources"
+  edgenode-observability-loki-chunks-cache:
+    memcached: "argo.o11y.edgeNode.loki.chunksCache.resources"
+    exporter: "argo.o11y.edgeNode.loki.memcachedExporter.resources"
+  edgenode-observability-loki-gateway:
+    nginx: "argo.o11y.edgeNode.loki.gateway.resources"
+  edgenode-observability-loki-results-cache:
+    memcached: "argo.o11y.edgeNode.loki.resultsCache.resources"
+    exporter: "argo.o11y.edgeNode.loki.memcachedExporter.resources"
+  edgenode-observability-mimir-compactor:
+    compactor: "argo.o11y.edgeNode.mimir.compactor.resources"
+  edgenode-observability-mimir-distributor:
+    distributor: "argo.o11y.edgeNode.mimir.distributor.resources"
+  edgenode-observability-mimir-gateway:
+    gateway: "argo.o11y.edgeNode.mimir.gateway.resources"
+  edgenode-observability-mimir-ingester:
+    ingester: "argo.o11y.edgeNode.mimir.ingester.resources"
+  edgenode-observability-mimir-querier:
+    querier: "argo.o11y.edgeNode.mimir.querier.resources"
+  edgenode-observability-mimir-query-frontend:
+    query-frontend: "argo.o11y.edgeNode.mimir.query_frontend.resources"
+  edgenode-observability-mimir-ruler:
+    ruler: "argo.o11y.edgeNode.mimir.ruler.resources"
+  edgenode-observability-mimir-store-gateway:
+    store-gateway: "argo.o11y.edgeNode.mimir.storeGateway.resources"
+  edgenode-observability-minio:
+    minio: "argo.o11y.edgeNode.mimir.minio.resources"
+  edgenode-observability-opentelemetry-collector:
+    opentelemetry-collector: "argo.o11y.edgeNode.opentelemetryCollector.resources"
+  loki-backend:
+    loki-sc-rules: "argo.o11y.edgeNode.loki.sidecar.resources"
+    loki: "argo.o11y.edgeNode.loki.backend.resources"
+  loki-read:
+    loki: "argo.o11y.edgeNode.loki.read.resources"
+  loki-write:
+    loki: "argo.o11y.edgeNode.loki.write.resources"
+orch-secret:
+  external-secrets:
+    external-secrets: "argo.resources.externalSecrets.root"
+  external-secrets-cert-controller:
+    cert-controller: "argo.resources.externalSecrets.certController"
+  external-secrets-webhook:
+    webhook: "argo.resources.externalSecrets.webhook"
+  token-file-server:
+    token-file-server: "argo.resources.tokenFileServer"
+  token-refresh:
+    token-refresh: "argo.resources.tokenRefresh"
+orch-sre:
+  sre-exporter:
+    metrics-exporter: "argo.resources.sreExporter.metricsExporter"
+    otel-collector: "argo.resources.sreExporter.otelCollector"
+    config-reloader: "argo.resources.sreExporter.configReloader"
+orch-ui:
+  metadata-broker-orch-ui-metadata:
+    orch-ui-metadata: "argo.resources.metadataBroker.root"
+    openpolicyagent: "argo.resources.metadataBroker.opaResources"
+  web-ui-admin:
+    admin: "argo.resources.webUiAdmin"
+  web-ui-root:
+    container: "argo.resources.webUiRoot"
+  web-ui-app-orch:
+    ma: "argo.resources.webUiAppOrch"
+  web-ui-cluster-orch:
+    mc: "argo.resources.webUiClusterOrch"
+  web-ui-infra:
+    mi: "argo.resources.webUiInfra"

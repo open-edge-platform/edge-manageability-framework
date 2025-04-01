@@ -1,0 +1,107 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Edge Infrastructure Manager config for enablement 10k edge nodes
+
+argo:
+  infra-core:
+    inventory:
+      resources:
+        requests:
+          memory: "512Mi"
+          cpu: "2"
+        limits:
+          memory: "1024Mi"
+          cpu: "4"
+    api:
+      resources:
+        requests:
+          memory: "256Mi"
+          cpu: "500m"
+        limits:
+          memory: "512Mi"
+          cpu: "1"
+    exporter:
+      resources:
+        requests:
+          memory: "256Mi"
+          cpu: "500m"
+        limits:
+          memory: "512Mi"
+          cpu: "1"
+    tenant-controller:
+      resources:
+        requests:
+          memory: "256Mi"
+          cpu: "500m"
+        limits:
+          memory: "512Mi"
+          cpu: "1"
+    os-resource-manager:
+      resources:
+        requests:
+          memory: "256Mi"
+          cpu: "500m"
+        limits:
+          memory: "512Mi"
+          cpu: "1"
+  infra-managers:
+    host-manager:
+      resources:
+        requests:
+          memory: "1Gi"
+          cpu: "15"
+        limits:
+          memory: "2Gi"
+          cpu: "16"
+    maintenance-manager:
+      resources:
+        requests:
+          memory: "512Mi"
+          cpu: "1"
+        limits:
+          memory: "1024Mi"
+          cpu: "2"
+    telemetry-manager:
+      resources:
+        requests:
+          memory: "1Gi"
+          cpu: "4"
+        limits:
+          memory: "2Gi"
+          cpu: "6"
+    license-manager:
+      resources:
+        requests:
+          memory: "256Mi"
+          cpu: "500m"
+        limits:
+          memory: "512Mi"
+          cpu: "1"
+    networking-manager:
+      resources:
+        requests:
+          memory: "256Mi"
+          cpu: "500m"
+        limits:
+          memory: "512Mi"
+          cpu: "1"
+  infra-onboarding:
+    onboarding-manager:
+      resources:
+        requests:
+          memory: "256Mi"
+          cpu: "500m"
+        limits:
+          memory: "512Mi"
+          cpu: "1"
+    dkam:
+      resources:
+        requests:
+          memory: "256Mi"
+          cpu: "500m"
+        limits:
+          memory: "512Mi"
+          cpu: "1"
+  infra-external: {}

@@ -1,0 +1,22 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+argo:
+  infra-onboarding:
+    dkamMode: prod
+    netIp: dynamic
+    nameServers:
+      - 8.8.8.8
+
+  aws:
+    smSecret: release-service-token-prod
+    smProxyRegion: us-west-2
+
+  o11y:
+    alertingMonitor:
+      commonConfig:
+        storageClass: gp3
+    edgeNode:
+      commonConfig:
+        storageClass: gp3

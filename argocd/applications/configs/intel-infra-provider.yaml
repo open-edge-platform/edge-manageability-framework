@@ -1,0 +1,9 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+manager:
+  inventory:
+    endpoint: "inventory.orch-infra.svc.cluster.local:50051"
+oidc:
+  oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"

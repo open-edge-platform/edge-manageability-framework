@@ -1,0 +1,57 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+adm:
+  resources: null
+  catalogService: app-orch-catalog-grpc-server:8080
+  keycloakServerEndpoint: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
+  secretService:
+    enabled: true
+    endpoint: "http://vault.orch-platform.svc.cluster.local:8200"
+  serviceAccount:
+    create: false
+    name: orch-svc
+  fleet:
+    pollingInterval: 30
+  fleetGitRemoteType: http
+  fleetGitClientSecretName: app-gitea-credential
+  gitUseCaCert: true
+  releaseServiceProxy:
+    repo: "oci://rs-proxy.orch-platform.svc.cluster.local:8443"
+    repoSecret: "fleet-rs-secret"
+    remoteNamespace: "orch-platform"
+  apiExtension:
+    apiProxy:
+      namespace: orch-app
+    apiAgent:
+      namespace: orch-app
+  capi:
+    enabled: true
+
+openidc:
+  # -- the endpoint of a Keycloak Realm e.g. http://keycloak/realms/master
+  issuer: "http://platform-keycloak.orch-platform.svc/realms/master"
+  insecureSkipVerify: false
+
+gitea:
+  install: false
+traefikReverseProxy:
+  enabled: true
+  gatewayNamespace: orch-gateway
+  secretName: tls-orch
+  tlsOption: gateway-tls
+mockCompositeApps: []
+
+istio-proxy:
+  securityContext:
+    readOnlyRootFilesystem: true
+controller:
+  securityContext:
+    readOnlyRootFilesystem: true
+
+gateway:
+  resources: null
+
+openpolicyagent:
+  resources: null

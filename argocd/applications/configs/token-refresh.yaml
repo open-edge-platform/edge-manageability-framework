@@ -1,0 +1,7 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+refreshInterval: "5m"
+authEndpoint: "https://login.microsoftonline.com"
+authPath: "/organizations/oauth2/v2.0/token"

@@ -1,0 +1,20 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Includes App Orch, Cluster Orch, FM, Full UI, Rancher, Harbor
+# Use either this or enable-fm
+
+argo:
+  enabled:
+    harbor-oci: true
+    harbor-oci-security-patch: true
+    app-deployment-manager-secret: true
+    app-orch-tenant-controller: true
+    fleet-crd: true
+    fleet-controller: true
+    capi-operator-pre: true
+    capi-operator: true
+    cluster-manager: true
+    cluster-connect-gateway: true
+    intel-infra-provider: true

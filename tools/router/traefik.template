@@ -1,0 +1,166 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+## STATIC CONFIGURATION
+{{- if .IsSandbox }}
+experimental:
+  plugins:
+    subfilter:
+      modulename: "github.com/DirtyCajunRice/subfilter"
+      version: "v0.5.0"
+    rewriteResponseHeaders:
+      moduleName: "github.com/jamesmcroft/traefik-plugin-rewrite-response-headers"
+      version: "v1.1.2"
+{{ end }}
+log:
+  level: INFO
+
+api:
+  insecure: true
+  dashboard: true
+
+entryPoints:
+  websecure:
+    address: ":443"
+
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+  file:
+    filename: "traefik.yml"
+
+## DYNAMIC CONFIGURATION
+{{- if .IsSandbox }}
+http:
+  serversTransports:
+    orch-kind-http:
+      rootCAs:
+        - "/orch-ca.crt"
+  services:
+  {{- range .Hosts}}
+    {{justHost .}}-svc:
+      loadBalancer:
+        serversTransport: "orch-kind-http"
+        passHostHeader: false
+        servers:
+          - url: "https://{{.}}"
+  {{ end}}
+  routers:
+  {{- $extDomain := .ExternalDomain }}
+  {{- range .Hosts}}
+    {{justHost .}}-external:
+      entrypoints: "websecure"
+      rule: "Host(`{{justHost .}}.{{ $extDomain }}`)"
+      service: "{{justHost .}}-svc"
+      {{- $hostResult := justHost . }}
+      {{- if eq $hostResult "web-ui"}}
+      middlewares:
+        - "rewrite-webui-csp-resp-header"
+      {{- end }}
+      tls: {}
+  {{ end }}
+    app-orch-external-openidc:
+      entrypoints: "websecure"
+      rule: "Host(`app-orch.{{ .ExternalDomain }}`) && Path(`/openidc-issuer`)"
+      service: "app-orch-svc"
+      middlewares:
+        - "replace-domain"
+      tls: {}
+    keycloak-external-config:
+      entrypoints: "websecure"
+      rule: "Host(`keycloak.{{ .ExternalDomain }}`) && Path(`/realms/master/.well-known/openid-configuration`)"
+      service: "keycloak-svc"
+      middlewares:
+        - "replace-domain"
+      tls: {}
+    web-ui-external-config:
+      entrypoints: "websecure"
+      rule: "Host(`web-ui.{{ .ExternalDomain }}`) && Path(`/runtime-config.js`)"
+      service: "web-ui-svc"
+      middlewares:
+        - "replace-domain"
+        - "rewrite-webui-csp-resp-header"
+      tls: {}
+    observability-ui-external-config:
+      entrypoints: "websecure"
+      rule: "Host(`observability-ui.{{ .ExternalDomain }}`) && Path(`/runtime-config.js`)"
+      service: "observability-ui-svc"
+      middlewares:
+        - "replace-domain"
+      tls: {}
+  middlewares:
+    replace-domain:
+      plugin:
+        subfilter:
+          lastModified: true
+          filters:
+            - regex: "{{.InternalDomain}}"
+              replacement: "{{ .ExternalDomain }}"
+    rewrite-webui-csp-resp-header:
+      plugin:
+        rewriteResponseHeaders:
+          rewrites:
+            - header: "Content-Security-Policy"
+              regex: "{{.InternalDomain}}"
+              replacement: "{{ .ExternalDomain }}"
+{{ end }}
+tcp:
+  routers:
+    TCProuter0:
+      rule: "HostSNI(`argo.{{ .InternalDomain}}`)"
+      priority: 20
+      service: "argo-kind"
+      entryPoints:
+        - "websecure"
+      tls:
+       passthrough: true
+    TCProuter1:
+      rule: "HostSNI({{- range $i, $h := .Hosts }}{{- if (gt $i 0)}} {{end}}`{{.}}`,{{- end}} `fake.host`)"
+      priority: 9
+      service: "orch-kind"
+      entryPoints:
+        - "websecure"
+      tls:
+       passthrough: true
+    TCProuter2:
+      rule: HostSNI(`*`)
+      priority: 5
+      service: "boots-kind"
+      entryPoints:
+        - "websecure"
+      tls:
+        passthrough: true
+    TCProuter3:
+      rule: "HostSNI(`gitea.{{ .InternalDomain}}`)"
+      priority: 20
+      service: "gitea-kind"
+      entryPoints:
+        - "websecure"
+      tls:
+        passthrough: true
+  services:
+    argo-kind:
+      loadBalancer:
+        servers:
+          - address: {{ .ArgoIP }}:443
+    orch-kind:
+      loadBalancer:
+        servers:
+          - address: {{ .OrchIP }}:443
+    boots-kind:
+      loadBalancer:
+        servers:
+         - address: {{ .BootsIP }}:443
+    gitea-kind:
+      loadBalancer:
+        servers:
+          - address: {{ .GiteaIP }}:443
+{{- if .IsSandbox }}
+tls:
+  stores:
+    default:
+      defaultCertificate:
+        certFile: "/orch-sandbox.tls.crt"
+        keyFile: "/orch-sandbox.tls.key"
+{{ end }}

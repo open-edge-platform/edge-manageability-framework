@@ -1,0 +1,10 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+argo:
+  infra-onboarding:
+    nameServers:
+      - 10.248.2.1
+      - 172.30.90.4
+      - 10.223.45.36

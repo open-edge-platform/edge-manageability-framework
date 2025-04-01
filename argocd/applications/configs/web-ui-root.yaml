@@ -1,0 +1,25 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Auth
+global:
+  auth:
+    enabled: true
+    keycloak:
+      client_id: "webui-client"
+      realm: "master"
+  session_timeout: 3600
+
+# Used to configure the Header title
+header:
+  title: "Edge Orchestrator"
+
+# Ingress
+service:
+  type: ClusterIP
+  traefik:
+    enabled: true
+    options:
+      name: gateway-tls
+    namespace: orch-gateway

@@ -1,0 +1,67 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+import:
+  exporter:
+    enabled: true
+  tenant-controller:
+    enabled: true
+
+credentials:
+  serviceAccount:
+    name: "orch-svc"
+  params:
+    keycloakUrl: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
+    vaultUrl: "http://vault.orch-platform.svc.cluster.local:8200"
+
+api:
+  image:
+    pullPolicy: IfNotPresent
+  serviceArgs:
+    enableAuth: true
+    traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
+    inventoryAddress: "inventory.orch-infra.svc.cluster.local:50051"
+  traefikReverseProxy:
+    # We rely on the multi-tenant gateway.
+    enabled: false
+  oidc:
+    name: "keycloak-api"
+    oidc_env_name: "OIDC_SERVER_URL"
+    oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
+    oidc_tls_insecure_skip_verify_env_name: "OIDC_TLS_INSECURE_SKIP_VERIFY"
+    oidc_tls_insecure_skip_verify_value: "true"
+  multiTenancy:
+    enforceMultiTenancy: "true"
+  resources: null
+
+inventory:
+  image:
+    pullPolicy: IfNotPresent
+  inventory:
+    traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
+  postgresql:
+    pod:
+      enabled: false
+    ssl: false
+    secrets: inventory-local-postgresql
+  resources: null
+  serviceAccount:
+    name: "orch-svc"
+
+tenant-controller:
+  managerArgs:
+    inventoryAddress: "inventory.orch-infra.svc.cluster.local:50051"
+    traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
+  oidc:
+    oidc_server_url: "http://platform-keycloak.orch-platform.svc.cluster.local/realms/master"
+  resources: null
+  serviceAccount:
+    name: "orch-svc"
+  vault:
+    url: "http://vault.orch-platform.svc.cluster.local:8200"
+    role: "orch-svc"
+
+exporter:
+  resources: null

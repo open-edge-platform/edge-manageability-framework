@@ -1,0 +1,46 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Includes Platform
+# Always enable this
+
+argo:
+  enabled:
+    auth-service: true
+    ingress-nginx: true
+    cert-manager: true
+    certificate-file-server: true
+    copy-app-gitea-cred-to-fleet: true
+    copy-ca-cert-boots-to-gateway: true
+    copy-ca-cert-boots-to-infra: true
+    copy-ca-cert-gateway-to-cattle: true
+    copy-ca-cert-gateway-to-infra: true
+    copy-ca-cert-gitea-to-app: true
+    copy-ca-cert-gitea-to-cluster: true
+    copy-cluster-gitea-cred-to-fleet: true
+    external-secrets: true
+    istio-base: true
+    istio-policy: true
+    istiod: true
+    kiali: true
+    metadata-broker: true
+    nginx-ingress-pxe-boots: true
+    platform-autocert: true
+    platform-keycloak: true
+    prometheus-crd: true
+    reloader: true
+    rs-proxy: true
+    secrets-config: true
+    secret-wait-tls-orch: true
+    secret-wait-tls-boots: true
+    self-signed-cert: true
+    traefik-extra-objects: true
+    traefik-pre: true
+    traefik: true
+    traefik-boots: false
+    traefik-boots-extra-objects: true
+    vault: true
+    namespace-resource-quota: true
+    k8s-metrics-server: true
+    token-file-server: true

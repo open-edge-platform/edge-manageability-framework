@@ -1,0 +1,15 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+extends: default
+
+rules:
+  empty-lines:
+    max-end: 1
+  line-length:
+    max: 160
+  braces:
+    min-spaces-inside: 0
+    max-spaces-inside: 1
+  document-start: disable

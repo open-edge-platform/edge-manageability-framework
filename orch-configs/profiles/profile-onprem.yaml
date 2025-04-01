@@ -1,0 +1,142 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Orchestrator config for dev env
+# Use only one profile-* profile
+
+# Note:
+# This file should not include any environment specific configs by design.
+# However, there are still a few exceptions that we plan to refactor in the near future.
+# For now, please refer to "User configurable parameter" section and modify them accordingly.
+#
+# If you are using proxy in your environment then you also need to
+# configure proxy-none.yaml file in this directory.
+
+argo:
+  tlsSecret: tls-orch
+  imagePullSecrets: []
+
+  ## Postgres database configs
+  database:
+    type: local
+    ssl: false
+
+  postgresql:
+    maxConnections: 200
+    sharedBuffers: 256MB
+
+  catalog:
+    # only specify storageClass for non-local, non-default file systems
+    storageClass: openebs-hostpath
+    storageSize: 5Gi
+
+  adm:
+    deploymentNamespace: "fleet-default"
+    helmSecretName: "intel-reg-secret"
+
+  git:
+    gitServer: "https://gitea-http.gitea.svc.cluster.local"
+    provider: "gitea"
+
+  harbor:
+    # only specify storageClass for non-local, non-default file systems
+    storageClass: openebs-hostpath
+    registrySize: 100Gi
+    jobLogSize: 1Gi
+
+  vault:
+    ha: false
+    replicas: 1
+    autoInit: true
+    autoUnseal: false # .Values.argo.aws must be defined to use autoUnseal
+    authorizedAddrs: 0.0.0.0/0 # Comma-separated CIDR for allowed X-Forwarded-For
+
+  # Self-signed-cert configs.
+  # Must be enabled for dev env where tls-orch is not provisioned in advance
+  self-signed-cert:
+    generateOrchCert: true
+
+  platform-keycloak:
+    localRegistrySize: 1Gi
+
+  metadata-broker: {}
+
+  istio:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 128Mi
+      limits:
+        cpu: 2000m
+        memory: 1024Mi
+  o11y:
+    alertingMonitor: {}
+
+  traefikSvcType: LoadBalancer
+
+  infra-onboarding:
+    # supported modes are dev and prod. Customer should always use prod
+    dkamMode: prod
+    dkamStorageClass: openebs-hostpath
+    dkamExtraHost: ""
+    tinkerbellStorageClass: openebs-hostpath
+    onboardingManagerStorageClass: openebs-hostpath
+
+    ### START User configurable parameters
+    # This parameter is used to make the edge node
+    # IP static or dynamic during. This configuration is possible only at the time of provisioning only, cannot be changed after.
+    # Supported values => netIp: static (to configure Static IP. Interface IP read during provisioning)
+    # dynamic (to configure the IP address allocation to the edge node to be based on customer maintained DHCP)
+    # Note: Current release expects customer maintain IP address to Edge node MAC address mapping in the DHCP server.
+    netIp: dynamic
+    # nameserver parameter is only configured in the netplan when the netIp: static.
+    # In DHCP environment it is expected user configured DHCP server will respond with nameserver.
+    # Update nameserver parameter below according to your DNS server.
+    nameServers: []
+    # This parameter is used to specify the registry type, either "auth" for authenticated or "no-auth" for non-authenticated.
+    rsType: "no-auth"
+    # Support for adding Username and Password for login into  Ubuntu in dev mode
+    # Please Provide userName and passWord for login into Ubuntu only for dev mode
+    userName: ""
+    passWord: ""
+    enableTinkActionTimestamp: false
+    # User should update to Firewall Allow config to their environment.
+    # Existing ports, ipVer and protocol configuration should be retained.
+    # Use blank ("") or remove the elements if not required to be set for firewall configurations
+    # 1. etcd-client,etcd-peer,k8sApi,RKE2Api,K8sMetrics,CalicoCNI
+    # 2. MetalLB
+    # 3. NTP
+    # 4. SSH: remove in final release
+    firewallCfgAllow: |-
+      [{
+        "sourceIp": "",
+        "ports": "2379,2380,6443,9345,10250,5473",
+        "ipVer": "",
+        "protocol": "tcp"
+      },
+      {
+        "sourceIp": "",
+        "ports": "7946",
+        "ipVer": "",
+        "protocol": ""
+      },
+      {
+        "sourceIp": "",
+        "ports": "123",
+        "ipVer": "",
+        "protocol": "udp"
+      }]
+    # Used for time sync. User should update to the ntp servers in their environment.
+    ntpServer: "pool.ntp.org"
+    ### END User configurable parameters
+
+    # System configs
+    systemConfigFsInotifyMaxUserInstances: 8192
+    systemConfigVmOverCommitMemory: 1
+    systemConfigKernelPanicOnOops: 1
+    systemConfigKernelPanic: 10
+
+# Post custom template overwrite values should go to /root-app/environments/<env>/<appName>.yaml
+# This is a placeholder to prevent error when there isn't any overwrite needed
+postCustomTemplateOverwrite: {}

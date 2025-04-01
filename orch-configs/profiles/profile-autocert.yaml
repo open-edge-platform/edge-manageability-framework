@@ -1,0 +1,38 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Orchestrator config for autocert enabled
+# Use only one profile-* profile
+
+# This Profile file is  used for enabling autocert feature in orchestrator.
+
+argo:
+  # Lets Encrypt Generated certs
+  # optionally available to generate orchestrator cert using ACME DNS01 issuer (specifically Lets Encrypt)
+  autoCert:
+    issuer: "acme"
+    enabled: true
+    production: true
+
+  # Self-signed-cert configs.
+  # Must be disabled in order for autocert feature to deploy
+  self-signed-cert:
+    generateOrchCert: false
+
+
+  enabled:
+    botkube: true
+    cert-synchronizer: true
+    # Enables/Disables that platform-auto cert application in argo
+    platform-autocert: true
+
+  
+  certManager:
+    # This setting enables the use of recursive nameservers only for DNS01 validation. 
+    # Recursive nameservers are responsible for resolving DNS queries by recursively 
+    # querying other nameservers until the final answer is obtained.
+    dns01RecursiveNameserversOnly: true
+    # This setting specifies the URL of the recursive nameserver to be used for DNS01 validation. 
+    dns01RecursiveNameservers: "https://dns.google/dns-query"
+

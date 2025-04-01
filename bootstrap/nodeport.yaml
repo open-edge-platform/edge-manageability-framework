@@ -1,0 +1,9 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+server:
+  service:
+    type: NodePort
+    nodePortHttp: 32080
+    nodePortHttps: 32443

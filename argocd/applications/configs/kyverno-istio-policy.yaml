@@ -1,0 +1,43 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Namespace exclution
+---
+excludedNamespaces:
+  - argocd
+  - cattle-fleet-clusters-system
+  - cattle-fleet-local-system
+  - cattle-fleet-system
+  - cattle-global-data
+  - cattle-global-nt
+  - cattle-impersonation-system
+  - cattle-provisioning-capi-system
+  - cattle-system
+  - cattle-ui-plugin-system
+  - cert-manager
+  - cluster-fleet-local-*
+  - default
+  - dev
+  - dev-coder
+  - ext
+  - fleet-default
+  - fleet-local
+  - gitea
+  - istio-system
+  - kube-node-lease
+  - kube-public
+  - kube-system
+  - kyverno
+  - local
+  - local-path-storage
+  - metallb-system
+  - ns-label
+  - p-?????
+  - mailpit-dev
+  - kubeadm-control-plane-system
+  - kubeadm-bootstrap-system
+  - capi-variables
+  - capi-system
+  - capi-operator-system
+  - capr-system

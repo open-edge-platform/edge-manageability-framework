@@ -1,0 +1,16 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+spec:
+  template:
+    spec:
+      volumes:
+        - name: config-volume
+          configMap:
+            name: rke2-coredns-rke2-coredns
+            items:
+            - key: Corefile
+              path: Corefile
+            - key: sample.db
+              path: sample.db

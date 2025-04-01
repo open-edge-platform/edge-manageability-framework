@@ -1,0 +1,19 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+argo:
+  o11y:
+    orchestrator:
+      tempo:
+        enabled: true
+  infra-core:
+    enableTracing: true
+  infra-managers:
+    enableTracing: true
+  infra-onboarding:
+    enableTracing: true
+  infra-external:
+    enableTracing: true
+# Currently unused - note that it is not specifiying the required resources.
+# It must be enabled together other infra profiles.

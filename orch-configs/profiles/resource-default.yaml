@@ -1,0 +1,920 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+argo:
+  resources:
+    appDeploymentManager:
+      adm:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+      gateway:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+      openpolicyagent:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+    appResourceManager:
+      root:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+      vncProxyResources:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+    appServiceProxy:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+    authService:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+    awsSmProxy:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+    botkube:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+    catalogService:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+    certManager:
+      root:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+      cainjector:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+      webhook:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+    certificateFileServer:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+    clusterOrchestratorWaitCtm:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+    configProvisioner:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+    externalSecrets:
+      root:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+      certController:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+      webhook:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+    harborOci:
+      core:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+      database:
+        internal:
+          initContainer:
+            migrator:
+              requests:
+                cpu: "1m"
+                memory: "1Mi"
+              limits:
+                cpu: "64"
+                memory: "64Gi"
+            permissions:
+              requests:
+                cpu: "1m"
+                memory: "1Mi"
+              limits:
+                cpu: "64"
+                memory: "64Gi"
+          root:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+      exporter:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+      jobservice:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+      nginx:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+      portal:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+      redis:
+        internal:
+          requests:
+            cpu: "1m"
+            memory: "1Mi"
+          limits:
+            cpu: "64"
+            memory: "64Gi"
+      registry:
+        registry:
+          requests:
+            cpu: "1m"
+            memory: "1Mi"
+          limits:
+            cpu: "64"
+            memory: "64Gi"
+        controller:
+          requests:
+            cpu: "1m"
+            memory: "1Mi"
+          limits:
+            cpu: "64"
+            memory: "64Gi"
+      trivy:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+    iamUmbrella:
+      nexusApiGw:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+      tenancyManager:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+    ingressNginx:
+      controller:
+        root:
+          requests:
+            cpu: "1m"
+            memory: "1Mi"
+          limits:
+            cpu: "64"
+            memory: "64Gi"
+        admissionWebhooks:
+          createSecretJob:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+    interconnectManager:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+    istiod:
+      global:
+        proxy:
+          requests:
+            cpu: "1m"
+            memory: "1Mi"
+          limits:
+            cpu: "64"
+            memory: "64Gi"
+      pilot:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+    keycloakTenantController:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+    kiali:
+      deployment:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+    malwareScanner:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+    namespaceLabel:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+    traefik:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+    vault:
+      server:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+      injector:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+    postgresql:
+      primary:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+    kyverno:
+      admissionController:
+        initContainer:
+          requests:
+            cpu: "1m"
+            memory: "1Mi"
+          limits:
+            cpu: "64"
+            memory: "64Gi"
+        container:
+          requests:
+            cpu: "1m"
+            memory: "1Mi"
+          limits:
+            cpu: "64"
+            memory: "64Gi"
+      backgroundController:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+      cleanupController:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+      reportsController:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+    webUiRoot:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+    webUiInfra:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+    webUiAdmin:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+    webUiAppOrch:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+    webUiClusterOrch:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+    metadataBroker:
+      root:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+      opaResources:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+    sreExporter:
+      metricsExporter:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+      otelCollector:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+      configReloader:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+    orchestratorPrometheusAgent:
+      prometheusOperator:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+      kubeStateMetrics:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+      prometheus:
+        prometheusSpec:
+          requests:
+            cpu: "1m"
+            memory: "1Mi"
+          limits:
+            cpu: "64"
+            memory: "64Gi"
+    platformKeycloak:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+    rsProxy:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+    tokenRefresh:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+    tokenFileServer:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+    reloader:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+    appOrchTenantController:
+      configProvisioner:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+    certSynchronizer:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+# For o11y only, we are using the format that is compatible with previous version
+  o11y:
+    alertingMonitor:
+      alertmanager:
+        resources:
+          requests:
+            cpu: "1m"
+            memory: "1Mi"
+          limits:
+            cpu: "64"
+            memory: "64Gi"
+        configmapReload:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+    orchestrator:
+      grafana:
+        resources:
+          requests:
+            cpu: "1m"
+            memory: "1Mi"
+          limits:
+            cpu: "64"
+            memory: "64Gi"
+        sidecar:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        grafana_proxy:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+      loki:
+        write:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        read:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        gateway:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        backend:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        memcachedExporter:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        chunksCache:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        resultsCache:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        sidecar:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+      mimir:
+        resources:
+          requests:
+            cpu: "1m"
+            memory: "1Mi"
+          limits:
+            cpu: "64"
+            memory: "64Gi"
+        distributor:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        storeGateway:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        ingester:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        compactor:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        querier:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        query_frontend:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        ruler:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        minio:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        gateway:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+      opentelemetryCollector:
+        resources:
+          requests:
+            cpu: "1m"
+            memory: "1Mi"
+          limits:
+            cpu: "64"
+            memory: "64Gi"
+      opentelemetryCollectorDaemonset:
+        resources:
+          requests:
+            cpu: "1m"
+            memory: "1Mi"
+          limits:
+            cpu: "64"
+            memory: "64Gi"
+    edgeNode:
+      grafana:
+        resources:
+          requests:
+            cpu: "1m"
+            memory: "1Mi"
+          limits:
+            cpu: "64"
+            memory: "64Gi"
+        sidecar:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        grafana_proxy:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+      loki:
+        write:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        read:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        gateway:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        backend:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        memcachedExporter:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        chunksCache:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        resultsCache:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        sidecar:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+      mimir:
+        resources:
+          requests:
+            cpu: "1m"
+            memory: "1Mi"
+          limits:
+            cpu: "64"
+            memory: "64Gi"
+        distributor:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        storeGateway:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        ingester:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        compactor:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        querier:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        query_frontend:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        query:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        ruler:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        minio:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        gateway:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+      opentelemetryCollector:
+        resources:
+          requests:
+            cpu: "1m"
+            memory: "1Mi"
+          limits:
+            cpu: "64"
+            memory: "64Gi"

@@ -1,0 +1,31 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Simplified workflow outline used by fake-install.sh to provide a fast "target dummy" script
+# for testing the uninstall command flow. Needs to be kept in sync with the real installer
+# and automation workflow. 
+
+actions:
+  - output: Select an installation option
+    prompt: "Your selection (default [1]):"
+    response: 5
+  - output: cluster name step
+    prompt: "Enter the name of the cluster []:"
+    response: cd-pipe-0
+  - output: "aws region step"
+    prompt: "Specify the AWS region for the cluster (default []):"
+    response: us-west-2
+  - output: "local state step"
+    prompt: "local state path (default []):"
+    response: ../state
+  - output: "Image launch status through to the orchestrator admin container prompt"
+    prompt: "orchestrator-admin:~$"
+    response: cd pod-config
+  - output: "uninstall step"
+    prompt: "orchestrator-admin:pod-configs$"
+    response: utils/provision.sh uninstall --aws-account 054305100460 --customer-state-prefix cd-ops --environment $CLUSTER_NAME --parent-domain espdstage.infra-host.com --region $AWS_REGION --email builder@infra-host.com --socks-proxy $socks_proxy --auto-cert --auto
+  # Scan for Uninstall Success line. Without success line a prompt is a failure
+  - output: "exit container step"
+    prompt: "orchestrator-admin:pod-configs$"
+    response: exit

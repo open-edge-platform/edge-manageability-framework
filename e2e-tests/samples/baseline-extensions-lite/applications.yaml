@@ -1,0 +1,23 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+# cert-manager
+specSchema: "Application"
+schemaVersion: "0.1"
+$schema: "https://schema.intel.com/catalog.orchestrator/0.1/schema"
+
+name: baseline-extension-lite
+version: 1.14.3
+description: "baseline-extension-lite"
+kind: extension
+
+helmRegistry: "jetstack"
+chartName: "cert-manager"
+chartVersion: "1.16.2"
+
+profiles:
+  - name: default
+    displayName: "default"
+    valuesFileName: "values-baseline-extension-lite.yaml"

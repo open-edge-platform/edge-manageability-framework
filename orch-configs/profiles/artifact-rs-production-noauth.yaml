@@ -1,0 +1,15 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Define where to pull charts and containers.
+# Each cluster need to specify one and only one artifact-* profile.
+
+argo:
+  releaseService:
+    ociRegistry: "registry-rs.edgeorchestration.intel.com"
+    fileServer: "files-rs.edgeorchestration.intel.com"
+  tokenRefresh: null
+  chartRepoURL: "registry-rs.edgeorchestration.intel.com/edge-orch"
+  rsChartRepoURL: "registry-rs.edgeorchestration.intel.com/edge-orch"
+  containerRegistryURL: "registry-rs.edgeorchestration.intel.com/edge-orch"

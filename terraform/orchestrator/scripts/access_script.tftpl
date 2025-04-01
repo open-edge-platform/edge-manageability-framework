@@ -1,0 +1,38 @@
+#!/bin/bash
+
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+set -ex
+
+REGISTRY_URL="registry-rs.edgeorchestration.intel.com"
+RS_PATH="edge-orch/common/files/on-prem"
+ORAS_VERSION="1.1.0"
+ORCH_VERSION="3.0.0"
+
+# Refresh token can be provided as a first argument
+# refresh_token=$1
+
+# Override the refresh token if the variable is set
+# if [ -v AZUREAD_REFRESH_TOKEN ]; then
+#     refresh_token="${AZUREAD_REFRESH_TOKEN}"
+# fi
+
+# Install oras
+curl -LO "https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/oras_${ORAS_VERSION}_linux_amd64.tar.gz"
+mkdir -p oras-install/
+tar -zxf "oras_${ORAS_VERSION}_*.tar.gz" -C oras-install/
+sudo mv oras-install/oras /usr/local/bin/
+rm -rf "oras_${ORAS_VERSION}_*.tar.gz" oras-install/
+
+# TODO: Uncomment the line below if the JWT token is required
+#sudo apt-get install -y jq
+
+# TODO: Uncomment the lines below if the JWT token is required
+#JWT_TOKEN="$(curl -v -X POST -d "refresh_token=${refresh_token}&grant_type=refresh_token" https://${REGISTRY_URL}/oauth/token | jq -r .id_token)"
+#echo "${JWT_TOKEN}" | oras login --password-stdin $REGISTRY_URL
+oras logout $REGISTRY_URL
+oras pull "$REGISTRY_URL/$RS_PATH:$ORCH_VERSION"
+
+chmod +x ./onprem_installer.sh ./uninstall_onprem.sh

@@ -1,0 +1,15 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Includes Observability
+# Always enable this
+
+argo:
+  enabled:
+    alerting-monitor: true
+    edgenode-dashboards: true
+    edgenode-observability: true
+    orchestrator-dashboards: true
+    orchestrator-observability: true
+    orchestrator-prometheus-agent: true

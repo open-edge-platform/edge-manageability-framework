@@ -1,0 +1,82 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Observability config for validation env
+# Use only one o11y-* profile
+argo:
+  o11y:
+    edgeNode:
+      loki:
+        logRetentionPeriod: 24h
+        provisioningLogRetentionPeriod: 168h
+        read:
+          replicas: 3
+          volumeSize: 8Gi
+        replicationFactor: 3
+        write:
+          replicas: 3
+          volumeSize: 8Gi
+      mimir:
+        compactor:
+          volumeSize: 15Gi
+        distributor:
+          replicas: 2
+          resources:
+            limits:
+              memory: 20Gi
+        gateway:
+          replicas: 2
+        ingester:
+          replicas: 4
+          resources:
+            limits:
+              memory: 45Gi
+          volumeSize: 40Gi
+        storeGateway:
+          replicas: 1
+          resources:
+            limits:
+              memory: 4Gi
+          volumeSize: 5Gi
+        structuredConfig: # TODO use direct structuredConfig
+          maxGlobalSeriesPerUser: 25000000
+          metricsRetentionPeriod: 24h
+    orchestrator:
+      loki:
+        logRetentionPeriod: 24h
+        read:
+          replicas: 3
+          volumeSize: 8Gi
+        replicationFactor: 3
+        write:
+          replicas: 2
+          volumeSize: 8Gi
+      mimir:
+        compactor:
+          volumeSize: 18Gi
+        distributor:
+          replicas: 1
+          resources:
+            limits:
+              memory: 12Gi
+        ingester:
+          replicas: 2
+          resources:
+            limits:
+              memory: 45Gi
+            requests:
+              cpu: 150m
+              memory: 512Mi
+          volumeSize: 12Gi
+        storeGateway:
+          replicas: 1
+          resources:
+            limits:
+              memory: 4Gi
+            requests:
+              cpu: 100m
+              memory: 512Mi
+          volumeSize: 5Gi
+        structuredConfig: # TODO use direct structuredConfig
+          metricsRetentionPeriod: 24h

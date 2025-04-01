@@ -1,0 +1,11 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+defaultTargetType: ip
+ingressClassParams:
+  spec:
+    scheme: internal
+
+# https://github.com/kubernetes-sigs/aws-load-balancer-controller/issues/2071
+enableCertManager: true

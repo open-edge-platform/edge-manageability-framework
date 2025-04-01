@@ -1,0 +1,20 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+image:
+  pullPolicy: IfNotPresent
+fullnameOverride: app-service-proxy
+serviceAccount:
+  create: false
+  name: orch-svc
+traefik:
+  enabled: true
+  secretName: tls-orch          ## must be created in orch-gateway namespace
+  tlsOption: gateway-tls
+  gatewayNamespace: orch-gateway
+git:
+  remoteType: http
+  clientSecret: app-gitea-credential
+  gitUseCaCert: true
+resources: null

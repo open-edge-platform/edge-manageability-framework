@@ -1,0 +1,104 @@
+{
+    "name": "baseline",
+    "version": "v0.0.1",
+    "kubernetesVersion": "v1.30.10+rke2r1",
+    "description": "Baseline Cluster Template",
+    "controlplaneprovidertype": "rke2",
+    "infraprovidertype": "intel",
+    "clusterconfiguration": {
+      "kind": "RKE2ControlPlaneTemplate",
+      "apiVersion": "controlplane.cluster.x-k8s.io/v1beta1",
+      "metadata": {
+        "labels": {
+          "cpumanager": "true"
+        }
+      },
+      "spec": {
+        "template": {
+          "spec": {
+            "agentConfig": {
+              "kubelet": {
+                "extraArgs": [
+                  "--topology-manager-policy=best-effort",
+                  "--cpu-manager-policy=static",
+                  "--reserved-cpus=1",
+                  "--max-pods=250",
+                  "--tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"
+                ]
+              }
+            },
+            "manifestsConfigMapReference": {
+              "apiVersion": "v1",
+              "kind": "ConfigMap",
+              "name": "coredns-config",
+              "namespace": "default"
+            },
+            "privateRegistriesConfig": {
+              "mirrors": {
+                "rs-proxy.rs-proxy.svc.cluster.local:8443": {
+                  "endpoint": [
+                    "https://localhost.internal:9443"
+                  ]
+                }
+              }
+            },
+            "serverConfig": {
+              "cni": "calico",
+              "cniMultusEnable": true,
+              "disableComponents": {
+                "kubernetesComponents": [
+                  "cloudController"
+                ]
+              },
+              "kubeApiServer": {
+                "extraArgs": [
+                  "--feature-gates=PortForwardWebsockets=true",
+                  "--tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"
+                ]
+              },
+              "kubeControllerManager": {
+                "extraArgs": null
+              },
+              "kubeScheduler": {
+                "extraArgs": null
+              },
+              "etcd": {
+                "exposeMetrics": false,
+                "backupConfig": {
+                  "retention": "5",
+                  "scheduleCron": "0 */5 * * *"
+                },
+                "customConfig": {
+                  "extraArgs": [
+                    "cipher-suites=[TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_CHACHA20_POLY1305_SHA256]"
+                  ]
+                }
+              }
+            },
+            "nodeDrainTimeout": "2m",
+            "rolloutStrategy": {
+              "type": "RollingUpdate",
+              "rollingUpdate": {
+                "maxSurge": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    "clusterNetwork": {
+      "pods": {
+        "cidrBlocks": [
+          "192.168.0.0/16"
+        ]
+      },
+      "services": {
+        "cidrBlocks": [
+          "10.128.0.0/12"
+        ]
+      }
+    },
+    "cluster-labels": {
+      "default-extension": "baseline"
+    }
+}

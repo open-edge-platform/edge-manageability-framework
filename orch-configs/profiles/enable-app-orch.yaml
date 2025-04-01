@@ -1,0 +1,19 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Includes App Orch, Cluster Orch, FM, Full UI, Rancher, Harbor
+# Use either this or enable-fm
+
+argo:
+  enabled:
+    akri-helper-role: true
+    app-deployment-crd: true
+    app-deployment-manager: true
+    app-resource-manager: true
+    app-service-proxy: true
+    fleet-rs-secret: true
+    app-orch-catalog: true
+    malware-scanner: false
+    app-deployment-manager-secret: true
+    app-interconnect-manager: true

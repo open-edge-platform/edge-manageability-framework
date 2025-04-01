@@ -1,0 +1,41 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+allowedDomains: >
+  .github.io
+  .github.com
+  .githubusercontent.com
+  .haxx.se
+  .curl.se
+  .intel.com
+  .infra-host.com
+  .docker.io
+  .docker.com
+  .quay.io
+  .fluentbit.io
+  .k8s.io
+  .pkg.dev
+  .amazonaws.com
+  .intel.com
+  .infra-host.com
+  .letsencrypt.org
+  .public.ecr.aws
+  .cloudfront.net
+  .api.snapcraft.io
+
+sentinelDomains: ".sentinelcloud.com"
+
+aptDomains: >
+  .archive.ubuntu.com
+  ppa.launchpad.net
+  esm.ubuntu.com
+  ports.ubuntu.com
+  security.ubuntu.com
+  ddebs.ubuntu.com
+  mirrors.ubuntu.com
+  .archive.canonical.com
+  .extras.ubuntu.com
+  changelogs.ubuntu.com
+
+debianDomains: ".debian.org cdn.debian.net http.debian.net "

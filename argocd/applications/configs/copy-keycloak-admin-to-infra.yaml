@@ -1,0 +1,11 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+remoteNamespace: orch-platform
+refreshInterval: "0m"   # no need to refresh, default admin password is created once and never changed
+targetSecretName: platform-keycloak
+sourceSecretName: platform-keycloak
+keyName:
+  - source: admin-password
+    target: admin-password

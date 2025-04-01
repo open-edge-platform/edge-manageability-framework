@@ -1,0 +1,19 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Includes App Orch, Cluster Orch, FM, Full UI, Rancher, Harbor
+# Use either this or enable-fm
+
+argo:
+  enabled:
+    web-ui-root: true
+    web-ui-app-orch: true
+    web-ui-cluster-orch: true
+    web-ui-infra: true
+    web-ui-admin: true
+  cors:
+    enabled: true
+  # This enables the ingress route for Infra UI standalone
+  ui:
+    ingressInfraUi: false

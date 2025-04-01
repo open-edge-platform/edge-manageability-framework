@@ -1,0 +1,14 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+remoteNamespace: orch-platform
+refreshInterval: "10m"
+targetSecretName: cluster-gitea-credential
+sourceSecretName: cluster-gitea-credential
+type: kubernetes.io/basic-auth
+keyName:
+  - source: username
+    target: username
+  - source: password
+    target: password

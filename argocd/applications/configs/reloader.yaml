@@ -1,0 +1,18 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+reloader:
+  watchGlobally: false
+  deployment:
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 65534
+    containerSecurityContext:
+      seccompProfile:
+        type: RuntimeDefault
+      capabilities:
+        drop:
+          - ALL
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true

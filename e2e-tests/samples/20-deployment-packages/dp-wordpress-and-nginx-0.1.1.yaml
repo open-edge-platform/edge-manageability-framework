@@ -1,0 +1,32 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+specSchema: "DeploymentPackage"
+schemaVersion: "0.1"
+$schema: "https://schema.intel.com/catalog.orchestrator/0.1/schema"
+
+name: "wordpress-and-nginx-apps"
+displayName: "wordpress and nginx applications"
+description: "wordpress and nginx applications."
+version: "0.1.1"
+
+artifacts:
+  - name: "intel-icon"
+    purpose: "icon"
+
+applications:
+  - name: wordpress
+    version: 0.1.1
+  - name: nginx
+    version: 0.1.0
+
+deploymentProfiles:
+  - name: "testing"
+    displayName: "for testing"
+    applicationProfiles:
+      - application: "wordpress"
+        profile: "default"
+      - application: "nginx"
+        profile: "default"

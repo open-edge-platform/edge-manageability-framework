@@ -1,0 +1,14 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+caSecretName: gateway-ca-cert
+caSecretKey: ca.crt
+
+openPolicyAgent:
+  config:
+    profile: "compressed"
+
+istio-proxy:
+  securityContext:
+    readOnlyRootFilesystem: true

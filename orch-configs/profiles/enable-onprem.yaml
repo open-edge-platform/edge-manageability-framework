@@ -1,0 +1,14 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Includes components that is only needed for local deployments
+# Use either this or enable-aws
+
+argo:
+  enabled:
+    postgresql: true
+    postgresql-secrets: true
+    metallb: true
+    metallb-config: true
+    k8s-metrics-server: false # Override this since the RKE2 will have metrics-server installed by default

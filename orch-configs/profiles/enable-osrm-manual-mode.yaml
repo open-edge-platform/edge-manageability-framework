@@ -1,0 +1,10 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Includes OS Resource Manager (OSRM) configuration to enable/disable manual mode
+# Enable this to set manual mode for OSRM
+
+argo:
+  infra-managers:
+    os-resource-manager-manual-mode: false

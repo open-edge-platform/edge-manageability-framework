@@ -1,0 +1,21 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+.terraform/
+.terraform.lock.hcl
+*.tmp
+statefiles/
+**/terraform.tfstate*
+terraform.tfstate*
+**/plan.out
+plan.out
+tls.crt
+tls.key
+**/certs/*
+**/aws_auth.yaml
+*.tar.gz
+package.zip
+SAVEME
+SAVEME.*
+sshuttle.pid

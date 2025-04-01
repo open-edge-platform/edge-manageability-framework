@@ -1,0 +1,37 @@
+<?xml version="1.0" ?>
+<xsl:stylesheet version="1.0"
+  xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  <xsl:output omit-xml-declaration="yes" indent="yes"/>
+
+  <!-- Template to copy all nodes and attributes as-is -->
+  <xsl:template match="node()|@*">
+    <xsl:copy>
+      <xsl:apply-templates select="node()|@*"/>
+    </xsl:copy>
+  </xsl:template>
+  
+  <!-- Template to add 'cache' and 'io' attributes to disk driver elements -->
+  <xsl:template match="disk[@type='volume']/driver">
+    <xsl:copy>
+      <xsl:attribute name="cache">none</xsl:attribute>
+      <xsl:attribute name="io">native</xsl:attribute>
+      <xsl:apply-templates select="@*|node()"/>
+    </xsl:copy>
+  </xsl:template>
+
+<!-- Template to add CPU pinning if enabled -->
+%{ if enable_cpu_pinning ~}
+  <xsl:template match="domain">
+    <xsl:copy>
+      <xsl:apply-templates select="@*|node()"/>
+      <cputune>
+        %{ for i in range(0, vm_vcpu) ~}
+        <vcpupin vcpu="${i}" cpuset="${i}"/>
+        %{ endfor ~}
+      </cputune>
+    </xsl:copy>
+  </xsl:template>
+%{ endif ~}
+
+
+</xsl:stylesheet>

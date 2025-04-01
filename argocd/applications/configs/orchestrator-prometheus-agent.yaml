@@ -1,0 +1,75 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+crds:
+  enabled: false
+prometheusOperator:
+  enabled: true
+  admissionWebhooks:
+    enabled: false
+  tls:
+    enabled: false
+  alertmanagerInstanceNamespaces: ["orch-platform"]
+  alertmanagerConfigNamespaces: ["orch-platform"]
+  prometheusInstanceNamespaces: ["orch-platform"]
+kubeletService:
+  enabled: false
+nodeExporter:
+  enabled: false
+prometheus-node-exporter:
+  prometheus:
+    monitor:
+      enabled: false
+kubeStateMetrics:
+  enabled: true
+kube-state-metrics:
+  prometheus:
+    monitor:
+      enabled: true
+grafana:
+  enabled: false
+kubeProxy:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeEtcd:
+  enabled: false
+coreDns:
+  enabled: false
+kubeControllerManager:
+  enabled: false
+kubelet:
+  enabled: false
+kubeApiServer:
+  enabled: false
+kubernetesServiceMonitors:
+  enabled: false
+alertmanager:
+  enabled: false
+defaultRules:
+  create: false
+prometheus:
+  agentMode: false
+  enabled: true
+  prometheusSpec:
+    ruleNamespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: 'orch-platform'
+    podMetadata:
+      annotations:
+        traffic.sidecar.istio.io/excludeOutboundPorts: '15090'
+    ruleSelectorNilUsesHelmValues: false
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    probeSelectorNilUsesHelmValues: false
+    retention: 24h
+    scrapeInterval: "60s"
+    evaluationInterval: "60s"
+    remoteWrite:
+      - name: orchestrator-admin
+        url: "http://orchestrator-observability-mimir-gateway:8181/api/v1/push"
+        headers:
+          "X-Scope-OrgID": 'orchestrator-system'

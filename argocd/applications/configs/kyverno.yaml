@@ -1,0 +1,29 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Deploy minimally viable HA config. See https://kyverno.io/docs/installation/methods/#high-availability
+admissionController:
+  replicas: 3
+backgroundController:
+  replicas: 2
+cleanupController:
+  replicas: 2
+reportsController:
+  replicas: 2
+
+# FIXME This will become default value in the future Kyverno 1.12.0 release per https://github.com/kyverno/kyverno/pull/9948
+# Revert this once we upgrade to Kyverno >= 1.12.0
+config:
+  webhooks:
+    - namespaceSelector:
+        matchExpressions:
+          - key: kubernetes.io/metadata.name
+            operator: NotIn
+            values:
+              - kube-system
+crds:
+  migration:
+    # -- Enable CRDs migration using helm post upgrade hook
+    # disabling CRD migration as a workaround to https://github.com/kyverno/kyverno/issues/10283
+    enabled: false

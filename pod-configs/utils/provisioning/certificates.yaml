@@ -1,0 +1,14 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+tls:
+  body:
+    - tls_cert_body
+  key:
+    - tls_key
+  chain:
+    - ca_cert
+    - tls_cert_chain
+  bundle:
+    - tls_cert

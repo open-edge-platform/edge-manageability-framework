@@ -1,0 +1,57 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+import:
+  dkam:
+    enabled: true
+  tinkerbell:
+    enabled: true
+  onboarding-manager:
+    enabled: true
+
+tinkerbell:
+  pvc:
+    enabled: false
+  traefikReverseProxy:
+    gatewayNamespace: orch-gateway
+
+onboarding-manager:
+  managerArgs:
+    inventoryAddress: "inventory.orch-infra.svc.cluster.local:50051"
+    traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
+  traefikReverseProxy:
+    enabled: true
+    secretName: "tls-orch"
+    tlsOption: "gateway-tls"
+    gatewayNamespace: orch-gateway
+  env:
+    tinkerActionsVersion: "1.15.0"
+    oidc:
+      oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
+      # Skip AuthZ for CDN-boots
+      clients:
+        bypass:
+          - cdn-boots
+    vaultUrl: "http://vault.orch-platform.svc.cluster.local:8200"
+    vaultRole: "orch-svc"
+    keycloakUrl: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
+  multiTenancy:
+    enforceMultiTenancy: true
+  resources: null
+  serviceAccount:
+    name: "orch-svc"
+
+dkam:
+  managerArgs:
+    traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
+  env:
+    rs_proxy_address: "rs-proxy.orch-platform.svc.cluster.local:8081/"
+    oidc:
+      oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
+  resources: null
+
+infra-config:
+  config:
+    enAgentManifestTag: "1.0.0-dev-adf978b"

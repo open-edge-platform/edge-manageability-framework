@@ -1,0 +1,53 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+expose:
+  type: clusterIP
+  tls:
+    enabled: false
+    certSource: none
+
+tlsCoreSecretForIngress: harbor-ingress
+
+# The update strategy for deployments with persistent volumes(jobservice, registry): "RollingUpdate" or "Recreate"
+# Set it as "Recreate" when "RWM" for volumes isn't supported
+updateStrategy:
+  type: Recreate
+
+existingSecretAdminPassword: harbor-admin-password
+existingSecretAdminPasswordKey: HARBOR_ADMIN_PASSWORD
+
+# Disable notary as it takes more time to come up and we do not use notary at this time.
+# When we upgrade Harbor to latest stable version LPC5-1918 Notary is already deprecated (deprecated in v2.9.0 and beyond)
+notary:
+  enabled: false
+
+core:
+  resources: null
+database:
+  internal:
+    initContainer:
+      migrator:
+        resources: null
+      permissions:
+        resources: null
+    resources: null
+exporter:
+  resources: null
+jobservice:
+  resources: null
+nginx:
+  resources: null
+portal:
+  resources: null
+redis:
+  internal:
+    resources: null
+registry:
+  registry:
+    resources: null
+  controller:
+    resources: null
+trivy:
+  resources: null

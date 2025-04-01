@@ -1,0 +1,79 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+.idea
+.env
+assets/mage
+jwt.txt
+tools/router/traefik.yml
+tools/router/docker-compose.yml
+vault-keys.json
+mage_output_file.go
+fleet-secret
+*.tgz
+*.tar.gz
+vendor
+orch-utils
+COMMIT_ID
+.DS_Store
+.test
+_build/
+firewall-doc.md
+install-*.log
+uninstall-*.log
+cloud-orchestrator-installer/
+state/
+local-state/
+state-*/
+tmp/
+
+e2e-tests/installer/*.log
+e2e-tests/installer/poetry.lock
+.prettierrc
+*.crt
+*.key
+*.lock.hcl
+
+# IDE specific settings
+.vscode
+
+# configs ignore
+*.iml
+
+# pod-configs ignore
+.terraform/
+.terraform.lock.hcl
+*.tmp
+statefiles/
+**/terraform.tfstate*
+terraform.tfstate*
+**/plan.out
+plan.out
+tls.crt
+tls.key
+**/certs/*
+**/aws_auth.yaml
+*.tar.gz
+package.zip
+SAVEME
+SAVEME.*
+sshuttle.pid
+
+# On-prem directories with build artifacts
+on-prem-installers/repo_archives
+on-prem-installers/installers
+on-prem-installers/dist
+on-prem-installers/assets/mage
+on-prem-installers/assets/tea
+
+# Terraform specific settings
+.terraform.tfstate.lock.info
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+**/.terraform/*
+**/files/
+
+# Build artifacts
+edge-manageability-framework/

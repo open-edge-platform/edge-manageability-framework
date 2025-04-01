@@ -1,0 +1,86 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Orchestrator config for co-e2e env
+# Use only one profile-* profile
+
+# This Profile file is only used for Intel internal testing in KIND environment.
+
+# Note:
+# This file should not include any environment specific configs by design.
+# However, there are still a few exceptions that we plan to refactor in the near future.
+# For now, please refer to "User configurable parameter" section and modify them accordingly.
+#
+# If you are using proxy in your environment then you also need to
+# configure proxy-none.yaml file in this directory.
+
+argo:
+  tlsSecret: tls-orch
+  imagePullSecrets: []
+
+  ## Postgres database configs
+  database:
+    type: local
+    ssl: false
+
+  catalog:
+    # only specify storageClass for non-local, non-default file systems
+    storageClass:
+    storageSize: 1Gi
+
+  adm:
+    deploymentNamespace: "fleet-default"
+    helmSecretName: "intel-reg-secret"
+
+  git:
+    provider: "gitea"
+
+  harbor:
+    # only specify storageClass for non-local, non-default file systems
+    storageClass:
+    registrySize: 1Gi
+    jobLogSize: 100Mi
+
+  vault:
+    ha: false
+    replicas: 1
+    autoInit: true
+    autoUnseal: false # .Values.argo.aws must be defined to use autoUnseal
+    authorizedAddrs: 0.0.0.0/0 # Comma-separated CIDR for allowed X-Forwarded-For
+
+  # Lets Encrypt Generated certs
+  # optionally available to generate orchestrator cert using ACME DNS01 issuer (specifically Lets Encrypt)
+  autoCert:
+    issuer: "acme"
+    enabled: false
+
+  # Self-signed-cert configs.
+  # Must be enabled for dev env where tls-orch is not provisioned in advance
+  self-signed-cert:
+    generateOrchCert: true
+
+  platform-keycloak:
+    localRegistrySize: 1Gi
+
+  metadata-broker: {}
+
+ # Configure the following to scale the default ingress-nginx controller which is use for delivery of day0 images
+ # Larger values may be needed on VM and on-prem clusters to support performance and prevent timeouts.
+ # However better to set low and adjust if needed
+
+  # for tinkerbell CDN server below requests is reasonable minimum for stability with 50 nodes.
+  istio:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 128Mi
+      limits:
+        cpu: 2000m
+        memory: 1024Mi
+
+  traefikSvcType: LoadBalancer
+
+# Post custom template overwrite values should go to /root-app/environments/<env>/<appName>.yaml
+# This is a placeholder to prevent error when there isn't any overwrite needed
+postCustomTemplateOverwrite: {}

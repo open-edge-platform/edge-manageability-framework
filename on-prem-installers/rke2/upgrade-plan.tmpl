@@ -1,0 +1,32 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: upgrade.cattle.io/v1
+kind: Plan
+metadata:
+  name: server-plan
+  namespace: system-upgrade
+  labels:
+    rke2-upgrade: server
+spec:
+  concurrency: 1
+  nodeSelector:
+    matchExpressions:
+      - { key: rke2-upgrade, operator: Exists }
+      - { key: rke2-upgrade, operator: NotIn, values: ["disabled", "false"] }
+      - {
+          key: node-role.kubernetes.io/control-plane,
+          operator: In,
+          values: ["true"],
+        }
+  tolerations:
+    - key: "CriticalAddonsOnly"
+      operator: "Equal"
+      value: "true"
+      effect: "NoExecute"
+  serviceAccountName: system-upgrade
+  cordon: true
+  upgrade:
+    image: rancher/rke2-upgrade
+  version: {{ .Version }} # Bump for next version of Orch

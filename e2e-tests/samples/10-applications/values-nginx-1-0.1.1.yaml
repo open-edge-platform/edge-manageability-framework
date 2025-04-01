@@ -1,0 +1,14 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+global:
+  initial_admin_user_password: test-required
+  optional_user_password: test-optional
+service:
+  type: ClusterIP
+replicaCount: 1
+machine:
+  admin:
+    ip_address: 1.2.3.4

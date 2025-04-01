@@ -1,0 +1,80 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+import: {}
+
+loca-manager:
+  serviceAccount:
+    name: "orch-svc"
+  serviceArgs:
+    inventoryAddress: "inventory.orch-infra.svc.cluster.local:50051"
+    traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
+  multiTenancy:
+    enforceMultiTenancy: true
+  resources: null
+  env:
+    vaultUrl: "http://vault.orch-platform.svc.cluster.local:8200"
+    vaultRole: "orch-svc"
+    keycloakUrl: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
+
+loca-metadata-manager:
+  serviceAccount:
+    name: "orch-svc"
+  serviceArgs:
+    inventoryAddress: "inventory.orch-infra.svc.cluster.local:50051"
+    traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
+  multiTenancy:
+    enforceMultiTenancy: true
+  resources: null
+  env:
+    vaultUrl: "http://vault.orch-platform.svc.cluster.local:8200"
+    vaultRole: "orch-svc"
+
+loca-templates-manager:
+  serviceAccount:
+    name: "orch-svc"
+  serviceArgs:
+    inventoryAddress: "inventory.orch-infra.svc.cluster.local:50051"
+    traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
+  ubuntu_repos_certificates:
+    - |
+      -----BEGIN CERTIFICATE-----
+      MIIE/zCCA+egAwIBAgISA1YYMk9tNlWtii3VhmtNbQp1MA0GCSqGSIb3DQEBCwUA
+      MDMxCzAJBgNVBAYTAlVTMRYwFAYDVQQKEw1MZXQncyBFbmNyeXB0MQwwCgYDVQQD
+      EwNSMTAwHhcNMjUwMzExMjMyMDA2WhcNMjUwNjA5MjMyMDA1WjAiMSAwHgYDVQQD
+      ExdvbGQtcmVsZWFzZXMudWJ1bnR1LmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEP
+      ADCCAQoCggEBAL5bU9Q9Cf6KDe4+qaUhxzteYw9VpHHajyv3RtW1L44HYcrY23Fm
+      Wl+B3NcKebgxeCmIUHPjeT22O185A+W2kCShFK46DXJLy9w/95dC6Vni+MVNolcN
+      5Lf0jdONgMDdo+32zjII1n6iyo0p7wkBjMsGABFJoqTJAaMq5mwy9nF/sPIqdmaT
+      q1YwBP3OeRZJ8YCvcundLS9HDkhal5+6/NFD57csm4bwbrccOpdarF0ebvy2cruk
+      Zj677mBPENQjHQ6xoYKV4XiW1xsJ32Mn4ktBZuMlEpyuPKCj5d7xeFYobxOwZ1iE
+      gV7CplBMIzXPzQ0bqocCqzWZfBrfRLAYZbMCAwEAAaOCAhwwggIYMA4GA1UdDwEB
+      /wQEAwIFoDAdBgNVHSUEFjAUBggrBgEFBQcDAQYIKwYBBQUHAwIwDAYDVR0TAQH/
+      BAIwADAdBgNVHQ4EFgQUJLJ8LKXFCuG8Uj+ME5ecw1M7tQYwHwYDVR0jBBgwFoAU
+      u7zDR6XkvKnGw6RyDBCNojXhyOgwVwYIKwYBBQUHAQEESzBJMCIGCCsGAQUFBzAB
+      hhZodHRwOi8vcjEwLm8ubGVuY3Iub3JnMCMGCCsGAQUFBzAChhdodHRwOi8vcjEw
+      LmkubGVuY3Iub3JnLzAiBgNVHREEGzAZghdvbGQtcmVsZWFzZXMudWJ1bnR1LmNv
+      bTATBgNVHSAEDDAKMAgGBmeBDAECATCCAQUGCisGAQQB1nkCBAIEgfYEgfMA8QB2
+      AKLjCuRF772tm3447Udnd1PXgluElNcrXhssxLlQpEfnAAABlYe3tcEAAAQDAEcw
+      RQIhAIB+Jcn3caERYoGN2pSv+s9M3jPJDoZ3JsbjCI8LIZwbAiBENMuiEGpWiAfn
+      pKpPPLNmrjfiuuGraeB0C3iDmltTRgB3AHMgIg8IFor588SmiwqyappKAO71d4WK
+      CE0FANSlQkRZAAABlYe3rjMAAAQDAEgwRgIhAK3HBjCK/Wyg8wn9vczPPFhCnYoG
+      XypWziVOEdD4zWxEAiEAqc7As4gy1yS50cK5fqFlIiQ0U7C8jEb9UmmfRgK2kcMw
+      DQYJKoZIhvcNAQELBQADggEBABhekTrH56X/E8iRdBBkHtmO7XvenVrCoVYPLdk7
+      j2TFAB5JjatPB/wzcQnexvCngoOj0zE8xxqGx2JePNrxk2SzTWOfA1yXDWyVYsRd
+      CYaykg6ZKxaoiV61UAgcEJUEzUstM9KRHbjDoy/ZMsemMpFdp38Q6AeoJS08jf1e
+      sFvo2jqgMiPoKPLmnIzdoCKf0+WtHOJt6BBoAOxLAxrUnCtDfQvR1OFm3AkdUTeO
+      fI1XhwcNnCvXV8xEVvPGupc44+4dKmHJfAiY+bQgH0Fcco/YxfZswcLPDKTxPXF/
+      StRo1ZACCL0Bl98yeFMBJYu9s4zfaS9C8/1bd1jTxXk5+xU=
+      -----END CERTIFICATE-----
+
+  resources: null
+
+loca-credentials:
+  serviceAccount:
+    name: "orch-svc"
+  params:
+    keycloakUrl: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
+    vaultUrl: "http://vault.orch-platform.svc.cluster.local:8200"

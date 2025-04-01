@@ -1,0 +1,105 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+import:
+
+host-manager:
+  inventory:
+    addr: inventory.orch-infra.svc.cluster.local
+  image:
+    pullPolicy: IfNotPresent
+  serviceArgs:
+    traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
+  traefikReverseProxy:
+    enabled: true
+    secretName: "tls-orch"
+    tlsOption: "gateway-tls"
+  oidc:
+    oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
+  multiTenancy:
+    enforceMultiTenancy: "true"
+  resources: null
+
+maintenance-manager:
+  inventory:
+    addr: inventory.orch-infra.svc.cluster.local
+  image:
+    pullPolicy: IfNotPresent
+  serviceArgs:
+    traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
+  traefikReverseProxy:
+    enabled: true
+    secretName: "tls-orch"
+    tlsOption: "gateway-tls"
+  oidc:
+    oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
+  telemetryMgrArgs:
+    enableVal: false  # disable telemetry profile validation
+  multiTenancy:
+    enforceMultiTenancy: "true"
+  resources: null
+  mimaintmgr:
+    traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
+
+networking-manager:
+  image:
+    pullPolicy: IfNotPresent
+  serviceArgs:
+    inventoryAddress: "inventory.orch-infra.svc.cluster.local:50051"
+    traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
+  resources: null
+
+telemetry-manager:
+  image:
+    pullPolicy: IfNotPresent
+  telemetryMgrArgs:
+    inventoryAddress: "inventory.orch-infra.svc.cluster.local:50051"
+    traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
+  traefikReverseProxy:
+    enabled: true
+    secretName: "tls-orch"
+    tlsOption: "gateway-tls"
+  oidc:
+    oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
+  multiTenancy:
+    enforceMultiTenancy: "true"
+  resources: null
+
+os-resource-manager:
+  managerArgs:
+    osProfileRevision: 0.1.1
+    osSecurityFeatureEnable: false
+    inventoryAddress: "inventory.orch-infra.svc.cluster.local:50051"
+    traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
+    rsProxyRegistryAddress: "rs-proxy.orch-platform.svc.cluster.local:8081/"
+    rsProxyFilesAddress: "rs-proxy-files.orch-platform.svc.cluster.local:8081/"
+    rsEnProfileRepo: "edge-orch/en/files/os-profile/"
+  image:
+    pullPolicy: IfNotPresent
+  oidc:
+    oidc_server_url: "http://platform-keycloak.orch-platform.svc.cluster.local/realms/master"
+  autoProvision:
+    enabled: false  # autoprovisioning disabled by default, can be enabled by enable-autoprovision profile
+  multiTenancy:
+    enforceMultiTenancy: "true"
+  resources: null
+
+attestationstatus-manager:
+  inventory:
+    addr: inventory.orch-infra.svc.cluster.local
+  image:
+    pullPolicy: IfNotPresent
+  serviceArgs:
+    traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
+  traefikReverseProxy:
+    enabled: true
+    secretName: "tls-orch"
+    tlsOption: "gateway-tls"
+  oidc:
+    oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
+  multiTenancy:
+    enforceMultiTenancy: "true"
+  resources: null
+

@@ -1,0 +1,10 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# .shellcheckrc enables/disables shellcheck rules. The rules can be found at
+# https://www.shellcheck.net/wiki/
+
+# disable=SC2154 # var is referenced but not assigned.
+# disable=SC1091 # (info): Not following: (error message here).
+disable=SC2317 # (info): Command appears to be unreachable. Check usage (or ignore if invoked indirectly).

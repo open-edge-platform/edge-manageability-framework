@@ -1,0 +1,4 @@
+pexpect==4.9.0 ; python_version >= "3.8" and python_version < "4.0"
+ptyprocess==0.7.0 ; python_version >= "3.8" and python_version < "4.0"
+selenium==4.21.0
+python-dotenv==1.0.1

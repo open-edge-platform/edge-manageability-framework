@@ -1,0 +1,66 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: mailpit
+  name: mailpit
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mailpit
+  template:
+    metadata:
+      labels:
+        app: mailpit
+        sidecar.istio.io/inject: "false"
+      name: mailpit
+    spec:
+      containers:
+        - image: axllent/mailpit:v1.22.2
+          name: mailpit
+          ports:
+            - containerPort: 8025
+            - containerPort: 1025
+          resources: { }
+          env:
+          - name: MP_DATA_FILE
+            value: /data/mailpit.db
+          volumeMounts:
+            - mountPath: /data
+              name: data-volume
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      volumes:
+        - name: data-volume
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: mailpit
+  name: mailpit-svc
+spec:
+  ports:
+    - port: 8025
+      protocol: TCP
+      name: web
+    - port: 1025
+      name: smtp
+      appProtocol: tcp
+  selector:
+    app: mailpit

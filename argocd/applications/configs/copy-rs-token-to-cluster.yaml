@@ -1,0 +1,11 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+remoteNamespace: orch-secret
+refreshInterval: "180s"
+targetSecretName: release-service-token
+sourceSecretName: release-service-token
+keyName:
+  - source: token
+    target: token

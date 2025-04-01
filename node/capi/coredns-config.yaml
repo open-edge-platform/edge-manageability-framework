@@ -1,0 +1,49 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns-config
+  namespace: NAMESPACE
+data:
+  coredns-config.yaml: |-
+    apiVersion: helm.cattle.io/v1
+    kind: HelmChartConfig
+    metadata:
+      name: rke2-coredns
+      namespace: kube-system
+    spec:
+      valuesContent: |-
+        servers:
+        - zones:
+          - zone: .
+          port: 53
+          plugins:
+          - name: errors
+          - name: health
+            configBlock: |-
+              lameduck 5s
+          - name: ready
+          - name: kubernetes
+            parameters: cluster.local in-addr.arpa ip6.arpa
+            configBlock: |-
+              pods insecure
+              fallthrough in-addr.arpa ip6.arpa
+              ttl 30
+          - name: hosts
+            parameters: /etc/hosts kind.internal
+            configBlock: |-
+              ORCHESTRATOR_IP connect-gateway.kind.internal fleet.kind.internal
+              fallthrough
+          - name: prometheus
+            parameters: 0.0.0.0:9153
+          - name: forward
+            parameters: . /etc/resolv.conf
+          - name: cache
+            parameters: 30
+          - name: loop
+          - name: reload
+          - name: loadbalance

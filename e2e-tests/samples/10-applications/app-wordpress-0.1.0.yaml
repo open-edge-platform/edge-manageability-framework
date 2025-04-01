@@ -1,0 +1,22 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+specSchema: "Application"
+schemaVersion: "0.1"
+$schema: "https://schema.intel.com/catalog.orchestrator/0.1/schema"
+
+name: wordpress
+version: 0.1.0
+description: "Wordpress"
+
+# CLI tool will look up registry by name and convert to an ID.
+
+helmRegistry: "bitnami"
+chartName: "wordpress"
+chartVersion: "15.2.42"
+
+profiles:
+  - name: "default"
+    valuesFileName: "values-wordpress-0.1.0.yaml"

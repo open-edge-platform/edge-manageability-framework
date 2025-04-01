@@ -1,0 +1,26 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Proxy setting for Intel internal networks
+# Use only one proxy-* profile
+
+# Note: Other User configuration can be found in profile-aws.yaml for aws deployment
+# and profile-onprem.yaml for bare-metal deployment of the orchestrator.
+
+### START User configurable parameters
+# If Proxy is used then User should update the config for their environment.
+# Users can configure noProxyDkam same as noProxy.
+# Users can leave it blank if proxy is not used in the deployment environment.
+argo:
+  proxy:
+    httpProxy: ""
+    httpsProxy: ""
+    noProxy: ""
+    # Proxy Config for the Edge Node
+    enHttpProxy: ""
+    enHttpsProxy: ""
+    enFtpProxy: ""
+    enSocksProxy: ""
+    enNoProxy: ""
+### END User configurable parameters

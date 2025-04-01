@@ -1,0 +1,10 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+installCRDs: true
+resources: null
+cainjector:
+  resources: null
+webhook:
+  resources: null

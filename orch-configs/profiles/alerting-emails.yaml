@@ -1,0 +1,15 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+argo:  
+  o11y:
+    alertingMonitor: 
+      smtp:
+        initialize: true
+        configSecret: smtp
+        userPasswordAuth: true
+        passwordSecret:
+          name: smtp-auth
+          key: password
+        requireTls: true

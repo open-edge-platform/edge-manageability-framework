@@ -1,0 +1,11 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Includes Multitenancy components
+# TODO: Merge with enable-platform.yaml profile when this feature is ready to be released.
+# More info: https://intel-my.sharepoint.com/:w:/p/chris_thach/ESM4Q-YuZLZOlmjRaYCJCqkB9XiXodRzE_W4VIxqDR8kjg?e=0gydVn
+
+argo:
+  enabled:
+    multitenant_gateway: true

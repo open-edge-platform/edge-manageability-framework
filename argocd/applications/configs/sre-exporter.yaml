@@ -1,0 +1,29 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+replicaCount: 1
+
+metricsExporter:
+  queryURI: http://orchestrator-observability-mimir-gateway.orch-platform.svc.cluster.local:8181/prometheus
+  mimirScopeOrgId: orchestrator-system
+  queryURIEdgeNode: http://edgenode-observability-mimir-gateway.orch-infra.svc.cluster.local:8181/prometheus
+  mimirScopeOrgIdEdgeNode: edgenode-system
+  vaultNamespace: orch-platform
+
+otelCollector:
+  # External secrets include: basic-auth username/password, remote write endpoint URL and optionally TLS CA cert
+  externalSecret:
+    enabled: false
+    refreshInterval: "5m"
+    providerWebhookUrl: http://aws-sm-proxy.orch-secret.svc.cluster.local:8080/aws-secret
+    providerWebhookQueryKey: name
+  pushInterval: 30s
+  basicAuth:
+    enabled: true
+  tls:
+    enabled: false
+
+configReloader:
+  o11yTenantController:
+    namespace: orch-platform

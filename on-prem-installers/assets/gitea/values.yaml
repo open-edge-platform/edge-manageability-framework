@@ -1,0 +1,71 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+redis-cluster:
+  enabled: false
+postgresql:
+  enabled: true
+  primary:
+    persistence:
+      enabled: true
+      storageClass: "openebs-hostpath"
+    extendedConfiguration: |-
+      huge_pages = off
+    initdb:
+      args: "--set huge_pages=off"
+postgresql-ha:
+  enabled: false
+
+persistence:
+  enabled: true
+  storageClass: "openebs-hostpath"
+
+gitea:
+  config:
+    database:
+      DB_TYPE: postgres
+    session:
+      PROVIDER: db
+    cache:
+      ADAPTER: memory
+    queue:
+      TYPE: level
+    indexer:
+      ISSUE_INDEXER_TYPE: bleve
+      REPO_INDEXER_ENABLED: true
+    repository:
+      ENABLE_PUSH_CREATE_USER: true
+      DEFAULT_PUSH_CREATE_PRIVATE: true
+      FORCE_PRIVATE: true
+    service:
+      DISABLE_REGISTRATION: true
+    server:
+      APP_DATA_PATH: /data
+      DOMAIN: gitea-http.gitea.svc.cluster.local
+      PROTOCOL: https
+      CERT_FILE: /tmp/secret-volume/tls.crt
+      KEY_FILE: /tmp/secret-volume/tls.key
+
+service:
+  http:
+    port: 443
+
+extraVolumes:
+- name: secret-volume
+  secret:
+    secretName: gitea-tls-certs
+
+extraContainerVolumeMounts:
+- name: secret-volume
+  readOnly: true
+  mountPath: /tmp/secret-volume
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  seccompProfile:
+    type: RuntimeDefault
+  runAsNonRoot: true

@@ -1,0 +1,10 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Include AWS Secret Manager
+# Use this in conjunction with enable-aws or enable-dev
+
+argo:
+  enabled:
+    aws-sm-proxy: true

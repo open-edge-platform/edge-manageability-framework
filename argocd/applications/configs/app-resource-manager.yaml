@@ -1,0 +1,19 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+fullnameOverride: app-resource-manager
+serviceAccount:
+  create: false
+  name: orch-svc
+traefikReverseProxy:
+  restProxy:
+    enabled: true
+  gatewayNamespace: orch-gateway
+  secretName: tls-orch
+  tlsOption: gateway-tls
+resources: null
+vncProxyResources: null
+vaultServer: "http://vault.orch-platform.svc.cluster.local:8200"
+keycloakServer: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
+defaultNamespace: "orch-app"

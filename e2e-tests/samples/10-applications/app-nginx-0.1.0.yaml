@@ -1,0 +1,30 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+specSchema: "Application"
+schemaVersion: "0.1"
+$schema: "https://schema.intel.com/catalog.orchestrator/0.1/schema"
+
+name: nginx
+version: 0.1.0
+description: "NGINX"
+
+# CLI tool will look up registry by name and convert to an ID.
+
+helmRegistry: "bitnami"
+chartName: "nginx"
+chartVersion: "15.9.3"
+
+profiles:
+  - name: "default"
+    valuesFileName: "values-nginx-1-0.1.0.yaml"
+  - name: "three-replicas"
+    valuesFileName: "values-nginx-3-0.1.0.yaml"
+  - name: "five-replicas"
+    valuesFileName: "values-nginx-5-0.1.0.yaml"
+  - name: "seven-replicas"
+    valuesFileName: "values-nginx-7-0.1.0.yaml"
+  - name: "nine-replicas"
+    valuesFileName: "values-nginx-9-0.1.0.yaml"

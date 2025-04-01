@@ -1,0 +1,39 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Cluster specific values applied to root-app only
+root:
+  clusterValues: []
+
+# Values applied to both root app and shared among all child apps
+argo:
+  ## Basic cluster information
+  # NOTE: Do we need to make these configurable?
+  # NOTE: The namespace has been renamed to avoid the cluster-configuration overriding it
+  utilsProject: "utils"
+  utilsNamespace: "utils"
+
+  ## Basic cluster information
+  project: ""
+  clusterName: ""
+  clusterDomain: ""
+
+  deployRepoURL: ""
+  deployRepoRevision: ""
+
+  enabled:
+    enic: true
+    copy-ca-cert-gateway-to-enic: true
+
+  enic:
+    replicas: 1
+    orchestratorIp: ""
+    orchestratorUser: ""
+    orchestratorPass: ""
+    orchestratorOrg: ""
+    orchestratorProject: ""
+
+  imagePullSecrets: ""
+
+postCustomTemplateOverwrite: {}

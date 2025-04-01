@@ -1,0 +1,39 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+jwtMiddlewareException:
+  - namespace: "orch-gateway"
+    names:
+      - "harbor-oci"
+      - "ma-gitea"
+      - "app-service-proxy"
+      - "ws-app-service-proxy"
+      - "app-orch-catalog-rest-proxy"
+      - "vnc-proxy-app-resource-manager-websocket-server"
+      - "traefik-boots-ca-certificate"
+      - "common-log-query-rest-proxy"
+      - "web-ui-root"
+      - "web-ui-infra"
+      - "svc-fleet-https"
+      - "onboardingmgr-api-grpc-stream"
+      - "iam-umbrella-nexus-api-gw-api-docs"
+      - "cluster-connect-gateway-ws"
+      - "cluster-connect-gateway-kubeapi"
+  - namespace: "orch-boots"
+    names:
+      - "tinkerbell-nginx-ingress"
+anyMiddlewareException:
+  - namespace: "orch-gateway"
+    names:
+      - "orch-platform-grafana"
+      - "orch-platform-keycloak"
+      - "orch-platform-vault"
+      - "edgenode-observability-grafana"
+      - "traefik-boots-ca-certificate"
+      - "harbor-oci"
+      - "svc-fleet-https"
+      - "onboardingmgr-api-grpc-stream"
+      - "cluster-connect-gateway-ws"
+      - "cluster-connect-gateway-kubeapi"

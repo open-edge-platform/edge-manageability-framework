@@ -1,0 +1,71 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+globalArguments:
+providers:
+  kubernetesCRD:
+    allowCrossNamespace: true
+    namespaces:
+      - "default"
+      - "orch-gateway"
+      - "orch-platform"
+      - "orch-app"
+      - "orch-infra"
+      - "orch-cluster"
+      - "orch-harbor"
+      - "cattle-system"
+      - "connect-gateway"
+      - "orch-ui"
+      - "orch-secret"
+      - "orch-iam"
+ingressRoute:
+  dashboard:
+    enabled: false
+experimental:
+  plugins:
+    enabled: true
+logs:
+  general:
+    format: json
+  access:
+    enabled: true
+    format: json
+
+volumes:
+  - name: jwt-plugin
+    type: configMap
+    # mount path for the pod is not important when using plugins but it needs to be specified
+    mountPath: ./traefik-jwt-plugin/
+
+additionalVolumeMounts:
+  - mountPath: ./plugins-local/src/github.com/team-carepay/traefik-jwt-plugin/
+    name: jwt-plugin
+
+additionalArguments:
+  - --experimental.localPlugins.jwt.moduleName=github.com/team-carepay/traefik-jwt-plugin
+
+metrics:
+  prometheus:
+    buckets: "0.1,0.3,0.6,0.9,1.2,1.5,2.0,2.5,5.0,10.0"
+    service:
+      enabled: true
+
+deployment:
+  podAnnotations:
+    traffic.sidecar.istio.io/excludeInboundPorts: "8000,8443,8080"               # Traefik listened
+    # TODO: Make configurable because every k8s cluster is different
+    traffic.sidecar.istio.io/excludeOutboundIPRanges: "10.96.0.1/32"        # k8s API server
+
+resources: null
+nodeSelector: {}
+tolerations: []
+
+# modify default Traefik container security context to include seccompProfile
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: [ALL]
+  readOnlyRootFilesystem: true
+  seccompProfile:
+    type: RuntimeDefault

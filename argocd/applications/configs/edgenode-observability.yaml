@@ -1,0 +1,31 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+loki:
+  loki:
+    storage:
+      s3:
+        endpoint: edgenode-observability-minio:9000
+
+mimir-distributed:
+  minio:
+    deploymentUpdate:
+      type: Recreate
+    makeBucketJob:
+      exitCommand: ""
+    makeUserJob:
+      exitCommand: ""
+    makePolicyJob:
+      exitCommand: ""
+
+opentelemetry-collector:
+  config:
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: ${env:MY_POD_IP}:4317
+          http:
+            endpoint: ${env:MY_POD_IP}:4318
+            include_metadata: true

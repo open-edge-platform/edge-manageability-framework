@@ -1,0 +1,71 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+{{- $projectName := .Values.argo.utilsNamespace | default "default" }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: {{$projectName}}
+  namespace: argocd
+spec:
+  sourceNamespaces:
+    - {{ required "A valid namespace entry required!" .Values.argo.utilsNamespace }}
+  # this can be modifed later to only add known helm chart and git repos
+  sourceRepos:
+    - '*'
+  destinations:
+    # All namespace or servers allowed.
+    - namespace: '*'
+      server: '*'
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: dev-utils
+  namespace: {{ required "A valid namespace entry required!" .Values.argo.utilsNamespace }}
+spec:
+  project: {{$projectName}}
+  sources:
+    - path: argocd-internal/applications
+      repoURL: {{ required "A valid deployRepoURL entry required!" .Values.argo.deployRepoURL }}
+      targetRevision: {{ required "A valid deployRepoRevision entry required!" .Values.argo.deployRepoRevision | quote }}
+      helm:
+        valueFiles:
+        # Load every yaml file in .Values.root.clusterValues as root-app values
+          {{- range .Values.root.clusterValues }}
+            {{- printf "- $values/%s" . | nindent 10 }}
+          {{- end }}
+        # Propagate local values to child app, overwriting the values read from remote git repo
+        {{- if .Values.root.useLocalValues }}
+        valuesObject:
+          argo:
+            {{- .Values.argo | toYaml | nindent 12 }}
+          postCustomTemplateOverwrite:
+            {{- .Values.postCustomTemplateOverwrite | toYaml | nindent 12 }}
+        {{- end }}
+    - repoURL: '{{ required "A valid deployRepoURL entry required!" .Values.argo.deployRepoURL }}.git'
+      targetRevision: {{ required "A valid deployRepoRevision entry required!" .Values.argo.deployRepoRevision | quote }}
+      ref: values
+  destination:
+    namespace: {{ required "A valid namespace entry required!" .Values.argo.utilsNamespace }}
+    server: "https://kubernetes.default.svc" # root-app should always be deployed in Argo CD server
+  syncPolicy:
+    {{- if .Values.argo.autosync }}
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        maxDuration: 3m0s
+        factor: 2
+    {{- end }}
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true

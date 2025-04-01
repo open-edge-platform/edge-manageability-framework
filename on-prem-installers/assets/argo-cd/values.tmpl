@@ -1,0 +1,49 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+server:
+  service:
+    type: LoadBalancer
+configs:
+  params:
+    application.namespaces: "*"
+    server.tls.minversion: "1.2"
+    # // Note that for TLS v1.3, cipher suites are not configurable and will be chosen automatically.
+    server.tls.ciphers: "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384:TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384:TLS_AES_256_GCM_SHA384"
+  # https://argo-cd.readthedocs.io/en/stable/operator-manual/health/#argocd-app
+  cm:
+    resource.customizations: |
+      argoproj.io/Application:
+        health.lua: |
+          hs = {}
+          hs.status = "Progressing"
+          hs.message = ""
+          if obj.status ~= nil then
+            if obj.status.health ~= nil then
+              hs.status = obj.status.health.status
+              if obj.status.health.message ~= nil then
+                hs.message = obj.status.health.message
+              end
+            end
+          end
+          return hs
+    users.session.duration: "1h"
+{{ if or .Values.http_proxy .Values.https_proxy }}
+global:
+  env:
+    {{ if .Values.http_proxy }}
+    - name: http_proxy
+      value: {{ .Values.http_proxy }}
+    {{ end }}
+    {{ if .Values.https_proxy }}
+    - name: https_proxy
+      value: {{ .Values.https_proxy }}
+    {{ end }}
+    - name: no_proxy
+      value: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,127.0.0.0/8,localhost,.svc,.local,argocd-repo-server,argocd-application-controller,argocd-metrics,argocd-server,argocd-server-metrics,argocd-redis,argocd-dex-server,{{ .Values.no_proxy }}"
+{{ end }}
+
+# Disabled due to vulnerability report and we are not using it
+dex:
+  enabled: false

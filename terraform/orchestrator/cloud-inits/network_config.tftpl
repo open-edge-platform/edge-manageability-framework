@@ -1,0 +1,15 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+network:
+  version: 2
+  ethernets:
+    ens:
+      match:
+        name: ens*
+      dhcp4: true
+      addresses:
+%{ for vmnet_ip in vmnet_ips ~}
+      - ${vmnet_ip}
+%{ endfor ~}

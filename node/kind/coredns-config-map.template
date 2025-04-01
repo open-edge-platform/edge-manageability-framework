@@ -1,0 +1,41 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rke2-coredns-rke2-coredns
+  namespace: kube-system
+data:
+   Corefile: |
+    .:53 {
+        errors
+        health {
+           lameduck 5s
+        }
+        ready
+        kubernetes cluster.local in-addr.arpa ip6.arpa {
+           pods insecure
+           fallthrough in-addr.arpa ip6.arpa
+           ttl 30
+        }
+        file /etc/coredns/sample.db kind.internal
+        prometheus :9153
+        forward . /etc/resolv.conf {
+           max_concurrent 1000
+        }
+        cache 30
+        loop
+        reload
+        loadbalance
+      }
+   sample.db: |
+         ; kind.internal test file
+         kind.internal.            IN      SOA     sns.dns.icann.org. noc.dns.icann.org. 2015082541 7200 3600 1209600 3600
+         kind.internal.            IN      NS      b.iana-servers.net.
+         kind.internal.            IN      NS      a.iana-servers.net.
+         fleet.kind.internal.      IN      A       {{ .OrchIP }}
+         app-orch.kind.internal.   IN      A       {{ .OrchIP }}
+         cname.kind.internal.      IN      CNAME   www.kind.internal.
+         service.kind.internal.    IN      SRV     8080 10 10 kind.internal.

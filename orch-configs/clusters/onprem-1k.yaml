@@ -1,0 +1,79 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Cluster specific values applied to root-app only
+root:
+  useLocalValues: false
+  clusterValues:
+    - orch-configs/profiles/enable-platform.yaml
+    - orch-configs/profiles/enable-multitenancy.yaml
+    - orch-configs/profiles/enable-o11y.yaml
+    - orch-configs/profiles/enable-kyverno.yaml
+    - orch-configs/profiles/enable-app-orch.yaml
+    - orch-configs/profiles/enable-cluster-orch.yaml
+    - orch-configs/profiles/enable-edgeinfra-1k.yaml
+    - orch-configs/profiles/enable-full-ui.yaml
+    - orch-configs/profiles/enable-onprem.yaml
+    - orch-configs/profiles/enable-sre.yaml
+    - orch-configs/profiles/enable-autoprovision.yaml
+    # proxy group should be specified as the first post-"enable" profile
+    - orch-configs/profiles/proxy-none.yaml
+    - orch-configs/profiles/profile-onprem.yaml
+    - orch-configs/profiles/alerting-emails.yaml
+    - orch-configs/profiles/artifact-rs-production.yaml
+    - orch-configs/profiles/o11y-onprem-1k.yaml
+    - orch-configs/profiles/resource-default.yaml
+    - orch-configs/clusters/onprem-1k.yaml
+
+# Values applied to both root app and shared among all child apps
+argo:
+  ## Basic cluster information
+  project: onprem
+  namespace: onprem
+  clusterName: onprem
+  # Base domain name for all Orchestrator services. This base domain will be concatenated with a service's subdomain
+  # name to produce the service's domain name. For example, given the domain name of `orchestrator.io`, the Web UI
+  # service will be accessible via `web-ui.orchestrator.io`. Not to be confused with the K8s cluster domain.
+  clusterDomain: cluster.onprem
+
+  ## Argo CD configs
+  utilsRepoURL: "https://gitea-http.gitea.svc.cluster.local/argocd/orch-utils"
+  utilsRepoRevision: main
+  deployRepoURL: "https://gitea-http.gitea.svc.cluster.local/argocd/edge-manageability-framework"
+  deployRepoRevision: main
+
+  targetServer: "https://kubernetes.default.svc"
+  autosync: true
+
+  o11y:
+    # If the cluster has a node dedicated to edgenode observability services
+    dedicatedEdgenodeEnabled: false
+
+    sre:
+      customerLabel: local
+
+  postgresql:
+    resourcesPreset: "large"
+
+orchestratorDeployment:
+  targetCluster: onprem
+
+# Post custom template overwrite values should go to /root-app/environments/<env>/<appName>.yaml
+# This is a placeholder to prevent error when there isn't any overwrite needed
+postCustomTemplateOverwrite:
+  argocd:
+    server:
+      service:
+        annotations:
+          metallb.universe.tf/address-pool: argocd-server
+  traefik:
+    service:
+      annotations:
+        metallb.universe.tf/address-pool: traefik
+  ingress-nginx:
+    controller:
+      service:
+        annotations:
+          metallb.universe.tf/address-pool: ingress-nginx-controller
+

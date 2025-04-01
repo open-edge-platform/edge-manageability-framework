@@ -1,0 +1,11 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+remoteNamespace: gitea
+refreshInterval: "10m"
+targetSecretName: gitea-ca-cert
+sourceSecretName: gitea-tls-certs
+keyName:
+  - source: tls.crt
+    target: ca.crt

@@ -1,0 +1,312 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+- name: "default"
+  description: "Cluster with capacity to support up to 50 Edge Nodes"
+  variables:
+  - name: "EKS Default Nodegrouop Node Volume Size"
+    value: 20
+    variable: "eks_volume_size"
+    type: integer
+  - name: "EKS Default Nodegroup Minimum Size"
+    value: 3
+    variable: "eks_min_size"
+    type: integer
+  - name: "EKS Default Nodegroup Maximum Size"
+    value: 3
+    variable: "eks_max_size"
+    type: integer
+  - name: "EKS Default Nodegroup Desired Size"
+    value: 3
+    variable: "eks_desired_size"
+    type: integer
+  - name: "EKS Default Nodegroup Node Instance Type"
+    value: "t3.2xlarge"
+    variable: "eks_node_instance_type"
+    type: string
+  - name: "EKS Default Nodegroup Maximum Pod Number"
+    value: 58
+    variable: "eks_max_pods"
+    type: integer
+  - name: "Aurora Minimum ACU Number"
+    value: 0.5
+    variable: "aurora_min_acus"
+    type: number
+  - name: "Aurora Maximum ACU Number"
+    value: 2
+    variable: "aurora_max_acus"
+    type: number
+  - name: "Aurora Development Mode"
+    value: false
+    variable: "aurora_dev_mode"
+    type: bool
+  - name: "EKS additional Nodegroup"
+    value: >
+        {
+          "observability": {
+            desired_size = 1
+            min_size = 1
+            max_size = 1
+            labels = {
+              "node.kubernetes.io/custom-rule": "observability"
+            }
+            taints = {
+              "node.kubernetes.io/custom-rule": {
+                value = "observability"
+                effect = "NO_SCHEDULE"
+              }
+            }
+            instance_type = "t3.2xlarge"
+            volume_size = 20
+            volume_type = "gp3"
+          }
+        }
+    variable: "eks_additional_node_groups"
+    type: object
+- name: "100en"
+  description: "Cluster with 100 Edge Nodes capacity"
+  variables:
+  - name: "EKS Default Nodegrouop Node Volume Size"
+    value: 128
+    variable: "eks_volume_size"
+    type: integer
+  - name: "EKS Default Nodegroup Minimum Size"
+    value: 3
+    variable: "eks_min_size"
+    type: integer
+  - name: "EKS Default Nodegroup Maximum Size"
+    value: 3
+    variable: "eks_max_size"
+    type: integer
+  - name: "EKS Default Nodegroup Desired Size"
+    value: 3
+    variable: "eks_desired_size"
+    type: integer
+  - name: "EKS Default Nodegroup Node Instance Type"
+    value: "t3.2xlarge"
+    variable: "eks_node_instance_type"
+    type: string
+  - name: "EKS Default Nodegroup Maximum Pod Number"
+    value: 58
+    variable: "eks_max_pods"
+    type: integer
+  - name: "Aurora Minimum ACU Number"
+    value: 0.5
+    variable: "aurora_min_acus"
+    type: number
+  - name: "Aurora Maximum ACU Number"
+    value: 2
+    variable: "aurora_max_acus"
+    type: number
+  - name: "Aurora Development Mode"
+    value: false
+    variable: "aurora_dev_mode"
+    type: bool
+  - name: "EKS additional Nodegroup"
+    value: >
+        {
+          "observability": {
+            desired_size = 1
+            min_size = 1
+            max_size = 1
+            labels = {
+              "node.kubernetes.io/custom-rule": "observability"
+            }
+            taints = {
+              "node.kubernetes.io/custom-rule": {
+                value = "observability"
+                effect = "NO_SCHEDULE"
+              }
+            }
+            instance_type = "r5.2xlarge"
+            volume_size = 128
+            volume_type = "gp3"
+          }
+        }
+    variable: "eks_additional_node_groups"
+    type: object
+- name: "500en"
+  description: "Cluster with 500 Edge Nodes capacity"
+  variables:
+  - name: "EKS Default Nodegrouop Node Volume Size"
+    value: 128
+    variable: "eks_volume_size"
+    type: integer
+  - name: "EKS Default Nodegroup Minimum Size"
+    value: 3
+    variable: "eks_min_size"
+    type: integer
+  - name: "EKS Default Nodegroup Maximum Size"
+    value: 3
+    variable: "eks_max_size"
+    type: integer
+  - name: "EKS Default Nodegroup Desired Size"
+    value: 3
+    variable: "eks_desired_size"
+    type: integer
+  - name: "EKS Default Nodegroup Node Instance Type"
+    value: "t3.2xlarge"
+    variable: "eks_node_instance_type"
+    type: string
+  - name: "EKS Default Nodegroup Maximum Pod Number"
+    value: 58
+    variable: "eks_max_pods"
+    type: integer
+  - name: "Aurora Minimum ACU Number"
+    value: 0.5
+    variable: "aurora_min_acus"
+    type: number
+  - name: "Aurora Maximum ACU Number"
+    value: 4
+    variable: "aurora_max_acus"
+    type: number
+  - name: "Aurora Development Mode"
+    value: false
+    variable: "aurora_dev_mode"
+    type: bool
+  - name: "EKS additional Nodegroup"
+    value: >
+        {
+          "observability": {
+            desired_size = 2
+            min_size = 2
+            max_size = 2
+            labels = {
+              "node.kubernetes.io/custom-rule": "observability"
+            }
+            taints = {
+              "node.kubernetes.io/custom-rule": {
+                value = "observability"
+                effect = "NO_SCHEDULE"
+              }
+            }
+            instance_type = "r5.4xlarge"
+            volume_size = 128
+            volume_type = "gp3"
+          }
+        }
+    variable: "eks_additional_node_groups"
+    type: object
+- name: "1ken"
+  description: "Cluster with 1K Edge Nodes capacity"
+  variables:
+  - name: "EKS Default Nodegrouop Node Volume Size"
+    value: 128
+    variable: "eks_volume_size"
+    type: integer
+  - name: "EKS Default Nodegroup Minimum Size"
+    value: 3
+    variable: "eks_min_size"
+    type: integer
+  - name: "EKS Default Nodegroup Maximum Size"
+    value: 3
+    variable: "eks_max_size"
+    type: integer
+  - name: "EKS Default Nodegroup Desired Size"
+    value: 3
+    variable: "eks_desired_size"
+    type: integer
+  - name: "EKS Default Nodegroup Node Instance Type"
+    value: "m4.4xlarge"
+    variable: "eks_node_instance_type"
+    type: string
+  - name: "EKS Default Nodegroup Maximum Pod Number"
+    value: 234
+    variable: "eks_max_pods"
+  - name: "Aurora Minimum ACU Number"
+    value: 0.5
+    variable: "aurora_min_acus"
+    type: number
+  - name: "Aurora Maximum ACU Number"
+    value: 8
+    variable: "aurora_max_acus"
+    type: number
+  - name: "Aurora Development Mode"
+    value: false
+    variable: "aurora_dev_mode"
+    type: bool
+  - name: "EKS additional Nodegroup"
+    value: >
+        {
+          "observability": {
+            desired_size = 3
+            min_size = 3
+            max_size = 3
+            labels = {
+              "node.kubernetes.io/custom-rule": "observability"
+            }
+            taints = {
+              "node.kubernetes.io/custom-rule": {
+                value = "observability"
+                effect = "NO_SCHEDULE"
+              }
+            }
+            instance_type = "r5.4xlarge"
+            volume_size = 128
+            volume_type = "gp3"
+          }
+        }
+    variable: "eks_additional_node_groups"
+    type: object
+- name: "10ken"
+  description: "Cluster with 10K Edge Nodes capacity"
+  variables:
+  - name: "EKS Default Nodegrouop Node Volume Size"
+    value: 128
+    variable: "eks_volume_size"
+    type: integer
+  - name: "EKS Default Nodegroup Minimum Size"
+    value: 5
+    variable: "eks_min_size"
+    type: integer
+  - name: "EKS Default Nodegroup Maximum Size"
+    value: 5
+    variable: "eks_max_size"
+    type: integer
+  - name: "EKS Default Nodegroup Desired Size"
+    value: 5
+    variable: "eks_desired_size"
+    type: integer
+  - name: "EKS Default Nodegroup Node Instance Type"
+    value: "m4.4xlarge"
+    variable: "eks_node_instance_type"
+    type: string
+  - name: "EKS Default Nodegroup Maximum Pod Number"
+    value: 234
+    variable: "eks_max_pods"
+  - name: "Aurora Minimum ACU Number"
+    value: 0.5
+    variable: "aurora_min_acus"
+    type: number
+  - name: "Aurora Maximum ACU Number"
+    value: 35
+    variable: "aurora_max_acus"
+    type: number
+  - name: "Aurora Development Mode"
+    value: false
+    variable: "aurora_dev_mode"
+    type: bool
+  - name: "EKS additional Nodegroup"
+    value: >
+        {
+          "observability": {
+            desired_size = 3
+            min_size = 3
+            max_size = 3
+            labels = {
+              "node.kubernetes.io/custom-rule": "observability"
+            }
+            taints = {
+              "node.kubernetes.io/custom-rule": {
+                value = "observability"
+                effect = "NO_SCHEDULE"
+              }
+            }
+            instance_type = "r5.8xlarge"
+            volume_size = 128
+            volume_type = "gp3"
+          }
+        }
+    variable: "eks_additional_node_groups"
+    type: object

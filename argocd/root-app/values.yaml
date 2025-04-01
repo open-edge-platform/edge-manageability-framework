@@ -1,0 +1,23 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Cluster specific values applied to root-app only
+root:
+  clusterValues: []
+
+# Values applied to both root app and shared among all child apps
+argo:
+  ## Basic cluster information
+  project: ""
+  namespace: ""
+  clusterName: ""
+  clusterDomain: ""
+
+  deployRepoURL: ""
+  deployRepoRevision: ""
+
+  targetServer: ""
+  autosync: true
+
+  enabled: {}

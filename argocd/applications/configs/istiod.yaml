@@ -1,0 +1,34 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+pilot:
+  resources: null
+securityContext:
+  seccompProfile:
+    type: RuntimeDefault
+podSecurityContext:
+  seccompProfile:
+    type: RuntimeDefault
+# meshConfig defines runtime configuration of components, including Istiod and istio-agent behavior
+# See https://istio.io/docs/reference/config/istio.mesh.v1alpha1/ for all available options
+meshConfig:
+  meshMTLS:
+    minProtocolVersion: TLSV1_3
+  defaultConfig:
+    holdApplicationUntilProxyStarts: true
+
+sidecarInjectorWebhook:
+  neverInjectSelector:
+    - matchExpressions:
+        # Never inject sidecar for K8s jobs
+        # Istio container will continue to run, making a job never-ending
+        - key: job-name
+          operator: Exists
+        # Exclude:
+        # - secrets-config job since it needs to communicate with Keycloak via VirtualService
+        # - credentials job since it needs to communicate with Keycloak and Vault
+        # - loca-credentials job since it needs to communicate with Keycloak and Vault
+        - key: app.kubernetes.io/name
+          operator: NotIn
+          values: [secrets-config, credentials, loca-credentials]

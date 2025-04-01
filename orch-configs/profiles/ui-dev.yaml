@@ -1,0 +1,17 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Enables CORS on API server from localhost so that the UI team can do development locally
+
+argo:
+  cors:
+    enabled: true
+    allowedOrigins:
+      - "http://localhost:8080"
+      - "http://localhost:8081"
+      - "http://localhost:8082"
+      - "http://localhost:8083"
+      - "http://localhost:8084"
+  platform-keycloak:
+    extraUiRedirects: http://localhost:8080,http://localhost:8081,http://localhost:8082,http://localhost:8083,http://localhost:8084

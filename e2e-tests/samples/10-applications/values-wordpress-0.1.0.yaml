@@ -1,0 +1,25 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+mariadb:
+  primary:
+    persistence:
+      enabled: false
+  auth:
+    password: password
+    rootPassword: secretpassword
+wordpressUsername: admin
+wordpressPassword: password
+persistence:
+  enabled: false
+resources:
+  requests:
+    cpu: 0m
+    memory: 0Mi
+service:
+  type: ClusterIP
+  annotations:
+    service-proxy.app.orchestrator.io/ports: "80"
+    external-dns.alpha.kubernetes.io/hostname: "wordpress.example.org"
