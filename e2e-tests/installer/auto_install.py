@@ -712,12 +712,12 @@ class AutoInstall:
 
         # Support registry profile override for non-prod deployments
         if self.registry_profile_copied:
-            self.installer_session.sendline(f"cp pod-configs/SAVEME/artifact-rs-profile.yaml ~/edge-manageability-framework/config/profiles/artifact-rs-production-noauth.yaml")
+            self.installer_session.sendline(f"cp pod-configs/SAVEME/artifact-rs-profile.yaml ~/edge-manageability-framework/orch-configs/profiles/artifact-rs-production-noauth.yaml")
             self.installer_session.expect("orchestrator-admin:~")
 
         # replace internal proxy profile for internal deployments
         if self.internal and self.internal_proxy_profile_copied:
-            self.installer_session.sendline(f"cp pod-configs/SAVEME/proxy-internal.yaml ~/edge-manageability-framework/config/profiles/proxy-none.yaml")
+            self.installer_session.sendline(f"cp pod-configs/SAVEME/proxy-internal.yaml ~/edge-manageability-framework/orch-configs/profiles/proxy-none.yaml")
             self.installer_session.expect("orchestrator-admin:~")
 
         # configure cluster
@@ -765,12 +765,12 @@ class AutoInstall:
 
         # Support registry profile override for non-prod deployments
         if self.registry_profile_copied:
-            self.installer_session.sendline(f"cp pod-configs/SAVEME/artifact-rs-profile.yaml ~/edge-manageability-framework/config/profiles/artifact-rs-production-noauth.yaml")
+            self.installer_session.sendline(f"cp pod-configs/SAVEME/artifact-rs-profile.yaml ~/edge-manageability-framework/orch-configs/profiles/artifact-rs-production-noauth.yaml")
             self.installer_session.expect("orchestrator-admin:~")
 
         # replace internal proxy profile for internal deployments
         if self.internal and self.internal_proxy_profile_copied:
-            self.installer_session.sendline(f"cp pod-configs/SAVEME/proxy-internal.yaml ~/edge-manageability-framework/config/profiles/proxy-none.yaml")
+            self.installer_session.sendline(f"cp pod-configs/SAVEME/proxy-internal.yaml ~/edge-manageability-framework/orch-configs/profiles/proxy-none.yaml")
             self.installer_session.expect("orchestrator-admin:~")
 
         # configure cluster
@@ -814,12 +814,12 @@ class AutoInstall:
 
         # Support registry profile override for non-prod deployments
         if self.registry_profile_copied:
-            self.installer_session.sendline(f"cp pod-configs/SAVEME/artifact-rs-profile.yaml ~/edge-manageability-framework/config/profiles/artifact-rs-production-noauth.yaml")
+            self.installer_session.sendline(f"cp pod-configs/SAVEME/artifact-rs-profile.yaml ~/edge-manageability-framework/orch-configs/profiles/artifact-rs-production-noauth.yaml")
             self.installer_session.expect("orchestrator-admin:~")
 
         # replace internal proxy profile for internal deployments
         if self.internal and self.internal_proxy_profile_copied:
-            self.installer_session.sendline(f"cp pod-configs/SAVEME/proxy-internal.yaml ~/edge-manageability-framework/config/profiles/proxy-none.yaml")
+            self.installer_session.sendline(f"cp pod-configs/SAVEME/proxy-internal.yaml ~/edge-manageability-framework/orch-configs/profiles/proxy-none.yaml")
             self.installer_session.expect("orchestrator-admin:~")
 
         # configure cluster

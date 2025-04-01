@@ -19,7 +19,7 @@ M                := $(MAKEDIR)/milestones
 EDGE_MANAGEABILITY_FRAMEWORK_DIR  ?= ${HOME}/src/edge-manageability-framework
 ###
 
-CLUSTER_CONFIG=${HOME}/src/edge-manageability-framework/orch-configsclusters/${CLUSTER_NAME}.yaml
+CLUSTER_CONFIG=${HOME}/src/edge-manageability-framework/orch-configs/clusters/${CLUSTER_NAME}.yaml
 
 INTEL_HARBOR_CACERT := ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/mage/intel-harbor-ca.crt
 
@@ -117,7 +117,7 @@ ${M}/argocd-ready: | ${M}/argocd-release
 
 ${M}/deploy-orch: | ${M}/argocd-ready
 	@[ -z "${TARGET_ENV}" ] && echo "*** TARGET_ENV not set" && exit 1 || true
-	helm upgrade --install root-app ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/argocd/root-app -n ${TARGET_ENV} -f ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/orch-configsclusters/${TARGET_ENV}.yaml --create-namespace
+	helm upgrade --install root-app ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/argocd/root-app -n ${TARGET_ENV} -f ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/orch-configs/clusters/${TARGET_ENV}.yaml --create-namespace
 	touch $@
 
 install: ${M}/deploy-orch ## Install the Edge Orchestrator software
