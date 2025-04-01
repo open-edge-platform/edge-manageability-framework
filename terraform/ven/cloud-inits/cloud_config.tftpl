@@ -72,6 +72,4 @@ sys_config:
       default_target: "multi-user.target"
       
 runcmd:
-  -  apt update
-  -  apt install -y qemu-guest-agent jq || true
   -  systemctl enable --now qemu-guest-agent
