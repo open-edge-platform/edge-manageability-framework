@@ -86,7 +86,7 @@ To set up your development environment, follow these steps:
     mage tarball:onpremFull
     sudo rm -r repo_archives
     mkdir -p repo_archives
-    mv onpremFull_orch-deploy_$(head -1 VERSION).tgz repo_archives/
+    mv onpremFull_edge-manageability-framework_$(head -1 VERSION).tgz repo_archives/
     cd on-prem-installers
     mage build:all
     export TF_VAR_deploy_tag=$(mage build:debVersion)

@@ -285,8 +285,8 @@ resource "null_resource" "copy_local_orch_installer" {
   }
 
   provisioner "file" {
-    source      = "../../${var.working_directory}/${var.local_repo_archives_path}/onpremFull_orch-deploy_${split("\n",data.local_file.version_file.content)[0]}.tgz"
-    destination = "/home/ubuntu/repo_archives/onpremFull_orch-deploy_${split("\n",data.local_file.version_file.content)[0]}.tgz"
+    source      = "../../${var.working_directory}/${var.local_repo_archives_path}/onpremFull_edge-manageability-framework_${split("\n",data.local_file.version_file.content)[0]}.tgz"
+    destination = "/home/ubuntu/repo_archives/onpremFull_edge-manageability-framework_${split("\n",data.local_file.version_file.content)[0]}.tgz"
   }
 }
 

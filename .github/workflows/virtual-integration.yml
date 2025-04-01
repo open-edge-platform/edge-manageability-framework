@@ -538,8 +538,8 @@ jobs:
         run: |
           mage test:e2eOrchObservability
 
-      #######################################################################    
-      # TODO: Enable these tests once the ENIC metrics are available 
+      #######################################################################
+      # TODO: Enable these tests once the ENIC metrics are available
       # Bugfix: 24968 Metrics from ENiC are not present in orchestrator.
       #######################################################################
       # - name: "Test Observability EdgeNode Stack"
@@ -664,7 +664,7 @@ jobs:
         run: |
           mage tarball:onpremFull
           mkdir -p repo_archives
-          mv onpremFull_orch-deploy_$(head -1 VERSION).tgz repo_archives/
+          mv onpremFull_edge-manageability-framework_$(head -1 VERSION).tgz repo_archives/
           cd on-prem-installers
           mage build:all
           export TF_VAR_deploy_tag=$(mage build:debVersion)
