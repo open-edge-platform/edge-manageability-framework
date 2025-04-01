@@ -1,0 +1,6 @@
+.terraform.tfstate.lock.info
+.terraform/
+files/
+terraform.tfstate
+terraform.tfstate.backup
+plan.out
