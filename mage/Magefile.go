@@ -399,7 +399,7 @@ func (Undeploy) VEN(ctx context.Context) error {
 		return fmt.Errorf("failed to change directory to 'ven': %w", err)
 	}
 
-	if err := sh.RunV("git", "checkout", "ven_v3.0.0-n20250331"); err != nil {
+	if err := sh.RunV("git", "checkout", "vm-provisioning/1.0.4"); err != nil {
 		return fmt.Errorf("failed to checkout specific commit: %w", err)
 	}
 
@@ -788,7 +788,7 @@ func (d Deploy) VENWithFlow(ctx context.Context, flow string) (string, error) { 
 		return "", fmt.Errorf("failed to change directory to 'ven': %w", err)
 	}
 
-	if err := sh.RunV("git", "checkout", "ven_v3.0.0-n20250331"); err != nil {
+	if err := sh.RunV("git", "checkout", "vm-provisioning/1.0.4"); err != nil {
 		return "", fmt.Errorf("failed to checkout specific commit: %w", err)
 	}
 
