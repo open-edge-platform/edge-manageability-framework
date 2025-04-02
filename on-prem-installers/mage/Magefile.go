@@ -33,8 +33,7 @@ const (
 	rke2CustomImageDownloadPath    = "assets/rke2/offline-images/"
 	rke2ImagesURLFmt               = "https://github.com/rancher/rke2/releases/download/%s/rke2.linux-amd64.tar.gz"
 	//nolint: all
-	rke2LibURLFmt    = "https://github.com/rancher/rke2/releases/download/%s/rke2-images.linux-amd64.tar.zst"
-	rke2LibSHAURLFmt = "https://github.com/rancher/rke2/releases/download/%s/sha256sum-amd64.txt"
+	rke2LibURLFmt = "https://github.com/rancher/rke2/releases/download/%s/rke2-images.linux-amd64.tar.zst"
 
 	//nolint: all
 	rke2CNICalicoURLFmt = "https://github.com/rancher/rke2/releases/download/%s/rke2-images-calico.linux-amd64.tar.zst"
@@ -117,7 +116,8 @@ func (Build) Deps() error {
 
 // Builds all the installers. Must run on Ubuntu 22.04.
 func (b Build) All(ctx context.Context) error {
-	mg.CtxDeps(
+	// Must run serially since each installer build cleans up the dist directory.
+	mg.SerialCtxDeps(
 		ctx,
 		b.OnpremKEInstaller,
 		b.OSConfig,
@@ -136,16 +136,7 @@ func (b Build) OnpremKEInstaller(ctx context.Context) error {
 		mage.Deps.FPM,
 	)
 
-	mode, exists := os.LookupEnv("ON_PREM_ENVIRONMENT")
-	if !exists || mode == "" {
-		if err := os.Setenv("ON_PREM_ENVIRONMENT", "online"); err != nil {
-			fmt.Printf("Error setting missing ON_PREM_ENVIRONMENT environment variable: %s\n", err)
-			os.Exit(1)
-		}
-	}
-	onPremEnvironment := os.Getenv("ON_PREM_ENVIRONMENT")
-
-	return b.onpremKeInstaller(onPremEnvironment)
+	return b.onpremKeInstaller()
 }
 
 // Build the OS-Config Installer package.
@@ -377,52 +368,6 @@ type Deploy mg.Namespace
 // Rke2Cluster Deploys a local RKE2 Kubernetes cluster.
 func (d Deploy) Rke2Cluster() error {
 	return d.rke2Cluster()
-}
-
-// PrepareRke2AirGap prepares all the required artifacts for air-gap install.
-func (d Deploy) PrepareRke2AirGap() error {
-	// TODO: Check if dependecies are installed
-
-	fmt.Println("Remove old artifacts directory")
-	if err := os.RemoveAll(rke2ArtifactDownloadPath); err != nil {
-		return fmt.Errorf("remove artifacts dir: %w", err)
-	}
-
-	fmt.Println("Create artifacts directory")
-	if err := os.MkdirAll(rke2ArtifactDownloadPath, os.ModePerm); err != nil {
-		return fmt.Errorf("create artifacts dir: %w", err)
-	}
-
-	fmt.Println("Download RKE2")
-	if err := d.downloadRke2TarBall(rke2Version); err != nil {
-		return fmt.Errorf("download rke2: %w", err)
-	}
-
-	fmt.Println("Download CNI Calico")
-	if err := d.downloadCniCalicoTarBall(rke2Version); err != nil {
-		return fmt.Errorf("download CNI Calico: %w", err)
-	}
-
-	// TODO: Download MetalLB manifests
-
-	fmt.Println("Download RKE2 extensions")
-	if err := d.downloadRKE2CustomArtifacts(); err != nil {
-		return fmt.Errorf("download rke2 extensions: %w", err)
-	}
-
-	fmt.Println("Download RKE2 installer script")
-	if err := d.downloadRKE2InstallerScript(); err != nil {
-		return fmt.Errorf("download rke2 installer script: %w", err)
-	}
-
-	fmt.Printf("Successfully wrote air-gap artifacts to %s 😊\n", rke2ArtifactDownloadPath)
-
-	return nil
-}
-
-// Rke2ClusterAirGap Deploys a local RKE2 Kubernetes cluster in air gap mode.
-func (d Deploy) Rke2ClusterAirGap() error {
-	return d.rke2ClusterAirGap()
 }
 
 // Namespace contains upgrade targets.

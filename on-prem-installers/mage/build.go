@@ -84,21 +84,13 @@ func (Build) DEBVersion() error {
 	return nil
 }
 
-const giteaPath = "assets/gitea"
-
-const giteaChartVersion = "10.4.0"
-
-const argocdPath = "assets/argo-cd"
-
-const argocdHelmVersion = "7.4.4"
-
-const onPremOffline = "offline"
-
-const onPremOnline = "online"
-
-const deployOnlineDirectory = "onprem-ke-installer"
-
-const deployOfflineDirectory = "rke2-installer-airgap"
+const (
+	giteaPath             = "assets/gitea"
+	giteaChartVersion     = "10.4.0"
+	argocdPath            = "assets/argo-cd"
+	argocdHelmVersion     = "7.4.4"
+	deployOnlineDirectory = "onprem-ke-installer"
+)
 
 func compile(path, output string) error {
 	return sh.RunWithV(map[string]string{
@@ -114,18 +106,10 @@ func compile(path, output string) error {
 	)
 }
 
-func (Build) onpremKeInstaller(environment string) error {
+func (Build) onpremKeInstaller() error {
 	fmt.Println("Fetch dependencies and compile onprem-ke-installer executable")
 
-	var deployFilePath string
-	switch environment {
-	case onPremOnline:
-		deployFilePath = deployOnlineDirectory
-	case onPremOffline:
-		deployFilePath = deployOfflineDirectory
-	default:
-		return fmt.Errorf("ON_PREM_ENVIRONMENT envirnmental variable not correct! Set to `offline` or `online`")
-	}
+	deployFilePath := deployOnlineDirectory
 
 	mg.SerialDeps(
 		Clean,
@@ -142,50 +126,25 @@ func (Build) onpremKeInstaller(environment string) error {
 		return fmt.Errorf("get DEB version: %w", err)
 	}
 
-	switch environment {
-	case onPremOnline:
-		fmt.Println("Build onprem-ke-installer package 📦")
-		return sh.RunV(
-			"fpm",
-			"-s", "dir",
-			"-t", "deb",
-			"--name", "onprem-ke-installer",
-			"-p", "./dist/",
-			"--version", debVersion,
-			"--architecture", "amd64",
-			"--description", "Installs Intel onprem-ke",
-			"--url", "https://github.com/open-edge-platform/edge-manageability-framework/on-prem-installers",
-			"--maintainer", "Intel Corporation",
-			"--after-install", "./cmd/onprem-ke-installer/after-install.sh",
-			"--after-remove", "./cmd/onprem-ke-installer/after-remove.sh",
-			"--after-upgrade", "./cmd/onprem-ke-installer/after-upgrade.sh",
-			"./dist/bin/onprem-ke-installer=/usr/bin/onprem-ke-installer",
-			"./cmd/onprem-ke-installer/onprem-ke-installer.1=/usr/share/man/man1/onprem-ke-installer.1",
-			"./rke2=/tmp/onprem-ke-installer",
-		)
-	case onPremOffline:
-		fmt.Println("Build airgap rke2-installer package 📦")
-		return sh.RunV(
-			"fpm",
-			"-s", "dir",
-			"-t", "deb",
-			"--name", "rke2-installer-airgap",
-			"-p", "./dist/",
-			"--version", debVersion,
-			"--architecture", "amd64",
-			"--description", "Installs Intel airgap rke2",
-			"--url", "https://github.com/open-edge-platform/edge-manageability-framework/on-prem-installers",
-			"--maintainer", "Intel Corporation",
-			"--after-install", "./cmd/rke2-installer-airgap/after-install.sh",
-			"--after-remove", "./cmd/rke2-installer-airgap/after-remove.sh",
-			"./dist/bin/rke2-installer-airgap=/usr/bin/rke2-installer-airgap",
-			"./cmd/rke2-installer-airgap/rke2-installer-airgap.1=/usr/share/man/man1/rke2-installer-airgap.1",
-			"./assets/rke2=/tmp/rke2-installer-airgap/assets",
-			"./rke2=/tmp/rke2-installer-airgap",
-		)
-	default:
-		return fmt.Errorf("ON_PREM_ENVIRONMENT envirnmental variable not correct! Set to `offline` or `online`")
-	}
+	fmt.Println("Build onprem-ke-installer package 📦")
+	return sh.RunV(
+		"fpm",
+		"-s", "dir",
+		"-t", "deb",
+		"--name", "onprem-ke-installer",
+		"-p", "./dist/",
+		"--version", debVersion,
+		"--architecture", "amd64",
+		"--description", "Installs Intel onprem-ke",
+		"--url", "https://github.com/open-edge-platform/edge-manageability-framework/on-prem-installers",
+		"--maintainer", "Intel Corporation",
+		"--after-install", "./cmd/onprem-ke-installer/after-install.sh",
+		"--after-remove", "./cmd/onprem-ke-installer/after-remove.sh",
+		"--after-upgrade", "./cmd/onprem-ke-installer/after-upgrade.sh",
+		"./dist/bin/onprem-ke-installer=/usr/bin/onprem-ke-installer",
+		"./cmd/onprem-ke-installer/onprem-ke-installer.1=/usr/share/man/man1/onprem-ke-installer.1",
+		"./rke2=/tmp/onprem-ke-installer",
+	)
 }
 
 func (Build) osConfigInstaller() error {
