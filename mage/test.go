@@ -728,6 +728,8 @@ func (Test) ChartsAvailableOnReleaseService(ctx context.Context) error {
 			ctx, cancel := context.WithTimeout(ctx, registryCheckTimeout)
 			defer cancel()
 
+			statusKey := chart + " Version " + component.Version
+
 			if stdouterr, err := exec.CommandContext(
 				ctx,
 				"helm",
@@ -738,7 +740,7 @@ func (Test) ChartsAvailableOnReleaseService(ctx context.Context) error {
 			).CombinedOutput(); err != nil {
 				if strings.Contains(string(stdouterr), "not found") {
 					mu.Lock()
-					status[chart] = false
+					status[statusKey] = false
 					fail = true
 					mu.Unlock()
 					return nil
@@ -747,7 +749,7 @@ func (Test) ChartsAvailableOnReleaseService(ctx context.Context) error {
 			}
 
 			mu.Lock()
-			status[chart] = true
+			status[statusKey] = true
 			mu.Unlock()
 
 			return nil
