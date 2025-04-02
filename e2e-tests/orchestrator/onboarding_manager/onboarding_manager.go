@@ -19,8 +19,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	infra_api "github.com/intel/infra-core/api/pkg/api/v0"
-	pb_om "github.com/intel/infra-onboarding/onboarding-manager/pkg/api/onboardingmgr/v1"
+	infra_api "github.com/open-edge-platform/infra-core/api/pkg/api/v0"
+	pb_om "github.com/open-edge-platform/infra-onboarding/onboarding-manager/pkg/api/onboardingmgr/v1"
 	tinkv1alpha1 "github.com/tinkerbell/tink/api/v1alpha1"
 	"golang.org/x/oauth2"
 	"google.golang.org/grpc"
