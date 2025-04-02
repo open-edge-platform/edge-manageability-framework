@@ -322,7 +322,7 @@ func helmPullImage(imagePath string, version string, targetDir string) error {
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("error pulling image: %w", err)
+		return fmt.Errorf("error pulling artifact %s version %s: %w: %s", imagePath, version, err, string(output))
 	}
 	fmt.Println(string(output))
 
