@@ -27,7 +27,7 @@ require (
 	github.com/oapi-codegen/runtime v1.1.1 // indirect
 	github.com/onsi/ginkgo/v2 v2.22.2
 	github.com/onsi/gomega v1.36.2
-	github.com/open-edge-platform/app-orch-deployment/app-deployment-manager/api/nbi/v2 v2.3.21
+	github.com/open-edge-platform/app-orch-deployment/app-deployment-manager/api/nbi/v2 v2.3.39
 	github.com/open-edge-platform/cluster-manager v0.1.29
 	github.com/open-edge-platform/orch-library/go v0.5.28
 	github.com/open-edge-platform/orch-utils/tenancy-datamodel v0.0.0-20250401180309-9c2571c45857

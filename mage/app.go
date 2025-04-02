@@ -11,7 +11,7 @@ import (
 	"os"
 
 	"github.com/bitfield/script"
-	catalogloader "github.com/open-edge-platform/orch-library/go/pkg/loader"
+	catalogloader "github.com/open-edge-platform/orch-library/tree/4a79080b16bf098e60ce7a2dbda57e99328e5774/go/pkg/loader"
 )
 
 func (App) upload() error {
