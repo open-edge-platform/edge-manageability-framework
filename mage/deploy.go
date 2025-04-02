@@ -74,9 +74,9 @@ func (Deploy) all(targetEnv string) error {
 
 	// TBD: Restore after walkthrough and implementation of deploy through Gitea workflow
 
-	// if err := (Deploy{}).orchLocal(targetEnv); err != nil {
-	// 	return err
-	// }
+	if err := (Deploy{}).orchLocal(targetEnv); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -184,13 +184,12 @@ func (Deploy) kind(targetEnv string) error { //nolint:gocyclo
 		time.Sleep(argoRetryInterval * time.Second)
 	}
 
-	// TBD: restore with proper Gitea repo paths
-	// if err := (Argo{}).repoAdd(); err != nil {
-	// 	return err
-	// }
-	// if err := (Argo{}).dockerHubChartOrgAdd(); err != nil {
-	// 	return err
-	// }
+	if err := (Argo{}).repoAdd(); err != nil {
+		return err
+	}
+	if err := (Argo{}).dockerHubChartOrgAdd(); err != nil {
+		return err
+	}
 	fmt.Println("kind cluster ready: 😊")
 	return nil
 }
