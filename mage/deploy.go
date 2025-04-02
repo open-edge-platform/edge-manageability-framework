@@ -30,12 +30,15 @@ import (
 
 var pwChars = []rune(`abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789`)
 
+var specialChars = []rune(`!@#$%^&*()`)
+
 func randomPassword(count int) string {
 	runes := make([]rune, count)
 
 	for i := 0; i < count; i++ {
 		runes[i] = pwChars[rand.Intn(len(pwChars))]
 	}
+	runes[rand.Intn(count)] = specialChars[rand.Intn(len(specialChars))]
 	return string(runes)
 }
 
