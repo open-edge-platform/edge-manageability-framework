@@ -17,17 +17,17 @@ require (
 	github.com/getkin/kin-openapi v0.128.0 // indirect
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/google/uuid v1.6.0
-	github.com/intel/infra-core/api v1.26.2
-	github.com/intel/infra-managers/host v1.17.3
-	github.com/intel/infra-managers/maintenance v1.17.2-0.20250218093348-aa84583dc157
-	github.com/intel/infra-managers/telemetry v1.16.2-0.20250218093348-aa84583dc157
-	github.com/intel/infra-onboarding/onboarding-manager v1.26.0
+	github.com/open-edge-platform/infra-core/api v1.26.2
+	github.com/open-edge-platform/infra-managers/host v1.17.3
+	github.com/open-edge-platform/infra-managers/maintenance v1.17.2-0.20250218093348-aa84583dc157
+	github.com/open-edge-platform/infra-managers/telemetry v1.16.2-0.20250218093348-aa84583dc157
+	github.com/open-edge-platform/infra-onboarding/onboarding-manager v1.26.0
 	github.com/labstack/echo/v4 v4.12.0 // indirect
 	github.com/magefile/mage v1.15.0
 	github.com/oapi-codegen/runtime v1.1.1 // indirect
 	github.com/onsi/ginkgo/v2 v2.22.2
 	github.com/onsi/gomega v1.36.2
-	github.com/open-edge-platform/app-orch-deployment/app-deployment-manager/api/nbi/v2 v2.3.19
+	github.com/open-edge-platform/app-orch-deployment/app-deployment-manager/api/nbi/v2 v2.3.21
 	github.com/open-edge-platform/cluster-manager v0.1.29
 	github.com/open-edge-platform/orch-library/go v0.5.28
 	github.com/open-edge-platform/orch-utils/tenancy-datamodel v0.0.0-20250401180309-9c2571c45857
