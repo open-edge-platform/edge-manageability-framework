@@ -21,7 +21,7 @@ import (
 	deploymentV2 "github.com/open-edge-platform/app-orch-deployment/app-deployment-manager/api/nbi/v2/pkg/restClient"
 	util "github.com/open-edge-platform/edge-manageability-framework/mage"
 
-	cm "github.com/open-edge-platform/cluster-manager/pkg/api"
+	cm "github.com/open-edge-platform/cluster-manager/v2/pkg/api"
 )
 
 var (
