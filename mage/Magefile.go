@@ -259,6 +259,39 @@ func (Deps) EnsureUbuntu() error {
 	return nil
 }
 
+// Installs FPM (Effing Package Management) for creating OS packages.
+func (d Deps) FPM(ctx context.Context) error {
+	mg.SerialCtxDeps(
+		ctx,
+		d.EnsureUbuntu,
+	)
+
+	// Check if FPM is already installed and its version is 1.16.0
+	if output, err := exec.Command("fpm", "--version").Output(); err == nil {
+		if strings.TrimSpace(string(output)) == "1.16.0" {
+			fmt.Println("FPM version 1.16.0 is already installed ✅")
+			return nil
+		}
+		fmt.Println("A different version of FPM is installed. Updating to version 1.16.0...")
+	}
+
+	// Check if Ruby is already installed
+	if _, err := exec.LookPath("ruby"); err == nil {
+		fmt.Println("Ruby is already installed ✅")
+	} else {
+		// Ruby is just needed for this target and is not necessarily needed for general development.
+		if err := sh.RunV("sudo", "apt-get", "update", "--assume-yes"); err != nil {
+			return fmt.Errorf("failed to update apt-get: %w", err)
+		}
+		if err := sh.RunV("sudo", "apt-get", "install", "--assume-yes", "ruby-full"); err != nil {
+			return fmt.Errorf("failed to install ruby: %w", err)
+		}
+	}
+
+	// Install or update FPM to version 1.16.0
+	return sh.RunV("sudo", "gem", "install", "fpm", "--version", "1.16.0")
+}
+
 // Installs libvirt dependencies. This is required for running an Orchestrator and Edge Node using KVM. Only Ubuntu
 // 22.04 is supported.
 func (d Deps) Libvirt(ctx context.Context) error {

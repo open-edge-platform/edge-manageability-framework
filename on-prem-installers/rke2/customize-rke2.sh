@@ -24,13 +24,12 @@ Purpose:
 Customize rke2 server on localhost
 
 Usage:
-$(basename "$0") [-h] [-a] [-u username] [-p password]
+$(basename "$0") [-h] [-u username] [-p password]
 
 ex:
-customize-rke2.sh -a
+customize-rke2.sh -u myusername -p mypassword
 
 Options:
-    -a:             Air gap mode
     -u:             Docker username (optional)
     -p:             Docker password (optional)
     -h:             help
