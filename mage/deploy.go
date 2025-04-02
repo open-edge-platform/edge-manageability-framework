@@ -526,6 +526,7 @@ func kindCluster(name string, targetEnv string) error {
 	cacheRegistryURL := ""
 	if cacheRegistry != "" {
 		cacheRegistryURL = fmt.Sprintf("https://%s", cacheRegistry)
+		(Gen{}).RegistryCacheCert(targetEnv) 
 	}
 
 	//nolint: lll
