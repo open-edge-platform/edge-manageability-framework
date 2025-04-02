@@ -6,8 +6,8 @@ global:
   env:
     # Proxy setting for Intel internal clusters
     - name: http_proxy
-      value: "{{ .Values.httpProxy }}"
+      value: "{{ .Values.argo.proxy.httpProxy }}"
     - name: https_proxy
-      value: "{{ .Values.httpsProxy }}"
+      value: "{{ .Values.argo.proxy.httpsProxy }}"
     - name: no_proxy
-      value: "{{ .Values.noProxy }}"
+      value: "{{ .Values.argo.proxy.noProxy }}"

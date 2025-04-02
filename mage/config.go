@@ -14,72 +14,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// type proxyConfig struct {
-// 	HTTPProxy          string `yaml:"httpProxy,omitempty"`
-// 	HTTPSProxy         string `yaml:"httpsProxy,omitempty"`
-// 	NoProxy            string `yaml:"noProxy,omitempty"`
-// 	EnHTTPProxy        string `yaml:"enHttpProxy,omitempty"`
-// 	EnHTTPSProxy       string `yaml:"enHttpsProxy,omitempty"`
-// 	EnNoProxy          string `yaml:"enNoProxy,omitempty"`
-// 	NoPeerProxyDomains string `yaml:"noPeerProxyDomains,omitempty"`
-// }
-
-// type clusterSettings struct {
-// 	Name                string   `yaml:"name"`
-// 	ID                  string   `yaml:"id"`
-// 	EnableObservability bool     `yaml:"enableObservability,omitempty" default:"true"`
-// 	DeployURL           string   `yaml:"deployUrl"`
-// 	ProxyConfigFile     string   `yaml:"proxyConfigFile"`
-// 	JumpHostAllowList   []string `yaml:"jumpHostAllowList"`
-// 	RegistryCache       string   `yaml:"registryCache"`
-// 	RegistryCacheCert   string   `yaml:"registryCacheCert"`
-// }
-
-// // UnmarshalYAML is a custom unmarshaler to set default values.
-// func (c *clusterSettings) UnmarshalYAML(unmarshal func(interface{}) error) error {
-// 	type alias clusterSettings
-// 	defaults := alias{
-// 		EnableObservability: true,
-// 	}
-// 	if err := unmarshal(&defaults); err != nil {
-// 		return err
-// 	}
-// 	*c = clusterSettings(defaults)
-// 	return nil
-// }
-
-// loadClusterSettings loads a clusterSettings object from a provided YAML file path.
-// func loadClusterSettings(yamlPath string) (*clusterSettings, error) {
-// 	data, err := os.ReadFile(yamlPath)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("failed to read YAML file: %w", err)
-// 	}
-
-// 	var settings clusterSettings
-// 	if err := yaml.Unmarshal(data, &settings); err != nil {
-// 		return nil, fmt.Errorf("failed to unmarshal YAML into clusterSettings: %w", err)
-// 	}
-
-// 	if settings.ProxyConfigFile != "" {
-// 		proxyConfigPath := fmt.Sprintf("%s/%s", os.DirFS(yamlPath), settings.ProxyConfigFile)
-// 		proxyData, err := os.ReadFile(proxyConfigPath)
-// 		if err != nil {
-// 			return nil, fmt.Errorf("failed to read proxy config file: %w", err)
-// 		}
-
-// 		var proxy proxyConfig
-// 		if err := yaml.Unmarshal(proxyData, &proxy); err != nil {
-// 			return nil, fmt.Errorf("failed to unmarshal proxy config: %w", err)
-// 		}
-
-// 		settings.Proxy = &proxy
-// 	}
-
-// 	fmt.Printf("Loaded cluster settings: %+v\n", settings)
-
-// 	return &settings, nil
-// }
-
 // Create a cluster deployment configuration.
 func getClusterSettings() (map[string]interface{}, error) {
 	clusterValues := make(map[string]interface{})
@@ -418,33 +352,45 @@ func (Config) clean() error {
 	return nil
 }
 
-func (Config) getTargetEnvType(targetEnv string) (string, error) {
+func (Config) getTargetValues(targetEnv string) (map[string]interface{}, error) {
 	if targetEnv == "" {
-		return "", fmt.Errorf("target environment is not specified")
+		return nil, fmt.Errorf("target environment is not specified")
 	}
 
 	clusterFilePath := fmt.Sprintf("orch-configs/clusters/%s.yaml", targetEnv)
-	clusterValues, err := parseClusterValues(clusterFilePath)
+	targetValues, err := parseClusterValues(clusterFilePath)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse cluster values: %w", err)
+		return nil, fmt.Errorf("failed to parse cluster values: %w", err)
 	}
 
-	targetCluster, ok := clusterValues["orchestratorDeployment"].(map[string]interface{})["targetCluster"].(string)
-	if !ok || targetCluster == "" {
-		targetCluster = "kind"
+	return targetValues, nil
+}
+
+func (c Config) getTargetEnvType(targetEnv string) (string, error) {
+	defaultEnv := "kind"
+
+	clusterValues, err := c.getTargetValues(targetEnv)
+	if err != nil {
+		return defaultEnv, fmt.Errorf("failed to get target values: %w", err)
 	}
+
+	orchestratorDeploymentConfig, ok := clusterValues["orchestratorDeployment"].(map[string]interface{})
+	if !ok {
+		return defaultEnv, fmt.Errorf("'orchestratorDeployment' configuration is missing or invalid")
+	}
+
+	targetCluster, ok := orchestratorDeploymentConfig["targetCluster"].(string)
+	if !ok || targetCluster == "" {
+		return defaultEnv, fmt.Errorf("'targetCluster' field is missing or empty")
+	}
+
 	return targetCluster, nil
 }
 
-func (Config) isAutoCertEnabled(targetEnv string) (bool, error) {
-	if targetEnv == "" {
-		return false, fmt.Errorf("target environment is not specified")
-	}
-
-	clusterFilePath := fmt.Sprintf("orch-configs/clusters/%s.yaml", targetEnv)
-	clusterValues, err := parseClusterValues(clusterFilePath)
+func (c Config) isAutoCertEnabled(targetEnv string) (bool, error) {
+	clusterValues, err := c.getTargetValues(targetEnv)
 	if err != nil {
-		return false, fmt.Errorf("failed to parse cluster values: %w", err)
+		return false, fmt.Errorf("failed to get target values: %w", err)
 	}
 
 	argoConfig, ok := clusterValues["argo"].(map[string]interface{})
@@ -463,6 +409,94 @@ func (Config) isAutoCertEnabled(targetEnv string) (bool, error) {
 	}
 
 	return enabled, nil
+}
+
+func (c Config) isMailpitEnabled(targetEnv string) (bool, error) {
+	clusterValues, err := c.getTargetValues(targetEnv)
+	if err != nil {
+		return false, fmt.Errorf("failed to get target values: %w", err)
+	}
+
+	orchestratorDeploymentConfig, ok := clusterValues["orchestratorDeployment"].(map[string]interface{})
+	if !ok {
+		return false, fmt.Errorf("'orchestratorDeployment' configuration is missing or invalid")
+	}
+
+	enableMailpit, ok := orchestratorDeploymentConfig["enableMailpit"].(bool)
+	if !ok {
+		return false, fmt.Errorf("'enableMailpit' field is missing or not a boolean")
+	}
+
+	return enableMailpit, nil
+}
+
+func (c Config) getDockerCache(targetEnv string) (string, error) {
+	clusterValues, err := c.getTargetValues(targetEnv)
+	if err != nil {
+		return "", fmt.Errorf("failed to get target values: %w", err)
+	}
+
+	orchestratorDeploymentConfig, ok := clusterValues["orchestratorDeployment"].(map[string]interface{})
+	if !ok {
+		return "", fmt.Errorf("'orchestratorDeployment' configuration is missing or invalid")
+	}
+
+	dockerCache, ok := orchestratorDeploymentConfig["dockerCache"].(string)
+	if !ok {
+		return "", fmt.Errorf("'dockerCache' field is missing or not a boolean")
+	}
+
+	return dockerCache, nil
+}
+
+func (c Config) getDockerCacheCert(targetEnv string) (string, error) {
+	clusterValues, err := c.getTargetValues(targetEnv)
+	if err != nil {
+		return "", fmt.Errorf("failed to get target values: %w", err)
+	}
+
+	orchestratorDeploymentConfig, ok := clusterValues["orchestratorDeployment"].(map[string]interface{})
+	if !ok {
+		return "", fmt.Errorf("'orchestratorDeployment' configuration is missing or invalid")
+	}
+
+	dockerCacheCert, ok := orchestratorDeploymentConfig["dockerCacheCert"].(string)
+	if !ok {
+		return "", fmt.Errorf("'dockerCacheCert' field is missing or not a boolean")
+	}
+
+	return dockerCacheCert, nil
+}
+
+func (c Config) renderTargetConfigTemplate(targetEnv string, templatePath string, outputPath string) error {
+	targetValues, err := c.getTargetValues(targetEnv)
+	if err != nil {
+		return fmt.Errorf("failed to get target values: %w", err)
+	}
+
+	templateValues := map[string]interface{}{
+		"Values": targetValues,
+	}
+	tmpl, err := template.ParseFiles(templatePath)
+	if err != nil {
+		return fmt.Errorf("failed to parse template: %w", err)
+	}
+
+	if err := os.MkdirAll(filepath.Dir(outputPath), os.ModePerm); err != nil {
+		return fmt.Errorf("failed to create output directory: %w", err)
+	}
+
+	outputFile, err := os.Create(outputPath)
+	if err != nil {
+		return fmt.Errorf("failed to create output file: %w", err)
+	}
+	defer outputFile.Close()
+	if err := tmpl.Execute(outputFile, templateValues); err != nil {
+		return fmt.Errorf("failed to render template: %w", err)
+	}
+	fmt.Printf("Rendered target configuration file: %s\n", outputPath)
+
+	return nil
 }
 
 func (Config) debug(targetEnv string) error {

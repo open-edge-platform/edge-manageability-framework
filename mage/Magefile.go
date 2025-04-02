@@ -458,23 +458,28 @@ func (d Deploy) Kind(targetEnv string) error {
 }
 
 func (d Deploy) Gitea(targetEnv string) error {
-	// TBD: Change useIntelRegistry to targetEnv, render the bootstrap gitea-ext.tpl to gitea.yaml and set giteaBootstrapValues to gitea.yaml
-	// TBD: use the proxy settings from the parsed cluster profile settings to render the gitea.yaml
+	err := (Config{}).renderTargetConfigTemplate(targetEnv, "orch-configs/templates/bootstrap/gitea.tpl", ".deploy/bootstrap/gitea.yaml")
+	if err != nil {
+		return fmt.Errorf("failed to render gitea configuration: %v", err)
+	}
 
-	giteaBootstrapValues := []string{"bootstrap/gitea.yaml"}
+	giteaBootstrapValues := []string{".deploy/bootstrap/gitea.yaml"}
 	return d.gitea(giteaBootstrapValues, targetEnv)
 }
 
 // Deploy Argo CD in kind cluster.
 func (d Deploy) Argocd(targetEnv string) error {
+	err := (Config{}).renderTargetConfigTemplate(targetEnv, "orch-configs/templates/bootstrap/argocd-proxy.tpl", ".deploy/bootstrap/argocd-proxy.yaml")
+	if err != nil {
+		return fmt.Errorf("failed to render argocd proxy configuration: %v", err)
+	}
+
 	// Set argoBootstrapValues to the default set for a kind dev environment
 	argoBootstrapValues := []string{
 		"bootstrap/argocd.yaml",
 		"bootstrap/lb.yaml",
+		".deploy/bootstrap/argocd-proxy.yaml",
 	}
-
-	// TBD: Change useIntelRegistry to targetEnv
-	// TBD: if targetEnv has a non-empty proxy, render the bootstrap argo-proxy.tpl to argo-proxy.yaml and add argo-proxy.yaml to argoBootstrapValues
 
 	return d.argocd(argoBootstrapValues, targetEnv)
 }
@@ -1432,31 +1437,20 @@ func (g Gen) LEOrchestratorCABundle() error {
 
 // RegistryCacheCert generates the Registry cache x509 certificate file for a specified target environment.
 func (Gen) RegistryCacheCert(targetEnv string) error {
+	cacheRegistry, _ := (Config{}).getDockerCache(targetEnv)
 	cacheRegistryURL := ""
-	clusterFilePath := fmt.Sprintf("orch-configs/clusters/%s.yaml", targetEnv)
-	clusterValues, err := parseClusterValues(clusterFilePath)
-	if err != nil {
-		return fmt.Errorf("failed to parse cluster values for targetEnv %s: %w", targetEnv, err)
+	if cacheRegistry != "" {
+		cacheRegistryURL = fmt.Sprintf("http://%s", cacheRegistry)
 	}
 
-	// Check if the cache registry URL is set in the cluster values
-	if clusterValues["orchestratorDeployment"] != nil {
-		if dockerCache, ok := clusterValues["orchestratorDeployment"].(map[string]interface{})["dockerCache"]; ok {
-			cacheRegistryURL = fmt.Sprintf("%v", dockerCache)
-		}
-	}
 	if cacheRegistryURL == "" {
 		fmt.Printf("%s doesn't specify a dockerCache URL. No cache certificate will be generated.\n", targetEnv)
 	} else {
-		fmt.Printf("Using cache registry URL: %s\n", cacheRegistryURL)
-
-		err := (Registry{}).getRegistryCert(cacheRegistryURL, filepath.Join("mage", "registry-cache-ca.crt"), false)
+		cacheRegistryCert := filepath.Join("mage", "registry-cache-ca.crt")
+		err := (Registry{}).getRegistryCert(cacheRegistryURL, cacheRegistryCert, false)
 		if err != nil {
-			fmt.Printf("Failed to generate cache registry certificate: %v\n", err)
 			return fmt.Errorf("failed to generate cache registry certificate: %w", err)
 		}
-
-		cacheRegistryCert := filepath.Join("mage", "registry-cache-ca.crt")
 		fmt.Printf("Cache registry certificate saved to: %s\n", cacheRegistryCert)
 	}
 
