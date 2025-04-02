@@ -208,8 +208,8 @@ github.com/open-edge-platform/cluster-manager v0.1.29 h1:KVYqwz1LYMh0we0xLUlG/Cb
 github.com/open-edge-platform/cluster-manager v0.1.29/go.mod h1:K+SE4TjQJZZZ2bGmqH/owIDQdM3TMJY6NN2l5n0BJpU=
 github.com/open-edge-platform/orch-library/go v0.5.25 h1:KkPZhRBURfxaIiCM/BvLDNK3vJhNbT0FaCga6k7uLHw=
 github.com/open-edge-platform/orch-library/go v0.5.25/go.mod h1:fUz9Xd6YJgOAizyjNGMsK+dLgyh/FYyZTKTAPWqpkFI=
-github.com/open-edge-platform/orch-utils/tenancy-datamodel v0.0.0-20250312121040-f4b11832045f h1:CcI8Fl8Fw5JN8wLOdT+YMFkHSZmlEyblBIi+z297SEc=
-github.com/open-edge-platform/orch-utils/tenancy-datamodel v0.0.0-20250312121040-f4b11832045f/go.mod h1:XcWrH0IrljdAfHUXUaFl1kjp02omolmHkmJ94/ZNPXA=
+github.com/open-edge-platform/orch-utils/tenancy-datamodel v0.0.0-20250401180309-9c2571c45857 h1:MWbL6C74qWMO4MPNqus03bebOyT9eCL9RszghnHKSms=
+github.com/open-edge-platform/orch-utils/tenancy-datamodel v0.0.0-20250401180309-9c2571c45857/go.mod h1:dshRhRSIazosRzSsjP0uddwKbQuq6ObGlDoBeBHY164=
 github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8Oi/yOhh5U=
 github.com/opencontainers/go-digest v1.0.0/go.mod h1:0JzlMkj0TRzQZfJkVvzbP0HBR3IKzErnv2BNG4W4MAM=
 github.com/opencontainers/image-spec v1.1.0 h1:8SG7/vwALn54lVB/0yZ/MMwhFrPYtpEHQb2IpWsCzug=
@@ -327,8 +327,8 @@ golang.org/x/net v0.0.0-20220722155237-a158d28d115b/go.mod h1:XRhObCWvk6IyKnWLug
 golang.org/x/net v0.6.0/go.mod h1:2Tu9+aMcznHK/AK1HMvgo6xiTLG5rD5rZLDS+rp2Bjs=
 golang.org/x/net v0.10.0/go.mod h1:0qNGK6F8kojg2nk9dLZ2mShWaEBan6FAoqfSigmmuDg=
 golang.org/x/net v0.17.0/go.mod h1:NxSsAGuq816PNPmqtQdLE42eU2Fs7NoRIZrHJAlaCOE=
-golang.org/x/net v0.37.0 h1:1zLorHbz+LYj7MQlSf1+2tPIIgibq2eL5xkrGk6f+2c=
-golang.org/x/net v0.37.0/go.mod h1:ivrbrMbzFq5J41QOQh0siUuly180yBYtLp+CKbEaFx8=
+golang.org/x/net v0.38.0 h1:vRMAPTMaeGqVhG5QyLJHqNDwecKTomGeqbnfZyKlBI8=
+golang.org/x/net v0.38.0/go.mod h1:ivrbrMbzFq5J41QOQh0siUuly180yBYtLp+CKbEaFx8=
 golang.org/x/oauth2 v0.25.0 h1:CY4y7XT9v0cRI9oupztF8AgiIu99L/ksR/Xp/6jrZ70=
 golang.org/x/oauth2 v0.25.0/go.mod h1:XYTD2NtWslqkgxebSiOHnXEap4TF09sJSc7H1sXbhtI=
 golang.org/x/sync v0.0.0-20190423024810-112230192c58/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
