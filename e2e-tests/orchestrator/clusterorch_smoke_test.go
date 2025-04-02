@@ -14,9 +14,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/intel/infra-core/api/pkg/api/v0"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/open-edge-platform/infra-core/api/pkg/api/v0"
 
 	deploymentV2 "github.com/open-edge-platform/app-orch-deployment/app-deployment-manager/api/nbi/v2/pkg/restClient"
 	util "github.com/open-edge-platform/edge-manageability-framework/mage"

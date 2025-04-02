@@ -26,9 +26,9 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/rs/zerolog/log"
 
-	invapi "github.com/intel/infra-core/api/pkg/api/v0"
 	"github.com/open-edge-platform/edge-manageability-framework/internal/retry"
 	util "github.com/open-edge-platform/edge-manageability-framework/mage"
+	invapi "github.com/open-edge-platform/infra-core/api/pkg/api/v0"
 	baseorginfrahostcomv1 "github.com/open-edge-platform/orch-utils/tenancy-datamodel/build/apis/org.edge-orchestrator.intel.com/v1"
 	baseprojectinfrahostcomv1 "github.com/open-edge-platform/orch-utils/tenancy-datamodel/build/apis/project.edge-orchestrator.intel.com/v1"
 )
