@@ -28,13 +28,13 @@ import (
 	"google.golang.org/grpc/credentials/oauth"
 	"google.golang.org/grpc/status"
 
-	pb_hm "github.com/intel/infra-managers/host/pkg/api/hostmgr/proto"
-	pb_mm "github.com/intel/infra-managers/maintenance/pkg/api/maintmgr/v1"
-	pb_tm "github.com/intel/infra-managers/telemetry/pkg/api/telemetrymgr/v1"
-	pb_om "github.com/intel/infra-onboarding/onboarding-manager/pkg/api/onboardingmgr/v1"
 	onboarding_manager "github.com/open-edge-platform/edge-manageability-framework/e2e-tests/orchestrator/onboarding_manager"
 	"github.com/open-edge-platform/edge-manageability-framework/internal/retry"
 	util "github.com/open-edge-platform/edge-manageability-framework/mage"
+	pb_hm "github.com/open-edge-platform/infra-managers/host/pkg/api/hostmgr/proto"
+	pb_mm "github.com/open-edge-platform/infra-managers/maintenance/pkg/api/maintmgr/v1"
+	pb_tm "github.com/open-edge-platform/infra-managers/telemetry/pkg/api/telemetrymgr/v1"
+	pb_om "github.com/open-edge-platform/infra-onboarding/onboarding-manager/pkg/api/onboardingmgr/v1"
 )
 
 var (
