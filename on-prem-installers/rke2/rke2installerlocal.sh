@@ -6,13 +6,10 @@
 
 # Script Name: rke2installerlocal.sh
 # Description: This script installs RKE2 on the machine where the script is executed.
-#              This script takes arguments as described below. It is to be noted that when air-gap
-#              mode is enabled, it expects the RKE2 installer tar ball to be available in the ./rke2 folder.
-#              If air-gap mode is not enabled, the RKE2 installer tar ball will be downloaded from internet.
+#              This script takes arguments as described below.
 # Usage: ./rke2/rke2installerlocal.sh [ -i <host ip>] [ -v <rke2_version> ] [ -a ]
 #    -i:             Host IP (optional)
 #    -v:             rke2 version (optional)
-#    -a:             air gap mode (optional)
 #    -h:             help (optional)
 
 set +xe
@@ -20,14 +17,12 @@ set +xe
 HELP=""
 RKE2VERSION="v1.30.10+rke2r1"
 HOSTIP=""
-AIRGAP='false'
 ROOT_DIR=$(pwd)
 
-while getopts 'i:v:ha' flag; do
+while getopts 'i:v:h' flag; do
   case "${flag}" in
    # i) HOSTIP="${HOSTIP}" ;; is a noop shellcheck flags?
     v) RKE2VERSION="${OPTARG}" ;;
-    a) AIRGAP='true';;
     h) HELP='true' ;;
     *) HELP='true' ;;
   esac
@@ -47,7 +42,6 @@ ex:
 Options:
     -i:             Host IP (optional)
     -v:             rke2 version (optional)
-    -a:             air gap mode (optional)
     -h:             help (optional)
 EOF
 }
@@ -58,32 +52,20 @@ if [[ $HELP ]]; then
     exit 1
 fi
 
-# Copy files needed for AirGap install if air-gap is enabled
-if [[ ${AIRGAP} == 'true' ]]; then
-  echo "air gap mode is set!"
-  if [[ ! -f "${ROOT_DIR}/assets/rke2/rke2-images.linux-amd64.tar.zst" || ! -f "${ROOT_DIR}/assets/rke2/rke2.linux-amd64.tar.gz" ]]; then
-    echo "files expected for air-gap install not found!"
-    exit 1
-  fi
-  if [[ ! -f "${ROOT_DIR}/assets/rke2/rke2-images-calico.linux-amd64.tar.zst" ]]; then
-    echo "CNI tarball for air-gap install not found!"
-    exit 1
-  fi
+# Escape '+' character if found in the URL request
+# shellcheck disable=SC2001
+RKE2VERSION=$(echo "$RKE2VERSION" | sed 's/+/%2b/g')
+curl -sfL --create-dirs "https://github.com/rancher/rke2/releases/download/${RKE2VERSION}/rke2-images.linux-amd64.tar.zst" --output "${ROOT_DIR}/assets/rke2/rke2-images.linux-amd64.tar.zst"
+curl -sfL --create-dirs "https://github.com/rancher/rke2/releases/download/${RKE2VERSION}/rke2-images-calico.linux-amd64.tar.zst" --output "${ROOT_DIR}/assets/rke2/rke2-images-calico.linux-amd64.tar.zst"
+curl -sfL --create-dirs "https://github.com/rancher/rke2/releases/download/${RKE2VERSION}/rke2.linux-amd64.tar.gz" --output "${ROOT_DIR}/assets/rke2/rke2.linux-amd64.tar.gz"
+curl -sfL --create-dirs "https://github.com/rancher/rke2/releases/download/${RKE2VERSION}/sha256sum-amd64.txt" --output "${ROOT_DIR}/assets/rke2/sha256sum-amd64.txt"
+if [[ ${INSTALL_RKE2_MIRROR} && ${INSTALL_RKE2_MIRROR} == "cn" ]]; then
+curl -sfL --create-dirs https://rancher-mirror.rancher.cn/rke2/install.sh --output "${ROOT_DIR}/assets/rke2/install.sh"
 else
-  # Escape '+' character if found in the URL request
-  # shellcheck disable=SC2001
-  RKE2VERSION=$(echo "$RKE2VERSION" | sed 's/+/%2b/g')
-  curl -sfL --create-dirs "https://github.com/rancher/rke2/releases/download/${RKE2VERSION}/rke2-images.linux-amd64.tar.zst" --output "${ROOT_DIR}/assets/rke2/rke2-images.linux-amd64.tar.zst"
-  curl -sfL --create-dirs "https://github.com/rancher/rke2/releases/download/${RKE2VERSION}/rke2-images-calico.linux-amd64.tar.zst" --output "${ROOT_DIR}/assets/rke2/rke2-images-calico.linux-amd64.tar.zst"
-  curl -sfL --create-dirs "https://github.com/rancher/rke2/releases/download/${RKE2VERSION}/rke2.linux-amd64.tar.gz" --output "${ROOT_DIR}/assets/rke2/rke2.linux-amd64.tar.gz"
-  curl -sfL --create-dirs "https://github.com/rancher/rke2/releases/download/${RKE2VERSION}/sha256sum-amd64.txt" --output "${ROOT_DIR}/assets/rke2/sha256sum-amd64.txt"
-  if [[ ${INSTALL_RKE2_MIRROR} && ${INSTALL_RKE2_MIRROR} == "cn" ]]; then
-    curl -sfL --create-dirs https://rancher-mirror.rancher.cn/rke2/install.sh --output "${ROOT_DIR}/assets/rke2/install.sh"
-  else
-    curl -sfL --create-dirs https://get.rke2.io --output "${ROOT_DIR}/assets/rke2/install.sh"
-  fi
-  chmod +x "${ROOT_DIR}/assets/rke2/install.sh"
+curl -sfL --create-dirs https://get.rke2.io --output "${ROOT_DIR}/assets/rke2/install.sh"
 fi
+chmod +x "${ROOT_DIR}/assets/rke2/install.sh"
+
 #pass shellcheck
 declare https_proxy
 # Configure proxy settings
