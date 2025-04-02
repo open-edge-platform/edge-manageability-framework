@@ -29,7 +29,7 @@ require (
 	github.com/onsi/gomega v1.36.2
 	github.com/open-edge-platform/app-orch-deployment/app-deployment-manager/api/nbi/v2 v2.3.19
 	github.com/open-edge-platform/cluster-manager v0.1.29
-	github.com/open-edge-platform/orch-library/go v0.0.0-dev
+	github.com/open-edge-platform/orch-library/go v0.5.28
 	github.com/open-edge-platform/orch-utils/tenancy-datamodel v0.0.0-20250401180309-9c2571c45857
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/rs/zerolog v1.33.0
