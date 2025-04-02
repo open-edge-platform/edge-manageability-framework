@@ -56,11 +56,11 @@ infra-config:
     systemConfigKernelPanic: "{{ index .Values.argo "infra-onboarding" "systemConfigKernelPanic" | default "10" }}"
 
     cdnSvc: {{ .Values.argo.releaseService.fileServer }}
-    provisioningSvc: tinkerbell-nginx.{{ .Values.argo.clusterDomain }}
+    provisioningSvc: "orch-10-139-220-227.pid.infra-host.com"
     tinkerSvc: tinkerbell-server.{{ .Values.argo.clusterDomain }}
     omSvc: onboarding-node.{{ .Values.argo.clusterDomain }}
     omStreamSvc: onboarding-stream.{{ .Values.argo.clusterDomain }}
-    extraHosts: "{{ index .Values.argo "infra-onboarding" "dkamExtraHost" | default "" }}"
+    extraHosts: "10.139.220.227 api-proxy.kind.internal,10.139.220.227 app-orch.kind.internal,10.139.220.227 cluster-orch-edge-node.kind.internal,10.139.220.227 fdo-mfg.kind.internal,10.139.220.227 fdo-owner.kind.internal,10.139.220.227 keycloak.kind.internal,10.139.220.227 release.kind.internal,10.139.220.227 tinkerbell-server.kind.internal,10.139.220.227 orch-10-139-220-227.pid.infra-host.com,10.139.220.227 registry.kind.internal,10.139.220.227 infra-node.kind.internal,10.139.220.227 logs-node.kind.internal,10.139.220.227 vault-edge-node.kind.internal,10.139.220.227 vault.kind.internal,10.139.220.227 update-node.kind.internal,10.139.220.227 metrics-node.kind.internal,10.139.220.227 cluster-orch-node.kind.internal,10.139.220.227 kind.internal,10.139.220.227 telemetry-node.kind.internal,10.139.220.227 onboarding-node.kind.internal,10.139.220.227 license-node.kind.internal,10.139.220.227 kind.internal,10.139.220.227 onboarding-stream.kind.internal"
 
     firewallReqAllow: |-
       [{
@@ -80,7 +80,7 @@ tinkerbell:
   traefikReverseProxy:
     enabled: &traefikReverseProxy_enabled true
     tinkServerDnsname: "tinkerbell-server.{{ .Values.argo.clusterDomain }}"
-    nginxDnsname: &nginxDnsname "tinkerbell-nginx.{{ .Values.argo.clusterDomain }}"
+    nginxDnsname: &nginxDnsname "orch-10-139-220-227.pid.infra-host.com"
   stack:
     resources:
       limits:
