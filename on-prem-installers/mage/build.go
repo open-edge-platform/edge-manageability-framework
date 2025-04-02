@@ -7,13 +7,13 @@ package mage
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"github.com/bitfield/script"
 	"github.com/magefile/mage/mg"
 	"github.com/magefile/mage/sh"
+	"github.com/open-edge-platform/edge-manageability-framework/mage"
 )
 
 func GetBranchName() (string, error) {
@@ -21,7 +21,7 @@ func GetBranchName() (string, error) {
 	if branchName == "" {
 		output, err := script.Exec("git rev-parse --abbrev-ref HEAD").String()
 		if err != nil {
-			return "", fmt.Errorf("get branch name: %w", err)
+			return "", fmt.Errorf("failed to execute git command to get branch name: %w", err)
 		}
 		branchName = strings.TrimSpace(output)
 	}
@@ -35,48 +35,16 @@ func GetBranchName() (string, error) {
 func GetRepoVersion() (string, error) {
 	contents, err := os.ReadFile("VERSION")
 	if err != nil {
-		return "", fmt.Errorf("read version from 'VERSION' file: %w", err)
+		return "", fmt.Errorf("failed to read 'VERSION' file: %w", err)
 	}
 	return strings.TrimSpace(string(contents)), nil
 }
 
-func GetDebVersion() (string, error) {
-	repoVersion, err := GetRepoVersion()
-	if err != nil {
-		return "", fmt.Errorf("read version from 'VERSION' file: %w", err)
-	}
-
-	// get branch name
-	branchName, err := GetBranchName()
-	if err != nil {
-		return "", fmt.Errorf("get branch name: %w", err)
-	}
-
-	// check if release branch
-	isReleaseBranch := branchName == "main" ||
-		strings.Contains(branchName, "pass-validation") ||
-		strings.HasPrefix(branchName, "release")
-
-	// If release version on release branches, return the version as is
-	if isReleaseBranch && !strings.Contains(repoVersion, "-dev") {
-		return repoVersion, nil // e.g., 3.0.0, 3.0.0-rc1, 3.0.0-n20250306
-	}
-
-	stdout, err := exec.Command("git", "rev-parse", "--short", "HEAD").CombinedOutput()
-	if err != nil {
-		return "", fmt.Errorf("get current git hash: %w", err)
-	}
-	shortHash := strings.TrimSpace(string(stdout))
-
-	// else, return the version with short hash appended
-	return fmt.Sprintf("%s-%s", repoVersion, shortHash), nil // e.g., 3.0.0-dev-7d763f9, 3.0.0-rc1-7d763f9 (in pre-merge CI)
-}
-
 // Returns the DEB package version
 func (Build) DEBVersion() error {
-	version, err := GetDebVersion()
+	version, err := mage.GetDebVersion()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get DEB version: %w", err)
 	}
 
 	fmt.Println(version)
@@ -107,13 +75,11 @@ func compile(path, output string) error {
 }
 
 func (Build) onpremKeInstaller() error {
-	fmt.Println("Fetch dependencies and compile onprem-ke-installer executable")
+	fmt.Println("Compile onprem-ke-installer executable")
 
 	deployFilePath := deployOnlineDirectory
 
 	mg.SerialDeps(
-		Clean,
-		// Must compile after everything is fetched in order to package dependencies
 		mg.F(
 			compile,
 			filepath.Join(".", "cmd", deployFilePath, "main.go"),
@@ -121,9 +87,9 @@ func (Build) onpremKeInstaller() error {
 		),
 	)
 
-	debVersion, err := GetDebVersion()
+	debVersion, err := mage.GetDebVersion()
 	if err != nil {
-		return fmt.Errorf("get DEB version: %w", err)
+		return fmt.Errorf("failed to get DEB version for onprem-ke-installer: %w", err)
 	}
 
 	fmt.Println("Build onprem-ke-installer package 📦")
@@ -148,10 +114,8 @@ func (Build) onpremKeInstaller() error {
 }
 
 func (Build) osConfigInstaller() error {
-	fmt.Println("Fetch dependencies and compile configuration installer executable")
+	fmt.Println("Compile configuration installer executable")
 	mg.SerialDeps(
-		Clean,
-		// Must compile after everything is fetched in order to package dependencies
 		mg.F(
 			compile,
 			filepath.Join(".", "cmd", "onprem-config-installer", "main.go"),
@@ -159,9 +123,9 @@ func (Build) osConfigInstaller() error {
 		),
 	)
 
-	debVersion, err := GetDebVersion()
+	debVersion, err := mage.GetDebVersion()
 	if err != nil {
-		return fmt.Errorf("get DEB version: %w", err)
+		return fmt.Errorf("failed to get DEB version for osConfigInstaller: %w", err)
 	}
 
 	fmt.Println("Build onprem-config-installer package 📦")
@@ -188,7 +152,7 @@ func (Build) osConfigInstaller() error {
 func (Build) giteaInstaller() error {
 	cmd := "helm repo add gitea-charts https://dl.gitea.com/charts/ --force-update"
 	if _, err := script.Exec(cmd).Stdout(); err != nil {
-		return err
+		return fmt.Errorf("failed to add gitea helm repo: %w", err)
 	}
 
 	if err := os.RemoveAll(filepath.Join(giteaPath, "gitea")); err != nil {
@@ -197,12 +161,12 @@ func (Build) giteaInstaller() error {
 
 	cmd = fmt.Sprintf("helm fetch gitea-charts/gitea --version %v --untar --untardir %v", giteaChartVersion, giteaPath)
 	if _, err := script.Exec(cmd).Stdout(); err != nil {
-		return err
+		return fmt.Errorf("failed to fetch gitea chart: %w", err)
 	}
 
-	debVersion, err := GetDebVersion()
+	debVersion, err := mage.GetDebVersion()
 	if err != nil {
-		return fmt.Errorf("get DEB version: %w", err)
+		return fmt.Errorf("failed to get DEB version for giteaInstaller: %w", err)
 	}
 
 	fmt.Println("Build gitea package 📦")
@@ -231,21 +195,21 @@ func (Build) giteaInstaller() error {
 func (Build) argoCdInstaller() error {
 	cmd := "helm repo add argo-helm https://argoproj.github.io/argo-helm --force-update"
 	if _, err := script.Exec(cmd).Stdout(); err != nil {
-		return err
+		return fmt.Errorf("failed to add argo helm repo: %w", err)
 	}
 
 	if err := os.RemoveAll(filepath.Join(argocdPath, "argo-cd")); err != nil {
-		return nil
+		return err
 	}
 
 	cmd = fmt.Sprintf("helm fetch argo-helm/argo-cd --version %v --untar --untardir %v", argocdHelmVersion, argocdPath)
 	if _, err := script.Exec(cmd).Stdout(); err != nil {
-		return err
+		return fmt.Errorf("failed to fetch argo-cd chart: %w", err)
 	}
 
-	debVersion, err := GetDebVersion()
+	debVersion, err := mage.GetDebVersion()
 	if err != nil {
-		return fmt.Errorf("get DEB version: %w", err)
+		return fmt.Errorf("failed to get DEB version for argoCdInstaller: %w", err)
 	}
 
 	fmt.Println("Build argocd-installer package 📦")
@@ -273,12 +237,10 @@ func (Build) argoCdInstaller() error {
 
 func (Build) onPremOrchInstaller() error {
 	if err := downloadTeaBinary(); err != nil {
-		return err
+		return fmt.Errorf("failed to download tea binary: %w", err)
 	}
 
-	// Statically compile the Orch Installer binary
 	mg.SerialDeps(
-		Clean,
 		mg.F(
 			compile,
 			filepath.Join(".", "cmd", "onprem-orch-installer", "main.go"),
@@ -290,9 +252,9 @@ func (Build) onPremOrchInstaller() error {
 		return fmt.Errorf("statically compiling mage: %w", err)
 	}
 
-	debVersion, err := GetDebVersion()
+	debVersion, err := mage.GetDebVersion()
 	if err != nil {
-		return fmt.Errorf("get DEB version: %w", err)
+		return fmt.Errorf("failed to get DEB version for onPremOrchInstaller: %w", err)
 	}
 
 	fmt.Println("Build on-prem orch-installer package 📦")
@@ -322,11 +284,11 @@ func downloadTeaBinary() error {
 
 	err := downloadFile(usrBinTea, "https://dl.gitea.com/tea/"+teaVersion+"/tea-"+teaVersion+"-linux-amd64")
 	if err != nil {
-		return fmt.Errorf("failed to download tea binary - %w", err)
+		return fmt.Errorf("failed to download tea binary: %w", err)
 	}
 
 	if err := os.Chmod(usrBinTea, 0700); err != nil { //nolint:gofumpt
-		return fmt.Errorf("failed to chmod tea binary - %w", err)
+		return fmt.Errorf("failed to set permissions for tea binary: %w", err)
 	}
 
 	return nil

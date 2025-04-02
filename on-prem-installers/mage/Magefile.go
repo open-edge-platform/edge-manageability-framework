@@ -116,8 +116,9 @@ func (Build) Deps() error {
 
 // Builds all the installers. Must run on Ubuntu 22.04.
 func (b Build) All(ctx context.Context) error {
-	// Must run serially since each installer build cleans up the dist directory.
-	mg.SerialCtxDeps(
+	mg.CtxDeps(ctx, Clean)
+
+	mg.CtxDeps(
 		ctx,
 		b.OnpremKEInstaller,
 		b.OSConfig,
@@ -125,6 +126,7 @@ func (b Build) All(ctx context.Context) error {
 		b.ArgocdInstaller,
 		b.OnPremOrchInstaller,
 	)
+
 	return nil
 }
 
@@ -227,7 +229,7 @@ func (Publish) DEBPackages(ctx context.Context) error {
 		return fmt.Errorf("failed get branch name: %w", err)
 	}
 
-	version, err := GetDebVersion()
+	version, err := mage.GetDebVersion()
 	if err != nil {
 		return fmt.Errorf("failed to get DEB version: %w", err)
 	}
@@ -306,7 +308,7 @@ func (Publish) DEBPackages(ctx context.Context) error {
 // published, the files will be available via the Release service with `oras pull $ARTIFACT_NAME e.g.,
 // oras pull registry-rs.edgeorchestration.intel.com/edge-orch/common/files/functions.sh:3.0.0-dev-d5ed6ff
 func (Publish) Files(ctx context.Context) error {
-	version, err := GetDebVersion()
+	version, err := mage.GetDebVersion()
 	if err != nil {
 		return fmt.Errorf("failed to get version: %w", err)
 	}
