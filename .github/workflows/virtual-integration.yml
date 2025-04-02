@@ -443,6 +443,7 @@ jobs:
           git config --global url."https://${{ secrets.SYS_ORCH_GITHUB }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Setup asdf and install dependencies
+        id: install-deps
         uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main
 
       - name: Get current git hash of the PR
@@ -538,8 +539,8 @@ jobs:
         run: |
           mage test:e2eOrchObservability
 
-      #######################################################################    
-      # TODO: Enable these tests once the ENIC metrics are available 
+      #######################################################################
+      # TODO: Enable these tests once the ENIC metrics are available
       # Bugfix: 24968 Metrics from ENiC are not present in orchestrator.
       #######################################################################
       # - name: "Test Observability EdgeNode Stack"
