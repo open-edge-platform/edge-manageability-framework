@@ -26,6 +26,8 @@ import (
 	"github.com/bitfield/script"
 	"github.com/magefile/mage/mg"
 	"github.com/magefile/mage/sh"
+	"github.com/open-edge-platform/edge-manageability-framework/internal/retry"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -732,9 +734,20 @@ func (d Deploy) OnPrem(ctx context.Context) error {
 
 	kubeconfigPath := filepath.Join(dir, "terraform", "orchestrator", "files", "kubeconfig")
 
-	fmt.Printf("Orchestrator deployment started 🚀\n")
+	// Seed container images to make the deployment faster
+	if err := retry.UntilItSucceeds(
+		ctx,
+		func() error {
+			return d.SeedContainerImages(ctx)
+		},
+		5*time.Second,
+	); err != nil {
+		fmt.Printf("Failed to seed container images: %v\n", err)
+	}
 
 	fmt.Printf(`
+Orchestrator deployment started 🚀
+
 This generally takes ~35 minutes to complete. You can check the status of the deployment by running:
 
 export KUBECONFIG=%s
@@ -751,6 +764,99 @@ mage deploy:OrchCA deploy:EdgeNetworkDNS
 
 Congrats! You should now be able to access the Orchestrator on this host at https://web-ui.cluster.onprem 🎉
 `, kubeconfigPath)
+
+	return nil
+}
+
+// SeedContainerImages opportunistically fetches all container images for the Orchestrator and stores them in
+// containerd's cache. Use this to speed up the deployment of the Orchestrator ⚡️
+// TODO: Make it work for deployments that use a different deployment revision.
+func (Deploy) SeedContainerImages(ctx context.Context) error {
+	manifestFile := "image_manifest.json"
+
+	var images []string
+
+	// Check if the manifest file exists
+	if _, err := os.Stat(manifestFile); err == nil {
+		// Load the manifest from the file
+		file, err := os.Open(manifestFile)
+		if err != nil {
+			return fmt.Errorf("failed to open manifest file: %w", err)
+		}
+		defer file.Close()
+
+		var cachedImages []string
+		if err := json.NewDecoder(file).Decode(&cachedImages); err != nil {
+			return fmt.Errorf("failed to decode manifest file: %w", err)
+		}
+
+		fmt.Println("Loaded image manifest from cache.")
+		images = cachedImages
+	} else {
+		// Generate the manifest and save it to a file just in case
+		images, _, err = getImageManifest()
+		if err != nil {
+			return fmt.Errorf("failed to get image manifest: %w", err)
+		}
+
+		file, err := os.Create(manifestFile)
+		if err != nil {
+			return fmt.Errorf("failed to create manifest file: %w", err)
+		}
+		defer file.Close()
+
+		if err := json.NewEncoder(file).Encode(images); err != nil {
+			return fmt.Errorf("failed to encode manifest to file: %w", err)
+		}
+
+		fmt.Println("Image manifest saved to cache.")
+	}
+
+	fmt.Println("Seeding container images... 🌱")
+
+	eg, ctx := errgroup.WithContext(ctx)
+
+	eg.SetLimit(runtime.NumCPU())
+
+	for _, image := range images {
+		eg.Go(func() error {
+			// sudo ctr --address /run/k3s/containerd/containerd.sock --namespace k8s.io images ls --quiet | xargs -I {} ctr images inspect {} | jq '.size' | awk '{sum += $1} END {print sum}'
+			cmd := exec.CommandContext(
+				ctx,
+				"sshpass", "-p", "ubuntu", // TODO: Remove hardcoded password
+				"ssh",
+				"-o", "StrictHostKeyChecking=no",
+				"-o", "UserKnownHostsFile=/dev/null",
+				"-o", "ServerAliveInterval=60", // Keep SSH connection alive
+				"ubuntu@192.168.99.10", // TODO: Make this configurable
+				"sudo",
+				"ctr",
+				"--address", "/run/k3s/containerd/containerd.sock",
+				"--namespace", "k8s.io",
+				"images",
+				"pull",
+				image,
+			)
+
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+
+			if err := cmd.Run(); err != nil {
+				fmt.Printf("failed to pull image %s: %s\n", image, err)
+				return nil
+			}
+
+			defer fmt.Println("Seeded image:", image)
+
+			return nil
+		})
+	}
+
+	if err := eg.Wait(); err != nil {
+		return fmt.Errorf("failed to pull container images: %w", err)
+	}
+
+	fmt.Println("Container images seeded successfully 🌳")
 
 	return nil
 }

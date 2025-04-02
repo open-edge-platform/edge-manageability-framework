@@ -77,3 +77,4 @@ on-prem-installers/assets/tea
 
 # Build artifacts
 edge-manageability-framework/
+image_manifest.json
