@@ -92,8 +92,6 @@ const argocdPath = "assets/argo-cd"
 
 const argocdHelmVersion = "7.4.4"
 
-const fpmImageName = "registry-rs.edgeorchestration.intel.com/edge-orch/common/fpm:1.15.1"
-
 const onPremOffline = "offline"
 
 const onPremOnline = "online"
@@ -117,7 +115,7 @@ func compile(path, output string) error {
 }
 
 func (Build) onpremKeInstaller(environment string) error {
-	fmt.Println("Fetch dependencies (if AirGap) and compile onprem-ke-installer executable")
+	fmt.Println("Fetch dependencies and compile onprem-ke-installer executable")
 
 	var deployFilePath string
 	switch environment {
@@ -131,7 +129,6 @@ func (Build) onpremKeInstaller(environment string) error {
 
 	mg.SerialDeps(
 		Clean,
-		Prereq{}.GitLFSPull,
 		// Must compile after everything is fetched in order to package dependencies
 		mg.F(
 			compile,
@@ -139,12 +136,6 @@ func (Build) onpremKeInstaller(environment string) error {
 			filepath.Join(".", "dist", "bin", deployFilePath),
 		),
 	)
-
-	// Use the current directory as the build context
-	dir, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("get working directory: %w", err)
-	}
 
 	debVersion, err := GetDebVersion()
 	if err != nil {
@@ -155,53 +146,42 @@ func (Build) onpremKeInstaller(environment string) error {
 	case onPremOnline:
 		fmt.Println("Build onprem-ke-installer package 📦")
 		return sh.RunV(
-			"docker",
-			"run",
-			"--rm",
-			"-u", "0:0", // required to run in CI
-			"-v", fmt.Sprintf("%s:/src", dir),
-			fpmImageName,
+			"fpm",
 			"-s", "dir",
 			"-t", "deb",
 			"--name", "onprem-ke-installer",
-			"-p", "/src/dist/",
+			"-p", "./dist/",
 			"--version", debVersion,
 			"--architecture", "amd64",
 			"--description", "Installs Intel onprem-ke",
 			"--url", "https://github.com/open-edge-platform/edge-manageability-framework/on-prem-installers",
 			"--maintainer", "Intel Corporation",
-			"--after-install", "/src/cmd/onprem-ke-installer/after-install.sh",
-			"--after-remove", "/src/cmd/onprem-ke-installer/after-remove.sh",
-			"--after-upgrade", "/src/cmd/onprem-ke-installer/after-upgrade.sh",
-			"/src/dist/bin/onprem-ke-installer=/usr/bin/onprem-ke-installer",
-			"/src/cmd/onprem-ke-installer/onprem-ke-installer.1=/usr/share/man/man1/onprem-ke-installer.1",
-			"/src/rke2=/tmp/onprem-ke-installer",
+			"--after-install", "./cmd/onprem-ke-installer/after-install.sh",
+			"--after-remove", "./cmd/onprem-ke-installer/after-remove.sh",
+			"--after-upgrade", "./cmd/onprem-ke-installer/after-upgrade.sh",
+			"./dist/bin/onprem-ke-installer=/usr/bin/onprem-ke-installer",
+			"./cmd/onprem-ke-installer/onprem-ke-installer.1=/usr/share/man/man1/onprem-ke-installer.1",
+			"./rke2=/tmp/onprem-ke-installer",
 		)
 	case onPremOffline:
 		fmt.Println("Build airgap rke2-installer package 📦")
 		return sh.RunV(
-			"docker",
-			"run",
-			"--rm",
-			"-u", "0:0", // required to run in CI
-			"-v", fmt.Sprintf("%s:/src", dir),
-			fpmImageName,
+			"fpm",
 			"-s", "dir",
 			"-t", "deb",
 			"--name", "rke2-installer-airgap",
-			"-p", "/src/dist/",
+			"-p", "./dist/",
 			"--version", debVersion,
 			"--architecture", "amd64",
 			"--description", "Installs Intel airgap rke2",
 			"--url", "https://github.com/open-edge-platform/edge-manageability-framework/on-prem-installers",
 			"--maintainer", "Intel Corporation",
-			"--after-install", "/src/cmd/rke2-installer-airgap/after-install.sh",
-			"--after-remove", "/src/cmd/rke2-installer-airgap/after-remove.sh",
-			"/src/dist/bin/rke2-installer-airgap=/usr/bin/rke2-installer-airgap",
-			"/src/cmd/rke2-installer-airgap/rke2-installer-airgap.1="+
-				"/usr/share/man/man1/rke2-installer-airgap.1",
-			"/src/assets/rke2=/tmp/rke2-installer-airgap/assets",
-			"/src/rke2=/tmp/rke2-installer-airgap",
+			"--after-install", "./cmd/rke2-installer-airgap/after-install.sh",
+			"--after-remove", "./cmd/rke2-installer-airgap/after-remove.sh",
+			"./dist/bin/rke2-installer-airgap=/usr/bin/rke2-installer-airgap",
+			"./cmd/rke2-installer-airgap/rke2-installer-airgap.1=/usr/share/man/man1/rke2-installer-airgap.1",
+			"./assets/rke2=/tmp/rke2-installer-airgap/assets",
+			"./rke2=/tmp/rke2-installer-airgap",
 		)
 	default:
 		return fmt.Errorf("ON_PREM_ENVIRONMENT envirnmental variable not correct! Set to `offline` or `online`")
@@ -220,12 +200,6 @@ func (Build) osConfigInstaller() error {
 		),
 	)
 
-	// Use the current directory as the build context
-	dir, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("get working directory: %w", err)
-	}
-
 	debVersion, err := GetDebVersion()
 	if err != nil {
 		return fmt.Errorf("get DEB version: %w", err)
@@ -233,16 +207,11 @@ func (Build) osConfigInstaller() error {
 
 	fmt.Println("Build onprem-config-installer package 📦")
 	return sh.RunV(
-		"docker",
-		"run",
-		"--rm",
-		"-u", "0:0", // required to run in CI
-		"-v", fmt.Sprintf("%s:/src", dir),
-		fpmImageName,
+		"fpm",
 		"-s", "dir",
 		"-t", "deb",
 		"--name", "onprem-config-installer",
-		"-p", "/src/dist",
+		"-p", "./dist",
 		"-d", "jq,libpq5,apparmor,lvm2,mosquitto,net-tools,ntp,openssh-server", //nolint:misspell
 		"-d", "software-properties-common,tpm2-abrmd,tpm2-tools,unzip",
 		"--version", debVersion,
@@ -250,10 +219,10 @@ func (Build) osConfigInstaller() error {
 		"--description", "OS Configuration Powered By Intel",
 		"--url", "https://github.com/open-edge-platform/edge-manageability-framework/on-prem-installers",
 		"--maintainer", "Intel Corporation",
-		"--after-install", "/src/cmd/onprem-config-installer/after-install.sh",
-		"--after-remove", "/src/cmd/onprem-config-installer/after-remove.sh",
-		"/src/dist/bin/onprem-config-installer=/usr/bin/onprem-config-installer",
-		"/src/cmd/onprem-config-installer/onprem-config-installer.1=/usr/share/man/man1/onprem-config-installer.1",
+		"--after-install", "./cmd/onprem-config-installer/after-install.sh",
+		"--after-remove", "./cmd/onprem-config-installer/after-remove.sh",
+		"./dist/bin/onprem-config-installer=/usr/bin/onprem-config-installer",
+		"./cmd/onprem-config-installer/onprem-config-installer.1=/usr/share/man/man1/onprem-config-installer.1",
 	)
 }
 
@@ -272,12 +241,6 @@ func (Build) giteaInstaller() error {
 		return err
 	}
 
-	// Use the current directory as the build context
-	dir, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("get working directory: %w", err)
-	}
-
 	debVersion, err := GetDebVersion()
 	if err != nil {
 		return fmt.Errorf("get DEB version: %w", err)
@@ -285,16 +248,11 @@ func (Build) giteaInstaller() error {
 
 	fmt.Println("Build gitea package 📦")
 	if err := sh.RunV(
-		"docker",
-		"run",
-		"--rm",
-		"-u", "0:0", // required to run in CI
-		"-v", fmt.Sprintf("%s:/src", dir),
-		fpmImageName,
+		"fpm",
 		"-s", "dir",
 		"-t", "deb",
 		"--name", "onprem-gitea-installer",
-		"-p", "/src/dist/",
+		"-p", "./dist/",
 		"--version", debVersion,
 		"--architecture", "amd64",
 		"--description", "Installs Gitea",
@@ -326,11 +284,6 @@ func (Build) argoCdInstaller() error {
 		return err
 	}
 
-	dir, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("get working directory: %w", err)
-	}
-
 	debVersion, err := GetDebVersion()
 	if err != nil {
 		return fmt.Errorf("get DEB version: %w", err)
@@ -338,16 +291,11 @@ func (Build) argoCdInstaller() error {
 
 	fmt.Println("Build argocd-installer package 📦")
 	if err := sh.RunV(
-		"docker",
-		"run",
-		"--rm",
-		"-u", "0:0", // required to run in CI
-		"-v", fmt.Sprintf("%s:/src", dir),
-		fpmImageName,
+		"fpm",
 		"-s", "dir",
 		"-t", "deb",
 		"--name", "onprem-argocd-installer",
-		"-p", "/src/dist",
+		"-p", "./dist",
 		"--version", debVersion,
 		"--architecture", "amd64",
 		"--description", "Installs argo-cd on the on-prem orchestrator",
@@ -383,12 +331,6 @@ func (Build) onPremOrchInstaller() error {
 		return fmt.Errorf("statically compiling mage: %w", err)
 	}
 
-	// Use the current directory as the build context
-	dir, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("get working directory: %w", err)
-	}
-
 	debVersion, err := GetDebVersion()
 	if err != nil {
 		return fmt.Errorf("get DEB version: %w", err)
@@ -396,26 +338,21 @@ func (Build) onPremOrchInstaller() error {
 
 	fmt.Println("Build on-prem orch-installer package 📦")
 	return sh.RunV(
-		"docker",
-		"run",
-		"--rm",
-		"-u", "0:0", // required to run in CI
-		"-v", fmt.Sprintf("%s:/src", dir),
-		fpmImageName,
+		"fpm",
 		"-s", "dir",
 		"-t", "deb",
 		"--name", "onprem-orch-installer",
-		"-p", "/src/dist/",
+		"-p", "./dist/",
 		"--version", debVersion,
 		"--architecture", "amd64",
 		"--description", "Installs on-prem Orchestrator",
 		"--url", "https://github.com/open-edge-platform/edge-manageability-framework",
 		"--maintainer", "Intel Corporation",
-		"--after-install", "/src/cmd/onprem-orch-installer/after-install.sh",
-		"--after-remove", "/src/cmd/onprem-orch-installer/after-remove.sh",
-		"/src/dist/bin/onprem-orch-installer=/usr/bin/orch-installer",
-		"/src/assets/tea=/usr/bin/tea",
-		"/src/cmd/onprem-orch-installer/generate_fqdn=/usr/bin/generate_fqdn",
+		"--after-install", "./cmd/onprem-orch-installer/after-install.sh",
+		"--after-remove", "./cmd/onprem-orch-installer/after-remove.sh",
+		"./dist/bin/onprem-orch-installer=/usr/bin/orch-installer",
+		"./assets/tea=/usr/bin/tea",
+		"./cmd/onprem-orch-installer/generate_fqdn=/usr/bin/generate_fqdn",
 	)
 }
 

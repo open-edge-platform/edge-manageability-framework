@@ -115,9 +115,9 @@ func (Build) Deps() error {
 	return nil
 }
 
-// Builds all the installers. Docker is required to build the packages.
+// Builds all the installers. Must run on Ubuntu 22.04.
 func (b Build) All(ctx context.Context) error {
-	mg.SerialCtxDeps(
+	mg.CtxDeps(
 		ctx,
 		b.OnpremKEInstaller,
 		b.OSConfig,
@@ -129,8 +129,12 @@ func (b Build) All(ctx context.Context) error {
 }
 
 // Build the onprem-KE Installer package. By default builds online installer.
-func (b Build) OnpremKEInstaller() error {
-	mg.Deps(b.Deps)
+func (b Build) OnpremKEInstaller(ctx context.Context) error {
+	mg.CtxDeps(
+		ctx,
+		b.Deps,
+		mage.Deps.FPM,
+	)
 
 	mode, exists := os.LookupEnv("ON_PREM_ENVIRONMENT")
 	if !exists || mode == "" {
@@ -145,29 +149,45 @@ func (b Build) OnpremKEInstaller() error {
 }
 
 // Build the OS-Config Installer package.
-func (b Build) OSConfig() error {
-	mg.Deps(b.Deps)
+func (b Build) OSConfig(ctx context.Context) error {
+	mg.CtxDeps(
+		ctx,
+		b.Deps,
+		mage.Deps.FPM,
+	)
 
 	return b.osConfigInstaller()
 }
 
 // Build the Gitea Installer package.
-func (b Build) GiteaInstaller() error {
-	mg.Deps(b.Deps)
+func (b Build) GiteaInstaller(ctx context.Context) error {
+	mg.CtxDeps(
+		ctx,
+		b.Deps,
+		mage.Deps.FPM,
+	)
 
 	return b.giteaInstaller()
 }
 
 // Build the Argo-Cd Installer package.
-func (b Build) ArgocdInstaller() error {
-	mg.Deps(b.Deps)
+func (b Build) ArgocdInstaller(ctx context.Context) error {
+	mg.CtxDeps(
+		ctx,
+		b.Deps,
+		mage.Deps.FPM,
+	)
 
 	return b.argoCdInstaller()
 }
 
 // Builds Orch Installer package.
-func (b Build) OnPremOrchInstaller() error {
-	mg.Deps(b.Deps)
+func (b Build) OnPremOrchInstaller(ctx context.Context) error {
+	mg.CtxDeps(
+		ctx,
+		b.Deps,
+		mage.Deps.FPM,
+	)
 
 	return b.onPremOrchInstaller()
 }
