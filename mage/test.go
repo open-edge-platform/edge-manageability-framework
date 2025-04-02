@@ -151,6 +151,18 @@ func (Test) e2eAlertsObservability() error {
 		"-r",
 		"-p",
 		"--skip-package", "assets",
+		"--label-filter=observability-alerts && !extended",
+		filepath.Join("e2e-tests", "orchestrator"),
+	)
+}
+
+func (Test) e2eAlertsObservabilityExtended() error {
+	return sh.RunV(
+		"ginkgo",
+		"-v",
+		"-r",
+		"-p",
+		"--skip-package", "assets",
 		"--label-filter=observability-alerts",
 		filepath.Join("e2e-tests", "orchestrator"),
 	)
@@ -163,7 +175,7 @@ func (Test) e2eSreObservabilityNoEnic() error {
 		"-r",
 		"-p",
 		"--skip-package", "assets",
-		"--label-filter=sre-observability && enic-not-deployed",
+		"--label-filter=sre-observability && !enic",
 		filepath.Join("e2e-tests", "orchestrator"),
 	)
 }
@@ -175,7 +187,7 @@ func (Test) e2eSreObservability() error {
 		"-r",
 		"-p",
 		"--skip-package", "assets",
-		"--label-filter=sre-observability && enic-deployed",
+		"--label-filter=sre-observability && enic",
 		filepath.Join("e2e-tests", "orchestrator"),
 	)
 }
