@@ -72,9 +72,11 @@ func (Deploy) all(targetEnv string) error {
 
 	// TBD: commit deployment and configs to gitea and deploy using argo referencing to gitea
 
-	if err := (Deploy{}).orchLocal(targetEnv); err != nil {
-		return err
-	}
+	// TBD: Restore after walkthrough and implementation of deploy through Gitea workflow
+
+	// if err := (Deploy{}).orchLocal(targetEnv); err != nil {
+	// 	return err
+	// }
 	return nil
 }
 
@@ -182,12 +184,13 @@ func (Deploy) kind(targetEnv string) error { //nolint:gocyclo
 		time.Sleep(argoRetryInterval * time.Second)
 	}
 
-	if err := (Argo{}).repoAdd(); err != nil {
-		return err
-	}
-	if err := (Argo{}).dockerHubChartOrgAdd(); err != nil {
-		return err
-	}
+	// TBD: restore with proper Gitea repo paths
+	// if err := (Argo{}).repoAdd(); err != nil {
+	// 	return err
+	// }
+	// if err := (Argo{}).dockerHubChartOrgAdd(); err != nil {
+	// 	return err
+	// }
 	fmt.Println("kind cluster ready: 😊")
 	return nil
 }
@@ -978,10 +981,21 @@ func createOrUpdateGiteaAccount(username string, password string) error {
 
 // Deploy ArgoCD using helm chart
 func (Deploy) argocd(bootstrapValues []string, targetEnv string) error {
-	// TBD: Use the config: RegistryCacheCert value from the targetEnv
+	// TBD: Fix the cert to be config based rather than server query based. Current handling is a generalization of
+	//      pre-OSS logic that queries a well known, trusted cache server for the cert rather than configuring a known
+	//      good cert. This is not a secure practice and should be fixed.
 	registryCertName := "blank" // this variable will be ignored by a helm chart if useIntelRegistry is false
 	registryCertPem := []byte("blank")
-
+	dockerCache, _ := (Config{}).getDockerCache(targetEnv)
+	if dockerCache == "" {
+		registryCertServer := strings.ReplaceAll(dockerCache, ".", "\\.")
+		registryCertName = fmt.Sprintf("configs.tls.certificates.%s", registryCertServer)
+		var err error
+		registryCertPem, err = os.ReadFile(filepath.Join("mage", "registry-cache-ca.crt"))
+		if err != nil {
+			return fmt.Errorf("read registry certificate file: %w", err)
+		}
+	}
 	cmd := "helm repo add argo-helm https://argoproj.github.io/argo-helm --force-update"
 	if _, err := script.Exec(cmd).Stdout(); err != nil {
 		return err
