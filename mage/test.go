@@ -696,7 +696,7 @@ func (Test) ChartsAvailableOnReleaseService(ctx context.Context) error {
 
 	// Only test charts that are first party
 	for _, component := range manifest.Components {
-		if strings.Contains(component.Repo, IntelTiberRegistryRepoURL+"/"+IntelTiberRepository) {
+		if strings.Contains(component.Repo, PublicTiberRegistryRepoURL+"/"+IntelTiberRepository) {
 			filteredComponents = append(filteredComponents, component)
 		}
 	}
