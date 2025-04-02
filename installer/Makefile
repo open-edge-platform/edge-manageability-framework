@@ -23,6 +23,8 @@ CLUSTER_CONFIG=${HOME}/src/edge-manageability-framework/orch-configs/clusters/${
 
 INTEL_HARBOR_CACERT := ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/mage/intel-harbor-ca.crt
 
+SAVE_DIR := ${HOME}/pod-configs/SAVEME
+
 ORCH_ISTIO_NAMESPACES := orch-infra orch-iam orch-app orch-cluster orch-ui orch-platform orch-harbor orch-gateway orch-sre orch-database
 
 ORCH_NAMESPACES  := cattle-system
@@ -46,9 +48,9 @@ endif
 
 ## TBD: This shouldn't be a flag. It should be a parameter containing a reference to a proxy configuration that can be used
 ##      to render this bootstrap file from a template.
-ifeq (${USE_PROXY},true)
-    # Commands to run if USE_REPO_PROXY is true
-    ## ARGO_PROXY := --values ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/bootstrap/internal-proxy.yamln/main
+ifeq (${USE_ARGO_PROXY},true)
+    # Commands to run if USE_ARGO_PROXY is true
+    ARGO_PROXY := --values ${SAVE_DIR}/proxy-argocd.yaml
 endif
 
 ifeq (${USE_TEST_ADMIN},true)
