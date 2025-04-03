@@ -701,7 +701,7 @@ func (DevUtils) CreateDefaultUser(ctx context.Context) error {
 			continue
 		}
 
-		// // add user to group
+		// add user to group
 		if user.Groups != nil {
 			userGroup := *user.Groups
 			err = addUserToGroups(ctx, client, token, KeycloakRealm, userGroup, userId)
@@ -710,7 +710,7 @@ func (DevUtils) CreateDefaultUser(ctx context.Context) error {
 			}
 		}
 
-		// // add realm role to user
+		// add realm role to user
 		var roles []gocloak.Role
 		for _, role := range *user.RealmRoles {
 			realmRole, err := getRealmRole(ctx, client, token, "master", role)
@@ -724,8 +724,49 @@ func (DevUtils) CreateDefaultUser(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("added member roles to the user %s\n", userId)
-		time.Sleep(1 * time.Second)
+
+		time.Sleep(5 * time.Second)
+
+		// Verify the user has the correct roles and groups
+		assignedRoles, err := client.GetRealmRolesByUserID(ctx, token.AccessToken, "master", userId)
+		if err != nil {
+			return fmt.Errorf("failed to fetch roles for user %s: %w", *user.Username, err)
+		}
+
+		for _, expectedRole := range *user.RealmRoles {
+			found := false
+			for _, assignedRole := range assignedRoles {
+				if assignedRole.Name != nil && *assignedRole.Name == expectedRole {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return fmt.Errorf("role %s not assigned to user %s", expectedRole, *user.Username)
+			}
+		}
+
+		if user.Groups != nil {
+			assignedGroups, err := client.GetUserGroups(ctx, token.AccessToken, KeycloakRealm, userId)
+			if err != nil {
+				return fmt.Errorf("failed to fetch groups for user %s: %w", *user.Username, err)
+			}
+
+			for _, expectedGroup := range *user.Groups {
+				found := false
+				for _, assignedGroup := range assignedGroups {
+					if assignedGroup.Name != nil && *assignedGroup.Name == expectedGroup {
+						found = true
+						break
+					}
+				}
+				if !found {
+					return fmt.Errorf("group %s not assigned to user %s", expectedGroup, *user.Username)
+				}
+			}
+		}
+
+		fmt.Printf("added member roles and groups to the user %s\n", userId)
 	}
 
 	return nil
