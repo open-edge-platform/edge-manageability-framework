@@ -19,10 +19,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	folderv1 "github.com/open-edge-platform/orch-utils/tree/9c2571c45857715ae0c68c9b6038dabc636334a3/tenancy-datamodel/build/apis/org.edge-orchestrator.intel.com/v1"
-	orgsv1 "github.com/open-edge-platform/orch-utils/tree/9c2571c45857715ae0c68c9b6038dabc636334a3/tenancy-datamodel/build/apis/org.edge-orchestrator.intel.com/v1"
-	projectv1 "github.com/open-edge-platform/orch-utils/tree/9c2571c45857715ae0c68c9b6038dabc636334a3/tenancy-datamodel/build/apis/project.edge-orchestrator.intel.com/v1"
-
+	folderv1 "github.com/open-edge-platform/orch-utils/tenancy-datamodel/build/apis/folder.edge-orchestrator.intel.com/v1"
+	orgsv1 "github.com/open-edge-platform/orch-utils/tenancy-datamodel/build/apis/org.edge-orchestrator.intel.com/v1"
+	projectv1 "github.com/open-edge-platform/orch-utils/tenancy-datamodel/build/apis/project.edge-orchestrator.intel.com/v1"
 	nexus_client "github.com/open-edge-platform/orch-utils/tenancy-datamodel/build/nexus-client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
