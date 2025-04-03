@@ -86,7 +86,7 @@ argo:
 {{- end }}
 
   ## Argo CD configs
-  deployRepoURL: "https://github.com/open-edge-platform/edge-manageability-framework"
+  deployRepoURL: "https://gitea-http.gitea.svc.cluster.local/argocd/edge-manageability-framework"
   deployRepoRevision: main
 
   targetServer: "https://kubernetes.default.svc"

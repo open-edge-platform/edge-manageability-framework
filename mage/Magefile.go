@@ -500,6 +500,46 @@ func (d Deploy) Gitea(targetEnv string) error {
 	return d.gitea(giteaBootstrapValues, targetEnv)
 }
 
+func (d Deploy) StartGiteaProxy() error {
+	d.StopGiteaProxy()
+
+	portForwardCmd, err := d.startGiteaPortForward()
+	if err != nil {
+		return fmt.Errorf("failed to start Gitea port forwarding: %w", err)
+	}
+
+	// Save the PID to a .gitea-proxy file
+	pid := portForwardCmd.Process.Pid
+	pidFile := ".gitea-proxy"
+	if err := os.WriteFile(pidFile, []byte(strconv.Itoa(pid)), 0644); err != nil {
+		return fmt.Errorf("failed to write PID to %s: %w", pidFile, err)
+	}
+	fmt.Printf("Gitea proxy PID saved to %s\n", pidFile)
+	return nil
+}
+
+func (d Deploy) StopGiteaProxy() error {
+	pidFile := ".gitea-proxy"
+	pidBytes, err := os.ReadFile(pidFile)
+	if err != nil {
+		return fmt.Errorf("failed to read PID file %s: %w", pidFile, err)
+	}
+	pid, err := strconv.Atoi(strings.TrimSpace(string(pidBytes)))
+	if err != nil {
+		return fmt.Errorf("failed to parse PID from %s: %w", pidFile, err)
+	}
+	portForwardCmd := exec.Command("kill", "-9", strconv.Itoa(pid))
+	if err := portForwardCmd.Run(); err != nil {
+		return fmt.Errorf("failed to stop Gitea port forwarding: %w", err)
+	}
+	fmt.Printf("Gitea proxy with PID %d stopped\n", pid)
+	if err := os.Remove(pidFile); err != nil {
+		return fmt.Errorf("failed to remove PID file %s: %w", pidFile, err)
+	}
+	fmt.Printf("PID file %s removed\n", pidFile)
+	return nil
+}
+
 // Deploy Argo CD in kind cluster.
 func (d Deploy) Argocd(targetEnv string) error {
 	err := (Config{}).renderTargetConfigTemplate(targetEnv, "orch-configs/templates/bootstrap/argocd-proxy.tpl", ".deploy/bootstrap/argocd-proxy.yaml")
@@ -1579,10 +1619,11 @@ func (c Config) CreatePreset() error {
 	return c.createPreset()
 }
 
+// TBD: Fix logic and restore this functionality.
 // Clean out generated cluster configuration files.
-func (c Config) Clean() error {
-	return c.clean()
-}
+// func (c Config) Clean() error {
+// 	return c.clean()
+// }
 
 // Render a Cluster configuration.
 func (c Config) Debug(targetEnv string) error {

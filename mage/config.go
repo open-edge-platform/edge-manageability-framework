@@ -297,88 +297,90 @@ func (Config) createPreset() error {
 	return nil
 }
 
-func (Config) clean() error {
-	gitignorePath := "orch-configs/clusters/.gitignore"
-	clusterDir := "orch-configs/clusters"
+// TBD: Fix the clean function to remove ignored files based on .gitignore set from the orch-configs directory instead of the
+//      orch-configs/clusters directory.
+// func (Config) clean() error {
+// 	gitignorePath := "orch-configs/clusters/.gitignore"
+// 	clusterDir := "orch-configs/clusters"
 
-	// Load .gitignore patterns.
-	gitignoreData, err := os.ReadFile(gitignorePath)
-	if err != nil {
-		return fmt.Errorf("failed to read .gitignore file: %w", err)
-	}
-	gitignorePatterns := []string{}
-	for _, line := range strings.Split(string(gitignoreData), "\n") {
-		line = strings.TrimSpace(line)
-		if line != "" && !strings.HasPrefix(line, "#") {
-			gitignorePatterns = append(gitignorePatterns, line)
-		}
-	}
+// 	// Load .gitignore patterns.
+// 	gitignoreData, err := os.ReadFile(gitignorePath)
+// 	if err != nil {
+// 		return fmt.Errorf("failed to read .gitignore file: %w", err)
+// 	}
+// 	gitignorePatterns := []string{}
+// 	for _, line := range strings.Split(string(gitignoreData), "\n") {
+// 		line = strings.TrimSpace(line)
+// 		if line != "" && !strings.HasPrefix(line, "#") {
+// 			gitignorePatterns = append(gitignorePatterns, line)
+// 		}
+// 	}
 
-	// Walk through the cluster directory and process .yaml files.
-	files, err := os.ReadDir(clusterDir)
-	if err != nil {
-		return fmt.Errorf("failed to read cluster directory: %w", err)
-	}
+// 	// Walk through the cluster directory and process .yaml files.
+// 	files, err := os.ReadDir(clusterDir)
+// 	if err != nil {
+// 		return fmt.Errorf("failed to read cluster directory: %w", err)
+// 	}
 
-	for _, file := range files {
-		// Skip directories.
-		if file.IsDir() {
-			continue
-		}
+// 	for _, file := range files {
+// 		// Skip directories.
+// 		if file.IsDir() {
+// 			continue
+// 		}
 
-		// Check if the file is a .yaml file.
-		if filepath.Ext(file.Name()) == ".yaml" {
-			// Check if the file matches any .gitignore pattern and is not explicitly included.
-			relPath := file.Name()
+// 		// Check if the file is a .yaml file.
+// 		if filepath.Ext(file.Name()) == ".yaml" {
+// 			// Check if the file matches any .gitignore pattern and is not explicitly included.
+// 			relPath := file.Name()
 
-			matched := false
-			var negated bool
-			for _, pattern := range gitignorePatterns {
-				if strings.HasPrefix(pattern, "!") {
-					negatedPattern := pattern[1:]
-					negated, err = filepath.Match(negatedPattern, relPath)
-					if err != nil {
-						return err
-					}
-					if negated {
-						matched = false
-						break
-					}
-				} else {
-					m, err := filepath.Match(pattern, relPath)
-					if err != nil {
-						return err
-					}
-					if m {
-						matched = true
-					}
-				}
-			}
+// 			matched := false
+// 			var negated bool
+// 			for _, pattern := range gitignorePatterns {
+// 				if strings.HasPrefix(pattern, "!") {
+// 					negatedPattern := pattern[1:]
+// 					negated, err = filepath.Match(negatedPattern, relPath)
+// 					if err != nil {
+// 						return err
+// 					}
+// 					if negated {
+// 						matched = false
+// 						break
+// 					}
+// 				} else {
+// 					m, err := filepath.Match(pattern, relPath)
+// 					if err != nil {
+// 						return err
+// 					}
+// 					if m {
+// 						matched = true
+// 					}
+// 				}
+// 			}
 
-			if matched {
-				fmt.Printf("Deleting ignored file: %s\n", filepath.Join(clusterDir, relPath))
-				if err := os.Remove(filepath.Join(clusterDir, relPath)); err != nil {
-					return fmt.Errorf("failed to delete file '%s': %w", relPath, err)
-				}
+// 			if matched {
+// 				fmt.Printf("Deleting ignored file: %s\n", filepath.Join(clusterDir, relPath))
+// 				if err := os.Remove(filepath.Join(clusterDir, relPath)); err != nil {
+// 					return fmt.Errorf("failed to delete file '%s': %w", relPath, err)
+// 				}
 
-				// Check for and delete the corresponding proxy profile file.
-				proxyFileName := fmt.Sprintf("proxy-%s.yaml", strings.TrimSuffix(relPath, filepath.Ext(relPath)))
-				proxyFilePath := filepath.Join("orch-configs/profiles", proxyFileName)
-				if _, err := os.Stat(proxyFilePath); err == nil {
-					fmt.Printf("Deleting associated proxy profile file: %s\n", proxyFilePath)
-					if err := os.Remove(proxyFilePath); err != nil {
-						return fmt.Errorf("failed to delete proxy profile file '%s': %w", proxyFilePath, err)
-					}
-				}
-			}
-		}
-	}
-	if err != nil {
-		return fmt.Errorf("error while processing cluster directory: %w", err)
-	}
+// 				// Check for and delete the corresponding proxy profile file.
+// 				proxyFileName := fmt.Sprintf("proxy-%s.yaml", strings.TrimSuffix(relPath, filepath.Ext(relPath)))
+// 				proxyFilePath := filepath.Join("orch-configs/profiles", proxyFileName)
+// 				if _, err := os.Stat(proxyFilePath); err == nil {
+// 					fmt.Printf("Deleting associated proxy profile file: %s\n", proxyFilePath)
+// 					if err := os.Remove(proxyFilePath); err != nil {
+// 						return fmt.Errorf("failed to delete proxy profile file '%s': %w", proxyFilePath, err)
+// 					}
+// 				}
+// 			}
+// 		}
+// 	}
+// 	if err != nil {
+// 		return fmt.Errorf("error while processing cluster directory: %w", err)
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 func (Config) getTargetValues(targetEnv string) (map[string]interface{}, error) {
 	if targetEnv == "" {

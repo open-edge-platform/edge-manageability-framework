@@ -101,6 +101,14 @@ func (Argo) repoAdd() error {
 	return nil
 }
 
+func (Argo) repoAddUrl(url string, repoUser string, repoAuth string) error {
+	cmd := fmt.Sprintf("argocd repo add %s --username %s --password %s --upsert", url, repoUser, repoAuth)
+	if _, err := script.Exec(cmd).Stdout(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (Argo) dockerHubChartOrgAdd() error {
 	dockerToken := os.Getenv("DOCKERHUB_TOKEN")
 	dockerUsername := os.Getenv("DOCKERHUB_USERNAME")
