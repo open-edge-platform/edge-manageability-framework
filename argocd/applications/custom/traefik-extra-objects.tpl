@@ -26,9 +26,10 @@ connectCSPs:
 - "https://cluster-orch.{{ .Values.argo.clusterDomain }}"
 - "https://metadata.{{ .Values.argo.clusterDomain }}"
 - "https://alerting-monitor.{{ .Values.argo.clusterDomain }}"
-- "http://44.247.62.6"
+- "http://44.247.62.6:8080"
 scriptSources:
 - "https://app-service-proxy.{{ .Values.argo.clusterDomain }}"
+- "http://44.247.62.6:8080"
 clusterOrchNodeMatchHost: Host(`cluster-orch-node.{{ .Values.argo.clusterDomain }}`)
 logsNodeMatchHost: Host(`logs-node.{{ .Values.argo.clusterDomain }}`)
 metricsNodeMatchHost: Host(`metrics-node.{{ .Values.argo.clusterDomain }}`)
