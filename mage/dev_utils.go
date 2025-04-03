@@ -747,7 +747,13 @@ func (DevUtils) CreateDefaultUser(ctx context.Context) error {
 		}
 
 		if user.Groups != nil {
-			assignedGroups, err := client.GetUserGroups(ctx, token.AccessToken, KeycloakRealm, userId)
+			assignedGroups, err := client.GetUserGroups(
+				ctx,
+				token.AccessToken,
+				KeycloakRealm,
+				userId,
+				gocloak.GetGroupsParams{},
+			)
 			if err != nil {
 				return fmt.Errorf("failed to fetch groups for user %s: %w", *user.Username, err)
 			}
