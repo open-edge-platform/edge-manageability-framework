@@ -54,6 +54,7 @@ cors:
   allowedOrigins:
     - https://{{ .Values.argo.clusterDomain }}
     - https://web-ui.{{ .Values.argo.clusterDomain }}
+    - http://localhost:8080
   {{- range $origin := .Values.argo.cors.allowedOrigins }}
     - {{ $origin }}
   {{- end }}
