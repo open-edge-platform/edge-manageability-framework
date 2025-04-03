@@ -291,6 +291,9 @@ func makeAuthorizedRequest(method, url, namespace string, body []byte, cli *http
 	defaultOrchPassword, err := GetDefaultOrchPassword()
 	keycloakSecret := getEnv("KEYCLOAK_SECRET", defaultOrchPassword)
 	token, err := GetApiToken(cli, edgeMgrUser, keycloakSecret)
+	if err != nil {
+		return nil, err
+	}
 
 	req.Header.Set("Activeprojectid", namespace)
 	req.Header.Add("Authorization", "Bearer "+*token)
