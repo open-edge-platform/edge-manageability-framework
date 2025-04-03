@@ -17,7 +17,7 @@ chpasswd:
 %{ if ntp_server != "" ~}
 ntp:
   enabled: true
-  ntp_client: systemd-timesyncd
+  ntp_client: chrony
   servers:
     - ${ntp_server}
 %{ endif ~}
