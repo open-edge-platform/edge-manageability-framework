@@ -11,7 +11,7 @@ global:
     {{- end }}
   auth:
     keycloak:
-      url: "http://localhost:4000"
+      url: "http://44.247.62.6:4000"
   observability:
     url: "https://observability-ui.{{ .Values.argo.clusterDomain }}"
 
@@ -33,14 +33,14 @@ versions:
   orchestrator: {{ .Values.argo.orchestratorVersion | default .Chart.Version }}
 
 api:
-  catalog: "http://localhost:5000"
-  appDeploymentManger: "http://localhost:5000"
-  appResourceManger: "http://localhost:5000"
-  clusterOrch: "http://localhost:5000"
-  infraManager: "http://localhost:5000"
-  metadataBroker: "http://localhost:5000"
-  alertManager: "http://localhost:5000"
-  tenantManager: "http://localhost:5000"
+  catalog: "http://44.247.62.6:5000"
+  appDeploymentManger: "http://44.247.62.6:5000"
+  appResourceManger: "http://44.247.62.6:5000"
+  clusterOrch: "http://44.247.62.6:5000"
+  infraManager: "http://44.247.62.6:5000"
+  metadataBroker: "http://44.247.62.6:5000"
+  alertManager: "http://44.247.62.6:5000"
+  tenantManager: "http://44.247.62.6:5000"
 
 {{- with .Values.argo.resources.webUiRoot }}
 resources:
