@@ -78,6 +78,29 @@ To set up your development environment, follow these steps:
     no_proxy = "cluster.onprem,your_other_domains"
     ```
 
+1. (Optional) Use locally built artifacts to deploy orchestrator
+
+    Build repo archive and installer packages and move them to default directories
+
+    ```shell
+    mage tarball:onpremFull
+    sudo rm -r repo_archives
+    mkdir -p repo_archives
+    mv onpremFull_edge-manageability-framework_$(head -1 VERSION).tgz repo_archives/
+    cd on-prem-installers
+    mage build:all
+    export TF_VAR_deploy_tag=$(mage build:debVersion)
+    sudo rm -r ../dist
+    mv dist ..
+    cd ..
+    ```
+
+    Edit `terraform/orchestrator/terraform.tfvars` to use locally built artifacts.
+
+    ```hcl
+    use_local_build_artifact = true
+    ```
+
 1. Start the deployment of the Orchestrator. This usually takes 15 minutes to install the platform elements (e.g., RKE2,
    Gitea, PostgreSQL, etc).
 

@@ -121,8 +121,10 @@ orchestratorDeployment:
   targetCluster: {{ .Values.targetCluster }}
   enableMailpit: {{ .Values.enableMailpit }}
   dockerCache: "{{ .Values.dockerCache }}"
+{{- if and .Values.dockerCacheCert }}  
   dockerCacheCert: |
 {{ .Values.dockerCacheCert | indent 4 }}
+{{- end }}
 
 # Post custom template overwrite values should go to /root-app/environments/<env>/<appName>.yaml
 # This is a placeholder to prevent error when there isn't any overwrite needed
