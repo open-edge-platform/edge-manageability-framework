@@ -38,6 +38,11 @@ infra-config:
     orchAttestationStatus: attest-node.{{ .Values.argo.clusterDomain }}:443
     orchRegistry: {{ .Values.argo.releaseService.ociRegistry }}:9443
     orchFileServer: {{ .Values.argo.releaseService.fileServer }}:60444
+    orchMPSHost: mps-node.{{ .Values.argo.clusterDomain }}:4433
+    orchMPSWHost: mps-webport-node.{{ .Values.argo.clusterDomain }}:443
+    orchRPSHost: rps-node.{{ .Values.argo.clusterDomain }}:443
+    orchRPSWHost: rps-webport-node.{{ .Values.argo.clusterDomain }}:443
+    orchMPSRHost: mpsrouter-node.{{ .Values.argo.clusterDomain }}:443
 
     rsType: "{{ index .Values.argo "infra-onboarding" "rsType" | default "no-auth" }}"
     netIp: "{{ index .Values.argo "infra-onboarding" "netIp" | default "dynamic" }}"
@@ -173,3 +178,41 @@ onboarding-manager:
   {{- end}}
   {{- end}}
   {{- end}}
+
+amt:
+  mps:
+    registry:
+      name: {{ .Values.argo.containerRegistryURL }}/one-intel-edge
+    traefikReverseProxy:
+      host:
+        grpc:
+          name: "mps-node.{{ .Values.argo.clusterDomain }}"
+        webport: # Define a new name for the other port
+          name: "mps-webport-node.{{ .Values.argo.clusterDomain }}" # Define the name for the new port
+  {{- if .Values.argo.traefik }}
+    tlsOption: {{ .Values.argo.traefik.tlsOption | default "" | quote }}
+  {{- end }}
+
+  rps:
+    registry:
+      name: {{ .Values.argo.containerRegistryURL }}/one-intel-edge
+    traefikReverseProxy:
+      host:
+        grpc:
+          name: "rps-node.{{ .Values.argo.clusterDomain }}"
+        webport: # Define a new name for the other port
+          name: "rps-webport-node.{{ .Values.argo.clusterDomain }}" # Define the name for the new port
+  {{- if .Values.argo.traefik }}
+    tlsOption: {{ .Values.argo.traefik.tlsOption | default "" | quote }}
+  {{- end }}
+
+  mpsrouter:
+    registry:
+      name: {{ .Values.argo.containerRegistryURL }}/one-intel-edge
+    traefikReverseProxy:
+      host:
+        grpc:
+          name: "mpsrouter-node.{{ .Values.argo.clusterDomain }}"
+  {{- if .Values.argo.traefik }}
+    tlsOption: {{ .Values.argo.traefik.tlsOption | default "" | quote }}
+  {{- end }}

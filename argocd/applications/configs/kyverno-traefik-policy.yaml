@@ -21,6 +21,9 @@ jwtMiddlewareException:
       - "iam-umbrella-nexus-api-gw-api-docs"
       - "cluster-connect-gateway-ws"
       - "cluster-connect-gateway-kubeapi"
+      - "amt-api-mps"
+      - "amt-api-rps"
+      - "amt-api-mpsrouter"
   - namespace: "orch-boots"
     names:
       - "tinkerbell-nginx-ingress"
