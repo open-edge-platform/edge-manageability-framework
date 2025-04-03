@@ -32,16 +32,6 @@ service:
 versions:
   orchestrator: {{ .Values.argo.orchestratorVersion | default .Chart.Version }}
 
-api:
-  catalog: "https://api.{{ .Values.argo.clusterDomain }}"
-  appDeploymentManger: "https://api.{{ .Values.argo.clusterDomain }}"
-  appResourceManger: "https://api.{{ .Values.argo.clusterDomain }}"
-  clusterOrch: "https://api.{{ .Values.argo.clusterDomain }}"
-  infraManager: "https://api.{{ .Values.argo.clusterDomain }}"
-  metadataBroker: "https://api.{{ .Values.argo.clusterDomain }}"
-  alertManager: "https://alerting-monitor.{{ .Values.argo.clusterDomain }}"
-  tenantManager: "https://api.{{ .Values.argo.clusterDomain }}"
-
 {{- with .Values.argo.resources.webUiInfra }}
 resources:
   {{- toYaml . | nindent 2 }}
