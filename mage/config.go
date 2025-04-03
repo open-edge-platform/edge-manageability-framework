@@ -5,7 +5,9 @@
 package mage
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -157,12 +159,6 @@ func parseClusterValues(clusterConfigPath string) (map[string]interface{}, error
 
 // Create a cluster deployment configuration from a cluster values file.
 func (Config) usePreset(clusterPresetFile string) (string, error) {
-	clusterTemplatePath := "orch-configs/templates/cluster.tpl"
-	clusterTmpl, err := template.ParseFiles(clusterTemplatePath)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse template: %w", err)
-	}
-
 	clusterValues, err := os.ReadFile(clusterPresetFile)
 	if err != nil {
 		return "", fmt.Errorf("failed to read cluster preset file: %w", err)
@@ -215,7 +211,8 @@ func (Config) usePreset(clusterPresetFile string) (string, error) {
 	}
 	defer outputFile.Close()
 
-	if err := clusterTmpl.Execute(outputFile, presetDataValues); err != nil {
+	clusterTemplatePath := "orch-configs/templates/cluster.tpl"
+	if err := renderTemplate(clusterTemplatePath, presetDataValues, outputFile); err != nil {
 		return "", fmt.Errorf("failed to render cluster template: %w", err)
 	}
 
@@ -256,6 +253,30 @@ func (Config) usePreset(clusterPresetFile string) (string, error) {
 	}
 
 	return clusterName, nil
+}
+
+func renderTemplate(templatePath string, vars any, out io.Writer) error {
+	tmpl := template.New("template").Funcs(template.FuncMap{
+		"indent": func(spaces int, v string) string {
+			prefix := strings.Repeat(" ", spaces)
+			return prefix + strings.ReplaceAll(v, "\n", "\n"+prefix)
+		},
+	})
+	tmpl, err := tmpl.ParseFiles(templatePath)
+	if err != nil {
+		return fmt.Errorf("failed to parse template: %w", err)
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.ExecuteTemplate(&buf, filepath.Base(templatePath), vars); err != nil {
+		return fmt.Errorf("failed to execute template: %w", err)
+	}
+
+	if _, err := out.Write(buf.Bytes()); err != nil {
+		return fmt.Errorf("failed to write output: %w", err)
+	}
+
+	return nil
 }
 
 // Create a cluster values file using the cluster configuration interface.
