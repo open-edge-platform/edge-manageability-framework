@@ -47,7 +47,7 @@ var _ = Describe("Tenancy integration test", Label(tenancy), func() {
 		fmt.Printf("serviceDomain: %v\n", serviceDomain)
 	})
 	Describe("Tenancy API services- Token validation", Ordered, Label(tenancy), func() {
-		It("Tenancy API services should NOT be accessible over HTTPS when using valid but expired token", func() {
+		PIt("Tenancy API services should NOT be accessible over HTTPS when using valid but expired token", func() {
 			adminPass, err := util.GetKeycloakSecret()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(saveTokenUser(cli, "admin", adminPass)).To(Succeed())

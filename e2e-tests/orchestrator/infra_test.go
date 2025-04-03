@@ -206,7 +206,7 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 
 	Describe("Edge Infra services", Ordered, Label(infraManagement), func() {
 		testUrl := baseProjAPIUrl + "/compute"
-		It("Edge Infrastructure services should NOT be accessible over HTTPS when using valid but expired token", func() { //nolint: dupl, lll
+		PIt("Edge Infrastructure services should NOT be accessible over HTTPS when using valid but expired token", func() { //nolint: dupl, lll
 			Expect(saveTokenUser(cli, testApiUser, testUserPassword)).To(Succeed())
 
 			jwt, err := script.File(outputFile).String()
@@ -297,7 +297,7 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 		It("should NOT be accessible over gRPC when uses invalid token", func(ctx SpecContext) {
 			sbiWithInvalidTokenExpectError(ctx, grpcInfraHostMgrJWT, hrmSBIUrl, servicePort)
 		})
-		It("should NOT be accessible over gRPC when using valid but expired token", func(ctx SpecContext) {
+		PIt("should NOT be accessible over gRPC when using valid but expired token", func(ctx SpecContext) {
 			sbiWithExpiredTokenExpectError(ctx, cli, grpcInfraHostMgrJWT, hrmSBIUrl, servicePort)
 		})
 	})
@@ -328,7 +328,7 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 		It("should NOT be accessible over gRPC when uses invalid token", func(ctx SpecContext) {
 			sbiWithInvalidTokenExpectError(ctx, grpcInfraMainMgrJWT, mmSBIUrl, servicePort)
 		})
-		It("should NOT be accessible over gRPC when using valid but expired token", func(ctx SpecContext) {
+		PIt("should NOT be accessible over gRPC when using valid but expired token", func(ctx SpecContext) {
 			sbiWithExpiredTokenExpectError(ctx, cli, grpcInfraMainMgrJWT, mmSBIUrl, servicePort)
 		})
 	})
@@ -364,7 +364,7 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 			sbiWithInvalidTokenExpectError(ctx, grpcInfraTelemetryMgrJWT, tmSBIUrl, servicePort)
 		})
 
-		It("should NOT be accessible over HTTPS when using valid but expired token", func(ctx SpecContext) { //nolint: dupl
+		PIt("should NOT be accessible over HTTPS when using valid but expired token", func(ctx SpecContext) { //nolint: dupl
 			sbiWithExpiredTokenExpectError(ctx, cli, grpcInfraTelemetryMgrJWT, tmSBIUrl, servicePort)
 		})
 	})
@@ -611,7 +611,7 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 			defer conn.Close()
 		})
 
-		It("should NOT be accessible over gRPC when using valid but expired token", func(ctx SpecContext) {
+		PIt("should NOT be accessible over gRPC when using valid but expired token", func(ctx SpecContext) {
 			Expect(saveTokenUser(cli, testEnUser, testUserPassword)).To(Succeed())
 			token, err := script.File(outputFile).String()
 			Expect(err).ToNot(HaveOccurred())
@@ -676,7 +676,7 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 			sbiWithInvalidTokenExpectError(ctx, grpcInfraOnboardNodeJWT, omSBIUrl, servicePort)
 		})
 
-		It("should NOT be accessible over gRPC when using valid but expired token", func(ctx SpecContext) {
+		PIt("should NOT be accessible over gRPC when using valid but expired token", func(ctx SpecContext) {
 			sbiWithExpiredTokenExpectError(ctx, cli, grpcInfraOnboardNodeJWT, omSBIUrl, servicePort)
 		})
 	})

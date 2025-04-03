@@ -317,6 +317,7 @@ func (Test) e2e() error {
 		"-randomize-all",
 		"-randomize-suites",
 		"--label-filter=orchestrator-integration",
+		"--repeat=4",
 		filepath.Join("e2e-tests", "orchestrator"),
 	)
 }
