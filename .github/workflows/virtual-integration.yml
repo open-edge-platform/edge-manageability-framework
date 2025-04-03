@@ -147,7 +147,7 @@ jobs:
       - name: Set up git credentials
         shell: bash
         run: |
-          echo "GOPRIVATE=github.com/open-edge-platform,github.com/intel" >> $GITHUB_ENV
+          echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
           git config --global url."https://${{ secrets.SYS_ORCH_GITHUB }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Setup asdf and install dependencies
@@ -171,7 +171,7 @@ jobs:
       - name: Set up git credentials
         shell: bash
         run: |
-          echo "GOPRIVATE=github.com/open-edge-platform,github.com/intel" >> $GITHUB_ENV
+          echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
           git config --global url."https://${{ secrets.SYS_ORCH_GITHUB }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Setup asdf and install dependencies
@@ -195,7 +195,7 @@ jobs:
       - name: Set up git credentials
         shell: bash
         run: |
-          echo "GOPRIVATE=github.com/open-edge-platform,github.com/intel" >> $GITHUB_ENV
+          echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
           git config --global url."https://${{ secrets.SYS_ORCH_GITHUB }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Setup asdf and install dependencies
@@ -218,7 +218,7 @@ jobs:
       - name: Set up git credentials
         shell: bash
         run: |
-          echo "GOPRIVATE=github.com/open-edge-platform,github.com/intel" >> $GITHUB_ENV
+          echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
           git config --global url."https://${{ secrets.SYS_ORCH_GITHUB }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Setup asdf and install dependencies
@@ -241,7 +241,7 @@ jobs:
       - name: Set up git credentials
         shell: bash
         run: |
-          echo "GOPRIVATE=github.com/open-edge-platform,github.com/intel" >> $GITHUB_ENV
+          echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
           git config --global url."https://${{ secrets.SYS_ORCH_GITHUB }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Setup asdf and install dependencies
@@ -264,7 +264,7 @@ jobs:
       - name: Set up git credentials
         shell: bash
         run: |
-          echo "GOPRIVATE=github.com/open-edge-platform,github.com/intel" >> $GITHUB_ENV
+          echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
           git config --global url."https://${{ secrets.SYS_ORCH_GITHUB }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Setup asdf and install dependencies
@@ -294,7 +294,7 @@ jobs:
       - name: Set up git credentials
         shell: bash
         run: |
-          echo "GOPRIVATE=github.com/open-edge-platform,github.com/intel" >> $GITHUB_ENV
+          echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
           git config --global url."https://${{ secrets.SYS_ORCH_GITHUB }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Setup asdf and install dependencies
@@ -346,7 +346,7 @@ jobs:
       - name: Set up git credentials
         shell: bash
         run: |
-          echo "GOPRIVATE=github.com/open-edge-platform,github.com/intel" >> $GITHUB_ENV
+          echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
           git config --global url."https://${{ secrets.SYS_ORCH_GITHUB }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Setup asdf and install dependencies
@@ -439,10 +439,11 @@ jobs:
       - name: Set up git credentials
         shell: bash
         run: |
-          echo "GOPRIVATE=github.com/open-edge-platform,github.com/intel" >> $GITHUB_ENV
+          echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
           git config --global url."https://${{ secrets.SYS_ORCH_GITHUB }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Setup asdf and install dependencies
+        id: install-deps
         uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main
 
       - name: Get current git hash of the PR
@@ -639,7 +640,7 @@ jobs:
       - name: Set up git credentials
         shell: bash
         run: |
-          echo "GOPRIVATE=github.com/open-edge-platform,github.com/intel" >> $GITHUB_ENV
+          echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
           git config --global url."https://${{ secrets.SYS_ORCH_GITHUB }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Setup asdf and install dependencies
