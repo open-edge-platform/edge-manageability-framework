@@ -17,7 +17,7 @@ import (
 	"strings"
 	"time"
 
-	invapi "github.com/intel/infra-core/api/pkg/api/v0"
+	invapi "github.com/open-edge-platform/infra-core/api/pkg/api/v0"
 )
 
 const (
