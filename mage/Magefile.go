@@ -1344,6 +1344,19 @@ func (t Test) E2eAlertsObservability(ctx context.Context) error {
 	return t.e2eAlertsObservability()
 }
 
+// Test end-to-end functionality of observability alerts (extended, includes long-duration tests).
+func (t Test) E2eAlertsObservabilityExtended(ctx context.Context) error {
+	mg.SerialCtxDeps(
+		ctx,
+		Gen{}.OrchCA,
+		Deploy{}.OrchCA,
+		Router{}.Stop,
+		Router{}.Start,
+	)
+
+	return t.e2eAlertsObservabilityExtended()
+}
+
 // Test end-to-end functionality of SRE Exporter.
 func (t Test) E2eSreObservability(ctx context.Context) error {
 	mg.SerialCtxDeps(
