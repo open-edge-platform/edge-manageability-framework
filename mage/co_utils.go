@@ -11,8 +11,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"os/exec"
-	"time"
 
 	"github.com/bitfield/script"
 )
@@ -20,17 +18,12 @@ import (
 const (
 	baselineClusterTemplatePath = "./node/capi/baseline.json"
 	defaultTemplate             = "baseline-v2.0.0"
-	portForwardAddress          = "0.0.0.0"
-	portForwardService          = "svc/cluster-manager"
-	portForwardServiceNamespace = "orch-cluster"
-	portForwardLocalPort        = "8080"
-	portForwardRemotePort       = "8080"
-	clusterTemplateURL          = "http://127.0.0.1:8080/v2/templates"
-	clusterCreateURL            = "http://127.0.0.1:8080/v2/clusters"
+	clusterApiBaseURLTemplate   = "https://api.%s/v2/projects/%s"
 )
 
 var (
 	edgeMgrUser = getEnv("EDGE_MGR_USER", "sample-project-edge-mgr")
+	project     = getEnv("PROJECT", "sample-project")
 )
 
 // TODO replace with open-edge-platform/cluster-manager types
@@ -70,24 +63,14 @@ func createCoreDNSConfigMap() error {
 	return nil
 }
 
-// creates default cluster template from file in given namespace <namespace>
-func (cu CoUtils) CreateDefaultClusterTemplate(namespace string) error {
+func (cu CoUtils) CreateDefaultClusterTemplate() error {
 	fmt.Println("Create CoreDNS ConfigMap referenced by cluster template")
 	err := createCoreDNSConfigMap()
 	if err != nil {
 		return err
 	}
 
-	fmt.Println("Create default cluster template in namespace:", namespace)
-	cmd, err := portForwardToECM()
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if err := killportForwardToECM(cmd); err != nil {
-			fmt.Println("Error killing port-forward process:", err)
-		}
-	}()
+	fmt.Println("Create default cluster template in project:", project)
 
 	data, err := os.ReadFile(baselineClusterTemplatePath)
 	if err != nil {
@@ -95,7 +78,9 @@ func (cu CoUtils) CreateDefaultClusterTemplate(namespace string) error {
 	}
 
 	fmt.Println("POST request to cluster-manager")
-	resp, err := makeAuthorizedRequest("POST", clusterTemplateURL, namespace, data, &http.Client{})
+	path := "/templates?default=false"
+	url := fmt.Sprintf(clusterApiBaseURLTemplate+path, serviceDomain, project)
+	resp, err := makeAuthorizedRequest("POST", url, data, &http.Client{})
 	if err != nil {
 		return err
 	}
@@ -105,10 +90,10 @@ func (cu CoUtils) CreateDefaultClusterTemplate(namespace string) error {
 	fmt.Println(string(body))
 
 	if resp.StatusCode != http.StatusCreated {
-		return fmt.Errorf("failed to create default template in namespace '%s': %s", namespace, string(body))
+		return fmt.Errorf("failed to create default template for project '%s': %s", project, string(body))
 	}
 
-	err = cu.SetDefaultTemplate("baseline", "v2.0.0", namespace)
+	err = cu.SetDefaultTemplate("baseline", "v2.0.0")
 	if err != nil {
 		return err
 	}
@@ -116,19 +101,8 @@ func (cu CoUtils) CreateDefaultClusterTemplate(namespace string) error {
 	return nil
 }
 
-// creates single node cluster and with given name, nodeid and namespace <cluster-name> <node-id> <namespace>
-func (CoUtils) CreateCluster(clusterName, nodeGUID, namespace string) error {
-	fmt.Println("Create cluster with name:", clusterName, "and node id:", nodeGUID, "in namespace:", namespace)
-
-	cmd, err := portForwardToECM()
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if err := killportForwardToECM(cmd); err != nil {
-			fmt.Println("Error killing port-forward process:", err)
-		}
-	}()
+func (CoUtils) CreateCluster(clusterName, nodeGUID string) error {
+	fmt.Println("Create cluster with name:", clusterName, "and node id:", nodeGUID, "in project:", project)
 
 	data, err := fillClusterConfig(clusterName, defaultTemplate, nodeGUID)
 	if err != nil {
@@ -137,7 +111,9 @@ func (CoUtils) CreateCluster(clusterName, nodeGUID, namespace string) error {
 
 	fmt.Println(string(data))
 	fmt.Println("POST request to cluster-manager")
-	resp, err := makeAuthorizedRequest("POST", clusterCreateURL, namespace, data, &http.Client{})
+	path := "/clusters"
+	url := fmt.Sprintf(clusterApiBaseURLTemplate+path, serviceDomain, project)
+	resp, err := makeAuthorizedRequest("POST", url, data, &http.Client{})
 	if err != nil {
 		return err
 	}
@@ -147,26 +123,18 @@ func (CoUtils) CreateCluster(clusterName, nodeGUID, namespace string) error {
 	fmt.Println(string(body))
 
 	if resp.StatusCode != http.StatusCreated {
-		return fmt.Errorf("failed to create cluster %s in namespace '%s': %s", clusterName, namespace, string(body))
+		return fmt.Errorf("failed to create cluster %s in project '%s': %s", clusterName, project, string(body))
 	}
 
 	return nil
 }
 
-// deletes cluster with given name in given namespace <cluster-name> <namespace>
-func (CoUtils) DeleteCluster(clusterName, namespace string) error {
-	cmd, err := portForwardToECM()
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if err := killportForwardToECM(cmd); err != nil {
-			fmt.Println("Error killing port-forward process:", err)
-		}
-	}()
+func (CoUtils) DeleteCluster(clusterName string) error {
+	fmt.Println("Delete cluster with name:", clusterName, "in project:", project)
 
-	deleteUrl := fmt.Sprintf("%s/%s", clusterCreateURL, clusterName)
-	resp, err := makeAuthorizedRequest("DELETE", deleteUrl, namespace, nil, &http.Client{})
+	path := "/clusters/" + clusterName
+	url := fmt.Sprintf(clusterApiBaseURLTemplate+path, serviceDomain, project)
+	resp, err := makeAuthorizedRequest("DELETE", url, nil, &http.Client{})
 	if err != nil {
 		return err
 	}
@@ -176,24 +144,14 @@ func (CoUtils) DeleteCluster(clusterName, namespace string) error {
 	fmt.Println(string(body))
 
 	if resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("failed to delete cluster %s in namespace '%s': %s", clusterName, namespace, string(body))
+		return fmt.Errorf("failed to delete cluster %s in project '%s': %s", clusterName, project, string(body))
 	}
 
 	return nil
 }
 
-// sets default template in given namespace <template-name> <template-version> <namespace>
-func (CoUtils) SetDefaultTemplate(templateName, templateVersion, namespace string) error {
-	fmt.Printf("Set template %s in namespace %s as default\n", templateName, namespace)
-	cmd, err := portForwardToECM()
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if err := killportForwardToECM(cmd); err != nil {
-			fmt.Println("Error killing port-forward process:", err)
-		}
-	}()
+func (CoUtils) SetDefaultTemplate(templateName, templateVersion string) error {
+	fmt.Printf("Set template %s in project %s as default\n", templateName, project)
 
 	reqBody := map[string]string{
 		"name":    templateName,
@@ -205,8 +163,9 @@ func (CoUtils) SetDefaultTemplate(templateName, templateVersion, namespace strin
 		return err
 	}
 
-	putUrl := fmt.Sprintf("%s/%s/default", clusterTemplateURL, templateName)
-	resp, err := makeAuthorizedRequest("PUT", putUrl, namespace, data, &http.Client{})
+	path := fmt.Sprintf("/%s/default", templateName)
+	url := fmt.Sprintf(clusterApiBaseURLTemplate+path, serviceDomain, project)
+	resp, err := makeAuthorizedRequest("PUT", url, data, &http.Client{})
 	if err != nil {
 		return err
 	}
@@ -216,27 +175,10 @@ func (CoUtils) SetDefaultTemplate(templateName, templateVersion, namespace strin
 	fmt.Println(string(body))
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to set template %s as default in namespace '%s': %s", templateName, namespace, string(body))
+		return fmt.Errorf("failed to set template %s as default in project '%s': %s", templateName, project, string(body))
 	}
 
-	fmt.Printf("Template %s set as default in namespace %s\n", templateName, namespace)
-	return nil
-}
-
-func portForwardToECM() (*exec.Cmd, error) {
-	fmt.Println("port-forward to cluster-manager")
-	cmd := exec.Command("kubectl", "port-forward", "-n", portForwardServiceNamespace, portForwardService, fmt.Sprintf("%s:%s", portForwardLocalPort, portForwardRemotePort), "--address", portForwardAddress)
-	err := cmd.Start()
-	time.Sleep(5 * time.Second) // Give some time for port-forwarding to establish
-
-	return cmd, err
-}
-
-func killportForwardToECM(cmd *exec.Cmd) error {
-	fmt.Println("kill process that port-forwards network to cluster-manager")
-	if cmd != nil && cmd.Process != nil {
-		return cmd.Process.Kill()
-	}
+	fmt.Printf("Template %s set as default in project %s\n", templateName, project)
 	return nil
 }
 
@@ -283,7 +225,7 @@ func getEnv(key, fallback string) string {
 	return fallback
 }
 
-func makeAuthorizedRequest(method, url, namespace string, body []byte, cli *http.Client) (*http.Response, error) {
+func makeAuthorizedRequest(method, url string, body []byte, cli *http.Client) (*http.Response, error) {
 	req, err := http.NewRequest(method, url, bytes.NewBuffer(body))
 	if err != nil {
 		return nil, err
@@ -295,7 +237,6 @@ func makeAuthorizedRequest(method, url, namespace string, body []byte, cli *http
 		return nil, err
 	}
 
-	req.Header.Set("Activeprojectid", namespace)
 	req.Header.Add("Authorization", "Bearer "+*token)
 	req.Header.Add("Content-Type", "application/json")
 	return cli.Do(req)
