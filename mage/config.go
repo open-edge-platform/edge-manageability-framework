@@ -261,6 +261,13 @@ func renderTemplate(templatePath string, vars any, out io.Writer) error {
 			prefix := strings.Repeat(" ", spaces)
 			return prefix + strings.ReplaceAll(v, "\n", "\n"+prefix)
 		},
+		"toYaml": func(v interface{}) (string, error) {
+			out, err := yaml.Marshal(v)
+			if err != nil {
+				return "", err
+			}
+			return string(out), nil
+		},
 	})
 	tmpl, err := tmpl.ParseFiles(templatePath)
 	if err != nil {

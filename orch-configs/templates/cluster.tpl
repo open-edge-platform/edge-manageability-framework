@@ -53,6 +53,13 @@ root:
 {{- end }}
     - orch-configs/profiles/resource-default.yaml
     - orch-configs/clusters/{{ .Values.name }}.yaml
+    # # rate limit is applicable to each cluster.
+    # # please see https://doc.traefik.io/traefik/middlewares/http/ratelimit/
+    # # if you enable default traefik rate limit, do not specify custom rate limit
+{{- if .Values.enableDefaultTraefikRateLimit }}
+    - orch-configs/profiles/default-traefik-rate-limit.yaml
+{{- end }}
+
 
 # Values applied to both root app and shared among all child apps
 argo:
@@ -99,9 +106,9 @@ argo:
     # region: ""
     # account: ""
 {{- end }}
-
   # # rate limit is applicable to each cluster.
   # # please see https://doc.traefik.io/traefik/middlewares/http/ratelimit/
+  # # if you specify custom traefik rate limit, do not enable the default one.
   # traefik:
   #   rateLimit:
   #     # When rateLimit section is not specified or average is set to 0 (default setting), rate limiting will be disabled.
@@ -116,6 +123,10 @@ argo:
   #     # and therefore cannot be used to deactivate rate limiting for some IPs.
   #     excludedIps:
   #       - 10.244.0.1
+{{- if .Values.traefik }}
+  traefik:
+{{ toYaml .Values.traefik | indent 4 }}
+{{- end }}
 
 orchestratorDeployment:
   targetCluster: {{ .Values.targetCluster }}
