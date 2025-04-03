@@ -540,21 +540,17 @@ jobs:
         run: |
           mage test:e2eOrchObservability
 
-      #######################################################################
-      # TODO: Enable these tests once the ENIC metrics are available
-      # Bugfix: 24968 Metrics from ENiC are not present in orchestrator.
-      #######################################################################
-      # - name: "Test Observability EdgeNode Stack"
-      #   env:
-      #     ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-      #   run: |
-      #     mage test:e2eENObservability
+      - name: "Test Observability EdgeNode Stack"
+        env:
+          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+        run: |
+          mage test:e2eENObservability
 
-      # - name: "Test Observability Alerts"
-      #   env:
-      #     ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-      #   run: |
-      #     mage test:e2eAlertsObservability
+      - name: "Test Observability Alerts"
+        env:
+          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+        run: |
+          mage test:e2eAlertsObservability
 
       - name: Wait for cluster agent to be ready
         run: |
