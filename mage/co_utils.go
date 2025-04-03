@@ -231,6 +231,9 @@ func makeAuthorizedRequest(method, url string, body []byte, cli *http.Client) (*
 		return nil, err
 	}
 	defaultOrchPassword, err := GetDefaultOrchPassword()
+	if err != nil {
+		return nil, err
+	}
 	keycloakSecret := getEnv("KEYCLOAK_SECRET", defaultOrchPassword)
 	token, err := GetApiToken(cli, edgeMgrUser, keycloakSecret)
 	if err != nil {
