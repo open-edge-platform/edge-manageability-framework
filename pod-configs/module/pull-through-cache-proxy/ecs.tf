@@ -260,7 +260,7 @@ resource "aws_cloudwatch_log_group" "pull_through_cache_proxy" {
 }
 
 resource "aws_security_group" "ecs_service" {
-  name   = var.name
+  name   = "${var.name}-ptcp-ecs"
   vpc_id = var.vpc_id
 }
 
