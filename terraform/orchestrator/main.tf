@@ -79,6 +79,10 @@ resource "local_file" "cloud_init_networking_data_file" {
   }
 }
 
+data "local_file" "version_file" {
+  filename = "${var.working_directory}/../../VERSION"
+}
+
 resource "libvirt_cloudinit_disk" "cloud_init_config" {
   name           = "commoninit.iso"
   pool           = var.storage_pool
@@ -231,10 +235,65 @@ resource "null_resource" "copy_files" {
   }
 }
 
+resource "null_resource" "copy_local_orch_installer" {
+
+  count = var.use_local_build_artifact ? 1 : 0
+
+  depends_on = [
+    local_file.env_data_file,
+    null_resource.resize_and_restart_vm
+  ]
+
+  connection {
+    type     = "ssh"
+    host     = local.vmnet_ip0
+    port     = var.vm_ssh_port
+    user     = var.vm_ssh_user
+    password = var.vm_ssh_password
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "mkdir /home/ubuntu/installers",
+      "mkdir /home/ubuntu/repo_archives",
+    ]
+  }
+
+  provisioner "file" {
+    source      = "../../${var.working_directory}/${var.local_installers_path}/onprem-argocd-installer_${var.deploy_tag}_amd64.deb"
+    destination = "/home/ubuntu/installers/onprem-argocd-installer_${var.deploy_tag}_amd64.deb"
+  }
+
+  provisioner "file" {
+    source      = "../../${var.working_directory}/${var.local_installers_path}/onprem-config-installer_${var.deploy_tag}_amd64.deb"
+    destination = "/home/ubuntu/installers/onprem-config-installer_${var.deploy_tag}_amd64.deb"
+  }
+
+  provisioner "file" {
+    source      = "../../${var.working_directory}/${var.local_installers_path}/onprem-gitea-installer_${var.deploy_tag}_amd64.deb"
+    destination = "/home/ubuntu/installers/onprem-gitea-installer_${var.deploy_tag}_amd64.deb"
+  }
+
+  provisioner "file" {
+    source      = "../../${var.working_directory}/${var.local_installers_path}/onprem-ke-installer_${var.deploy_tag}_amd64.deb"
+    destination = "/home/ubuntu/installers/onprem-ke-installer_${var.deploy_tag}_amd64.deb"
+  }
+
+  provisioner "file" {
+    source      = "../../${var.working_directory}/${var.local_installers_path}/onprem-orch-installer_${var.deploy_tag}_amd64.deb"
+    destination = "/home/ubuntu/installers/onprem-orch-installer_${var.deploy_tag}_amd64.deb"
+  }
+
+  provisioner "file" {
+    source      = "../../${var.working_directory}/${var.local_repo_archives_path}/onpremFull_edge-manageability-framework_${split("\n",data.local_file.version_file.content)[0]}.tgz"
+    destination = "/home/ubuntu/repo_archives/onpremFull_edge-manageability-framework_${split("\n",data.local_file.version_file.content)[0]}.tgz"
+  }
+}
+
 resource "null_resource" "write_installer_config" {
 
-  // Disable this resource if auto-install is disabled
-  count = var.enable_auto_install ? 1 : 0
+  // Enable this resource if auto-install is enabled and not using local build artifacts
+  count = var.enable_auto_install && !var.use_local_build_artifact ? 1 : 0
 
   depends_on = [
     null_resource.copy_files
@@ -261,8 +320,8 @@ resource "null_resource" "write_installer_config" {
 
 resource "null_resource" "set_proxy_config" {
 
-  // Only run this if a proxy is set
-  count = local.is_proxy_set ? 1 : 0
+  // Enable this resource if auto-install is enabled and a proxy is set
+  count = var.enable_auto_install && local.is_proxy_set ? 1 : 0
 
   depends_on = [
     null_resource.copy_files,
@@ -288,7 +347,7 @@ resource "null_resource" "set_proxy_config" {
 
 resource "null_resource" "exec_installer" {
 
-  // Disable this resource if auto-install is disabled
+  // Enable this resource if auto-install if enabled
   count = var.enable_auto_install ? 1 : 0
 
   depends_on = [
