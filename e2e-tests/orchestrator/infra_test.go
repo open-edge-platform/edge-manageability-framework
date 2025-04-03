@@ -31,6 +31,7 @@ import (
 	onboarding_manager "github.com/open-edge-platform/edge-manageability-framework/e2e-tests/orchestrator/onboarding_manager"
 	"github.com/open-edge-platform/edge-manageability-framework/internal/retry"
 	util "github.com/open-edge-platform/edge-manageability-framework/mage"
+	pb_am "github.com/open-edge-platform/infra-managers/attestationstatus/pkg/api/attestmgr/v1"
 	pb_hm "github.com/open-edge-platform/infra-managers/host/pkg/api/hostmgr/proto"
 	pb_mm "github.com/open-edge-platform/infra-managers/maintenance/pkg/api/maintmgr/v1"
 	pb_tm "github.com/open-edge-platform/infra-managers/telemetry/pkg/api/telemetrymgr/v1"
@@ -366,6 +367,42 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 
 		It("should NOT be accessible over HTTPS when using valid but expired token", func(ctx SpecContext) { //nolint: dupl
 			sbiWithExpiredTokenExpectError(ctx, cli, grpcInfraTelemetryMgrJWT, tmSBIUrl, servicePort)
+		})
+	})
+
+	Describe("Attestation Status Manager service", Ordered, Label(infraManagement), func() {
+		amSBIUrl := "attest-node." + serviceDomain
+
+		It("should be accessible over HTTPS when using valid token", func(ctx SpecContext) {
+			enToken, err := getTestENToken(cli, testUserPassword)
+			Expect(err).ToNot(HaveOccurred())
+
+			reqCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
+			defer cancel()
+
+			err = grpcAttestStatusMgrJWT(
+				reqCtx,
+				amSBIUrl,
+				servicePort,
+				*enToken,
+			)
+			Expect(status.Code(err)).To(Equal(codes.NotFound)) // Getting a gRPC response back is good enough
+		})
+
+		It("should NOT be accessible over gRPC when using non-EN token", func(ctx SpecContext) {
+			sbiWithAPITokenExpectError(ctx, cli, grpcAttestStatusMgrJWT, amSBIUrl, servicePort, testUserPassword)
+		})
+
+		It("should NOT be accessible over HTTPS when using no token", func(ctx SpecContext) {
+			sbiWithNoTokenExpectError(ctx, grpcAttestStatusMgrJWT, amSBIUrl, servicePort)
+		})
+
+		It("should NOT be accessible over HTTPS when using invalid token", func(ctx SpecContext) {
+			sbiWithInvalidTokenExpectError(ctx, grpcAttestStatusMgrJWT, amSBIUrl, servicePort)
+		})
+
+		It("should NOT be accessible over HTTPS when using valid but expired token", func(ctx SpecContext) { //nolint: dupl
+			sbiWithExpiredTokenExpectError(ctx, cli, grpcAttestStatusMgrJWT, amSBIUrl, servicePort)
 		})
 	})
 
@@ -856,6 +893,43 @@ func grpcInfraMainMgrJWT(ctx context.Context, address string, port int, token st
 			UpdateStatus: &pb_mm.UpdateStatus{
 				StatusType: pb_mm.UpdateStatus_STATUS_TYPE_UP_TO_DATE,
 			},
+		},
+	); err != nil {
+		return fmt.Errorf("could not call grpc endpoint for server %s: %w", target, err)
+	}
+	return nil
+}
+
+// last param is needed to keep the signature of the function same as other grpcInfra* functions
+func grpcAttestStatusMgrJWT(ctx context.Context, address string, port int, token string, _ ...string) error {
+	target := fmt.Sprintf("%s:%d", address, port)
+
+	conn, err := grpc.DialContext(
+		ctx,
+		target,
+		grpc.WithBlock(),
+		grpc.WithTransportCredentials(
+			credentials.NewClientTLSFromCert(nil, ""), // Use host's root CA set to establish trust
+		),
+		grpc.WithPerRPCCredentials(
+			oauth.TokenSource{
+				TokenSource: oauth2.StaticTokenSource(
+					&oauth2.Token{AccessToken: token}, // Send the access token as part of the HTTP Authorization header
+				),
+			},
+		),
+	)
+	if err != nil {
+		return fmt.Errorf("could not dial server %s: %w", target, err)
+	}
+	defer conn.Close()
+
+	cli := pb_am.NewAttestationStatusMgrServiceClient(conn)
+	if _, err := cli.UpdateInstanceAttestationStatusByHostGuid(
+		ctx,
+		&pb_am.UpdateInstanceAttestationStatusByHostGuidRequest{
+			HostGuid:          uuid.New().String(),
+			AttestationStatus: pb_am.AttestationStatus_ATTESTATION_STATUS_UNSPECIFIED,
 		},
 	); err != nil {
 		return fmt.Errorf("could not call grpc endpoint for server %s: %w", target, err)
