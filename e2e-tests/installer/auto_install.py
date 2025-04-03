@@ -360,6 +360,7 @@ class AutoInstall:
         self.socks_proxy_params = ""
         self.enable_cache_registry = "--enable-cache-registry"
         self.jumphost_allow_list = ""
+        self.eks_internal_params = ""
 
         if self.internal:
             self.internal_params = "--internal"
