@@ -19,9 +19,11 @@ M                := $(MAKEDIR)/milestones
 EDGE_MANAGEABILITY_FRAMEWORK_DIR  ?= ${HOME}/src/edge-manageability-framework
 ###
 
-CLUSTER_CONFIG=${HOME}/src/edge-manageability-framework/orch-configsclusters/${CLUSTER_NAME}.yaml
+CLUSTER_CONFIG=${HOME}/src/edge-manageability-framework/orch-configs/clusters/${CLUSTER_NAME}.yaml
 
 INTEL_HARBOR_CACERT := ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/mage/intel-harbor-ca.crt
+
+SAVE_DIR := ${HOME}/pod-configs/SAVEME
 
 ORCH_ISTIO_NAMESPACES := orch-infra orch-iam orch-app orch-cluster orch-ui orch-platform orch-harbor orch-gateway orch-sre orch-database
 
@@ -46,9 +48,9 @@ endif
 
 ## TBD: This shouldn't be a flag. It should be a parameter containing a reference to a proxy configuration that can be used
 ##      to render this bootstrap file from a template.
-ifeq (${USE_PROXY},true)
-    # Commands to run if USE_REPO_PROXY is true
-    ## ARGO_PROXY := --values ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/bootstrap/internal-proxy.yamln/main
+ifeq (${USE_ARGO_PROXY},true)
+    # Commands to run if USE_ARGO_PROXY is true
+    ARGO_PROXY := --values ${SAVE_DIR}/proxy-argocd.yaml
 endif
 
 ifeq (${USE_TEST_ADMIN},true)
@@ -117,7 +119,7 @@ ${M}/argocd-ready: | ${M}/argocd-release
 
 ${M}/deploy-orch: | ${M}/argocd-ready
 	@[ -z "${TARGET_ENV}" ] && echo "*** TARGET_ENV not set" && exit 1 || true
-	helm upgrade --install root-app ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/argocd/root-app -n ${TARGET_ENV} -f ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/orch-configsclusters/${TARGET_ENV}.yaml --create-namespace
+	helm upgrade --install root-app ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/argocd/root-app -n ${TARGET_ENV} -f ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/orch-configs/clusters/${TARGET_ENV}.yaml --create-namespace
 	touch $@
 
 install: ${M}/deploy-orch ## Install the Edge Orchestrator software
