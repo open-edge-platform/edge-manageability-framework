@@ -24,7 +24,7 @@ The [orch-utils](https://github.com/open-edge-platform/orch-utils) repository pr
 
 ## Get Started
 
-See the [Documentation](https://github.com/intel) to get started using edge-manageability-framework.
+See the [Documentation](https://github.com/open-edge-platform) to get started using edge-manageability-framework.
 
 TODO: what docs (link above) has the Get Started Guide?
 
@@ -83,7 +83,7 @@ To learn how to contribute to the project, see the [Contributor's Guide](/CONTRI
 ## Community and Support
 
 To learn more about the project, its community, and governance, visit the [Edge Orchestrator
-Community](https://github.com/intel).
+Community](https://github.com/open-edge-platform).
 
 ## License
 
