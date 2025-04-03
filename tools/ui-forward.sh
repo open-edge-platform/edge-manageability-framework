@@ -68,15 +68,15 @@ kill_port_forward() {
 
 CLUSTER_FQDN="kind.internal"
 
-mage deploy:orchLocal dev
-
 # mage argo:login
 
 # disable auto-sync cause we're going to do bad, bad things
 argocd app set dev/root-app --sync-policy none
 
-# force a sync of the UI root app, we don't care about the rest of the apps right now
-argocd app sync dev/web-ui-root
+mage deploy:orchLocal dev
+
+# force sync
+argocd app sync dev/root-app
 
 kubectl get configmaps -n orch-ui web-ui-root-runtime-config -o yaml | yq .data.config
 
