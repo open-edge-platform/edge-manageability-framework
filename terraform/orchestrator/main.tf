@@ -292,7 +292,8 @@ resource "null_resource" "exec_installer" {
   count = var.enable_auto_install ? 1 : 0
 
   depends_on = [
-    null_resource.write_installer_config
+    null_resource.write_installer_config,
+    null_resource.set_proxy_config
   ]
 
   connection {
