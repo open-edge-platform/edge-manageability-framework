@@ -19,7 +19,7 @@ import (
 
 const (
 	baselineClusterTemplatePath = "./node/capi/baseline.json"
-	defaultTemplate             = "baseline-v0.0.1"
+	defaultTemplate             = "baseline-v2.0.0"
 	portForwardAddress          = "0.0.0.0"
 	portForwardService          = "svc/cluster-manager"
 	portForwardServiceNamespace = "orch-cluster"
@@ -27,6 +27,10 @@ const (
 	portForwardRemotePort       = "8080"
 	clusterTemplateURL          = "http://127.0.0.1:8080/v2/templates"
 	clusterCreateURL            = "http://127.0.0.1:8080/v2/clusters"
+)
+
+var (
+	edgeMgrUser = getEnv("EDGE_MGR_USER", "sample-project-edge-mgr")
 )
 
 // TODO replace with open-edge-platform/cluster-manager types
@@ -91,17 +95,7 @@ func (cu CoUtils) CreateDefaultClusterTemplate(namespace string) error {
 	}
 
 	fmt.Println("POST request to cluster-manager")
-	req, err := http.NewRequest("POST", clusterTemplateURL, bytes.NewBuffer(data))
-	if err != nil {
-		return err
-	}
-
-	req.Header.Set("Activeprojectid", namespace)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := makeAuthorizedRequest("POST", clusterTemplateURL, namespace, data, &http.Client{})
 	if err != nil {
 		return err
 	}
@@ -114,7 +108,7 @@ func (cu CoUtils) CreateDefaultClusterTemplate(namespace string) error {
 		return fmt.Errorf("failed to create default template in namespace '%s': %s", namespace, string(body))
 	}
 
-	err = cu.SetDefaultTemplate("baseline", "v0.0.1", namespace)
+	err = cu.SetDefaultTemplate("baseline", "v2.0.0", namespace)
 	if err != nil {
 		return err
 	}
@@ -143,17 +137,7 @@ func (CoUtils) CreateCluster(clusterName, nodeGUID, namespace string) error {
 
 	fmt.Println(string(data))
 	fmt.Println("POST request to cluster-manager")
-	req, err := http.NewRequest("POST", clusterCreateURL, bytes.NewBuffer(data))
-	if err != nil {
-		return err
-	}
-
-	req.Header.Set("Activeprojectid", namespace)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := makeAuthorizedRequest("POST", clusterCreateURL, namespace, data, &http.Client{})
 	if err != nil {
 		return err
 	}
@@ -182,17 +166,7 @@ func (CoUtils) DeleteCluster(clusterName, namespace string) error {
 	}()
 
 	deleteUrl := fmt.Sprintf("%s/%s", clusterCreateURL, clusterName)
-	req, err := http.NewRequest("DELETE", deleteUrl, nil)
-	if err != nil {
-		return err
-	}
-
-	req.Header.Set("Activeprojectid", namespace)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := makeAuthorizedRequest("DELETE", deleteUrl, namespace, nil, &http.Client{})
 	if err != nil {
 		return err
 	}
@@ -232,17 +206,7 @@ func (CoUtils) SetDefaultTemplate(templateName, templateVersion, namespace strin
 	}
 
 	putUrl := fmt.Sprintf("%s/%s/default", clusterTemplateURL, templateName)
-	req, err := http.NewRequest("PUT", putUrl, bytes.NewBuffer(data))
-	if err != nil {
-		return err
-	}
-
-	req.Header.Set("Activeprojectid", namespace)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := makeAuthorizedRequest("PUT", putUrl, namespace, data, &http.Client{})
 	if err != nil {
 		return err
 	}
@@ -310,4 +274,26 @@ func getCoreDNSConfigMap(namespace, gatewayIP string) ([]byte, error) {
 	data = bytes.ReplaceAll(data, []byte("NAMESPACE"), []byte(namespace))
 	data = bytes.ReplaceAll(data, []byte("ORCHESTRATOR_IP"), []byte(gatewayIP))
 	return data, nil
+}
+
+func getEnv(key, fallback string) string {
+	if value, exists := os.LookupEnv(key); exists {
+		return value
+	}
+	return fallback
+}
+
+func makeAuthorizedRequest(method, url, namespace string, body []byte, cli *http.Client) (*http.Response, error) {
+	req, err := http.NewRequest(method, url, bytes.NewBuffer(body))
+	if err != nil {
+		return nil, err
+	}
+	defaultOrchPassword, err := GetDefaultOrchPassword()
+	keycloakSecret := getEnv("KEYCLOAK_SECRET", defaultOrchPassword)
+	token, err := GetApiToken(cli, edgeMgrUser, keycloakSecret)
+
+	req.Header.Set("Activeprojectid", namespace)
+	req.Header.Add("Authorization", "Bearer "+*token)
+	req.Header.Add("Content-Type", "application/json")
+	return cli.Do(req)
 }
