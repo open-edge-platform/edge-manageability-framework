@@ -7,13 +7,13 @@ package mage
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"github.com/bitfield/script"
 	"github.com/magefile/mage/mg"
 	"github.com/magefile/mage/sh"
+	"github.com/open-edge-platform/edge-manageability-framework/mage"
 )
 
 func GetBranchName() (string, error) {
@@ -21,7 +21,7 @@ func GetBranchName() (string, error) {
 	if branchName == "" {
 		output, err := script.Exec("git rev-parse --abbrev-ref HEAD").String()
 		if err != nil {
-			return "", fmt.Errorf("get branch name: %w", err)
+			return "", fmt.Errorf("failed to execute git command to get branch name: %w", err)
 		}
 		branchName = strings.TrimSpace(output)
 	}
@@ -35,48 +35,16 @@ func GetBranchName() (string, error) {
 func GetRepoVersion() (string, error) {
 	contents, err := os.ReadFile("VERSION")
 	if err != nil {
-		return "", fmt.Errorf("read version from 'VERSION' file: %w", err)
+		return "", fmt.Errorf("failed to read 'VERSION' file: %w", err)
 	}
 	return strings.TrimSpace(string(contents)), nil
 }
 
-func GetDebVersion() (string, error) {
-	repoVersion, err := GetRepoVersion()
-	if err != nil {
-		return "", fmt.Errorf("read version from 'VERSION' file: %w", err)
-	}
-
-	// get branch name
-	branchName, err := GetBranchName()
-	if err != nil {
-		return "", fmt.Errorf("get branch name: %w", err)
-	}
-
-	// check if release branch
-	isReleaseBranch := branchName == "main" ||
-		strings.Contains(branchName, "pass-validation") ||
-		strings.HasPrefix(branchName, "release")
-
-	// If release version on release branches, return the version as is
-	if isReleaseBranch && !strings.Contains(repoVersion, "-dev") {
-		return repoVersion, nil // e.g., 3.0.0, 3.0.0-rc1, 3.0.0-n20250306
-	}
-
-	stdout, err := exec.Command("git", "rev-parse", "--short", "HEAD").CombinedOutput()
-	if err != nil {
-		return "", fmt.Errorf("get current git hash: %w", err)
-	}
-	shortHash := strings.TrimSpace(string(stdout))
-
-	// else, return the version with short hash appended
-	return fmt.Sprintf("%s-%s", repoVersion, shortHash), nil // e.g., 3.0.0-dev-7d763f9, 3.0.0-rc1-7d763f9 (in pre-merge CI)
-}
-
 // Returns the DEB package version
 func (Build) DEBVersion() error {
-	version, err := GetDebVersion()
+	version, err := mage.GetDebVersion()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get DEB version: %w", err)
 	}
 
 	fmt.Println(version)
@@ -84,23 +52,13 @@ func (Build) DEBVersion() error {
 	return nil
 }
 
-const giteaPath = "assets/gitea"
-
-const giteaChartVersion = "10.4.0"
-
-const argocdPath = "assets/argo-cd"
-
-const argocdHelmVersion = "7.4.4"
-
-const fpmImageName = "registry-rs.edgeorchestration.intel.com/edge-orch/common/fpm:1.15.1"
-
-const onPremOffline = "offline"
-
-const onPremOnline = "online"
-
-const deployOnlineDirectory = "onprem-ke-installer"
-
-const deployOfflineDirectory = "rke2-installer-airgap"
+const (
+	giteaPath             = "assets/gitea"
+	giteaChartVersion     = "10.4.0"
+	argocdPath            = "assets/argo-cd"
+	argocdHelmVersion     = "7.4.4"
+	deployOnlineDirectory = "onprem-ke-installer"
+)
 
 func compile(path, output string) error {
 	return sh.RunWithV(map[string]string{
@@ -116,23 +74,12 @@ func compile(path, output string) error {
 	)
 }
 
-func (Build) onpremKeInstaller(environment string) error {
-	fmt.Println("Fetch dependencies (if AirGap) and compile onprem-ke-installer executable")
+func (Build) onpremKeInstaller() error {
+	fmt.Println("Compile onprem-ke-installer executable")
 
-	var deployFilePath string
-	switch environment {
-	case onPremOnline:
-		deployFilePath = deployOnlineDirectory
-	case onPremOffline:
-		deployFilePath = deployOfflineDirectory
-	default:
-		return fmt.Errorf("ON_PREM_ENVIRONMENT envirnmental variable not correct! Set to `offline` or `online`")
-	}
+	deployFilePath := deployOnlineDirectory
 
 	mg.SerialDeps(
-		Clean,
-		Prereq{}.GitLFSPull,
-		// Must compile after everything is fetched in order to package dependencies
 		mg.F(
 			compile,
 			filepath.Join(".", "cmd", deployFilePath, "main.go"),
@@ -140,79 +87,35 @@ func (Build) onpremKeInstaller(environment string) error {
 		),
 	)
 
-	// Use the current directory as the build context
-	dir, err := os.Getwd()
+	debVersion, err := mage.GetDebVersion()
 	if err != nil {
-		return fmt.Errorf("get working directory: %w", err)
+		return fmt.Errorf("failed to get DEB version for onprem-ke-installer: %w", err)
 	}
 
-	debVersion, err := GetDebVersion()
-	if err != nil {
-		return fmt.Errorf("get DEB version: %w", err)
-	}
-
-	switch environment {
-	case onPremOnline:
-		fmt.Println("Build onprem-ke-installer package 📦")
-		return sh.RunV(
-			"docker",
-			"run",
-			"--rm",
-			"-u", "0:0", // required to run in CI
-			"-v", fmt.Sprintf("%s:/src", dir),
-			fpmImageName,
-			"-s", "dir",
-			"-t", "deb",
-			"--name", "onprem-ke-installer",
-			"-p", "/src/dist/",
-			"--version", debVersion,
-			"--architecture", "amd64",
-			"--description", "Installs Intel onprem-ke",
-			"--url", "https://github.com/open-edge-platform/edge-manageability-framework/on-prem-installers",
-			"--maintainer", "Intel Corporation",
-			"--after-install", "/src/cmd/onprem-ke-installer/after-install.sh",
-			"--after-remove", "/src/cmd/onprem-ke-installer/after-remove.sh",
-			"--after-upgrade", "/src/cmd/onprem-ke-installer/after-upgrade.sh",
-			"/src/dist/bin/onprem-ke-installer=/usr/bin/onprem-ke-installer",
-			"/src/cmd/onprem-ke-installer/onprem-ke-installer.1=/usr/share/man/man1/onprem-ke-installer.1",
-			"/src/rke2=/tmp/onprem-ke-installer",
-		)
-	case onPremOffline:
-		fmt.Println("Build airgap rke2-installer package 📦")
-		return sh.RunV(
-			"docker",
-			"run",
-			"--rm",
-			"-u", "0:0", // required to run in CI
-			"-v", fmt.Sprintf("%s:/src", dir),
-			fpmImageName,
-			"-s", "dir",
-			"-t", "deb",
-			"--name", "rke2-installer-airgap",
-			"-p", "/src/dist/",
-			"--version", debVersion,
-			"--architecture", "amd64",
-			"--description", "Installs Intel airgap rke2",
-			"--url", "https://github.com/open-edge-platform/edge-manageability-framework/on-prem-installers",
-			"--maintainer", "Intel Corporation",
-			"--after-install", "/src/cmd/rke2-installer-airgap/after-install.sh",
-			"--after-remove", "/src/cmd/rke2-installer-airgap/after-remove.sh",
-			"/src/dist/bin/rke2-installer-airgap=/usr/bin/rke2-installer-airgap",
-			"/src/cmd/rke2-installer-airgap/rke2-installer-airgap.1="+
-				"/usr/share/man/man1/rke2-installer-airgap.1",
-			"/src/assets/rke2=/tmp/rke2-installer-airgap/assets",
-			"/src/rke2=/tmp/rke2-installer-airgap",
-		)
-	default:
-		return fmt.Errorf("ON_PREM_ENVIRONMENT envirnmental variable not correct! Set to `offline` or `online`")
-	}
+	fmt.Println("Build onprem-ke-installer package 📦")
+	return sh.RunV(
+		"fpm",
+		"-s", "dir",
+		"-t", "deb",
+		"--name", "onprem-ke-installer",
+		"-p", "./dist/",
+		"--version", debVersion,
+		"--architecture", "amd64",
+		"--description", "Installs Intel onprem-ke",
+		"--url", "https://github.com/open-edge-platform/edge-manageability-framework/on-prem-installers",
+		"--maintainer", "Intel Corporation",
+		"--after-install", "./cmd/onprem-ke-installer/after-install.sh",
+		"--after-remove", "./cmd/onprem-ke-installer/after-remove.sh",
+		"--after-upgrade", "./cmd/onprem-ke-installer/after-upgrade.sh",
+		"./dist/bin/onprem-ke-installer=/usr/bin/onprem-ke-installer",
+		"./cmd/onprem-ke-installer/onprem-ke-installer.1=/usr/share/man/man1/onprem-ke-installer.1",
+		"./rke2=/tmp/onprem-ke-installer",
+	)
 }
 
 func (Build) osConfigInstaller() error {
-	fmt.Println("Fetch dependencies and compile configuration installer executable")
+	fmt.Println("Compile configuration installer executable")
 	mg.SerialDeps(
-		Clean,
-		// Must compile after everything is fetched in order to package dependencies
 		mg.F(
 			compile,
 			filepath.Join(".", "cmd", "onprem-config-installer", "main.go"),
@@ -220,29 +123,18 @@ func (Build) osConfigInstaller() error {
 		),
 	)
 
-	// Use the current directory as the build context
-	dir, err := os.Getwd()
+	debVersion, err := mage.GetDebVersion()
 	if err != nil {
-		return fmt.Errorf("get working directory: %w", err)
-	}
-
-	debVersion, err := GetDebVersion()
-	if err != nil {
-		return fmt.Errorf("get DEB version: %w", err)
+		return fmt.Errorf("failed to get DEB version for osConfigInstaller: %w", err)
 	}
 
 	fmt.Println("Build onprem-config-installer package 📦")
 	return sh.RunV(
-		"docker",
-		"run",
-		"--rm",
-		"-u", "0:0", // required to run in CI
-		"-v", fmt.Sprintf("%s:/src", dir),
-		fpmImageName,
+		"fpm",
 		"-s", "dir",
 		"-t", "deb",
 		"--name", "onprem-config-installer",
-		"-p", "/src/dist",
+		"-p", "./dist",
 		"-d", "jq,libpq5,apparmor,lvm2,mosquitto,net-tools,ntp,openssh-server", //nolint:misspell
 		"-d", "software-properties-common,tpm2-abrmd,tpm2-tools,unzip",
 		"--version", debVersion,
@@ -250,17 +142,17 @@ func (Build) osConfigInstaller() error {
 		"--description", "OS Configuration Powered By Intel",
 		"--url", "https://github.com/open-edge-platform/edge-manageability-framework/on-prem-installers",
 		"--maintainer", "Intel Corporation",
-		"--after-install", "/src/cmd/onprem-config-installer/after-install.sh",
-		"--after-remove", "/src/cmd/onprem-config-installer/after-remove.sh",
-		"/src/dist/bin/onprem-config-installer=/usr/bin/onprem-config-installer",
-		"/src/cmd/onprem-config-installer/onprem-config-installer.1=/usr/share/man/man1/onprem-config-installer.1",
+		"--after-install", "./cmd/onprem-config-installer/after-install.sh",
+		"--after-remove", "./cmd/onprem-config-installer/after-remove.sh",
+		"./dist/bin/onprem-config-installer=/usr/bin/onprem-config-installer",
+		"./cmd/onprem-config-installer/onprem-config-installer.1=/usr/share/man/man1/onprem-config-installer.1",
 	)
 }
 
 func (Build) giteaInstaller() error {
 	cmd := "helm repo add gitea-charts https://dl.gitea.com/charts/ --force-update"
 	if _, err := script.Exec(cmd).Stdout(); err != nil {
-		return err
+		return fmt.Errorf("failed to add gitea helm repo: %w", err)
 	}
 
 	if err := os.RemoveAll(filepath.Join(giteaPath, "gitea")); err != nil {
@@ -269,32 +161,21 @@ func (Build) giteaInstaller() error {
 
 	cmd = fmt.Sprintf("helm fetch gitea-charts/gitea --version %v --untar --untardir %v", giteaChartVersion, giteaPath)
 	if _, err := script.Exec(cmd).Stdout(); err != nil {
-		return err
+		return fmt.Errorf("failed to fetch gitea chart: %w", err)
 	}
 
-	// Use the current directory as the build context
-	dir, err := os.Getwd()
+	debVersion, err := mage.GetDebVersion()
 	if err != nil {
-		return fmt.Errorf("get working directory: %w", err)
-	}
-
-	debVersion, err := GetDebVersion()
-	if err != nil {
-		return fmt.Errorf("get DEB version: %w", err)
+		return fmt.Errorf("failed to get DEB version for giteaInstaller: %w", err)
 	}
 
 	fmt.Println("Build gitea package 📦")
 	if err := sh.RunV(
-		"docker",
-		"run",
-		"--rm",
-		"-u", "0:0", // required to run in CI
-		"-v", fmt.Sprintf("%s:/src", dir),
-		fpmImageName,
+		"fpm",
 		"-s", "dir",
 		"-t", "deb",
 		"--name", "onprem-gitea-installer",
-		"-p", "/src/dist/",
+		"-p", "./dist/",
 		"--version", debVersion,
 		"--architecture", "amd64",
 		"--description", "Installs Gitea",
@@ -314,40 +195,30 @@ func (Build) giteaInstaller() error {
 func (Build) argoCdInstaller() error {
 	cmd := "helm repo add argo-helm https://argoproj.github.io/argo-helm --force-update"
 	if _, err := script.Exec(cmd).Stdout(); err != nil {
-		return err
+		return fmt.Errorf("failed to add argo helm repo: %w", err)
 	}
 
 	if err := os.RemoveAll(filepath.Join(argocdPath, "argo-cd")); err != nil {
-		return nil
+		return err
 	}
 
 	cmd = fmt.Sprintf("helm fetch argo-helm/argo-cd --version %v --untar --untardir %v", argocdHelmVersion, argocdPath)
 	if _, err := script.Exec(cmd).Stdout(); err != nil {
-		return err
+		return fmt.Errorf("failed to fetch argo-cd chart: %w", err)
 	}
 
-	dir, err := os.Getwd()
+	debVersion, err := mage.GetDebVersion()
 	if err != nil {
-		return fmt.Errorf("get working directory: %w", err)
-	}
-
-	debVersion, err := GetDebVersion()
-	if err != nil {
-		return fmt.Errorf("get DEB version: %w", err)
+		return fmt.Errorf("failed to get DEB version for argoCdInstaller: %w", err)
 	}
 
 	fmt.Println("Build argocd-installer package 📦")
 	if err := sh.RunV(
-		"docker",
-		"run",
-		"--rm",
-		"-u", "0:0", // required to run in CI
-		"-v", fmt.Sprintf("%s:/src", dir),
-		fpmImageName,
+		"fpm",
 		"-s", "dir",
 		"-t", "deb",
 		"--name", "onprem-argocd-installer",
-		"-p", "/src/dist",
+		"-p", "./dist",
 		"--version", debVersion,
 		"--architecture", "amd64",
 		"--description", "Installs argo-cd on the on-prem orchestrator",
@@ -366,12 +237,10 @@ func (Build) argoCdInstaller() error {
 
 func (Build) onPremOrchInstaller() error {
 	if err := downloadTeaBinary(); err != nil {
-		return err
+		return fmt.Errorf("failed to download tea binary: %w", err)
 	}
 
-	// Statically compile the Orch Installer binary
 	mg.SerialDeps(
-		Clean,
 		mg.F(
 			compile,
 			filepath.Join(".", "cmd", "onprem-orch-installer", "main.go"),
@@ -383,39 +252,28 @@ func (Build) onPremOrchInstaller() error {
 		return fmt.Errorf("statically compiling mage: %w", err)
 	}
 
-	// Use the current directory as the build context
-	dir, err := os.Getwd()
+	debVersion, err := mage.GetDebVersion()
 	if err != nil {
-		return fmt.Errorf("get working directory: %w", err)
-	}
-
-	debVersion, err := GetDebVersion()
-	if err != nil {
-		return fmt.Errorf("get DEB version: %w", err)
+		return fmt.Errorf("failed to get DEB version for onPremOrchInstaller: %w", err)
 	}
 
 	fmt.Println("Build on-prem orch-installer package 📦")
 	return sh.RunV(
-		"docker",
-		"run",
-		"--rm",
-		"-u", "0:0", // required to run in CI
-		"-v", fmt.Sprintf("%s:/src", dir),
-		fpmImageName,
+		"fpm",
 		"-s", "dir",
 		"-t", "deb",
 		"--name", "onprem-orch-installer",
-		"-p", "/src/dist/",
+		"-p", "./dist/",
 		"--version", debVersion,
 		"--architecture", "amd64",
 		"--description", "Installs on-prem Orchestrator",
 		"--url", "https://github.com/open-edge-platform/edge-manageability-framework",
 		"--maintainer", "Intel Corporation",
-		"--after-install", "/src/cmd/onprem-orch-installer/after-install.sh",
-		"--after-remove", "/src/cmd/onprem-orch-installer/after-remove.sh",
-		"/src/dist/bin/onprem-orch-installer=/usr/bin/orch-installer",
-		"/src/assets/tea=/usr/bin/tea",
-		"/src/cmd/onprem-orch-installer/generate_fqdn=/usr/bin/generate_fqdn",
+		"--after-install", "./cmd/onprem-orch-installer/after-install.sh",
+		"--after-remove", "./cmd/onprem-orch-installer/after-remove.sh",
+		"./dist/bin/onprem-orch-installer=/usr/bin/orch-installer",
+		"./assets/tea=/usr/bin/tea",
+		"./cmd/onprem-orch-installer/generate_fqdn=/usr/bin/generate_fqdn",
 	)
 }
 
@@ -426,11 +284,11 @@ func downloadTeaBinary() error {
 
 	err := downloadFile(usrBinTea, "https://dl.gitea.com/tea/"+teaVersion+"/tea-"+teaVersion+"-linux-amd64")
 	if err != nil {
-		return fmt.Errorf("failed to download tea binary - %w", err)
+		return fmt.Errorf("failed to download tea binary: %w", err)
 	}
 
 	if err := os.Chmod(usrBinTea, 0700); err != nil { //nolint:gofumpt
-		return fmt.Errorf("failed to chmod tea binary - %w", err)
+		return fmt.Errorf("failed to set permissions for tea binary: %w", err)
 	}
 
 	return nil

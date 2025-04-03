@@ -14,7 +14,11 @@ traefikReverseProxy:
 
 manager:
   image:
-    repository: registry-rs.edgeorchestration.intel.com/edge-orch/cluster/capi-provider-intel-manager
+    registry:
+      name: {{ .Values.argo.containerRegistryURL }}
+    repository: cluster/capi-provider-intel-manager
 southboundApi:
   image:
-    repository: registry-rs.edgeorchestration.intel.com/edge-orch/cluster/capi-provider-intel-southbound
+    registry:
+      name: {{ .Values.argo.containerRegistryURL }}
+    repository: cluster/capi-provider-intel-southbound
