@@ -322,7 +322,7 @@ func helmPullImage(imagePath string, version string, targetDir string) error {
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("error pulling image: %w", err)
+		return fmt.Errorf("error pulling artifact %s version %s: %w: %s", imagePath, version, err, string(output))
 	}
 	fmt.Println(string(output))
 
@@ -693,12 +693,14 @@ func getImageManifest(repoPrefix string) ([]string, []string, error) {
 			err := helmPullImage(chartRemotePath, component.Version, tempDir)
 			if err != nil {
 				fmt.Println("error pulling helm chart for", component.AppName, ": %w", err)
+				return nil, nil, fmt.Errorf("error pulling helm chart for %s: %w", component.AppName, err)
 			}
 			chartLocalPath := filepath.Join(tempDir, filepath.Base(component.Chart)+"-"+component.Version+".tgz")
 			err = helmTemplate(component.AppName, component.ReleaseName, "./"+chartLocalPath,
 				argoValues, filepath.Join(tempDir, component.ReleaseName))
 			if err != nil {
 				fmt.Println("error templating helm chart for", component.AppName, ": %w", err)
+				return nil, nil, fmt.Errorf("error templating helm chart for %s: %w", component.AppName, err)
 			}
 		} else {
 			fmt.Println("Skipping 3rd party hosted chart")
