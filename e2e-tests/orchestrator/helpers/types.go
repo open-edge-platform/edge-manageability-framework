@@ -5,6 +5,7 @@
 package helpers
 
 import (
+	"net/http"
 	"time"
 
 	baseorginfrahostcomv1 "github.com/open-edge-platform/orch-utils/tenancy-datamodel/build/apis/org.edge-orchestrator.intel.com/v1"
@@ -157,4 +158,22 @@ type MailList struct {
 		Attachments int       `json:"Attachments"`
 		Snippet     string    `json:"Snippet"`
 	} `json:"messages"`
+}
+
+type APIClient struct {
+	HTTPClient            *http.Client
+	ServiceDomainWithPort string
+	ProjectName           string
+	Token                 string
+}
+
+type MaintenanceModeContext struct {
+	RegionResourceID string
+	SiteResourceID   string
+	HostID           string
+	ScheduleID       string
+}
+
+type GenericCreateResourceResponse struct {
+	ResourceID string `json:"resourceId"`
 }
