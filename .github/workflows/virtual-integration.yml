@@ -505,6 +505,12 @@ jobs:
       - name: Create default user and run e2e tests
         run: mage devUtils:createDefaultUser test:e2e
 
+      - name: "Test Observability SRE Exporter w/o ENiC"
+        env:
+          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+        run: |
+          mage test:e2eSreObservabilityNoEnic
+
       - name: Deploy ENiC
         shell: bash
         timeout-minutes: 5
