@@ -1313,6 +1313,8 @@ ptcp_variable() {
     # and the VPC_ID is not empty.
     if [[ -n "$VPC_ID" ]] && $SKIP_APPLY_VPC; then
         VPC_TERRAFORM_BACKEND_KEY="${AWS_REGION}/vpc/${VPC_ID}"
+    else
+        VPC_TERRAFORM_BACKEND_KEY="${AWS_REGION}/vpc/${ENV_NAME}"
     fi
     cat <<EOF
 vpc_terraform_backend_bucket = "${BUCKET_NAME}"

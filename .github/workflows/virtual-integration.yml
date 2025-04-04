@@ -147,7 +147,7 @@ jobs:
       - name: Set up git credentials
         shell: bash
         run: |
-          echo "GOPRIVATE=github.com/open-edge-platform,github.com/intel" >> $GITHUB_ENV
+          echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
           git config --global url."https://${{ secrets.SYS_ORCH_GITHUB }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Setup asdf and install dependencies
@@ -171,7 +171,7 @@ jobs:
       - name: Set up git credentials
         shell: bash
         run: |
-          echo "GOPRIVATE=github.com/open-edge-platform,github.com/intel" >> $GITHUB_ENV
+          echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
           git config --global url."https://${{ secrets.SYS_ORCH_GITHUB }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Setup asdf and install dependencies
@@ -195,7 +195,7 @@ jobs:
       - name: Set up git credentials
         shell: bash
         run: |
-          echo "GOPRIVATE=github.com/open-edge-platform,github.com/intel" >> $GITHUB_ENV
+          echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
           git config --global url."https://${{ secrets.SYS_ORCH_GITHUB }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Setup asdf and install dependencies
@@ -218,7 +218,7 @@ jobs:
       - name: Set up git credentials
         shell: bash
         run: |
-          echo "GOPRIVATE=github.com/open-edge-platform,github.com/intel" >> $GITHUB_ENV
+          echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
           git config --global url."https://${{ secrets.SYS_ORCH_GITHUB }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Setup asdf and install dependencies
@@ -241,7 +241,7 @@ jobs:
       - name: Set up git credentials
         shell: bash
         run: |
-          echo "GOPRIVATE=github.com/open-edge-platform,github.com/intel" >> $GITHUB_ENV
+          echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
           git config --global url."https://${{ secrets.SYS_ORCH_GITHUB }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Setup asdf and install dependencies
@@ -264,7 +264,7 @@ jobs:
       - name: Set up git credentials
         shell: bash
         run: |
-          echo "GOPRIVATE=github.com/open-edge-platform,github.com/intel" >> $GITHUB_ENV
+          echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
           git config --global url."https://${{ secrets.SYS_ORCH_GITHUB }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Setup asdf and install dependencies
@@ -294,7 +294,7 @@ jobs:
       - name: Set up git credentials
         shell: bash
         run: |
-          echo "GOPRIVATE=github.com/open-edge-platform,github.com/intel" >> $GITHUB_ENV
+          echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
           git config --global url."https://${{ secrets.SYS_ORCH_GITHUB }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Setup asdf and install dependencies
@@ -346,7 +346,7 @@ jobs:
       - name: Set up git credentials
         shell: bash
         run: |
-          echo "GOPRIVATE=github.com/open-edge-platform,github.com/intel" >> $GITHUB_ENV
+          echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
           git config --global url."https://${{ secrets.SYS_ORCH_GITHUB }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Setup asdf and install dependencies
@@ -439,10 +439,11 @@ jobs:
       - name: Set up git credentials
         shell: bash
         run: |
-          echo "GOPRIVATE=github.com/open-edge-platform,github.com/intel" >> $GITHUB_ENV
+          echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
           git config --global url."https://${{ secrets.SYS_ORCH_GITHUB }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Setup asdf and install dependencies
+        id: install-deps
         uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main
 
       - name: Get current git hash of the PR
@@ -490,6 +491,16 @@ jobs:
         run: mage test:imagePullPolicyCompliance
       - name: Setup Sample Org and Project with default users
         run: mage tenantUtils:createDefaultMtSetup
+
+      - name: Run e2e tenancy tests
+        run: mage test:e2etenancy
+
+      - name: Run e2e tenancy API gateway tests
+        run: mage test:e2etenancyapigw
+
+      - name: Create default user and run e2e tests
+        run: mage devUtils:createDefaultUser test:e2e
+
       - name: Deploy ENiC
         shell: bash
         timeout-minutes: 5
@@ -517,15 +528,6 @@ jobs:
         with:
           token: ${{ secrets.SYS_ORCH_GITHUB }}
 
-      - name: Run e2e tenancy tests
-        run: mage test:e2etenancy
-
-      - name: Run e2e tenancy API gateway tests
-        run: mage test:e2etenancyapigw
-
-      - name: Create default user and run e2e tests
-        run: mage devUtils:createDefaultUser test:e2e
-
       - name: "Test Observability Public Endpoints"
         env:
           ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
@@ -538,21 +540,17 @@ jobs:
         run: |
           mage test:e2eOrchObservability
 
-      #######################################################################    
-      # TODO: Enable these tests once the ENIC metrics are available 
-      # Bugfix: 24968 Metrics from ENiC are not present in orchestrator.
-      #######################################################################
-      # - name: "Test Observability EdgeNode Stack"
-      #   env:
-      #     ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-      #   run: |
-      #     mage test:e2eENObservability
+      - name: "Test Observability EdgeNode Stack"
+        env:
+          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+        run: |
+          mage test:e2eENObservability
 
-      # - name: "Test Observability Alerts"
-      #   env:
-      #     ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-      #   run: |
-      #     mage test:e2eAlertsObservability
+      - name: "Test Observability Alerts"
+        env:
+          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+        run: |
+          mage test:e2eAlertsObservability
 
       - name: Wait for cluster agent to be ready
         run: |
@@ -643,7 +641,7 @@ jobs:
       - name: Set up git credentials
         shell: bash
         run: |
-          echo "GOPRIVATE=github.com/open-edge-platform,github.com/intel" >> $GITHUB_ENV
+          echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
           git config --global url."https://${{ secrets.SYS_ORCH_GITHUB }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Setup asdf and install dependencies

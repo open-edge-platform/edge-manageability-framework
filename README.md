@@ -120,7 +120,7 @@ To learn how to contribute to the project, see the [Contributor's Guide](/CONTRI
 ## Community and Support
 
 To learn more about the project, its community, and governance, visit the [Edge Orchestrator
-Community](https://github.com/intel).
+Community](https://github.com/open-edge-platform).
 
 ## License
 
