@@ -57,8 +57,8 @@ argo:
 
   # Self-signed-cert configs.
   # Must be enabled for dev env where tls-orch is not provisioned in advance
-  #self-signed-cert:
-  #  generateOrchCert: true
+  self-signed-cert:
+    generateOrchCert: true
 
   platform-keycloak:
     localRegistrySize: 1Gi
