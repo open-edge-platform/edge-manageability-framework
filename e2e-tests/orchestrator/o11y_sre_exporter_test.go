@@ -13,6 +13,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/open-edge-platform/edge-manageability-framework/e2e-tests/orchestrator/helpers"
 	util "github.com/open-edge-platform/edge-manageability-framework/mage"
 )
 
@@ -123,7 +124,7 @@ var _ = Describe("Observability SRE Exporter Test:", Label("sre-observability"),
 		return value, resp.StatusCode
 	}
 
-	Context("When ENIC is not deployed", Label("enic-not-deployed"), func() {
+	Context("When ENIC is not deployed", func() {
 		It("exported orchestrator metrics return non-null values", func() {
 			for _, metric := range orchMetrics {
 				value, status := verifyMetric(metric)
@@ -148,7 +149,7 @@ var _ = Describe("Observability SRE Exporter Test:", Label("sre-observability"),
 		})
 	})
 
-	Context("When ENIC is deployed", Label("enic-deployed"), func() {
+	Context("When ENIC is deployed", Label(helpers.LabelEnic), func() {
 		It("diagnostic metric postfixed _up returns 1", func() {
 			for _, metric := range diagnosticMetrics {
 				value, status := verifyMetric(metric + "_up")
