@@ -1238,6 +1238,13 @@ func (Deploy) updateDeployRepo(targetEnv, gitRepoPath, repoName, localClonePath 
 	}
 	version = bytes.TrimSpace(version)
 
+	if _, err := script.Exec("git config user.email 'mage@local'").Stdout(); err != nil {
+		return fmt.Errorf("error setting git user email: %w", err)
+	}
+	if _, err := script.Exec("git config user.name 'mage'").Stdout(); err != nil {
+		return fmt.Errorf("error setting git user name: %w", err)
+	}
+
 	// Commit the changes with the appropriate message
 	cmd = fmt.Sprintf("git commit -m 'update deployment to version: %s'", version)
 	if _, err := script.Exec(cmd).Stdout(); err != nil {
@@ -1362,6 +1369,25 @@ func getDeployRevision() string {
 	return deployRevision
 }
 
+// func giteaDeployRevisionParam() string {
+// 	// Get the Gitea credentials from the Kubernetes secret, the randomly generated password constants are not
+// 	giteaDeployDir := ".deploy/gitea/edge-manageability-framework"
+// 	if _, err := os.Stat(giteaDeployDir); os.IsNotExist(err) {
+// 		fmt.Println("failed to locate deploy (.) repo, using cluster default deploy revision")
+// 		return ""
+// 	} else {
+// 		cmd := fmt.Sprintf("bash -c 'cd %s; git rev-parse --short HEAD'", giteaDeployDir)
+// 		out, err := script.Exec(cmd).String()
+// 		if err != nil {
+// 			fmt.Println("failed to determine deployRevision: %w", err)
+// 			fmt.Println("  using cluster default configs revision")
+// 			return ""
+// 		}
+// 		deployRevision = strings.TrimSpace(out)
+// 		return fmt.Sprintf("--set-string argo.deployRepoRevision=%s ", deployRevision)
+// 	}
+// }
+
 func getDeployTag() (string, error) {
 	var deployTag string
 	deployDir := getDeployDir()
@@ -1467,6 +1493,10 @@ func (d Deploy) orchLocal(targetEnv string) error {
 	// if err != nil {
 	// 	return err
 	// }
+
+	// targetConfig := getTargetConfig(targetEnv)
+	// cmd := fmt.Sprintf("helm upgrade --install root-app argocd/root-app -f %s  -n %s --create-namespace %s %s %s"+
+	// 	"--set root.useLocalValues=true", targetConfig, targetEnv, deployRevision, configsRevision, orchVersion)
 
 	targetConfig := getTargetConfig(targetEnv)
 
