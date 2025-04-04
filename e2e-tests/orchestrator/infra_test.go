@@ -929,7 +929,7 @@ func grpcAttestStatusMgrJWT(ctx context.Context, address string, port int, token
 		ctx,
 		&pb_am.UpdateInstanceAttestationStatusByHostGuidRequest{
 			HostGuid:          uuid.New().String(),
-			AttestationStatus: pb_am.AttestationStatus_ATTESTATION_STATUS_UNSPECIFIED,
+			AttestationStatus: pb_am.AttestationStatus_ATTESTATION_STATUS_VERIFIED,
 		},
 	); err != nil {
 		return fmt.Errorf("could not call grpc endpoint for server %s: %w", target, err)
