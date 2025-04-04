@@ -23,7 +23,6 @@ locals {
 }
 
 module "eks" {
-  depends_on                  = [module.sre_secret]
   source                      = "../../module/eks"
   cluster_name                = var.eks_cluster_name
   aws_account_number          = var.aws_account_number
