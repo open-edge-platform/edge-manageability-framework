@@ -1792,10 +1792,11 @@ set_values() {
 #         ... your text ...
 #       EOF
 
-# The SRE secret string.
+# The SRE settings, leave empty if disabled.
 sre_basic_auth_username=""
 sre_basic_auth_password=""
 sre_destination_secret_url=""
+sre_destination_ca_secret=""
 
 # The email configuration information if it is needed.
 smtp_user=""

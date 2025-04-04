@@ -124,7 +124,7 @@ resource "kubernetes_secret" "webhook_github_secret" {
   }
 }
 
-resource "kubernetes_secret" "basic_auth" {
+resource "kubernetes_secret" "sre_basic_auth_username" {
   depends_on = [time_sleep.wait_ns]
 
   metadata {
@@ -136,7 +136,7 @@ resource "kubernetes_secret" "basic_auth" {
   }
 }
 
-resource "kubernetes_secret" "basic_auth" {
+resource "kubernetes_secret" "sre_basic_auth_password" {
   depends_on = [time_sleep.wait_ns]
 
   metadata {
@@ -148,7 +148,7 @@ resource "kubernetes_secret" "basic_auth" {
   }
 }
 
-resource "kubernetes_secret" "basic_auth" {
+resource "kubernetes_secret" "sre_destination_secret_url" {
   depends_on = [time_sleep.wait_ns]
 
   metadata {
@@ -157,6 +157,18 @@ resource "kubernetes_secret" "basic_auth" {
   }
   data = {
     "password" = var.sre_destination_secret_url
+  }
+}
+
+resource "kubernetes_secret" "sre_destination_ca_secret" {
+  depends_on = [time_sleep.wait_ns]
+
+  metadata {
+    name      = "sre-destination-ca-secret"
+    namespace = "orch-sre"
+  }
+  data = {
+    "password" = var.sre_destination_ca_secret
   }
 }
 

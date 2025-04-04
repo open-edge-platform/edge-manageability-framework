@@ -291,6 +291,11 @@ variable "sre_destination_secret_url" {
   default = ""
 }
 
+variable "sre_destination_ca_secret" {
+  type    = string
+  default = ""
+}
+
 variable "smtp_user" {
   description = "SMTP server username"
   type        = string

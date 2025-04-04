@@ -169,6 +169,7 @@ module "orch_init" {
   sre_basic_auth_username       = var.sre_basic_auth_username
   sre_basic_auth_password       = var.sre_basic_auth_password
   sre_destination_secret_url    = var.sre_destination_secret_url
+  sre_destination_ca_secret     = var.sre_destination_ca_secret
   webhook_github_netrc          = var.webhook_github_netrc
   smtp_user                     = var.smtp_user
   smtp_pass                     = var.smtp_pass
