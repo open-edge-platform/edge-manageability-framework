@@ -123,7 +123,8 @@ func (Deploy) kind(targetEnv string) error { //nolint:gocyclo
 
 	// If cache registry URL is set, load the cert into the kind cluster
 	cacheRegistry, _ := (Config{}).getDockerCache(targetEnv)
-	if cacheRegistry != "" {
+	cacheRegistryCert, _ := (Config{}).getDockerCacheCert(targetEnv)
+	if cacheRegistry != "" and cacheRegistryCert != "" {
 		if err := (loadKindRegistryCacheCerts("kind-control-plane")); err != nil {
 			return fmt.Errorf("error loading registry cache CA certificates into kind cluster: %w", err)
 		}
