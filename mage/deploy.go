@@ -184,6 +184,15 @@ func (Deploy) kind(targetEnv string) error { //nolint:gocyclo
 		return err
 	}
 
+	// NOTE: Must initially populate the Gitea repo before attempting to add it to ArgoCD (errors with empty repo)
+	//       We also need to update/push contents on every deploy within the Orch and Orch local operations for those
+	//       functions to work properly.
+	
+	// Clone and update the Gitea deployment repo
+	if err := (Deploy{}).updateDeployRepo(targetEnv, deployRepoPath, deployRepoName, deployGiteaRepoDir); err != nil {
+		return fmt.Errorf("error updating deployment repo content: %w", err)
+	}
+
 	// Wait for Argo CD deployment to finish and the load balancer to be updated
 	for i := 0; i < argoRetryCount; i++ {
 		var err error
