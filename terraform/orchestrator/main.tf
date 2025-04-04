@@ -292,7 +292,7 @@ resource "null_resource" "copy_local_orch_installer" {
 
 resource "null_resource" "write_installer_config" {
 
-  // Enable this resource if auto-install is enabled and not using local build artifacts
+  // Enable this resource if auto-install is enabled and using build artifacts from the RS
   count = var.enable_auto_install && !var.use_local_build_artifact ? 1 : 0
 
   depends_on = [
@@ -348,7 +348,7 @@ resource "null_resource" "set_proxy_config" {
 
 resource "null_resource" "exec_installer" {
 
-  // Enable this resource if auto-install if enabled
+  // Enable this resource if auto-install is enabled
   count = var.enable_auto_install ? 1 : 0
 
   depends_on = [
