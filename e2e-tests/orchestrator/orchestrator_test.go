@@ -557,7 +557,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
 			defer resp.Body.Close()
-			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
+			Expect(resp.StatusCode).To(Equal(http.StatusUnauthorized))
 		})
 
 		It("should NOT be accessible over HTTPS when using invalid token", func() {
@@ -630,7 +630,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
 			defer resp.Body.Close()
-			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
+			Expect(resp.StatusCode).To(Equal(http.StatusUnauthorized))
 		})
 
 		It("should NOT be accessible over HTTPS when using invalid token", func() {
