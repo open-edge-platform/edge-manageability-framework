@@ -1524,21 +1524,34 @@ func (g Gen) LEOrchestratorCABundle() error {
 // RegistryCacheCert generates the Registry cache x509 certificate file for a specified target environment.
 func (Gen) RegistryCacheCert(targetEnv string) error {
 	cacheRegistry, _ := (Config{}).getDockerCache(targetEnv)
-	cacheRegistryURL := ""
-	if cacheRegistry != "" {
-		cacheRegistryURL = fmt.Sprintf("http://%s", cacheRegistry)
+	cacheRegistry = strings.TrimSpace(cacheRegistry)
+	cacheRegistryCert, _ := (Config{}).getDockerCacheCert(targetEnv)
+	cacheRegistryCert = strings.TrimSpace(cacheRegistryCert)
+
+	// if cacheRegistry != "" {
+	// 	cacheRegistryURL = fmt.Sprintf("http://%s", cacheRegistry)
+	// }
+
+	fmt.Printf("RegistryCacheCert: cacheRegistry=%s\n", cacheRegistry)
+	fmt.Printf("RegistryCacheCert: cacheRegistryCert=%s\n", cacheRegistryCert)
+
+	if cacheRegistry != "" && cacheRegistryCert != "" {
+		if err := os.WriteFile(filepath.Join("mage", "registry-cache-ca.crt"), []byte(cacheRegistryCert), 0644); err != nil {
+			return fmt.Errorf("failed to write cache registry certificate to file: %w", err)
+		}
+		fmt.Printf("Cache registry certificate written to: %s\n", filepath.Join("mage", "registry-cache-ca.crt"))
 	}
 
-	if cacheRegistryURL == "" {
-		fmt.Printf("%s doesn't specify a dockerCache URL. No cache certificate will be generated.\n", targetEnv)
-	} else {
-		cacheRegistryCert := filepath.Join("mage", "registry-cache-ca.crt")
-		err := (Registry{}).getRegistryCert(cacheRegistryURL, cacheRegistryCert, false)
-		if err != nil {
-			return fmt.Errorf("failed to generate cache registry certificate: %w", err)
-		}
-		fmt.Printf("Cache registry certificate saved to: %s\n", cacheRegistryCert)
-	}
+	// if cacheRegistryURL == "" {
+	// 	fmt.Printf("%s doesn't specify a dockerCache URL. No cache certificate will be generated.\n", targetEnv)
+	// } else {
+	// 	cacheRegistryCert := filepath.Join("mage", "registry-cache-ca.crt")
+	// 	err := (Registry{}).getRegistryCert(cacheRegistryURL, cacheRegistryCert, false)
+	// 	if err != nil {
+	// 		return fmt.Errorf("failed to generate cache registry certificate: %w", err)
+	// 	}
+	// 	fmt.Printf("Cache registry certificate saved to: %s\n", cacheRegistryCert)
+	// }
 
 	return nil
 }

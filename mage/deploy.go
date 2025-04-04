@@ -123,8 +123,13 @@ func (Deploy) kind(targetEnv string) error { //nolint:gocyclo
 
 	// If cache registry URL is set, load the cert into the kind cluster
 	cacheRegistry, _ := (Config{}).getDockerCache(targetEnv)
+	cacheRegistry = strings.TrimSpace(cacheRegistry)
 	cacheRegistryCert, _ := (Config{}).getDockerCacheCert(targetEnv)
+	cacheRegistryCert = strings.TrimSpace(cacheRegistryCert)
+	fmt.Printf("cacheRegistry=%s\n", cacheRegistry)
+	fmt.Printf("cacheRegistryCert=%s\n", cacheRegistryCert)
 	if cacheRegistry != "" && cacheRegistryCert != "" {
+		fmt.Printf("Loading registry cache CA certificates into kind cluster\n")
 		if err := (loadKindRegistryCacheCerts("kind-control-plane")); err != nil {
 			return fmt.Errorf("error loading registry cache CA certificates into kind cluster: %w", err)
 		}
@@ -535,6 +540,13 @@ func kindCluster(name string, targetEnv string) error {
 	}
 
 	cacheRegistry, _ := (Config{}).getDockerCache(targetEnv)
+	cacheRegistry = strings.TrimSpace(cacheRegistry)
+	cacheRegistryCert, _ := (Config{}).getDockerCacheCert(targetEnv)
+	cacheRegistryCert = strings.TrimSpace(cacheRegistryCert)
+
+	fmt.Printf("kind cacheRegistry=%s\n", cacheRegistry)
+	fmt.Printf("kind cacheRegistryCert=%s\n", cacheRegistryCert)
+
 	cacheRegistryURL := ""
 	if cacheRegistry != "" {
 		cacheRegistryURL = fmt.Sprintf("https://%s", cacheRegistry)
@@ -593,7 +605,7 @@ func kindCluster(name string, targetEnv string) error {
         {{- if ne .CacheRegistryURL "" }}
             [plugins."io.containerd.grpc.v1.cri".registry.mirrors."*"]
               endpoint = ["{{ .CacheRegistryURL }}"]
-          {{- if ne .CacheRegistryHost "" }}
+          {{- if ne .CacheRegistryCert "" }}
             [plugins."io.containerd.grpc.v1.cri".registry.configs]
               [plugins."io.containerd.grpc.v1.cri".registry.configs."{{ .CacheRegistryHost }}".tls]
                 ca_file = "/usr/local/share/ca-certificates/registry-cache-ca.crt"
@@ -613,6 +625,7 @@ EOF`))
 			DockerDir         string
 			CacheRegistryURL  string
 			CacheRegistryHost string
+			CacheRegistryCert string
 		}{
 			Name:              name,
 			APIServerAddress:  apiServerAddress,
@@ -621,6 +634,7 @@ EOF`))
 			DockerDir:         dockerDir,
 			CacheRegistryURL:  cacheRegistryURL,
 			CacheRegistryHost: cacheRegistry,
+			CacheRegistryCert: cacheRegistryCert,
 		},
 	); err != nil {
 		return fmt.Errorf("error in executing template: %w", err)
@@ -1277,7 +1291,13 @@ func (Deploy) argocd(bootstrapValues []string, targetEnv string) error {
 	registryCertName := "blank" // this variable will be ignored by a helm chart if useIntelRegistry is false
 	registryCertPem := []byte("blank")
 	dockerCache, _ := (Config{}).getDockerCache(targetEnv)
-	if dockerCache == "" {
+	dockerCache = strings.TrimSpace(dockerCache)
+	dockerCacheCert, _ := (Config{}).getDockerCacheCert(targetEnv)
+	dockerCacheCert = strings.TrimSpace(dockerCacheCert)
+	fmt.Printf("argocd: dockerCache=%s\n", dockerCache)
+	fmt.Printf("argocd: dockerCacheCert=%s\n", dockerCacheCert)
+
+	if dockerCache != "" && dockerCacheCert != "" {
 		registryCertServer := strings.ReplaceAll(dockerCache, ".", "\\.")
 		registryCertName = fmt.Sprintf("configs.tls.certificates.%s", registryCertServer)
 		var err error
