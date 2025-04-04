@@ -151,6 +151,18 @@ func (Test) e2eAlertsObservability() error {
 		"-r",
 		"-p",
 		"--skip-package", "assets",
+		"--label-filter=observability-alerts && !extended",
+		filepath.Join("e2e-tests", "orchestrator"),
+	)
+}
+
+func (Test) e2eAlertsObservabilityExtended() error {
+	return sh.RunV(
+		"ginkgo",
+		"-v",
+		"-r",
+		"-p",
+		"--skip-package", "assets",
 		"--label-filter=observability-alerts",
 		filepath.Join("e2e-tests", "orchestrator"),
 	)
@@ -163,7 +175,7 @@ func (Test) e2eSreObservabilityNoEnic() error {
 		"-r",
 		"-p",
 		"--skip-package", "assets",
-		"--label-filter=sre-observability && enic-not-deployed",
+		"--label-filter=sre-observability && !enic",
 		filepath.Join("e2e-tests", "orchestrator"),
 	)
 }
@@ -175,7 +187,7 @@ func (Test) e2eSreObservability() error {
 		"-r",
 		"-p",
 		"--skip-package", "assets",
-		"--label-filter=sre-observability && enic-deployed",
+		"--label-filter=sre-observability && enic",
 		filepath.Join("e2e-tests", "orchestrator"),
 	)
 }
@@ -696,7 +708,7 @@ func (Test) ChartsAvailableOnReleaseService(ctx context.Context) error {
 
 	// Only test charts that are first party
 	for _, component := range manifest.Components {
-		if strings.Contains(component.Repo, IntelTiberRegistryRepoURL+"/"+IntelTiberRepository) {
+		if strings.Contains(component.Repo, PublicTiberRegistryRepoURL+"/"+IntelTiberRepository) {
 			filteredComponents = append(filteredComponents, component)
 		}
 	}
@@ -728,6 +740,8 @@ func (Test) ChartsAvailableOnReleaseService(ctx context.Context) error {
 			ctx, cancel := context.WithTimeout(ctx, registryCheckTimeout)
 			defer cancel()
 
+			statusKey := chart + " Version " + component.Version
+
 			if stdouterr, err := exec.CommandContext(
 				ctx,
 				"helm",
@@ -738,7 +752,7 @@ func (Test) ChartsAvailableOnReleaseService(ctx context.Context) error {
 			).CombinedOutput(); err != nil {
 				if strings.Contains(string(stdouterr), "not found") {
 					mu.Lock()
-					status[chart] = false
+					status[statusKey] = false
 					fail = true
 					mu.Unlock()
 					return nil
@@ -747,7 +761,7 @@ func (Test) ChartsAvailableOnReleaseService(ctx context.Context) error {
 			}
 
 			mu.Lock()
-			status[chart] = true
+			status[statusKey] = true
 			mu.Unlock()
 
 			return nil

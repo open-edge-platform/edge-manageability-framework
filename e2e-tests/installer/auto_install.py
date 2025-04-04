@@ -298,7 +298,6 @@ class AutoInstall:
         self.cidr_block = os.getenv("AUTOINSTALL_CIDR_BLOCK")
         self.jumphost_sshkey_path = os.getenv("AUTOINSTALL_JUMPHOST_SSHKEY")
         self.internal_proxy_profile_path = os.getenv("AUTOINSTALL_INTERNAL_PROXY_PROFILE")
-        self.internal_harbor_cert_path = os.getenv("AUTOINSTALL_INTERNAL_HARBOR_CERT")
 
         self.jumphost_sshkey_copied = False
         if self.jumphost_sshkey_path and len(self.jumphost_sshkey_path) > 0:
@@ -323,19 +322,20 @@ class AutoInstall:
             )
             shutil.copy(self.internal_proxy_profile_path, state_proxy_profile_path)
             self.internal_proxy_profile_copied = True
-
-        # Support pre-integration flow
-        self.internal_harbor_cert_copied = False
-        if self.internal_harbor_cert_path and len(self.internal_harbor_cert_path) > 0:
-            if not os.path.isfile(self.internal_harbor_cert_path):
-                raise FileNotFoundError(f"File '{self.internal_harbor_cert_path}' not found.")
+        
+        # Support for ArgoCD proxy settings
+        self.argocd_proxy_path = os.getenv("AUTOINSTALL_ARGOCD_PROXY")
+        self.argocd_proxy_copied = False
+        if self.argocd_proxy_path and len(self.argocd_proxy_path) > 0:
+            if not os.path.isfile(self.argocd_proxy_path):
+                raise FileNotFoundError(f"File '{self.argocd_proxy_path}' not found.")
             if not os.path.exists(self.state_path):
                 os.makedirs(self.state_path)
-            state_internal_harbor_cert_path = (
-                f"{self.state_path}/internal-harbor-ca.crt"
+            state_argocd_proxy_path = (
+                f"{self.state_path}/proxy-argocd.yaml"
             )
-            shutil.copy(self.internal_harbor_cert_path, state_internal_harbor_cert_path)
-            self.internal_harbor_cert_copied = True
+            shutil.copy(self.argocd_proxy_path, state_argocd_proxy_path)
+            self.argocd_proxy_copied = True
 
         self.custom_vpc = self.vpc_id is not None and len(self.vpc_id) > 0
         if self.internal and not self.custom_vpc:
@@ -358,15 +358,13 @@ class AutoInstall:
         self.vpc_jumphost_params = ""
         self.internal_makefile_params = ""
         self.socks_proxy_params = ""
-        self.internal_rs_url = "registry-rs.edgeorchestration.intel.com"
         self.enable_cache_registry = "--enable-cache-registry"
+        self.jumphost_allow_list = ""
+        self.eks_internal_params = ""
 
         if self.internal:
             self.internal_params = "--internal"
-            self.internal_makefile_params = "USE_REPO_PROXY=true USE_INTERNAL_PROXY=true USE_TEST_ADMIN=true"
-            # Check if internal RS and update makefile params
-            if self.rs_domain in self.internal_rs_url:
-                self.internal_makefile_params += " USE_INTERNAL_REGISTRY_CERTS=true"
+            self.internal_makefile_params = "USE_REPO_PROXY=true USE_ARGO_PROXY=true USE_TEST_ADMIN=true"
 
             # TODO: do we really need to set the cluster DNS IP? Why?
             self.eks_internal_params = "--eks-cluster-dns-ip 172.20.0.10 "
@@ -380,6 +378,12 @@ class AutoInstall:
         if self.custom_vpc:
             self.vpc_params = f"--skip-apply-vpc --vpc-id {self.vpc_id}"
             self.vpc_jumphost_params = f"--jumphost-ip {self.jumphost_ip} --cidr-block {self.cidr_block}"
+        
+        # For public deployments pass IP list for SSH access if available
+        self.jump_host_allow_ips = os.getenv("JUMP_HOST_ALLOW_IPS", "[]")
+        if not self.custom_vpc:
+            if self.jump_host_allow_ips not in (None, "[]"):
+                self.jumphost_allow_list = f"--jumphost-ip-allow-list {self.jump_host_allow_ips}"
 
         # Verify Proxy Settings
         if not self.internal:
@@ -551,7 +555,8 @@ class AutoInstall:
             f"--environment $CLUSTER_NAME --parent-domain {self.cluster_domain} "
             f"--region $AWS_REGION --email builder@infra-host.com "
             f"--profile {self.cluster_profile} "
-            f"{self.auto_cert} {self.internal_params} {self.vpc_params} {self.vpc_jumphost_params} {self.socks_proxy_params} --auto "
+            f"{self.vpc_params} {self.vpc_jumphost_params} {self.jumphost_allow_list} "
+            f"{self.auto_cert} {self.internal_params} {self.socks_proxy_params} --auto "
             f"{self.enable_cache_registry} "
             f"{self.eks_internal_params}"
         )
@@ -594,7 +599,8 @@ class AutoInstall:
             f"--aws-admin-roles {self.aws_roles} "
             f"--azuread-refresh-token {self.refresh_token} "
             f"--profile {self.cluster_profile} "
-            f"{self.auto_cert} {self.internal_params} {self.vpc_params} {self.vpc_jumphost_params} {self.socks_proxy_params} --auto "
+            f"{self.vpc_params} {self.vpc_jumphost_params} {self.jumphost_allow_list} "
+            f"{self.auto_cert} {self.internal_params} {self.socks_proxy_params} --auto "
             f"{self.enable_cache_registry} "
             f"{self.eks_internal_params}"
         )
@@ -656,7 +662,8 @@ class AutoInstall:
             f"--aws-admin-roles {self.aws_roles} "
             f"--azuread-refresh-token {self.refresh_token} "
             f"--profile {self.cluster_profile} "
-            f"{self.auto_cert} {self.internal_params} {self.vpc_params} {self.vpc_jumphost_params} {self.socks_proxy_params} --auto --reduce-ns-ttl "
+            f"{self.vpc_params} {self.vpc_jumphost_params} {self.jumphost_allow_list} "
+            f"{self.auto_cert} {self.internal_params} {self.socks_proxy_params} --auto --reduce-ns-ttl "
             f"{self.enable_cache_registry} "
             f"{self.eks_internal_params}"
         )
@@ -712,12 +719,12 @@ class AutoInstall:
 
         # Support registry profile override for non-prod deployments
         if self.registry_profile_copied:
-            self.installer_session.sendline(f"cp pod-configs/SAVEME/artifact-rs-profile.yaml ~/edge-manageability-framework/config/profiles/artifact-rs-production-noauth.yaml")
+            self.installer_session.sendline(f"cp pod-configs/SAVEME/artifact-rs-profile.yaml ~/edge-manageability-framework/orch-configs/profiles/artifact-rs-production-noauth.yaml")
             self.installer_session.expect("orchestrator-admin:~")
 
         # replace internal proxy profile for internal deployments
         if self.internal and self.internal_proxy_profile_copied:
-            self.installer_session.sendline(f"cp pod-configs/SAVEME/proxy-internal.yaml ~/edge-manageability-framework/config/profiles/proxy-none.yaml")
+            self.installer_session.sendline(f"cp pod-configs/SAVEME/proxy-internal.yaml ~/edge-manageability-framework/orch-configs/profiles/proxy-none.yaml")
             self.installer_session.expect("orchestrator-admin:~")
 
         # configure cluster
@@ -765,12 +772,12 @@ class AutoInstall:
 
         # Support registry profile override for non-prod deployments
         if self.registry_profile_copied:
-            self.installer_session.sendline(f"cp pod-configs/SAVEME/artifact-rs-profile.yaml ~/edge-manageability-framework/config/profiles/artifact-rs-production-noauth.yaml")
+            self.installer_session.sendline(f"cp pod-configs/SAVEME/artifact-rs-profile.yaml ~/edge-manageability-framework/orch-configs/profiles/artifact-rs-production-noauth.yaml")
             self.installer_session.expect("orchestrator-admin:~")
 
         # replace internal proxy profile for internal deployments
         if self.internal and self.internal_proxy_profile_copied:
-            self.installer_session.sendline(f"cp pod-configs/SAVEME/proxy-internal.yaml ~/edge-manageability-framework/config/profiles/proxy-none.yaml")
+            self.installer_session.sendline(f"cp pod-configs/SAVEME/proxy-internal.yaml ~/edge-manageability-framework/orch-configs/profiles/proxy-none.yaml")
             self.installer_session.expect("orchestrator-admin:~")
 
         # configure cluster
@@ -814,12 +821,12 @@ class AutoInstall:
 
         # Support registry profile override for non-prod deployments
         if self.registry_profile_copied:
-            self.installer_session.sendline(f"cp pod-configs/SAVEME/artifact-rs-profile.yaml ~/edge-manageability-framework/config/profiles/artifact-rs-production-noauth.yaml")
+            self.installer_session.sendline(f"cp pod-configs/SAVEME/artifact-rs-profile.yaml ~/edge-manageability-framework/orch-configs/profiles/artifact-rs-production-noauth.yaml")
             self.installer_session.expect("orchestrator-admin:~")
 
         # replace internal proxy profile for internal deployments
         if self.internal and self.internal_proxy_profile_copied:
-            self.installer_session.sendline(f"cp pod-configs/SAVEME/proxy-internal.yaml ~/edge-manageability-framework/config/profiles/proxy-none.yaml")
+            self.installer_session.sendline(f"cp pod-configs/SAVEME/proxy-internal.yaml ~/edge-manageability-framework/orch-configs/profiles/proxy-none.yaml")
             self.installer_session.expect("orchestrator-admin:~")
 
         # configure cluster
@@ -861,12 +868,6 @@ class AutoInstall:
 
         self.installer_session.sendline("cd ~")
         self.installer_session.expect("orchestrator-admin:~")
-
-        # create registry cert configmap for pre-integration deployments
-        if self.internal and self.rs_domain in self.internal_rs_url and self.internal_harbor_cert_copied:
-            self.installer_session.sendline(f"kubectl create configmap registry-certs -n argocd --from-file=registry-certs.crt=/root/pod-configs/SAVEME/internal-harbor-ca.crt")
-            self.installer_session.expect("orchestrator-admin:~")
-
         self.installer_session.sendline(f"{self.internal_makefile_params} make install")
 
         # installation complete - get argocd password - TBD select one approach to caching this and remove the other.
@@ -932,7 +933,8 @@ class AutoInstall:
             f"--aws-admin-roles {self.aws_roles} "
             f"--azuread-refresh-token {self.refresh_token} "
             f"--profile {self.cluster_profile} "
-            f"{self.auto_cert} {self.internal_params} {self.vpc_params} {self.vpc_jumphost_params} {self.socks_proxy_params} --auto "
+            f"{self.vpc_params} {self.vpc_jumphost_params} {self.jumphost_allow_list} "
+            f"{self.auto_cert} {self.internal_params} {self.socks_proxy_params} --auto "
             f"{self.enable_cache_registry}"
         )
 

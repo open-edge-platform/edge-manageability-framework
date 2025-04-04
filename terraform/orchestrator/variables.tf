@@ -165,9 +165,9 @@ variable "deploy_tag" {
 }
 
 variable "use_local_build_artifact" {
-  type        = string
+  type        = bool
   description = "Path to the local Orchestrator artifacts relative to working directory."
-  default     = "false"
+  default     = false
 }
 
 variable "local_installers_path" {
