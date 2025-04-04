@@ -532,7 +532,6 @@ if  [[ $SKIP_DOWNLOAD != true  ]]; then
 else 
   echo "Skipping packages download"
   sudo chown -R _apt:root $deb_dir_name
-  sudo rm -rf  "${cwd}/${git_arch_name}/tmp/edge-manageability-framework"
 fi
 
 # Write configuration to disk if the flag is set
