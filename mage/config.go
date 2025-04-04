@@ -419,6 +419,7 @@ func (c Config) getTargetEnvType(targetEnv string) (string, error) {
 
 func (c Config) isAutoCertEnabled(targetEnv string) (bool, error) {
 	clusterValues, err := c.getTargetValues(targetEnv)
+
 	if err != nil {
 		return false, fmt.Errorf("failed to get target values: %w", err)
 	}
@@ -428,9 +429,9 @@ func (c Config) isAutoCertEnabled(targetEnv string) (bool, error) {
 		return false, fmt.Errorf("'argo' configuration is missing or invalid")
 	}
 
-	autoCertConfig, ok := argoConfig["autocert"].(map[string]interface{})
+	autoCertConfig, ok := argoConfig["autoCert"].(map[string]interface{})
 	if !ok {
-		return false, fmt.Errorf("'autocert' configuration is missing or invalid")
+		return false, fmt.Errorf("'autoCert' configuration is missing or invalid")
 	}
 
 	enabled, ok := autoCertConfig["enabled"].(bool)
