@@ -41,7 +41,7 @@ updates:
 
   # Enable version updates for Helm
   - package-ecosystem: "helm"
-    directory:
+    directories:
       - "/argocd-internal/applications"
       - "/argocd-internal/root-app"
       - "/argocd/applications"
