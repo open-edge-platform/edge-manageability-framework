@@ -339,9 +339,8 @@ resource "null_resource" "set_proxy_config" {
   provisioner "remote-exec" {
     inline = [ 
       "set -o errexit",
-      "sed -i 's|proxy-none.yaml|proxy-explicit.yaml|' /home/ubuntu/repo_archives/tmp/edge-manageability-framework/orch-configs/clusters/onprem.yaml",
-      "cp /home/ubuntu/proxy_config.yaml /home/ubuntu/repo_archives/tmp/edge-manageability-framework/orch-configs/profiles/proxy-explicit.yaml",
-      "cat /home/ubuntu/repo_archives/tmp/edge-manageability-framework/orch-configs/profiles/proxy-explicit.yaml",
+      "cp /home/ubuntu/proxy_config.yaml /home/ubuntu/repo_archives/tmp/edge-manageability-framework/orch-configs/profiles/proxy-none.yaml",
+      "cat /home/ubuntu/repo_archives/tmp/edge-manageability-framework/orch-configs/profiles/proxy-none.yaml",
      ]
     when = create
   }

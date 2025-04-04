@@ -552,7 +552,7 @@ cd "$tmp_dir"
 tar -zcf "$repo_file" ./edge-manageability-framework
 mv -f "$repo_file" "$cwd/$git_arch_name/$repo_file"
 cd "$cwd"
-rm -rf "$tmp_dir"
+# rm -rf "$tmp_dir"
 
 # Run OS Configuration installer
 echo "Installing the OS level configuration..."
