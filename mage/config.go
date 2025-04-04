@@ -419,6 +419,7 @@ func (c Config) getTargetEnvType(targetEnv string) (string, error) {
 
 func (c Config) isAutoCertEnabled(targetEnv string) (bool, error) {
 	clusterValues, err := c.getTargetValues(targetEnv)
+
 	if err != nil {
 		return false, fmt.Errorf("failed to get target values: %w", err)
 	}
