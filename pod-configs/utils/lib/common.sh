@@ -456,7 +456,7 @@ apply_terraform() {
         terraform state rm module.gitea 2>/dev/null || true
 
         # Remove the SSM document since Terraform doesn't update the state file
-        terraform state rm 'module.ec2log[0].aws_ssm_document.push_log' || true
+        terraform state rm module.ec2log[0].aws_ssm_document.push_log 2>/dev/null || true
         aws ssm delete-document --region ${AWS_REGION} --name orch-ec2log-${ENV_NAME}-term || true
     fi
 
