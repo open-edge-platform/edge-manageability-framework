@@ -16,6 +16,25 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// Add default values if not specified in the parsed presetData.
+var (
+	defaultPresetValues = map[string]interface{}{
+		"targetCluster":       "kind",
+		"clusterDomain":       serviceDomain,
+		"enableObservability": true,
+		"enableKyverno":       true,
+		"enableEdgeInfra":     true,
+		"enableAutoProvision": true,
+		"proxyProfile":        "",
+		"deployProfile":       "dev",
+		"enableTraefikLogs":   true,
+		"enableMailpit":       false,
+		"dockerCache":         "",
+		"dockerCacheCert":     "",
+		"deployRepoURL":       "https://gitea-http.gitea.svc.cluster.local/argocd/edge-manageability-framework",
+	}
+)
+
 // Create a cluster deployment configuration.
 func getClusterSettings() (map[string]interface{}, error) {
 	clusterValues := make(map[string]interface{})
@@ -171,23 +190,8 @@ func (Config) usePreset(clusterPresetFile string) (string, error) {
 		return "", fmt.Errorf("failed to unmarshal yaml: %w", err)
 	}
 
-	// Add default values if not specified in the parsed presetData.
-	defaults := map[string]interface{}{
-		"targetCluster":       "kind",
-		"enableObservability": true,
-		"enableKyverno":       true,
-		"enableEdgeInfra":     true,
-		"enableAutoProvision": true,
-		"proxyProfile":        "",
-		"deployProfile":       "dev",
-		"enableTraefikLogs":   true,
-		"enableMailpit":       false,
-		"dockerCache":         "",
-		"dockerCacheCert":     "",
-	}
-
-	// Merge default values into the presetData map.
-	for key, defaultValue := range defaults {
+	// Apply defaultPresetValues to the presetData map to fill in any missing defaults.
+	for key, defaultValue := range defaultPresetValues {
 		if _, exists := presetData[key]; !exists {
 			presetData[key] = defaultValue
 		}

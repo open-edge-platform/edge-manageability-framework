@@ -83,7 +83,7 @@ argo:
 {{- end }}
 
   ## Argo CD configs
-  deployRepoURL: "https://gitea-http.gitea.svc.cluster.local/argocd/edge-manageability-framework"
+  deployRepoURL: "{{ .Values.deployRepoURL }}"
   deployRepoRevision: main
 
   targetServer: "https://kubernetes.default.svc"
@@ -92,12 +92,8 @@ argo:
   o11y:
     sre:
       customerLabel: local
-{{- if and .Values.enableCoder }}
-      externalSecretsEnabled: true
-      providerSecretName: sre-secret
 {{- end }}
-{{- end }}
-{{ if or .Values.enableAsm .Values.enableCoder }}
+{{ if .Values.enableCoder }}
   aws: {}
     # Account ID and region will be set by deploy.go
     # region: ""
