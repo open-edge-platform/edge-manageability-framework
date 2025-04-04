@@ -359,6 +359,8 @@ class AutoInstall:
         self.internal_makefile_params = ""
         self.socks_proxy_params = ""
         self.enable_cache_registry = "--enable-cache-registry"
+        self.jumphost_allow_list = ""
+        self.eks_internal_params = ""
 
         if self.internal:
             self.internal_params = "--internal"
@@ -376,6 +378,12 @@ class AutoInstall:
         if self.custom_vpc:
             self.vpc_params = f"--skip-apply-vpc --vpc-id {self.vpc_id}"
             self.vpc_jumphost_params = f"--jumphost-ip {self.jumphost_ip} --cidr-block {self.cidr_block}"
+        
+        # For public deployments pass IP list for SSH access if available
+        self.jump_host_allow_ips = os.getenv("JUMP_HOST_ALLOW_IPS", "[]")
+        if not self.custom_vpc:
+            if self.jump_host_allow_ips not in (None, "[]"):
+                self.jumphost_allow_list = f"--jumphost-ip-allow-list {self.jump_host_allow_ips}"
 
         # Verify Proxy Settings
         if not self.internal:
@@ -547,7 +555,8 @@ class AutoInstall:
             f"--environment $CLUSTER_NAME --parent-domain {self.cluster_domain} "
             f"--region $AWS_REGION --email builder@infra-host.com "
             f"--profile {self.cluster_profile} "
-            f"{self.auto_cert} {self.internal_params} {self.vpc_params} {self.vpc_jumphost_params} {self.socks_proxy_params} --auto "
+            f"{self.vpc_params} {self.vpc_jumphost_params} {self.jumphost_allow_list} "
+            f"{self.auto_cert} {self.internal_params} {self.socks_proxy_params} --auto "
             f"{self.enable_cache_registry} "
             f"{self.eks_internal_params}"
         )
@@ -590,7 +599,8 @@ class AutoInstall:
             f"--aws-admin-roles {self.aws_roles} "
             f"--azuread-refresh-token {self.refresh_token} "
             f"--profile {self.cluster_profile} "
-            f"{self.auto_cert} {self.internal_params} {self.vpc_params} {self.vpc_jumphost_params} {self.socks_proxy_params} --auto "
+            f"{self.vpc_params} {self.vpc_jumphost_params} {self.jumphost_allow_list} "
+            f"{self.auto_cert} {self.internal_params} {self.socks_proxy_params} --auto "
             f"{self.enable_cache_registry} "
             f"{self.eks_internal_params}"
         )
@@ -652,7 +662,8 @@ class AutoInstall:
             f"--aws-admin-roles {self.aws_roles} "
             f"--azuread-refresh-token {self.refresh_token} "
             f"--profile {self.cluster_profile} "
-            f"{self.auto_cert} {self.internal_params} {self.vpc_params} {self.vpc_jumphost_params} {self.socks_proxy_params} --auto --reduce-ns-ttl "
+            f"{self.vpc_params} {self.vpc_jumphost_params} {self.jumphost_allow_list} "
+            f"{self.auto_cert} {self.internal_params} {self.socks_proxy_params} --auto --reduce-ns-ttl "
             f"{self.enable_cache_registry} "
             f"{self.eks_internal_params}"
         )
@@ -922,7 +933,8 @@ class AutoInstall:
             f"--aws-admin-roles {self.aws_roles} "
             f"--azuread-refresh-token {self.refresh_token} "
             f"--profile {self.cluster_profile} "
-            f"{self.auto_cert} {self.internal_params} {self.vpc_params} {self.vpc_jumphost_params} {self.socks_proxy_params} --auto "
+            f"{self.vpc_params} {self.vpc_jumphost_params} {self.jumphost_allow_list} "
+            f"{self.auto_cert} {self.internal_params} {self.socks_proxy_params} --auto "
             f"{self.enable_cache_registry}"
         )
 
