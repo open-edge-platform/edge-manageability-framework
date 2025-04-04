@@ -2,8 +2,6 @@
 
 # Edge Manageability Framework
 
-TODO: Add GHA status badges.
-
 ## Overview
 
 Welcome to the Edge Manageability Framework, a comprehensive suite designed to streamline and enhance the deployment and management of infrastructure and applications at the edge. This framework leverages cutting-edge technologies to provide robust solutions for hardware onboarding, secure workload deployment, and cluster lifecycle management, all centered around Kubernetes-based application deployment for edge computing.
