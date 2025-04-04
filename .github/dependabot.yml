@@ -27,6 +27,9 @@ updates:
       - "/pod-configs/orchestrator/orch-load-balancer"
       - "/pod-configs/orchestrator/orch-route53"
       - "/pod-configs/orchestrator/pull-through-cache-proxy"
+      - "/pod-configs/module/lb-target-group-attachment"
+      - "/pod-configs/module/application-load-balancer"
+      - "/pod-configs/module/load-balancer"
       - "/pod-configs/buckets"
     schedule:
       interval: "daily"
