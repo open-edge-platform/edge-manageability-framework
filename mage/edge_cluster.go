@@ -435,7 +435,7 @@ func getUserToken() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	edgeMgrToken, err := GetApiToken(cli, "sample-project-edge-mgr", defaultOrchPassword)
+	edgeMgrToken, err := GetApiToken(cli, edgeMgrUser, defaultOrchPassword)
 
 	return *edgeMgrToken, err
 }

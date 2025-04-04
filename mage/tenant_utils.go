@@ -1037,3 +1037,43 @@ func getRealmRole(ctx context.Context, client *gocloak.GoCloak, token *gocloak.J
 	}
 	return realmRole, nil
 }
+
+// getEdgeAndOnboardingUsers retrieves the Edge Infra Manager and Onboarding users for a given organization
+func getEdgeAndOnboardingUsers(ctx context.Context, orgName string) (string, string, error) {
+	var user *gocloak.User
+	params := gocloak.GetUsersParams{}
+	edgeInfraUser := ""
+	onboardingUser := ""
+
+	client, token, err := KeycloakLogin(ctx)
+	if err != nil {
+		return edgeInfraUser, onboardingUser, err
+	}
+
+	users, err := client.GetUsers(ctx, token.AccessToken, KeycloakRealm, params)
+	if err != nil {
+		fmt.Printf("error getting user %v", err)
+		return edgeInfraUser, onboardingUser, err
+	}
+
+	// Loop through the users to find Edge Infra Manager and Onboarding users
+	for _, user = range users {
+		// Check if the user is an Edge Infra Manager
+		if strings.Contains(*user.Username, "-edge-mgr") {
+			newSt := strings.Split(*user.Email, "@")
+			// Ensure the email domain matches the organization name
+			if newSt[1] == orgName+".com" {
+				edgeInfraUser = *user.Username
+			}
+		}
+		if strings.Contains(*user.Username, "-onboarding-user") {
+			newSt := strings.Split(*user.Email, "@")
+			if newSt[1] == orgName+".com" {
+				onboardingUser = *user.Username
+			}
+		}
+	}
+
+	fmt.Printf("Found Edge Infra User: %s, Onboarding User: %s\n", edgeInfraUser, onboardingUser)
+	return edgeInfraUser, onboardingUser, nil
+}
