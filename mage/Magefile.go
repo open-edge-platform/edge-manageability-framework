@@ -501,7 +501,10 @@ func (d Deploy) Gitea(targetEnv string) error {
 }
 
 func (d Deploy) StartGiteaProxy() error {
-	d.StopGiteaProxy()
+	err := d.StopGiteaProxy()
+	if err != nil {
+		return fmt.Errorf("failed to stop Gitea proxy: %w", err)
+	}
 
 	portForwardCmd, err := d.startGiteaPortForward()
 	if err != nil {
@@ -520,10 +523,16 @@ func (d Deploy) StartGiteaProxy() error {
 
 func (d Deploy) StopGiteaProxy() error {
 	pidFile := ".gitea-proxy"
+
+	if _, err := os.Stat(pidFile); os.IsNotExist(err) {
+		return nil
+	}
+
 	pidBytes, err := os.ReadFile(pidFile)
 	if err != nil {
 		return fmt.Errorf("failed to read PID file %s: %w", pidFile, err)
 	}
+
 	pid, err := strconv.Atoi(strings.TrimSpace(string(pidBytes)))
 	if err != nil {
 		return fmt.Errorf("failed to parse PID from %s: %w", pidFile, err)

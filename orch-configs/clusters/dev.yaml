@@ -67,6 +67,7 @@ argo:
 
 orchestratorDeployment:
   targetCluster: kind
+  enableMailpit: true
 
 # Post custom template overwrite values should go to /root-app/environments/<env>/<appName>.yaml
 # This is a placeholder to prevent error when there isn't any overwrite needed
