@@ -192,14 +192,9 @@ func (Deploy) kind(targetEnv string) error { //nolint:gocyclo
 		time.Sleep(argoRetryInterval * time.Second)
 	}
 
-	// gitUsername, gitPassword, err := getArgoGiteaCredentials()
-	// if err != nil {
-	// 	return fmt.Errorf("error getting gitea credentials: %w", err)
-	// }
-
-	// if err := (Argo{}).repoAddUrl(deployRepoClusterUrl, gitUsername, gitPassword); err != nil {
-	// 	return fmt.Errorf("error adding repo to argo: %w", err)
-	// }
+	if err := (Argo{}).repoAdd(); err != nil {
+		return err
+	}
 
 	if err := (Argo{}).dockerHubChartOrgAdd(); err != nil {
 		return err
@@ -1017,7 +1012,7 @@ func createOrUpdateGiteaAccount(username string, password string) error {
 	return nil
 }
 
-func getArgoGiteaCredentials() (string, string, error) {
+func (Deploy) getArgoGiteaCredentials() (string, string, error) {
 	// Load the username from the Kubernetes secret argocd-gitea-credential in orch-platform namespace
 	cmd := "kubectl get secret argocd-gitea-credential -n orch-platform -o jsonpath='{.data.username}'"
 	encodedUsername, err := script.Exec(cmd).String()
@@ -1114,7 +1109,7 @@ func (Deploy) stopGiteaPortForward(portForwardCmd *exec.Cmd) error {
 func createOrUpdateGiteaRepo(username string, password string, repo string) error {
 	// Get the Gitea credentials from the Kubernetes secret, the randomly generated password constants are not
 	// safe as this commit/update may be part of a separate mage run than the initial deployment
-	gitUsername, gitPassword, err := getArgoGiteaCredentials()
+	gitUsername, gitPassword, err := (Deploy{}).getArgoGiteaCredentials()
 	if err != nil {
 		return fmt.Errorf("error getting Gitea credentials: %w", err)
 	}
@@ -1185,7 +1180,7 @@ func (Deploy) updateDeployRepo(targetEnv, gitRepoPath, repoName, localClonePath 
 
 	// Get the Gitea credentials from the Kubernetes secret, the randomly generated password constants are not
 	// safe as this commit/update may be part of a separate mage run than the initial deployment
-	gitUsername, gitPassword, err := getArgoGiteaCredentials()
+	gitUsername, gitPassword, err := (Deploy{}).getArgoGiteaCredentials()
 	if err != nil {
 		return fmt.Errorf("error getting Gitea credentials: %w", err)
 	}

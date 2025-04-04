@@ -53,9 +53,9 @@ var argoNamespaces = []string{
 	"orch-infra",    // used when creating a secret for mailpit
 }
 
-// TODO: Remove private repos and argo references to them
+// TODO: Ideally this would be extracted from the cluster configuration and aligned with over gitea server configuration/secrets
 var privateRepos = []string{
-	"https://github.com/open-edge-platform/edge-manageability-framework",
+	"https://gitea-http.gitea.svc.cluster.local/argocd/edge-manageability-framework",
 }
 
 var globalAsdf = []string{

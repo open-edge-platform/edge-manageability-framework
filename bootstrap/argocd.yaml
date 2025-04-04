@@ -40,6 +40,20 @@ global:
     - name: no_proxy
       value: ""
 
+# FIXME Workaround for ArgoCD not applying CA file when pulling from OCI registry. Remove this once the issue is fixed
+# Ref: https://github.com/argoproj/argo-cd/issues/13726, https://github.com/argoproj/argo-cd/issues/14877
+repoServer:
+  # -- Additional volumeMounts to the Repo Server main container
+  volumeMounts:
+    - mountPath: /etc/ssl/certs/registry-certs.pem
+      name: registry-certs
+      subPath: registry-certs.crt
+  # -- Additional volumes to the Repo Server pod
+  volumes:
+    - name: registry-certs
+      configMap:
+        name: registry-certs
+
 # Disabled due to vulnerability report and we are not using it
 dex:
   enabled: false

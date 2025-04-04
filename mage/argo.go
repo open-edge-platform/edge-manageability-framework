@@ -82,15 +82,17 @@ func (Argo) login() error {
 }
 
 func (Argo) repoAdd() error {
-	gitUser := os.Getenv("GIT_USER")
-	if gitUser == "" {
-		return fmt.Errorf("must set environment variable GIT_USER")
+	gitUser, gitToken, err := (Deploy{}).getArgoGiteaCredentials()
+	if err != nil {
+		return fmt.Errorf("error getting gitea credentials: %w", err)
 	}
 
-	gitToken := os.Getenv("GIT_TOKEN")
-	if gitToken == "" {
-		return fmt.Errorf("must set environment variable GIT_TOKEN")
-	}
+	// gitUser := os.Getenv("GIT_USER")
+	// gitToken := os.Getenv("GIT_TOKEN")
+
+	// if gitUser == "" || gitToken == "" {
+	// 	return fmt.Errorf("GIT_USER and GIT_TOKEN must be set")
+	// }
 
 	for _, repo := range privateRepos {
 		cmd := fmt.Sprintf("argocd repo add %s --username %s --password %s --upsert", repo, gitUser, gitToken)
@@ -101,13 +103,32 @@ func (Argo) repoAdd() error {
 	return nil
 }
 
-func (Argo) repoAddUrl(url string, repoUser string, repoAuth string) error {
-	cmd := fmt.Sprintf("argocd repo add %s --username %s --password %s --upsert", url, repoUser, repoAuth)
-	if _, err := script.Exec(cmd).Stdout(); err != nil {
-		return err
-	}
-	return nil
-}
+// func (Argo) repoAddUrl(serverUrl string, repo string, gitUser string, gitPassword string) error {
+// 	// cmd := fmt.Sprintf("argocd repo add %s --username %s --password %s --upsert", url, repoUser, repoAuth)
+// 	// if _, err := script.Exec(cmd).Stdout(); err != nil {
+// 	// 	return err
+// 	// }
+
+// 	resource "kubernetes_secret" "argocd_gitea_secrets"
+
+// 	{
+// 		metadata {
+// 		  name      = "gitea-credential-${repo}"
+// 		  namespace = "argocd"
+// 		  labels = {
+// 			"argocd.argoproj.io/secret-type" : "repository"
+// 		  }
+// 		}
+// 		data = {
+// 		  "username" = "argocd"
+// 		  "password" = random_password.gitea_user_password["argocd"].result
+// 		  "url"      = "https://${var.gitea_fqdn}/argocd/${each.key}"
+// 		  "type"     = "git"
+// 		}
+// 	  }
+
+// 	return nil
+// }
 
 func (Argo) dockerHubChartOrgAdd() error {
 	dockerToken := os.Getenv("DOCKERHUB_TOKEN")
