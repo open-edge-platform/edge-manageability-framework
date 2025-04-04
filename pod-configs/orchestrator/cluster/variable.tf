@@ -123,13 +123,6 @@ variable "istio_namespaces" {
   type    = list(string)
   default = ["orch-infra", "orch-app", "orch-cluster", "orch-ui", "orch-platform", "orch-gateway"]
 }
-variable "sre_basic_auth_username" {
-  type    = string
-  default = "nexsre"
-}
-variable "sre_basic_auth_password" {
-  type = string
-}
 variable "webhook_github_netrc" {
   description = "Content of netrc file which contains access token to connect to GitHub."
   default     = ""
@@ -245,10 +238,7 @@ variable "argocd_repos" {
 
 variable "eks_additional_iam_policies" {
   type = set(string)
-  default = [
-    "secret_read_release-service-token",
-    "secret_read_sre-secret"
-  ]
+  default = []
 }
 
 variable "eks_additional_node_groups" {
@@ -286,10 +276,19 @@ variable "eks_additional_node_groups" {
   }
 }
 
-variable "sre_secret_string" {
-  description = "The secret value to store on AWS secrets manager for SRE exporter"
-  type        = string
-  sensitive   = true
+variable "sre_basic_auth_username" {
+  type    = string
+  default = ""
+}
+
+variable "sre_basic_auth_password" {
+  type    = string
+  default = ""
+}
+
+variable "sre_destination_secret_url" {
+  type    = string
+  default = ""
 }
 
 variable "smtp_user" {

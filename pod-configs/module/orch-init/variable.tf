@@ -21,10 +21,17 @@ variable "webhook_github_netrc" {
 
 variable "sre_basic_auth_username" {
   type    = string
+  default = ""
 }
 
 variable "sre_basic_auth_password" {
   type    = string
+  default = ""
+}
+
+variable "sre_destination_secret_url" {
+  type    = string
+  default = ""
 }
 
 variable "public_cloud" {

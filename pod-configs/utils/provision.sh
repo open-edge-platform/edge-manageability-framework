@@ -1002,14 +1002,7 @@ action_cluster() {
         export TF_VAR_ca_cert="$(cat ${SAVE_DIR}/${CHAIN})"
     fi
     export TF_VAR_auto_cert=${AUTO_CERT}
-    export TF_VAR_sre_basic_auth_password=""
     export TF_VAR_webhook_github_netrc=""
-    export TF_VAR_sre_secret_string=${TF_VAR_sre_secret_string:-""}
-
-    # Put a random string so that Terraform can proceed
-    if [[ -z "$TF_VAR_sre_secret_string" ]]; then
-        TF_VAR_sre_secret_string="random"
-    fi
 
     for v in "TF_VAR_tls_key" "TF_VAR_tls_cert" "TF_VAR_ca_cert"; do
         error_var_blank $v
@@ -1029,7 +1022,6 @@ action_cluster() {
         echo "EOF" >> $tfvar_override
     fi
     echo "auto_cert=${AUTO_CERT}" >> $tfvar_override
-    echo "sre_basic_auth_password=\"\"" >> $tfvar_override
     echo "webhook_github_netrc=\"\"" >> $tfvar_override
 
     if [[ "$OVERRIDE_EKS_SIZE" == "true" ]]; then
@@ -1757,7 +1749,6 @@ push-savedir() {
 set_values() {
     action="$1"
 
-    TF_VAR_sre_secret_string=""
     TF_VAR_smtp_user=""
     TF_VAR_smtp_pass=""
     TF_VAR_smtp_url=""
@@ -1802,7 +1793,9 @@ set_values() {
 #       EOF
 
 # The SRE secret string.
-sre_secret_string="place the SRE secret string here"
+sre_basic_auth_username=""
+sre_basic_auth_password=""
+sre_destination_secret_url=""
 
 # The email configuration information if it is needed.
 smtp_user=""
