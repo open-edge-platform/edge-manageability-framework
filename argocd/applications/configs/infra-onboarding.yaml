@@ -54,4 +54,4 @@ dkam:
 
 infra-config:
   config:
-    enAgentManifestTag: "1.0.0-dev-bf09305"
+    enAgentManifestTag: "1.0.0-dev-7d80575"
