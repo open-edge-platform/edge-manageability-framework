@@ -26,7 +26,7 @@ resource "local_file" "env_data_file" {
   }
 }
 
-resource "local_file" "proxy_config_file" {  
+resource "local_file" "proxy_config_file" {
   content = templatefile(
     "${path.module}/templates/proxy_config.tftpl",
     {
