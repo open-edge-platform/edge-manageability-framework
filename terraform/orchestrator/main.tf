@@ -26,7 +26,7 @@ resource "local_file" "env_data_file" {
   }
 }
 
-resource "local_file" "proxy_config_file" {
+resource "local_file" "proxy_config_file" {  
   content = templatefile(
     "${path.module}/templates/proxy_config.tftpl",
     {
@@ -339,7 +339,9 @@ resource "null_resource" "set_proxy_config" {
   provisioner "remote-exec" {
     inline = [ 
       "set -o errexit",
-      "mv /home/ubuntu/proxy_config.yaml /home/ubuntu/repo_archives/tmp/edge-manageability-framework/orch-configs/profiles/proxy-none.yaml"
+      "sed -i 's|proxy-none.yaml|proxy-explicit.yaml|' /home/ubuntu/repo_archives/tmp/edge-manageability-framework/orch-configs/clusters/onprem.yaml",
+      "cp /home/ubuntu/proxy_config.yaml /home/ubuntu/repo_archives/tmp/edge-manageability-framework/orch-configs/profiles/proxy-explicit.yaml",
+      "cat /home/ubuntu/repo_archives/tmp/edge-manageability-framework/orch-configs/profiles/proxy-explicit.yaml",
      ]
     when = create
   }
