@@ -5,30 +5,66 @@
 version: 2
 enable-beta-ecosystems: true
 updates:
-  # Maintain Go modules
+
+  # Enable version updates for Go modules
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
       interval: "daily"
-    open-pull-requests-limit: 2
-    # Maintain docker-compose version
-  - package-ecosystem: "docker-compose"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 2
-    # Maintain Terraform vrsion
+    commit-message:
+      prefix: "Go modules"
+    reviewers:
+      - "se-chris-thach"
+      - "dmytroye"
+
+    # Enable version updates for Terraform
   - package-ecosystem: "terraform"
-    directory: "/"
+    directories:
+      - "/terraform/edge-network"
+      - "/terraform/orchestrator"
+      - "/terraform/edge-storage-pool"
     schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 2
-    # Maintain Helm version
+      interval: "daily"
+    commit-message:
+      prefix: "terraform"
+    reviewers:
+      - "se-chris-thach"
+      - "dmytroye"
+
+    # Enable version updates for Helm
   - package-ecosystem: "helm"
+    directory:
+      - "/argocd-internal/applications"
+      - "/argocd-internal/root-app"
+      - "/argocd/applications"
+      - "/argocd/root-app"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "Helm"
+    reviewers:
+      - "se-chris-thach"
+      - "dmytroye"
+
+  # Enable version updates for Docker
+  - package-ecosystem: "docker"
+    directories:
+      - "/installer"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "Dockerfile"
+    reviewers:
+      - "se-chris-thach"
+      - "dmytroye"
+      
+  # Enable version updates for GitHub Actions
+  - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 2
+      interval: "daily"
+    commit-message:
+      prefix: "Github Actions"
     reviewers:
       - "se-chris-thach"
       - "dmytroye"
