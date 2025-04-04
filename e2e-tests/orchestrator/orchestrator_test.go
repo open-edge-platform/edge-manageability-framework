@@ -535,24 +535,6 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 		templatesUrl := fmt.Sprintf("https://api.%s/v2/projects/%s/templates", serviceDomainWithPort, util.TestProject)
 		coUser := fmt.Sprintf("%s-edge-op", util.TestUser)
 
-		It("should NOT be accessible over HTTPS when using no token", func() {
-			req, err := http.NewRequest("GET", templatesUrl, nil)
-			Expect(err).ToNot(HaveOccurred())
-			resp, err := cli.Do(req)
-			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
-			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
-		})
-		It("should NOT be accessible over HTTPS when using invalid token", func() {
-			req, err := http.NewRequest("GET", templatesUrl, nil)
-			Expect(err).ToNot(HaveOccurred())
-			const invalid = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c" //nolint: lll
-			req.Header.Add("Authorization", "Bearer "+invalid)
-			resp, err := cli.Do(req)
-			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
-			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
-		})
 		It("should be accessible over HTTPS when using valid token", func() {
 			Eventually(func() bool {
 				req, err := http.NewRequest("GET", templatesUrl, nil)
@@ -565,6 +547,39 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 				return resp.StatusCode == http.StatusOK
 			}, 20*time.Second, 5*time.Second).Should(BeTrue())
 		})
+
+		nonCoUser := fmt.Sprintf("%s-api-user", util.TestUser)
+		It("should NOT be accessible over HTTPS when using valid token with invalid roles", func() {
+			req, err := http.NewRequest("GET", templatesUrl, nil)
+			Expect(err).ToNot(HaveOccurred())
+			token := getKeycloakJWT(cli, nonCoUser)
+			req.Header.Add("Authorization", "Bearer "+token)
+			resp, err := cli.Do(req)
+			Expect(err).ToNot(HaveOccurred())
+			defer resp.Body.Close()
+			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
+		})
+
+		It("should NOT be accessible over HTTPS when using invalid token", func() {
+			req, err := http.NewRequest("GET", templatesUrl, nil)
+			Expect(err).ToNot(HaveOccurred())
+			const invalid = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c" //nolint: lll
+			req.Header.Add("Authorization", "Bearer "+invalid)
+			resp, err := cli.Do(req)
+			Expect(err).ToNot(HaveOccurred())
+			defer resp.Body.Close()
+			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
+		})
+
+		It("should NOT be accessible over HTTPS when using no token", func() {
+			req, err := http.NewRequest("GET", templatesUrl, nil)
+			Expect(err).ToNot(HaveOccurred())
+			resp, err := cli.Do(req)
+			Expect(err).ToNot(HaveOccurred())
+			defer resp.Body.Close()
+			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
+		})
+
 		It("should NOT be accessible over HTTPS when using valid but expired token", func() { //nolint: dupl
 			Expect(saveToken(cli)).To(Succeed())
 			token, err := script.File(outputFile).String()
@@ -573,6 +588,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 
 			isUnexpired, err := isTokenUnexpired(token)
 			Expect(err).ToNot(HaveOccurred())
+
 			if isUnexpired {
 				Skip("Skipping this test because JWT Token is NOT expired")
 			}
@@ -605,6 +621,18 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			Expect(string(content)).To(ContainSubstring(`{"clusters":[`))
 		})
 
+		nonCoUser := fmt.Sprintf("%s-api-user", util.TestUser)
+		It("should NOT be accessible over HTTPS when using valid token with invalid roles", func() {
+			req, err := http.NewRequest("GET", cmUrl, nil)
+			Expect(err).ToNot(HaveOccurred())
+			token := getKeycloakJWT(cli, nonCoUser)
+			req.Header.Add("Authorization", "Bearer "+token)
+			resp, err := cli.Do(req)
+			Expect(err).ToNot(HaveOccurred())
+			defer resp.Body.Close()
+			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
+		})
+
 		It("should NOT be accessible over HTTPS when using invalid token", func() {
 			req, err := http.NewRequest("GET", cmUrl, nil)
 			Expect(err).ToNot(HaveOccurred())
@@ -627,15 +655,12 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 
 		It("should NOT be accessible over HTTPS when using valid but expired token", func() {
 			Expect(saveToken(cli)).To(Succeed())
-
 			token, err := script.File(outputFile).String()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(token).ToNot(BeEmpty())
 
 			isUnexpired, err := isTokenUnexpired(token)
-
 			Expect(err).ToNot(HaveOccurred())
-
 			if isUnexpired {
 				Skip("Skipping this test because JWT Token is NOT expired")
 			}
@@ -646,6 +671,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			req.Header.Add("Authorization", "Bearer "+token)
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
+			defer resp.Body.Close()
 			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
 		})
 	})
