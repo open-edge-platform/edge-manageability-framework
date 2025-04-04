@@ -20,18 +20,6 @@ locals {
   cidr_blocks     = data.terraform_remote_state.vpc.outputs.cidr_blocks
   vpc_name        = data.terraform_remote_state.vpc.outputs.vpc_name
   smtp_from       = var.smtp_from == "" ? "${var.eks_cluster_name}@intel.com" : var.smtp_from
-  # Use this map to dynamically generate aws_iam_role_policy_attachment resource since
-  # Terraofrm does not allow keys to be created dynamically
-  additional_iam_policies = merge({ for arn in var.eks_additional_iam_policies : arn => arn },
-    {
-      "sre-secret" : module.sre_secret.read_only_policy_name
-  })
-}
-
-module "sre_secret" {
-  source        = "../../module/secret"
-  name          = "sre-secret-${var.eks_cluster_name}"
-  secret_string = var.sre_secret_string
 }
 
 module "eks" {
@@ -53,7 +41,6 @@ module "eks" {
   addons                      = var.eks_addons
   eks_version                 = var.eks_version
   max_pods                    = var.eks_max_pods
-  additional_iam_policies     = local.additional_iam_policies
   additional_node_groups      = var.eks_additional_node_groups
   public_cloud                = var.public_cloud
   enable_cache_registry       = var.enable_cache_registry
@@ -181,6 +168,7 @@ module "orch_init" {
   ca_cert                       = var.ca_cert
   sre_basic_auth_username       = var.sre_basic_auth_username
   sre_basic_auth_password       = var.sre_basic_auth_password
+  sre_destination_secret_url    = var.sre_destination_secret_url
   webhook_github_netrc          = var.webhook_github_netrc
   smtp_user                     = var.smtp_user
   smtp_pass                     = var.smtp_pass
