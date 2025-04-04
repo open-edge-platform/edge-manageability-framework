@@ -95,7 +95,7 @@ func (Argo) repoAdd() error {
 	// }
 
 	for _, repo := range privateRepos {
-		cmd := fmt.Sprintf("argocd repo add %s --username %s --password %s --upsert --insecure", repo, gitUser, gitToken)
+		cmd := fmt.Sprintf("argocd repo add %s --username %s --password %s --upsert --insecure-skip-server-verification --insecure", repo, gitUser, gitToken)
 		if _, err := script.Exec(cmd).Stdout(); err != nil {
 			return err
 		}
