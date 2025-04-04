@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 resource "aws_security_group" "alb" {
-  name   = "${var.name}-alb"
+  name   = "${var.name}-ptcp-alb"
   vpc_id = var.vpc_id
 }
 
