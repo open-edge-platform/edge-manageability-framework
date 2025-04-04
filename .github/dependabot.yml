@@ -17,7 +17,7 @@ updates:
       - "se-chris-thach"
       - "dmytroye"
 
-    # Enable version updates for Terraform
+  # Enable version updates for Terraform
   - package-ecosystem: "terraform"
     directories:
       - "/terraform/edge-network"
@@ -39,7 +39,7 @@ updates:
       - "se-chris-thach"
       - "dmytroye"
 
-    # Enable version updates for Helm
+  # Enable version updates for Helm
   - package-ecosystem: "helm"
     directory:
       - "/argocd-internal/applications"
