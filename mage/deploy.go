@@ -381,41 +381,6 @@ func kubectlCreateAndApply(createArgs ...string) error {
 	return nil
 }
 
-// Secret Manager is not available for environments other than EKS clusters and Coder
-func secretsManagerAvailable(targetEnv string) bool {
-	// Config will contain the following:
-	// argo:
-	//   enabled:
-	//     aws-sm-proxy: true
-
-	if targetEnv == "" {
-		return false
-	}
-
-	clusterFilePath := fmt.Sprintf("orch-configs/clusters/%s.yaml", targetEnv)
-	clusterValues, err := parseClusterValues(clusterFilePath)
-	if err != nil {
-		return false
-	}
-
-	argoConfig, ok := clusterValues["argo"].(map[string]interface{})
-	if !ok {
-		return false
-	}
-
-	autoCertConfig, ok := argoConfig["enabled"].(map[string]interface{})
-	if !ok {
-		return false
-	}
-
-	enabled, ok := autoCertConfig["aws-sm-proxy"].(bool)
-	if !ok {
-		return false
-	}
-
-	return enabled
-}
-
 func createLocalSreSecrets() error {
 	// basic-auth-username for sre-exporter
 	if err := kubectlCreateAndApply("secret", "generic", "-n", "orch-sre", "basic-auth-username",
@@ -473,10 +438,8 @@ func localSecret(targetEnv string, createRSToken bool) error {
 	// 	}
 	// }
 
-	if !secretsManagerAvailable(targetEnv) {
-		if err := createLocalSreSecrets(); err != nil {
-			return err
-		}
+	if err := createLocalSreSecrets(); err != nil {
+		return err
 	}
 	return nil
 }

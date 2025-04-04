@@ -24,9 +24,6 @@ root:
     - orch-configs/profiles/ui-dev.yaml
 {{- end }}
     - orch-configs/profiles/enable-dev.yaml
-{{- if .Values.enableAsm }}
-    - orch-configs/profiles/enable-asm.yaml
-{{- end }}
 {{- if .Values.enableObservability }}
     - orch-configs/profiles/enable-sre.yaml
 {{- end }}
@@ -39,10 +36,10 @@ root:
 {{- else }}
     - orch-configs/profiles/proxy-none.yaml
 {{- end }}
+    - orch-configs/profiles/profile-{{ .Values.deployProfile }}.yaml
 {{- if .Values.enableAutoCert }}
     - orch-configs/profiles/profile-autocert.yaml
 {{- end }}
-    - orch-configs/profiles/profile-{{ .Values.deployProfile }}.yaml
     - orch-configs/profiles/artifact-rs-production-noauth.yaml
 {{- if .Values.enableObservability }}
     - orch-configs/profiles/o11y-dev.yaml
