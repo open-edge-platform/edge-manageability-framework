@@ -201,7 +201,23 @@ func (Deploy) kind(targetEnv string) error { //nolint:gocyclo
 		time.Sleep(argoRetryInterval * time.Second)
 	}
 
-	if err := (Argo{}).repoAdd(); err != nil {
+	gitUser := os.Getenv("GIT_USER")
+	gitToken := os.Getenv("GIT_TOKEN")
+
+	if gitUser == "" || gitToken == "" {
+		return fmt.Errorf("GIT_USER and GIT_TOKEN must be set")
+	}
+
+	if err := (Argo{}).repoAdd(gitUser, gitToken, githubRepos); err != nil {
+		return err
+	}
+
+	giteaUser, giteaToken, err := (Deploy{}).getArgoGiteaCredentials()
+	if err != nil {
+		return fmt.Errorf("error getting gitea credentials: %w", err)
+	}
+
+	if err := (Argo{}).repoAdd(giteaUser, giteaToken, giteaRepos); err != nil {
 		return err
 	}
 
@@ -1194,7 +1210,7 @@ func (Deploy) updateDeployRepo(targetEnv, gitRepoPath, repoName, localClonePath 
 	}
 
 	// Copy files and directories to the newly cloned deployRepoPath
-	filesToCopy := []string{"VERSION", "argocd", "argocd-internal", "orch-configs/profiles"}
+	filesToCopy := []string{"VERSION", "argocd", "orch-configs/profiles"}
 	filesToCopy = append(filesToCopy, fmt.Sprintf("orch-configs/clusters/%s.yaml", targetEnv))
 
 	for _, file := range filesToCopy {

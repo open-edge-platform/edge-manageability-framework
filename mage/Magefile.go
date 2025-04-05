@@ -54,7 +54,11 @@ var argoNamespaces = []string{
 }
 
 // TODO: Ideally this would be extracted from the cluster configuration and aligned with over gitea server configuration/secrets
-var privateRepos = []string{
+var githubRepos = []string{
+	"https://github.com/open-edge-platform/edge-manageability-framework",
+}
+
+var giteaRepos = []string{
 	"https://gitea-http.gitea.svc.cluster.local/argocd/edge-manageability-framework",
 }
 
@@ -1197,8 +1201,8 @@ func (a Argo) Login() error {
 }
 
 // Add internal helm/git repos.
-func (a Argo) RepoAdd() error {
-	return a.repoAdd()
+func (a Argo) RepoAdd(gitUser string, gitToken string, repos []string) error {
+	return a.repoAdd(gitUser, gitToken, repos)
 }
 
 // Lists all ArgoCD Applications, sorted by syncWave.

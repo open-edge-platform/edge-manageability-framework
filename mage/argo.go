@@ -81,20 +81,8 @@ func (Argo) login() error {
 	return nil
 }
 
-func (Argo) repoAdd() error {
-	gitUser, gitToken, err := (Deploy{}).getArgoGiteaCredentials()
-	if err != nil {
-		return fmt.Errorf("error getting gitea credentials: %w", err)
-	}
-
-	// gitUser := os.Getenv("GIT_USER")
-	// gitToken := os.Getenv("GIT_TOKEN")
-
-	// if gitUser == "" || gitToken == "" {
-	// 	return fmt.Errorf("GIT_USER and GIT_TOKEN must be set")
-	// }
-
-	for _, repo := range privateRepos {
+func (Argo) repoAdd(gitUser string, gitToken string, repos []string) error {
+	for _, repo := range repos {
 		cmd := fmt.Sprintf("argocd repo add %s --username %s --password %s --upsert --insecure-skip-server-verification --insecure", repo, gitUser, gitToken)
 		if _, err := script.Exec(cmd).Stdout(); err != nil {
 			return err
@@ -102,33 +90,6 @@ func (Argo) repoAdd() error {
 	}
 	return nil
 }
-
-// func (Argo) repoAddUrl(serverUrl string, repo string, gitUser string, gitPassword string) error {
-// 	// cmd := fmt.Sprintf("argocd repo add %s --username %s --password %s --upsert", url, repoUser, repoAuth)
-// 	// if _, err := script.Exec(cmd).Stdout(); err != nil {
-// 	// 	return err
-// 	// }
-
-// 	resource "kubernetes_secret" "argocd_gitea_secrets"
-
-// 	{
-// 		metadata {
-// 		  name      = "gitea-credential-${repo}"
-// 		  namespace = "argocd"
-// 		  labels = {
-// 			"argocd.argoproj.io/secret-type" : "repository"
-// 		  }
-// 		}
-// 		data = {
-// 		  "username" = "argocd"
-// 		  "password" = random_password.gitea_user_password["argocd"].result
-// 		  "url"      = "https://${var.gitea_fqdn}/argocd/${each.key}"
-// 		  "type"     = "git"
-// 		}
-// 	  }
-
-// 	return nil
-// }
 
 func (Argo) dockerHubChartOrgAdd() error {
 	dockerToken := os.Getenv("DOCKERHUB_TOKEN")
