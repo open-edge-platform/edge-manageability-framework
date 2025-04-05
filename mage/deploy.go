@@ -53,17 +53,17 @@ var (
 const giteaPasswordLength = 100
 
 var (
-	adminGiteaUsername  	= "gitea_admin"
-	adminGiteaPassword   	= randomPassword(giteaPasswordLength)
-	argoGiteaUsername     	= "argocd"
-	argoGiteaPassword    	= randomPassword(giteaPasswordLength)
-	appGiteaUsername     	= "apporch"
-	appGiteaPassword     	= randomPassword(giteaPasswordLength)
-	clusterGiteaUsername 	= "clusterorch"
-	clusterGiteaPassword 	= randomPassword(giteaPasswordLength)
-	deployRepoPath 			= "argocd/edge-manageability-framework"
-	deployRepoName 			= "edge-manageability-framework"	
-	deployGiteaRepoDir 		= ".deploy/gitea"	
+	adminGiteaUsername   = "gitea_admin"
+	adminGiteaPassword   = randomPassword(giteaPasswordLength)
+	argoGiteaUsername    = "argocd"
+	argoGiteaPassword    = randomPassword(giteaPasswordLength)
+	appGiteaUsername     = "apporch"
+	appGiteaPassword     = randomPassword(giteaPasswordLength)
+	clusterGiteaUsername = "clusterorch"
+	clusterGiteaPassword = randomPassword(giteaPasswordLength)
+	deployRepoPath       = "argocd/edge-manageability-framework"
+	deployRepoName       = "edge-manageability-framework"
+	deployGiteaRepoDir   = ".deploy/gitea"
 )
 
 func (Deploy) all(targetEnv string) error {
@@ -181,7 +181,7 @@ func (Deploy) kind(targetEnv string) error { //nolint:gocyclo
 	// NOTE: Must initially populate the Gitea repo before attempting to add it to ArgoCD (errors with empty repo)
 	//       We also need to update/push contents on every deploy within the Orch and Orch local operations for those
 	//       functions to work properly.
-	
+	//
 	// Clone and update the Gitea deployment repo
 	if err := (Deploy{}).updateDeployRepo(targetEnv, deployRepoPath, deployRepoName, deployGiteaRepoDir); err != nil {
 		return fmt.Errorf("error updating deployment repo content: %w", err)
@@ -1077,7 +1077,7 @@ func (Deploy) startGiteaPortForward() (*exec.Cmd, error) {
 
 			return portForwardCmd, fmt.Errorf("timed out attempting to establish port forwarding for Gitea: %w", err)
 		}
-	}	
+	}
 
 	fmt.Printf("Port-forward started with PID: %d\n", portForwardCmd.Process.Pid)
 
@@ -1098,9 +1098,9 @@ func createOrUpdateGiteaRepo(username string, password string, repo string) erro
 	if err != nil {
 		return fmt.Errorf("error getting Gitea credentials: %w", err)
 	}
-	
+
 	portForwardCmd, err := (Deploy{}).startGiteaPortForward()
-	if err != nil {	
+	if err != nil {
 		return fmt.Errorf("error starting Gitea port-forward: %w", err)
 	}
 	defer func() {
@@ -1108,7 +1108,6 @@ func createOrUpdateGiteaRepo(username string, password string, repo string) erro
 			fmt.Printf("error stopping Gitea port-forward: %v\n", err)
 		}
 	}()
-
 
 	url := "https://localhost:9654/api/v1/user/repos"
 	payload := fmt.Sprintf(`{"name": "%s"}`, repo)
@@ -1154,7 +1153,7 @@ func (Deploy) updateDeployRepo(targetEnv, gitRepoPath, repoName, localClonePath 
 	}()
 
 	portForwardCmd, err := (Deploy{}).startGiteaPortForward()
-	if err != nil {	
+	if err != nil {
 		return fmt.Errorf("error starting Gitea port-forward: %w", err)
 	}
 	defer func() {
@@ -1169,7 +1168,7 @@ func (Deploy) updateDeployRepo(targetEnv, gitRepoPath, repoName, localClonePath 
 	if err != nil {
 		return fmt.Errorf("error getting Gitea credentials: %w", err)
 	}
-	
+
 	// Set GIT_SSL_NO_VERIFY=true for git commmands that we are running through the port forward tunnel
 	os.Setenv("GIT_SSL_NO_VERIFY", "true")
 
