@@ -67,7 +67,7 @@ argo:
   # Base domain name for all Orchestrator services. This base domain will be concatenated with a service's subdomain
   # name to produce the service's domain name. For example, given the domain name of `orchestrator.io`, the Web UI
   # service will be accessible via `web-ui.orchestrator.io`. Not to be confused with the K8s cluster domain.
-  clusterDomain: kind.internal
+  clusterDomain: {{ .Values.clusterDomain }}
 
 {{- if and .Values.enableAutocert .Values.staging }}
   autoCert:
@@ -124,6 +124,7 @@ argo:
 orchestratorDeployment:
   targetCluster: {{ .Values.targetCluster }}
   enableMailpit: {{ .Values.enableMailpit }}
+  argoServiceType: {{ .Values.argoServiceType }}
   dockerCache: "{{ .Values.dockerCache }}"
 {{- if and .Values.dockerCacheCert }}  
   dockerCacheCert: |

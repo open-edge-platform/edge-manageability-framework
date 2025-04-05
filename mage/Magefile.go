@@ -493,7 +493,7 @@ func (d Deploy) Kind(targetEnv string) error {
 func (d Deploy) Gitea(targetEnv string) error {
 	err := (Config{}).renderTargetConfigTemplate(targetEnv, "orch-configs/templates/bootstrap/gitea.tpl", ".deploy/bootstrap/gitea.yaml")
 	if err != nil {
-		return fmt.Errorf("failed to render gitea configuration: %v", err)
+		return fmt.Errorf("failed to render gitea configuration: %w", err)
 	}
 
 	giteaBootstrapValues := []string{".deploy/bootstrap/gitea.yaml"}
@@ -514,7 +514,7 @@ func (d Deploy) StartGiteaProxy() error {
 	// Save the PID to a .gitea-proxy file
 	pid := portForwardCmd.Process.Pid
 	pidFile := ".gitea-proxy"
-	if err := os.WriteFile(pidFile, []byte(strconv.Itoa(pid)), 0644); err != nil {
+	if err := os.WriteFile(pidFile, []byte(strconv.Itoa(pid)), 0o644); err != nil {
 		return fmt.Errorf("failed to write PID to %s: %w", pidFile, err)
 	}
 	fmt.Printf("Gitea proxy PID saved to %s\n", pidFile)
@@ -551,16 +551,14 @@ func (d Deploy) StopGiteaProxy() error {
 
 // Deploy Argo CD in kind cluster.
 func (d Deploy) Argocd(targetEnv string) error {
-	err := (Config{}).renderTargetConfigTemplate(targetEnv, "orch-configs/templates/bootstrap/argocd-proxy.tpl", ".deploy/bootstrap/argocd-proxy.yaml")
+	err := (Config{}).renderTargetConfigTemplate(targetEnv, "orch-configs/templates/bootstrap/argocd.tpl", ".deploy/bootstrap/argocd.yaml")
 	if err != nil {
-		return fmt.Errorf("failed to render argocd proxy configuration: %v", err)
+		return fmt.Errorf("failed to render argocd proxy configuration: %w", err)
 	}
 
 	// Set argoBootstrapValues to the default set for a kind dev environment
 	argoBootstrapValues := []string{
-		"bootstrap/argocd.yaml",
-		"bootstrap/lb.yaml",
-		".deploy/bootstrap/argocd-proxy.yaml",
+		".deploy/bootstrap/argocd.yaml",
 	}
 
 	return d.argocd(argoBootstrapValues, targetEnv)
@@ -1537,30 +1535,12 @@ func (Gen) RegistryCacheCert(targetEnv string) error {
 	cacheRegistryCert, _ := (Config{}).getDockerCacheCert(targetEnv)
 	cacheRegistryCert = strings.TrimSpace(cacheRegistryCert)
 
-	// if cacheRegistry != "" {
-	// 	cacheRegistryURL = fmt.Sprintf("http://%s", cacheRegistry)
-	// }
-
-	fmt.Printf("RegistryCacheCert: cacheRegistry=%s\n", cacheRegistry)
-	fmt.Printf("RegistryCacheCert: cacheRegistryCert=%s\n", cacheRegistryCert)
-
 	if cacheRegistry != "" && cacheRegistryCert != "" {
-		if err := os.WriteFile(filepath.Join("mage", "registry-cache-ca.crt"), []byte(cacheRegistryCert), 0644); err != nil {
+		if err := os.WriteFile(filepath.Join("mage", "registry-cache-ca.crt"), []byte(cacheRegistryCert), 0o644); err != nil {
 			return fmt.Errorf("failed to write cache registry certificate to file: %w", err)
 		}
 		fmt.Printf("Cache registry certificate written to: %s\n", filepath.Join("mage", "registry-cache-ca.crt"))
 	}
-
-	// if cacheRegistryURL == "" {
-	// 	fmt.Printf("%s doesn't specify a dockerCache URL. No cache certificate will be generated.\n", targetEnv)
-	// } else {
-	// 	cacheRegistryCert := filepath.Join("mage", "registry-cache-ca.crt")
-	// 	err := (Registry{}).getRegistryCert(cacheRegistryURL, cacheRegistryCert, false)
-	// 	if err != nil {
-	// 		return fmt.Errorf("failed to generate cache registry certificate: %w", err)
-	// 	}
-	// 	fmt.Printf("Cache registry certificate saved to: %s\n", cacheRegistryCert)
-	// }
 
 	return nil
 }

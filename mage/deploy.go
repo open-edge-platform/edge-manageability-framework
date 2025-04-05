@@ -6,6 +6,7 @@ package mage
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
@@ -15,14 +16,14 @@ import (
 	"io/fs"
 	"math/rand"
 	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"text/template"
 	"time"
-	"net/http"
-	"crypto/tls"
+
 	"github.com/bitfield/script"
 	"github.com/magefile/mage/mg"
 	"github.com/magefile/mage/sh"
@@ -60,7 +61,6 @@ var (
 	appGiteaPassword     	= randomPassword(giteaPasswordLength)
 	clusterGiteaUsername 	= "clusterorch"
 	clusterGiteaPassword 	= randomPassword(giteaPasswordLength)
-	deployRepoClusterUrl	= "https://gitea-http.gitea.svc.cluster.local/argocd/edge-manageability-framework.git"
 	deployRepoPath 			= "argocd/edge-manageability-framework"
 	deployRepoName 			= "edge-manageability-framework"	
 	deployGiteaRepoDir 		= ".deploy/gitea"	
@@ -76,10 +76,6 @@ func (Deploy) all(targetEnv string) error {
 	if err := (Deploy{}).kind(targetEnv); err != nil {
 		return err
 	}
-
-	// TBD: commit deployment and configs to gitea and deploy using argo referencing to gitea
-
-	// TBD: Restore after walkthrough and implementation of deploy through Gitea workflow
 
 	if err := (Deploy{}).orchLocal(targetEnv); err != nil {
 		return err
@@ -126,8 +122,6 @@ func (Deploy) kind(targetEnv string) error { //nolint:gocyclo
 	cacheRegistry = strings.TrimSpace(cacheRegistry)
 	cacheRegistryCert, _ := (Config{}).getDockerCacheCert(targetEnv)
 	cacheRegistryCert = strings.TrimSpace(cacheRegistryCert)
-	fmt.Printf("cacheRegistry=%s\n", cacheRegistry)
-	fmt.Printf("cacheRegistryCert=%s\n", cacheRegistryCert)
 	if cacheRegistry != "" && cacheRegistryCert != "" {
 		fmt.Printf("Loading registry cache CA certificates into kind cluster\n")
 		if err := (loadKindRegistryCacheCerts("kind-control-plane")); err != nil {
@@ -516,13 +510,13 @@ func kindCluster(name string, targetEnv string) error {
 	cacheRegistryCert, _ := (Config{}).getDockerCacheCert(targetEnv)
 	cacheRegistryCert = strings.TrimSpace(cacheRegistryCert)
 
-	fmt.Printf("kind cacheRegistry=%s\n", cacheRegistry)
-	fmt.Printf("kind cacheRegistryCert=%s\n", cacheRegistryCert)
-
 	cacheRegistryURL := ""
 	if cacheRegistry != "" {
 		cacheRegistryURL = fmt.Sprintf("https://%s", cacheRegistry)
-		(Gen{}).RegistryCacheCert(targetEnv) 
+		err := (Gen{}).RegistryCacheCert(targetEnv)
+		if err != nil {
+			return fmt.Errorf("error generating registry cache cert: %w", err)
+		}
 	}
 
 	//nolint: lll
@@ -1006,7 +1000,7 @@ func (Deploy) getArgoGiteaCredentials() (string, string, error) {
 	if err != nil {
 		return "", "", fmt.Errorf("error retrieving username from Kubernetes secret: %w", err)
 	}
-	argoGiteaUsername := strings.TrimSpace(string(encodedUsername))
+	argoGiteaUsername := strings.TrimSpace(encodedUsername)
 
 	// Load the password from the Kubernetes secret argocd-gitea-credential in orch-platform namespace
 	cmd = "kubectl get secret argocd-gitea-credential -n orch-platform -o jsonpath='{.data.password}'"
@@ -1014,7 +1008,7 @@ func (Deploy) getArgoGiteaCredentials() (string, string, error) {
 	if err != nil {
 		return "", "", fmt.Errorf("error retrieving password from Kubernetes secret: %w", err)
 	}
-	argoGiteaPassword := strings.TrimSpace(string(encodedPassword))
+	argoGiteaPassword := strings.TrimSpace(encodedPassword)
 
 	// Decode the base64 encoded username and password
 	decodedUsername, err := base64.StdEncoding.DecodeString(argoGiteaUsername)
@@ -1076,7 +1070,11 @@ func (Deploy) startGiteaPortForward() (*exec.Cmd, error) {
 			break
 		}
 		if i == portForwardRetries-1 {
-			portForwardCmd.Process.Kill()
+			err := portForwardCmd.Process.Kill()
+			if err != nil {
+				fmt.Printf("Error killing port-forward process: %v\n", err)
+			}
+
 			return portForwardCmd, fmt.Errorf("timed out attempting to establish port forwarding for Gitea: %w", err)
 		}
 	}	
@@ -1088,7 +1086,7 @@ func (Deploy) startGiteaPortForward() (*exec.Cmd, error) {
 
 func (Deploy) stopGiteaPortForward(portForwardCmd *exec.Cmd) error {
 	if err := portForwardCmd.Process.Kill(); err != nil {
-		return fmt.Errorf("error stopping port-forward: %v", err)
+		return fmt.Errorf("error stopping port-forward: %w", err)
 	}
 	return nil
 }
@@ -1145,7 +1143,7 @@ func createOrUpdateGiteaRepo(username string, password string, repo string) erro
 func (Deploy) updateDeployRepo(targetEnv, gitRepoPath, repoName, localClonePath string) error {
 	// Get the current working directory so we can return to it when this function exits
 	originalDir, err := os.Getwd()
-	fmt.Printf("updateDeployRepo inital working directory: %s\n", originalDir)
+	fmt.Printf("updateDeployRepo initial working directory: %s\n", originalDir)
 	if err != nil {
 		return fmt.Errorf("error getting current working directory: %w", err)
 	}
@@ -1197,7 +1195,7 @@ func (Deploy) updateDeployRepo(targetEnv, gitRepoPath, repoName, localClonePath 
 	}
 
 	// Copy files and directories to the newly cloned deployRepoPath
-	filesToCopy := []string{"VERSION", "argocd", "orch-configs/profiles"}
+	filesToCopy := []string{"VERSION", "argocd", "argocd-internal", "orch-configs/profiles"}
 	filesToCopy = append(filesToCopy, fmt.Sprintf("orch-configs/clusters/%s.yaml", targetEnv))
 
 	for _, file := range filesToCopy {
@@ -1264,17 +1262,12 @@ func (Deploy) updateDeployRepo(targetEnv, gitRepoPath, repoName, localClonePath 
 
 // Deploy ArgoCD using helm chart
 func (Deploy) argocd(bootstrapValues []string, targetEnv string) error {
-	// TBD: Fix the cert to be config based rather than server query based. Current handling is a generalization of
-	//      pre-OSS logic that queries a well known, trusted cache server for the cert rather than configuring a known
-	//      good cert. This is not a secure practice and should be fixed.
 	registryCertName := "blank" // this variable will be ignored by a helm chart if useIntelRegistry is false
 	registryCertPem := []byte("blank")
 	dockerCache, _ := (Config{}).getDockerCache(targetEnv)
 	dockerCache = strings.TrimSpace(dockerCache)
 	dockerCacheCert, _ := (Config{}).getDockerCacheCert(targetEnv)
 	dockerCacheCert = strings.TrimSpace(dockerCacheCert)
-	fmt.Printf("argocd: dockerCache=%s\n", dockerCache)
-	fmt.Printf("argocd: dockerCacheCert=%s\n", dockerCacheCert)
 
 	if dockerCache != "" && dockerCacheCert != "" {
 		registryCertServer := strings.ReplaceAll(dockerCache, ".", "\\.")
@@ -1369,24 +1362,24 @@ func getDeployRevision() string {
 	return deployRevision
 }
 
-// func giteaDeployRevisionParam() string {
-// 	// Get the Gitea credentials from the Kubernetes secret, the randomly generated password constants are not
-// 	giteaDeployDir := ".deploy/gitea/edge-manageability-framework"
-// 	if _, err := os.Stat(giteaDeployDir); os.IsNotExist(err) {
-// 		fmt.Println("failed to locate deploy (.) repo, using cluster default deploy revision")
-// 		return ""
-// 	} else {
-// 		cmd := fmt.Sprintf("bash -c 'cd %s; git rev-parse --short HEAD'", giteaDeployDir)
-// 		out, err := script.Exec(cmd).String()
-// 		if err != nil {
-// 			fmt.Println("failed to determine deployRevision: %w", err)
-// 			fmt.Println("  using cluster default configs revision")
-// 			return ""
-// 		}
-// 		deployRevision = strings.TrimSpace(out)
-// 		return fmt.Sprintf("--set-string argo.deployRepoRevision=%s ", deployRevision)
-// 	}
-// }
+func giteaDeployRevisionParam() string {
+	// Get the Gitea credentials from the Kubernetes secret, the randomly generated password constants are not
+	giteaDeployDir := ".deploy/gitea/edge-manageability-framework"
+	if _, err := os.Stat(giteaDeployDir); os.IsNotExist(err) {
+		fmt.Println("failed to locate deploy (.) repo, using cluster default deploy revision")
+		return ""
+	} else {
+		cmd := fmt.Sprintf("bash -c 'cd %s; git rev-parse --short HEAD'", giteaDeployDir)
+		out, err := script.Exec(cmd).String()
+		if err != nil {
+			fmt.Println("failed to determine deployRevision: %w", err)
+			fmt.Println("  using cluster default configs revision")
+			return ""
+		}
+		deployRevision := strings.TrimSpace(out)
+		return fmt.Sprintf("--set-string argo.deployRepoRevision=%s ", deployRevision)
+	}
+}
 
 func getDeployTag() (string, error) {
 	var deployTag string
@@ -1486,18 +1479,6 @@ func (d Deploy) orch(targetEnv string) error {
 }
 
 func (d Deploy) orchLocal(targetEnv string) error {
-	var subDomain string
-	// deployRevision := getDeployRevisionParam()
-	// configsRevision := getConfigsRevisionParam()
-	// orchVersion, err := getOrchestratorVersionParam()
-	// if err != nil {
-	// 	return err
-	// }
-
-	// targetConfig := getTargetConfig(targetEnv)
-	// cmd := fmt.Sprintf("helm upgrade --install root-app argocd/root-app -f %s  -n %s --create-namespace %s %s %s"+
-	// 	"--set root.useLocalValues=true", targetConfig, targetEnv, deployRevision, configsRevision, orchVersion)
-
 	targetConfig := getTargetConfig(targetEnv)
 
 	// Clone and update the Gitea deployment repo
@@ -1505,12 +1486,15 @@ func (d Deploy) orchLocal(targetEnv string) error {
 		return fmt.Errorf("error updating deployment repo content: %w", err)
 	}
 
-	cmd := fmt.Sprintf("helm upgrade --install root-app argocd/root-app -f %s -n %s --create-namespace", targetConfig, targetEnv)
-	_, err := script.Exec(cmd).Stdout()
+	var subDomain string
+	deployRevision := giteaDeployRevisionParam()
+	orchVersion, err := getOrchestratorVersionParam()
+	if err != nil {
+		return fmt.Errorf("failed to get orchestrator version: %w", err)
+	}
 
-	// We are now taking current code and pushing to main in gitea. There is no longer a need for the revision params and overwrite
-	// cmd := fmt.Sprintf("helm upgrade --install root-app argocd/root-app -f %s  -n %s --create-namespace %s %s %s"+
-	// 	"--set root.useLocalValues=true", targetConfig, targetEnv, deployRevision, configsRevision, orchVersion)
+	cmd := fmt.Sprintf("helm upgrade --install root-app argocd/root-app -f %s  -n %s --create-namespace %s %s"+
+		"--set root.useLocalValues=true", targetConfig, targetEnv, deployRevision, orchVersion)
 
 	// only for coder deployments
 	targetAutoCertEnabled, _ := (Config{}).isAutoCertEnabled(targetEnv)
@@ -1544,7 +1528,7 @@ func (d Deploy) orchLocal(targetEnv string) error {
 	fmt.Printf("exec: %s\n", cmd)
 	_, err = script.Exec(cmd).Stdout()
 
-	if autoCert && (strings.HasPrefix(targetEnv, "dev") || strings.HasPrefix(targetEnv, "ext")) {
+	if autoCert && targetAutoCertEnabled {
 		fmt.Printf("Orchestrator will be available at domain : %s\n", subDomain)
 	}
 	return err
