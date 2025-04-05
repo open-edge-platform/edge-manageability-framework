@@ -164,7 +164,7 @@ resource "kubernetes_secret" "sre_destination_ca_secret" {
   depends_on = [time_sleep.wait_ns]
 
   metadata {
-    name      = "sre-destination-ca-secret"
+    name      = "destination-secret-ca"
     namespace = "orch-sre"
   }
   data = {
