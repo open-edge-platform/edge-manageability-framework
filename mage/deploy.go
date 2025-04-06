@@ -83,6 +83,30 @@ func (Deploy) all(targetEnv string) error {
 	return nil
 }
 
+// Dump a listing of all objects in a specified namespace
+func kubectlDebugNamespace(name string) error {
+	cmd := fmt.Sprintf("kubectl -n %s get all -o wide", name)
+	data, err := script.Exec(cmd).String()
+	if err != nil {
+		return fmt.Errorf("kubectl debug namespace: %w", err)
+	}
+	fmt.Printf("kubectl -n %s get all -o wide\n", name)
+	fmt.Println(data)
+	return nil
+}
+
+// // Describe specified pods matching a regex
+// func kubectlDebugPods(name string, regex string) error {
+// 	cmd := fmt.Sprintf("kubectl -n %s get pods -o wide | grep %s", name, regex)
+// 	data, err := script.Exec(cmd).String()
+// 	if err != nil {
+// 		return fmt.Errorf("kubectl debug pods: %w", err)
+// 	}
+// 	fmt.Printf("kubectl -n %s get pods -o wide | grep %s\n", name, regex)
+// 	fmt.Println(data)
+// 	return nil
+// }
+
 func (Deploy) kind(targetEnv string) error { //nolint:gocyclo
 	// TBD: Validate the targetEnv as kind appropriate, not a specified preset name
 
@@ -198,19 +222,11 @@ func (Deploy) kind(targetEnv string) error { //nolint:gocyclo
 			return err
 		}
 		fmt.Printf("Login failed, retrying in %d seconds... (Attempt %d)\n", argoRetryInterval, i+1)
+
+		_ = kubectlDebugNamespace("argocd")
+
 		time.Sleep(argoRetryInterval * time.Second)
 	}
-
-	// gitUser := os.Getenv("GIT_USER")
-	// gitToken := os.Getenv("GIT_TOKEN")
-
-	// if gitUser == "" || gitToken == "" {
-	// 	return fmt.Errorf("GIT_USER and GIT_TOKEN must be set")
-	// }
-
-	// if err := (Argo{}).repoAdd(gitUser, gitToken, githubRepos); err != nil {
-	// 	return err
-	// }
 
 	giteaUser, giteaToken, err := (Deploy{}).getArgoGiteaCredentials()
 	if err != nil {

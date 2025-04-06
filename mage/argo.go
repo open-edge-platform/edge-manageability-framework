@@ -60,6 +60,7 @@ func (Argo) login() error {
 		return err
 	}
 
+	fmt.Printf("looking up argo IP and port\n")
 	argoIP := os.Getenv("ARGO_IP")
 	if argoIP == "" {
 		// login to Argo without using the router
@@ -73,10 +74,12 @@ func (Argo) login() error {
 	if argoPort == "" {
 		argoPort = "443"
 	}
+	fmt.Printf("argoIP: %s argoPort: %s\n", argoIP, argoPort)
 
-	cmd := fmt.Sprintf("argocd login %s:%s --username admin --password %s --insecure --grpc-web", argoIP, argoPort, secret)
+	fmt.Printf("logging in to ArgoCD\n")
+	cmd := fmt.Sprintf("argocd login %s:%s --username admin --password %s --insecure --insecure-skip-server-verification --grpc-web", argoIP, argoPort, secret)
 	if _, err := script.Exec(cmd).Stdout(); err != nil {
-		return err
+		return fmt.Errorf("logging in to ArgoCD: %w", err)
 	}
 	return nil
 }
@@ -85,7 +88,7 @@ func (Argo) repoAdd(gitUser string, gitToken string, repos []string) error {
 	for _, repo := range repos {
 		cmd := fmt.Sprintf("argocd repo add %s --username %s --password %s --upsert --insecure-skip-server-verification --insecure", repo, gitUser, gitToken)
 		if _, err := script.Exec(cmd).Stdout(); err != nil {
-			return err
+			return fmt.Errorf("adding repo %s: %w", repo, err)
 		}
 	}
 	return nil
