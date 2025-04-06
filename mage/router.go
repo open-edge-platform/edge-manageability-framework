@@ -41,15 +41,15 @@ func (r Router) start(externalDomain string, sandboxKeyFile string, sandboxCertF
 		fmt.Println("skipping router start")
 		return nil
 	}
-	argoIP, err := lookupGenericIP("argocd", "argocd-server")
+	argoIP, err := awaitGenericIP("argocd", "argocd-server", 20*time.Second)
 	if err != nil {
 		return fmt.Errorf("performing argo IP lookup %w", err)
 	}
-	giteaIP, err := lookupGenericIP("gitea", "gitea-http")
+	giteaIP, err := awaitGenericIP("gitea", "gitea-http", 20*time.Second)
 	if err != nil {
 		return fmt.Errorf("performing argo IP lookup %w", err)
 	}
-	orchIP, err := lookupGenericIP("orch-gateway", "traefik")
+	orchIP, err := awaitGenericIP("orch-gateway", "traefik", 20*time.Second)
 	if err != nil {
 		fmt.Printf("WARNING: could not find orchestrator IP: %s\n", err)
 		fmt.Println("Looks like Orchestrator Traefik isn't ready yet. Please run:")
@@ -85,7 +85,7 @@ func (r Router) start(externalDomain string, sandboxKeyFile string, sandboxCertF
 		domainname = defaultClusterDomain
 	}
 
-	bootsIP, err := lookupGenericIP("orch-boots", "ingress-nginx-controller")
+	bootsIP, err := awaitGenericIP("orch-boots", "ingress-nginx-controller", 20*time.Second)
 	if err != nil {
 		fmt.Printf("WARNING: could not find boots IP %v\n", err)
 		fmt.Println("Looks like Orchestrators nginx Boots isn't ready yet. Please run:")
@@ -202,6 +202,28 @@ func (Router) stop() error {
 		}
 	}
 	return nil
+}
+
+func awaitGenericIP(namespace, serviceName string, duration time.Duration) (string, error) {
+	timeout := time.After(duration)
+	tickDuration := duration / 5
+	if tickDuration < 2*time.Second {
+		tickDuration = 2 * time.Second
+	}
+	tick := time.Tick(tickDuration)
+
+	for {
+		select {
+		case <-timeout:
+			return "", fmt.Errorf("timed out waiting for IP of %s:%s", namespace, serviceName)
+		case <-tick:
+			ip, err := lookupGenericIP(namespace, serviceName)
+			if err == nil {
+				return ip, nil
+			}
+			fmt.Printf("Retrying lookup for %s:%s due to error: %v\n", namespace, serviceName, err)
+		}
+	}
 }
 
 func lookupGenericIP(namespace, serviceName string) (string, error) {

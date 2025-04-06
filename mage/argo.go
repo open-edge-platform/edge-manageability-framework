@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/bitfield/script"
 )
@@ -64,7 +65,7 @@ func (Argo) login() error {
 	argoIP := os.Getenv("ARGO_IP")
 	if argoIP == "" {
 		// login to Argo without using the router
-		ip, err := lookupGenericIP("argocd", "argocd-server")
+		ip, err := awaitGenericIP("argocd", "argocd-server", 20*time.Second)
 		if err != nil {
 			return fmt.Errorf("performing argo IP lookup %w", err)
 		}
