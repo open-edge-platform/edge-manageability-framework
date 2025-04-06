@@ -68,6 +68,7 @@ func (Argo) login() error {
 		if err != nil {
 			return fmt.Errorf("performing argo IP lookup %w", err)
 		}
+		fmt.Printf("found argo IP: %s\n", ip)
 		argoIP = ip
 	}
 	argoPort := os.Getenv("ARGO_PORT")
@@ -75,9 +76,13 @@ func (Argo) login() error {
 		argoPort = "443"
 	}
 	fmt.Printf("argoIP: %s argoPort: %s\n", argoIP, argoPort)
+	if argoIP == "" {
+		fmt.Printf("argoIP is invalid or empty, using localhost\n")
+		argoIP = "127.0.0.1"
+	}
 
 	fmt.Printf("logging in to ArgoCD\n")
-	cmd := fmt.Sprintf("argocd login %s:%s --username admin --password %s --insecure --insecure-skip-server-verification --grpc-web", argoIP, argoPort, secret)
+	cmd := fmt.Sprintf("argocd login %s:%s --username admin --password %s --insecure --grpc-web", argoIP, argoPort, secret)
 	if _, err := script.Exec(cmd).Stdout(); err != nil {
 		return fmt.Errorf("logging in to ArgoCD: %w", err)
 	}

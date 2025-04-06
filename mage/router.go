@@ -205,18 +205,22 @@ func (Router) stop() error {
 
 func lookupGenericIP(namespace, serviceName string) (string, error) {
 	cmd := fmt.Sprintf("kubectl -n %s get svc %s -o json", namespace, serviceName)
+	fmt.Printf("looking up %s:%s IP\n", namespace, serviceName)
+	fmt.Printf("cmd: %s\n", cmd)
 	data, err := script.Exec(cmd).String()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to lookup service details: %w", err)
 	}
 	ip, err := script.Echo(data).JQ(".status.loadBalancer.ingress | .[0] | .ip ").Replace(`"`, "").String()
 	if err != nil {
 		return "", fmt.Errorf("argo lb ip lookup: %w", err)
 	}
+	fmt.Printf("found %s IP: %s\n", serviceName, ip)
 	argoIP := strings.TrimSpace(ip)
 	if argoIP == "" {
 		return "", fmt.Errorf("argocd IP is empty")
 	}
+	fmt.Printf("returning GenericIP: %s\n", argoIP)
 	return argoIP, nil
 }
 
