@@ -4,7 +4,12 @@
 
 server:
   service:
-    type: ClusterIP
+    type: {{ .Values.orchestratorDeployment.argoServiceType }}
+{{- if eq .Values.orchestratorDeployment.argoServiceType "NodePort" }}
+    nodePortHttp: 32080
+    nodePortHttps: 32443
+{{- end }}
+
 configs:
   params:
     application.namespaces: "*"
@@ -39,14 +44,6 @@ global:
       value: "{{ .Values.argo.proxy.httpsProxy }}"
     - name: no_proxy
       value: "{{ .Values.argo.proxy.noProxy }}"
-
-server:
-  service:
-    type: {{ .Values.orchestratorDeployment.argoServiceType }}
-{{- if eq .Values.orchestratorDeployment.argoServiceType "NodePort" }}
-    nodePortHttp: 32080
-    nodePortHttps: 32443
-{{- end }}
 
 # FIXME Workaround for ArgoCD not applying CA file when pulling from OCI registry. Remove this once the issue is fixed
 # Ref: https://github.com/argoproj/argo-cd/issues/13726, https://github.com/argoproj/argo-cd/issues/14877
