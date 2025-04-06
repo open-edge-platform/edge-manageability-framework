@@ -526,12 +526,30 @@ func (d Deploy) StartGiteaProxy() error {
 }
 
 func (d Deploy) StopAllKubectlProxies() error {
-	// Stop all kubectl port-forward processes
-	cmd := exec.Command("pkill", "-f", "kubectl port-forward")
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to stop kubectl port-forward processes: %w", err)
+	// List all kubectl port-forward processes
+	cmd := exec.Command("pgrep", "-af", "kubectl port-forward")
+	output, err := cmd.Output()
+	if err != nil {
+		fmt.Printf("failed to list kubectl port-forward processes: %v\n", err)
+		return nil
 	}
-	fmt.Println("All kubectl port-forward processes stopped")
+	fmt.Println("kubectl port-forward processes:")
+	fmt.Println(string(output))
+
+	// Stop all kubectl port-forward processes
+	cmd = exec.Command("pkill", "-f", "kubectl port-forward")
+	if err := cmd.Run(); err != nil {
+		fmt.Printf("failed to stop kubectl port-forward processes: %v", err)
+	}
+
+	cmd = exec.Command("pgrep", "-af", "kubectl port-forward")
+	output, err = cmd.Output()
+	if err != nil {
+		fmt.Printf("failed to list kubectl port-forward processes: %v\n", err)
+		return nil
+	}
+	fmt.Println("Any remaining kubectl port-forward processes after pkill:")
+	fmt.Println(string(output))
 	return nil
 }
 
