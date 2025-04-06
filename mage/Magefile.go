@@ -53,13 +53,15 @@ var argoNamespaces = []string{
 	"orch-infra",    // used when creating a secret for mailpit
 }
 
-// TODO: Ideally this would be extracted from the cluster configuration and aligned with over gitea server configuration/secrets
-// var githubRepos = []string{
-// 	"https://github.com/open-edge-platform/edge-manageability-framework",
-// }
-
+// FIXME: Ideally this could be extracted from the cluster configuration and aligned with auth secrets - out of scope for now
 var giteaRepos = []string{
 	"https://gitea-http.gitea.svc.cluster.local/argocd/edge-manageability-framework",
+}
+
+// Public GitHub repositories can be useful for specific development workflows.
+var githubRepos = []string{
+	"https://github.com/open-edge-platform/edge-manageability-framework",
+	"https://github.com/open-edge-platform/orch-utils",
 }
 
 var globalAsdf = []string{
@@ -1235,9 +1237,19 @@ func (a Argo) Login() error {
 	return a.login()
 }
 
-// Add internal helm/git repos.
-func (a Argo) RepoAdd(gitUser string, gitToken string, repos []string) error {
-	return a.repoAdd(gitUser, gitToken, repos)
+// Add public GitHub Orchestrator platform source repos to ArgoCD.
+func (a Argo) AddGithubRepos() error {
+	gitUser := os.Getenv("GIT_USER")
+	if gitUser == "" {
+		return fmt.Errorf("must set environment variable GIT_USER")
+	}
+
+	gitToken := os.Getenv("GIT_TOKEN")
+	if gitToken == "" {
+		return fmt.Errorf("must set environment variable GIT_TOKEN")
+	}
+
+	return a.repoAdd(gitUser, gitToken, githubRepos)
 }
 
 // Lists all ArgoCD Applications, sorted by syncWave.
@@ -1660,11 +1672,10 @@ func (c Config) CreatePreset() error {
 	return c.createPreset()
 }
 
-// TBD: Fix logic and restore this functionality.
 // Clean out generated cluster configuration files.
-// func (c Config) Clean() error {
-// 	return c.clean()
-// }
+func (c Config) Clean() error {
+	return c.clean()
+}
 
 // Render a Cluster configuration.
 func (c Config) Debug(targetEnv string) error {

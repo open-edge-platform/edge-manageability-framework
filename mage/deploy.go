@@ -95,21 +95,7 @@ func kubectlDebugNamespace(name string) error {
 	return nil
 }
 
-// // Describe specified pods matching a regex
-// func kubectlDebugPods(name string, regex string) error {
-// 	cmd := fmt.Sprintf("kubectl -n %s get pods -o wide | grep %s", name, regex)
-// 	data, err := script.Exec(cmd).String()
-// 	if err != nil {
-// 		return fmt.Errorf("kubectl debug pods: %w", err)
-// 	}
-// 	fmt.Printf("kubectl -n %s get pods -o wide | grep %s\n", name, regex)
-// 	fmt.Println(data)
-// 	return nil
-// }
-
 func (Deploy) kind(targetEnv string) error { //nolint:gocyclo
-	// TBD: Validate the targetEnv as kind appropriate, not a specified preset name
-
 	targetEnvType, err := (Config{}).getTargetEnvType(targetEnv)
 	if err != nil || targetEnvType != "kind" {
 		return fmt.Errorf("wrong environment specified for kind deployment: %s is a %s orchestrator definition", targetEnv, targetEnvType)
@@ -125,7 +111,6 @@ func (Deploy) kind(targetEnv string) error { //nolint:gocyclo
 		return err
 	}
 
-	// TODO: Before destroying environment Check if the tls-orch secret exists, if it does persist it
 	targetAutoCertEnabled, _ := (Config{}).isAutoCertEnabled(targetEnv)
 	if autoCert && targetAutoCertEnabled {
 		existingCert := gatewayTLSSecretValid()
@@ -157,7 +142,7 @@ func (Deploy) kind(targetEnv string) error { //nolint:gocyclo
 		return fmt.Errorf("error creating namespaces: %w", err)
 	}
 
-	// TBD: Extend support for gernerally configurable token based release service authentication. This is currently not supported.
+	// FIXME: Extend support for gernerally configurable token based release service authentication. This is currently not supported.
 	if err := localSecret(targetEnv, false); err != nil {
 		return fmt.Errorf("error creating local secrets: %w", err)
 	}
@@ -175,7 +160,6 @@ func (Deploy) kind(targetEnv string) error { //nolint:gocyclo
 		return fmt.Errorf("error deploying metallb: %w", err)
 	}
 
-	// TBD: This should not be a preset name based decision. This should be a cluster configuration setting.
 	targetMailpitEnabled, _ := (Config{}).isMailpitEnabled(targetEnv)
 	if targetMailpitEnabled {
 		if err := deployMailpit(); err != nil {
@@ -431,7 +415,6 @@ func createLocalSreSecrets() error {
 	return nil
 }
 
-// FIXME Revisit this code when we have Secrets Manager
 func localSecret(targetEnv string, createRSToken bool) error {
 	if err := kubectlCreateAndApply("namespace", "orch-harbor"); err != nil {
 		return err
@@ -455,7 +438,8 @@ func localSecret(targetEnv string, createRSToken bool) error {
 		return err
 	}
 
-	// TBD: Extend support for gernerally configurable token based release service authentication. This is currently not supported.
+	// FIXME: Extend support for gernerally configurable token based release service authentication.
+	// This is currently not supported with the OSS conversion.
 	// if createRSToken {
 	// 	// for environments w/o Secret Manager we have to create respective secrets.
 	// 	// azure-ad-creds for release service
@@ -1434,43 +1418,6 @@ func getDeployTag() (string, error) {
 	deployTag = "v" + deployTag
 	return deployTag, nil
 }
-
-// func getDeployRevisionParam() string {
-// 	deployRevision := getDeployRevision()
-// 	if deployRevision == "" {
-// 		return ""
-// 	}
-// 	return fmt.Sprintf("--set-string argo.deployRepoRevision=%s ", deployRevision)
-// }
-
-// func getConfigsRevision() string {
-// 	configsRevision := os.Getenv("ORCH_CONFIG_REV")
-// 	if configsRevision == "" {
-// 		configsDir := getConfigsDir()
-// 		if _, err := os.Stat(configsDir); os.IsNotExist(err) {
-// 			fmt.Println("failed to locate config repo, using cluster default configs revision")
-// 			return ""
-// 		} else {
-// 			cmd := fmt.Sprintf("bash -c 'cd %s; git rev-parse --short HEAD'", configsDir)
-// 			out, err := script.Exec(cmd).String()
-// 			if err != nil {
-// 				fmt.Println("failed to determine configsRevision: %w", err)
-// 				fmt.Println("  using cluster default configs revision")
-// 				return ""
-// 			}
-// 			configsRevision = strings.TrimSpace(out)
-// 		}
-// 	}
-// 	return configsRevision
-// }
-
-// func getConfigsRevisionParam() string {
-// 	configsRevision := getConfigsRevision()
-// 	if configsRevision == "" {
-// 		return ""
-// 	}
-// 	return fmt.Sprintf("--set-string argo.configsRepoRevision=%s ", configsRevision)
-// }
 
 func getOrchestratorVersion() (string, error) {
 	version, err := getVersionFromFile()

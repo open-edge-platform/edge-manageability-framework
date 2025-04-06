@@ -9,7 +9,6 @@ server:
     nodePortHttp: 32080
     nodePortHttps: 32443
 {{- end }}
-
 configs:
   params:
     application.namespaces: "*"

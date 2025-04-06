@@ -51,9 +51,9 @@ argo:
 
   # Lets Encrypt Generated certs
   # optionally available to generate orchestrator cert using ACME DNS01 issuer (specifically Lets Encrypt)
-  #  autoCert:
-  #   issuer: "acme"
-  #  enabled: false
+  autoCert:
+    issuer: "acme"
+    enabled: false
 
   # Self-signed-cert configs.
   # Must be enabled for dev env where tls-orch is not provisioned in advance

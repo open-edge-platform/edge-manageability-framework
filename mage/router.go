@@ -234,10 +234,7 @@ func lookupGenericIP(namespace, serviceName string) (string, error) {
 		return "", fmt.Errorf("failed to lookup service details: %w", err)
 	}
 
-	fmt.Println("kubectl command output:", data)
-
 	var parsedData map[string]interface{}
-
 	if err := json.Unmarshal([]byte(data), &parsedData); err != nil {
 		return "", fmt.Errorf("failed to parse service details: %w", err)
 	}
@@ -246,12 +243,10 @@ func lookupGenericIP(namespace, serviceName string) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("status field not found or invalid")
 	}
-
 	loadBalancer, ok := status["loadBalancer"].(map[string]interface{})
 	if !ok {
 		return "", fmt.Errorf("loadBalancer field not found or invalid")
 	}
-
 	ingress, ok := loadBalancer["ingress"].([]interface{})
 	if !ok || len(ingress) == 0 {
 		return "", fmt.Errorf("ingress field not found or empty")
@@ -261,31 +256,14 @@ func lookupGenericIP(namespace, serviceName string) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("ingress[0] is not a valid object")
 	}
-
 	ip, ok := firstIngress["ip"].(string)
 	if !ok || ip == "" {
 		return "", fmt.Errorf("IP field not found or empty in ingress[0]")
 	}
 
-	argoIP := strings.TrimSpace(ip)
-	fmt.Printf("returning GenericIP: %s\n", argoIP)
-	return argoIP, nil
-
-	// argoIP := strings.TrimSpace(parsedData.Status.LoadBalancer.Ingress[0].IP)
-	// fmt.Printf("returning GenericIP: %s\n", argoIP)
-	// return argoIP, nil
-
-	// ip, err := script.Echo(data).JQ(".status.loadBalancer.ingress | .[0] | .ip ").Replace(`"`, "").String()
-	// if err != nil {
-	// 	return "", fmt.Errorf("argo lb ip lookup: %w", err)
-	// }
-	// fmt.Printf("found %s IP: %s\n", serviceName, ip)
-	// argoIP := strings.TrimSpace(ip)
-	// if argoIP == "" {
-	// 	return "", fmt.Errorf("argocd IP is empty")
-	// }
-	// fmt.Printf("returning GenericIP: %s\n", argoIP)
-	// return argoIP, nil
+	genericIP := strings.TrimSpace(ip)
+	fmt.Printf("found GenericIP: %s for %s:%s\n", genericIP, namespace, serviceName)
+	return genericIP, nil
 }
 
 // Generate docker-compose.yml.

@@ -36,56 +36,21 @@ var (
 	}
 )
 
-// Create a cluster deployment configuration.
-func getClusterSettings() (map[string]interface{}, error) {
-	clusterValues := make(map[string]interface{})
-
-	if _, err := fmt.Println("Create a cluster deployment configuration"); err != nil {
-		return clusterValues, nil
-	}
-
-	clusterValues["name"] = "default-cluster"
-	clusterValues["id"] = "dev"
-	clusterValues["enableObservability"] = true
-	clusterValues["enableKyverno"] = true
-	clusterValues["enableEdgeInfra"] = true
-	clusterValues["enableAutoProvision"] = true
-
-	return clusterValues, nil
-}
-
 func (c Config) createCluster() (string, error) {
-	clusterSettings, err := getClusterSettings()
-	if err != nil {
-		return "", fmt.Errorf("invalid cluster settings: %w", err)
-	}
+	fmt.Println("Interactive cluster configuration is not currently supported.")
+	fmt.Println("Use config:usePreset with a manually generated preset file until this functionality is supported.")
 
-	// TBD: render the new settings to a appropriate file(s)
+	// TBD: Implement interactive queryClusterPresetSettings interface
+	// clusterSettings, err := queryClusterPresetSettings()
+	// if err != nil {
+	// 	return "", fmt.Errorf("invalid cluster settings: %w", err)
+	// }
 
 	// Render the cluster deployment configuration template.
-	// templatePath := "orch-configs/template/cluster.tpl"
-	// tmpl, err := template.ParseFiles(templatePath)
-	// if err != nil {
-	// 	return fmt.Errorf("failed to parse template: %w", err)
-	// }
+	// clusterName, err := renderClusterTemplate(clusterSettings)
+	// return clusterName, nil
 
-	// outputPath := "orch-configs/clusters/cluster.yaml"
-	// outputFile, err := os.Create(outputPath)
-	// if err != nil {
-	// 	return fmt.Errorf("failed to create output file: %w", err)
-	// }
-	// defer outputFile.Close()
-
-	// if err := tmpl.Execute(outputFile, clusterSettings); err != nil {
-	// 	return fmt.Errorf("failed to render template: %w", err)
-	// }
-
-	name, ok := clusterSettings["name"].(string)
-	if !ok || name == "" {
-		return "", fmt.Errorf("invalid cluster settings: missing or invalid 'name'")
-	}
-
-	return name, nil
+	return "", nil
 }
 
 // writeMapAsYAML writes a map[string]interface{} as a YAML string.
@@ -145,7 +110,6 @@ func parseClusterValues(clusterConfigPath string) (map[string]interface{}, error
 				if !ok {
 					return nil, fmt.Errorf("invalid clusterValues entry, expected string but got %T", path)
 				}
-				// fmt.Printf("Loading cluster values file: %s\n", filePath)
 				fileData, err := os.ReadFile(filePath)
 				if err != nil {
 					return nil, fmt.Errorf("failed to read cluster values file '%s': %w", filePath, err)
@@ -156,11 +120,8 @@ func parseClusterValues(clusterConfigPath string) (map[string]interface{}, error
 					return nil, fmt.Errorf("failed to unmarshal cluster values from file '%s': %w", filePath, err)
 				}
 				if filePath != clusterConfigPath {
-					// fmt.Printf("Loading and merging cluster values file: %s\n", filePath)
-					// Perform a deep merge of fileValues into clusterValues.
 					deepMerge(clusterValues, fileValues)
 				} else {
-					// Remove 'clusterValues' from the root config prior to merging into the consolidated clusterValues.
 					if root, ok := fileValues["root"].(map[string]interface{}); ok {
 						delete(root, "clusterValues")
 					}
@@ -184,8 +145,6 @@ func (Config) usePreset(clusterPresetFile string) (string, error) {
 		return "", fmt.Errorf("failed to read cluster preset file: %w", err)
 	}
 
-	// fmt.Printf("Cluster values for debugging:\n%s\n", string(clusterValues))
-
 	var presetData map[string]interface{}
 	if err := yaml.Unmarshal(clusterValues, &presetData); err != nil {
 		return "", fmt.Errorf("failed to unmarshal yaml: %w", err)
@@ -198,6 +157,23 @@ func (Config) usePreset(clusterPresetFile string) (string, error) {
 		}
 	}
 
+	// Evaluate and update proxyProfile relative path if it exists.
+	if proxyProfile, ok := presetData["proxyProfile"].(string); ok && proxyProfile != "" {
+		proxyProfilePath := fmt.Sprintf("%s/%s", filepath.Dir(clusterPresetFile), proxyProfile)
+		presetData["proxyProfile"] = proxyProfilePath
+	}
+
+	var clusterName string
+	if clusterName, err = renderClusterTemplate(presetData); err != nil {
+		return "", fmt.Errorf("failed to render cluster template: %w", err)
+	}
+
+	return clusterName, nil
+}
+
+// Render cluster preset data into a template and save it to a cluster definition file.
+func renderClusterTemplate(presetData map[string]interface{}) (string, error) {
+	// Use "name" from the presetData to handle file naming in alignment with existing targetEnv logic
 	if _, ok := presetData["name"]; !ok {
 		return "", fmt.Errorf("missing required field 'name' in cluster values")
 	}
@@ -222,10 +198,9 @@ func (Config) usePreset(clusterPresetFile string) (string, error) {
 	}
 
 	if proxyProfile, ok := presetData["proxyProfile"].(string); ok && proxyProfile != "" {
-		proxyProfilePath := fmt.Sprintf("%s/%s", filepath.Dir(clusterPresetFile), proxyProfile)
-		proxyValuesData, err := os.ReadFile(proxyProfilePath)
+		proxyValuesData, err := os.ReadFile(proxyProfile)
 		if err != nil {
-			return "", fmt.Errorf("failed to read proxy profile file '%s': %w", proxyProfilePath, err)
+			return "", fmt.Errorf("failed to read proxy profile file '%s': %w", proxyProfile, err)
 		}
 
 		var proxyData map[string]interface{}
@@ -302,90 +277,82 @@ func (Config) createPreset() error {
 	return nil
 }
 
-// TBD: Fix the clean function to remove ignored files based on .gitignore set from the orch-configs directory instead of the
-//      orch-configs/clusters directory.
-// func (Config) clean() error {
-// 	gitignorePath := "orch-configs/clusters/.gitignore"
-// 	clusterDir := "orch-configs/clusters"
+// Remove ignored files based on .gitignore set from the orch-configs directory
+func (Config) clean() error {
+	gitignorePath := "orch-configs/.gitignore"
+	configsDir := "orch-configs"
 
-// 	// Load .gitignore patterns.
-// 	gitignoreData, err := os.ReadFile(gitignorePath)
-// 	if err != nil {
-// 		return fmt.Errorf("failed to read .gitignore file: %w", err)
-// 	}
-// 	gitignorePatterns := []string{}
-// 	for _, line := range strings.Split(string(gitignoreData), "\n") {
-// 		line = strings.TrimSpace(line)
-// 		if line != "" && !strings.HasPrefix(line, "#") {
-// 			gitignorePatterns = append(gitignorePatterns, line)
-// 		}
-// 	}
+	// Load .gitignore patterns.
+	gitignoreData, err := os.ReadFile(gitignorePath)
+	if err != nil {
+		return fmt.Errorf("failed to read .gitignore file: %w", err)
+	}
 
-// 	// Walk through the cluster directory and process .yaml files.
-// 	files, err := os.ReadDir(clusterDir)
-// 	if err != nil {
-// 		return fmt.Errorf("failed to read cluster directory: %w", err)
-// 	}
+	excludePatterns := []string{}
+	includePatterns := []string{}
+	for _, line := range strings.Split(string(gitignoreData), "\n") {
+		line = strings.TrimSpace(line)
+		if line != "" && !strings.HasPrefix(line, "#") {
+			if strings.HasPrefix(line, "!") {
+				// Negated pattern (include)
+				includePatterns = append(includePatterns, strings.TrimPrefix(line, "!"))
+			} else {
+				// Regular pattern (exclude)
+				excludePatterns = append(excludePatterns, line)
+			}
+		}
+	}
 
-// 	for _, file := range files {
-// 		// Skip directories.
-// 		if file.IsDir() {
-// 			continue
-// 		}
+	// Walk through the cluster directory and process .yaml files.
+	err = filepath.Walk(configsDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() && filepath.Ext(path) == ".yaml" {
+			relPath, err := filepath.Rel(configsDir, path)
+			if err != nil {
+				return err
+			}
 
-// 		// Check if the file is a .yaml file.
-// 		if filepath.Ext(file.Name()) == ".yaml" {
-// 			// Check if the file matches any .gitignore pattern and is not explicitly included.
-// 			relPath := file.Name()
+			excludeMatch := false
+			includeMatch := false
+			for _, pattern := range excludePatterns {
+				matched, err := filepath.Match(pattern, relPath)
+				if err != nil {
+					return fmt.Errorf("error matching pattern '%s': %w", pattern, err)
+				}
+				if matched {
+					excludeMatch = true
+					break
+				}
+			}
 
-// 			matched := false
-// 			var negated bool
-// 			for _, pattern := range gitignorePatterns {
-// 				if strings.HasPrefix(pattern, "!") {
-// 					negatedPattern := pattern[1:]
-// 					negated, err = filepath.Match(negatedPattern, relPath)
-// 					if err != nil {
-// 						return err
-// 					}
-// 					if negated {
-// 						matched = false
-// 						break
-// 					}
-// 				} else {
-// 					m, err := filepath.Match(pattern, relPath)
-// 					if err != nil {
-// 						return err
-// 					}
-// 					if m {
-// 						matched = true
-// 					}
-// 				}
-// 			}
+			for _, pattern := range includePatterns {
+				matched, err := filepath.Match(pattern, relPath)
+				if err != nil {
+					return fmt.Errorf("error matching pattern '%s': %w", pattern, err)
+				}
+				if matched {
+					includeMatch = true
+					break
+				}
+			}
 
-// 			if matched {
-// 				fmt.Printf("Deleting ignored file: %s\n", filepath.Join(clusterDir, relPath))
-// 				if err := os.Remove(filepath.Join(clusterDir, relPath)); err != nil {
-// 					return fmt.Errorf("failed to delete file '%s': %w", relPath, err)
-// 				}
+			if excludeMatch && !includeMatch {
+				fmt.Printf("Deleting ignored file: %s\n", path)
+				if err := os.Remove(path); err != nil {
+					return fmt.Errorf("failed to delete file '%s': %w", path, err)
+				}
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("error while enumerating .yaml files: %w", err)
+	}
 
-// 				// Check for and delete the corresponding proxy profile file.
-// 				proxyFileName := fmt.Sprintf("proxy-%s.yaml", strings.TrimSuffix(relPath, filepath.Ext(relPath)))
-// 				proxyFilePath := filepath.Join("orch-configs/profiles", proxyFileName)
-// 				if _, err := os.Stat(proxyFilePath); err == nil {
-// 					fmt.Printf("Deleting associated proxy profile file: %s\n", proxyFilePath)
-// 					if err := os.Remove(proxyFilePath); err != nil {
-// 						return fmt.Errorf("failed to delete proxy profile file '%s': %w", proxyFilePath, err)
-// 					}
-// 				}
-// 			}
-// 		}
-// 	}
-// 	if err != nil {
-// 		return fmt.Errorf("error while processing cluster directory: %w", err)
-// 	}
-
-// 	return nil
-// }
+	return nil
+}
 
 func (Config) getTargetValues(targetEnv string) (map[string]interface{}, error) {
 	if targetEnv == "" {

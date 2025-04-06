@@ -30,7 +30,6 @@ import (
 // Deploys the ENiC (indicates the number of instances, optionally set env variables: ORCH_FQDN, ORCH_IP, ORCH_USER, ORCH_PASS, ORCH_ORG, ORCH_PROJECT).
 func (DevUtils) DeployEnic(replicas int, targetEnv string) error {
 	deployRevision := giteaDeployRevisionParam()
-	// configsRevision := getConfigsRevisionParam()
 	namespace := "utils"
 	orchestratorIp, err := getPrimaryIP()
 	if err != nil {
