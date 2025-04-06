@@ -18,6 +18,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -28,8 +29,8 @@ import (
 
 // Deploys the ENiC (indicates the number of instances, optionally set env variables: ORCH_FQDN, ORCH_IP, ORCH_USER, ORCH_PASS, ORCH_ORG, ORCH_PROJECT).
 func (DevUtils) DeployEnic(replicas int, targetEnv string) error {
-	deployRevision := getDeployRevisionParam()
-	configsRevision := getConfigsRevisionParam()
+	deployRevision := giteaDeployRevisionParam()
+	// configsRevision := getConfigsRevisionParam()
 	namespace := "utils"
 	orchestratorIp, err := getPrimaryIP()
 	if err != nil {
@@ -71,17 +72,33 @@ func (DevUtils) DeployEnic(replicas int, targetEnv string) error {
 
 	targetConfig := getTargetConfig(targetEnv)
 
-	cmd := fmt.Sprintf("helm upgrade --install root-app argocd-internal/root-app -f %s -n %s --create-namespace %s %s "+
+	cmd := fmt.Sprintf("helm upgrade --install root-app argocd-internal/root-app -f %s -n %s --create-namespace %s "+
 		"--set root.useLocalValues=true --set argo.enic.replicas=%d "+
 		"--set argo.clusterDomain=%s --set argo.enic.orchestratorIp=%s "+
 		"--set argo.enic.orchestratorUser=%s --set argo.enic.orchestratorPass=%s "+
 		"--set argo.enic.orchestratorOrg=%s --set argo.enic.orchestratorProject=%s",
-		targetConfig, namespace, deployRevision, configsRevision,
+		targetConfig, namespace, deployRevision,
 		replicas,
 		orchFQDN, orchIP,
 		orchUser, orchPass,
 		orchOrg, orchProject,
 	)
+
+	// Pushd to the deployment directory
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current working directory: %w", err)
+	}
+	deploymentDir := filepath.Join(deployGiteaRepoDir, deployRepoName)
+	if err := os.Chdir(deploymentDir); err != nil {
+		return fmt.Errorf("failed to change directory to %s: %w", deploymentDir, err)
+	}
+	defer func() {
+		if err := os.Chdir(currentDir); err != nil {
+			log.Printf("failed to change back to original directory: %v", err)
+		}
+	}()
+
 	fmt.Printf("exec: %s\n", cmd)
 	_, err = script.Exec(cmd).Stdout()
 	return err

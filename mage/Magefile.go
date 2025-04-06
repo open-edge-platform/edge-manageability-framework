@@ -54,9 +54,9 @@ var argoNamespaces = []string{
 }
 
 // TODO: Ideally this would be extracted from the cluster configuration and aligned with over gitea server configuration/secrets
-var githubRepos = []string{
-	"https://github.com/open-edge-platform/edge-manageability-framework",
-}
+// var githubRepos = []string{
+// 	"https://github.com/open-edge-platform/edge-manageability-framework",
+// }
 
 var giteaRepos = []string{
 	"https://gitea-http.gitea.svc.cluster.local/argocd/edge-manageability-framework",
@@ -525,31 +525,48 @@ func (d Deploy) StartGiteaProxy() error {
 	return nil
 }
 
+func (d Deploy) StopAllKubectlProxies() error {
+	// Stop all kubectl port-forward processes
+	cmd := exec.Command("pkill", "-f", "kubectl port-forward")
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to stop kubectl port-forward processes: %w", err)
+	}
+	fmt.Println("All kubectl port-forward processes stopped")
+	return nil
+}
+
 func (d Deploy) StopGiteaProxy() error {
 	pidFile := ".gitea-proxy"
 
 	if _, err := os.Stat(pidFile); os.IsNotExist(err) {
+		fmt.Println("Gitea proxy PID file not found, nothing to stop")
 		return nil
 	}
+	defer func() {
+		if err := os.Remove(pidFile); err != nil {
+			fmt.Printf("failed to remove PID file %s: %v\n", pidFile, err)
+		}
+	}()
 
 	pidBytes, err := os.ReadFile(pidFile)
 	if err != nil {
-		return fmt.Errorf("failed to read PID file %s: %w", pidFile, err)
+		fmt.Printf("failed to read PID file %s\n", pidFile)
+		return nil
 	}
 
 	pid, err := strconv.Atoi(strings.TrimSpace(string(pidBytes)))
 	if err != nil {
-		return fmt.Errorf("failed to parse PID from %s: %w", pidFile, err)
+		fmt.Printf("failed to parse PID from %s\n", pidFile)
+		return nil
 	}
+
 	portForwardCmd := exec.Command("kill", "-9", strconv.Itoa(pid))
 	if err := portForwardCmd.Run(); err != nil {
-		return fmt.Errorf("failed to stop Gitea port forwarding: %w", err)
+		fmt.Printf("failed to stop Gitea port forwarding process: %d", pid)
+	} else {
+		fmt.Printf("Gitea proxy with PID %d stopped\n", pid)
 	}
-	fmt.Printf("Gitea proxy with PID %d stopped\n", pid)
-	if err := os.Remove(pidFile); err != nil {
-		return fmt.Errorf("failed to remove PID file %s: %w", pidFile, err)
-	}
-	fmt.Printf("PID file %s removed\n", pidFile)
+
 	return nil
 }
 

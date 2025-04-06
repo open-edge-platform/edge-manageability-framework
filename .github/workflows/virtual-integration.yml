@@ -463,6 +463,8 @@ jobs:
           DOCKERHUB_USERNAME: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
         run: |
           set +x
+          echo "Clearing any existing kubectl proxies..."
+          mage deploy:StopAllKubectlProxies
           echo "Starting to deploy Orchestrator..."
           mage deploy:kindAll
           echo "Orchestrator deployment done!"

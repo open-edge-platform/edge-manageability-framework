@@ -201,16 +201,16 @@ func (Deploy) kind(targetEnv string) error { //nolint:gocyclo
 		time.Sleep(argoRetryInterval * time.Second)
 	}
 
-	gitUser := os.Getenv("GIT_USER")
-	gitToken := os.Getenv("GIT_TOKEN")
+	// gitUser := os.Getenv("GIT_USER")
+	// gitToken := os.Getenv("GIT_TOKEN")
 
-	if gitUser == "" || gitToken == "" {
-		return fmt.Errorf("GIT_USER and GIT_TOKEN must be set")
-	}
+	// if gitUser == "" || gitToken == "" {
+	// 	return fmt.Errorf("GIT_USER and GIT_TOKEN must be set")
+	// }
 
-	if err := (Argo{}).repoAdd(gitUser, gitToken, githubRepos); err != nil {
-		return err
-	}
+	// if err := (Argo{}).repoAdd(gitUser, gitToken, githubRepos); err != nil {
+	// 	return err
+	// }
 
 	giteaUser, giteaToken, err := (Deploy{}).getArgoGiteaCredentials()
 	if err != nil {
@@ -1210,7 +1210,7 @@ func (Deploy) updateDeployRepo(targetEnv, gitRepoPath, repoName, localClonePath 
 	}
 
 	// Copy files and directories to the newly cloned deployRepoPath
-	filesToCopy := []string{"VERSION", "argocd", "orch-configs/profiles"}
+	filesToCopy := []string{"VERSION", "argocd", "argocd-internal", "orch-configs/profiles"}
 	filesToCopy = append(filesToCopy, fmt.Sprintf("orch-configs/clusters/%s.yaml", targetEnv))
 
 	for _, file := range filesToCopy {
@@ -1419,42 +1419,42 @@ func getDeployTag() (string, error) {
 	return deployTag, nil
 }
 
-func getDeployRevisionParam() string {
-	deployRevision := getDeployRevision()
-	if deployRevision == "" {
-		return ""
-	}
-	return fmt.Sprintf("--set-string argo.deployRepoRevision=%s ", deployRevision)
-}
+// func getDeployRevisionParam() string {
+// 	deployRevision := getDeployRevision()
+// 	if deployRevision == "" {
+// 		return ""
+// 	}
+// 	return fmt.Sprintf("--set-string argo.deployRepoRevision=%s ", deployRevision)
+// }
 
-func getConfigsRevision() string {
-	configsRevision := os.Getenv("ORCH_CONFIG_REV")
-	if configsRevision == "" {
-		configsDir := getConfigsDir()
-		if _, err := os.Stat(configsDir); os.IsNotExist(err) {
-			fmt.Println("failed to locate config repo, using cluster default configs revision")
-			return ""
-		} else {
-			cmd := fmt.Sprintf("bash -c 'cd %s; git rev-parse --short HEAD'", configsDir)
-			out, err := script.Exec(cmd).String()
-			if err != nil {
-				fmt.Println("failed to determine configsRevision: %w", err)
-				fmt.Println("  using cluster default configs revision")
-				return ""
-			}
-			configsRevision = strings.TrimSpace(out)
-		}
-	}
-	return configsRevision
-}
+// func getConfigsRevision() string {
+// 	configsRevision := os.Getenv("ORCH_CONFIG_REV")
+// 	if configsRevision == "" {
+// 		configsDir := getConfigsDir()
+// 		if _, err := os.Stat(configsDir); os.IsNotExist(err) {
+// 			fmt.Println("failed to locate config repo, using cluster default configs revision")
+// 			return ""
+// 		} else {
+// 			cmd := fmt.Sprintf("bash -c 'cd %s; git rev-parse --short HEAD'", configsDir)
+// 			out, err := script.Exec(cmd).String()
+// 			if err != nil {
+// 				fmt.Println("failed to determine configsRevision: %w", err)
+// 				fmt.Println("  using cluster default configs revision")
+// 				return ""
+// 			}
+// 			configsRevision = strings.TrimSpace(out)
+// 		}
+// 	}
+// 	return configsRevision
+// }
 
-func getConfigsRevisionParam() string {
-	configsRevision := getConfigsRevision()
-	if configsRevision == "" {
-		return ""
-	}
-	return fmt.Sprintf("--set-string argo.configsRepoRevision=%s ", configsRevision)
-}
+// func getConfigsRevisionParam() string {
+// 	configsRevision := getConfigsRevision()
+// 	if configsRevision == "" {
+// 		return ""
+// 	}
+// 	return fmt.Sprintf("--set-string argo.configsRepoRevision=%s ", configsRevision)
+// }
 
 func getOrchestratorVersion() (string, error) {
 	version, err := getVersionFromFile()
