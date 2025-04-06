@@ -205,6 +205,7 @@ func (Router) stop() error {
 }
 
 func lookupGenericIP(namespace, serviceName string) (string, error) {
+	fmt.Printf("looking up %s:%s IP\n", namespace, serviceName)
 	cmd := fmt.Sprintf("kubectl -n %s get svc %s -o json", namespace, serviceName)
 	data, err := script.Exec(cmd).String()
 	if err != nil {
@@ -213,27 +214,44 @@ func lookupGenericIP(namespace, serviceName string) (string, error) {
 
 	fmt.Println("kubectl command output:", data)
 
-	var parsedData struct {
-		Status struct {
-			LoadBalancer struct {
-				Ingress []struct {
-					IP string `json:"ip"`
-				} `json:"ingress"`
-			} `json:"loadBalancer"`
-		} `json:"status"`
-	}
+	var parsedData map[string]interface{}
 
 	if err := json.Unmarshal([]byte(data), &parsedData); err != nil {
 		return "", fmt.Errorf("failed to parse service details: %w", err)
 	}
 
-	if len(parsedData.Status.LoadBalancer.Ingress) == 0 || parsedData.Status.LoadBalancer.Ingress[0].IP == "" {
-		return "", fmt.Errorf("load balancer ingress IP not found")
+	status, ok := parsedData["status"].(map[string]interface{})
+	if !ok {
+		return "", fmt.Errorf("status field not found or invalid")
 	}
 
-	argoIP := strings.TrimSpace(parsedData.Status.LoadBalancer.Ingress[0].IP)
+	loadBalancer, ok := status["loadBalancer"].(map[string]interface{})
+	if !ok {
+		return "", fmt.Errorf("loadBalancer field not found or invalid")
+	}
+
+	ingress, ok := loadBalancer["ingress"].([]interface{})
+	if !ok || len(ingress) == 0 {
+		return "", fmt.Errorf("ingress field not found or empty")
+	}
+
+	firstIngress, ok := ingress[0].(map[string]interface{})
+	if !ok {
+		return "", fmt.Errorf("ingress[0] is not a valid object")
+	}
+
+	ip, ok := firstIngress["ip"].(string)
+	if !ok || ip == "" {
+		return "", fmt.Errorf("IP field not found or empty in ingress[0]")
+	}
+
+	argoIP := strings.TrimSpace(ip)
 	fmt.Printf("returning GenericIP: %s\n", argoIP)
 	return argoIP, nil
+
+	// argoIP := strings.TrimSpace(parsedData.Status.LoadBalancer.Ingress[0].IP)
+	// fmt.Printf("returning GenericIP: %s\n", argoIP)
+	// return argoIP, nil
 
 	// ip, err := script.Echo(data).JQ(".status.loadBalancer.ingress | .[0] | .ip ").Replace(`"`, "").String()
 	// if err != nil {
