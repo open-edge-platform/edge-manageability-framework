@@ -196,9 +196,10 @@ func (Undeploy) Kind() error {
 }
 
 // Deletes ENiC and cluster, input project name: mage undeploy:edgeCluster <org-name> <project-name>
-func (Undeploy) EdgeCluster(ctx context.Context, orgName, projectName string) error {
+func (Undeploy) EdgeCluster(orgName, projectName string) error {
 	updateEdgeName()
 
+	ctx := context.TODO()
 	if err := (TenantUtils{}).GetProject(ctx, orgName, projectName); err != nil {
 		return fmt.Errorf("failed to get project %s: %w", projectName, err)
 	}
@@ -1079,6 +1080,7 @@ func (d Deploy) OrchCA() error {
 // Deploys ENiC Edge cluster with sample-project project.
 func (d Deploy) EdgeCluster() error {
 	updateEdgeName()
+
 	projectName := "sample-project"
 	orgName := "sample-org"
 
@@ -1104,9 +1106,10 @@ func (d Deploy) EdgeCluster() error {
 }
 
 // Deploys ENiC Edge cluster, input required: mage deploy:edgeClusterWithProject <org-name> <project-name>
-func (d Deploy) EdgeClusterWithProject(ctx context.Context, orgName string, projectName string) error {
+func (d Deploy) EdgeClusterWithProject(orgName string, projectName string) error {
 	updateEdgeName()
 
+	ctx := context.TODO()
 	if err := (TenantUtils{}).GetProject(ctx, orgName, projectName); err != nil {
 		return fmt.Errorf("failed to get project %s: %w", projectName, err)
 	}
