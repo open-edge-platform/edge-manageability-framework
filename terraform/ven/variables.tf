@@ -103,18 +103,6 @@ variable "vm_net0_mac_address" {
   default     = ""
 }
 
-#variable "vm_net1_bridge" {
-#  type        = string
-#  description = "The name of the bridge to attach the net1 ethernet interface to the VM."
-#  default     = "vmbr2"
-#}
-#
-#variable "vm_net1_mac_address" {
-#  type        = string
-#  description = "The MAC address of the net1 ethernet interface. Leave blank to automatically generate one."
-#  default     = ""
-#}
-
 variable "ntp_server" {
   type        = string
   description = "NTP server the VM must use."
@@ -162,35 +150,3 @@ variable "vm_name" {
   description = "The name of the VM."
   default     = "ven-tf"
 }
-
-#variable "orch_ip" {
-#  type        = string
-#  description = "The IP address of the orchestrator." # TODO: Will we ever need to use this?
-#  default = ""
-#}
-#
-#variable "orch_fqdn" {
-#  type        = string
-#  description = "The FQDN of the orchestrator."
-#}
-#
-#variable "orch_org" {
-#  type        = string
-#  description = "The name of the organisation that the EN will register to."
-#}
-#
-#variable "orch_project" {
-#  type        = string
-#  description = "The name of the project that the EN will register to."
-#}
-#
-#variable "orch_user" {
-#  type        = string
-#  description = "The orchestrator user associated that will register the EN."
-#}
-#
-#variable "orch_password" {
-#  type        = string
-#  description = "The password of the orchestrator user that will register the EN."
-#}
-#
