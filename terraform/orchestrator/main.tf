@@ -292,8 +292,8 @@ resource "null_resource" "copy_local_orch_installer" {
 
 resource "null_resource" "write_installer_config" {
 
-  // Disable this resource if auto-install is disabled
-  count = var.enable_auto_install ? 1 : 0
+  // Enable this resource if auto-install is enabled and using build artifacts from the RS
+  count = var.enable_auto_install && !var.use_local_build_artifact ? 1 : 0
 
   depends_on = [
     null_resource.copy_files
@@ -312,19 +312,19 @@ resource "null_resource" "write_installer_config" {
       "set -o errexit",
       "until [ -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 15; done",
       "echo 'cloud-init has finished!'",
-      "bash -c 'cd /home/ubuntu; source .env; ./onprem_installer.sh --trace ${var.override_flag ? "--override" : ""} ${var.use_local_build_artifact ? "--skip-download" : ""} --write-config'",
-      "mv /home/ubuntu/proxy_config.yaml /home/ubuntu/repo_archives/tmp/edge-manageability-framework/orch-configs/profiles/proxy-internal.yaml"
+      "bash -c 'cd /home/ubuntu; source .env; ./onprem_installer.sh --trace ${var.override_flag ? "--override" : ""} --write-config'",
     ]
     when = create
   }
 }
 
-resource "null_resource" "exec_installer" {
+resource "null_resource" "set_proxy_config" {
 
-  // Disable this resource if auto-install is disabled
-  count = var.enable_auto_install ? 1 : 0
+  // Enable this resource if auto-install is enabled and a proxy is set
+  count = var.enable_auto_install && local.is_proxy_set ? 1 : 0
 
   depends_on = [
+    null_resource.copy_files,
     null_resource.write_installer_config
   ]
 
@@ -337,8 +337,37 @@ resource "null_resource" "exec_installer" {
   }
 
   provisioner "remote-exec" {
+    inline = [ 
+      "set -o errexit",
+      "cp /home/ubuntu/proxy_config.yaml /home/ubuntu/repo_archives/tmp/edge-manageability-framework/orch-configs/profiles/proxy-none.yaml",
+      "cat /home/ubuntu/repo_archives/tmp/edge-manageability-framework/orch-configs/profiles/proxy-none.yaml",
+     ]
+    when = create
+  }
+}
+
+resource "null_resource" "exec_installer" {
+
+  // Enable this resource if auto-install is enabled
+  count = var.enable_auto_install ? 1 : 0
+
+  depends_on = [
+    null_resource.write_installer_config,
+    null_resource.set_proxy_config
+  ]
+
+  connection {
+    type     = "ssh"
+    host     = local.vmnet_ip0
+    port     = var.vm_ssh_port
+    user     = var.vm_ssh_user
+    password = var.vm_ssh_password
+  }
+
+  provisioner "remote-exec" {
     inline = [
-      "bash -c 'cd /home/ubuntu; source .env; env; ./onprem_installer.sh --trace --yes ${var.override_flag ? "--override" : ""} ${var.use_local_build_artifact ? "--skip-download" : ""} | tee ./install_output.log; exit $${PIPESTATUS[0]}'",
+      "set -o errexit",
+      "bash -c 'cd /home/ubuntu; source .env; env; ./onprem_installer.sh --skip-download --trace --yes ${var.override_flag ? "--override" : ""} | tee ./install_output.log; exit $${PIPESTATUS[0]}'",
     ]
     when = create
   }
