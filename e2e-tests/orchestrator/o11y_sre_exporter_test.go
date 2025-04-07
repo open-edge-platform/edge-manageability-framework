@@ -145,7 +145,7 @@ var _ = Describe("Observability SRE Exporter Test:", Label("sre-observability"),
 
 	Context("When ENIC is not deployed", func() {
 		It("exported orchestrator metrics return non-null values", func() {
-			Eventually(expectNotEmpty(orchMetrics), orchMetricQueryTimeout, 10*time.Second).Should(Succeed())
+			Eventually(expectNotEmpty, orchMetricQueryTimeout, 10*time.Second).WithArguments(orchMetrics).Should(Succeed())
 		})
 
 		It("exported edgenode metrics return null values", func() {
@@ -182,11 +182,11 @@ var _ = Describe("Observability SRE Exporter Test:", Label("sre-observability"),
 		})
 
 		It("exported orchestrator metrics return non-null values", func() {
-			Eventually(expectNotEmpty(orchMetrics), orchMetricQueryTimeout, 10*time.Second).Should(Succeed())
+			Eventually(expectNotEmpty, orchMetricQueryTimeout, 10*time.Second).WithArguments(orchMetrics).Should(Succeed())
 		})
 
 		It("exported edgenode metrics return non-null values", func() {
-			Eventually(expectNotEmpty(edgenodeMetrics), enicMetricQueryTimeout, 10*time.Second).Should(Succeed())
+			Eventually(expectNotEmpty, enicMetricQueryTimeout, 10*time.Second).WithArguments(edgenodeMetrics).Should(Succeed())
 		})
 
 		It("diagnostic metric postfixed _up are not available when password is incorrect", func() {
