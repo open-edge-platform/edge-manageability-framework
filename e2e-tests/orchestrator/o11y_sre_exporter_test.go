@@ -98,7 +98,6 @@ var _ = Describe("Observability SRE Exporter Test:", Label("sre-observability"),
 	})
 
 	verifyMetric := func(metric string) (string, int) {
-		By(fmt.Sprintf("Checking metric: %s", metric))
 		req, err := http.NewRequest(http.MethodGet,
 			fmt.Sprintf("%s/api/v1/query?query=topk_last(1,%s)", victoriaMetricsURL, metric), nil)
 		Expect(err).ToNot(HaveOccurred())
