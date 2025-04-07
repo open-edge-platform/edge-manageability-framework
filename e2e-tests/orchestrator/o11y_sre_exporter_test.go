@@ -126,24 +126,26 @@ var _ = Describe("Observability SRE Exporter Test:", Label("sre-observability"),
 		return value, resp.StatusCode
 	}
 
+	expectNotEmpty := func(metrics []string) error {
+		nullMetrics := make([]string, 0, len(metrics))
+		for _, metric := range metrics {
+			value, status := verifyMetric(metric)
+			if status != http.StatusOK {
+				return fmt.Errorf("query for metric %s returned status %d", metric, status)
+			}
+			if value == "" {
+				nullMetrics = append(nullMetrics, metric)
+			}
+		}
+		if len(nullMetrics) > 0 {
+			return fmt.Errorf("metrics %q returned null values", nullMetrics)
+		}
+		return nil
+	}
+
 	Context("When ENIC is not deployed", func() {
 		It("exported orchestrator metrics return non-null values", func() {
-			Eventually(func() error {
-				nullMetrics := make([]string, 0, len(orchMetrics))
-				for _, metric := range orchMetrics {
-					value, status := verifyMetric(metric)
-					if status != http.StatusOK {
-						return fmt.Errorf("query for metric %s returned status %d", metric, status)
-					}
-					if value == "" {
-						nullMetrics = append(nullMetrics, metric)
-					}
-				}
-				if len(nullMetrics) > 0 {
-					return fmt.Errorf("metrics %q returned null values", nullMetrics)
-				}
-				return nil
-			}, orchMetricQueryTimeout, 10*time.Second).Should(Succeed())
+			Eventually(expectNotEmpty(orchMetrics), orchMetricQueryTimeout, 10*time.Second).Should(Succeed())
 		})
 
 		It("exported edgenode metrics return null values", func() {
@@ -180,41 +182,11 @@ var _ = Describe("Observability SRE Exporter Test:", Label("sre-observability"),
 		})
 
 		It("exported orchestrator metrics return non-null values", func() {
-			Eventually(func() error {
-				nullMetrics := make([]string, 0, len(orchMetrics))
-				for _, metric := range orchMetrics {
-					value, status := verifyMetric(metric)
-					if status != http.StatusOK {
-						return fmt.Errorf("query for metric %s returned status %d", metric, status)
-					}
-					if value == "" {
-						nullMetrics = append(nullMetrics, metric)
-					}
-				}
-				if len(nullMetrics) > 0 {
-					return fmt.Errorf("metrics %q returned null values", nullMetrics)
-				}
-				return nil
-			}, orchMetricQueryTimeout, 10*time.Second).Should(Succeed())
+			Eventually(expectNotEmpty(orchMetrics), orchMetricQueryTimeout, 10*time.Second).Should(Succeed())
 		})
 
 		It("exported edgenode metrics return non-null values", func() {
-			Eventually(func() error {
-				nullMetrics := make([]string, 0, len(edgenodeMetrics))
-				for _, metric := range edgenodeMetrics {
-					value, status := verifyMetric(metric)
-					if status != http.StatusOK {
-						return fmt.Errorf("query for metric %s returned status %d", metric, status)
-					}
-					if value == "" {
-						nullMetrics = append(nullMetrics, metric)
-					}
-				}
-				if len(nullMetrics) > 0 {
-					return fmt.Errorf("metrics %q returned null values", nullMetrics)
-				}
-				return nil
-			}, enicMetricQueryTimeout, 10*time.Second).Should(Succeed())
+			Eventually(expectNotEmpty(edgenodeMetrics), enicMetricQueryTimeout, 10*time.Second).Should(Succeed())
 		})
 
 		It("diagnostic metric postfixed _up are not available when password is incorrect", func() {
