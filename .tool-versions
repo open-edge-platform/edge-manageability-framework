@@ -10,7 +10,7 @@ helm-diff 3.10.0
 helmfile 0.171.0
 jq 1.7.1
 kind 0.27.0
-kubectl 1.32.2
+kubectl 1.30.10
 mage 1.15.0
 markdownlint-cli2 0.17.2
 nodejs 23.10.0
