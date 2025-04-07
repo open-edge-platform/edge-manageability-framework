@@ -61,12 +61,6 @@ variable "vm_boot_disk_image_file" {
   default     = "/var/lib/vz/template/iso/jammy-server-cloudimg-amd64.img"
 }
 
-#variable "vm_data_disk_size" {
-#  type        = string
-#  description = "The size of the VM's data disk. Accepts K for kibibytes, M for mebibytes, G for gibibytes, T for tibibytes."
-#  default     = "512G"
-#}
-
 variable "vm_sockets" {
   type        = number
   description = "The number of sockets to allocate to the VM."
