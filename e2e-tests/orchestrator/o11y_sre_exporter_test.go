@@ -23,7 +23,7 @@ const (
 	sreNamespace           = "orch-sre"
 	destinationService     = "svc/sre-exporter-destination"
 	orchMetricQueryTimeout = 2 * time.Minute
-	enicMetricQueryTimeout = 4 * time.Minute
+	enicMetricQueryTimeout = 6 * time.Minute
 )
 
 var (
