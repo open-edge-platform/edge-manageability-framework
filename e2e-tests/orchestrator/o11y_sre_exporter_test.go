@@ -18,10 +18,12 @@ import (
 )
 
 const (
-	victoriaMetricsURL = "http://localhost:8428"
-	httpAuthUsername   = "sre"
-	sreNamespace       = "orch-sre"
-	destinationService = "svc/sre-exporter-destination"
+	victoriaMetricsURL     = "http://localhost:8428"
+	httpAuthUsername       = "sre"
+	sreNamespace           = "orch-sre"
+	destinationService     = "svc/sre-exporter-destination"
+	orchMetricQueryTimeout = 2 * time.Minute
+	enicMetricQueryTimeout = 4 * time.Minute
 )
 
 var (
@@ -127,9 +129,13 @@ var _ = Describe("Observability SRE Exporter Test:", Label("sre-observability"),
 	Context("When ENIC is not deployed", func() {
 		It("exported orchestrator metrics return non-null values", func() {
 			for _, metric := range orchMetrics {
-				value, status := verifyMetric(metric)
-				Expect(status).To(Equal(http.StatusOK))
-				Expect(value).ToNot(BeEmpty(), fmt.Sprintf("Metric %s returned null value", metric))
+				Eventually(func() (string, error) {
+					value, status := verifyMetric(metric)
+					if status != http.StatusOK {
+						return "", fmt.Errorf("query for metric %s returned status %d", metric, status)
+					}
+					return value, nil
+				}, orchMetricQueryTimeout, 10*time.Second).ShouldNot(BeEmpty(), fmt.Sprintf("Metric %s returned null value", metric))
 			}
 		})
 
@@ -168,17 +174,25 @@ var _ = Describe("Observability SRE Exporter Test:", Label("sre-observability"),
 
 		It("exported orchestrator metrics return non-null values", func() {
 			for _, metric := range orchMetrics {
-				value, status := verifyMetric(metric)
-				Expect(status).To(Equal(http.StatusOK))
-				Expect(value).ToNot(BeEmpty(), fmt.Sprintf("Metric %s returned null value", metric))
+				Eventually(func() (string, error) {
+					value, status := verifyMetric(metric)
+					if status != http.StatusOK {
+						return "", fmt.Errorf("query for metric %s returned status %d", metric, status)
+					}
+					return value, nil
+				}, orchMetricQueryTimeout, 10*time.Second).ShouldNot(BeEmpty(), fmt.Sprintf("Metric %s returned null value", metric))
 			}
 		})
 
 		It("exported edgenode metrics return non-null values", func() {
 			for _, metric := range edgenodeMetrics {
-				value, status := verifyMetric(metric)
-				Expect(status).To(Equal(http.StatusOK))
-				Expect(value).ToNot(BeEmpty(), fmt.Sprintf("Metric %s returned null value", metric))
+				Eventually(func() (string, error) {
+					value, status := verifyMetric(metric)
+					if status != http.StatusOK {
+						return "", fmt.Errorf("query for metric %s returned status %d", metric, status)
+					}
+					return value, nil
+				}, enicMetricQueryTimeout, 10*time.Second).ShouldNot(BeEmpty(), fmt.Sprintf("Metric %s returned null value", metric))
 			}
 		})
 
