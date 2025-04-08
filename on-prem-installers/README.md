@@ -114,6 +114,7 @@ Execute the following instructions on your development machine.
     ${TRAEFIK_IP} "app-orch.cluster.onprem"
     ${TRAEFIK_IP} "app-service-proxy.cluster.onprem"
     ${ARGO_IP} "argocd.cluster.onprem"
+    ${TRAEFIK_IP} "attest-node.cluster.onprem"
     ${TRAEFIK_IP} "cluster-orch-edge-node.cluster.onprem"
     ${TRAEFIK_IP} "cluster-orch-node.cluster.onprem"
     ${TRAEFIK_IP} "cluster-orch.cluster.onprem"
