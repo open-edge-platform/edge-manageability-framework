@@ -124,7 +124,7 @@ func (DevUtils) WaitForEnic() error {
 	for {
 		ready, err := isEnicArgoAppReady()
 		if err != nil {
-			fmt.Println(fmt.Errorf("Error while checking ENiC App: %w", err))
+			fmt.Println(fmt.Errorf("error while checking ENiC App: %w", err))
 		}
 
 		if ready {
@@ -172,7 +172,7 @@ func (DevUtils) WaitForEnicNodeAgent() error {
 	for {
 		ready, err := isEnicArgoAppReady()
 		if err != nil {
-			fmt.Println(fmt.Errorf("Error while checking ENiC App: %w", err))
+			fmt.Println(fmt.Errorf("error while checking ENiC App: %w", err))
 		}
 
 		if ready {
