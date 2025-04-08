@@ -21,3 +21,4 @@ terraform-docs 0.17.0
 tflint 0.51.2
 yamllint 1.26.3
 yq 4.34.2
+cmctl 2.1.0
