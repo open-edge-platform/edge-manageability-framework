@@ -99,17 +99,13 @@ resource "proxmox_vm_qemu" "ven" {
   }
 
   disks {
-    // cloud-int drive
-    //ide {
     scsi {
-      //ide2 {
+      // cloud-int drive
       scsi1 {
         cloudinit {
           storage = "local-lvm"
         }
       }
-    //}
-    //scsi {
       // Boot disk will be modified later
       scsi0 {
         disk {
