@@ -120,7 +120,7 @@ func updateEdgeName() {
 // Install ASDF plugins.
 func AsdfPlugins() error {
 	// Install remaining tools
-	if _, err := script.File(".tool-versions").Column(1).
+	if _, err := script.File("../.tool-versions").Column(1).
 		MatchRegexp(regexp.MustCompile(`^[^\#]`)).ExecForEach("asdf plugin add {{.}}").Stdout(); err != nil {
 		return err
 	}
@@ -132,7 +132,7 @@ func AsdfPlugins() error {
 	}
 	// Set plugins listed in globalAsdf as global
 	for _, name := range globalAsdf {
-		if _, err := script.File(".tool-versions").MatchRegexp(regexp.MustCompile(name)).Column(2).
+		if _, err := script.File("../.tool-versions").MatchRegexp(regexp.MustCompile(name)).Column(2).
 			ExecForEach(fmt.Sprintf("asdf set --home %s {{.}}", name)).Stdout(); err != nil {
 			return err
 		}
