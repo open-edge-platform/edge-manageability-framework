@@ -1178,7 +1178,7 @@ func (d Deploy) EdgeCluster(targetEnv string) error {
 	return d.deployEnicCluster(targetEnv, strings.Join(labels, ","))
 }
 
-// Deploys ENiC Edge cluster, input required: mage deploy:edgeClusterWithProject <org-name> <project-name> <edge-infra-user>
+// Deploys ENiC Edge cluster, input required: mage deploy:edgeClusterWithProject <targetEnv> <org-name> <project-name> <edge-infra-user>
 func (d Deploy) EdgeClusterWithProject(targetEnv string, orgName string, projectName string, edgeInfraUser string) error {
 	updateEdgeName()
 
