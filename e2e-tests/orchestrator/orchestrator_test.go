@@ -334,7 +334,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			Expect(string(content)).To(ContainSubstring("Error 503"))
 			Expect(string(content)).To(ContainSubstring("<p>Sorry! Something went wrong on our end. Please try again later.</p>"))
 		})
-		It("should respond to OPTIONS on 404 without server disclosure", func() {
+		It("should respond to OPTIONS on 404 without server disclosure", Label(ui), func() {
 			// Create OPTIONS request to a non-existent URL
 			req, err := http.NewRequest("OPTIONS", "https://web-ui."+serviceDomainWithPort+"/non-existent-path", nil)
 			Expect(err).ToNot(HaveOccurred())
