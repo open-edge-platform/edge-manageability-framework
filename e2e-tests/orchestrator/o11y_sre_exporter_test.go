@@ -41,7 +41,7 @@ var (
 
 	edgenodeMetrics = []string{
 		// Exported Edge Node Metrics
-		// Temperature metric "orch_edgenode_env_temp" is ommitted since it is not fully supported on virtual edge nodes
+		// Temperature metric "orch_edgenode_env_temp" is omitted since it is not fully supported on virtual edge nodes
 		"orch_edgenode_mem_used_percent",
 		"orch_edgenode_disk_used_percent",
 		"orch_edgenode_cpu_idle_percent",
