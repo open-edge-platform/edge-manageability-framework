@@ -59,7 +59,7 @@ load_provision_values() {
             return 1
         fi
     fi
-    
+
     # Extract and export specific variables from the tfvar file
     while IFS='=' read -r key value; do
         # Skip lines that are comments or empty
@@ -75,8 +75,17 @@ load_provision_values() {
 
        # Export only the required variables
         case $key in
-            sre_secret_string)
-                export SRE_SECRET_STRING="$value"
+            sre_basic_auth_username)
+                export SRE_BASIC_AUTH_USERNAME="$value"
+                ;;
+            sre_basic_auth_password)
+                export SRE_BASIC_AUTH_PASSWORD="$value"
+                ;;
+            sre_destination_secret_url)
+                export SRE_DESTINATION_SECRET_URL="$value"
+                ;;
+            sre_destination_ca_secret)
+                export SRE_DESTINATION_CA_SECRET="$value"
                 ;;
             auto_cert)
                 export AUTO_CERT="$value"
@@ -361,7 +370,7 @@ init_terraform() {
     cat <<EOF > $backend
 bucket = "$state_bucket"
 key    = "${key}"
-region = "${BUCKET_REGION:-"us-west-2"}" 
+region = "${BUCKET_REGION:-"us-west-2"}"
 EOF
 
     rm -rf .terraform || true
@@ -378,7 +387,7 @@ get_s3_prefix() {
     init_terraform "pod-configs" "orchestrator/cluster" "$BUCKET_NAME" "${AWS_REGION}/cluster/${CLUSTER_NAME}"
 
     local resource
-    
+
     if resource=$(terraform state list | grep -oP '^module.s3.aws_s3_bucket.bucket\[".+"\]$' | head -1) && \
         [[ -n "$resource" ]]; then
         local bucket=$(terraform state show "$resource" | grep -P "^\s* bucket\s*=" | cut -d'=' -f2 | xargs echo)
