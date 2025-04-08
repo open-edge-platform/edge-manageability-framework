@@ -4,7 +4,11 @@
 
 server:
   service:
-    type: ClusterIP
+    type: {{ .Values.orchestratorDeployment.argoServiceType }}
+{{- if eq .Values.orchestratorDeployment.argoServiceType "NodePort" }}
+    nodePortHttp: 32080
+    nodePortHttps: 32443
+{{- end }}
 configs:
   params:
     application.namespaces: "*"
@@ -29,15 +33,16 @@ configs:
             end
           end
           return hs
+    users.session.duration: "1h"
 global:
   env:
     # Proxy setting for Intel internal clusters
     - name: http_proxy
-      value: "{{ .Values.proxy.httpProxy }}"
+      value: "{{ .Values.argo.proxy.httpProxy }}"
     - name: https_proxy
-      value: "{{ .Values.proxy.httpsProxy }}"
+      value: "{{ .Values.argo.proxy.httpsProxy }}"
     - name: no_proxy
-      value: "{{ .Values.proxy.noProxy }}"
+      value: "{{ .Values.argo.proxy.noProxy }}"
 
 # FIXME Workaround for ArgoCD not applying CA file when pulling from OCI registry. Remove this once the issue is fixed
 # Ref: https://github.com/argoproj/argo-cd/issues/13726, https://github.com/argoproj/argo-cd/issues/14877
@@ -52,3 +57,7 @@ repoServer:
     - name: registry-certs
       configMap:
         name: registry-certs
+
+# Disabled due to vulnerability report and we are not using it
+dex:
+  enabled: false

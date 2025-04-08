@@ -195,6 +195,8 @@ github.com/open-edge-platform/cluster-manager/v2 v2.0.2 h1:VN+VZCfRcDaRBEnr9zmkj
 github.com/open-edge-platform/cluster-manager/v2 v2.0.2/go.mod h1:41JE0HclkqzMWoMeds1EVfxk5FMCCgqv/YFxRJfvK2E=
 github.com/open-edge-platform/infra-core/api v1.32.0 h1:p7YMG6mBIW5cVDWa9TbpjwwnDzptzRl8DAkqxKe2eGs=
 github.com/open-edge-platform/infra-core/api v1.32.0/go.mod h1:6bwFbs40HRwUhYTM0iohBuG1QDbUS0P/RMdbrscIJyo=
+github.com/open-edge-platform/infra-managers/attestationstatus v0.4.0 h1:fAdQlDKrqjh1cxk/vRPgLvD0RZ8y9cNC2Gf1HdXjU40=
+github.com/open-edge-platform/infra-managers/attestationstatus v0.4.0/go.mod h1:zpyd4hb6RyepXvL+7gksnjeK0mheUUUEavB62aiXZJc=
 github.com/open-edge-platform/infra-managers/host v1.21.0 h1:wiTik4k9U1wGh90ZlPgx48WNZfO4r9t6mQgJB3EO4e0=
 github.com/open-edge-platform/infra-managers/host v1.21.0/go.mod h1:zEJs5dZS/b+6r3z2y3qqoDtJyHJfxoDQUGeow+quhdY=
 github.com/open-edge-platform/infra-managers/maintenance v1.21.0 h1:38twhZVAo0fYBDhfHWmsZUBcf6h+ZmXgodQrG7J8uNE=

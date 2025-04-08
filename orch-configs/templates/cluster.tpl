@@ -24,9 +24,6 @@ root:
     - orch-configs/profiles/ui-dev.yaml
 {{- end }}
     - orch-configs/profiles/enable-dev.yaml
-{{- if .Values.enableAsm }}
-    - orch-configs/profiles/enable-asm.yaml
-{{- end }}
 {{- if .Values.enableObservability }}
     - orch-configs/profiles/enable-sre.yaml
 {{- end }}
@@ -39,10 +36,10 @@ root:
 {{- else }}
     - orch-configs/profiles/proxy-none.yaml
 {{- end }}
+    - orch-configs/profiles/profile-{{ .Values.deployProfile }}.yaml
 {{- if .Values.enableAutoCert }}
     - orch-configs/profiles/profile-autocert.yaml
 {{- end }}
-    - orch-configs/profiles/profile-{{ .Values.deployProfile }}.yaml
     - orch-configs/profiles/artifact-rs-production-noauth.yaml
 {{- if .Values.enableObservability }}
     - orch-configs/profiles/o11y-dev.yaml
@@ -53,6 +50,13 @@ root:
 {{- end }}
     - orch-configs/profiles/resource-default.yaml
     - orch-configs/clusters/{{ .Values.name }}.yaml
+    # # rate limit is applicable to each cluster.
+    # # please see https://doc.traefik.io/traefik/middlewares/http/ratelimit/
+    # # if you enable default traefik rate limit, do not specify custom rate limit
+{{- if .Values.enableDefaultTraefikRateLimit }}
+    - orch-configs/profiles/default-traefik-rate-limit.yaml
+{{- end }}
+
 
 # Values applied to both root app and shared among all child apps
 argo:
@@ -63,7 +67,7 @@ argo:
   # Base domain name for all Orchestrator services. This base domain will be concatenated with a service's subdomain
   # name to produce the service's domain name. For example, given the domain name of `orchestrator.io`, the Web UI
   # service will be accessible via `web-ui.orchestrator.io`. Not to be confused with the K8s cluster domain.
-  clusterDomain: kind.internal
+  clusterDomain: {{ .Values.clusterDomain }}
 
 {{- if and .Values.enableAutocert .Values.staging }}
   autoCert:
@@ -79,7 +83,7 @@ argo:
 {{- end }}
 
   ## Argo CD configs
-  deployRepoURL: "https://github.com/open-edge-platform/edge-manageability-framework"
+  deployRepoURL: "{{ .Values.deployRepoURL }}"
   deployRepoRevision: main
 
   targetServer: "https://kubernetes.default.svc"
@@ -88,20 +92,16 @@ argo:
   o11y:
     sre:
       customerLabel: local
-{{- if and .Values.enableCoder }}
-      externalSecretsEnabled: true
-      providerSecretName: sre-secret
 {{- end }}
-{{- end }}
-{{ if or .Values.enableAsm .Values.enableCoder }}
+{{ if .Values.enableCoder }}
   aws: {}
     # Account ID and region will be set by deploy.go
     # region: ""
     # account: ""
 {{- end }}
-
   # # rate limit is applicable to each cluster.
   # # please see https://doc.traefik.io/traefik/middlewares/http/ratelimit/
+  # # if you specify custom traefik rate limit, do not enable the default one.
   # traefik:
   #   rateLimit:
   #     # When rateLimit section is not specified or average is set to 0 (default setting), rate limiting will be disabled.
@@ -116,11 +116,20 @@ argo:
   #     # and therefore cannot be used to deactivate rate limiting for some IPs.
   #     excludedIps:
   #       - 10.244.0.1
+{{- if .Values.traefik }}
+  traefik:
+{{ toYaml .Values.traefik | indent 4 }}
+{{- end }}
 
 orchestratorDeployment:
   targetCluster: {{ .Values.targetCluster }}
   enableMailpit: {{ .Values.enableMailpit }}
+  argoServiceType: {{ .Values.argoServiceType }}
   dockerCache: "{{ .Values.dockerCache }}"
+{{- if and .Values.dockerCacheCert }}  
+  dockerCacheCert: |
+{{ .Values.dockerCacheCert | indent 4 }}
+{{- end }}
 
 # Post custom template overwrite values should go to /root-app/environments/<env>/<appName>.yaml
 # This is a placeholder to prevent error when there isn't any overwrite needed

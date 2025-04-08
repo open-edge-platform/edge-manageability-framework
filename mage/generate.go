@@ -1183,7 +1183,7 @@ func (Gen) hostfileTraefik() error {
 	}
 
 	// Add BIOS nginx hosts
-	bootsIP, err := lookupGenericIP("orch-boots", "ingress-nginx-controller")
+	bootsIP, err := awaitGenericIP("orch-boots", "ingress-nginx-controller", 20*time.Second)
 	if err != nil {
 		return err
 	}
@@ -1193,7 +1193,7 @@ func (Gen) hostfileTraefik() error {
 	}
 
 	// Add Gitea hosts
-	giteaIP, err := lookupGenericIP("gitea", "gitea-http")
+	giteaIP, err := awaitGenericIP("gitea", "gitea-http", 20*time.Second)
 	if err != nil {
 		return err
 	}
@@ -1203,7 +1203,7 @@ func (Gen) hostfileTraefik() error {
 	}
 
 	// Add Argo CD hosts
-	argoIP, err := lookupGenericIP("argocd", "argocd-server")
+	argoIP, err := awaitGenericIP("argocd", "argocd-server", 20*time.Second)
 	if err != nil {
 		return err
 	}

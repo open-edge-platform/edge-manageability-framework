@@ -50,6 +50,7 @@ variable "dns_hosts" {
     { hostname = "app-orch.cluster.onprem", ip = "192.168.99.30" },
     { hostname = "app-service-proxy.cluster.onprem", ip = "192.168.99.30" },
     { hostname = "argocd.cluster.onprem", ip = "192.168.99.20" },
+    { hostname = "attest-node.cluster.onprem", ip = "192.168.99.30" },
     { hostname = "cluster-orch-edge-node.cluster.onprem", ip = "192.168.99.30" },
     { hostname = "cluster-orch-node.cluster.onprem", ip = "192.168.99.30" },
     { hostname = "cluster.onprem", ip = "192.168.99.30" },
