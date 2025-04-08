@@ -49,7 +49,7 @@ COPY asdf-install-versions /bin/asdf-install-versions
 
 WORKDIR /root
 USER root
-COPY tool-versions .tool-versions
+COPY ../.tool-versions .tool-versions
 
 RUN git clone https://github.com/asdf-vm/asdf.git .asdf --branch v0.15.0
 RUN echo '\nsource $HOME/.asdf/asdf.sh' >> .bashrc

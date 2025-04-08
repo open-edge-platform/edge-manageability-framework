@@ -4,12 +4,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-if [ ! -f .tool-versions ]; then
+if [ ! -f ../.tool-versions ]; then
   echo ".tool-versions file not found!"
   exit 1
 fi
 
-cat .tool-versions | grep -v '#' | while read -r version; do
+cat ../.tool-versions | grep -v '#' | while read -r version; do
   ret=$(asdf where $version)
   ex=$?
   if [ $ex -eq 0 ]; then
