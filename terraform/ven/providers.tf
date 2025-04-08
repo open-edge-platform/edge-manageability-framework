@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
 provider "proxmox" {
   pm_api_url      = var.pm_api_url
   pm_debug        = true

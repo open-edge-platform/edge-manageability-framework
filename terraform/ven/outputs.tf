@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
 output "vm_id" {
   value       = proxmox_vm_qemu.ven.vmid
   description = "The ENiVM Proxmox VM ID"

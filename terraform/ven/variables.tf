@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
 variable "pm_api_url" {
   type        = string
   description = "The URL of the Proxmox VE API."

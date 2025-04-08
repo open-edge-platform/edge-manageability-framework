@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
 // Randomly generates vmid
 resource "random_integer" "next_vmid" {
   min = 2000

@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # Exit if any of the intermediate steps fail
 set -o errexit -o nounset -o pipefail -o xtrace
 
