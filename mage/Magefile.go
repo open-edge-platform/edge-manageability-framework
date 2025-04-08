@@ -53,9 +53,15 @@ var argoNamespaces = []string{
 	"orch-infra",    // used when creating a secret for mailpit
 }
 
-// TODO: Remove private repos and argo references to them
-var privateRepos = []string{
+// FIXME: Ideally this could be extracted from the cluster configuration and aligned with auth secrets - out of scope for now
+var giteaRepos = []string{
+	"https://gitea-http.gitea.svc.cluster.local/argocd/edge-manageability-framework",
+}
+
+// Public GitHub repositories can be useful for specific development workflows.
+var githubRepos = []string{
 	"https://github.com/open-edge-platform/edge-manageability-framework",
+	"https://github.com/open-edge-platform/orch-utils",
 }
 
 var globalAsdf = []string{
@@ -504,23 +510,110 @@ func (d Deploy) Kind(targetEnv string) error {
 }
 
 func (d Deploy) Gitea(targetEnv string) error {
-	// TBD: Change useIntelRegistry to targetEnv, render the bootstrap gitea-ext.tpl to gitea.yaml and set giteaBootstrapValues to gitea.yaml
-	// TBD: use the proxy settings from the parsed cluster profile settings to render the gitea.yaml
+	err := (Config{}).renderTargetConfigTemplate(targetEnv, "orch-configs/templates/bootstrap/gitea.tpl", ".deploy/bootstrap/gitea.yaml")
+	if err != nil {
+		return fmt.Errorf("failed to render gitea configuration: %w", err)
+	}
 
-	giteaBootstrapValues := []string{"bootstrap/gitea.yaml"}
+	giteaBootstrapValues := []string{".deploy/bootstrap/gitea.yaml"}
 	return d.gitea(giteaBootstrapValues, targetEnv)
+}
+
+func (d Deploy) StartGiteaProxy() error {
+	err := d.StopGiteaProxy()
+	if err != nil {
+		return fmt.Errorf("failed to stop Gitea proxy: %w", err)
+	}
+
+	portForwardCmd, err := d.startGiteaPortForward()
+	if err != nil {
+		return fmt.Errorf("failed to start Gitea port forwarding: %w", err)
+	}
+
+	// Save the PID to a .gitea-proxy file
+	pid := portForwardCmd.Process.Pid
+	pidFile := ".gitea-proxy"
+	if err := os.WriteFile(pidFile, []byte(strconv.Itoa(pid)), 0o644); err != nil {
+		return fmt.Errorf("failed to write PID to %s: %w", pidFile, err)
+	}
+	fmt.Printf("Gitea proxy PID saved to %s\n", pidFile)
+	return nil
+}
+
+func (d Deploy) StopAllKubectlProxies() error {
+	// List all kubectl port-forward processes
+	cmd := exec.Command("pgrep", "-af", "kubectl port-forward")
+	output, err := cmd.Output()
+	if err != nil {
+		fmt.Printf("failed to list kubectl port-forward processes: %v\n", err)
+		return nil
+	}
+	fmt.Println("kubectl port-forward processes:")
+	fmt.Println(string(output))
+
+	// Stop all kubectl port-forward processes
+	cmd = exec.Command("pkill", "-f", "kubectl port-forward")
+	if err := cmd.Run(); err != nil {
+		fmt.Printf("failed to stop kubectl port-forward processes: %v", err)
+	}
+
+	cmd = exec.Command("pgrep", "-af", "kubectl port-forward")
+	output, err = cmd.Output()
+	if err != nil {
+		fmt.Printf("failed to list kubectl port-forward processes: %v\n", err)
+		return nil
+	}
+	fmt.Println("Any remaining kubectl port-forward processes after pkill:")
+	fmt.Println(string(output))
+	return nil
+}
+
+func (d Deploy) StopGiteaProxy() error {
+	pidFile := ".gitea-proxy"
+
+	if _, err := os.Stat(pidFile); os.IsNotExist(err) {
+		fmt.Println("Gitea proxy PID file not found, nothing to stop")
+		return nil
+	}
+	defer func() {
+		if err := os.Remove(pidFile); err != nil {
+			fmt.Printf("failed to remove PID file %s: %v\n", pidFile, err)
+		}
+	}()
+
+	pidBytes, err := os.ReadFile(pidFile)
+	if err != nil {
+		fmt.Printf("failed to read PID file %s\n", pidFile)
+		return nil
+	}
+
+	pid, err := strconv.Atoi(strings.TrimSpace(string(pidBytes)))
+	if err != nil {
+		fmt.Printf("failed to parse PID from %s\n", pidFile)
+		return nil
+	}
+
+	portForwardCmd := exec.Command("kill", "-9", strconv.Itoa(pid))
+	if err := portForwardCmd.Run(); err != nil {
+		fmt.Printf("failed to stop Gitea port forwarding process: %d", pid)
+	} else {
+		fmt.Printf("Gitea proxy with PID %d stopped\n", pid)
+	}
+
+	return nil
 }
 
 // Deploy Argo CD in kind cluster.
 func (d Deploy) Argocd(targetEnv string) error {
-	// Set argoBootstrapValues to the default set for a kind dev environment
-	argoBootstrapValues := []string{
-		"bootstrap/argocd.yaml",
-		"bootstrap/lb.yaml",
+	err := (Config{}).renderTargetConfigTemplate(targetEnv, "orch-configs/templates/bootstrap/argocd.tpl", ".deploy/bootstrap/argocd.yaml")
+	if err != nil {
+		return fmt.Errorf("failed to render argocd proxy configuration: %w", err)
 	}
 
-	// TBD: Change useIntelRegistry to targetEnv
-	// TBD: if targetEnv has a non-empty proxy, render the bootstrap argo-proxy.tpl to argo-proxy.yaml and add argo-proxy.yaml to argoBootstrapValues
+	// Set argoBootstrapValues to the default set for a kind dev environment
+	argoBootstrapValues := []string{
+		".deploy/bootstrap/argocd.yaml",
+	}
 
 	return d.argocd(argoBootstrapValues, targetEnv)
 }
@@ -1184,9 +1277,19 @@ func (a Argo) Login() error {
 	return a.login()
 }
 
-// Add internal helm/git repos.
-func (a Argo) RepoAdd() error {
-	return a.repoAdd()
+// Add public GitHub Orchestrator platform source repos to ArgoCD.
+func (a Argo) AddGithubRepos() error {
+	gitUser := os.Getenv("GIT_USER")
+	if gitUser == "" {
+		return fmt.Errorf("must set environment variable GIT_USER")
+	}
+
+	gitToken := os.Getenv("GIT_TOKEN")
+	if gitToken == "" {
+		return fmt.Errorf("must set environment variable GIT_TOKEN")
+	}
+
+	return a.repoAdd(gitUser, gitToken, githubRepos)
 }
 
 // Lists all ArgoCD Applications, sorted by syncWave.
@@ -1518,32 +1621,16 @@ func (g Gen) LEOrchestratorCABundle() error {
 
 // RegistryCacheCert generates the Registry cache x509 certificate file for a specified target environment.
 func (Gen) RegistryCacheCert(targetEnv string) error {
-	cacheRegistryURL := ""
-	clusterFilePath := fmt.Sprintf("orch-configs/clusters/%s.yaml", targetEnv)
-	clusterValues, err := parseClusterValues(clusterFilePath)
-	if err != nil {
-		return fmt.Errorf("failed to parse cluster values for targetEnv %s: %w", targetEnv, err)
-	}
+	cacheRegistry, _ := (Config{}).getDockerCache(targetEnv)
+	cacheRegistry = strings.TrimSpace(cacheRegistry)
+	cacheRegistryCert, _ := (Config{}).getDockerCacheCert(targetEnv)
+	cacheRegistryCert = strings.TrimSpace(cacheRegistryCert)
 
-	// Check if the cache registry URL is set in the cluster values
-	if clusterValues["orchestratorDeployment"] != nil {
-		if dockerCache, ok := clusterValues["orchestratorDeployment"].(map[string]interface{})["dockerCache"]; ok {
-			cacheRegistryURL = fmt.Sprintf("%v", dockerCache)
+	if cacheRegistry != "" && cacheRegistryCert != "" {
+		if err := os.WriteFile(filepath.Join("mage", "registry-cache-ca.crt"), []byte(cacheRegistryCert), 0o644); err != nil {
+			return fmt.Errorf("failed to write cache registry certificate to file: %w", err)
 		}
-	}
-	if cacheRegistryURL == "" {
-		fmt.Printf("%s doesn't specify a dockerCache URL. No cache certificate will be generated.\n", targetEnv)
-	} else {
-		fmt.Printf("Using cache registry URL: %s\n", cacheRegistryURL)
-
-		err := (Registry{}).getRegistryCert(cacheRegistryURL, filepath.Join("mage", "registry-cache-ca.crt"), false)
-		if err != nil {
-			fmt.Printf("Failed to generate cache registry certificate: %v\n", err)
-			return fmt.Errorf("failed to generate cache registry certificate: %w", err)
-		}
-
-		cacheRegistryCert := filepath.Join("mage", "registry-cache-ca.crt")
-		fmt.Printf("Cache registry certificate saved to: %s\n", cacheRegistryCert)
+		fmt.Printf("Cache registry certificate written to: %s\n", filepath.Join("mage", "registry-cache-ca.crt"))
 	}
 
 	return nil
