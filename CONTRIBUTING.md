@@ -1,7 +1,5 @@
 # How to contribute
-For information on submitting pull requests and issues, refer to the [Contributor Guide](https://github.com/open-edge-platform/orch-docs/blob/main/docs/developer_guide/contributor_guide/index.rst).
-
-TODO: Replace the link with published website
+For information on submitting pull requests and issues, refer to the [Contributor Guide](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/developer_guide/contributor_guide/index.htmlt).
 
 ## License
 
