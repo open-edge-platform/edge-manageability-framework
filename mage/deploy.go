@@ -6,6 +6,7 @@ package mage
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
@@ -15,7 +16,7 @@ import (
 	"io/fs"
 	"math/rand"
 	"net"
-	"net/url"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -54,10 +55,15 @@ const giteaPasswordLength = 100
 var (
 	adminGiteaUsername   = "gitea_admin"
 	adminGiteaPassword   = randomPassword(giteaPasswordLength)
+	argoGiteaUsername    = "argocd"
+	argoGiteaPassword    = randomPassword(giteaPasswordLength)
 	appGiteaUsername     = "apporch"
 	appGiteaPassword     = randomPassword(giteaPasswordLength)
 	clusterGiteaUsername = "clusterorch"
 	clusterGiteaPassword = randomPassword(giteaPasswordLength)
+	deployRepoPath       = "argocd/edge-manageability-framework"
+	deployRepoName       = "edge-manageability-framework"
+	deployGiteaRepoDir   = ".deploy/gitea"
 )
 
 func (Deploy) all(targetEnv string) error {
@@ -67,13 +73,9 @@ func (Deploy) all(targetEnv string) error {
 		return err
 	}
 
-	// TBD: generate JIT bootstrap definitions
-
 	if err := (Deploy{}).kind(targetEnv); err != nil {
 		return err
 	}
-
-	// TBD: commit deployment and configs to gitea and deploy using argo referencing to gitea
 
 	if err := (Deploy{}).orchLocal(targetEnv); err != nil {
 		return err
@@ -81,9 +83,19 @@ func (Deploy) all(targetEnv string) error {
 	return nil
 }
 
-func (Deploy) kind(targetEnv string) error { //nolint:gocyclo
-	// TBD: Validate the targetEnv as kind appropriate, not a specified preset name
+// Dump a listing of all objects in a specified namespace
+func kubectlDebugNamespace(name string) error {
+	cmd := fmt.Sprintf("kubectl -n %s get all -o wide", name)
+	data, err := script.Exec(cmd).String()
+	if err != nil {
+		return fmt.Errorf("kubectl debug namespace: %w", err)
+	}
+	fmt.Printf("kubectl -n %s get all -o wide\n", name)
+	fmt.Println(data)
+	return nil
+}
 
+func (Deploy) kind(targetEnv string) error { //nolint:gocyclo
 	targetEnvType, err := (Config{}).getTargetEnvType(targetEnv)
 	if err != nil || targetEnvType != "kind" {
 		return fmt.Errorf("wrong environment specified for kind deployment: %s is a %s orchestrator definition", targetEnv, targetEnvType)
@@ -99,7 +111,6 @@ func (Deploy) kind(targetEnv string) error { //nolint:gocyclo
 		return err
 	}
 
-	// TODO: Before destroying environment Check if the tls-orch secret exists, if it does persist it
 	targetAutoCertEnabled, _ := (Config{}).isAutoCertEnabled(targetEnv)
 	if autoCert && targetAutoCertEnabled {
 		existingCert := gatewayTLSSecretValid()
@@ -115,39 +126,30 @@ func (Deploy) kind(targetEnv string) error { //nolint:gocyclo
 		return err
 	}
 
-	clusterFilePath := fmt.Sprintf("orch-configs/clusters/%s.yaml", targetEnv)
-	clusterValues, err := parseClusterValues(clusterFilePath)
-	if err != nil {
-		return fmt.Errorf("failed to parse cluster values for targetEnv %s: %w", targetEnv, err)
-	}
-
-	var cacheRegistryURL string
-	if clusterValues["orchestratorDeployment"] != nil {
-		if dockerCache, ok := clusterValues["orchestratorDeployment"].(map[string]interface{})["dockerCache"]; ok {
-			cacheRegistryURL = fmt.Sprintf("%v", dockerCache)
-		}
-	}
-
 	// If cache registry URL is set, load the cert into the kind cluster
-	if cacheRegistryURL != "" {
+	cacheRegistry, _ := (Config{}).getDockerCache(targetEnv)
+	cacheRegistry = strings.TrimSpace(cacheRegistry)
+	cacheRegistryCert, _ := (Config{}).getDockerCacheCert(targetEnv)
+	cacheRegistryCert = strings.TrimSpace(cacheRegistryCert)
+	if cacheRegistry != "" && cacheRegistryCert != "" {
+		fmt.Printf("Loading registry cache CA certificates into kind cluster\n")
 		if err := (loadKindRegistryCacheCerts("kind-control-plane")); err != nil {
 			return fmt.Errorf("error loading registry cache CA certificates into kind cluster: %w", err)
 		}
 	}
 
 	if err := createNamespaces(); err != nil {
-		return err
+		return fmt.Errorf("error creating namespaces: %w", err)
 	}
 
-	// TBD: Extend support for gernerally configurable token based release service authentication. This is currently not supported.
+	// FIXME: Extend support for gernerally configurable token based release service authentication. This is currently not supported.
 	if err := localSecret(targetEnv, false); err != nil {
-		return err
+		return fmt.Errorf("error creating local secrets: %w", err)
 	}
 
 	// Check if the tls-orch secret exists on the filesystem
 	// if it does, then read it and create the tls-orch secret with it
-	// TBD: This should be a cluster configuration setting
-	if autoCert && (strings.HasPrefix(targetEnv, "dev") || strings.HasPrefix(targetEnv, "ext")) {
+	if autoCert && targetAutoCertEnabled {
 		fmt.Println("Restoring existing tls-orch secret")
 		if err := restoreGatewayTLSSecret("aws"); err != nil {
 			fmt.Printf("Error restoring secret: %+v\n", err)
@@ -155,11 +157,11 @@ func (Deploy) kind(targetEnv string) error { //nolint:gocyclo
 	}
 
 	if err := deployMetalLB(); err != nil {
-		return err
+		return fmt.Errorf("error deploying metallb: %w", err)
 	}
 
-	// TBD: This should not be a preset name based decision. This should be a cluster configuration setting.
-	if targetEnv == "dev" || targetEnv == "dev-minimal" || targetEnv == "dev-coder" || targetEnv == "dev-internal" || targetEnv == "dev-internal-coder" {
+	targetMailpitEnabled, _ := (Config{}).isMailpitEnabled(targetEnv)
+	if targetMailpitEnabled {
 		if err := deployMailpit(); err != nil {
 			return err
 		}
@@ -172,6 +174,7 @@ func (Deploy) kind(targetEnv string) error { //nolint:gocyclo
 	if err := (Deploy{}).Gitea(targetEnv); err != nil {
 		return err
 	}
+
 	if err := (Deploy{}).Argocd(targetEnv); err != nil {
 		return err
 	}
@@ -181,6 +184,15 @@ func (Deploy) kind(targetEnv string) error { //nolint:gocyclo
 	}
 	if err := (Router{}).Start(); err != nil {
 		return err
+	}
+
+	// NOTE: Must initially populate the Gitea repo before attempting to add it to ArgoCD (errors with empty repo)
+	//       We also need to update/push contents on every deploy within the Orch and Orch local operations for those
+	//       functions to work properly.
+	//
+	// Clone and update the Gitea deployment repo
+	if err := (Deploy{}).updateDeployRepo(targetEnv, deployRepoPath, deployRepoName, deployGiteaRepoDir); err != nil {
+		return fmt.Errorf("error updating deployment repo content: %w", err)
 	}
 
 	// Wait for Argo CD deployment to finish and the load balancer to be updated
@@ -194,12 +206,21 @@ func (Deploy) kind(targetEnv string) error { //nolint:gocyclo
 			return err
 		}
 		fmt.Printf("Login failed, retrying in %d seconds... (Attempt %d)\n", argoRetryInterval, i+1)
+
+		_ = kubectlDebugNamespace("argocd")
+
 		time.Sleep(argoRetryInterval * time.Second)
 	}
 
-	if err := (Argo{}).repoAdd(); err != nil {
+	giteaUser, giteaToken, err := (Deploy{}).getArgoGiteaCredentials()
+	if err != nil {
+		return fmt.Errorf("error getting gitea credentials: %w", err)
+	}
+
+	if err := (Argo{}).repoAdd(giteaUser, giteaToken, giteaRepos); err != nil {
 		return err
 	}
+
 	if err := (Argo{}).dockerHubChartOrgAdd(); err != nil {
 		return err
 	}
@@ -354,7 +375,7 @@ func kubectlCreateAndApply(createArgs ...string) error {
 	var applyYaml bytes.Buffer
 	dryrunExec.Stdout = &applyYaml
 	if err := dryrunExec.Run(); err != nil {
-		return err
+		return fmt.Errorf("exec %s error %w: %s", strings.Join(dryrunCmd, " "), err, applyYaml.String())
 	}
 
 	// Execute kubectl apply using YAML generated by the dry-run as input
@@ -364,45 +385,10 @@ func kubectlCreateAndApply(createArgs ...string) error {
 	var applyOut bytes.Buffer
 	applyExec.Stdout = &applyOut
 	if err := applyExec.Run(); err != nil {
-		return fmt.Errorf("error %w: %s", err, applyOut.String())
+		return fmt.Errorf("apply failed with error %w: %s", err, applyOut.String())
 	}
 
 	return nil
-}
-
-// Secret Manager is not available for environments other than EKS clusters and Coder
-func secretsManagerAvailable(targetEnv string) bool {
-	// Config will contain the following:
-	// argo:
-	//   enabled:
-	//     aws-sm-proxy: true
-
-	if targetEnv == "" {
-		return false
-	}
-
-	clusterFilePath := fmt.Sprintf("orch-configs/clusters/%s.yaml", targetEnv)
-	clusterValues, err := parseClusterValues(clusterFilePath)
-	if err != nil {
-		return false
-	}
-
-	argoConfig, ok := clusterValues["argo"].(map[string]interface{})
-	if !ok {
-		return false
-	}
-
-	autoCertConfig, ok := argoConfig["enabled"].(map[string]interface{})
-	if !ok {
-		return false
-	}
-
-	enabled, ok := autoCertConfig["aws-sm-proxy"].(bool)
-	if !ok {
-		return false
-	}
-
-	return enabled
 }
 
 func createLocalSreSecrets() error {
@@ -429,7 +415,6 @@ func createLocalSreSecrets() error {
 	return nil
 }
 
-// FIXME Revisit this code when we have Secrets Manager
 func localSecret(targetEnv string, createRSToken bool) error {
 	if err := kubectlCreateAndApply("namespace", "orch-harbor"); err != nil {
 		return err
@@ -453,7 +438,8 @@ func localSecret(targetEnv string, createRSToken bool) error {
 		return err
 	}
 
-	// TBD: Extend support for gernerally configurable token based release service authentication. This is currently not supported.
+	// FIXME: Extend support for gernerally configurable token based release service authentication.
+	// This is currently not supported with the OSS conversion.
 	// if createRSToken {
 	// 	// for environments w/o Secret Manager we have to create respective secrets.
 	// 	// azure-ad-creds for release service
@@ -462,10 +448,8 @@ func localSecret(targetEnv string, createRSToken bool) error {
 	// 	}
 	// }
 
-	if !secretsManagerAvailable(targetEnv) {
-		if err := createLocalSreSecrets(); err != nil {
-			return err
-		}
+	if err := createLocalSreSecrets(); err != nil {
+		return err
 	}
 	return nil
 }
@@ -537,29 +521,17 @@ func kindCluster(name string, targetEnv string) error {
 		}
 	}
 
-	clusterFilePath := fmt.Sprintf("orch-configs/clusters/%s.yaml", targetEnv)
-	clusterValues, err := parseClusterValues(clusterFilePath)
-	if err != nil {
-		return fmt.Errorf("failed to parse cluster values for targetEnv %s: %w", targetEnv, err)
-	}
+	cacheRegistry, _ := (Config{}).getDockerCache(targetEnv)
+	cacheRegistry = strings.TrimSpace(cacheRegistry)
+	cacheRegistryCert, _ := (Config{}).getDockerCacheCert(targetEnv)
+	cacheRegistryCert = strings.TrimSpace(cacheRegistryCert)
 
-	var cacheRegistryURL string
-	if clusterValues["orchestratorDeployment"] != nil {
-		if dockerCache, ok := clusterValues["orchestratorDeployment"].(map[string]interface{})["dockerCache"]; ok {
-			cacheRegistryURL = fmt.Sprintf("%v", dockerCache)
-		}
-	}
-
-	// This only gets set if we successfully pull the cert from the registry cache URL
-	cacheRegistryHost := ""
-	if cacheRegistryURL != "" {
-		err := (Registry{}).getRegistryCert(cacheRegistryURL, filepath.Join("mage", "registry-cache-ca.crt"), false)
-		if err == nil {
-			parsedUrl, err := url.Parse(cacheRegistryURL)
-			if err != nil {
-				return fmt.Errorf("invalid registry URL: %w", err)
-			}
-			cacheRegistryHost = parsedUrl.Host
+	cacheRegistryURL := ""
+	if cacheRegistry != "" {
+		cacheRegistryURL = fmt.Sprintf("https://%s", cacheRegistry)
+		err := (Gen{}).RegistryCacheCert(targetEnv)
+		if err != nil {
+			return fmt.Errorf("error generating registry cache cert: %w", err)
 		}
 	}
 
@@ -615,7 +587,7 @@ func kindCluster(name string, targetEnv string) error {
         {{- if ne .CacheRegistryURL "" }}
             [plugins."io.containerd.grpc.v1.cri".registry.mirrors."*"]
               endpoint = ["{{ .CacheRegistryURL }}"]
-          {{- if ne .CacheRegistryHost "" }}
+          {{- if ne .CacheRegistryCert "" }}
             [plugins."io.containerd.grpc.v1.cri".registry.configs]
               [plugins."io.containerd.grpc.v1.cri".registry.configs."{{ .CacheRegistryHost }}".tls]
                 ca_file = "/usr/local/share/ca-certificates/registry-cache-ca.crt"
@@ -635,6 +607,7 @@ EOF`))
 			DockerDir         string
 			CacheRegistryURL  string
 			CacheRegistryHost string
+			CacheRegistryCert string
 		}{
 			Name:              name,
 			APIServerAddress:  apiServerAddress,
@@ -642,7 +615,8 @@ EOF`))
 			DockerToken:       dockerToken,
 			DockerDir:         dockerDir,
 			CacheRegistryURL:  cacheRegistryURL,
-			CacheRegistryHost: cacheRegistryHost,
+			CacheRegistryHost: cacheRegistry,
+			CacheRegistryCert: cacheRegistryCert,
 		},
 	); err != nil {
 		return fmt.Errorf("error in executing template: %w", err)
@@ -650,6 +624,11 @@ EOF`))
 
 	return sh.RunV("sh", "-c", buf.String())
 }
+
+const (
+	nsCreateRetries    = 5
+	nsCreateRetryDelay = 50
+)
 
 // Create namespaces without erroring out if they already exist
 func createNamespaces() error {
@@ -661,8 +640,16 @@ func createNamespaces() error {
 
 	// Create Namespaces without Istio injection label
 	for _, namespace := range argoNamespaces {
-		if err := kubectlCreateAndApply("ns", namespace); err != nil {
-			return err
+		fmt.Printf("Creating namespace %s\n", namespace)
+		for attempt := 1; attempt <= nsCreateRetries; attempt++ {
+			if err := kubectlCreateAndApply("ns", namespace); err != nil {
+				if attempt == nsCreateRetries {
+					return fmt.Errorf("error creating namespace %s after %d attempts: %w", namespace, nsCreateRetries, err)
+				}
+				time.Sleep(nsCreateRetryDelay * time.Millisecond)
+				continue
+			}
+			break
 		}
 	}
 
@@ -916,36 +903,62 @@ func (Deploy) gitea(bootstrapValues []string, targetEnv string) error {
 	cmd := fmt.Sprintf("helm -n gitea upgrade --install gitea %s --version %s "+
 		bootstrapParam+" --set gitea.admin.username='%s' --set gitea.admin.password='%s' --create-namespace --wait",
 		giteaRegistry, giteaVersion, adminGiteaUsername, adminGiteaPassword)
+	fmt.Printf("Deploying Gitea with cmd: %s\n", cmd)
 	if _, err := script.Exec(cmd).Stdout(); err != nil {
 		return err
 	}
 	// Store admin credential in K8s Secret
 	// This is not consumed during normal situlations
+	fmt.Println("Creating admin-gitea-credential secret")
 	if err := createOrUpdateGiteaSecret("admin-gitea-credential", adminGiteaUsername, adminGiteaPassword); err != nil {
 		return err
 	}
+	// Create argocd account in Gitea
+	fmt.Println("Creating argocd account in Gitea")
+	if err := createOrUpdateGiteaAccount(argoGiteaUsername, argoGiteaPassword); err != nil {
+		fmt.Println("Error creating argocd account in Gitea")
+		return err
+	}
+	// Store argocd gitea credential in K8s Secret
+	fmt.Println("Creating argocd-gitea-credential secret")
+	if err := createOrUpdateGiteaSecret("argocd-gitea-credential", argoGiteaUsername, argoGiteaPassword); err != nil {
+		fmt.Println("Error creating argocd-gitea-credential secret")
+		return err
+	}
 	// Create apporch account in Gitea
+	fmt.Println("Creating apporch account in Gitea")
 	if err := createOrUpdateGiteaAccount(appGiteaUsername, appGiteaPassword); err != nil {
 		fmt.Println("Error creating apporch account in Gitea")
 		return err
 	}
 	// Store app orch gitea credential in K8s Secret
 	// This will later be connsumed by adm-secret to create Vault secret ma_git_service
+	fmt.Println("Creating app-gitea-credential secret")
 	if err := createOrUpdateGiteaSecret("app-gitea-credential", appGiteaUsername, appGiteaPassword); err != nil {
 		fmt.Println("Error creating app-gitea-credential secret")
 		return err
 	}
 	// Create clusterorch acccount in Gitea
+	fmt.Println("Creating clusterorch account in Gitea")
 	if err := createOrUpdateGiteaAccount(clusterGiteaUsername, clusterGiteaPassword); err != nil {
 		fmt.Println("Error creating clusterorch account in Gitea")
 		return err
 	}
 	// Store cluster orch gitea credential in K8s Secret
 	// This will later be connsumed by adm-secret to create Vault secret mc_git_service
+	fmt.Println("Creating cluster-gitea-credential secret")
 	if err := createOrUpdateGiteaSecret("cluster-gitea-credential", clusterGiteaUsername, clusterGiteaPassword); err != nil {
 		fmt.Println("Error creating cluster-gitea-credential secret")
 		return err
 	}
+
+	// Create the Gitea argocd edge-managability-framework repo
+	fmt.Println("Creating edge-managability-framework repo in Gitea")
+	if err := createOrUpdateGiteaRepo(argoGiteaUsername, argoGiteaPassword, deployRepoName); err != nil {
+		fmt.Println("Error creating edge-managability-framework repo in Gitea")
+		return err
+	}
+
 	return nil
 }
 
@@ -996,13 +1009,290 @@ func createOrUpdateGiteaAccount(username string, password string) error {
 	return nil
 }
 
+func (Deploy) getArgoGiteaCredentials() (string, string, error) {
+	// Load the username from the Kubernetes secret argocd-gitea-credential in orch-platform namespace
+	cmd := "kubectl get secret argocd-gitea-credential -n orch-platform -o jsonpath='{.data.username}'"
+	encodedUsername, err := script.Exec(cmd).String()
+	if err != nil {
+		return "", "", fmt.Errorf("error retrieving username from Kubernetes secret: %w", err)
+	}
+	argoGiteaUsername := strings.TrimSpace(encodedUsername)
+
+	// Load the password from the Kubernetes secret argocd-gitea-credential in orch-platform namespace
+	cmd = "kubectl get secret argocd-gitea-credential -n orch-platform -o jsonpath='{.data.password}'"
+	encodedPassword, err := script.Exec(cmd).String()
+	if err != nil {
+		return "", "", fmt.Errorf("error retrieving password from Kubernetes secret: %w", err)
+	}
+	argoGiteaPassword := strings.TrimSpace(encodedPassword)
+
+	// Decode the base64 encoded username and password
+	decodedUsername, err := base64.StdEncoding.DecodeString(argoGiteaUsername)
+	if err != nil {
+		return "", "", fmt.Errorf("error decoding username: %w", err)
+	}
+	decodedPassword, err := base64.StdEncoding.DecodeString(argoGiteaPassword)
+	if err != nil {
+		return "", "", fmt.Errorf("error decoding password: %w", err)
+	}
+
+	return string(decodedUsername), string(decodedPassword), nil
+}
+
+func (Deploy) startGiteaPortForward() (*exec.Cmd, error) {
+	// Get the service port for gitea-http in the gitea namespace
+	cmd := "kubectl get svc gitea-http -n gitea -o jsonpath='{.spec.ports[0].port}'"
+	servicePort, err := script.Exec(cmd).String()
+	fmt.Printf("Service port: %s\n", servicePort)
+	if err != nil {
+		return nil, fmt.Errorf("error retrieving gitea-http service port: %w", err)
+	}
+	servicePort = strings.TrimSpace(servicePort)
+
+	// Start kubectl port-forward in the background
+	fmt.Printf("Starting port-forward for Gitea on port 9654 to service port %s\n", servicePort)
+	portForwardCmd := exec.Command("kubectl", "port-forward", "-n", "gitea", "svc/gitea-http", "9654:"+servicePort)
+	portForwardCmd.Stdout = os.Stdout
+	portForwardCmd.Stderr = os.Stderr
+	if err := portForwardCmd.Start(); err != nil {
+		return nil, fmt.Errorf("error starting port-forward: %w", err)
+	}
+
+	// Wait for the port forwarding to be established
+	portForwardRetries := 10
+	portForwardDelay := 2 * time.Second
+	for i := 0; i < portForwardRetries; i++ {
+		time.Sleep(portForwardDelay)
+		// Create an HTTP client that skips server certificate validation
+		client := &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			},
+		}
+		resp, err := client.Get("https://localhost:9654/api/v1/version")
+		if err != nil {
+			fmt.Printf("Error connecting to Gitea: %v\n", err)
+		} else {
+			fmt.Printf("Gitea response: %s\n", resp.Status)
+			body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				fmt.Printf("Error reading response body: %v\n", err)
+			} else {
+				fmt.Printf("Response body: %s\n", string(body))
+			}
+			defer resp.Body.Close()
+		}
+		if err == nil && resp.StatusCode == http.StatusOK {
+			break
+		}
+		if i == portForwardRetries-1 {
+			err := portForwardCmd.Process.Kill()
+			if err != nil {
+				fmt.Printf("Error killing port-forward process: %v\n", err)
+			}
+
+			return portForwardCmd, fmt.Errorf("timed out attempting to establish port forwarding for Gitea: %w", err)
+		}
+	}
+
+	fmt.Printf("Port-forward started with PID: %d\n", portForwardCmd.Process.Pid)
+
+	return portForwardCmd, nil
+}
+
+func (Deploy) stopGiteaPortForward(portForwardCmd *exec.Cmd) error {
+	if err := portForwardCmd.Process.Kill(); err != nil {
+		return fmt.Errorf("error stopping port-forward: %w", err)
+	}
+	return nil
+}
+
+func createOrUpdateGiteaRepo(username string, password string, repo string) error {
+	// Get the Gitea credentials from the Kubernetes secret, the randomly generated password constants are not
+	// safe as this commit/update may be part of a separate mage run than the initial deployment
+	gitUsername, gitPassword, err := (Deploy{}).getArgoGiteaCredentials()
+	if err != nil {
+		return fmt.Errorf("error getting Gitea credentials: %w", err)
+	}
+
+	portForwardCmd, err := (Deploy{}).startGiteaPortForward()
+	if err != nil {
+		return fmt.Errorf("error starting Gitea port-forward: %w", err)
+	}
+	defer func() {
+		if err := (Deploy{}).stopGiteaPortForward(portForwardCmd); err != nil {
+			fmt.Printf("error stopping Gitea port-forward: %v\n", err)
+		}
+	}()
+
+	url := "https://localhost:9654/api/v1/user/repos"
+	payload := fmt.Sprintf(`{"name": "%s"}`, repo)
+	req, err := http.NewRequest("POST", url, strings.NewReader(payload))
+	if err != nil {
+		return fmt.Errorf("error creating HTTP request: %w", err)
+	}
+	req.SetBasicAuth(gitUsername, gitPassword)
+	req.Header.Set("Content-Type", "application/json")
+
+	// Create an HTTP client that skips server certificate validation
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("error sending HTTP request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("failed to create repository, status: %s, response: %s", resp.Status, string(body))
+	}
+	fmt.Printf("%s repository created successfully\n", repo)
+
+	return nil
+}
+
+func (Deploy) updateDeployRepo(targetEnv, gitRepoPath, repoName, localClonePath string) error {
+	// Get the current working directory so we can return to it when this function exits
+	originalDir, err := os.Getwd()
+	fmt.Printf("updateDeployRepo initial working directory: %s\n", originalDir)
+	if err != nil {
+		return fmt.Errorf("error getting current working directory: %w", err)
+	}
+	defer func() {
+		if err := os.Chdir(originalDir); err != nil {
+			fmt.Printf("error changing back to original directory: %v\n", err)
+		}
+	}()
+
+	portForwardCmd, err := (Deploy{}).startGiteaPortForward()
+	if err != nil {
+		return fmt.Errorf("error starting Gitea port-forward: %w", err)
+	}
+	defer func() {
+		if err := (Deploy{}).stopGiteaPortForward(portForwardCmd); err != nil {
+			fmt.Printf("error stopping Gitea port-forward: %v\n", err)
+		}
+	}()
+
+	// Get the Gitea credentials from the Kubernetes secret, the randomly generated password constants are not
+	// safe as this commit/update may be part of a separate mage run than the initial deployment
+	gitUsername, gitPassword, err := (Deploy{}).getArgoGiteaCredentials()
+	if err != nil {
+		return fmt.Errorf("error getting Gitea credentials: %w", err)
+	}
+
+	// Set GIT_SSL_NO_VERIFY=true for git commmands that we are running through the port forward tunnel
+	os.Setenv("GIT_SSL_NO_VERIFY", "true")
+
+	// Ensure the localClonePath path exists and doesn't have a copy of the repo already cloned
+	if _, err := os.Stat(localClonePath); os.IsNotExist(err) {
+		if err := os.MkdirAll(localClonePath, 0o755); err != nil {
+			return fmt.Errorf("error creating directory %s: %w", localClonePath, err)
+		}
+	}
+	if err := os.Chdir(localClonePath); err != nil {
+		return fmt.Errorf("error changing to directory %s: %w", localClonePath, err)
+	}
+	if _, err := os.Stat(deployRepoName); err == nil {
+		if err := os.RemoveAll(deployRepoName); err != nil {
+			return fmt.Errorf("error removing directory %s: %w", deployRepoName, err)
+		}
+	}
+
+	// Clone the repository using the port-forwarded address
+	cmd := fmt.Sprintf("git clone https://localhost:9654/%s %s", gitRepoPath, repoName)
+	if _, err := script.Exec(cmd).Stdout(); err != nil {
+		return fmt.Errorf("error cloning repository: %w", err)
+	}
+
+	// Copy files and directories to the newly cloned deployRepoPath
+	filesToCopy := []string{"VERSION", "argocd", "argocd-internal", "orch-configs/profiles"}
+	filesToCopy = append(filesToCopy, fmt.Sprintf("orch-configs/clusters/%s.yaml", targetEnv))
+
+	for _, file := range filesToCopy {
+		src := filepath.Join("../..", file)
+		dst := filepath.Join(repoName, file)
+
+		// Check if the source exists
+		if _, err := os.Stat(src); os.IsNotExist(err) {
+			return fmt.Errorf("source file or directory does not exist: %s", src)
+		}
+
+		if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+			return fmt.Errorf("error creating directory %s: %w", filepath.Dir(dst), err)
+		}
+
+		// Copy the file or directory
+		cmd := fmt.Sprintf("cp -r %s %s", src, dst)
+		if _, err := script.Exec(cmd).Stdout(); err != nil {
+			return fmt.Errorf("error copying %s to %s: %w", src, dst, err)
+		}
+	}
+
+	// Navigate to the deployRepoPath
+	if err := os.Chdir(repoName); err != nil {
+		return fmt.Errorf("error changing to directory %s: %w", repoName, err)
+	}
+
+	// Add all changes to git
+	cmd = "git add ."
+	if _, err := script.Exec(cmd).Stdout(); err != nil {
+		return fmt.Errorf("error adding changes to git: %w", err)
+	}
+
+	// Get the VERSION file content
+	version, err := os.ReadFile("VERSION")
+	if err != nil {
+		return fmt.Errorf("error reading VERSION file: %w", err)
+	}
+	version = bytes.TrimSpace(version)
+
+	if _, err := script.Exec("git config user.email 'mage@local'").Stdout(); err != nil {
+		return fmt.Errorf("error setting git user email: %w", err)
+	}
+	if _, err := script.Exec("git config user.name 'mage'").Stdout(); err != nil {
+		return fmt.Errorf("error setting git user name: %w", err)
+	}
+
+	// Commit the changes with the appropriate message
+	cmd = fmt.Sprintf("git commit -m 'update deployment to version: %s'", version)
+	if _, err := script.Exec(cmd).Stdout(); err != nil {
+		return fmt.Errorf("error committing changes: %w", err)
+	}
+
+	// Push the changes to the gitea repository
+	cmd = fmt.Sprintf("git push https://%s:%s@localhost:9654/%s", gitUsername, gitPassword, gitRepoPath)
+	if _, err := script.Exec(cmd).Stdout(); err != nil {
+		return fmt.Errorf("error pushing changes to remote repository: %w", err)
+	}
+
+	// Add any additional logic for updating the repository if needed
+	fmt.Printf("Repository %s updated successfully at %s\n", deployRepoName, deployRepoPath)
+	return nil
+}
+
 // Deploy ArgoCD using helm chart
 func (Deploy) argocd(bootstrapValues []string, targetEnv string) error {
-	// TBD: Use the config: RegistryCacheCert value from the targetEnv
-
 	registryCertName := "blank" // this variable will be ignored by a helm chart if useIntelRegistry is false
 	registryCertPem := []byte("blank")
+	dockerCache, _ := (Config{}).getDockerCache(targetEnv)
+	dockerCache = strings.TrimSpace(dockerCache)
+	dockerCacheCert, _ := (Config{}).getDockerCacheCert(targetEnv)
+	dockerCacheCert = strings.TrimSpace(dockerCacheCert)
 
+	if dockerCache != "" && dockerCacheCert != "" {
+		registryCertServer := strings.ReplaceAll(dockerCache, ".", "\\.")
+		registryCertName = fmt.Sprintf("configs.tls.certificates.%s", registryCertServer)
+		var err error
+		registryCertPem, err = os.ReadFile(filepath.Join("mage", "registry-cache-ca.crt"))
+		if err != nil {
+			return fmt.Errorf("read registry certificate file: %w", err)
+		}
+	}
 	cmd := "helm repo add argo-helm https://argoproj.github.io/argo-helm --force-update"
 	if _, err := script.Exec(cmd).Stdout(); err != nil {
 		return err
@@ -1087,6 +1377,25 @@ func getDeployRevision() string {
 	return deployRevision
 }
 
+func giteaDeployRevisionParam() string {
+	// Get the Gitea credentials from the Kubernetes secret, the randomly generated password constants are not
+	giteaDeployDir := ".deploy/gitea/edge-manageability-framework"
+	if _, err := os.Stat(giteaDeployDir); os.IsNotExist(err) {
+		fmt.Println("failed to locate deploy (.) repo, using cluster default deploy revision")
+		return ""
+	} else {
+		cmd := fmt.Sprintf("bash -c 'cd %s; git rev-parse --short HEAD'", giteaDeployDir)
+		out, err := script.Exec(cmd).String()
+		if err != nil {
+			fmt.Println("failed to determine deployRevision: %w", err)
+			fmt.Println("  using cluster default configs revision")
+			return ""
+		}
+		deployRevision := strings.TrimSpace(out)
+		return fmt.Sprintf("--set-string argo.deployRepoRevision=%s ", deployRevision)
+	}
+}
+
 func getDeployTag() (string, error) {
 	var deployTag string
 	deployDir := getDeployDir()
@@ -1108,43 +1417,6 @@ func getDeployTag() (string, error) {
 
 	deployTag = "v" + deployTag
 	return deployTag, nil
-}
-
-func getDeployRevisionParam() string {
-	deployRevision := getDeployRevision()
-	if deployRevision == "" {
-		return ""
-	}
-	return fmt.Sprintf("--set-string argo.deployRepoRevision=%s ", deployRevision)
-}
-
-func getConfigsRevision() string {
-	configsRevision := os.Getenv("ORCH_CONFIG_REV")
-	if configsRevision == "" {
-		configsDir := getConfigsDir()
-		if _, err := os.Stat(configsDir); os.IsNotExist(err) {
-			fmt.Println("failed to locate config repo, using cluster default configs revision")
-			return ""
-		} else {
-			cmd := fmt.Sprintf("bash -c 'cd %s; git rev-parse --short HEAD'", configsDir)
-			out, err := script.Exec(cmd).String()
-			if err != nil {
-				fmt.Println("failed to determine configsRevision: %w", err)
-				fmt.Println("  using cluster default configs revision")
-				return ""
-			}
-			configsRevision = strings.TrimSpace(out)
-		}
-	}
-	return configsRevision
-}
-
-func getConfigsRevisionParam() string {
-	configsRevision := getConfigsRevision()
-	if configsRevision == "" {
-		return ""
-	}
-	return fmt.Sprintf("--set-string argo.configsRepoRevision=%s ", configsRevision)
 }
 
 func getOrchestratorVersion() (string, error) {
@@ -1173,26 +1445,38 @@ func getOrchestratorVersionParam() (string, error) {
 // Root app that starts the deployment of children apps.
 func (d Deploy) orch(targetEnv string) error {
 	targetConfig := getTargetConfig(targetEnv)
+
+	// Clone and update the Gitea deployment repo
+	if err := (Deploy{}).updateDeployRepo(targetEnv, deployRepoPath, deployRepoName, deployGiteaRepoDir); err != nil {
+		return fmt.Errorf("error updating deployment repo content: %w", err)
+	}
+
 	cmd := fmt.Sprintf("helm upgrade --install root-app argocd/root-app -f %s -n %s --create-namespace", targetConfig, targetEnv)
 	_, err := script.Exec(cmd).Stdout()
 	return err
 }
 
 func (d Deploy) orchLocal(targetEnv string) error {
-	var subDomain string
-	deployRevision := getDeployRevisionParam()
-	configsRevision := getConfigsRevisionParam()
-	orchVersion, err := getOrchestratorVersionParam()
-	if err != nil {
-		return err
+	targetConfig := getTargetConfig(targetEnv)
+
+	// Clone and update the Gitea deployment repo
+	if err := (Deploy{}).updateDeployRepo(targetEnv, deployRepoPath, deployRepoName, deployGiteaRepoDir); err != nil {
+		return fmt.Errorf("error updating deployment repo content: %w", err)
 	}
 
-	targetConfig := getTargetConfig(targetEnv)
-	cmd := fmt.Sprintf("helm upgrade --install root-app argocd/root-app -f %s  -n %s --create-namespace %s %s %s"+
-		"--set root.useLocalValues=true", targetConfig, targetEnv, deployRevision, configsRevision, orchVersion)
+	var subDomain string
+	deployRevision := giteaDeployRevisionParam()
+	orchVersion, err := getOrchestratorVersionParam()
+	if err != nil {
+		return fmt.Errorf("failed to get orchestrator version: %w", err)
+	}
+
+	cmd := fmt.Sprintf("helm upgrade --install root-app argocd/root-app -f %s  -n %s --create-namespace %s %s"+
+		"--set root.useLocalValues=true", targetConfig, targetEnv, deployRevision, orchVersion)
 
 	// only for coder deployments
-	if autoCert && (strings.HasPrefix(targetEnv, "dev") || strings.HasPrefix(targetEnv, "ext")) {
+	targetAutoCertEnabled, _ := (Config{}).isAutoCertEnabled(targetEnv)
+	if autoCert && targetAutoCertEnabled {
 		// retrieve the subdomain name
 		subDomain = os.Getenv("ORCH_DOMAIN")
 		if subDomain == "" {
@@ -1222,7 +1506,7 @@ func (d Deploy) orchLocal(targetEnv string) error {
 	fmt.Printf("exec: %s\n", cmd)
 	_, err = script.Exec(cmd).Stdout()
 
-	if autoCert && (strings.HasPrefix(targetEnv, "dev") || strings.HasPrefix(targetEnv, "ext")) {
+	if autoCert && targetAutoCertEnabled {
 		fmt.Printf("Orchestrator will be available at domain : %s\n", subDomain)
 	}
 	return err
