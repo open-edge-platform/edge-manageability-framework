@@ -111,10 +111,14 @@ set_default_sre_env() {
     export SRE_USERNAME=sre
   fi
   if [[ -z ${SRE_PASSWORD} ]]; then
-    export SRE_PASSWORD=123
+    if [[ -z ${ORCH_DEFAULT_PASSWORD} ]]; then
+      export SRE_PASSWORD=123
+    else
+      export SRE_PASSWORD=$ORCH_DEFAULT_PASSWORD
+    fi
   fi
   if [[ -z ${SRE_DEST_URL} ]]; then
-    export SRE_DEST_URL="http://sre-exporter-destination:8428/api/v1/write"
+    export SRE_DEST_URL="http://sre-exporter-destination.orch-sre.svc.cluster.local:8428/api/v1/write"
   fi
   ## we don't create SRE_DEST_CA_CERT by default
 }
@@ -528,7 +532,6 @@ if  [[ $SKIP_DOWNLOAD != true  ]]; then
 else 
   echo "Skipping packages download"
   sudo chown -R _apt:root $deb_dir_name
-  sudo rm -rf  "${cwd}/${git_arch_name}/tmp/edge-manageability-framework"
 fi
 
 # Write configuration to disk if the flag is set

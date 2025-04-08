@@ -124,16 +124,51 @@ resource "kubernetes_secret" "webhook_github_secret" {
   }
 }
 
-resource "kubernetes_secret" "basic_auth" {
+resource "kubernetes_secret" "sre_basic_auth_username" {
   depends_on = [time_sleep.wait_ns]
 
   metadata {
-    name      = "basic-auth"
+    name      = "basic-auth-username"
     namespace = "orch-sre"
   }
   data = {
     "username" = var.sre_basic_auth_username
+  }
+}
+
+resource "kubernetes_secret" "sre_basic_auth_password" {
+  depends_on = [time_sleep.wait_ns]
+
+  metadata {
+    name      = "basic-auth-password"
+    namespace = "orch-sre"
+  }
+  data = {
     "password" = var.sre_basic_auth_password
+  }
+}
+
+resource "kubernetes_secret" "sre_destination_secret_url" {
+  depends_on = [time_sleep.wait_ns]
+
+  metadata {
+    name      = "destination-secret-url"
+    namespace = "orch-sre"
+  }
+  data = {
+    "password" = var.sre_destination_secret_url
+  }
+}
+
+resource "kubernetes_secret" "sre_destination_ca_secret" {
+  depends_on = [time_sleep.wait_ns]
+
+  metadata {
+    name      = "destination-secret-ca"
+    namespace = "orch-sre"
+  }
+  data = {
+    "password" = var.sre_destination_ca_secret
   }
 }
 
