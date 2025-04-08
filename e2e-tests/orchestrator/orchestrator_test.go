@@ -307,7 +307,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			Expect(err).ToNot(HaveOccurred())
 			Expect(string(content)).To(ContainSubstring(fmt.Sprintf("orchestrator: \"%s\",", orchVersion)))
 		})
-		It("should display a custom error page for 404 status code", func() {
+		It("should display a custom error page for 404 status code", Label(ui), func() {
 			resp, err := cli.Get("https://web-ui." + serviceDomainWithPort + "/non-existent-path")
 			Expect(err).ToNot(HaveOccurred())
 			defer resp.Body.Close()
@@ -319,7 +319,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			Expect(string(content)).To(ContainSubstring("<p>Oops! The page you are looking for cannot be found or you don't have permission to access it.</p>"))
 		})
 
-		It("should display a custom error page for 503 status code", func() {
+		It("should display a custom error page for 503 status code", Label(ui), func() {
 			// Create a request to a path that will trigger a 503 error
 			req, err := http.NewRequest("GET", "https://web-ui."+serviceDomainWithPort+"/_error/503", nil)
 			Expect(err).ToNot(HaveOccurred())
