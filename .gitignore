@@ -2,8 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+.deploy
 .idea
 .env
+.gitea-proxy
 assets/mage
 jwt.txt
 tools/router/traefik.yml
@@ -34,6 +36,7 @@ e2e-tests/installer/poetry.lock
 *.crt
 *.key
 *.lock.hcl
+*.swp
 
 # IDE specific settings
 .vscode
