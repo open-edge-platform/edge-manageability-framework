@@ -308,7 +308,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			Expect(string(content)).To(ContainSubstring(fmt.Sprintf("orchestrator: \"%s\",", orchVersion)))
 		})
 
-		It("should respond to OPTIONS on 404 without server disclosure", Label(ui), func() {
+		It("should respond to OPTIONS on 403 without server disclosure", Label(ui), func() {
 			// Create OPTIONS request to a non-existent URL
 			req, err := http.NewRequest("OPTIONS", "https://web-ui."+serviceDomainWithPort+"/mfe/infrastructure/679.d844fa89e1647e1784b6.js", nil)
 			Expect(err).ToNot(HaveOccurred())
@@ -317,14 +317,14 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			Expect(err).ToNot(HaveOccurred())
 			defer resp.Body.Close()
 
-			// Check status code (should be 404)
-			Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
+			// Check status code (should be 403)
+			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
 
 			// Verify response doesn't contain nginx server information
 			content, err := io.ReadAll(resp.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(string(content)).ToNot(ContainSubstring("nginx"))
-			Expect(string(content)).To(ContainSubstring("Error 404"))
+			Expect(string(content)).To(ContainSubstring("Error 40x"))
 			Expect(string(content)).To(ContainSubstring("<p>Oops! The page you are looking for cannot be found or you don't have permission to access it.</p>"))
 
 			// Verify server header is not present
