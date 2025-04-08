@@ -1,0 +1,13 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Include AWS Secret Manager
+# Use this in conjunction with enable-aws or enable-dev
+
+argo:
+  traefik:
+    rateLimit:
+      average: 600
+      burst: 200
+      period: 1m
