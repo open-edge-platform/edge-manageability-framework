@@ -212,7 +212,7 @@ func HttpInfraOnboardNewRegisterHost(url, token string, client *http.Client, hos
 	return &registeredHost, nil
 }
 
-func HttpInfraOnboardGetNode(ctx context.Context, url string, token string, client *http.Client, uuid string) (string, error) {
+func HttpInfraOnboardGetHostID(ctx context.Context, url string, token string, client *http.Client, uuid string) (string, error) {
 	rCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -241,7 +241,7 @@ func HttpInfraOnboardGetNode(ctx context.Context, url string, token string, clie
 	return hostID, nil
 }
 
-func HttpInfraOnboardGetHostAndInstance(ctx context.Context, url string, token string, client *http.Client, uuid string) (string, string, error) {
+func HttpInfraOnboardGetHostIDAndInstanceID(ctx context.Context, url string, token string, client *http.Client, uuid string) (string, string, error) {
 	rCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -288,6 +288,75 @@ func HttpInfraOnboardDelResource(ctx context.Context, url string, token string, 
 	}
 
 	return nil
+}
+
+func HttpInfraOnboardNewInstance(instanceUrl, token, hostID, osID string, client *http.Client) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	instKind := infra_api.INSTANCEKINDMETAL
+	instanceName := "test-instance"
+	instance := infra_api.Instance{
+		HostID: &hostID,
+		OsID:   &osID,
+		Kind:   &instKind,
+		Name:   &instanceName,
+	}
+
+	data, err := json.Marshal(instance)
+	if err != nil {
+		return fmt.Errorf("failed to marshal instance data: %w", err)
+	}
+
+	responseHooker := func(res *http.Response) error {
+		if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
+			return fmt.Errorf("failed to create instance, status: %s", res.Status)
+		}
+		return nil
+	}
+
+	if err := httpPost(ctx, client, instanceUrl, token, data, responseHooker); err != nil {
+		return fmt.Errorf("HTTP POST request failed: %w", err)
+	}
+
+	return nil
+}
+
+func HttpInfraOnboardGetOSID(ctx context.Context, url string, token string, client *http.Client) (string, error) {
+	rCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	osID := ""
+	responseHooker := func(res *http.Response) error {
+		b, err := io.ReadAll(res.Body)
+		if err != nil {
+			return err
+		}
+		os := &infra_api.OperatingSystemResourceList{}
+		err = json.Unmarshal(b, &os)
+		if err != nil {
+			return err
+		}
+		if os.OperatingSystemResources == nil || len(*os.OperatingSystemResources) == 0 {
+			return fmt.Errorf("empty os resources")
+		}
+		for _, osr := range *os.OperatingSystemResources {
+			if *osr.ProfileName == "ubuntu-22.04-lts-generic" {
+				osID = *osr.ResourceId
+				fmt.Printf("Found OS: %s\n", osID)
+				break
+			}
+		}
+		if osID == "" {
+			return fmt.Errorf("ubuntu-22.04-lts-generic profile not found")
+		}
+		return nil
+	}
+	if err := httpGet(rCtx, client, url, token, responseHooker); err != nil {
+		return osID, err
+	}
+
+	return osID, nil
 }
 
 func CheckWorkflowCreationInfraOnboard(ns string, uuid string, cli client.Client) error {
