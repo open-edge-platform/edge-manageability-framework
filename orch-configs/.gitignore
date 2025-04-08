@@ -1,0 +1,15 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Ignore generated proxy profiles
+profiles/proxy-*.yaml
+!profiles/proxy-none.yaml
+
+# Ignore generated cluster configs
+clusters/*.yaml
+!clusters/bkc.yaml
+!clusters/dev.yaml
+!clusters/dev-minimal.yaml
+!clusters/onprem*.yaml
+
