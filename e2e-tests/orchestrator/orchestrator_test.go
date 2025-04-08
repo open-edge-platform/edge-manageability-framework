@@ -334,6 +334,26 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			Expect(string(content)).To(ContainSubstring("Error 503"))
 			Expect(string(content)).To(ContainSubstring("<p>Sorry! Something went wrong on our end. Please try again later.</p>"))
 		})
+		It("should respond to OPTIONS on 404 without server disclosure", func() {
+			// Create OPTIONS request to a non-existent URL
+			req, err := http.NewRequest("OPTIONS", "https://web-ui."+serviceDomainWithPort+"/non-existent-path", nil)
+			Expect(err).ToNot(HaveOccurred())
+
+			resp, err := cli.Do(req)
+			Expect(err).ToNot(HaveOccurred())
+			defer resp.Body.Close()
+
+			// Check status code (should be 404)
+			Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
+
+			// Verify response doesn't contain nginx server information
+			content, err := io.ReadAll(resp.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(string(content)).ToNot(ContainSubstring("nginx"))
+
+			// Verify server header is not present
+			Expect("Server").ToNot(BeKeyOf(resp.Header))
+		})
 	})
 
 	Describe("Metadata Broker service ", Label(metadataBroker, platform), func() {
