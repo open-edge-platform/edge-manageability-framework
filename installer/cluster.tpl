@@ -15,7 +15,6 @@ root:
     - orch-configs/profiles/enable-edgeinfra.yaml
     - orch-configs/profiles/enable-full-ui.yaml
     - orch-configs/profiles/enable-aws.yaml
-    - orch-configs/profiles/enable-asm.yaml
     - orch-configs/profiles/enable-autoprovision.yaml
     ${SRE_PROFILE}
     # proxy group should be specified as the first post-"enable" profile

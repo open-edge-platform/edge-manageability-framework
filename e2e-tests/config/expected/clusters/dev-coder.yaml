@@ -50,7 +50,6 @@ argo:
   o11y:
     sre:
       customerLabel: local
-      externalSecretsEnabled: true
       providerSecretName: sre-secret
 
   aws:
