@@ -323,7 +323,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			// Create a request to a path that will trigger a 503 error
 			req, err := http.NewRequest("GET", "https://web-ui."+serviceDomainWithPort+"/_error/503", nil)
 			Expect(err).ToNot(HaveOccurred())
-			
+
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
 			defer resp.Body.Close()
@@ -332,7 +332,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			content, err := io.ReadAll(resp.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(string(content)).To(ContainSubstring("Error 503"))
-			Expect(string(content)).To(ContainSubstring("<p>Oops! The page you are looking for cannot be found or you don't have permission to access it.</p>"))
+			Expect(string(content)).To(ContainSubstring("<p>Sorry! Something went wrong on our end. Please try again later.</p>"))
 		})
 	})
 
