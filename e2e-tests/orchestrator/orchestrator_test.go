@@ -307,7 +307,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			Expect(err).ToNot(HaveOccurred())
 			Expect(string(content)).To(ContainSubstring(fmt.Sprintf("orchestrator: \"%s\",", orchVersion)))
 		})
-		It("should display a custom error page for 404 status code", func() {
+		It("should display a custom error page for 404 status code", Label(ui), func() {
 			resp, err := cli.Get("https://web-ui." + serviceDomainWithPort + "/non-existent-path")
 			Expect(err).ToNot(HaveOccurred())
 			defer resp.Body.Close()
