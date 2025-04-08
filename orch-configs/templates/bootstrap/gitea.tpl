@@ -3,7 +3,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 image:
-  registry: {{ .Values.registryCache}}
+{{- if .Values.orchestratorDeployment.dockerCache }}
+  registry: {{ .Values.orchestratorDeployment.dockerCache }}
+{{- end }}
   pullPolicy: IfNotPresent
   rootless: true
 containerSecurityContext:
