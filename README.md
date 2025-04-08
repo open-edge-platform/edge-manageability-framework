@@ -9,6 +9,10 @@ Welcome to the Edge Manageability Framework, a comprehensive suite designed to s
 ## Primary Product: Edge Orchestrator
 At the center of Edge Manageability Framework is Edge Orchestrator, the primary solution to manage edge environments efficiently and securely. It encompasses a range of features that cater to the unique demands of edge computing, ensuring seamless integration and operation across diverse hardware and software landscapes. Edge Orchestrator is designed to be the central hub for managing edge infrastructure and edge application deployments at scale across geographically distributed edge sites.  It offers multitenancy and IDAM for tenants and offers automation, configuration, observability and alerting capabilities, dashboards for quick views of status and issue identification, and management of all infrastructure components including edge nodes (i.e. hosts) and clusters.
 
+<div dir="auto">
+<a target="_blank" rel="noopener noreferrer" href="/open-edge-platform/edge-manageability-framework/Edge_Manageability_Framework_Readme_Image.png"><img alt="Edge Manageability Framework High Level Component Diagram" src="/open-edge-platform/edge-manageability-framework/Edge_Manageability_Framework_Readme_Image.png" style="max-width: 100%;"></a>
+</div>
+
 ### Key Components and Repositories
 
 #### Edge Manageability Framework
