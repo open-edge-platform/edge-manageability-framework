@@ -1198,7 +1198,7 @@ func (d Deploy) EdgeClusterWithProject(targetEnv string, orgName string, project
 	return d.deployEnicCluster(targetEnv, strings.Join(labels, ","))
 }
 
-// Deploys ENiC Edge cluster with sample-project project, input labels: mage deploy:edgeClusterWithLabels <labels, color=blue,city=hillsboro>
+// Deploys ENiC Edge cluster with sample-project project, input labels: mage deploy:edgeClusterWithLabels <targetEnv> <labels, color=blue,city=hillsboro>
 func (d Deploy) EdgeClusterWithLabels(targetEnv string, labels string) error {
 	updateEdgeName()
 
