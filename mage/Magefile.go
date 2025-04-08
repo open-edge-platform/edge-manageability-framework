@@ -1158,7 +1158,7 @@ func (d Deploy) OrchCA() error {
 }
 
 // Deploys ENiC Edge cluster with sample-project project.
-func (d Deploy) EdgeCluster() error {
+func (d Deploy) EdgeCluster(targetEnv string) error {
 	updateEdgeName()
 
 	os.Setenv("ORCH_PROJECT", "sample-project")
@@ -1175,11 +1175,11 @@ func (d Deploy) EdgeCluster() error {
 	labels := []string{
 		"color=blue",
 	}
-	return d.deployEnicCluster(strings.Join(labels, ","))
+	return d.deployEnicCluster(targetEnv, strings.Join(labels, ","))
 }
 
 // Deploys ENiC Edge cluster, input required: mage deploy:edgeClusterWithProject <org-name> <project-name> <edge-infra-user>
-func (d Deploy) EdgeClusterWithProject(orgName string, projectName string, edgeInfraUser string) error {
+func (d Deploy) EdgeClusterWithProject(targetEnv string, orgName string, projectName string, edgeInfraUser string) error {
 	updateEdgeName()
 
 	os.Setenv("ORCH_USER", edgeInfraUser)
@@ -1195,11 +1195,11 @@ func (d Deploy) EdgeClusterWithProject(orgName string, projectName string, edgeI
 	labels := []string{
 		"color=blue",
 	}
-	return d.deployEnicCluster(strings.Join(labels, ","))
+	return d.deployEnicCluster(targetEnv, strings.Join(labels, ","))
 }
 
 // Deploys ENiC Edge cluster with sample-project project, input labels: mage deploy:edgeClusterWithLabels <labels, color=blue,city=hillsboro>
-func (d Deploy) EdgeClusterWithLabels(labels string) error {
+func (d Deploy) EdgeClusterWithLabels(targetEnv string, labels string) error {
 	updateEdgeName()
 
 	os.Setenv("ORCH_PROJECT", "sample-project")
@@ -1213,7 +1213,7 @@ func (d Deploy) EdgeClusterWithLabels(labels string) error {
 
 	fleetNamespace = projectId
 
-	return d.deployEnicCluster(labels)
+	return d.deployEnicCluster(targetEnv, labels)
 }
 
 func (d Deploy) AddKyvernoPolicy() error {
