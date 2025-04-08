@@ -1,4 +1,12 @@
-# Contributing
+# How to contribute
+For information on submitting pull requests and issues, refer to the [Contributor Guide](https://github.com/open-edge-platform/orch-docs/blob/main/docs/developer_guide/contributor_guide/index.rst).
+
+TODO: Replace the link with published website
+
+## License
+
+edge-manageability-framework is licensed under the terms in [LICENSE](/LICENSES/Apache-2.0.txt). By contributing to the project, you
+agree to the license and copyright terms therein and release your contribution under these terms.
 
 ## Development Environment Setup
 
@@ -275,11 +283,6 @@ Refer to the project's style guide for the specific language used.
 
 1. Update the documentation to reflect your changes.
 1. Write clear and concise docstrings for all functions, classes, and modules.
-
-## License
-
-edge-manageability-framework is licensed under the terms in [LICENSE](/LICENSES/Apache-2.0.txt). By contributing to the project, you
-agree to the license and copyright terms therein and release your contribution under these terms.
 
 ## Sign your work
 
