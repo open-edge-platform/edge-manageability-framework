@@ -1095,12 +1095,14 @@ STANDALONE=0
 	}
 
 	var outputBuf bytes.Buffer
-	os.Setenv("ONBOARDING_USERNAME", data.OnboardingUsername)
-	os.Setenv("ONBOARDING_PASSWORD", data.OnboardingPassword)
-	os.Setenv("PROJECT_NAME", data.ProjectName)
-	os.Setenv("PROJECT_API_USER", data.ProjectApiUser)
-	os.Setenv("PROJECT_API_PASSWORD", data.ProjectApiPassword)
 	cmd := exec.CommandContext(ctx, "sudo", filepath.Join("scripts", "create_vm.sh"), "1", fmt.Sprintf("-%s", flow))
+	cmd.Env = append(os.Environ(),
+		"ONBOARDING_USERNAME="+data.OnboardingUsername,
+		"ONBOARDING_PASSWORD="+data.OnboardingPassword,
+		"PROJECT_NAME="+data.ProjectName,
+		"PROJECT_API_USER="+data.ProjectApiUser,
+		"PROJECT_API_PASSWORD="+data.ProjectApiPassword,
+	)
 	cmd.Stdout = io.MultiWriter(os.Stdout, &outputBuf)
 	cmd.Stderr = io.MultiWriter(os.Stderr, &outputBuf)
 
