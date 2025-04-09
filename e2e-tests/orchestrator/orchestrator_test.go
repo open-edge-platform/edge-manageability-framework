@@ -330,7 +330,6 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			Expect(string(content)).To(ContainSubstring("permission to access it."))
 			Expect(string(content)).To(ContainSubstring("</p>"))
 
-
 			// Verify server header is not present
 			Expect("Server").ToNot(BeKeyOf(resp.Header))
 		})
