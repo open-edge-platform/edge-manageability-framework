@@ -17,7 +17,7 @@ At the center of Edge Manageability Framework is Edge Orchestrator, the primary 
 - [edge-manageability-framework](https://github.com/open-edge-platform/edge-manageability-framework): This repository is the central hub for deploying the Edge Orchestrator. It includes Argo CD applications, Helm charts, and deployment scripts necessary for setting up the orchestrator in various environments, including on-premise and cloud-based setups.
 
 #### Documentation
-- [orch-docs](https://github.com/open-edge-platform/orch-docs): Documentation including deployment, user, developer, and contribution guides, API references, tutorials, troubleshooting, and software architecture specifications.
+- [orch-docs](https://github.com/open-edge-platform/orch-docs): Documentation including deployment, user, developer, and contribution guides, API references, tutorials, troubleshooting, and software architecture specifications.  You can also visit our documentaion hub here (TODO insert release docs URL)
 
 #### Foundational Platform Services
 - [orch-utils](https://github.com/open-edge-platform/orch-utils): The orch-utils repository provides various utility functions and tools that support the deployment and management of the Edge Orchestrator. This includes Kubernetes jobs, Helm charts, Dockerfiles, and Go code for tasks such as namespace creation, policy management, and Traefik route configuration.
@@ -63,59 +63,11 @@ At the center of Edge Manageability Framework is Edge Orchestrator, the primary 
 
 
 ## Get Started
-To get started with Edge Orchestrator, go here TODO to view deployment and installation guides.
-
-TODO: Use Make targets before releasing source code.
-
-### Lint
-
-```sh
-mage lint:all
-```
-
-### Test
-
-```sh
-mage test:go
-```
-
-### Build
-
-```sh
-echo TODO
-```
-
-### Release
-
-```sh
-echo TODO
-```
-
-## Develop
-
-To develop edge-manageability-framework, the following development prerequisites are required:
-
-- [Go](https://go.dev/doc/install)
-- [Mage](https://magefile.org/)
-- [asdf](https://asdf-vm.com/guide/getting-started.html)
-- [Docker](https://docs.docker.com/get-docker/)
-
-To build and test edge-manageability-framework, first clone the repository:
-
-```sh
-git clone https://github.com/open-edge-platform/edge-manageability-framework edge-manageability-framework
-cd edge-manageability-framework
-```
-
-Then, install the required install tools:
-
-```sh
-mage asdfPlugins
-```
-
-## Contribute
-
-To learn how to contribute to the project, see the [Contributor's Guide](/CONTRIBUTING.md).
+There are multiple ways to begin to learn about, use, or contribute to Edge Orchestrator.
+- Start by deploying your own orchestrator [in the cloud or on-premises](https://github.com/open-edge-platform/orch-docs/blob/main/docs/deployment_guide/index.rst)
+- Read the latest [Release Notes](https://github.com/open-edge-platform/orch-docs/blob/main/docs/release_notes/index.rst) or explore the [User Guide](https://github.com/open-edge-platform/orch-docs/blob/main/docs/user_guide/index.rst)
+- Learn about all components and usage of them in the [Developer Guide](https://github.com/open-edge-platform/orch-docs/blob/main/docs/developer_guide/index.rst)
+- [Contribute](https://github.com/open-edge-platform/orch-docs/blob/main/docs/developer_guide/contributor_guide/index.rst) to the project
 
 ## Community and Support
 
