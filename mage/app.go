@@ -40,7 +40,7 @@ func (App) upload() error {
 		orchPass = orchPassEnv
 	}
 
-	err = UploadFiles(paths, defaultClusterDomain, orchProject, orchUser, orchPass)
+	err = UploadFiles(paths, serviceDomain, orchProject, orchUser, orchPass)
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
