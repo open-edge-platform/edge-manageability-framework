@@ -156,7 +156,7 @@ resource "kubernetes_secret" "sre_destination_secret_url" {
     namespace = "orch-sre"
   }
   data = {
-    "password" = var.sre_destination_secret_url
+    "url" = var.sre_destination_secret_url
   }
 }
 
@@ -168,7 +168,7 @@ resource "kubernetes_secret" "sre_destination_ca_secret" {
     namespace = "orch-sre"
   }
   data = {
-    "password" = var.sre_destination_ca_secret
+    "ca.crt" = var.sre_destination_ca_secret
   }
 }
 
