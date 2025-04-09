@@ -316,10 +316,10 @@ func (TenantUtils) GetOrg(ctx context.Context, orgName string) error {
 		return fmt.Errorf("\nerror retrieving the org (%s). Error: %w", orgName, err)
 	}
 	if strings.HasPrefix(orgStatus.Message, "Waiting for watchers") && strings.HasSuffix(orgStatus.Message, "to be deleted") {
-		return fmt.Errorf("\norg (%s) is waiting for watchers to be deleted with status message '%s'.", orgName, orgStatus.Message)
+		return fmt.Errorf("\norg (%s) is waiting for watchers to be deleted with status message '%s'", orgName, orgStatus.Message)
 	}
 	if orgStatus.Message != fmt.Sprintf("Org %s CREATE is complete", orgName) {
-		return fmt.Errorf("\norg (%s) status message is set to %s.", orgName, orgStatus.Message)
+		return fmt.Errorf("\norg (%s) status message is set to %s", orgName, orgStatus.Message)
 	}
 	fmt.Printf("\nOrg status message - %s, Org status - %s\n", orgStatus.Message, orgStatus.StatusIndicator)
 	// println("orgId: ", orgStatus.UID)
@@ -464,7 +464,7 @@ func GetKeycloakSecret() (string, error) {
 	// Decode the Base64 string
 	encodedPass, err := base64.StdEncoding.DecodeString(pass)
 	if err != nil {
-		return "", fmt.Errorf("Error decoding Base64 string: %w", err)
+		return "", fmt.Errorf("error decoding Base64 string: %w", err)
 	}
 
 	// Convert the decoded bytes to a string
@@ -705,7 +705,7 @@ func (TenantUtils) GetProject(ctx context.Context, orgName, projectName string) 
 		return fmt.Errorf("\nerror retrieving the project (%s). Error: %w", projectName, err)
 	}
 	if strings.Contains(projectStatus.Message, "Waiting for watchers") {
-		return fmt.Errorf("\nproject (%s) status message is set to %s.", projectName, projectStatus.Message)
+		return fmt.Errorf("\nproject (%s) status message is set to %s", projectName, projectStatus.Message)
 	}
 	fmt.Printf("\nproject status message - %s, project status - %s\n", projectStatus.Message, projectStatus.StatusIndicator)
 	println("projectId: ", projectStatus.UID)
