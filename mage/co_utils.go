@@ -93,7 +93,7 @@ func (cu CoUtils) CreateDefaultClusterTemplate() error {
 		return fmt.Errorf("failed to create default template for project '%s': %s", project, string(body))
 	}
 
-	err = cu.SetDefaultTemplate("baseline", "v2.0.0")
+	err = cu.SetDefaultTemplate("baseline", "v2.0.2")
 	if err != nil {
 		return err
 	}
