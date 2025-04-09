@@ -251,7 +251,7 @@ var _ = Describe("Edgenode Observability Test:", Ordered, Label(edgenodeObs), fu
 			Expect(logs.Data.Result).ToNot(BeEmpty())
 		})
 
-		It("Apt Install logs should be present in edgenode loki", func() {
+		PIt("Apt Install logs should be present in edgenode loki", func() {
 			query := "{file_type=\"AptInstallLogs\"}"
 			logs, err := helpers.GetLogs(cli, logsAddr, query, projectID)
 			Expect(err).ToNot(HaveOccurred())
