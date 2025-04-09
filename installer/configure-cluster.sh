@@ -21,7 +21,7 @@ usage() {
         echo "        configure-cluster.sh"
         echo "    To start the tunnel using a custom VPC jumphost:"
         echo "        configure-cluster.sh --jumphost-ip 10.139.222.218  --cidr-block 10.250.0.0/16"
-} 
+}
 
 parse_params() {
     if ! options=$(getopt -o h -l cidr-block:,help,jumphost-ip: -- "$@")
@@ -97,10 +97,11 @@ if [ -z $ARGOCD_TG_ARN ]; then
     export ARGOCD_TG_ARN=$(aws elbv2 describe-target-groups --names ${CLUSTER_NAME}-argocd-https | jq -r '.TargetGroups[].TargetGroupArn')
 fi
 
-if [ -z $SRE_SECRET_STRING ] || [ "$SRE_SECRET_STRING" == "place the SRE secret string here" ]; then
-    export SRE_PROFILE="#- orch-configs/profiles/enable-sre.yaml"
-else
+
+if [ -n "$SRE_BASIC_AUTH_USERNAME" ] || [ -n "$SRE_BASIC_AUTH_PASSWORD" ] || [ -n "$SRE_DESTINATION_SECRET_URL" ] || [ -n "$SRE_DESTINATION_CA_SECRET" ]; then
     export SRE_PROFILE="- orch-configs/profiles/enable-sre.yaml"
+else
+    export SRE_PROFILE="#- orch-configs/profiles/enable-sre.yaml"
 fi
 
 if [ -z $SMTP_URL ]; then
