@@ -235,17 +235,17 @@ EOF
 # Note: If the configuration already exists, the script will prompt the user to confirm if they want to overwrite it.
 allow_config_in_runtime() {
   if [ "$ENABLE_TRACE" = true ]; then
-      echo "Tracing is enabled. Temporarily disabling tracing"
-      set +x
+    echo "Tracing is enabled. Temporarily disabling tracing"
+    set +x
   fi
 
   tmp_dir="$cwd/$git_arch_name/tmp"
 
   if [ -d "$tmp_dir/$si_config_repo" ]; then
-      echo "Configuration already exists at $tmp_dir/$si_config_repo."
+    echo "Configuration already exists at $tmp_dir/$si_config_repo."
     if [ "$ASSUME_YES" = true ]; then
-        echo "Assuming yes to use existing configuration."
-        return
+      echo "Assuming yes to use existing configuration."
+      return
     fi
     while true; do
       read -rp "Do you want to overwrite the existing configuration? (yes/no): " yn
@@ -343,8 +343,8 @@ Ready to proceed with installation? " yn
   done
 
   if [ "$ENABLE_TRACE" = true ]; then
-      echo "Tracing is enabled. Re-enabling tracing"
-      set -x
+    echo "Tracing is enabled. Re-enabling tracing"
+    set -x
   fi
 }
 
