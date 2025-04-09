@@ -7,6 +7,9 @@ name: Auto Approve & Merge
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  
+  pull_request_target:
+    types: [opened, synchronize, reopened]
 
 jobs:
   auto-approve:
@@ -23,12 +26,10 @@ jobs:
 
   auto-merge:
     name: Auto merge PR
-    needs: 
-      - auto-approve
     runs-on: ubuntu-latest
     if: |
-      github.actor == 'sys-orch' && 
-      github.event.pull_request.base.ref == 'main-pass-validation'
+      github.actor == 'ashridatta' && 
+      github.event.pull_request.base.ref == 'main'
     steps:
       - name: Auto merge
         uses: reitermarkus/automerge@v2
@@ -36,3 +37,4 @@ jobs:
           token:  ${{ secrets.SYS_ORCH_GITHUB_APPROVE }}
           merge-method: squash
           do-not-merge-labels: 'DO NOT MERGE'
+          dry-run: true
