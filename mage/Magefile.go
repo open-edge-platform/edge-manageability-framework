@@ -1094,14 +1094,12 @@ STANDALONE=0
 		return "", fmt.Errorf("failed to update provider default OS: %w", err)
 	}
 
-	os.Setenv("ONBOARDING_USERNAME", data.OnboardingUsername)
-	os.Setenv("ONBOARDING_PASSWORD", data.OnboardingPassword)
-	os.Setenv("PROJECT_NAME", data.ProjectName)
-	os.Setenv("PROJECT_API_USER", data.ProjectApiUser)
-	os.Setenv("PROJECT_API_PASSWORD", data.ProjectApiPassword)
+	envVars := fmt.Sprintf("ONBOARDING_USERNAME=%s ONBOARDING_PASSWORD=%s PROJECT_NAME=%s PROJECT_API_USER=%s PROJECT_API_PASSWORD=%s",
+		data.OnboardingUsername, data.OnboardingPassword, data.ProjectName, data.ProjectApiUser, data.ProjectApiPassword)
+	fmt.Println(envVars)
 
 	var outputBuf bytes.Buffer
-	cmd := exec.CommandContext(ctx, "sudo", "-E", filepath.Join("scripts", "create_vm.sh"), "1", fmt.Sprintf("-%s", flow))
+	cmd := exec.CommandContext(ctx, "sudo", "-E", envVars, filepath.Join("scripts", "create_vm.sh"), "1", fmt.Sprintf("-%s", flow))
 	cmd.Stdout = io.MultiWriter(os.Stdout, &outputBuf)
 	cmd.Stderr = io.MultiWriter(os.Stderr, &outputBuf)
 
