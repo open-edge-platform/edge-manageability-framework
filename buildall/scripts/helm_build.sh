@@ -32,16 +32,25 @@ if [ ! -f "${TAGS_PATH}" ]; then
   exit 0
 fi
 
-TAGS=$(cat "${TAGS_PATH}")
+TAG_FILE=$(cat "${TAGS_PATH}")
 
 pushd "${REPO_PATH}"
-  for tag in $TAGS; do
-    echo "*** Building helm chart for tag: '${tag}' ***"
+  for tline in $TAG_FILE; do
+
+    tag=$(cut -d '|' -f 1 <<< "$tline")
+    outDir=$(cut -d '|' -f 2 <<< "$tline")
+
+    if [ "$tag" == "$outDir" ]
+    then
+      outDir="."
+    fi
+
+    echo "*** Building helm chart for tag: '${tag}' placed in: '${outDir}' ***"
 
     git switch --detach "${tag}"
 
     make helm-build
 
-    cp ./*.tgz ../../charts
+    cp "${outDir}"/*.tgz ../../charts
   done
 popd

@@ -29,6 +29,9 @@ def match_charts(chart_mf, chart_to_repo, artifacts):
                 repo_chart_data["gitTagPrefix"] + manifest_chart_data["version"]
             )
 
+            if "outDir" in repo_chart_data:
+                chart_tag_to_build += "|" + repo_chart_data["outDir"]
+
             if repo in repo_tags_to_build:
                 repo_tags_to_build[repo]["charts"].append(chart_tag_to_build)
             else:
