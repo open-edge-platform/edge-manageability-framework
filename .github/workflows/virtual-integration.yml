@@ -77,7 +77,7 @@ jobs:
 
       - name: Upload evidence
         if: always()
-        uses: actions/upload-artifact@v4.4.3
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: trivy-fs-report
           path: ${{ env.OUTPUT_FILE }}
@@ -108,7 +108,7 @@ jobs:
 
       - name: Upload evidence
         if: always()
-        uses: actions/upload-artifact@v4.4.3
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: antivirus-report
           path: ${{ env.OUTPUT_FILE }}
@@ -578,7 +578,7 @@ jobs:
 
       - name: Upload smoke test logs
         if: always()
-        uses: actions/upload-artifact@v4.4.3
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: smoke-test
           path: |
@@ -599,7 +599,7 @@ jobs:
 
       - name: Upload diagnostic information to CI artifact store
         if: always() && steps.get-diagnostic-info.conclusion == 'success'
-        uses: actions/upload-artifact@v4.4.3
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: kind-diagnostics
           path: |
@@ -703,7 +703,7 @@ jobs:
 
       - name: Upload diagnostic information to CI artifact store
         if: always() && steps.get-diagnostic-info.conclusion == 'success'
-        uses: actions/upload-artifact@v4.4.3
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: onprem-diagnostics
           path: |
