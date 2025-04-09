@@ -41,7 +41,7 @@ RUN wget https://github.com/tmccombs/hcl2json/releases/download/v0.6.4/hcl2json_
     chmod +x /tmp/hcl2json && \
     mv /tmp/hcl2json /usr/local/bin/hcl2json
 
-RUN pip install  --break-system-packages requests==2.32.0 certbot==2.9.0 \
+RUN pip install  --break-system-packages requests==2.32.0 certbot==3.2.0 \
     certbot-dns-route53==2.9.0 sshuttle==1.1.2 boto3==1.34.150
 
 COPY asdf-install-plugins /bin/asdf-install-plugins
