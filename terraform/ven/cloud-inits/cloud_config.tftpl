@@ -1,0 +1,80 @@
+#cloud-config
+
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+hostname: ${hostname}
+user: ubuntu
+password: ubuntu
+%{ if ssh_key != "" ~}
+ssh_authorized_keys:
+  - ${ssh_key}
+%{ endif ~}
+ssh_pwauth: true
+chpasswd:
+  expire: false
+%{ if ntp_server != "" ~}
+ntp:
+  enabled: true
+  ntp_client: systemd-timesyncd
+  servers:
+    - ${ntp_server}
+%{ endif ~}
+apt:
+%{ if http_proxy != "" ~}
+  http_proxy: ${http_proxy}
+%{ endif ~}
+%{ if https_proxy != ""  ~}
+  https_proxy: ${https_proxy}
+%{ endif ~}
+%{ if length(ca_certs) > 0 ~}
+ca_certs:
+  remove_defaults: false
+  trusted:
+%{ for ca_cert in ca_certs ~}
+    - |
+      ${ca_cert}
+%{ endfor ~}
+%{ endif ~}
+package_update: true
+package_upgrade: false
+package_reboot_if_required: false
+packages:
+  - qemu-guest-agent
+  - jq
+  - snap:
+    - [oras, --classic]
+write_files:
+%{ if http_proxy != "" ~}
+  - path: /etc/environment
+    append: true
+    content: |
+      http_proxy=${http_proxy}
+      HTTP_PROXY=${http_proxy}
+%{ endif ~}
+%{ if https_proxy != ""  ~}
+  - path: /etc/environment
+    append: true
+    content: |
+      https_proxy=${https_proxy}
+      HTTPS_PROXY=${https_proxy}
+%{ endif ~}
+%{ if no_proxy  != "" ~}
+  - path: /etc/environment
+    append: true
+    content: |
+      no_proxy=${no_proxy}
+      NO_PROXY=${no_proxy}
+%{ endif ~}
+  - encoding: b64
+    content: ${env_base64_content}
+    owner: ubuntu:ubuntu
+    path: /home/ubuntu/.env
+    permissions: "700"
+    defer: true
+sys_config:
+      default_target: "multi-user.target"
+      
+runcmd:
+  -  systemctl enable --now qemu-guest-agent
