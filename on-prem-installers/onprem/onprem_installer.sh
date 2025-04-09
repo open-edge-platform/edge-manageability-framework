@@ -410,6 +410,7 @@ validate_and_set_ip() {
     while true; do
       read -rp "Please provide a value for ${ip_var_name}: " ip_value
       if [[ $ip_value =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        export "$ip_var_name"="$ip_value"
         yq -i "$yaml_path|=strenv($ip_var_name)" "$yaml_file"
         echo "${ip_var_name} has been set to: $ip_value"
         break
@@ -424,8 +425,6 @@ validate_and_set_ip() {
       fi
     done
   fi
-
-  export "$ip_var_name"="$ip_value"
 }
 
 write_configs_using_overrides() {
