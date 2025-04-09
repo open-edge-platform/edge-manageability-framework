@@ -17,7 +17,7 @@ import (
 
 const (
 	baselineClusterTemplatePath = "./node/capi/baseline.json"
-	defaultTemplate             = "baseline-v2.0.0"
+	defaultTemplate             = "baseline-v2.0.2"
 	clusterApiBaseURLTemplate   = "https://api.%s/v2/projects/%s"
 )
 
