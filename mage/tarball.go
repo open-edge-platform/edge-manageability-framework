@@ -72,7 +72,9 @@ func (tm *TarballManifest) addedgeManageabilityFrameworkFiles() error {
 	tm.manifest = append(tm.manifest, tm.actualDir+"/VERSION")
 	tm.manifest = append(tm.manifest, tm.actualDir+"/argocd")
 	tm.manifest = append(tm.manifest, tm.actualDir+"/bootstrap")
-	tm.manifest = append(tm.manifest, tm.actualDir+"/orch-configs")
+	tm.manifest = append(tm.manifest, tm.actualDir+"/orch-configs/clusters")
+	tm.manifest = append(tm.manifest, tm.actualDir+"/orch-configs/profiles")
+	tm.manifest = append(tm.manifest, tm.actualDir+"/orch-configs/templates")
 	tm.manifest = append(tm.manifest, tm.actualDir+"/tools")
 	return nil
 }
