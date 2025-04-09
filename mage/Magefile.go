@@ -1095,7 +1095,6 @@ STANDALONE=0
 	}
 
 	var outputBuf bytes.Buffer
-	#NIO ENV setting
 	os.Setenv("PROJECT_NAME", data.ProjectName)
 	os.Setenv("PROJECT_API_USER", data.OnboardingUsername)
 	os.Setenv("PROJECT_API_PASSWORD", data.OnboardingPassword)
