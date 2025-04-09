@@ -9,13 +9,15 @@ Welcome to the Edge Manageability Framework, a comprehensive suite designed to s
 ## Primary Product: Edge Orchestrator
 At the center of Edge Manageability Framework is Edge Orchestrator, the primary solution to manage edge environments efficiently and securely. It encompasses a range of features that cater to the unique demands of edge computing, ensuring seamless integration and operation across diverse hardware and software landscapes. Edge Orchestrator is designed to be the central hub for managing edge infrastructure and edge application deployments at scale across geographically distributed edge sites.  It offers multitenancy and IDAM for tenants and offers automation, configuration, observability and alerting capabilities, dashboards for quick views of status and issue identification, and management of all infrastructure components including edge nodes (i.e. hosts) and clusters.
 
+![Edge Manageability Framework High Level Component Diagram](Edge_Manageability_Framework_Readme_Image.png)
+
 ### Key Components and Repositories
 
 #### Edge Manageability Framework
 - [edge-manageability-framework](https://github.com/open-edge-platform/edge-manageability-framework): This repository is the central hub for deploying the Edge Orchestrator. It includes Argo CD applications, Helm charts, and deployment scripts necessary for setting up the orchestrator in various environments, including on-premise and cloud-based setups.
 
 #### Documentation
-- [orch-docs](https://github.com/open-edge-platform/orch-docs): Documentation including deployment, user, developer, and contribution guides, API references, tutorials, troubleshooting, and software architecture specifications.
+- [orch-docs](https://github.com/open-edge-platform/orch-docs): Documentation including deployment, user, developer, and contribution guides, API references, tutorials, troubleshooting, and software architecture specifications.  You can also visit our documentaion hub here (TODO insert release docs URL)
 
 #### Foundational Platform Services
 - [orch-utils](https://github.com/open-edge-platform/orch-utils): The orch-utils repository provides various utility functions and tools that support the deployment and management of the Edge Orchestrator. This includes Kubernetes jobs, Helm charts, Dockerfiles, and Go code for tasks such as namespace creation, policy management, and Traefik route configuration.
@@ -61,59 +63,11 @@ At the center of Edge Manageability Framework is Edge Orchestrator, the primary 
 
 
 ## Get Started
-To get started with Edge Orchestrator, go here TODO to view deployment and installation guides.
-
-TODO: Use Make targets before releasing source code.
-
-### Lint
-
-```sh
-mage lint:all
-```
-
-### Test
-
-```sh
-mage test:go
-```
-
-### Build
-
-```sh
-echo TODO
-```
-
-### Release
-
-```sh
-echo TODO
-```
-
-## Develop
-
-To develop edge-manageability-framework, the following development prerequisites are required:
-
-- [Go](https://go.dev/doc/install)
-- [Mage](https://magefile.org/)
-- [asdf](https://asdf-vm.com/guide/getting-started.html)
-- [Docker](https://docs.docker.com/get-docker/)
-
-To build and test edge-manageability-framework, first clone the repository:
-
-```sh
-git clone https://github.com/open-edge-platform/edge-manageability-framework edge-manageability-framework
-cd edge-manageability-framework
-```
-
-Then, install the required install tools:
-
-```sh
-mage asdfPlugins
-```
-
-## Contribute
-
-To learn how to contribute to the project, see the [Contributor's Guide](/CONTRIBUTING.md).
+There are multiple ways to begin to learn about, use, or contribute to Edge Orchestrator.
+- Start by deploying your own orchestrator [in the cloud or on-premises](https://github.com/open-edge-platform/orch-docs/blob/main/docs/deployment_guide/index.rst)
+- Read the latest [Release Notes](https://github.com/open-edge-platform/orch-docs/blob/main/docs/release_notes/index.rst) or explore the [User Guide](https://github.com/open-edge-platform/orch-docs/blob/main/docs/user_guide/index.rst)
+- Learn about all components and usage of them in the [Developer Guide](https://github.com/open-edge-platform/orch-docs/blob/main/docs/developer_guide/index.rst)
+- [Contribute](https://github.com/open-edge-platform/orch-docs/blob/main/docs/developer_guide/contributor_guide/index.rst) to the project
 
 ## Community and Support
 
@@ -122,13 +76,4 @@ Community](https://github.com/open-edge-platform).
 
 ## License
 
-Copyright 2025 Intel Corporation
-
-Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the
-License. You may obtain a copy of the License at
-
-[http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0)
-
-Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an
-"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific
-language governing permissions and limitations under the License.
+Edge Manageability Framework is licensed under [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0)
