@@ -30,7 +30,6 @@ const (
 	enicContainerName = "edge-node"
 	enicPodName       = "enic-0"
 	enicNs            = "enic"
-	targetEnv         = "dev-minimal"
 	enicPodExec       = "kubectl -n %s exec %s -c %s -- "
 )
 
@@ -39,7 +38,7 @@ var (
 	nodeGuid       string
 )
 
-func (Deploy) deployEnicCluster(labels string) error {
+func (Deploy) deployEnicCluster(targetEnv string, labels string) error {
 	if err := cleanUpEnic(); err != nil {
 		return err
 	}

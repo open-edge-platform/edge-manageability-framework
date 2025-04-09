@@ -201,7 +201,7 @@ func (Undeploy) Kind() error {
 	return nil
 }
 
-// Deletes ENiC and cluster, input project name: mage undeploy:edgeCluster <org-name> <project-name>
+// Deletes ENiC and cluster, input required: mage undeploy:edgeCluster <org-name> <project-name>
 func (Undeploy) EdgeCluster(orgName, projectName string) error {
 	updateEdgeName()
 
@@ -1170,8 +1170,8 @@ func (d Deploy) OrchCA() error {
 	return d.orchCA()
 }
 
-// Deploys ENiC Edge cluster with sample-project project.
-func (d Deploy) EdgeCluster() error {
+// Deploys ENiC Edge cluster with sample-project project, input required: mage deploy:edgeCluster <targetEnv>
+func (d Deploy) EdgeCluster(targetEnv string) error {
 	updateEdgeName()
 
 	projectName := "sample-project"
@@ -1195,11 +1195,11 @@ func (d Deploy) EdgeCluster() error {
 	labels := []string{
 		"color=blue",
 	}
-	return d.deployEnicCluster(strings.Join(labels, ","))
+	return d.deployEnicCluster(targetEnv, strings.Join(labels, ","))
 }
 
-// Deploys ENiC Edge cluster, input required: mage deploy:edgeClusterWithProject <org-name> <project-name>
-func (d Deploy) EdgeClusterWithProject(orgName string, projectName string) error {
+// Deploys ENiC Edge cluster, input required: mage deploy:edgeClusterWithProject <targetEnv> <org-name> <project-name>
+func (d Deploy) EdgeClusterWithProject(targetEnv string, orgName string, projectName string) error {
 	updateEdgeName()
 
 	ctx := context.TODO()
@@ -1229,11 +1229,11 @@ func (d Deploy) EdgeClusterWithProject(orgName string, projectName string) error
 	labels := []string{
 		"color=blue",
 	}
-	return d.deployEnicCluster(strings.Join(labels, ","))
+	return d.deployEnicCluster(targetEnv, strings.Join(labels, ","))
 }
 
-// Deploys ENiC Edge cluster with sample-project project, input labels: mage deploy:edgeClusterWithLabels <labels, color=blue,city=hillsboro>
-func (d Deploy) EdgeClusterWithLabels(labels string) error {
+// Deploys ENiC Edge cluster with sample-project project: mage deploy:edgeClusterWithLabels <targetEnv> <labels, color=blue,city=hillsboro>
+func (d Deploy) EdgeClusterWithLabels(targetEnv string, labels string) error {
 	updateEdgeName()
 	projectName := "sample-project"
 	orgName := "sample-org"
@@ -1253,7 +1253,7 @@ func (d Deploy) EdgeClusterWithLabels(labels string) error {
 
 	fleetNamespace = projectId
 
-	return d.deployEnicCluster(labels)
+	return d.deployEnicCluster(targetEnv, labels)
 }
 
 func (d Deploy) AddKyvernoPolicy() error {
