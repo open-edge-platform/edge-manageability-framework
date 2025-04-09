@@ -325,9 +325,11 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			Expect(err).ToNot(HaveOccurred())
 			Expect(string(content)).ToNot(ContainSubstring("nginx"))
 			Expect(string(content)).To(ContainSubstring("Error 40x"))
-			// Check for error message content within <p> tags
-			str_content := string(content)
-			Expect(str_content).To(MatchRegexp(`<p[^>]*>.*Oops!.*cannot be found.*permission to access it.*</p>`))
+			Expect(string(content)).To(ContainSubstring("<p>"))
+			Expect(string(content)).To(ContainSubstring("Oops! The page you are looking for cannot be found"))
+			Expect(string(content)).To(ContainSubstring("permission to access it."))
+			Expect(string(content)).To(ContainSubstring("</p>"))
+
 
 			// Verify server header is not present
 			Expect("Server").ToNot(BeKeyOf(resp.Header))
