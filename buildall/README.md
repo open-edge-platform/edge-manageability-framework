@@ -135,11 +135,11 @@ below:
 
 ## Performance
 
-The most performance intensive steps are making the artifact lists, the helm
-charts, and the docker images.  Fortunately with the design of this system,
-they can all be run in parallel across all repos at the same time. Within each
-repo the process is serialized as there can only be a checkout of single tags
-at a time.
+The most performance intensive steps are building the artifact lists, the helm
+charts, and especially the docker images.  Fortunately with the design of this
+system, they can all be run in parallel across all repos at the same time.
+Within each repo the process is serialized as only a single tag can be checked
+out at a time.
 
 ## Todo
 

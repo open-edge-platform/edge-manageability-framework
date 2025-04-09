@@ -29,4 +29,4 @@ make image-manifest
 make sort-images
 
 # build all imgaes given the versions
-make image-build
+make -j 4 image-build
