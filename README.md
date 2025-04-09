@@ -69,28 +69,6 @@ There are multiple ways to begin to learn about, use, or contribute to Edge Orch
 - Learn about all components and usage of them in the [Developer Guide](https://github.com/open-edge-platform/orch-docs/blob/main/docs/developer_guide/index.rst)
 - [Contribute](https://github.com/open-edge-platform/orch-docs/blob/main/docs/developer_guide/contributor_guide/index.rst) to the project
 
-## Develop
-
-To develop edge-manageability-framework, the following development prerequisites are required:
-
-- [Go](https://go.dev/doc/install)
-- [Mage](https://magefile.org/)
-- [asdf](https://asdf-vm.com/guide/getting-started.html)
-- [Docker](https://docs.docker.com/get-docker/)
-
-To build and test edge-manageability-framework, first clone the repository:
-
-```sh
-git clone https://github.com/open-edge-platform/edge-manageability-framework edge-manageability-framework
-cd edge-manageability-framework
-```
-
-Then, install the required install tools:
-
-```sh
-mage asdfPlugins
-```
-
 ## Community and Support
 
 To learn more about the project, its community, and governance, visit the [Edge Orchestrator
