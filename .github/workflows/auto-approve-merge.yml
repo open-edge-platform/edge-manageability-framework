@@ -5,9 +5,6 @@
 name: Auto Approve & Merge
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-  
   pull_request_target:
     types: [opened, synchronize, reopened]
 
@@ -16,8 +13,8 @@ jobs:
     name: Auto approve PR
     runs-on: ubuntu-latest
     if: |
-      github.actor == 'sys-orch' && 
-      github.event.pull_request.base.ref == 'main-pass-validation'
+      github.actor == 'ashridatta' && 
+      github.event.pull_request.base.ref == 'main'
     steps:
       - uses: hmarr/auto-approve-action@v4
         with:
