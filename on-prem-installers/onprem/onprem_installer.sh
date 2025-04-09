@@ -234,6 +234,11 @@ EOF
 # 6. Continues with the installation of the orchestrator.
 # Note: If the configuration already exists, the script will prompt the user to confirm if they want to overwrite it.
 allow_config_in_runtime() {
+  if [ "$ENABLE_TRACE" = true ]; then
+      echo "Tracing is enabled. Temporarily disabling tracing"
+      set +x
+  fi
+
   tmp_dir="$cwd/$git_arch_name/tmp"
 
   if [ -d "$tmp_dir/$si_config_repo" ]; then
@@ -336,6 +341,11 @@ Ready to proceed with installation? " yn
       * ) echo "Please answer yes or no.";;
     esac
   done
+
+  if [ "$ENABLE_TRACE" = true ]; then
+      echo "Tracing is enabled. Re-enabling tracing"
+      set -x
+  fi
 }
 
 usage() {
@@ -427,6 +437,7 @@ write_config_to_disk() {
 
 ASSUME_YES=false
 SKIP_DOWNLOAD=false
+ENABLE_TRACE=false
 
 if [ -n "${1-}" ]; then
   while :; do
@@ -462,6 +473,7 @@ if [ -n "${1-}" ]; then
       ;;
       -t|--trace)
         set -x
+        ENABLE_TRACE=true
       ;;
       -w|--write-config)
         WRITE_CONFIG="true"
