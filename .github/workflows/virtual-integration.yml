@@ -384,7 +384,7 @@ jobs:
 
       - name: Login to ECR
         if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
-        uses: docker/login-action@v3.3.0
+        uses: docker/login-action@v3.4.0
         with:
           registry: 080137407410.dkr.ecr.us-west-2.amazonaws.com
 
