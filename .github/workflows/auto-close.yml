@@ -16,7 +16,7 @@ jobs:
   stale-auto-close:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/stale@v5.2.0
+      - uses: actions/stale@v9.1.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           stale-pr-message: "This pull request is stale because it has been open 30 days with no activity. Make a comment or update the PR to avoid closing PR after 15 days."
