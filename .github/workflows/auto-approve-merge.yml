@@ -5,7 +5,7 @@
 name: Auto Approve & Merge
 
 on:
-  pull_request_target:
+  pull_request:
     types: [opened, synchronize, reopened]
 
 jobs:
@@ -13,8 +13,8 @@ jobs:
     name: Auto approve PR
     runs-on: ubuntu-latest
     if: |
-      github.actor == 'ashridatta' && 
-      github.event.pull_request.base.ref == 'main'
+      github.actor == 'sys-orch' && 
+      github.event.pull_request.base.ref == 'main-pass-validation'
     steps:
       - uses: hmarr/auto-approve-action@v4
         with:
@@ -23,17 +23,15 @@ jobs:
 
   auto-merge:
     name: Auto merge PR
-    needs: 
-      - auto-approve
     runs-on: ubuntu-latest
     if: |
       github.actor == 'ashridatta' && 
       github.event.pull_request.base.ref == 'main'
     steps:
       - name: Auto merge
-        uses: reitermarkus/automerge@v2
+        uses: peter-evans/enable-pull-request-automerge@v3
         with:
           token:  ${{ secrets.SYS_ORCH_GITHUB_APPROVE }}
+          pull-request-number: ${{ github.event.pull_request.number }}
           merge-method: squash
-          do-not-merge-labels: 'DO NOT MERGE'
-          dry-run: true
+          
