@@ -397,11 +397,11 @@ validate_and_set_ip() {
 
   if [[ -n ${!ip_var_name} ]]; then
     if [[ $ip_value =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-        yq -i "$yaml_path|=strenv($ip_var_name)" "$yaml_file"
-        echo "${ip_var_name} has been set to: $ip_value"
+      yq -i "$yaml_path|=strenv($ip_var_name)" "$yaml_file"
+      echo "${ip_var_name} has been set to: $ip_value"
     else
-        unset "$ip_var_name"
-        echo "The value provided for ${ip_var_name} is not a valid IPv4 address: $ip_value"
+      unset "$ip_var_name"
+      echo "The value provided for ${ip_var_name} is not a valid IPv4 address: $ip_value"
     fi
   fi
 
@@ -409,14 +409,14 @@ validate_and_set_ip() {
     echo "${ip_var_name} is not set to a valid value in the configuration file."
     while true; do
       read -rp "Please provide a value for ${ip_var_name}: " ip_value
-      if [[ $ip_value =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then        
+      if [[ $ip_value =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
         yq -i "$yaml_path|=strenv($ip_var_name)" "$yaml_file"
         echo "${ip_var_name} has been set to: $ip_value"
         break
       else
         unset "$ip_var_name"
-
-        "Invalid IP address. Would you like to provide a valid value? (Y/n): " yn
+        echo "Invalid IP address. Would you like to provide a valid value? (Y/n): "
+        read -r yn
         case $yn in
           [Nn]* ) echo "Exiting as a valid value for ${ip_var_name} has not been provided."; exit 1;;
           * ) ;;
@@ -450,7 +450,7 @@ write_configs_using_overrides() {
     yq -i '.argo.o11y.alertingMonitor.smtp.insecureSkipVerify|=true' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
   fi
 
-  # Override MetalLB address pools  
+  # Override MetalLB address pools
   validate_and_set_ip '.postCustomTemplateOverwrite.metallb-config.ArgoIP' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml ARGO_IP
   validate_and_set_ip '.postCustomTemplateOverwrite.metallb-config.TraefikIP' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml TRAEFIK_IP
   validate_and_set_ip '.postCustomTemplateOverwrite.metallb-config.NginxIP' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml NGINX_IP
