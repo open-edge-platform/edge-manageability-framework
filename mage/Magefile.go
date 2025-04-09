@@ -967,15 +967,6 @@ func (d Deploy) VENWithFlow(ctx context.Context, flow string) (string, error) { 
 	tmpl, err := template.New("config").Parse(`
 CLUSTER='{{.ServiceDomain}}'
 
-# IO Flow Configurations
-ONBOARDING_USERNAME='{{.OnboardingUsername}}'
-ONBOARDING_PASSWORD='{{.OnboardingPassword}}'
-
-# NIO Flow Configurations
-PROJECT_NAME='{{.ProjectName}}'
-PROJECT_API_USER='{{.ProjectApiUser}}'
-PROJECT_API_PASSWORD='{{.ProjectApiPassword}}'
-
 # VM Resources
 RAM_SIZE='{{.RamSize}}'
 NO_OF_CPUS='{{.NoOfCpus}}'
@@ -1104,6 +1095,9 @@ STANDALONE=0
 	}
 
 	var outputBuf bytes.Buffer
+	os.Setenv("PROJECT_NAME", ProjectName)
+	os.Setenv("PROJECT_API_USER", OnboardingUsername)
+	os.Setenv("PROJECT_API_PASSWORD", OnboardingPassword)
 	cmd := exec.CommandContext(ctx, "sudo", filepath.Join("scripts", "create_vm.sh"), "1", fmt.Sprintf("-%s", flow))
 	cmd.Stdout = io.MultiWriter(os.Stdout, &outputBuf)
 	cmd.Stderr = io.MultiWriter(os.Stderr, &outputBuf)
