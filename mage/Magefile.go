@@ -62,6 +62,7 @@ var giteaRepos = []string{
 var githubRepos = []string{
 	"https://github.com/open-edge-platform/edge-manageability-framework",
 	"https://github.com/open-edge-platform/orch-utils",
+	"https://github.com/open-edge-platform/infra-charts",
 }
 
 var globalAsdf = []string{
