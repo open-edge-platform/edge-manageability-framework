@@ -253,9 +253,12 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 		})
 
 		It("should verify UI response headers", func() {
-			resp, err := cli.Get("https://web-ui." + serviceDomainWithPort)
+			resp, err := cli.Get("https://api." + serviceDomainWithPort)
 			Expect(err).ToNot(HaveOccurred())
 			defer resp.Body.Close()
+			for k, v := range resp.Header {
+				fmt.Println(k, "--->", v)
+			}
 			for k, v := range secureHeadersAdd() {
 				Expect(k).To(BeKeyOf(resp.Header))
 				Expect(resp.Header.Values(k)).To(ContainElements(v))
