@@ -4,3 +4,18 @@
 
 # Intentionally left blank
 
+# SPDX-FileCopyrightText: (C) 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Enable serviceMonitor for the gateway
+gateway:
+  metrics:
+    serviceMonitor:
+      enabled: true
+
+# Enable serviceMonitor for the controller
+controller:
+  metrics:
+    serviceMonitor:
+      enabled: true
