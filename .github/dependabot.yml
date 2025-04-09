@@ -3,12 +3,76 @@
 # SPDX-License-Identifier: Apache-2.0
 
 version: 2
+enable-beta-ecosystems: true
 updates:
-  # Maintain Go modules
+
+  # Enable version updates for Go modules
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
       interval: "daily"
-    open-pull-requests-limit: 2
+    commit-message:
+      prefix: "Go modules"
     reviewers:
       - "se-chris-thach"
+      - "dmytroye"
+
+  # Enable version updates for Terraform
+  - package-ecosystem: "terraform"
+    directories:
+      - "/terraform/edge-network"
+      - "/terraform/orchestrator"
+      - "/terraform/edge-storage-pool"
+      - "/pod-configs/orchestrator/cluster"
+      - "/pod-configs/orchestrator/orch-load-balancer"
+      - "/pod-configs/orchestrator/orch-route53"
+      - "/pod-configs/orchestrator/pull-through-cache-proxy"
+      - "/pod-configs/module/lb-target-group-attachment"
+      - "/pod-configs/module/application-load-balancer"
+      - "/pod-configs/module/load-balancer"
+      - "/pod-configs/buckets"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "terraform"
+    reviewers:
+      - "se-chris-thach"
+      - "dmytroye"
+
+  # Enable version updates for Helm
+  - package-ecosystem: "helm"
+    directories:
+      - "/argocd-internal/applications"
+      - "/argocd-internal/root-app"
+      - "/argocd/applications"
+      - "/argocd/root-app"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "Helm"
+    reviewers:
+      - "se-chris-thach"
+      - "dmytroye"
+
+  # Enable version updates for Docker
+  - package-ecosystem: "docker"
+    directories:
+      - "/installer"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "Dockerfile"
+    reviewers:
+      - "se-chris-thach"
+      - "dmytroye"
+      
+  # Enable version updates for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "Github Actions"
+    reviewers:
+      - "se-chris-thach"
+      - "dmytroye"
