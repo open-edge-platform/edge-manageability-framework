@@ -16,7 +16,7 @@
   - `vpc`: Virtual private cloud configs
   - `orch-load-balancer`: Load balancing components
   - `orch-route53`: Route53 DNS configs
-  - `pull-through-cache-proxy`: OCI cache proxy config
+  - `pull-through-cache-proxy`: Proxy that redirects OCI requests to corresponding pull through cache path.
 
 ### The module directory
 
