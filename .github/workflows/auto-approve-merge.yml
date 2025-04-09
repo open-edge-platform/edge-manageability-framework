@@ -23,10 +23,12 @@ jobs:
 
   auto-merge:
     name: Auto merge PR
+    needs: 
+      - auto-approve
     runs-on: ubuntu-latest
     if: |
-      github.actor == 'ashridatta' && 
-      github.event.pull_request.base.ref == 'main'
+      github.actor == 'sys-orch' && 
+      github.event.pull_request.base.ref == 'main-pass-validation'
     steps:
       - name: Auto merge
         uses: peter-evans/enable-pull-request-automerge@v3
