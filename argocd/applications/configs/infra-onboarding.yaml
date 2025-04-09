@@ -86,4 +86,4 @@ amt:
 
 infra-config:
   config:
-    enAgentManifestTag: "1.0.0-dev-7d80575"
+    enAgentManifestTag: "1.0.0"

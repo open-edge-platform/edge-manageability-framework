@@ -8,4 +8,12 @@ locals {
   vmnet_ip1 = local.vmnet_ips[1]
   vmnet_ip2 = local.vmnet_ips[2]
   vmnet_ip3 = local.vmnet_ips[3]
+
+  is_proxy_set = (
+    var.http_proxy != "" ||
+    var.https_proxy != "" ||
+    var.ftp_proxy != "" ||
+    var.socks_proxy != "" ||
+    var.no_proxy != ""
+  )
 }
