@@ -6,7 +6,7 @@ For information on submitting pull requests and issues, refer to the [Contributo
 edge-manageability-framework is licensed under the terms in [LICENSE](/LICENSES/Apache-2.0.txt).
 By contributing to the project, you agree to the license and copyright terms therein and release your contribution under these terms.
 
-## Getting Started
+## Get Started
 
 ### System Requirements
 
@@ -192,14 +192,11 @@ changes made to the codebase.
 
 ![Orchestrator Edge Node CI/Dev Machine Architecture](/docs/images/orchestrator-edge-node-CI-architecture.drawio.svg)
 
-## Code Standards
+## Development Guidelines
 
-The project follows specific coding standards to ensure consistency and readability. Please adhere to the following
-guidelines when contributing:
+## Coding Standards
 
-### Coding Style
-
-Refer to the project's style guide for the specific language used.
+Consistently following coding standards helps maintain readability and quality. Adhere to the following conventions:
 
 #### Golang
 
@@ -249,6 +246,12 @@ Refer to the project's style guide for the specific language used.
 - Ensure that your YAML files are valid and well-structured.
 - Code must pass `mage lint:yaml` to ensure proper formatting.
 
+### Testing
+
+1. Write unit, integration, and E2E tests for your code.
+1. Ensure all static analysis and tests pass before submitting a pull request.
+1. Aim for high test coverage to ensure code reliability.
+
 ### Continuous Integration
 
 1. Submit a pull request (PR) to the `main` branch of the repository.
@@ -270,12 +273,6 @@ Refer to the project's style guide for the specific language used.
   environment. All code that runs in CI should be able to run locally as well.
 1. CI workflows should primarily be executing the same Mage commands that a developer would run locally. There should
   not be any "magic" in the CI that is not also available locally.
-
-### Testing
-
-1. Write unit, integration, and E2E tests for your code.
-1. Ensure all static analysis and tests pass before submitting a pull request.
-1. Aim for high test coverage to ensure code reliability.
 
 ### Documentation
 
