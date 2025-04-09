@@ -5,5 +5,5 @@
 # Enables audit logging in api-gw
 
 argo:
-  enabled:
+  enable:
     audit: true
