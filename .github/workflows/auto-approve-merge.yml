@@ -23,6 +23,8 @@ jobs:
 
   auto-merge:
     name: Auto merge PR
+    needs: 
+      - auto-approve
     runs-on: ubuntu-latest
     if: |
       github.actor == 'ashridatta' && 
