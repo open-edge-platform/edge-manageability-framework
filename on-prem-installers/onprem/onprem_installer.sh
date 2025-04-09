@@ -389,6 +389,45 @@ print_env_variables() {
   echo "========================================"; echo
 }
 
+validate_and_set_ip() {
+  local yaml_path="$1"
+  local yaml_file="$2"
+  local ip_var_name="$3"
+  local ip_value
+
+  if [[ -n ${!ip_var_name} ]]; then
+    if [[ $ip_value =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        yq -i "$yaml_path|=strenv($ip_var_name)" "$yaml_file"
+        echo "${ip_var_name} has been set to: $ip_value"
+    else
+        unset "$ip_var_name"
+        echo "The value provided for ${ip_var_name} is not a valid IPv4 address: $ip_value"
+    fi
+  fi
+
+  if [[ -z $(yq "$yaml_path" "$yaml_file") || $(yq "$yaml_path" "$yaml_file") == "null" ]]; then
+    echo "${ip_var_name} is not set to a valid value in the configuration file."
+    while true; do
+      read -rp "Please provide a value for ${ip_var_name}: " ip_value
+      if [[ $ip_value =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then        
+        yq -i "$yaml_path|=strenv($ip_var_name)" "$yaml_file"
+        echo "${ip_var_name} has been set to: $ip_value"
+        break
+      else
+        unset "$ip_var_name"
+
+        "Invalid IP address. Would you like to provide a valid value? (Y/n): " yn
+        case $yn in
+          [Nn]* ) echo "Exiting as a valid value for ${ip_var_name} has not been provided."; exit 1;;
+          * ) ;;
+        esac
+      fi
+    done
+  fi
+
+  export "$ip_var_name"="$ip_value"
+}
+
 write_configs_using_overrides() {
   ## Option to override clusterDomain in onprem yaml by setting env variable
   if [[ -n ${CLUSTER_DOMAIN} ]]; then
@@ -411,10 +450,10 @@ write_configs_using_overrides() {
     yq -i '.argo.o11y.alertingMonitor.smtp.insecureSkipVerify|=true' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
   fi
 
-  # Override MetalLB address pools
-  yq -i '.postCustomTemplateOverwrite.metallb-config.ArgoIP|=strenv(ARGO_IP)' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
-  yq -i '.postCustomTemplateOverwrite.metallb-config.TraefikIP|=strenv(TRAEFIK_IP)' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
-  yq -i '.postCustomTemplateOverwrite.metallb-config.NginxIP|=strenv(NGINX_IP)' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
+  # Override MetalLB address pools  
+  validate_and_set_ip '.postCustomTemplateOverwrite.metallb-config.ArgoIP' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml ARGO_IP
+  validate_and_set_ip '.postCustomTemplateOverwrite.metallb-config.TraefikIP' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml TRAEFIK_IP
+  validate_and_set_ip '.postCustomTemplateOverwrite.metallb-config.NginxIP' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml NGINX_IP
 }
 
 write_config_to_disk() {
