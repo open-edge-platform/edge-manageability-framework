@@ -10,7 +10,7 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "monthly"
     commit-message:
       prefix: "Go modules"
     reviewers:
@@ -32,7 +32,7 @@ updates:
       - "/pod-configs/module/load-balancer"
       - "/pod-configs/buckets"
     schedule:
-      interval: "daily"
+      interval: "monthly"
     commit-message:
       prefix: "terraform"
     reviewers:
@@ -47,7 +47,7 @@ updates:
       - "/argocd/applications"
       - "/argocd/root-app"
     schedule:
-      interval: "daily"
+      interval: "monthly"
     commit-message:
       prefix: "Helm"
     reviewers:
@@ -59,7 +59,7 @@ updates:
     directories:
       - "/installer"
     schedule:
-      interval: "daily"
+      interval: "monthly"
     commit-message:
       prefix: "Dockerfile"
     reviewers:
@@ -70,7 +70,7 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "monthly"
     commit-message:
       prefix: "Github Actions"
     reviewers:
