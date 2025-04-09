@@ -201,9 +201,22 @@ func (Undeploy) Kind() error {
 	return nil
 }
 
-// UndeployEdgeCluster Deletes ENiC and cluster, input project name: mage UndeployEdgeCluster <project-name>
-func UndeployEdgeCluster(projectName string) error {
+// Deletes ENiC and cluster, input project name: mage undeploy:edgeCluster <org-name> <project-name>
+func (Undeploy) EdgeCluster(orgName, projectName string) error {
 	updateEdgeName()
+
+	ctx := context.TODO()
+	if err := (TenantUtils{}).GetProject(ctx, orgName, projectName); err != nil {
+		return fmt.Errorf("failed to get project %s: %w", projectName, err)
+	}
+
+	edgeInfraUser, _, err := getEdgeAndOnboardingUsers(ctx, orgName)
+	if err != nil {
+		return err
+	}
+
+	edgeMgrUser = edgeInfraUser
+	project = projectName
 
 	projectId, err := projectId(projectName)
 	if err != nil {
@@ -1161,11 +1174,18 @@ func (d Deploy) OrchCA() error {
 func (d Deploy) EdgeCluster() error {
 	updateEdgeName()
 
-	os.Setenv("ORCH_PROJECT", "sample-project")
-	os.Setenv("ORCH_ORG", "sample-org")
+	projectName := "sample-project"
+	orgName := "sample-org"
+
+	if err := (TenantUtils{}).GetProject(context.TODO(), orgName, projectName); err != nil {
+		return fmt.Errorf("failed to get project %s: %w", projectName, err)
+	}
+
+	os.Setenv("ORCH_PROJECT", projectName)
+	os.Setenv("ORCH_ORG", orgName)
 	os.Setenv("ORCH_USER", "sample-project-onboarding-user")
 
-	projectId, err := projectId("sample-project")
+	projectId, err := projectId(projectName)
 	if err != nil {
 		return err
 	}
@@ -1178,13 +1198,27 @@ func (d Deploy) EdgeCluster() error {
 	return d.deployEnicCluster(strings.Join(labels, ","))
 }
 
-// Deploys ENiC Edge cluster, input required: mage deploy:edgeClusterWithProject <org-name> <project-name> <edge-infra-user>
-func (d Deploy) EdgeClusterWithProject(orgName string, projectName string, edgeInfraUser string) error {
+// Deploys ENiC Edge cluster, input required: mage deploy:edgeClusterWithProject <org-name> <project-name>
+func (d Deploy) EdgeClusterWithProject(orgName string, projectName string) error {
 	updateEdgeName()
 
-	os.Setenv("ORCH_USER", edgeInfraUser)
+	ctx := context.TODO()
+	if err := (TenantUtils{}).GetProject(ctx, orgName, projectName); err != nil {
+		return fmt.Errorf("failed to get project %s: %w", projectName, err)
+	}
+
+	edgeInfraUser, onboardingUser, err := getEdgeAndOnboardingUsers(ctx, orgName)
+	if err != nil {
+		return err
+	}
+
+	edgeMgrUser = edgeInfraUser
+	project = projectName
+
 	os.Setenv("ORCH_PROJECT", projectName)
 	os.Setenv("ORCH_ORG", orgName)
+	os.Setenv("ORCH_USER", onboardingUser)
+
 	projectId, err := projectId(projectName)
 	if err != nil {
 		return err
@@ -1201,12 +1235,18 @@ func (d Deploy) EdgeClusterWithProject(orgName string, projectName string, edgeI
 // Deploys ENiC Edge cluster with sample-project project, input labels: mage deploy:edgeClusterWithLabels <labels, color=blue,city=hillsboro>
 func (d Deploy) EdgeClusterWithLabels(labels string) error {
 	updateEdgeName()
+	projectName := "sample-project"
+	orgName := "sample-org"
 
-	os.Setenv("ORCH_PROJECT", "sample-project")
-	os.Setenv("ORCH_ORG", "sample-org")
+	if err := (TenantUtils{}).GetProject(context.TODO(), orgName, projectName); err != nil {
+		return fmt.Errorf("failed to get project %s: %w", projectName, err)
+	}
+
+	os.Setenv("ORCH_PROJECT", projectName)
+	os.Setenv("ORCH_ORG", orgName)
 	os.Setenv("ORCH_USER", "sample-project-onboarding-user")
 
-	projectId, err := projectId("sample-project")
+	projectId, err := projectId(projectName)
 	if err != nil {
 		return err
 	}
