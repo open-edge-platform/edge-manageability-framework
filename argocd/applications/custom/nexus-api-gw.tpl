@@ -20,7 +20,7 @@ resources:
   {{- toYaml . | nindent 2 }}
 {{- end }}
 
-{{- if eq (index .Values "argo" "audit" "enabled") true }}
+{{- if eq (index .Values "argo" "enabled" "audit") true }}
 logging:
   level: info
 {{- end }}
