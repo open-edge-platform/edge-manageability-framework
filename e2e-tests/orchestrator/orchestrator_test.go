@@ -592,8 +592,9 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
 		})
 	})
+
 	Describe("Cluster connect gateway", Label(clusterOrch), func() {
-		ccgUrl := fmt.Sprintf("https://connect-gateway.%s/kubernetes", serviceDomainWithPort)
+		ccgUrl := fmt.Sprintf("https://connect-gateway.%s/kubernetes/%s-randomid/v1/pods", serviceDomainWithPort, util.TestProject)
 		It("should NOT be accessible when using invalid token", func() {
 			req, err := http.NewRequest("GET", ccgUrl, nil)
 			Expect(err).ToNot(HaveOccurred())
@@ -602,7 +603,38 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
 			defer resp.Body.Close()
-			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
+			Expect(resp.StatusCode).To(Equal(http.StatusUnauthorized))
+		})
+
+		It("should NOT be accessible over HTTPS when using no token", func() {
+			req, err := http.NewRequest("GET", ccgUrl, nil)
+			Expect(err).ToNot(HaveOccurred())
+			resp, err := cli.Do(req)
+			Expect(err).ToNot(HaveOccurred())
+			defer resp.Body.Close()
+			Expect(resp.StatusCode).To(Equal(http.StatusUnauthorized))
+		})
+
+		It("should NOT be accessible over HTTPS when using valid but expired token", func() {
+			Expect(saveToken(cli)).To(Succeed())
+			token, err := script.File(outputFile).String()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(token).ToNot(BeEmpty())
+
+			isUnexpired, err := isTokenUnexpired(token)
+			Expect(err).ToNot(HaveOccurred())
+			if isUnexpired {
+				Skip("Skipping this test because JWT Token is NOT expired")
+			}
+
+			req, err := http.NewRequest("GET", ccgUrl, nil)
+			Expect(err).ToNot(HaveOccurred())
+
+			req.Header.Add("Authorization", "Bearer "+token)
+			resp, err := cli.Do(req)
+			Expect(err).ToNot(HaveOccurred())
+			defer resp.Body.Close()
+			Expect(resp.StatusCode).To(Equal(http.StatusUnauthorized))
 		})
 	})
 
