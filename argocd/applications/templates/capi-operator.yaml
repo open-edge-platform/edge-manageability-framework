@@ -35,9 +35,7 @@ spec:
           {{- $baseFile := printf "configs/%s.yaml" $appName }}
           {{- $baseConfig := .Files.Get $baseFile|fromYaml}}
           {{- $overwrite := (get .Values.postCustomTemplateOverwrite $appName ) | default dict }}
-          {{- $customValuesFile := printf "custom/%s-values.tpl" $appName }}
-          {{- $customValues := tpl (.Files.Get $customValuesFile) . | fromYaml }}
-          {{- mergeOverwrite $baseConfig $customConfig $customValues $overwrite | toYaml | nindent 10 }}
+          {{- mergeOverwrite $baseConfig $customConfig $overwrite | toYaml | nindent 10 }}
   destination:
     namespace: {{$namespace}}
     server: {{ required "A valid targetServer entry required!" .Values.argo.targetServer }}
