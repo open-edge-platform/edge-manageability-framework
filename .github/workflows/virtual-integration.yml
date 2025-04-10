@@ -527,7 +527,6 @@ jobs:
         if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' }}
         with:
           token: ${{ secrets.SYS_ORCH_GITHUB }}
-          app_orch: false
 
       - name: "Test Observability Public Endpoints"
         env:
