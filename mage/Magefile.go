@@ -1103,10 +1103,20 @@ STANDALONE=0
 		}
 	}
 
+	var outputChmodBuf bytes.Buffer
+	chmodCmd := exec.CommandContext(ctx, "sudo", "chmod", "755",
+		filepath.Join("scripts", "update_provider_defaultos.sh"),
+		filepath.Join("scripts", "create_vm.sh"),
+		filepath.Join("scripts", "show_host-status.sh"),
+	)
+	chmodCmd.Stdout = io.MultiWriter(os.Stdout, &outputChmodBuf)
+	chmodCmd.Stderr = io.MultiWriter(os.Stderr, &outputChmodBuf)
+
+	if err := chmodCmd.Run(); err != nil {
+		return "", fmt.Errorf("failed to chmod: %w", err)
+	}
+
 	var outputBuf bytes.Buffer
-	cmd = exec.CommandContext(ctx, "sudo", "chmod", "755", filepath.Join("scripts", "update_provider_defaultos.sh"))
-	cmd = exec.CommandContext(ctx, "sudo", "chmod", "755", filepath.Join("scripts", "create_vm.sh"))
-	cmd = exec.CommandContext(ctx, "sudo", "chmod", "755", filepath.Join("scripts", "show_host-status.sh"))
 	cmd := exec.CommandContext(ctx, filepath.Join("scripts", "update_provider_defaultos.sh"), "microvisor")
 	cmd.Env = append(os.Environ(),
 		"CLUSTER="+data.ServiceDomain,
