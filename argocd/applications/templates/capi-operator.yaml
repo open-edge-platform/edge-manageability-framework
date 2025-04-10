@@ -29,8 +29,6 @@ spec:
           - name: diagnosticsAddress
             value: ':8080'
         releaseName: {{$appName}}
-        valuesFiles:
-          - configs/capi-operator-values.yaml
         valuesObject:
           {{- $customFile := printf "custom/%s.tpl" $appName }}
           {{- $customConfig := tpl (.Files.Get $customFile) . | fromYaml }}
