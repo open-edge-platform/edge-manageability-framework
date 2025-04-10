@@ -265,7 +265,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			}
 		})
 
-		FIt("should verify API response COOP & COEP headers", func() {
+		It("should verify API response COOP & COEP headers", func() {
 			req, err := http.NewRequest("GET", "https://api."+serviceDomainWithPort+"/v1/projects/sample-project/compute/os?filter='profile_name=\"tiberos-nonrt\"", nil)
 			Expect(err).ToNot(HaveOccurred())
 			user := fmt.Sprintf("%s-edge-op", util.TestUser)
