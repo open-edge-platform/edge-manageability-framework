@@ -2,15 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "5.72.1"
-    }
-  }
-}
-
 # Create Target group attachment
 resource "aws_lb_target_group_attachment" "main" {
   for_each         = var.eks_nodes
