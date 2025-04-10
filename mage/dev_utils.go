@@ -127,6 +127,7 @@ func isEnicArgoAppReady() (bool, error) {
 func RegisterEnic() error {
 	fmt.Printf("Registering ENiC...\n")
 	var enicUUID uuid.UUID
+	var errUUID error
 
 	cmd := fmt.Sprintf("kubectl exec -it -n %s %s -c edge-node -- bash -c 'dmidecode -s system-uuid'", enicNs, enicPodName)
 	ctx, cancel := context.WithTimeout(context.Background(), waitForReadyMin*time.Minute)
@@ -135,7 +136,7 @@ func RegisterEnic() error {
 	fn := func() error {
 		out, err := exec.Command("bash", "-c", cmd).Output()
 		outParsed := strings.Trim(string(out), "\n")
-		enicUUID, errUUID := uuid.Parse(outParsed)
+		enicUUID, errUUID = uuid.Parse(outParsed)
 		fmt.Printf("\nENiC UUID output: %s from output (%s)\n", enicUUID, outParsed)
 		if err != nil || errUUID != nil {
 			fmt.Printf("\rENiC UUID is not ready: %s (%vs)", enicUUID, counter*waitForNextSec)
