@@ -128,7 +128,7 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 			Expect(err).ToNot(HaveOccurred())
 
 			// Register Host
-			registeredHost, err := onboarding_manager.HttpInfraOnboardNewRegisterHost(hostRegUrl, *apiToken, cli, hostUuid)
+			registeredHost, err := onboarding_manager.HttpInfraOnboardNewRegisterHost(hostRegUrl, *apiToken, cli, hostUuid, false)
 			Expect(err).ToNot(HaveOccurred())
 			fmt.Printf("Registered Host: %+v\n", registeredHost)
 
@@ -204,7 +204,7 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 			Expect(err).ToNot(HaveOccurred())
 
 			// Register Host
-			registeredHost, err := onboarding_manager.HttpInfraOnboardNewRegisterHost(hostRegUrl, *apiToken, cli, hostUuid)
+			registeredHost, err := onboarding_manager.HttpInfraOnboardNewRegisterHost(hostRegUrl, *apiToken, cli, hostUuid, false)
 			Expect(err).ToNot(HaveOccurred())
 			fmt.Printf("Registered Host: %+v\n", registeredHost)
 

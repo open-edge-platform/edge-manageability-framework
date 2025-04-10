@@ -189,7 +189,7 @@ func RegisterEnic() error {
 	baseProjAPIUrl := fmt.Sprintf(apiBaseURLTemplate, orchFQDN, orchProject)
 	hostRegUrl := baseProjAPIUrl + "/compute/hosts/register"
 
-	_, err = onboarding_manager.HttpInfraOnboardNewRegisterHost(hostRegUrl, *apiToken, cli, enicUUID)
+	_, err = onboarding_manager.HttpInfraOnboardNewRegisterHost(hostRegUrl, *apiToken, cli, enicUUID, true)
 	if err != nil {
 		return fmt.Errorf("error registering ENiC: %w", err)
 	}
