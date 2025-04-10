@@ -1222,7 +1222,7 @@ func syncDeployRepoContent(targetEnv, dstDir, srcDir string) error {
 	}
 
 	return nil
-} 
+}
 
 // commitAndPushGiteaRepo commits and pushes changes to the Gitea repository
 func commitAndPushGiteaRepo(gitRepoPath, gitUsername, gitPassword string) error {
@@ -1268,7 +1268,7 @@ func commitAndPushGiteaRepo(gitRepoPath, gitUsername, gitPassword string) error 
 	if _, err := script.Exec(cmd).Stdout(); err != nil {
 		return fmt.Errorf("error adding changes to git: %w", err)
 	}
-	
+
 	// Commit the changes with a basic version message
 	cmd = fmt.Sprintf("git commit -m 'update deployment to version: %s'", version)
 	if _, err := script.Exec(cmd).Stdout(); err != nil {
@@ -1334,14 +1334,14 @@ func (d Deploy) updateDeployRepo(targetEnv, gitRepoPath, repoName, localClonePat
 	if err := os.Chdir(repoName); err != nil {
 		return fmt.Errorf("error changing to the repo directory %s: %w", repoName, err)
 	}
-	
+
 	// Commit and push gitea repo update
 	if err := commitAndPushGiteaRepo(gitRepoPath, gitUsername, gitPassword); err != nil {
 		return fmt.Errorf("error updating gitea repo content: %w", err)
 	}
 
 	// Add any additional logic for updating the repository if needed
-	fmt.Printf("Repository %s updated successfully at %s/%s\n", gitRepoPath, localClonePath, repoName )
+	fmt.Printf("Repository %s updated successfully at %s/%s\n", gitRepoPath, localClonePath, repoName)
 	return nil
 }
 
