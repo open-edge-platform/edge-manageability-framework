@@ -677,6 +677,13 @@ jobs:
         run: mage tenantUtils:createDefaultMtSetup
 
       - name: Test Edge Node onboarding
+        env:
+          PROJECT_NAME: 'sample-project'
+          ONBOARDING_USERNAME: 'sample-project-onboarding-user'
+          ONBOARDING_PASSWORD: 'password'
+          PROJECT_API_USER: 'sample-project-api-user'
+          PROJECT_API_PASSWORD: 'password'
+          
         timeout-minutes: 20
         if: |
           needs.check-changed-files.outputs.onboarding == 'true' ||
