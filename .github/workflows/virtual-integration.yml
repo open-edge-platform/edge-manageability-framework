@@ -508,6 +508,7 @@ jobs:
           ORCH_ORG: sample-org
           ORCH_PROJECT: sample-project
           ORCH_USER: sample-project-onboarding-user
+          ORCH_USER_API: sample-project-api-user
           EDGE_MANAGEABILITY_FRAMEWORK_REV: ${{ env.GIT_HASH }}
         run: |
           mage devUtils:deployEnic 1 dev

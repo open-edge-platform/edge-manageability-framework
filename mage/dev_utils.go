@@ -24,7 +24,10 @@ import (
 
 	"github.com/Nerzal/gocloak/v13"
 	"github.com/bitfield/script"
+	"github.com/google/uuid"
 	"github.com/open-edge-platform/edge-manageability-framework/internal/retry"
+
+	onboarding_manager "github.com/open-edge-platform/edge-manageability-framework/e2e-tests/orchestrator/onboarding_manager"
 )
 
 // Deploys the ENiC (indicates the number of instances, optionally set env variables: ORCH_FQDN, ORCH_IP, ORCH_USER, ORCH_PASS, ORCH_ORG, ORCH_PROJECT).
@@ -120,6 +123,80 @@ func isEnicArgoAppReady() (bool, error) {
 	return false, nil
 }
 
+// RegisterEnic Registers ENiC UUID with orchestrator
+func RegisterEnic() error {
+	fmt.Printf("Registering ENiC...\n")
+	var enicUUID uuid.UUID
+
+	cmd := fmt.Sprintf("kubectl exec -it -n %s %s -c edge-node -- bash -c 'dmidecode -s system-uuid'", enicNs, enicPodName)
+	ctx, cancel := context.WithTimeout(context.Background(), waitForReadyMin*time.Minute)
+	defer cancel()
+	counter := 0
+	fn := func() error {
+		out, err := exec.Command("bash", "-c", cmd).Output()
+
+		enicUUID, errUUID := uuid.Parse(string(out))
+
+		if err != nil || errUUID != nil {
+			fmt.Printf("\rENiC UUID: %s (%vs)", enicUUID, counter*waitForNextSec)
+			counter++
+			return fmt.Errorf("enic UUID is not ready")
+		} else {
+			fmt.Printf("\nENiC UUID: %s (%vs)\n", enicUUID, counter*waitForNextSec)
+			return nil
+		}
+	}
+
+	if err := retry.UntilItSucceeds(ctx, fn, time.Duration(waitForNextSec)*time.Second); err != nil {
+		return fmt.Errorf("enic UUID retrieve error: %w 😲", err)
+	}
+
+	cli, err := GetClient()
+	if err != nil {
+		return fmt.Errorf("error creating HTTP client: %w", err)
+	}
+
+	orchUser := defaultUser
+	if orchUserEnv := os.Getenv("ORCH_USER_API"); orchUserEnv != "" {
+		orchUser = orchUserEnv
+	}
+
+	orchPass, err := GetDefaultOrchPassword()
+	if err != nil {
+		return err
+	}
+	if orchPassEnv := os.Getenv("ORCH_PASS"); orchPassEnv != "" {
+		orchPass = orchPassEnv
+	}
+
+	orchProject := defaultProject
+	if orchProjectEnv := os.Getenv("ORCH_PROJECT"); orchProjectEnv != "" {
+		orchProject = orchProjectEnv
+	}
+
+	orchFQDN := serviceDomain
+	if orchFQDNEnv := os.Getenv("ORCH_FQDN"); orchFQDNEnv != "" {
+		orchFQDN = orchFQDNEnv
+	}
+
+	apiToken, err := GetApiToken(cli, orchUser, orchPass)
+	if err != nil {
+		return fmt.Errorf("error getting API Token: %w", err)
+	}
+
+	apiBaseURLTemplate := "https://api.%s/v1/projects/%s"
+	baseProjAPIUrl := fmt.Sprintf(apiBaseURLTemplate, orchFQDN, orchProject)
+	hostRegUrl := baseProjAPIUrl + "/compute/hosts/register"
+
+	_, err = onboarding_manager.HttpInfraOnboardNewRegisterHost(hostRegUrl, *apiToken, cli, enicUUID)
+	if err != nil {
+		return fmt.Errorf("error registering ENiC: %w", err)
+	}
+
+	fmt.Printf("Registed ENiC ...\n")
+	return nil
+}
+
 func (DevUtils) WaitForEnic() error {
 	for {
 		ready, err := isEnicArgoAppReady()
@@ -138,6 +215,10 @@ func (DevUtils) WaitForEnic() error {
 	ctx, cancel := context.WithTimeout(context.Background(), waitForReadyMin*time.Minute)
 	defer cancel()
 	counter := 0
+
+	if err := retry.UntilItSucceeds(ctx, RegisterEnic, time.Duration(waitForNextSec)*time.Second); err != nil {
+		return fmt.Errorf("enic registration error: %w 😲", err)
+	}
 
 	cmd := fmt.Sprintf("kubectl -n %s get pod/%s -o jsonpath='{.status.phase}'", enicNs, enicPodName)
 
