@@ -9,6 +9,7 @@
 {{- if (index .Values.argo.enabled $appName) }}
 apiVersion: argoproj.io/v1alpha1
 kind: Application
+
 metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "{{ $syncWave }}"
