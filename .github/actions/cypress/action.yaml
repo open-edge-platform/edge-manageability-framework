@@ -11,15 +11,15 @@ inputs:
   app_orch:
     required: false
     description: "Run App Orch tests"
-    default: false
+    default: true
   cluster_orch:
     required: false
     description: "Run Cluster Orch tests"
-    default: false
+    default: true
   infra:
     required: false
     description: "Run Infra tests"
-    default: false
+    default: true
   infra_provision_hosts:
     require: false
     description: "Run Infra Provision Hosts tests"
@@ -31,7 +31,7 @@ inputs:
   admin:
     required: false
     description: "Run Admin tests"
-    default: false
+    default: true
   en_serial_number:
     required: ${{ inputs.infra != '' || false }} # NOTE this is required if the
     description: "Serial number of the EN"
