@@ -1098,8 +1098,9 @@ STANDALONE=0
 	chmodCmd := exec.CommandContext(ctx, "sudo", "chmod", "755",
 		filepath.Join("scripts", "update_provider_defaultos.sh"),
 		filepath.Join("scripts", "create_vm.sh"),
-		filepath.Join("scripts", "show_host-status.sh"),
+		filepath.Join("scripts", "host_status_check.sh"),
 		filepath.Join("scripts", "nio_configs.sh"),
+		filepath.Join("scripts", "destroy_vm.sh"),
 	)
 
 	chmodCmd.Stdout = io.MultiWriter(os.Stdout, &outputChmodBuf)
