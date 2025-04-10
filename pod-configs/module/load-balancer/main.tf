@@ -2,15 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "5.72.1"
-    }
-  }
-}
-
 locals {
   subnets_with_eip = var.internal ? [] : var.subnets
   protocol_mapping = {
