@@ -49,4 +49,22 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ApplyOutOfSyncOnly=true
+  patches:
+    - target:
+        kind: Deployment
+        name: rke2-control-plane-controller-manager
+        namespace: capr-system
+      patch: |
+        spec:
+          template:
+            spec:
+              containers:
+                - name: manager
+                  args:
+                    - '--diagnostics-address=:8080'
+                    - '--insecure-diagnostics=true'
+                  ports:
+                    - containerPort: 8080
+                      name: metrics
+                      protocol: TCP
 {{- end }}
