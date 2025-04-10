@@ -11,19 +11,27 @@ inputs:
   app_orch:
     required: false
     description: "Run App Orch tests"
-    default: true
+    default: false
   cluster_orch:
     required: false
     description: "Run Cluster Orch tests"
-    default: true
+    default: false
   infra:
     required: false
     description: "Run Infra tests"
-    default: true
+    default: false
+  infra_provision_hosts:
+    require: false
+    description: "Run Infra Provision Hosts tests"
+    default: false
+  infra_verify_hosts:
+    require: false
+    description: "Run Infra Verify Hosts tests"
+    default: false
   admin:
     required: false
     description: "Run Admin tests"
-    default: true
+    default: false
 runs:
   using: "composite"
   steps:
@@ -62,6 +70,27 @@ runs:
         npx cypress run --e2e \
           -s cypress/e2e/infra/infra-smoke.cy.ts \
           --env EN_UUID=${{ env.EN_UUID }}
+
+    - name: Run Automatic Onboarding And Provisioning test
+      id: auto_onboard_provision
+      if: ${{ always() && inputs.infra_provision_hosts == 'true' }}
+      working-directory: orch-ui/tests
+      shell: bash
+      run: |
+        npx cypress run --e2e \
+          -s cypress/e2e/infra/provision-hosts.cy.ts \
+          --env EN_SERIAL_NUMBER=SN123456
+
+    - name: Run Verify Host test
+      id: verify_host
+      if: ${{ always() && inputs.infra_verify_host == 'true' }}
+      working-directory: orch-ui/tests
+      shell: bash
+      run: |
+        npx cypress run --e2e \
+          -s cypress/e2e/infra/verify-hosts.cy.ts \
+          --env EN_SERIAL_NUMBER=SN123456
+
     - name: Collect Edge Infra Manager logs
       if: ${{ always() && inputs.infra == 'true' }}
       working-directory: orch-ui/tests

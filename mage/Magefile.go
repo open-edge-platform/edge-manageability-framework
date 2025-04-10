@@ -872,8 +872,9 @@ func (d Deploy) VEN(ctx context.Context, flow string) error {
 	return nil
 }
 
+// Check Chris message for where to inject SN
 // VENWithFlow deploys a local Virtual Edge Node using libvirt and returns the serial number of the deployed node.
-func (d Deploy) VENWithFlow(ctx context.Context, flow string) (string, error) { //nolint:gocyclo,maintidx
+func (d Deploy) VENWithFlow(ctx context.Context, flow string, sn string) (string, error) { //nolint:gocyclo,maintidx
 	mg.CtxDeps(
 		ctx,
 		Deps{}.EnsureUbuntu,
@@ -1091,7 +1092,7 @@ STANDALONE=0
 	}
 
 	var outputBuf bytes.Buffer
-	cmd := exec.CommandContext(ctx, "sudo", filepath.Join("scripts", "create_vm.sh"), "1", fmt.Sprintf("-%s", flow))
+	cmd := exec.CommandContext(ctx, "sudo", filepath.Join("scripts", "create_vm.sh"), "1", fmt.Sprintf("-%s", flow), fmt.Sprintf("-serials=%s", sn))
 	cmd.Stdout = io.MultiWriter(os.Stdout, &outputBuf)
 	cmd.Stderr = io.MultiWriter(os.Stderr, &outputBuf)
 

@@ -527,6 +527,7 @@ jobs:
         if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' }}
         with:
           token: ${{ secrets.SYS_ORCH_GITHUB }}
+          app_orch: false
 
       - name: "Test Observability Public Endpoints"
         env:
@@ -676,6 +677,7 @@ jobs:
       - name: Create MT Sample Org and Project with default users
         run: mage tenantUtils:createDefaultMtSetup
 
+      #register and provision
       - name: Test Edge Node onboarding
         timeout-minutes: 20
         if: |
@@ -684,6 +686,26 @@ jobs:
           needs.check-changed-files.outputs.orch == 'true' ||
           needs.check-changed-files.outputs.ci == 'true'
         run: mage test:onboarding
+        # cypress run register+provision
+        #mage deploy:VENWithFlow nio <sn>
+        # cypress run verify
+
+      - name: UI E2E Infra Automatically Onboard and Provision
+        uses: ./.github/actions/cypress
+        if: ${{ always() }}
+        with:
+          token: ${{ secrets.SYS_ORCH_GITHUB }}
+          infra_provision_host: true
+
+      - name: Start Ven
+        run: mage deploy:VENWithFlow nio SN123456
+
+      - name: UI E2E Infra Verify Host
+        uses: ./.github/actions/cypress
+        if: ${{ always() }}
+        with:
+          token: ${{ secrets.SYS_ORCH_GITHUB }}
+          infra_verify_host: true
 
       - name: Get diagnostic information
         id: get-diagnostic-info
