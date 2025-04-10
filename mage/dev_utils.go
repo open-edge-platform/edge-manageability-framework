@@ -198,6 +198,14 @@ func RegisterEnic() error {
 }
 
 func (DevUtils) WaitForEnic() error {
+	ctx, cancel := context.WithTimeout(context.Background(), waitForReadyMin*time.Minute)
+	defer cancel()
+	counter := 0
+
+	if err := retry.UntilItSucceeds(ctx, RegisterEnic, time.Duration(waitForNextSec)*time.Second); err != nil {
+		return fmt.Errorf("enic registration error: %w 😲", err)
+	}
+
 	for {
 		ready, err := isEnicArgoAppReady()
 		if err != nil {
@@ -212,14 +220,6 @@ func (DevUtils) WaitForEnic() error {
 	}
 
 	// Add another check for enic readiness, sometimes enic argo will be synced and healthy but no enic pod
-	ctx, cancel := context.WithTimeout(context.Background(), waitForReadyMin*time.Minute)
-	defer cancel()
-	counter := 0
-
-	if err := retry.UntilItSucceeds(ctx, RegisterEnic, time.Duration(waitForNextSec)*time.Second); err != nil {
-		return fmt.Errorf("enic registration error: %w 😲", err)
-	}
-
 	cmd := fmt.Sprintf("kubectl -n %s get pod/%s -o jsonpath='{.status.phase}'", enicNs, enicPodName)
 
 	fmt.Printf("Waiting %v minutes for ENiC pod to start...\n", waitForReadyMin)
