@@ -1158,6 +1158,13 @@ STANDALONE=0
 
 	// Add the new command to execute host_statue with the serial number
 	hostStatueCmd := exec.CommandContext(ctx, filepath.Join("scripts", "host_status_check.sh"), serialNumber)
+	hostStatueCmd.Env = append(os.Environ(),
+		"ONBOARDING_USERNAME="+data.OnboardingUsername,
+		"ONBOARDING_PASSWORD="+data.OnboardingPassword,
+		"PROJECT_NAME="+data.ProjectName,
+		"PROJECT_API_USER="+data.ProjectApiUser,
+		"PROJECT_API_PASSWORD="+data.ProjectApiPassword,
+	)
 	hostStatueCmd.Stdout = os.Stdout
 	hostStatueCmd.Stderr = os.Stderr
 
