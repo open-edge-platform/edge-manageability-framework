@@ -95,7 +95,7 @@ keycloakConfigCli:
         "realm": "master",
         "accountTheme": "keycloak",
         "displayName": "Keycloak",
-        "displayNameHtml": "<img src='https://www.intel.com/content/dam/develop/public/us/en/images/admin/logos/logo-intel-tiber-edge-platform-on-dark.png'></img>",
+        "displayNameHtml": "<img src='https://github.com/open-edge-platform/orch-docs/blob/de556f9da37cfe2a5fdb9ea0c6348c06c8391868/docs/_static/one-edge-platform-login-title.png'></img>",
         "defaultSignatureAlgorithm": "PS512",
         "accessTokenLifespan": 3600,
         "ssoSessionIdleTimeout": 5400,
