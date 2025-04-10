@@ -30,6 +30,14 @@ manager:
       RuntimeSDK: "false"
       MachineSetPreflightChecks: "true"
       MachineWaitForVolumeDetachConsiderVolumeAttachments: "true"
+  containers:
+    - args:
+        - '--diagnostics-address=:8080'
+        - '--insecure-diagnostics=true'
+      ports:
+        - containerPort: 8080
+          name: metrics
+          protocol: TCP
 configSecret:
   namespace: capi-variables
   name: capi-variables
