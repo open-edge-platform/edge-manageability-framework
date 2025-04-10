@@ -30,7 +30,6 @@ const (
 	enicContainerName = "edge-node"
 	enicPodName       = "enic-0"
 	enicNs            = "enic"
-	targetEnv         = "dev-coder-minimal"
 	enicPodExec       = "kubectl -n %s exec %s -c %s -- "
 )
 
@@ -39,7 +38,7 @@ var (
 	nodeGuid       string
 )
 
-func (Deploy) deployEnicCluster(labels string) error {
+func (Deploy) deployEnicCluster(targetEnv string, labels string) error {
 	if err := cleanUpEnic(); err != nil {
 		return err
 	}
@@ -152,21 +151,19 @@ func deleteEnic() error {
 }
 
 func createCluster() error {
-	if err := (CoUtils{}).CreateCluster(edgeClusterName, nodeGuid, fleetNamespace); err != nil {
+	if err := (CoUtils{}).CreateCluster(edgeClusterName, nodeGuid); err != nil {
 		return err
 	}
 
-	fmt.Printf("Created cluster %s in namespace %s...\n", edgeClusterName, fleetNamespace)
+	fmt.Printf("Created cluster %s...\n", edgeClusterName)
 
 	return nil
 }
 
 func deleteCluster() error {
-	fmt.Printf("Deleting cluster %s in namespace %s...\n", edgeClusterName, fleetNamespace)
-
-	if err := (CoUtils{}).DeleteCluster(edgeClusterName, fleetNamespace); err != nil {
+	if err := (CoUtils{}).DeleteCluster(edgeClusterName); err != nil {
 		// No cluster to delete and exit
-		if strings.Contains(err.Error(), fmt.Sprintf("cluster %s not found in namespace %s", edgeClusterName, fleetNamespace)) {
+		if strings.Contains(err.Error(), fmt.Sprintf("cluster %s not found", edgeClusterName)) {
 			return nil
 		}
 		return err
@@ -437,7 +434,7 @@ func getUserToken() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	edgeMgrToken, err := GetApiToken(cli, "sample-project-edge-mgr", defaultOrchPassword)
+	edgeMgrToken, err := GetApiToken(cli, edgeMgrUser, defaultOrchPassword)
 
 	return *edgeMgrToken, err
 }
