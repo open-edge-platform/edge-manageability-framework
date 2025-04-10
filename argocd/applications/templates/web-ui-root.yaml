@@ -19,9 +19,9 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
-    - repoURL: https://github.com/open-edge-platform/orch-ui
-      path: apps/root/deploy
-      targetRevision: test-helm-4-10-2025
+    - repoURL: "https://github.com/open-edge-platform/orch-ui"
+      path: "apps/root/deploy"
+      targetRevision: "test-helm-4-10-2025"
       helm:
         releaseName: web-ui
         valuesObject:
