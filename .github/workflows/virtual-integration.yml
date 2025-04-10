@@ -683,6 +683,10 @@ jobs:
           needs.check-changed-files.outputs.on-prem == 'true' ||
           needs.check-changed-files.outputs.orch == 'true' ||
           needs.check-changed-files.outputs.ci == 'true'
+        env:
+          PROJECT_NAME: 'sample-project'
+          PROJECT_API_USER: 'sample-project-api-user'
+          PROJECT_API_PASSWORD: 'password'
         run: mage test:onboarding
 
       - name: Get diagnostic information
