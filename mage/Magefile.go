@@ -1088,19 +1088,19 @@ STANDALONE=0
 	}
 	var outputChmodBuf bytes.Buffer
 	chmodCmd := exec.CommandContext(ctx, "sudo", "chmod", "755",
-        filepath.Join("scripts", "update_provider_defaultos.sh"),
-        filepath.Join("scripts", "create_vm.sh"),
-        filepath.Join("scripts", "show_host-status.sh"),
-		filepath.Join("scripts", "nio_configs.sh"),		
-    )
-	
+		filepath.Join("scripts", "update_provider_defaultos.sh"),
+		filepath.Join("scripts", "create_vm.sh"),
+		filepath.Join("scripts", "show_host-status.sh"),
+		filepath.Join("scripts", "nio_configs.sh"),
+	)
+
 	chmodCmd.Stdout = io.MultiWriter(os.Stdout, &outputChmodBuf)
 	chmodCmd.Stderr = io.MultiWriter(os.Stderr, &outputChmodBuf)
 
 	if err := chmodCmd.Run(); err != nil {
 		return "", fmt.Errorf("failed to chmod: %w", err)
 	}
-	
+
 	if err := sh.RunV(filepath.Join("scripts", "update_provider_defaultos.sh"), "microvisor"); err != nil {
 		return "", fmt.Errorf("failed to update provider default OS: %w", err)
 	}
