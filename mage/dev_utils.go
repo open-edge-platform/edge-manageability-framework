@@ -199,14 +199,14 @@ func (DevUtils) RegisterEnic() error {
 }
 
 // GetEnicSerialNumber retrieves the ENiC serial number.
-func (DevUtils) GetEnicSerialNumber() (string, error) {
+func (DevUtils) GetEnicSerialNumber() error {
 	ctx, cancel := context.WithTimeout(context.Background(), waitForReadyMin*time.Minute)
 	defer cancel()
 	counter := 0
 	var serialNumber string
 
+	fmt.Printf("Executing command to get ENiC serial number...\n")
 	fn := func() error {
-		fmt.Printf("Executing command to get ENiC serial number...\n")
 		cmd := fmt.Sprintf("kubectl exec -it -n %s %s -c edge-node -- bash -c 'dmidecode -s system-serial-number'", enicNs, enicPodName)
 		out, err := exec.Command("bash", "-c", cmd).Output()
 		if err != nil {
@@ -220,21 +220,22 @@ func (DevUtils) GetEnicSerialNumber() (string, error) {
 	}
 
 	if err := retry.UntilItSucceeds(ctx, fn, time.Duration(waitForNextSec)*time.Second); err != nil {
-		return "", fmt.Errorf("failed to get ENiC serial number after multiple attempts: %w", err)
+		return fmt.Errorf("failed to get ENiC serial number after multiple attempts: %w", err)
 	}
 
-	return serialNumber, nil
+	fmt.Println(serialNumber)
+	return nil
 }
 
 // GetEnicUUID retrieves the ENiC UUID.
-func (DevUtils) GetEnicUUID() (string, error) {
+func (DevUtils) GetEnicUUID() error {
 	ctx, cancel := context.WithTimeout(context.Background(), waitForReadyMin*time.Minute)
 	defer cancel()
 	counter := 0
 	var uuid string
 
+	fmt.Printf("Executing command to get ENiC serial number...\n")
 	fn := func() error {
-		fmt.Printf("Executing command to get ENiC serial number...\n")
 		cmd := fmt.Sprintf("kubectl exec -it -n %s %s -c edge-node -- bash -c 'dmidecode -s system-uuid'", enicNs, enicPodName)
 		out, err := exec.Command("bash", "-c", cmd).Output()
 		if err != nil {
@@ -248,10 +249,11 @@ func (DevUtils) GetEnicUUID() (string, error) {
 	}
 
 	if err := retry.UntilItSucceeds(ctx, fn, time.Duration(waitForNextSec)*time.Second); err != nil {
-		return "", fmt.Errorf("failed to get ENiC serial number after multiple attempts: %w", err)
+		return fmt.Errorf("failed to get ENiC serial number after multiple attempts: %w", err)
 	}
 
-	return uuid, nil
+	fmt.Println(uuid)
+	return nil
 }
 
 // WaitForEnic waits for the ENiC pod to be in a running state.
