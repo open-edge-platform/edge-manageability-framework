@@ -1090,16 +1090,49 @@ STANDALONE=0
 		}
 	}
 
-	if err := sh.RunV(filepath.Join("scripts", "update_provider_defaultos.sh"), "microvisor"); err != nil {
+	envVars := map[string]string{
+		"ONBOARDING_USERNAME":  data.OnboardingUsername,
+		"ONBOARDING_PASSWORD":  data.OnboardingPassword,
+		"PROJECT_NAME":         data.ProjectName,
+		"PROJECT_API_USER":     data.ProjectApiUser,
+		"PROJECT_API_PASSWORD": data.ProjectApiPassword,
+	}
+
+	for key, value := range envVars {
+		if err := os.Setenv(key, value); err != nil {
+			return "", fmt.Errorf("failed to set environment variable %s: %w", key, err)
+		}
+	}
+
+	envVarsString := ""
+	for key, value := range envVars {
+		envVarsString += fmt.Sprintf("%s=%s\n", key, value)
+	}
+
+	var outputBuf bytes.Buffer
+	cmd := exec.CommandContext(ctx, envVarsString, filepath.Join("scripts", "update_provider_defaultos.sh"), "microvisor")
+	cmd.Env = append(os.Environ(),
+		"ONBOARDING_USERNAME="+data.OnboardingUsername,
+		"ONBOARDING_PASSWORD="+data.OnboardingPassword,
+		"PROJECT_NAME="+data.ProjectName,
+		"PROJECT_API_USER="+data.ProjectApiUser,
+		"PROJECT_API_PASSWORD="+data.ProjectApiPassword,
+	)
+	cmd.Stdout = io.MultiWriter(os.Stdout, &outputBuf)
+	cmd.Stderr = io.MultiWriter(os.Stderr, &outputBuf)
+
+	if err := cmd.Run(); err != nil {
 		return "", fmt.Errorf("failed to update provider default OS: %w", err)
 	}
 
-	envVars := fmt.Sprintf("ONBOARDING_USERNAME=%s ONBOARDING_PASSWORD=%s PROJECT_NAME=%s PROJECT_API_USER=%s PROJECT_API_PASSWORD=%s",
-		data.OnboardingUsername, data.OnboardingPassword, data.ProjectName, data.ProjectApiUser, data.ProjectApiPassword)
-	fmt.Println(envVars)
-
-	var outputBuf bytes.Buffer
-	cmd := exec.CommandContext(ctx, "sudo", "-E", envVars, filepath.Join("scripts", "create_vm.sh"), "1", fmt.Sprintf("-%s", flow))
+	cmd = exec.CommandContext(ctx, "sudo", envVarsString, filepath.Join("scripts", "create_vm.sh"), "1", fmt.Sprintf("-%s", flow))
+	cmd.Env = append(os.Environ(),
+		"ONBOARDING_USERNAME="+data.OnboardingUsername,
+		"ONBOARDING_PASSWORD="+data.OnboardingPassword,
+		"PROJECT_NAME="+data.ProjectName,
+		"PROJECT_API_USER="+data.ProjectApiUser,
+		"PROJECT_API_PASSWORD="+data.ProjectApiPassword,
+	)
 	cmd.Stdout = io.MultiWriter(os.Stdout, &outputBuf)
 	cmd.Stderr = io.MultiWriter(os.Stderr, &outputBuf)
 
