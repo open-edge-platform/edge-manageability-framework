@@ -1,3 +1,4 @@
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) [![Virtual Integration](https://github.com/open-edge-platform/edge-manageability-framework/actions/workflows/virtual-integration.yml/badge.svg?branch=main)](https://github.com/open-edge-platform/edge-manageability-framework/actions/workflows/virtual-integration.yml?query=branch%3Amain)
 # Proposing Features and Changes to Edge Microvisor Toolkit
 
 ## Introduction
