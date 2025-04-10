@@ -1496,7 +1496,7 @@ func (d Deploy) orchLocal(targetEnv string) error {
 		if err != nil {
 			return fmt.Errorf("error retrieving the AWS account ID: %w", err)
 		}
-		cmd = cmd + " " + fmt.Sprintf("--set argo.aws.account=%s", strings.Trim(awsAccountID, "\n"))
+		cmd = cmd + " " + fmt.Sprintf("--set-string argo.aws.account=%s", strings.Trim(awsAccountID, "\n"))
 
 		// Get AWS region of this VM
 		az, err := script.Exec("curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone").String()

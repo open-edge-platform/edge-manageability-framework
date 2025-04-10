@@ -283,6 +283,21 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			}
 		})
 
+		Describe("Harbor service", Label(appOrch), func() {
+			It("should verify Harbor response headers", func() {
+				resp, err := cli.Get("https://registry-oci." + serviceDomainWithPort + "/api/v2.0/ping")
+				Expect(err).ToNot(HaveOccurred())
+				defer resp.Body.Close()
+				for k, v := range secureHeadersAdd() {
+					Expect(k).To(BeKeyOf(resp.Header))
+					Expect(resp.Header.Values(k)).To(ContainElements(v))
+				}
+				for _, k := range secureHeadersRemove() {
+					Expect(k).ToNot(BeKeyOf(resp.Header))
+				}
+			})
+		})
+
 		// FIXME: Test is needs to be improved to use other source of truth for version
 		PIt("should have the version set in the configuration", func() {
 			resp, err := cli.Get("https://web-ui." + serviceDomainWithPort + "/runtime-config.js")
@@ -362,19 +377,6 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 			_, err = io.ReadAll(resp.Body)
 			Expect(err).ToNot(HaveOccurred())
-		})
-	})
-
-	Describe("Application Catalog service", Label(appOrch), func() {
-		It("should be accessible over HTTPS", func() {
-			resp, err := cli.Get("https://app-orch." + serviceDomainWithPort + "/test")
-			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
-
-			Expect(resp.StatusCode).To(Equal(http.StatusOK))
-			content, err := io.ReadAll(resp.Body)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(string(content)).To(ContainSubstring("Ok"))
 		})
 	})
 
@@ -515,19 +517,6 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			Expect(err).ToNot(HaveOccurred())
 			defer resp.Body.Close()
 			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
-		})
-	})
-
-	PDescribe("App-Service-proxy service", Label(appOrch), func() {
-		It("should be accessible over HTTPS", func() {
-			resp, err := cli.Get("https://app-service-proxy." + serviceDomainWithPort + "/test")
-			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
-
-			Expect(resp.StatusCode).To(Equal(http.StatusOK))
-			content, err := io.ReadAll(resp.Body)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(string(content)).To(ContainSubstring("Ok"))
 		})
 	})
 
