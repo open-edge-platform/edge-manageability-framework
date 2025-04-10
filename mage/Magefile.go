@@ -1095,7 +1095,7 @@ STANDALONE=0
 	}
 
 	var outputBuf bytes.Buffer
-	cmd := exec.CommandContext(ctx, "sudo", "-E", envVars, filepath.Join("scripts", "create_vm.sh"), "1", fmt.Sprintf("-%s", flow))
+	cmd := exec.CommandContext(ctx, "sudo", "-E", filepath.Join("scripts", "create_vm.sh"), "1", fmt.Sprintf("-%s", flow))
 	cmd.Stdout = io.MultiWriter(os.Stdout, &outputBuf)
 	cmd.Stderr = io.MultiWriter(os.Stderr, &outputBuf)
 
