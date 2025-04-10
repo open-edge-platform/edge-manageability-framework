@@ -678,17 +678,6 @@ jobs:
         run: mage tenantUtils:createDefaultMtSetup
 
       #register and provision
-      - name: Test Edge Node onboarding
-        timeout-minutes: 20
-        if: |
-          needs.check-changed-files.outputs.onboarding == 'true' ||
-          needs.check-changed-files.outputs.on-prem == 'true' ||
-          needs.check-changed-files.outputs.orch == 'true' ||
-          needs.check-changed-files.outputs.ci == 'true'
-        run: mage test:onboarding
-        # cypress run register+provision
-        #mage deploy:VENWithFlow nio <sn>
-        # cypress run verify
 
       - name: UI E2E Infra Automatically Onboard and Provision
         uses: ./.github/actions/cypress
@@ -698,7 +687,7 @@ jobs:
           infra_provision_host: true
 
       - name: Start Ven
-        run: mage deploy:VENWithFlow nio SN123456
+        run: mage deploy:VENWithFlow nio ${{inputs.en_serial_number}}
 
       - name: UI E2E Infra Verify Host
         uses: ./.github/actions/cypress

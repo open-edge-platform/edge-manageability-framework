@@ -32,6 +32,10 @@ inputs:
     required: false
     description: "Run Admin tests"
     default: false
+  en_serial_number:
+    required: ${{ inputs.infra != '' || false }} # NOTE this is required if the
+    description: "Serial number of the EN"
+    default: "SN123456"
 runs:
   using: "composite"
   steps:
@@ -79,7 +83,7 @@ runs:
       run: |
         npx cypress run --e2e \
           -s cypress/e2e/infra/provision-hosts.cy.ts \
-          --env EN_SERIAL_NUMBER=SN123456
+          --env EN_SERIAL_NUMBER=${{ inputs.en_serial_number }}
 
     - name: Run Verify Host test
       id: verify_host
@@ -89,7 +93,7 @@ runs:
       run: |
         npx cypress run --e2e \
           -s cypress/e2e/infra/verify-hosts.cy.ts \
-          --env EN_SERIAL_NUMBER=SN123456
+          --env EN_SERIAL_NUMBER=${{ inputs.en_serial_number }}
 
     - name: Collect Edge Infra Manager logs
       if: ${{ always() && inputs.infra == 'true' }}
