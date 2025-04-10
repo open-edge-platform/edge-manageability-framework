@@ -42,19 +42,3 @@ securityContext:
   seccompProfile:
     type: RuntimeDefault
   runAsNonRoot: true
-
-controlPlane:
-  rke2:
-    namespace: "capr-system" # Target namespace for the provider
-    version: "v0.12.0"       # Version of the control plane provider
-    values:                  # Custom values to override in the provider's deployment
-      deployment:
-        containers:
-          - name: manager
-            args:
-              - "--diagnostics-address=:8080"
-              - "--insecure-diagnostics=true"
-            ports:
-              - containerPort: 8080
-                name: metrics
-                protocol: TCP

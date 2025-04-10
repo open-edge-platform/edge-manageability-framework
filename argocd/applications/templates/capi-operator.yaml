@@ -36,6 +36,21 @@ spec:
           {{- $baseConfig := .Files.Get $baseFile|fromYaml}}
           {{- $overwrite := (get .Values.postCustomTemplateOverwrite $appName ) | default dict }}
           {{- mergeOverwrite $baseConfig $customConfig $overwrite | toYaml | nindent 10 }}
+          controlPlane:
+            rke2:
+              namespace: "capr-system"
+              version: "v0.12.0"
+              values:
+                deployment:
+                  containers:
+                    - name: manager
+                      args:
+                        - "--diagnostics-address=:8080"
+                        - "--insecure-diagnostics=true"
+                      ports:
+                        - containerPort: 8080
+                          name: metrics
+                          protocol: TCP
   destination:
     namespace: {{$namespace}}
     server: {{ required "A valid targetServer entry required!" .Values.argo.targetServer }}
