@@ -32,7 +32,7 @@ runs:
       with:
         repository: open-edge-platform/orch-ui
         path: orch-ui
-        ref: tests/ITEP-23621-AO-E2E
+        ref: ITEP-23621-AO-E2E
         token: ${{ inputs.token }}
     - run: git log -1
       shell: bash
