@@ -40,7 +40,7 @@ const (
 	tplConnectionLostFiring               = `\*\[[0-9]+\] Firing\* \*Project:\* %s\\n\*Alert Name:\* %s`
 	receiverUpdateAppliedTimeout          = 2 * time.Minute
 	resourceUsageAlertFiringTimeout       = 4 * time.Minute
-	resourceUsageAlertNotificationTimeout = 4 * time.Minute
+	resourceUsageAlertNotificationTimeout = 8 * time.Minute
 	hostConnectionLostAlertFiringTimeout  = 8 * time.Minute
 	hostConnectionLostAlertAbsentTimeout  = 4 * time.Minute
 	alertSuppressionInMaintenanceTimeout  = 4 * time.Minute
@@ -330,7 +330,7 @@ var _ = Describe("Observability Alerts Test:", Ordered, Label(helpers.LabelAlert
 				)
 			})
 
-			PIt("verify that email notifications are being sent", func() {
+			It("verify that email notifications are being sent", func() {
 				Eventually(func() error {
 					messages, err := helpers.GetAlertReceiverMessages(cli, mailpitURL)
 					if err != nil {
