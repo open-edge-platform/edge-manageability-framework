@@ -23,11 +23,11 @@ inputs:
   infra_provision_hosts:
     require: false
     description: "Run Infra Provision Hosts tests"
-    default: false
+    default: true
   infra_verify_hosts:
     require: false
     description: "Run Infra Verify Hosts tests"
-    default: false
+    default: true
   admin:
     required: false
     description: "Run Admin tests"
