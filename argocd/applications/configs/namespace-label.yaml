@@ -5,7 +5,7 @@
 namespaces:
   - name: "orch-infra"
     labels:
-      istio-injection: disabled
+      istio-injection: enabled
   - name: "orch-iam"
     labels:
       istio-injection: enabled

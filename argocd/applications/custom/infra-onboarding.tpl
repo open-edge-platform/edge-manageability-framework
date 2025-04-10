@@ -181,8 +181,10 @@ onboarding-manager:
 
 amt:
   mps:
-    registry:
-      name: {{ .Values.argo.containerRegistryURL }}/one-intel-edge
+    image:
+      repository: oact-mps
+      registry: 
+        name: gar-registry.caas.intel.com/lp-iaas/
     traefikReverseProxy:
       host:
         grpc:
@@ -194,8 +196,10 @@ amt:
   {{- end }}
 
   rps:
-    registry:
-      name: {{ .Values.argo.containerRegistryURL }}/one-intel-edge
+    image:
+      repository: oact-rps
+      registry:
+        name: gar-registry.caas.intel.com/lp-iaas/
     traefikReverseProxy:
       host:
         grpc:
@@ -207,8 +211,10 @@ amt:
   {{- end }}
 
   mpsrouter:
-    registry:
-      name: {{ .Values.argo.containerRegistryURL }}/one-intel-edge
+    image:
+      repository: oact-mpsrouter
+      registry: 
+        name: gar-registry.caas.intel.com/lp-iaas/
     traefikReverseProxy:
       host:
         grpc:
