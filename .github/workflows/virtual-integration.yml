@@ -512,11 +512,9 @@ jobs:
           EDGE_MANAGEABILITY_FRAMEWORK_REV: ${{ env.GIT_HASH }}
         run: |
           mage devUtils:deployEnic 1 dev
-          mage devUtils:waitForEnic
-          mage devUtils:waitForEnicNodeAgent
 
-          UUID=$(kubectl exec -it -n enic enic-0 -c edge-node -- bash -c "dmidecode -s system-uuid")
-          SN=$(kubectl exec -it -n enic enic-0 -c edge-node -- bash -c "dmidecode -s system-serial-number")
+          UUID=$(mage devUtils:getEnicUUID)
+          SN=$(mage devUtils:getEnicSerialNumber)
           echo "EN_UUID=$UUID" >> "$GITHUB_ENV"
           echo "EN_SN=$SN" >> "$GITHUB_ENV"
 
@@ -528,6 +526,8 @@ jobs:
         if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' }}
         with:
           token: ${{ secrets.SYS_ORCH_GITHUB }}
+          en_serial_number: ${{ env.EN_SN }}
+          infra: "cypress/e2e/infra/locations.cy.ts,cypress/e2e/infra/provision-hosts.cy.ts,cypress/e2e/infra/verify-host.cy.ts"
 
       - name: "Test Observability Public Endpoints"
         env:

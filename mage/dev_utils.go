@@ -124,7 +124,7 @@ func isEnicArgoAppReady() (bool, error) {
 }
 
 // RegisterEnic Registers ENiC UUID with orchestrator
-func RegisterEnic() error {
+func (DevUtils) RegisterEnic() error {
 	fmt.Printf("Registering ENiC...\n")
 	var enicUUID uuid.UUID
 	var errUUID error
@@ -198,14 +198,67 @@ func RegisterEnic() error {
 	return nil
 }
 
+// GetEnicSerialNumber retrieves the ENiC serial number.
+func (DevUtils) GetEnicSerialNumber() (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), waitForReadyMin*time.Minute)
+	defer cancel()
+	counter := 0
+	var serialNumber string
+
+	fn := func() error {
+		fmt.Printf("Executing command to get ENiC serial number...\n")
+		cmd := fmt.Sprintf("kubectl exec -it -n %s %s -c edge-node -- bash -c 'dmidecode -s system-serial-number'", enicNs, enicPodName)
+		out, err := exec.Command("bash", "-c", cmd).Output()
+		if err != nil {
+			fmt.Printf("\rFailed to get ENiC serial number: attempt %d (%vs)", counter, counter*waitForNextSec)
+			counter++
+			return fmt.Errorf("get ENiC serial number: %w", err)
+		}
+		serialNumber = strings.TrimSpace(string(out))
+		fmt.Printf("\nSuccessfully got ENiC serial number: %s (%vs)\n", serialNumber, counter*waitForNextSec)
+		return nil
+	}
+
+	if err := retry.UntilItSucceeds(ctx, fn, time.Duration(waitForNextSec)*time.Second); err != nil {
+		return "", fmt.Errorf("failed to get ENiC serial number after multiple attempts: %w", err)
+	}
+
+	return serialNumber, nil
+}
+
+// GetEnicUUID retrieves the ENiC UUID.
+func (DevUtils) GetEnicUUID() (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), waitForReadyMin*time.Minute)
+	defer cancel()
+	counter := 0
+	var uuid string
+
+	fn := func() error {
+		fmt.Printf("Executing command to get ENiC serial number...\n")
+		cmd := fmt.Sprintf("kubectl exec -it -n %s %s -c edge-node -- bash -c 'dmidecode -s system-uuid'", enicNs, enicPodName)
+		out, err := exec.Command("bash", "-c", cmd).Output()
+		if err != nil {
+			fmt.Printf("\rFailed to get ENiC serial number: attempt %d (%vs)", counter, counter*waitForNextSec)
+			counter++
+			return fmt.Errorf("get ENiC serial number: %w", err)
+		}
+		uuid = strings.TrimSpace(string(out))
+		fmt.Printf("\nSuccessfully got ENiC serial number: %s (%vs)\n", uuid, counter*waitForNextSec)
+		return nil
+	}
+
+	if err := retry.UntilItSucceeds(ctx, fn, time.Duration(waitForNextSec)*time.Second); err != nil {
+		return "", fmt.Errorf("failed to get ENiC serial number after multiple attempts: %w", err)
+	}
+
+	return uuid, nil
+}
+
+// WaitForEnic waits for the ENiC pod to be in a running state.
 func (DevUtils) WaitForEnic() error {
 	ctx, cancel := context.WithTimeout(context.Background(), waitForReadyMin*time.Minute)
 	defer cancel()
 	counter := 0
-
-	if err := retry.UntilItSucceeds(ctx, RegisterEnic, time.Duration(waitForNextSec)*time.Second); err != nil {
-		return fmt.Errorf("enic registration error: %w 😲", err)
-	}
 
 	for {
 		ready, err := isEnicArgoAppReady()
