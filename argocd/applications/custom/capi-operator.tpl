@@ -45,15 +45,16 @@ securityContext:
 
 controlPlane:
   rke2:
-    manifestPatches:
-      - op: replace
-        path: /spec/template/spec/containers/0/args
-        value:
-          - '--diagnostics-address=:8080'
-          - '--insecure-diagnostics=true'
-      - op: replace
-        path: /spec/template/spec/containers/0/ports
-        value:
-          - containerPort: 8080
-            name: metrics
-            protocol: TCP
+    namespace: "capr-system" # Target namespace for the provider
+    version: "v0.12.0"       # Version of the control plane provider
+    values:                  # Custom values to override in the provider's deployment
+      deployment:
+        containers:
+          - name: manager
+            args:
+              - "--diagnostics-address=:8080"
+              - "--insecure-diagnostics=true"
+            ports:
+              - containerPort: 8080
+                name: metrics
+                protocol: TCP
