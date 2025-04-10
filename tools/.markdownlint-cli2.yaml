@@ -5,6 +5,10 @@
 # The rule definition can be found
 # https://github.com/updownpress/markdown-lint/tree/master/rules
 
+---
+# SPDX-FileCopyrightText: (C) 2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 default: true
 config:
   MD004:
@@ -31,3 +35,7 @@ config:
 
 ignores:
   - "**/.terraform/**"
+  - ".github/*"
+  - SECURITY.md
+  - CODE_OF_CONDUCT.md
+  - CONTRIBUTING.md

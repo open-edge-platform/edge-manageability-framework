@@ -1,12 +1,20 @@
 # E2E Cloud Installer Testing
 
-This document describes the structure, intent, how to run, and how to extend end-to-end tests for the Orchestrator cloud installer.
+This document describes the structure, intent, how to run, and how to extend
+end-to-end tests for the Orchestrator cloud installer.
 
 ## Scope
 
-The installer automation test logic implementation is expected to be specific for the Orchestrator version in the current branch (main, release-*, etc). The only exception on this limitation is this current 24.05.1 preerelease version will of necessity support 24.03.2 installation to support upgrade test automation from the released software.
+The installer automation test logic implementation is expected to be specific
+for the Orchestrator version in the current branch (main, release-*, etc). The
+only exception on this limitation is this current 24.05.1 preerelease version
+will of necessity support 24.03.2 installation to support upgrade test
+automation from the released software.
 
-The test logic is expected to be updated for each new Orchestrator version and the pipeline exceution layer should handle pulling and calling the correct install AutoInstall implemenation for each version that is part of a test scenario.
+The test logic is expected to be updated for each new Orchestrator version and
+the pipeline exceution layer should handle pulling and calling the correct
+install AutoInstall implemenation for each version that is part of a test
+scenario.
 
 ## Usage
 
@@ -50,24 +58,33 @@ optional arguments:
 
 ## Scenarios
 
-Sample pipeline implementation is described by the `jenkins-*.sh` files. These are not intended to be run directly, but to be used as a reference for creating a Jenkins pipeline. They can be run in a developer environment for test purposes.
+Sample pipeline implementation is described by the `jenkins-*.sh` files. These
+are not intended to be run directly, but to be used as a reference for creating
+a Jenkins pipeline. They can be run in a developer environment for test
+purposes.
 
-### Clean 24.05 Install and verify functionality
+### Clean 24.05-1 Install and verify functionality
 
 1. Run the install operation:
 
     ```sh
-    python $test_path/auto_install.py --mode uninstall --product full
+       python $test_path/auto_install.py --mode uninstall --product full
     ```
 
-    * *This script blocks until the provisioning phase is complete and the `argocd` installation phase has started.*
-    * *Returns 0 if the provisioning phase is successful, and a non-zero value if it fails.*
+   - *This script blocks until the provisioning phase is complete and
+      the `argocd` installation phase has started.*
+   - *Returns 0 if the provisioning phase is successful, and a non-zero value
+      if it fails.*
 
-2. Wait for `argocd` installation to complete. This is best done using the standard CI wait operation. You will need to ensure the tunnel to access the target cluster management is up. That process is shown in `jenkins-await-install.sh` which use installer saved state data to set up the tunnel and call:
+2. Wait for `argocd` installation to complete. This is best done using the
+   standard CI wait operation. You will need to ensure the tunnel to access the
+   target cluster management is up. That process is shown
+   in `jenkins-await-install.sh` which use installer saved state data to set up
+   the tunnel and call:
 
-        ```sh
-        mage -v deploy:waitUntilComplete
-        ```
+   ```sh
+      mage -v deploy:waitUntilComplete
+   ```
 
 3. Perform acceptance/install test cases
 
@@ -76,34 +93,47 @@ Sample pipeline implementation is described by the `jenkins-*.sh` files. These a
 1. Run the uninstall operation:
 
     ```sh
-    python $test_path/auto_install.py --mode uninstall --product full
+       python $test_path/auto_install.py --mode uninstall --product full
     ```
 
-    * *This script blocks while AWS resources are deprovisioned.*
-    * *Returns 0 if the provisioning phase is successful, and a non-zero value if it fails.*
+    - *This script blocks while AWS resources are deprovisioned.*
+    - *Returns 0 if the provisioning phase is successful, and a non-zero value
+       if it fails.*
 
 2. Perform acceptance/uninstall test cases
 
 ### Upgrade Orchestrator 24.03.2 to 24.05 and verify functionality
 
-TBD: Currently not available - Requires "legacy" version of auto_install.py that supports 24.03.2 commandline options.
+TBD: Currently not available - Requires "legacy" version of auto_install.py that
+supports 24.03.2 commandline options.
 
-In general, the Installer automation logic is expected to be on the branch that implements a specific release, and the pipeline execution layer should handle pulling and calling the correct install AutoInstall implementation for each version that is part of a test scenario.
+In general, the Installer automation logic is expected to be on the branch that
+implements a specific release, and the pipeline execution layer should handle
+pulling and calling the correct install AutoInstall implementation for each
+version that is part of a test scenario.
 
-However, the automation logic was created after the release branch for 24.03.2 was branched and frozen, so the automation logic for that version will be in a separate `e2e-tests/installer/legacy` folder in the `main` and `release-24.05.1` branches.
+However, the automation logic was created after the release branch for 24.03.2
+was branched and frozen, so the automation logic for that version will be in a
+separate `e2e-tests/installer/legacy` folder in the `main` and `release-24.05.1`
+branches.
 
-The `legacy` folder will be removed from `main` when `release-24.05.1` is released. `release-24.08.0` is not expected to have a `legacy` folder.
+The `legacy` folder will be removed from `main` when `release-24.05.1` is
+released. `release-24.08.0` is not expected to have a `legacy` folder.
 
 ### Upgrade Orchestrator and Test EN from 24.03.2 to 24.05.1 and verify functionality
 
-TBD: Currently not available. EN upgrade implementation is not yet complete. Installer workflow changes are not planned at this time, but this workflow needs to be validated.
+TBD: Currently not available. EN upgrade implementation is not yet complete.
+Installer workflow changes are not planned at this time, but this workflow needs
+to be validated.
 
-## Scenarios
+## Scenarios-1
 
-Sample pipeline implementation is described by the `jenkins-*.sh` files. These are not intended to be run directly, but to be used as a reference for creating a Jenkins pipeline. They can be run in
+Sample pipeline implementation is described by the `jenkins-*.sh` files. These
+are not intended to be run directly, but to be used as a reference for creating
+a Jenkins pipeline. They can be run in
 a developer environment for test purposes.
 
-### Clean 24.05 Install and verify functionality
+### Clean 24.05-0 Install and verify functionality
 
 1. Run the install operation:
 
@@ -111,9 +141,15 @@ a developer environment for test purposes.
     python $test_path/auto_install.py --mode uninstall --product full
     ```
 
-    This blocks until the provisioning phase is complete and the `argocd` installation phase has started. The script will return 0 if the provisioning phase is successful, and a non-zero value if it fails.
+   This blocks until the provisioning phase is complete and the `argocd`
+   installation phase has started. The script will return 0 if the provisioning
+   phase is successful, and a non-zero value if it fails.
 
-2. Wait for `argocd` installation to complete. This is best done using the standard CI wait operation. You will need to ensure the tunnel to access the target cluster management is up. That process is shown in `jenkins-await-install.sh` which use installer saved state data to set up the tunnel and call:
+2. Wait for `argocd` installation to complete. This is best done using the
+   standard CI wait operation. You will need to ensure the tunnel to access the
+   target cluster management is up. That process is shown
+   in `jenkins-await-install.sh` which use installer saved state data to set up
+   the tunnel and call:
 
     ```sh
     mage -v deploy:waitUntilComplete
@@ -121,7 +157,7 @@ a developer environment for test purposes.
 
 3. Perform acceptance/install test cases
 
-### Uninstall 24.05 and verify removal
+### Uninstall 24.05-0 and verify removal
 
 1. Run the uninstall operation:
 
@@ -129,18 +165,29 @@ a developer environment for test purposes.
     python $test_path/auto_install.py --mode uninstall --product full
     ```
 
-    This blocks until the AWS resources are deprovisioned. The script will return 0 if the provisioning phase is successful, and a non-zero value if it fails.
+   This blocks until the AWS resources are deprovisioned. The script will return
+   0 if the provisioning phase is successful, and a non-zero value if it fails.
 
 2. Perform acceptance/uninstall test cases
 
-### Upgrade Orchestrator 24.03.2 to 24.05 and verify functionality
+### Upgrade Orchestrator 24.03.2-0 to 24.05-0 and verify functionality
 
-TBD: Currently not available - Requires "legacy" version of auto_install.py that supports 24.03.2 commandline options.
+TBD: Currently not available - Requires "legacy" version of auto_install.py that
+supports 24.03.2 commandline options.
 
-In general, the Installer automation logic is expected to be on the branch that implements a specific release, and the pipeline execution layer should handle pulling and calling the correct install AutoInstall implementation for each version that is part of a test scenario.
+In general, the Installer automation logic is expected to be on the branch that
+implements a specific release, and the pipeline execution layer should handle
+pulling and calling the correct install AutoInstall implementation for each
+version that is part of a test scenario.
 
-However, the automation logic was created after the release branch for 24.03.2 was branched and frozen, so the automation logic for that version will be in a separate `e2e-tests/installer/legacy` folder in the `main` and `release-24.05.1` branches. It will be removed from `main` when `release-24.05.1` is released. `release-24.08.0` is not expected to have a `legacy` folder.
+However, the automation logic was created after the release branch for 24.03.2
+was branched and frozen, so the automation logic for that version will be in a
+separate `e2e-tests/installer/legacy` folder in the `main` and `release-24.05.1`
+branches. It will be removed from `main` when `release-24.05.1` is
+released. `release-24.08.0` is not expected to have a `legacy` folder.
 
-### Upgrade Orchestrator and Test EN from 24.03.2 to 24.05.1 and verify functionality
+### Upgrade Orchestrator and Test EN from 24.03.2-0 to 24.05.1-0 and verify functionality
 
-TBD: Currently not available. EN upgrade implementation is not yet complete. Installer workflow changes are not planned at this time, but this workflow needs to be validated.
+TBD: Currently not available. EN upgrade implementation is not yet complete.
+Installer workflow changes are not planned at this time, but this workflow needs
+to be validated.

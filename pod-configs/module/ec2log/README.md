@@ -1,18 +1,25 @@
 # Save EKS node logs on S3 when an node is terminated
 
-This module is an option in the cluster module if the variable *enable_ec2log* is set. It push the logs in the EKS node EC2 instance to an S3 before the instance is terminated for troubleshooting purposes.
+This module is an option in the cluster module if the variable *enable_ec2log*
+is set. It push the logs in the EKS node EC2 instance to an S3 before the
+instance is terminated for troubleshooting purposes.
 
 ## Backgroupd
 
-Sometimes when an EKS cluster experiences critical issues, it terminates the nodes in trouble and restarts new ones. The logs in the terminated nodes will be removed as the result and will not been available for troubleshooting. We need a way to keep the logs.
+Sometimes when an EKS cluster experiences critical issues, it terminates the
+nodes in trouble and restarts new ones. The logs in the terminated nodes will be
+removed as the result and will not been available for troubleshooting. We need a
+way to keep the logs.
 
 ## How it works
 
-The following main AWS resources are created for each cluster and involved in the procedure:
+The following main AWS resources are created for each cluster and involved in
+the procedure:
 
-- An Auto Scaling Group (ASG) terminating hook to trigger the Lambda function. 
+- An Auto Scaling Group (ASG) terminating hook to trigger the Lambda function.
 
-- A Lambda function which responds the terminating event. It passes the parameters and executes the SSM document.
+- A Lambda function which responds the terminating event. It passes the
+  parameters and executes the SSM document.
 
 - An SSM document which uploads the logs to the S3 bucket.
 
@@ -34,11 +41,13 @@ The following main AWS resources are created for each cluster and involved in th
 
 - Output of *top* command.
 
-Other logs can be added to the upload list by setting the variables when calling the module.
+Other logs can be added to the upload list by setting the variables when calling
+the module.
 
 ## Variables
 
-Set the following variables in the cluster variable file to enable collecting logs and customize the logs.
+Set the following variables in the cluster variable file to enable collecting
+logs and customize the logs.
 
 - enable_ec2log: Set true to enable collecting logs.
 
@@ -48,4 +57,5 @@ Set the following variables in the cluster variable file to enable collecting lo
 
 - ec2log_s3_expire: The expiration in days for the uploaded logs.
 
-- ec2log_cw_expire: The expiration in days for the CloudWatch log group for the Lambda function.
+- ec2log_cw_expire: The expiration in days for the CloudWatch log group for the
+  Lambda function.
