@@ -1090,18 +1090,44 @@ STANDALONE=0
 		}
 	}
 
-	if err := sh.RunV(filepath.Join("scripts", "update_provider_defaultos.sh"), "microvisor"); err != nil {
+	envVars := map[string]string{
+		"ONBOARDING_USERNAME":  data.OnboardingUsername,
+		"ONBOARDING_PASSWORD":  data.OnboardingPassword,
+		"PROJECT_NAME":         data.ProjectName,
+		"PROJECT_API_USER":     data.ProjectApiUser,
+		"PROJECT_API_PASSWORD": data.ProjectApiPassword,
+	}
+
+	for key, value := range envVars {
+		if err := os.Setenv(key, value); err != nil {
+			return "", fmt.Errorf("failed to set environment variable %s: %w", key, err)
+		}
+	}
+
+	var outputBuf bytes.Buffer
+	cmd := exec.CommandContext(ctx, filepath.Join("scripts", "update_provider_defaultos.sh"), "microvisor")
+	cmd.Env = append(os.Environ(),
+		"ONBOARDING_USERNAME="+data.OnboardingUsername,
+		"ONBOARDING_PASSWORD="+data.OnboardingPassword,
+		"PROJECT_NAME="+data.ProjectName,
+		"PROJECT_API_USER="+data.ProjectApiUser,
+		"PROJECT_API_PASSWORD="+data.ProjectApiPassword,
+	)
+	cmd.Stdout = io.MultiWriter(os.Stdout, &outputBuf)
+	cmd.Stderr = io.MultiWriter(os.Stderr, &outputBuf)
+
+	if err := cmd.Run(); err != nil {
 		return "", fmt.Errorf("failed to update provider default OS: %w", err)
 	}
 
-	os.Setenv("ONBOARDING_USERNAME", data.OnboardingUsername)
-	os.Setenv("ONBOARDING_PASSWORD", data.OnboardingPassword)
-	os.Setenv("PROJECT_NAME", data.ProjectName)
-	os.Setenv("PROJECT_API_USER", data.ProjectApiUser)
-	os.Setenv("PROJECT_API_PASSWORD", data.ProjectApiPassword)
-
-	var outputBuf bytes.Buffer
-	cmd := exec.CommandContext(ctx, "sudo", "-E", filepath.Join("scripts", "create_vm.sh"), "1", fmt.Sprintf("-%s", flow))
+	cmd = exec.CommandContext(ctx, "sudo", filepath.Join("scripts", "create_vm.sh"), "1", fmt.Sprintf("-%s", flow))
+	cmd.Env = append(os.Environ(),
+		"ONBOARDING_USERNAME="+data.OnboardingUsername,
+		"ONBOARDING_PASSWORD="+data.OnboardingPassword,
+		"PROJECT_NAME="+data.ProjectName,
+		"PROJECT_API_USER="+data.ProjectApiUser,
+		"PROJECT_API_PASSWORD="+data.ProjectApiPassword,
+	)
 	cmd.Stdout = io.MultiWriter(os.Stdout, &outputBuf)
 	cmd.Stderr = io.MultiWriter(os.Stderr, &outputBuf)
 
