@@ -10,12 +10,12 @@ if [ ! -f .tool-versions ]; then
 fi
 
 cat .tool-versions | grep -v '#' | awk '{print $1}' | while read -r plugin; do
-  ret=$(asdf plugin-list | grep $plugin)
+  ret=$(asdf plugin list | grep $plugin)
   if [ $? -eq 0 ]; then
     echo "$plugin is already installed. Skipping"
   else
     echo "Installing $plugin"
-    asdf plugin-add $plugin
+    asdf plugin add $plugin
     ex=$?
     if [ $ex -eq 2 ] || [ $ex -eq 0 ]; then
       echo "Successfully installed $plugin"
