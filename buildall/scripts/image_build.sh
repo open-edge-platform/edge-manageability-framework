@@ -8,11 +8,15 @@
 
 set -eu -o pipefail
 
-if [[ $# != 1 ]]; then
-  echo "Usage: $0 <repo_path>"
+if [[ $# != 2 ]]; then
+  echo "Usage: $0 <repo_path> <log_file>"
 fi
 
 REPO=$1
+
+# touch and find the full path to the logfile
+touch "$2"
+LOGFILE=$(realpath "$2")
 
 # bring in env vars
 source env.sh
@@ -45,7 +49,7 @@ pushd "${REPO_PATH}"
       target='docker-build'
     fi
 
-    echo "*** Building docker image for tag: '${tag}' with target ${target} ***"
+    echo "*** Starting docker build in: '${REPO}', tag: '${tag}', target: '${target}' ***"
 
     git switch --detach "${tag}"
 
@@ -53,13 +57,14 @@ pushd "${REPO_PATH}"
     # regex matches all the end-of-string numbers/dots
     if [[ "${tag}" =~ ([0-9.]+)$ ]]
     then
-      echo "Bare Version: ${BASH_REMATCH[1]}"
       export DOCKER_VERSION="${BASH_REMATCH[1]}"
     else
       echo "Invalid tag format '${tag}'"
       exit 1
     fi
 
-    make "${target}"
+    echo make "${target}" >> "${LOGFILE}" 2>&1
+
+    echo "*** Finished docker build in repo: '${REPO}', tag: '${tag}', target: '${target}' ***"
   done
 popd

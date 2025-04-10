@@ -6,7 +6,7 @@
 # SPDX-FileCopyrightText: (C) 2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-set -eu -o pipefail
+set -xeu -o pipefail
 
 if [[ $# != 1 ]]; then
   echo "Usage: $0 <repo>"

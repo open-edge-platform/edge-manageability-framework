@@ -150,6 +150,9 @@ system, they can all be run in parallel across all repos at the same time.
 Within each repo the process is serialized as only a single tag can be checked
 out at a time.
 
+Building additional times will leverage both the ability of make to keep track
+of progress (via files in scratch), and the docker build cache.
+
 ## Todo
 
 - Add required `make *-list` targets to code repos that build artifacts

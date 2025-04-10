@@ -1,5 +1,6 @@
+app-orch-catalog
+app-orch-deployment
 infra-charts
-infra-core
 infra-managers
 infra-external
 infra-onboarding

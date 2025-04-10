@@ -86,16 +86,18 @@ $(REPO_DIR)/%: | $(REPO_LIST)
 	git clone https://github.com/$(GITHUB_ORG)/$*.git $(REPO_DIR)/$*
 
 checkout-repos: $(REPOS) | $(REPO_LIST) ## checkout all repos
-	echo "All checked out"
+	@echo "All checked out"
 
 GIT_BRANCH ?= buildall
 branch-checkout: checkout-repos ## refresh and checkout all repos with a specific branch
 	for repo in $(REPOS); do \
 		pushd $$repo ;\
-		git fetch ; git checkout $(GIT_BRANCH) ; git pull --ff-only ;\
+		git checkout $(GIT_BRANCH) ;\
 	  popd ;\
 	done
 
+#	git fetch ; git checkout $(GIT_BRANCH) ; git pull --ff-only ;\
+	#
 # Check if there are the right make targets needed in the repo
 MAKEFILE_CHECKS := $(addprefix $(SCRATCH_DIR)/make_check_, $(shell tr '\n' ' ' < $(REPO_LIST)))
 check-makefiles: $(REPOS) | $(MAKEFILE_CHECKS)
@@ -152,7 +154,7 @@ IMAGE_BUILDS := $(addprefix $(SCRATCH_DIR)/ibuild_, $(shell tr '\n' ' ' < $(REPO
 image-build: $(IMAGE_BUILDS) ## build all container images
 
 $(SCRATCH_DIR)/ibuild_%:
-	$(SCRIPTS_DIR)/image_build.sh $* |tee $@
+	$(SCRIPTS_DIR)/image_build.sh $* $@
 
 clean-image: ## clean up docker images to rebuild
 	rm -rf $(SCRATCH_DIR)/ibuild_*

@@ -19,24 +19,27 @@ def match_charts(chart_mf, chart_to_repo, artifacts):
     """match up charts in manifest with where they are built in repos"""
 
     for chart, repo in chart_to_repo.items():
-        if chart in chart_mf["components"]:
 
-            repo_chart_data = artifacts[repo]["charts"][chart]
+        # most component names == chart name, but not all (web-ui and orch-ui)
+        for _, cdata in chart_mf["components"].items():
+            if chart == cdata["chart"]:
 
-            manifest_chart_data = chart_mf["components"][chart]
+                repo_chart_data = artifacts[repo]["charts"][chart]
 
-            chart_tag_to_build = (
-                repo_chart_data["gitTagPrefix"] + manifest_chart_data["version"]
-            )
+                manifest_chart_data = cdata
 
-            if "outDir" in repo_chart_data:
-                chart_tag_to_build += "|" + repo_chart_data["outDir"]
+                chart_tag_to_build = (
+                    repo_chart_data["gitTagPrefix"] + manifest_chart_data["version"]
+                )
 
-            if repo in repo_tags_to_build:
-                repo_tags_to_build[repo]["charts"].append(chart_tag_to_build)
-            else:
-                repo_tags_to_build[repo] = {"charts": [], "images": []}
-                repo_tags_to_build[repo]["charts"].append(chart_tag_to_build)
+                if "outDir" in repo_chart_data:
+                    chart_tag_to_build += "|" + repo_chart_data["outDir"]
+
+                if repo in repo_tags_to_build:
+                    repo_tags_to_build[repo]["charts"].append(chart_tag_to_build)
+                else:
+                    repo_tags_to_build[repo] = {"charts": [], "images": []}
+                    repo_tags_to_build[repo]["charts"].append(chart_tag_to_build)
 
 
 if __name__ == "__main__":
