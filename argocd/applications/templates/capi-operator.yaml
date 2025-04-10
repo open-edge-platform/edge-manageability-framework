@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-{{- $appName        := "capi-operator" }}
-{{- $namespace      := "capi-operator-system" }}
-{{- $syncWave       := "1000" }}
+{{- $appName := "capi-operator" }}
+{{- $namespace := "capi-operator-system" }}
+{{- $syncWave := "1000" }}
 ---
 {{- if (index .Values.argo.enabled $appName) }}
 apiVersion: argoproj.io/v1alpha1
@@ -30,7 +30,9 @@ spec:
           {{- $baseFile := printf "configs/%s.yaml" $appName }}
           {{- $baseConfig := .Files.Get $baseFile|fromYaml}}
           {{- $overwrite := (get .Values.postCustomTemplateOverwrite $appName ) | default dict }}
-          {{- mergeOverwrite $baseConfig $customConfig $overwrite | toYaml | nindent 10 }}
+          {{- $customValuesFile := printf "custom/%s-values.tpl" $appName }}
+          {{- $customValues := tpl (.Files.Get $customValuesFile) . | fromYaml }}
+          {{- mergeOverwrite $baseConfig $customConfig $customValues $overwrite | toYaml | nindent 10 }}
   destination:
     namespace: {{$namespace}}
     server: {{ required "A valid targetServer entry required!" .Values.argo.targetServer }}
@@ -49,22 +51,4 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ApplyOutOfSyncOnly=true
-  patches:
-    - target:
-        kind: Deployment
-        name: rke2-control-plane-controller-manager
-        namespace: capr-system
-      patch: |
-        spec:
-          template:
-            spec:
-              containers:
-                - name: manager
-                  args:
-                    - '--diagnostics-address=:8080'
-                    - '--insecure-diagnostics=true'
-                  ports:
-                    - containerPort: 8080
-                      name: metrics
-                      protocol: TCP
 {{- end }}
