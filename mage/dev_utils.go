@@ -134,11 +134,11 @@ func RegisterEnic() error {
 	counter := 0
 	fn := func() error {
 		out, err := exec.Command("bash", "-c", cmd).Output()
-
-		enicUUID, errUUID := uuid.Parse(string(out))
-
+		outParsed := strings.Trim(string(out), "\n")
+		enicUUID, errUUID := uuid.Parse(outParsed)
+		fmt.Printf("\nENiC UUID output: %s from output (%s)\n", enicUUID, outParsed)
 		if err != nil || errUUID != nil {
-			fmt.Printf("\rENiC UUID: %s (%vs)", enicUUID, counter*waitForNextSec)
+			fmt.Printf("\rENiC UUID is not ready: %s (%vs)", enicUUID, counter*waitForNextSec)
 			counter++
 			return fmt.Errorf("enic UUID is not ready")
 		} else {
