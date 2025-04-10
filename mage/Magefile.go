@@ -1086,9 +1086,15 @@ STANDALONE=0
 			continue
 		}
 	}
+	var outputChmodBuf bytes.Buffer
+	chmodCmd := exec.CommandContext(ctx, "sudo", "chmod", "755", filepath.Join("scripts", "*.sh"))
+	chmodCmd.Stdout = io.MultiWriter(os.Stdout, &outputChmodBuf)
+	chmodCmd.Stderr = io.MultiWriter(os.Stderr, &outputChmodBuf)
 
-	chmodCmd := exec.CommandContext(ctx, "sudo", "chmod", "755",filepath.Join("scripts", "*.sh"))
-
+	if err := chmodCmd.Run(); err != nil {
+		return "", fmt.Errorf("failed to chmod: %w", err)
+	}
+	
 	if err := sh.RunV(filepath.Join("scripts", "update_provider_defaultos.sh"), "microvisor"); err != nil {
 		return "", fmt.Errorf("failed to update provider default OS: %w", err)
 	}
