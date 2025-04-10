@@ -193,7 +193,7 @@ func RegisterEnic() error {
 		return fmt.Errorf("error registering ENiC: %w", err)
 	}
 
-	fmt.Printf("Registed ENiC ...\n")
+	fmt.Printf("Registered ENiC ...\n")
 	return nil
 }
 
