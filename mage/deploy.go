@@ -1210,7 +1210,7 @@ func (Deploy) updateDeployRepo(targetEnv, gitRepoPath, repoName, localClonePath 
 	}
 
 	// Copy files and directories to the newly cloned deployRepoPath
-	filesToCopy := []string{"VERSION", "argocd", "argocd-internal", "orch-configs/profiles"}
+	filesToCopy := []string{"VERSION", "argocd/", "argocd-internal/", "orch-configs/profiles/"}
 	filesToCopy = append(filesToCopy, fmt.Sprintf("orch-configs/clusters/%s.yaml", targetEnv))
 
 	for _, file := range filesToCopy {
@@ -1226,8 +1226,15 @@ func (Deploy) updateDeployRepo(targetEnv, gitRepoPath, repoName, localClonePath 
 			return fmt.Errorf("error creating directory %s: %w", filepath.Dir(dst), err)
 		}
 
+		// Coder environments are silently ignoring the copy overwrite of gitea repo contents.
+		// Forcing the delete and re-copy to get this update to work properly in Coder environments.
+		cmd := fmt.Sprintf("rm -rf %s", dst)
+		if _, err := script.Exec(cmd).Stdout(); err != nil {
+			return fmt.Errorf("error deleting %s: %w", dst, err)
+		}
+
 		// Copy the file or directory
-		cmd := fmt.Sprintf("cp -r %s %s", src, dst)
+		cmd = fmt.Sprintf("cp -rf %s %s", src, dst)
 		if _, err := script.Exec(cmd).Stdout(); err != nil {
 			return fmt.Errorf("error copying %s to %s: %w", src, dst, err)
 		}
