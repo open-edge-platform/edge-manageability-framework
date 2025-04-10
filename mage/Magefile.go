@@ -1133,7 +1133,7 @@ STANDALONE=0
 		return "", fmt.Errorf("failed to update provider default OS: %w", err)
 	}
 
-	cmd = exec.CommandContext(ctx, "sudo", filepath.Join("scripts", "create_vm.sh"), "1", fmt.Sprintf("-%s", flow))
+	cmd = exec.CommandContext(ctx, "sudo", "-E", filepath.Join("scripts", "create_vm.sh"), "1", fmt.Sprintf("-%s", flow))
 	cmd.Env = append(os.Environ(),
 		"CLUSTER="+data.ServiceDomain,
 		"ONBOARDING_USERNAME="+data.OnboardingUsername,
