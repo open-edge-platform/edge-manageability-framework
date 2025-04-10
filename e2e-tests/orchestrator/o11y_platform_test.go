@@ -373,7 +373,7 @@ var _ = Describe("Orchestrator Observability Test:", Ordered, Label(orchObs), fu
 
 		It("Loki query api should be working correctly", func() {
 			query := "{app=\"validation\"}"
-			logs, err := helpers.GetLogs(cli, logsAddr, query, orchSystem)
+			logs, err := helpers.GetLogs(cli, logsAddr, query, since1h, orchSystem)
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(logs.Data.Result).ToNot(BeEmpty())
@@ -382,7 +382,7 @@ var _ = Describe("Orchestrator Observability Test:", Ordered, Label(orchObs), fu
 
 		It("Audit logs must be present in orchestrator", func() {
 			query := "{k8s_namespace_name=~\".+\"} |~ \"\\\"component\\\":\\\"Audit\\\"\" | json"
-			logs, err := helpers.GetLogs(cli, logsAddr, query, orchSystem)
+			logs, err := helpers.GetLogs(cli, logsAddr, query, since1h, orchSystem)
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(logs.Data.Result).ToNot(BeEmpty())
@@ -393,7 +393,7 @@ var _ = Describe("Orchestrator Observability Test:", Ordered, Label(orchObs), fu
 				logsNotFound := make(map[string]struct{})
 				for _, name := range logsServiceNames {
 					query := fmt.Sprintf("{service_name=~\"%v\"}", name)
-					logs, err := helpers.GetLogs(cli, logsAddr, query, orchSystem)
+					logs, err := helpers.GetLogs(cli, logsAddr, query, since1h, orchSystem)
 					if err != nil {
 						return logsNotFound, err
 					}
