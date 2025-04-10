@@ -1091,6 +1091,7 @@ STANDALONE=0
 	}
 
 	envVars := map[string]string{
+		"CLUSTER":              data.ServiceDomain,
 		"ONBOARDING_USERNAME":  data.OnboardingUsername,
 		"ONBOARDING_PASSWORD":  data.OnboardingPassword,
 		"PROJECT_NAME":         data.ProjectName,
@@ -1107,6 +1108,7 @@ STANDALONE=0
 	var outputBuf bytes.Buffer
 	cmd := exec.CommandContext(ctx, filepath.Join("scripts", "update_provider_defaultos.sh"), "microvisor")
 	cmd.Env = append(os.Environ(),
+		"CLUSTER="+data.ServiceDomain,
 		"ONBOARDING_USERNAME="+data.OnboardingUsername,
 		"ONBOARDING_PASSWORD="+data.OnboardingPassword,
 		"PROJECT_NAME="+data.ProjectName,
@@ -1122,6 +1124,7 @@ STANDALONE=0
 
 	cmd = exec.CommandContext(ctx, "sudo", filepath.Join("scripts", "create_vm.sh"), "1", fmt.Sprintf("-%s", flow))
 	cmd.Env = append(os.Environ(),
+		"CLUSTER="+data.ServiceDomain,
 		"ONBOARDING_USERNAME="+data.OnboardingUsername,
 		"ONBOARDING_PASSWORD="+data.OnboardingPassword,
 		"PROJECT_NAME="+data.ProjectName,
@@ -1159,6 +1162,7 @@ STANDALONE=0
 	// Add the new command to execute host_statue with the serial number
 	hostStatueCmd := exec.CommandContext(ctx, filepath.Join("scripts", "host_status_check.sh"), serialNumber)
 	hostStatueCmd.Env = append(os.Environ(),
+		"CLUSTER="+data.ServiceDomain,
 		"ONBOARDING_USERNAME="+data.OnboardingUsername,
 		"ONBOARDING_PASSWORD="+data.OnboardingPassword,
 		"PROJECT_NAME="+data.ProjectName,
