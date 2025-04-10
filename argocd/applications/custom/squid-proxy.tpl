@@ -7,7 +7,7 @@ httpsProxy: {{.Values.argo.proxy.httpsProxy }}
 {{- end }}
 image:
   registry: {{.Values.argo.containerRegistryURL }}
-  repository: common/secrets-config
+  repository: common/squid-proxy
 imagePullSecrets:
   {{- with .Values.argo.imagePullSecrets }}
     {{- toYaml . | nindent 2 }}
