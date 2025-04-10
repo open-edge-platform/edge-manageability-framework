@@ -1104,6 +1104,9 @@ STANDALONE=0
 	}
 
 	var outputBuf bytes.Buffer
+	cmd = exec.CommandContext(ctx, "sudo", "chmod", "755", filepath.Join("scripts", "update_provider_defaultos.sh"))
+	cmd = exec.CommandContext(ctx, "sudo", "chmod", "755", filepath.Join("scripts", "create_vm.sh"))
+	cmd = exec.CommandContext(ctx, "sudo", "chmod", "755", filepath.Join("scripts", "show_host-status.sh"))
 	cmd := exec.CommandContext(ctx, filepath.Join("scripts", "update_provider_defaultos.sh"), "microvisor")
 	cmd.Env = append(os.Environ(),
 		"CLUSTER="+data.ServiceDomain,
