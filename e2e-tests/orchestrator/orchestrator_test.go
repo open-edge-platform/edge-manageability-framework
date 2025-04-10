@@ -253,18 +253,30 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 		})
 
 		It("should verify UI response headers", func() {
-			resp, err := cli.Get("https://api." + serviceDomainWithPort)
+			resp, err := cli.Get("https://web-ui." + serviceDomainWithPort)
 			Expect(err).ToNot(HaveOccurred())
 			defer resp.Body.Close()
-			for k, v := range resp.Header {
-				fmt.Println(k, "--->", v)
-			}
 			for k, v := range secureHeadersAdd() {
 				Expect(k).To(BeKeyOf(resp.Header))
 				Expect(resp.Header.Values(k)).To(ContainElements(v))
 			}
 			for _, k := range secureHeadersRemove() {
 				Expect(k).ToNot(BeKeyOf(resp.Header))
+			}
+		})
+
+		FIt("should verify API response COOP & COEP headers", func() {
+			req, err := http.NewRequest("GET", "https://api."+serviceDomainWithPort+"/v1/projects/sample-project/compute/os?filter='profile_name=\"tiberos-nonrt\"", nil)
+			Expect(err).ToNot(HaveOccurred())
+			user := fmt.Sprintf("%s-edge-op", util.TestUser)
+			token := getKeycloakJWT(cli, user)
+			req.Header.Add("Authorization", "Bearer "+token)
+			resp, err := cli.Do(req)
+			Expect(err).ToNot(HaveOccurred())
+			defer resp.Body.Close()
+			for k, v := range coopCoepHeaders() {
+				Expect(k).To(BeKeyOf(resp.Header))
+				Expect(resp.Header.Values(k)).To(ContainElements(v))
 			}
 		})
 
@@ -862,6 +874,13 @@ func corsHeader() map[string][]string {
 		"Access-Control-Allow-Headers":     {"*"},
 		"Access-Control-Allow-Credentials": {"true"},
 		"Access-Control-Max-Age":           {"100"},
+	}
+}
+
+func coopCoepHeaders() map[string][]string {
+	return map[string][]string{
+		"Cross-Origin-Embedder-Policy": {"require-corp"},
+		"Cross-Origin-Opener-Policy":   {"same-origin"},
 	}
 }
 
