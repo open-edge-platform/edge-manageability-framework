@@ -21,7 +21,7 @@ spec:
   sources:
     - repoURL: https://github.com/open-edge-platform/infra-charts
       path: {{$appName}}
-      targetRevision: instrumentaioLogs_withHostID
+      targetRevision: livenessProbe
       helm:
         releaseName: {{$appName}}
         valuesObject:
