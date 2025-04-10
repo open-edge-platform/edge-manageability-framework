@@ -592,6 +592,19 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
 		})
 	})
+	Describe("Cluster connect gateway", Label(clusterOrch), func() {
+		ccgUrl := fmt.Sprintf("https://connect-gateway.%s/kubernetes", serviceDomainWithPort)
+		It("should NOT be accessible when using invalid token", func() {
+			req, err := http.NewRequest("GET", ccgUrl, nil)
+			Expect(err).ToNot(HaveOccurred())
+			const invalid = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c" //nolint: lll
+			req.Header.Add("Authorization", "Bearer "+invalid)
+			resp, err := cli.Do(req)
+			Expect(err).ToNot(HaveOccurred())
+			defer resp.Body.Close()
+			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
+		})
+	})
 
 	Describe("Cluster Manager service - Clusters", Label(clusterOrch), func() {
 		cmUrl := fmt.Sprintf("https://api.%s/v2/projects/%s/clusters", serviceDomainWithPort, util.TestProject)
