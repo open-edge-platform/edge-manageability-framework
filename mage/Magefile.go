@@ -451,7 +451,7 @@ func (Undeploy) VEN(ctx context.Context) error {
 		return fmt.Errorf("failed to change directory to 'ven': %w", err)
 	}
 
-	if err := sh.RunV("git", "checkout", "vm-provisioning/1.0.6"); err != nil {
+	if err := sh.RunV("git", "checkout", "vm-provisioning/1.0.7"); err != nil {
 		return fmt.Errorf("failed to checkout specific commit: %w", err)
 	}
 
@@ -927,7 +927,7 @@ func (d Deploy) VENWithFlow(ctx context.Context, flow string) (string, error) { 
 		return "", fmt.Errorf("failed to change directory to 'ven': %w", err)
 	}
 
-	if err := sh.RunV("git", "checkout", "vm-provisioning/1.0.6"); err != nil {
+	if err := sh.RunV("git", "checkout", "vm-provisioning/1.0.7"); err != nil {
 		return "", fmt.Errorf("failed to checkout specific commit: %w", err)
 	}
 
@@ -971,7 +971,6 @@ CLUSTER='{{.ServiceDomain}}'
 RAM_SIZE='{{.RamSize}}'
 NO_OF_CPUS='{{.NoOfCpus}}'
 SDA_DISK_SIZE='{{.SdaDiskSize}}'
-SDB_DISK_SIZE='{{.SdbDiskSize}}'
 LIBVIRT_DRIVER='{{.LibvirtDriver}}'
 
 USERNAME_LINUX='{{.UsernameLinux}}'
@@ -1017,8 +1016,7 @@ STANDALONE=0
 		ProjectApiPassword: password,
 		RamSize:            "4096",
 		NoOfCpus:           "4",
-		SdaDiskSize:        "32G",
-		SdbDiskSize:        "32G",
+		SdaDiskSize:        "110G",
 		LibvirtDriver:      "kvm",
 		UsernameLinux:      "user",
 		PasswordLinux:      "user",
