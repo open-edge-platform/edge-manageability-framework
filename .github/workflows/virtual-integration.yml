@@ -699,7 +699,7 @@ jobs:
         if: ${{ always() && inputs.infra_provision_hosts == 'true' }}
         with:
           token: ${{ secrets.SYS_ORCH_GITHUB }}
-          infra_provision_host: true
+          infra_provision_hosts: true
 
       - name: Start Ven
         env:
@@ -711,7 +711,7 @@ jobs:
         if: ${{ always() && inputs.infra_verify_hosts == 'true' }}
         with:
           token: ${{ secrets.SYS_ORCH_GITHUB }}
-          infra_verify_host: true
+          infra_verify_hosts: true
 
       - name: Get diagnostic information
         id: get-diagnostic-info
