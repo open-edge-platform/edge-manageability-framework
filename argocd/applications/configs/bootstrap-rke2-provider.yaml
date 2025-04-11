@@ -13,7 +13,7 @@ spec:
     kustomize:
       repoURL: https://github.com/rancher/cluster-api-provider-rke2
       ref: main
-      path: bootstrap/config/default
+      path: bootstrap/config/manager
       patches:
         - target:
             kind: Deployment
