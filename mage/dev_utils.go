@@ -223,7 +223,7 @@ func (DevUtils) GetEnicSerialNumber() error {
 		return fmt.Errorf("failed to get ENiC serial number after multiple attempts: %w", err)
 	}
 
-	fmt.Println(serialNumber)
+	fmt.Printf("Serial Number: %s", serialNumber)
 	return nil
 }
 
@@ -252,7 +252,7 @@ func (DevUtils) GetEnicUUID() error {
 		return fmt.Errorf("failed to get ENiC serial number after multiple attempts: %w", err)
 	}
 
-	fmt.Println(uuid)
+	fmt.Printf("UUID: %s", uuid)
 	return nil
 }
 

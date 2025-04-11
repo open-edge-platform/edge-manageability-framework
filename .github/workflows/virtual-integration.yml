@@ -513,8 +513,12 @@ jobs:
         run: |
           mage devUtils:deployEnic 1 dev
 
-          UUID=$(mage devUtils:getEnicUUID)
-          SN=$(mage devUtils:getEnicSerialNumber)
+
+          UUID_OUT=$(mage devUtils:getEnicUUID)
+          SN_OUT=$(mage devUtils:getEnicSerialNumber)
+
+          UUID=$(echo $UUID_OUT | sed -e 's|UUID: \(.*\)|\1|')
+          SN=$(echo $SN_OUT | sed -e 's|Serial Number: \(.*\)|\1|')
           echo "EN_UUID=$UUID" >> "$GITHUB_ENV"
           echo "EN_SN=$SN" >> "$GITHUB_ENV"
 
