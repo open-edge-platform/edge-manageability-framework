@@ -67,7 +67,6 @@ variable "dns_hosts" {
     { hostname = "observability-ui.cluster.onprem", ip = "192.168.99.30" },
     { hostname = "onboarding-node.cluster.onprem", ip = "192.168.99.30" },
     { hostname = "onboarding-stream.cluster.onprem", ip = "192.168.99.30" },
-    { hostname = "orchestrator-license.cluster.onprem", ip = "192.168.99.30" },
     { hostname = "registry-oci.cluster.onprem", ip = "192.168.99.30" },
     { hostname = "registry.cluster.onprem", ip = "192.168.99.30" },
     { hostname = "release.cluster.onprem", ip = "192.168.99.30" },
