@@ -17,6 +17,7 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -1266,11 +1267,11 @@ func (Deploy) updateDeployRepo(targetEnv, gitRepoPath, repoName, localClonePath 
 	if _, err := script.Exec(cmd).Stdout(); err != nil {
 		return fmt.Errorf("error committing changes: %w", err)
 	}
-
+	escapedGitPassword := url.QueryEscape(gitPassword)
 	// Push the changes to the gitea repository
-	cmd = fmt.Sprintf("git push https://%s:%s@localhost:9654/%s", gitUsername, gitPassword, gitRepoPath)
+	cmd = fmt.Sprintf("git push 'https://%s:%s@localhost:9654/%s'", gitUsername, escapedGitPassword, gitRepoPath)
 	if _, err := script.Exec(cmd).Stdout(); err != nil {
-		return fmt.Errorf("error pushing changes to remote repository: %w", err)
+		return fmt.Errorf("error pushing changes to remote repository: %w , %v", err, cmd)
 	}
 
 	// Add any additional logic for updating the repository if needed
