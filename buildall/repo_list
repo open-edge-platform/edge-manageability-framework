@@ -1,6 +1,14 @@
 app-orch-catalog
 app-orch-deployment
+app-orch-tenant-controller
 infra-charts
 infra-managers
 infra-external
 infra-onboarding
+cluster-manager
+cluster-connect-gateway
+cluster-api-provider-intel
+o11y-alerting-monitor
+o11y-charts
+o11y-sre-exporter
+o11y-tenant-controller

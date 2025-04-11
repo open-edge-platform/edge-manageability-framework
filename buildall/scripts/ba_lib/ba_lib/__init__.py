@@ -32,7 +32,7 @@ def load_repo_artifacts(repodir):
 
     for artifact_fn in p.glob("artifacts_*.yaml"):
         with open(artifact_fn, "r", encoding="utf-8") as af:
-            repo_name = re.findall(r"artifacts_([a-z-]+).yaml", str(artifact_fn))[0]
+            repo_name = re.findall(r"artifacts_([a-z0-9-]+).yaml", str(artifact_fn))[0]
             repo_data = yaml.load(af)
             repo_artifacts[repo_name] = repo_data
 

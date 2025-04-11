@@ -9,7 +9,12 @@ combines artifact and manifest information into datastructure that can be used
 to determine which charts to build
 """
 
+import sys
+import ruamel.yaml
+
 from ba_lib import load_yaml, load_repo_artifacts
+
+yaml = ruamel.yaml.YAML()
 
 # globals
 repo_tags_to_build = {}
@@ -50,9 +55,6 @@ if __name__ == "__main__":
 
     match_charts(chart_manifest, ctr, repo_artifacts)
 
-    print("builds needed in each repo")
-    print(repo_tags_to_build)
-
     for rname, data in repo_tags_to_build.items():
         if data["charts"]:  # If there are charts in the repo
 
@@ -60,3 +62,6 @@ if __name__ == "__main__":
             with open(f"scratch/htags_{rname}", "w", encoding="utf-8") as htagout:
                 for line in data["charts"]:
                     htagout.write(f"{line}\n")
+
+    print("chart builds needed in each repo:")
+    yaml.dump(repo_tags_to_build, sys.stdout)
