@@ -1021,7 +1021,7 @@ STANDALONE=0
 		ProjectName:        "sample-project",
 		ProjectApiUser:     "sample-project-api-user",
 		ProjectApiPassword: password,
-		RamSize:            "4096",
+		RamSize:            "8192",
 		NoOfCpus:           "4",
 		SdaDiskSize:        "110G",
 		LibvirtDriver:      "kvm",
