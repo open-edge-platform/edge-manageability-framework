@@ -695,6 +695,40 @@ jobs:
 
       #register and provision
 
+      - name: Deploy External Orchestrator
+        env:
+          # TODO: create git user secret so we don't have to hardcode it
+          # GIT_USER: ${{ secrets.SYS_ORCH_GITHUB_USERNAME }}
+          GIT_USER: "git"
+          GIT_TOKEN: ${{ secrets.SYS_ORCH_GITHUB }}
+          EDGE_MANAGEABILITY_FRAMEWORK_REV: ${{ env.GIT_HASH }}
+          DOCKERHUB_TOKEN: ${{ secrets.SYS_DOCKERHUB_RO }}
+          DOCKERHUB_USERNAME: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
+        run: |
+          set +x
+          echo "Starting to deploy Orchestrator..."
+          mage deploy:kindAll
+          echo "Orchestrator deployment done!"
+          echo "Root App Status:"
+          kubectl -n dev get applications root-app -o yaml
+      - name: Verify Kind Deployment
+        id: verify-kind-deployment
+        timeout-minutes: 25
+        run: |
+          echo "Starting to verify Orchestrator deployment..."
+          mage deploy:waitUntilComplete
+          echo "Orchestrator deployment verified!"
+          mage router:stop router:start
+          echo "Router restarted"
+      - name: Setup Test environment
+        shell: bash
+        run: |
+          sudo awk -i inplace '/BEGIN ORCH DEVELOPMENT HOSTS/,/END ORCH DEVELOPMENT HOSTS/ { next } 1' /etc/hosts
+          sudo awk -i inplace '/BEGIN ORCH SRE DEVELOPMENT HOST/,/END ORCH SRE DEVELOPMENT HOST/ { next } 1' /etc/hosts
+          mage gen:hostfileTraefik | sudo tee -a /etc/hosts > /dev/null
+          echo "Updated Hostfile entries!"
+          mage gen:orchCa deploy:orchCa
+
       - name: UI E2E Infra Automatically Onboard and Provision
         uses: ./.github/actions/cypress
         with:
