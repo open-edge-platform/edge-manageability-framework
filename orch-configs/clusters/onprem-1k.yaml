@@ -20,7 +20,7 @@ root:
     - orch-configs/profiles/proxy-none.yaml
     - orch-configs/profiles/profile-onprem.yaml
     - orch-configs/profiles/alerting-emails.yaml
-    - orch-configs/profiles/artifact-rs-production.yaml
+    - orch-configs/profiles/artifact-rs-production-noauth.yaml
     - orch-configs/profiles/o11y-onprem-1k.yaml
     - orch-configs/profiles/resource-default.yaml
     - orch-configs/clusters/onprem-1k.yaml
