@@ -11,27 +11,27 @@ inputs:
   app_orch:
     required: false
     description: "Run App Orch tests"
-    default: true
+    default: false
   cluster_orch:
     required: false
     description: "Run Cluster Orch tests"
-    default: true
+    default: false
   infra:
     required: false
     description: "Run Infra tests"
-    default: true
+    default: false
   infra_provision_hosts:
     require: false
     description: "Run Infra Provision Hosts tests"
-    default: true
+    default: false
   infra_verify_hosts:
     require: false
     description: "Run Infra Verify Hosts tests"
-    default: true
+    default: false
   admin:
     required: false
     description: "Run Admin tests"
-    default: true
+    default: false
   en_serial_number:
     required: false
     description: "Serial number of the EN"

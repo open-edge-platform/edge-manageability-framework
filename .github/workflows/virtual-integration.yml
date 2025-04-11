@@ -696,7 +696,6 @@ jobs:
 
       - name: UI E2E Infra Automatically Onboard and Provision
         uses: ./.github/actions/cypress
-        if: ${{ always() && inputs.infra_provision_hosts == 'true' }}
         with:
           token: ${{ secrets.SYS_ORCH_GITHUB }}
           infra_provision_hosts: true
@@ -708,7 +707,6 @@ jobs:
 
       - name: UI E2E Infra Verify Host
         uses: ./.github/actions/cypress
-        if: ${{ always() && inputs.infra_verify_hosts == 'true' }}
         with:
           token: ${{ secrets.SYS_ORCH_GITHUB }}
           infra_verify_hosts: true
