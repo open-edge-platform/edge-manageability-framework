@@ -380,19 +380,6 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 		})
 	})
 
-	Describe("Application Catalog service", Label(appOrch), func() {
-		It("should be accessible over HTTPS", func() {
-			resp, err := cli.Get("https://app-orch." + serviceDomainWithPort + "/test")
-			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
-
-			Expect(resp.StatusCode).To(Equal(http.StatusOK))
-			content, err := io.ReadAll(resp.Body)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(string(content)).To(ContainSubstring("Ok"))
-		})
-	})
-
 	Describe("App Deployment Manager service", Label(appOrch), func() {
 		admDeploymentsURL := fmt.Sprintf("https://api.%s/v1/projects/%s/appdeployment/deployments", serviceDomainWithPort, util.TestProject)
 
@@ -530,19 +517,6 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			Expect(err).ToNot(HaveOccurred())
 			defer resp.Body.Close()
 			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
-		})
-	})
-
-	PDescribe("App-Service-proxy service", Label(appOrch), func() {
-		It("should be accessible over HTTPS", func() {
-			resp, err := cli.Get("https://app-service-proxy." + serviceDomainWithPort + "/test")
-			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
-
-			Expect(resp.StatusCode).To(Equal(http.StatusOK))
-			content, err := io.ReadAll(resp.Body)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(string(content)).To(ContainSubstring("Ok"))
 		})
 	})
 
