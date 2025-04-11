@@ -45,7 +45,3 @@ ports:
     exposedPort: 4433
     expose: true
     protocol: TCP
-    transport:
-      lifeCycle:
-        requestAcceptGraceTimeout: 5s
-        graceTimeOut: 10s

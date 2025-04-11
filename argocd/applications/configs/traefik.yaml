@@ -54,6 +54,7 @@ metrics:
 deployment:
   podAnnotations:
     traffic.sidecar.istio.io/excludeInboundPorts: "8000,8443,8080,4433"               # Traefik listened
+    traffic.sidecar.istio.io/excludeOutboundPorts: "4433"               # Traefik mps passthrough 
     # TODO: Make configurable because every k8s cluster is different
     traffic.sidecar.istio.io/excludeOutboundIPRanges: "10.96.0.1/32"        # k8s API server
 
