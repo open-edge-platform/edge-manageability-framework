@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-{{- $appName        := "capi-operator" }}
+{{- $appName        := "bootstrap-rke2-provider" }}
 {{- $namespace      := "capi-operator-system" }}
 {{- $syncWave       := "1000" }}
 ---
@@ -19,23 +19,10 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
-    - repoURL: https://kubernetes-sigs.github.io/cluster-api-operator
-      chart: cluster-api-operator
-      targetRevision: 0.15.1
-      helm:
-        parameters:
-          - name: insecureDiagnostics
-            value: 'true'
-          - name: diagnosticsAddress
-            value: ':8080'
-        releaseName: {{$appName}}
-        valuesObject:
-          {{- $customFile := printf "custom/%s.tpl" $appName }}
-          {{- $customConfig := tpl (.Files.Get $customFile) . | fromYaml }}
-          {{- $baseFile := printf "configs/%s.yaml" $appName }}
-          {{- $baseConfig := .Files.Get $baseFile|fromYaml}}
-          {{- $overwrite := (get .Values.postCustomTemplateOverwrite $appName ) | default dict }}
-          {{- mergeOverwrite $baseConfig $customConfig $overwrite | toYaml | nindent 10 }}
+      kustomize:
+        path: argocd/applications/configs
+        resources:
+          - argocd/applications/configs/bootstrap-rke2-provider.yaml
   destination:
     namespace: {{$namespace}}
     server: {{ required "A valid targetServer entry required!" .Values.argo.targetServer }}
