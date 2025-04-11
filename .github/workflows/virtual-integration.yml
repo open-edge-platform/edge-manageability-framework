@@ -705,7 +705,7 @@ jobs:
       - name: Start Ven
         env:
           EN_SERIAL_NUMBER: ${{ inputs.en_serial_number }}
-        run: mage deploy:VENWithFlow nio $EN_SERIAL_NUMBER
+        run: mage deploy:ven nio $EN_SERIAL_NUMBER
 
       - name: UI E2E Infra Verify Host
         uses: ./.github/actions/cypress

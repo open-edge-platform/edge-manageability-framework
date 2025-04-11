@@ -874,8 +874,8 @@ func (flow OnboardingFlow) IsValid() bool {
 }
 
 // Deploy a local Virtual Edge Node using libvirt. An Orchestrator must be running locally.
-func (d Deploy) VEN(ctx context.Context, flow string) error {
-	serialNumber, err := d.VENWithFlow(ctx, flow, "")
+func (d Deploy) VEN(ctx context.Context, flow string, sn string) error {
+	serialNumber, err := d.VENWithFlow(ctx, flow, sn)
 	if err != nil {
 		return fmt.Errorf("failed to deploy virtual Edge Node: %w", err)
 	}
