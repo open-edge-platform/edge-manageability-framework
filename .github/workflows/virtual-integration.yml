@@ -537,6 +537,7 @@ jobs:
         if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' }}
         with:
           token: ${{ secrets.SYS_ORCH_GITHUB }}
+          admin: true
 
       - name: "Test Observability Public Endpoints"
         env:
@@ -696,6 +697,7 @@ jobs:
 
       - name: UI E2E Infra Automatically Onboard and Provision
         uses: ./.github/actions/cypress
+        if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' }}
         with:
           token: ${{ secrets.SYS_ORCH_GITHUB }}
           infra_provision_hosts: true
