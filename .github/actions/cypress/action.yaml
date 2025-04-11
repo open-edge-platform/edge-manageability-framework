@@ -125,9 +125,8 @@ runs:
       working-directory: orch-ui/tests
       shell: bash
       run: |
-        # Disabling these tests for now as they are intermittently failing on unrelated changes (IssueID: 26507)
-        # npx cypress run --e2e \
-        #  -s "cypress/e2e/app-orch/deployment-package-smoke.cy.ts"
+        npx cypress run --e2e \
+          -s "cypress/e2e/app-orch/deployment-package-smoke.cy.ts"
         # These tests are not stable yet, will be enabled in a separate PR
         # npx cypress run --e2e \
         #   -s cypress/e2e/app-orch/deployment-smoke.cy.ts
