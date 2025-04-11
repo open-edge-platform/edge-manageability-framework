@@ -1,0 +1,23 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: rke2-bootstrap-patch
+  namespace: argocd
+spec:
+  project: dev
+  source:
+    repoURL: https://github.com/open-edge-platform/edge-manageability-framework.git
+    targetRevision: capi-metrics
+    path: argocd/applications/templates
+  destination:
+    namespace: capr-system
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
