@@ -999,13 +999,13 @@ func createOrUpdateGiteaAccount(username string, password string) error {
 	// Create user if not exists
 	if match == 0 {
 		fmt.Println("User does not exist, creating")
-		cmd = fmt.Sprintf("%s gitea admin user create --username %s --password %s --email %s", kubectlPrefix, username, password, username+"@local.domain")
+		cmd = fmt.Sprintf("%s gitea admin user create --username %s --password '%s' --email %s", kubectlPrefix, username, password, username+"@local.domain")
 		if _, err := script.Exec(cmd).String(); err != nil {
 			return err
 		}
 	}
 	// Ensure password is update-to-date when updating the password
-	cmd = fmt.Sprintf("%s gitea admin user change-password --username %s --password %s --must-change-password=false", kubectlPrefix, username, password)
+	cmd = fmt.Sprintf("%s gitea admin user change-password --username %s --password '%s' --must-change-password=false", kubectlPrefix, username, password)
 	if _, err := script.Exec(cmd).String(); err != nil {
 		return err
 	}
