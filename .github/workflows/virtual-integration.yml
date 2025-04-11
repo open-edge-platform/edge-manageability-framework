@@ -696,17 +696,19 @@ jobs:
 
       - name: UI E2E Infra Automatically Onboard and Provision
         uses: ./.github/actions/cypress
-        if: ${{ always() && inputs.infra_provision_host == 'true' }}
+        if: ${{ always() && inputs.infra_provision_hosts == 'true' }}
         with:
           token: ${{ secrets.SYS_ORCH_GITHUB }}
           infra_provision_host: true
 
       - name: Start Ven
-        run: mage deploy:VENWithFlow nio ${{inputs.en_serial_number}}
+        env:
+          EN_SERIAL_NUMBER: ${{ inputs.en_serial_number }}
+        run: mage deploy:VENWithFlow nio $EN_SERIAL_NUMBER
 
       - name: UI E2E Infra Verify Host
         uses: ./.github/actions/cypress
-        if: ${{ always() && inputs.infra_verify_host == 'true' }}
+        if: ${{ always() && inputs.infra_verify_hosts == 'true' }}
         with:
           token: ${{ secrets.SYS_ORCH_GITHUB }}
           infra_verify_host: true
