@@ -19,6 +19,8 @@ yaml = ruamel.yaml.YAML()
 # globals
 repo_tags_to_build = {}
 
+req_charts = []
+
 
 def match_charts(chart_mf, chart_to_repo, artifacts):
     """match up charts in manifest with where they are built in repos"""
@@ -28,6 +30,8 @@ def match_charts(chart_mf, chart_to_repo, artifacts):
         # most component names == chart name, but not all (web-ui and orch-ui)
         for _, cdata in chart_mf["components"].items():
             if chart == cdata["chart"]:
+
+                req_charts.remove(chart)
 
                 repo_chart_data = artifacts[repo]["charts"][chart]
 
@@ -41,7 +45,8 @@ def match_charts(chart_mf, chart_to_repo, artifacts):
                     chart_tag_to_build += "|" + repo_chart_data["outDir"]
 
                 if repo in repo_tags_to_build:
-                    repo_tags_to_build[repo]["charts"].append(chart_tag_to_build)
+                    if chart_tag_to_build not in repo_tags_to_build[repo]["charts"]:
+                        repo_tags_to_build[repo]["charts"].append(chart_tag_to_build)
                 else:
                     repo_tags_to_build[repo] = {"charts": [], "images": []}
                     repo_tags_to_build[repo]["charts"].append(chart_tag_to_build)
@@ -50,6 +55,11 @@ def match_charts(chart_mf, chart_to_repo, artifacts):
 if __name__ == "__main__":
 
     chart_manifest = load_yaml("scratch/manifest_charts.yaml")
+
+    # create a list of required charts, but only ours (with oci:// url)
+    for _, chart_data in chart_manifest["components"].items():
+        if chart_data["repo"].startswith("oci://"):
+            req_charts.append(chart_data["chart"])
 
     repo_artifacts, ctr, _itr = load_repo_artifacts("scratch")
 
@@ -65,3 +75,6 @@ if __name__ == "__main__":
 
     print("chart builds needed in each repo:")
     yaml.dump(repo_tags_to_build, sys.stdout)
+
+    if req_charts:  # only print missing charts if they exist
+        print(f"missing charts: {req_charts}")
