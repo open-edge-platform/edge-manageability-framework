@@ -124,7 +124,7 @@ func (DevUtils) WaitForEnic() error {
 	for {
 		ready, err := isEnicArgoAppReady()
 		if err != nil {
-			fmt.Println(fmt.Errorf("Error while checking ENiC App: %w", err))
+			fmt.Println(fmt.Errorf("error while checking ENiC App: %w", err))
 		}
 
 		if ready {
@@ -172,7 +172,7 @@ func (DevUtils) WaitForEnicNodeAgent() error {
 	for {
 		ready, err := isEnicArgoAppReady()
 		if err != nil {
-			fmt.Println(fmt.Errorf("Error while checking ENiC App: %w", err))
+			fmt.Println(fmt.Errorf("error while checking ENiC App: %w", err))
 		}
 
 		if ready {
@@ -405,7 +405,7 @@ func ManageRoles(cli *http.Client, token, action, username, orgUUID, projUUID st
 		return fmt.Errorf("failed to get user ID: %w", err)
 	}
 
-	pollIntervalInSecs := time.Duration(1)
+	pollIntervalInSecs := time.Duration.Seconds(1)
 	retryCount := 120 // wait for 2 mins
 	for i := 0; i < retryCount; i++ {
 		var errs []error
@@ -418,7 +418,7 @@ func ManageRoles(cli *http.Client, token, action, username, orgUUID, projUUID st
 			return nil
 		}
 		fmt.Printf("Not all roles are assigned, failed with an error: %v, Retrying...", errs)
-		time.Sleep(pollIntervalInSecs * time.Second)
+		time.Sleep(time.Duration(pollIntervalInSecs))
 	}
 	return fmt.Errorf("time out waiting for roles to be assigned")
 }

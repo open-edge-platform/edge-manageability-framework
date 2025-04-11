@@ -201,9 +201,22 @@ func (Undeploy) Kind() error {
 	return nil
 }
 
-// UndeployEdgeCluster Deletes ENiC and cluster, input project name: mage UndeployEdgeCluster <project-name>
-func UndeployEdgeCluster(projectName string) error {
+// Deletes ENiC and cluster, input required: mage undeploy:edgeCluster <org-name> <project-name>
+func (Undeploy) EdgeCluster(orgName, projectName string) error {
 	updateEdgeName()
+
+	ctx := context.TODO()
+	if err := (TenantUtils{}).GetProject(ctx, orgName, projectName); err != nil {
+		return fmt.Errorf("failed to get project %s: %w", projectName, err)
+	}
+
+	edgeInfraUser, _, err := getEdgeAndOnboardingUsers(ctx, orgName)
+	if err != nil {
+		return err
+	}
+
+	edgeMgrUser = edgeInfraUser
+	project = projectName
 
 	projectId, err := projectId(projectName)
 	if err != nil {
@@ -438,7 +451,7 @@ func (Undeploy) VEN(ctx context.Context) error {
 		return fmt.Errorf("failed to change directory to 'ven': %w", err)
 	}
 
-	if err := sh.RunV("git", "checkout", "vm-provisioning/1.0.4"); err != nil {
+	if err := sh.RunV("git", "checkout", "vm-provisioning/1.0.7"); err != nil {
 		return fmt.Errorf("failed to checkout specific commit: %w", err)
 	}
 
@@ -914,7 +927,7 @@ func (d Deploy) VENWithFlow(ctx context.Context, flow string) (string, error) { 
 		return "", fmt.Errorf("failed to change directory to 'ven': %w", err)
 	}
 
-	if err := sh.RunV("git", "checkout", "vm-provisioning/1.0.4"); err != nil {
+	if err := sh.RunV("git", "checkout", "vm-provisioning/1.0.7"); err != nil {
 		return "", fmt.Errorf("failed to checkout specific commit: %w", err)
 	}
 
@@ -957,7 +970,6 @@ CLUSTER='{{.ServiceDomain}}'
 # IO Flow Configurations
 ONBOARDING_USERNAME='{{.OnboardingUsername}}'
 ONBOARDING_PASSWORD='{{.OnboardingPassword}}'
-
 # NIO Flow Configurations
 PROJECT_NAME='{{.ProjectName}}'
 PROJECT_API_USER='{{.ProjectApiUser}}'
@@ -967,7 +979,6 @@ PROJECT_API_PASSWORD='{{.ProjectApiPassword}}'
 RAM_SIZE='{{.RamSize}}'
 NO_OF_CPUS='{{.NoOfCpus}}'
 SDA_DISK_SIZE='{{.SdaDiskSize}}'
-SDB_DISK_SIZE='{{.SdbDiskSize}}'
 LIBVIRT_DRIVER='{{.LibvirtDriver}}'
 
 USERNAME_LINUX='{{.UsernameLinux}}'
@@ -995,7 +1006,6 @@ STANDALONE=0
 		RamSize            string
 		NoOfCpus           string
 		SdaDiskSize        string
-		SdbDiskSize        string
 		LibvirtDriver      string
 		UsernameLinux      string
 		PasswordLinux      string
@@ -1011,10 +1021,9 @@ STANDALONE=0
 		ProjectName:        "sample-project",
 		ProjectApiUser:     "sample-project-api-user",
 		ProjectApiPassword: password,
-		RamSize:            "4096",
+		RamSize:            "8192",
 		NoOfCpus:           "4",
-		SdaDiskSize:        "32G",
-		SdbDiskSize:        "32G",
+		SdaDiskSize:        "110G",
 		LibvirtDriver:      "kvm",
 		UsernameLinux:      "user",
 		PasswordLinux:      "user",
@@ -1084,6 +1093,21 @@ STANDALONE=0
 			time.Sleep(10 * time.Second)
 			continue
 		}
+	}
+	var outputChmodBuf bytes.Buffer
+	chmodCmd := exec.CommandContext(ctx, "sudo", "chmod", "755",
+		filepath.Join("scripts", "update_provider_defaultos.sh"),
+		filepath.Join("scripts", "create_vm.sh"),
+		filepath.Join("scripts", "host_status_check.sh"),
+		filepath.Join("scripts", "nio_configs.sh"),
+		filepath.Join("scripts", "destroy_vm.sh"),
+	)
+
+	chmodCmd.Stdout = io.MultiWriter(os.Stdout, &outputChmodBuf)
+	chmodCmd.Stderr = io.MultiWriter(os.Stderr, &outputChmodBuf)
+
+	if err := chmodCmd.Run(); err != nil {
+		return "", fmt.Errorf("failed to chmod: %w", err)
 	}
 
 	if err := sh.RunV(filepath.Join("scripts", "update_provider_defaultos.sh"), "microvisor"); err != nil {
@@ -1157,34 +1181,21 @@ func (d Deploy) OrchCA() error {
 	return d.orchCA()
 }
 
-// Deploys ENiC Edge cluster with sample-project project.
-func (d Deploy) EdgeCluster() error {
+// Deploys ENiC Edge cluster with sample-project project, input required: mage deploy:edgeCluster <targetEnv>
+func (d Deploy) EdgeCluster(targetEnv string) error {
 	updateEdgeName()
 
-	os.Setenv("ORCH_PROJECT", "sample-project")
-	os.Setenv("ORCH_ORG", "sample-org")
-	os.Setenv("ORCH_USER", "sample-project-onboarding-user")
+	projectName := "sample-project"
+	orgName := "sample-org"
 
-	projectId, err := projectId("sample-project")
-	if err != nil {
-		return err
+	if err := (TenantUtils{}).GetProject(context.TODO(), orgName, projectName); err != nil {
+		return fmt.Errorf("failed to get project %s: %w", projectName, err)
 	}
 
-	fleetNamespace = projectId
-
-	labels := []string{
-		"color=blue",
-	}
-	return d.deployEnicCluster(strings.Join(labels, ","))
-}
-
-// Deploys ENiC Edge cluster, input required: mage deploy:edgeClusterWithProject <org-name> <project-name> <edge-infra-user>
-func (d Deploy) EdgeClusterWithProject(orgName string, projectName string, edgeInfraUser string) error {
-	updateEdgeName()
-
-	os.Setenv("ORCH_USER", edgeInfraUser)
 	os.Setenv("ORCH_PROJECT", projectName)
 	os.Setenv("ORCH_ORG", orgName)
+	os.Setenv("ORCH_USER", "sample-project-onboarding-user")
+
 	projectId, err := projectId(projectName)
 	if err != nil {
 		return err
@@ -1195,25 +1206,65 @@ func (d Deploy) EdgeClusterWithProject(orgName string, projectName string, edgeI
 	labels := []string{
 		"color=blue",
 	}
-	return d.deployEnicCluster(strings.Join(labels, ","))
+	return d.deployEnicCluster(targetEnv, strings.Join(labels, ","))
 }
 
-// Deploys ENiC Edge cluster with sample-project project, input labels: mage deploy:edgeClusterWithLabels <labels, color=blue,city=hillsboro>
-func (d Deploy) EdgeClusterWithLabels(labels string) error {
+// Deploys ENiC Edge cluster, input required: mage deploy:edgeClusterWithProject <targetEnv> <org-name> <project-name>
+func (d Deploy) EdgeClusterWithProject(targetEnv string, orgName string, projectName string) error {
 	updateEdgeName()
 
-	os.Setenv("ORCH_PROJECT", "sample-project")
-	os.Setenv("ORCH_ORG", "sample-org")
-	os.Setenv("ORCH_USER", "sample-project-onboarding-user")
+	ctx := context.TODO()
+	if err := (TenantUtils{}).GetProject(ctx, orgName, projectName); err != nil {
+		return fmt.Errorf("failed to get project %s: %w", projectName, err)
+	}
 
-	projectId, err := projectId("sample-project")
+	edgeInfraUser, onboardingUser, err := getEdgeAndOnboardingUsers(ctx, orgName)
+	if err != nil {
+		return err
+	}
+
+	edgeMgrUser = edgeInfraUser
+	project = projectName
+
+	os.Setenv("ORCH_PROJECT", projectName)
+	os.Setenv("ORCH_ORG", orgName)
+	os.Setenv("ORCH_USER", onboardingUser)
+
+	projectId, err := projectId(projectName)
 	if err != nil {
 		return err
 	}
 
 	fleetNamespace = projectId
 
-	return d.deployEnicCluster(labels)
+	labels := []string{
+		"color=blue",
+	}
+	return d.deployEnicCluster(targetEnv, strings.Join(labels, ","))
+}
+
+// Deploys ENiC Edge cluster with sample-project project: mage deploy:edgeClusterWithLabels <targetEnv> <labels, color=blue,city=hillsboro>
+func (d Deploy) EdgeClusterWithLabels(targetEnv string, labels string) error {
+	updateEdgeName()
+	projectName := "sample-project"
+	orgName := "sample-org"
+
+	if err := (TenantUtils{}).GetProject(context.TODO(), orgName, projectName); err != nil {
+		return fmt.Errorf("failed to get project %s: %w", projectName, err)
+	}
+
+	os.Setenv("ORCH_PROJECT", projectName)
+	os.Setenv("ORCH_ORG", orgName)
+	os.Setenv("ORCH_USER", "sample-project-onboarding-user")
+
+	projectId, err := projectId(projectName)
+	if err != nil {
+		return err
+	}
+
+	fleetNamespace = projectId
+
+	return d.deployEnicCluster(targetEnv, labels)
 }
 
 func (d Deploy) AddKyvernoPolicy() error {
