@@ -221,6 +221,11 @@ func (Deploy) kind(targetEnv string) error { //nolint:gocyclo
 		return err
 	}
 
+	// This is done to automate debug deployment of infra charts
+	if err := (Argo{}).AddGithubRepos(); err != nil {
+		return err
+	}
+
 	if err := (Argo{}).dockerHubChartOrgAdd(); err != nil {
 		return err
 	}
