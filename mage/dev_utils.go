@@ -205,17 +205,17 @@ func (DevUtils) GetEnicSerialNumber() error {
 	counter := 0
 	var serialNumber string
 
-	// fmt.Printf("Executing command to get ENiC serial number...\n")
+	fmt.Printf("Executing command to get ENiC serial number...\n")
 	fn := func() error {
 		cmd := fmt.Sprintf("kubectl exec -it -n %s %s -c edge-node -- bash -c 'dmidecode -s system-serial-number'", enicNs, enicPodName)
 		out, err := exec.Command("bash", "-c", cmd).Output()
 		if err != nil {
-			// fmt.Printf("\rFailed to get ENiC serial number: attempt %d (%vs)", counter, counter*waitForNextSec)
+			fmt.Printf("\rFailed to get ENiC serial number: attempt %d (%vs)", counter, counter*waitForNextSec)
 			counter++
 			return fmt.Errorf("get ENiC serial number: %w", err)
 		}
 		serialNumber = strings.TrimSpace(string(out))
-		fmt.Printf("Serial Number: %s", serialNumber)
+		fmt.Printf("Serial Number: %s\n", serialNumber)
 		return nil
 	}
 
@@ -233,18 +233,17 @@ func (DevUtils) GetEnicUUID() error {
 	counter := 0
 	var uuid string
 
-	// fmt.Printf("Executing command to get ENiC UUID...\n")
+	fmt.Printf("Executing command to get ENiC UUID...\n")
 	fn := func() error {
 		cmd := fmt.Sprintf("kubectl exec -it -n %s %s -c edge-node -- bash -c 'dmidecode -s system-uuid'", enicNs, enicPodName)
 		out, err := exec.Command("bash", "-c", cmd).Output()
 		if err != nil {
-			// fmt.Printf("\rFailed to get ENiC UUID: attempt %d (%vs)", counter, counter*waitForNextSec)
+			fmt.Printf("\rFailed to get ENiC UUID: attempt %d (%vs)", counter, counter*waitForNextSec)
 			counter++
 			return fmt.Errorf("get ENiC UUID: %w", err)
 		}
 		uuid = strings.TrimSpace(string(out))
-		fmt.Printf("UUID: %s", uuid)
-		// fmt.Printf("\nSuccessfully got ENiC UUID: %s (%vs)\n", uuid, counter*waitForNextSec)
+		fmt.Printf("UUID: %s\n", uuid)
 		return nil
 	}
 

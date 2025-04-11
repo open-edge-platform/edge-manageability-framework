@@ -514,12 +514,13 @@ jobs:
         run: |
           mage devUtils:deployEnic 1 dev
 
+          # wait until SN and UUID are available
+          mage devUtils:getEnicSerialNumber
+          mage devUtils:getEnicUUID
 
-          UUID_OUT=$(mage devUtils:getEnicUUID)
-          SN_OUT=$(mage devUtils:getEnicSerialNumber)
-
-          UUID=$(echo $UUID_OUT | sed -e 's|UUID: \(.*\)|\1|')
-          SN=$(echo $SN_OUT | sed -e 's|Serial Number: \(.*\)|\1|')
+          # then get then and store them in the env
+          UUID=$(kubectl exec -it -n enic enic-0 -c edge-node -- bash -c "dmidecode -s system-uuid")
+          SN=$(kubectl exec -it -n enic enic-0 -c edge-node -- bash -c "dmidecode -s system-serial-number")
           echo "EN_UUID=$UUID" >> "$GITHUB_ENV"
           echo "EN_SN=$SN" >> "$GITHUB_ENV"
 
