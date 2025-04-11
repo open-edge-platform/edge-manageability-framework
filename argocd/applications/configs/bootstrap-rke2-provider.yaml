@@ -1,0 +1,33 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+apiVersion: operator.cluster.x-k8s.io/v1alpha2
+kind: Provider
+metadata:
+  name: bootstrap-rke2
+  namespace: cluster-api-operator-system
+spec:
+  type: BootstrapProvider
+  version: v0.12.0
+  deployment:
+    kustomize:
+      repoURL: https://github.com/rancher/cluster-api-provider-rke2
+      ref: main
+      path: bootstrap/config/default
+      patches:
+        - target:
+            kind: Deployment
+            name: rke2-bootstrap-controller-manager
+          patch: |
+            - op: add
+              path: /spec/template/spec/containers/0/args/-
+              value: --diagnostics-address=:8080
+            - op: add
+              path: /spec/template/spec/containers/0/args/-
+              value: --insecure-diagnostics=true
+            - op: add
+              path: /spec/template/spec/containers/0/ports/-
+              value:
+                containerPort: 8080
+                name: metrics
+                protocol: TCP

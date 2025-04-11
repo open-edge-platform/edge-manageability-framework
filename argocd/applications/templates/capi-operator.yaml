@@ -36,6 +36,10 @@ spec:
           {{- $baseConfig := .Files.Get $baseFile|fromYaml}}
           {{- $overwrite := (get .Values.postCustomTemplateOverwrite $appName ) | default dict }}
           {{- mergeOverwrite $baseConfig $customConfig $overwrite | toYaml | nindent 10 }}
+      kustomize:
+        path: argocd/applications/configs
+        resources:
+          - argocd/applications/configs/bootstrap-rke2-provider.yaml
   destination:
     namespace: {{$namespace}}
     server: {{ required "A valid targetServer entry required!" .Values.argo.targetServer }}
