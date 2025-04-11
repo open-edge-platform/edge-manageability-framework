@@ -20,14 +20,14 @@ spec:
             name: rke2-bootstrap-controller-manager
             namespace: capr-system
           patch: |
-            - op: add
-              path: /spec/template/spec/containers/0/args/-
+            - op: replace
+              path: /spec/template/spec/containers/0/args/1
               value: --diagnostics-address=:8080
-            - op: add
-              path: /spec/template/spec/containers/0/args/-
+            - op: replace
+              path: /spec/template/spec/containers/0/args/2
               value: --insecure-diagnostics=true
-            - op: add
-              path: /spec/template/spec/containers/0/ports/-
+            - op: replace
+              path: /spec/template/spec/containers/0/ports/2
               value:
                 containerPort: 8080
                 name: metrics
