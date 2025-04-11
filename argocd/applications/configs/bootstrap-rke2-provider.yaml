@@ -5,7 +5,7 @@ apiVersion: operator.cluster.x-k8s.io/v1alpha2
 kind: Provider
 metadata:
   name: bootstrap-rke2
-  namespace: cluster-api-operator-system
+  namespace: capr-system
 spec:
   type: BootstrapProvider
   version: v0.12.0
