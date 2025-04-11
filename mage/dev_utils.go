@@ -210,7 +210,7 @@ func (DevUtils) GetEnicSerialNumber() error {
 		cmd := fmt.Sprintf("kubectl exec -it -n %s %s -c edge-node -- bash -c 'dmidecode -s system-serial-number'", enicNs, enicPodName)
 		out, err := exec.Command("bash", "-c", cmd).Output()
 		if err != nil {
-			fmt.Printf("\rFailed to get ENiC serial number: attempt %d (%vs)", counter, counter*waitForNextSec)
+			// fmt.Printf("\rFailed to get ENiC serial number: attempt %d (%vs)", counter, counter*waitForNextSec)
 			counter++
 			return fmt.Errorf("get ENiC serial number: %w", err)
 		}
@@ -239,7 +239,7 @@ func (DevUtils) GetEnicUUID() error {
 		cmd := fmt.Sprintf("kubectl exec -it -n %s %s -c edge-node -- bash -c 'dmidecode -s system-uuid'", enicNs, enicPodName)
 		out, err := exec.Command("bash", "-c", cmd).Output()
 		if err != nil {
-			fmt.Printf("\rFailed to get ENiC serial number: attempt %d (%vs)", counter, counter*waitForNextSec)
+			// fmt.Printf("\rFailed to get ENiC serial number: attempt %d (%vs)", counter, counter*waitForNextSec)
 			counter++
 			return fmt.Errorf("get ENiC serial number: %w", err)
 		}

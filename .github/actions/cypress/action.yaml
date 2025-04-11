@@ -25,7 +25,7 @@ inputs:
     description: "Run Admin tests"
     default: true
   en_serial_number:
-    required: ${{ inputs.infra != '' || false }} # NOTE this is required if the
+    required: false # NOTE this is required if the
     description: "Serial number of the EN"
     default: ""
 runs:
