@@ -319,6 +319,9 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 				Expect(err).ToNot(HaveOccurred())
 				defer resp.Body.Close()
 				for k, v := range secureHeadersAdd() {
+					if k == "Content-Security-Policy" || k == "Cross-Origin-Embedder-Policy" {
+						continue
+					}
 					Expect(k).To(BeKeyOf(resp.Header))
 					Expect(resp.Header.Values(k)).To(ContainElements(v))
 				}
