@@ -49,10 +49,10 @@ At the center of Edge Manageability Framework is Edge Orchestrator, the primary 
 - [infra-charts](https://github.com/open-edge-platform/infra-charts): Supplies Helm charts for infrastructure deployment.
 
 #### Observability
-- [o11y-charts](https://github.com/open-edge-platform/olly-charts): Provides Helm charts for observability services.
-- [o11y-alerting-monitor](https://github.com/open-edge-platform/olly-alerting-monitor): Offers alerting and monitoring services.
-- [o11y-sre-exporter](https://github.com/open-edge-platform/olly-sre-exporter): Supplies SRE exporter services for enhanced observability.
-- [o11y-tenant-controller](https://github.com/open-edge-platform/olly-tenant-controller): Manages tenant control services.
+- [o11y-charts](https://github.com/open-edge-platform/o11y-charts): This repository provides key Observability Helm Charts and its helper applications deployable on the Edge Orchestrator.
+- [o11y-alerting-monitor](https://github.com/open-edge-platform/o11y-alerting-monitor): Alerting Monitor service handles management of alert notifications in the Edge Orchestrator.
+- [o11y-sre-exporter](https://github.com/open-edge-platform/o11y-sre-exporter): SRE Exporter service enables exporting Edge Orchestrator's Service Level Indicators (SLIs) and its key runtime metrics to external systems.
+- [o11y-tenant-controller](https://github.com/open-edge-platform/o11y-tenant-controller): Observability Tenant Controller service maintains multitenancy configuration for Observability (o11y) services on Edge Orchestrator.
 
 #### Edge Nodes / Hosts
 - [edge-node-agents](https://github.com/open-edge-platform/edge-node-agents): Deploys agents for managing edge nodes and hosts with policy-based management.
