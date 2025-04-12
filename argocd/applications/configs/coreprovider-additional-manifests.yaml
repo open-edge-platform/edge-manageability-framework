@@ -1,0 +1,27 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coreprovider-additional-manifests
+  namespace: capi-system
+data:
+  manifests: |
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: capi-controller-manager
+      namespace: capi-system
+    spec:
+      template:
+        spec:
+          containers:
+            - name: manager
+              args:
+                - "--diagnostics-address=:8080"
+                - "--insecure-diagnostics=true"
+              ports:
+                - containerPort: 8080
+                  name: metrics
+                  protocol: TCP
