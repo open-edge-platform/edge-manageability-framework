@@ -491,6 +491,10 @@ jobs:
         run: mage test:imagePullPolicyCompliance
       - name: Setup Sample Org and Project with default users
         run: mage tenantUtils:createDefaultMtSetup
+      - name: Deploy Victoria Metrics instance
+        env:
+          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+        run: mage deploy:victoriaMetrics apply
 
       - name: Run e2e tenancy tests
         run: mage test:e2etenancy
@@ -501,7 +505,14 @@ jobs:
       - name: Create default user and run e2e tests
         run: mage devUtils:createDefaultUser test:e2e
 
+      - name: "Test Observability SRE Exporter w/o ENiC"
+        env:
+          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+        run: |
+          mage test:e2eSreObservabilityNoEnic
+
       - name: Deploy ENiC
+        if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' }}
         shell: bash
         timeout-minutes: 5
         env:
@@ -512,22 +523,28 @@ jobs:
           EDGE_MANAGEABILITY_FRAMEWORK_REV: ${{ env.GIT_HASH }}
         run: |
           mage devUtils:deployEnic 1 dev
-          mage devUtils:waitForEnic
-          mage devUtils:waitForEnicNodeAgent
 
+          # wait until SN and UUID are available
+          mage devUtils:getEnicSerialNumber
+          mage devUtils:getEnicUUID
+
+          # then get then and store them in the env
           UUID=$(kubectl exec -it -n enic enic-0 -c edge-node -- bash -c "dmidecode -s system-uuid")
           SN=$(kubectl exec -it -n enic enic-0 -c edge-node -- bash -c "dmidecode -s system-serial-number")
           echo "EN_UUID=$UUID" >> "$GITHUB_ENV"
           echo "EN_SN=$SN" >> "$GITHUB_ENV"
 
       - name: Print current EN UUID and SN
+        if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' }}
         run: echo "Current ENiC has UUID ${{ env.EN_UUID }} and SN ${{ env.EN_SN }}"
 
       - name: UI E2E Tests
-        uses: ./.github/actions/cypress
         if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' }}
+        uses: ./.github/actions/cypress
         with:
           token: ${{ secrets.SYS_ORCH_GITHUB }}
+          en_serial_number: ${{ env.EN_SN }}
+          infra: "cypress/e2e/infra/locations.cy.ts,cypress/e2e/infra/provision-hosts.cy.ts,cypress/e2e/infra/verify-host.cy.ts"
 
       - name: "Test Observability Public Endpoints"
         env:
@@ -552,6 +569,12 @@ jobs:
           ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
         run: |
           mage test:e2eAlertsObservability
+
+      - name: "Test Observability SRE Exporter"
+        env:
+          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+        run: |
+          mage test:e2eSreObservability
 
       - name: Wait for cluster agent to be ready
         run: |

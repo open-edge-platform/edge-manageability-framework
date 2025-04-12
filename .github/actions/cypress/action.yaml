@@ -18,12 +18,16 @@ inputs:
     default: true
   infra:
     required: false
-    description: "Run Infra tests"
-    default: true
+    description: "List of tests to run for Edge Infra Manager"
+    default: "cypress/e2e/infra/infra-smoke.cy.ts" # set to empty string to skip
   admin:
     required: false
     description: "Run Admin tests"
     default: true
+  en_serial_number:
+    required: false # NOTE this is required if the
+    description: "Serial number of the EN"
+    default: ""
 runs:
   using: "composite"
   steps:
@@ -32,7 +36,7 @@ runs:
       with:
         repository: open-edge-platform/orch-ui
         path: orch-ui
-        ref: tests/0.1.13
+        ref: ITEP-24901-ven
         token: ${{ inputs.token }}
     - run: git log -1
       shell: bash
@@ -55,15 +59,15 @@ runs:
           -s "cypress/e2e/admin/non-org-admin-smoke.cy.ts,cypress/e2e/admin/org-admin-smoke.cy.ts"
     - name: Run Edge Infra Manager Cypress tests
       id: infra_tests
-      if: ${{ always() && inputs.infra == 'true' }}
+      if: ${{ always() && inputs.infra != '' }}
       working-directory: orch-ui/tests
       shell: bash
       run: |
         npx cypress run --e2e \
-          -s cypress/e2e/infra/infra-smoke.cy.ts \
-          --env EN_UUID=${{ env.EN_UUID }}
+          -s ${{inputs.infra}} \
+          --env EN_SERIAL_NUMBER=${{ inputs.en_serial_number }}
     - name: Collect Edge Infra Manager logs
-      if: ${{ always() && inputs.infra == 'true' }}
+      if: ${{ always() && inputs.infra != '' }}
       working-directory: orch-ui/tests
       shell: bash
       run: |
@@ -87,7 +91,7 @@ runs:
         kubectl get workflow -A > cypress/logs/edgeinfra/workflow.txt
         kubectl get hardware -A > cypress/logs/edgeinfra/hardware.txt
         kubectl get template -A > cypress/logs/edgeinfra/template.txt
-        kubectl get workflow -n orch-infra workflow-${{ env.EN_UUID }}-prod -o yaml || true > cypress/logs/edgeinfra/workflow-${{ env.EN_UUID }}-prod.log
+        kubectl get workflow -n orch-infra workflow-${{ inputs.en_serial_number }}-prod -o yaml || true > cypress/logs/edgeinfra/workflow-${{ inputs.en_serial_number }}-prod.log
     - name: Run Cluster Orch tests
       id: cluster_orch_tests
       if: ${{ always() && inputs.cluster_orch == 'true' }}
