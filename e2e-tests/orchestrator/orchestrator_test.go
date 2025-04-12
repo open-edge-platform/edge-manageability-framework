@@ -953,8 +953,8 @@ func secureHeadersAddAppOrch() map[string][]string {
 	appOrchSecureHeaders["Content-Security-Policy"] = []string{fmt.Sprintf("default-src 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' ; frame-src 'self' https://keycloak.%s; style-src 'self'; img-src 'self' data:; connect-src 'self' https://keycloak.%s; upgrade-insecure-requests; block-all-mixed-content", //nolint: lll
 		serviceDomain, serviceDomain)}
 	appOrchSecureHeaders["Cross-Origin-Embedder-Policy"] = []string{"unsafe-none"}
-	delete(appOrchSecureHeaders, "x-content-type-options")
-	delete(appOrchSecureHeaders, "x-frame-options")
+	delete(appOrchSecureHeaders, "X-Content-Type-Options")
+	delete(appOrchSecureHeaders, "X-Frame-Options")
 
 	return appOrchSecureHeaders
 }
