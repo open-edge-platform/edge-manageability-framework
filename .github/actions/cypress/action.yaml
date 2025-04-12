@@ -32,7 +32,7 @@ runs:
       with:
         repository: open-edge-platform/orch-ui
         path: orch-ui
-        ref: tests/0.1.14
+        ref: 8c43536a86f067ef951f4913daefdb89b04e1b96
         token: ${{ inputs.token }}
     - run: git log -1
       shell: bash
