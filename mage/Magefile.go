@@ -451,7 +451,7 @@ func (Undeploy) VEN(ctx context.Context) error {
 		return fmt.Errorf("failed to change directory to 'ven': %w", err)
 	}
 
-	if err := sh.RunV("git", "checkout", "vm-provisioning/1.0.4"); err != nil {
+	if err := sh.RunV("git", "checkout", "vm-provisioning/1.0.7"); err != nil {
 		return fmt.Errorf("failed to checkout specific commit: %w", err)
 	}
 
@@ -928,7 +928,7 @@ func (d Deploy) VENWithFlow(ctx context.Context, flow string, sn string) (string
 		return "", fmt.Errorf("failed to change directory to 'ven': %w", err)
 	}
 
-	if err := sh.RunV("git", "checkout", "vm-provisioning/1.0.4"); err != nil {
+	if err := sh.RunV("git", "checkout", "vm-provisioning/1.0.7"); err != nil {
 		return "", fmt.Errorf("failed to checkout specific commit: %w", err)
 	}
 
@@ -971,7 +971,6 @@ CLUSTER='{{.ServiceDomain}}'
 # IO Flow Configurations
 ONBOARDING_USERNAME='{{.OnboardingUsername}}'
 ONBOARDING_PASSWORD='{{.OnboardingPassword}}'
-
 # NIO Flow Configurations
 PROJECT_NAME='{{.ProjectName}}'
 PROJECT_API_USER='{{.ProjectApiUser}}'
@@ -981,7 +980,6 @@ PROJECT_API_PASSWORD='{{.ProjectApiPassword}}'
 RAM_SIZE='{{.RamSize}}'
 NO_OF_CPUS='{{.NoOfCpus}}'
 SDA_DISK_SIZE='{{.SdaDiskSize}}'
-SDB_DISK_SIZE='{{.SdbDiskSize}}'
 LIBVIRT_DRIVER='{{.LibvirtDriver}}'
 
 USERNAME_LINUX='{{.UsernameLinux}}'
@@ -1009,7 +1007,6 @@ STANDALONE=0
 		RamSize            string
 		NoOfCpus           string
 		SdaDiskSize        string
-		SdbDiskSize        string
 		LibvirtDriver      string
 		UsernameLinux      string
 		PasswordLinux      string
@@ -1025,10 +1022,9 @@ STANDALONE=0
 		ProjectName:        "sample-project",
 		ProjectApiUser:     "sample-project-api-user",
 		ProjectApiPassword: password,
-		RamSize:            "4096",
+		RamSize:            "8192",
 		NoOfCpus:           "4",
-		SdaDiskSize:        "32G",
-		SdbDiskSize:        "32G",
+		SdaDiskSize:        "110G",
 		LibvirtDriver:      "kvm",
 		UsernameLinux:      "user",
 		PasswordLinux:      "user",
@@ -1098,6 +1094,21 @@ STANDALONE=0
 			time.Sleep(10 * time.Second)
 			continue
 		}
+	}
+	var outputChmodBuf bytes.Buffer
+	chmodCmd := exec.CommandContext(ctx, "sudo", "chmod", "755",
+		filepath.Join("scripts", "update_provider_defaultos.sh"),
+		filepath.Join("scripts", "create_vm.sh"),
+		filepath.Join("scripts", "host_status_check.sh"),
+		filepath.Join("scripts", "nio_configs.sh"),
+		filepath.Join("scripts", "destroy_vm.sh"),
+	)
+
+	chmodCmd.Stdout = io.MultiWriter(os.Stdout, &outputChmodBuf)
+	chmodCmd.Stderr = io.MultiWriter(os.Stderr, &outputChmodBuf)
+
+	if err := chmodCmd.Run(); err != nil {
+		return "", fmt.Errorf("failed to chmod: %w", err)
 	}
 
 	if err := sh.RunV(filepath.Join("scripts", "update_provider_defaultos.sh"), "microvisor"); err != nil {
