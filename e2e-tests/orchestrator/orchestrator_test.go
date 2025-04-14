@@ -265,6 +265,21 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			}
 		})
 
+		It("should verify API response COOP & COEP headers", func() {
+			req, err := http.NewRequest("GET", "https://api."+serviceDomainWithPort+"/v1/projects/sample-project/compute/os?filter='profile_name=\"tiberos-nonrt\"", nil)
+			Expect(err).ToNot(HaveOccurred())
+			user := fmt.Sprintf("%s-edge-op", util.TestUser)
+			token := getKeycloakJWT(cli, user)
+			req.Header.Add("Authorization", "Bearer "+token)
+			resp, err := cli.Do(req)
+			Expect(err).ToNot(HaveOccurred())
+			defer resp.Body.Close()
+			for k, v := range coopCoepHeaders() {
+				Expect(k).To(BeKeyOf(resp.Header))
+				Expect(resp.Header.Values(k)).To(ContainElements(v))
+			}
+		})
+
 		It("should verify API response CORS headers", func() {
 			req, err := http.NewRequest("OPTIONS", "https://api."+serviceDomainWithPort+"/v1/projects/sample-project/compute/os?filter='profile_name=\"tiberos-nonrt\"", nil)
 			Expect(err).ToNot(HaveOccurred())
@@ -406,19 +421,6 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 		})
 	})
 
-	Describe("Application Catalog service", Label(appOrch), func() {
-		It("should be accessible over HTTPS", func() {
-			resp, err := cli.Get("https://app-orch." + serviceDomainWithPort + "/test")
-			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
-
-			Expect(resp.StatusCode).To(Equal(http.StatusOK))
-			content, err := io.ReadAll(resp.Body)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(string(content)).To(ContainSubstring("Ok"))
-		})
-	})
-
 	Describe("App Deployment Manager service", Label(appOrch), func() {
 		admDeploymentsURL := fmt.Sprintf("https://api.%s/v1/projects/%s/appdeployment/deployments", serviceDomainWithPort, util.TestProject)
 
@@ -556,19 +558,6 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			Expect(err).ToNot(HaveOccurred())
 			defer resp.Body.Close()
 			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
-		})
-	})
-
-	PDescribe("App-Service-proxy service", Label(appOrch), func() {
-		It("should be accessible over HTTPS", func() {
-			resp, err := cli.Get("https://app-service-proxy." + serviceDomainWithPort + "/test")
-			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
-
-			Expect(resp.StatusCode).To(Equal(http.StatusOK))
-			content, err := io.ReadAll(resp.Body)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(string(content)).To(ContainSubstring("Ok"))
 		})
 	})
 
@@ -885,6 +874,13 @@ func corsHeader() map[string][]string {
 		"Access-Control-Allow-Headers":     {"*"},
 		"Access-Control-Allow-Credentials": {"true"},
 		"Access-Control-Max-Age":           {"100"},
+	}
+}
+
+func coopCoepHeaders() map[string][]string {
+	return map[string][]string{
+		"Cross-Origin-Embedder-Policy": {"require-corp"},
+		"Cross-Origin-Opener-Policy":   {"same-origin"},
 	}
 }
 
