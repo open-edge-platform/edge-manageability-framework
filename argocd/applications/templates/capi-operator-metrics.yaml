@@ -13,7 +13,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "{{ $syncWave }}"
   name: {{$appName}}
-  namespace: dev
+  namespace: {{ required "A valid namespace entry required!" .Values.argo.namespace }}
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:

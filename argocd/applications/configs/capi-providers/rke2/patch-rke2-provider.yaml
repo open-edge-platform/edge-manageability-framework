@@ -1,0 +1,85 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: deployment-patch-role
+  namespace: capr-system
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "patch", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: allow-rke2-to-patch
+  namespace: capr-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: deployment-patch-role
+subjects:
+  - kind: ServiceAccount
+    name: rke2-manager
+    namespace: capr-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rke2-manager
+  namespace: capr-system
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: provider-rke2-patch
+  namespace: capr-system
+spec:
+  schedule: "*/2 * * * *"  # Runs every 2 minutes
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: rke2-manager
+          containers:
+          - name: kubectl
+            image: bitnami/kubectl:1.30.1  # Pinned version
+            command:
+            - /bin/sh
+            - -c
+            - |
+              for deployment in rke2-control-plane-controller-manager rke2-bootstrap-controller-manager; do
+                echo "Patching args for $deployment"
+                kubectl -n capr-system patch deployment $deployment --type strategic -p '{
+                  "spec": {
+                    "template": {
+                      "spec": {
+                        "containers": [{
+                          "name": "manager",
+                          "args": [
+                            "--leader-elect",
+                            "--diagnostics-address=:8080",
+                            "--insecure-diagnostics=true"
+                          ]
+                        }]
+                      }
+                    }
+                  }
+                }'
+                echo "Patching ports for $deployment"
+                kubectl -n capr-system patch deployment $deployment --type json -p '[
+                  {
+                    "op": "replace",
+                    "path": "/spec/template/spec/containers/0/ports",
+                    "value": [
+                      { "containerPort": 9443, "name": "webhook-server", "protocol": "TCP" },
+                      { "containerPort": 9440, "name": "healthz", "protocol": "TCP" },
+                      { "containerPort": 8080, "name": "metrics", "protocol": "TCP" }
+                    ]
+                  }
+                ]'
+              done
+          restartPolicy: Never
