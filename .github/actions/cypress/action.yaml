@@ -25,8 +25,12 @@ inputs:
     description: "Run Admin tests"
     default: true
   en_serial_number:
-    required: false # NOTE this is required if the
+    required: false # NOTE this is required if the infra tests are running
     description: "Serial number of the EN"
+    default: ""
+  en_uuid:
+    required: false # NOTE this is required if the infra tests are running
+    description: "UUID of the EN"
     default: ""
 runs:
   using: "composite"
@@ -91,7 +95,7 @@ runs:
         kubectl get workflow -A > cypress/logs/edgeinfra/workflow.txt
         kubectl get hardware -A > cypress/logs/edgeinfra/hardware.txt
         kubectl get template -A > cypress/logs/edgeinfra/template.txt
-        kubectl get workflow -n orch-infra workflow-${{ inputs.en_serial_number }}-prod -o yaml || true > cypress/logs/edgeinfra/workflow-${{ inputs.en_serial_number }}-prod.log
+        kubectl get workflow -n orch-infra workflow-${{ inputs.en_uuid }}-prod -o yaml || true > cypress/logs/edgeinfra/workflow-${{ inputs.en_uuid }}-prod.log
     - name: Run Cluster Orch tests
       id: cluster_orch_tests
       if: ${{ always() && inputs.cluster_orch == 'true' }}
