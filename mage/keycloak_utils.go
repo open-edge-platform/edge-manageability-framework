@@ -88,14 +88,26 @@ func check_and_encode_password(password string) string {
 
 func clean_up_psql_pod() {
 	command := "kubectl delete -n " + keycloak_namespace + " pod/keycloak-recovery-psql"
-	exec.Command("bash", "-c", command).CombinedOutput()
+	_, err := exec.Command("bash", "-c", command).CombinedOutput()
+	if err != nil {
+		fmt.Println("Error deleting pod:", err.Error())
+	}
+
 }
 
 func set_keycloak_password(encoded_password string) {
 	command := "kubectl -n " + keycloak_namespace + " get secret platform-keycloak -o yaml | yq e '.data.admin-password = \"" + encoded_password + "\"' | kubectl apply --force -f -"
-	exec.Command("bash", "-c", command).CombinedOutput()
+	_, err := exec.Command("bash", "-c", command).CombinedOutput()
+	if err != nil {
+		fmt.Println("Error executing command:", err.Error())
+		return
+	}
 	command = "kubectl delete pod -n " + keycloak_namespace + " platform-keycloak-0"
-	exec.Command("bash", "-c", command).CombinedOutput()
+	_, err = exec.Command("bash", "-c", command).CombinedOutput()
+	if err != nil {
+		fmt.Println("Error deleting keycloak pod:", err.Error())
+		return
+	}
 	fmt.Printf("Waiting for keycloak to restart...")
 	time.Sleep(45 * time.Second)
 }
@@ -150,7 +162,7 @@ func run_sql_command(decodedMap map[string]string, sqlCommand string) string {
 	if err != nil {
 		// Print debug information
 		fmt.Println("psql command to execute:")
-		fmt.Println(string(command))
+		fmt.Println(command)
 		fmt.Println("Bash command to execute:")
 		fmt.Println(psqlCommand)
 		fmt.Println(string(sql_output_byte))
