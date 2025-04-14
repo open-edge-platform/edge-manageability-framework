@@ -14,10 +14,10 @@ At the center of Edge Manageability Framework is Edge Orchestrator, the primary 
 ### Key Components and Repositories
 
 #### Edge Manageability Framework
-- [edge-manageability-framework](https://github.com/open-edge-platform/edge-manageability-framework): This repository is the central hub for deploying the Edge Orchestrator. It includes Argo CD applications, Helm charts, and deployment scripts necessary for setting up the orchestrator in various environments, including on-premise and cloud-based setups.
+- [edge-manageability-framework](https://github.com/open-edge-platform/edge-manageability-framework): The central hub for deploying the Edge Orchestrator. It includes Argo CD applications, Helm charts, and deployment scripts necessary for setting up the orchestrator in various environments, including on-premise and cloud-based setups.
 
 #### Documentation
-- [orch-docs](https://github.com/open-edge-platform/orch-docs): Documentation including deployment, user, developer, and contribution guides, API references, tutorials, troubleshooting, and software architecture specifications.  You can also visit our documentaion hub here (TODO insert release docs URL)
+- [orch-docs](https://github.com/open-edge-platform/orch-docs): Edge Orchestrator documentation includes deployment, user, developer, and contribution guides; and API references, tutorials, troubleshooting, and software architecture specifications. You can also visit our documentaion hub here (TODO insert release docs URL)
 
 #### Foundational Platform Services
 - [orch-utils](https://github.com/open-edge-platform/orch-utils): The orch-utils repository provides various utility functions and tools that support the deployment and management of the Edge Orchestrator. This includes Kubernetes jobs, Helm charts, Dockerfiles, and Go code for tasks such as namespace creation, policy management, and Traefik route configuration.
@@ -42,11 +42,11 @@ At the center of Edge Manageability Framework is Edge Orchestrator, the primary 
 - [cluster-connect-gateway](https://github.com/open-edge-platform/cluster-connect-gateway): Ensures gateway services for cluster connectivity.
 
 #### Edge Infrastructure Manager
-- [infra-core](https://github.com/open-edge-platform/infra-core): Manages core infrastructure services.
+- [infra-core](https://github.com/open-edge-platform/infra-core): Core services for the Edge Infrastructure Manager.
 - [infra-managers](https://github.com/open-edge-platform/infra-managers): Provides life-cycle management services for infrastructure resources.
-- [infra-onboarding](https://github.com/open-edge-platform/infra-onboarding): Onboarding and provisioning services.
-- [infra-external](https://github.com/open-edge-platform/infra-external): Manages third party infrastructure components.
-- [infra-charts](https://github.com/open-edge-platform/infra-charts): Supplies Helm charts for infrastructure deployment.
+- [infra-onboarding](https://github.com/open-edge-platform/infra-onboarding): Edge Node Onboarding and Provisioning services.
+- [infra-external](https://github.com/open-edge-platform/infra-external): Extensions for the Edge Infrastructure Manager.
+- [infra-charts](https://github.com/open-edge-platform/infra-charts): Helm charts for deploying Edge Infrastructure Manager services.
 
 #### Observability
 - [o11y-charts](https://github.com/open-edge-platform/o11y-charts): This repository provides key Observability Helm Charts and its helper applications deployable on the Edge Orchestrator.
@@ -56,7 +56,7 @@ At the center of Edge Manageability Framework is Edge Orchestrator, the primary 
 
 #### Edge Nodes / Hosts
 - [edge-node-agents](https://github.com/open-edge-platform/edge-node-agents): Deploys agents for managing edge nodes and hosts with policy-based management.
-- [virtual-edge-node](https://github.com/open-edge-platform/virtual-edge-node): Emulates hardware edge nodes.
+- [virtual-edge-node](https://github.com/open-edge-platform/virtual-edge-node): Virtual Edge Node onboarding and deployment scripts and configurations.
 
 #### Secure Edge Deployment
 - [trusted-compute](https://github.com/open-edge-platform/trusted-compute): Ensures secure deployment within virtual machines, providing trusted compute environments.
