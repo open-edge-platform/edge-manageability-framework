@@ -19,9 +19,9 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   source:
-    - repoURL: https://github.com/open-edge-platform/edge-manageability-framework.git
-      path: argocd/applications/configs/capi-providers
-      targetRevision: capi-metrics
+     repoURL: https://github.com/open-edge-platform/edge-manageability-framework.git
+     path: argocd/applications/configs/capi-providers
+     targetRevision: capi-metrics
   destination:
     namespace: {{$namespace}}
     server: {{ required "A valid targetServer entry required!" .Values.argo.targetServer }}
