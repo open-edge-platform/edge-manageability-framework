@@ -40,7 +40,7 @@ runs:
       with:
         repository: open-edge-platform/orch-ui
         path: orch-ui
-        ref: 50d9b453269cf1e5b0862dee5295a46a5a1e8583
+        ref: hotfix/verify-host
         token: ${{ inputs.token }}
     - run: git log -1
       shell: bash
