@@ -18,12 +18,13 @@ import (
 )
 
 var (
-	keycloakNamespace  = "orch-platform"
-	MinPassowordLength = 10
+	keycloakNamespace = "orch-platform"
+	minPasswordLength = 10
 )
 
 type Keycloak mg.Namespace
 
+// GetPassword retrieves the admin keycloak password
 func (k Keycloak) GetPassword() {
 	command := "kubectl get secret -n " + keycloakNamespace + " platform-keycloak -o jsonpath='{.data.admin-password}' | base64 --decode"
 	out, err := exec.Command("bash", "-c", command).CombinedOutput()
@@ -34,7 +35,7 @@ func (k Keycloak) GetPassword() {
 	fmt.Println(string(out))
 }
 
-// set_password '<password>' sets the keycloak password, make sure you use quotes around the password
+// SetPassword '<password>' sets the admin keycloak password, make sure you use quotes around the password
 func (k Keycloak) SetPassword(password string) {
 	encoded_password := check_and_encode_password(password)
 	if encoded_password == "" {
@@ -45,7 +46,7 @@ func (k Keycloak) SetPassword(password string) {
 	k.ResetPassword()
 }
 
-// Resets the keycloak password and restarts keycloak
+// Resets the admin keycloak password and restarts keycloak
 func (k Keycloak) ResetPassword() {
 	_, decodedMap := get_postgress_creds()
 	start_local_psql_pod()
@@ -64,7 +65,7 @@ func (k Keycloak) ResetPassword() {
 
 func check_and_encode_password(password string) string {
 	// Check password length
-	if len(password) < MinPassowordLength {
+	if len(password) < minPasswordLength {
 		fmt.Println("Password must be at least 10 characters long")
 		return ""
 	}
