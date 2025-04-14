@@ -22,6 +22,8 @@ spec:
      repoURL: https://github.com/open-edge-platform/edge-manageability-framework.git
      path: argocd/applications/configs/capi-providers
      targetRevision: capi-metrics
+     directory:
+       recurse: true
   destination:
     namespace: {{$namespace}}
     server: {{ required "A valid targetServer entry required!" .Values.argo.targetServer }}
