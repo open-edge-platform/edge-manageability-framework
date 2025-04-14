@@ -132,8 +132,6 @@ Execute the following instructions on your development machine.
     ${TRAEFIK_IP} "observability-ui.cluster.onprem"
     ${TRAEFIK_IP} "onboarding-node.cluster.onprem"
     ${TRAEFIK_IP} "onboarding-stream.cluster.onprem"
-    ${TRAEFIK_IP} "onboarding.cluster.onprem"
-    ${TRAEFIK_IP} "orchestrator-license.cluster.onprem"
     ${TRAEFIK_IP} "registry-oci.cluster.onprem"
     ${TRAEFIK_IP} "registry.cluster.onprem"
     ${TRAEFIK_IP} "release.cluster.onprem"

@@ -99,7 +99,7 @@ func kubectlDebugNamespace(name string) error {
 	return nil
 }
 
-func (Deploy) kind(targetEnv string) error { //nolint:gocyclo
+func (d Deploy) kind(targetEnv string) error { //nolint:gocyclo
 	targetEnvType, err := (Config{}).getTargetEnvType(targetEnv)
 	if err != nil || targetEnvType != "kind" {
 		return fmt.Errorf("wrong environment specified for kind deployment: %s is a %s orchestrator definition", targetEnv, targetEnvType)
@@ -195,7 +195,7 @@ func (Deploy) kind(targetEnv string) error { //nolint:gocyclo
 	//       functions to work properly.
 	//
 	// Clone and update the Gitea deployment repo
-	if err := (Deploy{}).updateDeployRepo(targetEnv, deployRepoPath, deployRepoName, deployGiteaRepoDir); err != nil {
+	if err := d.updateDeployRepo(targetEnv, deployRepoPath, deployRepoName, deployGiteaRepoDir); err != nil {
 		return fmt.Errorf("error updating deployment repo content: %w", err)
 	}
 
@@ -216,7 +216,7 @@ func (Deploy) kind(targetEnv string) error { //nolint:gocyclo
 		time.Sleep(argoRetryInterval * time.Second)
 	}
 
-	giteaUser, giteaToken, err := (Deploy{}).getArgoGiteaCredentials()
+	giteaUser, giteaToken, err := d.getArgoGiteaCredentials()
 	if err != nil {
 		return fmt.Errorf("error getting gitea credentials: %w", err)
 	}
@@ -899,7 +899,7 @@ func (Deploy) generateInfraCerts() error {
 	return nil
 }
 
-func (Deploy) gitea(bootstrapValues []string, targetEnv string) error {
+func (d Deploy) gitea(bootstrapValues []string, targetEnv string) error {
 	// Deploy Gitea
 	giteaRegistry := "oci://registry-1.docker.io/giteacharts/gitea"
 
@@ -958,7 +958,7 @@ func (Deploy) gitea(bootstrapValues []string, targetEnv string) error {
 
 	// Create the Gitea argocd edge-managability-framework repo
 	fmt.Println("Creating edge-managability-framework repo in Gitea")
-	if err := createOrUpdateGiteaRepo(argoGiteaUsername, argoGiteaPassword, deployRepoName); err != nil {
+	if err := d.createOrUpdateGiteaRepo(deployRepoName); err != nil {
 		fmt.Println("Error creating edge-managability-framework repo in Gitea")
 		return err
 	}
@@ -1013,6 +1013,7 @@ func createOrUpdateGiteaAccount(username string, password string) error {
 	return nil
 }
 
+// Get the Gitea credentials from the Kubernetes secret argocd-gitea-credential in orch-platform namespace
 func (Deploy) getArgoGiteaCredentials() (string, string, error) {
 	// Load the username from the Kubernetes secret argocd-gitea-credential in orch-platform namespace
 	cmd := "kubectl get secret argocd-gitea-credential -n orch-platform -o jsonpath='{.data.username}'"
@@ -1043,6 +1044,7 @@ func (Deploy) getArgoGiteaCredentials() (string, string, error) {
 	return string(decodedUsername), string(decodedPassword), nil
 }
 
+// startGiteaPortForward starts a port-forward to the Gitea service and returns the command.
 func (Deploy) startGiteaPortForward() (*exec.Cmd, error) {
 	// Get the service port for gitea-http in the gitea namespace
 	cmd := "kubectl get svc gitea-http -n gitea -o jsonpath='{.spec.ports[0].port}'"
@@ -1104,6 +1106,7 @@ func (Deploy) startGiteaPortForward() (*exec.Cmd, error) {
 	return portForwardCmd, nil
 }
 
+// stopGiteaPortForward stops the Gitea port-forward process.
 func (Deploy) stopGiteaPortForward(portForwardCmd *exec.Cmd) error {
 	if err := portForwardCmd.Process.Kill(); err != nil {
 		return fmt.Errorf("error stopping port-forward: %w", err)
@@ -1111,20 +1114,21 @@ func (Deploy) stopGiteaPortForward(portForwardCmd *exec.Cmd) error {
 	return nil
 }
 
-func createOrUpdateGiteaRepo(username string, password string, repo string) error {
+// createOrUpdateGiteaRepo creates or updates a Gitea repository
+func (d Deploy) createOrUpdateGiteaRepo(repo string) error {
 	// Get the Gitea credentials from the Kubernetes secret, the randomly generated password constants are not
 	// safe as this commit/update may be part of a separate mage run than the initial deployment
-	gitUsername, gitPassword, err := (Deploy{}).getArgoGiteaCredentials()
+	gitUsername, gitPassword, err := d.getArgoGiteaCredentials()
 	if err != nil {
 		return fmt.Errorf("error getting Gitea credentials: %w", err)
 	}
 
-	portForwardCmd, err := (Deploy{}).startGiteaPortForward()
+	portForwardCmd, err := d.startGiteaPortForward()
 	if err != nil {
 		return fmt.Errorf("error starting Gitea port-forward: %w", err)
 	}
 	defer func() {
-		if err := (Deploy{}).stopGiteaPortForward(portForwardCmd); err != nil {
+		if err := d.stopGiteaPortForward(portForwardCmd); err != nil {
 			fmt.Printf("error stopping Gitea port-forward: %v\n", err)
 		}
 	}()
@@ -1159,7 +1163,134 @@ func createOrUpdateGiteaRepo(username string, password string, repo string) erro
 	return nil
 }
 
-func (Deploy) updateDeployRepo(targetEnv, gitRepoPath, repoName, localClonePath string) error {
+// cloneDeployRepo clones the deployment repository to the local clone path
+func cloneDeployRepo(localClonePath, gitRepoPath, repoName string) error {
+	// Ensure the localClonePath path exists and doesn't have a copy of the repo already cloned
+	if _, err := os.Stat(localClonePath); os.IsNotExist(err) {
+		if err := os.MkdirAll(localClonePath, 0o755); err != nil {
+			return fmt.Errorf("error creating directory %s: %w", localClonePath, err)
+		}
+	}
+	if err := os.Chdir(localClonePath); err != nil {
+		return fmt.Errorf("error changing to directory %s: %w", localClonePath, err)
+	}
+	if _, err := os.Stat(repoName); err == nil {
+		if err := os.RemoveAll(repoName); err != nil {
+			return fmt.Errorf("error removing directory %s: %w", repoName, err)
+		}
+	}
+
+	// Clone the gitea repository using the port-forwarded address. This depends on the port-forward
+	// connection being established.
+	cmd := fmt.Sprintf("git clone https://localhost:9654/%s %s", gitRepoPath, repoName)
+	if _, err := script.Exec(cmd).Stdout(); err != nil {
+		return fmt.Errorf("error cloning repository: %w", err)
+	}
+
+	return nil
+}
+
+// syncDeployRepoContent copies the deployment files from the source directory to the destination directory
+func syncDeployRepoContent(targetEnv, dstDir, srcDir string) error {
+	// Copy argocd deployment files to the dstDir directory (expected to be cloned deployment repo path)
+	filesToCopy := []string{"VERSION", "argocd/", "argocd-internal/", "orch-configs/profiles/"}
+	filesToCopy = append(filesToCopy, fmt.Sprintf("orch-configs/clusters/%s.yaml", targetEnv))
+
+	for _, file := range filesToCopy {
+		src := filepath.Join(srcDir, file)
+		dst := filepath.Join(dstDir, file)
+
+		// Check if the source exists
+		if _, err := os.Stat(src); os.IsNotExist(err) {
+			return fmt.Errorf("source file or directory does not exist: %s", src)
+		}
+
+		// Coder environments are silently ignoring the copy overwrite of gitea repo contents.
+		// Forcing the delete and re-copy to get this update to work properly in Coder environments.
+		if _, err := os.Stat(dst); err == nil {
+			if err := os.RemoveAll(dst); err != nil {
+				return fmt.Errorf("error removing existing destination: %s, %w", dst, err)
+			}
+		}
+
+		// Create the destination directory if it doesn't exist to prevent errors with files in nested directories
+		if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+			return fmt.Errorf("error creating directory %s: %w", filepath.Dir(dst), err)
+		}
+
+		// Copy the file or directory
+		cmd := fmt.Sprintf("cp -rf %s %s", src, dst)
+		if _, err := script.Exec(cmd).Stdout(); err != nil {
+			return fmt.Errorf("error copying %s to %s: %w", src, dst, err)
+		}
+	}
+
+	return nil
+}
+
+// commitAndPushGiteaRepo commits and pushes changes to the Gitea repository
+func commitAndPushGiteaRepo(gitRepoPath, gitUsername, gitPassword string) error {
+	// This function assumes that the current working directory is the root of the locally cloned repository path
+	// Add all changes to git
+	// Get the VERSION file content
+	if _, err := script.Exec("git config user.email 'mage@local'").Stdout(); err != nil {
+		return fmt.Errorf("error setting git user email: %w", err)
+	}
+	if _, err := script.Exec("git config user.name 'mage'").Stdout(); err != nil {
+		return fmt.Errorf("error setting git user name: %w", err)
+	}
+
+	version, err := os.ReadFile("VERSION")
+	if err != nil {
+		return fmt.Errorf("error reading VERSION file: %w", err)
+	}
+	version = bytes.TrimSpace(version)
+
+	// Check if there are changes to commit
+	changes := false
+	out, err := script.Exec("git status --porcelain").String()
+	if err != nil {
+		return fmt.Errorf("error checking git status: %w", err)
+	}
+	lines := strings.Split(out, "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "M") || strings.HasPrefix(line, "??") {
+			changes = true
+			break
+		}
+	}
+
+	// return successfully if there are no changes to commit and push as those commands will error out with no changes
+	if !changes {
+		fmt.Println("No changes to commit")
+		return nil
+	}
+
+	// Add all local path change to gitea
+	cmd := "git add ."
+	if _, err := script.Exec(cmd).Stdout(); err != nil {
+		return fmt.Errorf("error adding changes to git: %w", err)
+	}
+
+	// Commit the changes with a basic version message
+	cmd = fmt.Sprintf("git commit -m 'update deployment to version: %s'", version)
+	if _, err := script.Exec(cmd).Stdout(); err != nil {
+		return fmt.Errorf("error committing changes: %w", err)
+	}
+	escapedGitPassword := url.QueryEscape(gitPassword)
+	// Push the changes to the gitea repository
+	cmd = fmt.Sprintf("git push 'https://%s:%s@localhost:9654/%s'", gitUsername, escapedGitPassword, gitRepoPath)
+	if _, err := script.Exec(cmd).Stdout(); err != nil {
+		return fmt.Errorf("error pushing changes to remote repository: %w , %v", err, cmd)
+	}
+	fmt.Printf("Repository %s updated successfully\n", gitRepoPath)
+
+	return nil
+}
+
+// updateDeployRepo updates the deployment repository with the latest changes
+func (d Deploy) updateDeployRepo(targetEnv, gitRepoPath, repoName, localClonePath string) error {
 	// Get the current working directory so we can return to it when this function exits
 	originalDir, err := os.Getwd()
 	fmt.Printf("updateDeployRepo initial working directory: %s\n", originalDir)
@@ -1172,19 +1303,19 @@ func (Deploy) updateDeployRepo(targetEnv, gitRepoPath, repoName, localClonePath 
 		}
 	}()
 
-	portForwardCmd, err := (Deploy{}).startGiteaPortForward()
+	portForwardCmd, err := d.startGiteaPortForward()
 	if err != nil {
 		return fmt.Errorf("error starting Gitea port-forward: %w", err)
 	}
 	defer func() {
-		if err := (Deploy{}).stopGiteaPortForward(portForwardCmd); err != nil {
+		if err := d.stopGiteaPortForward(portForwardCmd); err != nil {
 			fmt.Printf("error stopping Gitea port-forward: %v\n", err)
 		}
 	}()
 
 	// Get the Gitea credentials from the Kubernetes secret, the randomly generated password constants are not
 	// safe as this commit/update may be part of a separate mage run than the initial deployment
-	gitUsername, gitPassword, err := (Deploy{}).getArgoGiteaCredentials()
+	gitUsername, gitPassword, err := d.getArgoGiteaCredentials()
 	if err != nil {
 		return fmt.Errorf("error getting Gitea credentials: %w", err)
 	}
@@ -1192,90 +1323,29 @@ func (Deploy) updateDeployRepo(targetEnv, gitRepoPath, repoName, localClonePath 
 	// Set GIT_SSL_NO_VERIFY=true for git commmands that we are running through the port forward tunnel
 	os.Setenv("GIT_SSL_NO_VERIFY", "true")
 
-	// Ensure the localClonePath path exists and doesn't have a copy of the repo already cloned
-	if _, err := os.Stat(localClonePath); os.IsNotExist(err) {
-		if err := os.MkdirAll(localClonePath, 0o755); err != nil {
-			return fmt.Errorf("error creating directory %s: %w", localClonePath, err)
-		}
-	}
-	if err := os.Chdir(localClonePath); err != nil {
-		return fmt.Errorf("error changing to directory %s: %w", localClonePath, err)
-	}
-	if _, err := os.Stat(deployRepoName); err == nil {
-		if err := os.RemoveAll(deployRepoName); err != nil {
-			return fmt.Errorf("error removing directory %s: %w", deployRepoName, err)
-		}
+	// Init/Clean local clone path, change directory to it, and clone the repo
+	// Note: The cwd will be set to the localClonePath directory after this command
+	if err := cloneDeployRepo(localClonePath, gitRepoPath, repoName); err != nil {
+		return fmt.Errorf("error cloning deploy repo: %w", err)
 	}
 
-	// Clone the repository using the port-forwarded address
-	cmd := fmt.Sprintf("git clone https://localhost:9654/%s %s", gitRepoPath, repoName)
-	if _, err := script.Exec(cmd).Stdout(); err != nil {
-		return fmt.Errorf("error cloning repository: %w", err)
+	// Sync argocd deploy content from the root source path to the deploy repo clone path
+	if err := syncDeployRepoContent(targetEnv, repoName, "../.."); err != nil {
+		return fmt.Errorf("error updating deploy repo content: %w", err)
 	}
 
-	// Copy files and directories to the newly cloned deployRepoPath
-	filesToCopy := []string{"VERSION", "argocd", "argocd-internal", "orch-configs/profiles"}
-	filesToCopy = append(filesToCopy, fmt.Sprintf("orch-configs/clusters/%s.yaml", targetEnv))
-
-	for _, file := range filesToCopy {
-		src := filepath.Join("../..", file)
-		dst := filepath.Join(repoName, file)
-
-		// Check if the source exists
-		if _, err := os.Stat(src); os.IsNotExist(err) {
-			return fmt.Errorf("source file or directory does not exist: %s", src)
-		}
-
-		if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
-			return fmt.Errorf("error creating directory %s: %w", filepath.Dir(dst), err)
-		}
-
-		// Copy the file or directory
-		cmd := fmt.Sprintf("cp -r %s %s", src, dst)
-		if _, err := script.Exec(cmd).Stdout(); err != nil {
-			return fmt.Errorf("error copying %s to %s: %w", src, dst, err)
-		}
-	}
-
-	// Navigate to the deployRepoPath
+	// Navigate to the deploy repo directory
 	if err := os.Chdir(repoName); err != nil {
-		return fmt.Errorf("error changing to directory %s: %w", repoName, err)
+		return fmt.Errorf("error changing to the repo directory %s: %w", repoName, err)
 	}
 
-	// Add all changes to git
-	cmd = "git add ."
-	if _, err := script.Exec(cmd).Stdout(); err != nil {
-		return fmt.Errorf("error adding changes to git: %w", err)
-	}
-
-	// Get the VERSION file content
-	version, err := os.ReadFile("VERSION")
-	if err != nil {
-		return fmt.Errorf("error reading VERSION file: %w", err)
-	}
-	version = bytes.TrimSpace(version)
-
-	if _, err := script.Exec("git config user.email 'mage@local'").Stdout(); err != nil {
-		return fmt.Errorf("error setting git user email: %w", err)
-	}
-	if _, err := script.Exec("git config user.name 'mage'").Stdout(); err != nil {
-		return fmt.Errorf("error setting git user name: %w", err)
-	}
-
-	// Commit the changes with the appropriate message
-	cmd = fmt.Sprintf("git commit -m 'update deployment to version: %s'", version)
-	if _, err := script.Exec(cmd).Stdout(); err != nil {
-		return fmt.Errorf("error committing changes: %w", err)
-	}
-	escapedGitPassword := url.QueryEscape(gitPassword)
-	// Push the changes to the gitea repository
-	cmd = fmt.Sprintf("git push 'https://%s:%s@localhost:9654/%s'", gitUsername, escapedGitPassword, gitRepoPath)
-	if _, err := script.Exec(cmd).Stdout(); err != nil {
-		return fmt.Errorf("error pushing changes to remote repository: %w , %v", err, cmd)
+	// Commit and push gitea repo update
+	if err := commitAndPushGiteaRepo(gitRepoPath, gitUsername, gitPassword); err != nil {
+		return fmt.Errorf("error updating gitea repo content: %w", err)
 	}
 
 	// Add any additional logic for updating the repository if needed
-	fmt.Printf("Repository %s updated successfully at %s\n", deployRepoName, deployRepoPath)
+	fmt.Printf("Repository %s updated successfully at %s/%s\n", gitRepoPath, localClonePath, repoName)
 	return nil
 }
 
