@@ -313,6 +313,36 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			})
 		})
 
+		Describe("App Service Proxy service", Label(appOrch), func() {
+			It("should verify ASP response headers", func() {
+				resp, err := cli.Get("https://app-service-proxy." + serviceDomainWithPort + "/app-service-proxy-test")
+				Expect(err).ToNot(HaveOccurred())
+				defer resp.Body.Close()
+				for k, v := range secureHeadersAddAppOrch() {
+					Expect(k).To(BeKeyOf(resp.Header))
+					Expect(resp.Header.Values(k)).To(ContainElements(v))
+				}
+				for _, k := range secureHeadersRemove() {
+					Expect(k).ToNot(BeKeyOf(resp.Header))
+				}
+			})
+		})
+
+		Describe("VNC service", Label(appOrch), func() {
+			It("should verify VNC response headers", func() {
+				resp, err := cli.Get("https://vnc." + serviceDomainWithPort + "/?project=p1&app=a1&cluster=c1&vm=v1")
+				Expect(err).ToNot(HaveOccurred())
+				defer resp.Body.Close()
+				for k, v := range secureHeadersAddAppOrch() {
+					Expect(k).To(BeKeyOf(resp.Header))
+					Expect(resp.Header.Values(k)).To(ContainElements(v))
+				}
+				for _, k := range secureHeadersRemove() {
+					Expect(k).ToNot(BeKeyOf(resp.Header))
+				}
+			})
+		})
+
 		// FIXME: Test is needs to be improved to use other source of truth for version
 		PIt("should have the version set in the configuration", func() {
 			resp, err := cli.Get("https://web-ui." + serviceDomainWithPort + "/runtime-config.js")
@@ -336,6 +366,32 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			content, err := io.ReadAll(resp.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(string(content)).To(ContainSubstring(fmt.Sprintf("orchestrator: \"%s\",", orchVersion)))
+		})
+
+		It("should respond to OPTIONS on 403 without server disclosure", Label(ui), func() {
+			// Create OPTIONS request to a non-existent URL
+			req, err := http.NewRequest("OPTIONS", "https://web-ui."+serviceDomainWithPort+"/mfe/infrastructure/679.d844fa89e1647e1784b6.js", nil)
+			Expect(err).ToNot(HaveOccurred())
+
+			resp, err := cli.Do(req)
+			Expect(err).ToNot(HaveOccurred())
+			defer resp.Body.Close()
+
+			// Check status code (should be 403)
+			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
+
+			// Verify response doesn't contain nginx server information
+			content, err := io.ReadAll(resp.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(string(content)).ToNot(ContainSubstring("nginx"))
+			Expect(string(content)).To(ContainSubstring("Error 40x"))
+			Expect(string(content)).To(ContainSubstring("<p>"))
+			Expect(string(content)).To(ContainSubstring("Oops! The page you are looking for cannot be found"))
+			Expect(string(content)).To(ContainSubstring("permission to access it."))
+			Expect(string(content)).To(ContainSubstring("</p>"))
+
+			// Verify server header is not present
+			Expect("Server").ToNot(BeKeyOf(resp.Header))
 		})
 	})
 
@@ -888,6 +944,19 @@ func secureHeadersAdd() map[string][]string {
 			"accelerometer=(),ambient-light-sensor=(),autoplay=(),battery=(),camera=(),display-capture=(),document-domain=(),encrypted-media=(),fullscreen=(),gamepad=(),geolocation=(),gyroscope=(),layout-animations=(self),legacy-image-formats=(self),magnetometer=(),microphone=(),midi=(),oversized-images=(self),payment=(),picture-in-picture=(),publickey-credentials-get=(),speaker-selection=(),sync-xhr=(self),unoptimized-images=(self),unsized-media=(self),usb=(),screen-wake-lock=(),web-share=(),xr-spatial-tracking=()", //nolint: lll
 		},
 	}
+}
+
+func secureHeadersAddAppOrch() map[string][]string {
+	// adapted from https://owasp.org/www-project-secure-headers/ci/headers_add.json
+	appOrchSecureHeaders := secureHeadersAdd()
+
+	appOrchSecureHeaders["Content-Security-Policy"] = []string{fmt.Sprintf("default-src 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' ; frame-src 'self' https://keycloak.%s; style-src 'self'; img-src 'self' data:; connect-src 'self' https://keycloak.%s; upgrade-insecure-requests; block-all-mixed-content", //nolint: lll
+		serviceDomain, serviceDomain)}
+	appOrchSecureHeaders["Cross-Origin-Embedder-Policy"] = []string{"unsafe-none"}
+	delete(appOrchSecureHeaders, "X-Content-Type-Options")
+	delete(appOrchSecureHeaders, "X-Frame-Options")
+
+	return appOrchSecureHeaders
 }
 
 func secureHeadersRemove() []string {
