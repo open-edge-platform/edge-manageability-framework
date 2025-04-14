@@ -1,0 +1,34 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "1001"
+  name: coreprovider
+  namespace: dev
+spec:
+  project: dev
+  source:
+    repoURL: https://github.com/open-edge-platform/edge-manageability-framework.git
+    path: argocd/applications/configs/capi-providers/core
+    targetRevision: capi-metrics
+  destination:
+    namespace: capi-system
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 15
+      backoff:
+        duration: 10s
+        maxDuration: 3m0s
+        factor: 2
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
+

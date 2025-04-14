@@ -15,6 +15,7 @@ argo:
     fleet-controller: true
     capi-operator-pre: true
     capi-operator: true
+    capi-operator-metrics: true
     cluster-manager: true
     cluster-connect-gateway: true
     intel-infra-provider: true
