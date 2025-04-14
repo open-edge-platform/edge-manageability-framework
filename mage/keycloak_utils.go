@@ -87,7 +87,7 @@ func check_and_encode_password(password string) string {
 }
 
 func clean_up_psql_pod() {
-	command := "kubectl delete -n " + keycloak_namespace + " pod/psql"
+	command := "kubectl delete -n " + keycloak_namespace + " pod/keycloak-recovery-psql"
 	exec.Command("bash", "-c", command).CombinedOutput()
 }
 
@@ -101,13 +101,13 @@ func set_keycloak_password(encoded_password string) {
 }
 
 func start_local_psql_pod() {
-	command := "kubectl run -n " + keycloak_namespace + " psql --image=bitnami/postgresql -- sh -c 'sleep 10000'"
+	command := "kubectl run -n " + keycloak_namespace + " keycloak-recovery-psql --image=bitnami/postgresql -- sh -c 'sleep 10000'"
 	_, err := exec.Command("bash", "-c", command).CombinedOutput()
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 	fmt.Println("Spinning up an pod in the same namespace as keycloak.")
-	command = "kubectl logs -n " + keycloak_namespace + " psql"
+	command = "kubectl logs -n " + keycloak_namespace + " keycloak-recovery-psql"
 
 	for {
 		outputlog, err := exec.Command("bash", "-c", command).CombinedOutput()
@@ -145,7 +145,7 @@ func run_sql_command(decodedMap map[string]string, sqlCommand string) string {
 		sqlCommand,
 	)
 
-	command := "kubectl exec -i -n " + keycloak_namespace + " pod/psql -- sh -c ' " + psqlCommand + "'"
+	command := "kubectl exec -i -n " + keycloak_namespace + " pod/keycloak-recovery-psql -- sh -c ' " + psqlCommand + "'"
 	sql_output_byte, err := exec.Command("bash", "-c", command).CombinedOutput()
 	if err != nil {
 		// Print debug information
