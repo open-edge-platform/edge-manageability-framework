@@ -265,6 +265,21 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			}
 		})
 
+		It("should verify API response COOP & COEP headers", func() {
+			req, err := http.NewRequest("GET", "https://api."+serviceDomainWithPort+"/v1/projects/sample-project/compute/os?filter='profile_name=\"tiberos-nonrt\"", nil)
+			Expect(err).ToNot(HaveOccurred())
+			user := fmt.Sprintf("%s-edge-op", util.TestUser)
+			token := getKeycloakJWT(cli, user)
+			req.Header.Add("Authorization", "Bearer "+token)
+			resp, err := cli.Do(req)
+			Expect(err).ToNot(HaveOccurred())
+			defer resp.Body.Close()
+			for k, v := range coopCoepHeaders() {
+				Expect(k).To(BeKeyOf(resp.Header))
+				Expect(resp.Header.Values(k)).To(ContainElements(v))
+			}
+		})
+
 		It("should verify API response CORS headers", func() {
 			req, err := http.NewRequest("OPTIONS", "https://api."+serviceDomainWithPort+"/v1/projects/sample-project/compute/os?filter='profile_name=\"tiberos-nonrt\"", nil)
 			Expect(err).ToNot(HaveOccurred())
@@ -321,6 +336,32 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			content, err := io.ReadAll(resp.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(string(content)).To(ContainSubstring(fmt.Sprintf("orchestrator: \"%s\",", orchVersion)))
+		})
+
+		It("should respond to OPTIONS on 403 without server disclosure", Label(ui), func() {
+			// Create OPTIONS request to a non-existent URL
+			req, err := http.NewRequest("OPTIONS", "https://web-ui."+serviceDomainWithPort+"/mfe/infrastructure/679.d844fa89e1647e1784b6.js", nil)
+			Expect(err).ToNot(HaveOccurred())
+
+			resp, err := cli.Do(req)
+			Expect(err).ToNot(HaveOccurred())
+			defer resp.Body.Close()
+
+			// Check status code (should be 403)
+			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
+
+			// Verify response doesn't contain nginx server information
+			content, err := io.ReadAll(resp.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(string(content)).ToNot(ContainSubstring("nginx"))
+			Expect(string(content)).To(ContainSubstring("Error 40x"))
+			Expect(string(content)).To(ContainSubstring("<p>"))
+			Expect(string(content)).To(ContainSubstring("Oops! The page you are looking for cannot be found"))
+			Expect(string(content)).To(ContainSubstring("permission to access it."))
+			Expect(string(content)).To(ContainSubstring("</p>"))
+
+			// Verify server header is not present
+			Expect("Server").ToNot(BeKeyOf(resp.Header))
 		})
 	})
 
@@ -833,6 +874,13 @@ func corsHeader() map[string][]string {
 		"Access-Control-Allow-Headers":     {"*"},
 		"Access-Control-Allow-Credentials": {"true"},
 		"Access-Control-Max-Age":           {"100"},
+	}
+}
+
+func coopCoepHeaders() map[string][]string {
+	return map[string][]string{
+		"Cross-Origin-Embedder-Policy": {"require-corp"},
+		"Cross-Origin-Opener-Policy":   {"same-origin"},
 	}
 }
 
