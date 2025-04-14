@@ -1,0 +1,43 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+{{- $appName        := "capi-operator-metrics" }}
+{{- $namespace      := "capi-operator-system" }}
+{{- $syncWave       := "1000" }}
+---
+{{- if (index .Values.argo.enabled $appName) }}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "{{ $syncWave }}"
+  name: {{$appName}}
+  namespace: dev
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ required "A valid projectName entry required!" .Values.argo.project }}
+  source:
+    - repoURL: https://github.com/open-edge-platform/edge-manageability-framework.git
+      path: argocd/applications/configs/capi-providers
+      targetRevision: capi-metrics
+  destination:
+    namespace: {{$namespace}}
+    server: {{ required "A valid targetServer entry required!" .Values.argo.targetServer }}
+  syncPolicy:
+    {{- if .Values.argo.autosync }}
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 15
+      backoff:
+        duration: 10s
+        maxDuration: 3m0s
+        factor: 2
+    {{- end }}
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
+{{- end }}
