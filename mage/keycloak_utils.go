@@ -148,8 +148,7 @@ func run_sql_command(decodedMap map[string]string, sqlCommand string) string {
 	command := "kubectl exec -i -n " + keycloak_namespace + " pod/psql -- sh -c ' " + psqlCommand + "'"
 	sql_output_byte, err := exec.Command("bash", "-c", command).CombinedOutput()
 	if err != nil {
-		// Print the command
-
+		// Print debug information
 		fmt.Println("psql command to execute:")
 		fmt.Println(string(command))
 		fmt.Println("Bash command to execute:")
@@ -164,8 +163,7 @@ func run_sql_command(decodedMap map[string]string, sqlCommand string) string {
 
 func get_postgress_creds() (error, map[string]string) {
 	json_project, _ := exec.Command("kubectl", "get", "secret", "-n", keycloak_namespace, "platform-keycloak-local-postgresql", "-o", "json").CombinedOutput()
-	// json_project := string(byte_json_project)
-	// fmt.Printf(string(byte_json_project))
+
 	// Create a new map to store decoded values
 	decodedMap := make(map[string]string)
 
