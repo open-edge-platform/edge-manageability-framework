@@ -84,7 +84,7 @@ runs:
         npx cypress run --e2e \
           --config baseUrl=https://web-ui.cluster.onprem \
           -s cypress/e2e/infra/provision-hosts.cy.ts \
-          --env EN_SERIAL_NUMBER=${{ inputs.en_serial_number }}
+          --env EN_SERIAL_NUMBER=${{ inputs.en_serial_number }},EN_UUID=${{ env.EN_UUID }}
 
     - name: Run Verify Host test
       id: verify_host
