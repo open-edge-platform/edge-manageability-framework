@@ -17,6 +17,8 @@ import (
 )
 
 // Starts a TLS reverse proxy server that exposes all Orchestrator services over a single port on the given address.
+// This proxy assumes DNS is configured to point all Orchestrator DNS records to the given address. It is only useful
+// to expose the Orchestrator services externally of the host this is executed on (e.g., onboarding an Edge Node).
 func (Deploy) Proxy(ctx context.Context, addr string) error {
 	decodedCert, decodedKey, err := OrchTLSCertAndKey(ctx)
 	if err != nil {
@@ -44,11 +46,10 @@ func (Deploy) Proxy(ctx context.Context, addr string) error {
 	}
 
 	handler, err := NewReverseProxyHandler(
-		// TODO: Make configurable
 		map[string]string{
-			"argocd.":           "192.168.99.20",
-			"tinkerbell-nginx.": "192.168.99.40",
-			"traefik.":          "192.168.99.30",
+			"argocd.":           "argocd.cluster.onprem",
+			"tinkerbell-nginx.": "tinkerbell-nginx.cluster.onprem",
+			"traefik.":          "traefik.cluster.onprem",
 		},
 	)
 	if err != nil {
@@ -109,17 +110,23 @@ type ReverseProxyHandler struct {
 	Routes map[string]*httputil.ReverseProxy
 }
 
-func NewReverseProxyHandler(routeIPs map[string]string) (*ReverseProxyHandler, error) {
-	routes := make(map[string]*httputil.ReverseProxy, 3)
+func NewReverseProxyHandler(routeHosts map[string]string) (*ReverseProxyHandler, error) {
+	routes := make(map[string]*httputil.ReverseProxy, len(routeHosts))
 
-	for name, ip := range routeIPs {
-		proxy := httputil.NewSingleHostReverseProxy(
-			&url.URL{
-				Scheme: "https",
-				Host:   ip + ":443",
+	for name, host := range routeHosts {
+		proxy := &httputil.ReverseProxy{
+			Rewrite: func(r *httputil.ProxyRequest) {
+				r.SetXForwarded()
+
+				// Modify the request Host header to route to the correct backend and strip the port of the proxy
+				r.SetURL(&url.URL{
+					Scheme: "https",
+					Host:   host + ":443",
+				})
 			},
-		)
+		}
 
+		// TODO: Make configurable
 		proxy.Transport = &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
 			TLSClientConfig: &tls.Config{
