@@ -1,3 +1,3 @@
-# Secret Module
+# Secret module
 
-Module to create secrets and related policy
+Module to create AWS Secret Manager and configure related IAM policies

@@ -2,8 +2,8 @@
 
 ## Overview
 
-Welcome to the Edge Manageability Framework, a comprehensive suite designed to
-streamline and enhance the deployment and management of infrastructure and
+Welcome to the Edge Manageability Framework, a comprehensive solution designed
+to streamline and enhance the deployment and management of infrastructure and
 applications at the edge. This framework leverages cutting-edge technologies to
 provide robust solutions for hardware onboarding, secure workload deployment,
 and cluster lifecycle management, all centered around Kubernetes-based
@@ -17,13 +17,14 @@ range of features that cater to the unique demands of edge computing, ensuring
 seamless integration and operation across diverse hardware and software
 landscapes. Edge Orchestrator is designed to be the central hub for managing
 edge infrastructure and edge application deployments at scale across
-geographically distributed edge sites. It offers multitenancy and IDAM for
-tenants and offers automation, configuration, observability and alerting
-capabilities, dashboards for quick views of status and issue identification, and
-management of all infrastructure components including edge nodes (i.e. hosts)
-and clusters.
+geographically distributed edge sites. It offers automated application
+deployment based on customer-defined configuration & criteria, multitenancy and
+identity & access management for tenants, observability & alerting capabilities,
+dashboards for quick views of status & issue identification, and management of
+all software deployments & infrastructure components including edge nodes (i.e.
+hosts) and clusters.
 
-![Edge Manageability Framework High Level Component Diagram](Edge_Manageability_Framework_Readme_Image.png)
+![Edge Manageability Framework High Level Component Diagram](docs/Edge_Manageability_Framework_Readme_Image.png)
 
 ### Key Components and Repositories
 
@@ -132,9 +133,12 @@ Orchestrator.
 
 - Start by deploying your own
   orchestrator [in the cloud or on-premises](https://github.com/open-edge-platform/orch-docs/blob/main/docs/deployment_guide/index.rst)
-- Read the latest [Release Notes](https://github.com/open-edge-platform/orch-docs/blob/main/docs/release_notes/index.rst)
-  or explore the [User Guide](https://github.com/open-edge-platform/orch-docs/blob/main/docs/user_guide/index.rst)
-- Learn about all components and usage of them in the [Developer Guide](https://github.com/open-edge-platform/orch-docs/blob/main/docs/developer_guide/index.rst)
+- Read the
+  latest [Release Notes](https://github.com/open-edge-platform/orch-docs/blob/main/docs/release_notes/index.rst)
+  or explore
+  the [User Guide](https://github.com/open-edge-platform/orch-docs/blob/main/docs/user_guide/index.rst)
+- Learn about all components and usage of them in
+  the [Developer Guide](https://github.com/open-edge-platform/orch-docs/blob/main/docs/developer_guide/index.rst)
 - [Contribute](https://github.com/open-edge-platform/orch-docs/blob/main/docs/developer_guide/contributor_guide/index.rst)
   to the project
 

@@ -6,12 +6,13 @@ This directory contains scripts to manage AWS Aurora for Orchestrator.
 
 The database configuration must satisfy the following requirements:
 
-- One database instance to be shared by all Orchestrator services (M-A/C/I,
-  harbor, keycloak, vault, etc.)
+- One database instance to be shared by all Orchestrator services (App Orch,
+  Cluster Orch, Edge Infrastructure Manager, Keycloak, Vault, etc.)
 - Isolation between services achieved through dedicated credentials and
   databases
 - Region-level high availability to ensure database survival during node and/or
   entire AZ failures
+
 - Backup and restore capabilities
 - Data encryption in transit and at rest
 
