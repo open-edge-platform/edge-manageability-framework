@@ -13,8 +13,10 @@ import (
 	"github.com/magefile/mage/mg"
 )
 
-var keycloak_namespace = "orch-platform"
-var char_length = 10
+var (
+	keycloak_namespace = "orch-platform"
+	char_length        = 10
+)
 
 type Keycloak mg.Namespace
 
@@ -41,7 +43,6 @@ func (k Keycloak) SetPassword(password string) {
 
 // Resets the keycloak password and restarts keycloak
 func (k Keycloak) ResetPassword() {
-
 	_, decodedMap := get_postgress_creds()
 	start_local_psql_pod()
 	admin_id := run_sql_command(decodedMap, "SELECT id FROM user_entity where username = '\\'admin\\'';")
@@ -92,7 +93,6 @@ func clean_up_psql_pod() {
 	if err != nil {
 		fmt.Println("Error deleting pod:", err.Error())
 	}
-
 }
 
 func set_keycloak_password(encoded_password string) {
