@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2025 Intel Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+
 package mage
 
 // https://www.keycloak.org/server/bootstrap-admin-recovery
@@ -14,14 +18,14 @@ import (
 )
 
 var (
-	keycloak_namespace = "orch-platform"
-	char_length        = 10
+	keycloakNamespace  = "orch-platform"
+	MinPassowordLength = 10
 )
 
 type Keycloak mg.Namespace
 
 func (k Keycloak) GetPassword() {
-	command := "kubectl get secret -n " + keycloak_namespace + " platform-keycloak -o jsonpath='{.data.admin-password}' | base64 --decode"
+	command := "kubectl get secret -n " + keycloakNamespace + " platform-keycloak -o jsonpath='{.data.admin-password}' | base64 --decode"
 	out, err := exec.Command("bash", "-c", command).CombinedOutput()
 	if err != nil {
 		fmt.Println("Error executing command:", err)
@@ -60,7 +64,7 @@ func (k Keycloak) ResetPassword() {
 
 func check_and_encode_password(password string) string {
 	// Check password length
-	if len(password) < char_length {
+	if len(password) < MinPassowordLength {
 		fmt.Println("Password must be at least 10 characters long")
 		return ""
 	}
@@ -88,7 +92,7 @@ func check_and_encode_password(password string) string {
 }
 
 func clean_up_psql_pod() {
-	command := "kubectl delete -n " + keycloak_namespace + " pod/keycloak-recovery-psql"
+	command := "kubectl delete -n " + keycloakNamespace + " pod/keycloak-recovery-psql"
 	_, err := exec.Command("bash", "-c", command).CombinedOutput()
 	if err != nil {
 		fmt.Println("Error deleting pod:", err.Error())
@@ -96,13 +100,13 @@ func clean_up_psql_pod() {
 }
 
 func set_keycloak_password(encoded_password string) {
-	command := "kubectl -n " + keycloak_namespace + " get secret platform-keycloak -o yaml | yq e '.data.admin-password = \"" + encoded_password + "\"' | kubectl apply --force -f -"
+	command := "kubectl -n " + keycloakNamespace + " get secret platform-keycloak -o yaml | yq e '.data.admin-password = \"" + encoded_password + "\"' | kubectl apply --force -f -"
 	_, err := exec.Command("bash", "-c", command).CombinedOutput()
 	if err != nil {
 		fmt.Println("Error executing command:", err.Error())
 		return
 	}
-	command = "kubectl delete pod -n " + keycloak_namespace + " platform-keycloak-0"
+	command = "kubectl delete pod -n " + keycloakNamespace + " platform-keycloak-0"
 	_, err = exec.Command("bash", "-c", command).CombinedOutput()
 	if err != nil {
 		fmt.Println("Error deleting keycloak pod:", err.Error())
@@ -113,13 +117,13 @@ func set_keycloak_password(encoded_password string) {
 }
 
 func start_local_psql_pod() {
-	command := "kubectl run -n " + keycloak_namespace + " keycloak-recovery-psql --image=bitnami/postgresql -- sh -c 'sleep 10000'"
+	command := "kubectl run -n " + keycloakNamespace + " keycloak-recovery-psql --image=bitnami/postgresql -- sh -c 'sleep 10000'"
 	_, err := exec.Command("bash", "-c", command).CombinedOutput()
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 	fmt.Println("Spinning up an pod in the same namespace as keycloak.")
-	command = "kubectl logs -n " + keycloak_namespace + " keycloak-recovery-psql"
+	command = "kubectl logs -n " + keycloakNamespace + " keycloak-recovery-psql"
 
 	for {
 		outputlog, err := exec.Command("bash", "-c", command).CombinedOutput()
@@ -137,7 +141,7 @@ func start_local_psql_pod() {
 
 func run_keycloak_admin_bootstrap() {
 	// some strange encoding issue with the keycloak shell requires the export.
-	command := "kubectl exec -itn " + keycloak_namespace + " platform-keycloak-0" +
+	command := "kubectl exec -itn " + keycloakNamespace + " platform-keycloak-0" +
 		"  -- sh -c 'export KC_BOOTSTRAP_ADMIN_PASSWORD=\"$(echo $KC_BOOTSTRAP_ADMIN_PASSWORD)\"; /opt/bitnami/keycloak/bin/kc.sh bootstrap-admin user --username:env KC_BOOTSTRAP_ADMIN_USERNAME --password:env KC_BOOTSTRAP_ADMIN_PASSWORD'"
 	out, err := exec.Command("bash", "-c", command).CombinedOutput()
 	if err != nil {
@@ -157,7 +161,7 @@ func run_sql_command(decodedMap map[string]string, sqlCommand string) string {
 		sqlCommand,
 	)
 
-	command := "kubectl exec -i -n " + keycloak_namespace + " pod/keycloak-recovery-psql -- sh -c ' " + psqlCommand + "'"
+	command := "kubectl exec -i -n " + keycloakNamespace + " pod/keycloak-recovery-psql -- sh -c ' " + psqlCommand + "'"
 	sql_output_byte, err := exec.Command("bash", "-c", command).CombinedOutput()
 	if err != nil {
 		// Print debug information
@@ -174,7 +178,7 @@ func run_sql_command(decodedMap map[string]string, sqlCommand string) string {
 }
 
 func get_postgress_creds() (error, map[string]string) {
-	json_project, _ := exec.Command("kubectl", "get", "secret", "-n", keycloak_namespace, "platform-keycloak-local-postgresql", "-o", "json").CombinedOutput()
+	json_project, _ := exec.Command("kubectl", "get", "secret", "-n", keycloakNamespace, "platform-keycloak-local-postgresql", "-o", "json").CombinedOutput()
 
 	// Create a new map to store decoded values
 	decodedMap := make(map[string]string)
