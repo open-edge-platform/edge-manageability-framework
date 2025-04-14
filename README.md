@@ -31,18 +31,18 @@ hosts) and clusters.
 #### Edge Manageability Framework (deploy)
 
 - [edge-manageability-framework](https://github.com/open-edge-platform/edge-manageability-framework):
-  This repository is the central hub for deploying the Edge Orchestrator. It
-  includes Argo CD applications, Helm charts, and deployment scripts necessary
-  for setting up the orchestrator in various environments, including on-premise
-  and cloud-based setups.
+  The central hub for deploying the Edge Orchestrator. It includes Argo CD
+  applications, Helm charts, and deployment scripts necessary for setting up the
+  orchestrator in various environments, including on-premise and cloud-based
+  setups.
 
 #### Documentation
 
-- [orch-docs](https://github.com/open-edge-platform/orch-docs): Documentation
-  including deployment, user, developer, and contribution guides, API
-  references, tutorials, troubleshooting, and software architecture
-  specifications. You can also visit our documentaion hub here (TODO insert
-  release docs URL)
+- [orch-docs](https://github.com/open-edge-platform/orch-docs): Edge
+  Orchestrator documentation includes deployment, user, developer, and
+  contribution guides; and API references, tutorials, troubleshooting, and
+  software architecture specifications. You can also visit our documentaion hub
+  here (TODO insert release docs URL)
 
 #### Foundational Platform Services
 
@@ -91,6 +91,8 @@ hosts) and clusters.
 
 #### Edge Infrastructure Manager
 
+<<<<<<< HEAD
+
 - [infra-core](https://github.com/open-edge-platform/infra-core): Manages core
   infrastructure services.
 - [infra-managers](https://github.com/open-edge-platform/infra-managers):
@@ -119,6 +121,41 @@ hosts) and clusters.
   Deploys agents for managing edge nodes and hosts with policy-based management.
 - [virtual-edge-node](https://github.com/open-edge-platform/virtual-edge-node):
   Emulates hardware edge nodes.
+  =======
+- [infra-core](https://github.com/open-edge-platform/infra-core): Core services
+  for the Edge Infrastructure Manager.
+- [infra-managers](https://github.com/open-edge-platform/infra-managers):
+  Provides life-cycle management services for infrastructure resources.
+- [infra-onboarding](https://github.com/open-edge-platform/infra-onboarding):
+  Edge Node Onboarding and Provisioning services.
+- [infra-external](https://github.com/open-edge-platform/infra-external):
+  Extensions for the Edge Infrastructure Manager.
+- [infra-charts](https://github.com/open-edge-platform/infra-charts): Helm
+  charts for deploying Edge Infrastructure Manager services.
+
+#### Observability
+
+- [o11y-charts](https://github.com/open-edge-platform/o11y-charts): This
+  repository provides key Observability Helm Charts and its helper applications
+  deployable on the Edge Orchestrator.
+- [o11y-alerting-monitor](https://github.com/open-edge-platform/o11y-alerting-monitor):
+  Alerting Monitor service handles management of alert notifications in the Edge
+  Orchestrator.
+- [o11y-sre-exporter](https://github.com/open-edge-platform/o11y-sre-exporter):
+  SRE Exporter service enables exporting Edge Orchestrator's Service Level
+  Indicators (SLIs) and its key runtime metrics to external systems.
+- [o11y-tenant-controller](https://github.com/open-edge-platform/o11y-tenant-controller):
+  Observability Tenant Controller service maintains multitenancy configuration
+  for Observability (o11y) services on Edge Orchestrator.
+
+#### Edge Nodes / Hosts
+
+- [edge-node-agents](https://github.com/open-edge-platform/edge-node-agents):
+  Deploys agents for managing edge nodes and hosts with policy-based management.
+- [virtual-edge-node](https://github.com/open-edge-platform/virtual-edge-node):
+  Virtual Edge Node onboarding and deployment scripts and configurations.
+
+> > > > > > > 6df3f8218009ecec6b31a98a21e55f9060a4d982
 
 #### Secure Edge Deployment
 
