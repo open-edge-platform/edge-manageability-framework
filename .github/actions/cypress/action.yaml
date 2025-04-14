@@ -82,6 +82,7 @@ runs:
       shell: bash
       run: |
         npx cypress run --e2e \
+          --config baseUrl=https://web-ui.cluster.onprem \
           -s cypress/e2e/infra/provision-hosts.cy.ts \
           --env EN_SERIAL_NUMBER=${{ inputs.en_serial_number }}
 
