@@ -18,8 +18,8 @@ inputs:
     default: false
   infra:
     required: false
-    description: "Run Infra tests"
-    default: false
+    description: "List of tests to run for Edge Infra Manager"
+    default: "cypress/e2e/infra/infra-smoke.cy.ts" # set to empty string to skip
   infra_provision_hosts:
     require: false
     description: "Run Infra Provision Hosts tests"
@@ -31,15 +31,14 @@ inputs:
   admin:
     required: false
     description: "Run Admin tests"
-    default: false
+    default: true
   en_serial_number:
-    required: false
+    required: false # NOTE this is required if the infra tests are running
     description: "Serial number of the EN"
-    default: "SN123456"
+    default: ""
   en_uuid:
-    required: false
+    required: false # NOTE this is required if the infra tests are running
     description: "UUID of the EN"
-    default: "UUID123456"
 runs:
   using: "composite"
   steps:
@@ -48,12 +47,11 @@ runs:
       with:
         repository: open-edge-platform/orch-ui
         path: orch-ui
-        ref: 8c43536a86f067ef951f4913daefdb89b04e1b96
+        ref: a145d044ff73eade7a1e14d5c925108472d9aa48
         token: ${{ inputs.token }}
     - run: git log -1
       shell: bash
       working-directory: orch-ui
-    - name: Cache npm dependencies
       uses: actions/setup-node@v4.2.0
       with:
         cache: "npm"
@@ -71,13 +69,13 @@ runs:
           -s "cypress/e2e/admin/non-org-admin-smoke.cy.ts,cypress/e2e/admin/org-admin-smoke.cy.ts"
     - name: Run Edge Infra Manager Cypress tests
       id: infra_tests
-      if: ${{ always() && inputs.infra == 'true' }}
+      if: ${{ always() && inputs.infra != '' }}
       working-directory: orch-ui/tests
       shell: bash
       run: |
         npx cypress run --e2e \
-          -s cypress/e2e/infra/infra-smoke.cy.ts \
-          --env EN_UUID=${{ env.EN_UUID }}
+          -s ${{inputs.infra}} \
+          --env EN_SERIAL_NUMBER=${{ inputs.en_serial_number }}
 
     - name: Run Automatic Onboarding And Provisioning test
       id: auto_onboard_provision
@@ -89,7 +87,6 @@ runs:
           --config baseUrl=https://web-ui.cluster.onprem \
           -s cypress/e2e/infra/provision-hosts.cy.ts \
           --env EN_SERIAL_NUMBER=${{ inputs.en_serial_number }},EN_UUID=${{ inputs.en_uuid }}
-
     - name: Run Verify Host test
       id: verify_host
       if: ${{ always() && inputs.infra_verify_host == 'true' }}
@@ -99,9 +96,8 @@ runs:
         npx cypress run --e2e \
           -s cypress/e2e/infra/verify-hosts.cy.ts \
           --env EN_SERIAL_NUMBER=${{ inputs.en_serial_number }}
-
     - name: Collect Edge Infra Manager logs
-      if: ${{ always() && inputs.infra == 'true' }}
+      if: ${{ always() && inputs.infra != '' }}
       working-directory: orch-ui/tests
       shell: bash
       run: |
@@ -125,7 +121,7 @@ runs:
         kubectl get workflow -A > cypress/logs/edgeinfra/workflow.txt
         kubectl get hardware -A > cypress/logs/edgeinfra/hardware.txt
         kubectl get template -A > cypress/logs/edgeinfra/template.txt
-        kubectl get workflow -n orch-infra workflow-${{ env.EN_UUID }}-prod -o yaml || true > cypress/logs/edgeinfra/workflow-${{ env.EN_UUID }}-prod.log
+        kubectl get workflow -n orch-infra workflow-${{ inputs.en_uuid }}-prod -o yaml || true > cypress/logs/edgeinfra/workflow-${{ inputs.en_uuid }}-prod.log
     - name: Run Cluster Orch tests
       id: cluster_orch_tests
       if: ${{ always() && inputs.cluster_orch == 'true' }}
@@ -154,9 +150,7 @@ runs:
         kubectl logs -n orch-cluster -l app=southbound-api > cypress/logs/cluster-orch/southbound-api.log
 
         # ENiC components
-        kubectl -n enic exec -it $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c edge-node -- systemctl status rancher-system-agent > cypress/logs/cluster-orch/rancher-system-agent.log || true
-        kubectl -n enic exec -it $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c edge-node -- systemctl status rke2-server > cypress/logs/cluster-orch/rke2-server.log || true
-        kubectl -n enic exec -it $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c edge-node -- systemctl status rancher-system-agent > cypress/logs/cluster-orch/rancher-system-agent.log  || true
+        kubectl -n enic exec -it $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c edge-node -- journalctl -xeu cluster-agent --no-tail > cypress/logs/cluster-orch/enic-cluster-agent.log
     - name: Run AppOrch Cypress tests
       id: app_orch_tests
       if: ${{ always() && inputs.app_orch == 'true' }}
