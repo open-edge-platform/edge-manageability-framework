@@ -39,6 +39,7 @@ inputs:
   en_uuid:
     required: false # NOTE this is required if the infra tests are running
     description: "UUID of the EN"
+    default: ""
 runs:
   using: "composite"
   steps:
@@ -52,6 +53,7 @@ runs:
     - run: git log -1
       shell: bash
       working-directory: orch-ui
+    - name: Cache npm dependencies
       uses: actions/setup-node@v4.2.0
       with:
         cache: "npm"
@@ -96,6 +98,7 @@ runs:
         npx cypress run --e2e \
           -s cypress/e2e/infra/verify-hosts.cy.ts \
           --env EN_SERIAL_NUMBER=${{ inputs.en_serial_number }}
+
     - name: Collect Edge Infra Manager logs
       if: ${{ always() && inputs.infra != '' }}
       working-directory: orch-ui/tests

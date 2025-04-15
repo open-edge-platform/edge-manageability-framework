@@ -709,6 +709,7 @@ jobs:
         with:
           token: ${{ secrets.SYS_ORCH_GITHUB }}
           infra_provision_hosts: true
+          en_uuid: "uuid1234"
 
       - name: Start Ven
         env:
