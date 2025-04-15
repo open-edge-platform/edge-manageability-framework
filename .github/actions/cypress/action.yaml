@@ -36,6 +36,10 @@ inputs:
     required: false
     description: "Serial number of the EN"
     default: "SN123456"
+  en_uuid:
+    required: false
+    description: "UUID of the EN"
+    default: "UUID123456"
 runs:
   using: "composite"
   steps:
@@ -84,7 +88,7 @@ runs:
         npx cypress run --e2e \
           --config baseUrl=https://web-ui.cluster.onprem \
           -s cypress/e2e/infra/provision-hosts.cy.ts \
-          --env EN_SERIAL_NUMBER=${{ inputs.en_serial_number }},EN_UUID=${{ env.EN_UUID }}
+          --env EN_SERIAL_NUMBER=${{ inputs.en_serial_number }},EN_UUID=${{ inputs.en_uuid }}
 
     - name: Run Verify Host test
       id: verify_host
