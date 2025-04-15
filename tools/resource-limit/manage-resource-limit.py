@@ -56,6 +56,7 @@ def get_metrics(namespace, istio=False):
                 max_cpu = max(max_cpu, cpu)
                 min_cpu = min(min_cpu, cpu)
             max_cpu = max_cpu * 2
+            min_cpu = min_cpu // 2
             if pod_name in result:
                 result[pod_name][container_name] = {
                     "cpu": {
@@ -91,6 +92,7 @@ def get_metrics(namespace, istio=False):
                 max_memory = max(max_memory, memory)
                 min_memory = min(min_memory, memory)
             max_memory = max_memory * 2
+            min_memory = min_memory // 2
             if pod_name in result:
                 result[pod_name][container_name]["memory"] = {
                     "max": max_memory,
