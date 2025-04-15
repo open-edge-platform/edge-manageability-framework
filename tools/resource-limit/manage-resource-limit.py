@@ -16,8 +16,8 @@ from datetime import datetime, timedelta
 
 abspath = os.path.abspath(__file__)
 curr_dir = os.path.dirname(abspath)
-QUERY_PERIOD=7 # 7 days
-STEP="610" # 1/1000 of 7d
+QUERY_PERIOD = 7 # days
+STEP = "60" # seconds
 
 # Function to get metrics from the Metrics Server
 def get_metrics(namespace, istio=False):
@@ -127,11 +127,12 @@ def get_resource_config(namespace):
     mapping = load_mappings()
     metrics = get_metrics(namespace)
     resoruce_configs = {} # key -> requests and limits
-
+    if pod_prefixes not in mapping:
+        return {}, { "cpu_request": 0, "memory_request": 0, "cpu_limit": 0, "memory_limit": 0 }
+    pod_prefixes = mapping.get(namespace, {})
     for item in metrics:
         pod_name = item["pod_name"]
         container_config_mapping = {}
-        pod_prefixes = mapping.get(namespace, [])
         for pod_prefix in pod_prefixes:
             if pod_name.startswith(pod_prefix):
                 container_config_mapping = mapping[namespace][pod_prefix]
