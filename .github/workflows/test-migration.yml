@@ -1,0 +1,84 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: Test Migration
+
+on:
+  # Allow manually triggering the workflow
+  workflow_dispatch: {}
+  # Run on all commits that are pushed to all branches
+  push:
+    branches:
+      - main
+      - main-pass-validation
+
+  # Trigger workflow on PRs to all branches
+  pull_request:
+    branches:
+      - "*"
+    types:
+      - opened
+      - synchronize
+      - reopened
+  # Trigger workflow when enqueued to a merge group
+  merge_group:
+
+jobs:
+  test-charts-available:
+    name: Test charts are available in Release service
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+
+      - uses: actions/cache@v4.2.0
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Set up Git credentials
+        shell: bash
+        run: |
+          echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
+          git config --global url."https://${{ secrets.SYS_ORCH_GITHUB }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+
+      - name: Setup asdf and install dependencies
+        uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main
+
+      - name: Run test
+        run: mage test:ChartsAvailableOnReleaseService
+
+  test-containers-available:
+    name: Test containers are available in Release service
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+
+      - uses: actions/cache@v4.2.0
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Set up Go environment
+        shell: bash
+        run: |
+          echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
+          git config --global url."https://${{ secrets.SYS_ORCH_GITHUB }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+
+      - name: Setup asdf and install dependencies
+        uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main
+
+      - name: Run test
+        run: mage test:ContainersAvailableOnReleaseService true
