@@ -13,7 +13,6 @@ root:
     - orch-configs/profiles/enable-edgeinfra.yaml
     - orch-configs/profiles/enable-full-ui.yaml
     - orch-configs/profiles/enable-dev.yaml
-    - orch-configs/profiles/enable-autoprovision.yaml
     # proxy group should be specified as the first post-"enable" profile
     - orch-configs/profiles/proxy-none.yaml
     - orch-configs/profiles/profile-dev.yaml

@@ -9,6 +9,7 @@ param:
   orchPass: {{ .Values.argo.enic.orchestratorPass }}
   orchOrg: {{ .Values.argo.enic.orchestratorOrg }}
   orchProject: {{ .Values.argo.enic.orchestratorProject }}
+  enableNIO: true
 replicaCount: {{ .Values.argo.enic.replicas }}
 
 global:
