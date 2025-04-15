@@ -6,7 +6,7 @@ output "vpc_name" {
   value = var.vpc_name
 }
 output "public_subnets" {
-  value = data.aws_subnet.pubilc_subnets
+  value = data.aws_subnet.public_subnets
 }
 output "private_subnets" {
   value = data.aws_subnet.private_subnets
