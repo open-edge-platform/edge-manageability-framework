@@ -28,6 +28,8 @@ connectCSPs:
 - "https://alerting-monitor.{{ .Values.argo.clusterDomain }}"
 scriptSources:
 - "https://app-service-proxy.{{ .Values.argo.clusterDomain }}"
+connectCSPsAppOrch:
+- "https://keycloak.{{ .Values.argo.clusterDomain }}"
 clusterOrchNodeMatchHost: Host(`cluster-orch-node.{{ .Values.argo.clusterDomain }}`)
 logsNodeMatchHost: Host(`logs-node.{{ .Values.argo.clusterDomain }}`)
 metricsNodeMatchHost: Host(`metrics-node.{{ .Values.argo.clusterDomain }}`)
