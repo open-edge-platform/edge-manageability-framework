@@ -427,6 +427,9 @@ jobs:
       needs.check-changed-files.outputs.ci == 'true' ||
       github.ref == 'refs/heads/main' ||
       github.ref == 'refs/heads/main-pass-validation'
+      ) && (
+      !github.actor == 'sys-orch' &&
+      !contains(github.event.head_commit.message, 'Update VERSION to 3.0.0-dev')
       )
     runs-on: ubuntu-24.04-16core-64GB
     timeout-minutes: 90
@@ -645,6 +648,9 @@ jobs:
       needs.build-publish.result == 'success' ||
       github.ref == 'refs/heads/main' ||
       github.ref == 'refs/heads/main-pass-validation'
+      ) && (
+      !github.actor == 'sys-orch' &&
+      !contains(github.event.head_commit.message, 'Update VERSION to 3.0.0-dev')
       )
     runs-on: ubuntu-22.04-32core-128GB
     timeout-minutes: 120
