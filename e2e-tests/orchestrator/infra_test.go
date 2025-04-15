@@ -72,6 +72,7 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 				hostGrpcUrl = fmt.Sprintf("onboarding-node.%s:%d", serviceDomain, servicePort)
 				hostUrl     = baseProjAPIUrl + "/compute/hosts"
 				instanceUrl = baseProjAPIUrl + "/compute/instances"
+				osUrl       = baseProjAPIUrl + "/compute/os"
 				err         error
 				mac         = onboarding_manager.Mac()
 				hostUuid    = uuid.NewString()
@@ -87,8 +88,16 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 			err = onboarding_manager.GrpcInfraOnboardNewNode(hostGrpcUrl, *onbToken, mac, hostUuid)
 			Expect(err).ToNot(HaveOccurred(), "cannot create host")
 
+			hostID, err := onboarding_manager.HttpInfraOnboardGetHostID(ctx, hostUrl, *apiToken, cli, hostUuid)
+			Expect(err).ToNot(HaveOccurred(), "cannot get host")
+
+			osID, err := onboarding_manager.HttpInfraOnboardGetOSID(ctx, osUrl, *apiToken, cli)
+			Expect(err).ToNot(HaveOccurred(), "cannot get os")
+
+			Expect(onboarding_manager.HttpInfraOnboardNewInstance(instanceUrl, *apiToken, hostID, osID, cli)).To(Succeed())
+
 			// Get Host and Instance
-			_, _, err = onboarding_manager.HttpInfraOnboardGetHostAndInstance(ctx, hostUrl, *apiToken, cli, hostUuid)
+			_, _, err = onboarding_manager.HttpInfraOnboardGetHostIDAndInstanceID(ctx, hostUrl, *apiToken, cli, hostUuid)
 			Expect(err).ToNot(HaveOccurred(), "cannot get host and instance")
 
 			// Check if Workflow is created
@@ -109,6 +118,7 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 				hostRegUrl  = baseProjAPIUrl + "/compute/hosts/register"
 				hostUrl     = baseProjAPIUrl + "/compute/hosts"
 				instanceUrl = baseProjAPIUrl + "/compute/instances"
+				osUrl       = baseProjAPIUrl + "/compute/os"
 				err         error
 				mac         = onboarding_manager.Mac()
 				hostUuid    = uuid.New()
@@ -118,7 +128,7 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 			Expect(err).ToNot(HaveOccurred())
 
 			// Register Host
-			registeredHost, err := onboarding_manager.HttpInfraOnboardNewRegisterHost(hostRegUrl, *apiToken, cli, hostUuid)
+			registeredHost, err := onboarding_manager.HttpInfraOnboardNewRegisterHost(hostRegUrl, *apiToken, cli, hostUuid, false)
 			Expect(err).ToNot(HaveOccurred())
 			fmt.Printf("Registered Host: %+v\n", registeredHost)
 
@@ -141,13 +151,21 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 			Expect(err).ToNot(HaveOccurred())
 			Expect(nodeState).To(Equal(pb_om.OnboardNodeStreamResponse_NODE_STATE_ONBOARDED))
 
+			hostID, err := onboarding_manager.HttpInfraOnboardGetHostID(ctx, hostUrl, *apiToken, cli, hostUuid.String())
+			Expect(err).ToNot(HaveOccurred(), "cannot get host")
+
+			osID, err := onboarding_manager.HttpInfraOnboardGetOSID(ctx, osUrl, *apiToken, cli)
+			Expect(err).ToNot(HaveOccurred(), "cannot get os")
+
+			Expect(onboarding_manager.HttpInfraOnboardNewInstance(instanceUrl, *apiToken, hostID, osID, cli)).To(Succeed())
+
 			// Wait for host and instance reconciliation
 			reqCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 			defer cancel()
 			err = retry.UntilItSucceeds(
 				reqCtx,
 				func() error {
-					hostID, instanceID, err := onboarding_manager.HttpInfraOnboardGetHostAndInstance(reqCtx, hostUrl, *apiToken, cli, hostUuid.String())
+					hostID, instanceID, err := onboarding_manager.HttpInfraOnboardGetHostIDAndInstanceID(reqCtx, hostUrl, *apiToken, cli, hostUuid.String())
 					if err != nil {
 						if strings.Contains(err.Error(), "empty host result for uuid") || strings.Contains(err.Error(), "instance not yet created for uuid") {
 							// Continue retrying if the host result is empty or instance is not yet created
@@ -186,12 +204,12 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 			Expect(err).ToNot(HaveOccurred())
 
 			// Register Host
-			registeredHost, err := onboarding_manager.HttpInfraOnboardNewRegisterHost(hostRegUrl, *apiToken, cli, hostUuid)
+			registeredHost, err := onboarding_manager.HttpInfraOnboardNewRegisterHost(hostRegUrl, *apiToken, cli, hostUuid, false)
 			Expect(err).ToNot(HaveOccurred())
 			fmt.Printf("Registered Host: %+v\n", registeredHost)
 
 			// Retrieve the host ID
-			hostID, err = onboarding_manager.HttpInfraOnboardGetNode(ctx, hostUrl, *apiToken, cli, hostUuid.String())
+			hostID, err = onboarding_manager.HttpInfraOnboardGetHostID(ctx, hostUrl, *apiToken, cli, hostUuid.String())
 			Expect(err).ToNot(HaveOccurred())
 
 			// Verify registration with invalid UUID
@@ -277,13 +295,22 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 			Expect(err).ToNot(HaveOccurred())
 			hostUrl := baseProjAPIUrl + "/compute/hosts"
 			instanceUrl := baseProjAPIUrl + "/compute/instances"
+			osUrl := baseProjAPIUrl + "/compute/os"
 
 			reqCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
 			defer cancel()
 
 			// Invoke API using jwt token
 			Expect(grpcInfraOnboardNodeJWT(reqCtx, onbSBIUrl, servicePort, *enToken, hostUuid)).To(Succeed())
-			// Invoke API using jwt token
+
+			hostID, err := onboarding_manager.HttpInfraOnboardGetHostID(ctx, hostUrl, *apiToken, cli, hostUuid)
+			Expect(err).ToNot(HaveOccurred(), "cannot get host")
+
+			osID, err := onboarding_manager.HttpInfraOnboardGetOSID(ctx, osUrl, *apiToken, cli)
+			Expect(err).ToNot(HaveOccurred(), "cannot get os")
+
+			Expect(onboarding_manager.HttpInfraOnboardNewInstance(instanceUrl, *apiToken, hostID, osID, cli)).To(Succeed())
+
 			Expect(grpcInfraHostMgrJWT(reqCtx, hrmSBIUrl, servicePort, *enToken, hostUuid)).To(Succeed())
 
 			// Housekeeping
@@ -693,6 +720,7 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 
 			hostUrl := baseProjAPIUrl + "/compute/hosts"
 			instanceUrl := baseProjAPIUrl + "/compute/instances"
+			osUrl := baseProjAPIUrl + "/compute/os"
 			hostUuid := uuid.New().String()
 
 			reqCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
@@ -700,6 +728,14 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 
 			// Invoke API using jwt token
 			Expect(grpcInfraOnboardNodeJWT(reqCtx, omSBIUrl, servicePort, *onbToken, hostUuid)).To(Succeed())
+
+			hostID, err := onboarding_manager.HttpInfraOnboardGetHostID(ctx, hostUrl, *apiToken, cli, hostUuid)
+			Expect(err).ToNot(HaveOccurred(), "cannot get host")
+
+			osID, err := onboarding_manager.HttpInfraOnboardGetOSID(ctx, osUrl, *apiToken, cli)
+			Expect(err).ToNot(HaveOccurred(), "cannot get os")
+
+			Expect(onboarding_manager.HttpInfraOnboardNewInstance(instanceUrl, *apiToken, hostID, osID, cli)).To(Succeed())
 
 			// Housekeeping
 			Expect(cleanupHost(ctx, hostUrl, instanceUrl, *apiToken, cli, hostUuid)).To(Succeed())
@@ -998,7 +1034,7 @@ func sbiCallExpectErrorMsg(
 
 // cleanupHost is used to remove hosts that are created during the test.
 func cleanupHost(ctx context.Context, hostUrl, instanceUrl, apiToken string, cli *http.Client, hostUUID string) error {
-	hostID, instanceID, err := onboarding_manager.HttpInfraOnboardGetHostAndInstance(ctx, hostUrl, apiToken, cli, hostUUID)
+	hostID, instanceID, err := onboarding_manager.HttpInfraOnboardGetHostIDAndInstanceID(ctx, hostUrl, apiToken, cli, hostUUID)
 	if err != nil {
 		return err
 	}
@@ -1016,7 +1052,7 @@ func cleanupHost(ctx context.Context, hostUrl, instanceUrl, apiToken string, cli
 	err = retry.UntilItSucceeds(
 		reqCtx,
 		func() error {
-			hostID, err := onboarding_manager.HttpInfraOnboardGetNode(reqCtx, hostUrl, apiToken, cli, hostUUID)
+			hostID, err := onboarding_manager.HttpInfraOnboardGetHostID(reqCtx, hostUrl, apiToken, cli, hostUUID)
 			if hostID != "" {
 				err = fmt.Errorf("not removed yet")
 			}
