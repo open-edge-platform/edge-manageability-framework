@@ -124,7 +124,7 @@ runs:
         kubectl logs -n orch-cluster -l app=southbound-api > cypress/logs/cluster-orch/southbound-api.log
 
         # ENiC components
-        kubectl -n enic exec -it $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c edge-node -- journalctl -xeu cluster-agent --no-tail > smoke-test/logs/enic-cluster-agent-post.log
+        kubectl -n enic exec -it $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c edge-node -- journalctl -xeu cluster-agent --no-tail > cypress/logs/cluster-orch/enic-cluster-agent.log
     - name: Run AppOrch Cypress tests
       id: app_orch_tests
       if: ${{ always() && inputs.app_orch == 'true' }}
