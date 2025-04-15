@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-{{- $appName        := "tenancy-api-remapping" }}
+{{- $appName        := "tenancy-api-mapping" }}
 {{- $namespace      := "orch-iam" }}
 {{- $syncWave       := "1200" }}
 ---
@@ -20,8 +20,8 @@ spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
     - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
-      chart: common/charts/tenancy-api-remapping
-      targetRevision: 0.3.3
+      chart: common/charts/{{$appName}}
+      targetRevision: 0.4.0
       helm:
         releaseName: {{$appName}}
         valuesObject:

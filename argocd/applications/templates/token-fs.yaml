@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-{{- $appName        := "token-file-server" }}
+{{- $appName        := "token-fs" }}
 {{- $namespace      := "orch-secret" }}
 {{- $syncWave       := "1300" }}
 ---
@@ -21,7 +21,7 @@ spec:
   sources:
     - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
       chart: common/charts/{{$appName}}
-      targetRevision: 1.1.3
+      targetRevision: 1.2.0
       helm:
         releaseName: {{$appName}}
         valuesObject:
