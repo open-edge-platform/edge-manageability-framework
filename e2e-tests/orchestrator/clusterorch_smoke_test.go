@@ -247,7 +247,7 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 	Describe("Find Host by UUID", Label(clusterOrchSmoke), func() {
 		It("should find the host with the specified UUID", func() {
 			findHost := func() (bool, error) {
-				hostsResponse, err := getHosts(*edgeInfraToken, false)
+				hostsResponse, err := getHosts(*edgeInfraToken, true)
 				if err != nil {
 					return false, err
 				}

@@ -49,11 +49,6 @@ func (DevUtils) DeployEnic(replicas int, targetEnv string) error {
 		orchIP = orchIPEnv
 	}
 
-	orchUser := defaultUser
-	if orchUserEnv := os.Getenv("ORCH_USER"); orchUserEnv != "" {
-		orchUser = orchUserEnv
-	}
-
 	orchPass, err := GetDefaultOrchPassword()
 	if err != nil {
 		return err
@@ -70,6 +65,11 @@ func (DevUtils) DeployEnic(replicas int, targetEnv string) error {
 	orchProject := defaultProject
 	if orchProjectEnv := os.Getenv("ORCH_PROJECT"); orchProjectEnv != "" {
 		orchProject = orchProjectEnv
+	}
+
+	orchUser := fmt.Sprintf("%s-%s", orchProject, "onboarding-user")
+	if orchUserEnv := os.Getenv("ORCH_USER"); orchUserEnv != "" {
+		orchUser = orchUserEnv
 	}
 
 	targetConfig := getTargetConfig(targetEnv)
@@ -157,11 +157,6 @@ func (DevUtils) RegisterEnic() error {
 		return fmt.Errorf("error creating HTTP client: %w", err)
 	}
 
-	orchUser := defaultUser
-	if orchUserEnv := os.Getenv("ORCH_USER_API"); orchUserEnv != "" {
-		orchUser = orchUserEnv
-	}
-
 	orchPass, err := GetDefaultOrchPassword()
 	if err != nil {
 		return err
@@ -173,6 +168,11 @@ func (DevUtils) RegisterEnic() error {
 	orchProject := defaultProject
 	if orchProjectEnv := os.Getenv("ORCH_PROJECT"); orchProjectEnv != "" {
 		orchProject = orchProjectEnv
+	}
+
+	orchUser := fmt.Sprintf("%s-%s", orchProject, "onboarding-user")
+	if orchUserEnv := os.Getenv("ORCH_USER"); orchUserEnv != "" {
+		orchUser = orchUserEnv
 	}
 
 	orchFQDN := serviceDomain
