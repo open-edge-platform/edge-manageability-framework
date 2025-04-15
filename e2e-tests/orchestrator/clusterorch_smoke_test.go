@@ -77,18 +77,15 @@ func getEnv(key, fallback string) string {
 	return fallback
 }
 
-func getHosts(token string, assignedToSite bool) (string, error) {
+func getHosts(token string) (string, error) {
 	url := fmt.Sprintf(apiBaseURLTemplate+"/compute/hosts", serviceDomain, project)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return "", err
 	}
 	query := req.URL.Query()
-	if assignedToSite {
-		query.Add("filter", "(desiredState=HOST_STATE_ONBOARDED OR currentState=HOST_STATE_ONBOARDED) AND instance.desiredState=INSTANCE_STATE_RUNNING AND has(site) AND NOT has(instance.workloadMembers)")
-	} else {
-		query.Add("filter", "(desiredState=HOST_STATE_ONBOARDED OR currentState=HOST_STATE_ONBOARDED) AND instance.desiredState=INSTANCE_STATE_RUNNING AND NOT has(site) AND NOT has(instance.workloadMembers)")
-	}
+	query.Add("filter", "(desiredState=HOST_STATE_ONBOARDED OR currentState=HOST_STATE_ONBOARDED) AND instance.desiredState=INSTANCE_STATE_RUNNING AND NOT has(instance.workloadMembers)")
+
 	query.Add("offset", "0")
 	query.Add("orderBy", "name asc")
 	query.Add("pageSize", "100")
@@ -110,7 +107,7 @@ func getHosts(token string, assignedToSite bool) (string, error) {
 
 func getInstanceIdForHostGuid(token, guid string) string {
 	instanceId := ""
-	hostsResponse, err := getHosts(token, true)
+	hostsResponse, err := getHosts(token)
 	if err != nil {
 		return instanceId
 	}
@@ -247,7 +244,7 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 	Describe("Find Host by UUID", Label(clusterOrchSmoke), func() {
 		It("should find the host with the specified UUID", func() {
 			findHost := func() (bool, error) {
-				hostsResponse, err := getHosts(*edgeInfraToken, true)
+				hostsResponse, err := getHosts(*edgeInfraToken)
 				if err != nil {
 					return false, err
 				}
