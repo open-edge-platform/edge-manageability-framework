@@ -1300,6 +1300,7 @@ func (Gen) hostfile(ip string, addComment bool) error {
 	return nil
 }
 
+// BiosTraefikhostfile Generates the tinkerbell-nginx hostfile entry
 func (Gen) BiosTraefikhostfile(ip string, addComment bool) error {
 	hosts, err := (Gen{}).kubeBiosDnslookupDockerInternal()
 	if err != nil {
