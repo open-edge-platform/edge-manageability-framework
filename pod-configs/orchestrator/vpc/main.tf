@@ -87,7 +87,7 @@ module "jumphost" {
 }
 
 # Prepare for output
-data "aws_subnet" "pubilc_subnets" {
+data "aws_subnet" "public_subnets" {
   for_each          = var.public_subnets
   availability_zone = each.value.az
   cidr_block        = each.value.cidr_block
