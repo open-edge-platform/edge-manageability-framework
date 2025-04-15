@@ -10,12 +10,13 @@
 
 ### Directory for different categories
 
-Each directory contains a `main.tf` file a the Terraform entrypoint, and a `variable.tf` file to manage available vairables.
-
-- buckets:  set up S3 buckets to store Terraform state
-- account: set up resources under certain account, such as IAM roles.
-- vpc-external: set up external-facing VPCs, those VPCs will be fully managed by the team.
-- external/{subcategory}: Deployments for public clusters, such as production, public staging.
+- **buckets**: Sets up S3 buckets to store Terraform state
+- **orchestrator**: Contains Terraform configuration for orchestrator environments
+  - `cluster`: Cluster configs, including EKS cluster, storage, database, ...
+  - `vpc`: Virtual private cloud configs
+  - `orch-load-balancer`: Load balancing components
+  - `orch-route53`: Route53 DNS configs
+  - `pull-through-cache-proxy`: Proxy that redirects OCI requests to corresponding pull through cache path.
 
 ### The module directory
 
@@ -23,33 +24,7 @@ Each directory contains a `main.tf` file a the Terraform entrypoint, and a `vari
 
 ### The utils directory
 
-This directory contains utilities to manage the deployment, like the CLI for Aurora database.
-
-## Backends
-
-For every Terraform configs, we always use the following path format for S3 backend:
-
-S3 Bucket: `lp-devops-[AWS account alias]-terraform`
-S3 Key: `[AWS region]/[category]/[name or id]`
-
-
-## Deploy resources
-
-To deploy resources from a category, the first thing is to initialize Terraform modules and backend:
-
-`terraform init -backend-config environments/[environemnt]/backend.tf`
-
-This command will include required modules and download providers that used by the Terraform config.
-
-Next is to check if eveything will be configured/deployed as expected
-
-`terraform plan -var-file environments/[environment]/variable.tfvar`
-
-This will show the plan about which resources will be created or updated.
-
-Finally, we can use the following to apply Terraform configuration
-
-`terraform apply -var-file environments/[environment]/variable.tfvar`
+This directory contains utilities to manage the deployment.
 
 ## Naming convention
 
@@ -58,4 +33,3 @@ Directory, filename: all lower case with `-` as word separator.
 Terraform resource, data name: all lower case with `_` as word separator.
 
 Infra resource name(e.g., cluster name, vm name, subnet name): all lower case with `-` as word separator.
-
