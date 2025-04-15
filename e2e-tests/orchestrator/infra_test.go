@@ -19,6 +19,8 @@ import (
 
 	"github.com/bitfield/script"
 	"github.com/google/uuid"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"golang.org/x/oauth2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -308,8 +310,7 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 			Expect(err).ToNot(HaveOccurred(), "cannot get os")
 
 			Expect(onboarding_manager.HttpInfraOnboardNewInstance(instanceUrl, *apiToken, hostID, osID, cli)).To(Succeed())
-
-			// Invoke API using jwt token
+			
 			// Expecting FailedPrecondition as Instance is not provisioned yet, but it's enough to verify reachability
 			Expect(grpcInfraHostMgrJWT(reqCtx, hrmSBIUrl, servicePort, *enToken, hostUuid)).Should(
 				MatchError(ContainSubstring(
