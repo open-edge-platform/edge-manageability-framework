@@ -21,7 +21,7 @@ spec:
   sources:
     - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
       chart: orch-ui/charts/orch-metadata-broker
-      targetRevision: 0.4.7
+      targetRevision: 0.4.10
       helm:
         releaseName: {{$appName}}
         valuesObject:
