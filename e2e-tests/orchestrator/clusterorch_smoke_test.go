@@ -372,7 +372,7 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 				Expect(err).ToNot(HaveOccurred())
 				defer resp.Body.Close()
 				Expect(resp.StatusCode).To(Or(Equal(http.StatusOK), Equal(http.StatusNoContent)), fmt.Sprintf("Failed to delete deployment %s, HTTP status code: %d", *deployment.DeployId, resp.StatusCode))
-				fmt.Printf("Deployment %s(%s) has been successfully deleted.\n", *&deployment.Name, *deployment.DeployId)
+				fmt.Printf("Deployment %s (%s) has been successfully deleted.\n", *deployment.Name, *deployment.DeployId)
 			}
 		})
 	})
