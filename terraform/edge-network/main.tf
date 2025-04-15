@@ -9,7 +9,7 @@ resource "libvirt_network" "edge_network" {
 
   autostart = true
 
-  domain = var.network_domain
+  domain = var.dns_domain
 
   addresses = var.network_subnet_cidrs
 
@@ -28,7 +28,7 @@ resource "libvirt_network" "edge_network" {
     dynamic "hosts" {
       for_each = var.dns_hosts
       content {
-        hostname = hosts.value.hostname
+        hostname = "${hosts.value.hostname}.${var.dns_domain}"
         ip       = hosts.value.ip
       }
     }
@@ -43,7 +43,7 @@ resource "libvirt_network" "edge_network" {
     // Do not forward DNS queries for the local network domain
     options {
       option_name  = "local"
-      option_value = "/${var.network_domain}/"
+      option_value = "/${var.dns_domain}/"
     }
 
     // Forward queries to the configured DNS resolvers if the local domain is not matched
@@ -80,7 +80,7 @@ resource "libvirt_network" "edge_network" {
     }
     options {
       option_name  = "dhcp-boot"
-      option_value = var.dhcp_boot
+      option_value = "tag:efi-http,https://tinkerbell-nginx.${var.dns_domain}/tink-stack/signed_ipxe.efi"
     }
   }
 }

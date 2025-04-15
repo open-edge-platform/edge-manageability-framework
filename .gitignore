@@ -12,6 +12,7 @@ tools/router/traefik.yml
 tools/router/docker-compose.yml
 vault-keys.json
 mage_output_file.go
+static-magefile
 fleet-secret
 *.tgz
 *.tar.gz

@@ -6,6 +6,7 @@ package mage
 
 import (
 	"bufio"
+	"context"
 	"encoding/base64"
 	"fmt"
 	"os"
@@ -21,6 +22,9 @@ import (
 
 	"github.com/bitfield/script"
 	"gopkg.in/yaml.v3"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 func (Gen) dockerImageManifest() error {
@@ -1482,4 +1486,37 @@ Add to your system trust store so your browser or client trusts the TLS certific
 		filePath,
 	)
 	return nil
+}
+
+// OrchTLSCertAndKey returns the Orchestrator's TLS certificate and key.
+// TODO: Refactor existing code to use this.
+func OrchTLSCertAndKey(ctx context.Context) ([]byte, []byte, error) {
+	kubeconfig := os.Getenv("KUBECONFIG")
+	if kubeconfig == "" {
+		return nil, nil, fmt.Errorf("KUBECONFIG environment variable is not set")
+	}
+
+	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		return nil, nil, fmt.Errorf("load Kubernetes config from KUBECONFIG: %w", err)
+	}
+
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, nil, fmt.Errorf("create Kubernetes client: %w", err)
+	}
+
+	secret, err := clientset.CoreV1().Secrets("orch-gateway").Get(ctx, "tls-orch", metav1.GetOptions{})
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get secret 'tls-orch': %w", err)
+	}
+
+	cert, certExists := secret.Data["tls.crt"]
+	key, keyExists := secret.Data["tls.key"]
+
+	if !certExists || !keyExists {
+		return nil, nil, fmt.Errorf("certificate or key not found in secret 'tls-orch'")
+	}
+
+	return cert, key, nil
 }

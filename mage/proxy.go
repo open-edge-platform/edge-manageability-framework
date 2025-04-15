@@ -4,28 +4,36 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"os"
-	"strings"
 	"time"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
-// Starts a TLS reverse proxy server that exposes all Orchestrator services over a single port on the given address.
-// This proxy assumes DNS is configured to point all Orchestrator DNS records to the given address. It is only useful
-// to expose the Orchestrator services externally of the host this is executed on (e.g., onboarding an Edge Node).
+// Starts a TLS SNI reverse proxy server that exposes all Orchestrator services using the given address. This proxy
+// assumes DNS is configured for the cluster domain so that all Orchestrator DNS records resolve to the given address.
+// It is only useful to expose the Orchestrator services externally of the host this is executed on (e.g., onboarding an
+// Edge Node). If listening on port 443, the process must be run with elevated privileges, either as root or with the
+// capability to bind to privileged ports. This can be done by setting the `cap_net_bind_service` capability on the
+// binary.
+//
+// Usage:
+//
+// 1. Compile the mage file: mage -compile ./static-magefile
+// 2. Add the capability to bind to port 443: sudo setcap 'cap_net_bind_service=+ep' ./static-magefile
+// 3. Run the proxy: ./static-magefile deploy:proxy <network-interface-IP>:443
+//
+// TODO: tinkerbell-nginx may not work due to it using TLS cipher suites that are not compatible with the default Go TLS
+// configuration. Possibly using a pure TCP proxy instead of a TLS proxy just for tinkerbell-nginx would work.
 func (Deploy) Proxy(ctx context.Context, addr string) error {
 	decodedCert, decodedKey, err := OrchTLSCertAndKey(ctx)
 	if err != nil {
 		return fmt.Errorf("get certificate and key: %w", err)
 	}
 
-	certFile, err := os.CreateTemp("", "tls-proxy-cert-")
+	certFile, err := os.CreateTemp("", "proxy-cert-")
 	if err != nil {
 		return fmt.Errorf("create certificate file: %w", err)
 	}
@@ -35,7 +43,7 @@ func (Deploy) Proxy(ctx context.Context, addr string) error {
 		return fmt.Errorf("write certificate file: %w", err)
 	}
 
-	keyFile, err := os.CreateTemp("", "tls-proxy-key-")
+	keyFile, err := os.CreateTemp("", "proxy-key-")
 	if err != nil {
 		return fmt.Errorf("create key file: %w", err)
 	}
@@ -45,13 +53,7 @@ func (Deploy) Proxy(ctx context.Context, addr string) error {
 		return fmt.Errorf("write key file: %w", err)
 	}
 
-	handler, err := NewReverseProxyHandler(
-		map[string]string{
-			"argocd.":           "argocd.cluster.onprem",
-			"tinkerbell-nginx.": "tinkerbell-nginx.cluster.onprem",
-			"traefik.":          "traefik.cluster.onprem",
-		},
-	)
+	handler, err := NewReverseProxyHandler()
 	if err != nil {
 		return fmt.Errorf("create handler: %w", err)
 	}
@@ -59,8 +61,8 @@ func (Deploy) Proxy(ctx context.Context, addr string) error {
 	s := &http.Server{
 		Addr:           addr,
 		Handler:        handler,
-		ReadTimeout:    15 * time.Second,
-		WriteTimeout:   15 * time.Second,
+		ReadTimeout:    time.Minute,
+		WriteTimeout:   time.Minute,
 		MaxHeaderBytes: http.DefaultMaxHeaderBytes,
 	}
 
@@ -74,91 +76,42 @@ func (Deploy) Proxy(ctx context.Context, addr string) error {
 	return s.ListenAndServeTLS(certFile.Name(), keyFile.Name())
 }
 
-// OrchTLSCertAndKey returns the Orchestrator's TLS certificate and key.
-func OrchTLSCertAndKey(ctx context.Context) ([]byte, []byte, error) {
-	kubeconfig := os.Getenv("KUBECONFIG")
-	if kubeconfig == "" {
-		return nil, nil, fmt.Errorf("KUBECONFIG environment variable is not set")
-	}
-
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-	if err != nil {
-		return nil, nil, fmt.Errorf("load Kubernetes config from KUBECONFIG: %w", err)
-	}
-
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, nil, fmt.Errorf("create Kubernetes client: %w", err)
-	}
-
-	secret, err := clientset.CoreV1().Secrets("orch-gateway").Get(ctx, "tls-orch", metav1.GetOptions{})
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get secret 'tls-orch': %w", err)
-	}
-
-	cert, certExists := secret.Data["tls.crt"]
-	key, keyExists := secret.Data["tls.key"]
-
-	if !certExists || !keyExists {
-		return nil, nil, fmt.Errorf("certificate or key not found in secret 'tls-orch'")
-	}
-
-	return cert, key, nil
-}
-
+// ReverseProxyHandler is an instance of httputil.ReverseProxy configured to forward HTTP requests to an upstream
+// service. It uses the TLS SNI (Server Name Indication) to determine the target service.
 type ReverseProxyHandler struct {
-	Routes map[string]*httputil.ReverseProxy
+	Proxy *httputil.ReverseProxy
 }
 
-func NewReverseProxyHandler(routeHosts map[string]string) (*ReverseProxyHandler, error) {
-	routes := make(map[string]*httputil.ReverseProxy, len(routeHosts))
-
-	for name, host := range routeHosts {
-		proxy := &httputil.ReverseProxy{
+func NewReverseProxyHandler() (*ReverseProxyHandler, error) {
+	return &ReverseProxyHandler{
+		Proxy: &httputil.ReverseProxy{
 			Rewrite: func(r *httputil.ProxyRequest) {
+				// Set X-Forwarded-* headers to indicate that the request is being proxied.
 				r.SetXForwarded()
 
-				// Modify the request Host header to route to the correct backend and strip the port of the proxy
-				r.SetURL(&url.URL{
-					Scheme: "https",
-					Host:   host + ":443",
-				})
+				// Pass the request to the upstream service using the TLS servername since Orchestrator's
+				// ingress will need this to route to the correct service. It is assumed that the upstream service is
+				// listening on port 443 and is on the same host as the reverse proxy.
+				r.SetURL(
+					&url.URL{
+						Scheme: "https",
+						Host:   r.In.TLS.ServerName,
+					},
+				)
 			},
-		}
-
-		// TODO: Make configurable
-		proxy.Transport = &http.Transport{
-			Proxy: http.ProxyFromEnvironment,
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: true, // TODO: Use a CA pool instead of skipping verification
+				},
 			},
-		}
-
-		routes[name] = proxy
-	}
-
-	return &ReverseProxyHandler{
-		Routes: routes,
+			ErrorLog: log.New(os.Stderr, "Proxy: ", log.Lshortfile),
+		},
 	}, nil
 }
 
-// ServeHTTP is the HTTP handler method for the ReverseProxyHandler struct.
-// It routes incoming HTTP requests to the appropriate backend service based on the
-// ServerName field in the TLS configuration of the request.
+// ServeHTTP is the HTTP handler method for the ReverseProxyHandler struct. It routes incoming HTTP requests to the
+// single reverse proxy instance.
 func (p *ReverseProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("Received request: Host=%s, ServerName=%s, URL=%s\n", r.Host, r.TLS.ServerName, r.URL)
-
-	switch {
-	case strings.HasPrefix(r.TLS.ServerName, "argocd."):
-		fmt.Printf("Routing to argocd backend\n")
-		p.Routes["argocd."].ServeHTTP(w, r)
-
-	case strings.HasPrefix(r.TLS.ServerName, "tinkerbell-nginx."):
-		fmt.Printf("Routing to tinkerbell-nginx backend\n")
-		p.Routes["tinkerbell-nginx."].ServeHTTP(w, r)
-
-	default:
-		fmt.Printf("Routing to traefik backend\n")
-		p.Routes["traefik."].ServeHTTP(w, r)
-	}
+	p.Proxy.ServeHTTP(w, r)
 }
