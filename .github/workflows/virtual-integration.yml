@@ -491,6 +491,10 @@ jobs:
         run: mage test:imagePullPolicyCompliance
       - name: Setup Sample Org and Project with default users
         run: mage tenantUtils:createDefaultMtSetup
+      - name: Deploy Victoria Metrics instance
+        env:
+          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+        run: mage deploy:victoriaMetrics apply
 
       - name: Run e2e tenancy tests
         run: mage test:e2etenancy
@@ -500,6 +504,12 @@ jobs:
 
       - name: Create default user and run e2e tests
         run: mage devUtils:createDefaultUser test:e2e
+
+      - name: "Test Observability SRE Exporter w/o ENiC"
+        env:
+          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+        run: |
+          mage test:e2eSreObservabilityNoEnic
 
       - name: Deploy ENiC
         shell: bash
@@ -551,6 +561,12 @@ jobs:
           ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
         run: |
           mage test:e2eAlertsObservability
+
+      - name: "Test Observability SRE Exporter"
+        env:
+          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+        run: |
+          mage test:e2eSreObservability
 
       - name: Wait for cluster agent to be ready
         run: |
