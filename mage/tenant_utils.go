@@ -815,7 +815,7 @@ func (TenantUtils) CreateEdgeInfraUsers(ctx context.Context, orgName, projectNam
 		}
 	}
 
-	// Create Edge Infra Manager NB API user with service-admin
+	// Create Edge Infra Manager NB API user with service-admin which is needed for observability-admin access
 	user = edgeInfraUserPrefix + "-service-admin-api-user"
 	userId, orgId, err = createKeycloakUser(ctx, client, token, user, orgName)
 	if err != nil && status.Code(err) != codes.AlreadyExists {
