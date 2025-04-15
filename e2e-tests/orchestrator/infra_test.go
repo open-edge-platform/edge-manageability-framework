@@ -284,7 +284,12 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 			// Invoke API using jwt token
 			Expect(grpcInfraOnboardNodeJWT(reqCtx, onbSBIUrl, servicePort, *enToken, hostUuid)).To(Succeed())
 			// Invoke API using jwt token
-			Expect(grpcInfraHostMgrJWT(reqCtx, hrmSBIUrl, servicePort, *enToken, hostUuid)).To(Succeed())
+			// Expecting FailedPrecondition as Instance is not provisioned yet, but it's enough to verify reachability
+			Expect(grpcInfraHostMgrJWT(reqCtx, hrmSBIUrl, servicePort, *enToken, hostUuid)).Should(
+				MatchError(ContainSubstring(
+					"could not call grpc endpoint for server infra-node.%s:%d: rpc error: code = FailedPrecondition",
+					serviceDomain, servicePort)),
+			)
 
 			// Housekeeping
 			Expect(cleanupHost(ctx, hostUrl, instanceUrl, *apiToken, cli, hostUuid)).To(Succeed())
