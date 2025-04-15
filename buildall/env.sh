@@ -14,6 +14,8 @@ export DOCKER_REPOSITORY=edge-orch
 # Make job parallelism - how many jobs to run at once
 export MAKE_JOBS=4
 
+export MAKEFLAGS=--no-print-directory
+
 # this makes Docker buildkit print progress in plain format, easier to capture in a logfile
 export BUILDKIT_PROGRESS=plain
 

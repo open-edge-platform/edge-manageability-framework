@@ -88,7 +88,7 @@ $(REPO_DIR)/%: | $(REPO_LIST)
 checkout-repos: $(REPOS) | $(REPO_LIST) ## checkout all repos
 	@echo "All checked out"
 
-GIT_BRANCH ?= buildall
+GIT_BRANCH ?= main
 branch-checkout: checkout-repos ## refresh and checkout all repos with a specific branch
 	for repo in $(REPOS); do \
 		pushd $$repo ;\
@@ -144,7 +144,7 @@ HELM_BUILDS := $(addprefix $(SCRATCH_DIR)/hbuild_, $(shell tr '\n' ' ' < $(REPO_
 helm-build: $(HELM_BUILDS) $(CHARTS_DIR) ## build all helm charts
 
 $(SCRATCH_DIR)/hbuild_%: $(CHARTS_DIR)
-	$(SCRIPTS_DIR)/helm_build.sh $* |tee $@
+	$(SCRIPTS_DIR)/helm_build.sh $* $@
 
 clean-helm:  ## clean up helm charts to rebuild
 	rm -rf $(SCRATCH_DIR)/hbuild_*

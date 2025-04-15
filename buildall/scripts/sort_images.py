@@ -86,7 +86,8 @@ def match_images(image_mf, image_to_repo, artifacts):
                     image_tag_to_build += "|" + repo_image_data["buildTarget"]
 
                 if repo in repo_tags_to_build:
-                    repo_tags_to_build[repo]["images"].append(image_tag_to_build)
+                    if image_tag_to_build not in repo_tags_to_build[repo]["images"]:
+                        repo_tags_to_build[repo]["images"].append(image_tag_to_build)
                 else:
                     repo_tags_to_build[repo] = {"charts": [], "images": []}
                     repo_tags_to_build[repo]["images"].append(image_tag_to_build)

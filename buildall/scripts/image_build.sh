@@ -63,7 +63,7 @@ pushd "${REPO_PATH}"
       exit 1
     fi
 
-    echo make "${target}" >> "${LOGFILE}" 2>&1
+    make "${target}" >> "${LOGFILE}" 2>&1
 
     echo "*** Finished docker build in repo: '${REPO}', tag: '${tag}', target: '${target}' ***"
   done

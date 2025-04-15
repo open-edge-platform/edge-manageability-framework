@@ -6,13 +6,17 @@
 # SPDX-FileCopyrightText: (C) 2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-set -xeu -o pipefail
+set -eu -o pipefail
 
-if [[ $# != 1 ]]; then
-  echo "Usage: $0 <repo>"
+if [[ $# != 2 ]]; then
+  echo "Usage: $0 <repo> <log_file>"
 fi
 
 REPO=$1
+
+# touch and find the full path to the logfile
+touch "$2"
+LOGFILE=$(realpath "$2")
 
 # bring in env vars
 source env.sh
@@ -45,12 +49,28 @@ pushd "${REPO_PATH}"
       outDir="."
     fi
 
-    echo "*** Building helm chart for tag: '${tag}' placed in: '${outDir}' ***"
-
     git switch --detach "${tag}"
 
-    make helm-build
+    # check if helm-build target exists in Makefile
+    set +eu
+    HELM_BUILD_TARGET=$(grep ^helm-build Makefile)
+    set -eu
+
+    if [ ! "${HELM_BUILD_TARGET}" ]; then
+      echo "*** Copying Makefile from main branch as helm-build target doesn't exist ***"
+      git checkout main Makefile
+    fi
+
+    echo "*** Starting make helm-build in: '${REPO}', tag: '${tag}', placed in: '${outDir}' ***"
+
+    make helm-build >> "${LOGFILE}" 2>&1
 
     cp "${outDir}"/*.tgz ../../charts
+
+    # clean up repo
+    git checkout HEAD .
+
+    echo "*** Finished make helm-build in: '${REPO}', tag: '${tag}', placed in: '${outDir}' ***"
+
   done
 popd
