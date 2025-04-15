@@ -637,7 +637,6 @@ jobs:
       - lint-yaml
       - build-publish
       - check-changed-files
-      - deploy-kind
     if: |
       always() && (
       needs.check-changed-files.outputs.orch == 'true' ||
