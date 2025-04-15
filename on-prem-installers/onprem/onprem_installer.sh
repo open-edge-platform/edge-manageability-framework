@@ -34,9 +34,9 @@ source "$(dirname "$0")/functions.sh"
 
 ### Constants
 
-RELEASE_SERVICE_URL="${RELEASE_SERVICE_URL:-open-registry.espdprod.infra-host.com}"
+RELEASE_SERVICE_URL="${RELEASE_SERVICE_URL:-registry-rs.edgeorchestration.intel.com}"
 ORCH_INSTALLER_PROFILE="${ORCH_INSTALLER_PROFILE:-onprem}"
-DEPLOY_VERSION="${DEPLOY_VERSION:-v3.0.0-rc2}"
+DEPLOY_VERSION="${DEPLOY_VERSION:-v3.0.0}"
 GITEA_IMAGE_REGISTRY="${GITEA_IMAGE_REGISTRY:-docker.io}"
 
 ### Variables
