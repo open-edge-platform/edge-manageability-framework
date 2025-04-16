@@ -20,13 +20,10 @@ QUERY_PERIOD = 7 # days
 STEP = "60" # seconds
 
 # Function to get metrics from the Metrics Server
-def get_metrics(namespace, istio=False):
+def get_metrics(namespace):
     result = {}
     query_parameters = []
-    if istio:
-        query_parameters.append('k8s_container_name="istio-proxy"')
-    else:
-        query_parameters.append('k8s_container_name!="istio-proxy"')
+    query_parameters.append('k8s_container_name!="istio-proxy"')
     if namespace:
         query_parameters.append(f'k8s_namespace_name="{namespace}"')
     else:
@@ -164,25 +161,7 @@ def get_resource_config(namespace):
                 resoruce_configs[config_key]["cpu_limit"] = max(resoruce_configs[config_key]["cpu_limit"], cpu_max)
                 resoruce_configs[config_key]["memory_limit"] = max(resoruce_configs[config_key]["memory_limit"], memory_max)
 
-    istio_usage = {
-        "cpu_request": 0,
-        "memory_request": 0,
-        "cpu_limit": 0,
-        "memory_limit": 0,
-    }
-    metrics = get_metrics(None, istio=True)
-    for item in metrics:
-        cpu_max = item['cpu_max']
-        memory_max = item['memory_max']
-        cpu_min = item['cpu_min']
-        memory_min = item['memory_min']
-
-        istio_usage["cpu_request"] = max(istio_usage["cpu_request"], cpu_min)
-        istio_usage["memory_request"] = max(istio_usage["memory_request"], memory_min)
-        istio_usage["cpu_limit"] = max(istio_usage["cpu_limit"], cpu_max)
-        istio_usage["memory_limit"] = max(istio_usage["memory_limit"], memory_max)
-
-    return resoruce_configs, istio_usage
+    return resoruce_configs
 
 def convert_to_nested_dict(flat_dict):
     nested_dict = {}
@@ -280,23 +259,13 @@ def main():
             "orch-sre",
             "orch-ui"
         ]
-        maximum_istio_usage = {
-            "cpu_request": 0,
-            "memory_request": 0,
-            "cpu_limit": 0,
-            "memory_limit": 0
-        }
         pf = start_mimir_gw_port_forwarding()
         try:
             for ns in namespaces:
-                resource_config, istio_usage = get_resource_config(ns)
+                resource_config = get_resource_config(ns)
                 if resource_config is None:
                     print(f"Failed to get metrics for namespace: {ns}")
                     continue
-                maximum_istio_usage["cpu_request"] = max(maximum_istio_usage["cpu_request"], istio_usage["cpu_request"])
-                maximum_istio_usage["memory_request"] = max(maximum_istio_usage["memory_request"], istio_usage["memory_request"])
-                maximum_istio_usage["cpu_limit"] = max(maximum_istio_usage["cpu_limit"], istio_usage["cpu_limit"])
-                maximum_istio_usage["memory_limit"] = max(maximum_istio_usage["memory_limit"], istio_usage["memory_limit"])
 
                 for rc, res in resource_config.items():
                     if rc not in resource_configs_to_override:
@@ -304,7 +273,6 @@ def main():
                     else:
                         resource_configs_to_override[rc]["cpu"] = max(resource_configs_to_override[rc]["cpu"], res["cpu"])
                         resource_configs_to_override[rc]["memory"] = max(resource_configs_to_override[rc]["memory"], res["memory"])
-            resource_configs_to_override["argo.resources.istiod.global.proxy"] = maximum_istio_usage
             resource_configs_to_override = convert_to_nested_dict(resource_configs_to_override)
         finally:
             pf.kill()
