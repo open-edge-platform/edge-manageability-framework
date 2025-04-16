@@ -4,20 +4,20 @@
 
 ## Overview
 
-Welcome to the Edge Manageability Framework, a comprehensive suite designed to streamline and enhance the deployment and management of infrastructure and applications at the edge. This framework leverages cutting-edge technologies to provide robust solutions for hardware onboarding, secure workload deployment, and cluster lifecycle management, all centered around Kubernetes-based application deployment for edge computing.
+Welcome to the Edge Manageability Framework, a comprehensive solution designed to streamline and enhance the deployment and management of infrastructure and applications at the edge. This framework leverages cutting-edge technologies to provide robust solutions for hardware onboarding, secure workload deployment, and cluster lifecycle management, all centered around Kubernetes-based application deployment for edge computing.
 
 ## Primary Product: Edge Orchestrator
-At the center of Edge Manageability Framework is Edge Orchestrator, the primary solution to manage edge environments efficiently and securely. It encompasses a range of features that cater to the unique demands of edge computing, ensuring seamless integration and operation across diverse hardware and software landscapes. Edge Orchestrator is designed to be the central hub for managing edge infrastructure and edge application deployments at scale across geographically distributed edge sites.  It offers multitenancy and IDAM for tenants and offers automation, configuration, observability and alerting capabilities, dashboards for quick views of status and issue identification, and management of all infrastructure components including edge nodes (i.e. hosts) and clusters.
+At the center of Edge Manageability Framework is Edge Orchestrator, the primary solution to manage edge environments efficiently and securely. It encompasses a range of features that cater to the unique demands of edge computing, ensuring seamless integration and operation across diverse hardware and software landscapes. Edge Orchestrator is designed to be the central hub for managing edge infrastructure and edge application deployments at scale across geographically distributed edge sites.  It offers automated application deployment based on customer-defined configuration & criteria, multitenancy and identity & access management for tenants, observability & alerting capabilities, dashboards for quick views of status & issue identification, and management of all software deployments & infrastructure components including edge nodes (i.e. hosts) and clusters.
 
-![Edge Manageability Framework High Level Component Diagram](Edge_Manageability_Framework_Readme_Image.png)
+![Edge Manageability Framework High Level Component Diagram](docs/Edge_Manageability_Framework_Readme_Image.png)
 
 ### Key Components and Repositories
 
 #### Edge Manageability Framework
-- [edge-manageability-framework](https://github.com/open-edge-platform/edge-manageability-framework): This repository is the central hub for deploying the Edge Orchestrator. It includes Argo CD applications, Helm charts, and deployment scripts necessary for setting up the orchestrator in various environments, including on-premise and cloud-based setups.
+- [edge-manageability-framework](https://github.com/open-edge-platform/edge-manageability-framework): The central hub for deploying the Edge Orchestrator. It includes Argo CD applications, Helm charts, and deployment scripts necessary for setting up the orchestrator in various environments, including on-premise and cloud-based setups.
 
 #### Documentation
-- [orch-docs](https://github.com/open-edge-platform/orch-docs): Documentation including deployment, user, developer, and contribution guides, API references, tutorials, troubleshooting, and software architecture specifications.  You can also visit our documentaion hub here (TODO insert release docs URL)
+- [orch-docs](https://github.com/open-edge-platform/orch-docs): Edge Orchestrator documentation includes deployment, user, developer, and contribution guides; and API references, tutorials, troubleshooting, and software architecture specifications. You can also visit our documentaion hub here (TODO insert release docs URL)
 
 #### Foundational Platform Services
 - [orch-utils](https://github.com/open-edge-platform/orch-utils): The orch-utils repository provides various utility functions and tools that support the deployment and management of the Edge Orchestrator. This includes Kubernetes jobs, Helm charts, Dockerfiles, and Go code for tasks such as namespace creation, policy management, and Traefik route configuration.
@@ -42,24 +42,27 @@ At the center of Edge Manageability Framework is Edge Orchestrator, the primary 
 - [cluster-connect-gateway](https://github.com/open-edge-platform/cluster-connect-gateway): Ensures gateway services for cluster connectivity.
 
 #### Edge Infrastructure Manager
-- [infra-core](https://github.com/open-edge-platform/infra-core): Manages core infrastructure services.
+- [infra-core](https://github.com/open-edge-platform/infra-core): Core services for the Edge Infrastructure Manager.
 - [infra-managers](https://github.com/open-edge-platform/infra-managers): Provides life-cycle management services for infrastructure resources.
-- [infra-onboarding](https://github.com/open-edge-platform/infra-onboarding): Onboarding and provisioning services.
-- [infra-external](https://github.com/open-edge-platform/infra-external): Manages third party infrastructure components.
-- [infra-charts](https://github.com/open-edge-platform/infra-charts): Supplies Helm charts for infrastructure deployment.
+- [infra-onboarding](https://github.com/open-edge-platform/infra-onboarding): Edge Node Onboarding and Provisioning services.
+- [infra-external](https://github.com/open-edge-platform/infra-external): Extensions for the Edge Infrastructure Manager.
+- [infra-charts](https://github.com/open-edge-platform/infra-charts): Helm charts for deploying Edge Infrastructure Manager services.
 
 #### Observability
-- [o11y-charts](https://github.com/open-edge-platform/olly-charts): Provides Helm charts for observability services.
-- [o11y-alerting-monitor](https://github.com/open-edge-platform/olly-alerting-monitor): Offers alerting and monitoring services.
-- [o11y-sre-exporter](https://github.com/open-edge-platform/olly-sre-exporter): Supplies SRE exporter services for enhanced observability.
-- [o11y-tenant-controller](https://github.com/open-edge-platform/olly-tenant-controller): Manages tenant control services.
+- [o11y-charts](https://github.com/open-edge-platform/o11y-charts): This repository provides key Observability Helm Charts and its helper applications deployable on the Edge Orchestrator.
+- [o11y-alerting-monitor](https://github.com/open-edge-platform/o11y-alerting-monitor): Alerting Monitor service handles management of alert notifications in the Edge Orchestrator.
+- [o11y-sre-exporter](https://github.com/open-edge-platform/o11y-sre-exporter): SRE Exporter service enables exporting Edge Orchestrator's Service Level Indicators (SLIs) and its key runtime metrics to external systems.
+- [o11y-tenant-controller](https://github.com/open-edge-platform/o11y-tenant-controller): Observability Tenant Controller service maintains multitenancy configuration for Observability (o11y) services on Edge Orchestrator.
 
 #### Edge Nodes / Hosts
 - [edge-node-agents](https://github.com/open-edge-platform/edge-node-agents): Deploys agents for managing edge nodes and hosts with policy-based management.
-- [virtual-edge-node](https://github.com/open-edge-platform/virtual-edge-node): Emulates hardware edge nodes.
+- [virtual-edge-node](https://github.com/open-edge-platform/virtual-edge-node): Virtual Edge Node onboarding and deployment scripts and configurations.
 
 #### Secure Edge Deployment
 - [trusted-compute](https://github.com/open-edge-platform/trusted-compute): Ensures secure deployment within virtual machines, providing trusted compute environments.
+
+#### Shared CI
+- [orch-ci](https://github.com/open-edge-platform/orch-ci): Open Edge Platform common CI
 
 
 ## Get Started
