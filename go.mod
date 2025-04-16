@@ -14,11 +14,12 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/google/uuid v1.6.0
 	github.com/magefile/mage v1.15.0
-	github.com/onsi/ginkgo/v2 v2.22.2
+	github.com/onsi/ginkgo/v2 v2.23.3
 	github.com/onsi/gomega v1.36.2
 	github.com/open-edge-platform/app-orch-deployment/app-deployment-manager/api/nbi/v2 v2.3.21
 	github.com/open-edge-platform/cluster-manager/v2 v2.0.2
 	github.com/open-edge-platform/infra-core/api v1.32.0
+	github.com/open-edge-platform/infra-managers/attestationstatus v0.4.0
 	github.com/open-edge-platform/infra-managers/host v1.21.0
 	github.com/open-edge-platform/infra-managers/maintenance v1.21.0
 	github.com/open-edge-platform/infra-managers/telemetry v1.21.0

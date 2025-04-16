@@ -23,8 +23,9 @@ allowedDomains: >
   .public.ecr.aws
   .cloudfront.net
   .api.snapcraft.io
+  .rke2.io
 
-sentinelDomains: ".sentinelcloud.com"
+sentinelDomains:
 
 aptDomains: >
   .archive.ubuntu.com
@@ -37,5 +38,6 @@ aptDomains: >
   .archive.canonical.com
   .extras.ubuntu.com
   changelogs.ubuntu.com
+  cloud-images.ubuntu.com
 
 debianDomains: ".debian.org cdn.debian.net http.debian.net "

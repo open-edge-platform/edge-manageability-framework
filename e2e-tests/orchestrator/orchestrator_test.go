@@ -265,6 +265,21 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			}
 		})
 
+		It("should verify API response COOP & COEP headers", func() {
+			req, err := http.NewRequest("GET", "https://api."+serviceDomainWithPort+"/v1/projects/sample-project/compute/os?filter='profile_name=\"tiberos-nonrt\"", nil)
+			Expect(err).ToNot(HaveOccurred())
+			user := fmt.Sprintf("%s-edge-op", util.TestUser)
+			token := getKeycloakJWT(cli, user)
+			req.Header.Add("Authorization", "Bearer "+token)
+			resp, err := cli.Do(req)
+			Expect(err).ToNot(HaveOccurred())
+			defer resp.Body.Close()
+			for k, v := range coopCoepHeaders() {
+				Expect(k).To(BeKeyOf(resp.Header))
+				Expect(resp.Header.Values(k)).To(ContainElements(v))
+			}
+		})
+
 		It("should verify API response CORS headers", func() {
 			req, err := http.NewRequest("OPTIONS", "https://api."+serviceDomainWithPort+"/v1/projects/sample-project/compute/os?filter='profile_name=\"tiberos-nonrt\"", nil)
 			Expect(err).ToNot(HaveOccurred())
@@ -281,6 +296,51 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 				Expect(k).To(BeKeyOf(resp.Header))
 				Expect(resp.Header.Values(k)).To(ContainElements(v))
 			}
+		})
+
+		Describe("Harbor service", Label(appOrch), func() {
+			It("should verify Harbor response headers", func() {
+				resp, err := cli.Get("https://registry-oci." + serviceDomainWithPort + "/api/v2.0/ping")
+				Expect(err).ToNot(HaveOccurred())
+				defer resp.Body.Close()
+				for k, v := range secureHeadersAdd() {
+					Expect(k).To(BeKeyOf(resp.Header))
+					Expect(resp.Header.Values(k)).To(ContainElements(v))
+				}
+				for _, k := range secureHeadersRemove() {
+					Expect(k).ToNot(BeKeyOf(resp.Header))
+				}
+			})
+		})
+
+		Describe("App Service Proxy service", Label(appOrch), func() {
+			It("should verify ASP response headers", func() {
+				resp, err := cli.Get("https://app-service-proxy." + serviceDomainWithPort + "/app-service-proxy-test")
+				Expect(err).ToNot(HaveOccurred())
+				defer resp.Body.Close()
+				for k, v := range secureHeadersAddAppOrch() {
+					Expect(k).To(BeKeyOf(resp.Header))
+					Expect(resp.Header.Values(k)).To(ContainElements(v))
+				}
+				for _, k := range secureHeadersRemove() {
+					Expect(k).ToNot(BeKeyOf(resp.Header))
+				}
+			})
+		})
+
+		Describe("VNC service", Label(appOrch), func() {
+			It("should verify VNC response headers", func() {
+				resp, err := cli.Get("https://vnc." + serviceDomainWithPort + "/?project=p1&app=a1&cluster=c1&vm=v1")
+				Expect(err).ToNot(HaveOccurred())
+				defer resp.Body.Close()
+				for k, v := range secureHeadersAddAppOrch() {
+					Expect(k).To(BeKeyOf(resp.Header))
+					Expect(resp.Header.Values(k)).To(ContainElements(v))
+				}
+				for _, k := range secureHeadersRemove() {
+					Expect(k).ToNot(BeKeyOf(resp.Header))
+				}
+			})
 		})
 
 		// FIXME: Test is needs to be improved to use other source of truth for version
@@ -306,6 +366,32 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			content, err := io.ReadAll(resp.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(string(content)).To(ContainSubstring(fmt.Sprintf("orchestrator: \"%s\",", orchVersion)))
+		})
+
+		It("should respond to OPTIONS on 403 without server disclosure", Label(ui), func() {
+			// Create OPTIONS request to a non-existent URL
+			req, err := http.NewRequest("OPTIONS", "https://web-ui."+serviceDomainWithPort+"/mfe/infrastructure/679.d844fa89e1647e1784b6.js", nil)
+			Expect(err).ToNot(HaveOccurred())
+
+			resp, err := cli.Do(req)
+			Expect(err).ToNot(HaveOccurred())
+			defer resp.Body.Close()
+
+			// Check status code (should be 403)
+			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
+
+			// Verify response doesn't contain nginx server information
+			content, err := io.ReadAll(resp.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(string(content)).ToNot(ContainSubstring("nginx"))
+			Expect(string(content)).To(ContainSubstring("Error 40x"))
+			Expect(string(content)).To(ContainSubstring("<p>"))
+			Expect(string(content)).To(ContainSubstring("Oops! The page you are looking for cannot be found"))
+			Expect(string(content)).To(ContainSubstring("permission to access it."))
+			Expect(string(content)).To(ContainSubstring("</p>"))
+
+			// Verify server header is not present
+			Expect("Server").ToNot(BeKeyOf(resp.Header))
 		})
 	})
 
@@ -362,19 +448,6 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 			_, err = io.ReadAll(resp.Body)
 			Expect(err).ToNot(HaveOccurred())
-		})
-	})
-
-	Describe("Application Catalog service", Label(appOrch), func() {
-		It("should be accessible over HTTPS", func() {
-			resp, err := cli.Get("https://app-orch." + serviceDomainWithPort + "/test")
-			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
-
-			Expect(resp.StatusCode).To(Equal(http.StatusOK))
-			content, err := io.ReadAll(resp.Body)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(string(content)).To(ContainSubstring("Ok"))
 		})
 	})
 
@@ -518,41 +591,10 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 		})
 	})
 
-	PDescribe("App-Service-proxy service", Label(appOrch), func() {
-		It("should be accessible over HTTPS", func() {
-			resp, err := cli.Get("https://app-service-proxy." + serviceDomainWithPort + "/test")
-			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
-
-			Expect(resp.StatusCode).To(Equal(http.StatusOK))
-			content, err := io.ReadAll(resp.Body)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(string(content)).To(ContainSubstring("Ok"))
-		})
-	})
-
 	Describe("Cluster Manager service - Templates", Label(clusterOrch), func() {
 		templatesUrl := fmt.Sprintf("https://api.%s/v2/projects/%s/templates", serviceDomainWithPort, util.TestProject)
 		coUser := fmt.Sprintf("%s-edge-op", util.TestUser)
 
-		It("should NOT be accessible over HTTPS when using no token", func() {
-			req, err := http.NewRequest("GET", templatesUrl, nil)
-			Expect(err).ToNot(HaveOccurred())
-			resp, err := cli.Do(req)
-			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
-			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
-		})
-		It("should NOT be accessible over HTTPS when using invalid token", func() {
-			req, err := http.NewRequest("GET", templatesUrl, nil)
-			Expect(err).ToNot(HaveOccurred())
-			const invalid = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c" //nolint: lll
-			req.Header.Add("Authorization", "Bearer "+invalid)
-			resp, err := cli.Do(req)
-			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
-			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
-		})
 		It("should be accessible over HTTPS when using valid token", func() {
 			Eventually(func() bool {
 				req, err := http.NewRequest("GET", templatesUrl, nil)
@@ -565,6 +607,39 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 				return resp.StatusCode == http.StatusOK
 			}, 20*time.Second, 5*time.Second).Should(BeTrue())
 		})
+
+		nonCoUser := fmt.Sprintf("%s-api-user", util.TestUser)
+		It("should NOT be accessible over HTTPS when using valid token with invalid roles", func() {
+			req, err := http.NewRequest("GET", templatesUrl, nil)
+			Expect(err).ToNot(HaveOccurred())
+			token := getKeycloakJWT(cli, nonCoUser)
+			req.Header.Add("Authorization", "Bearer "+token)
+			resp, err := cli.Do(req)
+			Expect(err).ToNot(HaveOccurred())
+			defer resp.Body.Close()
+			Expect(resp.StatusCode).To(Equal(http.StatusUnauthorized))
+		})
+
+		It("should NOT be accessible over HTTPS when using invalid token", func() {
+			req, err := http.NewRequest("GET", templatesUrl, nil)
+			Expect(err).ToNot(HaveOccurred())
+			const invalid = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c" //nolint: lll
+			req.Header.Add("Authorization", "Bearer "+invalid)
+			resp, err := cli.Do(req)
+			Expect(err).ToNot(HaveOccurred())
+			defer resp.Body.Close()
+			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
+		})
+
+		It("should NOT be accessible over HTTPS when using no token", func() {
+			req, err := http.NewRequest("GET", templatesUrl, nil)
+			Expect(err).ToNot(HaveOccurred())
+			resp, err := cli.Do(req)
+			Expect(err).ToNot(HaveOccurred())
+			defer resp.Body.Close()
+			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
+		})
+
 		It("should NOT be accessible over HTTPS when using valid but expired token", func() { //nolint: dupl
 			Expect(saveToken(cli)).To(Succeed())
 			token, err := script.File(outputFile).String()
@@ -573,6 +648,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 
 			isUnexpired, err := isTokenUnexpired(token)
 			Expect(err).ToNot(HaveOccurred())
+
 			if isUnexpired {
 				Skip("Skipping this test because JWT Token is NOT expired")
 			}
@@ -605,6 +681,18 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			Expect(string(content)).To(ContainSubstring(`{"clusters":[`))
 		})
 
+		nonCoUser := fmt.Sprintf("%s-api-user", util.TestUser)
+		It("should NOT be accessible over HTTPS when using valid token with invalid roles", func() {
+			req, err := http.NewRequest("GET", cmUrl, nil)
+			Expect(err).ToNot(HaveOccurred())
+			token := getKeycloakJWT(cli, nonCoUser)
+			req.Header.Add("Authorization", "Bearer "+token)
+			resp, err := cli.Do(req)
+			Expect(err).ToNot(HaveOccurred())
+			defer resp.Body.Close()
+			Expect(resp.StatusCode).To(Equal(http.StatusUnauthorized))
+		})
+
 		It("should NOT be accessible over HTTPS when using invalid token", func() {
 			req, err := http.NewRequest("GET", cmUrl, nil)
 			Expect(err).ToNot(HaveOccurred())
@@ -627,15 +715,12 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 
 		It("should NOT be accessible over HTTPS when using valid but expired token", func() {
 			Expect(saveToken(cli)).To(Succeed())
-
 			token, err := script.File(outputFile).String()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(token).ToNot(BeEmpty())
 
 			isUnexpired, err := isTokenUnexpired(token)
-
 			Expect(err).ToNot(HaveOccurred())
-
 			if isUnexpired {
 				Skip("Skipping this test because JWT Token is NOT expired")
 			}
@@ -646,6 +731,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			req.Header.Add("Authorization", "Bearer "+token)
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
+			defer resp.Body.Close()
 			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
 		})
 	})
@@ -821,6 +907,13 @@ func corsHeader() map[string][]string {
 	}
 }
 
+func coopCoepHeaders() map[string][]string {
+	return map[string][]string{
+		"Cross-Origin-Embedder-Policy": {"require-corp"},
+		"Cross-Origin-Opener-Policy":   {"same-origin"},
+	}
+}
+
 func secureHeadersAdd() map[string][]string {
 	// adapted from https://owasp.org/www-project-secure-headers/ci/headers_add.json
 	return map[string][]string{
@@ -851,6 +944,19 @@ func secureHeadersAdd() map[string][]string {
 			"accelerometer=(),ambient-light-sensor=(),autoplay=(),battery=(),camera=(),display-capture=(),document-domain=(),encrypted-media=(),fullscreen=(),gamepad=(),geolocation=(),gyroscope=(),layout-animations=(self),legacy-image-formats=(self),magnetometer=(),microphone=(),midi=(),oversized-images=(self),payment=(),picture-in-picture=(),publickey-credentials-get=(),speaker-selection=(),sync-xhr=(self),unoptimized-images=(self),unsized-media=(self),usb=(),screen-wake-lock=(),web-share=(),xr-spatial-tracking=()", //nolint: lll
 		},
 	}
+}
+
+func secureHeadersAddAppOrch() map[string][]string {
+	// adapted from https://owasp.org/www-project-secure-headers/ci/headers_add.json
+	appOrchSecureHeaders := secureHeadersAdd()
+
+	appOrchSecureHeaders["Content-Security-Policy"] = []string{fmt.Sprintf("default-src 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' ; frame-src 'self' https://keycloak.%s; style-src 'self'; img-src 'self' data:; connect-src 'self' https://keycloak.%s; upgrade-insecure-requests; block-all-mixed-content", //nolint: lll
+		serviceDomain, serviceDomain)}
+	appOrchSecureHeaders["Cross-Origin-Embedder-Policy"] = []string{"unsafe-none"}
+	delete(appOrchSecureHeaders, "X-Content-Type-Options")
+	delete(appOrchSecureHeaders, "X-Frame-Options")
+
+	return appOrchSecureHeaders
 }
 
 func secureHeadersRemove() []string {

@@ -15,10 +15,6 @@ global:
   observability:
     url: "https://observability-ui.{{ .Values.argo.clusterDomain }}"
 
-# Doc service URL
-header:
-  documentationUrl: "https://edc.intel.com/content/www/us/en/secure/design/confidential/tools/edge-orchestrator/"
-
 # Ingress
 service:
   traefik:

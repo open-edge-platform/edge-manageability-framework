@@ -53,8 +53,13 @@ var argoNamespaces = []string{
 	"orch-infra",    // used when creating a secret for mailpit
 }
 
-// TODO: Remove private repos and argo references to them
-var privateRepos = []string{
+// FIXME: Ideally this could be extracted from the cluster configuration and aligned with auth secrets - out of scope for now
+var giteaRepos = []string{
+	"https://gitea-http.gitea.svc.cluster.local/argocd/edge-manageability-framework",
+}
+
+// Public GitHub repositories can be useful for specific development workflows.
+var githubRepos = []string{
 	"https://github.com/open-edge-platform/edge-manageability-framework",
 	"https://github.com/open-edge-platform/orch-utils",
 	"https://github.com/open-edge-platform/infra-charts",
@@ -197,9 +202,22 @@ func (Undeploy) Kind() error {
 	return nil
 }
 
-// UndeployEdgeCluster Deletes ENiC and cluster, input project name: mage UndeployEdgeCluster <project-name>
-func UndeployEdgeCluster(projectName string) error {
+// Deletes ENiC and cluster, input required: mage undeploy:edgeCluster <org-name> <project-name>
+func (Undeploy) EdgeCluster(orgName, projectName string) error {
 	updateEdgeName()
+
+	ctx := context.TODO()
+	if err := (TenantUtils{}).GetProject(ctx, orgName, projectName); err != nil {
+		return fmt.Errorf("failed to get project %s: %w", projectName, err)
+	}
+
+	edgeInfraUser, _, err := getEdgeAndOnboardingUsers(ctx, orgName)
+	if err != nil {
+		return err
+	}
+
+	edgeMgrUser = edgeInfraUser
+	project = projectName
 
 	projectId, err := projectId(projectName)
 	if err != nil {
@@ -434,7 +452,7 @@ func (Undeploy) VEN(ctx context.Context) error {
 		return fmt.Errorf("failed to change directory to 'ven': %w", err)
 	}
 
-	if err := sh.RunV("git", "checkout", "vm-provisioning/1.0.4"); err != nil {
+	if err := sh.RunV("git", "checkout", "vm-provisioning/1.0.7"); err != nil {
 		return fmt.Errorf("failed to checkout specific commit: %w", err)
 	}
 
@@ -493,23 +511,110 @@ func (d Deploy) Kind(targetEnv string) error {
 }
 
 func (d Deploy) Gitea(targetEnv string) error {
-	// TBD: Change useIntelRegistry to targetEnv, render the bootstrap gitea-ext.tpl to gitea.yaml and set giteaBootstrapValues to gitea.yaml
-	// TBD: use the proxy settings from the parsed cluster profile settings to render the gitea.yaml
+	err := (Config{}).renderTargetConfigTemplate(targetEnv, "orch-configs/templates/bootstrap/gitea.tpl", ".deploy/bootstrap/gitea.yaml")
+	if err != nil {
+		return fmt.Errorf("failed to render gitea configuration: %w", err)
+	}
 
-	giteaBootstrapValues := []string{"bootstrap/gitea.yaml"}
+	giteaBootstrapValues := []string{".deploy/bootstrap/gitea.yaml"}
 	return d.gitea(giteaBootstrapValues, targetEnv)
+}
+
+func (d Deploy) StartGiteaProxy() error {
+	err := d.StopGiteaProxy()
+	if err != nil {
+		return fmt.Errorf("failed to stop Gitea proxy: %w", err)
+	}
+
+	portForwardCmd, err := d.startGiteaPortForward()
+	if err != nil {
+		return fmt.Errorf("failed to start Gitea port forwarding: %w", err)
+	}
+
+	// Save the PID to a .gitea-proxy file
+	pid := portForwardCmd.Process.Pid
+	pidFile := ".gitea-proxy"
+	if err := os.WriteFile(pidFile, []byte(strconv.Itoa(pid)), 0o644); err != nil {
+		return fmt.Errorf("failed to write PID to %s: %w", pidFile, err)
+	}
+	fmt.Printf("Gitea proxy PID saved to %s\n", pidFile)
+	return nil
+}
+
+func (d Deploy) StopAllKubectlProxies() error {
+	// List all kubectl port-forward processes
+	cmd := exec.Command("pgrep", "-af", "kubectl port-forward")
+	output, err := cmd.Output()
+	if err != nil {
+		fmt.Printf("failed to list kubectl port-forward processes: %v\n", err)
+		return nil
+	}
+	fmt.Println("kubectl port-forward processes:")
+	fmt.Println(string(output))
+
+	// Stop all kubectl port-forward processes
+	cmd = exec.Command("pkill", "-f", "kubectl port-forward")
+	if err := cmd.Run(); err != nil {
+		fmt.Printf("failed to stop kubectl port-forward processes: %v", err)
+	}
+
+	cmd = exec.Command("pgrep", "-af", "kubectl port-forward")
+	output, err = cmd.Output()
+	if err != nil {
+		fmt.Printf("failed to list kubectl port-forward processes: %v\n", err)
+		return nil
+	}
+	fmt.Println("Any remaining kubectl port-forward processes after pkill:")
+	fmt.Println(string(output))
+	return nil
+}
+
+func (d Deploy) StopGiteaProxy() error {
+	pidFile := ".gitea-proxy"
+
+	if _, err := os.Stat(pidFile); os.IsNotExist(err) {
+		fmt.Println("Gitea proxy PID file not found, nothing to stop")
+		return nil
+	}
+	defer func() {
+		if err := os.Remove(pidFile); err != nil {
+			fmt.Printf("failed to remove PID file %s: %v\n", pidFile, err)
+		}
+	}()
+
+	pidBytes, err := os.ReadFile(pidFile)
+	if err != nil {
+		fmt.Printf("failed to read PID file %s\n", pidFile)
+		return nil
+	}
+
+	pid, err := strconv.Atoi(strings.TrimSpace(string(pidBytes)))
+	if err != nil {
+		fmt.Printf("failed to parse PID from %s\n", pidFile)
+		return nil
+	}
+
+	portForwardCmd := exec.Command("kill", "-9", strconv.Itoa(pid))
+	if err := portForwardCmd.Run(); err != nil {
+		fmt.Printf("failed to stop Gitea port forwarding process: %d", pid)
+	} else {
+		fmt.Printf("Gitea proxy with PID %d stopped\n", pid)
+	}
+
+	return nil
 }
 
 // Deploy Argo CD in kind cluster.
 func (d Deploy) Argocd(targetEnv string) error {
-	// Set argoBootstrapValues to the default set for a kind dev environment
-	argoBootstrapValues := []string{
-		"bootstrap/argocd.yaml",
-		"bootstrap/lb.yaml",
+	err := (Config{}).renderTargetConfigTemplate(targetEnv, "orch-configs/templates/bootstrap/argocd.tpl", ".deploy/bootstrap/argocd.yaml")
+	if err != nil {
+		return fmt.Errorf("failed to render argocd proxy configuration: %w", err)
 	}
 
-	// TBD: Change useIntelRegistry to targetEnv
-	// TBD: if targetEnv has a non-empty proxy, render the bootstrap argo-proxy.tpl to argo-proxy.yaml and add argo-proxy.yaml to argoBootstrapValues
+	// Set argoBootstrapValues to the default set for a kind dev environment
+	argoBootstrapValues := []string{
+		".deploy/bootstrap/argocd.yaml",
+	}
 
 	return d.argocd(argoBootstrapValues, targetEnv)
 }
@@ -823,7 +928,7 @@ func (d Deploy) VENWithFlow(ctx context.Context, flow string) (string, error) { 
 		return "", fmt.Errorf("failed to change directory to 'ven': %w", err)
 	}
 
-	if err := sh.RunV("git", "checkout", "vm-provisioning/1.0.4"); err != nil {
+	if err := sh.RunV("git", "checkout", "vm-provisioning/1.0.7"); err != nil {
 		return "", fmt.Errorf("failed to checkout specific commit: %w", err)
 	}
 
@@ -866,7 +971,6 @@ CLUSTER='{{.ServiceDomain}}'
 # IO Flow Configurations
 ONBOARDING_USERNAME='{{.OnboardingUsername}}'
 ONBOARDING_PASSWORD='{{.OnboardingPassword}}'
-
 # NIO Flow Configurations
 PROJECT_NAME='{{.ProjectName}}'
 PROJECT_API_USER='{{.ProjectApiUser}}'
@@ -876,7 +980,6 @@ PROJECT_API_PASSWORD='{{.ProjectApiPassword}}'
 RAM_SIZE='{{.RamSize}}'
 NO_OF_CPUS='{{.NoOfCpus}}'
 SDA_DISK_SIZE='{{.SdaDiskSize}}'
-SDB_DISK_SIZE='{{.SdbDiskSize}}'
 LIBVIRT_DRIVER='{{.LibvirtDriver}}'
 
 USERNAME_LINUX='{{.UsernameLinux}}'
@@ -904,7 +1007,6 @@ STANDALONE=0
 		RamSize            string
 		NoOfCpus           string
 		SdaDiskSize        string
-		SdbDiskSize        string
 		LibvirtDriver      string
 		UsernameLinux      string
 		PasswordLinux      string
@@ -920,10 +1022,9 @@ STANDALONE=0
 		ProjectName:        "sample-project",
 		ProjectApiUser:     "sample-project-api-user",
 		ProjectApiPassword: password,
-		RamSize:            "4096",
+		RamSize:            "8192",
 		NoOfCpus:           "4",
-		SdaDiskSize:        "32G",
-		SdbDiskSize:        "32G",
+		SdaDiskSize:        "110G",
 		LibvirtDriver:      "kvm",
 		UsernameLinux:      "user",
 		PasswordLinux:      "user",
@@ -993,6 +1094,21 @@ STANDALONE=0
 			time.Sleep(10 * time.Second)
 			continue
 		}
+	}
+	var outputChmodBuf bytes.Buffer
+	chmodCmd := exec.CommandContext(ctx, "sudo", "chmod", "755",
+		filepath.Join("scripts", "update_provider_defaultos.sh"),
+		filepath.Join("scripts", "create_vm.sh"),
+		filepath.Join("scripts", "host_status_check.sh"),
+		filepath.Join("scripts", "nio_configs.sh"),
+		filepath.Join("scripts", "destroy_vm.sh"),
+	)
+
+	chmodCmd.Stdout = io.MultiWriter(os.Stdout, &outputChmodBuf)
+	chmodCmd.Stderr = io.MultiWriter(os.Stderr, &outputChmodBuf)
+
+	if err := chmodCmd.Run(); err != nil {
+		return "", fmt.Errorf("failed to chmod: %w", err)
 	}
 
 	if err := sh.RunV(filepath.Join("scripts", "update_provider_defaultos.sh"), "microvisor"); err != nil {
@@ -1066,34 +1182,21 @@ func (d Deploy) OrchCA() error {
 	return d.orchCA()
 }
 
-// Deploys ENiC Edge cluster with sample-project project.
-func (d Deploy) EdgeCluster() error {
+// Deploys ENiC Edge cluster with sample-project project, input required: mage deploy:edgeCluster <targetEnv>
+func (d Deploy) EdgeCluster(targetEnv string) error {
 	updateEdgeName()
 
-	os.Setenv("ORCH_PROJECT", "sample-project")
-	os.Setenv("ORCH_ORG", "sample-org")
-	os.Setenv("ORCH_USER", "sample-project-onboarding-user")
+	projectName := "sample-project"
+	orgName := "sample-org"
 
-	projectId, err := projectId("sample-project")
-	if err != nil {
-		return err
+	if err := (TenantUtils{}).GetProject(context.TODO(), orgName, projectName); err != nil {
+		return fmt.Errorf("failed to get project %s: %w", projectName, err)
 	}
 
-	fleetNamespace = projectId
-
-	labels := []string{
-		"color=blue",
-	}
-	return d.deployEnicCluster(strings.Join(labels, ","))
-}
-
-// Deploys ENiC Edge cluster, input required: mage deploy:edgeClusterWithProject <org-name> <project-name> <edge-infra-user>
-func (d Deploy) EdgeClusterWithProject(orgName string, projectName string, edgeInfraUser string) error {
-	updateEdgeName()
-
-	os.Setenv("ORCH_USER", edgeInfraUser)
 	os.Setenv("ORCH_PROJECT", projectName)
 	os.Setenv("ORCH_ORG", orgName)
+	os.Setenv("ORCH_USER", "sample-project-onboarding-user")
+
 	projectId, err := projectId(projectName)
 	if err != nil {
 		return err
@@ -1104,25 +1207,65 @@ func (d Deploy) EdgeClusterWithProject(orgName string, projectName string, edgeI
 	labels := []string{
 		"color=blue",
 	}
-	return d.deployEnicCluster(strings.Join(labels, ","))
+	return d.deployEnicCluster(targetEnv, strings.Join(labels, ","))
 }
 
-// Deploys ENiC Edge cluster with sample-project project, input labels: mage deploy:edgeClusterWithLabels <labels, color=blue,city=hillsboro>
-func (d Deploy) EdgeClusterWithLabels(labels string) error {
+// Deploys ENiC Edge cluster, input required: mage deploy:edgeClusterWithProject <targetEnv> <org-name> <project-name>
+func (d Deploy) EdgeClusterWithProject(targetEnv string, orgName string, projectName string) error {
 	updateEdgeName()
 
-	os.Setenv("ORCH_PROJECT", "sample-project")
-	os.Setenv("ORCH_ORG", "sample-org")
-	os.Setenv("ORCH_USER", "sample-project-onboarding-user")
+	ctx := context.TODO()
+	if err := (TenantUtils{}).GetProject(ctx, orgName, projectName); err != nil {
+		return fmt.Errorf("failed to get project %s: %w", projectName, err)
+	}
 
-	projectId, err := projectId("sample-project")
+	edgeInfraUser, onboardingUser, err := getEdgeAndOnboardingUsers(ctx, orgName)
+	if err != nil {
+		return err
+	}
+
+	edgeMgrUser = edgeInfraUser
+	project = projectName
+
+	os.Setenv("ORCH_PROJECT", projectName)
+	os.Setenv("ORCH_ORG", orgName)
+	os.Setenv("ORCH_USER", onboardingUser)
+
+	projectId, err := projectId(projectName)
 	if err != nil {
 		return err
 	}
 
 	fleetNamespace = projectId
 
-	return d.deployEnicCluster(labels)
+	labels := []string{
+		"color=blue",
+	}
+	return d.deployEnicCluster(targetEnv, strings.Join(labels, ","))
+}
+
+// Deploys ENiC Edge cluster with sample-project project: mage deploy:edgeClusterWithLabels <targetEnv> <labels, color=blue,city=hillsboro>
+func (d Deploy) EdgeClusterWithLabels(targetEnv string, labels string) error {
+	updateEdgeName()
+	projectName := "sample-project"
+	orgName := "sample-org"
+
+	if err := (TenantUtils{}).GetProject(context.TODO(), orgName, projectName); err != nil {
+		return fmt.Errorf("failed to get project %s: %w", projectName, err)
+	}
+
+	os.Setenv("ORCH_PROJECT", projectName)
+	os.Setenv("ORCH_ORG", orgName)
+	os.Setenv("ORCH_USER", "sample-project-onboarding-user")
+
+	projectId, err := projectId(projectName)
+	if err != nil {
+		return err
+	}
+
+	fleetNamespace = projectId
+
+	return d.deployEnicCluster(targetEnv, labels)
 }
 
 func (d Deploy) AddKyvernoPolicy() error {
@@ -1146,9 +1289,19 @@ func (a Argo) Login() error {
 	return a.login()
 }
 
-// Add internal helm/git repos.
-func (a Argo) RepoAdd() error {
-	return a.repoAdd()
+// Add public GitHub Orchestrator platform source repos to ArgoCD.
+func (a Argo) AddGithubRepos() error {
+	gitUser := os.Getenv("GIT_USER")
+	if gitUser == "" {
+		return fmt.Errorf("must set environment variable GIT_USER")
+	}
+
+	gitToken := os.Getenv("GIT_TOKEN")
+	if gitToken == "" {
+		return fmt.Errorf("must set environment variable GIT_TOKEN")
+	}
+
+	return a.repoAdd(gitUser, gitToken, githubRepos)
 }
 
 // Lists all ArgoCD Applications, sorted by syncWave.
@@ -1480,32 +1633,16 @@ func (g Gen) LEOrchestratorCABundle() error {
 
 // RegistryCacheCert generates the Registry cache x509 certificate file for a specified target environment.
 func (Gen) RegistryCacheCert(targetEnv string) error {
-	cacheRegistryURL := ""
-	clusterFilePath := fmt.Sprintf("orch-configs/clusters/%s.yaml", targetEnv)
-	clusterValues, err := parseClusterValues(clusterFilePath)
-	if err != nil {
-		return fmt.Errorf("failed to parse cluster values for targetEnv %s: %w", targetEnv, err)
-	}
+	cacheRegistry, _ := (Config{}).getDockerCache(targetEnv)
+	cacheRegistry = strings.TrimSpace(cacheRegistry)
+	cacheRegistryCert, _ := (Config{}).getDockerCacheCert(targetEnv)
+	cacheRegistryCert = strings.TrimSpace(cacheRegistryCert)
 
-	// Check if the cache registry URL is set in the cluster values
-	if clusterValues["orchestratorDeployment"] != nil {
-		if dockerCache, ok := clusterValues["orchestratorDeployment"].(map[string]interface{})["dockerCache"]; ok {
-			cacheRegistryURL = fmt.Sprintf("%v", dockerCache)
+	if cacheRegistry != "" && cacheRegistryCert != "" {
+		if err := os.WriteFile(filepath.Join("mage", "registry-cache-ca.crt"), []byte(cacheRegistryCert), 0o644); err != nil {
+			return fmt.Errorf("failed to write cache registry certificate to file: %w", err)
 		}
-	}
-	if cacheRegistryURL == "" {
-		fmt.Printf("%s doesn't specify a dockerCache URL. No cache certificate will be generated.\n", targetEnv)
-	} else {
-		fmt.Printf("Using cache registry URL: %s\n", cacheRegistryURL)
-
-		err := (Registry{}).getRegistryCert(cacheRegistryURL, filepath.Join("mage", "registry-cache-ca.crt"), false)
-		if err != nil {
-			fmt.Printf("Failed to generate cache registry certificate: %v\n", err)
-			return fmt.Errorf("failed to generate cache registry certificate: %w", err)
-		}
-
-		cacheRegistryCert := filepath.Join("mage", "registry-cache-ca.crt")
-		fmt.Printf("Cache registry certificate saved to: %s\n", cacheRegistryCert)
+		fmt.Printf("Cache registry certificate written to: %s\n", filepath.Join("mage", "registry-cache-ca.crt"))
 	}
 
 	return nil

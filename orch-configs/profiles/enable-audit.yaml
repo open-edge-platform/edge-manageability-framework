@@ -2,9 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-#*.yaml
-#!bkc.yaml
-#!dev.yaml
-#!dev-minimal.yaml
-#!onprem*.yaml
+# Enables audit logging in api-gw
 
+argo:
+  enabled:
+    audit: true

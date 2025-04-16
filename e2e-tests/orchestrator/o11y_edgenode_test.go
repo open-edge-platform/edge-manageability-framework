@@ -29,6 +29,8 @@ const (
 	enMetricsEndpoint  = "/prometheus/api/v1/query"
 	enLogsEndpoint     = "/loki/api/v1/query_range"
 	enLogWriteEndpoint = "/loki/api/v1/push"
+	since1h            = "1h"
+	since3h            = "3h"
 	// Org and project names must be the same as in step in CI.
 	enOrgName     = "sample-org"
 	enProjectName = "sample-project"
@@ -202,7 +204,7 @@ var _ = Describe("Edgenode Observability Test:", Ordered, Label(edgenodeObs), fu
 			headers := make(http.Header)
 			headers.Add("X-Scope-OrgID", projectID)
 			query := "{app=\"validation\"}"
-			logs, err := helpers.GetLogs(cli, logsAddr, query, projectID)
+			logs, err := helpers.GetLogs(cli, logsAddr, query, since1h, projectID)
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(logs.Data.Result).ToNot(BeEmpty())
@@ -217,7 +219,7 @@ var _ = Describe("Edgenode Observability Test:", Ordered, Label(edgenodeObs), fu
 				headers.Add("X-Scope-OrgID", projectID)
 
 				query := fmt.Sprintf("{file_type=\"%v\"}", name)
-				logs, err := helpers.GetLogs(cli, logsAddr, query, projectID)
+				logs, err := helpers.GetLogs(cli, logsAddr, query, since1h, projectID)
 				Expect(err).ToNot(HaveOccurred())
 
 				if len(logs.Data.Result) == 0 {
@@ -229,7 +231,7 @@ var _ = Describe("Edgenode Observability Test:", Ordered, Label(edgenodeObs), fu
 
 		It("OpenTelemetry Collector logs should be present in edgenode loki", func() {
 			query := "{file_type=\"OpenTelemetry_Collector\"}"
-			logs, err := helpers.GetLogs(cli, logsAddr, query, projectID)
+			logs, err := helpers.GetLogs(cli, logsAddr, query, since1h, projectID)
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(logs.Data.Result).ToNot(BeEmpty())
@@ -237,7 +239,7 @@ var _ = Describe("Edgenode Observability Test:", Ordered, Label(edgenodeObs), fu
 
 		It("Telegraf logs should be present in edgenode loki", func() {
 			query := "{file_type=\"Telegraf\"}"
-			logs, err := helpers.GetLogs(cli, logsAddr, query, projectID)
+			logs, err := helpers.GetLogs(cli, logsAddr, query, since1h, projectID)
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(logs.Data.Result).ToNot(BeEmpty())
@@ -245,7 +247,7 @@ var _ = Describe("Edgenode Observability Test:", Ordered, Label(edgenodeObs), fu
 
 		It("Caddy logs should be present in edgenode loki", func() {
 			query := "{file_type=\"caddy\"}"
-			logs, err := helpers.GetLogs(cli, logsAddr, query, projectID)
+			logs, err := helpers.GetLogs(cli, logsAddr, query, since1h, projectID)
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(logs.Data.Result).ToNot(BeEmpty())
@@ -253,7 +255,7 @@ var _ = Describe("Edgenode Observability Test:", Ordered, Label(edgenodeObs), fu
 
 		It("Apt Install logs should be present in edgenode loki", func() {
 			query := "{file_type=\"AptInstallLogs\"}"
-			logs, err := helpers.GetLogs(cli, logsAddr, query, projectID)
+			logs, err := helpers.GetLogs(cli, logsAddr, query, since3h, projectID)
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(logs.Data.Result).ToNot(BeEmpty())

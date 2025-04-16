@@ -18,18 +18,21 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/Nerzal/gocloak/v13"
 	"github.com/bitfield/script"
+	"github.com/google/uuid"
 	"github.com/open-edge-platform/edge-manageability-framework/internal/retry"
+
+	onboarding_manager "github.com/open-edge-platform/edge-manageability-framework/e2e-tests/orchestrator/onboarding_manager"
 )
 
 // Deploys the ENiC (indicates the number of instances, optionally set env variables: ORCH_FQDN, ORCH_IP, ORCH_USER, ORCH_PASS, ORCH_ORG, ORCH_PROJECT).
 func (DevUtils) DeployEnic(replicas int, targetEnv string) error {
-	deployRevision := getDeployRevisionParam()
-	configsRevision := getConfigsRevisionParam()
+	deployRevision := giteaDeployRevisionParam()
 	namespace := "utils"
 	orchestratorIp, err := getPrimaryIP()
 	if err != nil {
@@ -44,11 +47,6 @@ func (DevUtils) DeployEnic(replicas int, targetEnv string) error {
 	orchIP := orchestratorIp.String()
 	if orchIPEnv := os.Getenv("ORCH_IP"); orchIPEnv != "" {
 		orchIP = orchIPEnv
-	}
-
-	orchUser := defaultUser
-	if orchUserEnv := os.Getenv("ORCH_USER"); orchUserEnv != "" {
-		orchUser = orchUserEnv
 	}
 
 	orchPass, err := GetDefaultOrchPassword()
@@ -69,19 +67,40 @@ func (DevUtils) DeployEnic(replicas int, targetEnv string) error {
 		orchProject = orchProjectEnv
 	}
 
+	orchUser := fmt.Sprintf("%s-%s", orchProject, "onboarding-user")
+	if orchUserEnv := os.Getenv("ORCH_USER"); orchUserEnv != "" {
+		orchUser = orchUserEnv
+	}
+
 	targetConfig := getTargetConfig(targetEnv)
 
-	cmd := fmt.Sprintf("helm upgrade --install root-app argocd-internal/root-app -f %s -n %s --create-namespace %s %s "+
+	cmd := fmt.Sprintf("helm upgrade --install root-app argocd-internal/root-app -f %s -n %s --create-namespace %s "+
 		"--set root.useLocalValues=true --set argo.enic.replicas=%d "+
 		"--set argo.clusterDomain=%s --set argo.enic.orchestratorIp=%s "+
 		"--set argo.enic.orchestratorUser=%s --set argo.enic.orchestratorPass=%s "+
 		"--set argo.enic.orchestratorOrg=%s --set argo.enic.orchestratorProject=%s",
-		targetConfig, namespace, deployRevision, configsRevision,
+		targetConfig, namespace, deployRevision,
 		replicas,
 		orchFQDN, orchIP,
 		orchUser, orchPass,
 		orchOrg, orchProject,
 	)
+
+	// Pushd to the deployment directory
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current working directory: %w", err)
+	}
+	deploymentDir := filepath.Join(deployGiteaRepoDir, deployRepoName)
+	if err := os.Chdir(deploymentDir); err != nil {
+		return fmt.Errorf("failed to change directory to %s: %w", deploymentDir, err)
+	}
+	defer func() {
+		if err := os.Chdir(currentDir); err != nil {
+			log.Printf("failed to change back to original directory: %v", err)
+		}
+	}()
+
 	fmt.Printf("exec: %s\n", cmd)
 	_, err = script.Exec(cmd).Stdout()
 	return err
@@ -104,11 +123,146 @@ func isEnicArgoAppReady() (bool, error) {
 	return false, nil
 }
 
+// RegisterEnic Registers ENiC UUID with orchestrator
+func (DevUtils) RegisterEnic() error {
+	fmt.Printf("Registering ENiC...\n")
+	var enicUUID uuid.UUID
+	var errUUID error
+
+	cmd := fmt.Sprintf("kubectl exec -it -n %s %s -c edge-node -- bash -c 'dmidecode -s system-uuid'", enicNs, enicPodName)
+	ctx, cancel := context.WithTimeout(context.Background(), waitForReadyMin*time.Minute)
+	defer cancel()
+	counter := 0
+	fn := func() error {
+		out, err := exec.Command("bash", "-c", cmd).Output()
+		outParsed := strings.Trim(string(out), "\n")
+		enicUUID, errUUID = uuid.Parse(outParsed)
+		fmt.Printf("\nENiC UUID output: %s from output (%s)\n", enicUUID, outParsed)
+		if err != nil || errUUID != nil {
+			fmt.Printf("\rENiC UUID is not ready: %s (%vs)", enicUUID, counter*waitForNextSec)
+			counter++
+			return fmt.Errorf("enic UUID is not ready")
+		} else {
+			fmt.Printf("\nENiC UUID: %s (%vs)\n", enicUUID, counter*waitForNextSec)
+			return nil
+		}
+	}
+
+	if err := retry.UntilItSucceeds(ctx, fn, time.Duration(waitForNextSec)*time.Second); err != nil {
+		return fmt.Errorf("enic UUID retrieve error: %w 😲", err)
+	}
+
+	cli, err := GetClient()
+	if err != nil {
+		return fmt.Errorf("error creating HTTP client: %w", err)
+	}
+
+	orchPass, err := GetDefaultOrchPassword()
+	if err != nil {
+		return err
+	}
+	if orchPassEnv := os.Getenv("ORCH_PASS"); orchPassEnv != "" {
+		orchPass = orchPassEnv
+	}
+
+	orchProject := defaultProject
+	if orchProjectEnv := os.Getenv("ORCH_PROJECT"); orchProjectEnv != "" {
+		orchProject = orchProjectEnv
+	}
+
+	orchUser := fmt.Sprintf("%s-%s", orchProject, "onboarding-user")
+	if orchUserEnv := os.Getenv("ORCH_USER"); orchUserEnv != "" {
+		orchUser = orchUserEnv
+	}
+
+	orchFQDN := serviceDomain
+	if orchFQDNEnv := os.Getenv("ORCH_FQDN"); orchFQDNEnv != "" {
+		orchFQDN = orchFQDNEnv
+	}
+
+	apiToken, err := GetApiToken(cli, orchUser, orchPass)
+	if err != nil {
+		return fmt.Errorf("error getting API Token: %w", err)
+	}
+
+	apiBaseURLTemplate := "https://api.%s/v1/projects/%s"
+	baseProjAPIUrl := fmt.Sprintf(apiBaseURLTemplate, orchFQDN, orchProject)
+	hostRegUrl := baseProjAPIUrl + "/compute/hosts/register"
+
+	_, err = onboarding_manager.HttpInfraOnboardNewRegisterHost(hostRegUrl, *apiToken, cli, enicUUID, true)
+	if err != nil {
+		return fmt.Errorf("error registering ENiC: %w", err)
+	}
+
+	fmt.Printf("Registered ENiC ...\n")
+	return nil
+}
+
+// GetEnicSerialNumber retrieves the ENiC serial number.
+func (DevUtils) GetEnicSerialNumber() error {
+	ctx, cancel := context.WithTimeout(context.Background(), waitForReadyMin*time.Minute)
+	defer cancel()
+	counter := 0
+	var serialNumber string
+
+	fmt.Printf("Executing command to get ENiC serial number...\n")
+	fn := func() error {
+		cmd := fmt.Sprintf("kubectl exec -it -n %s %s -c edge-node -- bash -c 'dmidecode -s system-serial-number'", enicNs, enicPodName)
+		out, err := exec.Command("bash", "-c", cmd).Output()
+		if err != nil {
+			fmt.Printf("\rFailed to get ENiC serial number: attempt %d (%vs)", counter, counter*waitForNextSec)
+			counter++
+			return fmt.Errorf("get ENiC serial number: %w", err)
+		}
+		serialNumber = strings.TrimSpace(string(out))
+		fmt.Printf("Serial Number: %s\n", serialNumber)
+		return nil
+	}
+
+	if err := retry.UntilItSucceeds(ctx, fn, time.Duration(waitForNextSec)*time.Second); err != nil {
+		return fmt.Errorf("failed to get ENiC serial number after multiple attempts: %w", err)
+	}
+
+	return nil
+}
+
+// GetEnicUUID retrieves the ENiC UUID.
+func (DevUtils) GetEnicUUID() error {
+	ctx, cancel := context.WithTimeout(context.Background(), waitForReadyMin*time.Minute)
+	defer cancel()
+	counter := 0
+	var uuid string
+
+	fmt.Printf("Executing command to get ENiC UUID...\n")
+	fn := func() error {
+		cmd := fmt.Sprintf("kubectl exec -it -n %s %s -c edge-node -- bash -c 'dmidecode -s system-uuid'", enicNs, enicPodName)
+		out, err := exec.Command("bash", "-c", cmd).Output()
+		if err != nil {
+			fmt.Printf("\rFailed to get ENiC UUID: attempt %d (%vs)", counter, counter*waitForNextSec)
+			counter++
+			return fmt.Errorf("get ENiC UUID: %w", err)
+		}
+		uuid = strings.TrimSpace(string(out))
+		fmt.Printf("UUID: %s\n", uuid)
+		return nil
+	}
+
+	if err := retry.UntilItSucceeds(ctx, fn, time.Duration(waitForNextSec)*time.Second); err != nil {
+		return fmt.Errorf("failed to get ENiC UUID after multiple attempts: %w", err)
+	}
+	return nil
+}
+
+// WaitForEnic waits for the ENiC pod to be in a running state.
 func (DevUtils) WaitForEnic() error {
+	ctx, cancel := context.WithTimeout(context.Background(), waitForReadyMin*time.Minute)
+	defer cancel()
+	counter := 0
+
 	for {
 		ready, err := isEnicArgoAppReady()
 		if err != nil {
-			fmt.Println(fmt.Errorf("Error while checking ENiC App: %w", err))
+			fmt.Println(fmt.Errorf("error while checking ENiC App: %w", err))
 		}
 
 		if ready {
@@ -119,10 +273,6 @@ func (DevUtils) WaitForEnic() error {
 	}
 
 	// Add another check for enic readiness, sometimes enic argo will be synced and healthy but no enic pod
-	ctx, cancel := context.WithTimeout(context.Background(), waitForReadyMin*time.Minute)
-	defer cancel()
-	counter := 0
-
 	cmd := fmt.Sprintf("kubectl -n %s get pod/%s -o jsonpath='{.status.phase}'", enicNs, enicPodName)
 
 	fmt.Printf("Waiting %v minutes for ENiC pod to start...\n", waitForReadyMin)
@@ -156,7 +306,7 @@ func (DevUtils) WaitForEnicNodeAgent() error {
 	for {
 		ready, err := isEnicArgoAppReady()
 		if err != nil {
-			fmt.Println(fmt.Errorf("Error while checking ENiC App: %w", err))
+			fmt.Println(fmt.Errorf("error while checking ENiC App: %w", err))
 		}
 
 		if ready {
@@ -389,7 +539,7 @@ func ManageRoles(cli *http.Client, token, action, username, orgUUID, projUUID st
 		return fmt.Errorf("failed to get user ID: %w", err)
 	}
 
-	pollIntervalInSecs := time.Duration(1)
+	pollIntervalInSecs := time.Duration.Seconds(1)
 	retryCount := 120 // wait for 2 mins
 	for i := 0; i < retryCount; i++ {
 		var errs []error
@@ -402,7 +552,7 @@ func ManageRoles(cli *http.Client, token, action, username, orgUUID, projUUID st
 			return nil
 		}
 		fmt.Printf("Not all roles are assigned, failed with an error: %v, Retrying...", errs)
-		time.Sleep(pollIntervalInSecs * time.Second)
+		time.Sleep(time.Duration(pollIntervalInSecs))
 	}
 	return fmt.Errorf("time out waiting for roles to be assigned")
 }

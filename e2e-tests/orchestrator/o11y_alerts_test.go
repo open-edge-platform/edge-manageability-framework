@@ -40,7 +40,7 @@ const (
 	tplConnectionLostFiring               = `\*\[[0-9]+\] Firing\* \*Project:\* %s\\n\*Alert Name:\* %s`
 	receiverUpdateAppliedTimeout          = 2 * time.Minute
 	resourceUsageAlertFiringTimeout       = 4 * time.Minute
-	resourceUsageAlertNotificationTimeout = 4 * time.Minute
+	resourceUsageAlertNotificationTimeout = 8 * time.Minute
 	hostConnectionLostAlertFiringTimeout  = 8 * time.Minute
 	hostConnectionLostAlertAbsentTimeout  = 4 * time.Minute
 	alertSuppressionInMaintenanceTimeout  = 4 * time.Minute

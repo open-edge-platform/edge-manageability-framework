@@ -31,6 +31,7 @@ import (
 	onboarding_manager "github.com/open-edge-platform/edge-manageability-framework/e2e-tests/orchestrator/onboarding_manager"
 	"github.com/open-edge-platform/edge-manageability-framework/internal/retry"
 	util "github.com/open-edge-platform/edge-manageability-framework/mage"
+	pb_am "github.com/open-edge-platform/infra-managers/attestationstatus/pkg/api/attestmgr/v1"
 	pb_hm "github.com/open-edge-platform/infra-managers/host/pkg/api/hostmgr/proto"
 	pb_mm "github.com/open-edge-platform/infra-managers/maintenance/pkg/api/maintmgr/v1"
 	pb_tm "github.com/open-edge-platform/infra-managers/telemetry/pkg/api/telemetrymgr/v1"
@@ -71,6 +72,7 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 				hostGrpcUrl = fmt.Sprintf("onboarding-node.%s:%d", serviceDomain, servicePort)
 				hostUrl     = baseProjAPIUrl + "/compute/hosts"
 				instanceUrl = baseProjAPIUrl + "/compute/instances"
+				osUrl       = baseProjAPIUrl + "/compute/os"
 				err         error
 				mac         = onboarding_manager.Mac()
 				hostUuid    = uuid.NewString()
@@ -86,8 +88,16 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 			err = onboarding_manager.GrpcInfraOnboardNewNode(hostGrpcUrl, *onbToken, mac, hostUuid)
 			Expect(err).ToNot(HaveOccurred(), "cannot create host")
 
+			hostID, err := onboarding_manager.HttpInfraOnboardGetHostID(ctx, hostUrl, *apiToken, cli, hostUuid)
+			Expect(err).ToNot(HaveOccurred(), "cannot get host")
+
+			osID, err := onboarding_manager.HttpInfraOnboardGetOSID(ctx, osUrl, *apiToken, cli)
+			Expect(err).ToNot(HaveOccurred(), "cannot get os")
+
+			Expect(onboarding_manager.HttpInfraOnboardNewInstance(instanceUrl, *apiToken, hostID, osID, cli)).To(Succeed())
+
 			// Get Host and Instance
-			_, _, err = onboarding_manager.HttpInfraOnboardGetHostAndInstance(ctx, hostUrl, *apiToken, cli, hostUuid)
+			_, _, err = onboarding_manager.HttpInfraOnboardGetHostIDAndInstanceID(ctx, hostUrl, *apiToken, cli, hostUuid)
 			Expect(err).ToNot(HaveOccurred(), "cannot get host and instance")
 
 			// Check if Workflow is created
@@ -108,6 +118,7 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 				hostRegUrl  = baseProjAPIUrl + "/compute/hosts/register"
 				hostUrl     = baseProjAPIUrl + "/compute/hosts"
 				instanceUrl = baseProjAPIUrl + "/compute/instances"
+				osUrl       = baseProjAPIUrl + "/compute/os"
 				err         error
 				mac         = onboarding_manager.Mac()
 				hostUuid    = uuid.New()
@@ -117,7 +128,7 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 			Expect(err).ToNot(HaveOccurred())
 
 			// Register Host
-			registeredHost, err := onboarding_manager.HttpInfraOnboardNewRegisterHost(hostRegUrl, *apiToken, cli, hostUuid)
+			registeredHost, err := onboarding_manager.HttpInfraOnboardNewRegisterHost(hostRegUrl, *apiToken, cli, hostUuid, false)
 			Expect(err).ToNot(HaveOccurred())
 			fmt.Printf("Registered Host: %+v\n", registeredHost)
 
@@ -140,13 +151,21 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 			Expect(err).ToNot(HaveOccurred())
 			Expect(nodeState).To(Equal(pb_om.OnboardNodeStreamResponse_NODE_STATE_ONBOARDED))
 
+			hostID, err := onboarding_manager.HttpInfraOnboardGetHostID(ctx, hostUrl, *apiToken, cli, hostUuid.String())
+			Expect(err).ToNot(HaveOccurred(), "cannot get host")
+
+			osID, err := onboarding_manager.HttpInfraOnboardGetOSID(ctx, osUrl, *apiToken, cli)
+			Expect(err).ToNot(HaveOccurred(), "cannot get os")
+
+			Expect(onboarding_manager.HttpInfraOnboardNewInstance(instanceUrl, *apiToken, hostID, osID, cli)).To(Succeed())
+
 			// Wait for host and instance reconciliation
 			reqCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 			defer cancel()
 			err = retry.UntilItSucceeds(
 				reqCtx,
 				func() error {
-					hostID, instanceID, err := onboarding_manager.HttpInfraOnboardGetHostAndInstance(reqCtx, hostUrl, *apiToken, cli, hostUuid.String())
+					hostID, instanceID, err := onboarding_manager.HttpInfraOnboardGetHostIDAndInstanceID(reqCtx, hostUrl, *apiToken, cli, hostUuid.String())
 					if err != nil {
 						if strings.Contains(err.Error(), "empty host result for uuid") || strings.Contains(err.Error(), "instance not yet created for uuid") {
 							// Continue retrying if the host result is empty or instance is not yet created
@@ -185,12 +204,12 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 			Expect(err).ToNot(HaveOccurred())
 
 			// Register Host
-			registeredHost, err := onboarding_manager.HttpInfraOnboardNewRegisterHost(hostRegUrl, *apiToken, cli, hostUuid)
+			registeredHost, err := onboarding_manager.HttpInfraOnboardNewRegisterHost(hostRegUrl, *apiToken, cli, hostUuid, false)
 			Expect(err).ToNot(HaveOccurred())
 			fmt.Printf("Registered Host: %+v\n", registeredHost)
 
 			// Retrieve the host ID
-			hostID, err = onboarding_manager.HttpInfraOnboardGetNode(ctx, hostUrl, *apiToken, cli, hostUuid.String())
+			hostID, err = onboarding_manager.HttpInfraOnboardGetHostID(ctx, hostUrl, *apiToken, cli, hostUuid.String())
 			Expect(err).ToNot(HaveOccurred())
 
 			// Verify registration with invalid UUID
@@ -276,14 +295,28 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 			Expect(err).ToNot(HaveOccurred())
 			hostUrl := baseProjAPIUrl + "/compute/hosts"
 			instanceUrl := baseProjAPIUrl + "/compute/instances"
+			osUrl := baseProjAPIUrl + "/compute/os"
 
 			reqCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
 			defer cancel()
 
 			// Invoke API using jwt token
 			Expect(grpcInfraOnboardNodeJWT(reqCtx, onbSBIUrl, servicePort, *enToken, hostUuid)).To(Succeed())
-			// Invoke API using jwt token
-			Expect(grpcInfraHostMgrJWT(reqCtx, hrmSBIUrl, servicePort, *enToken, hostUuid)).To(Succeed())
+
+			hostID, err := onboarding_manager.HttpInfraOnboardGetHostID(ctx, hostUrl, *apiToken, cli, hostUuid)
+			Expect(err).ToNot(HaveOccurred(), "cannot get host")
+
+			osID, err := onboarding_manager.HttpInfraOnboardGetOSID(ctx, osUrl, *apiToken, cli)
+			Expect(err).ToNot(HaveOccurred(), "cannot get os")
+
+			Expect(onboarding_manager.HttpInfraOnboardNewInstance(instanceUrl, *apiToken, hostID, osID, cli)).To(Succeed())
+
+			// Expecting FailedPrecondition as Instance is not provisioned yet, but it's enough to verify reachability
+			Expect(grpcInfraHostMgrJWT(reqCtx, hrmSBIUrl, servicePort, *enToken, hostUuid)).Should(
+				MatchError(ContainSubstring(
+					"could not call grpc endpoint for server infra-node.%s:%d: rpc error: code = FailedPrecondition",
+					serviceDomain, servicePort)),
+			)
 
 			// Housekeeping
 			Expect(cleanupHost(ctx, hostUrl, instanceUrl, *apiToken, cli, hostUuid)).To(Succeed())
@@ -366,6 +399,42 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 
 		It("should NOT be accessible over HTTPS when using valid but expired token", func(ctx SpecContext) { //nolint: dupl
 			sbiWithExpiredTokenExpectError(ctx, cli, grpcInfraTelemetryMgrJWT, tmSBIUrl, servicePort)
+		})
+	})
+
+	Describe("Attestation Status Manager service", Ordered, Label(infraManagement), func() {
+		amSBIUrl := "attest-node." + serviceDomain
+
+		It("should be accessible over HTTPS when using valid token", func(ctx SpecContext) {
+			enToken, err := getTestENToken(cli, testUserPassword)
+			Expect(err).ToNot(HaveOccurred())
+
+			reqCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
+			defer cancel()
+
+			err = grpcAttestStatusMgrJWT(
+				reqCtx,
+				amSBIUrl,
+				servicePort,
+				*enToken,
+			)
+			Expect(status.Code(err)).To(Equal(codes.NotFound)) // Getting a gRPC response back is good enough
+		})
+
+		It("should NOT be accessible over gRPC when using non-EN token", func(ctx SpecContext) {
+			sbiWithAPITokenExpectError(ctx, cli, grpcAttestStatusMgrJWT, amSBIUrl, servicePort, testUserPassword)
+		})
+
+		It("should NOT be accessible over HTTPS when using no token", func(ctx SpecContext) {
+			sbiWithNoTokenExpectError(ctx, grpcAttestStatusMgrJWT, amSBIUrl, servicePort)
+		})
+
+		It("should NOT be accessible over HTTPS when using invalid token", func(ctx SpecContext) {
+			sbiWithInvalidTokenExpectError(ctx, grpcAttestStatusMgrJWT, amSBIUrl, servicePort)
+		})
+
+		It("should NOT be accessible over HTTPS when using valid but expired token", func(ctx SpecContext) { //nolint: dupl
+			sbiWithExpiredTokenExpectError(ctx, cli, grpcAttestStatusMgrJWT, amSBIUrl, servicePort)
 		})
 	})
 
@@ -656,6 +725,7 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 
 			hostUrl := baseProjAPIUrl + "/compute/hosts"
 			instanceUrl := baseProjAPIUrl + "/compute/instances"
+			osUrl := baseProjAPIUrl + "/compute/os"
 			hostUuid := uuid.New().String()
 
 			reqCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
@@ -663,6 +733,14 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 
 			// Invoke API using jwt token
 			Expect(grpcInfraOnboardNodeJWT(reqCtx, omSBIUrl, servicePort, *onbToken, hostUuid)).To(Succeed())
+
+			hostID, err := onboarding_manager.HttpInfraOnboardGetHostID(ctx, hostUrl, *apiToken, cli, hostUuid)
+			Expect(err).ToNot(HaveOccurred(), "cannot get host")
+
+			osID, err := onboarding_manager.HttpInfraOnboardGetOSID(ctx, osUrl, *apiToken, cli)
+			Expect(err).ToNot(HaveOccurred(), "cannot get os")
+
+			Expect(onboarding_manager.HttpInfraOnboardNewInstance(instanceUrl, *apiToken, hostID, osID, cli)).To(Succeed())
 
 			// Housekeeping
 			Expect(cleanupHost(ctx, hostUrl, instanceUrl, *apiToken, cli, hostUuid)).To(Succeed())
@@ -863,6 +941,43 @@ func grpcInfraMainMgrJWT(ctx context.Context, address string, port int, token st
 	return nil
 }
 
+// last param is needed to keep the signature of the function same as other grpcInfra* functions
+func grpcAttestStatusMgrJWT(ctx context.Context, address string, port int, token string, _ ...string) error {
+	target := fmt.Sprintf("%s:%d", address, port)
+
+	conn, err := grpc.DialContext(
+		ctx,
+		target,
+		grpc.WithBlock(),
+		grpc.WithTransportCredentials(
+			credentials.NewClientTLSFromCert(nil, ""), // Use host's root CA set to establish trust
+		),
+		grpc.WithPerRPCCredentials(
+			oauth.TokenSource{
+				TokenSource: oauth2.StaticTokenSource(
+					&oauth2.Token{AccessToken: token}, // Send the access token as part of the HTTP Authorization header
+				),
+			},
+		),
+	)
+	if err != nil {
+		return fmt.Errorf("could not dial server %s: %w", target, err)
+	}
+	defer conn.Close()
+
+	cli := pb_am.NewAttestationStatusMgrServiceClient(conn)
+	if _, err := cli.UpdateInstanceAttestationStatusByHostGuid(
+		ctx,
+		&pb_am.UpdateInstanceAttestationStatusByHostGuidRequest{
+			HostGuid:          uuid.New().String(),
+			AttestationStatus: pb_am.AttestationStatus_ATTESTATION_STATUS_VERIFIED,
+		},
+	); err != nil {
+		return fmt.Errorf("could not call grpc endpoint for server %s: %w", target, err)
+	}
+	return nil
+}
+
 func sbiWithAPITokenExpectError(
 	ctx context.Context, cli *http.Client,
 	sbiCall func(context.Context, string, int, string, ...string) error,
@@ -924,7 +1039,7 @@ func sbiCallExpectErrorMsg(
 
 // cleanupHost is used to remove hosts that are created during the test.
 func cleanupHost(ctx context.Context, hostUrl, instanceUrl, apiToken string, cli *http.Client, hostUUID string) error {
-	hostID, instanceID, err := onboarding_manager.HttpInfraOnboardGetHostAndInstance(ctx, hostUrl, apiToken, cli, hostUUID)
+	hostID, instanceID, err := onboarding_manager.HttpInfraOnboardGetHostIDAndInstanceID(ctx, hostUrl, apiToken, cli, hostUUID)
 	if err != nil {
 		return err
 	}
@@ -942,7 +1057,7 @@ func cleanupHost(ctx context.Context, hostUrl, instanceUrl, apiToken string, cli
 	err = retry.UntilItSucceeds(
 		reqCtx,
 		func() error {
-			hostID, err := onboarding_manager.HttpInfraOnboardGetNode(reqCtx, hostUrl, apiToken, cli, hostUUID)
+			hostID, err := onboarding_manager.HttpInfraOnboardGetHostID(reqCtx, hostUrl, apiToken, cli, hostUUID)
 			if hostID != "" {
 				err = fmt.Errorf("not removed yet")
 			}

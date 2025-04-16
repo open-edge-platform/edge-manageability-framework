@@ -18,7 +18,7 @@ body:
   - type: textarea
     attributes:
       label: System Setup
-      description: Describe your system and software setup. Include any critical video, audio, and model files.
+      description: Describe your system and software setup.
     validations:
       required: true
 

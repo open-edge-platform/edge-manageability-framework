@@ -234,13 +234,18 @@ EOF
 # 6. Continues with the installation of the orchestrator.
 # Note: If the configuration already exists, the script will prompt the user to confirm if they want to overwrite it.
 allow_config_in_runtime() {
+  if [ "$ENABLE_TRACE" = true ]; then
+    echo "Tracing is enabled. Temporarily disabling tracing"
+    set +x
+  fi
+
   tmp_dir="$cwd/$git_arch_name/tmp"
 
   if [ -d "$tmp_dir/$si_config_repo" ]; then
-      echo "Configuration already exists at $tmp_dir/$si_config_repo."
+    echo "Configuration already exists at $tmp_dir/$si_config_repo."
     if [ "$ASSUME_YES" = true ]; then
-        echo "Assuming yes to use existing configuration."
-        return
+      echo "Assuming yes to use existing configuration."
+      return
     fi
     while true; do
       read -rp "Do you want to overwrite the existing configuration? (yes/no): " yn
@@ -336,6 +341,11 @@ Ready to proceed with installation? " yn
       * ) echo "Please answer yes or no.";;
     esac
   done
+
+  if [ "$ENABLE_TRACE" = true ]; then
+    echo "Tracing is enabled. Re-enabling tracing"
+    set -x
+  fi
 }
 
 usage() {
@@ -421,12 +431,51 @@ write_config_to_disk() {
   exit 0
 }
 
+validate_and_set_ip() {
+  local yaml_path="$1"
+  local yaml_file="$2"
+  local ip_var_name="$3"
+  local ip_value
+
+  echo "Value at $yaml_path in $yaml_file: $(yq "$yaml_path" "$yaml_file")"
+
+  if [[ -z $(yq "$yaml_path" "$yaml_file") || $(yq "$yaml_path" "$yaml_file") == "null" ]]; then
+    echo "${ip_var_name} is not set to a valid value in the configuration file."
+    while true; do
+      read -rp "Please provide a value for ${ip_var_name}: " ip_value
+      if [[ $ip_value =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        export "$ip_var_name"="$ip_value"
+        yq -i "$yaml_path|=strenv($ip_var_name)" "$yaml_file"
+        echo "${ip_var_name} has been set to: $ip_value"
+        break
+      else
+        unset "$ip_var_name"
+        echo "Invalid IP address. Would you like to provide a valid value? (Y/n): "
+        read -r yn
+        case $yn in
+          [Nn]* ) echo "Exiting as a valid value for ${ip_var_name} has not been provided."; exit 1;;
+          * ) ;;
+        esac
+      fi
+    done
+  fi
+}
+
+validate_config() {
+
+  # Validate the IP addresses for Argo, Traefik and Nginx services
+  validate_and_set_ip '.postCustomTemplateOverwrite.metallb-config.ArgoIP' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml ARGO_IP
+  validate_and_set_ip '.postCustomTemplateOverwrite.metallb-config.TraefikIP' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml TRAEFIK_IP
+  validate_and_set_ip '.postCustomTemplateOverwrite.metallb-config.NginxIP' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml NGINX_IP
+}
+
 ################################
 ##### INSTALL SCRIPT START #####
 ################################
 
 ASSUME_YES=false
 SKIP_DOWNLOAD=false
+ENABLE_TRACE=false
 
 if [ -n "${1-}" ]; then
   while :; do
@@ -462,6 +511,7 @@ if [ -n "${1-}" ]; then
       ;;
       -t|--trace)
         set -x
+        ENABLE_TRACE=true
       ;;
       -w|--write-config)
         WRITE_CONFIG="true"
@@ -532,7 +582,6 @@ if  [[ $SKIP_DOWNLOAD != true  ]]; then
 else 
   echo "Skipping packages download"
   sudo chown -R _apt:root $deb_dir_name
-  sudo rm -rf  "${cwd}/${git_arch_name}/tmp/edge-manageability-framework"
 fi
 
 # Write configuration to disk if the flag is set
@@ -545,6 +594,9 @@ allow_config_in_runtime
 
 # Write out the configs that have explicit overrides
 write_configs_using_overrides
+
+# Validate the configuration file, and set missing values
+validate_config
 
 ## Tar back the edge-manageability-framework repo. This will be later pushed to Gitea repo in the Orchestrator Installer
 tmp_dir="$cwd/$git_arch_name/tmp"
