@@ -61,6 +61,9 @@ At the center of Edge Manageability Framework is Edge Orchestrator, the primary 
 #### Secure Edge Deployment
 - [trusted-compute](https://github.com/open-edge-platform/trusted-compute): Ensures secure deployment within virtual machines, providing trusted compute environments.
 
+#### Shared CI
+- [orch-ci](https://github.com/open-edge-platform/orch-ci): Open Edge Platform common CI
+
 
 ## Get Started
 There are multiple ways to begin to learn about, use, or contribute to Edge Orchestrator.
