@@ -15,6 +15,15 @@ traefikReverseProxy:
 manager:
   image:
     repository: registry-rs.edgeorchestration.intel.com/edge-orch/cluster/capi-provider-intel-manager
+{{- with .Values.argo.resources.intelInfraProvider.manager }}
+  resources:
+    {{- toYaml . | nindent 4 }}
+{{- end }}
+
 southboundApi:
   image:
     repository: registry-rs.edgeorchestration.intel.com/edge-orch/cluster/capi-provider-intel-southbound
+{{- with .Values.argo.resources.intelInfraProvider.southboundApi }}
+  resources:
+    {{- toYaml . | nindent 4 }}
+{{- end }}
