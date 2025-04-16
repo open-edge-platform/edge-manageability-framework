@@ -34,6 +34,10 @@
 /argocd/applications/configs/app* @scottmbaker @ray-milkey @adibrastegarnia @malruben @SeanCondon @sys-orch-approve
 /argocd/applications/custom/app* @scottmbaker @ray-milkey @adibrastegarnia @malruben @SeanCondon @sys-orch-approve
 
+# UI templates and values
+/argocd/applications/**/web-ui* @teone @fjcooper5 @satya-in @mamanzan @RPG-coder-intc @dlemiech @riyaz-ghati @vigneshintel
+/argocd/applications/**/metadata-broker* @teone @fjcooper5 @satya-in @mamanzan @RPG-coder-intc @dlemiech @riyaz-ghati @vigneshintel
+
 # Cluster Orch Tests
 /e2e-tests/orchestrator/clusterorch_smoke_test.go @gcgirish @andybavier @hyunsun @jdanieck @jokuniew @sys-orch-approve
 /mage/edge_cluster.go @gcgirish @andybavier @hyunsun @jdanieck @jokuniew @sys-orch-approve

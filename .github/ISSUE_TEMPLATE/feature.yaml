@@ -6,7 +6,9 @@ body:
 
   - type: markdown
     attributes:
-      value: <br>To expedite issue processing please search open and closed issues before submitting a new one. Existing issues often contain information about workarounds, resolution, or progress updates.
+      value: |
+        <br>To expedite issue processing please search open and closed issues before submitting a new one. Existing issues often contain information about workarounds, resolution, or progress updates.
+        <br>The Design Proposal process is described in the [Design Proposal](https://github.com/open-edge-platform/edge-manageability-framework/design-proposals/README.md)
 
   - type: textarea
     attributes:
