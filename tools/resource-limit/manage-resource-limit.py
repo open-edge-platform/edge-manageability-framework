@@ -127,7 +127,7 @@ def get_resource_config(namespace):
     metrics = get_metrics(namespace)
     resoruce_configs = {} # key -> requests and limits
     if namespace not in mapping:
-        return {}, { "cpu_request": 0, "memory_request": 0, "cpu_limit": 0, "memory_limit": 0 }
+        return {}
     pod_prefixes = mapping.get(namespace, {})
     for item in metrics:
         pod_name = item["pod_name"]
