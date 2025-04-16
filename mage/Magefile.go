@@ -1858,6 +1858,15 @@ type LogUtils mg.Namespace
 
 type Version mg.Namespace
 
+func (Version) GetVersionTag() error {
+	tag, err := getDeployTag()
+	if err != nil {
+		return fmt.Errorf("failed to get deploy tag: %w", err)
+	}
+	fmt.Println(tag)
+	return nil
+}
+
 // Checks that the Version in the VERSION file and in the Argo Charts is in syn
 func (v Version) CheckVersion() error {
 	return v.checkVersion()

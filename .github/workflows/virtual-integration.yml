@@ -352,6 +352,12 @@ jobs:
       - name: Setup asdf and install dependencies
         uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main
 
+      - name: Get version tag
+        id: get_version_tag
+        run: |
+          output=$(mage version:getVersionTag)
+          echo "versionTag=$output" >> $GITHUB_ENV
+
       - name: Build DEB packages
         working-directory: on-prem-installers
         run: mage build:all
@@ -383,16 +389,22 @@ jobs:
         run: mage publish:sourceTarballs
 
       - name: Login to ECR
-        if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
         uses: docker/login-action@v3.3.0
         with:
           registry: 080137407410.dkr.ecr.us-west-2.amazonaws.com
 
       - name: Build Cloud Installer and release bundle artifacts
-        if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
         run: |
           mage installer:build
           mage installer:bundle
+
+      - name: Scan Cloud Installer Image
+        uses: aquasecurity/trivy-action@6c175e9c4083a92bbca2f9724c8a5e33bc2d97a5  # v0.30.0
+        with:
+          image-ref: open-registry.espdprod.infra-host.com/edge-orch/common/orchestrator-installer-cloudfull:${{ env.versionTag }}
+          format: table
+          output: "trivy-orchestrator-installer-cloudfull.txt"
+          ignore-unfixed: true
 
       - name: Publish Cloud Installer artifact
         if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
