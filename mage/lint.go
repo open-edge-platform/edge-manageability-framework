@@ -40,3 +40,8 @@ func (Lint) yaml() error {
 func (Lint) Terraform() error {
 	return sh.RunV("tflint", "--init", "--chdir=terraform")
 }
+
+// Lint markdown files using markdownlint-cli2 tool.
+func (Lint) Markdown() error {
+	return sh.RunV("markdownlint-cli2", "**/*.md", "--config", "tools/.markdownlint-cli2.yaml")
+}
