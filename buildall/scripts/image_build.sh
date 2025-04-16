@@ -21,6 +21,8 @@ LOGFILE=$(realpath "$2")
 # bring in env vars
 source env.sh
 
+START_TS=$(date +"%s")
+
 REPO_PATH="repos/${REPO}"
 
 if [ ! -d "${REPO_PATH}" ]; then
@@ -68,3 +70,8 @@ pushd "${REPO_PATH}"
     echo "*** Finished docker build in repo: '${REPO}', tag: '${tag}', target: '${target}' ***"
   done
 popd
+
+END_TS=$(date +"%s")
+ELAPSED=$(( END_TS - START_TS ))
+
+echo "### Docker build in: '${REPO}' took ${ELAPSED} seconds ###"

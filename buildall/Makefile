@@ -92,7 +92,7 @@ GIT_BRANCH ?= main
 branch-checkout: checkout-repos ## refresh and checkout all repos with a specific branch
 	for repo in $(REPOS); do \
 		pushd $$repo ;\
-		git checkout $(GIT_BRANCH) ;\
+		git checkout $(GIT_BRANCH) ; git pull --ff-only ;\
 	  popd ;\
 	done
 
@@ -109,6 +109,9 @@ $(SCRATCH_DIR)/make_check_%:
 
 buildall: ## perform the entire build
 	$(SCRIPTS_DIR)/buildall.sh
+
+timed-buildall:
+	$(SCRIPTS_DIR)/timed_buildall.sh
 
 # list all artifacts used in each repo
 ARTIFACT_LIST := $(addprefix $(SCRATCH_DIR)/artifacts_, $(addsuffix .yaml, $(shell tr '\n' ' ' < $(REPO_LIST))))

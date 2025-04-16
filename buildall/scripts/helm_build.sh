@@ -21,6 +21,8 @@ LOGFILE=$(realpath "$2")
 # bring in env vars
 source env.sh
 
+START_TS=$(date +"%s")
+
 REPO_PATH="repos/${REPO}"
 
 if [ ! -d "${REPO_PATH}" ]; then
@@ -57,11 +59,11 @@ pushd "${REPO_PATH}"
     set -eu
 
     if [ ! "${HELM_BUILD_TARGET}" ]; then
-      echo "*** Copying Makefile from main branch as helm-build target doesn't exist ***"
+      echo "### Copying Makefile from main branch as helm-build target doesn't exist ###"
       git checkout main Makefile
     fi
 
-    echo "*** Starting make helm-build in: '${REPO}', tag: '${tag}', placed in: '${outDir}' ***"
+    echo "### Starting make helm-build in: '${REPO}', tag: '${tag}', placed in: '${outDir}' ###"
 
     make helm-build >> "${LOGFILE}" 2>&1
 
@@ -70,7 +72,12 @@ pushd "${REPO_PATH}"
     # clean up repo
     git checkout HEAD .
 
-    echo "*** Finished make helm-build in: '${REPO}', tag: '${tag}', placed in: '${outDir}' ***"
+    echo "### Finished make helm-build in: '${REPO}', tag: '${tag}', placed in: '${outDir}' ###"
 
   done
 popd
+
+END_TS=$(date +"%s")
+ELAPSED=$(( END_TS - START_TS ))
+
+echo "### Helm build in: '${REPO}' took ${ELAPSED} seconds ###"
