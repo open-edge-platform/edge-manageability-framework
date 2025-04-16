@@ -21,7 +21,7 @@ spec:
   sources:
     - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
       chart: orch-ui/charts/orch-ui-infra
-      targetRevision: 1.0.8
+      targetRevision: 1.0.9
       helm:
         releaseName: web-ui
         valuesObject:
