@@ -12,7 +12,7 @@ image:
 
 traefik:
   matchRoute: Host(`app-service-proxy.{{ .Values.argo.clusterDomain }}`)
-  matchRouteWs: Host(`app-orch.{{ .Values.argo.clusterDomain }}`) && PathPrefix(`/app-service-proxy`)
+  matchRouteSrc: Host(`app-service-proxy.{{ .Values.argo.clusterDomain }}`) && PathPrefix(`/app-service-proxy`)
 {{- if .Values.argo.traefik }}
   tlsOption: {{ .Values.argo.traefik.tlsOption | default "" | quote }}
 {{- end }}

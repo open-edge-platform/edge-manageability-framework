@@ -54,12 +54,15 @@ func CheckMetric(cli *http.Client, endpoint, metric, tenant string) (found bool,
 	return len(metrics.Data.Result) != 0, nil
 }
 
-func GetLogs(cli *http.Client, endpoint, query, tenant string) (logs logsResponse, err error) {
+func GetLogs(cli *http.Client, endpoint, query, since, tenant string) (logs logsResponse, err error) {
 	header := make(http.Header)
 	header.Add("X-Scope-OrgID", tenant)
 
 	params := url.Values{}
 	params.Add("query", query)
+	if since != "" {
+		params.Add("since", since)
+	}
 	endpoint += "?" + params.Encode()
 
 	resp, err := MakeRequest(http.MethodGet, endpoint, nil, cli, header)

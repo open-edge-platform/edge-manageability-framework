@@ -16,12 +16,11 @@ root:
     - orch-configs/profiles/enable-full-ui.yaml
     - orch-configs/profiles/enable-onprem.yaml
     - orch-configs/profiles/enable-sre.yaml
-    - orch-configs/profiles/enable-autoprovision.yaml
     # proxy group should be specified as the first post-"enable" profile
     - orch-configs/profiles/proxy-none.yaml
     - orch-configs/profiles/profile-onprem.yaml
     - orch-configs/profiles/alerting-emails.yaml
-    - orch-configs/profiles/artifact-rs-production.yaml
+    - orch-configs/profiles/artifact-rs-production-noauth.yaml
     - orch-configs/profiles/o11y-onprem.yaml
     - orch-configs/profiles/enable-explicit-proxy.yaml
     - orch-configs/profiles/resource-default.yaml

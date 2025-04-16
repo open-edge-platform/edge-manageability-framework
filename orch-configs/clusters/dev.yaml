@@ -9,6 +9,7 @@ root:
     - orch-configs/profiles/enable-platform.yaml
     - orch-configs/profiles/enable-multitenancy.yaml
     - orch-configs/profiles/enable-o11y.yaml
+    - orch-configs/profiles/enable-audit.yaml
     - orch-configs/profiles/enable-kyverno.yaml
     - orch-configs/profiles/enable-app-orch.yaml
     - orch-configs/profiles/enable-cluster-orch.yaml
@@ -16,7 +17,6 @@ root:
     - orch-configs/profiles/enable-full-ui.yaml
     - orch-configs/profiles/enable-dev.yaml
     - orch-configs/profiles/enable-sre.yaml
-    - orch-configs/profiles/enable-autoprovision.yaml
     # proxy group should be specified as the first post-"enable" profile
     - orch-configs/profiles/proxy-none.yaml
     - orch-configs/profiles/profile-dev.yaml

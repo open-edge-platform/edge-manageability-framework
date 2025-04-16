@@ -7,7 +7,7 @@
 # someone opens a pull request.
 
 # Everything requires Platform team review by default
-* @se-chris-thach @mdbalvin @rad-szulim @charlesmcchan @yi-tseng-intel @ashridatta @teone @callumnobleintel @daniele-moro @SeanCondon @pierventre @cgoea john.oloughlin@intel.com gary.loughnane@intel.com @jjuele @emmakenny @PalashGoelIntel @palade @pperycz @ltalarcz @jakubsikorski @sys-orch-approve
+* @se-chris-thach @mdbalvin @rad-szulim @charlesmcchan @yi-tseng-intel @ashridatta @teone @callumnobleintel @daniele-moro @SeanCondon @pierventre @cgoea john.oloughlin@intel.com gary.loughnane@intel.com @emmakenny @PalashGoelIntel @palade @pperycz @ltalarcz @jakubsikorski @sys-orch-approve @ahalimx86
 
 # Except the following folders, which can be merged with passing CI and one approval
 /argocd/applications/templates
@@ -23,7 +23,7 @@
 .github/actions/cypress/ @teone @mamanzan @satya-in @fjcooper5
 
 # Platform team Forza maintains on-prem Orchestrator
-/on-prem-installers/ @se-chris-thach @palade john.oloughlin@intel.com gary.loughnane@intel.com @jjuele @emmakenny @PalashGoelIntel @mdbalvin @ashridatta @sys-orch-approve
+/on-prem-installers/ @se-chris-thach @palade john.oloughlin@intel.com gary.loughnane@intel.com @emmakenny @PalashGoelIntel @mdbalvin @ashridatta @sys-orch-approve
 
 # application catalog tests
 /e2e-tests/orchestrator/app_catalog_test.go @scottmbaker @ray-milkey @adibrastegarnia @malruben @SeanCondon @sys-orch-approve
@@ -33,6 +33,10 @@
 /argocd/applications/templates/app* @scottmbaker @ray-milkey @adibrastegarnia @malruben @SeanCondon @sys-orch-approve
 /argocd/applications/configs/app* @scottmbaker @ray-milkey @adibrastegarnia @malruben @SeanCondon @sys-orch-approve
 /argocd/applications/custom/app* @scottmbaker @ray-milkey @adibrastegarnia @malruben @SeanCondon @sys-orch-approve
+
+# UI templates and values
+/argocd/applications/**/web-ui* @teone @fjcooper5 @satya-in @mamanzan @RPG-coder-intc @dlemiech @riyaz-ghati @vigneshintel
+/argocd/applications/**/metadata-broker* @teone @fjcooper5 @satya-in @mamanzan @RPG-coder-intc @dlemiech @riyaz-ghati @vigneshintel
 
 # Cluster Orch Tests
 /e2e-tests/orchestrator/clusterorch_smoke_test.go @gcgirish @andybavier @hyunsun @jdanieck @jokuniew @sys-orch-approve
@@ -47,4 +51,4 @@
 /pod-configs @luoyingf @ashridatta @yi-tseng-intel @sys-orch-approve
 
 # Kyverno config requires Platform team review
-/argocd/applications/configs/kyverno-* chris.thach@intel.com @mdbalvin @rad-szulim @charlesmcchan @yi-tseng-intel john.oloughlin@intel.com gary.loughnane@intel.com @jjuele @emmakenny @palade @Irakus @sys-orch-approve
+/argocd/applications/configs/kyverno-* chris.thach@intel.com @mdbalvin @rad-szulim @charlesmcchan @yi-tseng-intel john.oloughlin@intel.com gary.loughnane@intel.com @emmakenny @palade @Irakus @sys-orch-approve @ahalimx86
