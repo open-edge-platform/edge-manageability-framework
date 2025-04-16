@@ -5,3 +5,10 @@
 clusterManager:
   extraArgs:
     disable-mt: false
+
+templateController:
+  extraArgs:
+    - '--webhook-enabled=true'
+
+webhookService:
+  enabled: true
