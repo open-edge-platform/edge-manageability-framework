@@ -1858,6 +1858,7 @@ type LogUtils mg.Namespace
 
 type Version mg.Namespace
 
+// Get the Release Tag for the current source version
 func (Version) GetVersionTag() error {
 	tag, err := getDeployTag()
 	if err != nil {
