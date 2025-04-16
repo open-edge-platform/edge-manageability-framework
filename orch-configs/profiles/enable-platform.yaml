@@ -43,4 +43,4 @@ argo:
     vault: true
     namespace-resource-quota: true
     k8s-metrics-server: true
-    token-file-server: true
+    token-fs: true
