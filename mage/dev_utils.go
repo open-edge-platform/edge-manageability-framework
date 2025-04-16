@@ -170,7 +170,7 @@ func (DevUtils) RegisterEnic() error {
 		orchProject = orchProjectEnv
 	}
 
-	orchUser := fmt.Sprintf("%s-%s", orchProject, "onboarding-user")
+	orchUser := fmt.Sprintf("%s-%s", orchProject, "api-user")
 	if orchUserEnv := os.Getenv("ORCH_USER"); orchUserEnv != "" {
 		orchUser = orchUserEnv
 	}
@@ -245,7 +245,7 @@ func (DevUtils) ProvisionEnic() error {
 		orchProject = orchProjectEnv
 	}
 
-	orchUser := fmt.Sprintf("%s-%s", orchProject, "onboarding-user")
+	orchUser := fmt.Sprintf("%s-%s", orchProject, "api-user")
 	if orchUserEnv := os.Getenv("ORCH_USER"); orchUserEnv != "" {
 		orchUser = orchUserEnv
 	}
