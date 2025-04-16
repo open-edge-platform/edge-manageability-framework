@@ -404,7 +404,7 @@ jobs:
       - name: Scan Cloud Installer Image
         uses: aquasecurity/trivy-action@6c175e9c4083a92bbca2f9724c8a5e33bc2d97a5  # v0.30.0
         with:
-          image-ref: open-registry.espdprod.infra-host.com/edge-orch/common/orchestrator-installer-cloudfull:${{ env.versionTag }}
+          image-ref: 080137407410.dkr.ecr.us-west-2.amazonaws.com/edge-orch/common/orchestrator-installer-cloudfull:${{ env.versionTag }}
           format: table
           output: "trivy-orchestrator-installer-cloudfull.txt"
           ignore-unfixed: true
