@@ -107,10 +107,10 @@ $(SCRATCH_DIR)/make_check_%:
 
 ## targets used to run buildall ##
 
-buildall: ## perform the entire build
+buildall: $(SCRATCH_DIR) ## perform the entire build
 	$(SCRIPTS_DIR)/buildall.sh
 
-timed-buildall:
+timed-buildall: $(SCRATCH_DIR)
 	$(SCRIPTS_DIR)/timed_buildall.sh
 
 # list all artifacts used in each repo

@@ -10,7 +10,6 @@ set -xeu -o pipefail
 # bring in environmental variables. Where MAKE_JOBS is set
 source env.sh
 
-
 # otherwise the shell builtin time may be used
 TIMECMD="command time"
 TIMEFILE=scratch/times_$(date -u +"%Y%m%d_%H%M%S")
@@ -18,7 +17,6 @@ TIMEFILE=scratch/times_$(date -u +"%Y%m%d_%H%M%S")
 START_TS=$(date +"%s")
 
 touch "${TIMEFILE}"
-
 
 # checkout all repos - populates repos/
 echo "checkout-repos" >> "${TIMEFILE}"
@@ -55,4 +53,3 @@ ${TIMECMD} -a -o "${TIMEFILE}" time make -j "${MAKE_JOBS}" image-build
 END_TS=$(date +"%s")
 ELAPSED=$(( END_TS - START_TS ))
 echo "Total elapsed time: ${ELAPSED} seconds" | tee -a "${TIMEFILE}"
-

@@ -63,7 +63,7 @@ pushd "${REPO_PATH}"
       git checkout main Makefile
     fi
 
-    echo "### Starting make helm-build in: '${REPO}', tag: '${tag}', placed in: '${outDir}' ###"
+    echo "### Starting make helm-build in: '${REPO}', tag: '${tag}' ###"
 
     make helm-build >> "${LOGFILE}" 2>&1
 
@@ -72,7 +72,7 @@ pushd "${REPO_PATH}"
     # clean up repo
     git checkout HEAD .
 
-    echo "### Finished make helm-build in: '${REPO}', tag: '${tag}', placed in: '${outDir}' ###"
+    echo "### Finished make helm-build in: '${REPO}', tag: '${tag}', output in: '${outDir}' ###"
 
   done
 popd
