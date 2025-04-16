@@ -6,8 +6,6 @@
 # https://github.com/updownpress/markdown-lint/tree/master/rules
 
 ---
-# SPDX-FileCopyrightText: (C) 2025 Intel Corporation
-# SPDX-License-Identifier: Apache-2.0
 
 default: true
 config:
