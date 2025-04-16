@@ -91,37 +91,6 @@ hosts) and clusters.
 
 #### Edge Infrastructure Manager
 
-<<<<<<< HEAD
-
-- [infra-core](https://github.com/open-edge-platform/infra-core): Manages core
-  infrastructure services.
-- [infra-managers](https://github.com/open-edge-platform/infra-managers):
-  Provides life-cycle management services for infrastructure resources.
-- [infra-onboarding](https://github.com/open-edge-platform/infra-onboarding):
-  Onboarding and provisioning services.
-- [infra-external](https://github.com/open-edge-platform/infra-external):
-  Manages third party infrastructure components.
-- [infra-charts](https://github.com/open-edge-platform/infra-charts): Supplies
-  Helm charts for infrastructure deployment.
-
-#### Observability
-
-- [o11y-charts](https://github.com/open-edge-platform/olly-charts): Provides
-  Helm charts for observability services.
-- [o11y-alerting-monitor](https://github.com/open-edge-platform/olly-alerting-monitor):
-  Offers alerting and monitoring services.
-- [o11y-sre-exporter](https://github.com/open-edge-platform/olly-sre-exporter):
-  Supplies SRE exporter services for enhanced observability.
-- [o11y-tenant-controller](https://github.com/open-edge-platform/olly-tenant-controller):
-  Manages tenant control services.
-
-#### Edge Nodes / Hosts
-
-- [edge-node-agents](https://github.com/open-edge-platform/edge-node-agents):
-  Deploys agents for managing edge nodes and hosts with policy-based management.
-- [virtual-edge-node](https://github.com/open-edge-platform/virtual-edge-node):
-  Emulates hardware edge nodes.
-  =======
 - [infra-core](https://github.com/open-edge-platform/infra-core): Core services
   for the Edge Infrastructure Manager.
 - [infra-managers](https://github.com/open-edge-platform/infra-managers):
@@ -155,13 +124,16 @@ hosts) and clusters.
 - [virtual-edge-node](https://github.com/open-edge-platform/virtual-edge-node):
   Virtual Edge Node onboarding and deployment scripts and configurations.
 
-> > > > > > > 6df3f8218009ecec6b31a98a21e55f9060a4d982
-
 #### Secure Edge Deployment
 
 - [trusted-compute](https://github.com/open-edge-platform/trusted-compute):
   Ensures secure deployment within virtual machines, providing trusted compute
   environments.
+
+#### Shared CI
+
+- [orch-ci](https://github.com/open-edge-platform/orch-ci): Open Edge Platform
+  common CI
 
 ## Get Started
 
