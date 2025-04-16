@@ -198,6 +198,93 @@ func (DevUtils) RegisterEnic() error {
 	return nil
 }
 
+// ProvisionEnic Registers ENiC UUID with orchestrator
+func (DevUtils) ProvisionEnic() error {
+	fmt.Printf("Provisioning ENiC...\n")
+	var enicUUID uuid.UUID
+	var errUUID error
+
+	cmd := fmt.Sprintf("kubectl exec -it -n %s %s -c edge-node -- bash -c 'dmidecode -s system-uuid'", enicNs, enicPodName)
+	ctx, cancel := context.WithTimeout(context.Background(), waitForReadyMin*time.Minute)
+	defer cancel()
+	counter := 0
+	fn := func() error {
+		out, err := exec.Command("bash", "-c", cmd).Output()
+		outParsed := strings.Trim(string(out), "\n")
+		enicUUID, errUUID = uuid.Parse(outParsed)
+		fmt.Printf("\nENiC UUID output: %s from output (%s)\n", enicUUID, outParsed)
+		if err != nil || errUUID != nil {
+			fmt.Printf("\rENiC UUID is not ready: %s (%vs)", enicUUID, counter*waitForNextSec)
+			counter++
+			return fmt.Errorf("enic UUID is not ready")
+		} else {
+			fmt.Printf("\nENiC UUID: %s (%vs)\n", enicUUID, counter*waitForNextSec)
+			return nil
+		}
+	}
+
+	if err := retry.UntilItSucceeds(ctx, fn, time.Duration(waitForNextSec)*time.Second); err != nil {
+		return fmt.Errorf("enic UUID retrieve error: %w 😲", err)
+	}
+
+	cli, err := GetClient()
+	if err != nil {
+		return fmt.Errorf("error creating HTTP client: %w", err)
+	}
+
+	orchPass, err := GetDefaultOrchPassword()
+	if err != nil {
+		return err
+	}
+	if orchPassEnv := os.Getenv("ORCH_PASS"); orchPassEnv != "" {
+		orchPass = orchPassEnv
+	}
+
+	orchProject := defaultProject
+	if orchProjectEnv := os.Getenv("ORCH_PROJECT"); orchProjectEnv != "" {
+		orchProject = orchProjectEnv
+	}
+
+	orchUser := fmt.Sprintf("%s-%s", orchProject, "onboarding-user")
+	if orchUserEnv := os.Getenv("ORCH_USER"); orchUserEnv != "" {
+		orchUser = orchUserEnv
+	}
+
+	orchFQDN := serviceDomain
+	if orchFQDNEnv := os.Getenv("ORCH_FQDN"); orchFQDNEnv != "" {
+		orchFQDN = orchFQDNEnv
+	}
+
+	apiToken, err := GetApiToken(cli, orchUser, orchPass)
+	if err != nil {
+		return fmt.Errorf("error getting API Token: %w", err)
+	}
+
+	apiBaseURLTemplate := "https://api.%s/v1/projects/%s"
+	baseProjAPIUrl := fmt.Sprintf(apiBaseURLTemplate, orchFQDN, orchProject)
+	hostUrl := baseProjAPIUrl + "/compute/hosts"
+	instanceUrl := baseProjAPIUrl + "/compute/instances"
+	osUrl := baseProjAPIUrl + "/compute/os"
+
+	hostID, err := onboarding_manager.HttpInfraOnboardGetHostID(ctx, hostUrl, *apiToken, cli, enicUUID.String())
+	if err != nil {
+		return fmt.Errorf("error getting ENiC resourceID: %w", err)
+	}
+
+	osID, err := onboarding_manager.HttpInfraOnboardGetOSID(ctx, osUrl, *apiToken, cli)
+	if err != nil {
+		return fmt.Errorf("error getting Ubuntu resourceID: %w", err)
+	}
+
+	err = onboarding_manager.HttpInfraOnboardNewInstance(instanceUrl, *apiToken, hostID, osID, cli)
+	if err != nil {
+		return fmt.Errorf("error provisioning ENiC: %w", err)
+	}
+
+	fmt.Printf("Provisioned ENiC ...\n")
+	return nil
+}
+
 // GetEnicSerialNumber retrieves the ENiC serial number.
 func (DevUtils) GetEnicSerialNumber() error {
 	ctx, cancel := context.WithTimeout(context.Background(), waitForReadyMin*time.Minute)
