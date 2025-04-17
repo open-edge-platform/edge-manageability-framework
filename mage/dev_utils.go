@@ -320,7 +320,6 @@ func getEnicReplicaCount() (int, error) {
 
 // GetEnicSerialNumber retrieves the ENiC serial number.
 func (DevUtils) GetEnicSerialNumber() error {
-
 	replicas, err := getEnicReplicaCount()
 	if err != nil {
 		return fmt.Errorf("error getting ENiC replica count: %w", err)
