@@ -31,7 +31,7 @@ inputs:
   admin:
     required: false
     description: "Run Admin tests"
-    default: true
+    default: false
   en_serial_number:
     required: false # NOTE this is required if the infra tests are running
     description: "Serial number of the EN"
