@@ -88,7 +88,7 @@ type Lint mg.Namespace
 
 // Lint markdown files using markdownlint-cli2 tool.
 func (Lint) Markdown() error {
-	return sh.RunV("markdownlint-cli2", "--config", ".markdownlint-cli2.yaml", "**/*.md")
+	return sh.RunV("markdownlint-cli2", "--config", "../tools/.markdownlint-cli2.yaml", "**/*.md")
 }
 
 // Namespace contains Build targets.
