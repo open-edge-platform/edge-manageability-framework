@@ -271,6 +271,8 @@ load_cluster_state_env() {
     CODECOMMIT_ADM_SSHKEY="codecommit_adm_sshkey_${ENV_NAME}"
     JUMPHOST_SSHKEY="jumphost_sshkey_${ENV_NAME}"
     VALUES="${AWS_ACCOUNT}-${ENV_NAME}-values.sh"
+    VARIABLE_TFVAR="${AWS_ACCOUNT}-${ENV_NAME}-values.tfvar"
+    PROFILE_TFVAR="${AWS_ACCOUNT}-${ENV_NAME}-profile.tfvar"
     VALUES_CHANGED=".${AWS_ACCOUNT}-${ENV_NAME}-valueschanged"
     SAVE_DIR_S3="${ENV_NAME}-SAVEME"
 
