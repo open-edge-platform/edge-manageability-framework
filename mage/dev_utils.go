@@ -123,9 +123,7 @@ func isEnicArgoAppReady() (bool, error) {
 	return false, nil
 }
 
-// RegisterEnic Registers ENiC UUID with orchestrator
-func (DevUtils) RegisterEnic() error {
-	fmt.Printf("Registering ENiC...\n")
+func getEnicUUIDInt() (uuid.UUID, error) {
 	var enicUUID uuid.UUID
 	var errUUID error
 
@@ -149,7 +147,45 @@ func (DevUtils) RegisterEnic() error {
 	}
 
 	if err := retry.UntilItSucceeds(ctx, fn, time.Duration(waitForNextSec)*time.Second); err != nil {
-		return fmt.Errorf("enic UUID retrieve error: %w 😲", err)
+		return uuid.UUID{}, fmt.Errorf("enic UUID retrieve error: %w 😲", err)
+	}
+
+	return enicUUID, nil
+}
+
+func getEnicSNInt() (string, error) {
+	var serialNumber string
+
+	cmd := fmt.Sprintf("kubectl exec -it -n %s %s -c edge-node -- bash -c 'dmidecode -s system-serial-number'", enicNs, enicPodName)
+	ctx, cancel := context.WithTimeout(context.Background(), waitForReadyMin*time.Minute)
+	defer cancel()
+	counter := 0
+	fn := func() error {
+		out, err := exec.Command("bash", "-c", cmd).Output()
+		if err != nil {
+			fmt.Printf("\rFailed to get ENiC serial number: attempt %d (%vs)", counter, counter*waitForNextSec)
+			counter++
+			return fmt.Errorf("get ENiC serial number: %w", err)
+		}
+		serialNumber = strings.TrimSpace(string(out))
+		fmt.Printf("Serial Number: %s\n", serialNumber)
+		return nil
+	}
+
+	if err := retry.UntilItSucceeds(ctx, fn, time.Duration(waitForNextSec)*time.Second); err != nil {
+		return "", fmt.Errorf("failed to get ENiC serial number after multiple attempts: %w", err)
+	}
+
+	return serialNumber, nil
+}
+
+// RegisterEnic Registers ENiC UUID with orchestrator
+func (DevUtils) RegisterEnic() error {
+	fmt.Printf("Registering ENiC...\n")
+
+	enicUUID, err := getEnicUUIDInt()
+	if err != nil {
+		return fmt.Errorf("error getting ENiC UUID: %w", err)
 	}
 
 	cli, err := GetClient()
@@ -170,7 +206,7 @@ func (DevUtils) RegisterEnic() error {
 		orchProject = orchProjectEnv
 	}
 
-	orchUser := fmt.Sprintf("%s-%s", orchProject, "onboarding-user")
+	orchUser := fmt.Sprintf("%s-%s", orchProject, "api-user")
 	if orchUserEnv := os.Getenv("ORCH_USER"); orchUserEnv != "" {
 		orchUser = orchUserEnv
 	}
@@ -198,29 +234,81 @@ func (DevUtils) RegisterEnic() error {
 	return nil
 }
 
-// GetEnicSerialNumber retrieves the ENiC serial number.
-func (DevUtils) GetEnicSerialNumber() error {
-	ctx, cancel := context.WithTimeout(context.Background(), waitForReadyMin*time.Minute)
-	defer cancel()
-	counter := 0
-	var serialNumber string
+// ProvisionEnic Registers ENiC UUID with orchestrator
+func (DevUtils) ProvisionEnic() error {
+	fmt.Printf("Provisioning ENiC...\n")
 
-	fmt.Printf("Executing command to get ENiC serial number...\n")
-	fn := func() error {
-		cmd := fmt.Sprintf("kubectl exec -it -n %s %s -c edge-node -- bash -c 'dmidecode -s system-serial-number'", enicNs, enicPodName)
-		out, err := exec.Command("bash", "-c", cmd).Output()
-		if err != nil {
-			fmt.Printf("\rFailed to get ENiC serial number: attempt %d (%vs)", counter, counter*waitForNextSec)
-			counter++
-			return fmt.Errorf("get ENiC serial number: %w", err)
-		}
-		serialNumber = strings.TrimSpace(string(out))
-		fmt.Printf("Serial Number: %s\n", serialNumber)
-		return nil
+	enicUUID, err := getEnicUUIDInt()
+	if err != nil {
+		return fmt.Errorf("error getting ENiC UUID: %w", err)
 	}
 
-	if err := retry.UntilItSucceeds(ctx, fn, time.Duration(waitForNextSec)*time.Second); err != nil {
-		return fmt.Errorf("failed to get ENiC serial number after multiple attempts: %w", err)
+	ctx, cancel := context.WithTimeout(context.Background(), waitForReadyMin*time.Minute)
+	defer cancel()
+
+	cli, err := GetClient()
+	if err != nil {
+		return fmt.Errorf("error creating HTTP client: %w", err)
+	}
+
+	orchPass, err := GetDefaultOrchPassword()
+	if err != nil {
+		return err
+	}
+	if orchPassEnv := os.Getenv("ORCH_PASS"); orchPassEnv != "" {
+		orchPass = orchPassEnv
+	}
+
+	orchProject := defaultProject
+	if orchProjectEnv := os.Getenv("ORCH_PROJECT"); orchProjectEnv != "" {
+		orchProject = orchProjectEnv
+	}
+
+	orchUser := fmt.Sprintf("%s-%s", orchProject, "api-user")
+	if orchUserEnv := os.Getenv("ORCH_USER"); orchUserEnv != "" {
+		orchUser = orchUserEnv
+	}
+
+	orchFQDN := serviceDomain
+	if orchFQDNEnv := os.Getenv("ORCH_FQDN"); orchFQDNEnv != "" {
+		orchFQDN = orchFQDNEnv
+	}
+
+	apiToken, err := GetApiToken(cli, orchUser, orchPass)
+	if err != nil {
+		return fmt.Errorf("error getting API Token: %w", err)
+	}
+
+	apiBaseURLTemplate := "https://api.%s/v1/projects/%s"
+	baseProjAPIUrl := fmt.Sprintf(apiBaseURLTemplate, orchFQDN, orchProject)
+	hostUrl := baseProjAPIUrl + "/compute/hosts"
+	instanceUrl := baseProjAPIUrl + "/compute/instances"
+	osUrl := baseProjAPIUrl + "/compute/os"
+
+	hostID, err := onboarding_manager.HttpInfraOnboardGetHostID(ctx, hostUrl, *apiToken, cli, enicUUID.String())
+	if err != nil {
+		return fmt.Errorf("error getting ENiC resourceID: %w", err)
+	}
+
+	osID, err := onboarding_manager.HttpInfraOnboardGetOSID(ctx, osUrl, *apiToken, cli)
+	if err != nil {
+		return fmt.Errorf("error getting Ubuntu resourceID: %w", err)
+	}
+
+	err = onboarding_manager.HttpInfraOnboardNewInstance(instanceUrl, *apiToken, hostID, osID, cli)
+	if err != nil {
+		return fmt.Errorf("error provisioning ENiC: %w", err)
+	}
+
+	fmt.Printf("Provisioned ENiC ...\n")
+	return nil
+}
+
+// GetEnicSerialNumber retrieves the ENiC serial number.
+func (DevUtils) GetEnicSerialNumber() error {
+	_, err := getEnicSNInt()
+	if err != nil {
+		return fmt.Errorf("error getting ENiC SN: %w", err)
 	}
 
 	return nil
@@ -228,28 +316,11 @@ func (DevUtils) GetEnicSerialNumber() error {
 
 // GetEnicUUID retrieves the ENiC UUID.
 func (DevUtils) GetEnicUUID() error {
-	ctx, cancel := context.WithTimeout(context.Background(), waitForReadyMin*time.Minute)
-	defer cancel()
-	counter := 0
-	var uuid string
-
-	fmt.Printf("Executing command to get ENiC UUID...\n")
-	fn := func() error {
-		cmd := fmt.Sprintf("kubectl exec -it -n %s %s -c edge-node -- bash -c 'dmidecode -s system-uuid'", enicNs, enicPodName)
-		out, err := exec.Command("bash", "-c", cmd).Output()
-		if err != nil {
-			fmt.Printf("\rFailed to get ENiC UUID: attempt %d (%vs)", counter, counter*waitForNextSec)
-			counter++
-			return fmt.Errorf("get ENiC UUID: %w", err)
-		}
-		uuid = strings.TrimSpace(string(out))
-		fmt.Printf("UUID: %s\n", uuid)
-		return nil
+	_, err := getEnicUUIDInt()
+	if err != nil {
+		return fmt.Errorf("error getting ENiC UUID: %w", err)
 	}
 
-	if err := retry.UntilItSucceeds(ctx, fn, time.Duration(waitForNextSec)*time.Second); err != nil {
-		return fmt.Errorf("failed to get ENiC UUID after multiple attempts: %w", err)
-	}
 	return nil
 }
 
