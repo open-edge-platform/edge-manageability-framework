@@ -2,9 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-core: cluster-api:v1.9.0
-bootstrap: capr-system:rke2:v0.12.0
-controlPlane: capr-system:rke2:v0.12.0
 env:
   manager:
   {{- if .Values.argo.proxy }}
@@ -21,18 +18,7 @@ env:
     value: "{{ .Values.argo.proxy.noProxy }}"
   {{- end }}
   {{- end }}
-manager:
-  featureGates:
-    core:
-      MachinePool: "true"
-      ClusterResourceSet: "true"
-      ClusterTopology: "true"
-      RuntimeSDK: "false"
-      MachineSetPreflightChecks: "true"
-      MachineWaitForVolumeDetachConsiderVolumeAttachments: "true"
-configSecret:
-  namespace: capi-variables
-  name: capi-variables
+
 containerSecurityContext:
   allowPrivilegeEscalation: false
   capabilities:
