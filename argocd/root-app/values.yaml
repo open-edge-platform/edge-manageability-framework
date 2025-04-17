@@ -20,4 +20,3 @@ argo:
   targetServer: ""
   autosync: true
 
-  enabled: {}
