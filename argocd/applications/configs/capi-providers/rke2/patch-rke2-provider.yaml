@@ -38,7 +38,7 @@ metadata:
   name: provider-rke2-patch
   namespace: capr-system
 spec:
-  schedule: "*/2 * * * *"  # Runs every 2 minutes
+  schedule: "*/5 * * * *"  # runs every 5 minutes
   jobTemplate:
     spec:
       template:

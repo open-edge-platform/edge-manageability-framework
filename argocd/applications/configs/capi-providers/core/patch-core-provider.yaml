@@ -31,7 +31,7 @@ metadata:
   name: provider-core-patch
   namespace: capi-system
 spec:
-  schedule: "*/2 * * * *"
+  schedule: "*/5 * * * *"
   jobTemplate:
     spec:
       template:
@@ -55,7 +55,8 @@ spec:
                           "--leader-elect",
                           "--use-deprecated-infra-machine-naming=false",
                           "--diagnostics-address=:8080",
-                          "--insecure-diagnostics=true"
+                          "--insecure-diagnostics=true",
+                          "--feature-gates=ClusterResourceSet=true,ClusterTopology=true,MachinePool=true,MachineSetPreflightChecks=true,MachineWaitForVolumeDetachConsiderVolumeAttachments=true,RuntimeSDK=false"
                         ]
                       }]
                     }
