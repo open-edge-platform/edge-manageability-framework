@@ -125,7 +125,9 @@ chart-manifest: $(SCRATCH_DIR)/manifest_charts.yaml ## build chart manifest
 
 $(SCRATCH_DIR)/manifest_charts.yaml: $(SCRATCH_DIR)
 	pushd .. ;\
+	echo "### Generating releaseManifest ####" ;\
 	mage gen:releaseManifest $(PROJECT_NAME)/$@ ;\
+	echo "### Generated releaseManifest ####" ;\
 	popd
 
 sort-charts: $(VENV_DIR)  ## determine which repos can build charts required by manifest, and write to htags_
@@ -135,7 +137,9 @@ sort-charts: $(VENV_DIR)  ## determine which repos can build charts required by 
 image-manifest: $(SCRATCH_DIR)/manifest_images.yaml  ## build image manifest
 $(SCRATCH_DIR)/manifest_images.yaml: $(SCRATCH_DIR)
 	pushd .. ;\
-	mage gen:localReleaseImageManifest $(PROJECT_NAME)/$@ ;\
+	echo "### Generating localReleaseImageManifest from charts ####" ;\
+	mage gen:localReleaseImageManifest $(PROJECT_NAME)/$@ > $(PROJECT_NAME)/$@.log ;\
+	echo "### Generated localReleaseImageManifest ####" ;\
 	popd
 
 sort-images: $(VENV_DIR)  ## determine which repos can build images required by manifest, and write to itags_

@@ -27,8 +27,8 @@ export MAKEFLAGS=--no-print-directory
 export BUILDKIT_PROGRESS=plain
 
 # Set this to any value (such as 'Y') if you have limited space and want
-# to prune the docker buildx cache as you go
-export DOCKER_PRUNE=Y
+# to prune the docker buildx cache after every repo
+export DOCKER_PRUNE=
 
 # don't color output
 export NO_COLOR=1
