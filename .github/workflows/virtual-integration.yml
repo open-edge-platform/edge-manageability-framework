@@ -710,7 +710,7 @@ jobs:
           token: ${{ secrets.SYS_ORCH_GITHUB }}
           infra: ""
           infra_provision_hosts: true
-          en_sn: "sn1234"
+          en_serial_number: "sn1234"
           en_uuid: "uuid1234"
 
       - name: Start Ven
