@@ -20,16 +20,16 @@ import (
 type Publish mg.Namespace
 
 const (
-	AWSRegion                    = "us-west-2"
-	IntelTiberRegistryRepoURL    = "080137407410.dkr.ecr.us-west-2.amazonaws.com"
-	PublicTiberRegistryRepoURL   = "registry-rs.edgeorchestration.intel.com"
-	IntelTiberRepository         = "edge-orch"
-	RegistryRepoSubProj          = "common"
-	IntelTiberContainerRegistry  = IntelTiberRegistryRepoURL + "/" + IntelTiberRepository + "/" + RegistryRepoSubProj
-	PublicTiberContainerRegistry = PublicTiberRegistryRepoURL + "/" + IntelTiberRepository + "/" + RegistryRepoSubProj
-	IntelTiberChartRegistry      = IntelTiberRegistryRepoURL + "/" + IntelTiberRepository + "/" + RegistryRepoSubProj + "/charts" //nolint: lll
-	IntelTiberFilesRegistry      = IntelTiberRegistryRepoURL + "/" + IntelTiberRepository + "/" + RegistryRepoSubProj + "/files"  //nolint: lll
-	PublicTiberFilesRegistry     = PublicTiberRegistryRepoURL + "/" + IntelTiberRepository + "/" + RegistryRepoSubProj + "/files" //nolint: lll
+	AWSRegion                 = "us-west-2"
+	InternalRegistryRepoURL   = "080137407410.dkr.ecr.us-west-2.amazonaws.com"
+	PublicRegistryRepoURL     = "registry-rs.edgeorchestration.intel.com"
+	RepositoryName            = "edge-orch"
+	RegistryRepoSubProj       = "common"
+	InternalContainerRegistry = InternalRegistryRepoURL + "/" + RepositoryName + "/" + RegistryRepoSubProj
+	PublicContainerRegistry   = PublicRegistryRepoURL + "/" + RepositoryName + "/" + RegistryRepoSubProj
+	InternalChartRegistry     = InternalRegistryRepoURL + "/" + RepositoryName + "/" + RegistryRepoSubProj + "/charts" //nolint: lll
+	InternalFilesRegistry     = InternalRegistryRepoURL + "/" + RepositoryName + "/" + RegistryRepoSubProj + "/files"  //nolint: lll
+	PublicFilesRegistry       = PublicRegistryRepoURL + "/" + RepositoryName + "/" + RegistryRepoSubProj + "/files"    //nolint: lll
 )
 
 // Builds and publishes Orchestrator application source tarballs to the registry.
@@ -92,19 +92,19 @@ func (Publish) SourceTarballs(ctx context.Context) error {
 
 		variantLC := strings.ToLower(variant)
 
-		repoName := fmt.Sprintf("%s/common/files/orchestrator/%s", IntelTiberRepository, variantLC)
+		repoName := fmt.Sprintf("%s/common/files/orchestrator/%s", RepositoryName, variantLC)
 		if err := TryToCreateECRRepository(ctx, repoName); err != nil {
 			fmt.Printf("failed to create ECR repository %s, ignoring: %v\n", repoName, err)
 		}
 
 		artifactType := "application/vnd.intel.oep.orchestrator"
 
-		fullPath := fmt.Sprintf("%s/%s:%s", IntelTiberRegistryRepoURL, repoName, tag)
+		fullPath := fmt.Sprintf("%s/%s:%s", InternalRegistryRepoURL, repoName, tag)
 		fmt.Printf("Pushing artifact to %s\n", fullPath)
 
 		if err := pushArtifact(
 			ctx,
-			IntelTiberRegistryRepoURL,
+			InternalRegistryRepoURL,
 			repoName,
 			tag,
 			fileName,
@@ -166,7 +166,7 @@ func (Publish) CloudInstaller(ctx context.Context) error {
 	}
 
 	// Publish the installer image
-	installerImageRepo := fmt.Sprintf("%s/common/%s", IntelTiberRepository, InstallerImageName)
+	installerImageRepo := fmt.Sprintf("%s/common/%s", RepositoryName, InstallerImageName)
 	if err := TryToCreateECRRepository(ctx, installerImageRepo); err != nil {
 		fmt.Printf("failed to create ECR repository %s, ignoring: %v\n", installerImageRepo, err)
 	}
@@ -176,19 +176,19 @@ func (Publish) CloudInstaller(ctx context.Context) error {
 	}
 
 	// Publish the installer release bundle
-	repoName := fmt.Sprintf("%s/common/files/%s", IntelTiberRepository, ReleaseBundleName)
+	repoName := fmt.Sprintf("%s/common/files/%s", RepositoryName, ReleaseBundleName)
 	if err := TryToCreateECRRepository(ctx, repoName); err != nil {
 		fmt.Printf("failed to create ECR repository %s, ignoring: %v\n", repoName, err)
 	}
 
 	artifactType := "application/vnd.intel.oep.orchestrator"
 
-	fullPath := fmt.Sprintf("%s/%s:%s", IntelTiberRegistryRepoURL, repoName, tag)
+	fullPath := fmt.Sprintf("%s/%s:%s", InternalRegistryRepoURL, repoName, tag)
 	fmt.Printf("Pushing artifact to %s\n", fullPath)
 
 	if err := pushArtifact(
 		ctx,
-		IntelTiberRegistryRepoURL,
+		InternalRegistryRepoURL,
 		repoName,
 		tag,
 		fileName,
@@ -235,13 +235,13 @@ func (Publish) ReleaseManifest(ctx context.Context) error {
 	}
 
 	// Create ECR repository for sub-project if it does not exist
-	manifestRepoName := fmt.Sprintf("%s/%s/files/release-manifest", IntelTiberRepository, RegistryRepoSubProj)
+	manifestRepoName := fmt.Sprintf("%s/%s/files/release-manifest", RepositoryName, RegistryRepoSubProj)
 	if err := TryToCreateECRRepository(ctx, manifestRepoName); err != nil {
 		fmt.Printf("failed to create ECR repository %s, ignoring: %v\n", manifestRepoName, err)
 	}
 	var (
 		artifactTag  = tag
-		artifactName = fmt.Sprintf("%s/release-manifest:%s", IntelTiberFilesRegistry, artifactTag)
+		artifactName = fmt.Sprintf("%s/release-manifest:%s", InternalFilesRegistry, artifactTag)
 	)
 
 	fmt.Println("Pushing to registry:", artifactName)

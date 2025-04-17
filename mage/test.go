@@ -708,7 +708,7 @@ func (Test) ChartsAvailableOnReleaseService(ctx context.Context) error {
 
 	// Only test charts that are first party
 	for _, component := range manifest.Components {
-		if strings.Contains(component.Repo, PublicTiberRegistryRepoURL+"/"+IntelTiberRepository) {
+		if strings.Contains(component.Repo, PublicRegistryRepoURL+"/"+RepositoryName) {
 			filteredComponents = append(filteredComponents, component)
 		}
 	}
@@ -810,7 +810,7 @@ func (Test) ContainersAvailableOnReleaseService(ctx context.Context, firstPartyO
 	if firstPartyOnly {
 		// Only test images that are first party
 		for _, image := range imagesList {
-			if !strings.Contains(image, IntelTiberRegistryRepoURL+"/"+IntelTiberRepository) {
+			if !strings.Contains(image, InternalRegistryRepoURL+"/"+RepositoryName) {
 				ignored = append(ignored, image)
 			}
 		}
