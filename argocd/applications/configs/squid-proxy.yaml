@@ -23,6 +23,7 @@ allowedDomains: >
   .public.ecr.aws
   .cloudfront.net
   .api.snapcraft.io
+  .rke2.io
 
 sentinelDomains:
 
