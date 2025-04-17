@@ -55,7 +55,6 @@ pushd "${REPO_PATH}"
 
     git switch --detach "${tag}"
 
-    # this is a hack deal with issues in the docker-build target in EIM repos
     # regex matches all the end-of-string numbers/dots
     if [[ "${tag}" =~ ([0-9.]+)$ ]]
     then
@@ -65,13 +64,20 @@ pushd "${REPO_PATH}"
       exit 1
     fi
 
+    # This env var is required for builds in orch-utils
+    GITHUB_TOKEN=$GITHUB_TOKEN \
     make "${target}" >> "${LOGFILE}" 2>&1
 
-    echo "*** Finished docker build in repo: '${REPO}', tag: '${tag}', target: '${target}' ***"
+    echo "*** Finished docker build in: '${REPO}', tag: '${tag}', target: '${target}' ***"
   done
 popd
 
+# optionally cleanup docker buildx cache
+if [ -n "${DOCKER_PRUNE}" ]; then
+  echo "### Pruning docker buildx cache ###"
+  docker buildx prune -f
+fi
+
 END_TS=$(date +"%s")
 ELAPSED=$(( END_TS - START_TS ))
-
 echo "### Docker build in: '${REPO}' took ${ELAPSED} seconds ###"

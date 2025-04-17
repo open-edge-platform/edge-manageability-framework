@@ -80,4 +80,4 @@ popd
 END_TS=$(date +"%s")
 ELAPSED=$(( END_TS - START_TS ))
 
-echo "### Helm build in: '${REPO}' took ${ELAPSED} seconds ###"
+echo "### helm-build took ${ELAPSED} seconds in repo: '${REPO}' ###"

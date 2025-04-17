@@ -691,7 +691,6 @@ func removeIntelFromNoProxy() {
 	}
 }
 
-
 func getImageManifest(repoPrefix string) ([]string, []string, error) {
 	removeIntelFromNoProxy()
 
@@ -789,7 +788,6 @@ func getImageManifest(repoPrefix string) ([]string, []string, error) {
 
 // Basically the same as getImageManifest but works only on local copies of helm files with buildall
 func getLocalImageManifest(repoPrefix string) ([]string, []string, error) {
-
 	manifest, err := getManifest()
 	if err != nil {
 		return nil, nil, fmt.Errorf("error creating manifest: %w", err)
@@ -828,8 +826,7 @@ func getLocalImageManifest(repoPrefix string) ([]string, []string, error) {
 			chartRemotePath := strings.Join([]string{component.Repo, component.Chart}, "/")
 			fmt.Println("** Remote Path: ", chartRemotePath)
 
-			//chartLocalPath := filepath.Join(tempDir, filepath.Base(component.Chart)+"-"+component.Version+".tgz")
-		  chartLocalPath := filepath.Join("buildall/charts/", filepath.Base(component.Chart)+"-"+component.Version+".tgz")
+			chartLocalPath := filepath.Join("buildall/charts/", filepath.Base(component.Chart)+"-"+component.Version+".tgz")
 			fmt.Println("** Local Path: ", chartLocalPath)
 
 			err = helmTemplate(component.AppName, component.ReleaseName, "./"+chartLocalPath,

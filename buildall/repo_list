@@ -1,3 +1,8 @@
+orch-utils
+o11y-alerting-monitor
+o11y-charts
+o11y-sre-exporter
+o11y-tenant-controller
 app-orch-catalog
 app-orch-deployment
 app-orch-tenant-controller
@@ -9,10 +14,5 @@ infra-core
 infra-external
 infra-managers
 infra-onboarding
-o11y-alerting-monitor
-o11y-charts
-o11y-sre-exporter
-o11y-tenant-controller
 orch-metadata-broker
 orch-ui
-orch-utils
