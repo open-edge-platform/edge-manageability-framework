@@ -2,11 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-{{- $appName        := "tenancy-datamodel-init" }}
-{{- $namespace      := "orch-iam" }}
-{{- $syncWave       := "1200" }}
+{{- $appName        := "token-fs" }}
+{{- $namespace      := "orch-secret" }}
+{{- $syncWave       := "1300" }}
 ---
-{{- if (index .Values.argo.enabled "multitenant_gateway") }}
+{{- if (index .Values.argo.enabled $appName) }}
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -20,8 +20,8 @@ spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
     - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
-      chart: common/charts/tenancy-datamodel-init
-      targetRevision: 0.1.5
+      chart: common/charts/{{$appName}}
+      targetRevision: 1.2.2
       helm:
         releaseName: {{$appName}}
         valuesObject:

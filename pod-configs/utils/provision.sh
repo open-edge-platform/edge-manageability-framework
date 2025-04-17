@@ -1002,14 +1002,7 @@ action_cluster() {
         export TF_VAR_ca_cert="$(cat ${SAVE_DIR}/${CHAIN})"
     fi
     export TF_VAR_auto_cert=${AUTO_CERT}
-    export TF_VAR_sre_basic_auth_password=""
     export TF_VAR_webhook_github_netrc=""
-    export TF_VAR_sre_secret_string=${TF_VAR_sre_secret_string:-""}
-
-    # Put a random string so that Terraform can proceed
-    if [[ -z "$TF_VAR_sre_secret_string" ]]; then
-        TF_VAR_sre_secret_string="random"
-    fi
 
     for v in "TF_VAR_tls_key" "TF_VAR_tls_cert" "TF_VAR_ca_cert"; do
         error_var_blank $v
@@ -1029,7 +1022,6 @@ action_cluster() {
         echo "EOF" >> $tfvar_override
     fi
     echo "auto_cert=${AUTO_CERT}" >> $tfvar_override
-    echo "sre_basic_auth_password=\"\"" >> $tfvar_override
     echo "webhook_github_netrc=\"\"" >> $tfvar_override
 
     if [[ "$OVERRIDE_EKS_SIZE" == "true" ]]; then
@@ -1313,6 +1305,8 @@ ptcp_variable() {
     # and the VPC_ID is not empty.
     if [[ -n "$VPC_ID" ]] && $SKIP_APPLY_VPC; then
         VPC_TERRAFORM_BACKEND_KEY="${AWS_REGION}/vpc/${VPC_ID}"
+    else
+        VPC_TERRAFORM_BACKEND_KEY="${AWS_REGION}/vpc/${ENV_NAME}"
     fi
     cat <<EOF
 vpc_terraform_backend_bucket = "${BUCKET_NAME}"
@@ -1452,7 +1446,7 @@ check_quotas() {
     fi
 
     # Elastic IPs (EIPs)
-    EIP_REQ=13
+    EIP_REQ=7
     EIP_QUOTA=$(aws service-quotas get-service-quota --service-code ec2 --quota-code L-0263D0A3 |  jq .Quota.Value)
     ec=0
 
@@ -1755,7 +1749,6 @@ push-savedir() {
 set_values() {
     action="$1"
 
-    TF_VAR_sre_secret_string=""
     TF_VAR_smtp_user=""
     TF_VAR_smtp_pass=""
     TF_VAR_smtp_url=""
@@ -1799,8 +1792,11 @@ set_values() {
 #         ... your text ...
 #       EOF
 
-# The SRE secret string.
-sre_secret_string="place the SRE secret string here"
+# The SRE settings, leave empty if disabled.
+sre_basic_auth_username=""
+sre_basic_auth_password=""
+sre_destination_secret_url=""
+sre_destination_ca_secret=""
 
 # The email configuration information if it is needed.
 smtp_user=""

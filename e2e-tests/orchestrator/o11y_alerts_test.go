@@ -9,9 +9,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"os/exec"
+	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -24,15 +25,26 @@ import (
 )
 
 const (
-	alertsObs = "observability-alerts"
-	// Org and project names must be the same as in step in CI.
-	alertOrgName     = "sample-org"
-	alertProjectName = "sample-project"
-	alertUser        = "alert-user"
-	alertOpUser      = "alert-operator-user"
-	mailpitNamespace = "mailpit-dev"
-	mailpitSvc       = "mailpit-svc"
-	mailpitPort      = 15000
+	// Org and project names must match those set by CI pipeline.
+	alertOrgName                          = "sample-org"
+	alertProjectName                      = "sample-project"
+	alertUser                             = "alert-user"
+	alertOpUser                           = "alert-operator-user"
+	hostUser                              = "host-user"
+	mailpitNamespace                      = "mailpit-dev"
+	mailpitSvc                            = "mailpit-svc"
+	mailpitPort                           = 15000
+	hostConnectionLostErrorString         = "Host Status Connection Lost"
+	hostConnectionLostAlertDisplayName    = "Host Status Connection Lost"
+	tplConnectionLostResolved             = `\*\[[0-9]+\] Resolved\* \*Project:\* %s\\n\*Alert Name:\* %s`
+	tplConnectionLostFiring               = `\*\[[0-9]+\] Firing\* \*Project:\* %s\\n\*Alert Name:\* %s`
+	receiverUpdateAppliedTimeout          = 2 * time.Minute
+	resourceUsageAlertFiringTimeout       = 4 * time.Minute
+	resourceUsageAlertNotificationTimeout = 8 * time.Minute
+	hostConnectionLostAlertFiringTimeout  = 8 * time.Minute
+	hostConnectionLostAlertAbsentTimeout  = 4 * time.Minute
+	alertSuppressionInMaintenanceTimeout  = 4 * time.Minute
+	hostConnectionLostNotificationTimeout = 8 * time.Minute
 )
 
 var alertDef = []string{
@@ -54,22 +66,31 @@ var alertDef = []string{
 	"HighNetworkUsage",
 }
 
-var expectedAlerts = []string{
+var expectedCPUMemAlerts = []string{
 	"CPUUsageExceedsThreshold",
 	"RAMUsageExceedsThreshold",
 }
 
-var _ = Describe("Observability Alerts Test:", Ordered, Label(alertsObs), func() {
+var suppressedAlertsQueryParams = []string{
+	"suppressed=true",
+	"active=false",
+}
+
+var _ = Describe("Observability Alerts Test:", Ordered, Label(helpers.LabelAlerts, helpers.LabelApplicationMonitor), func() {
 	var (
-		cli                *http.Client
-		projectID          string
-		token              *string
-		initialDefinitions *helpers.AlertDefinitionsArray
-		receiverID         string
-		mailpitURL         string
-		mailpitPortFwdCmd  *exec.Cmd
-		user               string
-		password           string
+		cli                     *http.Client
+		projectID               string
+		token                   *string
+		initialDefinitions      *helpers.AlertDefinitionsArray
+		receiverID              string
+		mailpitURL              string
+		mailpitPortFwdCmd       *exec.Cmd
+		user                    string
+		password                string
+		suppressContext         *helpers.MaintenanceModeContext
+		apiClient               *helpers.APIClient
+		rConnectionLostFiring   *regexp.Regexp
+		rConnectionLostResolved *regexp.Regexp
 	)
 
 	BeforeAll(func() {
@@ -85,6 +106,12 @@ var _ = Describe("Observability Alerts Test:", Ordered, Label(alertsObs), func()
 		Expect(err).ToNot(HaveOccurred())
 
 		err = helpers.AddUserToGroup(ctx, alertUser, "service-admin-group")
+		Expect(err).ToNot(HaveOccurred())
+
+		err = helpers.CreateUser(ctx, hostUser)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = helpers.AddUserToGroup(ctx, hostUser, fmt.Sprintf("%v_Host-Manager-Group", projectID))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = helpers.CreateUser(ctx, alertOpUser)
@@ -109,6 +136,13 @@ var _ = Describe("Observability Alerts Test:", Ordered, Label(alertsObs), func()
 		Expect(err).ToNot(HaveOccurred())
 
 		initialDefinitions = new(helpers.AlertDefinitionsArray)
+
+		suppressContext = new(helpers.MaintenanceModeContext)
+
+		rConnectionLostFiring, err = regexp.Compile(fmt.Sprintf(tplConnectionLostFiring, projectID, hostConnectionLostErrorString))
+		Expect(err).ToNot(HaveOccurred())
+		rConnectionLostResolved, err = regexp.Compile(fmt.Sprintf(tplConnectionLostResolved, projectID, hostConnectionLostErrorString))
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	BeforeEach(func() {
@@ -123,9 +157,10 @@ var _ = Describe("Observability Alerts Test:", Ordered, Label(alertsObs), func()
 		var err error
 		token, err = util.GetApiToken(cli, user, password)
 		Expect(err).ToNot(HaveOccurred())
+		apiClient = helpers.NewAPIClient(cli, serviceDomainWithPort, alertProjectName, *token)
 	})
 
-	Context("Alerts tests", func() {
+	Context("Running preparatory test cases", func() {
 		When("using user in Edge Manager group", func() {
 			BeforeEach(func() {
 				user = alertUser
@@ -142,6 +177,7 @@ var _ = Describe("Observability Alerts Test:", Ordered, Label(alertsObs), func()
 				receivers := new(helpers.AlertReceiversArray)
 				err = helpers.ParseJSONBody(resp.Body, receivers)
 				Expect(err).ToNot(HaveOccurred())
+				Expect(receivers.Receivers).ToNot(BeEmpty())
 				Expect(receivers.Receivers[0].EmailConfig.From).To(ContainSubstring("Open Edge Platform Alert"))
 				receiverID = receivers.Receivers[0].ID
 				Expect(receiverID).ToNot(BeEmpty())
@@ -166,24 +202,27 @@ var _ = Describe("Observability Alerts Test:", Ordered, Label(alertsObs), func()
 
 				By("verifying that receiver is in applied state")
 				Eventually(helpers.VerifyReceiverState,
-					2*time.Minute, 10*time.Second).WithArguments(cli,
+					receiverUpdateAppliedTimeout, 10*time.Second).WithArguments(cli,
 					serviceDomainWithPort, *token, alertProjectName, receiverID, "Applied").Should(Succeed(), "eventually receiver has to be applied")
 			})
 
+			It("delete any existing alert receiver mail messages", func() {
+				err := helpers.DeleteAlertReceiverMessages(cli, mailpitURL)
+				Expect(err).ToNot(HaveOccurred())
+			})
+		})
+	})
+
+	Context("Alerts tests for edge node metrics", func() {
+		When("using user in Edge Manager group", func() {
+			BeforeEach(func() {
+				user = alertUser
+			})
+
 			It("verify that CPU and Memory alerts are not present", func() {
-				endpoint := "https://api." + serviceDomainWithPort + "/v1/projects/" + alertProjectName + "/alerts"
-				resp, err := makeAuthorizedRequest(http.MethodGet, endpoint, *token, nil, cli)
+				alertNames, err := helpers.GetAlertNames(apiClient)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(resp.StatusCode).To(Equal(http.StatusOK))
-				defer resp.Body.Close()
-
-				alerts := new(helpers.Alerts)
-				err = helpers.ParseJSONBody(resp.Body, alerts)
-				Expect(err).ToNot(HaveOccurred())
-
-				for _, alert := range alerts.Alerts {
-					Expect(alert.Labels.Alertname).ToNot(BeElementOf("CPUUsageExceedsThreshold", "RAMUsageExceedsThreshold"))
-				}
+				Expect(alertNames).ToNot(Or(ContainElement("CPUUsageExceedsThreshold"), ContainElement("RAMUsageExceedsThreshold")))
 			})
 
 			It("verify that alert definitions contain expected definitions", func() {
@@ -248,7 +287,7 @@ var _ = Describe("Observability Alerts Test:", Ordered, Label(alertsObs), func()
 					Expect(statusCode).To(Equal(http.StatusNoContent))
 				}
 
-				By("verifying that alert definitions have minimal thersholds")
+				By("verifying that alert definitions have minimal thresholds")
 				for _, initialDefinition := range initialDefinitions.AlertDefinitions {
 					template, err := func() (*helpers.AlertDefinitionTemplate, error) {
 						endpoint := fmt.Sprintf("https://api."+serviceDomainWithPort+"/v1/projects/"+alertProjectName+"/alerts/definitions/%v/template",
@@ -284,146 +323,37 @@ var _ = Describe("Observability Alerts Test:", Ordered, Label(alertsObs), func()
 				}
 			})
 
-			It("verify that expected alerts are coming", func() {
-				Eventually(func() ([]string, error) {
-					endpoint := "https://api." + serviceDomainWithPort + "/v1/projects/" + alertProjectName + "/alerts"
-					resp, err := makeAuthorizedRequest(http.MethodGet, endpoint, *token, nil, cli)
-					if err != nil {
-						return nil, err
-					}
-					defer resp.Body.Close()
-					if resp.StatusCode != http.StatusOK {
-						return nil, fmt.Errorf("endpoint returned non 200 status, returned code: %v", resp.StatusCode)
-					}
-
-					alerts := new(helpers.Alerts)
-					err = helpers.ParseJSONBody(resp.Body, alerts)
-					if err != nil {
-						return nil, err
-					}
-
-					alertsNames := make([]string, 0)
-					for _, alert := range alerts.Alerts {
-						alertsNames = append(alertsNames, alert.Labels.Alertname)
-					}
-					return alertsNames, nil
-				}, 4*time.Minute, 10*time.Second).Should(ContainElements(expectedAlerts), "eventually expected alerts should be fired")
-			})
-
-			It("verify that there aren't any resolved alerts", func() {
-				endpoint := "https://api." + serviceDomainWithPort + "/v1/projects/" + alertProjectName + "/alerts?suppressed=false&active=false&resolved=true"
-				resp, err := makeAuthorizedRequest(http.MethodGet, endpoint, *token, nil, cli)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(resp.StatusCode).To(Equal(http.StatusOK))
-				defer resp.Body.Close()
-
-				alerts := new(helpers.Alerts)
-				err = helpers.ParseJSONBody(resp.Body, alerts)
-				Expect(err).ToNot(HaveOccurred())
-
-				Expect(alerts.Alerts).To(BeEmpty())
-			})
-
-			It("verify that there aren't any suppressed alerts", func() {
-				endpoint := "https://api." + serviceDomainWithPort + "/v1/projects/" + alertProjectName + "/alerts?suppressed=true&active=false&resolved=false"
-				resp, err := makeAuthorizedRequest(http.MethodGet, endpoint, *token, nil, cli)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(resp.StatusCode).To(Equal(http.StatusOK))
-				defer resp.Body.Close()
-
-				alerts := new(helpers.Alerts)
-				err = helpers.ParseJSONBody(resp.Body, alerts)
-				Expect(err).ToNot(HaveOccurred())
-
-				Expect(alerts.Alerts).To(BeEmpty())
+			It("verify that expected alerts are coming", Label(helpers.LabelEnic), func() {
+				Eventually(helpers.GetAlertNames, resourceUsageAlertFiringTimeout, 10*time.Second).WithArguments(apiClient).Should(
+					ContainElements(expectedCPUMemAlerts),
+					"eventually expected alerts should be fired",
+				)
 			})
 
 			It("verify that email notifications are being sent", func() {
 				Eventually(func() error {
-					messagesURL := mailpitURL + "/api/v1/messages"
-					resp, err := helpers.MakeRequest(http.MethodGet, messagesURL, nil, cli, nil)
+					messages, err := helpers.GetAlertReceiverMessages(cli, mailpitURL)
 					if err != nil {
 						return err
 					}
-					defer resp.Body.Close()
-					if resp.StatusCode != http.StatusOK {
-						return fmt.Errorf("endpoint returned non 200 status, status returned: %v", resp.StatusCode)
-					}
-
-					mails := new(helpers.MailList)
-					err = helpers.ParseJSONBody(resp.Body, mails)
-					if err != nil {
-						return err
-					}
-					if mails.Total == 0 {
-						return errors.New("no mails received yet")
-					}
-
 					var ramUsageFound, cpuUsageFound bool
-					for _, mail := range mails.Messages {
-						err := func(mailID string) error {
-							messageURL := fmt.Sprintf("%s/api/v1/message/%s", mailpitURL, mailID)
-							resp, err := helpers.MakeRequest(http.MethodGet, messageURL, nil, cli, nil)
-							if err != nil {
-								return err
-							}
-							defer resp.Body.Close()
-							if resp.StatusCode != http.StatusOK {
-								return fmt.Errorf("message endpoint returned non 200 status, status returned: %v", resp.StatusCode)
-							}
-
-							content, err := io.ReadAll(resp.Body)
-							if err != nil {
-								return err
-							}
-
-							if strings.Contains(string(content), "Host RAM Usage Exceeds Threshold") {
-								ramUsageFound = true
-							}
-							if strings.Contains(string(content), "Host CPU Usage Exceeds Threshold") {
-								cpuUsageFound = true
-							}
-							return nil
-						}(mail.ID)
-						if err != nil {
-							return err
-						}
+					if slices.ContainsFunc(messages, func(msg string) bool {
+						return strings.Contains(msg, "Host RAM Usage Exceeds Threshold")
+					}) {
+						ramUsageFound = true
 					}
-
+					if slices.ContainsFunc(messages, func(msg string) bool {
+						return strings.Contains(msg, "Host CPU Usage Exceeds Threshold")
+					}) {
+						cpuUsageFound = true
+					}
 					if ramUsageFound && cpuUsageFound {
 						return nil
 					}
 					return errors.New("expected notifications not found yet")
-				}, 4*time.Minute, 10*time.Second).Should(Succeed(), "all expected email notifications should be sent")
-			})
-
-			It("verify that alert receivers email can be disabled correctly", func() {
-				By("verifying that alertUser's email is in enabled list")
-				alertUserEmail := fmt.Sprintf("%s %s <%s@observability-user.com>", alertUser, alertUser, alertUser)
-				found, err := helpers.IsEmailEnabled(cli, serviceDomainWithPort, *token, alertProjectName, receiverID, alertUserEmail)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(found).To(BeTrue())
-
-				By("disabling alertUser email for sending notifications")
-				emailConfig := helpers.PatchReceiverBody{}
-				reqBody, err := json.Marshal(emailConfig)
-				Expect(err).ToNot(HaveOccurred())
-
-				resp, err := makeAuthorizedRequest(http.MethodPatch,
-					"https://api."+serviceDomainWithPort+"/v1/projects/"+alertProjectName+"/alerts/receivers/"+receiverID, *token, reqBody, cli)
-				Expect(err).ToNot(HaveOccurred())
-				defer resp.Body.Close()
-				Expect(resp.StatusCode).To(Equal(http.StatusNoContent))
-
-				By("verifying that alertUser's email is not in enabled list")
-				found, err = helpers.IsEmailEnabled(cli, serviceDomainWithPort, *token, alertProjectName, receiverID, alertUserEmail)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(found).To(BeFalse())
-
-				By("verifying that receiver is in applied state")
-				Eventually(helpers.VerifyReceiverState,
-					2*time.Minute, 10*time.Second).WithArguments(cli,
-					serviceDomainWithPort, *token, alertProjectName, receiverID, "Applied").Should(Succeed(), "eventually receiver has to be applied")
+				}, resourceUsageAlertNotificationTimeout, 10*time.Second).Should(
+					Succeed(), "all expected email notifications should be sent",
+				)
 			})
 		})
 
@@ -464,12 +394,140 @@ var _ = Describe("Observability Alerts Test:", Ordered, Label(alertsObs), func()
 		})
 	})
 
-	AfterAll(func() {
-		logInfo("Deleting users used by test and reverting alert threshold...")
+	Context("Alerts tests for host status metrics",
+		Label(helpers.LabelEnic, helpers.LabelExtended, helpers.LabelApplicationInfraCore), func() {
+			When("using user in Edge Manager group", func() {
+				BeforeEach(func() {
+					user = alertUser
+				})
 
-		user = alertUser
-		token, err := util.GetApiToken(cli, user, password)
+				It("Verify that no HostStatus* alerts are present", func() {
+					alertNames, err := helpers.GetAlertNames(apiClient)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(alertNames).ToNot(Or(ContainElement("HostStatusError"), ContainElement("HostStatusConnectionLost")))
+				})
+
+				It("Verify that HostStatusConnectionLost alert fires", func() {
+					By("Blocking the connection from the host")
+					err := helpers.BlockEnicTraffic()
+					Expect(err).ToNot(HaveOccurred())
+
+					By("Waiting for the alert to fire")
+					Eventually(helpers.GetAlertNames, hostConnectionLostAlertFiringTimeout, 10*time.Second).WithArguments(apiClient).Should(
+						ContainElements("HostStatusConnectionLost"),
+						"eventually expected alerts should fire",
+					)
+				})
+
+				It("verify that there aren't any suppressed alerts", func() {
+					alertNames, err := helpers.GetAlertNames(apiClient, suppressedAlertsQueryParams...)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(alertNames).To(BeEmpty())
+				})
+
+				It("Verify that HostStatusConnectionLost alert is suppressed when the host is put into maintenance mode", func() {
+					By("Scheduling maintenance mode for the host")
+
+					hostApiToken, err := util.GetApiToken(cli, hostUser, password)
+					Expect(err).ToNot(HaveOccurred())
+					hostApiClient := helpers.NewAPIClient(cli, serviceDomainWithPort, alertProjectName, *hostApiToken)
+					err = helpers.SetMaintenanceModeForEnic(hostApiClient, suppressContext)
+					Expect(err).ToNot(HaveOccurred())
+
+					By("Waiting for the alert to be suppressed")
+					Eventually(func() ([]string, error) {
+						return helpers.GetAlertNames(apiClient, suppressedAlertsQueryParams...)
+					}, alertSuppressionInMaintenanceTimeout, 10*time.Second).Should(
+						ContainElements("HostStatusConnectionLost"),
+						"eventually expected alert should be suppressed",
+					)
+				})
+
+				It("verify that email notification for HostStatusConnectionLost alert firing is sent", func() {
+					Eventually(func() error {
+						mails, err := helpers.GetAlertReceiverMessages(cli, mailpitURL)
+						if err != nil {
+							return err
+						}
+						if slices.ContainsFunc(mails, rConnectionLostFiring.MatchString) {
+							return nil
+						}
+						return errors.New("expected email notification not found")
+					}, hostConnectionLostNotificationTimeout, 10*time.Second).Should(Succeed(), "eventually email notification should be sent")
+				})
+
+				It("Verify that HostStatusConnectionLost alert is absent", func() {
+					By("Unblocking the connection from the host")
+					err := helpers.UnblockEnicTraffic()
+					Expect(err).ToNot(HaveOccurred())
+
+					By("Waiting for the alert to be absent")
+					Eventually(func() ([]string, error) {
+						return helpers.GetAlertNames(apiClient, suppressedAlertsQueryParams...)
+					}, hostConnectionLostAlertAbsentTimeout, 10*time.Second).ShouldNot(
+						ContainElements("HostStatusConnectionLost"),
+						"eventually previously fired alerts should be absent",
+					)
+				})
+
+				It("verify that alert HostStatusConnectionLost is resolved in email notifications", func() {
+					Eventually(func() error {
+						mails, err := helpers.GetAlertReceiverMessages(cli, mailpitURL)
+						if err != nil {
+							return err
+						}
+						if slices.ContainsFunc(mails, rConnectionLostResolved.MatchString) {
+							return nil
+						}
+						return errors.New("expected email notification not found")
+					}, hostConnectionLostNotificationTimeout, 10*time.Second).Should(Succeed(), "eventually email notification should be sent")
+				})
+			})
+		})
+
+	Context("Closing alerts test cases", func() {
+		When("using user in Edge Manager group", func() {
+			BeforeEach(func() {
+				user = alertUser
+			})
+
+			It("verify that alert receivers email can be disabled correctly", func() {
+				By("verifying that alertUser's email is in enabled list")
+				alertUserEmail := fmt.Sprintf("%s %s <%s@observability-user.com>", alertUser, alertUser, alertUser)
+				found, err := helpers.IsEmailEnabled(cli, serviceDomainWithPort, *token, alertProjectName, receiverID, alertUserEmail)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(found).To(BeTrue())
+
+				By("disabling alertUser email for sending notifications")
+				emailConfig := helpers.PatchReceiverBody{}
+				reqBody, err := json.Marshal(emailConfig)
+				Expect(err).ToNot(HaveOccurred())
+
+				resp, err := makeAuthorizedRequest(http.MethodPatch,
+					"https://api."+serviceDomainWithPort+"/v1/projects/"+alertProjectName+"/alerts/receivers/"+receiverID, *token, reqBody, cli)
+				Expect(err).ToNot(HaveOccurred())
+				defer resp.Body.Close()
+				Expect(resp.StatusCode).To(Equal(http.StatusNoContent))
+
+				By("verifying that alertUser's email is not in enabled list")
+				found, err = helpers.IsEmailEnabled(cli, serviceDomainWithPort, *token, alertProjectName, receiverID, alertUserEmail)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(found).To(BeFalse())
+
+				By("verifying that receiver is in applied state")
+				Eventually(helpers.VerifyReceiverState,
+					receiverUpdateAppliedTimeout, 10*time.Second).WithArguments(cli,
+					serviceDomainWithPort, *token, alertProjectName, receiverID, "Applied").Should(Succeed(), "eventually receiver has to be applied")
+			})
+		})
+	})
+
+	AfterAll(func() {
+		By("Deleting users used by test and reverting alert threshold...")
+
+		hostApiToken, err := util.GetApiToken(cli, hostUser, password)
 		Expect(err).ToNot(HaveOccurred())
+		hostApiClient := helpers.NewAPIClient(cli, serviceDomainWithPort, alertProjectName, *hostApiToken)
 
 		err = helpers.PatchAlertDefinitions(cli, serviceDomainWithPort, *token, alertProjectName, *initialDefinitions)
 		Expect(err).ToNot(HaveOccurred())
@@ -481,11 +539,20 @@ var _ = Describe("Observability Alerts Test:", Ordered, Label(alertsObs), func()
 		err = util.ManageTenancyUserAndRoles(ctx, cli, "", "", http.MethodDelete, alertOpUser, true)
 		Expect(err).ToNot(HaveOccurred())
 
-		messagesURL := mailpitURL + "/api/v1/messages"
-		resp, err := helpers.MakeRequest(http.MethodDelete, messagesURL, nil, cli, nil)
+		err = util.ManageTenancyUserAndRoles(ctx, cli, "", "", http.MethodDelete, hostUser, true)
 		Expect(err).ToNot(HaveOccurred())
-		defer resp.Body.Close()
-		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+
+		By("Unblocking ENiC traffic")
+		err = helpers.UnblockEnicTraffic()
+		Expect(err).ToNot(HaveOccurred())
+
+		By("Cleaning up after maintenance mode for the host")
+		err = helpers.UnsetMaintenanceModeForEnic(hostApiClient, suppressContext)
+		Expect(err).ToNot(HaveOccurred())
+
+		By("Deleting alert notifications")
+		err = helpers.DeleteAlertReceiverMessages(cli, mailpitURL)
+		Expect(err).ToNot(HaveOccurred())
 
 		err = mailpitPortFwdCmd.Process.Kill()
 		Expect(err).ToNot(HaveOccurred())

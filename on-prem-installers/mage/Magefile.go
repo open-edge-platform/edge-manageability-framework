@@ -33,8 +33,7 @@ const (
 	rke2CustomImageDownloadPath    = "assets/rke2/offline-images/"
 	rke2ImagesURLFmt               = "https://github.com/rancher/rke2/releases/download/%s/rke2.linux-amd64.tar.gz"
 	//nolint: all
-	rke2LibURLFmt    = "https://github.com/rancher/rke2/releases/download/%s/rke2-images.linux-amd64.tar.zst"
-	rke2LibSHAURLFmt = "https://github.com/rancher/rke2/releases/download/%s/sha256sum-amd64.txt"
+	rke2LibURLFmt = "https://github.com/rancher/rke2/releases/download/%s/rke2-images.linux-amd64.tar.zst"
 
 	//nolint: all
 	rke2CNICalicoURLFmt = "https://github.com/rancher/rke2/releases/download/%s/rke2-images-calico.linux-amd64.tar.zst"
@@ -89,7 +88,7 @@ type Lint mg.Namespace
 
 // Lint markdown files using markdownlint-cli2 tool.
 func (Lint) Markdown() error {
-	return sh.RunV("markdownlint-cli2", "--config", ".markdownlint-cli2.yaml", "**/*.md")
+	return sh.RunV("markdownlint-cli2", "--config", "../tools/.markdownlint-cli2.yaml", "**/*.md")
 }
 
 // Namespace contains Build targets.
@@ -115,9 +114,11 @@ func (Build) Deps() error {
 	return nil
 }
 
-// Builds all the installers. Docker is required to build the packages.
+// Builds all the installers. Must run on Ubuntu 22.04.
 func (b Build) All(ctx context.Context) error {
-	mg.SerialCtxDeps(
+	mg.CtxDeps(ctx, Clean)
+
+	mg.CtxDeps(
 		ctx,
 		b.OnpremKEInstaller,
 		b.OSConfig,
@@ -125,49 +126,61 @@ func (b Build) All(ctx context.Context) error {
 		b.ArgocdInstaller,
 		b.OnPremOrchInstaller,
 	)
+
 	return nil
 }
 
 // Build the onprem-KE Installer package. By default builds online installer.
-func (b Build) OnpremKEInstaller() error {
-	mg.Deps(b.Deps)
+func (b Build) OnpremKEInstaller(ctx context.Context) error {
+	mg.CtxDeps(
+		ctx,
+		b.Deps,
+		mage.Deps.FPM,
+	)
 
-	mode, exists := os.LookupEnv("ON_PREM_ENVIRONMENT")
-	if !exists || mode == "" {
-		if err := os.Setenv("ON_PREM_ENVIRONMENT", "online"); err != nil {
-			fmt.Printf("Error setting missing ON_PREM_ENVIRONMENT environment variable: %s\n", err)
-			os.Exit(1)
-		}
-	}
-	onPremEnvironment := os.Getenv("ON_PREM_ENVIRONMENT")
-
-	return b.onpremKeInstaller(onPremEnvironment)
+	return b.onpremKeInstaller()
 }
 
 // Build the OS-Config Installer package.
-func (b Build) OSConfig() error {
-	mg.Deps(b.Deps)
+func (b Build) OSConfig(ctx context.Context) error {
+	mg.CtxDeps(
+		ctx,
+		b.Deps,
+		mage.Deps.FPM,
+	)
 
 	return b.osConfigInstaller()
 }
 
 // Build the Gitea Installer package.
-func (b Build) GiteaInstaller() error {
-	mg.Deps(b.Deps)
+func (b Build) GiteaInstaller(ctx context.Context) error {
+	mg.CtxDeps(
+		ctx,
+		b.Deps,
+		mage.Deps.FPM,
+	)
 
 	return b.giteaInstaller()
 }
 
 // Build the Argo-Cd Installer package.
-func (b Build) ArgocdInstaller() error {
-	mg.Deps(b.Deps)
+func (b Build) ArgocdInstaller(ctx context.Context) error {
+	mg.CtxDeps(
+		ctx,
+		b.Deps,
+		mage.Deps.FPM,
+	)
 
 	return b.argoCdInstaller()
 }
 
 // Builds Orch Installer package.
-func (b Build) OnPremOrchInstaller() error {
-	mg.Deps(b.Deps)
+func (b Build) OnPremOrchInstaller(ctx context.Context) error {
+	mg.CtxDeps(
+		ctx,
+		b.Deps,
+		mage.Deps.FPM,
+	)
 
 	return b.onPremOrchInstaller()
 }
@@ -216,7 +229,7 @@ func (Publish) DEBPackages(ctx context.Context) error {
 		return fmt.Errorf("failed get branch name: %w", err)
 	}
 
-	version, err := GetDebVersion()
+	version, err := mage.GetDebVersion()
 	if err != nil {
 		return fmt.Errorf("failed to get DEB version: %w", err)
 	}
@@ -295,7 +308,7 @@ func (Publish) DEBPackages(ctx context.Context) error {
 // published, the files will be available via the Release service with `oras pull $ARTIFACT_NAME e.g.,
 // oras pull registry-rs.edgeorchestration.intel.com/edge-orch/common/files/functions.sh:3.0.0-dev-d5ed6ff
 func (Publish) Files(ctx context.Context) error {
-	version, err := GetDebVersion()
+	version, err := mage.GetDebVersion()
 	if err != nil {
 		return fmt.Errorf("failed to get version: %w", err)
 	}
@@ -357,52 +370,6 @@ type Deploy mg.Namespace
 // Rke2Cluster Deploys a local RKE2 Kubernetes cluster.
 func (d Deploy) Rke2Cluster() error {
 	return d.rke2Cluster()
-}
-
-// PrepareRke2AirGap prepares all the required artifacts for air-gap install.
-func (d Deploy) PrepareRke2AirGap() error {
-	// TODO: Check if dependecies are installed
-
-	fmt.Println("Remove old artifacts directory")
-	if err := os.RemoveAll(rke2ArtifactDownloadPath); err != nil {
-		return fmt.Errorf("remove artifacts dir: %w", err)
-	}
-
-	fmt.Println("Create artifacts directory")
-	if err := os.MkdirAll(rke2ArtifactDownloadPath, os.ModePerm); err != nil {
-		return fmt.Errorf("create artifacts dir: %w", err)
-	}
-
-	fmt.Println("Download RKE2")
-	if err := d.downloadRke2TarBall(rke2Version); err != nil {
-		return fmt.Errorf("download rke2: %w", err)
-	}
-
-	fmt.Println("Download CNI Calico")
-	if err := d.downloadCniCalicoTarBall(rke2Version); err != nil {
-		return fmt.Errorf("download CNI Calico: %w", err)
-	}
-
-	// TODO: Download MetalLB manifests
-
-	fmt.Println("Download RKE2 extensions")
-	if err := d.downloadRKE2CustomArtifacts(); err != nil {
-		return fmt.Errorf("download rke2 extensions: %w", err)
-	}
-
-	fmt.Println("Download RKE2 installer script")
-	if err := d.downloadRKE2InstallerScript(); err != nil {
-		return fmt.Errorf("download rke2 installer script: %w", err)
-	}
-
-	fmt.Printf("Successfully wrote air-gap artifacts to %s 😊\n", rke2ArtifactDownloadPath)
-
-	return nil
-}
-
-// Rke2ClusterAirGap Deploys a local RKE2 Kubernetes cluster in air gap mode.
-func (d Deploy) Rke2ClusterAirGap() error {
-	return d.rke2ClusterAirGap()
 }
 
 // Namespace contains upgrade targets.

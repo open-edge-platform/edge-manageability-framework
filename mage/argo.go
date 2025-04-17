@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/bitfield/script"
 )
@@ -60,42 +61,40 @@ func (Argo) login() error {
 		return err
 	}
 
+	fmt.Printf("looking up argo IP and port\n")
 	argoIP := os.Getenv("ARGO_IP")
 	if argoIP == "" {
 		// login to Argo without using the router
-		ip, err := lookupGenericIP("argocd", "argocd-server")
+		ip, err := awaitGenericIP("argocd", "argocd-server", 20*time.Second)
 		if err != nil {
 			return fmt.Errorf("performing argo IP lookup %w", err)
 		}
+		fmt.Printf("found argo IP: %s\n", ip)
 		argoIP = ip
 	}
 	argoPort := os.Getenv("ARGO_PORT")
 	if argoPort == "" {
 		argoPort = "443"
 	}
+	fmt.Printf("argoIP: %s argoPort: %s\n", argoIP, argoPort)
+	if argoIP == "" {
+		fmt.Printf("argoIP is invalid or empty, using localhost\n")
+		argoIP = "127.0.0.1"
+	}
 
+	fmt.Printf("logging in to ArgoCD\n")
 	cmd := fmt.Sprintf("argocd login %s:%s --username admin --password %s --insecure --grpc-web", argoIP, argoPort, secret)
 	if _, err := script.Exec(cmd).Stdout(); err != nil {
-		return err
+		return fmt.Errorf("logging in to ArgoCD: %w", err)
 	}
 	return nil
 }
 
-func (Argo) repoAdd() error {
-	gitUser := os.Getenv("GIT_USER")
-	if gitUser == "" {
-		return fmt.Errorf("must set environment variable GIT_USER")
-	}
-
-	gitToken := os.Getenv("GIT_TOKEN")
-	if gitToken == "" {
-		return fmt.Errorf("must set environment variable GIT_TOKEN")
-	}
-
-	for _, repo := range privateRepos {
-		cmd := fmt.Sprintf("argocd repo add %s --username %s --password %s --upsert", repo, gitUser, gitToken)
+func (Argo) repoAdd(gitUser string, gitToken string, repos []string) error {
+	for _, repo := range repos {
+		cmd := fmt.Sprintf("argocd repo add %s --username %s --password '%s' --upsert --insecure-skip-server-verification --insecure", repo, gitUser, gitToken)
 		if _, err := script.Exec(cmd).Stdout(); err != nil {
-			return err
+			return fmt.Errorf("adding repo %s: %w", repo, err)
 		}
 	}
 	return nil

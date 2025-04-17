@@ -454,6 +454,11 @@ apply_terraform() {
         terraform state rm module.orch_init 2>/dev/null || true
         terraform state rm module.kms.kubernetes_secret.vault_kms_unseal 2>/dev/null || true
         terraform state rm module.gitea 2>/dev/null || true
+
+        # Remove the SSM document since Terraform doesn't update the state file
+        # See https://github.com/hashicorp/terraform-provider-aws/issues/42127
+        terraform state rm module.ec2log[0].aws_ssm_document.push_log 2>/dev/null || true
+        aws ssm delete-document --region ${AWS_REGION} --name orch-ec2log-${ENV_NAME}-term 2>/dev/null || true
     fi
 
     if [[ "$MODULE_DIR" == *"${ORCH_DIR}/cluster" ]]; then

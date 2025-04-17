@@ -14,14 +14,14 @@ import (
 	"os"
 	"time"
 
-	"github.com/intel/infra-core/api/pkg/api/v0"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/open-edge-platform/infra-core/api/pkg/api/v0"
 
 	deploymentV2 "github.com/open-edge-platform/app-orch-deployment/app-deployment-manager/api/nbi/v2/pkg/restClient"
 	util "github.com/open-edge-platform/edge-manageability-framework/mage"
 
-	cm "github.com/open-edge-platform/cluster-manager/pkg/api"
+	cm "github.com/open-edge-platform/cluster-manager/v2/pkg/api"
 )
 
 var (
@@ -77,18 +77,15 @@ func getEnv(key, fallback string) string {
 	return fallback
 }
 
-func getHosts(token string, assignedToSite bool) (string, error) {
+func getHosts(token string) (string, error) {
 	url := fmt.Sprintf(apiBaseURLTemplate+"/compute/hosts", serviceDomain, project)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return "", err
 	}
 	query := req.URL.Query()
-	if assignedToSite {
-		query.Add("filter", "(desiredState=HOST_STATE_ONBOARDED OR currentState=HOST_STATE_ONBOARDED) AND instance.desiredState=INSTANCE_STATE_RUNNING AND has(site) AND NOT has(instance.workloadMembers)")
-	} else {
-		query.Add("filter", "(desiredState=HOST_STATE_ONBOARDED OR currentState=HOST_STATE_ONBOARDED) AND instance.desiredState=INSTANCE_STATE_RUNNING AND NOT has(site) AND NOT has(instance.workloadMembers)")
-	}
+	query.Add("filter", "(desiredState=HOST_STATE_ONBOARDED OR currentState=HOST_STATE_ONBOARDED) AND instance.desiredState=INSTANCE_STATE_RUNNING AND NOT has(instance.workloadMembers)")
+
 	query.Add("offset", "0")
 	query.Add("orderBy", "name asc")
 	query.Add("pageSize", "100")
@@ -110,7 +107,7 @@ func getHosts(token string, assignedToSite bool) (string, error) {
 
 func getInstanceIdForHostGuid(token, guid string) string {
 	instanceId := ""
-	hostsResponse, err := getHosts(token, true)
+	hostsResponse, err := getHosts(token)
 	if err != nil {
 		return instanceId
 	}
@@ -247,7 +244,7 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 	Describe("Find Host by UUID", Label(clusterOrchSmoke), func() {
 		It("should find the host with the specified UUID", func() {
 			findHost := func() (bool, error) {
-				hostsResponse, err := getHosts(*edgeInfraToken, false)
+				hostsResponse, err := getHosts(*edgeInfraToken)
 				if err != nil {
 					return false, err
 				}
@@ -375,7 +372,7 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 				Expect(err).ToNot(HaveOccurred())
 				defer resp.Body.Close()
 				Expect(resp.StatusCode).To(Or(Equal(http.StatusOK), Equal(http.StatusNoContent)), fmt.Sprintf("Failed to delete deployment %s, HTTP status code: %d", *deployment.DeployId, resp.StatusCode))
-				fmt.Printf("Deployment %s has been successfully deleted.\n", *deployment.DeployId)
+				fmt.Printf("Deployment %s (%s) has been successfully deleted.\n", *deployment.Name, *deployment.DeployId)
 			}
 		})
 	})
