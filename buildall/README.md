@@ -168,13 +168,13 @@ recent changes.
 If this target fails, there may be changes in the repo - go into `repos/<repo>`
 to investigate.
 
-### Failure in the chart-manifest step
+#### Failure in the chart-manifest step
 
 This runs the `mage` command in the parent directory - check that mage is
 installed and that it can be run. Could also be a network/proxy issue as mage
 can download go code to build.
 
-### Failure in the sort-charts step
+#### Failure in the sort-charts step
 
 If there's a failure to build the python virtualenv, check that your network
 and proxy settings allow you to download required python packages using pip.
@@ -188,7 +188,7 @@ then re-run the build steps.
 Also, check the contents of the `scratch/artifacts_*` files - they should all
 be well-formed YAML.
 
-### Failure in the helm-build step
+#### Failure in the helm-build step
 
 This may occur if either the `make helm-build` can't be run, or the tag that
 should be checked out is not available.
@@ -202,15 +202,15 @@ in the repo by going into `repos/<repo>` and running `git tag`.
 If they are all there, check out the tag and make sure that `make helm-build`
 completes successfully.
 
-### Failure in the image-manifest step
+#### Failure in the image-manifest step
 
 See troubleshooting for chart-manifest above
 
-### Failure in the sort-images step
+#### Failure in the sort-images step
 
 See troubleshooting for sort-charts step
 
-### Failure in the build-images step
+#### Failure in the build-images step
 
 This may occur if the tag is not available in the repo - see the helm-build
 troubleshooting above.
