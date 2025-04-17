@@ -131,13 +131,11 @@ func getEnicUUIDInt(pod string) (uuid.UUID, error) {
 	cmd := fmt.Sprintf("kubectl exec -it -n %s %s -c edge-node -- bash -c 'dmidecode -s system-uuid'", enicNs, pod)
 	ctx, cancel := context.WithTimeout(context.Background(), waitForReadyMin*time.Minute)
 	defer cancel()
-	counter := 0
 	fn := func() error {
 		out, err := exec.Command("bash", "-c", cmd).Output()
 		outParsed := strings.Trim(string(out), "\n")
 		enicUUID, errUUID = uuid.Parse(outParsed)
 		if err != nil || errUUID != nil {
-			counter++
 			return fmt.Errorf("enic UUID is not ready")
 		} else {
 			return nil
@@ -157,11 +155,9 @@ func getEnicSNInt(pod string) (string, error) {
 	cmd := fmt.Sprintf("kubectl exec -it -n %s %s -c edge-node -- bash -c 'dmidecode -s system-serial-number'", enicNs, pod)
 	ctx, cancel := context.WithTimeout(context.Background(), waitForReadyMin*time.Minute)
 	defer cancel()
-	counter := 0
 	fn := func() error {
 		out, err := exec.Command("bash", "-c", cmd).Output()
 		if err != nil {
-			counter++
 			return fmt.Errorf("get ENiC serial number: %w", err)
 		}
 		serialNumbers = strings.TrimSpace(string(out))
@@ -302,19 +298,40 @@ func (DevUtils) ProvisionEnic(podName string) error {
 }
 
 func getEnicReplicaCount() (int, error) {
-	// get the replica count from the ENiC replica set
-	cmd := fmt.Sprintf("kubectl -n %s get statefulsets %s -o jsonpath='{.spec.replicas}'", enicNs, "enic")
+	var replicas int
 
-	out, err := exec.Command("bash", "-c", cmd).Output()
-	if err != nil {
-		fmt.Printf("\rFailed to get ENiC replica count")
-		return 0, fmt.Errorf("get ENiC replica count: %w", err)
+	fn := func() (*int, error) {
+		// get the replica count from the ENiC replica set
+		cmd := fmt.Sprintf("kubectl -n %s get statefulsets %s -o jsonpath='{.spec.replicas}'", enicNs, "enic")
+
+		out, err := exec.Command("bash", "-c", cmd).Output()
+		if err != nil {
+			fmt.Printf("\rFailed to get ENiC replica count")
+			return nil, fmt.Errorf("get ENiC replica count: %w", err)
+		}
+		// convert out to integer
+		count, err := strconv.Atoi(strings.TrimSpace(string(out)))
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert replicas to int: %w", err)
+		}
+		return &count, nil
 	}
-	// convert out to integer
-	replicas, err := strconv.Atoi(strings.TrimSpace(string(out)))
-	if err != nil {
-		return 0, fmt.Errorf("failed to convert replicas to int: %w", err)
+
+	for {
+		count, err := fn()
+		if err != nil {
+			fmt.Println(fmt.Errorf("error while checking ENiC App: %w", err))
+		}
+
+		if count != nil {
+			replicas = *count
+			break
+		}
+		fmt.Println("Can't get ENiC replicas count, will check again 10 seconds 🟡")
+		time.Sleep(10 * time.Second)
 	}
+
+	fmt.Printf("ENiC replicas count: %d\n", replicas)
 	return replicas, nil
 }
 
