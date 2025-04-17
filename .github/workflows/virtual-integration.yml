@@ -352,6 +352,12 @@ jobs:
       - name: Setup asdf and install dependencies
         uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main
 
+      - name: Get version tag
+        id: get_version_tag
+        run: |
+          output=$(mage version:getVersionTag)
+          echo "versionTag=$output" >> $GITHUB_ENV
+
       - name: Build DEB packages
         working-directory: on-prem-installers
         run: mage build:all
@@ -383,16 +389,35 @@ jobs:
         run: mage publish:sourceTarballs
 
       - name: Login to ECR
-        if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
         uses: docker/login-action@v3.3.0
         with:
           registry: 080137407410.dkr.ecr.us-west-2.amazonaws.com
 
       - name: Build Cloud Installer and release bundle artifacts
-        if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
         run: |
           mage installer:build
           mage installer:bundle
+
+      - name: Scan Cloud Installer Image
+        uses: aquasecurity/trivy-action@6c175e9c4083a92bbca2f9724c8a5e33bc2d97a5  # v0.30.0
+        with:
+          image-ref: 080137407410.dkr.ecr.us-west-2.amazonaws.com/edge-orch/common/orchestrator-installer-cloudfull:${{ env.versionTag }}
+          format: table
+          output: "trivy-orchestrator-installer-cloudfull.txt"
+          ignore-unfixed: true
+
+      - name: Calculate MD5 Checksum
+        id: checksum
+        run: |
+          md5sum_value=$(md5sum "trivy-orchestrator-installer-cloudfull.txt" | cut -d " " -f 1)
+          echo "md5sum is $md5sum_value"
+          echo "md5sum_value=$md5sum_value" >> "$GITHUB_ENV"
+
+      - name: Upload Trivy Image Scan Report
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: trivy-scan-report-orchestrator-installer-cloudfull-${{ env.md5sum_value }}
+          path: trivy-orchestrator-installer-cloudfull.txt
 
       - name: Publish Cloud Installer artifact
         if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
