@@ -213,6 +213,33 @@ def prometheus_query_range(query: str, start: datetime, end: datetime, step: str
     connection.close()
     return json.loads(data)
 
+def remove_resource_keys_from_dict(root_app_val: dict):
+    mappings = load_mappings()
+    resource_keys = []
+    for _, pod_prefixes in mappings.items():
+        for _, containers in pod_prefixes.items():
+            for _, resource_key in containers.items():
+                resource_keys.append(resource_key)
+
+    def recursively_delete(d: dict, keys: list):
+        if not isinstance(d, dict):
+            return
+        if not d:
+            return
+        if keys[0] not in d:
+            return
+        if len(keys) == 1:
+            del d[keys[0]]
+        else:
+            recursively_delete(d[keys[0]], keys[1:])
+            if not d[keys[0]]:
+                del d[keys[0]]
+
+    for resource_key in resource_keys:
+        keys = resource_key.split('.')
+        recursively_delete(root_app_val, keys)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Manage resource limits")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -278,18 +305,12 @@ def main():
             pf.kill()
     elif args.command == "unfreeze":
         print("Unfreezing resource limits...")
-        mapping = load_mappings()
-        unfreeze_configs = {}
-        for _, prefixes in mapping.items():
-            for _, container_config_mapping in prefixes.items():
-                for _, config_key in container_config_mapping.items():
-                    unfreeze_configs[config_key] = {
-                        "cpu_request": 1,
-                        "memory_request": 1,
-                        "cpu_limit": 64000,
-                        "memory_limit": 65536
-                    }
-        resource_configs_to_override = convert_to_nested_dict(unfreeze_configs)
+        root_app_val = {}
+        with open("/tmp/root-app-values.yaml", "r") as file:
+            root_app_val = yaml.load(file, Loader=yaml.FullLoader)
+        remove_resource_keys_from_dict(root_app_val)
+        with open("/tmp/root-app-values.yaml", "w") as file:
+            yaml.dump(root_app_val, file)
     else:
         print(f"Invalid command: {args.command}")
         return
@@ -303,10 +324,12 @@ def main():
         "root-app",
         "argocd/root-app",
         "-n", helm_release_namespace,
-        "-f", "/tmp/root-app-values.yaml",
-        "-f", "/tmp/resource-config.yaml"
+        "-f", "/tmp/root-app-values.yaml"
     ]
+    if args.command == "freeze":
+        command.extend(["-f", "/tmp/resource-config.yaml"])
     if not args.dry:
+        print(" ".join(command))
         subprocess.run(command)
     else:
         print("Dry run:")
