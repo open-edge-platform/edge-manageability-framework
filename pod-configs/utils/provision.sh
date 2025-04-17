@@ -1446,7 +1446,7 @@ check_quotas() {
     fi
 
     # Elastic IPs (EIPs)
-    EIP_REQ=13
+    EIP_REQ=7
     EIP_QUOTA=$(aws service-quotas get-service-quota --service-code ec2 --quota-code L-0263D0A3 |  jq .Quota.Value)
     ec=0
 
