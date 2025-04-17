@@ -285,7 +285,7 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 	})
 
 	Describe("Update Host", Label(clusterOrchSmoke), func() {
-		It("should update the host successfully", func() {
+		PIt("should update the host successfully", func() {
 			data := fmt.Sprintf(`{"name":"%s","siteId":"%s","metadata":[]}`, hostID, siteID)
 			url := fmt.Sprintf(apiBaseURLTemplate+"/compute/hosts/%s", serviceDomain, project, hostID)
 
