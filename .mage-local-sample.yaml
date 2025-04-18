@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # This file can be copied to .mage-local.yaml and modified to suit your needs.
 
 # Automatically registers the default GitHub repositories (edge-manageability-framework and orch-utils)
