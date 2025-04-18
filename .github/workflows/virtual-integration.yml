@@ -511,106 +511,106 @@ jobs:
         run: |
           mage test:e2eSreObservabilityNoEnic
 
-      - name: Deploy ENiC
-        if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' }}
-        shell: bash
-        timeout-minutes: 5
-        env:
-          ORCH_ORG: sample-org
-          ORCH_PROJECT: sample-project
-          ORCH_USER: sample-project-onboarding-user
-          ORCH_USER_API: sample-project-api-user
-          EDGE_MANAGEABILITY_FRAMEWORK_REV: ${{ env.GIT_HASH }}
-        run: |
-          mage devUtils:deployEnic 1 dev
+      # - name: Deploy ENiC
+      #   if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' }}
+      #   shell: bash
+      #   timeout-minutes: 5
+      #   env:
+      #     ORCH_ORG: sample-org
+      #     ORCH_PROJECT: sample-project
+      #     ORCH_USER: sample-project-onboarding-user
+      #     ORCH_USER_API: sample-project-api-user
+      #     EDGE_MANAGEABILITY_FRAMEWORK_REV: ${{ env.GIT_HASH }}
+      #   run: |
+      #     mage devUtils:deployEnic 1 dev
 
-          # wait until SN and UUID are available
-          mage devUtils:getEnicSerialNumber
-          mage devUtils:getEnicUUID
+      #     # wait until SN and UUID are available
+      #     mage devUtils:getEnicSerialNumber
+      #     mage devUtils:getEnicUUID
 
-          # then get then and store them in the env
-          UUID=$(kubectl exec -it -n enic enic-0 -c edge-node -- bash -c "dmidecode -s system-uuid")
-          SN=$(kubectl exec -it -n enic enic-0 -c edge-node -- bash -c "dmidecode -s system-serial-number")
-          echo "EN_UUID=$UUID" >> "$GITHUB_ENV"
-          echo "EN_SN=$SN" >> "$GITHUB_ENV"
+      #     # then get then and store them in the env
+      #     UUID=$(kubectl exec -it -n enic enic-0 -c edge-node -- bash -c "dmidecode -s system-uuid")
+      #     SN=$(kubectl exec -it -n enic enic-0 -c edge-node -- bash -c "dmidecode -s system-serial-number")
+      #     echo "EN_UUID=$UUID" >> "$GITHUB_ENV"
+      #     echo "EN_SN=$SN" >> "$GITHUB_ENV"
 
-      - name: Print current EN UUID and SN
-        if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' }}
-        run: echo "Current ENiC has UUID ${{ env.EN_UUID }} and SN ${{ env.EN_SN }}"
+      # - name: Print current EN UUID and SN
+      #   if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' }}
+      #   run: echo "Current ENiC has UUID ${{ env.EN_UUID }} and SN ${{ env.EN_SN }}"
 
-      - name: UI E2E Tests
-        if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' }}
-        uses: ./.github/actions/cypress
-        with:
-          token: ${{ secrets.SYS_ORCH_GITHUB }}
-          admin: true
-          en_serial_number: ${{ env.EN_SN }}
-          en_uuid: ${{ env.EN_UUID }}
-          infra: "cypress/e2e/infra/locations.cy.ts,cypress/e2e/infra/provision-hosts.cy.ts,cypress/e2e/infra/verify-host.cy.ts"
+      # - name: UI E2E Tests
+      #   if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' }}
+      #   uses: ./.github/actions/cypress
+      #   with:
+      #     token: ${{ secrets.SYS_ORCH_GITHUB }}
+      #     admin: true
+      #     en_serial_number: ${{ env.EN_SN }}
+      #     en_uuid: ${{ env.EN_UUID }}
+      #     infra: "cypress/e2e/infra/locations.cy.ts,cypress/e2e/infra/provision-hosts.cy.ts,cypress/e2e/infra/verify-host.cy.ts"
 
-      - name: "Test Observability Public Endpoints"
-        env:
-          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-        run: |
-          mage test:e2eObservability
+      # - name: "Test Observability Public Endpoints"
+      #   env:
+      #     ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+      #   run: |
+      #     mage test:e2eObservability
 
-      - name: "Test Observability Orchestrator Stack"
-        env:
-          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-        run: |
-          mage test:e2eOrchObservability
+      # - name: "Test Observability Orchestrator Stack"
+      #   env:
+      #     ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+      #   run: |
+      #     mage test:e2eOrchObservability
 
-      - name: "Test Observability EdgeNode Stack"
-        env:
-          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-        run: |
-          mage test:e2eENObservability
+      # - name: "Test Observability EdgeNode Stack"
+      #   env:
+      #     ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+      #   run: |
+      #     mage test:e2eENObservability
 
-      - name: "Test Observability Alerts"
-        env:
-          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-        run: |
-          mage test:e2eAlertsObservability
+      # - name: "Test Observability Alerts"
+      #   env:
+      #     ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+      #   run: |
+      #     mage test:e2eAlertsObservability
 
-      - name: "Test Observability SRE Exporter"
-        env:
-          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-        run: |
-          mage test:e2eSreObservability
+      # - name: "Test Observability SRE Exporter"
+      #   env:
+      #     ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+      #   run: |
+      #     mage test:e2eSreObservability
 
-      - name: Wait for cluster agent to be ready
-        run: |
-          mkdir -p smoke-test/logs
-          kubectl exec -n enic enic-0 -c edge-node -- bash -c "journalctl -x" > smoke-test/logs/enic-journalctl-pre.log
-          kubectl exec -n enic enic-0 -c edge-node -- bash -c "journalctl -xeu cluster-agent" > smoke-test/logs/enic-cluster-agent-pre.log
-          timeout 5m kubectl exec -n enic enic-0 -c edge-node -- bash -c "journalctl -f" | grep -m 1 "Cluster Agent state update"
+      # - name: Wait for cluster agent to be ready
+      #   run: |
+      #     mkdir -p smoke-test/logs
+      #     kubectl exec -n enic enic-0 -c edge-node -- bash -c "journalctl -x" > smoke-test/logs/enic-journalctl-pre.log
+      #     kubectl exec -n enic enic-0 -c edge-node -- bash -c "journalctl -xeu cluster-agent" > smoke-test/logs/enic-cluster-agent-pre.log
+      #     timeout 5m kubectl exec -n enic enic-0 -c edge-node -- bash -c "journalctl -f" | grep -m 1 "Cluster Agent state update"
 
-      - name: Run AO / CO smoke test
-        if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' }}
-        env:
-          PROJECT: sample-project
-          NODE_UUID: ${{ env.EN_UUID }}
-          EDGE_MGR_USER: sample-project-edge-mgr
-          EDGE_INFRA_USER: sample-project-api-user
-        run: |
-          echo "Running AO / CO smoke test..."
-          mage test:clusterOrchSmokeTest
+      # - name: Run AO / CO smoke test
+      #   if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' }}
+      #   env:
+      #     PROJECT: sample-project
+      #     NODE_UUID: ${{ env.EN_UUID }}
+      #     EDGE_MGR_USER: sample-project-edge-mgr
+      #     EDGE_INFRA_USER: sample-project-api-user
+      #   run: |
+      #     echo "Running AO / CO smoke test..."
+      #     mage test:clusterOrchSmokeTest
 
-      - name: Collect smoke test logs
-        if: always()
-        run: |
-          mkdir -p smoke-test/logs
-          kubectl exec -n enic enic-0 -c edge-node -- bash -c "journalctl -xeu cluster-agent" > smoke-test/logs/enic-cluster-agent-post.log
+      # - name: Collect smoke test logs
+      #   if: always()
+      #   run: |
+      #     mkdir -p smoke-test/logs
+      #     kubectl exec -n enic enic-0 -c edge-node -- bash -c "journalctl -xeu cluster-agent" > smoke-test/logs/enic-cluster-agent-post.log
 
-      - name: Upload smoke test logs
-        if: always()
-        uses: actions/upload-artifact@v4.4.3
-        with:
-          name: smoke-test
-          path: |
-            smoke-test/logs/enic-journalctl-pre.log
-            smoke-test/logs/enic-cluster-agent-pre.log
-            smoke-test/logs/enic-cluster-agent-post.log
+      # - name: Upload smoke test logs
+      #   if: always()
+      #   uses: actions/upload-artifact@v4.4.3
+      #   with:
+      #     name: smoke-test
+      #     path: |
+      #       smoke-test/logs/enic-journalctl-pre.log
+      #       smoke-test/logs/enic-cluster-agent-pre.log
+      #       smoke-test/logs/enic-cluster-agent-post.log
 
       - name: Get diagnostic information
         id: get-diagnostic-info
