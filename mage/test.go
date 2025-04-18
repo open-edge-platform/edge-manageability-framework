@@ -799,7 +799,7 @@ func (Test) ChartsAvailableOnReleaseService(ctx context.Context) error {
 // TODO: Only cloud orch is tested right now. Update for on-prem or check whether this is good enough for on-prem.
 func (Test) ContainersAvailableOnReleaseService(ctx context.Context, firstPartyOnly bool) error {
 	// Get all container images for orchestrator that should be in the Release service
-	imagesList, _, err := getImageManifest(OCIPublicContainerRegistry)
+	imagesList, _, err := getImageManifest()
 	if err != nil {
 		return fmt.Errorf("get manifest: %w", err)
 	}

@@ -691,7 +691,7 @@ func removeIntelFromNoProxy() {
 	}
 }
 
-func getImageManifest(repoPrefix string) ([]string, []string, error) {
+func getImageManifest() ([]string, []string, error) {
 	removeIntelFromNoProxy()
 
 	manifest, err := getManifest()
@@ -728,7 +728,7 @@ func getImageManifest(repoPrefix string) ([]string, []string, error) {
 		fmt.Println(component.AppName)
 		fmt.Println(hrEqual)
 		// DBG: fmt.Println("Repo:", component.Repo)
-		if strings.HasPrefix(component.Repo, repoPrefix) {
+		if strings.HasPrefix(component.Repo, "oci://registry-rs.edgeorchestration.intel.com/edge-orch") {
 			chartRemotePath := strings.Join([]string{component.Repo, component.Chart}, "/")
 			err := helmPullImage(chartRemotePath, component.Version, tempDir)
 			if err != nil {
@@ -787,7 +787,7 @@ func getImageManifest(repoPrefix string) ([]string, []string, error) {
 }
 
 // Basically the same as getImageManifest but works only on local copies of helm files with buildall
-func getLocalImageManifest(repoPrefix string) ([]string, []string, error) {
+func getLocalImageManifest() ([]string, []string, error) {
 	manifest, err := getManifest()
 	if err != nil {
 		return nil, nil, fmt.Errorf("error creating manifest: %w", err)
@@ -822,7 +822,7 @@ func getLocalImageManifest(repoPrefix string) ([]string, []string, error) {
 		fmt.Println(component.AppName)
 		fmt.Println(hrEqual)
 		// DBG: fmt.Println("Repo:", component.Repo)
-		if strings.HasPrefix(component.Repo, repoPrefix) {
+		if strings.HasPrefix(component.Repo, "oci://registry-rs.edgeorchestration.intel.com/edge-orch") {
 			chartRemotePath := strings.Join([]string{component.Repo, component.Chart}, "/")
 			fmt.Println("** Remote Path: ", chartRemotePath)
 
@@ -1013,8 +1013,8 @@ func buildOnPrem() error {
 	return nil
 }
 
-func (Gen) releaseImageManifest(manifestFilename string, repoPrefix string) error {
-	imageManifest, binaryManifest, err := getImageManifest(repoPrefix)
+func (Gen) releaseImageManifest(manifestFilename string) error {
+	imageManifest, binaryManifest, err := getImageManifest()
 	if err != nil {
 		return fmt.Errorf("error getting image manifest: %w", err)
 	}
@@ -1104,8 +1104,8 @@ func (Gen) releaseImageManifest(manifestFilename string, repoPrefix string) erro
 	return nil
 }
 
-func (Gen) dumpReleaseImageManifest(repoPrefix string) error {
-	imageManifest, binaryManifest, err := getImageManifest(repoPrefix)
+func (Gen) dumpReleaseImageManifest() error {
+	imageManifest, binaryManifest, err := getImageManifest()
 	if err != nil {
 		return fmt.Errorf("error getting image manifest: %w", err)
 	}
@@ -1132,8 +1132,8 @@ func (Gen) dumpReleaseImageManifest(repoPrefix string) error {
 	return nil
 }
 
-func (Gen) localReleaseImageManifest(manifestFilename string, repoPrefix string) error {
-	imageManifest, binaryManifest, err := getLocalImageManifest(repoPrefix)
+func (Gen) localReleaseImageManifest(manifestFilename string) error {
+	imageManifest, binaryManifest, err := getLocalImageManifest()
 	if err != nil {
 		return fmt.Errorf("error getting image manifest: %w", err)
 	}
