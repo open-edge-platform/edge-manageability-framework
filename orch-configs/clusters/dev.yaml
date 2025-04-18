@@ -77,3 +77,10 @@ postCustomTemplateOverwrite:
     logs:
       general:
         level: DEBUG
+  # TODO: remove this when enic is published
+  enic:
+    images:
+      enic:
+        tag: 0.6.0
+      utils:
+        tag: 0.6.0

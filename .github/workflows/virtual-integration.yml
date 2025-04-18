@@ -547,6 +547,10 @@ jobs:
           ORCH_USER_API: sample-project-api-user
           EDGE_MANAGEABILITY_FRAMEWORK_REV: ${{ env.GIT_HASH }}
         run: |
+          # TODO remove once ENIC is published
+          mage argo:login
+          mage argo:AddGithubRepos
+
           mage devUtils:deployEnic 1 dev
 
           # wait until SN and UUID are available
