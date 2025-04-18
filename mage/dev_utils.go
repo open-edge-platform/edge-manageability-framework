@@ -19,6 +19,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -123,25 +124,20 @@ func isEnicArgoAppReady() (bool, error) {
 	return false, nil
 }
 
-func getEnicUUIDInt() (uuid.UUID, error) {
+func getEnicUUIDInt(pod string) (uuid.UUID, error) {
 	var enicUUID uuid.UUID
 	var errUUID error
 
-	cmd := fmt.Sprintf("kubectl exec -it -n %s %s -c edge-node -- bash -c 'dmidecode -s system-uuid'", enicNs, enicPodName)
+	cmd := fmt.Sprintf("kubectl exec -it -n %s %s -c edge-node -- bash -c 'dmidecode -s system-uuid'", enicNs, pod)
 	ctx, cancel := context.WithTimeout(context.Background(), waitForReadyMin*time.Minute)
 	defer cancel()
-	counter := 0
 	fn := func() error {
 		out, err := exec.Command("bash", "-c", cmd).Output()
 		outParsed := strings.Trim(string(out), "\n")
 		enicUUID, errUUID = uuid.Parse(outParsed)
-		fmt.Printf("\nENiC UUID output: %s from output (%s)\n", enicUUID, outParsed)
 		if err != nil || errUUID != nil {
-			fmt.Printf("\rENiC UUID is not ready: %s (%vs)", enicUUID, counter*waitForNextSec)
-			counter++
 			return fmt.Errorf("enic UUID is not ready")
 		} else {
-			fmt.Printf("\nENiC UUID: %s (%vs)\n", enicUUID, counter*waitForNextSec)
 			return nil
 		}
 	}
@@ -153,22 +149,18 @@ func getEnicUUIDInt() (uuid.UUID, error) {
 	return enicUUID, nil
 }
 
-func getEnicSNInt() (string, error) {
-	var serialNumber string
+func getEnicSNInt(pod string) (string, error) {
+	var serialNumbers string
 
-	cmd := fmt.Sprintf("kubectl exec -it -n %s %s -c edge-node -- bash -c 'dmidecode -s system-serial-number'", enicNs, enicPodName)
+	cmd := fmt.Sprintf("kubectl exec -it -n %s %s -c edge-node -- bash -c 'dmidecode -s system-serial-number'", enicNs, pod)
 	ctx, cancel := context.WithTimeout(context.Background(), waitForReadyMin*time.Minute)
 	defer cancel()
-	counter := 0
 	fn := func() error {
 		out, err := exec.Command("bash", "-c", cmd).Output()
 		if err != nil {
-			fmt.Printf("\rFailed to get ENiC serial number: attempt %d (%vs)", counter, counter*waitForNextSec)
-			counter++
 			return fmt.Errorf("get ENiC serial number: %w", err)
 		}
-		serialNumber = strings.TrimSpace(string(out))
-		fmt.Printf("Serial Number: %s\n", serialNumber)
+		serialNumbers = strings.TrimSpace(string(out))
 		return nil
 	}
 
@@ -176,14 +168,14 @@ func getEnicSNInt() (string, error) {
 		return "", fmt.Errorf("failed to get ENiC serial number after multiple attempts: %w", err)
 	}
 
-	return serialNumber, nil
+	return serialNumbers, nil
 }
 
-// RegisterEnic Registers ENiC UUID with orchestrator
-func (DevUtils) RegisterEnic() error {
+// RegisterEnic Registers ENiC with orchestrator, usage: mage devUtils:registerEnic enic-0
+func (DevUtils) RegisterEnic(podName string) error {
 	fmt.Printf("Registering ENiC...\n")
 
-	enicUUID, err := getEnicUUIDInt()
+	enicUUID, err := getEnicUUIDInt(podName)
 	if err != nil {
 		return fmt.Errorf("error getting ENiC UUID: %w", err)
 	}
@@ -225,6 +217,7 @@ func (DevUtils) RegisterEnic() error {
 	baseProjAPIUrl := fmt.Sprintf(apiBaseURLTemplate, orchFQDN, orchProject)
 	hostRegUrl := baseProjAPIUrl + "/compute/hosts/register"
 
+	fmt.Printf("Registering ENiC on %s (project: %s) with user %s and password %s\n", orchFQDN, orchProject, orchUser, orchPass)
 	_, err = onboarding_manager.HttpInfraOnboardNewRegisterHost(hostRegUrl, *apiToken, cli, enicUUID, true)
 	if err != nil {
 		return fmt.Errorf("error registering ENiC: %w", err)
@@ -234,11 +227,11 @@ func (DevUtils) RegisterEnic() error {
 	return nil
 }
 
-// ProvisionEnic Registers ENiC UUID with orchestrator
-func (DevUtils) ProvisionEnic() error {
+// ProvisionEnic Provisions ENiC with orchestrator, usage: mage devUtils:provisionEnic enic-0
+func (DevUtils) ProvisionEnic(podName string) error {
 	fmt.Printf("Provisioning ENiC...\n")
 
-	enicUUID, err := getEnicUUIDInt()
+	enicUUID, err := getEnicUUIDInt(podName)
 	if err != nil {
 		return fmt.Errorf("error getting ENiC UUID: %w", err)
 	}
@@ -304,11 +297,61 @@ func (DevUtils) ProvisionEnic() error {
 	return nil
 }
 
+func getEnicReplicaCount() (int, error) {
+	var replicas int
+
+	fn := func() (*int, error) {
+		// get the replica count from the ENiC replica set
+		cmd := fmt.Sprintf("kubectl -n %s get statefulsets %s -o jsonpath='{.spec.replicas}'", enicNs, "enic")
+
+		out, err := exec.Command("bash", "-c", cmd).Output()
+		if err != nil {
+			fmt.Printf("\rFailed to get ENiC replica count")
+			return nil, fmt.Errorf("get ENiC replica count: %w", err)
+		}
+		// convert out to integer
+		count, err := strconv.Atoi(strings.TrimSpace(string(out)))
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert replicas to int: %w", err)
+		}
+		return &count, nil
+	}
+
+	for {
+		count, err := fn()
+		if err != nil {
+			fmt.Println(fmt.Errorf("error while checking ENiC App: %w", err))
+		}
+
+		if count != nil {
+			replicas = *count
+			break
+		}
+		fmt.Println("Can't get ENiC replicas count, will check again 10 seconds 🟡")
+		time.Sleep(10 * time.Second)
+	}
+
+	fmt.Printf("ENiC replicas count: %d\n", replicas)
+	return replicas, nil
+}
+
 // GetEnicSerialNumber retrieves the ENiC serial number.
 func (DevUtils) GetEnicSerialNumber() error {
-	_, err := getEnicSNInt()
+	replicas, err := getEnicReplicaCount()
 	if err != nil {
-		return fmt.Errorf("error getting ENiC SN: %w", err)
+		return fmt.Errorf("error getting ENiC replica count: %w", err)
+	}
+
+	fmt.Println("ENiC Serial Numbers:")
+	// iterate through the replicas to get the serial number
+	for i := 0; i < replicas; i++ {
+		pod := fmt.Sprintf("%s-%d", "enic", i)
+		serialNumber, err := getEnicSNInt(pod)
+		if err != nil {
+			return fmt.Errorf("error getting ENiC SN: %w", err)
+		}
+
+		fmt.Printf("\t- %s: %s\n", pod, serialNumber)
 	}
 
 	return nil
@@ -316,9 +359,20 @@ func (DevUtils) GetEnicSerialNumber() error {
 
 // GetEnicUUID retrieves the ENiC UUID.
 func (DevUtils) GetEnicUUID() error {
-	_, err := getEnicUUIDInt()
+	replicas, err := getEnicReplicaCount()
 	if err != nil {
-		return fmt.Errorf("error getting ENiC UUID: %w", err)
+		return fmt.Errorf("error getting ENiC replica count: %w", err)
+	}
+
+	fmt.Println("ENiC UUIDs:")
+	// iterate through the replicas to get the serial number
+	for i := 0; i < replicas; i++ {
+		pod := fmt.Sprintf("%s-%d", "enic", i)
+		uuid, err := getEnicUUIDInt(pod)
+		if err != nil {
+			return fmt.Errorf("error getting ENiC UUID: %w", err)
+		}
+		fmt.Printf("\t- %s: %s\n", pod, uuid)
 	}
 
 	return nil
