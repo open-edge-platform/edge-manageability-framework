@@ -313,6 +313,12 @@ func (Publish) Files(ctx context.Context) error {
 		return fmt.Errorf("failed to get version: %w", err)
 	}
 
+	// get branch name
+	branchName, err := GetBranchName()
+	if err != nil {
+		return fmt.Errorf("failed get branch name: %w", err)
+	}
+
 	fmt.Println("Version: ", version)
 
 	// Create ECR repository for sub-project if it does not exist
@@ -321,9 +327,17 @@ func (Publish) Files(ctx context.Context) error {
 		fmt.Printf("failed to create ECR repository %s, ignoring: %v\n", repoName, err)
 	}
 	var (
-		tag          = version
-		artifactName = fmt.Sprintf("%s/on-prem:%s", OpenEdgePlatformFilesRegistry, tag)
+		tags         = fmt.Sprintf("%s,latest-%s-dev", version, branchName)
+		artifactName = fmt.Sprintf("%s/on-prem:%s", OpenEdgePlatformFilesRegistry, tags)
 	)
+
+	// If on main or a release branch, the version as declared in the VERSION file should be added
+	if branchName == "main" ||
+		strings.Contains(branchName, "pass-validation") ||
+		strings.HasPrefix(branchName, "release") {
+		tags = fmt.Sprintf("%s,latest-%s", version, branchName)
+		artifactName = fmt.Sprintf("%s/on-prem:%s", OpenEdgePlatformFilesRegistry, tags)
+	}
 
 	fmt.Println("Pushing to registry:", artifactName)
 
