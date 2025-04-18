@@ -710,13 +710,13 @@ jobs:
           token: ${{ secrets.SYS_ORCH_GITHUB }}
           infra: ""
           infra_provision_hosts: true
-          en_serial_number: "sn1234"
-          en_uuid: "uuid1234"
+          en_serial_number: ${{ env.EN_SN }}
+          en_uuid: ${{ env.EN_UUID }}
 
       - name: Start Ven
         env:
-          EN_SERIAL_NUMBER: ${{ inputs.en_serial_number }}
-        run: mage deploy:ven nio $EN_SERIAL_NUMBER
+          EN_SERIAL_NUMBER: ${{ env.EN_SN }}
+        run: mage deploy:ven nio ${{ env.EN_UUID }}
 
       - name: UI E2E Infra Verify Host
         uses: ./.github/actions/cypress
