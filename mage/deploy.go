@@ -101,7 +101,9 @@ func kubectlDebugNamespace(name string) error {
 
 func (d Deploy) kind(targetEnv string) error { //nolint:gocyclo
 	targetEnvType, err := (Config{}).getTargetEnvType(targetEnv)
-	if err != nil || targetEnvType != "kind" {
+	if err != nil {
+		return fmt.Errorf("error getting target environment type: %w", err)
+	} else if targetEnvType != "kind" {
 		return fmt.Errorf("wrong environment specified for kind deployment: %s is a %s orchestrator definition", targetEnv, targetEnvType)
 	}
 

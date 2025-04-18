@@ -1694,6 +1694,11 @@ func (g Gen) DumpReleaseImageManifest() error {
 	return g.dumpReleaseImageManifest()
 }
 
+// Create a Release image manifest with local charts
+func (g Gen) LocalReleaseImageManifest(manifestFilename string) error {
+	return g.localReleaseImageManifest(manifestFilename)
+}
+
 // Create a document showing firewall configurationt.
 func (g Gen) FirewallDoc() error {
 	return g.firewallDoc()
