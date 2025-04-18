@@ -13,6 +13,10 @@ clusterManager:
       {{- with .Values.argo.imagePullSecrets }}
         {{- toYaml . | nindent 6 }}
       {{- end }}
+  {{- with .Values.argo.resources.clusterManager.clusterManager }}
+  resources:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 templateController:
   image:
     repository: cluster/template-controller
@@ -22,3 +26,7 @@ templateController:
       {{- with .Values.argo.imagePullSecrets }}
         {{- toYaml . | nindent 6 }}
       {{- end }}
+  {{- with .Values.argo.resources.clusterManager.templateController }}
+  resources:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}

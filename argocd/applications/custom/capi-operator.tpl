@@ -21,6 +21,11 @@ env:
     value: "{{ .Values.argo.proxy.noProxy }}"
   {{- end }}
   {{- end }}
+{{- with .Values.argo.resources.capiOperator }}
+resources:
+  manager:
+    {{- toYaml . | nindent 4 }}
+{{- end }}
 manager:
   featureGates:
     core:
