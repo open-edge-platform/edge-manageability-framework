@@ -1,0 +1,17 @@
+# This file can be copied to .mage-local.yaml and modified to suit your needs.
+
+# Automatically registers the default GitHub repositories (edge-manageability-framework and orch-utils)
+# with the ArgoCD service. This can be useful for some development workflows.
+enableGithubRepos: true
+
+# To use additional GitHub repositories, add them to the localRepos section.
+# The user and token values are used to allow ArgoCD to authenticate with GitHub.
+# - These values can refer to environment variables as shown, or can be set to the actual values.
+#   - If user or token is not specified, they default to $GIT_USER and $GIT_TOKEN, respectively 
+#     (ex: o11y-charts will default to use these variables).
+# - Anonymous GitHub access is not currently supported.
+localRepos:
+  - url: https://github.com/open-edge-platform/infra-charts
+    user: $GITHUB_USER
+    token: $GITHUB_TOKEN
+  - url: https://github.com/open-edge-platform/o11y-charts

@@ -26,6 +26,7 @@ import (
 	"github.com/bitfield/script"
 	"github.com/magefile/mage/mg"
 	"github.com/magefile/mage/sh"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -1300,7 +1301,96 @@ func (a Argo) AddGithubRepos() error {
 		return fmt.Errorf("must set environment variable GIT_TOKEN")
 	}
 
+	err := a.login()
+	if err != nil {
+		return fmt.Errorf("failed to login to ArgoCD: %w", err)
+	}
+
 	return a.repoAdd(gitUser, gitToken, githubRepos)
+}
+
+// Add repositories to ArgoCD from .mage-local.yaml configuration.
+func (a Argo) AddLocalRepos() error {
+	_, err := os.Stat(".mage-local.yaml")
+	if err != nil {
+		fmt.Println("No .mage-local.yaml found, using default repositories")
+		return nil
+	}
+
+	fmt.Println("Local repositories file .mage-local.yaml found, adding repositories to ArgoCD")
+	yamlFile, err := os.ReadFile(".mage-local.yaml")
+	if err != nil {
+		return fmt.Errorf("error reading .mage-local.yaml: %w", err)
+	}
+	
+	var localMageSettings struct {
+		EnableGithubRepos bool `yaml:"enableGithubRepos"`
+		LocalRepos []struct {
+			Url string `yaml:"url"`
+			User string `yaml:"user",default:"$GIT_USER"`
+			Token string `yaml:"token",default:"$GIT_TOKEN"`
+		} `yaml:"localRepos"`
+	}
+	
+	if err := yaml.Unmarshal(yamlFile, &localMageSettings); err != nil {
+		return fmt.Errorf("error parsing .mage-local.yaml: %w", err)
+	}
+
+	if localMageSettings.EnableGithubRepos {
+		fmt.Println("Adding Github repositories")
+		if err := a.AddGithubRepos(); err != nil {
+			return fmt.Errorf("failed to add Github repositories: %w", err)
+		}
+	} else {
+		// If Github repositories are not enabled, login to ArgoCD here to avoid duplicate login
+		err := a.login();
+		if err == nil {
+			return fmt.Errorf("failed to login to ArgoCD: %w", err)
+		}
+	}
+
+	// Add any specified local repositories to ArgoCD
+	if len(localMageSettings.LocalRepos) > 0 {
+		fmt.Println("Adding local repositories")
+		for _, repo := range localMageSettings.LocalRepos {
+			if repo.Url == "" {
+				continue
+			}
+			// If the user value is empty, set it to the default value
+			if repo.User == "" {
+				repo.User = "$GIT_USER"
+			}
+			// If the token value is empty, set it to the default value
+			if repo.Token == "" {
+				repo.Token = "$GIT_TOKEN"
+			}
+			// If the user value starts with a '$' sign, replace it with the environment value
+			if strings.HasPrefix(repo.User, "$") {
+				envVar := strings.TrimPrefix(repo.User, "$")
+				repo.User = os.Getenv(envVar)
+				if repo.User == "" {
+					return fmt.Errorf("User %s required by %s repo is not set", envVar, repo.Url)
+				}
+			}
+			// If the token value starts with a '$' sign, replace it with the environment value
+			if strings.HasPrefix(repo.Token, "$") {
+				envVar := strings.TrimPrefix(repo.Token, "$")
+				repo.Token = os.Getenv(envVar)
+				if repo.Token == "" {
+					return fmt.Errorf("Token %s required by %s repo is not set", envVar, repo.Url)
+				}
+			}
+			
+			fmt.Printf("Adding local repository %s\n", repo.Url)
+			repoUrlList := []string{repo.Url}
+			err := a.repoAdd(repo.User, repo.Token, repoUrlList )
+			if err != nil {
+				return fmt.Errorf("failed to add local repository %s: %w", repo.Url, err)
+			}
+		}
+	}
+
+	return nil
 }
 
 // Lists all ArgoCD Applications, sorted by syncWave.
