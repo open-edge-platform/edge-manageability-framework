@@ -1322,16 +1322,17 @@ func (a Argo) AddLocalRepos() error {
 	if err != nil {
 		return fmt.Errorf("error reading .mage-local.yaml: %w", err)
 	}
-	
+
 	var localMageSettings struct {
 		EnableGithubRepos bool `yaml:"enableGithubRepos"`
+
 		LocalRepos []struct {
-			Url string `yaml:"url"`
-			User string `yaml:"user",default:"$GIT_USER"`
-			Token string `yaml:"token",default:"$GIT_TOKEN"`
+			Url   string `yaml:"url"`
+			User  string `yaml:"user"`
+			Token string `yaml:"token"`
 		} `yaml:"localRepos"`
 	}
-	
+
 	if err := yaml.Unmarshal(yamlFile, &localMageSettings); err != nil {
 		return fmt.Errorf("error parsing .mage-local.yaml: %w", err)
 	}
@@ -1343,7 +1344,7 @@ func (a Argo) AddLocalRepos() error {
 		}
 	} else {
 		// If Github repositories are not enabled, login to ArgoCD here to avoid duplicate login
-		err := a.login();
+		err := a.login()
 		if err == nil {
 			return fmt.Errorf("failed to login to ArgoCD: %w", err)
 		}
@@ -1380,7 +1381,7 @@ func (a Argo) AddLocalRepos() error {
 					return fmt.Errorf("Token %s required by %s repo is not set", envVar, repo.Url)
 				}
 			}
-			
+
 			fmt.Printf("Adding local repository %s\n", repo.Url)
 			repoUrlList := []string{repo.Url}
 			err := a.repoAdd(repo.User, repo.Token, repoUrlList)
