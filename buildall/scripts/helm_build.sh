@@ -67,7 +67,7 @@ pushd "${REPO_PATH}"
 
     make helm-build >> "${LOGFILE}" 2>&1
 
-    cp "${outDir}"/*.tgz ../../charts
+    mv "${outDir}"/*.tgz ../../charts
 
     # clean up repo
     git checkout HEAD .
