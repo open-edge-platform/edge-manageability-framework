@@ -242,7 +242,7 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 	})
 
 	Describe("Find Host by UUID", Label(clusterOrchSmoke), func() {
-		PIt("should find the host with the specified UUID", func() {
+		It("should find the host with the specified UUID", func() {
 			findHost := func() (bool, error) {
 				hostsResponse, err := getHosts(*edgeInfraToken)
 				if err != nil {
@@ -285,7 +285,7 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 	})
 
 	Describe("Update Host", Label(clusterOrchSmoke), func() {
-		PIt("should update the host successfully", func() {
+		It("should update the host successfully", func() {
 			data := fmt.Sprintf(`{"name":"%s","siteId":"%s","metadata":[]}`, hostID, siteID)
 			url := fmt.Sprintf(apiBaseURLTemplate+"/compute/hosts/%s", serviceDomain, project, hostID)
 
