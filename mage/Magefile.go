@@ -1694,6 +1694,11 @@ func (g Gen) DumpReleaseImageManifest() error {
 	return g.dumpReleaseImageManifest()
 }
 
+// Create a Release image manifest with local charts
+func (g Gen) LocalReleaseImageManifest(manifestFilename string) error {
+	return g.localReleaseImageManifest(manifestFilename)
+}
+
 // Create a document showing firewall configurationt.
 func (g Gen) FirewallDoc() error {
 	return g.firewallDoc()
@@ -1857,6 +1862,16 @@ type DevUtils mg.Namespace
 type LogUtils mg.Namespace
 
 type Version mg.Namespace
+
+// Get the Release Tag for the current source version
+func (Version) GetVersionTag() error {
+	tag, err := getDeployTag()
+	if err != nil {
+		return fmt.Errorf("failed to get deploy tag: %w", err)
+	}
+	fmt.Println(tag)
+	return nil
+}
 
 // Checks that the Version in the VERSION file and in the Argo Charts is in syn
 func (v Version) CheckVersion() error {
