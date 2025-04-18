@@ -12,4 +12,3 @@ argo:
     edgenode-observability: true
     orchestrator-dashboards: true
     orchestrator-observability: true
-    orchestrator-prometheus-agent: true
