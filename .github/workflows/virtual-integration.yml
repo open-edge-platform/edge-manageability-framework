@@ -619,6 +619,7 @@ jobs:
           EDGE_INFRA_USER: sample-project-api-user
         run: |
           echo "Running AO / CO smoke test..."
+          mage devUtils:WaitForEnic
           mage test:clusterOrchSmokeTest
 
       - name: Collect smoke test logs
