@@ -9,19 +9,19 @@
 core:
   name: cluster-api
   namespace: capi-system
-  spec: 
+  spec:
     version: v1.9.0
     configSecret:
       namespace: capi-variables
       name: capi-variables
     manager:
       featureGates:
-        MachinePool: "true"
-        ClusterResourceSet: "true"
-        ClusterTopology: "true"
-        RuntimeSDK: "false"
-        MachineSetPreflightChecks: "true"
-        MachineWaitForVolumeDetachConsiderVolumeAttachments: "true"
+        MachinePool: true
+        ClusterResourceSet: true
+        ClusterTopology: true
+        RuntimeSDK: false
+        MachineSetPreflightChecks: true
+        MachineWaitForVolumeDetachConsiderVolumeAttachments: true
 
 # https://doc.crds.dev/github.com/kubernetes-sigs/cluster-api-operator/operator.cluster.x-k8s.io/BootstrapProvider/v1alpha2@v0.15.1
 bootstrap:
@@ -32,18 +32,19 @@ bootstrap:
     configSecret:
       namespace: capi-variables
       name: capi-variables
-    deployment:
-      containers:
-        - name: manager
-          imageUrl:  docker.io/andybavier/cluster-api-provider-rke2-controlplane:latest
-          args:
-            "-- Concurrency":  5
 
 # https://doc.crds.dev/github.com/kubernetes-sigs/cluster-api-operator/operator.cluster.x-k8s.io/ControlPlaneProvider/v1alpha2@v0.15.1
 controlPlane:
   name: rke2
   namespace: capr-system
-  version:v0.12.0
-  configSecret:
-    namespace: capi-variables
-    name: capi-variables
+  spec:
+    version: v0.12.0
+    configSecret:
+      namespace: capi-variabless
+      name: capi-variables
+    deployment:
+      containers:
+      - name: manager
+        imageUrl:  docker.io/andybavier/cluster-api-provider-rke2-controlplane:latest
+        args:
+          "-- concurrency":  "5"
