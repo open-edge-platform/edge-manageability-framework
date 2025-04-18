@@ -127,5 +127,5 @@ helm install gitea /tmp/gitea/gitea --values /tmp/gitea/values.yaml --set gitea.
 
 # Create Gitea accounts for ArgoCD, AppOrch and ClusterOrch
 createGiteaAccount "argocd-gitea-credential" "argocd" "$argocdGiteaPassword" "argocd@orch-installer.com"
-createGiteaAccount "app-gitea-credential" "apporch" "$appGiteaPassword" "test@test.com"
-createGiteaAccount "cluster-gitea-credential" "clusterorch" "$clusterGiteaPassword" "test@test2.com"
+createGiteaAccount "app-gitea-credential" "apporch" "$appGiteaPassword" "apporch@orch-installer.com"
+createGiteaAccount "cluster-gitea-credential" "clusterorch" "$clusterGiteaPassword" "clusterorch@orch-installer.com"
