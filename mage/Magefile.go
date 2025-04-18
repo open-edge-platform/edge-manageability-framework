@@ -1383,7 +1383,7 @@ func (a Argo) AddLocalRepos() error {
 			
 			fmt.Printf("Adding local repository %s\n", repo.Url)
 			repoUrlList := []string{repo.Url}
-			err := a.repoAdd(repo.User, repo.Token, repoUrlList )
+			err := a.repoAdd(repo.User, repo.Token, repoUrlList)
 			if err != nil {
 				return fmt.Errorf("failed to add local repository %s: %w", repo.Url, err)
 			}
