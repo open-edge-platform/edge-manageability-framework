@@ -313,7 +313,6 @@ func (Publish) Files(ctx context.Context) error {
 		return fmt.Errorf("failed to get version: %w", err)
 	}
 
-	// get branch name
 	branchName, err := GetBranchName()
 	if err != nil {
 		return fmt.Errorf("failed get branch name: %w", err)
