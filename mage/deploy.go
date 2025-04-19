@@ -227,6 +227,12 @@ func (d Deploy) kind(targetEnv string) error { //nolint:gocyclo
 		return err
 	}
 
+	// Check for `.mage-local.yaml` file. If it exists, use it to add any additional repos spacified as
+	// desired in the settings.
+	if err := (Argo{}).AddLocalRepos(); err != nil {
+		return fmt.Errorf("error adding local repos: %w", err)
+	}
+
 	if err := (Argo{}).dockerHubChartOrgAdd(); err != nil {
 		return err
 	}
