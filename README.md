@@ -150,6 +150,7 @@ Orchestrator.
   the [Developer Guide](https://github.com/open-edge-platform/orch-docs/blob/main/docs/developer_guide/index.rst)
 - [Contribute](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/developer_guide/contributor_guide/index.html)
   to the project
+- [Troubleshooting] (https://docs.openedgeplatform.intel.com/edge-manage-docs/main/developer_guide/troubleshooting/index.html)
 
 ## Community and Support
 
