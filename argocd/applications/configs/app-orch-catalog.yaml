@@ -34,7 +34,7 @@ application-catalog-server:
 openpolicyagent:
   securityContext:
     readOnlyRootFilesystem: true
-  tag: 0.69-0-static
+  tag: 0.69.0-static
 resources: null
 vaultServerAddress: http://vault.orch-platform.svc.cluster.local:8200
 serviceAccount: orch-svc
