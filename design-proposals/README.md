@@ -1,4 +1,4 @@
-# Proposing Features and Changes to Edge Microvisor Toolkit
+# Proposing Features and Changes to Edge Manageability Framework
 
 ## Introduction
 
@@ -117,7 +117,7 @@ document, that if accepted becomes an
 Architecture Decision Record (ADR)
 
 - The design document should be checked in
-  to [the proposal directory](https://github.com/open-edge-platform/edge-manageability-framework/design-proposals/)
+  to [the proposal directory](https://github.com/open-edge-platform/edge-manageability-framework/tree/main/design-proposals/)
   as `NNNN-shortname.md`,
   where `NNNN` is the project name (e.g. app-orch) and `shortname` is a short
   name (a few dash-separated words at most).
