@@ -19,12 +19,9 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.utilsProject }}
   sources:
-    # - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
-    #   chart: infra/charts/{{$appName}}
-    #   targetRevision: 0.6.0
-    - repoURL: https://github.com/open-edge-platform/virtual-edge-node
-      path: edge-node-container/chart
-      targetRevision: chore/probes
+    - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
+      chart: infra/charts/{{$appName}}
+      targetRevision: 0.6.1
       helm:
         releaseName: {{$appName}}
         valuesObject:
