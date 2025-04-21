@@ -26,7 +26,7 @@ same subdirectory naming convention.
 
 There are two variants of this proposal:
 
-### Sub-Proposal - Import a specific deployment package from a reposutory (requires more GUI work)
+### Sub-Proposal - Import a specific deployment package from a repository (requires more GUI work)
 
 - The existing `Import Deployment Package` screen shall be updated with an `Import from URL` button.
 
@@ -34,7 +34,7 @@ There are two variants of this proposal:
 
 - The GUI will pass the URL to the application catalog service. For example, `/v3/projects/{project-name}/catalog/list_packages_from_repo?url=<url>`.
 
-- The application catalog shall return a list of deployment packages that were found in the
+- The application catalog shall scan the repository and return a list of deployment packages that were found in the
   repository.
 
 - The GUI will display the list of deployment packages that were found and allow the user to choose one.
@@ -42,7 +42,7 @@ There are two variants of this proposal:
 - The GUI will pass the `URL` and `name` of the chosen deployment package to the catalog service
   for import, for example `/v3/projects/{project-name}/catalog/import_package_from_repo?url=<url>&package=<package>`.
 
-- The application catalog service will internally clone the repository, navigate to the selected package,
+- The application catalog service will extract the selected package from the repository and
   parse the yaml files there to extract a deployment package, and add that deployment package to the catalog.
 
 - The GUI shall display a confirmation screen.
@@ -56,13 +56,26 @@ There are two variants of this proposal:
 - The GUI will pass the `URL` to the catalog service
   for import, for example `/v3/projects/{project-name}/catalog/import_package_from_repo?url=<url>`.
 
-- The application catalog service will internally clone the repository, locate all valid deployment packages,
-  and add all of them to the application catalog.
+- The application catalog service shall extract all deployment packages from the repository and
+  add all of them to the application catalog.
 
 - The GUI shall display a confirmation screen.
 
 Note: The above URLs use query arguments for example illustrative purposes. The implementation may use POST
 with a JSON payload instead. This is an implementation detail.
+
+### Scanning and extracting deployment packages from github repositories
+
+The above proposals mention scanning repositories to find deployment packages and extracting
+deployment packages from a repository. A naive approach is for the Catalog Service to internally clone
+the repository to a temporary section of its local file system and use file operations to examine
+the repository.
+
+A more sophisticated approach may be use github REST APIs to examine the contents of a repository
+without having to fully clone the repo. As the repositories may be large and there are only a few
+relatively small yaml files that are of interest, this may be more efficient.
+
+The specific choice of method is left as an implementation decision.
 
 ## Rationale
 
