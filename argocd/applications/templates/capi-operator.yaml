@@ -21,7 +21,7 @@ spec:
   sources:
     - repoURL: https://kubernetes-sigs.github.io/cluster-api-operator
       chart: cluster-api-operator
-      targetRevision: 0.15.1
+      targetRevision: 0.18.1
       helm:
         releaseName: {{$appName}}
         valuesObject:

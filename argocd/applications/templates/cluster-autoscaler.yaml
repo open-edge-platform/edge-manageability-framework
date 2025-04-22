@@ -21,7 +21,7 @@ spec:
   sources:
     - repoURL: https://kubernetes.github.io/autoscaler
       chart: cluster-autoscaler
-      targetRevision: "9.37.0"
+      targetRevision: 9.46.6
       helm:
         releaseName: {{$appName}}
         valuesObject:
