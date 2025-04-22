@@ -44,7 +44,7 @@ hosts) and clusters.
   software architecture specifications. You can also visit our
   [documentation](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/developer_guide/contributor_guide/index.html).
 
-#### Foundational Platform Services
+#### Platform Services
 
 - [orch-utils](https://github.com/open-edge-platform/orch-utils): The orch-utils
   repository provides various utility functions and tools that support the
@@ -148,8 +148,9 @@ Orchestrator.
   the [User Guide](https://github.com/open-edge-platform/orch-docs/blob/main/docs/user_guide/index.rst)
 - Learn about all components and usage of them in
   the [Developer Guide](https://github.com/open-edge-platform/orch-docs/blob/main/docs/developer_guide/index.rst)
-- [Contribute](https://github.com/open-edge-platform/orch-docs/blob/main/docs/developer_guide/contributor_guide/index.rst)
+- [Contribute](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/developer_guide/contributor_guide/index.html)
   to the project
+- [Troubleshooting](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/developer_guide/troubleshooting/index.html)
 
 ## Community and Support
 
