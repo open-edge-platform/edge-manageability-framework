@@ -21,7 +21,7 @@ spec:
   sources:
     - repoURL: https://kyverno.github.io/kyverno
       chart: kyverno
-      targetRevision: 3.2.5
+      targetRevision: 3.3.7
       helm:
         releaseName: {{$appName}}
         valuesObject:

@@ -21,7 +21,7 @@ spec:
   sources:
     - repoURL: https://helm.traefik.io/traefik
       chart: traefik
-      targetRevision: 35.0.0
+      targetRevision: 35.0.1
       helm:
         releaseName: {{$appName}}
         valuesObject:

@@ -21,7 +21,7 @@ spec:
   sources:
     - repoURL: https://helm.releases.hashicorp.com
       chart: vault
-      targetRevision: 0.28.1
+      targetRevision: 0.30.0
       helm:
         releaseName: {{$appName}}
         valuesObject:
