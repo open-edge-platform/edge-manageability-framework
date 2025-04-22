@@ -107,8 +107,8 @@ orch-app:
 orch-boots:
   ingress-nginx-controller:
     controller: "argo.resources.ingressNginx.controller.root"
-orch-cluster:
 # TODO: replace with new cluster-orch stack (cm + capi)
+# orch-cluster:
 # Resource managed by VPA/HPA
 # orch-database:
 #   postgresql:

@@ -86,16 +86,19 @@ runs:
         kubectl logs -n orch-iam -l app=nexus-api-gw > cypress/logs/edgeinfra/nexus-api-gw.log
         kubectl logs -n orch-gateway -l app.kubernetes.io/name=traefik > cypress/logs/edgeinfra/traefik.log
 
-        kubectl -n enic logs $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c fake-uuid > cypress/logs/edgeinfra/enic-fake-uuid.log
-        kubectl -n enic exec -it $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c edge-node -- journalctl -u onboard --no-tail > cypress/logs/edgeinfra/enic-onboard.log
-        kubectl -n enic exec -it $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c edge-node -- journalctl -u agents --no-tail > cypress/logs/edgeinfra/enic-agents.log
-        kubectl -n enic exec -it $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c edge-node -- journalctl -u node-agent --no-tail > cypress/logs/edgeinfra/enic-node-agent.log
-        kubectl -n enic exec -it $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c edge-node -- journalctl -u hardware-discovery-agent --no-tail > cypress/logs/edgeinfra/enic-hardware-discovery-agent.log
+        kubectl -n enic logs $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c fake-uuid > cypress/logs/edgeinfra/enic-fake-uuid.log || true
+        kubectl -n enic exec -it $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c edge-node -- journalctl -u onboard --no-tail > cypress/logs/edgeinfra/enic-onboard.log || true
+        kubectl -n enic exec -it $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c edge-node -- journalctl -u agents --no-tail > cypress/logs/edgeinfra/enic-agents.log || true
+        kubectl -n enic exec -it $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c edge-node -- journalctl -u node-agent --no-tail > cypress/logs/edgeinfra/enic-node-agent.log || true
+        kubectl -n enic exec -it $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c edge-node -- journalctl -u hardware-discovery-agent --no-tail > cypress/logs/edgeinfra/enic-hardware-discovery-agent.log || true
 
         kubectl get workflow -A > cypress/logs/edgeinfra/workflow.txt
         kubectl get hardware -A > cypress/logs/edgeinfra/hardware.txt
         kubectl get template -A > cypress/logs/edgeinfra/template.txt
-        kubectl get workflow -n orch-infra workflow-${{ inputs.en_uuid }}-prod -o yaml || true > cypress/logs/edgeinfra/workflow-${{ inputs.en_uuid }}-prod.log
+        kubectl get workflow -n orch-infra workflow-${{ inputs.en_uuid }}-prod -o yaml > cypress/logs/edgeinfra/workflow-${{ inputs.en_uuid }}-prod.log || true
+
+        kubectl describe pod -n enic > cypress/logs/edgeinfra/enic-pod-describe.txt
+        kubectl describe applications -n utils enic > cypress/logs/edgeinfra/enic-argocd-app.txt
     - name: Run Cluster Orch tests
       id: cluster_orch_tests
       if: ${{ always() && inputs.cluster_orch == 'true' }}
@@ -124,7 +127,7 @@ runs:
         kubectl logs -n orch-cluster -l app=southbound-api > cypress/logs/cluster-orch/southbound-api.log
 
         # ENiC components
-        kubectl -n enic exec -it $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c edge-node -- journalctl -xeu cluster-agent --no-tail > cypress/logs/cluster-orch/enic-cluster-agent.log
+        kubectl -n enic exec -it $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c edge-node -- journalctl -xeu cluster-agent --no-tail > cypress/logs/cluster-orch/enic-cluster-agent.log || true
     - name: Run AppOrch Cypress tests
       id: app_orch_tests
       if: ${{ always() && inputs.app_orch == 'true' }}
