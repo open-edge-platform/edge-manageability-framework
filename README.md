@@ -28,14 +28,14 @@ hosts) and clusters.
 
 ### Key Components
 
-The Edge Orchestrator is used to centrally manage all Edge Nodes at edge sites and perform all life-cycle management of OS, edge-clusters, and edge-applications in these managed Edge Nodes. Edge Orchestrator consists of six main components, and it is deployable on-premises or in the cloud:
+Edge Orchestrator is used to centrally manage all Edge Nodes at sites and perform all lifecycle management of OS, clusters, and applications in the managed nodes. Edge Orchestrator consists of six main components, and it is deployable on-premises or in the cloud:
 
-- [Edge Infrastructure Manager](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/developer_guide/infra_manager/index.html): Policy based secure life cycle management of a fleet of edge nodes/devices at scale, spread across distributed locations allowing onboarding, provisioning, inventory management, upgrades and more.
+- [Edge Infrastructure Manager](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/developer_guide/infra_manager/index.html): Policy-based secure life cycle management of a fleet of edge nodes/devices at scale, spread across distributed locations allowing onboarding, provisioning, inventory management, upgrades and more.
 - [Edge Cluster Orchestrator](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/developer_guide/cluster_orch/index.html): A lightweight orchestrator based on the Cluster API (CAPI) standard designed to automate the deployment and lifecycle management of Kubernetes* clusters at scale across distributed edges, providing centralized monitoring and access control.
 - [Edge Application Orchestrator](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/developer_guide/app_orch/index.html): Offers customers the ability to easily package, deploy and monitor cloud-native applications at scale across distributed edges
 - [UI](https://github.com/open-edge-platform/orch-ui): The web user interface for the Edge Orchestrator, allowing the user to manage most of the features of the product in an intuitive, visual, manner without having to trigger a series of APIs individually.
 - [Observability](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/developer_guide/observability/index.html): A modular observability stack that provides visibility into the health and performance of the system, including logging, reporting, alerts, and SRE data from Edge Orchestrator components and Edge Nodes.
-- [Platform Services](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/developer_guide/platform/index.html): A collection of services that support the deployment and management of the Edge Orchestrator, including Identity and Access management, multitenancy management, ingress route configuration, secrets and certificate management, cloud and on-prem infrastruture life-cycle management and more.
+- [Platform Services](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/developer_guide/platform/index.html): A collection of services that support the deployment and management of the Edge Orchestrator, including identity and access management, multitenancy management, ingress route configuration, secrets and certificate management, cloud and on-prem infrastruture life-cycle management and more.
 
 ## Get Started
 
