@@ -594,7 +594,7 @@ func waitUntilProjectCreation(ctx context.Context, nexusClient *nexus_client.Cli
 			if err != nil {
 				return "", err
 			}
-			fmt.Printf("project %v status - %v\n", projectName, project.Status.ProjectStatus.StatusIndicator)
+			fmt.Printf("project %v status - %v (%s)\n", projectName, project.Status.ProjectStatus.StatusIndicator, project.Status.ProjectStatus.Message)
 			if project.Status.ProjectStatus.StatusIndicator == projectv1.StatusIndicationIdle {
 				return project.Status.ProjectStatus.UID, nil
 			}
