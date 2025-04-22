@@ -5,3 +5,13 @@
 clusterManager:
   extraArgs:
     disable-mt: false
+
+templateController:
+  metrics:
+    service:
+      enabled: true
+      port: 8080
+      labels:
+        app: "template-controller-metrics-svc"
+    serviceMonitor:
+      enabled: true
