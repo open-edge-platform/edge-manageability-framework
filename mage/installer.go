@@ -46,7 +46,7 @@ func getFullImageNames(target string) ([]string, error) {
 	registry := os.Getenv("DOCKER_REGISTRY")
 	var registryPath string
 	if repository == "" && registry == "" {
-		registryPath = IntelTiberContainerRegistry
+		registryPath = InternalContainerRegistry
 	} else {
 		registryPath = path.Join(registry, repository)
 	}
@@ -224,7 +224,7 @@ func (i Installer) bundle() error {
 	registry := os.Getenv("DOCKER_REGISTRY")
 	var registryPath string
 	if repository == "" && registry == "" {
-		registryPath = IntelTiberContainerRegistry
+		registryPath = InternalContainerRegistry
 	} else {
 		registryPath = path.Join(registry, repository)
 	}
@@ -266,7 +266,7 @@ func (i Installer) bundle() error {
 	}
 
 	publishImage := path.Join(registryPath, InstallerImageName+":"+versionTag)
-	publicImage := path.Join(PublicTiberContainerRegistry, InstallerImageName+":"+versionTag)
+	publicImage := path.Join(PublicContainerRegistry, InstallerImageName+":"+versionTag)
 	fmt.Println("install image:")
 	fmt.Printf("  - publish : %s\n", publishImage)
 	fmt.Printf("  = public  : %s\n", publicImage)

@@ -603,6 +603,7 @@ jobs:
           mage test:e2eSreObservability
 
       - name: Wait for cluster agent to be ready
+        if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' }}
         run: |
           mkdir -p smoke-test/logs
           kubectl exec -n enic enic-0 -c edge-node -- bash -c "journalctl -x" > smoke-test/logs/enic-journalctl-pre.log
