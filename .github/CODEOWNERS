@@ -48,7 +48,10 @@
 /e2e-tests/mailpit/ @pperycz @ltalarcz @jakubsikorski @mholowni @p-zak @tdorauintc @sys-orch-approve
 
 # Infrastructure
-/pod-configs @luoyingf @ashridatta @yi-tseng-intel @sys-orch-approve
+/pod-configs @luoyingf @ashridatta @yi-tseng-intel @palade @sys-orch-approve
+
+# Documentation
+/**/*.md @Andrea-Campanella @se-chris-thach @mdbalvin @rad-szulim @charlesmcchan @yi-tseng-intel @ashridatta @teone @callumnobleintel @daniele-moro @SeanCondon @pierventre @cgoea john.oloughlin@intel.com gary.loughnane@intel.com @emmakenny @PalashGoelIntel @palade @pperycz @ltalarcz @jakubsikorski @sys-orch-approve @ahalimx86
 
 # Kyverno config requires Platform team review
 /argocd/applications/configs/kyverno-* chris.thach@intel.com @mdbalvin @rad-szulim @charlesmcchan @yi-tseng-intel john.oloughlin@intel.com gary.loughnane@intel.com @emmakenny @palade @Irakus @sys-orch-approve @ahalimx86
