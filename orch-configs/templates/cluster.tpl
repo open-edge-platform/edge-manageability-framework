@@ -11,6 +11,9 @@ root:
 {{- if .Values.enableObservability }}
     - orch-configs/profiles/enable-o11y.yaml
 {{- end }}
+{{- if .Values.enableAuditLogging }}
+    - orch-configs/profiles/enable-audit.yaml
+{{- end }}
 {{- if .Values.enableKyverno }}
     - orch-configs/profiles/enable-kyverno.yaml
 {{- end }}
@@ -23,7 +26,7 @@ root:
 {{- if .Values.enableUiDev }}
     - orch-configs/profiles/ui-dev.yaml
 {{- end }}
-    - orch-configs/profiles/enable-dev.yaml
+    - orch-configs/profiles/enable-{{ .Values.deployProfile }}.yaml
 {{- if .Values.enableObservability }}
     - orch-configs/profiles/enable-sre.yaml
 {{- end }}

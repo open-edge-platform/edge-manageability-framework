@@ -123,6 +123,11 @@ orch-cluster:
     intel-infra-provider-manager: "argo.resources.intelInfraProvider.manager"
   intel-infra-provider-southbound:
     intel-infra-provider-southbound: "argo.resources.intelInfraProvider.southboundApi"
+# orch-cluster:
+# Resource managed by VPA/HPA
+# orch-database:
+#   postgresql:
+#     postgresql: "argo.resources.postgresql"
 orch-gateway:
   auth-service:
     auth-service: "argo.resources.authService"
