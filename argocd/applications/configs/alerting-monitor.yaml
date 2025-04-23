@@ -12,6 +12,3 @@ openPolicyAgent:
 istio-proxy:
   securityContext:
     readOnlyRootFilesystem: true
-
-alertManagerConfig:
-  groupInterval: 1m
