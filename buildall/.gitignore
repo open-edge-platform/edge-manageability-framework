@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: (C) 2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+repos/
+scratch/
+venv_*
+charts/
+
+# buildall lib
+scripts/ba_lib/*.egg-info
+scripts/ba_lib/build
+scripts/__pycache__
