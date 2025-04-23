@@ -462,6 +462,11 @@ apply_terraform() {
     fi
 
     if [[ "$MODULE_DIR" == *"${ORCH_DIR}/cluster" ]]; then
+        s3_prefix="$(get_s3_prefix)"
+        echo "s3_prefix                          = \"$s3_prefix\"" >> "${ROOT_DIR}/${ORCH_DIR}/cluster/environments/${ENV_NAME}/variable.tfvar"
+    fi
+
+    if [[ "$MODULE_DIR" == *"${ORCH_DIR}/cluster" ]]; then
         s3_prefix=$(get_variable_value "s3_prefix" ${VARIABLE_FILES[*]})
     fi
 
@@ -770,13 +775,13 @@ check_s3bucket_exist() {
 }
 
 extract_bucket_s3_prefix() {
-    data_bucket="%1"
+    data_bucket="$1"
 
     # Strip the cluster name and bucket type
-    echo "$data_bucket" | sed -ne "s/^${ENV_NAME}-\\([^-]*\\).\+$/\\1/p"
+    echo "$data_bucket" | sed -ne "s/^${ENV_NAME}-\\([^-]*\\)-.\+$/\\1/p"
 }
 
-get_existing_s3_prefix() {
+get_existing_s3_prefix() {    
     data_buckets=$(get_s3buckets)
     if [[ -z "$data_buckets" ]]; then
         return
@@ -796,6 +801,6 @@ get_s3_prefix() {
     fi
 
     # Generate a new one
-    tr -dc a-z0-9 </dev/urandom | head -c 4; echo
+    tr -dc a-z0-9 </dev/urandom | head -c 6; echo
 
 }
