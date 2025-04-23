@@ -162,7 +162,7 @@ Here is brief description of all the repos.
 
 #### Shared CI
 
-- [orch-ci](https://github.com/open-edge-platform/orch-ci): Open Edge Platform
+- [orch-ci](https://github.com/open-edge-platform/orch-ci):
   Central hub for continuous integration (CI) workflows and actions shared across all repos.
 
 ## Community and Support
