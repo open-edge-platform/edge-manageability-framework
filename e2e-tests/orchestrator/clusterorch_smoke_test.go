@@ -446,6 +446,18 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 			Expect(defaultTemplateName).ToNot(BeEmpty(), "Default template name should not be empty")
 			Expect(defaultTemplateVersion).ToNot(BeEmpty(), "Default template version should not be empty")
 
+			// Get and list all templates before attempting to delete the cluster template
+			listtemplatesURL := fmt.Sprintf(clusterApiBaseURLTemplate+"/templates", serviceDomain, project)
+			r, err := makeAuthorizedRequest(http.MethodGet, listtemplatesURL, *edgeMgrToken, nil, cli)
+			Expect(err).ToNot(HaveOccurred())
+			defer r.Body.Close()
+
+			b, err := io.ReadAll(r.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(r.StatusCode).To(Equal(http.StatusOK))
+
+			fmt.Println("Clusters before attempting to delete the cluster template:", string(b))
+
 			// Attempt to delete the cluster template
 			url := fmt.Sprintf(clusterApiBaseURLTemplate+"/templates/%s/%s", serviceDomain, project, defaultTemplateName, defaultTemplateVersion)
 			resp, err := makeAuthorizedRequest(http.MethodDelete, url, *edgeMgrToken, nil, cli)
