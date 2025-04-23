@@ -166,7 +166,11 @@ Here is brief description of all the repos.
 ## Community and Support
 
 To learn more about the project, its community, and governance, visit
-the [Edge Orchestrator Community](https://github.com/open-edge-platform).
+the Edge Manageability Framework community [Discussions page](https://github.com/open-edge-platform/edge-manageability-framework/discussions)
+
+To submit issues, use the [Issues page](https://github.com/open-edge-platform/edge-manageability-framework/issues)
+
+Discover more about the [Open Edge Platform](https://github.com/open-edge-platform).
 
 ## License
 
