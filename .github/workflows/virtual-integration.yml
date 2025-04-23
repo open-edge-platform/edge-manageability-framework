@@ -681,7 +681,7 @@ jobs:
       github.ref == 'refs/heads/main' ||
       github.ref == 'refs/heads/main-pass-validation'
       )
-    runs-on: ubuntu-22.04-32core-128GB
+    runs-on: ubuntu-24.04-16core-64GB
     timeout-minutes: 120
     env:
       KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
