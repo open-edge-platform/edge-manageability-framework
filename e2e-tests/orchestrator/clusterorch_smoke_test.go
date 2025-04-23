@@ -350,7 +350,8 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 			defaultTemplateName = *templateList.DefaultTemplateInfo.Name
 			defaultTemplateVersion = templateList.DefaultTemplateInfo.Version
 			defaultTemplate = defaultTemplateName + "-" + defaultTemplateVersion
-			fmt.Printf("Default template retrieved successful, template=%s\n", defaultTemplate)
+			fmt.Printf("Default template retrieved successfully: template=%s, name=%s, version=%s\n",
+				defaultTemplate, defaultTemplateName, defaultTemplateVersion)
 		})
 	})
 
@@ -406,24 +407,6 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 		})
 	})
 
-	Describe("Attempt to Delete Cluster Template in Use", Label(clusterOrchSmoke), func() {
-		It("should fail to delete the cluster template while it is in use", func() {
-			Expect(defaultTemplateName).ToNot(BeEmpty(), "Default template name should not be empty")
-			Expect(defaultTemplateVersion).ToNot(BeEmpty(), "Default template version should not be empty")
-
-			// Attempt to delete the cluster template
-			url := fmt.Sprintf(clusterApiBaseURLTemplate+"/templates/%s/%s", serviceDomain, project, defaultTemplateName, defaultTemplateVersion)
-			resp, err := makeAuthorizedRequest(http.MethodDelete, url, *edgeMgrToken, nil, cli)
-			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
-
-			// Expect the request to fail with a 400 Bad Request status code
-			Expect(resp.StatusCode).To(Equal(http.StatusBadRequest), "Expected 400 Bad Request when deleting a template in use")
-			Expect(resp.Body).To(ContainSubstring("denied the request: clusterTemplate is in use"))
-			fmt.Printf("Failed to delete template %s-%s as expected, HTTP status code: %d\n", defaultTemplateName, defaultTemplateVersion, resp.StatusCode)
-		})
-	})
-
 	Describe("Check Cluster Status", Label(clusterOrchSmoke), func() {
 		It("should check the cluster status until it becomes active", func() {
 			clusterActive := func() (bool, error) {
@@ -455,6 +438,28 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 			Eventually(func() (bool, error) {
 				return clusterActive()
 			}, 1200*time.Second, 10*time.Second).Should(BeTrue(), "timeout reached. Cluster did not become active")
+		})
+	})
+
+	Describe("Attempt to Delete Cluster Template in Use", Label(clusterOrchSmoke), func() {
+		It("should fail to delete the cluster template while it is in use", func() {
+			Expect(defaultTemplateName).ToNot(BeEmpty(), "Default template name should not be empty")
+			Expect(defaultTemplateVersion).ToNot(BeEmpty(), "Default template version should not be empty")
+
+			// Attempt to delete the cluster template
+			url := fmt.Sprintf(clusterApiBaseURLTemplate+"/templates/%s/%s", serviceDomain, project, defaultTemplateName, defaultTemplateVersion)
+			resp, err := makeAuthorizedRequest(http.MethodDelete, url, *edgeMgrToken, nil, cli)
+			Expect(err).ToNot(HaveOccurred())
+			defer resp.Body.Close()
+
+			body, err := io.ReadAll(resp.Body)
+			Expect(err).ToNot(HaveOccurred())
+			fmt.Println(string(body))
+
+			// Expect the request to fail with a 400 Bad Request status code
+			Expect(resp.StatusCode).To(Equal(http.StatusBadRequest), "Expected 400 Bad Request when deleting a template in use")
+			Expect(resp.Body).To(ContainSubstring("denied the request: clusterTemplate is in use"))
+			fmt.Printf("Failed to delete template %s-%s as expected, HTTP status code: %d\n", defaultTemplateName, defaultTemplateVersion, resp.StatusCode)
 		})
 	})
 
