@@ -39,72 +39,72 @@ Edge Orchestrator is used to centrally manage all Edge Nodes at sites and perfor
 
 ## Get Started
 
-There are multiple ways to begin to learn about, use, or contribute to Edge
-Orchestrator.
+There are multiple ways to begin to learn about, use, or contribute to Edge Orchestrator.
 
 - Start by deploying your own
-  orchestrator [in the cloud or on-premises](https://github.com/open-edge-platform/orch-docs/blob/main/docs/deployment_guide/index.rst)
-- Read the
-  latest [Release Notes](https://github.com/open-edge-platform/orch-docs/blob/main/docs/release_notes/index.rst)
-  or explore
-  the [User Guide](https://github.com/open-edge-platform/orch-docs/blob/main/docs/user_guide/index.rst)
-- Learn about all components, their architecture and usage, and how to contribute in
+  orchestrator [in the cloud or on-premises](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/deployment_guide/index.html)
+- Read the latest [Release Notes](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/release_notes/index.html) including KPIs, container and Helm chart
+  listing and 3rd party dependencies
+- Explore the [User Guide](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/user_guide/index.html) and [API Reference](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/api/index.html)
+- Learn about all components, their architecture and inner workings, and how to contribute in
   the [Developer Guide](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/developer_guide/index.html)
-   - CI based Dev workflow - make changes to any 1 component of the Edge Orchestrator, locally build your change, test locally with prebuilt images of the rest of the components and emulated Edge Nodes, and then submit a PR to the component CI and the [Edge Manageability Framework CI](https://github.com/open-edge-platform/edge-manageability-framework/actions).
-   - Buildall based Dev workflow - make changes and build all the components locally and test using the [buildall](https://github.com/open-edge-platform/edge-manageability-framework/tree/main/buildall) script
-- [Troubleshooting](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/developer_guide/troubleshooting/index.html)
+   - [CI based Developer workflow](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/developer_guide/contributor_guide/index.html) - make changes to 1 or more components of the Edge Orchestrator, locally build your change, test locally with prebuilt images of the rest of the components, and then submit a PR to the component CI and the [Edge Manageability Framework CI](https://github.com/open-edge-platform/edge-manageability-framework/actions).
+   - [Buildall based Developer workflow](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/developer_guide/platform/buildall.rst) -  if you do not wish to use our CI and pre-built images, the [buildall](https://github.com/open-edge-platform/edge-manageability-framework/tree/main/buildall) script can clone all the repos, build the Helm chart and container images required to deploy the Edge Orchestrator from source, push the artifacts to a repository of your choice, and locally test in your developer environment.
+
 
 
 ###  Repositories
 
+There are several repos that make up the Edge Manageability Framework in the Open Edge Platform.
+Here is brief description of all the repos.
+
 #### Edge Manageability Framework (deploy)
 
 - [edge-manageability-framework](https://github.com/open-edge-platform/edge-manageability-framework):
-  The central hub for deploying the Edge Orchestrator. It includes Argo CD
+  The central hub for deploying the Edge Orchestrator. This repo includes Argo CD
   applications, Helm charts, and deployment scripts necessary for setting up the
   orchestrator in various environments, including on-premise and cloud-based
-  setups.
+  setups. Once the Edge Orchestrator is operational, all Edge Node software is deployed via the Edge Orchestrator.
 
 #### Edge Infrastructure Manager
 
-- [infra-core](https://github.com/open-edge-platform/infra-core): Core services
-  for the Edge Infrastructure Manager.
+- [infra-core](https://github.com/open-edge-platform/infra-core) (top-level repo): Core services
+  for the Edge Infrastructure Manager including inventory, APIs, tenancy and more.
 - [infra-managers](https://github.com/open-edge-platform/infra-managers):
-  Provides life-cycle management services for infrastructure resources.
+  Provides life-cycle management services for edge infrastructure resources via a collection of resource managers.
 - [infra-onboarding](https://github.com/open-edge-platform/infra-onboarding):
-  Edge Node Onboarding and Provisioning services.
+  A collection of services that enable remote onboarding and provisioning of Edge Nodes.
 - [infra-external](https://github.com/open-edge-platform/infra-external):
-  Extensions for the Edge Infrastructure Manager.
+  Vendor extensions for the Edge Infrastructure Manager allowing integration with 3rd party software
 - [infra-charts](https://github.com/open-edge-platform/infra-charts): Helm
   charts for deploying Edge Infrastructure Manager services.
 
 #### Edge Cluster Orchestration
 
-- [cluster-manager](https://github.com/open-edge-platform/cluster-manager):
-  Oversees management services for clusters, including monitoring and operation.
+- [cluster-manager](https://github.com/open-edge-platform/cluster-manager) (top-level repo):
+  Core services for life cycle management of edge clusters, including APIs, tenancy, integration with CAPI, and operation.
 - [cluster-api-provider-intel](https://github.com/open-edge-platform/cluster-api-provider-intel):
-  Provides Intel-specific API support for clusters.
+  Cluster-API (CAPI) compliant provider for edge clusters on Edge Nodes managed by Edge Orchestrator.
 - [cluster-tests](https://github.com/open-edge-platform/cluster-tests): Offers
-  testing frameworks for cluster management.
+  testing framework for edge cluster management.
 - [cluster-connect-gateway](https://github.com/open-edge-platform/cluster-connect-gateway):
-  Ensures gateway services for cluster connectivity.
+  Provides access to edge clusters via a secure tunnel between the Edge Orchestrator and Edge Nodes.
 
 #### Edge Application Orchestrator
 
-- [app-orch-catalog](https://github.com/open-edge-platform/app-orch-catalog):
-  Facilitates catalog services for application packaging and deployment.
+- [app-orch-catalog](https://github.com/open-edge-platform/app-orch-catalog) (top-level repo):
+  Facilitates catalog services for end-user application definition and packaging for deployment to Edge Nodes.
 - [app-orch-tenant-controller](https://github.com/open-edge-platform/app-orch-tenant-controller):
-  Manages tenancy control for Application Orchestrator 
+  Manages tenancy control for Application Orchestrator
 - [app-orch-deployment](https://github.com/open-edge-platform/app-orch-deployment):
-  Manages deployment and application lifecycle for cloud-native
+  Manages deployment and application lifecycle for end-user cloud-native
   applications across distributed edges.
 
 #### User Interface
 
-- [orch-ui](https://github.com/open-edge-platform/orch-ui): User interface
-  components for all services and a single UI for users to interact with.
+- [orch-ui](https://github.com/open-edge-platform/orch-ui): The web user interface for the Edge Orchestrator, allowing the user to manage most of the features of the product in a single intuitive GUI.
 - [orch-metadata-broker](https://github.com/open-edge-platform/orch-metadata-broker):
-  Service responsible for storing and retrieving metadata, enabling the UI to populate dropdowns with previously entered metadata keys and values
+  Service responsible for storing and retrieving metadata, enabling the UI to populate dropdowns with previously entered metadata keys and values.
 
 #### Observability
 
@@ -132,10 +132,9 @@ Orchestrator.
 #### Documentation
 
 - [orch-docs](https://github.com/open-edge-platform/orch-docs): Edge
-  Orchestrator documentation includes deployment, user, developer, and
-  contribution guides; and API references, tutorials, troubleshooting, and
+  Orchestrator documentation includes deployment, user, and developer guides; and API references, tutorials, troubleshooting, and
   software architecture specifications. You can also visit our
-  [documentation](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/developer_guide/contributor_guide/index.html).
+  [documentation](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/index.html).
 
 #### Common Services
 
@@ -143,26 +142,26 @@ Orchestrator.
   shared libraries and resources for application and cluster lifecycle
   management.
 - [cluster-extensions](https://github.com/open-edge-platform/cluster-extensions):
-  Provides extensions for cluster orchestration and standardized cluster
-  creation.
+  Provides extensions for edge clusters managed by Edge Orchestrator. A standard set of extensions are deployed on all edge clusters.
+  An optional set of extensions can be deployed on-demand.
 
 #### Edge Nodes / Hosts
 
 - [edge-node-agents](https://github.com/open-edge-platform/edge-node-agents):
-  Deploys agents for managing edge nodes and hosts with policy-based management.
+  Collection of all the agents installed in the Edge Node OS that work together with the Edge Orchestrator to manage Edge Node functionality.
 - [virtual-edge-node](https://github.com/open-edge-platform/virtual-edge-node):
-  Virtual Edge Node onboarding and deployment scripts and configurations.
+  Collection of software based emulators and simulators for physical Edge Nodes used in test environments.
 
 #### Secure Edge Deployment
 
 - [trusted-compute](https://github.com/open-edge-platform/trusted-compute):
-  Ensures secure deployment within virtual machines, providing trusted compute
-  environments.
+  Security extensions that utilize hardware security capabilities in Edge Nodes to enable continuous monitoring
+  and end-user appliction (workload) protection through isolated execution.
 
 #### Shared CI
 
-- [orch-ci](https://github.com/open-edge-platform/orch-ci): Open Edge Platform
-  common CI
+- [orch-ci](https://github.com/open-edge-platform/orch-ci):
+  Central hub for continuous integration (CI) workflows and actions shared across all repos.
 
 ## Community and Support
 
