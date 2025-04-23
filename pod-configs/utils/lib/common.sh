@@ -768,3 +768,34 @@ check_s3bucket_exist() {
     bucket=$1
     aws s3 ls "s3://${bucket}" --region "${AWS_REGION}" &>/dev/null
 }
+
+extract_bucket_s3_prefix() {
+    data_bucket="%1"
+
+    # Strip the cluster name and bucket type
+    echo "$data_bucket" | sed -ne "s/^${ENV_NAME}-\\([^-]*\\).\+$/\\1/p"
+}
+
+get_existing_s3_prefix() {
+    data_buckets=$(get_s3buckets)
+    if [[ -z "$data_buckets" ]]; then
+        return
+    fi
+
+    first_bucket=$(echo "$data_buckets" | head -1)
+
+    extract_bucket_s3_prefix "$first_bucket"
+}
+
+get_s3_prefix() {
+    # Check if there has been any S3 bucket existing in the Terraform state.
+    existing=$(get_existing_s3_prefix)
+    if [[ -n "$existing" ]]; then
+        echo "$existing"
+        return
+    fi
+
+    # Generate a new one
+    tr -dc a-z0-9 </dev/urandom | head -c 4; echo
+
+}

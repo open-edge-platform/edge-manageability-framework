@@ -910,6 +910,9 @@ cluster_variable() {
     if [[ -n "$VPC_ID" ]] && $SKIP_APPLY_VPC; then
         VPC_TERRAFORM_BACKEND_KEY="${AWS_REGION}/vpc/${VPC_ID}"
     fi
+
+    s3_prefix="$(get_s3_prefix)"
+
     cat <<EOF
 vpc_terraform_backend_bucket       = "$BUCKET_NAME"
 vpc_terraform_backend_key          = "${VPC_TERRAFORM_BACKEND_KEY}"
@@ -927,7 +930,7 @@ aurora_availability_zones          = ["${azs[0]}", "${azs[1]}", "${azs[2]}"]
 aurora_instance_availability_zones = ${aurora_ins_azs}
 aurora_dev_mode                    = false
 public_cloud                       = true
-s3_prefix                          = "orch"
+s3_prefix                          = "$s3_prefix"
 efs_throughput_mode                = "elastic"
 cluster_fqdn                       = "${ROOT_DOMAIN}"
 enable_cache_registry              = ${ENABLE_CACHE_REGISTRY}
