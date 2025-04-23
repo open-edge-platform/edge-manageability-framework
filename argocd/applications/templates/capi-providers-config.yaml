@@ -19,7 +19,7 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   source:
-    - repoURL: https://github.com/open-edge-platform/orch-utils
+      repoURL: https://github.com/open-edge-platform/orch-utils
       chart: charts/capi-operator-providers-config
       targetRevision: main
       helm:
