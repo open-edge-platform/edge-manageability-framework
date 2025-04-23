@@ -39,20 +39,18 @@ Edge Orchestrator is used to centrally manage all Edge Nodes at sites and perfor
 
 ## Get Started
 
-There are multiple ways to begin to learn about, use, or contribute to Edge
-Orchestrator.
+There are multiple ways to begin to learn about, use, or contribute to Edge Orchestrator.
 
 - Start by deploying your own
-  orchestrator [in the cloud or on-premises](https://github.com/open-edge-platform/orch-docs/blob/main/docs/deployment_guide/index.rst)
-- Read the
-  latest [Release Notes](https://github.com/open-edge-platform/orch-docs/blob/main/docs/release_notes/index.rst)
-  or explore
-  the [User Guide](https://github.com/open-edge-platform/orch-docs/blob/main/docs/user_guide/index.rst)
-- Learn about all components, their architecture and usage, and how to contribute in
+  orchestrator [in the cloud or on-premises](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/deployment_guide/index.html)
+- Read the latest [Release Notes](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/release_notes/index.html) including KPIs, container and Helm chart
+  listing and 3rd party dependencies
+- Explore the [User Guide](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/user_guide/index.html) and [API Reference](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/api/index.html)
+- Learn about all components, their architecture and inner workings, and how to contribute in
   the [Developer Guide](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/developer_guide/index.html)
-   - CI based Dev workflow - make changes to any 1 component of the Edge Orchestrator, locally build your change, test locally with prebuilt images of the rest of the components and emulated Edge Nodes, and then submit a PR to the component CI and the [Edge Manageability Framework CI](https://github.com/open-edge-platform/edge-manageability-framework/actions).
-   - Buildall based Dev workflow - make changes and build all the components locally and test using the [buildall](https://github.com/open-edge-platform/edge-manageability-framework/tree/main/buildall) script
-- [Troubleshooting](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/developer_guide/troubleshooting/index.html)
+   - [CI based Developer workflow](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/developer_guide/contributor_guide/index.html) - make changes to 1 or more components of the Edge Orchestrator, locally build your change, test locally with prebuilt images of the rest of the components, and then submit a PR to the component CI and the [Edge Manageability Framework CI](https://github.com/open-edge-platform/edge-manageability-framework/actions).
+   - [Buildall based Developer workflow](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/developer_guide/platform/buildall.rst) -  if you do not wish to use our CI and pre-built images, the [buildall](https://github.com/open-edge-platform/edge-manageability-framework/tree/main/buildall) script can clone all the repos, build the Helm chart and container images required to deploy the Edge Orchestrator from source, push the artifacts to a repository of your choice, and locally test in your developer environment.
+
 
 
 ###  Repositories
