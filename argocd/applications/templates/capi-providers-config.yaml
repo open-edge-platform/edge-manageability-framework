@@ -24,7 +24,7 @@ spec:
     targetRevision: main
     helm:
       releaseName: {{$appName}}
-      values:  # Embed values directly
+      values: |
         core:
           name: cluster-api
           namespace: capi-system
@@ -64,7 +64,7 @@ spec:
                 args:
                   "--concurrency": "5"
       valuesFiles:
-        - values.yaml  # Additional values file located in the chart directory
+        - values.yaml
   destination:
     namespace: {{$namespace}}
     server: {{ required "A valid targetServer entry required!" .Values.argo.targetServer }}
