@@ -63,8 +63,6 @@ spec:
                 imageUrl: docker.io/andybavier/cluster-api-provider-rke2-controlplane:latest
                 args:
                   "--concurrency": "5"
-      valuesFiles:
-        - values.yaml
   destination:
     namespace: {{$namespace}}
     server: {{ required "A valid targetServer entry required!" .Values.argo.targetServer }}
