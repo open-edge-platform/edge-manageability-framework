@@ -40,7 +40,7 @@ controlPlane:
   spec:
     version: v0.12.0
     configSecret:
-      namespace: capi-variabless
+      namespace: capi-variables
       name: capi-variables
     deployment:
       containers:

@@ -18,10 +18,10 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
-  sources:
-    - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
-      chart: common/charts/{{$appName}}
-      targetRevision: 0.0.1
+  source:
+    - repoURL: https://github.com/open-edge-platform/orch-utils
+      chart: charts/capi-operator-providers-config
+      targetRevision: main
       helm:
         releaseName: {{$appName}}
         valuesObject:
