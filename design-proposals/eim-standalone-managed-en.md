@@ -56,9 +56,58 @@ The following information should be read from Edge Node to map them to EIM resou
 - device identifiers, including UUID, Serial Number, MAC address of the management interface
 
 ```mermaid
+sequenceDiagram
+%%{wrap}%%
+autonumber
 
+  box LightYellow Edge Node(s)
+  participant emfctl as Local EN agent
+  end
 
+  participant user as User
 
+  box rgb(235,255,255) Edge Orchestrator
+
+  participant pa as Provisioning Nginx
+  participant om as Onboarding Manager
+  participant kc as KeyCloak
+  participant inv as Inventory / API
+
+  end
+
+  note over emfctl,user: User installs Standalone EN, decides to scale out
+
+  user->>+pa: Get orchestrator CA certificate
+  pa-->>-user: [CA certificate]
+
+  user->>emfctl: Upload CA certificate to all ENs
+
+  user->>inv: Register ENs with UUID/Serial Number
+
+  user->>emfctl: Configure ENs before onboarding (proxy settings)
+
+  user->>emfctl: Start onboarding of Standalone ENs
+
+  emfctl->>+om: Invoke OnboardStandaloneService gRPC (UUID, Serial Number, OS info, ...)
+
+  om->>+inv: Query Host and Instance resources by UUID/Serial Number
+  inv->>-om: [Host, Instance]
+
+  om->>om: Validate OS info provided by ENs
+
+  alt Validation failed
+      om->>inv: Set onboarding and provisioning status with failure reason
+      om->>emfctl: Return failure reason
+  else
+      om->>inv: Set EN as Onboarded and Provisioned
+      om-->>-emfctl: Return cloud-init
+  end
+
+  emfctl->>emfctl: Save cloud-init, run manually or reboot
+
+  note over emfctl: After OS reboot
+
+  emfctl->>emfctl: Execute cloud-init, activate Edge Node Agents
 ```
 
 In the registration step, users follow a similar registration process, with several modifications:
