@@ -21,7 +21,7 @@ spec:
   source:
       repoURL: https://github.com/open-edge-platform/orch-utils
       chart: charts/capi-operator-providers-config
-      targetRevision: main
+      targetRevision: 0.0.1
       helm:
         releaseName: {{$appName}}
         valuesObject:
