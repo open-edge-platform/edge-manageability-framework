@@ -134,7 +134,7 @@ Here is brief description of all the repos.
 - [orch-docs](https://github.com/open-edge-platform/orch-docs): Edge
   Orchestrator documentation includes deployment, user, and developer guides; and API references, tutorials, troubleshooting, and
   software architecture specifications. You can also visit our
-  [documentation](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/developer_guide/contributor_guide/index.html).
+  [documentation](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/index.html).
 
 #### Common Services
 
