@@ -6,9 +6,13 @@ This directory contains scripts to manage AWS Aurora for Orchestrator.
 
 The database configuration must satisfy the following requirements:
 
-- One database instance to be shared by all Orchestrator services (App Orch, Cluster Orch, Edge Infrastructure Manager, Keycloak, Vault, etc.)
-- Isolation between services achieved through dedicated credentials and databases
-- Region-level high availability to ensure database survival during node and/or entire AZ failures
+- One database instance to be shared by all Orchestrator services (App Orch,
+  Cluster Orch, Edge Infrastructure Manager, Keycloak, Vault, etc.)
+- Isolation between services achieved through dedicated credentials and
+  databases
+- Region-level high availability to ensure database survival during node and/or
+  entire AZ failures
+
 - Backup and restore capabilities
 - Data encryption in transit and at rest
 
@@ -18,28 +22,39 @@ The database configuration must satisfy the following requirements:
 
 - Compatible with PostgreSQL 14.6
 - DB storage replicated across three AZs (same as EKS nodes)
-- Managed admin credentials, automatically rotated every 7 days (via AWS Secrets Manager, only devops can access)
+- Managed admin credentials, automatically rotated every 7 days (via AWS Secrets
+  Manager, only devops can access)
 - Nightly backups on S3 with 30 day retention
 - Reachable only from within EKS private subnets
 - SSL enforced for all connections
 - Storage encrypted with AWS managed Key (via AWS KMS)
-- One ServerlessV2 instance per AZ (one writer/primary, one or more reader/backup) running on different AZs
-- Transparent failover, where the reader instance is automatically promoted to primary if the writer fails (endpoint/host stays the same)
-- The cost of ServelessV2 instances depends on load and is evaluated each second in increments of 0.5 Aurora Capacity Units (where 1 ACU ~= 2GB memory)
-- When completely idle, the monthly cost of the reader instance should be around ~$50
-- The plan is to evaluate usage and decide later whether to switch to non-serverless instances
+- One ServerlessV2 instance per AZ (one writer/primary, one or more
+  reader/backup) running on different AZs
+- Transparent failover, where the reader instance is automatically promoted to
+  primary if the writer fails (endpoint/host stays the same)
+- The cost of ServelessV2 instances depends on load and is evaluated each second
+  in increments of 0.5 Aurora Capacity Units (where 1 ACU ~= 2GB memory)
+- When completely idle, the monthly cost of the reader instance should be
+  around ~$50
+- The plan is to evaluate usage and decide later whether to switch to
+  non-serverless instances
 
 ### Database Isolation
 
-- All screts to create database tables, users, and permissions are developed as Terraform module, see `module/aurora-database/main.tf` for detail of the implementation.
-- The Terraform state stores database connection credentials in a k8s secret with a randomly generated password
+- All screts to create database tables, users, and permissions are developed as
+  Terraform module, see `module/aurora-database/main.tf` for detail of the
+  implementation.
+- The Terraform state stores database connection credentials in a k8s secret
+  with a randomly generated password
 - Each database gets a dedicated user ("role" in PostgreSQL terminology)
 - The user/role has full privileges within the associated database
-- Isolation is enforced at the connection level, allowing only one user/role to connect to each database
+- Isolation is enforced at the connection level, allowing only one user/role to
+  connect to each database
 
 ## Quick Start Instructions
 
-All modules to create Aurora databases, users, and roles are included in the cluster module (`internal/cluster/main.tf`).
+All modules to create Aurora databases, users, and roles are included in the
+cluster module (`internal/cluster/main.tf`).
 
   ```terraform
 module "aurora" {
@@ -86,23 +101,27 @@ module "aurora_import" {
 }
   ```
 
-  See the variable definition from each module for detail information.
+See the variable definition from each module for detail information.
 
-2. These module does following:
+These module does following:
 
-  1. The "aurora" module: Create Aurora database and configure it based on the module parameter
-  2. The "aurora_database" module: Create database, add users, and grant permissions for each user to database (with psql command)
-  3. The "aurora_import" module: Creates Kubernetes secret with database credential (e.g., host, port, username, password)
+- The "aurora" module: Create Aurora database and configure it based on the
+  module parameter
+- The "aurora_database" module: Create database, add users, and grant
+  permissions for each user to database (with psql command)
+- The "aurora_import" module: Creates Kubernetes secret with database
+  credential (e.g., host, port, username, password)
 
 ## Detailed Instructions
 
 ### Reset Database Password and Secret
 
-If the database secret gets deleted, the only option is to reset the password and create a new secret.
+If the database secret gets deleted, the only option is to reset the password
+and create a new secret.
 
-```text
-$ cd internal/cluster # or external/cluster
-$ ../../utils/aurora/reset-db-password.sh [namespace] [database] [username]
+```sh
+cd internal/cluster # or external/cluster
+../../utils/aurora/reset-db-password.sh [namespace] [database] [username]
 ```
 
 ### Validate Secret
@@ -110,9 +129,9 @@ $ ../../utils/aurora/reset-db-password.sh [namespace] [database] [username]
 To validate the database privileges and the content of the secret, you can run
 the `validate-db-secret.sh` script:
 
-```text
-$ cd internal/cluster # or external/cluster
-$ ../../utils/aurora/validate-db-secret.sh orch-sre db1-aurora-postgresql
+```sh
+cd internal/cluster # or external/cluster
+../../utils/aurora/validate-db-secret.sh orch-sre db1-aurora-postgresql
 
 *** Retrieving secret orch-sre/db1-aurora-postgresql...
   - PGHOST=demo-aurora-postgresql.cluster-cfka4txnb9fx.us-west-2.rds.amazonaws.com
@@ -146,6 +165,7 @@ pod "psql-client-14031" deleted
 #### Negative Test
 
 Validate access to `db2` using the generated secret -- it should work!
+
 ```text
 $ cd internal/cluster # or external/cluster
 $ ../../utils/aurora/validate-db-secret.sh orch-sre db2-aurora-postgresql
@@ -154,12 +174,13 @@ $ ../../utils/aurora/validate-db-secret.sh orch-sre db2-aurora-postgresql
 *** All tests passed
 ```
 
-Now try to connect to `orch-sre-system-db1` (third parameter) using `db2` credentials -- the
+Now try to connect to `orch-sre-system-db1` (third parameter) using `db2`
+credentials -- the
 connection should FAIL!
 
-```text
-$ cd internal/cluster # or external/cluster
-$ ../../utils/aurora/validate-db-secret.sh orch-sre db2-aurora-postgresql orch-sre-system-db1
+```sh
+cd internal/cluster # or external/cluster
+../../utils/aurora/validate-db-secret.sh orch-sre db2-aurora-postgresql orch-sre-system-db1
 
 *** Retrieving secret orch-sre/db2-aurora-postgresql...
   - PGHOST=sc-dev-aurora-postgresql.cluster-clrdxvrnkf8x.us-west-2.rds.amazonaws.com
@@ -180,9 +201,10 @@ command terminated with exit code 2
 
 To get a psql shell on a given database:
 
-```text
-$ cd internal/cluster # or external/cluster
-$ ../../utils/aurora/psql.sh orch-sre db1-aurora-postgresql
+```sh
+cd internal/cluster # or external/cluster
+../../utils/aurora/psql.sh orch-sre db1-aurora-postgresql
+
 *** Retrieving secret orch-sre/db1-aurora-postgresql...
   - PGHOST=sc-dev-aurora-postgresql.cluster-clrdxvrnkf8x.us-west-2.rds.amazonaws.com
   - PGPORT=5432
@@ -199,18 +221,19 @@ orch-sre-system-db1=>
 
 To get a shell for the admin user:
 
-```text
-$ ../../utils/aurora/psql.sh --admin
+```sh
+../../utils/aurora/psql.sh --admin
 ```
 
 ### pgWeb
 
-[pgWeb](https://github.com/sosedoff/pgweb) is an open-source, web GUI based client for Postgres
+[pgWeb](https://github.com/sosedoff/pgweb) is an open-source, web GUI based
+client for Postgres
 
 To access pgweb on a given database:
 
-```text
-$ ../../utils/aurora/pgweb.sh orch-platform vault-aurora-postgresql
+```sh
+../../utils/aurora/pgweb.sh orch-platform vault-aurora-postgresql
 
 *** Creating pgweb pod...
 *** Retrieving secret orch-platform/vault-aurora-postgresql...
@@ -234,16 +257,19 @@ Then open the browser to access `http://localhost:8081`
 
 To get a shell for the admin user:
 
-```text
-$ ../../utils/aurora/pgweb.sh --admin <CLUSTER_NAME> <AWS_REGION>
+```sh
+../../utils/aurora/pgweb.sh --admin <CLUSTER_NAME> <AWS_REGION>
 ```
 
 ### Wipe out table content
 
-Wiping out table content can be useful when we want to restart a service from clean slate.
-In this section, we will take catalog service as an example to show you how to empty the table content while keeping the structure.
+Wiping out table content can be useful when we want to restart a service from
+clean slate.
+In this section, we will take catalog service as an example to show you how to
+empty the table content while keeping the structure.
 
-First, we need to access PostgreSQL shell as instructed [here](#postgressql-shell).
+First, we need to access PostgreSQL shell as
+instructed [here](#postgressql-shell).
 
 We can verify the table contents by:
 
@@ -296,10 +322,12 @@ orch-app-system-catalog-service=> select name from applications;
 
 ### Wipe out entire database table
 
-Wiping out table content is sometimes not enough to recover more complicated issues such as database migration.
+Wiping out table content is sometimes not enough to recover more complicated
+issues such as database migration.
 In that case, we can completely wipe out entire table including structure.
 
-First, we need to access PostgreSQL shell as instructed [here](#postgressql-shell).
+First, we need to access PostgreSQL shell as
+instructed [here](#postgressql-shell).
 
 We can completely drop the table by:
 
