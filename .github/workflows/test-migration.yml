@@ -81,5 +81,4 @@ jobs:
         uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main
 
       - name: Run test
-        run: mage test:ContainersAvailableOnReleaseService true
-        
+        run: mage test:ContainersAvailableOnReleaseService true        

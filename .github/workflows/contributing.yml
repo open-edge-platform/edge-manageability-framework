@@ -22,4 +22,3 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           issue-message: "Thank you for your contribution! Please make sure to review our [Contributing Guide](https://github.com/open-edge-platform/edge-manageability-framework/blob/main/.github/CONTRIBUTING.md)."
           pr-message: "Thank you for your contribution! Please make sure to review our [Contributing Guide](https://github.com/open-edge-platform/edge-manageability-framework/blob/main/.github/CONTRIBUTING.md)."
-          
