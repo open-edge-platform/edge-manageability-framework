@@ -56,20 +56,13 @@ controlplane:
             '--concurrency': '5'
           name: manager
           imageUrl: "docker.io/andybavier/cluster-api-provider-rke2-controlplane:latest"
-    manifestPatches:
-    - |
-      apiVersion: apps/v1
-      kind: Deployment
-      metadata:
-        name: rke2-control-plane-controller-manager
-        namespace: capr-system
-      spec:
-        template:
-          spec:
-            containers:
-              - name: manager
-                image: docker.io/andybavier/cluster-api-provider-rke2-controlplane:latest
-                ports:
-                  - containerPort: 8080
-                    name: metrics
-                    protocol: TCP
+          ports:
+            - containerPort: 9443
+              name: webhook-server
+              protocol: TCP
+            - containerPort: 9440
+              name: healthz
+              protocol: TCP
+            - containerPort: 8080
+              name: metrics
+              protocol: TCP
