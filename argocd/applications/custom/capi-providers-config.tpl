@@ -28,7 +28,7 @@ bootstrap:
   name: rke2
   namespace: capr-system
   spec:
-    version: v0.12.0
+    version: v0.14.0
     configSecret:
       namespace: capi-variables
       name: capi-variables
@@ -38,7 +38,7 @@ controlPlane:
   name: rke2
   namespace: capr-system
   spec:
-    version: v0.12.0
+    version: v0.14.0
     configSecret:
       namespace: capi-variables
       name: capi-variables
