@@ -161,7 +161,7 @@ variable "enable_auto_install" {
 variable "deploy_tag" {
   type        = string
   description = "Orchestrator release tag version. If empty, will use the default main branch tag."
-  default     = "latest-main"
+  default     = "latest-main-dev"
 }
 
 variable "use_local_build_artifact" {
