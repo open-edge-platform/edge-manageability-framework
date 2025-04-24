@@ -35,4 +35,5 @@ jobs:
         with:
           token:  ${{ secrets.SYS_ORCH_GITHUB_APPROVE }}
           pull-request-number: ${{ github.event.pull_request.number }}
-          merge-method: squash          
+          merge-method: squash
+          
