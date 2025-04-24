@@ -83,6 +83,13 @@ alertmanager:
       {{- toYaml . | nindent 6 }}
   {{- end }}
 {{- end }}
+
+{{- if and .alertmanager .alertmanager.config }}
+alertManagerConfig:
+{{- if .alertmanager.config.groupInterval }}
+  groupInterval: {{ .alertmanager.config.groupInterval }}
+{{- end }}
+{{- end }}
 {{- end }}
 {{- end }}
 
