@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# CAPI providers are deployed via CAPI operator and configured via its CRds
-# the helmchart .spec is passed unmodified to the CRD .spec
+# CAPI providers are managed using the CAPI operator and configured through its CRDs.
+# The Helm chart .spec is directly passed to the CRD .spec without modification.
 
 # https://doc.crds.dev/github.com/kubernetes-sigs/cluster-api-operator/operator.cluster.x-k8s.io/CoreProvider/v1alpha2@v0.15.1
 core:

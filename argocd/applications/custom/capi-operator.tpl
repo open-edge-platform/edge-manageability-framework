@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+# This file is specific to the configuration of the CAPI operator. Configuration for CAPI providers is managed in capi-providers-config.tpl.
+
 env:
   manager:
   {{- if .Values.argo.proxy }}
