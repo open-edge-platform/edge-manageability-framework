@@ -330,7 +330,7 @@ var _ = Describe("Observability Alerts Test:", Ordered, Label(helpers.LabelAlert
 				)
 			})
 
-			PIt("verify that email notifications are being sent", func() {
+			It("verify that email notifications are being sent", func() {
 				Eventually(func() error {
 					messages, err := helpers.GetAlertReceiverMessages(cli, mailpitURL)
 					if err != nil {
