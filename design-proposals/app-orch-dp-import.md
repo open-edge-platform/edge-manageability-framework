@@ -17,21 +17,23 @@ convention has already been adopted for AI Suite applications at Intel, and endo
 Edge Software Catalog (ESC).
 
 Current mechanisem in 3.0 requires a user to clone the application repository and then import the deployment
-package into the Orchestrator using their web browser. This proposal seeks to eliminate the need
-to clone and import.
+package into the Orchestrator using their web browser. This process is complicated by the fact that many
+repositories contain multiple deployment packages, and they are often located in subdirectories, and not
+all AI Suite repositories use the same subdirectory naming convention.
 
-This proposal is complicated by the fact that many repositories contain multiple deployment
-packages, and they are often located in subdirectories, and not all AI Suite repositories use the
-same subdirectory naming convention.
+This proposal seeks to eliminate the need to clone a `git` repo, navigate the `git` repo, and import. The use of `git`
+is a skillset that casual users of the orchestrator may not have, and the complex nature of the evolving repositories
+makes navigation difficult.
 
 ## Proposal 1: Tarball-based import
 
-Note: The term `tarball` is defined as a `.tar.gz` archive that contains a set of individual files and/or directories, packaged together into a single file.
+Note: The term `tarball` is defined as a `.tar.gz` archive that contains a set of individual files and/or directories,
+packaged together into a single file.
 
 Allowing a deployment package to be imported as a single tarball is
-work that is already scoped for application orchestration and GUI. We could leverage this capability to simplify the upload/download
-interaction between opensource repository and orchestrator. This will require some prep steps be done to the opensource repo to make
-a tarball available.
+work that is already scoped for application orchestration and GUI. We could leverage this capability to simplify the
+upload/download interaction between opensource repository and orchestrator. This will require some prep steps be done
+to the opensource repo to make a tarball available.
 
 Application owner preparation steps:
 
@@ -48,9 +50,9 @@ Orchestrator user steps:
 
 - Use their browser in the orchestrator's GUI to import the tarball from their local computer.
 
-Although the user's computer is still used as a transient storage location for the VBU app, this proposal eliminates the need to use
-complex tools such as `git` to clone repositories, and eliminates the need to navigate the repository's tree to locate the proper
-deployment package.
+Although the user's computer is still used as a transient storage location for the VBU app, this proposal eliminates the
+need to use complex tools such as `git` to clone repositories, and eliminates the need to navigate the repository's tree
+to locate the proper deployment package.
 
 ## Proposal 2: Import a specific deployment package from a repository (requires more GUI work)
 
