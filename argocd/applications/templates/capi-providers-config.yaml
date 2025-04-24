@@ -18,57 +18,19 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
-  source:
-    repoURL: https://github.com/open-edge-platform/orch-utils
-    path: charts/capi-operator-providers-config
-    targetRevision: main
-    helm:
-      releaseName: {{$appName}}
-      values: |
-        core:
-          name: cluster-api
-          namespace: capi-system
-          spec:
-            version: v1.9.0
-            configSecret:
-              namespace: capi-variables
-              name: capi-variables
-            manager:
-              featureGates:
-                MachinePool: true
-                ClusterResourceSet: true
-                ClusterTopology: true
-                RuntimeSDK: false
-                MachineSetPreflightChecks: true
-                MachineWaitForVolumeDetachConsiderVolumeAttachments: true
-        bootstrap:
-          name: rke2
-          namespace: capr-system
-          spec:
-            version: v0.12.0
-            configSecret:
-              namespace: capi-variables
-              name: capi-variables
-        controlPlane:
-          name: rke2
-          namespace: capr-system
-          spec:
-            version: v0.12.0
-            configSecret:
-              namespace: capi-variables
-              name: capi-variables
-            manifestPatches:
-              - op: replace
-                path: /spec/template/spec/containers/0/args
-                value:
-                  - '--diagnostics-address=:8080'
-                  - '--insecure-diagnostics=true'
-              - op: replace
-                path: /spec/template/spec/containers/0/ports
-                value:
-                  - containerPort: 8080
-                    name: metrics
-                    protocol: TCP
+  sources:
+    - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
+      chart: common/charts/{{$appName}}
+      targetRevision: 0.0.1
+      helm:
+        releaseName: {{$appName}}
+        valuesObject:
+          {{- $customFile := printf "custom/%s.tpl" $appName }}
+          {{- $customConfig := tpl (.Files.Get $customFile) . | fromYaml }}
+          {{- $baseFile := printf "configs/%s.yaml" $appName }}
+          {{- $baseConfig := .Files.Get $baseFile|fromYaml}}
+          {{- $overwrite := (get .Values.postCustomTemplateOverwrite $appName ) | default dict }}
+          {{- mergeOverwrite $baseConfig $customConfig $overwrite | toYaml | nindent 10 }}
   destination:
     namespace: {{$namespace}}
     server: {{ required "A valid targetServer entry required!" .Values.argo.targetServer }}
