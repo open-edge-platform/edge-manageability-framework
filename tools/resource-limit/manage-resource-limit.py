@@ -16,17 +16,14 @@ from datetime import datetime, timedelta
 
 abspath = os.path.abspath(__file__)
 curr_dir = os.path.dirname(abspath)
-QUERY_PERIOD=7 # 7 days
-STEP="610" # 1/1000 of 7d
+QUERY_PERIOD = 7 # days
+STEP = "60" # seconds
 
 # Function to get metrics from the Metrics Server
-def get_metrics(namespace, istio=False):
+def get_metrics(namespace):
     result = {}
     query_parameters = []
-    if istio:
-        query_parameters.append('k8s_container_name="istio-proxy"')
-    else:
-        query_parameters.append('k8s_container_name!="istio-proxy"')
+    query_parameters.append('k8s_container_name!="istio-proxy"')
     if namespace:
         query_parameters.append(f'k8s_namespace_name="{namespace}"')
     else:
@@ -56,6 +53,7 @@ def get_metrics(namespace, istio=False):
                 max_cpu = max(max_cpu, cpu)
                 min_cpu = min(min_cpu, cpu)
             max_cpu = max_cpu * 2
+            min_cpu = min_cpu // 2
             if pod_name in result:
                 result[pod_name][container_name] = {
                     "cpu": {
@@ -91,6 +89,7 @@ def get_metrics(namespace, istio=False):
                 max_memory = max(max_memory, memory)
                 min_memory = min(min_memory, memory)
             max_memory = max_memory * 2
+            min_memory = min_memory // 2
             if pod_name in result:
                 result[pod_name][container_name]["memory"] = {
                     "max": max_memory,
@@ -127,11 +126,12 @@ def get_resource_config(namespace):
     mapping = load_mappings()
     metrics = get_metrics(namespace)
     resoruce_configs = {} # key -> requests and limits
-
+    if namespace not in mapping:
+        return {}
+    pod_prefixes = mapping.get(namespace, {})
     for item in metrics:
         pod_name = item["pod_name"]
         container_config_mapping = {}
-        pod_prefixes = mapping.get(namespace, [])
         for pod_prefix in pod_prefixes:
             if pod_name.startswith(pod_prefix):
                 container_config_mapping = mapping[namespace][pod_prefix]
@@ -161,25 +161,7 @@ def get_resource_config(namespace):
                 resoruce_configs[config_key]["cpu_limit"] = max(resoruce_configs[config_key]["cpu_limit"], cpu_max)
                 resoruce_configs[config_key]["memory_limit"] = max(resoruce_configs[config_key]["memory_limit"], memory_max)
 
-    istio_usage = {
-        "cpu_request": 0,
-        "memory_request": 0,
-        "cpu_limit": 0,
-        "memory_limit": 0,
-    }
-    metrics = get_metrics(None, istio=True)
-    for item in metrics:
-        cpu_max = item['cpu_max']
-        memory_max = item['memory_max']
-        cpu_min = item['cpu_min']
-        memory_min = item['memory_min']
-
-        istio_usage["cpu_request"] = max(istio_usage["cpu_request"], cpu_min)
-        istio_usage["memory_request"] = max(istio_usage["memory_request"], memory_min)
-        istio_usage["cpu_limit"] = max(istio_usage["cpu_limit"], cpu_max)
-        istio_usage["memory_limit"] = max(istio_usage["memory_limit"], memory_max)
-
-    return resoruce_configs, istio_usage
+    return resoruce_configs
 
 def convert_to_nested_dict(flat_dict):
     nested_dict = {}
@@ -231,6 +213,33 @@ def prometheus_query_range(query: str, start: datetime, end: datetime, step: str
     connection.close()
     return json.loads(data)
 
+def remove_resource_keys_from_dict(root_app_val: dict):
+    mappings = load_mappings()
+    resource_keys = []
+    for _, pod_prefixes in mappings.items():
+        for _, containers in pod_prefixes.items():
+            for _, resource_key in containers.items():
+                resource_keys.append(resource_key)
+
+    def recursively_delete(d: dict, keys: list):
+        if not isinstance(d, dict):
+            return
+        if not d:
+            return
+        if keys[0] not in d:
+            return
+        if len(keys) == 1:
+            del d[keys[0]]
+        else:
+            recursively_delete(d[keys[0]], keys[1:])
+            if not d[keys[0]]:
+                del d[keys[0]]
+
+    for resource_key in resource_keys:
+        keys = resource_key.split('.')
+        recursively_delete(root_app_val, keys)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Manage resource limits")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -277,23 +286,13 @@ def main():
             "orch-sre",
             "orch-ui"
         ]
-        maximum_istio_usage = {
-            "cpu_request": 0,
-            "memory_request": 0,
-            "cpu_limit": 0,
-            "memory_limit": 0
-        }
         pf = start_mimir_gw_port_forwarding()
         try:
             for ns in namespaces:
-                resource_config, istio_usage = get_resource_config(ns)
+                resource_config = get_resource_config(ns)
                 if resource_config is None:
                     print(f"Failed to get metrics for namespace: {ns}")
                     continue
-                maximum_istio_usage["cpu_request"] = max(maximum_istio_usage["cpu_request"], istio_usage["cpu_request"])
-                maximum_istio_usage["memory_request"] = max(maximum_istio_usage["memory_request"], istio_usage["memory_request"])
-                maximum_istio_usage["cpu_limit"] = max(maximum_istio_usage["cpu_limit"], istio_usage["cpu_limit"])
-                maximum_istio_usage["memory_limit"] = max(maximum_istio_usage["memory_limit"], istio_usage["memory_limit"])
 
                 for rc, res in resource_config.items():
                     if rc not in resource_configs_to_override:
@@ -301,24 +300,17 @@ def main():
                     else:
                         resource_configs_to_override[rc]["cpu"] = max(resource_configs_to_override[rc]["cpu"], res["cpu"])
                         resource_configs_to_override[rc]["memory"] = max(resource_configs_to_override[rc]["memory"], res["memory"])
-            resource_configs_to_override["argo.resources.istiod.global.proxy"] = maximum_istio_usage
             resource_configs_to_override = convert_to_nested_dict(resource_configs_to_override)
         finally:
             pf.kill()
     elif args.command == "unfreeze":
         print("Unfreezing resource limits...")
-        mapping = load_mappings()
-        unfreeze_configs = {}
-        for _, prefixes in mapping.items():
-            for _, container_config_mapping in prefixes.items():
-                for _, config_key in container_config_mapping.items():
-                    unfreeze_configs[config_key] = {
-                        "cpu_request": 1,
-                        "memory_request": 1,
-                        "cpu_limit": 64000,
-                        "memory_limit": 65536
-                    }
-        resource_configs_to_override = convert_to_nested_dict(unfreeze_configs)
+        root_app_val = {}
+        with open("/tmp/root-app-values.yaml", "r") as file:
+            root_app_val = yaml.load(file, Loader=yaml.FullLoader)
+        remove_resource_keys_from_dict(root_app_val)
+        with open("/tmp/root-app-values.yaml", "w") as file:
+            yaml.dump(root_app_val, file)
     else:
         print(f"Invalid command: {args.command}")
         return
@@ -332,10 +324,12 @@ def main():
         "root-app",
         "argocd/root-app",
         "-n", helm_release_namespace,
-        "-f", "/tmp/root-app-values.yaml",
-        "-f", "/tmp/resource-config.yaml"
+        "-f", "/tmp/root-app-values.yaml"
     ]
+    if args.command == "freeze":
+        command.extend(["-f", "/tmp/resource-config.yaml"])
     if not args.dry:
+        print(" ".join(command))
         subprocess.run(command)
     else:
         print("Dry run:")

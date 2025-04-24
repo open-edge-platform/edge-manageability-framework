@@ -4,6 +4,12 @@
 
 # This file is specific to the configuration of the CAPI operator. Configuration for CAPI providers is managed in capi-providers-config.tpl.
 
+{{- with .Values.argo.resources.capiOperator }}
+resources:
+  manager:
+    {{- toYaml . | nindent 4 }}
+{{- end }}
+
 env:
   manager:
   {{- if .Values.argo.proxy }}
@@ -20,7 +26,6 @@ env:
     value: "{{ .Values.argo.proxy.noProxy }}"
   {{- end }}
   {{- end }}
-
 containerSecurityContext:
   allowPrivilegeEscalation: false
   capabilities:

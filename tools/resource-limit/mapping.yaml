@@ -107,8 +107,23 @@ orch-app:
 orch-boots:
   ingress-nginx-controller:
     controller: "argo.resources.ingressNginx.controller.root"
+capi-operator-system:
+  capi-operator-cluster-api-operator:
+    manager: "argo.resources.capiOperator"
 orch-cluster:
-# TODO: replace with new cluster-orch stack (cm + capi)
+  cluster-manager:
+    cluster-manager: "argo.resources.clusterManager.clusterManager"
+  cluster-manager-template-controller:
+    template-controller: "argo.resources.clusterManager.templateManager"
+  cluster-connect-gateway-controller:
+    connect-controller: "argo.resources.clusterConnectGateway.controller"
+  cluster-connect-gateway-gateway:
+    connect-gateway: "argo.resources.clusterConnectGateway.gateway"
+  intel-infra-provider-manager:
+    intel-infra-provider-manager: "argo.resources.intelInfraProvider.manager"
+  intel-infra-provider-southbound:
+    intel-infra-provider-southbound: "argo.resources.intelInfraProvider.southboundApi"
+# orch-cluster:
 # Resource managed by VPA/HPA
 # orch-database:
 #   postgresql:
