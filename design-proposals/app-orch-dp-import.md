@@ -13,8 +13,9 @@ application repository into the Orchestrator.
 
 The convention chosen for opensource applications wishing to distribute their deployment packages
 is that deployment packages will be placed in yaml format into well-known `deployment-package/` directories. This
-convention has already been adopted for AI Suite applications at Intel, and endorsed as part of the
-Edge Software Catalog (ESC).
+convention has already been adopted for AI Suite applications at Intel
+(ex: `PDD <https://github.com/open-edge-platform/edge-ai-suites/tree/main/manufacturing-ai-suite/pallet-defect-detection/deployment-package>`),
+and endorsed as part of the Edge Software Catalog (ESC).
 
 Current mechanisem in 3.0 requires a user to clone the application repository and then import the deployment
 package into the Orchestrator using their web browser. This process is complicated by the fact that many
@@ -56,14 +57,16 @@ to locate the proper deployment package.
 
 ## Proposal 2: Import a specific deployment package from a repository (requires more GUI work)
 
-- The existing `Import Deployment Package` screen shall be updated with an `Import from URL` button.
+- The existing `Import Deployment Package
+  <https://docs.openedgeplatform.intel.com/edge-manage-docs/main/user_guide/package_software/import_deployment.html>`
+  screen shall be updated with an `Import from Github Repository` button.
 
 - The user will paste the URL of the repo they wish to import into the GUI.
 
 - The GUI will pass the URL to the application catalog service. For example, `/v3/projects/{project-name}/catalog/list_packages_from_repo?url=<url>`.
 
 - The application catalog shall scan the repository and return a list of deployment packages that were found in the
-  repository.
+  repository. After returning the list, the catalog service shall discard any transient state used to generate the list.
 
 - The GUI will display the list of deployment packages that were found and allow the user to choose one.
 
@@ -72,6 +75,7 @@ to locate the proper deployment package.
 
 - The application catalog service will extract the selected package from the repository and
   parse the yaml files there to extract a deployment package, and add that deployment package to the catalog.
+  After loading the deployment package, the catalog service shall discard any transient state used to extract the DP.
 
 - The GUI shall display a confirmation screen.
 
@@ -92,7 +96,9 @@ with a JSON payload instead. This is an implementation detail.
 This is the same as the preceding proposal, but with a simplification that it elminates the step required
 to generate list of DPs and for the user to select a DP from the list.
 
-- The existing `Import Deployment Package` screen shall be updated with an `Import from URL` button.
+- The existing `Import Deployment Package
+  <https://docs.openedgeplatform.intel.com/edge-manage-docs/main/user_guide/package_software/import_deployment.html>`
+  screen shall be updated with an `Import from Github Repository` button.
 
 - The user will paste the URL of the repo they wish to import into the GUI.
 
