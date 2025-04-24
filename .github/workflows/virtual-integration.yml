@@ -352,6 +352,12 @@ jobs:
       - name: Setup asdf and install dependencies
         uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main
 
+      - name: Get version tag
+        id: get_version_tag
+        run: |
+          output=$(mage version:getVersionTag)
+          echo "versionTag=$output" >> $GITHUB_ENV
+
       - name: Build DEB packages
         working-directory: on-prem-installers
         run: mage build:all
@@ -383,16 +389,35 @@ jobs:
         run: mage publish:sourceTarballs
 
       - name: Login to ECR
-        if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
         uses: docker/login-action@v3.3.0
         with:
           registry: 080137407410.dkr.ecr.us-west-2.amazonaws.com
 
       - name: Build Cloud Installer and release bundle artifacts
-        if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
         run: |
           mage installer:build
           mage installer:bundle
+
+      - name: Scan Cloud Installer Image
+        uses: aquasecurity/trivy-action@6c175e9c4083a92bbca2f9724c8a5e33bc2d97a5  # v0.30.0
+        with:
+          image-ref: 080137407410.dkr.ecr.us-west-2.amazonaws.com/edge-orch/common/orchestrator-installer-cloudfull:${{ env.versionTag }}
+          format: table
+          output: "trivy-orchestrator-installer-cloudfull.txt"
+          ignore-unfixed: true
+
+      - name: Calculate MD5 Checksum
+        id: checksum
+        run: |
+          md5sum_value=$(md5sum "trivy-orchestrator-installer-cloudfull.txt" | cut -d " " -f 1)
+          echo "md5sum is $md5sum_value"
+          echo "md5sum_value=$md5sum_value" >> "$GITHUB_ENV"
+
+      - name: Upload Trivy Image Scan Report
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: trivy-scan-report-orchestrator-installer-cloudfull-${{ env.md5sum_value }}
+          path: trivy-orchestrator-installer-cloudfull.txt
 
       - name: Publish Cloud Installer artifact
         if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
@@ -512,32 +537,40 @@ jobs:
           mage test:e2eSreObservabilityNoEnic
 
       - name: Deploy ENiC
+        if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' }}
         shell: bash
         timeout-minutes: 5
         env:
           ORCH_ORG: sample-org
           ORCH_PROJECT: sample-project
           ORCH_USER: sample-project-onboarding-user
+          ORCH_USER_API: sample-project-api-user
           EDGE_MANAGEABILITY_FRAMEWORK_REV: ${{ env.GIT_HASH }}
         run: |
           mage devUtils:deployEnic 1 dev
-          mage devUtils:waitForEnic
-          mage devUtils:waitForEnicNodeAgent
 
+          # wait until SN and UUID are available
+          mage devUtils:getEnicSerialNumber
+          mage devUtils:getEnicUUID
+
+          # then get then and store them in the env
           UUID=$(kubectl exec -it -n enic enic-0 -c edge-node -- bash -c "dmidecode -s system-uuid")
           SN=$(kubectl exec -it -n enic enic-0 -c edge-node -- bash -c "dmidecode -s system-serial-number")
           echo "EN_UUID=$UUID" >> "$GITHUB_ENV"
           echo "EN_SN=$SN" >> "$GITHUB_ENV"
 
       - name: Print current EN UUID and SN
+        if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' }}
         run: echo "Current ENiC has UUID ${{ env.EN_UUID }} and SN ${{ env.EN_SN }}"
 
       - name: UI E2E Tests
-        uses: ./.github/actions/cypress
         if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' }}
+        uses: ./.github/actions/cypress
         with:
           token: ${{ secrets.SYS_ORCH_GITHUB }}
-          app_orch: false
+          en_serial_number: ${{ env.EN_SN }}
+          en_uuid: ${{ env.EN_UUID }}
+          infra: "cypress/e2e/infra/locations.cy.ts,cypress/e2e/infra/provision-hosts.cy.ts,cypress/e2e/infra/verify-host.cy.ts"
 
       - name: "Test Observability Public Endpoints"
         env:
@@ -570,6 +603,7 @@ jobs:
           mage test:e2eSreObservability
 
       - name: Wait for cluster agent to be ready
+        if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' }}
         run: |
           mkdir -p smoke-test/logs
           kubectl exec -n enic enic-0 -c edge-node -- bash -c "journalctl -x" > smoke-test/logs/enic-journalctl-pre.log
@@ -755,4 +789,7 @@ jobs:
           path: orch-ci
 
       - name: Tag repo
+        env:
+          GITHUB_TOKEN: ${{ secrets.SYS_ORCH_GITHUB }}
         run: orch-ci/scripts/version-tag.sh
+        
