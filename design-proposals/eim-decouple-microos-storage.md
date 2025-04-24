@@ -2,7 +2,7 @@
 
 Author(s): Tomasz Osiński
 
-Last updated: 23.04.2025
+Last updated: 24.04.2025
 
 ## Abstract
 
@@ -53,7 +53,7 @@ The solution assumes the following:
 - iPXE script along with the Micro-OS bundle are still stored on the orchestrator PV. Since these are small files, the provisioning time would not be impacted.
 - ENs will download the Micro-OS bundle and the Micro-OS image during the iPXE phase and inject the Micro-OS bundle to the Micro-OS image (via `initrd`), similarly to how the initramfs is loaded.
   For example, the CA certificate may be inserted under `/etc/pki/ca-trust/source/anchors/`, while the environment variables can be injected to `/etc/hook/env_config`.
-- The services running inside Micro-OS should read from these files to retrieve certificate, env variales, and other required files.
+- The services running inside Micro-OS (e.g., device discovery, tink worker) should read from these files to retrieve certificate, env variales, and other required files.
 
 The workflow is presented below. Note that this workflow uses an example of Micro-EMT and RS file server to store Micro-EMT.
 The RS file server could be easily replaced by any other HTTPS-based local server that stores Micro-EMT. 
