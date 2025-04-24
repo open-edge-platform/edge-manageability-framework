@@ -14,7 +14,7 @@ application repository into the Orchestrator.
 The convention chosen for opensource applications wishing to distribute their deployment packages
 is that deployment packages will be placed in yaml format into well-known `deployment-package/` directories. This
 convention has already been adopted for AI Suite applications at Intel
-(ex: `PDD <https://github.com/open-edge-platform/edge-ai-suites/tree/main/manufacturing-ai-suite/pallet-defect-detection/deployment-package>`),
+(ex: [PDD](https://github.com/open-edge-platform/edge-ai-suites/tree/main/manufacturing-ai-suite/pallet-defect-detection/deployment-package)),
 and endorsed as part of the Edge Software Catalog (ESC).
 
 Current mechanisem in 3.0 requires a user to clone the application repository and then import the deployment
@@ -57,8 +57,7 @@ to locate the proper deployment package.
 
 ## Proposal 2: Import a specific deployment package from a repository (requires more GUI work)
 
-- The existing `Import Deployment Package
-  <https://docs.openedgeplatform.intel.com/edge-manage-docs/main/user_guide/package_software/import_deployment.html>`
+- The existing [Import Deployment Package](/edge-manage-docs/main/user_guide/package_software/import_deployment)
   screen shall be updated with an `Import from Github Repository` button.
 
 - The user will paste the URL of the repo they wish to import into the GUI.
