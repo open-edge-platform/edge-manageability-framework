@@ -46,6 +46,6 @@ controlplane:
 #    deployment:
 #      containers:
 #      - name: manager
-#        imageUrl:  docker.io/andybavier/cluster-api-provider-rke2-controlplane:latest
+#        imageUrl:  docker.io/user/patched-rke2-controlplane:latest
 #        args:
 #          "-- concurrency":  "5"
