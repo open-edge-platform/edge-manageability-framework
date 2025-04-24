@@ -890,11 +890,15 @@ func getKeycloakJWT(cli *http.Client, username string) string {
 
 // saveToken should persist token to a file only if one does not exist.
 func saveToken(cli *http.Client) error {
-	_, err := script.IfExists(outputFile).Stdout()
-	if err != nil {
+	fileInfo, err := os.Stat(outputFile)
+	if err != nil || fileInfo.Size() == 0 {
 		jwt := getKeycloakJWT(cli, "all-groups-example-user")
 		// create file if it does not exist
 		_, err := script.Echo(jwt).WriteFile(outputFile)
+		fileInfo, _ = os.Stat(outputFile)
+		if fileInfo.Size() == 0 {
+			return fmt.Errorf("Token file is empty")
+		}
 		return err
 	}
 	return nil
@@ -902,14 +906,18 @@ func saveToken(cli *http.Client) error {
 
 // saveToken should persist token to a file only if one does not exist.
 func saveTokenUser(cli *http.Client, username, password string) error {
-	_, err := script.IfExists(outputFile).Stdout()
-	if err != nil {
+	fileInfo, err := os.Stat(outputFile)
+	if err != nil || fileInfo.Size() == 0 {
 		token, err := util.GetApiToken(cli, username, password)
 		if err != nil {
 			return err
 		}
 		// create file if it does not exist
 		_, err = script.Echo(*token).WriteFile(outputFile)
+		fileInfo, _ = os.Stat(outputFile)
+		if fileInfo.Size() == 0 {
+			return fmt.Errorf("Token file is empty")
+		}
 		return err
 	}
 	return nil
