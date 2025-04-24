@@ -50,8 +50,8 @@ func (Deploy) deployEnicCluster(targetEnv string, labels string) error {
 	// Host Register ENiC. This needs to happen right after
 	// deploying ENiC and not waiting for Enic to be ready.
 	// Otherwise, the host register will fail.
-	if err := registerEnic(); err != nil {
-		return fmt.Errorf("\n%w", err)
+	if err := (DevUtils{}).RegisterEnic(enicPodName); err != nil {
+		return err
 	}
 
 	// Allow some time for Helm to load ENiC
@@ -106,13 +106,6 @@ func (Deploy) deployEnicCluster(targetEnv string, labels string) error {
 
 	fmt.Println("ENiC cluster ready 😊")
 
-	return nil
-}
-
-func registerEnic() error {
-	if err := (DevUtils{}).RegisterEnic(enicPodName); err != nil {
-		return fmt.Errorf("cannot register enic: %s", enicPodName)
-	}
 	return nil
 }
 
