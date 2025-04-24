@@ -34,7 +34,7 @@ bootstrap:
       name: capi-variables
 
 # https://doc.crds.dev/github.com/kubernetes-sigs/cluster-api-operator/operator.cluster.x-k8s.io/ControlPlaneProvider/v1alpha2@v0.15.1
-controlPlane:
+controlplane:
   name: rke2
   namespace: capr-system
   spec:
