@@ -105,60 +105,60 @@ bootstrap:
         kind: Deployment
         metadata:
           labels:
-          cluster.x-k8s.io/provider: bootstrap-rke2
-          control-plane: controller-manager
+            cluster.x-k8s.io/provider: bootstrap-rke2
+            control-plane: controller-manager
           name: rke2-bootstrap-controller-manager
           namespace: capr-system
         spec:
           replicas: 1
           selector:
-          matchLabels:
-            cluster.x-k8s.io/provider: bootstrap-rke2
-            control-plane: controller-manager
+            matchLabels:
+              cluster.x-k8s.io/provider: bootstrap-rke2
+              control-plane: controller-manager
           template:
-          metadata:
-            labels:
-            cluster.x-k8s.io/provider: bootstrap-rke2
-            control-plane: controller-manager
-          spec:
-            containers:
-            - args:
-              - '--leader-elect'
-              - '--diagnostics-address=:8080'
-              - '--insecure-diagnostics=true'
-              - '--feature-gates=MachinePool=true'
-              command:
-              - /manager
-              image: ghcr.io/rancher/cluster-api-provider-rke2-bootstrap:v0.14.0
-              imagePullPolicy: IfNotPresent
-              name: manager
-              ports:
-              - containerPort: 9443
-                name: webhook-server
-              - containerPort: 9440
-                name: healthz
-              - containerPort: 8080
-                name: metrics
+            metadata:
+              labels:
+                cluster.x-k8s.io/provider: bootstrap-rke2
+                control-plane: controller-manager
+            spec:
+              containers:
+                - args:
+                    - '--leader-elect'
+                    - '--diagnostics-address=:8080'
+                    - '--insecure-diagnostics=true'
+                    - '--feature-gates=MachinePool=true'
+                  command:
+                    - /manager
+                  image: ghcr.io/rancher/cluster-api-provider-rke2-bootstrap:v0.14.0
+                  imagePullPolicy: IfNotPresent
+                  name: manager
+                  ports:
+                    - containerPort: 9443
+                      name: webhook-server
+                    - containerPort: 9440
+                      name: healthz
+                    - containerPort: 8080
+                      name: metrics
+                  securityContext:
+                    allowPrivilegeEscalation: false
+                    capabilities:
+                      drop:
+                        - ALL
+                    runAsGroup: 65532
+                    runAsUser: 65532
+                  volumeMounts:
+                    - mountPath: /tmp/k8s-webhook-server/serving-certs
+                      name: cert
+                      readOnly: true
               securityContext:
-              allowPrivilegeEscalation: false
-              capabilities:
-                drop:
-                - ALL
-              runAsGroup: 65532
-              runAsUser: 65532
-              volumeMounts:
-              - mountPath: /tmp/k8s-webhook-server/serving-certs
-                name: cert
-                readOnly: true
-            securityContext:
-            runAsNonRoot: true
-            seccompProfile:
-              type: RuntimeDefault
-            serviceAccountName: rke2-bootstrap-manager
-            volumes:
-            - name: cert
-              secret:
-              secretName: rke2-bootstrap-webhook-service-cert
+                runAsNonRoot: true
+                seccompProfile:
+                  type: RuntimeDefault
+              serviceAccountName: rke2-bootstrap-manager
+              volumes:
+                - name: cert
+                  secret:
+                    secretName: rke2-bootstrap-webhook-service-cert
 
 # https://doc.crds.dev/github.com/kubernetes-sigs/cluster-api-operator/operator.cluster.x-k8s.io/ControlPlaneProvider/v1alpha2@v0.15.1
 controlplane:
