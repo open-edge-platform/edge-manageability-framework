@@ -9,7 +9,7 @@ Last updated: 2025-04-16
 This proposal describes a mechanism for importing a deployment package from an opensource
 application repository into the Orchestrator.
 
-## Proposal
+## Problem Statement
 
 The convention chosen for opensource applications wishing to distribute their deployment packages
 is that deployment packages will be placed in yaml format into well-known `deployment-package/` directories. This
@@ -24,9 +24,35 @@ This proposal is complicated by the fact that many repositories contain multiple
 packages, and they are often located in subdirectories, and not all AI Suite repositories use the
 same subdirectory naming convention.
 
-There are two variants of this proposal:
+## Proposal 1: Tarball-based import
 
-### Sub-Proposal - Import a specific deployment package from a repository (requires more GUI work)
+Note: The term `tarball` is defined as a `.tar.gz` archive that contains a set of individual files and/or directories, packaged together into a single file.
+
+Allowing a deployment package to be imported as a single tarball is
+work that is already scoped for application orchestration and GUI. We could leverage this capability to simplify the upload/download
+interaction between opensource repository and orchestrator. This will require some prep steps be done to the opensource repo to make
+a tarball available.
+
+Application owner preparation steps:
+
+- The opensource application owner shall create a tarball of their yaml files, and check that
+  archive into their opensource repository alongside the yaml source files. The application owner may wish
+  to use CI to automate this process.
+
+- The opensource application owner shall place a link to the tarball file into their documentation.
+
+Orchestrator user steps:
+
+- Follow the link in the application's documentation to download the tarball to their local computer.
+  This is a simple operation that can be done with a web browser, and results in a single file being downloaded.
+
+- Use their browser in the orchestrator's GUI to import the tarball from their local computer.
+
+Although the user's computer is still used as a transient storage location for the VBU app, this proposal eliminates the need to use
+complex tools such as `git` to clone repositories, and eliminates the need to navigate the repository's tree to locate the proper
+deployment package.
+
+## Proposal 2: Import a specific deployment package from a repository (requires more GUI work)
 
 - The existing `Import Deployment Package` screen shall be updated with an `Import from URL` button.
 
@@ -47,7 +73,22 @@ There are two variants of this proposal:
 
 - The GUI shall display a confirmation screen.
 
-### Sub-Proposal - Import all deployment packages from a repository (requires less GUI work)
+This proposal requieres scanning repositories to find deployment packages and extracting
+deployment packages from a repository. A naive approach is for the Catalog Service to internally clone
+the repository to a temporary section of its local file system and use file operations to examine
+the repository.
+
+A more sophisticated approach may be use github REST APIs to examine the contents of a repository
+without having to fully clone the repo. As the repositories may be large and there are only a few
+relatively small yaml files that are of interest, this may be more efficient.
+
+Note: The above URLs use query arguments for example illustrative purposes. The implementation may use POST
+with a JSON payload instead. This is an implementation detail.
+
+### Proposal 3: Import all deployment packages from a repository (requires less GUI work)
+
+This is the same as the preceding proposal, but with a simplification that it elminates the step required
+to generate list of DPs and for the user to select a DP from the list.
 
 - The existing `Import Deployment Package` screen shall be updated with an `Import from URL` button.
 
@@ -60,22 +101,6 @@ There are two variants of this proposal:
   add all of them to the application catalog.
 
 - The GUI shall display a confirmation screen.
-
-Note: The above URLs use query arguments for example illustrative purposes. The implementation may use POST
-with a JSON payload instead. This is an implementation detail.
-
-### Scanning and extracting deployment packages from github repositories
-
-The above proposals mention scanning repositories to find deployment packages and extracting
-deployment packages from a repository. A naive approach is for the Catalog Service to internally clone
-the repository to a temporary section of its local file system and use file operations to examine
-the repository.
-
-A more sophisticated approach may be use github REST APIs to examine the contents of a repository
-without having to fully clone the repo. As the repositories may be large and there are only a few
-relatively small yaml files that are of interest, this may be more efficient.
-
-The specific choice of method is left as an implementation decision.
 
 ## Rationale
 
@@ -90,6 +115,13 @@ Other approaches have been considered include:
   (or pull from) the other. This would involve additional complexity regarding authentication and
   entitlement from ESC to Orchestrator or vice-versa. It would require additional implementation effort
   from the ESC.
+
+- The App Orch Tenant Controller (AOTC) is capable of installing deployment packages for extensions and could be used to
+  install application deployment packages. However, the AOTC is a one-size-fits-all solution that bootstraps a project
+  with a predefined set of packages. It is not designed to install new packages at runtime. There may be 50 or
+  more AI applications with published deployment packages, and it would be undesirable to preload that many into
+  the catalog at project creation time. Similarly, there may be a need to import deployment packages at any
+  time.
 
 ## Affected components and Teams
 
