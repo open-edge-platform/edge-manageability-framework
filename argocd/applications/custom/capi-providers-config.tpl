@@ -42,9 +42,15 @@ controlPlane:
     configSecret:
       namespace: capi-variables
       name: capi-variables
-    deployment:
-      containers:
-      - name: manager
-        imageUrl:  docker.io/andybavier/cluster-api-provider-rke2-controlplane:latest
-        args:
-          "-- concurrency":  "5"
+    manifestPatches:
+      - op: replace
+        path: /spec/template/spec/containers/0/args
+        value:
+          - '--diagnostics-address=:8080'
+          - '--insecure-diagnostics=true'
+      - op: replace
+        path: /spec/template/spec/containers/0/ports
+        value:
+          - containerPort: 8080
+            name: metrics
+            protocol: TCP
