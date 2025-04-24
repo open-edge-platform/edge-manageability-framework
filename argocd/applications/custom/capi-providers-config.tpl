@@ -32,6 +32,12 @@ bootstrap:
     configSecret:
       namespace: capi-variables
       name: capi-variables
+    deployment:
+      containers:
+        - args:
+            '--diagnostics-address': ':8080'
+            '--insecure-diagnostics': 'true'
+          name: manager
 
 # https://doc.crds.dev/github.com/kubernetes-sigs/cluster-api-operator/operator.cluster.x-k8s.io/ControlPlaneProvider/v1alpha2@v0.15.1
 controlplane:
@@ -42,3 +48,28 @@ controlplane:
     configSecret:
       namespace: capi-variables
       name: capi-variables
+    deployment:
+      containers:
+        - args:
+            '--diagnostics-address': ':8080'
+            '--insecure-diagnostics': 'true'
+            '--concurrency': '5'
+          name: manager
+          imageUrl: "docker.io/andybavier/cluster-api-provider-rke2-controlplane:latest"
+    manifestPatches:
+    - |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: rke2-control-plane-controller-manager
+        namespace: capr-system
+      spec:
+        template:
+          spec:
+            containers:
+              - name: manager
+                image: docker.io/andybavier/cluster-api-provider-rke2-controlplane:latest
+                ports:
+                  - containerPort: 8080
+                    name: metrics
+                    protocol: TCP
