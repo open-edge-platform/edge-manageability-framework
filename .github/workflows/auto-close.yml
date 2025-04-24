@@ -24,3 +24,4 @@ jobs:
           days-before-pr-close: 15
           remove-pr-stale-when-updated: "true"
           close-pr-message: "This pull request was automatically closed due to inactivity"
+          
