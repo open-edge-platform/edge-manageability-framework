@@ -42,15 +42,3 @@ controlPlane:
     configSecret:
       namespace: capi-variables
       name: capi-variables
-    manifestPatches:
-      - op: replace
-        path: /spec/template/spec/containers/0/args
-        value:
-          - '--diagnostics-address=:8080'
-          - '--insecure-diagnostics=true'
-      - op: replace
-        path: /spec/template/spec/containers/0/ports
-        value:
-          - containerPort: 8080
-            name: metrics
-            protocol: TCP
