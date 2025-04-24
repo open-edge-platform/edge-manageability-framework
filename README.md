@@ -1,7 +1,17 @@
 # Edge Manageability Framework
 
-## Primary Product: Edge Orchestrator
-At the center of Edge Manageability Framework is Edge Orchestrator, the primary solution to manage edge environments efficiently and securely. It encompasses a range of features that cater to the unique demands of edge computing, ensuring seamless integration and operation across diverse hardware and software landscapes. Edge Orchestrator is designed to be the central hub for managing edge infrastructure and edge application deployments at scale across geographically distributed edge sites.  It offers automated application deployment based on customer-defined configuration & criteria, multitenancy and identity & access management for tenants, observability & alerting capabilities, dashboards for quick views of status & issue identification, and management of all software deployments & infrastructure components including edge nodes (i.e. hosts) and clusters.
+At the center of Edge Manageability Framework is Edge Orchestrator, the primary
+solution to manage edge environments efficiently and securely. It encompasses a
+range of features that cater to the unique demands of edge computing, ensuring
+seamless integration and operation across diverse hardware and software
+landscapes. Edge Orchestrator is designed to be the central hub for managing
+edge infrastructure and edge application deployments at scale across
+geographically distributed edge sites. It offers automated application
+deployment based on customer-defined configuration & criteria, multitenancy and
+identity & access management for tenants, observability & alerting capabilities,
+dashboards for quick views of status & issue identification, and management of
+all software deployments & infrastructure components including edge nodes (i.e.
+hosts) and clusters.
 
 Welcome to the Edge Manageability Framework, a comprehensive solution designed
 to streamline and enhance the deployment and management of infrastructure and
@@ -50,7 +60,7 @@ There are multiple ways to begin to learn about, use, or contribute to Edge Orch
 - Learn about all components, their architecture and inner workings, and how to contribute in
   the [Developer Guide](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/developer_guide/index.html)
    - [CI based Developer workflow](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/developer_guide/contributor_guide/index.html) - make changes to 1 or more components of the Edge Orchestrator, locally build your change, test locally with prebuilt images of the rest of the components, and then submit a PR to the component CI and the [Edge Manageability Framework CI](https://github.com/open-edge-platform/edge-manageability-framework/actions).
-   - [Buildall based Developer workflow](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/developer_guide/platform/buildall.rst) -  if you do not wish to use our CI and pre-built images, the [buildall](https://github.com/open-edge-platform/edge-manageability-framework/tree/main/buildall) script can clone all the repos, build the Helm chart and container images required to deploy the Edge Orchestrator from source, push the artifacts to a repository of your choice, and locally test in your developer environment.
+   - [Buildall based Developer workflow](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/developer_guide/platform/buildall.html) -  if you do not wish to use our CI and pre-built images, the [buildall](https://github.com/open-edge-platform/edge-manageability-framework/tree/main/buildall) script can clone all the repos, build the Helm chart and container images required to deploy the Edge Orchestrator from source, push the artifacts to a repository of your choice, and locally test in your developer environment.
 
 
 
