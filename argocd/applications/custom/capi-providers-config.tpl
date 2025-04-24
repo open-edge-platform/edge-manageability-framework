@@ -10,7 +10,7 @@ core:
   name: cluster-api
   namespace: capi-system
   spec:
-    version: v1.9.0
+    version: v1.9.7
     configSecret:
       namespace: capi-variables
       name: capi-variables
@@ -28,7 +28,7 @@ bootstrap:
   name: rke2
   namespace: capr-system
   spec:
-    version: v0.12.0
+    version: v0.14.0
     configSecret:
       namespace: capi-variables
       name: capi-variables
@@ -38,13 +38,14 @@ controlplane:
   name: rke2
   namespace: capr-system
   spec:
-    version: v0.12.0
+    version: v0.14.0
     configSecret:
       namespace: capi-variables
       name: capi-variables
-    deployment:
-      containers:
-      - name: manager
-        imageUrl:  docker.io/andybavier/cluster-api-provider-rke2-controlplane:latest
-        args:
-          "-- concurrency":  "5"
+# example deployment configuration      
+#    deployment:
+#      containers:
+#      - name: manager
+#        imageUrl:  docker.io/andybavier/cluster-api-provider-rke2-controlplane:latest
+#        args:
+#          "-- concurrency":  "5"
