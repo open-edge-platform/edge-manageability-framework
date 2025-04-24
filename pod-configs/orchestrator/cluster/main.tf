@@ -19,7 +19,6 @@ locals {
   vpc_id          = data.terraform_remote_state.vpc.outputs.vpc_id
   cidr_blocks     = data.terraform_remote_state.vpc.outputs.cidr_blocks
   vpc_name        = data.terraform_remote_state.vpc.outputs.vpc_name
-  smtp_from       = var.smtp_from == "" ? "${var.eks_cluster_name}@intel.com" : var.smtp_from
 }
 
 module "eks" {
@@ -174,7 +173,7 @@ module "orch_init" {
   smtp_pass                     = var.smtp_pass
   smtp_url                      = var.smtp_url
   smtp_port                     = var.smtp_port
-  smtp_from                     = local.smtp_from
+  smtp_from                     = var.smtp_from
   public_cloud                  = var.public_cloud
   auto_cert                     = var.auto_cert
   release_service_refresh_token = var.release_service_refresh_token
