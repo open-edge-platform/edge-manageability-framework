@@ -1619,8 +1619,7 @@ export filepath to REQUESTS_CA_BUNDLE if using for robot framework test with sta
 // OrchCA Saves Orchestrators's CA certificate to `orch-ca.crt` so it can be imported to trust store for web access.
 func (Gen) orchCA(filePath string) error {
 	var certKey string
-	kubeCmd := fmt.Sprintf("kubectl --v=%d get secret -n orch-gateway tls-orch -o json",
-		verboseLevel)
+	kubeCmd := fmt.Sprintf("kubectl get secret -n orch-gateway tls-orch -o json")
 
 	data, err := script.NewPipe().Exec(kubeCmd).String()
 	if err != nil {
