@@ -462,11 +462,6 @@ apply_terraform() {
     fi
 
     if [[ "$MODULE_DIR" == *"${ORCH_DIR}/cluster" ]]; then
-        s3_prefix="$(get_s3_prefix)"
-        echo "s3_prefix                          = \"$s3_prefix\"" >> "${ROOT_DIR}/${ORCH_DIR}/cluster/environments/${ENV_NAME}/variable.tfvar"
-    fi
-
-    if [[ "$MODULE_DIR" == *"${ORCH_DIR}/cluster" ]]; then
         s3_prefix=$(get_variable_value "s3_prefix" ${VARIABLE_FILES[*]})
     fi
 
@@ -772,8 +767,4 @@ import_s3_pending() {
 check_s3bucket_exist() {
     bucket=$1
     aws s3 ls "s3://${bucket}" --region "${AWS_REGION}" &>/dev/null
-}
-
-get_s3_prefix() {
-    echo "${AWS_ACCOUNT}-${AWS_REGION}" | sha256sum | cut -d' ' -f1 | head -c 6
 }
