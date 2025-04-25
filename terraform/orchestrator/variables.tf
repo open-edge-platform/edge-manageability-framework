@@ -160,7 +160,7 @@ variable "enable_auto_install" {
 
 variable "deploy_tag" {
   type        = string
-  description = "Orchestrator release tag version. If empty, will use the default production tag."
+  description = "Orchestrator release tag version. If empty, will use the default main branch tag."
   default     = "latest-main-dev"
 }
 
