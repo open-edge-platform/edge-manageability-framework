@@ -26,7 +26,6 @@ core:
       containers:
       - name: manager
         args:
-          "--diagnostics-address": ":8080"
           "--insecure-diagnostics": "true"
 
 
@@ -43,7 +42,6 @@ bootstrap:
       containers:
       - name: manager
         args:
-          "--diagnostics-address": ":8080"
           "--insecure-diagnostics": "true"
 
 # https://doc.crds.dev/github.com/kubernetes-sigs/cluster-api-operator/operator.cluster.x-k8s.io/ControlPlaneProvider/v1alpha2@v0.15.1
@@ -59,7 +57,6 @@ controlplane:
       containers:
       - name: manager
         args:
-          "--diagnostics-address": ":8080"
           "--insecure-diagnostics": "true"
 # example deployment configuration      
 #    deployment:
