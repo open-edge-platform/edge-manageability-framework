@@ -1,0 +1,40 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: rke2-controlplane-additional-manifest
+  namespace: capr-system
+data:
+  manifests: |
+    ---
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: core-provider-metrics
+      namespace: capr-system
+      labels:
+        app: rke2-control-plane-metrics-svc
+    spec:
+      ports:
+        - name: metrics
+          port: 8443
+          protocol: TCP
+          targetPort: metrics
+      selector:
+        control-plane: controller-manager
+    ---
+      apiVersion: monitoring.coreos.com/v1
+      kind: ServiceMonitor
+      metadata:
+        name: core-provider-monitor
+        namespace: capr-system
+      spec:
+        endpoints:
+          - path: /metrics
+            port: metrics
+            scheme: http
+        namespaceSelector:
+          matchNames:
+          - capr-system
+        selector:
+          matchLabels:
+            app: rke2-control-plane-metrics-svc
