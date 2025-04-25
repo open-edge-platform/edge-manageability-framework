@@ -166,6 +166,9 @@ controlplane:
   namespace: capr-system
   spec:
     version: v0.14.0
+    additionalManifests:
+      name: rke2-control-plane-manifests
+      namespace: capr-system
     configSecret:
       namespace: capi-variables
       name: capi-variables
@@ -233,3 +236,51 @@ controlplane:
               - name: cert
                 secret:
                   secretName: rke2-controlplane-webhook-service-cert
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rke2-control-plane-manifests
+  namespace: capr-system
+data:
+  manisfests: |-
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: capi-rke2-metrics
+      namespace: capr-system
+      labels:
+        control-plane: controller-manager
+        app: metric-svc
+    spec:
+      ports:
+        - name: metrics
+          port: 8080
+          protocol: TCP
+          targetPort: metrics
+      selector:
+        control-plane: controller-manager
+    ---
+    apiVersion: monitoring.coreos.com/v1
+    kind: ServiceMonitor
+    metadata:
+      name: capi-rke2-metrics
+      namespace: capr-system
+    spec:
+      endpoints:
+      - port: metrics
+        scheme: http
+        path: /metrics
+      namespaceSelector:
+        matchNames:
+        - capr-system
+      selector:
+        matchExpressions:
+        - key: prometheus.io/service-monitor
+          operator: NotIn
+          values:
+          - "false"
+        matchLabels:
+          control-plane: controller-manager
+          app: metric-svc
