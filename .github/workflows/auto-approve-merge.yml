@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       github.actor == 'sys-orch' && 
-      github.event.pull_request.base.ref == 'main-pass-validation'
+      github.event.pull_request.base.ref == '3.0-pass-validation'
     steps:
       - uses: hmarr/auto-approve-action@v4
         with:
@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       github.actor == 'sys-orch' && 
-      github.event.pull_request.base.ref == 'main-pass-validation'
+      github.event.pull_request.base.ref == '3.0-pass-validation'
     steps:
       - name: Auto merge
         uses: peter-evans/enable-pull-request-automerge@v3
