@@ -3,3 +3,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 agentTLSMode: "strict"
+controller:
+  reconciler:
+    workers:
+      bundle: '50'
+      bundledeployment: '50'
+      gitrepo: '50'
