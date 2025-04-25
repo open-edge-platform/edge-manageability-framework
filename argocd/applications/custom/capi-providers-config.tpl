@@ -58,6 +58,9 @@ controlplane:
       - name: manager
         args:
           "--insecure-diagnostics": "true"
+    additionalManifests:
+        name: rke2-controlplane-additional-manifest
+        namespace: capr-system
 # example deployment configuration      
 #    deployment:
 #      containers:
