@@ -7,13 +7,8 @@ clusterManager:
     disable-mt: false
 
 templateController:
-  extraArgs:
-    - '--webhook-enabled=true'
   metrics:
     service:
       enabled: true
     serviceMonitor:
       enabled: true
-
-webhookService:
-  enabled: true
