@@ -637,9 +637,7 @@ jobs:
         with:
           name: smoke-test
           path: |
-            smoke-test/logs/enic-journalctl-pre.log
-            smoke-test/logs/enic-cluster-agent-pre.log
-            smoke-test/logs/enic-cluster-agent-post.log
+            smoke-test/logs/*
 
       - name: Get diagnostic information
         id: get-diagnostic-info
