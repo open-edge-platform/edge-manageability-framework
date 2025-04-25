@@ -42,6 +42,12 @@ controlplane:
     configSecret:
       namespace: capi-variables
       name: capi-variables
+    deployment:
+      containers:
+      - name: manager
+        args:
+          "--diagnostics-address": ":8080"
+          "--insecure-diagnostics": "true"
 # example deployment configuration      
 #    deployment:
 #      containers:
