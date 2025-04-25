@@ -40,18 +40,18 @@ var (
 
 func (Deploy) deployEnicCluster(targetEnv string, labels string) error {
 	if err := cleanUpEnic(); err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 
 	if err := (DevUtils{}).DeployEnic(enicReplicas, targetEnv); err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 
 	// Host Register ENiC. This needs to happen right after
 	// deploying ENiC and not waiting for Enic to be ready.
 	// Otherwise, the host register will fail.
 	if err := (DevUtils{}).RegisterEnic(enicPodName); err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 
 	// Allow some time for Helm to load ENiC
@@ -61,20 +61,20 @@ func (Deploy) deployEnicCluster(targetEnv string, labels string) error {
 	}
 
 	if err := enicGuid(); err != nil {
-		return fmt.Errorf("\n%w", err)
+		return fmt.Errorf("%w", err)
 	}
 
 	if err := createNs(); err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 
 	if err := createCluster(); err != nil {
-		return fmt.Errorf("\n%w", err)
+		return fmt.Errorf("%w", err)
 	}
 
 	// Before deploying any apps make sure cluster is ready
 	if err := waitForEdgeClusterReady(); err != nil {
-		return fmt.Errorf("\n%w", err)
+		return fmt.Errorf("%w", err)
 	}
 
 	clusterLabels := parseLabels(labels)
@@ -83,20 +83,20 @@ func (Deploy) deployEnicCluster(targetEnv string, labels string) error {
 	}
 
 	if err := genKubeconfigEntry(); err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 
 	if err := (Use{}).EdgeCluster(); err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 
 	// Wait for edge node fleet agent to be ready
 	if err := waitForENFleetAgentReady(); err != nil {
-		return fmt.Errorf("\n%w", err)
+		return fmt.Errorf("%w", err)
 	}
 
 	if err := (Use{}).Orch(); err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 
 	fmt.Println("Assigned cluster labels: ")

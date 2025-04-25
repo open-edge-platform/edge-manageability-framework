@@ -213,7 +213,7 @@ func (Undeploy) EdgeCluster(orgName, projectName string) error {
 
 	edgeInfraUser, _, err := getEdgeAndApiUsers(ctx, orgName)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get edge user: %w", err)
 	}
 
 	edgeMgrUser = edgeInfraUser
@@ -221,12 +221,12 @@ func (Undeploy) EdgeCluster(orgName, projectName string) error {
 
 	projectId, err := projectId(projectName)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get project id: %w", err)
 	}
 	fleetNamespace = projectId
 
 	if err := cleanUpEnic(); err != nil {
-		return err
+		return fmt.Errorf("failed to cleanup enic: %w", err)
 	}
 
 	fmt.Println("\nENiC cluster deleted 😊")
@@ -1196,7 +1196,7 @@ func (d Deploy) EdgeCluster(targetEnv string) error {
 
 	_, apiUser, err := getEdgeAndApiUsers(ctx, orgName)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get api user: %w", err)
 	}
 
 	os.Setenv("ORCH_PROJECT", projectName)
@@ -1205,7 +1205,7 @@ func (d Deploy) EdgeCluster(targetEnv string) error {
 
 	projectId, err := projectId(projectName)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get project id: %w", err)
 	}
 
 	fleetNamespace = projectId
@@ -1227,7 +1227,7 @@ func (d Deploy) EdgeClusterWithProject(targetEnv string, orgName string, project
 
 	edgeInfraUser, apiUser, err := getEdgeAndApiUsers(ctx, orgName)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get edge and api users: %w", err)
 	}
 
 	edgeMgrUser = edgeInfraUser
@@ -1239,7 +1239,7 @@ func (d Deploy) EdgeClusterWithProject(targetEnv string, orgName string, project
 
 	projectId, err := projectId(projectName)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get project id: %w", err)
 	}
 
 	fleetNamespace = projectId
@@ -1263,7 +1263,7 @@ func (d Deploy) EdgeClusterWithLabels(targetEnv string, labels string) error {
 
 	_, apiUser, err := getEdgeAndApiUsers(ctx, orgName)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get api user: %w", err)
 	}
 
 	os.Setenv("ORCH_PROJECT", projectName)
@@ -1272,7 +1272,7 @@ func (d Deploy) EdgeClusterWithLabels(targetEnv string, labels string) error {
 
 	projectId, err := projectId(projectName)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get project id: %w", err)
 	}
 
 	fleetNamespace = projectId

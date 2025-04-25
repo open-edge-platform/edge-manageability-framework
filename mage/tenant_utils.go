@@ -1082,6 +1082,9 @@ func getEdgeAndApiUsers(ctx context.Context, orgName string) (string, string, er
 		// Check if the user is an Edge Infra Manager
 		if strings.Contains(*user.Username, "-edge-mgr") {
 			usernameSplit := strings.Split(*user.Email, "@")
+			if len(usernameSplit) == 0 {
+				return edgeInfraUser, apiUser, fmt.Errorf("unable to get user name from user email %s", *user.Email)
+			}
 			// Ensure the email domain matches the organization name
 			if usernameSplit[1] == orgName+".com" {
 				edgeInfraUser = *user.Username
@@ -1089,6 +1092,9 @@ func getEdgeAndApiUsers(ctx context.Context, orgName string) (string, string, er
 		}
 		if strings.Contains(*user.Username, "-api-user") && !strings.Contains(*user.Username, "-service-admin") {
 			usernameSplit := strings.Split(*user.Email, "@")
+			if len(usernameSplit) == 0 {
+				return edgeInfraUser, apiUser, fmt.Errorf("unable to get user name from user email %s", *user.Email)
+			}
 			if usernameSplit[1] == orgName+".com" {
 				apiUser = *user.Username
 			}
