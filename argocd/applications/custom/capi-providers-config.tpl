@@ -32,6 +32,12 @@ bootstrap:
     configSecret:
       namespace: capi-variables
       name: capi-variables
+    deployment:
+      containers:
+      - name: manager
+        args:
+          "--diagnostics-address": ":8080"
+          "--insecure-diagnostics": "true"
 
 # https://doc.crds.dev/github.com/kubernetes-sigs/cluster-api-operator/operator.cluster.x-k8s.io/ControlPlaneProvider/v1alpha2@v0.15.1
 controlplane:
