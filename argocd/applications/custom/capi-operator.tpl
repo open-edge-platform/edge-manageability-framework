@@ -26,6 +26,8 @@ env:
     value: "{{ .Values.argo.proxy.noProxy }}"
   {{- end }}
   {{- end }}
+diagnosticsAddress: ":8080"
+insecureDiagnostics: true
 containerSecurityContext:
   allowPrivilegeEscalation: false
   capabilities:
