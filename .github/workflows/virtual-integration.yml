@@ -626,6 +626,10 @@ jobs:
         if: always()
         run: |
           mkdir -p smoke-test/logs
+          kubectl logs -n orch-app -l app=app-deployment-api -c app-deployment-api --tail=-1 > smoke-test/logs/app-deployment-api.log
+          kubectl logs -n orch-app -l app=app-deployment-manager --tail=-1 > smoke-test/logs/app-deployment-manager.log
+          kubectl logs -n orch-app -l app=app-resource-manager -c app-resource-manager --tail=-1 > smoke-test/logs/app-resource-manager.log
+          kubectl logs -n orch-app -l app.kubernetes.io/name=app-orch-catalog --tail=-1 > smoke-test/logs/application-catalog.log
           kubectl exec -n enic enic-0 -c edge-node -- bash -c "journalctl -xeu cluster-agent" > smoke-test/logs/enic-cluster-agent-post.log
 
       - name: Upload smoke test logs
@@ -634,9 +638,7 @@ jobs:
         with:
           name: smoke-test
           path: |
-            smoke-test/logs/enic-journalctl-pre.log
-            smoke-test/logs/enic-cluster-agent-pre.log
-            smoke-test/logs/enic-cluster-agent-post.log
+            smoke-test/logs/*
 
       - name: Get diagnostic information
         id: get-diagnostic-info
