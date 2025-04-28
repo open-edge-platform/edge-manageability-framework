@@ -2,6 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+metrics:
+  enabled: true
+
 # CAPI providers are managed using the CAPI operator and configured through its CRDs.
 # The Helm chart .spec is directly passed to the CRD .spec without modification.
 
@@ -27,6 +30,9 @@ core:
       - name: manager
         args:
           "--insecure-diagnostics": "true"
+    additionalManifests:
+      name: core-additional-manifest
+      namespace: capi-system
 
 
 # https://doc.crds.dev/github.com/kubernetes-sigs/cluster-api-operator/operator.cluster.x-k8s.io/BootstrapProvider/v1alpha2@v0.15.1
@@ -43,6 +49,9 @@ bootstrap:
       - name: manager
         args:
           "--insecure-diagnostics": "true"
+    additionalManifests:
+      name: bootstrap-additional-manifest
+      namespace: capr-system
 
 # https://doc.crds.dev/github.com/kubernetes-sigs/cluster-api-operator/operator.cluster.x-k8s.io/ControlPlaneProvider/v1alpha2@v0.15.1
 controlplane:
@@ -59,8 +68,8 @@ controlplane:
         args:
           "--insecure-diagnostics": "true"
     additionalManifests:
-        name: rke2-controlplane-additional-manifest
-        namespace: capr-system
+      name: controlplane-additional-manifest
+      namespace: capr-system
 # example deployment configuration      
 #    deployment:
 #      containers:
@@ -68,3 +77,4 @@ controlplane:
 #        imageUrl:  docker.io/user/patched-rke2-controlplane:latest
 #        args:
 #          "-- concurrency":  "5"
+
