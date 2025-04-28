@@ -138,12 +138,6 @@ func AsdfPlugins() error {
 			return err
 		}
 	}
-	// for _, name := range globalAsdf {
-	// 	if _, err := script.File(".tool-versions").MatchRegexp(regexp.MustCompile(name)).Column(2).
-	// 		ExecForEach(fmt.Sprintf("asdf global %s {{.}}", name)).Stdout(); err != nil {
-	// 		return err
-	// 	}
-	// }
 	fmt.Printf("asdf plugins updated 🔌\n")
 	return nil
 }
