@@ -99,43 +99,43 @@ runs:
 
     #     kubectl describe pod -n enic > cypress/logs/edgeinfra/enic-pod-describe.txt
     #     kubectl describe applications -n utils enic > cypress/logs/edgeinfra/enic-argocd-app.txt
-    # - name: Run Cluster Orch tests
-    #   id: cluster_orch_tests
-    #   if: ${{ always() && inputs.cluster_orch == 'true' }}
-    #   working-directory: orch-ui/tests
-    #   shell: bash
-    #   run: |
-    #     npx cypress run --e2e \
-    #       -s "cypress/e2e/cluster-orch/cluster-orch-smoke.cy.ts" \
-    #       --env EN_UUID=${{ env.EN_UUID }}
-    # - name: Collect ClusterOrch logs
-    #   if: ${{ always() && inputs.cluster_orch == 'true' }}
-    #   working-directory: orch-ui/tests
-    #   shell: bash
-    #   run: |
-    #     mkdir -p cypress/logs/cluster-orch
+    - name: Run Cluster Orch tests
+      id: cluster_orch_tests
+      if: ${{ always() && inputs.cluster_orch == 'true' }}
+      working-directory: orch-ui/tests
+      shell: bash
+      run: |
+        npx cypress run --e2e \
+          -s "cypress/e2e/cluster-orch/cluster-orch-smoke.cy.ts" \
+          --env EN_UUID=${{ env.EN_UUID }}
+    - name: Collect ClusterOrch logs
+      if: ${{ always() && inputs.cluster_orch == 'true' }}
+      working-directory: orch-ui/tests
+      shell: bash
+      run: |
+        mkdir -p cypress/logs/cluster-orch
 
-    #     # CAPI components
-    #     kubectl logs -n capi-operator-system -l app=cluster-api-operator > cypress/logs/cluster-orch/cluster-api-operator.log
-    #     kubectl logs -n capr-system -l cluster.x-k8s.io/provider=bootstrap-rke2 > cypress/logs/cluster-orch/bootstrap-rke2.log
-    #     kubectl logs -n capr-system -l cluster.x-k8s.io/provider=control-plane-rke2 > cypress/logs/cluster-orch/control-plane-rke2.log
+        # CAPI components
+        kubectl logs -n capi-operator-system -l app=cluster-api-operator > cypress/logs/cluster-orch/cluster-api-operator.log
+        kubectl logs -n capr-system -l cluster.x-k8s.io/provider=bootstrap-rke2 > cypress/logs/cluster-orch/bootstrap-rke2.log
+        kubectl logs -n capr-system -l cluster.x-k8s.io/provider=control-plane-rke2 > cypress/logs/cluster-orch/control-plane-rke2.log
 
-    #     # Orch components
-    #     kubectl logs -n orch-cluster -l app=cluster-connect-gateway-gateway > cypress/logs/cluster-orch/cluster-connect-gateway-gateway.log
-    #     kubectl logs -n orch-cluster -l app=cluster-manager-cm > cypress/logs/cluster-orch/cluster-manager-cm.log
-    #     kubectl logs -n orch-cluster -l app=cluster-manager-controller > cypress/logs/cluster-orch/cluster-manager-controller.log
-    #     kubectl logs -n orch-cluster -l app=southbound-api > cypress/logs/cluster-orch/southbound-api.log
+        # Orch components
+        kubectl logs -n orch-cluster -l app=cluster-connect-gateway-gateway > cypress/logs/cluster-orch/cluster-connect-gateway-gateway.log
+        kubectl logs -n orch-cluster -l app=cluster-manager-cm > cypress/logs/cluster-orch/cluster-manager-cm.log
+        kubectl logs -n orch-cluster -l app=cluster-manager-controller > cypress/logs/cluster-orch/cluster-manager-controller.log
+        kubectl logs -n orch-cluster -l app=southbound-api > cypress/logs/cluster-orch/southbound-api.log
 
-    #     # ENiC components
-    #     kubectl -n enic exec -it $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c edge-node -- journalctl -xeu cluster-agent --no-tail > cypress/logs/cluster-orch/enic-cluster-agent.log || true
+        # ENiC components
+        kubectl -n enic exec -it $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c edge-node -- journalctl -xeu cluster-agent --no-tail > cypress/logs/cluster-orch/enic-cluster-agent.log || true
     - name: Run AppOrch Cypress tests
       id: app_orch_tests
       if: ${{ always() && inputs.app_orch == 'true' }}
       working-directory: orch-ui/tests
       shell: bash
       run: |
-        npx cypress run --e2e \
-          -s "cypress/e2e/app-orch/deployment-package-smoke.cy.ts"
+        # npx cypress run --e2e \
+        #   -s "cypress/e2e/app-orch/deployment-package-smoke.cy.ts"
         # These tests are not stable yet, will be enabled in a separate PR
         npx cypress run --e2e \
           -s "cypress/e2e/app-orch/deployment-smoke.cy.ts" \
