@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-core: cluster-api:v1.9.0
-bootstrap: capr-system:rke2:v0.12.0
-controlPlane: capr-system:rke2:v0.12.0
+core: cluster-api:v1.9.7
+bootstrap: capr-system:rke2:v0.14.0
+controlPlane: capr-system:rke2:v0.14.0
 env:
   manager:
   {{- if .Values.argo.proxy }}
