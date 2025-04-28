@@ -2,11 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-{{- $appName        := "token-file-server" }}
-{{- $namespace      := "orch-secret" }}
-{{- $syncWave       := "1300" }}
+{{- $appName        := "tenancy-api-mapping" }}
+{{- $namespace      := "orch-iam" }}
+{{- $syncWave       := "1200" }}
 ---
-{{- if (index .Values.argo.enabled $appName) }}
+{{- if (index .Values.argo.enabled "multitenant_gateway") }}
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -21,7 +21,7 @@ spec:
   sources:
     - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
       chart: common/charts/{{$appName}}
-      targetRevision: 1.1.3
+      targetRevision: 0.4.1
       helm:
         releaseName: {{$appName}}
         valuesObject:

@@ -594,7 +594,7 @@ func waitUntilProjectCreation(ctx context.Context, nexusClient *nexus_client.Cli
 			if err != nil {
 				return "", err
 			}
-			fmt.Printf("project %v status - %v\n", projectName, project.Status.ProjectStatus.StatusIndicator)
+			fmt.Printf("project %v status - %v (%s)\n", projectName, project.Status.ProjectStatus.StatusIndicator, project.Status.ProjectStatus.Message)
 			if project.Status.ProjectStatus.StatusIndicator == projectv1.StatusIndicationIdle {
 				return project.Status.ProjectStatus.UID, nil
 			}
@@ -815,6 +815,25 @@ func (TenantUtils) CreateEdgeInfraUsers(ctx context.Context, orgName, projectNam
 		}
 	}
 
+	// Create Edge Infra Manager NB API user with service-admin which is needed for observability-admin access
+	user = edgeInfraUserPrefix + "-service-admin-api-user"
+	userId, orgId, err = createKeycloakUser(ctx, client, token, user, orgName)
+	if err != nil && status.Code(err) != codes.AlreadyExists {
+		return fmt.Errorf("error creating Keycloak user %s. Error: %w", user, err)
+	}
+	if status.Code(err) != codes.AlreadyExists {
+		groups := []string{projectId + "_Host-Manager-Group", "service-admin-group"}
+
+		err = addUserToGroups(ctx, client, token, KeycloakRealm, groups, userId)
+		if err != nil {
+			return fmt.Errorf("error adding org roles to user %s. Error: %w", user, err)
+		}
+		err = addProjectMemberRole(ctx, client, token, KeycloakRealm, orgId, projectId, userId)
+		if err != nil {
+			return fmt.Errorf("error adding member role to user %s. Error: %w", user, err)
+		}
+	}
+
 	return nil
 }
 
@@ -987,6 +1006,8 @@ func createKeycloakUser(ctx context.Context, client *gocloak.GoCloak, token *goc
 	user = &gocloak.User{
 		Username:      &edgeInfraUser,
 		Email:         gocloak.StringP(edgeInfraUser + "@" + orgName + ".com"),
+		FirstName:     &edgeInfraUser,
+		LastName:      &edgeInfraUser,
 		Enabled:       gocloak.BoolP(true),
 		EmailVerified: gocloak.BoolP(true),
 	}
