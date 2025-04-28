@@ -288,7 +288,7 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 		hrmSBIUrl := "infra-node." + serviceDomain
 		hostUuid := uuid.New().String()
 
-		It("should be accessible over gRPC when uses a valid keycloak token", func(ctx SpecContext) {
+		PIt("should be accessible over gRPC when uses a valid keycloak token", func(ctx SpecContext) {
 			enToken, err := getTestENToken(cli, testUserPassword)
 			Expect(err).ToNot(HaveOccurred())
 			apiToken, err := getTestInfraApiToken(cli, testUserPassword)

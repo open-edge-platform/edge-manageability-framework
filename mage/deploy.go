@@ -101,7 +101,9 @@ func kubectlDebugNamespace(name string) error {
 
 func (d Deploy) kind(targetEnv string) error { //nolint:gocyclo
 	targetEnvType, err := (Config{}).getTargetEnvType(targetEnv)
-	if err != nil || targetEnvType != "kind" {
+	if err != nil {
+		return fmt.Errorf("error getting target environment type: %w", err)
+	} else if targetEnvType != "kind" {
 		return fmt.Errorf("wrong environment specified for kind deployment: %s is a %s orchestrator definition", targetEnv, targetEnvType)
 	}
 
@@ -223,6 +225,12 @@ func (d Deploy) kind(targetEnv string) error { //nolint:gocyclo
 
 	if err := (Argo{}).repoAdd(giteaUser, giteaToken, giteaRepos); err != nil {
 		return err
+	}
+
+	// Check for `.mage-local.yaml` file. If it exists, use it to add any additional repos spacified as
+	// desired in the settings.
+	if err := (Argo{}).AddLocalRepos(); err != nil {
+		return fmt.Errorf("error adding local repos: %w", err)
 	}
 
 	if err := (Argo{}).dockerHubChartOrgAdd(); err != nil {

@@ -302,11 +302,13 @@ func HttpInfraOnboardNewInstance(instanceUrl, token, hostID, osID string, client
 
 	instKind := infra_api.INSTANCEKINDMETAL
 	instanceName := "test-instance"
+	sf := infra_api.SECURITYFEATURENONE
 	instance := infra_api.Instance{
-		HostID: &hostID,
-		OsID:   &osID,
-		Kind:   &instKind,
-		Name:   &instanceName,
+		HostID:          &hostID,
+		OsID:            &osID,
+		Kind:            &instKind,
+		Name:            &instanceName,
+		SecurityFeature: &sf,
 	}
 
 	data, err := json.Marshal(instance)

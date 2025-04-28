@@ -23,6 +23,7 @@ var (
 		"clusterDomain":       serviceDomain,
 		"argoServiceType":     "LoadBalancer",
 		"enableObservability": true,
+		"enableAuditLogging":  false,
 		"enableKyverno":       true,
 		"enableEdgeInfra":     true,
 		"enableAutoProvision": true,
