@@ -140,6 +140,14 @@ Other approaches have been considered include:
 
 ## Implementation plan
 
+### Proposal 1
+
+Application Orchestration team shall modify the catalog service to accept tarball uploads and to extract the DP from them.
+
+GUI team shall remove any impediments (if there are any) to uploading tarballs via the existing import command.
+
+### Proposal 2 / 3
+
 Application Orchestration team shall implement two APIs:
 
 - `list_packages_from_repo`. Given a repository URL, clones the repo and returns a list of deployment packages
@@ -153,6 +161,11 @@ list of deployment packages and to allow the user to select one, and to confirm 
 failure of the operation.
 
 If/when a CLI is committed to, Application Orchestration team shall update the CLI.
+
+## Decision
+
+The tentative decision is to implement Proposal 1 at this time. Proposal 1 mainly leverages existing planned work, and
+nothing in Proposal 1 prevents taking up the other proposals at a future date.
 
 ## Open issues (if applicable)
 
