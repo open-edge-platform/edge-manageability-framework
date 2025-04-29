@@ -619,8 +619,7 @@ func (d Deploy) Argocd(targetEnv string) error {
 	return d.argocd(argoBootstrapValues, targetEnv)
 }
 
-// Deploy the edge network locally.
-func (d Deploy) EdgeNetwork(ctx context.Context) error {
+func edgeNetwork(ctx context.Context, applyFirewall bool) error {
 	mg.CtxDeps(
 		ctx,
 		Deps{}.EnsureUbuntu,
@@ -672,8 +671,40 @@ func (d Deploy) EdgeNetwork(ctx context.Context) error {
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("terraform apply failed: %w", err)
 	}
+	if applyFirewall {
+		// Define the firewall filter using virsh nwfilter;
+		// Reject all traffic that is not destined for the subnet specified below
+		filterXML := `
+<filter name='virbr1-filter' chain='root'>
+  <rule action='accept' direction='in' priority='500'>
+	<ip match='dest' value='192.168.99.0/24'/>
+  </rule>
+  <rule action='reject' direction='in' priority='600'/>
+</filter>`
+		filterFile := "/tmp/virbr1-filter.xml"
+		if err := os.WriteFile(filterFile, []byte(filterXML), 0644); err != nil {
+			return fmt.Errorf("failed to write filter XML: %w", err)
+		}
+
+		// Define the filter in virsh
+		if err := sh.RunV("sudo", "virsh", "nwfilter-define", filterFile); err != nil {
+			return fmt.Errorf("failed to define nwfilter: %w", err)
+		}
+
+		fmt.Println("Firewall filter created successfully")
+	}
 
 	return nil
+}
+
+// Deploy the edge network locally.
+func (d Deploy) EdgeNetwork(ctx context.Context) error {
+	return edgeNetwork(ctx, false)
+}
+
+// Deploy the edge network locally with additional firewall filter to prevent EN from reaching Internet directly.
+func (d Deploy) EdgeNetworkFirewallFilter(ctx context.Context) error {
+	return edgeNetwork(ctx, true)
 }
 
 // Sets the edge network DNS resolver as the default resolver on the host machine.
