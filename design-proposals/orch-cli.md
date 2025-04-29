@@ -6,12 +6,13 @@ Last updated: 2025-04-29
 
 ## Abstract
 
-This ADR describes the implementation of a command line interface (CLI) for the
+This ADR describes the design of a command line interface (CLI) for the
 Orchestrator. The CLI is a cross-component tool that may be used from a Linux, Windows, or
-Mac environment, such as from the administrator's laptop.
+Mac environment, such as from the administrator's laptop. The CLI may also may be leveraged
+as a building block in other environments such as CI/CD or testing.
 
-This ADR describes a CLI that uses the `Catalog CLI` as a strating point. However, this ADR
-also assumes that syntax and semantics of the CLI may diverge from the existing `Catalog CLI` and
+The CLI described here uses the `Catalog CLI` as a strating point and inspiration. However, this
+ADR assumes that syntax and semantics of the CLI may diverge from the existing `Catalog CLI` and
 this ADR is not constrained by that existing implementation. As such, examples given in this
 ADR may not necessarily work with the existing catalog CLI.
 
@@ -24,7 +25,7 @@ The CLI follows a `verb - noun - subject` pattern. For example,
 
 - `cli get application nginx`. The verb is `get`. The noun is `application` and the subject
   is `nginx`. This particular CLI command would return the application called nginx from the
-  Orchestrator.
+  Orchestrator and print them to the console in a human-readable format.
 
 ### Syntax
 
@@ -58,7 +59,7 @@ verb.
 
 - `delete` ... deletes an object from the Orchestrator.
 
-- `set` / `update` ... modifies a value in an existing object on the Orchestrator.
+- `set` / `update` ... modifies one or more values in an existing object on the Orchestrator.
 
 - `apply` ... create or modify an object from a yaml or json specification, from stdin or from a local
   file.
@@ -66,14 +67,15 @@ verb.
 ##### Configuration and utility
 
 - `config` ... configures the CLI. For example, `cli config set endpoint https://my-orchestrator.com/`
-  TO-DO: This implementation inherited from the catalog CLI is ad-hoc and we should consider discarding
-  it in favor treating configuration as any other verb-noun operation,
+  TO-DO: This command inherited from the catalog CLI does not follow consistent syntax
+  and we should consider discarding it in favor treating configuration as any other verb-noun operation,
   i.e. `cli update config --endpoint https://my-orchestrator.com/`.
 
 - `completion` ... return a script that can be used to configure autocompletion.
   TO-DO: Consider treating completion as a verb/noun operation? i.e. `cli get completion bash`.
 
-- `upload` ... upload items to the Orchestrator.
+- `upload <directory>` ... upload items to the Orchestrator. This is currently a catalog-specific
+  operation and uploads a directory of yaml files to the orchestrator.
 
 - `version` ... return the version number of the CLI.
 
@@ -148,7 +150,7 @@ verb/noun pair includes the options `--chart-name` and `--chart-registry` and `-
 
 - `cli logout` ... log out.
 
-### Miscellaneous
+### Miscellaneous Guidelines
 
 - The CLI seeks to minimize the boundaries between teams and components. For example, the following approaches
   are not desirable:
@@ -186,6 +188,11 @@ format.
 
 - Addtional context or explanation may be provided in the CLI, such as returning objects in a human-readable format.
 
+- The CLI may contain additional guardrails to "fail early" or to fail in a human readable manner when the user
+  performs an incorrect operation.
+
+- The CLI may seek to hide or mask sensitive information such as tokens or passwords.
+
 ## Affected components and Teams
 
 Application Orchestration, Cluster Orchestration, EIM, Platform.
@@ -213,3 +220,10 @@ TO-DO: Here is may make sense to separate code by subsystem for easier maintaina
 
 - Session / Context management. It would be convenient if the CLI could store the context for
   multiple orchestrator sessions and then easily switch between them.
+
+- Distribution of Binaries. Proposal is to make them a github release, so they may be easily
+  downloaded by an end-user. Additional scanning or signing of binaries may be necessary.
+
+- Filtering and Naming. This proposal adopts the Catalog convention where most objects are named by
+  their `name` and `version`. Other systems, such as EIM may have more complex naming to consider
+  such as naming by `uuid` or `id` in addition to `name`.
