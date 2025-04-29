@@ -8,6 +8,7 @@ grpcurl 1.8.9
 helm 3.11.1
 helm-diff 3.6.0
 helmfile 0.150.0
+jq 1.6
 kind 0.17.0
 kubectl 1.30.10
 mage 1.14.0
@@ -20,4 +21,3 @@ terraform-docs 0.17.0
 tflint 0.51.2
 yamllint 1.26.3
 yq 4.34.2
-jq 1.6
