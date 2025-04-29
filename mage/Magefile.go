@@ -135,6 +135,7 @@ func AsdfPlugins() error {
 	// Install remaining tools
 	if _, err := script.File(".tool-versions").Column(1).
 		MatchRegexp(regexp.MustCompile(`^[^\#]`)).ExecForEach("asdf plugin add {{.}}").Stdout(); err != nil {
+		return fmt.Errorf("error running 'asdf plugin add {{.}}': %v", err)
 	}
 	if _, err := script.Exec("asdf install").Stdout(); err != nil {
 		return fmt.Errorf("error running 'asdf install': %v", err)
