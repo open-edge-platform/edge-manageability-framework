@@ -142,11 +142,11 @@ func AsdfPlugins() error {
 	}
 	if _, err := script.Exec("asdf install").Stdout(); err != nil {
 		fmt.Printf("Error running 'asdf install': %v\n", err)
-		return nil
+		return err
 	}
 	if _, err := script.Exec("asdf current").Stdout(); err != nil {
 		fmt.Printf("Error running 'asdf current': %v\n", err)
-		return nil
+		return err
 	}
 	// Set plugins listed in globalAsdf as global
 	for _, name := range globalAsdf {
