@@ -34,7 +34,7 @@ variable "vm_boot_disk_size" {
 
 variable "os_disk_image_url" {
   type        = string
-  description = "The URL of the OS disk image"
+  description = "The URL of the OS disk image."
   default     = "https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img"
 }
 
