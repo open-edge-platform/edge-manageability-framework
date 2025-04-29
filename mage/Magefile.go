@@ -207,9 +207,9 @@ func (Undeploy) EdgeCluster(orgName, projectName string) error {
 		return fmt.Errorf("failed to get project %s: %w", projectName, err)
 	}
 
-	edgeInfraUser, _, err := getEdgeAndOnboardingUsers(ctx, orgName)
+	edgeInfraUser, _, err := getEdgeAndApiUsers(ctx, orgName)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get edge user: %w", err)
 	}
 
 	edgeMgrUser = edgeInfraUser
@@ -217,12 +217,12 @@ func (Undeploy) EdgeCluster(orgName, projectName string) error {
 
 	projectId, err := projectId(projectName)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get project id: %w", err)
 	}
 	fleetNamespace = projectId
 
 	if err := cleanUpEnic(); err != nil {
-		return err
+		return fmt.Errorf("failed to cleanup enic: %w", err)
 	}
 
 	fmt.Println("\nENiC cluster deleted 😊")
@@ -1185,17 +1185,23 @@ func (d Deploy) EdgeCluster(targetEnv string) error {
 	projectName := "sample-project"
 	orgName := "sample-org"
 
-	if err := (TenantUtils{}).GetProject(context.TODO(), orgName, projectName); err != nil {
+	ctx := context.TODO()
+	if err := (TenantUtils{}).GetProject(ctx, orgName, projectName); err != nil {
 		return fmt.Errorf("failed to get project %s: %w", projectName, err)
+	}
+
+	_, apiUser, err := getEdgeAndApiUsers(ctx, orgName)
+	if err != nil {
+		return fmt.Errorf("failed to get api user: %w", err)
 	}
 
 	os.Setenv("ORCH_PROJECT", projectName)
 	os.Setenv("ORCH_ORG", orgName)
-	os.Setenv("ORCH_USER", "sample-project-onboarding-user")
+	os.Setenv("ORCH_USER", apiUser)
 
 	projectId, err := projectId(projectName)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get project id: %w", err)
 	}
 
 	fleetNamespace = projectId
@@ -1215,9 +1221,9 @@ func (d Deploy) EdgeClusterWithProject(targetEnv string, orgName string, project
 		return fmt.Errorf("failed to get project %s: %w", projectName, err)
 	}
 
-	edgeInfraUser, onboardingUser, err := getEdgeAndOnboardingUsers(ctx, orgName)
+	edgeInfraUser, apiUser, err := getEdgeAndApiUsers(ctx, orgName)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get edge and api users: %w", err)
 	}
 
 	edgeMgrUser = edgeInfraUser
@@ -1225,11 +1231,11 @@ func (d Deploy) EdgeClusterWithProject(targetEnv string, orgName string, project
 
 	os.Setenv("ORCH_PROJECT", projectName)
 	os.Setenv("ORCH_ORG", orgName)
-	os.Setenv("ORCH_USER", onboardingUser)
+	os.Setenv("ORCH_USER", apiUser)
 
 	projectId, err := projectId(projectName)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get project id: %w", err)
 	}
 
 	fleetNamespace = projectId
@@ -1246,17 +1252,23 @@ func (d Deploy) EdgeClusterWithLabels(targetEnv string, labels string) error {
 	projectName := "sample-project"
 	orgName := "sample-org"
 
-	if err := (TenantUtils{}).GetProject(context.TODO(), orgName, projectName); err != nil {
+	ctx := context.TODO()
+	if err := (TenantUtils{}).GetProject(ctx, orgName, projectName); err != nil {
 		return fmt.Errorf("failed to get project %s: %w", projectName, err)
+	}
+
+	_, apiUser, err := getEdgeAndApiUsers(ctx, orgName)
+	if err != nil {
+		return fmt.Errorf("failed to get api user: %w", err)
 	}
 
 	os.Setenv("ORCH_PROJECT", projectName)
 	os.Setenv("ORCH_ORG", orgName)
-	os.Setenv("ORCH_USER", "sample-project-onboarding-user")
+	os.Setenv("ORCH_USER", apiUser)
 
 	projectId, err := projectId(projectName)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get project id: %w", err)
 	}
 
 	fleetNamespace = projectId
