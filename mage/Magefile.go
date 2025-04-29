@@ -120,6 +120,16 @@ func updateEdgeName() {
 
 // Install ASDF plugins.
 func AsdfPlugins() error {
+	// Install jq and markdown-lint pre-requisites
+	if _, err := script.Exec("sudo apt-get install jq").Stdout(); err != nil {
+		fmt.Printf("Error running installing jq: %v\n", err)
+		return err
+	}
+	// Install markdown-lint pre-requisites
+	if _, err := script.Exec("apt-get install python3.10-venv").Stdout(); err != nil {
+		fmt.Printf("Error running installing markdown-lint pre-requisites: %v\n", err)
+		return err
+	}
 	// Install remaining tools
 	if _, err := script.File(".tool-versions").Column(1).
 		MatchRegexp(regexp.MustCompile(`^[^\#]`)).ExecForEach("asdf plugin add {{.}}").Stdout(); err != nil {
