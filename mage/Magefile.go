@@ -122,32 +122,32 @@ func updateEdgeName() {
 func AsdfPlugins() error {
 	// Install markdown-lint pre-requisites (jq)
 	if _, err := script.Exec("sudo apt-get install jq -y").Stdout(); err != nil {
-		return fmt.Errorf("error running installing markdown-lint pre-requisites (jq): %v", err)
+		return fmt.Errorf("error running installing markdown-lint pre-requisites (jq): %w", err)
 	}
 	// Install markdown-lint pre-requisites (npm)
 	if _, err := script.Exec("sudo apt-get install npm -y").Stdout(); err != nil {
-		return fmt.Errorf("error running installing markdown-lint pre-requisites (npm): %v", err)
+		return fmt.Errorf("error running installing markdown-lint pre-requisites (npm): %w", err)
 	}
 	// Install yamllint pre-requisites (python3-venv)
 	if _, err := script.Exec("sudo apt-get install python3-venv -y").Stdout(); err != nil {
-		return fmt.Errorf("error running installing yamllint pre-requisites (python3-venv): %v", err)
+		return fmt.Errorf("error running installing yamllint pre-requisites (python3-venv): %w", err)
 	}
 	// Install remaining tools
 	if _, err := script.File(".tool-versions").Column(1).
 		MatchRegexp(regexp.MustCompile(`^[^\#]`)).ExecForEach("asdf plugin add {{.}}").Stdout(); err != nil {
-		return fmt.Errorf("error running 'asdf plugin add {{.}}': %v", err)
+		return fmt.Errorf("error running 'asdf plugin add {{.}}': %w", err)
 	}
 	if _, err := script.Exec("asdf install").Stdout(); err != nil {
-		return fmt.Errorf("error running 'asdf install': %v", err)
+		return fmt.Errorf("error running 'asdf install': %w", err)
 	}
 	if _, err := script.Exec("asdf current").Stdout(); err != nil {
-		return fmt.Errorf("error running 'asdf current': %v", err)
+		return fmt.Errorf("error running 'asdf current': %w", err)
 	}
 	// Set plugins listed in globalAsdf as global
 	for _, name := range globalAsdf {
 		if _, err := script.File(".tool-versions").MatchRegexp(regexp.MustCompile(name)).Column(2).
 			ExecForEach(fmt.Sprintf("asdf set --home %s {{.}}", name)).Stdout(); err != nil {
-			return fmt.Errorf("error seting plugins listed in globalAsdf as global: %v", err)
+			return fmt.Errorf("error seting plugins listed in globalAsdf as global: %w", err)
 		}
 	}
 	fmt.Printf("asdf plugins updated🔌\n")
