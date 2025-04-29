@@ -150,6 +150,15 @@ verb/noun pair includes the options `--chart-name` and `--chart-registry` and `-
 
 ### Miscellaneous
 
+- The CLI seeks to minimize the boundaries between teams and components. For example, the following approaches
+  are not desirable:
+
+  - `cli update app-orch application foo` ... app-orch is a team/subsystem designator that is not relevant to
+    the user.
+
+  - `cli update catalog application foo` ... catalog is a component name. It is not relevant to the user that
+    applications are managed by the catalog service.
+
 - The CLI should avoid distinguishing between singular and plural nouns. For example `list applications`
   and `list application` should be equivalent commands.
 
