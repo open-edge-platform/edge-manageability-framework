@@ -1,4 +1,4 @@
-# Design Proposal: Add suppport for K8s
+# Design Proposal: Add suppport for K3s
 
 Author(s): Hyunsun Moon, Andy Bavier, Denisio Togashi
 
