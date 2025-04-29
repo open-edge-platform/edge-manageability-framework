@@ -125,13 +125,13 @@ func AsdfPlugins() error {
 		return fmt.Errorf("error running installing markdown-lint pre-requisites (jq): %w", err)
 	}
 	// Install markdown-lint pre-requisites (npm)
-	//if _, err := script.Exec("sudo apt-get install npm -y").Stdout(); err != nil {
-	//	return fmt.Errorf("error running installing markdown-lint pre-requisites (npm): %w", err)
-	//}
+	if _, err := script.Exec("sudo apt-get install npm -y").Stdout(); err != nil {
+		return fmt.Errorf("error running installing markdown-lint pre-requisites (npm): %w", err)
+	}
 	// Install yamllint pre-requisites (python3-venv)
-	//if _, err := script.Exec("sudo apt-get install python3-venv -y").Stdout(); err != nil {
-	//	return fmt.Errorf("error running installing yamllint pre-requisites (python3-venv): %w", err)
-	//}
+	if _, err := script.Exec("sudo apt-get install python3-venv -y").Stdout(); err != nil {
+		return fmt.Errorf("error running installing yamllint pre-requisites (python3-venv): %w", err)
+	}
 	// Install remaining tools
 	if _, err := script.File(".tool-versions").Column(1).
 		MatchRegexp(regexp.MustCompile(`^[^\#]`)).ExecForEach("asdf plugin add {{.}}").Stdout(); err != nil {
