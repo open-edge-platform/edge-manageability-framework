@@ -90,7 +90,7 @@ relatively small yaml files that are of interest, this may be more efficient.
 Note: The above URLs use query arguments for example illustrative purposes. The implementation may use POST
 with a JSON payload instead. This is an implementation detail.
 
-### Proposal 3: Import all deployment packages from a repository (requires less GUI work)
+## Proposal 3: Import all deployment packages from a repository (requires less GUI work)
 
 This is the same as the preceding proposal, but with a simplification that it elminates the step required
 to generate list of DPs and for the user to select a DP from the list.
