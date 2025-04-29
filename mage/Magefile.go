@@ -1393,7 +1393,7 @@ func (a Argo) AddLocalRepos() error {
 				envVar := strings.TrimPrefix(repo.User, "$")
 				repo.User = os.Getenv(envVar)
 				if repo.User == "" {
-					return fmt.Errorf("User %s required by %s repo is not set", envVar, repo.Url)
+					return fmt.Errorf("user %s required by %s repo is not set", envVar, repo.Url)
 				}
 			}
 			// If the token value starts with a '$' sign, replace it with the environment value
@@ -1401,7 +1401,7 @@ func (a Argo) AddLocalRepos() error {
 				envVar := strings.TrimPrefix(repo.Token, "$")
 				repo.Token = os.Getenv(envVar)
 				if repo.Token == "" {
-					return fmt.Errorf("Token %s required by %s repo is not set", envVar, repo.Url)
+					return fmt.Errorf("token %s required by %s repo is not set", envVar, repo.Url)
 				}
 			}
 
