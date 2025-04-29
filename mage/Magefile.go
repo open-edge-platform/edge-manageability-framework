@@ -121,13 +121,13 @@ func updateEdgeName() {
 // Install ASDF plugins.
 func AsdfPlugins() error {
 	// Install markdown-lint pre-requisites (jq)
-	if _, err := script.Exec("sudo apt-get install jq -y").Stdout(); err != nil {
-		return fmt.Errorf("error running installing markdown-lint pre-requisites (jq): %w", err)
-	}
+	//if _, err := script.Exec("sudo apt-get install jq -y").Stdout(); err != nil {
+	//	return fmt.Errorf("error running installing markdown-lint pre-requisites (jq): %w", err)
+	//}
 	// Install markdown-lint pre-requisites (npm)
-	if _, err := script.Exec("sudo apt-get install npm -y").Stdout(); err != nil {
-		return fmt.Errorf("error running installing markdown-lint pre-requisites (npm): %w", err)
-	}
+	//if _, err := script.Exec("sudo apt-get install npm -y").Stdout(); err != nil {
+	//	return fmt.Errorf("error running installing markdown-lint pre-requisites (npm): %w", err)
+	//}
 	// Install yamllint pre-requisites (python3-venv)
 	if _, err := script.Exec("sudo apt-get install python3-venv -y").Stdout(); err != nil {
 		return fmt.Errorf("error running installing yamllint pre-requisites (python3-venv): %w", err)
