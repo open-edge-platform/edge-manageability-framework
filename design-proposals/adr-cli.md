@@ -1,0 +1,192 @@
+# Design Proposal: Orchestrator Command Line Interface
+
+Author(s): Scott Baker
+
+Last updated: 2025-04-29
+
+## Abstract
+
+This ADR describes the implementation of a command line interface (CLI) for the
+Orchestrator. The CLI is a cross-component tool that may be used from a Linux, Windows, or
+Mac environment, such as from the administrator's laptop.
+
+This ADR describes a CLI that uses the `Catalog CLI` as a strating point. However, this ADR
+also assumes that syntax and semantics of the CLI may diverge from the existing `Catalog CLI` and
+this ADR is not constrained by that existing implementation. As such, examples given in this
+ADR may not necessarily work with the existing catalog CLI.
+
+## Proposal
+
+The CLI implements a set of verbs, a set of nouns, and a set of common options that may
+be used to interact with the orchestrator.
+
+The CLI follows a `verb - noun - subject` pattern. For example,
+
+* `cli get application nginx`. The verb is `get`. The noun is `application` and the subject
+  is `nginx`. This particular CLI command would return the application called nginx from the
+  Orchestrator.
+
+### Syntax
+
+This section describes the syntax of the CLI.
+
+#### Verbs
+
+Note that some verbs may have synonyms. For example, `set` and `update` are synonyms for the same
+verb.
+
+##### Session Management
+
+- `login <user-id>` ... log in to the Orchestrator. The CLI shall prompt for a password and retrieve
+  a refresh token. The refresh token is cached locally until it is expired or a `logout` verb is used.
+
+- `logout` ... log out of the Orchestrator. Any active login state, including the refresh token, is
+  discarded.
+
+##### CRUD Operations
+
+- `list` ... lists objects on the Orchestrator. The `list` verb produces a list of all objects
+  on the Orchestrator, with an optional filter. List should return tabular summary-level information
+  about the objects.
+
+- `get` / `describe` ... retrieves objects from the Orchestrator. `get` is for retrieving single objects whereas
+  `list` is for retrieving multiple objects. `get` should retrieve more verbose information about the
+  object than `list`.
+
+- `create` ... creates an object on the Orchestrator. Additional noun-specific parameters are used to
+  describe the properties of the object to be created.
+
+- `delete` ... deletes an object from the Orchestrator.
+
+- `set` / `update` ... modifies a value in an existing object on the Orchestrator.
+
+- `apply` ... create or modify an object from a yaml or json specification, from stdin or from a local
+  file.
+
+##### Configuration and utility
+
+- `config` ... configures the CLI. For example, `cli config set endpoint https://my-orchestrator.com/`
+  TO-DO: This implementation inherited from the catalog CLI is ad-hoc and we should consider discarding
+  it in favor treating configuration as any other verb-noun operation,
+  i.e. `cli update config --endpoint https://my-orchestrator.com/`. 
+
+- `completion` ... return a script that can be used to configure autocompletion.
+  TO-DO: Consider treating completion as a verb/noun operation? i.e. `cli get completion bash`.
+
+- `upload` ... upload items to the Orchestrator.
+
+- `version` ... return the version number of the CLI.
+
+- `watch` ... watch an object in the Orchestrator using webhook or stream interface, returning changes
+  as they occur.
+  TO-DO: drop this?
+
+- `wipe` ... wipe all data in a project.
+  TO-DO: drop this? Should be implemented as part of `cli delete project`.
+
+#### Nouns
+
+This ADR does not seek to exhaustively list the set of nouns that are available on the CLI. Each
+component shall add their own nouns as appropriate. For example,
+
+- `cli list applications` ... The `application` noun applies to applications in the catalog.
+
+- `cli list registry` ... The `registry` noun applies to registries in the catalog.
+
+#### Subjects
+
+Subjects are additional information or context releated to a noun. Different nouns may support
+different subjects. For convenience sake, most nouns support a name subject and optionally for those
+objects that are versioned, a version subject. For example,
+
+- `cli get application nginx` ... returns the first nginx application, agnostic to the version.
+
+- `cli get application nginx 0.0.1` ... return exactly version 0.0.1 of the nginx application.
+
+If additional subjects beyond name and version are required, then they should be specified with addional
+options. For example,
+
+- `cli get application nginx --deployed true` ... get the nginx application that is currently deployed.
+
+#### Global Options
+
+- `-h` / `--help` ... return help. The help returned may be contextualized to the verb or noun that is
+  being used. For example `cli -h` returns global help whereas `cli create application -h` return help
+  that is relevant to creating applications.
+
+- `-n` / `--noauth` ... disables authentication checks, only useful in a devleopment environment.
+
+- `-p` / `--project` ... sets the project that will be used for the current verb. Required for verbs that
+  act on projects.
+
+- `-v` / `--verbose` ... enables verbose output.
+
+- `-o json` / `-o yaml` ... instead of returning human-readable output, return output in `yaml` or `json`.
+
+#### Verb-Specific and/or Noun-Specific options.
+
+Verbs and nouns may have addional non-global options as necessary. For example, the `create application`
+verb/noun pair includes the options `--chart-name` and `--chart-registry` and `--chart-version`.
+
+#### Examples
+
+- `cli login sample-project-admin` ... log in as a user.
+
+- `cli -p acme list applications nginx` ... list all nginx applications in a tabular format.
+
+- `cli -p acme list applications nginx =o yaml` ... list all nginx applications and emit the output as yaml.
+
+- `cli -p acme create application nginx 0.0.1 --chart-name nginx --chart-registry bitnami --chart-version 0.0.1`
+  ... create the nginx application using the specified parameters.
+
+- `cli -p acme delete applciation nginx 0.0.1` ... delete the nginx application.
+
+- `cli -p acme update application nginx 0.0.1 --chart-registry dockerhub` ... change the chart-registry for an
+  application.
+
+- `cli -p acme apply -f nginx.yaml` ... create the objects contained inside nginx.yaml.
+
+- `cli logout` ... log out.
+
+### Miscellaneous
+
+- The CLI should avoid distinguishing between singular and plural nouns. For example `list applications`
+  and `list application` should be equivalent commands.
+
+- The CLI stores its local state in the file (in a Linux environment) `~/.orch-cli/orch-cli.yaml`. This state
+  includes the orchestrator endpoint, keycloak endpoint, default projects, logged in username, and logged in
+  refresh token. This file should have permissions set appropriately.
+
+- The CLI generally uses the single `api.` endpoint for the orchestrator. There are occasionally places where
+  it may infer the names of additional endpoints. For example, during login it will infer the `keycloak.` endpoint
+  by taking the `api.` endpoint and substituting `keylocak` for `api`. This may be done with other endpoints
+  as necessary.
+
+## Rationale
+
+A fully autogenerated approach was discussed, but we feel this would too closely tie the CLI to the syntax
+and structure of the API. The CLI is meant to abstract the operations of the API into a more human-consumable
+format. 
+
+- There may be times when a particular CLI operation leads to multiple API calls.
+
+- Related objects may be internally resolved by the CLI as necessary. For example, a user might link objects A
+  and B together by name, even if the API represents the link by an internal identifiers or uuids.
+
+- If there are future breaking changes to the API, then the CLI may seek to insulate the user from those changes.
+
+- Addtional context or explanation may be provided in the CLI, such as returning objects in a human-readable format.
+
+## Affected components and Teams
+
+Application Orchestration, Cluster Orchestration, EIM, Platform.
+
+## Implementation plan
+
+The CLI is to be implemented in the `go` programming language, using the popular `cobra` and `viper`
+go libraries.
+
+## Open issues (if applicable)
+
+- Session / Context management. It would be convenient if the CLI could store the context for
+  multiple orchestrator sessions and then easily switch between them.
