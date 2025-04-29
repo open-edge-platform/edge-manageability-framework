@@ -195,7 +195,22 @@ Application Orchestration, Cluster Orchestration, EIM, Platform.
 The CLI is to be implemented in the `go` programming language, using the popular `cobra` and `viper`
 go libraries.
 
+The CLI shall include a Makefile and github actions that facilitate building it for Linux, Windows, and
+Mac.
+
+### Code structure
+
+The CLI shall be implemented in a modular way. 
+
+Each noun shall be placed in a file `<noun>.go` in the `internal/cli` directory. For example,
+
+- `internal/cli/application.go` ... implements the noun `application` and its associated verbs.
+
+TO-DO: Here is may make sense to separate code by subsystem for easier maintainability. For example,
+`internal/cli/catalog/application.go`, `internal/cli/cluster/cluster-templates.go`, etc. Discuss.
+
 ## Open issues (if applicable)
 
 - Session / Context management. It would be convenient if the CLI could store the context for
   multiple orchestrator sessions and then easily switch between them.
+
