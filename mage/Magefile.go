@@ -122,37 +122,32 @@ func updateEdgeName() {
 func AsdfPlugins() error {
 	// Install markdown-lint pre-requisites (jq)
 	if _, err := script.Exec("sudo apt-get install jq -y").Stdout(); err != nil {
-		fmt.Printf("error running installing markdown-lint pre-requisites (jq): %v\n", err)
+		fmt.Errorf("error running installing markdown-lint pre-requisites (jq): %v\n", err)
 		return err
 	}
 	// Install markdown-lint pre-requisites (npm)
 	if _, err := script.Exec("sudo apt-get install npm -y").Stdout(); err != nil {
-		fmt.Printf("error running installing markdown-lint pre-requisites (npm): %v\n", err)
-		return err
+		return fmt.Errorf("error running installing markdown-lint pre-requisites (npm): %v\n", err)
 	}
 	// Install yamllint pre-requisites (python3-venv)
 	if _, err := script.Exec("sudo apt-get install python3-venv -y").Stdout(); err != nil {
-		fmt.Printf("error running installing yamllint pre-requisites (python3-venv): %v\n", err)
-		return err
+		return fmt.Errorf("error running installing yamllint pre-requisites (python3-venv): %v\n", err)
 	}
 	// Install remaining tools
 	if _, err := script.File(".tool-versions").Column(1).
 		MatchRegexp(regexp.MustCompile(`^[^\#]`)).ExecForEach("asdf plugin add {{.}}").Stdout(); err != nil {
-		return err
 	}
 	if _, err := script.Exec("asdf install").Stdout(); err != nil {
-		fmt.Printf("error running 'asdf install': %v\n", err)
-		return err
+		return fmt.Errorf("error running 'asdf install': %v\n", err)
 	}
 	if _, err := script.Exec("asdf current").Stdout(); err != nil {
-		fmt.Printf("error running 'asdf current': %v\n", err)
-		return err
+		return fmt.Errorf("error running 'asdf current': %v\n", err)
 	}
 	// Set plugins listed in globalAsdf as global
 	for _, name := range globalAsdf {
 		if _, err := script.File(".tool-versions").MatchRegexp(regexp.MustCompile(name)).Column(2).
 			ExecForEach(fmt.Sprintf("asdf set --home %s {{.}}", name)).Stdout(); err != nil {
-			return err
+			return fmt.Errorf("error seting plugins listed in globalAsdf as global: %v\n", err)
 		}
 	}
 	fmt.Printf("asdf plugins updated🔌\n")
