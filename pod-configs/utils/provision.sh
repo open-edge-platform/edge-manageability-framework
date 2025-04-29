@@ -1222,19 +1222,6 @@ action_orch_loadbalancer() {
         # TODO: remove "load_values" once we remove values.sh in 25.02 release
         # We should use a single tfvar file to store all the variables, including certificate variables
         load_values
-
-        echo "tls_key = <<-EOF" > $variable_override
-        cat "${TF_VAR_tls_key}" >> $variable_override
-        echo "EOF" >> $variable_override
-
-        echo "tls_cert_chain = <<-EOF" >> $variable_override
-        cat "${TF_VAR_tls_cert}" >> $variable_override
-        echo "EOF" >> $variable_override
-
-        tls_cert_body="$(get_end_cert "${TF_VAR_tls_cert}")"
-        echo "tls_cert_body = <<-EOF" >> $variable_override
-        echo "$tls_cert_body" >> $variable_override
-        echo "EOF" >> $variable_override
     fi
 
     # Skip destroying the aws-lb-target-group-binding Kubernetes resources to avoid errors for old clusters which don't have the Kubernetes CRD installed
