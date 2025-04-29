@@ -120,14 +120,19 @@ func updateEdgeName() {
 
 // Install ASDF plugins.
 func AsdfPlugins() error {
-	// Install jq and markdown-lint pre-requisites
+	// Install markdown-lint pre-requisites (jq)
 	if _, err := script.Exec("sudo apt-get install jq").Stdout(); err != nil {
-		fmt.Printf("Error running installing jq: %v\n", err)
+		fmt.Printf("Error running installing markdown-lint pre-requisites (jq): %v\n", err)
 		return err
 	}
-	// Install markdown-lint pre-requisites
-	if _, err := script.Exec("apt-get install python3.10-venv").Stdout(); err != nil {
-		fmt.Printf("Error running installing markdown-lint pre-requisites: %v\n", err)
+	// Install markdown-lint pre-requisites (npm)
+	if _, err := script.Exec("sudo apt-get install npm").Stdout(); err != nil {
+		fmt.Printf("Error running installing markdown-lint pre-requisites (npm): %v\n", err)
+		return err
+	}
+	// Install yamllint pre-requisites (python3-venv)
+	if _, err := script.Exec("sudo apt-get install python3-venv").Stdout(); err != nil {
+		fmt.Printf("Error running installing yamllint pre-requisites (python3-venv): %v\n", err)
 		return err
 	}
 	// Install remaining tools
@@ -150,7 +155,7 @@ func AsdfPlugins() error {
 			return err
 		}
 	}
-	fmt.Printf("asdf plugins updated 🔌\n")
+	fmt.Printf("asdf plugins updated🔌\n")
 	return nil
 }
 
