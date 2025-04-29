@@ -8,7 +8,7 @@
 argo:
   releaseService:
     ociRegistry: "registry-rs.edgeorchestration.intel.com"
-    fileServer: "files-rs.edgeorchestration.intel.com"
+    fileServer: "files-rs.internal.ledgepark.intel.com"
   tokenRefresh: null
   chartRepoURL: "registry-rs.edgeorchestration.intel.com/edge-orch"
   rsChartRepoURL: "registry-rs.edgeorchestration.intel.com/edge-orch"
