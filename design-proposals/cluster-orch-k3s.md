@@ -1,6 +1,6 @@
 # Design Proposal: Add suppport for K8s
 
-Author(s): Hyunsun Moon
+Author(s): Hyunsun Moon, Andy Bavier, Denisio Togashi
 
 Last updated: 4/28/25
 
@@ -49,12 +49,20 @@ The proposed integration of K3s does not introduce any breaking changes to the e
 
 Cluster Orchestration provides sample cluster templates that users can employ to create new clusters directly or as a basis for developing customized templates with additional configurations. For example, sample templates for RKE2 clusters are available [here](https://github.com/open-edge-platform/cluster-manager/tree/release-2.0/default-cluster-templates). Similarly, sample cluster templates for K3s, featuring three distinct security levels—restricted, baseline, and privileged—will be provided and installed by default with the orchestrator.
 
-#### Cluster API K3s provider
+#### Cluster API K3s Provider Changes
 
 ## Rationale
 
-1. MicroK8s
-2. K0s
+Alternative approaches, such as MicroK8s and k0s, were considered but ultimately set aside due to specific limitations. MicroK8s is primarily designed for local development with a focus on single-node setups, which may not meet the scalability needs of edge deployments. On the other hand, k0s, while suitable for both small and large clusters, lacks the popularity and community support that K3s enjoys. Here are more details about advantages of K3s over these alternatives:
+
+**Resource Efficiency**: K3s boasts a compact package size of 68MB (total 556MB) and requires only 1-2 CPUs and 1.7-2GB of RAM, making it particularly well-suited for environments with constrained computational resources. This efficiency enables more resources to be dedicated to application workloads rather than the Kubernetes itself.
+
+**Ease of Deployment**: As a single binary with embedded data store either SQLite or etcd, K3s simplifies the setup process and reduces the complexity often associated with Kubernetes deployments.
+
+**Community and Adoption**: With 29.4k GitHub stars, K3s has achieved wide adoption and boasts a strong community, providing robust support and ongoing development. This popularity underscores its proven track record and reliability across various deployment scenarios.
+
+**Flexibility and Customization**: K3s offers a variety of default add-ons, such as CNI (flannel by default), helm controller, and metrics-server, which can be disabled if not required. This flexibility allows users to customize their deployments to meet specific project requirements and constraints, enhancing adaptability to diverse use cases.
+
 
 ## Affected components and Teams
 
@@ -74,6 +82,8 @@ quarterly release cycle.]
 ### Phase 2 
 
 ### Phase 3
+
+### Test Plan
 
 ## Open issues (if applicable)
 
