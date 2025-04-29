@@ -11,7 +11,7 @@ helmfile 0.150.0
 jq 1.6
 kind 0.17.0
 kubectl 1.30.10
-mage 1.14.0
+mage 1.15.0
 markdownlint-cli2 0.17.2
 nodejs 23.6.1
 oras 1.2.0
@@ -19,5 +19,6 @@ shellcheck 0.9.0
 terraform 1.9.5
 terraform-docs 0.17.0
 tflint 0.51.2
+python 3.13.3
 yamllint 1.26.3
 yq 4.34.2
