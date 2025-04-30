@@ -2,6 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+resource "random_integer" "random_prefix" {
+  min = 100000
+  max = 999999
+}
+
 ## IAM Policy
 resource "aws_iam_policy" "s3_policy" {
   description = "Policy that allows access to S3 buckets in ${var.cluster_name} cluster"
@@ -79,7 +84,7 @@ locals {
 
 resource "aws_s3_bucket" "bucket" {
   for_each      = local.buckets
-  bucket        = var.s3_prefix == "" ? "${var.cluster_name}-${each.key}" : "${var.cluster_name}-${var.s3_prefix}-${each.key}"
+  bucket        = var.s3_prefix == "" ? "${var.cluster_name}-${random_integer.random_prefix.result}-${each.key}" : "${var.cluster_name}-${var.s3_prefix}-${each.key}"
   force_destroy = true
 }
 
@@ -138,7 +143,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
 # Create tracing bucket
 resource "aws_s3_bucket" "tracing" {
   count         = var.create_tracing ? 1 : 0
-  bucket        = var.s3_prefix == "" ? "${var.cluster_name}-tempo-traces" : "${var.cluster_name}-${var.s3_prefix}-tempo-traces"
+  bucket        = var.s3_prefix == "" ? "${var.cluster_name}-${random_integer.random_prefix.result}-tempo-traces" : "${var.cluster_name}-${var.s3_prefix}-tempo-traces"
   force_destroy = true
 }
 
