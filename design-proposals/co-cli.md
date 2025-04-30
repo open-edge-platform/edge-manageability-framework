@@ -27,6 +27,7 @@ The target for cluster-orchestration part in CLI is to be able to:
 - `clustertemplate`
 - `cluster`
 - `en-kubeconfig`
+- `hw-features` (?)
 
 #### Syntax
 Assumption: All CLI commands should include a `--project` or `-p` parameter.
@@ -96,3 +97,5 @@ quarterly release cycle.]
     Clustertemplate's clusterConfig is a long string with a lot of details,
     so passing this option in interactive mode might be problematic.
 
+- how we can gether information about hardware features of edgenode? 
+    Will simple kubectl labels check + nfd (node feature discovery) on edgenode does the job?
