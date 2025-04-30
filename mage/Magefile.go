@@ -129,7 +129,7 @@ func AsdfPlugins() error {
 		MatchRegexp(regexp.MustCompile(`^[^\#]`)).ExecForEach("asdf plugin add {{.}}").Stdout(); err != nil {
 		return fmt.Errorf("error running 'asdf plugin add': %w", err)
 	}
-	if _, err := script.File(".tool-versions").MatchRegexp(regexp.MustCompile(`^[^\#]`)).ExecForEach("bash -c 'line=\"{{.}}\"; tool=$(echo $line | awk \'{print $1}\'); version=$(echo $line | awk \'{print $2}\'); asdf install $tool $version'").Stdout(); err != nil {
+	if _, err := script.File(".tool-versions").MatchRegexp(regexp.MustCompile(`^[^\#]`)).ExecForEach("bash -c 'line=\"{{.}}\"; tool=$(echo $line | awk \"{print $1}\"); version=$(echo $line | awk \"{print $2}\"); asdf install $tool $version'").Stdout(); err != nil {
 		return fmt.Errorf("error running 'asdf install': %w", err)
 	}
 	if _, err := script.Exec("asdf current").Stdout(); err != nil {
