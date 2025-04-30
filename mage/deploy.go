@@ -451,7 +451,9 @@ func localSecret(targetEnv string, createRSToken bool) error {
 		"--from-literal=admin-password="+keycloakPassword); err != nil {
 		return err
 	}
-
+	if err := kubectlCreateAndApply("namespace", "orch-database"); err != nil {
+		return err
+	}
 	// creating postgres secret that contains the randomly generated postgres admin password
 	if err := kubectlCreateAndApply("secret", "generic", "-n", "orch-database", "postgresql",
 		"--from-literal=postgres-password="+postgresPassword); err != nil {
