@@ -129,7 +129,23 @@ func AsdfPlugins() error {
 		MatchRegexp(regexp.MustCompile(`^[^\#]`)).ExecForEach("asdf plugin add {{.}}").Stdout(); err != nil {
 		return fmt.Errorf("error running 'asdf plugin add': %w", err)
 	}
-	if _, err := script.File(".tool-versions").MatchRegexp(regexp.MustCompile(`^[^\#]`)).ExecForEach("bash -c 'line=\"{{.}}\"; tool=$(echo $line | awk \"{print $1}\"); version=$(echo $line | awk \"{print $2}\"); asdf install $tool $version'").Stdout(); err != nil {
+	if _, err := script.File(".tool-versions").MatchRegexp(regexp.MustCompile(`^[^\#]`)).FilterLine(func(line string) string {
+		// Split the line into parts
+		parts := strings.Fields(line)
+		if len(parts) < 2 {
+			fmt.Printf("invalid line format: %s\n", line)
+			return line
+		}
+		tool := parts[0]
+		version := parts[1]
+
+		// Run the asdf install command
+		cmd := fmt.Sprintf("asdf install %s %s", tool, version)
+		if _, err := script.Exec(cmd).Stdout(); err != nil {
+			fmt.Printf("error running '%s': %v\n", cmd, err)
+		}
+		return line
+	}).Stdout(); err != nil {
 		return fmt.Errorf("error running 'asdf install': %w", err)
 	}
 	if _, err := script.Exec("asdf current").Stdout(); err != nil {
