@@ -120,16 +120,16 @@ func updateEdgeName() {
 
 // Install ASDF plugins.
 func AsdfPlugins() error {
-	// Install markdown-lint pre-requisites (npm)
-	if _, err := script.Exec("sudo apt-get install npm -y").Stdout(); err != nil {
-		return fmt.Errorf("error running installing markdown-lint pre-requisites (npm): %w", err)
+	// Check if ASDF is installed
+	if _, err := exec.LookPath("asdf"); err != nil {
+		return fmt.Errorf("asdf is not installed: %w", err)
 	}
 	// Install remaining tools
 	if _, err := script.File(".tool-versions").Column(1).
 		MatchRegexp(regexp.MustCompile(`^[^\#]`)).ExecForEach("asdf plugin add {{.}}").Stdout(); err != nil {
 		return fmt.Errorf("error running 'asdf plugin add': %w", err)
 	}
-	if _, err := script.Exec("asdf install").Stdout(); err != nil {
+	if _, err := script.File(".tool-versions").MatchRegexp(regexp.MustCompile(`^[^\#]`)).ExecForEach("bash -c 'line=\"{{.}}\"; tool=$(echo $line | awk \'{print $1}\'); version=$(echo $line | awk \'{print $2}\'); asdf install $tool $version'").Stdout(); err != nil {
 		return fmt.Errorf("error running 'asdf install': %w", err)
 	}
 	if _, err := script.Exec("asdf current").Stdout(); err != nil {
