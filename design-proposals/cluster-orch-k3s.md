@@ -91,9 +91,23 @@ quarterly release cycle.]
 
 ### Phase 1
 
+Cluster Orch team is responsible for:
+* Contributing concurrency support PR to K3S Provider.
+* Modifying Cluster Manager to create custom resources expected by the K3S Provider.
+* Integrating the K3S Provider with the Cluster API Provider Intel.
+* Demonstrating K3S Provider can create / delete clusters in Cluster Tests environment.  This may involve manually creating K3S Provider CRs until Cluster Manager changes are ready.
+
 ### Phase 2 
 
+Cluster Orch team is responsible for:
+* Creating new default cluster templates for K3S.
+* Integrating K3S Provider and other updated components with EMF.
+* Studying cluster creation / deletion behavior across multiple scenarios, and improving where necessary.
+
 ### Phase 3
+
+Cluster Orch team is responsible for:
+* Performing scale testing with K3S edge clusters
 
 ### Test Plan
 
