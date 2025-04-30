@@ -120,45 +120,31 @@ func updateEdgeName() {
 
 // Install ASDF plugins.
 func AsdfPlugins() error {
-	// Check if ASDF is installed
-	if _, err := exec.LookPath("asdf"); err != nil {
-		return fmt.Errorf("asdf is not installed: %w", err)
-	}
 	// Install remaining tools
 	if _, err := script.File(".tool-versions").Column(1).
 		MatchRegexp(regexp.MustCompile(`^[^\#]`)).ExecForEach("asdf plugin add {{.}}").Stdout(); err != nil {
-		return fmt.Errorf("error running 'asdf plugin add': %w", err)
+		return err
 	}
-	if _, err := script.File(".tool-versions").MatchRegexp(regexp.MustCompile(`^[^\#]`)).FilterLine(func(line string) string {
-		// Split the line into parts
-		parts := strings.Fields(line)
-		if len(parts) < 2 {
-			fmt.Printf("invalid line format: %s\n", line)
-			return line
-		}
-		tool := parts[0]
-		version := parts[1]
-
-		// Run the asdf install command
-		cmd := fmt.Sprintf("asdf install %s %s", tool, version)
-		if _, err := script.Exec(cmd).Stdout(); err != nil {
-			fmt.Printf("error running '%s': %v\n", cmd, err)
-		}
-		return line
-	}).Stdout(); err != nil {
-		return fmt.Errorf("error running 'asdf install': %w", err)
+	if _, err := script.Exec("asdf install").Stdout(); err != nil {
+		return err
 	}
 	if _, err := script.Exec("asdf current").Stdout(); err != nil {
-		return fmt.Errorf("error running 'asdf current': %w", err)
+		return err
 	}
 	// Set plugins listed in globalAsdf as global
 	for _, name := range globalAsdf {
 		if _, err := script.File(".tool-versions").MatchRegexp(regexp.MustCompile(name)).Column(2).
 			ExecForEach(fmt.Sprintf("asdf set --home %s {{.}}", name)).Stdout(); err != nil {
-			return fmt.Errorf("error seting plugins listed in globalAsdf as global: %w", err)
+			return err
 		}
 	}
-	fmt.Printf("asdf plugins updated🔌\n")
+	// for _, name := range globalAsdf {
+	// 	if _, err := script.File(".tool-versions").MatchRegexp(regexp.MustCompile(name)).Column(2).
+	// 		ExecForEach(fmt.Sprintf("asdf global %s {{.}}", name)).Stdout(); err != nil {
+	// 		return err
+	// 	}
+	// }
+	fmt.Printf("asdf plugins updated 🔌\n")
 	return nil
 }
 
@@ -1396,7 +1382,7 @@ func (a Argo) AddLocalRepos() error {
 				envVar := strings.TrimPrefix(repo.User, "$")
 				repo.User = os.Getenv(envVar)
 				if repo.User == "" {
-					return fmt.Errorf("user %s required by %s repo is not set", envVar, repo.Url)
+					return fmt.Errorf("User %s required by %s repo is not set", envVar, repo.Url)
 				}
 			}
 			// If the token value starts with a '$' sign, replace it with the environment value
@@ -1404,7 +1390,7 @@ func (a Argo) AddLocalRepos() error {
 				envVar := strings.TrimPrefix(repo.Token, "$")
 				repo.Token = os.Getenv(envVar)
 				if repo.Token == "" {
-					return fmt.Errorf("token %s required by %s repo is not set", envVar, repo.Url)
+					return fmt.Errorf("Token %s required by %s repo is not set", envVar, repo.Url)
 				}
 			}
 
