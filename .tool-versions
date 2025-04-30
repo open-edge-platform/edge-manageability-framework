@@ -12,8 +12,6 @@ jq 1.7.1
 kind 0.27.0
 kubectl 1.32.3
 mage 1.15.0
-nodejs 23.11.0
-markdownlint-cli2 0.17.2
 oras 1.2.2
 shellcheck 0.10.0
 terraform 1.11.4
@@ -22,3 +20,5 @@ tflint 0.56.0
 python 3.13.3
 yamllint 1.36.2
 yq 4.44.6
+nodejs 23.11.0
+markdownlint-cli2 0.17.2
