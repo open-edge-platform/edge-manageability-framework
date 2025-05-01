@@ -5,7 +5,7 @@
 
 # buildall.sh
 
-set -xeu -o pipefail
+set -eu -o pipefail
 
 # bring in environmental variables. Where MAKE_JOBS is set
 source env.sh

@@ -26,13 +26,13 @@ SCRATCH_DIR := scratch
 CHARTS_DIR  := charts
 
 $(REPO_DIR):
-	mkdir -p $@
+	@mkdir -p $@
 
 $(SCRATCH_DIR):
-	mkdir -p $@
+	@mkdir -p $@
 
 $(CHARTS_DIR):
-	mkdir -p $@
+	@mkdir -p $@
 
 check: ## check for prereqs (currently noOp)
 
@@ -48,7 +48,8 @@ VENV_DIR     := venv_$(PROJECT_NAME)
 
 # virtualenv activate script has undefined variables, disable then re-enable in bash
 $(VENV_DIR): requirements.txt
-	python3 -m venv $@ ;\
+	@echo "## Building Python Virtualenv ##"
+	@python3 -m venv $@ ;\
   set +u; . ./$@/bin/activate; set -u ;\
   python -m pip install --upgrade pip ;\
   python -m pip install -r requirements.txt
@@ -86,18 +87,16 @@ $(REPO_DIR)/%: | $(REPO_LIST)
 	git clone https://github.com/$(GITHUB_ORG)/$*.git $(REPO_DIR)/$*
 
 checkout-repos: $(REPOS) | $(REPO_LIST) ## checkout all repos
-	@echo "All checked out"
+	@echo "## All repos have been checked out ##"
 
 GIT_BRANCH ?= main
-branch-checkout: checkout-repos ## refresh and checkout all repos with a specific branch
-	for repo in $(REPOS); do \
+branch-checkout: checkout-repos ## refresh and checkout all repos at branch GIT_BRANCH (default: main)
+	@for repo in $(REPOS); do \
 		pushd $$repo ;\
 		git checkout $(GIT_BRANCH) ; git pull --ff-only ;\
 	  popd ;\
 	done
 
-#	git fetch ; git checkout $(GIT_BRANCH) ; git pull --ff-only ;\
-	#
 # Check if there are the right make targets needed in the repo
 MAKEFILE_CHECKS := $(addprefix $(SCRATCH_DIR)/make_check_, $(shell tr '\n' ' ' < $(REPO_LIST)))
 check-makefiles: $(REPOS) | $(MAKEFILE_CHECKS)
@@ -106,64 +105,65 @@ $(SCRATCH_DIR)/make_check_%:
 	$(SCRIPTS_DIR)/check_makefile.sh repos/$* |tee $@
 
 ## targets used to run buildall ##
-
 buildall: $(SCRATCH_DIR) ## perform the entire build
-	$(SCRIPTS_DIR)/buildall.sh
+	@$(SCRIPTS_DIR)/buildall.sh
 
-timed-buildall: $(SCRATCH_DIR)
+timed-buildall: $(SCRATCH_DIR) ## perform the entire build with build times and verbose output
 	$(SCRIPTS_DIR)/timed_buildall.sh
 
 # list all artifacts used in each repo
 ARTIFACT_LIST := $(addprefix $(SCRATCH_DIR)/artifacts_, $(addsuffix .yaml, $(shell tr '\n' ' ' < $(REPO_LIST))))
 list-artifacts: $(REPOS) | $(SCRATCH_DIR) $(ARTIFACT_LIST) ## list charts/images provided by each repo
+	@echo "## All artifact lists have been created ##"
 
 $(SCRATCH_DIR)/artifacts_%.yaml:
-	$(SCRIPTS_DIR)/list_artifacts.sh repos/$* |tee $@
+	@echo "### Generating artifact list in 'repos/$*' ###" ;\
+	$(SCRIPTS_DIR)/list_artifacts.sh repos/$* > $@
 
 # determine work needed with orch-deploy manifest
 chart-manifest: $(SCRATCH_DIR)/manifest_charts.yaml ## build chart manifest
 
 $(SCRATCH_DIR)/manifest_charts.yaml: $(SCRATCH_DIR)
-	pushd .. ;\
-	echo "### Generating releaseManifest ####" ;\
+	@pushd .. > /dev/null ;\
+	echo "## Generating releaseManifest of required helm charts ##" ;\
 	mage gen:releaseManifest $(PROJECT_NAME)/$@ ;\
-	echo "### Generated releaseManifest ####" ;\
-	popd
+	popd > /dev/null
 
 sort-charts: $(VENV_DIR)  ## determine which repos can build charts required by manifest, and write to htags_
-	set +u; . ./$</bin/activate; set -u ;\
+	@set +u; . ./$</bin/activate; set -u ;\
 	python scripts/sort_charts.py
 
 image-manifest: $(SCRATCH_DIR)/manifest_images.yaml  ## build image manifest
 $(SCRATCH_DIR)/manifest_images.yaml: $(SCRATCH_DIR)
-	pushd .. ;\
-	echo "### Generating localReleaseImageManifest from charts ####" ;\
+	@pushd .. > /dev/null ;\
+	echo "## Generating localReleaseImageManifest of docker images from charts ###" ;\
 	mage gen:localReleaseImageManifest $(PROJECT_NAME)/$@ > $(PROJECT_NAME)/$@.log ;\
-	echo "### Generated localReleaseImageManifest ####" ;\
-	popd
+	popd > /dev/null
 
 sort-images: $(VENV_DIR)  ## determine which repos can build images required by manifest, and write to itags_
-	set +u; . ./$</bin/activate; set -u ;\
+	@set +u; . ./$</bin/activate; set -u ;\
 	python scripts/sort_images.py
 
 # build charts
 HELM_BUILDS := $(addprefix $(SCRATCH_DIR)/hbuild_, $(shell tr '\n' ' ' < $(REPO_LIST)))
 helm-build: $(HELM_BUILDS) $(CHARTS_DIR) ## build all helm charts
+	@echo "## All helm charts have been created ##"
 
 $(SCRATCH_DIR)/hbuild_%: $(CHARTS_DIR)
-	$(SCRIPTS_DIR)/helm_build.sh $* $@
+	@$(SCRIPTS_DIR)/helm_build.sh $* $@
 
-clean-helm:  ## clean up helm charts to rebuild
+clean-helm:  ## clean up helm chart scratchfiles to force rebuild
 	rm -rf $(SCRATCH_DIR)/hbuild_*
 
 # build images
 IMAGE_BUILDS := $(addprefix $(SCRATCH_DIR)/ibuild_, $(shell tr '\n' ' ' < $(REPO_LIST)))
 image-build: $(IMAGE_BUILDS) ## build all container images
+	@echo "## All docker images have been created ##"
 
 $(SCRATCH_DIR)/ibuild_%:
-	$(SCRIPTS_DIR)/image_build.sh $* $@
+	@$(SCRIPTS_DIR)/image_build.sh $* $@
 
-clean-image: ## clean up docker images to rebuild
+clean-image: ## clean up docker image scratchfiles to force rebuild
 	rm -rf $(SCRATCH_DIR)/ibuild_*
 
 clean: clean-helm clean-image ## clean up scratch files
