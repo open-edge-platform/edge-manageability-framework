@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/bitfield/script"
-
 	"github.com/open-edge-platform/edge-manageability-framework/internal/retry"
 )
 
@@ -195,7 +194,6 @@ func waitForENFleetAgentReady() error {
 
 	// Since kubeconfig context is Edge Cluster
 	edgeClusterPodStatusCmd := "kubectl get pods -A"
-
 	cmd := "kubectl -n cattle-fleet-system get pods -l app=fleet-agent -o jsonpath='{.items[0].status.phase}'"
 
 	fmt.Printf("Waiting %v minutes for EN Fleet Agent to start...\n", waitForReadyMin)
