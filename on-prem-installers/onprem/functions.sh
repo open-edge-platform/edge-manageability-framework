@@ -50,7 +50,21 @@ stringData:
 EOF
 }
 
-# Generates a random password for Keycloak with the following requirements:
+create_postgres_password() {
+    kubectl -n "$1" delete secret platform-keycloak --ignore-not-found
+
+    kubectl apply -f - <<EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgresql
+  namespace: $1
+stringData:
+  postgres-password: "$2"
+EOF
+}
+
+# Generates a random password for Keycloak and Postgres with the following requirements:
 # - At least one lowercase letter
 # - At least one uppercase letter
 # - At least one digit
@@ -58,7 +72,7 @@ EOF
 # - Total length of 25 characters
 # The password is created by generating random characters for each category,
 # filling the rest with additional random characters, and shuffling the result.
-generate_keycloak_password() {
+generate_password() {
     # Generate random characters for each category
     # shellcheck disable=SC2018
     lowercase=$(tr -dc 'a-z' < /dev/urandom | head -c 1)
