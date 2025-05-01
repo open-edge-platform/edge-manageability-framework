@@ -10,6 +10,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"gopkg.in/yaml.v3"
 	"net/http"
 	"os/exec"
 	"strings"
