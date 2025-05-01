@@ -258,3 +258,14 @@ out in a repo at a time.
 
 Building additional times will leverage both the ability of make to keep track
 of progress (via files in scratch), and the docker cache.
+
+## Code Counting
+
+As this automation checks out most of the other repos, it offers the ability to
+perform a code count on those repos. This requires installing the
+[scc](https://github.com/boyter/scc) tool to perform counting on each repo, and
+will summarize results into csv files in `scratch/codecount_*.csv`.
+
+A grouping based on code type is performed in the summarization process, and
+the mapping for this can be found in the `generate_totals_csv()` function in
+`scripts/codecount_summarize.py`.
