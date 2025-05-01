@@ -38,6 +38,9 @@ dependencies to run properly:
 - buf (1.45.0 or later)
 - protoc-gen-go-grpc (1.2.0 or later)
 - protoc-gen-go (v1.30.0 or later)
+- protoc-gen-openapi (latest from
+  https://github.com/kollalabs/protoc-gen-openapi)
+- protoc-gen-grpc-gateway (v2.26.3)
 - swagger (4.0.4 or later)
 - yq (4.44.3 or later)
 
