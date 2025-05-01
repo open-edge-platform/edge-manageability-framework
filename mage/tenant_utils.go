@@ -594,7 +594,7 @@ func waitUntilProjectCreation(ctx context.Context, nexusClient *nexus_client.Cli
 			if err != nil {
 				return "", err
 			}
-			fmt.Printf("project %v status - %v\n", projectName, project.Status.ProjectStatus.StatusIndicator)
+			fmt.Printf("project %v status - %v (%s)\n", projectName, project.Status.ProjectStatus.StatusIndicator, project.Status.ProjectStatus.Message)
 			if project.Status.ProjectStatus.StatusIndicator == projectv1.StatusIndicationIdle {
 				return project.Status.ProjectStatus.UID, nil
 			}
@@ -815,6 +815,25 @@ func (TenantUtils) CreateEdgeInfraUsers(ctx context.Context, orgName, projectNam
 		}
 	}
 
+	// Create Edge Infra Manager NB API user with service-admin which is needed for observability-admin access
+	user = edgeInfraUserPrefix + "-service-admin-api-user"
+	userId, orgId, err = createKeycloakUser(ctx, client, token, user, orgName)
+	if err != nil && status.Code(err) != codes.AlreadyExists {
+		return fmt.Errorf("error creating Keycloak user %s. Error: %w", user, err)
+	}
+	if status.Code(err) != codes.AlreadyExists {
+		groups := []string{projectId + "_Host-Manager-Group", "service-admin-group"}
+
+		err = addUserToGroups(ctx, client, token, KeycloakRealm, groups, userId)
+		if err != nil {
+			return fmt.Errorf("error adding org roles to user %s. Error: %w", user, err)
+		}
+		err = addProjectMemberRole(ctx, client, token, KeycloakRealm, orgId, projectId, userId)
+		if err != nil {
+			return fmt.Errorf("error adding member role to user %s. Error: %w", user, err)
+		}
+	}
+
 	return nil
 }
 
@@ -987,6 +1006,8 @@ func createKeycloakUser(ctx context.Context, client *gocloak.GoCloak, token *goc
 	user = &gocloak.User{
 		Username:      &edgeInfraUser,
 		Email:         gocloak.StringP(edgeInfraUser + "@" + orgName + ".com"),
+		FirstName:     &edgeInfraUser,
+		LastName:      &edgeInfraUser,
 		Enabled:       gocloak.BoolP(true),
 		EmailVerified: gocloak.BoolP(true),
 	}
@@ -1038,42 +1059,48 @@ func getRealmRole(ctx context.Context, client *gocloak.GoCloak, token *gocloak.J
 	return realmRole, nil
 }
 
-// getEdgeAndOnboardingUsers retrieves the Edge Infra Manager and Onboarding users for a given organization
-func getEdgeAndOnboardingUsers(ctx context.Context, orgName string) (string, string, error) {
+// getEdgeAndApiUsers retrieves the Edge Infra Manager and API users for a given organization
+func getEdgeAndApiUsers(ctx context.Context, orgName string) (string, string, error) {
 	var user *gocloak.User
 	params := gocloak.GetUsersParams{}
 	edgeInfraUser := ""
-	onboardingUser := ""
+	apiUser := ""
 
 	client, token, err := KeycloakLogin(ctx)
 	if err != nil {
-		return edgeInfraUser, onboardingUser, err
+		return edgeInfraUser, apiUser, err
 	}
 
 	users, err := client.GetUsers(ctx, token.AccessToken, KeycloakRealm, params)
 	if err != nil {
 		fmt.Printf("error getting user %v", err)
-		return edgeInfraUser, onboardingUser, err
+		return edgeInfraUser, apiUser, err
 	}
 
-	// Loop through the users to find Edge Infra Manager and Onboarding users
+	// Loop through the users to find Edge Infra Manager and API users
 	for _, user = range users {
 		// Check if the user is an Edge Infra Manager
 		if strings.Contains(*user.Username, "-edge-mgr") {
-			newSt := strings.Split(*user.Email, "@")
+			usernameSplit := strings.Split(*user.Email, "@")
+			if len(usernameSplit) == 0 {
+				return edgeInfraUser, apiUser, fmt.Errorf("unable to get user name from user email %s", *user.Email)
+			}
 			// Ensure the email domain matches the organization name
-			if newSt[1] == orgName+".com" {
+			if usernameSplit[1] == orgName+".com" {
 				edgeInfraUser = *user.Username
 			}
 		}
-		if strings.Contains(*user.Username, "-onboarding-user") {
-			newSt := strings.Split(*user.Email, "@")
-			if newSt[1] == orgName+".com" {
-				onboardingUser = *user.Username
+		if strings.Contains(*user.Username, "-api-user") && !strings.Contains(*user.Username, "-service-admin") {
+			usernameSplit := strings.Split(*user.Email, "@")
+			if len(usernameSplit) == 0 {
+				return edgeInfraUser, apiUser, fmt.Errorf("unable to get user name from user email %s", *user.Email)
+			}
+			if usernameSplit[1] == orgName+".com" {
+				apiUser = *user.Username
 			}
 		}
 	}
 
-	fmt.Printf("Found Edge Infra User: %s, Onboarding User: %s\n", edgeInfraUser, onboardingUser)
-	return edgeInfraUser, onboardingUser, nil
+	fmt.Printf("Found Edge Infra User: %s, API User: %s\n", edgeInfraUser, apiUser)
+	return edgeInfraUser, apiUser, nil
 }

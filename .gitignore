@@ -6,6 +6,7 @@
 .idea
 .env
 .gitea-proxy
+.mage-local.yaml
 assets/mage
 jwt.txt
 tools/router/traefik.yml

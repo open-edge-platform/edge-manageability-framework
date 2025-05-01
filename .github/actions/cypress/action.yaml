@@ -18,12 +18,20 @@ inputs:
     default: true
   infra:
     required: false
-    description: "Run Infra tests"
-    default: true
+    description: "List of tests to run for Edge Infra Manager"
+    default: "cypress/e2e/infra/infra-smoke.cy.ts" # set to empty string to skip
   admin:
     required: false
     description: "Run Admin tests"
     default: true
+  en_serial_number:
+    required: false # NOTE this is required if the infra tests are running
+    description: "Serial number of the EN"
+    default: ""
+  en_uuid:
+    required: false # NOTE this is required if the infra tests are running
+    description: "UUID of the EN"
+    default: ""
 runs:
   using: "composite"
   steps:
@@ -32,7 +40,7 @@ runs:
       with:
         repository: open-edge-platform/orch-ui
         path: orch-ui
-        ref: 8c43536a86f067ef951f4913daefdb89b04e1b96
+        ref: a145d044ff73eade7a1e14d5c925108472d9aa48
         token: ${{ inputs.token }}
     - run: git log -1
       shell: bash
@@ -55,15 +63,15 @@ runs:
           -s "cypress/e2e/admin/non-org-admin-smoke.cy.ts,cypress/e2e/admin/org-admin-smoke.cy.ts"
     - name: Run Edge Infra Manager Cypress tests
       id: infra_tests
-      if: ${{ always() && inputs.infra == 'true' }}
+      if: ${{ always() && inputs.infra != '' }}
       working-directory: orch-ui/tests
       shell: bash
       run: |
         npx cypress run --e2e \
-          -s cypress/e2e/infra/infra-smoke.cy.ts \
-          --env EN_UUID=${{ env.EN_UUID }}
+          -s ${{inputs.infra}} \
+          --env EN_SERIAL_NUMBER=${{ inputs.en_serial_number }}
     - name: Collect Edge Infra Manager logs
-      if: ${{ always() && inputs.infra == 'true' }}
+      if: ${{ always() && inputs.infra != '' }}
       working-directory: orch-ui/tests
       shell: bash
       run: |
@@ -78,16 +86,19 @@ runs:
         kubectl logs -n orch-iam -l app=nexus-api-gw > cypress/logs/edgeinfra/nexus-api-gw.log
         kubectl logs -n orch-gateway -l app.kubernetes.io/name=traefik > cypress/logs/edgeinfra/traefik.log
 
-        kubectl -n enic logs $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c fake-uuid > cypress/logs/edgeinfra/enic-fake-uuid.log
-        kubectl -n enic exec -it $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c edge-node -- journalctl -u onboard --no-tail > cypress/logs/edgeinfra/enic-onboard.log
-        kubectl -n enic exec -it $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c edge-node -- journalctl -u agents --no-tail > cypress/logs/edgeinfra/enic-agents.log
-        kubectl -n enic exec -it $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c edge-node -- journalctl -u node-agent --no-tail > cypress/logs/edgeinfra/enic-node-agent.log
-        kubectl -n enic exec -it $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c edge-node -- journalctl -u hardware-discovery-agent --no-tail > cypress/logs/edgeinfra/enic-hardware-discovery-agent.log
+        kubectl -n enic logs $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c fake-uuid > cypress/logs/edgeinfra/enic-fake-uuid.log || true
+        kubectl -n enic exec -it $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c edge-node -- journalctl -u onboard --no-tail > cypress/logs/edgeinfra/enic-onboard.log || true
+        kubectl -n enic exec -it $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c edge-node -- journalctl -u agents --no-tail > cypress/logs/edgeinfra/enic-agents.log || true
+        kubectl -n enic exec -it $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c edge-node -- journalctl -u node-agent --no-tail > cypress/logs/edgeinfra/enic-node-agent.log || true
+        kubectl -n enic exec -it $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c edge-node -- journalctl -u hardware-discovery-agent --no-tail > cypress/logs/edgeinfra/enic-hardware-discovery-agent.log || true
 
         kubectl get workflow -A > cypress/logs/edgeinfra/workflow.txt
         kubectl get hardware -A > cypress/logs/edgeinfra/hardware.txt
         kubectl get template -A > cypress/logs/edgeinfra/template.txt
-        kubectl get workflow -n orch-infra workflow-${{ env.EN_UUID }}-prod -o yaml || true > cypress/logs/edgeinfra/workflow-${{ env.EN_UUID }}-prod.log
+        kubectl get workflow -n orch-infra workflow-${{ inputs.en_uuid }}-prod -o yaml > cypress/logs/edgeinfra/workflow-${{ inputs.en_uuid }}-prod.log || true
+
+        kubectl describe pod -n enic > cypress/logs/edgeinfra/enic-pod-describe.txt
+        kubectl describe applications -n utils enic > cypress/logs/edgeinfra/enic-argocd-app.txt
     - name: Run Cluster Orch tests
       id: cluster_orch_tests
       if: ${{ always() && inputs.cluster_orch == 'true' }}
@@ -116,9 +127,7 @@ runs:
         kubectl logs -n orch-cluster -l app=southbound-api > cypress/logs/cluster-orch/southbound-api.log
 
         # ENiC components
-        kubectl -n enic exec -it $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c edge-node -- systemctl status rancher-system-agent > cypress/logs/cluster-orch/rancher-system-agent.log || true
-        kubectl -n enic exec -it $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c edge-node -- systemctl status rke2-server > cypress/logs/cluster-orch/rke2-server.log || true
-        kubectl -n enic exec -it $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c edge-node -- systemctl status rancher-system-agent > cypress/logs/cluster-orch/rancher-system-agent.log  || true
+        kubectl -n enic exec -it $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c edge-node -- journalctl -xeu cluster-agent --no-tail > cypress/logs/cluster-orch/enic-cluster-agent.log || true
     - name: Run AppOrch Cypress tests
       id: app_orch_tests
       if: ${{ always() && inputs.app_orch == 'true' }}

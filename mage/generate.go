@@ -98,7 +98,8 @@ func splitOnLastSlash(str string) (string, string) {
 	return str[:lastSlashIndex], str[lastSlashIndex+1:]
 }
 
-func parseAppConfig(filename string) (*ComponentDetails, error) {
+//nolint:gocyclo
+func parseAppConfig(filename string) ([]*ComponentDetails, error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, fmt.Errorf("unable to open file: %w", err)
@@ -107,12 +108,14 @@ func parseAppConfig(filename string) (*ComponentDetails, error) {
 
 	scanner := bufio.NewScanner(file)
 	values := make(map[string]string)
-	var config ComponentDetails
+	var commonDetails ComponentDetails
+	var components []*ComponentDetails
 	fmValueRegex := regexp.MustCompile(`{{-\s+\$([\w]+)\s+:=\s+"([^"]+)".*}}`)
 	inFrontmatter := true
 	inSpec := false
 	inSources := false
 	sourcesIndent := 2
+	currentComponent := &ComponentDetails{}
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -127,13 +130,13 @@ func parseAppConfig(filename string) (*ComponentDetails, error) {
 			}
 			values[matches[1]] = matches[2]
 			if matches[1] == "appName" {
-				config.AppName = matches[2]
+				commonDetails.AppName = matches[2]
 			}
 			if matches[1] == "namespace" {
-				config.Namespace = matches[2]
+				commonDetails.Namespace = matches[2]
 			}
 			if matches[1] == "syncWave" {
-				config.Order = matches[2]
+				commonDetails.Order = matches[2]
 			}
 		} else {
 			if strings.HasPrefix(line, "spec:") {
@@ -149,25 +152,43 @@ func parseAppConfig(filename string) (*ComponentDetails, error) {
 			}
 			if inSources {
 				indent := getIndentSize(line)
-				if indent <= sourcesIndent && line[indent] != '-' {
+				// Check if this is a new source entry (starts with a dash)
+				if indent >= sourcesIndent && strings.HasPrefix(strings.TrimSpace(line), "-") {
+					if currentComponent.Repo != "" || currentComponent.Chart != "" {
+						// Save the previous component before starting a new one
+						components = append(components, currentComponent)
+					}
+					// Create a new component with common details
+					currentComponent = &ComponentDetails{
+						AppName:   commonDetails.AppName,
+						Namespace: commonDetails.Namespace,
+						Order:     commonDetails.Order,
+					}
+				}
+
+				// If we've moved out of the sources section
+				if indent <= sourcesIndent && !strings.HasPrefix(strings.TrimSpace(line), "-") {
 					break
 				}
+
 				match := regexp.MustCompile(`repoURL:\s*(.*)$`).FindStringSubmatch(line)
 				if match != nil {
 					if strings.Contains(match[1], ".Values.argo.chartRepoURL") {
-						config.Repo = "oci://registry-rs.edgeorchestration.intel.com/edge-orch"
+						currentComponent.Repo = "oci://registry-rs.edgeorchestration.intel.com/edge-orch"
 					} else if strings.Contains(match[1], ".Values.argo.rsChartRepoURL") {
-						config.Repo = "oci://registry-rs.edgeorchestration.intel.com/edge-orch"
+						currentComponent.Repo = "oci://registry-rs.edgeorchestration.intel.com/edge-orch"
 					} else {
-						config.Repo = strings.Trim(match[1], " ")
+						currentComponent.Repo = strings.Trim(match[1], " ")
 					}
 					continue
 				}
+
 				match = regexp.MustCompile(`targetRevision:\s*(.*)$`).FindStringSubmatch(line)
 				if match != nil {
-					config.Version = strings.Trim(match[1], " ")
+					currentComponent.Version = strings.Trim(match[1], " ")
 					continue
 				}
+
 				match = regexp.MustCompile(`chart:\s*(.*)$`).FindStringSubmatch(line)
 				if match != nil {
 					chartStr := strings.Trim(match[1], " ")
@@ -178,12 +199,13 @@ func parseAppConfig(filename string) (*ComponentDetails, error) {
 						chartStr = regexp.MustCompile(`{{\s*\$chartName\s*}}`).ReplaceAllString(chartStr, values["chartName"])
 					}
 					path, chart := splitOnLastSlash(strings.Trim(chartStr, " "))
-					config.Chart = chart
+					currentComponent.Chart = chart
 					if path != "" {
-						config.Repo = config.Repo + "/" + path
+						currentComponent.Repo = currentComponent.Repo + "/" + path
 					}
 					continue
 				}
+
 				match = regexp.MustCompile(`path:\s*(.*)$`).FindStringSubmatch(line)
 				if match != nil {
 					pathStr := strings.Trim(match[1], " ")
@@ -193,15 +215,16 @@ func parseAppConfig(filename string) (*ComponentDetails, error) {
 					if _, ok := values["chartName"]; ok {
 						pathStr = regexp.MustCompile(`{{\s*\$chartName\s*}}`).ReplaceAllString(pathStr, values["chartName"])
 					}
-					config.Chart = pathStr
+					currentComponent.Chart = pathStr
 					continue
 				}
+
 				match = regexp.MustCompile(`releaseName:\s*(.*)$`).FindStringSubmatch(line)
 				if match != nil {
 					if strings.Contains(match[1], "$appName") {
-						config.ReleaseName = values["appName"]
+						currentComponent.ReleaseName = values["appName"]
 					} else {
-						config.ReleaseName = strings.Trim(match[1], " ")
+						currentComponent.ReleaseName = strings.Trim(match[1], " ")
 					}
 					continue
 				}
@@ -213,7 +236,17 @@ func parseAppConfig(filename string) (*ComponentDetails, error) {
 		return nil, err
 	}
 
-	return &config, nil
+	// Add the last component if it exists
+	if currentComponent.Repo != "" || currentComponent.Chart != "" {
+		components = append(components, currentComponent)
+	}
+
+	// If no components were found, return an empty slice
+	if len(components) == 0 {
+		return []*ComponentDetails{}, nil
+	}
+
+	return components, nil
 }
 
 func getManifest() (*Manifest, error) {
@@ -256,14 +289,22 @@ func getManifest() (*Manifest, error) {
 
 	for _, appfile := range appEntries {
 		if !appfile.IsDir() && strings.HasSuffix(appfile.Name(), ".yaml") {
-			config, err := parseAppConfig(filepath.Join(appPath, appfile.Name()))
+			configList, err := parseAppConfig(filepath.Join(appPath, appfile.Name()))
 			if err != nil {
 				fmt.Println("  error parsing app config: %w", err)
 			} else {
-				if config.ReleaseName == "" {
-					config.ReleaseName = config.AppName
+				for i, config := range configList {
+					var manifestEntryName string
+					if i == 0 {
+						manifestEntryName = config.AppName
+					} else {
+						manifestEntryName = config.AppName + "-" + config.Chart
+					}
+					if config.ReleaseName == "" {
+						config.ReleaseName = manifestEntryName
+					}
+					manifest.Components[manifestEntryName] = *config
 				}
-				manifest.Components[config.AppName] = *config
 			}
 		}
 	}
@@ -745,6 +786,98 @@ func getImageManifest() ([]string, []string, error) {
 	return imageList, binaryList, nil
 }
 
+// Basically the same as getImageManifest but works only on local copies of helm files with buildall
+func getLocalImageManifest() ([]string, []string, error) {
+	manifest, err := getManifest()
+	if err != nil {
+		return nil, nil, fmt.Errorf("error creating manifest: %w", err)
+	}
+
+	tempDir, err := os.MkdirTemp(".", "_appimg_*.tmp")
+	if err != nil {
+		return nil, nil, fmt.Errorf("error creating temp folder: %w", err)
+	}
+	fmt.Println("Extracting helmfiles to: ", tempDir)
+	defer os.RemoveAll(tempDir)
+
+	clusterValues, err := loadClusterConfig("bkc")
+	if err != nil {
+		return nil, nil, fmt.Errorf("error loading cluster configuration: %w", err)
+	}
+
+	// save clusterValues to tempDir
+	valuesFilePath := filepath.Join(tempDir, "values.yaml")
+	err = saveValuesFile(valuesFilePath, clusterValues)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error saving cluster values: %w", err)
+	}
+
+	argoValues, err := loadArgoAppValues(tempDir)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error loading argo valueObjects: %w", err)
+	}
+
+	for _, component := range manifest.Components {
+		fmt.Println(hrEqual)
+		fmt.Println(component.AppName)
+		fmt.Println(hrEqual)
+		// DBG: fmt.Println("Repo:", component.Repo)
+		if strings.HasPrefix(component.Repo, "oci://registry-rs.edgeorchestration.intel.com/edge-orch") {
+			chartRemotePath := strings.Join([]string{component.Repo, component.Chart}, "/")
+			fmt.Println("** Remote Path: ", chartRemotePath)
+
+			chartLocalPath := filepath.Join("buildall/charts/", filepath.Base(component.Chart)+"-"+component.Version+".tgz")
+			fmt.Println("** Local Path: ", chartLocalPath)
+
+			err = helmTemplate(component.AppName, component.ReleaseName, "./"+chartLocalPath,
+				argoValues, filepath.Join(tempDir, component.ReleaseName))
+			if err != nil {
+				fmt.Println("error templating helm chart for", component.AppName, ": %w", err)
+			}
+		} else {
+			fmt.Println("Skipping 3rd party hosted chart")
+			continue
+		}
+	}
+
+	imageList, err := parseTemplatedChartsForImageValues(tempDir)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error parsing templated charts: %w", err)
+	}
+
+	binaryList := []string{}
+	// Add OCI Tarball deployment artifacts
+	tarballRepos := []string{"orchestrator"}
+	tarballVariants := []string{"cloudFull", "onpremFull"}
+	installVariants := []string{"cloudFull"}
+
+	deployTag, err := getDeployTag()
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get tag for deployment artifacts: %w", err)
+	}
+
+	for _, variant := range tarballVariants {
+		for _, repo := range tarballRepos {
+			// buildImageBasePath = ${REGISTRY}"/"${REGISTRY_PROJECT}"/"${SUB_COMPONENT_NAME}"/"${ARTIFACT_TYPE}"
+			// oras push $buildImageBasePath"/"${repo}"/"${VARIANT_LC}":"${TAG}"
+			binaryList = append(binaryList, fmt.Sprintf("%s/%s/%s:%s", binaryBasePath, repo,
+				strings.ToLower(variant), deployTag))
+		}
+	}
+
+	binaryList = append(binaryList, fmt.Sprintf("%s/cloud-orchestrator-installer:%s", binaryBasePath, deployTag))
+
+	// Add OCI installer deployment artifacts
+	for _, installVariant := range installVariants {
+		// buildImageBasePath = ${REGISTRY}"/"${REGISTRY_PROJECT}"/
+		// oras push $buildImageBasePath"/"${repo}"/"${VARIANT_LC}":"${TAG}"
+		imageList = append(imageList, fmt.Sprintf("%s/orchestrator-installer-%s:%s", installBasePath,
+			strings.ToLower(installVariant), deployTag))
+	}
+
+	return imageList, binaryList, nil
+}
+
 func GetBranchName() (string, error) {
 	branchName := os.Getenv("BRANCH_NAME")
 	if branchName == "" {
@@ -996,6 +1129,62 @@ func (Gen) dumpReleaseImageManifest() error {
 	}
 
 	fmt.Println("")
+	return nil
+}
+
+func (Gen) localReleaseImageManifest(manifestFilename string) error {
+	imageManifest, binaryManifest, err := getLocalImageManifest()
+	if err != nil {
+		return fmt.Errorf("error getting image manifest: %w", err)
+	}
+
+	manifestFile, err := os.Create(manifestFilename)
+	if err != nil {
+		return fmt.Errorf("unable to create manifest file: %w", err)
+	}
+	defer manifestFile.Close()
+
+	_, err = manifestFile.WriteString("\n")
+	if err != nil {
+		return fmt.Errorf("file write error: %w", err)
+	}
+
+	if len(imageManifest) == 0 {
+		_, err = manifestFile.WriteString("images: []\n")
+		if err != nil {
+			return fmt.Errorf("file write error: %w", err)
+		}
+	} else {
+		_, err = manifestFile.WriteString("images:\n")
+		if err != nil {
+			return fmt.Errorf("file write error: %w", err)
+		}
+		for _, imagePath := range imageManifest {
+			_, err = manifestFile.WriteString("  - " + imagePath + "\n")
+			if err != nil {
+				return fmt.Errorf("file write error: %w", err)
+			}
+		}
+	}
+
+	if len(binaryManifest) == 0 {
+		_, err = manifestFile.WriteString("binaries: []\n")
+		if err != nil {
+			return fmt.Errorf("file write error: %w", err)
+		}
+	} else {
+		_, err = manifestFile.WriteString("binaries:\n")
+		if err != nil {
+			return fmt.Errorf("file write error: %w", err)
+		}
+		for _, binaryPath := range binaryManifest {
+			_, err = manifestFile.WriteString("  - " + binaryPath + "\n")
+			if err != nil {
+				return fmt.Errorf("file write error: %w", err)
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -1300,6 +1489,7 @@ func (Gen) hostfile(ip string, addComment bool) error {
 	return nil
 }
 
+// BiosTraefikhostfile Generates the tinkerbell-nginx hostfile entry
 func (Gen) BiosTraefikhostfile(ip string, addComment bool) error {
 	hosts, err := (Gen{}).kubeBiosDnslookupDockerInternal()
 	if err != nil {

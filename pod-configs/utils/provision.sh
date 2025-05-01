@@ -910,6 +910,7 @@ cluster_variable() {
     if [[ -n "$VPC_ID" ]] && $SKIP_APPLY_VPC; then
         VPC_TERRAFORM_BACKEND_KEY="${AWS_REGION}/vpc/${VPC_ID}"
     fi
+
     cat <<EOF
 vpc_terraform_backend_bucket       = "$BUCKET_NAME"
 vpc_terraform_backend_key          = "${VPC_TERRAFORM_BACKEND_KEY}"
@@ -927,7 +928,6 @@ aurora_availability_zones          = ["${azs[0]}", "${azs[1]}", "${azs[2]}"]
 aurora_instance_availability_zones = ${aurora_ins_azs}
 aurora_dev_mode                    = false
 public_cloud                       = true
-s3_prefix                          = "orch"
 efs_throughput_mode                = "elastic"
 cluster_fqdn                       = "${ROOT_DOMAIN}"
 enable_cache_registry              = ${ENABLE_CACHE_REGISTRY}
@@ -1446,7 +1446,7 @@ check_quotas() {
     fi
 
     # Elastic IPs (EIPs)
-    EIP_REQ=13
+    EIP_REQ=7
     EIP_QUOTA=$(aws service-quotas get-service-quota --service-code ec2 --quota-code L-0263D0A3 |  jq .Quota.Value)
     ec=0
 
