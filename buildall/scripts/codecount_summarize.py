@@ -45,10 +45,10 @@ def add_groups_and_langs(scc_filename, cc_data):
     """
 
     # strip off dirname, prefix, and ending .json
-    repo_name = re.split(".*/scc_([a-z0-9-]+).json", scc_filename)[1]
+    repo_name = re.split(".*/scc_([a-z0-9-.]+).json", scc_filename)[1]
 
     # group by prefix
-    re_pre = re.split("([a-z0-9]+)-.*", repo_name)
+    re_pre = re.split("([a-z0-9.]+)-.*", repo_name)
     if len(re_pre) == 1:  # if no dash in name
         repo_group = re_pre[0]
     else:
@@ -171,6 +171,7 @@ def generate_totals_csv(out_csv_filename, repo_data):
                     "Docker ignore",
                     "Dockerfile",
                     "Makefile",
+                    "Groovy",
                 ]:
                     r_build += ldata["Code"]
 
@@ -187,6 +188,8 @@ def generate_totals_csv(out_csv_filename, repo_data):
                     "JavaScript",
                     "Protocol Buffers",
                     "Python",
+                    "Robot Framework (min)",
+                    "Robot Framework",
                     "Sass",
                     "Shell",
                     "TypeScript (min)",
@@ -198,6 +201,7 @@ def generate_totals_csv(out_csv_filename, repo_data):
                 elif lname in [
                     "CloudFormation (YAML)",
                     "Go Template",
+                    "JSON (min)",
                     "JSON",
                     "Smarty Template",
                     "TOML",
