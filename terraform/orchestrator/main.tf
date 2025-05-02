@@ -180,7 +180,6 @@ resource "null_resource" "resize_and_restart_vm" {
 resource "null_resource" "wait_for_cloud_init" {
 
   depends_on = [
-    local_file.env_data_file,
     null_resource.resize_and_restart_vm
   ]
 
@@ -317,8 +316,8 @@ resource "null_resource" "copy_local_orch_installer" {
 
 resource "null_resource" "write_installer_config" {
 
-  // Enable this resource if auto-install is enabled and using build artifacts from the RS
-  count = var.enable_auto_install && !var.use_local_build_artifact ? 1 : 0
+  // Enable this resource if auto-install is enabled
+  count = var.enable_auto_install ? 1 : 0
 
   depends_on = [
     null_resource.copy_files,
@@ -336,7 +335,7 @@ resource "null_resource" "write_installer_config" {
   provisioner "remote-exec" {
     inline = [
       "set -o errexit",
-      "bash -c 'cd /home/ubuntu; source .env; ./onprem_installer.sh --trace ${var.override_flag ? "--override" : ""} --write-config'",
+      "bash -c 'cd /home/ubuntu; source .env; ./onprem_installer.sh  ${var.use_local_build_artifact ? "--skip-download" : ""} --trace ${var.override_flag ? "--override" : ""} --write-config'",
     ]
     when = create
   }
