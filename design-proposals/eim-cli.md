@@ -26,7 +26,7 @@ The following workflows are to be supported initially - the list may be expanded
 
 The local options associated with the `host` object/noun would help with filtering and providing arguments to the commands:
 
-- `-o` `registered`/`onboarded`/`provisioned`/`all`/`deauthorized`/`unknown`/`error` - helps filter out the output of `list` command/verb ( TODO maybe instead of `-o` for output change to `-s` for status???)
+- `--registered`/`onboarded`/`provisioned`/`all`/`deauthorized`/`unknown`/`error` - helps filter out the output of `list` command/verb
 - `--import-from-csv` `my-hosts.csv` - used to provision a bulk of hosts using BIT
 > **NOTE**: TODO - Team I am not yet convinced on using the register/onboard/provision flags as options to the create/delete objects/nouns rather than using as verbs directly - will welcome feedback
 - `--register` `<arguments>` - local flag for the `create` command - enables only registering host during create - takes in argument in particular order necessary for registering the host 
@@ -168,7 +168,7 @@ Delete a location
 
 - Delete region (ie. `emfctl delete region myregion --region-type <type>`)
 - Delete a sub region in a region or another sub region (ie. `emfctl delete sub-region mysubregion --region-type <type> --region myregion <...>`)
-- Delete a site in a region/subregion or it's subregion (ie. `emfctl delete site mysite --longtitude 0 --latitude 0 --region myregion <...>`)
+- Delete a site in a region/subregion or it's subregion (ie. `emfctl delete site mysite  --region myregion <...>`)
 
 ### OS Profile/Provider management
 
@@ -233,6 +233,8 @@ The update of provisioning provider is a combined create/delete action
 > QUESTION/TODO - What about CLI for remote ssh? do we need this in this release?  
 > QUESTION/TODO - What about CLI for scheduling maintenance to node?  
 > QUESTION/TODO - What about CLI for scheduling maintenance to site?  
+> QUESTION/TODO - What about CLI for vPRO?
+> QUESTION/TODO - What about CLI for per Edge Node config?
 
 ## Rationale
 
