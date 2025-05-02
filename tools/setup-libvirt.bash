@@ -8,9 +8,9 @@ set -o nounset
 set -o pipefail
 set -o xtrace
 
-sudo apt-get update -y
+sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get update -y
 
-sudo apt-get -y install \
+sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get -y install \
     libvirt-daemon-system \
     libvirt-clients \
     qemu-kvm \
