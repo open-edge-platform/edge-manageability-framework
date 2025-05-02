@@ -6,7 +6,7 @@ Last updated: 01/05/2025
 
 ## Abstract
 
-The Edge Orchestrator requires a management via a CLI tool, an overarching EMF CLI will be designed/implemented as per the Orchestrator CLI ADR (https://github.com/open-edge-platform/edge-manageability-framework/pull/246/files).
+The Edge Orchestrator requires a management via a CLI tool, an extensible EMF CLI will be designed/implemented as per the Orchestrator CLI ADR (https://github.com/open-edge-platform/edge-manageability-framework/pull/246/files).
 As part of this CLI a number of EIM specific actions/features/workflows should be supported.
 This design proposal will focus on the details required for the EIM support.
 
