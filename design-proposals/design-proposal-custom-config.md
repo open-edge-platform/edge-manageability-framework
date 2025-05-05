@@ -60,37 +60,75 @@ autonumber
 - *Step 4*: During the onboarding and provisioning of the EdgeNode, the Onboarding Manager copies the user cloud-init file into the EdgeNode along with the default EdgeNode provisioning cloud-init file. The cloud-init tool then picks up the user/custom cloud-init config during the first boot. 
 
 ### Changes required for implementation 
-#### 1. New custom-config resource
+
+#### 1. New custom-config resource and data model
 A new custom-config resource will be added to the Infra-core data model, which captures information needed for a creating config on the edge node. The custom-config resource will contain the following fields:
 
-- custom-config-file : The config file is the user provided configuration file. The file can be of different supported format specified in config-type. 
+- custom-config-file : The config file is the user provided configuration file. The file can be of different supported format specified in config-type. Below is the data-model of the custom-config-file. 
+
+
 - custom-config-type : The configuration can be of different type such as cloud-init, bash file or json. The custom-config-type bash file or json can be for future use.
 
+***Data-Model*** example of custom-config :
 
-#### 2. custom-config data-model
+  ```yaml
+  // Custom configuration type
+  enum CustomConfigType {
+  CUSTOM_CONFIG_TYPE_UNSPECIFIED = 0;
+  CUSTOM_CONFIG_TYPE_CLOUD_INIT = 1;
+  }
+  // ConfigTemplate describes custom configuration 
+  message ConfigTemplate {
+    // configuration file.
+    string config = 1 [
+      (ent.field) = {
+        optional: false
+        immutable: true
+      },
 
-```yaml
-// ConfigTemplate describes configuration file 
-message ConfigTemplate {
-  // configuration file.
-  string config = 1 [
-    (ent.field) = {
-      optional: false
-      immutable: true
-    },
+      (buf.validate.field).string = {
+        min_len: 1
+        max_len: 16384
+        pattern: "^[A-Za-z0-9-/_\\[\\]\\.\\\\]*$"
+      },
+      (buf.validate.field).ignore = IGNORE_IF_UNPOPULATED
+    ];
 
-    (buf.validate.field).string = {
-      min_len: 1
-      max_len: 16384
-      pattern: "^[A-Za-z0-9-/_\\[\\]\\.\\\\]*$"
-    },
-    (buf.validate.field).ignore = IGNORE_IF_UNPOPULATED
-  ];
+    CustomConfigType config_type = 2;
+  }
+  ```
+  The instance resource data-model has to be updated to include custom-config resource.
 
-```
+#### 2. EIM API enahncement
 
-#### 3. Updates to Bulk Import Tool 
+A new set of APIs will be added to support custom-config resource handling. These APIs should enable Create, Read, and Delete operations on custom-config resources. 
 
-## Limitations
+Additionally, the instance resource APIs must be extended to support the addition and updating of custom-config resources. Custom-config resources shall not be permitted to be deleted while the instance is active. 
 
-## Open issues
+#### 3. Changes in Onboarding Manager 
+During provisioning, the Onboarding Manager shall check the instance. If the custom-config contains the cloud-init file, it will be copied along with the existing default EMF EdgeNode cloud-init. Since the custom-config is optional, no action is required if the cloud-init file is not present. There will be no error handling for user cloud-init failures. 
+
+#### 5. Updates to Bulk Import Tool 
+The Bulk Import Tool has to be enhances to support :
+- Include custom-config resourceID in .csv file
+
+  Ex: Here cc-8s150fg1 is the resource ID of custom-config
+  ```csv
+  Serial,UUID,OSProfile,Site,Secure,RemoteUser,Metadata,Error - do not fill
+  2500JF3,4c4c4544-2046-5310-8052-cac04f515233,os-7d650dd1,site-08c1e377,true,localaccount-9dfb57cb,cc-8s150fg1,key1=value1&key2=value2,
+  ```
+- Update Bulk Import Tool to check and include custom-config resource ID into the instance creation API. 
+
+#### 6. UI enhancements
+The UI should provide an option for users to create custom configurations cloud-init data. This feature can be designed similarly to the application profile YAML edit text input block under Deployments.
+
+To assist users, sample helper templates can be included. Once the provisioning is completed, the cloud-init data should be immutable; no edit or delete options should be available. Users should only be able to view the cloud-init configuration under host details.
+
+Here is a sample UI with cloud-init configuration for updating IP address and proxy settings.
+
+  ![cloud-init sample](./images/cloud-init.png)
+
+
+## Opens
+1. To include single or multiple cloud-init configs.
+2. Do we need to support more than one file format.
