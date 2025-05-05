@@ -34,13 +34,13 @@ fi
 TAGS_PATH="scratch/itags_${REPO}"
 
 if [ ! -f "${TAGS_PATH}" ]; then
-  echo "'${TAGS_PATH}' does not exist, so repo does not create any container images"
+  echo "### No docker images built in repos/${REPO} ###"
   exit 0
 fi
 
 TAG_FILE=$(cat "${TAGS_PATH}")
 
-pushd "${REPO_PATH}"
+pushd "${REPO_PATH}" >> "${LOGFILE}"
   for tline in $TAG_FILE; do
 
     tag=$(cut -d '|' -f 1 <<< "$tline")
@@ -51,9 +51,9 @@ pushd "${REPO_PATH}"
       target='docker-build'
     fi
 
-    echo "*** Starting docker build in: '${REPO}', tag: '${tag}', target: '${target}' ***"
+    echo "### Running 'make ${target}' in 'repos/${REPO}', tag: '${tag}' ###"
 
-    git switch --detach "${tag}"
+    git switch --detach "${tag}" >> "${LOGFILE}" 2>&1
 
     # regex matches all the end-of-string numbers/dots
     if [[ "${tag}" =~ ([0-9.]+)$ ]]
@@ -68,16 +68,15 @@ pushd "${REPO_PATH}"
     GITHUB_TOKEN=$GITHUB_TOKEN \
     make "${target}" >> "${LOGFILE}" 2>&1
 
-    echo "*** Finished docker build in: '${REPO}', tag: '${tag}', target: '${target}' ***"
   done
-popd
+popd >> "${LOGFILE}"
 
 # optionally cleanup docker buildx cache
 if [ -n "${DOCKER_PRUNE}" ]; then
-  echo "### Pruning docker buildx cache ###"
-  docker buildx prune -f
+  echo "#### Pruning docker buildx cache ####" | tee "${LOGFILE}"
+  docker buildx prune -f  >> "${LOGFILE}" 2>&1
 fi
 
 END_TS=$(date +"%s")
 ELAPSED=$(( END_TS - START_TS ))
-echo "### Docker build in: '${REPO}' took ${ELAPSED} seconds ###"
+echo "### All docker image builds complete in: 'repos/${REPO}', took ${ELAPSED}s ###"

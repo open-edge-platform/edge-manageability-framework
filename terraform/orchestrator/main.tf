@@ -177,6 +177,30 @@ resource "null_resource" "resize_and_restart_vm" {
   }
 }
 
+resource "null_resource" "wait_for_cloud_init" {
+
+  depends_on = [
+    null_resource.resize_and_restart_vm
+  ]
+
+  connection {
+    type     = "ssh"
+    host     = local.vmnet_ip0
+    port     = var.vm_ssh_port
+    user     = var.vm_ssh_user
+    password = var.vm_ssh_password
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "set -o errexit",
+      "until [ -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 15; done",
+      "echo 'cloud-init has finished!'",
+    ]
+    when = create
+  }
+}
+
 resource "null_resource" "copy_files" {
   depends_on = [
     local_file.env_data_file,
@@ -292,11 +316,12 @@ resource "null_resource" "copy_local_orch_installer" {
 
 resource "null_resource" "write_installer_config" {
 
-  // Enable this resource if auto-install is enabled and using build artifacts from the RS
-  count = var.enable_auto_install && !var.use_local_build_artifact ? 1 : 0
+  // Enable this resource if auto-install is enabled
+  count = var.enable_auto_install ? 1 : 0
 
   depends_on = [
-    null_resource.copy_files
+    null_resource.copy_files,
+    null_resource.wait_for_cloud_init
   ]
 
   connection {
@@ -310,9 +335,7 @@ resource "null_resource" "write_installer_config" {
   provisioner "remote-exec" {
     inline = [
       "set -o errexit",
-      "until [ -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 15; done",
-      "echo 'cloud-init has finished!'",
-      "bash -c 'cd /home/ubuntu; source .env; ./onprem_installer.sh --trace ${var.override_flag ? "--override" : ""} --write-config'",
+      "bash -c 'cd /home/ubuntu; source .env; ./onprem_installer.sh  ${var.use_local_build_artifact ? "--skip-download" : ""} --trace ${var.override_flag ? "--override" : ""} --write-config'",
     ]
     when = create
   }
@@ -353,7 +376,8 @@ resource "null_resource" "exec_installer" {
 
   depends_on = [
     null_resource.write_installer_config,
-    null_resource.set_proxy_config
+    null_resource.set_proxy_config,
+    null_resource.wait_for_cloud_init
   ]
 
   connection {
