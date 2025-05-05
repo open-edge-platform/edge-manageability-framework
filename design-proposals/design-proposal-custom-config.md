@@ -109,7 +109,7 @@ Additionally, the instance resource APIs must be extended to support the additio
 During provisioning, the Onboarding Manager shall check the instance. If the custom-config contains the cloud-init file, it will be copied along with the existing default EMF EdgeNode cloud-init. Since the custom-config is optional, no action is required if the cloud-init file is not present. There will be no error handling for user cloud-init failures. 
 
 #### 5. Updates to Bulk Import Tool 
-The Bulk Import Tool has to be enhances to support :
+The Bulk Import Tool has to be enhances to :
 - Include custom-config resourceID in .csv file
 
   Ex: Here cc-8s150fg1 is the resource ID of custom-config
