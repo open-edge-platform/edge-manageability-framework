@@ -485,7 +485,7 @@ func genKubeconfigEntry() error {
 		// retrieve the subdomain name
 		domainname = os.Getenv("ORCH_DOMAIN")
 		if domainname == "" {
-			return fmt.Errorf("ORCH_DOMAIN is required to with AUTO_CERT enabled")
+			return fmt.Errorf("ORCH_DOMAIN is required to be set with AUTO_CERT enabled")
 		}
 	} else if domainname == "" {
 		domainname = defaultClusterDomain
