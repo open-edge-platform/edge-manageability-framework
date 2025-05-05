@@ -1,4 +1,4 @@
-# Design Proposal: Custom EdgeNode Configuration via Cloud-Init
+# Design Proposal: Custom EdgeNode Configuration 
 
 This document outlines the detailed process for incorporating custom configurations specific to each edge node. It also explains how these configurations can be associated with instances, ensuring that they are applied during the provisioning phase. By following the steps provided, users can effectively manage and customize their edge node settings to meet specific requirements at the time of instance creation.
 
@@ -11,10 +11,12 @@ As a result, adjustments such as changes to proxy settings and the configuration
 This limitation means that any specific customization needed for individual edge nodes cannot be automated during the initial setup. Instead, users must wait until the provisioning process is complete and then manually intervene to make the necessary adjustments. This approach can be time-consuming and may lead to inconsistencies in configuration across different nodes.
 
 ## Proposed solution
-The proposed solution leverages cloud-init to provide custom configurations or per edge-node configurations. Cloud-init, an open-source application developed by Canonical, is used to bootstrap Linux images in a cloud computing environment. It is a powerful tool for automating the initial setup of cloud instances, including configuring networking, storage, users, and packages. Cloud-init is exposed by hyperscale’s for VM configuration; for instance, AWS provides it as [user data](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/user-data.html#userdata-linux), while Azure offers it as [custom data](https://learn.microsoft.com/en-us/azure/virtual-machines/linux/using-cloud-init). 
+The proposed solution leverages cloud-init to provide custom configurations or per edge-node configurations. 
+Cloud-init, an open-source application developed by Canonical, is used to bootstrap Linux images in a cloud computing environment. It is a powerful tool for automating the initial setup of cloud instances, including configuring networking, storage, users, and packages. Cloud-init is exposed by hyperscale’s for VM configuration; for instance, AWS provides it as [user data](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/user-data.html#userdata-linux), while Azure offers it as [custom data](https://learn.microsoft.com/en-us/azure/virtual-machines/linux/using-cloud-init). 
 
 In this solution, the cloud-init configuration will be exposed to EMF users through UI/APIs. EMF users will be able to add their cloud-init YAML files, which will be utilized by the cloud-init tool during edge node provisioning.
 
+The interfaces proposed shall not restrict it to only cloud-init file yaml format, in future the solution can be extented to different type of file formats such as bash script or json file format.
 
 ```mermaid
 sequenceDiagram
@@ -58,9 +60,36 @@ autonumber
 - *Step 4*: During the onboarding and provisioning of the EdgeNode, the Onboarding Manager copies the user cloud-init file into the EdgeNode along with the default EdgeNode provisioning cloud-init file. The cloud-init tool then picks up the user/custom cloud-init config during the first boot. 
 
 ### Changes required for implementation 
-1. #### custom-config resource
-1. #### custom-config data-model
-1. #### Updates to Bulk Import Tool 
+#### 1. New custom-config resource
+A new custom-config resource will be added to the Infra-core data model, which captures information needed for a creating config on the edge node. The custom-config resource will contain the following fields:
+
+- custom-config-file : The config file is the user provided configuration file. The file can be of different supported format specified in config-type. 
+- custom-config-type : The configuration can be of different type such as cloud-init, bash file or json. The custom-config-type bash file or json can be for future use.
+
+
+#### 2. custom-config data-model
+
+```yaml
+// ConfigTemplate describes configuration file 
+message ConfigTemplate {
+  // configuration file.
+  string config = 1 [
+    (ent.field) = {
+      optional: false
+      immutable: true
+    },
+
+    (buf.validate.field).string = {
+      min_len: 1
+      max_len: 16384
+      pattern: "^[A-Za-z0-9-/_\\[\\]\\.\\\\]*$"
+    },
+    (buf.validate.field).ignore = IGNORE_IF_UNPOPULATED
+  ];
+
+```
+
+#### 3. Updates to Bulk Import Tool 
 
 ## Limitations
 
