@@ -11,7 +11,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -478,19 +477,7 @@ func genKubeconfigEntry() error {
 
 	replaceEdgeServer := string(out)
 	insideClusterUrl := "http://cluster-connect-gateway.orch-cluster.svc:8080"
-
-	domainname := ""
-	// if auto-cert retrieve domainname from system
-	if autoCert {
-		// retrieve the subdomain name
-		domainname = os.Getenv("ORCH_DOMAIN")
-		if domainname == "" {
-			return fmt.Errorf("ORCH_DOMAIN is required to be set with AUTO_CERT enabled")
-		}
-	} else if domainname == "" {
-		domainname = defaultClusterDomain
-	}
-	outsideClusterUrl := fmt.Sprintf("https://connect-gateway.%s:443", domainname)
+	outsideClusterUrl := fmt.Sprintf("https://connect-gateway.%s:443", serviceDomain)
 
 	edgeServer := strings.Replace(replaceEdgeServer, insideClusterUrl, outsideClusterUrl, 1)
 
