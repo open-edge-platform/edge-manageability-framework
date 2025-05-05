@@ -4,18 +4,6 @@
     {
       "Effect": "Allow",
       "Action": [
-        "iam:CreateServiceLinkedRole"
-      ],
-      "Resource": "*",
-      "Condition": {
-        "StringEquals": {
-          "iam:AWSServiceName": "elasticloadbalancing.amazonaws.com"
-        }
-      }
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
         "ec2:DescribeAccountAttributes",
         "ec2:DescribeAddresses",
         "ec2:DescribeAvailabilityZones",
@@ -45,11 +33,9 @@
     {
       "Effect": "Allow",
       "Action": [
-        "cognito-idp:DescribeUserPoolClient",
         "acm:ListCertificates",
-        "acm:DescribeCertificate",
-        "iam:ListServerCertificates",
-        "iam:GetServerCertificate"
+        "acm:DescribeCertificate"
+        
       ],
       "Resource": "*"
     },
