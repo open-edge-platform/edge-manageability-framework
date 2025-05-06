@@ -130,8 +130,11 @@ resource "aws_iam_policy" "cloudwatch" {
       },
       {
         Action = [
+            "logs:CreateLogGroup",
+            "logs:CreateLogStream",
             "logs:PutLogEvents",
-            "cloudwatch:PutMetricData",
+            "logs:DescribeLogStreams",
+            "cloudwatch:PutMetricData"
         ],
         Effect   = "Allow",
         Resource = "*",
