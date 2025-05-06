@@ -55,7 +55,7 @@ func (Deploy) deployEnicCluster(targetEnv string, labels string) error {
 	}
 
 	// Allow some time for Helm to load ENiC
-	time.Sleep(5 * time.Second)
+	time.Sleep(20 * time.Second)
 	if err := (DevUtils{}).WaitForEnic(); err != nil {
 		return fmt.Errorf("failed waiting for enic to become ready: %w", err)
 	}
