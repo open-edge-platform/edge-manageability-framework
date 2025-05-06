@@ -1,0 +1,59 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: On-Prem Upgrade
+
+# Only run at most 1 workflow concurrently per PR, unlimited for branches
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# Manual Trigger
+on:
+  workflow_dispatch:
+
+jobs:
+  upgrade-from-version:
+    name: Upgrade from version
+    strategy:
+      matrix:
+        # Add comma separated Git tags here to test upgrade from different versions, e.g. [2.0.0, v3.0.0]
+        version-tags: [v3.0.0]
+    runs-on: ubuntu-24.04-16core-64GB
+    steps:
+      - name: Checkout ${{ matrix.version-tags }}
+        uses: actions/checkout@v4.2.1
+        with:
+          ref: refs/tags/${{ matrix.version-tags }}
+
+      - name: Setup asdf and install dependencies
+        id: install-deps
+        uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main
+
+      - name: Deploy Orchestrator ${{ matrix.version-tags }}
+        env:
+          TF_VAR_intel_release_service_refresh_token: value-not-used
+          TF_VAR_deploy_tag: ${{ needs.build-publish.outputs.deb-version }}
+          TF_VAR_FILE: ${{ github.workspace }}/terraform/orchestrator/terraform.tfvars
+          TF_VAR_vm_vcpu: 16
+          TF_VAR_vm_memory: 49152
+          TF_VAR_docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
+          TF_VAR_docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
+        timeout-minutes: 90
+        run: mage deploy:onPrem
+
+      - name: Verify Deployment
+        timeout-minutes: 60
+        run: mage -v deploy:waitUntilComplete
+
+      - name: Checkout Code Under Test
+        uses: actions/checkout@v4.2.1
+
+      - name: Upgrade Orchestrator
+        timeout-minutes: 90
+        run: echo "we need add the upgrade command here" # TODO
+
+      - name: Verify Deployment After Upgrade
+        timeout-minutes: 60
+        run: mage -v deploy:waitUntilComplete
