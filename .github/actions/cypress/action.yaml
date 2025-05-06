@@ -136,7 +136,6 @@ runs:
       run: |
         npx cypress run --e2e \
           -s "cypress/e2e/app-orch/deployment-package-smoke.cy.ts"
-        These tests are not stable yet, will be enabled in a separate PR
         npx cypress run --e2e \
           -s "cypress/e2e/app-orch/deployment-smoke.cy.ts" \
           --env EN_UUID=${{ env.EN_UUID }}
