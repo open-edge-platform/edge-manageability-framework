@@ -73,8 +73,6 @@ if __name__ == "__main__":
                 for line in data["charts"]:
                     htagout.write(f"{line}\n")
 
-    print("chart builds needed in each repo:")
-    yaml.dump(repo_tags_to_build, sys.stdout)
-
-    if req_charts:  # only print missing charts if they exist
-        print(f"missing charts: {req_charts}")
+    if req_charts:  # die if missing charts if they exist
+        print(f"ERROR - Missing charts: {req_charts}")
+        sys.exit(1)
