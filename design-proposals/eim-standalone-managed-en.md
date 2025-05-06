@@ -7,7 +7,7 @@ Last updated: 29.04.2025
 ## Abstract
 
 A Customer Journey for Open Edge Platform assumes that customers can manually deploy a set of Standalone
-Edge Nodes (SEN) that can be onboarded to the Edge Orchestrator at later stage, once a customer is ready to scale their deployment.
+Edge Nodes (EMT-S) that can be onboarded to the Edge Orchestrator at later stage, once a customer is ready to scale their deployment.
 SENs are converted to managed Edge Nodes which, once onboarded, are fully owned by the Edge Orchestrator - customers
 can manage them (e.g., install clusters, applications or perform Day2 OS updates) through the Edge Orchestrator UI and API.
 
@@ -33,19 +33,18 @@ This design aims at:
 - Providing a solution for onboarding Edge Nodes in a fully automated way, with minimal manual steps.
 - Keeping the solution OS-independent, i.e., the solution should work on any OS that is supported by the Edge Orchestrator.
 - Reducing the user interaction (i.e., logging into the OS, injecting USB sticks, etc.) with Edge Node machines.
-- Enabling the onboarding process at scale, i.e., the design should enable onboarding of multiple machines at once.
+- Enabling the onboarding process at scale, i.e., the design should enable onboarding of multiple EMT-S nodes at once.
 
 The proposed solution is an MVP approach - some of the above goals may not be fully achieved in the first version of the design,
 but the design doesn't preclude achieving them in the future. 
 
 ### Assumptions
 
-- Customers will drive the onboarding process from a local developer machine, with desktop, keyboard and mouse.
+- Customers will drive the onboarding process from a local developer machine, with monitor, keyboard and mouse.
 - The local developer machine will have direct access to ENs via local subnet. Customers can SSH into the ENs.
-- SENs being onboarded won't be equipped with desktop, keyboard or mouse. The only machine equipped with peripherals will be
+- SENs being onboarded won't be equipped with monitor, keyboard or mouse. The only machine equipped with peripherals will be
   the local developer/admin machine.
 - The design will re-use the current APIs of Onboarding Manager to drive IO/NIO-based onboarding.
-  We may just require small modifications to the Onboarding Manager and the gRPC interface.
 
 ### Solution
 
@@ -109,7 +108,8 @@ autonumber
 **Step 0.** A user already provisioned a set of Standalone ENs following the user guides and decides to scale out.
 They don't need to have direct access to the Edge Orchestrator UI/API (could be different personas on-site vs. remote administrator).
 Users don't need to perform any configuration on the Edge Orchestrator beforehand, but we assume that the Edge Orchestrator supports
-the OS version of the Standalone ENs. The remote administrator configures a special user/role for SEN onboarding.
+the OS version of the Standalone ENs. The remote administrator configures a special user/role for SEN onboarding. The special user/role
+is associated with a single project that will determine in which tenant the SEN is imported.
 
 1. An on-site user retrieves user credentials for SEN onboarding from the remote administrator.
 2. An on-site user logs into the node and invokes the CLI tool that should already be installed on the EMT image.
