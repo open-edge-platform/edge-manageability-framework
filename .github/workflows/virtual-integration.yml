@@ -168,12 +168,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4.2.1
 
-      - name: Set up git credentials
-        shell: bash
-        run: |
-          echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
-          git config --global url."https://${{ secrets.SYS_ORCH_GITHUB }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
-
       - name: Setup asdf and install dependencies
         uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main
 
@@ -192,12 +186,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4.2.1
 
-      - name: Set up git credentials
-        shell: bash
-        run: |
-          echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
-          git config --global url."https://${{ secrets.SYS_ORCH_GITHUB }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
-
       - name: Setup asdf and install dependencies
         uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main
 
@@ -215,12 +203,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4.2.1
 
-      - name: Set up git credentials
-        shell: bash
-        run: |
-          echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
-          git config --global url."https://${{ secrets.SYS_ORCH_GITHUB }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
-
       - name: Setup asdf and install dependencies
         uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main
 
@@ -237,12 +219,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.2.1
-
-      - name: Set up git credentials
-        shell: bash
-        run: |
-          echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
-          git config --global url."https://${{ secrets.SYS_ORCH_GITHUB }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Setup asdf and install dependencies
         uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main
@@ -288,7 +264,6 @@ jobs:
         uses: actions/checkout@v4.2.2
         with:
           repository: open-edge-platform/orch-ci
-          token: ${{ secrets.SYS_ORCH_GITHUB }}
           path: orch-ci
 
       - name: Set up git credentials
@@ -684,19 +659,13 @@ jobs:
       github.ref == 'refs/heads/main' ||
       github.ref == 'refs/heads/main-pass-validation'
       )
-    runs-on: ubuntu-22.04-32core-128GB
+    runs-on: ubuntu-24.04-16core-64GB
     timeout-minutes: 120
     env:
       KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.2.1
-
-      - name: Set up git credentials
-        shell: bash
-        run: |
-          echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
-          git config --global url."https://${{ secrets.SYS_ORCH_GITHUB }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Setup asdf and install dependencies
         id: install-deps
@@ -707,8 +676,8 @@ jobs:
           TF_VAR_intel_release_service_refresh_token: value-not-used
           TF_VAR_deploy_tag: ${{ needs.build-publish.outputs.deb-version }}
           TF_VAR_FILE: ${{ github.workspace }}/terraform/orchestrator/terraform.tfvars
-          TF_VAR_vm_vcpu: 24
-          TF_VAR_vm_memory: 65536
+          TF_VAR_vm_vcpu: 16
+          TF_VAR_vm_memory: 49152
           TF_VAR_docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
           TF_VAR_docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
         timeout-minutes: 90
