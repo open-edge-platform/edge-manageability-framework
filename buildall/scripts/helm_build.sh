@@ -34,13 +34,13 @@ fi
 TAGS_PATH="scratch/htags_${REPO}"
 
 if [ ! -f "${TAGS_PATH}" ]; then
-  echo "'${TAGS_PATH}' does not exist, so repo does not create any helm charts"
+  echo "### No helm charts built in repos/${REPO} ###"
   exit 0
 fi
 
 TAG_FILE=$(cat "${TAGS_PATH}")
 
-pushd "${REPO_PATH}"
+pushd "${REPO_PATH}" >> "${LOGFILE}"
   for tline in $TAG_FILE; do
 
     tag=$(cut -d '|' -f 1 <<< "$tline")
@@ -51,33 +51,32 @@ pushd "${REPO_PATH}"
       outDir="."
     fi
 
-    git switch --detach "${tag}"
+    git switch --detach "${tag}" >> "${LOGFILE}" 2>&1
 
     # check if helm-build target exists in Makefile
-    set +eu
+    set +e
     HELM_BUILD_TARGET=$(grep ^helm-build Makefile)
-    set -eu
+    set -e
 
     if [ ! "${HELM_BUILD_TARGET}" ]; then
-      echo "### Copying Makefile from main branch as helm-build target doesn't exist ###"
-      git checkout main Makefile
+      echo "#### Copying Makefile from main branch as helm-build target doesn't exist ####" \
+        | tee -a "${LOGFILE}"
+      git checkout main Makefile  >> "${LOGFILE}" 2>&1
     fi
 
-    echo "### Starting make helm-build in: '${REPO}', tag: '${tag}' ###"
+    echo "### Running 'make helm-build' in 'repos/${REPO}', tag: '${tag}' ###"
 
     make helm-build >> "${LOGFILE}" 2>&1
 
     mv "${outDir}"/*.tgz ../../charts
 
     # clean up repo
-    git checkout HEAD .
-
-    echo "### Finished make helm-build in: '${REPO}', tag: '${tag}', output in: '${outDir}' ###"
+    git checkout HEAD . >> "${LOGFILE}" 2>&1
 
   done
-popd
+popd >> "${LOGFILE}"
 
 END_TS=$(date +"%s")
 ELAPSED=$(( END_TS - START_TS ))
 
-echo "### helm-build took ${ELAPSED} seconds in repo: '${REPO}' ###"
+echo "### All helm chart builds complete in 'repos/${REPO}', took ${ELAPSED}s ###"

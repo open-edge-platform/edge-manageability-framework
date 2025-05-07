@@ -5,6 +5,9 @@
 argo:  
   o11y:
     alertingMonitor: 
+      alertmanager:
+        config:
+          groupInterval: 1m
       smtp:
         initialize: true
         configSecret: smtp

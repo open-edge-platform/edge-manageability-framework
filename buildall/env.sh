@@ -33,6 +33,9 @@ export DOCKER_PRUNE=
 # don't color output
 export NO_COLOR=1
 
+# avoid checking for tool versions/presence
+export TOOL_VERSION_CHECK=0
+
 # Github Token - used to build certain images
 # Obtain from: https://github.com/settings/tokens
 export GITHUB_TOKEN=

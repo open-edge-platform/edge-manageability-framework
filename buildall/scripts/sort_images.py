@@ -53,12 +53,12 @@ def parse_image_manifest(image_mf_raw):
                 if len(split) == 1:
                     name, version = split[0]
                 else:
-                    print(f"Underspecified image name: {rawi}")
+                    print(f"INFO: Underspecified image name: {rawi}")
 
         if name in image_mf_fix["images"]:
             if image_mf_fix["images"][name]["registry"] != registry:
                 print(
-                    f"Duplicate image: '{name}' has registry '{registry}' which "
+                    f"INFO: Duplicate image: '{name}' has registry '{registry}' which "
                     f"doesn't match earlier '{image_mf_fix['images'][name]['registry']}'"
                 )
             else:
@@ -101,9 +101,6 @@ if __name__ == "__main__":
     repo_artifacts, _ctr, itr = load_repo_artifacts("scratch")
 
     match_images(image_manifest, itr, repo_artifacts)
-
-    print("builds needed in each repo")
-    print(repo_tags_to_build)
 
     for rname, data in repo_tags_to_build.items():
         if data["images"]:  # If there are charts in the repo
