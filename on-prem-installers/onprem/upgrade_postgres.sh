@@ -1,3 +1,9 @@
+#!/bin/bash
+
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
 podname="postgresql-0"
 postgres_namespace=orch-database
 POSTGRES_LOCAL_BACKUP_PATH="./" 
