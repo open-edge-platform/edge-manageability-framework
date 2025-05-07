@@ -15,7 +15,7 @@ prechecks() {
    fi
 
   # Check if the PostgreSQL pod is running
-  pod_status=$(kubectl get pods -n $postgres_namespace podname -o jsonpath='{.status.phase}')
+  pod_status=$(kubectl get pods -n $postgres_namespace $podname -o jsonpath='{.status.phase}')
 
   if [ "$pod_status" != "Running" ]; then
     echo "PostgreSQL pod is not running. Current status: $pod_status"
@@ -42,8 +42,6 @@ backup_postgres() {
 
     echo "Backing up databases from pod $podname in namespace $postgres_namespace..."
 
-    # password=$(kubectl exec -n $postgres_namespace $podname -- /bin/bash -c 'echo -n "${POSTGRES_POSTGRES_PASSWORD:-$POSTGRES_PASSWORD}"')
-
     remote_backup_path="/tmp/${postgres_namespace}_${podname}_backup.sql"
     
     kubectl exec -n $postgres_namespace $podname -- /bin/bash -c "$(typeset -f disable_security); disable_security"
@@ -66,26 +64,19 @@ kubectl delete pvc -n $postgres_namespace data-postgresql-0 &
 # patch ensures cascade delete
 kubectl patch application -n $application_namespace postgresql  -p '{"metadata": {"finalizers": ["resources-finalizer.argocd.argoproj.io"]}}' --type merge
 kubectl delete application -n $application_namespace postgresql --cascade=background
-# kubectl patch application -n $application_namespace postgresql-secrets  -p '{"metadata": {"finalizers": ["resources-finalizer.argocd.argoproj.io"]}}' --type merge
-# kubectl delete application -n $application_namespace postgresql-secrets
 
 }
 
 restore_postgres() {
-POSTGRES_USERNAME="postgres" 
 
-
+   kubectl exec -n $postgres_namespace $podname -- /bin/bash -c "$(typeset -f disable_security); disable_security"
    remote_backup_path="/tmp/${postgres_namespace}_${podname}_backup.sql"
    kubectl cp "$local_backup_path" "$postgres_namespace/$podname:$remote_backup_path"
 
-    echo "Restoring backup databases from pod $podname in namespace $postgres_namespace..."
+   echo "Restoring backup databases from pod $podname in namespace $postgres_namespace..."
 
-    password=$(kubectl exec -n $postgres_namespace $podname -- /bin/bash -c 'echo -n "${POSTGRES_POSTGRES_PASSWORD:-$POSTGRES_PASSWORD}"')
-    #password=$(echo $POSTGRESQL | base64 --decode)
-    echo $password
-
-    kubectl exec -n $postgres_namespace $podname -- /bin/bash -c "PGPASSWORD='$password' psql -U $POSTGRES_USERNAME <  $remote_backup_path "
-
+   kubectl exec -n $postgres_namespace $podname -- /bin/bash -c "psql -U $POSTGRES_USERNAME <  $remote_backup_path "
+   kubectl exec -n $postgres_namespace $podname -- /bin/bash -c "$(typeset -f enable_security); enable_security"
 
 }
 
@@ -95,7 +86,6 @@ prechecks
 
 # Backup secret
 kubectl get secret -n $postgres_namespace postgresql -o yaml > postgres_secret.yaml
-
 
 backup_postgres
 delete_postgress
