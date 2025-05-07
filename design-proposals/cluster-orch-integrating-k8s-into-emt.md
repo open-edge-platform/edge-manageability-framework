@@ -203,9 +203,9 @@ A new cluster is created only when the user does not provide an existing cluster
 
 #### Manual Cluster Creation
 
-Manual cluster creation is an existing method where users create a cluster by selecting a template and hosts. Before we talk about manual cluster creation workflow, it is important to understand the coupling between EMT image version and cluster template introduced by integrating Kubernetes into EMT. For instance, creating a K3s cluster with a K3s v1.32 template may not work as expected on a EMT machine provisioned with K3s v1.30. Such discrepancies can occur when Edge Orchestration undergoes multiple upgrades, resulting in a mix of multiple versions of cluster templates and EMT machines. While this issue is relevant for K3s on EMT only, given that this combination is the primary use case, it is important to address it properly in our user workflow. There are a few options to mitigate this issue.
+Manual cluster creation is an existing method where users create a cluster by selecting a template and hosts. Before we talk about manual cluster creation workflow, it is important to understand the coupling between EMT image version and cluster template introduced by integrating Kubernetes into EMT. For instance, creating a K3s cluster with a K3s v1.32 template may not work as expected on a EMT machine provisioned with K3s v1.30. Such discrepancies can occur when Edge Orchestration undergoes multiple upgrades, resulting in a mix of multiple versions of cluster templates and EMT machines. While this issue is relevant for K3s on EMT only, given that this combination is the primary use case, it is important to address it properly in the user workflow. There are a few options to mitigate this issue.
 
-**Option 1)** Restrict cluster creation to onboarded hosts only, excluding provisioned hosts. The Cluster Manager automatically selects the appropriate EMT version and requests instance creation from the Infra Manager to install the OS and Kubernetes.
+**Option 1)** Restrict cluster creation to onboarded hosts only, excluding provisioned hosts. The Cluster Manager automatically selects the appropriate EMT version, and requests instance creation to the Infra Manager to install the OS and Kubernetes. Could be simplest option.
 
 **Option 2)** Implement logic and a new API within the Cluster Manager to check version compatibility and return eligible hosts for the selected cluster template.
 
@@ -213,7 +213,14 @@ Manual cluster creation is an existing method where users create a cluster by se
 
 *[todo: add decision]*
 
-#### Day-2 Operations
+#### Delete Cluster
+
+Similar to cluster creation, cluster deletion can occur in two ways:
+
+**1. Automatically when a host is deauthorized**: Users can opt to delete the cluster when the host is deauthorized, with this option enabled by default during cluster creation. The Cluster Manager will automatically delete the cluster when all hosts within it are deauthorized.
+**2. Manually through a direct request to the Cluster Manager**: Users can initiate a cluster deletion by making a direct API call to the Cluster Manager.
+
+For manual deletion, the handling of cluster nodes depends on the approach taken for manual creation. If manual creation is restricted to onboarded hosts only (Option 1), deleting a host should deauthorize the cluster nodes, making users to re-onboard the hosts for reuse. If either Option 2 or Option 3 is chosen, deleting a host should only clean up Kubernetes, which aligns with the current behavior.
 
 ## Rationale
 
