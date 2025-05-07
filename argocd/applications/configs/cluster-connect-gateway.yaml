@@ -2,5 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Intentionally left blank
+# Enable serviceMonitor for the gateway
+gateway:
+  metrics:
+    serviceMonitor:
+      enabled: true
 
+# Enable serviceMonitor for the controller
+controller:
+  metrics:
+    serviceMonitor:
+      enabled: true
