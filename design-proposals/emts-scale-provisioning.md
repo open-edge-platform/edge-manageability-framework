@@ -37,13 +37,32 @@ The provisioning of EMT-S at scale will be driven by a local orchestrator instan
 it will consist of:
 
 - Foundational Platform Services that are required to deploy and run the orchestrator instance.
+- Limited observability stack that should only provide logs.
 - A reduced flavor of EIM - only infra-core and infra-onboarding will be deployed (no infra-managers as they won't be used by EMT-S).
 - Limited Web UI with EIM only.
 - No cluster and application orchestrator deployed.
+- Abandon HA requirements - EIM-S is primarily a single-node, on-prem deployment. Any data loss can be backed by hardware-level redundancy. Think of EIM-S as Rancher Desktop or Virtualbox.
+
+FPS components that are essential to EIM are:
+- IAM, Multi-Tenancy components
+- Keycloak
+- RS-proxy
+- Vault
+- secrets-config
+- MetalLB services
+
+The following FPS/Observability components should be disabled:
+- Kyverno
+- Prometheus and all metrics-related components (including infra-core's exporter, Mimir)
+- SRE exporter
+- Alerting monitors
+- Loki should be scaled down to minimal deployment
+
+**The installation of EIM-S should become a one-line command operation.**
 
 ### PXE-based provisioning workflow
 
-For MVP we will heavily rely on capabilities provided by Tinkerbell SMEE. We will leverage DHCP and TFTP server implementations from SMEE and only make several modifications ot the 
+For MVP we will heavily rely on capabilities provided by Tinkerbell SMEE. We will leverage DHCP and TFTP server implementations from SMEE and only make several modifications to the 
 EIM stack.
 
 By default, Tinkerbell SMEE relies on MAC addresses to uniquely identify PXE-booting machines and customize the iPXE script per machine.
@@ -109,9 +128,15 @@ The alternative considered was to use a standalone Tinkerbell deployment without
 it would completely change the UX as we would need to familiarize customers with Tinkerbell APIs (or have a custom CLI tool to help them manage Tinkerbell CRDs).
 With the current proposal we keep using the current UX, with possibility to use Bulk Import Tool to scale preregistration process and selectively choose OS profiles for Edge Nodes.
 
+## Affected components and Teams
+
+- **FPS team** should work with the help of EIM team on slimming down the FPS components to meet EIM-S requirements.
+- **EIM team** responsible for slimming down deployment of EIM and enabling Tinkerbell SMEE with required configuration. 
+
 ## Open issues
 
 - By default, the provisioning flow will complete and all the agents will be installed, started and connected to the orchestrator instance that deployed them.
   We may need a way to stop the provisioning flow without installing and starting agents.
 - In this solution, PXE boot will always be allowed for any device in a local subnet trying to initiate PXE boot.
   On the contrary, the Tinkerbell allows to control whether PXE boot is enabled/disabled for a device. For now, I don't see any need to control who is allowed to PXE-boot.
+- If we needed to support ISO images for EMT-D, we would need to create a new OS profile. We would also need to add a new Tinkerbell action that supports flashing ISO images to the disk.
