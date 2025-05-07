@@ -21,3 +21,8 @@ prometheus:
     resources:
       {{- toYaml . | nindent 6 }}
 {{- end }}
+
+{{- if (index .Values.argo.enabled kube-apiserver-metrics) }}
+kubeApiServer:
+  enabled: true
+{{- end }}
