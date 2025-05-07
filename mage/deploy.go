@@ -579,6 +579,12 @@ func kindCluster(name string, targetEnv string) error {
       kubeadmConfigPatches:
       - |
         kind: ClusterConfiguration
+        etcd:
+          local:
+            extraArgs:
+              quota-backend-bytes: "8589934592"
+              auto-compaction-mode: "periodic"
+              auto-compaction-retention: "1h"
         apiServer:
         # enable auditing flags on the API server
           extraArgs:
