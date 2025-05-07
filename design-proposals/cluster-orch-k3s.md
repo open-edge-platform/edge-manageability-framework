@@ -116,6 +116,20 @@ Cluster Orch team is responsible for:
 * Performing scale testing with K3s edge clusters.
 * Optimizing Cluster Orchestration components and Cluster API provider K3s if necessary to achieve the desired KPIs.
 
+### Test Plan
+
+To ensure the reliability and functionality of CO components and the Cluster API K3s provider, it is crucial to conduct component testing in isolation. This can be accomplished by mocking the Edge Framework Infrastructure Manager and other dependencies, as we have already done for the current RKE2 providers. This approach allows us to focus on testing the internal logic of the CO component and verify its expected performance before integrating it with other system parts.
+The integration test plan for Cluster Orch emphasizes testing its subsystems in isolation and reporting the function test coverage. This plan is hosted, documented, and executed by the [cluster-tests repository](https://github.com/open-edge-platform/cluster-tests/tree/main/test-plan). The contents of the [test plan](https://github.com/open-edge-platform/cluster-tests/tree/main/test-plan) in the cluster-tests repository includes:
+
+* Test purpose, scope, objective
+* Components under test
+* Different types of test - functional, failure, error
+* Test environment
+* Test cases - test id, description, type of test, precondition, steps, expected results
+* Test schedule
+
+The cluster-tests repository was designed based on RKE2 providers, so we do not anticipate significant changes when implementing K3s CAPI providers. This existing framework can be extended to accommodate the current test plan. Additionally, the repository supports configurable functional integration tests at a granular level, allowing for adjustments to dependencies as needed.
+
 ## Open issues (if applicable)
 
 N/A
