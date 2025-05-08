@@ -76,7 +76,7 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: Setup asdf and install dependencies
-        uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main
+        uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
 
       - name: Run test
         run: mage test:ContainersAvailableOnReleaseService true

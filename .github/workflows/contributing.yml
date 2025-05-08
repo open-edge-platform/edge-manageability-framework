@@ -10,8 +10,12 @@ on:
   issues:
     types: [opened]
 
+permissions: {}
+
 jobs:
   remind-contributing:
+    permissions:
+      contents: read
     name: Remind Contributor
     runs-on: ubuntu-latest
     steps:
