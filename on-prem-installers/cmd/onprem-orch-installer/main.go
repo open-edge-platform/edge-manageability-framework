@@ -86,7 +86,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: gitea-init-{{ .repoName }}
-  namespace: gitea
+  namespace: orch-platform
   labels:
     managed-by: edge-manageability-framework
 spec:
