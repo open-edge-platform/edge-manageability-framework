@@ -54,6 +54,10 @@ func (Deploy) deployEnicCluster(targetEnv string, labels string) error {
 		return fmt.Errorf("failed to register enic: %w", err)
 	}
 
+	if err := (DevUtils{}).ProvisionEnic(enicPodName); err != nil {
+		return fmt.Errorf("failed to provision enic: %w", err)
+	}
+
 	// Allow some time for Helm to load ENiC
 	time.Sleep(5 * time.Second)
 	if err := (DevUtils{}).WaitForEnic(); err != nil {
