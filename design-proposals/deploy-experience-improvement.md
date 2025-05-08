@@ -33,6 +33,7 @@ Finally, by replacing monolithic shell scripts with modular Go components and ad
 - A **unified installer** that supports AWS, Azure, and on-prem targets.
 - A **text user interface (TUI) interactive configuration builder** that guides users through required inputs,
   with the ability to preload values from environment variables or prior installations.
+  It should minimize user input. For example, scale profiles for infra and orchestrator can be automatically applied according to user-specified target scale.
 - A **well-defined abstraction between infrastructure and orchestrator** logic that enables independent testing and upgrading,
   as well as the ability to plug in new cloud providers via Go modules.
 - **Wrapped and actionable error messages**. Raw logs should be saved to files, and restarts should be possible from the point of failure.
