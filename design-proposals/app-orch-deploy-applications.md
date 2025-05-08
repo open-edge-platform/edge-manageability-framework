@@ -15,7 +15,7 @@ allows a collection of Applications (each of which is a Helm Chart) to be deploy
 one or more edge nodes. This feature has been leveraged for complex use cases that are built from
 many helm charts.
 
-[Multi-Chart Application](images/app-orch-deployment-package.png)
+![Multi-Chart Application](images/app-orch-deployment-package.png)
 
 While the `Deployment Package` offers flexibility in supporting complex use cases, it also
 leads to unnecessary complexity for most common case, which only involve single a Helm Chart.
@@ -24,7 +24,7 @@ The `Deployment Package` provides no added value if it points to exactly one `Ap
 but it creates a significant amount of additional work. Furthermore, a `Registry` object must
 also exist to abstract the OCI registry URL of the chart.
 
-[Multi-Chart Application](images/app-orch-dp-single-chart.png)
+![Single-Chart Application](images/app-orch-dp-single-chart.png)
 
 This proposal is to allow deployment of `Application` without requiring creation of a
 `Deployment Package`.
