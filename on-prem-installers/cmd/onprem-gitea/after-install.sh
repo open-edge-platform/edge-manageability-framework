@@ -57,12 +57,6 @@ processCerts() {
     --cert="$tmpDir/infra-tls.crt" \
     --key="$tmpDir/infra-tls.key"
 
-  # Create a tls secret with custom key names for orch-platform namespace
-  # This is needed to access the gitea service from the orch-platform namespace  
-  kubectl create secret tls gitea-tls-certs -n orch-platform \
-    --cert="$tmpDir/infra-tls.crt" \
-    --key="$tmpDir/infra-tls.key"  
-
   # Clean up the temporary directory
   rm -rf "$tmpDir"
 }
