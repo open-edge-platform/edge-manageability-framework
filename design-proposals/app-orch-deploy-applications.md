@@ -119,14 +119,18 @@ the `Application` object.
 ### Folding Registries into Applications
 
 The common case is that a Helm Chart can be retrieved from its OCI URL, and optional username
-and password. We could add these three fields to the `Application` object:
+and password. We could eliminate the need to have a separate `Registry` object by
+adding these three fields to the `Application` object:
 
 - `chart_url`. The URL of the OCI helm chart.
 
 - `chart_username`, `chart_password`. Optional credentials to use when fetching the Helm Chart.
 
-If `chart_url` and `helm_registry_name` are mutually exclusive. The user must either choose
-the simplified approach, or choose the more flexible approach of using the `Registry` object.
+`chart_url` and the existing field `helm_registry_name` are mutually exclusive. The user must either
+choose the simplified approach, or choose the more flexible approach of using the `Registry` object.
+If `chart_url` is specified, then App Orch will also make it available as an image registry,
+consistent with how `Image Pull Secrets` are implemented in the deployment manager. As such,
+`chart_url` will also be mutually exclusive with `image_registry_name`.
 
 If the user has a more complex use case that requires a custom cert, or they want to abstract
 these details behind a named `Registry` object, they are free to do so. There is still value in
