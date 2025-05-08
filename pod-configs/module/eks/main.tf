@@ -181,12 +181,6 @@ resource "aws_iam_role_policy_attachment" "AmazonSSMManagedInstanceCore" {
   role       = aws_iam_role.eks_nodes.name
 }
 
-resource "aws_iam_role_policy_attachment" "AmazonEC2ContainerRegistryPowerUser" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"
-  role       = aws_iam_role.eks_nodes.name
-}
-
-
 resource "aws_launch_template" "eks_launch_template" {
   name = "eks-nodegroup-${var.cluster_name}-1"
 
@@ -370,12 +364,8 @@ resource "aws_eks_addon" "addons" {
   configuration_values        = each.value.configuration_values
 }
 
-data "aws_iam_policy" "lb_controller" {
-  name = var.aws_lb_controller_iam
-}
-
 resource "aws_iam_role_policy_attachment" "ELB_Controller" {
-  policy_arn = data.aws_iam_policy.lb_controller.arn
+  policy_arn = aws_iam_policy.aws_load_balancer.arn
   role       = aws_iam_role.eks_nodes.name
 }
 
