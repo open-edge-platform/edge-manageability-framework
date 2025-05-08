@@ -481,7 +481,7 @@ func genKubeconfigEntry() error {
 
 	replaceEdgeServer := string(out)
 	insideClusterUrl := "http://cluster-connect-gateway.orch-cluster.svc:8080"
-	outsideClusterUrl := "https://connect-gateway.kind.internal:443"
+	outsideClusterUrl := fmt.Sprintf("https://connect-gateway.%s:443", serviceDomain)
 
 	edgeServer := strings.Replace(replaceEdgeServer, insideClusterUrl, outsideClusterUrl, 1)
 
