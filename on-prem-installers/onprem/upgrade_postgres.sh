@@ -51,15 +51,16 @@ backup_postgres() {
     remote_backup_path="/tmp/${postgres_namespace}_${podname}_backup.sql"
     
     kubectl exec -n $postgres_namespace $podname -- /bin/bash -c "$(typeset -f disable_security); disable_security"
-    kubectl exec -n $postgres_namespace $podname -- /bin/bash -c "pg_dumpall -U $POSTGRES_USERNAME -f '$remote_backup_path'"
 
-    if [ $? -eq 0 ]; then
+
+    if  $(kubectl exec -n $postgres_namespace $podname -- /bin/bash -c "pg_dumpall -U $POSTGRES_USERNAME -f '$remote_backup_path'"); then
       echo "Backup completed successfully for pod $podname in namespace $postgres_namespace."
 
       kubectl cp "$postgres_namespace/$podname:$remote_backup_path" "$local_backup_path"
     else
       echo "Backup failed for pod $podname in namespace $postgres_namespace."
     fi
+
 }
 
 
