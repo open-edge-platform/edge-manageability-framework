@@ -29,7 +29,7 @@ Following are the MVP requirements for the scale provisioning of EMT-S edge node
 ## Solution
 
 The solution assumes that we will deploy a slimmed down version of EIM (aka EIM standalone) on a customer's premises (OXM warehouse). The slimmed-down EIM
-should only consist of required components to drive OS provisioning.
+should only consist of required components to drive OS provisioning. The EIM standalone will not be a fork of EIM. The approach will be deployment time configuration of EMF to deploy only what the required features. The design for the deployment time configuration/profile for EMF and EIM will be handeled in another design document.
 
 ### Slimmed-down EIM
 
@@ -44,6 +44,7 @@ it will consist of:
 - Abandon HA requirements - EIM-S is primarily a single-node, on-prem deployment. Any data loss can be backed by hardware-level redundancy. Think of EIM-S as Rancher Desktop or Virtualbox.
 
 FPS components that are essential to EIM are:
+
 - IAM, Multi-Tenancy components
 - Keycloak
 - RS-proxy
@@ -52,6 +53,7 @@ FPS components that are essential to EIM are:
 - MetalLB services
 
 The following FPS/Observability components should be disabled:
+
 - Kyverno
 - Prometheus and all metrics-related components (including infra-core's exporter, Mimir)
 - SRE exporter
@@ -62,7 +64,7 @@ The following FPS/Observability components should be disabled:
 
 ### PXE-based provisioning workflow
 
-For MVP we will heavily rely on capabilities provided by Tinkerbell SMEE. We will leverage DHCP and TFTP server implementations from SMEE and only make several modifications to the 
+For MVP we will heavily rely on capabilities provided by Tinkerbell SMEE. We will leverage DHCP and TFTP server implementations from SMEE and only make several modifications to the
 EIM stack.
 
 By default, Tinkerbell SMEE relies on MAC addresses to uniquely identify PXE-booting machines and customize the iPXE script per machine.
@@ -112,10 +114,11 @@ autonumber
 ```
 
 Notes:
+
 - Similar to the standard flow - If EN is not pre-registered, the process will fallback to Interactive Onboarding waiting for a user to provide credentials.
 - Similar to the standard flow - If EN is pre-registered, but the OS profile is not selected, the default OS will be provisioned.
 - In Step 3, SMEE returns an URL to EFI script that is stored on SMEE'S TFTP server. This operation is fully handled by SMEE and it supports various of hardware PXE architectures:
-  https://github.com/tinkerbell/smee/blob/main/internal/dhcp/dhcp.go#L44. 
+  <https://github.com/tinkerbell/smee/blob/main/internal/dhcp/dhcp.go#L44>.
 - In Step 6, SMEE replies with HTTP(S) URL to iPXE script stored on Provisioning Nginx. We need custom SMEE configuration (mentioned above) to make it happen.
 - The rest of steps after Step 6 follows the existing OS provisioning flow. In summary, the difference between HTTPS-based boot and PXE boot is how the iPXE script is triggered.
 
@@ -131,7 +134,7 @@ With the current proposal we keep using the current UX, with possibility to use 
 ## Affected components and Teams
 
 - **FPS team** should work with the help of EIM team on slimming down the FPS components to meet EIM-S requirements.
-- **EIM team** responsible for slimming down deployment of EIM and enabling Tinkerbell SMEE with required configuration. 
+- **EIM team** responsible for slimming down deployment of EIM and enabling Tinkerbell SMEE with required configuration.
 
 ## Open issues
 
