@@ -159,7 +159,7 @@ spec:
 	log.Printf("Waiting for %v job to finish...", "gitea-init-"+repoName)
 
 	out, err = script.Exec("kubectl wait --for=condition=complete " +
-		"--timeout=300s -n gitea job/gitea-init-" + repoName).String()
+		"--timeout=300s -n orch-platform job/gitea-init-" + repoName).String()
 	if err != nil {
 		return fmt.Errorf("failed to wait for job - %w %s", err, out)
 	}
