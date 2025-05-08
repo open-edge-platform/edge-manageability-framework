@@ -10,11 +10,12 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"gopkg.in/yaml.v3"
 	"net/http"
 	"os/exec"
 	"strings"
 	"time"
+
+	"gopkg.in/yaml.v3"
 
 	"github.com/bitfield/script"
 	"github.com/open-edge-platform/edge-manageability-framework/internal/retry"
