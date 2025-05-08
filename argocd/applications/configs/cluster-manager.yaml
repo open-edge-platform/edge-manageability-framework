@@ -5,10 +5,7 @@
 clusterManager:
   extraArgs:
     disable-mt: false
+    disable-metrics: false
 
-templateController:
-  metrics:
-    service:
-      enabled: true
-    serviceMonitor:
-      enabled: true
+metrics:
+  enabled: true
