@@ -36,12 +36,12 @@ runs:
   using: "composite"
   steps:
     - name: Checkout UI repo
-      uses: actions/checkout@v4.2.2
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
       with:
         repository: open-edge-platform/orch-ui
         path: orch-ui
         ref: a145d044ff73eade7a1e14d5c925108472d9aa48
-        token: ${{ inputs.token }}
+        persist-credentials: false
     - run: git log -1
       shell: bash
       working-directory: orch-ui
