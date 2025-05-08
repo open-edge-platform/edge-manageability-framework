@@ -11,7 +11,7 @@ Orchestrator. The CLI is a cross-component tool that may be used from a Linux, W
 Mac environment, such as from the administrator's laptop. The CLI may also may be leveraged
 as a building block in other environments such as CI/CD or testing.
 
-The CLI described here uses the `Catalog CLI` as a strating point and inspiration. However, this
+The CLI described here uses the `Catalog CLI` as a starting point and inspiration. However, this
 ADR assumes that syntax and semantics of the CLI may diverge from the existing `Catalog CLI` and
 this ADR is not constrained by that existing implementation. As such, examples given in this
 ADR may not necessarily work with the existing catalog CLI.
@@ -21,11 +21,20 @@ ADR may not necessarily work with the existing catalog CLI.
 The CLI implements a set of verbs, a set of nouns, and a set of common options that may
 be used to interact with the orchestrator.
 
+The CLI is not intended to be an automation framework in and of itself. It is intended to support
+a set of relatively tightly scoped operations, such as adding and removing specific objects from
+the orchestrator. The CLI may be leveraged by automation tools that might perform more complex
+sets of steps. In this respect the CLI and the `mage targets` in EMF have different purpose as
+the mage targets implement multi-step workflows, end-to-end tests, etc.
+
 The CLI follows a `verb - noun - subject` pattern. For example,
 
 - `cli get application nginx`. The verb is `get`. The noun is `application` and the subject
   is `nginx`. This particular CLI command would return the application called nginx from the
   Orchestrator and print them to the console in a human-readable format.
+
+The name of the CLI presented in this documents has been generalized to `cli`. Proposed names include
+`orchctl`, `emfctl`, `orch`, or `oc`.
 
 ### Syntax
 
@@ -66,25 +75,20 @@ verb.
 
 ##### Configuration and utility
 
-- `config` ... configures the CLI. For example, `cli config set endpoint https://my-orchestrator.com/`
-  TO-DO: This command inherited from the catalog CLI does not follow consistent syntax
-  and we should consider discarding it in favor treating configuration as any other verb-noun operation,
-  i.e. `cli update config --endpoint https://my-orchestrator.com/`.
+- Configuraiton of the CLI tool. This should be treated no differently than any other verb/noun
+  combination using `get` and `update`. i.e. `cli update config --endpoint https://my-orchestrator.com/`.
+  NOTE: Current implementation uses a special-purpose syntax,
+  `cli config set endpoint https://my-orchestrator.com/`, to be revised.
 
-- `completion` ... return a script that can be used to configure autocompletion.
-  TO-DO: Consider treating completion as a verb/noun operation? i.e. `cli get completion bash`.
+- Code Completion. Use `get completion bash`.
+  NOTE: Current implementation uses a special-purpose syntax, to be revised.
 
 - `upload <directory>` ... upload items to the Orchestrator. This is currently a catalog-specific
   operation and uploads a directory of yaml files to the orchestrator.
 
-- `version` ... return the version number of the CLI.
-
-- `watch` ... watch an object in the Orchestrator using webhook or stream interface, returning changes
-  as they occur.
-  TO-DO: drop this?
-
-- `wipe` ... wipe all data in a project.
-  TO-DO: drop this? Should be implemented as part of `cli delete project`.
+- `version` ... return the version number of the CLI. We should also consider implementing an API on
+  the orchestrator to allow querying the version of the orchestrator, so orch version and be reported
+  alongside client version. Remote API is TBD.
 
 #### Nouns
 
@@ -105,8 +109,8 @@ objects that are versioned, a version subject. For example,
 
 - `cli get application nginx 0.0.1` ... return exactly version 0.0.1 of the nginx application.
 
-If additional subjects beyond name and version are required, then they should be specified with addional
-options. For example,
+If additional subjects beyond name and version are required, then they should be specified with additional
+filters. For example,
 
 - `cli get application nginx --deployed true` ... get the nginx application that is currently deployed.
 
@@ -119,9 +123,12 @@ options. For example,
 - `-n` / `--noauth` ... disables authentication checks, only useful in a devleopment environment.
 
 - `-p` / `--project` ... sets the project that will be used for the current verb. Required for verbs that
-  act on projects.
+  act on projects. The CLI configuration shall allow a default project to be specified, so that `-p` does
+  not need to be repeated for each command.
 
 - `-v` / `--verbose` ... enables verbose output.
+
+- `-vv` / `--veryverbose` ... enables even more verbose output, such as the printing of API calls.
 
 - `-o json` / `-o yaml` ... instead of returning human-readable output, return output in `yaml` or `json`.
 
@@ -136,7 +143,7 @@ verb/noun pair includes the options `--chart-name` and `--chart-registry` and `-
 
 - `cli -p acme list applications nginx` ... list all nginx applications in a tabular format.
 
-- `cli -p acme list applications nginx =o yaml` ... list all nginx applications and emit the output as yaml.
+- `cli -p acme list applications nginx -o yaml` ... list all nginx applications and emit the output as yaml.
 
 - `cli -p acme create application nginx 0.0.1 --chart-name nginx --chart-registry bitnami --chart-version 0.0.1`
   ... create the nginx application using the specified parameters.
@@ -172,6 +179,10 @@ verb/noun pair includes the options `--chart-name` and `--chart-registry` and `-
   it may infer the names of additional endpoints. For example, during login it will infer the `keycloak.` endpoint
   by taking the `api.` endpoint and substituting `keylocak` for `api`. This may be done with other endpoints
   as necessary.
+
+- Project, org, and user management is treated like any other nouns in this proposal, and the specifics of
+  project management should be determined in their own ADR. For example, `cli list projects` and
+  `cli create project` are plausible verb/noun combinations for project management.
 
 ## Rationale
 
@@ -214,15 +225,18 @@ Each noun shall be placed in a file `<noun>.go` in the `internal/cli` directory.
 - `internal/cli/application.go` ... implements the noun `application` and its associated verbs.
 
 TO-DO: Here is may make sense to separate code by subsystem for easier maintainability. For example,
-`internal/cli/catalog/application.go`, `internal/cli/cluster/cluster-templates.go`, etc. Discuss.
+`internal/cli/app/application.go`, `internal/cli/cluster/cluster-templates.go`, etc. Discuss.
+
+## Distribution
+
+- Distribution of Binaries. Proposal is to make them a github release, so they may be easily
+  downloaded by an end-user. Additional scanning or signing of binaries may be necessary and this
+  will need to be integrated into CI/CD.
 
 ## Open issues (if applicable)
 
 - Session / Context management. It would be convenient if the CLI could store the context for
   multiple orchestrator sessions and then easily switch between them.
-
-- Distribution of Binaries. Proposal is to make them a github release, so they may be easily
-  downloaded by an end-user. Additional scanning or signing of binaries may be necessary.
 
 - Filtering and Naming. This proposal adopts the Catalog convention where most objects are named by
   their `name` and `version`. Other systems, such as EIM may have more complex naming to consider
