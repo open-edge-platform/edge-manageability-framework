@@ -14,7 +14,7 @@ controller:
   extraArgs:
     default-ssl-certificate: "orch-boots/tls-boots"
   service:
-    enableHttp: false
+    enableHttp: true
   resources: null
   admissionWebhooks:
     createSecretJob:
