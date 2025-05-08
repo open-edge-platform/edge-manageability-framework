@@ -8,8 +8,12 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+permissions: {}
+
 jobs:
   auto-approve:
+    permissions:
+      pull-requests: write
     name: Auto approve PR
     runs-on: ubuntu-latest
     if: |
@@ -22,6 +26,9 @@ jobs:
           review-message: "Auto approved by sys-orch-github-approve bot"
 
   auto-merge:
+    permissions:
+      pull-requests: write
+      contents: write
     name: Auto merge PR
     needs: 
       - auto-approve

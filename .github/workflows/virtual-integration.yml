@@ -190,7 +190,7 @@ jobs:
           persist-credentials: false
 
       - name: Trivy (Filesystem)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@6c175e9c4083a92bbca2f9724c8a5e33bc2d97a5  # 0.30.0
         with:
           scan-type: "fs"
           scan-ref: "."
@@ -255,7 +255,7 @@ jobs:
           persist-credentials: false
 
       - name: REUSE Compliance Check
-        uses: fsfe/reuse-action@v4
+        uses: fsfe/reuse-action@bb774aa972c2a89ff34781233d275075cbddf542  # v5.0.0
 
   lint-markdown:
     permissions:
@@ -508,7 +508,7 @@ jobs:
         run: echo "DEB_VERSION=$(mage build:debVersion)" >> "$GITHUB_OUTPUT"
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4.1.0
+        uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722  # v4.0.1
         with:
           aws-access-key-id: ${{ secrets.NO_AUTH_ECR_PUSH_USERNAME }}
           aws-secret-access-key: ${{ secrets.NO_AUTH_ECR_PUSH_PASSWD }}
@@ -529,7 +529,7 @@ jobs:
         run: mage publish:sourceTarballs
 
       - name: Login to ECR
-        uses: docker/login-action@v3.3.0
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772  # v3.4.0
         with:
           registry: 080137407410.dkr.ecr.us-west-2.amazonaws.com
 
@@ -842,7 +842,7 @@ jobs:
 
       - name: Setup asdf and install dependencies
         id: install-deps
-        uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main
+        uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
 
       - name: Deploy Orchestrator
         env:
