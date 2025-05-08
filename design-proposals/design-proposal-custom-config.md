@@ -10,9 +10,32 @@ As a result, adjustments such as changes to proxy settings and the configuration
 
 This limitation means that any specific customization needed for individual edge nodes cannot be automated during the initial setup. Instead, users must wait until the provisioning process is complete and then manually intervene to make the necessary adjustments. This approach can be time-consuming and may lead to inconsistencies in configuration across different nodes.
 
+## Solution options
+
+All options utilize cloud-init to provide custom configurations or per edge-node configurations. There is no doubt that cloud-init is the preferred tool, as the configuration needs to be done only once at bootup. Cloud-init, an open-source application developed by Canonical, is used to bootstrap Linux images in a cloud computing environment. It is a powerful tool for automating the initial setup of cloud instances, including configuring networking, storage, users, and packages. Cloud-init is exposed by hyperscale’s for VM configuration; for instance, AWS provides it as [user data](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/user-data.html#userdata-linux), while Azure offers it as [custom data](https://learn.microsoft.com/en-us/azure/virtual-machines/linux/using-cloud-init).
+
+The following options where evaluated to configure using cloud-init. 
+
+1. Option 1 : 
+    Only exposing the configuration required through a dedicated API to the orchestrator API user. The API's will have list of configurations that the user want to add and call the EIM API. The EIM shall add those configuration to the existing cloud-init curated by onboarding manager. 
+
+2. Option 2 : 
+    Exposing a template with the configs through a dedicated API to the user. The user shall populated with desired configurations in predefined XML or yaml template form and call the EIM API. The EIM onboarding manager shall add those configuration to the existing or new cloud-init.
+
+3. Option 3 :
+    The complete cloud-init file will be exposed to the user through a dedicated API. The user can create a cloud-init file, add the desired configurations, and call the EIM API. The EIM onboarding manager will then add this new cloud-init file to the Edge Node, allowing the cloud-init tool to configure the node accordingly.
+
+  The ****Option 3*** offered more advantages when compared to others.
+
+  *Scalability*: As new configurations or policies are defined, they can be seamlessly integrated into the existing setup with out changing to EIM API or Inventory. But with Option 1 and 2 changes will be needed in EIM. 
+
+  *Flexibility*: Cloud-init supports a wide range of configuration options, including user data scripts, cloud-config directives, and more. This flexibility allows users to customize their instances extensively without being limited by predefined templates. Extending the Template or parameters (Option 1, 2) in API was be additional effort in furture maintenance. 
+
+  *Integration and Reusability*: Cloud-init integrates seamlessly with various cloud platforms and services, ensuring that configurations are applied consistently across different environments. If the user have there existing cloud-init it can be *re-used* in EMF for custom configuration. This is not possible with Option 1 and 2.
+
+  *Industry Standard*: Cloud-init is widely recognized and used in the industry for initializing cloud instances. It has extensive documentation and community support, making it a reliable choice. More parameter validation type check more documentation  etc will be required in EIM to handle it.
+
 ## Proposed solution
-The proposed solution leverages cloud-init to provide custom configurations or per edge-node configurations. 
-Cloud-init, an open-source application developed by Canonical, is used to bootstrap Linux images in a cloud computing environment. It is a powerful tool for automating the initial setup of cloud instances, including configuring networking, storage, users, and packages. Cloud-init is exposed by hyperscale’s for VM configuration; for instance, AWS provides it as [user data](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/user-data.html#userdata-linux), while Azure offers it as [custom data](https://learn.microsoft.com/en-us/azure/virtual-machines/linux/using-cloud-init). 
 
 In this solution, the cloud-init configuration will be exposed to EMF users through UI/APIs. EMF users will be able to add their cloud-init YAML files, which will be utilized by the cloud-init tool during edge node provisioning.
 
@@ -78,7 +101,7 @@ A new custom-config resource will be added to the Infra-core data model, which c
   CUSTOM_CONFIG_TYPE_UNSPECIFIED = 0;
   CUSTOM_CONFIG_TYPE_CLOUD_INIT = 1;
   }
-  // CustomeConfigResource describes custom configuration 
+  // CustomConfigResource describes custom configuration 
   message ConfigTemplate {
     // configuration file.
     string config = 1 [
