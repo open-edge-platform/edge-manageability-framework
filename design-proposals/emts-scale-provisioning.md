@@ -31,7 +31,7 @@ Following are the MVP requirements for the scale provisioning of EMT-S edge node
 The solution assumes that we will deploy a slimmed down version of EIM (aka EIM standalone) on a customer's premises (OXM warehouse). The slimmed-down EIM
 should only consist of required components to drive OS provisioning. The EIM standalone will not be a fork of EIM. The approach will be deployment time configuration of EMF to deploy only what the required features. The design for the deployment time configuration/profile for EMF and EIM will be handled in another design document.
 
-### Slimmed-down EIM
+### EIM standalone
 
 The provisioning of EMT-S at scale will be driven by a local orchestrator instance that will be slimmed down to include only necessary components. In a nutshell,
 it will consist of:
