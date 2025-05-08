@@ -1030,7 +1030,7 @@ func createOrUpdateGiteaAccount(username string, password string) error {
 // Get the Gitea credentials from the Kubernetes secret argocd-gitea-credential in orch-platform namespace
 func (Deploy) getArgoGiteaCredentials() (string, string, error) {
 	// Load the username from the Kubernetes secret argocd-gitea-credential in orch-platform namespace
-	cmd := "kubectl get secret argocd-gitea-credential -n orch-platform -o jsonpath='{.data.username}'"
+	cmd := "kubectl get secret argocd-gitea-credential -n gitea -o jsonpath='{.data.username}'"
 	encodedUsername, err := script.Exec(cmd).String()
 	if err != nil {
 		return "", "", fmt.Errorf("error retrieving username from Kubernetes secret: %w", err)
@@ -1038,7 +1038,7 @@ func (Deploy) getArgoGiteaCredentials() (string, string, error) {
 	argoGiteaUsername := strings.TrimSpace(encodedUsername)
 
 	// Load the password from the Kubernetes secret argocd-gitea-credential in orch-platform namespace
-	cmd = "kubectl get secret argocd-gitea-credential -n orch-platform -o jsonpath='{.data.password}'"
+	cmd = "kubectl get secret argocd-gitea-credential -n gitea -o jsonpath='{.data.password}'"
 	encodedPassword, err := script.Exec(cmd).String()
 	if err != nil {
 		return "", "", fmt.Errorf("error retrieving password from Kubernetes secret: %w", err)
