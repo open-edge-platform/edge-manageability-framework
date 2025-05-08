@@ -207,7 +207,7 @@ offs, advantages, and disadvantages of the chosen approach.]
 |---------------------------------------------------------------------|------------------|
 | **Design**                                                          |                  |
 | Design - interface between installer and modules, config format     | 1                |
-| Design - installer internals and modules                            | 1                |
+| Design - installer internals and modules                            | 0 (Done)         |
 | Design - progress visualization                                     | 0 (Done)         |
 | Design - error handling                                             | 0 (Done)         |
 | Design - Cloud upgrade                                              | 1                |
@@ -227,7 +227,10 @@ offs, advantages, and disadvantages of the chosen approach.]
 | **Upgrades**                                                        |                  |
 | Cloud upgrade from 3.0                                              | 2                |
 | On-Prem upgrade from 3.0                                            | 2                |
-| **Total**                                                           | **29.25**        |
+| **Documentation**                                                   |                  |
+| Update Cloud deployment doc                                         | 0.75             |
+| Update On-Prem deployment doc                                       | 0.75             |
+| **Total**                                                           | **29.75**        |
 
 Required Resources: 5 FTE, 6 weeks (2 sprints)
 
