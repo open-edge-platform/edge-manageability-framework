@@ -28,8 +28,9 @@ Following are the MVP requirements for the scale provisioning of EMT-S edge node
 
 ## Solution
 
-The solution assumes that we will deploy a slimmed down version of EIM (aka EIM standalone) on a customer's premises (OXM warehouse). The slimmed-down EIM
-should only consist of required components to drive OS provisioning. The EIM standalone will not be a fork of EIM. The approach will be deployment time configuration of EMF to deploy only what the required features. The design for the deployment time configuration/profile for EMF and EIM will be handled in another design document.
+The proposed solution involves deploying a streamlined version of the EIM, referred to as EIM standalone, at the customer's premises, specifically the OXM warehouse. This streamlined EIM will include only the essential components necessary for operating system provisioning. It is important to note that the EIM standalone will not be a separate branch or fork of the existing EIM system.
+
+The deployment strategy will utilize configuration settings at deployment time within the EMF to ensure that only the required features are activated. The detailed design for the deployment time configuration and profile settings for both EMF and EIM will be addressed in a separate design document.
 
 ### EIM standalone
 
