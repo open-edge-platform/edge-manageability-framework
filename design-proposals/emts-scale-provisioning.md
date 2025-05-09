@@ -160,11 +160,11 @@ The EIM-local consists of the following components:
 
 **NOTE1:** Local HTTP server providing `boot.ipxe` and Micro-OS image is needed to overcome HTTPS issue as
 SMEE's built-in iPXE doesn't include EMF's CA certificate. This alternative design assumes no modifications to Tinkerbell SMEE, for simplicity.
-However, signed_ipxe.efi with EMF's CA certificate embedded may also be provided by local TFTP server, removing the need for local HTTP server.
-This effectively requires creating a fork of Tinkerbell SMEE. If we decide to follow this path it gives clear advantages:
+However, an EIM-owned `signed_ipxe.efi` with EMF's CA certificate embedded may also be provided by local TFTP server, removing the need for local HTTP server.
+This effectively requires creating a fork of Tinkerbell SMEE to enable serving EIM iPXE. If we decide to follow this path it gives clear advantages:
 1. Simplifies deployment and solves HTTPS issue
 2. Give us more control over default iPXE script (i.e., for instrumentation purposes, non-standard customer requirements)
-3. TFTP/DHCP servers are Go-based, so we can "catch" provisioning KPIs at the earlier stage than we do now.
+3. TFTP/DHCP servers are Go-based, so we can "catch" per-EN provisioning KPIs at the earlier stage than we do now.
 4. Tinkerbell project is not actively developed anymore.
 
 This design proposal doesn't pursue this option, but the idea is left for further discussion.
@@ -252,46 +252,44 @@ From this point, EN goes through standard provisioning process.
 The provisioning of EMT-S at scale will be driven by a local orchestrator instance that only includes EIM components. 
 The main requirement of EIM standalone is to make it easy and resource-efficient for customers to deploy.
 
-There are two approaches to how we can configure EIM standalone to be more lightweight and faster to deploy:
+There are two approaches (see options below) to how we can configure EIM standalone to be more lightweight and faster to deploy.
 
-1. A slimmed down deployment based on the current EIM Standalone profile
+This proposal makes a decision to proceed with Option 1 for 3.1 release, but Option 2 should be a target solution for EIM-S.
 
+#### Option 1: A slimmed down deployment based on the current EIM Standalone profile
 
+This approach will use the existing EIM standalone profile. This is an EMF deployment profile that only deploys EIM with Observability and FPS components.
 
-2. A minimal EIM deployment
+#### Option 2: A minimal EIM deployment
 
+Even the slimmed down version of EIM from Option 1 may not meet requirements for fast and easy deployment on-site.
 
+This option is a radical approach to make EIM super-lightweight and reduce any FPS dependencies that are not essential to EIM. 
+Note that this option requires some modifications to EIM components, as some of them rely on FPS components (e.g., Vault or Keylocak).
 
+The minimal EIM deployment is mainly used to support OXM use cases, where EIM is only used to provision ENs that are further shipped to the target location.
 
-
-In a nutshell,
-it will consist of:
-
-- Foundational Platform Services that are required to deploy and run the orchestrator instance.
-- Limited observability stack that should only provide logs.
-- A reduced flavor of EIM - only infra-core and infra-onboarding will be deployed (no infra-managers as they won't be used by EMT-S).
-- Limited Web UI with EIM only.
+The minimal EIM deployment at high level:
 - No cluster and application orchestrator deployed.
+- Simplified deployment with just Helm on a standard K8s cluster. No ArgoCD, Fleet, RKE2.
+- A single tenant deployment, without the Multi-Tenancy/IAM framework. A default tenant will be created to "own" EIM resources.
+- Reduced EIM with infra-core (without exporter, Tenant Controller), infra-onboarding and infra-managers
+- Minimal set of FPS services. A rough minimum of FPS services that may be required by EIM are:
+  - Postgres database
+  - RS proxy
+  - Vault (?)
+  - Traefik
+  - cert-manager
+  - MetalLB
+- Relaxed security requirements:
+  - No Istio for inter-Pod communication security
+  - No Kyverno for policies
+- No UI deployed, the EN pre-registration is done via Bulk Import Tool, API or CLI tool.
+- Limited observability stack that should only provide logs. No alerting, SRE, Prometheus.
 - Abandon HA requirements - EIM-S is primarily a single-node, on-prem deployment. Any data loss can be backed by hardware-level redundancy. Think of EIM-S as Rancher Desktop or Virtualbox.
 
-FPS components that are essential to EIM are:
-
-- IAM, Multi-Tenancy components
-- Keycloak
-- RS-proxy
-- Vault
-- secrets-config
-- MetalLB services
-
-The following FPS/Observability components should be disabled:
-
-- Kyverno
-- Prometheus and all metrics-related components (including infra-core's exporter, Mimir)
-- SRE exporter
-- Alerting monitors
-- Loki should be scaled down to minimal deployment
-
-**The installation of EIM-S should become a one-line command operation.**
+The minimal EIM deployment should consist of:
+- infra-core without exporter and 
 
 ### Rationale
 
@@ -310,10 +308,9 @@ With the current proposal we keep using the current UX, with possibility to use 
 - Expose Tinkerbell SMEE's DHCP/TFTP server via External IP (similar to Provisioning Nginx now) or find any other solution to expose DHCP to local L2 network
 - Provide a toggle to disable HTTPS for Provisioning Nginx in the case of EIM standalone deployment
 
+**EIM team** responsible for slimming down deployment of EIM and enabling Tinkerbell SMEE with required configuration.
 
-- 
-- **EIM team** responsible for slimming down deployment of EIM and enabling Tinkerbell SMEE with required configuration.
-- **Observability team**'s help may be needed to reduce size/capabilities of the observability stack for EIM-S.
+**Observability team**'s help may be needed to reduce size/capabilities of the observability stack for EIM-S (Option 2).
 
 ## Open issues
 
