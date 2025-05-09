@@ -21,7 +21,7 @@ spec:
   sources:
     - repoURL: https://rancher.github.io/fleet-helm-charts/
       chart: fleet
-      targetRevision: 0.10.2
+      targetRevision: 0.12.2
       helm:
         releaseName: {{ $appName }}
         valuesObject:
