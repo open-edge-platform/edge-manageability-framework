@@ -17,7 +17,7 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
-    - repoURL: https://cloudnative-pg.github.io/charts
+    - repoURL: "https://cloudnative-pg.github.io/charts"
       chart: cnpg/cloudnative-pg
       targetRevision: 0.23.2
       helm:
