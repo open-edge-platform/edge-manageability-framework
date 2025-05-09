@@ -10,7 +10,7 @@ The Edge Microvisor Toolkit Standalone (EMT-S) node is designed to enable enterp
 
 ### Proposal Summary
 
-EIM leverages the Tinkerbell solution for provisioning operating systems on edge nodes. The current implementation supports OS provisioning via bootable USB or iPXE/HTTPs boot. To enable scalable provisioning of EMT-S edge nodes for the OXM workflow, this proposal suggests integrating PXE-based provisioning into EIM by utilizing the `smee` (formerly `boots`) component of Tinkerbell. Additionally, EMF and EIM will support configurations to deploy this as a standalone EIM solution (to be referred in future as EIM-S), tailored for OXMs to efficiently provision edge nodes at scale. OXM will have the option of provisioning edge nodes using bootable USB, iPXE/HTTPs boot, or PXE-based provisioning. The solution will also include a user experience (UX) for pre-registering edge nodes using serial numbers, UUIDs, or MAC addresses. Furthermore, the solution will support the provisioning of different operating system profiles based on the selected identifiers. In cases where a device on the local area network (LAN) boots over PXE and is not pre-registered, the default operating system will be provisioned
+EIM leverages the Tinkerbell solution for provisioning operating systems on edge nodes. The current implementation supports OS provisioning via bootable USB or iPXE/HTTPs boot. To enable scalable provisioning of EMT-S edge nodes for the OXM workflow, this proposal suggests integrating PXE-based provisioning into EIM by utilizing the `smee` (formerly `boots`) component of Tinkerbell. Additionally, EMF and EIM will support configurations to deploy this as a standalone EIM solution (to be referred in future as EIM-S), tailored for OXMs to efficiently provision edge nodes at scale. OXM will have the option of provisioning edge nodes using bootable USB, iPXE/HTTPs boot, or PXE-based provisioning. The solution will also include a user experience (UX) for pre-registering edge nodes using serial numbers, or UUIDs. Furthermore, the solution will support the provisioning of different operating system profiles based on the selected identifiers. In cases where a device on the local area network (LAN) boots over PXE and is not pre-registered, the default operating system will be provisioned.
 
 ### MVP requirements
 
@@ -22,7 +22,7 @@ Following are the MVP requirements for the scale provisioning of EMT-S edge node
 - Have a UX to pre-register BareMetal edge nodes using Serial number or UUID or MAC address.
 - Provision different OS profiles to different edge nodes selected based on Serial number or UUID or MAC address.
 - Provision default OS when a device on the LAN boots over PXE and is not pre-registered.
-- Have a ux of  collecting provisioning logs and status of edge nodes.
+- Have a UX of collecting provisioning logs and status of edge nodes.
 
 > Note: It might be possible for EMF-EIM to support provisioning of the EMT-S nodes. supporting this capability as part of MVP depends on any active customer requirements.
 
@@ -47,9 +47,9 @@ but, once chain-loaded to iPXE, the Micro-OS is downloaded and used to drive pro
 In other words, the only difference between the new PXE-based boot and HTTP-based boot is how the OS provisioning is triggered. The subsequent workflow remains the same -
 it leverages Micro-OS, device discovery and Tinkerbell workflow to complete OS provisioning.
 
-**NOTE1**: Customers should provide their own local DHCP server for dynamic IP address assignment.
+> **NOTE1**: Customers should provide their own local DHCP server for dynamic IP address assignment.
 
-**NOTE2**: The workflow assumes that the EIM Standalone is deployed locally on customers' premises and ENs have direct connectivity with EIM services.
+> **NOTE2**: The workflow assumes that the EIM Standalone is deployed locally on customers' premises and ENs have direct connectivity with EIM services.
 
 The high-level PXE-based provisioning workflow is as follows:
 
@@ -158,18 +158,18 @@ The EIM-local consists of the following components:
 3. (OPTIONAL) **K8s cluster with MetalLB extension** to make Standalone SMEE's DHCP/TFTP servers accessible from a local network. Only needed if EIM-local is deployed on top of Kubernetes.
    Note that the EIM-local can also be deployed as standalone OS services or Docker containers with `--network=host`.
 
-**NOTE1:** Local HTTP server providing `boot.ipxe` and Micro-OS image is needed to overcome HTTPS issue as
+> **NOTE1:** Local HTTP server providing `boot.ipxe` and Micro-OS image is needed to overcome HTTPS issue as
 SMEE's built-in iPXE doesn't include EMF's CA certificate. This alternative design assumes no modifications to Tinkerbell SMEE, for simplicity.
 However, an EIM-owned `signed_ipxe.efi` with EMF's CA certificate embedded may also be provided by local TFTP server, removing the need for local HTTP server.
 This effectively requires creating a fork of Tinkerbell SMEE to enable serving EIM iPXE. If we decide to follow this path it gives clear advantages:
-1. Simplifies deployment and solves HTTPS issue
-2. Give us more control over default iPXE script (i.e., for instrumentation purposes, non-standard customer requirements)
-3. TFTP/DHCP servers are Go-based, so we can "catch" per-EN provisioning KPIs at the earlier stage than we do now.
-4. Tinkerbell project is not actively developed anymore.
+> 1. Simplifies deployment and solves HTTPS issue
+> 2. Give us more control over default iPXE script (i.e., for instrumentation purposes, non-standard customer requirements)
+> 3. TFTP/DHCP servers are Go-based, so we can "catch" per-EN provisioning KPIs at the earlier stage than we do now.
+> 4. Tinkerbell project is not actively developed anymore.
 
 This design proposal doesn't pursue this option, but the idea is left for further discussion.
 
-**NOTE2**: This alternative workflow assumes that all ENs have access to Internet and the cloud-based orchestrator.
+> **NOTE2**: This alternative workflow assumes that all ENs have access to Internet and the cloud-based orchestrator.
 
 The alternative workflow with managed EMF is presented below:
 
