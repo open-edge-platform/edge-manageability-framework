@@ -72,7 +72,7 @@ runs:
       run: |
         npx cypress run --e2e \
           -s ${INPUTS_INFRA} \
-          --env EN_SERIAL_NUMBER
+          --env EN_SERIAL_NUMBER=${EN_SERIAL_NUMBER}
     - name: Collect Edge Infra Manager logs
       if: ${{ always() && inputs.infra != '' }}
       working-directory: orch-ui/tests
