@@ -195,7 +195,7 @@ like Profiles and Parameter Templates are lost.
 
   - Update the `Edit Deployment` page similar to the changes to `Create Deployment`
 
-  - Update the `Application` page to have a deployment link.
+  - Update the `Application` page to have a deployment link and display the `is_deployed` field in both list and detail view.
 
   - Update any status tables and dashboards as necessary to support these changes.
 
