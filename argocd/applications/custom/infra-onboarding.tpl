@@ -181,8 +181,6 @@ onboarding-manager:
 
 amt:
   mps:
-    registry:
-      name: {{ .Values.argo.containerRegistryURL }}/one-intel-edge
     traefikReverseProxy:
       host:
         grpc:
@@ -194,8 +192,6 @@ amt:
   {{- end }}
 
   rps:
-    registry:
-      name: {{ .Values.argo.containerRegistryURL }}/one-intel-edge
     traefikReverseProxy:
       host:
         grpc:
@@ -207,8 +203,6 @@ amt:
   {{- end }}
 
   mpsrouter:
-    registry:
-      name: {{ .Values.argo.containerRegistryURL }}/one-intel-edge
     traefikReverseProxy:
       host:
         grpc:

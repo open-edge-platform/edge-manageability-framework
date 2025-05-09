@@ -56,32 +56,29 @@ dkam:
 
 amt:
   mps:
+    registry:
+      name: docker.io
     traefikReverseProxy:
       enabled: true
       secretName: "tls-orch"
       tlsOption: "gateway-tls"
       gatewayNamespace: orch-gateway
-  env:
-    oidc:
-      oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
   rps:
+    registry:
+      name: docker.io
     traefikReverseProxy:
       enabled: true
       secretName: "tls-orch"
       tlsOption: "gateway-tls"
       gatewayNamespace: orch-gateway
-  env:
-    oidc:
-      oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
   mpsrouter:
+    registry:
+      name: docker.io
     traefikReverseProxy:
       enabled: true
       secretName: "tls-orch"
       tlsOption: "gateway-tls"
       gatewayNamespace: orch-gateway
-  env:
-    oidc:
-      oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
 
 
 infra-config:
