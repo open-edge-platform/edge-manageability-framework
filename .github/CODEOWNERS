@@ -40,7 +40,7 @@
 
 # Cluster Orch Tests
 /e2e-tests/orchestrator/clusterorch_smoke_test.go @gcgirish @andybavier @hyunsun @jdanieck @jokuniew @sys-orch-approve
-/mage/edge_cluster.go @gcgirish @andybavier @hyunsun @jdanieck @jokuniew @sys-orch-approve
+/mage/edge_cluster.go @gcgirish @andybavier @hyunsun @jdanieck @jokuniew @malruben @adibrastegarnia @sys-orch-approve
 
 # Obaas Tests
 /e2e-tests/orchestrator/o11y_* @pperycz @ltalarcz @jakubsikorski @mholowni @p-zak @tdorauintc @sys-orch-approve

@@ -7,6 +7,11 @@ To ensure that a tested Best Known Configuration set of components are used,
 the versions rebuilt are derived from the versions specified in the current
 checkout of the `edge-manageability-framework` repository.
 
+Please see the [Edge Orchestrator docs on
+buildall](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/developer_guide/platform/buildall.html)
+to decide whether this process is suitable for your development or deployment
+process.
+
 ## Prerequisites
 
 Performing a buildall requires the following tools to be installed in a
@@ -18,13 +23,27 @@ Linux/Unix like environment:
   - The built docker images require around 5GB of space
   - Approximately roughly 50GB for build cache. See `DOCKER_PRUNE` below
     to optionally prune the build cache during the build process.
-- Helm 3
+- Helm 3 (3.17 or later recommended)
 - Python 3 (in-support version such as 3.10 or later, tested on 3.12)
-- Mage
+- Mage 1.15 or later
 
-Additionally, some of the containers that are build require the following
+Additionally, some of the Makefiles in component repos require the following
+dependencies to run properly:
 
-- Open Policy Agent v0.69.0 (or possibly later) for infra-core repo
+- Open Policy Agent (`opa` cli tool) v0.69.0 (or possibly later) for infra-core repo
+- golangci-lint (v1.64.8 or later)
+- go-junit-report (v2.1.0 or later)
+- oapi-codegen (v1.12.0 or later)
+- protoc-gen-doc (1.5.1 or later)
+- buf (1.45.0 or later)
+- protoc-gen-go-grpc (1.2.0 or later)
+- protoc-gen-go (v1.30.0 or later)
+- protoc-gen-openapi (latest from
+  [github.com/kollalabs/protoc-gen-openapi](https://github.com/kollalabs/protoc-gen-openapi)
+  )
+- protoc-gen-grpc-gateway (v2.26.3)
+- swagger (4.0.4 or later)
+- yq (4.44.3 or later)
 
 ## Configuration
 
@@ -47,6 +66,8 @@ docker build, set `DOCKER_PRUNE` to `Y`.
 
 ## Usage
 
+### Build
+
 All commands are run using `make`.
 
 You can get a list of all the make targets with `make help`
@@ -57,7 +78,8 @@ To run the full process with the BKC from the currently checked out copy of
 To cleanup internal scratch state, run `make clean`
 
 To fully cleanup (including tools), run `make clean-all`.  Note that this only
-cleans up local files, not container images that were built.
+cleans up local files, not container images that were built, which can be done
+with `docker rmi` or similar commands.
 
 ### How it works
 
@@ -237,3 +259,14 @@ out in a repo at a time.
 
 Building additional times will leverage both the ability of make to keep track
 of progress (via files in scratch), and the docker cache.
+
+## Code Counting
+
+As this automation includes checking out repos, it also offers the ability to
+perform a code count on those repos by running `make codecount`. This requires
+the [scc](https://github.com/boyter/scc) tool to count within on each repo, then
+summarizes results into CSV files in `scratch/codecount_*.csv`.
+
+A grouping based on code language and line type is performed in the
+summarization process, and the mapping for this can be found in the
+`generate_totals_csv()` function in `scripts/codecount_summarize.py`.
