@@ -194,6 +194,7 @@ like Profiles and Parameter Templates are lost.
     the application profiles directly rather than requiring deployment package profiles.
 
   - Update the `Edit Deployment` page similar to the changes to `Create Deployment`
+  - Update the `Deployments` list page to support linkage to both Apps and DP
 
   - Update the `Application` page to have a deployment link and display the `is_deployed` field in both list and detail view.
 
