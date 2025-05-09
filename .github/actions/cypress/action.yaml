@@ -40,7 +40,7 @@ runs:
       with:
         repository: open-edge-platform/orch-ui
         path: orch-ui
-        ref: a145d044ff73eade7a1e14d5c925108472d9aa48
+        ref: ITEP-23621-AO-E2E
         token: ${{ inputs.token }}
     - run: git log -1
       shell: bash
@@ -136,9 +136,9 @@ runs:
       run: |
         npx cypress run --e2e \
           -s "cypress/e2e/app-orch/deployment-package-smoke.cy.ts"
-        # These tests are not stable yet, will be enabled in a separate PR
-        # npx cypress run --e2e \
-        #   -s cypress/e2e/app-orch/deployment-smoke.cy.ts
+        npx cypress run --e2e \
+          -s "cypress/e2e/app-orch/deployment-smoke.cy.ts" \
+          --env EN_UUID=${{ env.EN_UUID }}
     - name: Collect AppOrch logs
       if: ${{ always() && inputs.app_orch == 'true' }}
       working-directory: orch-ui/tests
