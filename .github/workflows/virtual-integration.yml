@@ -168,12 +168,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4.2.1
 
-      - name: Set up git credentials
-        shell: bash
-        run: |
-          echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
-          git config --global url."https://${{ secrets.SYS_ORCH_GITHUB }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
-
       - name: Setup asdf and install dependencies
         uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main
 
@@ -192,12 +186,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4.2.1
 
-      - name: Set up git credentials
-        shell: bash
-        run: |
-          echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
-          git config --global url."https://${{ secrets.SYS_ORCH_GITHUB }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
-
       - name: Setup asdf and install dependencies
         uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main
 
@@ -215,12 +203,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4.2.1
 
-      - name: Set up git credentials
-        shell: bash
-        run: |
-          echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
-          git config --global url."https://${{ secrets.SYS_ORCH_GITHUB }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
-
       - name: Setup asdf and install dependencies
         uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main
 
@@ -237,12 +219,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.2.1
-
-      - name: Set up git credentials
-        shell: bash
-        run: |
-          echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
-          git config --global url."https://${{ secrets.SYS_ORCH_GITHUB }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Setup asdf and install dependencies
         uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main
@@ -288,7 +264,6 @@ jobs:
         uses: actions/checkout@v4.2.2
         with:
           repository: open-edge-platform/orch-ci
-          token: ${{ secrets.SYS_ORCH_GITHUB }}
           path: orch-ci
 
       - name: Set up git credentials
@@ -515,6 +490,7 @@ jobs:
       - name: Run image pull policy compliance tests
         run: mage test:imagePullPolicyCompliance
       - name: Setup Sample Org and Project with default users
+        id: default-mt-setup
         run: mage tenantUtils:createDefaultMtSetup
       - name: Deploy Victoria Metrics instance
         env:
@@ -537,7 +513,7 @@ jobs:
           mage test:e2eSreObservabilityNoEnic
 
       - name: Deploy ENiC
-        if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' }}
+        if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' && steps.default-mt-setup.conclusion == 'success' }}
         shell: bash
         timeout-minutes: 5
         env:
@@ -560,11 +536,11 @@ jobs:
           echo "EN_SN=$SN" >> "$GITHUB_ENV"
 
       - name: Print current EN UUID and SN
-        if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' }}
+        if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' && steps.default-mt-setup.conclusion == 'success' }}
         run: echo "Current ENiC has UUID ${{ env.EN_UUID }} and SN ${{ env.EN_SN }}"
 
       - name: UI E2E Tests
-        if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' }}
+        if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' && steps.default-mt-setup.conclusion == 'success' }}
         uses: ./.github/actions/cypress
         with:
           token: ${{ secrets.SYS_ORCH_GITHUB }}
@@ -611,7 +587,7 @@ jobs:
           timeout 5m kubectl exec -n enic enic-0 -c edge-node -- bash -c "journalctl -f" | grep -m 1 "Cluster Agent state update"
 
       - name: Run AO / CO smoke test
-        if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' }}
+        if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' && steps.default-mt-setup.conclusion == 'success' }}
         env:
           PROJECT: sample-project
           NODE_UUID: ${{ env.EN_UUID }}
@@ -625,6 +601,10 @@ jobs:
         if: always()
         run: |
           mkdir -p smoke-test/logs
+          kubectl logs -n orch-app -l app=app-deployment-api -c app-deployment-api --tail=-1 > smoke-test/logs/app-deployment-api.log
+          kubectl logs -n orch-app -l app=app-deployment-manager --tail=-1 > smoke-test/logs/app-deployment-manager.log
+          kubectl logs -n orch-app -l app=app-resource-manager -c app-resource-manager --tail=-1 > smoke-test/logs/app-resource-manager.log
+          kubectl logs -n orch-app -l app.kubernetes.io/name=app-orch-catalog --tail=-1 > smoke-test/logs/application-catalog.log
           kubectl exec -n enic enic-0 -c edge-node -- bash -c "journalctl -xeu cluster-agent" > smoke-test/logs/enic-cluster-agent-post.log
 
       - name: Upload smoke test logs
@@ -633,9 +613,7 @@ jobs:
         with:
           name: smoke-test
           path: |
-            smoke-test/logs/enic-journalctl-pre.log
-            smoke-test/logs/enic-cluster-agent-pre.log
-            smoke-test/logs/enic-cluster-agent-post.log
+            smoke-test/logs/*
 
       - name: Get diagnostic information
         id: get-diagnostic-info
@@ -681,19 +659,13 @@ jobs:
       github.ref == 'refs/heads/main' ||
       github.ref == 'refs/heads/main-pass-validation'
       )
-    runs-on: ubuntu-22.04-32core-128GB
+    runs-on: ubuntu-24.04-16core-64GB
     timeout-minutes: 120
     env:
       KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.2.1
-
-      - name: Set up git credentials
-        shell: bash
-        run: |
-          echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
-          git config --global url."https://${{ secrets.SYS_ORCH_GITHUB }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Setup asdf and install dependencies
         id: install-deps
@@ -704,8 +676,8 @@ jobs:
           TF_VAR_intel_release_service_refresh_token: value-not-used
           TF_VAR_deploy_tag: ${{ needs.build-publish.outputs.deb-version }}
           TF_VAR_FILE: ${{ github.workspace }}/terraform/orchestrator/terraform.tfvars
-          TF_VAR_vm_vcpu: 24
-          TF_VAR_vm_memory: 65536
+          TF_VAR_vm_vcpu: 16
+          TF_VAR_vm_memory: 49152
           TF_VAR_docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
           TF_VAR_docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
         timeout-minutes: 90
