@@ -271,7 +271,7 @@ func (Publish) DEBPackages(ctx context.Context) error {
 		if branchName == "main" ||
 			strings.Contains(branchName, "pass-validation") ||
 			strings.HasPrefix(branchName, "release") {
-			tags = fmt.Sprintf("%s,latest-%s", version, branchName)
+			tags = fmt.Sprintf("%s,latest-%s-dev", version, branchName)
 			artifactName = fmt.Sprintf("%s/%s:%s", OpenEdgePlatformFilesRegistry, name, tags)
 		}
 
@@ -334,7 +334,7 @@ func (Publish) Files(ctx context.Context) error {
 	if branchName == "main" ||
 		strings.Contains(branchName, "pass-validation") ||
 		strings.HasPrefix(branchName, "release") {
-		tags = fmt.Sprintf("%s,latest-%s", version, branchName)
+		tags = fmt.Sprintf("%s,latest-%s-dev", version, branchName)
 		artifactName = fmt.Sprintf("%s/on-prem:%s", OpenEdgePlatformFilesRegistry, tags)
 	}
 

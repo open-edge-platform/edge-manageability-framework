@@ -1059,42 +1059,48 @@ func getRealmRole(ctx context.Context, client *gocloak.GoCloak, token *gocloak.J
 	return realmRole, nil
 }
 
-// getEdgeAndOnboardingUsers retrieves the Edge Infra Manager and Onboarding users for a given organization
-func getEdgeAndOnboardingUsers(ctx context.Context, orgName string) (string, string, error) {
+// getEdgeAndApiUsers retrieves the Edge Infra Manager and API users for a given organization
+func getEdgeAndApiUsers(ctx context.Context, orgName string) (string, string, error) {
 	var user *gocloak.User
 	params := gocloak.GetUsersParams{}
 	edgeInfraUser := ""
-	onboardingUser := ""
+	apiUser := ""
 
 	client, token, err := KeycloakLogin(ctx)
 	if err != nil {
-		return edgeInfraUser, onboardingUser, err
+		return edgeInfraUser, apiUser, err
 	}
 
 	users, err := client.GetUsers(ctx, token.AccessToken, KeycloakRealm, params)
 	if err != nil {
 		fmt.Printf("error getting user %v", err)
-		return edgeInfraUser, onboardingUser, err
+		return edgeInfraUser, apiUser, err
 	}
 
-	// Loop through the users to find Edge Infra Manager and Onboarding users
+	// Loop through the users to find Edge Infra Manager and API users
 	for _, user = range users {
 		// Check if the user is an Edge Infra Manager
 		if strings.Contains(*user.Username, "-edge-mgr") {
-			newSt := strings.Split(*user.Email, "@")
+			usernameSplit := strings.Split(*user.Email, "@")
+			if len(usernameSplit) == 0 {
+				return edgeInfraUser, apiUser, fmt.Errorf("unable to get user name from user email %s", *user.Email)
+			}
 			// Ensure the email domain matches the organization name
-			if newSt[1] == orgName+".com" {
+			if usernameSplit[1] == orgName+".com" {
 				edgeInfraUser = *user.Username
 			}
 		}
-		if strings.Contains(*user.Username, "-onboarding-user") {
-			newSt := strings.Split(*user.Email, "@")
-			if newSt[1] == orgName+".com" {
-				onboardingUser = *user.Username
+		if strings.Contains(*user.Username, "-api-user") && !strings.Contains(*user.Username, "-service-admin") {
+			usernameSplit := strings.Split(*user.Email, "@")
+			if len(usernameSplit) == 0 {
+				return edgeInfraUser, apiUser, fmt.Errorf("unable to get user name from user email %s", *user.Email)
+			}
+			if usernameSplit[1] == orgName+".com" {
+				apiUser = *user.Username
 			}
 		}
 	}
 
-	fmt.Printf("Found Edge Infra User: %s, Onboarding User: %s\n", edgeInfraUser, onboardingUser)
-	return edgeInfraUser, onboardingUser, nil
+	fmt.Printf("Found Edge Infra User: %s, API User: %s\n", edgeInfraUser, apiUser)
+	return edgeInfraUser, apiUser, nil
 }
