@@ -140,7 +140,7 @@ jobs:
           persist-credentials: false
       - name: Scan for secrets
         run: |
-          echo "sanitized project name: ${SANITIZIED_PROJECT_NAME}"
+          echo "sanitized project name:  ${SANITIZIED_PROJECT_NAME}"
           gitleaks dir ${GITHUB_WORKSPACE} -v -c ci/.gitleaks.toml --baseline-path ci/gitleaks_baselines/gitleaks-"${SANITIZIED_PROJECT_NAME}".json -r gitleaks-"${SANITIZIED_PROJECT_NAME}".json
       - name: Upload Gitleaks Report
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
