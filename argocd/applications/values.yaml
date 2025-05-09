@@ -18,5 +18,11 @@ argo:
         name: alerting
       - namespace: orch-iam
         name: iam-tenancy
+      - namespace: orch-infra
+        name: mps
+      - namespace: orch-infra
+        name: rps
+      - namespace: orch-infra
+        name: mpsrouter
   traefik:
     tlsOption: "gateway-tls"
