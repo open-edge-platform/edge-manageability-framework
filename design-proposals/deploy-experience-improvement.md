@@ -31,7 +31,7 @@ Finally, by replacing monolithic shell scripts with modular Go components and ad
 ### Scope of work
 
 - A **unified installer** that supports AWS, Azure, and on-prem targets.
-- A **text user interface (TUI) interactive configuration builder** that guides users through required inputs,
+- A **text user interface (TUI) configuration builder** that guides users through required inputs,
   with the ability to preload values from environment variables or prior installations.
   It should minimize user input. For example, scale profiles for infra and orchestrator can be automatically applied according to user-specified target scale.
 - A **well-defined abstraction between infrastructure and orchestrator** logic that enables independent testing and upgrading,
@@ -65,13 +65,18 @@ Finally, by replacing monolithic shell scripts with modular Go components and ad
 - All shell scripts (e.g., `provision.sh`) will be replaced with Go code.
 - Variable duplication across platforms will be eliminated using shared Terraform variable naming and outputs.
 - Use of global variables and relative paths will be minimized.
+- Developers should be able to modify, build, and run installer locally
+- The same installer should be able to handle multiple deployments.
+  The context of target cluster should be derived from the supplied user config.
 
-#### Interactive Config Builder
+#### Config Builder
 
 - Configuration will be reduced to only the fields required for the selected environment.
 - Full YAML config will be rendered for user review and advanced modification.
 - Prior configurations can be loaded and migrated forward during upgrades.
 - Schema validation will ensure correctness before proceeding.
+- The default mode should be interactive, but it should also have an non-interactive mode
+  - e.g. CI may want to invoke config builder to validate configuration before kicking off the deployment
 
 #### Progress Visualization / Error Handling
 
@@ -167,8 +172,9 @@ Output:
   Both `User Config` and `Runtime State` will be stored as a single structured YAML file,
   both persisted locally or in the cloud, similar to Terraform state files.
   These configurations will be versioned, enabling version specific upgrade logic such as configuration schema and/or data migration
-  The interactive config builder will support loading previous configurations, migrating them to the latest schema,
+  The config builder will support loading previous configurations, migrating them to the latest schema,
   and prompting for any new required attributes.
+  We should leverage 3rd party libraries such as [Viper](https://github.com/spf13/viper) to handle configurations.
 
 - **Configuration Consumption:**
   Each installer module will implement a config provider that parses the *User Config* and *Runtime State*, and generates module-specific configuration (e.g., Helm values, Terraform variables).
@@ -185,10 +191,15 @@ Output:
 - **Parallel Execution:**
   Dependencies between steps should be explicitly defined.
   Tasks that are independent will be executed in parallel to optimize installation time.
+  This is a requirement for the standalone edge node mass provisioning.
 
 - **Logging and Error Handling:**
   All logs will be dumped to a file automatically.
   Modules will return standardized error codes with consistent logging behavior across the system.
+
+- **Output validation:**
+  We should validate the output of each step and ensure the system is in the desired state before proceeding.
+  The validation logic should be shared across different cloud provider implementations, ensuring a consistent behavior across different environments.
 
 ## Rationale
 
@@ -214,7 +225,7 @@ offs, advantages, and disadvantages of the chosen approach.]
 | Design - On-Prem upgrade                                            | 1                |
 | **Implementation**                                                  |                  |
 | Common - Implement installer framework and core logic               | 5                |
-| Stage 0 - interactive config helper                                 | 2                |
+| Stage 0 - Config builder                                            | 2                |
 | Stage 1 - AWS - Reimplement as installer module                     | 3                |
 | Stage 1 - On-Prem - Reimplement as installer module                 | 3                |
 | Stage 2 - Implement common pre-orch jobs - Cloud                    | 0.75             |
