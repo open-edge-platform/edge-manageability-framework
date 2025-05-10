@@ -247,6 +247,8 @@ For manual deletion, the handling of cluster nodes depends on the chosen approac
 
 - **Option 3:** Deleting a cluster automatically deauthorizes the associated hosts. While reverting the host to its onboarded state prior to cluster creation would be ideal, this is technically infeasible. As a result, users must manually re-onboard the host for future use, which is a notable drawback. However, this approach aligns with the principle of treating the OS and Kubernetes as an atomic unit. It also simplifies CAPINTEL's implementation by avoiding the complexities of cleaning up Kubernetes from the OS.
 
+Note that while other combinations are technically feasible—for instance, restricting cluster creation to onboarded hosts only (option 3) and cleaning up Kubernetes from the OS when a cluster is deleted, still requiring the user to manually re-onboard to create another cluster on it—maintaining consistency across workflows is critical. This consistency reduces user confusion and simplifies implementation, ensuring a predictable and streamlined user experience.
+
 *[Decision pending]*
 
 ## Rationale
