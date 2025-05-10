@@ -294,13 +294,9 @@ jobs:
       - scan-vulnerabilities
       - check-changed-files
     if: |
-      always() && (
       needs.check-changed-files.outputs.orch == 'true' ||
       needs.check-changed-files.outputs.on-prem == 'true' ||
-      needs.check-changed-files.outputs.ci == 'true' ||
-      github.ref == 'refs/heads/main' ||
-      github.ref == 'refs/heads/main-pass-validation'
-      )
+      needs.check-changed-files.outputs.ci == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
@@ -422,12 +418,8 @@ jobs:
       - lint-yaml
       - check-changed-files
     if: |
-      always() && (
       needs.check-changed-files.outputs.orch == 'true' ||
-      needs.check-changed-files.outputs.ci == 'true' ||
-      github.ref == 'refs/heads/main' ||
-      github.ref == 'refs/heads/main-pass-validation'
-      )
+      needs.check-changed-files.outputs.ci == 'true'
     runs-on: ubuntu-24.04-16core-64GB
     timeout-minutes: 90
     env:
@@ -651,14 +643,10 @@ jobs:
       - build-publish
       - check-changed-files
     if: |
-      always() && (
       needs.check-changed-files.outputs.orch == 'true' ||
       needs.check-changed-files.outputs.on-prem == 'true' ||
       needs.check-changed-files.outputs.ci == 'true' ||
-      needs.build-publish.result == 'success' ||
-      github.ref == 'refs/heads/main' ||
-      github.ref == 'refs/heads/main-pass-validation'
-      )
+      needs.build-publish.result == 'success'
     runs-on: ubuntu-24.04-16core-64GB
     timeout-minutes: 120
     env:
