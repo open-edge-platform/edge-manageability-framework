@@ -45,6 +45,7 @@ spec:
         factor: 2
     {{- end }}
     syncOptions:
+      - ServerSideApply=true
       - CreateNamespace=true
       - ApplyOutOfSyncOnly=true
 # {{- end }}
