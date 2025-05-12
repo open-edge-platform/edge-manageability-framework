@@ -140,8 +140,8 @@ but also that we should strive to do both.
 ## Open issues (if applicable) / Feature Requests
 
 - Automatically adding the chart's values.yaml as the initial profile if the user did not provide their
-  own values.yaml when importing. This is a feature request from a VBU user. The only disadvantage is
-  that some charts have a very large and verbose values.yaml. Importing it into the default Profile will
+  own values.yaml when importing. This is a feature request from internal customers. The only disadvantage
+  is that some charts have a very large and verbose values.yaml. Importing it into the default Profile will
   lead to a large and verbose profile, that is identical to the values.yaml in the helm chart. For charts
   with smaller values.yaml this could make a lot of sense as a starting point.
 
