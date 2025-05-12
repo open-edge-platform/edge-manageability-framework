@@ -58,7 +58,7 @@ amt:
   mps:
     image:
       registry:
-        name: docker.io
+        name: docker.io/
     traefikReverseProxy:
       enabled: true
       secretName: "tls-orch"
@@ -67,7 +67,7 @@ amt:
   rps:
     image:
       registry:
-        name: docker.io
+        name: docker.io/
     traefikReverseProxy:
       enabled: true
       secretName: "tls-orch"
@@ -76,7 +76,7 @@ amt:
   mpsrouter:
     image:
       registry:
-        name: docker.io
+        name: docker.io/
     traefikReverseProxy:
       enabled: true
       secretName: "tls-orch"
