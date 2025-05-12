@@ -2,7 +2,7 @@
 
 Author(s): Julia Okuniewska
 
-Last updated: 2025-04-30
+Last updated: 2025-05-12
 
 ## Abstract
 
@@ -20,14 +20,14 @@ The target for cluster-orchestration part in CLI is to be able to:
 - create/list/delete clustertemplates
 - mark clustertemplate as default one
 - create cluster with given hosts and given template (or pick default template if not specified)
+- get specified cluster
+- delete specified cluster
 - download edgenode's kubeconfig
-- Discover hardware features (e.g. GPU, DLboost, etc) (?)
 
 ### Nouns
 - `clustertemplate`
 - `cluster`
 - `en-kubeconfig`
-- `hw-features` (?)
 
 #### Syntax
 Assumption: All CLI commands should include a `--project` or `-p` parameter.
@@ -90,12 +90,12 @@ TODO:
 This should include a discussion of how the work fits into the product's
 quarterly release cycle.]
 
+## Out of scope Features
+- hardware information, currently retreivable via EIM CLI
+
 ## Open issues (if applicable)
 
 - should we support interactive cluster template creation
     or should cluster template be created only from file (-f flag)?
     Clustertemplate's clusterConfig is a long string with a lot of details,
     so passing this option in interactive mode might be problematic.
-
-- how we can gether information about hardware features of edgenode? 
-    Will simple kubectl labels check + nfd (node feature discovery) on edgenode does the job?
