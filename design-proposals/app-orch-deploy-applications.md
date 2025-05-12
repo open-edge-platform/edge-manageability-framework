@@ -18,7 +18,7 @@ many helm charts.
 ![Multi-Chart Application](images/app-orch-deployment-package.png)
 
 While the `Deployment Package` offers flexibility in supporting complex use cases, it also
-leads to unnecessary complexity for most common case, which only involve single a Helm Chart.
+leads to unnecessary complexity for most common case, which only involve single  Helm Chart.
 To deploy a single chart, the user has to create both an `Application` and `Deployment Package`.
 The `Deployment Package` provides no added value if it points to exactly one `Application`,
 but it creates a significant amount of additional work. Furthermore, a `Registry` object must
