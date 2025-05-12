@@ -14,6 +14,26 @@ It is important to note that EMT machines will not come with Kubernetes pre-inst
 
 A key aspect of this proposal is to treat Kubernetes clusters as an integral part of the infrastructure, rather than as a separate concept. By embedding Kubernetes into EMT, we aim to simplify the operational model, aligning cluster management with the same principles that govern the underlying OS. This approach ensures that Kubernetes is tightly coupled with the host OS, enabling a more cohesive and predictable edge environment.
 
+### User Stories
+
+#### User Story 1: Simplified Edge Setup with Automatic Cluster Creation
+As an Edge Administrator with Edge Onboarding Manager and Edge Manager/Operator roles, I want to onboard multiple edge hosts in bulk and automatically create clusters on them with a predefined configuration, so that I can streamline the onboarding process and ensure a consistent environment to run predefined workloads across multiple locations with minimal manual intervention.
+
+#### User Story 2: Advanced Edge Setup with Manual Cluster Creation
+As an Edge Manager, I want to manually install the operating system and create clusters on edge hosts that are already available, so that I can customize OS-level system parameters through cloud-init, such as `isolcpus` and `hugepages`, as well as Kubernetes cluster configurations through custom cluster template, to meet specific workload requirements as they are determined.
+
+#### User Story 3: Development Environment to Find Optimal Configuration
+As an Application Developer, I want to reset OS-level system parameters and cluster on shared edge hosts with minimal effort, so that I can validate my application and experiment with different configurations and find the optimal setup including OS-level system parameters and Kubernetes configuration for my applications.
+
+#### User Story 4: Separation of Responsibilities
+As an Edge Onboarding Manager, I want to onboard edge devices using their correct serial numbers and verify their connection to the Edge Manageability Framework, so that the devices are ready for further configuration and workload deployment by other roles. As an Edge Manager/Operator, I want to focus solely on deploying and managing edge workloads without needing to access or troubleshoot the underlying edge infrastructure, ensuring a clear separation of responsibilities and reducing complexity in my role.
+
+#### User Story 5: Enhanced Security with Embedded Kubernetes
+As a security-conscious operator, I want to apply the latest CVE patches for Kubernetes to both existing and new edge devices faster than upstream, so that I can minimize security vulnerabilities and reduce exposure time.
+
+#### User Story 6: Reliable Cluster Creation
+As an Edge Manager/Operator, I want edge devices to be ready for use quickly and reliably, even in environments with unstable network connectivity.
+
 ## Scope
 
 This design change primarily targets the most common edge configuration: K3s on EMT. For other setups, such as K3s on Ubuntu, RKE2 on EMT, and RKE2 on Ubuntu, Kubernetes will continue to be sourced from external registries during cluster installation. This decision may evolve as we gain more experience with EMT and K3s.
