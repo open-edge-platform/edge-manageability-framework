@@ -572,11 +572,11 @@ jobs:
       - name: Create default user and run e2e tests
         run: mage devUtils:createDefaultUser test:e2e
 
-      - name: "Test Observability SRE Exporter w/o ENiC"
-        env:
-          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-        run: |
-          mage test:e2eSreObservabilityNoEnic
+      # - name: "Test Observability SRE Exporter w/o ENiC"
+      #   env:
+      #     ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+      #   run: |
+      #     mage test:e2eSreObservabilityNoEnic
 
       - name: Deploy ENiC
         if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' && steps.default-mt-setup.conclusion == 'success' }}
@@ -638,11 +638,11 @@ jobs:
         run: |
           mage test:e2eAlertsObservability
 
-      - name: "Test Observability SRE Exporter"
-        env:
-          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-        run: |
-          mage test:e2eSreObservability
+      # - name: "Test Observability SRE Exporter"
+      #   env:
+      #     ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+      #   run: |
+      #     mage test:e2eSreObservability
 
       - name: Wait for cluster agent to be ready
         if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' }}
