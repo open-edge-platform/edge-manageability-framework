@@ -37,7 +37,8 @@ Below is a more detailed breakdown of the catalog data model. Some fields of the
 omitted for brevity, and this proposal will focus only on the fields that are relevant to
 this proposal. Fields like display-names, descriptions, etc., have been omitted.
 
-- `Registry`. A registry represents a Helm Registry. The `Registry` object contains the following:
+- `Registry`. A registry represents a Helm or Image Registry. The `Registry` object contains the
+  following:
 
   - `name`. Name/identifier for the `Registry`.
   
@@ -95,7 +96,7 @@ usually in a 1:1 correspondence. The user has to create the `Registry`, then the
 `Application`, linking it to the `Registry`. Finally, the user creates the `Deployment Package`
 and links it the `Application`. There is complexity and overhead in creating the
 `deployment_profiles` as they have to shadow the application profiles.
-There is complexity in versioning all of these objects -- updating the
+There is complexity and error-prone in versioning all of these objects -- updating the
 Helm Chart trickles up the chain requiring version increments to the `Application` and
 `Deployment Package`.
 
@@ -207,6 +208,7 @@ create hidden internal `Deployment Packages` so the existing API calls and GUI w
 deployment would still work. This seems feasible -- Catalog could imply a `Deployment Package` object
 if one does not exist and return it in the API. However, this might be confusing for users, if they
 believe they are deploying `Applications`, and hidden `Deployment Package` leak into the workflows.
+We decided it is better to have explicit deployment packages rather than trying to hide them.
 
 ## Decision
 
