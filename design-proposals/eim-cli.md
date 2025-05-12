@@ -2,7 +2,7 @@
 
 Author(s): damiankopyto
 
-Last updated: 01/05/2025
+Last updated: 12/05/2025
 
 ## Abstract
 
@@ -12,15 +12,18 @@ This design proposal will focus on the details required for the EIM support.
 
 ## Proposal
 
-This document proposes to include the EIM related functionality as subset of commands of the EMF CLI. The workflows called out in the following section are to be supported and represented through commands of the EMF CLI, the usability and functionality of the commands should be on par with the UI usage. The CLI will call the necessary APIs in order to execute the actions.
+This document proposes to include the EIM related functionality as subset of commands of the (EMF CLI is a placeholder name) EMF CLI. The workflows called out in the following section are to be supported and represented through commands of the EMF CLI, the usability and functionality of the commands should be on par with the UI usage. The CLI will call the necessary APIs in order to execute the actions. The CLI may also be a vehicle for introducing new functionality before it gets reflected in the UI.
 
 ## Workflows
 
 The following workflows are to be supported initially - the list may be expanded in the future if necessary functionality needs to be supported via CLI. It is assumed that the Bulk Import Tool [(BIT)](https://github.com/open-edge-platform/infra-core/tree/main/bulk-import-tools) will be integrated as part of the CLI effort.
 
-> **NOTE**: The commands and the order of commands at this stage is in no way final - they are just placeholders until we agree on actual command structure overall.
+> **NOTE**: The commands and the order of commands at this stage is in no way final - they are just placeholders until we agree on actual command structure overall.  
+> **NOTE**: Not all the commands/functionalities and associated flags and option may be implemented in the initial version of the tool.
 
 ### Ability to register/onboard/provision a host
+
+>**NOTE**: The host CRUD operations and integrating BIT are top priority in 3.1 release.
 
 #### Local Options
 
@@ -28,21 +31,15 @@ The local options associated with the `host` object/noun would help with filteri
 
 - `--registered`/`onboarded`/`provisioned`/`all`/`deauthorized`/`unknown`/`error` - helps filter out the output of `list` command/verb
 - `--import-from-csv` `my-hosts.csv` - used to provision a bulk of hosts using BIT
-> **NOTE**: TODO - Team I am not yet convinced on using the register/onboard/provision flags as options to the create/delete objects/nouns rather than using as verbs directly - will welcome feedback
-- `--register` `<arguments>` - local flag for the `create` command - enables only registering host during create - takes in argument in particular order necessary for registering the host 
-- `--onboard` - local flag for the `create` command - enables only onboarding of already registered host during create
-- `--provision` `<arguments>` - local flag for the `create` command - enables only provisioning of already onboarded host during create - takes in argument in particular order necessary for provisioning of the host
 - `--auto-provision` - optional local flag that only takes effect when `--register` flag is invoked - enables auto provisioning of node when it connects
-> **Note**: TODO - If it is the case that the autoprovision toggle in registration view in UI is ignored if the provisioner is set to autoprovision (TODO also get to to bottom why the toggle is allowed in UI if that is the case) then the CLI should spit out a warning message about this whenever a host is being created/registered/onboarded
 - `--auto-onboarding` - optional local flag that only takes effect when `--register` flag is invoked - enables auto onboarding of node when it connects
-- `--deauthorize-only` - optional local flag that only takes effect when `delete` flag is invoked - does not delete host fully but only deauthorizes it
-- `--force-delete` - optional local flag that only takes effect when `delete` flag is invoked - deletes host without deauthorization
 - `--edit-config` `<arguments>` - set of arguments to aid the edition of host
+- `--cluster-template` `<argument>` - a flag accepting name of the template to be used for cluster deployment.
 
 #### List  host information
 
 The list command is responsible for listing all deployed hosts, in tabular format with the amount of information equivalent to what is present in UI: `Name`/`Host Status`/`Serial Number`/`Operating System`/`Site`/`Workload`/`Actions`/`UUID`/`Processor`/`Latest Updates`/`Trusted Compute`   
-> **TODO** this list should probably be scaled back by default and allow for expansion with `-o wide`? Looking for feedback.
+> **NOTE** - the output will be scaled back by default and expanded with -o wide option.
 
 - List Registered Host (ie. `emfctl list hosts -o registered`)
 - List Onboarded Host (ie. `emfctl list hosts -o onboarded`)
@@ -63,36 +60,37 @@ From the current understanding the tool does not support registration only or on
 
 The bulk import would be invoked with `--import-from-csv` option. Since with bulk import the host names are autogenerated the `host` command/noun would either have to take argument when the flag is provided, or the BIT tool would need to be expanded to accept a name that could be used as a prefix for auto generated host names.
 
-> **TODO** - Look for feedback - I did not give this much thought yet - how do we want to integrate the BIT tool - integrate it into the CLI codebase (then do we need CSV - could it be `yaml` instead) - or integrate to be used with CLI, installed as dependency and CLI calls BIT tool?
+Additionally it is expected that the BIT will allow for a combination of provisioning host and deploying cluster using a specific template - this the `import host` command should accept a `--cluster-template` flag.
 
-- Create multiple hosts (register/onboard/provision) (ie. `emfctl create host --import-from-csv my-hosts.csv`)
+BIT will be integrated into the CLI.
+BIT would be the de-facto command to onboard/provision an Edge Node or a number of Edge Nodes into the EMF.
+
+- Create multiple hosts (register/onboard/provision) (ie. `emfctl import host --import-from-csv my-hosts.csv`)
 
 #### Register Host
 
-The create command is responsible for creation of the host within the Edge Orchestrator - the creation process is split into multiple stages - it is proposed to support the registration stage only with the `--register` option to be provided as part of the `host` object/noun followed by the arguments needed to successfully register the host.
+The register command is responsible for registration of a host within the Edge Orchestrator only.
 
 *Required info: `Host Name`/`Serial Number`/`UUID`*  
 *Optional info: `Auto Onboarding`/`Auto Provisioning`*
 
-- Register Host (ie. `emfctl create host myhost --register <arguments>`) 
+- Register Host (ie. `emfctl register host myhost) 
 
 #### Onboard Host
 
-This option of the `create` command will support onboarding of any registered host using the `--onboard` option followed by arguments needed to successfully onboard a registered host.
+The `onboard` command is responsible for an onboarding of an already successfully registered host.
 
-- Onboard Host (ie. `emfctl create host myhost --onboard <arguments>`)
+- Onboard Host (ie. `emfctl onboard host myhost`)
 
-> NOTE/TODO: If the autoprovisioning is set up in provider the onboarded host will provision automatically this should be communicated to user
+> **NOTE**: By default the auto-provisioning is off but if the auto-provisioning is set up in provider the onboarded host will provision automatically this should be communicated to user (either through CLI or documentation)
 
 #### Provision Host
 
-This option of the `create` command will support provisioning of any onboarded host using the `--provision` option followed by arguments needed to successfully provision a registered host.
+The provision command is responsible for provisioning an already onboarded node.
 
 *Required info: `OSProfile`/`Site`/`Secure`/`RemoteUser`/`Metadata`*
 
-- Provision Host (ie. `emfctl create host myhost --provision <arguments>`)
-
-> NOTE: Need to establish what the default behaviour should be for `create host myhost` without argument (in UI it is equivalent of `--provision <args>` + `--auto-onboarding`)
+- Provision Host (ie. `emfctl provision host my-host`)
 
 #### Edit Host
 
@@ -103,18 +101,23 @@ Registered/Onboarded/Provisioned hosts can be edited
 - Edit host (ie `emfctl edit host myhost --edit-config <arguments>`)
 
 
-#### Deauthorize and/or delete Host
+#### Deauthorize Host
 
-- Deauthorise Host (ie. `emfctl delete host myhost` `--deauthorize-only`)
-> TODO: Is this correct default behaviour?
-- Deauthorise and Delete Host (ie. `emfctl delete host myhost`)
-- Delete Host (ie. `emfctl delete host myhost --force-delete`)
+- Deauthorise Host (ie. `emfctl deauthorize host myhost`)
+
+#### Delete Host
+
+- Delete Host (ie. `emfctl delete host myhost`)
+
+> NOTE: This should require user confirmation
 
 #### Other
 
 > **NOTE/QUESTION**: Viewing metrics, scheduling maintenance are not considered to be supported in the initial phase of the EIM related CLI commands - should they be?
 
 ### Ability to create & manage Locations/regions/sub-regions/sites
+
+> **NOTE**: The ability to manage locations is not a priority for 3.1 release.
 
 #### Local options
 
@@ -172,6 +175,9 @@ Delete a location
 
 ### OS Profile/Provider management
 
+>**NOTE**: The host OS Profile management is a priority for 3.1 release.  
+>**NOTE**: The provider management is not a priority for 3.1 release.
+
 #### List OS Profiles
 
 Lists all available profiles in tabular format
@@ -188,9 +194,9 @@ Describes a particular OS profile in tabular format
 
 #### Create OS Profile
 
-Create OS profile - TODO what is the best way to do this from CLI - the OS profiles require a lot of input and super long strings for the installed packages?
+Create OS profile takes an input from a file
 
-- Create OS profile (ie. `emfctl create osprofile myprofile --imageId <> --installedPackages <> --kernelCommand <> --osProvider <> --profilename <> --osType <> --updateSources <> --imageURL <> --repoURL <> --sha256 <>  `)
+- Create OS profile (ie. `emfctl create osprofile myprofile </path/to/profile>`)
 
 #### Update OS Profile
 
@@ -228,13 +234,29 @@ The update of provisioning provider is a combined create/delete action
 
 - Delete the provisioning provider (ie `emfctl delete provider providername`)
 
+### Single click update
+
+A single click update will be a feature that enables to run an update on a given edge node without scheduling maintenance (maintenance may be schedule under the hood but not part of user experience).
+
+> **TODO/TBD** provide arguments that need to be associated with update via flag or from file.
+
+- Update host (ie. `emcfctl run-maintenance host my-host`)
+
+### Retrieve update version/history
+
+In 3.1 it is expected that the day 2 updates and information about them will be tracked, a command to retrieve this information should be included in CLI.
+
+> TODO/TBD figure out what a how info is tracked to display in user readable way at a later stage
+
+- Update host (ie. `emcfctl audit host my-host`)
+
 ### Other
 
 > QUESTION/TODO - What about CLI for remote ssh? do we need this in this release?  
-> QUESTION/TODO - What about CLI for scheduling maintenance to node?  
+> QUESTION/TODO - What about CLI for scheduling maintenance to node?  Yes - single click update.  
 > QUESTION/TODO - What about CLI for scheduling maintenance to site?  
-> QUESTION/TODO - What about CLI for vPRO?
-> QUESTION/TODO - What about CLI for per Edge Node config?
+> QUESTION/TODO - What about CLI for vPRO? - At some point?  
+> QUESTION/TODO - What about CLI for per Edge Node config? - At some point?  
 
 ## Rationale
 
@@ -246,11 +268,23 @@ The EMF CLI and teams working on it.
 
 ## Implementation plan
 
-The App Orchestration teams takes a lead on the overarching design/rules for the EMF CLI since ground work has already been done via the Catalogue CLI. EIM team shall contribute to that.
+The EIM functionality will be contributed into the existing Catalog CLI tool, the EIM team will focus on EIM specific functionality and provide feedback for improvements to overall CLI experience where needed.
 
 Once the design for the EMI portion has been agreed internally within the EIM team, and agreed with other teams in terms of integration with overall EMF CLI the EIM features will be added in one at a time. The commands/workflows will be implemented adhering to the original design for EMF CLI.
 
+3.1 features:
+* Basic Host CRUD + BIT integration
+* Basic OS Profile CRUD
+* Single Click update
+* Audit Day2 versions
+
+Beyond 3.1:
+* Provider management
+* Improvement and complex combinations for CRUD operations
+* Location management
+* vPro support
+* Per EN configuration
+* Scheduled Maintenance
+
 ## Open issues (if applicable)
 
-EMF CLI final design still in progress.
-Close out on full set of features supported in initial release
