@@ -1899,7 +1899,8 @@ func (a App) Upload() error {
 	return a.upload()
 }
 
-func (a App) UploadWithPath(paths []string) error {
+func (a App) UploadWithPath() error {
+	var paths []string
 	return a.uploadWithPath(paths)
 }
 
