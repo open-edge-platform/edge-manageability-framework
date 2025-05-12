@@ -137,4 +137,13 @@ but also that we should strive to do both.
 
 - GUI. Implement UI button or link for exporting deployment package.
 
-## Open issues (if applicable)
+## Open issues (if applicable) / Feature Requests
+
+- Automatically adding the chart's values.yaml as the initial profile if the user did not provide their
+  own values.yaml when importing. This is a feature request from a VBU user. The only disadvantage is
+  that some charts have a very large and verbose values.yaml. Importing it into the default Profile will
+  lead to a large and verbose profile, that is identical to the values.yaml in the helm chart. For charts
+  with smaller values.yaml this could make a lot of sense as a starting point.
+
+- Automatically create parameter templates from all valus.yaml profile. This also has the disadvantage
+  that a large chart could produce a large quantity of parameter templates.
