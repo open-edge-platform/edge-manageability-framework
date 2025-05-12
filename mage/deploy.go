@@ -307,7 +307,7 @@ spec:
     spec:
       containers:
         - name: victoriametrics
-          image: victoriametrics/victoria-metrics:stable
+          image: victoriametrics/victoria-metrics:v1.117.0
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8428
