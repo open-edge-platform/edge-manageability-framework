@@ -145,7 +145,7 @@ but also that we should strive to do both.
   lead to a large and verbose profile, that is identical to the values.yaml in the helm chart. For charts
   with smaller values.yaml this could make a lot of sense as a starting point.
 
-- Automatically create parameter templates from all valus.yaml profile. This also has the disadvantage
+- Automatically create parameter templates from all values.yaml profile. This also has the disadvantage
   that a large chart could produce a large quantity of parameter templates.
 
 ## Decision
