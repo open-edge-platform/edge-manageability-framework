@@ -207,3 +207,8 @@ create hidden internal `Deployment Packages` so the existing API calls and GUI w
 deployment would still work. This seems feasible -- Catalog could imply a `Deployment Package` object
 if one does not exist and return it in the API. However, this might be confusing for users, if they
 believe they are deploying `Applications`, and hidden `Deployment Package` leak into the workflows.
+
+## Decision
+
+Decision is to defer this ADR. We will implement the ADR on helm-to-dp import and DP export which should
+satisfy the requirement to simplify onboarding of helm-based applications.
