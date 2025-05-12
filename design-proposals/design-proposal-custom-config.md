@@ -19,9 +19,40 @@ The following options where evaluated to configure using cloud-init.
 1. Option 1 : 
     Only exposing the configuration required through a dedicated API to the orchestrator API user. The API's will have list of configurations that the user want to add and call the EIM API. The EIM shall add those configuration to the existing cloud-init curated by onboarding manager. 
 
+    Example of the openAPI with proxy address and ip address address:
+    ```yaml
+    customConfig:
+      type: object
+      required:
+        - proxy
+        - ipaddress
+      properties:
+        proxy:
+          title: proxy
+          type: string
+        ipaddress:
+          title: ip
+          type: string
+    ```
+
 2. Option 2 : 
     Exposing a template with the configs through a dedicated API to the user. The user shall populated with desired configurations in predefined XML or yaml template form and call the EIM API. The EIM onboarding manager shall add those configuration to the existing or new cloud-init.
 
+    Example of template the openAPI with runcmd for running usear command and adding user:
+    ```yaml
+    customConfig:
+      type: object
+      required:
+        - runcmd
+        - user
+      properties:
+        runcmd:
+          title: runcmd
+          type: string
+        users:
+          title: users in cloud-init
+          type: string
+    ```
 3. Option 3 :
     The complete cloud-init file will be exposed to the user through a dedicated API. The user can create a cloud-init file, add the desired configurations, and call the EIM API. The EIM onboarding manager will then add this new cloud-init file to the Edge Node, allowing the cloud-init tool to configure the node accordingly.
 
@@ -157,6 +188,68 @@ The UI shall provide interface to the user during Host registration page to asso
 
 Once the provisioning is completed, the cloud-init data should be immutable; no edit or delete options should be available. Users should only be able to view the cloud-init configuration under host details.
 
+#### Examples:
+1. Add user proxy address on the edgenode. 
+
+  ```yaml
+  
+#cloud-config
+write_files:
+  - path: /etc/environment
+    permissions: '0644'
+    owner: root:root
+    content: |
+      http_proxy="http://proxy.example.com:8080"
+      https_proxy="http://proxy.example.com:8080"
+      ftp_proxy="http://proxy.example.com:8080"
+      no_proxy="localhost,127.0.0.1,localaddress,.localdomain.com"
+      HTTP_PROXY="http://proxy.example.com:8080"
+      HTTPS_PROXY="http://proxy.example.com:8080"
+      FTP_PROXY="http://proxy.example.com:8080"
+      NO_PROXY="localhost,127.0.0.1,localaddress,.localdomain.com"
+
+  ```
+
+2. Update the kernel parameter by modifying the GRUB configuration file. 
+
+  ```yaml
+  
+  #cloud-config
+  write_files:
+    - path: /etc/default/grub
+      permissions: '0644'
+      owner: root:root
+      content: |
+        GRUB_DEFAULT=0
+        GRUB_TIMEOUT=5
+        GRUB_DISTRIBUTOR=`lsb_release -i -s 2> /dev/null || echo Debian`
+        GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"
+        GRUB_CMDLINE_LINUX="your_kernel_parameter=value"
+  runcmd:
+    - update-grub
+
+  ```
+
+3. Setting IP address using MAC address
+
+  ```yaml
+  #cloud-config
+  network:
+    version: 2
+    ethernets:
+      eth0:
+        match:
+          macaddress: "00:11:22:33:44:55"
+        set-name: eth0
+        addresses:
+          - 192.168.1.100/24
+        gateway4: 192.168.1.1
+        nameservers:
+          addresses:
+            - 8.8.8.8
+            - 8.8.4.4
+
+  ```
 
 ## Opens
 1. To include single or multiple cloud-init configs.
