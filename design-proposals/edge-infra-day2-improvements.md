@@ -114,19 +114,21 @@ New Resources:
   - `update_policy`: enum field, defines which policy to use:
     - `UPDATE_POLICY_LATEST`: upgrade to latest version. 
       - mutable: upgrade all packages to latest versions.
-      - immutable: upgrade the OS version to the latest.
+      - immutable: upgrade the OS version to the latest, based on SemVer.
     - `UPDATE_POLICY_TARGET`: upgrade to a specific version.
       - mutable: upgrade all packages to the specified version defined in 
         the `install_package` list.
       - immutable: upgrade the OS version to OS Version linked by the 
         `target_os` edge.
   - `target_os`: edge to the OS Profile that must be installed during the 
-    update. This field is used only for Immutable OSes.
-
-- **OS Update Job**: stores the information about the update job that run 
+    update. This field is used only for Immutable OSes, and when the 
+    `update_policy` is `UPDATE_POLICY_TARGET`.
+  
+- **OS Update Run**: stores the information about the update job that run 
   on the Edge Node. This resource is created when the update is started, 
   and stores information about what happened in the Edge Node during the 
-  Update.
+  Update. If there are concerns about the size of this table, we can add 
+  retention policies for this resource.
   - `status`: stores the short description of what happened during the update.
   - `status_indicator`: enum field, moder status indicator:
     - `STATUS_INDICATION_ERROR`: an error happened during the update.
@@ -155,7 +157,9 @@ Resource and Field Handling:
     maintenance schedule happened.
   - `installed_packages`: this field is handled by Host Resource Manager (HRM)
     that received the information about installed package by the Hardware 
-    Discovery Manager (HDA).
+    Discovery Manager (HDA). For Immutable OS, this field could be filled 
+    with info from the OSProfile directly, without EN providing these 
+    information at runtime.
   - `new_versions`: this field is handled by the OSRM, that will update 
     it when new updates are available. 
 - **OS Update Policy**: this resource is completely handled by the User of 
@@ -163,11 +167,11 @@ Resource and Field Handling:
   won't change the content of this resource. Default OS Update Policies 
   could be agreed and created upon Tenant creation (for example, update to 
   latest policy). OS Update Policies cannot be updated after creation, and 
-  cannot be deleted if any OS Update Job or any Instances refers to it.
-- **OS Update Job**: this resource is created by the OSRM when the update 
-  job is started. The content of this resource is filled by the OSRM, and 
-  it will be updated with the status of the update job. It is read-only 
-  from Northbound REST APIs.
+  cannot be deleted if any OS Update Run or any Instances refers to it.
+- **OS Update Run**: this resource is created by the MM when the update 
+  job is started on the Edge Node. The content of this resource is filled by 
+  the MM, and it will be updated with the status of the update job. It is 
+  read-only from Northbound REST APIs.
 
 #### Day 2 Workflows:
 
@@ -201,14 +205,14 @@ autonumber
     note over MM,PUA: Update Schedule Start
     PUA->>PUA: Start Update
     PUA->>MM: PlatformUpdateStatusRequest with updateStatu "STATUS_TYPE_STARTED"
-    MM->>Inventory: Create a OSUpdateJob, with start_time, linking to the OSUpdatePolicy
+    MM->>Inventory: Create a OSUpdateRun, with start_time, linking to the OSUpdatePolicy
     
     alt Update successful on the Edge Node
         Edge Node->>MM: PlatformUpdateStatusRequest with updateStatus "STATUS_TYPE_UPDATED"
-        MM->>Inventory: Update OSUpdateJob with the IDLE status and end_time
+        MM->>Inventory: Update OSUpdateRun with the IDLE status and end_time
     else Update failed on the Edge Node
         Edge Node->>MM: PlatformUpdateStatusRequest with updateStatus "STATUS_TYPE_FAILED"
-        MM->>Inventory: Update OSUpdateJob with the ERROR status, end_time and status_details
+        MM->>Inventory: Update OSUpdateRun with the ERROR status, end_time and status_details
     end
 ```
 
@@ -280,18 +284,18 @@ Edge Infrastructure Manager:
   1. OSProfile updates
   2. Instance updates
   3. New OSUpdatePolicy resource
-  4. New OSUpdateJob resource
+  4. New OSUpdateRun resource
 - **API**: API needs to be updated according to the schema changes.
   1. OperatingSystem resource update
   2. Instance resource update
   3. New OSUpdatePolicy APIs (Create, Read, Delete)
-  4. New OSUpdateJob APIs (Read, Delete)
+  4. New OSUpdateRun APIs (Read, Delete)
 - **Maintenance Manager (MM)**: The MM needs to be updated to handle the new 
-  OSUpdatePolicy and OSUpdateJob resources.
+  OSUpdatePolicy and OSUpdateRun resources.
   1. Update southbound APIs to allow PUA to provide packages ready to be 
      updated
   2. Handle OSUpdatePolicy
-  3. Create and Update OSUpdateJob
+  3. Create and Update OSUpdateRun
 - **OS Resource Manager (OSRM)**: OSRM adds support for new EMT versions, 
   notice 
   of new updates for EMT, and fill package info from Ubuntu manifest.
@@ -318,7 +322,7 @@ Edge Node:
 
 UI/CLI:
 1. Support for creation of OSUpdatePolicy.
-2. Support to show History of the Instance, via the OSUpdateJob resources.
+2. Support to show History of the Instance, via the OSUpdateRun resources.
 
 ## Implementation plan
 
@@ -328,9 +332,9 @@ The implementation plan is divided into 3 phases.
 
 1. schema and REST API changes (inv.\*, API.\*)
 2. Update to Maintenance Manager (MM) to handle OSUpdatePolicy, and create
-   and update OSUpdateJob (MM.ii, MM.iii)
+   and update OSUpdateRun (MM.ii, MM.iii)
 3. UI/CLI support for OSUpdatePolicy (UI/CLI.1)
-4. CLI support for OSUpdateJob (CLI.2)
+4. CLI support for OSUpdateRun (CLI.2)
 5. New Integration tests
 6. Update to documentation for the new Day2 operations
 
@@ -355,3 +359,7 @@ The implementation plan is divided into 3 phases.
 - How to handle OSProfile updates from OSRM? Do we need a compatibility 
   matrix or a way to accept a OSProfile into a running orch from a Project 
   admin?
+- Create OS Update Run even if the update was no-op?
+- avoid split between HRM and MM for installed packages? We could make PUA 
+  do the package discovery, and report it to the MM.
+- Retention policies for OS Update Run?
