@@ -185,7 +185,7 @@ like Profiles and Parameter Templates are lost.
 - App Orch modifies the Deployment object and Controller to support deploying applications
   without deployment packages.
 
-- GUI team modofies the following pages:
+- GUI team modifies the following pages:
 
   - Update the `Create Deployment` page with a choice to choose between deploying DPs or
     applications, and proceed with the appropriate workflow.
