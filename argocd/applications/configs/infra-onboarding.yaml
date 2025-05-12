@@ -56,24 +56,27 @@ dkam:
 
 amt:
   mps:
-    registry:
-      name: docker.io
+    image:
+      registry:
+        name: docker.io
     traefikReverseProxy:
       enabled: true
       secretName: "tls-orch"
       tlsOption: "gateway-tls"
       gatewayNamespace: orch-gateway
   rps:
-    registry:
-      name: docker.io
+    image:
+      registry:
+        name: docker.io
     traefikReverseProxy:
       enabled: true
       secretName: "tls-orch"
       tlsOption: "gateway-tls"
       gatewayNamespace: orch-gateway
   mpsrouter:
-    registry:
-      name: docker.io
+    image:
+      registry:
+        name: docker.io
     traefikReverseProxy:
       enabled: true
       secretName: "tls-orch"
