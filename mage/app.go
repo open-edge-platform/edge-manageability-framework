@@ -14,7 +14,7 @@ import (
 	catalogloader "github.com/open-edge-platform/orch-library/go/pkg/loader"
 )
 
-func (App) uploadWithPaths(paths []string) error {
+func (App) uploadWithPath(paths []string) error {
 	orchProject := defaultProject
 	if orchProjectEnv := os.Getenv("ORCH_PROJECT"); orchProjectEnv != "" {
 		orchProject = orchProjectEnv

@@ -1900,7 +1900,7 @@ func (a App) Upload() error {
 }
 
 func (a App) UploadWithPath(paths []string) error {
-	return a.UploadWithPath(paths)
+	return a.uploadWithPath(paths)
 }
 
 // Deploys Wordpress via Orchestrator using public charts and images.
