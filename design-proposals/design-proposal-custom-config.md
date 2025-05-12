@@ -52,13 +52,45 @@ The following options where evaluated to configure using cloud-init.
         users:
           title: users in cloud-init
           type: string
+        version:
+          title: Applicable on OS version
+          type: string
+        site:
+          title: applicable on site 
+          type: string
+        kernelparam:
+          title: Kernel parameter
+          type: string
     ```
+    There are certain advantages of this option:
+
+      - Templating provides a simpler and more user-friendly method for adding configurations.
+        Ex: The user does not have to form the command for setting the kernal parameter, this can be added by onboarding manager in the cloud-init
+      - Additionally, templating allows for the verification of certain preconditions before applying cloud-init. Ex: In the above example version control can determine the applicability of cloud-init on specific EdgeNodes by checking the OS version.  
+
+    The *Option 2* should be considered for future implementations when a simpler and more intuitive method is required as it needs carefull templating of parameters.
+
 3. Option 3 :
     The complete cloud-init file will be exposed to the user through a dedicated API. The user can create a cloud-init file, add the desired configurations, and call the EIM API. The EIM onboarding manager will then add this new cloud-init file to the Edge Node, allowing the cloud-init tool to configure the node accordingly.
 
-  The ****Option 3*** offered more advantages when compared to others.
+    Example of template the openAPI with cloud-init file as input parameter for user:
+    ```yaml
+    customConfig:
+      type: object
+      required:
+        - cloud-init
+        - name
+      properties:
+        cloud-init:
+          title: cloud-init file
+          type: string
+        name:
+          title: name of file
+          type: string
+    ```
+  The ***Option 3*** offered more advantages when compared to others. 
 
-  *Scalability*: As new configurations or policies are defined, they can be seamlessly integrated into the existing setup with out changing to EIM API or Inventory. But with Option 1 and 2 changes will be needed in EIM. 
+  *Scalability*: As new configurations or policies are defined, they can be seamlessly integrated into the existing setup with out changing to EIM API or Inventory. But with Option 1 changes will be needed in EIM. We might have to update the template in Option 2 if more conditions or fields are needed for example region is required. 
 
   *Flexibility*: Cloud-init supports a wide range of configuration options, including user data scripts, cloud-config directives, and more. This flexibility allows users to customize their instances extensively without being limited by predefined templates. Extending the Template or parameters (Option 1, 2) in API was be additional effort in furture maintenance. 
 
@@ -128,12 +160,8 @@ A new custom-config resource will be added to the Infra-core data model, which c
 
   ```yaml
   // Custom configuration type
-  enum CustomConfigType {
-  CUSTOM_CONFIG_TYPE_UNSPECIFIED = 0;
-  CUSTOM_CONFIG_TYPE_CLOUD_INIT = 1;
-  }
   // CustomConfigResource describes custom configuration 
-  message ConfigTemplate {
+  message CustomConfigResource {
     // configuration file.
     string config = 1 [
       (ent.field) = {
@@ -149,12 +177,23 @@ A new custom-config resource will be added to the Infra-core data model, which c
       (buf.validate.field).ignore = IGNORE_IF_UNPOPULATED
     ];
 
-    CustomConfigType config_type = 2;
+    // name provided by admin
+    string name = 2 [
+      (ent.field) = {
+        optional: false
+        immutable: true
+      },
+      (buf.validate.field).string = {
+        pattern: "^[a-z][a-z0-9-]{0,31}$"
+        max_bytes: 32
+      },
+      (buf.validate.field).ignore = IGNORE_IF_UNPOPULATED
+    ];
   }
   ```
   The instance resource data-model has to be updated to include custom-config resource.
 
-  The relationship between an instance and its custom configuration shall be one-to-one. Each instance can be associated with only one pre-created custom configuration. We will not have more than one custom configuration or cloud-init associated with an instance, as most configurations can be consolidated into a single cloud-init file.
+  The relationship between an instance and its custom configuration shall be one-to-many. Each instance can be associated with one or more than one pre-created custom configuration. The onboarding manager will create cloud-init file based on number of cloud-init files added by user. We can ristrict the number of cloud-init file that canbe associated to a instance to 5. 
 
 #### 2. EIM API enahncement
 
@@ -252,5 +291,4 @@ write_files:
   ```
 
 ## Opens
-1. To include single or multiple cloud-init configs.
-2. Do we need to support more than one file format.
+1. Do we need to support more than one file format.
