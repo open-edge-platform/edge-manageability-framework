@@ -1899,9 +1899,8 @@ func (a App) Upload() error {
 	return a.upload()
 }
 
-func (a App) UploadWithPath() error {
-	var paths []string
-	return a.uploadWithPath(paths)
+func (a App) UploadWithPath(paths ...string) error {
+	return a.uploadWithPath(paths...)
 }
 
 // Deploys Wordpress via Orchestrator using public charts and images.
