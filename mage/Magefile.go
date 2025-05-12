@@ -1895,12 +1895,8 @@ type Registry mg.Namespace
 type App mg.Namespace
 
 // Upload sample applications to Catalog.
-func (a App) Upload() error {
-	return a.upload()
-}
-
-func (a App) UploadWithPath(paths ...string) error {
-	return a.uploadWithPath(paths...)
+func (a App) Upload(paths ...string) error {
+	return a.upload(paths...)
 }
 
 // Deploys Wordpress via Orchestrator using public charts and images.

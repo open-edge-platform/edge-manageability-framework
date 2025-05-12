@@ -14,41 +14,13 @@ import (
 	catalogloader "github.com/open-edge-platform/orch-library/go/pkg/loader"
 )
 
-func (App) uploadWithPath(paths ...string) error {
-	orchProject := defaultProject
-	if orchProjectEnv := os.Getenv("ORCH_PROJECT"); orchProjectEnv != "" {
-		orchProject = orchProjectEnv
-	}
-
-	// todo: remove hardcode
-	orchUser := "sample-project-edge-mgr"
-	if orchUserEnv := os.Getenv("ORCH_USER"); orchUserEnv != "" {
-		orchUser = orchUserEnv
-	}
-
-	orchPass, err := GetDefaultOrchPassword()
-	if err != nil {
-		return err
-	}
-	if orchPassEnv := os.Getenv("ORCH_PASS"); orchPassEnv != "" {
-		orchPass = orchPassEnv
-	}
-
-	err = UploadFiles(paths, serviceDomain, orchProject, orchUser, orchPass)
-	if err != nil {
-		return fmt.Errorf("%w", err)
-	}
-
-	fmt.Println("Apps Uploaded 😊")
-	return nil
-
-}
-
-func (App) upload() error {
-	paths := []string{
-		"e2e-tests/samples/00-common",
-		"e2e-tests/samples/10-applications",
-		"e2e-tests/samples/20-deployment-packages",
+func (App) upload(paths ...string) error {
+	if len(paths) == 0 {
+		paths = []string{
+			"e2e-tests/samples/00-common",
+			"e2e-tests/samples/10-applications",
+			"e2e-tests/samples/20-deployment-packages",
+		}
 	}
 
 	orchProject := defaultProject
