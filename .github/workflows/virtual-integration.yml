@@ -838,3 +838,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.SYS_ORCH_GITHUB }}
         run: orch-ci/scripts/version-tag.sh
+
+  post-merge:
+    permissions:
+      contents: read
+      security-events: write
+      id-token: write
+    if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
+    uses: open-edge-platform/orch-ci/.github/workflows/post-merge.yml@0.1.10
+    with:
+      run_build: false
+      run_version_tag: false
+    secrets:  # zizmor: ignore[secrets-inherit]
+      inherit
