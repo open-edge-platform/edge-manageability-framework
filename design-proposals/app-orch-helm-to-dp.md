@@ -147,3 +147,9 @@ but also that we should strive to do both.
 
 - Automatically create parameter templates from all valus.yaml profile. This also has the disadvantage
   that a large chart could produce a large quantity of parameter templates.
+
+## Decision
+
+Implement GUI integration and Command Line Tool, pending GUI resource availability. Add the two feature
+requests above to the CLI tool, and consider adding advanced options to enable them on the GUI page, if
+GUI design to incorporate advanced options is feasible.
