@@ -27,11 +27,6 @@ variable "ip_allow_list" {
   default = []
 }
 
-variable "eks_node_ami_id" {
-  type    = string
-  default = "ami-0d3aa1878940d0eed"
-}
-
 variable "volume_size" {
   type    = number
   default = 120

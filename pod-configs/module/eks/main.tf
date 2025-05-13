@@ -6,6 +6,15 @@ locals {
   eks_nodegroup_role_name = "eks-node-${var.cluster_name}"
 }
 
+data "aws_ami" "eks_node_ami" {
+  most_recent = true
+  owners      = ["602401143452"] # Amazon EKS AMI owner ID
+  filter {
+    name   = "name"
+    values = ["amazon-eks-node-${var.eks_version}-*"]
+  }
+}
+
 resource "aws_iam_role" "iam_role_eks_cluster" {
   name               = "eks-${var.cluster_name}"
   assume_role_policy = <<EOF
@@ -204,7 +213,7 @@ resource "aws_launch_template" "eks_launch_template" {
     }
   }
 
-  image_id      = var.eks_node_ami_id
+  image_id      = data.aws_ami.eks_node_ami.id
   instance_type = var.eks_node_instance_type
 
   user_data = base64encode(templatefile("${path.module}/eks_cloud_init.tpl", {
@@ -219,7 +228,7 @@ resource "aws_launch_template" "eks_launch_template" {
     eks_endpoint = data.aws_eks_cluster.eks_cluster_data.endpoint
     eks_cluster_ca = data.aws_eks_cluster.eks_cluster_data.certificate_authority[0].data
     cluster_name = var.cluster_name
-    eks_node_ami_id = var.eks_node_ami_id
+    eks_node_ami_id = data.aws_ami.eks_node_ami.id
     max_pods = var.max_pods
     eks_cluster_dns_ip = var.eks_cluster_dns_ip
   }))
@@ -255,7 +264,7 @@ resource "aws_launch_template" "additional_node_group_launch_template" {
     }
   }
 
-  image_id      = var.eks_node_ami_id
+  image_id      = data.aws_ami.eks_node_ami.id
   instance_type = each.value.instance_type
 
   user_data = base64encode(templatefile("${path.module}/eks_cloud_init.tpl", {
@@ -270,7 +279,7 @@ resource "aws_launch_template" "additional_node_group_launch_template" {
     eks_endpoint = data.aws_eks_cluster.eks_cluster_data.endpoint
     eks_cluster_ca = data.aws_eks_cluster.eks_cluster_data.certificate_authority[0].data
     cluster_name = var.cluster_name
-    eks_node_ami_id = var.eks_node_ami_id
+    eks_node_ami_id = data.aws_ami.eks_node_ami.id
     max_pods = var.max_pods
     eks_cluster_dns_ip = var.eks_cluster_dns_ip
   }))
