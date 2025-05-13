@@ -323,6 +323,8 @@ Edge Node:
 UI/CLI:
 1. Support for creation of OSUpdatePolicy.
 2. Support to show History of the Instance, via the OSUpdateRun resources.
+3. Update to support the `new_versions` field in the Instance resource, 
+   instead of using `desired_os` to support update badge.
 
 ## Implementation plan
 
@@ -333,8 +335,9 @@ The implementation plan is divided into 3 phases.
 1. schema and REST API changes (inv.\*, API.\*)
 2. Update to Maintenance Manager (MM) to handle OSUpdatePolicy, and create
    and update OSUpdateRun (MM.ii, MM.iii)
-3. UI/CLI support for OSUpdatePolicy (UI/CLI.1)
+3. UI/CLI support for OSUpdatePolicy (UI/CLI.1) - UI work is Tentative
 4. CLI support for OSUpdateRun (CLI.2)
+5. UI update to support `new_versions` (UI/CLI.3) - Tentative
 5. New Integration tests
 6. Update to documentation for the new Day2 operations
 
