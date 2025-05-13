@@ -183,7 +183,7 @@ amt:
   mps:
     traefikReverseProxy:
       host:
-        grpc:
+        cira:
           name: "mps-node.{{ .Values.argo.clusterDomain }}"
         webport: # Define a new name for the other port
           name: "mps-webport-node.{{ .Values.argo.clusterDomain }}" # Define the name for the new port
