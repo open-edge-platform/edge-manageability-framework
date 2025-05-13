@@ -10,8 +10,6 @@ import:
     enabled: true
   onboarding-manager:
     enabled: true
-  amt:
-    enabled: true
 
 tinkerbell:
   pvc:
@@ -53,36 +51,6 @@ dkam:
     oidc:
       oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
   resources: null
-
-amt:
-  mps:
-    image:
-      registry:
-        name: docker.io/
-    traefikReverseProxy:
-      enabled: true
-      secretName: "tls-orch"
-      tlsOption: "gateway-tls"
-      gatewayNamespace: orch-gateway
-  rps:
-    image:
-      registry:
-        name: docker.io/
-    traefikReverseProxy:
-      enabled: true
-      secretName: "tls-orch"
-      tlsOption: "gateway-tls"
-      gatewayNamespace: orch-gateway
-  mpsrouter:
-    image:
-      registry:
-        name: docker.io/
-    traefikReverseProxy:
-      enabled: true
-      secretName: "tls-orch"
-      tlsOption: "gateway-tls"
-      gatewayNamespace: orch-gateway
-
 
 infra-config:
   config:

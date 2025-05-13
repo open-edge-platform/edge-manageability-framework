@@ -3,7 +3,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ---
-import: {}
+import: 
+  amt:
+    enabled: true
 
 loca-manager:
   serviceAccount:
@@ -78,3 +80,33 @@ loca-credentials:
   params:
     keycloakUrl: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
     vaultUrl: "http://vault.orch-platform.svc.cluster.local:8200"
+
+amt:
+  mps:
+    image:
+      registry:
+        name: docker.io/
+    traefikReverseProxy:
+      enabled: true
+      secretName: "tls-orch"
+      tlsOption: "gateway-tls"
+      gatewayNamespace: orch-gateway
+  rps:
+    image:
+      registry:
+        name: docker.io/
+    traefikReverseProxy:
+      enabled: true
+      secretName: "tls-orch"
+      tlsOption: "gateway-tls"
+      gatewayNamespace: orch-gateway
+  mpsrouter:
+    image:
+      registry:
+        name: docker.io/
+    traefikReverseProxy:
+      enabled: true
+      secretName: "tls-orch"
+      tlsOption: "gateway-tls"
+      gatewayNamespace: orch-gateway
+
