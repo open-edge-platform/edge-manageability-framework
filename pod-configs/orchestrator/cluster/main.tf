@@ -29,7 +29,6 @@ module "eks" {
   vpc_id                      = local.vpc_id
   subnets                     = local.private_subnets
   ip_allow_list               = local.cidr_blocks # Allow entire VPC to access the cluster
-  eks_node_ami_id             = var.eks_node_ami_id
   volume_size                 = var.eks_volume_size
   volume_type                 = var.eks_volume_type
   eks_node_instance_type      = var.eks_node_instance_type

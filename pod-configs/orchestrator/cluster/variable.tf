@@ -54,9 +54,6 @@ variable "cluster_fqdn" {
 }
 
 # Optional variables
-variable "eks_node_ami_id" {
-  default = "ami-09ea311630482acd7"
-}
 variable "eks_volume_size" {
   default = 20
 }
