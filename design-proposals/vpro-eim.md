@@ -162,14 +162,11 @@ implement the following functionality to support this design proposal:
 
 Inventory **Unit tests** will be extended accordingly in the affected components.
 
-The integration plan will be split in two flows: i) VIP tests will be extended to verify e2e flow except successfull
-activation which cannot be tested using any Virtual Edge Node flavor; ii) New tests involving hardvware devices will be
-written to verify the complete e2e flow.
+API integration tests and VIP tests will be improved with additional tests to verify the API/Inventory integration and
+to act as smoke/sanity tests for the virtual pipeline.
 
 All the aforementioned tests should include negative and failure scenarios such as failed activations, unsupported
 operations.
-
-We expect EMT team to conduct integration tests before releasing EMT images supporting RPC and its deps.
 
 ## Open issues (if applicable)
 
