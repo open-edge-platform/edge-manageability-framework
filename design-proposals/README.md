@@ -1,4 +1,4 @@
-# Proposing Features and Changes to Edge Microvisor Toolkit
+# Proposing Features and Changes to Edge Manageability Framework
 
 ## Introduction
 
