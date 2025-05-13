@@ -55,14 +55,16 @@ However, The DM Resource Manager can fake the `IN_PROGRESS` statuses until the s
 reflect the required operation. For example during the provisioning, the RM can keep the `IN_PROGRESS` state until
 the device is connected, move to an error status if the devices does not show up after a given threshold.
 
-**Note2** the behavior of the resource manager is driven by the `DesiredPowerState` and `PowerOffPolicy`, and internally keeps a timer between soft and hard when `ORDERED_OFF` is set in `PowerOffPolicy`.
-The PowerStatus would be updated with this internal behavior in the DM RM, for example: "Soft power off succeeded", "Soft power off failed after 30s, forcing Hard power off", etc.
+**Note2** the behavior of the resource manager is driven by the `DesiredPowerState` and `PowerOffPolicy`, and
+internally keeps a timer between soft and hard when `ORDERED_OFF` is set in `PowerOffPolicy`.
+The PowerStatus would be updated with this internal behavior in the DM RM, for example: "Soft power off succeeded",
+"Soft power off failed after 30s, forcing Hard power off", etc.
 
 **Note3** `AMTSKU` is populated during the device discovery. AMT version decoding is quite complex see
 [here][rpc-decoding].
 For this reason a string is suggested instead of an Enum.
 
-A new entity called `AMTResource` will be added to Inventory and "connected" to the 
+A new entity called `AMTResource` will be added to Inventory and "connected" to the
 [Host](https://github.com/open-edge-platform/infra-core/blob/main/inventory/api/compute/v1/compute.proto#L47) with the
 cardinality 0...1.. It will be used mainly to keep track the activation of vPRO/AMT:
 
@@ -71,9 +73,11 @@ cardinality 0...1.. It will be used mainly to keep track the activation of vPRO/
 - `CurrentState` ->> {UNSPECIFIED, PROVISION, UNPROVISION, DISCONNECT}
 - `AMTStatus` ->> {PROVISIONED, UNPROVISIONED, DISCONNECTED, UNSUPPORTED}
 
-**Note** that technologies like AMT do not provide any info about in progress operations. However, The DM Resource Manager can fake the `IN_PROGRESS` statuses using `Last*` timestamps exposed by MPS.
+**Note** that technologies like AMT do not provide any info about in progress operations. However, The DM Resource
+Manager can fake the `IN_PROGRESS` statuses using `Last*` timestamps exposed by MPS.
 
-Instead, UI or Users can fetch directly from MPS REST APIs (through the MT-GW), using device UUID, the following additional information such as:
+Instead, UI or Users can fetch directly from MPS REST APIs (through the MT-GW), using device UUID, the following
+additional information such as:
 
 - `SoftwareVersion` - AMT version deployed in the device
 - `NetworkState` - the network state of the AMT interface
@@ -89,9 +93,10 @@ Instead, UI or Users can fetch directly from MPS REST APIs (through the MT-GW), 
 Inventory should not allow the removal of an host if one of the baremetal controller is not nil.
 
 Existing managers used for Onboarding & Provisioning need to be aware of the request to activate vPRO functionality.
-A new optional tink-action will be used to enable the feature see [vPRO/AMT/ISM devices activation](./vpro-device.md). 
+A new optional tink-action will be used to enable the feature see [vPRO/AMT/ISM devices activation](./vpro-device.md).
 
-For [automatic (aka nZTP) provisioning][nztp], the Provider resource `infra-onboarding` will not contain any field in the provider config.
+For [automatic (aka nZTP) provisioning][nztp], the Provider resource `infra-onboarding` will not contain any field in
+the provider config.
 
 The NA readiness should not consider the `AmtInfo` status, as it is not required to have the node fully operational.
 
@@ -116,18 +121,24 @@ Additionally requirements for the e2e user flow:
 
 ## Rationale
 
-DMT stack is going to share the same pool of resources of Edge Infrastructure Manager. This includes the usage of some Foundational Platform Services. Hiding completely MPS/RPS would require proxy the data through the infrastructure manager and duplicate state. 
+DMT stack is going to share the same pool of resources of Edge Infrastructure Manager. This includes the usage of some
+Foundational Platform Services. Hiding completely MPS/RPS would require proxy the data through the infrastructure
+manager and duplicate state.
 
-For example Domain profile and provisioning certificate will be uploaded directly using the RPS REST APIs. AMT Device information will be fetched directly from MPS without the need to involve Edge Infrastructure Manager.
+For example Domain profile and provisioning certificate will be uploaded directly using the RPS REST APIs. AMT Device
+information will be fetched directly from MPS without the need to involve Edge Infrastructure Manager.
 
 We will manage through Edge Infrastructure Manager only the features that really matters for the users and that require
 additional intelligence and more fine grained control (see later power management).
 
-An alternative data-model design considers AMT and BMC resources integrated in HostResources, however this strategy makes the lifecycle of the baremetal controllers more complex. For example see the scenario where the host should not be removed if one of these parts is still present.
+An alternative data-model design considers AMT and BMC resources integrated in HostResources, however this strategy
+makes the lifecycle of the baremetal controllers more complex. For example see the scenario where the host should not
+be removed if one of these parts is still present.
 
 Inherently is more clean separate the concerns between Host and its components (for example `BMCResource`).
 
-Status tracking and updates will mostly rely on the state coming from the DMT stack. In this way, we will not need to rely on any in-band agent and get updates even when the device is in bad state.
+Status tracking and updates will mostly rely on the state coming from the DMT stack. In this way, we will not need to
+rely on any in-band agent and get updates even when the device is in bad state.
 
 To learn more on remote power management see the [Device Management RM proposal](./vpro-rm.md]).
 
@@ -162,9 +173,11 @@ We expect EMT team to conduct integration tests before releasing EMT images supp
 
 ## Open issues (if applicable)
 
-At the time of writing, the user will not be able to opt-in/opt-out but we commit to add this feature in future proposals. As explained above activation/deactivation will be integrated in the device lifecycle.
+At the time of writing, the user will not be able to opt-in/opt-out but we commit to add this feature in future
+proposals. As explained above activation/deactivation will be integrated in the device lifecycle.
 
-The following requirements are not considered at the time of writing as there is not clarity about their need and for some of them there will be issues on GNU/Linux OSes because for lack of drivers and compatibility:
+The following requirements are not considered at the time of writing as there is not clarity about their need and
+for some of them there will be issues on GNU/Linux OSes because for lack of drivers and compatibility:
 
 - User is able to view the Boot Order of the device.
 - User is able to change the Boot Order of the device.
