@@ -181,6 +181,7 @@ onboarding-manager:
 
 amt:
   mps:
+    commonName: "mps-node.{{ .Values.argo.clusterDomain }}"
     traefikReverseProxy:
       host:
         cira:
