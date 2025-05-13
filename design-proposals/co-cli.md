@@ -38,17 +38,17 @@ CRUD operations for clustertemplate:
 ```bash
 cli list clustertemplates
 cli list clustertemplates --default
-cli get clustertemplate --name <name> --version <version>
-cli get clustertemplate versions --name <name>
+cli get clustertemplate <name> --version <version>
+cli get clustertemplate versions <name>
 cli apply clustertemplate --file <path_to_clustertemplate.yaml>
-cli delete clustertemplate --name <name> --version <version>
+cli delete clustertemplate <name> --version <version>
 ```
 Cluster template does not support set/update operation.
 It is immutable.
 
 Extra operations related to clustertemplate:
 ```bash
-cli set-default clustertemplate --name <name> --version <version>
+cli set-default clustertemplate <name> --version <version>
 ```
 or if `--version` parameter is not passed, take the latest version for given name.
 
@@ -57,16 +57,16 @@ CRUD operations for cluster:
 ```bash
 cli list clusters
 cli list clusters --summary
-cli get cluster --name <name>
-cli get cluster --node <nodeId>
+cli get cluster <name>
+cli get cluster details <nodeId>
 cli apply cluster --file <path_to_cluster.yaml>
 cli create cluster \
     --name <name> \
     --hosts 6e6422c3-625e-507a-bc8a-bd2330e07e7e:all \ # required in format <uuid:role>
     --clusterLabels key:value \ # optional
     --template <template name-version> # optional
-cli delete cluster --name <name>
-cli delete cluster --name <name> --force
+cli delete cluster <name>
+cli delete cluster <name> --force
 cli set/update cluster --clusterLabels key:value, key2:value2
 
 ```
@@ -74,7 +74,7 @@ cli set/update cluster --clusterLabels key:value, key2:value2
 ##### en-kubeconfig
 operations for edgenode's kubeconfig
 ```bash
-cli get en-kubeconfig --name <cluster name> --output <path_to_save_location>
+cli get en-kubeconfig <cluster name> --output <path_to_save_location>
 ```
 
 ## Rationale
