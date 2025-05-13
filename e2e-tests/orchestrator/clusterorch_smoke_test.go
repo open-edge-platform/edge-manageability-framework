@@ -456,9 +456,9 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 			Expect(err).ToNot(HaveOccurred())
 			fmt.Println(string(body))
 
-			// Expect the request to fail with a 500 Internal Server Error status code
-			Expect(resp.StatusCode).To(Equal(http.StatusInternalServerError), "Expected 500 Internal Server Error when deleting a template in use")
-			Expect(body).To(ContainSubstring("denied the request: clusterTemplate is in use"))
+			// Expect the request to fail with a 409 Conflict status code
+			Expect(resp.StatusCode).To(Equal(http.StatusConflict), "Expected 409 Conflict when deleting a template in use")
+			Expect(body).To(ContainSubstring("clusterTemplate is in use"))
 			fmt.Printf("Failed to delete template %s-%s as expected, HTTP status code: %d\n", defaultTemplateName, defaultTemplateVersion, resp.StatusCode)
 		})
 	})
