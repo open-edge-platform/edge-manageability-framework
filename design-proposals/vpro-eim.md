@@ -21,7 +21,8 @@ Changes are expected in the data-model and a bit of re-structuring in the existi
 - `BmcUsername` - the username to access the Device Management controller
 - `BmcPassword` - the password to access the Device Management controller
 
-They are currently mis-used by `OnboardingManager`. We should create a proper `migration` and we should include as part of the migration `PxeMac`. Ideally this will be the steps:
+They are currently mis-used by `OnboardingManager`. We should create a proper `migration` and we should include as part
+of the migration `PxeMac`. Ideally this will be the steps:
 
 `BaremetalControllerKind` identifies the type of Device Management and becomes a shared enum;
 
@@ -50,13 +51,15 @@ Powered Off, Hibernated}
 - `AMTSKU` ->> a string reporting AMT/ISM version. `Unsupported` otherwise.
 
 **Note** that technologies like AMT do not provide any info about in progress operations, nor if a reboot is in-progress.
-However, The DM Resource Manager can fake the `IN_PROGRESS` statuses until the state in the DMT stack does not reflect the
-required operation. For example during the provisioning, the RM can keep the `IN_PROGRESS` state until the device is connected, move to an error status if the devices does not show up after a given threshold
+However, The DM Resource Manager can fake the `IN_PROGRESS` statuses until the state in the DMT stack does not
+reflect the required operation. For example during the provisioning, the RM can keep the `IN_PROGRESS` state until
+the device is connected, move to an error status if the devices does not show up after a given threshold.
 
 **Note2** the behavior of the resource manager is driven by the `DesiredPowerState` and `PowerOffPolicy`, and internally keeps a timer between soft and hard when `ORDERED_OFF` is set in `PowerOffPolicy`.
 The PowerStatus would be updated with this internal behavior in the DM RM, for example: "Soft power off succeeded", "Soft power off failed after 30s, forcing Hard power off", etc.
 
-**Note3** `AMTSKU` is populated during the device discovery. AMT version decoding is quite complex see [here](https://github.com/device-management-toolkit/rpc-go/blob/d55220bd040807647a1b3a6ce218950de6f90781/internal/local/info.go#L409).
+**Note3** `AMTSKU` is populated during the device discovery. AMT version decoding is quite complex see
+[here][rpc-decoding].
 For this reason a string is suggested instead of an Enum.
 
 A new entity called `AMTResource` will be added to Inventory and "connected" to the 
@@ -88,7 +91,7 @@ Inventory should not allow the removal of an host if one of the baremetal contro
 Existing managers used for Onboarding & Provisioning need to be aware of the request to activate vPRO functionality.
 A new optional tink-action will be used to enable the feature see [vPRO/AMT/ISM devices activation](./vpro-device.md). 
 
-For [automatic (aka nZTP) provisioning](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/user_guide/concepts/nztp.html), the Provider resource `infra-onboarding` will not contain any field in the provider config.
+For [automatic (aka nZTP) provisioning][nztp], the Provider resource `infra-onboarding` will not contain any field in the provider config.
 
 The NA readiness should not consider the `AmtInfo` status, as it is not required to have the node fully operational.
 
@@ -167,3 +170,6 @@ The following requirements are not considered at the time of writing as there is
 - User is able to change the Boot Order of the device.
 - Support Edge Node that has wired Internet connectivity which requires LAN auth;
 - Support Edge Node that has wireless Internet connectivity through WLAN technology;
+
+[rpc-decoding]: https://github.com/device-management-toolkit/rpc-go/blob/d55220bd040807647a1b3a6ce218950de6f90781/internal/local/info.go#L409
+[nztp]: https://docs.openedgeplatform.intel.com/edge-manage-docs/main/user_guide/concepts/nztp.html
