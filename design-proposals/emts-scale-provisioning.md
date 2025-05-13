@@ -22,7 +22,7 @@ Following are the MVP requirements for the scale provisioning of EMT-S edge node
 - Have a UX to pre-register BareMetal edge nodes using Serial number or UUID or MAC address.
 - Provision different OS profiles to different edge nodes selected based on Serial number or UUID or MAC address.
 - Provision default OS when a device on the LAN boots over PXE and is not pre-registered.
-- Have a ux of  collecting provisioning logs and status of edge nodes.
+- Have a UX of collecting provisioning logs and status of edge nodes.
 
 > Note: It might be possible for EMF-EIM to support provisioning of the EMT-S nodes. supporting this capability as part of MVP depends on any active customer requirements.
 
@@ -247,54 +247,22 @@ The `boot.ipxe` script downloads Micro-OS from the local HTTP server and boots i
 The Micro-OS has all necessary certificates to communicate with the central orchestrator. Micro-OS services start device discovery and Tinkerbell workflow to provision target OS.
 From this point, EN goes through standard provisioning process.
 
-### EIM standalone
+### EIM-only profile of EMF deployment (EIM-S)
 
 The provisioning of EMT-S at scale will be driven by a local orchestrator instance that only includes EIM components. 
 The main requirement of EIM standalone is to make it easy and resource-efficient for customers to deploy.
 
-There are two approaches (see options below) to how we can configure EIM standalone to be more lightweight and faster to deploy.
+For MVP, we will leverage the EIM Standalone profile. This is an EMF deployment profile that only deploys EIM with Observability and FPS components.
 
-This proposal makes a decision to proceed with Option 1 for 3.1 release, but Option 2 should be a target solution for EIM-S.
-
-#### Option 1: A slimmed down deployment based on the current EIM Standalone profile
-
-This approach will use the existing EIM standalone profile. This is an EMF deployment profile that only deploys EIM with Observability and FPS components.
-
-#### Option 2: A minimal EIM deployment
-
-Even the slimmed down version of EIM from Option 1 may not meet requirements for fast and easy deployment on-site.
-
-This option is a radical approach to make EIM super-lightweight and reduce any FPS dependencies that are not essential to EIM. 
-Note that this option requires some modifications to EIM components, as some of them rely on FPS components (e.g., Vault or Keylocak).
-
-The minimal EIM deployment is mainly used to support OXM use cases, where EIM is only used to provision ENs that are further shipped to the target location.
-
-The minimal EIM deployment at high level:
-- No cluster and application orchestrator deployed.
-- Simplified deployment with just Helm on a standard K8s cluster. No ArgoCD, Fleet, RKE2.
-- A single tenant deployment, without the Multi-Tenancy/IAM framework. A default tenant will be created to "own" EIM resources.
-- Reduced EIM with infra-core (without exporter, Tenant Controller), infra-onboarding and infra-managers
-- Minimal set of FPS services. A rough minimum of FPS services that may be required by EIM are:
-  - Postgres database
-  - RS proxy
-  - Vault (?)
-  - Traefik
-  - cert-manager
-  - MetalLB
-- Relaxed security requirements:
-  - No Istio for inter-Pod communication security
-  - No Kyverno for policies
-- No UI deployed, the EN pre-registration is done via Bulk Import Tool, API or CLI tool.
-- Limited observability stack that should only provide logs. No alerting, SRE, Prometheus.
-- Abandon HA requirements - EIM-S is primarily a single-node, on-prem deployment. Any data loss can be backed by hardware-level redundancy. Think of EIM-S as Rancher Desktop or Virtualbox.
-
-The minimal EIM deployment should consist of:
-- infra-core without exporter and 
+Any further optimization to make EIM deployment fast and easy will be handled as part of the effort on the new installer (see [ADR](https://github.com/open-edge-platform/edge-manageability-framework/pull/290)).
+To give an example, further optimizations may include deploying EIM as a self-contained Helm chart (instead of ArgoCD appplication) and getting rid of FPS services that are
+not required (e.g., Argo, Istio, HA capabilities, etc.).
 
 ### Rationale
 
 The current design proposal allows to easily support legacy PXE boot while keeping the current UX around EN pre-registration. It also lets us keep all the features that EIM currently supports,
-including logging, KPI instrumentation, observability, etc.
+including logging, KPI instrumentation, observability, etc. The EN pre-registration also enables selectively configuring desired OS profile per EN and acts as
+admission control to prevent unwanted ENs being provisioned to EMF "magically". 
 
 The alternative considered was to use a standalone Tinkerbell deployment without the rest of the EIM stack. While it has advantage of a more lightweight deployment,
 it would completely change the UX as we would need to familiarize customers with Tinkerbell APIs (or have a custom CLI tool to help them manage Tinkerbell CRDs).
@@ -311,12 +279,11 @@ With the current proposal we keep using the current UX, with possibility to use 
 
 **EIM team** responsible for slimming down deployment of EIM and enabling Tinkerbell SMEE with required configuration.
 
-**Observability team**'s help may be needed to reduce size/capabilities of the observability stack for EIM-S (Option 2).
-
 ## Open issues
 
 - By default, the provisioning flow will complete and all the agents will be installed, started and connected to the orchestrator instance that deployed them.
   We may need a way to stop the provisioning flow without installing and starting agents.
 - In this solution, PXE boot will always be allowed for any device in a local subnet trying to initiate PXE boot.
-  On the contrary, the Tinkerbell allows to control whether PXE boot is enabled/disabled for a device. For now, I don't see any need to control who is allowed to PXE-boot.
+  On the contrary, the Tinkerbell allows to control whether PXE boot is enabled/disabled for a device. For now, we won't have any control to who is allowed to PXE-boot, but
+  the admission control will be done at later stage (once EMF's iPXE is chainloaded).
 - If we needed to support ISO images for EMT-D, we would need to create a new OS profile. We would also need to add a new Tinkerbell action that supports flashing ISO images to the disk.
