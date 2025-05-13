@@ -30,7 +30,7 @@ Following are the MVP requirements for the scale provisioning of EMT-S edge node
 
 The solution consists of two major enhancements (modifications) to EMF:
 1) **Support legacy PXE boot to scale EMT-S provisioning** - the EIM will be extended with a local DHCP/TFTP server that helps initiate OS provisioning via legacy PXE boot. 
-2) **Use EIM standalone deployment** - the proposed solution involves deploying a streamlined version of the EIM, referred to as EIM standalone,
+2) **Use EIM standalone deployment** - the proposed solution involves deploying a specific EMF profile, referred to as EIM standalone profile. 
    at the customer's premises, specifically the OXM warehouse. This streamlined EIM will include only the essential components necessary for operating system provisioning. 
    It is important to note that the EIM standalone will not be a separate branch or fork of the existing EIM system. 
    The deployment strategy will utilize configuration settings at deployment time within the EMF to ensure that only the required features are activated.
