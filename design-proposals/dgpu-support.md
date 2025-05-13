@@ -26,10 +26,10 @@ Support for OS drivers in Edge Microvisor Toolkit (EMT) should be included in th
 
 | dGPU(OS)             | OS    | Kernel | Platform | Priority | Kernel cmd | SRIOV    | Workload  | DevicePlugin | Operator | Notes |
 |----------------------|-------|--------|----------|----------|------------|----------|-----------|--------------|----------|-------|
-| Intel B580 (EMT)     | 3.0   | -      | Xeon     | P0(3.0)  | Required   | Required | Geti, PDD |    Required  | No       |       |
-| Intel B580 (Ubuntu)  | 24.04 | >6.11  | Xeon     | P1(3.0)  | Required   | Required | Geti, PDD |    Required  | No       |       |
-| Nvidia P100 (EMT)    | 3.0   | -      | Xeon     | P2(>3.1) | Required   | Required | Geti, PDD |    No        | Yes      |       |
-| Nvidia P100 (Ubuntu) | 24.04 | >6.11  | Xeon     | P2(>3.1) | Required   | Required | Geti, PDD |    No        | Yes      |       |
+| Intel B580 (EMT)     | 3.0   | -      | Xeon     | P0(3.1)  | Required   | Required | Geti, PDD |    Required  | -        |       |
+| Intel B580 (Ubuntu)  | 24.04 | >6.11  | Xeon     | P1(3.1)  | Required   | Required | Geti, PDD |    Required  | -        |       |
+| Nvidia P100 (EMT)    | 3.0   | -      | Xeon     | P2(3.2)  | Required   | Required | Geti, PDD |    -         | Required |       |
+| Nvidia P100 (Ubuntu) | 24.04 | >6.11  | Xeon     | P2(3.2)  | Required   | Required | Geti, PDD |    -         | Required |       |
 
 ### Limitations and Debt of The Current Design
 
