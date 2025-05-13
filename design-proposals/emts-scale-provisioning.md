@@ -19,7 +19,7 @@ Following are the MVP requirements for the scale provisioning of EMT-S edge node
 - Provision multiple BareMetal edge nodes without onboarding for the purpose of standalone/singleton use.
 - Provide deploy a service on the local network that can achieve this provisioning at scale.
 - Deploy the provisioning service on the local network that support PXE Boot (BIOS/UEFI with DHCP + TFTP) boot and iPXE with HTTPs.  
-- Have a UX to pre-register BareMetal edge nodes using Serial number or UUID or MAC address.
+- Have a UX to pre-register BareMetal edge nodes using Serial number or UUID.
 - Provision different OS profiles to different edge nodes selected based on Serial number or UUID or MAC address.
 - Provision default OS when a device on the LAN boots over PXE and is not pre-registered.
 - Have a UX of collecting provisioning logs and status of edge nodes.
@@ -277,6 +277,7 @@ The minimal EIM deployment at high level:
 - Minimal set of FPS services. A rough minimum of FPS services that may be required by EIM are:
   - Postgres database
   - RS proxy
+  - Keycloak (?)
   - Vault (?)
   - Traefik
   - cert-manager
@@ -305,6 +306,7 @@ With the current proposal we keep using the current UX, with possibility to use 
 **FPS team** needs provide help for the following:
 - Reduce FPS components to minimum to make EIM-S deployment lightweight
 - Make EIM-S deployment operation easy in terms of number of CLI commands/steps to execute
+- Make EIM-S deployment fast (ideally deployable in ~2 mins)
 - Expose Tinkerbell SMEE's DHCP/TFTP server via External IP (similar to Provisioning Nginx now) or find any other solution to expose DHCP to local L2 network
 - Provide a toggle to disable HTTPS for Provisioning Nginx in the case of EIM standalone deployment
 
