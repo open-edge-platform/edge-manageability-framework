@@ -10,7 +10,7 @@ The Edge Microvisor Toolkit Standalone (EMT-S) node is designed to enable enterp
 
 ### Proposal Summary
 
-EIM leverages the Tinkerbell solution for provisioning operating systems on edge nodes. The current implementation supports OS provisioning via bootable USB or iPXE/HTTPs boot. To enable scalable provisioning of EMT-S edge nodes for the OXM workflow, this proposal suggests integrating PXE-based provisioning into EIM by utilizing the `smee` (formerly `boots`) component of Tinkerbell. Additionally, EMF and EIM will support configurations to deploy this as a standalone EIM solution (to be referred in future as EIM-S), tailored for OXMs to efficiently provision edge nodes at scale. OXM will have the option of provisioning edge nodes using bootable USB, iPXE/HTTPs boot, or PXE-based provisioning. The solution will also include a user experience (UX) for pre-registering edge nodes using serial numbers, or UUIDs. Furthermore, the solution will support the provisioning of different operating system profiles based on the selected identifiers. In cases where a device on the local area network (LAN) boots over PXE and is not pre-registered, the default operating system will be provisioned.
+EIM leverages the Tinkerbell solution for provisioning operating systems on edge nodes. The current implementation supports OS provisioning via bootable USB or iPXE/HTTPs boot. To enable scalable provisioning of EMT-S edge nodes for the OXM workflow, this proposal suggests integrating PXE-based provisioning into EIM by utilizing the `smee` (formerly `boots`) component of Tinkerbell. Additionally, EMF and EIM will support configurations to deploy an EIM only profile (referred in this document as EIM-S), tailored for OXMs to efficiently provision edge nodes at scale. OXM will have the option of provisioning edge nodes using bootable USB, iPXE/HTTPs boot, or PXE-based provisioning. The solution will also include a user experience (UX) for pre-registering edge nodes using serial numbers, UUIDs, or MAC addresses. Furthermore, the solution will support the provisioning of different operating system profiles based on the selected identifiers. In cases where a device on the local area network (LAN) boots over PXE and is not pre-registered, the default operating system will be provisioned
 
 ### MVP requirements
 
@@ -19,10 +19,10 @@ Following are the MVP requirements for the scale provisioning of EMT-S edge node
 - Provision multiple BareMetal edge nodes without onboarding for the purpose of standalone/singleton use.
 - Provide deploy a service on the local network that can achieve this provisioning at scale.
 - Deploy the provisioning service on the local network that support PXE Boot (BIOS/UEFI with DHCP + TFTP) boot and iPXE with HTTPs.  
-- Have a UX to pre-register BareMetal edge nodes using Serial number or UUID.
+- Have a UX to pre-register BareMetal edge nodes using Serial number or UUID or MAC address.
 - Provision different OS profiles to different edge nodes selected based on Serial number or UUID or MAC address.
 - Provision default OS when a device on the LAN boots over PXE and is not pre-registered.
-- Have a UX of collecting provisioning logs and status of edge nodes.
+- Have a ux of  collecting provisioning logs and status of edge nodes.
 
 > Note: It might be possible for EMF-EIM to support provisioning of the EMT-S nodes. supporting this capability as part of MVP depends on any active customer requirements.
 
@@ -30,9 +30,9 @@ Following are the MVP requirements for the scale provisioning of EMT-S edge node
 
 The solution consists of two major enhancements (modifications) to EMF:
 1) **Support legacy PXE boot to scale EMT-S provisioning** - the EIM will be extended with a local DHCP/TFTP server that helps initiate OS provisioning via legacy PXE boot. 
-2) **Use EIM standalone deployment** - the proposed solution involves deploying a streamlined version of the EIM, referred to as EIM standalone,
-   at the customer's premises, specifically the OXM warehouse. This streamlined EIM will include only the essential components necessary for operating system provisioning. 
-   It is important to note that the EIM standalone will not be a separate branch or fork of the existing EIM system. 
+2) **Use EIM standalone deployment** - the proposed solution involves deploying a specific EMF profile, referred to as EIM standalone profile. 
+   at the customer's premises, specifically the OXM warehouse. This streamlined EMF profile to include EIM only will comprise only the essential components necessary for operating system provisioning. 
+   It is important to note that the EIM standalone will not be a separate branch or fork of the existing EMF EIM system. 
    The deployment strategy will utilize configuration settings at deployment time within the EMF to ensure that only the required features are activated.
    The detailed design for the deployment time configuration and profile settings for both EMF and EIM will be addressed in a separate design document.
 
@@ -47,9 +47,9 @@ but, once chain-loaded to iPXE, the Micro-OS is downloaded and used to drive pro
 In other words, the only difference between the new PXE-based boot and HTTP-based boot is how the OS provisioning is triggered. The subsequent workflow remains the same -
 it leverages Micro-OS, device discovery and Tinkerbell workflow to complete OS provisioning.
 
-> **NOTE1**: Customers should provide their own local DHCP server for dynamic IP address assignment.
+**NOTE1**: Customers should provide their own local DHCP server for dynamic IP address assignment.
 
-> **NOTE2**: The workflow assumes that the EIM Standalone is deployed locally on customers' premises and ENs have direct connectivity with EIM services.
+**NOTE2**: The workflow assumes that the EIM Standalone is deployed locally on customers' premises and ENs have direct connectivity with EIM services.
 
 The high-level PXE-based provisioning workflow is as follows:
 
@@ -158,18 +158,18 @@ The EIM-local consists of the following components:
 3. (OPTIONAL) **K8s cluster with MetalLB extension** to make Standalone SMEE's DHCP/TFTP servers accessible from a local network. Only needed if EIM-local is deployed on top of Kubernetes.
    Note that the EIM-local can also be deployed as standalone OS services or Docker containers with `--network=host`.
 
-> **NOTE1:** Local HTTP server providing `boot.ipxe` and Micro-OS image is needed to overcome HTTPS issue as
+**NOTE1:** Local HTTP server providing `boot.ipxe` and Micro-OS image is needed to overcome HTTPS issue as
 SMEE's built-in iPXE doesn't include EMF's CA certificate. This alternative design assumes no modifications to Tinkerbell SMEE, for simplicity.
 However, an EIM-owned `signed_ipxe.efi` with EMF's CA certificate embedded may also be provided by local TFTP server, removing the need for local HTTP server.
 This effectively requires creating a fork of Tinkerbell SMEE to enable serving EIM iPXE. If we decide to follow this path it gives clear advantages:
-> 1. Simplifies deployment and solves HTTPS issue
-> 2. Give us more control over default iPXE script (i.e., for instrumentation purposes, non-standard customer requirements)
-> 3. TFTP/DHCP servers are Go-based, so we can "catch" per-EN provisioning KPIs at the earlier stage than we do now.
-> 4. Tinkerbell project is not actively developed anymore.
+1. Simplifies deployment and solves HTTPS issue
+2. Give us more control over default iPXE script (i.e., for instrumentation purposes, non-standard customer requirements)
+3. TFTP/DHCP servers are Go-based, so we can "catch" per-EN provisioning KPIs at the earlier stage than we do now.
+4. Tinkerbell project is not actively developed anymore.
 
 This design proposal doesn't pursue this option, but the idea is left for further discussion.
 
-> **NOTE2**: This alternative workflow assumes that all ENs have access to Internet and the cloud-based orchestrator.
+**NOTE2**: This alternative workflow assumes that all ENs have access to Internet and the cloud-based orchestrator.
 
 The alternative workflow with managed EMF is presented below:
 
@@ -277,7 +277,6 @@ The minimal EIM deployment at high level:
 - Minimal set of FPS services. A rough minimum of FPS services that may be required by EIM are:
   - Postgres database
   - RS proxy
-  - Keycloak (?)
   - Vault (?)
   - Traefik
   - cert-manager
@@ -306,7 +305,6 @@ With the current proposal we keep using the current UX, with possibility to use 
 **FPS team** needs provide help for the following:
 - Reduce FPS components to minimum to make EIM-S deployment lightweight
 - Make EIM-S deployment operation easy in terms of number of CLI commands/steps to execute
-- Make EIM-S deployment fast (ideally deployable in ~2 mins)
 - Expose Tinkerbell SMEE's DHCP/TFTP server via External IP (similar to Provisioning Nginx now) or find any other solution to expose DHCP to local L2 network
 - Provide a toggle to disable HTTPS for Provisioning Nginx in the case of EIM standalone deployment
 

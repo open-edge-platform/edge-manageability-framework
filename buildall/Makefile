@@ -166,7 +166,26 @@ $(SCRATCH_DIR)/ibuild_%:
 clean-image: ## clean up docker image scratchfiles to force rebuild
 	rm -rf $(SCRATCH_DIR)/ibuild_*
 
-clean: clean-helm clean-image ## clean up scratch files
+# codecount
+ALL_REPO_LIST := all_repo_list  # list of all repos that need to be counted
+ALL_REPOS := $(addprefix $(REPO_DIR)/, $(shell tr '\n' ' ' < $(ALL_REPO_LIST)))
+SCC_LIST := $(addprefix $(SCRATCH_DIR)/scc_, $(addsuffix .json, $(shell tr '\n' ' ' < $(ALL_REPO_LIST))))
+
+codecount: $(VENV_DIR) $(SCC_LIST) $(ALL_REPOS) ## Create summarized CSV codecounts and totals from scc json
+	set +u; . ./$</bin/activate; set -u ;\
+	$(SCRIPTS_DIR)/codecount_summarize.py $(SCRATCH_DIR)
+
+$(SCRATCH_DIR)/scc_%.json: $(ALL_REPOS) | $(SCRATCH_DIR)
+	@pushd ${REPO_DIR}/$* ;\
+  scc --min-gen -f json2 --output "../../$@";\
+	popd
+
+clean-codecount: ## clean up codecounts
+	rm -rf $(SCRATCH_DIR)/scc_*
+	rm -rf $(SCRATCH_DIR)/codecount_*
+
+# cleanup
+clean: clean-helm clean-image clean-codecount ## clean up scratch files
 	rm -rf $(SCRATCH_DIR)/manifest_*
 	rm -rf $(SCRATCH_DIR)/artifacts_*
 	rm -rf $(SCRATCH_DIR)/htags_*
