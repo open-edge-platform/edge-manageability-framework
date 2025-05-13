@@ -140,7 +140,7 @@ tcp:
         - "websecure"
       tls:
         passthrough: true
-    TCProuter3:
+    TCProuter4:
       rule: "HostSNI(`mps-node.{{ .InternalDomain}}`)"
       priority: 20
       service: "orch-kind"
