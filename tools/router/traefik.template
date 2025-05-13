@@ -23,7 +23,8 @@ api:
 entryPoints:
   websecure:
     address: ":443"
-
+  tcpamt:
+    address: ":4433"
 providers:
   docker:
     endpoint: "unix:///var/run/docker.sock"
@@ -137,6 +138,14 @@ tcp:
       service: "gitea-kind"
       entryPoints:
         - "websecure"
+      tls:
+        passthrough: true
+    TCProuter3:
+      rule: "HostSNI(`mps-node.{{ .InternalDomain}}`)"
+      priority: 20
+      service: "orch-kind"
+      entryPoints:
+        - "tcpamt"
       tls:
         passthrough: true
   services:
