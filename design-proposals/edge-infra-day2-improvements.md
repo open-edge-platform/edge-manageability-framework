@@ -32,7 +32,8 @@ versions of EMT a EN passed through its lifecycle.
 
 ### Limitations and Debt of The Current Design
 
-The day 2 workflow for Mutable and EMT OSs are very different see [Day2 Updates](https://github.com/open-edge-platform/edge-manage-docs/blob/d8b6ecf2c7bf2ad9341e219f9f9bb90f85e784ff/docs/developer_guide/infra_manager/arch/day2_flow.rst).
+The day 2 workflow for Mutable and EMT OSs are very different see [Day2
+Updates](https://github.com/open-edge-platform/edge-manage-docs/blob/d8b6ecf2c7bf2ad9341e219f9f9bb90f85e784ff/docs/developer_guide/infra_manager/arch/day2_flow.rst).
 
 Day 2 updates for mutable OSes are currently driven via the same OS resource
 that is used for Day0 (provisioning). As a consequence all Instances using a
@@ -71,7 +72,8 @@ updates for the Edge Node.
 The following represents the schema changes to be applied to EIM schema to
 fulfill the above requirements:
 
-![Edge Infrastructure Manager Day2 Entity Relationship Diagram](./schema_day2_changes.drawio.svg)
+![Edge Infrastructure Manager Day2 Entity Relationship
+Diagram](./schema_day2_changes.drawio.svg)
 
 > Notes on Region and Sites edges: that is a proposal for advanced feature to
 > support hierarchical Update Policies, but it won't be described into this
@@ -95,14 +97,14 @@ Changes:
     installed in the Edge Node at runtime. For Immutable OSes, we expect this to
     be equal to the content of `installed_packages` in the OS Profile. For
     Mutable OSes, this could change during the lifetime of the Edge Node.
-  - `new_versions`: signals that new updates are available. This field doesn't
-    tell anything about the fact that the update will be done in the next
-    scheduled maintenance. The field is a string.
+  - `os_updates_available`: signals that new updates are available. This field
+    doesn't tell anything about the fact that the update will be done in the
+    next scheduled maintenance. The field is a string.
     - mutable: list of packages ready to be upgraded on the Edge Node, empty if
       no new versions are available.
     - immutable: latest EMT version, empty if the version is already latest.
-  - `update_policy`: The update policy that is applied during the
-    maintenance schedule.
+  - `update_policy`: The update policy that is applied during the maintenance
+    schedule.
   - `update_status_detail`: The field can be deprecated, the details about the
     update will be available in the OS Update Run. It will be kept for backward
     compatibility for UI.
@@ -128,10 +130,10 @@ New Resources:
         `target_os` edge.
   - `target_os`: edge to the OS Profile that must be installed during the
     update. This field is used only for Immutable OSes, and when the
-    `update_policy` is `UPDATE_POLICY_TARGET`. This can not be used to 
-    upgrade a Ubuntu distribution (e,g. from 22.04 to 24.04), for such 
-    update we should implement it via a new OS Update Policy. Currently, 
-    this feature will not be supported.
+    `update_policy` is `UPDATE_POLICY_TARGET`. This can not be used to upgrade a
+    Ubuntu distribution (e,g. from 22.04 to 24.04), for such update we should
+    implement it via a new OS Update Policy. Currently, this feature will not be
+    supported.
   
 - **OS Update Run**: stores the information about the update job that run on the
   Edge Node. This resource is created when the update is started, and stores
@@ -188,15 +190,15 @@ Resource and Field Handling:
 
 #### Retention policy for "OS Update Run"
 
-Since a OS Update Run resource will be created every time an update is 
-triggered on the Edge Node, even if the update is a no-op. The size of the 
-table can easily grow. To avoid this, we can implement a retention policy 
-for the resources. The following retention policy is proposed:
+Since a OS Update Run resource will be created every time an update is triggered
+on the Edge Node, even if the update is a no-op. The size of the table can
+easily grow. To avoid this, we can implement a retention policy for the
+resources. The following retention policy is proposed:
 - User can delete OS Update Run resources via Northbound REST APIs.
-- By default, OS Update Run resources are kept for 30 days after the update 
-  is finished
-- A configuration flag, at orchestrator level (cross tenant configuration) 
-  can be provided to change the retention policy.
+- By default, OS Update Run resources are kept for 30 days after the update is
+  finished
+- A configuration flag, at orchestrator level (cross tenant configuration) can
+  be provided to change the retention policy.
 
 #### Day 2 Workflows:
 
@@ -323,8 +325,8 @@ Edge Infrastructure Manager:
      updated, and handle `os_updates_available` for Mutable OSes
   5. Update southbound APIs to allow PUA to provide the list of packages
      installed on the EN (could be merged with point iv above).
-  6. Handle OS Update Run retention policy, and delete resources older than 
-     the retention policy.
+  6. Handle OS Update Run retention policy, and delete resources older than the
+     retention policy.
 - **OS Resource Manager (OSRM)**: OSRM adds support for new EMT versions, notice
   of new updates for EMT, and fill package info from Ubuntu manifest.
   1. Polling of new EMT versions from Release Service and create new OSProfiles
@@ -341,7 +343,7 @@ Edge Node:
      populate runtime packages on the Instance resource
 
 UI/CLI:
-1. Support for creation of OSUpdatePolicy via dedicated page to handle these 
+1. Support for creation of OSUpdatePolicy via dedicated page to handle these
    resources
 2. Show History of the Instance, via the OSUpdateRun resources
 3. Update to support the `os_updates_available` field in the Instance resource,
@@ -384,8 +386,8 @@ and immutable automatically done.
 
 ### Phase 3 (for EMF.next release)
 
-Goal: installed_packages available for both mutable and immutable, and 
-implement OS Update Run retention policy.
+Goal: installed_packages available for both mutable and immutable, and implement
+OS Update Run retention policy.
 
 1. MM update to SBI APIs (MM.v)
 2. PUA update to report runtime packages (PUA.ii)
