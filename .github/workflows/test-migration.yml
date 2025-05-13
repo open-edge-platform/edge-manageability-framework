@@ -24,16 +24,22 @@ on:
   # Trigger workflow when enqueued to a merge group
   merge_group:
 
+permissions: {}
+
 jobs:
   test-charts-available:
+    permissions:
+      contents: read
     name: Test charts are available in Release service
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          persist-credentials: false
 
-      - uses: actions/cache@v4.2.0
+      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684  # v4.2.3
         with:
           path: |
             ~/.cache/go-build
@@ -43,20 +49,24 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: Setup asdf and install dependencies
-        uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main
+        uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
 
       - name: Run test
         run: mage test:ChartsAvailableOnReleaseService
 
   test-containers-available:
+    permissions:
+      contents: read
     name: Test containers are available in Release service
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          persist-credentials: false
 
-      - uses: actions/cache@v4.2.0
+      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684  # v4.2.3
         with:
           path: |
             ~/.cache/go-build
@@ -66,7 +76,7 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: Setup asdf and install dependencies
-        uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main
+        uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
 
       - name: Run test
         run: mage test:ContainersAvailableOnReleaseService true
