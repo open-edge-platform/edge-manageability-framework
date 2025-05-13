@@ -28,7 +28,7 @@ However, an EIM-owned `signed_ipxe.efi` with EMF's CA certificate embedded may a
 This effectively requires creating a fork of Tinkerbell SMEE to enable serving EIM iPXE. If we decide to follow this path it gives clear advantages:
 1. Simplifies deployment and solves HTTPS issue
 2. Give us more control over default iPXE script (i.e., for instrumentation purposes, non-standard customer requirements)
-3. TFTP/DHCP servers are Go-based, so we can "catch" per-EN provisioning KPIs at the earlier stage than we do now.
+3. TFTP/DHCP servers are Go-based, so we can "catch" per-EN provisioning KPIs or status at the earlier stage than we do now. For instance, provisioning status can give early feedback to user that PXE boot was initiated successfully. This can be useful when no monitor is connected to EN.
 4. Tinkerbell project is not actively developed anymore.
 
 This design proposal doesn't pursue this option, but the idea is left for further discussion.
