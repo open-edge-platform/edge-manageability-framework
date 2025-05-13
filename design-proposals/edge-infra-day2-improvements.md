@@ -25,6 +25,10 @@ passed through its lifecycle.
 - Unify day 2 workflows between Mutable and Immutable OSes
 - Track all the day 2 operations that happened to a given Edge Node
 - Track packages installed into an Edge Node in both Mutable and Immutable OSes
+- New OSProfiles for EMT created in EIM at runtime, without orchestrator 
+  upgrade
+- Provide an easy way to the UI to signal that an update is available for an 
+  Edge Node
 
 ### Limitations and Debt of The Current Design
 
@@ -48,8 +52,9 @@ of the Desired OS.
 The current design does not provide a mechanism to track the Day2 
 operations that happened in the past.
 
-There is no mechanism to Update OS Profiles when new EMT versions are 
-available in the Release Service.
+There is no automatic mechanism to Update OS Profiles when new EMT versions 
+are available in the Release Service, unless an orchestrator update is 
+performed.
 
 ### Proposed changes
 
@@ -68,6 +73,10 @@ fulfill the above requirements:
 
 ![Edge Infrastructure Manager Day2 Entity Relationship Diagram](./schema_day2_changes.drawio.svg)
 
+> Notes on Region and Sites edges: that is a proposal for advanced feature 
+> to support hierarchical Update Policies, but it won't be described into 
+> this Design Proposal.
+
 Changes:
 - **OS Profile**:
   - `installed_packages`: field is used to track only packages installed at 
@@ -77,12 +86,9 @@ Changes:
     packages, since those are installed during Day 0, but they are not part 
     of the Ubuntu manifest.
   - `update_sources`: the field is deprecated, and should not be used anymore.
-  - The resource now supports only Create, Read and Delete operations. Update 
-    is not allowed anymore. The resource is now read-only from the 
-    Northbound APIs perspective.
 - **Instance**:
-  - `desired_os`: field is removed, we don't drive the Immutable OS day 2 
-    workflow from this field anymore.
+  - `desired_os`: field is deprecated and won't be used in the next release,
+    we don't drive the Immutable OS day 2 workflow from this field anymore.
   - `current_os`: the field can now be changed from EIM northbound APIs 
     (REST), only before the EN is provisioned. After that, the field is 
     handled internally by EIM, and will be updated based on the current OS 
@@ -100,6 +106,9 @@ Changes:
     - immutable: latest EMT version, empty if the version is already latest.
   - `next_update_policy`: The update policy that is applied during the 
     maintenance schedule.
+  - `update_status_detail`: The field can be deprecated, the details about 
+    the update will be available in the OS Update Run. It will be kept for 
+    backward compatibility for UI.
   
 New Resources:
 
@@ -114,11 +123,11 @@ New Resources:
   - `update_policy`: enum field, defines which policy to use:
     - `UPDATE_POLICY_LATEST`: upgrade to latest version. 
       - mutable: upgrade all packages to latest versions.
-      - immutable: upgrade the OS version to the latest, based on SemVer.
+      - immutable: upgrade the OS Profile version to the latest.
     - `UPDATE_POLICY_TARGET`: upgrade to a specific version.
       - mutable: upgrade all packages to the specified version defined in 
         the `install_package` list.
-      - immutable: upgrade the OS version to OS Version linked by the 
+      - immutable: upgrade the OS Profile to OS Profile linked by the 
         `target_os` edge.
   - `target_os`: edge to the OS Profile that must be installed during the 
     update. This field is used only for Immutable OSes, and when the 
@@ -151,6 +160,9 @@ Resource and Field Handling:
 - **OS Profile**:
   - `installed_packages`: this field is handled and filled by OSRM also for 
     Mutable OSes.
+  - A standard user using the orchestrator should not interact with
+    OSProfile APIs anymore. Still APIs are accessible for advanced users
+    who want to create custom OSProfiles.
 - **Instance**:
   - `current_os`: after provisioning, this field is handled internally by 
     EIM. The Maintenance Manager (MM) keeps it updated after the 
@@ -160,18 +172,21 @@ Resource and Field Handling:
     Discovery Manager (HDA). For Immutable OS, this field could be filled 
     with info from the OSProfile directly, without EN providing these 
     information at runtime.
-  - `new_versions`: this field is handled by the OSRM, that will update 
-    it when new updates are available. 
+  - `os_updates_available`: this field is handled by the MM, that will update 
+    it when new updates are available.
 - **OS Update Policy**: this resource is completely handled by the User of 
   the orchestrator. The creation is done through Northbound REST APIs. EIM 
   won't change the content of this resource. Default OS Update Policies 
   could be agreed and created upon Tenant creation (for example, update to 
-  latest policy). OS Update Policies cannot be updated after creation, and 
-  cannot be deleted if any OS Update Run or any Instances refers to it.
+  latest policy). OS Update Policies is immutable and cannot be updated after 
+  creation. Also, it cannot be deleted if any OS Update Run or any Instances 
+  refers to it.
 - **OS Update Run**: this resource is created by the MM when the update 
   job is started on the Edge Node. The content of this resource is filled by 
   the MM, and it will be updated with the status of the update job. It is 
-  read-only from Northbound REST APIs.
+  read-only from Northbound REST APIs. An OS Update Run is created even if 
+  the Edge Node hasn't done any update. This is useful to track any 
+  false positives during updates.
 
 #### Day 2 Workflows:
 
@@ -216,31 +231,31 @@ autonumber
     end
 ```
 
-Automatic Update of the Instance `new_versions` field:
+Automatic Update of the Instance `os_updates_available` field:
 ```mermaid
 sequenceDiagram
 %%{wrap}%%
 autonumber
     box Edge Infrastructure Manager
     participant Inventory
-    participant OSRM as OS Resource Manager
-    participant Release Service
+    participant MM as Maintenance Manager
     end
     box Edge Node
     participant PUA as Platform Update Agent
     end
     
-    loop OSRM polling Release Service for EMT
-        OSRM->>Release Service: Poll latest EMT version
-        note over OSRM,Release Service: New version is detected
-        OSRM->>Inventory: Create new OSProfile for the new EMT version
-        OSRM->>Inventory: Update `new_versions` on all Instances for the given EMT flavor
+    loop Peridic calls from EN to MM
+    alt Immutable (EMT) OS
+    PUA->>MM: PlatformUpdateRequest
+        note over MM,Inventory: New EMT version is detected by Maintenance Manager
+        MM->>Inventory: Update "os_updates_available" field on the Instance with the new EMT version
+        MM->>PUA: PlatformUpdateResponse
+    else Mutable (Ubuntu) OS
+        note over MM,PUA: New package updates are detected by PUA
+        PUA->>MM: PlatformUpdateRequest with new package versions
+        MM->>Inventory: Update "os_updates_available" field on the Instance with the list of new package versions available
+        MM->>PUA: PlatformUpdateResponse
     end
-    
-    loop Edge Node checking for package updates on Mutable OSes
-        note over OSRM,PUA: New package updates are detected by PUA
-        PUA->>OSRM: PlatformUpdateRequest with new package versions
-        OSRM->>Inventory: Update `new_versions` field on the Instance with the list of new package versions available
     end
 ```
 
@@ -253,10 +268,10 @@ autonumber
     participant Inventory
     participant OSRM as OS Resource Manager
     participant uRepo as Ubuntu repository
-    participant HRM as Host Resource Manager
+    participant MM as Maintenance Manager
     end
     box Edge Node
-    participant HDA as Hardware Discovery Agent
+    participant PUA as Platform Update Agent
     end
     
     
@@ -267,15 +282,10 @@ autonumber
     end
     
     loop Edge Node checking for installed packages on the OS
-        HDA->>HRM: List of installed packages
-        HRM->>Inventory: Compare and update `installed_packages` field in the Instance if needed
+        MM->>PUA: List of installed packages
+        PUA->>Inventory: Compare and update "installed_packages" field in the Instance if needed
     end
 ```
-
-## Rationale
-
-[A discussion of alternate approaches that have been considered and the trade
-offs, advantages, and disadvantages of the chosen approach.]
 
 ## Affected components and Teams
 
@@ -292,39 +302,37 @@ Edge Infrastructure Manager:
   4. New OSUpdateRun APIs (Read, Delete)
 - **Maintenance Manager (MM)**: The MM needs to be updated to handle the new 
   OSUpdatePolicy and OSUpdateRun resources.
-  1. Update southbound APIs to allow PUA to provide packages ready to be 
-     updated
-  2. Handle OSUpdatePolicy
-  3. Create and Update OSUpdateRun
+  1. Handle OSUpdatePolicy
+  2. Create and Update OSUpdateRun
+  3. Handle `os_updates_available` for Immutable OSes
+  4. Update southbound APIs to allow PUA to provide packages ready to be 
+     updated, and handle `os_updates_available` for Mutable OSes
+  5. Update southbound APIs to allow PUA to provide the list of packages 
+     installed on the EN (could be merged with point iv above).
 - **OS Resource Manager (OSRM)**: OSRM adds support for new EMT versions, 
   notice 
   of new updates for EMT, and fill package info from Ubuntu manifest.
   1. Polling of new EMT versions from Release Service and create new 
-     OSprofiles accordingly
-  2. Update `new_versions` field in the Instances
-  3. Fetch Ubuntu Manifest referenced into the OSProfile from Release 
-     Service. Parse it and fill the information into the OSProfile in 
-     Inventory.
-- **Host Resource Manager (HRM)**: HRM updates the installed packaged on 
-  per-instance basis
-  1. Update Southbound API to allow HDA to provide list of installed 
-     packages with versions.
-  2. Fill the installed packages information into the Instance resource.
+     OSProfiles accordingly
+  2. Fetch Ubuntu Manifest referenced into the OSProfile from Release 
+     Service. Parse it and fill the information into the OSProfile 
+     `installed_packages` in Inventory.
 
 Edge Node:
 - **Platform Update Agent (PUA)**:
   1. For mutable OSes, PUA needs to poll and check for new update to 
      already installed packages, and reports back to the MM the new 
-     versions available.
-- **Hardware Discovery Agent (HDA)**:
-  1. For both mutable and immutable OSes, HDA should report the list of 
-     installed packages to the HRM with versions.
+     versions available
+  2. Propagate installed packaged on the EN to the maintenance manager to 
+     populate installed packages on the Instance resource
 
 UI/CLI:
-1. Support for creation of OSUpdatePolicy.
-2. Support to show History of the Instance, via the OSUpdateRun resources.
-3. Update to support the `new_versions` field in the Instance resource, 
-   instead of using `desired_os` to support update badge.
+1. Support for creation of OSUpdatePolicy
+2. Show History of the Instance, via the OSUpdateRun resources
+3. Update to support the `os_updates_available` field in the Instance resource, 
+   instead of using `desired_os` to support update badge
+4. Update to properly show installed packages from the Instance instead of 
+   OSProfile
 
 ## Implementation plan
 
@@ -334,35 +342,36 @@ The implementation plan is divided into 3 phases.
 
 1. schema and REST API changes (inv.\*, API.\*)
 2. Update to Maintenance Manager (MM) to handle OSUpdatePolicy, and create
-   and update OSUpdateRun (MM.ii, MM.iii)
+   and update OSUpdateRun (MM.i, MM.ii)
 3. UI/CLI support for OSUpdatePolicy (UI/CLI.1) - UI work is Tentative
-4. CLI support for OSUpdateRun (CLI.2)
-5. UI update to support `new_versions` (UI/CLI.3) - Tentative
-5. New Integration tests
-6. Update to documentation for the new Day2 operations
+4. OSRM to poll Ubuntu Manifest (OSRM.ii)
+5. CLI support for OSUpdateRun (CLI.2)
+6. New Integration tests
+7. Update to documentation for the new Day2 operations
 
 ### Phase 2 (for EMF 3.2 release)
 
-1. OSRM to support immutable OSes notice for new versions (OSRM.i, OSRM.ii)
-2. New Integration tests
-3. Update to documentation
+1. OSRM to automatically populate new OSProfiles (OSRM.i)
+2. PUA update to check for new updates available (PUA.i)
+3. MM to populate `os_updates_available` for Mutable and Immutable OSes (MM.
+   iii, MM.iv)
+4. UI to support new `os_updates_available` field (UI/CLI.3)
+5. New Integration tests
+6. Update to documentation
 
 ### Phase 3 (for EMF.next release)
 
-1. MM update to SBI APIs (MM.i)
-2. OSRM fetch Ubuntu Manifest (OSRM.iii)
-3. HRM update to SBI APIs (HRM.i, HRM.ii)
-4. PUA update to check for new packages (PUA.i)
-5. HDA update to report installed packages (HDA.i)
-6. New Integration tests
-7. Update to documentation
+1. MM update to SBI APIs (MM.v)
+2. PUA update to report installed packages (PUA.ii)
+3. UI to support Installed packages from Instance (UI.4)
+4. New Integration tests
+5. Update to documentation
 
 ## Open issues (if applicable)
 
 - How to handle OSProfile updates from OSRM? Do we need a compatibility 
   matrix or a way to accept a OSProfile into a running orch from a Project 
   admin?
-- Create OS Update Run even if the update was no-op?
 - avoid split between HRM and MM for installed packages? We could make PUA 
   do the package discovery, and report it to the MM.
 - Retention policies for OS Update Run?
