@@ -63,11 +63,11 @@ cli apply cluster --file <path_to_cluster.yaml>
 cli create cluster \
     --name <name> \
     --hosts 6e6422c3-625e-507a-bc8a-bd2330e07e7e:all \ # required in format <uuid:role>
-    --clusterLabels key:value \ # optional
+    --labels key:value \ # optional
     --template <template name-version> # optional
 cli delete cluster <name>
 cli delete cluster <name> --force
-cli set/update cluster --clusterLabels key:value, key2:value2
+cli set/update cluster --labels key:value, key2:value2
 
 ```
 
