@@ -2,14 +2,14 @@
 
 Author(s): Julia Okuniewska
 
-Last updated: 2025-05-12
+Last updated: 2025-05-13
 
 ## Abstract
 
 This ADR describes the design of nouns supported by cluster-orchestration
 in command line interface (CLI).
 
-This is a work-in-progress document that is complementary to general CLI design:
+This document is complementary to general CLI design:
 https://github.com/open-edge-platform/edge-manageability-framework/pull/246.
 
 ## Proposal
@@ -21,7 +21,7 @@ The target for cluster-orchestration part in CLI is to be able to:
 - mark clustertemplate as default one
 - create cluster with given hosts and given template (or pick default template if not specified)
 - get specified cluster
-- delete specified cluster
+- delete/force-delete specified cluster
 - download edgenode's kubeconfig
 
 ### Nouns
@@ -37,7 +37,9 @@ For simplicity, this parameter is omitted in the commands provided below.
 CRUD operations for clustertemplate:
 ```bash
 cli list clustertemplates
+cli list clustertemplates --default
 cli get clustertemplate --name <name> --version <version>
+cli get clustertemplate versions --name <name>
 cli apply clustertemplate --file <path_to_clustertemplate.yaml>
 cli delete clustertemplate --name <name> --version <version>
 ```
@@ -45,18 +47,18 @@ Cluster template does not support set/update operation.
 It is immutable.
 
 Extra operations related to clustertemplate:
-
 ```bash
 cli set-default clustertemplate --name <name> --version <version>
 ```
-
-or if --version parameter is not passed, take the latest version for given name.
+or if `--version` parameter is not passed, take the latest version for given name.
 
 ##### cluster
 CRUD operations for cluster:
 ```bash
 cli list clusters
-cli get cluster --name <name> --version <version>
+cli list clusters --summary
+cli get cluster --name <name>
+cli get cluster --node <nodeId>
 cli apply cluster --file <path_to_cluster.yaml>
 cli create cluster \
     --name <name> \
@@ -64,7 +66,9 @@ cli create cluster \
     --clusterLabels key:value \ # optional
     --template <template name-version> # optional
 cli delete cluster --name <name>
+cli delete cluster --name <name> --force
 cli set/update cluster --clusterLabels key:value, key2:value2
+
 ```
 
 ##### en-kubeconfig
@@ -74,24 +78,18 @@ cli get en-kubeconfig --name <cluster name> --output <path_to_save_location>
 ```
 
 ## Rationale
-
-TODO:
-[A discussion of alternate approaches that have been considered and the trade
-offs, advantages, and disadvantages of the chosen approach.]
+The justification of this cli is to simplify user interaction with the API.
 
 ## Affected components and Teams
 
-Cluster Orchestration
+Cluster Orchestration Team
 
 ## Implementation plan
-
-TODO:
-[A description of the implementation plan, who will do them, and when.
-This should include a discussion of how the work fits into the product's
-quarterly release cycle.]
+The CLI is to be implemented in the `go` programming language, using the popular `cobra` go library.
 
 ## Out of scope Features
 - hardware information, currently retreivable via EIM CLI
+- add another node to cluster, currently not supported feature in cluster-orchestration.
 
 ## Open issues (if applicable)
 
