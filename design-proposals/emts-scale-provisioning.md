@@ -305,6 +305,7 @@ With the current proposal we keep using the current UX, with possibility to use 
 **FPS team** needs provide help for the following:
 - Reduce FPS components to minimum to make EIM-S deployment lightweight
 - Make EIM-S deployment operation easy in terms of number of CLI commands/steps to execute
+- Make EIM-S deployment fast (ideally deployable in ~2 mins)
 - Expose Tinkerbell SMEE's DHCP/TFTP server via External IP (similar to Provisioning Nginx now) or find any other solution to expose DHCP to local L2 network
 - Provide a toggle to disable HTTPS for Provisioning Nginx in the case of EIM standalone deployment
 
