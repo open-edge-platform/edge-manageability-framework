@@ -45,3 +45,4 @@ argo:
     k8s-metrics-server: true
     token-fs: true
     postgresql-cloudnative: true
+    postgresql-cloudnative-cluster: true
