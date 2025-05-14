@@ -17,9 +17,9 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
-    - repoURL: https://charts.bitnami.com/bitnami
+    - repoURL: "registry-1.docker.io/bitnamicharts"
       chart: postgresql
-      targetRevision: 15.5.26
+      targetRevision: 16.6.3
       helm:
         releaseName: {{$appName}}
         valuesObject:
