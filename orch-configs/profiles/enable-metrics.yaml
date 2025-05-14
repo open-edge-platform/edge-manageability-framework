@@ -12,4 +12,8 @@ argo:
   infra-external:
     enableMetrics: true
 # Currently unused - note that it is not specifiying the required resources.
-# It must be enabled together other infra profiles.
+# It must be enabled together other infra profiles. - what profiles?
+
+# kube-apiserver metrics
+  enabled:
+    kube-apiserver-metrics: true
