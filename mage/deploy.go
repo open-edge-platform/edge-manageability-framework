@@ -899,6 +899,8 @@ func (Deploy) generateInfraCerts() error {
 	// The cert is signed for both *.kind.internal and *.serviceDomain.
 	commonName := "*.kind.internal"
 	san := fmt.Sprintf("subjectAltName=DNS:%s,DNS:%s", commonName, fmt.Sprintf("*.%s", serviceDomain))
+	fmt.Println("Test SAN: ", san)
+	fmt.Println("Test service domain:", serviceDomain)
 
 	// Generate infra TLS cert
 	cmd := fmt.Sprintf("openssl req -x509 -nodes -days 365 -newkey rsa:4096 -keyout infra-tls.key -out infra-tls.crt "+
