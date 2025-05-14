@@ -82,11 +82,12 @@ Diagram](./schema_day2_changes.drawio.svg)
 Changes:
 - **OS Profile**:
   - `installed_packages`: field is used to track only packages installed at day
-    0, for Immutable those comes from the Manifest file published together with
+    0, for Immutable these come from the Manifest file published together with
     the EMT image. For Mutable, those are filled using the Ubuntu manifest file.
     For Mutable, this won't include Bare Metal Agents packages, since those are
     installed during Day 0, but they are not part of the Ubuntu manifest.
   - `update_sources`: the field is deprecated, and should not be used anymore.
+  - `kernel_commands`: the field is deprecated, and should not be used anymore.
 - **Instance**:
   - `desired_os`: field is deprecated and won't be used in the next release, we
     don't drive the Immutable OS day 2 workflow from this field anymore.
@@ -119,9 +120,12 @@ New Resources:
   - `update_sources`: 'DEB822 Source Format' for Debian style OSs, contains the
     sources of the packages to be installed during the update, if new sources
     needs to be added.
+  - `kernel_commands`: list of kernel commands to be used during the update.
+    This field is used only for Mutable OSes.
   - `update_policy`: enum field, defines which policy to use:
     - `UPDATE_POLICY_LATEST`: upgrade to latest version. 
-      - mutable: upgrade all packages to latest versions.
+      - mutable: upgrade all packages to latest versions, currently not
+        supported, could be supported in the future.
       - immutable: upgrade the OS Profile version to the latest.
     - `UPDATE_POLICY_TARGET`: upgrade to a specific version.
       - mutable: upgrade all packages to the specified version defined in the
@@ -301,7 +305,86 @@ autonumber
 
 ### Orchestrator Update and Migrations
 
-[TODO]
+Given the above schema changes, we need to consider how we are going to support
+orchestrator updates and data migrations in the database.
+
+**Mutable OS** 
+- Any Mutable OSProfile with `update_sources`, `kernel_commands` or
+  `installed_packages` fields set, needs to be migrated to the new schema by
+  creating OSUpdatePolicy, filling the `install_packages`, `update_sources` and
+  `kernel_command` fields with the one coming from the OSprofile and linking it
+  to the related Instances. 
+- In any Mutable OSProfile the `update_sources`, `kernel_commands` and
+  `installed_packages` fields must be cleaned, since the fields are either
+  deprecated or change their meaning. This should happen after the creation of
+  the OSUpdatePolicy.
+
+> Note: The `installed_packages` field for Mutable OSProfile won't be populated
+> for OSProfile migrated from old orchestrator versions.
+
+**Immutable OSes**
+  - For any Instance with a `desired_os` set that is different from the
+    `current_os`, we must create a OSUpdatePolicy of type `POLICY_TARGET` with
+    `target_os` equal to the `desired_os` and link it to the Instance.
+
+We don't expect to create OSUpdateRun for past updates, since we don't have
+information about what happened during updates in the past.
+
+New fields in the Instance resource, such as `runtime_packages`,
+`os_update_available`, won't be populated during migration, but will be
+eventually populated by the Maintenance Manager.
+
+### EMT versioning and automatic creation of OSProfiles
+
+OSRM, upon provisioning of a new tenant, it fetches OSProfiles for the given
+version set as orchestrator configuration. Currently, this configuration is
+changed only during orchestrator upgrade. The proposal is to support automatic
+update of OSProfiles, by creating new OSProfiles when new versions are available
+in the Release Service.
+
+However, we should consider that there is a need to maintain compatibility
+between orchestrator and OSProfiles. For example, Bare Metal Agents must be
+compatible with the orchestrator version. To avoid, creating complex
+compatibility matrix between orchestrator and OSProfile, the proposal is to only
+support patch release update of the OSProfiles within a given minor release of
+the orchestrator. This can be achieved using the tilde range comparisons (~),
+that is supported by the
+[Masterminds/semver](https://github.com/Masterminds/semver?tab=readme-ov-file#tilde-range-comparisons-patch)
+library. To achieve this, we allow users to set the `osProfileRevision` in the
+configuration of the OS Resource manager, by either setting a precise version of
+the OSProfile or with a `~` prefix. For example, if the orchestrator is
+configured with `0.3.1`, only OSProfile version `0.3.1` will be allowed in the
+orchestrator. If, instead, `~0.3.1` is set, all versions in the range will be
+picked `>=0.3.1, <0.4.0`.
+
+The following sequence diagram consider only one single OSProfile (EMT), the
+same approach applies to all other enabled OSProfiles. The `osProfileRevision`
+in the orchestrator is set to `~0.3.1`:
+```mermaid
+sequenceDiagram
+%%{wrap}%%
+autonumber
+    box Edge Infrastructure Manager
+    participant Inventory
+    participant OSRM as OS Resource Manager
+    participant MM as Maintenance Manager
+    end 
+    participant Release Service
+    
+    note over OSRM,Inventory: New tenant is provisioned 
+    OSRM->>Release Service: Retrieve EMT OSProfile tags
+    loop For each OSProfile >=0.3.1, <0.4.0
+        OSRM->>Inventory: Create EMT OSProfile
+    end
+
+    loop OSRM poll Release Service for new the OSProfiles peridically
+        OSRM->>Release Service: Retrieve EMT OSProfile tags
+        OSRM->>Inventory: List all EMT OSProfile available in the orchestrator
+        loop For each OSProfile in RS but not in Inventory
+            OSRM->>Inventory: Create EMT OSProfile
+        end    
+    end
+```
 
 ## Affected components and Teams
 
@@ -397,6 +480,3 @@ OS Update Run retention policy.
 6. Update to documentation
 
 ## Open issues (if applicable)
-
-- How to handle OSProfile updates from OSRM? Do we need a compatibility matrix
-  or a way to accept a OSProfile into a running orch from a Project admin?
