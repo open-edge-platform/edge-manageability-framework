@@ -572,11 +572,11 @@ jobs:
       - name: Create default user and run e2e tests
         run: mage devUtils:createDefaultUser test:e2e
 
-      # - name: "Test Observability SRE Exporter w/o ENiC"
-      #   env:
-      #     ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-      #   run: |
-      #     mage test:e2eSreObservabilityNoEnic
+      - name: "Test Observability SRE Exporter w/o ENiC"
+        env:
+          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+        run: |
+          mage test:e2eSreObservabilityNoEnic
 
       - name: Deploy ENiC
         if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' && steps.default-mt-setup.conclusion == 'success' }}
@@ -638,11 +638,11 @@ jobs:
         run: |
           mage test:e2eAlertsObservability
 
-      # - name: "Test Observability SRE Exporter"
-      #   env:
-      #     ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-      #   run: |
-      #     mage test:e2eSreObservability
+      - name: "Test Observability SRE Exporter"
+        env:
+          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+        run: |
+          mage test:e2eSreObservability
 
       - name: Wait for cluster agent to be ready
         if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' }}
@@ -746,8 +746,6 @@ jobs:
           TF_VAR_intel_release_service_refresh_token: value-not-used
           TF_VAR_deploy_tag: ${{ needs.build-publish.outputs.deb-version }}
           TF_VAR_FILE: ${{ github.workspace }}/terraform/orchestrator/terraform.tfvars
-          TF_VAR_vm_vcpu: 16
-          TF_VAR_vm_memory: 49152
           TF_VAR_docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
           TF_VAR_docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
         timeout-minutes: 90
