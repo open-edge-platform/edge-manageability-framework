@@ -1,7 +1,7 @@
 # Design Proposal: Support for dGPU
 
 Author(s): Rajeev Ranjan
-Last updated: 2025-05-13
+Last updated: 2025-05-14
 
 ## Abstract
 
@@ -13,7 +13,8 @@ This proposal dicusses about improving support for graphics card specifically di
 
 1. New dGPU to support
     - Intel Battlemage B580
-    - Nvidia P100 (post 3.1)
+    - Nvidia P100 (post 3.1 on EMT)
+
    Support to exiting iGPU is implicit here.
 
 1. Avoid maintaining a dedicated OSProfile to support GPU
@@ -24,12 +25,12 @@ Ubuntu 24.04 with kernel (>6.11) should support in-tree GPU drivers which should
 
 Support for OS drivers in Edge Microvisor Toolkit (EMT) should be included in the immutable images. We do not have an option of installing the driver on day-2 here anyways.
 
-| dGPU(OS)             | OS    | Kernel | Platform | Priority | Kernel cmd | SRIOV    | Workload  | DevicePlugin | Operator | Notes |
-|----------------------|-------|--------|----------|----------|------------|----------|-----------|--------------|----------|-------|
-| Intel B580 (EMT)     | 3.0   | -      | Xeon     | P0(3.1)  | Required   | Required | Geti, PDD |    Required  | -        |       |
-| Intel B580 (Ubuntu)  | 24.04 | >6.11  | Xeon     | P1(3.1)  | Required   | Required | Geti, PDD |    Required  | -        |       |
-| Nvidia P100 (EMT)    | 3.0   | -      | Xeon     | P2(3.2)  | Required   | Required | Geti, PDD |    -         | Required |       |
-| Nvidia P100 (Ubuntu) | 24.04 | >6.11  | Xeon     | P2(3.2)  | Required   | Required | Geti, PDD |    -         | Required |       |
+| dGPU(OS)    | OS           | Kernel | Platform | Priority | Kernel cmd | SRIOV    | DevicePlugin | Operator | Notes |
+|-------------|--------------|--------|----------|----------|------------|----------|--------------|----------|-------|
+| Intel B580  | EMT 3.0      | -      | Xeon     | P0(3.1)  | Required   | Required | Required     | -        |       |
+| Intel B580  | Ubuntu 24.04 | >6.11  | Xeon     | P1(3.1)  | Required   | Required | Required     | -        | In-tree driver verification WIP |
+| Nvidia P100 | EMT 3.0      | -      | Xeon     | P2(3.2)  | Required   | Required | -            | Required |       |
+| Nvidia P100 | Ubuntu 24.04 | >6.11  | Xeon     | P0(3.1)  | Required   |    -     | -            | Required | Needs a specific kernel 6.11.x |
 
 ### Limitations and Debt of The Current Design
 
@@ -74,13 +75,19 @@ In the previous release (3.0), one of the primary concerns was the inability to 
 
 ### Phase 1 (for EMF 3.1 release)
 
-The Intel Battlemage B580 GPU support shall be built initially starting with support in EMT followed by Ubuntu.
+1. Maintain support for Intel® Arc™ iGPU and dGPU in Ubuntu
+1. Intel Battlemage B580 dGPU support in EMT
+1. Intel Battlemage B580 dGPU support in Ubuntu
+1. Nvidia P100 dGPU support in Ubuntu
 
 ### Phase 2 (for EMF 3.2 release)
 
-The Nvidia P100 GPU support can follow starting with support in EMT followed by Ubuntu.
+1. Nvidia P100 GPU support in EMT
 
-## Open issues (if applicable)
+## Open issues
 
-1. Does Ubuntu in-tree kernel 6.11++ support Battelmage B580 as well?
+1. Does Ubuntu in-tree kernel 6.11++ support Battlemage B580 as well?
 
+   The last tested version was not working. Tweaks were required. Needs to be verified against latest version.
+
+1. No requirement for iGPU & dGPU together at the moment
