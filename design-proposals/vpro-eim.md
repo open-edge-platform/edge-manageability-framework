@@ -150,8 +150,7 @@ We report hereafter the affected components and Teams:
 
 ## Implementation plan
 
-Hereafter we present as steps the proposed plan to manage the device activation in the release 3.1. EIM team will
-implement the following functionality to support this design proposal:
+Edge Infrastructure Manager team will implement the following functionality to support this design proposal:
 
 - Sanitize Inventory data-model and implement proper migration
 - Extend Inventory data-model and implement unit tests
