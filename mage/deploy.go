@@ -47,11 +47,13 @@ func randomPassword(count int) string {
 const (
 	harborPasswordLength   = 100
 	keycloakPasswordLength = 14
+	postgresPasswordLength = 14
 )
 
 var (
 	harborPassword   = randomPassword(harborPasswordLength)
 	keycloakPassword = randomPassword(keycloakPasswordLength)
+	postgresPassword = randomPassword(postgresPasswordLength)
 )
 
 const giteaPasswordLength = 100
@@ -449,7 +451,14 @@ func localSecret(targetEnv string, createRSToken bool) error {
 		"--from-literal=admin-password="+keycloakPassword); err != nil {
 		return err
 	}
-
+	if err := kubectlCreateAndApply("namespace", "orch-database"); err != nil {
+		return err
+	}
+	// creating postgres secret that contains the randomly generated postgres admin password
+	if err := kubectlCreateAndApply("secret", "generic", "-n", "orch-database", "postgresql",
+		"--from-literal=postgres-password="+postgresPassword); err != nil {
+		return err
+	}
 	// FIXME: Extend support for gernerally configurable token based release service authentication.
 	// This is currently not supported with the OSS conversion.
 	// if createRSToken {
