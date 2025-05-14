@@ -61,6 +61,7 @@ var giteaRepos = []string{
 
 // Public GitHub repositories can be useful for specific development workflows.
 var githubRepos = []string{
+    "https://github.com/open-edge-platform/infra-charts",
 	"https://github.com/open-edge-platform/edge-manageability-framework",
 	"https://github.com/open-edge-platform/orch-utils",
 }
