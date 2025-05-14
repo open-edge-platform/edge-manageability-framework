@@ -86,6 +86,9 @@ Changes:
     the EMT image. For Mutable, those are filled using the Ubuntu manifest file.
     For Mutable, this won't include Bare Metal Agents packages, since those are
     installed during Day 0, but they are not part of the Ubuntu manifest.
+  - `installed_packages_source`: field is the URL where the Manifest file 
+    is stored. The field is immutable. This is added to allow manual 
+    creation of OSProfiles (advanced feature).
   - `update_sources`: the field is deprecated, and should not be used anymore.
   - `kernel_commands`: the field is deprecated, and should not be used anymore.
 - **Instance**:
