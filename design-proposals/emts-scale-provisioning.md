@@ -19,10 +19,11 @@ Following are the MVP requirements for the scale provisioning of EMT-S edge node
 - Provision multiple BareMetal edge nodes without onboarding for the purpose of standalone/singleton use.
 - Provide deploy a service on the local network that can achieve this provisioning at scale.
 - Deploy the provisioning service on the local network that support PXE Boot (BIOS/UEFI with DHCP + TFTP) boot and iPXE with HTTPs.  
-- Have a UX to pre-register BareMetal edge nodes using Serial number or UUID or MAC address.
-- Provision different OS profiles to different edge nodes selected based on Serial number or UUID or MAC address.
+- Have a UX to pre-register BareMetal edge nodes using Serial number or UUID.
+- Provision different OS profiles to different edge nodes selected based on Serial number or UUID.
 - Provision default OS when a device on the LAN boots over PXE and is not pre-registered.
 - Have a UX of collecting provisioning logs and status of edge nodes.
+- Provide the same UX and EN capabilities as if an [EMT-S node is provisioned via USB](https://github.com/open-edge-platform/edge-microvisor-toolkit-standalone-node/tree/main/standalone-node).
 
 > Note: It might be possible for EMF-EIM to support provisioning of the EMT-S nodes. supporting this capability as part of MVP depends on any active customer requirements.
 
@@ -144,12 +145,38 @@ controlled environments and we can relax security requirements to support PXE bo
 
 Tinkerbell SMEE's DHCP/TFTP server must be reachable from a local, on-prem L2 network to handle DHCP/TFTP requests. This requires modifications to FPS services.
 
+### Compatibility with USB-based EMT-S
+
+Target capabilities and UX of EMT-S provisioned at scale must be consistent with the existing USB-based flow for EMT-S provisioning.
+It means that the target OS configuration must be exactly the same as done via [scripts that provisions EMT-S with USB](https://github.com/open-edge-platform/edge-microvisor-toolkit-standalone-node/tree/main/standalone-node).
+
+Option 1: Use custom HookOS for Standalone Edge Node within orchestrator
+
+- need to add MAC address as pre-registration OR use custom HookOS for all hosts starting PXE boot (no pre-registration-based PXE boot supported)
+- probably need a fork of SMEE to support both custom and standard HookOS and be able to select per-EN
+- need CI/CD to publish custom HookOS and DKAM changes to consume it
+- need significant modifications to custom HookOS to read OS image/installation files from Nginx instead of USB device
+
+Option 2: Use standard HookOS but prepare custom Tinkerbell workflow
+
+- Create a separate OS profile for EMT-S. Create and run a separate Tinkerbell workflow for "Standalone" OS profile.
+- Standalone OS profile can be assigned to EN during pre-registration (can be BIT only)
+  - EN Proxy settings can be provided as EIM orchestrator settings
+  - SSH key to EMT-S nodes can be provided via Local Account
+  - EN username/password credentiasl can be provided in DEV mode via EIM cluster settings
+- New Tinkerbell workflow would need to mimic behavior of [EMT-S OS installation script](https://github.com/open-edge-platform/edge-microvisor-toolkit-standalone-node/blob/main/standalone-node/hook_os/files/install-os.sh).
+
+Ideally, EMT-S OS installation scripts should act as a "standalone Tink worker" that reads Tinkerbell YAML file and executes all steps as defined there.
+We won't be there yet for 3.1, but this should be a direction for us, so that we don't have diverged codebases.
+
 ### EIM-only profile of EMF deployment (EIM-S)
 
 The provisioning of EMT-S at scale will be driven by a local orchestrator instance that only includes EIM components. 
 The main requirement of EIM standalone is to make it easy and resource-efficient for customers to deploy.
 
 For MVP, we will leverage the EIM Standalone profile. This is an EMF deployment profile that only deploys EIM with Observability and FPS components.
+
+EIM Standalone profile for minimal OXM wareshouse deployments will be configured with EMT-Standalone OS profile only.
 
 Any further optimization to make EIM deployment fast and easy will be handled as part of the effort on the new installer (see [ADR](https://github.com/open-edge-platform/edge-manageability-framework/pull/290)).
 To give an example, further optimizations may include deploying EIM as a self-contained Helm chart (instead of ArgoCD appplication) and getting rid of FPS services that are
@@ -174,7 +201,16 @@ With the current proposal we keep using the current UX, with possibility to use 
 - Expose Tinkerbell SMEE's DHCP/TFTP server via External IP (similar to Provisioning Nginx now) or find any other solution to expose DHCP to local L2 network
 - Provide a toggle to disable HTTPS for Provisioning Nginx in the case of EIM standalone deployment
 
-**EIM team** responsible for slimming down deployment of EIM and enabling Tinkerbell SMEE with required configuration.
+**EIM team** will make changes to the following components:
+
+- **infra-charts**
+  - Enable Tinkerbell SMEE and possibly move to separate Helm chart so that SMEE can be run as standalone piece or Deployment Package 
+  - Upgrade Tinkerbell SMEE version to support `auto-proxy`
+  - Modify deployment files to expose SMEE to L2 network to handle DHCP requests  
+- **Documentation**
+  - Document the scale EMT-S provisioning flow
+  - Document the PXE boot provisioning setup with network requirements and desired configuration
+- TBC
 
 ## Open issues
 
