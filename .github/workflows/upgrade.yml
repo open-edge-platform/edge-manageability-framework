@@ -52,7 +52,7 @@ jobs:
 
       - name: Upgrade Orchestrator
         timeout-minutes: 90
-        run: echo "we need add the upgrade command here" # TODO
+        run: ./on-prem-installers/onprem/upgrade_postgres.sh
 
       - name: Verify Deployment After Upgrade
         timeout-minutes: 60
