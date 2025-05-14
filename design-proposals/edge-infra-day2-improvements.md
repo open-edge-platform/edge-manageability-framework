@@ -86,19 +86,19 @@ Changes:
     the EMT image. For Mutable, those are filled using the Ubuntu manifest file.
     For Mutable, this won't include Bare Metal Agents packages, since those are
     installed during Day 0, but they are not part of the Ubuntu manifest.
-  - `installed_packages_source`: field is the URL where the Manifest file 
-    is stored. The field is immutable. This is added to allow manual 
-    creation of OSProfiles (advanced feature).
+  - `installed_packages_source`: field is the URL where the Manifest file is
+    stored. The field is immutable. This is added to allow manual creation of
+    OSProfiles (advanced feature).
   - `update_sources`: the field is deprecated, and should not be used anymore.
   - `kernel_commands`: the field is deprecated, and should not be used anymore.
 - **Instance**:
   - `desired_os`: field is deprecated and won't be used in the next release, we
     don't drive the Immutable OS day 2 workflow from this field anymore.
-  - `os`: this field was deprecated, but will be re-used, and it does the 
-    work that in the past was done by the `desired_os` field for day 0 
-    operation. The field becomes immutable, and cannot be changed after is 
-    set the first time from the northbound APIs. After provisioning, the 
-    update of this field is handled internally.
+  - `os`: this field was deprecated, but will be re-used, and it does the work
+    that in the past was done by the `desired_os` field for day 0 operation. The
+    field becomes immutable, and cannot be changed after is set the first time
+    from the northbound APIs. After provisioning, the update of this field is
+    handled internally.
   - `current_os`: field is deprecated and won't be used in the next release.
   - `runtime_packages`: this field is used to track packages that are actually
     installed in the Edge Node at runtime. For Immutable OSes, we expect this to
@@ -176,8 +176,8 @@ Resource and Field Handling:
     APIs anymore. Still APIs are accessible for advanced users who want to
     create custom OSProfiles.
 - **Instance**:
-  - `os`: after provisioning, this field is handled internally by EIM.
-    The Maintenance Manager (MM) keeps it updated after the maintenance schedule
+  - `os`: after provisioning, this field is handled internally by EIM. The
+    Maintenance Manager (MM) keeps it updated after the maintenance schedule
     happened.
   - `runtime_packages`: this field is handled by Maintenance Manager (MM) that
     receives the information about installed packages at runtime by the Platform
@@ -192,6 +192,18 @@ Resource and Field Handling:
   agreed and created upon Tenant creation (for example, update to latest
   policy). OS Update Policies is immutable and cannot be updated after creation.
   Also, it cannot be deleted if any OS Update Run or any Instances refers to it.
+  Only a subset of fields in a OS Update Policy can be set depending on the
+  target policy, if it targets Mutable or Immutable OSes:
+
+  - Policies for mutable OS: `install_packages`, `update_sources`,
+    `kernel_commands` and `update_policy` fields can be set only.
+  - Policies for immutable OS: `target_os` and `update_policy` fields can be
+    set, only.
+  
+  Also, when linking an Instance to a OS Update Policy, only policies for
+  Mutable OS can be linked to Instance with Mutable OSes, and policies for
+  Immutable OS can be linked to Instances with Immutable OSes. These constraints
+  are enforced at API or Inventory level by EIM directly.
 - **OS Update Run**: this resource is created by the MM when the update job is
   started on the Edge Node. The content of this resource is filled by the MM,
   and it will be updated with the status of the update job. It is read-only from
