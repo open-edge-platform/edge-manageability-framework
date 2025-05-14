@@ -53,13 +53,13 @@ variable "vm_user" {
 variable "vm_vcpu" {
   type        = number
   description = "The number of virtual CPUs to use for the VM."
-  default     = 24
+  default     = 16
 }
 
 variable "vm_memory" {
   type        = number
   description = "The amount of memory to use for the VM."
-  default     = 65536
+  default     = 49152
 }
 
 variable "vm_enable_hugepages" {
