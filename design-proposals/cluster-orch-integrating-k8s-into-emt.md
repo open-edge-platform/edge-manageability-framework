@@ -20,7 +20,7 @@ A key aspect of this proposal is to treat Kubernetes clusters as an integral par
 As an Edge Administrator with Edge Onboarding Manager and Edge Manager/Operator roles, I want to onboard multiple edge hosts in bulk and automatically create clusters on them with a predefined configuration, so that I can streamline the onboarding process and ensure a consistent environment to run predefined workloads across multiple locations with minimal manual intervention.
 
 #### User Story 2: Advanced Edge Setup with Manual Cluster Creation
-As an Edge Manager, I want to manually install the operating system and create clusters on edge hosts that are already available, so that I can customize OS-level system parameters through cloud-init, such as `isolcpus` and `hugepages`, as well as Kubernetes cluster configurations through custom cluster template, to meet specific workload requirements as they are determined.
+As an Edge Manager, I want to manually install the operating system and create clusters on edge hosts that are already available, so that I can customize OS-level system parameters through cloud-init, such as `isolcpus` and `hugepages`, as well as Kubernetes cluster configurations accordingly through custom cluster template, to meet specific workload requirements as they are determined.
 
 #### User Story 3: Development Environment to Find Optimal Configuration
 As an Application Developer, I want to reset OS-level system parameters and cluster on shared edge hosts with minimal effort, so that I can validate my application and experiment with different configurations and find the optimal setup including OS-level system parameters and Kubernetes configuration for my applications.
@@ -36,7 +36,14 @@ As an Edge Manager/Operator, I want edge devices to be ready for use quickly and
 
 ## Scope
 
-This design change primarily targets the most common edge configuration: K3s on EMT. For other setups, such as K3s on Ubuntu, RKE2 on EMT, and RKE2 on Ubuntu, Kubernetes will continue to be sourced from external registries during cluster installation. This decision may evolve as we gain more experience with EMT and K3s.
+This design change primarily targets the most common edge configuration: K3s on EMT. For other setups, such as K3s on Ubuntu, RKE2 on EMT, and RKE2 on Ubuntu, Kubernetes will continue to be supported and sourced from external registries during cluster installation. This decision may evolve as we gain more experience with EMT and K3s.
+
+The table below summarizes the supported operating systems and Kubernetes distributions for each edge type, along with the available cluster creation methods.
+
+| **Edge Type**          | **Supported OS** | **Supported Kubernetes** | **Cluster Creation Methods**                                                                                                                                                                                                                                 |
+| ---------------------- | ---------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **EMF Managed**        | Ubuntu, EMT      | K3s, RKE2                | **Manual**: Via the cluster management page. <br> **Automated**: Via host registration with a selected template (K3s or RKE2). <br> <br> **Note**: For K3s on EMT, the selected template's K3s version must match the K3s version embedded in the EMT image. |
+| **Standalone (EMT-S)** | EMT              | K3s                      | **Automated**: Using the EMT-S installer.                                                                                                                                                                                                                    |
 
 ## Proposal
 
@@ -251,7 +258,9 @@ Manual cluster creation enables users to dynamically create a cluster by selecti
 
 **Option 3:** Restrict cluster creation to onboarded hosts only, rather than provisioned hosts. Alternatively, streamline the process by removing the "provisioned" status of hosts, as its purpose is unclear. During cluster creation, users would select an OS profile, with eligible profiles filtered based on the selected cluster template. This includes all Ubuntu profiles and EMT profiles with compatible K3s versions for the chosen template. In this approach, CAPINTEL must request the Infra Manager to create an Instance first to install the OS with the selected profile, before assigning the Instance to the Workload. While this approach is a breaking change from previous releases, it aligns with the new design principle of treating Kubernetes as an integral part of the infrastructure. It also supports the purpose of manual creation, enabling users to configure the edge environment—including both the OS and Kubernetes—based on the defined workload type.
 
-*[Decision pending]*
+**Decision for 3.1 Release**
+
+The decision for the 3.1 release is to proceed with **Option 1**, as it is less disruptive and preserves the same user experience as the previous release. This approach minimizes changes while addressing the immediate requirements from existing users. **Option 3** will be revisited in future releases to accommodate workloads that require correlation between provisioning-time OS-level configuration via cloud-init and custom Kubernetes-level configuration via cluster template, for example, RT workload with core pinning configuration, for manual cluster creation and deletion workflows.
 
 #### Delete Cluster
 
@@ -269,12 +278,22 @@ For manual deletion, the handling of cluster nodes depends on the chosen approac
 
 Note that while other combinations are technically feasible—for instance, restricting cluster creation to onboarded hosts only (option 3) and cleaning up Kubernetes from the OS when a cluster is deleted, still requiring the user to manually re-onboard to create another cluster on it—maintaining consistency across workflows is critical. This consistency reduces user confusion and simplifies implementation, ensuring a predictable and streamlined user experience.
 
-*[Decision pending]*
+**Decision for 3.1 Release**
 
-## Rationale
+*Pending decision*
 
-[A discussion of alternate approaches that have been considered and the trade
-offs, advantages, and disadvantages of the chosen approach.]
+#### Upgrade Cluster
+
+For K3s on EMT, upgrading the Kubernetes version will trigger updating the EMT image. This process replaces the immutable components of K3s—such as the K3s binary, addon image tarball, and install script—with the new version, while preserving user data stored in the mutable partition, including cluster configurations and existing workloads.
+
+Cluster upgrades must be initiated via Cluster Orchestration, not through the Infra Manager or direct EMT image updates, for the following reasons:
+
+- **Post-Update Commands**: After an A/B update, additional commands are required to load and install the new addon images and manifests. These commands are generated by Cluster Orchestration during the upgrade request. Performing an EMT image update without Cluster Orchestration may result in a partial upgrade.
+- **Multi-Node Clusters**: For multi-node clusters, Kubernetes version upgrades must be coordinated across all nodes to maintain cluster health. Upgrading a single EMT host image independently could disrupt the cluster.
+
+To prevent unintended K3s version updates via EMT image upgrades, a safeguard will block EMT version upgrades if the new image includes a K3s version with a different major or minor version than the current one. This ensures compatibility and avoids unexpected disruptions.
+
+It is important to note that Kubernetes version upgrades, including those for K3s on EMT setups, will not be supported for EMF-managed edges until the [in-place upgrade for CAPI](https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/proposals/20240807-in-place-updates.md) is implemented.
 
 ## Affected components and Teams
 
