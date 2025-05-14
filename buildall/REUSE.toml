@@ -7,7 +7,7 @@ version = 1
 path = [
   ".gitignore",
   "README.md",
-  "repo_list",
+  "*repo_list",
 ]
 
 SPDX-FileCopyrightText = "2025 Intel Corporation"
