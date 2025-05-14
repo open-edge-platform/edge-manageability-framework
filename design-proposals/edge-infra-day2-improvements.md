@@ -91,9 +91,12 @@ Changes:
 - **Instance**:
   - `desired_os`: field is deprecated and won't be used in the next release, we
     don't drive the Immutable OS day 2 workflow from this field anymore.
-  - `current_os`: the field can now be changed from EIM northbound APIs (REST),
-    only before the EN is provisioned. After that, the field is handled
-    internally by EIM, and will be updated based on the current OS installed.
+  - `os`: this field was deprecated, but will be re-used, and it does the 
+    work that in the past was done by the `desired_os` field for day 0 
+    operation. The field becomes immutable, and cannot be changed after is 
+    set the first time from the northbound APIs. After provisioning, the 
+    update of this field is handled internally.
+  - `current_os`: field is deprecated and won't be used in the next release.
   - `runtime_packages`: this field is used to track packages that are actually
     installed in the Edge Node at runtime. For Immutable OSes, we expect this to
     be equal to the content of `installed_packages` in the OS Profile. For
@@ -170,7 +173,7 @@ Resource and Field Handling:
     APIs anymore. Still APIs are accessible for advanced users who want to
     create custom OSProfiles.
 - **Instance**:
-  - `current_os`: after provisioning, this field is handled internally by EIM.
+  - `os`: after provisioning, this field is handled internally by EIM.
     The Maintenance Manager (MM) keeps it updated after the maintenance schedule
     happened.
   - `runtime_packages`: this field is handled by Maintenance Manager (MM) that
