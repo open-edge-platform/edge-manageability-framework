@@ -45,7 +45,7 @@ def add_groups_and_langs(scc_filename, cc_data):
     """
 
     # strip off dirname, prefix, and ending .json
-    repo_name = re.split(".*/scc_([a-z0-9-.]+).json", scc_filename)[1]
+    repo_name = re.split(".*/scc_([a-z0-9-_.]+).json", scc_filename)[1]
 
     # group by prefix
     re_pre = re.split("([a-z0-9.]+)-.*", repo_name)
@@ -168,17 +168,22 @@ def generate_totals_csv(out_csv_filename, repo_data):
                 if re.match(".*(gen).*", lname):
                     r_gen += ldata["Code"]
                 elif lname in [
+                    "Autoconf",
+                    "CMake",
                     "Docker ignore",
                     "Dockerfile",
-                    "Makefile",
                     "Groovy",
+                    "Makefile",
                 ]:
                     r_build += ldata["Code"]
 
                 elif lname in [
                     "Assembly",
                     "BASH",
+                    "C Header",
                     "C",
+                    "C++ Header",
+                    "C++",
                     "CSS",
                     "Go",
                     "GraphQL",
@@ -186,12 +191,21 @@ def generate_totals_csv(out_csv_filename, repo_data):
                     "Java",
                     "JavaScript (min)",
                     "JavaScript",
+                    "Jupyter (min)",
+                    "Jupyter",
+                    "LESS (gen)",
+                    "Lua",
+                    "PHP",
+                    "Perl",
                     "Protocol Buffers",
                     "Python",
                     "Robot Framework (min)",
                     "Robot Framework",
+                    "Ruby",
+                    "Rust",
                     "Sass",
                     "Shell",
+                    "Systemd",
                     "TypeScript (min)",
                     "TypeScript Typings",
                     "TypeScript",
@@ -199,24 +213,32 @@ def generate_totals_csv(out_csv_filename, repo_data):
                     r_code += ldata["Code"]
 
                 elif lname in [
+                    "CSV",
                     "CloudFormation (YAML)",
                     "Go Template",
+                    "INI",
                     "JSON (min)",
                     "JSON",
+                    "Patch",
                     "Smarty Template",
                     "TOML",
                     "Terraform",
                     "XML",
+                    "XML Schema",
                     "YAML",
                 ]:
                     r_data += ldata["Code"]
 
                 elif lname in [
+                    "DOT",
+                    "Document Type Definition",
                     "License",
                     "Markdown",
                     "Plain Text",
                     "ReStructuredText",
+                    "SVG (min)",
                     "SVG",
+                    "TeX",
                 ]:
                     r_comment += ldata["Code"]
 
