@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 {{- $appName        := "postgresql-cloudnative" }}
-{{- $namespace      := "orch-database" }}
+{{- $namespace      := "john" }}
 {{- $syncWave       := "140" }}
 ---
 # {{- if (index .Values.argo.enabled $appName) }}
