@@ -29,9 +29,10 @@ Following are the MVP requirements for the scale provisioning of EMT-S edge node
 
 ## Solution
 
-The solution consists of two major enhancements (modifications) to EMF:
-1) **Support legacy PXE boot to scale EMT-S provisioning** - the EIM will be extended with a local DHCP/TFTP server that helps initiate OS provisioning via legacy PXE boot. 
-2) **Use EIM standalone deployment** - the proposed solution involves deploying a specific EMF profile, referred to as EIM standalone profile. 
+The solution consists of three major enhancements (modifications) to EMF:
+1) **Support legacy PXE boot to scale EMT-S provisioning** - the EIM will be extended with a local DHCP/TFTP server that helps initiate OS provisioning via legacy PXE boot.
+2) **Extend usage of Platform Bundle to be compatible with USB-based EMT-S** - to be consistent with USB-based EMT-S, the EIM will consume Platform Bundle that contains all the scripts and files to install standalone K8s cluster and other customizations.
+3) **Use EIM standalone deployment** - the proposed solution involves deploying a specific EMF profile, referred to as EIM standalone profile. 
    at the customer's premises, specifically the OXM warehouse. This streamlined EMF profile to include EIM only will comprise only the essential components necessary for operating system provisioning. 
    It is important to note that the EIM standalone will not be a separate branch or fork of the existing EMF EIM system. 
    The deployment strategy will utilize configuration settings at deployment time within the EMF to ensure that only the required features are activated.
@@ -150,21 +151,43 @@ Tinkerbell SMEE's DHCP/TFTP server must be reachable from a local, on-prem L2 ne
 Target capabilities and UX of EMT-S provisioned at scale must be consistent with the existing USB-based flow for EMT-S provisioning.
 It means that the target OS configuration must be exactly the same as done via [scripts that provisions EMT-S with USB](https://github.com/open-edge-platform/edge-microvisor-toolkit-standalone-node/tree/main/standalone-node).
 
-Option 1: Use custom HookOS for Standalone Edge Node within orchestrator
+From the end product (deployed EMT OS) perspective, the main differences between USB-based EMT-S and EIM-provisioned EMT-S are:
+- The OS image is read from USB device, while EIM-based approach won't assume USB device is injected to all hundreds of ENs. OS image will be downloaded from Release Service.
+- Local OS user and SSH key is configured on USB-based EMT-S. We can achieve the same with EIM by using Local Account feature (requires proper user documentation).
+- USB-based EMT-S loads `collect-logs.sh` script that is used to grab logs from ENs. This is a gap with EIM-based approach, as EIM doesn't inject any such file to target OS.
+- USB-based EMT-S installs **SEN K8s cluster package** with **custom cloud-init** and installation scripts to deploy K8s cluster on EMT-S. This is another gap with EIM-based approach.
 
-- need to add MAC address as pre-registration OR use custom HookOS for all hosts starting PXE boot (no pre-registration-based PXE boot supported)
-- probably need a fork of SMEE to support both custom and standard HookOS and be able to select per-EN
-- need CI/CD to publish custom HookOS and DKAM changes to consume it
-- need significant modifications to custom HookOS to read OS image/installation files from Nginx instead of USB device
-
-Option 2: Use standard HookOS but prepare custom Tinkerbell workflow
-
-- Create a separate OS profile for EMT-S. Create and run a separate Tinkerbell workflow for "Standalone" OS profile.
-- Standalone OS profile can be assigned to EN during pre-registration (can be BIT only)
+The plan to be consistent with USB-based EMT-S is as follows:
+- The gap will be covered by extending the use of **_Platform Bundle_** to provide additional files to provisioned EN. The details of how the Platform Bundle will be extended are described [here](https://github.com/open-edge-platform/edge-manageability-framework/pull/318).
+- The extended Platform Bundle will contain a tarball package that contains all additional files for EMT-S, namely **SEN K8s cluster package**, **custom cloud-init**, and `collect-logs.sh`
+- A new OS profile ("EMT Standalone") will be created and configured with extended Platform Bundle. The Platform Bundle files will be provisioned to ENs as described in the [design proposal](https://github.com/open-edge-platform/edge-manageability-framework/pull/318). 
+- If needed, a dedicated Tinkerbell workflow will be created to provision EMT-S OS profile. The new Tinkerbell workflow would need to mimic behavior of [EMT-S OS installation script](https://github.com/open-edge-platform/edge-microvisor-toolkit-standalone-node/blob/main/standalone-node/hook_os/files/install-os.sh).
+- EMT-S repository will have to be extended with CI/CD pipeline to push EMT-S Platform Bundle to Release Service.
+- Other EN configurations that are required for EMT-S will be provided as follows:
   - EN Proxy settings can be provided as EIM orchestrator settings
   - SSH key to EMT-S nodes can be provided via Local Account
-  - EN username/password credentiasl can be provided in DEV mode via EIM cluster settings
-- New Tinkerbell workflow would need to mimic behavior of [EMT-S OS installation script](https://github.com/open-edge-platform/edge-microvisor-toolkit-standalone-node/blob/main/standalone-node/hook_os/files/install-os.sh).
+  - EN username/password credentials can be provided in DEV mode via EIM cluster settings
+
+The EMT-S Platform Bundle should contain:
+- `/etc/cloud/cloud.cfg.d/installer.cfg` - [EMT-S cloud init](https://github.com/open-edge-platform/edge-microvisor-toolkit-standalone-node/blob/main/standalone-node/hook_os/files/cloud-init.yaml)
+- `/opt/sen-rke2-package.tar.gz` with all cluster installation files
+- `/etc/cloud/collect-logs.sh` with the script to [collect EMT-S logs](https://github.com/open-edge-platform/edge-microvisor-toolkit-standalone-node/blob/main/standalone-node/hook_os/files/collect-logs.sh)
+
+The high-level integration workflow would be:
+1. The EMT-S repo will have a CI/CD to generate tarball package and push it to Release Service.
+2. OS profile will define Platform Bundle containing the generated RS artifact with tarball package.
+3. EMF will deploy EIM Standalone profile that only contains the "EMT Standalone" OS profile.
+4. During EN provisioning, Onboarding Manager will generate Tinkerbell workflow step to download install the tarball package to target OS.
+5. During Micro-OS stage, there will be a dedicated Tinker action that downloads the tarball package from Release Service and writes it to the target OS location, under specified path.
+6. Once OS is booting, we assume all files are already written to target OS filesystem and custom cloud-init can be executed to install K8s cluster. 
+
+> **NOTE**: Eventually EMT-S K8s cluster should be installed as planned in [this design proposal](https://github.com/open-edge-platform/edge-manageability-framework/pull/273),
+> but the Platform Bundle approach will be pursued for EMF 3.1 release to avoid too many dependencies on other teams.
+
+#### Code hygiene
+
+We should unify actions done via USB-based EMT-S and Tinkerbell workflow. For instance, USB-based EMT-S uses [enable-dmv](https://github.com/open-edge-platform/edge-microvisor-toolkit-standalone-node/blob/main/standalone-node/hook_os/files/enable-dmv.sh) script,
+that is almost equal to Tinker action doing the same.
 
 Ideally, EMT-S OS installation scripts should act as a "standalone Tink worker" that reads Tinkerbell YAML file and executes all steps as defined there.
 We won't be there yet for 3.1, but this should be a direction for us, so that we don't have diverged codebases.
