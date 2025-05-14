@@ -487,7 +487,8 @@ jobs:
       - lint-yaml
       - check-changed-files
     if: |
-      always() && (
+      always() &&
+      needs.lint-version.result == 'success' && (
       needs.check-changed-files.outputs.orch == 'true' ||
       needs.check-changed-files.outputs.ci == 'true' ||
       github.ref == 'refs/heads/main' ||
@@ -720,11 +721,11 @@ jobs:
       - build-publish
       - check-changed-files
     if: |
-      always() && (
+      always() && 
+      needs.build-publish.result == 'success' && (
       needs.check-changed-files.outputs.orch == 'true' ||
       needs.check-changed-files.outputs.on-prem == 'true' ||
       needs.check-changed-files.outputs.ci == 'true' ||
-      needs.build-publish.result == 'success' ||
       github.ref == 'refs/heads/main' ||
       github.ref == 'refs/heads/main-pass-validation'
       )
