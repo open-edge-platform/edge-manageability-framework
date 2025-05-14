@@ -10,3 +10,6 @@ primary:
       drop: ["ALL"]
     seccompProfile:
       type: "RuntimeDefault"
+
+auth:
+  existingSecret: postgresql
