@@ -44,7 +44,7 @@ kubeControllerManager:
 kubelet:
   enabled: false
 kubeApiServer:
-  enabled: false
+  enabled: true
 kubernetesServiceMonitors:
   enabled: false
 alertmanager:
