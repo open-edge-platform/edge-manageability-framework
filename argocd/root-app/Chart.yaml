@@ -5,5 +5,5 @@
 apiVersion: v2
 name: root-app
 type: application
-version: 3.1.0-dev
-appVersion: "3.1.0-dev"
+version: 3.1.0-n20250430
+appVersion: "3.1.0-n20250430"
