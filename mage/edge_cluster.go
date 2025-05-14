@@ -15,10 +15,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bitfield/script"
-
-	"github.com/open-edge-platform/edge-manageability-framework/internal/retry"
 	"gopkg.in/yaml.v3"
+
+	"github.com/bitfield/script"
+	"github.com/open-edge-platform/edge-manageability-framework/internal/retry"
 )
 
 const (
@@ -52,6 +52,10 @@ func (Deploy) deployEnicCluster(targetEnv string, labels string) error {
 	// Otherwise, the host register will fail.
 	if err := (DevUtils{}).RegisterEnic(enicPodName); err != nil {
 		return fmt.Errorf("failed to register enic: %w", err)
+	}
+
+	if err := (DevUtils{}).ProvisionEnic(enicPodName); err != nil {
+		return fmt.Errorf("failed to provision enic: %w", err)
 	}
 
 	// Allow some time for Helm to load ENiC
@@ -192,8 +196,7 @@ func waitForENFleetAgentReady() error {
 
 	// Since kubeconfig context is Edge Cluster
 	edgeClusterPodStatusCmd := "kubectl get pods -A"
-
-	cmd := "kubectl -n cattle-fleet-system get pods fleet-agent-0 -o jsonpath='{.status.phase}'"
+	cmd := "kubectl -n cattle-fleet-system get pods -l app=fleet-agent -o jsonpath='{.items[0].status.phase}'"
 
 	fmt.Printf("Waiting %v minutes for EN Fleet Agent to start...\n", waitForReadyMin)
 	fn := func() error {

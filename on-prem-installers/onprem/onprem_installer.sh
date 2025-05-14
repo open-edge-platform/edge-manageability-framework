@@ -653,10 +653,13 @@ create_sre_secrets
 set_default_smtp_env
 create_smpt_secrets
 harbor_password=$(head -c 512 /dev/urandom | tr -dc A-Za-z0-9 | cut -c1-100)
-keycloak_password=$(generate_keycloak_password)
+keycloak_password=$(generate_password)
+postgres_password=$(generate_password)
 create_harbor_secret orch-harbor "$harbor_password"
 create_harbor_password orch-harbor "$harbor_password"
 create_keycloak_password orch-platform "$keycloak_password"
+create_postgres_password orch-database "$postgres_password"
+
 
 # Run orchestrator installer
 echo "Installing Edge Orchestrator Packages"
