@@ -1,0 +1,38 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+specSchema: "DeploymentPackage"
+schemaVersion: "0.1"
+$schema: "https://schema.intel.com/catalog.orchestrator/0.1/schema"
+
+name: "wordpress"
+displayName: "My Wordpress Blog"
+description: "Wordpress"
+version: "0.1.2"
+
+artifacts:
+  - name: "intel-icon"
+    purpose: "icon"
+
+defaultNamespaces:
+  wordpress : "wordpress"
+
+# CLI tool will also have to contend with converting application (name, version, publisher)
+# tuple into an application ID.
+
+applications:
+  - name: wordpress
+    version: 0.1.1
+
+deploymentProfiles:
+  - name: "testing"
+    applicationProfiles:
+      - application: "wordpress"
+        profile: "default"
+
+#namespaces:
+#  - name: "wordpress"
+#    labels:
+#      name: "test-wordpress"

@@ -9,3 +9,7 @@ controller:
       bundle: '50'
       bundledeployment: '50'
       gitrepo: '50'
+
+
+debug: true
+debugLevel: 4
