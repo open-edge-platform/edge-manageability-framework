@@ -540,7 +540,6 @@ set_artifacts_version
 
 # Check & install script dependencies
 check_oras
-install_jq
 install_yq
 
 if  [[ $SKIP_DOWNLOAD != true  ]]; then 
