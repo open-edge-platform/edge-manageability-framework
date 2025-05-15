@@ -197,7 +197,7 @@ We won't be there yet for 3.1, but this should be a direction for us, so that we
 
 Once ENs are provisioned and ready to be shipped to the field to operate as standalone ENs, they should be detached from the local EMF orchestrator.
 An explicit detach would be needed if there are agents' configurations, certificates, credentials, etc. installed on ENs.
-However, BM agents won't be configured and activated for EMT-S OS profiles. Therefore, the only operation to detach ENs from the orchestrator is to delete them via northbound API.
+However, **BM agents won't be configured and activated for EMT-S OS profiles**. Therefore, the only operation to detach ENs from the orchestrator is to delete them via northbound API.
 This is already supported via UI or CLI.
 
 ### EIM-only profile of EMF deployment (EIM-S)
@@ -248,8 +248,6 @@ This direction requires more development effort, but is still left as future imp
 
 ## Open issues
 
-- By default, the provisioning flow will complete and all the agents will be installed, started and connected to the orchestrator instance that deployed them.
-  We may need a way to stop the provisioning flow without installing and starting agents.
 - In this solution, PXE boot will always be allowed for any device in a local subnet trying to initiate PXE boot.
   On the contrary, the Tinkerbell allows to control whether PXE boot is enabled/disabled for a device. For now, we won't have any control to who is allowed to PXE-boot, but
   the admission control will be done at later stage (once EMF's iPXE is chainloaded).
