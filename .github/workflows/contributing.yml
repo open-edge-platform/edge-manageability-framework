@@ -24,5 +24,5 @@ jobs:
         uses: actions/first-interaction@34f15e814fe48ac9312ccf29db4e74fa767cbab7  # v1.3.0
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-          issue-message: "Thank you for your contribution! Please make sure to review our [Contributing Guide](https://github.com/open-edge-platform/edge-manageability-framework/blob/main/.github/CONTRIBUTING.md)."
-          pr-message: "Thank you for your contribution! Please make sure to review our [Contributing Guide](https://github.com/open-edge-platform/edge-manageability-framework/blob/main/.github/CONTRIBUTING.md)."
+          issue-message: "Thank you for your contribution! Please make sure to review our [Contributing Guide](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/developer_guide/contributor_guide/index.html)."
+          pr-message: "Thank you for your contribution! Please make sure to review our [Contributing Guide](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/developer_guide/contributor_guide/index.html)."
