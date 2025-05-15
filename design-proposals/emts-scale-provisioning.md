@@ -200,12 +200,13 @@ An explicit detach would be needed if there are agents' configurations, certific
 However, **BM agents won't be configured and activated for EMT-S OS profiles**. Therefore, the only operation to detach ENs from the orchestrator is to delete them via northbound API.
 This is already supported via UI or CLI.
 
-### EIM-only profile of EMF deployment (EIM-S)
+### OXM profile of EMF deployment (EIM-S)
 
-The provisioning of EMT-S at scale will be driven by a local orchestrator instance that only includes EIM components. 
+The provisioning of EMT-S at scale will be driven by a local OXM orchestrator instance that only includes EIM components. 
 The main requirement of EIM standalone is to make it easy and resource-efficient for customers to deploy.
 
 For MVP, we will leverage the EIM Standalone profile. This is an EMF deployment profile that only deploys EIM with Observability and FPS components.
+Also, EIM won't include `infra-managers` for the OXM profile.
 
 EIM Standalone profile for minimal OXM warehouse deployments will be configured with EMT-Standalone OS profile only.
 
