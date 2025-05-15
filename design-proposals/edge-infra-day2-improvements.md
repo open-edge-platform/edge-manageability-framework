@@ -1,6 +1,6 @@
 # Design Proposal: Edge Infrastructure Manager Day 2 Improvements
 
-Author(s): Daniele Moro, Tomasz Osinski
+Author(s): Edge Infrastructure Manager Team
 
 Last updated: 2025-05-08
 
