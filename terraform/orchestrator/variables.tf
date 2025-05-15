@@ -110,6 +110,24 @@ variable "no_proxy" {
   default     = ""
 }
 
+variable "en_http_proxy" {
+  type        = string
+  description = "Sets the Edge Node HTTP_PROXY environment variable in the VM."
+  default     = ""
+}
+
+variable "en_https_proxy" {
+  type        = string
+  description = "Sets the Edge Node HTTPS_PROXY environment variable in the VM."
+  default     = ""
+}
+
+variable "en_no_proxy" {
+  type        = string
+  description = "Sets the Edge Node NO_PROXY environment variable in the VM."
+  default     = ""
+}
+
 variable "ftp_proxy" {
   type        = string
   description = "Sets the FTP_PROXY environment variable in the VM."
