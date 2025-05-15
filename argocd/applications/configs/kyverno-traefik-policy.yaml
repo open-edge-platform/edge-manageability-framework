@@ -20,6 +20,7 @@ jwtMiddlewareException:
       - "iam-umbrella-nexus-api-gw-api-docs"
       - "cluster-connect-gateway-ws"
       - "cluster-connect-gateway-kubeapi"
+      - "orch-platform-keycloak"
   - namespace: "orch-boots"
     names:
       - "tinkerbell-nginx-ingress"
@@ -27,7 +28,6 @@ anyMiddlewareException:
   - namespace: "orch-gateway"
     names:
       - "orch-platform-grafana"
-      - "orch-platform-keycloak"
       - "orch-platform-vault"
       - "edgenode-observability-grafana"
       - "traefik-boots-ca-certificate"
