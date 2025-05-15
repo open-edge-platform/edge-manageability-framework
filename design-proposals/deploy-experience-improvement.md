@@ -214,34 +214,33 @@ offs, advantages, and disadvantages of the chosen approach.]
 
 ## Implementation plan
 
-| Task                                                                | Est Person-Weeks |
-|---------------------------------------------------------------------|------------------|
-| **Design**                                                          |                  |
-| Design - interface between installer and modules, config format     | 1                |
-| Design - installer internals and modules                            | 0 (Done)         |
-| Design - progress visualization                                     | 0 (Done)         |
-| Design - error handling                                             | 0 (Done)         |
-| Design - Cloud upgrade                                              | 1                |
-| Design - On-Prem upgrade                                            | 1                |
-| **Implementation**                                                  |                  |
-| Common - Implement installer framework and core logic               | 5                |
-| Stage 0 - Config builder                                            | 2                |
-| Stage 1 - AWS - Reimplement as installer module                     | 3                |
-| Stage 1 - On-Prem - Reimplement as installer module                 | 3                |
-| Stage 2 - Implement common pre-orch jobs - Cloud                    | 0.75             |
-| Stage 2 - Implement common pre-orch jobs - On-Prem                  | 0.75             |
-| Stage 3 - Monitor Argo CD deployment                                | 0.75             |
-| **Common Improvements**                                             |                  |
-| Common - Progress visualization                                     | 2                |
-| Common - Cloud - Improve error handling and feedback                | 2                |
-| Common - On-Prem - Improve error handling and feedback              | 2                |
-| **Upgrades**                                                        |                  |
-| Cloud upgrade from 3.0                                              | 2                |
-| On-Prem upgrade from 3.0                                            | 2                |
-| **Documentation**                                                   |                  |
-| Update Cloud deployment doc                                         | 0.75             |
-| Update On-Prem deployment doc                                       | 0.75             |
-| **Total**                                                           | **29.75**        |
+| Task                                                                |
+|---------------------------------------------------------------------|
+| **Design**                                                          |
+| Design - interface between installer and modules, config format     |
+| Design - progress visualization                                     |
+| Design - error handling                                             |
+| Design - Cloud upgrade                                              |
+| Design - On-Prem upgrade                                            |
+| **Implementation**                                                  |
+| Common - Implement installer framework and core logic               |
+| Stage 0 - Config builder                                            |
+| Stage 1 - AWS - Reimplement as installer module                     |
+| Stage 1 - On-Prem - Reimplement as installer module                 |
+| Stage 2 - Implement common pre-orch jobs - Cloud                    |
+| Stage 2 - Implement common pre-orch jobs - On-Prem                  |
+| Stage 3 - Monitor Argo CD deployment                                |
+| **Common Improvements**                                             |
+| Common - Progress visualization                                     |
+| Common - Cloud - Improve error handling and feedback                |
+| Common - On-Prem - Improve error handling and feedback              |
+| **Upgrades**                                                        |
+| Cloud upgrade from 3.0                                              |
+| On-Prem upgrade from 3.0                                            |
+| **Documentation**                                                   |
+| Update Cloud deployment doc                                         | 
+| Update On-Prem deployment doc                                       |
+| **Total**                                                           |
 
 Required Resources: 5 FTE, 6 weeks (2 sprints)
 
