@@ -31,6 +31,7 @@ Following are the MVP requirements for the scale provisioning of EMT-S edge node
 
 The solution consists of three major enhancements (modifications) to EMF:
 1) **Support legacy PXE boot to scale EMT-S provisioning** - the EIM will be extended with a local DHCP/TFTP server that helps initiate OS provisioning via legacy PXE boot.
+   The legacy PXE boot uses the devices' PXE firmware to bootstrap into iPXE, which then continues the EN provisioning process.
 2) **Extend usage of Platform Bundle to be compatible with USB-based EMT-S** - to be consistent with USB-based EMT-S, the EIM will consume Platform Bundle that contains all the scripts and files to install standalone K8s cluster and other customizations.
 3) **Use EIM standalone deployment** - the proposed solution involves deploying a specific EMF profile, referred to as EIM standalone profile. 
    at the customer's premises, specifically the OXM warehouse. This streamlined EMF profile to include EIM only will comprise only the essential components necessary for operating system provisioning. 
@@ -192,6 +193,13 @@ that is almost equal to Tinker action doing the same.
 Ideally, EMT-S OS installation scripts should act as a "standalone Tink worker" that reads Tinkerbell YAML file and executes all steps as defined there.
 We won't be there yet for 3.1, but this should be a direction for us, so that we don't have diverged codebases.
 
+### Detach of Edge Nodes
+
+Once ENs are provisioned and ready to be shipped to the field to operate as standalone ENs, they should be detached from the local EMF orchestrator.
+An explicit detach would be needed if there are agents' configurations, certificates, credentials, etc. installed on ENs.
+However, BM agents won't be configured and activated for EMT-S OS profiles. Therefore, the only operation to detach ENs from the orchestrator is to delete them via northbound API.
+This is already supported via UI or CLI.
+
 ### EIM-only profile of EMF deployment (EIM-S)
 
 The provisioning of EMT-S at scale will be driven by a local orchestrator instance that only includes EIM components. 
@@ -214,6 +222,9 @@ admission control to prevent unwanted ENs being provisioned to EMF "magically".
 The alternative considered was to use a standalone Tinkerbell deployment without the rest of the EIM stack. While it has advantage of a more lightweight deployment,
 it would completely change the UX as we would need to familiarize customers with Tinkerbell APIs (or have a custom CLI tool to help them manage Tinkerbell CRDs).
 With the current proposal we keep using the current UX, with possibility to use Bulk Import Tool to scale preregistration process and selectively choose OS profiles for Edge Nodes.
+
+Also, an alternative to using SMEE was considered to avoid divergence in security policies (HTTP vs. HTTPS for Provisioning Nginx).
+This direction requires more development effort, but is still left as future improvement. It's further elaborated in a separate [design proposal](https://github.com/open-edge-platform/edge-manageability-framework/pull/309).
 
 ## Affected components and Teams
 
