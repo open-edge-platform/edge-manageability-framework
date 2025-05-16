@@ -7,7 +7,7 @@ Last updated: 05/12/2025
 ## Abstract
 
 vPRO/Active Management Technology (AMT)/Intel Standard Manageability (ISM) needs to be explicitily activated and
-configured in the devices before to be available in the Edge Orchestrator.
+configured in the devices before to be consumable from a cloud deployment.
 
 [Open Device Management Toolkit](https://device-management-toolkit.github.io/docs/2.27/GetStarted/overview/) (Open DMT)
 provides an open source stack through which is possible to manage vPRO enabled devices.
@@ -32,7 +32,7 @@ Adding the `rpc-go` to the Tink-EMT image allows for the AMT/ISM device to be ac
 operating system being deployed on the edge node. Not every device will support AMT & ISM. Introspection of the device
 capabilites will be added to the `Device Discovery` to determine:
 
-1. AMT Supported Device
+1. vPRO Supported Device
 2. ISM Supported Device
 3. No OOB Supported
 
@@ -74,7 +74,7 @@ sequenceDiagram
         inv ->> dm: Notify
         activate dm
         ps ->> ps: Reconcile the device
-        alt AMT CurrentaState provisioned
+        alt AMT CurrentState provisioned
             ps ->> en: Provision the device
             activate en
             ps ->> en: Activate vPRO
@@ -95,7 +95,7 @@ sequenceDiagram
         activate mps
         mps ->> dm: Done
         deactivate mps
-        dm ->> inv: Update AMT Status IN_PROGRESS
+        dm ->> inv: Update AMT Status IN_PROGRESS (Connecting)
         dm ->> inv: Update AMT CurrentState Provisioned
         deactivate dm
     else [Device is not eligible]
@@ -110,6 +110,7 @@ sequenceDiagram
         deactivate en
         deactivate ps
         dm ->> dm: Reconcile the device
+        dm ->> inv: Update AMT Status IDLE (Unsupported)
         deactivate dm
     end
     Note right of dm: Check periodically the connection status<br>and use internal timers to track disconnection
@@ -171,7 +172,7 @@ implement the following functionality to support this design proposal:
 
 As dependency we expect the EMT team to deliver:
 
-- EMT-Tinker image supporting RPC and its dependencies
+- EMT-Tinker image supporting RPC-go, LMS, kernel drivers and all the dependencies;
 
 **Not mandatory but nice to have** is to support the installation of the RPC and its dependencies in all the Ubuntu
 flavors support by the Edge Orchestrator and have EMT image supporting RPC and its dependencies;
