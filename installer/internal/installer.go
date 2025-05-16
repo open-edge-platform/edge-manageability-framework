@@ -14,6 +14,11 @@ import (
 	"github.com/knadh/koanf/v2"
 )
 
+const (
+	OrchConfigVersion   = "0.0.1-dev"
+	RuntimeStateVersion = "0.0.1-dev"
+)
+
 type OrchInstaller struct {
 	Stages []OrchInstallerStage
 
@@ -25,7 +30,9 @@ type OrchInstaller struct {
 // This must be as general as possible
 // Note that we are using
 type OrchInstallerConfig struct {
-	Version string `yaml:"version"`
+	// Schema version of the config
+	ConfigVersion string `yaml:"config_version"`
+	OrchVersion   string `yaml:"orch_version"`
 	// The target environment that will be used
 	TargetEnvironment string `yaml:"target_environment" validate:"required,oneof=aws azure on-prem demo"`
 	// The DeploymentName that will be shared across all the stages.
@@ -48,6 +55,9 @@ type OrchInstallerConfig struct {
 // The data that will pass to the first stage
 type OrchInstallerRuntimeState struct {
 	mutex *sync.Mutex
+	// Schema version of the runtime state
+	RuntimeStateVersion string `yaml:"config_version"`
+	OrchVersion         string `yaml:"orch_version"`
 	// The Action that will be performed
 	// This can be one of the following:
 	// - install
