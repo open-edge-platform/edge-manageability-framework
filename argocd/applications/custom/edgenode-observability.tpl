@@ -712,7 +712,7 @@ opentelemetry-collector:
   {{- with .Values.argo.imagePullSecrets }}
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  config:
+  alternateConfig:
     service:
       pipelines:
         metrics:
