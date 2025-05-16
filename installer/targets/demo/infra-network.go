@@ -102,7 +102,8 @@ func (s *DemoInfraNetworkStage) RunStage(ctx context.Context, config internal.Or
 		if vpcID, ok := output.Output["vpc_id"]; ok {
 			runtimeState.VPCID = strings.Trim(vpcID, "\"")
 			return nil
-		} else {
+		} else if runtimeState.Action == "install" || runtimeState.Action == "upgrade" {
+			// skip if we are not installing or upgrading
 			return &internal.OrchInstallerError{
 				ErrorCode:  internal.OrchInstallerErrorCodeInternal,
 				ErrorStage: s.Name(),

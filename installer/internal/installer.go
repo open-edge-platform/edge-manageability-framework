@@ -64,7 +64,7 @@ func CreateOrchInstaller(stages []OrchInstallerStage) (*OrchInstaller, error) {
 func reverseStages(stages []OrchInstallerStage) []OrchInstallerStage {
 	reversed := []OrchInstallerStage{}
 	for i := len(stages) - 1; i >= 0; i-- {
-		reversed[i] = stages[i]
+		reversed = append(reversed, stages[i])
 	}
 	return reversed
 }
