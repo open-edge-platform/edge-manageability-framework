@@ -360,7 +360,7 @@ resource "null_resource" "set_proxy_config" {
   }
 
   provisioner "remote-exec" {
-    inline = [ 
+    inline = [
       "set -o errexit",
       "cp /home/ubuntu/proxy_config.yaml /home/ubuntu/repo_archives/tmp/edge-manageability-framework/orch-configs/profiles/proxy-none.yaml",
       "cat /home/ubuntu/repo_archives/tmp/edge-manageability-framework/orch-configs/profiles/proxy-none.yaml",
