@@ -55,7 +55,7 @@ type OrchInstallerRuntimeState struct {
 	// - uninstall
 	Action string `yaml:"action" validate:"required,oneof=install upgrade uninstall"`
 	// The directory where the logs will be saved
-	LogDir string `yaml:"log_path"`
+	LogDir string `yaml:"log_dir"`
 	DryRun bool   `yaml:"dry_run"`
 
 	// Infra-specific runtime state
