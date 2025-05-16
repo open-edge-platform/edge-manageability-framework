@@ -7,6 +7,9 @@ Last updated: 2025-05-16
 
 This design proposal outlines a plan to enhance discrete GPU (dGPU) support, addressing current limitations and introducing new functionalities. Key issues identified include inadequate support for newer dGPUs like Intel Battlemage, reliance on out-of-tree drivers, challenges with Secure Boot due to unsigned i915 drivers, and inefficiencies from redundant OSProfiles for GPU-equipped systems. The proposal aims to streamline driver integration as extensions, enable Single Root I/O Virtualization (SRIOV), and improve overall system compatibility and user efficiency for GPU workloads on EdgeNodes.
 
+## Limitations and Debt of The Current Design
+In the earlier release (3.0), a key issue was the inability to activate Secure Boot for GPU-based workloads. This limitation arose because the i915 drivers, crucial for Intel's integrated and discrete GPUs, lacked signatures from a trusted package distributor like Canonical. Consequently, Secure Boot, which mandates that all kernel modules be signed by an authorized entity, couldn’t be engaged without compromising or circumventing this security feature. This created a substantial challenge for users who needed both GPU acceleration and a secure boot environment.
+
 ### Goals/Requirements (release 3.1 onwards)
 
 
