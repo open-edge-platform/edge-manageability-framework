@@ -1,0 +1,67 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Cluster specific values applied to root-app only
+root:
+  useLocalValues: false
+  clusterValues:
+    - orch-configs/profiles/enable-platform-oxm.yaml
+    - orch-configs/profiles/enable-edgeinfra-oxm.yaml
+    - orch-configs/profiles/enable-ui-oxm.yaml
+    - orch-configs/profiles/enable-dev.yaml
+    # proxy group should be specified as the first post-"enable" profile
+    - orch-configs/profiles/proxy-none.yaml
+    - orch-configs/profiles/profile-autocert.yaml
+    - orch-configs/profiles/profile-dev.yaml
+    - orch-configs/profiles/artifact-rs-production-noauth.yaml
+    - orch-configs/profiles/resource-default.yaml
+    - orch-configs/clusters/dev-oxm.yaml
+
+# Values applied to both root app and shared among all child apps
+argo:
+  ## Basic cluster information
+  project: dev
+  namespace: dev
+  clusterName: dev
+  # Base domain name for all Orchestrator services. This base domain will be concatenated with a service's subdomain
+  # name to produce the service's domain name. For example, given the domain name of `orchestrator.io`, the Web UI
+  # service will be accessible via `web-ui.orchestrator.io`. Not to be confused with the K8s cluster domain.
+  clusterDomain: kind.internal
+
+  ## Argo CD configs
+  deployRepoURL: "https://gitea-http.gitea.svc.cluster.local/argocd/edge-manageability-framework"
+  deployRepoRevision: main
+
+  targetServer: "https://kubernetes.default.svc"
+  autosync: true
+
+  # # rate limit is applicable to each cluster.
+  # # please see https://doc.traefik.io/traefik/middlewares/http/ratelimit/
+  # traefik:
+  #   rateLimit:
+  #     # When rateLimit section is not specified or average is set to 0 (default setting), rate limiting will be disabled.
+  #     average: 5
+  #     # period, in combination with average, defines the actual maximum rate: average / period
+  #     period: 1m
+  #     # burst is the maximum number of requests allowed to go through in the same arbitrarily small period of time.
+  #     burst: 20
+  #     # If depth is specified, excludedIPs is ignored.
+  #     ipStrategyDepth: 1
+  #     # Contrary to what the name might suggest, this option is not about excluding an IP from the rate limiter,
+  #     # and therefore cannot be used to deactivate rate limiting for some IPs.
+  #     excludedIps:
+  #       - 10.244.0.1
+
+orchestratorDeployment:
+  targetCluster: kind
+  enableMailpit: true
+  argoServiceType: LoadBalancer
+
+# Post custom template overwrite values should go to /root-app/environments/<env>/<appName>.yaml
+# This is a placeholder to prevent error when there isn't any overwrite needed
+postCustomTemplateOverwrite:
+  traefik:
+    logs:
+      general:
+        level: DEBUG

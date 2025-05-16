@@ -12,4 +12,5 @@ clusters/*.yaml
 !clusters/dev.yaml
 !clusters/dev-minimal.yaml
 !clusters/onprem*.yaml
+!clusters/dev-oxm*.yaml
 

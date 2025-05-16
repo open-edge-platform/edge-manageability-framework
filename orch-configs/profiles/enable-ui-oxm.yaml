@@ -11,6 +11,6 @@ argo:
     web-ui-admin: true
   cors:
     enabled: true
-  # This enables the ingress route for FM standalone
+  # This enables the ingress route for Infra UI standalone
   ui:
     ingressInfraUi: true

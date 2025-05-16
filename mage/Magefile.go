@@ -484,6 +484,11 @@ func (d Deploy) KindMinimal() error {
 	return d.all("dev-minimal")
 }
 
+// Deploy kind cluster, Argo CD, and all Orchestrator services except o11y and kyverno.
+func (d Deploy) KindOxm() error {
+	return d.all("dev-oxm")
+}
+
 // Deploy kind cluster, Argo CD, and Orchestrator services with customized settings.
 func (d Deploy) KindCustom() error {
 	targetEnv, err := Config{}.createCluster()
