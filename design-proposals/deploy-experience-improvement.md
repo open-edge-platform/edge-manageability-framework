@@ -36,15 +36,16 @@ Finally, by replacing monolithic shell scripts with modular Go components and ad
   It should minimize user input. For example, scale profiles for infra and orchestrator can be automatically applied according to user-specified target scale.
 - A **well-defined abstraction between infrastructure and orchestrator** logic that enables independent testing and upgrading,
   as well as the ability to plug in new cloud providers via Go modules.
-- **Wrapped and actionable error messages**. Raw logs should be saved to files, and restarts should be possible from the point of failure.
-- Diff previews should be available during upgrade flows, showing schema migrations or configuration changes.
 - Every module should be **toggled independently** and have minimal external dependency.
-- Installer should support **orchestrator CLI integration** (e.g. `cli deploy aws`) and parallel execution of non-dependent tasks.
 - On-prem installation will not require a separate admin machine.
 - Be compatible with upcoming Azure implementation and ongoing replacement of kind with on-prem in Coder
 
 ### Out of scope
 
+- (EMF-3.2) A clearn **progress visualization** showing the overall progress
+- (EMF-3.2) **Diff previews** should be available during upgrade flows, showing schema migrations or configuration changes.
+- (EMF-3.2) **Wrapped and actionable error messages**. Raw logs should be saved to files, and restarts should be possible from the point of failure.
+- (EMF-3.2) Installer should support **orchestrator CLI integration** (e.g. `cli deploy aws`) and parallel execution of non-dependent tasks.
 - Optimizing total deployment time, as current durations are acceptable.
 - Full automation of post-deployment IAM/org/user configuration (users will be guided to complete this manually).
 
@@ -214,35 +215,25 @@ offs, advantages, and disadvantages of the chosen approach.]
 
 ## Implementation plan
 
-| Task                                                                |
-|---------------------------------------------------------------------|
-| **Design**                                                          |
-| Design - interface between installer and modules, config format     |
-| Design - progress visualization                                     |
-| Design - error handling                                             |
-| Design - Cloud upgrade                                              |
-| Design - On-Prem upgrade                                            |
-| **Implementation**                                                  |
-| Common - Implement installer framework and core logic               |
-| Stage 0 - Config builder                                            |
-| Stage 1 - AWS - Reimplement as installer module                     |
-| Stage 1 - On-Prem - Reimplement as installer module                 |
-| Stage 2 - Implement common pre-orch jobs - Cloud                    |
-| Stage 2 - Implement common pre-orch jobs - On-Prem                  |
-| Stage 3 - Monitor Argo CD deployment                                |
-| **Common Improvements**                                             |
-| Common - Progress visualization                                     |
-| Common - Cloud - Improve error handling and feedback                |
-| Common - On-Prem - Improve error handling and feedback              |
-| **Upgrades**                                                        |
-| Cloud upgrade from 3.0                                              |
-| On-Prem upgrade from 3.0                                            |
-| **Documentation**                                                   |
-| Update Cloud deployment doc                                         | 
-| Update On-Prem deployment doc                                       |
-| **Total**                                                           |
+- Design - interface between installer and modules, config format 
+- Design - Cloud Upgrade
+- Design - On-Prem Upgrade
+- Common - Implement installer framework and core logic
+- Stage 0: interactive config helper
+- Stage 1 - AWS - Reimplement as installer module
+  - Implement Cloud upgrade from 3.0
+- Stage 1 - On-Prem - Reimplement as installer module
+  - Implement On-Prem update from 3.0
+- Stage 2 - Implement common pre-orch jobs (cloud)
+- Stage 2 - Implement common pre-orch jobs (onprem)
+- Stage 3 - Monitor Argo CD deployment
+- Nightly tests for Cloud upgrade
+- Nightly tests for On-Prem upgrade
+- Deployment Doc - Cloud deployment
+- Deployment Doc - On-Prem deployment
+- CI and release automation - installer binary
 
-Required Resources: 5 FTE, 6 weeks (2 sprints)
+Required Resources: 7.5 FTE, 6 weeks (2 sprints)
 
 ## Open issues (if applicable)
 
