@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+config.yaml
+runtime-state.yaml
 .logs
 .deploy
 .idea
