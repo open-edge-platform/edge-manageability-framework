@@ -8,6 +8,10 @@ import (
 	"context"
 	"fmt"
 	"sync"
+
+	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/structs"
+	"github.com/knadh/koanf/v2"
 )
 
 type OrchInstaller struct {
@@ -43,6 +47,7 @@ type OrchInstallerConfig struct {
 
 // The data that will pass to the first stage
 type OrchInstallerRuntimeState struct {
+	mutex *sync.Mutex
 	// The Action that will be performed
 	// This can be one of the following:
 	// - install
@@ -55,6 +60,33 @@ type OrchInstallerRuntimeState struct {
 
 	// Infra-specific runtime state
 	VPCID string `yaml:"vpc_id" validate:"required"`
+}
+
+func (rs *OrchInstallerRuntimeState) UpdateRuntimeState(source OrchInstallerRuntimeState) *OrchInstallerError {
+	rs.mutex.Lock()
+	defer rs.mutex.Unlock()
+	srcK := koanf.New(".")
+	srcK.Load(structs.Provider(source, "yaml"), nil)
+	dstK := koanf.New(".")
+	dstK.Load(structs.Provider(rs, "yaml"), nil)
+	dstK.Merge(srcK)
+
+	dstData, err := dstK.Marshal(yaml.Parser())
+	if err != nil {
+		return &OrchInstallerError{
+			ErrorCode: OrchInstallerErrorCodeInternal,
+			ErrorMsg:  fmt.Sprintf("failed to marshal runtime state: %v", err),
+		}
+	}
+
+	err = DeserializeFromYAML(rs, dstData)
+	if err != nil {
+		return &OrchInstallerError{
+			ErrorCode: OrchInstallerErrorCodeInternal,
+			ErrorMsg:  fmt.Sprintf("failed to unmarshal runtime state: %v", err),
+		}
+	}
+	return nil
 }
 
 func CreateOrchInstaller(stages []OrchInstallerStage) (*OrchInstaller, error) {
