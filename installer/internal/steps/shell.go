@@ -25,14 +25,14 @@ type OrchInstallerShellStepOutput struct {
 	Error  error  `json:"error"`
 }
 
-func (s *OrchInstallerShellStep) Run(ctx *context.Context) (*OrchInstallerShellStepOutput, *internal.OrchInstallerError) {
+func (s *OrchInstallerShellStep) Run(ctx context.Context) (*OrchInstallerShellStepOutput, *internal.OrchInstallerError) {
 	// RunStep logic here
 	// TODO: add timeout
 	// TODO: Store *internal.OrchInstallerErrors so we can handle it later in post step?
 	logger := internal.Logger()
 	logger.Debugf("Running shell command: %s", s.Command)
 
-	s.cmd = exec.CommandContext(*ctx, "sh", "-c", s.Command)
+	s.cmd = exec.CommandContext(ctx, "sh", "-c", s.Command)
 
 	stderrWriter := strings.Builder{}
 	stdoutWriter := strings.Builder{}

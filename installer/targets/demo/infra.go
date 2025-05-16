@@ -35,7 +35,7 @@ func (s *DemoInfraStage) Name() string {
 	return "DemoInfraStage"
 }
 
-func (s *DemoInfraStage) PreStage(ctx *context.Context, installerInput internal.OrchInstallerInput, prevStageOutput internal.RuntimeState) (internal.RuntimeState, *internal.OrchInstallerError) {
+func (s *DemoInfraStage) PreStage(ctx context.Context, installerInput internal.OrchInstallerInput, prevStageOutput internal.RuntimeState) (internal.RuntimeState, *internal.OrchInstallerError) {
 	infraNetRuntimeState, ok := prevStageOutput.(*DemoInfraNetworkStageRuntimeState)
 	if !ok {
 		return nil, &internal.OrchInstallerError{
@@ -65,7 +65,7 @@ func (s *DemoInfraStage) PreStage(ctx *context.Context, installerInput internal.
 	}, nil
 }
 
-func (s *DemoInfraStage) RunStage(ctx *context.Context, installerInput internal.OrchInstallerInput, prevStageOutput internal.RuntimeState) (internal.RuntimeState, *internal.OrchInstallerError) {
+func (s *DemoInfraStage) RunStage(ctx context.Context, installerInput internal.OrchInstallerInput, prevStageOutput internal.RuntimeState) (internal.RuntimeState, *internal.OrchInstallerError) {
 	prevOutput, ok := prevStageOutput.(*DemoInfraStageRuntimeState)
 	if !ok {
 		return nil, &internal.OrchInstallerError{
@@ -89,6 +89,6 @@ func (s *DemoInfraStage) RunStage(ctx *context.Context, installerInput internal.
 	return nil, err
 }
 
-func (s *DemoInfraStage) PostStage(ctx *context.Context, installerInput internal.OrchInstallerInput, prevStageOutput internal.RuntimeState, prevStageError *internal.OrchInstallerError) (internal.RuntimeState, *internal.OrchInstallerError) {
+func (s *DemoInfraStage) PostStage(ctx context.Context, installerInput internal.OrchInstallerInput, prevStageOutput internal.RuntimeState, prevStageError *internal.OrchInstallerError) (internal.RuntimeState, *internal.OrchInstallerError) {
 	return prevStageOutput, prevStageError
 }

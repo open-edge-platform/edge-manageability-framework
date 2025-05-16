@@ -36,7 +36,7 @@ func marshalHCL(data any) ([]byte, error) {
 	return k.Marshal(json.Parser()) // Terraform accepts json format
 }
 
-func (s *OrchInstallerTerraformStep) Run(ctx *context.Context) (*OrchInstallerTerraformStepOutput, *internal.OrchInstallerError) {
+func (s *OrchInstallerTerraformStep) Run(ctx context.Context) (*OrchInstallerTerraformStepOutput, *internal.OrchInstallerError) {
 	logger := internal.Logger()
 	logger.Debugf("Initializing backend and variables files")
 	if _, err := os.Stat(fmt.Sprintf("%s/environments", s.ModulePath)); os.IsNotExist(err) {
@@ -93,7 +93,7 @@ func (s *OrchInstallerTerraformStep) Run(ctx *context.Context) (*OrchInstallerTe
 	}
 
 	logger.Debugf("Initializing Terraform with backend config: %s", backendConfigPath)
-	err = tf.Init(*ctx, tfexec.Upgrade(true), tfexec.BackendConfig(backendConfigPath))
+	err = tf.Init(ctx, tfexec.Upgrade(true), tfexec.BackendConfig(backendConfigPath))
 	if err != nil {
 		return nil, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeTerraform,
@@ -110,7 +110,7 @@ func (s *OrchInstallerTerraformStep) Run(ctx *context.Context) (*OrchInstallerTe
 	}
 	if s.Action == "install" || s.Action == "upgrade" {
 		logger.Debugf("Applying Terraform with variables file: %s", variableFilePath)
-		err = tf.ApplyJSON(*ctx, fileLogWriter, tfexec.VarFile(variableFilePath))
+		err = tf.ApplyJSON(ctx, fileLogWriter, tfexec.VarFile(variableFilePath))
 		if err != nil {
 			return nil, &internal.OrchInstallerError{
 				ErrorCode: internal.OrchInstallerErrorCodeTerraform,
@@ -120,7 +120,7 @@ func (s *OrchInstallerTerraformStep) Run(ctx *context.Context) (*OrchInstallerTe
 		logger.Debugf("Terraform applied successfully")
 	} else if s.Action == "uninstall" {
 		logger.Debugf("Destroying Terraform with variables file: %s", variableFilePath)
-		err = tf.DestroyJSON(*ctx, fileLogWriter, tfexec.VarFile(variableFilePath))
+		err = tf.DestroyJSON(ctx, fileLogWriter, tfexec.VarFile(variableFilePath))
 		if err != nil {
 			return nil, &internal.OrchInstallerError{
 				ErrorCode: internal.OrchInstallerErrorCodeTerraform,
@@ -135,7 +135,7 @@ func (s *OrchInstallerTerraformStep) Run(ctx *context.Context) (*OrchInstallerTe
 		}
 	}
 
-	output, err := tf.Output(*ctx)
+	output, err := tf.Output(ctx)
 	if err != nil {
 		return nil, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeTerraform,

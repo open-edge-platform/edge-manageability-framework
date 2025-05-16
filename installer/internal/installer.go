@@ -64,7 +64,7 @@ func reverseStages(stages []OrchInstallerStage) []OrchInstallerStage {
 	return reversed
 }
 
-func (o *OrchInstaller) Run(ctx *context.Context, action string, input OrchInstallerInput, logDir string) (RuntimeState, *OrchInstallerError) {
+func (o *OrchInstaller) Run(ctx context.Context, action string, input OrchInstallerInput, logDir string) (RuntimeState, *OrchInstallerError) {
 	logger := Logger()
 	// TODO: Add error handling and logging
 	// TODO: collect runtimeStates from stages
