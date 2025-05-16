@@ -25,6 +25,7 @@ argo:
     istiod: true
     kiali: true
     metadata-broker: true
+    multitenant_gateway: true
     nginx-ingress-pxe-boots: true
     platform-autocert: true
     platform-keycloak: true

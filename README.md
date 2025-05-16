@@ -177,9 +177,17 @@ Here is brief description of all the repos.
 ## Community and Support
 
 To learn more about the project, its community, and governance, visit
-the [Edge Orchestrator Community](https://github.com/open-edge-platform).
+the Edge Manageability Framework community [Discussions page](https://github.com/open-edge-platform/edge-manageability-framework/discussions)
+
+To submit issues, use the [Issues page](https://github.com/open-edge-platform/edge-manageability-framework/issues)
+
+Discover more about the [Open Edge Platform](https://github.com/open-edge-platform).
 
 ## License
 
 Edge Manageability Framework is licensed
 under [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0)
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=open-edge-platform/edge-manageability-framework&type=Date)](https://www.star-history.com/#open-edge-platform/edge-manageability-framework&Date)

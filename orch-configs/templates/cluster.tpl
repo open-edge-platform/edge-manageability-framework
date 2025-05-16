@@ -7,7 +7,6 @@ root:
   useLocalValues: false
   clusterValues:
     - orch-configs/profiles/enable-platform.yaml
-    - orch-configs/profiles/enable-multitenancy.yaml
 {{- if .Values.enableObservability }}
     - orch-configs/profiles/enable-o11y.yaml
 {{- end }}
@@ -129,7 +128,7 @@ orchestratorDeployment:
   enableMailpit: {{ .Values.enableMailpit }}
   argoServiceType: {{ .Values.argoServiceType }}
   dockerCache: "{{ .Values.dockerCache }}"
-{{- if and .Values.dockerCacheCert }}  
+{{- if and .Values.dockerCacheCert }}
   dockerCacheCert: |
 {{ .Values.dockerCacheCert | indent 4 }}
 {{- end }}

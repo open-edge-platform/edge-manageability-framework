@@ -7,7 +7,6 @@ root:
   useLocalValues: false
   clusterValues:
     - orch-configs/profiles/enable-platform.yaml
-    - orch-configs/profiles/enable-multitenancy.yaml
     - orch-configs/profiles/enable-app-orch.yaml
     - orch-configs/profiles/enable-cluster-orch.yaml
     - orch-configs/profiles/enable-edgeinfra.yaml

@@ -33,15 +33,7 @@
               "name": "coredns-config",
               "namespace": "default"
             },
-            "privateRegistriesConfig": {
-              "mirrors": {
-                "rs-proxy.rs-proxy.svc.cluster.local:8443": {
-                  "endpoint": [
-                    "https://localhost.internal:9443"
-                  ]
-                }
-              }
-            },
+            "privateRegistriesConfig": {},
             "serverConfig": {
               "cni": "calico",
               "cniMultusEnable": true,

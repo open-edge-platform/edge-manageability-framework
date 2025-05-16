@@ -12,6 +12,9 @@ if [[ $# != 1 ]]; then
   echo "Usage: $0 <name of github org>"
 fi
 
+# bring in environmental variables
+source env.sh
+
 GITHUB_ORG="$1"
 
 GITHUB_USER="${GITHUB_USER:-user}"

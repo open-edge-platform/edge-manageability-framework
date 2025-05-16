@@ -78,7 +78,7 @@ func (DevUtils) DeployEnic(replicas int, targetEnv string) error {
 	cmd := fmt.Sprintf("helm upgrade --install root-app argocd-internal/root-app -f %s -n %s --create-namespace %s "+
 		"--set root.useLocalValues=true --set argo.enic.replicas=%d "+
 		"--set argo.clusterDomain=%s --set argo.enic.orchestratorIp=%s "+
-		"--set argo.enic.orchestratorUser=%s --set argo.enic.orchestratorPass=%s "+
+		"--set argo.enic.orchestratorUser=%s --set argo.enic.orchestratorPass=\"%s\" "+
 		"--set argo.enic.orchestratorOrg=%s --set argo.enic.orchestratorProject=%s",
 		targetConfig, namespace, deployRevision,
 		replicas,

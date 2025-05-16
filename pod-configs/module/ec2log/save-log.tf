@@ -134,7 +134,7 @@ resource "aws_iam_policy" "cloudwatch" {
             "logs:CreateLogStream",
             "logs:PutLogEvents",
             "logs:DescribeLogStreams",
-            "cloudwatch:PutMetricData",
+            "cloudwatch:PutMetricData"
         ],
         Effect   = "Allow",
         Resource = "*",

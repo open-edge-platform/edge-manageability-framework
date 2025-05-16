@@ -1207,7 +1207,7 @@ func setupNewService(port, serviceName, namespace, serviceType string) error {
 		return err
 	}
 
-	timeout := 32 * time.Second
+	timeout := 120 * time.Second
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 

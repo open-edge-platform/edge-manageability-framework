@@ -8,20 +8,27 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+permissions: {}
+
 jobs:
   auto-approve:
+    permissions:
+      pull-requests: write
     name: Auto approve PR
     runs-on: ubuntu-latest
     if: |
       github.actor == 'sys-orch' && 
       github.event.pull_request.base.ref == 'main-pass-validation'
     steps:
-      - uses: hmarr/auto-approve-action@v4
+      - uses: hmarr/auto-approve-action@8f929096a962e83ccdfa8afcf855f39f12d4dac7  # v4
         with:
           github-token: ${{ secrets.SYS_ORCH_GITHUB_APPROVE }}
           review-message: "Auto approved by sys-orch-github-approve bot"
 
   auto-merge:
+    permissions:
+      pull-requests: write
+      contents: write
     name: Auto merge PR
     needs: 
       - auto-approve
@@ -31,7 +38,7 @@ jobs:
       github.event.pull_request.base.ref == 'main-pass-validation'
     steps:
       - name: Auto merge
-        uses: peter-evans/enable-pull-request-automerge@v3
+        uses: peter-evans/enable-pull-request-automerge@a660677d5469627102a1c1e11409dd063606628d  # v3
         with:
           token:  ${{ secrets.SYS_ORCH_GITHUB_APPROVE }}
           pull-request-number: ${{ github.event.pull_request.number }}

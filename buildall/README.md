@@ -39,7 +39,8 @@ dependencies to run properly:
 - protoc-gen-go-grpc (1.2.0 or later)
 - protoc-gen-go (v1.30.0 or later)
 - protoc-gen-openapi (latest from
-  https://github.com/kollalabs/protoc-gen-openapi)
+  [github.com/kollalabs/protoc-gen-openapi](https://github.com/kollalabs/protoc-gen-openapi)
+  )
 - protoc-gen-grpc-gateway (v2.26.3)
 - swagger (4.0.4 or later)
 - yq (4.44.3 or later)
@@ -258,3 +259,14 @@ out in a repo at a time.
 
 Building additional times will leverage both the ability of make to keep track
 of progress (via files in scratch), and the docker cache.
+
+## Code Counting
+
+As this automation includes checking out repos, it also offers the ability to
+perform a code count on those repos by running `make codecount`. This requires
+the [scc](https://github.com/boyter/scc) tool to count within on each repo, then
+summarizes results into CSV files in `scratch/codecount_*.csv`.
+
+A grouping based on code language and line type is performed in the
+summarization process, and the mapping for this can be found in the
+`generate_totals_csv()` function in `scripts/codecount_summarize.py`.
