@@ -120,7 +120,9 @@ This package list file needs to be appended to the `PackageLists` section of all
 
 Also, we propose to add the K3s version information embedded in the EMT image to the `manifest.json` file of the OS profile. This information can be used by the Cluster Manager to perform version compatibility checks, ensuring that the Kubernetes version embedded in the EMT image aligns with the cluster templates selected by users.
 
-Lastly, it is important to note that while the K3s binary benefits from the immutability provided by its placement in the read-only partition of EMT, ensuring it cannot be updated without an EMT image update, the same level of immutability is not guaranteed for addon images. Addons, which are essentially Kubernetes Pods, can be updated after their initial creation using images loaded from the embedded tarball.
+It is important to note that while the K3s binary benefits from the immutability provided by its placement in the read-only partition of EMT, ensuring it cannot be updated without an EMT image update, the same level of immutability is not guaranteed for addon images. Addons, which are essentially Kubernetes Pods, can be updated after their initial creation using images loaded from the embedded tarball.
+
+Lastly, any user data stored under `/etc/rancher` and `/var/lib/rancher`, including K3s server configuration, container state, images, and persistent volumes, will reside in a mutable partition. This ensures that user data remains intact across EMT image updates, preserving cluster configurations and workloads.
 
 ### Skip downloading K3s
 
