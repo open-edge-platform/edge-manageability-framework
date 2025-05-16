@@ -25,12 +25,14 @@ Ubuntu 24.04 with kernel (>6.11) should support in-tree GPU drivers which should
 
 Support for OS drivers in Edge Microvisor Toolkit (EMT) should be included in the immutable images. We do not have an option of installing the driver on day-2 here anyways.
 
-| dGPU(OS)    | OS           | Kernel | Platform | Priority | Kernel cmd | SRIOV    | DevicePlugin | Operator | Notes |
-|-------------|--------------|--------|----------|----------|------------|----------|--------------|----------|-------|
-| Intel B580  | EMT 3.0      | -      | Xeon     | P0(3.1)  | Required   | Required | Required     | -        |       |
-| Intel B580  | Ubuntu 24.04 | >6.11  | Xeon     | P1(3.1)  | Required   | Required | Required     | -        | In-tree driver verification WIP |
-| Nvidia P100 | EMT 3.0      | -      | Xeon     | P2(3.2)  | Required   | Required | -            | Required |       |
-| Nvidia P100 | Ubuntu 24.04 | >6.11  | Xeon     | P0(3.1)  | Required   |    -     | -            | Required | Needs a specific kernel 6.11.x |
+| GPU         | OS           | Kernel | Platform   | Priority | Kernel cmd | SRIOV     | DevicePlugin | Operator | Notes |
+|-------------|--------------|--------|------------|----------|------------|-----------|--------------|----------|-------|
+| Intel iGPU  | EMT 3.0      | -      | Xeon, Core | P0(3.1)  | Required   | Required  | Required     | -        |       |
+| Intel iGPU  | Ubuntu 24.04 | >6.11  | Xeon, Core | P0(3.1)  | Required   | Required  | Required     | -        |       |
+| Intel B580  | EMT 3.0      | -      | Xeon       | P0(3.1)  | Required   | 3.2       | Required     | -        |       |
+| Intel B580  | Ubuntu 24.04 | >6.11  | Xeon       | P1(3.1)  | Required   | 3.2       | Required     | -        | In-tree driver verification WIP |
+| Nvidia P100 | EMT 3.0      | -      | Xeon       | P2(3.2)  | Required   | Required  | -            | Required |       |
+| Nvidia P100 | Ubuntu 24.04 | >6.11  | Xeon       | P0(3.1)  | Required   |    -      | -            | Required | Needs a specific kernel 6.11.x |
 
 ### Limitations and Debt of The Current Design
 
