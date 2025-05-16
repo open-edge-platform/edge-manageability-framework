@@ -12,7 +12,7 @@ import (
 )
 
 // Helper functions
-func SerializeToYAML(runtimeState any) ([]byte, error) {
+func SerializeToYAML(runtimeState OrchInstallerRuntimeState) ([]byte, error) {
 	k := koanf.New(".")
 	// NOTE: Set parser to nil since we don't need to parse go struct
 	err := k.Load(structs.Provider(runtimeState, "yaml"), nil)
@@ -22,7 +22,7 @@ func SerializeToYAML(runtimeState any) ([]byte, error) {
 	return k.Marshal(yaml.Parser())
 }
 
-func DeserializeFromYAML(runtimeState any, data []byte) error {
+func DeserializeFromYAML(runtimeState *OrchInstallerRuntimeState, data []byte) error {
 	v := koanf.New(".")
 
 	err := v.Load(rawbytes.Provider(data), yaml.Parser())

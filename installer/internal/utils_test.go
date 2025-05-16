@@ -1,52 +1,43 @@
 // SPDX-FileCopyrightText: 2025 Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
-
 package internal_test
 
 import (
 	"testing"
 
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
+	"github.com/stretchr/testify/suite"
 )
 
-type TestStruct struct {
-	Foo string `yaml:"foo"`
-	Baz string `yaml:"baz"`
+type UtilsTestSuite struct {
+	suite.Suite
 }
 
-func TestSerializeAndDeserialize(t *testing.T) {
-	data := []byte(`---
-foo: "bar"
-baz: "baz"`)
+func TestUtilsTestSuite(t *testing.T) {
+	suite.Run(t, new(UtilsTestSuite))
+}
 
-	obj := &TestStruct{}
-	err := internal.DeserializeFromYAML(obj, data)
-	if err != nil {
-		t.Fatalf("failed to unmarshal yaml: %v", err)
-	}
+func (s *UtilsTestSuite) TestSerializeAndDeserialize() {
+	data := []byte(`action: install
+dry_run: false
+log_dir: .logs
+vpc_id: vpc-12345678`)
 
-	if obj.Foo != "bar" {
-		t.Fatalf("expected Foo to be 'bar', got '%s'", obj.Foo)
-	}
-	if obj.Baz != "baz" {
-		t.Fatalf("expected Baz to be 'baz', got '%s'", obj.Baz)
-	}
-
+	obj := internal.OrchInstallerRuntimeState{}
+	err := internal.DeserializeFromYAML(&obj, data)
+	s.NoError(err, "failed to unmarshal yaml")
+	s.Equal("install", obj.Action)
+	s.Equal(false, obj.DryRun)
+	s.Equal(".logs", obj.LogDir)
+	s.Equal("vpc-12345678", obj.VPCID)
 	data2, err := internal.SerializeToYAML(obj)
-	if err != nil {
-		t.Fatalf("failed to marshal yaml: %v", err)
-	}
-	// NOTE: The serialized data may not match the original input due to formatting or key order differences.
-	obj2 := &TestStruct{}
-	err = internal.DeserializeFromYAML(obj2, data2)
-	if err != nil {
-		t.Fatalf("failed to unmarshal yaml: %v", err)
-	}
-	if obj2.Foo != "bar" {
-		t.Fatalf("expected Foo to be 'bar', got '%s'", obj2.Foo)
-	}
-	if obj2.Baz != "baz" {
-		t.Fatalf("expected Baz to be 'baz', got '%s'", obj2.Baz)
-	}
+	s.NoError(err, "failed to marshal yaml")
+	obj2 := internal.OrchInstallerRuntimeState{}
+	err = internal.DeserializeFromYAML(&obj2, data2)
+	s.NoError(err, "failed to unmarshal yaml")
+	s.Equal(obj.Action, obj2.Action)
+	s.Equal(obj.DryRun, obj2.DryRun)
+	s.Equal(obj.LogDir, obj2.LogDir)
+	s.Equal(obj.VPCID, obj2.VPCID)
 }
