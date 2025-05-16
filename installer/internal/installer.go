@@ -16,7 +16,8 @@ type OrchInstaller struct {
 // The top level installer input defined here
 // This must be as general as possible
 // Note that we are using
-type OrchInstallerInput struct {
+type OrchInstallerConfig struct {
+	Version string `yaml:"version"`
 	// The target environment that will be used
 	TargetEnvironment string `yaml:"target_environment" validate:"required,oneof=aws azure on-prem demo"`
 	// The DeploymentName that will be shared across all the stages.
@@ -46,6 +47,7 @@ type OrchInstallerRuntimeState struct {
 	Action string `yaml:"action" validate:"required,oneof=install upgrade uninstall"`
 	// The directory where the logs will be saved
 	LogDir string `yaml:"log_path"`
+	DryRun bool   `yaml:"dry_run"`
 }
 
 func CreateOrchInstaller(stages []OrchInstallerStage) (*OrchInstaller, error) {
@@ -64,7 +66,7 @@ func reverseStages(stages []OrchInstallerStage) []OrchInstallerStage {
 	return reversed
 }
 
-func (o *OrchInstaller) Run(ctx context.Context, action string, input OrchInstallerInput, logDir string) (RuntimeState, *OrchInstallerError) {
+func (o *OrchInstaller) Run(ctx context.Context, action string, input OrchInstallerConfig, logDir string) (RuntimeState, *OrchInstallerError) {
 	logger := Logger()
 	// TODO: Add error handling and logging
 	// TODO: collect runtimeStates from stages

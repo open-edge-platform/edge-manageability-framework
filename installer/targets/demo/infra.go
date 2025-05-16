@@ -35,7 +35,7 @@ func (s *DemoInfraStage) Name() string {
 	return "DemoInfraStage"
 }
 
-func (s *DemoInfraStage) PreStage(ctx context.Context, installerInput internal.OrchInstallerInput, prevStageOutput internal.RuntimeState) (internal.RuntimeState, *internal.OrchInstallerError) {
+func (s *DemoInfraStage) PreStage(ctx context.Context, config internal.OrchInstallerConfig, prevStageOutput internal.RuntimeState) (internal.RuntimeState, *internal.OrchInstallerError) {
 	infraNetRuntimeState, ok := prevStageOutput.(*DemoInfraNetworkStageRuntimeState)
 	if !ok {
 		return nil, &internal.OrchInstallerError{
@@ -46,7 +46,7 @@ func (s *DemoInfraStage) PreStage(ctx context.Context, installerInput internal.O
 		}
 	}
 
-	bucketName := fmt.Sprintf("%s-%s", installerInput.DeploymentName, installerInput.StateStoreBucketPostfix)
+	bucketName := fmt.Sprintf("%s-%s", config.DeploymentName, config.StateStoreBucketPostfix)
 
 	variables := DemoInfraStageVariables{
 		VPCID: infraNetRuntimeState.VPCID,
@@ -54,7 +54,7 @@ func (s *DemoInfraStage) PreStage(ctx context.Context, installerInput internal.O
 	backendConfig := AWSBackendConfig{
 		Bucket: bucketName,
 		Key:    "infra",
-		Region: installerInput.Region,
+		Region: config.Region,
 	}
 
 	return &DemoInfraStageRuntimeState{
@@ -65,7 +65,7 @@ func (s *DemoInfraStage) PreStage(ctx context.Context, installerInput internal.O
 	}, nil
 }
 
-func (s *DemoInfraStage) RunStage(ctx context.Context, installerInput internal.OrchInstallerInput, prevStageOutput internal.RuntimeState) (internal.RuntimeState, *internal.OrchInstallerError) {
+func (s *DemoInfraStage) RunStage(ctx context.Context, config internal.OrchInstallerConfig, prevStageOutput internal.RuntimeState) (internal.RuntimeState, *internal.OrchInstallerError) {
 	prevOutput, ok := prevStageOutput.(*DemoInfraStageRuntimeState)
 	if !ok {
 		return nil, &internal.OrchInstallerError{
@@ -89,6 +89,6 @@ func (s *DemoInfraStage) RunStage(ctx context.Context, installerInput internal.O
 	return nil, err
 }
 
-func (s *DemoInfraStage) PostStage(ctx context.Context, installerInput internal.OrchInstallerInput, prevStageOutput internal.RuntimeState, prevStageError *internal.OrchInstallerError) (internal.RuntimeState, *internal.OrchInstallerError) {
+func (s *DemoInfraStage) PostStage(ctx context.Context, config internal.OrchInstallerConfig, prevStageOutput internal.RuntimeState, prevStageError *internal.OrchInstallerError) (internal.RuntimeState, *internal.OrchInstallerError) {
 	return prevStageOutput, prevStageError
 }

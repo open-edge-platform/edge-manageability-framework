@@ -50,7 +50,7 @@ func (s *DemoInfraNetworkStage) Name() string {
 	return "DemoInfraNetworkStage"
 }
 
-func (s *DemoInfraNetworkStage) PreStage(ctx context.Context, installerInput internal.OrchInstallerInput, prevStageOutput internal.RuntimeState) (internal.RuntimeState, *internal.OrchInstallerError) {
+func (s *DemoInfraNetworkStage) PreStage(ctx context.Context, config internal.OrchInstallerConfig, prevStageOutput internal.RuntimeState) (internal.RuntimeState, *internal.OrchInstallerError) {
 	installerOutput, ok := prevStageOutput.(*internal.OrchInstallerRuntimeState)
 	if !ok {
 		return nil, &internal.OrchInstallerError{
@@ -62,9 +62,9 @@ func (s *DemoInfraNetworkStage) PreStage(ctx context.Context, installerInput int
 	}
 
 	logger := internal.Logger()
-	bucketName := fmt.Sprintf("%s-%s", installerInput.DeploymentName, installerInput.StateStoreBucketPostfix)
+	bucketName := fmt.Sprintf("%s-%s", config.DeploymentName, config.StateStoreBucketPostfix)
 	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(installerInput.Region),
+		Region: aws.String(config.Region),
 	})
 	if err != nil {
 		return nil, &internal.OrchInstallerError{
@@ -95,13 +95,13 @@ func (s *DemoInfraNetworkStage) PreStage(ctx context.Context, installerInput int
 	}
 
 	variables := DemoInfraNetworkVariables{
-		Name: installerInput.DeploymentName,
-		Cidr: installerInput.NetworkCIDR,
+		Name: config.DeploymentName,
+		Cidr: config.NetworkCIDR,
 	}
 	backendConfig := AWSBackendConfig{
 		Bucket: bucketName,
 		Key:    "infra-network",
-		Region: installerInput.Region,
+		Region: config.Region,
 	}
 
 	return &DemoInfraNetworkStageRuntimeState{
@@ -112,7 +112,7 @@ func (s *DemoInfraNetworkStage) PreStage(ctx context.Context, installerInput int
 	}, nil
 }
 
-func (s *DemoInfraNetworkStage) RunStage(ctx context.Context, installerInput internal.OrchInstallerInput, prevStageOutput internal.RuntimeState) (internal.RuntimeState, *internal.OrchInstallerError) {
+func (s *DemoInfraNetworkStage) RunStage(ctx context.Context, config internal.OrchInstallerConfig, prevStageOutput internal.RuntimeState) (internal.RuntimeState, *internal.OrchInstallerError) {
 	prevOutput, ok := prevStageOutput.(*DemoInfraNetworkStageRuntimeState)
 	if !ok {
 		return nil, &internal.OrchInstallerError{
@@ -154,6 +154,6 @@ func (s *DemoInfraNetworkStage) RunStage(ctx context.Context, installerInput int
 	return rs, err
 }
 
-func (s *DemoInfraNetworkStage) PostStage(ctx context.Context, installerInput internal.OrchInstallerInput, prevStageOutput internal.RuntimeState, prevStageError *internal.OrchInstallerError) (internal.RuntimeState, *internal.OrchInstallerError) {
+func (s *DemoInfraNetworkStage) PostStage(ctx context.Context, config internal.OrchInstallerConfig, prevStageOutput internal.RuntimeState, prevStageError *internal.OrchInstallerError) (internal.RuntimeState, *internal.OrchInstallerError) {
 	return prevStageOutput, prevStageError
 }

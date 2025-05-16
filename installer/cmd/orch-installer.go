@@ -99,14 +99,14 @@ func execute(action string, orchConfigFile string, logDir string) {
 		logger.Fatalf("error reading config file %s: %s", orchConfigFile, err)
 	}
 	logger.Infof("Config file %s read successfully", orchConfigFile)
-	orchInstallerInput := internal.OrchInstallerInput{}
-	err = internal.DeserializeFromYAML(&orchInstallerInput, configData)
+	orchInstallerConfig := internal.OrchInstallerConfig{}
+	err = internal.DeserializeFromYAML(&orchInstallerConfig, configData)
 	if err != nil {
 		logger.Fatalf("error unmarshalling config file: %s", err)
 	}
 	logger.Infof("Action: %s", action)
-	logger.Infof("Target environment: %s", orchInstallerInput.TargetEnvironment)
-	logger.Infof("Deployment name: %s", orchInstallerInput.DeploymentName)
+	logger.Infof("Target environment: %s", orchInstallerConfig.TargetEnvironment)
+	logger.Infof("Deployment name: %s", orchInstallerConfig.DeploymentName)
 
 	// TODO: we will use switch-case to determine the stage to run
 	// for now we will just run the demo stage
@@ -133,7 +133,7 @@ func execute(action string, orchConfigFile string, logDir string) {
 	}()
 
 	// TODO: Convert error to user friendly message and actions
-	_, runErr := orchInstaller.Run(ctx, action, orchInstallerInput, logDir)
+	_, runErr := orchInstaller.Run(ctx, action, orchInstallerConfig, logDir)
 	if runErr != nil {
 		logger.Errorf("error running orch installer: %v", runErr)
 	} else if orchInstaller.Cancelled() {
