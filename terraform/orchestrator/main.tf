@@ -391,6 +391,35 @@ resource "null_resource" "exec_installer" {
   provisioner "remote-exec" {
     inline = [
       "set -o errexit",
+      "cp /home/ubuntu/proxy_config.yaml /home/ubuntu/repo_archives/tmp/edge-manageability-framework/orch-configs/profiles/proxy-none.yaml",
+      "cat /home/ubuntu/repo_archives/tmp/edge-manageability-framework/orch-configs/profiles/proxy-none.yaml",
+     ]
+    when = create
+  }
+}
+
+resource "null_resource" "exec_installer" {
+
+  // Enable this resource if auto-install is enabled
+  count = var.enable_auto_install ? 1 : 0
+
+  depends_on = [
+    null_resource.write_installer_config,
+    null_resource.set_proxy_config,
+    null_resource.wait_for_cloud_init
+  ]
+
+  connection {
+    type     = "ssh"
+    host     = local.vmnet_ip0
+    port     = var.vm_ssh_port
+    user     = var.vm_ssh_user
+    password = var.vm_ssh_password
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "set -o errexit",
       "bash -c 'cd /home/ubuntu; source .env; env; ./onprem_installer.sh --skip-download --trace --yes ${var.override_flag ? "--override" : ""} | tee ./install_output.log; exit $${PIPESTATUS[0]}'",
     ]
     when = create
