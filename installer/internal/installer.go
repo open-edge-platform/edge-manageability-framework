@@ -48,6 +48,9 @@ type OrchInstallerRuntimeState struct {
 	// The directory where the logs will be saved
 	LogDir string `yaml:"log_path"`
 	DryRun bool   `yaml:"dry_run"`
+
+	// Infra-specific runtime state
+	VPCID string `yaml:"vpc_id" validate:"required"`
 }
 
 func CreateOrchInstaller(stages []OrchInstallerStage) (*OrchInstaller, error) {
@@ -66,31 +69,26 @@ func reverseStages(stages []OrchInstallerStage) []OrchInstallerStage {
 	return reversed
 }
 
-func (o *OrchInstaller) Run(ctx context.Context, action string, input OrchInstallerConfig, logDir string) (RuntimeState, *OrchInstallerError) {
+func (o *OrchInstaller) Run(ctx context.Context, input OrchInstallerConfig, runtimeState *OrchInstallerRuntimeState) *OrchInstallerError {
 	logger := Logger()
 	// TODO: Add error handling and logging
 	// TODO: collect runtimeStates from stages
 	// TODO: Handle final runtimeState?
 
-	if action == "" {
-		return nil, &OrchInstallerError{
+	if runtimeState.Action == "" {
+		return &OrchInstallerError{
 			ErrorCode: OrchInstallerErrorCodeInvalidArgument,
 			ErrorMsg:  "action must be specified",
 		}
 	}
 
-	var runtimeState RuntimeState = &OrchInstallerRuntimeState{
-		Action: action,
-		LogDir: logDir,
-	}
-
-	if action != "install" && action != "upgrade" && action != "uninstall" {
-		return nil, &OrchInstallerError{
+	if runtimeState.Action != "install" && runtimeState.Action != "upgrade" && runtimeState.Action != "uninstall" {
+		return &OrchInstallerError{
 			ErrorCode: OrchInstallerErrorCodeInvalidArgument,
-			ErrorMsg:  fmt.Sprintf("unsupported action: %s", action),
+			ErrorMsg:  fmt.Sprintf("unsupported action: %s", runtimeState.Action),
 		}
 	}
-	if action == "uninstall" {
+	if runtimeState.Action == "uninstall" {
 		o.Stages = reverseStages(o.Stages)
 	}
 	for _, stage := range o.Stages {
@@ -101,22 +99,22 @@ func (o *OrchInstaller) Run(ctx context.Context, action string, input OrchInstal
 		}
 		name := stage.Name()
 		logger.Infof("Running stage: %s", name)
-		runtimeState, err = stage.PreStage(ctx, input, runtimeState)
+		err = stage.PreStage(ctx, input, runtimeState)
 
 		// We will skip to run the stage if the previous stage failed
 		if err == nil {
-			runtimeState, err = stage.RunStage(ctx, input, runtimeState)
+			err = stage.RunStage(ctx, input, runtimeState)
 		}
 
 		// But we will always run the post stage, the post stage should
 		// handle the error and rollback if needed.
-		runtimeState, err = stage.PostStage(ctx, input, runtimeState, err)
+		err = stage.PostStage(ctx, input, runtimeState, err)
 		if err != nil {
 			err.ErrorStage = name
-			return runtimeState, err
+			return err
 		}
 	}
-	return runtimeState, nil
+	return nil
 }
 
 func (o *OrchInstaller) CancelInstallation() {

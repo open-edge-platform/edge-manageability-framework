@@ -16,79 +16,48 @@ const (
 type DemoInfraStage struct {
 	WorkingDir        string
 	TerraformExecPath string
+
+	variables     DemoInfraStageVariables
+	backendConfig AWSBackendConfig
 }
 
 type DemoInfraStageVariables struct {
 	VPCID string `yaml:"vpc_id"`
 }
 
-type DemoInfraStageRuntimeState struct {
-	Variables     DemoInfraStageVariables `yaml:"variables"`
-	BackendConfig AWSBackendConfig        `yaml:"backend_config"`
-
-	// Inherit from previous stage
-	Action string `yaml:"action" validate:"required,oneof=install upgrade uninstall"`
-	LogDir string `yaml:"log_path"`
-}
-
 func (s *DemoInfraStage) Name() string {
 	return "DemoInfraStage"
 }
 
-func (s *DemoInfraStage) PreStage(ctx context.Context, config internal.OrchInstallerConfig, prevStageOutput internal.RuntimeState) (internal.RuntimeState, *internal.OrchInstallerError) {
-	infraNetRuntimeState, ok := prevStageOutput.(*DemoInfraNetworkStageRuntimeState)
-	if !ok {
-		return nil, &internal.OrchInstallerError{
-			ErrorCode:  internal.OrchInstallerErrorCodeInternal,
-			ErrorStage: s.Name(),
-			ErrorStep:  "DemoInfraNetworkStage",
-			ErrorMsg:   "failed to cast previous stage output to DemoInfraNetworkStageRuntimeState",
-		}
+func (s *DemoInfraStage) PreStage(ctx context.Context, config internal.OrchInstallerConfig, runtimeState *internal.OrchInstallerRuntimeState) *internal.OrchInstallerError {
+	s.variables = DemoInfraStageVariables{
+		VPCID: runtimeState.VPCID,
 	}
-
-	bucketName := fmt.Sprintf("%s-%s", config.DeploymentName, config.StateStoreBucketPostfix)
-
-	variables := DemoInfraStageVariables{
-		VPCID: infraNetRuntimeState.VPCID,
-	}
-	backendConfig := AWSBackendConfig{
-		Bucket: bucketName,
+	s.backendConfig = AWSBackendConfig{
+		Bucket: fmt.Sprintf("%s-%s", config.DeploymentName, config.StateStoreBucketPostfix),
 		Key:    "infra",
 		Region: config.Region,
 	}
-
-	return &DemoInfraStageRuntimeState{
-		Action:        infraNetRuntimeState.Action,
-		Variables:     variables,
-		BackendConfig: backendConfig,
-		LogDir:        infraNetRuntimeState.LogDir,
-	}, nil
+	return nil
 }
 
-func (s *DemoInfraStage) RunStage(ctx context.Context, config internal.OrchInstallerConfig, prevStageOutput internal.RuntimeState) (internal.RuntimeState, *internal.OrchInstallerError) {
-	prevOutput, ok := prevStageOutput.(*DemoInfraStageRuntimeState)
-	if !ok {
-		return nil, &internal.OrchInstallerError{
-			ErrorCode:  internal.OrchInstallerErrorCodeInternal,
-			ErrorStage: s.Name(),
-			ErrorStep:  "RunStage",
-			ErrorMsg:   "failed to cast previous stage output to DemoInfraStageRuntimeState",
-		}
-	}
+func (s *DemoInfraStage) RunStage(ctx context.Context, config internal.OrchInstallerConfig, runtimeState *internal.OrchInstallerRuntimeState) *internal.OrchInstallerError {
 	terraformStep := &steps.OrchInstallerTerraformStep{
-		Action:        prevOutput.Action,
+		Action:        runtimeState.Action,
 		ExecPath:      s.TerraformExecPath,
 		ModulePath:    filepath.Join(s.WorkingDir, InfraModulePath),
-		Variables:     prevOutput.Variables,
-		BackendConfig: prevOutput.BackendConfig,
-		LogFile:       filepath.Join(prevOutput.LogDir, "stage-infra-terraform.log"),
+		Variables:     s.variables,
+		BackendConfig: s.backendConfig,
+		LogFile:       filepath.Join(runtimeState.LogDir, "stage-infra-terraform.log"),
 	}
-
 	// TODO: Collect outputs from steps
 	_, err := terraformStep.Run(ctx)
-	return nil, err
+	return err
 }
 
-func (s *DemoInfraStage) PostStage(ctx context.Context, config internal.OrchInstallerConfig, prevStageOutput internal.RuntimeState, prevStageError *internal.OrchInstallerError) (internal.RuntimeState, *internal.OrchInstallerError) {
-	return prevStageOutput, prevStageError
+func (s *DemoInfraStage) PostStage(ctx context.Context,
+	config internal.OrchInstallerConfig,
+	runtimeState *internal.OrchInstallerRuntimeState,
+	prevStageError *internal.OrchInstallerError) *internal.OrchInstallerError {
+	return prevStageError
 }

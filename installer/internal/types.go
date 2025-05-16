@@ -7,11 +7,8 @@ import (
 	"github.com/knadh/koanf/v2"
 )
 
-// Overall interface that defines the the runtime state(output) that can be shared between stages.
-type RuntimeState any
-
 // Helper functions
-func SerializeToYAML(runtimeState RuntimeState) ([]byte, error) {
+func SerializeToYAML(runtimeState any) ([]byte, error) {
 	k := koanf.New(".")
 	// NOTE: Set parser to nil since we don't need to parse go struct
 	err := k.Load(structs.Provider(runtimeState, "yaml"), nil)
@@ -21,7 +18,7 @@ func SerializeToYAML(runtimeState RuntimeState) ([]byte, error) {
 	return k.Marshal(yaml.Parser())
 }
 
-func DeserializeFromYAML(runtimeState RuntimeState, data []byte) error {
+func DeserializeFromYAML(runtimeState any, data []byte) error {
 	v := koanf.New(".")
 
 	err := v.Load(rawbytes.Provider(data), yaml.Parser())
