@@ -119,6 +119,7 @@ createGiteaSecret "gitea-cred" "gitea_admin" "$adminGiteaPassword" "gitea"
 
 # Create user credential secrets for ArgoCD, AppOrch and ClusterOrch
 createGiteaSecret "argocd-gitea-credential" "argocd" "$argocdGiteaPassword" "gitea"
+createGiteaSecret "argocd-gitea-credential" "argocd" "$argocdGiteaPassword" "orch-platform"
 createGiteaSecret "app-gitea-credential" "apporch" "$appGiteaPassword" "orch-platform"
 createGiteaSecret "cluster-gitea-credential" "clusterorch" "$clusterGiteaPassword" "orch-platform"
 
