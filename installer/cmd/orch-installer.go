@@ -133,9 +133,9 @@ func execute(action string, orchConfigFile string, logDir string) {
 	}()
 
 	// TODO: Convert error to user friendly message and actions
-	_, runErr := orchInstaller.Run(&ctx, action, orchInstallerInput, logDir)
+	_, runErr := orchInstaller.Run(ctx, action, orchInstallerInput, logDir)
 	if runErr != nil {
-		logger.Errorf("error running orch installer: %v", err)
+		logger.Errorf("error running orch installer: %v", runErr)
 	} else if orchInstaller.Cancelled() {
 		logger.Info("Installation cancelled")
 	} else {
