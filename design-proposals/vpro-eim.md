@@ -154,8 +154,12 @@ Edge Infrastructure Manager team will implement the following functionality to s
 
 - Sanitize Inventory data-model and implement proper migration
 - Extend Inventory data-model and implement unit tests
+- Tenant controller will be extended to handle properly the removal of the new resources
+
+UI and CLI will not be able to integrate with these APIs and will have to use DMT micro-services
+for remote power management. Following items will be delivered in 3.2:
+
 - Extend API and implement integration tests
-- Tenant controller will be extended to handle properly the removal of the BM resources
 
 ### Test Plan
 
