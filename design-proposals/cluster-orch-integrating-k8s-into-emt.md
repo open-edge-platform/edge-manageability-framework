@@ -310,6 +310,65 @@ Edge Microvisor Toolkit
 Cluster Orchestration
 UX/UI
 
-## Implementation plan
+## Implementation Plan [ wip ]
 
-## Test Plan
+1. **Build K3s RPM Packages**:
+   - Write a SPEC file for K3s and its dependencies (e.g., `k3s-selinux`).
+   - Integrate the SPEC file into the EMT build pipeline.
+   - Test the RPM build process to ensure the K3s binary and assets are correctly packaged.
+
+2. **Integrate K3s into EMT**:
+   - Create a new package list file (`k3s.json`) specifying the K3s and `k3s-selinux` packages.
+   - Update the EMT image configuration files to include the `k3s.json` package list.
+   - Modify the EMT build pipeline to embed the K3s version into the `manifest.json` file.
+
+3. **Update Cluster Manager**:
+   - Implement logic to filter cluster templates based on the Kubernetes version embedded in the EMT image.
+   - Add support for the `airGapped` configuration in the Cluster Manager API for K3s on EMT.
+
+4. **Update CAPINTEL Provider**:
+   - Modify CAPINTEL to handle the new workflows for cluster creation, deletion.
+   - Implement safeguards to block incompatible EMT image upgrades.
+
+5. **Update UI/UX**:
+   - Add a toggle for `Create Cluster Automatically` during host registration.
+   - Update the UI to filter cluster templates based on the selected OS profile.
+
+6. **Documentation**:
+   - Update user documentation to reflect the new workflows and limitations.
+   - Provide examples for configuring `airGapped` and using the new features.
+
+7. **Testing and Validation**:
+   - Perform end-to-end testing for all workflows (automatic/manual cluster creation, deletion, and upgrades).
+   - Validate compatibility checks between EMT images and cluster templates.
+
+## Test Plan [ wip ]
+
+1. **Unit Tests**:
+   - Test the SPEC file to ensure correct RPM packaging of K3s and its dependencies.
+   - Validate the logic for filtering cluster templates based on Kubernetes versions.
+
+2. **Integration Tests**:
+   - Test the EMT build pipeline to ensure K3s is correctly embedded in the image.
+   - Verify that the `airGapped` configuration works as expected during cluster creation.
+
+3. **End-to-End Tests**:
+   - Test automatic cluster creation during host registration.
+   - Test manual cluster creation with compatible and incompatible EMT images.
+   - Test cluster deletion and ensure proper cleanup of Kubernetes configurations.
+
+4. **Upgrade Tests**:
+   - Test upgrading the EMT image with a new K3s version.
+   - Validate safeguards to block incompatible EMT image upgrades.
+
+5. **UI/UX Tests**:
+   - Verify the new toggle for `Create Cluster Automatically` works as expected.
+   - Ensure the UI correctly filters cluster templates based on OS profiles.
+
+6. **Performance Tests**:
+   - Measure cluster creation times for K3s on EMT and compare them to existing setups.
+   - Test the scalability of automatic cluster creation for bulk host registration.
+
+7. **Regression Tests**:
+   - Ensure existing workflows for K3s on Ubuntu and RKE2 on EMT/Ubuntu remain unaffected.
+   - Validate that multi-node cluster workflows are not disrupted.
