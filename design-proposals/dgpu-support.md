@@ -44,7 +44,20 @@ In the earlier release (3.0), a key issue was the inability to activate Secure B
    Develop/update the cluster extensions supported by the platform to ease the consumption of GPUs.
    https://github.com/open-edge-platform/cluster-extensions/blob/main/README.md
    * **Intel**
+     * Intel Arc B580 Graphics support the Xe2 driver architecture.
+     * The Xe2 driver is integrated into Linux kernel version 6.11*.
+     * Updating the kernel to version 6.11 or its minor updates will include the necessary display driver.
+
+        ![BMG-Supported-Linux-kernel](images/BMG-driver.png)
+        https://dgpu-docs.intel.com/devices/hardware-table.html
      * Existing extensions, such as the device-operator and gpu-plugin, will be updated. The Intel GPU device plugin for Kubernetes facilitates access to Intel discrete and integrated GPUs, registering resources like gpu.intel.com/i915 and gpu.intel.com/xe within a Kubernetes cluster
+     * **For EMT** : EMT should be build with 6.11* linux kernel.
+     * **For Ubuntu** : ubuntu 24.04.2 and 24.10 desktop version will come with 6.11* kernel and support the BMG graphic card. 
+     *  for compute and media package intel provide PPA 
+        ```
+        sudo add-apt-repository -y ppa:kobuk-team/intel-graphics
+        ```
+        https://dgpu-docs.intel.com/driver/client/overview.html#ubuntu-24.10-24.04
    * **NVIDIA**
      * A new extension will be created to configure and install the NVIDIA GPU Operator using its Helm chart. The NVIDIA GPU Operator automates the management of all NVIDIA software components required to provision GPUs in Kubernetes, including drivers, the Kubernetes device plugin, the NVIDIA Container Runtime, and monitoring tools.
         ![gpu-operator-extension](images/nvidia-gpu-operator-extension-package.png)
