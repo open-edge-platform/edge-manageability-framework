@@ -32,13 +32,6 @@ func (Deploy) rke2Cluster() error { //nolint: cyclop
 		return fmt.Errorf("error running customize-rke2.sh: %w", err)
 	}
 
-	devEnv, present := os.LookupEnv("INSTALLER_DEPLOY")
-	if !present && devEnv == "" {
-		if err := (Registry{}.loadRegistryCacheCerts()); err != nil {
-			return fmt.Errorf("error loading registry cache CA certificates into rke2 cluster: %w", err)
-		}
-	}
-
 	// We need to wait for all deployments and pods to be Ready also before deploying OpenEBS
 	if err := testDeploymentAndPods(); err != nil {
 		return fmt.Errorf("error testing deployments and pods: %w", err)
