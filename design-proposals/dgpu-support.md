@@ -115,7 +115,7 @@ The implementation is planned in two phases:
 
 1. Does Ubuntu in-tree kernel 6.11++ support Battlemage B580 as well?
 
-   The last tested version was not working. Tweaks were required. Needs to be verified against latest version.
+   Yes Ubuntu desktop 24.04.2 and 24.10 has 6.11* kernel support Battlemage B580 .
 2. No requirement for iGPU & dGPU together at the moment
 
 
