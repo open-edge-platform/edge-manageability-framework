@@ -76,7 +76,8 @@ license: $(VENV_DIR) ## Check licensing with the reuse tool
 ## targets to help create buildall ##
 
 # rebuild a repo list - not needed most of the time
-$(REPO_LIST):
+ALL_REPO_LIST := all_repo_list  # list of all repos that need to be counted#
+$(ALL_REPO_LIST):
 	$(SCRIPTS_DIR)/list_repos.sh $(GITHUB_ORG) > $@
 
 # build list of full paths from repo list
@@ -167,7 +168,6 @@ clean-image: ## clean up docker image scratchfiles to force rebuild
 	rm -rf $(SCRATCH_DIR)/ibuild_*
 
 # codecount
-ALL_REPO_LIST := all_repo_list  # list of all repos that need to be counted
 ALL_REPOS := $(addprefix $(REPO_DIR)/, $(shell tr '\n' ' ' < $(ALL_REPO_LIST)))
 SCC_LIST := $(addprefix $(SCRATCH_DIR)/scc_, $(addsuffix .json, $(shell tr '\n' ' ' < $(ALL_REPO_LIST))))
 
