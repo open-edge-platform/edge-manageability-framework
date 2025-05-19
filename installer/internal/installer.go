@@ -34,7 +34,7 @@ type OrchInstallerConfig struct {
 	ConfigVersion string `yaml:"config_version"`
 	OrchVersion   string `yaml:"orch_version"`
 	// The target environment that will be used
-	TargetEnvironment string `yaml:"target_environment" validate:"required,oneof=aws azure on-prem demo"`
+	TargetEnvironment string `yaml:"target_environment"`
 	// The DeploymentName that will be shared across all the stages.
 	// Including but not limited to:
 	// - Backend storage name(S3 bucket, Azure storage, dir, ...)
@@ -42,17 +42,18 @@ type OrchInstallerConfig struct {
 	// - EKS/AKS/RKE2 cluster name
 	// - Database name
 	// ...
-	DeploymentName string   `yaml:"deployment_name" validate:"required"`
-	NetworkCIDR    string   `yaml:"network_cidr"`
-	SubnetCIDRs    []string `yaml:"subnet_cidrs"`
+	DeploymentName string `yaml:"deployment_name"`
+	CustomerTag    string `yaml:"customer_tag"`
 
 	// Cloud deployment specific fields
-	Region                  string   `yaml:"region"`
+	NetworkCIDR             string   `yaml:"network_cidr"`
 	AvailabilityZones       []string `yaml:"availability_zones"`
+	Region                  string   `yaml:"region"`
 	StateStoreBucketPostfix string   `yaml:"state_store_bucket_postfix"`
+	JumpHostIPAllowList     []string `yaml:"jumphost_ip_allow_list"`
 }
 
-// The data that will pass to the first stage
+// Runtime state that will be shared across all the stages
 type OrchInstallerRuntimeState struct {
 	mutex *sync.Mutex
 	// Schema version of the runtime state
@@ -63,13 +64,17 @@ type OrchInstallerRuntimeState struct {
 	// - install
 	// - upgrade
 	// - uninstall
-	Action string `yaml:"action" validate:"required,oneof=install upgrade uninstall"`
+	Action string `yaml:"action"`
 	// The directory where the logs will be saved
-	LogDir string `yaml:"log_dir"`
-	DryRun bool   `yaml:"dry_run"`
+	LogDir            string `yaml:"log_dir"`
+	DryRun            bool   `yaml:"dry_run"`
+	TerraformExecPath string `yaml:"terraform_exec_path"`
 
 	// Infra-specific runtime state
-	VPCID string `yaml:"vpc_id" validate:"required"`
+	// VPC(AWS) or VPN(Azure) ID
+	VPCID            string   `yaml:"vpc_id"`
+	PublicSubnetIds  []string `yaml:"public_subnet_ids"`
+	PrivateSubnetIds []string `yaml:"public_subnet_ids"`
 }
 
 func (rs *OrchInstallerRuntimeState) UpdateRuntimeState(source OrchInstallerRuntimeState) *OrchInstallerError {
