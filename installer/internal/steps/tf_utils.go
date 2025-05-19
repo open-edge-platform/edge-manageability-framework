@@ -27,7 +27,7 @@ type OrchInstallerTerraformStep struct {
 }
 
 type OrchInstallerTerraformStepOutput struct {
-	Output map[string]string `yaml:"output"`
+	Output map[string]tfexec.OutputMeta `yaml:"output"`
 }
 
 func marshalHCL(data any) ([]byte, error) {
@@ -147,18 +147,6 @@ func (s *OrchInstallerTerraformStep) Run(ctx context.Context) (*OrchInstallerTer
 		}
 	}
 
-	convertedOutput := make(map[string]string)
-	for key, value := range output {
-		jsonValue, err := value.Value.MarshalJSON()
-		if err != nil {
-			return nil, &internal.OrchInstallerError{
-				ErrorCode: internal.OrchInstallerErrorCodeInternal,
-				ErrorMsg:  fmt.Sprintf("failed to marshal terraform output value: %v", err),
-			}
-		}
-		convertedOutput[key] = string(jsonValue)
-	}
-
 	if !s.KeepGeneratedFiles {
 		if _, err := os.Stat(backendConfigPath); err == nil {
 			logger.Debugf("Deleting backend config file: %s", backendConfigPath)
@@ -175,6 +163,6 @@ func (s *OrchInstallerTerraformStep) Run(ctx context.Context) (*OrchInstallerTer
 	}
 
 	return &OrchInstallerTerraformStepOutput{
-		Output: convertedOutput,
+		Output: output,
 	}, nil
 }
