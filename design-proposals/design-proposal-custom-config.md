@@ -118,7 +118,7 @@ autonumber
   note over user : User creates a custom cloud-init config yaml.
 
   user ->> inv : Create custom-config resource providing cloud-init config yaml.
-  note over inv : API does basic yaml validation of the cloud-init config file.
+  note over inv : Inventory does basic yaml validation of the cloud-init config file.
   inv ->> user : custom-config resourceID 
 
   note over user : User associates the custom-config resource with the host instance, through bulk import tool or UI or through Inventory APIs.  
@@ -193,7 +193,7 @@ A new custom-config resource will be added to the Infra-core data model, which c
   ```
   The instance resource data-model has to be updated to include custom-config resource.
 
-  The relationship between an instance and its custom configuration shall be one-to-many. Each instance can be associated with one or more than one pre-created custom configuration. The onboarding manager will create cloud-init file based on number of cloud-init files added by user. We can ristrict the number of cloud-init file that canbe associated to a instance to 5. 
+  The relationship between an instance and its custom configuration can be many-to-many. Meaning instance can be associated with multiple custom-config. This can be considered for future implementation as this requires more effort and study of database handling. So for simplicity and faster implementation we can have relationship between an instance and its custom configuration to be one-to-many. Each instance can be associated with one custom configuration. The onboarding manager will create cloud-init file based on number of cloud-init file added by user. 
 
 #### 2. EIM API enahncement
 
@@ -205,10 +205,9 @@ Additionally, the instance resource APIs must be extended to support the additio
 During provisioning, the Onboarding Manager shall check the instance. If the custom-config contains the cloud-init file, it will be copied along with the existing default EMF EdgeNode cloud-init. Since the custom-config is optional, no action is required if the cloud-init file is not present. There will be no error handling for user cloud-init failures. 
 
 #### 4. Updates to Bulk Import Tool 
-The Bulk Import Tool has to be enhances to :
-- Include custom-config resourceID in .csv file
+- Include custom-config name in .csv file
 
-  Ex: Here cc-8s150fg1 is the resource ID of custom-config
+  Ex: Here custom-config-1 is the name of custom-config
   ```csv
   Serial,UUID,OSProfile,Site,Secure,RemoteUser,CustomConfigNameMetadata,Error - do not fill
   2500JF3,4c4c4544-2046-5310-8052-cac04f515233,os-7d650dd1,site-08c1e377,true,localaccount-9dfb57cb,custom-config-1,key1=value1&key2=value2,
