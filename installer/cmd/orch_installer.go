@@ -8,6 +8,7 @@ import (
 	"context"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -118,6 +119,7 @@ func execute(action string, orchConfigFile string, runtimeStateFile string, logD
 	}
 	runtimeState.Action = action
 	runtimeState.LogDir = logDir
+	runtimeState.Mutex = &sync.Mutex{}
 
 	logger.Infof("Action: %s", action)
 	logger.Infof("Target environment: %s", orchInstallerConfig.TargetEnvironment)
@@ -154,11 +156,13 @@ func execute(action string, orchConfigFile string, runtimeStateFile string, logD
 	// TODO: Convert error to user friendly message and actions
 	runErr := orchInstaller.Run(ctx, orchInstallerConfig, runtimeState)
 	if runErr != nil {
-		logger.Errorf("error running orch installer: %v", runErr)
+		logger.Infof("error running orch installer: %v", runErr)
 	} else if orchInstaller.Cancelled() {
 		logger.Info("Installation cancelled")
 	} else {
 		logger.Infof("Orch installer %s successfully", action)
+		// Writes version to runtime state when installation is successful
+		runtimeState.OrchVersion = string(version)
 	}
 
 	runtimeStateData, err = internal.SerializeToYAML(runtimeState)
