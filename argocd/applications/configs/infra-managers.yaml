@@ -69,7 +69,7 @@ telemetry-manager:
 
 os-resource-manager:
   managerArgs:
-    osProfileRevision: 0.3.0
+    osProfileRevision: 0.4.1
     osSecurityFeatureEnable: false
     inventoryAddress: "inventory.orch-infra.svc.cluster.local:50051"
     traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"

@@ -467,8 +467,11 @@ apply_terraform() {
 
     if [ "$ACTION" == "apply" ] && [[ "$MODULE_DIR" == *"${ORCH_DIR}/cluster" ]]; then
         import_pending=false
-        if determine_import_s3_bucket $s3_prefix; then
-            import_pending=true
+        if [[ -n "$s3_prefix" ]]; then
+        # Import existing S3 bucket is needed only when there is s3_prefix specified explicitly in any of the variable files
+            if determine_import_s3_bucket $s3_prefix; then
+                import_pending=true
+            fi
         fi
     fi
 

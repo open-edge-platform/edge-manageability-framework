@@ -44,9 +44,9 @@ kubeControllerManager:
 kubelet:
   enabled: false
 kubeApiServer:
-  enabled: false
+  enabled: true
 kubernetesServiceMonitors:
-  enabled: false
+  enabled: true
 alertmanager:
   enabled: false
 defaultRules:
@@ -57,10 +57,10 @@ prometheus:
   prometheusSpec:
     ruleNamespaceSelector:
       matchLabels:
-        kubernetes.io/metadata.name: 'orch-platform'
+        kubernetes.io/metadata.name: "orch-platform"
     podMetadata:
       annotations:
-        traffic.sidecar.istio.io/excludeOutboundPorts: '15090'
+        traffic.sidecar.istio.io/excludeOutboundPorts: "15090"
     ruleSelectorNilUsesHelmValues: false
     serviceMonitorSelectorNilUsesHelmValues: false
     podMonitorSelectorNilUsesHelmValues: false
@@ -72,4 +72,4 @@ prometheus:
       - name: orchestrator-admin
         url: "http://orchestrator-observability-mimir-gateway:8181/api/v1/push"
         headers:
-          "X-Scope-OrgID": 'orchestrator-system'
+          "X-Scope-OrgID": "orchestrator-system"
