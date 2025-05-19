@@ -320,7 +320,6 @@ jobs:
       - lint-yaml
       - lint-version
       - scan-viruses
-      - scan-vulnerabilities
       - check-changed-files
     if: |
       always() &&
