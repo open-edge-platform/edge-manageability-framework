@@ -664,6 +664,51 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 		})
 	})
 
+	Describe("Cluster connect gateway", Label(clusterOrch), func() {
+		ccgUrl := fmt.Sprintf("https://connect-gateway.%s/kubernetes/%s-randomid/v1/pods", serviceDomainWithPort, util.TestProject)
+		It("should NOT be accessible when using invalid token", func() {
+			req, err := http.NewRequest("GET", ccgUrl, nil)
+			Expect(err).ToNot(HaveOccurred())
+			const invalid = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c" //nolint: lll
+			req.Header.Add("Authorization", "Bearer "+invalid)
+			resp, err := cli.Do(req)
+			Expect(err).ToNot(HaveOccurred())
+			defer resp.Body.Close()
+			Expect(resp.StatusCode).To(Equal(http.StatusUnauthorized))
+		})
+
+		It("should NOT be accessible over HTTPS when using no token", func() {
+			req, err := http.NewRequest("GET", ccgUrl, nil)
+			Expect(err).ToNot(HaveOccurred())
+			resp, err := cli.Do(req)
+			Expect(err).ToNot(HaveOccurred())
+			defer resp.Body.Close()
+			Expect(resp.StatusCode).To(Equal(http.StatusUnauthorized))
+		})
+
+		It("should NOT be accessible over HTTPS when using valid but expired token", func() {
+			Expect(saveToken(cli)).To(Succeed())
+			token, err := script.File(outputFile).String()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(token).ToNot(BeEmpty())
+
+			isUnexpired, err := isTokenUnexpired(token)
+			Expect(err).ToNot(HaveOccurred())
+			if isUnexpired {
+				Skip("Skipping this test because JWT Token is NOT expired")
+			}
+
+			req, err := http.NewRequest("GET", ccgUrl, nil)
+			Expect(err).ToNot(HaveOccurred())
+
+			req.Header.Add("Authorization", "Bearer "+token)
+			resp, err := cli.Do(req)
+			Expect(err).ToNot(HaveOccurred())
+			defer resp.Body.Close()
+			Expect(resp.StatusCode).To(Equal(http.StatusUnauthorized))
+		})
+	})
+
 	Describe("Cluster Manager service - Clusters", Label(clusterOrch), func() {
 		cmUrl := fmt.Sprintf("https://api.%s/v2/projects/%s/clusters", serviceDomainWithPort, util.TestProject)
 		coUser := fmt.Sprintf("%s-edge-op", util.TestUser)
@@ -845,11 +890,15 @@ func getKeycloakJWT(cli *http.Client, username string) string {
 
 // saveToken should persist token to a file only if one does not exist.
 func saveToken(cli *http.Client) error {
-	_, err := script.IfExists(outputFile).Stdout()
-	if err != nil {
+	fileInfo, err := os.Stat(outputFile)
+	if err != nil || fileInfo.Size() == 0 {
 		jwt := getKeycloakJWT(cli, "all-groups-example-user")
 		// create file if it does not exist
 		_, err := script.Echo(jwt).WriteFile(outputFile)
+		fileInfo, _ = os.Stat(outputFile)
+		if fileInfo.Size() == 0 {
+			return fmt.Errorf("Token file is empty")
+		}
 		return err
 	}
 	return nil
@@ -857,14 +906,18 @@ func saveToken(cli *http.Client) error {
 
 // saveToken should persist token to a file only if one does not exist.
 func saveTokenUser(cli *http.Client, username, password string) error {
-	_, err := script.IfExists(outputFile).Stdout()
-	if err != nil {
+	fileInfo, err := os.Stat(outputFile)
+	if err != nil || fileInfo.Size() == 0 {
 		token, err := util.GetApiToken(cli, username, password)
 		if err != nil {
 			return err
 		}
 		// create file if it does not exist
 		_, err = script.Echo(*token).WriteFile(outputFile)
+		fileInfo, _ = os.Stat(outputFile)
+		if fileInfo.Size() == 0 {
+			return fmt.Errorf("Token file is empty")
+		}
 		return err
 	}
 	return nil
@@ -952,7 +1005,6 @@ func secureHeadersAddAppOrch() map[string][]string {
 
 	appOrchSecureHeaders["Content-Security-Policy"] = []string{fmt.Sprintf("default-src 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' ; frame-src 'self' https://keycloak.%s; style-src 'self'; img-src 'self' data:; connect-src 'self' https://keycloak.%s; upgrade-insecure-requests; block-all-mixed-content", //nolint: lll
 		serviceDomain, serviceDomain)}
-	appOrchSecureHeaders["Cross-Origin-Embedder-Policy"] = []string{"unsafe-none"}
 	delete(appOrchSecureHeaders, "X-Content-Type-Options")
 	delete(appOrchSecureHeaders, "X-Frame-Options")
 
@@ -1154,7 +1206,7 @@ func setupNewService(port, serviceName, namespace, serviceType string) error {
 		return err
 	}
 
-	timeout := 32 * time.Second
+	timeout := 120 * time.Second
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 

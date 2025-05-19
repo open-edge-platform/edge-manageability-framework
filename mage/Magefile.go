@@ -26,6 +26,7 @@ import (
 	"github.com/bitfield/script"
 	"github.com/magefile/mage/mg"
 	"github.com/magefile/mage/sh"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -119,31 +120,30 @@ func updateEdgeName() {
 
 // Install ASDF plugins.
 func AsdfPlugins() error {
+	// Check if ASDF is installed
+	if _, err := exec.LookPath("asdf"); err != nil {
+		return fmt.Errorf("asdf is not installed: %w", err)
+	}
 	// Install remaining tools
 	if _, err := script.File(".tool-versions").Column(1).
 		MatchRegexp(regexp.MustCompile(`^[^\#]`)).ExecForEach("asdf plugin add {{.}}").Stdout(); err != nil {
-		return err
+		return fmt.Errorf("error running 'asdf plugin add': %w", err)
 	}
-	if _, err := script.Exec("asdf install").Stdout(); err != nil {
-		return err
+	if _, err := script.File(".tool-versions").
+		MatchRegexp(regexp.MustCompile(`^[^\#]\S+\s+\S+$`)).ExecForEach("asdf install {{.}}").Stdout(); err != nil {
+		return fmt.Errorf("error running 'asdf install': %w", err)
 	}
 	if _, err := script.Exec("asdf current").Stdout(); err != nil {
-		return err
+		return fmt.Errorf("error running 'asdf current': %w", err)
 	}
 	// Set plugins listed in globalAsdf as global
 	for _, name := range globalAsdf {
 		if _, err := script.File(".tool-versions").MatchRegexp(regexp.MustCompile(name)).Column(2).
 			ExecForEach(fmt.Sprintf("asdf set --home %s {{.}}", name)).Stdout(); err != nil {
-			return err
+			return fmt.Errorf("error seting plugins listed in globalAsdf as global: %w", err)
 		}
 	}
-	// for _, name := range globalAsdf {
-	// 	if _, err := script.File(".tool-versions").MatchRegexp(regexp.MustCompile(name)).Column(2).
-	// 		ExecForEach(fmt.Sprintf("asdf global %s {{.}}", name)).Stdout(); err != nil {
-	// 		return err
-	// 	}
-	// }
-	fmt.Printf("asdf plugins updated 🔌\n")
+	fmt.Printf("asdf plugins updated🔌\n")
 	return nil
 }
 
@@ -210,9 +210,9 @@ func (Undeploy) EdgeCluster(orgName, projectName string) error {
 		return fmt.Errorf("failed to get project %s: %w", projectName, err)
 	}
 
-	edgeInfraUser, _, err := getEdgeAndOnboardingUsers(ctx, orgName)
+	edgeInfraUser, _, err := getEdgeAndApiUsers(ctx, orgName)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get edge user: %w", err)
 	}
 
 	edgeMgrUser = edgeInfraUser
@@ -220,12 +220,12 @@ func (Undeploy) EdgeCluster(orgName, projectName string) error {
 
 	projectId, err := projectId(projectName)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get project id: %w", err)
 	}
 	fleetNamespace = projectId
 
 	if err := cleanUpEnic(); err != nil {
-		return err
+		return fmt.Errorf("failed to cleanup enic: %w", err)
 	}
 
 	fmt.Println("\nENiC cluster deleted 😊")
@@ -1188,17 +1188,23 @@ func (d Deploy) EdgeCluster(targetEnv string) error {
 	projectName := "sample-project"
 	orgName := "sample-org"
 
-	if err := (TenantUtils{}).GetProject(context.TODO(), orgName, projectName); err != nil {
+	ctx := context.TODO()
+	if err := (TenantUtils{}).GetProject(ctx, orgName, projectName); err != nil {
 		return fmt.Errorf("failed to get project %s: %w", projectName, err)
+	}
+
+	_, apiUser, err := getEdgeAndApiUsers(ctx, orgName)
+	if err != nil {
+		return fmt.Errorf("failed to get api user: %w", err)
 	}
 
 	os.Setenv("ORCH_PROJECT", projectName)
 	os.Setenv("ORCH_ORG", orgName)
-	os.Setenv("ORCH_USER", "sample-project-onboarding-user")
+	os.Setenv("ORCH_USER", apiUser)
 
 	projectId, err := projectId(projectName)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get project id: %w", err)
 	}
 
 	fleetNamespace = projectId
@@ -1218,9 +1224,9 @@ func (d Deploy) EdgeClusterWithProject(targetEnv string, orgName string, project
 		return fmt.Errorf("failed to get project %s: %w", projectName, err)
 	}
 
-	edgeInfraUser, onboardingUser, err := getEdgeAndOnboardingUsers(ctx, orgName)
+	edgeInfraUser, apiUser, err := getEdgeAndApiUsers(ctx, orgName)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get edge and api users: %w", err)
 	}
 
 	edgeMgrUser = edgeInfraUser
@@ -1228,11 +1234,11 @@ func (d Deploy) EdgeClusterWithProject(targetEnv string, orgName string, project
 
 	os.Setenv("ORCH_PROJECT", projectName)
 	os.Setenv("ORCH_ORG", orgName)
-	os.Setenv("ORCH_USER", onboardingUser)
+	os.Setenv("ORCH_USER", apiUser)
 
 	projectId, err := projectId(projectName)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get project id: %w", err)
 	}
 
 	fleetNamespace = projectId
@@ -1249,17 +1255,23 @@ func (d Deploy) EdgeClusterWithLabels(targetEnv string, labels string) error {
 	projectName := "sample-project"
 	orgName := "sample-org"
 
-	if err := (TenantUtils{}).GetProject(context.TODO(), orgName, projectName); err != nil {
+	ctx := context.TODO()
+	if err := (TenantUtils{}).GetProject(ctx, orgName, projectName); err != nil {
 		return fmt.Errorf("failed to get project %s: %w", projectName, err)
+	}
+
+	_, apiUser, err := getEdgeAndApiUsers(ctx, orgName)
+	if err != nil {
+		return fmt.Errorf("failed to get api user: %w", err)
 	}
 
 	os.Setenv("ORCH_PROJECT", projectName)
 	os.Setenv("ORCH_ORG", orgName)
-	os.Setenv("ORCH_USER", "sample-project-onboarding-user")
+	os.Setenv("ORCH_USER", apiUser)
 
 	projectId, err := projectId(projectName)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get project id: %w", err)
 	}
 
 	fleetNamespace = projectId
@@ -1300,7 +1312,97 @@ func (a Argo) AddGithubRepos() error {
 		return fmt.Errorf("must set environment variable GIT_TOKEN")
 	}
 
+	err := a.login()
+	if err != nil {
+		return fmt.Errorf("failed to login to ArgoCD: %w", err)
+	}
+
 	return a.repoAdd(gitUser, gitToken, githubRepos)
+}
+
+// Add repositories to ArgoCD from .mage-local.yaml configuration.
+func (a Argo) AddLocalRepos() error {
+	_, err := os.Stat(".mage-local.yaml")
+	if err != nil {
+		fmt.Println("No .mage-local.yaml found, using default repositories")
+		return nil
+	}
+
+	fmt.Println("Local repositories file .mage-local.yaml found, adding repositories to ArgoCD")
+	yamlFile, err := os.ReadFile(".mage-local.yaml")
+	if err != nil {
+		return fmt.Errorf("error reading .mage-local.yaml: %w", err)
+	}
+
+	var localMageSettings struct {
+		EnableGithubRepos bool `yaml:"enableGithubRepos"`
+
+		LocalRepos []struct {
+			Url   string `yaml:"url"`
+			User  string `yaml:"user"`
+			Token string `yaml:"token"`
+		} `yaml:"localRepos"`
+	}
+
+	if err := yaml.Unmarshal(yamlFile, &localMageSettings); err != nil {
+		return fmt.Errorf("error parsing .mage-local.yaml: %w", err)
+	}
+
+	if localMageSettings.EnableGithubRepos {
+		fmt.Println("Adding Github repositories")
+		if err := a.AddGithubRepos(); err != nil {
+			return fmt.Errorf("failed to add Github repositories: %w", err)
+		}
+	} else {
+		// If Github repositories are not enabled, login to ArgoCD here to avoid duplicate login
+		err := a.login()
+		if err == nil {
+			return fmt.Errorf("failed to login to ArgoCD: %w", err)
+		}
+	}
+
+	// Add any specified local repositories to ArgoCD
+	if len(localMageSettings.LocalRepos) > 0 {
+		fmt.Println("Adding local repositories")
+		for _, repo := range localMageSettings.LocalRepos {
+			if repo.Url == "" {
+				continue
+			}
+			// If the user value is empty, set it to the default value
+			if repo.User == "" {
+				repo.User = "$GIT_USER"
+			}
+			// If the token value is empty, set it to the default value
+			if repo.Token == "" {
+				repo.Token = "$GIT_TOKEN"
+			}
+			// If the user value starts with a '$' sign, replace it with the environment value
+			if strings.HasPrefix(repo.User, "$") {
+				envVar := strings.TrimPrefix(repo.User, "$")
+				repo.User = os.Getenv(envVar)
+				if repo.User == "" {
+					return fmt.Errorf("user %s required by %s repo is not set", envVar, repo.Url)
+				}
+			}
+			// If the token value starts with a '$' sign, replace it with the environment value
+			if strings.HasPrefix(repo.Token, "$") {
+				envVar := strings.TrimPrefix(repo.Token, "$")
+				repo.Token = os.Getenv(envVar)
+				if repo.Token == "" {
+					return fmt.Errorf("token %s required by %s repo is not set", envVar, repo.Url)
+				}
+			}
+
+			fmt.Printf("Adding local repository %s\n", repo.Url)
+			repoUrlList := []string{repo.Url}
+			err := a.repoAdd(repo.User, repo.Token, repoUrlList)
+			if err != nil {
+				return fmt.Errorf("failed to add local repository %s: %w", repo.Url, err)
+			}
+		}
+	}
+
+	return nil
 }
 
 // Lists all ArgoCD Applications, sorted by syncWave.

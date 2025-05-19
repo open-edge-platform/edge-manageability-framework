@@ -24,6 +24,7 @@ allowedDomains: >
   .cloudfront.net
   .api.snapcraft.io
   .rke2.io
+  .snapcraftcontent.com
 
 sentinelDomains:
 

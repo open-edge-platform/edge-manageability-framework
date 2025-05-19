@@ -47,11 +47,13 @@ func randomPassword(count int) string {
 const (
 	harborPasswordLength   = 100
 	keycloakPasswordLength = 14
+	postgresPasswordLength = 14
 )
 
 var (
 	harborPassword   = randomPassword(harborPasswordLength)
 	keycloakPassword = randomPassword(keycloakPasswordLength)
+	postgresPassword = randomPassword(postgresPasswordLength)
 )
 
 const giteaPasswordLength = 100
@@ -227,6 +229,12 @@ func (d Deploy) kind(targetEnv string) error { //nolint:gocyclo
 		return err
 	}
 
+	// Check for `.mage-local.yaml` file. If it exists, use it to add any additional repos spacified as
+	// desired in the settings.
+	if err := (Argo{}).AddLocalRepos(); err != nil {
+		return fmt.Errorf("error adding local repos: %w", err)
+	}
+
 	if err := (Argo{}).dockerHubChartOrgAdd(); err != nil {
 		return err
 	}
@@ -301,7 +309,7 @@ spec:
     spec:
       containers:
         - name: victoriametrics
-          image: victoriametrics/victoria-metrics:latest
+          image: victoriametrics/victoria-metrics:v1.117.0
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8428
@@ -443,7 +451,14 @@ func localSecret(targetEnv string, createRSToken bool) error {
 		"--from-literal=admin-password="+keycloakPassword); err != nil {
 		return err
 	}
-
+	if err := kubectlCreateAndApply("namespace", "orch-database"); err != nil {
+		return err
+	}
+	// creating postgres secret that contains the randomly generated postgres admin password
+	if err := kubectlCreateAndApply("secret", "generic", "-n", "orch-database", "postgresql",
+		"--from-literal=postgres-password="+postgresPassword); err != nil {
+		return err
+	}
 	// FIXME: Extend support for gernerally configurable token based release service authentication.
 	// This is currently not supported with the OSS conversion.
 	// if createRSToken {
@@ -564,6 +579,12 @@ func kindCluster(name string, targetEnv string) error {
       kubeadmConfigPatches:
       - |
         kind: ClusterConfiguration
+        etcd:
+          local:
+            extraArgs:
+              quota-backend-bytes: "8589934592"
+              auto-compaction-mode: "periodic"
+              auto-compaction-retention: "1h"
         apiServer:
         # enable auditing flags on the API server
           extraArgs:
@@ -1532,6 +1553,26 @@ func (d Deploy) orch(targetEnv string) error {
 	return err
 }
 
+// getAWSAvailabilityZone retrieves the AWS availability zone using IMDSv2 with fallback to IMDSv1
+func getAWSAvailabilityZone() (string, error) {
+	// Try IMDSv2 first - requires getting a token
+	tokenCmd := "curl -s -X PUT \"http://169.254.169.254/latest/api/token\" -H \"X-aws-ec2-metadata-token-ttl-seconds: 60\""
+	token, err := script.Exec(tokenCmd).String()
+
+	if err == nil && token != "" {
+		// Use the token to get the AZ with IMDSv2
+		azCmd := fmt.Sprintf("curl -s -H \"X-aws-ec2-metadata-token: %s\" http://169.254.169.254/latest/meta-data/placement/availability-zone", strings.TrimSpace(token))
+		az, err := script.Exec(azCmd).String()
+		if err == nil && az != "" {
+			return strings.TrimSpace(az), nil
+		}
+	}
+
+	// Fall back to IMDSv1 if IMDSv2 fails
+	az, err := script.Exec("curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone").String()
+	return strings.TrimSpace(az), err
+}
+
 func (d Deploy) orchLocal(targetEnv string) error {
 	targetConfig := getTargetConfig(targetEnv)
 
@@ -1572,7 +1613,7 @@ func (d Deploy) orchLocal(targetEnv string) error {
 		cmd = cmd + " " + fmt.Sprintf("--set-string argo.aws.account=%s", strings.Trim(awsAccountID, "\n"))
 
 		// Get AWS region of this VM
-		az, err := script.Exec("curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone").String()
+		az, err := getAWSAvailabilityZone()
 		if err != nil || az == "" {
 			return fmt.Errorf("error retrieving the AWS AZ: %w", err)
 		}

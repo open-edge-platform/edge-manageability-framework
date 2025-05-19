@@ -15,10 +15,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bitfield/script"
-
-	"github.com/open-edge-platform/edge-manageability-framework/internal/retry"
 	"gopkg.in/yaml.v3"
+
+	"github.com/bitfield/script"
+	"github.com/open-edge-platform/edge-manageability-framework/internal/retry"
 )
 
 const (
@@ -40,56 +40,67 @@ var (
 
 func (Deploy) deployEnicCluster(targetEnv string, labels string) error {
 	if err := cleanUpEnic(); err != nil {
-		return err
+		return fmt.Errorf("failed to clean up enic: %w", err)
 	}
 
 	if err := (DevUtils{}).DeployEnic(enicReplicas, targetEnv); err != nil {
-		return err
+		return fmt.Errorf("failed to deploy enic: %w", err)
+	}
+
+	// Host Register ENiC. This needs to happen right after
+	// deploying ENiC and not waiting for Enic to be ready.
+	// Otherwise, the host register will fail.
+	if err := (DevUtils{}).RegisterEnic(enicPodName); err != nil {
+		return fmt.Errorf("failed to register enic: %w", err)
+	}
+
+	if err := (DevUtils{}).ProvisionEnic(enicPodName); err != nil {
+		return fmt.Errorf("failed to provision enic: %w", err)
 	}
 
 	// Allow some time for Helm to load ENiC
 	time.Sleep(5 * time.Second)
 	if err := (DevUtils{}).WaitForEnic(); err != nil {
-		return fmt.Errorf("\n%w", err)
+		return fmt.Errorf("failed waiting for enic to become ready: %w", err)
 	}
 
 	if err := enicGuid(); err != nil {
-		return fmt.Errorf("\n%w", err)
+		return fmt.Errorf("failed to get enic uuid: %w", err)
 	}
 
 	if err := createNs(); err != nil {
-		return err
+		return fmt.Errorf("failed to create namespace: %w", err)
 	}
 
 	if err := createCluster(); err != nil {
-		return fmt.Errorf("\n%w", err)
+		return fmt.Errorf("failed to create cluster: %w", err)
 	}
 
 	// Before deploying any apps make sure cluster is ready
 	if err := waitForEdgeClusterReady(); err != nil {
-		return fmt.Errorf("\n%w", err)
+		return fmt.Errorf("failed waiting for edge cluster to become ready: %w", err)
 	}
 
 	clusterLabels := parseLabels(labels)
 	if err := addClusterLabels(clusterLabels); err != nil {
-		return err
+		return fmt.Errorf("failed to add cluster labels: %w", err)
 	}
 
 	if err := genKubeconfigEntry(); err != nil {
-		return err
+		return fmt.Errorf("failed to generate edge cluster kubeconfig entry: %w", err)
 	}
 
 	if err := (Use{}).EdgeCluster(); err != nil {
-		return err
+		return fmt.Errorf("failed to switch to edge cluster context: %w", err)
 	}
 
 	// Wait for edge node fleet agent to be ready
 	if err := waitForENFleetAgentReady(); err != nil {
-		return fmt.Errorf("\n%w", err)
+		return fmt.Errorf("failed waiting for EN Fleet agent to become ready: %w", err)
 	}
 
 	if err := (Use{}).Orch(); err != nil {
-		return err
+		return fmt.Errorf("failed to switch to orchestrator context: %w", err)
 	}
 
 	fmt.Println("Assigned cluster labels: ")
@@ -171,7 +182,7 @@ func deleteCluster() error {
 
 	// Wait for cluster resource to fully delete
 	if err := waitForEdgeClusterDelete(); err != nil {
-		return fmt.Errorf("\n%w", err)
+		return fmt.Errorf("failed waiting for edge cluster to delete: %w", err)
 	}
 
 	return nil
@@ -185,8 +196,7 @@ func waitForENFleetAgentReady() error {
 
 	// Since kubeconfig context is Edge Cluster
 	edgeClusterPodStatusCmd := "kubectl get pods -A"
-
-	cmd := "kubectl -n cattle-fleet-system get pods fleet-agent-0 -o jsonpath='{.status.phase}'"
+	cmd := "kubectl -n cattle-fleet-system get pods -l app=fleet-agent -o jsonpath='{.items[0].status.phase}'"
 
 	fmt.Printf("Waiting %v minutes for EN Fleet Agent to start...\n", waitForReadyMin)
 	fn := func() error {
@@ -470,7 +480,7 @@ func genKubeconfigEntry() error {
 
 	replaceEdgeServer := string(out)
 	insideClusterUrl := "http://cluster-connect-gateway.orch-cluster.svc:8080"
-	outsideClusterUrl := "https://connect-gateway.kind.internal:443"
+	outsideClusterUrl := fmt.Sprintf("https://connect-gateway.%s:443", serviceDomain)
 
 	edgeServer := strings.Replace(replaceEdgeServer, insideClusterUrl, outsideClusterUrl, 1)
 
