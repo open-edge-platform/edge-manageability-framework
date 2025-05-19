@@ -50,9 +50,20 @@ but, once chain-loaded to iPXE, the Micro-OS is downloaded and used to drive pro
 In other words, the only difference between the new PXE-based boot and HTTP-based boot is how the OS provisioning is triggered. The subsequent workflow remains the same -
 it leverages Micro-OS, device discovery and Tinkerbell workflow to complete OS provisioning.
 
-**NOTE1**: Customers should provide their own local DHCP server for dynamic IP address assignment.
+The design proposal assumes the following network topology deployed on customers' sites:
 
-**NOTE2**: The workflow assumes that the EIM Standalone is deployed locally on customers' premises and ENs have direct connectivity with EIM services.
+![PXE-enabled network topology](images/eim-pxe-network-topology.png)
+
+- Edge Nodes and the EIM-only profile of EMF are deployed in the same local subnet. All ENs have direct L2 connectivity with EIM services.
+- Local subnet must not be exposed to external world.
+- The deployment scenario follows the Proxy DHCP scenario as described in [PXE specification, section 2.2.3](https://dimitrije.website/files/pxespec.pdf).
+- We assume the existence of two DHCP servers:
+  - EIM PXE-enabled DHCP server (e.g., Tinkerbell SMEE) - as described above, it serves PXE boot information. **The EIM PXE-enabled DHCP server is not intended
+    to assign IP addresses.**
+  - Local DHCP server - it acts as the standard DHCP server that provides dynamic IP addresses to ENs via DHCP.
+
+
+**NOTE1**: Customers should provide their own local DHCP server for dynamic IP address assignment.
 
 The high-level PXE-based provisioning workflow is as follows:
 
