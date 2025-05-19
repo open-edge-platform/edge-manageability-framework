@@ -18,13 +18,16 @@ budgeted device and when the USB boot does not provide a scalable solution for t
 Similarly to [EMT-S scale provisioning](./emts-scale-provisioning.md), the solution assumes there is the EMF OXM profile
 deployed in the local network. This can be deployed using several options:
 
-- on site directly on metal or a VM (via installation script provided by the EIM);
+- on site directly on metal, on docker or on a VM (via installation script provided by the EIM);
 - on an edge cluster deployed as kube-virt VM;
 
 The second solution is appealing for scenarios where the customer/user does not have additional computing to host
 EIM-local and it deploys directly as edge workload on the existing edge clusters. Of course this will require special
 configuration and possibly bind the VM on the host-network to allow DHCP/TFTP traffic flowing through the
 virtualization layers.
+
+If there are no restrictions or conflicts with the edge workload it could be deployed also as deployment package or
+by installing the application directly on the edge cluster through helm charts.
 
 Differently from the naive OXM profile, this solution will serve the `boot.ipxe` and the Micro-OS image of the remote
 orchestrator. Once the Micro-OS is booted, the remote EMF will take control and spawn the cloud based provisioning flow.
@@ -42,7 +45,7 @@ could be an alternative solution together with the ability of importing standalo
 An alternative solution is to deploy only a small local piece of Edge Infrastructure Manager (called "EIM-local"
 hereinafter), given its small footprint it makes possible to deploy it using several solutions:
 
-- on site directly on metal or a VM via installation script;
+- on site directly on metal, on docker or on a VM via installation script;
 - on an edge cluster deployed as deployment package;
 - on an edge cluster deployed via installation script;
 
