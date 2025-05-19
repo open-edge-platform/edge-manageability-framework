@@ -14,7 +14,7 @@ type UtilsTestSuite struct {
 	suite.Suite
 }
 
-func TestUtilsTestSuite(t *testing.T) {
+func TestUtils(t *testing.T) {
 	suite.Run(t, new(UtilsTestSuite))
 }
 
