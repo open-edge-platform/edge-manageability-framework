@@ -47,7 +47,6 @@ type OrchInstallerConfig struct {
 
 	// Cloud deployment specific fields
 	NetworkCIDR             string   `yaml:"network_cidr"`
-	AvailabilityZones       []string `yaml:"availability_zones"`
 	Region                  string   `yaml:"region"`
 	StateStoreBucketPostfix string   `yaml:"state_store_bucket_postfix"`
 	JumpHostIPAllowList     []string `yaml:"jumphost_ip_allow_list"`
