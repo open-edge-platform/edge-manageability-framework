@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
-	"github.com/open-edge-platform/edge-manageability-framework/installer/targets/demo"
+	"github.com/open-edge-platform/edge-manageability-framework/installer/targets/aws"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )
@@ -31,10 +31,12 @@ func main() {
 
 	// These flages are common to all commands
 	var configFile, runtimeStateFile, logLevel, logDir string
+	var keepGeneratedFiles bool
 	rootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "config.yaml", "Path to the configuration file")
 	rootCmd.PersistentFlags().StringVarP(&runtimeStateFile, "runtime-state", "r", "runtime-state.yaml", "Path to the runtime state file")
 	rootCmd.PersistentFlags().StringVarP(&logLevel, "log-level", "l", "info", "Log level (debug, info, warn, error)")
 	rootCmd.PersistentFlags().StringVarP(&logDir, "log-dir", "o", ".logs", "Path to the log dir")
+	rootCmd.PersistentFlags().BoolVarP(&keepGeneratedFiles, "keep-generated-files", "k", false, "Keep generated files")
 
 	commands := []struct {
 		use   string
@@ -56,7 +58,7 @@ func main() {
 				if err != nil {
 					zap.S().Fatalf("error initializing logger: %s", err)
 				}
-				execute(cmd.Name(), configFile, runtimeStateFile, logDir)
+				execute(cmd.Name(), configFile, runtimeStateFile, logDir, keepGeneratedFiles)
 			},
 		}
 		rootCmd.AddCommand(c)
@@ -64,7 +66,7 @@ func main() {
 	rootCmd.Execute()
 }
 
-func execute(action string, orchConfigFile string, runtimeStateFile string, logDir string) {
+func execute(action string, orchConfigFile string, runtimeStateFile string, logDir string, keepGeneratedFiles bool) {
 	logger := zap.S()
 	currentDir, err := os.Getwd()
 	if err != nil {
@@ -121,9 +123,13 @@ func execute(action string, orchConfigFile string, runtimeStateFile string, logD
 	logger.Infof("Target environment: %s", orchInstallerConfig.TargetEnvironment)
 	logger.Infof("Deployment name: %s", orchInstallerConfig.DeploymentName)
 
-	// TODO: we will use switch-case to determine the stage to run
-	// for now we will just run the demo stage
-	stages := demo.CreateDemoStages(currentDir)
+	var stages []internal.OrchInstallerStage
+	switch orchInstallerConfig.TargetEnvironment {
+	case "aws":
+		stages = aws.CreateAWSStages(currentDir, keepGeneratedFiles)
+	default:
+		logger.Fatalf("error: target environment %s not supported", orchInstallerConfig.TargetEnvironment)
+	}
 	orchInstaller, err := internal.CreateOrchInstaller(stages)
 	if err != nil {
 		logger.Fatalf("error creating orch installer: %s", err)
