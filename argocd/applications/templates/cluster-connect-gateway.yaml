@@ -21,7 +21,7 @@ spec:
   sources:
     - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
       chart: cluster/charts/{{$appName}}
-      targetRevision: 1.0.6
+      targetRevision: 1.1.1-dev-20db7ddf
       helm:
         releaseName: {{$appName}}
         valuesObject:
@@ -33,7 +33,7 @@ spec:
           {{- mergeOverwrite $baseConfig $customConfig $overwrite | toYaml | nindent 10 }}
     - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
       chart: cluster/charts/cluster-connect-gateway-crd
-      targetRevision: 1.0.6
+      targetRevision: 1.1.1-dev-20db7ddf
   destination:
     namespace: {{$namespace}}
     server: {{ required "A valid targetServer entry required!" .Values.argo.targetServer }}

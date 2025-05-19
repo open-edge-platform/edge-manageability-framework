@@ -40,12 +40,6 @@ func (Publish) SourceTarballs(ctx context.Context) error {
 	}
 	defaultRepoVersionStr := strings.TrimSpace(string(defaultRepoVersion))
 
-	gitTagName, err := script.Exec("git tag --points-at HEAD").String()
-	if err != nil {
-		return fmt.Errorf("failed to get git tag name: %w", err)
-	}
-	gitTagName = strings.TrimSpace(gitTagName)
-
 	branchName, err := GetBranchName()
 	if err != nil {
 		return fmt.Errorf("failed to get branch name: %w", err)
@@ -73,11 +67,6 @@ func (Publish) SourceTarballs(ctx context.Context) error {
 			defaultRepoVersionStr,
 			gitShortHash(),
 		)
-	}
-
-	// If there is a git tag name, append it to the tag
-	if gitTagName != "" {
-		tag = fmt.Sprintf("%s,%s,v%s", tag, gitTagName, gitTagName)
 	}
 
 	for _, variant := range []string{"cloudFull", "onpremFull"} {
@@ -126,17 +115,10 @@ func (Publish) CloudInstaller(ctx context.Context) error {
 	}
 	defaultRepoVersionStr := strings.TrimSpace(string(defaultRepoVersion))
 
-	gitTagName, err := script.Exec("git tag --points-at HEAD").String()
-	if err != nil {
-		return fmt.Errorf("failed to get git tag name: %w", err)
-	}
-	gitTagName = strings.TrimSpace(gitTagName)
-
-	branchName, err := script.Exec("git rev-parse --abbrev-ref HEAD").String()
+	branchName, err := GetBranchName()
 	if err != nil {
 		return fmt.Errorf("failed to get branch name: %w", err)
 	}
-	branchName = strings.TrimSpace(branchName)
 
 	var tag string
 
@@ -153,11 +135,6 @@ func (Publish) CloudInstaller(ctx context.Context) error {
 			defaultRepoVersionStr,
 			gitShortHash(),
 		)
-	}
-
-	// If there is a git tag name, append it to the tag
-	if gitTagName != "" {
-		tag = fmt.Sprintf("%s,%s,v%s", tag, gitTagName, gitTagName)
 	}
 
 	fileName := "_build/" + ReleaseBundleName + ".tgz"
@@ -211,11 +188,10 @@ func (Publish) ReleaseManifest(ctx context.Context) error {
 	}
 	defaultRepoVersionStr := strings.TrimSpace(string(defaultRepoVersion))
 
-	branchName, err := script.Exec("git rev-parse --abbrev-ref HEAD").String()
+	branchName, err := GetBranchName()
 	if err != nil {
 		return fmt.Errorf("failed to get branch name: %w", err)
 	}
-	branchName = strings.TrimSpace(branchName)
 
 	var tag string
 

@@ -121,31 +121,30 @@ func updateEdgeName() {
 
 // Install ASDF plugins.
 func AsdfPlugins() error {
+	// Check if ASDF is installed
+	if _, err := exec.LookPath("asdf"); err != nil {
+		return fmt.Errorf("asdf is not installed: %w", err)
+	}
 	// Install remaining tools
 	if _, err := script.File(".tool-versions").Column(1).
 		MatchRegexp(regexp.MustCompile(`^[^\#]`)).ExecForEach("asdf plugin add {{.}}").Stdout(); err != nil {
-		return err
+		return fmt.Errorf("error running 'asdf plugin add': %w", err)
 	}
-	if _, err := script.Exec("asdf install").Stdout(); err != nil {
-		return err
+	if _, err := script.File(".tool-versions").
+		MatchRegexp(regexp.MustCompile(`^[^\#]\S+\s+\S+$`)).ExecForEach("asdf install {{.}}").Stdout(); err != nil {
+		return fmt.Errorf("error running 'asdf install': %w", err)
 	}
 	if _, err := script.Exec("asdf current").Stdout(); err != nil {
-		return err
+		return fmt.Errorf("error running 'asdf current': %w", err)
 	}
 	// Set plugins listed in globalAsdf as global
 	for _, name := range globalAsdf {
 		if _, err := script.File(".tool-versions").MatchRegexp(regexp.MustCompile(name)).Column(2).
 			ExecForEach(fmt.Sprintf("asdf set --home %s {{.}}", name)).Stdout(); err != nil {
-			return err
+			return fmt.Errorf("error seting plugins listed in globalAsdf as global: %w", err)
 		}
 	}
-	// for _, name := range globalAsdf {
-	// 	if _, err := script.File(".tool-versions").MatchRegexp(regexp.MustCompile(name)).Column(2).
-	// 		ExecForEach(fmt.Sprintf("asdf global %s {{.}}", name)).Stdout(); err != nil {
-	// 		return err
-	// 	}
-	// }
-	fmt.Printf("asdf plugins updated 🔌\n")
+	fmt.Printf("asdf plugins updated🔌\n")
 	return nil
 }
 
@@ -1383,7 +1382,7 @@ func (a Argo) AddLocalRepos() error {
 				envVar := strings.TrimPrefix(repo.User, "$")
 				repo.User = os.Getenv(envVar)
 				if repo.User == "" {
-					return fmt.Errorf("User %s required by %s repo is not set", envVar, repo.Url)
+					return fmt.Errorf("user %s required by %s repo is not set", envVar, repo.Url)
 				}
 			}
 			// If the token value starts with a '$' sign, replace it with the environment value
@@ -1391,7 +1390,7 @@ func (a Argo) AddLocalRepos() error {
 				envVar := strings.TrimPrefix(repo.Token, "$")
 				repo.Token = os.Getenv(envVar)
 				if repo.Token == "" {
-					return fmt.Errorf("Token %s required by %s repo is not set", envVar, repo.Url)
+					return fmt.Errorf("token %s required by %s repo is not set", envVar, repo.Url)
 				}
 			}
 

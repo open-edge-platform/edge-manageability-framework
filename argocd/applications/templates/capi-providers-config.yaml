@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-{{- $appName        := "istio-policy" }}
-{{- $namespace      := "istio-system" }}
-{{- $syncWave       := "150" }}
+{{- $appName        := "capi-providers-config" }}
+{{- $namespace      := "capi-operator-system" }}
+{{- $syncWave       := "1100" }}
 ---
 {{- if (index .Values.argo.enabled $appName) }}
 apiVersion: argoproj.io/v1alpha1
@@ -21,7 +21,7 @@ spec:
   sources:
     - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
       chart: common/charts/{{$appName}}
-      targetRevision: 2.0.6
+      targetRevision: 0.0.2
       helm:
         releaseName: {{$appName}}
         valuesObject:
