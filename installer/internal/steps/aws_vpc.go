@@ -5,19 +5,29 @@ package steps
 
 import (
 	"context"
-	nativeJson "encoding/json"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"net"
 	"path/filepath"
 	"strings"
 
+	"github.com/knadh/koanf/parsers/json"
+	"github.com/knadh/koanf/providers/rawbytes"
+	"github.com/knadh/koanf/v2"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
 	"github.com/praserx/ipconv"
+	"golang.org/x/crypto/ssh"
 )
 
 const (
-	ModulePath      = "pod-configs/orchestrator/vpc"
-	JumpHostAMIName = "ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*"
+	ModulePath       = "pod-configs/orchestrator/vpc"
+	JumpHostAMIName  = "ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-20250516.1"
+	JumpHostAMIOwner = "099720109477"
+	JumpHostAMIID    = "ami-0026a04369a3093cc"
+	SSKKeySize       = 4096
 )
 
 type AWSVPCVariables struct {
@@ -88,6 +98,7 @@ func (s *AWSVPCStep) ConfigStep(ctx context.Context, config internal.OrchInstall
 	s.variables.Region = config.Region
 	s.variables.VPCName = config.DeploymentName
 	s.variables.VPCCidrBlock = config.NetworkCIDR
+	s.variables.EndpointSGName = config.DeploymentName + "-vpc-ep"
 
 	//Based on the region, we need to get the availability zones.
 
@@ -130,16 +141,6 @@ func (s *AWSVPCStep) ConfigStep(ctx context.Context, config internal.OrchInstall
 		}
 	}
 	for i := range RequiredAvailabilityZones {
-		name := fmt.Sprintf("subnet-%s-pub", availabilityZones[i])
-		ipInt := netAddrInt + (uint32)(i*(1<<uint(32-PublicSubnetMaskSize)))
-		ip := ipconv.IntToIPv4(ipInt)
-		s.variables.PublicSubnets[name] = AWSVPCSubnet{
-			Az:        availabilityZones[i],
-			CidrBlock: fmt.Sprintf("%s/%d", ip.String(), PublicSubnetMaskSize),
-		}
-	}
-	netAddrInt += RequiredAvailabilityZones * (1 << uint(32-PublicSubnetMaskSize))
-	for i := range RequiredAvailabilityZones {
 		name := fmt.Sprintf("subnet-%s", availabilityZones[i])
 		ipInt := netAddrInt + (uint32)(i*(1<<uint(32-PrivateSubnetMaskSize)))
 		ip := ipconv.IntToIPv4(ipInt)
@@ -148,22 +149,43 @@ func (s *AWSVPCStep) ConfigStep(ctx context.Context, config internal.OrchInstall
 			CidrBlock: fmt.Sprintf("%s/%d", ip.String(), PrivateSubnetMaskSize),
 		}
 	}
+	netAddrInt += RequiredAvailabilityZones * (1 << uint(32-PrivateSubnetMaskSize))
+	for i := range RequiredAvailabilityZones {
+		name := fmt.Sprintf("subnet-%s-pub", availabilityZones[i])
+		ipInt := netAddrInt + (uint32)(i*(1<<uint(32-PublicSubnetMaskSize)))
+		ip := ipconv.IntToIPv4(ipInt)
+		s.variables.PublicSubnets[name] = AWSVPCSubnet{
+			Az:        availabilityZones[i],
+			CidrBlock: fmt.Sprintf("%s/%d", ip.String(), PublicSubnetMaskSize),
+		}
+	}
 
 	s.variables.JumphostSubnet = AWSVPCJumphostSubnetType{
-		Name:      fmt.Sprintf("subnet-%s-pub", availabilityZones[0]),
+		Name:      fmt.Sprintf("%s-subnet-%s-pub", config.DeploymentName, availabilityZones[0]),
 		Az:        availabilityZones[0],
 		CidrBlock: s.variables.PublicSubnets[fmt.Sprintf("subnet-%s-pub", availabilityZones[0])].CidrBlock,
 	}
-	s.variables.JumphostAmiId, err = FindAMIIDByName(config.Region, JumpHostAMIName)
-	if err != nil {
-		return runtimeState, &internal.OrchInstallerError{
-			ErrorCode: internal.OrchInstallerErrorCodeInternal,
-			ErrorStep: s.Name(),
-			ErrorMsg:  fmt.Sprintf("failed to find AMI ID: %v", err),
-		}
-	}
-	s.variables.CustomerTag = config.CustomerTag
+	s.variables.JumphostAmiId = JumpHostAMIID
 	s.variables.JumphostIPAllowList = config.JumpHostIPAllowList
+
+	// Generate SSH key pair for the jumphost
+	if runtimeState.JumpHostSSHKeyPrivateKey == "" || runtimeState.JumpHostSSHKeyPublicKey == "" {
+		privateKey, publicKey, err := GenerateSSHKeyPair()
+		if err != nil {
+			return runtimeState, &internal.OrchInstallerError{
+				ErrorCode: internal.OrchInstallerErrorCodeInternal,
+				ErrorStep: s.Name(),
+				ErrorMsg:  fmt.Sprintf("failed to generate SSH key pair: %v", err),
+			}
+		}
+		s.variables.JumphostInstanceSshKey = publicKey
+		runtimeState.JumpHostSSHKeyPrivateKey = privateKey
+		runtimeState.JumpHostSSHKeyPublicKey = publicKey
+	} else {
+		s.variables.JumphostInstanceSshKey = runtimeState.JumpHostSSHKeyPublicKey
+	}
+
+	s.variables.CustomerTag = config.CustomerTag
 
 	s.backendConfig = TerraformAWSBucketBackendConfig{
 		Region: config.Region,
@@ -222,21 +244,35 @@ func (s *AWSVPCStep) RunStep(ctx context.Context, config internal.OrchInstallerC
 				ErrorMsg:  "public_subnets does not exist in terraform output",
 			}
 		} else {
-			var subnets []struct {
-				Id string `json:"id" yaml:"id"`
-				// Skip other fields
+			jsonBytes, marshalErr := publicSubnets.Value.MarshalJSON()
+			if marshalErr != nil {
+				return runtimeState, &internal.OrchInstallerError{
+					ErrorCode: internal.OrchInstallerErrorCodeTerraform,
+					ErrorStep: s.Name(),
+					ErrorMsg:  fmt.Sprintf("not able to marshal value of public subnets: %v", marshalErr),
+				}
 			}
-			unmarshalErr := nativeJson.Unmarshal([]byte(publicSubnets.Value), &subnets)
+
+			k := koanf.New(".")
+			unmarshalErr := k.Load(rawbytes.Provider(jsonBytes), json.Parser())
 			if unmarshalErr != nil {
 				return runtimeState, &internal.OrchInstallerError{
 					ErrorCode: internal.OrchInstallerErrorCodeTerraform,
 					ErrorStep: s.Name(),
-					ErrorMsg:  "not able to unmarshal public subnets output",
+					ErrorMsg:  fmt.Sprintf("not able to unmarshal public subnets output: %v", unmarshalErr),
 				}
 			}
 			runtimeState.PublicSubnetIds = nil
-			for _, s := range subnets {
-				runtimeState.PublicSubnetIds = append(runtimeState.PublicSubnetIds, s.Id)
+			for subnetName := range s.variables.PublicSubnets {
+				subnetId := k.Get(fmt.Sprintf("%s.id", subnetName))
+				if subnetId == nil {
+					return runtimeState, &internal.OrchInstallerError{
+						ErrorCode: internal.OrchInstallerErrorCodeTerraform,
+						ErrorStep: s.Name(),
+						ErrorMsg:  fmt.Sprintf("subnet id for %s does not exist in terraform output", subnetName),
+					}
+				}
+				runtimeState.PublicSubnetIds = append(runtimeState.PublicSubnetIds, subnetId.(string))
 			}
 		}
 		if privateSubnets, ok := terraformStepOutput.Output["private_subnets"]; !ok {
@@ -246,21 +282,35 @@ func (s *AWSVPCStep) RunStep(ctx context.Context, config internal.OrchInstallerC
 				ErrorMsg:  "private_subnets does not exist in terraform output",
 			}
 		} else {
-			var subnets []struct {
-				Id string `json:"id" yaml:"id"`
-				// Skip other fields
+			jsonBytes, marshalErr := privateSubnets.Value.MarshalJSON()
+			if marshalErr != nil {
+				return runtimeState, &internal.OrchInstallerError{
+					ErrorCode: internal.OrchInstallerErrorCodeTerraform,
+					ErrorStep: s.Name(),
+					ErrorMsg:  fmt.Sprintf("not able to marshal value of private subnets: %v", marshalErr),
+				}
 			}
-			unmarshalErr := nativeJson.Unmarshal([]byte(privateSubnets.Value), &subnets)
+
+			k := koanf.New(".")
+			unmarshalErr := k.Load(rawbytes.Provider(jsonBytes), json.Parser())
 			if unmarshalErr != nil {
 				return runtimeState, &internal.OrchInstallerError{
 					ErrorCode: internal.OrchInstallerErrorCodeTerraform,
 					ErrorStep: s.Name(),
-					ErrorMsg:  "not able to unmarshal public subnets output",
+					ErrorMsg:  fmt.Sprintf("not able to unmarshal private subnets output: %v", unmarshalErr),
 				}
 			}
 			runtimeState.PrivateSubnetIds = nil
-			for _, s := range subnets {
-				runtimeState.PrivateSubnetIds = append(runtimeState.PrivateSubnetIds, s.Id)
+			for subnetName := range s.variables.PrivateSubnets {
+				subnetId := k.Get(fmt.Sprintf("%s.id", subnetName))
+				if subnetId == nil {
+					return runtimeState, &internal.OrchInstallerError{
+						ErrorCode: internal.OrchInstallerErrorCodeTerraform,
+						ErrorStep: s.Name(),
+						ErrorMsg:  fmt.Sprintf("subnet id for %s does not exist in terraform output", subnetName),
+					}
+				}
+				runtimeState.PrivateSubnetIds = append(runtimeState.PrivateSubnetIds, subnetId.(string))
 			}
 		}
 	} else {
@@ -274,5 +324,25 @@ func (s *AWSVPCStep) RunStep(ctx context.Context, config internal.OrchInstallerC
 }
 
 func (s *AWSVPCStep) PostStep(ctx context.Context, config internal.OrchInstallerConfig, runtimeState internal.OrchInstallerRuntimeState, prevStepError *internal.OrchInstallerError) (internal.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
-	return runtimeState, nil
+	return runtimeState, prevStepError
+}
+
+func GenerateSSHKeyPair() (string, string, error) {
+	privateKey, err := rsa.GenerateKey(rand.Reader, SSKKeySize)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to generate private key: %v", err)
+	}
+
+	privateKeyBytes := x509.MarshalPKCS1PrivateKey(privateKey)
+	privateKeyPEM := &pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: privateKeyBytes,
+	}
+	privateKeyString := string(pem.EncodeToMemory(privateKeyPEM))
+	pub, err := ssh.NewPublicKey(&privateKey.PublicKey)
+	if err != nil {
+		return "", "", err
+	}
+	publicKeyString := string(ssh.MarshalAuthorizedKey(pub))
+	return privateKeyString, publicKeyString, nil
 }

@@ -54,7 +54,7 @@ type OrchInstallerConfig struct {
 
 // Runtime state that will be shared across all the stages
 type OrchInstallerRuntimeState struct {
-	mutex *sync.Mutex
+	Mutex *sync.Mutex
 	// Schema version of the runtime state
 	RuntimeStateVersion string `yaml:"config_version"`
 	OrchVersion         string `yaml:"orch_version"`
@@ -71,14 +71,16 @@ type OrchInstallerRuntimeState struct {
 
 	// Infra-specific runtime state
 	// VPC(AWS) or VPN(Azure) ID
-	VPCID            string   `yaml:"vpc_id"`
-	PublicSubnetIds  []string `yaml:"public_subnet_ids"`
-	PrivateSubnetIds []string `yaml:"public_subnet_ids"`
+	VPCID                    string   `yaml:"vpc_id"`
+	PublicSubnetIds          []string `yaml:"public_subnet_ids"`
+	PrivateSubnetIds         []string `yaml:"private_subnet_ids"`
+	JumpHostSSHKeyPublicKey  string   `yaml:"jump_host_ssh_key_public_key"`
+	JumpHostSSHKeyPrivateKey string   `yaml:"jump_host_ssh_key_private_key"`
 }
 
 func (rs *OrchInstallerRuntimeState) UpdateRuntimeState(source OrchInstallerRuntimeState) *OrchInstallerError {
-	rs.mutex.Lock()
-	defer rs.mutex.Unlock()
+	rs.Mutex.Lock()
+	defer rs.Mutex.Unlock()
 	srcK := koanf.New(".")
 	srcK.Load(structs.Provider(source, "yaml"), nil)
 	dstK := koanf.New(".")

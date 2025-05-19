@@ -47,7 +47,10 @@ func (a *PreInfraStage) PreStage(ctx context.Context, config internal.OrchInstal
 }
 
 func (a *PreInfraStage) RunStage(ctx context.Context, config internal.OrchInstallerConfig, runtimeState *internal.OrchInstallerRuntimeState) *internal.OrchInstallerError {
-	vpcStep := &steps.AWSVPCStep{}
+	vpcStep := &steps.AWSVPCStep{
+		RootPath:           a.RootPath,
+		KeepGeneratedFiles: a.KeepGeneratedFiles,
+	}
 	err := func() *internal.OrchInstallerError {
 		if newRuntimeState, err := vpcStep.ConfigStep(ctx, config, *runtimeState); err != nil {
 			return err

@@ -55,7 +55,7 @@ func (s *CreateAWSStateBucket) RunStep(ctx context.Context, config internal.Orch
 	_, err := s3Client.CreateBucket(s3Input)
 	if err != nil {
 		if aerr, ok := err.(s3.RequestFailure); ok && aerr.Code() == s3.ErrCodeBucketAlreadyOwnedByYou {
-			logger.Debug("S3 bucket %s already exists", s.bucketName)
+			logger.Debugf("S3 bucket %s already exists", s.bucketName)
 		} else {
 			return runtimeState, &internal.OrchInstallerError{
 				ErrorCode:  internal.OrchInstallerErrorCodeInternal,
@@ -65,7 +65,7 @@ func (s *CreateAWSStateBucket) RunStep(ctx context.Context, config internal.Orch
 			}
 		}
 	} else {
-		logger.Debug("S3 bucket %s created successfully", s.bucketName)
+		logger.Debugf("S3 bucket %s created successfully", s.bucketName)
 	}
 	return runtimeState, nil
 }

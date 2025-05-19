@@ -179,6 +179,5 @@ func InstallTerraformAndGetExecPath() (string, error) {
 		Product: product.Terraform,
 		Version: version.Must(version.NewVersion(TerraformVersion)),
 	}
-
 	return installer.Install(context.Background())
 }

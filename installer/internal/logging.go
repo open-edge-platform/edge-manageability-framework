@@ -54,5 +54,5 @@ func Logger() *zap.SugaredLogger {
 }
 
 func FileLogWriter(logFile string) (io.Writer, error) {
-	return os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	return os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY, 0644)
 }

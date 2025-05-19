@@ -53,7 +53,7 @@ func GetAvailableZones(region string) ([]string, error) {
 	return zones, nil
 }
 
-func FindAMIIDByName(region string, amiName string) (string, error) {
+func FindAMIID(region string, amiName string, amiOwner string) (string, error) {
 	session, err := session.NewSession(&aws.Config{
 		Region: aws.String(region),
 	})
@@ -66,6 +66,10 @@ func FindAMIIDByName(region string, amiName string) (string, error) {
 			{
 				Name:   aws.String("name"),
 				Values: []*string{aws.String(amiName)},
+			},
+			{
+				Name:   aws.String("owner-id"),
+				Values: []*string{aws.String(amiOwner)},
 			},
 		},
 	}
