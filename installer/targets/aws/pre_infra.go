@@ -8,6 +8,11 @@ import (
 )
 
 type PreInfraStage struct {
+	// The root path of the edge-managability-framework repo
+	// This is used to find the terraform files and right log path
+	RootPath string
+	// Keeps the generated files such as Terraform variables and backend config.
+	KeepGeneratedFiles bool
 }
 
 func (a *PreInfraStage) Name() string {
