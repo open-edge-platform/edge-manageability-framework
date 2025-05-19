@@ -9,11 +9,18 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/hc-install/product"
+	"github.com/hashicorp/hc-install/releases"
 	"github.com/hashicorp/terraform-exec/tfexec"
 	"github.com/knadh/koanf/parsers/json"
 	"github.com/knadh/koanf/providers/structs"
 	"github.com/knadh/koanf/v2"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
+)
+
+const (
+	TerraformVersion = "1.9.5"
 )
 
 type OrchInstallerTerraformStep struct {
@@ -165,4 +172,13 @@ func (s *OrchInstallerTerraformStep) Run(ctx context.Context) (*OrchInstallerTer
 	return &OrchInstallerTerraformStepOutput{
 		Output: output,
 	}, nil
+}
+
+func InstallTerraformAndGetExecPath() (string, error) {
+	installer := &releases.ExactVersion{
+		Product: product.Terraform,
+		Version: version.Must(version.NewVersion(TerraformVersion)),
+	}
+
+	return installer.Install(context.Background())
 }

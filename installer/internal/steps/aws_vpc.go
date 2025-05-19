@@ -174,6 +174,15 @@ func (s *AWSVPCStep) ConfigStep(ctx context.Context, config internal.OrchInstall
 }
 
 func (s *AWSVPCStep) PreSetp(ctx context.Context, config internal.OrchInstallerConfig, runtimeState internal.OrchInstallerRuntimeState) (internal.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+	terraformExecPath, err := InstallTerraformAndGetExecPath()
+	runtimeState.TerraformExecPath = terraformExecPath
+	if err != nil {
+		return runtimeState, &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeInternal,
+			ErrorStep: s.Name(),
+			ErrorMsg:  fmt.Sprintf("failed to get terraform exec path: %v", err),
+		}
+	}
 	return runtimeState, nil
 }
 
