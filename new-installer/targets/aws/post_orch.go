@@ -37,7 +37,7 @@ func (a *PostOrchStage) PreStage(ctx context.Context, config internal.OrchInstal
 			return err
 		}
 
-		if newRuntimeState, err := step.PreSetp(ctx, config, *runtimeState); err != nil {
+		if newRuntimeState, err := step.PreStep(ctx, config, *runtimeState); err != nil {
 			return err
 		} else if err = runtimeState.UpdateRuntimeState(newRuntimeState); err != nil {
 			return err

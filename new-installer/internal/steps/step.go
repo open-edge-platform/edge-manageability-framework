@@ -18,8 +18,8 @@ type OrchInstallerStep interface {
 	ConfigStep(ctx context.Context, config internal.OrchInstallerConfig, runtimeState internal.OrchInstallerRuntimeState) (internal.OrchInstallerRuntimeState, *internal.OrchInstallerError)
 
 	// PreStep is called before the main step logic. It can be used to perform any necessary setup or checks
-	// For example, runiing some script before upgrade from previous version.
-	PreSetp(ctx context.Context, config internal.OrchInstallerConfig, runtimeState internal.OrchInstallerRuntimeState) (internal.OrchInstallerRuntimeState, *internal.OrchInstallerError)
+	// For example, running some script before upgrade from previous version.
+	PreStep(ctx context.Context, config internal.OrchInstallerConfig, runtimeState internal.OrchInstallerRuntimeState) (internal.OrchInstallerRuntimeState, *internal.OrchInstallerError)
 
 	// RunStep is the main logic of the step. It should perform the core functionality of the step.
 	// For example, running a script to install or configure something.
