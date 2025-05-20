@@ -100,13 +100,3 @@ amt:
       secretName: "tls-orch"
       tlsOption: "gateway-tls"
       gatewayNamespace: orch-gateway
-  mpsrouter:
-    image:
-      registry:
-        name: docker.io/
-    traefikReverseProxy:
-      enabled: true
-      secretName: "tls-orch"
-      tlsOption: "gateway-tls"
-      gatewayNamespace: orch-gateway
-

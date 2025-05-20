@@ -22,7 +22,5 @@ argo:
         name: mps
       - namespace: orch-infra
         name: rps
-      - namespace: orch-infra
-        name: mpsrouter
   traefik:
     tlsOption: "gateway-tls"

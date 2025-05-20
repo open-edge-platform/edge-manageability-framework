@@ -39,7 +39,6 @@ restrictedPolicyOrch:
       - "dkam*"
       - "mps*"
       - "rps*"
-      - "mpsrouter*"
   - namespace: "capi-operator-system"
     names:
       - "capi-operator-cluster-api-operator*"

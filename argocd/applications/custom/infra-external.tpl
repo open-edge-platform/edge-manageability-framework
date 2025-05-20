@@ -108,12 +108,3 @@ amt:
   {{- if .Values.argo.traefik }}
     tlsOption: {{ .Values.argo.traefik.tlsOption | default "" | quote }}
   {{- end }}
-
-  mpsrouter:
-    traefikReverseProxy:
-      host:
-        grpc:
-          name: "mpsrouter-node.{{ .Values.argo.clusterDomain }}"
-  {{- if .Values.argo.traefik }}
-    tlsOption: {{ .Values.argo.traefik.tlsOption | default "" | quote }}
-  {{- end }}

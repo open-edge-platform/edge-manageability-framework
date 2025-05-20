@@ -40,7 +40,6 @@ variable "hostname" {
     "metrics-node",
     "mps-node",
     "mps-webport-node",
-    "mpsrouter-node",
     "observability-admin",
     "observability-ui",
     "onboarding-node",

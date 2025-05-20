@@ -69,7 +69,6 @@ variable "dns_hosts" {
     { hostname = "onboarding-stream.cluster.onprem", ip = "192.168.99.30" },
     { hostname = "mps-node.cluster.onprem", ip = "192.168.99.30" },
     { hostname = "mps-webport-node.cluster.onprem", ip = "192.168.99.30" },
-    { hostname = "mpsrouter-node.cluster.onprem", ip = "192.168.99.30" },
     { hostname = "rps-node.cluster.onprem", ip = "192.168.99.30" },
     { hostname = "rps-webport-node.cluster.onprem", ip = "192.168.99.30" },
     { hostname = "onboarding.cluster.onprem", ip = "192.168.99.30" },

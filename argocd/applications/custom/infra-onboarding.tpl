@@ -42,7 +42,6 @@ infra-config:
     orchMPSWHost: mps-webport-node.{{ .Values.argo.clusterDomain }}:443
     orchRPSHost: rps-node.{{ .Values.argo.clusterDomain }}:443
     orchRPSWHost: rps-webport-node.{{ .Values.argo.clusterDomain }}:443
-    orchMPSRHost: mpsrouter-node.{{ .Values.argo.clusterDomain }}:443
 
     rsType: "{{ index .Values.argo "infra-onboarding" "rsType" | default "no-auth" }}"
     netIp: "{{ index .Values.argo "infra-onboarding" "netIp" | default "dynamic" }}"
