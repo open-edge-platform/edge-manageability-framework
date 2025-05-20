@@ -226,7 +226,7 @@ func (s *AWSVPCStep) RunStep(ctx context.Context, config internal.OrchInstallerC
 			ErrorMsg:  fmt.Sprintf("failed to run terraform: %v", err),
 		}
 	}
-	if terraformStepOutput != nil && terraformStepOutput.Output != nil {
+	if terraformStepOutput != nil && terraformStepOutput.Output != nil && (runtimeState.Action == "install" || runtimeState.Action == "upgrade") {
 		if vpcIDMeta, ok := terraformStepOutput.Output["vpc_id"]; !ok {
 			return runtimeState, &internal.OrchInstallerError{
 				ErrorCode: internal.OrchInstallerErrorCodeTerraform,
