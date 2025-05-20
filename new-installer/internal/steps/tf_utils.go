@@ -23,7 +23,7 @@ const (
 	TerraformVersion = "1.9.5"
 )
 
-type OrchInstallerTerraformStep struct {
+type TerraformUtility struct {
 	Action             string
 	ExecPath           string
 	ModulePath         string
@@ -33,21 +33,26 @@ type OrchInstallerTerraformStep struct {
 	KeepGeneratedFiles bool
 }
 
-type OrchInstallerTerraformStepOutput struct {
-	Output map[string]tfexec.OutputMeta `yaml:"output"`
+type TerraformUtilityOutput struct {
+	Output map[string]tfexec.OutputMeta `json:"output"`
+}
+
+type TerraformAWSBucketBackendConfig struct {
+	Region string `json:"region"`
+	Bucket string `json:"bucket"`
+	Key    string `json:"key"`
 }
 
 func marshalHCL(data any) ([]byte, error) {
 	k := koanf.New(".")
-	// Using the tag yaml here since we are using the yaml tag in the struct.
-	err := k.Load(structs.Provider(data, "yaml"), nil)
+	err := k.Load(structs.Provider(data, "json"), nil)
 	if err != nil {
 		return nil, err
 	}
 	return k.Marshal(json.Parser()) // Terraform accepts json format
 }
 
-func (s *OrchInstallerTerraformStep) Run(ctx context.Context) (*OrchInstallerTerraformStepOutput, *internal.OrchInstallerError) {
+func (s *TerraformUtility) Run(ctx context.Context) (*TerraformUtilityOutput, *internal.OrchInstallerError) {
 	logger := internal.Logger()
 	logger.Debugf("Initializing backend and variables files")
 	if _, err := os.Stat(fmt.Sprintf("%s/environments", s.ModulePath)); os.IsNotExist(err) {
@@ -169,7 +174,7 @@ func (s *OrchInstallerTerraformStep) Run(ctx context.Context) (*OrchInstallerTer
 		}
 	}
 
-	return &OrchInstallerTerraformStepOutput{
+	return &TerraformUtilityOutput{
 		Output: output,
 	}, nil
 }

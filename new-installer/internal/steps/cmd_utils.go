@@ -10,12 +10,15 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
 )
 
-type OrchInstallerShellStep struct {
-	Command          string
+const DefaultTimeout = 60 // seconds
+
+type ShellUtility struct {
+	Command          []string
 	Timeout          int
 	SkipError        bool
 	RunInBackeground bool
@@ -23,20 +26,22 @@ type OrchInstallerShellStep struct {
 	cmd *exec.Cmd
 }
 
-type OrchInstallerShellStepOutput struct {
-	Stdout string `json:"stdout"`
-	Stderr string `json:"stderr"`
-	Error  error  `json:"error"`
+type ShellUtilityOutput struct {
+	Stdout strings.Builder
+	Stderr strings.Builder
+	Error  error
 }
 
-func (s *OrchInstallerShellStep) Run(ctx context.Context) (*OrchInstallerShellStepOutput, *internal.OrchInstallerError) {
-	// RunStep logic here
-	// TODO: add timeout
-	// TODO: Store *internal.OrchInstallerErrors so we can handle it later in post step?
+func (s *ShellUtility) Run(ctx context.Context) (*ShellUtilityOutput, *internal.OrchInstallerError) {
 	logger := internal.Logger()
 	logger.Debugf("Running shell command: %s", s.Command)
+	if s.Timeout <= 0 {
+		s.Timeout = DefaultTimeout
+	}
+	timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(s.Timeout)*time.Second)
+	defer cancel()
 
-	s.cmd = exec.CommandContext(ctx, "sh", "-c", s.Command)
+	s.cmd = exec.CommandContext(timeoutCtx, s.Command[0], s.Command[1:]...)
 
 	stderrWriter := strings.Builder{}
 	stdoutWriter := strings.Builder{}
@@ -50,9 +55,9 @@ func (s *OrchInstallerShellStep) Run(ctx context.Context) (*OrchInstallerShellSt
 		err = s.cmd.Run()
 	}
 
-	output := &OrchInstallerShellStepOutput{
-		Stdout: stdoutWriter.String(),
-		Stderr: stderrWriter.String(),
+	output := &ShellUtilityOutput{
+		Stdout: stdoutWriter,
+		Stderr: stderrWriter,
 		Error:  err,
 	}
 
@@ -65,14 +70,14 @@ func (s *OrchInstallerShellStep) Run(ctx context.Context) (*OrchInstallerShellSt
 	return output, nil
 }
 
-func (s *OrchInstallerShellStep) Process() *os.Process {
+func (s *ShellUtility) Process() *os.Process {
 	if s.cmd == nil {
 		return nil
 	}
 	return s.cmd.Process
 }
 
-func (s *OrchInstallerShellStep) Kill() error {
+func (s *ShellUtility) Kill() error {
 	if s.cmd == nil {
 		return nil
 	}
@@ -82,7 +87,7 @@ func (s *OrchInstallerShellStep) Kill() error {
 	return s.cmd.Process.Kill()
 }
 
-func (s *OrchInstallerShellStep) Wait() error {
+func (s *ShellUtility) Wait() error {
 	if s.cmd == nil {
 		return nil
 	}
