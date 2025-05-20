@@ -131,7 +131,7 @@ func (s *OrchInstallerTerraformStep) Run(ctx context.Context) (*OrchInstallerTer
 		logger.Debugf("Terraform applied successfully")
 	} else if s.Action == "uninstall" {
 		logger.Debugf("Destroying Terraform with variables file: %s", variableFilePath)
-		err = tf.DestroyJSON(ctx, fileLogWriter, tfexec.VarFile(variableFilePath))
+		err = tf.DestroyJSON(ctx, fileLogWriter, tfexec.VarFile(variableFilePath), tfexec.Refresh(false))
 		if err != nil {
 			return nil, &internal.OrchInstallerError{
 				ErrorCode: internal.OrchInstallerErrorCodeTerraform,
