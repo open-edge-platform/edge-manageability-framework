@@ -1,3 +1,4 @@
+anomalib
 app-orch-catalog
 app-orch-deployment
 app-orch-tenant-controller
@@ -6,14 +7,23 @@ cluster-connect-gateway
 cluster-extensions
 cluster-manager
 cluster-tests
+datumaro
+edge-ai-libraries
+edge-ai-suites
+edge-ai-tuning-kit
 edge-manage-docs
 edge-manageability-framework
+edge-microvisor-toolkit
+edge-microvisor-update-tool
 edge-node-agents
+geti
+geti-sdk
 infra-charts
 infra-core
 infra-external
 infra-managers
 infra-onboarding
+model_api
 o11y-alerting-monitor
 o11y-charts
 o11y-sre-exporter
@@ -23,5 +33,6 @@ orch-library
 orch-metadata-broker
 orch-ui
 orch-utils
+training_extensions
 trusted-compute
 virtual-edge-node
