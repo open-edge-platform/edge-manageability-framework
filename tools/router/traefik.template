@@ -141,8 +141,8 @@ tcp:
       tls:
         passthrough: true
     TCProuter4:
-      rule: "HostSNI(`mps-node.{{ .InternalDomain}}`)"
-      priority: 20
+      rule: "HostSNI(`*`)"
+      priority: 10
       service: "orch-kind-cira"
       entryPoints:
         - "tcpamt"
