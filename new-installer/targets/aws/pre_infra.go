@@ -21,13 +21,7 @@ func NewPreInfraStage(rootPath string, keepGeneratedFiles bool) *PreInfraStage {
 	return &PreInfraStage{
 		RootPath:           rootPath,
 		KeepGeneratedFiles: keepGeneratedFiles,
-		steps: []steps.OrchInstallerStep{
-			&steps.CreateAWSStateBucket{},
-			&steps.AWSVPCStep{
-				RootPath:           rootPath,
-				KeepGeneratedFiles: keepGeneratedFiles,
-			},
-		},
+		steps:              []steps.OrchInstallerStep{},
 	}
 }
 
