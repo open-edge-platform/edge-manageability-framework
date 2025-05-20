@@ -1,2 +1,4 @@
 # cluster:
 #     superuserSecret: "postgresql"
+service:
+  name: postgresql
