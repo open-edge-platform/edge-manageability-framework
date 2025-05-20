@@ -20,8 +20,8 @@ spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
     - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
-      chart: o11y/charts/{{$appName}}
-      targetRevision: 1.7.0
+      path: deployments/alerting-monitor/
+      targetRevision: pkimak
       helm:
         releaseName: {{$appName}}
         valuesObject:
