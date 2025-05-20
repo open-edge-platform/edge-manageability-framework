@@ -306,10 +306,92 @@ It is important to note that Kubernetes version upgrades, including those for K3
 
 ## Affected components and Teams
 
-Edge Microvisor Toolkit
-Cluster Orchestration
+Edge Microvisor Toolkit (EMT)
+Cluster Orchestration (CO)
 UX/UI
 
-## Implementation plan
+## Phase 1
 
-## Test Plan
+### Implementation Plan: Foundation and Initial Functionality
+
+1. **Build and Package K3s**
+- Develop the SPEC file for K3s and its dependencies.
+- Integrate the SPEC file into the EMT build pipeline.
+- Test the RPM build process to ensure correct packaging.
+
+2. **Embed K3s into EMT**
+- Create the package list file (`k3s.json`) specifying K3s packages.
+- Update EMT image configurations to include the `k3s.json` package list.
+- Modify the EMT build pipeline to embed K3s version information into the `manifest.json` file.
+
+3. **Cluster Manager Enhancements**
+- Implement logic to filter cluster templates based on the Kubernetes version embedded in EMT images.
+- Add support for the `airGapped` configuration in the Cluster Manager API for K3s on EMT.
+
+4. **CAPINTEL Provider Updates**
+- Modify CAPINTEL to handle new workflows for cluster creation and deletion.
+- Implement safeguards to block incompatible EMT image upgrades.
+
+5. **UI/UX Improvements**
+- Add a toggle for `Create Cluster Automatically` during host registration.
+- Update the UI to filter cluster templates based on the selected OS profile.
+
+### Test Plan
+
+1. **Unit Tests**
+- Test the SPEC file for correct RPM packaging of K3s and dependencies.
+
+2. **Integration Tests**
+- Test the EMT build pipeline to ensure K3s is correctly embedded in the image.
+
+3. **End-to-End Tests**
+- Test automatic cluster creation during host registration.
+- Validate logic for filtering cluster templates based on Kubernetes versions.
+
+### Goals
+- Achieve a working integration of K3s into EMT with basic functionality.
+- Ensure most of the development is completed in the first phase for CO, UI and EMT.
+- Ensure documentation is updated to guide users through new workflows.
+
+## Phase 2
+
+### Implementation plan: Enhancements and Optimization
+
+We expect most of the implementation to be completed in the first phase. The second phase will focus on refining the 
+user experience and optimizing workflows based on feedback from the first phase.
+
+The documentation shall be updated to reflect the new workflows and limitations introduced by this design change. 
+The following updates are planned:
+- Update user documentation to reflect new workflows and limitations.
+- Update EMT and EMT-S documentation to include K3s integration details.
+
+
+### Test Plan
+
+1. **Integration Tests**
+- Verify the `airGapped` configuration during cluster creation.
+
+2. **End-to-End Tests**
+- Test manual cluster creation with compatible and incompatible EMT images.
+- Test cluster deletion and ensure proper cleanup of Kubernetes configurations.
+
+3. **Upgrade Tests**
+- Test upgrading the EMT image with a new K3s version.
+- Validate safeguards to block incompatible EMT image upgrades.
+
+4. **UI/UX Tests**
+- Verify the functionality of the `Create Cluster Automatically` toggle.
+- Ensure the UI correctly filters cluster templates based on OS profiles.
+
+5. **Performance Tests**
+- Measure cluster creation times for K3s on EMT and compare them to existing setups.
+- Test scalability of automatic cluster creation for bulk host registration.
+
+6. **Regression Tests**
+- Ensure existing workflows for K3s on Ubuntu and RKE2 on EMT/Ubuntu remain unaffected.
+- Validate that multi-node cluster workflows are not disrupted.
+
+### Goals
+- Enhance functionality and optimize workflows based on feedback from Sprint 1.
+- Implement additional features and safeguards to improve reliability and user experience.
+- Conduct comprehensive testing to ensure robustness and scalability.
