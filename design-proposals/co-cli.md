@@ -30,8 +30,7 @@ The target for cluster-orchestration part in CLI is to be able to:
 - `en-kubeconfig`
 
 #### Syntax
-Assumption: All CLI commands should include a `--project` or `-p` parameter.
-For simplicity, this parameter is omitted in the commands provided below.
+If the `--project` parameter is not explicitly provided, the CLI should default to the currently active project context, which can be configured using a separate command like `cli set project <project_name>`.
 
 ##### clustertemplate
 CRUD operations for clustertemplate:
@@ -41,6 +40,7 @@ cli list clustertemplates --default
 cli get clustertemplate <name> --version <version>
 cli get clustertemplate versions <name>
 cli apply clustertemplate --file <path_to_clustertemplate.yaml>
+cli apply clustertemplate --file <path_to_clustertemplate.yaml> --default
 cli delete clustertemplate <name> --version <version>
 ```
 Cluster template does not support set/update operation.
