@@ -109,7 +109,7 @@ func (s *TerraformUtility) Run(ctx context.Context) (*TerraformUtilityOutput, *i
 	}
 
 	logger.Debugf("Initializing Terraform with backend config: %s", backendConfigPath)
-	err = tf.Init(ctx, tfexec.Upgrade(true), tfexec.BackendConfig(backendConfigPath))
+	err = tf.Init(ctx, tfexec.Upgrade(true), tfexec.BackendConfig(backendConfigPath), tfexec.Reconfigure(true))
 	if err != nil {
 		return nil, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeTerraform,
