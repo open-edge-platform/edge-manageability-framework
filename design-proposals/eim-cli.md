@@ -14,23 +14,22 @@ This design proposal will focus on the details required for the EIM support.
 - **Define** The user experience of the CLI tool should align with industry-standard tools such as kubectl, providing a familiar and intuitive interface. Since the Edge Infrastructure Manager (EIM) is primarily intended for customers to manage fleets of edge nodes, the CLI should be optimized for fleet management as the default use case. Managing individual edge nodes should be treated as an exception rather than the norm.
 - **Identify** common use cases and workflows.
   - Pre-registration of fleet of edge nodes (including Kubernetes)
-  - Get the status of Fleet of edge nodes (in a specific region/site)
-    - default should be ENs not assigned to region/site.
-    - Treat region and sites as namespace `-n`.
-    - `-A` should be all sites and regions.
-    - `-o wide` should give status of pending Update and CVE status.
-  - Update the all the edge nodes in the fleet that has pending Update (in a specific region/site)
-    - Treat region and sites as namespace `-n`.
-    - `-A` should be all sites and regions.
-  - Update the all the edge nodes in the fleet that has pending CVE Update (in a specific region/site)
-    - Treat region and sites as namespace `-n`.
+  - List the status of Fleet of edge nodes (in a specific region/site)
+    - default should be all ENs in all region/site.
+    - Treat region and sites as namespace.
+    - `-o wide` should give status of pending Update and CVE status (e.g. 4 Critical, 2 high, 1 medium).
+  - List UpdatePolicy
+  - List Region and Sites
+  - Update the all the edge nodes in the fleet that has pending Update including CVE update (in a specific region/site)
+    - Treat region and sites as namespace.
     - `-A` should be all sites and regions.
   - De-register fleet of edge nodes matching a criteria (in a specific region/site)
-    - Treat region and sites as namespace `-n`.
+    - Treat region and sites as namespace.
     - `-A` should be all sites and regions.
   - De-register a single edge node
-  - Describe a specific edge node
-  - Describe a OS profile/resource
+  - Get (in future Describe) a specific edge node
+  - Get (in future Describe) a OS profile/resource
+  - Update a single edge node
 - **Establish** command patterns, flags, and output formats.
 - **Ensure** usability, consistency, and extensibility.
 
