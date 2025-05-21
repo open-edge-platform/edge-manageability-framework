@@ -49,7 +49,7 @@
 
 /argocd/applications/configs/capi* @gcgirish @andybavier @hyunsun @jdanieck @jokuniew @eoghanlawless @sys-orch-approve
 /argocd/applications/configs/cluster* @gcgirish @andybavier @hyunsun @jdanieck @jokuniew @eoghanlawless @sys-orch-approve
-/argocd/applications/templates/intel-infra-provider* @gcgirish @andybavier @hyunsun @jdanieck @jokuniew @eoghanlawless @sys-orch-approve
+/argocd/applications/configs/intel-infra-provider* @gcgirish @andybavier @hyunsun @jdanieck @jokuniew @eoghanlawless @sys-orch-approve
 
 /argocd/applications/custom/capi* @gcgirish @andybavier @hyunsun @jdanieck @jokuniew @eoghanlawless @sys-orch-approve
 /argocd/applications/custom/cluster* @gcgirish @andybavier @hyunsun @jdanieck @jokuniew @eoghanlawless @sys-orch-approve
