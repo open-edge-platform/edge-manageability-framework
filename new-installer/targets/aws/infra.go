@@ -34,20 +34,20 @@ func (a *InfraStage) Name() string {
 }
 func (a *InfraStage) PreStage(ctx context.Context, config internal.OrchInstallerConfig, runtimeState *internal.OrchInstallerRuntimeState) *internal.OrchInstallerStageError {
 	containsError := false
-	stepErrors := make([]*internal.OrchInstallerError, len(a.steps))
-	for i, step := range a.steps {
+	var stepErrors map[string]*internal.OrchInstallerError
+	for _, step := range a.steps {
 		if newRuntimeState, err := step.ConfigStep(ctx, config, *runtimeState); err != nil {
-			stepErrors[i] = err
+			stepErrors[step.Name()] = err
 			containsError = true
 		} else if err = runtimeState.UpdateRuntimeState(newRuntimeState); err != nil {
-			stepErrors[i] = err
+			stepErrors[step.Name()] = err
 			containsError = true
 		}
 		if newRuntimeState, err := step.PreStep(ctx, config, *runtimeState); err != nil {
-			stepErrors[i] = err
+			stepErrors[step.Name()] = err
 			containsError = true
 		} else if err = runtimeState.UpdateRuntimeState(newRuntimeState); err != nil {
-			stepErrors[i] = err
+			stepErrors[step.Name()] = err
 			containsError = true
 		}
 	}
@@ -61,13 +61,13 @@ func (a *InfraStage) PreStage(ctx context.Context, config internal.OrchInstaller
 
 func (a *InfraStage) RunStage(ctx context.Context, config internal.OrchInstallerConfig, runtimeState *internal.OrchInstallerRuntimeState) *internal.OrchInstallerStageError {
 	containsError := false
-	stepErrors := make([]*internal.OrchInstallerError, len(a.steps))
+	var stepErrors map[string]*internal.OrchInstallerError
 	for i, step := range a.steps {
 		if newRuntimeState, err := step.RunStep(ctx, config, *runtimeState); err != nil {
-			stepErrors[i] = err
+			stepErrors[step.Name()] = err
 			containsError = true
 		} else if err = runtimeState.UpdateRuntimeState(newRuntimeState); err != nil {
-			stepErrors[i] = err
+			stepErrors[step.Name()] = err
 			containsError = true
 		}
 	}
@@ -81,17 +81,17 @@ func (a *InfraStage) RunStage(ctx context.Context, config internal.OrchInstaller
 
 func (a *InfraStage) PostStage(ctx context.Context, config internal.OrchInstallerConfig, runtimeState *internal.OrchInstallerRuntimeState, prevStageError *internal.OrchInstallerStageError) *internal.OrchInstallerStageError {
 	containsError := false
-	stepErrors := make([]*internal.OrchInstallerError, len(a.steps))
-	for i, step := range a.steps {
+	var stepErrors map[string]*internal.OrchInstallerError
+	for _, step := range a.steps {
 		var stepError *internal.OrchInstallerError = nil
 		if prevStageError != nil {
-			stepError = prevStageError.StepErrors[i]
+			stepError = prevStageError.StepErrors[step.Name()]
 		}
 		if newRuntimeState, err := step.PostStep(ctx, config, *runtimeState, stepError); err != nil {
-			stepErrors[i] = err
+			stepErrors[step.Name()] = err
 			containsError = true
 		} else if err = runtimeState.UpdateRuntimeState(newRuntimeState); err != nil {
-			stepErrors[i] = err
+			stepErrors[step.Name()] = err
 			containsError = true
 		}
 	}

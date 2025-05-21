@@ -23,5 +23,5 @@ func (e *OrchInstallerError) Error() string {
 }
 
 type OrchInstallerStageError struct {
-	StepErrors []*OrchInstallerError
+	StepErrors map[string]*OrchInstallerError
 }
