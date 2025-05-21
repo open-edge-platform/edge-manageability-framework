@@ -9,6 +9,7 @@ import (
 
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps"
+	steps_aws "github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps/aws"
 )
 
 type PreInfraStage struct {
@@ -25,7 +26,13 @@ func NewPreInfraStage(rootPath string, keepGeneratedFiles bool) *PreInfraStage {
 	return &PreInfraStage{
 		RootPath:           rootPath,
 		KeepGeneratedFiles: keepGeneratedFiles,
-		steps:              []steps.OrchInstallerStep{},
+		steps: []steps.OrchInstallerStep{
+			&steps_aws.CreateAWSStateBucket{},
+			&steps_aws.AWSVPCStep{
+				RootPath:           rootPath,
+				KeepGeneratedFiles: keepGeneratedFiles,
+			},
+		},
 	}
 }
 
