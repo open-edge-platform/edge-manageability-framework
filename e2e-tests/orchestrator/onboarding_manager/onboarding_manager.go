@@ -238,7 +238,7 @@ func HttpInfraOnboardGetHostID(ctx context.Context, url string, token string, cl
 		}
 		fmt.Printf("HostResource %#v\n", ps)
 		hostID = *(*ps.Hosts)[0].ResourceId
-		fmt.Println("HostID ",hostID,", TotalElements ",*ps.TotalElements)
+		fmt.Println("HostID ", hostID, ", TotalElements ", *ps.TotalElements)
 		return nil
 	}
 	if err := httpGet(rCtx, client, fmt.Sprintf("%s?uuid=%s", url, uuid), token, responseHooker); err != nil {
@@ -275,7 +275,7 @@ func HttpInfraOnboardGetHostIDAndInstanceID(ctx context.Context, url string, tok
 		} else {
 			return fmt.Errorf("instance not yet created for uuid %s", uuid)
 		}
-		fmt.Println("HostID ",hostID,", InstanceID " ,instanceID,", TotalElements ",*ps.TotalElements)
+		fmt.Println("HostID ", hostID, ", InstanceID ", instanceID, ", TotalElements ", *ps.TotalElements)
 		return nil
 	}
 
