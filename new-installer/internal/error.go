@@ -14,12 +14,14 @@ const (
 )
 
 type OrchInstallerError struct {
-	ErrorCode  OrchInstallerErrorCode
-	ErrorMsg   string
-	ErrorStage string
-	ErrorStep  string
+	ErrorCode OrchInstallerErrorCode
+	ErrorMsg  string
 }
 
 func (e *OrchInstallerError) Error() string {
 	return e.ErrorMsg
+}
+
+type OrchInstallerStageError struct {
+	StepErrors []*OrchInstallerError
 }

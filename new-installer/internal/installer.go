@@ -123,10 +123,6 @@ func reverseStages(stages []OrchInstallerStage) []OrchInstallerStage {
 
 func (o *OrchInstaller) Run(ctx context.Context, input OrchInstallerConfig, runtimeState *OrchInstallerRuntimeState) *OrchInstallerError {
 	logger := Logger()
-	// TODO: Add error handling and logging
-	// TODO: collect runtimeStates from stages
-	// TODO: Handle final runtimeState?
-
 	if runtimeState.Action == "" {
 		return &OrchInstallerError{
 			ErrorCode: OrchInstallerErrorCodeInvalidArgument,
@@ -144,7 +140,7 @@ func (o *OrchInstaller) Run(ctx context.Context, input OrchInstallerConfig, runt
 		o.Stages = reverseStages(o.Stages)
 	}
 	for _, stage := range o.Stages {
-		var err *OrchInstallerError
+		var err *OrchInstallerStageError
 		if o.Cancelled() {
 			logger.Info("Installation cancelled")
 			break
@@ -162,8 +158,10 @@ func (o *OrchInstaller) Run(ctx context.Context, input OrchInstallerConfig, runt
 		// handle the error and rollback if needed.
 		err = stage.PostStage(ctx, input, runtimeState, err)
 		if err != nil {
-			err.ErrorStage = name
-			return err
+			return &OrchInstallerError{
+				ErrorCode: OrchInstallerErrorCodeInternal,
+				ErrorMsg:  BuildErrorMessage(name, err),
+			}
 		}
 	}
 	return nil
@@ -179,4 +177,18 @@ func (o *OrchInstaller) Cancelled() bool {
 	o.mutex.Lock()
 	defer o.mutex.Unlock()
 	return o.cancelled
+}
+
+func BuildErrorMessage(stageName string, err *OrchInstallerStageError) string {
+	if err == nil {
+		return ""
+	}
+	msg := "Stage: " + stageName + "\n"
+	for i, stepErr := range err.StepErrors {
+		if stepErr != nil {
+			msg += fmt.Sprintf("Step: %d\n", i)
+			msg += fmt.Sprintf("Error: %s\n", stepErr.ErrorMsg)
+		}
+	}
+	return msg
 }
