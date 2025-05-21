@@ -6,9 +6,33 @@ Last updated: 12/05/2025
 
 ## Abstract
 
-The Edge Orchestrator requires a management via a CLI tool, an extensible EMF CLI will be designed/implemented as per the Orchestrator CLI ADR (https://github.com/open-edge-platform/edge-manageability-framework/pull/246/files).
+The Edge Orchestrator requires a management via a CLI tool, an extensible EMF CLI will be designed/implemented as per the Orchestrator CLI ADR (<https://github.com/open-edge-platform/edge-manageability-framework/pull/246/files>).
 As part of this CLI a number of EIM specific actions/features/workflows should be supported.
 This design proposal will focus on the details required for the EIM support.
+
+- **Goal** CLI tool should provide simple user experience for common workflows of EIM. Advanced workflows should be possible but only as an extended operation.
+- **Define** The user experience of the CLI tool should align with industry-standard tools such as kubectl, providing a familiar and intuitive interface. Since the Edge Infrastructure Manager (EIM) is primarily intended for customers to manage fleets of edge nodes, the CLI should be optimized for fleet management as the default use case. Managing individual edge nodes should be treated as an exception rather than the norm.
+- **Identify** common use cases and workflows.
+  - Pre-registration of fleet of edge nodes (including Kubernetes)
+  - Get the status of Fleet of edge nodes (in a specific region/site)
+    - default should be ENs not assigned to region/site.
+    - Treat region and sites as namespace `-n`.
+    - `-A` should be all sites and regions.
+    - `-o wide` should give status of pending Update and CVE status.
+  - Update the all the edge nodes in the fleet that has pending Update (in a specific region/site)
+    - Treat region and sites as namespace `-n`.
+    - `-A` should be all sites and regions.
+  - Update the all the edge nodes in the fleet that has pending CVE Update (in a specific region/site)
+    - Treat region and sites as namespace `-n`.
+    - `-A` should be all sites and regions.
+  - De-register fleet of edge nodes matching a criteria (in a specific region/site)
+    - Treat region and sites as namespace `-n`.
+    - `-A` should be all sites and regions.
+  - De-register a single edge node
+  - Describe a specific edge node
+  - Describe a OS profile/resource
+- **Establish** command patterns, flags, and output formats.
+- **Ensure** usability, consistency, and extensibility.
 
 ## Proposal
 
@@ -38,7 +62,7 @@ The local options associated with the `host` object/noun would help with filteri
 
 #### List  host information
 
-The list command is responsible for listing all deployed hosts, in tabular format with the amount of information equivalent to what is present in UI: `Name`/`Host Status`/`Serial Number`/`Operating System`/`Site`/`Workload`/`Actions`/`UUID`/`Processor`/`Latest Updates`/`Trusted Compute`   
+The list command is responsible for listing all deployed hosts, in tabular format with the amount of information equivalent to what is present in UI: `Name`/`Host Status`/`Serial Number`/`Operating System`/`Site`/`Workload`/`Actions`/`UUID`/`Processor`/`Latest Updates`/`Trusted Compute`
 > **NOTE** - the output will be scaled back by default and expanded with -o wide option.
 
 - List Registered Host (ie. `emfctl list hosts -o registered`)
@@ -74,7 +98,7 @@ The register command is responsible for registration of a host within the Edge O
 *Required info: `Host Name`/`Serial Number`/`UUID`*  
 *Optional info: `Auto Onboarding`/`Auto Provisioning`*
 
-- Register Host (ie. `emfctl register host myhost) 
+- Register Host (ie. `emfctl register host myhost)
 
 #### Onboard Host
 
@@ -99,7 +123,6 @@ Registered/Onboarded/Provisioned hosts can be edited
 *Required info: `Name`/`Site`/`Region`/`Metadata`*
 
 - Edit host (ie `emfctl edit host myhost --edit-config <arguments>`)
-
 
 #### Deauthorize Host
 
@@ -210,7 +233,7 @@ Create OS profile takes an input from a file
 
 - Delete OS profile (ie. `emfctl delete osprofile myprofile`)
 
-#### List Provisioning Provider 
+#### List Provisioning Provider
 
 - List provisioning provider (ie. `emfctl list provider`)
 
@@ -273,18 +296,17 @@ The EIM functionality will be contributed into the existing Catalog CLI tool, th
 Once the design for the EMI portion has been agreed internally within the EIM team, and agreed with other teams in terms of integration with overall EMF CLI the EIM features will be added in one at a time. The commands/workflows will be implemented adhering to the original design for EMF CLI.
 
 3.1 features:
-* Basic Host CRUD + BIT integration
-* Basic OS Profile CRUD
-* Single Click update
-* Audit Day2 versions
+- Basic Host CRUD + BIT integration
+- Basic OS Profile CRUD
+- Single Click update
+- Audit Day2 versions
 
 Beyond 3.1:
-* Provider management
-* Improvement and complex combinations for CRUD operations
-* Location management
-* vPro support
-* Per EN configuration
-* Scheduled Maintenance
+- Provider management
+- Improvement and complex combinations for CRUD operations
+- Location management
+- vPro support
+- Per EN configuration
+- Scheduled Maintenance
 
 ## Open issues (if applicable)
-
