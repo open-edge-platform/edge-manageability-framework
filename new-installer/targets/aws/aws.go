@@ -4,14 +4,17 @@
 
 package aws
 
-import "github.com/open-edge-platform/edge-manageability-framework/installer/internal"
+import (
+	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
+	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps"
+)
 
 func CreateAWSStages(rootPath string, keepGeneratedFiles bool) []internal.OrchInstallerStage {
 	return []internal.OrchInstallerStage{
-		NewPreInfraStage(rootPath, keepGeneratedFiles),
-		NewInfraStage(rootPath, keepGeneratedFiles),
-		NewPreOrchStage(rootPath, keepGeneratedFiles),
-		NewOrchStage(rootPath, keepGeneratedFiles),
-		NewPostOrchStage(rootPath, keepGeneratedFiles),
+		NewAWSStage("PreInfra", []steps.OrchInstallerStep{}),
+		NewAWSStage("Infra", []steps.OrchInstallerStep{}),
+		NewAWSStage("PreOrch", []steps.OrchInstallerStep{}),
+		NewAWSStage("Orch", []steps.OrchInstallerStep{}),
+		NewAWSStage("OrchInit", []steps.OrchInstallerStep{}),
 	}
 }
