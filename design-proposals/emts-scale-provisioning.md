@@ -12,9 +12,9 @@ The Edge Microvisor Toolkit Standalone (EMT-S) node is designed to enable enterp
 
 EIM leverages the Tinkerbell solution for provisioning operating systems on edge nodes. The current implementation supports OS provisioning via bootable USB or iPXE/HTTPs boot. To enable scalable provisioning of EMT-S edge nodes for the OXM workflow, this proposal suggests integrating PXE-based provisioning into EIM by utilizing the `smee` (formerly `boots`) component of Tinkerbell. Additionally, EMF and EIM will support configurations to deploy an EIM only profile (referred in this document as EIM-S), tailored for OXMs to efficiently provision edge nodes at scale. OXM will have the option of provisioning edge nodes using bootable USB, iPXE/HTTPs boot, or PXE-based provisioning. The solution will also include a user experience (UX) for pre-registering edge nodes using serial numbers, UUIDs, or MAC addresses. Furthermore, the solution will support the provisioning of different operating system profiles based on the selected identifiers. In cases where a device on the local area network (LAN) boots over PXE and is not pre-registered, the default operating system will be provisioned
 
-### MVP requirements
+### Requirements
 
-Following are the MVP requirements for the scale provisioning of EMT-S edge node supporting OXM workflow:
+Following are the requirements for the scale provisioning of EMT-S edge node supporting OXM workflow:
 
 - Provision multiple BareMetal edge nodes without onboarding for the purpose of standalone/singleton use.
 - Provide deploy a service on the local network that can achieve this provisioning at scale.
@@ -24,21 +24,20 @@ Following are the MVP requirements for the scale provisioning of EMT-S edge node
 - Provision default OS when a device on the LAN boots over PXE and is not pre-registered.
 - Have a UX of collecting provisioning logs and status of edge nodes.
 - Provide the same UX and EN capabilities as if an [EMT-S node is provisioned via USB](https://github.com/open-edge-platform/edge-microvisor-toolkit-standalone-node/tree/main/standalone-node).
-- Edge Nodes cannot download anything directly from Internet
-
-> Note: It might be possible for EMF-EIM to support provisioning of the EMT-S nodes. supporting this capability as part of MVP depends on any active customer requirements.
+- Edge Nodes cannot download anything directly from Internet. However, the on-prem EMF instance is still capable of reaching any Internet endpoint.
 
 ## Solution
 
-The solution consists of three major enhancements (modifications) to EMF:
-1) **Support legacy PXE boot to scale EMT-S provisioning** - the EIM will be extended with a local DHCP/TFTP server that helps initiate OS provisioning via legacy PXE boot.
+At high-level, the solution proposes the following:
+1. **Extend EMF to support legacy PXE boot to scale EMT-S provisioning** - the EIM will be extended with a local DHCP/TFTP server that helps initiate OS provisioning via legacy PXE boot.
    The legacy PXE boot uses the devices' PXE firmware to bootstrap into iPXE, which then continues the EN provisioning process.
-2) **Extend usage of Platform Bundle to be compatible with USB-based EMT-S** - to be consistent with USB-based EMT-S, the EIM will consume Platform Bundle that contains all the scripts and files to install standalone K8s cluster and other customizations.
-3) **Use EIM standalone deployment** - the proposed solution involves deploying a specific EMF profile, referred to as EIM standalone profile. 
-   at the customer's premises, specifically the OXM warehouse. This streamlined EMF profile to include EIM only will comprise only the essential components necessary for operating system provisioning. 
-   It is important to note that the EIM standalone will not be a separate branch or fork of the existing EMF EIM system. 
+2. **Use EIM standalone deployment** - the proposed solution involves deploying a specific EMF profile, referred to as EIM standalone profile,
+   at the customer's premises, specifically the OXM warehouse. This streamlined EMF profile to include EIM only will comprise only the essential components necessary for EN provisioning.
+   It is important to note that the EIM standalone will not be a separate branch or fork of the existing EMF EIM system.
    The deployment strategy will utilize configuration settings at deployment time within the EMF to ensure that only the required features are activated.
+   EMF orchestrator will also be configured to run as a proxy for ENs without direct Internet access to download installation artifacts during provisioning. 
    The detailed design for the deployment time configuration and profile settings for both EMF and EIM will be addressed in a separate design document.
+3. **Provide a dedicated OS profile, tailored to EMT-S** - 
 
 ### Legacy PXE provisioning workflow
 
@@ -62,8 +61,6 @@ The design proposal assumes the following network topology deployed on customers
   - EIM PXE-enabled DHCP server (e.g., Tinkerbell SMEE) - as described above, it serves PXE boot information. **The EIM PXE-enabled DHCP server is not intended
     to assign IP addresses.**
   - Local DHCP server - it acts as the standard DHCP server that provides dynamic IP addresses to ENs via DHCP.
-
-**NOTE1**: Customers should provide their own local DHCP server for dynamic IP address assignment.
 
 The high-level PXE-based provisioning workflow is as follows:
 
@@ -158,6 +155,16 @@ controlled environments and we can relax security requirements to support PXE bo
 
 Tinkerbell SMEE's DHCP/TFTP server must be reachable from a local, on-prem L2 network to handle DHCP/TFTP requests. This requires modifications to FPS services.
 
+### EMT-S nodes without direct Internet access
+
+The OXM EMF profile will leverage a standard Tinkerbell actions to download OS artifacts from Internet (Intel Release Service) during provisioning.
+Currently, the OS streaming requires upstream Internet connectivity. However, the EMT-S nodes on-prem may not be configured with direct Internet access.
+Therefore, we will use the following on-prem deployment configuration to support this use case:
+
+![EMT-S nodes without direct Internet access](images/eim-pxe-network-topology.png)
+
+In general, the EMF orchestrator is configured with upstream Internet connectivity and will act as an Internet proxy to all EMT-S nodes in the local network.
+
 ### Compatibility with USB-based EMT-S
 
 Target capabilities and UX of EMT-S provisioned at scale must be consistent with the existing USB-based flow for EMT-S provisioning.
@@ -171,6 +178,7 @@ From the end product (deployed EMT OS) perspective, the main differences between
 
 As agreed, the EMT-S image will include all cluster dependencies (base K8s binaries + cluster extensions) baked into the EMT-S image.
 The same EMT-S image will be used for USB-based and at-scale approach. EMF OXM profile will include a separate OS profile for EMT-S that will leverage the custom EMT-S image with all extensions.
+`collect-logs.sh` script should also become a part of EMT-S OS image. If not, users can still use the EMF observability stack to grab logs.
 
 If needed, a dedicated Tinkerbell workflow will be created to provision EMT-S OS profile. The new Tinkerbell workflow would need to mimic behavior of [EMT-S OS installation script](https://github.com/open-edge-platform/edge-microvisor-toolkit-standalone-node/blob/main/standalone-node/hook_os/files/install-os.sh).
 
@@ -192,7 +200,7 @@ We won't be there yet for 3.1, but this should be a direction for us, so that we
 Once ENs are provisioned and ready to be shipped to the field to operate as standalone ENs, they should be detached from the local EMF orchestrator.
 An explicit detach would be needed if there are agents' configurations, certificates, credentials, etc. installed on ENs.
 However, **BM agents won't be configured and activated for EMT-S OS profiles**. Therefore, the only operation to detach ENs from the orchestrator is to delete them via northbound API.
-This is already supported via UI or CLI.
+This is already supported via UI/CLI.
 
 ### OXM profile of EMF deployment (EIM-S)
 
@@ -208,7 +216,7 @@ Any further optimization to make EIM deployment fast and easy will be handled as
 To give an example, further optimizations may include deploying EIM as a self-contained Helm chart (instead of ArgoCD appplication) and getting rid of FPS services that are
 not required (e.g., Argo, Istio, HA capabilities, etc.).
 
-### Rationale
+## Rationale
 
 The current design proposal allows to easily support legacy PXE boot while keeping the current UX around EN pre-registration. It also lets us keep all the features that EIM currently supports,
 including logging, KPI instrumentation, observability, etc. The EN pre-registration also enables selectively configuring desired OS profile per EN and acts as
@@ -221,7 +229,7 @@ With the current proposal we keep using the current UX, with possibility to use 
 Also, an alternative to using SMEE was considered to avoid divergence in security policies (HTTP vs. HTTPS for Provisioning Nginx).
 This direction requires more development effort, but is still left as future improvement. It's further elaborated in a separate [design proposal](https://github.com/open-edge-platform/edge-manageability-framework/pull/309).
 
-#### (Alternative) Install K8s package via Platform Bundle
+### (Alternative) Install K8s package via Platform Bundle
 
 The plan to install K8s package via Platfrom Bundle is as follows:
 - The gap will be covered by extending the use of **_Platform Bundle_** to provide additional files to provisioned EN. The details of how the Platform Bundle will be extended are described [here](https://github.com/open-edge-platform/edge-manageability-framework/pull/318).
@@ -257,10 +265,20 @@ The high-level integration workflow would be:
   - Enable Tinkerbell SMEE and possibly move to separate Helm chart so that SMEE can be run as standalone piece or Deployment Package 
   - Upgrade Tinkerbell SMEE version to support `auto-proxy`
   - Modify deployment files to expose SMEE to L2 network to handle DHCP requests  
+- **OS profiles**
+  - Create a new OS profile for EMT-S
+- **Onboarding Manager**
+  - Implement necessary customizations to Tinkerbell workflow to support EMT-S provisioning
 - **Documentation**
   - Document the scale EMT-S provisioning flow
   - Document the PXE boot provisioning setup with network requirements and desired configuration
-- TBC
+
+**vEN**
+- Adjust scripts to let vEN be provisioned via PXE
+
+**Automation**
+- Leverage vEN and prepare test infra to validate PXE-based provisioning of 100s of vENs at once
+
 
 ## Open issues
 
