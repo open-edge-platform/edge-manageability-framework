@@ -83,7 +83,10 @@ func (a *PreOrchStage) PostStage(ctx context.Context, config internal.OrchInstal
 	containsError := false
 	stepErrors := make([]*internal.OrchInstallerError, len(a.steps))
 	for i, step := range a.steps {
-		stepError := prevStageError.StepErrors[i]
+		var stepError *internal.OrchInstallerError = nil
+		if prevStageError != nil {
+			stepError = prevStageError.StepErrors[i]
+		}
 		if newRuntimeState, err := step.PostStep(ctx, config, *runtimeState, stepError); err != nil {
 			stepErrors[i] = err
 			containsError = true
