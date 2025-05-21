@@ -8,5 +8,21 @@ func CreateAWSStages(rootPath string, keepGeneratedFiles bool) []internal.OrchIn
 			RootPath:           rootPath,
 			KeepGeneratedFiles: keepGeneratedFiles,
 		},
+		&InfraStage{
+			RootPath:           rootPath,
+			KeepGeneratedFiles: keepGeneratedFiles,
+		},
+		&PreOrchStage{
+			RootPath:           rootPath,
+			KeepGeneratedFiles: keepGeneratedFiles,
+		},
+		&OrchStage{
+			RootPath:           rootPath,
+			KeepGeneratedFiles: keepGeneratedFiles,
+		},
+		&PostOrchStage{
+			RootPath:           rootPath,
+			KeepGeneratedFiles: keepGeneratedFiles,
+		},
 	}
 }
