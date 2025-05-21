@@ -1,8 +1,8 @@
 # Design Proposal: Simplified Default Addon
 
-Author(s): Hyunsun Moon
+Author(s): Hyunsun Moon, Madalina Lazar
 
-Last updated: 05/19/2025
+Last updated: 05/21/2025
 
 ## Abstract
 
@@ -55,6 +55,25 @@ While the unified approach simplifies addon deployment, specific deployment stra
 [A description of the implementation plan, who will do them, and when.
 This should include a discussion of how the work fits into the product's
 quarterly release cycle.]
+
+- replace extensions
+- - replace openebs with Rancher's local path provisioner
+- - replace gatekeeper with Pod Security Admission rules
+- - update network policies for both EMT-managed, EMT-S to the appropriate restriction level
+
+With these extensions replaced and network policies updates CO with RKE2 as a provider should be installed
+and working as in 3.0.
+
+- [WIP] package Helm add-ons 
+- - package LPP (local path provisioner), NFD, network policies as Helm addons for the RKE2 provider
+- - package NFD, network policies as Helm addons for the RKE2 provider
+
+[WIP] Add more details about the packaging process
+At this point this change should be tested with both providers (RKE2, K3s) on both EMT-managed, EMT-S edges
+
+- [WIP] mark extensions like openebs, observability as optional
+
+- clean-up base extensions package
 
 ## Open issues
 
