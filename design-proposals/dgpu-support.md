@@ -44,15 +44,15 @@ In the earlier release (3.0), a key issue was the inability to activate Secure B
    Develop/update the cluster extensions supported by the platform to ease the consumption of GPUs.
    https://github.com/open-edge-platform/cluster-extensions/blob/main/README.md
    * **Intel**
-     * Intel Arc B580 Graphics support the Xe2 driver architecture.
-     * The Xe2 driver is integrated into Linux kernel version 6.11*.
-     * Updating the kernel to version 6.11 or its minor updates will include the necessary display driver.
+     * Intel Arc B580 Graphics is compatible with the Xe2 driver architecture.
+     * Upgrading the kernel to version 6.11 or its minor variations enables Xe2 driver support.
+     * The DEB package will be installed during node onboarding.
 
         ![BMG-Supported-Linux-kernel](images/BMG-driver.png)
         https://dgpu-docs.intel.com/devices/hardware-table.html
      * Existing extensions, such as the device-operator and gpu-plugin, will be updated. The Intel GPU device plugin for Kubernetes facilitates access to Intel discrete and integrated GPUs, registering resources like gpu.intel.com/i915 and gpu.intel.com/xe within a Kubernetes cluster
      * **For EMT** : EMT should be build with 6.11* linux kernel.
-     * **For Ubuntu** : ubuntu 24.04.2 and 24.10 desktop version will come with 6.11* kernel and support the BMG graphic card. 
+     * **For Ubuntu** : Ubuntu desktop versions 24.04.2 and 24.10 will feature the 6.11 kernel and include the necessary graphic drivers, ensuring compatibility with BMG graphics cards.
      *  for compute and media package intel provide PPA 
         ```
         sudo add-apt-repository -y ppa:kobuk-team/intel-graphics
