@@ -116,6 +116,7 @@ The implementation is planned in two phases:
 1. Does Ubuntu in-tree kernel 6.11++ support Battlemage B580 as well?
 
    Yes Ubuntu desktop 24.04.2 and 24.10 has 6.11* kernel support Battlemage B580 .
-2. No requirement for iGPU & dGPU together at the moment
+2. Gpu driver are not enable in ubuntu 24.04 server edition eith 6.11* kernel.
+3. No requirement for iGPU & dGPU together at the moment
 
 
