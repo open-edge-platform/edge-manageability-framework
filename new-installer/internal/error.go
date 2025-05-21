@@ -11,6 +11,7 @@ const (
 	OrchInstallerErrorCodeInternal
 	OrchInstallerErrorCodeInvalidArgument
 	OrchInstallerErrorCodeTerraform
+	OrchInstallerErrorCodeStateUploadFailed
 )
 
 type OrchInstallerError struct {
@@ -23,5 +24,7 @@ func (e *OrchInstallerError) Error() string {
 }
 
 type OrchInstallerStageError struct {
-	StepErrors []*OrchInstallerError
+	ErrorCode  OrchInstallerErrorCode
+	ErrorMsg   string
+	StepErrors map[string]*OrchInstallerError
 }
