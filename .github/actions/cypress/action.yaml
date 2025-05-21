@@ -36,12 +36,12 @@ runs:
   using: "composite"
   steps:
     - name: Checkout UI repo
-      uses: actions/checkout@v4.2.2
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
       with:
         repository: open-edge-platform/orch-ui
         path: orch-ui
         ref: a145d044ff73eade7a1e14d5c925108472d9aa48
-        token: ${{ inputs.token }}
+        persist-credentials: false
     - run: git log -1
       shell: bash
       working-directory: orch-ui
@@ -66,14 +66,19 @@ runs:
       if: ${{ always() && inputs.infra != '' }}
       working-directory: orch-ui/tests
       shell: bash
+      env: 
+        EN_SERIAL_NUMBER: ${{ inputs.en_serial_number }}
+        INPUTS_INFRA: ${{inputs.infra}}
       run: |
         npx cypress run --e2e \
-          -s ${{inputs.infra}} \
-          --env EN_SERIAL_NUMBER=${{ inputs.en_serial_number }}
+          -s ${INPUTS_INFRA} \
+          --env EN_SERIAL_NUMBER=${EN_SERIAL_NUMBER}
     - name: Collect Edge Infra Manager logs
       if: ${{ always() && inputs.infra != '' }}
       working-directory: orch-ui/tests
       shell: bash
+      env:
+        EN_UUID: ${{ inputs.en_uuid }}
       run: |
         mkdir -p cypress/logs/edgeinfra
         kubectl logs -n orch-infra -l app.kubernetes.io/name=inventory > cypress/logs/edgeinfra/inventory.log
@@ -95,7 +100,7 @@ runs:
         kubectl get workflow -A > cypress/logs/edgeinfra/workflow.txt
         kubectl get hardware -A > cypress/logs/edgeinfra/hardware.txt
         kubectl get template -A > cypress/logs/edgeinfra/template.txt
-        kubectl get workflow -n orch-infra workflow-${{ inputs.en_uuid }}-prod -o yaml > cypress/logs/edgeinfra/workflow-${{ inputs.en_uuid }}-prod.log || true
+        kubectl get workflow -n orch-infra workflow-${EN_UUID}-prod -o yaml > cypress/logs/edgeinfra/workflow-${EN_UUID}-prod.log || true
 
         kubectl describe pod -n enic > cypress/logs/edgeinfra/enic-pod-describe.txt
         kubectl describe applications -n utils enic > cypress/logs/edgeinfra/enic-argocd-app.txt

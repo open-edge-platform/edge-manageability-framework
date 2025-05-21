@@ -176,3 +176,7 @@ Discover more about the [Open Edge Platform](https://github.com/open-edge-platfo
 
 Edge Manageability Framework is licensed
 under [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0)
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=open-edge-platform/edge-manageability-framework&type=Date)](https://www.star-history.com/#open-edge-platform/edge-manageability-framework&Date)

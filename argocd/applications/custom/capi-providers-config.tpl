@@ -30,6 +30,7 @@ core:
       - name: manager
         args:
           "--insecure-diagnostics": "true"
+          "--additional-sync-machine-labels": ".*"
     additionalManifests:
       name: core-additional-manifest
       namespace: capi-system

@@ -15,10 +15,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bitfield/script"
-
-	"github.com/open-edge-platform/edge-manageability-framework/internal/retry"
 	"gopkg.in/yaml.v3"
+
+	"github.com/bitfield/script"
+	"github.com/open-edge-platform/edge-manageability-framework/internal/retry"
 )
 
 const (
@@ -196,8 +196,7 @@ func waitForENFleetAgentReady() error {
 
 	// Since kubeconfig context is Edge Cluster
 	edgeClusterPodStatusCmd := "kubectl get pods -A"
-
-	cmd := "kubectl -n cattle-fleet-system get pods fleet-agent-0 -o jsonpath='{.status.phase}'"
+	cmd := "kubectl -n cattle-fleet-system get pods -l app=fleet-agent -o jsonpath='{.items[0].status.phase}'"
 
 	fmt.Printf("Waiting %v minutes for EN Fleet Agent to start...\n", waitForReadyMin)
 	fn := func() error {
@@ -481,7 +480,7 @@ func genKubeconfigEntry() error {
 
 	replaceEdgeServer := string(out)
 	insideClusterUrl := "http://cluster-connect-gateway.orch-cluster.svc:8080"
-	outsideClusterUrl := "https://connect-gateway.kind.internal:443"
+	outsideClusterUrl := fmt.Sprintf("https://connect-gateway.%s:443", serviceDomain)
 
 	edgeServer := strings.Replace(replaceEdgeServer, insideClusterUrl, outsideClusterUrl, 1)
 
