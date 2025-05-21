@@ -1,6 +1,6 @@
 # Design Proposal: EIM CLI
 
-Author(s): damiankopyto
+Author(s): damiankopyto and Krishna
 
 Last updated: 12/05/2025
 
