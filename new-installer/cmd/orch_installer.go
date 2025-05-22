@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
+	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/targets/aws"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
@@ -91,7 +92,7 @@ func execute(action string, orchConfigFile string, logDir string, keepGeneratedF
 		logger.Fatalf("error reading config file %s: %s", orchConfigFile, err)
 	}
 	logger.Infof("Config file %s read successfully", orchConfigFile)
-	config := internal.OrchInstallerConfig{}
+	config := config.OrchInstallerConfig{}
 	err = internal.DeserializeFromYAML(&config, configData)
 	if err != nil {
 		logger.Fatalf("error unmarshalling config file: %s", err)
