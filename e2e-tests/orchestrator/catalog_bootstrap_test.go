@@ -171,7 +171,7 @@ var _ = Describe("Config Provisioner integration test", Label("orchestrator-inte
 
 				harborDockerOCIReg := GetRegistry(ctx, c, accessToken, testProject, "harbor-docker-oci", http.StatusOK, checkRESTResponse)
 				checkRegistry(harborDockerOCIReg, "harbor oci docker", "Harbor OCI docker images registry", "IMAGE",
-					"https://registry-oci."+serviceDomain+"/")
+					"oci://registry-oci."+serviceDomain+"/"+harborProjectDisplayName)
 				checkLoginCredentials(ctx, harborDockerOCIReg, harborProjectName)
 
 				intelRSHelmReg := GetRegistry(ctx, c, accessToken, testProject, "intel-rs-helm", http.StatusOK, checkRESTResponse)
@@ -319,7 +319,7 @@ var _ = Describe("Provisioned registries push test", Label("orchestrator-integra
 				imageVer := "latest"
 
 				regDomain := reg.RootURL[strings.LastIndex(reg.RootURL, "//")+2:]
-				remoteImageName := fmt.Sprintf("%s/%s/%s:%s", strings.TrimRight(regDomain, "/"), harborProjectName, imageName, imageVer)
+				remoteImageName := fmt.Sprintf("%s/%s:%s", strings.TrimRight(regDomain, "/"), imageName, imageVer)
 
 				err = dc.ImageTag(ctx, imageName+":"+imageVer, remoteImageName)
 				Expect(err).ToNot(HaveOccurred(), "tagging docker image %s as %s", imageName+":"+imageVer, remoteImageName)
@@ -347,7 +347,7 @@ var _ = Describe("Provisioned registries push test", Label("orchestrator-integra
 				tlsConfiguration := &tls.Config{ //nolint: gosec
 					RootCAs: caPool,
 				}
-				baseRegistryURL := reg.RootURL + "api/v2.0/"
+				baseRegistryURL := strings.TrimSuffix(strings.Replace(reg.RootURL, "oci://", "https://", 1), harborProjectName) + "api/v2.0/"
 				doHarborREST(ctx, tlsConfiguration, "GET", baseRegistryURL+"projects/"+harborProjectName+
 					"/repositories?q=name%3D"+harborProjectName+"%2F"+imageName,
 					reg.Username, reg.AuthToken, http.StatusOK, checkRESTResponse)
