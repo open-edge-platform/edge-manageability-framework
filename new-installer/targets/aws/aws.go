@@ -10,7 +10,7 @@ import (
 	steps_aws "github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps/aws"
 )
 
-func CreateAWSStages(rootPath string, keepGeneratedFiles bool) []internal.OrchInstallerStage {
+func CreateAWSStages(rootPath string, keepGeneratedFiles bool) ([]internal.OrchInstallerStage, error) {
 	return []internal.OrchInstallerStage{
 		NewAWSStage("PreInfra", []steps.OrchInstallerStep{
 			&steps_aws.CreateAWSStateBucket{},
@@ -23,5 +23,5 @@ func CreateAWSStages(rootPath string, keepGeneratedFiles bool) []internal.OrchIn
 		NewAWSStage("PreOrch", []steps.OrchInstallerStep{}),
 		NewAWSStage("Orch", []steps.OrchInstallerStep{}),
 		NewAWSStage("OrchInit", []steps.OrchInstallerStep{}),
-	}
+	}, nil
 }
