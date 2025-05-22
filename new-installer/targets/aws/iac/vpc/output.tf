@@ -2,21 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-output "vpc_name" {
-  value = var.vpc_name
+output "vpc_id" {
+  value = aws_vpc.id
 }
 output "public_subnets" {
-  value = data.aws_subnet.public_subnets
+  value = aws_subnet.public_subnets
 }
 output "private_subnets" {
-  value = data.aws_subnet.private_subnets
-}
-output "cidr_blocks" {
-  value = concat([var.vpc_cidr_block], tolist(var.vpc_additional_cidr_blocks))
-}
-output "vpc_id" {
-  value = module.vpc.vpc.id
-}
-output "region" {
-  value = var.region
+  value = aws_subnet.private_subnets
 }

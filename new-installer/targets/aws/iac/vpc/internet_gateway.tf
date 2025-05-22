@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 resource "aws_internet_gateway" "igw" {
-  vpc_id = var.vpc.id
+  vpc_id = aws_vpc.main.id
   tags = {
-    Name = "${var.vpc_name}-igw"
-    VPC  = "${var.vpc_name}"
+    Name = "${var.name}-igw"
+    VPC  = "${var.name}"
   }
 }

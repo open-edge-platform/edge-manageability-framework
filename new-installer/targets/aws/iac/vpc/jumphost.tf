@@ -2,13 +2,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+locals {
+  jumphost_instance_type = "t3.medium"
+}
+
 resource "aws_key_pair" "jumphost_instance_launch_key" {
-  key_name   = "${var.vpc_id}-jumphost-key"
+  key_name   = "${var.name}-jumphost-key"
   public_key = var.jumphost_instance_ssh_key_pub
 }
 
 resource "aws_iam_role" "ec2" {
-  name               = "${var.vpc_name}-jumphost"
+  name               = "${var.name}-jumphost"
   assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -26,29 +30,31 @@ EOF
   tags = {
     Creator = "terraform"
     Module  = path.module
+    Name    = "${var.name}-jumphost"
+    VPC     = var.name
   }
 }
 
-data "aws_region" "current" {}
-
 data "aws_iam_policy_document" "eks_cluster_access_policy_document" {
   statement {
-    actions = ["eks:ListNodegroups",
-              "eks:UntagResource",
-              "eks:ListTagsForResource",
-              "eks:DescribeNodegroup",
-              "eks:TagResource",
-              "eks:AccessKubernetesApi",
-              "eks:DescribeCluster"]
-    resources = ["arn:aws:eks:${data.aws_region.current.name}::cluster/${var.vpc_name}"]
-    effect = "Allow"
+    actions = [
+      "eks:ListNodegroups",
+      "eks:UntagResource",
+      "eks:ListTagsForResource",
+      "eks:DescribeNodegroup",
+      "eks:TagResource",
+      "eks:AccessKubernetesApi",
+      "eks:DescribeCluster"
+    ]
+    resources = ["arn:aws:eks:${var.region}::cluster/${var.name}"]
+    effect    = "Allow"
   }
 }
 
 resource "aws_iam_policy" "eks_cluster_access_policy" {
-   name        = "${var.vpc_name}-jump-eks-cluster-access-policy"
-   description = "Allow permissions to access EKS cluster"
-   policy      = data.aws_iam_policy_document.eks_cluster_access_policy_document.json
+  name        = "${var.name}-jump-eks-cluster-access-policy"
+  description = "Allow permissions to access EKS cluster"
+  policy      = data.aws_iam_policy_document.eks_cluster_access_policy_document.json
 }
 
 resource "aws_iam_role_policy_attachment" "eks_cluster_access" {
@@ -62,27 +68,28 @@ resource "aws_iam_role_policy_attachment" "AmazonSSMManagedInstanceCore" {
 }
 
 resource "aws_iam_instance_profile" "ec2" {
-  name = "${var.vpc_name}-jumphost"
+  name = "${var.name}-jumphost"
   role = aws_iam_role.ec2.name
 }
 
-data "aws_subnet" "jumphost" {
-  vpc_id            = var.vpc_id
-  cidr_block        = var.subnet.cidr_block
-  availability_zone = var.subnet.az
-  tags = {
-    Name : var.subnet.name
+data "aws_ami" "jumphost" {
+  most_recent = true
+  owners      = ["099720109477"]
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*"]
   }
 }
 
 resource "aws_instance" "jumphost" {
-  ami                    = var.jumphost_ami_id
-  instance_type          = var.jumphost_instance_type
+  ami                    = data.aws_ami.jumphost.id
+  instance_type          = local.jumphost_instance_type
   key_name               = aws_key_pair.jumphost_instance_launch_key.key_name
-  subnet_id              = data.aws_subnet.jumphost.id
+  subnet_id              = aws_subnet.public_subnet[var.jumphost_subnet].id
   vpc_security_group_ids = [aws_security_group.jumphost.id]
   iam_instance_profile   = aws_iam_instance_profile.ec2.name
-  user_data              = templatefile(
+  user_data = templatefile(
     "${path.module}/jumphost_user_data.tftpl",
     {
       region                        = var.region
@@ -94,12 +101,12 @@ resource "aws_instance" "jumphost" {
     encrypted = true
   }
   volume_tags = {
-    VPC  = var.vpc_name
-    Name = "${var.vpc_name}-jump-root"
+    VPC  = var.name
+    Name = "${var.name}-jump-root"
   }
   tags = {
-    VPC  = var.vpc_name
-    Name = "${var.vpc_name}-jump"
+    VPC  = var.name
+    Name = "${var.name}-jump"
   }
   metadata_options {
     http_tokens = "required"
@@ -108,57 +115,57 @@ resource "aws_instance" "jumphost" {
 
 resource "aws_security_group" "jumphost" {
   description = "Main security group for the jump host"
-  name_prefix = "${var.vpc_name}-jump-sg"
-  vpc_id      = var.vpc_id
+  name_prefix = "${var.name}-jump-sg"
+  vpc_id      = aws_vpc.main.id
 
   lifecycle {
     create_before_destroy = true
   }
 
   tags = {
-    VPC  = var.vpc_name
-    Name = "${var.vpc_name}-jumphost"
+    VPC  = var.name
+    Name = "${var.name}-jumphost"
   }
 }
 
 resource "aws_security_group_rule" "jumphost_egress_private" {
-  for_each = var.egress_ip_allow_list
-  type        = "egress"
-  from_port   = 0
-  to_port     = 0
-  protocol    = -1
-  cidr_blocks = [each.key]
-  description = "Allow egress traffic only to private subnets"
+  for_each          = aws_subnet.private_subnet
+  type              = "egress"
+  from_port         = 0
+  to_port           = 0
+  protocol          = -1
+  cidr_blocks       = [each.value.cidr_block]
+  description       = "Allow egress traffic only to private subnets"
   security_group_id = aws_security_group.jumphost.id
 }
 
+#trivy:ignore:AVD-AWS-0104
 resource "aws_security_group_rule" "jumphost_egress_https" {
-  type        = "egress"
-  from_port   = 443
-  to_port     = 443
-  protocol    = "tcp"
-  cidr_blocks = ["0.0.0.0/0"]
-  description = "Allow traffic to the endpoints and repos"
+  type              = "egress"
+  from_port         = 443
+  to_port           = 443
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  description       = "Allow traffic to the endpoints and repos"
   security_group_id = aws_security_group.jumphost.id
 }
 
 resource "aws_security_group_rule" "jumphost_ingress_ssh" {
-  for_each = var.ip_allow_list
-  type        = "ingress"
-  from_port   = 22
-  to_port     = 22
-  protocol    = "tcp"
-  cidr_blocks = [each.key]
-  description = "Allow SSH access"
+  for_each          = var.jumphost_ip_allow_list
+  type              = "ingress"
+  from_port         = 22
+  to_port           = 22
+  protocol          = "tcp"
+  cidr_blocks       = [each.key]
+  description       = "Allow SSH access"
   security_group_id = aws_security_group.jumphost.id
 }
-
 
 resource "aws_eip" "jumphost" {
   domain = "vpc"
   tags = {
-    Name = "${var.vpc_name}-jumphost"
-    VPC  = var.vpc_name
+    Name = "${var.name}-jumphost"
+    VPC  = var.name
   }
 }
 
