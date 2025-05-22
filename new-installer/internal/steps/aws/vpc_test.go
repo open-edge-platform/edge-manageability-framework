@@ -17,6 +17,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	terratest_aws "github.com/gruntwork-io/terratest/modules/aws"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
+	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 	steps_aws "github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps/aws"
 
 	"github.com/stretchr/testify/suite"
@@ -24,8 +25,8 @@ import (
 
 type VPCStepTest struct {
 	suite.Suite
-	config       internal.OrchInstallerConfig
-	runtimeState internal.OrchInstallerRuntimeState
+	config       config.OrchInstallerConfig
+	runtimeState config.OrchInstallerRuntimeState
 	step         *steps_aws.AWSVPCStep
 	randomText   string
 	logDir       string
@@ -99,7 +100,7 @@ func (s *VPCStepTest) TestInstallVPC() {
 	s.Equal(vpc.Tags["Name"], s.config.Global.OrchName)
 }
 
-func (s *VPCStepTest) goThroughStepFunctions() (internal.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *VPCStepTest) goThroughStepFunctions() (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	ctx := context.Background()
 	newRS, err := s.step.ConfigStep(ctx, s.config)
 	if err != nil {

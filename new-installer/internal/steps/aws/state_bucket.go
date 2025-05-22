@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
+	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps"
 )
 
@@ -32,7 +33,7 @@ func (s *CreateAWSStateBucket) Name() string {
 	return "CreateAWSStateBucket"
 }
 
-func (s *CreateAWSStateBucket) ConfigStep(ctx context.Context, config internal.OrchInstallerConfig) (internal.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *CreateAWSStateBucket) ConfigStep(ctx context.Context, config config.OrchInstallerConfig) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	if config.Global.OrchName == "" {
 		return config.Generated, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInvalidArgument,
@@ -59,12 +60,12 @@ func (s *CreateAWSStateBucket) ConfigStep(ctx context.Context, config internal.O
 	return config.Generated, nil
 }
 
-func (s *CreateAWSStateBucket) PreStep(ctx context.Context, config internal.OrchInstallerConfig) (internal.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *CreateAWSStateBucket) PreStep(ctx context.Context, config config.OrchInstallerConfig) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	// no-op for now
 	return config.Generated, nil
 }
 
-func (s *CreateAWSStateBucket) RunStep(ctx context.Context, config internal.OrchInstallerConfig) (internal.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *CreateAWSStateBucket) RunStep(ctx context.Context, config config.OrchInstallerConfig) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	if config.Generated.Action == "" {
 		return config.Generated, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInvalidArgument,
@@ -90,6 +91,6 @@ func (s *CreateAWSStateBucket) RunStep(ctx context.Context, config internal.Orch
 	return config.Generated, err
 }
 
-func (s *CreateAWSStateBucket) PostStep(ctx context.Context, config internal.OrchInstallerConfig, prevStepError *internal.OrchInstallerError) (internal.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *CreateAWSStateBucket) PostStep(ctx context.Context, config config.OrchInstallerConfig, prevStepError *internal.OrchInstallerError) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	return config.Generated, prevStepError
 }

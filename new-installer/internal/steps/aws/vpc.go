@@ -18,6 +18,7 @@ import (
 	"github.com/knadh/koanf/providers/rawbytes"
 	"github.com/knadh/koanf/v2"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
+	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps"
 	"github.com/praserx/ipconv"
 	"golang.org/x/crypto/ssh"
@@ -97,7 +98,7 @@ func (s *AWSVPCStep) Name() string {
 	return "AWSVPCStep"
 }
 
-func (s *AWSVPCStep) ConfigStep(ctx context.Context, config internal.OrchInstallerConfig) (internal.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *AWSVPCStep) ConfigStep(ctx context.Context, config config.OrchInstallerConfig) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	s.variables = NewDefaultAWSVPCVariables()
 	s.variables.Region = config.Aws.Region
 	s.variables.VPCName = config.Global.OrchName
@@ -193,11 +194,11 @@ func (s *AWSVPCStep) ConfigStep(ctx context.Context, config internal.OrchInstall
 	return config.Generated, nil
 }
 
-func (s *AWSVPCStep) PreStep(ctx context.Context, config internal.OrchInstallerConfig) (internal.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *AWSVPCStep) PreStep(ctx context.Context, config config.OrchInstallerConfig) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	return config.Generated, nil
 }
 
-func (s *AWSVPCStep) RunStep(ctx context.Context, config internal.OrchInstallerConfig) (internal.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *AWSVPCStep) RunStep(ctx context.Context, config config.OrchInstallerConfig) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	terraformStepInput := steps.TerraformUtilityInput{
 		Action:             config.Generated.Action,
 		ExecPath:           s.TerraformExecPath,
@@ -304,7 +305,7 @@ func (s *AWSVPCStep) RunStep(ctx context.Context, config internal.OrchInstallerC
 	return config.Generated, nil
 }
 
-func (s *AWSVPCStep) PostStep(ctx context.Context, config internal.OrchInstallerConfig, prevStepError *internal.OrchInstallerError) (internal.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *AWSVPCStep) PostStep(ctx context.Context, config config.OrchInstallerConfig, prevStepError *internal.OrchInstallerError) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	return config.Generated, prevStepError
 }
 

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
+	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -24,7 +25,7 @@ dry_run: false
 log_dir: .logs
 vpc_id: vpc-12345678`)
 
-	obj := internal.OrchInstallerRuntimeState{}
+	obj := config.OrchInstallerRuntimeState{}
 	err := internal.DeserializeFromYAML(&obj, data)
 	s.NoError(err, "failed to unmarshal yaml")
 	s.Equal("install", obj.Action)
@@ -33,7 +34,7 @@ vpc_id: vpc-12345678`)
 	s.Equal("vpc-12345678", obj.VPCID)
 	data2, err := internal.SerializeToYAML(obj)
 	s.NoError(err, "failed to marshal yaml")
-	obj2 := internal.OrchInstallerRuntimeState{}
+	obj2 := config.OrchInstallerRuntimeState{}
 	err = internal.DeserializeFromYAML(&obj2, data2)
 	s.NoError(err, "failed to unmarshal yaml")
 	s.Equal(obj.Action, obj2.Action)

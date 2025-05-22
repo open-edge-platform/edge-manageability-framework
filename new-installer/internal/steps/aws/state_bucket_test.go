@@ -13,6 +13,7 @@ import (
 
 	terratest_aws "github.com/gruntwork-io/terratest/modules/aws"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
+	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps"
 	steps_aws "github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps/aws"
 
@@ -21,7 +22,7 @@ import (
 
 type StateBucketTest struct {
 	suite.Suite
-	config internal.OrchInstallerConfig
+	config config.OrchInstallerConfig
 
 	step              *steps_aws.CreateAWSStateBucket
 	randomText        string
@@ -34,7 +35,7 @@ func TestCreateAWSStateBucket(t *testing.T) {
 
 func (s *StateBucketTest) SetupTest() {
 	s.randomText = strings.ToLower(rand.Text()[0:8])
-	s.config = internal.OrchInstallerConfig{}
+	s.config = config.OrchInstallerConfig{}
 	s.config.Aws.Region = "us-west-2"
 	s.config.Global.OrchName = "test"
 	s.config.Generated.DeploymentId = s.randomText
