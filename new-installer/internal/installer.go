@@ -32,12 +32,12 @@ type OrchInstallerRuntimeState struct {
 	Action string `yaml:"action"`
 
 	// The directory where the logs will be saved
-	LogDir            string `yaml:"logDir"`
-	DryRun            bool   `yaml:"dryRun"`
-	TerraformExecPath string `yaml:"terraformExecPath"`
+	LogDir string `yaml:"logDir"`
+	DryRun bool   `yaml:"dryRun"`
 
 	// Used for state and o11y bucket prefix. lowercase or digit
-	DeploymentId string `yaml:"deploymentId"`
+	DeploymentId     string `yaml:"deploymentId"`
+	StateBucketState string `yaml:"stateBucketState"` // The state S3 bucket Terraform state
 	// Move runtime state here?
 	KubeConfig    string `yaml:"kubeConfig"`
 	TlsCert       string `yaml:"tlsCert"`
@@ -72,13 +72,13 @@ type OrchInstallerConfig struct {
 		AzureAdTokenEndpoint string   `yaml:"azureAdTokenEndpoint,omitempty"`
 	} `yaml:"advanced"`
 	Aws struct {
-		Region            string `yaml:"region"`
-		CustomerTag       string `yaml:"customerTag,omitempty"`
-		CacheRegistry     string `yaml:"cacheRegistry,omitempty"`
-		JumpHostWhitelist string `yaml:"jumpHostWhitelist,omitempty"`
-		VpcId             string `yaml:"vpcId,omitempty"`
-		ReduceNsTtl       bool   `yaml:"reduceNsTtl,omitempty"` // TODO: do we need this?
-		EksDnsIp          string `yaml:"eksDnsIp,omitempty"`    // TODO: do we need this?
+		Region            string   `yaml:"region"`
+		CustomerTag       string   `yaml:"customerTag,omitempty"`
+		CacheRegistry     string   `yaml:"cacheRegistry,omitempty"`
+		JumpHostWhitelist []string `yaml:"jumpHostWhitelist,omitempty"`
+		VpcId             string   `yaml:"vpcId,omitempty"`
+		ReduceNsTtl       bool     `yaml:"reduceNsTtl,omitempty"` // TODO: do we need this?
+		EksDnsIp          string   `yaml:"eksDnsIp,omitempty"`    // TODO: do we need this?
 	} `yaml:"aws,omitempty"`
 	Onprem struct {
 		IP             string `yaml:"ip"`

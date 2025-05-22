@@ -107,9 +107,12 @@ func execute(action string, orchConfigFile string, logDir string, keepGeneratedF
 	var stages []internal.OrchInstallerStage
 	switch config.Provider {
 	case "aws":
-		stages = aws.CreateAWSStages(currentDir, keepGeneratedFiles)
+		stages, err = aws.CreateAWSStages(currentDir, keepGeneratedFiles)
 	default:
 		logger.Fatalf("error: target environment %s not supported", config.Provider)
+	}
+	if err != nil {
+		logger.Fatalf("error creating stages for provider %s: %s", config.Provider, err)
 	}
 	orchInstaller, err := internal.CreateOrchInstaller(stages)
 	if err != nil {
