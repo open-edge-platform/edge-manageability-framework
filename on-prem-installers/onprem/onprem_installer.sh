@@ -72,7 +72,6 @@ set_artifacts_version() {
     "onprem-config-installer:${DEPLOY_VERSION}"
     "onprem-ke-installer:${DEPLOY_VERSION}"
     "onprem-argocd-installer:${DEPLOY_VERSION}"
-    "onprem-gitea-installer:${DEPLOY_VERSION}"
     "onprem-orch-installer:${DEPLOY_VERSION}"
   )
 
@@ -628,17 +627,14 @@ sudo chown -R "$USER":"$USER"  /home/"$USER"/.kube
 sudo chmod 600 /home/"$USER"/.kube/config
 export KUBECONFIG=/home/$USER/.kube/config
 
-# Run gitea installer
-echo "Installing Gitea"
-eval "sudo IMAGE_REGISTRY=${GITEA_IMAGE_REGISTRY} NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y $cwd/$deb_dir_name/onprem-gitea-installer_*_amd64.deb"
+
+# Run argo CD installer
+echo "Installing Gitea & ArgoCD..."
+eval "sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y $cwd/$deb_dir_name/onprem-argocd-installer_*_amd64.deb"
 wait_for_namespace_creation $gitea_ns
 sleep 30s
 wait_for_pods_running $gitea_ns
 echo "Gitea Installed"
-
-# Run argo CD installer
-echo "Installing ArgoCD..."
-eval "sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y $cwd/$deb_dir_name/onprem-argocd-installer_*_amd64.deb"
 wait_for_namespace_creation $argo_cd_ns
 sleep 30s
 wait_for_pods_running $argo_cd_ns
