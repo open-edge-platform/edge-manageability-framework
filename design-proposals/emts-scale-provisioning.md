@@ -41,11 +41,12 @@ At high-level, the solution proposes the following:
 
 ### Legacy PXE provisioning workflow
 
-The solution relies on the capabilities provided by Tinkerbell SMEE. SMEE provides a minimal DHCP and TFTP server implementations that support PXE boot.
+The solution assumes that EIM will be extended with a minimal DHCP/TFTP server implementation that support PXE boot.
 The DHCP server provides necessary PXE info to machines initiating the PXE boot, while the TFTP server provides the iPXE binary that can be chain-loaded at boot time by PXE.
-The iPXE binary provided by the SMEE's TFTP server is a third-party script, maintained by the Tinkerbell project.
+The iPXE binary provided by the TFTP server is the same iPXE binary (`signed_ipxe.efi`) that is used for HTTPS and USB boots. `signed_ipxe.efi` is curated by DKAM and shared with other
+EIM components via K8s PVC.
 
-The solution assumes that the local EIM-provided DHCP/TFTP server is only used to initiate boot via legacy PXE (as legacy PXE has limited capabilities, i.e., it doesn't support HTTPS boot),
+The solution assumes that the local EIM-provided DHCP/TFTP server is only used to initiate boot via legacy PXE,
 but, once chain-loaded to iPXE, the Micro-OS is downloaded and used to drive provisioning.
 In other words, the only difference between the new PXE-based boot and HTTP-based boot is how the OS provisioning is triggered. The subsequent workflow remains the same -
 it leverages Micro-OS, device discovery and Tinkerbell workflow to complete OS provisioning.
@@ -58,8 +59,9 @@ The design proposal assumes the following network topology deployed on customers
 - Local subnet must not be exposed to external world.
 - The deployment scenario follows the Proxy DHCP scenario as described in [PXE specification, section 2.2.3](https://dimitrije.website/files/pxespec.pdf).
 - We assume the existence of two DHCP servers:
-  - EIM PXE-enabled DHCP server (e.g., Tinkerbell SMEE) - as described above, it serves PXE boot information. **The EIM PXE-enabled DHCP server is not intended
-    to assign IP addresses.**
+  - EIM PXE-enabled DHCP server - as described above, it serves PXE boot information. **The EIM PXE-enabled DHCP server is not intended
+    to assign IP addresses.** It replies to DHCP requests with the TFTP endpoint of where the initial iPXE script is stored. The EIM PXE server will also
+    include a lightweight TFTP server.
   - Local DHCP server - it acts as the standard DHCP server that provides dynamic IP addresses to ENs via DHCP.
 
 The high-level PXE-based provisioning workflow is as follows:
@@ -75,8 +77,10 @@ autonumber
   participant microos as Micro-OS
   end
 
+  participant dhcp as Customer DHCP server
+
   box rgb(235,255,255) Standalone Edge Infrastructure Manager, on-prem 
-  participant smee as Tinkerbell SMEE
+  participant pxe-server as PXE server
   participant pa as Provisioning Nginx
   participant inv as Inventory / API
   end
@@ -86,17 +90,23 @@ autonumber
   user->>inv: Pre-register ENs with SN/UUID
   note over bios,ipxe: PXE boot starts
 
-  bios->>smee: DHCP Discover
-  smee->>bios: DHCP reply with tftp://<smee-ip>/ipxe.efi
+  bios->>pxe-server: DHCP Discover
+  bios->>dhcp: DHCP Discover
+  pxe-server->>bios: DHCP reply with tftp://<pxe-server>/signed_ipxe.efi
+  dhcp->>bios: DHCP reply with assigned IP address
+  
+  note over bios: PXE firmware combines two DHCP replies to get both IP address and PXE info, as per PXE specs
 
-  bios->>+smee: Downloads ipxe.efi via TFTP
-  smee->>-bios: [ipxe.efi]
+  bios->>+pxe-server: Downloads signed_ipxe.efi via TFTP
+  pxe-server->>-bios: [signed_ipxe.efi]
 
   bios->>ipxe: Leaves PXE context, taken over by iPXE
 
-  ipxe->>smee: DHCP Discover
-  smee->>ipxe: DHCP reply with http://<nginx-ip>/tink-stack/boot.ipxe
-
+  opt IP address not transferred from PXE context
+  ipxe->>dhcp: DHCP Discover
+  dhcp->>ipxe: DHCP reply with assigned IP address
+  end
+  
   ipxe->>+pa: Download boot.ipxe
   pa->>-ipxe: [boot.ipxe]
 
@@ -110,20 +120,26 @@ autonumber
   note over microos,inv: OS provisioning continues with the standard flow, through Micro-OS and Tinkerbell workflow
 ```
 
-1. Users perform standard EN registration via UI or Bulk Import Tool. For each EN we can define OS profile and additonal settings (e.g., site, local account).
-2. ENs on site start PXE boot. They initiate DHCP discovery.
-3. DHCP requests are intercepted by Tinkerbell SMEE. It replies with a TFTP address pointing to itself. The Tinkerbell SMEE provides default iPXE environment (e.g., `ipxe.efi`).
-   It supports a range of different PXE architectures (see [link](https://github.com/tinkerbell/smee/blob/c0443b87cec44bf5d7d0028c876ea3be4f4d3d47/internal/dhcp/dhcp.go#L44)).
-4. `ipxe.efi` is downloaded to PXE environment.
-5. EN leaves PXE context and loads iPXE execution environment.
-6. iPXE must perform a separate DHCP discovery as EN left PXE context. It sends DHCP requests with another User-Class (`Tinkerbell`).
-7. This time, Tinkerbell SMEE replies with the HTTP URL to `boot.ipxe`. The decision on what to return is based on the User-Class.
-8. iPXE gets DHCP reply with HTTP URL to EIM's Provisioning Nginx. Note that this is a plain HTTP endpoint (without TLS) because the `ipxe.efi` provided by SMEE
-   doesn't include orchestrator's CA certificate and the download would fail. We elaborate more on this below. 
-9. iPXE downloads `boot.ipxe` via HTTP from Provisioning Nginx. `boot.ipxe` is our EIM-provided iPXE script that downloads and boots into Micro-OS.
-10. `boot.ipxe` is downloaded.
-11. iPXE chain-loads to `boot.ipxe`.
-12. `boot.ipxe` downloads Micro-OS image from the HTTP endpoint of Provisioning Nginx.
+**Step 1** Users perform standard EN registration via UI or Bulk Import Tool. For each EN we can define OS profile and additional settings (e.g., site, local account).
+
+**Steps 2-3** ENs on site start PXE boot. They initiate DHCP discovery. Broadcast DHCP requests are intercepted by customer DHCP server and EIM PXE server.
+
+**Step 4** Local customer DHCP server replies with dynamic IP address assigned to EN.
+
+**Step 5** EIM PXE server replies with a TFTP address pointing to itself. It provides default iPXE environment (e.g., `signed_ipxe.efi`).
+
+PXE firmware combines two DHCP replies as per PXE specs.
+
+**Steps 6-7** `signed_ipxe.efi` is downloaded to PXE environment.
+
+**Step 8** EN leaves PXE context and loads iPXE execution environment. Note that some platforms may transfer IP address assignment from PXE to iPXE.
+
+**Steps 9-10** If needed, iPXE performs another DHCP discovery. The customer DHCP server replies with IP address. No PXE boot information is needed at this point - 
+the `signed_ipxe.efi` has HTTPS URL (Provisioning Nginx's endpoint) embedded to download `boot.ipxe` from.
+
+**Steps 11-13** iPXE downloads `boot.ipxe` via HTTP from Provisioning Nginx. `boot.ipxe` is our EIM-provided iPXE script that downloads and boots into Micro-OS.
+
+**Steps 14-15** `boot.ipxe` downloads Micro-OS image from the HTTPS endpoint of Provisioning Nginx.
 
 Once Micro-OS is downloaded, EN boots into it and the standard process is continued - device discovery is done and Tinkerbell workflow started to provision target OS.
 
@@ -279,10 +295,10 @@ The high-level integration workflow would be:
 **Automation**
 - Leverage vEN and prepare test infra to validate PXE-based provisioning of 100s of vENs at once
 
-
 ## Open issues
 
 - In this solution, PXE boot will always be allowed for any device in a local subnet trying to initiate PXE boot.
   On the contrary, the Tinkerbell allows to control whether PXE boot is enabled/disabled for a device. For now, we won't have any control to who is allowed to PXE-boot, but
   the admission control will be done at later stage (once EMF's iPXE is chainloaded).
 - If we needed to support ISO images for EMT-D, we would need to create a new OS profile. We would also need to add a new Tinkerbell action that supports flashing ISO images to the disk.
+- The current `signed_ipxe.efi` supports modern UEFI. For platforms that only support legacy BIOS boot we may need to extend DKAM to build a dedicated `.kpxe` binary.
