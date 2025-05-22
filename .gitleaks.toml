@@ -1,0 +1,11 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "global allow lists"
+paths = [
+  '''e2e-tests/orchestrator/orchestrator_test.go''',
+  '''e2e-tests/orchestrator/tenancy_test.go''',
+  '''e2e-tests/orchestrator/o11y_test.go''',
+  '''e2e-tests/orchestrator/infra_test.go'''
+]
