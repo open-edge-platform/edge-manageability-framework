@@ -50,9 +50,12 @@ In the earlier release (3.0), a key issue was the inability to activate Secure B
 
         ![BMG-Supported-Linux-kernel](images/BMG-driver.png)
         https://dgpu-docs.intel.com/devices/hardware-table.html
+     * Refer to the official documentation for driver installation. DEB package install GPU drivers as part of rolling updates.
+     
+       https://dgpu-docs.intel.com/driver/installation-rolling.html 
      * Existing extensions, such as the device-operator and gpu-plugin, will be updated. The Intel GPU device plugin for Kubernetes facilitates access to Intel discrete and integrated GPUs, registering resources like gpu.intel.com/i915 and gpu.intel.com/xe within a Kubernetes cluster
      * **For EMT** : EMT should be build with 6.11* linux kernel.
-     * **For Ubuntu** : Ubuntu desktop versions 24.04.2 and 24.10 will feature the 6.11 kernel and include the necessary graphic drivers, ensuring compatibility with BMG graphics cards.
+     * **For Ubuntu** : Ubuntu Server 24.04.2, equipped with the 6.11 kernel, has been validated with BMG GPU drivers. DEB packages are available as rolling updates in the official documentation.
      *  for compute and media package intel provide PPA 
         ```
         sudo add-apt-repository -y ppa:kobuk-team/intel-graphics
@@ -117,6 +120,8 @@ The implementation is planned in two phases:
 
    Yes Ubuntu desktop 24.04.2 and 24.10 has 6.11* kernel support Battlemage B580 .
 2. Gpu driver are not enable in ubuntu 24.04 server edition eith 6.11* kernel.
+   
+   DEB packages are included in the rolling updates outlined in the official graphics driver installation documentation.
 3. No requirement for iGPU & dGPU together at the moment
 
 
