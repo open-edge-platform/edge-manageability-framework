@@ -7,69 +7,89 @@ package steps_aws
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
+	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps"
 )
 
+const StateBucketModulePath = "new-installer/targets/aws/iac/state_bucket"
+
+type StateBucketVariables struct {
+	Region   string `json:"region"`
+	OrchName string `json:"orch_name"`
+	Bucket   string `json:"bucket"`
+}
+
 type CreateAWSStateBucket struct {
-	bucketName string
-	session    *session.Session
+	variables          StateBucketVariables
+	RootPath           string
+	KeepGeneratedFiles bool
+	TerraformExecPath  string
 }
 
 func (s *CreateAWSStateBucket) Name() string {
 	return "CreateAWSStateBucket"
 }
 
-func (s *CreateAWSStateBucket) ConfigStep(ctx context.Context, config internal.OrchInstallerConfig, runtimeState internal.OrchInstallerRuntimeState) (internal.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
-	if config.DeploymentName == "" || config.StateStoreBucketPostfix == "" {
-		return runtimeState, &internal.OrchInstallerError{
+func (s *CreateAWSStateBucket) ConfigStep(ctx context.Context, config internal.OrchInstallerConfig) (internal.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+	if config.Global.OrchName == "" {
+		return config.Generated, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInvalidArgument,
-			ErrorMsg:  "DeploymentName or StateStoreBucketPostfix is not set",
+			ErrorMsg:  "OrchName is not set",
 		}
 	}
-	s.bucketName = config.DeploymentName + "-" + config.StateStoreBucketPostfix
-	return runtimeState, nil
+	if config.Aws.Region == "" {
+		return config.Generated, &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeInvalidArgument,
+			ErrorMsg:  "Region is not set",
+		}
+	}
+	if config.Generated.DeploymentId == "" {
+		return config.Generated, &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeInvalidArgument,
+			ErrorMsg:  "DeploymentId is not set",
+		}
+	}
+	s.variables = StateBucketVariables{
+		Region:   config.Aws.Region,
+		OrchName: config.Global.OrchName,
+		Bucket:   fmt.Sprintf("%s-%s", config.Global.OrchName, config.Generated.DeploymentId),
+	}
+	return config.Generated, nil
 }
 
-func (s *CreateAWSStateBucket) PreStep(ctx context.Context, config internal.OrchInstallerConfig, runtimeState internal.OrchInstallerRuntimeState) (internal.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
-	var err error
-	s.session, err = session.NewSession(&aws.Config{
-		Region: aws.String(config.Region),
+func (s *CreateAWSStateBucket) PreStep(ctx context.Context, config internal.OrchInstallerConfig) (internal.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+	// no-op for now
+	return config.Generated, nil
+}
+
+func (s *CreateAWSStateBucket) RunStep(ctx context.Context, config internal.OrchInstallerConfig) (internal.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+	if config.Generated.Action == "" {
+		return config.Generated, &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeInvalidArgument,
+			ErrorMsg:  "Action is not set",
+		}
+	}
+	output, err := steps.RunTerraformModule(ctx, steps.TerraformUtilityInput{
+		Action:             config.Generated.Action,
+		ExecPath:           s.TerraformExecPath,
+		ModulePath:         filepath.Join(s.RootPath, StateBucketModulePath),
+		Variables:          s.variables,
+		LogFile:            filepath.Join(s.RootPath, ".logs", "aws_state_bucket.log"),
+		KeepGeneratedFiles: s.KeepGeneratedFiles,
 	})
-	if err != nil {
-		return runtimeState, &internal.OrchInstallerError{
+	if output.TerraformState == "" {
+		return config.Generated, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInternal,
-			ErrorMsg:  fmt.Sprintf("failed to create AWS session: %v", err),
-		}
-	}
-	return runtimeState, nil
-}
-
-func (s *CreateAWSStateBucket) RunStep(ctx context.Context, config internal.OrchInstallerConfig, runtimeState internal.OrchInstallerRuntimeState) (internal.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
-	logger := internal.Logger()
-	s3Client := s3.New(s.session)
-	s3Input := &s3.CreateBucketInput{
-		Bucket: aws.String(s.bucketName),
-	}
-	_, err := s3Client.CreateBucket(s3Input)
-	if err != nil {
-		if aerr, ok := err.(s3.RequestFailure); ok && aerr.Code() == s3.ErrCodeBucketAlreadyOwnedByYou {
-			logger.Debugf("S3 bucket %s already exists", s.bucketName)
-		} else {
-			return runtimeState, &internal.OrchInstallerError{
-				ErrorCode: internal.OrchInstallerErrorCodeInternal,
-				ErrorMsg:  fmt.Sprintf("failed to create S3 bucket: %v", err),
-			}
+			ErrorMsg:  "Terraform state is empty",
 		}
 	} else {
-		logger.Debugf("S3 bucket %s created successfully", s.bucketName)
+		config.Generated.StateBucketState = output.TerraformState
 	}
-	return runtimeState, nil
+	return config.Generated, err
 }
 
-func (s *CreateAWSStateBucket) PostStep(ctx context.Context, config internal.OrchInstallerConfig, runtimeState internal.OrchInstallerRuntimeState, prevStepError *internal.OrchInstallerError) (internal.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
-	return runtimeState, nil
+func (s *CreateAWSStateBucket) PostStep(ctx context.Context, config internal.OrchInstallerConfig, prevStepError *internal.OrchInstallerError) (internal.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+	return config.Generated, prevStepError
 }
