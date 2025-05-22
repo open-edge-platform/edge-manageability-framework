@@ -85,12 +85,14 @@ func checkLoginCredentials(ctx context.Context, reg Registry, harborProjectName 
 		tlsConfiguration := &tls.Config{ //nolint: gosec
 			RootCAs: caPool,
 		}
-		baseRegistryURL := reg.RootURL + "api/v2.0/"
+		baseRegistryURL := strings.Replace(reg.RootURL, "oci://", "https://", 1)
+		baseRegistryURL = strings.ToLower(baseRegistryURL)
+		baseRegistryURL = strings.TrimSuffix(baseRegistryURL, harborProjectName) + "api/v2.0/"
 		resp := doHarborREST(ctx, tlsConfiguration, "GET", baseRegistryURL+"projects?name="+harborProjectName, reg.Username, reg.AuthToken, http.StatusOK, checkRESTResponse)
 		b, err := io.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
 		defer resp.Body.Close()
-		Expect(b).To(ContainSubstring(harborProjectName), "expecting project name %s to be found in query", harborProjectName)
+		Expect(string(b)).To(ContainSubstring(harborProjectName), "expecting project name %s to be found in query", harborProjectName)
 	}
 }
 
@@ -171,7 +173,7 @@ var _ = Describe("Config Provisioner integration test", Label("orchestrator-inte
 
 				harborDockerOCIReg := GetRegistry(ctx, c, accessToken, testProject, "harbor-docker-oci", http.StatusOK, checkRESTResponse)
 				checkRegistry(harborDockerOCIReg, "harbor oci docker", "Harbor OCI docker images registry", "IMAGE",
-					"oci://registry-oci."+serviceDomain+"/"+harborProjectDisplayName)
+					"oci://registry-oci."+serviceDomain+"/"+harborProjectName)
 				checkLoginCredentials(ctx, harborDockerOCIReg, harborProjectName)
 
 				intelRSHelmReg := GetRegistry(ctx, c, accessToken, testProject, "intel-rs-helm", http.StatusOK, checkRESTResponse)
@@ -318,7 +320,7 @@ var _ = Describe("Provisioned registries push test", Label("orchestrator-integra
 				imageName := "docker-push-test-image"
 				imageVer := "latest"
 
-				regDomain := reg.RootURL[strings.LastIndex(reg.RootURL, "//")+2:]
+				regDomain := strings.ToLower(reg.RootURL[strings.LastIndex(reg.RootURL, "//")+2:])
 				remoteImageName := fmt.Sprintf("%s/%s:%s", strings.TrimRight(regDomain, "/"), imageName, imageVer)
 
 				err = dc.ImageTag(ctx, imageName+":"+imageVer, remoteImageName)
@@ -348,7 +350,7 @@ var _ = Describe("Provisioned registries push test", Label("orchestrator-integra
 					RootCAs: caPool,
 				}
 				baseRegistryURL := strings.TrimSuffix(
-					strings.Replace(reg.RootURL, "oci://", "https://", 1), harborProjectDisplayName) + "api/v2.0/"
+					strings.Replace(reg.RootURL, "oci://", "https://", 1), harborProjectName) + "api/v2.0/"
 				doHarborREST(ctx, tlsConfiguration, "GET", baseRegistryURL+"projects/"+harborProjectName+
 					"/repositories?q=name%3D"+harborProjectName+"%2F"+imageName,
 					reg.Username, reg.AuthToken, http.StatusOK, checkRESTResponse)
