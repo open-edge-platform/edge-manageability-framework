@@ -16,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	terratest_aws "github.com/gruntwork-io/terratest/modules/aws"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
 	steps_aws "github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps/aws"
 
@@ -93,54 +94,61 @@ func (s *VPCStepTest) TearDownTest() {
 }
 
 func (s *VPCStepTest) TestInstallVPC() {
-	s.goThroughStepFunctions()
-}
-
-func (s *VPCStepTest) goThroughStepFunctions() {
-	ctx := context.Background()
-	newRS, err := s.step.ConfigStep(ctx, s.config, s.runtimeState)
+	rs, err := s.goThroughStepFunctions()
 	if err != nil {
 		s.NoError(err)
 		return
 	}
+
+	vpc := terratest_aws.GetVpcById(s.T(), rs.VPCID, s.config.Region)
+	if vpc == nil {
+		s.NotNil(vpc)
+		return
+	}
+	s.Equal(vpc.Name, s.config.DeploymentName)
+	s.Equal(vpc.CidrBlock, s.config.NetworkCIDR)
+	s.Equal(vpc.Tags["CustomerTag"], s.config.CustomerTag)
+	s.Equal(vpc.Tags["Name"], s.config.DeploymentName)
+}
+
+func (s *VPCStepTest) goThroughStepFunctions() (internal.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+	ctx := context.Background()
+	newRS, err := s.step.ConfigStep(ctx, s.config, s.runtimeState)
+	if err != nil {
+		return newRS, err
+	}
 	err = s.runtimeState.UpdateRuntimeState(newRS)
 	if err != nil {
-		s.NoError(err)
-		return
+		return newRS, err
 	}
 
 	newRS, err = s.step.PreStep(ctx, s.config, s.runtimeState)
 	if err != nil {
-		s.NoError(err)
-		return
+		return newRS, err
 	}
 	err = s.runtimeState.UpdateRuntimeState(newRS)
 	if err != nil {
-		s.NoError(err)
-		return
+		return newRS, err
 	}
 
 	newRS, err = s.step.RunStep(ctx, s.config, s.runtimeState)
 	if err != nil {
-		s.NoError(err)
-		return
+		return newRS, err
 	}
 	err = s.runtimeState.UpdateRuntimeState(newRS)
 	if err != nil {
-		s.NoError(err)
-		return
+		return newRS, err
 	}
 
 	newRS, err = s.step.PostStep(ctx, s.config, s.runtimeState, err)
 	if err != nil {
-		s.NoError(err)
-		return
+		return newRS, err
 	}
 	err = s.runtimeState.UpdateRuntimeState(newRS)
 	if err != nil {
-		s.NoError(err)
-		return
+		return newRS, err
 	}
+	return newRS, nil
 }
 
 func createOrDeleteS3Bucket(bucketName string, action string) error {
