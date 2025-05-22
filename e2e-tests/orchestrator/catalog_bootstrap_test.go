@@ -347,7 +347,8 @@ var _ = Describe("Provisioned registries push test", Label("orchestrator-integra
 				tlsConfiguration := &tls.Config{ //nolint: gosec
 					RootCAs: caPool,
 				}
-				baseRegistryURL := strings.TrimSuffix(strings.Replace(reg.RootURL, "oci://", "https://", 1), harborProjectName) + "api/v2.0/"
+				baseRegistryURL := strings.TrimSuffix(
+					strings.Replace(reg.RootURL, "oci://", "https://", 1), harborProjectDisplayName) + "api/v2.0/"
 				doHarborREST(ctx, tlsConfiguration, "GET", baseRegistryURL+"projects/"+harborProjectName+
 					"/repositories?q=name%3D"+harborProjectName+"%2F"+imageName,
 					reg.Username, reg.AuthToken, http.StatusOK, checkRESTResponse)
