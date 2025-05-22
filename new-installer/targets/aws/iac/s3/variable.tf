@@ -2,11 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-variable "cluster_name" {
-  description = "The name of the cluster"
-  type        = string
-}
-
 variable "region" {
   type = string
 }
@@ -19,11 +14,13 @@ variable "s3_prefix" {
   default = ""
 }
 
-variable "s3_create_tracing" {
-  type    = bool
-  default = false
+variable "cluster_name" {
+  type        = string
+  default     = ""
+  description = "EKS Cluster which will related to the S3 buckets"
 }
-variable "import_s3_buckets" {
+
+variable "create_tracing" {
   type    = bool
   default = false
 }
