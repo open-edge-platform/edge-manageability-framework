@@ -4,7 +4,6 @@
 package steps_aws_test
 
 import (
-	"context"
 	"crypto/rand"
 	"os"
 	"path/filepath"
@@ -12,7 +11,6 @@ import (
 	"testing"
 
 	terratest_aws "github.com/gruntwork-io/terratest/modules/aws"
-	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps"
 	steps_aws "github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps/aws"
@@ -34,22 +32,22 @@ func TestCreateAWSStateBucket(t *testing.T) {
 }
 
 func (s *StateBucketTest) SetupTest() {
-	s.randomText = strings.ToLower(rand.Text()[0:8])
-	s.config = config.OrchInstallerConfig{}
-	s.config.Aws.Region = "us-west-2"
-	s.config.Global.OrchName = "test"
-	s.config.Generated.DeploymentId = s.randomText
-	var err error
-	s.terraformExecPath, err = steps.InstallTerraformAndGetExecPath()
-	if err != nil {
-		s.NoError(err)
-		return
-	}
 	rootPath, err := filepath.Abs("../../../../")
 	if err != nil {
 		s.NoError(err)
 		return
 	}
+	s.randomText = strings.ToLower(rand.Text()[0:8])
+	s.config = config.OrchInstallerConfig{}
+	s.config.Aws.Region = "us-west-2"
+	s.config.Global.OrchName = "test"
+	s.config.Generated.DeploymentId = s.randomText
+	s.terraformExecPath, err = steps.InstallTerraformAndGetExecPath()
+	if err != nil {
+		s.NoError(err)
+		return
+	}
+
 	s.step = &steps_aws.CreateAWSStateBucket{
 		RootPath:           rootPath,
 		KeepGeneratedFiles: false,
@@ -59,106 +57,25 @@ func (s *StateBucketTest) SetupTest() {
 
 func (s *StateBucketTest) TearDownTest() {
 	s.config.Generated.Action = "uninstall"
-	ctx := context.Background()
-	newRS, err := s.step.ConfigStep(ctx, s.config)
+	_, err := steps.GoThroughStepFunctions(s.step, &s.config)
 	if err != nil {
 		s.NoError(err)
-		return
-	}
-	err = internal.UpdateRuntimeState(&s.config.Generated, newRS)
-	if err != nil {
-		s.NoError(err)
-		return
-	}
-	newRS, err = s.step.PreStep(ctx, s.config)
-	if err != nil {
-		s.NoError(err)
-		return
-	}
-	err = internal.UpdateRuntimeState(&s.config.Generated, newRS)
-	if err != nil {
-		s.NoError(err)
-		return
-	}
-	newRS, err = s.step.RunStep(ctx, s.config)
-	if err != nil {
-		s.NoError(err)
-		return
-	}
-	if !s.NotEmpty(newRS.StateBucketState) {
-		return
-	}
-	err = internal.UpdateRuntimeState(&s.config.Generated, newRS)
-	if err != nil {
-		s.NoError(err)
-		return
-	}
-	newRS, err = s.step.PostStep(ctx, s.config, err)
-	if err != nil {
-		s.NoError(err)
-		return
-	}
-	err = internal.UpdateRuntimeState(&s.config.Generated, newRS)
-	if err != nil {
-		s.NoError(err)
-		return
 	}
 	if _, err := os.Stat(s.terraformExecPath); err == nil {
 		err = os.Remove(s.terraformExecPath)
 		if err != nil {
 			s.NoError(err)
-			return
 		}
 	}
 }
 
 func (s *StateBucketTest) TestInstall() {
 	s.config.Generated.Action = "install"
-	ctx := context.Background()
-	newRS, err := s.step.ConfigStep(ctx, s.config)
+	_, err := steps.GoThroughStepFunctions(s.step, &s.config)
 	if err != nil {
 		s.NoError(err)
 		return
 	}
-	err = internal.UpdateRuntimeState(&s.config.Generated, newRS)
-	if err != nil {
-		s.NoError(err)
-		return
-	}
-	newRS, err = s.step.PreStep(ctx, s.config)
-	if err != nil {
-		s.NoError(err)
-		return
-	}
-	err = internal.UpdateRuntimeState(&s.config.Generated, newRS)
-	if err != nil {
-		s.NoError(err)
-		return
-	}
-	newRS, err = s.step.RunStep(ctx, s.config)
-	if err != nil {
-		s.NoError(err)
-		return
-	}
-	if !s.NotEmpty(newRS.StateBucketState) {
-		return
-	}
-	err = internal.UpdateRuntimeState(&s.config.Generated, newRS)
-	if err != nil {
-		s.NoError(err)
-		return
-	}
-	newRS, err = s.step.PostStep(ctx, s.config, err)
-	if err != nil {
-		s.NoError(err)
-		return
-	}
-	err = internal.UpdateRuntimeState(&s.config.Generated, newRS)
-	if err != nil {
-		s.NoError(err)
-		return
-	}
-
 	expectBucketName := s.config.Global.OrchName + "-" + s.config.Generated.DeploymentId
 	terratest_aws.AssertS3BucketExists(s.T(), s.config.Aws.Region, expectBucketName)
 }

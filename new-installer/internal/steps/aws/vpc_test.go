@@ -4,7 +4,6 @@
 package steps_aws_test
 
 import (
-	"context"
 	"crypto/rand"
 	"fmt"
 	"os"
@@ -18,6 +17,7 @@ import (
 	terratest_aws "github.com/gruntwork-io/terratest/modules/aws"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
+	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps"
 	steps_aws "github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps/aws"
 
 	"github.com/stretchr/testify/suite"
@@ -25,11 +25,11 @@ import (
 
 type VPCStepTest struct {
 	suite.Suite
-	config       config.OrchInstallerConfig
-	runtimeState config.OrchInstallerRuntimeState
-	step         *steps_aws.AWSVPCStep
-	randomText   string
-	logDir       string
+	config            config.OrchInstallerConfig
+	step              *steps_aws.AWSVPCStep
+	randomText        string
+	logDir            string
+	terraformExecPath string
 }
 
 func TestVPCStep(t *testing.T) {
@@ -43,6 +43,8 @@ func (s *VPCStepTest) SetupTest() {
 		return
 	}
 	s.randomText = strings.ToLower(rand.Text()[0:8])
+	s.logDir = filepath.Join(rootPath, ".logs")
+	internal.InitLogger("debug", s.logDir)
 	s.config.Aws.Region = "us-west-2"
 	s.config.Global.OrchName = "test"
 	s.config.Generated.DeploymentId = s.randomText
@@ -63,28 +65,43 @@ func (s *VPCStepTest) SetupTest() {
 			return
 		}
 	}
+	s.terraformExecPath, err = steps.InstallTerraformAndGetExecPath()
+	if err != nil {
+		s.NoError(err)
+		return
+	}
 
 	s.step = &steps_aws.AWSVPCStep{
 		RootPath:           rootPath,
 		KeepGeneratedFiles: true,
+		TerraformExecPath:  s.terraformExecPath,
 	}
 }
 
 func (s *VPCStepTest) TearDownTest() {
 	// We will always uninstall VPC module
-	s.runtimeState.Action = "uninstall"
-	s.goThroughStepFunctions()
-
-	bucketName := fmt.Sprintf("test-%s-%s", s.randomText, s.randomText)
-	err := createOrDeleteS3Bucket(bucketName, "delete")
+	s.config.Generated.Action = "uninstall"
+	_, err := steps.GoThroughStepFunctions(s.step, &s.config)
 	if err != nil {
 		s.NoError(err)
-		return
+	}
+
+	bucketName := fmt.Sprintf("test-%s-%s", s.randomText, s.randomText)
+	s3Err := createOrDeleteS3Bucket(bucketName, "delete")
+	if s3Err != nil {
+		s.NoError(err)
+	}
+	if _, err := os.Stat(s.terraformExecPath); err == nil {
+		err = os.Remove(s.terraformExecPath)
+		if err != nil {
+			s.NoError(err)
+		}
 	}
 }
 
 func (s *VPCStepTest) TestInstallVPC() {
-	rs, err := s.goThroughStepFunctions()
+	s.config.Generated.Action = "install"
+	rs, err := steps.GoThroughStepFunctions(s.step, &s.config)
 	if err != nil {
 		s.NoError(err)
 		return
@@ -98,46 +115,6 @@ func (s *VPCStepTest) TestInstallVPC() {
 	s.Equal(vpc.Name, s.config.Global.OrchName)
 	s.Equal(vpc.CidrBlock, steps_aws.DefaultNetworkCIDR)
 	s.Equal(vpc.Tags["Name"], s.config.Global.OrchName)
-}
-
-func (s *VPCStepTest) goThroughStepFunctions() (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
-	ctx := context.Background()
-	newRS, err := s.step.ConfigStep(ctx, s.config)
-	if err != nil {
-		return newRS, err
-	}
-	err = internal.UpdateRuntimeState(&s.config.Generated, newRS)
-	if err != nil {
-		return newRS, err
-	}
-
-	newRS, err = s.step.PreStep(ctx, s.config)
-	if err != nil {
-		return newRS, err
-	}
-	err = internal.UpdateRuntimeState(&s.config.Generated, newRS)
-	if err != nil {
-		return newRS, err
-	}
-
-	newRS, err = s.step.RunStep(ctx, s.config)
-	if err != nil {
-		return newRS, err
-	}
-	err = internal.UpdateRuntimeState(&s.config.Generated, newRS)
-	if err != nil {
-		return newRS, err
-	}
-
-	newRS, err = s.step.PostStep(ctx, s.config, err)
-	if err != nil {
-		return newRS, err
-	}
-	err = internal.UpdateRuntimeState(&s.config.Generated, newRS)
-	if err != nil {
-		return newRS, err
-	}
-	return newRS, nil
 }
 
 func createOrDeleteS3Bucket(bucketName string, action string) error {
