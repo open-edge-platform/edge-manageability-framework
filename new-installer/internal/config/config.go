@@ -59,13 +59,13 @@ type OrchInstallerConfig struct {
 		AzureAdTokenEndpoint string   `yaml:"azureAdTokenEndpoint,omitempty"`
 	} `yaml:"advanced"`
 	Aws struct {
-		Region            string `yaml:"region"`
-		CustomerTag       string `yaml:"customerTag,omitempty"`
-		CacheRegistry     string `yaml:"cacheRegistry,omitempty"`
-		JumpHostWhitelist string `yaml:"jumpHostWhitelist,omitempty"`
-		VpcId             string `yaml:"vpcId,omitempty"`
-		ReduceNsTtl       bool   `yaml:"reduceNsTtl,omitempty"` // TODO: do we need this?
-		EksDnsIp          string `yaml:"eksDnsIp,omitempty"`    // TODO: do we need this?
+		Region            string   `yaml:"region"`
+		CustomerTag       string   `yaml:"customerTag,omitempty"`
+		CacheRegistry     string   `yaml:"cacheRegistry,omitempty"`
+		JumpHostWhitelist []string `yaml:"jumpHostWhitelist,omitempty"`
+		VpcId             string   `yaml:"vpcId,omitempty"`
+		ReduceNsTtl       bool     `yaml:"reduceNsTtl,omitempty"` // TODO: do we need this?
+		EksDnsIp          string   `yaml:"eksDnsIp,omitempty"`    // TODO: do we need this?
 	} `yaml:"aws,omitempty"`
 	Onprem struct {
 		ArgoIP         string `yaml:"argoIp"`
