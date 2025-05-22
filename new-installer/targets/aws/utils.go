@@ -17,28 +17,28 @@ import (
 )
 
 func UploadStateToS3(config config.OrchInstallerConfig) error {
-	if config.Aws.Region == "" {
+	if config.AWS.Region == "" {
 		return fmt.Errorf("AWS region is not set")
 	}
 	if config.Global.OrchName == "" {
 		return fmt.Errorf("OrchName is not set")
 	}
-	if config.Generated.DeploymentId == "" {
-		return fmt.Errorf("DeploymentId is not set")
+	if config.Generated.DeploymentID == "" {
+		return fmt.Errorf("DeploymentID is not set")
 	}
 	session, err := session.NewSession()
 	if err != nil {
 		return err
 	}
 	s3Client := s3.New(session, &aws.Config{
-		Region: aws.String(config.Aws.Region),
+		Region: aws.String(config.AWS.Region),
 	})
 	configYaml, err := internal.SerializeToYAML(config)
 	if err != nil {
 		return err
 	}
 	_, err = s3Client.PutObject(&s3.PutObjectInput{
-		Bucket: aws.String(fmt.Sprintf("%s-%s", config.Global.OrchName, config.Generated.DeploymentId)),
+		Bucket: aws.String(fmt.Sprintf("%s-%s", config.Global.OrchName, config.Generated.DeploymentID)),
 		Key:    aws.String("config.yaml"),
 		Body:   aws.ReadSeekCloser(bytes.NewReader(configYaml)),
 	})
