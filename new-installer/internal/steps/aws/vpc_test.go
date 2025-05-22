@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -37,34 +36,24 @@ func TestVPCStep(t *testing.T) {
 }
 
 func (s *VPCStepTest) SetupTest() {
-	s.randomText = strings.ToLower(rand.Text()[0:8])
-	s.config = internal.OrchInstallerConfig{
-		DeploymentName:          fmt.Sprintf("test-%s", s.randomText),
-		Region:                  "us-west-2",
-		NetworkCIDR:             "10.250.0.0/16",
-		StateStoreBucketPostfix: s.randomText,
-		JumpHostIPAllowList:     []string{"10.250.0.0/16"},
-		CustomerTag:             "unit-test",
-	}
-
-	// Create a temporary S3 bucket to store the terraform state
-	bucketName := fmt.Sprintf("test-%s-%s", s.randomText, s.randomText)
-	err := createOrDeleteS3Bucket(bucketName, "create")
-	if err != nil {
-		s.NoError(err)
-		return
-	}
-
 	rootPath, err := filepath.Abs("../../../../")
 	if err != nil {
 		s.NoError(err)
 		return
 	}
-	s.logDir = filepath.Join(rootPath, ".logs")
-	s.runtimeState = internal.OrchInstallerRuntimeState{
-		Mutex:  &sync.Mutex{},
-		Action: "install",
-		LogDir: s.logDir,
+	s.randomText = strings.ToLower(rand.Text()[0:8])
+	s.config.Aws.Region = "us-west-2"
+	s.config.Global.OrchName = "test"
+	s.config.Generated.DeploymentId = s.randomText
+	s.config.Aws.JumpHostWhitelist = []string{"10.250.0.0/16"}
+	s.config.Generated.LogDir = filepath.Join(rootPath, ".logs")
+
+	// Create a temporary S3 bucket to store the terraform state
+	bucketName := fmt.Sprintf("%s-%s", s.config.Global.OrchName, s.randomText)
+	err = createOrDeleteS3Bucket(bucketName, "create")
+	if err != nil {
+		s.NoError(err)
+		return
 	}
 	if _, err := os.Stat(s.logDir); os.IsNotExist(err) {
 		err := os.MkdirAll(s.logDir, os.ModePerm)
@@ -100,51 +89,50 @@ func (s *VPCStepTest) TestInstallVPC() {
 		return
 	}
 
-	vpc := terratest_aws.GetVpcById(s.T(), rs.VPCID, s.config.Region)
+	vpc := terratest_aws.GetVpcById(s.T(), rs.VpcId, s.config.Aws.Region)
 	if vpc == nil {
 		s.NotNil(vpc)
 		return
 	}
-	s.Equal(vpc.Name, s.config.DeploymentName)
-	s.Equal(vpc.CidrBlock, s.config.NetworkCIDR)
-	s.Equal(vpc.Tags["CustomerTag"], s.config.CustomerTag)
-	s.Equal(vpc.Tags["Name"], s.config.DeploymentName)
+	s.Equal(vpc.Name, s.config.Global.OrchName)
+	s.Equal(vpc.CidrBlock, steps_aws.DefaultNetworkCIDR)
+	s.Equal(vpc.Tags["Name"], s.config.Global.OrchName)
 }
 
 func (s *VPCStepTest) goThroughStepFunctions() (internal.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	ctx := context.Background()
-	newRS, err := s.step.ConfigStep(ctx, s.config, s.runtimeState)
+	newRS, err := s.step.ConfigStep(ctx, s.config)
 	if err != nil {
 		return newRS, err
 	}
-	err = s.runtimeState.UpdateRuntimeState(newRS)
-	if err != nil {
-		return newRS, err
-	}
-
-	newRS, err = s.step.PreStep(ctx, s.config, s.runtimeState)
-	if err != nil {
-		return newRS, err
-	}
-	err = s.runtimeState.UpdateRuntimeState(newRS)
+	err = internal.UpdateRuntimeState(&s.config.Generated, newRS)
 	if err != nil {
 		return newRS, err
 	}
 
-	newRS, err = s.step.RunStep(ctx, s.config, s.runtimeState)
+	newRS, err = s.step.PreStep(ctx, s.config)
 	if err != nil {
 		return newRS, err
 	}
-	err = s.runtimeState.UpdateRuntimeState(newRS)
+	err = internal.UpdateRuntimeState(&s.config.Generated, newRS)
 	if err != nil {
 		return newRS, err
 	}
 
-	newRS, err = s.step.PostStep(ctx, s.config, s.runtimeState, err)
+	newRS, err = s.step.RunStep(ctx, s.config)
 	if err != nil {
 		return newRS, err
 	}
-	err = s.runtimeState.UpdateRuntimeState(newRS)
+	err = internal.UpdateRuntimeState(&s.config.Generated, newRS)
+	if err != nil {
+		return newRS, err
+	}
+
+	newRS, err = s.step.PostStep(ctx, s.config, err)
+	if err != nil {
+		return newRS, err
+	}
+	err = internal.UpdateRuntimeState(&s.config.Generated, newRS)
 	if err != nil {
 		return newRS, err
 	}
