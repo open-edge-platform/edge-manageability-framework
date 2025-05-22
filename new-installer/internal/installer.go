@@ -14,11 +14,6 @@ import (
 	"github.com/knadh/koanf/v2"
 )
 
-const (
-	OrchConfigVersion   = "0.0.1-dev"
-	RuntimeStateVersion = "0.0.1-dev"
-)
-
 type OrchInstaller struct {
 	Stages []OrchInstallerStage
 
@@ -26,65 +21,100 @@ type OrchInstaller struct {
 	cancelled bool
 }
 
-// The top level installer input defined here
-// This must be as general as possible
-// Note that we are using
-type OrchInstallerConfig struct {
-	// Schema version of the config
-	ConfigVersion string `yaml:"config_version"`
-	OrchVersion   string `yaml:"orch_version"`
-	// The target environment that will be used
-	TargetEnvironment string `yaml:"target_environment"`
-	// The DeploymentName that will be shared across all the stages.
-	// Including but not limited to:
-	// - Backend storage name(S3 bucket, Azure storage, dir, ...)
-	// - VPC/VPN
-	// - EKS/AKS/RKE2 cluster name
-	// - Database name
-	// ...
-	DeploymentName string `yaml:"deployment_name"`
-	CustomerTag    string `yaml:"customer_tag"`
+type Scale int
 
-	// Cloud deployment specific fields
-	NetworkCIDR             string   `yaml:"network_cidr"`
-	Region                  string   `yaml:"region"`
-	StateStoreBucketPostfix string   `yaml:"state_store_bucket_postfix"`
-	JumpHostIPAllowList     []string `yaml:"jumphost_ip_allow_list"`
-}
-
-// Runtime state that will be shared across all the stages
 type OrchInstallerRuntimeState struct {
-	Mutex *sync.Mutex
-	// Schema version of the runtime state
-	RuntimeStateVersion string `yaml:"config_version"`
-	OrchVersion         string `yaml:"orch_version"`
 	// The Action that will be performed
 	// This can be one of the following:
 	// - install
 	// - upgrade
 	// - uninstall
 	Action string `yaml:"action"`
-	// The directory where the logs will be saved
-	LogDir            string `yaml:"log_dir"`
-	DryRun            bool   `yaml:"dry_run"`
-	TerraformExecPath string `yaml:"terraform_exec_path"`
 
-	// Infra-specific runtime state
-	// VPC(AWS) or VPN(Azure) ID
-	VPCID                    string   `yaml:"vpc_id"`
-	PublicSubnetIds          []string `yaml:"public_subnet_ids"`
-	PrivateSubnetIds         []string `yaml:"private_subnet_ids"`
-	JumpHostSSHKeyPublicKey  string   `yaml:"jump_host_ssh_key_public_key"`
-	JumpHostSSHKeyPrivateKey string   `yaml:"jump_host_ssh_key_private_key"`
+	// The directory where the logs will be saved
+	LogDir            string `yaml:"logDir"`
+	DryRun            bool   `yaml:"dryRun"`
+	TerraformExecPath string `yaml:"terraformExecPath"`
+
+	// Used for state and o11y bucket prefix. lowercase or digit
+	DeploymentId string `yaml:"deploymentId"`
+	// Move runtime state here?
+	KubeConfig    string `yaml:"kubeConfig"`
+	TlsCert       string `yaml:"tlsCert"`
+	TlsKey        string `yaml:"tlsKey"`
+	TlsCa         string `yaml:"tlsCa"`
+	CacheRegistry string `yaml:"cacheRegistry"`
+	VpcId         string `yaml:"vpcId"` // VPC ID
+
+	PublicSubnetIds          []string `yaml:"publicSubnetIds"`
+	PrivateSubnetIds         []string `yaml:"privateSubnetIds"`
+	JumpHostSSHKeyPublicKey  string   `yaml:"jumpHostSshPublicKey"`
+	JumpHostSSHKeyPrivateKey string   `yaml:"jumpHostSshPrivateKey"`
 }
 
-func (rs *OrchInstallerRuntimeState) UpdateRuntimeState(source OrchInstallerRuntimeState) *OrchInstallerError {
-	rs.Mutex.Lock()
-	defer rs.Mutex.Unlock()
+type OrchInstallerConfig struct {
+	Version   int                       `yaml:"version"`
+	Provider  string                    `yaml:"provider"`
+	Generated OrchInstallerRuntimeState `yaml:"generated"`
+	Global    struct {
+		OrchName     string `yaml:"orchName"`     // EMF deployment name
+		ParentDomain string `yaml:"parentDomain"` // not including cluster name
+		HttpProxy    string `yaml:"httpProxy,omitempty"`
+		HttpsProxy   string `yaml:"httpsProxy,omitempty"`
+		SocksProxy   string `yaml:"socksProxy,omitempty"`
+		NoProxy      string `yaml:"noProxy,omitempty"`
+		AdminEmail   string `yaml:"adminEmail"`
+		Scale        Scale  `yaml:"scale"`
+	} `yaml:"global"`
+	Advanced struct {
+		Enabled              []string `yaml:"enabled"` // installer module flag
+		AzureAdRefreshToken  string   `yaml:"azureAdRefreshToken,omitempty"`
+		AzureAdTokenEndpoint string   `yaml:"azureAdTokenEndpoint,omitempty"`
+	} `yaml:"advanced"`
+	Aws struct {
+		Region            string `yaml:"region"`
+		CustomerTag       string `yaml:"customerTag,omitempty"`
+		CacheRegistry     string `yaml:"cacheRegistry,omitempty"`
+		JumpHostWhitelist string `yaml:"jumpHostWhitelist,omitempty"`
+		VpcId             string `yaml:"vpcId,omitempty"`
+		ReduceNsTtl       bool   `yaml:"reduceNsTtl,omitempty"` // TODO: do we need this?
+		EksDnsIp          string `yaml:"eksDnsIp,omitempty"`    // TODO: do we need this?
+	} `yaml:"aws,omitempty"`
+	Onprem struct {
+		IP             string `yaml:"ip"`
+		DockerUsername string `yaml:"dockerUsername,omitempty"`
+		DockerToken    string `yaml:"dockerToken,omitempty"`
+	} `yaml:"onprem,omitempty"`
+	Orch struct {
+		Enabled         []string `yaml:"enabled"`
+		DefaultPassword string   `yaml:"defaultPassword"`
+	} `yaml:"orch"`
+	// Optional
+	Cert struct {
+		TlsCert string `yaml:"tlsCert"`
+		TlsKey  string `yaml:"tlsKey"`
+		TlsCa   string `yaml:"tlsCa"`
+	} `yaml:"cert,omitempty"`
+	Sre struct {
+		username  string `yaml:"username"`
+		password  string `yaml:"password"`
+		secretUrl string `yaml:"secretUrl"`
+		caSecret  string `yaml:"caSecret"`
+	} `yaml:"sre,omitempty"`
+	Smtp struct {
+		username string `yaml:"username"`
+		password string `yaml:"password"`
+		url      string `yaml:"url"`
+		port     int    `yaml:"port"`
+		from     string `yaml:"from"`
+	} `yaml:"smtp,omitempty"`
+}
+
+func UpdateRuntimeState(dest *OrchInstallerRuntimeState, source OrchInstallerRuntimeState) *OrchInstallerError {
 	srcK := koanf.New(".")
 	srcK.Load(structs.Provider(source, "yaml"), nil)
 	dstK := koanf.New(".")
-	dstK.Load(structs.Provider(rs, "yaml"), nil)
+	dstK.Load(structs.Provider(dest, "yaml"), nil)
 	dstK.Merge(srcK)
 
 	dstData, err := dstK.Marshal(yaml.Parser())
@@ -95,7 +125,7 @@ func (rs *OrchInstallerRuntimeState) UpdateRuntimeState(source OrchInstallerRunt
 		}
 	}
 
-	err = DeserializeFromYAML(rs, dstData)
+	err = DeserializeFromYAML(dest, dstData)
 	if err != nil {
 		return &OrchInstallerError{
 			ErrorCode: OrchInstallerErrorCodeInternal,
@@ -121,22 +151,23 @@ func reverseStages(stages []OrchInstallerStage) []OrchInstallerStage {
 	return reversed
 }
 
-func (o *OrchInstaller) Run(ctx context.Context, input OrchInstallerConfig, runtimeState *OrchInstallerRuntimeState) *OrchInstallerError {
+func (o *OrchInstaller) Run(ctx context.Context, config OrchInstallerConfig) *OrchInstallerError {
 	logger := Logger()
-	if runtimeState.Action == "" {
+	action := config.Generated.Action
+	if action == "" {
 		return &OrchInstallerError{
 			ErrorCode: OrchInstallerErrorCodeInvalidArgument,
 			ErrorMsg:  "action must be specified",
 		}
 	}
 
-	if runtimeState.Action != "install" && runtimeState.Action != "upgrade" && runtimeState.Action != "uninstall" {
+	if action != "install" && action != "upgrade" && action != "uninstall" {
 		return &OrchInstallerError{
 			ErrorCode: OrchInstallerErrorCodeInvalidArgument,
-			ErrorMsg:  fmt.Sprintf("unsupported action: %s", runtimeState.Action),
+			ErrorMsg:  fmt.Sprintf("unsupported action: %s", action),
 		}
 	}
-	if runtimeState.Action == "uninstall" {
+	if action == "uninstall" {
 		o.Stages = reverseStages(o.Stages)
 	}
 	for _, stage := range o.Stages {
@@ -147,16 +178,16 @@ func (o *OrchInstaller) Run(ctx context.Context, input OrchInstallerConfig, runt
 		}
 		name := stage.Name()
 		logger.Infof("Running stage: %s", name)
-		err = stage.PreStage(ctx, input, runtimeState)
+		err = stage.PreStage(ctx, &config)
 
 		// We will skip to run the stage if the previous stage failed
 		if err == nil {
-			err = stage.RunStage(ctx, input, runtimeState)
+			err = stage.RunStage(ctx, &config)
 		}
 
 		// But we will always run the post stage, the post stage should
 		// handle the error and rollback if needed.
-		err = stage.PostStage(ctx, input, runtimeState, err)
+		err = stage.PostStage(ctx, &config, err)
 		if err != nil {
 			return &OrchInstallerError{
 				ErrorCode: OrchInstallerErrorCodeInternal,
@@ -184,9 +215,9 @@ func BuildErrorMessage(stageName string, err *OrchInstallerStageError) string {
 		return ""
 	}
 	msg := "Stage: " + stageName + "\n"
-	for i, stepErr := range err.StepErrors {
+	for name, stepErr := range err.StepErrors {
 		if stepErr != nil {
-			msg += fmt.Sprintf("Step: %d\n", i)
+			msg += fmt.Sprintf("Step: %s\n", name)
 			msg += fmt.Sprintf("Error: %s\n", stepErr.ErrorMsg)
 		}
 	}

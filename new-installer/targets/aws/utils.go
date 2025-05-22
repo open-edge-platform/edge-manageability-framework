@@ -2,6 +2,7 @@ package aws
 
 import (
 	"bytes"
+	"fmt"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -10,22 +11,31 @@ import (
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
 )
 
-func UploadRuntimeStateToS3(bucketName string, region string, runtimeState internal.OrchInstallerRuntimeState) error {
+func UploadStateToS3(config internal.OrchInstallerConfig) error {
+	if config.Aws.Region == "" {
+		return fmt.Errorf("AWS region is not set")
+	}
+	if config.Global.OrchName == "" {
+		return fmt.Errorf("OrchName is not set")
+	}
+	if config.Generated.DeploymentId == "" {
+		return fmt.Errorf("DeploymentId is not set")
+	}
 	session, err := session.NewSession()
 	if err != nil {
 		return err
 	}
 	s3Client := s3.New(session, &aws.Config{
-		Region: aws.String(region),
+		Region: aws.String(config.Aws.Region),
 	})
-	runtimeStateYaml, err := internal.SerializeToYAML(runtimeState)
+	configYaml, err := internal.SerializeToYAML(config)
 	if err != nil {
 		return err
 	}
 	_, err = s3Client.PutObject(&s3.PutObjectInput{
-		Bucket: aws.String(bucketName),
-		Key:    aws.String("runtime-state.yaml"),
-		Body:   aws.ReadSeekCloser(bytes.NewReader(runtimeStateYaml)),
+		Bucket: aws.String(fmt.Sprintf("%s-%s", config.Global.OrchName, config.Generated.DeploymentId)),
+		Key:    aws.String("config.yaml"),
+		Body:   aws.ReadSeekCloser(bytes.NewReader(configYaml)),
 	})
 	if err != nil {
 		return err
