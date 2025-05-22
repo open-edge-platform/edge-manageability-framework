@@ -2,7 +2,7 @@
 
 Author(s): damiankopyto and Krishna
 
-Last updated: 12/05/2025
+Last updated: 22/05/2025
 
 ## Abstract
 
@@ -14,13 +14,27 @@ This design proposal will focus on the details required for the EIM support.
 - **Define** The user experience of the CLI tool should align with industry-standard tools such as kubectl, providing a familiar and intuitive interface. Since the Edge Infrastructure Manager (EIM) is primarily intended for customers to manage fleets of edge nodes, the CLI should be optimized for fleet management as the default use case. Managing individual edge nodes should be treated as an exception rather than the norm.
 - **Identify** common use cases and workflows.
   - Pre-registration of fleet of edge nodes (including Kubernetes)
+    - Mandatory fields:
+      - UUID
+      - Serial
+      - OS
+      - Site
+      - Region
+    - Optional fields:
+      - SB/FDE (False as default),
+      - SSH key (no key)
+      - Metadata (none)
+      - Cloud-init(no file)
+      - vPRO (false)
+      - k8s Cluster template (no template)
   - List the status of Fleet of edge nodes (in a specific region/site)
     - default should be all ENs in all region/site.
-    - Treat region and sites as namespace.
+    - Treat region and sites as namespace (`-r` `--region` for regions and `-s` `--site` for sites).
     - `-o wide` should give status of pending Update and CVE status (e.g. 4 Critical, 2 high, 1 medium).
   - CRUD of UpdatePolicy
   - List Region and Sites
   - Update the all the edge nodes in the fleet that has pending Update including CVE update (in a specific region/site)
+    - Update a single edge node
     - Treat region and sites as namespace.
     - `-A` should be all sites and regions.
   - De-register fleet of edge nodes matching a criteria (in a specific region/site)
@@ -29,7 +43,6 @@ This design proposal will focus on the details required for the EIM support.
   - De-register a single edge node
   - Get (in future Describe) a specific edge node
   - Get (in future Describe) a OS profile/resource
-  - Update a single edge node
 - **Establish** command patterns, flags, and output formats.
 - **Ensure** usability, consistency, and extensibility.
 
@@ -41,10 +54,9 @@ This document proposes to include the EIM related functionality as subset of com
 
 The following workflows are to be supported initially - the list may be expanded in the future if necessary functionality needs to be supported via CLI. It is assumed that the Bulk Import Tool [(BIT)](https://github.com/open-edge-platform/infra-core/tree/main/bulk-import-tools) will be integrated as part of the CLI effort.
 
-> **NOTE**: The commands and the order of commands at this stage is in no way final - they are just placeholders until we agree on actual command structure overall.  
 > **NOTE**: Not all the commands/functionalities and associated flags and option may be implemented in the initial version of the tool.
 
-### Ability to register/onboard/provision a host
+### Ability to fully provision a host
 
 >**NOTE**: The host CRUD operations and integrating BIT are top priority in 3.1 release.
 
@@ -54,66 +66,40 @@ The local options associated with the `host` object/noun would help with filteri
 
 - `--registered`/`onboarded`/`provisioned`/`all`/`deauthorized`/`unknown`/`error` - helps filter out the output of `list` command/verb
 - `--import-from-csv` `my-hosts.csv` - used to provision a bulk of hosts using BIT
-- `--auto-provision` - optional local flag that only takes effect when `--register` flag is invoked - enables auto provisioning of node when it connects
-- `--auto-onboarding` - optional local flag that only takes effect when `--register` flag is invoked - enables auto onboarding of node when it connects
-- `--edit-config` `<arguments>` - set of arguments to aid the edition of host
 - `--cluster-template` `<argument>` - a flag accepting name of the template to be used for cluster deployment.
+- `--filter` - a flag accepting either a pre-set or custom filter
 
 #### List  host information
 
 The list command is responsible for listing all deployed hosts, in tabular format with the amount of information equivalent to what is present in UI: `Name`/`Host Status`/`Serial Number`/`Operating System`/`Site`/`Workload`/`Actions`/`UUID`/`Processor`/`Latest Updates`/`Trusted Compute`
 > **NOTE** - the output will be scaled back by default and expanded with -o wide option.
 
-- List Registered Host (ie. `emfctl list hosts -o registered`)
-- List Onboarded Host (ie. `emfctl list hosts -o onboarded`)
-- List Provisioned Host (ie. `emfctl list hosts -o provisioned`)
+- List Onboarded Host (ie. `emfctl list hosts --filter onboarded`)
+- List All Host with specific serial number (ie. `emfctl list hosts --filter "serialNumber='123456789'`)
 - List All Host (ie. `emfctl list hosts`) (the default behaviour)
 
 #### Get host information
 
 The get command is responsible for describing the detailed information about a particular host.
-The output is more verbose and includes information from the `list` with addition of the detail captured under `Status Details`/`Resources`/`Specifications`/`I/O Devices`/`OS Profile`/`Host Labels` in UI - likely to be displayed as a mixture human readable sections and tabular? TODO get feedback on how aligned with UI we need this to be could be a table for each subsection.
+The output is more verbose and includes information from the `list` with addition of the detail captured under `Status Details`/`Resources`/`Specifications`/`I/O Devices`/`OS Profile`/`Host Labels` in UI - likely to be displayed as a mixture human readable sections and tabular?
 
-- Get Host (ie. `emfctl get host myhost`)
+- Get Host (ie. `emfctl get host myhostID`)
 
 #### Bulk import of multiple Hosts
 
 The BIT tool allows for importing a number of hosts through CSV file, on import it registers, onboards and provisions the hosts - a hostname is autogenerated for each added host.
-From the current understanding the tool does not support registration only or onboarding only (ie. the OSProfile is a mandatory field), but it will support handling (onboarding/provisioning) of existing registered hosts if the hosts are added to CSV. With this assumption in mind the proposal is that CLI only uses bulk import for "fully provisioned" hosts (unless/until the BIT supports register only for bulk import).
+From the current understanding the tool does not support registration only or onboarding only (ie. the OSProfile is a mandatory field), but it will support handling (onboarding/provisioning) of existing registered hosts if the hosts are added to CSV. With this assumption in mind the proposal is that CLI only uses bulk import for "fully provisioned" hosts.
 
-The bulk import would be invoked with `--import-from-csv` option. Since with bulk import the host names are autogenerated the `host` command/noun would either have to take argument when the flag is provided, or the BIT tool would need to be expanded to accept a name that could be used as a prefix for auto generated host names.
+The bulk import would be invoked with `--import-from-csv` option.
 
-Additionally it is expected that the BIT will allow for a combination of provisioning host and deploying cluster using a specific template - this the `import host` command should accept a `--cluster-template` flag.
+Since with bulk import the host names are autogenerated the `host` command/noun would either have to take argument when the flag is provided, or the BIT tool would need to be expanded to accept a name that could be used as a prefix for auto generated host names (this is low priority item).
+
+Additionally it is expected that the BIT will allow for a combination of provisioning host and deploying cluster using a specific template - this the `create host` command should accept a `--cluster-template` flag.
 
 BIT will be integrated into the CLI.
 BIT would be the de-facto command to onboard/provision an Edge Node or a number of Edge Nodes into the EMF.
 
-- Create multiple hosts (register/onboard/provision) (ie. `emfctl import host --import-from-csv my-hosts.csv`)
-
-#### Register Host
-
-The register command is responsible for registration of a host within the Edge Orchestrator only.
-
-*Required info: `Host Name`/`Serial Number`/`UUID`*  
-*Optional info: `Auto Onboarding`/`Auto Provisioning`*
-
-- Register Host (ie. `emfctl register host myhost)
-
-#### Onboard Host
-
-The `onboard` command is responsible for an onboarding of an already successfully registered host.
-
-- Onboard Host (ie. `emfctl onboard host myhost`)
-
-> **NOTE**: By default the auto-provisioning is off but if the auto-provisioning is set up in provider the onboarded host will provision automatically this should be communicated to user (either through CLI or documentation)
-
-#### Provision Host
-
-The provision command is responsible for provisioning an already onboarded node.
-
-*Required info: `OSProfile`/`Site`/`Secure`/`RemoteUser`/`Metadata`*
-
-- Provision Host (ie. `emfctl provision host my-host`)
+- Create multiple hosts (register/onboard/provision) (ie. `emfctl create host my-hosts.csv`)
 
 #### Edit Host
 
@@ -121,21 +107,21 @@ Registered/Onboarded/Provisioned hosts can be edited
 
 *Required info: `Name`/`Site`/`Region`/`Metadata`*
 
-- Edit host (ie `emfctl edit host myhost --edit-config <arguments>`)
+- Edit host (ie `emfctl edit host myhostID --edit-config <arguments>`)
 
 #### Deauthorize Host
 
-- Deauthorise Host (ie. `emfctl deauthorize host myhost`)
+- Deauthorise Host (ie. `emfctl deauthorize host myhostID`)
 
 #### Delete Host
 
-- Delete Host (ie. `emfctl delete host myhost`)
+- Delete Host (ie. `emfctl delete host myhostID`)
 
 > NOTE: This should require user confirmation
 
 #### Other
 
-> **NOTE/QUESTION**: Viewing metrics, scheduling maintenance are not considered to be supported in the initial phase of the EIM related CLI commands - should they be?
+> **NOTE**: Viewing metrics, scheduling maintenance are not considered to be supported in the initial phase of the EIM related CLI commands.
 
 ### Ability to create & manage Locations/regions/sub-regions/sites
 
@@ -145,55 +131,38 @@ Registered/Onboarded/Provisioned hosts can be edited
 
 The local options associated with the `location`/`region`/`sub-region`/`site` object/noun would help with filtering and providing arguments to the commands:
 
-- `--region-type` - to be used with `create region/subregion`
-- `--region` `<arg>` - region name/names to be used with sub-region
 - `--latitude` - latitude for site
 - `--longititude` - longtitude for site
 
-> NOTE: TODO Do we need to support advanced region settings in this release?
+> NOTE: Initially the location management support will be simple and minimal - re-evaluate when regions are back on the agenda
 
 #### List locations/regions/sub-regions/sites
 
-> NOTE: TODO Not yet sure what is actually useful for the user to list vs how it's going to be used to edit and manage the regions. Is there a point in having different commands to list different levels of location where individually they do not contain all that much info if advanced settings are not enabled?
-
 List locations will display the hierarchical tree of the location created
 
-- List locations (ie. `emfctl list location`)
 - List all regions only (ie. `emfctl list region`)
-- List all sub-regions only (ie. `emfctl list sub-region`)
 - List all sites only (ie. `emfctl list site`)
 
 #### Get regions/sub-regions/sites
 
 Get region details including sub regions and sites below.
 
-- Get region including sub regions and sites below. (ie. `emfctl get region myregion`)
-- Get sub-region including sub regions and sites below. (`emfctl get sub-region mysubregion --region myregion mysubregion mysubregionssubregion`)
-- Get site details including the regions/subregions above (`emfctl get site mysite --region myregion mysubregion`)
+- Get region (ie. `emfctl get region myregion`)
+- Get site details  (`emfctl get site mysite`)
 
 #### Create location/regions/sub-region
 
 Create a new location
 
-- Create region (ie. `emfctl create region myregion --region-type <type>`)
-- Create region sub region in a region or another sub region (ie. `emfctl create sub-region mysubregion --region-type <type> --region myregion <...>`)
-- Create site in a region/subregion or it's subregion (ie. `emfctl create site mysite --longtitude 0 --latitude 0 --region myregion <...>`)
-
-**Update region**
-
-Update a location
-
-- Update region (ie. `emfctl update region myregion --region-type <type>`)
-- Update subregion  in a region or another sub region (ie. `emfctl update sub-region mysubregion --region-type <type> --region myregion <...>`)
-- Update a site in a region/subregion or it's subregion (ie. `emfctl update site mysite --longtitude 0 --latitude 0 --region myregion <...>`)
+- Create region (ie. `emfctl create region myregion`)
+- Create site in a region/subregion or it's subregion (ie. `emfctl create site mysite region --longtitude 0 --latitude 0 `)
 
 **Delete location/region/sub-region**
 
 Delete a location
 
-- Delete region (ie. `emfctl delete region myregion --region-type <type>`)
-- Delete a sub region in a region or another sub region (ie. `emfctl delete sub-region mysubregion --region-type <type> --region myregion <...>`)
-- Delete a site in a region/subregion or it's subregion (ie. `emfctl delete site mysite  --region myregion <...>`)
+- Delete region (ie. `emfctl delete region myregion` )
+- Delete a site in a region/subregion or it's subregion (ie. `emfctl delete site mysite myregion`)
 
 ### OS Profile/Provider management
 
@@ -222,13 +191,9 @@ Create OS profile takes an input from a file
 
 #### Update OS Profile
 
-> TODO not all fields in OS profile are updatable (really only ubuntu profile are updateable apart from name???)
-
 - Update OS profile (ie. `emfctl update osprofile myprofile --<all relevant options>`)
 
 #### Delete OS Profile
-
-> TODO - Does the API prevent deletion of original profiles and profile in use? What about a scenario where user installs fresh orchestrator and deletes all profiles as first action? What sort of safeguards do we have in API vs what is needed in CLI?
 
 - Delete OS profile (ie. `emfctl delete osprofile myprofile`)
 
@@ -246,8 +211,6 @@ The update of provisioning provider is a combined create/delete action
 
 - Update the Provisioning provider (ie. `emcfctl update provider providername --configuration <deafultOS/autoprovision/defaultLocalAccount/osSecurityFeatureEnable>`)
 
-> TODO Are we planning to support any other provider than infra_onboarding? Is there a point in delete/create for now?
-
 #### Create Provisioning Provider
 
 - Create the Provisioning provider (ie. `emcfctl create provider providername --configuration <deafultOS/autoprovision/defaultLocalAccount/osSecurityFeatureEnable>`)
@@ -260,25 +223,25 @@ The update of provisioning provider is a combined create/delete action
 
 A single click update will be a feature that enables to run an update on a given edge node without scheduling maintenance (maintenance may be schedule under the hood but not part of user experience).
 
-> **TODO/TBD** provide arguments that need to be associated with update via flag or from file.
+> **TBD** provide arguments that need to be associated with update via flag or from file.
 
-- Update host (ie. `emcfctl run-maintenance host my-host`)
+- Update host (ie. `emcfctl update host my-host`)
 
 ### Retrieve update version/history
 
 In 3.1 it is expected that the day 2 updates and information about them will be tracked, a command to retrieve this information should be included in CLI.
 
-> TODO/TBD figure out what a how info is tracked to display in user readable way at a later stage
+> TBD figure out what a how info is tracked to display in user readable way at a later stage
 
 - Update host (ie. `emcfctl audit host my-host`)
 
 ### Other
 
-> QUESTION/TODO - What about CLI for remote ssh? do we need this in this release?  
-> QUESTION/TODO - What about CLI for scheduling maintenance to node?  Yes - single click update.  
-> QUESTION/TODO - What about CLI for scheduling maintenance to site?  
-> QUESTION/TODO - What about CLI for vPRO? - At some point?  
-> QUESTION/TODO - What about CLI for per Edge Node config? - At some point?  
+- CLI remote ssh? - Optional
+- CLI for scheduling maintenance to node?  Yes - single click update. No to scheduled updates.
+- CLI for scheduling maintenance to site?  No - not supported, yes for single update.
+- CLI for vPRO? - Yes 
+- CLI for per Edge Node config? - Yes  
 
 ## Rationale
 
@@ -300,7 +263,7 @@ Once the design for the EMI portion has been agreed internally within the EIM te
 - Single Click update
 - Audit Day2 versions
 
-Beyond 3.1:
+Best effort 3.1:
 - Provider management
 - Improvement and complex combinations for CRUD operations
 - Location management
