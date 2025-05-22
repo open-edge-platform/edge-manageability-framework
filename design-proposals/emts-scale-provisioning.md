@@ -143,43 +143,15 @@ the `signed_ipxe.efi` has HTTPS URL (Provisioning Nginx's endpoint) embedded to 
 
 Once Micro-OS is downloaded, EN boots into it and the standard process is continued - device discovery is done and Tinkerbell workflow started to provision target OS.
 
-The following modifications to EIM must be made to support the above workflow:
-
-1. **Enable Tinkerbell SMEE with proper configuration**
-
-By default, Tinkerbell SMEE relies on MAC addresses to uniquely identify PXE-booting machines and customize the iPXE script per machine.
-In the case of EIM, we use a static iPXE script that is not customized per Edge Node. Therefore, we can avoid using MAC address as a unique identifier
-and it will let use avoid adding MAC address as another EN identifier during pre-registration. We also need to configure Tinkerbell to provide URL to `boot.ipxe` via DHCP reply.
-
-The following modifications are needed:
-
-- Tinkerbell SMEE must be enabled via infra-charts to provide DHCP and TFTP server
-- Tinkerbell SMEE must be configured with the following flags to avoid lookups by MAC address and to use our EIM iPXE script:
-  - `-dhcp-mode=auto-proxy`
-  - `-dhcp-http-ipxe-script-url=<URL to iPXE script on Provisioning NGINX>` (e.g., `http://tinkerbell-nginx.CLUSTER_DOMAIN/tink-stack/boot.ipxe`)
-  - `-dhcp-http-ipxe-script-prepend-mac=false`
-
-2. **Expose Provisioning Nginx via HTTP for on-prem EIM standalone only**
-
-Currently, Provisioning Nginx is deployed behind HTTPS and the iPXE binary must be built with orchestrator's CA certificate for successful handshake.
-Tinkerbell SMEE obviously doesn't include the EMF's CA certificate. Therefore, any communication over HTTPS is not feasible.
-
-For on-prem, EIM standalone profile only we will disable HTTPS for Provisioning Nginx. The assumption is that the on-prem, customers' sites are typically
-controlled environments and we can relax security requirements to support PXE boot (any traffic doesn't leave a local L2 network).
-
-3. **Expose Tinkerbell SMEE's DHCP/TFTP server via K8s External IP**
-
-Tinkerbell SMEE's DHCP/TFTP server must be reachable from a local, on-prem L2 network to handle DHCP/TFTP requests. This requires modifications to FPS services.
-
 ### EMT-S nodes without direct Internet access
 
 The OXM EMF profile will leverage a standard Tinkerbell actions to download OS artifacts from Internet (Intel Release Service) during provisioning.
 Currently, the OS streaming requires upstream Internet connectivity. However, the EMT-S nodes on-prem may not be configured with direct Internet access.
 Therefore, we will use the following on-prem deployment configuration to support this use case:
 
-![EMT-S nodes without direct Internet access](images/eim-pxe-network-topology.png)
+![EMT-S nodes without direct Internet access](images/eim-emt-s-scale-internet-access.png)
 
-In general, the EMF orchestrator is configured with upstream Internet connectivity and will act as an Internet proxy to all EMT-S nodes in the local network.
+In general, the EMF orchestrator should be configured with upstream Internet connectivity and act as an Internet proxy to all EMT-S nodes in the local network.
 
 ### Compatibility with USB-based EMT-S
 
@@ -242,9 +214,6 @@ The alternative considered was to use a standalone Tinkerbell deployment without
 it would completely change the UX as we would need to familiarize customers with Tinkerbell APIs (or have a custom CLI tool to help them manage Tinkerbell CRDs).
 With the current proposal we keep using the current UX, with possibility to use Bulk Import Tool to scale preregistration process and selectively choose OS profiles for Edge Nodes.
 
-Also, an alternative to using SMEE was considered to avoid divergence in security policies (HTTP vs. HTTPS for Provisioning Nginx).
-This direction requires more development effort, but is still left as future improvement. It's further elaborated in a separate [design proposal](https://github.com/open-edge-platform/edge-manageability-framework/pull/309).
-
 ### (Alternative) Install K8s package via Platform Bundle
 
 The plan to install K8s package via Platfrom Bundle is as follows:
@@ -272,15 +241,14 @@ The high-level integration workflow would be:
 - Reduce FPS components to minimum to make EIM-S deployment lightweight
 - Make EIM-S deployment operation easy in terms of number of CLI commands/steps to execute
 - Make EIM-S deployment fast (ideally deployable in ~2 mins)
-- Expose Tinkerbell SMEE's DHCP/TFTP server via External IP (similar to Provisioning Nginx now) or find any other solution to expose DHCP to local L2 network
-- Provide a toggle to disable HTTPS for Provisioning Nginx in the case of EIM standalone deployment
 
 **EIM team** will make changes to the following components:
 
 - **infra-charts**
-  - Enable Tinkerbell SMEE and possibly move to separate Helm chart so that SMEE can be run as standalone piece or Deployment Package 
-  - Upgrade Tinkerbell SMEE version to support `auto-proxy`
-  - Modify deployment files to expose SMEE to L2 network to handle DHCP requests  
+  - Add Helm charts implementing local PXE server. The Helm chart should be a standalone chart and optionally enabled for infra-onboarding.
+    - The local PXE server should make use of ipxe.efi script generated by DKAM
+    - There should be a way to run local PXE server as standalone Helm chart
+    - The local PXE server Pod should be exposed to L2 network to handle DHCP requests  
 - **OS profiles**
   - Create a new OS profile for EMT-S
 - **Onboarding Manager**
