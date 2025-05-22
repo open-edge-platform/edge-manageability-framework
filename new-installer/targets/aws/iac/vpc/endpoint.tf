@@ -41,7 +41,7 @@ resource "aws_security_group" "vpc_endpoints" {
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
-    cidr_blocks = var.cidr_block
+    cidr_blocks = [var.cidr_block]
     description = "Allow HTTPS traffic from VPC"
   }
   description = "Allow HTTPS traffic from VPC"

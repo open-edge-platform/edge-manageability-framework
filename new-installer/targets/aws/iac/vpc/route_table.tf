@@ -15,12 +15,17 @@ resource "aws_route_table" "public_subnet" {
   }
 }
 
+
+locals {
+  private_subnet_to_ngw = zipmap(keys(var.private_subnets), keys(aws_nat_gateway.main))
+}
+
 resource "aws_route_table" "private_subnet" {
-  for_each = aws_nat_gateway.main
+  for_each = local.private_subnet_to_ngw
   vpc_id   = aws_vpc.main.id
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = each.value.id
+    gateway_id = aws_nat_gateway.main[each.value].id
   }
   tags = {
     Name = "${var.name}-private-subnet-${each.key}"
