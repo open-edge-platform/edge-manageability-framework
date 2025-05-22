@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-variable "cluster_name" {
+variable "name" {
   description = "The name of the cluster"
   type        = string
 }
@@ -20,9 +20,9 @@ variable "customer_tag" {
   default = ""
 }
 
-variable "private_subnet_ids" {
+variable "subnet_ids" {
   type        = set(string)
-  description = "Subnet IDs for EFS to attach"
+  description = "Subnet IDs for EKS cluster"
 }
 
 variable "eks_version" {
@@ -31,42 +31,42 @@ variable "eks_version" {
   description = "EKS version to use for the cluster"
 }
 
-variable "eks_volume_size" {
+variable "volume_size" {
   type        = number
   description = "The size of the EKS volume in GiB"
 }
 
-variable "eks_volume_type" {
+variable "volume_type" {
   type        = string
   default     = "gp3"
   description = "The type of the EKS volume (e.g., gp2, gp3)"
 }
 
-variable "eks_node_instance_type" {
+variable "node_instance_type" {
   type        = string
   description = "The instance type for EKS nodes"
   default     = "t3.2xlarge"
 }
 
-variable "eks_desired_size" {
+variable "desired_size" {
   type        = number
   description = "The desired number of EKS nodes"
   default     = 1
 }
 
-variable "eks_min_size" {
+variable "min_size" {
   type        = number
   description = "The minimum number of EKS nodes"
   default     = 1
 }
 
-variable "eks_max_size" {
+variable "max_size" {
   type        = number
   description = "The maximum number of EKS nodes"
   default     = 1
 }
 
-variable "eks_addons" {
+variable "addons" {
   type = list(object({
     name                 = string
     version              = string
@@ -89,11 +89,11 @@ variable "eks_addons" {
   ]
 }
 
-variable "eks_max_pods" {
+variable "max_pods" {
   default = 58
 }
 
-variable "eks_additional_node_groups" {
+variable "additional_node_groups" {
   type = map(object({
     desired_size : number
     min_size : number
@@ -127,10 +127,7 @@ variable "eks_additional_node_groups" {
     }
   }
 }
-variable "public_cloud" {
-  type    = bool
-  default = true
-}
+
 variable "enable_cache_registry" {
   type    = string
   default = "false"
@@ -140,37 +137,31 @@ variable "cache_registry" {
   default = ""
 }
 
-variable "eks_user_script_pre_cloud_init" {
+variable "user_script_pre_cloud_init" {
   type        = string
   default     = ""
   description = "Script to run before cloud-init"
 }
 
-variable "eks_user_script_post_cloud_init" {
+variable "user_script_post_cloud_init" {
   type        = string
   default     = ""
   description = "Script to run after cloud-init"
 }
-variable "eks_http_proxy" {
+variable "http_proxy" {
   type        = string
   default     = ""
   description = "HTTP proxy to use for EKS nodes"
 }
 
-variable "eks_https_proxy" {
+variable "https_proxy" {
   type        = string
   default     = ""
   description = "HTTPS proxy to use for EKS nodes"
 }
 
-variable "eks_no_proxy" {
+variable "no_proxy" {
   type        = string
   default     = ""
   description = "No proxy to use for EKS nodes"
-}
-
-variable "eks_cluster_dns_ip" {
-  type        = string
-  default     = ""
-  description = "IP address of the DNS server for the cluster, leave empty to use the default DNS server"
 }
