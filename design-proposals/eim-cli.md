@@ -18,7 +18,7 @@ This design proposal will focus on the details required for the EIM support.
     - default should be all ENs in all region/site.
     - Treat region and sites as namespace.
     - `-o wide` should give status of pending Update and CVE status (e.g. 4 Critical, 2 high, 1 medium).
-  - List UpdatePolicy
+  - CRUD of UpdatePolicy
   - List Region and Sites
   - Update the all the edge nodes in the fleet that has pending Update including CVE update (in a specific region/site)
     - Treat region and sites as namespace.
