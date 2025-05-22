@@ -5,3 +5,7 @@
 clusterManager:
   extraArgs:
     disable-mt: false
+    disable-metrics: false
+
+metrics:
+  enabled: true
