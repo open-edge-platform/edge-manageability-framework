@@ -27,3 +27,16 @@ variable "enable_deletion_protection" {
   type        = bool
   default     = true
 }
+variable "tls_cert_arn" {
+  description = "The ARN of the TLS certificate for traefik, argocd, and gitea load balancer"
+  type        = string
+}
+variable "region" {
+  description = "The AWS region where the load balancer will be created"
+  type        = string
+}
+variable "customer_tag" {
+  description = "Customer tag for the load balancer"
+  type        = string
+  default     = ""
+}
