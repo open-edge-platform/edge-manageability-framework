@@ -21,7 +21,8 @@ import (
 var _ = Describe("Node Onboarding test (Non-Interactive flow)", func() {
 	It("should onboard a node successfully", func(ctx SpecContext) {
 		By("Deploying a new Edge Node")
-		serialNumber, err := mage.Deploy{}.VENWithFlow(ctx, "nio")
+		serialNumber := "EN123456789"
+		err := mage.Deploy{}.VENWithFlow(ctx, "nio", serialNumber)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating an Orchestrator client")
@@ -53,7 +54,8 @@ var _ = Describe("Node Onboarding test (Non-Interactive flow)", func() {
 var _ = PDescribe("Node Onboarding test (Interactive Onboarding flow)", func() {
 	It("should onboard a node successfully", func(ctx SpecContext) {
 		By("Deploying a new Edge Node")
-		serialNumber, err := mage.Deploy{}.VENWithFlow(ctx, "io")
+		serialNumber := "EN123456789"
+		err := mage.Deploy{}.VENWithFlow(ctx, "io", serialNumber)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating an Orchestrator client")

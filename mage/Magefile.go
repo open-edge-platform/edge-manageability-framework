@@ -874,8 +874,8 @@ func (flow OnboardingFlow) IsValid() bool {
 }
 
 // Deploy a local Virtual Edge Node using libvirt. An Orchestrator must be running locally.
-func (d Deploy) VEN(ctx context.Context, flow string) error {
-	serialNumber, err := d.VENWithFlow(ctx, flow)
+func (d Deploy) VEN(ctx context.Context, flow string, serialNumber string) error {
+	err := d.VENWithFlow(ctx, flow, serialNumber)
 	if err != nil {
 		return fmt.Errorf("failed to deploy virtual Edge Node: %w", err)
 	}
@@ -886,57 +886,57 @@ func (d Deploy) VEN(ctx context.Context, flow string) error {
 }
 
 // VENWithFlow deploys a local Virtual Edge Node using libvirt and returns the serial number of the deployed node.
-func (d Deploy) VENWithFlow(ctx context.Context, flow string) (string, error) { //nolint:gocyclo,maintidx
+func (d Deploy) VENWithFlow(ctx context.Context, flow string, serialNumber string) error { //nolint:gocyclo,maintidx
 	mg.CtxDeps(
 		ctx,
 		Deps{}.EnsureUbuntu,
 	)
 
 	if !OnboardingFlow(flow).IsValid() {
-		return "", fmt.Errorf("invalid onboarding flow: %s", flow)
+		return fmt.Errorf("invalid onboarding flow: %s", flow)
+	}
+
+	if serialNumber == "" {
+		return fmt.Errorf("serial number is required")
 	}
 
 	if serviceDomain == "" {
-		return "", fmt.Errorf("cluster service domain name is not set")
+		return fmt.Errorf("cluster service domain name is not set")
 	}
 
 	fmt.Printf("Using Orchestrator domain: %s\n", serviceDomain)
 
 	password, err := GetDefaultOrchPassword()
 	if err != nil {
-		return "", fmt.Errorf("failed to get default Orchestrator password: %w", err)
+		return fmt.Errorf("failed to get default Orchestrator password: %w", err)
 	}
 
 	tempDir, err := os.MkdirTemp("", "ven-clone")
 	if err != nil {
-		return "", fmt.Errorf("failed to create temporary directory: %w", err)
+		return fmt.Errorf("failed to create temporary directory: %w", err)
 	}
 	defer os.RemoveAll(tempDir)
 
 	fmt.Printf("Temporary directory created: %s\n", tempDir)
 
 	if err := os.Chdir(tempDir); err != nil {
-		return "", fmt.Errorf("failed to change directory to temporary directory: %w", err)
+		return fmt.Errorf("failed to change directory to temporary directory: %w", err)
 	}
 
 	if err := sh.RunV("git", "clone", "https://github.com/open-edge-platform/virtual-edge-node", "ven"); err != nil {
-		return "", fmt.Errorf("failed to clone repository: %w", err)
+		return fmt.Errorf("failed to clone repository: %w", err)
 	}
 
 	if err := os.Chdir("ven"); err != nil {
-		return "", fmt.Errorf("failed to change directory to 'ven': %w", err)
+		return fmt.Errorf("failed to change directory to 'ven': %w", err)
 	}
 
-	if err := sh.RunV("git", "checkout", "vm-provisioning/1.0.7"); err != nil {
-		return "", fmt.Errorf("failed to checkout specific commit: %w", err)
-	}
-
-	if err := os.Chdir("vm-provisioning"); err != nil {
-		return "", fmt.Errorf("failed to change directory to 'vm-provisioning': %w", err)
+	if err := sh.RunV("git", "checkout", "pico/1.5.0"); err != nil {
+		return fmt.Errorf("failed to checkout specific commit: %w", err)
 	}
 
 	if err := sh.RunV("sudo", "mkdir", "-p", "/etc/apparmor.d/disable/"); err != nil {
-		return "", fmt.Errorf("failed to create directory: %w", err)
+		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
 	for _, link := range []string{
@@ -944,56 +944,57 @@ func (d Deploy) VENWithFlow(ctx context.Context, flow string) (string, error) { 
 		"/etc/apparmor.d/usr.lib.libvirt.virt-aa-helper",
 	} {
 		if err := sh.RunV("sudo", "ln", "-sf", link, "/etc/apparmor.d/disable/"); err != nil {
-			return "", fmt.Errorf("failed to create symlink: %w", err)
+			return fmt.Errorf("failed to create symlink: %w", err)
 		}
 	}
 
-	if err := sh.RunV("sudo", "apparmor_parser", "-R", "/etc/apparmor.d/usr.sbin.libvirtd"); err != nil {
-		fmt.Printf("failed to remove apparmor profile: %v\n", err)
-	}
-
-	if err := sh.RunV("sudo", "apparmor_parser", "-R", "/etc/apparmor.d/usr.lib.libvirt.virt-aa-helper"); err != nil {
-		fmt.Printf("failed to remove apparmor profile: %v\n", err)
+	for _, profile := range []string{
+		"/etc/apparmor.d/usr.sbin.libvirtd",
+		"/etc/apparmor.d/usr.lib.libvirt.virt-aa-helper",
+	} {
+		if err := sh.RunV("sudo", "apparmor_parser", "-R", profile); err != nil {
+			fmt.Printf("failed to remove apparmor profile: %v\n", err)
+		}
 	}
 
 	if err := sh.RunV("sudo", "systemctl", "restart", "libvirtd"); err != nil {
-		return "", fmt.Errorf("failed to restart libvirtd: %w", err)
+		return fmt.Errorf("failed to restart libvirtd: %w", err)
 	}
 
 	if err := sh.RunV("sudo", "systemctl", "reload", "apparmor"); err != nil {
-		return "", fmt.Errorf("failed to reload apparmor: %w", err)
+		return fmt.Errorf("failed to reload apparmor: %w", err)
 	}
 
 	tmpl, err := template.New("config").Parse(`
-CLUSTER='{{.ServiceDomain}}'
+	CLUSTER='{{.ServiceDomain}}'
 
-# IO Flow Configurations
-ONBOARDING_USERNAME='{{.OnboardingUsername}}'
-ONBOARDING_PASSWORD='{{.OnboardingPassword}}'
-# NIO Flow Configurations
-PROJECT_NAME='{{.ProjectName}}'
-PROJECT_API_USER='{{.ProjectApiUser}}'
-PROJECT_API_PASSWORD='{{.ProjectApiPassword}}'
+	# IO Flow Configurations
+	ONBOARDING_USERNAME='{{.OnboardingUsername}}'
+	ONBOARDING_PASSWORD='{{.OnboardingPassword}}'
+	# NIO Flow Configurations
+	PROJECT_NAME='{{.ProjectName}}'
+	PROJECT_API_USER='{{.ProjectApiUser}}'
+	PROJECT_API_PASSWORD='{{.ProjectApiPassword}}'
 
-# VM Resources
-RAM_SIZE='{{.RamSize}}'
-NO_OF_CPUS='{{.NoOfCpus}}'
-SDA_DISK_SIZE='{{.SdaDiskSize}}'
-LIBVIRT_DRIVER='{{.LibvirtDriver}}'
+	# VM Resources
+	RAM_SIZE='{{.RamSize}}'
+	NO_OF_CPUS='{{.NoOfCpus}}'
+	SDA_DISK_SIZE='{{.SdaDiskSize}}'
+	LIBVIRT_DRIVER='{{.LibvirtDriver}}'
 
-USERNAME_LINUX='{{.UsernameLinux}}'
-PASSWORD_LINUX='{{.PasswordLinux}}'
-CI_CONFIG='{{.CiConfig}}'
+	USERNAME_LINUX='{{.UsernameLinux}}'
+	PASSWORD_LINUX='{{.PasswordLinux}}'
+	CI_CONFIG='{{.CiConfig}}'
 
-# Optional: Advance Settings
-BRIDGE_NAME='{{.BridgeName}}'
-INTF_NAME='{{.IntfName}}'
-VM_NAME='{{.VmName}}'
-POOL_NAME='{{.PoolName}}'
-STANDALONE=0
-`)
+	# Optional: Advance Settings
+	BRIDGE_NAME='{{.BridgeName}}'
+	INTF_NAME='{{.IntfName}}'
+	VM_NAME='{{.VmName}}'
+	POOL_NAME='{{.PoolName}}'
+	STANDALONE=0
+	`)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse template: %w", err)
+		return fmt.Errorf("failed to parse template: %w", err)
 	}
 
 	data := struct {
@@ -1030,17 +1031,26 @@ STANDALONE=0
 		CiConfig:           "true",
 		BridgeName:         "edge",
 		IntfName:           "virbr1",
-		VmName:             "",
+		VmName:             fmt.Sprintf("edge-node-%s", serialNumber),
 		PoolName:           "edge",
 	}
 
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, data); err != nil {
-		return "", fmt.Errorf("failed to execute template: %w", err)
+		return fmt.Errorf("failed to execute template: %w", err)
+	}
+
+	venDir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current working directory: %w", err)
+	}
+
+	if err := os.Chdir("vm-provisioning"); err != nil {
+		return fmt.Errorf("failed to change directory to 'vm-provisioning': %w", err)
 	}
 
 	if err := os.WriteFile("config", buf.Bytes(), os.ModePerm); err != nil {
-		return "", fmt.Errorf("failed to write config file: %w", err)
+		return fmt.Errorf("failed to write config file: %w", err)
 	}
 
 	for i := 0; i < 60; i++ {
@@ -1076,14 +1086,14 @@ STANDALONE=0
 			out, err := os.Create(filepath.Join("certs", "Full_server.crt"))
 			if err != nil {
 				fmt.Printf("Failed to create file: %v\n", err)
-				return "", fmt.Errorf("failed to create file: %w", err)
+				return fmt.Errorf("failed to create file: %w", err)
 			}
 			defer out.Close()
 
 			_, err = io.Copy(out, resp.Body)
 			if err != nil {
 				fmt.Printf("Failed to write to file: %v\n", err)
-				return "", fmt.Errorf("failed to write to file: %w", err)
+				return fmt.Errorf("failed to write to file: %w", err)
 			}
 
 			fmt.Println("Successfully retrieved and saved the certificate.")
@@ -1094,75 +1104,91 @@ STANDALONE=0
 			continue
 		}
 	}
-	var outputChmodBuf bytes.Buffer
-	chmodCmd := exec.CommandContext(ctx, "sudo", "chmod", "755",
-		filepath.Join("scripts", "update_provider_defaultos.sh"),
-		filepath.Join("scripts", "create_vm.sh"),
-		filepath.Join("scripts", "host_status_check.sh"),
-		filepath.Join("scripts", "nio_configs.sh"),
-		filepath.Join("scripts", "destroy_vm.sh"),
-	)
+	// Make scripts executable
+	scripts := []string{
+		"update_provider_defaultos.sh",
+		"nio_flow_host_config.sh",
+		"nio_configs.sh",
+	}
+	for _, script := range scripts {
+		scriptPath := filepath.Join("scripts", script)
+		if err := sh.RunV("sudo", "chmod", "755", scriptPath); err != nil {
+			return fmt.Errorf("failed to chmod %s: %w", script, err)
+		}
+	}
 
-	chmodCmd.Stdout = io.MultiWriter(os.Stdout, &outputChmodBuf)
-	chmodCmd.Stderr = io.MultiWriter(os.Stderr, &outputChmodBuf)
-
-	if err := chmodCmd.Run(); err != nil {
-		return "", fmt.Errorf("failed to chmod: %w", err)
+	// Create the "out/logs" directory if it doesn't exist
+	if err := os.MkdirAll("out/logs", 0o755); err != nil {
+		return fmt.Errorf("failed to create out/logs directory: %w", err)
 	}
 
 	if err := sh.RunV(filepath.Join("scripts", "update_provider_defaultos.sh"), "microvisor"); err != nil {
-		return "", fmt.Errorf("failed to update provider default OS: %w", err)
+		return fmt.Errorf("failed to update provider default OS: %w, with output:%s", err)
 	}
 
-	var outputBuf bytes.Buffer
-	cmd := exec.CommandContext(ctx, "sudo", filepath.Join("scripts", "create_vm.sh"), "1", fmt.Sprintf("-%s", flow))
-	cmd.Stdout = io.MultiWriter(os.Stdout, &outputBuf)
-	cmd.Stderr = io.MultiWriter(os.Stderr, &outputBuf)
+	if err := sh.RunV(filepath.Join("scripts", "nio_flow_host_config.sh"), "1", serialNumber); err != nil {
+		return fmt.Errorf("failed to set flow host config: %w", err)
+	}
+
+	if err := os.Chdir(filepath.Join(venDir, "pico")); err != nil {
+		return fmt.Errorf("failed to change directory to '%s': %w", venDir, err)
+	}
+
+	cmd := exec.CommandContext(context.Background(), "asdf", "install")
+
+	// Stream the output to stdout and stderr
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("failed to create virtual machine: %w", err)
+		return fmt.Errorf("failed to run asdf install: %w", err)
 	}
 
-	matches, err := searchForSubstring(outputBuf.Bytes(), "serial=")
-	if err != nil {
-		return "", fmt.Errorf("failed to search file for serial number: %w", err)
-	}
-	if len(matches) == 0 {
-		return "", fmt.Errorf("failed to find serial number in ci-console.log")
+	// Terraform initialization
+	cmd = exec.CommandContext(
+		context.Background(),
+		"terraform",
+		"-chdir="+filepath.Join("modules", "pico-vm-libvirt"),
+		"init",
+		"--upgrade",
+	)
+
+	// Stream the output to stdout and stderr
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to init the terraform module: %w", err)
 	}
 
-	// Remove trailing commas or spaces
-	serialNumber := strings.Split(matches[0], "serial=")[1]
-	serialNumber = strings.TrimSpace(strings.ReplaceAll(serialNumber, ",", ""))
+	// Pass parent context to the command to allow for cancellation
+	cmd = exec.CommandContext(
+		context.Background(),
+		"terraform",
+		"-chdir="+filepath.Join("modules", "pico-vm-libvirt"),
+		"apply",
+		fmt.Sprintf("--parallelism=%d", runtime.NumCPU()), // Set parallelism to the number of CPUs on the machine
+		fmt.Sprintf("-var=vm_name=%s", data.VmName),
+		fmt.Sprintf("-var=tinkerbell_nginx_domain=%s", fmt.Sprintf("tinkerbell-nginx.%s", serviceDomain)),
+		fmt.Sprintf("-var=smbios_serial=%s", serialNumber),
+		fmt.Sprintf("-var=smbios_uuid=%s", ""),
+		fmt.Sprintf("-var=libvirt_network_name=%s", data.BridgeName),
+		fmt.Sprintf("-var=libvirt_pool_name=%s", data.PoolName),
+		fmt.Sprintf("-var=vm_console=%s", "file"),
+		"--auto-approve",
+	)
 
-	// Search for "Secure Boot Status MATCH" in the output
-	matches_sb, err := searchForSubstring(outputBuf.Bytes(), "Secure Boot Status MATCH")
-	if err != nil {
-		return "", fmt.Errorf("failed to search file for Secure Boot Status MATCH: %w", err)
-	}
-	if len(matches_sb) == 0 {
-		return "", fmt.Errorf("failed to find Secure Boot Status MATCH check in ci-console.log")
+	// Stream the output to stdout and stderr
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to create virtual machine: %w", err)
 	}
 
-	// Add the new command to execute host_statue with the serial number
-	hostStatueCmd := exec.CommandContext(ctx, filepath.Join("scripts", "host_status_check.sh"), serialNumber)
-	hostStatueCmd.Stdout = os.Stdout
-	hostStatueCmd.Stderr = os.Stderr
+	fmt.Printf("VEN deployment started 🚀\n")
 
-	if err := hostStatueCmd.Run(); err != nil {
-		return "", fmt.Errorf("failed to execute host_statue command: %w", err)
-	}
-	return serialNumber, nil
-}
-
-func searchForSubstring(contents []byte, substring string) ([]string, error) {
-	var matchingLines []string
-	for _, line := range bytes.Split(contents, []byte{'\n'}) {
-		if bytes.Contains(line, []byte(substring)) {
-			matchingLines = append(matchingLines, string(line))
-		}
-	}
-	return matchingLines, nil
+	return nil
 }
 
 // Deploy the Orchestrator using edge-manageability-framework revision defined by the targetEnv config.
