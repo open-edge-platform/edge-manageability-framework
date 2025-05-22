@@ -8,7 +8,6 @@ import (
 	"context"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 	"time"
 
@@ -31,10 +30,9 @@ func main() {
 	}
 
 	// These flages are common to all commands
-	var configFile, runtimeStateFile, logLevel, logDir string
+	var configFile, logLevel, logDir string
 	var keepGeneratedFiles bool
 	rootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "config.yaml", "Path to the configuration file")
-	rootCmd.PersistentFlags().StringVarP(&runtimeStateFile, "runtime-state", "r", "runtime-state.yaml", "Path to the runtime state file")
 	rootCmd.PersistentFlags().StringVarP(&logLevel, "log-level", "l", "info", "Log level (debug, info, warn, error)")
 	rootCmd.PersistentFlags().StringVarP(&logDir, "log-dir", "o", ".logs", "Path to the log dir")
 	rootCmd.PersistentFlags().BoolVarP(&keepGeneratedFiles, "keep-generated-files", "k", false, "Keep generated files")
@@ -59,7 +57,7 @@ func main() {
 				if err != nil {
 					zap.S().Fatalf("error initializing logger: %s", err)
 				}
-				execute(cmd.Name(), configFile, runtimeStateFile, logDir, keepGeneratedFiles)
+				execute(cmd.Name(), configFile, logDir, keepGeneratedFiles)
 			},
 		}
 		rootCmd.AddCommand(c)
@@ -67,7 +65,7 @@ func main() {
 	rootCmd.Execute()
 }
 
-func execute(action string, orchConfigFile string, runtimeStateFile string, logDir string, keepGeneratedFiles bool) {
+func execute(action string, orchConfigFile string, logDir string, keepGeneratedFiles bool) {
 	logger := zap.S()
 	currentDir, err := os.Getwd()
 	if err != nil {
@@ -93,44 +91,25 @@ func execute(action string, orchConfigFile string, runtimeStateFile string, logD
 		logger.Fatalf("error reading config file %s: %s", orchConfigFile, err)
 	}
 	logger.Infof("Config file %s read successfully", orchConfigFile)
-	orchInstallerConfig := internal.OrchInstallerConfig{}
-	err = internal.DeserializeFromYAML(&orchInstallerConfig, configData)
+	config := internal.OrchInstallerConfig{}
+	err = internal.DeserializeFromYAML(&config, configData)
 	if err != nil {
 		logger.Fatalf("error unmarshalling config file: %s", err)
 	}
 
-	// Load runtime state file
-	if _, err := os.Stat(runtimeStateFile); os.IsNotExist(err) {
-		err = os.WriteFile(runtimeStateFile, []byte{}, 0644)
-		if err != nil {
-			logger.Fatalf("error creating runtime state file %s: %s", runtimeStateFile, err)
-		}
-		logger.Infof("Runtime state file %s created successfully", runtimeStateFile)
-	}
-	runtimeState := &internal.OrchInstallerRuntimeState{}
-	runtimeStateData, err := os.ReadFile(runtimeStateFile)
-	if err != nil {
-		logger.Fatalf("error reading runtime state file %s: %s", runtimeStateFile, err)
-	}
-	logger.Infof("Runtime state file %s read successfully", runtimeStateFile)
-	err = internal.DeserializeFromYAML(runtimeState, runtimeStateData)
-	if err != nil {
-		logger.Fatalf("error unmarshalling runtime state file: %s", err)
-	}
-	runtimeState.Action = action
-	runtimeState.LogDir = logDir
-	runtimeState.Mutex = &sync.Mutex{}
+	config.Generated.Action = action
+	config.Generated.LogDir = logDir
 
 	logger.Infof("Action: %s", action)
-	logger.Infof("Target environment: %s", orchInstallerConfig.TargetEnvironment)
-	logger.Infof("Deployment name: %s", orchInstallerConfig.DeploymentName)
+	logger.Infof("Target environment: %s", config.Provider)
+	logger.Infof("Orchestrator name: %s", config.Global.OrchName)
 
 	var stages []internal.OrchInstallerStage
-	switch orchInstallerConfig.TargetEnvironment {
+	switch config.Provider {
 	case "aws":
 		stages = aws.CreateAWSStages(currentDir, keepGeneratedFiles)
 	default:
-		logger.Fatalf("error: target environment %s not supported", orchInstallerConfig.TargetEnvironment)
+		logger.Fatalf("error: target environment %s not supported", config.Provider)
 	}
 	orchInstaller, err := internal.CreateOrchInstaller(stages)
 	if err != nil {
@@ -154,24 +133,17 @@ func execute(action string, orchConfigFile string, runtimeStateFile string, logD
 	}()
 
 	// TODO: Convert error to user friendly message and actions
-	runErr := orchInstaller.Run(ctx, orchInstallerConfig, runtimeState)
+	runErr := orchInstaller.Run(ctx, config)
 	if runErr != nil {
 		logger.Infof("error running orch installer: %v", runErr)
 	} else if orchInstaller.Cancelled() {
 		logger.Info("Installation cancelled")
 	} else {
 		logger.Infof("Orch installer %s successfully", action)
-		// Writes version to runtime state when installation is successful
-		runtimeState.OrchVersion = string(version)
 	}
 
-	runtimeStateData, err = internal.SerializeToYAML(runtimeState)
+	err = aws.UploadStateToS3(config)
 	if err != nil {
-		logger.Errorf("error serializing runtime state: %s", err)
-	} else {
-		err = os.WriteFile(runtimeStateFile, runtimeStateData, 0644)
-		if err != nil {
-			logger.Errorf("error writing runtime state to file: %s", err)
-		}
+		logger.Errorf("error uploading state to S3: %s", err)
 	}
 }
