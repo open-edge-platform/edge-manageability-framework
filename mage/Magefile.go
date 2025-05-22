@@ -874,8 +874,8 @@ func (flow OnboardingFlow) IsValid() bool {
 }
 
 // Deploy a local Virtual Edge Node using libvirt. An Orchestrator must be running locally.
-func (d Deploy) VEN(ctx context.Context, flow string) error {
-	serialNumber, err := d.VENWithFlow(ctx, flow)
+func (d Deploy) VEN(ctx context.Context, flow string, serialNumber string) error {
+	err := d.VENWithFlow(ctx, flow, serialNumber)
 	if err != nil {
 		return fmt.Errorf("failed to deploy virtual Edge Node: %w", err)
 	}
@@ -886,57 +886,64 @@ func (d Deploy) VEN(ctx context.Context, flow string) error {
 }
 
 // VENWithFlow deploys a local Virtual Edge Node using libvirt and returns the serial number of the deployed node.
-func (d Deploy) VENWithFlow(ctx context.Context, flow string) (string, error) { //nolint:gocyclo,maintidx
+func (d Deploy) VENWithFlow(ctx context.Context, flow string, serialNumber string) error { //nolint:gocyclo,maintidx
 	mg.CtxDeps(
 		ctx,
+		d.EdgeNetwork,
+		d.EdgeStoragePool,
+		Deps{}.Terraform,
 		Deps{}.EnsureUbuntu,
 	)
 
 	if !OnboardingFlow(flow).IsValid() {
-		return "", fmt.Errorf("invalid onboarding flow: %s", flow)
+		return fmt.Errorf("invalid onboarding flow: %s", flow)
+	}
+
+	if serialNumber == "" {
+		return fmt.Errorf("serial number is required")
 	}
 
 	if serviceDomain == "" {
-		return "", fmt.Errorf("cluster service domain name is not set")
+		return fmt.Errorf("cluster service domain name is not set")
 	}
 
 	fmt.Printf("Using Orchestrator domain: %s\n", serviceDomain)
 
 	password, err := GetDefaultOrchPassword()
 	if err != nil {
-		return "", fmt.Errorf("failed to get default Orchestrator password: %w", err)
+		return fmt.Errorf("failed to get default Orchestrator password: %w", err)
 	}
 
 	tempDir, err := os.MkdirTemp("", "ven-clone")
 	if err != nil {
-		return "", fmt.Errorf("failed to create temporary directory: %w", err)
+		return fmt.Errorf("failed to create temporary directory: %w", err)
 	}
 	defer os.RemoveAll(tempDir)
 
 	fmt.Printf("Temporary directory created: %s\n", tempDir)
 
 	if err := os.Chdir(tempDir); err != nil {
-		return "", fmt.Errorf("failed to change directory to temporary directory: %w", err)
+		return fmt.Errorf("failed to change directory to temporary directory: %w", err)
 	}
 
 	if err := sh.RunV("git", "clone", "https://github.com/open-edge-platform/virtual-edge-node", "ven"); err != nil {
-		return "", fmt.Errorf("failed to clone repository: %w", err)
+		return fmt.Errorf("failed to clone repository: %w", err)
 	}
 
 	if err := os.Chdir("ven"); err != nil {
-		return "", fmt.Errorf("failed to change directory to 'ven': %w", err)
+		return fmt.Errorf("failed to change directory to 'ven': %w", err)
 	}
 
 	if err := sh.RunV("git", "checkout", "vm-provisioning/1.0.7"); err != nil {
-		return "", fmt.Errorf("failed to checkout specific commit: %w", err)
+		return fmt.Errorf("failed to checkout specific commit: %w", err)
 	}
 
 	if err := os.Chdir("vm-provisioning"); err != nil {
-		return "", fmt.Errorf("failed to change directory to 'vm-provisioning': %w", err)
+		return fmt.Errorf("failed to change directory to 'vm-provisioning': %w", err)
 	}
 
 	if err := sh.RunV("sudo", "mkdir", "-p", "/etc/apparmor.d/disable/"); err != nil {
-		return "", fmt.Errorf("failed to create directory: %w", err)
+		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
 	for _, link := range []string{
@@ -944,7 +951,7 @@ func (d Deploy) VENWithFlow(ctx context.Context, flow string) (string, error) { 
 		"/etc/apparmor.d/usr.lib.libvirt.virt-aa-helper",
 	} {
 		if err := sh.RunV("sudo", "ln", "-sf", link, "/etc/apparmor.d/disable/"); err != nil {
-			return "", fmt.Errorf("failed to create symlink: %w", err)
+			return fmt.Errorf("failed to create symlink: %w", err)
 		}
 	}
 
@@ -957,11 +964,11 @@ func (d Deploy) VENWithFlow(ctx context.Context, flow string) (string, error) { 
 	}
 
 	if err := sh.RunV("sudo", "systemctl", "restart", "libvirtd"); err != nil {
-		return "", fmt.Errorf("failed to restart libvirtd: %w", err)
+		return fmt.Errorf("failed to restart libvirtd: %w", err)
 	}
 
 	if err := sh.RunV("sudo", "systemctl", "reload", "apparmor"); err != nil {
-		return "", fmt.Errorf("failed to reload apparmor: %w", err)
+		return fmt.Errorf("failed to reload apparmor: %w", err)
 	}
 
 	tmpl, err := template.New("config").Parse(`
@@ -993,7 +1000,7 @@ POOL_NAME='{{.PoolName}}'
 STANDALONE=0
 `)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse template: %w", err)
+		return fmt.Errorf("failed to parse template: %w", err)
 	}
 
 	data := struct {
@@ -1036,11 +1043,11 @@ STANDALONE=0
 
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, data); err != nil {
-		return "", fmt.Errorf("failed to execute template: %w", err)
+		return fmt.Errorf("failed to execute template: %w", err)
 	}
 
 	if err := os.WriteFile("config", buf.Bytes(), os.ModePerm); err != nil {
-		return "", fmt.Errorf("failed to write config file: %w", err)
+		return fmt.Errorf("failed to write config file: %w", err)
 	}
 
 	for i := 0; i < 60; i++ {
@@ -1076,14 +1083,14 @@ STANDALONE=0
 			out, err := os.Create(filepath.Join("certs", "Full_server.crt"))
 			if err != nil {
 				fmt.Printf("Failed to create file: %v\n", err)
-				return "", fmt.Errorf("failed to create file: %w", err)
+				return fmt.Errorf("failed to create file: %w", err)
 			}
 			defer out.Close()
 
 			_, err = io.Copy(out, resp.Body)
 			if err != nil {
 				fmt.Printf("Failed to write to file: %v\n", err)
-				return "", fmt.Errorf("failed to write to file: %w", err)
+				return fmt.Errorf("failed to write to file: %w", err)
 			}
 
 			fmt.Println("Successfully retrieved and saved the certificate.")
@@ -1097,7 +1104,6 @@ STANDALONE=0
 	var outputChmodBuf bytes.Buffer
 	chmodCmd := exec.CommandContext(ctx, "sudo", "chmod", "755",
 		filepath.Join("scripts", "update_provider_defaultos.sh"),
-		filepath.Join("scripts", "create_vm.sh"),
 		filepath.Join("scripts", "host_status_check.sh"),
 		filepath.Join("scripts", "nio_configs.sh"),
 		filepath.Join("scripts", "destroy_vm.sh"),
@@ -1107,41 +1113,61 @@ STANDALONE=0
 	chmodCmd.Stderr = io.MultiWriter(os.Stderr, &outputChmodBuf)
 
 	if err := chmodCmd.Run(); err != nil {
-		return "", fmt.Errorf("failed to chmod: %w", err)
+		return fmt.Errorf("failed to chmod: %w", err)
 	}
 
 	if err := sh.RunV(filepath.Join("scripts", "update_provider_defaultos.sh"), "microvisor"); err != nil {
-		return "", fmt.Errorf("failed to update provider default OS: %w", err)
+		return fmt.Errorf("failed to update provider default OS: %w", err)
+	}
+
+	if err := chmodCmd.Run(); err != nil {
+		return fmt.Errorf("failed to chmod: %w", err)
+	}
+
+	if err := sh.RunV(filepath.Join("scripts", "nio_flow_host_config.sh"), "1", serialNumber); err != nil {
+		return fmt.Errorf("failed to update provider default OS: %w", err)
 	}
 
 	var outputBuf bytes.Buffer
-	cmd := exec.CommandContext(ctx, "sudo", filepath.Join("scripts", "create_vm.sh"), "1", fmt.Sprintf("-%s", flow))
-	cmd.Stdout = io.MultiWriter(os.Stdout, &outputBuf)
-	cmd.Stderr = io.MultiWriter(os.Stderr, &outputBuf)
+
+	// Pass parent context to the command to allow for cancellation
+	cmd := exec.CommandContext(
+		ctx,
+		"terraform",
+		//"-chdir="+filepath.Join("terraform", "ven2"),  // TODO: UPDATE THIS
+		"-chdir="+filepath.Join("terraform", "ven2"), // TODO: REMOVE THIS
+		"apply",
+		fmt.Sprintf("--parallelism=%d", runtime.NumCPU()), // Set parallelism to the number of CPUs on the machine
+		fmt.Sprintf("-var=tinkerbell_nginx_domain=%s", "tinkerbell-nginx.cluster.onprem"),
+		fmt.Sprintf("-var=smbios_serial=%s", "LIBVIRT1"),
+		"--auto-approve",
+	)
+
+	// Stream the output to stdout and stderr
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("failed to create virtual machine: %w", err)
+		return fmt.Errorf("failed to create virtual machine: %w", err)
 	}
+
+	fmt.Printf("VEN deployment started 🚀\n")
 
 	matches, err := searchForSubstring(outputBuf.Bytes(), "serial=")
 	if err != nil {
-		return "", fmt.Errorf("failed to search file for serial number: %w", err)
+		return fmt.Errorf("failed to search file for serial number: %w", err)
 	}
 	if len(matches) == 0 {
-		return "", fmt.Errorf("failed to find serial number in ci-console.log")
+		return fmt.Errorf("failed to find serial number in ci-console.log")
 	}
-
-	// Remove trailing commas or spaces
-	serialNumber := strings.Split(matches[0], "serial=")[1]
-	serialNumber = strings.TrimSpace(strings.ReplaceAll(serialNumber, ",", ""))
 
 	// Search for "Secure Boot Status MATCH" in the output
 	matches_sb, err := searchForSubstring(outputBuf.Bytes(), "Secure Boot Status MATCH")
 	if err != nil {
-		return "", fmt.Errorf("failed to search file for Secure Boot Status MATCH: %w", err)
+		return fmt.Errorf("failed to search file for Secure Boot Status MATCH: %w", err)
 	}
 	if len(matches_sb) == 0 {
-		return "", fmt.Errorf("failed to find Secure Boot Status MATCH check in ci-console.log")
+		return fmt.Errorf("failed to find Secure Boot Status MATCH check in ci-console.log")
 	}
 
 	// Add the new command to execute host_statue with the serial number
@@ -1150,9 +1176,9 @@ STANDALONE=0
 	hostStatueCmd.Stderr = os.Stderr
 
 	if err := hostStatueCmd.Run(); err != nil {
-		return "", fmt.Errorf("failed to execute host_statue command: %w", err)
+		return fmt.Errorf("failed to execute host_statue command: %w", err)
 	}
-	return serialNumber, nil
+	return nil
 }
 
 func searchForSubstring(contents []byte, substring string) ([]string, error) {
