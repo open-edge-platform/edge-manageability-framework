@@ -289,5 +289,6 @@ write_files:
 
   ```
 
-## Opens
-1. Do we need to support more than one file format.
+## Future task
+1. To support more than one file format.
+1. Many to many related between instance and custom-config resource.
