@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
+	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps"
 )
 
@@ -27,7 +28,7 @@ func (a *AWSStage) Name() string {
 	return a.name
 }
 
-func (a *AWSStage) PreStage(ctx context.Context, config *internal.OrchInstallerConfig) *internal.OrchInstallerStageError {
+func (a *AWSStage) PreStage(ctx context.Context, config *config.OrchInstallerConfig) *internal.OrchInstallerStageError {
 	logger := internal.Logger()
 	containsError := false
 	var stepErrors map[string]*internal.OrchInstallerError = make(map[string]*internal.OrchInstallerError)
@@ -73,7 +74,7 @@ func (a *AWSStage) PreStage(ctx context.Context, config *internal.OrchInstallerC
 	return nil
 }
 
-func (a *AWSStage) RunStage(ctx context.Context, config *internal.OrchInstallerConfig) *internal.OrchInstallerStageError {
+func (a *AWSStage) RunStage(ctx context.Context, config *config.OrchInstallerConfig) *internal.OrchInstallerStageError {
 	logger := internal.Logger()
 	containsError := false
 	var stepErrors map[string]*internal.OrchInstallerError = make(map[string]*internal.OrchInstallerError)
@@ -103,7 +104,7 @@ func (a *AWSStage) RunStage(ctx context.Context, config *internal.OrchInstallerC
 	return nil
 }
 
-func (a *AWSStage) PostStage(ctx context.Context, config *internal.OrchInstallerConfig, prevStageError *internal.OrchInstallerStageError) *internal.OrchInstallerStageError {
+func (a *AWSStage) PostStage(ctx context.Context, config *config.OrchInstallerConfig, prevStageError *internal.OrchInstallerStageError) *internal.OrchInstallerStageError {
 	logger := internal.Logger()
 	containsError := false
 	var stepErrors map[string]*internal.OrchInstallerError = make(map[string]*internal.OrchInstallerError)

@@ -13,9 +13,10 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
+	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 )
 
-func UploadStateToS3(config internal.OrchInstallerConfig) error {
+func UploadStateToS3(config config.OrchInstallerConfig) error {
 	if config.Aws.Region == "" {
 		return fmt.Errorf("AWS region is not set")
 	}
