@@ -17,7 +17,7 @@ provider "aws" {
   region = var.region
   default_tags {
     tags = {
-      environment = "${var.vpc_name}"
+      environment = "${var.name}"
       customer = var.customer_tag
     }
   }

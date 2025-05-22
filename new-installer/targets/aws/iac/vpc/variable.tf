@@ -44,7 +44,7 @@ variable "endpoint_sg_name" {
 }
 
 variable "jumphost_ip_allow_list" {
-  type        = list(string)
+  type        = set(string)
   description = "List of IPs which used for security group rules. Default is empty which will not allow any traffic."
   default = []
 }

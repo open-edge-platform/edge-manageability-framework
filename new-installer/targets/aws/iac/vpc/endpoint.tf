@@ -53,7 +53,7 @@ resource "aws_vpc_endpoint" "endpoint" {
   service_name      = "com.amazonaws.${var.region}.${each.key}"
   vpc_endpoint_type = "Interface"
 
-  subnet_ids = [for k, v in data.aws_subnet.endpoint : v.id]
+  subnet_ids = [for k, v in aws_subnet.private_subnet : v.id]
   security_group_ids = [
     aws_security_group.vpc_endpoints.id
   ]
