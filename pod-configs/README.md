@@ -17,11 +17,11 @@
 - **buckets**: Sets up S3 buckets to store Terraform state
 - **orchestrator**: Contains Terraform configuration for orchestrator
   environments
-    - `cluster`: Cluster configs, including EKS cluster, storage, database, ...
-    - `vpc`: Virtual private cloud configs
-    - `orch-load-balancer`: Load balancing components
-    - `orch-route53`: Route53 DNS configs
-    - `pull-through-cache-proxy`: Proxy that redirects OCI requests to
+  - `cluster`: Cluster configs, including EKS cluster, storage, database, ...
+  - `vpc`: Virtual private cloud configs
+  - `orch-load-balancer`: Load balancing components
+  - `orch-route53`: Route53 DNS configs
+  - `pull-through-cache-proxy`: Proxy that redirects OCI requests to
       corresponding pull through cache path.
 
 ### The module directory
