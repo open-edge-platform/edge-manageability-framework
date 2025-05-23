@@ -634,17 +634,21 @@ export KUBECONFIG=/home/$USER/.kube/config
 # Run gitea installer
 echo "Installing Gitea"
 eval "sudo IMAGE_REGISTRY=${GITEA_IMAGE_REGISTRY} NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y $cwd/$deb_dir_name/onprem-gitea-installer_*_amd64.deb"
-wait_for_namespace_creation $gitea_ns
+# wait_for_namespace_creation $gitea_ns
+mage onPrem:waitForNamespaceCreation $gitea_ns
 sleep 30s
-wait_for_pods_running $gitea_ns
+mage onPrem:waitForPodsRunning $gitea_ns
+# wait_for_pods_running $gitea_ns
 echo "Gitea Installed"
 
 # Run argo CD installer
 echo "Installing ArgoCD..."
 eval "sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y $cwd/$deb_dir_name/onprem-argocd-installer_*_amd64.deb"
-wait_for_namespace_creation $argo_cd_ns
+# wait_for_namespace_creation $argo_cd_ns
+mage onPrem:waitForNamespaceCreation $argo_cd_ns
 sleep 30s
-wait_for_pods_running $argo_cd_ns
+mage onPrem:waitForPodsRunning $argo_cd_ns
+# wait_for_pods_running $argo_cd_ns
 echo "ArgoCD installed"
 
 # Create namespaces for ArgoCD
