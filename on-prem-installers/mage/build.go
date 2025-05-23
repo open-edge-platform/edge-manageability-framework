@@ -166,6 +166,10 @@ func (Build) argoCdInstaller() error {
 	}
 
 	// Gitea helm installation
+	if err := os.RemoveAll(filepath.Join(giteaPath, "gitea")); err != nil {
+		return err
+	}
+
 	cmd = "helm repo add gitea-charts https://dl.gitea.com/charts/ --force-update"
 	if _, err := script.Exec(cmd).Stdout(); err != nil {
 		return fmt.Errorf("failed to add gitea helm repo: %w", err)
