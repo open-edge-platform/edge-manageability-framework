@@ -51,6 +51,12 @@ func (s *AWSObservabilityBucketsStep) Name() string {
 func (s *AWSObservabilityBucketsStep) ConfigStep(ctx context.Context, config internal.OrchInstallerConfig, runtimeState internal.OrchInstallerRuntimeState) (internal.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	s.variables = NewAWSObservabilityBucketsVariables()
 	s.variables.AWSAccountID = config.
+
+	s.backendConfig = TerraformAWSBucketBackendConfig{
+		Region: config.Region,
+		Bucket: config.DeploymentName + "-" + config.StateStoreBucketPostfix,
+		Key:    config.Region + "/vpc/" + config.DeploymentName,
+	}
 	return runtimeState, nil
 }
 
