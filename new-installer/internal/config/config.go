@@ -30,13 +30,12 @@ type OrchInstallerRuntimeState struct {
 	DeploymentID     string `yaml:"deploymentID"`
 	StateBucketState string `yaml:"stateBucketState"` // The state S3 bucket Terraform state
 	// Move runtime state here?
-	KubeConfig    string `yaml:"kubeConfig"`
-	TLSCert       string `yaml:"tlsCert"`
-	TLSKey        string `yaml:"tlsKey"`
-	TLSCa         string `yaml:"tlsCa"`
-	CacheRegistry string `yaml:"cacheRegistry"`
-	VPCID         string `yaml:"vpcID"` // VPC ID
-
+	KubeConfig               string   `yaml:"kubeConfig"`
+	TLSCert                  string   `yaml:"tlsCert"`
+	TLSKey                   string   `yaml:"tlsKey"`
+	TLSCa                    string   `yaml:"tlsCa"`
+	CacheRegistry            string   `yaml:"cacheRegistry"`
+	VPCID                    string   `yaml:"vpcID"`
 	PublicSubnetIDs          []string `yaml:"publicSubnetIDs"`
 	PrivateSubnetIDs         []string `yaml:"privateSubnetIDs"`
 	JumpHostSSHKeyPublicKey  string   `yaml:"jumpHostSSHPublicKey"`
@@ -87,7 +86,7 @@ type OrchInstallerConfig struct {
 	SRE struct {
 		Username  string `yaml:"username,omitempty"`
 		Password  string `yaml:"password,omitempty"`
-		SecretUrl string `yaml:"secretUrl,omitempty"`
+		SecretUrl string `yaml:"secretURL,omitempty"`
 		CASecret  string `yaml:"caSecret,omitempty"`
 	} `yaml:"sre,omitempty"`
 	SMTP struct {
