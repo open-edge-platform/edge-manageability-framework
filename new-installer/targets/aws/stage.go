@@ -14,16 +14,18 @@ import (
 )
 
 type AWSStage struct {
-	steps  []steps.OrchInstallerStep
-	name   string
-	labels []string
+	steps                  []steps.OrchInstallerStep
+	name                   string
+	labels                 []string
+	orchConfigReaderWriter config.OrchConfigReaderWriter
 }
 
-func NewAWSStage(name string, steps []steps.OrchInstallerStep, labels []string) *AWSStage {
+func NewAWSStage(name string, steps []steps.OrchInstallerStep, labels []string, orchConfigReaderWriter config.OrchConfigReaderWriter) *AWSStage {
 	return &AWSStage{
-		steps:  steps,
-		name:   name,
-		labels: labels,
+		steps:                  steps,
+		name:                   name,
+		labels:                 labels,
+		orchConfigReaderWriter: orchConfigReaderWriter,
 	}
 }
 func (a *AWSStage) Name() string {
@@ -40,6 +42,20 @@ func (a *AWSStage) PreStage(ctx context.Context, config *config.OrchInstallerCon
 
 func (a *AWSStage) RunStage(ctx context.Context, config *config.OrchInstallerConfig) *internal.OrchInstallerError {
 	logger := internal.Logger()
+	if config == nil {
+		return &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeInvalidArgument,
+			ErrorMsg:  "OrchInstallerConfig is nil",
+		}
+	}
+	if config.Generated.Action == "uninstall" {
+		a.steps = steps.ReverseSteps(a.steps)
+	}
+	a.steps = steps.FilterSteps(a.steps, config.Advanced.TargetLabels)
+	if len(a.steps) == 0 {
+		return nil
+	}
+
 	for _, step := range a.steps {
 		logger.Debugf("ConfigStep %s", step.Name())
 		stepErr := func() *internal.OrchInstallerError {
@@ -48,11 +64,10 @@ func (a *AWSStage) RunStage(ctx context.Context, config *config.OrchInstallerCon
 			} else if err = internal.UpdateRuntimeState(&config.Generated, newRuntimeState); err != nil {
 				return err
 			}
-			logger.Debug("Uploading runtime state to S3 after ConfigStep %s", step.Name())
-			if uploadError := UploadStateToS3(*config); uploadError != nil {
+			if uploadError := a.orchConfigReaderWriter.WriteOrchConfig(*config); uploadError != nil {
 				return &internal.OrchInstallerError{
 					ErrorCode: internal.OrchInstallerErrorCodeStateUploadFailed,
-					ErrorMsg:  fmt.Sprintf("Failed to upload runtime state to S3: %v", uploadError),
+					ErrorMsg:  fmt.Sprintf("Failed to write state: %v", uploadError),
 				}
 			}
 			logger.Debugf("PreStep %s", step.Name())
@@ -61,11 +76,10 @@ func (a *AWSStage) RunStage(ctx context.Context, config *config.OrchInstallerCon
 			} else if err = internal.UpdateRuntimeState(&config.Generated, newRuntimeState); err != nil {
 				return err
 			}
-			logger.Debug("Uploading runtime state to S3 after PreStep %s", step.Name())
-			if uploadError := UploadStateToS3(*config); uploadError != nil {
+			if uploadError := a.orchConfigReaderWriter.WriteOrchConfig(*config); uploadError != nil {
 				return &internal.OrchInstallerError{
 					ErrorCode: internal.OrchInstallerErrorCodeStateUploadFailed,
-					ErrorMsg:  fmt.Sprintf("Failed to upload runtime state to S3: %v", uploadError),
+					ErrorMsg:  fmt.Sprintf("Failed to write state: %v", uploadError),
 				}
 			}
 			logger.Debugf("RunStep %s", step.Name())
@@ -74,11 +88,10 @@ func (a *AWSStage) RunStage(ctx context.Context, config *config.OrchInstallerCon
 			} else if err = internal.UpdateRuntimeState(&config.Generated, newRuntimeState); err != nil {
 				return err
 			}
-			logger.Debug("Uploading runtime state to S3 after RunStep %s", step.Name())
-			if uploadError := UploadStateToS3(*config); uploadError != nil {
+			if uploadError := a.orchConfigReaderWriter.WriteOrchConfig(*config); uploadError != nil {
 				return &internal.OrchInstallerError{
 					ErrorCode: internal.OrchInstallerErrorCodeStateUploadFailed,
-					ErrorMsg:  fmt.Sprintf("Failed to upload runtime state to S3: %v", uploadError),
+					ErrorMsg:  fmt.Sprintf("Failed to write state: %v", uploadError),
 				}
 			}
 			return nil
@@ -90,11 +103,10 @@ func (a *AWSStage) RunStage(ctx context.Context, config *config.OrchInstallerCon
 		} else if err = internal.UpdateRuntimeState(&config.Generated, newRuntimeState); err != nil {
 			return err
 		}
-		logger.Debug("Uploading runtime state to S3 after PostStep %s", step.Name())
-		if uploadError := UploadStateToS3(*config); uploadError != nil {
+		if uploadError := a.orchConfigReaderWriter.WriteOrchConfig(*config); uploadError != nil {
 			return &internal.OrchInstallerError{
 				ErrorCode: internal.OrchInstallerErrorCodeStateUploadFailed,
-				ErrorMsg:  fmt.Sprintf("Failed to upload runtime state to S3: %v", uploadError),
+				ErrorMsg:  fmt.Sprintf("Failed to write state: %v", uploadError),
 			}
 		}
 	}
