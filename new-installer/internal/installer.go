@@ -55,34 +55,6 @@ func CreateOrchInstaller(stages []OrchInstallerStage) (*OrchInstaller, error) {
 	}, nil
 }
 
-func reverseStages(stages []OrchInstallerStage) []OrchInstallerStage {
-	reversed := []OrchInstallerStage{}
-	for i := len(stages) - 1; i >= 0; i-- {
-		reversed = append(reversed, stages[i])
-	}
-	return reversed
-}
-
-func filterStages(stages []OrchInstallerStage, labels []string) []OrchInstallerStage {
-	if len(labels) == 0 {
-		return stages
-	}
-	filtered := []OrchInstallerStage{}
-	for _, stage := range stages {
-		func() {
-			for _, stageLabel := range stage.Labels() {
-				for _, label := range labels {
-					if stageLabel == label {
-						filtered = append(filtered, stage)
-						return
-					}
-				}
-			}
-		}()
-	}
-	return filtered
-}
-
 func (o *OrchInstaller) Run(ctx context.Context, config config.OrchInstallerConfig) *OrchInstallerError {
 	logger := Logger()
 	action := config.Generated.Action
@@ -100,9 +72,9 @@ func (o *OrchInstaller) Run(ctx context.Context, config config.OrchInstallerConf
 		}
 	}
 	if action == "uninstall" {
-		o.Stages = reverseStages(o.Stages)
+		o.Stages = ReverseStages(o.Stages)
 	}
-	o.Stages = filterStages(o.Stages, config.Advanced.TargetLabels)
+	o.Stages = FilterStages(o.Stages, config.Advanced.TargetLabels)
 	// Nothing to do if no stages are found
 	if len(o.Stages) == 0 {
 		return nil

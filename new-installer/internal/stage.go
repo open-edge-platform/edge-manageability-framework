@@ -26,3 +26,31 @@ type OrchInstallerStage interface {
 	// It should also return the final output of the stage.
 	PostStage(ctx context.Context, config *config.OrchInstallerConfig, prevStageError *OrchInstallerError) *OrchInstallerError
 }
+
+func ReverseStages(stages []OrchInstallerStage) []OrchInstallerStage {
+	reversed := []OrchInstallerStage{}
+	for i := len(stages) - 1; i >= 0; i-- {
+		reversed = append(reversed, stages[i])
+	}
+	return reversed
+}
+
+func FilterStages(stages []OrchInstallerStage, labels []string) []OrchInstallerStage {
+	if len(labels) == 0 {
+		return stages
+	}
+	filtered := []OrchInstallerStage{}
+	for _, stage := range stages {
+		func() {
+			for _, stageLabel := range stage.Labels() {
+				for _, label := range labels {
+					if stageLabel == label {
+						filtered = append(filtered, stage)
+						return
+					}
+				}
+			}
+		}()
+	}
+	return filtered
+}
