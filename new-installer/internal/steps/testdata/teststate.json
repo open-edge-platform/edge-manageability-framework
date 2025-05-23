@@ -1,0 +1,51 @@
+{
+  "version": 4,
+  "terraform_version": "1.9.5",
+  "serial": 1,
+  "lineage": "9f619574-d777-1a2f-016a-f133a04cc180",
+  "outputs": {
+    "output1": {
+      "value": "asd",
+      "type": "string"
+    },
+    "output2": {
+      "value": 123,
+      "type": "number"
+    }
+  },
+  "resources": [
+    {
+      "mode": "managed",
+      "type": "null_resource",
+      "name": "res1",
+      "provider": "provider[\"registry.terraform.io/hashicorp/null\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "id": "5245751834164451048",
+            "triggers": null
+          },
+          "sensitive_attributes": []
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "null_resource",
+      "name": "res2",
+      "provider": "provider[\"registry.terraform.io/hashicorp/null\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "id": "3392208372839835671",
+            "triggers": null
+          },
+          "sensitive_attributes": []
+        }
+      ]
+    }
+  ],
+  "check_results": null
+}
