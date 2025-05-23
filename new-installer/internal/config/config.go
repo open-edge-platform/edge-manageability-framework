@@ -37,7 +37,7 @@ type OrchInstallerRuntimeState struct {
 	CacheRegistry string `yaml:"cacheRegistry"`
 	VPCID         string `yaml:"vpcID"` // VPC ID
 
-	PublicSubnetIdDs         []string `yaml:"publicSubnetIDs"`
+	PublicSubnetIDs          []string `yaml:"publicSubnetIDs"`
 	PrivateSubnetIDs         []string `yaml:"privateSubnetIDs"`
 	JumpHostSSHKeyPublicKey  string   `yaml:"jumpHostSSHPublicKey"`
 	JumpHostSSHKeyPrivateKey string   `yaml:"jumpHostSSHPrivateKey"`
