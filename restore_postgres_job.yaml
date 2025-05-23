@@ -1,0 +1,31 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pg-restore-job
+  namespace: orch-database
+spec:
+  template:
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 2000
+        fsGroup: 3000
+      containers:
+      - name: psql
+        image: postgres:15
+        command: ["sh", "-c", "psql -h postgresql-cloudnative-cluster-rw -U postgres -f /sql/orch-database_postgresql-0_backup.sql"]
+        env:
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgresql-cloudnative-cluster-superuser
+              key: password
+        volumeMounts:
+        - name: sql-volume
+          mountPath: /sql
+      volumes:
+      - name: sql-volume
+        configMap:
+          name: pg-backup-sql
+      restartPolicy: Never
+  backoffLimit: 1
