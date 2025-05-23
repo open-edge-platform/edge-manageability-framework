@@ -53,6 +53,64 @@ In the earlier release (3.0), a key issue was the inability to activate Secure B
      * Refer to the official documentation for driver installation. DEB package install GPU drivers as part of rolling updates.
      
        https://dgpu-docs.intel.com/driver/installation-rolling.html 
+
+     * **Installation Procedure:**
+         * Make sure prerequisites to add repository access are available.
+            ``` 
+            sudo apt update
+            sudo apt install -y gpg-agent wget
+            ```
+         *  Add the online network package repository.
+            ```
+            . /etc/os-release
+            if [[ ! " jammy noble " =~ " ${VERSION_CODENAME} " ]]; then
+               echo "Ubuntu version ${VERSION_CODENAME} not supported"
+            else
+               wget -qO - https://repositories.intel.com/gpu/intel-graphics.key | \
+               sudo gpg --yes --dearmor --output /usr/share/keyrings/intel-graphics.gpg
+               echo "deb [arch=amd64 signed-by=/usr/share/keyrings/intel-graphics.gpg] https://repositories.intel.com/gpu/ubuntu ${VERSION_CODENAME} unified" | \
+               sudo tee /etc/apt/sources.list.d/intel-gpu-${VERSION_CODENAME}.list
+               sudo apt update
+            fi
+            ```
+         * Install kernel and Intel® XPU System Management Interface (XPU-SMI) packages on  a bare metal system. Installation on the host is sufficient for hardware management and support of the runtimes in containers and bare metal.
+            ```
+            sudo apt install -y \
+            linux-headers-$(uname -r) \
+            linux-modules-extra-$(uname -r) \
+            flex bison \
+            intel-fw-gpu intel-i915-dkms xpu-smi
+            sudo reboot
+            ```
+         * Install packages responsible for computing and media runtimes. 
+            ```
+            sudo apt install -y \
+            intel-opencl-icd libze-intel-gpu1 libze1 \
+            intel-media-va-driver-non-free libmfx-gen1 libvpl2 \
+            libegl-mesa0 libegl1-mesa-dev libgbm1 libgl1-mesa-dev libgl1-mesa-dri \
+            libglapi-mesa libgles2-mesa-dev libglx-mesa0 libigdgmm12 libxatracker2 mesa-va-drivers \
+            mesa-vdpau-drivers mesa-vulkan-drivers va-driver-all vainfo hwinfo clinfo
+             ```
+         * Install development packages.
+            ```
+            sudo apt install -y \
+            libigc-dev intel-igc-cm libigdfcl-dev libigfxcmrt-dev libze-dev
+            ```
+         * List the group assigned ownership of the render nodes and the groups you are a member of.There are specific groups that users must be a part of to access certain functionalities of the GPU. The render group specifically allows access to GPU resources for rendering tasks without giving full access to display management or other potentially more sensitive operations.
+            ```
+            stat -c "%G" /dev/dri/render*
+            groups ${USER}
+            ```
+         * If you are not a member of the same group used by the DRM render nodes, add your user to the render node group.
+            ```
+            sudo gpasswd -a ${USER} render
+            ```
+         * Change the group ID of the current shell.
+           ```
+           newgrp render
+           ```
+
+
      * Existing extensions, such as the device-operator and gpu-plugin, will be updated. The Intel GPU device plugin for Kubernetes facilitates access to Intel discrete and integrated GPUs, registering resources like gpu.intel.com/i915 and gpu.intel.com/xe within a Kubernetes cluster
      * **For EMT** : EMT should be build with 6.11* linux kernel.
      * **For Ubuntu** : Ubuntu Server 24.04.2, equipped with the 6.11 kernel, has been validated with BMG GPU drivers. DEB packages are available as rolling updates in the official documentation.
