@@ -410,7 +410,7 @@ config_certificate() {
         break
     done
 
-    whiptail --title "Info" --infobox "Saving the certificates. It could take serveral seconds..." 8 78
+    whiptail --title "Info" --infobox "Saving the certificates. It could take several seconds..." 8 78
 
     local v
     for v in ${vars_body[@]}; do
@@ -569,8 +569,8 @@ adv_menu() {
         fi
 
         case $curr_select in
-            1) config_variables || break;;   # Exit the loop only when Cancel is seleted
-            2) config_certificate || break;;   # Exit the loop only when Cancel is seleted;;
+            1) config_variables || break;;   # Exit the loop only when Cancel is selected
+            2) config_certificate || break;;   # Exit the loop only when Cancel is selected;;
             3) show_values;;
             *) echo "Error: Internal error." && exit 1;;
         esac
@@ -578,7 +578,7 @@ adv_menu() {
 }
 
 show_values() {
-    whiptail --title "Info" --infobox "Getting all configured variables. It could take serveral seconds..." 8 78
+    whiptail --title "Info" --infobox "Getting all configured variables. It could take several seconds..." 8 78
     local vars_set="$(print_values)"
     local mesg="The following values have been configured:\n\n${vars_set}"
     whiptail --title "Values" --msgbox "$mesg" 0 78
@@ -668,7 +668,7 @@ show_profile_menu() {
             done
 
             if whiptail --title "Values to be set" --yesno $mesg 0 0; then
-                whiptail --title "Info" --infobox "Preparing to save the profile. It could take serveral seconds..." 8 78
+                whiptail --title "Info" --infobox "Preparing to save the profile. It could take several seconds..." 8 78
                 for i in $(seq 0 $((${#var_vars[@]} - 1))); do
                     local v=$(yq -r ".[$index].variables.[$i].value" $PROFILE_CONFIG)
                     local t=$(yq -r ".[$index].variables.[$i].type" $PROFILE_CONFIG)
