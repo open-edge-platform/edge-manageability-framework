@@ -857,8 +857,8 @@ func parseProject(body io.ReadCloser) (Projects, error) {
 	return proj, nil
 }
 
-func parseRegionsList(body io.ReadCloser) (invapi.RegionServiceListRegionsResponse, error) {
-	var regionsList invapi.RegionServiceListRegionsResponse
+func parseRegionsList(body io.ReadCloser) (*invapi.RegionServiceListRegionsResponse, error) {
+	regionsList := &invapi.RegionServiceListRegionsResponse{}
 
 	data, err := io.ReadAll(body)
 	if err != nil {
@@ -870,7 +870,7 @@ func parseRegionsList(body io.ReadCloser) (invapi.RegionServiceListRegionsRespon
 	}
 
 	if regionsList.JSON200 == nil {
-		return regionsList, fmt.Errorf("failed to get regions list: %w", err)
+		return regionsList, fmt.Errorf("failed to get regions list: %s", *regionsList.JSONDefault.Message)
 	}
 	return regionsList, nil
 }
