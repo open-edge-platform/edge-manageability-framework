@@ -416,20 +416,20 @@ var _ = Describe("Tenancy integration test", Label(tenancy), func() {
 			token, err = util.GetApiToken(cli, tenancyUser, password)
 			Expect(err).ToNot(HaveOccurred())
 
-			Eventually(func() (*int, error) {
+			Eventually(func() (int32, error) {
 				resp, err = makeAuthorizedRequest(http.MethodGet, "https://api."+serviceDomainWithPort+"/v1/projects/"+projName+"/regions", *token, nil, cli)
 				if err != nil {
-					return nil, fmt.Errorf("failed to get regions: %w", err)
+					return 0, fmt.Errorf("failed to get regions: %w", err)
 				}
 				defer resp.Body.Close()
 				if resp.StatusCode != http.StatusOK {
-					return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+					return 0, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 				}
 				regionsList, err := parseRegionsList(resp.Body)
 				if err != nil {
-					return nil, fmt.Errorf("failed to parse regions list: %w", err)
+					return 0, fmt.Errorf("failed to parse regions list: %w", err)
 				}
-				return regionsList.TotalElements, nil
+				return regionsList.JSON200.TotalElements, nil
 			}, 2*time.Minute, 10*time.Second).ShouldNot(BeNil(), "regions list should not be empty")
 
 			logInfo("Verify Catalog services for Project: %s under Org: %s", projName, orgName)

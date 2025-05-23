@@ -28,7 +28,7 @@ import (
 
 	"github.com/open-edge-platform/edge-manageability-framework/internal/retry"
 	util "github.com/open-edge-platform/edge-manageability-framework/mage"
-	invapi "github.com/open-edge-platform/infra-core/api/pkg/api/v0"
+	invapi "github.com/open-edge-platform/infra-core/apiv2/v2/pkg/api/v2"
 	baseorginfrahostcomv1 "github.com/open-edge-platform/orch-utils/tenancy-datamodel/build/apis/org.edge-orchestrator.intel.com/v1"
 	baseprojectinfrahostcomv1 "github.com/open-edge-platform/orch-utils/tenancy-datamodel/build/apis/project.edge-orchestrator.intel.com/v1"
 )
@@ -857,8 +857,8 @@ func parseProject(body io.ReadCloser) (Projects, error) {
 	return proj, nil
 }
 
-func parseRegionsList(body io.ReadCloser) (invapi.RegionsList, error) {
-	var regionsList invapi.RegionsList
+func parseRegionsList(body io.ReadCloser) (invapi.RegionServiceListRegionsResponse, error) {
+	var regionsList invapi.RegionServiceListRegionsResponse
 
 	data, err := io.ReadAll(body)
 	if err != nil {
@@ -869,6 +869,9 @@ func parseRegionsList(body io.ReadCloser) (invapi.RegionsList, error) {
 		return regionsList, fmt.Errorf("failed to Unmarshal regionsList: %w", err)
 	}
 
+	if regionsList.JSON200 == nil {
+		return regionsList, fmt.Errorf("failed to get regions list: %w", err)
+	}
 	return regionsList, nil
 }
 
