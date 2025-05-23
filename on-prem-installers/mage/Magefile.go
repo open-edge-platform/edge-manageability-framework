@@ -404,11 +404,6 @@ func (u Undeploy) Rke2Cluster() error {
 // Namespace contains Gen targets.
 type Gen mg.Namespace
 
-// RegistryCacheCert Generates Intel Harbor registry cache x509 certificate.
-func (Gen) RegistryCacheCert() error {
-	return Registry{}.registryCert(true)
-}
-
 // Generates Intel SHA256 Private Root Certificate Chain certificates.
 func (Gen) IntelSHA256PrivateRootCertChain() error {
 	file, err := os.Create("IntelSHA2RootChain-Base64.zip")

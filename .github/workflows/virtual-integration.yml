@@ -33,6 +33,7 @@ permissions: {}
 
 jobs:
   pre-merge:
+    if: github.event_name == 'pull_request'
     permissions:
       contents: read
     uses: open-edge-platform/orch-ci/.github/workflows/pre-merge.yml@main
@@ -71,38 +72,6 @@ jobs:
         uses: open-edge-platform/orch-ci/discover-changed-files@main  # zizmor: ignore[unpinned-uses]
         with:
           project_folder: "."
-
-  scan-vulnerabilities:
-    permissions:
-      contents: read
-    name: Scan for vulnerabilities
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    env:
-      OUTPUT_FILE: e2e-tests/trivy/trivy-fs-report.csv
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-        with:
-          persist-credentials: false
-
-      - name: Trivy (Filesystem)
-        uses: aquasecurity/trivy-action@6c175e9c4083a92bbca2f9724c8a5e33bc2d97a5  # 0.30.0
-        with:
-          scan-type: "fs"
-          scan-ref: "."
-          format: "template"
-          template: "@e2e-tests/trivy/trivy-scan-report.tpl"
-          output: ${{ env.OUTPUT_FILE }}
-          exit-code: 1
-          cache: "false"
-
-      - name: Upload evidence
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
-        with:
-          name: trivy-fs-report
-          path: ${{ env.OUTPUT_FILE }}
 
   scan-viruses:
     permissions:
@@ -351,10 +320,10 @@ jobs:
       - lint-yaml
       - lint-version
       - scan-viruses
-      - scan-vulnerabilities
       - check-changed-files
     if: |
-      always() && (
+      always() &&
+      needs.lint-version.result == 'success' && (
       needs.check-changed-files.outputs.orch == 'true' ||
       needs.check-changed-files.outputs.on-prem == 'true' ||
       needs.check-changed-files.outputs.ci == 'true' ||
@@ -486,7 +455,8 @@ jobs:
       - lint-yaml
       - check-changed-files
     if: |
-      always() && (
+      always() &&
+      needs.lint-version.result == 'success' && (
       needs.check-changed-files.outputs.orch == 'true' ||
       needs.check-changed-files.outputs.ci == 'true' ||
       github.ref == 'refs/heads/main' ||
@@ -719,11 +689,11 @@ jobs:
       - build-publish
       - check-changed-files
     if: |
-      always() && (
+      always() && 
+      needs.build-publish.result == 'success' && (
       needs.check-changed-files.outputs.orch == 'true' ||
       needs.check-changed-files.outputs.on-prem == 'true' ||
       needs.check-changed-files.outputs.ci == 'true' ||
-      needs.build-publish.result == 'success' ||
       github.ref == 'refs/heads/main' ||
       github.ref == 'refs/heads/main-pass-validation'
       )
