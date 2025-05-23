@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/huh"
 	"gopkg.in/yaml.v3"
 
+	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -30,122 +31,6 @@ type flag struct {
 	ConfigureSmtp         bool
 }
 
-type Scale int
-
-const (
-	Scale10    Scale = 10
-	Scale100   Scale = 100
-	Scale500   Scale = 500
-	Scale1000  Scale = 1000
-	Scale10000 Scale = 10000
-)
-
-type userInput_1 struct {
-	Version  int    `yaml:"version"`
-	Provider string `yaml:"provider"`
-	Global   struct {
-		ClusterName   string `yaml:"clusterName"`
-		ClusterDomain string `yaml:"clusterDomain"`
-	} `yaml:"global"`
-	Aws struct {
-		Account string `yaml:"account"`
-		Region  string `yaml:"region"`
-	} `yaml:"aws"`
-	Azure struct {
-		Subscription string `yaml:"subscription"`
-		Region       string `yaml:"region"`
-	} `yaml:"azure"`
-	Onprem struct {
-		IP string `yaml:"ip"`
-	} `yaml:"onprem"`
-	Enabled []string `yaml:"enabled"`
-}
-
-type userInput_2 struct {
-	Version   int    `yaml:"version"`
-	Provider  string `yaml:"provider"`
-	Generated struct {
-		// Used for state and o11y bucket prefix. lowercase or digit
-		DeploymentId string `yaml:"deploymentId"`
-		// Move runtime state here?
-		KubeConfig    string `yaml:"kubeConfig"`
-		TlsCert       string `yaml:"tlsCert"`
-		TlsKey        string `yaml:"tlsKey"`
-		TlsCa         string `yaml:"tlsCa"`
-		CacheRegistry string `yaml:"cacheRegistry"`
-		VpcId         string `yaml:"vpcId"` // VPC ID
-	} `yaml:"generated"`
-	Global struct {
-		OrchName     string `yaml:"orchName"`     // EMF deployment name
-		ParentDomain string `yaml:"parentDomain"` // not including cluster name
-		AdminEmail   string `yaml:"adminEmail"`
-		Scale        Scale  `yaml:"scale"`
-	} `yaml:"global"`
-	Advanced struct { // TODO: form for this part is not done yet
-		Enabled              []string `yaml:"enabled"` // installer module flag
-		AzureAdRefreshToken  string   `yaml:"azureAdRefreshToken,omitempty"`
-		AzureAdTokenEndpoint string   `yaml:"azureAdTokenEndpoint,omitempty"`
-	} `yaml:"advanced"`
-	Aws struct {
-		Region            string `yaml:"region"`
-		CustomerTag       string `yaml:"customerTag,omitempty"`
-		CacheRegistry     string `yaml:"cacheRegistry,omitempty"`
-		JumpHostWhitelist string `yaml:"jumpHostWhitelist,omitempty"`
-		VpcId             string `yaml:"vpcId,omitempty"`
-		ReduceNsTtl       bool   `yaml:"reduceNsTtl,omitempty"` // TODO: do we need this?
-		EksDnsIp          string `yaml:"eksDnsIp,omitempty"`    // TODO: do we need this?
-	} `yaml:"aws,omitempty"`
-	Onprem struct {
-		ArgoIP         string `yaml:"argoIp"`
-		TraefikIP      string `yaml:"traefikIp"`
-		NginxIP        string `yaml:"nginxIp"`
-		DockerUsername string `yaml:"dockerUsername,omitempty"`
-		DockerToken    string `yaml:"dockerToken,omitempty"`
-	} `yaml:"onprem,omitempty"`
-	Orch struct {
-		Enabled         []string `yaml:"enabled"`
-		DefaultPassword string   `yaml:"defaultPassword"`
-	} `yaml:"orch"`
-	// Optional
-	Cert struct {
-		TlsCert string `yaml:"tlsCert,omitempty"`
-		TlsKey  string `yaml:"tlsKey,omitempty"`
-		TlsCa   string `yaml:"tlsCa,omitempty"`
-	} `yaml:"cert,omitempty"`
-	Sre struct {
-		Username  string `yaml:"username,omitempty"`
-		Password  string `yaml:"password,omitempty"`
-		SecretUrl string `yaml:"secretUrl,omitempty"`
-		CaSecret  string `yaml:"caSecret,omitempty"`
-	} `yaml:"sre,omitempty"`
-	Smtp struct {
-		Username string `yaml:"username"`
-		Password string `yaml:"password"`
-		Url      string `yaml:"url"`
-		Port     string `yaml:"port"`
-		From     string `yaml:"from"`
-	} `yaml:"smtp,omitempty"`
-	Proxy struct {
-		HttpProxy  string `yaml:"httpProxy,omitempty"`
-		HttpsProxy string `yaml:"httpsProxy,omitempty"`
-		SocksProxy string `yaml:"socksProxy,omitempty"`
-		NoProxy    string `yaml:"noProxy,omitempty"`
-	} `yaml:"proxy,omitempty"`
-}
-
-type orchApp struct {
-	Name        string `yaml:"name"`
-	Description string `yaml:"description"`
-}
-
-type orchPackage struct {
-	Name        string             `yaml:"name"`
-	Description string             `yaml:"description"`
-	Apps        map[string]orchApp `yaml:"apps"`
-}
-
-var orchPackages map[string]orchPackage
-
 type Mode int
 
 const (
@@ -155,10 +40,12 @@ const (
 )
 
 // These are states that will be saved back to the config file
-var input userInput_2
+var input config.OrchInstallerConfig
 
 // These are intermediate states that will not be saved back to the config file
 var flags flag
+var orchPackages map[string]config.OrchPackage
+var tmpJumpHostWhitelist string
 var enabledSimple []string
 var enabledAdvanced []string
 var configMode Mode
@@ -212,18 +99,18 @@ func configureGlobal() *huh.Group {
 			Placeholder("firstname.lastname@intel.com").
 			Validate(validateAdminEmail).
 			Value(&input.Global.AdminEmail),
-		huh.NewSelect[Scale]().
+		huh.NewSelect[config.Scale]().
 			Title("Scale").
 			Description("Select target scale").
 			OptionsFunc(
-				func() []huh.Option[Scale] {
-					var options []huh.Option[Scale]
+				func() []huh.Option[config.Scale] {
+					var options []huh.Option[config.Scale]
 					options = append(options,
-						huh.NewOption("1~10 Edge Nodes", Scale10),
-						huh.NewOption("10~100 Edge Nodes", Scale100),
-						huh.NewOption("100-500 Edge Nodes", Scale500),
-						huh.NewOption("500-1000 Edge Nodes", Scale1000),
-						huh.NewOption("1000-10000 Edge Nodes", Scale10000),
+						huh.NewOption("1~10 Edge Nodes", config.Scale10),
+						huh.NewOption("10~100 Edge Nodes", config.Scale100),
+						huh.NewOption("100-500 Edge Nodes", config.Scale500),
+						huh.NewOption("500-1000 Edge Nodes", config.Scale1000),
+						huh.NewOption("1000-10000 Edge Nodes", config.Scale10000),
 					)
 					return options
 				}, nil).
@@ -238,7 +125,7 @@ func configureAwsBasic() *huh.Group {
 			Description("This is the region where the EMF will be deployed.").
 			Placeholder("us-east-1").
 			Validate(validateAwsRegion).
-			Value(&input.Aws.Region),
+			Value(&input.AWS.Region),
 	).WithHideFunc(func() bool {
 		return input.Provider != "aws"
 	}).Title("Step 3a: AWS Basic Configuration\n")
@@ -264,37 +151,37 @@ func configureAwsExpert() *huh.Group {
 			Description("(Optional) Apply this tag to all AWS resources").
 			Placeholder("").
 			Validate(validateAwsCustomTag).
-			Value(&input.Aws.CustomerTag),
+			Value(&input.AWS.CustomerTag),
 		huh.NewInput().
 			Title("Container Registry Cache").
 			Description("(Optional) Pull OCI artifact from this cache registry").
 			Placeholder("").
 			Validate(validateCacheRegistry).
-			Value(&input.Aws.CacheRegistry),
+			Value(&input.AWS.CacheRegistry),
 		huh.NewInput().
 			Title("Jump Host Whitelist").
 			Description("(Optional) Traffic from this CIDR will be allowed to access the jump host").
 			Placeholder("10.0.0.0/8").
 			Validate(validateAwsJumpHostWhitelist).
-			Value(&input.Aws.JumpHostWhitelist),
+			Value(&tmpJumpHostWhitelist),
 		huh.NewInput().
 			Title("VPC ID").
 			Description("(Optional) Enter VPC ID if you prefer to reuse existing VPC instead of letting us create one").
 			Placeholder("").
 			Validate(validateAwsVpcId).
-			Value(&input.Aws.VpcId),
+			Value(&input.AWS.VPCID),
 		huh.NewConfirm().
 			Title("Reduce NS TTL").
 			Description("(Optional) Reduce the TTL of the NS record to 60 seconds").
 			Affirmative("yes").
 			Negative("no").
-			Value(&input.Aws.ReduceNsTtl),
+			Value(&input.AWS.ReduceNSTTL),
 		huh.NewInput().
 			Title("EKS DNS IP").
 			Description("(Optional) Enter EKS DNS IP if you prefer to reuse a non-default DNS server").
 			Placeholder("").
 			Validate(validateAwsEksDnsIp).
-			Value(&input.Aws.EksDnsIp),
+			Value(&input.AWS.EKSDNSIP),
 	).WithHideFunc(func() bool {
 		return input.Provider != "aws" || (!flags.ExpertMode && !flags.ConfigureAwsExpert)
 	}).Title("Step 3b: AWS Expert Configurations\n")
@@ -375,13 +262,13 @@ func configureProxy() *huh.Group {
 			Description("(Optional) HTTP proxy to be used for all outbound traffic").
 			Placeholder("").
 			Validate(validateProxy).
-			Value(&input.Proxy.HttpProxy),
+			Value(&input.Proxy.HTTPProxy),
 		huh.NewInput().
 			Title("HTTPS Proxy").
 			Description("(Optional) HTTPS proxy to be used for all outbound traffic").
 			Placeholder("").
 			Validate(validateProxy).
-			Value(&input.Proxy.HttpsProxy),
+			Value(&input.Proxy.HTTPSProxy),
 		huh.NewInput().
 			Title("SOCKS Proxy").
 			Description("(Optional) SOCKS proxy to be used for all outbound traffic").
@@ -419,19 +306,19 @@ func configureCert() *huh.Group {
 			Description("(Optional) TLS certificate to be used for the EMF").
 			Placeholder("").
 			Validate(validateTlsCert).
-			Value(&input.Cert.TlsCert),
+			Value(&input.Cert.TLSCert),
 		huh.NewText().
 			Title("TLS Key").
 			Description("(Optional) TLS key to be used for the EMF").
 			Placeholder("").
 			Validate(validateTlsKey).
-			Value(&input.Cert.TlsKey),
+			Value(&input.Cert.TLSKey),
 		huh.NewText().
 			Title("TLS CA").
 			Description("(Optional) TLS CA to be used for the EMF").
 			Placeholder("").
 			Validate(validateTlsCa).
-			Value(&input.Cert.TlsCa),
+			Value(&input.Cert.TLSCA),
 	).WithHideFunc(func() bool {
 		return !flags.ExpertMode && !flags.ConfigureCert
 	}).Title("Step 5: (Optional) TLS Certificate\n")
@@ -456,25 +343,25 @@ func configureSre() *huh.Group {
 			Title("SRE Username").
 			Description("(Optional) SRE username to be used for the EMF").
 			Placeholder("").
-			Value(&input.Sre.Username),
+			Value(&input.SRE.Username),
 		huh.NewInput().
 			Title("SRE Password").
 			Description("(Optional) SRE password to be used for the EMF").
 			Placeholder("").
 			EchoMode(huh.EchoModePassword).
-			Value(&input.Sre.Password),
+			Value(&input.SRE.Password),
 		huh.NewInput().
 			Title("SRE Secret URL").
 			Description("(Optional) SRE secret URL to be used for the EMF").
 			Placeholder("").
 			Validate(validateSreSecretUrl).
-			Value(&input.Sre.SecretUrl),
+			Value(&input.SRE.SecretUrl),
 		huh.NewInput().
 			Title("SRE CA Secret").
 			Description("(Optional) SRE CA secret to be used for the EMF").
 			Placeholder("").
 			Validate(validateSreCaSecret).
-			Value(&input.Sre.CaSecret),
+			Value(&input.SRE.CASecret),
 	).WithHideFunc(func() bool {
 		return !flags.ExpertMode && !flags.ConfigureCert
 	}).Title("Step 5: (Optional) Site Reliability Engineering (SRE)\n")
@@ -499,31 +386,31 @@ func configureSmtp() *huh.Group {
 			Title("SMTP Username").
 			Description("(Optional) SMTP username to be used for the EMF").
 			Placeholder("").
-			Value(&input.Smtp.Username),
+			Value(&input.SMTP.Username),
 		huh.NewInput().
 			Title("SMTP Password").
 			Description("(Optional) SMTP password to be used for the EMF").
 			Placeholder("").
 			EchoMode(huh.EchoModePassword).
-			Value(&input.Smtp.Password),
+			Value(&input.SMTP.Password),
 		huh.NewInput().
 			Title("SMTP URL").
 			Description("(Optional) SMTP URL to be used for the EMF").
 			Placeholder("").
 			Validate(validateSmtpUrl).
-			Value(&input.Smtp.Url),
+			Value(&input.SMTP.URL),
 		huh.NewInput().
 			Title("SMTP Port").
 			Description("(Optional) SMTP port to be used for the EMF").
 			Placeholder("").
 			Validate(validateSmtpPort).
-			Value(&input.Smtp.Port),
+			Value(&input.SMTP.Port),
 		huh.NewInput().
 			Title("SMTP From Address").
 			Description("(Optional) SMTP from address to be used for the EMF").
 			Placeholder("").
 			Validate(validateSmtpFrom).
-			Value(&input.Smtp.From),
+			Value(&input.SMTP.From),
 	).WithHideFunc(func() bool {
 		return !flags.ExpertMode && !flags.ConfigureSmtp
 	}).Title("Step 6: (Optional) Email Notification\n")
@@ -561,18 +448,18 @@ func simpleMode() *huh.Group {
 				// Collect all apps into a slice for sorting
 				packageList := make([]struct {
 					Name    string
-					Package orchPackage
+					Package config.OrchPackage
 				}, 0, len(orchPackages))
 				for name, pkg := range orchPackages {
 					packageList = append(packageList, struct {
 						Name    string
-						Package orchPackage
+						Package config.OrchPackage
 					}{name, pkg})
 				}
 				// Sort by package.Name alphabetically
 				slices.SortFunc(packageList, func(a, b struct {
 					Name    string
-					Package orchPackage
+					Package config.OrchPackage
 				}) int {
 					return strings.Compare(a.Package.Name, b.Package.Name)
 				})
@@ -602,20 +489,20 @@ func advancedMode() *huh.Group {
 					// Collect all apps from all packages
 					appList := make([]struct {
 						Name string
-						App  orchApp
+						App  config.OrchApp
 					}, 0)
 					for _, pkg := range orchPackages {
 						for name, app := range pkg.Apps {
 							appList = append(appList, struct {
 								Name string
-								App  orchApp
+								App  config.OrchApp
 							}{name, app})
 						}
 					}
 					// Sort by app.Name alphabetically
 					slices.SortFunc(appList, func(a, b struct {
 						Name string
-						App  orchApp
+						App  config.OrchApp
 					}) int {
 						return strings.Compare(a.App.Name, b.App.Name)
 					})
@@ -685,14 +572,6 @@ func migrateConfig(raw map[string]interface{}) error {
 		if err := yaml.Unmarshal(yamlBytes, &input); err != nil {
 			return fmt.Errorf("failed to decode config file into version %d: %s", fileVersion, err)
 		}
-	} else if fileVersion == 1 {
-		// Version is 1. Migrate to latest version
-		var userInput1 userInput_1
-		if err := yaml.Unmarshal(yamlBytes, &userInput1); err != nil {
-			return fmt.Errorf("failed to decode config file into version %d: %s", fileVersion, err)
-		}
-		// TODO: migrate userInput1 to userInput2
-		return fmt.Errorf("failed to migrate to version %d", version)
 	} else {
 		return fmt.Errorf("unsupported config file version: %d", fileVersion)
 	}
@@ -744,6 +623,15 @@ func postProcessConfig() {
 	}
 	if configMode == Advanced {
 		input.Orch.Enabled = enabledAdvanced
+	}
+
+	// Covert comma separated IPs into a slice
+	if tmpJumpHostWhitelist != "" {
+		parts := strings.Split(tmpJumpHostWhitelist, ",")
+		for i := range parts {
+			parts[i] = strings.TrimSpace(parts[i])
+		}
+		input.AWS.JumpHostWhitelist = parts
 	}
 
 	// Setting up default values
