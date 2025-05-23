@@ -10,6 +10,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/knadh/koanf/parsers/json"
+	"github.com/knadh/koanf/providers/rawbytes"
+	"github.com/knadh/koanf/v2"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps"
 	"github.com/stretchr/testify/suite"
 )
@@ -70,12 +73,50 @@ func (s *TerraformUtilityTest) TestApplyingTerraformModule() {
 		return
 	}
 	s.Equal(output1, []byte(`"value1"`))
-
 	output2, uerr := output.Output["output2"].Value.MarshalJSON()
 	if !s.NoError(uerr) {
 		return
 	}
 	s.Equal(output2, []byte(`2`))
+
+	s.NotEmpty(output.TerraformState)
+	k := koanf.New(".")
+	k.Load(rawbytes.Provider([]byte(output.TerraformState)), json.Parser())
+	res := k.Get("resources").([]any)
+	s.NotEmpty(res)
+}
+
+func (s *TerraformUtilityTest) TestDestroyTerraformModule() {
+	tfUtil := steps.CreateTerraformUtility()
+	ctx := context.Background()
+	variables := TestTfVariables{
+		Var1: "value1",
+		Var2: 2,
+	}
+	tfState, err := os.ReadFile(filepath.Join(s.testdataDir, "teststate.json"))
+	if !s.NoError(err) {
+		return
+	}
+	output, utilErr := tfUtil.RunTerraformModule(ctx, steps.TerraformUtilityInput{
+		Action:             "uninstall",
+		ExecPath:           s.tfExecPath,
+		ModulePath:         s.testdataDir,
+		LogFile:            filepath.Join(s.testdataDir, "terraform.log"),
+		KeepGeneratedFiles: false,
+		Variables:          variables,
+		TerraformState:     string(tfState),
+	})
+	if utilErr != nil {
+		s.NoError(utilErr)
+		return
+	}
+	s.Empty(output.Output)
+
+	s.NotEmpty(output.TerraformState)
+	k := koanf.New(".")
+	k.Load(rawbytes.Provider([]byte(output.TerraformState)), json.Parser())
+	res := k.Get("resources").([]any)
+	s.Empty(res)
 }
 
 func (s *TerraformUtilityTest) deleteTerraformFiles() {

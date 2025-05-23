@@ -252,18 +252,11 @@ func (*terraformUtilityImpl) RunTerraformModule(ctx context.Context, input Terra
 	// Preserve terraform state in the runtime state
 	var terraformState string
 	if input.BackendConfig == nil {
-		state, err := tf.Show(ctx)
-		if err != nil {
-			return TerraformUtilityOutput{}, &internal.OrchInstallerError{
-				ErrorCode: internal.OrchInstallerErrorCodeTerraform,
-				ErrorMsg:  fmt.Sprintf("failed to retrieve terraform state: %v", err),
-			}
-		}
-		stateJson, err := marshalHCLJSON(state)
+		stateJson, err := os.ReadFile(filepath.Join(input.ModulePath, "terraform.tfstate"))
 		if err != nil {
 			return TerraformUtilityOutput{}, &internal.OrchInstallerError{
 				ErrorCode: internal.OrchInstallerErrorCodeInternal,
-				ErrorMsg:  fmt.Sprintf("failed to marshal terraform state: %v", err),
+				ErrorMsg:  fmt.Sprintf("failed to read terraform state file: %v", err),
 			}
 		}
 		terraformState = string(stateJson)
