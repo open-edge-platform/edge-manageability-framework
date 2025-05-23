@@ -858,7 +858,7 @@ func parseProject(body io.ReadCloser) (Projects, error) {
 }
 
 func parseRegionsList(body io.ReadCloser) (*invapi.ListRegionsResponse, error) {
-	regionsList := &invapi.RegionServiceListRegionsResponse{}
+	var regionsList invapi.RegionServiceListRegionsResponse
 
 	data, err := io.ReadAll(body)
 	if err != nil {
