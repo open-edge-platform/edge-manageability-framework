@@ -21,13 +21,12 @@ addressed in the release 3.1.
 ## Proposal
 
 The cloud-toolkit includes two core components: Management Presence Server (MPS) and Remote Provisioning Server (RPS),
-see [DMT documentation](https://device-management-toolkit.github.io/docs/2.27/GetStarted/overview/) for furhter details.
+see [OpenDMT documentation](https://device-management-toolkit.github.io/docs/2.27/GetStarted/overview/) for furhter details.
 
 MPS and RPS are extended and deployed together the Edge Infrastructure Manager micro-services; they are cloud-native
-and can be deployed using the DMT charts. At the time of writing a PoC has been realized showcasing their initial
-integration in Edge Instracture Manager charts.
+and can be deployed using the OpenDMT charts.
 
-In the following diagram, we represent the deployment of the DMT services.
+In the following diagram, we represent the deployment of the OpenDMT services.
 
 ```mermaid
 graph TD
@@ -35,8 +34,8 @@ graph TD
     Traefik["Traefik Gateway"]
     %% MT-Gateway - Middle Level
     MTGW["MT Gateway"]
-    %% Intel AMT* Services Box - Middle Section
-    subgraph "Intel AMT* Services"
+    %% OpenDMT* Services Box - Middle Section
+    subgraph "OpenDMT* Services"
         RPS["Remote Provisioning Server (RPS)"]
         MPS["Management Presence Server (MPS)"]
     end
@@ -57,16 +56,16 @@ graph TD
 ```
 
 The Remote Provisioning Client (RPC) application runs on the managed device/Edge Node and communicates with the RPS
-microservice on the development system. The RPC and RPS configure and [activate](./vpro-device.md) Intel AMT on the
+microservice deployed remotely. The RPC and RPS configure and [activate](./vpro-device.md) Intel AMT on the
 managed device. Once properly configured, the remote managed device can call home to the MPS by establishing a Client
 Initiated Remote Access (CIRA) connection with the MPS.
 
 CIRA enables a CIRA-capable edge device to initiate and establish a persistent connection to the MPS. As long as the
 managed device is connected to the network and to a power source, it can maintain a persistent connection.
 
-**Note1:** CIRA connection is terminated directly in MPS service;
+**Note1:** CIRA connection is terminated directly in the MPS service;
 
-**Note2:** Traffic on port 8081 is the ws established between RPC-RPS and is used to perform the configuration
+**Note2:** Traffic on port 8081 is the web-socket established between RPC-RPS and is used to perform the configuration
 
 **Note3:** Port 8080 is "exposed" by MT-GW to allow the configuration of the Domain and the Provisioning Certificate
 
@@ -79,19 +78,21 @@ considered as future work to improve the scalability of the layered architecture
 Other tools such as Kong and Kuma, respectively used as traffic gateway and service mesh will be replaced by Traefik
 and Istio which are currently the tools in use by the EMF platform.
 
-DMT should be configured to leverage platform services such as the centralized Database and EMF secrets service.
-However they cannot be used out-of-the-box and seamless integrated in EMF: the DMT services need to be aware of EMF
+OpenDMT should be configured to leverage platform services such as the centralized Database and EMF secrets service.
+However they cannot be used out-of-the-box and seamless integrated in EMF: the OpenDMT services need to be aware of EMF
 internals to store credentials in Vault (token expiring after 1h), handle properly Multitenancy and validate the tenant
 ids.
 
 Additionally, tokens need to be properly handled and specific roles should be created in Keycloak. As regards the
 database, MPS/RPS can share the same DB of the other EMF micro-services. It is required though to create a new
-instance for DMT services where the RPS/MPS tables will live logically separated from the EIM/CO/AO tables.
+instance for OpenDMT services where the RPS/MPS tables will live logically separated from the EIM/CO/AO tables.
 
-**Note:** tenantID in DMT uses UUID format and it can be provided as input to the RPC client when it is started.
+**Note:** tenantID in OpenDMT uses UUID format and it can be provided as input to the RPC client when it is started.
 However MPS/RPS services need to be
 [extended](https://device-management-toolkit.github.io/docs/2.27/Reference/middlewareExtensibility/) in order to
 properly handle multi-tenancy same as Keycloak tokens.
+
+### Configuring OpenDMT stack
 
 AMT/vPRO works using two exclusive modes: Client Control Mode and Admin Control Mode. The first provides full access to
 features of Intel® AMT, but it does require user consent for all redirection features. The latter provides full access
@@ -110,15 +111,15 @@ can maintain a persistent connection. This
 automated using the set of information already available in the EMF env variables, config map and etc. See
 [DM Resource Manager](../dm-manager) for major details.
 
-**ACM profile** config that enables the ACM mode in the device, it has a dependency with the **Domain Configuration**.
+**ACM profile** config that enables the ACM mode in the device, it has a dependency with the **CIRA Configuration**.
 This [configuration](https://device-management-toolkit.github.io/docs/2.27/GetStarted/Cloud/createProfileACM/) can be
 automated using the set of information already available in the EMF env variables, config map and etc. See
 [DM Resource Manager](../dm-manager) for major details.
 
 **Domain profile** is required by the ACM profile activation. This [configuration][domain-profile] cannot be automated
-and requires the user to purchase and provide the provisioning certificate using PFX format. Additionally the
-**DNS suffix** must be either set manually through MEBX or DHCP Option 15; it should be set to match the FQDN of the
-provisioning certificate .
+and requires the user to purchase and provide the provisioning certificate using PFX format and the password used to
+encrypt the file. Additionally the **DNS suffix** must be either set manually through MEBX or using the DHCP Option 15;
+it should be set to match the FQDN of the provisioning certificate .
 
 For this configuration we expect the user to interact directly with RPS. This would mean that extensions to MT-GW will
 be required too and RPS should be extended in order to handle MT.
@@ -166,20 +167,15 @@ and cannot be automated in anyhow by EIM. See [documentation][lan-config] for mo
 
 ## Rationale
 
-Using directly the DMT services has the undeniable advantage of providing a baseline to start with, otherwise we have
-to start from scratch. However, from the poc is clear that some extensions are required.
+Using directly the OpenDMT services has the undeniable advantage of providing a baseline to start with, otherwise we have
+to start from scratch. However, OpenDMT does not cover all the featues exposed by vPRO skus and in future we might be
+required to extend their capabilities in order to support advanced features as reprovision the device using HTTPs boot
+option or secure remote erase.
 
-One shortcoming of the MPS/RPS services is that they are written using Node.js.
+One shortcoming of the MPS/RPS services is that they are written using Node.js. An alternative design would consider to rewrite the functionalitiy of MPS/RPS using `go` which would give us a different programming model and more libraries to use.
 
-Aspect to consider is that DMT does not cover all the featues exposed by vPRO skus and in future we might be required
-to extend their capabilities in order to support advanced features as reprovision the device using HTTPs boot option
-or secure remote erase.
-
-For this reason and what stated above is crucial to start thinking rewriting DMT core services using another
-technology such as **go**.
-
-Another undeniable advantage is the handling of the migrations and the creation of the db which at the time of writing
-are done using a [manual process](https://device-management-toolkit.github.io/docs/2.27/Deployment/upgradeVersion/).
+For example the handling of the migrations and the creation of the db which at the time of writing
+are done using a [manual process](https://device-management-toolkit.github.io/docs/2.27/Deployment/upgradeVersion/), it could be automated and realized using versioned migrations.
 
 Another design choice considers to not expose MPS/RPS services through the MT-GW and bridge the requests through
 EIM. How to achieve this and if we should purse is left as an open question.
@@ -193,7 +189,8 @@ required to execute the integration with FPSs.
   - IAM/MT-GW, Keycloak, Database, Traefik, Istio, Vault are the main services affected
 - UI should support
   - the creation and the removal of the Domain configurations by extending the Admin page.
-  - power management commands exposed by MPS
+  - activation of vPRO during the device registration 
+  - power management commands
 - Automation and infrastructure teams should pay careful attention when setting up the environments to test the technology
 
 ## Implementation plan
@@ -205,7 +202,7 @@ Hereafter we present as steps the proposed plan in the release 3.1.
 - Move user creation to the installer script
 - Introduce new roles and possibly groups to have fine-grain tokens
 - Substitute Kong and Kuma respectively with Traefik and Istio
-- Vault root creation and refresh logic need to be properly implemented
+- Vault root creation and refresh logic move to a job, side care container or in the DM RM
 - Integrate MT-GW with RPS/MPS and expose their services
 - Extend MPS to properly handle JWT tokens and ActiveProjectID
   - Requests from the north will have ActiveProjectID and the JWT token
@@ -235,9 +232,6 @@ Integration with Mosquitto is left for future iterations.
 MPSRouter is additionally deployed to address MPS scalability. Should FPS consider MPSRouter integration and its dependency with Istio?
 
 OpenDMT stack offers device audit log and events. Should OBaaS consider how to integrate these features in the stack?
-
-If there are issues with the stack, either we fork or we open github issues. Shall we consider to rewrite MPS/RPS in go?
-The tight deadlines make this very proihibitive.
 
 [domain-profile]: https://device-management-toolkit.github.io/docs/2.27/GetStarted/Cloud/createProfileACM/#create-a-domain-profile/
 [wireless-config]: https://device-management-toolkit.github.io/docs/2.27/Reference/EA/RPSConfiguration/remoteIEEE8021xConfig/
