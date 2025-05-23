@@ -78,10 +78,15 @@ type AWSVPCStep struct {
 	RootPath           string
 	KeepGeneratedFiles bool
 	TerraformExecPath  string
+	StepLabels         []string
 }
 
 func (s *AWSVPCStep) Name() string {
 	return "AWSVPCStep"
+}
+
+func (s *AWSVPCStep) Labels() []string {
+	return s.StepLabels
 }
 
 func (s *AWSVPCStep) ConfigStep(ctx context.Context, config config.OrchInstallerConfig) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {

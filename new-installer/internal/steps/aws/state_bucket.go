@@ -27,10 +27,15 @@ type CreateAWSStateBucket struct {
 	RootPath           string
 	KeepGeneratedFiles bool
 	TerraformExecPath  string
+	StepLabels         []string
 }
 
 func (s *CreateAWSStateBucket) Name() string {
 	return "CreateAWSStateBucket"
+}
+
+func (s *CreateAWSStateBucket) Labels() []string {
+	return s.StepLabels
 }
 
 func (s *CreateAWSStateBucket) ConfigStep(ctx context.Context, config config.OrchInstallerConfig) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {

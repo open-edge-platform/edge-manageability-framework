@@ -15,6 +15,9 @@ type OrchInstallerStep interface {
 	// The name of the step
 	Name() string
 
+	// Labels for the step
+	Labels() []string
+
 	// Configure the step, such as generating configuration files or setting up the environment.
 	ConfigStep(ctx context.Context, config config.OrchInstallerConfig) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError)
 
@@ -30,4 +33,32 @@ type OrchInstallerStep interface {
 	// This step will always be called, even if the config, pre, or main step logic fails.
 	// It should handle errors gracefully before returning.
 	PostStep(ctx context.Context, config config.OrchInstallerConfig, prevStepError *internal.OrchInstallerError) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError)
+}
+
+func FilterSteps(steps []OrchInstallerStep, labels []string) []OrchInstallerStep {
+	if len(labels) == 0 {
+		return steps
+	}
+	var filteredSteps []OrchInstallerStep
+	for _, step := range steps {
+		func() {
+			for _, label := range step.Labels() {
+				for _, filterLabel := range labels {
+					if label == filterLabel {
+						filteredSteps = append(filteredSteps, step)
+						return
+					}
+				}
+			}
+		}()
+	}
+	return filteredSteps
+}
+
+func ReverseSteps(steps []OrchInstallerStep) []OrchInstallerStep {
+	var reversedSteps []OrchInstallerStep
+	for i := len(steps) - 1; i >= 0; i-- {
+		reversedSteps = append(reversedSteps, steps[i])
+	}
+	return reversedSteps
 }

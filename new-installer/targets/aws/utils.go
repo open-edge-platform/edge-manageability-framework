@@ -15,7 +15,10 @@ import (
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 )
 
-func UploadStateToS3(orchConfig config.OrchInstallerConfig) error {
+// Writes orch config to S3 bucket
+type S3OrchConfigWriter struct{}
+
+func (S3OrchConfigWriter) WriteOrchConfig(orchConfig config.OrchInstallerConfig) error {
 	if orchConfig.AWS.Region == "" {
 		return fmt.Errorf("AWS region is not set")
 	}
@@ -25,7 +28,9 @@ func UploadStateToS3(orchConfig config.OrchInstallerConfig) error {
 	if orchConfig.Generated.DeploymentID == "" {
 		return fmt.Errorf("DeploymentID is not set")
 	}
-	session, err := session.NewSession()
+	session, err := session.NewSession(&aws.Config{
+		Region: aws.String(orchConfig.AWS.Region),
+	})
 	if err != nil {
 		return err
 	}

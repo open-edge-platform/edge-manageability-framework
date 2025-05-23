@@ -55,14 +55,6 @@ func CreateOrchInstaller(stages []OrchInstallerStage) (*OrchInstaller, error) {
 	}, nil
 }
 
-func reverseStages(stages []OrchInstallerStage) []OrchInstallerStage {
-	reversed := []OrchInstallerStage{}
-	for i := len(stages) - 1; i >= 0; i-- {
-		reversed = append(reversed, stages[i])
-	}
-	return reversed
-}
-
 func (o *OrchInstaller) Run(ctx context.Context, config config.OrchInstallerConfig) *OrchInstallerError {
 	logger := Logger()
 	action := config.Generated.Action
@@ -80,10 +72,15 @@ func (o *OrchInstaller) Run(ctx context.Context, config config.OrchInstallerConf
 		}
 	}
 	if action == "uninstall" {
-		o.Stages = reverseStages(o.Stages)
+		o.Stages = ReverseStages(o.Stages)
+	}
+	o.Stages = FilterStages(o.Stages, config.Advanced.TargetLabels)
+	// Nothing to do if no stages are found
+	if len(o.Stages) == 0 {
+		return nil
 	}
 	for _, stage := range o.Stages {
-		var err *OrchInstallerStageError
+		var err *OrchInstallerError
 		if o.Cancelled() {
 			logger.Info("Installation cancelled")
 			break
@@ -101,10 +98,7 @@ func (o *OrchInstaller) Run(ctx context.Context, config config.OrchInstallerConf
 		// handle the error and rollback if needed.
 		err = stage.PostStage(ctx, &config, err)
 		if err != nil {
-			return &OrchInstallerError{
-				ErrorCode: OrchInstallerErrorCodeInternal,
-				ErrorMsg:  BuildErrorMessage(name, err),
-			}
+			return err
 		}
 	}
 	return nil
@@ -120,18 +114,4 @@ func (o *OrchInstaller) Cancelled() bool {
 	o.mutex.Lock()
 	defer o.mutex.Unlock()
 	return o.cancelled
-}
-
-func BuildErrorMessage(stageName string, err *OrchInstallerStageError) string {
-	if err == nil {
-		return ""
-	}
-	msg := "Stage: " + stageName + "\n"
-	for name, stepErr := range err.StepErrors {
-		if stepErr != nil {
-			msg += fmt.Sprintf("Step: %s\n", name)
-			msg += fmt.Sprintf("Error: %s\n", stepErr.ErrorMsg)
-		}
-	}
-	return msg
 }

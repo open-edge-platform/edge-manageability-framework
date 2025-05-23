@@ -4,6 +4,8 @@
 
 package config
 
+import "os"
+
 type Scale int
 
 const (
@@ -30,13 +32,12 @@ type OrchInstallerRuntimeState struct {
 	DeploymentID     string `yaml:"deploymentID"`
 	StateBucketState string `yaml:"stateBucketState"` // The state S3 bucket Terraform state
 	// Move runtime state here?
-	KubeConfig    string `yaml:"kubeConfig"`
-	TLSCert       string `yaml:"tlsCert"`
-	TLSKey        string `yaml:"tlsKey"`
-	TLSCa         string `yaml:"tlsCa"`
-	CacheRegistry string `yaml:"cacheRegistry"`
-	VPCID         string `yaml:"vpcID"` // VPC ID
-
+	KubeConfig               string   `yaml:"kubeConfig"`
+	TLSCert                  string   `yaml:"tlsCert"`
+	TLSKey                   string   `yaml:"tlsKey"`
+	TLSCa                    string   `yaml:"tlsCa"`
+	CacheRegistry            string   `yaml:"cacheRegistry"`
+	VPCID                    string   `yaml:"vpcID"`
 	PublicSubnetIDs          []string `yaml:"publicSubnetIDs"`
 	PrivateSubnetIDs         []string `yaml:"privateSubnetIDs"`
 	JumpHostSSHKeyPublicKey  string   `yaml:"jumpHostSSHPublicKey"`
@@ -54,7 +55,9 @@ type OrchInstallerConfig struct {
 		Scale        Scale  `yaml:"scale"`
 	} `yaml:"global"`
 	Advanced struct { // TODO: form for this part is not done yet
-		Enabled              []string `yaml:"enabled"` // installer module flag
+		// Targets(Stage or Steps) with any labels matched in this list will be executed(either install, upgrade or uninstall)
+		// The installer will execute all targets if this is empty.
+		TargetLabels         []string `yaml:"targetLabels"`
 		AzureADRefreshToken  string   `yaml:"azureADRefreshToken,omitempty"`
 		AzureADTokenEndpoint string   `yaml:"azureADTokenEndpoint,omitempty"`
 	} `yaml:"advanced"`
@@ -87,7 +90,7 @@ type OrchInstallerConfig struct {
 	SRE struct {
 		Username  string `yaml:"username,omitempty"`
 		Password  string `yaml:"password,omitempty"`
-		SecretUrl string `yaml:"secretUrl,omitempty"`
+		SecretUrl string `yaml:"secretURL,omitempty"`
 		CASecret  string `yaml:"caSecret,omitempty"`
 	} `yaml:"sre,omitempty"`
 	SMTP struct {
@@ -114,4 +117,34 @@ type OrchPackage struct {
 	Name        string             `yaml:"name"`
 	Description string             `yaml:"description"`
 	Apps        map[string]OrchApp `yaml:"apps"`
+}
+
+type OrchConfigReaderWriter interface {
+	WriteOrchConfig(orchConfig OrchInstallerConfig) error
+	ReadOrchConfig() (OrchInstallerConfig, error)
+}
+
+type FileBaseOrchConfigReaderWriter struct {
+	OrchConfigFilePath string
+}
+
+func (f *FileBaseOrchConfigReaderWriter) WriteOrchConfig(orchConfig OrchInstallerConfig) error {
+	orchConfigYaml, err := SerializeToYAML(orchConfig)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(f.OrchConfigFilePath, orchConfigYaml, 0644)
+}
+
+func (f *FileBaseOrchConfigReaderWriter) ReadOrchConfig() (OrchInstallerConfig, error) {
+	orchConfig := OrchInstallerConfig{}
+	orchConfigData, err := os.ReadFile(f.OrchConfigFilePath)
+	if err != nil {
+		return orchConfig, err
+	}
+	err = DeserializeFromYAML(&orchConfig, orchConfigData)
+	if err != nil {
+		return orchConfig, err
+	}
+	return orchConfig, nil
 }
