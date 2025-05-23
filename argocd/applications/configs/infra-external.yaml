@@ -83,18 +83,12 @@ loca-credentials:
 
 amt:
   mps:
-    image:
-      registry:
-        name: docker.io/
     traefikReverseProxy:
       enabled: true
       secretName: "tls-orch"
       tlsOption: "gateway-tls"
       gatewayNamespace: orch-gateway
   rps:
-    image:
-      registry:
-        name: docker.io/
     traefikReverseProxy:
       enabled: true
       secretName: "tls-orch"
