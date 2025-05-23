@@ -37,7 +37,7 @@ func UpdateRuntimeState(dest *config.OrchInstallerRuntimeState, source config.Or
 		}
 	}
 
-	err = DeserializeFromYAML(dest, dstData)
+	err = config.DeserializeFromYAML(dest, dstData)
 	if err != nil {
 		return &OrchInstallerError{
 			ErrorCode: OrchInstallerErrorCodeInternal,
