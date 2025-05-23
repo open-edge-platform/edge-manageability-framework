@@ -20,7 +20,7 @@ The table below outlines the addons included in the 3.0 release and the planned 
 | telegraf                   | Y              | N                            | N                      | Move to optional observability package                                  |
 | prometheus stack           | Y              | N                            | N                      | Move to optional observability package                                  |
 | node-exporter              | Y              | N                            | N                      | Move to optional observability package                                  |
-| openebs                    | Y              | N                            | N                      | Move to optional package                                                |
+| openebs                    | Y              | N                            | N                      | Drop                                                                    |
 | fluent-bit                 | Y              | N                            | N                      | Move to optional package                                                |
 | nfd                        | Y              | N                            | N                      | Drop until required                                                     |
 | network-policies           | Y              | Y                            | Y                      |                                                                         |
