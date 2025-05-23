@@ -19,9 +19,8 @@ Following are the requirements for the scale provisioning of EMT-S edge node sup
 - Provision multiple BareMetal edge nodes without onboarding for the purpose of standalone/singleton use.
 - Provide deploy a service on the local network that can achieve this provisioning at scale.
 - Deploy the provisioning service on the local network that support PXE Boot (BIOS/UEFI with DHCP + TFTP) boot and iPXE with HTTPs.  
-- Have a UX to pre-register BareMetal edge nodes using Serial number or UUID.
+- Have a UX to pre-register BareMetal edge nodes using Serial number or UUID. Selecting OS profile for EN should be mandatory during pre-registration.
 - Provision different OS profiles to different edge nodes selected based on Serial number or UUID.
-- Provision default OS when a device on the LAN boots over PXE and is not pre-registered.
 - Have a UX of collecting provisioning logs and status of edge nodes.
 - Provide the same UX and EN capabilities as if an [EMT-S node is provisioned via USB](https://github.com/open-edge-platform/edge-microvisor-toolkit-standalone-node/tree/main/standalone-node).
 - Edge Nodes cannot download anything directly from Internet. However, the on-prem EMF instance is still capable of reaching any Internet endpoint.
