@@ -4,6 +4,8 @@
 
 package config
 
+import "os"
+
 type Scale int
 
 const (
@@ -115,4 +117,34 @@ type OrchPackage struct {
 	Name        string             `yaml:"name"`
 	Description string             `yaml:"description"`
 	Apps        map[string]OrchApp `yaml:"apps"`
+}
+
+type OrchConfigReaderWriter interface {
+	WriteOrchConfig(orchConfig OrchInstallerConfig) error
+	ReadOrchConfig() (OrchInstallerConfig, error)
+}
+
+type FileBaseOrchConfigReaderWriter struct {
+	OrchConfigFilePath string
+}
+
+func (f *FileBaseOrchConfigReaderWriter) WriteOrchConfig(orchConfig OrchInstallerConfig) error {
+	orchConfigYaml, err := SerializeToYAML(orchConfig)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(f.OrchConfigFilePath, orchConfigYaml, 0644)
+}
+
+func (f *FileBaseOrchConfigReaderWriter) ReadOrchConfig() (OrchInstallerConfig, error) {
+	orchConfig := OrchInstallerConfig{}
+	orchConfigData, err := os.ReadFile(f.OrchConfigFilePath)
+	if err != nil {
+		return orchConfig, err
+	}
+	err = DeserializeFromYAML(&orchConfig, orchConfigData)
+	if err != nil {
+		return orchConfig, err
+	}
+	return orchConfig, nil
 }
