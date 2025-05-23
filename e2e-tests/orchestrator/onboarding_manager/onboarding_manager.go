@@ -229,17 +229,17 @@ func HttpInfraOnboardGetHostID(ctx context.Context, url string, token string, cl
 		if err != nil {
 			return err
 		}
-		ps := &infra_api.HostServiceListHostsResponse{}
+		ps := &infra_api.ListHostsResponse{}
 		err = json.Unmarshal(b, &ps)
 		if err != nil {
 			return err
 		}
-		if ps.JSON200 == nil || ps.JSON200.Hosts == nil || len(ps.JSON200.Hosts) == 0 {
+		if ps.Hosts == nil {
 			return fmt.Errorf("empty host result for uuid %s", uuid)
 		}
 		fmt.Printf("HostResource %#v\n", ps)
-		hostID = *(ps.JSON200.Hosts)[0].ResourceId
-		fmt.Println("HostID ", hostID, ", TotalElements ", ps.JSON200.TotalElements)
+		hostID = *(ps.Hosts)[0].ResourceId
+		fmt.Println("HostID ", hostID, ", TotalElements ", ps.TotalElements)
 		return nil
 	}
 	if err := httpGet(rCtx, client, fmt.Sprintf("%s?uuid=%s", url, uuid), token, responseHooker); err != nil {
@@ -260,23 +260,23 @@ func HttpInfraOnboardGetHostIDAndInstanceID(ctx context.Context, url string, tok
 		if err != nil {
 			return err
 		}
-		ps := &infra_api.HostServiceListHostsResponse{}
+		ps := &infra_api.ListHostsResponse{}
 		err = json.Unmarshal(b, &ps)
 		if err != nil {
 			return err
 		}
-		if ps.JSON200 == nil || ps.JSON200.Hosts == nil || len(ps.JSON200.Hosts) == 0 {
+		if ps.Hosts == nil {
 			return fmt.Errorf("empty host result for uuid %s", uuid)
 		}
 		fmt.Printf("HostResource %#v\n", ps)
-		host := (ps.JSON200.Hosts)[0]
+		host := (ps.Hosts)[0]
 		hostID = *host.ResourceId
 		if host.Instance != nil && host.Instance.InstanceID != nil {
 			instanceID = *host.Instance.InstanceID
 		} else {
 			return fmt.Errorf("instance not yet created for uuid %s", uuid)
 		}
-		fmt.Println("HostID ", hostID, ", InstanceID ", instanceID, ", TotalElements ", ps.JSON200.TotalElements)
+		fmt.Println("HostID ", hostID, ", InstanceID ", instanceID, ", TotalElements ", ps.TotalElements)
 		return nil
 	}
 
@@ -343,16 +343,16 @@ func HttpInfraOnboardGetOSID(ctx context.Context, url string, token string, clie
 		if err != nil {
 			return err
 		}
-		os := &infra_api.OperatingSystemServiceListOperatingSystemsResponse{}
+		os := &infra_api.ListOperatingSystemsResponse{}
 		err = json.Unmarshal(b, &os)
 		if err != nil {
 			return err
 		}
-		if os.JSON200 == nil || os.JSON200.OperatingSystemResources == nil ||
-			len(os.JSON200.OperatingSystemResources) == 0 {
+		if os.OperatingSystemResources == nil ||
+			len(os.OperatingSystemResources) == 0 {
 			return fmt.Errorf("empty os resources")
 		}
-		for _, osr := range os.JSON200.OperatingSystemResources {
+		for _, osr := range os.OperatingSystemResources {
 			if *osr.ProfileName == "ubuntu-22.04-lts-generic" {
 				osID = *osr.ResourceId
 				fmt.Printf("Found OS: %s\n", osID)

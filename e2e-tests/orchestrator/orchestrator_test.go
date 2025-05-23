@@ -858,7 +858,7 @@ func parseProject(body io.ReadCloser) (Projects, error) {
 }
 
 func parseRegionsList(body io.ReadCloser) (*invapi.ListRegionsResponse, error) {
-	var regionsList invapi.RegionServiceListRegionsResponse
+	regionsList := &invapi.ListRegionsResponse{}
 
 	data, err := io.ReadAll(body)
 	if err != nil {
@@ -869,11 +869,7 @@ func parseRegionsList(body io.ReadCloser) (*invapi.ListRegionsResponse, error) {
 		return nil, fmt.Errorf("failed to Unmarshal regionsList: %w", err)
 	}
 
-	if regionsList.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("failed to get regions list: %s", *regionsList.JSONDefault.Message)
-	}
-
-	return regionsList.JSON200, nil
+	return regionsList, nil
 }
 
 func getKeycloakJWT(cli *http.Client, username string) string {

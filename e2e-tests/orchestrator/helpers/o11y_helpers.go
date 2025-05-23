@@ -283,7 +283,7 @@ func GetHostByUUID(client *APIClient, uuid string) (string, error) {
 	}
 
 	// one host is expected in o11y tests, no need to check the pagination
-	hostsList := new(invapi.HostServiceListHostsResponse)
+	hostsList := new(invapi.ListHostsResponse)
 	statusCode, err := client.MakeAPICallParseResp(http.MethodGet, "/compute/hosts", nil, hostsList)
 	if err != nil {
 		return "", fmt.Errorf("error accessing get hosts API endpoint: %w", err)
@@ -292,7 +292,7 @@ func GetHostByUUID(client *APIClient, uuid string) (string, error) {
 		return "", fmt.Errorf("get hosts API endpoint returned non 200 status, returned code: %v", statusCode)
 	}
 
-	for _, host := range hostsList.JSON200.Hosts {
+	for _, host := range hostsList.Hosts {
 		if host.Uuid != nil && *host.Uuid == uuid {
 			hostID := *host.ResourceId
 			if hostID == "" {

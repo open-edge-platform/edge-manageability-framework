@@ -114,17 +114,17 @@ func getInstanceIdForHostGuid(token, guid string) string {
 	if hostsResponse == "" {
 		return instanceId
 	}
-	var hosts api.HostServiceListHostsResponse
+	var hosts api.ListHostsResponse
 	err = json.Unmarshal([]byte(hostsResponse), &hosts)
 	if err != nil {
 		return instanceId
 	}
 
-	if hosts.JSON200 == nil || hosts.JSON200.Hosts == nil || len(hosts.JSON200.Hosts) == 0 {
+	if hosts.Hosts == nil {
 		return instanceId
 	}
 
-	for _, host := range hosts.JSON200.Hosts {
+	for _, host := range hosts.Hosts {
 		if host.Uuid == nil {
 			return instanceId
 		}
@@ -254,17 +254,17 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 				if hostsResponse == "" {
 					return false, fmt.Errorf("hosts response is empty")
 				}
-				var hosts api.HostServiceListHostsResponse
+				var hosts api.ListHostsResponse
 				err = json.Unmarshal([]byte(hostsResponse), &hosts)
 				if err != nil {
 					return false, err
 				}
 
-				if hosts.JSON200 == nil || hosts.JSON200.Hosts == nil || len(hosts.JSON200.Hosts) == 0 {
+				if hosts.Hosts == nil {
 					return false, fmt.Errorf("hosts list is nil")
 				}
 
-				for _, host := range hosts.JSON200.Hosts {
+				for _, host := range hosts.Hosts {
 					if host.Uuid == nil {
 						return false, fmt.Errorf("host UUID is nil")
 					}
