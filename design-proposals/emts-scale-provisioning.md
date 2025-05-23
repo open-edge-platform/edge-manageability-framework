@@ -194,15 +194,15 @@ This is already supported via UI/CLI.
 
 The provisioning of EMT-S at scale will be driven by a local OXM orchestrator instance that only includes EIM components. 
 The main requirement of EIM standalone is to make it easy and resource-efficient for customers to deploy.
-
-For MVP, we will leverage the EIM Standalone profile. This is an EMF deployment profile that only deploys EIM with Observability and FPS components.
-Also, EIM won't include `infra-managers` for the OXM profile.
-
-EIM Standalone profile for minimal OXM warehouse deployments will be configured with EMT-Standalone OS profile only.
-
+The target solution is to use a lightweight EMF deployment profile that only deploys EIM with Observability and FPS components.
 Any further optimization to make EIM deployment fast and easy will be handled as part of the effort on the new installer (see [ADR](https://github.com/open-edge-platform/edge-manageability-framework/pull/290)).
 To give an example, further optimizations may include deploying EIM as a self-contained Helm chart (instead of ArgoCD appplication) and getting rid of FPS services that are
 not required (e.g., Argo, Istio, HA capabilities, etc.).
+
+For MVP, we will use the entire EMF deployment with required customizations
+(e.g., Squid proxy, dedicated roles to hide App/Cluster Orch features from UI). We will also provide default bootstrap scripts to
+automatically create necessary users/projects/orgs, reducing the deployment time for OXMs.
+Also, EMF profile for minimal OXM warehouse deployments will be configured with EMT-Standalone OS profile only.
 
 ## Rationale
 
