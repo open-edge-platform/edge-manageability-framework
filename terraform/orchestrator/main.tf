@@ -294,11 +294,6 @@ resource "null_resource" "copy_local_orch_installer" {
   }
 
   provisioner "file" {
-    source      = "../../${var.working_directory}/${var.local_installers_path}/onprem-gitea-installer_${var.deploy_tag}_amd64.deb"
-    destination = "/home/ubuntu/installers/onprem-gitea-installer_${var.deploy_tag}_amd64.deb"
-  }
-
-  provisioner "file" {
     source      = "../../${var.working_directory}/${var.local_installers_path}/onprem-ke-installer_${var.deploy_tag}_amd64.deb"
     destination = "/home/ubuntu/installers/onprem-ke-installer_${var.deploy_tag}_amd64.deb"
   }
