@@ -108,5 +108,4 @@ func TestValidateSimpleMode(t *testing.T) {
 
 func TestValidateAdvancedMode(t *testing.T) {
 	// TODO: placeholder for advanced mode validation
-	return
 }
