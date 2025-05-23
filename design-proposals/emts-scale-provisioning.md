@@ -59,7 +59,7 @@ The design proposal assumes the following network topology deployed on customers
 - Local subnet must not be exposed to external world.
 - The deployment scenario follows the Proxy DHCP scenario as described in [PXE specification, section 2.2.3](https://dimitrije.website/files/pxespec.pdf).
 - We assume the existence of two DHCP servers:
-  - EIM PXE-enabled DHCP server - as described above, it serves PXE boot information. **The EIM PXE-enabled DHCP server is not intended
+  - EIM PXE-enabled DHCP server - as described above, it serves PXE boot information (works in Proxy DHCP mode). **The EIM PXE-enabled DHCP server is not intended
     to assign IP addresses.** It replies to DHCP requests with the TFTP endpoint of where the initial iPXE script is stored. The EIM PXE server will also
     include a lightweight TFTP server.
   - Local DHCP server - it acts as the standard DHCP server that provides dynamic IP addresses to ENs via DHCP.
