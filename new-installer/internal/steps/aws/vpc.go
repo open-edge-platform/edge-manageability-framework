@@ -25,10 +25,10 @@ import (
 )
 
 const (
-	VPCModulePath                    = "new-installer/targets/aws/iac/vpc"
-	SSKKeySize                       = 4096
-	DefaultNetworkCIDR               = "10.250.0.0/16"
-	DefaultTerraformBackendBucketKey = "vpc.tfstate"
+	VPCModulePath       = "new-installer/targets/aws/iac/vpc"
+	SSKKeySize          = 4096
+	DefaultNetworkCIDR  = "10.250.0.0/16"
+	VPCBackendBucketKey = "vpc.tfstate"
 )
 
 type AWSVPCVariables struct {
@@ -170,7 +170,7 @@ func (s *AWSVPCStep) ConfigStep(ctx context.Context, config config.OrchInstaller
 	s.backendConfig = TerraformAWSBucketBackendConfig{
 		Region: config.AWS.Region,
 		Bucket: config.Global.OrchName + "-" + config.Generated.DeploymentID,
-		Key:    DefaultTerraformBackendBucketKey,
+		Key:    VPCBackendBucketKey,
 	}
 	return config.Generated, nil
 }
@@ -196,7 +196,7 @@ func (s *AWSVPCStep) RunStep(ctx context.Context, config config.OrchInstallerCon
 			ErrorMsg:  fmt.Sprintf("failed to run terraform: %v", err),
 		}
 	}
-	if config.Generated.Action == "destroy" {
+	if config.Generated.Action == "uninstall" {
 		return config.Generated, nil
 	}
 	if terraformStepOutput.Output != nil {

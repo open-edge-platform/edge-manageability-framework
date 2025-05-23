@@ -86,10 +86,10 @@ func (s *VPCStepTest) TearDownTest() {
 		s.NoError(err)
 	}
 
-	bucketName := fmt.Sprintf("test-%s-%s", s.randomText, s.randomText)
+	bucketName := fmt.Sprintf("%s-%s", s.config.Global.OrchName, s.randomText)
 	s3Err := createOrDeleteS3Bucket(bucketName, "delete")
 	if s3Err != nil {
-		s.NoError(err)
+		s.NoError(s3Err)
 	}
 	if _, err := os.Stat(s.terraformExecPath); err == nil {
 		err = os.Remove(s.terraformExecPath)
@@ -113,7 +113,7 @@ func (s *VPCStepTest) TestInstallVPC() {
 		return
 	}
 	s.Equal(vpc.Name, s.config.Global.OrchName)
-	s.Equal(vpc.CidrBlock, steps_aws.DefaultNetworkCIDR)
+	s.Equal(*vpc.CidrBlock, steps_aws.DefaultNetworkCIDR)
 	s.Equal(vpc.Tags["Name"], s.config.Global.OrchName)
 }
 
@@ -138,6 +138,10 @@ func createOrDeleteS3Bucket(bucketName string, action string) error {
 			}
 		}
 	} else {
+		s3Client.DeleteObject(&s3.DeleteObjectInput{
+			Bucket: aws.String(bucketName),
+			Key:    aws.String(steps_aws.VPCBackendBucketKey),
+		})
 		_, err = s3Client.DeleteBucket(&s3.DeleteBucketInput{
 			Bucket: aws.String(bucketName),
 		})
