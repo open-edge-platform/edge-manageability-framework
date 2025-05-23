@@ -86,7 +86,7 @@ func (s *AWSVPCStep) Name() string {
 
 func (s *AWSVPCStep) ConfigStep(ctx context.Context, config config.OrchInstallerConfig) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	s.variables = NewDefaultAWSVPCVariables()
-	s.variables.Region = config.Aws.Region
+	s.variables.Region = config.AWS.Region
 	s.variables.Name = config.Global.OrchName
 	s.variables.CidrBlock = DefaultNetworkCIDR
 	s.variables.EndpointSGName = config.Global.OrchName + "-vpc-ep"
@@ -94,7 +94,7 @@ func (s *AWSVPCStep) ConfigStep(ctx context.Context, config config.OrchInstaller
 	//Based on the region, we need to get the availability zones.
 
 	// Extract availability zones
-	availabilityZones, err := GetAvailableZones(config.Aws.Region)
+	availabilityZones, err := GetAvailableZones(config.AWS.Region)
 	if err != nil {
 		return config.Generated, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInternal,
@@ -148,7 +148,7 @@ func (s *AWSVPCStep) ConfigStep(ctx context.Context, config config.OrchInstaller
 	}
 
 	s.variables.JumphostSubnet = fmt.Sprintf("subnet-%s-pub", availabilityZones[0])
-	s.variables.JumphostIPAllowList = config.Aws.JumpHostWhitelist
+	s.variables.JumphostIPAllowList = config.AWS.JumpHostWhitelist
 
 	// Generate SSH key pair for the jumphost
 	if config.Generated.JumpHostSSHKeyPrivateKey == "" || config.Generated.JumpHostSSHKeyPublicKey == "" {
@@ -166,10 +166,10 @@ func (s *AWSVPCStep) ConfigStep(ctx context.Context, config config.OrchInstaller
 		s.variables.JumphostInstanceSshKey = config.Generated.JumpHostSSHKeyPublicKey
 	}
 
-	s.variables.CustomerTag = config.Aws.CustomerTag
+	s.variables.CustomerTag = config.AWS.CustomerTag
 	s.backendConfig = TerraformAWSBucketBackendConfig{
-		Region: config.Aws.Region,
-		Bucket: config.Global.OrchName + "-" + config.Generated.DeploymentId,
+		Region: config.AWS.Region,
+		Bucket: config.Global.OrchName + "-" + config.Generated.DeploymentID,
 		Key:    DefaultTerraformBackendBucketKey,
 	}
 	return config.Generated, nil
@@ -206,7 +206,7 @@ func (s *AWSVPCStep) RunStep(ctx context.Context, config config.OrchInstallerCon
 				ErrorMsg:  "vpc_id does not exist in terraform output",
 			}
 		} else {
-			config.Generated.VpcId = strings.Trim(string(vpcIDMeta.Value), "\"")
+			config.Generated.VPCID = strings.Trim(string(vpcIDMeta.Value), "\"")
 		}
 		// TODO: Reuse same code for public and private subnets
 		if publicSubnets, ok := terraformStepOutput.Output["public_subnets"]; !ok {
@@ -231,7 +231,7 @@ func (s *AWSVPCStep) RunStep(ctx context.Context, config config.OrchInstallerCon
 					ErrorMsg:  fmt.Sprintf("not able to unmarshal public subnets output: %v", unmarshalErr),
 				}
 			}
-			config.Generated.PublicSubnetIds = nil
+			config.Generated.PublicSubnetIDs = nil
 			for subnetName := range s.variables.PublicSubnets {
 				subnetId := k.Get(fmt.Sprintf("%s.id", subnetName))
 				if subnetId == nil {
@@ -240,7 +240,7 @@ func (s *AWSVPCStep) RunStep(ctx context.Context, config config.OrchInstallerCon
 						ErrorMsg:  fmt.Sprintf("subnet id for %s does not exist in terraform output", subnetName),
 					}
 				}
-				config.Generated.PublicSubnetIds = append(config.Generated.PublicSubnetIds, subnetId.(string))
+				config.Generated.PublicSubnetIDs = append(config.Generated.PublicSubnetIDs, subnetId.(string))
 			}
 		}
 		if privateSubnets, ok := terraformStepOutput.Output["private_subnets"]; !ok {
@@ -265,7 +265,7 @@ func (s *AWSVPCStep) RunStep(ctx context.Context, config config.OrchInstallerCon
 					ErrorMsg:  fmt.Sprintf("not able to unmarshal private subnets output: %v", unmarshalErr),
 				}
 			}
-			config.Generated.PrivateSubnetIds = nil
+			config.Generated.PrivateSubnetIDs = nil
 			for subnetName := range s.variables.PrivateSubnets {
 				subnetId := k.Get(fmt.Sprintf("%s.id", subnetName))
 				if subnetId == nil {
@@ -274,7 +274,7 @@ func (s *AWSVPCStep) RunStep(ctx context.Context, config config.OrchInstallerCon
 						ErrorMsg:  fmt.Sprintf("subnet id for %s does not exist in terraform output", subnetName),
 					}
 				}
-				config.Generated.PrivateSubnetIds = append(config.Generated.PrivateSubnetIds, subnetId.(string))
+				config.Generated.PrivateSubnetIDs = append(config.Generated.PrivateSubnetIDs, subnetId.(string))
 			}
 		}
 	} else {

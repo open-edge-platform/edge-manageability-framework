@@ -27,20 +27,20 @@ type OrchInstallerRuntimeState struct {
 	DryRun bool   `yaml:"dryRun"`
 
 	// Used for state and o11y bucket prefix. lowercase or digit
-	DeploymentId     string `yaml:"deploymentId"`
+	DeploymentID     string `yaml:"deploymentID"`
 	StateBucketState string `yaml:"stateBucketState"` // The state S3 bucket Terraform state
 	// Move runtime state here?
 	KubeConfig    string `yaml:"kubeConfig"`
-	TlsCert       string `yaml:"tlsCert"`
-	TlsKey        string `yaml:"tlsKey"`
-	TlsCa         string `yaml:"tlsCa"`
+	TLSCert       string `yaml:"tlsCert"`
+	TLSKey        string `yaml:"tlsKey"`
+	TLSCa         string `yaml:"tlsCa"`
 	CacheRegistry string `yaml:"cacheRegistry"`
-	VpcId         string `yaml:"vpcId"` // VPC ID
+	VPCID         string `yaml:"vpcID"` // VPC ID
 
-	PublicSubnetIds          []string `yaml:"publicSubnetIds"`
-	PrivateSubnetIds         []string `yaml:"privateSubnetIds"`
-	JumpHostSSHKeyPublicKey  string   `yaml:"jumpHostSshPublicKey"`
-	JumpHostSSHKeyPrivateKey string   `yaml:"jumpHostSshPrivateKey"`
+	PublicSubnetIDs          []string `yaml:"publicSubnetIDs"`
+	PrivateSubnetIDs         []string `yaml:"privateSubnetIDs"`
+	JumpHostSSHKeyPublicKey  string   `yaml:"jumpHostSSHPublicKey"`
+	JumpHostSSHKeyPrivateKey string   `yaml:"jumpHostSSHPrivateKey"`
 }
 
 type OrchInstallerConfig struct {
@@ -55,22 +55,22 @@ type OrchInstallerConfig struct {
 	} `yaml:"global"`
 	Advanced struct { // TODO: form for this part is not done yet
 		Enabled              []string `yaml:"enabled"` // installer module flag
-		AzureAdRefreshToken  string   `yaml:"azureAdRefreshToken,omitempty"`
-		AzureAdTokenEndpoint string   `yaml:"azureAdTokenEndpoint,omitempty"`
+		AzureADRefreshToken  string   `yaml:"azureADRefreshToken,omitempty"`
+		AzureADTokenEndpoint string   `yaml:"azureADTokenEndpoint,omitempty"`
 	} `yaml:"advanced"`
-	Aws struct {
+	AWS struct {
 		Region            string   `yaml:"region"`
 		CustomerTag       string   `yaml:"customerTag,omitempty"`
 		CacheRegistry     string   `yaml:"cacheRegistry,omitempty"`
 		JumpHostWhitelist []string `yaml:"jumpHostWhitelist,omitempty"`
-		VpcId             string   `yaml:"vpcId,omitempty"`
-		ReduceNsTtl       bool     `yaml:"reduceNsTtl,omitempty"` // TODO: do we need this?
-		EksDnsIp          string   `yaml:"eksDnsIp,omitempty"`    // TODO: do we need this?
+		VPCID             string   `yaml:"vpcID,omitempty"`
+		ReduceNSTTL       bool     `yaml:"reduceNSTTL,omitempty"` // TODO: do we need this?
+		EKSDNSIP          string   `yaml:"eksDNDIP,omitempty"`    // TODO: do we need this?
 	} `yaml:"aws,omitempty"`
 	Onprem struct {
-		ArgoIP         string `yaml:"argoIp"`
-		TraefikIP      string `yaml:"traefikIp"`
-		NginxIP        string `yaml:"nginxIp"`
+		ArgoIP         string `yaml:"argoIP"`
+		TraefikIP      string `yaml:"traefikIP"`
+		NginxIP        string `yaml:"nginxIP"`
 		DockerUsername string `yaml:"dockerUsername,omitempty"`
 		DockerToken    string `yaml:"dockerToken,omitempty"`
 	} `yaml:"onprem,omitempty"`
@@ -80,38 +80,38 @@ type OrchInstallerConfig struct {
 	} `yaml:"orch"`
 	// Optional
 	Cert struct {
-		TlsCert string `yaml:"tlsCert,omitempty"`
-		TlsKey  string `yaml:"tlsKey,omitempty"`
-		TlsCa   string `yaml:"tlsCa,omitempty"`
+		TLSCert string `yaml:"tlsCert,omitempty"`
+		TLSKey  string `yaml:"tlsKey,omitempty"`
+		TLSCA   string `yaml:"tlsCA,omitempty"`
 	} `yaml:"cert,omitempty"`
-	Sre struct {
+	SRE struct {
 		Username  string `yaml:"username,omitempty"`
 		Password  string `yaml:"password,omitempty"`
 		SecretUrl string `yaml:"secretUrl,omitempty"`
-		CaSecret  string `yaml:"caSecret,omitempty"`
+		CASecret  string `yaml:"caSecret,omitempty"`
 	} `yaml:"sre,omitempty"`
-	Smtp struct {
+	SMTP struct {
 		Username string `yaml:"username"`
 		Password string `yaml:"password"`
-		Url      string `yaml:"url"`
+		URL      string `yaml:"url"`
 		Port     string `yaml:"port"`
 		From     string `yaml:"from"`
 	} `yaml:"smtp,omitempty"`
 	Proxy struct {
-		HttpProxy  string `yaml:"httpProxy,omitempty"`
-		HttpsProxy string `yaml:"httpsProxy,omitempty"`
+		HTTPProxy  string `yaml:"httpProxy,omitempty"`
+		HTTPSProxy string `yaml:"httpsProxy,omitempty"`
 		SocksProxy string `yaml:"socksProxy,omitempty"`
 		NoProxy    string `yaml:"noProxy,omitempty"`
 	} `yaml:"proxy,omitempty"`
 }
 
-type orchApp struct {
+type OrchApp struct {
 	Name        string `yaml:"name"`
 	Description string `yaml:"description"`
 }
 
-type orchPackage struct {
+type OrchPackage struct {
 	Name        string             `yaml:"name"`
 	Description string             `yaml:"description"`
-	Apps        map[string]orchApp `yaml:"apps"`
+	Apps        map[string]OrchApp `yaml:"apps"`
 }

@@ -45,10 +45,10 @@ func (s *VPCStepTest) SetupTest() {
 	s.randomText = strings.ToLower(rand.Text()[0:8])
 	s.logDir = filepath.Join(rootPath, ".logs")
 	internal.InitLogger("debug", s.logDir)
-	s.config.Aws.Region = "us-west-2"
+	s.config.AWS.Region = "us-west-2"
 	s.config.Global.OrchName = "test"
-	s.config.Generated.DeploymentId = s.randomText
-	s.config.Aws.JumpHostWhitelist = []string{"10.250.0.0/16"}
+	s.config.Generated.DeploymentID = s.randomText
+	s.config.AWS.JumpHostWhitelist = []string{"10.250.0.0/16"}
 	s.config.Generated.LogDir = filepath.Join(rootPath, ".logs")
 
 	// Create a temporary S3 bucket to store the terraform state
@@ -107,7 +107,7 @@ func (s *VPCStepTest) TestInstallVPC() {
 		return
 	}
 
-	vpc := terratest_aws.GetVpcById(s.T(), rs.VpcId, s.config.Aws.Region)
+	vpc := terratest_aws.GetVpcById(s.T(), rs.VPCID, s.config.AWS.Region)
 	if vpc == nil {
 		s.NotNil(vpc)
 		return

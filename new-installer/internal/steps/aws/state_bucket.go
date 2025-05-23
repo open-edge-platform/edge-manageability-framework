@@ -40,22 +40,22 @@ func (s *CreateAWSStateBucket) ConfigStep(ctx context.Context, config config.Orc
 			ErrorMsg:  "OrchName is not set",
 		}
 	}
-	if config.Aws.Region == "" {
+	if config.AWS.Region == "" {
 		return config.Generated, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInvalidArgument,
 			ErrorMsg:  "Region is not set",
 		}
 	}
-	if config.Generated.DeploymentId == "" {
+	if config.Generated.DeploymentID == "" {
 		return config.Generated, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInvalidArgument,
 			ErrorMsg:  "DeploymentId is not set",
 		}
 	}
 	s.variables = StateBucketVariables{
-		Region:   config.Aws.Region,
+		Region:   config.AWS.Region,
 		OrchName: config.Global.OrchName,
-		Bucket:   fmt.Sprintf("%s-%s", config.Global.OrchName, config.Generated.DeploymentId),
+		Bucket:   fmt.Sprintf("%s-%s", config.Global.OrchName, config.Generated.DeploymentID),
 	}
 	return config.Generated, nil
 }

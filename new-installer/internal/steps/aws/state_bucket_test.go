@@ -39,9 +39,9 @@ func (s *StateBucketTest) SetupTest() {
 	}
 	s.randomText = strings.ToLower(rand.Text()[0:8])
 	s.config = config.OrchInstallerConfig{}
-	s.config.Aws.Region = "us-west-2"
+	s.config.AWS.Region = "us-west-2"
 	s.config.Global.OrchName = "test"
-	s.config.Generated.DeploymentId = s.randomText
+	s.config.Generated.DeploymentID = s.randomText
 	s.terraformExecPath, err = steps.InstallTerraformAndGetExecPath()
 	if err != nil {
 		s.NoError(err)
@@ -76,6 +76,6 @@ func (s *StateBucketTest) TestInstall() {
 		s.NoError(err)
 		return
 	}
-	expectBucketName := s.config.Global.OrchName + "-" + s.config.Generated.DeploymentId
-	terratest_aws.AssertS3BucketExists(s.T(), s.config.Aws.Region, expectBucketName)
+	expectBucketName := s.config.Global.OrchName + "-" + s.config.Generated.DeploymentID
+	terratest_aws.AssertS3BucketExists(s.T(), s.config.AWS.Region, expectBucketName)
 }
