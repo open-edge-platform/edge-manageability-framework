@@ -201,6 +201,7 @@ func (Build) argoCdInstaller() error {
 		"--after-remove", filepath.Join("cmd/onprem-argo-cd", "after-remove.sh"),
 		"--after-upgrade", filepath.Join("cmd/onprem-argo-cd", "after-upgrade.sh"),
 		argocdPath+"=/tmp/",
+		giteaPath+"=/tmp/",
 	); err != nil {
 		return err
 	}
