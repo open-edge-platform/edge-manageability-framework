@@ -539,10 +539,12 @@ print_env_variables
 set_artifacts_version
 
 # Check & install script dependencies
-onPrem:checkOras
+mage onPrem:checkOras
 #check_oras
-install_jq
-install_yq
+mage onPrem:installJq
+mage onPrem:installYq
+# install_jq
+# install_yq
 
 if  [[ $SKIP_DOWNLOAD != true  ]]; then 
   # Cleanup and download .deb packages
@@ -656,10 +658,14 @@ create_smpt_secrets
 harbor_password=$(head -c 512 /dev/urandom | tr -dc A-Za-z0-9 | cut -c1-100)
 keycloak_password=$(generate_password)
 postgres_password=$(generate_password)
-create_harbor_secret orch-harbor "$harbor_password"
-create_harbor_password orch-harbor "$harbor_password"
-create_keycloak_password orch-platform "$keycloak_password"
-create_postgres_password orch-database "$postgres_password"
+# create_harbor_secret orch-harbor "$harbor_password"
+mage onPrem:createHarborSecret orch-harbor "$harbor_password"
+#create_harbor_password orch-harbor "$harbor_password"
+mage onPrem:createHarborPassword orch-harbor "$harbor_password"
+# create_keycloak_password orch-platform "$keycloak_password"
+mage onPrem:createKeycloakPassword orch-platform "$keycloak_password"
+# create_postgres_password orch-database "$postgres_password"
+mage onPrem:createPostgresPassword orch-database "$postgres_password"
 
 
 # Run orchestrator installer
