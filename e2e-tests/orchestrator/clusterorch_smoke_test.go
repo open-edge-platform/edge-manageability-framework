@@ -211,7 +211,7 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 			defer resp.Body.Close()
 			body, err := io.ReadAll(resp.Body)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(resp.StatusCode).To(Equal(http.StatusCreated))
+			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 
 			var region api.Region
 			err = json.Unmarshal(body, &region)
@@ -232,7 +232,7 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 			defer resp.Body.Close()
 			body, err := io.ReadAll(resp.Body)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(resp.StatusCode).To(Equal(http.StatusCreated))
+			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 
 			var site api.Site
 			err = json.Unmarshal(body, &site)
