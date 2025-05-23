@@ -56,15 +56,15 @@ type OrchInstallerTest struct {
 	suite.Suite
 }
 
-func TestSuite(t *testing.T) {
+func TestInstallerSuite(t *testing.T) {
 	suite.Run(t, new(OrchInstallerTest))
 }
 
-func createMockStage(name string, extectedToRun bool, labels []string) *OrchInstallerStageMock {
+func createMockStage(name string, expectToRun bool, labels []string) *OrchInstallerStageMock {
 	stage := &OrchInstallerStageMock{}
 	stage.On("Name").Return(name)
 	stage.On("Labels").Return(labels)
-	if extectedToRun {
+	if expectToRun {
 		stage.On("PreStage", mock.Anything, mock.Anything).Return(nil)
 		stage.On("RunStage", mock.Anything, mock.Anything).Return(nil)
 		stage.On("PostStage", mock.Anything, mock.Anything, mock.Anything).Return(nil)
