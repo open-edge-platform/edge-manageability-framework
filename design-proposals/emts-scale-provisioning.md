@@ -241,6 +241,7 @@ The high-level integration workflow would be:
 - Reduce FPS components to minimum to make EIM-S deployment lightweight
 - Make EIM-S deployment operation easy in terms of number of CLI commands/steps to execute
 - Make EIM-S deployment fast (ideally deployable in ~2 mins)
+- Create default project, org and user for the OXM use case. User should be created with `<project-id>_Host_Manager_Group` role only.
 
 **EIM team** will make changes to the following components:
 
