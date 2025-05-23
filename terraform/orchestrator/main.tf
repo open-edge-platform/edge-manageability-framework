@@ -246,6 +246,11 @@ resource "null_resource" "copy_files" {
   }
 
   provisioner "file" {
+    source      = "../../${var.working_directory}/on-prem-installers/onprem/functions.go"
+    destination = "/home/ubuntu/functions.go"
+    when        = create
+  }
+  provisioner "file" {
     source      = "${var.working_directory}/scripts/access_script.tftpl"
     destination = "/home/ubuntu/access_script.sh"
     when        = create

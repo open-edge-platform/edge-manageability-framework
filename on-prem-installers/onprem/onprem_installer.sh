@@ -539,9 +539,12 @@ print_env_variables
 set_artifacts_version
 
 # Check & install script dependencies
-check_oras
-install_jq
-install_yq
+mage onPrem:checkOras
+#check_oras
+mage onPrem:installJq
+mage onPrem:installYq
+# install_jq
+# install_yq
 
 if  [[ $SKIP_DOWNLOAD != true  ]]; then 
   # Cleanup and download .deb packages
@@ -631,17 +634,21 @@ export KUBECONFIG=/home/$USER/.kube/config
 # Run gitea installer
 echo "Installing Gitea"
 eval "sudo IMAGE_REGISTRY=${GITEA_IMAGE_REGISTRY} NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y $cwd/$deb_dir_name/onprem-gitea-installer_*_amd64.deb"
-wait_for_namespace_creation $gitea_ns
+# wait_for_namespace_creation $gitea_ns
+mage onPrem:waitForNamespaceCreation $gitea_ns
 sleep 30s
-wait_for_pods_running $gitea_ns
+mage onPrem:waitForPodsRunning $gitea_ns
+# wait_for_pods_running $gitea_ns
 echo "Gitea Installed"
 
 # Run argo CD installer
 echo "Installing ArgoCD..."
 eval "sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y $cwd/$deb_dir_name/onprem-argocd-installer_*_amd64.deb"
-wait_for_namespace_creation $argo_cd_ns
+# wait_for_namespace_creation $argo_cd_ns
+mage onPrem:waitForNamespaceCreation $argo_cd_ns
 sleep 30s
-wait_for_pods_running $argo_cd_ns
+mage onPrem:waitForPodsRunning $argo_cd_ns
+# wait_for_pods_running $argo_cd_ns
 echo "ArgoCD installed"
 
 # Create namespaces for ArgoCD
@@ -655,10 +662,14 @@ create_smpt_secrets
 harbor_password=$(head -c 512 /dev/urandom | tr -dc A-Za-z0-9 | cut -c1-100)
 keycloak_password=$(generate_password)
 postgres_password=$(generate_password)
-create_harbor_secret orch-harbor "$harbor_password"
-create_harbor_password orch-harbor "$harbor_password"
-create_keycloak_password orch-platform "$keycloak_password"
-create_postgres_password orch-database "$postgres_password"
+# create_harbor_secret orch-harbor "$harbor_password"
+mage onPrem:createHarborSecret orch-harbor "$harbor_password"
+#create_harbor_password orch-harbor "$harbor_password"
+mage onPrem:createHarborPassword orch-harbor "$harbor_password"
+# create_keycloak_password orch-platform "$keycloak_password"
+mage onPrem:createKeycloakPassword orch-platform "$keycloak_password"
+# create_postgres_password orch-database "$postgres_password"
+mage onPrem:createPostgresPassword orch-database "$postgres_password"
 
 
 # Run orchestrator installer
