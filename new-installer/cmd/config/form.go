@@ -13,19 +13,6 @@ import (
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 )
 
-func configureProvider() *huh.Group {
-	return huh.NewGroup(
-		huh.NewSelect[string]().
-			Title("Infrastructure Type").
-			Value(&input.Provider).
-			Description("Select the infrastructure type where the EMF will be deployed.").
-			Options(
-				huh.NewOption("AWS", "aws"),
-				huh.NewOption("On-Premises", "onprem"),
-			),
-	).Title("Step 1: Infrastructure Type\n")
-}
-
 func configureGlobal() *huh.Group {
 	return huh.NewGroup(
 		huh.NewInput().
@@ -49,20 +36,28 @@ func configureGlobal() *huh.Group {
 		huh.NewSelect[config.Scale]().
 			Title("Scale").
 			Description("Select target scale").
-			OptionsFunc(
-				func() []huh.Option[config.Scale] {
-					var options []huh.Option[config.Scale]
-					options = append(options,
-						huh.NewOption("1~10 Edge Nodes", config.Scale10),
-						huh.NewOption("10~100 Edge Nodes", config.Scale100),
-						huh.NewOption("100-500 Edge Nodes", config.Scale500),
-						huh.NewOption("500-1000 Edge Nodes", config.Scale1000),
-						huh.NewOption("1000-10000 Edge Nodes", config.Scale10000),
-					)
-					return options
-				}, nil).
+			Options(
+				huh.NewOption("1~10 Edge Nodes", config.Scale10),
+				huh.NewOption("10~100 Edge Nodes", config.Scale100),
+				huh.NewOption("100-500 Edge Nodes", config.Scale500),
+				huh.NewOption("500-1000 Edge Nodes", config.Scale1000),
+				huh.NewOption("1000-10000 Edge Nodes", config.Scale10000),
+			).
 			Value(&input.Global.Scale),
-	).Title("Step 2: Global Settings\n")
+	).Title("Step 1: Global Settings\n")
+}
+
+func configureProvider() *huh.Group {
+	return huh.NewGroup(
+		huh.NewSelect[string]().
+			Title("Infrastructure Type").
+			Value(&input.Provider).
+			Description("Select the infrastructure type where the EMF will be deployed.").
+			Options(
+				huh.NewOption("AWS", "aws"),
+				huh.NewOption("On-Premises", "onprem"),
+			),
+	).Title("Step 2: Infrastructure Type\n")
 }
 
 func configureAwsBasic() *huh.Group {
@@ -131,7 +126,7 @@ func configureAwsExpert() *huh.Group {
 			Value(&input.AWS.EKSDNSIP),
 	).WithHideFunc(func() bool {
 		return input.Provider != "aws" || (!flags.ExpertMode && !flags.ConfigureAwsExpert)
-	}).Title("Step 3b: AWS Expert Configurations\n")
+	}).Title("Step 3b: (Optional) AWS Expert Configurations\n")
 }
 
 func configureOnPremBasic() *huh.Group {
@@ -311,7 +306,7 @@ func configureSre() *huh.Group {
 			Value(&input.SRE.CASecret),
 	).WithHideFunc(func() bool {
 		return !flags.ExpertMode && !flags.ConfigureCert
-	}).Title("Step 5: (Optional) Site Reliability Engineering (SRE)\n")
+	}).Title("Step 6: (Optional) Site Reliability Engineering (SRE)\n")
 }
 
 func confirmSmtp() *huh.Group {
@@ -324,7 +319,7 @@ func confirmSmtp() *huh.Group {
 			Value(&flags.ConfigureSmtp),
 	).WithHideFunc(func() bool {
 		return flags.ExpertMode
-	}).Title("Step 6: (Optional) Email Notification\n")
+	}).Title("Step 7: (Optional) Email Notification\n")
 }
 
 func configureSmtp() *huh.Group {
@@ -360,113 +355,127 @@ func configureSmtp() *huh.Group {
 			Value(&input.SMTP.From),
 	).WithHideFunc(func() bool {
 		return !flags.ExpertMode && !flags.ConfigureSmtp
-	}).Title("Step 6: (Optional) Email Notification\n")
+	}).Title("Step 7: (Optional) Email Notification\n")
 }
 
 func orchConfigMode() *huh.Group {
+	options := []huh.Option[Mode]{
+		huh.NewOption("Simple   - select from pre-defined packages (recommended)", Simple),
+		huh.NewOption("Advanced - enable/disable each individual apps", Advanced),
+	}
+	if len(input.Orch.Enabled) != 0 {
+		options = append(options, huh.NewOption("Skip     - use existing config", Skip))
+	}
 	return huh.NewGroup(
 		huh.NewSelect[Mode]().
 			Title("Orchestrator Configuration Mode").
 			Description("Warning: Simple mode will reset all the advanced settings that was previously configured").
-			OptionsFunc(func() []huh.Option[Mode] {
-				var options []huh.Option[Mode]
-				options = append(options,
-					huh.NewOption("Simple   - select from pre-defined packages (recommended)", Simple),
-					huh.NewOption("Advanced - enable/disable each individual apps", Advanced),
-				)
-				if len(input.Orch.Enabled) != 0 {
-					options = append(options,
-						huh.NewOption("Skip     - use existing config", Skip),
-					)
-				}
-				return options
-			}, nil).
+			Options(options...).
 			Value(&configMode),
-	).Title("Step 7: Orchestrator Configuration\n")
+	).Title("Step 8: Orchestrator Configuration\n")
 }
 
 func simpleMode() *huh.Group {
+	var options []huh.Option[string]
+	// Collect all apps into a slice for sorting
+	packageList := make([]struct {
+		Name    string
+		Package config.OrchPackage
+	}, 0, len(orchPackages))
+	for name, pkg := range orchPackages {
+		packageList = append(packageList, struct {
+			Name    string
+			Package config.OrchPackage
+		}{name, pkg})
+	}
+	// Sort by package.Name alphabetically
+	slices.SortFunc(packageList, func(a, b struct {
+		Name    string
+		Package config.OrchPackage
+	}) int {
+		return strings.Compare(a.Package.Name, b.Package.Name)
+	})
+	for _, item := range packageList {
+		options = append(options,
+			huh.NewOption(fmt.Sprintf("%s (%s)", item.Package.Name, item.Package.Description), item.Name).
+				Selected(true),
+		)
+	}
+
 	return huh.NewGroup(
 		huh.NewMultiSelect[string]().
 			Title("Select Orchestrator Packages").
 			Description("Select the orchestrator packages to be enabled in the EMF.").
-			OptionsFunc(func() []huh.Option[string] {
-				var options []huh.Option[string]
-				// Collect all apps into a slice for sorting
-				packageList := make([]struct {
-					Name    string
-					Package config.OrchPackage
-				}, 0, len(orchPackages))
-				for name, pkg := range orchPackages {
-					packageList = append(packageList, struct {
-						Name    string
-						Package config.OrchPackage
-					}{name, pkg})
-				}
-				// Sort by package.Name alphabetically
-				slices.SortFunc(packageList, func(a, b struct {
-					Name    string
-					Package config.OrchPackage
-				}) int {
-					return strings.Compare(a.Package.Name, b.Package.Name)
-				})
-				for _, item := range packageList {
-					options = append(options,
-						huh.NewOption(fmt.Sprintf("%s (%s)", item.Package.Name, item.Package.Description), item.Name).
-							Selected(true),
-					)
-				}
-				return options
-			}, nil).
+			Options(options...).
 			Value(&enabledSimple).
 			Validate(validateSimpleMode),
 	).WithHideFunc(func() bool {
 		return configMode != Simple
-	}).Title("Step 7: Select Orchestrator Components (Simple Mode)\n")
+	}).Title("Step 8: Select Orchestrator Components (Simple Mode)\n")
 }
 
 func advancedMode() *huh.Group {
+	var options []huh.Option[string]
+	// Collect all apps from all packages
+	appList := make([]struct {
+		Name string
+		App  config.OrchApp
+	}, 0)
+	for _, pkg := range orchPackages {
+		for name, app := range pkg.Apps {
+			appList = append(appList, struct {
+				Name string
+				App  config.OrchApp
+			}{name, app})
+		}
+	}
+	// Sort by app.Name alphabetically
+	slices.SortFunc(appList, func(a, b struct {
+		Name string
+		App  config.OrchApp
+	}) int {
+		return strings.Compare(a.App.Name, b.App.Name)
+	})
+	for _, item := range appList {
+		options = append(options,
+			huh.NewOption(fmt.Sprintf("%s (%s)", item.App.Name, item.App.Description), item.Name).
+				Selected(slices.Contains(input.Orch.Enabled, item.Name)),
+		)
+	}
+
 	return huh.NewGroup(
 		huh.NewMultiSelect[string]().
 			Title("Select Orchestrator Components").
 			Description("Select the Orchestrator components to be enabled in the EMF.").
-			OptionsFunc(
-				func() []huh.Option[string] {
-					var options []huh.Option[string]
-					// Collect all apps from all packages
-					appList := make([]struct {
-						Name string
-						App  config.OrchApp
-					}, 0)
-					for _, pkg := range orchPackages {
-						for name, app := range pkg.Apps {
-							appList = append(appList, struct {
-								Name string
-								App  config.OrchApp
-							}{name, app})
-						}
-					}
-					// Sort by app.Name alphabetically
-					slices.SortFunc(appList, func(a, b struct {
-						Name string
-						App  config.OrchApp
-					}) int {
-						return strings.Compare(a.App.Name, b.App.Name)
-					})
-					for _, item := range appList {
-						options = append(options,
-							huh.NewOption(fmt.Sprintf("%s (%s)", item.App.Name, item.App.Description), item.Name).
-								Selected(slices.Contains(input.Orch.Enabled, item.Name)),
-						)
-					}
-					return options
-				},
-				nil,
-			).
+			Options(options...).
 			Value(&enabledAdvanced).
 			Validate(validateAdvancedMode).
 			Height(25),
 	).WithHideFunc(func() bool {
 		return configMode != Advanced
-	}).Title("Step 7: Select Orchestrator Components (Advanced Mode)\n")
+	}).Title("Step 8: Select Orchestrator Components (Advanced Mode)\n")
+}
+
+func orchInstallerForm() *huh.Form {
+	return huh.NewForm(
+		configureGlobal(),
+		configureProvider(),
+		configureAwsBasic(),
+		confirmAwsExpert(),
+		configureAwsExpert(),
+		configureOnPremBasic(),
+		confirmOnPremExpert(),
+		configureOnPremExpert(),
+		confirmProxy(),
+		configureProxy(),
+		confirmCert(),
+		configureCert(),
+		confirmSre(),
+		configureSre(),
+		confirmSmtp(),
+		configureSmtp(),
+		orchConfigMode(),
+		simpleMode(),
+		advancedMode(),
+	).WithTheme(huh.ThemeCharm())
 }

@@ -9,7 +9,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/charmbracelet/huh"
 	"gopkg.in/yaml.v3"
 
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
@@ -191,28 +190,7 @@ func main() {
 			loadOrchPackages()
 			loadConfig()
 
-			err := huh.NewForm(
-				configureProvider(),
-				configureGlobal(),
-				configureAwsBasic(),
-				confirmAwsExpert(),
-				configureAwsExpert(),
-				configureOnPremBasic(),
-				confirmOnPremExpert(),
-				configureOnPremExpert(),
-				confirmProxy(),
-				configureProxy(),
-				confirmCert(),
-				configureCert(),
-				confirmSre(),
-				configureSre(),
-				confirmSmtp(),
-				configureSmtp(),
-				orchConfigMode(),
-				simpleMode(),
-				advancedMode(),
-			).WithTheme(huh.ThemeCharm()).
-				Run()
+			err := orchInstallerForm().Run()
 			if err != nil {
 				fmt.Println("Failed to generate config:", err)
 				os.Exit(1)

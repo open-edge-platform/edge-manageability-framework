@@ -26,7 +26,7 @@ func validateOrchName(s string) error {
 }
 
 func validateParentDomain(s string) error {
-	if matched := regexp.MustCompile(`^[a-z0-9-]+\.+[a-z0-9-]+$`).MatchString(s); !matched {
+	if matched := regexp.MustCompile(`^[a-z0-9-.]+\.[a-z0-9-]+$`).MatchString(s); !matched {
 		return fmt.Errorf("parent domain must be all lower case letters, digits, or '.'")
 	}
 	return nil
@@ -87,7 +87,7 @@ func validateTlsCert(s string) error {
 	if s == "" {
 		return nil
 	}
-	if matched := regexp.MustCompile(`(?s)^-----BEGIN CERTIFICATE-----\n.*\n-----END CERTIFICATE-----$`).MatchString(s); !matched {
+	if matched := regexp.MustCompile(`(?s)^-----BEGIN CERTIFICATE-----\n.*\n-----END CERTIFICATE-----\n?$`).MatchString(s); !matched {
 		return fmt.Errorf("TLS certificate must be in PEM format")
 	}
 	return nil
@@ -97,7 +97,7 @@ func validateTlsKey(s string) error {
 	if s == "" {
 		return nil
 	}
-	if matched := regexp.MustCompile(`(?s)^-----BEGIN PRIVATE KEY-----\n.*\n-----END PRIVATE KEY-----$`).MatchString(s); !matched {
+	if matched := regexp.MustCompile(`(?s)^-----BEGIN PRIVATE KEY-----\n.*\n-----END PRIVATE KEY-----\n?$`).MatchString(s); !matched {
 		return fmt.Errorf("TLS key must be in PEM format")
 	}
 	return nil
@@ -107,7 +107,7 @@ func validateTlsCa(s string) error {
 	if s == "" {
 		return nil
 	}
-	if matched := regexp.MustCompile(`(?s)^-----BEGIN CERTIFICATE-----\n.*\n-----END CERTIFICATE-----$`).MatchString(s); !matched {
+	if matched := regexp.MustCompile(`(?s)^-----BEGIN CERTIFICATE-----\n.*\n-----END CERTIFICATE-----\n?$`).MatchString(s); !matched {
 		return fmt.Errorf("TLS CA must be in PEM format")
 	}
 	return nil
@@ -149,10 +149,7 @@ func validateIp(s string) error {
 	}
 	parts := strings.Split(s, ".")
 	for _, part := range parts {
-		i, err := strconv.Atoi(part)
-		if err != nil {
-			return fmt.Errorf("cannot convert %s to integer: %s", part, err)
-		}
+		i, _ := strconv.Atoi(part)
 		if i < 0 || i > 255 {
 			return fmt.Errorf("IP address must be between 0 and 255")
 		}

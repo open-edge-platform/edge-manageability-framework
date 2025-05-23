@@ -93,6 +93,11 @@ func TestValidateParentDomain(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name:    "valid domain with two dot",
+			input:   "subdomain.example.com",
+			wantErr: false,
+		},
+		{
 			name:    "valid domain with dash",
 			input:   "my-domain.com",
 			wantErr: false,
