@@ -177,4 +177,3 @@ onboarding-manager:
   {{- end}}
   {{- end}}
   {{- end}}
-
