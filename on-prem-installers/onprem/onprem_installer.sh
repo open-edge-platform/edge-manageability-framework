@@ -539,7 +539,8 @@ print_env_variables
 set_artifacts_version
 
 # Check & install script dependencies
-check_oras
+onPrem:checkOras
+#check_oras
 install_jq
 install_yq
 
