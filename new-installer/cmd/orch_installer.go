@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
+	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/targets/aws"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
@@ -91,28 +92,28 @@ func execute(action string, orchConfigFile string, logDir string, keepGeneratedF
 		logger.Fatalf("error reading config file %s: %s", orchConfigFile, err)
 	}
 	logger.Infof("Config file %s read successfully", orchConfigFile)
-	config := internal.OrchInstallerConfig{}
-	err = internal.DeserializeFromYAML(&config, configData)
+	orchConfig := config.OrchInstallerConfig{}
+	err = config.DeserializeFromYAML(&orchConfig, configData)
 	if err != nil {
 		logger.Fatalf("error unmarshalling config file: %s", err)
 	}
 
-	config.Generated.Action = action
-	config.Generated.LogDir = logDir
+	orchConfig.Generated.Action = action
+	orchConfig.Generated.LogDir = logDir
 
 	logger.Infof("Action: %s", action)
-	logger.Infof("Target environment: %s", config.Provider)
-	logger.Infof("Orchestrator name: %s", config.Global.OrchName)
+	logger.Infof("Target environment: %s", orchConfig.Provider)
+	logger.Infof("Orchestrator name: %s", orchConfig.Global.OrchName)
 
 	var stages []internal.OrchInstallerStage
-	switch config.Provider {
+	switch orchConfig.Provider {
 	case "aws":
 		stages, err = aws.CreateAWSStages(currentDir, keepGeneratedFiles)
 	default:
-		logger.Fatalf("error: target environment %s not supported", config.Provider)
+		logger.Fatalf("error: target environment %s not supported", orchConfig.Provider)
 	}
 	if err != nil {
-		logger.Fatalf("error creating stages for provider %s: %s", config.Provider, err)
+		logger.Fatalf("error creating stages for provider %s: %s", orchConfig.Provider, err)
 	}
 	orchInstaller, err := internal.CreateOrchInstaller(stages)
 	if err != nil {
@@ -136,7 +137,7 @@ func execute(action string, orchConfigFile string, logDir string, keepGeneratedF
 	}()
 
 	// TODO: Convert error to user friendly message and actions
-	runErr := orchInstaller.Run(ctx, config)
+	runErr := orchInstaller.Run(ctx, orchConfig)
 	if runErr != nil {
 		logger.Infof("error running orch installer: %v", runErr)
 	} else if orchInstaller.Cancelled() {
@@ -145,7 +146,7 @@ func execute(action string, orchConfigFile string, logDir string, keepGeneratedF
 		logger.Infof("Orch installer %s successfully", action)
 	}
 
-	err = aws.UploadStateToS3(config)
+	err = aws.UploadStateToS3(orchConfig)
 	if err != nil {
 		logger.Errorf("error uploading state to S3: %s", err)
 	}

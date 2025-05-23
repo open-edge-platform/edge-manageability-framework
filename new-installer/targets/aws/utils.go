@@ -12,32 +12,32 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 
-	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
+	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 )
 
-func UploadStateToS3(config internal.OrchInstallerConfig) error {
-	if config.Aws.Region == "" {
+func UploadStateToS3(orchConfig config.OrchInstallerConfig) error {
+	if orchConfig.AWS.Region == "" {
 		return fmt.Errorf("AWS region is not set")
 	}
-	if config.Global.OrchName == "" {
+	if orchConfig.Global.OrchName == "" {
 		return fmt.Errorf("OrchName is not set")
 	}
-	if config.Generated.DeploymentId == "" {
-		return fmt.Errorf("DeploymentId is not set")
+	if orchConfig.Generated.DeploymentID == "" {
+		return fmt.Errorf("DeploymentID is not set")
 	}
 	session, err := session.NewSession()
 	if err != nil {
 		return err
 	}
 	s3Client := s3.New(session, &aws.Config{
-		Region: aws.String(config.Aws.Region),
+		Region: aws.String(orchConfig.AWS.Region),
 	})
-	configYaml, err := internal.SerializeToYAML(config)
+	configYaml, err := config.SerializeToYAML(orchConfig)
 	if err != nil {
 		return err
 	}
 	_, err = s3Client.PutObject(&s3.PutObjectInput{
-		Bucket: aws.String(fmt.Sprintf("%s-%s", config.Global.OrchName, config.Generated.DeploymentId)),
+		Bucket: aws.String(fmt.Sprintf("%s-%s", orchConfig.Global.OrchName, orchConfig.Generated.DeploymentID)),
 		Key:    aws.String("config.yaml"),
 		Body:   aws.ReadSeekCloser(bytes.NewReader(configYaml)),
 	})
