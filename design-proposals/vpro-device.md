@@ -15,15 +15,15 @@ provides an open source stack through which is possible to manage vPRO enabled d
 ![EMF Stack](./images/specs/stack.svg)
 
 This document describes the design proposal for adding the Remote Provisioning Client (RPC) component of DMT stack into
-the EN sw and propose a design on how to manage the device activation during the EN journey.
+the EN sw and propose a solution on how to manage the device activation during the EN journey.
 
 ## Proposal
 
 Remote Provisioning Client (RPC) is launched during the provisioning flow (uOS stage).
 
-vPRO (AMT & ISM) capable Core devices need to have the `rpc-go` utility embedded in the uOS image (the so called
+vPRO (AMT & ISM) capable devices need to have the `rpc-go` utility embedded in the uOS image (the so called
 Tink-EMT image - replacement of HookOS), as this is required to activate AMT. This also requires the `heci` driver to
-be included in the kernel as the `rpc-go` utility communicates with CSME over PCIe/HECI in to activate the device.
+be included in the kernel as the `rpc-go` utility communicates with CSME over PCIe/HECI to activate the device.
 
 `Local Manageability Service` (LMS) must to be included as it is still required to enable the communication between RPC
 and AMT device. Additionally, it offers the support for in-band commands too.
@@ -120,7 +120,7 @@ sequenceDiagram
 implemented between MPS and AMT;
 
 **Note 2** - Device Management Resource Manager will provide a `staticPassword` profile where the AMT and MEBx
-passwords are set to a well know value. Disabling this option the RM will randomly generate a password for each device.
+passwords are set to a well know value. Disabling this option the RM will randomly generate a password for each device (using RPS auto-generation) or it will generate a random password and store as secret.
 
 **Note 3** - Passwords are stored in `Vault` and can be always retrieved either using the Vault APIs or through the
 web-ui.
@@ -193,5 +193,5 @@ We expect EMT team to conduct integration tests before releasing EMT images supp
 
 ## Open issues (if applicable)
 
-Platform Manageability Agent and SB APIs will not be integrated which implies that the remote deactivation and device
-reconfiguration will not be supported in 3.1.
+Platform Manageability Agent and SB APIs will not be integrated which implies that the device reconfiguration will not
+be supported in 3.1.
