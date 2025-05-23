@@ -40,3 +40,8 @@ ports:
       - orch-gateway-cors@kubernetescrd
       {{- end }}
       {{- end }}
+  tcpamt:
+    port: 4433
+    exposedPort: 4433
+    expose: true
+    protocol: TCP
