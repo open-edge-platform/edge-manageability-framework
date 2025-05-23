@@ -77,7 +77,7 @@ Here is an example of SPEC file to build and package K3s binary:
 # This is not a complete SPEC and hasn't been tested
 
 Source0: https://github.com/k3s-io/k3s/archive/refs/tags/%{version}.tar.gz
-Source1: https://github.com/k3s-io/k3s/releases/download/%{version}/k3s-airgap-images-amd64.tar.zst
+Source1: https://registry-rs.edgeorchestration.intel.com/en/files/%{version}/k3s-airgap-images-amd64.tar.zst
 
 BuildRequires: make
 BuildRequires: docker
