@@ -857,22 +857,22 @@ func parseProject(body io.ReadCloser) (Projects, error) {
 	return proj, nil
 }
 
-func parseRegionsList(body io.ReadCloser) (*invapi.RegionServiceListRegionsResponse, error) {
+func parseRegionsListTotal(body io.ReadCloser) (int32, error) {
 	regionsList := &invapi.RegionServiceListRegionsResponse{}
 
 	data, err := io.ReadAll(body)
 	if err != nil {
-		return regionsList, fmt.Errorf("failed to read body: %w", err)
+		return 0, fmt.Errorf("failed to read body: %w", err)
 	}
 
 	if err = json.Unmarshal(data, &regionsList); err != nil {
-		return regionsList, fmt.Errorf("failed to Unmarshal regionsList: %w", err)
+		return 0, fmt.Errorf("failed to Unmarshal regionsList: %w", err)
 	}
 
 	if regionsList.JSON200 == nil {
-		return regionsList, fmt.Errorf("failed to get regions list: %s", *regionsList.JSONDefault.Message)
+		return 0, fmt.Errorf("failed to get regions list: %s", *regionsList.JSONDefault.Message)
 	}
-	return regionsList, nil
+	return regionsList.JSON200.TotalElements, nil
 }
 
 func getKeycloakJWT(cli *http.Client, username string) string {
