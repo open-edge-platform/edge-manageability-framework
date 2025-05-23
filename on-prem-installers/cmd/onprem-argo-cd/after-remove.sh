@@ -36,7 +36,7 @@ EOF
     rm -rf /tmp/argo-cd || true
 }
 
-remove_argocd
+
 
 remove_gitea() {
 cat << "EOF"
@@ -57,3 +57,4 @@ EOF
 }
 
 remove_gitea
+remove_argocd
