@@ -6,6 +6,7 @@ package steps
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -14,15 +15,16 @@ import (
 	"github.com/hashicorp/hc-install/product"
 	"github.com/hashicorp/hc-install/releases"
 	"github.com/hashicorp/terraform-exec/tfexec"
-	"github.com/knadh/koanf/parsers/json"
-	"github.com/knadh/koanf/providers/structs"
-	"github.com/knadh/koanf/v2"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
 )
 
 const (
 	TerraformVersion = "1.9.5"
 )
+
+type TerraformUtility interface {
+	RunTerraformModule(ctx context.Context, input TerraformUtilityInput) (TerraformUtilityOutput, *internal.OrchInstallerError)
+}
 
 type TerraformUtilityInput struct {
 	Action     string
@@ -48,12 +50,7 @@ type TerraformAWSBucketBackendConfig struct {
 }
 
 func marshalHCLJSON(data any) ([]byte, error) {
-	k := koanf.New(".")
-	err := k.Load(structs.Provider(data, "json"), nil)
-	if err != nil {
-		return nil, err
-	}
-	return k.Marshal(json.Parser()) // Terraform accepts json format
+	return json.Marshal(data)
 }
 
 func validateInput(input TerraformUtilityInput) *internal.OrchInstallerError {
@@ -102,7 +99,13 @@ func validateInput(input TerraformUtilityInput) *internal.OrchInstallerError {
 	return nil
 }
 
-func RunTerraformModule(ctx context.Context, input TerraformUtilityInput) (TerraformUtilityOutput, *internal.OrchInstallerError) {
+type terraformUtilityImpl struct{}
+
+func CreateTerraformUtility() TerraformUtility {
+	return &terraformUtilityImpl{}
+}
+
+func (*terraformUtilityImpl) RunTerraformModule(ctx context.Context, input TerraformUtilityInput) (TerraformUtilityOutput, *internal.OrchInstallerError) {
 	logger := internal.Logger()
 	validationErr := validateInput(input)
 	if validationErr != nil {
