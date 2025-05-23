@@ -94,6 +94,8 @@ applicationSet:
 helm install argocd /tmp/argo-cd/argo-cd --values /tmp/argo-cd/values.yaml -f /tmp/argo-cd/mounts.yaml -n argocd --create-namespace
 }
 
+install_argocd
+
 
 processSAN() {
   local result="subjectAltName=DNS:localhost"
@@ -215,4 +217,3 @@ EOF
 }
 
 install_gitea
-install_argocd

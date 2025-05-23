@@ -98,6 +98,8 @@ helm upgrade argocd /tmp/argo-cd/argo-cd --values /tmp/argo-cd/values.yaml -f /t
   --wait --timeout 15m0s
 }
 
+upgrade_argocd
+
 processSAN() {
   local result="subjectAltName=DNS:localhost"
   for domain in "$@"; do
@@ -218,4 +220,3 @@ EOF
 }
 
 upgrade_gitea
-upgrade_argocd
