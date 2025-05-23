@@ -22,9 +22,3 @@ type OrchInstallerError struct {
 func (e *OrchInstallerError) Error() string {
 	return e.ErrorMsg
 }
-
-type OrchInstallerStageError struct {
-	ErrorCode  OrchInstallerErrorCode
-	ErrorMsg   string
-	StepErrors map[string]*OrchInstallerError
-}
