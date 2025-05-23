@@ -12,7 +12,7 @@ metadata:
 spec:
   sourceNamespaces:
     - {{ required "A valid namespace entry required!" .Values.argo.namespace }}
-  # this can be modifed later to only add known helm chart and git repos
+  # this can be modified later to only add known helm chart and git repos
   sourceRepos:
     - '*'
   destinations:

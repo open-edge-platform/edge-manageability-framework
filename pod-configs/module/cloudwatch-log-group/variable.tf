@@ -5,7 +5,7 @@
 variable "name" {}
 
 variable "retention_in_days" {
-  description = "pecifies the number of days you want to retain log events in the specified log group."
+  description = "specifies the number of days you want to retain log events in the specified log group."
   default = 90
   type = number
 }

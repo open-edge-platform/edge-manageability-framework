@@ -46,7 +46,7 @@ this proposal. Fields like display-names, descriptions, etc., have been omitted.
 
   - `root_url`. The URL where charts are fetched from the registry.
 
-  - `username`, `password`, `cacerts`. For private registries, the credentails necessary to access
+  - `username`, `password`, `cacerts`. For private registries, the credentials necessary to access
     the registry.
 
 - `Application`. The `Application` object contains the following:
@@ -163,7 +163,7 @@ deploy multiple charts at the same time, we could require them to use an "umbrel
 chart", and we would represent the umbrella chart as a single Application object. Eliminating
 objects is disruptive from a backward compatibility / upgrade standpoint. It also drops
 a capability that is currently in use with demonstrated value. We propose re-evaluating
-the prevelance of deployment packages after deployable Applications have been supported
+the prevalence of deployment packages after deployable Applications have been supported
 for a few release cycles, and then making a decision whether to deprecate them.
 
 Another proposal is to eliminate not just `Deployment Package`, but to eliminate `Application`

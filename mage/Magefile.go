@@ -140,7 +140,7 @@ func AsdfPlugins() error {
 	for _, name := range globalAsdf {
 		if _, err := script.File(".tool-versions").MatchRegexp(regexp.MustCompile(name)).Column(2).
 			ExecForEach(fmt.Sprintf("asdf set --home %s {{.}}", name)).Stdout(); err != nil {
-			return fmt.Errorf("error seting plugins listed in globalAsdf as global: %w", err)
+			return fmt.Errorf("error setting plugins listed in globalAsdf as global: %w", err)
 		}
 	}
 	fmt.Printf("asdf plugins updated🔌\n")

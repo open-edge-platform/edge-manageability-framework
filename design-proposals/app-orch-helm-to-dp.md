@@ -60,7 +60,7 @@ There are two options where this functionality can be implemented:
 
 - `Command Line Tool`. A command line tool has already been written where the user specifies
   the necessary information (URL, optional username and password, etc) as command line arguments
-  to the tool. In respose the tool downlaods the Helm Chart, and then generates the `Deployment Package`
+  to the tool. In response the tool downloads the Helm Chart, and then generates the `Deployment Package`
   as a set of yaml files. The yaml files may then be imported to the Orchestrator by using
   the user's browser.
 

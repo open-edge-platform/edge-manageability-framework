@@ -21,7 +21,7 @@ variable "vpc_region" {
 }
 variable "lb_created" {
   type        = bool
-  description = "Wether the LBs for the Orchestrator are created. The CNAME of {orch_name}.{parent_zone} will be created if it is true."
+  description = "Whether the LBs for the Orchestrator are created. The CNAME of {orch_name}.{parent_zone} will be created if it is true."
   default     = false
 }
 variable "create_root_domain" {

@@ -27,7 +27,7 @@ import (
 	"github.com/open-edge-platform/edge-manageability-framework/internal/secrets"
 )
 
-// verboseLevel is a package-level variable intialized during startup.
+// verboseLevel is a package-level variable initialized during startup.
 var verboseLevel = func() int {
 	if getDebug() {
 		return 9
@@ -165,7 +165,7 @@ func addCATrustStore(certName string) error {
 }
 
 func uniqueHosts() ([]string, string, error) {
-	// hosts needs to be unsorted thats why we dont use (Gen{}).kubeDnslookupDockerInternal()
+	// hosts needs to be unsorted that's why we dont use (Gen{}).kubeDnslookupDockerInternal()
 	kubeCmd := fmt.Sprintf("kubectl --v=%d -n orch-gateway get configmap kubernetes-docker-internal -o json", verboseLevel)
 	hosts, err := Gen{}.dnsNamesConfigMap(kubeCmd)
 	if err != nil {

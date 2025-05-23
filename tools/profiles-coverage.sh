@@ -6,7 +6,7 @@
 
 #
 # This script requires an environment variable ORCH_CONFIGS_DIR set to absolute path
-# where the source of `orch-configs` repositiory resides on local filesystem
+# where the source of `orch-configs` repository resides on local filesystem
 #
 # If invoked without parameters:
 # - it displays all profile names and count of clusters where it is used

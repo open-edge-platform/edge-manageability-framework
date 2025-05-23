@@ -11,7 +11,7 @@ variable "vpc_name" {
 }
 
 variable "vpc_cidr_block" {
-  description = "Default VPC CIDR blcok"
+  description = "Default VPC CIDR block"
 }
 
 variable "vpc_additional_cidr_blocks" {

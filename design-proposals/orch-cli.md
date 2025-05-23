@@ -75,7 +75,7 @@ verb.
 
 ##### Configuration and utility
 
-- Configuraiton of the CLI tool. This should be treated no differently than any other verb/noun
+- Configuration of the CLI tool. This should be treated no differently than any other verb/noun
   combination using `get` and `update`. i.e. `cli update config --endpoint https://my-orchestrator.com/`.
   NOTE: Current implementation uses a special-purpose syntax,
   `cli config set endpoint https://my-orchestrator.com/`, to be revised.
@@ -101,7 +101,7 @@ component shall add their own nouns as appropriate. For example,
 
 #### Subjects
 
-Subjects are additional information or context releated to a noun. Different nouns may support
+Subjects are additional information or context related to a noun. Different nouns may support
 different subjects. For convenience sake, most nouns support a name subject and optionally for those
 objects that are versioned, a version subject. For example,
 
@@ -120,7 +120,7 @@ filters. For example,
   being used. For example `cli -h` returns global help whereas `cli create application -h` return help
   that is relevant to creating applications.
 
-- `-n` / `--noauth` ... disables authentication checks, only useful in a devleopment environment.
+- `-n` / `--noauth` ... disables authentication checks, only useful in a development environment.
 
 - `-p` / `--project` ... sets the project that will be used for the current verb. Required for verbs that
   act on projects. The CLI configuration shall allow a default project to be specified, so that `-p` does
@@ -134,7 +134,7 @@ filters. For example,
 
 #### Verb-Specific and/or Noun-Specific options
 
-Verbs and nouns may have addional non-global options as necessary. For example, the `create application`
+Verbs and nouns may have additional non-global options as necessary. For example, the `create application`
 verb/noun pair includes the options `--chart-name` and `--chart-registry` and `--chart-version`.
 
 #### Examples
@@ -148,7 +148,7 @@ verb/noun pair includes the options `--chart-name` and `--chart-registry` and `-
 - `cli -p acme create application nginx 0.0.1 --chart-name nginx --chart-registry bitnami --chart-version 0.0.1`
   ... create the nginx application using the specified parameters.
 
-- `cli -p acme delete applciation nginx 0.0.1` ... delete the nginx application.
+- `cli -p acme delete application nginx 0.0.1` ... delete the nginx application.
 
 - `cli -p acme update application nginx 0.0.1 --chart-registry dockerhub` ... change the chart-registry for an
   application.
@@ -197,7 +197,7 @@ format.
 
 - If there are future breaking changes to the API, then the CLI may seek to insulate the user from those changes.
 
-- Addtional context or explanation may be provided in the CLI, such as returning objects in a human-readable format.
+- Additional context or explanation may be provided in the CLI, such as returning objects in a human-readable format.
 
 - The CLI may contain additional guardrails to "fail early" or to fail in a human readable manner when the user
   performs an incorrect operation.

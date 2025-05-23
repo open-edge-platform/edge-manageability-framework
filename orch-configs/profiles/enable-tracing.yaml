@@ -15,5 +15,5 @@ argo:
     enableTracing: true
   infra-external:
     enableTracing: true
-# Currently unused - note that it is not specifiying the required resources.
+# Currently unused - note that it is not specifying the required resources.
 # It must be enabled together other infra profiles.

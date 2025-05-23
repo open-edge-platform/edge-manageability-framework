@@ -26,7 +26,7 @@ fi
 
 if ! which terraform-docs &> /dev/null; then
   echo "Unable to find terraform-doc tool"
-  echo "Plase follow this link to install it"
+  echo "Please follow this link to install it"
   echo "https://terraform-docs.io/user-guide/installation/"
   exit 1
 fi

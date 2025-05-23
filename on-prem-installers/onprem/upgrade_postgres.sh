@@ -66,7 +66,7 @@ backup_postgres() {
 
 
 delete_postgress() {
-# backgrounbd as pvc will not be deleted until app deleteion
+# backgrounbd as pvc will not be deleted until app deletion
 kubectl delete pvc -n $postgres_namespace data-postgresql-0 &
 # patch ensures cascade delete
 kubectl patch application -n $application_namespace postgresql  -p '{"metadata": {"finalizers": ["resources-finalizer.argocd.argoproj.io"]}}' --type merge

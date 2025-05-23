@@ -13,7 +13,7 @@ import (
 
 // Start a local docker container registry.
 func (Registry) StartLocalRegistry() error {
-	// Try to start the registry to check if it already exitsts.
+	// Try to start the registry to check if it already exists.
 	err := sh.Run("docker", "start", fmt.Sprintf("kind-registry.%s", serviceDomain))
 	if err == nil {
 		// Already exists, do nothing

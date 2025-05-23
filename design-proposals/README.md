@@ -156,7 +156,7 @@ proposal in one of the following 3 stages.
 
 Issues in the Active column are reviewed weekly in the different teams
 to watch for emerging consensus in the discussions.
-The mantainers may also comment, make suggestions,
+The maintainers may also comment, make suggestions,
 ask clarifying questions, and try to restate the proposals to make sure
 everyone agrees about what exactly is being discussed.
 
@@ -180,9 +180,8 @@ closed.
 
 ## Help
 
-If you need help with this process, please contact the Project's mantainers
-contributors by posting
-to
+If you need help with this process, please contact the Project's maintainers
+contributors by posting to
 the [Discussions](https://github.com/open-edge-platform/edge-manageability-framework/discussions)
 .
 

@@ -96,7 +96,7 @@ if [ "${ACTION}" == "restore" ]; then
             fi
         done
     else
-        echo "An error occured. Exiting..."
+        echo "An error occurred. Exiting..."
         exit 1
     fi
 fi
