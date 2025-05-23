@@ -71,8 +71,6 @@ variable "dns_hosts" {
     { hostname = "mps-webport-node.cluster.onprem", ip = "192.168.99.30" },
     { hostname = "rps-node.cluster.onprem", ip = "192.168.99.30" },
     { hostname = "rps-webport-node.cluster.onprem", ip = "192.168.99.30" },
-    { hostname = "onboarding.cluster.onprem", ip = "192.168.99.30" },
-    { hostname = "orchestrator-license.cluster.onprem", ip = "192.168.99.30" },
     { hostname = "registry-oci.cluster.onprem", ip = "192.168.99.30" },
     { hostname = "registry.cluster.onprem", ip = "192.168.99.30" },
     { hostname = "release.cluster.onprem", ip = "192.168.99.30" },
