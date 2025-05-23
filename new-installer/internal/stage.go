@@ -35,22 +35,26 @@ func ReverseStages(stages []OrchInstallerStage) []OrchInstallerStage {
 	return reversed
 }
 
+func labelMatch(stageLabels []string, filterLabels []string) bool {
+	for _, label := range stageLabels {
+		for _, filterLabel := range filterLabels {
+			if label == filterLabel {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func FilterStages(stages []OrchInstallerStage, labels []string) []OrchInstallerStage {
 	if len(labels) == 0 {
 		return stages
 	}
 	filtered := []OrchInstallerStage{}
 	for _, stage := range stages {
-		func() {
-			for _, stageLabel := range stage.Labels() {
-				for _, label := range labels {
-					if stageLabel == label {
-						filtered = append(filtered, stage)
-						return
-					}
-				}
-			}
-		}()
+		if labelMatch(stage.Labels(), labels) {
+			filtered = append(filtered, stage)
+		}
 	}
 	return filtered
 }

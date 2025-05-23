@@ -24,10 +24,10 @@ func (s *ShellUtilityTest) TestBasicCmd() {
 	shellUtil := steps.CreateShellUtility()
 	ctx := context.Background()
 	output, err := shellUtil.Run(ctx, steps.ShellUtilityInput{
-		Command:          []string{"echo", "Hello, World!"},
-		Timeout:          5,
-		SkipError:        false,
-		RunInBackeground: false,
+		Command:         []string{"echo", "Hello, World!"},
+		Timeout:         5,
+		SkipError:       false,
+		RunInBackground: false,
 	})
 
 	if err != nil {
@@ -43,10 +43,10 @@ func (s *ShellUtilityTest) TestBasicCmdStderr() {
 	shellUtil := steps.CreateShellUtility()
 	ctx := context.Background()
 	output, err := shellUtil.Run(ctx, steps.ShellUtilityInput{
-		Command:          []string{"sh", "-c", "echo 'Hello, World!' >&2"},
-		Timeout:          5,
-		SkipError:        false,
-		RunInBackeground: false,
+		Command:         []string{"sh", "-c", "echo 'Hello, World!' >&2"},
+		Timeout:         5,
+		SkipError:       false,
+		RunInBackground: false,
 	})
 
 	if err != nil {
@@ -62,10 +62,10 @@ func (s *ShellUtilityTest) TestBasicCmdError() {
 	shellUtil := steps.CreateShellUtility()
 	ctx := context.Background()
 	output, err := shellUtil.Run(ctx, steps.ShellUtilityInput{
-		Command:          []string{"sh", "-c", "exit 1"},
-		Timeout:          5,
-		SkipError:        false,
-		RunInBackeground: false,
+		Command:         []string{"sh", "-c", "exit 1"},
+		Timeout:         5,
+		SkipError:       false,
+		RunInBackground: false,
 	})
 
 	if err == nil {
@@ -82,10 +82,10 @@ func (s *ShellUtilityTest) TestBasicCmdSkipError() {
 	shellUtil := steps.CreateShellUtility()
 	ctx := context.Background()
 	output, err := shellUtil.Run(ctx, steps.ShellUtilityInput{
-		Command:          []string{"sh", "-c", "exit 1"},
-		Timeout:          5,
-		SkipError:        true,
-		RunInBackeground: false,
+		Command:         []string{"sh", "-c", "exit 1"},
+		Timeout:         5,
+		SkipError:       true,
+		RunInBackground: false,
 	})
 	if err != nil {
 		s.NoError(err)
@@ -102,10 +102,10 @@ func (s *ShellUtilityTest) TestBasicCmdTimeout() {
 	shellUtil := steps.CreateShellUtility()
 	ctx := context.Background()
 	output, err := shellUtil.Run(ctx, steps.ShellUtilityInput{
-		Command:          []string{"sh", "-c", "sleep 10"},
-		Timeout:          1,
-		SkipError:        false,
-		RunInBackeground: false,
+		Command:         []string{"sh", "-c", "sleep 10"},
+		Timeout:         1,
+		SkipError:       false,
+		RunInBackground: false,
 	})
 
 	if err == nil {
@@ -122,10 +122,10 @@ func (s *ShellUtilityTest) TestBasicCmdBackground() {
 	shellUtil := steps.CreateShellUtility()
 	ctx := context.Background()
 	output, err := shellUtil.Run(ctx, steps.ShellUtilityInput{
-		Command:          []string{"sh", "-c", "sleep 10"},
-		Timeout:          1,
-		SkipError:        false,
-		RunInBackeground: true,
+		Command:         []string{"sh", "-c", "sleep 10"},
+		Timeout:         1,
+		SkipError:       false,
+		RunInBackground: true,
 	})
 
 	if err != nil {

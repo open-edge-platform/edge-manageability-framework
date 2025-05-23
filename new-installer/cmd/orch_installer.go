@@ -30,7 +30,7 @@ func main() {
 		Run:   func(cmd *cobra.Command, args []string) {},
 	}
 
-	// These flages are common to all commands
+	// These flags are common to all commands
 	var configFile, logLevel, logDir string
 	var keepGeneratedFiles bool
 	rootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "config.yaml", "Path to the configuration file")

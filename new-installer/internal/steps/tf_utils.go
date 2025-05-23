@@ -169,7 +169,7 @@ func (*terraformUtilityImpl) RunTerraformModule(ctx context.Context, input Terra
 		if err != nil {
 			return TerraformUtilityOutput{}, &internal.OrchInstallerError{
 				ErrorCode: internal.OrchInstallerErrorCodeTerraform,
-				ErrorMsg:  fmt.Sprintf("failed to create terraform instance: %v", err),
+				ErrorMsg:  fmt.Sprintf("failed to initialize Terraform backend: %v", err),
 			}
 		}
 	} else {

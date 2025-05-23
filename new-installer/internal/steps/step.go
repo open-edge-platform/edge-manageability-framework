@@ -35,22 +35,26 @@ type OrchInstallerStep interface {
 	PostStep(ctx context.Context, config config.OrchInstallerConfig, prevStepError *internal.OrchInstallerError) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError)
 }
 
+func labelMatch(stepLabels []string, filterLabels []string) bool {
+	for _, label := range stepLabels {
+		for _, filterLabel := range filterLabels {
+			if label == filterLabel {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func FilterSteps(steps []OrchInstallerStep, labels []string) []OrchInstallerStep {
 	if len(labels) == 0 {
 		return steps
 	}
 	var filteredSteps []OrchInstallerStep
 	for _, step := range steps {
-		func() {
-			for _, label := range step.Labels() {
-				for _, filterLabel := range labels {
-					if label == filterLabel {
-						filteredSteps = append(filteredSteps, step)
-						return
-					}
-				}
-			}
-		}()
+		if labelMatch(step.Labels(), labels) {
+			filteredSteps = append(filteredSteps, step)
+		}
 	}
 	return filteredSteps
 }

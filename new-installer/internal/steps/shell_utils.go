@@ -29,10 +29,10 @@ type shellUtilityImpl struct {
 }
 
 type ShellUtilityInput struct {
-	Command          []string
-	Timeout          int
-	SkipError        bool
-	RunInBackeground bool
+	Command         []string
+	Timeout         int
+	SkipError       bool
+	RunInBackground bool
 }
 
 type ShellUtilityOutput struct {
@@ -62,7 +62,7 @@ func (s *shellUtilityImpl) Run(ctx context.Context, input ShellUtilityInput) (*S
 	s.cmd.Stdout = &stdoutWriter
 	s.cmd.Stderr = &stderrWriter
 	var err error
-	if input.RunInBackeground {
+	if input.RunInBackground {
 		err = s.cmd.Start()
 	} else {
 		err = s.cmd.Run()
