@@ -53,7 +53,9 @@ type OrchInstallerConfig struct {
 		Scale        Scale  `yaml:"scale"`
 	} `yaml:"global"`
 	Advanced struct { // TODO: form for this part is not done yet
-		Enabled              []string `yaml:"enabled"` // installer module flag
+		// Targets(Stage or Steps) with any labels matched in this list will be executed(either install, upgrade or uninstall)
+		// The installer will execute all targets if this is empty.
+		TargetLabels         []string `yaml:"targetLabels"`
 		AzureADRefreshToken  string   `yaml:"azureADRefreshToken,omitempty"`
 		AzureADTokenEndpoint string   `yaml:"azureADTokenEndpoint,omitempty"`
 	} `yaml:"advanced"`
