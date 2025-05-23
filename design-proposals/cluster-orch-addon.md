@@ -1,4 +1,4 @@
-# Design Proposal: Simplified Default Addon
+# Design Proposal: Simplify Default Addon
 
 Author(s): Hyunsun Moon, Madalina Lazar
 
@@ -22,13 +22,14 @@ The table below outlines the addons included in the 3.0 release and the planned 
 | node-exporter              | Y              | N                            | N                      | Move to optional observability package                                  |
 | openebs                    | Y              | N                            | N                      | Move to optional package                                                |
 | fluent-bit                 | Y              | N                            | N                      | Move to optional package                                                |
-| nfd                        | Y              | Y                            | Y                      |                                                                         |
+| nfd                        | Y              | N                            | N                      | Drop until required                                                     |
 | network-policies           | Y              | Y                            | Y                      |                                                                         |
 | local-path-provisioner     | N              | Y                            | Y                      | Built into K3s                                                          |
 | kube-metrics               | N              | N                            | Y                      | Built into K3s                                                          |
 | traefik ingress controller | N              | N                            | Y                      | Built into K3s                                                          |
 | serviceLB                  | N              | N                            | Y                      | Build into K3s                                                          |
 | kubernetes-dashboard       | Y (EMT-S only) | N                            | Y                      |                                                                         |
+| calico                     | Y              | Y                            | Y                      |                                                                         |
 
 ### Unified Addon Deployment Approach
 
@@ -43,6 +44,12 @@ While the unified approach simplifies addon deployment, specific deployment stra
 - **Cluster Templates**: Three default cluster templates will continue to be provided—privileged, baseline, and restricted. Each template will have distinct Kubernetes Pod Admission Standards configurations, while other configurations will remain consistent across templates.
 - **Built-in Addons**: If an addon is built into K3s or RKE2, it will be utilized directly. For addons not built-in, a HelmChart definition will be added as additional files in the default cluster template to enable automatic deployment by K3s or RKE2.
 - **Consistency Across Platforms**: The set of default addons will be identical for both K3s and RKE2. If an addon is built into K3s but not RKE2, it will be included in the addon manifest of the RKE2 default cluster template to ensure parity.
+
+### Airgap Install Requirement for EMT-S
+
+For EMT-S, ensuring functionality without Internet access is a critical requirement. To meet this need, addon images not built into K3s, such as Calico and kubernetes-dashboard, will be embedded into EMT.
+
+K3s releases a `.zst` for built-in addon images for airgap install, which is uncompressed and loaded into `containerd` during bootstrap. We will adopt a similar approach by creating a custom airgap image tarball that includes Calico and Kubernetes Dashboard images in addition to K3s built-in addon images. This custom tarball will replace the upstream tarball when building the EMT image.
 
 ### Upgrade from 3.0 to 3.1
 
