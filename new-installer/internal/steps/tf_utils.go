@@ -28,9 +28,9 @@ type TerraformUtilityInput struct {
 	Action     string
 	ExecPath   string
 	ModulePath string
-	Variables  any // Any struct to seriaalize to HCL JSON
+	Variables  any // Any struct to serialize to HCL JSON
 	// Either use backend config or backend state. Cannot use both.
-	BackendConfig      any // Any struct to seriaalize to HCL JSON
+	BackendConfig      any // Any struct to serialize to HCL JSON
 	TerraformState     string
 	LogFile            string
 	KeepGeneratedFiles bool
