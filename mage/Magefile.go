@@ -33,7 +33,7 @@ const (
 	kindOrchClusterName      = "kind" // TODO: Keep for backwards compatibility until all Mage is moved to root
 	deploymentTimeoutEnv     = "DEPLOYMENT_TIMEOUT"
 	defaultDeploymentTimeout = "1200s" // timeout must be a valid string
-	argoVersion              = "7.4.4"
+	argoVersion              = "8.0.0"
 	argoRetryCount           = 30
 	argoRetryInterval        = 30
 	giteaVersion             = "10.6.0"
