@@ -1005,7 +1005,6 @@ func secureHeadersAddAppOrch() map[string][]string {
 
 	appOrchSecureHeaders["Content-Security-Policy"] = []string{fmt.Sprintf("default-src 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' ; frame-src 'self' https://keycloak.%s; style-src 'self'; img-src 'self' data:; connect-src 'self' https://keycloak.%s; upgrade-insecure-requests; block-all-mixed-content", //nolint: lll
 		serviceDomain, serviceDomain)}
-	appOrchSecureHeaders["Cross-Origin-Embedder-Policy"] = []string{"unsafe-none"}
 	delete(appOrchSecureHeaders, "X-Content-Type-Options")
 	delete(appOrchSecureHeaders, "X-Frame-Options")
 
@@ -1207,7 +1206,7 @@ func setupNewService(port, serviceName, namespace, serviceType string) error {
 		return err
 	}
 
-	timeout := 32 * time.Second
+	timeout := 120 * time.Second
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 

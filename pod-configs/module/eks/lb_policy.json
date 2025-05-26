@@ -4,18 +4,6 @@
     {
       "Effect": "Allow",
       "Action": [
-        "iam:CreateServiceLinkedRole"
-      ],
-      "Resource": "*",
-      "Condition": {
-        "StringEquals": {
-          "iam:AWSServiceName": "elasticloadbalancing.amazonaws.com"
-        }
-      }
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
         "ec2:DescribeAccountAttributes",
         "ec2:DescribeAddresses",
         "ec2:DescribeAvailabilityZones",
@@ -45,23 +33,8 @@
     {
       "Effect": "Allow",
       "Action": [
-        "cognito-idp:DescribeUserPoolClient",
         "acm:ListCertificates",
-        "acm:DescribeCertificate",
-        "iam:ListServerCertificates",
-        "iam:GetServerCertificate",
-        "waf-regional:GetWebACL",
-        "waf-regional:GetWebACLForResource",
-        "waf-regional:AssociateWebACL",
-        "waf-regional:DisassociateWebACL",
-        "wafv2:GetWebACL",
-        "wafv2:GetWebACLForResource",
-        "wafv2:AssociateWebACL",
-        "wafv2:DisassociateWebACL",
-        "shield:GetSubscriptionState",
-        "shield:DescribeProtection",
-        "shield:CreateProtection",
-        "shield:DeleteProtection"
+        "acm:DescribeCertificate"
       ],
       "Resource": "*"
     },
