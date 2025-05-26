@@ -59,9 +59,9 @@ logs and customize the logs.
 
 - enable_ec2log: Set true to enable collecting logs.
 
-- upload_file_list: The list of files to be uploaded to S3 (default: "
-  /var/log/messages* /var/log/aws-routed-eni/* /var/log/dmesg /tmp/kubelet.log
-  /tmp/free.log /tmp/df.log /tmp/top.log").
+- upload_file_list: The list of files to be uploaded to S3 (default:
+  `/var/log/messages*` `/var/log/aws-routed-eni/*` `/var/log/dmesg` `/tmp/kubelet.log`
+  `/tmp/free.log` `/tmp/df.log` `/tmp/top.log`).
 
 - script: The script to be executed before uploads to generate additional logs.
 

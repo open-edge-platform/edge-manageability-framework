@@ -12,18 +12,19 @@ permissions: {}
 
 jobs:
   auto-approve:
+    runs-on: ubuntu-latest
     permissions:
       pull-requests: write
-    name: Auto approve PR
-    runs-on: ubuntu-latest
-    if: |
-      github.actor == 'sys-orch' && 
-      github.event.pull_request.base.ref == 'main-pass-validation'
     steps:
-      - uses: hmarr/auto-approve-action@8f929096a962e83ccdfa8afcf855f39f12d4dac7  # v4
-        with:
-          github-token: ${{ secrets.SYS_ORCH_GITHUB_APPROVE }}
-          review-message: "Auto approved by sys-orch-github-approve bot"
+      - name: Auto approve PR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        if: github.actor == github.actor == 'sys-orch' && 
+          github.event.pull_request.base.ref == 'main-pass-validation'
+        run: |
+          echo "Approving PR #${{ github.event.pull_request.number }} by ${{ github.actor }}"
+          gh pr review ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --approve --body "Auto approved by sys-orch-github-approve bot"
+
 
   auto-merge:
     permissions:
@@ -38,9 +39,9 @@ jobs:
       github.event.pull_request.base.ref == 'main-pass-validation'
     steps:
       - name: Auto merge
-        uses: peter-evans/enable-pull-request-automerge@a660677d5469627102a1c1e11409dd063606628d  # v3
-        with:
-          token:  ${{ secrets.SYS_ORCH_GITHUB_APPROVE }}
-          pull-request-number: ${{ github.event.pull_request.number }}
-          merge-method: squash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Enabling auto-merge for PR #${{ github.event.pull_request.number }} by ${{ github.actor }}"
+          gh pr merge ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --auto --squash
           
