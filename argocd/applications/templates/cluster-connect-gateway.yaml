@@ -19,9 +19,9 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
-    - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
-      chart: cluster/charts/{{$appName}}
-      targetRevision: 1.1.1
+    - repoURL: https://github.com/open-edge-platform/cluster-connect-gateway
+      path: deployment/charts/{{$appName}}
+      targetRevision: check_lost_connection
       helm:
         releaseName: {{$appName}}
         valuesObject:
