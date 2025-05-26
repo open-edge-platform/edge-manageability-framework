@@ -65,7 +65,7 @@ autonumber
   participant user as User
 
   rect rgb(191, 223, 255)
-  note over http-server,local-admin: Starts to installation script to deploy PXE server on-prem
+  note over pxe-server,local-admin: Starts to installation script to deploy PXE server on-prem
   local-admin->>+pa: Downloads signed_ipxe.efi
   pa->>-local-admin: [signed_ipxe.efi]
   local-admin->>pxe-server: Deploys PXE server and configures it to serve downloaded ipxe.efi
@@ -86,9 +86,6 @@ autonumber
 
   bios->>ipxe: Leaves PXE context, taken over by iPXE
 
-  ipxe->>smee: DHCP Discover
-  smee->>ipxe: DHCP reply with http://<nginx-ip>/boot.ipxe
-  
   ipxe->>+pa: Download boot.ipxe
   pa->>-ipxe: [boot.ipxe]
   
