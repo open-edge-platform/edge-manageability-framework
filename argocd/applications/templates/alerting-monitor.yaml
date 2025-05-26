@@ -21,7 +21,7 @@ spec:
   sources:
     - repoURL: https://github.com/open-edge-platform/o11y-alerting-monitor.git
       path: deployments/alerting-monitor/
-      targetRevision: pkimak
+      targetRevision: pkimak-logging
       helm:
         releaseName: {{$appName}}
         valuesObject:
