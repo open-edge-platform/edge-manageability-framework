@@ -120,7 +120,7 @@ func getInstanceIdForHostGuid(token, guid string) string {
 		return instanceId
 	}
 
-	if hosts.Hosts == nil {
+	if len(hosts.Hosts) == 0 {
 		return instanceId
 	}
 
@@ -128,7 +128,7 @@ func getInstanceIdForHostGuid(token, guid string) string {
 		if host.Uuid == nil {
 			return instanceId
 		}
-		if *host.Uuid == nodeUUID {
+		if *host.Uuid == guid {
 			if host.ResourceId == nil {
 				return instanceId
 			}
@@ -260,7 +260,7 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 					return false, err
 				}
 
-				if hosts.Hosts == nil {
+				if len(hosts.Hosts) == 0 {
 					return false, fmt.Errorf("hosts list is nil")
 				}
 
