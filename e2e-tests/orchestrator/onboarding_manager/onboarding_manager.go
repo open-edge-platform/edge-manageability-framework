@@ -348,8 +348,7 @@ func HttpInfraOnboardGetOSID(ctx context.Context, url string, token string, clie
 		if err != nil {
 			return err
 		}
-		if os.OperatingSystemResources == nil ||
-			len(os.OperatingSystemResources) == 0 {
+		if len(os.OperatingSystemResources) == 0 {
 			return fmt.Errorf("empty os resources")
 		}
 		for _, osr := range os.OperatingSystemResources {
