@@ -39,6 +39,7 @@ cd ../
 go install github.com/asdf-vm/asdf/cmd/asdf@v0.17.0
 asdf plugin add mage
 asdf install mage latest
+go mod download
 # asdf global mage latest
 cd -
 
