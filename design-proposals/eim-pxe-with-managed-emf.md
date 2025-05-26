@@ -33,11 +33,11 @@ The iPXE script includes a logic to fetch IP address from a local DHCP server an
 Once booted into Micro-OS, the provisioning process is taken over by the cloud-based orchestrator. From now on, ENs
 communicate with the remote EMF orchestrator to complete OS provisioning. The secure channel is ensured by using HTTPS communication with JWT authorization.
 
+**NOTE:** This workflow assumes that all ENs have access to Internet and the cloud-based orchestrator.
+
 The high-level solution's architecture is depicted below:
 
 ![PXE with managed EMF](images/eim-pxe-with-managed-emf.png)
-
-**NOTE:** This workflow assumes that all ENs have access to Internet and the cloud-based orchestrator.
 
 ```mermaid
 sequenceDiagram
