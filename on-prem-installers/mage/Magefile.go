@@ -121,7 +121,6 @@ func (b Build) All(ctx context.Context) error {
 	mg.CtxDeps(
 		ctx,
 		b.OnpremKEInstaller,
-		b.OSConfig,
 		b.ArgocdInstaller,
 		b.OnPremOrchInstaller,
 	)
@@ -138,17 +137,6 @@ func (b Build) OnpremKEInstaller(ctx context.Context) error {
 	)
 
 	return b.onpremKeInstaller()
-}
-
-// Build the OS-Config Installer package.
-func (b Build) OSConfig(ctx context.Context) error {
-	mg.CtxDeps(
-		ctx,
-		b.Deps,
-		mage.Deps.FPM,
-	)
-
-	return b.osConfigInstaller()
 }
 
 // Build the Argo-Cd Installer package.

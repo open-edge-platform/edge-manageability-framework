@@ -69,7 +69,6 @@ orch_namespace_list=(
 # Variables that depend on the above and might require updating later, are placed in here
 set_artifacts_version() {
   installer_list=(
-    "onprem-config-installer:${DEPLOY_VERSION}"
     "onprem-ke-installer:${DEPLOY_VERSION}"
     "onprem-argocd-installer:${DEPLOY_VERSION}"
     "onprem-orch-installer:${DEPLOY_VERSION}"
@@ -606,12 +605,8 @@ mv -f "$repo_file" "$cwd/$git_arch_name/$repo_file"
 cd "$cwd"
 rm -rf "$tmp_dir"
 
-# Run OS Configuration installer
-echo "Installing the OS level configuration..."
-eval "sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y $cwd/$deb_dir_name/onprem-config-installer_*_amd64.deb"
-echo "OS level configuration installed"
 
-# Run K8s Installer
+# Run OS Configuration installer and K8s Installer
 echo "Installing RKE2..."
 if [[ -n "${DOCKER_USERNAME}" && -n "${DOCKER_PASSWORD}" ]]; then
   echo "Docker credentials provided. Installing RKE2 with Docker credentials"
@@ -619,7 +614,7 @@ if [[ -n "${DOCKER_USERNAME}" && -n "${DOCKER_PASSWORD}" ]]; then
 else
   sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y "$cwd"/$deb_dir_name/onprem-ke-installer_*_amd64.deb
 fi
-echo "RKE2 Installed"
+echo "OS level configuration installed and RKE2 Installed"
 
 mkdir -p /home/"$USER"/.kube
 sudo cp  /etc/rancher/rke2/rke2.yaml /home/"$USER"/.kube/config

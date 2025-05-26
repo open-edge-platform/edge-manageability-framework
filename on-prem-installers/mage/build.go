@@ -113,42 +113,6 @@ func (Build) onpremKeInstaller() error {
 	)
 }
 
-func (Build) osConfigInstaller() error {
-	fmt.Println("Compile configuration installer executable")
-	mg.SerialDeps(
-		mg.F(
-			compile,
-			filepath.Join(".", "cmd", "onprem-config-installer", "main.go"),
-			filepath.Join(".", "dist", "bin", "onprem-config-installer"),
-		),
-	)
-
-	debVersion, err := mage.GetDebVersion()
-	if err != nil {
-		return fmt.Errorf("failed to get DEB version for osConfigInstaller: %w", err)
-	}
-
-	fmt.Println("Build onprem-config-installer package 📦")
-	return sh.RunV(
-		"fpm",
-		"-s", "dir",
-		"-t", "deb",
-		"--name", "onprem-config-installer",
-		"-p", "./dist",
-		"-d", "jq,libpq5,apparmor,lvm2,mosquitto,net-tools,ntp,openssh-server", //nolint:misspell
-		"-d", "software-properties-common,tpm2-abrmd,tpm2-tools,unzip",
-		"--version", debVersion,
-		"--architecture", "amd64",
-		"--description", "OS Configuration Powered By Intel",
-		"--url", "https://github.com/open-edge-platform/edge-manageability-framework/on-prem-installers",
-		"--maintainer", "Intel Corporation",
-		"--after-install", "./cmd/onprem-config-installer/after-install.sh",
-		"--after-remove", "./cmd/onprem-config-installer/after-remove.sh",
-		"./dist/bin/onprem-config-installer=/usr/bin/onprem-config-installer",
-		"./cmd/onprem-config-installer/onprem-config-installer.1=/usr/share/man/man1/onprem-config-installer.1",
-	)
-}
-
 func (Build) argoCdInstaller() error {
 	// ArgoCD helm installation
 	cmd := "helm repo add argo-helm https://argoproj.github.io/argo-helm --force-update"
