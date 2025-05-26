@@ -38,6 +38,7 @@ asdf plugin add mage
 asdf install mage latest
 asdf global mage latest
 
+
 ### Constants
 
 RELEASE_SERVICE_URL="${RELEASE_SERVICE_URL:-registry-rs.edgeorchestration.intel.com}"
