@@ -1,6 +1,6 @@
 # Design Proposal: Support for dGPU
 
-Author(s): Rajeev Ranjan, Sandeep Sharma
+Author(s): Rajeev Ranjan, Sandeep Sharma, Jagrat Acharya
 Last updated: 2025-05-16
 
 ## Abstract
@@ -54,7 +54,14 @@ In the earlier release (3.0), a key issue was the inability to activate Secure B
      
        https://dgpu-docs.intel.com/driver/installation-rolling.html 
 
-     * **Installation Procedure:**
+     * **Ubuntu Desktop**
+         * Ubuntu Desktop 24.04.2 includes the xe driver by default.
+         * For Any additional compute and media package intel provide PPA, can be installed from the official Intel site.
+           
+           https://dgpu-docs.intel.com/driver/client/overview.html
+           
+
+     * **Ubuntu Server:**
          * Make sure prerequisites to add repository access are available.
             ``` 
             sudo apt update
@@ -114,11 +121,7 @@ In the earlier release (3.0), a key issue was the inability to activate Secure B
      * Existing extensions, such as the device-operator and gpu-plugin, will be updated. The Intel GPU device plugin for Kubernetes facilitates access to Intel discrete and integrated GPUs, registering resources like gpu.intel.com/i915 and gpu.intel.com/xe within a Kubernetes cluster
      * **For EMT** : EMT should be build with 6.11* linux kernel.
      * **For Ubuntu** : Ubuntu Server 24.04.2, equipped with the 6.11 kernel, has been validated with BMG GPU drivers. DEB packages are available as rolling updates in the official documentation.
-     *  for compute and media package intel provide PPA 
-        ```
-        sudo add-apt-repository -y ppa:kobuk-team/intel-graphics
-        ```
-        https://dgpu-docs.intel.com/driver/client/overview.html#ubuntu-24.10-24.04
+    
    * **NVIDIA**
      * A new extension will be created to configure and install the NVIDIA GPU Operator using its Helm chart. The NVIDIA GPU Operator automates the management of all NVIDIA software components required to provision GPUs in Kubernetes, including drivers, the Kubernetes device plugin, the NVIDIA Container Runtime, and monitoring tools.
         ![gpu-operator-extension](images/nvidia-gpu-operator-extension-package.png)
