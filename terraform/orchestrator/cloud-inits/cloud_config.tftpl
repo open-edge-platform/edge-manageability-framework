@@ -42,7 +42,6 @@ package_upgrade: false
 package_reboot_if_required: false
 packages:
   - qemu-guest-agent
-  - golang-go
   - jq
   - snap:
     - [oras, --classic]
@@ -70,7 +69,7 @@ write_files:
 %{ endif ~}
 runcmd:
   - systemctl enable --now qemu-guest-agent
-  - go install github.com/asdf-vm/asdf/cmd/asdf@v0.17.0
-  - asdf plugin add mage
-  - asdf install mage latest
-  - asdf global mage latest
+  # - go install github.com/asdf-vm/asdf/cmd/asdf@v0.17.0
+  # - asdf plugin add mage
+  # - asdf install mage latest
+  # - asdf global mage latest
