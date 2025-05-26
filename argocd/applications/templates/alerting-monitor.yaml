@@ -19,7 +19,7 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
-    - repoURL: https://github.com/open-edge-platform/o11y-alerting-monitor
+    - repoURL: https://github.com/open-edge-platform/o11y-alerting-monitor.git
       path: deployments/alerting-monitor/
       targetRevision: pkimak
       helm:
