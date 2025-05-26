@@ -242,7 +242,7 @@ func HttpInfraOnboardGetHostID(ctx context.Context, url string, token string, cl
 		fmt.Println("HostUUID ", uuid, ", HostID ", hostID, ", TotalElements ", ps.TotalElements)
 		return nil
 	}
-	if err := httpGet(rCtx, client, fmt.Sprintf("%s?filter='uuid=%q'", url, uuid), token, responseHooker); err != nil {
+	if err := httpGet(rCtx, client, fmt.Sprintf("%s?filter=uuid=%q", url, uuid), token, responseHooker); err != nil {
 		return hostID, err
 	}
 
@@ -280,7 +280,7 @@ func HttpInfraOnboardGetHostIDAndInstanceID(ctx context.Context, url string, tok
 		return nil
 	}
 
-	if err := httpGet(rCtx, client, fmt.Sprintf("%s?filter='uuid=%q'", url, uuid), token, responseHooker); err != nil {
+	if err := httpGet(rCtx, client, fmt.Sprintf("%s?filter=uuid=%q", url, uuid), token, responseHooker); err != nil {
 		return hostID, instanceID, err
 	}
 
