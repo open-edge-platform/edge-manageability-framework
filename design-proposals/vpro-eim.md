@@ -26,7 +26,7 @@ of the migration `PxeMac`. Ideally this will be the steps:
 
 `BaremetalControllerKind` identifies the type of Device Management and becomes a shared enum;
 
-- `BaremetalControllerKind` ->> {UNSPECIFIED, NONE, IPMI, VPRO, PDU}
+- `BaremetalControllerKind` ->> {UNSPECIFIED, NONE, IPMI, REDFISH, PDU}
 
 We introduce a new resource to abstract Baseboard Management Controller `BMCResource` and "connected" to the
 [Host](https://github.com/open-edge-platform/infra-core/blob/main/inventory/api/compute/v1/compute.proto#L47) with the
