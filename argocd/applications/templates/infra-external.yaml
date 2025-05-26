@@ -19,9 +19,9 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
-  - repoURL: https://github.com/open-edge-platform/infra-charts
-    path: infra-external
-    targetRevision: add-dm-manager
+    - repoURL: https://github.com/open-edge-platform/infra-charts
+      path: infra-external
+      targetRevision: add-dm-manager
       helm:
         releaseName: {{$appName}}
         valuesObject:
