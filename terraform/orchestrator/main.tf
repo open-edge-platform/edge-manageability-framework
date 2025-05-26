@@ -253,7 +253,7 @@ resource "null_resource" "copy_files" {
 
   provisioner "file" {
     source      = "../../${var.working_directory}/on-prem-installers/onprem/go.sum"
-    destination = "/home/ubuntu/functions.sum"
+    destination = "/home/ubuntu/go.sum"
     when        = create
   }
 
