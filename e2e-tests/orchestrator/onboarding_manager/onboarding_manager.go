@@ -234,7 +234,7 @@ func HttpInfraOnboardGetHostID(ctx context.Context, url string, token string, cl
 		if err != nil {
 			return err
 		}
-		if ps.Hosts == nil {
+		if len(ps.Hosts) == 0 {
 			return fmt.Errorf("empty host result for uuid %s", uuid)
 		}
 		fmt.Printf("HostResource %#v\n", ps)
@@ -265,7 +265,7 @@ func HttpInfraOnboardGetHostIDAndInstanceID(ctx context.Context, url string, tok
 		if err != nil {
 			return err
 		}
-		if ps.Hosts == nil {
+		if len(ps.Hosts) == 0 {
 			return fmt.Errorf("empty host result for uuid %s", uuid)
 		}
 		fmt.Printf("HostResource %#v\n", ps)
