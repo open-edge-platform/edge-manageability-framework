@@ -239,10 +239,10 @@ func HttpInfraOnboardGetHostID(ctx context.Context, url string, token string, cl
 		}
 		fmt.Printf("HostResource %#v\n", ps)
 		hostID = *(ps.Hosts)[0].ResourceId
-		fmt.Println("HostID ", hostID, ", TotalElements ", ps.TotalElements)
+		fmt.Println("HostUUID ", uuid, ", HostID ", hostID, ", TotalElements ", ps.TotalElements)
 		return nil
 	}
-	if err := httpGet(rCtx, client, fmt.Sprintf("%s?filter='uuid=%q'", url, uuid), token, responseHooker); err != nil {
+	if err := httpGet(rCtx, client, fmt.Sprintf("%s?filter='uuid=%q", url, uuid), token, responseHooker); err != nil {
 		return hostID, err
 	}
 
@@ -276,11 +276,11 @@ func HttpInfraOnboardGetHostIDAndInstanceID(ctx context.Context, url string, tok
 		} else {
 			return fmt.Errorf("instance not yet created for uuid %s", uuid)
 		}
-		fmt.Println("HostID ", hostID, ", InstanceID ", instanceID, ", TotalElements ", ps.TotalElements)
+		fmt.Println("HostUUID ", uuid, "HostID ", hostID, ", InstanceID ", instanceID, ", TotalElements ", ps.TotalElements)
 		return nil
 	}
 
-	if err := httpGet(rCtx, client, fmt.Sprintf("%s?filter='uuid=%q'", url, uuid), token, responseHooker); err != nil {
+	if err := httpGet(rCtx, client, fmt.Sprintf("%s?filter='uuid=%q", url, uuid), token, responseHooker); err != nil {
 		return hostID, instanceID, err
 	}
 
