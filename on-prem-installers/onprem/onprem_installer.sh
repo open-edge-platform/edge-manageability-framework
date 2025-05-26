@@ -32,6 +32,12 @@ set -o pipefail
 # shellcheck disable=SC1091
 source "$(dirname "$0")/functions.sh"
 
+
+go install github.com/asdf-vm/asdf/cmd/asdf@v0.17.0
+asdf plugin add mage
+asdf install mage latest
+asdf global mage latest
+
 ### Constants
 
 RELEASE_SERVICE_URL="${RELEASE_SERVICE_URL:-registry-rs.edgeorchestration.intel.com}"
