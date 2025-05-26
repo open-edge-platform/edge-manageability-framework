@@ -82,6 +82,9 @@ loca-credentials:
     vaultUrl: "http://vault.orch-platform.svc.cluster.local:8200"
 
 amt:
+  import:
+    dm-manager:
+      enabled: true
   mps:
     traefikReverseProxy:
       enabled: true
