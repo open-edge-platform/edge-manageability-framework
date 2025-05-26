@@ -8,6 +8,8 @@ gateway:
     serviceMonitor:
       enabled: true
   logLevel: debug
+  image:
+    pullPolicy: Always
 
 # Enable serviceMonitor for the controller
 controller:
