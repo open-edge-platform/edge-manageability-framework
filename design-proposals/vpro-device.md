@@ -52,14 +52,14 @@ Let us now analyze the device activation, the user must do the following steps b
 ```mermaid
 sequenceDiagram
     title AMT provisioning through Tinker action
-    actor to as Trusted operator
+    actor us as User
     participant inv as Inventory
     participant ps as Provisioning
     participant dm as Device Management
     participant en as Edge Node
     participant mps as Management Presence Server
     participant rps as Remote Provisioning Server
-    to ->> en: Boot device
+    us ->> en: Boot device
     activate en
     Note right of en: AMT eligibiliy as part of the discovery
     en ->> ps: Device discovery
@@ -157,13 +157,13 @@ more flexible and provide better control compared to the second solution.
 
 We report hereafter the affected components and Teams:
 
-- Onboarding Manager and Tinker Actions (EIM team)
-- EMT and EMT-Tinker (EMT team)
+- Onboarding Manager and Tinker Actions (Edge Infrastructure Manager team)
+- EMT and EMT-Tinker (Edge Microvisor Toolkit team)
 
 ## Implementation plan
 
-Hereafter we present as steps the proposed plan to manage the device activation in the release 3.1. EIM team will
-implement the following functionality to support this design proposal:
+Hereafter we present as steps the proposed plan to manage the device activation in the release 3.1. Edge Infrastructure
+manager will implement the following functionality to support this design proposal:
 
 - Device discovery reports device eligibility
 - Activation will be always performed without user consent
@@ -179,8 +179,9 @@ flavors support by the Edge Orchestrator and have EMT image supporting RPC and i
 
 ### Test Plan
 
-To ensure the reliability and functionality of the EIM components, it is crucial to component testing in isolation and
-by mocking DMT and other deps. **Unit tests** will be extended accordingly in the affected components.
+To ensure the reliability and functionality of the Edge Infrastructure Manager components, it is crucial to component
+testing in isolation and by mocking DMT and other deps. **Unit tests** will be extended accordingly in the affected
+components.
 
 The integration plan will be split in two flows: i) VIP tests will be extended to verify e2e flow except successfull
 activation which cannot be tested using any Virtual Edge Node flavor; ii) New tests involving hardvware devices will be
