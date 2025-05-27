@@ -121,55 +121,55 @@ export GIT_REPOS=$cwd/$git_arch_name
 #   ## we don't create SRE_DEST_CA_CERT by default
 # }
 
-set_default_smtp_env() {
-  if [[ -z ${SMTP_ADDRESS} ]]; then
-    export SMTP_ADDRESS="smtp.serveraddress.com"
-  fi
-  if [[ -z ${SMTP_PORT} ]]; then
-    export SMTP_PORT="587"
-  fi
-  # Firstname Lastname <email@example.com> format expected
-  if [[ -z ${SMTP_HEADER} ]]; then
-    export SMTP_HEADER="foo bar <foo@bar.com>"
-  fi
-  if [[ -z ${SMTP_USERNAME} ]]; then
-    export SMTP_USERNAME="uSeR"
-  fi
-  if [[ -z ${SMTP_PASSWORD} ]]; then
-    export SMTP_PASSWORD=T@123sfD
-  fi
-}
+# set_default_smtp_env() {
+#   if [[ -z ${SMTP_ADDRESS} ]]; then
+#     export SMTP_ADDRESS="smtp.serveraddress.com"
+#   fi
+#   if [[ -z ${SMTP_PORT} ]]; then
+#     export SMTP_PORT="587"
+#   fi
+#   # Firstname Lastname <email@example.com> format expected
+#   if [[ -z ${SMTP_HEADER} ]]; then
+#     export SMTP_HEADER="foo bar <foo@bar.com>"
+#   fi
+#   if [[ -z ${SMTP_USERNAME} ]]; then
+#     export SMTP_USERNAME="uSeR"
+#   fi
+#   if [[ -z ${SMTP_PASSWORD} ]]; then
+#     export SMTP_PASSWORD=T@123sfD
+#   fi
+# }
 
-create_smpt_secrets() {
-  namespace=orch-infra
-  kubectl -n $namespace delete secret smtp --ignore-not-found
-  kubectl -n $namespace delete secret smtp-auth --ignore-not-found
+# create_smpt_secrets() {
+#   namespace=orch-infra
+#   kubectl -n $namespace delete secret smtp --ignore-not-found
+#   kubectl -n $namespace delete secret smtp-auth --ignore-not-found
 
-  kubectl apply -f - <<EOF
-apiVersion: v1
-kind: Secret
-metadata:
-  name: smtp
-  namespace: $namespace
-type: Opaque
-stringData:
-  smartHost: $SMTP_ADDRESS
-  smartPort: "$SMTP_PORT"
-  from: $SMTP_HEADER
-  authUsername: $SMTP_USERNAME
-EOF
+#   kubectl apply -f - <<EOF
+# apiVersion: v1
+# kind: Secret
+# metadata:
+#   name: smtp
+#   namespace: $namespace
+# type: Opaque
+# stringData:
+#   smartHost: $SMTP_ADDRESS
+#   smartPort: "$SMTP_PORT"
+#   from: $SMTP_HEADER
+#   authUsername: $SMTP_USERNAME
+# EOF
 
-  kubectl apply -f - <<EOF
-apiVersion: v1
-kind: Secret
-metadata:
-  name: smtp-auth
-  namespace: $namespace
-type: kubernetes.io/basic-auth
-stringData:
-  password: $SMTP_PASSWORD
-EOF
-}
+#   kubectl apply -f - <<EOF
+# apiVersion: v1
+# kind: Secret
+# metadata:
+#   name: smtp-auth
+#   namespace: $namespace
+# type: kubernetes.io/basic-auth
+# stringData:
+#   password: $SMTP_PASSWORD
+# EOF
+# }
 
 # create_sre_secrets() {
 #   namespace=orch-sre
@@ -656,11 +656,12 @@ mage onPrem:createNamespaces
 # Create secret with azure credentials
 #create_azure_secret
 # mage onprem:CreateAzureSecret todo: this is not used anymore
-set_default_sre_env
+# set_default_sre_env
 # create_sre_secrets
 mage onPrem:createSreSecrets
-set_default_smtp_env
-create_smpt_secrets
+# set_default_smtp_env
+# create_smpt_secrets
+mage onPrem:createSmtpSecrets
 harbor_password=$(head -c 512 /dev/urandom | tr -dc A-Za-z0-9 | cut -c1-100)
 keycloak_password=$(generate_password)
 postgres_password=$(generate_password)

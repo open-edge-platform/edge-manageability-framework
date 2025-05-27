@@ -571,3 +571,66 @@ stringData:
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
+
+func (OnPrem) CreateSmtpSecrets() error {
+	if os.Getenv("SMTP_ADDRESS") == "" {
+		os.Setenv("SMTP_ADDRESS", "smtp.serveraddress.com")
+	}
+	if os.Getenv("SMTP_PORT") == "" {
+		os.Setenv("SMTP_PORT", "587")
+	}
+	// Firstname Lastname <email@example.com> format expected
+	if os.Getenv("SMTP_HEADER") == "" {
+		os.Setenv("SMTP_HEADER", "foo bar <foo@bar.com>")
+	}
+	if os.Getenv("SMTP_USERNAME") == "" {
+		os.Setenv("SMTP_USERNAME", "uSeR")
+	}
+	if os.Getenv("SMTP_PASSWORD") == "" {
+		os.Setenv("SMTP_PASSWORD", "T@123sfD")
+	}
+
+	namespace := "orch-infra"
+	smtpAddress := os.Getenv("SMTP_ADDRESS")
+	smtpPort := os.Getenv("SMTP_PORT")
+	smtpHeader := os.Getenv("SMTP_HEADER")
+	smtpUsername := os.Getenv("SMTP_USERNAME")
+	smtpPassword := os.Getenv("SMTP_PASSWORD")
+
+	// Delete existing secrets
+	exec.Command("kubectl", "-n", namespace, "delete", "secret", "smtp", "--ignore-not-found").Run()
+	exec.Command("kubectl", "-n", namespace, "delete", "secret", "smtp-auth", "--ignore-not-found").Run()
+
+	// Create smtp secret
+	smtpSecret := fmt.Sprintf(`apiVersion: v1
+kind: Secret
+metadata:
+  name: smtp
+  namespace: %s
+type: Opaque
+stringData:
+  smartHost: %s
+  smartPort: "%s"
+  from: %s
+  authUsername: %s
+`, namespace, smtpAddress, smtpPort, smtpHeader, smtpUsername)
+	if err := applySecret(smtpSecret); err != nil {
+		return err
+	}
+
+	// Create smtp-auth secret
+	smtpAuthSecret := fmt.Sprintf(`apiVersion: v1
+kind: Secret
+metadata:
+  name: smtp-auth
+  namespace: %s
+type: kubernetes.io/basic-auth
+stringData:
+  password: %s
+`, namespace, smtpPassword)
+	if err := applySecret(smtpAuthSecret); err != nil {
+		return err
+	}
+
+	return nil
+}
