@@ -26,20 +26,19 @@ func (NewInstaller) Build() error {
 }
 
 func (NewInstaller) Test() error {
-	// Run tests for the new installer, except for the AWS IaC tests
-	// Ginkgo flags:
-	// -v: verbose output
-	// -r: recursive test
-	// -p: parallel test
-	// --skip-package: skip tests in specific packages
-	if err := sh.RunV("ginkgo", "-v", "-r", "-p", "--skip-package=new-installer/targets/aws/iac", "new-installer"); err != nil {
+	// Run tests for the new installer, except for the AWS IaC tests.
+	if err := sh.RunV("ginkgo", "-v", "-r", "-p", "--skip-package=new-installer/targets/aws/iac/tests", "new-installer"); err != nil {
 		return err
 	}
 	fmt.Println("Installer tests passed successfully.")
 	return nil
 }
 
-// Test Terraform modules
 func (NewInstaller) TestIaC() error {
+	// Test Terraform modules only.
+	if err := sh.RunV("ginkgo", "-v", "-r", "new-installer/targets/aws/iac/tests"); err != nil {
+		return fmt.Errorf("failed to run IaC tests: %w", err)
+	}
+	fmt.Println("IaC tests passed successfully.")
 	return nil
 }

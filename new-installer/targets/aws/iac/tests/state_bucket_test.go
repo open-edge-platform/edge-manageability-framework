@@ -29,9 +29,11 @@ func (s *StateBucketTestSuite) TestApplyingModule() {
 		TerraformDir: "../state_bucket",
 		Vars: map[string]any{
 			"region":    "us-west-2",
-			"orch_name": "test",
+			"orch_name": "unit-test",
 			"bucket":    bucketName,
 		},
+		Reconfigure: true,
+		Upgrade:     true,
 	})
 	defer terraform.Destroy(s.T(), terraformOptions)
 	terraform.InitAndApply(s.T(), terraformOptions)

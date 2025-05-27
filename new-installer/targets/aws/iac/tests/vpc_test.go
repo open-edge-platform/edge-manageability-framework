@@ -86,7 +86,7 @@ func (s *VPCTestSuite) TestApplyingModule() {
 		JumphostInstanceSSHKey: publicSSHKey,
 		JumphostSubnet:         "public-subnet-1",
 		Production:             true,
-		CustomerTag:            "test-customer",
+		CustomerTag:            "unit-test",
 	}
 
 	jsonData, err := json.Marshal(variables)
@@ -110,8 +110,11 @@ func (s *VPCTestSuite) TestApplyingModule() {
 			"bucket": bucketName,
 			"key":    "vpc.tfstate",
 		},
+		Reconfigure: true,
+		Upgrade:     true,
 	})
 	defer terraform.Destroy(s.T(), terraformOptions)
+
 	terraform.InitAndApply(s.T(), terraformOptions)
 
 	// TODO: Check VPC and subnets were created successfully
