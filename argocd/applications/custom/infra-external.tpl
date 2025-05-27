@@ -84,3 +84,31 @@ loca-templates-manager:
   {{- end}}
   {{- end}}
 {{- end }}
+
+amt:
+  mps:
+    commonName: "mps-node.{{ .Values.argo.clusterDomain }}"
+    traefikReverseProxy:
+      host:
+        cira:
+          name: "mps-node.{{ .Values.argo.clusterDomain }}"
+        webport: # Define a new name for the other port
+          name: "mps-webport-node.{{ .Values.argo.clusterDomain }}" # Define the name for the new port
+  {{- if .Values.argo.traefik }}
+    tlsOption: {{ .Values.argo.traefik.tlsOption | default "" | quote }}
+  {{- end }}
+
+  rps:
+    traefikReverseProxy:
+      host:
+        grpc:
+          name: "rps-node.{{ .Values.argo.clusterDomain }}"
+        webport: # Define a new name for the other port
+          name: "rps-webport-node.{{ .Values.argo.clusterDomain }}" # Define the name for the new port
+  {{- if .Values.argo.traefik }}
+    tlsOption: {{ .Values.argo.traefik.tlsOption | default "" | quote }}
+  {{- end }}
+
+  dm-manager:
+    serviceArgs:
+      clusterDomain: {{ .Values.argo.clusterDomain }}

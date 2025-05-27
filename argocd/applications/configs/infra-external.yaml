@@ -3,7 +3,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ---
-import: {}
+import:
+  amt:
+    enabled: true
 
 loca-manager:
   serviceAccount:
@@ -78,3 +80,27 @@ loca-credentials:
   params:
     keycloakUrl: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
     vaultUrl: "http://vault.orch-platform.svc.cluster.local:8200"
+
+amt:
+  mps:
+    traefikReverseProxy:
+      enabled: true
+      secretName: "tls-orch"
+      tlsOption: "gateway-tls"
+      gatewayNamespace: orch-gateway
+  rps:
+    traefikReverseProxy:
+      enabled: true
+      secretName: "tls-orch"
+      tlsOption: "gateway-tls"
+      gatewayNamespace: orch-gateway
+  dm-manager:
+    serviceArgs:
+      # Password policy for AMT
+      # If 'static', then password from params.password will be used for every AMT device.
+      # If 'dynamic', then password will be generated for each AMT device.
+      passwordPolicy: static
+    params:
+      # User-provided password
+      # Should have One uppercase letter, one lowercase letter, one digit, one special character, and be at least 8 characters long.
+      password: "P@ssw0rd"

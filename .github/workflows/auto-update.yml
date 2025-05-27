@@ -1,0 +1,39 @@
+# SPDX-FileCopyrightText: (C) 2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+
+name: Auto Update PR
+
+# On push to the main branch and support branches, update any branches that are out of date
+# and have auto-merge enabled. If the branch is currently out of date with the base branch,
+# it must be first manually updated and then will be kept up to date on future runs.
+on:
+  push:
+    branches:
+      - main
+      - release-*
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  update-pull-requests:
+    permissions:
+      contents: read
+      pull-requests: write
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Update pull requests
+        uses: open-edge-platform/orch-ci/.github/actions/pr_updater@f341738d975c38b2b91f25d405baeb2d39bf2ddb  # 0.1.14
+        with:
+          github_token: ${{ secrets.SYS_ORCH_GITHUB }}
