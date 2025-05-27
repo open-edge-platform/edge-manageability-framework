@@ -24,7 +24,7 @@ resource "aws_security_group_rule" "infra_allow_https" {
 
 #trivy:ignore:AVD-AWS-0053 Allow public access to the load balancer
 resource "aws_lb" "infra" {
-  name                       = substr(sha256("${var.cluster_name}-infra"), 0, 32)
+  name                       = substr(sha256("${var.cluster_name}-argocd"), 0, 32)
   internal                   = var.internal
   load_balancer_type         = "application"
   subnets                    = var.public_subnet_ids
