@@ -24,12 +24,13 @@ import (
 
 type VPCStepTest struct {
 	suite.Suite
-	config     config.OrchInstallerConfig
-	step       *steps_aws.AWSVPCStep
-	randomText string
-	logDir     string
-	tfUtility  *MockTerraformUtility
-	awsUtility *MockAWSUtility
+	config       config.OrchInstallerConfig
+	runtimeState config.OrchInstallerRuntimeState
+	step         *steps_aws.AWSVPCStep
+	randomText   string
+	logDir       string
+	tfUtility    *MockTerraformUtility
+	awsUtility   *MockAWSUtility
 }
 
 func TestVPCStep(t *testing.T) {
@@ -47,11 +48,11 @@ func (s *VPCStepTest) SetupTest() {
 	internal.InitLogger("debug", s.logDir)
 	s.config.AWS.Region = "us-west-2"
 	s.config.Global.OrchName = "test"
-	s.config.Generated.DeploymentID = s.randomText
+	s.runtimeState.DeploymentID = s.randomText
 	s.config.AWS.JumpHostWhitelist = []string{"10.250.0.0/16"}
-	s.config.Generated.LogDir = filepath.Join(rootPath, ".logs")
-	s.config.Generated.JumpHostSSHKeyPrivateKey = "foobar"
-	s.config.Generated.JumpHostSSHKeyPublicKey = "foobar"
+	s.runtimeState.LogDir = filepath.Join(rootPath, ".logs")
+	s.runtimeState.JumpHostSSHKeyPrivateKey = "foobar"
+	s.runtimeState.JumpHostSSHKeyPublicKey = "foobar"
 
 	if _, err := os.Stat(s.logDir); os.IsNotExist(err) {
 		err := os.MkdirAll(s.logDir, os.ModePerm)
@@ -71,9 +72,9 @@ func (s *VPCStepTest) SetupTest() {
 }
 
 func (s *VPCStepTest) TestInstallAndUninstallVPC() {
-	s.config.Generated.Action = "install"
+	s.runtimeState.Action = "install"
 	s.expectTFUtiliyyCall("install")
-	rs, err := steps.GoThroughStepFunctions(s.step, &s.config)
+	rs, err := steps.GoThroughStepFunctions(s.step, &s.config, s.runtimeState)
 	if err != nil {
 		s.NoError(err)
 		return
@@ -91,9 +92,9 @@ func (s *VPCStepTest) TestInstallAndUninstallVPC() {
 		"subnet-6",
 	}, rs.PublicSubnetIDs)
 
-	s.config.Generated.Action = "uninstall"
+	s.runtimeState.Action = "uninstall"
 	s.expectTFUtiliyyCall("uninstall")
-	_, err = steps.GoThroughStepFunctions(s.step, &s.config)
+	_, err = steps.GoThroughStepFunctions(s.step, &s.config, s.runtimeState)
 	if err != nil {
 		s.NoError(err)
 	}
@@ -151,7 +152,7 @@ func (s *VPCStepTest) expectTFUtiliyyCall(action string) {
 		},
 		BackendConfig: steps_aws.TerraformAWSBucketBackendConfig{
 			Region: s.config.AWS.Region,
-			Bucket: fmt.Sprintf("%s-%s", s.config.Global.OrchName, s.config.Generated.DeploymentID),
+			Bucket: fmt.Sprintf("%s-%s", s.config.Global.OrchName, s.runtimeState.DeploymentID),
 			Key:    "vpc.tfstate",
 		},
 		TerraformState: "",

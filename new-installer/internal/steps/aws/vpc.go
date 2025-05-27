@@ -90,7 +90,7 @@ func (s *AWSVPCStep) Labels() []string {
 	return s.StepLabels
 }
 
-func (s *AWSVPCStep) ConfigStep(ctx context.Context, config config.OrchInstallerConfig) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *AWSVPCStep) ConfigStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	s.variables = NewDefaultAWSVPCVariables()
 	s.variables.Region = config.AWS.Region
 	s.variables.Name = config.Global.OrchName
@@ -102,7 +102,7 @@ func (s *AWSVPCStep) ConfigStep(ctx context.Context, config config.OrchInstaller
 	// Extract availability zones
 	availabilityZones, err := s.AWSUtility.GetAvailableZones(config.AWS.Region)
 	if err != nil {
-		return config.Generated, &internal.OrchInstallerError{
+		return runtimeState, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInternal,
 			ErrorMsg:  fmt.Sprintf("failed to get availability zones: %v", err),
 		}
@@ -112,7 +112,7 @@ func (s *AWSVPCStep) ConfigStep(ctx context.Context, config config.OrchInstaller
 	// and the availability zones.
 	vpcCIDR, vpcNet, err := net.ParseCIDR(s.variables.CidrBlock)
 	if err != nil {
-		return config.Generated, &internal.OrchInstallerError{
+		return runtimeState, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInvalidArgument,
 			ErrorMsg:  fmt.Sprintf("failed to parse VPC CIDR block: %v", err),
 		}
@@ -120,7 +120,7 @@ func (s *AWSVPCStep) ConfigStep(ctx context.Context, config config.OrchInstaller
 	vpcMaskSize, _ := vpcNet.Mask.Size()
 	// This logic is correct, since the number of IPs is 2^(32-maskSize).
 	if vpcMaskSize > MinimumVPCCIDRMaskSize {
-		return config.Generated, &internal.OrchInstallerError{
+		return runtimeState, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInvalidArgument,
 			ErrorMsg:  fmt.Sprintf("VPC CIDR block is too small: %s, minimum is %d", s.variables.CidrBlock, MinimumVPCCIDRMaskSize),
 		}
@@ -128,7 +128,7 @@ func (s *AWSVPCStep) ConfigStep(ctx context.Context, config config.OrchInstaller
 	netAddr := vpcCIDR
 	netAddrInt, err := ipconv.IPv4ToInt(netAddr)
 	if err != nil {
-		return config.Generated, &internal.OrchInstallerError{
+		return runtimeState, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInternal,
 			ErrorMsg:  fmt.Sprintf("failed to convert IP to int: %v", err),
 		}
@@ -157,72 +157,72 @@ func (s *AWSVPCStep) ConfigStep(ctx context.Context, config config.OrchInstaller
 	s.variables.JumphostIPAllowList = config.AWS.JumpHostWhitelist
 
 	// Generate SSH key pair for the jumphost
-	if config.Generated.JumpHostSSHKeyPrivateKey == "" || config.Generated.JumpHostSSHKeyPublicKey == "" {
+	if runtimeState.JumpHostSSHKeyPrivateKey == "" || runtimeState.JumpHostSSHKeyPublicKey == "" {
 		privateKey, publicKey, err := GenerateSSHKeyPair()
 		if err != nil {
-			return config.Generated, &internal.OrchInstallerError{
+			return runtimeState, &internal.OrchInstallerError{
 				ErrorCode: internal.OrchInstallerErrorCodeInternal,
 				ErrorMsg:  fmt.Sprintf("failed to generate SSH key pair: %v", err),
 			}
 		}
 		s.variables.JumphostInstanceSshKey = publicKey
-		config.Generated.JumpHostSSHKeyPrivateKey = privateKey
-		config.Generated.JumpHostSSHKeyPublicKey = publicKey
+		runtimeState.JumpHostSSHKeyPrivateKey = privateKey
+		runtimeState.JumpHostSSHKeyPublicKey = publicKey
 	} else {
-		s.variables.JumphostInstanceSshKey = config.Generated.JumpHostSSHKeyPublicKey
+		s.variables.JumphostInstanceSshKey = runtimeState.JumpHostSSHKeyPublicKey
 	}
 
 	s.variables.CustomerTag = config.AWS.CustomerTag
 	s.backendConfig = TerraformAWSBucketBackendConfig{
 		Region: config.AWS.Region,
-		Bucket: config.Global.OrchName + "-" + config.Generated.DeploymentID,
+		Bucket: config.Global.OrchName + "-" + runtimeState.DeploymentID,
 		Key:    VPCBackendBucketKey,
 	}
-	return config.Generated, nil
+	return runtimeState, nil
 }
 
-func (s *AWSVPCStep) PreStep(ctx context.Context, config config.OrchInstallerConfig) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
-	return config.Generated, nil
+func (s *AWSVPCStep) PreStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+	return runtimeState, nil
 }
 
-func (s *AWSVPCStep) RunStep(ctx context.Context, config config.OrchInstallerConfig) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *AWSVPCStep) RunStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	terraformStepInput := steps.TerraformUtilityInput{
-		Action:             config.Generated.Action,
+		Action:             runtimeState.Action,
 		ModulePath:         filepath.Join(s.RootPath, VPCModulePath),
 		Variables:          s.variables,
 		BackendConfig:      s.backendConfig,
-		LogFile:            filepath.Join(config.Generated.LogDir, "aws_vpc.log"),
+		LogFile:            filepath.Join(runtimeState.LogDir, "aws_vpc.log"),
 		KeepGeneratedFiles: s.KeepGeneratedFiles,
 	}
 	terraformStepOutput, err := s.TerraformUtility.Run(ctx, terraformStepInput)
 	if err != nil {
-		return config.Generated, &internal.OrchInstallerError{
+		return runtimeState, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeTerraform,
 			ErrorMsg:  fmt.Sprintf("failed to run terraform: %v", err),
 		}
 	}
-	if config.Generated.Action == "uninstall" {
-		return config.Generated, nil
+	if runtimeState.Action == "uninstall" {
+		return runtimeState, nil
 	}
 	if terraformStepOutput.Output != nil {
 		if vpcIDMeta, ok := terraformStepOutput.Output["vpc_id"]; !ok {
-			return config.Generated, &internal.OrchInstallerError{
+			return runtimeState, &internal.OrchInstallerError{
 				ErrorCode: internal.OrchInstallerErrorCodeTerraform,
 				ErrorMsg:  "vpc_id does not exist in terraform output",
 			}
 		} else {
-			config.Generated.VPCID = strings.Trim(string(vpcIDMeta.Value), "\"")
+			runtimeState.VPCID = strings.Trim(string(vpcIDMeta.Value), "\"")
 		}
 		// TODO: Reuse same code for public and private subnets
 		if publicSubnets, ok := terraformStepOutput.Output["public_subnets"]; !ok {
-			return config.Generated, &internal.OrchInstallerError{
+			return runtimeState, &internal.OrchInstallerError{
 				ErrorCode: internal.OrchInstallerErrorCodeTerraform,
 				ErrorMsg:  "public_subnets does not exist in terraform output",
 			}
 		} else {
 			jsonBytes, marshalErr := publicSubnets.Value.MarshalJSON()
 			if marshalErr != nil {
-				return config.Generated, &internal.OrchInstallerError{
+				return runtimeState, &internal.OrchInstallerError{
 					ErrorCode: internal.OrchInstallerErrorCodeTerraform,
 					ErrorMsg:  fmt.Sprintf("not able to marshal value of public subnets: %v", marshalErr),
 				}
@@ -231,32 +231,32 @@ func (s *AWSVPCStep) RunStep(ctx context.Context, config config.OrchInstallerCon
 			k := koanf.New(".")
 			unmarshalErr := k.Load(rawbytes.Provider(jsonBytes), json.Parser())
 			if unmarshalErr != nil {
-				return config.Generated, &internal.OrchInstallerError{
+				return runtimeState, &internal.OrchInstallerError{
 					ErrorCode: internal.OrchInstallerErrorCodeTerraform,
 					ErrorMsg:  fmt.Sprintf("not able to unmarshal public subnets output: %v", unmarshalErr),
 				}
 			}
-			config.Generated.PublicSubnetIDs = nil
+			runtimeState.PublicSubnetIDs = nil
 			for subnetName := range s.variables.PublicSubnets {
 				subnetId := k.Get(fmt.Sprintf("%s.id", subnetName))
 				if subnetId == nil {
-					return config.Generated, &internal.OrchInstallerError{
+					return runtimeState, &internal.OrchInstallerError{
 						ErrorCode: internal.OrchInstallerErrorCodeTerraform,
 						ErrorMsg:  fmt.Sprintf("subnet id for %s does not exist in terraform output", subnetName),
 					}
 				}
-				config.Generated.PublicSubnetIDs = append(config.Generated.PublicSubnetIDs, subnetId.(string))
+				runtimeState.PublicSubnetIDs = append(runtimeState.PublicSubnetIDs, subnetId.(string))
 			}
 		}
 		if privateSubnets, ok := terraformStepOutput.Output["private_subnets"]; !ok {
-			return config.Generated, &internal.OrchInstallerError{
+			return runtimeState, &internal.OrchInstallerError{
 				ErrorCode: internal.OrchInstallerErrorCodeTerraform,
 				ErrorMsg:  "private_subnets does not exist in terraform output",
 			}
 		} else {
 			jsonBytes, marshalErr := privateSubnets.Value.MarshalJSON()
 			if marshalErr != nil {
-				return config.Generated, &internal.OrchInstallerError{
+				return runtimeState, &internal.OrchInstallerError{
 					ErrorCode: internal.OrchInstallerErrorCodeTerraform,
 					ErrorMsg:  fmt.Sprintf("not able to marshal value of private subnets: %v", marshalErr),
 				}
@@ -265,34 +265,34 @@ func (s *AWSVPCStep) RunStep(ctx context.Context, config config.OrchInstallerCon
 			k := koanf.New(".")
 			unmarshalErr := k.Load(rawbytes.Provider(jsonBytes), json.Parser())
 			if unmarshalErr != nil {
-				return config.Generated, &internal.OrchInstallerError{
+				return runtimeState, &internal.OrchInstallerError{
 					ErrorCode: internal.OrchInstallerErrorCodeTerraform,
 					ErrorMsg:  fmt.Sprintf("not able to unmarshal private subnets output: %v", unmarshalErr),
 				}
 			}
-			config.Generated.PrivateSubnetIDs = nil
+			runtimeState.PrivateSubnetIDs = nil
 			for subnetName := range s.variables.PrivateSubnets {
 				subnetId := k.Get(fmt.Sprintf("%s.id", subnetName))
 				if subnetId == nil {
-					return config.Generated, &internal.OrchInstallerError{
+					return runtimeState, &internal.OrchInstallerError{
 						ErrorCode: internal.OrchInstallerErrorCodeTerraform,
 						ErrorMsg:  fmt.Sprintf("subnet id for %s does not exist in terraform output", subnetName),
 					}
 				}
-				config.Generated.PrivateSubnetIDs = append(config.Generated.PrivateSubnetIDs, subnetId.(string))
+				runtimeState.PrivateSubnetIDs = append(runtimeState.PrivateSubnetIDs, subnetId.(string))
 			}
 		}
 	} else {
-		return config.Generated, &internal.OrchInstallerError{
+		return runtimeState, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeTerraform,
 			ErrorMsg:  "cannot find any output from VPC module",
 		}
 	}
-	return config.Generated, nil
+	return runtimeState, nil
 }
 
-func (s *AWSVPCStep) PostStep(ctx context.Context, config config.OrchInstallerConfig, prevStepError *internal.OrchInstallerError) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
-	return config.Generated, prevStepError
+func (s *AWSVPCStep) PostStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState, prevStepError *internal.OrchInstallerError) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+	return runtimeState, prevStepError
 }
 
 func GenerateSSHKeyPair() (string, string, error) {

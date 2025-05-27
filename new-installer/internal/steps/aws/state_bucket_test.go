@@ -19,7 +19,8 @@ import (
 
 type StateBucketTest struct {
 	suite.Suite
-	config config.OrchInstallerConfig
+	config       config.OrchInstallerConfig
+	runtimeState config.OrchInstallerRuntimeState
 
 	step       *steps_aws.CreateAWSStateBucket
 	randomText string
@@ -40,7 +41,7 @@ func (s *StateBucketTest) SetupTest() {
 	s.config = config.OrchInstallerConfig{}
 	s.config.AWS.Region = "us-west-2"
 	s.config.Global.OrchName = "test"
-	s.config.Generated.DeploymentID = s.randomText
+	s.runtimeState.DeploymentID = s.randomText
 	s.tfUtility = &MockTerraformUtility{}
 
 	s.step = &steps_aws.CreateAWSStateBucket{
@@ -51,17 +52,17 @@ func (s *StateBucketTest) SetupTest() {
 }
 
 func (s *StateBucketTest) TestInstallAndUninstall() {
-	s.config.Generated.Action = "install"
+	s.runtimeState.Action = "install"
 	s.expectTFUtiliyyCall("install")
-	_, err := steps.GoThroughStepFunctions(s.step, &s.config)
+	_, err := steps.GoThroughStepFunctions(s.step, &s.config, s.runtimeState)
 	if err != nil {
 		s.NoError(err)
 		return
 	}
 
-	s.config.Generated.Action = "uninstall"
+	s.runtimeState.Action = "uninstall"
 	s.expectTFUtiliyyCall("uninstall")
-	_, err = steps.GoThroughStepFunctions(s.step, &s.config)
+	_, err = steps.GoThroughStepFunctions(s.step, &s.config, s.runtimeState)
 	if err != nil {
 		s.NoError(err)
 	}
@@ -73,7 +74,7 @@ func (s *StateBucketTest) expectTFUtiliyyCall(action string) {
 		Variables: steps_aws.StateBucketVariables{
 			Region:   s.config.AWS.Region,
 			OrchName: s.config.Global.OrchName,
-			Bucket:   s.config.Global.OrchName + "-" + s.config.Generated.DeploymentID,
+			Bucket:   s.config.Global.OrchName + "-" + s.runtimeState.DeploymentID,
 		},
 		ModulePath:         filepath.Join(s.step.RootPath, steps_aws.StateBucketModulePath),
 		LogFile:            filepath.Join(s.step.RootPath, ".logs", "aws_state_bucket.log"),
