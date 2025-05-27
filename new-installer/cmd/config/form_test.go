@@ -365,9 +365,14 @@ func testAdvancedMode(t *testing.T) {
 	}
 }
 
-func TestSimpleWorkflow(t *testing.T) {
+func initTest() {
+	input = config.OrchInstallerConfig{}
 	flags.PackagePath = "../../assets/packages.yaml"
 	loadOrchPackages()
+}
+
+func TestSimpleWorkflow(t *testing.T) {
+	initTest()
 
 	// Test the form initialization
 	form = orchInstallerForm()
@@ -386,7 +391,7 @@ func TestSimpleWorkflow(t *testing.T) {
 }
 
 func TestAdvancedWorkflow(t *testing.T) {
-	init()
+	initTest()
 
 	// Test the form initialization
 	form = orchInstallerForm()
@@ -407,12 +412,6 @@ func TestAdvancedWorkflow(t *testing.T) {
 	testConfigureSMTP(t)
 	testConfirmAdvancedMode(t)
 	testAdvancedMode(t)
-}
-
-func init() {
-	input = config.OrchInstallerConfig{}
-	flags.PackagePath = "../../assets/packages.yaml"
-	loadOrchPackages()
 }
 
 // batchUpdate is a helper function to run the model and update it with the command
