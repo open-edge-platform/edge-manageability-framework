@@ -77,8 +77,9 @@ type AWSVPCStep struct {
 	backendConfig      TerraformAWSBucketBackendConfig
 	RootPath           string
 	KeepGeneratedFiles bool
-	TerraformExecPath  string
 	StepLabels         []string
+	TerraformUtility   steps.TerraformUtility
+	AWSUtility         AWSUtility
 }
 
 func (s *AWSVPCStep) Name() string {
@@ -99,7 +100,7 @@ func (s *AWSVPCStep) ConfigStep(ctx context.Context, config config.OrchInstaller
 	//Based on the region, we need to get the availability zones.
 
 	// Extract availability zones
-	availabilityZones, err := GetAvailableZones(config.AWS.Region)
+	availabilityZones, err := s.AWSUtility.GetAvailableZones(config.AWS.Region)
 	if err != nil {
 		return config.Generated, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInternal,
@@ -187,14 +188,13 @@ func (s *AWSVPCStep) PreStep(ctx context.Context, config config.OrchInstallerCon
 func (s *AWSVPCStep) RunStep(ctx context.Context, config config.OrchInstallerConfig) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	terraformStepInput := steps.TerraformUtilityInput{
 		Action:             config.Generated.Action,
-		ExecPath:           s.TerraformExecPath,
 		ModulePath:         filepath.Join(s.RootPath, VPCModulePath),
 		Variables:          s.variables,
 		BackendConfig:      s.backendConfig,
 		LogFile:            filepath.Join(config.Generated.LogDir, "aws_vpc.log"),
 		KeepGeneratedFiles: s.KeepGeneratedFiles,
 	}
-	terraformStepOutput, err := steps.RunTerraformModule(ctx, terraformStepInput)
+	terraformStepOutput, err := s.TerraformUtility.Run(ctx, terraformStepInput)
 	if err != nil {
 		return config.Generated, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeTerraform,

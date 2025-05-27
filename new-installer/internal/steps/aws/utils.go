@@ -19,13 +19,23 @@ const (
 	MinimumVPCCIDRMaskSize    = 20
 )
 
+type AWSUtility interface {
+	GetAvailableZones(region string) ([]string, error)
+}
+
+type awsUtilityImpl struct{}
+
+func CreateAWSUtility() AWSUtility {
+	return &awsUtilityImpl{}
+}
+
 type TerraformAWSBucketBackendConfig struct {
 	Region string `json:"region" yaml:"region"`
 	Bucket string `json:"bucket" yaml:"bucket"`
 	Key    string `json:"key" yaml:"key"`
 }
 
-func GetAvailableZones(region string) ([]string, error) {
+func (*awsUtilityImpl) GetAvailableZones(region string) ([]string, error) {
 	session, err := session.NewSession(&aws.Config{
 		Region: aws.String(region),
 	})

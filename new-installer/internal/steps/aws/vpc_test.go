@@ -5,31 +5,31 @@ package steps_aws_test
 
 import (
 	"crypto/rand"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-	terratest_aws "github.com/gruntwork-io/terratest/modules/aws"
+	"github.com/hashicorp/terraform-exec/tfexec"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps"
 	steps_aws "github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps/aws"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
 type VPCStepTest struct {
 	suite.Suite
-	config            config.OrchInstallerConfig
-	step              *steps_aws.AWSVPCStep
-	randomText        string
-	logDir            string
-	terraformExecPath string
+	config     config.OrchInstallerConfig
+	step       *steps_aws.AWSVPCStep
+	randomText string
+	logDir     string
+	tfUtility  *MockTerraformUtility
+	awsUtility *MockAWSUtility
 }
 
 func TestVPCStep(t *testing.T) {
@@ -50,14 +50,9 @@ func (s *VPCStepTest) SetupTest() {
 	s.config.Generated.DeploymentID = s.randomText
 	s.config.AWS.JumpHostWhitelist = []string{"10.250.0.0/16"}
 	s.config.Generated.LogDir = filepath.Join(rootPath, ".logs")
+	s.config.Generated.JumpHostSSHKeyPrivateKey = "foobar"
+	s.config.Generated.JumpHostSSHKeyPublicKey = "foobar"
 
-	// Create a temporary S3 bucket to store the terraform state
-	bucketName := fmt.Sprintf("%s-%s", s.config.Global.OrchName, s.randomText)
-	err = createOrDeleteS3Bucket(bucketName, "create")
-	if err != nil {
-		s.NoError(err)
-		return
-	}
 	if _, err := os.Stat(s.logDir); os.IsNotExist(err) {
 		err := os.MkdirAll(s.logDir, os.ModePerm)
 		if err != nil {
@@ -65,91 +60,124 @@ func (s *VPCStepTest) SetupTest() {
 			return
 		}
 	}
-	s.terraformExecPath, err = steps.InstallTerraformAndGetExecPath()
-	if err != nil {
-		s.NoError(err)
-		return
-	}
-
+	s.tfUtility = &MockTerraformUtility{}
+	s.awsUtility = &MockAWSUtility{}
 	s.step = &steps_aws.AWSVPCStep{
 		RootPath:           rootPath,
 		KeepGeneratedFiles: true,
-		TerraformExecPath:  s.terraformExecPath,
+		TerraformUtility:   s.tfUtility,
+		AWSUtility:         s.awsUtility,
 	}
 }
 
-func (s *VPCStepTest) TearDownTest() {
-	// We will always uninstall VPC module
-	s.config.Generated.Action = "uninstall"
-	_, err := steps.GoThroughStepFunctions(s.step, &s.config)
-	if err != nil {
-		s.NoError(err)
-	}
-
-	bucketName := fmt.Sprintf("%s-%s", s.config.Global.OrchName, s.randomText)
-	s3Err := createOrDeleteS3Bucket(bucketName, "delete")
-	if s3Err != nil {
-		s.NoError(s3Err)
-	}
-	if _, err := os.Stat(s.terraformExecPath); err == nil {
-		err = os.Remove(s.terraformExecPath)
-		if err != nil {
-			s.NoError(err)
-		}
-	}
-}
-
-func (s *VPCStepTest) TestInstallVPC() {
+func (s *VPCStepTest) TestInstallAndUninstallVPC() {
 	s.config.Generated.Action = "install"
+	s.expectTFUtiliyyCall("install")
 	rs, err := steps.GoThroughStepFunctions(s.step, &s.config)
 	if err != nil {
 		s.NoError(err)
 		return
 	}
 
-	vpc := terratest_aws.GetVpcById(s.T(), rs.VPCID, s.config.AWS.Region)
-	if vpc == nil {
-		s.NotNil(vpc)
-		return
+	s.Equal(rs.VPCID, "vpc-12345678")
+	s.ElementsMatch([]string{
+		"subnet-1",
+		"subnet-2",
+		"subnet-3",
+	}, rs.PrivateSubnetIDs)
+	s.ElementsMatch([]string{
+		"subnet-4",
+		"subnet-5",
+		"subnet-6",
+	}, rs.PublicSubnetIDs)
+
+	s.config.Generated.Action = "uninstall"
+	s.expectTFUtiliyyCall("uninstall")
+	_, err = steps.GoThroughStepFunctions(s.step, &s.config)
+	if err != nil {
+		s.NoError(err)
 	}
-	s.Equal(vpc.Name, s.config.Global.OrchName)
-	s.Equal(*vpc.CidrBlock, steps_aws.DefaultNetworkCIDR)
-	s.Equal(vpc.Tags["Name"], s.config.Global.OrchName)
 }
 
-func createOrDeleteS3Bucket(bucketName string, action string) error {
-	session, err := session.NewSession(&aws.Config{
-		Region: aws.String("us-west-2"),
-	})
-	if err != nil {
-		return err
+func (s *VPCStepTest) expectTFUtiliyyCall(action string) {
+	s.awsUtility.On("GetAvailableZones", "us-west-2").Return([]string{"us-west-2a", "us-west-2b", "us-west-2c"}, nil).Once()
+	input := steps.TerraformUtilityInput{
+		Action:             action,
+		ModulePath:         filepath.Join(s.step.RootPath, steps_aws.VPCModulePath),
+		LogFile:            filepath.Join(s.logDir, "aws_vpc.log"),
+		KeepGeneratedFiles: s.step.KeepGeneratedFiles,
+		Variables: steps_aws.AWSVPCVariables{
+			Name:               s.config.Global.OrchName,
+			Region:             s.config.AWS.Region,
+			CidrBlock:          "10.250.0.0/16",
+			EnableDnsHostnames: true,
+			EnableDnsSupport:   true,
+			JumphostIPAllowList: []string{
+				"10.250.0.0/16",
+			},
+			JumphostInstanceSshKey: "foobar",
+			Production:             true,
+			CustomerTag:            "",
+			EndpointSGName:         s.config.Global.OrchName + "-vpc-ep",
+			PrivateSubnets: map[string]steps_aws.AWSVPCSubnet{
+				"subnet-us-west-2a": {
+					Az:        "us-west-2a",
+					CidrBlock: "10.250.0.0/22",
+				},
+				"subnet-us-west-2b": {
+					Az:        "us-west-2b",
+					CidrBlock: "10.250.4.0/22",
+				},
+				"subnet-us-west-2c": {
+					Az:        "us-west-2c",
+					CidrBlock: "10.250.8.0/22",
+				},
+			},
+			PublicSubnets: map[string]steps_aws.AWSVPCSubnet{
+				"subnet-us-west-2a-pub": {
+					Az:        "us-west-2a",
+					CidrBlock: "10.250.12.0/24",
+				},
+				"subnet-us-west-2b-pub": {
+					Az:        "us-west-2b",
+					CidrBlock: "10.250.13.0/24",
+				},
+				"subnet-us-west-2c-pub": {
+					Az:        "us-west-2c",
+					CidrBlock: "10.250.14.0/24",
+				},
+			},
+			JumphostSubnet: "subnet-us-west-2a-pub",
+		},
+		BackendConfig: steps_aws.TerraformAWSBucketBackendConfig{
+			Region: s.config.AWS.Region,
+			Bucket: fmt.Sprintf("%s-%s", s.config.Global.OrchName, s.config.Generated.DeploymentID),
+			Key:    "vpc.tfstate",
+		},
+		TerraformState: "",
 	}
-	s3Client := s3.New(session)
-	s3Input := &s3.CreateBucketInput{
-		Bucket: aws.String(bucketName),
-	}
-	if action == "create" {
-		_, err = s3Client.CreateBucket(s3Input)
-		if err != nil {
-			if aerr, ok := err.(s3.RequestFailure); ok && aerr.Code() == s3.ErrCodeBucketAlreadyOwnedByYou {
-				// no-op, bucket already exists
-			} else {
-				return err
-			}
-		}
+	if action == "install" {
+		s.tfUtility.On("Run", mock.Anything, input).Return(steps.TerraformUtilityOutput{
+			TerraformState: "",
+			Output: map[string]tfexec.OutputMeta{
+				"vpc_id": {
+					Type:  json.RawMessage(`"string"`),
+					Value: json.RawMessage(`"vpc-12345678"`),
+				},
+				"private_subnets": {
+					Type:  json.RawMessage(`"list"`),
+					Value: json.RawMessage(`{"subnet-us-west-2a":{"id":"subnet-1"},"subnet-us-west-2b":{"id":"subnet-2"},"subnet-us-west-2c":{"id":"subnet-3"}}`),
+				},
+				"public_subnets": {
+					Type:  json.RawMessage(`"list"`),
+					Value: json.RawMessage(`{"subnet-us-west-2a-pub":{"id":"subnet-4"},"subnet-us-west-2b-pub":{"id":"subnet-5"},"subnet-us-west-2c-pub":{"id":"subnet-6"}}`),
+				},
+			},
+		}, nil).Once()
 	} else {
-		s3Client.DeleteObject(&s3.DeleteObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String(steps_aws.VPCBackendBucketKey),
-		})
-		_, err = s3Client.DeleteBucket(&s3.DeleteBucketInput{
-			Bucket: aws.String(bucketName),
-		})
-		if aerr, ok := err.(s3.RequestFailure); ok && aerr.Code() == s3.ErrCodeNoSuchBucket {
-			// no-op, bucket already exists
-		} else {
-			return err
-		}
+		s.tfUtility.On("Run", mock.Anything, input).Return(steps.TerraformUtilityOutput{
+			TerraformState: "",
+			Output:         map[string]tfexec.OutputMeta{},
+		}, nil).Once()
 	}
-	return err
 }
