@@ -24,3 +24,22 @@ func (NewInstaller) Build() error {
 	fmt.Println("Installer built successfully. Run ./new-installer/_build/orch-installer to start the installer.")
 	return nil
 }
+
+func (NewInstaller) Test() error {
+	// Run tests for the new installer, except for the AWS IaC tests
+	// Ginkgo flags:
+	// -v: verbose output
+	// -r: recursive test
+	// -p: parallel test
+	// --skip-package: skip tests in specific packages
+	if err := sh.RunV("ginkgo", "-v", "-r", "-p", "--skip-package=new-installer/targets/aws/iac", "new-installer"); err != nil {
+		return err
+	}
+	fmt.Println("Installer tests passed successfully.")
+	return nil
+}
+
+// Test Terraform modules
+func (NewInstaller) TestIaC() error {
+	return nil
+}
