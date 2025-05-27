@@ -68,7 +68,7 @@ type OrchInstallerConfig struct {
 		JumpHostWhitelist []string `yaml:"jumpHostWhitelist,omitempty"`
 		VPCID             string   `yaml:"vpcID,omitempty"`
 		ReduceNSTTL       bool     `yaml:"reduceNSTTL,omitempty"` // TODO: do we need this?
-		EKSDNSIP          string   `yaml:"eksDNDIP,omitempty"`    // TODO: do we need this?
+		EKSDNSIP          string   `yaml:"eksDNSIP,omitempty"`    // TODO: do we need this?
 	} `yaml:"aws,omitempty"`
 	Onprem struct {
 		ArgoIP         string `yaml:"argoIP"`

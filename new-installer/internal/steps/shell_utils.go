@@ -17,13 +17,22 @@ import (
 
 const DefaultTimeout = 60 // seconds
 
-type ShellUtility struct {
-	Command          []string
-	Timeout          int
-	SkipError        bool
-	RunInBackeground bool
+type ShellUtility interface {
+	Run(ctx context.Context, input ShellUtilityInput) (*ShellUtilityOutput, *internal.OrchInstallerError)
+	Process() *os.Process
+	Kill() error
+	Wait() error
+}
 
+type shellUtilityImpl struct {
 	cmd *exec.Cmd
+}
+
+type ShellUtilityInput struct {
+	Command         []string
+	Timeout         int
+	SkipError       bool
+	RunInBackground bool
 }
 
 type ShellUtilityOutput struct {
@@ -32,16 +41,20 @@ type ShellUtilityOutput struct {
 	Error  error
 }
 
-func (s *ShellUtility) Run(ctx context.Context) (*ShellUtilityOutput, *internal.OrchInstallerError) {
+func CreateShellUtility() ShellUtility {
+	return &shellUtilityImpl{}
+}
+
+func (s *shellUtilityImpl) Run(ctx context.Context, input ShellUtilityInput) (*ShellUtilityOutput, *internal.OrchInstallerError) {
 	logger := internal.Logger()
-	logger.Debugf("Running shell command: %s", s.Command)
-	if s.Timeout <= 0 {
-		s.Timeout = DefaultTimeout
+	logger.Debugf("Running shell command: %s", input.Command)
+	if input.Timeout <= 0 {
+		input.Timeout = DefaultTimeout
 	}
-	timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(s.Timeout)*time.Second)
+	timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(input.Timeout)*time.Second)
 	defer cancel()
 
-	s.cmd = exec.CommandContext(timeoutCtx, s.Command[0], s.Command[1:]...)
+	s.cmd = exec.CommandContext(timeoutCtx, input.Command[0], input.Command[1:]...)
 
 	stderrWriter := strings.Builder{}
 	stdoutWriter := strings.Builder{}
@@ -49,7 +62,7 @@ func (s *ShellUtility) Run(ctx context.Context) (*ShellUtilityOutput, *internal.
 	s.cmd.Stdout = &stdoutWriter
 	s.cmd.Stderr = &stderrWriter
 	var err error
-	if s.RunInBackeground {
+	if input.RunInBackground {
 		err = s.cmd.Start()
 	} else {
 		err = s.cmd.Run()
@@ -61,7 +74,7 @@ func (s *ShellUtility) Run(ctx context.Context) (*ShellUtilityOutput, *internal.
 		Error:  err,
 	}
 
-	if err != nil && !s.SkipError {
+	if err != nil && !input.SkipError {
 		return output, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInternal,
 			ErrorMsg:  fmt.Sprintf("failed to execute command: %v", err),
@@ -70,14 +83,14 @@ func (s *ShellUtility) Run(ctx context.Context) (*ShellUtilityOutput, *internal.
 	return output, nil
 }
 
-func (s *ShellUtility) Process() *os.Process {
+func (s *shellUtilityImpl) Process() *os.Process {
 	if s.cmd == nil {
 		return nil
 	}
 	return s.cmd.Process
 }
 
-func (s *ShellUtility) Kill() error {
+func (s *shellUtilityImpl) Kill() error {
 	if s.cmd == nil {
 		return nil
 	}
@@ -87,7 +100,7 @@ func (s *ShellUtility) Kill() error {
 	return s.cmd.Process.Kill()
 }
 
-func (s *ShellUtility) Wait() error {
+func (s *shellUtilityImpl) Wait() error {
 	if s.cmd == nil {
 		return nil
 	}
