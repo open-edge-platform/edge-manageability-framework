@@ -85,7 +85,7 @@ ids.
 
 Additionally, tokens need to be properly handled and specific roles should be created in Keycloak. As regards the
 database, MPS/RPS can share the same DB of the other EMF micro-services. It is required though to create a new
-instance for OpenDMT services where the RPS/MPS tables will live logically separated from the EIM/CO/AO tables.
+instance for OpenDMT services where the RPS/MPS tables will live logically separated from the other tables.
 
 **Note:** tenantID in OpenDMT uses UUID format and it can be provided as input to the RPC client when it is started.
 However MPS/RPS services need to be
@@ -109,12 +109,12 @@ persistent connection to the MPS. As long as the managed device is connected to 
 can maintain a persistent connection. This
 [configuration](https://device-management-toolkit.github.io/docs/2.27/GetStarted/Cloud/createCIRAConfig/) can be
 automated using the set of information already available in the EMF env variables, config map and etc. See
-[DM Resource Manager](../dm-manager) for major details.
+[DM Resource Manager](./vpro-rm) for major details.
 
 **ACM profile** config that enables the ACM mode in the device, it has a dependency with the **CIRA Configuration**.
 This [configuration](https://device-management-toolkit.github.io/docs/2.27/GetStarted/Cloud/createProfileACM/) can be
 automated using the set of information already available in the EMF env variables, config map and etc. See
-[DM Resource Manager](../dm-manager) for major details.
+[DM Resource Manager](./vpro-rm) for major details.
 
 **Domain profile** is required by the ACM profile activation. This [configuration][domain-profile] cannot be automated
 and requires the user to purchase and provide the provisioning certificate using PFX format and the password used to
@@ -126,6 +126,7 @@ be required too and RPS should be extended in order to handle MT.
 
 ```mermaid
 sequenceDiagram
+  title: AMT domain configuration provisioning
   %%{wrap}%%
   autonumber
   participant US as User
@@ -163,7 +164,18 @@ without disruptions.
 **WLAN configuration** is not supported by GNU/Linux derived OSes. See [documentation][wireless-config] for more details.
 
 **LAN configuration** is not considered in the existing requirements. This configuration needs to be pushed through RPS
-and cannot be automated in anyhow by EIM. See [documentation][lan-config] for more details.
+and cannot be automated in anyhow by Edge Infrastructure Manager. See [documentation][lan-config] for more details.
+
+### MVP Requirements
+
+At the time of writing, the expectation is to full-fill the following requirements:
+
+- Seamless integration of the OpenDMT stack
+- Multi-tenancy and IDM token handling (using right roles and groups)
+- vPRO domains configuration
+- report vPRO devices data
+- issue power commands
+- Activation/Deactivation of the devices
 
 ## Rationale
 
@@ -178,7 +190,7 @@ For example the handling of the migrations and the creation of the db which at t
 are done using a [manual process](https://device-management-toolkit.github.io/docs/2.27/Deployment/upgradeVersion/), it could be automated and realized using versioned migrations.
 
 Another design choice considers to not expose MPS/RPS services through the MT-GW and bridge the requests through
-EIM. How to achieve this and if we should purse is left as an open question.
+Edge Infrastructure Manager. How to achieve this and if we should purse is left as an open question.
 
 ## Affected components and Teams
 
