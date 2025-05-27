@@ -120,7 +120,8 @@ sequenceDiagram
 implemented between MPS and AMT;
 
 **Note 2** - Device Management Resource Manager will provide a `staticPassword` profile where the AMT and MEBx
-passwords are set to a well know value. Disabling this option the RM will randomly generate a password for each device (using RPS auto-generation) or it will generate a random password and store as secret.
+passwords are set to a well know value. Disabling this option the RM will randomly generate a password for each device
+(using RPS auto-generation) or it will generate a random password and store as secret.
 
 **Note 3** - Passwords are stored in `Vault` and can be always retrieved either using the Vault APIs or through the
 web-ui.
