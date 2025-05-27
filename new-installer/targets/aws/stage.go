@@ -6,7 +6,6 @@ package aws
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
@@ -64,35 +63,17 @@ func (a *AWSStage) RunStage(ctx context.Context, config *config.OrchInstallerCon
 			} else if err = internal.UpdateRuntimeState(runtimeState, newRuntimeState); err != nil {
 				return err
 			}
-			if uploadError := a.orchConfigReaderWriter.WriteOrchConfig(*config); uploadError != nil {
-				return &internal.OrchInstallerError{
-					ErrorCode: internal.OrchInstallerErrorCodeInternal,
-					ErrorMsg:  fmt.Sprintf("Failed to write state: %v", uploadError),
-				}
-			}
 			logger.Debugf("PreStep %s", step.Name())
 			if newRuntimeState, err := step.PreStep(ctx, *config, *runtimeState); err != nil {
 				return err
 			} else if err = internal.UpdateRuntimeState(runtimeState, newRuntimeState); err != nil {
 				return err
 			}
-			if uploadError := a.orchConfigReaderWriter.WriteOrchConfig(*config); uploadError != nil {
-				return &internal.OrchInstallerError{
-					ErrorCode: internal.OrchInstallerErrorCodeInternal,
-					ErrorMsg:  fmt.Sprintf("Failed to write state: %v", uploadError),
-				}
-			}
 			logger.Debugf("RunStep %s", step.Name())
 			if newRuntimeState, err := step.RunStep(ctx, *config, *runtimeState); err != nil {
 				return err
 			} else if err = internal.UpdateRuntimeState(runtimeState, newRuntimeState); err != nil {
 				return err
-			}
-			if uploadError := a.orchConfigReaderWriter.WriteOrchConfig(*config); uploadError != nil {
-				return &internal.OrchInstallerError{
-					ErrorCode: internal.OrchInstallerErrorCodeInternal,
-					ErrorMsg:  fmt.Sprintf("Failed to write state: %v", uploadError),
-				}
 			}
 			return nil
 		}()
@@ -102,12 +83,6 @@ func (a *AWSStage) RunStage(ctx context.Context, config *config.OrchInstallerCon
 			return err
 		} else if err = internal.UpdateRuntimeState(runtimeState, newRuntimeState); err != nil {
 			return err
-		}
-		if uploadError := a.orchConfigReaderWriter.WriteOrchConfig(*config); uploadError != nil {
-			return &internal.OrchInstallerError{
-				ErrorCode: internal.OrchInstallerErrorCodeInternal,
-				ErrorMsg:  fmt.Sprintf("Failed to write state: %v", uploadError),
-			}
 		}
 	}
 	return nil
