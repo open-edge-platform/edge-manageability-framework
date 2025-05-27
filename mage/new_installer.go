@@ -48,13 +48,6 @@ func (NewInstaller) BuildConfigBuilder() error {
 }
 
 func (NewInstaller) Test() error {
-	if err := (NewInstaller{}).TestInstaller(); err != nil {
-		return fmt.Errorf("failed to run installer tests: %w", err)
-	}
-	return nil
-}
-
-func (NewInstaller) TestInstaller() error {
 	// Run tests for the new installer, except for the AWS IaC tests
 	// Ginkgo flags:
 	// -v: verbose output

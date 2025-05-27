@@ -12,19 +12,19 @@ import (
 
 type OrchInstallerStage interface {
 	Name() string
-	// Labels for the stage
+	// Labels for the stage, We can selectively run a subset of stages by specifying labels.
 	Labels() []string
 	// PreStage: initialize the stage, such as creating directories, downloading files, etc.
 	// It also process the output/runtime-state from previous stage.
-	PreStage(ctx context.Context, config *config.OrchInstallerConfig) *OrchInstallerError
+	PreStage(ctx context.Context, config *config.OrchInstallerConfig, runtimeState *config.OrchInstallerRuntimeState) *OrchInstallerError
 
 	// RunStage: run the stage, such as running terraform, ansible, etc.
-	RunStage(ctx context.Context, config *config.OrchInstallerConfig) *OrchInstallerError
+	RunStage(ctx context.Context, config *config.OrchInstallerConfig, runtimeState *config.OrchInstallerRuntimeState) *OrchInstallerError
 
 	// PostStage: cleanup the stage, such as removing directories, files, etc.
 	// It should also handle the error from the previous stage and rollback if needed.
 	// It should also return the final output of the stage.
-	PostStage(ctx context.Context, config *config.OrchInstallerConfig, prevStageError *OrchInstallerError) *OrchInstallerError
+	PostStage(ctx context.Context, config *config.OrchInstallerConfig, runtimeState *config.OrchInstallerRuntimeState, prevStageError *OrchInstallerError) *OrchInstallerError
 }
 
 func ReverseStages(stages []OrchInstallerStage) []OrchInstallerStage {
@@ -35,7 +35,7 @@ func ReverseStages(stages []OrchInstallerStage) []OrchInstallerStage {
 	return reversed
 }
 
-func labelMatch(stageLabels []string, filterLabels []string) bool {
+func matchAnyLabel(stageLabels []string, filterLabels []string) bool {
 	for _, label := range stageLabels {
 		for _, filterLabel := range filterLabels {
 			if label == filterLabel {
@@ -52,7 +52,7 @@ func FilterStages(stages []OrchInstallerStage, labels []string) []OrchInstallerS
 	}
 	filtered := []OrchInstallerStage{}
 	for _, stage := range stages {
-		if labelMatch(stage.Labels(), labels) {
+		if matchAnyLabel(stage.Labels(), labels) {
 			filtered = append(filtered, stage)
 		}
 	}

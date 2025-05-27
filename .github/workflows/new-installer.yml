@@ -1,0 +1,153 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: Orch Installer
+
+on:
+  # Allow manually triggering the workflow
+  workflow_dispatch: {}
+  # Run on all commits that are pushed to all branches
+  push:
+    branches:
+      - main
+      - main-pass-validation
+
+  # Trigger workflow on PRs to all branches
+  pull_request:
+    branches:
+      - "*"
+    types:
+      - opened
+      - synchronize
+      - reopened
+  # Trigger workflow when enqueued to a merge group
+  merge_group:
+
+# Only run at most 1 workflow concurrently per PR, unlimited for branches
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions: {}
+
+jobs:
+  check-changed-files:
+    permissions:
+      contents: read
+    name: Filter list of changed files
+    runs-on: ubuntu-latest
+    outputs:
+      new_installer: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer') }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Discover Changed Files
+        id: check-files
+        uses: open-edge-platform/orch-ci/discover-changed-files@main  # zizmor: ignore[unpinned-uses]
+        with:
+          project_folder: "."
+
+  lint-terraform:
+    permissions:
+      contents: read
+    name: Lint Terraform
+    needs:
+      - check-changed-files
+    if: needs.check-changed-files.outputs.new_installer == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Setup asdf and install dependencies
+        uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
+
+      - name: Run lint
+        run: mage lint:terraform
+
+  lint-go:
+    permissions:
+      contents: read
+    name: Lint Go
+    needs:
+      - check-changed-files
+    if: needs.check-changed-files.outputs.new_installer == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Set up git credentials
+        shell: bash
+        run: |
+          echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
+          git config --global url."https://${{ secrets.SYS_ORCH_GITHUB }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+
+      - name: Setup asdf and install dependencies
+        uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
+
+      - name: Run lint
+        run: mage lint:golang
+
+  build-test-new-installer:
+    permissions:
+      contents: read
+    name: Build and test new installer
+    needs:
+      - lint-go
+      - check-changed-files
+    if: needs.check-changed-files.outputs.new_installer == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          persist-credentials: false
+
+      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684  # v4.2.3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Set up git credentials
+        shell: bash
+        run: |
+          echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
+          git config --global url."https://${{ secrets.SYS_ORCH_GITHUB }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+
+      - name: Setup asdf and install dependencies
+        uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
+
+      - name: Get version tag
+        id: get_version_tag
+        run: |
+          output=$(mage version:getVersionTag)
+          echo "versionTag=$output" >> $GITHUB_ENV
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722  # v4.0.1
+        with:
+          aws-access-key-id: ${{ secrets.NO_AUTH_ECR_PUSH_USERNAME }}
+          aws-secret-access-key: ${{ secrets.NO_AUTH_ECR_PUSH_PASSWD }}
+          aws-region: us-west-2
+
+      - name: Build new installer
+        run: mage newinstaller:build
+
+      - name: Test new installer
+        run: mage newinstaller:test

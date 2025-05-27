@@ -55,9 +55,9 @@ func CreateOrchInstaller(stages []OrchInstallerStage) (*OrchInstaller, error) {
 	}, nil
 }
 
-func (o *OrchInstaller) Run(ctx context.Context, config config.OrchInstallerConfig) *OrchInstallerError {
+func (o *OrchInstaller) Run(ctx context.Context, config config.OrchInstallerConfig, runtimeState *config.OrchInstallerRuntimeState) *OrchInstallerError {
 	logger := Logger()
-	action := config.Generated.Action
+	action := runtimeState.Action
 	if action == "" {
 		return &OrchInstallerError{
 			ErrorCode: OrchInstallerErrorCodeInvalidArgument,
@@ -87,16 +87,16 @@ func (o *OrchInstaller) Run(ctx context.Context, config config.OrchInstallerConf
 		}
 		name := stage.Name()
 		logger.Infof("Running stage: %s", name)
-		err = stage.PreStage(ctx, &config)
+		err = stage.PreStage(ctx, &config, runtimeState)
 
 		// We will skip to run the stage if the previous stage failed
 		if err == nil {
-			err = stage.RunStage(ctx, &config)
+			err = stage.RunStage(ctx, &config, runtimeState)
 		}
 
 		// But we will always run the post stage, the post stage should
 		// handle the error and rollback if needed.
-		err = stage.PostStage(ctx, &config, err)
+		err = stage.PostStage(ctx, &config, runtimeState, err)
 		if err != nil {
 			return err
 		}
