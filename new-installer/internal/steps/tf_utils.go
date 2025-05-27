@@ -6,6 +6,7 @@ package steps
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -14,9 +15,6 @@ import (
 	"github.com/hashicorp/hc-install/product"
 	"github.com/hashicorp/hc-install/releases"
 	"github.com/hashicorp/terraform-exec/tfexec"
-	"github.com/knadh/koanf/parsers/json"
-	"github.com/knadh/koanf/providers/structs"
-	"github.com/knadh/koanf/v2"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
 )
 
@@ -24,13 +22,17 @@ const (
 	TerraformVersion = "1.9.5"
 )
 
+type TerraformUtility interface {
+	RunTerraformModule(ctx context.Context, input TerraformUtilityInput) (TerraformUtilityOutput, *internal.OrchInstallerError)
+}
+
 type TerraformUtilityInput struct {
 	Action     string
 	ExecPath   string
 	ModulePath string
-	Variables  any // Any struct to seriaalize to HCL JSON
+	Variables  any // Any struct to serialize to HCL JSON
 	// Either use backend config or backend state. Cannot use both.
-	BackendConfig      any // Any struct to seriaalize to HCL JSON
+	BackendConfig      any // Any struct to serialize to HCL JSON
 	TerraformState     string
 	LogFile            string
 	KeepGeneratedFiles bool
@@ -48,12 +50,7 @@ type TerraformAWSBucketBackendConfig struct {
 }
 
 func marshalHCLJSON(data any) ([]byte, error) {
-	k := koanf.New(".")
-	err := k.Load(structs.Provider(data, "json"), nil)
-	if err != nil {
-		return nil, err
-	}
-	return k.Marshal(json.Parser()) // Terraform accepts json format
+	return json.Marshal(data)
 }
 
 func validateInput(input TerraformUtilityInput) *internal.OrchInstallerError {
@@ -102,7 +99,13 @@ func validateInput(input TerraformUtilityInput) *internal.OrchInstallerError {
 	return nil
 }
 
-func RunTerraformModule(ctx context.Context, input TerraformUtilityInput) (TerraformUtilityOutput, *internal.OrchInstallerError) {
+type terraformUtilityImpl struct{}
+
+func CreateTerraformUtility() TerraformUtility {
+	return &terraformUtilityImpl{}
+}
+
+func (*terraformUtilityImpl) RunTerraformModule(ctx context.Context, input TerraformUtilityInput) (TerraformUtilityOutput, *internal.OrchInstallerError) {
 	logger := internal.Logger()
 	validationErr := validateInput(input)
 	if validationErr != nil {
@@ -166,7 +169,7 @@ func RunTerraformModule(ctx context.Context, input TerraformUtilityInput) (Terra
 		if err != nil {
 			return TerraformUtilityOutput{}, &internal.OrchInstallerError{
 				ErrorCode: internal.OrchInstallerErrorCodeTerraform,
-				ErrorMsg:  fmt.Sprintf("failed to create terraform instance: %v", err),
+				ErrorMsg:  fmt.Sprintf("failed to initialize Terraform backend: %v", err),
 			}
 		}
 	} else {
@@ -249,18 +252,11 @@ func RunTerraformModule(ctx context.Context, input TerraformUtilityInput) (Terra
 	// Preserve terraform state in the runtime state
 	var terraformState string
 	if input.BackendConfig == nil {
-		state, err := tf.Show(ctx)
-		if err != nil {
-			return TerraformUtilityOutput{}, &internal.OrchInstallerError{
-				ErrorCode: internal.OrchInstallerErrorCodeTerraform,
-				ErrorMsg:  fmt.Sprintf("failed to retrieve terraform state: %v", err),
-			}
-		}
-		stateJson, err := marshalHCLJSON(state)
+		stateJson, err := os.ReadFile(filepath.Join(input.ModulePath, "terraform.tfstate"))
 		if err != nil {
 			return TerraformUtilityOutput{}, &internal.OrchInstallerError{
 				ErrorCode: internal.OrchInstallerErrorCodeInternal,
-				ErrorMsg:  fmt.Sprintf("failed to marshal terraform state: %v", err),
+				ErrorMsg:  fmt.Sprintf("failed to read terraform state file: %v", err),
 			}
 		}
 		terraformState = string(stateJson)
