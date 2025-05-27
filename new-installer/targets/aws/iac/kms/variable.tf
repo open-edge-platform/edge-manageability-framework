@@ -8,9 +8,9 @@ variable "cluster_name" {
 
 variable "region" {
   type = string
+  default = "us-west-2"
 }
-
 variable "customer_tag" {
-  type    = string
+  type = string
   default = ""
 }
