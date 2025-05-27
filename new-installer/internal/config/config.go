@@ -16,8 +16,8 @@ const (
 	Scale10000 Scale = 10000
 )
 
-// The schema version for the OrchInstallerRuntimeState and OrchInstallerConfig
-const SchemaVersion = 1
+const UserConfigVersion = 1
+const RuntimeStateVersion = 1
 
 type OrchInstallerRuntimeState struct {
 	Version int `yaml:"version"`

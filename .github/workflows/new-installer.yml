@@ -147,7 +147,7 @@ jobs:
           aws-region: us-west-2
 
       - name: Build new installer
-        run: mage newinsaller:build
+        run: mage newinstaller:build
 
       - name: Test new installer
-        run: mage newinsaller:test
+        run: mage newinstaller:test

@@ -101,8 +101,8 @@ func execute(action string, orchConfigFile string, runtimeStateFile string, logD
 		logger.Fatalf("error reading runtime state file: %s", err)
 	}
 
-	if orchConfig.Version != config.SchemaVersion {
-		logger.Fatalf("error: orchestrator config version %s does not match installer version %s", orchConfig.Version, config.SchemaVersion)
+	if orchConfig.Version != config.UserConfigVersion {
+		logger.Fatalf("error: orchestrator config version %s does not match installer version %s", orchConfig.Version, config.UserConfigVersion)
 	}
 	// We will check and migrate runtime state version later in the installer.
 
@@ -114,10 +114,9 @@ func execute(action string, orchConfigFile string, runtimeStateFile string, logD
 	logger.Infof("Orchestrator name: %s", orchConfig.Global.OrchName)
 	logger.Infof("Orchestrator config version: %s", orchConfig.Version)
 
-	// TODO: Uncomment this when the installerConfigSchemaVersion is defined
-	// if orchConfig.Version != installerConfigSchemaVersion {
-	// 	logger.Fatalf("error: orchestrator config version %s does not match installer version %s", orchConfig.Version, installerConfigSchemaVersion)
-	// }
+	if orchConfig.Version != config.UserConfigVersion {
+		logger.Fatalf("error: orchestrator config version %s does not match installer version %d", orchConfig.Version, config.UserConfigVersion)
+	}
 
 	var stages []internal.OrchInstallerStage
 	switch orchConfig.Provider {
