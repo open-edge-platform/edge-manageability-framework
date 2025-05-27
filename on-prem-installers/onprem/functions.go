@@ -16,6 +16,11 @@ import (
 	"strings"
 	"time"
 
+	"bufio"
+
+	"path/filepath"
+	"regexp"
+
 	"github.com/magefile/mage/mg"
 )
 
@@ -356,4 +361,173 @@ func (OnPrem) PrintEnvVariables() {
 	fmt.Printf("%-25s: %s\n", "DEPLOY_VERSION", os.Getenv("DEPLOY_VERSION"))
 	fmt.Println("========================================")
 	fmt.Println()
+}
+
+func (OnPrem) AllowConfigInRuntime() error {
+	enableTrace := os.Getenv("ENABLE_TRACE") == "true"
+	cwd, _ := os.Getwd()
+	gitArchName := os.Getenv("git_arch_name")
+	siConfigRepo := os.Getenv("si_config_repo")
+	assumeYes := os.Getenv("ASSUME_YES") == "true"
+
+	tmpDir := filepath.Join(cwd, gitArchName, "tmp")
+	configRepoPath := filepath.Join(tmpDir, siConfigRepo)
+
+	// Disable tracing if enabled (not implemented in Go, just print)
+	if enableTrace {
+		fmt.Println("Tracing is enabled. Temporarily disabling tracing")
+	}
+
+	// Check if config already exists
+	if _, err := os.Stat(configRepoPath); err == nil {
+		fmt.Printf("Configuration already exists at %s.\n", configRepoPath)
+		if assumeYes {
+			fmt.Println("Assuming yes to use existing configuration.")
+			return nil
+		}
+		reader := bufio.NewReader(os.Stdin)
+		for {
+			fmt.Print("Do you want to overwrite the existing configuration? (yes/no): ")
+			yn, _ := reader.ReadString('\n')
+			yn = strings.TrimSpace(yn)
+			switch strings.ToLower(yn) {
+			case "y", "yes":
+				os.RemoveAll(configRepoPath)
+				break
+			case "n", "no":
+				fmt.Println("Using existing configuration.")
+				return nil
+			default:
+				fmt.Println("Please answer yes or no.")
+			}
+		}
+	}
+
+	// Untar edge-manageability-framework repo
+	repoFile := ""
+	files, _ := filepath.Glob(filepath.Join(cwd, gitArchName, fmt.Sprintf("*%s*.tgz", siConfigRepo)))
+	if len(files) > 0 {
+		repoFile = filepath.Base(files[0])
+	}
+	os.RemoveAll(tmpDir)
+	os.MkdirAll(tmpDir, 0755)
+	cmd := exec.Command("tar", "-xf", filepath.Join(cwd, gitArchName, repoFile), "-C", tmpDir)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	// Prompt for Docker.io credentials
+	reader := bufio.NewReader(os.Stdin)
+	dockerUsername := os.Getenv("DOCKER_USERNAME")
+	dockerPassword := os.Getenv("DOCKER_PASSWORD")
+	for {
+		if dockerUsername == "" && dockerPassword == "" {
+			fmt.Print("Would you like to provide Docker credentials? (Y/n): ")
+			yn, _ := reader.ReadString('\n')
+			yn = strings.TrimSpace(yn)
+			if strings.ToLower(yn) == "y" || yn == "" {
+				fmt.Print("Enter Docker Username: ")
+				dockerUsername, _ = reader.ReadString('\n')
+				dockerUsername = strings.TrimSpace(dockerUsername)
+				os.Setenv("DOCKER_USERNAME", dockerUsername)
+				fmt.Print("Enter Docker Password: ")
+				dockerPassword, _ = reader.ReadString('\n')
+				dockerPassword = strings.TrimSpace(dockerPassword)
+				os.Setenv("DOCKER_PASSWORD", dockerPassword)
+				break
+			} else if strings.ToLower(yn) == "n" {
+				fmt.Println("The installation will proceed without using Docker credentials.")
+				os.Unsetenv("DOCKER_USERNAME")
+				os.Unsetenv("DOCKER_PASSWORD")
+				break
+			} else {
+				fmt.Println("Please answer yes or no.")
+			}
+		} else {
+			fmt.Println("Setting Docker credentials.")
+			os.Setenv("DOCKER_USERNAME", dockerUsername)
+			os.Setenv("DOCKER_PASSWORD", dockerPassword)
+			break
+		}
+	}
+
+	if dockerUsername != "" && dockerPassword != "" {
+		fmt.Println("Docker credentials are set.")
+	} else {
+		fmt.Println("Docker credentials are not valid. The installation will proceed without using Docker credentials.")
+		os.Unsetenv("DOCKER_USERNAME")
+		os.Unsetenv("DOCKER_PASSWORD")
+	}
+
+	// Prompt for IP addresses for Argo, Traefik and Nginx services
+	fmt.Println("Provide IP addresses for Argo, Traefik and Nginx services.")
+	ipRegex := regexp.MustCompile(`^\d{1,3}(\.\d{1,3}){3}$`)
+	var argoIP, traefikIP, nginxIP string
+	for {
+		if argoIP == "" {
+			fmt.Print("Enter Argo IP: ")
+			argoIP, _ = reader.ReadString('\n')
+			argoIP = strings.TrimSpace(argoIP)
+			os.Setenv("ARGO_IP", argoIP)
+		}
+		if traefikIP == "" {
+			fmt.Print("Enter Traefik IP: ")
+			traefikIP, _ = reader.ReadString('\n')
+			traefikIP = strings.TrimSpace(traefikIP)
+			os.Setenv("TRAEFIK_IP", traefikIP)
+		}
+		if nginxIP == "" {
+			fmt.Print("Enter Nginx IP: ")
+			nginxIP, _ = reader.ReadString('\n')
+			nginxIP = strings.TrimSpace(nginxIP)
+			os.Setenv("NGINX_IP", nginxIP)
+		}
+		if ipRegex.MatchString(argoIP) && ipRegex.MatchString(traefikIP) && ipRegex.MatchString(nginxIP) {
+			fmt.Println("IP addresses are valid.")
+			break
+		} else {
+			fmt.Println("Inputted values are not valid IPs. Please input correct IPs without any masks.")
+			argoIP, traefikIP, nginxIP = "", "", ""
+			os.Unsetenv("ARGO_IP")
+			os.Unsetenv("TRAEFIK_IP")
+			os.Unsetenv("NGINX_IP")
+		}
+	}
+
+	// Wait for SI to confirm that they have made changes
+	for {
+		proceed := os.Getenv("PROCEED")
+		if proceed != "" {
+			break
+		}
+		fmt.Printf(`Edit config values.yaml files with custom configurations if necessary!!!
+The files are located at:
+%s/%s/orch-configs/profiles/<profile>.yaml
+%s/%s/orch-configs/clusters/$ORCH_INSTALLER_PROFILE.yaml
+Enter 'yes' to confirm that configuration is done in order to progress with installation
+('no' will exit the script) !!!
+
+Ready to proceed with installation? `, tmpDir, siConfigRepo, tmpDir, siConfigRepo)
+		yn, _ := reader.ReadString('\n')
+		yn = strings.TrimSpace(yn)
+		switch strings.ToLower(yn) {
+		case "y", "yes":
+			break
+		case "n", "no":
+			os.Exit(1)
+		default:
+			fmt.Println("Please answer yes or no.")
+			continue
+		}
+		break
+	}
+
+	// Re-enable tracing if needed
+	if enableTrace {
+		fmt.Println("Tracing is enabled. Re-enabling tracing")
+	}
+
+	return nil
 }

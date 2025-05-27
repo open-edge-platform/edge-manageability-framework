@@ -231,120 +231,120 @@ EOF
 # 5. Upon receiving a 'yes' response, the script re-archives the repository.
 # 6. Continues with the installation of the orchestrator.
 # Note: If the configuration already exists, the script will prompt the user to confirm if they want to overwrite it.
-allow_config_in_runtime() {
-  if [ "$ENABLE_TRACE" = true ]; then
-    echo "Tracing is enabled. Temporarily disabling tracing"
-    set +x
-  fi
+# allow_config_in_runtime() {
+#   if [ "$ENABLE_TRACE" = true ]; then
+#     echo "Tracing is enabled. Temporarily disabling tracing"
+#     set +x
+#   fi
 
-  tmp_dir="$cwd/$git_arch_name/tmp"
+#   tmp_dir="$cwd/$git_arch_name/tmp"
 
-  if [ -d "$tmp_dir/$si_config_repo" ]; then
-    echo "Configuration already exists at $tmp_dir/$si_config_repo."
-    if [ "$ASSUME_YES" = true ]; then
-      echo "Assuming yes to use existing configuration."
-      return
-    fi
-    while true; do
-      read -rp "Do you want to overwrite the existing configuration? (yes/no): " yn
-      case $yn in
-        [Yy]* ) rm -rf "${tmp_dir:?}/${si_config_repo:?}"; break;;
-        [Nn]* ) echo "Using existing configuration."; return;;
-        * ) echo "Please answer yes or no.";;
-      esac
-    done
-  fi
+#   if [ -d "$tmp_dir/$si_config_repo" ]; then
+#     echo "Configuration already exists at $tmp_dir/$si_config_repo."
+#     if [ "$ASSUME_YES" = true ]; then
+#       echo "Assuming yes to use existing configuration."
+#       return
+#     fi
+#     while true; do
+#       read -rp "Do you want to overwrite the existing configuration? (yes/no): " yn
+#       case $yn in
+#         [Yy]* ) rm -rf "${tmp_dir:?}/${si_config_repo:?}"; break;;
+#         [Nn]* ) echo "Using existing configuration."; return;;
+#         * ) echo "Please answer yes or no.";;
+#       esac
+#     done
+#   fi
 
-  ## Untar edge-manageability-framework repo
-  repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n")
+#   ## Untar edge-manageability-framework repo
+#   repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n")
 
-  rm -rf "$tmp_dir"
-  mkdir -p "$tmp_dir"
-  tar -xf "$cwd/$git_arch_name/$repo_file" -C "$tmp_dir"
+#   rm -rf "$tmp_dir"
+#   mkdir -p "$tmp_dir"
+#   tar -xf "$cwd/$git_arch_name/$repo_file" -C "$tmp_dir"
 
-  # Prompt for Docker.io credentials
-  ## Docker Hub usage and limits: https://docs.docker.com/docker-hub/usage/
-  while true; do
-    if [[ -z $DOCKER_USERNAME && -z $DOCKER_PASSWORD ]]; then
-      read -rp "Would you like to provide Docker credentials? (Y/n): " yn
-      case $yn in
-        [Yy]* ) echo "Enter Docker Username:"; read -r DOCKER_USERNAME; export DOCKER_USERNAME; echo "Enter Docker Password:"; read -r -s DOCKER_PASSWORD; export DOCKER_PASSWORD; break;;
-        [Nn]* ) echo "The installation will proceed without using Docker credentials."; unset DOCKER_USERNAME; unset DOCKER_PASSWORD; break;;
-        * ) echo "Please answer yes or no.";;
-      esac
-    else
-      echo "Setting Docker credentials."
-      export DOCKER_USERNAME
-      export DOCKER_PASSWORD
-      break
-    fi
-  done
+#   # Prompt for Docker.io credentials
+#   ## Docker Hub usage and limits: https://docs.docker.com/docker-hub/usage/
+#   while true; do
+#     if [[ -z $DOCKER_USERNAME && -z $DOCKER_PASSWORD ]]; then
+#       read -rp "Would you like to provide Docker credentials? (Y/n): " yn
+#       case $yn in
+#         [Yy]* ) echo "Enter Docker Username:"; read -r DOCKER_USERNAME; export DOCKER_USERNAME; echo "Enter Docker Password:"; read -r -s DOCKER_PASSWORD; export DOCKER_PASSWORD; break;;
+#         [Nn]* ) echo "The installation will proceed without using Docker credentials."; unset DOCKER_USERNAME; unset DOCKER_PASSWORD; break;;
+#         * ) echo "Please answer yes or no.";;
+#       esac
+#     else
+#       echo "Setting Docker credentials."
+#       export DOCKER_USERNAME
+#       export DOCKER_PASSWORD
+#       break
+#     fi
+#   done
 
-  if [[ -n $DOCKER_USERNAME && -n $DOCKER_PASSWORD ]]; then
-    echo "Docker credentials are set."
-  else
-    echo "Docker credentials are not valid. The installation will proceed without using Docker credentials."
-    unset DOCKER_USERNAME
-    unset DOCKER_PASSWORD
-  fi
+#   if [[ -n $DOCKER_USERNAME && -n $DOCKER_PASSWORD ]]; then
+#     echo "Docker credentials are set."
+#   else
+#     echo "Docker credentials are not valid. The installation will proceed without using Docker credentials."
+#     unset DOCKER_USERNAME
+#     unset DOCKER_PASSWORD
+#   fi
 
-  # Prompt for IP addresses for Argo, Traefik and Nginx services
-  echo "Provide IP addresses for Argo, Traefik and Nginx services."
-  while true; do
-    if [[ -z ${ARGO_IP} ]]; then
-      echo "Enter Argo IP:"
-      read -r ARGO_IP
-      export ARGO_IP
-    fi
+#   # Prompt for IP addresses for Argo, Traefik and Nginx services
+#   echo "Provide IP addresses for Argo, Traefik and Nginx services."
+#   while true; do
+#     if [[ -z ${ARGO_IP} ]]; then
+#       echo "Enter Argo IP:"
+#       read -r ARGO_IP
+#       export ARGO_IP
+#     fi
 
-    if [[ -z ${TRAEFIK_IP} ]]; then
-      echo "Enter Traefik IP:"
-      read -r TRAEFIK_IP
-      export TRAEFIK_IP
-    fi
+#     if [[ -z ${TRAEFIK_IP} ]]; then
+#       echo "Enter Traefik IP:"
+#       read -r TRAEFIK_IP
+#       export TRAEFIK_IP
+#     fi
 
-    if [[ -z ${NGINX_IP} ]]; then
-      echo "Enter Nginx IP:"
-      read -r NGINX_IP
-      export NGINX_IP
-    fi
+#     if [[ -z ${NGINX_IP} ]]; then
+#       echo "Enter Nginx IP:"
+#       read -r NGINX_IP
+#       export NGINX_IP
+#     fi
 
-    if [[ $ARGO_IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ && $TRAEFIK_IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ && $NGINX_IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-      echo "IP addresses are valid."
-      break
-    else
-      echo "Inputted values are not valid IPs. Please input correct IPs without any masks."
-      unset ARGO_IP
-      unset TRAEFIK_IP
-      unset NGINX_IP
-    fi
-  done
+#     if [[ $ARGO_IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ && $TRAEFIK_IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ && $NGINX_IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+#       echo "IP addresses are valid."
+#       break
+#     else
+#       echo "Inputted values are not valid IPs. Please input correct IPs without any masks."
+#       unset ARGO_IP
+#       unset TRAEFIK_IP
+#       unset NGINX_IP
+#     fi
+#   done
 
-  ## Wait for SI to confirm that they have made changes
-  while true; do
-    if [[ -n ${PROCEED} ]]; then
-      break
-    fi
-    read -rp "Edit config values.yaml files with custom configurations if necessary!!!
-The files are located at:
-$tmp_dir/$si_config_repo/orch-configs/profiles/<profile>.yaml
-$tmp_dir/$si_config_repo/orch-configs/clusters/$ORCH_INSTALLER_PROFILE.yaml
-Enter 'yes' to confirm that configuration is done in order to progress with installation
-('no' will exit the script) !!!
+#   ## Wait for SI to confirm that they have made changes
+#   while true; do
+#     if [[ -n ${PROCEED} ]]; then
+#       break
+#     fi
+#     read -rp "Edit config values.yaml files with custom configurations if necessary!!!
+# The files are located at:
+# $tmp_dir/$si_config_repo/orch-configs/profiles/<profile>.yaml
+# $tmp_dir/$si_config_repo/orch-configs/clusters/$ORCH_INSTALLER_PROFILE.yaml
+# Enter 'yes' to confirm that configuration is done in order to progress with installation
+# ('no' will exit the script) !!!
 
-Ready to proceed with installation? " yn
-    case $yn in
-      [Yy]* ) break;;
-      [Nn]* ) exit 1;;
-      * ) echo "Please answer yes or no.";;
-    esac
-  done
+# Ready to proceed with installation? " yn
+#     case $yn in
+#       [Yy]* ) break;;
+#       [Nn]* ) exit 1;;
+#       * ) echo "Please answer yes or no.";;
+#     esac
+#   done
 
-  if [ "$ENABLE_TRACE" = true ]; then
-    echo "Tracing is enabled. Re-enabling tracing"
-    set -x
-  fi
-}
+#   if [ "$ENABLE_TRACE" = true ]; then
+#     echo "Tracing is enabled. Re-enabling tracing"
+#     set -x
+#   fi
+# }
 
 usage() {
   cat >&2 <<EOF
@@ -592,7 +592,8 @@ if [[ "$WRITE_CONFIG" == "true" ]]; then
 fi
 
 # Config - interactive
-allow_config_in_runtime
+# allow_config_in_runtime
+mage onPrem:allowConfigInRuntime
 
 # Write out the configs that have explicit overrides
 write_configs_using_overrides
