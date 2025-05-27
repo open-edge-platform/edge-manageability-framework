@@ -441,12 +441,6 @@ jobs:
         run: |
           mage publish:releaseManifest
 
-      - name: Build new installer
-        run: mage newinsaller:build
-
-      - name: Test new installer
-        run: mage newinsaller:test
-
   deploy-kind:
     permissions:
       contents: read
@@ -695,7 +689,7 @@ jobs:
       - build-publish
       - check-changed-files
     if: |
-      always() &&
+      always() && 
       needs.build-publish.result == 'success' && (
       needs.check-changed-files.outputs.orch == 'true' ||
       needs.check-changed-files.outputs.on-prem == 'true' ||
