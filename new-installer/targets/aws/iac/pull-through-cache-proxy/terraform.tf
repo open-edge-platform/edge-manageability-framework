@@ -4,15 +4,8 @@
 
 terraform {
   backend "s3" {}
+  required_version = ">= 1.9.5"
   required_providers {
-    kubernetes = {
-      source = "hashicorp/kubernetes"
-      version = "2.33.0"
-    }
-    tls = {
-      source = "hashicorp/tls"
-      version = "4.0.6"
-    }
     aws = {
       source = "hashicorp/aws"
       version = "5.93.0"
@@ -21,10 +14,10 @@ terraform {
 }
 
 provider "aws" {
-  region  = var.aws_region
+  region = var.region
   default_tags {
     tags = {
-      environment = var.name
+      environment = "${var.cluster_name}"
       customer = var.customer_tag
     }
   }

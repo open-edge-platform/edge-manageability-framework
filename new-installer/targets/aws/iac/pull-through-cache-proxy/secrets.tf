@@ -9,10 +9,10 @@ locals {
 }
 
 resource "aws_secretsmanager_secret" "pull_through_cache_proxy" {
-  name        = "${var.name}-ptcp"
+  name        = "${var.cluster_name}-ptcp"
   description = "Nginx configs and TLS certs for Docker cache"
   tags = {
-    Name = var.name
+    Name = var.cluster_name
   }
   recovery_window_in_days = 0
 }

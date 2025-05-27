@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 resource "aws_security_group" "alb" {
-  name   = "${var.name}-ptcp-alb"
+  name   = "${var.cluster_name}-ptcp-alb"
   vpc_id = var.vpc_id
 }
 
@@ -26,7 +26,7 @@ resource "aws_security_group_rule" "alb_to_ecs_egress" {
 }
 
 resource "aws_lb" "pull_through_cache_proxy" {
-  name               = "${var.name}-ptcp"
+  name               = "${var.cluster_name}-ptcp"
   internal           = true
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb.id]
@@ -66,7 +66,7 @@ resource "aws_lb_listener" "https" {
 }
 
 resource "aws_lb_target_group" "pull_through_cache_proxy" {
-  name        = var.name
+  name        = var.cluster_name
   port        = 8443
   protocol    = "HTTPS"
   vpc_id      = var.vpc_id

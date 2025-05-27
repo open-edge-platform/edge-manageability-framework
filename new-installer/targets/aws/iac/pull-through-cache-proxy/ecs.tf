@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 resource "aws_ecs_cluster" "pull_through_cache_proxy" {
-  name = "${var.name}-ptcp"
+  name = "${var.cluster_name}-ptcp"
 }
 
 data "aws_iam_policy_document" "ecs_task_role" {
@@ -40,7 +40,7 @@ data "aws_iam_policy_document" "ecs_task_execution_role" {
 }
 
 resource "aws_iam_role" "ecs_task_execution_role" {
-  name               = "${var.name}-ecs-execution-role"
+  name               = "${var.cluster_name}-ecs-execution-role"
   assume_role_policy = data.aws_iam_policy_document.ecs_task_execution_role.json
 }
 
@@ -50,7 +50,7 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution_role" {
 }
 
 resource "aws_iam_policy" "ecs_task_execution_secrets_policy" {
-  name        = "${var.name}-ecs-execution-policy"
+  name        = "${var.cluster_name}-ecs-execution-policy"
   description = "Policy to allow ECS task execution role"
   policy = jsonencode({
     Version = "2012-10-17"
@@ -88,12 +88,12 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution_secrets_policy_att
 
 
 resource "aws_iam_role" "ecs_task_role" {
-  name               = "${var.name}-ecs-task"
+  name               = "${var.cluster_name}-ecs-task"
   assume_role_policy = data.aws_iam_policy_document.ecs_task_role.json
 }
 
 resource "aws_iam_policy" "ecs_task_ecr_policy" {
-  name        = "${var.name}-ecr-token"
+  name        = "${var.cluster_name}-ecr-token"
   description = "Policy to allow ECS task role to get authorization token from ECR"
   policy = jsonencode({
     Version = "2012-10-17"
@@ -130,7 +130,7 @@ resource "aws_iam_role_policy_attachment" "ecs_task_ecr_policy_attachment" {
 }
 
 resource "aws_ecs_task_definition" "pull_through_cache_proxy" {
-  family                   = var.name
+  family                   = var.cluster_name
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
   cpu                      = var.cpu
@@ -255,12 +255,12 @@ resource "aws_ecs_task_definition" "pull_through_cache_proxy" {
 }
 
 resource "aws_cloudwatch_log_group" "pull_through_cache_proxy" {
-  name              = var.name
+  name              = var.cluster_name
   retention_in_days = 3
 }
 
 resource "aws_security_group" "ecs_service" {
-  name   = "${var.name}-ptcp-ecs"
+  name   = "${var.cluster_name}-ptcp-ecs"
   vpc_id = var.vpc_id
 }
 
@@ -285,7 +285,7 @@ resource "aws_security_group_rule" "ecs_to_internet_https" {
 
 resource "aws_ecs_service" "pull_through_cache_proxy" {
   depends_on      = [aws_ecs_task_definition.pull_through_cache_proxy, aws_lb.pull_through_cache_proxy]
-  name            = var.name
+  name            = var.cluster_name
   cluster         = aws_ecs_cluster.pull_through_cache_proxy.id
   task_definition = aws_ecs_task_definition.pull_through_cache_proxy.arn
   desired_count   = var.desired_count
