@@ -103,6 +103,11 @@ func execute(action string, orchConfigFile string, logDir string, keepGeneratedF
 	logger.Infof("Orchestrator name: %s", orchConfig.Global.OrchName)
 	logger.Infof("Orchestrator config version: %s", orchConfig.Version)
 
+	// TODO: Uncomment this when the installerConfigSchemaVersion is defined
+	// if orchConfig.Version != installerConfigSchemaVersion {
+	// 	logger.Fatalf("error: orchestrator config version %s does not match installer version %s", orchConfig.Version, installerConfigSchemaVersion)
+	// }
+
 	var stages []internal.OrchInstallerStage
 	switch orchConfig.Provider {
 	case "aws":
