@@ -44,11 +44,11 @@ extended as follow:
 
 - `BootIP` - IP address learned during the device discovery
 - `BootMac` - Mac address learned during the device discovery
-- `DesiredPowerState` ->> {UNSPECIFIED, ON, SLEEP, OFF, HIBERNATE, POWER_CYCLE}
-- `CurrentPowerState` ->> {UNSPECIFIED, ON, SLEEP, OFF, HIBERNATE, POWER_CYCLE}
+- `DesiredPowerState` ->> {UNSPECIFIED, ON, SLEEP, OFF, HIBERNATE, RESET}
+- `CurrentPowerState` ->> {UNSPECIFIED, ON, SLEEP, OFF, HIBERNATE, RESET}
 - `PowerStatus` ->> is a modern status with some well known messages {Powered On, Light Sleeping, Deep Sleeping,
 Powered Off, Hibernated}
-- `PowerOffPolicy` ->> {IMMEDIATE_OFF, ORDERED_OFF}
+- `PowerCommandPolicy` ->> {IMMEDIATE_OFF, ORDERED_OFF}
 - `PowerOnTime` ->> the time of last startup (from which `Uptime` could be calculated by the UI)
 - `AMTSKU` ->> a string reporting AMT/ISM version. `Unsupported` otherwise.
 - `AMTDesiredState` ->> {UNSPECIFIED, PROVISION, UNPROVISION, DISCONNECT}
@@ -61,8 +61,8 @@ Powered Off, Hibernated}
 AMT does not provide any info about in progress operations, nor if a reboot is in-progress. However, The DM Resource Manager can fake the `IN_PROGRESS` statuses until the state in the DMT stack does not reflect the required operation.
 For example during the provisioning, the RM can keep the `IN_PROGRESS` state until the device is connected, move to an error status if the devices does not show up after a given threshold or can fake the `IN_PROGRESS` statuses using `Last*` timestamps exposed by MPS.
 
-The behavior of the resource manager is driven by the `DesiredPowerState` and `PowerOffPolicy`, and internally keeps a
-timer between soft and hard when `ORDERED_OFF` is set in `PowerOffPolicy`. The PowerStatus would be updated with this internal behavior in the DM RM, for example: "Soft power off succeeded", "Soft power off failed after 30s, forcing Hard power off", etc.
+The behavior of the resource manager is driven by the `DesiredPowerState` and `PowerCommandPolicy`, and internally keeps a
+timer between soft and hard when `ORDERED_OFF` is set in `PowerCommandPolicy`. The PowerStatus would be updated with this internal behavior in the DM RM, for example: "Soft power off succeeded", "Soft power off failed after 30s, forcing Hard power off", etc.
 
 Instead, UI or Users can fetch directly from MPS REST APIs (through the MT-GW), using device UUID, the following
 additional information such as:
@@ -131,7 +131,7 @@ To learn more on remote power management see the [Device Management RM proposal]
 
 We report hereafter the affected components and Teams:
 
-- APIs and Inventory (EIM team)
+- APIs and Inventory (Edge Infrastructure Manager team)
 
 ## Implementation plan
 
