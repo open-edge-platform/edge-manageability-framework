@@ -19,6 +19,22 @@ import (
 	"github.com/magefile/mage/mg"
 )
 
+var orchNamespaceList = []string{
+	"onprem",
+	"orch-boots",
+	"orch-database",
+	"orch-platform",
+	"orch-app",
+	"orch-cluster",
+	"orch-infra",
+	"orch-sre",
+	"orch-ui",
+	"orch-secret",
+	"orch-gateway",
+	"orch-harbor",
+	"cattle-system",
+}
+
 type OnPrem mg.Namespace
 
 // Create a harbor admin credential secret
@@ -217,4 +233,28 @@ func shuffleString(input string) string {
 		r[i], r[j.Int64()] = r[j.Int64()], r[i]
 	}
 	return string(r)
+}
+
+func CreateNamespaces() error {
+	for _, ns := range orchNamespaceList {
+		cmd := exec.Command("kubectl", "create", "ns", ns, "--dry-run=client", "-o", "yaml")
+		apply := exec.Command("kubectl", "apply", "-f", "-")
+		pipe, err := cmd.StdoutPipe()
+		if err != nil {
+			return fmt.Errorf("failed to get stdout pipe: %w", err)
+		}
+		apply.Stdin = pipe
+		apply.Stdout = nil
+		apply.Stderr = nil
+		if err := cmd.Start(); err != nil {
+			return fmt.Errorf("failed to start kubectl create: %w", err)
+		}
+		if err := apply.Run(); err != nil {
+			return fmt.Errorf("failed to apply namespace: %w", err)
+		}
+		if err := cmd.Wait(); err != nil {
+			return fmt.Errorf("kubectl create wait failed: %w", err)
+		}
+	}
+	return nil
 }

@@ -62,21 +62,7 @@ archives_rs_path="edge-orch/common/files/orchestrator"
 si_config_repo="edge-manageability-framework"
 installer_rs_path="edge-orch/common/files"
 
-orch_namespace_list=(
-  "onprem"
-  "orch-boots"
-  "orch-database"
-  "orch-platform"
-  "orch-app"
-  "orch-cluster"
-  "orch-infra"
-  "orch-sre"
-  "orch-ui"
-  "orch-secret"
-  "orch-gateway"
-  "orch-harbor"
-  "cattle-system"
-)
+
 
 # Variables that depend on the above and might require updating later, are placed in here
 set_artifacts_version() {
@@ -97,11 +83,11 @@ export GIT_REPOS=$cwd/$git_arch_name
 
 ### Functions
 
-create_namespaces() {
-  for ns in "${orch_namespace_list[@]}"; do
-    kubectl create ns "$ns" --dry-run=client -o yaml | kubectl apply -f -
-  done
-}
+# create_namespaces() {
+#   for ns in "${orch_namespace_list[@]}"; do
+#     kubectl create ns "$ns" --dry-run=client -o yaml | kubectl apply -f -
+#   done
+# }
 
 create_azure_secret() {
   namespace=orch-secret
@@ -664,7 +650,7 @@ mage onPrem:waitForPodsRunning $argo_cd_ns
 echo "ArgoCD installed"
 
 # Create namespaces for ArgoCD
-create_namespaces
+mage onPrem:createNamespaces
 # Create secret with azure credentials
 #create_azure_secret
 set_default_sre_env
