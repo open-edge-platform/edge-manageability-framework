@@ -19,3 +19,12 @@ variable "traefik_load_balancer_arn" {
 variable "argocd_load_balancer_arn" {
   type    = string
 }
+variable "waf_rule_groups" {
+  description = "Set of rule groups to apply to the WebACL"
+  type = set(object({
+    name        = string
+    vendor_name = string
+    priority    = number
+  }))
+  default = []
+}
