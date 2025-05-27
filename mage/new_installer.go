@@ -24,3 +24,12 @@ func (NewInstaller) Build() error {
 	fmt.Println("Installer built successfully. Run ./new-installer/_build/orch-installer to start the installer.")
 	return nil
 }
+
+func (NewInstaller) TestInternal() error {
+	// Build the new installer binary
+	if err := sh.RunV("ginkgo", "-v", "-r", "-p", "new-installer/internal"); err != nil {
+		return err
+	}
+	fmt.Println("Installer tests passed successfully.")
+	return nil
+}
