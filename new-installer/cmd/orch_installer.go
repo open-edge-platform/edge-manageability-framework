@@ -151,7 +151,10 @@ func execute(action string, orchConfigFile string, runtimeStateFile string, logD
 	}()
 
 	runErr := orchInstaller.Run(ctx, orchConfig, &runtimeState)
-	orchConfigReaderWriter.WriteRuntimeState(runtimeState) // TODO: handle error here
+	rsWriteErr := orchConfigReaderWriter.WriteRuntimeState(runtimeState) // TODO: handle error here
+	if rsWriteErr != nil {
+		logger.Errorf("error writing runtime state file: %s", rsWriteErr)
+	}
 	if runErr != nil {
 		logger.Infof("error running orch installer: %v", runErr)
 		showActionsForError(runErr)
