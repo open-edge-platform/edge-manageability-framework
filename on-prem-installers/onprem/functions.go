@@ -235,7 +235,7 @@ func shuffleString(input string) string {
 	return string(r)
 }
 
-func CreateNamespaces() error {
+func (OnPrem) CreateNamespaces() error {
 	for _, ns := range orchNamespaceList {
 		cmd := exec.Command("kubectl", "create", "ns", ns, "--dry-run=client", "-o", "yaml")
 		apply := exec.Command("kubectl", "apply", "-f", "-")
@@ -257,4 +257,103 @@ func CreateNamespaces() error {
 		}
 	}
 	return nil
+}
+
+func (OnPrem) CreateSreSecrets() error {
+	namespace := "orch-sre"
+	sreUsername := os.Getenv("SRE_USERNAME")
+	srePassword := os.Getenv("SRE_PASSWORD")
+	sreDestURL := os.Getenv("SRE_DEST_URL")
+	sreDestCACert := os.Getenv("SRE_DEST_CA_CERT")
+
+	// Delete existing secrets
+	secrets := []string{
+		"basic-auth-username",
+		"basic-auth-password",
+		"destination-secret-url",
+		"destination-secret-ca",
+	}
+	for _, secret := range secrets {
+		exec.Command("kubectl", "-n", namespace, "delete", "secret", secret, "--ignore-not-found").Run()
+	}
+
+	// Create basic-auth-username secret
+	secret1 := fmt.Sprintf(`apiVersion: v1
+kind: Secret
+metadata:
+  name: basic-auth-username
+  namespace: %s
+stringData:
+  username: %s
+`, namespace, sreUsername)
+	if err := applySecret(secret1); err != nil {
+		return err
+	}
+
+	// Create basic-auth-password secret
+	secret2 := fmt.Sprintf(`apiVersion: v1
+kind: Secret
+metadata:
+  name: basic-auth-password
+  namespace: %s
+stringData:
+  password: "%s"
+`, namespace, srePassword)
+	if err := applySecret(secret2); err != nil {
+		return err
+	}
+
+	// Create destination-secret-url secret
+	secret3 := fmt.Sprintf(`apiVersion: v1
+kind: Secret
+metadata:
+  name: destination-secret-url
+  namespace: %s
+stringData:
+  url: %s
+`, namespace, sreDestURL)
+	if err := applySecret(secret3); err != nil {
+		return err
+	}
+
+	// Create destination-secret-ca secret if SRE_DEST_CA_CERT is set
+	if sreDestCACert != "" {
+		// Indent each line of the CA cert by 4 spaces
+		indented := "    " + strings.ReplaceAll(sreDestCACert, "\n", "\n    ")
+		secret4 := fmt.Sprintf(`apiVersion: v1
+kind: Secret
+metadata:
+  name: destination-secret-ca
+  namespace: %s
+stringData:
+  ca.crt: |
+%s
+`, namespace, indented)
+		if err := applySecret(secret4); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// // Helper function to apply a secret using kubectl
+// func applySecret(secret string) error {
+// 	cmd := exec.Command("kubectl", "apply", "-f", "-")
+// 	cmd.Stdin = strings.NewReader(secret)
+// 	cmd.Stdout = os.Stdout
+// 	cmd.Stderr = os.Stderr
+// 	return cmd.Run()
+// }
+
+func (OnPrem) PrintEnvVariables() {
+	fmt.Println()
+	fmt.Println("========================================")
+	fmt.Println("         Environment Variables")
+	fmt.Println("========================================")
+	fmt.Printf("%-25s: %s\n", "RELEASE_SERVICE_URL", os.Getenv("RELEASE_SERVICE_URL"))
+	fmt.Printf("%-25s: %s\n", "ORCH_INSTALLER_PROFILE", os.Getenv("ORCH_INSTALLER_PROFILE"))
+	fmt.Printf("%-25s: %s\n", "DEPLOY_VERSION", os.Getenv("DEPLOY_VERSION"))
+	fmt.Println("========================================")
+	fmt.Println()
 }

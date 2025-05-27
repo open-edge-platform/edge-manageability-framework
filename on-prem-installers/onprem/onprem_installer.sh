@@ -171,56 +171,56 @@ stringData:
 EOF
 }
 
-create_sre_secrets() {
-  namespace=orch-sre
-  kubectl -n $namespace delete secret basic-auth-username --ignore-not-found
-  kubectl -n $namespace delete secret basic-auth-password --ignore-not-found
-  kubectl -n $namespace delete secret destination-secret-url --ignore-not-found
-  kubectl -n $namespace delete secret destination-secret-ca --ignore-not-found
+# create_sre_secrets() {
+#   namespace=orch-sre
+#   kubectl -n $namespace delete secret basic-auth-username --ignore-not-found
+#   kubectl -n $namespace delete secret basic-auth-password --ignore-not-found
+#   kubectl -n $namespace delete secret destination-secret-url --ignore-not-found
+#   kubectl -n $namespace delete secret destination-secret-ca --ignore-not-found
 
-  kubectl apply -f - <<EOF
-apiVersion: v1
-kind: Secret
-metadata:
-  name: basic-auth-username
-  namespace: $namespace
-stringData:
-  username: $SRE_USERNAME
-EOF
+#   kubectl apply -f - <<EOF
+# apiVersion: v1
+# kind: Secret
+# metadata:
+#   name: basic-auth-username
+#   namespace: $namespace
+# stringData:
+#   username: $SRE_USERNAME
+# EOF
 
-  kubectl apply -f - <<EOF
-apiVersion: v1
-kind: Secret
-metadata:
-  name: basic-auth-password
-  namespace: $namespace
-stringData:
-  password: "$SRE_PASSWORD"
-EOF
+#   kubectl apply -f - <<EOF
+# apiVersion: v1
+# kind: Secret
+# metadata:
+#   name: basic-auth-password
+#   namespace: $namespace
+# stringData:
+#   password: "$SRE_PASSWORD"
+# EOF
 
-  kubectl apply -f - <<EOF
-apiVersion: v1
-kind: Secret
-metadata:
-  name: destination-secret-url
-  namespace: $namespace
-stringData:
-  url: $SRE_DEST_URL
-EOF
+#   kubectl apply -f - <<EOF
+# apiVersion: v1
+# kind: Secret
+# metadata:
+#   name: destination-secret-url
+#   namespace: $namespace
+# stringData:
+#   url: $SRE_DEST_URL
+# EOF
 
-  if [[ -n "${SRE_DEST_CA_CERT-}" ]]; then
-  kubectl apply -f - <<EOF
-apiVersion: v1
-kind: Secret
-metadata:
-  name: destination-secret-ca
-  namespace: $namespace
-stringData:
-  ca.crt: |
-$(printf "%s" "$SRE_DEST_CA_CERT" |sed -e $'s/^/    /')
-EOF
-  fi
-}
+#   if [[ -n "${SRE_DEST_CA_CERT-}" ]]; then
+#   kubectl apply -f - <<EOF
+# apiVersion: v1
+# kind: Secret
+# metadata:
+#   name: destination-secret-ca
+#   namespace: $namespace
+# stringData:
+#   ca.crt: |
+# $(printf "%s" "$SRE_DEST_CA_CERT" |sed -e $'s/^/    /')
+# EOF
+#   fi
+# }
 
 # This script allows making changes to the configuration during its runtime.
 # The function performs the following steps:
@@ -377,15 +377,15 @@ Environment Variables:
 EOF
 }
 
-print_env_variables() {
-  echo; echo "========================================"
-  echo "         Environment Variables"
-  echo "========================================"
-  printf "%-25s: %s\n" "RELEASE_SERVICE_URL" "$RELEASE_SERVICE_URL"
-  printf "%-25s: %s\n" "ORCH_INSTALLER_PROFILE" "$ORCH_INSTALLER_PROFILE"
-  printf "%-25s: %s\n" "DEPLOY_VERSION" "$DEPLOY_VERSION"
-  echo "========================================"; echo
-}
+# print_env_variables() {
+#   echo; echo "========================================"
+#   echo "         Environment Variables"
+#   echo "========================================"
+#   printf "%-25s: %s\n" "RELEASE_SERVICE_URL" "$RELEASE_SERVICE_URL"
+#   printf "%-25s: %s\n" "ORCH_INSTALLER_PROFILE" "$ORCH_INSTALLER_PROFILE"
+#   printf "%-25s: %s\n" "DEPLOY_VERSION" "$DEPLOY_VERSION"
+#   echo "========================================"; echo
+# }
 
 write_configs_using_overrides() {
   ## Option to override clusterDomain in onprem yaml by setting env variable
@@ -531,7 +531,8 @@ fi
 echo "Running On Premise Edge Orchestrator installers"
 
 # Print environment variables
-print_env_variables
+# print_env_variables
+mage onPrem:printEnvVariables
 
 # Set the version of the artifacts to be downloaded
 set_artifacts_version
@@ -654,7 +655,8 @@ mage onPrem:createNamespaces
 # Create secret with azure credentials
 #create_azure_secret
 set_default_sre_env
-create_sre_secrets
+# create_sre_secrets
+mage onPrem:createSreSecrets
 set_default_smtp_env
 create_smpt_secrets
 harbor_password=$(head -c 512 /dev/urandom | tr -dc A-Za-z0-9 | cut -c1-100)
