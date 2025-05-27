@@ -151,3 +151,6 @@ jobs:
 
       - name: Test new installer
         run: mage newinstaller:test
+
+      - name: Test new installer IaC
+        run: mage newinstaller:testiac
