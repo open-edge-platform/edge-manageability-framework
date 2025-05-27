@@ -1,7 +1,16 @@
 # SPDX-FileCopyrightText: 2025 Intel Corporation
 #
 # SPDX-License-Identifier: Apache-2.0
-
+variable "region" {
+  type        = string
+  description = "The AWS region to deploy the RDS"
+  default     = "us-west-2"
+}
+variable "customer_tag" {
+  type        = string
+  description = "For customers to specify a tag for AWS resources"
+  default     = ""
+}
 variable "vpc_id" {
   type        = string
   description = "The VPC ID to deploy the RDS"
