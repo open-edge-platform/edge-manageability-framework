@@ -30,7 +30,7 @@ set -o pipefail
 
 # Import shared functions
 # shellcheck disable=SC1091
-source "$(dirname "$0")/functions.sh"
+# source "$(dirname "$0")/functions.sh"
 wget https://go.dev/dl/go1.23.4.linux-amd64.tar.gz
 rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.23.4.linux-amd64.tar.gz
 export PATH=$PATH:/usr/local/go/bin
@@ -46,21 +46,21 @@ cd -
 
 ### Constants
 
-RELEASE_SERVICE_URL="${RELEASE_SERVICE_URL:-registry-rs.edgeorchestration.intel.com}"
-ORCH_INSTALLER_PROFILE="${ORCH_INSTALLER_PROFILE:-onprem}"
-DEPLOY_VERSION="${DEPLOY_VERSION:-v3.1.0}"
-GITEA_IMAGE_REGISTRY="${GITEA_IMAGE_REGISTRY:-docker.io}"
+export RELEASE_SERVICE_URL="${RELEASE_SERVICE_URL:-registry-rs.edgeorchestration.intel.com}"
+export ORCH_INSTALLER_PROFILE="${ORCH_INSTALLER_PROFILE:-onprem}"
+export DEPLOY_VERSION="${DEPLOY_VERSION:-v3.1.0}"
+export GITEA_IMAGE_REGISTRY="${GITEA_IMAGE_REGISTRY:-docker.io}"
 
 ### Variables
-cwd=$(pwd)
+export cwd=$(pwd)
 
-deb_dir_name="installers"
-git_arch_name="repo_archives"
-argo_cd_ns=argocd
-gitea_ns=gitea
-archives_rs_path="edge-orch/common/files/orchestrator"
-si_config_repo="edge-manageability-framework"
-installer_rs_path="edge-orch/common/files"
+export deb_dir_name="installers"
+export git_arch_name="repo_archives"
+export argo_cd_ns=argocd
+export gitea_ns=gitea
+export archives_rs_path="edge-orch/common/files/orchestrator"
+export si_config_repo="edge-manageability-framework"
+export installer_rs_path="edge-orch/common/files"
 
 
 
@@ -471,9 +471,9 @@ validate_config() {
 ##### INSTALL SCRIPT START #####
 ################################
 
-ASSUME_YES=false
-SKIP_DOWNLOAD=false
-ENABLE_TRACE=false
+export ASSUME_YES=false
+export SKIP_DOWNLOAD=false
+export ENABLE_TRACE=false
 
 if [ -n "${1-}" ]; then
   while :; do
@@ -544,7 +544,7 @@ mage onPrem:installJq
 mage onPrem:installYq
 # install_jq
 # install_yq
-
+download_packages () {
 if  [[ $SKIP_DOWNLOAD != true  ]]; then 
   # Cleanup and download .deb packages
   sudo rm -rf "${cwd:?}/${deb_dir_name:?}/"
@@ -585,15 +585,16 @@ else
   echo "Skipping packages download"
   sudo chown -R _apt:root $deb_dir_name
 fi
-
+}
+download_packages
 # Write configuration to disk if the flag is set
 if [[ "$WRITE_CONFIG" == "true" ]]; then
   write_config_to_disk
 fi
 
 # Config - interactive
-allow_config_in_runtime
-#mage onPrem:allowConfigInRuntime
+#allow_config_in_runtime
+mage onPrem:allowConfigInRuntime
 
 # Write out the configs that have explicit overrides
 write_configs_using_overrides
