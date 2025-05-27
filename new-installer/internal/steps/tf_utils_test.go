@@ -56,7 +56,7 @@ func (s *TerraformUtilityTest) TestApplyingTerraformModule() {
 		Var1: "value1",
 		Var2: 2,
 	}
-	output, err := tfUtil.RunTerraformModule(ctx, steps.TerraformUtilityInput{
+	output, err := tfUtil.Run(ctx, steps.TerraformUtilityInput{
 		Action:             "install",
 		ExecPath:           s.tfExecPath,
 		ModulePath:         s.testdataDir,
@@ -97,7 +97,7 @@ func (s *TerraformUtilityTest) TestDestroyTerraformModule() {
 	if !s.NoError(err) {
 		return
 	}
-	output, utilErr := tfUtil.RunTerraformModule(ctx, steps.TerraformUtilityInput{
+	output, utilErr := tfUtil.Run(ctx, steps.TerraformUtilityInput{
 		Action:             "uninstall",
 		ExecPath:           s.tfExecPath,
 		ModulePath:         s.testdataDir,

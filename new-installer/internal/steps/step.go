@@ -15,7 +15,7 @@ type OrchInstallerStep interface {
 	// The name of the step
 	Name() string
 
-	// Labels for the step
+	// Labels for the step. We can selectively run a subset of steps by specifying labels.
 	Labels() []string
 
 	// Configure the step, such as generating configuration files or setting up the environment.
@@ -35,7 +35,7 @@ type OrchInstallerStep interface {
 	PostStep(ctx context.Context, config config.OrchInstallerConfig, prevStepError *internal.OrchInstallerError) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError)
 }
 
-func labelMatch(stepLabels []string, filterLabels []string) bool {
+func matchAnyLabel(stepLabels []string, filterLabels []string) bool {
 	for _, label := range stepLabels {
 		for _, filterLabel := range filterLabels {
 			if label == filterLabel {
@@ -52,7 +52,7 @@ func FilterSteps(steps []OrchInstallerStep, labels []string) []OrchInstallerStep
 	}
 	var filteredSteps []OrchInstallerStep
 	for _, step := range steps {
-		if labelMatch(step.Labels(), labels) {
+		if matchAnyLabel(step.Labels(), labels) {
 			filteredSteps = append(filteredSteps, step)
 		}
 	}

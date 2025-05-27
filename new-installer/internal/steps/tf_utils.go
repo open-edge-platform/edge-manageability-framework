@@ -23,7 +23,7 @@ const (
 )
 
 type TerraformUtility interface {
-	RunTerraformModule(ctx context.Context, input TerraformUtilityInput) (TerraformUtilityOutput, *internal.OrchInstallerError)
+	Run(ctx context.Context, input TerraformUtilityInput) (TerraformUtilityOutput, *internal.OrchInstallerError)
 }
 
 type TerraformUtilityInput struct {
@@ -105,7 +105,7 @@ func CreateTerraformUtility() TerraformUtility {
 	return &terraformUtilityImpl{}
 }
 
-func (*terraformUtilityImpl) RunTerraformModule(ctx context.Context, input TerraformUtilityInput) (TerraformUtilityOutput, *internal.OrchInstallerError) {
+func (*terraformUtilityImpl) Run(ctx context.Context, input TerraformUtilityInput) (TerraformUtilityOutput, *internal.OrchInstallerError) {
 	logger := internal.Logger()
 	validationErr := validateInput(input)
 	if validationErr != nil {
