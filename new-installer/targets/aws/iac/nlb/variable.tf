@@ -1,8 +1,6 @@
 # SPDX-FileCopyrightText: 2025 Intel Corporation
 #
 # SPDX-License-Identifier: Apache-2.0
-
-
 variable "cluster_name" {
   type = string
 }
@@ -13,11 +11,7 @@ variable "customer_tag" {
   type    = string
   default = ""
 }
-variable "internal" {
-  description = "Whether the load balancer is internal or external"
-  type        = bool
-  default     = false
-}
+
 variable "vpc_id" {
   description = "The VPC ID where the load balancer will be created"
   type        = string
@@ -34,4 +28,21 @@ variable "enable_deletion_protection" {
   description = "Enables load balancer deletion protection"
   type        = bool
   default     = true
+}
+
+variable "internal" {
+  description = "Create load balancers for internal VPC"
+  default     = false
+}
+variable "type" {
+  description = "Load balancer type"
+  default     = "network"
+}
+variable "subnets" {
+  description = "List of subnet ids for this load balancer"
+  type        = set(string)
+}
+variable "certificate_arn" {
+  description = "The ARN of the certificate to use for the load balancer"
+  type        = string
 }
