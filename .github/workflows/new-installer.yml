@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-name: Virtual Integration
+name: Orch Installer
 
 on:
   # Allow manually triggering the workflow
