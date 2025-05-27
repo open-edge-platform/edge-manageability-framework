@@ -531,3 +531,28 @@ Ready to proceed with installation? `, tmpDir, siConfigRepo, tmpDir, siConfigRep
 
 	return nil
 }
+
+func (OnPrem) CreateAzureSecret() error {
+	namespace := "orch-secret"
+	azureRefreshToken := os.Getenv("AZUREAD_REFRESH_TOKEN")
+
+	// Delete the existing secret if it exists
+	exec.Command("kubectl", "-n", namespace, "delete", "secret", "azure-ad-creds", "--ignore-not-found").Run()
+
+	// Define the secret YAML
+	secret := fmt.Sprintf(`apiVersion: v1
+kind: Secret
+metadata:
+  name: azure-ad-creds
+  namespace: %s
+stringData:
+  refresh_token: %s
+`, namespace, azureRefreshToken)
+
+	// Apply the secret using kubectl
+	cmd := exec.Command("kubectl", "apply", "-f", "-")
+	cmd.Stdin = strings.NewReader(secret)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}

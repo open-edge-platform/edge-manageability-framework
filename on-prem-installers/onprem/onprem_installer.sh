@@ -89,20 +89,20 @@ export GIT_REPOS=$cwd/$git_arch_name
 #   done
 # }
 
-create_azure_secret() {
-  namespace=orch-secret
-  kubectl -n $namespace delete secret azure-ad-creds --ignore-not-found
+# create_azure_secret() {
+#   namespace=orch-secret
+#   kubectl -n $namespace delete secret azure-ad-creds --ignore-not-found
 
-  kubectl apply -f - <<EOF
-apiVersion: v1
-kind: Secret
-metadata:
-  name: azure-ad-creds
-  namespace: $namespace
-stringData:
-  refresh_token: $AZUREAD_REFRESH_TOKEN
-EOF
-}
+#   kubectl apply -f - <<EOF
+# apiVersion: v1
+# kind: Secret
+# metadata:
+#   name: azure-ad-creds
+#   namespace: $namespace
+# stringData:
+#   refresh_token: $AZUREAD_REFRESH_TOKEN
+# EOF
+# }
 
 set_default_sre_env() {
   if [[ -z ${SRE_USERNAME} ]]; then
@@ -655,6 +655,7 @@ echo "ArgoCD installed"
 mage onPrem:createNamespaces
 # Create secret with azure credentials
 #create_azure_secret
+# mage onprem:CreateAzureSecret todo: this is not used anymore
 set_default_sre_env
 # create_sre_secrets
 mage onPrem:createSreSecrets
