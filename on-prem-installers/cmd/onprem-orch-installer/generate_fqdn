@@ -50,7 +50,7 @@ function generateArgocd() {
   delimiter=$"\n- "
   # Use awk to split the string by the multi-character delimiter
   readarray -t array < <(awk -v RS="$delimiter" '1' <<< "$dnsNames")
-  # retreive the first element which would be the domain
+  # retrieve the first element which would be the domain
   domainName=${array[0]}
   svcIp=$(kubectl get svc -n argocd "argocd-server" -o yaml | yq '.status.loadBalancer.ingress | .[0] | .ip')
   if [ "${svcIp}" == "null" ]; then
