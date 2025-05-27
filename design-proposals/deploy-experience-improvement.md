@@ -2,7 +2,7 @@
 
 Author(s): Charles Chan
 
-Last updated: May, 8, 2025
+Last updated: May, 27, 2025
 
 ## Abstract
 
@@ -37,7 +37,9 @@ Finally, by replacing monolithic shell scripts with modular Go components and ad
 - A **well-defined abstraction between infrastructure and orchestrator** logic that enables independent testing and upgrading,
   as well as the ability to plug in new cloud providers via Go modules.
 - Every module should be **toggled independently** and have minimal external dependency.
-- On-prem installation will not require a separate admin machine.
+- Installer should support **upgrade** and **uninstall** from a previous version
+- We should be able to run on-prem installer on the machine where EMF is being deployed.
+  It should not require an aditional admin machine.
 - Be compatible with upcoming Azure implementation and ongoing replacement of kind with on-prem in Coder
 
 ### Out of scope
@@ -215,7 +217,7 @@ offs, advantages, and disadvantages of the chosen approach.]
 
 ## Implementation plan
 
-- Design - interface between installer and modules, config format 
+- Design - interface between installer and modules, config format
 - Design - Cloud Upgrade
 - Design - On-Prem Upgrade
 - Common - Implement installer framework and core logic
