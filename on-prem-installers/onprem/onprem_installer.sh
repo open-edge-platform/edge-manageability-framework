@@ -104,22 +104,22 @@ export GIT_REPOS=$cwd/$git_arch_name
 # EOF
 # }
 
-set_default_sre_env() {
-  if [[ -z ${SRE_USERNAME} ]]; then
-    export SRE_USERNAME=sre
-  fi
-  if [[ -z ${SRE_PASSWORD} ]]; then
-    if [[ -z ${ORCH_DEFAULT_PASSWORD} ]]; then
-      export SRE_PASSWORD=123
-    else
-      export SRE_PASSWORD=$ORCH_DEFAULT_PASSWORD
-    fi
-  fi
-  if [[ -z ${SRE_DEST_URL} ]]; then
-    export SRE_DEST_URL="http://sre-exporter-destination.orch-sre.svc.cluster.local:8428/api/v1/write"
-  fi
-  ## we don't create SRE_DEST_CA_CERT by default
-}
+# set_default_sre_env() {  ## moved to create secrets
+#   if [[ -z ${SRE_USERNAME} ]]; then
+#     export SRE_USERNAME=sre
+#   fi
+#   if [[ -z ${SRE_PASSWORD} ]]; then
+#     if [[ -z ${ORCH_DEFAULT_PASSWORD} ]]; then
+#       export SRE_PASSWORD=123
+#     else
+#       export SRE_PASSWORD=$ORCH_DEFAULT_PASSWORD
+#     fi
+#   fi
+#   if [[ -z ${SRE_DEST_URL} ]]; then
+#     export SRE_DEST_URL="http://sre-exporter-destination.orch-sre.svc.cluster.local:8428/api/v1/write"
+#   fi
+#   ## we don't create SRE_DEST_CA_CERT by default
+# }
 
 set_default_smtp_env() {
   if [[ -z ${SMTP_ADDRESS} ]]; then

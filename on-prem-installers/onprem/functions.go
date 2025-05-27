@@ -265,6 +265,21 @@ func (OnPrem) CreateNamespaces() error {
 }
 
 func (OnPrem) CreateSreSecrets() error {
+	if os.Getenv("SRE_USERNAME") == "" {
+		os.Setenv("SRE_USERNAME", "sre")
+	}
+	if os.Getenv("SRE_PASSWORD") == "" {
+		if os.Getenv("ORCH_DEFAULT_PASSWORD") == "" {
+			os.Setenv("SRE_PASSWORD", "123")
+		} else {
+			os.Setenv("SRE_PASSWORD", os.Getenv("ORCH_DEFAULT_PASSWORD"))
+		}
+	}
+	if os.Getenv("SRE_DEST_URL") == "" {
+		os.Setenv("SRE_DEST_URL", "http://sre-exporter-destination.orch-sre.svc.cluster.local:8428/api/v1/write")
+	}
+	// SRE_DEST_CA_CERT is not set by default
+
 	namespace := "orch-sre"
 	sreUsername := os.Getenv("SRE_USERNAME")
 	srePassword := os.Getenv("SRE_PASSWORD")
