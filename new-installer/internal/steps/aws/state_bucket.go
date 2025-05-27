@@ -26,7 +26,7 @@ type CreateAWSStateBucket struct {
 	variables          StateBucketVariables
 	RootPath           string
 	KeepGeneratedFiles bool
-	TerraformExecPath  string
+	TerraformUtility   steps.TerraformUtility
 	StepLabels         []string
 }
 
@@ -77,15 +77,14 @@ func (s *CreateAWSStateBucket) RunStep(ctx context.Context, config config.OrchIn
 			ErrorMsg:  "Action is not set",
 		}
 	}
-	output, err := steps.RunTerraformModule(ctx, steps.TerraformUtilityInput{
+	output, err := s.TerraformUtility.Run(ctx, steps.TerraformUtilityInput{
 		Action:             config.Generated.Action,
-		ExecPath:           s.TerraformExecPath,
 		ModulePath:         filepath.Join(s.RootPath, StateBucketModulePath),
 		Variables:          s.variables,
 		LogFile:            filepath.Join(s.RootPath, ".logs", "aws_state_bucket.log"),
 		KeepGeneratedFiles: s.KeepGeneratedFiles,
 	})
-	if output.TerraformState == "" {
+	if config.Generated.Action != "uninstall" && output.TerraformState == "" {
 		return config.Generated, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInternal,
 			ErrorMsg:  "Terraform state is empty",

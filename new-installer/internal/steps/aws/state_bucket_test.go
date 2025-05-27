@@ -5,16 +5,15 @@ package steps_aws_test
 
 import (
 	"crypto/rand"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	terratest_aws "github.com/gruntwork-io/terratest/modules/aws"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps"
 	steps_aws "github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps/aws"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -22,9 +21,9 @@ type StateBucketTest struct {
 	suite.Suite
 	config config.OrchInstallerConfig
 
-	step              *steps_aws.CreateAWSStateBucket
-	randomText        string
-	terraformExecPath string
+	step       *steps_aws.CreateAWSStateBucket
+	randomText string
+	tfUtility  *MockTerraformUtility
 }
 
 func TestCreateAWSStateBucket(t *testing.T) {
@@ -42,40 +41,52 @@ func (s *StateBucketTest) SetupTest() {
 	s.config.AWS.Region = "us-west-2"
 	s.config.Global.OrchName = "test"
 	s.config.Generated.DeploymentID = s.randomText
-	s.terraformExecPath, err = steps.InstallTerraformAndGetExecPath()
-	if err != nil {
-		s.NoError(err)
-		return
-	}
+	s.tfUtility = &MockTerraformUtility{}
 
 	s.step = &steps_aws.CreateAWSStateBucket{
 		RootPath:           rootPath,
 		KeepGeneratedFiles: false,
-		TerraformExecPath:  s.terraformExecPath,
+		TerraformUtility:   s.tfUtility,
 	}
 }
 
-func (s *StateBucketTest) TearDownTest() {
-	s.config.Generated.Action = "uninstall"
-	_, err := steps.GoThroughStepFunctions(s.step, &s.config)
-	if err != nil {
-		s.NoError(err)
-	}
-	if _, err := os.Stat(s.terraformExecPath); err == nil {
-		err = os.Remove(s.terraformExecPath)
-		if err != nil {
-			s.NoError(err)
-		}
-	}
-}
-
-func (s *StateBucketTest) TestInstall() {
+func (s *StateBucketTest) TestInstallAndUninstall() {
 	s.config.Generated.Action = "install"
+	s.expectTFUtiliyyCall("install")
 	_, err := steps.GoThroughStepFunctions(s.step, &s.config)
 	if err != nil {
 		s.NoError(err)
 		return
 	}
-	expectBucketName := s.config.Global.OrchName + "-" + s.config.Generated.DeploymentID
-	terratest_aws.AssertS3BucketExists(s.T(), s.config.AWS.Region, expectBucketName)
+
+	s.config.Generated.Action = "uninstall"
+	s.expectTFUtiliyyCall("uninstall")
+	_, err = steps.GoThroughStepFunctions(s.step, &s.config)
+	if err != nil {
+		s.NoError(err)
+	}
+}
+
+func (s *StateBucketTest) expectTFUtiliyyCall(action string) {
+	input := steps.TerraformUtilityInput{
+		Action: action,
+		Variables: steps_aws.StateBucketVariables{
+			Region:   s.config.AWS.Region,
+			OrchName: s.config.Global.OrchName,
+			Bucket:   s.config.Global.OrchName + "-" + s.config.Generated.DeploymentID,
+		},
+		ModulePath:         filepath.Join(s.step.RootPath, steps_aws.StateBucketModulePath),
+		LogFile:            filepath.Join(s.step.RootPath, ".logs", "aws_state_bucket.log"),
+		KeepGeneratedFiles: s.step.KeepGeneratedFiles,
+		TerraformState:     "",
+	}
+	if action == "install" {
+		s.tfUtility.On("Run", mock.Anything, input).Return(steps.TerraformUtilityOutput{
+			TerraformState: "some state",
+		}, nil).Once()
+	} else {
+		s.tfUtility.On("Run", mock.Anything, input).Return(steps.TerraformUtilityOutput{
+			TerraformState: "",
+		}, nil).Once()
+	}
 }
