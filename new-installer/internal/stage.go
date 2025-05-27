@@ -12,7 +12,7 @@ import (
 
 type OrchInstallerStage interface {
 	Name() string
-	// Labels for the stage
+	// Labels for the stage, We can selectively run a subset of stages by specifying labels.
 	Labels() []string
 	// PreStage: initialize the stage, such as creating directories, downloading files, etc.
 	// It also process the output/runtime-state from previous stage.
@@ -35,22 +35,26 @@ func ReverseStages(stages []OrchInstallerStage) []OrchInstallerStage {
 	return reversed
 }
 
+func matchAnyLabel(stageLabels []string, filterLabels []string) bool {
+	for _, label := range stageLabels {
+		for _, filterLabel := range filterLabels {
+			if label == filterLabel {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func FilterStages(stages []OrchInstallerStage, labels []string) []OrchInstallerStage {
 	if len(labels) == 0 {
 		return stages
 	}
 	filtered := []OrchInstallerStage{}
 	for _, stage := range stages {
-		func() {
-			for _, stageLabel := range stage.Labels() {
-				for _, label := range labels {
-					if stageLabel == label {
-						filtered = append(filtered, stage)
-						return
-					}
-				}
-			}
-		}()
+		if matchAnyLabel(stage.Labels(), labels) {
+			filtered = append(filtered, stage)
+		}
 	}
 	return filtered
 }

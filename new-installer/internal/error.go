@@ -11,7 +11,6 @@ const (
 	OrchInstallerErrorCodeInternal
 	OrchInstallerErrorCodeInvalidArgument
 	OrchInstallerErrorCodeTerraform
-	OrchInstallerErrorCodeStateUploadFailed
 )
 
 type OrchInstallerError struct {

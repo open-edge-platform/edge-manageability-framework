@@ -66,7 +66,7 @@ func (a *AWSStage) RunStage(ctx context.Context, config *config.OrchInstallerCon
 			}
 			if uploadError := a.orchConfigReaderWriter.WriteOrchConfig(*config); uploadError != nil {
 				return &internal.OrchInstallerError{
-					ErrorCode: internal.OrchInstallerErrorCodeStateUploadFailed,
+					ErrorCode: internal.OrchInstallerErrorCodeInternal,
 					ErrorMsg:  fmt.Sprintf("Failed to write state: %v", uploadError),
 				}
 			}
@@ -78,7 +78,7 @@ func (a *AWSStage) RunStage(ctx context.Context, config *config.OrchInstallerCon
 			}
 			if uploadError := a.orchConfigReaderWriter.WriteOrchConfig(*config); uploadError != nil {
 				return &internal.OrchInstallerError{
-					ErrorCode: internal.OrchInstallerErrorCodeStateUploadFailed,
+					ErrorCode: internal.OrchInstallerErrorCodeInternal,
 					ErrorMsg:  fmt.Sprintf("Failed to write state: %v", uploadError),
 				}
 			}
@@ -90,7 +90,7 @@ func (a *AWSStage) RunStage(ctx context.Context, config *config.OrchInstallerCon
 			}
 			if uploadError := a.orchConfigReaderWriter.WriteOrchConfig(*config); uploadError != nil {
 				return &internal.OrchInstallerError{
-					ErrorCode: internal.OrchInstallerErrorCodeStateUploadFailed,
+					ErrorCode: internal.OrchInstallerErrorCodeInternal,
 					ErrorMsg:  fmt.Sprintf("Failed to write state: %v", uploadError),
 				}
 			}
@@ -105,7 +105,7 @@ func (a *AWSStage) RunStage(ctx context.Context, config *config.OrchInstallerCon
 		}
 		if uploadError := a.orchConfigReaderWriter.WriteOrchConfig(*config); uploadError != nil {
 			return &internal.OrchInstallerError{
-				ErrorCode: internal.OrchInstallerErrorCodeStateUploadFailed,
+				ErrorCode: internal.OrchInstallerErrorCodeInternal,
 				ErrorMsg:  fmt.Sprintf("Failed to write state: %v", uploadError),
 			}
 		}
