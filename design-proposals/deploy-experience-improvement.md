@@ -42,7 +42,7 @@ Finally, by replacing monolithic shell scripts with modular Go components and ad
 
 ### Out of scope
 
-- (EMF-3.2) A clearn **progress visualization** showing the overall progress
+- (EMF-3.2) A clear **progress visualization** showing the overall progress
 - (EMF-3.2) **Diff previews** should be available during upgrade flows, showing schema migrations or configuration changes.
 - (EMF-3.2) **Wrapped and actionable error messages**. Raw logs should be saved to files, and restarts should be possible from the point of failure.
 - (EMF-3.2) Installer should support **orchestrator CLI integration** (e.g. `cli deploy aws`) and parallel execution of non-dependent tasks.
