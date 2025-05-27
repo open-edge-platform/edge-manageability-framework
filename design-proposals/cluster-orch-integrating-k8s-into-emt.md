@@ -347,6 +347,9 @@ UX/UI
 3. **End-to-End Tests**
 - Test automatic cluster creation during host registration.
 - Validate logic for filtering cluster templates based on Kubernetes versions.
+- Update [light-weight-enic](https://github.com/open-edge-platform/edge-node-agents/tree/lw-enic/cluster-agent) used in
+[cluster-tests](https://github.com/open-edge-platform/cluster-tests/blob/main/.test-dependencies.yaml#L181) with k3s packages
+built in and use that for end-to-end tests of cluster-orchestration.
 
 ### Goals
 - Achieve a working integration of K3s into EMT with basic functionality.
