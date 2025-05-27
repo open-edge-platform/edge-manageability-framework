@@ -36,11 +36,11 @@ func (a *AWSStage) Labels() []string {
 	return a.labels
 }
 
-func (a *AWSStage) PreStage(ctx context.Context, config *config.OrchInstallerConfig) *internal.OrchInstallerError {
+func (a *AWSStage) PreStage(ctx context.Context, config *config.OrchInstallerConfig, runtimeState *config.OrchInstallerRuntimeState) *internal.OrchInstallerError {
 	return nil
 }
 
-func (a *AWSStage) RunStage(ctx context.Context, config *config.OrchInstallerConfig) *internal.OrchInstallerError {
+func (a *AWSStage) RunStage(ctx context.Context, config *config.OrchInstallerConfig, runtimeState *config.OrchInstallerRuntimeState) *internal.OrchInstallerError {
 	logger := internal.Logger()
 	if config == nil {
 		return &internal.OrchInstallerError{
@@ -48,7 +48,7 @@ func (a *AWSStage) RunStage(ctx context.Context, config *config.OrchInstallerCon
 			ErrorMsg:  "OrchInstallerConfig is nil",
 		}
 	}
-	if config.Generated.Action == "uninstall" {
+	if runtimeState.Action == "uninstall" {
 		a.steps = steps.ReverseSteps(a.steps)
 	}
 	a.steps = steps.FilterSteps(a.steps, config.Advanced.TargetLabels)
@@ -59,9 +59,9 @@ func (a *AWSStage) RunStage(ctx context.Context, config *config.OrchInstallerCon
 	for _, step := range a.steps {
 		logger.Debugf("ConfigStep %s", step.Name())
 		stepErr := func() *internal.OrchInstallerError {
-			if newRuntimeState, err := step.ConfigStep(ctx, *config); err != nil {
+			if newRuntimeState, err := step.ConfigStep(ctx, *config, *runtimeState); err != nil {
 				return err
-			} else if err = internal.UpdateRuntimeState(&config.Generated, newRuntimeState); err != nil {
+			} else if err = internal.UpdateRuntimeState(runtimeState, newRuntimeState); err != nil {
 				return err
 			}
 			if uploadError := a.orchConfigReaderWriter.WriteOrchConfig(*config); uploadError != nil {
@@ -71,9 +71,9 @@ func (a *AWSStage) RunStage(ctx context.Context, config *config.OrchInstallerCon
 				}
 			}
 			logger.Debugf("PreStep %s", step.Name())
-			if newRuntimeState, err := step.PreStep(ctx, *config); err != nil {
+			if newRuntimeState, err := step.PreStep(ctx, *config, *runtimeState); err != nil {
 				return err
-			} else if err = internal.UpdateRuntimeState(&config.Generated, newRuntimeState); err != nil {
+			} else if err = internal.UpdateRuntimeState(runtimeState, newRuntimeState); err != nil {
 				return err
 			}
 			if uploadError := a.orchConfigReaderWriter.WriteOrchConfig(*config); uploadError != nil {
@@ -83,9 +83,9 @@ func (a *AWSStage) RunStage(ctx context.Context, config *config.OrchInstallerCon
 				}
 			}
 			logger.Debugf("RunStep %s", step.Name())
-			if newRuntimeState, err := step.RunStep(ctx, *config); err != nil {
+			if newRuntimeState, err := step.RunStep(ctx, *config, *runtimeState); err != nil {
 				return err
-			} else if err = internal.UpdateRuntimeState(&config.Generated, newRuntimeState); err != nil {
+			} else if err = internal.UpdateRuntimeState(runtimeState, newRuntimeState); err != nil {
 				return err
 			}
 			if uploadError := a.orchConfigReaderWriter.WriteOrchConfig(*config); uploadError != nil {
@@ -98,9 +98,9 @@ func (a *AWSStage) RunStage(ctx context.Context, config *config.OrchInstallerCon
 		}()
 
 		logger.Debugf("PostStep %s", step.Name())
-		if newRuntimeState, err := step.PostStep(ctx, *config, stepErr); err != nil {
+		if newRuntimeState, err := step.PostStep(ctx, *config, *runtimeState, stepErr); err != nil {
 			return err
-		} else if err = internal.UpdateRuntimeState(&config.Generated, newRuntimeState); err != nil {
+		} else if err = internal.UpdateRuntimeState(runtimeState, newRuntimeState); err != nil {
 			return err
 		}
 		if uploadError := a.orchConfigReaderWriter.WriteOrchConfig(*config); uploadError != nil {
@@ -113,6 +113,6 @@ func (a *AWSStage) RunStage(ctx context.Context, config *config.OrchInstallerCon
 	return nil
 }
 
-func (a *AWSStage) PostStage(ctx context.Context, config *config.OrchInstallerConfig, prevStageError *internal.OrchInstallerError) *internal.OrchInstallerError {
+func (a *AWSStage) PostStage(ctx context.Context, config *config.OrchInstallerConfig, runtimeState *config.OrchInstallerRuntimeState, prevStageError *internal.OrchInstallerError) *internal.OrchInstallerError {
 	return nil
 }

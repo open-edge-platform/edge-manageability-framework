@@ -445,7 +445,7 @@ jobs:
         run: mage newinsaller:build
 
       - name: Test new installer
-        run: mage newinsaller:testinternal
+        run: mage newinsaller:test
 
   deploy-kind:
     permissions:
