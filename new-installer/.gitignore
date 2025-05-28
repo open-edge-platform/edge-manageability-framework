@@ -1,10 +1,14 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # User config and runtime state
 config.yaml
 runtime-state.yaml
 
 # Test coverage reports
 coverprofile.out
-coverage.html
+coverage.txt
 
 # Generated files
 backend.tfvars.json
