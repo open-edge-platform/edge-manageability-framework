@@ -59,10 +59,11 @@ Complete list of assets to build and/or package for K3s installation include the
 
 - k3s (binary)
 - [install.sh](https://github.com/k3s-io/k3s/blob/master/install.sh) (install script)
+- addon-images-standard.tar.zst (pre-built addon images for standard edge)
+- addon-images-maverick-flats.tar.zst (pre-built addon images for MF edge)
 - [k3s-selinux](https://github.com/k3s-io/k3s-selinux) (RPM package)
-- k3s-airgap-images.tar.zst (pre-built addon images)
 
-K3s includes several essential addons, such as CoreDNS, local-path-provisioner, and ingress controller. In the initial implementation, we will utilize pre-built images for these addons rather than building them directly within the EMT build pipeline.
+K3s will comes with several essential addons, such as CoreDNS, Calico CNI and local-path-provisioner. In the initial implementation, we will utilize pre-built images for these addons rather than building them directly within the EMT build pipeline. See [todo: add addon ADR link] for more details about addon.
 
 A new EMT image will be released under two additional conditions: when a new K3s version becomes available or when a critical CVE or security patch is required, supplementing the existing release cadence. This decision may evolve based on future user requirements.
 
@@ -70,14 +71,20 @@ A new EMT image will be released under two additional conditions: when a new K3s
 
 To build and package K3s, we will leverage the existing EMT build pipeline. As an RPM-based distribution, EMT simplifies the process of building and creating new RPM packages that can be installed on EMT. This involves writing a SPEC file that specifies the source location and build commands, and placing it in the SPECS folder of the repository. This approach offers significant advantages, such as eliminating the need to maintain forks of upstream repositories while providing the flexibility to apply patches and standardizing the build process for various software components with diverse build requirements. And of course, the subsequent step of integrating Kubernetes into the EMT image becomes very straightforward.
 
-Here is an example of SPEC file to build and package K3s binary:
+There will be total four new RPMs:
+
+* k3s: k3s binary, install script
+* k3s-selinux: selinux policies for k3s
+* k3s-standard-addon: standard addon images
+* k3s-maverick-flats-addon: maverick flats addon images
+
+Here is an example of SPEC file for k3s:
 
 ```
 ...
 # This is not a complete SPEC and hasn't been tested
 
 Source0: https://github.com/k3s-io/k3s/archive/refs/tags/%{version}.tar.gz
-Source1: https://registry-rs.edgeorchestration.intel.com/en/files/%{version}/k3s-airgap-images-amd64.tar.zst
 
 BuildRequires: make
 BuildRequires: docker
@@ -93,19 +100,31 @@ install -m 0755 bin/k3s %{buildroot}/usr/local/bin/k3s
 mkdir %{buildroot}/opt
 install -m 0755 install.sh %{buildroot}/opt/install.sh
 
-mkdir -p %{buildroot}/var/lib/rancher/k3s/agent/images
-install -m 0644 %{SOURCE1} %{buildroot}/var/lib/rancher/k3s/agent/images/k3s-airgap-images-amd64.tar.zst
-
 %files
 /usr/local/bin/k3s
 /opt/install.sh
+...
+```
+
+And here is another example of SPEC file for k3s-standard-addon:
+
+```
+...
+# This is not a complete SPEC and hasn't been tested
+
+Source0: https://registry-rs.edgeorchestration.intel.com/en/files/%{version}/k3s-standard-addon-images.tar.zst
+
+mkdir -p %{buildroot}/var/lib/rancher/k3s/agent/images
+install -m 0644 %{SOURCE0} %{buildroot}/var/lib/rancher/k3s/agent/images/k3s-airgap-images-amd64.tar.zst
+
+%files
 /var/lib/rancher/k3s/agent/images/k3s-airgap-images-amd64.tar.zst
 ...
 ```
 
 ### Making Kubernetes part of EMT
 
-Once RPM packages for K3s are ready, integrating them into the EMT image is straightforward. This involves creating a new package list file, `toolkit/imageconfigs/packagelists/k3s.json`, which includes the k3s and k3s-selinux packages. Below is an example of the JSON structure for the `k3s.json` file:
+Once RPM packages for K3s are ready, integrating them into the EMT image is straightforward. This involves creating a new package list files, `toolkit/imageconfigs/packagelists/k3s-standard.json` and `toolkit/imageconfigs/packagelists/k3s-maverick-flats.json`. Below is an example of the JSON structure for the `k3s.json` file:
 
 ```json
 {
