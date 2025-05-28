@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2025 Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
+
 package main
 
 import (
@@ -370,8 +371,7 @@ func testAdvancedMode(t *testing.T) {
 
 func initTest() {
 	input = config.OrchInstallerConfig{}
-	flags.PackagePath = "../../assets/packages.yaml"
-	loadOrchPackages()
+	loadOrchPackagesFromString(embedPackages)
 }
 
 func TestSimpleWorkflow(t *testing.T) {

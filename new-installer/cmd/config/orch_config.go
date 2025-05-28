@@ -42,7 +42,8 @@ const (
 var input config.OrchInstallerConfig
 
 //go:embed packages.yaml
-var embeddedPackages embed.FS
+var embedFS embed.FS
+var embedPackages string
 
 // These are intermediate states that will not be saved back to the config file
 var flags flag
@@ -193,19 +194,20 @@ func postProcessConfig() {
 }
 
 func main() {
+	// Load embedded packages.yaml
+	bytes, err := embedFS.ReadFile("packages.yaml")
+	if err != nil {
+		fmt.Printf("Failed to read embedded packages.yaml: %v\n", err)
+		os.Exit(1)
+	}
+	embedPackages = string(bytes)
+
 	var cobraCmd = &cobra.Command{
 		Use:   "arctic-huh",
 		Short: "An interactive tool to build EMF config",
 		Run: func(cmd *cobra.Command, args []string) {
 			if flags.PackagePath == "" {
-				bytes, err := embeddedPackages.ReadFile("packages.yaml")
-				if err != nil {
-					fmt.Printf("Failed to read embedded packages.yaml: %v\n", err)
-					os.Exit(1)
-				}
-				config := string(bytes)
-
-				loadOrchPackagesFromString(config)
+				loadOrchPackagesFromString(embedPackages)
 			} else {
 				loadOrchPackagesFromFile()
 			}
