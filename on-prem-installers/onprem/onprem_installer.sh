@@ -547,49 +547,50 @@ mage onPrem:installJq
 mage onPrem:installYq
 # install_jq
 # install_yq
-download_packages () {
-if  [[ $SKIP_DOWNLOAD != true  ]]; then 
-  # Cleanup and download .deb packages
-  sudo rm -rf "${cwd:?}/${deb_dir_name:?}/"
+# download_packages () {
+# if  [[ $SKIP_DOWNLOAD != true  ]]; then 
+#   # Cleanup and download .deb packages
+#   sudo rm -rf "${cwd:?}/${deb_dir_name:?}/"
 
-  retry_count=0
-  max_retries=10
-  retry_delay=15
+#   retry_count=0
+#   max_retries=10
+#   retry_delay=15
 
-  until download_artifacts "$cwd" "$deb_dir_name" "$RELEASE_SERVICE_URL" "$installer_rs_path" "${installer_list[@]}"; do
-    ((retry_count++))
-    if [ "$retry_count" -ge "$max_retries" ]; then
-      echo "Failed to download deb artifacts after $max_retries attempts."
-      exit 1
-    fi
-    echo "Download failed. Retrying in $retry_delay seconds... ($retry_count/$max_retries)"
-    sleep "$retry_delay"
-  done
+#   until download_artifacts "$cwd" "$deb_dir_name" "$RELEASE_SERVICE_URL" "$installer_rs_path" "${installer_list[@]}"; do
+#     ((retry_count++))
+#     if [ "$retry_count" -ge "$max_retries" ]; then
+#       echo "Failed to download deb artifacts after $max_retries attempts."
+#       exit 1
+#     fi
+#     echo "Download failed. Retrying in $retry_delay seconds... ($retry_count/$max_retries)"
+#     sleep "$retry_delay"
+#   done
 
-  sudo chown -R _apt:root $deb_dir_name
+#   sudo chown -R _apt:root $deb_dir_name
 
-  ## Cleanup and download .git packages
-  sudo rm -rf  "${cwd:?}/${git_arch_name:?}/"
+#   ## Cleanup and download .git packages
+#   sudo rm -rf  "${cwd:?}/${git_arch_name:?}/"
 
-  retry_count=0
-  max_retries=10
-  retry_delay=15
+#   retry_count=0
+#   max_retries=10
+#   retry_delay=15
 
-  until download_artifacts "$cwd" "$git_arch_name" "$RELEASE_SERVICE_URL" "$archives_rs_path" "${git_archive_list[@]}"; do
-    ((retry_count++))
-    if [ "$retry_count" -ge "$max_retries" ]; then
-      echo "Failed to download git artifacts after $max_retries attempts."
-      exit 1
-    fi
-    echo "Download failed. Retrying in $retry_delay seconds... ($retry_count/$max_retries)"
-    sleep "$retry_delay"
-  done
-else 
-  echo "Skipping packages download"
-  sudo chown -R _apt:root $deb_dir_name
-fi
-}
-download_packages
+#   until download_artifacts "$cwd" "$git_arch_name" "$RELEASE_SERVICE_URL" "$archives_rs_path" "${git_archive_list[@]}"; do
+#     ((retry_count++))
+#     if [ "$retry_count" -ge "$max_retries" ]; then
+#       echo "Failed to download git artifacts after $max_retries attempts."
+#       exit 1
+#     fi
+#     echo "Download failed. Retrying in $retry_delay seconds... ($retry_count/$max_retries)"
+#     sleep "$retry_delay"
+#   done
+# else 
+#   echo "Skipping packages download"
+#   sudo chown -R _apt:root $deb_dir_name
+# fi
+# }
+# download_packages
+mage onPrem:downloadPackages
 # Write configuration to disk if the flag is set
 if [[ "$WRITE_CONFIG" == "true" ]]; then
   write_config_to_disk

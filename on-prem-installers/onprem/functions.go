@@ -147,7 +147,7 @@ func (OnPrem) InstallYq() error {
 }
 
 // Download artifacts from OCI registry in Release Service
-func (OnPrem) DownloadArtifacts(cwd, dirName, rsURL, rsPath string, artifacts ...string) error {
+func DownloadArtifacts(cwd, dirName, rsURL, rsPath string, artifacts ...string) error {
 	os.MkdirAll(fmt.Sprintf("%s/%s", cwd, dirName), 0755)
 	os.Chdir(fmt.Sprintf("%s/%s", cwd, dirName))
 	for _, artifact := range artifacts {
@@ -704,5 +704,77 @@ func (OnPrem) WriteConfigsUsingOverrides() error {
 		}
 	}
 
+	return nil
+}
+
+// DownloadPackages cleans up and downloads .deb and .git packages with retry logic.
+func (OnPrem) DownloadPackages() error {
+	skipDownload := os.Getenv("SKIP_DOWNLOAD") == "true"
+	cwd := os.Getenv("cwd")
+	debDirName := os.Getenv("deb_dir_name")
+	gitArchName := os.Getenv("git_arch_name")
+	releaseServiceURL := os.Getenv("RELEASE_SERVICE_URL")
+	installerRSPath := os.Getenv("installer_rs_path")
+	archivesRSPath := os.Getenv("archives_rs_path")
+
+	// These lists should be set by your set_artifacts_version logic
+	installerList := []string{
+		fmt.Sprintf("onprem-config-installer:%s", os.Getenv("DEPLOY_VERSION")),
+		fmt.Sprintf("onprem-ke-installer:%s", os.Getenv("DEPLOY_VERSION")),
+		fmt.Sprintf("onprem-argocd-installer:%s", os.Getenv("DEPLOY_VERSION")),
+		fmt.Sprintf("onprem-gitea-installer:%s", os.Getenv("DEPLOY_VERSION")),
+		fmt.Sprintf("onprem-orch-installer:%s", os.Getenv("DEPLOY_VERSION")),
+	}
+	gitArchiveList := []string{
+		fmt.Sprintf("onpremfull:%s", os.Getenv("DEPLOY_VERSION")),
+	}
+
+	if !skipDownload {
+		// Cleanup .deb packages
+		exec.Command("sudo", "rm", "-rf", fmt.Sprintf("%s/%s", cwd, debDirName)).Run()
+
+		retryCount := 0
+		maxRetries := 10
+		retryDelay := 15 * time.Second
+
+		// Download .deb packages with retry
+		for {
+			err := DownloadArtifacts(cwd, debDirName, releaseServiceURL, installerRSPath, installerList...)
+			if err == nil {
+				break
+			}
+			retryCount++
+			if retryCount >= maxRetries {
+				fmt.Printf("Failed to download deb artifacts after %d attempts.\n", maxRetries)
+				return err
+			}
+			fmt.Printf("Download failed. Retrying in %d seconds... (%d/%d)\n", int(retryDelay.Seconds()), retryCount, maxRetries)
+			time.Sleep(retryDelay)
+		}
+
+		exec.Command("sudo", "chown", "-R", "_apt:root", debDirName).Run()
+
+		// Cleanup .git packages
+		exec.Command("sudo", "rm", "-rf", fmt.Sprintf("%s/%s", cwd, gitArchName)).Run()
+
+		retryCount = 0
+		// Download .git packages with retry
+		for {
+			err := DownloadArtifacts(cwd, gitArchName, releaseServiceURL, archivesRSPath, gitArchiveList...)
+			if err == nil {
+				break
+			}
+			retryCount++
+			if retryCount >= maxRetries {
+				fmt.Printf("Failed to download git artifacts after %d attempts.\n", maxRetries)
+				return err
+			}
+			fmt.Printf("Download failed. Retrying in %d seconds... (%d/%d)\n", int(retryDelay.Seconds()), retryCount, maxRetries)
+			time.Sleep(retryDelay)
+		}
+	} else {
+		fmt.Println("Skipping packages download")
+		exec.Command("sudo", "chown", "-R", "_apt:root", debDirName).Run()
+	}
 	return nil
 }
