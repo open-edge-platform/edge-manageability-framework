@@ -124,13 +124,14 @@ install -m 0644 %{SOURCE0} %{buildroot}/var/lib/rancher/k3s/agent/images/k3s-air
 
 ### Making Kubernetes part of EMT
 
-Once RPM packages for K3s are ready, integrating them into the EMT image is straightforward. This involves creating a new package list files, `toolkit/imageconfigs/packagelists/k3s-standard.json` and `toolkit/imageconfigs/packagelists/k3s-maverick-flats.json`. Below is an example of the JSON structure for the `k3s.json` file:
+Once RPM packages for K3s are ready, integrating them into the EMT image is straightforward. This involves creating a new package list files, `toolkit/imageconfigs/packagelists/k3s-standard.json` and `toolkit/imageconfigs/packagelists/k3s-maverick-flats.json`. Below is an example of the JSON structure for the `k3s-standard.json` file:
 
 ```json
 {
     "packages": [
         "k3s",
-        "k3s-selinux"
+        "k3s-selinux",
+        "k3s-standard-addon",
     ]
 }
 ```
