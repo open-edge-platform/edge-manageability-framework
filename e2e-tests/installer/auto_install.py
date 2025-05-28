@@ -75,7 +75,7 @@ class LongTaskMonitor:
 
     def cancel(self):
         """
-        Cancels the task by sending a cancelation command to the session.
+        Cancels the task by sending a cancellation command to the session.
         """
         self.step_time = 5
         self.session.sendcontrol('c')
@@ -252,7 +252,7 @@ class AutoInstall:
             )
             shutil.copy(self.provision_config_path_tfvar, state_config_path_tfvar)
 
-        # Handle regsitry profile override
+        # Handle registry profile override
         self.registry_profile_path = os.getenv("AUTOINSTALL_REGISTRY_PROFILE")
         self.registry_profile_copied = False
         if self.registry_profile_path and len(self.registry_profile_path) > 0:
@@ -811,7 +811,7 @@ class AutoInstall:
 
     def update_cluster(self):
         """
-        Performs pre-deployment container inititialization to enable cluster update and management operations.
+        Performs pre-deployment container initialization to enable cluster update and management operations.
         """
         self.current_step = "Update Cluster"
         print(f"Step: {self.current_step}")
@@ -1499,7 +1499,7 @@ if __name__ == "__main__":
         "    - DISABLE_AUTOCERT: Flag indicating whether auto certificate is disabled. (true/false)\n"
         "    - CLUSTER_PROFILE: The scaling profile for cluster(default, 100en, 1ken, 10ken)\n"
         "  account initialization workflow support:\n"
-        "    - ENABLE_ACCOUNT_INIT: Flag to specify whather account initialization is run on install. (true/false)\n"
+        "    - ENABLE_ACCOUNT_INIT: Flag to specify whether account initialization is run on install. (true/false)\n"
         "    - ENABLE_ACCOUNT_RESET: Flag to specify whether account reset is run on uninstall. (true/false)\n"
         "    - RS_REFRESH_TOKEN: The refresh token for the account initialization workflow. (optional)\n"
         "    - RS_TOKEN_ENDPOINT: The release service endpoint to obtain refresh token for the account initialization workflow.\n"

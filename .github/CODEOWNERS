@@ -68,3 +68,6 @@
 
 # Kyverno config requires Platform team review
 /argocd/applications/configs/kyverno-* chris.thach@intel.com @mdbalvin @rad-szulim @charlesmcchan @yi-tseng-intel john.oloughlin@intel.com gary.loughnane@intel.com @emmakenny @palade @Irakus @sys-orch-approve @ahalimx86
+
+# Design documents
+/design-proposals/ @scottmbaker @hyunsun @teone @krishnajs @Andrea-Campanella @se-chris-thach @charlesmcchan @yi-tseng-intel @ashridatta @callumnobleintel @daniele-moro @SeanCondon @pierventre @cgoea john.oloughlin@intel.com gary.loughnane@intel.com @PalashGoelIntel @palade @pperycz @ltalarcz @jakubsikorski @sys-orch-approve @ahalimx86
