@@ -207,7 +207,7 @@ Also, EMF profile for minimal OXM warehouse deployments will be configured with 
 
 The current design proposal allows to easily support legacy PXE boot while keeping the current UX around EN pre-registration. It also lets us keep all the features that EIM currently supports,
 including logging, KPI instrumentation, observability, etc. The EN pre-registration also enables selectively configuring desired OS profile per EN and acts as
-admission control to prevent unwanted ENs being provisioned to EMF "magically". 
+admission control to prevent unwanted ENs being provisioned to EMF "magically".
 
 The alternative considered was to use a standalone Tinkerbell deployment without the rest of the EIM stack. While it has advantage of a more lightweight deployment,
 it would completely change the UX as we would need to familiarize customers with Tinkerbell APIs (or have a custom CLI tool to help them manage Tinkerbell CRDs).
