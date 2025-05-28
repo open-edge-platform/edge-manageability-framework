@@ -324,6 +324,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
           persist-credentials: false
+          ref:  ${{ github.event.pull_request.head.sha }}
 
       - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684  # v4.2.3
         with:
@@ -356,7 +357,9 @@ jobs:
       - name: Set DEB_VERSION
         id: set-version
         working-directory: on-prem-installers
-        run: echo "DEB_VERSION=$(mage build:debVersion)" >> "$GITHUB_OUTPUT"
+        run: |
+          mage build:debVersion
+          echo "DEB_VERSION=$(mage build:debVersion)" >> "$GITHUB_OUTPUT"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722  # v4.0.1
@@ -687,31 +690,18 @@ jobs:
     env:
       KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
     steps:
-      - name: Checkout code
+      - name: Checkout Orchestrator repo
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
           persist-credentials: false
 
-      - name: Setup asdf and install dependencies
-        id: install-deps
-        uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
-
-      - name: Deploy Orchestrator
-        env:
-          TF_VAR_intel_release_service_refresh_token: value-not-used
-          TF_VAR_deploy_tag: ${{ needs.build-publish.outputs.deb-version }}
-          TF_VAR_FILE: ${{ github.workspace }}/terraform/orchestrator/terraform.tfvars
-          TF_VAR_docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
-          TF_VAR_docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
-        timeout-minutes: 90
-        run: mage deploy:onPrem
-
-      - name: Verify deployment
-        timeout-minutes: 60
-        run: mage -v deploy:waitUntilComplete
-
-      - name: Setup test environment
-        run: mage -v gen:orchCA deploy:orchCA deploy:edgeNetworkDNS
+      - name: Deploy On-Prem Orchestrator
+        uses: ./.github/actions/deploy_on_prem
+        with:
+          token: ${{ secrets.SYS_ORCH_GITHUB }}
+          orch_version: ${{ github.event.pull_request.head.sha }}
+          docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
+          docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
 
       - name: Run E2E tests
         env:

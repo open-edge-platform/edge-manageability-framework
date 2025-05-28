@@ -1,0 +1,58 @@
+# SPDX-FileCopyrightText: (C) 2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+name: "Deploy on Prem Orchestrator"
+description: "Creates a VM and Deploys the Orchestrator on it"
+inputs:
+  token:
+    required: true
+    description: "PAT token for private repositories"
+  orch_version:
+    required: false
+    description: "Orchestrator version to deploy"
+    default: "main"
+  docker_username:
+    required: true
+    description: "Docker Hub username for pulling images"
+  docker_password:
+    required: true
+    description: "Docker Hub password for pulling images"
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout Orchestrator repo
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      with:
+        ref: ${{ inputs.orch_version }}
+        persist-credentials: false
+
+    - name: Setup asdf and install dependencies
+      id: install-deps
+      uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
+
+    - name: Set deploy tag
+      id: deploy-tag
+      shell: bash
+      working-directory: on-prem-installers
+      # NOTE: The terraform deploy tag is different than the git ref, it's calucated using this mage target
+      run: |
+        mage build:debVersion
+        echo "DEPLOY_TAG=$(mage build:debVersion)" >> "$GITHUB_ENV"
+
+    - name: Deploy Orchestrator
+      env:
+        TF_VAR_intel_release_service_refresh_token: value-not-used
+        TF_VAR_deploy_tag: ${{ env.DEPLOY_TAG }}
+        TF_VAR_FILE: ${{ github.workspace }}/terraform/orchestrator/terraform.tfvars
+        TF_VAR_docker_username: ${{ inputs.docker_username }}
+        TF_VAR_docker_password: ${{ inputs.docker_password }}
+      shell: bash
+      run: mage deploy:onPrem
+
+    - name: Verify deployment
+      shell: bash
+      run: mage -v deploy:waitUntilComplete
+
+    - name: Setup test environment
+      shell: bash
+      run: mage -v gen:orchCA deploy:orchCA deploy:edgeNetworkDNS
