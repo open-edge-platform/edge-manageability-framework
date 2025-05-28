@@ -1178,6 +1178,7 @@ STANDALONE=0
 
 	fmt.Printf("VEN deployment started 🚀\n")
 
+	// This can be removed
 	// Search for "Secure Boot Status MATCH" in the output
 	matches_sb, err := searchForSubstring(consoleFilePath, "Secure Boot Status MATCH")
 	if err != nil {
@@ -1187,6 +1188,7 @@ STANDALONE=0
 		return fmt.Errorf("failed to find Secure Boot Status MATCH check in ci-console.log")
 	}
 
+	// This can be removed
 	// Add the new command to execute host_statue with the serial number
 	hostStatueCmd := exec.CommandContext(ctx, filepath.Join("scripts", "host_status_check.sh"), serialNumber)
 	hostStatueCmd.Stdout = os.Stdout
