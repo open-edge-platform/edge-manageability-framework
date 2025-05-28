@@ -5,6 +5,7 @@
 package main
 
 import (
+	"embed"
 	"fmt"
 	"os"
 	"strings"
@@ -14,8 +15,6 @@ import (
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 	"github.com/spf13/cobra"
 )
-
-const version = 2
 
 type flag struct {
 	Debug       bool
@@ -42,6 +41,9 @@ const (
 // These are states that will be saved back to the config file
 var input config.OrchInstallerConfig
 
+//go:embed packages.yaml
+var embeddedPackages embed.FS
+
 // These are intermediate states that will not be saved back to the config file
 var flags flag
 var orchPackages map[string]config.OrchPackage
@@ -50,7 +52,15 @@ var enabledSimple []string
 var enabledAdvanced []string
 var configMode Mode
 
-func loadOrchPackages() {
+func loadOrchPackagesFromString(configStr string) {
+	err := yaml.Unmarshal([]byte(configStr), &orchPackages)
+	if err != nil {
+		fmt.Printf("Failed to decode orchestrator packages string: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func loadOrchPackagesFromFile() {
 	file, err := os.Open(flags.PackagePath)
 	if err != nil {
 		fmt.Printf("Failed to open orchestrator packages file: %v\n", err)
@@ -71,7 +81,7 @@ func loadConfig() {
 	if err != nil {
 		if os.IsNotExist(err) {
 			fmt.Println("Config file does not exist. Starting fresh...")
-			input.Version = version
+			input.Version = config.UserConfigVersion
 			return
 		}
 		fmt.Println("Failed to open config file:", err)
@@ -109,7 +119,7 @@ func migrateConfig(raw map[string]interface{}) error {
 		return fmt.Errorf("version is not an integer in config file")
 	}
 
-	if fileVersion == version {
+	if fileVersion == config.UserConfigVersion {
 		// Version is the latest. No migration needed
 		if err := yaml.Unmarshal(yamlBytes, &input); err != nil {
 			return fmt.Errorf("failed to decode config file into version %d: %s", fileVersion, err)
@@ -187,7 +197,18 @@ func main() {
 		Use:   "arctic-huh",
 		Short: "An interactive tool to build EMF config",
 		Run: func(cmd *cobra.Command, args []string) {
-			loadOrchPackages()
+			if flags.PackagePath == "" {
+				bytes, err := embeddedPackages.ReadFile("packages.yaml")
+				if err != nil {
+					fmt.Printf("Failed to read embedded packages.yaml: %v\n", err)
+					os.Exit(1)
+				}
+				config := string(bytes)
+
+				loadOrchPackagesFromString(config)
+			} else {
+				loadOrchPackagesFromFile()
+			}
 			loadConfig()
 
 			err := orchInstallerForm().Run()
@@ -203,7 +224,7 @@ func main() {
 
 	cobraCmd.PersistentFlags().BoolVarP(&flags.Debug, "debug", "d", false, "Enable debug mode")
 	cobraCmd.PersistentFlags().StringVarP(&flags.ConfigPath, "config", "c", "configs.yaml", "Path to the config file")
-	cobraCmd.PersistentFlags().StringVarP(&flags.PackagePath, "package", "p", "packages.yaml", "Path to the Orchestrator package definition")
+	cobraCmd.PersistentFlags().StringVarP(&flags.PackagePath, "package", "p", "", "Path to the Orchestrator package definition")
 	cobraCmd.PersistentFlags().BoolVarP(&flags.ExpertMode, "expert", "e", false, "Show all optional configurations")
 
 	// Exit on help command
