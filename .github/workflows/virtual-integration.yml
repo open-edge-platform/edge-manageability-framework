@@ -52,8 +52,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       ci: ${{ contains(steps.check-files.outputs.changed_files, '.github/workflows') || contains(steps.check-files.outputs.changed_files, '.github/actions') }}
-      go: ${{ contains(steps.check-files.outputs.changed_files, '.go' || contains(steps.check-files.outputs.changed_files, '.mod') || contains(steps.check-files.outputs.changed_files, '.sum')) }}
-      markdown: ${{ contains(steps.check-files.outputs.changed_files, '.md') || contains(steps.check-files.outputs.changed_files, '.markdown') || contains(steps.check-files.outputs.changed_files, '.mdx')) }}
+      go: ${{ contains(steps.check-files.outputs.changed_files, '.go') || contains(steps.check-files.outputs.changed_files, '.mod') || contains(steps.check-files.outputs.changed_files, '.sum') }}
+      markdown: ${{ contains(steps.check-files.outputs.changed_files, '.md') || contains(steps.check-files.outputs.changed_files, '.markdown') || contains(steps.check-files.outputs.changed_files, '.mdx') }}
       orch: ${{ contains(steps.check-files.outputs.changed_files, 'argocd') || contains(steps.check-files.outputs.changed_files, 'bootstrap') || contains(steps.check-files.outputs.changed_files, 'installer') || contains(steps.check-files.outputs.changed_files, 'internal') || contains(steps.check-files.outputs.changed_files, 'mage') || contains(steps.check-files.outputs.changed_files, 'node') || contains(steps.check-files.outputs.changed_files, 'router') || contains(steps.check-files.outputs.changed_files, 'tools') || contains(steps.check-files.outputs.changed_files, 'e2e-tests') || contains(steps.check-files.outputs.changed_files, 'VERSION') }}
       on-prem: ${{ contains(steps.check-files.outputs.changed_files, 'on-prem-installers') || contains(steps.check-files.outputs.changed_files, 'terraform') }}
       onboarding: ${{ contains(steps.check-files.outputs.changed_files, 'argocd/applications/templates/infra-') || contains(steps.check-files.outputs.changed_files, 'argocd/applications/values.yaml') }}
