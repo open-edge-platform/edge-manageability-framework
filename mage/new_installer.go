@@ -50,7 +50,7 @@ func (NewInstaller) BuildConfigBuilder() error {
 
 func buildInternal(srcFolder string, output string) error {
 	// Ensure the build directory exists
-	if err := os.MkdirAll(filepath.Join(rootDir, buildDir), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(rootDir, buildDir), 0o755); err != nil {
 		return fmt.Errorf("failed to create build directory: %w", err)
 	}
 
@@ -63,8 +63,15 @@ func buildInternal(srcFolder string, output string) error {
 }
 
 func (NewInstaller) Test() error {
-	os.Chdir(rootDir)
-	defer os.Chdir("..")
+	if err := os.Chdir(rootDir); err != nil {
+		return fmt.Errorf("failed to change directory to %s: %w", rootDir, err)
+	}
+
+	defer func() {
+		if err := os.Chdir(".."); err != nil {
+			fmt.Printf("Warning: failed to change back to root directory: %v\n", err)
+		}
+	}()
 
 	// Run tests for the new installer, except for the AWS IaC tests
 	// Ginkgo flags:
