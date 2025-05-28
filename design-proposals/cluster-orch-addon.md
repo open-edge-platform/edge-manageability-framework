@@ -61,7 +61,8 @@ While the unified approach simplifies addon deployment, specific deployment stra
 
 For EMT-S, ensuring functionality without Internet access is a critical requirement. To meet this need, addon images not built into K3s, such as Calico and kubernetes-dashboard, will be embedded into EMT.
 
-K3s releases a `.zst` for built-in addon images for airgap install, which is uncompressed and loaded into `containerd` during bootstrap. We will adopt a similar approach by creating a custom airgap image tarball that includes Calico and Kubernetes Dashboard images in addition to K3s built-in addon images. This custom tarball will replace the upstream tarball when building the EMT image.
+K3s releases a `.zst` for built-in addon images for airgap install, which is uncompressed and loaded into `containerd` during bootstrap. We will adopt a similar approach by creating a custom airgap image tarball that includes non-k3s-built-in addon images in addition to K3s built-in addon images. We'll release two versions, one for standard and another for Maverick Flats.
+This custom tarball will replace the upstream tarball when building the EMT image [todo: add link k3s-emt ADR].
 
 ### Upgrade from 3.0 to 3.1
 
