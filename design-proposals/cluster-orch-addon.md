@@ -10,26 +10,38 @@ This proposal aims to streamline the default addons installed in Kubernetes edge
 
 ## Proposal
 
-### Default Addons for 3.1 Release
+### Common Default Addons for 3.1 Release
 The table below outlines the addons included in the 3.0 release and the planned changes for the 3.1 release, along with relevant notes:
+| Addon                      | Default in 3.0 | Default in 3.1 | Notes                                                                   |
+| -------------------------- | -------------- | -------------- | ----------------------------------------------------------------------- |
+| gatekeeper and constraints | Y              | N              | Replace with Kubernetes Pod Security Admission Controller and Standards |
+| cert-manager               | Y              | N              | Move to optional observability package                                  |
+| telegraf                   | Y              | N              | Move to optional observability package                                  |
+| prometheus stack           | Y              | N              | Move to optional observability package                                  |
+| node-exporter              | Y              | N              | Move to optional observability package                                  |
+| openebs                    | Y              | N              | Drop                                                                    |
+| fluent-bit                 | Y              | N              | Move to optional observability package                                  |
+| nfd                        | Y              | N              | Drop until required                                                     |
+| calico                     | Y              | Y              |                                                                         |
+| network-policies           | Y              | Y              |                                                                         |
+| local-path-provisioner     | N              | Y              | Built into K3s                                                          |
 
-| Addon                      | Default in 3.0 | Default in 3.1 (EMF-Managed) | Default in 3.1 (EMT-S) | Notes                                                                   |
-| -------------------------- | -------------- | ---------------------------- | ---------------------- | ----------------------------------------------------------------------- |
-| gatekeeper and constraints | Y              | N                            | N                      | Replace with Kubernetes Pod Security Admission Controller and Standards |
-| cert-manager               | Y              | N                            | N                      | Move to optional observability package                                  |
-| telegraf                   | Y              | N                            | N                      | Move to optional observability package                                  |
-| prometheus stack           | Y              | N                            | N                      | Move to optional observability package                                  |
-| node-exporter              | Y              | N                            | N                      | Move to optional observability package                                  |
-| openebs                    | Y              | N                            | N                      | Drop                                                                    |
-| fluent-bit                 | Y              | N                            | N                      | Move to optional package                                                |
-| nfd                        | Y              | N                            | N                      | Drop until required                                                     |
-| network-policies           | Y              | Y                            | Y                      |                                                                         |
-| local-path-provisioner     | N              | Y                            | Y                      | Built into K3s                                                          |
-| kube-metrics               | N              | N                            | Y                      | Built into K3s                                                          |
-| traefik ingress controller | N              | N                            | Y                      | Built into K3s                                                          |
-| serviceLB                  | N              | N                            | Y                      | Build into K3s                                                          |
-| kubernetes-dashboard       | Y (EMT-S only) | N                            | Y                      |                                                                         |
-| calico                     | Y              | Y                            | Y                      |                                                                         |
+
+### Default Addons for Different EMT Configurations
+
+The table below outlines additional addons enabled by default for different edge configurations:
+
+| Addon                      | Standard | Maverick Flats | Notes          |
+| -------------------------- | -------- | -------------- | -------------- |
+| kube-metrics               | Y        | N              | Built into K3s |
+| traefik ingress controller | N        | N              | Built into K3s |
+| serviceLB                  | N        | TBD            | Built into K3s |
+| kubernetes-dashboard       | Y        | N              |                |
+| Kubevirt                   | N        | Y              |                |
+| CDI                        | N        | TBD            |                |
+| MetalLB                    | N        | TBD            |                |
+| GPU device plugin          | N        | Y              |                |
+| MF device plugin           | N        | Y              |                |
 
 ### Unified Addon Deployment Approach
 
