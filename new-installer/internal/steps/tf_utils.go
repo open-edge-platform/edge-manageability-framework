@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hc-install/product"
@@ -20,8 +19,7 @@ import (
 )
 
 const (
-	TerraformVersion    = "1.9.5"
-	DefaultTfWaitDeplay = 600
+	TerraformVersion = "1.9.5"
 )
 
 type TerraformUtility interface {
@@ -152,7 +150,6 @@ func (tfUtil *terraformUtilityImpl) Run(ctx context.Context, input TerraformUtil
 			ErrorMsg:  fmt.Sprintf("failed to create terraform instance: %v", err),
 		}
 	}
-	_ = tf.SetWaitDelay(DefaultTfWaitDeplay * time.Second)
 	if input.BackendConfig != nil {
 		backendConfigPath := filepath.Join(input.ModulePath, "environments", "backend.tfvars.json")
 		backendConfig, err := marshalHCLJSON(input.BackendConfig)
