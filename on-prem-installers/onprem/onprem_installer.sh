@@ -598,7 +598,7 @@ allow_config_in_runtime
 
 # Write out the configs that have explicit overrides
 write_configs_using_overrides
-
+exit 1
 # Validate the configuration file, and set missing values
 validate_config
 
