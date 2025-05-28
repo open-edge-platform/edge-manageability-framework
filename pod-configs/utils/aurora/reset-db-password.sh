@@ -80,7 +80,7 @@ done
 databaseUser=$(kubectl get secret -n "$k8sNamespace" "$k8sSecretName" -o json | jq -r '.data.PGUSER' | base64 -d)
 
 if [ -z "$databaseUser" ]; then
-  echo "Unable to find database uesr from secret $k8sNamespace/$k8sSecretName"
+  echo "Unable to find database user from secret $k8sNamespace/$k8sSecretName"
   exit 1
 fi
 
