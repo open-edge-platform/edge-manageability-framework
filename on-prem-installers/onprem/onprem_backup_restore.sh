@@ -80,7 +80,7 @@ for ns in $namespaces; do
   # Find what applications are deployed in current namespace
   apps_in_ns=$(kubectl get applications.argoproj.io -n onprem -o json | jq -r --arg NAMESPACE "$ns" '.items[] | select(.spec.destination.namespace == $NAMESPACE) | .metadata.name')
 
-  # Disable autoSync for ArgoCD appllications so pods can be scaled down to zero for the time of backup restore
+  # Disable autoSync for ArgoCD applications so pods can be scaled down to zero for the time of backup restore
   declare -A sync_policy_map
   for app in $apps_in_ns; do
     echo "Disabling ArgoCD auto sync for application: $app"

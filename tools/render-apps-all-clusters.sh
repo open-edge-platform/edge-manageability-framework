@@ -6,10 +6,10 @@
 
 #
 # This script requires an environment variable ORCH_CONFIGS_DIR set to absolute path
-# where the source of `orch-configs` repositiory resides on local filesystem
+# where the source of `orch-configs` repository resides on local filesystem
 #
 # This script requires an environment variable EDGE_MANAGEABILITY_FRAMEWORK_DIR set to absolute path
-# where the source of `edge-manageability-framework` repositiory resides on local filesystem
+# where the source of `edge-manageability-framework` repository resides on local filesystem
 #
 # The script relies on `render-apps.sh` script to render output for a single cluster
 #
