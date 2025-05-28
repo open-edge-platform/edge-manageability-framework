@@ -16,10 +16,10 @@ import (
 type NewInstaller mg.Namespace
 
 var (
-	rootDir      = "new-installer"
-	buildDir     = "_build"
-	coverProfile = "coverprofile.out"
-	coverHtml    = "coverage.html"
+	rootDir        = "new-installer"
+	buildDir       = "_build"
+	coverProfile   = "coverprofile.out"
+	coverageReport = "coverage.txt"
 )
 
 func (NewInstaller) Build() error {
@@ -86,10 +86,10 @@ func (NewInstaller) Test() error {
 	}
 
 	if _, err := os.Stat(coverProfile); err == nil {
-		if err := sh.RunV("go", "tool", "cover", "-html="+coverProfile, "-o", coverHtml); err != nil {
+		if err := sh.RunV("go", "tool", "cover", "-func="+coverProfile, "-o", coverageReport); err != nil {
 			return fmt.Errorf("failed to generate coverage report: %w", err)
 		}
-		fmt.Printf("Coverage report saved to %s\n", coverHtml)
+		fmt.Printf("Coverage report saved to %s\n", coverageReport)
 	}
 	return nil
 }
@@ -113,7 +113,7 @@ func (NewInstaller) Clean() error {
 	}
 
 	// Remove the cover profile file if it exists
-	file = filepath.Join(rootDir, coverHtml)
+	file = filepath.Join(rootDir, coverageReport)
 	if err := os.Remove(file); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to remove %s: %w", file, err)
 	}
