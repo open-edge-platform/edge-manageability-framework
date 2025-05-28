@@ -237,7 +237,7 @@ allow_config_in_runtime() {
     set +x
   fi
 
-  tmp_dir="$cwd/$git_arch_name/tmp"
+  export tmp_dir="$cwd/$git_arch_name/tmp"
 
   if [ -d "$tmp_dir/$si_config_repo" ]; then
     echo "Configuration already exists at $tmp_dir/$si_config_repo."
@@ -416,7 +416,7 @@ write_configs_using_overrides() {
 }
 
 write_config_to_disk() {
-  tmp_dir="$cwd/$git_arch_name/tmp"
+  export tmp_dir="$cwd/$git_arch_name/tmp"
   rm -rf "$tmp_dir"
   mkdir -p "$tmp_dir"
   repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n")
@@ -603,8 +603,8 @@ write_configs_using_overrides
 validate_config
 
 ## Tar back the edge-manageability-framework repo. This will be later pushed to Gitea repo in the Orchestrator Installer
-tmp_dir="$cwd/$git_arch_name/tmp"
-repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n")
+export tmp_dir="$cwd/$git_arch_name/tmp"
+export repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n")
 cd "$tmp_dir"
 tar -zcf "$repo_file" ./edge-manageability-framework
 mv -f "$repo_file" "$cwd/$git_arch_name/$repo_file"
