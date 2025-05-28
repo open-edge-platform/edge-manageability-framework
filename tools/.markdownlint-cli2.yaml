@@ -30,6 +30,7 @@ config:
       - a  # allow anchors created by protoc-gen-doc and similar tools
       - img # allow images - needed if you need to define a size
       - span # allow span tags - needed if you need to highlight text in color
+MD059: false
 
 ignores:
   - "**/.terraform/**"
