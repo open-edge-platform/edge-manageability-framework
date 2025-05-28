@@ -1,0 +1,11 @@
+# User config and runtime state
+config.yaml
+runtime-state.yaml
+
+# Test coverage reports
+coverprofile.out
+coverage.html
+
+# Generated files
+backend.tfvars.json
+variables.tfvars.json

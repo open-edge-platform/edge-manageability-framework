@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-config.yaml
-runtime-state.yaml
 .logs
 .deploy
 .idea
@@ -84,7 +82,3 @@ on-prem-installers/assets/tea
 
 # Build artifacts
 edge-manageability-framework/
-
-# Generated files
-backend.tfvars.json
-variables.tfvars.json
