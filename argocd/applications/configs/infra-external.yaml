@@ -5,7 +5,7 @@
 ---
 import:
   amt:
-    enabled: true
+    enabled: false
 
 loca-manager:
   serviceAccount:
