@@ -11,7 +11,8 @@ development velocity, cloud support, and user experience:
 
 - The cloud installer and infrastructure provisioning are implemented as **large monolithic shell scripts**.
   This not only makes them difficult to maintain but also renders unit testing nearly impossible.
-- The installer is **only tested late in the hardware integration pipeline (HIP)**, which delays feedback and makes bugs harder to trace and resolve.
+- The installer is **only tested late in the hardware integration pipeline (HIP)**, which delays feedback and makes
+bugs harder to trace and resolve.
 - The on-prem installer was developed in parallel but shares little code or structure with the cloud installer.
   This results in **inconsistent behaviors and duplicated logic between cloud and on-prem** deployments.
 - There is **no clear boundary between infrastructure provisioning and orchestrator** setup,
@@ -20,11 +21,13 @@ development velocity, cloud support, and user experience:
 - **Error handling is poor**; raw error logs are surfaced directly to users with no actionable remediation,
   and failures require rerunning entire stages without guidance.
 
-This proposal aims to significantly improve the deployment experience of EMF across multiple environments (AWS, Azure, and on-prem).
-The new installer will prioritize user experience by offering a streamlined, zero-touch installation process after configuration,
-along with clear error handling and actionable feedback.
+This proposal aims to significantly improve the deployment experience of EMF across multiple environments (AWS, Azure,
+and on-prem).
+The new installer will prioritize user experience by offering a streamlined, zero-touch installation process after
+configuration, along with clear error handling and actionable feedback.
 It will also increase cloud portability through clear infrastructure abstraction and support for Azure.
-Finally, by replacing monolithic shell scripts with modular Go components and adding test coverage, we will enable faster iteration and more frequent releases.
+Finally, by replacing monolithic shell scripts with modular Go components and adding test coverage, we will enable
+faster iteration and more frequent releases.
 
 ## Proposal
 
@@ -33,9 +36,10 @@ Finally, by replacing monolithic shell scripts with modular Go components and ad
 - A **unified installer** that supports AWS, Azure, and on-prem targets.
 - A **text user interface (TUI) configuration builder** that guides users through required inputs,
   with the ability to preload values from environment variables or prior installations.
-  It should minimize user input. For example, scale profiles for infra and orchestrator can be automatically applied according to user-specified target scale.
-- A **well-defined abstraction between infrastructure and orchestrator** logic that enables independent testing and upgrading,
-  as well as the ability to plug in new cloud providers via Go modules.
+  It should minimize user input. For example, scale profiles for infra and orchestrator can be automatically applied
+  according to user-specified target scale.
+- A **well-defined abstraction between infrastructure and orchestrator** logic that enables independent testing and
+  upgrading, as well as the ability to plug in new cloud providers via Go modules.
 - Every module should be **toggled independently** and have minimal external dependency.
 - Installer should support **upgrade** and **uninstall** from a previous version
 - We should be able to run on-prem installer on the machine where EMF is being deployed.
@@ -45,9 +49,12 @@ Finally, by replacing monolithic shell scripts with modular Go components and ad
 ### Out of scope
 
 - (EMF-3.2) A clear **progress visualization** showing the overall progress
-- (EMF-3.2) **Diff previews** should be available during upgrade flows, showing schema migrations or configuration changes.
-- (EMF-3.2) **Wrapped and actionable error messages**. Raw logs should be saved to files, and restarts should be possible from the point of failure.
-- (EMF-3.2) Installer should support **orchestrator CLI integration** (e.g. `cli deploy aws`) and parallel execution of non-dependent tasks.
+- (EMF-3.2) **Diff previews** should be available during upgrade flows, showing schema migrations or configuration
+changes.
+- (EMF-3.2) **Wrapped and actionable error messages**. Raw logs should be saved to files, and restarts should be
+possible from the point of failure.
+- (EMF-3.2) Installer should support **orchestrator CLI integration** (e.g. `cli deploy aws`) and parallel execution of
+non-dependent tasks.
 - Optimizing total deployment time, as current durations are acceptable.
 - Full automation of post-deployment IAM/org/user configuration (users will be guided to complete this manually).
 
@@ -85,7 +92,8 @@ Finally, by replacing monolithic shell scripts with modular Go components and ad
 
 - A text-based progress bar will display milestones, elapsed time, estimated remaining time, and current stage.
 - Stage verification will occur both before (input validation) and after (desired state validation) each module runs.
-- Logs will be saved to a file and only shown to users when necessary. The default view will focus on high-level progress and status.
+- Logs will be saved to a file and only shown to users when necessary. The default view will focus on high-level
+progress and status.
 
 ### Installation Workflow
 
@@ -123,7 +131,8 @@ Output:
 #### Stage 2: Pre-Orchestrator
 
 Performs setup that must be completed before Argo CD can take over.
-This includes injecting secrets, setting up namespaces with required labels, importing TLS certs, and installing Gitea and Argo CD.
+This includes injecting secrets, setting up namespaces with required labels, importing TLS certs, and installing Gitea
+and Argo CD.
 
 Input:
 
@@ -174,22 +183,26 @@ Output:
 - **Configuration and State Management:**
   Both `User Config` and `Runtime State` will be stored as a single structured YAML file,
   both persisted locally or in the cloud, similar to Terraform state files.
-  These configurations will be versioned, enabling version specific upgrade logic such as configuration schema and/or data migration
+  These configurations will be versioned, enabling version specific upgrade logic such as configuration schema and/or
+  data migration
   The config builder will support loading previous configurations, migrating them to the latest schema,
   and prompting for any new required attributes.
   We should leverage 3rd party libraries such as [Viper](https://github.com/spf13/viper) to handle configurations.
 
 - **Configuration Consumption:**
-  Each installer module will implement a config provider that parses the *User Config* and *Runtime State*, and generates module-specific configuration (e.g., Helm values, Terraform variables).
+  Each installer module will implement a config provider that parses the *User Config* and *Runtime State*, and
+  generates module-specific configuration (e.g., Helm values, Terraform variables).
 
 - **Upgrade Workflow:**
   During upgrade, the installer will generate a new configuration and display a diff preview to the user before proceeding.
 
 - **Modular Infrastructure Provider Interface:**
-  Infrastructure providers (AWS, Azure, On-Prem) will implement a shared Go interface and register themselves as plug-ins. This abstraction ensures separation from orchestrator logic and allows easy extension to new cloud backends.
+  Infrastructure providers (AWS, Azure, On-Prem) will implement a shared Go interface and register themselves as
+  plug-ins. This abstraction ensures separation from orchestrator logic and allows easy extension to new cloud backends.
 
 - **Programmatic and orchestrator CLI Integration:**
-  The installer must support both CLI usage (e.g., `cli deploy aws`) and programmatic invocation for integration with other tools like the Orch CLI.
+  The installer must support both CLI usage (e.g., `cli deploy aws`) and programmatic invocation for integration with
+  other tools like the Orch CLI.
 
 - **Parallel Execution:**
   Dependencies between steps should be explicitly defined.
@@ -202,7 +215,8 @@ Output:
 
 - **Output validation:**
   We should validate the output of each step and ensure the system is in the desired state before proceeding.
-  The validation logic should be shared across different cloud provider implementations, ensuring a consistent behavior across different environments.
+  The validation logic should be shared across different cloud provider implementations, ensuring a consistent behavior
+  across different environments.
 
 ## Rationale
 
