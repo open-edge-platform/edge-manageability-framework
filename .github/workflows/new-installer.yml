@@ -151,3 +151,10 @@ jobs:
 
       - name: Test new installer
         run: mage newinstaller:test
+
+      - name: Upload new installer artifacts
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: installer-artifacts
+          path: |
+            new-installer/coverage.txt
