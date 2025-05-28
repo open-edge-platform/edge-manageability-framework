@@ -593,12 +593,13 @@ if [[ "$WRITE_CONFIG" == "true" ]]; then
 fi
 
 # Config - interactive
-allow_config_in_runtime
-# mage onPrem:allowConfigInRuntime
+export tmp_dir="$cwd/$git_arch_name/tmp"
+# allow_config_in_runtime
+mage onPrem:allowConfigInRuntime
 
 # Write out the configs that have explicit overrides
 write_configs_using_overrides
-exit 1
+# exit 1
 # Validate the configuration file, and set missing values
 validate_config
 
