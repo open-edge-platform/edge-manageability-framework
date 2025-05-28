@@ -184,10 +184,13 @@ to start from scratch. However, OpenDMT does not cover all the featues exposed b
 required to extend their capabilities in order to support advanced features as reprovision the device using HTTPs boot
 option or secure remote erase.
 
-One shortcoming of the MPS/RPS services is that they are written using Node.js. An alternative design would consider to rewrite the functionalitiy of MPS/RPS using `go` which would give us a different programming model and more libraries to use.
+One shortcoming of the MPS/RPS services is that they are written using Node.js. An alternative design would consider to
+rewrite the functionalitiy of MPS/RPS using `go` which would give us a different programming model and more libraries
+to use.
 
 For example the handling of the migrations and the creation of the db which at the time of writing
-are done using a [manual process](https://device-management-toolkit.github.io/docs/2.27/Deployment/upgradeVersion/), it could be automated and realized using versioned migrations.
+are done using a [manual process](https://device-management-toolkit.github.io/docs/2.27/Deployment/upgradeVersion/),
+it could be automated and realized using versioned migrations.
 
 Another design choice considers to not expose MPS/RPS services through the MT-GW and bridge the requests through
 Edge Infrastructure Manager. How to achieve this and if we should purse is left as an open question.
@@ -201,9 +204,10 @@ required to execute the integration with FPSs.
   - IAM/MT-GW, Keycloak, Database, Traefik, Istio, Vault are the main services affected
 - UI should support
   - the creation and the removal of the Domain configurations by extending the Admin page.
-  - activation of vPRO during the device registration 
+  - activation of vPRO during the device registration
   - power management commands
-- Automation and infrastructure teams should pay careful attention when setting up the environments to test the technology
+- Automation and infrastructure teams should pay careful attention when setting up the environments to test the
+technology
 
 ## Implementation plan
 
@@ -226,10 +230,11 @@ Hereafter we present as steps the proposed plan in the release 3.1.
 
 ## Test plan
 
-**Unit tests** will be extended accordingly in the affected components and possibly in the DTM components the extensions
-and the unit tests will be upstreamed.
+**Unit tests** will be extended accordingly in the affected components and possibly in the DTM components the
+extensions and the unit tests will be upstreamed.
 
-**VIP tests** should verify the deployment and FPS/IAM integration. Additionally, tests should be written to verify Domain
+**VIP tests** should verify the deployment and FPS/IAM integration. Additionally, tests should be written to verify
+Domain
 creation and issuing power management commands.
 
 New **HIP tests** involving hardware devices will be written to verify the complete e2e flow.
@@ -241,7 +246,8 @@ operations.
 
 Integration with Mosquitto is left for future iterations.
 
-MPSRouter is additionally deployed to address MPS scalability. Should FPS consider MPSRouter integration and its dependency with Istio?
+MPSRouter is additionally deployed to address MPS scalability. Should FPS consider MPSRouter integration and its
+dependency with Istio?
 
 OpenDMT stack offers device audit log and events. Should OBaaS consider how to integrate these features in the stack?
 
