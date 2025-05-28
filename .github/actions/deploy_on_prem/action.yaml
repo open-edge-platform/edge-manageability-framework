@@ -56,3 +56,31 @@ runs:
     - name: Setup test environment
       shell: bash
       run: mage -v gen:orchCA deploy:orchCA deploy:edgeNetworkDNS
+
+    - name: Get diagnostic information
+      id: get-diagnostic-info
+      if: always() && steps.install-deps.conclusion == 'success'
+      env:
+        SSH_HOST: 192.168.99.10
+        SSH_USER: ubuntu
+        SSH_PASSWORD: ubuntu
+      run: |
+        mkdir -p onprem-diagnostics
+        kubectl config set-cluster default --server="https://${SSH_HOST}:6443" --insecure-skip-tls-verify
+        kubectl get pods -o wide -A | tee onprem-diagnostics/pods-list.txt
+        kubectl describe pods -A | tee onprem-diagnostics/pods-describe.txt
+        mage logutils:collectArgoDiags | tee onprem-diagnostics/argo-diag.txt
+        kubectl get applications -o yaml -A | tee onprem-diagnostics/argocd-applications.yaml
+        kubectl get events -o yaml -A | tee onprem-diagnostics/events.yaml
+
+    - name: Upload diagnostic information to CI artifact store
+      if: always() && steps.get-diagnostic-info.conclusion == 'success'
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+      with:
+        name: onprem-diagnostics
+        path: |
+          onprem-diagnostics/pods-list.txt
+          onprem-diagnostics/pods-describe.txt
+          onprem-diagnostics/argo-diag.txt
+          onprem-diagnostics/argocd-applications.yaml
+          onprem-diagnostics/events.yaml
