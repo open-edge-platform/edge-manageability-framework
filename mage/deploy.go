@@ -47,11 +47,13 @@ func randomPassword(count int) string {
 const (
 	harborPasswordLength   = 100
 	keycloakPasswordLength = 14
+	postgresPasswordLength = 14
 )
 
 var (
 	harborPassword   = randomPassword(harborPasswordLength)
 	keycloakPassword = randomPassword(keycloakPasswordLength)
+	postgresPassword = randomPassword(postgresPasswordLength)
 )
 
 const giteaPasswordLength = 100
@@ -148,7 +150,7 @@ func (d Deploy) kind(targetEnv string) error { //nolint:gocyclo
 		return fmt.Errorf("error creating namespaces: %w", err)
 	}
 
-	// FIXME: Extend support for gernerally configurable token based release service authentication. This is currently not supported.
+	// FIXME: Extend support for generally configurable token based release service authentication. This is currently not supported.
 	if err := localSecret(targetEnv, false); err != nil {
 		return fmt.Errorf("error creating local secrets: %w", err)
 	}
@@ -227,7 +229,7 @@ func (d Deploy) kind(targetEnv string) error { //nolint:gocyclo
 		return err
 	}
 
-	// Check for `.mage-local.yaml` file. If it exists, use it to add any additional repos spacified as
+	// Check for `.mage-local.yaml` file. If it exists, use it to add any additional repos specified as
 	// desired in the settings.
 	if err := (Argo{}).AddLocalRepos(); err != nil {
 		return fmt.Errorf("error adding local repos: %w", err)
@@ -307,7 +309,7 @@ spec:
     spec:
       containers:
         - name: victoriametrics
-          image: victoriametrics/victoria-metrics:latest
+          image: victoriametrics/victoria-metrics:v1.117.0
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8428
@@ -449,8 +451,15 @@ func localSecret(targetEnv string, createRSToken bool) error {
 		"--from-literal=admin-password="+keycloakPassword); err != nil {
 		return err
 	}
-
-	// FIXME: Extend support for gernerally configurable token based release service authentication.
+	if err := kubectlCreateAndApply("namespace", "orch-database"); err != nil {
+		return err
+	}
+	// creating postgres secret that contains the randomly generated postgres admin password
+	if err := kubectlCreateAndApply("secret", "generic", "-n", "orch-database", "postgresql",
+		"--from-literal=postgres-password="+postgresPassword); err != nil {
+		return err
+	}
+	// FIXME: Extend support for generally configurable token based release service authentication.
 	// This is currently not supported with the OSS conversion.
 	// if createRSToken {
 	// 	// for environments w/o Secret Manager we have to create respective secrets.
@@ -570,6 +579,12 @@ func kindCluster(name string, targetEnv string) error {
       kubeadmConfigPatches:
       - |
         kind: ClusterConfiguration
+        etcd:
+          local:
+            extraArgs:
+              quota-backend-bytes: "8589934592"
+              auto-compaction-mode: "periodic"
+              auto-compaction-retention: "1h"
         apiServer:
         # enable auditing flags on the API server
           extraArgs:
@@ -950,7 +965,7 @@ func (d Deploy) gitea(bootstrapValues []string, targetEnv string) error {
 		fmt.Println("Error creating app-gitea-credential secret")
 		return err
 	}
-	// Create clusterorch acccount in Gitea
+	// Create clusterorch account in Gitea
 	fmt.Println("Creating clusterorch account in Gitea")
 	if err := createOrUpdateGiteaAccount(clusterGiteaUsername, clusterGiteaPassword); err != nil {
 		fmt.Println("Error creating clusterorch account in Gitea")
@@ -1328,7 +1343,7 @@ func (d Deploy) updateDeployRepo(targetEnv, gitRepoPath, repoName, localClonePat
 		return fmt.Errorf("error getting Gitea credentials: %w", err)
 	}
 
-	// Set GIT_SSL_NO_VERIFY=true for git commmands that we are running through the port forward tunnel
+	// Set GIT_SSL_NO_VERIFY=true for git commands that we are running through the port forward tunnel
 	os.Setenv("GIT_SSL_NO_VERIFY", "true")
 
 	// Init/Clean local clone path, change directory to it, and clone the repo

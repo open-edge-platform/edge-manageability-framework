@@ -105,13 +105,58 @@ argo:
       limits:
         cpu: "64"
         memory: "64Gi"
-    clusterOrchestratorWaitCtm:
+    capiOperator:
       requests:
         cpu: "1m"
         memory: "1Mi"
       limits:
         cpu: "64"
         memory: "64Gi"
+    clusterConnectGateway:
+      gateway:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+      controller:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+    clusterManager:
+      clusterManager:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+      templateController:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+    intelInfraProvider:
+      manager:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
+      southboundApi:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
     configProvisioner:
       requests:
         cpu: "1m"
