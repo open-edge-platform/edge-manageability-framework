@@ -593,8 +593,8 @@ if [[ "$WRITE_CONFIG" == "true" ]]; then
 fi
 
 # Config - interactive
-#allow_config_in_runtime
-mage onPrem:allowConfigInRuntime
+allow_config_in_runtime
+# mage onPrem:allowConfigInRuntime
 
 # Write out the configs that have explicit overrides
 write_configs_using_overrides
