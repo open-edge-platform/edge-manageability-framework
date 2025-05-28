@@ -428,6 +428,7 @@ func (OnPrem) AllowConfigInRuntime() error {
 	os.RemoveAll(tmpDir)
 	os.MkdirAll(tmpDir, 0755)
 	cmd := exec.Command("tar", "-xf", filepath.Join(cwd, gitArchName, repoFile), "-C", tmpDir)
+	fmt.Println("cmd:", cmd)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
