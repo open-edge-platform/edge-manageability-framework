@@ -380,7 +380,8 @@ func (OnPrem) PrintEnvVariables() {
 
 func (OnPrem) AllowConfigInRuntime() error {
 	enableTrace := os.Getenv("ENABLE_TRACE") == "true"
-	cwd, _ := os.Getwd()
+	cwd := os.Getenv("cwd")
+	// cwd, _ := os.Getwd()
 	gitArchName := os.Getenv("git_arch_name")
 	siConfigRepo := os.Getenv("si_config_repo")
 	assumeYes := os.Getenv("ASSUME_YES") == "true"
