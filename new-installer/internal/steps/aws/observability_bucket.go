@@ -15,7 +15,8 @@ import (
 )
 
 const (
-	ModulePath = "new-installer/targets/aws/iac/s3"
+	ModulePath                           = "new-installer/targets/aws/iac/s3"
+	ObservabilityBucketsBackendBucketKey = "observability_buckets.tfstate"
 )
 
 type ObservabilityBucketsVariables struct {
@@ -43,35 +44,45 @@ type ObservabilityBucketsStep struct {
 	RootPath           string
 	KeepGeneratedFiles bool
 	TerraformExecPath  string
+	StepLabels         []string
 }
 
 func (s *ObservabilityBucketsStep) Name() string {
 	return "AWSObservabilityBucketsStep"
 }
 
-func (s *ObservabilityBucketsStep) ConfigStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *ObservabilityBucketsStep) Labels() []string {
+	return s.StepLabels
+}
+
+func (s *ObservabilityBucketsStep) ConfigStep(ctx context.Context, config config.OrchInstallerConfig) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	s.variables = NewObservabilityBucketsVariables()
 	s.variables.Region = config.AWS.Region
 	s.variables.CustomerTag = config.AWS.CustomerTag
 	s.variables.S3Prefix = config.Global.OrchName // TODO: set this to the correct value from config
 	s.variables.ClusterName = config.Global.OrchName
 	s.variables.CreateTracing = false
-	return runtimeState, nil
+	s.backendConfig = steps.TerraformAWSBucketBackendConfig{
+		Bucket: config.Global.OrchName + "-" + config.Generated.DeploymentID,
+		Region: config.AWS.Region,
+		Key:    ObservabilityBucketsBackendBucketKey,
+	}
+	return config.Generated, nil
 }
 
-func (s *ObservabilityBucketsStep) PreStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *ObservabilityBucketsStep) PreStep(ctx context.Context, config config.OrchInstallerConfig) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	terraformExecPath, err := steps.InstallTerraformAndGetExecPath()
 	s.TerraformExecPath = terraformExecPath
 	if err != nil {
-		return runtimeState, &internal.OrchInstallerError{
+		return config.Generated, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInternal,
 			ErrorMsg:  fmt.Sprintf("failed to get terraform exec path: %v", err),
 		}
 	}
-	return runtimeState, nil
+	return config.Generated, nil
 }
 
-func (s *ObservabilityBucketsStep) RunStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *ObservabilityBucketsStep) RunStep(ctx context.Context, config config.OrchInstallerConfig) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	terraformUtility := steps.CreateTerraformUtility()
 	terraformStepInput := steps.TerraformUtilityInput{
 		Action:             config.Generated.Action,
@@ -83,7 +94,7 @@ func (s *ObservabilityBucketsStep) RunStep(ctx context.Context, config config.Or
 		LogFile:            filepath.Join(config.Generated.LogDir, "aws_observability_bucket.log"),
 		KeepGeneratedFiles: s.KeepGeneratedFiles,
 	}
-	terraformStepOutput, err := terraformUtility.RunTerraformModule(ctx, terraformStepInput)
+	terraformStepOutput, err := terraformUtility.Run(ctx, terraformStepInput)
 	if err != nil {
 		return config.Generated, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeTerraform,
@@ -96,9 +107,9 @@ func (s *ObservabilityBucketsStep) RunStep(ctx context.Context, config config.Or
 	if terraformStepOutput.Output != nil {
 		fmt.Println("Terraform Output:")
 	}
-	return runtimeState, nil
+	return config.Generated, nil
 }
 
-func (s *ObservabilityBucketsStep) PostStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState, prevStepError *internal.OrchInstallerError) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *ObservabilityBucketsStep) PostStep(ctx context.Context, config config.OrchInstallerConfig, prevStepError *internal.OrchInstallerError) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	return config.Generated, prevStepError
 }

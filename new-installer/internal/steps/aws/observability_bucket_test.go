@@ -5,6 +5,7 @@ package steps_aws_test
 
 import (
 	"crypto/rand"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -26,6 +27,10 @@ type ObservabilityBucketsStepTest struct {
 	terraformExecPath string
 }
 
+const (
+	DeploymentID = "test-deployment-id"
+)
+
 func TestObservabilityBucketsStep(t *testing.T) {
 	suite.Run(t, new(ObservabilityBucketsStepTest))
 }
@@ -41,6 +46,8 @@ func (s *ObservabilityBucketsStepTest) SetupTest() {
 	internal.InitLogger("debug", s.logDir)
 	s.config.AWS.Region = "us-west-2"
 	s.config.Global.OrchName = "piracki-test"
+	s.config.AWS.CustomerTag = "test"
+	s.config.Generated.DeploymentID = DeploymentID
 
 	s.terraformExecPath, err = steps.InstallTerraformAndGetExecPath()
 	if err != nil {
@@ -64,11 +71,13 @@ func (s *ObservabilityBucketsStepTest) TearDownTest() {
 	}
 }
 
-func (s *ObservabilityBucketsStepTest) TestInstallVPC() {
+func (s *ObservabilityBucketsStepTest) TestInstallOBservabilityBucket() {
 	s.config.Generated.Action = "install"
 	rs, err := steps.GoThroughStepFunctions(s.step, &s.config)
 	if err != nil {
 		s.NoError(err)
 		return
 	}
+	fmt.Println(rs)
+
 }
