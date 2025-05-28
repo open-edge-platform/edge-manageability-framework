@@ -51,8 +51,8 @@ graph TD
     User -->|443| Traefik
     Traefik -->|443| MTGW
     MTGW -->|3000/AMT-Device|MPS
-    MTGW -->|8080/Domain|RPS
-    MTGW -->|8081/WS|RPS
+    MTGW -->|8081/Domain|RPS
+    MTGW -->|8080/WS|RPS
 ```
 
 The Remote Provisioning Client (RPC) application runs on the managed device/Edge Node and communicates with the RPS
@@ -65,9 +65,9 @@ managed device is connected to the network and to a power source, it can maintai
 
 **Note1:** CIRA connection is terminated directly in the MPS service;
 
-**Note2:** Traffic on port 8081 is the web-socket established between RPC-RPS and is used to perform the configuration
+**Note2:** Traffic on port 8080 is the web-socket established between RPC-RPS and is used to perform the configuration
 
-**Note3:** Port 8080 is "exposed" by MT-GW to allow the configuration of the Domain and the Provisioning Certificate
+**Note3:** Port 8081 is "exposed" by MT-GW to allow the configuration of the Domain and the Provisioning Certificate
 
 **Note4:** Port 3000 is "exposed" by MT-GW to allow the retrieval of the AMT device information and potentially expose
 to OBaaS audit logs and events
