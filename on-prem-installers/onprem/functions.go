@@ -636,3 +636,73 @@ stringData:
 
 	return nil
 }
+
+func (OnPrem) WriteConfigsUsingOverrides() error {
+	tmpDir := os.Getenv("tmp_dir")
+	siConfigRepo := os.Getenv("si_config_repo")
+	profile := os.Getenv("ORCH_INSTALLER_PROFILE")
+	yamlPath := fmt.Sprintf("%s/%s/orch-configs/clusters/%s.yaml", tmpDir, siConfigRepo, profile)
+
+	clusterDomain := os.Getenv("CLUSTER_DOMAIN")
+	if clusterDomain != "" {
+		fmt.Println("CLUSTER_DOMAIN is set. Updating clusterDomain in the YAML file...")
+		cmd := exec.Command("yq", "-i", fmt.Sprintf(".argo.clusterDomain=\"%s\"", clusterDomain), yamlPath)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return err
+		}
+		fmt.Printf("Update complete. clusterDomain is now set to: %s\n", clusterDomain)
+	}
+
+	sreTlsEnabled := os.Getenv("SRE_TLS_ENABLED")
+	sreDestCaCert := os.Getenv("SRE_DEST_CA_CERT")
+	if sreTlsEnabled == "true" {
+		cmd := exec.Command("yq", "-i", ".argo.o11y.sre.tls.enabled|=true", yamlPath)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return err
+		}
+		if sreDestCaCert != "" {
+			cmd := exec.Command("yq", "-i", ".argo.o11y.sre.tls.caSecretEnabled|=true", yamlPath)
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+			if err := cmd.Run(); err != nil {
+				return err
+			}
+		}
+	} else {
+		cmd := exec.Command("yq", "-i", ".argo.o11y.sre.tls.enabled|=false", yamlPath)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return err
+		}
+	}
+
+	if os.Getenv("SMTP_SKIP_VERIFY") == "true" {
+		cmd := exec.Command("yq", "-i", ".argo.o11y.alertingMonitor.smtp.insecureSkipVerify|=true", yamlPath)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return err
+		}
+	}
+
+	// Override MetalLB address pools
+	cmds := []*exec.Cmd{
+		exec.Command("yq", "-i", ".postCustomTemplateOverwrite.metallb-config.ArgoIP|=strenv(ARGO_IP)", yamlPath),
+		exec.Command("yq", "-i", ".postCustomTemplateOverwrite.metallb-config.TraefikIP|=strenv(TRAEFIK_IP)", yamlPath),
+		exec.Command("yq", "-i", ".postCustomTemplateOverwrite.metallb-config.NginxIP|=strenv(NGINX_IP)", yamlPath),
+	}
+	for _, cmd := range cmds {
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
