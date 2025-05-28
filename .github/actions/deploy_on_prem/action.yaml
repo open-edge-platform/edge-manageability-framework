@@ -64,6 +64,7 @@ runs:
         SSH_HOST: 192.168.99.10
         SSH_USER: ubuntu
         SSH_PASSWORD: ubuntu
+      shell: bash
       run: |
         mkdir -p onprem-diagnostics
         kubectl config set-cluster default --server="https://${SSH_HOST}:6443" --insecure-skip-tls-verify
