@@ -4,10 +4,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-. ${HOME}/utils.sh
+# shellcheck disable=SC1091
+. "${HOME}"/utils.sh
 
 # Consts
-BUCKET_REGION="us-west-2"
+export BUCKET_REGION="us-west-2"
 SAVE_DIR="${SAVE_DIR:-${HOME}/pod-configs/SAVEME}"
 
 usage() {
@@ -30,13 +31,13 @@ parse_params() {
         exit 1
     fi
 
-    set -- $options
+    set -- "$options"
 
     while [ $# -gt 0 ]
     do
         case $1 in
-            --cidr-block) VPC_CIDR=$(eval echo $2); shift;;
-            --jumphost-ip) JUMPHOST_IP=$(eval echo $2); shift;;
+            --cidr-block) VPC_CIDR=$(eval echo "$2"); shift;;
+            --jumphost-ip) JUMPHOST_IP=$(eval echo "$2"); shift;;
             -h|--help) usage; exit;;
             (--) shift; break;;
             (-*) echo "$0: error - unrecognized option $1" 1>&2; exit 1;;
@@ -66,27 +67,28 @@ update_kube_config
 # Clone and init main branch for Code Commit Repos
 EDGE_MANAGEABILITY_FRAMEWORK="https://gitea.${CLUSTER_FQDN}/argocd/edge-manageability-framework.git"
 
-mkdir -p ${HOME}/src
+mkdir -p "${HOME}"/src
 
 # Clone GitOps Repos
-clone_repo $EDGE_MANAGEABILITY_FRAMEWORK edge-manageability-framework
+clone_repo "$EDGE_MANAGEABILITY_FRAMEWORK" edge-manageability-framework
 
 # Load ADMIN_EMAIL from cluster template
-export ADMIN_EMAIL=$(yq .argo.adminEmail ${HOME}/src/edge-manageability-framework/orch-configs/clusters/${CLUSTER_NAME}.yaml)
-echo ADMIN_EMAIL=${ADMIN_EMAIL} >> ${HOME}/.env
+admin_email=$(yq .argo.adminEmail "${HOME}"/src/edge-manageability-framework/orch-configs/clusters/"${CLUSTER_NAME}".yaml)
+export ADMIN_EMAIL="${admin_email}"
+echo ADMIN_EMAIL="${ADMIN_EMAIL}" >> "${HOME}"/.env
 
 ./start-tunnel.sh
 
 echo
 echo =============================================================================
 echo The environment has been prepared to perform administrative operations on
-echo the ${CLUSTER_NAME} orchestrator.
+echo the "${CLUSTER_NAME}" orchestrator.
 echo
 echo kubectl access to the cluster should be available. To verify, run:
 echo
 echo   kubectl get nodes
 echo
-echo GitOps repos are in ${HOME}/src/orch-config and ${HOME}/src/edge-manageability-framework.
+echo GitOps repos are in "${HOME}"/src/orch-config and "${HOME}"/src/edge-manageability-framework.
 echo To apply changes to the Orchestrator configuration, run:
 echo
 echo   make update

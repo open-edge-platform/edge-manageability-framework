@@ -22,20 +22,21 @@ if [[ "${ORCH_CONFIGS_DIR-}" == "" ]]; then
   exit 1
 fi
 
-pushd $PWD > /dev/null
+pushd "$PWD" > /dev/null
 
-cd $ORCH_CONFIGS_DIR
+cd "$ORCH_CONFIGS_DIR"
 
 if [ -n "${1-}" ]; then
   profile=$1
-  echo $profile covered in clusters:
-  egrep "^[ ]*- orch-configs/profiles/$profile" ./orch-configs/clusters/*
+  echo "$profile" covered in clusters:
+  grep -E "^[ ]*- orch-configs/profiles/$profile" ./orch-configs/clusters/*
 else
   PROFILES=$(ls profiles)
   # produces output formatted: <times covered>: <profile name>
   # so the script output can be easily sorted with 'sort -n'
   for profile in $PROFILES; do
-    echo $(egrep "^[ ]*- orch-configs/profiles/$profile" ./orch-configs/clusters/* | wc -l): $profile
+    count=$(grep -cE "^[ ]*- orch-configs/profiles/$profile" ./orch-configs/clusters/*)
+    echo "$count: $profile"  
   done
 fi
 

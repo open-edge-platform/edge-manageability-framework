@@ -18,19 +18,19 @@ USER=edge-operator-example-user
 PASSWORD=${ORCH_DEFAULT_PASSWORD}
 CLI=catalog
 
-[ ! -z "$1" ] && ORCHESTRATOR_DOMAIN=$1 || ORCHESTRATOR_DOMAIN=kind.internal
+[ -n "$1" ] && ORCHESTRATOR_DOMAIN=$1 || ORCHESTRATOR_DOMAIN=kind.internal
 
 CATALOG_ENDPOINT="https://app-orch.${ORCHESTRATOR_DOMAIN}"
 DEPLOYMENT_ENDPOINT="https://app-orch.${ORCHESTRATOR_DOMAIN}"
 
-[ ! -z "$1" ] && CATALOG_ARGS="--deployment-endpoint ${DEPLOYMENT_ENDPOINT} --catalog-endpoint ${CATALOG_ENDPOINT}" || CATALOG_ARGS=""
+[ -n "$1" ] && CATALOG_ARGS="--deployment-endpoint ${DEPLOYMENT_ENDPOINT} --catalog-endpoint ${CATALOG_ENDPOINT}" || CATALOG_ARGS=""
 
 
-${CLI} ${CATALOG_ARGS} logout
-${CLI} ${CATALOG_ARGS} login --client-id=system-client --trust-cert=true --keycloak https://keycloak.${ORCHESTRATOR_DOMAIN}/realms/master ${USER} ${PASSWORD}
+${CLI} "${CATALOG_ARGS}" logout
+${CLI} "${CATALOG_ARGS}" login --client-id=system-client --trust-cert=true --keycloak https://keycloak."${ORCHESTRATOR_DOMAIN}"/realms/master ${USER} "${PASSWORD}"
 
-REFRESH_TOKEN=$(${CLI} ${CATALOG_ARGS} config get refresh-token)
-ACCESS_TOKEN=$(curl -s --location --request POST https://keycloak.${}/realms/master/protocol/openid-connect/token \    
+REFRESH_TOKEN=$(${CLI} "${CATALOG_ARGS}" config get refresh-token)
+ACCESS_TOKEN=$(curl -s --location --request POST https://keycloak."${ORCHESTRATOR_DOMAIN}"/realms/master/protocol/openid-connect/token \
     --header 'Content-Type: application/x-www-form-urlencoded' \
     --data-urlencode 'grant_type=refresh_token' \
     --data-urlencode 'client_id=system-client' \
