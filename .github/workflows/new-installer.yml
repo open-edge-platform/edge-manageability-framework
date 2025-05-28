@@ -157,4 +157,4 @@ jobs:
         with:
           name: installer-artifacts
           path: |
-            new-installer/coverage.html
+            new-installer/coverage.txt
