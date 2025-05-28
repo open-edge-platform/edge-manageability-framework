@@ -12,8 +12,8 @@ will of necessity support 24.03.2 installation to support upgrade test
 automation from the released software.
 
 The test logic is expected to be updated for each new Orchestrator version and
-the pipeline exceution layer should handle pulling and calling the correct
-install AutoInstall implemenation for each version that is part of a test
+the pipeline execution layer should handle pulling and calling the correct
+install AutoInstall implementation for each version that is part of a test
 scenario.
 
 ## Usage
