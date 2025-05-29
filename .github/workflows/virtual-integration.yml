@@ -440,6 +440,7 @@ jobs:
       - check-changed-files
     if: |
       always() &&
+      github.event.pull_request.labels.*.name != 'installer' &&
       needs.lint-version.result == 'success' && (
       needs.check-changed-files.outputs.orch == 'true' ||
       needs.check-changed-files.outputs.ci == 'true' ||
@@ -674,6 +675,7 @@ jobs:
       - check-changed-files
     if: |
       always() &&
+      github.event.pull_request.labels.*.name != 'installer' &&
       needs.build-publish.result == 'success' && (
       needs.check-changed-files.outputs.orch == 'true' ||
       needs.check-changed-files.outputs.on-prem == 'true' ||
