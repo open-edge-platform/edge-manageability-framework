@@ -212,17 +212,41 @@ func configureProxy() *huh.Group {
 			Validate(validateProxy).
 			Value(&input.Proxy.HTTPSProxy),
 		huh.NewInput().
-			Title("SOCKS Proxy").
-			Description("(Optional) SOCKS proxy to be used for all outbound traffic").
-			Placeholder("").
-			Validate(validateProxy).
-			Value(&input.Proxy.SocksProxy),
-		huh.NewInput().
 			Title("No Proxy").
 			Description("(Optional) Comma separated list of domains that should not use the proxy").
 			Placeholder("").
-			Validate(validateProxy).
+			Validate(validateNoProxy).
 			Value(&input.Proxy.NoProxy),
+		huh.NewInput().
+			Title("Edge Node HTTP Proxy").
+			Description("(Optional) Edge Node HTTP proxy to be used for all outbound traffic").
+			Placeholder("").
+			Validate(validateProxy).
+			Value(&input.Proxy.ENHTTPProxy),
+		huh.NewInput().
+			Title("Edge Node HTTPS Proxy").
+			Description("(Optional) Edge Node HTTPS proxy to be used for all outbound traffic").
+			Placeholder("").
+			Validate(validateProxy).
+			Value(&input.Proxy.ENHTTPSProxy),
+		huh.NewInput().
+			Title("Edge Node FTP Proxy").
+			Description("(Optional) Edge Node FTP proxy to be used for all outbound traffic").
+			Placeholder("").
+			Validate(validateProxy).
+			Value(&input.Proxy.ENFTPProxy),
+		huh.NewInput().
+			Title("Edge Node SOCKS Proxy").
+			Description("(Optional) Edge Node FTP SOCKS to be used for all outbound traffic").
+			Placeholder("").
+			Validate(validateProxy).
+			Value(&input.Proxy.ENSocksProxy),
+		huh.NewInput().
+			Title("Edge Node No Proxy").
+			Description("(Optional) Comma separated list of domains that should not use the proxy").
+			Placeholder("").
+			Validate(validateNoProxy).
+			Value(&input.Proxy.ENNoProxy),
 	).WithHideFunc(func() bool {
 		return !flags.ExpertMode && !flags.ConfigureProxy
 	}).Title("Step 4: (Optional) Proxy\n")

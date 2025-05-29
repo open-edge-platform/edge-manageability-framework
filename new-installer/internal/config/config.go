@@ -16,7 +16,7 @@ const (
 	Scale10000 Scale = 10000
 )
 
-const UserConfigVersion = 1
+const UserConfigVersion = 2
 const RuntimeStateVersion = 1
 
 type OrchInstallerRuntimeState struct {
@@ -104,10 +104,14 @@ type OrchInstallerConfig struct {
 		From     string `yaml:"from"`
 	} `yaml:"smtp,omitempty"`
 	Proxy struct {
-		HTTPProxy  string `yaml:"httpProxy,omitempty"`
-		HTTPSProxy string `yaml:"httpsProxy,omitempty"`
-		SocksProxy string `yaml:"socksProxy,omitempty"`
-		NoProxy    string `yaml:"noProxy,omitempty"`
+		HTTPProxy    string `yaml:"httpProxy,omitempty"`
+		HTTPSProxy   string `yaml:"httpsProxy,omitempty"`
+		NoProxy      string `yaml:"noProxy,omitempty"`
+		ENHTTPProxy  string `yaml:"enHttpProxy,omitempty"`
+		ENHTTPSProxy string `yaml:"enHttpsProxy,omitempty"`
+		ENFTPProxy   string `yaml:"enFtpProxy,omitempty"`
+		ENSocksProxy string `yaml:"enSocksProxy,omitempty"`
+		ENNoProxy    string `yaml:"enNoProxy,omitempty"`
 	} `yaml:"proxy,omitempty"`
 }
 
