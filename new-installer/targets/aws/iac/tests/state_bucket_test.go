@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package aws_iac_state_bucket_test
+package aws_iac_test
 
 import (
 	"crypto/rand"

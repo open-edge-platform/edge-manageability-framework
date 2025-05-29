@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package aws_iac_state_bucket_test
+package aws_iac_test
 
 import (
 	"crypto/rand"
@@ -21,7 +21,10 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-const SSKKeySize = 2048
+const (
+	SSKKeySize    = 2048
+	DefaultRegion = "us-west-2"
+)
 
 type VPCTestSuite struct {
 	suite.Suite
@@ -56,15 +59,15 @@ func (s *VPCTestSuite) TestApplyingModule() {
 	// Bucket for VPC state
 	randomPostfix := strings.ToLower(rand.Text()[:8])
 	bucketName := "test-bucket-" + randomPostfix
-	aws.CreateS3Bucket(s.T(), "us-west-2", bucketName)
+	aws.CreateS3Bucket(s.T(), DefaultRegion, bucketName)
 	defer func() {
-		aws.EmptyS3Bucket(s.T(), "us-west-2", bucketName)
-		aws.DeleteS3Bucket(s.T(), "us-west-2", bucketName)
+		aws.EmptyS3Bucket(s.T(), DefaultRegion, bucketName)
+		aws.DeleteS3Bucket(s.T(), DefaultRegion, bucketName)
 	}()
 
 	_, publicSSHKey, _ := GenerateSSHKeyPair()
 	variables := AWSVPCVariables{
-		Region:             "us-west-2",
+		Region:             DefaultRegion,
 		Name:               "test-vpc-" + randomPostfix,
 		CidrBlock:          "10.250.0.0/16",
 		EnableDnsHostnames: true,
@@ -106,7 +109,7 @@ func (s *VPCTestSuite) TestApplyingModule() {
 		TerraformDir: "../vpc",
 		VarFiles:     []string{tempFile.Name()},
 		BackendConfig: map[string]interface{}{
-			"region": "us-west-2",
+			"region": DefaultRegion,
 			"bucket": bucketName,
 			"key":    "vpc.tfstate",
 		},
@@ -114,10 +117,57 @@ func (s *VPCTestSuite) TestApplyingModule() {
 		Upgrade:     true,
 	})
 	defer terraform.Destroy(s.T(), terraformOptions)
-
 	terraform.InitAndApply(s.T(), terraformOptions)
 
-	// TODO: Check VPC and subnets were created successfully
+	vpcID, err := terraform.OutputE(s.T(), terraformOptions, "vpc_id")
+	if err != nil {
+		s.NoError(err, "Failed to get VPC ID from Terraform output")
+		return
+	}
+	vpc := aws.GetVpcById(s.T(), vpcID, DefaultRegion)
+	s.Equal(vpc.CidrBlock, "10.250.0.0/16", "VPC CIDR block does not match expected value")
+	s.NotEmpty(vpcID, "VPC ID should not be empty")
+	privateSubnetIDs := terraform.OutputList(s.T(), terraformOptions, "private_subnet_ids")
+	for _, subnetID := range privateSubnetIDs {
+		_, err := GetSubnetByID(vpcID, subnetID, DefaultRegion)
+		if err != nil {
+			s.NoError(err)
+			return
+		}
+	}
+
+	publicSubnetIDs := terraform.OutputList(s.T(), terraformOptions, "public_subnet_ids")
+	for _, subnetID := range publicSubnetIDs {
+		_, err := GetSubnetByID(vpcID, subnetID, DefaultRegion)
+		if err != nil {
+			s.NoError(err)
+			return
+		}
+	}
+	ec2Filters := map[string][]string{
+		"tag:Name": {"test-vpc-" + randomPostfix + "-jump"},
+		"tag:VPC":  {"test-vpc-" + randomPostfix},
+	}
+	instanceIDs := aws.GetEc2InstanceIdsByFilters(s.T(), DefaultRegion, ec2Filters)
+	s.NotEmpty(instanceIDs, "No EC2 instances found with the specified filters")
+
+	_, err = GetInternetGatewaysByTags(DefaultRegion, map[string][]string{
+		"Name": {"test-vpc-" + randomPostfix + "-igw"},
+		"VPC":  {"test-vpc-" + randomPostfix},
+	})
+	if err != nil {
+		s.NoError(err, "Failed to get Internet Gateway for VPC")
+		return
+	}
+
+	ngws, err := GetNATGatewaysByTags(DefaultRegion, map[string][]string{
+		"VPC": {"test-vpc-" + randomPostfix},
+	})
+	if err != nil {
+		s.NoError(err, "Failed to get NAT Gateway for VPC")
+		return
+	}
+	s.Equal(len(privateSubnetIDs), len(ngws), "Number of NAT Gateways should match number of private subnets")
 }
 
 func GenerateSSHKeyPair() (string, string, error) {
