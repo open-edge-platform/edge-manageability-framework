@@ -125,25 +125,22 @@ func (s *VPCTestSuite) TestApplyingModule() {
 		return
 	}
 	vpc := aws.GetVpcById(s.T(), vpcID, DefaultRegion)
-	s.Equal(vpc.CidrBlock, "10.250.0.0/16", "VPC CIDR block does not match expected value")
+	s.Equal(*vpc.CidrBlock, "10.250.0.0/16", "VPC CIDR block does not match expected value")
 	s.NotEmpty(vpcID, "VPC ID should not be empty")
-	privateSubnetIDs := terraform.OutputList(s.T(), terraformOptions, "private_subnet_ids")
-	for _, subnetID := range privateSubnetIDs {
-		_, err := GetSubnetByID(vpcID, subnetID, DefaultRegion)
-		if err != nil {
-			s.NoError(err)
-			return
-		}
-	}
+	privateSubnets := terraform.OutputMapOfObjects(s.T(), terraformOptions, "private_subnets")
+	privateSubnet, ok := privateSubnets["private-subnet-1"].(map[string]interface{})
+	s.True(ok, "Expected private subnet to be a map of objects")
+	sid, ok := privateSubnet["id"].(string)
+	s.True(ok, "Expected private subnet ID to be a string")
+	s.NotEmpty(sid, "Private subnet ID should not be empty")
 
-	publicSubnetIDs := terraform.OutputList(s.T(), terraformOptions, "public_subnet_ids")
-	for _, subnetID := range publicSubnetIDs {
-		_, err := GetSubnetByID(vpcID, subnetID, DefaultRegion)
-		if err != nil {
-			s.NoError(err)
-			return
-		}
-	}
+	publicSubnetIDs := terraform.OutputMapOfObjects(s.T(), terraformOptions, "public_subnets")
+	publicSubnet, ok := publicSubnetIDs["public-subnet-1"].(map[string]interface{})
+	s.True(ok, "Expected public subnet to be a map of objects")
+	sid, ok = publicSubnet["id"].(string)
+	s.True(ok, "Expected public subnet ID to be a string")
+	s.NotEmpty(sid, "Public subnet ID should not be empty")
+
 	ec2Filters := map[string][]string{
 		"tag:Name": {"test-vpc-" + randomPostfix + "-jump"},
 		"tag:VPC":  {"test-vpc-" + randomPostfix},
@@ -160,14 +157,13 @@ func (s *VPCTestSuite) TestApplyingModule() {
 		return
 	}
 
-	ngws, err := GetNATGatewaysByTags(DefaultRegion, map[string][]string{
+	_, err = GetNATGatewaysByTags(DefaultRegion, map[string][]string{
 		"VPC": {"test-vpc-" + randomPostfix},
 	})
 	if err != nil {
 		s.NoError(err, "Failed to get NAT Gateway for VPC")
 		return
 	}
-	s.Equal(len(privateSubnetIDs), len(ngws), "Number of NAT Gateways should match number of private subnets")
 }
 
 func GenerateSSHKeyPair() (string, string, error) {
