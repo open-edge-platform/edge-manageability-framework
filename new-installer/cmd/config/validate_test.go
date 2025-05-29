@@ -8,6 +8,10 @@ import (
 	"testing"
 )
 
+const (
+	dummyCert = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn"
+)
+
 func TestValidateOrchName(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -926,53 +930,53 @@ func TestValidateTlsCert(t *testing.T) {
 		},
 		{
 			name:    "valid PEM certificate single line",
-			input:   "-----BEGIN CERTIFICATE-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn\n-----END CERTIFICATE-----",
+			input:   "-----BEGIN CERTIFICATE-----\n" + dummyCert + "\n-----END CERTIFICATE-----",
 			wantErr: false,
 		},
 		{
 			name:    "valid PEM certificate multiline",
-			input:   "-----BEGIN CERTIFICATE-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn\n-----END CERTIFICATE-----",
+			input:   "-----BEGIN CERTIFICATE-----\n" + dummyCert + "\n" + dummyCert + "\n-----END CERTIFICATE-----",
 			wantErr: false,
 		},
 		{
 			name:    "missing BEGIN line",
-			input:   "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn\n-----END CERTIFICATE-----",
+			input:   dummyCert + "\n-----END CERTIFICATE-----",
 			wantErr: true,
 			errMsg:  "TLS certificate must be in PEM format",
 		},
 		{
 			name:    "missing END line",
-			input:   "-----BEGIN CERTIFICATE-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn",
+			input:   "-----BEGIN CERTIFICATE-----\n" + dummyCert,
 			wantErr: true,
 			errMsg:  "TLS certificate must be in PEM format",
 		},
 		{
 			name:    "wrong header",
-			input:   "-----BEGIN CERT-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn\n-----END CERTIFICATE-----",
+			input:   "-----BEGIN CERT-----\n" + dummyCert + "\n-----END CERTIFICATE-----",
 			wantErr: true,
 			errMsg:  "TLS certificate must be in PEM format",
 		},
 		{
 			name:    "wrong footer",
-			input:   "-----BEGIN CERTIFICATE-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn\n-----END CERT-----",
+			input:   "-----BEGIN CERTIFICATE-----\n" + dummyCert + "\n-----END CERT-----",
 			wantErr: true,
 			errMsg:  "TLS certificate must be in PEM format",
 		},
 		{
 			name:    "no newlines",
-			input:   "-----BEGIN CERTIFICATE-----MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn-----END CERTIFICATE-----",
+			input:   "-----BEGIN CERTIFICATE-----" + dummyCert + "-----END CERTIFICATE-----",
 			wantErr: true,
 			errMsg:  "TLS certificate must be in PEM format",
 		},
 		{
 			name:    "extra text before",
-			input:   "extra\n-----BEGIN CERTIFICATE-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn\n-----END CERTIFICATE-----",
+			input:   "extra\n-----BEGIN CERTIFICATE-----\n" + dummyCert + "\n-----END CERTIFICATE-----",
 			wantErr: true,
 			errMsg:  "TLS certificate must be in PEM format",
 		},
 		{
 			name:    "extra text after",
-			input:   "-----BEGIN CERTIFICATE-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn\n-----END CERTIFICATE-----\nextra",
+			input:   "-----BEGIN CERTIFICATE-----\n" + dummyCert + "\n-----END CERTIFICATE-----\nextra",
 			wantErr: true,
 			errMsg:  "TLS certificate must be in PEM format",
 		},
