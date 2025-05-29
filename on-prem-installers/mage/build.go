@@ -99,6 +99,8 @@ func (Build) onpremKeInstaller() error {
 		"-t", "deb",
 		"--name", "onprem-ke-installer",
 		"-p", "./dist/",
+		"-d", "jq,libpq5,apparmor,lvm2,mosquitto,net-tools,ntp,openssh-server", //nolint:misspell
+		"-d", "software-properties-common,tpm2-abrmd,tpm2-tools,unzip",
 		"--version", debVersion,
 		"--architecture", "amd64",
 		"--description", "Installs Intel onprem-ke",
