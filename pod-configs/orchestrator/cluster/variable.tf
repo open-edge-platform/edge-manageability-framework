@@ -34,7 +34,7 @@ variable "ca_cert" {
 }
 variable "aurora_availability_zones" {
   type        = set(string)
-  description = "Availability zones to asociate to the RDS cluster."
+  description = "Availability zones to associate to the RDS cluster."
   validation {
     condition     = length(var.aurora_availability_zones) >= 3
     error_message = "Aurora requires a minimum of 3 AZs."
@@ -42,7 +42,7 @@ variable "aurora_availability_zones" {
 }
 variable "aurora_instance_availability_zones" {
   type        = set(string)
-  description = "Availability zones to asociate to the RDS instance."
+  description = "Availability zones to associate to the RDS instance."
   validation {
     condition     = length(var.aurora_instance_availability_zones) >= 1
     error_message = "At least 1 AZ for RDS instance."
@@ -181,7 +181,7 @@ Development mode, apply the following settings when true:
 - Disable deletion protection
 - Skips final snapshot when delete
 - Make backup retention period to 7 days(30 days for production)
-- Applys changes immediately instead of update the cluster during the maintaince window.
+- Applies changes immediately instead of update the cluster during the maintenance window.
   EOT
 }
 
