@@ -61,6 +61,8 @@ jobs:
       terraform: ${{ contains(steps.check-files.outputs.changed_files, '.hcl') || contains(steps.check-files.outputs.changed_files, '.tf') || contains(steps.check-files.outputs.changed_files, '.tfvars') }}
       yaml: ${{ contains(steps.check-files.outputs.changed_files, '.yaml') || contains(steps.check-files.outputs.changed_files, '.yml') }}
       helm: ${{ contains(steps.check-files.outputs.changed_files, 'argocd/') || contains(steps.check-files.outputs.changed_files, 'argocd-internal/') }}
+      not-installer: ${{ !contains(steps.check-files.outputs.changed_files, 'new-installers') }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
@@ -445,7 +447,8 @@ jobs:
       needs.check-changed-files.outputs.ci == 'true' ||
       github.ref == 'refs/heads/main' ||
       github.ref == 'refs/heads/main-pass-validation'
-      )
+      ) &&
+      needs.check-changed-files.outputs.not-installer
     runs-on: ubuntu-24.04-16core-64GB
     timeout-minutes: 90
     env:
@@ -680,7 +683,8 @@ jobs:
       needs.check-changed-files.outputs.ci == 'true' ||
       github.ref == 'refs/heads/main' ||
       github.ref == 'refs/heads/main-pass-validation'
-      )
+      ) &&
+      needs.check-changed-files.outputs.not-installer
     runs-on: ubuntu-24.04-16core-64GB
     timeout-minutes: 120
     env:
