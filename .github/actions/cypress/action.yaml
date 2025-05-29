@@ -61,12 +61,23 @@ runs:
       run: |
         npx cypress run --e2e \
           -s "cypress/e2e/admin/non-org-admin-smoke.cy.ts,cypress/e2e/admin/org-admin-smoke.cy.ts"
+    - name: Collect Admin related logs
+      if: ${{ always() && inputs.admin == 'true' }}
+      working-directory: orch-ui/tests
+      shell: bash
+      run: |
+        mkdir -p cypress/logs/admin
+        kubectl logs -n orch-app -l app=app-orch-tenant-controller > cypress/logs/admin/app-tenant-controller.log
+        kubectl logs -n orch-infra -l app.kubernetes.io/name=tenant-controller > cypress/logs/admin/infra-tenant-controller.log
+        kubectl logs -n orch-platform -l app=keycloak-tenant-controller-pod > cypress/logs/admin/platform-tenant-controller.log
+        kubectl logs -n orch-ui -l app=app=metadata-broker > cypress/logs/admin/metadata-broker.log
+
     - name: Run Edge Infra Manager Cypress tests
       id: infra_tests
       if: ${{ always() && inputs.infra != '' }}
       working-directory: orch-ui/tests
       shell: bash
-      env: 
+      env:
         EN_SERIAL_NUMBER: ${{ inputs.en_serial_number }}
         INPUTS_INFRA: ${{inputs.infra}}
       run: |
