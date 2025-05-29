@@ -73,7 +73,7 @@ type Projects struct {
 	Status *baseprojectinfrahostcomv1.ProjectNexusStatus `json:"status,omitempty" yaml:"status,omitempty"`
 }
 
-// serviceDomain is a package-level variable intialized during startup.
+// serviceDomain is a package-level variable initialized during startup.
 var serviceDomain = func() string {
 	sd := os.Getenv("E2E_SVC_DOMAIN")
 	// retrieve svcdomain from configmap
@@ -95,7 +95,7 @@ var serviceDomain = func() string {
 	return sd
 }()
 
-// servicePort is a package-level variable intialized during startup.
+// servicePort is a package-level variable initialized during startup.
 var servicePort = func() int {
 	spStr := os.Getenv("E2E_SVC_PORT")
 	if spStr == "" {

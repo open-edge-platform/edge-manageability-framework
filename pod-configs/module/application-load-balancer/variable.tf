@@ -16,7 +16,7 @@ variable "subnets" {
   type        = set(string)
 }
 variable "listeners" {
-  description = "Map of listeners definiton, where the key is the name of listener"
+  description = "Map of listeners definition, where the key is the name of listener"
   type = map(object({
     listen                           = number
     protocol                         = optional(string, "HTTPS")
