@@ -51,29 +51,29 @@ resource "aws_iam_policy" "s3_policy" {
   })
 }
 
-## IAM Role
-# OIDC issuers from EKS clusters
-data "aws_eks_cluster" "eks" {
-  name = var.cluster_name
-}
+# ## IAM Role
+# # OIDC issuers from EKS clusters
+# data "aws_eks_cluster" "eks" {
+#   name = var.cluster_name
+# }
 
-data "aws_iam_policy_document" "s3_policy" {
-  statement {
-    actions = ["sts:AssumeRoleWithWebIdentity"]
-    effect  = "Allow"
-    condition {
-      test     = "StringEquals"
-      variable = "${replace(data.aws_eks_cluster.eks.identity[0].oidc[0].issuer, "https://", "")}:sub"
-      // https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-logic-multiple-context-keys-or-values.html
-      // If a single condition operator includes multiple values for a context key, those values are evaluated using a logical OR.
-      values = local.service_accounts
-    }
-    principals {
-      identifiers = ["arn:aws:iam::${local.aws_account_id}:oidc-provider/${replace(data.aws_eks_cluster.eks.identity[0].oidc[0].issuer, "https://", "")}"]
-      type        = "Federated"
-    }
-  }
-}
+# data "aws_iam_policy_document" "s3_policy" {
+#   statement {
+#     actions = ["sts:AssumeRoleWithWebIdentity"]
+#     effect  = "Allow"
+#     condition {
+#       test     = "StringEquals"
+#       variable = "${replace(data.aws_eks_cluster.eks.identity[0].oidc[0].issuer, "https://", "")}:sub"
+#       // https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-logic-multiple-context-keys-or-values.html
+#       // If a single condition operator includes multiple values for a context key, those values are evaluated using a logical OR.
+#       values = local.service_accounts
+#     }
+#     principals {
+#       identifiers = ["arn:aws:iam::${local.aws_account_id}:oidc-provider/${replace(data.aws_eks_cluster.eks.identity[0].oidc[0].issuer, "https://", "")}"]
+#       type        = "Federated"
+#     }
+#   }
+# }
 
 # resource "aws_iam_role" "s3_role" {
 #   description         = "Role that can access S3 buckets in ${var.cluster_name} cluster"
