@@ -49,4 +49,6 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ApplyOutOfSyncOnly=true
+      - Replace=true
+      - Force=true
 {{- end }}
