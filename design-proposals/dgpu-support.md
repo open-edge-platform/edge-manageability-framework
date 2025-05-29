@@ -52,16 +52,20 @@ In the earlier release (3.0), a key issue was the inability to activate Secure B
         https://dgpu-docs.intel.com/devices/hardware-table.html
      * Refer to the official documentation for driver installation. DEB package install GPU drivers as part of rolling updates.
      
-       https://dgpu-docs.intel.com/driver/installation-rolling.html 
+       https://dgpu-docs.intel.com/driver/installation-rolling.html
 
-     * **Ubuntu Desktop**
+     * **Ubuntu-22.04** 
+         * Ubuntu 22.04 officially supports the 6.8 Linux kernel, whereas the B580 requires the 6.11 Linux kernel. To install the driver for the B580, a custom 6.11 kernel is required.
+         * The driver installation instructions for Ubuntu 22.04 were ineffective for B580, resulting in a failed card enumeration.
+
+     * **Ubuntu-24.04 Desktop**
          * Ubuntu Desktop 24.04.2 includes the xe driver by default.
          * For Any additional compute and media package intel provide PPA, can be installed from the official Intel site.
            
            https://dgpu-docs.intel.com/driver/client/overview.html
            
 
-     * **Ubuntu Server:**
+     * **Ubuntu-24.04 Server:**
          * Make sure prerequisites to add repository access are available.
             ``` 
             sudo apt update
