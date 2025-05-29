@@ -76,7 +76,6 @@ additional information such as:
 - `NetworkState` - the network state of the AMT interface
 - `IPAddress` - the IP address of the AMT interface
 - `PowerSource` - info about system power source (Battery/Power)
-- `Features` - AMT supported features and in-use
 - `LastUpdate` - Last change push to the device
 - `LastConnected` - Last time the device was connected
 - `LastSeen` - Last time the device was seen
