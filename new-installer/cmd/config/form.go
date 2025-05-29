@@ -200,20 +200,26 @@ func confirmProxy() *huh.Group {
 func configureProxy() *huh.Group {
 	return huh.NewGroup(
 		huh.NewInput().
-			Title("HTTP Proxy").
-			Description("(Optional) HTTP proxy to be used for all outbound traffic").
+			Title("EMF HTTP Proxy").
+			Description("(Optional) EMF HTTP proxy to be used for all outbound traffic").
 			Placeholder("").
 			Validate(validateProxy).
 			Value(&input.Proxy.HTTPProxy),
 		huh.NewInput().
-			Title("HTTPS Proxy").
-			Description("(Optional) HTTPS proxy to be used for all outbound traffic").
+			Title("EMF HTTPS Proxy").
+			Description("(Optional) EMF HTTPS proxy to be used for all outbound traffic").
 			Placeholder("").
 			Validate(validateProxy).
 			Value(&input.Proxy.HTTPSProxy),
 		huh.NewInput().
-			Title("No Proxy").
-			Description("(Optional) Comma separated list of domains that should not use the proxy").
+			Title("EMF SOCKS Proxy").
+			Description("(Optional) EMF SOCKS proxy to be used for all outbound traffic").
+			Placeholder("").
+			Validate(validateProxy).
+			Value(&input.Proxy.ENSocksProxy),
+		huh.NewInput().
+			Title("EMF No Proxy").
+			Description("(Optional) Comma separated list of domains that should not use the proxy for EMF").
 			Placeholder("").
 			Validate(validateNoProxy).
 			Value(&input.Proxy.NoProxy),
@@ -237,13 +243,13 @@ func configureProxy() *huh.Group {
 			Value(&input.Proxy.ENFTPProxy),
 		huh.NewInput().
 			Title("Edge Node SOCKS Proxy").
-			Description("(Optional) Edge Node FTP SOCKS to be used for all outbound traffic").
+			Description("(Optional) Edge Node SOCKS proxy to be used for all outbound traffic").
 			Placeholder("").
 			Validate(validateProxy).
 			Value(&input.Proxy.ENSocksProxy),
 		huh.NewInput().
 			Title("Edge Node No Proxy").
-			Description("(Optional) Comma separated list of domains that should not use the proxy").
+			Description("(Optional) Comma separated list of domains that should not use the proxy by Edge Nodes").
 			Placeholder("").
 			Validate(validateNoProxy).
 			Value(&input.Proxy.ENNoProxy),

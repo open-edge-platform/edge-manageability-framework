@@ -147,13 +147,16 @@ func testConfirmProxy(t *testing.T) {
 }
 
 func testConfigureProxy(t *testing.T) {
-	// Enter http proxy
+	// Enter EMF http proxy
 	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("http://proxy.example.com:8080")})
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
-	// Enter https proxy
+	// Enter EMF https proxy
 	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("http://proxy.example.com:8081")})
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
-	// Enter no proxy
+	// Enter EMF SOCKS proxy
+	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("http://proxy.example.com:1080")})
+	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
+	// Enter EMF no proxy
 	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(".intel.com, 10.0.0.0/8")})
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
 	// Enter EN http proxy
@@ -165,7 +168,7 @@ func testConfigureProxy(t *testing.T) {
 	// Enter EN ftp proxy
 	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("http://proxy.example.com:8082")})
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
-	// Enter EN socks proxy
+	// Enter EN SOCKS proxy
 	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("http://proxy.example.com:1080")})
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
 	// Enter EN no proxy
