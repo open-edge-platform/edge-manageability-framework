@@ -25,28 +25,28 @@ func (m *OrchInstallerStepMock) Name() string {
 	return args.String(0)
 }
 
-func (m *OrchInstallerStepMock) ConfigStep(ctx context.Context, installerConfig config.OrchInstallerConfig) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (m *OrchInstallerStepMock) ConfigStep(ctx context.Context, installerConfig config.OrchInstallerConfig, rs config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	args := m.Called(ctx, installerConfig)
 	err, _ := args.Get(1).(*internal.OrchInstallerError)
 	newRS, _ := args.Get(0).(*config.OrchInstallerRuntimeState)
 	return *newRS, err
 }
 
-func (m *OrchInstallerStepMock) PreStep(ctx context.Context, installerConfig config.OrchInstallerConfig) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (m *OrchInstallerStepMock) PreStep(ctx context.Context, installerConfig config.OrchInstallerConfig, rs config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	args := m.Called(ctx, installerConfig)
 	err, _ := args.Get(1).(*internal.OrchInstallerError)
 	newRS, _ := args.Get(0).(*config.OrchInstallerRuntimeState)
 	return *newRS, err
 }
 
-func (m *OrchInstallerStepMock) RunStep(ctx context.Context, installerConfig config.OrchInstallerConfig) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (m *OrchInstallerStepMock) RunStep(ctx context.Context, installerConfig config.OrchInstallerConfig, rs config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	args := m.Called(ctx, installerConfig)
 	err, _ := args.Get(1).(*internal.OrchInstallerError)
 	newRS, _ := args.Get(0).(*config.OrchInstallerRuntimeState)
 	return *newRS, err
 }
 
-func (m *OrchInstallerStepMock) PostStep(ctx context.Context, installerConfig config.OrchInstallerConfig, prevStepError *internal.OrchInstallerError) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (m *OrchInstallerStepMock) PostStep(ctx context.Context, installerConfig config.OrchInstallerConfig, rs config.OrchInstallerRuntimeState, prevStepError *internal.OrchInstallerError) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	args := m.Called(ctx, installerConfig)
 	err, _ := args.Get(1).(*internal.OrchInstallerError)
 	newRS, _ := args.Get(0).(*config.OrchInstallerRuntimeState)
@@ -65,6 +65,13 @@ func (DummyOrchConfigReaderWriter) WriteOrchConfig(orchConfig config.OrchInstall
 }
 func (DummyOrchConfigReaderWriter) ReadOrchConfig() (config.OrchInstallerConfig, error) {
 	return config.OrchInstallerConfig{}, nil
+}
+
+func (DummyOrchConfigReaderWriter) WriteRuntimeState(runtimeState config.OrchInstallerRuntimeState) error {
+	return nil
+}
+func (DummyOrchConfigReaderWriter) ReadRuntimeState() (config.OrchInstallerRuntimeState, error) {
+	return config.OrchInstallerRuntimeState{}, nil
 }
 
 type OrchInstallerStageTest struct {
@@ -92,10 +99,9 @@ func createMockStep(name string, expectToRun bool, labels []string) *OrchInstall
 // Should run all steps when no labels are provided
 func (s *OrchInstallerStageTest) TestRunAllSteps() {
 	ctx := context.Background()
-	orchConfig := config.OrchInstallerConfig{
-		Generated: config.OrchInstallerRuntimeState{
-			Action: "install",
-		},
+	orchConfig := config.OrchInstallerConfig{}
+	runtimeState := config.OrchInstallerRuntimeState{
+		Action: "install",
 	}
 	steps := []steps.OrchInstallerStep{
 		createMockStep("step1", true, []string{"label1", "label2"}),
@@ -103,19 +109,19 @@ func (s *OrchInstallerStageTest) TestRunAllSteps() {
 	}
 	stage := aws.NewAWSStage("stage1", steps, []string{"stage1"}, &DummyOrchConfigReaderWriter{})
 
-	err := stage.PreStage(ctx, &orchConfig)
+	err := stage.PreStage(ctx, &orchConfig, &runtimeState)
 	if err != nil {
 		s.NoError(err)
 		return
 	}
 
-	err = stage.RunStage(ctx, &orchConfig)
+	err = stage.RunStage(ctx, &orchConfig, &runtimeState)
 	if err != nil {
 		s.NoError(err)
 		return
 	}
 
-	err = stage.PostStage(ctx, &orchConfig, nil)
+	err = stage.PostStage(ctx, &orchConfig, &runtimeState, nil)
 	if err != nil {
 		s.NoError(err)
 		return
@@ -125,10 +131,9 @@ func (s *OrchInstallerStageTest) TestRunAllSteps() {
 // Should run filtered steps when labels are provided
 func (s *OrchInstallerStageTest) TestRunFilteredSteps() {
 	ctx := context.Background()
-	orchConfig := config.OrchInstallerConfig{
-		Generated: config.OrchInstallerRuntimeState{
-			Action: "install",
-		},
+	orchConfig := config.OrchInstallerConfig{}
+	runtimeState := config.OrchInstallerRuntimeState{
+		Action: "install",
 	}
 	orchConfig.Advanced.TargetLabels = []string{"label1"}
 	steps := []steps.OrchInstallerStep{
@@ -137,19 +142,19 @@ func (s *OrchInstallerStageTest) TestRunFilteredSteps() {
 	}
 	stage := aws.NewAWSStage("stage1", steps, []string{"stage1"}, &DummyOrchConfigReaderWriter{})
 
-	err := stage.PreStage(ctx, &orchConfig)
+	err := stage.PreStage(ctx, &orchConfig, &runtimeState)
 	if err != nil {
 		s.NoError(err)
 		return
 	}
 
-	err = stage.RunStage(ctx, &orchConfig)
+	err = stage.RunStage(ctx, &orchConfig, &runtimeState)
 	if err != nil {
 		s.NoError(err)
 		return
 	}
 
-	err = stage.PostStage(ctx, &orchConfig, nil)
+	err = stage.PostStage(ctx, &orchConfig, &runtimeState, nil)
 	if err != nil {
 		s.NoError(err)
 		return

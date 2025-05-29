@@ -74,7 +74,7 @@ func (s *ShellUtilityTest) TestBasicCmdError() {
 	}
 	s.Equal("", output.Stdout.String())
 	s.Equal("", output.Stderr.String())
-	s.Equal("exit status 1", err.Error())
+	s.Equal("failed to execute command: exit status 1", err.Error())
 	s.Equal("exit status 1", output.Error.Error())
 }
 

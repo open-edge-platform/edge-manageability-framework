@@ -50,15 +50,18 @@ type TestTfVariables struct {
 }
 
 func (s *TerraformUtilityTest) TestApplyingTerraformModule() {
-	tfUtil := steps.CreateTerraformUtility()
+	tfUtil, err := steps.CreateTerraformUtility(s.tfExecPath)
+	if err != nil {
+		s.NoError(err)
+		return
+	}
 	ctx := context.Background()
 	variables := TestTfVariables{
 		Var1: "value1",
 		Var2: 2,
 	}
-	output, err := tfUtil.RunTerraformModule(ctx, steps.TerraformUtilityInput{
+	output, err := tfUtil.Run(ctx, steps.TerraformUtilityInput{
 		Action:             "install",
-		ExecPath:           s.tfExecPath,
 		ModulePath:         s.testdataDir,
 		LogFile:            filepath.Join(s.testdataDir, "terraform.log"),
 		KeepGeneratedFiles: false,
@@ -87,7 +90,11 @@ func (s *TerraformUtilityTest) TestApplyingTerraformModule() {
 }
 
 func (s *TerraformUtilityTest) TestDestroyTerraformModule() {
-	tfUtil := steps.CreateTerraformUtility()
+	tfUtil, initErr := steps.CreateTerraformUtility(s.tfExecPath)
+	if initErr != nil {
+		s.NoError(initErr)
+		return
+	}
 	ctx := context.Background()
 	variables := TestTfVariables{
 		Var1: "value1",
@@ -97,9 +104,8 @@ func (s *TerraformUtilityTest) TestDestroyTerraformModule() {
 	if !s.NoError(err) {
 		return
 	}
-	output, utilErr := tfUtil.RunTerraformModule(ctx, steps.TerraformUtilityInput{
+	output, utilErr := tfUtil.Run(ctx, steps.TerraformUtilityInput{
 		Action:             "uninstall",
-		ExecPath:           s.tfExecPath,
 		ModulePath:         s.testdataDir,
 		LogFile:            filepath.Join(s.testdataDir, "terraform.log"),
 		KeepGeneratedFiles: false,

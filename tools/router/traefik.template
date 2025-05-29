@@ -23,7 +23,8 @@ api:
 entryPoints:
   websecure:
     address: ":443"
-
+  tcpamt:
+    address: ":4433"
 providers:
   docker:
     endpoint: "unix:///var/run/docker.sock"
@@ -139,6 +140,14 @@ tcp:
         - "websecure"
       tls:
         passthrough: true
+    TCProuter4:
+      rule: "HostSNI(`*`)"
+      priority: 10
+      service: "orch-kind-cira"
+      entryPoints:
+        - "tcpamt"
+      tls:
+        passthrough: true
   services:
     argo-kind:
       loadBalancer:
@@ -148,6 +157,10 @@ tcp:
       loadBalancer:
         servers:
           - address: {{ .OrchIP }}:443
+    orch-kind-cira:
+      loadBalancer:
+        servers:
+          - address: {{ .OrchIP }}:4433
     boots-kind:
       loadBalancer:
         servers:

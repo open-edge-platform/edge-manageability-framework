@@ -16,7 +16,11 @@ const (
 	Scale10000 Scale = 10000
 )
 
+const UserConfigVersion = 1
+const RuntimeStateVersion = 1
+
 type OrchInstallerRuntimeState struct {
+	Version int `yaml:"version"`
 	// The Action that will be performed
 	// This can be one of the following:
 	// - install
@@ -45,10 +49,9 @@ type OrchInstallerRuntimeState struct {
 }
 
 type OrchInstallerConfig struct {
-	Version   int                       `yaml:"version"`
-	Provider  string                    `yaml:"provider"`
-	Generated OrchInstallerRuntimeState `yaml:"generated"`
-	Global    struct {
+	Version  int    `yaml:"version"`
+	Provider string `yaml:"provider"`
+	Global   struct {
 		OrchName     string `yaml:"orchName"`     // EMF deployment name
 		ParentDomain string `yaml:"parentDomain"` // not including cluster name
 		AdminEmail   string `yaml:"adminEmail"`
@@ -122,10 +125,13 @@ type OrchPackage struct {
 type OrchConfigReaderWriter interface {
 	WriteOrchConfig(orchConfig OrchInstallerConfig) error
 	ReadOrchConfig() (OrchInstallerConfig, error)
+	WriteRuntimeState(runtimeState OrchInstallerRuntimeState) error
+	ReadRuntimeState() (OrchInstallerRuntimeState, error)
 }
 
 type FileBaseOrchConfigReaderWriter struct {
-	OrchConfigFilePath string
+	OrchConfigFilePath   string
+	RuntimeStateFilePath string
 }
 
 func (f *FileBaseOrchConfigReaderWriter) WriteOrchConfig(orchConfig OrchInstallerConfig) error {
@@ -147,4 +153,25 @@ func (f *FileBaseOrchConfigReaderWriter) ReadOrchConfig() (OrchInstallerConfig, 
 		return orchConfig, err
 	}
 	return orchConfig, nil
+}
+
+func (f *FileBaseOrchConfigReaderWriter) WriteRuntimeState(runtimeState OrchInstallerRuntimeState) error {
+	runtimeStateYaml, err := SerializeToYAML(runtimeState)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(f.RuntimeStateFilePath, runtimeStateYaml, 0644)
+}
+
+func (f *FileBaseOrchConfigReaderWriter) ReadRuntimeState() (OrchInstallerRuntimeState, error) {
+	runtimeState := OrchInstallerRuntimeState{}
+	runtimeStateData, err := os.ReadFile(f.RuntimeStateFilePath)
+	if err != nil {
+		return runtimeState, err
+	}
+	err = DeserializeFromYAML(&runtimeState, runtimeStateData)
+	if err != nil {
+		return runtimeState, err
+	}
+	return runtimeState, nil
 }

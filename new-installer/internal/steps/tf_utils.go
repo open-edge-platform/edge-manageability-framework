@@ -23,12 +23,11 @@ const (
 )
 
 type TerraformUtility interface {
-	RunTerraformModule(ctx context.Context, input TerraformUtilityInput) (TerraformUtilityOutput, *internal.OrchInstallerError)
+	Run(ctx context.Context, input TerraformUtilityInput) (TerraformUtilityOutput, *internal.OrchInstallerError)
 }
 
 type TerraformUtilityInput struct {
 	Action     string
-	ExecPath   string
 	ModulePath string
 	Variables  any // Any struct to serialize to HCL JSON
 	// Either use backend config or backend state. Cannot use both.
@@ -66,12 +65,6 @@ func validateInput(input TerraformUtilityInput) *internal.OrchInstallerError {
 			ErrorMsg:  "module path must be specified",
 		}
 	}
-	if input.ExecPath == "" {
-		return &internal.OrchInstallerError{
-			ErrorCode: internal.OrchInstallerErrorCodeInvalidArgument,
-			ErrorMsg:  "exec path must be specified",
-		}
-	}
 	if input.Variables == nil {
 		return &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInvalidArgument,
@@ -99,13 +92,23 @@ func validateInput(input TerraformUtilityInput) *internal.OrchInstallerError {
 	return nil
 }
 
-type terraformUtilityImpl struct{}
-
-func CreateTerraformUtility() TerraformUtility {
-	return &terraformUtilityImpl{}
+type terraformUtilityImpl struct {
+	ExecPath string
 }
 
-func (*terraformUtilityImpl) RunTerraformModule(ctx context.Context, input TerraformUtilityInput) (TerraformUtilityOutput, *internal.OrchInstallerError) {
+func CreateTerraformUtility(terraformCommandPath string) (TerraformUtility, *internal.OrchInstallerError) {
+	if terraformCommandPath == "" {
+		return nil, &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeInvalidArgument,
+			ErrorMsg:  "exec path must be specified",
+		}
+	}
+	return &terraformUtilityImpl{
+		ExecPath: terraformCommandPath,
+	}, nil
+}
+
+func (tfUtil *terraformUtilityImpl) Run(ctx context.Context, input TerraformUtilityInput) (TerraformUtilityOutput, *internal.OrchInstallerError) {
 	logger := internal.Logger()
 	validationErr := validateInput(input)
 	if validationErr != nil {
@@ -140,7 +143,7 @@ func (*terraformUtilityImpl) RunTerraformModule(ctx context.Context, input Terra
 		}
 	}
 
-	tf, err := tfexec.NewTerraform(input.ModulePath, input.ExecPath)
+	tf, err := tfexec.NewTerraform(input.ModulePath, tfUtil.ExecPath)
 	if err != nil {
 		return TerraformUtilityOutput{}, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeTerraform,

@@ -28,7 +28,7 @@ func (m *OrchInstallerStageMock) Labels() []string {
 	return args.Get(0).([]string)
 }
 
-func (m *OrchInstallerStageMock) PreStage(ctx context.Context, config *config.OrchInstallerConfig) *internal.OrchInstallerError {
+func (m *OrchInstallerStageMock) PreStage(ctx context.Context, config *config.OrchInstallerConfig, rs *config.OrchInstallerRuntimeState) *internal.OrchInstallerError {
 	args := m.Called(ctx, config)
 	if err, ok := args.Get(0).(*internal.OrchInstallerError); ok {
 		return err
@@ -36,7 +36,7 @@ func (m *OrchInstallerStageMock) PreStage(ctx context.Context, config *config.Or
 	return nil
 }
 
-func (m *OrchInstallerStageMock) RunStage(ctx context.Context, config *config.OrchInstallerConfig) *internal.OrchInstallerError {
+func (m *OrchInstallerStageMock) RunStage(ctx context.Context, config *config.OrchInstallerConfig, rs *config.OrchInstallerRuntimeState) *internal.OrchInstallerError {
 	args := m.Called(ctx, config)
 	if err, ok := args.Get(0).(*internal.OrchInstallerError); ok {
 		return err
@@ -44,7 +44,7 @@ func (m *OrchInstallerStageMock) RunStage(ctx context.Context, config *config.Or
 	return nil
 }
 
-func (m *OrchInstallerStageMock) PostStage(ctx context.Context, config *config.OrchInstallerConfig, prevStageError *internal.OrchInstallerError) *internal.OrchInstallerError {
+func (m *OrchInstallerStageMock) PostStage(ctx context.Context, config *config.OrchInstallerConfig, rs *config.OrchInstallerRuntimeState, prevStageError *internal.OrchInstallerError) *internal.OrchInstallerError {
 	args := m.Called(ctx, config, prevStageError)
 	if err, ok := args.Get(0).(*internal.OrchInstallerError); ok {
 		return err
@@ -75,10 +75,9 @@ func createMockStage(name string, expectToRun bool, labels []string) *OrchInstal
 // Installer will install all stages if no labels are specified in the config
 func (s *OrchInstallerTest) TestOrchInstallerInstallAllStages() {
 	ctx := context.Background()
-	orchConfig := config.OrchInstallerConfig{
-		Generated: config.OrchInstallerRuntimeState{
-			Action: "install",
-		},
+	orchConfig := config.OrchInstallerConfig{}
+	runtimeState := config.OrchInstallerRuntimeState{
+		Action: "install",
 	}
 	stage1 := createMockStage("MockStage1", true, []string{"label1", "label2"})
 	stage2 := createMockStage("MockStage2", true, []string{"label3", "label4"})
@@ -87,7 +86,7 @@ func (s *OrchInstallerTest) TestOrchInstallerInstallAllStages() {
 		s.NoError(err)
 		return
 	}
-	installerErr := installer.Run(ctx, orchConfig)
+	installerErr := installer.Run(ctx, orchConfig, &runtimeState)
 	if installerErr != nil {
 		s.NoError(installerErr)
 		return
@@ -97,10 +96,9 @@ func (s *OrchInstallerTest) TestOrchInstallerInstallAllStages() {
 // Installer will not install any stages if no labels are specified in the config
 func (s *OrchInstallerTest) TestOrchInstallerInstallNoStages() {
 	ctx := context.Background()
-	orchConfig := config.OrchInstallerConfig{
-		Generated: config.OrchInstallerRuntimeState{
-			Action: "install",
-		},
+	orchConfig := config.OrchInstallerConfig{}
+	runtimeState := config.OrchInstallerRuntimeState{
+		Action: "install",
 	}
 	orchConfig.Advanced.TargetLabels = []string{"something-else"}
 	stage1 := createMockStage("MockStage1", true, []string{"label1", "label2"})
@@ -110,7 +108,7 @@ func (s *OrchInstallerTest) TestOrchInstallerInstallNoStages() {
 		s.NoError(err)
 		return
 	}
-	installerErr := installer.Run(ctx, orchConfig)
+	installerErr := installer.Run(ctx, orchConfig, &runtimeState)
 	if installerErr != nil {
 		s.NoError(installerErr)
 		return
@@ -120,10 +118,9 @@ func (s *OrchInstallerTest) TestOrchInstallerInstallNoStages() {
 // Installer will uninstall all stages if no labels are specified in the config
 func (s *OrchInstallerTest) TestOrchInstallerUninstallAllStages() {
 	ctx := context.Background()
-	orchConfig := config.OrchInstallerConfig{
-		Generated: config.OrchInstallerRuntimeState{
-			Action: "uninstall",
-		},
+	orchConfig := config.OrchInstallerConfig{}
+	runtimeState := config.OrchInstallerRuntimeState{
+		Action: "install",
 	}
 	stage1 := createMockStage("MockStage1", true, []string{"label1", "label2"})
 	stage2 := createMockStage("MockStage2", true, []string{"label3", "label4"})
@@ -132,7 +129,7 @@ func (s *OrchInstallerTest) TestOrchInstallerUninstallAllStages() {
 		s.NoError(err)
 		return
 	}
-	installerErr := installer.Run(ctx, orchConfig)
+	installerErr := installer.Run(ctx, orchConfig, &runtimeState)
 	if installerErr != nil {
 		s.NoError(installerErr)
 		return
@@ -142,10 +139,9 @@ func (s *OrchInstallerTest) TestOrchInstallerUninstallAllStages() {
 // Installer will install only the stages that match the labels specified in the config
 func (s *OrchInstallerTest) TestOrchInstallerInstallSpecificStagesWithLabel() {
 	ctx := context.Background()
-	orchConfig := config.OrchInstallerConfig{
-		Generated: config.OrchInstallerRuntimeState{
-			Action: "install",
-		},
+	orchConfig := config.OrchInstallerConfig{}
+	runtimeState := config.OrchInstallerRuntimeState{
+		Action: "install",
 	}
 	orchConfig.Advanced.TargetLabels = []string{"label1"}
 	stage1 := createMockStage("MockStage1", true, []string{"label1", "label2"})
@@ -155,7 +151,7 @@ func (s *OrchInstallerTest) TestOrchInstallerInstallSpecificStagesWithLabel() {
 		s.NoError(err)
 		return
 	}
-	installerErr := installer.Run(ctx, orchConfig)
+	installerErr := installer.Run(ctx, orchConfig, &runtimeState)
 	if installerErr != nil {
 		s.NoError(installerErr)
 		return
@@ -169,7 +165,7 @@ func (s *OrchInstallerTest) TestOrchInstallerInstallSpecificStagesWithLabel() {
 		s.NoError(err)
 		return
 	}
-	installerErr = installer.Run(ctx, orchConfig)
+	installerErr = installer.Run(ctx, orchConfig, &runtimeState)
 	if installerErr != nil {
 		s.NoError(installerErr)
 		return
@@ -179,10 +175,9 @@ func (s *OrchInstallerTest) TestOrchInstallerInstallSpecificStagesWithLabel() {
 // Installer will install only the stages that match the labels specified in the config
 func (s *OrchInstallerTest) TestOrchInstallerInstallSpecificStagesWithTwoLabels() {
 	ctx := context.Background()
-	orchConfig := config.OrchInstallerConfig{
-		Generated: config.OrchInstallerRuntimeState{
-			Action: "install",
-		},
+	orchConfig := config.OrchInstallerConfig{}
+	runtimeState := config.OrchInstallerRuntimeState{
+		Action: "install",
 	}
 	orchConfig.Advanced.TargetLabels = []string{"label1", "label3"}
 	stage1 := createMockStage("MockStage1", true, []string{"label1", "label2"})
@@ -192,7 +187,7 @@ func (s *OrchInstallerTest) TestOrchInstallerInstallSpecificStagesWithTwoLabels(
 		s.NoError(err)
 		return
 	}
-	installerErr := installer.Run(ctx, orchConfig)
+	installerErr := installer.Run(ctx, orchConfig, &runtimeState)
 	if installerErr != nil {
 		s.NoError(installerErr)
 		return
@@ -201,24 +196,23 @@ func (s *OrchInstallerTest) TestOrchInstallerInstallSpecificStagesWithTwoLabels(
 
 func (s *OrchInstallerTest) TestOrchInstallerInvalidArgument() {
 	ctx := context.Background()
-	orchConfig := config.OrchInstallerConfig{
-		Generated: config.OrchInstallerRuntimeState{
-			Action: "",
-		},
-	}
+	orchConfig := config.OrchInstallerConfig{}
+	runtimeState := config.OrchInstallerRuntimeState{}
 	installer, err := internal.CreateOrchInstaller([]internal.OrchInstallerStage{})
 	if err != nil {
 		s.NoError(err)
 		return
 	}
-	installerErr := installer.Run(ctx, orchConfig)
+	installerErr := installer.Run(ctx, orchConfig, &runtimeState)
 	s.Equal(installerErr, &internal.OrchInstallerError{
 		ErrorCode: internal.OrchInstallerErrorCodeInvalidArgument,
 		ErrorMsg:  "action must be specified",
 	})
 
-	orchConfig.Generated.Action = "invalid"
-	installerErr = installer.Run(ctx, orchConfig)
+	runtimeState = config.OrchInstallerRuntimeState{
+		Action: "invalid",
+	}
+	installerErr = installer.Run(ctx, orchConfig, &runtimeState)
 	s.Equal(installerErr, &internal.OrchInstallerError{
 		ErrorCode: internal.OrchInstallerErrorCodeInvalidArgument,
 		ErrorMsg:  "unsupported action: invalid",
@@ -226,9 +220,7 @@ func (s *OrchInstallerTest) TestOrchInstallerInvalidArgument() {
 }
 
 func (s *OrchInstallerTest) TestUpdateRuntimeState() {
-	orchConfig := config.OrchInstallerConfig{
-		Generated: config.OrchInstallerRuntimeState{},
-	}
+	runtimeState := config.OrchInstallerRuntimeState{}
 	newRuntimeState := config.OrchInstallerRuntimeState{
 		Action:                   "install",
 		LogDir:                   ".log",
@@ -247,24 +239,24 @@ func (s *OrchInstallerTest) TestUpdateRuntimeState() {
 		JumpHostSSHKeyPrivateKey: "random10",
 	}
 
-	err := internal.UpdateRuntimeState(&orchConfig.Generated, newRuntimeState)
+	err := internal.UpdateRuntimeState(&runtimeState, newRuntimeState)
 	if err != nil {
 		s.NoError(err)
 		return
 	}
-	s.Equal(orchConfig.Generated.DryRun, newRuntimeState.DryRun)
-	s.Equal(orchConfig.Generated.Action, newRuntimeState.Action)
-	s.Equal(orchConfig.Generated.LogDir, newRuntimeState.LogDir)
-	s.Equal(orchConfig.Generated.DeploymentID, newRuntimeState.DeploymentID)
-	s.Equal(orchConfig.Generated.StateBucketState, newRuntimeState.StateBucketState)
-	s.Equal(orchConfig.Generated.KubeConfig, newRuntimeState.KubeConfig)
-	s.Equal(orchConfig.Generated.TLSCert, newRuntimeState.TLSCert)
-	s.Equal(orchConfig.Generated.TLSKey, newRuntimeState.TLSKey)
-	s.Equal(orchConfig.Generated.TLSCa, newRuntimeState.TLSCa)
-	s.Equal(orchConfig.Generated.CacheRegistry, newRuntimeState.CacheRegistry)
-	s.Equal(orchConfig.Generated.VPCID, newRuntimeState.VPCID)
-	s.Equal(orchConfig.Generated.PublicSubnetIDs, newRuntimeState.PublicSubnetIDs)
-	s.Equal(orchConfig.Generated.PrivateSubnetIDs, newRuntimeState.PrivateSubnetIDs)
-	s.Equal(orchConfig.Generated.JumpHostSSHKeyPublicKey, newRuntimeState.JumpHostSSHKeyPublicKey)
-	s.Equal(orchConfig.Generated.JumpHostSSHKeyPrivateKey, newRuntimeState.JumpHostSSHKeyPrivateKey)
+	s.Equal(runtimeState.DryRun, newRuntimeState.DryRun)
+	s.Equal(runtimeState.Action, newRuntimeState.Action)
+	s.Equal(runtimeState.LogDir, newRuntimeState.LogDir)
+	s.Equal(runtimeState.DeploymentID, newRuntimeState.DeploymentID)
+	s.Equal(runtimeState.StateBucketState, newRuntimeState.StateBucketState)
+	s.Equal(runtimeState.KubeConfig, newRuntimeState.KubeConfig)
+	s.Equal(runtimeState.TLSCert, newRuntimeState.TLSCert)
+	s.Equal(runtimeState.TLSKey, newRuntimeState.TLSKey)
+	s.Equal(runtimeState.TLSCa, newRuntimeState.TLSCa)
+	s.Equal(runtimeState.CacheRegistry, newRuntimeState.CacheRegistry)
+	s.Equal(runtimeState.VPCID, newRuntimeState.VPCID)
+	s.Equal(runtimeState.PublicSubnetIDs, newRuntimeState.PublicSubnetIDs)
+	s.Equal(runtimeState.PrivateSubnetIDs, newRuntimeState.PrivateSubnetIDs)
+	s.Equal(runtimeState.JumpHostSSHKeyPublicKey, newRuntimeState.JumpHostSSHKeyPublicKey)
+	s.Equal(runtimeState.JumpHostSSHKeyPrivateKey, newRuntimeState.JumpHostSSHKeyPrivateKey)
 }
