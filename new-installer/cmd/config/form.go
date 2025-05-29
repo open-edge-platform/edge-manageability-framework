@@ -216,7 +216,7 @@ func configureProxy() *huh.Group {
 			Description("(Optional) EMF SOCKS proxy to be used for all outbound traffic").
 			Placeholder("").
 			Validate(validateProxy).
-			Value(&input.Proxy.ENSocksProxy),
+			Value(&input.Proxy.SocksProxy),
 		huh.NewInput().
 			Title("EMF No Proxy").
 			Description("(Optional) Comma separated list of domains that should not use the proxy for EMF").
