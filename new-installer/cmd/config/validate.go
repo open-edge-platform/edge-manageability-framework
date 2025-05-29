@@ -6,6 +6,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"slices"
 	"strconv"
@@ -218,5 +219,34 @@ func validateSimpleMode(s []string) error {
 
 func validateAdvancedMode(s []string) error {
 	// TODO: placeholder for advanced mode validation
+	return nil
+}
+
+func validateJumpHostPrivKeyPath(s string) error {
+	if s == "" {
+		return nil
+	}
+	s = os.ExpandEnv(s)
+	if _, err := os.Stat(s); err != nil {
+		return fmt.Errorf("jump host private key file does not exist: %v", err)
+	}
+	// TODO: check if the file content is a valid private key
+	return nil
+}
+
+func validateAwsEKSIAMRoles(s string) error {
+	if s == "" {
+		return nil
+	}
+	roles := strings.Split(s, ",")
+	for _, role := range roles {
+		role = strings.TrimSpace(role)
+		if role == "" {
+			continue
+		}
+		if matched := regexp.MustCompile(`^arn:aws:iam::\d{12}:role/[\w+=,.@-]+$`).MatchString(role); !matched {
+			return fmt.Errorf("invalid IAM role ARN: %s", role)
+		}
+	}
 	return nil
 }

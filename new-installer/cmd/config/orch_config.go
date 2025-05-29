@@ -49,6 +49,7 @@ var embedPackages string
 var flags flag
 var orchPackages map[string]config.OrchPackage
 var tmpJumpHostWhitelist string
+var tmpEKSIAMRoles string
 var enabledSimple []string
 var enabledAdvanced []string
 var configMode Mode
@@ -186,6 +187,15 @@ func postProcessConfig() {
 			parts[i] = strings.TrimSpace(parts[i])
 		}
 		input.AWS.JumpHostWhitelist = parts
+	}
+
+	// Convert comma separated IAM roles into a slice
+	if tmpEKSIAMRoles != "" {
+		parts := strings.Split(tmpEKSIAMRoles, ",")
+		for i := range parts {
+			parts[i] = strings.TrimSpace(parts[i])
+		}
+		input.AWS.EKSIAMRoles = parts
 	}
 
 	// Setting up default values

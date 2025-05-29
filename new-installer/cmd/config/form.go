@@ -107,6 +107,18 @@ func configureAwsExpert() *huh.Group {
 			Validate(validateAwsJumpHostWhitelist).
 			Value(&tmpJumpHostWhitelist),
 		huh.NewInput().
+			Title("Jump Host IP").
+			Description("(Optional) Jump host IP if it is created outside of installer in advance").
+			Placeholder("10.20.30.1").
+			Validate(validateIp).
+			Value(&input.AWS.JumpHostIP),
+		huh.NewInput().
+			Title("Jump Host SSH Private Key Path").
+			Description("(Optional) Path to jump host SSH private key if it is created outside of installer in advance").
+			Placeholder("$HOME/.ssh/id_rsa").
+			Validate(validateJumpHostPrivKeyPath).
+			Value(&input.AWS.JumpHostPrivKeyPath),
+		huh.NewInput().
 			Title("VPC ID").
 			Description("(Optional) Enter VPC ID if you prefer to reuse existing VPC instead of letting us create one").
 			Placeholder("").
@@ -124,6 +136,12 @@ func configureAwsExpert() *huh.Group {
 			Placeholder("").
 			Validate(validateAwsEksDnsIp).
 			Value(&input.AWS.EKSDNSIP),
+		huh.NewInput().
+			Title("EKS IAM Roles").
+			Description("(Optional) Comma-separated EKS IAM Roles if you want to allow other roles to access this cluster").
+			Placeholder("").
+			Validate(validateAwsEKSIAMRoles).
+			Value(&tmpEKSIAMRoles),
 	).WithHideFunc(func() bool {
 		return input.Provider != "aws" || (!flags.ExpertMode && !flags.ConfigureAwsExpert)
 	}).Title("Step 3b: (Optional) AWS Expert Configurations\n")
