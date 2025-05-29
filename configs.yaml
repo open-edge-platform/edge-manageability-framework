@@ -1,0 +1,29 @@
+version: 2
+provider: aws
+global:
+  orchName: demo
+  parentDomain: edgeorchestration.intel.com
+  adminEmail: charles.chan@intel.com
+  scale: 10
+advanced:
+  targetLabels: []
+aws:
+  region: us-west-2
+orch:
+  enabled:
+    - app-deployment-manager
+    - app-service-proxy
+    - cluster-manager
+    - infra-core
+    - onboarding-manager
+    - kyverno
+    - platform-keycloak
+    - vault
+    - istio
+    - traefik
+    - web-ui-core
+  defaultPassword: ChangeMeOn1stLogin!
+proxy:
+  httpProxy: https://proxy.intel.com:911
+  httpsProxy: https://proxy.intel.com:911
+  enHttpsProxy: https://enproxy.intel.com:911

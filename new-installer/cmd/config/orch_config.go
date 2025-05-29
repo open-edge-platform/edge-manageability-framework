@@ -120,7 +120,7 @@ func migrateConfig(raw map[string]interface{}) error {
 		return fmt.Errorf("version is not an integer in config file")
 	}
 
-	if fileVersion >= 1 && fileVersion <= config.UserConfigVersion {
+	if fileVersion >= config.MinUserConfigVersion && fileVersion <= config.UserConfigVersion {
 		// Version is compatible to the latest. No migration needed
 		if err := yaml.Unmarshal(yamlBytes, &input); err != nil {
 			return fmt.Errorf("failed to decode config file into version %d: %s", fileVersion, err)
