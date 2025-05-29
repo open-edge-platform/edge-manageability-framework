@@ -27,7 +27,7 @@ on:
 # Only run at most 1 workflow concurrently per PR, unlimited for branches
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.sha }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: false
 
 permissions: {}
 
@@ -151,6 +151,9 @@ jobs:
 
       - name: Test new installer
         run: mage newinstaller:test
+
+      - name: Test new installer IaC
+        run: mage newinstaller:testiac
 
       - name: Upload new installer artifacts
         uses: actions/upload-artifact@v4.6.2
