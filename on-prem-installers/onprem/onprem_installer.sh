@@ -65,6 +65,10 @@ export installer_rs_path="edge-orch/common/files"
 export tmp_dir="$cwd/$git_arch_name/tmp"
 export KUBECONFIG=/home/$USER/.kube/config
 
+export ASSUME_YES=false
+export SKIP_DOWNLOAD=false
+export ENABLE_TRACE=false
+
 
 
 # Variables that depend on the above and might require updating later, are placed in here
@@ -418,20 +422,20 @@ EOF
 #   yq -i '.postCustomTemplateOverwrite.metallb-config.NginxIP|=strenv(NGINX_IP)' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
 # }
 
-write_config_to_disk() {
-  # export tmp_dir="$cwd/$git_arch_name/tmp"
-  rm -rf "$tmp_dir"
-  mkdir -p "$tmp_dir"
-  repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n")
-  tar -xf "$cwd/$git_arch_name/$repo_file" -C "$tmp_dir"
+# write_config_to_disk() {
+#   # export tmp_dir="$cwd/$git_arch_name/tmp"
+#   rm -rf "$tmp_dir"
+#   mkdir -p "$tmp_dir"
+#   repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n")
+#   tar -xf "$cwd/$git_arch_name/$repo_file" -C "$tmp_dir"
 
-  # If overrides are set, ensure the written out configs are updated with them
-  # write_configs_using_overrides
-  mage onPrem:writeConfigsUsingOverrides
+#   # If overrides are set, ensure the written out configs are updated with them
+#   # write_configs_using_overrides
+#   mage onPrem:writeConfigsUsingOverrides
 
-  echo "Configuration files have been written to disk at $tmp_dir/$si_config_repo"
-  exit 0
-}
+#   echo "Configuration files have been written to disk at $tmp_dir/$si_config_repo"
+#   exit 0
+# }
 
 # validate_and_set_ip() {
 #   local yaml_path="$1"
@@ -475,9 +479,9 @@ write_config_to_disk() {
 ##### INSTALL SCRIPT START #####
 ################################
 
-export ASSUME_YES=false
-export SKIP_DOWNLOAD=false
-export ENABLE_TRACE=false
+# export ASSUME_YES=false
+# export SKIP_DOWNLOAD=false
+# export ENABLE_TRACE=false
 
 if [ -n "${1-}" ]; then
   while :; do
@@ -487,24 +491,24 @@ if [ -n "${1-}" ]; then
         exit 0
       ;;
       -s|--sre_tls)
-        SRE_TLS_ENABLED="true"
+        export SRE_TLS_ENABLED="true"
         if [ "$2" ]; then
           SRE_DEST_CA_CERT="$(cat "$2")"
           shift
         fi
       ;;
       --skip-download)
-        SKIP_DOWNLOAD=true
+        export SKIP_DOWNLOAD=true
       ;;
       -d|--notls)
-        SMTP_SKIP_VERIFY="true"
+        export SMTP_SKIP_VERIFY="true"
       ;;
       -o|--override)
-        ORCH_INSTALLER_PROFILE="onprem-dev"
+        export ORCH_INSTALLER_PROFILE="onprem-dev"
       ;;
       -u|--url)
         if [ "$2" ]; then
-          RELEASE_SERVICE_URL="$2"
+          export RELEASE_SERVICE_URL="$2"
           shift
         else
           echo "ERROR: $1 requires an argument"
@@ -513,13 +517,13 @@ if [ -n "${1-}" ]; then
       ;;
       -t|--trace)
         set -x
-        ENABLE_TRACE=true
+        export ENABLE_TRACE=true
       ;;
       -w|--write-config)
-        WRITE_CONFIG="true"
+        export WRITE_CONFIG="true"
       ;;
       -y|--yes)
-        ASSUME_YES=true
+        export ASSUME_YES=true
       ;;
       -?*)
         echo "Unknown argument $1"
