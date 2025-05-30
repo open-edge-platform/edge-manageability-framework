@@ -114,7 +114,3 @@ amt:
   {{- if .Values.argo.traefik }}
     tlsOption: {{ .Values.argo.traefik.tlsOption | default "" | quote }}
   {{- end }}
-
-  dm-manager:
-    serviceArgs:
-      clusterDomain: {{ .Values.argo.clusterDomain }}
