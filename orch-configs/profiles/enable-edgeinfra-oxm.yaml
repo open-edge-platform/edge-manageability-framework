@@ -56,6 +56,9 @@ argo:
     telemetry-manager:
       enabled: false
     os-resource-manager:
+      managerArgs:
+        enabledProfiles:
+          - microvisor-standalone
       resources:
         requests:
           memory: "16Mi"
@@ -66,6 +69,7 @@ argo:
     networking-manager:
       enabled: false
   infra-onboarding:
+
 #    pxe-server:
 #      enabled: true
 #      resources:

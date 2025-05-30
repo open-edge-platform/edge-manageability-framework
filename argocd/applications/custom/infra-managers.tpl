@@ -15,6 +15,20 @@ global:
     {{- end }}
     {{- end }}
 
+import:
+  host-manager:
+    enabled: {{ index .Values.argo "infra-managers" "host-manager" "enabled" }}
+  maintenance-manager:
+    enabled: {{ index .Values.argo "infra-managers" "maintenance-manager" "enabled" }}
+  networking-manager:
+    enabled: {{ index .Values.argo "infra-managers" "networking-manager" "enabled" }}
+  telemetry-manager:
+    enabled: {{ index .Values.argo "infra-managers" "telemetry-manager" "enabled" }}
+  os-resource-manager:
+    enabled: {{ index .Values.argo "infra-managers" "os-resource-manager" "enabled" }}
+  attestationstatus-manager:
+    enabled: {{ index .Values.argo "infra-managers" "attestationstatus-manager" "enabled" }}
+
 host-manager:
   serviceArgs:
     enableTracing: {{ index .Values.argo "infra-managers" "enableTracing" | default false }}
