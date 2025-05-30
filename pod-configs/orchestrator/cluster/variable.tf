@@ -215,11 +215,11 @@ variable "orch_databases" {
     "mps" : {
       namespace : "orch-infra"
       user: "orch-infra-system-mps_user"
-    }
+    },
     "rps" : {
       namespace : "orch-infra"
       user: "orch-infra-system-rps_user"
-    }
+    },
     # Uncomment following when using RDS for Gitea
     # "gitea": {
     #   namespace : "gitea"
