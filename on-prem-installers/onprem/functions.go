@@ -778,3 +778,65 @@ func (OnPrem) DownloadPackages() error {
 	}
 	return nil
 }
+
+// validateAndSetIP checks and sets an IP in the YAML config using yq, prompting the user if needed.
+func validateAndSetIP(yamlPath, yamlFile, ipVarName string) error {
+	// Read current value from YAML
+	cmd := exec.Command("yq", yamlPath, yamlFile)
+	out, err := cmd.Output()
+	if err != nil {
+		return fmt.Errorf("failed to read %s from %s: %w", yamlPath, yamlFile, err)
+	}
+	val := strings.TrimSpace(string(out))
+	fmt.Printf("Value at %s in %s: %s\n", yamlPath, yamlFile, val)
+
+	if val == "" || val == "null" {
+		reader := bufio.NewReader(os.Stdin)
+		ipRegex := regexp.MustCompile(`^\d{1,3}(\.\d{1,3}){3}$`)
+		for {
+			fmt.Printf("%s is not set to a valid value in the configuration file.\n", ipVarName)
+			fmt.Printf("Please provide a value for %s: ", ipVarName)
+			ipValue, _ := reader.ReadString('\n')
+			ipValue = strings.TrimSpace(ipValue)
+			if ipRegex.MatchString(ipValue) {
+				os.Setenv(ipVarName, ipValue)
+				cmd := exec.Command("yq", "-i", fmt.Sprintf("%s|=strenv(%s)", yamlPath, ipVarName), yamlFile)
+				cmd.Stdout = os.Stdout
+				cmd.Stderr = os.Stderr
+				if err := cmd.Run(); err != nil {
+					return fmt.Errorf("failed to set %s in %s: %w", ipVarName, yamlFile, err)
+				}
+				fmt.Printf("%s has been set to: %s\n", ipVarName, ipValue)
+				break
+			} else {
+				os.Unsetenv(ipVarName)
+				fmt.Print("Invalid IP address. Would you like to provide a valid value? (Y/n): ")
+				yn, _ := reader.ReadString('\n')
+				yn = strings.TrimSpace(yn)
+				if strings.ToLower(yn) == "n" {
+					return fmt.Errorf("Exiting as a valid value for %s has not been provided.", ipVarName)
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// ValidateConfig validates the IP addresses for Argo, Traefik, and Nginx services in the config.
+func (OnPrem) ValidateConfig() error {
+	tmpDir := os.Getenv("tmp_dir")
+	siConfigRepo := os.Getenv("si_config_repo")
+	profile := os.Getenv("ORCH_INSTALLER_PROFILE")
+	yamlFile := fmt.Sprintf("%s/%s/orch-configs/clusters/%s.yaml", tmpDir, siConfigRepo, profile)
+
+	if err := validateAndSetIP(".postCustomTemplateOverwrite.metallb-config.ArgoIP", yamlFile, "ARGO_IP"); err != nil {
+		return err
+	}
+	if err := validateAndSetIP(".postCustomTemplateOverwrite.metallb-config.TraefikIP", yamlFile, "TRAEFIK_IP"); err != nil {
+		return err
+	}
+	if err := validateAndSetIP(".postCustomTemplateOverwrite.metallb-config.NginxIP", yamlFile, "NGINX_IP"); err != nil {
+		return err
+	}
+	return nil
+}
