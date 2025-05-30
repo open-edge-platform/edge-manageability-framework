@@ -115,7 +115,7 @@ func configureAwsExpert() *huh.Group {
 		huh.NewInput().
 			Title("Jump Host SSH Private Key Path").
 			Description("(Optional) Path to jump host SSH private key if it is created outside of installer in advance").
-			Placeholder("$HOME/.ssh/id_rsa").
+			Placeholder("id_rsa").
 			Validate(validateJumpHostPrivKeyPath).
 			Value(&input.AWS.JumpHostPrivKeyPath),
 		huh.NewInput().
