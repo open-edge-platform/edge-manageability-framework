@@ -21,3 +21,12 @@ fi
 
 # Remove artifacts
 rm -rf /tmp/onprem-ke-installer || true
+
+# disable loading of kernel modules at boot
+rm -fr /etc/modules-load.d/lv-snapshots.conf
+
+# uninstall yq
+rm -rf /usr/local/bin/yq
+
+# uninstall helm
+rm -rf /usr/local/bin/helm
