@@ -23,7 +23,7 @@ root:
     - orch-configs/profiles/o11y-onprem.yaml
     - orch-configs/profiles/enable-explicit-proxy.yaml
     - orch-configs/profiles/resource-default.yaml
-    - orch-configs/clusters/onprem.yaml
+    - orch-configs/clusters/oxm.yaml
 
 # Values applied to both root app and shared among all child apps
 argo:
