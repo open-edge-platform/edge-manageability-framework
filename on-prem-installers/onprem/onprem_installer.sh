@@ -607,8 +607,8 @@ fi
 mage onPrem:allowConfigInRuntime
 
 # Write out the configs that have explicit overrides
-write_configs_using_overrides
-# mage onPrem:writeConfigsUsingOverrides
+#write_configs_using_overrides
+mage onPrem:writeConfigsUsingOverrides
 # exit 1
 # Validate the configuration file, and set missing values
 mage onPrem:validateConfig
