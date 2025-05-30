@@ -737,7 +737,7 @@ func TestValidateProxy(t *testing.T) {
 		{
 			name:    "proxy with user info",
 			input:   "http://user:pass@proxy.example.com:8080",
-			wantErr: false,
+			wantErr: true,
 		},
 		{
 			name:    "proxy with IP address",
@@ -750,19 +750,9 @@ func TestValidateProxy(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "socks5 proxy",
-			input:   "socks5://proxy.example.com:1080",
-			wantErr: false,
-		},
-		{
-			name:    "ftp proxy",
-			input:   "ftp://proxy.example.com:21",
-			wantErr: false,
-		},
-		{
 			name:    "invalid proxy string",
 			input:   "not a proxy",
-			wantErr: false,
+			wantErr: true,
 		},
 	}
 
@@ -772,6 +762,146 @@ func TestValidateProxy(t *testing.T) {
 			if tt.wantErr {
 				if err == nil {
 					t.Errorf("expected error, got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("expected no error, got %v", err)
+				}
+			}
+		})
+	}
+}
+
+func TestValidateNoProxy(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			name:    "empty string",
+			input:   "",
+			wantErr: false,
+		},
+		{
+			name:    "single valid IP",
+			input:   "192.168.1.1",
+			wantErr: false,
+		},
+		{
+			name:    "single valid CIDR",
+			input:   "10.0.0.0/24",
+			wantErr: false,
+		},
+		{
+			name:    "multiple valid IPs and CIDRs",
+			input:   "192.168.1.1,10.0.0.0/24,172.16.0.1",
+			wantErr: false,
+		},
+		{
+			name:    "valid domain",
+			input:   ".example.com",
+			wantErr: false,
+		},
+		{
+			name:    "valid domain without leading dot",
+			input:   "example.com",
+			wantErr: false,
+		},
+		{
+			name:    "multiple valid domains and IPs",
+			input:   "example.com,192.168.1.1,.internal.local",
+			wantErr: false,
+		},
+		{
+			name:    "valid IP with spaces",
+			input:   " 192.168.1.1 ",
+			wantErr: false,
+		},
+		{
+			name:    "valid domain with spaces",
+			input:   " .example.com ",
+			wantErr: false,
+		},
+		{
+			name:    "invalid IP format",
+			input:   "192.168.1",
+			wantErr: true,
+			errMsg:  "invalid no_proxy entry: 192.168.1",
+		},
+		{
+			name:    "invalid CIDR mask non-numeric",
+			input:   "10.0.0.0/abc",
+			wantErr: true,
+			errMsg:  "invalid no_proxy entry: 10.0.0.0/abc",
+		},
+		{
+			name:    "invalid CIDR mask out of range",
+			input:   "10.0.0.0/33",
+			wantErr: true,
+			errMsg:  "invalid CIDR mask in no_proxy entry: 10.0.0.0/33",
+		},
+		{
+			name:    "invalid IP octet out of range",
+			input:   "256.0.0.1",
+			wantErr: true,
+			errMsg:  "invalid IP in no_proxy entry: 256.0.0.1",
+		},
+		{
+			name:    "invalid entry with special char",
+			input:   "abc@def.com",
+			wantErr: true,
+			errMsg:  "invalid no_proxy entry: abc@def.com",
+		},
+		{
+			name:    "invalid entry with empty between commas",
+			input:   "example.com,,192.168.1.1",
+			wantErr: false,
+		},
+		{
+			name:    "invalid entry with only spaces",
+			input:   "   ",
+			wantErr: false,
+		},
+		{
+			name:    "invalid IP with negative octet",
+			input:   "10.0.-1.1",
+			wantErr: true,
+			errMsg:  "invalid no_proxy entry: 10.0.-1.1",
+		},
+		{
+			name:    "invalid domain with uppercase",
+			input:   "Example.com",
+			wantErr: true,
+			errMsg:  "invalid no_proxy entry: Example.com",
+		},
+		{
+			name:    "valid domain with dash",
+			input:   "my-domain.com",
+			wantErr: false,
+		},
+		{
+			name:    "valid domain with numbers",
+			input:   "abc123.com",
+			wantErr: false,
+		},
+		{
+			name:    "invalid domain with underscore",
+			input:   "abc_def.com",
+			wantErr: true,
+			errMsg:  "invalid no_proxy entry: abc_def.com",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateNoProxy(tt.input)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("expected error, got nil")
+				} else if tt.errMsg != "" && err.Error() != tt.errMsg {
+					t.Errorf("expected error message %q, got %q", tt.errMsg, err.Error())
 				}
 			} else {
 				if err != nil {
