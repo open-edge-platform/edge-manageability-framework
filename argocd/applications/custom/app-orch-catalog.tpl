@@ -29,3 +29,14 @@ openidc:
 {{- if .Values.argo.catalog.storageClass }}
 storageClassName: {{ .Values.argo.catalog.storageClass }}
 {{- end }}
+catalogServer:
+  # http proxy settings
+  {{- if .Values.argo.proxy.httpProxy}}
+  httpProxy: "{{ .Values.argo.proxy.httpProxy }}"
+  {{- end}}
+  {{- if .Values.argo.proxy.httpsProxy}}
+  httpsProxy: "{{ .Values.argo.proxy.httpsProxy }}"
+  {{- end}}
+  {{- if .Values.argo.proxy.noProxy}}
+  noProxy: "{{ .Values.argo.proxy.noProxy }}"
+  {{- end}}
