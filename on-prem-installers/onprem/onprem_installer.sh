@@ -430,8 +430,8 @@ write_config_to_disk() {
   tar -xf "$cwd/$git_arch_name/$repo_file" -C "$tmp_dir"
 
   # If overrides are set, ensure the written out configs are updated with them
-  write_configs_using_overrides
-  # mage onPrem:writeConfigsUsingOverrides
+  # write_configs_using_overrides
+  mage onPrem:writeConfigsUsingOverrides
 
   echo "Configuration files have been written to disk at $tmp_dir/$si_config_repo"
   exit 0
@@ -597,6 +597,7 @@ mage onPrem:installYq
 # download_packages
 mage onPrem:downloadPackages
 # Write configuration to disk if the flag is set
+export repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n")
 if [[ "$WRITE_CONFIG" == "true" ]]; then
   write_config_to_disk
   # mage onPrem:writeConfigToDisk
