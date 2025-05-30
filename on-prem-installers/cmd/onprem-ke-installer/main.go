@@ -179,6 +179,16 @@ func installYqTool(fileName string) error {
 		return err
 	}
 
+	// Save the current working directory
+	origDir, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	// Ensure we revert to the original directory before returning
+	defer func() {
+		_ = os.Chdir(origDir)
+	}()
+
 	// Check file is exist
 	if err = os.Chdir("/tmp"); err != nil {
 		return err
@@ -219,10 +229,21 @@ func installHelmTool(fileName string, version string) error {
 	var cmdlines []string
 	helmURL := "https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3"
 
-	// Check file is exist
+	// Save the current working directory
+	origDir, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	// Ensure we revert to the original directory before returning
+	defer func() {
+		_ = os.Chdir(origDir)
+	}()
+
+	// Change to /tmp
 	if err := os.Chdir("/tmp"); err != nil {
 		return err
 	}
+
 	if _, err := os.Stat(fileName); os.IsNotExist(err) {
 		fmt.Println("File does not exist")
 	} else if err != nil {
