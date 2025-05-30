@@ -18,9 +18,6 @@ inputs:
     required: true
     description: "Docker Hub password for pulling images"
 
-env:
-  KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
-
 runs:
   using: "composite"
   steps:
@@ -56,15 +53,20 @@ runs:
         TF_VAR_FILE: ${{ github.workspace }}/terraform/orchestrator/terraform.tfvars
         TF_VAR_docker_username: ${{ inputs.docker_username }}
         TF_VAR_docker_password: ${{ inputs.docker_password }}
+        KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
       shell: bash
       run: mage deploy:onPrem
 
     - name: Verify deployment
       shell: bash
+      env:
+        KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
       run: mage -v deploy:waitUntilComplete
 
     - name: Setup test environment
       shell: bash
+      env:
+        KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
       run: mage -v gen:orchCA deploy:orchCA deploy:edgeNetworkDNS
 
     - name: Get diagnostic information
@@ -74,6 +76,7 @@ runs:
         SSH_HOST: 192.168.99.10
         SSH_USER: ubuntu
         SSH_PASSWORD: ubuntu
+        KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
       shell: bash
       run: |
         mkdir -p onprem-diagnostics
