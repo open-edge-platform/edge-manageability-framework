@@ -840,3 +840,45 @@ func (OnPrem) ValidateConfig() error {
 	}
 	return nil
 }
+
+func (OnPrem) WriteConfigToDisk() error {
+	cwd := os.Getenv("cwd")
+	gitArchName := os.Getenv("git_arch_name")
+	siConfigRepo := os.Getenv("si_config_repo")
+	tmpDir := filepath.Join(cwd, gitArchName, "tmp")
+	os.Setenv("tmp_dir", tmpDir)
+
+	// Remove and recreate tmpDir
+	exec.Command("rm", "-rf", tmpDir).Run()
+	if err := os.MkdirAll(tmpDir, 0755); err != nil {
+		return fmt.Errorf("failed to create tmp dir: %w", err)
+	}
+
+	// Find the repo archive file
+	findCmd := exec.Command("find", filepath.Join(cwd, gitArchName), "-name", fmt.Sprintf("*%s*.tgz", siConfigRepo), "-type", "f", "-printf", "%f\n")
+	out, err := findCmd.Output()
+	if err != nil {
+		return fmt.Errorf("failed to find repo archive: %w", err)
+	}
+	repoFile := strings.TrimSpace(string(out))
+	if repoFile == "" {
+		return fmt.Errorf("repo archive not found")
+	}
+
+	// Extract the archive
+	tarCmd := exec.Command("tar", "-xf", filepath.Join(cwd, gitArchName, repoFile), "-C", tmpDir)
+	tarCmd.Stdout = os.Stdout
+	tarCmd.Stderr = os.Stderr
+	if err := tarCmd.Run(); err != nil {
+		return fmt.Errorf("failed to extract repo archive: %w", err)
+	}
+
+	// Apply config overrides
+	if err := (OnPrem{}).WriteConfigsUsingOverrides(); err != nil {
+		return fmt.Errorf("failed to apply config overrides: %w", err)
+	}
+
+	fmt.Printf("Configuration files have been written to disk at %s/%s\n", tmpDir, siConfigRepo)
+	os.Exit(0)
+	return nil
+}
