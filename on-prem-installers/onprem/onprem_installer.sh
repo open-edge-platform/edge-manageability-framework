@@ -63,6 +63,7 @@ export si_config_repo="edge-manageability-framework"
 export installer_rs_path="edge-orch/common/files"
 
 export tmp_dir="$cwd/$git_arch_name/tmp"
+export KUBECONFIG=/home/$USER/.kube/config
 
 
 
@@ -389,33 +390,33 @@ EOF
 #   echo "========================================"; echo
 # }
 
-write_configs_using_overrides() {
-  ## Option to override clusterDomain in onprem yaml by setting env variable
-  if [[ -n ${CLUSTER_DOMAIN} ]]; then
-    echo "CLUSTER_DOMAIN is set. Updating clusterDomain in the YAML file..."
-    yq -i ".argo.clusterDomain=\"${CLUSTER_DOMAIN}\"" "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
-    echo "Update complete. clusterDomain is now set to: $CLUSTER_DOMAIN"
-  fi
+# write_configs_using_overrides() {
+#   ## Option to override clusterDomain in onprem yaml by setting env variable
+#   if [[ -n ${CLUSTER_DOMAIN} ]]; then
+#     echo "CLUSTER_DOMAIN is set. Updating clusterDomain in the YAML file..."
+#     yq -i ".argo.clusterDomain=\"${CLUSTER_DOMAIN}\"" "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
+#     echo "Update complete. clusterDomain is now set to: $CLUSTER_DOMAIN"
+#   fi
 
-  ## Override TLS setting for SRE depending on user's input (presence of flag with SRE CA cert)
-  if [[ "${SRE_TLS_ENABLED-}" == "true" ]]; then
-    yq -i '.argo.o11y.sre.tls.enabled|=true' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
-    if [[ -n "${SRE_DEST_CA_CERT-}" ]]; then
-      yq -i '.argo.o11y.sre.tls.caSecretEnabled|=true' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
-    fi
-  else
-    yq -i '.argo.o11y.sre.tls.enabled|=false' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
-  fi
+#   ## Override TLS setting for SRE depending on user's input (presence of flag with SRE CA cert)
+#   if [[ "${SRE_TLS_ENABLED-}" == "true" ]]; then
+#     yq -i '.argo.o11y.sre.tls.enabled|=true' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
+#     if [[ -n "${SRE_DEST_CA_CERT-}" ]]; then
+#       yq -i '.argo.o11y.sre.tls.caSecretEnabled|=true' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
+#     fi
+#   else
+#     yq -i '.argo.o11y.sre.tls.enabled|=false' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
+#   fi
 
-  if [[ ${SMTP_SKIP_VERIFY} == "true" ]]; then
-    yq -i '.argo.o11y.alertingMonitor.smtp.insecureSkipVerify|=true' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
-  fi
+#   if [[ ${SMTP_SKIP_VERIFY} == "true" ]]; then
+#     yq -i '.argo.o11y.alertingMonitor.smtp.insecureSkipVerify|=true' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
+#   fi
 
-  # Override MetalLB address pools
-  yq -i '.postCustomTemplateOverwrite.metallb-config.ArgoIP|=strenv(ARGO_IP)' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
-  yq -i '.postCustomTemplateOverwrite.metallb-config.TraefikIP|=strenv(TRAEFIK_IP)' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
-  yq -i '.postCustomTemplateOverwrite.metallb-config.NginxIP|=strenv(NGINX_IP)' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
-}
+#   # Override MetalLB address pools
+#   yq -i '.postCustomTemplateOverwrite.metallb-config.ArgoIP|=strenv(ARGO_IP)' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
+#   yq -i '.postCustomTemplateOverwrite.metallb-config.TraefikIP|=strenv(TRAEFIK_IP)' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
+#   yq -i '.postCustomTemplateOverwrite.metallb-config.NginxIP|=strenv(NGINX_IP)' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
+# }
 
 write_config_to_disk() {
   # export tmp_dir="$cwd/$git_arch_name/tmp"
@@ -610,7 +611,7 @@ mage onPrem:validateConfig
 # validate_config
 
 ## Tar back the edge-manageability-framework repo. This will be later pushed to Gitea repo in the Orchestrator Installer
-export tmp_dir="$cwd/$git_arch_name/tmp"
+# export tmp_dir="$cwd/$git_arch_name/tmp"
 export repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n")
 cd "$tmp_dir"
 tar -zcf "$repo_file" ./edge-manageability-framework
@@ -637,7 +638,7 @@ mkdir -p /home/"$USER"/.kube
 sudo cp  /etc/rancher/rke2/rke2.yaml /home/"$USER"/.kube/config
 sudo chown -R "$USER":"$USER"  /home/"$USER"/.kube
 sudo chmod 600 /home/"$USER"/.kube/config
-export KUBECONFIG=/home/$USER/.kube/config
+
 
 # Run gitea installer
 echo "Installing Gitea"
