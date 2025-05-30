@@ -49,12 +49,6 @@ argo:
           memory: "64Gi"
           cpu: "64"
   infra-managers:
-    host-manager:
-      enabled: false
-    maintenance-manager:
-      enabled: false
-    telemetry-manager:
-      enabled: false
     os-resource-manager:
       managerArgs:
         enabledProfiles:
@@ -66,10 +60,7 @@ argo:
         limits:
           memory: "64Gi"
           cpu: "64"
-    networking-manager:
-      enabled: false
   infra-onboarding:
-
 #    pxe-server:
 #      enabled: true
 #      resources:
