@@ -73,7 +73,7 @@ resource "aws_security_group_rule" "eks_cluster_ingress" {
   to_port           = 443
   protocol          = "tcp"
   security_group_id = aws_security_group.eks_cluster.id
-  cidr_blocks       = each.value.cidr_block
+  cidr_blocks       = [each.value.cidr_block]
   description       = "Allow HTTPS traffic from VPC"
 }
 

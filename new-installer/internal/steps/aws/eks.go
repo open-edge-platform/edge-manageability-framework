@@ -1,0 +1,291 @@
+// SPDX-FileCopyrightText: 2025 Intel Corporation
+//
+// SPDX-License-Identifier: Apache-2.0
+package steps_aws
+
+import (
+	"context"
+	"fmt"
+	"path/filepath"
+
+	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
+	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
+	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps"
+)
+
+const (
+	DefaultEKSVersion   = "1.32"
+	EKSBackendBucketKey = "eks.tfstate"
+	EKSModulePath       = "new-installer/targets/aws/iac/eks"
+)
+
+type EKSAddOn struct {
+	Name                string `json:"name"`
+	Version             string `json:"version"`
+	ConfigurationValues string `json:"configuration_values"`
+}
+
+type EKSNodeGroup struct {
+	DesiredSize  int                 `json:"desired_size"`
+	MinSize      int                 `json:"min_size"`
+	MaxSize      int                 `json:"max_size"`
+	MaxPods      int                 `json:"max_pods,omitempty"`
+	Taints       map[string]EKSTaint `json:"taints"`
+	Labels       map[string]string   `json:"labels"`
+	InstanceType string              `json:"instance_type"`
+	VolumeSize   int                 `json:"volume_size"`
+	VolumeType   string              `json:"volume_type"`
+}
+
+type EKSTaint struct {
+	Value  string `json:"value"`
+	Effect string `json:"effect"`
+}
+
+type EKSVariables struct {
+	Name                    string                  `json:"name"`
+	Region                  string                  `json:"region"`
+	VPCID                   string                  `json:"vpc_id"`
+	CustomerTag             string                  `json:"customer_tag"`
+	SubnetIDs               []string                `json:"subnet_ids"`
+	EKSVersion              string                  `json:"eks_version"`
+	VolumeSize              int                     `json:"volume_size"`
+	VolumeType              string                  `json:"volume_type"`
+	NodeInstanceType        string                  `json:"node_instance_type"`
+	DesiredSize             int                     `json:"desired_size"`
+	MinSize                 int                     `json:"min_size"`
+	MaxSize                 int                     `json:"max_size"`
+	AddOns                  []EKSAddOn              `json:"add_ons"`
+	MaxPods                 int                     `json:"max_pods"`
+	AdditionalNodeGroups    map[string]EKSNodeGroup `json:"additional_node_groups"`
+	EnableCacheRegistry     bool                    `json:"enable_cache_registry"`
+	CacheRegistry           string                  `json:"cache_registry"`
+	UserScriptPreCloudInit  string                  `json:"user_script_pre_cloud_init"`
+	UserScriptPostCloudInit string                  `json:"user_script_post_cloud_init"`
+	HTTPProxy               string                  `json:"http_proxy"`
+	HTTPSProxy              string                  `json:"https_proxy"`
+	NoProxy                 string                  `json:"no_proxy"`
+	IPAllowList             []string                `json:"ip_allow_list"`
+}
+
+type AWSEKSStep struct {
+	variables          EKSVariables
+	backendConfig      TerraformAWSBucketBackendConfig
+	RootPath           string
+	KeepGeneratedFiles bool
+	StepLabels         []string
+	TerraformUtility   steps.TerraformUtility
+	AWSUtility         AWSUtility
+}
+
+func (s *AWSEKSStep) Name() string {
+	return "AWSEKSStep"
+}
+
+func (s *AWSEKSStep) Labels() []string {
+	return s.StepLabels
+}
+
+func (s *AWSEKSStep) ConfigStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+	// With fixed default values
+	s.variables.EKSVersion = DefaultEKSVersion
+	s.variables.AddOns = []EKSAddOn{
+		{
+			Name:    "aws-ebs-csi-driver",
+			Version: "v1.39.0-eksbuild.1",
+		},
+		{
+			Name:                "vpc-cni",
+			Version:             "v1.19.2-eksbuild.1",
+			ConfigurationValues: "{\"enableNetworkPolicy\": \"true\", \"nodeAgent\": {\"healthProbeBindAddr\": \"8163\", \"metricsBindAddr\": \"8162\"}}",
+		},
+		{
+			Name:    "aws-efs-csi-driver",
+			Version: "v2.1.4-eksbuild.1",
+		},
+	}
+	s.variables.UserScriptPreCloudInit = ""
+	s.variables.UserScriptPostCloudInit = ""
+
+	// With values from config
+	s.variables.Name = config.Global.OrchName
+	s.variables.Region = config.AWS.Region
+	s.variables.VPCID = runtimeState.VPCID
+	s.variables.CustomerTag = config.AWS.CustomerTag
+	s.variables.SubnetIDs = runtimeState.PrivateSubnetIDs
+	scaleSetup := mapScaleToAWSEKSSetup(config.Global.Scale)
+	s.variables.NodeInstanceType = scaleSetup.General.InstanceType
+	s.variables.DesiredSize = scaleSetup.General.DesiredSize
+	s.variables.MinSize = scaleSetup.General.MinSize
+	s.variables.MaxSize = scaleSetup.General.MaxSize
+	s.variables.MaxPods = scaleSetup.General.MaxPods
+	s.variables.VolumeSize = scaleSetup.General.VolumeSize
+	s.variables.VolumeType = scaleSetup.General.VolumeType
+	s.variables.AdditionalNodeGroups = make(map[string]EKSNodeGroup)
+	s.variables.AdditionalNodeGroups["observability"] = scaleSetup.O11y
+	s.variables.EnableCacheRegistry = config.AWS.CacheRegistry != ""
+	s.variables.CacheRegistry = config.AWS.CacheRegistry
+	s.variables.HTTPProxy = config.Proxy.HTTPProxy
+	s.variables.HTTPSProxy = config.Proxy.HTTPSProxy
+	s.variables.NoProxy = config.Proxy.NoProxy
+
+	s.backendConfig.Key = EKSBackendBucketKey
+	s.backendConfig.Region = config.AWS.Region
+	s.backendConfig.Bucket = config.Global.OrchName + "-" + runtimeState.DeploymentID
+	return runtimeState, nil
+}
+
+func (s *AWSEKSStep) PreStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+	return runtimeState, nil
+}
+
+func (s *AWSEKSStep) RunStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+	terraformStepInput := steps.TerraformUtilityInput{
+		Action:             runtimeState.Action,
+		ModulePath:         filepath.Join(s.RootPath, EKSModulePath),
+		Variables:          s.variables,
+		BackendConfig:      s.backendConfig,
+		LogFile:            filepath.Join(runtimeState.LogDir, "aws_eks.log"),
+		KeepGeneratedFiles: s.KeepGeneratedFiles,
+	}
+	// No output from EKS module for now
+	_, err := s.TerraformUtility.Run(ctx, terraformStepInput)
+	if err != nil {
+		return runtimeState, &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeTerraform,
+			ErrorMsg:  fmt.Sprintf("failed to run terraform: %v", err),
+		}
+	}
+	return runtimeState, nil
+}
+
+func (s *AWSEKSStep) PostStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState, prevStepError *internal.OrchInstallerError) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+	return runtimeState, nil
+}
+
+type EKSScaleSetup struct {
+	General EKSNodeGroup
+	O11y    EKSNodeGroup
+}
+
+func mapScaleToAWSEKSSetup(scale config.Scale) EKSScaleSetup {
+	switch scale {
+	case config.Scale10:
+		return EKSScaleSetup{
+			General: EKSNodeGroup{
+				DesiredSize:  3,
+				MinSize:      3,
+				MaxSize:      3,
+				MaxPods:      58,
+				VolumeSize:   20,
+				VolumeType:   "gp3",
+				InstanceType: "t3.2xlarge",
+			},
+			O11y: EKSNodeGroup{
+				DesiredSize: 1,
+				MinSize:     1,
+				MaxSize:     1,
+				Labels: map[string]string{
+					"node.kubernetes.io/custom-rule": "observability",
+				},
+				Taints: map[string]EKSTaint{
+					"node.kubernetes.io/custom-rule": {
+						Value:  "observability",
+						Effect: "NO_SCHEDULE",
+					},
+				},
+				InstanceType: "t3.2xlarge",
+				VolumeSize:   20,
+				VolumeType:   "gp3",
+			},
+		}
+	case config.Scale100:
+		return EKSScaleSetup{
+			General: EKSNodeGroup{
+				DesiredSize:  3,
+				MinSize:      3,
+				MaxSize:      3,
+				MaxPods:      58,
+				VolumeSize:   128,
+				VolumeType:   "gp3",
+				InstanceType: "t3.2xlarge",
+			},
+			O11y: EKSNodeGroup{
+				DesiredSize: 1,
+				MinSize:     1,
+				MaxSize:     1,
+				Labels: map[string]string{
+					"node.kubernetes.io/custom-rule": "observability",
+				},
+				Taints: map[string]EKSTaint{
+					"node.kubernetes.io/custom-rule": {
+						Value:  "observability",
+						Effect: "NO_SCHEDULE",
+					},
+				},
+				InstanceType: "r5.2xlarge",
+				VolumeSize:   128,
+				VolumeType:   "gp3",
+			},
+		}
+	case config.Scale500:
+		return EKSScaleSetup{
+			General: EKSNodeGroup{
+				DesiredSize:  3,
+				MinSize:      3,
+				MaxSize:      3,
+				MaxPods:      58,
+				VolumeSize:   128,
+				VolumeType:   "gp3",
+				InstanceType: "t3.2xlarge",
+			},
+			O11y: EKSNodeGroup{
+				DesiredSize: 2,
+				MinSize:     2,
+				MaxSize:     2,
+				Labels: map[string]string{
+					"node.kubernetes.io/custom-rule": "observability",
+				},
+				Taints: map[string]EKSTaint{
+					"node.kubernetes.io/custom-rule": {
+						Value:  "observability",
+						Effect: "NO_SCHEDULE",
+					},
+				},
+				InstanceType: "r5.4xlarge",
+				VolumeSize:   128,
+				VolumeType:   "gp3",
+			},
+		}
+	case config.Scale1000:
+		return EKSScaleSetup{
+			General: EKSNodeGroup{
+				DesiredSize:  3,
+				MinSize:      3,
+				MaxSize:      3,
+				MaxPods:      58,
+				VolumeSize:   128,
+				VolumeType:   "gp3",
+				InstanceType: "t3.2xlarge",
+			},
+			O11y: EKSNodeGroup{
+				DesiredSize: 2,
+				MinSize:     2,
+				MaxSize:     2,
+				Labels: map[string]string{
+					"node.kubernetes.io/custom-rule": "observability",
+				},
+				Taints: map[string]EKSTaint{
+					"node.kubernetes.io/custom-rule": {
+						Value:  "observability",
+						Effect: "NO_SCHEDULE",
+					},
+				},
+				InstanceType: "r5.4xlarge",
+				VolumeSize:   128,
+				VolumeType:   "gp3",
+			},
+		}
+	}
+	return EKSScaleSetup{}
+}
