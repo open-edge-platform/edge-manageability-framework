@@ -1506,7 +1506,7 @@ func TestValidateSmtpFrom(t *testing.T) {
 	}
 }
 
-func TestValidateIp(t *testing.T) {
+func TestValidateIP(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   string
@@ -1603,7 +1603,7 @@ func TestValidateIp(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validateIp(tt.input)
+			err := validateIP(tt.input)
 			if tt.wantErr {
 				if err == nil {
 					t.Errorf("expected error, got nil")

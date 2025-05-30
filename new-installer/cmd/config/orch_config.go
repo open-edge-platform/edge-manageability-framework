@@ -105,6 +105,8 @@ func loadConfig() {
 		fmt.Println("Failed to migrate existing config:", err)
 		os.Exit(1)
 	}
+
+	preProcessConfig()
 }
 
 func migrateConfig(raw map[string]interface{}) error {
@@ -134,6 +136,8 @@ func migrateConfig(raw map[string]interface{}) error {
 }
 
 func saveConfig() {
+	postProcessConfig()
+
 	file, err := os.Create(flags.ConfigPath)
 	if err != nil {
 		fmt.Println("Failed to create config file:", err)
@@ -165,6 +169,12 @@ func saveConfig() {
 	}
 }
 
+func preProcessConfig() {
+	// Convert slice to comma separated string
+	tmpJumpHostWhitelist = sliceToCommaSeparated(input.AWS.JumpHostWhitelist)
+	tmpEKSIAMRoles = sliceToCommaSeparated(input.AWS.EKSIAMRoles)
+}
+
 func postProcessConfig() {
 	// Convert input.Orch.Enabled when using simple mode
 	if configMode == Simple {
@@ -180,28 +190,32 @@ func postProcessConfig() {
 		input.Orch.Enabled = enabledAdvanced
 	}
 
-	// Covert comma separated IPs into a slice
-	if tmpJumpHostWhitelist != "" {
-		parts := strings.Split(tmpJumpHostWhitelist, ",")
-		for i := range parts {
-			parts[i] = strings.TrimSpace(parts[i])
-		}
-		input.AWS.JumpHostWhitelist = parts
-	}
-
-	// Convert comma separated IAM roles into a slice
-	if tmpEKSIAMRoles != "" {
-		parts := strings.Split(tmpEKSIAMRoles, ",")
-		for i := range parts {
-			parts[i] = strings.TrimSpace(parts[i])
-		}
-		input.AWS.EKSIAMRoles = parts
-	}
+	// Convert comma separated field into a slice
+	input.AWS.JumpHostWhitelist = commaSeparatedToSlice(tmpJumpHostWhitelist)
+	input.AWS.EKSIAMRoles = commaSeparatedToSlice(tmpEKSIAMRoles)
 
 	// Setting up default values
 	if input.Orch.DefaultPassword == "" {
 		input.Orch.DefaultPassword = "ChangeMeOn1stLogin!"
 	}
+}
+
+func commaSeparatedToSlice(input string) []string {
+	if input == "" {
+		return nil
+	}
+	parts := strings.Split(input, ",")
+	for i := range parts {
+		parts[i] = strings.TrimSpace(parts[i])
+	}
+	return parts
+}
+
+func sliceToCommaSeparated(input []string) string {
+	if len(input) == 0 {
+		return ""
+	}
+	return strings.Join(input, ", ")
 }
 
 func main() {
@@ -223,14 +237,11 @@ func main() {
 				loadOrchPackagesFromFile()
 			}
 			loadConfig()
-
 			err := orchInstallerForm().Run()
 			if err != nil {
 				fmt.Println("Failed to generate config:", err)
 				os.Exit(1)
 			}
-
-			postProcessConfig()
 			saveConfig()
 		},
 	}

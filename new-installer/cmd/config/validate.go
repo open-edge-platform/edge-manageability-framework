@@ -190,7 +190,18 @@ func validateSmtpFrom(s string) error {
 	return nil
 }
 
-func validateIp(s string) error {
+func validateIP(s string) error {
+	return validateIPInternal(s, false)
+}
+
+func validateOptionalIP(s string) error {
+	return validateIPInternal(s, true)
+}
+
+func validateIPInternal(s string, allowEmpty bool) error {
+	if s == "" && allowEmpty {
+		return nil
+	}
 	if matched := regexp.MustCompile(`^([0-9]{1,3}\.){3}[0-9]{1,3}$`).MatchString(s); !matched {
 		return fmt.Errorf("IP address must follow the format '^([0-9]{1,3}\\.){3}[0-9]{1,3}$', e.g., 192.168.1.1'")
 	}
