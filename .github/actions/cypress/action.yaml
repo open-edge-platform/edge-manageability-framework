@@ -70,7 +70,7 @@ runs:
         kubectl logs -n orch-app -l app=app-orch-tenant-controller --tail -1 > cypress/logs/admin/app-tenant-controller.log
         kubectl logs -n orch-infra -l app.kubernetes.io/name=tenant-controller --tail -1 > cypress/logs/admin/infra-tenant-controller.log
         kubectl logs -n orch-platform -l app=keycloak-tenant-controller-pod --tail -1 > cypress/logs/admin/platform-tenant-controller.log
-        kubectl logs -n orch-ui -l app=app=metadata-broker --tail -1 > cypress/logs/admin/metadata-broker.log
+        kubectl logs -n orch-ui -l app=metadata-broker --tail -1 > cypress/logs/admin/metadata-broker.log
 
         kubectl get orgactivewatchers.orgactivewatcher.edge-orchestrator.intel.com -o yaml > cypress/logs/admin/orgactivewatchers.yaml
         kubectl get orgs.org.edge-orchestrator.intel.com -o yaml > cypress/logs/admin/orgactivewatchers.yaml
