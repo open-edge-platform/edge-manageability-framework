@@ -8,7 +8,6 @@ import (
 	"embed"
 	"fmt"
 	"os"
-	"strings"
 
 	"gopkg.in/yaml.v3"
 
@@ -171,8 +170,8 @@ func saveConfig() {
 
 func preProcessConfig() {
 	// Convert slice to comma separated string
-	tmpJumpHostWhitelist = sliceToCommaSeparated(input.AWS.JumpHostWhitelist)
-	tmpEKSIAMRoles = sliceToCommaSeparated(input.AWS.EKSIAMRoles)
+	tmpJumpHostWhitelist = config.SliceToCommaSeparated(input.AWS.JumpHostWhitelist)
+	tmpEKSIAMRoles = config.SliceToCommaSeparated(input.AWS.EKSIAMRoles)
 }
 
 func postProcessConfig() {
@@ -191,31 +190,13 @@ func postProcessConfig() {
 	}
 
 	// Convert comma separated field into a slice
-	input.AWS.JumpHostWhitelist = commaSeparatedToSlice(tmpJumpHostWhitelist)
-	input.AWS.EKSIAMRoles = commaSeparatedToSlice(tmpEKSIAMRoles)
+	input.AWS.JumpHostWhitelist = config.CommaSeparatedToSlice(tmpJumpHostWhitelist)
+	input.AWS.EKSIAMRoles = config.CommaSeparatedToSlice(tmpEKSIAMRoles)
 
 	// Setting up default values
 	if input.Orch.DefaultPassword == "" {
 		input.Orch.DefaultPassword = "ChangeMeOn1stLogin!"
 	}
-}
-
-func commaSeparatedToSlice(input string) []string {
-	if input == "" {
-		return nil
-	}
-	parts := strings.Split(input, ",")
-	for i := range parts {
-		parts[i] = strings.TrimSpace(parts[i])
-	}
-	return parts
-}
-
-func sliceToCommaSeparated(input []string) string {
-	if len(input) == 0 {
-		return ""
-	}
-	return strings.Join(input, ", ")
 }
 
 func main() {
