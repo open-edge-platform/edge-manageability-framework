@@ -30,6 +30,7 @@ const keHeader = `
 | . \| |____   _| |_| |\  |____) |  | |/ ____ \| |____| |____| |____| | \ \ 
 |_|\_\______| |_____|_| \_|_____/   |_/_/    \_\______|______|______|_|  \_\									   
 `
+
 const configHeader = `
  ____            _                    ____             __ _
 / ___| _   _ ___| |_ ___ _ __ ___    / ___|___  _ __  / _(_) __ _
@@ -47,7 +48,6 @@ const (
 var upgrade = flag.Bool("upgrade", false, "determine if KE should be upgraded or installed")
 
 func main() {
-
 	// Install RKE2 Cluster
 	if err := os.Setenv("KUBECONFIG", fmt.Sprintf("/home/%s/.kube/config", os.Getenv("USER"))); err != nil {
 		fmt.Printf("Error setting KUBECONFIG environment variable: %s\n", err)
@@ -73,7 +73,6 @@ func main() {
 			os.Exit(1)
 		}
 	}
-	// --end
 
 	flag.Parse()
 	if *upgrade {
