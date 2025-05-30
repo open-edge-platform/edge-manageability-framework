@@ -16,7 +16,6 @@ import (
 	"strings"
 
 	"github.com/bitfield/script"
-	"github.com/magefile/mage/sh"
 )
 
 const header = `
@@ -46,10 +45,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err := configModules(); err != nil {
-		log.Fatal(err)
-	}
-
 	fmt.Println("OnPrem OS configure completed!")
 }
 
@@ -66,30 +61,6 @@ func privateCmdExcute(cmdline string) error {
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("error executing %s commands: %w", cmdline, err)
 	}
-	return nil
-}
-
-// Enable kernel modules required for LV snapshots
-func configModules() error {
-	fmt.Println("config kernel modules...")
-
-	mods, err := os.OpenFile("/etc/modules-load.d/lv-snapshots.conf", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o644)
-	if err != nil {
-		return err
-	}
-	defer mods.Close()
-
-	if _, err = mods.WriteString("dm-snapshot\ndm-mirror\n"); err != nil {
-		return err
-	}
-
-	if err = sh.RunV("modprobe", "dm-snapshot"); err != nil {
-		return err
-	}
-	if err = sh.RunV("modprobe", "dm-mirror"); err != nil {
-		return err
-	}
-
 	return nil
 }
 
