@@ -6,7 +6,7 @@
 
 for cluster in $(kind get clusters)
 do
-    echo Cluster: "$cluster"
-    kubectl --context kind-"$cluster" get pods -A
+    echo "Cluster: ${cluster}"
+    kubectl --context "kind-${cluster}" get pods -A
     echo ""
 done

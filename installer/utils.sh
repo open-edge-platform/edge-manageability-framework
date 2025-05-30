@@ -8,10 +8,10 @@
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
 if [ -f "${SCRIPT_DIR}/pod-configs/utils/lib/common.sh" ]; then
-    # shellcheck disable=SC1091
+    # shellcheck source=pod-configs/utils/lib/common.sh
     . "${SCRIPT_DIR}"/pod-configs/utils/lib/common.sh
 elif [ -f "${SCRIPT_DIR}/common.sh" ]; then
-    # shellcheck disable=SC1091
+    # shellcheck source=pod-configs/utils/lib/common.sh
     . "${SCRIPT_DIR}"/common.sh
 else
     echo "Error: Unable to load common.sh"

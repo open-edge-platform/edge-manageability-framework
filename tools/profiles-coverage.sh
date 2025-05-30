@@ -29,13 +29,13 @@ cd "$ORCH_CONFIGS_DIR"
 if [ -n "${1-}" ]; then
   profile=$1
   echo "$profile" covered in clusters:
-  grep -E "^[ ]*- orch-configs/profiles/$profile" ./orch-configs/clusters/*
+  grep -E "^[ ]*- orch-configs/profiles/${profile}" ./orch-configs/clusters/*
 else
   PROFILES=$(ls profiles)
   # produces output formatted: <times covered>: <profile name>
   # so the script output can be easily sorted with 'sort -n'
   for profile in $PROFILES; do
-    count=$(grep -cE "^[ ]*- orch-configs/profiles/$profile" ./orch-configs/clusters/*)
+    count=$(grep -cE "^[ ]*- orch-configs/profiles/${profile}" ./orch-configs/clusters/*)
     echo "$count: $profile"  
   done
 fi

@@ -21,5 +21,5 @@ CLUSTER_DEF=${CLUSTER_PATH}/${CLUSTER}.yaml
 
 VALUES_FILES=$(yq '.root.clusterValues[]' "${CLUSTER_DEF}" | awk "{print \"-f ${ORCH_CONFIGS_DIR}/\" \$1}" | xargs)
 
-helm template "${EDGE_MANAGEABILITY_FRAMEWORK_DIR}"/argocd/applications "${VALUES_FILES}"
-helm template "${EDGE_MANAGEABILITY_FRAMEWORK_DIR}"/argocd-internal/applications "${VALUES_FILES}"
+helm template "${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/argocd/applications" "${VALUES_FILES}"
+helm template "${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/argocd-internal/applications" "${VALUES_FILES}"

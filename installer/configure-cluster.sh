@@ -4,11 +4,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# shellcheck disable=SC1091
+# shellcheck source=installer/utils.sh
 . "${HOME}"/utils.sh
 
 # Consts
-#BUCKET_REGION="us-west-2"
+export BUCKET_REGION="us-west-2"
 SAVE_DIR="${SAVE_DIR:-${HOME}/pod-configs/SAVEME}"
 
 usage() {

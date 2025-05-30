@@ -163,7 +163,7 @@ jobs:
         uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
 
       - name: Run lint
-        run: shellcheck ***/*.sh
+        run: shellcheck -x ***/*.sh
 
   lint-terraform:
     permissions:

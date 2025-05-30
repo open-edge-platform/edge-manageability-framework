@@ -27,10 +27,10 @@ DEPLOYMENT_ENDPOINT="https://app-orch.${ORCHESTRATOR_DOMAIN}"
 
 
 ${CLI} "${CATALOG_ARGS}" logout
-${CLI} "${CATALOG_ARGS}" login --client-id=system-client --trust-cert=true --keycloak https://keycloak."${ORCHESTRATOR_DOMAIN}"/realms/master ${USER} "${PASSWORD}"
+${CLI} "${CATALOG_ARGS}" login --client-id=system-client --trust-cert=true --keycloak "https://keycloak.${ORCHESTRATOR_DOMAIN}/realms/master" ${USER} "${PASSWORD}"
 
 REFRESH_TOKEN=$(${CLI} "${CATALOG_ARGS}" config get refresh-token)
-ACCESS_TOKEN=$(curl -s --location --request POST https://keycloak."${ORCHESTRATOR_DOMAIN}"/realms/master/protocol/openid-connect/token \
+ACCESS_TOKEN=$(curl -s --location --request POST "https://keycloak.${ORCHESTRATOR_DOMAIN}/realms/master/protocol/openid-connect/token" \
     --header 'Content-Type: application/x-www-form-urlencoded' \
     --data-urlencode 'grant_type=refresh_token' \
     --data-urlencode 'client_id=system-client' \

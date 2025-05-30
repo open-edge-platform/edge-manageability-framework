@@ -4,7 +4,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# shellcheck disable=SC1091
+# shellcheck source=installer/utils.sh
 source utils.sh
 
 export SAVE_DIR=~/pod-configs/SAVEME

@@ -8,7 +8,7 @@
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
 if [ -f "${SCRIPT_DIR}/utils.sh" ]; then
-    # shellcheck disable=SC1091
+    # shellcheck source=installer/utils.sh
     . "${SCRIPT_DIR}"/utils.sh
 else
     echo "Error: Unable to load utils.sh"
@@ -75,7 +75,7 @@ load_provision_values
 parse_params "$@"
 
 if [ -z "$VPC_CIDR" ]; then
-    VPC_CIDR=$(aws ec2 describe-vpcs --region "${AWS_REGION}" --filter Name=tag:Name,Values="$CLUSTER_NAME" --query Vpcs[].CidrBlock --output text)
+    VPC_CIDR=$(aws ec2 describe-vpcs --region "${AWS_REGION}" --filter Name=tag:Name,Values="${CLUSTER_NAME}" --query Vpcs[].CidrBlock --output text)
 fi
 
 # Use common tunnel connection implementation

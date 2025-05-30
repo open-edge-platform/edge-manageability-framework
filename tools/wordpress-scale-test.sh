@@ -25,7 +25,7 @@ DEPLOYMENT_ENDPOINT="https://app-orch.${ORCHESTRATOR_DOMAIN}"
 [ -n "$4" ] && CATALOG_ARGS="--deployment-endpoint ${DEPLOYMENT_ENDPOINT} --catalog-endpoint ${CATALOG_ENDPOINT}" || CATALOG_ARGS=""
 
 ${CLI} "${CATALOG_ARGS}" logout
-${CLI} "${CATALOG_ARGS}" login --client-id=system-client --trust-cert=true --keycloak https://keycloak."${ORCHESTRATOR_DOMAIN}"/realms/master "${USER}" "${PASSWORD}"
+${CLI} "${CATALOG_ARGS}" login --client-id=system-client --trust-cert=true --keycloak "https://keycloak.${ORCHESTRATOR_DOMAIN}/realms/master" "${USER}" "${PASSWORD}"
 for _ in $(seq 1 "$APPS")
 do
     ${CLI} "${CATALOG_ARGS}" create deployment wordpress "${VERSION}" --application-label wordpress.color=blue \
