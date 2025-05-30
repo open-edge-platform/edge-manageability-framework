@@ -394,48 +394,48 @@ EOF
 #   echo "========================================"; echo
 # }
 
-# write_configs_using_overrides() {
-#   ## Option to override clusterDomain in onprem yaml by setting env variable
-#   if [[ -n ${CLUSTER_DOMAIN} ]]; then
-#     echo "CLUSTER_DOMAIN is set. Updating clusterDomain in the YAML file..."
-#     yq -i ".argo.clusterDomain=\"${CLUSTER_DOMAIN}\"" "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
-#     echo "Update complete. clusterDomain is now set to: $CLUSTER_DOMAIN"
-#   fi
+write_configs_using_overrides() {
+  ## Option to override clusterDomain in onprem yaml by setting env variable
+  if [[ -n ${CLUSTER_DOMAIN} ]]; then
+    echo "CLUSTER_DOMAIN is set. Updating clusterDomain in the YAML file..."
+    yq -i ".argo.clusterDomain=\"${CLUSTER_DOMAIN}\"" "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
+    echo "Update complete. clusterDomain is now set to: $CLUSTER_DOMAIN"
+  fi
 
-#   ## Override TLS setting for SRE depending on user's input (presence of flag with SRE CA cert)
-#   if [[ "${SRE_TLS_ENABLED-}" == "true" ]]; then
-#     yq -i '.argo.o11y.sre.tls.enabled|=true' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
-#     if [[ -n "${SRE_DEST_CA_CERT-}" ]]; then
-#       yq -i '.argo.o11y.sre.tls.caSecretEnabled|=true' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
-#     fi
-#   else
-#     yq -i '.argo.o11y.sre.tls.enabled|=false' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
-#   fi
+  ## Override TLS setting for SRE depending on user's input (presence of flag with SRE CA cert)
+  if [[ "${SRE_TLS_ENABLED-}" == "true" ]]; then
+    yq -i '.argo.o11y.sre.tls.enabled|=true' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
+    if [[ -n "${SRE_DEST_CA_CERT-}" ]]; then
+      yq -i '.argo.o11y.sre.tls.caSecretEnabled|=true' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
+    fi
+  else
+    yq -i '.argo.o11y.sre.tls.enabled|=false' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
+  fi
 
-#   if [[ ${SMTP_SKIP_VERIFY} == "true" ]]; then
-#     yq -i '.argo.o11y.alertingMonitor.smtp.insecureSkipVerify|=true' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
-#   fi
+  if [[ ${SMTP_SKIP_VERIFY} == "true" ]]; then
+    yq -i '.argo.o11y.alertingMonitor.smtp.insecureSkipVerify|=true' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
+  fi
 
-#   # Override MetalLB address pools
-#   yq -i '.postCustomTemplateOverwrite.metallb-config.ArgoIP|=strenv(ARGO_IP)' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
-#   yq -i '.postCustomTemplateOverwrite.metallb-config.TraefikIP|=strenv(TRAEFIK_IP)' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
-#   yq -i '.postCustomTemplateOverwrite.metallb-config.NginxIP|=strenv(NGINX_IP)' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
-# }
+  # Override MetalLB address pools
+  yq -i '.postCustomTemplateOverwrite.metallb-config.ArgoIP|=strenv(ARGO_IP)' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
+  yq -i '.postCustomTemplateOverwrite.metallb-config.TraefikIP|=strenv(TRAEFIK_IP)' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
+  yq -i '.postCustomTemplateOverwrite.metallb-config.NginxIP|=strenv(NGINX_IP)' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
+}
 
-# write_config_to_disk() {
-#   # export tmp_dir="$cwd/$git_arch_name/tmp"
-#   rm -rf "$tmp_dir"
-#   mkdir -p "$tmp_dir"
-#   repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n")
-#   tar -xf "$cwd/$git_arch_name/$repo_file" -C "$tmp_dir"
+write_config_to_disk() {
+  # export tmp_dir="$cwd/$git_arch_name/tmp"
+  rm -rf "$tmp_dir"
+  mkdir -p "$tmp_dir"
+  repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n")
+  tar -xf "$cwd/$git_arch_name/$repo_file" -C "$tmp_dir"
 
-#   # If overrides are set, ensure the written out configs are updated with them
-#   # write_configs_using_overrides
-#   mage onPrem:writeConfigsUsingOverrides
+  # If overrides are set, ensure the written out configs are updated with them
+  write_configs_using_overrides
+  # mage onPrem:writeConfigsUsingOverrides
 
-#   echo "Configuration files have been written to disk at $tmp_dir/$si_config_repo"
-#   exit 0
-# }
+  echo "Configuration files have been written to disk at $tmp_dir/$si_config_repo"
+  exit 0
+}
 
 # validate_and_set_ip() {
 #   local yaml_path="$1"
@@ -598,8 +598,8 @@ mage onPrem:installYq
 mage onPrem:downloadPackages
 # Write configuration to disk if the flag is set
 if [[ "$WRITE_CONFIG" == "true" ]]; then
-  # write_config_to_disk
-  mage onPrem:writeConfigToDisk
+  write_config_to_disk
+  # mage onPrem:writeConfigToDisk
 fi
 
 # Config - interactive
@@ -607,8 +607,8 @@ fi
 mage onPrem:allowConfigInRuntime
 
 # Write out the configs that have explicit overrides
-# write_configs_using_overrides
- mage onPrem:writeConfigsUsingOverrides
+write_configs_using_overrides
+# mage onPrem:writeConfigsUsingOverrides
 # exit 1
 # Validate the configuration file, and set missing values
 mage onPrem:validateConfig
