@@ -17,31 +17,31 @@ CLI=catalog
 USER=edge-operator-example-user
 PASSWORD=${ORCH_DEFAULT_PASSWORD}
 
-[ ! -z "$4" ] && ORCHESTRATOR_DOMAIN=$4 || ORCHESTRATOR_DOMAIN=kind.internal
+[ -n "$4" ] && ORCHESTRATOR_DOMAIN=$4 || ORCHESTRATOR_DOMAIN=kind.internal
 
 CATALOG_ENDPOINT="https://app-orch.${ORCHESTRATOR_DOMAIN}"
 DEPLOYMENT_ENDPOINT="https://app-orch.${ORCHESTRATOR_DOMAIN}"
 
-[ ! -z "$4" ] && CATALOG_ARGS="--deployment-endpoint ${DEPLOYMENT_ENDPOINT} --catalog-endpoint ${CATALOG_ENDPOINT}"
+[ -n "$4" ] && CATALOG_ARGS="--deployment-endpoint ${DEPLOYMENT_ENDPOINT} --catalog-endpoint ${CATALOG_ENDPOINT}"
 
 
-${CLI} ${CATALOG_ARGS} logout
-${CLI} ${CATALOG_ARGS} login --client-id=system-client --trust-cert=true --keycloak https://keycloak.${ORCHESTRATOR_DOMAIN}/realms/master ${USER} ${PASSWORD}
-for i in $(seq 1 $APPS)
+${CLI} "${CATALOG_ARGS}" logout
+${CLI} "${CATALOG_ARGS}" login --client-id=system-client --trust-cert=true --keycloak "https://keycloak.${ORCHESTRATOR_DOMAIN}/realms/master" ${USER} "${PASSWORD}"
+for _ in $(seq 1 "$APPS")
 do
-    ${CLI} ${CATALOG_ARGS} create deployment iperf-web-app ${VERSION} --application-label iperf-web-vm.color=blue --application-label kubevirt-helper.color=blue --publisher intel
-    sleep $SLEEP
+    ${CLI} "${CATALOG_ARGS}" create deployment iperf-web-app "${VERSION}" --application-label iperf-web-vm.color=blue --application-label kubevirt-helper.color=blue --publisher intel
+    sleep "$SLEEP"
 done
 
 while (true)
 do
-    COUNT=$(kubectl -n fleet-default get deployments.app.orchestrator.io --no-headers|grep -v " Running"|wc -l)
+    COUNT=$(kubectl -n fleet-default get deployments.app.orchestrator.io --no-headers|grep -cv " Running")
     echo "Waiting for $COUNT Deployments"
-    if [ $COUNT -gt 0 ]
+    if [ "$COUNT" -gt 0 ]
     then
         sleep 5
     else
-        COUNT=$(kubectl -n fleet-default get deployments.app.orchestrator.io --no-headers|grep " Running"|wc -l)
+        COUNT=$(kubectl -n fleet-default get deployments.app.orchestrator.io --no-headers|grep -c " Running")
         echo "All $COUNT Deployments are Running!"
         exit 0
     fi
