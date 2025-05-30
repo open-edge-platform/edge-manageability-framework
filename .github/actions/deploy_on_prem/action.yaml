@@ -17,6 +17,10 @@ inputs:
   docker_password:
     required: true
     description: "Docker Hub password for pulling images"
+
+env:
+  KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
+
 runs:
   using: "composite"
   steps:
