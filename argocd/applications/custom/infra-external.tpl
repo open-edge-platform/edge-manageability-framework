@@ -89,6 +89,7 @@ amt:
   mps:
     postgresql:
       type: {{ .Values.argo.database.type }}
+      ssl: {{ .Values.argo.database.ssl }}
     commonName: "mps-node.{{ .Values.argo.clusterDomain }}"
     traefikReverseProxy:
       host:
@@ -103,6 +104,7 @@ amt:
   rps:
     postgresql:
       type: {{ .Values.argo.database.type }}
+      ssl: {{ .Values.argo.database.ssl }}
     traefikReverseProxy:
       host:
         grpc:
