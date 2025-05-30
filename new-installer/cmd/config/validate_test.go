@@ -1582,12 +1582,6 @@ func TestValidateIP(t *testing.T) {
 			errMsg:  "IP address must follow the format '^([0-9]{1,3}\\.){3}[0-9]{1,3}$', e.g., 192.168.1.1'",
 		},
 		{
-			name:    "invalid IP with empty string",
-			input:   "",
-			wantErr: true,
-			errMsg:  "IP address must follow the format '^([0-9]{1,3}\\.){3}[0-9]{1,3}$', e.g., 192.168.1.1'",
-		},
-		{
 			name:    "invalid IP with trailing dot",
 			input:   "192.168.1.",
 			wantErr: true,
@@ -1601,9 +1595,48 @@ func TestValidateIP(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
+	testsMandatoryIP := append(tests, struct {
+		name    string
+		input   string
+		wantErr bool
+		errMsg  string
+	}{
+		name:    "empty IP string",
+		input:   "",
+		wantErr: true,
+	})
+
+	testsOptionalIP := append(tests, struct {
+		name    string
+		input   string
+		wantErr bool
+		errMsg  string
+	}{
+		name:    "empty IP string",
+		input:   "",
+		wantErr: false,
+	})
+
+	for _, tt := range testsMandatoryIP {
 		t.Run(tt.name, func(t *testing.T) {
 			err := validateIP(tt.input)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("expected error, got nil")
+				} else if tt.errMsg != "" && err.Error() != tt.errMsg {
+					t.Errorf("expected error message %q, got %q", tt.errMsg, err.Error())
+				}
+			} else {
+				if err != nil {
+					t.Errorf("expected no error, got %v", err)
+				}
+			}
+		})
+	}
+
+	for _, tt := range testsOptionalIP {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateOptionalIP(tt.input)
 			if tt.wantErr {
 				if err == nil {
 					t.Errorf("expected error, got nil")
