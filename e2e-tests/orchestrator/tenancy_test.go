@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	invapi "github.com/open-edge-platform/infra-core/apiv2/v2/pkg/api/v2"
 	projectv1 "github.com/open-edge-platform/orch-utils/tenancy-datamodel/build/apis/project.edge-orchestrator.intel.com/v1"
 
 	"github.com/bitfield/script"
@@ -416,7 +417,7 @@ var _ = Describe("Tenancy integration test", Label(tenancy), func() {
 			token, err = util.GetApiToken(cli, tenancyUser, password)
 			Expect(err).ToNot(HaveOccurred())
 
-			Eventually(func() (*int, error) {
+			Eventually(func() (*invapi.ListRegionsResponse, error) {
 				resp, err = makeAuthorizedRequest(http.MethodGet, "https://api."+serviceDomainWithPort+"/v1/projects/"+projName+"/regions", *token, nil, cli)
 				if err != nil {
 					return nil, fmt.Errorf("failed to get regions: %w", err)
@@ -425,11 +426,11 @@ var _ = Describe("Tenancy integration test", Label(tenancy), func() {
 				if resp.StatusCode != http.StatusOK {
 					return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 				}
-				regionsList, err := parseRegionsList(resp.Body)
+				regions, err := parseRegionsList(resp.Body)
 				if err != nil {
 					return nil, fmt.Errorf("failed to parse regions list: %w", err)
 				}
-				return regionsList.TotalElements, nil
+				return regions, nil
 			}, 2*time.Minute, 10*time.Second).ShouldNot(BeNil(), "regions list should not be empty")
 
 			logInfo("Verify Catalog services for Project: %s under Org: %s", projName, orgName)
