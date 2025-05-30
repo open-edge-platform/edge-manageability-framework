@@ -67,10 +67,10 @@ runs:
       shell: bash
       run: |
         mkdir -p cypress/logs/admin
-        kubectl logs -n orch-app -l app=app-orch-tenant-controller > cypress/logs/admin/app-tenant-controller.log
-        kubectl logs -n orch-infra -l app.kubernetes.io/name=tenant-controller > cypress/logs/admin/infra-tenant-controller.log
-        kubectl logs -n orch-platform -l app=keycloak-tenant-controller-pod > cypress/logs/admin/platform-tenant-controller.log
-        kubectl logs -n orch-ui -l app=app=metadata-broker > cypress/logs/admin/metadata-broker.log
+        kubectl logs -n orch-app -l app=app-orch-tenant-controller --tail -1 > cypress/logs/admin/app-tenant-controller.log
+        kubectl logs -n orch-infra -l app.kubernetes.io/name=tenant-controller --tail -1 > cypress/logs/admin/infra-tenant-controller.log
+        kubectl logs -n orch-platform -l app=keycloak-tenant-controller-pod --tail -1 > cypress/logs/admin/platform-tenant-controller.log
+        kubectl logs -n orch-ui -l app=app=metadata-broker --tail -1 > cypress/logs/admin/metadata-broker.log
 
     - name: Run Edge Infra Manager Cypress tests
       id: infra_tests
@@ -92,15 +92,15 @@ runs:
         EN_UUID: ${{ inputs.en_uuid }}
       run: |
         mkdir -p cypress/logs/edgeinfra
-        kubectl logs -n orch-infra -l app.kubernetes.io/name=inventory > cypress/logs/edgeinfra/inventory.log
-        kubectl logs -n orch-infra -l app.kubernetes.io/name=api > cypress/logs/edgeinfra/api.log
-        kubectl logs -n orch-infra -l app.kubernetes.io/name=onboarding-manager > cypress/logs/edgeinfra/onboarding-manager.log
-        kubectl logs -n orch-infra -l app.kubernetes.io/name=host-manager > cypress/logs/edgeinfra/host-manager.log
-        kubectl logs -n orch-infra -l app.kubernetes.io/name=dkam > cypress/logs/edgeinfra/dkam.log
-        kubectl logs -n orch-infra -l app.kubernetes.io/name=os-resource-manager > cypress/logs/edgeinfra/os-resource-manager.log
+        kubectl logs -n orch-infra -l app.kubernetes.io/name=inventory --tail -1 > cypress/logs/edgeinfra/inventory.log
+        kubectl logs -n orch-infra -l app.kubernetes.io/name=api --tail -1 > cypress/logs/edgeinfra/api.log
+        kubectl logs -n orch-infra -l app.kubernetes.io/name=onboarding-manager --tail -1 > cypress/logs/edgeinfra/onboarding-manager.log
+        kubectl logs -n orch-infra -l app.kubernetes.io/name=host-manager --tail -1 > cypress/logs/edgeinfra/host-manager.log
+        kubectl logs -n orch-infra -l app.kubernetes.io/name=dkam --tail -1 > cypress/logs/edgeinfra/dkam.log
+        kubectl logs -n orch-infra -l app.kubernetes.io/name=os-resource-manager --tail -1 > cypress/logs/edgeinfra/os-resource-manager.log
 
-        kubectl logs -n orch-iam -l app=nexus-api-gw > cypress/logs/edgeinfra/nexus-api-gw.log
-        kubectl logs -n orch-gateway -l app.kubernetes.io/name=traefik > cypress/logs/edgeinfra/traefik.log
+        kubectl logs -n orch-iam -l app=nexus-api-gw --tail -1 > cypress/logs/edgeinfra/nexus-api-gw.log
+        kubectl logs -n orch-gateway -l app.kubernetes.io/name=traefik --tail -1 > cypress/logs/edgeinfra/traefik.log
 
         kubectl -n enic logs $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c fake-uuid > cypress/logs/edgeinfra/enic-fake-uuid.log || true
         kubectl -n enic exec -it $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c edge-node -- journalctl -u onboard --no-tail > cypress/logs/edgeinfra/enic-onboard.log || true
@@ -132,15 +132,15 @@ runs:
         mkdir -p cypress/logs/cluster-orch
 
         # CAPI components
-        kubectl logs -n capi-operator-system -l app=cluster-api-operator > cypress/logs/cluster-orch/cluster-api-operator.log
-        kubectl logs -n capr-system -l cluster.x-k8s.io/provider=bootstrap-rke2 > cypress/logs/cluster-orch/bootstrap-rke2.log
-        kubectl logs -n capr-system -l cluster.x-k8s.io/provider=control-plane-rke2 > cypress/logs/cluster-orch/control-plane-rke2.log
+        kubectl logs -n capi-operator-system -l app=cluster-api-operator --tail -1 > cypress/logs/cluster-orch/cluster-api-operator.log
+        kubectl logs -n capr-system -l cluster.x-k8s.io/provider=bootstrap-rke2 --tail -1 > cypress/logs/cluster-orch/bootstrap-rke2.log
+        kubectl logs -n capr-system -l cluster.x-k8s.io/provider=control-plane-rke2 --tail -1 > cypress/logs/cluster-orch/control-plane-rke2.log
 
         # Orch components
-        kubectl logs -n orch-cluster -l app=cluster-connect-gateway-gateway > cypress/logs/cluster-orch/cluster-connect-gateway-gateway.log
-        kubectl logs -n orch-cluster -l app=cluster-manager-cm > cypress/logs/cluster-orch/cluster-manager-cm.log
-        kubectl logs -n orch-cluster -l app=cluster-manager-controller > cypress/logs/cluster-orch/cluster-manager-controller.log
-        kubectl logs -n orch-cluster -l app=southbound-api > cypress/logs/cluster-orch/southbound-api.log
+        kubectl logs -n orch-cluster -l app=cluster-connect-gateway-gateway --tail -1 > cypress/logs/cluster-orch/cluster-connect-gateway-gateway.log
+        kubectl logs -n orch-cluster -l app=cluster-manager-cm --tail -1 > cypress/logs/cluster-orch/cluster-manager-cm.log
+        kubectl logs -n orch-cluster -l app=cluster-manager-controller --tail -1 > cypress/logs/cluster-orch/cluster-manager-controller.log
+        kubectl logs -n orch-cluster -l app=southbound-api --tail -1 > cypress/logs/cluster-orch/southbound-api.log
 
         # ENiC components
         kubectl -n enic exec -it $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c edge-node -- journalctl -xeu cluster-agent --no-tail > cypress/logs/cluster-orch/enic-cluster-agent.log || true
@@ -161,10 +161,10 @@ runs:
       shell: bash
       run: |
         mkdir -p cypress/logs/app-orch
-        kubectl logs -n orch-app -l app=app-deployment-api > cypress/logs/app-orch/app-deployment-api.log
-        kubectl logs -n orch-app -l app=app-deployment-manager > cypress/logs/app-orch/app-deployment-manager.log
-        kubectl logs -n orch-app -l app=app-resource-manager > cypress/logs/app-orch/app-resource-manager.log
-        kubectl logs -n orch-app -l app.kubernetes.io/name=application-catalog > cypress/logs/app-orch/application-catalog.log
+        kubectl logs -n orch-app -l app=app-deployment-api --tail -1 > cypress/logs/app-orch/app-deployment-api.log
+        kubectl logs -n orch-app -l app=app-deployment-manager --tail -1 > cypress/logs/app-orch/app-deployment-manager.log
+        kubectl logs -n orch-app -l app=app-resource-manager --tail -1 > cypress/logs/app-orch/app-resource-manager.log
+        kubectl logs -n orch-app -l app.kubernetes.io/name=application-catalog --tail -1 > cypress/logs/app-orch/application-catalog.log
 
     - name: Upload test artifacts
       if: always()
