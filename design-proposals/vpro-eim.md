@@ -51,8 +51,8 @@ Powered Off, Hibernated}
 - `PowerCommandPolicy` ->> {IMMEDIATE_OFF, ORDERED_OFF}
 - `PowerOnTime` ->> the time of last startup (from which `Uptime` could be calculated by the UI)
 - `AMTSKU` ->> a string reporting AMT/ISM version. `Unsupported` otherwise.
-- `AMTDesiredState` ->> {UNSPECIFIED, PROVISION, UNPROVISION, DISCONNECT}
-- `AMTCurrentState` ->> {UNSPECIFIED, PROVISION, UNPROVISION, DISCONNECT}
+- `AMTDesiredState` ->> {UNSPECIFIED, PROVISIONED, UNPROVISIONED, DISCONNECT}
+- `AMTCurrentState` ->> {UNSPECIFIED, PROVISIONED, UNPROVISIONED, DISCONNECT}
 - `AMTStatus` ->> {PROVISIONED, UNPROVISIONED, DISCONNECTED, UNSUPPORTED}
 
 **Note:** `AMTSKU` is populated during the device discovery. AMT version decoding is quite complex see
