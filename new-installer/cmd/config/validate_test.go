@@ -8,6 +8,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -17,6 +18,39 @@ type OrchConfigValidationTest struct {
 
 func TestConfigValidationSuite(t *testing.T) {
 	suite.Run(t, new(OrchConfigValidationTest))
+}
+func (s *OrchConfigValidationTest) TestValidateAll() {
+	input = config.OrchInstallerConfig{
+		Version:  1,
+		Provider: "aws", // or "onprem", depending on your use case
+		Global: struct {
+			OrchName     string       `yaml:"orchName"`
+			ParentDomain string       `yaml:"parentDomain"`
+			AdminEmail   string       `yaml:"adminEmail"`
+			Scale        config.Scale `yaml:"scale"`
+		}{
+			OrchName:     "demo",
+			ParentDomain: "example.com",
+			AdminEmail:   "admin@example.com",
+			Scale:        config.Scale(10),
+			// populate fields for Scale struct here
+		},
+		AWS: struct {
+			Region              string   `yaml:"region"`
+			CustomerTag         string   `yaml:"customerTag,omitempty"`
+			CacheRegistry       string   `yaml:"cacheRegistry,omitempty"`
+			JumpHostWhitelist   []string `yaml:"jumpHostWhitelist,omitempty"`
+			JumpHostIP          string   `yaml:"jumpHostIP,omitempty"`
+			JumpHostPrivKeyPath string   `yaml:"jumpHostPrivKeyPath,omitempty"`
+			VPCID               string   `yaml:"vpcID,omitempty"`
+			ReduceNSTTL         bool     `yaml:"reduceNSTTL,omitempty"` // TODO: do we need this?
+			EKSDNSIP            string   `yaml:"eksDNSIP,omitempty"`    // TODO: do we need this?
+			EKSIAMRoles         []string `yaml:"eksIAMRoles,omitempty"`
+		}{
+			Region: "us-west-2",
+		},
+	}
+	s.NoError(validateAll(), "expected no error for valid config")
 }
 
 func (s *OrchConfigValidationTest) TestValidateOrchName() {

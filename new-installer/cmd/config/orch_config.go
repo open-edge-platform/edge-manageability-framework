@@ -5,21 +5,21 @@
 package main
 
 import (
-	"embed"
 	"fmt"
 	"os"
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/open-edge-platform/edge-manageability-framework/installer/asset"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 	"github.com/spf13/cobra"
 )
 
 type flag struct {
-	Debug       bool
-	PackagePath string
-	ConfigPath  string
-	ExpertMode  bool
+	Debug              bool
+	PackagePath        string
+	ConfigPath         string
+	NonInteractiveMode bool
 	// Flags to show optional configurations
 	ConfigureAwsExpert    bool
 	ConfigureOnPremExpert bool
@@ -40,10 +40,6 @@ const (
 // These are states that will be saved back to the config file
 var input config.OrchInstallerConfig
 
-//go:embed packages.yaml
-var embedFS embed.FS
-var embedPackages string
-
 // These are intermediate states that will not be saved back to the config file
 var flags flag
 var orchPackages map[string]config.OrchPackage
@@ -53,27 +49,34 @@ var enabledSimple []string
 var enabledAdvanced []string
 var configMode Mode
 
-func loadOrchPackagesFromString(configStr string) {
-	err := yaml.Unmarshal([]byte(configStr), &orchPackages)
-	if err != nil {
-		fmt.Printf("Failed to decode orchestrator packages string: %v\n", err)
-		os.Exit(1)
-	}
-}
+func loadOrchPackages() {
+	if flags.PackagePath != "" {
+		// If a package path is provided, we will load from that file
+		file, err := os.Open(flags.PackagePath)
+		if err != nil {
+			fmt.Printf("Failed to open orchestrator packages file: %v\n", err)
+			os.Exit(1)
+		}
+		defer file.Close()
 
-func loadOrchPackagesFromFile() {
-	file, err := os.Open(flags.PackagePath)
-	if err != nil {
-		fmt.Printf("Failed to open orchestrator packages file: %v\n", err)
-		os.Exit(1)
-	}
-	defer file.Close()
-
-	decoder := yaml.NewDecoder(file)
-	err = decoder.Decode(&orchPackages)
-	if err != nil {
-		fmt.Printf("Failed to decode orchestrator packages file: %v\n", err)
-		os.Exit(1)
+		decoder := yaml.NewDecoder(file)
+		err = decoder.Decode(&orchPackages)
+		if err != nil {
+			fmt.Printf("Failed to decode orchestrator packages file: %v\n", err)
+			os.Exit(1)
+		}
+	} else {
+		// If no package path is provided, we will load from the embedded file
+		bytes, err := asset.EmbedPackage.ReadFile("packages.yaml")
+		if err != nil {
+			fmt.Printf("Failed to read embedded packages.yaml: %v\n", err)
+			os.Exit(1)
+		}
+		err = yaml.Unmarshal(bytes, &orchPackages)
+		if err != nil {
+			fmt.Printf("Failed to decode orchestrator packages string: %v\n", err)
+			os.Exit(1)
+		}
 	}
 }
 
@@ -155,7 +158,7 @@ func saveConfig() {
 	}
 
 	if flags.Debug {
-		fmt.Printf("%+v\n", input)
+		fmt.Printf("%+v\n\n", input)
 		encoder = yaml.NewEncoder(os.Stdout)
 		encoder.SetIndent(2)
 		defer encoder.Close()
@@ -200,29 +203,31 @@ func postProcessConfig() {
 }
 
 func main() {
-	// Load embedded packages.yaml
-	bytes, err := embedFS.ReadFile("packages.yaml")
-	if err != nil {
-		fmt.Printf("Failed to read embedded packages.yaml: %v\n", err)
-		os.Exit(1)
-	}
-	embedPackages = string(bytes)
+	var tmpOrchName string
+	var tmpScale int
 
 	var cobraCmd = &cobra.Command{
-		Use:   "arctic-huh",
+		Use:   "config-builder",
 		Short: "An interactive tool to build EMF config",
 		Run: func(cmd *cobra.Command, args []string) {
-			if flags.PackagePath == "" {
-				loadOrchPackagesFromString(embedPackages)
-			} else {
-				loadOrchPackagesFromFile()
-			}
+			loadOrchPackages()
 			loadConfig()
-			err := orchInstallerForm().Run()
-			if err != nil {
-				fmt.Println("Failed to generate config:", err)
-				os.Exit(1)
+
+			if flags.NonInteractiveMode {
+				input.Global.OrchName = tmpOrchName
+				input.Global.Scale = config.Scale(tmpScale)
+				if err := validateAll(); err != nil {
+					fmt.Println("Validation failed:", err)
+					fmt.Println("Please run the command without --auto to fix the issues.")
+					os.Exit(1)
+				}
+			} else {
+				if err := orchInstallerForm().Run(); err != nil {
+					fmt.Println("Failed to generate config:", err)
+					os.Exit(1)
+				}
 			}
+
 			saveConfig()
 		},
 	}
@@ -230,7 +235,20 @@ func main() {
 	cobraCmd.PersistentFlags().BoolVarP(&flags.Debug, "debug", "d", false, "Enable debug mode")
 	cobraCmd.PersistentFlags().StringVarP(&flags.ConfigPath, "config", "c", "configs.yaml", "Path to the config file")
 	cobraCmd.PersistentFlags().StringVarP(&flags.PackagePath, "package", "p", "", "Path to the Orchestrator package definition")
-	cobraCmd.PersistentFlags().BoolVarP(&flags.ExpertMode, "expert", "e", false, "Show all optional configurations")
+	cobraCmd.PersistentFlags().BoolVar(&flags.NonInteractiveMode, "auto", false, "Run config builder in non-interactive mode")
+	cobraCmd.PersistentFlags().StringVar(&tmpOrchName, "name", "", "Name of the orchestrator (only used with --auto)")
+	cobraCmd.PersistentFlags().IntVar(&tmpScale, "scale", 10, "Target Scale (10, 100, 500, 1000, 10000) (only used with --auto)")
+	cobraCmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		autoFlag := cmd.Flags().Changed("auto")
+		nameFlag := cmd.Flags().Changed("name")
+		scaleFlag := cmd.Flags().Changed("scale")
+		// Either all three flags should be specified or none should be
+		if (autoFlag && (!nameFlag || !scaleFlag)) || (!autoFlag && (nameFlag || scaleFlag)) {
+			fmt.Println("--auto, --name, and --scale must all be specified together or none at all")
+			os.Exit(1)
+		}
+		return nil
+	}
 
 	// Exit on help command
 	helpFunc := cobraCmd.HelpFunc()
