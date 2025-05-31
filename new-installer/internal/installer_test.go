@@ -100,7 +100,7 @@ func (s *OrchInstallerTest) TestOrchInstallerInstallNoStages() {
 	runtimeState := config.OrchInstallerRuntimeState{
 		Action: "install",
 	}
-	orchConfig.Advanced.TargetLabels = []string{"something-else"}
+	runtimeState.TargetLabels = []string{"something-else"}
 	stage1 := createMockStage("MockStage1", true, []string{"label1", "label2"})
 	stage2 := createMockStage("MockStage2", true, []string{"label3", "label4"})
 	installer, err := internal.CreateOrchInstaller([]internal.OrchInstallerStage{stage1, stage2})
@@ -143,7 +143,7 @@ func (s *OrchInstallerTest) TestOrchInstallerInstallSpecificStagesWithLabel() {
 	runtimeState := config.OrchInstallerRuntimeState{
 		Action: "install",
 	}
-	orchConfig.Advanced.TargetLabels = []string{"label1"}
+	runtimeState.TargetLabels = []string{"label1"}
 	stage1 := createMockStage("MockStage1", true, []string{"label1", "label2"})
 	stage2 := createMockStage("MockStage2", false, []string{"label3", "label4"})
 	installer, err := internal.CreateOrchInstaller([]internal.OrchInstallerStage{stage1, stage2})
@@ -157,7 +157,7 @@ func (s *OrchInstallerTest) TestOrchInstallerInstallSpecificStagesWithLabel() {
 		return
 	}
 
-	orchConfig.Advanced.TargetLabels = []string{"label3"}
+	runtimeState.TargetLabels = []string{"label3"}
 	stage1 = createMockStage("MockStage1", false, []string{"label1", "label2"})
 	stage2 = createMockStage("MockStage2", true, []string{"label3", "label4"})
 	installer, err = internal.CreateOrchInstaller([]internal.OrchInstallerStage{stage1, stage2})
@@ -179,7 +179,7 @@ func (s *OrchInstallerTest) TestOrchInstallerInstallSpecificStagesWithTwoLabels(
 	runtimeState := config.OrchInstallerRuntimeState{
 		Action: "install",
 	}
-	orchConfig.Advanced.TargetLabels = []string{"label1", "label3"}
+	runtimeState.TargetLabels = []string{"label1", "label3"}
 	stage1 := createMockStage("MockStage1", true, []string{"label1", "label2"})
 	stage2 := createMockStage("MockStage2", true, []string{"label3", "label4"})
 	installer, err := internal.CreateOrchInstaller([]internal.OrchInstallerStage{stage1, stage2})

@@ -17,6 +17,45 @@ type UtilsTestSuite struct {
 func TestUtils(t *testing.T) {
 	suite.Run(t, new(UtilsTestSuite))
 }
+func (s *UtilsTestSuite) TestCommaSeparatedToSlice() {
+	tests := []struct {
+		input    string
+		expected []string
+	}{
+		{"", []string{}},
+		{"one", []string{"one"}},
+		{"one,two", []string{"one", "two"}},
+		{"one, two", []string{"one", "two"}},
+		{" one , two , three ", []string{"one", "two", "three"}},
+		{",one,,two,", []string{"", "one", "", "two", ""}},
+		{"  ,  ,  ", []string{"", "", ""}},
+	}
+
+	for _, tt := range tests {
+		result := config.CommaSeparatedToSlice(tt.input)
+		s.Equal(tt.expected, result, "input: %q", tt.input)
+	}
+}
+
+func (s *UtilsTestSuite) TestSliceToCommaSeparated() {
+	tests := []struct {
+		input    []string
+		expected string
+	}{
+		{nil, ""},
+		{[]string{}, ""},
+		{[]string{"one"}, "one"},
+		{[]string{"one", "two"}, "one, two"},
+		{[]string{"one", "two", "three"}, "one, two, three"},
+		{[]string{"", "one", "", "two", ""}, ", one, , two, "},
+		{[]string{"  ", " "}, "  ,  "},
+	}
+
+	for _, tt := range tests {
+		result := config.SliceToCommaSeparated(tt.input)
+		s.Equal(tt.expected, result, "input: %#v", tt.input)
+	}
+}
 
 func (s *UtilsTestSuite) TestSerializeAndDeserialize() {
 	data := []byte(`---

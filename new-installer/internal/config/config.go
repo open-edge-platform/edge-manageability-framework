@@ -18,8 +18,8 @@ const (
 
 // Current version
 // Should bump this every time we make backward-compatible config schema changes
-const UserConfigVersion = 2
-const RuntimeStateVersion = 1
+const UserConfigVersion = 4
+const RuntimeStateVersion = 2
 
 // Minimal version supported by the installer.
 // This should never be modified. Create `config/v2` when breaking changes are introduced.
@@ -39,6 +39,10 @@ type OrchInstallerRuntimeState struct {
 	// The directory where the logs will be saved
 	LogDir string `yaml:"logDir"`
 	DryRun bool   `yaml:"dryRun"`
+
+	// Targets (Stage or Steps) with any labels matched in this list will be executed (either install, upgrade or uninstall)
+	// The installer will execute all targets if this is empty.
+	TargetLabels []string `yaml:"targetLabels"`
 
 	// Used for state and o11y bucket prefix. lowercase or digit
 	DeploymentID     string `yaml:"deploymentID"`
@@ -66,20 +70,20 @@ type OrchInstallerConfig struct {
 		Scale        Scale  `yaml:"scale"`
 	} `yaml:"global"`
 	Advanced struct { // TODO: form for this part is not done yet
-		// Targets(Stage or Steps) with any labels matched in this list will be executed(either install, upgrade or uninstall)
-		// The installer will execute all targets if this is empty.
-		TargetLabels         []string `yaml:"targetLabels"`
-		AzureADRefreshToken  string   `yaml:"azureADRefreshToken,omitempty"`
-		AzureADTokenEndpoint string   `yaml:"azureADTokenEndpoint,omitempty"`
+		AzureADRefreshToken  string `yaml:"azureADRefreshToken,omitempty"`
+		AzureADTokenEndpoint string `yaml:"azureADTokenEndpoint,omitempty"`
 	} `yaml:"advanced"`
 	AWS struct {
-		Region            string   `yaml:"region"`
-		CustomerTag       string   `yaml:"customerTag,omitempty"`
-		CacheRegistry     string   `yaml:"cacheRegistry,omitempty"`
-		JumpHostWhitelist []string `yaml:"jumpHostWhitelist,omitempty"`
-		VPCID             string   `yaml:"vpcID,omitempty"`
-		ReduceNSTTL       bool     `yaml:"reduceNSTTL,omitempty"` // TODO: do we need this?
-		EKSDNSIP          string   `yaml:"eksDNSIP,omitempty"`    // TODO: do we need this?
+		Region              string   `yaml:"region"`
+		CustomerTag         string   `yaml:"customerTag,omitempty"`
+		CacheRegistry       string   `yaml:"cacheRegistry,omitempty"`
+		JumpHostWhitelist   []string `yaml:"jumpHostWhitelist,omitempty"`
+		JumpHostIP          string   `yaml:"jumpHostIP,omitempty"`
+		JumpHostPrivKeyPath string   `yaml:"jumpHostPrivKeyPath,omitempty"`
+		VPCID               string   `yaml:"vpcID,omitempty"`
+		ReduceNSTTL         bool     `yaml:"reduceNSTTL,omitempty"` // TODO: do we need this?
+		EKSDNSIP            string   `yaml:"eksDNSIP,omitempty"`    // TODO: do we need this?
+		EKSIAMRoles         []string `yaml:"eksIAMRoles,omitempty"`
 	} `yaml:"aws,omitempty"`
 	Onprem struct {
 		ArgoIP         string `yaml:"argoIP"`

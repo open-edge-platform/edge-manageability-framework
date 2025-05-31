@@ -135,7 +135,7 @@ func (s *OrchInstallerStageTest) TestRunFilteredSteps() {
 	runtimeState := config.OrchInstallerRuntimeState{
 		Action: "install",
 	}
-	orchConfig.Advanced.TargetLabels = []string{"label1"}
+	runtimeState.TargetLabels = []string{"label1"}
 	steps := []steps.OrchInstallerStep{
 		createMockStep("step1", true, []string{"label1", "label2"}),
 		createMockStep("step2", false, []string{"label2", "label3"}),

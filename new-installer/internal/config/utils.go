@@ -5,6 +5,8 @@
 package config
 
 import (
+	"strings"
+
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/rawbytes"
 	"github.com/knadh/koanf/providers/structs"
@@ -32,4 +34,22 @@ func DeserializeFromYAML(config any, data []byte) error {
 	return v.UnmarshalWithConf("", config, koanf.UnmarshalConf{
 		Tag: "yaml",
 	})
+}
+
+func CommaSeparatedToSlice(input string) []string {
+	if input == "" {
+		return []string{}
+	}
+	parts := strings.Split(input, ",")
+	for i := range parts {
+		parts[i] = strings.TrimSpace(parts[i])
+	}
+	return parts
+}
+
+func SliceToCommaSeparated(input []string) string {
+	if len(input) == 0 {
+		return ""
+	}
+	return strings.Join(input, ", ")
 }

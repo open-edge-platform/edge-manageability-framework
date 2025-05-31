@@ -6,6 +6,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"slices"
 	"strconv"
@@ -189,7 +190,18 @@ func validateSmtpFrom(s string) error {
 	return nil
 }
 
-func validateIp(s string) error {
+func validateIP(s string) error {
+	return validateIPInternal(s, false)
+}
+
+func validateOptionalIP(s string) error {
+	return validateIPInternal(s, true)
+}
+
+func validateIPInternal(s string, allowEmpty bool) error {
+	if s == "" && allowEmpty {
+		return nil
+	}
 	if matched := regexp.MustCompile(`^([0-9]{1,3}\.){3}[0-9]{1,3}$`).MatchString(s); !matched {
 		return fmt.Errorf("IP address must follow the format '^([0-9]{1,3}\\.){3}[0-9]{1,3}$', e.g., 192.168.1.1'")
 	}
@@ -218,5 +230,34 @@ func validateSimpleMode(s []string) error {
 
 func validateAdvancedMode(s []string) error {
 	// TODO: placeholder for advanced mode validation
+	return nil
+}
+
+func validateJumpHostPrivKeyPath(s string) error {
+	if s == "" {
+		return nil
+	}
+	s = os.ExpandEnv(s)
+	if _, err := os.Stat(s); err != nil {
+		return fmt.Errorf("jump host private key file does not exist: %v", err)
+	}
+	// TODO: check if the file content is a valid private key
+	return nil
+}
+
+func validateAwsEKSIAMRoles(s string) error {
+	if s == "" {
+		return nil
+	}
+	roles := strings.Split(s, ",")
+	for _, role := range roles {
+		role = strings.TrimSpace(role)
+		if role == "" {
+			continue
+		}
+		if matched := regexp.MustCompile(`^arn:aws:iam::\d{12}:role/[\w+=,.@-]+$`).MatchString(role); !matched {
+			return fmt.Errorf("invalid IAM role ARN: %s", role)
+		}
+	}
 	return nil
 }

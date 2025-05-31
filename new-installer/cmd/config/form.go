@@ -103,9 +103,21 @@ func configureAwsExpert() *huh.Group {
 		huh.NewInput().
 			Title("Jump Host Whitelist").
 			Description("(Optional) Comma-separated CIDR. Traffic from these CIDRs will be allowed to access the jump host").
-			Placeholder("10.0.0.0/8").
+			Placeholder("10.0.0.0/8, 192.168.0.0/16").
 			Validate(validateAwsJumpHostWhitelist).
 			Value(&tmpJumpHostWhitelist),
+		huh.NewInput().
+			Title("Jump Host IP").
+			Description("(Optional) Jump host IP if it is created outside of installer in advance").
+			Placeholder("10.20.30.1").
+			Validate(validateOptionalIP).
+			Value(&input.AWS.JumpHostIP),
+		huh.NewInput().
+			Title("Jump Host SSH Private Key Path").
+			Description("(Optional) Path to jump host SSH private key if it is created outside of installer in advance").
+			Placeholder("id_rsa").
+			Validate(validateJumpHostPrivKeyPath).
+			Value(&input.AWS.JumpHostPrivKeyPath),
 		huh.NewInput().
 			Title("VPC ID").
 			Description("(Optional) Enter VPC ID if you prefer to reuse existing VPC instead of letting us create one").
@@ -124,6 +136,12 @@ func configureAwsExpert() *huh.Group {
 			Placeholder("").
 			Validate(validateAwsEksDnsIp).
 			Value(&input.AWS.EKSDNSIP),
+		huh.NewInput().
+			Title("EKS IAM Roles").
+			Description("(Optional) Comma-separated EKS IAM Roles if you want to allow other roles to access this cluster").
+			Placeholder("").
+			Validate(validateAwsEKSIAMRoles).
+			Value(&tmpEKSIAMRoles),
 	).WithHideFunc(func() bool {
 		return input.Provider != "aws" || (!flags.ExpertMode && !flags.ConfigureAwsExpert)
 	}).Title("Step 3b: (Optional) AWS Expert Configurations\n")
@@ -135,19 +153,19 @@ func configureOnPremBasic() *huh.Group {
 			Title("Argo CD IP Address").
 			Description("This is the IP address of Argo CD.").
 			Placeholder("192.168.1.1").
-			Validate(validateIp).
+			Validate(validateIP).
 			Value(&input.Onprem.ArgoIP),
 		huh.NewInput().
 			Title("Traefik IP Address").
 			Description("This is the IP address of Traefik.").
 			Placeholder("192.168.1.2").
-			Validate(validateIp).
+			Validate(validateIP).
 			Value(&input.Onprem.TraefikIP),
 		huh.NewInput().
 			Title("NGINX IP Address").
 			Description("This is the IP address of NGINX.").
 			Placeholder("192.168.1.3").
-			Validate(validateIp).
+			Validate(validateIP).
 			Value(&input.Onprem.NginxIP),
 	).WithHideFunc(func() bool {
 		return input.Provider != "onprem"
