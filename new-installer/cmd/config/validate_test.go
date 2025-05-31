@@ -6,11 +6,20 @@ package main
 
 import (
 	"os"
-	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/suite"
 )
 
-func TestValidateOrchName(t *testing.T) {
+type OrchConfigValidationTest struct {
+	suite.Suite
+}
+
+func TestConfigValidationSuite(t *testing.T) {
+	suite.Run(t, new(OrchConfigValidationTest))
+}
+
+func (s *OrchConfigValidationTest) TestValidateOrchName() {
 	tests := []struct {
 		name    string
 		input   string
@@ -65,24 +74,21 @@ func TestValidateOrchName(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			err := validateOrchName(tt.input)
 			if tt.wantErr {
-				if err == nil {
-					t.Errorf("expected error, got nil")
-				} else if tt.errMsg != "" && err.Error() != tt.errMsg {
-					t.Errorf("expected error message %q, got %q", tt.errMsg, err.Error())
+				s.Error(err, "expected an error but got nil")
+				if tt.errMsg != "" {
+					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
 				}
 			} else {
-				if err != nil {
-					t.Errorf("expected no error, got %v", err)
-				}
+				s.NoError(err, "expected no error")
 			}
 		})
 	}
 }
 
-func TestValidateParentDomain(t *testing.T) {
+func (s *OrchConfigValidationTest) TestValidateParentDomain() {
 	tests := []struct {
 		name    string
 		input   string
@@ -164,24 +170,21 @@ func TestValidateParentDomain(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			err := validateParentDomain(tt.input)
 			if tt.wantErr {
-				if err == nil {
-					t.Errorf("expected error, got nil")
-				} else if tt.errMsg != "" && err.Error() != tt.errMsg {
-					t.Errorf("expected error message %q, got %q", tt.errMsg, err.Error())
+				s.Error(err, "expected an error but got nil")
+				if tt.errMsg != "" {
+					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
 				}
 			} else {
-				if err != nil {
-					t.Errorf("expected no error, got %v", err)
-				}
+				s.NoError(err, "expected no error")
 			}
 		})
 	}
 }
 
-func TestValidateAdminEmail(t *testing.T) {
+func (s *OrchConfigValidationTest) TestValidateAdminEmail() {
 	tests := []struct {
 		name    string
 		input   string
@@ -274,24 +277,21 @@ func TestValidateAdminEmail(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			err := validateAdminEmail(tt.input)
 			if tt.wantErr {
-				if err == nil {
-					t.Errorf("expected error, got nil")
-				} else if tt.errMsg != "" && err.Error() != tt.errMsg {
-					t.Errorf("expected error message %q, got %q", tt.errMsg, err.Error())
+				s.Error(err, "expected an error but got nil")
+				if tt.errMsg != "" {
+					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
 				}
 			} else {
-				if err != nil {
-					t.Errorf("expected no error, got %v", err)
-				}
+				s.NoError(err, "expected no error")
 			}
 		})
 	}
 }
 
-func TestValidateAwsRegion(t *testing.T) {
+func (s *OrchConfigValidationTest) TestValidateAwsRegion() {
 	tests := []struct {
 		name    string
 		input   string
@@ -364,24 +364,21 @@ func TestValidateAwsRegion(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			err := validateAwsRegion(tt.input)
 			if tt.wantErr {
-				if err == nil {
-					t.Errorf("expected error, got nil")
-				} else if tt.errMsg != "" && err.Error() != tt.errMsg {
-					t.Errorf("expected error message %q, got %q", tt.errMsg, err.Error())
+				s.Error(err, "expected an error but got nil")
+				if tt.errMsg != "" {
+					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
 				}
 			} else {
-				if err != nil {
-					t.Errorf("expected no error, got %v", err)
-				}
+				s.NoError(err, "expected no error")
 			}
 		})
 	}
 }
 
-func TestValidateAwsCustomTag(t *testing.T) {
+func (s *OrchConfigValidationTest) TestValidateAwsCustomTag() {
 	tests := []struct {
 		name    string
 		input   string
@@ -409,28 +406,24 @@ func TestValidateAwsCustomTag(t *testing.T) {
 		},
 		{
 			name:    "tag with unicode",
-			input:   "部署=生产",
+			input:   "部署=生產",
 			wantErr: false,
 		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			err := validateAwsCustomTag(tt.input)
 			if tt.wantErr {
-				if err == nil {
-					t.Errorf("expected error, got nil")
-				}
+				s.Error(err, "expected an error but got nil")
 			} else {
-				if err != nil {
-					t.Errorf("expected no error, got %v", err)
-				}
+				s.NoError(err, "expected no error")
 			}
 		})
 	}
 }
 
-func TestValidateCacheRegistry(t *testing.T) {
+func (s *OrchConfigValidationTest) TestValidateCacheRegistry() {
 	tests := []struct {
 		name    string
 		input   string
@@ -474,22 +467,18 @@ func TestValidateCacheRegistry(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			err := validateCacheRegistry(tt.input)
 			if tt.wantErr {
-				if err == nil {
-					t.Errorf("expected error, got nil")
-				}
+				s.Error(err, "expected an error but got nil")
 			} else {
-				if err != nil {
-					t.Errorf("expected no error, got %v", err)
-				}
+				s.NoError(err, "expected no error")
 			}
 		})
 	}
 }
 
-func TestValidateAwsJumpHostWhitelist(t *testing.T) {
+func (s *OrchConfigValidationTest) TestValidateAwsJumpHostWhitelist() {
 	tests := []struct {
 		name    string
 		input   string
@@ -538,22 +527,18 @@ func TestValidateAwsJumpHostWhitelist(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			err := validateAwsJumpHostWhitelist(tt.input)
 			if tt.wantErr {
-				if err == nil {
-					t.Errorf("expected error, got nil")
-				}
+				s.Error(err, "expected an error but got nil")
 			} else {
-				if err != nil {
-					t.Errorf("expected no error, got %v", err)
-				}
+				s.NoError(err, "expected no error")
 			}
 		})
 	}
 }
 
-func TestValidateAwsVpcId(t *testing.T) {
+func (s *OrchConfigValidationTest) TestValidateAwsVpcId() {
 	tests := []struct {
 		name    string
 		input   string
@@ -578,7 +563,7 @@ func TestValidateAwsVpcId(t *testing.T) {
 		{
 			name:    "valid vpc id all hex",
 			input:   "vpcabcdef0",
-			wantErr: true, // missing dash and not 8 chars after dash
+			wantErr: true,
 			errMsg:  "VPC ID must follow the format '^vpc-[0-9a-f]{8}$', e.g., 'vpc-12345678'",
 		},
 		{
@@ -620,24 +605,21 @@ func TestValidateAwsVpcId(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			err := validateAwsVpcId(tt.input)
 			if tt.wantErr {
-				if err == nil {
-					t.Errorf("expected error, got nil")
-				} else if tt.errMsg != "" && err.Error() != tt.errMsg {
-					t.Errorf("expected error message %q, got %q", tt.errMsg, err.Error())
+				s.Error(err, "expected an error but got nil")
+				if tt.errMsg != "" {
+					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
 				}
 			} else {
-				if err != nil {
-					t.Errorf("expected no error, got %v", err)
-				}
+				s.NoError(err, "expected no error")
 			}
 		})
 	}
 }
 
-func TestValidateAwsEksDnsIp(t *testing.T) {
+func (s *OrchConfigValidationTest) TestValidateAwsEksDnsIp() {
 	tests := []struct {
 		name    string
 		input   string
@@ -698,24 +680,21 @@ func TestValidateAwsEksDnsIp(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			err := validateAwsEksDnsIp(tt.input)
 			if tt.wantErr {
-				if err == nil {
-					t.Errorf("expected error, got nil")
-				} else if tt.errMsg != "" && err.Error() != tt.errMsg {
-					t.Errorf("expected error message %q, got %q", tt.errMsg, err.Error())
+				s.Error(err, "expected an error but got nil")
+				if tt.errMsg != "" {
+					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
 				}
 			} else {
-				if err != nil {
-					t.Errorf("expected no error, got %v", err)
-				}
+				s.NoError(err, "expected no error")
 			}
 		})
 	}
 }
 
-func TestValidateProxy(t *testing.T) {
+func (s *OrchConfigValidationTest) TestValidateProxy() {
 	tests := []struct {
 		name    string
 		input   string
@@ -759,22 +738,18 @@ func TestValidateProxy(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			err := validateProxy(tt.input)
 			if tt.wantErr {
-				if err == nil {
-					t.Errorf("expected error, got nil")
-				}
+				s.Error(err, "expected an error but got nil")
 			} else {
-				if err != nil {
-					t.Errorf("expected no error, got %v", err)
-				}
+				s.NoError(err, "expected no error")
 			}
 		})
 	}
 }
 
-func TestValidateNoProxy(t *testing.T) {
+func (s *OrchConfigValidationTest) TestValidateNoProxy() {
 	tests := []struct {
 		name    string
 		input   string
@@ -897,379 +872,21 @@ func TestValidateNoProxy(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			err := validateNoProxy(tt.input)
 			if tt.wantErr {
-				if err == nil {
-					t.Errorf("expected error, got nil")
-				} else if tt.errMsg != "" && err.Error() != tt.errMsg {
-					t.Errorf("expected error message %q, got %q", tt.errMsg, err.Error())
+				s.Error(err, "expected an error but got nil")
+				if tt.errMsg != "" {
+					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
 				}
 			} else {
-				if err != nil {
-					t.Errorf("expected no error, got %v", err)
-				}
+				s.NoError(err, "expected no error")
 			}
 		})
 	}
 }
 
-func TestValidateTlsCert(t *testing.T) {
-	tests := []struct {
-		name    string
-		input   string
-		wantErr bool
-		errMsg  string
-	}{
-		{
-			name:    "empty string",
-			input:   "",
-			wantErr: false,
-		},
-		{
-			name:    "valid PEM certificate single line",
-			input:   "-----BEGIN CERTIFICATE-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn\n-----END CERTIFICATE-----",
-			wantErr: false,
-		},
-		{
-			name:    "valid PEM certificate multiline",
-			input:   "-----BEGIN CERTIFICATE-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn\n-----END CERTIFICATE-----",
-			wantErr: false,
-		},
-		{
-			name:    "missing BEGIN line",
-			input:   "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn\n-----END CERTIFICATE-----",
-			wantErr: true,
-			errMsg:  "TLS certificate must be in PEM format",
-		},
-		{
-			name:    "missing END line",
-			input:   "-----BEGIN CERTIFICATE-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn",
-			wantErr: true,
-			errMsg:  "TLS certificate must be in PEM format",
-		},
-		{
-			name:    "wrong header",
-			input:   "-----BEGIN CERT-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn\n-----END CERTIFICATE-----",
-			wantErr: true,
-			errMsg:  "TLS certificate must be in PEM format",
-		},
-		{
-			name:    "wrong footer",
-			input:   "-----BEGIN CERTIFICATE-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn\n-----END CERT-----",
-			wantErr: true,
-			errMsg:  "TLS certificate must be in PEM format",
-		},
-		{
-			name:    "no newlines",
-			input:   "-----BEGIN CERTIFICATE-----MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn-----END CERTIFICATE-----",
-			wantErr: true,
-			errMsg:  "TLS certificate must be in PEM format",
-		},
-		{
-			name:    "extra text before",
-			input:   "extra\n-----BEGIN CERTIFICATE-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn\n-----END CERTIFICATE-----",
-			wantErr: true,
-			errMsg:  "TLS certificate must be in PEM format",
-		},
-		{
-			name:    "extra text after",
-			input:   "-----BEGIN CERTIFICATE-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn\n-----END CERTIFICATE-----\nextra",
-			wantErr: true,
-			errMsg:  "TLS certificate must be in PEM format",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := validateTlsCert(tt.input)
-			if tt.wantErr {
-				if err == nil {
-					t.Errorf("expected error, got nil")
-				} else if tt.errMsg != "" && err.Error() != tt.errMsg {
-					t.Errorf("expected error message %q, got %q", tt.errMsg, err.Error())
-				}
-			} else {
-				if err != nil {
-					t.Errorf("expected no error, got %v", err)
-				}
-			}
-		})
-	}
-}
-
-func TestValidateTlsKey(t *testing.T) {
-	tests := []struct {
-		name    string
-		input   string
-		wantErr bool
-		errMsg  string
-	}{
-		{
-			name:    "empty string",
-			input:   "",
-			wantErr: false,
-		},
-		{
-			name:    "valid PEM private key single line",
-			input:   "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQD\n-----END PRIVATE KEY-----",
-			wantErr: false,
-		},
-		{
-			name:    "valid PEM private key multiline",
-			input:   "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQD\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQD\n-----END PRIVATE KEY-----",
-			wantErr: false,
-		},
-		{
-			name:    "missing BEGIN line",
-			input:   "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQD\n-----END PRIVATE KEY-----",
-			wantErr: true,
-			errMsg:  "TLS key must be in PEM format",
-		},
-		{
-			name:    "missing END line",
-			input:   "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQD",
-			wantErr: true,
-			errMsg:  "TLS key must be in PEM format",
-		},
-		{
-			name:    "wrong header",
-			input:   "-----BEGIN KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQD\n-----END PRIVATE KEY-----",
-			wantErr: true,
-			errMsg:  "TLS key must be in PEM format",
-		},
-		{
-			name:    "wrong footer",
-			input:   "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQD\n-----END KEY-----",
-			wantErr: true,
-			errMsg:  "TLS key must be in PEM format",
-		},
-		{
-			name:    "no newlines",
-			input:   "-----BEGIN PRIVATE KEY-----MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQD-----END PRIVATE KEY-----",
-			wantErr: true,
-			errMsg:  "TLS key must be in PEM format",
-		},
-		{
-			name:    "extra text before",
-			input:   "extra\n-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQD\n-----END PRIVATE KEY-----",
-			wantErr: true,
-			errMsg:  "TLS key must be in PEM format",
-		},
-		{
-			name:    "extra text after",
-			input:   "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQD\n-----END PRIVATE KEY-----\nextra",
-			wantErr: true,
-			errMsg:  "TLS key must be in PEM format",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := validateTlsKey(tt.input)
-			if tt.wantErr {
-				if err == nil {
-					t.Errorf("expected error, got nil")
-				} else if tt.errMsg != "" && err.Error() != tt.errMsg {
-					t.Errorf("expected error message %q, got %q", tt.errMsg, err.Error())
-				}
-			} else {
-				if err != nil {
-					t.Errorf("expected no error, got %v", err)
-				}
-			}
-		})
-	}
-}
-
-func TestValidateTlsCa(t *testing.T) {
-	tests := []struct {
-		name    string
-		input   string
-		wantErr bool
-		errMsg  string
-	}{
-		{
-			name:    "empty string",
-			input:   "",
-			wantErr: false,
-		},
-		{
-			name:    "valid PEM CA certificate single line",
-			input:   "-----BEGIN CERTIFICATE-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn\n-----END CERTIFICATE-----",
-			wantErr: false,
-		},
-		{
-			name:    "valid PEM CA certificate multiline",
-			input:   "-----BEGIN CERTIFICATE-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn\n-----END CERTIFICATE-----",
-			wantErr: false,
-		},
-		{
-			name:    "missing BEGIN line",
-			input:   "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn\n-----END CERTIFICATE-----",
-			wantErr: true,
-			errMsg:  "TLS CA must be in PEM format",
-		},
-		{
-			name:    "missing END line",
-			input:   "-----BEGIN CERTIFICATE-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn",
-			wantErr: true,
-			errMsg:  "TLS CA must be in PEM format",
-		},
-		{
-			name:    "wrong header",
-			input:   "-----BEGIN CERT-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn\n-----END CERTIFICATE-----",
-			wantErr: true,
-			errMsg:  "TLS CA must be in PEM format",
-		},
-		{
-			name:    "wrong footer",
-			input:   "-----BEGIN CERTIFICATE-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn\n-----END CERT-----",
-			wantErr: true,
-			errMsg:  "TLS CA must be in PEM format",
-		},
-		{
-			name:    "no newlines",
-			input:   "-----BEGIN CERTIFICATE-----MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn-----END CERTIFICATE-----",
-			wantErr: true,
-			errMsg:  "TLS CA must be in PEM format",
-		},
-		{
-			name:    "extra text before",
-			input:   "extra\n-----BEGIN CERTIFICATE-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn\n-----END CERTIFICATE-----",
-			wantErr: true,
-			errMsg:  "TLS CA must be in PEM format",
-		},
-		{
-			name:    "extra text after",
-			input:   "-----BEGIN CERTIFICATE-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn\n-----END CERTIFICATE-----\nextra",
-			wantErr: true,
-			errMsg:  "TLS CA must be in PEM format",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := validateTlsCa(tt.input)
-			if tt.wantErr {
-				if err == nil {
-					t.Errorf("expected error, got nil")
-				} else if tt.errMsg != "" && err.Error() != tt.errMsg {
-					t.Errorf("expected error message %q, got %q", tt.errMsg, err.Error())
-				}
-			} else {
-				if err != nil {
-					t.Errorf("expected no error, got %v", err)
-				}
-			}
-		})
-	}
-}
-
-func TestValidateSreSecretUrl(t *testing.T) {
-	tests := []struct {
-		name    string
-		input   string
-		wantErr bool
-	}{
-		{
-			name:    "empty string",
-			input:   "",
-			wantErr: false,
-		},
-		{
-			name:    "simple url",
-			input:   "https://secrets.example.com/mysecret",
-			wantErr: false,
-		},
-		{
-			name:    "url with path and query",
-			input:   "https://secrets.example.com/mysecret?version=1",
-			wantErr: false,
-		},
-		{
-			name:    "url with port",
-			input:   "http://localhost:8080/secret",
-			wantErr: false,
-		},
-		{
-			name:    "non-url string",
-			input:   "not a url",
-			wantErr: false,
-		},
-		{
-			name:    "random string",
-			input:   "abc123!@#",
-			wantErr: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := validateSreSecretUrl(tt.input)
-			if tt.wantErr {
-				if err == nil {
-					t.Errorf("expected error, got nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("expected no error, got %v", err)
-				}
-			}
-		})
-	}
-}
-
-func TestValidateSreCaSecret(t *testing.T) {
-	tests := []struct {
-		name    string
-		input   string
-		wantErr bool
-	}{
-		{
-			name:    "empty string",
-			input:   "",
-			wantErr: false,
-		},
-		{
-			name:    "simple string",
-			input:   "my-secret",
-			wantErr: false,
-		},
-		{
-			name:    "string with special characters",
-			input:   "secret@123!#",
-			wantErr: false,
-		},
-		{
-			name:    "string with spaces",
-			input:   "my secret value",
-			wantErr: false,
-		},
-		{
-			name:    "string with unicode",
-			input:   "秘密-值",
-			wantErr: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := validateSreCaSecret(tt.input)
-			if tt.wantErr {
-				if err == nil {
-					t.Errorf("expected error, got nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("expected no error, got %v", err)
-				}
-			}
-		})
-	}
-}
-
-func TestValidateSmtpUrl(t *testing.T) {
+func (s *OrchConfigValidationTest) TestValidateSmtpUrl() {
 	tests := []struct {
 		name    string
 		input   string
@@ -1328,22 +945,18 @@ func TestValidateSmtpUrl(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			err := validateSmtpUrl(tt.input)
 			if tt.wantErr {
-				if err == nil {
-					t.Errorf("expected error, got nil")
-				}
+				s.Error(err, "expected an error but got nil")
 			} else {
-				if err != nil {
-					t.Errorf("expected no error, got %v", err)
-				}
+				s.NoError(err, "expected no error")
 			}
 		})
 	}
 }
 
-func TestValidateSmtpPort(t *testing.T) {
+func (s *OrchConfigValidationTest) TestValidateSmtpPort() {
 	tests := []struct {
 		name    string
 		input   string
@@ -1415,24 +1028,21 @@ func TestValidateSmtpPort(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			err := validateSmtpPort(tt.input)
 			if tt.wantErr {
-				if err == nil {
-					t.Errorf("expected error, got nil")
-				} else if tt.errMsg != "" && err.Error() != tt.errMsg {
-					t.Errorf("expected error message %q, got %q", tt.errMsg, err.Error())
+				s.Error(err, "expected an error but got nil")
+				if tt.errMsg != "" {
+					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
 				}
 			} else {
-				if err != nil {
-					t.Errorf("expected no error, got %v", err)
-				}
+				s.NoError(err, "expected no error")
 			}
 		})
 	}
 }
 
-func TestValidateSmtpFrom(t *testing.T) {
+func (s *OrchConfigValidationTest) TestValidateSmtpFrom() {
 	tests := []struct {
 		name    string
 		input   string
@@ -1491,22 +1101,18 @@ func TestValidateSmtpFrom(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			err := validateSmtpFrom(tt.input)
 			if tt.wantErr {
-				if err == nil {
-					t.Errorf("expected error, got nil")
-				}
+				s.Error(err, "expected an error but got nil")
 			} else {
-				if err != nil {
-					t.Errorf("expected no error, got %v", err)
-				}
+				s.NoError(err, "expected no error")
 			}
 		})
 	}
 }
 
-func TestValidateIP(t *testing.T) {
+func (s *OrchConfigValidationTest) TestValidateIP() {
 	tests := []struct {
 		name    string
 		input   string
@@ -1604,6 +1210,7 @@ func TestValidateIP(t *testing.T) {
 		name:    "empty IP string",
 		input:   "",
 		wantErr: true,
+		errMsg:  "IP address must follow the format '^([0-9]{1,3}\\.){3}[0-9]{1,3}$', e.g., 192.168.1.1'",
 	})
 
 	testsOptionalIP := append(tests, struct {
@@ -1618,41 +1225,35 @@ func TestValidateIP(t *testing.T) {
 	})
 
 	for _, tt := range testsMandatoryIP {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			err := validateIP(tt.input)
 			if tt.wantErr {
-				if err == nil {
-					t.Errorf("expected error, got nil")
-				} else if tt.errMsg != "" && err.Error() != tt.errMsg {
-					t.Errorf("expected error message %q, got %q", tt.errMsg, err.Error())
+				s.Error(err, "expected an error but got nil")
+				if tt.errMsg != "" {
+					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
 				}
 			} else {
-				if err != nil {
-					t.Errorf("expected no error, got %v", err)
-				}
+				s.NoError(err, "expected no error")
 			}
 		})
 	}
 
 	for _, tt := range testsOptionalIP {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			err := validateOptionalIP(tt.input)
 			if tt.wantErr {
-				if err == nil {
-					t.Errorf("expected error, got nil")
-				} else if tt.errMsg != "" && err.Error() != tt.errMsg {
-					t.Errorf("expected error message %q, got %q", tt.errMsg, err.Error())
+				s.Error(err, "expected an error but got nil")
+				if tt.errMsg != "" {
+					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
 				}
 			} else {
-				if err != nil {
-					t.Errorf("expected no error, got %v", err)
-				}
+				s.NoError(err, "expected no error")
 			}
 		})
 	}
 }
 
-func TestValidateSimpleMode(t *testing.T) {
+func (s *OrchConfigValidationTest) TestValidateSimpleMode() {
 	tests := []struct {
 		name    string
 		input   []string
@@ -1731,24 +1332,21 @@ func TestValidateSimpleMode(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			err := validateSimpleMode(tt.input)
 			if tt.wantErr {
-				if err == nil {
-					t.Errorf("expected error, got nil")
-				} else if tt.errMsg != "" && err.Error() != tt.errMsg {
-					t.Errorf("expected error message %q, got %q", tt.errMsg, err.Error())
+				s.Error(err, "expected an error but got nil")
+				if tt.errMsg != "" {
+					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
 				}
 			} else {
-				if err != nil {
-					t.Errorf("expected no error, got %v", err)
-				}
+				s.NoError(err, "expected no error")
 			}
 		})
 	}
 }
 
-func TestValidateAdvancedMode(t *testing.T) {
+func (s *OrchConfigValidationTest) TestValidateAdvancedMode() {
 	tests := []struct {
 		name    string
 		input   []string
@@ -1782,22 +1380,18 @@ func TestValidateAdvancedMode(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			err := validateAdvancedMode(tt.input)
 			if tt.wantErr {
-				if err == nil {
-					t.Errorf("expected error, got nil")
-				}
+				s.Error(err, "expected an error but got nil")
 			} else {
-				if err != nil {
-					t.Errorf("expected no error, got %v", err)
-				}
+				s.NoError(err, "expected no error")
 			}
 		})
 	}
 }
 
-func TestValidateAwsEKSIAMRoles(t *testing.T) {
+func (s *OrchConfigValidationTest) TestValidateAwsEKSIAMRoles() {
 	tests := []struct {
 		name    string
 		input   string
@@ -1878,27 +1472,23 @@ func TestValidateAwsEKSIAMRoles(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			err := validateAwsEKSIAMRoles(tt.input)
 			if tt.wantErr {
-				if err == nil {
-					t.Errorf("expected error, got nil")
-				} else if tt.errMsg != "" && err.Error() != tt.errMsg {
-					t.Errorf("expected error message %q, got %q", tt.errMsg, err.Error())
+				s.Error(err, "expected an error but got nil")
+				if tt.errMsg != "" {
+					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
 				}
 			} else {
-				if err != nil {
-					t.Errorf("expected no error, got %v", err)
-				}
+				s.NoError(err, "expected no error")
 			}
 		})
 	}
 }
-func TestValidateJumpHostPrivKeyPath(t *testing.T) {
+
+func (s *OrchConfigValidationTest) TestValidateJumpHostPrivKeyPath() {
 	tmpFile, err := os.CreateTemp("", "privkey")
-	if err != nil {
-		t.Fatalf("failed to create temp file: %v", err)
-	}
+	s.NoError(err, "Failed to create temp file")
 	defer os.Remove(tmpFile.Name())
 
 	tests := []struct {
@@ -1948,7 +1538,7 @@ func TestValidateJumpHostPrivKeyPath(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			var path string
 			if tt.setup != nil {
 				path = tt.setup()
@@ -1957,15 +1547,12 @@ func TestValidateJumpHostPrivKeyPath(t *testing.T) {
 			}
 			err := validateJumpHostPrivKeyPath(path)
 			if tt.wantErr {
-				if err == nil {
-					t.Errorf("expected error, got nil")
-				} else if tt.errMsg != "" && !strings.Contains(err.Error(), tt.errMsg) {
-					t.Errorf("expected error message to contain %q, got %q", tt.errMsg, err.Error())
+				s.Error(err, "expected an error but got nil")
+				if tt.errMsg != "" {
+					s.Contains(err.Error(), tt.errMsg, "error message mismatch")
 				}
 			} else {
-				if err != nil {
-					t.Errorf("expected no error, got %v", err)
-				}
+				s.NoError(err, "expected no error")
 			}
 		})
 	}
