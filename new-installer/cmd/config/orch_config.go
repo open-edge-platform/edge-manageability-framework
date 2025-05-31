@@ -158,7 +158,7 @@ func saveConfig() {
 	}
 
 	if flags.Debug {
-		fmt.Printf("%+v\n", input)
+		fmt.Printf("%+v\n\n", input)
 		encoder = yaml.NewEncoder(os.Stdout)
 		encoder.SetIndent(2)
 		defer encoder.Close()
@@ -216,9 +216,13 @@ func main() {
 			if flags.NonInteractiveMode {
 				input.Global.OrchName = tmpOrchName
 				input.Global.Scale = config.Scale(tmpScale)
+				if err := validateAll(); err != nil {
+					fmt.Println("Validation failed:", err)
+					fmt.Println("Please run the command without --auto to fix the issues.")
+					os.Exit(1)
+				}
 			} else {
-				err := orchInstallerForm().Run()
-				if err != nil {
+				if err := orchInstallerForm().Run(); err != nil {
 					fmt.Println("Failed to generate config:", err)
 					os.Exit(1)
 				}
@@ -241,14 +245,6 @@ func main() {
 		// Either all three flags should be specified or none should be
 		if (autoFlag && (!nameFlag || !scaleFlag)) || (!autoFlag && (nameFlag || scaleFlag)) {
 			fmt.Println("--auto, --name, and --scale must all be specified together or none at all")
-			os.Exit(1)
-		}
-		if err := validateOrchName(tmpOrchName); err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-		if err := validateScale(tmpScale); err != nil {
-			fmt.Println(err)
 			os.Exit(1)
 		}
 		return nil

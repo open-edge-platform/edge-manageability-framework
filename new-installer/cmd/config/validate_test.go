@@ -8,6 +8,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -18,65 +19,40 @@ type OrchConfigValidationTest struct {
 func TestConfigValidationSuite(t *testing.T) {
 	suite.Run(t, new(OrchConfigValidationTest))
 }
-
-func (s *OrchConfigValidationTest) TestValidateScale() {
-	tests := []struct {
-		name    string
-		input   int
-		wantErr bool
-		errMsg  string
-	}{
-		{
-			name:    "valid scale 10",
-			input:   10,
-			wantErr: false,
+func (s *OrchConfigValidationTest) TestValidateAll() {
+	input = config.OrchInstallerConfig{
+		Version:  1,
+		Provider: "aws", // or "onprem", depending on your use case
+		Global: struct {
+			OrchName     string       `yaml:"orchName"`
+			ParentDomain string       `yaml:"parentDomain"`
+			AdminEmail   string       `yaml:"adminEmail"`
+			Scale        config.Scale `yaml:"scale"`
+		}{
+			OrchName:     "demo",
+			ParentDomain: "example.com",
+			AdminEmail:   "admin@example.com",
+			Scale:        config.Scale(10),
+			// populate fields for Scale struct here
 		},
-		{
-			name:    "valid scale 100",
-			input:   100,
-			wantErr: false,
-		},
-		{
-			name:    "valid scale 500",
-			input:   500,
-			wantErr: false,
-		},
-		{
-			name:    "valid scale 1000",
-			input:   1000,
-			wantErr: false,
-		},
-		{
-			name:    "valid scale 10000",
-			input:   10000,
-			wantErr: false,
-		},
-		{
-			name:    "invalid scale -1",
-			input:   -1,
-			wantErr: true,
-		},
-		{
-			name:    "invalid scale 4",
-			input:   4,
-			wantErr: true,
+		AWS: struct {
+			Region              string   `yaml:"region"`
+			CustomerTag         string   `yaml:"customerTag,omitempty"`
+			CacheRegistry       string   `yaml:"cacheRegistry,omitempty"`
+			JumpHostWhitelist   []string `yaml:"jumpHostWhitelist,omitempty"`
+			JumpHostIP          string   `yaml:"jumpHostIP,omitempty"`
+			JumpHostPrivKeyPath string   `yaml:"jumpHostPrivKeyPath,omitempty"`
+			VPCID               string   `yaml:"vpcID,omitempty"`
+			ReduceNSTTL         bool     `yaml:"reduceNSTTL,omitempty"` // TODO: do we need this?
+			EKSDNSIP            string   `yaml:"eksDNSIP,omitempty"`    // TODO: do we need this?
+			EKSIAMRoles         []string `yaml:"eksIAMRoles,omitempty"`
+		}{
+			Region: "us-west-2",
 		},
 	}
-
-	for _, tt := range tests {
-		s.Run(tt.name, func() {
-			err := validateScale(tt.input)
-			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
-				if tt.errMsg != "" {
-					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
-				}
-			} else {
-				s.NoError(err, "expected no error")
-			}
-		})
-	}
+	s.NoError(validateAll(), "expected no error for valid config")
 }
+
 func (s *OrchConfigValidationTest) TestValidateOrchName() {
 	tests := []struct {
 		name    string

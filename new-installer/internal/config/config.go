@@ -108,12 +108,12 @@ type OrchInstallerConfig struct {
 	Proxy struct {
 		HTTPProxy    string `yaml:"httpProxy,omitempty"`
 		HTTPSProxy   string `yaml:"httpsProxy,omitempty"`
-		SocksProxy   string `yaml:"socksProxy,omitempty"`
+		SOCKSProxy   string `yaml:"socksProxy,omitempty"`
 		NoProxy      string `yaml:"noProxy,omitempty"`
 		ENHTTPProxy  string `yaml:"enHttpProxy,omitempty"`
 		ENHTTPSProxy string `yaml:"enHttpsProxy,omitempty"`
 		ENFTPProxy   string `yaml:"enFtpProxy,omitempty"`
-		ENSocksProxy string `yaml:"enSocksProxy,omitempty"`
+		ENSOCKSProxy string `yaml:"enSocksProxy,omitempty"`
 		ENNoProxy    string `yaml:"enNoProxy,omitempty"`
 	} `yaml:"proxy,omitempty"`
 }
