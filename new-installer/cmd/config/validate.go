@@ -11,6 +11,8 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 )
 
 func validateOrchName(s string) error {
@@ -36,6 +38,13 @@ func validateParentDomain(s string) error {
 func validateAdminEmail(s string) error {
 	if matched := regexp.MustCompile(`^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$`).MatchString(s); !matched {
 		return fmt.Errorf("admin email must be a valid email address")
+	}
+	return nil
+}
+
+func validateScale(s int) error {
+	if !config.Scale(s).IsValid() {
+		return fmt.Errorf("scale must be one of: %v", config.ValidScales())
 	}
 	return nil
 }

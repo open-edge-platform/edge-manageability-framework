@@ -19,6 +19,64 @@ func TestConfigValidationSuite(t *testing.T) {
 	suite.Run(t, new(OrchConfigValidationTest))
 }
 
+func (s *OrchConfigValidationTest) TestValidateScale() {
+	tests := []struct {
+		name    string
+		input   int
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			name:    "valid scale 10",
+			input:   10,
+			wantErr: false,
+		},
+		{
+			name:    "valid scale 100",
+			input:   100,
+			wantErr: false,
+		},
+		{
+			name:    "valid scale 500",
+			input:   500,
+			wantErr: false,
+		},
+		{
+			name:    "valid scale 1000",
+			input:   1000,
+			wantErr: false,
+		},
+		{
+			name:    "valid scale 10000",
+			input:   10000,
+			wantErr: false,
+		},
+		{
+			name:    "invalid scale -1",
+			input:   -1,
+			wantErr: true,
+		},
+		{
+			name:    "invalid scale 4",
+			input:   4,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			err := validateScale(tt.input)
+			if tt.wantErr {
+				s.Error(err, "expected an error but got nil")
+				if tt.errMsg != "" {
+					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
+				}
+			} else {
+				s.NoError(err, "expected no error")
+			}
+		})
+	}
+}
 func (s *OrchConfigValidationTest) TestValidateOrchName() {
 	tests := []struct {
 		name    string

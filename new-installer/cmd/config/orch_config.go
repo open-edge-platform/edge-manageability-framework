@@ -203,15 +203,19 @@ func postProcessConfig() {
 }
 
 func main() {
+	var tmpOrchName string
+	var tmpScale int
+
 	var cobraCmd = &cobra.Command{
-		Use:   "arctic-huh",
+		Use:   "config-builder",
 		Short: "An interactive tool to build EMF config",
 		Run: func(cmd *cobra.Command, args []string) {
 			loadOrchPackages()
 			loadConfig()
 
 			if flags.NonInteractiveMode {
-				fmt.Println("Running in non-interactive mode. Please provide all required flags.")
+				input.Global.OrchName = tmpOrchName
+				input.Global.Scale = config.Scale(tmpScale)
 			} else {
 				err := orchInstallerForm().Run()
 				if err != nil {
@@ -227,7 +231,28 @@ func main() {
 	cobraCmd.PersistentFlags().BoolVarP(&flags.Debug, "debug", "d", false, "Enable debug mode")
 	cobraCmd.PersistentFlags().StringVarP(&flags.ConfigPath, "config", "c", "configs.yaml", "Path to the config file")
 	cobraCmd.PersistentFlags().StringVarP(&flags.PackagePath, "package", "p", "", "Path to the Orchestrator package definition")
-	cobraCmd.PersistentFlags().BoolVarP(&flags.NonInteractiveMode, "non-interactive", "n", false, "Run config builder in non-interactive mode")
+	cobraCmd.PersistentFlags().BoolVar(&flags.NonInteractiveMode, "auto", false, "Run config builder in non-interactive mode")
+	cobraCmd.PersistentFlags().StringVar(&tmpOrchName, "name", "", "Name of the orchestrator (only used with --auto)")
+	cobraCmd.PersistentFlags().IntVar(&tmpScale, "scale", 10, "Target Scale (10, 100, 500, 1000, 10000) (only used with --auto)")
+	cobraCmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		autoFlag := cmd.Flags().Changed("auto")
+		nameFlag := cmd.Flags().Changed("name")
+		scaleFlag := cmd.Flags().Changed("scale")
+		// Either all three flags should be specified or none should be
+		if (autoFlag && (!nameFlag || !scaleFlag)) || (!autoFlag && (nameFlag || scaleFlag)) {
+			fmt.Println("--auto, --name, and --scale must all be specified together or none at all")
+			os.Exit(1)
+		}
+		if err := validateOrchName(tmpOrchName); err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		if err := validateScale(tmpScale); err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		return nil
+	}
 
 	// Exit on help command
 	helpFunc := cobraCmd.HelpFunc()

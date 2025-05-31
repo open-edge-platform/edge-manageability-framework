@@ -6,16 +6,6 @@ package config
 
 import "os"
 
-type Scale int
-
-const (
-	Scale10    Scale = 10
-	Scale100   Scale = 100
-	Scale500   Scale = 500
-	Scale1000  Scale = 1000
-	Scale10000 Scale = 10000
-)
-
 // Current version
 // Should bump this every time we make backward-compatible config schema changes
 const UserConfigVersion = 4
