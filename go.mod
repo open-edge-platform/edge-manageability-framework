@@ -32,7 +32,7 @@ require (
 	github.com/tinkerbell/tink v0.12.2
 	golang.org/x/crypto v0.36.0
 	golang.org/x/oauth2 v0.28.0
-	golang.org/x/sync v0.12.0
+	golang.org/x/sync v0.14.0
 	google.golang.org/grpc v1.71.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/apimachinery v0.32.3
