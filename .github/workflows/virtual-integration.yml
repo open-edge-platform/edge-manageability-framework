@@ -797,7 +797,7 @@ jobs:
       security-events: write
       id-token: write
     if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
-    uses: open-edge-platform/orch-ci/.github/workflows/post-merge.yml@0.1.10
+    uses: open-edge-platform/orch-ci/.github/workflows/post-merge.yml@0.1.20
     with:
       run_build: false
       run_version_tag: false
