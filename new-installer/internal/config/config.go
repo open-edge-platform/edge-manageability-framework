@@ -16,8 +16,16 @@ const (
 	Scale10000 Scale = 10000
 )
 
-const UserConfigVersion = 1
+// Current version
+// Should bump this every time we make backward-compatible config schema changes
+const UserConfigVersion = 2
 const RuntimeStateVersion = 1
+
+// Minimal version supported by the installer.
+// This should never be modified. Create `config/v2` when breaking changes are introduced.
+// Files with a version lower than this will require additional migration steps.
+const MinUserConfigVersion = 1
+const MinRuntimeStateVersion = 1
 
 type OrchInstallerRuntimeState struct {
 	Version int `yaml:"version"`
@@ -104,10 +112,15 @@ type OrchInstallerConfig struct {
 		From     string `yaml:"from"`
 	} `yaml:"smtp,omitempty"`
 	Proxy struct {
-		HTTPProxy  string `yaml:"httpProxy,omitempty"`
-		HTTPSProxy string `yaml:"httpsProxy,omitempty"`
-		SocksProxy string `yaml:"socksProxy,omitempty"`
-		NoProxy    string `yaml:"noProxy,omitempty"`
+		HTTPProxy    string `yaml:"httpProxy,omitempty"`
+		HTTPSProxy   string `yaml:"httpsProxy,omitempty"`
+		SocksProxy   string `yaml:"socksProxy,omitempty"`
+		NoProxy      string `yaml:"noProxy,omitempty"`
+		ENHTTPProxy  string `yaml:"enHttpProxy,omitempty"`
+		ENHTTPSProxy string `yaml:"enHttpsProxy,omitempty"`
+		ENFTPProxy   string `yaml:"enFtpProxy,omitempty"`
+		ENSocksProxy string `yaml:"enSocksProxy,omitempty"`
+		ENNoProxy    string `yaml:"enNoProxy,omitempty"`
 	} `yaml:"proxy,omitempty"`
 }
 
