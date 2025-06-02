@@ -1,0 +1,14 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+argo:
+  enabled:
+    infra-external: false
+  infra-managers:
+    os-resource-manager:
+      enabledProfiles:
+        - microvisor-standalone
+#  infra-onboarding:
+#    pxe-server:
+#      enabled: true
