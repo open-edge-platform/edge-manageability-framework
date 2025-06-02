@@ -73,7 +73,7 @@ func (s *VPCStepTest) SetupTest() {
 
 func (s *VPCStepTest) TestInstallAndUninstallVPC() {
 	s.runtimeState.Action = "install"
-	s.expectTFUtiliyyCall("install")
+	s.expectUtiliyCall("install")
 	rs, err := steps.GoThroughStepFunctions(s.step, &s.config, s.runtimeState)
 	if err != nil {
 		s.NoError(err)
@@ -93,14 +93,14 @@ func (s *VPCStepTest) TestInstallAndUninstallVPC() {
 	}, rs.PublicSubnetIDs)
 
 	s.runtimeState.Action = "uninstall"
-	s.expectTFUtiliyyCall("uninstall")
+	s.expectUtiliyCall("uninstall")
 	_, err = steps.GoThroughStepFunctions(s.step, &s.config, s.runtimeState)
 	if err != nil {
 		s.NoError(err)
 	}
 }
 
-func (s *VPCStepTest) expectTFUtiliyyCall(action string) {
+func (s *VPCStepTest) expectUtiliyCall(action string) {
 	s.awsUtility.On("GetAvailableZones", "us-west-2").Return([]string{"us-west-2a", "us-west-2b", "us-west-2c"}, nil).Once()
 	input := steps.TerraformUtilityInput{
 		Action:             action,
