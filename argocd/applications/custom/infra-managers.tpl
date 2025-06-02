@@ -118,8 +118,6 @@ os-resource-manager:
     {{- end}}
 {{- if and (index .Values.argo "infra-external") (index .Values.argo "infra-external" "loca") }}
     disableProviderAutomation: true
-{{- else }}
-
 {{- end }}
   metrics:
     enabled: {{ index .Values.argo "infra-managers" "enableMetrics" | default false }}
