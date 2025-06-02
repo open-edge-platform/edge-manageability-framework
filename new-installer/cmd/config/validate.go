@@ -79,7 +79,53 @@ func validateAwsEksDnsIp(s string) error {
 }
 
 func validateProxy(s string) error {
-	// TODO: implement proxy validation
+	if s == "" {
+		return nil
+	}
+	re := regexp.MustCompile(`^https?://[a-z0-9.-]+(:\d+)?$`)
+	if !re.MatchString(s) {
+		return fmt.Errorf("proxy must be in the format http(s)://host[:port], e.g., http://proxy.intel.com:912")
+	}
+	return nil
+}
+
+func validateNoProxy(s string) error {
+	if s == "" {
+		return nil
+	}
+	entries := strings.Split(s, ",")
+	ipRe := regexp.MustCompile(`^([0-9]{1,3}\.){3}[0-9]{1,3}(\/\d{1,2})?$`)
+	domainRe := regexp.MustCompile(`^\.?([a-z0-9.-]+\.[a-z]{2,})$`)
+	for _, entry := range entries {
+		e := strings.TrimSpace(entry)
+		if e == "" {
+			continue
+		}
+		if ipRe.MatchString(e) {
+			// Validate IP/CIDR
+			ip := e
+			if idx := strings.Index(e, "/"); idx != -1 {
+				ip = e[:idx]
+				mask := e[idx+1:]
+				m, err := strconv.Atoi(mask)
+				if err != nil || m < 0 || m > 32 {
+					return fmt.Errorf("invalid CIDR mask in no_proxy entry: %s", e)
+				}
+			}
+			parts := strings.Split(ip, ".")
+			for _, part := range parts {
+				i, err := strconv.Atoi(part)
+				if err != nil || i < 0 || i > 255 {
+					return fmt.Errorf("invalid IP in no_proxy entry: %s", e)
+				}
+			}
+			continue
+		}
+		if domainRe.MatchString(e) {
+			continue
+		}
+		return fmt.Errorf("invalid no_proxy entry: %s", e)
+	}
 	return nil
 }
 
