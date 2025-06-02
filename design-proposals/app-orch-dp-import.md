@@ -78,7 +78,7 @@ to locate the proper deployment package.
 
 - The GUI shall display a confirmation screen.
 
-This proposal requieres scanning repositories to find deployment packages and extracting
+This proposal requires scanning repositories to find deployment packages and extracting
 deployment packages from a repository. A naive approach is for the Catalog Service to internally clone
 the repository to a temporary section of its local file system and use file operations to examine
 the repository.
@@ -92,7 +92,7 @@ with a JSON payload instead. This is an implementation detail.
 
 ## Proposal 3: Import all deployment packages from a repository (requires less GUI work)
 
-This is the same as the preceding proposal, but with a simplification that it elminates the step required
+This is the same as the preceding proposal, but with a simplification that it eliminates the step required
 to generate list of DPs and for the user to select a DP from the list.
 
 - The existing `Import Deployment Package
