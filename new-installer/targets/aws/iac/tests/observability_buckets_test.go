@@ -5,8 +5,15 @@
 package aws_iac_test
 
 import (
+	"crypto/rand"
+	"encoding/json"
+	"os"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/gruntwork-io/terratest/modules/aws"
+	"github.com/gruntwork-io/terratest/modules/terraform"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -26,57 +33,79 @@ func TestObservabilityBucketsTestSuite(t *testing.T) {
 	suite.Run(t, new(ObservabilityBucketsTestSuite))
 }
 
-// func (s *ObservabilityBucketsTestSuite) TestApplyingModule() {
-// 	randomPostfix := strings.ToLower(rand.Text()[:8])
-// 	bucketName := "observability-buckets-state-test-bucket-" + randomPostfix
-// 	aws.CreateS3Bucket(s.T(), "us-west-2", bucketName)
-// 	defer func() {
-// 		aws.EmptyS3Bucket(s.T(), "us-west-2", bucketName)
-// 		aws.DeleteS3Bucket(s.T(), "us-west-2", bucketName)
-// 	}()
-// 	variables := ObservabilityBucketsVariables{
-// 		Region:        "us-west-2",
-// 		CustomerTag:   "test-customer",
-// 		S3Prefix:      "test-prefix",
-// 		ClusterName:   "test-cluster-" + randomPostfix,
-// 		CreateTracing: true,
-// 	}
-// 	jsonData, err := json.Marshal(variables)
-// 	if err != nil {
-// 		s.T().Fatalf("Failed to marshal variables: %v", err)
-// 	}
-// 	tempFile, err := os.CreateTemp("", "variables-*.tfvar.json")
-// 	if err != nil {
-// 		s.T().Fatalf("Failed to create temporary file: %v", err)
-// 	}
-// 	defer os.Remove(tempFile.Name())
-// 	if _, err := tempFile.Write(jsonData); err != nil {
-// 		s.T().Fatalf("Failed to write to temporary file: %v", err)
-// 	}
-// 	terraformOptions := terraform.WithDefaultRetryableErrors(s.T(), &terraform.Options{
-// 		TerraformDir: "../s3",
-// 		VarFiles:     []string{tempFile.Name()},
-// 		BackendConfig: map[string]interface{}{
-// 			"region": "us-west-2",
-// 			"bucket": bucketName,
-// 			"key":    "observability_buckets.tfstate",
-// 		},
-// 		Reconfigure: true,
-// 		Upgrade:     true,
-// 	})
-// 	defer terraform.Destroy(s.T(), terraformOptions)
+func (s *ObservabilityBucketsTestSuite) TestApplyingModule() {
+	randomPostfix := strings.ToLower(rand.Text()[:8])
+	bucketName := "observability-buckets-state-test-bucket-" + randomPostfix
+	aws.CreateS3Bucket(s.T(), "us-west-2", bucketName)
+	defer func() {
+		aws.EmptyS3Bucket(s.T(), "us-west-2", bucketName)
+		aws.DeleteS3Bucket(s.T(), "us-west-2", bucketName)
+	}()
+	clusterName := "observability-test-cluster-" + randomPostfix
+	variables := ObservabilityBucketsVariables{
+		Region:        "us-west-2",
+		CustomerTag:   "test-customer",
+		S3Prefix:      "test-prefix",
+		ClusterName:   clusterName,
+		CreateTracing: true,
+	}
+	jsonData, err := json.Marshal(variables)
+	if err != nil {
+		s.T().Fatalf("Failed to marshal variables: %v", err)
+	}
+	tempFile, err := os.CreateTemp("", "variables-*.tfvar.json")
+	if err != nil {
+		s.T().Fatalf("Failed to create temporary file: %v", err)
+	}
+	defer os.Remove(tempFile.Name())
+	if _, err := tempFile.Write(jsonData); err != nil {
+		s.T().Fatalf("Failed to write to temporary file: %v", err)
+	}
 
-// 	terraform.InitAndApply(s.T(), terraformOptions)
-// 	aws.AssertS3BucketExists(s.T(), "us-west-2", bucketName)
-// }
-
-func (s *ObservabilityBucketsTestSuite) TestCreatingEKS() {
-	s.T().Logf("Creating EKS cluster for testing")
-	clusterName, subnets, vpcId, err := CreateTestEKSCluster("test-eks-cluster-123", "us-west-2")
-	defer DeleteTestEKSCluster("test-eks-cluster-123", subnets, vpcId, "us-west-2")
-	s.T().Logf("EKS Cluster ID: %s, Subnet ID: %s, VPC ID: %s", clusterName, subnets, vpcId)
+	clusterName, subnets, vpcId, err := CreateTestEKSCluster(clusterName, "us-west-2")
 	if err != nil {
 		s.T().Fatalf("Failed to create EKS cluster: %v", err)
 	}
+
+	defer DeleteTestEKSCluster(clusterName, subnets, vpcId, "us-west-2")
+	time.Sleep(360 * time.Second) // Wait for EKS cluster to be ready
+	// eksCluster, err := GetEKSCluster(clusterName, "us-west-2")
+	// if err != nil {
+	// 	s.T().Fatalf("Failed to get EKS cluster: %v", err)
+	// }
+	// s.NotNil(eksCluster, "EKS cluster should not be nil")
+	// s.NotNil(eksCluster.Identity, "Identity shouldn't be nil")
+	// s.NotNil(eksCluster.Identity.Oidc, "OIDC shouldn't be nil")
+	// s.NotNil(eksCluster.Identity.Oidc.Issuer, "OIDC issuer shouldn't be nil")
+	// s.NotNil(nil, "nil shouldn't be nil")
+
+	terraformOptions := terraform.WithDefaultRetryableErrors(s.T(), &terraform.Options{
+		TerraformDir: "../s3",
+		VarFiles:     []string{tempFile.Name()},
+		BackendConfig: map[string]interface{}{
+			"region": "us-west-2",
+			"bucket": bucketName,
+			"key":    "observability_buckets.tfstate",
+		},
+		Reconfigure: true,
+		Upgrade:     true,
+	})
+	defer terraform.Destroy(s.T(), terraformOptions)
+
+	terraform.InitAndApply(s.T(), terraformOptions)
+	// Verify that the S3 buckets for orch observability are created
+	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-test-prefix-"+"orch-loki-admin")
+	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-test-prefix-"+"orch-loki-chunks")
+	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-test-prefix-"+"orch-loki-ruler")
+	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-test-prefix-"+"orch-mimir-ruler")
+	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-test-prefix-"+"orch-mimir-tsdb")
+	// Verify that the S3 buckets for edge node observability are created
+	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-test-prefix-"+"fm-loki-admin")
+	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-test-prefix-"+"fm-loki-chunks")
+	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-test-prefix-"+"fm-loki-ruler")
+	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-test-prefix-"+"fm-mimir-ruler")
+	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-test-prefix-"+"fm-mimir-tsdb")
+	// Verify that the S3 buckets for tracing are created if CreateTracing is true
+	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-test-prefix-"+"tempo-traces")
 
 }

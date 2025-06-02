@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	ModulePath                           = "new-installer/targets/aws/iac/s3"
+	S3ModulePath                         = "new-installer/targets/aws/iac/s3"
 	ObservabilityBucketsBackendBucketKey = "observability_buckets.tfstate"
 )
 
@@ -40,10 +40,9 @@ func NewObservabilityBucketsVariables() ObservabilityBucketsVariables {
 type ObservabilityBucketsStep struct {
 	variables          ObservabilityBucketsVariables
 	backendConfig      steps.TerraformAWSBucketBackendConfig
-	terraformState     string
 	RootPath           string
 	KeepGeneratedFiles bool
-	TerraformExecPath  string
+	TerraformUtility   steps.TerraformUtility
 	StepLabels         []string
 }
 
@@ -55,7 +54,7 @@ func (s *ObservabilityBucketsStep) Labels() []string {
 	return s.StepLabels
 }
 
-func (s *ObservabilityBucketsStep) ConfigStep(ctx context.Context, config config.OrchInstallerConfig) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *ObservabilityBucketsStep) ConfigStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	s.variables = NewObservabilityBucketsVariables()
 	s.variables.Region = config.AWS.Region
 	s.variables.CustomerTag = config.AWS.CustomerTag
@@ -63,53 +62,42 @@ func (s *ObservabilityBucketsStep) ConfigStep(ctx context.Context, config config
 	s.variables.ClusterName = config.Global.OrchName
 	s.variables.CreateTracing = false
 	s.backendConfig = steps.TerraformAWSBucketBackendConfig{
-		Bucket: config.Global.OrchName + "-" + config.Generated.DeploymentID,
+		Bucket: config.Global.OrchName + "-" + runtimeState.DeploymentID,
 		Region: config.AWS.Region,
 		Key:    ObservabilityBucketsBackendBucketKey,
 	}
-	return config.Generated, nil
+	return runtimeState, nil
 }
 
-func (s *ObservabilityBucketsStep) PreStep(ctx context.Context, config config.OrchInstallerConfig) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
-	terraformExecPath, err := steps.InstallTerraformAndGetExecPath()
-	s.TerraformExecPath = terraformExecPath
-	if err != nil {
-		return config.Generated, &internal.OrchInstallerError{
-			ErrorCode: internal.OrchInstallerErrorCodeInternal,
-			ErrorMsg:  fmt.Sprintf("failed to get terraform exec path: %v", err),
-		}
-	}
-	return config.Generated, nil
+func (s *ObservabilityBucketsStep) PreStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+	return runtimeState, nil
 }
 
-func (s *ObservabilityBucketsStep) RunStep(ctx context.Context, config config.OrchInstallerConfig) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
-	terraformUtility := steps.CreateTerraformUtility()
+func (s *ObservabilityBucketsStep) RunStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	terraformStepInput := steps.TerraformUtilityInput{
-		Action:             config.Generated.Action,
-		ExecPath:           s.TerraformExecPath,
-		ModulePath:         filepath.Join(s.RootPath, ModulePath),
+		Action:             runtimeState.Action,
+		ModulePath:         filepath.Join(s.RootPath, S3ModulePath),
 		Variables:          s.variables,
 		BackendConfig:      s.backendConfig,
-		TerraformState:     s.terraformState,
-		LogFile:            filepath.Join(config.Generated.LogDir, "aws_observability_bucket.log"),
+		LogFile:            filepath.Join(runtimeState.LogDir, "aws_observability_bucket.log"),
 		KeepGeneratedFiles: s.KeepGeneratedFiles,
 	}
-	terraformStepOutput, err := terraformUtility.Run(ctx, terraformStepInput)
+	terraformStepOutput, err := s.TerraformUtility.Run(ctx, terraformStepInput)
 	if err != nil {
-		return config.Generated, &internal.OrchInstallerError{
+		return runtimeState, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeTerraform,
 			ErrorMsg:  fmt.Sprintf("failed to run terraform: %v", err),
 		}
 	}
-	if config.Generated.Action == "uninstall" {
-		return config.Generated, nil
+	if runtimeState.Action == "uninstall" {
+		return runtimeState, nil
 	}
 	if terraformStepOutput.Output != nil {
 		fmt.Println("Terraform Output:")
 	}
-	return config.Generated, nil
+	return runtimeState, nil
 }
 
-func (s *ObservabilityBucketsStep) PostStep(ctx context.Context, config config.OrchInstallerConfig, prevStepError *internal.OrchInstallerError) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
-	return config.Generated, prevStepError
+func (s *ObservabilityBucketsStep) PostStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState, prevStepError *internal.OrchInstallerError) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+	return runtimeState, prevStepError
 }
