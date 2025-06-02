@@ -20,8 +20,6 @@ jwtMiddlewareException:
       - "iam-umbrella-nexus-api-gw-api-docs"
       - "cluster-connect-gateway-ws"
       - "cluster-connect-gateway-kubeapi"
-      - "amt-api-mps"
-      - "amt-api-rps"
       - "orch-platform-keycloak"
   - namespace: "orch-boots"
     names:
