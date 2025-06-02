@@ -4,9 +4,6 @@
 name: "Deploy on Prem Orchestrator"
 description: "Creates a VM and Deploys the Orchestrator on it"
 inputs:
-  token:
-    required: true
-    description: "PAT token for private repositories"
   orch_version:
     required: false
     description: "Orchestrator version to deploy"
@@ -32,7 +29,7 @@ runs:
       id: install-deps
       uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
 
-    - name: Chekc Oras
+    - name: Check Oras
       run: |
         oras version
       shell: bash
@@ -48,7 +45,6 @@ runs:
 
     - name: Deploy Orchestrator
       env:
-        TF_VAR_intel_release_service_refresh_token: value-not-used
         TF_VAR_deploy_tag: ${{ env.DEPLOY_TAG }}
         TF_VAR_FILE: ${{ github.workspace }}/terraform/orchestrator/terraform.tfvars
         TF_VAR_docker_username: ${{ inputs.docker_username }}

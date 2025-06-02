@@ -698,7 +698,6 @@ jobs:
         id: deploy-on-prem
         uses: ./.github/actions/deploy_on_prem
         with:
-          token: ${{ secrets.SYS_ORCH_GITHUB }}
           orch_version: ${{ github.event.pull_request.head.sha }}
           docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
           docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
