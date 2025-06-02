@@ -5,10 +5,15 @@
 version: 2
 enable-beta-ecosystems: true
 updates:
-
   # Enable version updates for Go modules
   - package-ecosystem: "gomod"
     directory: "/"
+    # Only update patch versions to reduce the chance of regressions getting introduced
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
     schedule:
       interval: "monthly"
     commit-message:
@@ -31,6 +36,12 @@ updates:
       - "/pod-configs/module/application-load-balancer"
       - "/pod-configs/module/load-balancer"
       - "/pod-configs/buckets"
+    # Only update patch versions to reduce the chance of regressions getting introduced
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
     schedule:
       interval: "monthly"
     commit-message:
@@ -46,6 +57,12 @@ updates:
       - "/argocd-internal/root-app"
       - "/argocd/applications"
       - "/argocd/root-app"
+    # Only update patch versions to reduce the chance of regressions getting introduced
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
     schedule:
       interval: "monthly"
     commit-message:
@@ -58,6 +75,12 @@ updates:
   - package-ecosystem: "docker"
     directories:
       - "/installer"
+    # Only update patch versions to reduce the chance of regressions getting introduced
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
     schedule:
       interval: "monthly"
     commit-message:
@@ -65,10 +88,16 @@ updates:
     reviewers:
       - "se-chris-thach"
       - "dmytroye"
-      
+
   # Enable version updates for GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
+    # Only update patch versions to reduce the chance of regressions getting introduced
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
     schedule:
       interval: "monthly"
     commit-message:
