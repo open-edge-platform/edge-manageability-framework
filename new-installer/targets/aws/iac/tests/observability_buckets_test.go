@@ -71,5 +71,12 @@ func TestObservabilityBucketsTestSuite(t *testing.T) {
 // }
 
 func (s *ObservabilityBucketsTestSuite) TestCreatingEKS() {
-	CreateTestEKSCluster()
+	s.T().Logf("Creating EKS cluster for testing")
+	clusterName, subnets, vpcId, err := CreateTestEKSCluster("test-eks-cluster-123", "us-west-2")
+	defer DeleteTestEKSCluster("test-eks-cluster-123", subnets, vpcId, "us-west-2")
+	s.T().Logf("EKS Cluster ID: %s, Subnet ID: %s, VPC ID: %s", clusterName, subnets, vpcId)
+	if err != nil {
+		s.T().Fatalf("Failed to create EKS cluster: %v", err)
+	}
+
 }
