@@ -6,6 +6,9 @@ argo:
   infra-managers:
     onboarding-manager:
       enabled: false
+    os-resource-manager:
+      enabledProfiles:
+        - ubuntu-lenovo
   infra-external:
     loca:
       # Default OS password that will be used during provisioning. After provisioning will be done, password authentication on EN will be disabled.

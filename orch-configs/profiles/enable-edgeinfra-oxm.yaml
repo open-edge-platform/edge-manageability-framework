@@ -50,9 +50,8 @@ argo:
           cpu: "64"
   infra-managers:
     os-resource-manager:
-      managerArgs:
-        enabledProfiles:
-          - microvisor-standalone
+      enabledProfiles:
+        - microvisor-standalone
       resources:
         requests:
           memory: "16Mi"
