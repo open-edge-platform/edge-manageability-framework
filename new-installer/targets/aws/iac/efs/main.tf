@@ -16,7 +16,7 @@ data "aws_caller_identity" "current" {}
 locals {
   account_id = data.aws_caller_identity.current.account_id
   efs_policy_source = "https://raw.githubusercontent.com/kubernetes-sigs/aws-efs-csi-driver/v1.5.4/docs/iam-policy-example.json"
-  eks_issuer = replace(data.aws_eks_cluster.eks[0].identity[0].oidc[0].issuer, "https://", "")
+  eks_issuer = replace(data.aws_eks_cluster.eks.identity[0].oidc[0].issuer, "https://", "")
   efs_throughput_mode = "elastic"
   efs_encryption = true
   transition_to_ia = "AFTER_7_DAYS"
@@ -25,7 +25,6 @@ locals {
 
 # IAM Policy
 data "http" "iam_policy" {
-
   url = local.efs_policy_source
 
   request_headers = {
@@ -35,7 +34,7 @@ data "http" "iam_policy" {
 
 resource "aws_iam_policy" "efs_policy" {
   name   = "${var.cluster_name}-EFS_CSI_Driver_Policy"
-  policy = data.http.iam_policy[0].response_body
+  policy = data.http.iam_policy.response_body
 }
 
 data "aws_iam_policy_document" "efs_assume_role_policy" {
@@ -57,13 +56,13 @@ data "aws_iam_policy_document" "efs_assume_role_policy" {
 }
 
 resource "aws_iam_role" "efs_role" {
-  name                = "${var.cluster_name}-${var.role_name}"
+  name                = "${var.cluster_name}-EFS_CSI_DriverRole"
   assume_role_policy  = data.aws_iam_policy_document.efs_assume_role_policy.json
 }
 
 resource "aws_iam_role_policy_attachment" "efs_role" {
   role       = aws_iam_role.efs_role.name
-  policy_arn = aws_iam_policy.efs_policy[0].arn
+  policy_arn = aws_iam_policy.efs_policy.arn
 }
 
 # Create Security Group
