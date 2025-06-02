@@ -36,7 +36,7 @@ jobs:
     if: github.event_name == 'pull_request'
     permissions:
       contents: read
-    uses: open-edge-platform/orch-ci/.github/workflows/pre-merge.yml@main
+    uses: open-edge-platform/orch-ci/.github/workflows/pre-merge.yml@3bdd409ccf738472c6e1547d14628b51c70dbe99  # 0.1.21
     with:
       run_version_check: false
       run_build: false
@@ -797,9 +797,14 @@ jobs:
       security-events: write
       id-token: write
     if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
-    uses: open-edge-platform/orch-ci/.github/workflows/post-merge.yml@0.1.10
+    uses: open-edge-platform/orch-ci/.github/workflows/post-merge.yml@3bdd409ccf738472c6e1547d14628b51c70dbe99  # 0.1.21
     with:
       run_build: false
       run_version_tag: false
-    secrets:  # zizmor: ignore[secrets-inherit]
-      inherit
+    secrets:
+      SYS_ORCH_GITHUB: ${{ secrets.SYS_ORCH_GITHUB }}
+      COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+      COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+      NO_AUTH_ECR_PUSH_USERNAME: ${{ secrets.NO_AUTH_ECR_PUSH_USERNAME }}
+      NO_AUTH_ECR_PUSH_PASSWD: ${{ secrets.NO_AUTH_ECR_PUSH_PASSWD }}
+      MSTEAMS_WEBHOOK: ${{ secrets.TEAMS_WEBHOOK }}
