@@ -203,8 +203,8 @@ github.com/open-edge-platform/infra-managers/maintenance v1.21.0 h1:38twhZVAo0fY
 github.com/open-edge-platform/infra-managers/maintenance v1.21.0/go.mod h1:NorikKbZAwJQFEIlQZK+4R3lIESuQqCDZ5kHb5itpXo=
 github.com/open-edge-platform/infra-managers/telemetry v1.21.0 h1:Gy2h3qwRsn3JCgoRSPa0pyHOmadAF/29wsMAwvI9ci0=
 github.com/open-edge-platform/infra-managers/telemetry v1.21.0/go.mod h1:6u2M8KxwriPWyLn1W3NMc1SSEDFoiRGhlLtrkcOkcRY=
-github.com/open-edge-platform/infra-onboarding/onboarding-manager v1.33.0 h1:3uRK793GSkQT2R/rf7/NrcI/mGP83rMyjMSUtFSNiBg=
-github.com/open-edge-platform/infra-onboarding/onboarding-manager v1.33.0/go.mod h1:7SL3s3QWqg+Z+yp/J6wJZmMnug04G8NGlLKma1SCwX4=
+github.com/open-edge-platform/infra-onboarding/onboarding-manager v1.33.1 h1:xgBPSu1pNe2lNnNlFJXTueUUav9lU3MgYZrvvgfCNf4=
+github.com/open-edge-platform/infra-onboarding/onboarding-manager v1.33.1/go.mod h1:7SL3s3QWqg+Z+yp/J6wJZmMnug04G8NGlLKma1SCwX4=
 github.com/open-edge-platform/orch-library/go v0.5.29 h1:LfOaRcRYXpQdcyHrVwN4wC2l11wbdUnBLkc2P7vrZNY=
 github.com/open-edge-platform/orch-library/go v0.5.29/go.mod h1:Wm6A5AJx4DCIOi4u+y1IMJxgFZ4n27f5FLSqW0QPW9k=
 github.com/open-edge-platform/orch-utils/tenancy-datamodel v0.0.0-20250401180309-9c2571c45857 h1:MWbL6C74qWMO4MPNqus03bebOyT9eCL9RszghnHKSms=
