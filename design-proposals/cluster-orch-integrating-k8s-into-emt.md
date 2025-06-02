@@ -75,8 +75,8 @@ There will be total four new RPMs:
 
 * k3s: k3s binary, install script
 * k3s-selinux: selinux policies for k3s
-* k3s-standard-addon: standard addon images
-* k3s-maverick-flats-addon: maverick flats addon images
+* k3s-standard-addon: standard addon images and charts
+* k3s-maverick-flats-addon: maverick flats addon images and charts
 
 Here is an example of SPEC file for k3s:
 
@@ -113,12 +113,17 @@ And here is another example of SPEC file for k3s-standard-addon:
 # This is not a complete SPEC and hasn't been tested
 
 Source0: https://registry-rs.edgeorchestration.intel.com/en/files/%{version}/k3s-standard-addon-images.tar.zst
+Source1: https://github.com/projectcalico/calico/releases/download/v3.30.1/tigera-operator-v3.30.1.tgz
 
 mkdir -p %{buildroot}/var/lib/rancher/k3s/agent/images
 install -m 0644 %{SOURCE0} %{buildroot}/var/lib/rancher/k3s/agent/images/k3s-airgap-images-amd64.tar.zst
 
+mkdir -p %{buildroot}/var/lib/rancher/k3s/server/static
+install -m 0644 %{SOURCE1} %{buildroot}/var/lib/rancher/k3s/server/static/tigera-operator-v3.30.1.tgz
+
 %files
 /var/lib/rancher/k3s/agent/images/k3s-airgap-images-amd64.tar.zst
+/var/lib/rancher/k3s/server/static/tigera-operator-v3.30.1.tgz
 ...
 ```
 
