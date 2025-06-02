@@ -7,19 +7,19 @@ locals {
   lb_sg_ids = {
     "traefik": {
       port = 8443,
-      security_group_id = module.traefik_load_balancer.lb_sg_id
+      security_group_id = var.traefik_sg_id
     },
     "traefik2": {
       port = 443,
-      security_group_id = module.traefik2_load_balancer[0].lb_sg_id
+      security_group_id = var.traefik2_sg_id
     },
     "argocd": {
       port = 8080,
-      security_group_id = module.argocd_load_balancer[0].lb_sg_id
+      security_group_id = var.argocd_sg_id
     },
     "gitea": {
       port = 3000,
-      security_group_id = module.argocd_load_balancer[0].lb_sg_id
+      security_group_id = var.argocd_sg_id
     }
   }
 }
