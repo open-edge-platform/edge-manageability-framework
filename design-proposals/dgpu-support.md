@@ -23,15 +23,15 @@ In the earlier release (3.0), a key issue was the inability to activate Secure B
 | GPU | OS | Kernel | Platform | Priority | Kernel cmd | SRIOV | DevicePlugin | Operator | Notes |
 |----|----|----|----|----|----|----|----|----|----|
 | Intel iGPU | EMT 3.0 | - | Xeon, Core | P0(3.1) | Required | Required | Required | - |    |
-| Intel iGPU | Ubuntu 24.04 | >6.11 | Xeon, Core | P0(3.1) | Required | Required | Required | - |    |
+| Intel iGPU | Ubuntu 22.04 | >6.11 | Xeon, Core | P0(3.1) | Required | Required | Required | - |    |
 | Intel B580 | EMT 3.0 | - | Xeon | P0(3.1) | Required | 3.2 | Required | - |    |
-| Intel B580 | Ubuntu 24.04 | >6.11 | Xeon | P1(3.1) | Required | 3.2 | Required | - | In-tree driver verification WIP |
+| Intel B580 | Ubuntu 22.04 | >6.11 | Xeon | P1(3.1) | Required | 3.2 | Required | - | In-tree driver verification WIP |
 | Nvidia P100 | EMT 3.0 | - | Xeon | P2(3.2) | Required | Required | - | Required |    |
-| Nvidia P100 | Ubuntu 24.04 | >6.11 | Xeon | P0(3.1) | Required | - | - | Required | Needs a specific kernel 6.11.x |
+| Nvidia P100 | Ubuntu 22.04 | >6.11 | Xeon | P0(3.1) | Required | - | - | Required | Needs a specific kernel 6.11.x |
 
+Note that integration on Ubuntu 24.04 is expected in release 3.2. So, the current release will continue with Ubuntu 22.04.
 
 ### Proposed changes
-
 
 1. **Avoid OSProfile for GPU Support**:
    * The plan is to eliminate the need for dedicated OSProfiles for Intel and NVIDIA GPUs. Instead, the system will rely on in-tree GPU drivers available in kernel versions greater than 6.11 with Ubuntu 24.04. This is expected to simplify deployment and reduce maintenance.
@@ -169,9 +169,10 @@ The implementation is planned in two phases:
 
 
 1. Maintain support for Intel® Arc™ iGPU and dGPU in Ubuntu
-2. Intel Battlemage B580 dGPU support in EMT
-3. Intel Battlemage B580 dGPU support in Ubuntu
-4. Nvidia P100 dGPU support in Ubuntu
+2. Intel® Arc™ iGPU support in EMT
+3. Intel Battlemage B580 dGPU support in EMT
+4. Intel Battlemage B580 dGPU support in Ubuntu
+5. Nvidia P100 dGPU support in Ubuntu
 
 ### Phase 2 (for EMF 3.2 release)
 
