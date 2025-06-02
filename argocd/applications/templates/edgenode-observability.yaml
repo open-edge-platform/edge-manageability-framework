@@ -17,9 +17,9 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
-    - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
-      chart: o11y/charts/{{$appName}}
-      targetRevision: 0.10.1
+    - repoURL: https://github.com/open-edge-platform/o11y-charts
+      path: charts/edgenode-observability/deployments/edgenode-observability
+      targetRevision: alternate-config
       helm:
         releaseName: {{$appName}}
         valuesObject:
