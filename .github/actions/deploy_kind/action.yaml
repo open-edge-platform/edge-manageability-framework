@@ -49,9 +49,9 @@ runs:
       GIT_USER: "git"
       GIT_TOKEN: ${{ inputs.token }}
       EDGE_MANAGEABILITY_FRAMEWORK_REV: ${{ inputs.orch_version }}
+      ORCH_DEFAULT_PASSWORD: ${{ inputs.orch_password }}
       DOCKERHUB_TOKEN: ${{ inputs.docker_password }}
       DOCKERHUB_USERNAME: ${{ inputs.docker_username }}
-      ORCH_DEFAULT_PASSWORD: ${{ inputs.orch_password }}
     shell: bash
     run: |
       set +x

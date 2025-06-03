@@ -464,8 +464,8 @@ jobs:
         with:
           orch_version: ${{ github.event.pull_request.head.sha || github.sha }}
           orch_password: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-          docker_username: ${{ secrets.NO_AUTH_ECR_PUSH_USERNAME }}
-          docker_password: ${{ secrets.NO_AUTH_ECR_PUSH_PASSWD }}
+          docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
+          docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
           token: ${{ secrets.SYS_ORCH_GITHUB }}
       - name: Run policy compliance tests
         run: mage test:policyCompliance
