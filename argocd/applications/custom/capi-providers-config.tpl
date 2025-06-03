@@ -38,10 +38,10 @@ core:
 
 # https://doc.crds.dev/github.com/kubernetes-sigs/cluster-api-operator/operator.cluster.x-k8s.io/BootstrapProvider/v1alpha2@v0.15.1
 bootstrap:
-  name: rke2
-  namespace: capr-system
+  name: k3s
+  namespace: capi-k3s-bootstrap-system
   spec:
-    version: v0.14.0
+    version: v0.2.1
     configSecret:
       namespace: capi-variables
       name: capi-variables
@@ -52,14 +52,14 @@ bootstrap:
           "--insecure-diagnostics": "true"
     additionalManifests:
       name: bootstrap-additional-manifest
-      namespace: capr-system
+      namespace: capi-k3s-bootstrap-system
 
 # https://doc.crds.dev/github.com/kubernetes-sigs/cluster-api-operator/operator.cluster.x-k8s.io/ControlPlaneProvider/v1alpha2@v0.15.1
 controlplane:
-  name: rke2
-  namespace: capr-system
+  name: k3s
+  namespace: capi-k3s-control-plane-system
   spec:
-    version: v0.14.0
+    version: v0.2.1
     configSecret:
       namespace: capi-variables
       name: capi-variables
@@ -70,12 +70,5 @@ controlplane:
           "--insecure-diagnostics": "true"
     additionalManifests:
       name: controlplane-additional-manifest
-      namespace: capr-system
-# example deployment configuration      
-#    deployment:
-#      containers:
-#      - name: manager
-#        imageUrl:  docker.io/user/patched-rke2-controlplane:latest
-#        args:
-#          "-- concurrency":  "5"
+      namespace: capi-k3s-control-plane-system
 

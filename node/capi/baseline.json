@@ -1,96 +1,75 @@
 {
-    "name": "baseline",
-    "version": "v0.0.1",
-    "kubernetesVersion": "v1.30.10+rke2r1",
-    "description": "Baseline Cluster Template",
-    "controlplaneprovidertype": "rke2",
-    "infraprovidertype": "intel",
-    "clusterconfiguration": {
-      "kind": "RKE2ControlPlaneTemplate",
-      "apiVersion": "controlplane.cluster.x-k8s.io/v1beta1",
-      "metadata": {
-        "labels": {
-          "cpumanager": "true"
-        }
-      },
-      "spec": {
-        "template": {
-          "spec": {
+  "name": "baseline-k3s",
+  "version": "v0.0.1",
+  "kubernetesVersion": "v1.32.4+k3s1",
+  "description": "Baseline Cluster Template for k3s",
+  "controlplaneprovidertype": "k3s",
+  "infraprovidertype": "intel",
+  "clusterconfiguration": {
+    "kind": "KThreesControlPlaneTemplate",
+    "apiVersion": "controlplane.cluster.x-k8s.io/v1beta2",
+    "metadata": {
+      "labels": {
+        "cpumanager": "true"
+      }
+    },
+    "spec": {
+      "template": {
+        "spec": {
+          "kthreesConfigSpec": {
+            "files": [
+              {}
+            ],
             "agentConfig": {
-              "kubelet": {
-                "extraArgs": [
-                  "--topology-manager-policy=best-effort",
-                  "--cpu-manager-policy=static",
-                  "--reserved-cpus=1",
-                  "--max-pods=250",
-                  "--tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"
-                ]
-              }
+              "kubeletArgs": [
+                "--topology-manager-policy=best-effort",
+                "--cpu-manager-policy=static",
+                "--reserved-cpus=1",
+                "--max-pods=250",
+                "--tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"
+              ]
             },
-            "manifestsConfigMapReference": {
-              "apiVersion": "v1",
-              "kind": "ConfigMap",
-              "name": "coredns-config",
-              "namespace": "default"
-            },
-            "privateRegistriesConfig": {},
+            "preK3sCommands": [
+              "mkdir -p /etc/systemd/system/k3s-server.service.d",
+              "echo '[Service]\nEnvironmentFile=/etc/environment' > /etc/systemd/system/k3s-server.service.d/override.conf",
+              "mkdir -p /var/lib/kubelet/static-pods",
+              "sed -i '/kubelet-arg:/a\\- pod-manifest-path=/var/lib/kubelet/static-pods' /etc/rancher/k3s/config.yaml",
+              "sudo cp /var/lib/rancher/k3s/agent/pod-manifests/connect-agent.yaml /var/lib/kubelet/static-pods/connect-agent.yaml"
+            ],
+            "postK3sCommands": [
+              "kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.30.0/manifests/operator-crds.yaml",
+              "kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.30.0/manifests/tigera-operator.yaml",
+              "kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.30.0/manifests/custom-resources.yaml"
+            ],
             "serverConfig": {
-              "cni": "calico",
-              "cniMultusEnable": true,
-              "disableComponents": {
-                "kubernetesComponents": [
-                  "cloudController"
-                ]
-              },
-              "kubeApiServer": {
-                "extraArgs": [
-                  "--feature-gates=PortForwardWebsockets=true",
-                  "--tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"
-                ]
-              },
-              "kubeControllerManager": {
-                "extraArgs": null
-              },
-              "kubeScheduler": {
-                "extraArgs": null
-              },
-              "etcd": {
-                "exposeMetrics": false,
-                "backupConfig": {
-                  "retention": "5",
-                  "scheduleCron": "0 */5 * * *"
-                },
-                "customConfig": {
-                  "extraArgs": [
-                    "cipher-suites=[TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_CHACHA20_POLY1305_SHA256]"
-                  ]
-                }
-              }
+              "kubeApiServerArg": [
+                "--feature-gates=PortForwardWebsockets=true",
+                "--tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"
+              ],
+              "kubeControllerManagerArgs": [],
+              "kubeSchedulerArgs": [],
+              "clusterDomain": "cluster.edge",
+              "disableCloudController": false
             },
-            "nodeDrainTimeout": "2m",
-            "rolloutStrategy": {
-              "type": "RollingUpdate",
-              "rollingUpdate": {
-                "maxSurge": 1
-              }
-            }
+            "version": "v1.32.4+k3s1"
           }
         }
       }
-    },
-    "clusterNetwork": {
-      "pods": {
-        "cidrBlocks": [
-          "192.168.0.0/16"
-        ]
-      },
-      "services": {
-        "cidrBlocks": [
-          "10.128.0.0/12"
-        ]
-      }
-    },
-    "cluster-labels": {
-      "default-extension": "baseline"
     }
+  },
+  "clusterNetwork": {
+    "pods": {
+      "cidrBlocks": [
+        "10.45.0.0/16"
+      ]
+    },
+    "services": {
+      "cidrBlocks": [
+        "10.46.0.0/16"
+      ]
+    }
+  },
+  "cluster-labels": {
+    "default-extension": "baseline"
+  }
 }
