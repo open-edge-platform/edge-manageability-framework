@@ -2,7 +2,11 @@
 
 ## Overview
 
-The New Orchestrator Installer is a modernized deployment tool for the Edge Manageability Framework (EMF) introduced in version 3.1. It replaces the previous monolithic shell script-based installers with a modular, extensible Go-based system that provides improved error handling, better user experience, and more consistent behavior across deployment targets.
+The New Orchestrator Installer is a modernized deployment tool for the Edge Manageability Framework (EMF)
+introduced in version 3.1.
+It replaces the previous monolithic shell script-based installers with a modular,
+extensible Go-based system that provides improved error handling,
+better user experience, and more consistent behavior across deployment targets.
 
 ## Key Features
 
@@ -16,7 +20,8 @@ The New Orchestrator Installer is a modernized deployment tool for the Edge Mana
 
 ## Architecture
 
-For more detailed information about the design decisions behind this architecture, see the [Deployment Experience Improvement](design-proposals/deployment-experience-improvement.md) design proposal.
+For more detailed information about the design decisions behind this architecture,
+see the [Deployment Experience Improvement](design-proposals/deployment-experience-improvement.md) design proposal.
 
 ## Build and Test
 
