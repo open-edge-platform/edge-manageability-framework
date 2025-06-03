@@ -136,3 +136,16 @@ func (NewInstaller) Clean() error {
 
 	return nil
 }
+
+func (NewInstaller) Lint() error {
+	oldWorkingDir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current working directory: %w", err)
+	}
+	os.Chdir(rootDir)
+	if err := sh.RunV("golangci-lint", "run", "--config", oldWorkingDir+"/.golangci.yml"); err != nil {
+		return err
+	}
+	os.Chdir(oldWorkingDir)
+	return nil
+}
