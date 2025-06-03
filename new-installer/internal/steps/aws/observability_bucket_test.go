@@ -29,7 +29,6 @@ type ObservabilityBucketsStepTest struct {
 	randomText   string
 	logDir       string
 	tfUtility    *MockTerraformUtility
-	awsUtility   *MockAWSUtility
 }
 
 const (
@@ -53,11 +52,12 @@ func (s *ObservabilityBucketsStepTest) SetupTest() {
 	s.config.Global.OrchName = "observability-buckets-test"
 	s.config.AWS.CustomerTag = "test"
 	s.runtimeState.DeploymentID = DeploymentID
-
+	s.runtimeState.LogDir = filepath.Join(rootPath, ".logs")
 	s.tfUtility = &MockTerraformUtility{}
 	s.step = &steps_aws.ObservabilityBucketsStep{
 		RootPath:           rootPath,
 		KeepGeneratedFiles: true,
+		TerraformUtility:   s.tfUtility,
 	}
 }
 
@@ -84,16 +84,16 @@ func (s *ObservabilityBucketsStepTest) expectTFUtiliyyCall(action string) {
 	input := steps.TerraformUtilityInput{
 		Action:             action,
 		ModulePath:         filepath.Join(s.step.RootPath, steps_aws.S3ModulePath),
-		LogFile:            filepath.Join(s.logDir, "aws_observability_buckets.log"),
+		LogFile:            filepath.Join(s.logDir, "aws_observability_bucket.log"),
 		KeepGeneratedFiles: s.step.KeepGeneratedFiles,
 		Variables: steps_aws.ObservabilityBucketsVariables{
 			Region:        s.config.AWS.Region,
 			CustomerTag:   s.config.AWS.CustomerTag,
 			S3Prefix:      s.config.Global.OrchName,
 			ClusterName:   s.config.Global.OrchName,
-			CreateTracing: true,
+			CreateTracing: false,
 		},
-		BackendConfig: steps_aws.TerraformAWSBucketBackendConfig{
+		BackendConfig: steps.TerraformAWSBucketBackendConfig{
 			Region: s.config.AWS.Region,
 			Bucket: fmt.Sprintf("%s-%s", s.config.Global.OrchName, s.runtimeState.DeploymentID),
 			Key:    steps_aws.ObservabilityBucketsBackendBucketKey,

@@ -82,6 +82,7 @@ func (s *ObservabilityBucketsStep) RunStep(ctx context.Context, config config.Or
 		LogFile:            filepath.Join(runtimeState.LogDir, "aws_observability_bucket.log"),
 		KeepGeneratedFiles: s.KeepGeneratedFiles,
 	}
+	fmt.Printf("Running Terraform util %s with input: %+v\n", s.TerraformUtility, terraformStepInput)
 	terraformStepOutput, err := s.TerraformUtility.Run(ctx, terraformStepInput)
 	if err != nil {
 		return runtimeState, &internal.OrchInstallerError{
