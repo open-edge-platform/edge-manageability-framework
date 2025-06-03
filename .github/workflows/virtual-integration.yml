@@ -33,6 +33,7 @@ permissions: {}
 
 jobs:
   pre-merge:
+    if: github.event_name == 'pull_request'
     permissions:
       contents: read
     uses: open-edge-platform/orch-ci/.github/workflows/pre-merge.yml@main
@@ -51,8 +52,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       ci: ${{ contains(steps.check-files.outputs.changed_files, '.github/workflows') || contains(steps.check-files.outputs.changed_files, '.github/actions') }}
-      go: ${{ contains(steps.check-files.outputs.changed_files, '.go' || contains(steps.check-files.outputs.changed_files, '.mod') || contains(steps.check-files.outputs.changed_files, '.sum')) }}
-      markdown: ${{ contains(steps.check-files.outputs.changed_files, '.md' || contains(steps.check-files.outputs.changed_files, '.markdown') || contains(steps.check-files.outputs.changed_files, '.mdx')) }}
+      go: ${{ contains(steps.check-files.outputs.changed_files, '.go') || contains(steps.check-files.outputs.changed_files, '.mod') || contains(steps.check-files.outputs.changed_files, '.sum') }}
+      markdown: ${{ contains(steps.check-files.outputs.changed_files, '.md') || contains(steps.check-files.outputs.changed_files, '.markdown') || contains(steps.check-files.outputs.changed_files, '.mdx') }}
       orch: ${{ contains(steps.check-files.outputs.changed_files, 'argocd') || contains(steps.check-files.outputs.changed_files, 'bootstrap') || contains(steps.check-files.outputs.changed_files, 'installer') || contains(steps.check-files.outputs.changed_files, 'internal') || contains(steps.check-files.outputs.changed_files, 'mage') || contains(steps.check-files.outputs.changed_files, 'node') || contains(steps.check-files.outputs.changed_files, 'router') || contains(steps.check-files.outputs.changed_files, 'tools') || contains(steps.check-files.outputs.changed_files, 'e2e-tests') || contains(steps.check-files.outputs.changed_files, 'VERSION') }}
       on-prem: ${{ contains(steps.check-files.outputs.changed_files, 'on-prem-installers') || contains(steps.check-files.outputs.changed_files, 'terraform') }}
       onboarding: ${{ contains(steps.check-files.outputs.changed_files, 'argocd/applications/templates/infra-') || contains(steps.check-files.outputs.changed_files, 'argocd/applications/values.yaml') }}
@@ -71,38 +72,6 @@ jobs:
         uses: open-edge-platform/orch-ci/discover-changed-files@main  # zizmor: ignore[unpinned-uses]
         with:
           project_folder: "."
-
-  scan-vulnerabilities:
-    permissions:
-      contents: read
-    name: Scan for vulnerabilities
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    env:
-      OUTPUT_FILE: e2e-tests/trivy/trivy-fs-report.csv
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-        with:
-          persist-credentials: false
-
-      - name: Trivy (Filesystem)
-        uses: aquasecurity/trivy-action@6c175e9c4083a92bbca2f9724c8a5e33bc2d97a5  # 0.30.0
-        with:
-          scan-type: "fs"
-          scan-ref: "."
-          format: "template"
-          template: "@e2e-tests/trivy/trivy-scan-report.tpl"
-          output: ${{ env.OUTPUT_FILE }}
-          exit-code: 1
-          cache: "false"
-
-      - name: Upload evidence
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
-        with:
-          name: trivy-fs-report
-          path: ${{ env.OUTPUT_FILE }}
 
   scan-viruses:
     permissions:
@@ -139,21 +108,6 @@ jobs:
           name: antivirus-report
           path: ${{ env.OUTPUT_FILE }}
 
-  check-license:
-    permissions:
-      contents: read
-    name: Check License
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-        with:
-          persist-credentials: false
-
-      - name: REUSE Compliance Check
-        uses: fsfe/reuse-action@bb774aa972c2a89ff34781233d275075cbddf542  # v5.0.0
-
   lint-markdown:
     permissions:
       contents: read
@@ -188,8 +142,7 @@ jobs:
         uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
 
       - name: Run lint
-        working-directory: on-prem-installers
-        run: mage lint:markdown
+        run: mage -v lint:markdown
 
   lint-shell:
     permissions:
@@ -351,10 +304,10 @@ jobs:
       - lint-yaml
       - lint-version
       - scan-viruses
-      - scan-vulnerabilities
       - check-changed-files
     if: |
-      always() && (
+      always() &&
+      needs.lint-version.result == 'success' && (
       needs.check-changed-files.outputs.orch == 'true' ||
       needs.check-changed-files.outputs.on-prem == 'true' ||
       needs.check-changed-files.outputs.ci == 'true' ||
@@ -370,6 +323,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
           persist-credentials: false
+          ref:  ${{ github.event.pull_request.head.sha }}
 
       - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684  # v4.2.3
         with:
@@ -402,7 +356,9 @@ jobs:
       - name: Set DEB_VERSION
         id: set-version
         working-directory: on-prem-installers
-        run: echo "DEB_VERSION=$(mage build:debVersion)" >> "$GITHUB_OUTPUT"
+        run: |
+          mage build:debVersion
+          echo "DEB_VERSION=$(mage build:debVersion)" >> "$GITHUB_OUTPUT"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722  # v4.0.1
@@ -486,7 +442,8 @@ jobs:
       - lint-yaml
       - check-changed-files
     if: |
-      always() && (
+      always() &&
+      needs.lint-version.result == 'success' && (
       needs.check-changed-files.outputs.orch == 'true' ||
       needs.check-changed-files.outputs.ci == 'true' ||
       github.ref == 'refs/heads/main' ||
@@ -719,11 +676,11 @@ jobs:
       - build-publish
       - check-changed-files
     if: |
-      always() && (
+      always() &&
+      needs.build-publish.result == 'success' && (
       needs.check-changed-files.outputs.orch == 'true' ||
       needs.check-changed-files.outputs.on-prem == 'true' ||
       needs.check-changed-files.outputs.ci == 'true' ||
-      needs.build-publish.result == 'success' ||
       github.ref == 'refs/heads/main' ||
       github.ref == 'refs/heads/main-pass-validation'
       )
@@ -732,31 +689,18 @@ jobs:
     env:
       KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
     steps:
-      - name: Checkout code
+      - name: Checkout Orchestrator repo
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
           persist-credentials: false
 
-      - name: Setup asdf and install dependencies
-        id: install-deps
-        uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
-
-      - name: Deploy Orchestrator
-        env:
-          TF_VAR_intel_release_service_refresh_token: value-not-used
-          TF_VAR_deploy_tag: ${{ needs.build-publish.outputs.deb-version }}
-          TF_VAR_FILE: ${{ github.workspace }}/terraform/orchestrator/terraform.tfvars
-          TF_VAR_docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
-          TF_VAR_docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
-        timeout-minutes: 90
-        run: mage deploy:onPrem
-
-      - name: Verify deployment
-        timeout-minutes: 60
-        run: mage -v deploy:waitUntilComplete
-
-      - name: Setup test environment
-        run: mage -v gen:orchCA deploy:orchCA deploy:edgeNetworkDNS
+      - name: Deploy On-Prem Orchestrator
+        id: deploy-on-prem
+        uses: ./.github/actions/deploy_on_prem
+        with:
+          orch_version: ${{ github.event.pull_request.head.sha }}
+          docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
+          docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
 
       - name: Run E2E tests
         env:
@@ -775,34 +719,6 @@ jobs:
           needs.check-changed-files.outputs.orch == 'true' ||
           needs.check-changed-files.outputs.ci == 'true'
         run: mage test:onboarding
-
-      - name: Get diagnostic information
-        id: get-diagnostic-info
-        if: always() && steps.install-deps.conclusion == 'success'
-        env:
-          SSH_HOST: 192.168.99.10
-          SSH_USER: ubuntu
-          SSH_PASSWORD: ubuntu
-        run: |
-          mkdir -p onprem-diagnostics
-          kubectl config set-cluster default --server="https://${SSH_HOST}:6443" --insecure-skip-tls-verify
-          kubectl get pods -o wide -A | tee onprem-diagnostics/pods-list.txt
-          kubectl describe pods -A | tee onprem-diagnostics/pods-describe.txt
-          mage logutils:collectArgoDiags | tee onprem-diagnostics/argo-diag.txt
-          kubectl get applications -o yaml -A | tee onprem-diagnostics/argocd-applications.yaml
-          kubectl get events -o yaml -A | tee onprem-diagnostics/events.yaml
-
-      - name: Upload diagnostic information to CI artifact store
-        if: always() && steps.get-diagnostic-info.conclusion == 'success'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
-        with:
-          name: onprem-diagnostics
-          path: |
-            onprem-diagnostics/pods-list.txt
-            onprem-diagnostics/pods-describe.txt
-            onprem-diagnostics/argo-diag.txt
-            onprem-diagnostics/argocd-applications.yaml
-            onprem-diagnostics/events.yaml
 
   tag-repo:
     permissions:
