@@ -9,6 +9,29 @@
 # Everything requires Platform team review by default
 * @se-chris-thach @mdbalvin @rad-szulim @charlesmcchan @yi-tseng-intel @ashridatta @teone @callumnobleintel @daniele-moro @SeanCondon @pierventre @cgoea john.oloughlin@intel.com gary.loughnane@intel.com @palade @pperycz @ltalarcz @jakubsikorski @sys-orch-approve @ahalimx86
 
+# Dependabot is used to manage dependencies in this repository. It is configured to automatically open pull requests to
+# update dependencies when new versions are available. The following files are managed by Dependabot and do not require
+# manual review or approval for changes. However, if you want to review the changes made by Dependabot, you can do so
+# by checking the pull requests it opens. This workaround was shared in
+# https://github.com/orgs/community/discussions/23064#discussioncomment-8383923 and can be removed once GitHub properly
+# supports CODEOWNERS for GitHub apps.
+# Go modules dependencies
+**/*.mod
+**/*.sum
+# Terraform dependencies
+**/*.tf
+**/*.tfvars
+**/*.tfstate
+**/*.tfstate.backup
+# Helm dependencies
+**/Chart.yaml
+**/values.yaml
+# Docker dependencies
+**/Dockerfile
+# GitHub Actions dependencies
+/.github/workflows/*.yml
+/.github/workflows/*.yaml
+
 # Except the following folders, which can be merged with passing CI and one approval
 /argocd/applications/templates
 /ci/
@@ -20,7 +43,7 @@
 .github/ @se-chris-thach @rad-szulim @charlesmcchan @mdbalvin @palade @Irakus @yi-tseng-intel @SushilLakra
 
 # Cypress tests require UI team review
-.github/actions/cypress/ @teone @mamanzan @satya-in @fjcooper5
+.github/actions/cypress/ @soniabha-intc @teone @satya-in @sys-orch-approve
 
 # Platform team Forza maintains on-prem Orchestrator
 /on-prem-installers/ @se-chris-thach @palade john.oloughlin@intel.com gary.loughnane@intel.com @mdbalvin @ashridatta @sys-orch-approve
@@ -35,8 +58,8 @@
 /argocd/applications/custom/app* @scottmbaker @adibrastegarnia @SeanCondon @badhrinathpa @pudelkoM @guptagunjan  @sys-orch-approve
 
 # UI templates and values
-/argocd/applications/**/web-ui* @teone @fjcooper5 @satya-in @mamanzan @RPG-coder-intc @dlemiech @riyaz-ghati @vigneshintel
-/argocd/applications/**/metadata-broker* @teone @fjcooper5 @satya-in @mamanzan @RPG-coder-intc @dlemiech @riyaz-ghati @vigneshintel
+/argocd/applications/**/web-ui* @soniabha-intc @teone @satya-in @dlemiech @riyaz-ghati @vigneshintel @sys-orch-approve
+/argocd/applications/**/metadata-broker* @soniabha-intc @teone @satya-in @dlemiech @riyaz-ghati @vigneshintel @sys-orch-approve
 
 # Cluster Orch Tests
 /e2e-tests/orchestrator/clusterorch_smoke_test.go @gcgirish @andybavier @hyunsun @jdanieck @jokuniew @eoghanlawless @sys-orch-approve
