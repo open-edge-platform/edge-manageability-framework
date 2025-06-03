@@ -676,9 +676,9 @@ mage onPrem:createSreSecrets
 # set_default_smtp_env
 # create_smpt_secrets
 mage onPrem:createSmtpSecrets
-harbor_password=$(mage onprem:generateHarborPassword)
-keycloak_password=$(mage onprem:generatePassword)
-postgres_password=$(mage onprem:generatePassword)
+harbor_password=$(mage onPrem:generateHarborPassword)
+keycloak_password=$(mage onPrem:generatePassword)
+postgres_password=$(mage onPrem:generatePassword)
 # create_harbor_secret orch-harbor "$harbor_password"
 mage onPrem:createHarborSecret orch-harbor "$harbor_password"
 #create_harbor_password orch-harbor "$harbor_password"
