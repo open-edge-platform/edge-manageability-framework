@@ -31,6 +31,8 @@ const (
 	VPCBackendBucketKey = "vpc.tfstate"
 )
 
+var AWSVPCStepLabels = []string{"aws", "vpc"}
+
 type AWSVPCVariables struct {
 	Region                 string                  `json:"region" yaml:"region"`
 	Name                   string                  `json:"name" yaml:"name"`
@@ -80,6 +82,16 @@ type AWSVPCStep struct {
 	StepLabels         []string
 	TerraformUtility   steps.TerraformUtility
 	AWSUtility         AWSUtility
+}
+
+func CreateAWSVPCStep(rootPath string, keepGeneratedFiles bool, terraformUtility steps.TerraformUtility, awsUtility AWSUtility) *AWSVPCStep {
+	return &AWSVPCStep{
+		RootPath:           rootPath,
+		KeepGeneratedFiles: keepGeneratedFiles,
+		TerraformUtility:   terraformUtility,
+		AWSUtility:         awsUtility,
+		StepLabels:         AWSVPCStepLabels,
+	}
 }
 
 func (s *AWSVPCStep) Name() string {
