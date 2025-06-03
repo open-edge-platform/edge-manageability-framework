@@ -7,6 +7,7 @@ package aws_iac_test
 import (
 	"crypto/rand"
 	"encoding/json"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -34,18 +35,19 @@ func TestObservabilityBucketsTestSuite(t *testing.T) {
 }
 
 func (s *ObservabilityBucketsTestSuite) TestApplyingModule() {
-	randomPostfix := strings.ToLower(rand.Text()[:8])
-	bucketName := "observability-buckets-state-test-bucket-" + randomPostfix
+
+	randomPostfix := strings.ToLower(rand.Text()[:4])
+	bucketName := "obs3-test-bucket-" + randomPostfix
 	aws.CreateS3Bucket(s.T(), "us-west-2", bucketName)
 	defer func() {
 		aws.EmptyS3Bucket(s.T(), "us-west-2", bucketName)
 		aws.DeleteS3Bucket(s.T(), "us-west-2", bucketName)
 	}()
-	clusterName := "observability-test-cluster-" + randomPostfix
+	clusterName := "obs3-test-" + randomPostfix
 	variables := ObservabilityBucketsVariables{
 		Region:        "us-west-2",
 		CustomerTag:   "test-customer",
-		S3Prefix:      "test-prefix",
+		S3Prefix:      "pre",
 		ClusterName:   clusterName,
 		CreateTracing: true,
 	}
@@ -62,22 +64,16 @@ func (s *ObservabilityBucketsTestSuite) TestApplyingModule() {
 		s.T().Fatalf("Failed to write to temporary file: %v", err)
 	}
 
-	clusterName, subnets, vpcId, err := CreateTestEKSCluster(clusterName, "us-west-2")
+	clusterName, vpcId, err := CreateTestEKSCluster(clusterName, "us-west-2")
 	if err != nil {
 		s.T().Fatalf("Failed to create EKS cluster: %v", err)
 	}
 
-	defer DeleteTestEKSCluster(clusterName, subnets, vpcId, "us-west-2")
-	time.Sleep(360 * time.Second) // Wait for EKS cluster to be ready
-	// eksCluster, err := GetEKSCluster(clusterName, "us-west-2")
-	// if err != nil {
-	// 	s.T().Fatalf("Failed to get EKS cluster: %v", err)
-	// }
-	// s.NotNil(eksCluster, "EKS cluster should not be nil")
-	// s.NotNil(eksCluster.Identity, "Identity shouldn't be nil")
-	// s.NotNil(eksCluster.Identity.Oidc, "OIDC shouldn't be nil")
-	// s.NotNil(eksCluster.Identity.Oidc.Issuer, "OIDC issuer shouldn't be nil")
-	// s.NotNil(nil, "nil shouldn't be nil")
+	fmt.Printf("Created EKS cluster: %s with vpc %s\n", clusterName, vpcId)
+
+	defer DeleteTestEKSCluster(clusterName, vpcId, "us-west-2")
+
+	WaitForClusterInActiveState(clusterName, "us-west-2", time.Minute*10)
 
 	terraformOptions := terraform.WithDefaultRetryableErrors(s.T(), &terraform.Options{
 		TerraformDir: "../s3",
@@ -94,18 +90,18 @@ func (s *ObservabilityBucketsTestSuite) TestApplyingModule() {
 
 	terraform.InitAndApply(s.T(), terraformOptions)
 	// Verify that the S3 buckets for orch observability are created
-	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-test-prefix-"+"orch-loki-admin")
-	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-test-prefix-"+"orch-loki-chunks")
-	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-test-prefix-"+"orch-loki-ruler")
-	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-test-prefix-"+"orch-mimir-ruler")
-	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-test-prefix-"+"orch-mimir-tsdb")
+	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-pre-"+"orch-loki-admin")
+	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-pre-"+"orch-loki-chunks")
+	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-pre-"+"orch-loki-ruler")
+	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-pre-"+"orch-mimir-ruler")
+	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-pre-"+"orch-mimir-tsdb")
 	// Verify that the S3 buckets for edge node observability are created
-	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-test-prefix-"+"fm-loki-admin")
-	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-test-prefix-"+"fm-loki-chunks")
-	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-test-prefix-"+"fm-loki-ruler")
-	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-test-prefix-"+"fm-mimir-ruler")
-	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-test-prefix-"+"fm-mimir-tsdb")
+	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-pre-"+"fm-loki-admin")
+	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-pre-"+"fm-loki-chunks")
+	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-pre-"+"fm-loki-ruler")
+	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-pre-"+"fm-mimir-ruler")
+	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-pre-"+"fm-mimir-tsdb")
 	// Verify that the S3 buckets for tracing are created if CreateTracing is true
-	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-test-prefix-"+"tempo-traces")
+	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-pre-"+"tempo-traces")
 
 }
