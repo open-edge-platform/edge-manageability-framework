@@ -1,0 +1,79 @@
+# SPDX-FileCopyrightText: (C) 2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+name: "Deploy Orchestrator on Kind"
+description: "Creates a single node Kind cluster and Deploys the Orchestrator on it"
+inputs:
+  orch_version:
+    required: false
+    description: "Orchestrator version to deploy"
+    default: "main"
+  orch_password:
+    required: true
+    description: "Password to use to deploy Orchestrator"
+  docker_username:
+    required: true
+    description: "Docker Hub username for pulling images"
+  docker_password:
+    required: true
+    description: "Docker Hub password for pulling images"
+  token:
+    required: true
+    description: "PAT token for private repositories"
+
+runs:
+  using: "composite"
+  steps:
+  - name: Checkout code
+    uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+    with:
+      persist-credentials: false
+
+  - name: Set up git credentials
+    shell: bash
+    run: |
+      echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
+      git config --global url."https://${{ inputs.token }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+
+  - name: Setup asdf and install dependencies
+    id: install-deps
+    uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
+
+  - name: Print current git hash
+    shell: bash
+    run: echo "Current git hash is ${{ inputs.orch_version }}"
+
+  - name: Deploy External Orchestrator
+    env:
+      GIT_USER: "git"
+      GIT_TOKEN: ${{ inputs.token }}
+      EDGE_MANAGEABILITY_FRAMEWORK_REV: ${{ inputs.orch_version }}
+      DOCKERHUB_TOKEN: ${{ inputs.docker_password }}
+      DOCKERHUB_USERNAME: ${{ inputs.docker_username }}
+      ORCH_DEFAULT_PASSWORD: ${{ inputs.orch_password }}
+    shell: bash
+    run: |
+      set +x
+      echo "Starting to deploy Orchestrator..."
+      mage deploy:kindAll
+      echo "Orchestrator deployment done!"
+      echo "Root App Status:"
+      kubectl -n dev get applications root-app -o yaml
+  - name: Verify Kind Deployment
+    id: verify-kind-deployment
+    timeout-minutes: 25
+    shell: bash
+    run: |
+      echo "Starting to verify Orchestrator deployment..."
+      mage deploy:waitUntilComplete
+      echo "Orchestrator deployment verified!"
+      mage router:stop router:start
+      echo "Router restarted"
+  - name: Setup Test environment
+    shell: bash
+    run: |
+      sudo awk -i inplace '/BEGIN ORCH DEVELOPMENT HOSTS/,/END ORCH DEVELOPMENT HOSTS/ { next } 1' /etc/hosts
+      sudo awk -i inplace '/BEGIN ORCH SRE DEVELOPMENT HOST/,/END ORCH SRE DEVELOPMENT HOST/ { next } 1' /etc/hosts
+      mage gen:hostfileTraefik | sudo tee -a /etc/hosts > /dev/null
+      echo "Updated Hostfile entries!"
+      mage gen:orchCa deploy:orchCa
