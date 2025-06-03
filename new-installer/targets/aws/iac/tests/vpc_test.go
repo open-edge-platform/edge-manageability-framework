@@ -22,8 +22,7 @@ import (
 )
 
 const (
-	SSKKeySize    = 2048
-	DefaultRegion = "us-west-2"
+	JumphostSSHKeySize = 2048
 )
 
 type VPCTestSuite struct {
@@ -167,7 +166,7 @@ func (s *VPCTestSuite) TestApplyingModule() {
 }
 
 func GenerateSSHKeyPair() (string, string, error) {
-	privateKey, err := rsa.GenerateKey(rand.Reader, SSKKeySize)
+	privateKey, err := rsa.GenerateKey(rand.Reader, JumphostSSHKeySize)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to generate private key: %v", err)
 	}

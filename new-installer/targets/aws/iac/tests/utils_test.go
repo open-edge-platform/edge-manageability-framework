@@ -12,6 +12,10 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 )
 
+const (
+	DefaultRegion = "us-west-2"
+)
+
 type AWSS3BackendConfig struct {
 	Region string `json:"region"`
 	Bucket string `json:"bucket"`
