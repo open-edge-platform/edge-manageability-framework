@@ -599,8 +599,8 @@ mage onPrem:downloadPackages
 # Write configuration to disk if the flag is set
 export repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n")
 if [[ "$WRITE_CONFIG" == "true" ]]; then
-  #write_config_to_disk
-  mage onPrem:writeConfigToDisk
+  write_config_to_disk
+  #mage onPrem:writeConfigToDisk
 fi
 
 # Config - interactive
