@@ -6,6 +6,8 @@ argo:
   enabled:
     infra-external: false
   infra-managers:
+    autoProvision:
+      defaultProfile: microvisor-standalone
     os-resource-manager:
       enabledProfiles:
         - microvisor-standalone
