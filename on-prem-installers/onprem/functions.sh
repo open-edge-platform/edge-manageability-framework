@@ -127,11 +127,6 @@ download_artifacts() {
     cd "$cwd" || exit 1
 }
 
-# Gets JWT token from Azure
-# get_JWT_token <refresh token> <release service URL>
-get_JWT_token() {
-    curl -X POST -d "refresh_token=$1&grant_type=refresh_token" "https://$2/oauth/token" | sed -n 's/.*"id_token":"\([^"]*\)".*/\1/p'
-}
 
 # Waits for pods in namespace to be in Ready state
 # wait_for_pods_running <namespace>
