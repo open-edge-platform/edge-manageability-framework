@@ -23,7 +23,7 @@ require (
 	github.com/open-edge-platform/infra-managers/host v1.21.0
 	github.com/open-edge-platform/infra-managers/maintenance v1.21.0
 	github.com/open-edge-platform/infra-managers/telemetry v1.21.0
-	github.com/open-edge-platform/infra-onboarding/onboarding-manager v1.33.0
+	github.com/open-edge-platform/infra-onboarding/onboarding-manager v1.33.1
 	github.com/open-edge-platform/orch-library/go v0.5.29
 	github.com/open-edge-platform/orch-utils/tenancy-datamodel v0.0.0-20250401180309-9c2571c45857
 	github.com/opencontainers/image-spec v1.1.1
@@ -35,8 +35,8 @@ require (
 	golang.org/x/sync v0.12.0
 	google.golang.org/grpc v1.71.0
 	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/apimachinery v0.32.3
-	k8s.io/client-go v0.32.3
+	k8s.io/apimachinery v0.32.5
+	k8s.io/client-go v0.32.5
 	oras.land/oras-go/v2 v2.5.0
 	sigs.k8s.io/controller-runtime v0.20.4
 )
@@ -139,7 +139,7 @@ require (
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	k8s.io/api v0.32.3 // indirect
+	k8s.io/api v0.32.5 // indirect
 	k8s.io/apiextensions-apiserver v0.32.1 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20250318190949-c8a335a9a2ff // indirect
