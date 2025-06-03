@@ -898,3 +898,38 @@ func (OnPrem) WriteConfigToDisk() error {
 	os.Exit(0)
 	return nil
 }
+
+func (OnPrem) InstallOrchestrator() error {
+	cwd := os.Getenv("cwd")
+	debDirName := os.Getenv("deb_dir_name")
+	orchInstallerProfile := os.Getenv("ORCH_INSTALLER_PROFILE")
+	gitRepos := os.Getenv("GIT_REPOS")
+
+	fmt.Println("Installing Edge Orchestrator Packages")
+
+	cmd := exec.Command(
+		"sudo", "env",
+		"NEEDRESTART_MODE=a",
+		"DEBIAN_FRONTEND=noninteractive",
+		fmt.Sprintf("ORCH_INSTALLER_PROFILE=%s", orchInstallerProfile),
+		fmt.Sprintf("GIT_REPOS=%s", gitRepos),
+		"apt-get", "install", "-y",
+		fmt.Sprintf("%s/%s/onprem-orch-installer_*_amd64.deb", cwd, debDirName),
+	)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to install Edge Orchestrator: %w", err)
+	}
+
+	fmt.Println("Edge Orchestrator getting installed, wait for SW to deploy...")
+
+	fmt.Printf(`
+Edge Orchestrator SW is being deployed, please wait for all applications to deploy...
+To check the status of the deployment run 'kubectl get applications -A'.
+Installation is completed when 'root-app' Application is in 'Healthy' and 'Synced' state.
+Once it is completed, you might want to configure DNS for UI and other services by running generate_fqdn script and following instructions
+`)
+
+	return nil
+}

@@ -690,11 +690,12 @@ mage onPrem:createPostgresPassword orch-database "$postgres_password"
 
 
 # Run orchestrator installer
-echo "Installing Edge Orchestrator Packages"
-eval "sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive ORCH_INSTALLER_PROFILE=$ORCH_INSTALLER_PROFILE GIT_REPOS=$GIT_REPOS apt-get install -y $cwd/$deb_dir_name/onprem-orch-installer_*_amd64.deb"
-echo "Edge Orchestrator getting installed, wait for SW to deploy... "
+mage onPrem:installOrchestrator
+# echo "Installing Edge Orchestrator Packages"
+# eval "sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive ORCH_INSTALLER_PROFILE=$ORCH_INSTALLER_PROFILE GIT_REPOS=$GIT_REPOS apt-get install -y $cwd/$deb_dir_name/onprem-orch-installer_*_amd64.deb"
+# echo "Edge Orchestrator getting installed, wait for SW to deploy... "
 
-printf "\nEdge Orchestrator SW is being deployed, please wait for all applications to deploy...\n
-To check the status of the deployment run 'kubectl get applications -A'.\n
-Installation is completed when 'root-app' Application is in 'Healthy' and 'Synced' state.\n
-Once it is completed, you might want to configure DNS for UI and other services by running generate_fqdn script and following instructions\n"
+# printf "\nEdge Orchestrator SW is being deployed, please wait for all applications to deploy...\n
+# To check the status of the deployment run 'kubectl get applications -A'.\n
+# Installation is completed when 'root-app' Application is in 'Healthy' and 'Synced' state.\n
+# Once it is completed, you might want to configure DNS for UI and other services by running generate_fqdn script and following instructions\n"
