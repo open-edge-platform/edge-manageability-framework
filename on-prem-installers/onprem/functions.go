@@ -111,6 +111,22 @@ func (OnPrem) GeneratePassword() (string, error) {
 	return shuffled, nil
 }
 
+// GeneratePassword generates a random 100-character alphanumeric password.
+func (OnPrem) GenerateHarborPassword() (string, error) {
+	const length = 100
+	const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+	var sb strings.Builder
+
+	for i := 0; i < length; i++ {
+		num, err := rand.Int(rand.Reader, big.NewInt(int64(len(chars))))
+		if err != nil {
+			return "", err
+		}
+		sb.WriteByte(chars[num.Int64()])
+	}
+	return sb.String(), nil
+}
+
 // Check if oras is installed
 func (OnPrem) CheckOras() error {
 	_, err := exec.LookPath("oras")
