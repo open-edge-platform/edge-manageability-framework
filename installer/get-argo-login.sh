@@ -10,5 +10,5 @@ echo
 echo Argo CD Default Account Settings
 echo
 echo   Username: admin
-echo   Password: $default_pass
+echo   Password: "$default_pass"
 echo
