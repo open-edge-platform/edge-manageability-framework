@@ -40,7 +40,7 @@ runs:
       with:
         repository: open-edge-platform/orch-ui
         path: orch-ui
-        ref: a145d044ff73eade7a1e14d5c925108472d9aa48
+        ref: ITEP-66310-api-changes
         persist-credentials: false
     - run: git log -1
       shell: bash
