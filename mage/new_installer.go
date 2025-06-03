@@ -142,10 +142,18 @@ func (NewInstaller) Lint() error {
 	if err != nil {
 		return fmt.Errorf("failed to get current working directory: %w", err)
 	}
-	os.Chdir(rootDir)
-	if err := sh.RunV("golangci-lint", "run", "--config", oldWorkingDir+"/.golangci.yml"); err != nil {
-		return err
+	err = os.Chdir(rootDir)
+	if err != nil {
+		return fmt.Errorf("failed to change directory to %s: %w", rootDir, err)
 	}
-	os.Chdir(oldWorkingDir)
+	defer func() {
+		err := os.Chdir(oldWorkingDir)
+		if err != nil {
+			fmt.Printf("Warning: failed to change back to original directory %s: %v\n", oldWorkingDir, err)
+		}
+	}()
+	if err := sh.RunV("golangci-lint", "run", "--config", oldWorkingDir+"/.golangci.yml", "-v", "--timeout", "5m0s"); err != nil {
+		return fmt.Errorf("Linter returned an error: %w", err)
+	}
 	return nil
 }
