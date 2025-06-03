@@ -1,0 +1,56 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+fps:
+  name: Platform Service
+  description: Essential components
+  apps:
+    platform-keycloak:
+      name: Keycloak
+      description: Identity Management
+    vault:
+      name: Vault
+      description: Secret Management
+    istio:
+      name: Istio
+      description: Service Mesh
+    traefik:
+      name: Traefik
+      description: Ingress Controller
+    kyverno:
+      name: Kyverno
+      description: Policy Enforcement
+eim:
+  name: Edge Infrastructure Management
+  description: Manage edge infrastructure and hardware
+  apps:
+    infra-core:
+      name: Infra Core
+      description: EIM Core Component
+    onboarding-manager:
+      name: Onboarding Manager
+      description: EIM Onboarding Component
+co:
+  name: Cluster Orchestration
+  description: Manage edge clusters
+  apps:
+    cluster-manager:
+      name: Cluster Manager
+      description: Cluster Orchestration Manager
+ao:
+  name: Application Orchestration
+  description: Manage edge applications
+  apps:
+    app-deployment-manager:
+      name: App Deployment Manager
+      description: Application Deployment Manager
+    app-service-proxy:
+      name: App Service Proxy
+      description: Application Service Proxy
+ui:
+  name: Web UI
+  description: Web user interface
+  apps:
+    web-ui-core:
+      name: Web UI Core
+      description: Web User Interface
