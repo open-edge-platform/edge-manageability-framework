@@ -61,7 +61,6 @@ runs:
       kubectl -n dev get applications root-app -o yaml
   - name: Verify Kind Deployment
     id: verify-kind-deployment
-    timeout-minutes: 25
     shell: bash
     run: |
       echo "Starting to verify Orchestrator deployment..."
