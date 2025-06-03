@@ -44,6 +44,7 @@ runs:
     run: echo "Current git hash is ${{ inputs.orch_version }}"
 
   - name: Deploy External Orchestrator
+    id: deploy-external-orchestrator
     env:
       GIT_USER: "git"
       GIT_TOKEN: ${{ inputs.token }}
@@ -57,8 +58,13 @@ runs:
       echo "Starting to deploy Orchestrator..."
       mage deploy:kindAll
       echo "Orchestrator deployment done!"
+  - name: Get Root App Status
+    shell: bash
+    if: ${{ always() && steps.deploy-external-orchestrator.conclusion != 'success' }}
+    run: |
       echo "Root App Status:"
-      kubectl -n dev get applications root-app -o yaml
+      kubectl get pods -o wide -A
+      kubectl -n dev get applications root-app -o yaml || true
   - name: Verify Kind Deployment
     id: verify-kind-deployment
     shell: bash
