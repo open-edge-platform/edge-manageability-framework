@@ -76,7 +76,7 @@ func (s *ObservabilityBucketsTestSuite) TestApplyingModule() {
 	WaitForClusterInActiveState(clusterName, "us-west-2", time.Minute*10)
 
 	terraformOptions := terraform.WithDefaultRetryableErrors(s.T(), &terraform.Options{
-		TerraformDir: "../s3",
+		TerraformDir: "../observability_buckets",
 		VarFiles:     []string{tempFile.Name()},
 		BackendConfig: map[string]interface{}{
 			"region": "us-west-2",

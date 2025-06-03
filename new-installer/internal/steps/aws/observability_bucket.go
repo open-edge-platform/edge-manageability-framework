@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	S3ModulePath                         = "new-installer/targets/aws/iac/s3"
+	S3ModulePath                         = "new-installer/targets/aws/iac/observability_buckets"
 	ObservabilityBucketsBackendBucketKey = "observability_buckets.tfstate"
 )
 
