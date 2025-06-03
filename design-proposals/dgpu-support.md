@@ -1,6 +1,7 @@
 # Design Proposal: Support for dGPU
 
 Author(s): Rajeev Ranjan, Sandeep Sharma, Jagrat Acharya
+
 Last updated: 2025-05-16
 
 ## Abstract
@@ -19,16 +20,16 @@ In the earlier release (3.0), a key issue was the inability to activate Secure B
 3. **One-click enablement/installation of GPUs**:Streamlining the GPU setup process for users
 4. **Component-Platform compatibility metrics**:
 
-| GPU           | OS           | Kernel  | Platform    | Priority |SB/FDE | SRIOV    | DevicePlugin | Operator  | Notes    |
-|---------------|--------------|---------|-------------|----------|-------|----------|--------------|-----------|----------|
-| Intel iGPU    | EMT 3.0      | -       | Xeon, Core  | P0(3.1)  | Yes   | Required | Required     | -         |          |
-| Intel iGPU    | Ubuntu 22.04 | >6.8    | Xeon, Core  | P0(3.1)  | No    | Required | Required     | -         |          |
-| Intel B580    | EMT 3.0      | -       | Xeon        | P0(3.1)  | Yes   | 3.2      | Required     | -         |          |
-| Intel B580    | Ubuntu 24.04 | >6.11   | Xeon        | P2(3.2)  | Yes   | 3.2      | Required     | -         | In-tree driver only in 24.04 |
-| Nvidia P100   | EMT 3.0      | -       | Xeon        | P2(3.2)  | Yes   | Required | -            | Required  |          |
-| Nvidia P100   | Ubuntu 22.04 | >6.11   | Xeon        | P1(3.1)  | No    | -        | -            | Required  | Needs a specific kernel 6.11.x |
+| GPU           | OS           | Kernel  | Platform    | Priority |SB/FDE | SRIOV    | DevicePlugin | Operator  |
+|---------------|--------------|---------|-------------|----------|-------|----------|--------------|-----------|
+| Intel iGPU    | EMT 3.0      | -       | Xeon, Core  | P0(3.1)  | Yes   | Required | Required     | -         |
+| Intel iGPU    | Ubuntu 22.04 | >6.8    | Xeon, Core  | P0(3.1)  | No    | Required | Required     | -         |
+| Intel B580    | EMT 3.0      | -       | Xeon        | P0(3.1)  | Yes   | 3.2      | Required     | -         |
+| Intel B580    | Ubuntu 24.04 | >6.11   | Xeon        | P2(3.2)  | Yes   | 3.2      | Required     | -         |
+| NVIDIA P100   | EMT 3.0      | -       | Xeon        | P2(3.2)  | Yes   | Required | -            | Required  |
+| NVIDIA P100   | Ubuntu 22.04 | >6.11   | Xeon        | P1(3.1)  | No    | -        | -            | Required  |
 
-Note that Nvidia P100 shall also be supported on Ubuntu 24.04 but in the 3.2 release cycle. For the current 3.1 release, technical readiness is targetted even if there are manual steps involved for Ubuntu 22.04.
+Note that NVIDIA P100 shall also be supported on Ubuntu 24.04 but in the 3.2 release cycle. For the current 3.1 release, technical readiness is targetted even if there are manual steps involved for Ubuntu 22.04.
 
 ### Proposed changes
 
@@ -168,12 +169,12 @@ The implementation is planned in two phases:
 1. Maintain support for Intel® Arc™ iGPU and dGPU on Ubuntu 22.04
 1. Intel® Arc™ iGPU support on EMT
 1. Intel Battlemage B580 dGPU support on EMT
-1. Nvidia P100 dGPU support on Ubuntu 22.04
+1. NVIDIA P100 dGPU support on Ubuntu 22.04
 
 ### Phase 2 (for EMF 3.2 release)
 
-1. Nvidia P100 dGPU support on EMT
-1. Nvidia P100 dGPU support on Ubuntu 24.04
+1. NVIDIA P100 dGPU support on EMT
+1. NVIDIA P100 dGPU support on Ubuntu 24.04
 1. Intel Battlemage B580 dGPU support on Ubuntu 24.04
 
 ## Open issues
