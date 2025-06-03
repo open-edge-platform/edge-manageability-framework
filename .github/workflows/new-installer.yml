@@ -153,7 +153,10 @@ jobs:
         run: mage newinstaller:test
 
       - name: Test new installer IaC
-      run: mage newinstaller:testiac
+        run: mage newinstaller:testiac
+
+      - name: Validate Terraform configs
+        run: mage newinstaller:validateiac
 
       - name: Upload new installer artifacts
         uses: actions/upload-artifact@v4.6.2

@@ -126,8 +126,9 @@ require (
 	golang.org/x/tools v0.22.0 // indirect
 )
 
+require github.com/aws/aws-sdk-go v1.55.7
+
 require (
-	github.com/aws/aws-sdk-go v1.55.7
 	github.com/charmbracelet/bubbletea v1.3.4
 	github.com/charmbracelet/huh v0.7.0
 	github.com/charmbracelet/lipgloss v1.1.0
