@@ -16,7 +16,7 @@ import (
 	"github.com/bitfield/script"
 )
 
-// skipRouter is a package-level variable intialized during startup.
+// skipRouter is a package-level variable initialized during startup.
 var skipRouter = func() bool {
 	// when the environment variable is set (SKIP_ROUTER=1), the router start/stop commands will be skipped
 	value := os.Getenv("SKIP_ROUTER")

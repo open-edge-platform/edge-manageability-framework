@@ -33,7 +33,7 @@ const (
 	kindOrchClusterName      = "kind" // TODO: Keep for backwards compatibility until all Mage is moved to root
 	deploymentTimeoutEnv     = "DEPLOYMENT_TIMEOUT"
 	defaultDeploymentTimeout = "1200s" // timeout must be a valid string
-	argoVersion              = "7.4.4"
+	argoVersion              = "8.0.0"
 	argoRetryCount           = 30
 	argoRetryInterval        = 30
 	giteaVersion             = "10.6.0"
@@ -140,7 +140,7 @@ func AsdfPlugins() error {
 	for _, name := range globalAsdf {
 		if _, err := script.File(".tool-versions").MatchRegexp(regexp.MustCompile(name)).Column(2).
 			ExecForEach(fmt.Sprintf("asdf set --home %s {{.}}", name)).Stdout(); err != nil {
-			return fmt.Errorf("error seting plugins listed in globalAsdf as global: %w", err)
+			return fmt.Errorf("error setting plugins listed in globalAsdf as global: %w", err)
 		}
 	}
 	fmt.Printf("asdf plugins updated🔌\n")
