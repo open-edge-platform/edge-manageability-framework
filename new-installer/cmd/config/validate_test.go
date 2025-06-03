@@ -912,6 +912,7 @@ func TestValidateNoProxy(t *testing.T) {
 	}
 }
 
+//nolint:dupword
 func TestValidateTlsCert(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -996,6 +997,7 @@ func TestValidateTlsCert(t *testing.T) {
 	}
 }
 
+//nolint:dupword
 func TestValidateTlsKey(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -1080,6 +1082,7 @@ func TestValidateTlsKey(t *testing.T) {
 	}
 }
 
+//nolint:dupword
 func TestValidateTlsCa(t *testing.T) {
 	tests := []struct {
 		name    string

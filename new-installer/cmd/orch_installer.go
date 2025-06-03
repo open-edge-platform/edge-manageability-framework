@@ -64,7 +64,10 @@ func main() {
 		}
 		rootCmd.AddCommand(c)
 	}
-	rootCmd.Execute()
+	err := rootCmd.Execute()
+	if err != nil {
+		zap.S().Fatalf("error executing command: %s", err)
+	}
 }
 
 func execute(action string, orchConfigFile string, runtimeStateFile string, logDir string, keepGeneratedFiles bool) {
@@ -141,7 +144,10 @@ func execute(action string, orchConfigFile string, runtimeStateFile string, logD
 		signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 		<-sig
 		logger.Info("Received interrupt signal, cancelling the installation, ctrl+C one more time to force it...")
-		logger.Sync()
+		err := logger.Sync()
+		if err != nil {
+			logger.Errorf("error syncing logger: %s", err)
+		}
 		orchInstaller.CancelInstallation()
 		cancelFunc()
 		<-sig

@@ -36,7 +36,7 @@ func (s *ShellUtilityTest) TestBasicCmd() {
 	}
 	s.Equal("Hello, World!\n", output.Stdout.String())
 	s.Equal("", output.Stderr.String())
-	s.Equal(nil, output.Error)
+	s.Require().NoError(output.Error)
 }
 
 func (s *ShellUtilityTest) TestBasicCmdStderr() {
@@ -55,7 +55,7 @@ func (s *ShellUtilityTest) TestBasicCmdStderr() {
 	}
 	s.Equal("", output.Stdout.String())
 	s.Equal("Hello, World!\n", output.Stderr.String())
-	s.Equal(nil, output.Error)
+	s.Require().NoError(output.Error)
 }
 
 func (s *ShellUtilityTest) TestBasicCmdError() {
@@ -135,6 +135,6 @@ func (s *ShellUtilityTest) TestBasicCmdBackground() {
 	waitErr := shellUtil.Wait()
 	s.Equal("", output.Stdout.String())
 	s.Equal("", output.Stderr.String())
-	s.Equal(nil, output.Error)
+	s.Require().NoError(output.Error)
 	s.Equal("signal: killed", waitErr.Error())
 }

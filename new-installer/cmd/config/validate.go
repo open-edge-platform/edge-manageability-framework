@@ -177,7 +177,7 @@ func validateSmtpPort(s string) error {
 	}
 	i, err := strconv.Atoi(s)
 	if err != nil {
-		return fmt.Errorf("cannot convert %s to integer: %s", s, err)
+		return fmt.Errorf("cannot convert %s to integer: %w", s, err)
 	}
 	if i < 1 || i > 65535 {
 		return fmt.Errorf("SMTP port must be between 1 and 65535")

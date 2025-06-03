@@ -28,18 +28,17 @@ global:
 
 	obj := config.OrchInstallerConfig{}
 	err := config.DeserializeFromYAML(&obj, data)
-	if !s.NoError(err, "failed to unmarshal yaml") {
-		return
-	}
+	s.Require().NoError(err, "failed to unmarshal yaml")
+
 	s.Equal(1, obj.Version)
 	s.Equal("aws", obj.Provider)
 	s.Equal("test", obj.Global.OrchName)
 	data2, err := config.SerializeToYAML(obj)
-	s.NoError(err, "failed to marshal yaml")
+	s.Require().NoError(err, "failed to marshal yaml")
 
 	obj2 := config.OrchInstallerConfig{}
 	err = config.DeserializeFromYAML(&obj2, data2)
-	s.NoError(err, "failed to unmarshal yaml")
+	s.Require().NoError(err, "failed to unmarshal yaml")
 	s.Equal(obj.Version, obj2.Version)
 	s.Equal(obj.Provider, obj2.Provider)
 	s.Equal(obj.Global.OrchName, obj2.Global.OrchName)

@@ -24,10 +24,28 @@ type OrchInstaller struct {
 
 func UpdateRuntimeState(dest *config.OrchInstallerRuntimeState, source config.OrchInstallerRuntimeState) *OrchInstallerError {
 	srcK := koanf.New(".")
-	srcK.Load(structs.Provider(source, "yaml"), nil)
+	err := srcK.Load(structs.Provider(source, "yaml"), nil)
+	if err != nil {
+		return &OrchInstallerError{
+			ErrorCode: OrchInstallerErrorCodeInternal,
+			ErrorMsg:  fmt.Sprintf("failed to marshal runtime state: %v", err),
+		}
+	}
 	dstK := koanf.New(".")
-	dstK.Load(structs.Provider(dest, "yaml"), nil)
-	dstK.Merge(srcK)
+	err = dstK.Load(structs.Provider(dest, "yaml"), nil)
+	if err != nil {
+		return &OrchInstallerError{
+			ErrorCode: OrchInstallerErrorCodeInternal,
+			ErrorMsg:  fmt.Sprintf("failed to marshal runtime state: %v", err),
+		}
+	}
+	err = dstK.Merge(srcK)
+	if err != nil {
+		return &OrchInstallerError{
+			ErrorCode: OrchInstallerErrorCodeInternal,
+			ErrorMsg:  fmt.Sprintf("failed to merge runtime state: %v", err),
+		}
+	}
 
 	dstData, err := dstK.Marshal(yaml.Parser())
 	if err != nil {

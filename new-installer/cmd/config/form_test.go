@@ -33,6 +33,7 @@ var form *huh.Form
 var model tea.Model
 
 func testConfigureGlobal(t *testing.T) {
+
 	// Enter orchestrator name
 	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("demo")})
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
@@ -54,6 +55,7 @@ func testConfigureGlobal(t *testing.T) {
 }
 
 func testConfigureProvider(t *testing.T) {
+
 	// Select AWS
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
 
@@ -65,6 +67,7 @@ func testConfigureProvider(t *testing.T) {
 }
 
 func testConfigureAwsBasic(t *testing.T) {
+
 	// Enter AWS region
 	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("us-west-2")})
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
@@ -77,6 +80,7 @@ func testConfigureAwsBasic(t *testing.T) {
 }
 
 func testConfirmAwsExpert(t *testing.T) {
+
 	// Select AWS expert mode
 	model.Update(tea.KeyMsg{Type: tea.KeyLeft})
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
@@ -89,6 +93,7 @@ func testConfirmAwsExpert(t *testing.T) {
 }
 
 func testSkipAwsExpert(t *testing.T) {
+
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
 
 	view := ansi.Strip(model.View())
@@ -396,16 +401,17 @@ func TestSimpleWorkflow(t *testing.T) {
 	form = orchInstallerForm()
 	model, _ = form.Update(form.Init())
 
-	testConfigureGlobal(t)
-	testConfigureProvider(t)
-	testConfigureAwsBasic(t)
-	testSkipAwsExpert(t)
-	testSkipProxy(t)
-	testSkipCert(t)
-	testSkipSRE(t)
-	testSkipSMTP(t)
-	testSimpleMode(t)
-	testAdvancedMode(t)
+	t.Run("", testConfigureGlobal)
+	t.Run("", testConfigureProvider)
+	t.Run("", testConfigureAwsBasic)
+	t.Run("", testSkipAwsExpert)
+	t.Run("", testSkipProxy)
+	t.Run("", testSkipCert)
+	t.Run("", testSkipSRE)
+	t.Run("", testSkipSMTP)
+	t.Run("", testConfirmSimpleMode)
+	t.Run("", testSimpleMode)
+	t.Run("", testAdvancedMode)
 }
 
 func TestAdvancedWorkflow(t *testing.T) {
@@ -415,21 +421,21 @@ func TestAdvancedWorkflow(t *testing.T) {
 	form = orchInstallerForm()
 	model, _ = form.Update(form.Init())
 
-	testConfigureGlobal(t)
-	testConfigureProvider(t)
-	testConfigureAwsBasic(t)
-	testConfirmAwsExpert(t)
-	testConfigureAwsExpert(t)
-	testConfirmProxy(t)
-	testConfigureProxy(t)
-	testConfirmCert(t)
-	testConfigureCert(t)
-	testConfirmSRE(t)
-	testConfigureSre(t)
-	testConfirmSMTP(t)
-	testConfigureSMTP(t)
-	testConfirmAdvancedMode(t)
-	testAdvancedMode(t)
+	t.Run("", testConfigureGlobal)
+	t.Run("", testConfigureProvider)
+	t.Run("", testConfigureAwsBasic)
+	t.Run("", testConfirmAwsExpert)
+	t.Run("", testConfigureAwsExpert)
+	t.Run("", testConfirmProxy)
+	t.Run("", testConfigureProxy)
+	t.Run("", testConfirmCert)
+	t.Run("", testConfigureCert)
+	t.Run("", testConfirmSRE)
+	t.Run("", testConfigureSre)
+	t.Run("", testConfirmSMTP)
+	t.Run("", testConfigureSMTP)
+	t.Run("", testConfirmAdvancedMode)
+	t.Run("", testAdvancedMode)
 }
 
 // batchUpdate is a helper function to run the model and update it with the command
