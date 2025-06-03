@@ -46,12 +46,14 @@ var embedFS embed.FS
 var embedPackages string
 
 // These are intermediate states that will not be saved back to the config file
-var flags flag
-var orchPackages map[string]config.OrchPackage
-var tmpJumpHostWhitelist string
-var enabledSimple []string
-var enabledAdvanced []string
-var configMode Mode
+var (
+	flags                flag
+	orchPackages         map[string]config.OrchPackage
+	tmpJumpHostWhitelist string
+	enabledSimple        []string
+	enabledAdvanced      []string
+	configMode           Mode
+)
 
 func loadOrchPackagesFromString(configStr string) {
 	err := yaml.Unmarshal([]byte(configStr), &orchPackages)
@@ -203,7 +205,7 @@ func main() {
 	}
 	embedPackages = string(bytes)
 
-	var cobraCmd = &cobra.Command{
+	cobraCmd := &cobra.Command{
 		Use:   "arctic-huh",
 		Short: "An interactive tool to build EMF config",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -241,5 +243,4 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-
 }

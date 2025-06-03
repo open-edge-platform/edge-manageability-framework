@@ -29,11 +29,12 @@ var pretty = lipgloss.NewStyle().
 	MarginTop(1).
 	Padding(1, 3, 1, 2)
 
-var form *huh.Form
-var model tea.Model
+var (
+	form  *huh.Form
+	model tea.Model
+)
 
 func testConfigureGlobal(t *testing.T) {
-
 	// Enter orchestrator name
 	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("demo")})
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
@@ -55,7 +56,6 @@ func testConfigureGlobal(t *testing.T) {
 }
 
 func testConfigureProvider(t *testing.T) {
-
 	// Select AWS
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
 
@@ -67,7 +67,6 @@ func testConfigureProvider(t *testing.T) {
 }
 
 func testConfigureAwsBasic(t *testing.T) {
-
 	// Enter AWS region
 	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("us-west-2")})
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
@@ -80,7 +79,6 @@ func testConfigureAwsBasic(t *testing.T) {
 }
 
 func testConfirmAwsExpert(t *testing.T) {
-
 	// Select AWS expert mode
 	model.Update(tea.KeyMsg{Type: tea.KeyLeft})
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
@@ -93,7 +91,6 @@ func testConfirmAwsExpert(t *testing.T) {
 }
 
 func testSkipAwsExpert(t *testing.T) {
-
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
 
 	view := ansi.Strip(model.View())
@@ -221,8 +218,8 @@ func testConfigureCert(t *testing.T) {
 	}
 	caDER, _ := x509.CreateCertificate(rand.Reader, &caTemplate, &caTemplate, &caPriv.PublicKey, caPriv)
 	caPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: caDER})
-	//caKeyBytes, _ := x509.MarshalECPrivateKey(caPriv)
-	//caKeyPEM := pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: caKeyBytes})
+	// caKeyBytes, _ := x509.MarshalECPrivateKey(caPriv)
+	// caKeyPEM := pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: caKeyBytes})
 
 	// Generate a server certificate and key signed by the CA
 	srvPriv, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)

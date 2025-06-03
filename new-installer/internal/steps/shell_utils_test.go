@@ -29,7 +29,6 @@ func (s *ShellUtilityTest) TestBasicCmd() {
 		SkipError:       false,
 		RunInBackground: false,
 	})
-
 	if err != nil {
 		s.NoError(err)
 		return
@@ -48,7 +47,6 @@ func (s *ShellUtilityTest) TestBasicCmdStderr() {
 		SkipError:       false,
 		RunInBackground: false,
 	})
-
 	if err != nil {
 		s.NoError(err)
 		return
@@ -127,7 +125,6 @@ func (s *ShellUtilityTest) TestBasicCmdBackground() {
 		SkipError:       false,
 		RunInBackground: true,
 	})
-
 	if err != nil {
 		s.NoError(err)
 		return

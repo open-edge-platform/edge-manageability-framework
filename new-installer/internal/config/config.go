@@ -18,14 +18,18 @@ const (
 
 // Current version
 // Should bump this every time we make backward-compatible config schema changes
-const UserConfigVersion = 2
-const RuntimeStateVersion = 1
+const (
+	UserConfigVersion   = 2
+	RuntimeStateVersion = 1
+)
 
 // Minimal version supported by the installer.
 // This should never be modified. Create `config/v2` when breaking changes are introduced.
 // Files with a version lower than this will require additional migration steps.
-const MinUserConfigVersion = 1
-const MinRuntimeStateVersion = 1
+const (
+	MinUserConfigVersion   = 1
+	MinRuntimeStateVersion = 1
+)
 
 type OrchInstallerRuntimeState struct {
 	Version int `yaml:"version"`
@@ -152,7 +156,7 @@ func (f *FileBaseOrchConfigReaderWriter) WriteOrchConfig(orchConfig OrchInstalle
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(f.OrchConfigFilePath, orchConfigYaml, 0644)
+	return os.WriteFile(f.OrchConfigFilePath, orchConfigYaml, 0o644)
 }
 
 func (f *FileBaseOrchConfigReaderWriter) ReadOrchConfig() (OrchInstallerConfig, error) {
@@ -173,7 +177,7 @@ func (f *FileBaseOrchConfigReaderWriter) WriteRuntimeState(runtimeState OrchInst
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(f.RuntimeStateFilePath, runtimeStateYaml, 0644)
+	return os.WriteFile(f.RuntimeStateFilePath, runtimeStateYaml, 0o644)
 }
 
 func (f *FileBaseOrchConfigReaderWriter) ReadRuntimeState() (OrchInstallerRuntimeState, error) {
