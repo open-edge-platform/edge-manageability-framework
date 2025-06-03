@@ -12,7 +12,6 @@ In the earlier release (3.0), a key issue was the inability to activate Secure B
 
 ### Goals/Requirements (release 3.1 onwards)
 
-
 1. **Support for additional GPUs**
    * Intel Battlemage B580
    * NVIDIA P100
@@ -20,26 +19,29 @@ In the earlier release (3.0), a key issue was the inability to activate Secure B
 3. **One-click enablement/installation of GPUs**:Streamlining the GPU setup process for users
 4. **Component-Platform compatibility metrics**:
 
-| GPU | OS | Kernel | Platform | Priority | Kernel cmd | SRIOV | DevicePlugin | Operator | Notes |
-|----|----|----|----|----|----|----|----|----|----|
-| Intel iGPU | EMT 3.0 | - | Xeon, Core | P0(3.1) | Required | Required | Required | - |    |
-| Intel iGPU | Ubuntu 22.04 | >6.11 | Xeon, Core | P0(3.1) | Required | Required | Required | - |    |
-| Intel B580 | EMT 3.0 | - | Xeon | P0(3.1) | Required | 3.2 | Required | - |    |
-| Intel B580 | Ubuntu 22.04 | >6.11 | Xeon | P1(3.1) | Required | 3.2 | Required | - | In-tree driver verification WIP |
-| Nvidia P100 | EMT 3.0 | - | Xeon | P2(3.2) | Required | Required | - | Required |    |
-| Nvidia P100 | Ubuntu 22.04 | >6.11 | Xeon | P0(3.1) | Required | - | - | Required | Needs a specific kernel 6.11.x |
+| GPU           | OS           | Kernel  | Platform    | Priority |SB/FDE | SRIOV    | DevicePlugin | Operator  | Notes    |
+|---------------|--------------|---------|-------------|----------|-------|----------|--------------|-----------|----------|
+| Intel iGPU    | EMT 3.0      | -       | Xeon, Core  | P0(3.1)  | Yes   | Required | Required     | -         |          |
+| Intel iGPU    | Ubuntu 22.04 | >6.8    | Xeon, Core  | P0(3.1)  | No    | Required | Required     | -         |          |
+| Intel B580    | EMT 3.0      | -       | Xeon        | P0(3.1)  | Yes   | 3.2      | Required     | -         |          |
+| Intel B580    | Ubuntu 24.04 | >6.11   | Xeon        | P2(3.2)  | Yes   | 3.2      | Required     | -         | In-tree driver only in 24.04 |
+| Nvidia P100   | EMT 3.0      | -       | Xeon        | P2(3.2)  | Yes   | Required | -            | Required  |          |
+| Nvidia P100   | Ubuntu 22.04 | >6.11   | Xeon        | P1(3.1)  | No    | -        | -            | Required  | Needs a specific kernel 6.11.x |
 
-Note that integration on Ubuntu 24.04 is expected in release 3.2. So, the current release will continue with Ubuntu 22.04.
+Note that Nvidia P100 shall also be supported on Ubuntu 24.04 but in the 3.2 release cycle. For the current 3.1 release, technical readiness is targetted even if there are manual steps involved for Ubuntu 22.04.
 
 ### Proposed changes
 
 1. **Avoid OSProfile for GPU Support**:
    * The plan is to eliminate the need for dedicated OSProfiles for Intel and NVIDIA GPUs. Instead, the system will rely on in-tree GPU drivers available in kernel versions greater than 6.11 with Ubuntu 24.04. This is expected to simplify deployment and reduce maintenance.
-2. **Ensure in-tree drivers (critical for secure boot)**:
+
+1. **Ensure in-tree drivers (critical for secure boot)**:
    Ubuntu 24.04, featuring kernel versions later than 6.11, is expected to include in-tree GPU drivers, enhancing overall usability. If in-tree driver support cannot be achieved, utilizing Intel Graphics Preview from Canonical, while beneficial during development cycles, will not be feasible for the official release. Given the priority of enablement, the continuation of day-2 procedures remains essential.
-3. **Edge Microvisor Toolkit (EMT) Support**:
+
+1. **Edge Microvisor Toolkit (EMT) Support**:
    * For EMT, Intel GPU drivers and prerequisites for the NVIDIA GPU Operator (including drivers, SR-IOV settings, and kernel command line parameters) will be included in the immutable OS image.
-4. **ITEP Application Extensions**:
+
+1. **ITEP Application Extensions**:
 
    Develop/update the cluster extensions supported by the platform to ease the consumption of GPUs.
    https://github.com/open-edge-platform/cluster-extensions/blob/main/README.md
@@ -131,35 +133,31 @@ Note that integration on Ubuntu 24.04 is expected in release 3.2. So, the curren
         ![gpu-operator-extension](images/nvidia-gpu-operator-extension-package.png)
      * **For EMT** : pre-installed drivers in the immutable OS will be utilized by the GPU Operator.
      * **For Ubuntu** : the extension package will configure the GPU Operator to detect the OS and install optimal drivers automatically.
-5. **SRIOV support**:
+
+1. **SRIOV support**:
 
    Single Root I/O Virtualization (SRIOV) support is a key enhancement
    * EMT will include SRIOV support alongside the drivers.
    * Kubernetes device plugins or operators will be used to enable SRIOV. The SR-IOV Network Device Plugin for Kubernetes can discover and manage SR-IOV capable network devices . NVIDIA also provides an SR-IOV Network Operator  and documentation for using SR-IOV in Kubernetes.
    * Virtual machines will leverage KubeVirt to access SR-IOV capabilities. Intel offers an "Intel Graphics SR-IOV Enablement Toolkit" with components to facilitate Graphics SR-IOV for applications using KubeVirt, allowing VMs direct access to partitioned GPU resources.
-6. **Documentation**:
+
+1. **Documentation**:
 
    Updated documentation will be provided, including:
    * Instructions for deploying the NVIDIA GPU Operator.
    * Revised guidelines for running GPU workloads on Kubernetes.
-7. **Monitoring and Metrics**:
+
+1. **Monitoring and Metrics**:
 
    GPU monitoring will be integrated into the observability stack:
    * Tools like the NVIDIA DCGM Exporter and Intel GPU metrics will be incorporated. The NVIDIA Data Center GPU Manager (DCGM) Exporter allows for the collection of GPU metrics in Prometheus format and can be deployed in Kubernetes, often via a Helm chart . It can also be deployed as part of the NVIDIA GPU Operator . dcgm-exporter collects metrics for all GPUs on a node and can associate these metrics with specific Kubernetes pods.
    * Dashboards will be provided for monitoring GPU usage and health.
-8. **Testing Across Workloads**:
+
+1. **Testing Across Workloads**:
 
    The proposed dGPU support will be tested using workloads such as
    * Geti
    * Pallet Defect Detection(PDD)
-
-### Day 2 Workflows:
-
-```
-<workflow goes here>
-```
-
-## Affected components and Teams
 
 ## Implementation plan
 
@@ -167,27 +165,27 @@ The implementation is planned in two phases:
 
 ### Phase 1 (for EMF 3.1 release)
 
-
-1. Maintain support for Intel® Arc™ iGPU and dGPU in Ubuntu
-2. Intel® Arc™ iGPU support in EMT
-3. Intel Battlemage B580 dGPU support in EMT
-4. Intel Battlemage B580 dGPU support in Ubuntu
-5. Nvidia P100 dGPU support in Ubuntu
+1. Maintain support for Intel® Arc™ iGPU and dGPU on Ubuntu 22.04
+1. Intel® Arc™ iGPU support on EMT
+1. Intel Battlemage B580 dGPU support on EMT
+1. Nvidia P100 dGPU support on Ubuntu 22.04
 
 ### Phase 2 (for EMF 3.2 release)
 
-
-1. Nvidia P100 GPU support in EMT
+1. Nvidia P100 dGPU support on EMT
+1. Nvidia P100 dGPU support on Ubuntu 24.04
+1. Intel Battlemage B580 dGPU support on Ubuntu 24.04
 
 ## Open issues
 
-
 1. Does Ubuntu in-tree kernel 6.11++ support Battlemage B580 as well?
 
-   Yes Ubuntu desktop 24.04.2 and 24.10 has 6.11* kernel support Battlemage B580 .
+   Yes Ubuntu desktop 24.04.2 and 24.10 has 6.11* kernel support Battlemage B580.
+
 2. Gpu driver are not enable in ubuntu 24.04 server edition eith 6.11* kernel.
    
    DEB packages are included in the rolling updates outlined in the official graphics driver installation documentation.
+
 3. No requirement for iGPU & dGPU together at the moment
 
 
