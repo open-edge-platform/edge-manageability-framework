@@ -20,41 +20,41 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-func policyString(clusterName string) string {
-	parsedAccId := strings.ReplaceAll(policy, "${local.account_id}", aws.GetAccountId())
+func policyString(t *testing.T, clusterName string) string {
+	parsedAccId := strings.ReplaceAll(policy, "${local.account_id}", aws.GetAccountId(t))
 	return strings.ReplaceAll(parsedAccId, "${aws_iam_user.vault.name}", "vault-"+clusterName)
 }
 
 const policy string = `{
-    Id = "vault"
-    Statement = [
-      {
-          "Sid": "Enable IAM User Permissions",
-          "Effect": "Allow",
-          "Principal": {
-              "AWS": "arn:aws:iam::${local.account_id}:root"
-          },
-          "Action": "kms:*",
-          "Resource": "*"
-      },
-      {
-        "Sid": "Allow use of the key"
-        "Action": [
-          "kms:Encrypt",
-          "kms:Decrypt",
-          "kms:ReEncrypt*",
-          "kms:GenerateDataKey*",
-          "kms:DescribeKey"
-        ]
-        "Effect": "Allow"
-        "Principal": {
-          "AWS": "arn:aws:iam::${local.account_id}:user/${aws_iam_user.vault.name}"
+    "Id": "vault",
+    "Statement": [
+        {
+            "Sid": "Enable IAM User Permissions",
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "arn:aws:iam::${local.account_id}:root"
+            },
+            "Action": "kms:*",
+            "Resource": "*"
+        },
+        {
+            "Sid": "Allow use of the key",
+            "Action": [
+                "kms:Encrypt",
+                "kms:Decrypt",
+                "kms:ReEncrypt*",
+                "kms:GenerateDataKey*",
+                "kms:DescribeKey"
+            ],
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "arn:aws:iam::${local.account_id}:user/${aws_iam_user.vault.name}"
+            },
+            "Resource": "*"
         }
-        "Resource": "*"
-      },
-    ]
-    Version = "2012-10-17"
-  }`
+    ],
+    "Version": "2012-10-17"
+}`
 
 type KMSTestSuite struct {
 	suite.Suite
@@ -78,7 +78,7 @@ func (s *KMSTestSuite) TestApplyingModule() {
 		aws.EmptyS3Bucket(s.T(), "us-west-2", bucketName)
 		aws.DeleteS3Bucket(s.T(), "us-west-2", bucketName)
 	}()
-	clusterName := "obs3-test-" + randomPostfix
+	clusterName := "kms-test-" + randomPostfix
 	variables := KMSVariables{
 		Region:      "us-west-2",
 		CustomerTag: "test-customer",
@@ -130,20 +130,15 @@ func (s *KMSTestSuite) TestApplyingModule() {
 	s.Require().NoError(err, "KMS Key should be created")
 	s.Assert().NotNil(kmsKeyOutput, "KMS Key should be created")
 	keyPolicies, err := kmsClient.ListKeyPolicies(s.T().Context(), &kms.ListKeyPoliciesInput{
-		KeyId: aws_sdk.String("alias/vault-kms-unseal-" + clusterName),
+		KeyId: aws_sdk.String(*kmsKeyOutput.KeyMetadata.KeyId),
 	})
 	s.Require().NoError(err, "Failed to list key policies for KMS Key")
 	s.Require().Len(keyPolicies.PolicyNames, 1, "There should be one key policy for the KMS Key")
-	s.Assert().Equal("vault", keyPolicies.PolicyNames[0], "The key policy name should be 'vault'")
 	keyPolicy, err := kmsClient.GetKeyPolicy(s.T().Context(), &kms.GetKeyPolicyInput{
-		KeyId:      aws_sdk.String("alias/vault-kms-unseal-" + clusterName),
-		PolicyName: aws_sdk.String("vault"),
+		KeyId:      aws_sdk.String(*kmsKeyOutput.KeyMetadata.KeyId),
+		PolicyName: aws_sdk.String("default"),
 	})
-	s.Assert().Equal(
-		policyString(clusterName),
+	s.JSONEq(policyString(s.T(), clusterName),
 		*keyPolicy.Policy,
-		"The KMS Key policy should match the expected policy",
-	)
-	// Verify that the KMS Key policy is set correctly
-	// Verify that correct policy has been assigned to KMS key
+		"The KMS Key policy should match the expected policy")
 }
