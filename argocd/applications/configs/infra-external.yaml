@@ -5,7 +5,7 @@
 ---
 import:
   amt:
-    enabled: true # Will Enable when ITEP-66997 is addressed
+    enabled: false # Will Enable when ITEP-66997 is addressed
 
 loca-manager:
   serviceAccount:
