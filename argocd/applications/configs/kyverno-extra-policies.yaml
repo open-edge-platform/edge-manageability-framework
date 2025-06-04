@@ -37,7 +37,7 @@ restrictedPolicyOrch:
       - "edgenode-observability-opentelemetry-collector*"
       - "edgenode-observability-minio*"
       - "dkam*"
-      - "rps*"
+      - "rps*" # Added for RPS to allow RPC traffic, which fails due to missing AUTH header.
   - namespace: "capi-operator-system"
     names:
       - "capi-operator-cluster-api-operator*"

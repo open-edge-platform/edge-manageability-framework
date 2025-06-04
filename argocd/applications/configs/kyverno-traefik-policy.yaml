@@ -21,7 +21,7 @@ jwtMiddlewareException:
       - "cluster-connect-gateway-ws"
       - "cluster-connect-gateway-kubeapi"
       - "orch-platform-keycloak"
-      - "amt-api-rps"
+      - "amt-api-rps" # # Added for RPS to allow RPC traffic, which fails due to missing AUTH header.
   - namespace: "orch-boots"
     names:
       - "tinkerbell-nginx-ingress"
