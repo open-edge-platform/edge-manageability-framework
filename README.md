@@ -51,7 +51,7 @@ reporting, alerts, and SRE data from Edge Orchestrator components and Edge Nodes
 - [Platform Services](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/developer_guide/platform/index.html):
 A collection of services that support the deployment and management of the Edge Orchestrator, including identity and
 access management, multitenancy management, ingress route configuration, secrets and certificate management, cloud and
-on-prem infrastruture life-cycle management and more.
+on-prem infrastructure life-cycle management and more.
 
 ## Get Started
 
@@ -181,7 +181,7 @@ Here is brief description of all the repos.
 
 - [trusted-compute](https://github.com/open-edge-platform/trusted-compute):
   Security extensions that utilize hardware security capabilities in Edge Nodes to enable continuous monitoring
-  and end-user appliction (workload) protection through isolated execution.
+  and end-user application (workload) protection through isolated execution.
 
 #### Shared CI
 
