@@ -98,15 +98,6 @@ check_oras() {
     fi
 }
 
-# Install jq tool
-install_jq() {
-    if ! command -v jq &>/dev/null; then
-        sudo NEEDRESTART_MODE=a apt-get install -y jq
-    else
-        echo jq tool found in the path
-    fi
-}
-
 # Install yq tool
 install_yq() {
     if ! command -v yq &>/dev/null; then
@@ -139,7 +130,7 @@ download_artifacts() {
 # Gets JWT token from Azure
 # get_JWT_token <refresh token> <release service URL>
 get_JWT_token() {
-    curl -X POST -d "refresh_token=$1&grant_type=refresh_token" "https://$2/oauth/token" | jq -r .id_token
+    curl -X POST -d "refresh_token=$1&grant_type=refresh_token" "https://$2/oauth/token" | sed -n 's/.*"id_token":"\([^"]*\)".*/\1/p'
 }
 
 # Waits for pods in namespace to be in Ready state
@@ -157,7 +148,7 @@ wait_for_deploy() {
 # Waits for pods in namespace to be created
 # wait_for_namespace_creation <namespace>
 wait_for_namespace_creation() {
-    while [ "$(kubectl get ns "$1" -o json | jq .status.phase -r)" != "Active" ]
+    while [ "$(kubectl get ns "$1" -o jsonpath='{.status.phase}')" != "Active" ]
     do
         sleep 5
     done
