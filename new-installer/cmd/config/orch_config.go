@@ -7,6 +7,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"gopkg.in/yaml.v3"
 
@@ -20,6 +21,7 @@ type flag struct {
 	PackagePath        string
 	ConfigPath         string
 	NonInteractiveMode bool
+	VerifyMode         bool
 	// Flags to show optional configurations
 	ConfigureAwsExpert    bool
 	ConfigureOnPremExpert bool
@@ -204,7 +206,7 @@ func postProcessConfig() {
 
 func main() {
 	var tmpOrchName string
-	var tmpScale int
+	var tmpScale string
 
 	var cobraCmd = &cobra.Command{
 		Use:   "config-builder",
@@ -214,11 +216,18 @@ func main() {
 			loadConfig()
 
 			if flags.NonInteractiveMode {
+				scale, err := strconv.Atoi(tmpScale)
+				if err != nil {
+					fmt.Printf("Invalid scale value: %s\n", tmpScale)
+					os.Exit(1)
+				}
 				input.Global.OrchName = tmpOrchName
-				input.Global.Scale = config.Scale(tmpScale)
+				input.Global.Scale = config.Scale(scale)
+			}
+			if flags.NonInteractiveMode || flags.VerifyMode {
 				if err := validateAll(); err != nil {
 					fmt.Println("Validation failed:", err)
-					fmt.Println("Please run the command without --auto to fix the issues.")
+					fmt.Println("Please run the command without --auto or --verify to fix the issues.")
 					os.Exit(1)
 				}
 			} else {
@@ -235,17 +244,19 @@ func main() {
 	cobraCmd.PersistentFlags().BoolVarP(&flags.Debug, "debug", "d", false, "Enable debug mode")
 	cobraCmd.PersistentFlags().StringVarP(&flags.ConfigPath, "config", "c", "configs.yaml", "Path to the config file")
 	cobraCmd.PersistentFlags().StringVarP(&flags.PackagePath, "package", "p", "", "Path to the Orchestrator package definition")
-	cobraCmd.PersistentFlags().BoolVar(&flags.NonInteractiveMode, "auto", false, "Run config builder in non-interactive mode")
-	cobraCmd.PersistentFlags().StringVar(&tmpOrchName, "name", "", "Name of the orchestrator (only used with --auto)")
-	cobraCmd.PersistentFlags().IntVar(&tmpScale, "scale", 10, "Target Scale (10, 100, 500, 1000, 10000) (only used with --auto)")
+	cobraCmd.PersistentFlags().BoolVar(&flags.NonInteractiveMode, "auto", false, "Generate config in non-interactive mode. Requires ORCH_NAME and ORCH_SCALE environment variables to be set. This should only be used for automated testing")
+	cobraCmd.PersistentFlags().BoolVar(&flags.VerifyMode, "verify", false, "Verify config in non-interactive mode without generating it")
 	cobraCmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		// Note: Think twice before adding new env var for auto mode
+		// Config file should be the only source of truth when possible
 		autoFlag := cmd.Flags().Changed("auto")
-		nameFlag := cmd.Flags().Changed("name")
-		scaleFlag := cmd.Flags().Changed("scale")
-		// Either all three flags should be specified or none should be
-		if (autoFlag && (!nameFlag || !scaleFlag)) || (!autoFlag && (nameFlag || scaleFlag)) {
-			fmt.Println("--auto, --name, and --scale must all be specified together or none at all")
-			os.Exit(1)
+		if autoFlag {
+			tmpOrchName, _ = os.LookupEnv("ORCH_NAME")
+			tmpScale, _ = os.LookupEnv("ORCH_SCALE")
+			if tmpOrchName == "" || tmpScale == "" {
+				fmt.Println("Environment variables ORCH_NAME and ORCH_SCALE must be set when using --auto")
+				os.Exit(1)
+			}
 		}
 		return nil
 	}
