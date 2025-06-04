@@ -8,9 +8,11 @@
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
 if [ -f "${SCRIPT_DIR}/pod-configs/utils/lib/common.sh" ]; then
-    . ${SCRIPT_DIR}/pod-configs/utils/lib/common.sh
+    # shellcheck source=pod-configs/utils/lib/common.sh
+    . "${SCRIPT_DIR}"/pod-configs/utils/lib/common.sh
 elif [ -f "${SCRIPT_DIR}/common.sh" ]; then
-    . ${SCRIPT_DIR}/common.sh
+    # shellcheck source=pod-configs/utils/lib/common.sh
+    . "${SCRIPT_DIR}"/common.sh
 else
     echo "Error: Unable to load common.sh"
     exit 1
@@ -18,43 +20,43 @@ fi
 
 load_provision_env() {
     # Does $HOME/.env exist? If so, load it.
-    if [ -f ${HOME}/.env ]; then
-        export $(cat ${HOME}/.env | xargs)
+    if [ -f "${HOME}"/.env ]; then
+        export "$(xargs < "${HOME}"/.env)"
     fi
 }
 
 save_cluster_env() {
     if [[ -z $AWS_ACCOUNT ]]; then
-        echo AWS_ACCOUNT=${AWS_ACCOUNT} > ${HOME}/.env
+        echo AWS_ACCOUNT="${AWS_ACCOUNT}" > "${HOME}"/.env
     fi
 
     if [[ -z $AWS_REGION ]]; then
-        echo AWS_REGION=${AWS_REGION} >> ${HOME}/.env
+        echo AWS_REGION="${AWS_REGION}" >> "${HOME}"/.env
     fi
 
     if [[ -z $BUCKET_NAME ]]; then
-        echo BUCKET_NAME=${BUCKET_NAME} >> ${HOME}/.env
+        echo BUCKET_NAME="${BUCKET_NAME}" >> "${HOME}"/.env
     fi
 
     if [[ -z $CLUSTER_FQDN ]]; then
-        echo CLUSTER_FQDN=${CLUSTER_FQDN} >> ${HOME}/.env
+        echo CLUSTER_FQDN="${CLUSTER_FQDN}" >> "${HOME}"/.env
     fi
 
     if [[ -z $ADMIN_EMAIL ]]; then
-        echo ADMIN_EMAIL=${ADMIN_EMAIL} >> ${HOME}/.env
+        echo ADMIN_EMAIL="${ADMIN_EMAIL}" >> "${HOME}"/.env
     fi
 }
 
 update_kube_config() {
     echo "  Applying Kubernetes context for ${CLUSTER_NAME} in ${AWS_REGION}"
-    aws eks --region ${AWS_REGION} update-kubeconfig --name ${CLUSTER_NAME}
+    aws eks --region "${AWS_REGION}" update-kubeconfig --name "${CLUSTER_NAME}"
 }
 
 load_provision_values() {
-    PROVISION_CONFIG_VALUES=$(echo ${SAVE_DIR}/${AWS_ACCOUNT}-${CLUSTER_NAME}-values.tfvar | tr -d '"')
-    if [ ! -f ${PROVISION_CONFIG_VALUES} ]; then
+    PROVISION_CONFIG_VALUES=$(echo "${SAVE_DIR}"/"${AWS_ACCOUNT}"-"${CLUSTER_NAME}"-values.tfvar | tr -d '"')
+    if [ ! -f "${PROVISION_CONFIG_VALUES}" ]; then
         download_savedir
-        if [ ! -f ${PROVISION_CONFIG_VALUES} ]; then
+        if [ ! -f "${PROVISION_CONFIG_VALUES}" ]; then
             echo "Error: Unable to load provision configuration values."
             return 1
         fi
@@ -94,12 +96,12 @@ load_provision_values() {
                 export SMTP_URL="$value"
                 ;;
         esac
-    done < ${PROVISION_CONFIG_VALUES}
+    done < "${PROVISION_CONFIG_VALUES}"
 }
 
 download_tunnel_config() {
     TUNNEL_CONFIG_VALUES="${SAVE_DIR}/${AWS_ACCOUNT}-${CUSTOMER_STATE_PREFIX}-${AWS_REGION}-vpc-${CLUSTER_NAME}.json"
-    if [ ! -f ${TUNNEL_CONFIG_VALUES} ]; then
+    if [ ! -f "${TUNNEL_CONFIG_VALUES}" ]; then
         download_savedir
 
         # TBD: Is it worth being selective?
@@ -107,7 +109,7 @@ download_tunnel_config() {
         # download_savedir_file "jumphost_sshkey_${CLUSTER_NAME}"
         # download_savedir_file "jumphost_sshkey_${CLUSTER_NAME}.pub"
 
-        if [ ! -f ${TUNNEL_CONFIG_VALUES} ]; then
+        if [ ! -f "${TUNNEL_CONFIG_VALUES}" ]; then
             echo "Error: Unable to load tunnel configuration values."
             return 1
         fi
@@ -115,26 +117,32 @@ download_tunnel_config() {
 }
 
 load_scm_auth() {
-    if [[ ! -f ${SAVE_DIR}/output-${AWS_ACCOUNT}-${CLUSTER_NAME}.json ]]; then
+    if [[ ! -f "${SAVE_DIR}"/output-"${AWS_ACCOUNT}"-"${CLUSTER_NAME}".json ]]; then
         # Pull the file from S3
         # aws s3 cp "s3://${BUCKET_NAME}/${AWS_REGION}/${CLUSTER_NAME}-SAVEME/output-${AWS_ACCOUNT}-${CLUSTER_NAME}.json" "${SAVE_DIR}/output-${AWS_ACCOUNT}-${CLUSTER_NAME}.json"
 
         # Pull the full cluster context from S3
         download_savedir
 
-        if [ ! -f ${PROVISION_CONFIG_VALUES} ]; then
+        if [ ! -f "${PROVISION_CONFIG_VALUES}" ]; then
             echo "Error: Unable to load provision configuration values."
             return 1
         fi
     fi
 
     echo Looking up Git credentials...
-    export GIT_USER=$(jq '.git_user' ${SAVE_DIR}/output-${AWS_ACCOUNT}-${CLUSTER_NAME}.json)
-    export GIT_TOKEN=$(jq '.git_token' ${SAVE_DIR}/output-${AWS_ACCOUNT}-${CLUSTER_NAME}.json)
-    export GITEA_ARGO_USER=$(jq '.gitea_argo_user' ${SAVE_DIR}/output-${AWS_ACCOUNT}-${CLUSTER_NAME}.json)
-    export GITEA_ARGO_TOKEN=$(jq '.gitea_argo_token' ${SAVE_DIR}/output-${AWS_ACCOUNT}-${CLUSTER_NAME}.json)
-    export GITEA_CO_USER=$(jq '.gitea_co_user' ${SAVE_DIR}/output-${AWS_ACCOUNT}-${CLUSTER_NAME}.json)
-    export GITEA_CO_TOKEN=$(jq '.gitea_co_token' ${SAVE_DIR}/output-${AWS_ACCOUNT}-${CLUSTER_NAME}.json)
+    git_user=$(jq -r '.git_user' "${SAVE_DIR}"/output-"${AWS_ACCOUNT}"-"${CLUSTER_NAME}".json)
+    export GIT_USER="$git_user"
+    git_token=$(jq -r '.git_token' "${SAVE_DIR}"/output-"${AWS_ACCOUNT}"-"${CLUSTER_NAME}".json)
+    export GIT_TOKEN="$git_token"
+    gitea_argo_user=$(jq -r '.gitea_argo_user' "${SAVE_DIR}"/output-"${AWS_ACCOUNT}"-"${CLUSTER_NAME}".json)
+    export GITEA_ARGO_USER="$gitea_argo_user"
+    gitea_argo_token=$(jq -r '.gitea_argo_token' "${SAVE_DIR}"/output-"${AWS_ACCOUNT}"-"${CLUSTER_NAME}".json)
+    export GITEA_ARGO_TOKEN="$gitea_argo_token"
+    gitea_co_user=$(jq -r '.gitea_co_user' "${SAVE_DIR}"/output-"${AWS_ACCOUNT}"-"${CLUSTER_NAME}".json)
+    export GITEA_CO_USER="$gitea_co_user"
+    gitea_co_token=$(jq -r '.gitea_co_token' "${SAVE_DIR}"/output-"${AWS_ACCOUNT}"-"${CLUSTER_NAME}".json)
+    export GITEA_CO_TOKEN="$gitea_co_token"
 
     if [[ (-z "${GIT_USER}" || -z "${GIT_TOKEN}") && (-z "${GITEA_ARGO_USER}" || -z "${GITEA_ARGO_TOKEN}") ]]; then
         echo "Error: Git credential lookup failed. Please define git credentials and re-execute this script"
@@ -150,20 +158,20 @@ save_scm_auth() {
     if [[ -n "${GIT_USER}" && -n "${GIT_TOKEN}" ]]; then
         echo "machine git-codecommit.${AWS_REGION}.amazonaws.com login ${GIT_USER} password ${GIT_TOKEN}" | sed "s/'//g; s/\"//g" > ~/.netrc
     fi
-    echo GIT_USER=${GIT_USER} >> ${HOME}/.env
-    echo GIT_TOKEN=${GIT_TOKEN} >> ${HOME}/.env
+    echo GIT_USER="${GIT_USER}" >> "${HOME}"/.env
+    echo GIT_TOKEN="${GIT_TOKEN}" >> "${HOME}"/.env
 
     if [[ -n "${GITEA_ARGO_USER}" && -n "${GITEA_ARGO_TOKEN}" ]]; then
         echo "machine gitea.${CLUSTER_FQDN} login ${GITEA_ARGO_USER} password ${GITEA_ARGO_TOKEN}" | sed "s/'//g; s/\"//g" >> ~/.netrc
     fi
-    echo GITEA_ARGO_USER=${GITEA_ARGO_USER} >> ${HOME}/.env
-    echo GITEA_ARGO_TOKEN=${GITEA_ARGO_TOKEN} >> ${HOME}/.env
+    echo GITEA_ARGO_USER="${GITEA_ARGO_USER}" >> "${HOME}"/.env
+    echo GITEA_ARGO_TOKEN="${GITEA_ARGO_TOKEN}" >> "${HOME}"/.env
 
     if [[ -n "${GITEA_CO_USER}" && -n "${GITEA_CO_TOKEN}" ]]; then
         echo "machine gitea.${CLUSTER_FQDN} login ${GITEA_CO_USER} password ${GITEA_CO_TOKEN}" | sed "s/'//g; s/\"//g" >> ~/.netrc
     fi
-    echo GITEA_ARGO_USER=${GITEA_CO_USER} >> ${HOME}/.env
-    echo GITEA_ARGO_TOKEN=${GITEA_CO_TOKEN} >> ${HOME}/.env
+    echo GITEA_ARGO_USER="${GITEA_CO_USER}" >> "${HOME}"/.env
+    echo GITEA_ARGO_TOKEN="${GITEA_CO_TOKEN}" >> "${HOME}"/.env
 }
 
 check_provision_env() {
@@ -194,40 +202,40 @@ check_provision_env() {
     #     exit_code=1
     # fi
 
-    if [[ -z $CLUSTER_FQDN ]]; then
+    if [[ -z "$CLUSTER_FQDN" ]]; then
         if [[ $prompt -eq 1 ]]; then
             while [[ $prompt -eq 1 ]]; do
-                read -p "Enter the full domain name for the cluster: " CLUSTER_FQDN
-                if [[ -n ${CLUSTER_FQDN} ]]; then
+                read -r -p "Enter the full domain name for the cluster: " CLUSTER_FQDN
+                if [[ -n "${CLUSTER_FQDN}" ]]; then
                     break
                 else
                     echo "Error: A valid cluster domain name is required."
                 fi
             done
-            export CLUSTER_FQDN=${CLUSTER_FQDN}
+            export CLUSTER_FQDN="${CLUSTER_FQDN}"
         else
             # If not prompting, exit with an error
-            if [[ $verbose -eq 1 ]]; then
+            if [[ "$verbose" -eq 1 ]]; then
                 echo "CLUSTER_FQDN is not defined."
             fi
             exit_code=1
         fi
     fi
 
-    if [[ -z $ADMIN_EMAIL ]]; then
+    if [[ -z "$ADMIN_EMAIL" ]]; then
         if [[ $prompt -eq 1 ]]; then
             while true; do
-                read -p "Please provide the administrator email address associated with the cluster's provisioning: " ADMIN_EMAIL
-                if [[ -n ${ADMIN_EMAIL} ]]; then
+                read -r -p "Please provide the administrator email address associated with the cluster's provisioning: " ADMIN_EMAIL
+                if [[ -n "${ADMIN_EMAIL}" ]]; then
                     break
                 else
                     echo "Error: A valid administrator email is required."
                 fi
             done
-            export ADMIN_EMAIL=${ADMIN_EMAIL}
+            export ADMIN_EMAIL="${ADMIN_EMAIL}"
         else
             # If not prompting, exit with an error
-            if [[ $verbose -eq 1 ]]; then
+            if [[ "$verbose" -eq 1 ]]; then
                 echo "ADMIN_EMAIL is not defined."
             fi
             exit_code=1
@@ -254,32 +262,33 @@ load_cluster_state_env() {
     fi
 
     # CUSTOMER_STATE_PREFIX - based on the installer environment or user input
-    if [[ -z ${CUSTOMER_STATE_PREFIX} ]]; then
+    if [[ -z "${CUSTOMER_STATE_PREFIX}" ]]; then
         echo "Error: A valid customer state prefix is required."
     fi
     export BUCKET_NAME="${AWS_ACCOUNT}-${CUSTOMER_STATE_PREFIX}"
 
     # Build environment variables for all of the state files based on the cluster name
     export ENV_NAME="${CLUSTER_NAME}"
-    FULLCHAIN="fullchain-${AWS_ACCOUNT}-${ENV_NAME}.pem"
-    CHAIN="chain-${AWS_ACCOUNT}-${ENV_NAME}.pem"
-    PRIVKEY="privkey-${AWS_ACCOUNT}-${ENV_NAME}.pem"
-    OUTPUT="output-${AWS_ACCOUNT}-${ENV_NAME}.json"
-    VPCSTATE="${BUCKET_NAME}-${AWS_REGION}-vpc-${ENV_NAME}.json"
-    KUBECONFIG="${SAVE_DIR}/kube-config-${AWS_ACCOUNT}-${ENV_NAME}"
-    CODECOMMIT_GITOPS_SSHKEY="codecommit_gitops_sshkey_${ENV_NAME}"
-    CODECOMMIT_ADM_SSHKEY="codecommit_adm_sshkey_${ENV_NAME}"
-    JUMPHOST_SSHKEY="jumphost_sshkey_${ENV_NAME}"
-    VALUES="${AWS_ACCOUNT}-${ENV_NAME}-values.sh"
-    VARIABLE_TFVAR="${AWS_ACCOUNT}-${ENV_NAME}-values.tfvar"
-    PROFILE_TFVAR="${AWS_ACCOUNT}-${ENV_NAME}-profile.tfvar"
-    VALUES_CHANGED=".${AWS_ACCOUNT}-${ENV_NAME}-valueschanged"
-    SAVE_DIR_S3="${ENV_NAME}-SAVEME"
+    export FULLCHAIN="fullchain-${AWS_ACCOUNT}-${ENV_NAME}.pem"
+    export CHAIN="chain-${AWS_ACCOUNT}-${ENV_NAME}.pem"
+    export PRIVKEY="privkey-${AWS_ACCOUNT}-${ENV_NAME}.pem"
+    export OUTPUT="output-${AWS_ACCOUNT}-${ENV_NAME}.json"
+    export VPCSTATE="${BUCKET_NAME}-${AWS_REGION}-vpc-${ENV_NAME}.json"
+    export KUBECONFIG="${SAVE_DIR}/kube-config-${AWS_ACCOUNT}-${ENV_NAME}"
+    export CODECOMMIT_GITOPS_SSHKEY="codecommit_gitops_sshkey_${ENV_NAME}"
+    export CODECOMMIT_ADM_SSHKEY="codecommit_adm_sshkey_${ENV_NAME}"
+    export JUMPHOST_SSHKEY="jumphost_sshkey_${ENV_NAME}"
+    export VALUES="${AWS_ACCOUNT}-${ENV_NAME}-values.sh"
+    export VARIABLE_TFVAR="${AWS_ACCOUNT}-${ENV_NAME}-values.tfvar"
+    export PROFILE_TFVAR="${AWS_ACCOUNT}-${ENV_NAME}-profile.tfvar"
+    export VALUES_CHANGED=".${AWS_ACCOUNT}-${ENV_NAME}-valueschanged"
+    export SAVE_DIR_S3="${ENV_NAME}-SAVEME"
 
     # CLUSTER_FQDN - based on S3 state or user input
     if [[ -z "$CLUSTER_FQDN" ]]; then
         # Look up FQDN from S3 if not defined.
-        export CLUSTER_FQDN=$(aws s3 cp s3://$BUCKET_NAME/$AWS_REGION/orch-route53/$CLUSTER_NAME - | jq '.resources[] | select(.name == "traetik_public") | .instances[0].attributes.fqdn' | tr -d '"' | sed 's/^traefik\.//')
+        cluster_fqdn=$(aws s3 cp s3://"$BUCKET_NAME"/"$AWS_REGION"/orch-route53/"$CLUSTER_NAME" - | jq '.resources[] | select(.name == "traetik_public") | .instances[0].attributes.fqdn' | tr -d '"' | sed 's/^traefik\.//')
+        export CLUSTER_FQDN="${cluster_fqdn}"
     fi
 
     # fullchain.pem doesn't have the admin email on it and it is stored nowhere else that I can see.
@@ -303,29 +312,29 @@ clone_repo() {
     local repo_url=$1
     local repo_name=$2
 
-    pushd ${HOME}/src
+    pushd "${HOME}"/src || exit
 
     # Update remote URL if repo exists
     # In upgrade scenario, prepare-upgrade.sh will clone the repos
-    if [ -d $repo_name ]; then
-        pushd $repo_name
-        git remote set-url origin $repo_url
-        popd
+    if [ -d "$repo_name" ]; then
+        pushd "$repo_name" || exit
+        git remote set-url origin "$repo_url"
+        popd || exit
     # Init git repo for the fresh install scenario
     else
-        echo cloning $repo_name from $repo_url...
+        echo cloning "$repo_name" from "$repo_url"...
         git clone "$repo_url" "$repo_name"
 
         # Create repos if they do not exist on Gitea
-        if [ ! -d $repo_name ]; then
-            mkdir $repo_name
-            pushd $repo_name
+        if [ ! -d "$repo_name" ]; then
+            mkdir "$repo_name"
+            pushd "$repo_name" || exit
             git init
-            git remote add origin $repo_url
-            popd
+            git remote add origin "$repo_url"
+            popd || exit
         fi
 
-        cd ${repo_name}
+        cd "${repo_name}" || exit
         git config user.name "orchestrator_installer"
         git config user.email "orchestrator_installer@local"
         if git show-ref --verify --quiet "refs/remotes/origin/main"; then
@@ -340,22 +349,22 @@ clone_repo() {
         fi
     fi
 
-    popd
+    popd || exit
 }
 
 commit_repo() {
     local repo_name=$1
     local comment=${2:-"Update main with latest release"}
 
-    echo updating $repo_name with release contents...
-    pushd ${HOME}/src/${repo_name}
+    echo updating "$repo_name" with release contents...
+    pushd "${HOME}"/src/"${repo_name}" || exit
     git config user.name "orchestrator_installer"
     git config user.email "orchestrator_installer@local"
     git checkout main
     git add .
     git commit -m "${comment}"
     git push --set-upstream origin main
-    popd
+    popd || exit
 }
 
 init_terraform() {
@@ -365,24 +374,24 @@ init_terraform() {
     local key=$4
 
     local dir=${podconfigs}/${module}
-    mkdir -p ${dir}/environments/${CLUSTER_NAME} || true
-    pushd $dir &>/dev/null
+    mkdir -p "${dir}"/environments/"${CLUSTER_NAME}" || true
+    pushd "$dir" &>/dev/null || exit
 
     local backend=environments/${CLUSTER_NAME}/backend.tf
-    cat <<EOF > $backend
+    cat <<EOF > "$backend"
 bucket = "$state_bucket"
 key    = "${key}"
 region = "${BUCKET_REGION:-"us-west-2"}"
 EOF
 
     rm -rf .terraform || true
-    terraform init -backend-config $backend >/dev/null
+    terraform init -backend-config "$backend" >/dev/null
 }
 
 cleanup_init_terraform() {
     # Must be called after init_terraform and on the same directory.
     rm -rf .terraform || true
-    popd &>/dev/null
+    popd &>/dev/null || exit
 }
 
 get_s3_prefix() {
@@ -392,10 +401,11 @@ get_s3_prefix() {
 
     if resource=$(terraform state list | grep -oP '^module.s3.aws_s3_bucket.bucket\[".+"\]$' | head -1) && \
         [[ -n "$resource" ]]; then
-        local bucket=$(terraform state show "$resource" | grep -P "^\s* bucket\s*=" | cut -d'=' -f2 | xargs echo)
-        echo $bucket | sed -ne "s|^${CLUSTER_NAME}-\([^-]\+\)-.*$|\1|p"
-    else
-        echo "Error: Not able to get the info of the S3 bucket for $buckeet_type." >&2
+        local bucket
+        bucket=$(terraform state show "$resource" | grep -P "^\s* bucket\s*=" | cut -d'=' -f2 | xargs echo)
+        echo "$bucket" | sed -ne "s|^${CLUSTER_NAME}-\([^-]\+\)-.*$|\1|p"
+    else        
+        echo "Error: Not able to get the info of the S3 bucket." >&2
         exit 1
     fi
 
