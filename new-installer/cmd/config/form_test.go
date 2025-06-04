@@ -12,6 +12,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"math/big"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -31,6 +32,9 @@ var pretty = lipgloss.NewStyle().
 
 var form *huh.Form
 var model tea.Model
+
+// Dummy SSH key file for testing
+var tmpPrivKey *os.File
 
 func testConfigureGlobal(t *testing.T) {
 	// Enter orchestrator name
@@ -108,6 +112,12 @@ func testConfigureAwsExpert(t *testing.T) {
 	// Enter just host whitelist
 	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("10.0.0.0/8,192.168.0.0/16")})
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
+	// Enter just host IP
+	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("10.20.30.1")})
+	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
+	// Enter just host SSH private key path
+	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(tmpPrivKey.Name())})
+	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
 	// Enter VPC ID
 	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("vpc-12345678")})
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
@@ -116,6 +126,9 @@ func testConfigureAwsExpert(t *testing.T) {
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
 	// Enter EKS DNS IP
 	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("8.8.8.8")})
+	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
+	// Enter EKS IAM role
+	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("arn:aws:iam::123456789012:role/EKS-Role")})
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
 
 	view := ansi.Strip(model.View())
@@ -384,13 +397,16 @@ func testAdvancedMode(t *testing.T) {
 	}
 }
 
-func initTest() {
+func initTest() error {
 	input = config.OrchInstallerConfig{}
 	loadOrchPackagesFromString(embedPackages)
+	return nil
 }
 
 func TestSimpleWorkflow(t *testing.T) {
-	initTest()
+	if err := initTest(); err != nil {
+		t.Fatalf("initTest failed: %v", err)
+	}
 
 	// Test the form initialization
 	form = orchInstallerForm()
@@ -409,7 +425,17 @@ func TestSimpleWorkflow(t *testing.T) {
 }
 
 func TestAdvancedWorkflow(t *testing.T) {
-	initTest()
+	if err := initTest(); err != nil {
+		t.Fatalf("initTest failed: %v", err)
+	}
+
+	// Create a temporary file for the private key
+	var err error
+	tmpPrivKey, err = os.CreateTemp("/tmp", "privkey")
+	if err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+	defer os.Remove(tmpPrivKey.Name())
 
 	// Test the form initialization
 	form = orchInstallerForm()
