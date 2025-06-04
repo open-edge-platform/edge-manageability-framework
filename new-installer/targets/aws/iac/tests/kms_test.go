@@ -11,10 +11,50 @@ import (
 	"strings"
 	"testing"
 
+	aws_sdk "github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
+	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/gruntwork-io/terratest/modules/aws"
+
 	"github.com/gruntwork-io/terratest/modules/terraform"
 	"github.com/stretchr/testify/suite"
 )
+
+func policyString(clusterName string) string {
+	parsedAccId := strings.ReplaceAll(policy, "${local.account_id}", aws.GetAccountId())
+	return strings.ReplaceAll(parsedAccId, "${aws_iam_user.vault.name}", "vault-"+clusterName)
+}
+
+const policy string = `{
+    Id = "vault"
+    Statement = [
+      {
+          "Sid": "Enable IAM User Permissions",
+          "Effect": "Allow",
+          "Principal": {
+              "AWS": "arn:aws:iam::${local.account_id}:root"
+          },
+          "Action": "kms:*",
+          "Resource": "*"
+      },
+      {
+        "Sid": "Allow use of the key"
+        "Action": [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*",
+          "kms:DescribeKey"
+        ]
+        "Effect": "Allow"
+        "Principal": {
+          "AWS": "arn:aws:iam::${local.account_id}:user/${aws_iam_user.vault.name}"
+        }
+        "Resource": "*"
+      },
+    ]
+    Version = "2012-10-17"
+  }`
 
 type KMSTestSuite struct {
 	suite.Suite
@@ -71,18 +111,39 @@ func (s *KMSTestSuite) TestApplyingModule() {
 	defer terraform.Destroy(s.T(), terraformOptions)
 
 	terraform.InitAndApply(s.T(), terraformOptions)
-	// Verify that the S3 buckets for orch observability are created
-	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-pre-"+"orch-loki-admin")
-	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-pre-"+"orch-loki-chunks")
-	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-pre-"+"orch-loki-ruler")
-	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-pre-"+"orch-mimir-ruler")
-	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-pre-"+"orch-mimir-tsdb")
-	// Verify that the S3 buckets for edge node observability are created
-	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-pre-"+"fm-loki-admin")
-	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-pre-"+"fm-loki-chunks")
-	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-pre-"+"fm-loki-ruler")
-	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-pre-"+"fm-mimir-ruler")
-	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-pre-"+"fm-mimir-tsdb")
-	// Verify that the S3 buckets for tracing are created if CreateTracing is true
-	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-pre-"+"tempo-traces")
+
+	// Verify that the IAM User for Vault was created
+	iamClient, err := aws.NewIamClientE(s.T(), "us-west-2")
+	s.Require().NoError(err, "Failed to create IAM client")
+	iamUserOutput, err := iamClient.GetUser(s.T().Context(), &iam.GetUserInput{
+		UserName: aws_sdk.String("vault-" + clusterName),
+	})
+	s.Require().NoError(err, "IAM User for Vault should be created")
+	s.Assert().NotNil(iamUserOutput, "IAM User for Vault should be created")
+
+	// Verify that the KMS Key was created
+	kmsClient, err := aws.NewKmsClientE(s.T(), "us-west-2")
+	s.Require().NoError(err, "Failed to create KMS client")
+	kmsKeyOutput, err := kmsClient.DescribeKey(s.T().Context(), &kms.DescribeKeyInput{
+		KeyId: aws_sdk.String("alias/vault-kms-unseal-" + clusterName),
+	})
+	s.Require().NoError(err, "KMS Key should be created")
+	s.Assert().NotNil(kmsKeyOutput, "KMS Key should be created")
+	keyPolicies, err := kmsClient.ListKeyPolicies(s.T().Context(), &kms.ListKeyPoliciesInput{
+		KeyId: aws_sdk.String("alias/vault-kms-unseal-" + clusterName),
+	})
+	s.Require().NoError(err, "Failed to list key policies for KMS Key")
+	s.Require().Len(keyPolicies.PolicyNames, 1, "There should be one key policy for the KMS Key")
+	s.Assert().Equal("vault", keyPolicies.PolicyNames[0], "The key policy name should be 'vault'")
+	keyPolicy, err := kmsClient.GetKeyPolicy(s.T().Context(), &kms.GetKeyPolicyInput{
+		KeyId:      aws_sdk.String("alias/vault-kms-unseal-" + clusterName),
+		PolicyName: aws_sdk.String("vault"),
+	})
+	s.Assert().Equal(
+		policyString(clusterName),
+		*keyPolicy.Policy,
+		"The KMS Key policy should match the expected policy",
+	)
+	// Verify that the KMS Key policy is set correctly
+	// Verify that correct policy has been assigned to KMS key
 }
