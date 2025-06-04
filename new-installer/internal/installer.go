@@ -74,7 +74,7 @@ func (o *OrchInstaller) Run(ctx context.Context, config config.OrchInstallerConf
 	if action == "uninstall" {
 		o.Stages = ReverseStages(o.Stages)
 	}
-	o.Stages = FilterStages(o.Stages, config.Advanced.TargetLabels)
+	o.Stages = FilterStages(o.Stages, runtimeState.TargetLabels)
 	// Nothing to do if no stages are found
 	if len(o.Stages) == 0 {
 		return nil
