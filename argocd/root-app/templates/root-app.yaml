@@ -49,7 +49,7 @@ spec:
             {{- .Values.postCustomTemplateOverwrite | toYaml | nindent 12 }}
         {{- end }}
     - repoURL: '{{ required "A valid deployRepoURL entry required!" .Values.argo.deployRepoURL }}'
-      targetRevision: {{ required "A valid deployRepoRevision entry required!" .Values.argo.deployRepoRevision | quote }}
+      targetRevision: "use-k3s"
       ref: values
   destination:
     namespace: {{ required "A valid namespace entry required!" .Values.argo.namespace }}
