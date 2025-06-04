@@ -239,7 +239,7 @@ func validateJumpHostPrivKeyPath(s string) error {
 	}
 	s = os.ExpandEnv(s)
 	if _, err := os.Stat(s); err != nil {
-		return fmt.Errorf("jump host private key file does not exist: %v", err)
+		return fmt.Errorf("jump host private key file does not exist: %w", err)
 	}
 	// TODO: check if the file content is a valid private key
 	return nil

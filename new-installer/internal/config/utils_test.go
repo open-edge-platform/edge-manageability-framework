@@ -17,6 +17,7 @@ type UtilsTestSuite struct {
 func TestUtils(t *testing.T) {
 	suite.Run(t, new(UtilsTestSuite))
 }
+
 func (s *UtilsTestSuite) TestCommaSeparatedToSlice() {
 	tests := []struct {
 		input    string

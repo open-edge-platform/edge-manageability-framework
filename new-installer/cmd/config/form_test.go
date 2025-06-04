@@ -427,7 +427,6 @@ func TestConfigFormSuite(t *testing.T) {
 }
 
 func (s *OrchConfigFormTest) TestSimpleWorkflow() {
-
 	if err := initTest(); err != nil {
 		s.T().Fatalf("initTest failed: %v", err)
 	}

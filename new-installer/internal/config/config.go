@@ -18,8 +18,10 @@ const (
 
 // Current version
 // Should bump this every time we make backward-compatible config schema changes
-const UserConfigVersion = 4
-const RuntimeStateVersion = 2
+const (
+	UserConfigVersion   = 4
+	RuntimeStateVersion = 2
+)
 
 // Minimal version supported by the installer.
 // This should never be modified. Create `config/v2` when breaking changes are introduced.
