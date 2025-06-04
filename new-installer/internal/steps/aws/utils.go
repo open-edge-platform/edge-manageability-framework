@@ -23,6 +23,7 @@ const (
 type AWSUtility interface {
 	GetAvailableZones(region string) ([]string, error)
 	S3MoveToS3(srcRegion, srcBucket, srcKey, destRegion, destBucket, destKey string) error
+	GetSubnetIDsFromVPC(region, vpcID string) ([]string, []string, error)
 }
 
 type awsUtilityImpl struct{}
@@ -122,4 +123,75 @@ func (*awsUtilityImpl) S3MoveToS3(srcRegion, srcBucket, srcKey, destRegion, dest
 	}
 
 	return nil
+}
+
+// GetPublicSubnetIDsFromVPC retrieves publicand private subnet IDs from a specified VPC in a given AWS region.
+func (*awsUtilityImpl) GetSubnetIDsFromVPC(region, vpcID string) ([]string, []string, error) {
+	session, err := session.NewSession(&aws.Config{
+		Region: aws.String(region),
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	ec2Client := ec2.New(session)
+
+	// Step 1: Get all subnets from the VPC
+	subnetsOutput, err := ec2Client.DescribeSubnets(&ec2.DescribeSubnetsInput{
+		Filters: []*ec2.Filter{
+			{
+				Name:   aws.String("vpc-id"),
+				Values: []*string{aws.String(vpcID)},
+			},
+		},
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var publicSubnetIDs []string
+	var privateSubnetIDs []string
+
+	// Step 2: Check the route tables for each subnet
+	for _, subnet := range subnetsOutput.Subnets {
+		routeTablesOutput, err := ec2Client.DescribeRouteTables(&ec2.DescribeRouteTablesInput{
+			Filters: []*ec2.Filter{
+				{
+					Name:   aws.String("association.subnet-id"),
+					Values: []*string{subnet.SubnetId},
+				},
+			},
+		})
+		if err != nil {
+			return nil, nil, err
+		}
+
+		// Step 3: Determine if the subnet is public or private
+		isPublic := false
+		isPrivate := false
+		for _, routeTable := range routeTablesOutput.RouteTables {
+			for _, route := range routeTable.Routes {
+				if route.DestinationCidrBlock != nil && *route.DestinationCidrBlock == "0.0.0.0/0" {
+					if route.NatGatewayId == nil && route.InstanceId == nil {
+						isPublic = true
+					} else if route.NatGatewayId != nil {
+						isPrivate = true
+					}
+					break
+				}
+			}
+			if isPublic || isPrivate {
+				break
+			}
+		}
+
+		// Step 4: Add to the appropriate list
+		if isPublic {
+			publicSubnetIDs = append(publicSubnetIDs, *subnet.SubnetId)
+		} else if isPrivate {
+			privateSubnetIDs = append(privateSubnetIDs, *subnet.SubnetId)
+		}
+	}
+
+	return publicSubnetIDs, privateSubnetIDs, nil
 }

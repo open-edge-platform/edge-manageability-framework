@@ -22,7 +22,7 @@ type StateBucketTest struct {
 	config       config.OrchInstallerConfig
 	runtimeState config.OrchInstallerRuntimeState
 
-	step       *steps_aws.CreateAWSStateBucket
+	step       *steps_aws.AWSStateBucketStep
 	randomText string
 	tfUtility  *MockTerraformUtility
 }
@@ -44,7 +44,7 @@ func (s *StateBucketTest) SetupTest() {
 	s.runtimeState.DeploymentID = s.randomText
 	s.tfUtility = &MockTerraformUtility{}
 
-	s.step = &steps_aws.CreateAWSStateBucket{
+	s.step = &steps_aws.AWSStateBucketStep{
 		RootPath:           rootPath,
 		KeepGeneratedFiles: false,
 		TerraformUtility:   s.tfUtility,

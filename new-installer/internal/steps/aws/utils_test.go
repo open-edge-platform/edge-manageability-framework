@@ -38,6 +38,25 @@ func (m *MockTerraformUtility) Run(ctx context.Context, input steps.TerraformUti
 	return steps.TerraformUtilityOutput{}, args.Get(1).(*internal.OrchInstallerError)
 }
 
+func (m *MockTerraformUtility) MoveState(ctx context.Context, input steps.TerraformUtilityMoveStateInput) *internal.OrchInstallerError {
+	args := m.Called(ctx, input)
+	if err, ok := args.Get(0).(*internal.OrchInstallerError); ok {
+		return err
+	} else {
+		// If the error is nil, return nil
+		if args.Get(0) == nil {
+			return nil
+		}
+	}
+	if len(args) != 1 {
+		return &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeInvalidArgument,
+			ErrorMsg:  "Unexpected number of arguments",
+		}
+	}
+	return nil
+}
+
 type MockAWSUtility struct {
 	mock.Mock
 }
@@ -54,4 +73,29 @@ func (m *MockAWSUtility) GetAvailableZones(region string) ([]string, error) {
 		}
 	}
 	return nil, args.Error(1)
+}
+
+func (m *MockAWSUtility) S3MoveToS3(srcRegion, srcBucket, srcKey, destRegion, destBucket, destKey string) error {
+	args := m.Called(srcRegion, srcBucket, srcKey, destRegion, destBucket, destKey)
+	return args.Error(0)
+}
+
+func (m *MockAWSUtility) GetSubnetIDsFromVPC(region, vpcID string) ([]string, []string, error) {
+	args := m.Called(region, vpcID)
+	if len(args) != 3 {
+		return nil, nil, &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeInvalidArgument,
+			ErrorMsg:  "Unexpected number of arguments",
+		}
+	}
+	privateSubnets, ok1 := args.Get(0).([]string)
+	publicSubnets, ok2 := args.Get(1).([]string)
+	err, ok3 := args.Get(2).(error)
+	if !ok1 || !ok2 || !ok3 {
+		return nil, nil, &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeInvalidArgument,
+			ErrorMsg:  "Invalid argument types",
+		}
+	}
+	return privateSubnets, publicSubnets, err
 }

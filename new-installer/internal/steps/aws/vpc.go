@@ -32,6 +32,17 @@ const (
 )
 
 var AWSVPCStepLabels = []string{"aws", "vpc"}
+var AWSVPCEndpoints = []string{
+	"elasticfilesystem",
+	"s3",
+	"eks",
+	"sts",
+	"ec2",
+	"ec2messages",
+	"ecr.dkr",
+	"ecr.api",
+	"elasticloadbalancing",
+}
 
 type AWSVPCVariables struct {
 	Region                 string                  `json:"region" yaml:"region"`
@@ -103,6 +114,19 @@ func (s *AWSVPCStep) Labels() []string {
 }
 
 func (s *AWSVPCStep) ConfigStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+	if s.skipVPCStep(config) {
+		// If VPC ID is already set, we skip this step.
+		runtimeState.VPCID = config.AWS.VPCID
+		var err error
+		runtimeState.PublicSubnetIDs, runtimeState.PrivateSubnetIDs, err = s.AWSUtility.GetSubnetIDsFromVPC(config.AWS.Region, runtimeState.VPCID)
+		if err != nil {
+			return runtimeState, &internal.OrchInstallerError{
+				ErrorCode: internal.OrchInstallerErrorCodeInternal,
+				ErrorMsg:  fmt.Sprintf("failed to get subnet IDs from VPC: %v", err),
+			}
+		}
+		return runtimeState, nil
+	}
 	s.variables = NewDefaultAWSVPCVariables()
 	s.variables.Region = config.AWS.Region
 	s.variables.Name = config.Global.OrchName
@@ -170,7 +194,7 @@ func (s *AWSVPCStep) ConfigStep(ctx context.Context, config config.OrchInstaller
 
 	// Generate SSH key pair for the jumphost
 	if runtimeState.JumpHostSSHKeyPrivateKey == "" || runtimeState.JumpHostSSHKeyPublicKey == "" {
-		privateKey, publicKey, err := GenerateSSHKeyPair()
+		privateKey, publicKey, err := generateSSHKeyPair()
 		if err != nil {
 			return runtimeState, &internal.OrchInstallerError{
 				ErrorCode: internal.OrchInstallerErrorCodeInternal,
@@ -194,48 +218,159 @@ func (s *AWSVPCStep) ConfigStep(ctx context.Context, config config.OrchInstaller
 }
 
 func (s *AWSVPCStep) PreStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
-	// TODO: Check if we need to upgrade the VPC module
-	needsUpgrade := false
-	if !needsUpgrade {
-		// Fresh install, no need to upgrade
+	if s.skipVPCStep(config) {
 		return runtimeState, nil
 	}
-	// Need to migrate Terraform state from old bucket to new bucket:
-	// Region -> Unchanged
-	// Bucket -> New
-	// Key -> New
+	if config.AWS.PreviousS3StateBucket == "" {
+		// No need to migrate state, since there is no previous state bucket
+		return runtimeState, nil
+	}
 
-	// Need to move Terraform states:
-	// module.vpc.aws_vpc.main -> aws_vpc.main
-	// module.vpc.aws_vpc_ipv4_cidr_block_association.secondary_cidr -> Skip, since we will not have additional CIDRs
-	// module.subnet.aws_subnet.private_subnet[name] -> aws_subnet.private_subnet[name]
-	// module.subnet.aws_subnet.public_subnet[name] -> aws_subnet.public_subnet[name]
-	// module.nat_gateway.aws_eip.ngw -> aws_eip.ngw
-	// module.nat_gateway.aws_nat_gateway.ngw_with_eip -> aws_nat_gateway.main
-	// module.internet_gateway.aws_internet_gateway.igw -> aws_internet_gateway.igw
-	// module.route_table.aws_route_table.public_subnet[name] -> aws_route_table.public_subnet[name]
-	// module.route_table.aws_route_table.private_subnet[name] -> aws_route_table.private_subnet[name]
-	// module.route_table.aws_route_table_association.public_subnet[name] -> aws_route_table_association.public_subnet[name]
-	// module.route_table.aws_route_table_association.private_subnet[name] -> aws_route_table_association.private_subnet[name]
-	// module.endpoint.aws_security_group.vpc_endpoints -> aws_security_group.vpc_endpoints
-	// module.endpoint.aws_vpc_endpoint.endpoint[name] -> aws_vpc_endpoint.endpoint[name]
-	// module.jumphost.aws_key_pair.jumphost_instance_launch_key -> aws_key_pair.jumphost_instance_launch_key
-	// module.jumphost.aws_iam_role.ec2 -> aws_iam_role.ec2
-	// module.jumphost.aws_iam_policy.eks_cluster_access_policy -> aws_iam_policy.eks_cluster_access_policy
-	// module.jumphost.aws_iam_role_policy_attachment.eks_cluster_access -> aws_iam_role_policy_attachment.eks_cluster_access
-	// module.jumphost.aws_iam_role_policy_attachment.AmazonSSMManagedInstanceCore -> aws_iam_role_policy_attachment.AmazonSSMManagedInstanceCore
-	// module.jumphost.aws_iam_instance_profile.ec2 -> aws_iam_instance_profile.ec2
-	// module.jumphost.aws_instance.jumphost -> aws_instance.jumphost
-	// module.jumphost.aws_security_group.jumphost -> aws_security_group.jumphost
-	// module.jumphost.aws_security_group_rule.jumphost_egress_private[name] -> aws_security_group_rule.jumphost_egress_private[name]
-	// module.jumphost.aws_security_group_rule.jumphost_egress_https -> aws_security_group_rule.jumphost_egress_https
-	// module.jumphost.aws_security_group_rule.jumphost_ingress_ssh[name] -> aws_security_group_rule.jumphost_ingress_ssh[name]
-	// module.jumphost.aws_eip.jumphost -> aws_eip.jumphost
-	// module.jumphost.aws_eip_association.jumphost -> aws_eip_association.jumphost
+	// Need to move Terraform state from old bucket to new bucket:
+	oldVPCBucketKey := fmt.Sprintf("%s/vpc/%s", config.AWS.Region, config.Global.OrchName)
+	s.AWSUtility.S3MoveToS3(config.AWS.Region,
+		config.AWS.PreviousS3StateBucket,
+		oldVPCBucketKey,
+		config.AWS.Region,
+		s.backendConfig.Bucket,
+		s.backendConfig.Key)
+
+	ModulePath := filepath.Join(s.RootPath, VPCModulePath)
+	s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
+		ModulePath:   ModulePath,
+		OldStateName: "module.vpc.main",
+		NewStateName: "aws_vpc.main",
+	})
+	s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
+		ModulePath:   ModulePath,
+		OldStateName: "module.vpc.main",
+		NewStateName: "aws_vpc.main",
+	})
+
+	for name := range s.variables.PublicSubnets {
+		s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
+			ModulePath:   ModulePath,
+			OldStateName: fmt.Sprintf("module.vpc.aws_subnet.public_subnet[%s]", name),
+			NewStateName: fmt.Sprintf("aws_subnet.public_subnet[%s]", name),
+		})
+		s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
+			ModulePath:   ModulePath,
+			OldStateName: fmt.Sprintf("module.nat_gateway.aws_eip.ngw[%s]", name),
+			NewStateName: fmt.Sprintf("aws_eip.ngw[%s]", name),
+		})
+		s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
+			ModulePath:   ModulePath,
+			OldStateName: fmt.Sprintf("module.nat_gateway.aws_nat_gateway.ngw_with_eip[%s]", name),
+			NewStateName: fmt.Sprintf("aws_nat_gateway.main[%s]", name),
+		})
+		s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
+			ModulePath:   ModulePath,
+			OldStateName: fmt.Sprintf("module.route_table.aws_route_table.public_subnet[%s]", name),
+			NewStateName: fmt.Sprintf("aws_route_table.public_subnet[%s]", name),
+		})
+		s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
+			ModulePath:   ModulePath,
+			OldStateName: fmt.Sprintf("module.route_table.aws_route_table_association.public_subnet[%s]", name),
+			NewStateName: fmt.Sprintf("aws_route_table_association.public_subnet[%s]", name),
+		})
+	}
+	for name := range s.variables.PrivateSubnets {
+		s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
+			ModulePath:   ModulePath,
+			OldStateName: fmt.Sprintf("module.vpc.aws_subnet.private_subnet[%s]", name),
+			NewStateName: fmt.Sprintf("aws_subnet.private_subnet[%s]", name),
+		})
+		s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
+			ModulePath:   ModulePath,
+			OldStateName: fmt.Sprintf("module.route_table.aws_route_table.private_subnet[%s]", name),
+			NewStateName: fmt.Sprintf("aws_route_table.private_subnet[%s]", name),
+		})
+		s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
+			ModulePath:   ModulePath,
+			OldStateName: fmt.Sprintf("module.route_table.aws_route_table_association.private_subnet[%s]", name),
+			NewStateName: fmt.Sprintf("aws_route_table_association.private_subnet[%s]", name),
+		})
+	}
+	s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
+		ModulePath:   ModulePath,
+		OldStateName: "module.internet_gateway.aws_internet_gateway.igw",
+		NewStateName: "aws_internet_gateway.igw",
+	})
+	s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
+		ModulePath:   ModulePath,
+		OldStateName: "module.endpoint.aws_security_group.vpc_endpoints",
+		NewStateName: "aws_security_group.vpc_endpoints",
+	})
+	for _, ep := range AWSVPCEndpoints {
+		s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
+			ModulePath:   ModulePath,
+			OldStateName: fmt.Sprintf("module.endpoint.aws_vpc_endpoint.endpoint[%s]", ep),
+			NewStateName: fmt.Sprintf("aws_vpc_endpoint.endpoint[%s]", ep),
+		})
+	}
+
+	s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
+		ModulePath:   ModulePath,
+		OldStateName: "module.jumphost.aws_key_pair.jumphost_instance_launch_key",
+		NewStateName: "aws_key_pair.jumphost_instance_launch_key",
+	})
+	s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
+		ModulePath:   ModulePath,
+		OldStateName: "module.jumphost.aws_iam_role.ec2",
+		NewStateName: "aws_iam_role.ec2",
+	})
+	s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
+		ModulePath:   ModulePath,
+		OldStateName: "module.jumphost.aws_iam_policy.eks_cluster_access_policy",
+		NewStateName: "aws_iam_policy.eks_cluster_access_policy",
+	})
+	s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
+		ModulePath:   ModulePath,
+		OldStateName: "module.jumphost.aws_iam_role_policy_attachment.eks_cluster_access",
+		NewStateName: "aws_iam_role_policy_attachment.eks_cluster_access",
+	})
+	s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
+		ModulePath:   ModulePath,
+		OldStateName: "module.jumphost.aws_iam_role_policy_attachment.AmazonSSMManagedInstanceCore",
+		NewStateName: "aws_iam_role_policy_attachment.AmazonSSMManagedInstanceCore",
+	})
+	s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
+		ModulePath:   ModulePath,
+		OldStateName: "module.jumphost.aws_iam_instance_profile.ec2",
+		NewStateName: "aws_iam_instance_profile.ec2",
+	})
+	s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
+		ModulePath:   ModulePath,
+		OldStateName: "module.jumphost.aws_instance.jumphost",
+		NewStateName: "aws_instance.jumphost",
+	})
+	s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
+		ModulePath:   ModulePath,
+		OldStateName: "module.jumphost.aws_security_group.jumphost",
+		NewStateName: "aws_security_group.jumphost",
+	})
+	s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
+		ModulePath:   ModulePath,
+		OldStateName: "module.jumphost.aws_security_group_rule.jumphost_egress_https",
+		NewStateName: "aws_security_group_rule.jumphost_egress_https",
+	})
+	s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
+		ModulePath:   ModulePath,
+		OldStateName: "module.jumphost.aws_eip.jumphost",
+		NewStateName: "aws_eip.jumphost",
+	})
+	s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
+		ModulePath:   ModulePath,
+		OldStateName: "module.jumphost.aws_eip_association.jumphost",
+		NewStateName: "aws_eip_association.jumphost",
+	})
 	return runtimeState, nil
 }
 
 func (s *AWSVPCStep) RunStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+	if s.skipVPCStep(config) {
+		return runtimeState, nil
+	}
 	terraformStepInput := steps.TerraformUtilityInput{
 		Action:             runtimeState.Action,
 		ModulePath:         filepath.Join(s.RootPath, VPCModulePath),
@@ -342,10 +477,13 @@ func (s *AWSVPCStep) RunStep(ctx context.Context, config config.OrchInstallerCon
 }
 
 func (s *AWSVPCStep) PostStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState, prevStepError *internal.OrchInstallerError) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+	if s.skipVPCStep(config) {
+		return runtimeState, nil
+	}
 	return runtimeState, prevStepError
 }
 
-func GenerateSSHKeyPair() (string, string, error) {
+func generateSSHKeyPair() (string, string, error) {
 	privateKey, err := rsa.GenerateKey(rand.Reader, SSKKeySize)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to generate private key: %v", err)
@@ -363,4 +501,8 @@ func GenerateSSHKeyPair() (string, string, error) {
 	}
 	publicKeyString := string(ssh.MarshalAuthorizedKey(pub))
 	return privateKeyString, publicKeyString, nil
+}
+
+func (s *AWSVPCStep) skipVPCStep(config config.OrchInstallerConfig) bool {
+	return config.AWS.VPCID != ""
 }
