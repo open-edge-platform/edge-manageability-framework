@@ -99,7 +99,7 @@ stringData:
 }
 
 // Generate a random password with requirements
-func (OnPrem) GeneratePassword() (string, error) {
+func (OnPrem) GeneratePassword() {
 	lower := randomChars("abcdefghijklmnopqrstuvwxyz", 1)
 	upper := randomChars("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 1)
 	digit := randomChars("0123456789", 1)
@@ -108,11 +108,11 @@ func (OnPrem) GeneratePassword() (string, error) {
 	password := lower + upper + digit + special + remaining
 	shuffled := shuffleString(password)
 	fmt.Println(shuffled)
-	return shuffled, nil
+	// return shuffled, nil
 }
 
 // GeneratePassword generates a random 100-character alphanumeric password.
-func (OnPrem) GenerateHarborPassword() (string, error) {
+func (OnPrem) GenerateHarborPassword() error {
 	const length = 100
 	const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 	var sb strings.Builder
@@ -120,11 +120,12 @@ func (OnPrem) GenerateHarborPassword() (string, error) {
 	for i := 0; i < length; i++ {
 		num, err := rand.Int(rand.Reader, big.NewInt(int64(len(chars))))
 		if err != nil {
-			return "", err
+			return err
 		}
 		sb.WriteByte(chars[num.Int64()])
 	}
-	return sb.String(), nil
+	fmt.Printf("%s\n", sb.String())
+	return nil
 }
 
 // Check if oras is installed
