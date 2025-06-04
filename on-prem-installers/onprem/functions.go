@@ -499,6 +499,10 @@ func (OnPrem) AllowConfigInRuntime() error {
 	fmt.Println("Provide IP addresses for Argo, Traefik and Nginx services.")
 	ipRegex := regexp.MustCompile(`^\d{1,3}(\.\d{1,3}){3}$`)
 	var argoIP, traefikIP, nginxIP string
+	argoIP = os.Getenv("ARGO_IP")
+	traefikIP = os.Getenv("TRAEFIK_IP")
+	nginxIP = os.Getenv("NGINX_IP")
+
 	for {
 		if argoIP == "" {
 			fmt.Print("Enter Argo IP: ")
@@ -736,10 +740,10 @@ func (OnPrem) DownloadPackages() error {
 
 	// These lists should be set by your set_artifacts_version logic
 	installerList := []string{
-		fmt.Sprintf("onprem-config-installer:%s", os.Getenv("DEPLOY_VERSION")),
+		// fmt.Sprintf("onprem-config-installer:%s", os.Getenv("DEPLOY_VERSION")),
 		fmt.Sprintf("onprem-ke-installer:%s", os.Getenv("DEPLOY_VERSION")),
 		fmt.Sprintf("onprem-argocd-installer:%s", os.Getenv("DEPLOY_VERSION")),
-		fmt.Sprintf("onprem-gitea-installer:%s", os.Getenv("DEPLOY_VERSION")),
+		// fmt.Sprintf("onprem-gitea-installer:%s", os.Getenv("DEPLOY_VERSION")),
 		fmt.Sprintf("onprem-orch-installer:%s", os.Getenv("DEPLOY_VERSION")),
 	}
 	gitArchiveList := []string{
