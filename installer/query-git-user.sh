@@ -4,10 +4,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# shellcheck source=installer/utils.sh
 source utils.sh
 
-export SAVE_DIR=~/pod-configs/SAVEME
+SAVE_DIR=~/pod-configs/SAVEME
 
 load_cluster_state_env
 if ! load_scm_auth; then

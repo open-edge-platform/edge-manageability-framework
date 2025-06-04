@@ -33,25 +33,25 @@ OUTPUT_DIR=render-output
 mkdir -p $OUTPUT_DIR
 OUTPUT_DIR_PATH=$(realpath $OUTPUT_DIR)
 
-pushd "$PWD"
+pushd $PWD
 
-cd "${EDGE_MANAGEABILITY_FRAMEWORK_DIR}"
+cd $EDGE_MANAGEABILITY_FRAMEWORK_DIR
 EDGE_MANAGEABILITY_FRAMEWORK_REV=$(git rev-parse --short HEAD)
 EDGE_MANAGEABILITY_FRAMEWORK_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
-cd "$ORCH_CONFIGS_DIR"
+cd $ORCH_CONFIGS_DIR
 ORCH_CONFIGS_REV=$(git rev-parse --short HEAD)
 ORCH_CONFIGS_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
-CLUSTERS=$(find "${ORCH_CONFIGS_DIR}/clusters" -maxdepth 1 -type f -name '*.yaml' -printf '%f\n' | sed 's/\.yaml$//')
+CLUSTERS=$(ls $ORCH_CONFIGS_DIR/clusters | sed 's/\.yaml//')
 RENDER_OUT_DIR=$OUTPUT_DIR_PATH/$EDGE_MANAGEABILITY_FRAMEWORK_BRANCH-$EDGE_MANAGEABILITY_FRAMEWORK_REV-$ORCH_CONFIGS_BRANCH-$ORCH_CONFIGS_REV
-mkdir -p "$RENDER_OUT_DIR"
+mkdir -p $RENDER_OUT_DIR
 
 for cluster in $CLUSTERS; do
-  echo "Rendering apps for cluster ${cluster}..."
-  mkdir -p "${RENDER_OUT_DIR}/${cluster}"
-  cd "${RENDER_OUT_DIR}/${cluster}"
-  "${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/tools/render-apps.sh" "$cluster" | yq -s '.metadata.name'
+  echo Rendering apps for cluster $cluster...
+  mkdir -p $RENDER_OUT_DIR/$cluster
+  cd $RENDER_OUT_DIR/$cluster
+  $EDGE_MANAGEABILITY_FRAMEWORK_DIR/tools/render-apps.sh $cluster | yq -s '.metadata.name'
 done
 
 popd
