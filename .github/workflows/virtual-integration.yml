@@ -183,7 +183,8 @@ jobs:
         uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@2b14d3ac351c09b086252c5989566333ef96bb6d # main
 
       - name: Run lint
-        run: shellcheck -x ***/*.sh
+        working-directory: on-prem-installers
+        run: shellcheck ***/*.sh
 
   lint-terraform:
     permissions:
