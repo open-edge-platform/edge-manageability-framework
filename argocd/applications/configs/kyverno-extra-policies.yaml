@@ -37,6 +37,7 @@ restrictedPolicyOrch:
       - "edgenode-observability-opentelemetry-collector*"
       - "edgenode-observability-minio*"
       - "dkam*"
+      - "rps*"
   - namespace: "capi-operator-system"
     names:
       - "capi-operator-cluster-api-operator*"

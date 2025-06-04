@@ -21,6 +21,7 @@ jwtMiddlewareException:
       - "cluster-connect-gateway-ws"
       - "cluster-connect-gateway-kubeapi"
       - "orch-platform-keycloak"
+      - "amt-api-rps"
   - namespace: "orch-boots"
     names:
       - "tinkerbell-nginx-ingress"
