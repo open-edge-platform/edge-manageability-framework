@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go/service/s3"
 )
 
 const (
@@ -21,6 +22,7 @@ const (
 
 type AWSUtility interface {
 	GetAvailableZones(region string) ([]string, error)
+	S3MoveToS3(srcRegion, srcBucket, srcKey, destRegion, destBucket, destKey string) error
 }
 
 type awsUtilityImpl struct{}
@@ -97,4 +99,27 @@ func FindAMIID(region string, amiName string, amiOwner string) (string, error) {
 	}
 
 	return *result.Images[0].ImageId, nil
+}
+
+func (*awsUtilityImpl) S3MoveToS3(srcRegion, srcBucket, srcKey, destRegion, destBucket, destKey string) error {
+	session, err := session.NewSession(&aws.Config{
+		Region: aws.String(srcRegion),
+	})
+	if err != nil {
+		return err
+	}
+
+	s3Client := s3.New(session)
+	copyInput := &s3.CopyObjectInput{
+		Bucket:     aws.String(destBucket),
+		CopySource: aws.String(fmt.Sprintf("s3://%s/%s", srcBucket, srcKey)),
+		Key:        aws.String(destKey),
+	}
+
+	_, err = s3Client.CopyObject(copyInput)
+	if err != nil {
+		return fmt.Errorf("failed to copy object from %s/%s to %s/%s: %v", srcBucket, srcKey, destBucket, destKey, err)
+	}
+
+	return nil
 }

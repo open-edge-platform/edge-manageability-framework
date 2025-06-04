@@ -194,6 +194,44 @@ func (s *AWSVPCStep) ConfigStep(ctx context.Context, config config.OrchInstaller
 }
 
 func (s *AWSVPCStep) PreStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+	// TODO: Check if we need to upgrade the VPC module
+	needsUpgrade := false
+	if !needsUpgrade {
+		// Fresh install, no need to upgrade
+		return runtimeState, nil
+	}
+	// Need to migrate Terraform state from old bucket to new bucket:
+	// Region -> Unchanged
+	// Bucket -> New
+	// Key -> New
+
+	// Need to move Terraform states:
+	// module.vpc.aws_vpc.main -> aws_vpc.main
+	// module.vpc.aws_vpc_ipv4_cidr_block_association.secondary_cidr -> Skip, since we will not have additional CIDRs
+	// module.subnet.aws_subnet.private_subnet[name] -> aws_subnet.private_subnet[name]
+	// module.subnet.aws_subnet.public_subnet[name] -> aws_subnet.public_subnet[name]
+	// module.nat_gateway.aws_eip.ngw -> aws_eip.ngw
+	// module.nat_gateway.aws_nat_gateway.ngw_with_eip -> aws_nat_gateway.main
+	// module.internet_gateway.aws_internet_gateway.igw -> aws_internet_gateway.igw
+	// module.route_table.aws_route_table.public_subnet[name] -> aws_route_table.public_subnet[name]
+	// module.route_table.aws_route_table.private_subnet[name] -> aws_route_table.private_subnet[name]
+	// module.route_table.aws_route_table_association.public_subnet[name] -> aws_route_table_association.public_subnet[name]
+	// module.route_table.aws_route_table_association.private_subnet[name] -> aws_route_table_association.private_subnet[name]
+	// module.endpoint.aws_security_group.vpc_endpoints -> aws_security_group.vpc_endpoints
+	// module.endpoint.aws_vpc_endpoint.endpoint[name] -> aws_vpc_endpoint.endpoint[name]
+	// module.jumphost.aws_key_pair.jumphost_instance_launch_key -> aws_key_pair.jumphost_instance_launch_key
+	// module.jumphost.aws_iam_role.ec2 -> aws_iam_role.ec2
+	// module.jumphost.aws_iam_policy.eks_cluster_access_policy -> aws_iam_policy.eks_cluster_access_policy
+	// module.jumphost.aws_iam_role_policy_attachment.eks_cluster_access -> aws_iam_role_policy_attachment.eks_cluster_access
+	// module.jumphost.aws_iam_role_policy_attachment.AmazonSSMManagedInstanceCore -> aws_iam_role_policy_attachment.AmazonSSMManagedInstanceCore
+	// module.jumphost.aws_iam_instance_profile.ec2 -> aws_iam_instance_profile.ec2
+	// module.jumphost.aws_instance.jumphost -> aws_instance.jumphost
+	// module.jumphost.aws_security_group.jumphost -> aws_security_group.jumphost
+	// module.jumphost.aws_security_group_rule.jumphost_egress_private[name] -> aws_security_group_rule.jumphost_egress_private[name]
+	// module.jumphost.aws_security_group_rule.jumphost_egress_https -> aws_security_group_rule.jumphost_egress_https
+	// module.jumphost.aws_security_group_rule.jumphost_ingress_ssh[name] -> aws_security_group_rule.jumphost_ingress_ssh[name]
+	// module.jumphost.aws_eip.jumphost -> aws_eip.jumphost
+	// module.jumphost.aws_eip_association.jumphost -> aws_eip_association.jumphost
 	return runtimeState, nil
 }
 
