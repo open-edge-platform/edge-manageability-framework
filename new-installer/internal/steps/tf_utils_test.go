@@ -30,13 +30,9 @@ func TestTerraformUtility(t *testing.T) {
 func (s *TerraformUtilityTest) SetupTest() {
 	var err error
 	s.tfExecPath, err = steps.InstallTerraformAndGetExecPath()
-	if !s.NoError(err) {
-		return
-	}
+	s.Require().NoError(err)
 	s.testdataDir, err = filepath.Abs("./testdata")
-	if !s.NoError(err) {
-		return
-	}
+	s.Require().NoError(err)
 	s.deleteTerraformFiles()
 }
 
@@ -72,19 +68,16 @@ func (s *TerraformUtilityTest) TestApplyingTerraformModule() {
 		return
 	}
 	output1, uerr := output.Output["output1"].Value.MarshalJSON()
-	if !s.NoError(uerr) {
-		return
-	}
+	s.Require().NoError(uerr)
 	s.Equal(output1, []byte(`"value1"`))
 	output2, uerr := output.Output["output2"].Value.MarshalJSON()
-	if !s.NoError(uerr) {
-		return
-	}
+	s.Require().NoError(uerr)
 	s.Equal(output2, []byte(`2`))
 
 	s.NotEmpty(output.TerraformState)
 	k := koanf.New(".")
-	k.Load(rawbytes.Provider([]byte(output.TerraformState)), json.Parser())
+	loadErr := k.Load(rawbytes.Provider([]byte(output.TerraformState)), json.Parser())
+	s.Require().NoError(loadErr)
 	res := k.Get("resources").([]any)
 	s.NotEmpty(res)
 }
@@ -101,9 +94,7 @@ func (s *TerraformUtilityTest) TestDestroyTerraformModule() {
 		Var2: 2,
 	}
 	tfState, err := os.ReadFile(filepath.Join(s.testdataDir, "teststate.json"))
-	if !s.NoError(err) {
-		return
-	}
+	s.Require().NoError(err)
 	output, utilErr := tfUtil.Run(ctx, steps.TerraformUtilityInput{
 		Action:             "uninstall",
 		ModulePath:         s.testdataDir,
@@ -120,7 +111,8 @@ func (s *TerraformUtilityTest) TestDestroyTerraformModule() {
 
 	s.NotEmpty(output.TerraformState)
 	k := koanf.New(".")
-	k.Load(rawbytes.Provider([]byte(output.TerraformState)), json.Parser())
+	loadErr := k.Load(rawbytes.Provider([]byte(output.TerraformState)), json.Parser())
+	s.Require().NoError(loadErr)
 	res := k.Get("resources").([]any)
 	s.Empty(res)
 }
