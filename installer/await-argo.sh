@@ -28,8 +28,7 @@ check_crds() {
 await_crds_check() {
     local delay=$1
     local timeout=$2
-    local start_time
-    start_time=$(date +%s)    
+    local start_time=$(date +%s)
     local end_time=$((start_time + timeout))
 
     while true; do
@@ -38,12 +37,12 @@ await_crds_check() {
         fi
 
         current_time=$(date +%s)
-        if [ "$current_time" -ge $end_time ]; then
+        if [ $current_time -ge $end_time ]; then
             return 1
         fi
 
         echo "Waiting for ${delay} seconds for CRD deployment..."
-        sleep "$delay"
+        sleep $delay
     done
 }
 

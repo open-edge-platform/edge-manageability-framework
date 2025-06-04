@@ -135,7 +135,7 @@ func (tfUtil *terraformUtilityImpl) Run(ctx context.Context, input TerraformUtil
 			ErrorMsg:  fmt.Sprintf("failed to marshal variables: %v", err),
 		}
 	}
-	err = os.WriteFile(variableFilePath, variables, 0644)
+	err = os.WriteFile(variableFilePath, variables, 0o644)
 	if err != nil {
 		return TerraformUtilityOutput{}, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInternal,
@@ -159,7 +159,7 @@ func (tfUtil *terraformUtilityImpl) Run(ctx context.Context, input TerraformUtil
 				ErrorMsg:  fmt.Sprintf("failed to marshal backend config: %v", err),
 			}
 		}
-		err = os.WriteFile(backendConfigPath, backendConfig, 0644)
+		err = os.WriteFile(backendConfigPath, backendConfig, 0o644)
 		if err != nil {
 			return TerraformUtilityOutput{}, &internal.OrchInstallerError{
 				ErrorCode: internal.OrchInstallerErrorCodeInternal,
@@ -200,7 +200,7 @@ func (tfUtil *terraformUtilityImpl) Run(ctx context.Context, input TerraformUtil
 		if input.TerraformState != "" {
 			logger.Debug("Loading state bucket state from runtime state")
 			// We already have a state bucket state. Need to load it to the module before init.
-			if err := os.WriteFile(terraformStatePath, []byte(input.TerraformState), 0644); err != nil {
+			if err := os.WriteFile(terraformStatePath, []byte(input.TerraformState), 0o644); err != nil {
 				return TerraformUtilityOutput{}, &internal.OrchInstallerError{
 					ErrorCode: internal.OrchInstallerErrorCodeInternal,
 					ErrorMsg:  fmt.Sprintf("failed to write terraform state file: %v", err),
