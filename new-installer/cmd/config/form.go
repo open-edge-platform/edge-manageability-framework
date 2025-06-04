@@ -37,11 +37,10 @@ func configureGlobal() *huh.Group {
 			Title("Scale").
 			Description("Select target scale").
 			Options(
-				huh.NewOption("1~10 Edge Nodes", config.Scale10),
-				huh.NewOption("10~100 Edge Nodes", config.Scale100),
+				huh.NewOption("1~50 Edge Nodes", config.Scale50),
+				huh.NewOption("50~100 Edge Nodes", config.Scale100),
 				huh.NewOption("100-500 Edge Nodes", config.Scale500),
 				huh.NewOption("500-1000 Edge Nodes", config.Scale1000),
-				huh.NewOption("1000-10000 Edge Nodes", config.Scale10000),
 			).
 			Value(&input.Global.Scale),
 	).Title("Step 1: Global Settings\n")

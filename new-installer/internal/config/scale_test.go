@@ -14,11 +14,10 @@ import (
 func TestValidScales(t *testing.T) {
 	// Test that ValidScales returns all expected scale values
 	expected := []config.Scale{
-		config.Scale10,
+		config.Scale50,
 		config.Scale100,
 		config.Scale500,
 		config.Scale1000,
-		config.Scale10000,
 	}
 
 	result := config.ValidScales()
@@ -43,13 +42,11 @@ func TestScaleIsValid(t *testing.T) {
 		scale    config.Scale
 		expected bool
 	}{
-		{"Scale10", config.Scale10, true},
+		{"Scale50", config.Scale50, true},
 		{"Scale100", config.Scale100, true},
 		{"Scale500", config.Scale500, true},
 		{"Scale1000", config.Scale1000, true},
-		{"Scale10000", config.Scale10000, true},
 		{"Invalid scale - 0", config.Scale(0), false},
-		{"Invalid scale - 50", config.Scale(50), false},
 		{"Invalid scale - 2000", config.Scale(2000), false},
 		{"Invalid scale - -10", config.Scale(-10), false},
 	}

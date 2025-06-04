@@ -33,7 +33,7 @@ func (s *OrchConfigValidationTest) TestValidateAll() {
 			OrchName:     "demo",
 			ParentDomain: "example.com",
 			AdminEmail:   "admin@example.com",
-			Scale:        config.Scale(10),
+			Scale:        config.Scale(50),
 			// populate fields for Scale struct here
 		},
 		AWS: struct {
