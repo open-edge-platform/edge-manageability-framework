@@ -258,6 +258,7 @@ load_cluster_state_env() {
         export AWS_ACCOUNT=${SESSION_ACCOUNT}
     elif [[ "${AWS_ACCOUNT}" != "${SESSION_ACCOUNT}" ]]; then
         echo "Error: Mismatched AWS session credentials. Current login session account doesn't match deployment account."
+        echo "Should be $AWS_ACCOUNT, but current session is $SESSION_ACCOUNT."
         return 1
     fi
 
@@ -404,7 +405,7 @@ get_s3_prefix() {
         local bucket
         bucket=$(terraform state show "$resource" | grep -P "^\s* bucket\s*=" | cut -d'=' -f2 | xargs echo)
         echo "$bucket" | sed -ne "s|^${CLUSTER_NAME}-\([^-]\+\)-.*$|\1|p"
-    else        
+    else
         echo "Error: Not able to get the info of the S3 bucket." >&2
         exit 1
     fi

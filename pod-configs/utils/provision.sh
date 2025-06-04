@@ -450,6 +450,7 @@ parse_params() {
             echo "Error: AWS credentials missing or expired. Please refresh AWS credentials to proceed."
         else
             echo "Error: Mismatched AWS session credentials. Current login session account doesn't match deployment account."
+            echo "Should be $AWS_ACCOUNT, but current session is $SESSION_ACCOUNT."
         fi
         exit 1
     fi
