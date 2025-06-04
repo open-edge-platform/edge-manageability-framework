@@ -40,7 +40,7 @@ runs:
       with:
         repository: open-edge-platform/orch-ui
         path: orch-ui
-        ref: tests/0.1.24
+        ref: tests/0.1.25
         persist-credentials: false
     - run: git log -1
       shell: bash
@@ -66,7 +66,7 @@ runs:
       if: ${{ always() && inputs.infra != '' }}
       working-directory: orch-ui/tests
       shell: bash
-      env: 
+      env:
         EN_SERIAL_NUMBER: ${{ inputs.en_serial_number }}
         INPUTS_INFRA: ${{inputs.infra}}
       run: |
