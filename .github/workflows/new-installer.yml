@@ -112,7 +112,7 @@ jobs:
         uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@2b14d3ac351c09b086252c5989566333ef96bb6d # main
 
       - name: Run lint
-        run: mage lint:golang
+        run: mage newInstaller:lint
 
   build-test-new-installer:
     permissions:
