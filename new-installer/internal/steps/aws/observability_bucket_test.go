@@ -41,13 +41,11 @@ func TestObservabilityBucketsStep(t *testing.T) {
 
 func (s *ObservabilityBucketsStepTest) SetupTest() {
 	rootPath, err := filepath.Abs("../../../../")
-	if err != nil {
-		s.NoError(err)
-		return
-	}
+	s.Require().NoError(err, "Failed to get absolute path")
 	s.randomText = strings.ToLower(rand.Text()[0:8])
 	s.logDir = filepath.Join(rootPath, ".logs")
-	internal.InitLogger("debug", s.logDir)
+	err = internal.InitLogger("debug", s.logDir)
+	s.Require().NoError(err, "Failed to initialize logger")
 	s.config.AWS.Region = "us-west-2"
 	s.config.Global.OrchName = "observability-buckets-test"
 	s.config.AWS.CustomerTag = "test"
@@ -77,7 +75,6 @@ func (s *ObservabilityBucketsStepTest) TestInstallAndUninstallOBservabilityBucke
 	if err != nil {
 		s.NoError(err)
 	}
-
 }
 
 func (s *ObservabilityBucketsStepTest) expectTFUtiliyyCall(action string) {

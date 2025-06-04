@@ -35,7 +35,6 @@ func TestObservabilityBucketsTestSuite(t *testing.T) {
 }
 
 func (s *ObservabilityBucketsTestSuite) TestApplyingModule() {
-
 	randomPostfix := strings.ToLower(rand.Text()[:4])
 	bucketName := "obs3-test-bucket-" + randomPostfix
 	aws.CreateS3Bucket(s.T(), "us-west-2", bucketName)
@@ -71,9 +70,17 @@ func (s *ObservabilityBucketsTestSuite) TestApplyingModule() {
 
 	fmt.Printf("Created EKS cluster: %s with vpc %s\n", clusterName, vpcId)
 
-	defer DeleteTestEKSCluster(clusterName, vpcId, "us-west-2")
+	defer func() {
+		err = DeleteTestEKSCluster(clusterName, vpcId, "us-west-2")
+		if err != nil {
+			s.T().Fatalf("Failed to delete EKS cluster: %v", err)
+		}
+	}()
 
-	WaitForClusterInActiveState(clusterName, "us-west-2", time.Minute*10)
+	err = WaitForClusterInActiveState(clusterName, "us-west-2", time.Minute*10)
+	if err != nil {
+		s.T().Fatalf("Failed to wait for EKS cluster to be active: %v in %s", err, (time.Minute * 10).String())
+	}
 
 	terraformOptions := terraform.WithDefaultRetryableErrors(s.T(), &terraform.Options{
 		TerraformDir: "../observability_buckets",
@@ -103,5 +110,4 @@ func (s *ObservabilityBucketsTestSuite) TestApplyingModule() {
 	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-pre-"+"fm-mimir-tsdb")
 	// Verify that the S3 buckets for tracing are created if CreateTracing is true
 	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-pre-"+"tempo-traces")
-
 }

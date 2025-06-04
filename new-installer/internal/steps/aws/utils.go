@@ -51,7 +51,6 @@ func (*awsUtilityImpl) GetAvailableZones(region string) ([]string, error) {
 			},
 		},
 	})
-
 	if err != nil {
 		return nil, err
 	}

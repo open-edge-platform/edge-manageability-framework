@@ -24,7 +24,7 @@ const (
 func setupIAMRole(name string, region string) (string, error) {
 	sess, err := session.NewSession(&aws.Config{Region: aws.String(region)})
 	if err != nil {
-		return "", fmt.Errorf("failed to create session: %v", err)
+		return "", fmt.Errorf("failed to create session: %w", err)
 	}
 	iamClient := iam.New(sess)
 
@@ -45,7 +45,7 @@ func setupIAMRole(name string, region string) (string, error) {
 	}
 	roleOutput, err := iamClient.CreateRole(roleInput)
 	if err != nil {
-		return "", fmt.Errorf("failed to create IAM role: %v", err)
+		return "", fmt.Errorf("failed to create IAM role: %w", err)
 	}
 	rolePolicies := []string{
 		"arn:aws:iam::aws:policy/AmazonEKSClusterPolicy",
@@ -58,7 +58,7 @@ func setupIAMRole(name string, region string) (string, error) {
 			PolicyArn: aws.String(rolePolicy),
 		})
 		if err != nil {
-			return "", fmt.Errorf("failed to attach policy %s to IAM role: %v", rolePolicy, err)
+			return "", fmt.Errorf("failed to attach policy %s to IAM role: %w", rolePolicy, err)
 		}
 	}
 	return *roleOutput.Role.Arn, nil
@@ -67,7 +67,7 @@ func setupIAMRole(name string, region string) (string, error) {
 func deleteIAMRole(roleName string, region string) error {
 	sess, err := session.NewSession(&aws.Config{Region: aws.String(region)})
 	if err != nil {
-		return fmt.Errorf("failed to create session: %v", err)
+		return fmt.Errorf("failed to create session: %w", err)
 	}
 	iamClient := iam.New(sess)
 
@@ -75,7 +75,7 @@ func deleteIAMRole(roleName string, region string) error {
 		RoleName: aws.String(roleName),
 	})
 	if err != nil {
-		return fmt.Errorf("failed to delete IAM role: %v", err)
+		return fmt.Errorf("failed to delete IAM role: %w", err)
 	}
 	fmt.Printf("IAM role %s deleted successfully\n", roleName)
 	return nil
@@ -84,7 +84,7 @@ func deleteIAMRole(roleName string, region string) error {
 func setupVPC(name string, region string) (string, error) {
 	sess, err := session.NewSession(&aws.Config{Region: aws.String(region)})
 	if err != nil {
-		return "", fmt.Errorf("failed to create session: %v", err)
+		return "", fmt.Errorf("failed to create session: %w", err)
 	}
 	ec2Client := ec2.New(sess)
 
@@ -107,7 +107,7 @@ func setupVPC(name string, region string) (string, error) {
 		},
 	})
 	if err != nil {
-		return "", fmt.Errorf("failed to create VPC: %v", err)
+		return "", fmt.Errorf("failed to create VPC: %w", err)
 	}
 	return *newVPC.Vpc.VpcId, nil
 }
@@ -115,7 +115,7 @@ func setupVPC(name string, region string) (string, error) {
 func deleteVPC(vpcId string, region string) error {
 	sess, err := session.NewSession(&aws.Config{Region: aws.String(region)})
 	if err != nil {
-		return fmt.Errorf("failed to create session: %v", err)
+		return fmt.Errorf("failed to create session: %w", err)
 	}
 	ec2Client := ec2.New(sess)
 
@@ -129,7 +129,7 @@ func deleteVPC(vpcId string, region string) error {
 		},
 	})
 	if err != nil {
-		return fmt.Errorf("failed to describe subnets: %v", err)
+		return fmt.Errorf("failed to describe subnets: %w", err)
 	}
 	for _, subnet := range subnets.Subnets {
 		fmt.Println("Deleting subnet:", *subnet.SubnetId)
@@ -138,7 +138,7 @@ func deleteVPC(vpcId string, region string) error {
 		})
 		if err != nil {
 			fmt.Printf("Error deleting subnet %s: %v\n", *subnet.SubnetId, err)
-			return fmt.Errorf("failed to delete subnet: %v", err)
+			return fmt.Errorf("failed to delete subnet: %w", err)
 		}
 		fmt.Printf("Subnet %s deleted successfully\n", *subnet.SubnetId)
 	}
@@ -150,7 +150,7 @@ func deleteVPC(vpcId string, region string) error {
 	})
 	if err != nil {
 		fmt.Printf("Error deleting VPC %s: %v\n", vpcId, err)
-		return fmt.Errorf("failed to delete VPC: %v", err)
+		return fmt.Errorf("failed to delete VPC: %w", err)
 	}
 	fmt.Printf("VPC %s deleted successfully\n", vpcId)
 	return nil
@@ -160,19 +160,19 @@ func setupSubnets(vpcId string, region string) ([]string, error) {
 	subnets := []string{}
 	sess, err := session.NewSession(&aws.Config{Region: aws.String(region)})
 	if err != nil {
-		return subnets, fmt.Errorf("failed to create session: %v", err)
+		return subnets, fmt.Errorf("failed to create session: %w", err)
 	}
 	ec2Client := ec2.New(sess)
 
 	subnet1, err := createSubnet("subnet-1", "192.168.0.0/18", ec2Client, vpcId, region, "usw2-az1")
 	if err != nil {
-		return subnets, fmt.Errorf("failed to create subnet 1: %v", err)
+		return subnets, fmt.Errorf("failed to create subnet 1: %w", err)
 	}
 	subnets = append(subnets, subnet1)
 
 	subnet2, err := createSubnet("subnet-2", "192.168.64.0/18", ec2Client, vpcId, region, "usw2-az2")
 	if err != nil {
-		return subnets, fmt.Errorf("failed to create subnet 2: %v", err)
+		return subnets, fmt.Errorf("failed to create subnet 2: %w", err)
 	}
 	subnets = append(subnets, subnet2)
 
@@ -203,7 +203,7 @@ func createSubnet(name string, cidr string, ec2Client *ec2.EC2, vpcId string, re
 
 	subnetOutput, err := ec2Client.CreateSubnet(subnetInput)
 	if err != nil {
-		return "", fmt.Errorf("failed to create subnet: %v", err)
+		return "", fmt.Errorf("failed to create subnet: %w", err)
 	}
 	return *subnetOutput.Subnet.SubnetId, nil
 }
@@ -211,7 +211,7 @@ func createSubnet(name string, cidr string, ec2Client *ec2.EC2, vpcId string, re
 func setupEKS(clusterName string, region string, subnets []string, roleARN string) error {
 	sess, err := session.NewSession(&aws.Config{Region: aws.String(region)})
 	if err != nil {
-		return fmt.Errorf("failed to create session: %v", err)
+		return fmt.Errorf("failed to create session: %w", err)
 	}
 	eksClient := eks.New(sess)
 
@@ -224,9 +224,8 @@ func setupEKS(clusterName string, region string, subnets []string, roleARN strin
 	}
 
 	_, err = eksClient.CreateCluster(clusterInput)
-
 	if err != nil {
-		return fmt.Errorf("failed to create EKS cluster: %v", err)
+		return fmt.Errorf("failed to create EKS cluster: %w", err)
 	}
 	return nil
 }
@@ -234,7 +233,7 @@ func setupEKS(clusterName string, region string, subnets []string, roleARN strin
 func deleteEKS(clusterName string, region string) error {
 	sess, err := session.NewSession(&aws.Config{Region: aws.String(region)})
 	if err != nil {
-		return fmt.Errorf("failed to create session: %v", err)
+		return fmt.Errorf("failed to create session: %w", err)
 	}
 	eksClient := eks.New(sess)
 
@@ -242,7 +241,7 @@ func deleteEKS(clusterName string, region string) error {
 		Name: aws.String(clusterName),
 	})
 	if err != nil {
-		return fmt.Errorf("failed to delete EKS cluster: %v", err)
+		return fmt.Errorf("failed to delete EKS cluster: %w", err)
 	}
 	fmt.Printf("EKS cluster %s deleted successfully\n", clusterName)
 	return nil
@@ -258,25 +257,37 @@ func CreateTestEKSCluster(clusterName string, region string) (string, string, er
 	vpcId, err := setupVPC(clusterName, region)
 	if err != nil {
 		fmt.Printf("Error setting up subnets: %v\n", err)
-		deleteIAMRole(clusterName+iamSuffix, region)
-		deleteIAMRole(clusterName+nodeIAMSuffix, region)
+		err = deleteIAMRole(clusterName+iamSuffix, region)
+		if err != nil {
+			fmt.Printf("Error deleting IAM role: %v\n", err)
+		}
 		return "", "", err
 	}
 
 	subnets, err := setupSubnets(vpcId, region)
 	if err != nil {
 		fmt.Printf("Error setting up subnets: %v\n", err)
-		deleteVPC(vpcId, region)
-		deleteIAMRole(clusterName+iamSuffix, region)
-		deleteIAMRole(clusterName+nodeIAMSuffix, region)
+		err = deleteVPC(vpcId, region)
+		if err != nil {
+			fmt.Printf("Error deleting VPC: %v\n", err)
+		}
+		err = deleteIAMRole(clusterName+iamSuffix, region)
+		if err != nil {
+			fmt.Printf("Error deleting IAM role: %v\n", err)
+		}
 		return "", "", err
 	}
 	err = setupEKS(clusterName, region, subnets, roleARN)
 	if err != nil {
 		fmt.Printf("Error setting up EKS cluster: %v\n", err)
-		deleteVPC(vpcId, region)
-		deleteIAMRole(clusterName+iamSuffix, region)
-		deleteIAMRole(clusterName+nodeIAMSuffix, region)
+		err = deleteVPC(vpcId, region)
+		if err != nil {
+			fmt.Printf("Error deleting VPC: %v\n", err)
+		}
+		err = deleteIAMRole(clusterName+iamSuffix, region)
+		if err != nil {
+			fmt.Printf("Error deleting IAM role: %v\n", err)
+		}
 		return "", "", err
 	}
 	return clusterName, vpcId, nil
@@ -285,7 +296,7 @@ func CreateTestEKSCluster(clusterName string, region string) (string, string, er
 func WaitForClusterInActiveState(clusterName string, region string, timeout time.Duration) error {
 	sess, err := session.NewSession(&aws.Config{Region: aws.String(region)})
 	if err != nil {
-		return fmt.Errorf("failed to create session: %v", err)
+		return fmt.Errorf("failed to create session: %w", err)
 	}
 	eksClient := eks.New(sess)
 
@@ -295,7 +306,7 @@ func WaitForClusterInActiveState(clusterName string, region string, timeout time
 		}
 		describeOutput, err := eksClient.DescribeCluster(describeInput)
 		if err != nil {
-			return fmt.Errorf("failed to describe EKS cluster: %v", err)
+			return fmt.Errorf("failed to describe EKS cluster: %w", err)
 		}
 
 		if describeOutput.Cluster.Status == nil || *describeOutput.Cluster.Status == eks.ClusterStatusActive {
@@ -313,18 +324,18 @@ func DeleteTestEKSCluster(clusterName string, vpcId string, region string) error
 	fmt.Println("Deleting EKS")
 	err := deleteEKS(clusterName, region)
 	if err != nil {
-		return fmt.Errorf("failed to delete EKS cluster: %v", err)
+		return fmt.Errorf("failed to delete EKS cluster: %w", err)
 	}
 	time.Sleep(30 * time.Second) // Wait for EKS cluster deletion to propagate
 	fmt.Println("Deleting VPC")
 	err = deleteVPC(vpcId, region)
 	if err != nil {
-		return fmt.Errorf("failed to delete VPC: %v", err)
+		return fmt.Errorf("failed to delete VPC: %w", err)
 	}
 	fmt.Println("Deleting IAM role")
 	err = deleteIAMRole(clusterName+iamSuffix, region)
 	if err != nil {
-		return fmt.Errorf("failed to delete IAM role: %v", err)
+		return fmt.Errorf("failed to delete IAM role: %w", err)
 	}
 
 	fmt.Printf("Successfully deleted EKS cluster %s and associated resources", clusterName)
