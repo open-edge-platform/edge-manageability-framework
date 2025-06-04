@@ -8,7 +8,6 @@ import (
 	"embed"
 	"fmt"
 	"os"
-	"strings"
 
 	"gopkg.in/yaml.v3"
 
@@ -46,14 +45,13 @@ var embedFS embed.FS
 var embedPackages string
 
 // These are intermediate states that will not be saved back to the config file
-var (
-	flags                flag
-	orchPackages         map[string]config.OrchPackage
-	tmpJumpHostWhitelist string
-	enabledSimple        []string
-	enabledAdvanced      []string
-	configMode           Mode
-)
+var flags flag
+var orchPackages map[string]config.OrchPackage
+var tmpJumpHostWhitelist string
+var tmpEKSIAMRoles string
+var enabledSimple []string
+var enabledAdvanced []string
+var configMode Mode
 
 func loadOrchPackagesFromString(configStr string) {
 	err := yaml.Unmarshal([]byte(configStr), &orchPackages)
@@ -106,6 +104,8 @@ func loadConfig() {
 		fmt.Println("Failed to migrate existing config:", err)
 		os.Exit(1)
 	}
+
+	preProcessConfig()
 }
 
 func migrateConfig(raw map[string]interface{}) error {
@@ -135,6 +135,8 @@ func migrateConfig(raw map[string]interface{}) error {
 }
 
 func saveConfig() {
+	postProcessConfig()
+
 	file, err := os.Create(flags.ConfigPath)
 	if err != nil {
 		fmt.Println("Failed to create config file:", err)
@@ -166,6 +168,12 @@ func saveConfig() {
 	}
 }
 
+func preProcessConfig() {
+	// Convert slice to comma separated string
+	tmpJumpHostWhitelist = config.SliceToCommaSeparated(input.AWS.JumpHostWhitelist)
+	tmpEKSIAMRoles = config.SliceToCommaSeparated(input.AWS.EKSIAMRoles)
+}
+
 func postProcessConfig() {
 	// Convert input.Orch.Enabled when using simple mode
 	if configMode == Simple {
@@ -181,14 +189,9 @@ func postProcessConfig() {
 		input.Orch.Enabled = enabledAdvanced
 	}
 
-	// Covert comma separated IPs into a slice
-	if tmpJumpHostWhitelist != "" {
-		parts := strings.Split(tmpJumpHostWhitelist, ",")
-		for i := range parts {
-			parts[i] = strings.TrimSpace(parts[i])
-		}
-		input.AWS.JumpHostWhitelist = parts
-	}
+	// Convert comma separated field into a slice
+	input.AWS.JumpHostWhitelist = config.CommaSeparatedToSlice(tmpJumpHostWhitelist)
+	input.AWS.EKSIAMRoles = config.CommaSeparatedToSlice(tmpEKSIAMRoles)
 
 	// Setting up default values
 	if input.Orch.DefaultPassword == "" {
@@ -215,14 +218,11 @@ func main() {
 				loadOrchPackagesFromFile()
 			}
 			loadConfig()
-
 			err := orchInstallerForm().Run()
 			if err != nil {
 				fmt.Println("Failed to generate config:", err)
 				os.Exit(1)
 			}
-
-			postProcessConfig()
 			saveConfig()
 		},
 	}

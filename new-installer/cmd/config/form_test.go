@@ -12,6 +12,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"math/big"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -21,6 +22,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
+	"github.com/stretchr/testify/suite"
 )
 
 var pretty = lipgloss.NewStyle().
@@ -34,7 +36,10 @@ var (
 	model tea.Model
 )
 
-func testConfigureGlobal(t *testing.T) {
+// Dummy SSH key file for testing
+var tmpPrivKey *os.File
+
+func (s *OrchConfigFormTest) testConfigureGlobal() {
 	// Enter orchestrator name
 	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("demo")})
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
@@ -51,22 +56,22 @@ func testConfigureGlobal(t *testing.T) {
 	view := ansi.Strip(model.View())
 	expected := "Step 2: Infrastructure Type"
 	if !strings.Contains(view, expected) {
-		t.Fatalf("Expected '%s'. Got: %s", expected, pretty.Render(view))
+		s.FailNow("Expected view to contain step 2 message", "Got: %s", pretty.Render(view))
 	}
 }
 
-func testConfigureProvider(t *testing.T) {
+func (s *OrchConfigFormTest) testConfigureProvider() {
 	// Select AWS
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
 
 	view := ansi.Strip(model.View())
 	expected := "Step 3a: AWS Basic Configuration"
 	if !strings.Contains(view, expected) {
-		t.Fatalf("Expected '%s'. Got: %s", expected, pretty.Render(view))
+		s.FailNow("Expected view to contain step 2 message", "Got: %s", pretty.Render(view))
 	}
 }
 
-func testConfigureAwsBasic(t *testing.T) {
+func (s *OrchConfigFormTest) testConfigureAwsBasic() {
 	// Enter AWS region
 	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("us-west-2")})
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
@@ -74,11 +79,11 @@ func testConfigureAwsBasic(t *testing.T) {
 	view := ansi.Strip(model.View())
 	expected := "Step 3b: (Optional) AWS Expert Configurations"
 	if !strings.Contains(view, expected) {
-		t.Fatalf("Expected '%s'. Got: %s", expected, pretty.Render(view))
+		s.FailNow("Expected view to contain step 2 message", "Got: %s", pretty.Render(view))
 	}
 }
 
-func testConfirmAwsExpert(t *testing.T) {
+func (s *OrchConfigFormTest) testConfirmAwsExpert() {
 	// Select AWS expert mode
 	model.Update(tea.KeyMsg{Type: tea.KeyLeft})
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
@@ -86,21 +91,21 @@ func testConfirmAwsExpert(t *testing.T) {
 	view := ansi.Strip(model.View())
 	expected := "Step 3b: (Optional) AWS Expert Configurations"
 	if !strings.Contains(view, expected) {
-		t.Fatalf("Expected '%s'. Got: %s", expected, pretty.Render(view))
+		s.FailNow("Expected view to contain step 2 message", "Got: %s", pretty.Render(view))
 	}
 }
 
-func testSkipAwsExpert(t *testing.T) {
+func (s *OrchConfigFormTest) testSkipAwsExpert() {
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
 
 	view := ansi.Strip(model.View())
 	expected := "Step 4: (Optional) Proxy"
 	if !strings.Contains(view, expected) {
-		t.Fatalf("Expected '%s'. Got: %s", expected, pretty.Render(view))
+		s.FailNow("Expected view to contain step 2 message", "Got: %s", pretty.Render(view))
 	}
 }
 
-func testConfigureAwsExpert(t *testing.T) {
+func (s *OrchConfigFormTest) testConfigureAwsExpert() {
 	// Enter custom tag
 	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("custom-tag")})
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
@@ -109,6 +114,12 @@ func testConfigureAwsExpert(t *testing.T) {
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
 	// Enter just host whitelist
 	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("10.0.0.0/8,192.168.0.0/16")})
+	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
+	// Enter just host IP
+	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("10.20.30.1")})
+	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
+	// Enter just host SSH private key path
+	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(tmpPrivKey.Name())})
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
 	// Enter VPC ID
 	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("vpc-12345678")})
@@ -119,36 +130,39 @@ func testConfigureAwsExpert(t *testing.T) {
 	// Enter EKS DNS IP
 	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("8.8.8.8")})
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
+	// Enter EKS IAM role
+	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("arn:aws:iam::123456789012:role/EKS-Role")})
+	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
 
 	view := ansi.Strip(model.View())
 	expected := "Step 4: (Optional) Proxy"
 	if !strings.Contains(view, expected) {
-		t.Fatalf("Expected '%s'. Got: %s", expected, pretty.Render(view))
+		s.FailNow("Expected view to contain step 2 message", "Got: %s", pretty.Render(view))
 	}
 }
 
-func testSkipProxy(t *testing.T) {
+func (s *OrchConfigFormTest) testSkipProxy() {
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
 
 	view := ansi.Strip(model.View())
 	expected := "Step 5: (Optional) TLS Certificate"
 	if !strings.Contains(view, expected) {
-		t.Fatalf("Expected '%s'. Got: %s", expected, pretty.Render(view))
+		s.FailNow("Expected view to contain step 2 message", "Got: %s", pretty.Render(view))
 	}
 }
 
-func testConfirmProxy(t *testing.T) {
+func (s *OrchConfigFormTest) testConfirmProxy() {
 	model.Update(tea.KeyMsg{Type: tea.KeyLeft})
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
 
 	view := ansi.Strip(model.View())
 	expected := "Step 4: (Optional) Proxy"
 	if !strings.Contains(view, expected) {
-		t.Fatalf("Expected '%s'. Got: %s", expected, pretty.Render(view))
+		s.FailNow("Expected view to contain step 2 message", "Got: %s", pretty.Render(view))
 	}
 }
 
-func testConfigureProxy(t *testing.T) {
+func (s *OrchConfigFormTest) testConfigureProxy() {
 	// Enter EMF http proxy
 	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("http://proxy.example.com:8080")})
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
@@ -180,31 +194,31 @@ func testConfigureProxy(t *testing.T) {
 	view := ansi.Strip(model.View())
 	expected := "Step 5: (Optional) TLS Certificate"
 	if !strings.Contains(view, expected) {
-		t.Fatalf("Expected '%s'. Got: %s", expected, pretty.Render(view))
+		s.FailNow("Expected view to contain step 2 message", "Got: %s", pretty.Render(view))
 	}
 }
 
-func testSkipCert(t *testing.T) {
+func (s *OrchConfigFormTest) testSkipCert() {
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
 
 	view := ansi.Strip(model.View())
 	expected := "Step 6: (Optional) Site Reliability Engineering (SRE)"
 	if !strings.Contains(view, expected) {
-		t.Fatalf("Expected '%s'. Got: %s", expected, pretty.Render(view))
+		s.FailNow("Expected view to contain step 2 message", "Got: %s", pretty.Render(view))
 	}
 }
 
-func testConfirmCert(t *testing.T) {
+func (s *OrchConfigFormTest) testConfirmCert() {
 	model.Update(tea.KeyMsg{Type: tea.KeyLeft})
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
 	view := ansi.Strip(model.View())
 	expected := "Step 5: (Optional) TLS Certificate"
 	if !strings.Contains(view, expected) {
-		t.Fatalf("Expected '%s'. Got: %s", expected, pretty.Render(view))
+		s.FailNow("Expected view to contain step 2 message", "Got: %s", pretty.Render(view))
 	}
 }
 
-func testConfigureCert(t *testing.T) {
+func (s *OrchConfigFormTest) testConfigureCert() {
 	// Generate a CA certificate and key
 	caPriv, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	caTemplate := x509.Certificate{
@@ -249,30 +263,30 @@ func testConfigureCert(t *testing.T) {
 	view := ansi.Strip(model.View())
 	expected := "Step 6: (Optional) Site Reliability Engineering (SRE)"
 	if !strings.Contains(view, expected) {
-		t.Fatalf("Expected '%s'. Got: %s", expected, pretty.Render(view))
+		s.FailNow("Expected view to contain step 2 message", "Got: %s", pretty.Render(view))
 	}
 }
 
-func testSkipSRE(t *testing.T) {
+func (s *OrchConfigFormTest) testSkipSRE() {
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
 	view := ansi.Strip(model.View())
 	expected := "Step 7: (Optional) Email Notification"
 	if !strings.Contains(view, expected) {
-		t.Fatalf("Expected '%s'. Got: %s", expected, pretty.Render(view))
+		s.FailNow("Expected view to contain step 2 message", "Got: %s", pretty.Render(view))
 	}
 }
 
-func testConfirmSRE(t *testing.T) {
+func (s *OrchConfigFormTest) testConfirmSRE() {
 	model.Update(tea.KeyMsg{Type: tea.KeyLeft})
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
 	view := ansi.Strip(model.View())
 	expected := "Step 6: (Optional) Site Reliability Engineering (SRE)"
 	if !strings.Contains(view, expected) {
-		t.Fatalf("Expected '%s'. Got: %s", expected, pretty.Render(view))
+		s.FailNow("Expected view to contain step 2 message", "Got: %s", pretty.Render(view))
 	}
 }
 
-func testConfigureSre(t *testing.T) {
+func (s *OrchConfigFormTest) testConfigureSre() {
 	// Enter SRE username
 	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("sre-user")})
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
@@ -289,32 +303,32 @@ func testConfigureSre(t *testing.T) {
 	view := ansi.Strip(model.View())
 	expected := "Step 7: (Optional) Email Notification"
 	if !strings.Contains(view, expected) {
-		t.Fatalf("Expected '%s'. Got: %s", expected, pretty.Render(view))
+		s.FailNow("Expected view to contain step 2 message", "Got: %s", pretty.Render(view))
 	}
 }
 
-func testSkipSMTP(t *testing.T) {
+func (s *OrchConfigFormTest) testSkipSMTP() {
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
 
 	view := ansi.Strip(model.View())
 	expected := "Step 8: Orchestrator Configuration"
 	if !strings.Contains(view, expected) {
-		t.Fatalf("Expected '%s'. Got: %s", expected, pretty.Render(view))
+		s.FailNow("Expected view to contain step 2 message", "Got: %s", pretty.Render(view))
 	}
 }
 
-func testConfirmSMTP(t *testing.T) {
+func (s *OrchConfigFormTest) testConfirmSMTP() {
 	model.Update(tea.KeyMsg{Type: tea.KeyLeft})
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
 
 	view := ansi.Strip(model.View())
 	expected := "Step 7: (Optional) Email Notification"
 	if !strings.Contains(view, expected) {
-		t.Fatalf("Expected '%s'. Got: %s", expected, pretty.Render(view))
+		s.FailNow("Expected view to contain step 2 message", "Got: %s", pretty.Render(view))
 	}
 }
 
-func testConfigureSMTP(t *testing.T) {
+func (s *OrchConfigFormTest) testConfigureSMTP() {
 	// Enter SMTP username
 	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("smtp-user")})
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
@@ -334,22 +348,22 @@ func testConfigureSMTP(t *testing.T) {
 	view := ansi.Strip(model.View())
 	expected := "Step 8: Orchestrator Configuration"
 	if !strings.Contains(view, expected) {
-		t.Fatalf("Expected '%s'. Got: %s", expected, pretty.Render(view))
+		s.FailNow("Expected view to contain step 2 message", "Got: %s", pretty.Render(view))
 	}
 }
 
-func testConfirmSimpleMode(t *testing.T) {
+func (s *OrchConfigFormTest) testConfirmSimpleMode() {
 	input.Orch.Enabled = []string{"dummy"}
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
 
 	view := ansi.Strip(model.View())
 	expected := "Step 8: Select Orchestrator Components (Simple Mode) "
 	if !strings.Contains(view, expected) {
-		t.Fatalf("Expected '%s'. Got: %s", expected, pretty.Render(view))
+		s.FailNow("Expected view to contain step 2 message", "Got: %s", pretty.Render(view))
 	}
 }
 
-func testConfirmAdvancedMode(t *testing.T) {
+func (s *OrchConfigFormTest) testConfirmAdvancedMode() {
 	input.Orch.Enabled = []string{"dummy"}
 	// Select Advanced Mode
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyDown}))
@@ -358,11 +372,11 @@ func testConfirmAdvancedMode(t *testing.T) {
 	view := ansi.Strip(model.View())
 	expected := "Step 8: Select Orchestrator Components (Advanced Mode) "
 	if !strings.Contains(view, expected) {
-		t.Fatalf("Expected '%s'. Got: %s", expected, pretty.Render(view))
+		s.FailNow("Expected view to contain step 2 message", "Got: %s", pretty.Render(view))
 	}
 }
 
-func testSimpleMode(t *testing.T) {
+func (s *OrchConfigFormTest) testSimpleMode() {
 	// Select Simple Mode
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
 
@@ -370,11 +384,11 @@ func testSimpleMode(t *testing.T) {
 	view := ansi.Strip(model.View())
 	expected := ""
 	if !strings.Contains(view, expected) {
-		t.Fatalf("Expected '%s'. Got: %s", expected, pretty.Render(view))
+		s.FailNow("Expected view to contain step 2 message", "Got: %s", pretty.Render(view))
 	}
 }
 
-func testAdvancedMode(t *testing.T) {
+func (s *OrchConfigFormTest) testAdvancedMode() {
 	// Select Simple Mode
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
 
@@ -382,57 +396,82 @@ func testAdvancedMode(t *testing.T) {
 	view := ansi.Strip(model.View())
 	expected := ""
 	if !strings.Contains(view, expected) {
-		t.Fatalf("Expected '%s'. Got: %s", expected, pretty.Render(view))
+		s.FailNow("Expected view to contain step 2 message", "Got: %s", pretty.Render(view))
 	}
 }
 
-func initTest() {
+func initTest() error {
+	// Reset config builder state to avoid interference between tests
 	input = config.OrchInstallerConfig{}
+	flags.ConfigureAwsExpert = false
+	flags.ConfigureOnPremExpert = false
+	flags.ConfigureProxy = false
+	flags.ConfigureCert = false
+	flags.ConfigureSre = false
+	flags.ConfigureSmtp = false
+	configMode = Simple
+
 	loadOrchPackagesFromString(embedPackages)
-}
-
-func TestSimpleWorkflow(t *testing.T) {
-	initTest()
-
-	// Test the form initialization
 	form = orchInstallerForm()
 	model, _ = form.Update(form.Init())
 
-	t.Run("", testConfigureGlobal)
-	t.Run("", testConfigureProvider)
-	t.Run("", testConfigureAwsBasic)
-	t.Run("", testSkipAwsExpert)
-	t.Run("", testSkipProxy)
-	t.Run("", testSkipCert)
-	t.Run("", testSkipSRE)
-	t.Run("", testSkipSMTP)
-	t.Run("", testConfirmSimpleMode)
-	t.Run("", testSimpleMode)
-	t.Run("", testAdvancedMode)
+	return nil
 }
 
-func TestAdvancedWorkflow(t *testing.T) {
-	initTest()
+type OrchConfigFormTest struct {
+	suite.Suite
+}
 
-	// Test the form initialization
-	form = orchInstallerForm()
-	model, _ = form.Update(form.Init())
+func TestConfigFormSuite(t *testing.T) {
+	suite.Run(t, new(OrchConfigFormTest))
+}
 
-	t.Run("", testConfigureGlobal)
-	t.Run("", testConfigureProvider)
-	t.Run("", testConfigureAwsBasic)
-	t.Run("", testConfirmAwsExpert)
-	t.Run("", testConfigureAwsExpert)
-	t.Run("", testConfirmProxy)
-	t.Run("", testConfigureProxy)
-	t.Run("", testConfirmCert)
-	t.Run("", testConfigureCert)
-	t.Run("", testConfirmSRE)
-	t.Run("", testConfigureSre)
-	t.Run("", testConfirmSMTP)
-	t.Run("", testConfigureSMTP)
-	t.Run("", testConfirmAdvancedMode)
-	t.Run("", testAdvancedMode)
+func (s *OrchConfigFormTest) TestSimpleWorkflow() {
+
+	if err := initTest(); err != nil {
+		s.T().Fatalf("initTest failed: %v", err)
+	}
+
+	s.Run("Configure Global", s.testConfigureGlobal)
+	s.Run("Configure Provider", s.testConfigureProvider)
+	s.Run("Configure AWS Basic", s.testConfigureAwsBasic)
+	s.Run("Skip AWS Expert", s.testSkipAwsExpert)
+	s.Run("Skip Proxy", s.testSkipProxy)
+	s.Run("Skip Certificate", s.testSkipCert)
+	s.Run("Skip SRE", s.testSkipSRE)
+	s.Run("Skip SMTP", s.testSkipSMTP)
+	s.Run("Confirm Simple Mode", s.testConfirmSimpleMode)
+	s.Run("Simple Mode", s.testSimpleMode)
+}
+
+func (s *OrchConfigFormTest) TestAdvancedWorkflow() {
+	if err := initTest(); err != nil {
+		s.T().Fatalf("initTest failed: %v", err)
+	}
+
+	// Create a temporary file for the private key
+	var err error
+	tmpPrivKey, err = os.CreateTemp("/tmp", "privkey")
+	if err != nil {
+		s.T().Fatalf("failed to create temp file: %v", err)
+	}
+	defer os.Remove(tmpPrivKey.Name())
+
+	s.Run("Configure Global", s.testConfigureGlobal)
+	s.Run("Configure Provider", s.testConfigureProvider)
+	s.Run("Configure AWS Basic", s.testConfigureAwsBasic)
+	s.Run("Confirm AWS Expert", s.testConfirmAwsExpert)
+	s.Run("Configure AWS Expert", s.testConfigureAwsExpert)
+	s.Run("Confirm Proxy", s.testConfirmProxy)
+	s.Run("Configure Proxy", s.testConfigureProxy)
+	s.Run("Confirm Certificate", s.testConfirmCert)
+	s.Run("Configure Certificate", s.testConfigureCert)
+	s.Run("Confirm SRE", s.testConfirmSRE)
+	s.Run("Configure SRE", s.testConfigureSre)
+	s.Run("Confirm SMTP", s.testConfirmSMTP)
+	s.Run("Configure SMTP", s.testConfigureSMTP)
+	s.Run("Confirm Advanced Mode", s.testConfirmAdvancedMode)
+	s.Run("Advanced Mode", s.testAdvancedMode)
 }
 
 // batchUpdate is a helper function to run the model and update it with the command
