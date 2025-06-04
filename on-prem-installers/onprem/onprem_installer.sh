@@ -74,10 +74,8 @@ export ENABLE_TRACE=false
 # Variables that depend on the above and might require updating later, are placed in here
 set_artifacts_version() {
   installer_list=(
-    "onprem-config-installer:${DEPLOY_VERSION}"
     "onprem-ke-installer:${DEPLOY_VERSION}"
     "onprem-argocd-installer:${DEPLOY_VERSION}"
-    "onprem-gitea-installer:${DEPLOY_VERSION}"
     "onprem-orch-installer:${DEPLOY_VERSION}"
   )
 
@@ -624,12 +622,8 @@ mv -f "$repo_file" "$cwd/$git_arch_name/$repo_file"
 cd "$cwd"
 rm -rf "$tmp_dir"
 
-# Run OS Configuration installer
-echo "Installing the OS level configuration..."
-eval "sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y $cwd/$deb_dir_name/onprem-config-installer_*_amd64.deb"
-echo "OS level configuration installed"
 
-# Run K8s Installer
+# Run OS Configuration installer and K8s Installer
 echo "Installing RKE2..."
 if [[ -n "${DOCKER_USERNAME}" && -n "${DOCKER_PASSWORD}" ]]; then
   echo "Docker credentials provided. Installing RKE2 with Docker credentials"
@@ -637,7 +631,7 @@ if [[ -n "${DOCKER_USERNAME}" && -n "${DOCKER_PASSWORD}" ]]; then
 else
   sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y "$cwd"/$deb_dir_name/onprem-ke-installer_*_amd64.deb
 fi
-echo "RKE2 Installed"
+echo "OS level configuration installed and RKE2 Installed"
 
 mkdir -p /home/"$USER"/.kube
 sudo cp  /etc/rancher/rke2/rke2.yaml /home/"$USER"/.kube/config
@@ -645,21 +639,21 @@ sudo chown -R "$USER":"$USER"  /home/"$USER"/.kube
 sudo chmod 600 /home/"$USER"/.kube/config
 
 
-# Run gitea installer
-echo "Installing Gitea"
-eval "sudo IMAGE_REGISTRY=${GITEA_IMAGE_REGISTRY} NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y $cwd/$deb_dir_name/onprem-gitea-installer_*_amd64.deb"
+
+# Run argo CD installer
+echo "Installing Gitea & ArgoCD..."
+eval "sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y $cwd/$deb_dir_name/onprem-argocd-installer_*_amd64.deb"
 # wait_for_namespace_creation $gitea_ns
 mage onPrem:waitForNamespaceCreation $gitea_ns
+
 sleep 30s
 mage onPrem:waitForPodsRunning $gitea_ns
 # wait_for_pods_running $gitea_ns
 echo "Gitea Installed"
 
-# Run argo CD installer
-echo "Installing ArgoCD..."
-eval "sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y $cwd/$deb_dir_name/onprem-argocd-installer_*_amd64.deb"
 # wait_for_namespace_creation $argo_cd_ns
 mage onPrem:waitForNamespaceCreation $argo_cd_ns
+
 sleep 30s
 mage onPrem:waitForPodsRunning $argo_cd_ns
 # wait_for_pods_running $argo_cd_ns
