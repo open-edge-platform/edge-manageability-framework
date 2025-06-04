@@ -19,6 +19,7 @@ type OrchConfigValidationTest struct {
 func TestConfigValidationSuite(t *testing.T) {
 	suite.Run(t, new(OrchConfigValidationTest))
 }
+
 func (s *OrchConfigValidationTest) TestValidateAll() {
 	input = config.OrchInstallerConfig{
 		Version:  1,
