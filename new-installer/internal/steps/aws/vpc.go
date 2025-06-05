@@ -229,81 +229,43 @@ func (s *AWSVPCStep) moveVPCAndSubnets(ctx context.Context, modulePath string) [
 	if mvErr != nil {
 		mvStateErrors = append(mvStateErrors, mvErr)
 	}
-	mvErr = s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
-		ModulePath:   modulePath,
-		OldStateName: "module.vpc.main",
-		NewStateName: "aws_vpc.main",
-	})
-	if mvErr != nil {
-		mvStateErrors = append(mvStateErrors, mvErr)
-	}
 
 	for name := range s.variables.PublicSubnets {
-		mvErr = s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
-			ModulePath:   modulePath,
-			OldStateName: fmt.Sprintf("module.vpc.aws_subnet.public_subnet[%s]", name),
-			NewStateName: fmt.Sprintf("aws_subnet.public_subnet[%s]", name),
-		})
-		if mvErr != nil {
-			mvStateErrors = append(mvStateErrors, mvErr)
+		stateMappings := map[string]string{
+			"module.vpc.aws_subnet.public_subnet[%s]":                          "aws_subnet.public_subnet[%s]",
+			"module.nat_gateway.aws_eip.ngw[%s]":                               "aws_eip.ngw[%s]",
+			"module.nat_gateway.aws_nat_gateway.ngw_with_eip[%s]":              "aws_nat_gateway.main[%s]",
+			"module.route_table.aws_route_table.public_subnet[%s]":             "aws_route_table.public_subnet[%s]",
+			"module.route_table.aws_route_table_association.public_subnet[%s]": "aws_route_table_association.public_subnet[%s]",
 		}
-		mvErr = s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
-			ModulePath:   modulePath,
-			OldStateName: fmt.Sprintf("module.nat_gateway.aws_eip.ngw[%s]", name),
-			NewStateName: fmt.Sprintf("aws_eip.ngw[%s]", name),
-		})
-		if mvErr != nil {
-			mvStateErrors = append(mvStateErrors, mvErr)
-		}
-		mvErr = s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
-			ModulePath:   modulePath,
-			OldStateName: fmt.Sprintf("module.nat_gateway.aws_nat_gateway.ngw_with_eip[%s]", name),
-			NewStateName: fmt.Sprintf("aws_nat_gateway.main[%s]", name),
-		})
-		if mvErr != nil {
-			mvStateErrors = append(mvStateErrors, mvErr)
-		}
-		mvErr = s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
-			ModulePath:   modulePath,
-			OldStateName: fmt.Sprintf("module.route_table.aws_route_table.public_subnet[%s]", name),
-			NewStateName: fmt.Sprintf("aws_route_table.public_subnet[%s]", name),
-		})
-		if mvErr != nil {
-			mvStateErrors = append(mvStateErrors, mvErr)
-		}
-		mvErr = s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
-			ModulePath:   modulePath,
-			OldStateName: fmt.Sprintf("module.route_table.aws_route_table_association.public_subnet[%s]", name),
-			NewStateName: fmt.Sprintf("aws_route_table_association.public_subnet[%s]", name),
-		})
-		if mvErr != nil {
-			mvStateErrors = append(mvStateErrors, mvErr)
+
+		for oldStateTemplate, newStateTemplate := range stateMappings {
+			mvErr = s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
+				ModulePath:   modulePath,
+				OldStateName: fmt.Sprintf(oldStateTemplate, name),
+				NewStateName: fmt.Sprintf(newStateTemplate, name),
+			})
+			if mvErr != nil {
+				mvStateErrors = append(mvStateErrors, mvErr)
+			}
 		}
 	}
 	for name := range s.variables.PrivateSubnets {
-		mvErr = s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
-			ModulePath:   modulePath,
-			OldStateName: fmt.Sprintf("module.vpc.aws_subnet.private_subnet[%s]", name),
-			NewStateName: fmt.Sprintf("aws_subnet.private_subnet[%s]", name),
-		})
-		if mvErr != nil {
-			mvStateErrors = append(mvStateErrors, mvErr)
+		stateMappings := map[string]string{
+			"module.vpc.aws_subnet.private_subnet[%s]":                          "aws_subnet.private_subnet[%s]",
+			"module.route_table.aws_route_table.private_subnet[%s]":             "aws_route_table.private_subnet[%s]",
+			"module.route_table.aws_route_table_association.private_subnet[%s]": "aws_route_table_association.private_subnet[%s]",
 		}
-		mvErr = s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
-			ModulePath:   modulePath,
-			OldStateName: fmt.Sprintf("module.route_table.aws_route_table.private_subnet[%s]", name),
-			NewStateName: fmt.Sprintf("aws_route_table.private_subnet[%s]", name),
-		})
-		if mvErr != nil {
-			mvStateErrors = append(mvStateErrors, mvErr)
-		}
-		mvErr = s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
-			ModulePath:   modulePath,
-			OldStateName: fmt.Sprintf("module.route_table.aws_route_table_association.private_subnet[%s]", name),
-			NewStateName: fmt.Sprintf("aws_route_table_association.private_subnet[%s]", name),
-		})
-		if mvErr != nil {
-			mvStateErrors = append(mvStateErrors, mvErr)
+
+		for oldStateTemplate, newStateTemplate := range stateMappings {
+			mvErr = s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
+				ModulePath:   modulePath,
+				OldStateName: fmt.Sprintf(oldStateTemplate, name),
+				NewStateName: fmt.Sprintf(newStateTemplate, name),
+			})
+			if mvErr != nil {
+				mvStateErrors = append(mvStateErrors, mvErr)
+			}
 		}
 	}
 	return mvStateErrors
@@ -342,93 +304,29 @@ func (s *AWSVPCStep) moveVPCInternetGatewayAndEndpoints(ctx context.Context, mod
 
 func (s *AWSVPCStep) moveJumphost(ctx context.Context, modulePath string) []*internal.OrchInstallerError {
 	var mvStateErrors []*internal.OrchInstallerError = make([]*internal.OrchInstallerError, 0)
-	mvErr := s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
-		ModulePath:   modulePath,
-		OldStateName: "module.jumphost.aws_key_pair.jumphost_instance_launch_key",
-		NewStateName: "aws_key_pair.jumphost_instance_launch_key",
-	})
-	if mvErr != nil {
-		mvStateErrors = append(mvStateErrors, mvErr)
+	stateMappings := map[string]string{
+		"module.jumphost.aws_key_pair.jumphost_instance_launch_key":                   "aws_key_pair.jumphost_instance_launch_key",
+		"module.jumphost.aws_iam_role.ec2":                                            "aws_iam_role.ec2",
+		"module.jumphost.aws_iam_policy.eks_cluster_access_policy":                    "aws_iam_policy.eks_cluster_access_policy",
+		"module.jumphost.aws_iam_role_policy_attachment.eks_cluster_access":           "aws_iam_role_policy_attachment.eks_cluster_access",
+		"module.jumphost.aws_iam_role_policy_attachment.AmazonSSMManagedInstanceCore": "aws_iam_role_policy_attachment.AmazonSSMManagedInstanceCore",
+		"module.jumphost.aws_iam_instance_profile.ec2":                                "aws_iam_instance_profile.ec2",
+		"module.jumphost.aws_instance.jumphost":                                       "aws_instance.jumphost",
+		"module.jumphost.aws_security_group.jumphost":                                 "aws_security_group.jumphost",
+		"module.jumphost.aws_security_group_rule.jumphost_egress_https":               "aws_security_group_rule.jumphost_egress_https",
+		"module.jumphost.aws_eip.jumphost":                                            "aws_eip.jumphost",
+		"module.jumphost.aws_eip_association.jumphost":                                "aws_eip_association.jumphost",
 	}
-	mvErr = s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
-		ModulePath:   modulePath,
-		OldStateName: "module.jumphost.aws_iam_role.ec2",
-		NewStateName: "aws_iam_role.ec2",
-	})
-	if mvErr != nil {
-		mvStateErrors = append(mvStateErrors, mvErr)
-	}
-	mvErr = s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
-		ModulePath:   modulePath,
-		OldStateName: "module.jumphost.aws_iam_policy.eks_cluster_access_policy",
-		NewStateName: "aws_iam_policy.eks_cluster_access_policy",
-	})
-	if mvErr != nil {
-		mvStateErrors = append(mvStateErrors, mvErr)
-	}
-	mvErr = s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
-		ModulePath:   modulePath,
-		OldStateName: "module.jumphost.aws_iam_role_policy_attachment.eks_cluster_access",
-		NewStateName: "aws_iam_role_policy_attachment.eks_cluster_access",
-	})
-	if mvErr != nil {
-		mvStateErrors = append(mvStateErrors, mvErr)
-	}
-	mvErr = s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
-		ModulePath:   modulePath,
-		OldStateName: "module.jumphost.aws_iam_role_policy_attachment.AmazonSSMManagedInstanceCore",
-		NewStateName: "aws_iam_role_policy_attachment.AmazonSSMManagedInstanceCore",
-	})
-	if mvErr != nil {
-		mvStateErrors = append(mvStateErrors, mvErr)
-	}
-	mvErr = s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
-		ModulePath:   modulePath,
-		OldStateName: "module.jumphost.aws_iam_instance_profile.ec2",
-		NewStateName: "aws_iam_instance_profile.ec2",
-	})
-	if mvErr != nil {
-		mvStateErrors = append(mvStateErrors, mvErr)
-	}
-	mvErr = s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
-		ModulePath:   modulePath,
-		OldStateName: "module.jumphost.aws_instance.jumphost",
-		NewStateName: "aws_instance.jumphost",
-	})
-	if mvErr != nil {
-		mvStateErrors = append(mvStateErrors, mvErr)
-	}
-	mvErr = s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
-		ModulePath:   modulePath,
-		OldStateName: "module.jumphost.aws_security_group.jumphost",
-		NewStateName: "aws_security_group.jumphost",
-	})
-	if mvErr != nil {
-		mvStateErrors = append(mvStateErrors, mvErr)
-	}
-	mvErr = s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
-		ModulePath:   modulePath,
-		OldStateName: "module.jumphost.aws_security_group_rule.jumphost_egress_https",
-		NewStateName: "aws_security_group_rule.jumphost_egress_https",
-	})
-	if mvErr != nil {
-		mvStateErrors = append(mvStateErrors, mvErr)
-	}
-	mvErr = s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
-		ModulePath:   modulePath,
-		OldStateName: "module.jumphost.aws_eip.jumphost",
-		NewStateName: "aws_eip.jumphost",
-	})
-	if mvErr != nil {
-		mvStateErrors = append(mvStateErrors, mvErr)
-	}
-	mvErr = s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
-		ModulePath:   modulePath,
-		OldStateName: "module.jumphost.aws_eip_association.jumphost",
-		NewStateName: "aws_eip_association.jumphost",
-	})
-	if mvErr != nil {
-		mvStateErrors = append(mvStateErrors, mvErr)
+
+	for oldState, newState := range stateMappings {
+		mvErr := s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
+			ModulePath:   modulePath,
+			OldStateName: oldState,
+			NewStateName: newState,
+		})
+		if mvErr != nil {
+			mvStateErrors = append(mvStateErrors, mvErr)
+		}
 	}
 	return mvStateErrors
 }
