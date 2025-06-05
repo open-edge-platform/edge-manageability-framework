@@ -411,7 +411,7 @@ func initTest() error {
 	flags.ConfigureSmtp = false
 	configMode = Simple
 
-	loadOrchPackagesFromString(embedPackages)
+	loadOrchPackages()
 	form = orchInstallerForm()
 	model, _ = form.Update(form.Init())
 
