@@ -11,7 +11,148 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 )
+
+func validateAll() error {
+	if err := validateGlobalConfig(); err != nil {
+		return err
+	}
+	if err := validateAWSConfig(); err != nil {
+		return err
+	}
+	if err := validateProxyConfig(); err != nil {
+		return err
+	}
+	if err := validateCertConfig(); err != nil {
+		return err
+	}
+	if err := validateSREConfig(); err != nil {
+		return err
+	}
+	if err := validateSMTPConfig(); err != nil {
+		return err
+	}
+	if err := validateAdvancedMode(input.Orch.Enabled); err != nil {
+		return fmt.Errorf("invalid advanced mode configuration: %w", err)
+	}
+	return nil
+}
+
+func validateGlobalConfig() error {
+	if err := validateOrchName(input.Global.OrchName); err != nil {
+		return fmt.Errorf("invalid orchestrator name: %w", err)
+	}
+	if err := validateParentDomain(input.Global.ParentDomain); err != nil {
+		return fmt.Errorf("invalid parent domain: %w", err)
+	}
+	if err := validateAdminEmail(input.Global.AdminEmail); err != nil {
+		return fmt.Errorf("invalid admin email: %w", err)
+	}
+	if err := validateScale(input.Global.Scale); err != nil {
+		return fmt.Errorf("invalid scale: %w", err)
+	}
+	return nil
+}
+
+func validateAWSConfig() error {
+	if err := validateAwsRegion(input.AWS.Region); err != nil {
+		return fmt.Errorf("invalid AWS region: %w", err)
+	}
+	if err := validateAwsCustomTag(input.AWS.CustomerTag); err != nil {
+		return fmt.Errorf("invalid AWS custom tag: %w", err)
+	}
+	if err := validateCacheRegistry(input.AWS.CacheRegistry); err != nil {
+		return fmt.Errorf("invalid cache registry: %w", err)
+	}
+	if err := validateAwsJumpHostWhitelist(config.SliceToCommaSeparated(input.AWS.JumpHostWhitelist)); err != nil {
+		return fmt.Errorf("invalid AWS jump host whitelist: %w", err)
+	}
+	if err := validateOptionalIP(input.AWS.JumpHostIP); err != nil {
+		return fmt.Errorf("invalid AWS jump host IP: %w", err)
+	}
+	if err := validateJumpHostPrivKeyPath(input.AWS.JumpHostPrivKeyPath); err != nil {
+		return fmt.Errorf("invalid AWS jump host private key path: %w", err)
+	}
+	if err := validateAwsVpcId(input.AWS.VPCID); err != nil {
+		return fmt.Errorf("invalid AWS VPC ID: %w", err)
+	}
+	if err := validateAwsEksDnsIp(input.AWS.EKSDNSIP); err != nil {
+		return fmt.Errorf("invalid AWS EKS DNS IP: %w", err)
+	}
+	if err := validateAwsEKSIAMRoles(config.SliceToCommaSeparated(input.AWS.EKSIAMRoles)); err != nil {
+		return fmt.Errorf("invalid AWS EKS IAM roles: %w", err)
+	}
+	return nil
+}
+
+func validateProxyConfig() error {
+	if err := validateProxy(input.Proxy.HTTPProxy); err != nil {
+		return fmt.Errorf("invalid HTTP proxy: %w", err)
+	}
+	if err := validateProxy(input.Proxy.HTTPSProxy); err != nil {
+		return fmt.Errorf("invalid HTTPS proxy: %w", err)
+	}
+	if err := validateProxy(input.Proxy.SOCKSProxy); err != nil {
+		return fmt.Errorf("invalid SOCKS proxy: %w", err)
+	}
+	if err := validateNoProxy(input.Proxy.NoProxy); err != nil {
+		return fmt.Errorf("invalid no proxy: %w", err)
+	}
+	if err := validateProxy(input.Proxy.ENHTTPProxy); err != nil {
+		return fmt.Errorf("invalid EN HTTP proxy: %w", err)
+	}
+	if err := validateProxy(input.Proxy.ENHTTPSProxy); err != nil {
+		return fmt.Errorf("invalid EN HTTPS proxy: %w", err)
+	}
+	if err := validateProxy(input.Proxy.ENFTPProxy); err != nil {
+		return fmt.Errorf("invalid EN FTP proxy: %w", err)
+	}
+	if err := validateProxy(input.Proxy.ENSOCKSProxy); err != nil {
+		return fmt.Errorf("invalid EN SOCKS proxy: %w", err)
+	}
+	if err := validateNoProxy(input.Proxy.ENNoProxy); err != nil {
+		return fmt.Errorf("invalid ENno proxy: %w", err)
+	}
+	return nil
+}
+
+func validateCertConfig() error {
+	if err := validateTlsCert(input.Cert.TLSCert); err != nil {
+		return fmt.Errorf("invalid TLS certificate: %w", err)
+	}
+	if err := validateTlsKey(input.Cert.TLSKey); err != nil {
+		return fmt.Errorf("invalid TLS key: %w", err)
+	}
+	if err := validateTlsCa(input.Cert.TLSCA); err != nil {
+		return fmt.Errorf("invalid TLS CA: %w", err)
+	}
+	return nil
+}
+
+func validateSREConfig() error {
+	if err := validateSreSecretUrl(input.SRE.SecretUrl); err != nil {
+		return fmt.Errorf("invalid SRE secret URL: %w", err)
+	}
+	if err := validateSreCaSecret(input.SRE.CASecret); err != nil {
+		return fmt.Errorf("invalid SRE CA secret: %w", err)
+	}
+	return nil
+}
+
+func validateSMTPConfig() error {
+	if err := validateSmtpUrl(input.SMTP.URL); err != nil {
+		return fmt.Errorf("invalid SMTP URL: %w", err)
+	}
+	if err := validateSmtpPort(input.SMTP.Port); err != nil {
+		return fmt.Errorf("invalid SMTP port: %w", err)
+	}
+	if err := validateSmtpFrom(input.SMTP.From); err != nil {
+		return fmt.Errorf("invalid SMTP from address: %w", err)
+	}
+	return nil
+}
 
 func validateOrchName(s string) error {
 	if len(s) == 0 {
@@ -36,6 +177,13 @@ func validateParentDomain(s string) error {
 func validateAdminEmail(s string) error {
 	if matched := regexp.MustCompile(`^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$`).MatchString(s); !matched {
 		return fmt.Errorf("admin email must be a valid email address")
+	}
+	return nil
+}
+
+func validateScale(s config.Scale) error {
+	if !s.IsValid() {
+		return fmt.Errorf("scale must be one of: %v", config.ValidScales())
 	}
 	return nil
 }
@@ -178,7 +326,7 @@ func validateSmtpPort(s string) error {
 	}
 	i, err := strconv.Atoi(s)
 	if err != nil {
-		return fmt.Errorf("cannot convert %s to integer: %s", s, err)
+		return fmt.Errorf("cannot convert %s to integer: %w", s, err)
 	}
 	if i < 1 || i > 65535 {
 		return fmt.Errorf("SMTP port must be between 1 and 65535")
@@ -239,7 +387,7 @@ func validateJumpHostPrivKeyPath(s string) error {
 	}
 	s = os.ExpandEnv(s)
 	if _, err := os.Stat(s); err != nil {
-		return fmt.Errorf("jump host private key file does not exist: %v", err)
+		return fmt.Errorf("jump host private key file does not exist: %w", err)
 	}
 	// TODO: check if the file content is a valid private key
 	return nil

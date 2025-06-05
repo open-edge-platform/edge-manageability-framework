@@ -4,11 +4,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# shellcheck source=installer/utils.sh
-. "${HOME}"/utils.sh
+. ${HOME}/utils.sh
 
 # Consts
-export BUCKET_REGION="us-west-2"
+BUCKET_REGION="us-west-2"
 SAVE_DIR="${SAVE_DIR:-${HOME}/pod-configs/SAVEME}"
 
 usage() {
@@ -31,13 +30,13 @@ parse_params() {
         exit 1
     fi
 
-    set -- "$options"
+    set -- $options
 
     while [ $# -gt 0 ]
     do
         case $1 in
-            --cidr-block) VPC_CIDR=$(eval echo "$2"); shift;;
-            --jumphost-ip) JUMPHOST_IP=$(eval echo "$2"); shift;;
+            --cidr-block) VPC_CIDR=$(eval echo $2); shift;;
+            --jumphost-ip) JUMPHOST_IP=$(eval echo $2); shift;;
             -h|--help) usage; exit;;
             (--) shift; break;;
             (-*) echo "$0: error - unrecognized option $1" 1>&2; exit 1;;
@@ -65,22 +64,21 @@ save_scm_auth
 update_kube_config
 
 # Clone and init main branch for Code Commit Repos
-export ORCH_DEPLOY="https://gitea.${CLUSTER_FQDN}/argocd/edge-manageability-framework"
+ORCH_DEPLOY="https://gitea.${CLUSTER_FQDN}/argocd/edge-manageability-framework"
 
-mkdir -p "${HOME}"/src
+mkdir -p ${HOME}/src
 
 # Clone GitOps Repos
-clone_repo "$EDGE_MANAGEABILITY_FRAMEWORK" edge-manageability-framework
+clone_repo $EDGE_MANAGEABILITY_FRAMEWORK edge-manageability-framework
 
 # Load ADMIN_EMAIL from cluster template
-admin_email=$(yq .argo.adminEmail "${HOME}"/src/edge-manageability-framework/orch-configs/clusters/"${CLUSTER_NAME}".yaml)
-export ADMIN_EMAIL="${admin_email}"
-echo ADMIN_EMAIL="${ADMIN_EMAIL}" >> "${HOME}"/.env
+export ADMIN_EMAIL=$(yq .argo.adminEmail ${HOME}/src/edge-manageability-framework/orch-configs/clusters/${CLUSTER_NAME}.yaml)
+echo ADMIN_EMAIL=${ADMIN_EMAIL} >> ${HOME}/.env
 
 # Update configs and deploy contents required for pre-upgrade
-pushd "${HOME}"/src/edge-manageability-framework/config || exit
-cp "${HOME}"/edge-manageability-framework/configs/profiles/enable-aws.yaml profiles/enable-aws.yaml
-popd || exit
+pushd ${HOME}/src/edge-manageability-framework/config
+cp ${HOME}/edge-manageability-framework/configs/profiles/enable-aws.yaml profiles/enable-aws.yaml
+popd
 
 # Push changes to GitOps Repos
 commit_repo edge-manageability-framework "Prepare for upgrade"
