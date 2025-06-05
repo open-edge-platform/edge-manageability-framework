@@ -40,7 +40,7 @@ runs:
       with:
         repository: open-edge-platform/orch-ui
         path: orch-ui
-        ref: tests/0.1.23
+        ref: hotfix/admin-tests
         persist-credentials: false
     - run: git log -1
       shell: bash
