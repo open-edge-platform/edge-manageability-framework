@@ -424,7 +424,7 @@ write_config_to_disk() {
   # export tmp_dir="$cwd/$git_arch_name/tmp"
   rm -rf "$tmp_dir"
   mkdir -p "$tmp_dir"
-  export repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n")
+  # export repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n")
   tar -xf "$cwd/$git_arch_name/$repo_file" -C "$tmp_dir"
 
   # If overrides are set, ensure the written out configs are updated with them
@@ -597,8 +597,8 @@ mage onPrem:downloadPackages
 # Write configuration to disk if the flag is set
 export repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n")
 if [[ "$WRITE_CONFIG" == "true" ]]; then
-  write_config_to_disk
-  #mage onPrem:writeConfigToDisk
+  #write_config_to_disk
+  mage onPrem:writeConfigToDisk
 fi
 
 # Config - interactive

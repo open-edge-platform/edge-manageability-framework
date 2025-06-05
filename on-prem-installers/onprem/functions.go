@@ -863,11 +863,12 @@ func (OnPrem) ValidateConfig() error {
 }
 
 func (OnPrem) WriteConfigToDisk() error {
+	tmpDir := os.Getenv("tmp_dir")
 	cwd := os.Getenv("cwd")
 	gitArchName := os.Getenv("git_arch_name")
 	siConfigRepo := os.Getenv("si_config_repo")
-	tmpDir := filepath.Join(cwd, gitArchName, "tmp")
-	os.Setenv("tmp_dir", tmpDir)
+	repoFile := os.Getenv("repo_file")
+	// os.Getenv("tmp_dir")
 
 	// Remove and recreate tmpDir
 	exec.Command("rm", "-rf", tmpDir).Run()
@@ -875,16 +876,6 @@ func (OnPrem) WriteConfigToDisk() error {
 		return fmt.Errorf("failed to create tmp dir: %w", err)
 	}
 
-	// Find the repo archive file
-	findCmd := exec.Command("find", filepath.Join(cwd, gitArchName), "-name", fmt.Sprintf("*%s*.tgz", siConfigRepo), "-type", "f", "-printf", "%f\n")
-	out, err := findCmd.Output()
-	if err != nil {
-		return fmt.Errorf("failed to find repo archive: %w", err)
-	}
-	repoFile := strings.TrimSpace(string(out))
-	if repoFile == "" {
-		return fmt.Errorf("repo archive not found")
-	}
 
 	// Extract the archive
 	tarCmd := exec.Command("tar", "-xf", filepath.Join(cwd, gitArchName, repoFile), "-C", tmpDir)
@@ -900,7 +891,7 @@ func (OnPrem) WriteConfigToDisk() error {
 	}
 
 	fmt.Printf("Configuration files have been written to disk at %s/%s\n", tmpDir, siConfigRepo)
-	os.Exit(0)
+	// os.Exit(0)
 	return nil
 }
 
