@@ -16,6 +16,31 @@ import (
 )
 
 func validateAll() error {
+	if err := validateGlobalConfig(); err != nil {
+		return err
+	}
+	if err := validateAWSConfig(); err != nil {
+		return err
+	}
+	if err := validateProxyConfig(); err != nil {
+		return err
+	}
+	if err := validateCertConfig(); err != nil {
+		return err
+	}
+	if err := validateSREConfig(); err != nil {
+		return err
+	}
+	if err := validateSMTPConfig(); err != nil {
+		return err
+	}
+	if err := validateAdvancedMode(input.Orch.Enabled); err != nil {
+		return fmt.Errorf("invalid advanced mode configuration: %w", err)
+	}
+	return nil
+}
+
+func validateGlobalConfig() error {
 	if err := validateOrchName(input.Global.OrchName); err != nil {
 		return fmt.Errorf("invalid orchestrator name: %w", err)
 	}
@@ -28,6 +53,10 @@ func validateAll() error {
 	if err := validateScale(input.Global.Scale); err != nil {
 		return fmt.Errorf("invalid scale: %w", err)
 	}
+	return nil
+}
+
+func validateAWSConfig() error {
 	if err := validateAwsRegion(input.AWS.Region); err != nil {
 		return fmt.Errorf("invalid AWS region: %w", err)
 	}
@@ -55,6 +84,10 @@ func validateAll() error {
 	if err := validateAwsEKSIAMRoles(config.SliceToCommaSeparated(input.AWS.EKSIAMRoles)); err != nil {
 		return fmt.Errorf("invalid AWS EKS IAM roles: %w", err)
 	}
+	return nil
+}
+
+func validateProxyConfig() error {
 	if err := validateProxy(input.Proxy.HTTPProxy); err != nil {
 		return fmt.Errorf("invalid HTTP proxy: %w", err)
 	}
@@ -82,6 +115,10 @@ func validateAll() error {
 	if err := validateNoProxy(input.Proxy.ENNoProxy); err != nil {
 		return fmt.Errorf("invalid ENno proxy: %w", err)
 	}
+	return nil
+}
+
+func validateCertConfig() error {
 	if err := validateTlsCert(input.Cert.TLSCert); err != nil {
 		return fmt.Errorf("invalid TLS certificate: %w", err)
 	}
@@ -91,12 +128,20 @@ func validateAll() error {
 	if err := validateTlsCa(input.Cert.TLSCA); err != nil {
 		return fmt.Errorf("invalid TLS CA: %w", err)
 	}
+	return nil
+}
+
+func validateSREConfig() error {
 	if err := validateSreSecretUrl(input.SRE.SecretUrl); err != nil {
 		return fmt.Errorf("invalid SRE secret URL: %w", err)
 	}
 	if err := validateSreCaSecret(input.SRE.CASecret); err != nil {
 		return fmt.Errorf("invalid SRE CA secret: %w", err)
 	}
+	return nil
+}
+
+func validateSMTPConfig() error {
 	if err := validateSmtpUrl(input.SMTP.URL); err != nil {
 		return fmt.Errorf("invalid SMTP URL: %w", err)
 	}
@@ -105,9 +150,6 @@ func validateAll() error {
 	}
 	if err := validateSmtpFrom(input.SMTP.From); err != nil {
 		return fmt.Errorf("invalid SMTP from address: %w", err)
-	}
-	if err := validateAdvancedMode(input.Orch.Enabled); err != nil {
-		return fmt.Errorf("invalid advanced mode configuration: %w", err)
 	}
 	return nil
 }

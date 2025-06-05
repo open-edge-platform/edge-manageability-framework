@@ -210,7 +210,7 @@ func main() {
 	var tmpOrchName string
 	var tmpScale string
 
-	var cobraCmd = &cobra.Command{
+	cobraCmd := &cobra.Command{
 		Use:   "config-builder",
 		Short: "An interactive tool to build EMF config",
 		Run: func(cmd *cobra.Command, args []string) {
