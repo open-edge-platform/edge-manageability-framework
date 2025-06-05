@@ -21,6 +21,7 @@ import (
 )
 
 func policyString(t *testing.T, clusterName string) string {
+	t.Helper()
 	parsedAccId := strings.ReplaceAll(policy, "${local.account_id}", aws.GetAccountId(t))
 	return strings.ReplaceAll(parsedAccId, "${aws_iam_user.vault.name}", "vault-"+clusterName)
 }
@@ -119,7 +120,7 @@ func (s *KMSTestSuite) TestApplyingModule() {
 		UserName: aws_sdk.String("vault-" + clusterName),
 	})
 	s.Require().NoError(err, "IAM User for Vault should be created")
-	s.Assert().NotNil(iamUserOutput, "IAM User for Vault should be created")
+	s.NotNil(iamUserOutput, "IAM User for Vault should be created")
 
 	// Verify that the KMS Key was created
 	kmsClient, err := aws.NewKmsClientE(s.T(), "us-west-2")
@@ -128,7 +129,7 @@ func (s *KMSTestSuite) TestApplyingModule() {
 		KeyId: aws_sdk.String("alias/vault-kms-unseal-" + clusterName),
 	})
 	s.Require().NoError(err, "KMS Key should be created")
-	s.Assert().NotNil(kmsKeyOutput, "KMS Key should be created")
+	s.NotNil(kmsKeyOutput, "KMS Key should be created")
 	keyPolicies, err := kmsClient.ListKeyPolicies(s.T().Context(), &kms.ListKeyPoliciesInput{
 		KeyId: aws_sdk.String(*kmsKeyOutput.KeyMetadata.KeyId),
 	})
@@ -138,6 +139,7 @@ func (s *KMSTestSuite) TestApplyingModule() {
 		KeyId:      aws_sdk.String(*kmsKeyOutput.KeyMetadata.KeyId),
 		PolicyName: aws_sdk.String("default"),
 	})
+	s.Require().NoError(err, "Failed to get key policy for KMS Key")
 	s.JSONEq(policyString(s.T(), clusterName),
 		*keyPolicy.Policy,
 		"The KMS Key policy should match the expected policy")
