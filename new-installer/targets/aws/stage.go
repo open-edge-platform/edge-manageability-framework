@@ -27,6 +27,7 @@ func NewAWSStage(name string, steps []steps.OrchInstallerStep, labels []string, 
 		orchConfigReaderWriter: orchConfigReaderWriter,
 	}
 }
+
 func (a *AWSStage) Name() string {
 	return a.name
 }
