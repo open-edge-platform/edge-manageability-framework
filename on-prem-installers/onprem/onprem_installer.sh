@@ -625,19 +625,20 @@ rm -rf "$tmp_dir"
 
 
 # Run OS Configuration installer and K8s Installer
-echo "Installing RKE2..."
-if [[ -n "${DOCKER_USERNAME}" && -n "${DOCKER_PASSWORD}" ]]; then
-  echo "Docker credentials provided. Installing RKE2 with Docker credentials"
-  sudo DOCKER_USERNAME="${DOCKER_USERNAME}" DOCKER_PASSWORD="${DOCKER_PASSWORD}" NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y "$cwd"/$deb_dir_name/onprem-ke-installer_*_amd64.deb
-else
-  sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y "$cwd"/$deb_dir_name/onprem-ke-installer_*_amd64.deb
-fi
-echo "OS level configuration installed and RKE2 Installed"
+mage onPrem:InstallRKE2
+# echo "Installing RKE2..."
+# if [[ -n "${DOCKER_USERNAME}" && -n "${DOCKER_PASSWORD}" ]]; then
+#   echo "Docker credentials provided. Installing RKE2 with Docker credentials"
+#   sudo DOCKER_USERNAME="${DOCKER_USERNAME}" DOCKER_PASSWORD="${DOCKER_PASSWORD}" NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y "$cwd"/$deb_dir_name/onprem-ke-installer_*_amd64.deb
+# else
+#   sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y "$cwd"/$deb_dir_name/onprem-ke-installer_*_amd64.deb
+# fi
+# echo "OS level configuration installed and RKE2 Installed"
 
-mkdir -p /home/"$USER"/.kube
-sudo cp  /etc/rancher/rke2/rke2.yaml /home/"$USER"/.kube/config
-sudo chown -R "$USER":"$USER"  /home/"$USER"/.kube
-sudo chmod 600 /home/"$USER"/.kube/config
+# mkdir -p /home/"$USER"/.kube
+# sudo cp  /etc/rancher/rke2/rke2.yaml /home/"$USER"/.kube/config
+# sudo chown -R "$USER":"$USER"  /home/"$USER"/.kube
+# sudo chmod 600 /home/"$USER"/.kube/config
 
 
 

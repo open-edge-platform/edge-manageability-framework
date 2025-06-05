@@ -991,7 +991,83 @@ func (OnPrem) ParseArgs() {
     }
 }
 
-func (OnPrem) JohnArgs() error {
-	os.Setenv("JOHN", "true")
+func (OnPrem) Deploy() error {
+
+
 	return nil
+}
+
+func (OnPrem) InstallRKE2() error {
+    fmt.Println("Installing RKE2...")
+
+    cwd := os.Getenv("cwd")
+    debDirName := os.Getenv("deb_dir_name")
+    installerPattern := fmt.Sprintf("%s/%s/onprem-ke-installer_*_amd64.deb", cwd, debDirName)
+    matches, err := filepath.Glob(installerPattern)
+    if err != nil || len(matches) == 0 {
+        return fmt.Errorf("no RKE2 installer package found at %s", installerPattern)
+    }
+    debFile := matches[0]
+
+    dockerUser := os.Getenv("DOCKER_USERNAME")
+    dockerPass := os.Getenv("DOCKER_PASSWORD")
+
+    var cmd *exec.Cmd
+    if dockerUser != "" && dockerPass != "" {
+        fmt.Println("Docker credentials provided. Installing RKE2 with Docker credentials")
+        cmd = exec.Command(
+            "sudo",
+            "env",
+            fmt.Sprintf("DOCKER_USERNAME=%s", dockerUser),
+            fmt.Sprintf("DOCKER_PASSWORD=%s", dockerPass),
+            "NEEDRESTART_MODE=a",
+            "DEBIAN_FRONTEND=noninteractive",
+            "apt-get", "install", "-y", debFile,
+        )
+    } else {
+        cmd = exec.Command(
+            "sudo",
+            "NEEDRESTART_MODE=a",
+            "DEBIAN_FRONTEND=noninteractive",
+            "apt-get", "install", "-y", debFile,
+        )
+    }
+    cmd.Stdout = os.Stdout
+    cmd.Stderr = os.Stderr
+    if err := cmd.Run(); err != nil {
+        return fmt.Errorf("failed to install RKE2: %v", err)
+    }
+
+    fmt.Println("OS level configuration installed and RKE2 Installed")
+
+    user := os.Getenv("USER")
+    kubeDir := fmt.Sprintf("/home/%s/.kube", user)
+    kubeConfig := fmt.Sprintf("%s/config", kubeDir)
+
+    if err := os.MkdirAll(kubeDir, 0755); err != nil {
+        return fmt.Errorf("failed to create .kube directory: %v", err)
+    }
+
+    cpCmd := exec.Command("sudo", "cp", "/etc/rancher/rke2/rke2.yaml", kubeConfig)
+    cpCmd.Stdout = os.Stdout
+    cpCmd.Stderr = os.Stderr
+    if err := cpCmd.Run(); err != nil {
+        return fmt.Errorf("failed to copy kubeconfig: %v", err)
+    }
+
+    chownCmd := exec.Command("sudo", "chown", "-R", fmt.Sprintf("%s:%s", user, user), kubeDir)
+    chownCmd.Stdout = os.Stdout
+    chownCmd.Stderr = os.Stderr
+    if err := chownCmd.Run(); err != nil {
+        return fmt.Errorf("failed to chown .kube directory: %v", err)
+    }
+
+    chmodCmd := exec.Command("sudo", "chmod", "600", kubeConfig)
+    chmodCmd.Stdout = os.Stdout
+    chmodCmd.Stderr = os.Stderr
+    if err := chmodCmd.Run(); err != nil {
+        return fmt.Errorf("failed to chmod kubeconfig: %v", err)
+    }
+
+    return nil
 }
