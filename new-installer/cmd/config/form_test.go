@@ -31,8 +31,10 @@ var pretty = lipgloss.NewStyle().
 	MarginTop(1).
 	Padding(1, 3, 1, 2)
 
-var form *huh.Form
-var model tea.Model
+var (
+	form  *huh.Form
+	model tea.Model
+)
 
 // Dummy SSH key file for testing
 var tmpPrivKey *os.File
@@ -230,8 +232,8 @@ func (s *OrchConfigFormTest) testConfigureCert() {
 	}
 	caDER, _ := x509.CreateCertificate(rand.Reader, &caTemplate, &caTemplate, &caPriv.PublicKey, caPriv)
 	caPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: caDER})
-	//caKeyBytes, _ := x509.MarshalECPrivateKey(caPriv)
-	//caKeyPEM := pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: caKeyBytes})
+	// caKeyBytes, _ := x509.MarshalECPrivateKey(caPriv)
+	// caKeyPEM := pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: caKeyBytes})
 
 	// Generate a server certificate and key signed by the CA
 	srvPriv, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
@@ -409,7 +411,7 @@ func initTest() error {
 	flags.ConfigureSmtp = false
 	configMode = Simple
 
-	loadOrchPackagesFromString(embedPackages)
+	loadOrchPackages()
 	form = orchInstallerForm()
 	model, _ = form.Update(form.Init())
 
@@ -425,7 +427,6 @@ func TestConfigFormSuite(t *testing.T) {
 }
 
 func (s *OrchConfigFormTest) TestSimpleWorkflow() {
-
 	if err := initTest(); err != nil {
 		s.T().Fatalf("initTest failed: %v", err)
 	}

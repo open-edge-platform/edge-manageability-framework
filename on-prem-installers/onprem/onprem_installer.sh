@@ -546,9 +546,7 @@ set_artifacts_version
 # Check & install script dependencies
 mage onPrem:checkOras
 #check_oras
-mage onPrem:installJq
 mage onPrem:installYq
-# install_jq
 # install_yq
 # download_packages () {
 # if  [[ $SKIP_DOWNLOAD != true  ]]; then 
@@ -594,6 +592,7 @@ mage onPrem:installYq
 # }
 # download_packages
 mage onPrem:downloadPackages
+
 # Write configuration to disk if the flag is set
 export repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n")
 if [[ "$WRITE_CONFIG" == "true" ]]; then
