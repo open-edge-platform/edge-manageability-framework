@@ -6,26 +6,20 @@ package config
 
 import "os"
 
-type Scale int
-
-const (
-	Scale10    Scale = 10
-	Scale100   Scale = 100
-	Scale500   Scale = 500
-	Scale1000  Scale = 1000
-	Scale10000 Scale = 10000
-)
-
 // Current version
 // Should bump this every time we make backward-compatible config schema changes
-const UserConfigVersion = 4
-const RuntimeStateVersion = 2
+const (
+	UserConfigVersion   = 4
+	RuntimeStateVersion = 2
+)
 
 // Minimal version supported by the installer.
 // This should never be modified. Create `config/v2` when breaking changes are introduced.
 // Files with a version lower than this will require additional migration steps.
-const MinUserConfigVersion = 1
-const MinRuntimeStateVersion = 1
+const (
+	MinUserConfigVersion   = 1
+	MinRuntimeStateVersion = 1
+)
 
 type OrchInstallerRuntimeState struct {
 	Version int `yaml:"version"`
@@ -118,12 +112,12 @@ type OrchInstallerConfig struct {
 	Proxy struct {
 		HTTPProxy    string `yaml:"httpProxy,omitempty"`
 		HTTPSProxy   string `yaml:"httpsProxy,omitempty"`
-		SocksProxy   string `yaml:"socksProxy,omitempty"`
+		SOCKSProxy   string `yaml:"socksProxy,omitempty"`
 		NoProxy      string `yaml:"noProxy,omitempty"`
 		ENHTTPProxy  string `yaml:"enHttpProxy,omitempty"`
 		ENHTTPSProxy string `yaml:"enHttpsProxy,omitempty"`
 		ENFTPProxy   string `yaml:"enFtpProxy,omitempty"`
-		ENSocksProxy string `yaml:"enSocksProxy,omitempty"`
+		ENSOCKSProxy string `yaml:"enSocksProxy,omitempty"`
 		ENNoProxy    string `yaml:"enNoProxy,omitempty"`
 	} `yaml:"proxy,omitempty"`
 }
@@ -156,7 +150,7 @@ func (f *FileBaseOrchConfigReaderWriter) WriteOrchConfig(orchConfig OrchInstalle
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(f.OrchConfigFilePath, orchConfigYaml, 0644)
+	return os.WriteFile(f.OrchConfigFilePath, orchConfigYaml, 0o644)
 }
 
 func (f *FileBaseOrchConfigReaderWriter) ReadOrchConfig() (OrchInstallerConfig, error) {
@@ -177,7 +171,7 @@ func (f *FileBaseOrchConfigReaderWriter) WriteRuntimeState(runtimeState OrchInst
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(f.RuntimeStateFilePath, runtimeStateYaml, 0644)
+	return os.WriteFile(f.RuntimeStateFilePath, runtimeStateYaml, 0o644)
 }
 
 func (f *FileBaseOrchConfigReaderWriter) ReadRuntimeState() (OrchInstallerRuntimeState, error) {
