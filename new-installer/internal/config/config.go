@@ -52,6 +52,7 @@ type OrchInstallerRuntimeState struct {
 	PrivateSubnetIDs         []string `yaml:"privateSubnetIDs"`
 	JumpHostSSHKeyPublicKey  string   `yaml:"jumpHostSSHPublicKey"`
 	JumpHostSSHKeyPrivateKey string   `yaml:"jumpHostSSHPrivateKey"`
+	CertID                   string   `yaml:"certID"` // The ID of the certificate in ACM
 }
 
 type OrchInstallerConfig struct {
