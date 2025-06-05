@@ -7,7 +7,6 @@
 package main
 
 import (
-	"bytes"
 	"crypto/rand"
 	"fmt"
 	"math/big"
@@ -137,18 +136,6 @@ func (OnPrem) CheckOras() error {
 	return nil
 }
 
-// Install jq tool
-func (OnPrem) InstallJq() error {
-	_, err := exec.LookPath("jq")
-	if err == nil {
-		fmt.Println("jq tool found in the path")
-		return nil
-	}
-	cmd := exec.Command("sudo", "NEEDRESTART_MODE=a", "apt-get", "install", "-y", "jq")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
-}
 
 // Install yq tool
 func (OnPrem) InstallYq() error {
@@ -178,18 +165,6 @@ func DownloadArtifacts(cwd, dirName, rsURL, rsPath string, artifacts ...string) 
 	return os.Chdir(cwd)
 }
 
-// Get JWT token from Azure
-func (OnPrem) GetJWTToken(refreshToken, rsURL string) (string, error) {
-	cmd := exec.Command("curl", "-X", "POST", "-d", fmt.Sprintf("refresh_token=%s&grant_type=refresh_token", refreshToken), fmt.Sprintf("https://%s/oauth/token", rsURL))
-	out, err := cmd.Output()
-	if err != nil {
-		return "", err
-	}
-	jq := exec.Command("jq", "-r", ".id_token")
-	jq.Stdin = bytes.NewReader(out)
-	token, err := jq.Output()
-	return strings.TrimSpace(string(token)), err
-}
 
 // Wait for pods in namespace to be in Ready state
 func (OnPrem) WaitForPodsRunning(namespace string) error {
@@ -210,20 +185,16 @@ func (OnPrem) WaitForDeploy(deployment, namespace string) error {
 // Wait for namespace to be created
 func (OnPrem) WaitForNamespaceCreation(namespace string) error {
 	for {
-		cmd := exec.Command("kubectl", "get", "ns", namespace, "-o", "json")
+		cmd := exec.Command("kubectl", "get", "ns", namespace, "-o", "jsonpath={.status.phase}")
 		out, err := cmd.Output()
 		if err != nil {
 			return err
 		}
-		jq := exec.Command("jq", ".status.phase", "-r")
-		jq.Stdin = bytes.NewReader(out)
-		phase, err := jq.Output()
-		if err != nil {
-			return err
-		}
-		if strings.TrimSpace(string(phase)) == "Active" {
+		if string(out) == "Active" {
 			break
 		}
+		fmt.Printf("%s\n", string(out))
+		fmt.Printf("Waiting for namespace %s to be created...\n", namespace)
 		time.Sleep(5 * time.Second)
 	}
 	return nil
