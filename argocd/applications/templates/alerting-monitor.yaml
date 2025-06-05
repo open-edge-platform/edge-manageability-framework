@@ -21,7 +21,7 @@ spec:
   sources:
     - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
       chart: o11y/charts/{{$appName}}
-      targetRevision: 1.7.0
+      targetRevision: 1.7.1
       helm:
         releaseName: {{$appName}}
         valuesObject:
