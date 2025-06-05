@@ -61,7 +61,7 @@ func (*awsUtilityImpl) GetAvailableZones(region string) ([]string, error) {
 	}
 
 	if len(zones) < RequiredAvailabilityZones {
-		return nil, fmt.Errorf("cannot get three AWS availablity zones from region %s", region)
+		return nil, fmt.Errorf("cannot get three AWS availability zones from region %s", region)
 	}
 	return zones, nil
 }

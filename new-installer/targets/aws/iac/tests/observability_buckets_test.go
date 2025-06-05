@@ -96,6 +96,7 @@ func (s *ObservabilityBucketsTestSuite) TestApplyingModule() {
 	defer terraform.Destroy(s.T(), terraformOptions)
 
 	terraform.InitAndApply(s.T(), terraformOptions)
+
 	// Verify that the S3 buckets for orch observability are created
 	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-pre-"+"orch-loki-admin")
 	aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-pre-"+"orch-loki-chunks")

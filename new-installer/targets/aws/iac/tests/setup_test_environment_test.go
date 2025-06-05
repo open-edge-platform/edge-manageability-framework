@@ -322,20 +322,25 @@ func WaitForClusterInActiveState(clusterName string, region string, timeout time
 
 func DeleteTestEKSCluster(clusterName string, vpcId string, region string) error {
 	fmt.Println("Deleting EKS")
+	errors := ""
 	err := deleteEKS(clusterName, region)
 	if err != nil {
-		return fmt.Errorf("failed to delete EKS cluster: %w", err)
+		errors += fmt.Sprintf("failed to delete EKS cluster %s: %v\n", clusterName, err)
 	}
-	time.Sleep(30 * time.Second) // Wait for EKS cluster deletion to propagate
+	time.Sleep(60 * time.Second) // Wait for EKS cluster deletion to propagate
 	fmt.Println("Deleting VPC")
 	err = deleteVPC(vpcId, region)
 	if err != nil {
-		return fmt.Errorf("failed to delete VPC: %w", err)
+		errors += fmt.Sprintf("failed to delete VPC: %v\n", err)
 	}
 	fmt.Println("Deleting IAM role")
 	err = deleteIAMRole(clusterName+iamSuffix, region)
 	if err != nil {
-		return fmt.Errorf("failed to delete IAM role: %w", err)
+		errors += fmt.Sprintf("failed to delete IAM role: %v\n", err)
+	}
+
+	if errors != "" {
+		return fmt.Errorf("errors occurred during cleanup:\n%s", errors)
 	}
 
 	fmt.Printf("Successfully deleted EKS cluster %s and associated resources", clusterName)
