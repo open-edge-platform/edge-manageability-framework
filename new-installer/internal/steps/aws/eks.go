@@ -55,7 +55,7 @@ type EKSVariables struct {
 	DesiredSize             int                     `json:"desired_size"`
 	MinSize                 int                     `json:"min_size"`
 	MaxSize                 int                     `json:"max_size"`
-	AddOns                  []EKSAddOn              `json:"add_ons"`
+	AddOns                  []EKSAddOn              `json:"addons"`
 	MaxPods                 int                     `json:"max_pods"`
 	AdditionalNodeGroups    map[string]EKSNodeGroup `json:"additional_node_groups"`
 	EnableCacheRegistry     bool                    `json:"enable_cache_registry"`
@@ -65,7 +65,6 @@ type EKSVariables struct {
 	HTTPProxy               string                  `json:"http_proxy"`
 	HTTPSProxy              string                  `json:"https_proxy"`
 	NoProxy                 string                  `json:"no_proxy"`
-	IPAllowList             []string                `json:"ip_allow_list"`
 }
 
 type AWSEKSStep struct {

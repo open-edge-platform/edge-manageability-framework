@@ -134,7 +134,6 @@ func (s *EKSTestSuite) TestApplyingModule() {
 			},
 		},
 		AdditionalNodeGroups: map[string]steps_aws.EKSNodeGroup{},
-		IPAllowList:          []string{},
 	}
 
 	jsonData, err := json.Marshal(eksVars)
