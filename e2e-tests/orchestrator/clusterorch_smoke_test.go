@@ -16,7 +16,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/open-edge-platform/infra-core/api/pkg/api/v0"
+	"github.com/open-edge-platform/infra-core/apiv2/v2/pkg/api/v2"
 
 	deploymentV2 "github.com/open-edge-platform/app-orch-deployment/app-deployment-manager/api/nbi/v2/pkg/restClient"
 	util "github.com/open-edge-platform/edge-manageability-framework/mage"
@@ -114,20 +114,21 @@ func getInstanceIdForHostGuid(token, guid string) string {
 	if hostsResponse == "" {
 		return instanceId
 	}
-	var hosts api.HostsList
+	var hosts api.ListHostsResponse
 	err = json.Unmarshal([]byte(hostsResponse), &hosts)
 	if err != nil {
 		return instanceId
 	}
-	if hosts.Hosts == nil {
+
+	if len(hosts.Hosts) == 0 {
 		return instanceId
 	}
 
-	for _, host := range *hosts.Hosts {
+	for _, host := range hosts.Hosts {
 		if host.Uuid == nil {
 			return instanceId
 		}
-		if (*host.Uuid).String() == nodeUUID {
+		if *host.Uuid == guid {
 			if host.ResourceId == nil {
 				return instanceId
 			}
@@ -211,9 +212,9 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 			defer resp.Body.Close()
 			body, err := io.ReadAll(resp.Body)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(resp.StatusCode).To(Equal(http.StatusCreated))
+			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 
-			var region api.Region
+			var region api.RegionResource
 			err = json.Unmarshal(body, &region)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(region.RegionID).ToNot(BeNil())
@@ -232,9 +233,9 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 			defer resp.Body.Close()
 			body, err := io.ReadAll(resp.Body)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(resp.StatusCode).To(Equal(http.StatusCreated))
+			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 
-			var site api.Site
+			var site api.SiteResource
 			err = json.Unmarshal(body, &site)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(site.SiteID).ToNot(BeNil())
@@ -253,21 +254,22 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 				if hostsResponse == "" {
 					return false, fmt.Errorf("hosts response is empty")
 				}
-				var hosts api.HostsList
+				var hosts api.ListHostsResponse
 				err = json.Unmarshal([]byte(hostsResponse), &hosts)
 				if err != nil {
 					return false, err
 				}
-				if hosts.Hosts == nil {
+
+				if len(hosts.Hosts) == 0 {
 					return false, fmt.Errorf("hosts list is nil")
 				}
 
-				for _, host := range *hosts.Hosts {
+				for _, host := range hosts.Hosts {
 					if host.Uuid == nil {
 						return false, fmt.Errorf("host UUID is nil")
 					}
 
-					if (*host.Uuid).String() == nodeUUID {
+					if *host.Uuid == nodeUUID {
 						if host.ResourceId == nil {
 							return false, fmt.Errorf("host resource ID is nil")
 						}

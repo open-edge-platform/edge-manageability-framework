@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	infra_api "github.com/open-edge-platform/infra-core/api/pkg/api/v0"
+	infra_api "github.com/open-edge-platform/infra-core/apiv2/v2/pkg/api/v2"
 	pb_om "github.com/open-edge-platform/infra-onboarding/onboarding-manager/pkg/api/onboardingmgr/v1"
 	tinkv1alpha1 "github.com/tinkerbell/tink/api/v1alpha1"
 	"golang.org/x/oauth2"
@@ -175,15 +175,16 @@ func HttpInfraOnboardNewRegisterHost(
 	client *http.Client,
 	hostUuid uuid.UUID,
 	autoOnboard bool,
-) (*infra_api.Host, error) {
+) (*infra_api.HostResource, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	name := "host-test"
 
-	hostRegisterInfo := &infra_api.HostRegisterInfo{
+	hostUuidStr := hostUuid.String()
+	hostRegisterInfo := &infra_api.HostRegister{
 		Name:        &name,
-		Uuid:        &hostUuid,
+		Uuid:        &hostUuidStr,
 		AutoOnboard: &autoOnboard,
 	}
 
@@ -194,7 +195,7 @@ func HttpInfraOnboardNewRegisterHost(
 
 	fmt.Printf("HostRegisterInfo %s\n", data)
 
-	var registeredHost infra_api.Host
+	var registeredHost infra_api.HostResource
 
 	responseHooker := func(res *http.Response) error {
 		b, err := io.ReadAll(res.Body)
@@ -228,20 +229,20 @@ func HttpInfraOnboardGetHostID(ctx context.Context, url string, token string, cl
 		if err != nil {
 			return err
 		}
-		ps := &infra_api.HostsList{}
+		ps := &infra_api.ListHostsResponse{}
 		err = json.Unmarshal(b, &ps)
 		if err != nil {
 			return err
 		}
-		if ps.Hosts == nil || len(*ps.Hosts) == 0 {
+		if len(ps.Hosts) == 0 {
 			return fmt.Errorf("empty host result for uuid %s", uuid)
 		}
 		fmt.Printf("HostResource %#v\n", ps)
-		hostID = *(*ps.Hosts)[0].ResourceId
-		fmt.Println("HostID ", hostID, ", TotalElements ", *ps.TotalElements)
+		hostID = *(ps.Hosts)[0].ResourceId
+		fmt.Println("HostUUID ", uuid, ", HostID ", hostID, ", TotalElements ", ps.TotalElements)
 		return nil
 	}
-	if err := httpGet(rCtx, client, fmt.Sprintf("%s?uuid=%s", url, uuid), token, responseHooker); err != nil {
+	if err := httpGet(rCtx, client, fmt.Sprintf("%s?filter=uuid=%q", url, uuid), token, responseHooker); err != nil {
 		return hostID, err
 	}
 
@@ -259,27 +260,27 @@ func HttpInfraOnboardGetHostIDAndInstanceID(ctx context.Context, url string, tok
 		if err != nil {
 			return err
 		}
-		ps := &infra_api.HostsList{}
+		ps := &infra_api.ListHostsResponse{}
 		err = json.Unmarshal(b, &ps)
 		if err != nil {
 			return err
 		}
-		if ps.Hosts == nil || len(*ps.Hosts) == 0 {
+		if len(ps.Hosts) == 0 {
 			return fmt.Errorf("empty host result for uuid %s", uuid)
 		}
 		fmt.Printf("HostResource %#v\n", ps)
-		host := (*ps.Hosts)[0]
+		host := (ps.Hosts)[0]
 		hostID = *host.ResourceId
 		if host.Instance != nil && host.Instance.InstanceID != nil {
 			instanceID = *host.Instance.InstanceID
 		} else {
 			return fmt.Errorf("instance not yet created for uuid %s", uuid)
 		}
-		fmt.Println("HostID ", hostID, ", InstanceID ", instanceID, ", TotalElements ", *ps.TotalElements)
+		fmt.Println("HostUUID ", uuid, "HostID ", hostID, ", InstanceID ", instanceID, ", TotalElements ", ps.TotalElements)
 		return nil
 	}
 
-	if err := httpGet(rCtx, client, fmt.Sprintf("%s?uuid=%s", url, uuid), token, responseHooker); err != nil {
+	if err := httpGet(rCtx, client, fmt.Sprintf("%s?filter=uuid=%q", url, uuid), token, responseHooker); err != nil {
 		return hostID, instanceID, err
 	}
 
@@ -304,8 +305,8 @@ func HttpInfraOnboardNewInstance(instanceUrl, token, hostID, osID string, client
 
 	instKind := infra_api.INSTANCEKINDMETAL
 	instanceName := "test-instance"
-	sf := infra_api.SECURITYFEATURENONE
-	instance := infra_api.Instance{
+	sf := infra_api.InstanceResourceSecurityFeatureSECURITYFEATURENONE
+	instance := infra_api.InstanceResource{
 		HostID:          &hostID,
 		OsID:            &osID,
 		Kind:            &instKind,
@@ -342,15 +343,15 @@ func HttpInfraOnboardGetOSID(ctx context.Context, url string, token string, clie
 		if err != nil {
 			return err
 		}
-		os := &infra_api.OperatingSystemResourceList{}
+		os := &infra_api.ListOperatingSystemsResponse{}
 		err = json.Unmarshal(b, &os)
 		if err != nil {
 			return err
 		}
-		if os.OperatingSystemResources == nil || len(*os.OperatingSystemResources) == 0 {
+		if len(os.OperatingSystemResources) == 0 {
 			return fmt.Errorf("empty os resources")
 		}
-		for _, osr := range *os.OperatingSystemResources {
+		for _, osr := range os.OperatingSystemResources {
 			if *osr.ProfileName == "ubuntu-22.04-lts-generic" {
 				osID = *osr.ResourceId
 				fmt.Printf("Found OS: %s\n", osID)

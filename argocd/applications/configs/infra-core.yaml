@@ -36,6 +36,29 @@ api:
     enforceMultiTenancy: "true"
   resources: null
 
+apiv2:
+  image:
+    pullPolicy: IfNotPresent
+  serviceArgsProxy:
+    enableAuth: true
+    traceURL: >-
+      orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318
+  serviceArgsGrpc:
+    enableAuth: true
+    inventoryAddress: inventory.orch-infra.svc.cluster.local:50051
+    traceURL: >-
+      orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318
+  traefikReverseProxy:
+    # We rely on the multi-tenant gateway.
+    enabled: false
+  oidc:
+    name: "keycloak-api"
+    oidc_env_name: "OIDC_SERVER_URL"
+    oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
+    oidc_tls_insecure_skip_verify_env_name: "OIDC_TLS_INSECURE_SKIP_VERIFY"
+    oidc_tls_insecure_skip_verify_value: "true"
+  resources: null
+
 inventory:
   image:
     pullPolicy: IfNotPresent
