@@ -5,6 +5,9 @@
 metrics:
   enabled: true
 
+namespaceLabels:
+  istio-injection: enabled
+
 # CAPI providers are managed using the CAPI operator and configured through its CRDs.
 # The Helm chart .spec is directly passed to the CRD .spec without modification.
 

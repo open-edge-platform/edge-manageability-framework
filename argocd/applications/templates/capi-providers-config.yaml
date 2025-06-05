@@ -19,9 +19,9 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
-    - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
-      chart: common/charts/{{$appName}}
-      targetRevision: 0.1.0
+    - repoURL: https://github.com/open-edge-platform/orch-utils.git
+      path: charts/capi-providers-config
+      targetRevision: i67696-fix
       helm:
         releaseName: {{$appName}}
         valuesObject:
