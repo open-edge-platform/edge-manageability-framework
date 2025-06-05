@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 name: "UI E2E Tests"
-description: "Sets up  the environment with necessary tools and dependencies, then runs UI E2E tests"
+description: "Sets up the environment with necessary tools and dependencies, then runs UI E2E tests"
 inputs:
   token:
     required: true
