@@ -14,10 +14,6 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-const (
-	DefaultRegion = "us-west-2"
-)
-
 type EKSAddOn struct {
 	Name                string `json:"name"`
 	Version             string `json:"version"`
