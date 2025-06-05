@@ -6,16 +6,6 @@ package config
 
 import "os"
 
-type Scale int
-
-const (
-	Scale10    Scale = 10
-	Scale100   Scale = 100
-	Scale500   Scale = 500
-	Scale1000  Scale = 1000
-	Scale10000 Scale = 10000
-)
-
 // Current version
 // Should bump this every time we make backward-compatible config schema changes
 const (
@@ -123,12 +113,12 @@ type OrchInstallerConfig struct {
 	Proxy struct {
 		HTTPProxy    string `yaml:"httpProxy,omitempty"`
 		HTTPSProxy   string `yaml:"httpsProxy,omitempty"`
-		SocksProxy   string `yaml:"socksProxy,omitempty"`
+		SOCKSProxy   string `yaml:"socksProxy,omitempty"`
 		NoProxy      string `yaml:"noProxy,omitempty"`
 		ENHTTPProxy  string `yaml:"enHttpProxy,omitempty"`
 		ENHTTPSProxy string `yaml:"enHttpsProxy,omitempty"`
 		ENFTPProxy   string `yaml:"enFtpProxy,omitempty"`
-		ENSocksProxy string `yaml:"enSocksProxy,omitempty"`
+		ENSOCKSProxy string `yaml:"enSocksProxy,omitempty"`
 		ENNoProxy    string `yaml:"enNoProxy,omitempty"`
 	} `yaml:"proxy,omitempty"`
 }
