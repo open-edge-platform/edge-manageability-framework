@@ -104,6 +104,8 @@ runs:
         mkdir -p cypress/logs/edgeinfra
         kubectl logs -n orch-infra -l app.kubernetes.io/name=inventory --tail -1 > cypress/logs/edgeinfra/inventory.log
         kubectl logs -n orch-infra -l app.kubernetes.io/name=api --tail -1 > cypress/logs/edgeinfra/api.log
+        kubectl logs -n orch-infra -l app.kubernetes.io/name=apiv2 -c apiv2-proxy --tail -1 > cypress/logs/edgeinfra/apiv2-proxy.log
+        kubectl logs -n orch-infra -l app.kubernetes.io/name=apiv2 -c apiv2-grpc --tail -1 > cypress/logs/edgeinfra/apiv2-grpc.log
         kubectl logs -n orch-infra -l app.kubernetes.io/name=onboarding-manager --tail -1 > cypress/logs/edgeinfra/onboarding-manager.log
         kubectl logs -n orch-infra -l app.kubernetes.io/name=host-manager --tail -1 > cypress/logs/edgeinfra/host-manager.log
         kubectl logs -n orch-infra -l app.kubernetes.io/name=dkam --tail -1 > cypress/logs/edgeinfra/dkam.log

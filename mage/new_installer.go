@@ -138,6 +138,27 @@ func (NewInstaller) Clean() error {
 	return nil
 }
 
+func (NewInstaller) Lint() error {
+	oldWorkingDir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current working directory: %w", err)
+	}
+	err = os.Chdir(rootDir)
+	if err != nil {
+		return fmt.Errorf("failed to change directory to %s: %w", rootDir, err)
+	}
+	defer func() {
+		err := os.Chdir(oldWorkingDir)
+		if err != nil {
+			fmt.Printf("Warning: failed to change back to original directory %s: %v\n", oldWorkingDir, err)
+		}
+	}()
+	if err := sh.RunV("golangci-lint", "run", "--config", oldWorkingDir+"/.golangci.yml", "-v", "--timeout", "5m0s"); err != nil {
+		return fmt.Errorf("Linter returned an error: %w", err)
+	}
+	return nil
+}
+
 func (NewInstaller) ValidateIaC() error {
 	iacDir := filepath.Join(rootDir, "targets", "aws", "iac")
 
