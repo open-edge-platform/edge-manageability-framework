@@ -135,7 +135,143 @@ func (s *AWSEKSStep) ConfigStep(ctx context.Context, config config.OrchInstaller
 	return runtimeState, nil
 }
 
+func (s *AWSEKSStep) removeOldStates(ctx context.Context, modulePath string) []*internal.OrchInstallerError {
+	var errs = make([]*internal.OrchInstallerError, 0)
+	stateNames := []string{
+		"module.s3",
+		"module.efs",
+		"module.aurora",
+		"module.aurora_database",
+		"module.aurora_import",
+		"module.kms",
+		"module.orch_init",
+		"module.eks_auth",
+		"module.ec2log",
+		"module.aws_lb_controller",
+		"module.gitea",
+	}
+
+	for _, stateName := range stateNames {
+		rmErr := s.TerraformUtility.RemoveState(ctx, steps.TerraformUtilityRemoveStateInput{
+			ModulePath: modulePath,
+			StateName:  stateName,
+		})
+		if rmErr != nil {
+			errs = append(errs, rmErr)
+		}
+	}
+	return errs
+}
+
+func (s *AWSEKSStep) moveIAMStates(ctx context.Context, modulePath string) []*internal.OrchInstallerError {
+	var errs = make([]*internal.OrchInstallerError, 0)
+	// Move IAM states related to EKS
+	iamStates := map[string]string{
+		"module.eks.aws_iam_role.iam_role_eks_cluster":                                   "aws_iam_role.iam_role_eks_cluster",
+		"module.eks.aws_iam_role_policy_attachment.eks_cluster_AmazonEKSClusterPolicy":   "aws_iam_role_policy_attachment.eks_cluster_AmazonEKSClusterPolicy",
+		"module.eks.aws_iam_role_policy_attachment.eks_cluster_AmazonEKSServicePolicy":   "aws_iam_role_policy_attachment.eks_cluster_AmazonEKSServicePolicy",
+		"module.eks.aws_iam_role_policy_attachment.AmazonEKSWorkerNodePolicy":            "aws_iam_role_policy_attachment.AmazonEKSWorkerNodePolicy",
+		"module.eks.aws_iam_role_policy_attachment.AmazonEKS_CNI_Policy":                 "aws_iam_role_policy_attachment.AmazonEKS_CNI_Policy",
+		"module.eks.aws_iam_role_policy_attachment.AmazonEC2ContainerRegistryReadOnly":   "aws_iam_role_policy_attachment.AmazonEC2ContainerRegistryReadOnly",
+		"module.eks.aws_iam_role_policy_attachment.AmazonEBSCSIDriverPolicy":             "aws_iam_role_policy_attachment.AmazonEBSCSIDriverPolicy",
+		"module.eks.aws_iam_role_policy_attachment.AmazonEFSCSIDriverPolicy":             "aws_iam_role_policy_attachment.AmazonEFSCSIDriverPolicy",
+		"module.eks.aws_iam_role_policy_attachment.AmazonSSMManagedInstanceCore":         "aws_iam_role_policy_attachment.AmazonSSMManagedInstanceCore",
+		"module.eks.aws_iam_role_policy_attachment.ELB_Controller":                       "aws_iam_role_policy_attachment.ELB_Controller",
+		"module.eks.aws_iam_role_policy_attachment.additional_policy":                    "aws_iam_role_policy_attachment.additional_policy",
+		"module.eks.aws_iam_role.eks_nodes":                                              "aws_iam_role.eks_nodes",
+		"module.eks.aws_iam_role.cas_controller":                                         "aws_iam_role.cas_controller",
+		"module.eks.aws_iam_role_policy_attachment.cas_controller":                       "aws_iam_role_policy_attachment.cas_controller",
+		"module.eks.aws_iam_role.certmgr":                                                "aws_iam_role.certmgr",
+		"module.eks.aws_iam_role_policy_attachment.certmgr_AmazonSSMManagedInstanceCore": "aws_iam_role_policy_attachment.certmgr_AmazonSSMManagedInstanceCore",
+		"module.eks.aws_iam_role_policy_attachment.certmgr_acm_sync_certmgr":             "aws_iam_role_policy_attachment.certmgr_acm_sync_certmgr",
+		"module.eks.aws_iam_role_policy_attachment.certmgr_acm_sync_eks_node":            "aws_iam_role_policy_attachment.certmgr_acm_sync_eks_node",
+		"module.eks.aws_iam_role_policy_attachment.certmgr_write_route53":                "aws_iam_role_policy_attachment.certmgr_write_route53",
+		"module.eks.aws_iam_policy.certmgr_acm_sync":                                     "aws_iam_policy.certmgr_acm_sync",
+		"module.eks.aws_iam_policy.certmgr_write_route53":                                "aws_iam_policy.certmgr_write_route53",
+		"module.eks.aws_iam_openid_connect_provider.cluster":                             "aws_iam_openid_connect_provider.cluster",
+		"module.eks.aws_iam_policy.cas_controller":                                       "aws_iam_policy.cas_controller",
+	}
+
+	for oldState, newState := range iamStates {
+		rmErr := s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
+			ModulePath:   modulePath,
+			OldStateName: oldState,
+			NewStateName: newState,
+		})
+		if rmErr != nil {
+			errs = append(errs, rmErr)
+		}
+	}
+	return errs
+}
+
+func (s *AWSEKSStep) moveEKSStates(ctx context.Context, modulePath string) []*internal.OrchInstallerError {
+	var errs = make([]*internal.OrchInstallerError, 0)
+	eksStates := map[string]string{
+		"module.eks.aws_security_group.eks_cluster":                            "aws_security_group.eks_cluster",
+		"module.eks.aws_eks_cluster.eks_cluster":                               "aws_eks_cluster.eks_cluster",
+		"module.eks.aws_eks_node_group.nodegroup":                              "aws_eks_node_group.nodegroup",
+		"module.eks.aws_eks_node_group.additional_node_group":                  "aws_eks_node_group.additional_node_group",
+		"module.eks.aws_eks_addon.addons":                                      "aws_eks_addon.addons",
+		"module.eks.null_resource.wait_eks_complete":                           "null_resource.wait_eks_complete",
+		"module.eks.null_resource.create_kubecnofig":                           "null_resource.create_kubecnofig",
+		"module.eks.null_resource.set_env":                                     "null_resource.set_env",
+		"module.eks.aws_launch_template.eks_launch_template":                   "aws_launch_template.eks_launch_template",
+		"module.eks.aws_launch_template.additional_node_group_launch_template": "aws_launch_template.additional_node_group_launch_template",
+	}
+
+	for oldState, newState := range eksStates {
+		rmErr := s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
+			ModulePath:   modulePath,
+			OldStateName: oldState,
+			NewStateName: newState,
+		})
+		if rmErr != nil {
+			errs = append(errs, rmErr)
+		}
+	}
+	return errs
+}
+
 func (s *AWSEKSStep) PreStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+	if config.AWS.PreviousS3StateBucket == "" {
+		// No need to migrate state, since there is no previous state bucket
+		return runtimeState, nil
+	}
+	// Need to move Terraform state from old bucket to new bucket:
+	oldEKSBucketKey := fmt.Sprintf("%s/cluster/%s", config.AWS.Region, config.Global.OrchName)
+	err := s.AWSUtility.S3CopyToS3(config.AWS.Region,
+		config.AWS.PreviousS3StateBucket,
+		oldEKSBucketKey,
+		config.AWS.Region,
+		s.backendConfig.Bucket,
+		s.backendConfig.Key)
+	if err != nil {
+		return runtimeState, &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeInternal,
+			ErrorMsg:  fmt.Sprintf("failed to move Terraform state from old bucket to new bucket: %v", err),
+		}
+	}
+	// Need to delete unrelevant states.
+	// Anything that is not related to EKS should be deleted.
+	modulePath := filepath.Join(s.RootPath, EKSModulePath)
+	rmErrs := s.removeOldStates(ctx, modulePath)
+
+	// ...and we need to move following states:
+	rmErrs = append(rmErrs, s.moveIAMStates(ctx, modulePath)...)
+	rmErrs = append(rmErrs, s.moveEKSStates(ctx, modulePath)...)
+
+	if len(rmErrs) > 0 {
+		errMsg := "failed to remove old Terraform states: "
+		for _, rmErr := range rmErrs {
+			errMsg += fmt.Sprintf("%v; ", rmErr.ErrorMsg)
+		}
+		return runtimeState, &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeInternal,
+			ErrorMsg:  errMsg,
+		}
+	}
+
 	return runtimeState, nil
 }
 

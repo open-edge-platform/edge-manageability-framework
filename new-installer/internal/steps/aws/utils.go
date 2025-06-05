@@ -22,7 +22,7 @@ const (
 
 type AWSUtility interface {
 	GetAvailableZones(region string) ([]string, error)
-	S3MoveToS3(srcRegion, srcBucket, srcKey, destRegion, destBucket, destKey string) error
+	S3CopyToS3(srcRegion, srcBucket, srcKey, destRegion, destBucket, destKey string) error
 	GetSubnetIDsFromVPC(region, vpcID string) ([]string, []string, error)
 }
 
@@ -101,7 +101,7 @@ func FindAMIID(region string, amiName string, amiOwner string) (string, error) {
 	return *result.Images[0].ImageId, nil
 }
 
-func (*awsUtilityImpl) S3MoveToS3(srcRegion, srcBucket, srcKey, destRegion, destBucket, destKey string) error {
+func (*awsUtilityImpl) S3CopyToS3(srcRegion, srcBucket, srcKey, destRegion, destBucket, destKey string) error {
 	session, err := session.NewSession(&aws.Config{
 		Region: aws.String(srcRegion),
 	})
