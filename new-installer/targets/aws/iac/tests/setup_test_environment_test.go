@@ -76,10 +76,13 @@ func deleteIAMRole(roleName string, region string) error {
 	}
 	fmt.Printf("Detaching policies from IAM role: %s\n", roleName)
 	for _, rolePolicy := range rolePolicies {
-		iamClient.DetachRolePolicy(&iam.DetachRolePolicyInput{
+		_, err := iamClient.DetachRolePolicy(&iam.DetachRolePolicyInput{
 			RoleName:  aws.String(roleName),
 			PolicyArn: aws.String(rolePolicy),
 		})
+		if err != nil {
+			return fmt.Errorf("failed to detach policy %s from IAM role: %w", rolePolicy, err)
+		}
 	}
 	fmt.Printf("Deleting IAM role: %s\n", roleName)
 	_, err = iamClient.DeleteRole(&iam.DeleteRoleInput{
