@@ -36,11 +36,11 @@ runs:
   using: "composite"
   steps:
     - name: Checkout UI repo
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       with:
         repository: open-edge-platform/orch-ui
         path: orch-ui
-        ref: a145d044ff73eade7a1e14d5c925108472d9aa48
+        ref: 38c0fb7f914d20769e4dfb839e9d899568652d8a # tests/0.1.26
         persist-credentials: false
     - run: git log -1
       shell: bash
@@ -66,7 +66,7 @@ runs:
       if: ${{ always() && inputs.infra != '' }}
       working-directory: orch-ui/tests
       shell: bash
-      env: 
+      env:
         EN_SERIAL_NUMBER: ${{ inputs.en_serial_number }}
         INPUTS_INFRA: ${{inputs.infra}}
       run: |
@@ -83,6 +83,8 @@ runs:
         mkdir -p cypress/logs/edgeinfra
         kubectl logs -n orch-infra -l app.kubernetes.io/name=inventory > cypress/logs/edgeinfra/inventory.log
         kubectl logs -n orch-infra -l app.kubernetes.io/name=api > cypress/logs/edgeinfra/api.log
+        kubectl logs -n orch-infra -l app.kubernetes.io/name=apiv2 -c apiv2-proxy > cypress/logs/edgeinfra/apiv2-proxy.log
+        kubectl logs -n orch-infra -l app.kubernetes.io/name=apiv2 -c apiv2-grpc > cypress/logs/edgeinfra/apiv2-grpc.log
         kubectl logs -n orch-infra -l app.kubernetes.io/name=onboarding-manager > cypress/logs/edgeinfra/onboarding-manager.log
         kubectl logs -n orch-infra -l app.kubernetes.io/name=host-manager > cypress/logs/edgeinfra/host-manager.log
         kubectl logs -n orch-infra -l app.kubernetes.io/name=dkam > cypress/logs/edgeinfra/dkam.log
