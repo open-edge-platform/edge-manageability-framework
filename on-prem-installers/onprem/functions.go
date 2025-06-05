@@ -14,7 +14,6 @@ import (
 	"os/exec"
 	"strings"
 	"time"
-
 	"bufio"
 
 	"path/filepath"
@@ -866,6 +865,37 @@ func (OnPrem) WriteConfigToDisk() error {
 	return nil
 }
 
+func (OnPrem) Usage() {
+    prog := filepath.Base(os.Args[0])
+    fmt.Fprintf(os.Stderr, `Purpose:
+Install OnPrem Edge Orchestrator.
+
+Usage:
+%s [option...] [argument]
+
+ex:
+./%s
+./%s -c <certificate string>
+
+Options:
+    -h, --help         Print this help message and exit
+    -c, --cert         Path to Release Service/ArgoCD certificate
+    -s, --sre          Path to SRE destination CA certificate (enables TLS for SRE Exporter)
+    --skip-download    Skip downloading installer packages 
+    -d, --notls        Disable TLS verification for SMTP endpoint
+    -o, --override     Override production values with dev values
+    -u, --url          Set the Release Service URL
+    -t, --trace        Enable tracing
+    -w, --write-config Write configuration to disk and exit
+    -y, --yes          Assume yes for using existing configuration if it exists
+
+Environment Variables:
+    DOCKER_USERNAME    Docker.io username
+    DOCKER_PASSWORD    Docker.io password
+
+`, prog, prog, prog)
+}
+
 func (OnPrem) InstallOrchestrator() error {
 	cwd := os.Getenv("cwd")
 	debDirName := os.Getenv("deb_dir_name")
@@ -874,15 +904,22 @@ func (OnPrem) InstallOrchestrator() error {
 
 	fmt.Println("Installing Edge Orchestrator Packages")
 
-	cmd := exec.Command(
-		"sudo", "env",
-		"NEEDRESTART_MODE=a",
-		"DEBIAN_FRONTEND=noninteractive",
-		fmt.Sprintf("ORCH_INSTALLER_PROFILE=%s", orchInstallerProfile),
-		fmt.Sprintf("GIT_REPOS=%s", gitRepos),
-		"apt-get", "install", "-y",
-		fmt.Sprintf("%s/%s/onprem-orch-installer_*_amd64.deb", cwd, debDirName),
-	)
+pattern := fmt.Sprintf("%s/%s/onprem-orch-installer_*_amd64.deb", cwd, debDirName)
+matches, err := filepath.Glob(pattern)
+if err != nil || len(matches) == 0 {
+    return fmt.Errorf("no deb package found matching pattern: %s", pattern)
+}
+debFile := matches[0] // or handle multiple matches as needed
+
+cmd := exec.Command(
+    "sudo",
+    "NEEDRESTART_MODE=a",
+    "DEBIAN_FRONTEND=noninteractive",
+    fmt.Sprintf("ORCH_INSTALLER_PROFILE=%s", orchInstallerProfile),
+    fmt.Sprintf("GIT_REPOS=%s", gitRepos),
+    "apt-get", "install", "-y",
+    debFile,
+)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
@@ -898,5 +935,63 @@ Installation is completed when 'root-app' Application is in 'Healthy' and 'Synce
 Once it is completed, you might want to configure DNS for UI and other services by running generate_fqdn script and following instructions
 `)
 
+	return nil
+}
+
+// ParseArgs parses CLI arguments and sets environment variables accordingly.
+func (OnPrem) ParseArgs() {
+    args := os.Args[1:]
+    for i := 0; i < len(args); i++ {
+        arg := args[i]
+        switch arg {
+        case "-h", "--help":
+            OnPrem{}.Usage()
+            os.Exit(0)
+        case "-s", "--sre_tls":
+            os.Setenv("SRE_TLS_ENABLED", "true")
+            if i+1 < len(args) && !strings.HasPrefix(args[i+1], "-") {
+                certPath := args[i+1]
+                data, err := os.ReadFile(certPath)
+                if err != nil {
+                    fmt.Fprintf(os.Stderr, "Failed to read SRE CA cert: %v\n", err)
+                    os.Exit(1)
+                }
+                os.Setenv("SRE_DEST_CA_CERT", string(data))
+                i++
+            }
+        case "--skip-download":
+            os.Setenv("SKIP_DOWNLOAD", "true")
+        case "-d", "--notls":
+            os.Setenv("SMTP_SKIP_VERIFY", "true")
+        case "-o", "--override":
+            os.Setenv("ORCH_INSTALLER_PROFILE", "onprem-dev")
+        case "-u", "--url":
+            if i+1 < len(args) {
+                os.Setenv("RELEASE_SERVICE_URL", args[i+1])
+                i++
+            } else {
+                fmt.Fprintf(os.Stderr, "ERROR: %s requires an argument\n", arg)
+                os.Exit(1)
+            }
+        case "-t", "--trace":
+            os.Setenv("ENABLE_TRACE", "true")
+            // No direct equivalent of set -x in Go
+        case "-w", "--write-config":
+            os.Setenv("WRITE_CONFIG", "true")
+        case "-y", "--yes":
+            os.Setenv("ASSUME_YES", "true")
+        default:
+            if strings.HasPrefix(arg, "-") {
+                fmt.Fprintf(os.Stderr, "Unknown argument %s\n", arg)
+                os.Exit(1)
+            } else {
+                break
+            }
+        }
+    }
+}
+
+func (OnPrem) JohnArgs() error {
+	os.Setenv("JOHN", "true")
 	return nil
 }

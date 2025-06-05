@@ -351,36 +351,36 @@ export GIT_REPOS=$cwd/$git_arch_name
 #   fi
 # }
 
-usage() {
-  cat >&2 <<EOF
-Purpose:
-Install OnPrem Edge Orchestrator.
+# usage() {
+#   cat >&2 <<EOF
+# Purpose:
+# Install OnPrem Edge Orchestrator.
 
-Usage:
-$(basename "$0") [option...] [argument]
+# Usage:
+# $(basename "$0") [option...] [argument]
 
-ex:
-./$(basename "$0")
-./$(basename "$0") -c <certificate string>
+# ex:
+# ./$(basename "$0")
+# ./$(basename "$0") -c <certificate string>
 
-Options:
-    -h, --help         Print this help message and exit
-    -c, --cert         Path to Release Service/ArgoCD certificate
-    -s, --sre          Path to SRE destination CA certificate (enables TLS for SRE Exporter)
-    --skip-download    Skip downloading installer packages 
-    -d, --notls        Disable TLS verification for SMTP endpoint
-    -o, --override     Override production values with dev values
-    -u, --url          Set the Release Service URL
-    -t, --trace        Enable tracing
-    -w, --write-config Write configuration to disk and exit
-    -y, --yes          Assume yes for using existing configuration if it exists
+# Options:
+#     -h, --help         Print this help message and exit
+#     -c, --cert         Path to Release Service/ArgoCD certificate
+#     -s, --sre          Path to SRE destination CA certificate (enables TLS for SRE Exporter)
+#     --skip-download    Skip downloading installer packages 
+#     -d, --notls        Disable TLS verification for SMTP endpoint
+#     -o, --override     Override production values with dev values
+#     -u, --url          Set the Release Service URL
+#     -t, --trace        Enable tracing
+#     -w, --write-config Write configuration to disk and exit
+#     -y, --yes          Assume yes for using existing configuration if it exists
 
-Environment Variables:
-    DOCKER_USERNAME    Docker.io username
-    DOCKER_PASSWORD    Docker.io password
+# Environment Variables:
+#     DOCKER_USERNAME    Docker.io username
+#     DOCKER_PASSWORD    Docker.io password
 
-EOF
-}
+# EOF
+# }
 
 # print_env_variables() {
 #   echo; echo "========================================"
@@ -420,20 +420,20 @@ EOF
 #   yq -i '.postCustomTemplateOverwrite.metallb-config.NginxIP|=strenv(NGINX_IP)' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
 # }
 
-write_config_to_disk() {
-  # export tmp_dir="$cwd/$git_arch_name/tmp"
-  rm -rf "$tmp_dir"
-  mkdir -p "$tmp_dir"
-  # export repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n")
-  tar -xf "$cwd/$git_arch_name/$repo_file" -C "$tmp_dir"
+# write_config_to_disk() {
+#   # export tmp_dir="$cwd/$git_arch_name/tmp"
+#   rm -rf "$tmp_dir"
+#   mkdir -p "$tmp_dir"
+#   # export repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n")
+#   tar -xf "$cwd/$git_arch_name/$repo_file" -C "$tmp_dir"
 
-  # If overrides are set, ensure the written out configs are updated with them
-  # write_configs_using_overrides
-  mage onPrem:writeConfigsUsingOverrides
+#   # If overrides are set, ensure the written out configs are updated with them
+#   # write_configs_using_overrides
+#   mage onPrem:writeConfigsUsingOverrides
 
-  echo "Configuration files have been written to disk at $tmp_dir/$si_config_repo"
-  exit 0
-}
+#   echo "Configuration files have been written to disk at $tmp_dir/$si_config_repo"
+#   exit 0
+# }
 
 # validate_and_set_ip() {
 #   local yaml_path="$1"
@@ -485,7 +485,8 @@ if [ -n "${1-}" ]; then
   while :; do
     case "$1" in
       -h|--help)
-        usage
+        # usage
+        mage onPrem:Usage
         exit 0
       ;;
       -s|--sre_tls)
@@ -532,6 +533,7 @@ if [ -n "${1-}" ]; then
     shift
   done
 fi
+
 
 ### Installer
 echo "Running On Premise Edge Orchestrator installers"
@@ -644,7 +646,7 @@ echo "Installing Gitea & ArgoCD..."
 eval "sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y $cwd/$deb_dir_name/onprem-argocd-installer_*_amd64.deb"
 # wait_for_namespace_creation $gitea_ns
 mage onPrem:waitForNamespaceCreation $gitea_ns
-
+echo "sleep 30s to allow Gitea to start"
 sleep 30s
 mage onPrem:waitForPodsRunning $gitea_ns
 # wait_for_pods_running $gitea_ns
@@ -683,12 +685,12 @@ mage onPrem:createPostgresPassword orch-database "$postgres_password"
 
 
 # Run orchestrator installer
-#mage onPrem:installOrchestrator
-echo "Installing Edge Orchestrator Packages"
-eval "sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive ORCH_INSTALLER_PROFILE=$ORCH_INSTALLER_PROFILE GIT_REPOS=$GIT_REPOS apt-get install -y $cwd/$deb_dir_name/onprem-orch-installer_*_amd64.deb"
-echo "Edge Orchestrator getting installed, wait for SW to deploy... "
+mage onPrem:installOrchestrator
+# echo "Installing Edge Orchestrator Packages"
+# eval "sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive ORCH_INSTALLER_PROFILE=$ORCH_INSTALLER_PROFILE GIT_REPOS=$GIT_REPOS apt-get install -y $cwd/$deb_dir_name/onprem-orch-installer_*_amd64.deb"
+# echo "Edge Orchestrator getting installed, wait for SW to deploy... "
 
-printf "\nEdge Orchestrator SW is being deployed, please wait for all applications to deploy...\n
-To check the status of the deployment run 'kubectl get applications -A'.\n
-Installation is completed when 'root-app' Application is in 'Healthy' and 'Synced' state.\n
-Once it is completed, you might want to configure DNS for UI and other services by running generate_fqdn script and following instructions\n"
+# printf "\nEdge Orchestrator SW is being deployed, please wait for all applications to deploy...\n
+# To check the status of the deployment run 'kubectl get applications -A'.\n
+# Installation is completed when 'root-app' Application is in 'Healthy' and 'Synced' state.\n
+# Once it is completed, you might want to configure DNS for UI and other services by running generate_fqdn script and following instructions\n"
