@@ -12,7 +12,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 
 	"bytes"
-	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -25,8 +24,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -125,19 +122,19 @@ func GetNATGatewaysByTags(region string, tags map[string][]string) ([]*ec2.NatGa
 
 // This function creates a VPC and three subnets in the specified AWS region.
 func CreateVPC(region string, name string) (string, []string, error) {
-	cfg, err := config.LoadDefaultConfig(context.Background(), config.WithRegion(region))
+	sess, err := session.NewSession(&aws.Config{Region: aws.String(region)})
 	if err != nil {
-		return "", nil, fmt.Errorf("unable to load AWS SDK config: %w", err)
+		return "", []string{}, fmt.Errorf("failed to create session: %w", err)
 	}
-	ec2Client := ec2.NewFromConfig(cfg)
+	ec2Client := ec2.New(sess)
 
 	// Create VPC
 	createVpcInput := &ec2.CreateVpcInput{
 		CidrBlock: aws.String("10.250.0.0/16"),
-		TagSpecifications: []types.TagSpecification{
+		TagSpecifications: []*ec2.TagSpecification{
 			{
-				ResourceType: types.ResourceTypeVpc,
-				Tags: []types.Tag{
+				ResourceType: aws.String(ec2.ResourceTypeVpc),
+				Tags: []*ec2.Tag{
 					{
 						Key:   aws.String("Name"),
 						Value: aws.String(name),
@@ -146,7 +143,7 @@ func CreateVPC(region string, name string) (string, []string, error) {
 			},
 		},
 	}
-	vpcOutput, err := ec2Client.CreateVpc(context.Background(), createVpcInput)
+	vpcOutput, err := ec2Client.CreateVpc(createVpcInput)
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to create VPC: %w", err)
 	}
@@ -155,7 +152,7 @@ func CreateVPC(region string, name string) (string, []string, error) {
 
 	// Create Internet Gateway
 	createInternetGatewayInput := &ec2.CreateInternetGatewayInput{}
-	igwOutput, err := ec2Client.CreateInternetGateway(context.Background(), createInternetGatewayInput)
+	igwOutput, err := ec2Client.CreateInternetGateway(createInternetGatewayInput)
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to create Internet Gateway: %w", err)
 	}
@@ -167,7 +164,7 @@ func CreateVPC(region string, name string) (string, []string, error) {
 		InternetGatewayId: aws.String(igwID),
 		VpcId:             aws.String(vpcID),
 	}
-	_, err = ec2Client.AttachInternetGateway(context.Background(), attachIgwInput)
+	_, err = ec2Client.AttachInternetGateway(attachIgwInput)
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to attach Internet Gateway to VPC: %w", err)
 	}
@@ -183,7 +180,7 @@ func CreateVPC(region string, name string) (string, []string, error) {
 			VpcId:            aws.String(vpcID),
 			AvailabilityZone: aws.String(region + zone),
 		}
-		subnetOutput, err := ec2Client.CreateSubnet(context.Background(), createSubnetInput)
+		subnetOutput, err := ec2Client.CreateSubnet(createSubnetInput)
 		if err != nil {
 			return "", nil, fmt.Errorf("failed to create subnet in zone %s: %w", zone, err)
 		}
@@ -196,7 +193,7 @@ func CreateVPC(region string, name string) (string, []string, error) {
 	createRouteTableInput := &ec2.CreateRouteTableInput{
 		VpcId: aws.String(vpcID),
 	}
-	routeTableOutput, err := ec2Client.CreateRouteTable(context.Background(), createRouteTableInput)
+	routeTableOutput, err := ec2Client.CreateRouteTable(createRouteTableInput)
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to create route table: %w", err)
 	}
@@ -209,7 +206,7 @@ func CreateVPC(region string, name string) (string, []string, error) {
 		DestinationCidrBlock: aws.String("0.0.0.0/0"),
 		GatewayId:            aws.String(igwID),
 	}
-	_, err = ec2Client.CreateRoute(context.Background(), createRouteInput)
+	_, err = ec2Client.CreateRoute(createRouteInput)
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to create route to Internet Gateway: %w", err)
 	}
@@ -221,7 +218,7 @@ func CreateVPC(region string, name string) (string, []string, error) {
 			RouteTableId: aws.String(routeTableID),
 			SubnetId:     aws.String(subnetID),
 		}
-		_, err := ec2Client.AssociateRouteTable(context.Background(), associateRouteTableInput)
+		_, err := ec2Client.AssociateRouteTable(associateRouteTableInput)
 		if err != nil {
 			return "", nil, fmt.Errorf("failed to associate subnet %s with route table: %w", subnetID, err)
 		}
@@ -232,24 +229,24 @@ func CreateVPC(region string, name string) (string, []string, error) {
 }
 
 func DeleteVPC(region string, vpcID string) error {
-	cfg, err := config.LoadDefaultConfig(context.Background(), config.WithRegion(region))
+	sess, err := session.NewSession(&aws.Config{Region: aws.String(region)})
 	if err != nil {
-		return fmt.Errorf("unable to load AWS SDK config: %w", err)
+		return fmt.Errorf("failed to create session: %w", err)
 	}
-	ec2Client := ec2.NewFromConfig(cfg)
+	ec2Client := ec2.New(sess)
 	deleteVpcInput := &ec2.DeleteVpcInput{
 		VpcId: aws.String(vpcID),
 	}
 	// Retrieve and delete all subnets associated with the VPC
 	describeSubnetsInput := &ec2.DescribeSubnetsInput{
-		Filters: []types.Filter{
+		Filters: []*ec2.Filter{
 			{
 				Name:   aws.String("vpc-id"),
-				Values: []string{vpcID},
+				Values: []*string{&vpcID},
 			},
 		},
 	}
-	subnetsOutput, err := ec2Client.DescribeSubnets(context.Background(), describeSubnetsInput)
+	subnetsOutput, err := ec2Client.DescribeSubnets(describeSubnetsInput)
 	if err != nil {
 		return fmt.Errorf("failed to describe subnets: %w", err)
 	}
@@ -258,13 +255,13 @@ func DeleteVPC(region string, vpcID string) error {
 		deleteSubnetInput := &ec2.DeleteSubnetInput{
 			SubnetId: subnet.SubnetId,
 		}
-		_, err := ec2Client.DeleteSubnet(context.Background(), deleteSubnetInput)
+		_, err := ec2Client.DeleteSubnet(deleteSubnetInput)
 		if err != nil {
 			return fmt.Errorf("failed to delete subnet %s: %w", *subnet.SubnetId, err)
 		}
 		log.Printf("Deleted Subnet with ID: %s", *subnet.SubnetId)
 	}
-	_, err = ec2Client.DeleteVpc(context.Background(), deleteVpcInput)
+	_, err = ec2Client.DeleteVpc(deleteVpcInput)
 	if err != nil {
 		return fmt.Errorf("failed to delete VPC: %w", err)
 	}
@@ -273,11 +270,11 @@ func DeleteVPC(region string, vpcID string) error {
 }
 
 func CreateJumpHost(vpcID string, subnetID string, region string) (string, string, string, error) {
-	cfg, err := config.LoadDefaultConfig(context.Background(), config.WithRegion(region))
+	sess, err := session.NewSession(&aws.Config{Region: aws.String(region)})
 	if err != nil {
-		return "", "", "", fmt.Errorf("unable to load AWS SDK config: %w", err)
+		return "", "", "", fmt.Errorf("failed to create session: %w", err)
 	}
-	ec2Client := ec2.NewFromConfig(cfg)
+	ec2Client := ec2.New(sess)
 
 	// Create a security group for the jump host
 	createSecurityGroupInput := &ec2.CreateSecurityGroupInput{
@@ -285,7 +282,7 @@ func CreateJumpHost(vpcID string, subnetID string, region string) (string, strin
 		Description: aws.String("Security group for jump host"),
 		VpcId:       aws.String(vpcID),
 	}
-	securityGroupOutput, err := ec2Client.CreateSecurityGroup(context.Background(), createSecurityGroupInput)
+	securityGroupOutput, err := ec2Client.CreateSecurityGroup(createSecurityGroupInput)
 	if err != nil {
 		return "", "", "", fmt.Errorf("failed to create security group: %w", err)
 	}
@@ -323,14 +320,14 @@ func CreateJumpHost(vpcID string, subnetID string, region string) (string, strin
 
 	authorizeIngressInput := &ec2.AuthorizeSecurityGroupIngressInput{
 		GroupId: aws.String(securityGroupID),
-		IpPermissions: []types.IpPermission{
+		IpPermissions: []*ec2.IpPermission{
 			{
-				IpProtocol: aws.String("-1"),                              // -1 allows all protocols
-				IpRanges:   []types.IpRange{{CidrIp: aws.String(myCIDR)}}, // Allow traffic from this IP
+				IpProtocol: aws.String("-1"),                             // -1 allows all protocols
+				IpRanges:   []*ec2.IpRange{{CidrIp: aws.String(myCIDR)}}, // Allow traffic from this IP
 			},
 		},
 	}
-	_, err = ec2Client.AuthorizeSecurityGroupIngress(context.Background(), authorizeIngressInput)
+	_, err = ec2Client.AuthorizeSecurityGroupIngress(authorizeIngressInput)
 	if err != nil {
 		return "", "", "", fmt.Errorf("failed to authorize security group ingress: %w", err)
 	}
@@ -350,7 +347,7 @@ func CreateJumpHost(vpcID string, subnetID string, region string) (string, strin
 		KeyName:           aws.String(keyName),
 		PublicKeyMaterial: []byte(publicKey),
 	}
-	_, err = ec2Client.ImportKeyPair(context.Background(), importKeyPairInput)
+	_, err = ec2Client.ImportKeyPair(importKeyPairInput)
 	if err != nil {
 		return "", "", "", fmt.Errorf("failed to import SSH key pair: %w", err)
 	}
@@ -359,20 +356,20 @@ func CreateJumpHost(vpcID string, subnetID string, region string) (string, strin
 	// Create the jump host instance
 	createInstanceInput := &ec2.RunInstancesInput{
 		ImageId:      aws.String("ami-0a605bc2ef5707a18"), // Ubuntu 24.04 LTS in us-west-2
-		InstanceType: types.InstanceTypeT3Micro,
-		MinCount:     aws.Int32(1),
-		MaxCount:     aws.Int32(1),
+		InstanceType: aws.String(ec2.InstanceTypeT3Micro),
+		MinCount:     aws.Int64(1),
+		MaxCount:     aws.Int64(1),
 		KeyName:      aws.String(keyName),
-		NetworkInterfaces: []types.InstanceNetworkInterfaceSpecification{
+		NetworkInterfaces: []*ec2.InstanceNetworkInterfaceSpecification{
 			{
 				AssociatePublicIpAddress: aws.Bool(true),
-				DeviceIndex:              aws.Int32(0),
+				DeviceIndex:              aws.Int64(0),
 				SubnetId:                 aws.String(subnetID),
-				Groups:                   []string{securityGroupID},
+				Groups:                   []*string{&securityGroupID},
 			},
 		},
 	}
-	runInstancesOutput, err := ec2Client.RunInstances(context.Background(), createInstanceInput)
+	runInstancesOutput, err := ec2Client.RunInstances(createInstanceInput)
 	if err != nil {
 		return "", "", "", fmt.Errorf("failed to create jump host instance: %w", err)
 	}
@@ -381,21 +378,21 @@ func CreateJumpHost(vpcID string, subnetID string, region string) (string, strin
 
 	// Wait for the instance to be in the running state and retrieve its public IP address
 	describeInstancesInput := &ec2.DescribeInstancesInput{
-		InstanceIds: []string{instanceID},
+		InstanceIds: []*string{&instanceID},
 	}
 
 	var jumphostIP string
 	for range 5 {
 		log.Printf("Waiting for Jump Host Instance to be in running state...")
 		time.Sleep(10 * time.Second)
-		describeInstancesOutput, err := ec2Client.DescribeInstances(context.Background(), describeInstancesInput)
+		describeInstancesOutput, err := ec2Client.DescribeInstances(describeInstancesInput)
 		if err != nil {
 			fmt.Printf("Failed to describe instance: %v, continue...\n", err)
 			continue
 		}
 
 		instance := describeInstancesOutput.Reservations[0].Instances[0]
-		if instance.State.Name == types.InstanceStateNameRunning && instance.PublicIpAddress != nil {
+		if *instance.State.Name == ec2.InstanceStateNameRunning && instance.PublicIpAddress != nil {
 			jumphostIP = *instance.PublicIpAddress
 			log.Printf("Jump Host Instance is running with Public IP: %s", jumphostIP)
 			break
@@ -449,17 +446,17 @@ func generateSSHKeyPair() (string, string, error) {
 }
 
 func DeleteJumpHost(instanceID string, region string) error {
-	cfg, err := config.LoadDefaultConfig(context.Background(), config.WithRegion(region))
+	sess, err := session.NewSession(&aws.Config{Region: aws.String(region)})
 	if err != nil {
-		return fmt.Errorf("unable to load AWS SDK config: %w", err)
+		return fmt.Errorf("failed to create session: %w", err)
 	}
-	ec2Client := ec2.NewFromConfig(cfg)
+	ec2Client := ec2.New(sess)
 
 	// Terminate the jump host instance
 	terminateInstancesInput := &ec2.TerminateInstancesInput{
-		InstanceIds: []string{instanceID},
+		InstanceIds: []*string{&instanceID},
 	}
-	_, err = ec2Client.TerminateInstances(context.Background(), terminateInstancesInput)
+	_, err = ec2Client.TerminateInstances(terminateInstancesInput)
 	if err != nil {
 		return fmt.Errorf("failed to terminate jump host instance: %w", err)
 	}
