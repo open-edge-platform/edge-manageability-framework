@@ -204,19 +204,19 @@ func (s *OrchInstallerTest) TestOrchInstallerInvalidArgument() {
 		return
 	}
 	installerErr := installer.Run(ctx, orchConfig, &runtimeState)
-	s.Equal(installerErr, &internal.OrchInstallerError{
+	s.Equal(&internal.OrchInstallerError{
 		ErrorCode: internal.OrchInstallerErrorCodeInvalidArgument,
 		ErrorMsg:  "action must be specified",
-	})
+	}, installerErr)
 
 	runtimeState = config.OrchInstallerRuntimeState{
 		Action: "invalid",
 	}
 	installerErr = installer.Run(ctx, orchConfig, &runtimeState)
-	s.Equal(installerErr, &internal.OrchInstallerError{
+	s.Equal(&internal.OrchInstallerError{
 		ErrorCode: internal.OrchInstallerErrorCodeInvalidArgument,
 		ErrorMsg:  "unsupported action: invalid",
-	})
+	}, installerErr)
 }
 
 func (s *OrchInstallerTest) TestUpdateRuntimeState() {

@@ -4,11 +4,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# shellcheck source=installer/utils.sh
-. "${HOME}"/utils.sh
+. ${HOME}/utils.sh
 
 # Consts
-export BUCKET_REGION="us-west-2"
+BUCKET_REGION="us-west-2"
 SAVE_DIR="${SAVE_DIR:-$HOME/pod-configs/SAVEME}"
 
 load_provision_env
@@ -23,7 +22,7 @@ ORCH_DEPLOY="https://gitea.${CLUSTER_FQDN}/argocd/edge-manageability-framework.g
 
 mkdir -p ~/src
 
-clone_repo "$ORCH_DEPLOY" edge-manageability-framework
+clone_repo $ORCH_DEPLOY edge-manageability-framework
 
 # Extract build contents to repo
 cp -R edge-manageability-framework/* src/edge-manageability-framework
