@@ -6,11 +6,15 @@ package aws_iac_test
 
 import (
 	"crypto/rand"
+	"encoding/json"
+	"net"
+	"os"
 	"strings"
 	"testing"
 	"time"
 
 	terra_test_aws "github.com/gruntwork-io/terratest/modules/aws"
+	"github.com/gruntwork-io/terratest/modules/terraform"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -89,8 +93,20 @@ func (s *EKSTestSuite) SetupTest() {
 		s.NoError(err, "Failed to create VPC and subnet")
 		return
 	}
+	var ipCIDRAllowList []string = make([]string, 0)
+	if cidrAllowListStr := os.Getenv("JUMPHOST_IP_CIDR_ALLOW_LIST"); cidrAllowListStr != "" {
+		for _, cidr := range strings.Split(cidrAllowListStr, ",") {
+			cidr = strings.TrimSpace(cidr)
+			if _, _, err := net.ParseCIDR(cidr); err != nil {
+				continue // Skip invalid CIDR
+			}
+			if cidr != "" {
+				ipCIDRAllowList = append(ipCIDRAllowList, cidr)
+			}
+		}
+	}
 	var jumphostPrivateKey, jumphostIP string
-	s.jumphostID, jumphostPrivateKey, jumphostIP, err = CreateJumpHost(s.vpcID, s.subnetIDs[0], DefaultRegion)
+	s.jumphostID, jumphostPrivateKey, jumphostIP, err = CreateJumpHost(s.vpcID, s.subnetIDs[0], DefaultRegion, ipCIDRAllowList)
 	if err != nil {
 		s.NoError(err, "Failed to create jump host")
 		return
@@ -114,14 +130,14 @@ func (s *EKSTestSuite) TearDownTest() {
 		s.NoError(err, "Failed to delete jump host %s", s.jumphostID)
 	}
 	// Note: Deleting a VPC will also delete all subnets.
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 10; i++ {
 		time.Sleep(10 * time.Second)
 		err := DeleteVPC(DefaultRegion, s.vpcID)
 		if err == nil {
 			break
 		}
 		if i == 4 {
-			s.NoError(err, "Failed to delete VPC %s after 5 attempts", s.vpcID)
+			s.NoError(err, "Failed to delete VPC %s after 10 attempts", s.vpcID)
 			break
 		}
 	}
@@ -129,76 +145,73 @@ func (s *EKSTestSuite) TearDownTest() {
 	terra_test_aws.DeleteS3Bucket(s.T(), DefaultRegion, s.stateBucketName)
 }
 
-func (s *EKSTestSuite) TestDummy() {
+func (s *EKSTestSuite) TestApplyingModule() {
+	eksVars := EKSVariables{
+		Name:                "test-eks-cluster" + s.randomPostfix,
+		Region:              DefaultRegion,
+		VPCID:               s.vpcID,
+		CustomerTag:         "test-customer",
+		SubnetIDs:           s.subnetIDs,
+		EKSVersion:          "1.32",
+		NodeInstanceType:    "t3.medium",
+		DesiredSize:         1,
+		MinSize:             1,
+		MaxSize:             1,
+		MaxPods:             58,
+		VolumeSize:          20,
+		VolumeType:          "gp3",
+		EnableCacheRegistry: true,
+		CacheRegistry:       "test-cache-registry",
+		HTTPProxy:           "",
+		HTTPSProxy:          "",
+		NoProxy:             "",
+		AddOns: []EKSAddOn{
+			{
+				Name:    "aws-ebs-csi-driver",
+				Version: "v1.39.0-eksbuild.1",
+			},
+			{
+				Name:                "vpc-cni",
+				Version:             "v1.19.2-eksbuild.1",
+				ConfigurationValues: "{\"enableNetworkPolicy\": \"true\", \"nodeAgent\": {\"healthProbeBindAddr\": \"8163\", \"metricsBindAddr\": \"8162\"}}",
+			},
+			{
+				Name:    "aws-efs-csi-driver",
+				Version: "v2.1.4-eksbuild.1",
+			},
+		},
+		AdditionalNodeGroups: map[string]EKSNodeGroup{},
+		IPAllowList:          []string{},
+	}
+
+	jsonData, err := json.Marshal(eksVars)
+	if err != nil {
+		s.T().Fatalf("Failed to marshal variables: %v", err)
+	}
+	tempFile, err := os.CreateTemp("", "variables-*.tfvar.json")
+	if err != nil {
+		s.T().Fatalf("Failed to create temporary file: %v", err)
+	}
+	defer os.Remove(tempFile.Name())
+	if _, err := tempFile.Write(jsonData); err != nil {
+		s.T().Fatalf("Failed to write to temporary file: %v", err)
+	}
+
+	terraformOptions := terraform.WithDefaultRetryableErrors(s.T(), &terraform.Options{
+		TerraformDir: "../eks",
+		VarFiles:     []string{tempFile.Name()},
+		BackendConfig: map[string]interface{}{
+			"region": DefaultRegion,
+			"bucket": s.stateBucketName,
+			"key":    "eks.tfstate",
+		},
+		Reconfigure: true,
+		Upgrade:     true,
+	})
+
+	defer terraform.Destroy(s.T(), terraformOptions)
+	terraform.InitAndApply(s.T(), terraformOptions)
+
+	// No outputs from EKS module, so we just check if everything we need is created
+	// TODO: Check if EKS cluster is created and has the expected properties
 }
-
-// func (s *EKSTestSuite) TestApplyingModule() {
-// 	eksVars := EKSVariables{
-// 		Name:                "test-eks-cluster" + s.randomPostfix,
-// 		Region:              DefaultRegion,
-// 		VPCID:               s.vpcID,
-// 		CustomerTag:         "test-customer",
-// 		SubnetIDs:           s.subnetIDs,
-// 		EKSVersion:          "1.32",
-// 		NodeInstanceType:    "t3.medium",
-// 		DesiredSize:         1,
-// 		MinSize:             1,
-// 		MaxSize:             1,
-// 		MaxPods:             58,
-// 		VolumeSize:          20,
-// 		VolumeType:          "gp3",
-// 		EnableCacheRegistry: true,
-// 		CacheRegistry:       "test-cache-registry",
-// 		HTTPProxy:           "",
-// 		HTTPSProxy:          "",
-// 		NoProxy:             "",
-// 		AddOns: []EKSAddOn{
-// 			{
-// 				Name:    "aws-ebs-csi-driver",
-// 				Version: "v1.39.0-eksbuild.1",
-// 			},
-// 			{
-// 				Name:                "vpc-cni",
-// 				Version:             "v1.19.2-eksbuild.1",
-// 				ConfigurationValues: "{\"enableNetworkPolicy\": \"true\", \"nodeAgent\": {\"healthProbeBindAddr\": \"8163\", \"metricsBindAddr\": \"8162\"}}",
-// 			},
-// 			{
-// 				Name:    "aws-efs-csi-driver",
-// 				Version: "v2.1.4-eksbuild.1",
-// 			},
-// 		},
-// 		AdditionalNodeGroups: map[string]EKSNodeGroup{},
-// 		IPAllowList:          []string{},
-// 	}
-
-// 	jsonData, err := json.Marshal(eksVars)
-// 	if err != nil {
-// 		s.T().Fatalf("Failed to marshal variables: %v", err)
-// 	}
-// 	tempFile, err := os.CreateTemp("", "variables-*.tfvar.json")
-// 	if err != nil {
-// 		s.T().Fatalf("Failed to create temporary file: %v", err)
-// 	}
-// 	defer os.Remove(tempFile.Name())
-// 	if _, err := tempFile.Write(jsonData); err != nil {
-// 		s.T().Fatalf("Failed to write to temporary file: %v", err)
-// 	}
-
-// 	terraformOptions := terraform.WithDefaultRetryableErrors(s.T(), &terraform.Options{
-// 		TerraformDir: "../eks",
-// 		VarFiles:     []string{tempFile.Name()},
-// 		BackendConfig: map[string]interface{}{
-// 			"region": DefaultRegion,
-// 			"bucket": s.stateBucketName,
-// 			"key":    "eks.tfstate",
-// 		},
-// 		Reconfigure: true,
-// 		Upgrade:     true,
-// 	})
-
-// 	defer terraform.Destroy(s.T(), terraformOptions)
-// 	terraform.InitAndApply(s.T(), terraformOptions)
-
-// 	// No outputs from EKS module, so we just check if everything we need is created
-// 	// TODO: Check if EKS cluster is created and has the expected properties
-// }

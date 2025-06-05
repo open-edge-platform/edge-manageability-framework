@@ -234,8 +234,64 @@ func DeleteVPC(region string, vpcID string) error {
 		return fmt.Errorf("failed to create session: %w", err)
 	}
 	ec2Client := ec2.New(sess)
-	deleteVpcInput := &ec2.DeleteVpcInput{
-		VpcId: aws.String(vpcID),
+	// Retrieve and delete all internet gateways associated with the VPC
+	describeInternetGatewaysInput := &ec2.DescribeInternetGatewaysInput{
+		Filters: []*ec2.Filter{
+			{
+				Name:   aws.String("attachment.vpc-id"),
+				Values: []*string{&vpcID},
+			},
+		},
+	}
+	internetGatewaysOutput, err := ec2Client.DescribeInternetGateways(describeInternetGatewaysInput)
+	if err != nil {
+		return fmt.Errorf("failed to describe internet gateways: %w", err)
+	}
+
+	for _, igw := range internetGatewaysOutput.InternetGateways {
+		detachIgwInput := &ec2.DetachInternetGatewayInput{
+			InternetGatewayId: igw.InternetGatewayId,
+			VpcId:             aws.String(vpcID),
+		}
+		_, err := ec2Client.DetachInternetGateway(detachIgwInput)
+		if err != nil {
+			return fmt.Errorf("failed to detach internet gateway %s: %w", *igw.InternetGatewayId, err)
+		}
+		log.Printf("Detached Internet Gateway with ID: %s", *igw.InternetGatewayId)
+
+		deleteIgwInput := &ec2.DeleteInternetGatewayInput{
+			InternetGatewayId: igw.InternetGatewayId,
+		}
+		_, err = ec2Client.DeleteInternetGateway(deleteIgwInput)
+		if err != nil {
+			return fmt.Errorf("failed to delete internet gateway %s: %w", *igw.InternetGatewayId, err)
+		}
+		log.Printf("Deleted Internet Gateway with ID: %s", *igw.InternetGatewayId)
+	}
+
+	// Retrieve and delete all NAT gateways associated with the VPC
+	describeNatGatewaysInput := &ec2.DescribeNatGatewaysInput{
+		Filter: []*ec2.Filter{
+			{
+				Name:   aws.String("vpc-id"),
+				Values: []*string{&vpcID},
+			},
+		},
+	}
+	natGatewaysOutput, err := ec2Client.DescribeNatGateways(describeNatGatewaysInput)
+	if err != nil {
+		return fmt.Errorf("failed to describe NAT gateways: %w", err)
+	}
+
+	for _, natGateway := range natGatewaysOutput.NatGateways {
+		deleteNatGatewayInput := &ec2.DeleteNatGatewayInput{
+			NatGatewayId: natGateway.NatGatewayId,
+		}
+		_, err := ec2Client.DeleteNatGateway(deleteNatGatewayInput)
+		if err != nil {
+			return fmt.Errorf("failed to delete NAT gateway %s: %w", *natGateway.NatGatewayId, err)
+		}
+		log.Printf("Deleted NAT Gateway with ID: %s", *natGateway.NatGatewayId)
 	}
 	// Retrieve and delete all subnets associated with the VPC
 	describeSubnetsInput := &ec2.DescribeSubnetsInput{
@@ -261,6 +317,90 @@ func DeleteVPC(region string, vpcID string) error {
 		}
 		log.Printf("Deleted Subnet with ID: %s", *subnet.SubnetId)
 	}
+	// Retrieve and delete all route tables associated with the VPC
+	describeRouteTablesInput := &ec2.DescribeRouteTablesInput{
+		Filters: []*ec2.Filter{
+			{
+				Name:   aws.String("vpc-id"),
+				Values: []*string{&vpcID},
+			},
+		},
+	}
+	routeTablesOutput, err := ec2Client.DescribeRouteTables(describeRouteTablesInput)
+	if err != nil {
+		return fmt.Errorf("failed to describe route tables: %w", err)
+	}
+
+	for _, routeTable := range routeTablesOutput.RouteTables {
+		// Skip the main route table
+		if routeTable.Associations != nil {
+			for _, assoc := range routeTable.Associations {
+				if assoc.Main != nil && *assoc.Main {
+					continue
+				}
+			}
+		}
+
+		// Delete default route (0.0.0.0/0) from the route table
+		if routeTable.Routes != nil {
+			for _, route := range routeTable.Routes {
+				if route.DestinationCidrBlock != nil && *route.DestinationCidrBlock == "0.0.0.0/0" {
+					deleteRouteInput := &ec2.DeleteRouteInput{
+						RouteTableId:         routeTable.RouteTableId,
+						DestinationCidrBlock: route.DestinationCidrBlock,
+					}
+					_, err := ec2Client.DeleteRoute(deleteRouteInput)
+					if err != nil {
+						return fmt.Errorf("failed to delete default route from route table %s: %w", *routeTable.RouteTableId, err)
+					}
+					log.Printf("Deleted default route (0.0.0.0/0) from Route Table with ID: %s", *routeTable.RouteTableId)
+				}
+			}
+		}
+
+		deleteRouteTableInput := &ec2.DeleteRouteTableInput{
+			RouteTableId: routeTable.RouteTableId,
+		}
+		_, err := ec2Client.DeleteRouteTable(deleteRouteTableInput)
+		if err != nil {
+			// Might be an error if the route table is default route table
+			continue
+		}
+		log.Printf("Deleted Route Table with ID: %s", *routeTable.RouteTableId)
+	}
+
+	// Retrieve and delete all security groups associated with the VPC
+	describeSecurityGroupsInput := &ec2.DescribeSecurityGroupsInput{
+		Filters: []*ec2.Filter{
+			{
+				Name:   aws.String("vpc-id"),
+				Values: []*string{&vpcID},
+			},
+		},
+	}
+	securityGroupsOutput, err := ec2Client.DescribeSecurityGroups(describeSecurityGroupsInput)
+	if err != nil {
+		return fmt.Errorf("failed to describe security groups: %w", err)
+	}
+
+	for _, securityGroup := range securityGroupsOutput.SecurityGroups {
+		// Skip the default security group
+		if *securityGroup.GroupName == "default" {
+			continue
+		}
+
+		deleteSecurityGroupInput := &ec2.DeleteSecurityGroupInput{
+			GroupId: securityGroup.GroupId,
+		}
+		_, err := ec2Client.DeleteSecurityGroup(deleteSecurityGroupInput)
+		if err != nil {
+			return fmt.Errorf("failed to delete security group %s: %w", *securityGroup.GroupId, err)
+		}
+		log.Printf("Deleted Security Group with ID: %s", *securityGroup.GroupId)
+	}
+	deleteVpcInput := &ec2.DeleteVpcInput{
+		VpcId: aws.String(vpcID),
+	}
 	_, err = ec2Client.DeleteVpc(deleteVpcInput)
 	if err != nil {
 		return fmt.Errorf("failed to delete VPC: %w", err)
@@ -269,7 +409,7 @@ func DeleteVPC(region string, vpcID string) error {
 	return nil
 }
 
-func CreateJumpHost(vpcID string, subnetID string, region string) (string, string, string, error) {
+func CreateJumpHost(vpcID string, subnetID string, region string, ipCIDRAllowlist []string) (string, string, string, error) {
 	sess, err := session.NewSession(&aws.Config{Region: aws.String(region)})
 	if err != nil {
 		return "", "", "", fmt.Errorf("failed to create session: %w", err)
@@ -293,7 +433,7 @@ func CreateJumpHost(vpcID string, subnetID string, region string) (string, strin
 	var publicIP string
 	if socksProxy := os.Getenv("SOCKS_PROXY"); socksProxy != "" {
 		// Use SOCKS_PROXY to get the public IP address
-		fmt.Printf("Using SOCKS_PROXY: %s\n", socksProxy)
+		log.Printf("Using SOCKS_PROXY: %s\n", socksProxy)
 		cmd := exec.Command("curl", "--socks5", socksProxy, "https://checkip.amazonaws.com")
 		output, err := cmd.Output()
 		if err != nil {
@@ -316,14 +456,21 @@ func CreateJumpHost(vpcID string, subnetID string, region string) (string, strin
 	}
 
 	myCIDR := fmt.Sprintf("%s/32", publicIP) // Allow only this machine's IP
-	fmt.Printf("Public IP of the machine running the test: %s\n", myCIDR)
+	log.Printf("Public IP of the machine running the test: %s\n", myCIDR)
+
+	ipAllowRanges := []*ec2.IpRange{{CidrIp: aws.String(myCIDR)}}
+	for _, ip := range ipCIDRAllowlist {
+		if ip != "" {
+			ipAllowRanges = append(ipAllowRanges, &ec2.IpRange{CidrIp: aws.String(ip)})
+		}
+	}
 
 	authorizeIngressInput := &ec2.AuthorizeSecurityGroupIngressInput{
 		GroupId: aws.String(securityGroupID),
 		IpPermissions: []*ec2.IpPermission{
 			{
-				IpProtocol: aws.String("-1"),                             // -1 allows all protocols
-				IpRanges:   []*ec2.IpRange{{CidrIp: aws.String(myCIDR)}}, // Allow traffic from this IP
+				IpProtocol: aws.String("-1"), // -1 allows all protocols
+				IpRanges:   ipAllowRanges,    // Allow traffic from this IP
 			},
 		},
 	}
@@ -387,7 +534,7 @@ func CreateJumpHost(vpcID string, subnetID string, region string) (string, strin
 		time.Sleep(10 * time.Second)
 		describeInstancesOutput, err := ec2Client.DescribeInstances(describeInstancesInput)
 		if err != nil {
-			fmt.Printf("Failed to describe instance: %v, continue...\n", err)
+			log.Printf("Failed to describe instance: %v, continue...\n", err)
 			continue
 		}
 
@@ -403,20 +550,40 @@ func CreateJumpHost(vpcID string, subnetID string, region string) (string, strin
 		return instanceID, privateKey, jumphostIP, fmt.Errorf("failed to retrieve public IP address of the jump host instance")
 	}
 
+	// Write the private key to a temporary file
+	privateKeyFile, err := os.CreateTemp("", "jumphost-key-*.pem")
+	defer os.Remove(privateKeyFile.Name()) // Clean up the temporary file after use
+
+	if err != nil {
+		return instanceID, privateKey, jumphostIP, fmt.Errorf("failed to create temporary private key file: %w", err)
+	}
+	defer privateKeyFile.Close()
+
+	if _, err := privateKeyFile.WriteString(privateKey); err != nil {
+		return instanceID, privateKey, jumphostIP, fmt.Errorf("failed to write private key to temporary file: %w", err)
+	}
+
+	// Set the file permissions to read-only for the owner
+	if err := os.Chmod(privateKeyFile.Name(), 0400); err != nil {
+		return instanceID, privateKey, jumphostIP, fmt.Errorf("failed to set permissions on temporary private key file: %w", err)
+	}
+	log.Printf("Private key written to temporary file: %s", privateKeyFile.Name())
+
 	// Wait for the instance to be reachable via SSH
 	var reachable bool = false
 	for range 10 {
+		time.Sleep(10 * time.Second)
 		var sshCmd *exec.Cmd
 		if socksProxy := os.Getenv("SOCKS_PROXY"); socksProxy != "" {
-			sshCmd = exec.Command("ssh", "-T", "-o", fmt.Sprintf("ProxyCommand=nc -x %s %%h %%p", socksProxy), "-o", "StrictHostKeyChecking=no", "-i", "/dev/stdin", fmt.Sprintf("ubuntu@%s", jumphostIP))
+			sshCmd = exec.Command("ssh", "-T", "-o", fmt.Sprintf("ProxyCommand=nc -x %s %%h %%p", socksProxy), "-o", "StrictHostKeyChecking=no", "-i", privateKeyFile.Name(), fmt.Sprintf("ubuntu@%s", jumphostIP), "true")
 		} else {
-			sshCmd = exec.Command("ssh", "-T", "-o", "StrictHostKeyChecking=no", "-i", "/dev/stdin", fmt.Sprintf("ubuntu@%s", jumphostIP))
+			sshCmd = exec.Command("ssh", "-T", "-o", "StrictHostKeyChecking=no", "-i", privateKeyFile.Name(), fmt.Sprintf("ubuntu@%s", jumphostIP), "true")
 		}
-		sshCmd.Stdin = strings.NewReader(privateKey)
-		if err := sshCmd.Run(); err != nil {
-			continue
+		if err := sshCmd.Run(); err == nil {
+			reachable = true
+			break
 		}
-		reachable = true
+
 	}
 	if !reachable {
 		return instanceID, privateKey, jumphostIP, fmt.Errorf("jump host instance is not reachable via SSH at %s", jumphostIP)
@@ -460,6 +627,28 @@ func DeleteJumpHost(instanceID string, region string) error {
 	if err != nil {
 		return fmt.Errorf("failed to terminate jump host instance: %w", err)
 	}
+
+	// Wait for the instance to be terminated
+	describeInstancesInput := &ec2.DescribeInstancesInput{
+		InstanceIds: []*string{&instanceID},
+	}
+
+	for range 20 {
+		log.Printf("Waiting for Jump Host Instance to be terminated...")
+		time.Sleep(10 * time.Second)
+		describeInstancesOutput, err := ec2Client.DescribeInstances(describeInstancesInput)
+		if err != nil {
+			log.Printf("Failed to describe instance: %v, continue...\n", err)
+			continue
+		}
+
+		instance := describeInstancesOutput.Reservations[0].Instances[0]
+		if *instance.State.Name == ec2.InstanceStateNameTerminated {
+			log.Printf("Jump Host Instance with ID %s has been terminated", instanceID)
+			break
+		}
+	}
+
 	log.Printf("Terminated Jump Host Instance with ID: %s", instanceID)
 
 	return nil
@@ -468,6 +657,7 @@ func DeleteJumpHost(instanceID string, region string) error {
 func StartSshuttle(jumphostIP string, jumphostKey string, remoteCIDRBlock string) error {
 	// Create a temporary file for the private key
 	privateKeyFile, err := os.CreateTemp("", "jumphost-key-*.pem")
+	defer os.Remove(privateKeyFile.Name()) // Clean up the temporary file after use
 	if err != nil {
 		return fmt.Errorf("failed to create temporary private key file: %w", err)
 	}
@@ -478,7 +668,7 @@ func StartSshuttle(jumphostIP string, jumphostKey string, remoteCIDRBlock string
 		return fmt.Errorf("failed to close temporary private key file: %w", err)
 	}
 	// Set the file permissions to read/write for the owner only
-	if err := os.Chmod(privateKeyFile.Name(), 0600); err != nil {
+	if err := os.Chmod(privateKeyFile.Name(), 0400); err != nil {
 		return fmt.Errorf("failed to set permissions on temporary private key file: %w", err)
 	}
 	// Construct the sshuttle command
@@ -488,11 +678,21 @@ func StartSshuttle(jumphostIP string, jumphostKey string, remoteCIDRBlock string
 	} else {
 		cmd = exec.Command("sshuttle", "--pidfile", "/tmp/sshuttle.pid", "-D", "-r", fmt.Sprintf("ubuntu@%s", jumphostIP), "--ssh-cmd", fmt.Sprintf("ssh -i %s -o StrictHostKeyChecking=no", privateKeyFile.Name()), remoteCIDRBlock)
 	}
-	if err := cmd.Start(); err != nil {
+	log.Printf("Starting sshuttle command: %s", cmd.String())
+
+	// It will actually run in the background due to the -D flag
+	// Use /tmp/sshuttle.pid to track the process
+	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to start sshuttle command: %w", err)
 	}
-
-	// We will let the sshuttle process run in the background.
+	time.Sleep(5 * time.Second) // Wait for sshuttle to establish the connection
+	// Print the PID of the sshuttle process
+	pid, err := os.ReadFile("/tmp/sshuttle.pid")
+	if err != nil {
+		log.Printf("Failed to read sshuttle PID file: %v", err)
+	} else {
+		log.Printf("sshuttle is running with PID: %s", strings.TrimSpace(string(pid)))
+	}
 	return nil
 }
 
@@ -501,7 +701,8 @@ func StopSshuttle() error {
 	pidFile := "/tmp/sshuttle.pid"
 	pidData, err := os.ReadFile(pidFile)
 	if err != nil {
-		return fmt.Errorf("failed to read sshuttle PID file: %w", err)
+		// Failed to read it, assume the process is not running
+		return nil
 	}
 
 	// Convert the PID to an integer
@@ -509,11 +710,6 @@ func StopSshuttle() error {
 	cmd := exec.Command("kill", pid)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to terminate sshuttle process with PID %s: %w", pid, err)
-	}
-
-	// Remove the PID file
-	if err := os.Remove(pidFile); err != nil {
-		return fmt.Errorf("failed to remove sshuttle PID file: %w", err)
 	}
 
 	log.Println("Stopped sshuttle successfully")
