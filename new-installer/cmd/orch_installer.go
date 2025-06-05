@@ -23,7 +23,6 @@ import (
 const DefaultTimeout = 60 * time.Minute
 
 func main() {
-
 	// Initialize the command line interface
 	rootCmd := &cobra.Command{
 		Use:   "orch-installer",
