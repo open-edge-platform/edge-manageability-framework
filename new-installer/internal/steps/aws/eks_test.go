@@ -43,7 +43,7 @@ func (s *EKSStepTest) SetupTest() {
 	s.logDir = filepath.Join(rootPath, ".logs")
 	internal.InitLogger("debug", s.logDir)
 	s.config.AWS.Region = "us-west-2"
-	s.config.Global.Scale = config.Scale10
+	s.config.Global.Scale = config.Scale50
 	s.config.Global.OrchName = "test"
 	s.config.AWS.CacheRegistry = "test-cache-registry"
 	s.runtimeState.DeploymentID = s.randomText

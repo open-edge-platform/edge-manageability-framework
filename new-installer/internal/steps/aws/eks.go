@@ -170,7 +170,7 @@ type EKSScaleSetup struct {
 
 func mapScaleToAWSEKSSetup(scale config.Scale) EKSScaleSetup {
 	switch scale {
-	case config.Scale10:
+	case config.Scale50:
 		return EKSScaleSetup{
 			General: EKSNodeGroup{
 				DesiredSize:  3,
