@@ -284,7 +284,7 @@ func validateSmtpPort(s string) error {
 	}
 	i, err := strconv.Atoi(s)
 	if err != nil {
-		return fmt.Errorf("cannot convert %s to integer: %s", s, err)
+		return fmt.Errorf("cannot convert %s to integer: %w", s, err)
 	}
 	if i < 1 || i > 65535 {
 		return fmt.Errorf("SMTP port must be between 1 and 65535")
@@ -345,7 +345,7 @@ func validateJumpHostPrivKeyPath(s string) error {
 	}
 	s = os.ExpandEnv(s)
 	if _, err := os.Stat(s); err != nil {
-		return fmt.Errorf("jump host private key file does not exist: %v", err)
+		return fmt.Errorf("jump host private key file does not exist: %w", err)
 	}
 	// TODO: check if the file content is a valid private key
 	return nil

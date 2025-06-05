@@ -6,6 +6,7 @@ package main
 
 import (
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
@@ -112,7 +113,7 @@ func (s *OrchConfigValidationTest) TestValidateOrchName() {
 		s.Run(tt.name, func() {
 			err := validateOrchName(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 				if tt.errMsg != "" {
 					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
 				}
@@ -208,7 +209,7 @@ func (s *OrchConfigValidationTest) TestValidateParentDomain() {
 		s.Run(tt.name, func() {
 			err := validateParentDomain(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 				if tt.errMsg != "" {
 					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
 				}
@@ -315,7 +316,7 @@ func (s *OrchConfigValidationTest) TestValidateAdminEmail() {
 		s.Run(tt.name, func() {
 			err := validateAdminEmail(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 				if tt.errMsg != "" {
 					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
 				}
@@ -402,7 +403,7 @@ func (s *OrchConfigValidationTest) TestValidateAwsRegion() {
 		s.Run(tt.name, func() {
 			err := validateAwsRegion(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 				if tt.errMsg != "" {
 					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
 				}
@@ -450,7 +451,7 @@ func (s *OrchConfigValidationTest) TestValidateAwsCustomTag() {
 		s.Run(tt.name, func() {
 			err := validateAwsCustomTag(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 			} else {
 				s.NoError(err, "expected no error")
 			}
@@ -505,7 +506,7 @@ func (s *OrchConfigValidationTest) TestValidateCacheRegistry() {
 		s.Run(tt.name, func() {
 			err := validateCacheRegistry(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 			} else {
 				s.NoError(err, "expected no error")
 			}
@@ -565,7 +566,7 @@ func (s *OrchConfigValidationTest) TestValidateAwsJumpHostWhitelist() {
 		s.Run(tt.name, func() {
 			err := validateAwsJumpHostWhitelist(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 			} else {
 				s.NoError(err, "expected no error")
 			}
@@ -643,7 +644,7 @@ func (s *OrchConfigValidationTest) TestValidateAwsVpcId() {
 		s.Run(tt.name, func() {
 			err := validateAwsVpcId(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 				if tt.errMsg != "" {
 					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
 				}
@@ -718,7 +719,7 @@ func (s *OrchConfigValidationTest) TestValidateAwsEksDnsIp() {
 		s.Run(tt.name, func() {
 			err := validateAwsEksDnsIp(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 				if tt.errMsg != "" {
 					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
 				}
@@ -776,7 +777,7 @@ func (s *OrchConfigValidationTest) TestValidateProxy() {
 		s.Run(tt.name, func() {
 			err := validateProxy(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 			} else {
 				s.NoError(err, "expected no error")
 			}
@@ -910,7 +911,7 @@ func (s *OrchConfigValidationTest) TestValidateNoProxy() {
 		s.Run(tt.name, func() {
 			err := validateNoProxy(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 				if tt.errMsg != "" {
 					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
 				}
@@ -983,7 +984,7 @@ func (s *OrchConfigValidationTest) TestValidateSmtpUrl() {
 		s.Run(tt.name, func() {
 			err := validateSmtpUrl(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 			} else {
 				s.NoError(err, "expected no error")
 			}
@@ -1066,7 +1067,7 @@ func (s *OrchConfigValidationTest) TestValidateSmtpPort() {
 		s.Run(tt.name, func() {
 			err := validateSmtpPort(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 				if tt.errMsg != "" {
 					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
 				}
@@ -1139,7 +1140,7 @@ func (s *OrchConfigValidationTest) TestValidateSmtpFrom() {
 		s.Run(tt.name, func() {
 			err := validateSmtpFrom(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 			} else {
 				s.NoError(err, "expected no error")
 			}
@@ -1263,7 +1264,7 @@ func (s *OrchConfigValidationTest) TestValidateIP() {
 		s.Run(tt.name, func() {
 			err := validateIP(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 				if tt.errMsg != "" {
 					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
 				}
@@ -1277,7 +1278,7 @@ func (s *OrchConfigValidationTest) TestValidateIP() {
 		s.Run(tt.name, func() {
 			err := validateOptionalIP(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 				if tt.errMsg != "" {
 					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
 				}
@@ -1370,7 +1371,7 @@ func (s *OrchConfigValidationTest) TestValidateSimpleMode() {
 		s.Run(tt.name, func() {
 			err := validateSimpleMode(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 				if tt.errMsg != "" {
 					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
 				}
@@ -1418,7 +1419,7 @@ func (s *OrchConfigValidationTest) TestValidateAdvancedMode() {
 		s.Run(tt.name, func() {
 			err := validateAdvancedMode(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 			} else {
 				s.NoError(err, "expected no error")
 			}
@@ -1510,7 +1511,7 @@ func (s *OrchConfigValidationTest) TestValidateAwsEKSIAMRoles() {
 		s.Run(tt.name, func() {
 			err := validateAwsEKSIAMRoles(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 				if tt.errMsg != "" {
 					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
 				}
@@ -1523,7 +1524,7 @@ func (s *OrchConfigValidationTest) TestValidateAwsEKSIAMRoles() {
 
 func (s *OrchConfigValidationTest) TestValidateJumpHostPrivKeyPath() {
 	tmpFile, err := os.CreateTemp("", "privkey")
-	s.NoError(err, "Failed to create temp file")
+	s.Require().NoError(err, "Failed to create temp file")
 	defer os.Remove(tmpFile.Name())
 
 	tests := []struct {
@@ -1582,12 +1583,187 @@ func (s *OrchConfigValidationTest) TestValidateJumpHostPrivKeyPath() {
 			}
 			err := validateJumpHostPrivKeyPath(path)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 				if tt.errMsg != "" {
 					s.Contains(err.Error(), tt.errMsg, "error message mismatch")
 				}
 			} else {
 				s.NoError(err, "expected no error")
+			}
+		})
+	}
+}
+
+func TestValidateAwsEKSIAMRoles(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			name:    "empty string",
+			input:   "",
+			wantErr: false,
+		},
+		{
+			name:    "single valid IAM role",
+			input:   "arn:aws:iam::123456789012:role/MyRole",
+			wantErr: false,
+		},
+		{
+			name:    "multiple valid IAM roles",
+			input:   "arn:aws:iam::123456789012:role/MyRole,arn:aws:iam::210987654321:role/AnotherRole",
+			wantErr: false,
+		},
+		{
+			name:    "valid IAM role with special chars",
+			input:   "arn:aws:iam::123456789012:role/My-Role_1+=,.@",
+			wantErr: true,
+		},
+		{
+			name:    "valid IAM roles with spaces",
+			input:   " arn:aws:iam::123456789012:role/MyRole , arn:aws:iam::210987654321:role/AnotherRole ",
+			wantErr: false,
+		},
+		{
+			name:    "invalid IAM role missing arn prefix",
+			input:   "aws:iam::123456789012:role/MyRole",
+			wantErr: true,
+			errMsg:  "invalid IAM role ARN: aws:iam::123456789012:role/MyRole",
+		},
+		{
+			name:    "invalid IAM role missing role name",
+			input:   "arn:aws:iam::123456789012:role/",
+			wantErr: true,
+			errMsg:  "invalid IAM role ARN: arn:aws:iam::123456789012:role/",
+		},
+		{
+			name:    "invalid IAM role with short account id",
+			input:   "arn:aws:iam::1234567890:role/MyRole",
+			wantErr: true,
+			errMsg:  "invalid IAM role ARN: arn:aws:iam::1234567890:role/MyRole",
+		},
+		{
+			name:    "invalid IAM role with extra fields",
+			input:   "arn:aws:iam::123456789012:role/MyRole:extra",
+			wantErr: true,
+			errMsg:  "invalid IAM role ARN: arn:aws:iam::123456789012:role/MyRole:extra",
+		},
+		{
+			name:    "invalid IAM role with invalid chars",
+			input:   "arn:aws:iam::123456789012:role/My Role!",
+			wantErr: true,
+			errMsg:  "invalid IAM role ARN: arn:aws:iam::123456789012:role/My Role!",
+		},
+		{
+			name:    "multiple roles, one invalid",
+			input:   "arn:aws:iam::123456789012:role/MyRole,invalid-arn",
+			wantErr: true,
+			errMsg:  "invalid IAM role ARN: invalid-arn",
+		},
+		{
+			name:    "only spaces between commas",
+			input:   "arn:aws:iam::123456789012:role/MyRole, ,arn:aws:iam::210987654321:role/AnotherRole",
+			wantErr: false,
+		},
+		{
+			name:    "empty entry between commas",
+			input:   "arn:aws:iam::123456789012:role/MyRole,,arn:aws:iam::210987654321:role/AnotherRole",
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateAwsEKSIAMRoles(tt.input)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("expected error, got nil")
+				} else if tt.errMsg != "" && err.Error() != tt.errMsg {
+					t.Errorf("expected error message %q, got %q", tt.errMsg, err.Error())
+				}
+			} else {
+				if err != nil {
+					t.Errorf("expected no error, got %v", err)
+				}
+			}
+		})
+	}
+}
+
+func TestValidateJumpHostPrivKeyPath(t *testing.T) {
+	tmpFile, err := os.CreateTemp(t.TempDir(), "privkey")
+	if err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	tests := []struct {
+		name    string
+		input   string
+		setup   func() string
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			name:    "empty string",
+			input:   "",
+			wantErr: false,
+		},
+		{
+			name: "existing file",
+			setup: func() string {
+				return tmpFile.Name()
+			},
+			wantErr: false,
+		},
+		{
+			name: "non-existent file",
+			setup: func() string {
+				return "/tmp/this_file_should_not_exist_123456789"
+			},
+			wantErr: true,
+			errMsg:  "jump host private key file does not exist",
+		},
+		{
+			name: "env var expansion to existing file",
+			setup: func() string {
+				t.Setenv("PRIVKEY_PATH", tmpFile.Name())
+				return "$PRIVKEY_PATH"
+			},
+			wantErr: false,
+		},
+		{
+			name: "env var expansion to non-existent file",
+			setup: func() string {
+				t.Setenv("PRIVKEY_PATH", "/tmp/this_file_should_not_exist_987654321")
+				return "$PRIVKEY_PATH"
+			},
+			wantErr: true,
+			errMsg:  "jump host private key file does not exist",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var path string
+			if tt.setup != nil {
+				path = tt.setup()
+			} else {
+				path = tt.input
+			}
+			err := validateJumpHostPrivKeyPath(path)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("expected error, got nil")
+				} else if tt.errMsg != "" && !strings.Contains(err.Error(), tt.errMsg) {
+					t.Errorf("expected error message to contain %q, got %q", tt.errMsg, err.Error())
+				}
+			} else {
+				if err != nil {
+					t.Errorf("expected no error, got %v", err)
+				}
 			}
 		})
 	}

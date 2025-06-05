@@ -439,7 +439,8 @@ func simpleMode() *huh.Group {
 	slices.SortFunc(packageList, func(a, b struct {
 		Name    string
 		Package config.OrchPackage
-	}) int {
+	},
+	) int {
 		return strings.Compare(a.Package.Name, b.Package.Name)
 	})
 	for _, item := range packageList {
@@ -480,7 +481,8 @@ func advancedMode() *huh.Group {
 	slices.SortFunc(appList, func(a, b struct {
 		Name string
 		App  config.OrchApp
-	}) int {
+	},
+	) int {
 		return strings.Compare(a.App.Name, b.App.Name)
 	})
 	for _, item := range appList {
