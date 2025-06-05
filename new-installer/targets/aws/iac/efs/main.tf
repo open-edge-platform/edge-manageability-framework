@@ -2,11 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-
-data "aws_eks_cluster" "eks" {
-  name = var.cluster_name
-}
-
 data "aws_vpc" "main" {
   id = var.vpc_id
 }
@@ -16,7 +11,7 @@ data "aws_caller_identity" "current" {}
 locals {
   account_id = data.aws_caller_identity.current.account_id
   efs_policy_source = "https://raw.githubusercontent.com/kubernetes-sigs/aws-efs-csi-driver/v1.5.4/docs/iam-policy-example.json"
-  eks_issuer = replace(data.aws_eks_cluster.eks.identity[0].oidc[0].issuer, "https://", "")
+  eks_issuer        = replace(var.eks_oidc_issuer, "https://", "")
   efs_throughput_mode = "elastic"
   efs_encryption = true
   transition_to_ia = "AFTER_7_DAYS"
@@ -81,7 +76,7 @@ resource "aws_security_group_rule" "allow_nfs" {
   from_port         = 2049
   to_port           = 2049
   protocol          = "tcp"
-  cidr_blocks       = data.aws_vpc.main.cidr_block
+  cidr_blocks       = [data.aws_vpc.main.cidr_block]
   security_group_id = aws_security_group.allow_nfs.id
   description       = "Allow NFS traffic from VPC"
 

@@ -10,6 +10,7 @@ const (
 	OrchInstallerErrorCodeUnknown OrchInstallerErrorCode = iota
 	OrchInstallerErrorCodeInternal
 	OrchInstallerErrorCodeInvalidArgument
+	OrchInstallerErrorCodeInvalidRuntimeState
 	OrchInstallerErrorCodeTerraform
 )
 
