@@ -45,7 +45,10 @@ func (s *VPCStepTest) SetupTest() {
 	}
 	s.randomText = strings.ToLower(rand.Text()[0:8])
 	s.logDir = filepath.Join(rootPath, ".logs")
-	internal.InitLogger("debug", s.logDir)
+	if err := internal.InitLogger("debug", s.logDir); err != nil {
+		s.NoError(err)
+		return
+	}
 	s.config.AWS.Region = "us-west-2"
 	s.config.Global.OrchName = "test"
 	s.runtimeState.DeploymentID = s.randomText
@@ -80,7 +83,7 @@ func (s *VPCStepTest) TestInstallAndUninstallVPC() {
 		return
 	}
 
-	s.Equal(rs.VPCID, "vpc-12345678")
+	s.Equal("vpc-12345678", rs.VPCID)
 	s.ElementsMatch([]string{
 		"subnet-1",
 		"subnet-2",
