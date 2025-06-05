@@ -17,6 +17,7 @@ import (
 
 	"github.com/gruntwork-io/terratest/modules/aws"
 	"github.com/gruntwork-io/terratest/modules/terraform"
+	steps_aws "github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps/aws"
 	"github.com/stretchr/testify/suite"
 	"golang.org/x/crypto/ssh"
 )
@@ -33,27 +34,6 @@ func TestVPCTestSuite(t *testing.T) {
 	suite.Run(t, new(VPCTestSuite))
 }
 
-type AWSVPCVariables struct {
-	Region                 string                  `json:"region" yaml:"region"`
-	Name                   string                  `json:"name" yaml:"name"`
-	CidrBlock              string                  `json:"cidr_block" yaml:"cidr_block"`
-	EnableDnsHostnames     bool                    `json:"enable_dns_hostnames" yaml:"enable_dns_hostnames"`
-	EnableDnsSupport       bool                    `json:"enable_dns_support" yaml:"enable_dns_support"`
-	PrivateSubnets         map[string]AWSVPCSubnet `json:"private_subnets" yaml:"private_subnets"`
-	PublicSubnets          map[string]AWSVPCSubnet `json:"public_subnets" yaml:"public_subnets"`
-	EndpointSGName         string                  `json:"endpoint_sg_name" yaml:"endpoint_sg_name"`
-	JumphostIPAllowList    []string                `json:"jumphost_ip_allow_list" yaml:"jumphost_ip_allow_list"`
-	JumphostInstanceSSHKey string                  `json:"jumphost_instance_ssh_key_pub" yaml:"jumphost_instance_ssh_key_pub"`
-	JumphostSubnet         string                  `json:"jumphost_subnet" yaml:"jumphost_subnet"`
-	Production             bool                    `json:"production" yaml:"production"`
-	CustomerTag            string                  `json:"customer_tag" yaml:"customer_tag"`
-}
-
-type AWSVPCSubnet struct {
-	Az        string `json:"az" yaml:"az"`
-	CidrBlock string `json:"cidr_block" yaml:"cidr_block"`
-}
-
 func (s *VPCTestSuite) TestApplyingModule() {
 	// Bucket for VPC state
 	randomPostfix := strings.ToLower(rand.Text()[:8])
@@ -65,19 +45,19 @@ func (s *VPCTestSuite) TestApplyingModule() {
 	}()
 
 	_, publicSSHKey, _ := GenerateSSHKeyPair()
-	variables := AWSVPCVariables{
+	variables := steps_aws.AWSVPCVariables{
 		Region:             DefaultRegion,
 		Name:               "test-vpc-" + randomPostfix,
 		CidrBlock:          "10.250.0.0/16",
 		EnableDnsHostnames: true,
 		EnableDnsSupport:   true,
-		PrivateSubnets: map[string]AWSVPCSubnet{
+		PrivateSubnets: map[string]steps_aws.AWSVPCSubnet{
 			"private-subnet-1": {
 				Az:        "us-west-2a",
 				CidrBlock: "10.250.0.0/22",
 			},
 		},
-		PublicSubnets: map[string]AWSVPCSubnet{
+		PublicSubnets: map[string]steps_aws.AWSVPCSubnet{
 			"public-subnet-1": {
 				Az:        "us-west-2a",
 				CidrBlock: "10.250.4.0/24",

@@ -58,7 +58,7 @@ type AWSVPCVariables struct {
 	PublicSubnets          map[string]AWSVPCSubnet `json:"public_subnets" yaml:"public_subnets"`
 	EndpointSGName         string                  `json:"endpoint_sg_name" yaml:"endpoint_sg_name"`
 	JumphostIPAllowList    []string                `json:"jumphost_ip_allow_list" yaml:"jumphost_ip_allow_list"`
-	JumphostInstanceSshKey string                  `json:"jumphost_instance_ssh_key_pub" yaml:"jumphost_instance_ssh_key_pub"`
+	JumphostInstanceSSHKey string                  `json:"jumphost_instance_ssh_key_pub" yaml:"jumphost_instance_ssh_key_pub"`
 	JumphostSubnet         string                  `json:"jumphost_subnet" yaml:"jumphost_subnet"`
 	Production             bool                    `json:"production" yaml:"production"`
 	CustomerTag            string                  `json:"customer_tag" yaml:"customer_tag"`
@@ -74,7 +74,7 @@ func NewDefaultAWSVPCVariables() AWSVPCVariables {
 		EnableDnsHostnames:     true,
 		EnableDnsSupport:       true,
 		JumphostIPAllowList:    []string{},
-		JumphostInstanceSshKey: "",
+		JumphostInstanceSSHKey: "",
 		Production:             true,
 		CustomerTag:            "",
 
@@ -203,11 +203,11 @@ func (s *AWSVPCStep) ConfigStep(ctx context.Context, config config.OrchInstaller
 				ErrorMsg:  fmt.Sprintf("failed to generate SSH key pair: %v", err),
 			}
 		}
-		s.variables.JumphostInstanceSshKey = publicKey
+		s.variables.JumphostInstanceSSHKey = publicKey
 		runtimeState.JumpHostSSHKeyPrivateKey = privateKey
 		runtimeState.JumpHostSSHKeyPublicKey = publicKey
 	} else {
-		s.variables.JumphostInstanceSshKey = runtimeState.JumpHostSSHKeyPublicKey
+		s.variables.JumphostInstanceSSHKey = runtimeState.JumpHostSSHKeyPublicKey
 	}
 
 	s.variables.CustomerTag = config.AWS.CustomerTag

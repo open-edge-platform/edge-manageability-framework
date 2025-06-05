@@ -119,7 +119,7 @@ func (s *VPCStepTest) expectUtiliyCall(action string) {
 			JumphostIPAllowList: []string{
 				"10.250.0.0/16",
 			},
-			JumphostInstanceSshKey: "foobar",
+			JumphostInstanceSSHKey: "foobar",
 			Production:             true,
 			CustomerTag:            "",
 			EndpointSGName:         s.config.Global.OrchName + "-vpc-ep",
