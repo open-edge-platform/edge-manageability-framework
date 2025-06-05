@@ -342,7 +342,7 @@ func (s *AWSVPCStep) PreStep(ctx context.Context, config config.OrchInstallerCon
 
 	// Need to move Terraform state from old bucket to new bucket:
 	oldVPCBucketKey := fmt.Sprintf("%s/vpc/%s", config.AWS.Region, config.Global.OrchName)
-	err := s.AWSUtility.S3MoveToS3(config.AWS.Region,
+	err := s.AWSUtility.S3CopyToS3(config.AWS.Region,
 		config.AWS.PreviousS3StateBucket,
 		oldVPCBucketKey,
 		config.AWS.Region,

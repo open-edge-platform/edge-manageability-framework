@@ -72,7 +72,7 @@ func (m *MockAWSUtility) GetAvailableZones(region string) ([]string, error) {
 	return nil, args.Error(1)
 }
 
-func (m *MockAWSUtility) S3MoveToS3(srcRegion, srcBucket, srcKey, destRegion, destBucket, destKey string) error {
+func (m *MockAWSUtility) S3CopyToS3(srcRegion, srcBucket, srcKey, destRegion, destBucket, destKey string) error {
 	args := m.Called(srcRegion, srcBucket, srcKey, destRegion, destBucket, destKey)
 	return args.Error(0)
 }
