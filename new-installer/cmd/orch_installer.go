@@ -14,6 +14,7 @@ import (
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/targets/aws"
+	"github.com/open-edge-platform/edge-manageability-framework/installer/targets/onprem"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )
@@ -22,6 +23,7 @@ import (
 const DefaultTimeout = 60 * time.Minute
 
 func main() {
+
 	// Initialize the command line interface
 	rootCmd := &cobra.Command{
 		Use:   "orch-installer",
@@ -127,6 +129,8 @@ func execute(action string, orchConfigFile string, runtimeStateFile string, logD
 	switch orchConfig.Provider {
 	case "aws":
 		stages, err = aws.CreateAWSStages(currentDir, keepGeneratedFiles, &orchConfigReaderWriter)
+	case "onprem":
+		stages, err = onprem.CreateOnPremStages(currentDir, keepGeneratedFiles, &orchConfigReaderWriter)
 	default:
 		logger.Fatalf("error: target environment %s not supported", orchConfig.Provider)
 	}
