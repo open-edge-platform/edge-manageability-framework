@@ -81,6 +81,8 @@ type OrchInstallerConfig struct {
 		VPCID             string   `yaml:"vpcID,omitempty"`
 		ReduceNSTTL       bool     `yaml:"reduceNSTTL,omitempty"` // TODO: do we need this?
 		EKSDNSIP          string   `yaml:"eksDNSIP,omitempty"`    // TODO: do we need this?
+		NodeGroupRole     string   `yaml:"nodegroup_role"`
+		S3Prefix          string   `yaml:"s3_prefix,omitempty"`
 	} `yaml:"aws,omitempty"`
 	Onprem struct {
 		ArgoIP         string `yaml:"argoIP"`
