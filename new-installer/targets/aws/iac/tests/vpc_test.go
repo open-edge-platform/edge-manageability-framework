@@ -124,7 +124,7 @@ func (s *VPCTestSuite) TestApplyingModule() {
 		return
 	}
 	vpc := aws.GetVpcById(s.T(), vpcID, DefaultRegion)
-	s.Equal(*vpc.CidrBlock, "10.250.0.0/16", "VPC CIDR block does not match expected value")
+	s.Equal("10.250.0.0/16", *vpc.CidrBlock, "VPC CIDR block does not match expected value")
 	s.NotEmpty(vpcID, "VPC ID should not be empty")
 	privateSubnets := terraform.OutputMapOfObjects(s.T(), terraformOptions, "private_subnets")
 	privateSubnet, ok := privateSubnets["private-subnet-1"].(map[string]interface{})
@@ -168,7 +168,7 @@ func (s *VPCTestSuite) TestApplyingModule() {
 func GenerateSSHKeyPair() (string, string, error) {
 	privateKey, err := rsa.GenerateKey(rand.Reader, JumphostSSHKeySize)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to generate private key: %v", err)
+		return "", "", fmt.Errorf("failed to generate private key: %w", err)
 	}
 
 	privateKeyBytes := x509.MarshalPKCS1PrivateKey(privateKey)

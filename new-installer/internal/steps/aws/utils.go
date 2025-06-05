@@ -54,7 +54,6 @@ func (*awsUtilityImpl) GetAvailableZones(region string) ([]string, error) {
 			},
 		},
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +64,7 @@ func (*awsUtilityImpl) GetAvailableZones(region string) ([]string, error) {
 	}
 
 	if len(zones) < RequiredAvailabilityZones {
-		return nil, fmt.Errorf("cannot get three AWS availablity zones from region %s", region)
+		return nil, fmt.Errorf("cannot get three AWS availability zones from region %s", region)
 	}
 	return zones, nil
 }
@@ -119,7 +118,7 @@ func (*awsUtilityImpl) S3MoveToS3(srcRegion, srcBucket, srcKey, destRegion, dest
 
 	_, err = s3Client.CopyObject(copyInput)
 	if err != nil {
-		return fmt.Errorf("failed to copy object from %s/%s to %s/%s: %v", srcBucket, srcKey, destBucket, destKey, err)
+		return fmt.Errorf("failed to copy object from %s/%s to %s/%s: %w", srcBucket, srcKey, destBucket, destKey, err)
 	}
 
 	return nil

@@ -18,9 +18,6 @@ type MockTerraformUtility struct {
 func (m *MockTerraformUtility) Run(ctx context.Context, input steps.TerraformUtilityInput) (steps.TerraformUtilityOutput, *internal.OrchInstallerError) {
 	args := m.Called(ctx, input)
 	var err *internal.OrchInstallerError
-	if args.Get(1) == nil {
-		err = nil
-	}
 	if e, ok := args.Get(1).(*internal.OrchInstallerError); ok {
 		err = e
 	} else {

@@ -25,7 +25,7 @@ type AWSS3BackendConfig struct {
 func GetSubnetByID(vpcID string, subnetID string, region string) (*ec2.Subnet, error) {
 	sess, err := session.NewSession(&aws.Config{Region: aws.String(region)})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create session: %v", err)
+		return nil, fmt.Errorf("failed to create session: %w", err)
 	}
 	svc := ec2.New(sess)
 	input := &ec2.DescribeSubnetsInput{
@@ -53,7 +53,7 @@ func GetSubnetByID(vpcID string, subnetID string, region string) (*ec2.Subnet, e
 func GetInternetGatewaysByTags(region string, tags map[string][]string) ([]*ec2.InternetGateway, error) {
 	sess, err := session.NewSession(&aws.Config{Region: aws.String(region)})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create session: %v", err)
+		return nil, fmt.Errorf("failed to create session: %w", err)
 	}
 	svc := ec2.New(sess)
 	filter := make([]*ec2.Filter, 0, len(tags))
@@ -81,7 +81,7 @@ func GetInternetGatewaysByTags(region string, tags map[string][]string) ([]*ec2.
 func GetNATGatewaysByTags(region string, tags map[string][]string) ([]*ec2.NatGateway, error) {
 	sess, err := session.NewSession(&aws.Config{Region: aws.String(region)})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create session: %v", err)
+		return nil, fmt.Errorf("failed to create session: %w", err)
 	}
 	svc := ec2.New(sess)
 	filter := make([]*ec2.Filter, 0, len(tags))
