@@ -672,21 +672,22 @@ mage onPrem:createSreSecrets
 # set_default_smtp_env
 # create_smpt_secrets
 mage onPrem:createSmtpSecrets
-harbor_password=$(mage onPrem:generateHarborPassword)
-keycloak_password=$(mage onPrem:generatePassword)
-postgres_password=$(mage onPrem:generatePassword)
-# create_harbor_secret orch-harbor "$harbor_password"
-mage onPrem:createHarborSecret orch-harbor "$harbor_password"
-#create_harbor_password orch-harbor "$harbor_password"
-mage onPrem:createHarborPassword orch-harbor "$harbor_password"
-# create_keycloak_password orch-platform "$keycloak_password"
-mage onPrem:createKeycloakPassword orch-platform "$keycloak_password"
-# create_postgres_password orch-database "$postgres_password"
-mage onPrem:createPostgresPassword orch-database "$postgres_password"
+mage onPrem:Deploy
+# harbor_password=$(mage onPrem:generateHarborPassword)
+# keycloak_password=$(mage onPrem:generatePassword)
+# postgres_password=$(mage onPrem:generatePassword)
+# # create_harbor_secret orch-harbor "$harbor_password"
+# mage onPrem:createHarborSecret orch-harbor "$harbor_password"
+# #create_harbor_password orch-harbor "$harbor_password"
+# mage onPrem:createHarborPassword orch-harbor "$harbor_password"
+# # create_keycloak_password orch-platform "$keycloak_password"
+# mage onPrem:createKeycloakPassword orch-platform "$keycloak_password"
+# # create_postgres_password orch-database "$postgres_password"
+# mage onPrem:createPostgresPassword orch-database "$postgres_password"
 
 
-# Run orchestrator installer
-mage onPrem:installOrchestrator
+# # Run orchestrator installer
+# mage onPrem:installOrchestrator
 # echo "Installing Edge Orchestrator Packages"
 # eval "sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive ORCH_INSTALLER_PROFILE=$ORCH_INSTALLER_PROFILE GIT_REPOS=$GIT_REPOS apt-get install -y $cwd/$deb_dir_name/onprem-orch-installer_*_amd64.deb"
 # echo "Edge Orchestrator getting installed, wait for SW to deploy... "

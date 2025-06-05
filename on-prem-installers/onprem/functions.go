@@ -97,7 +97,7 @@ stringData:
 }
 
 // Generate a random password with requirements
-func (OnPrem) GeneratePassword() {
+func (OnPrem) GeneratePassword() (string, error){
 	lower := randomChars("abcdefghijklmnopqrstuvwxyz", 1)
 	upper := randomChars("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 1)
 	digit := randomChars("0123456789", 1)
@@ -106,11 +106,12 @@ func (OnPrem) GeneratePassword() {
 	password := lower + upper + digit + special + remaining
 	shuffled := shuffleString(password)
 	fmt.Println(shuffled)
-	// return shuffled, nil
+	return shuffled, nil
+
 }
 
 // GeneratePassword generates a random 100-character alphanumeric password.
-func (OnPrem) GenerateHarborPassword() error {
+func (OnPrem) GenerateHarborPassword() (string, error) {
 	const length = 100
 	const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 	var sb strings.Builder
@@ -118,12 +119,12 @@ func (OnPrem) GenerateHarborPassword() error {
 	for i := 0; i < length; i++ {
 		num, err := rand.Int(rand.Reader, big.NewInt(int64(len(chars))))
 		if err != nil {
-			return err
+			return "", err
 		}
 		sb.WriteByte(chars[num.Int64()])
 	}
 	fmt.Printf("%s\n", sb.String())
-	return nil
+	return sb.String(), nil
 }
 
 // Check if oras is installed
@@ -991,12 +992,6 @@ func (OnPrem) ParseArgs() {
     }
 }
 
-func (OnPrem) Deploy() error {
-
-
-	return nil
-}
-
 func (OnPrem) InstallRKE2() error {
     fmt.Println("Installing RKE2...")
 
@@ -1068,6 +1063,68 @@ func (OnPrem) InstallRKE2() error {
     if err := chmodCmd.Run(); err != nil {
         return fmt.Errorf("failed to chmod kubeconfig: %v", err)
     }
+
+    return nil
+}
+
+
+
+func (OnPrem) Deploy() error {
+    // Sleep 30 seconds to allow ArgoCD to start
+    fmt.Println("Sleeping 30s to allow ArgoCD to start...")
+    time.Sleep(30 * time.Second)
+
+    // Wait for ArgoCD pods to be running
+    argoCDNamespace := os.Getenv("argo_cd_ns")
+    if argoCDNamespace == "" {
+        argoCDNamespace = "argocd"
+    }
+	err := OnPrem{}.WaitForPodsRunning(argoCDNamespace)
+    if err != nil {
+        return fmt.Errorf("failed to wait for ArgoCD pods: %v", err)
+    }
+    fmt.Println("ArgoCD installed")
+
+    // Create namespaces for ArgoCD
+	err = OnPrem{}.CreateNamespaces()
+    if err != nil {
+        return fmt.Errorf("failed to create namespaces: %v", err)
+    }
+
+    // Create SRE secrets
+	err = OnPrem{}.CreateSreSecrets()
+    if err != nil {
+        return fmt.Errorf("failed to create SRE secrets: %v", err)
+    }
+
+    // Create SMTP secrets
+	err = OnPrem{}.CreateSmtpSecrets()
+    if  err != nil {
+        return fmt.Errorf("failed to create SMTP secrets: %v", err)
+    }
+
+
+
+    // Generate passwords
+    harborPassword, err := OnPrem{}.GenerateHarborPassword()
+    if err != nil {
+        return fmt.Errorf("failed to generate Harbor password: %v", err)
+    }
+    keycloakPassword, err := OnPrem{}.GeneratePassword()
+    if err != nil {
+        return fmt.Errorf("failed to generate Keycloak password: %v", err)
+    }
+    postgresPassword, err := OnPrem{}.GeneratePassword()
+    if err != nil {
+        return fmt.Errorf("failed to generate Postgres password: %v", err)
+    }
+
+
+    OnPrem{}.CreateHarborPassword("orch-harbor", harborPassword)
+    OnPrem{}.CreateKeycloakPassword("orch-platform", keycloakPassword)
+    OnPrem{}.CreatePostgresPassword("orch-database", postgresPassword)
+    
+	OnPrem{}.InstallOrchestrator()
 
     return nil
 }
