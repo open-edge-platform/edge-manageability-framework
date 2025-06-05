@@ -70,7 +70,18 @@ func deleteIAMRole(roleName string, region string) error {
 		return fmt.Errorf("failed to create session: %w", err)
 	}
 	iamClient := iam.New(sess)
-
+	rolePolicies := []string{
+		"arn:aws:iam::aws:policy/AmazonEKSClusterPolicy",
+		"arn:aws:iam::aws:policy/AmazonEKSServicePolicy",
+	}
+	fmt.Printf("Detaching policies from IAM role: %s\n", roleName)
+	for _, rolePolicy := range rolePolicies {
+		iamClient.DetachRolePolicy(&iam.DetachRolePolicyInput{
+			RoleName:  aws.String(roleName),
+			PolicyArn: aws.String(rolePolicy),
+		})
+	}
+	fmt.Printf("Deleting IAM role: %s\n", roleName)
 	_, err = iamClient.DeleteRole(&iam.DeleteRoleInput{
 		RoleName: aws.String(roleName),
 	})
