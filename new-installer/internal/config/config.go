@@ -6,26 +6,20 @@ package config
 
 import "os"
 
-type Scale int
-
-const (
-	Scale10    Scale = 10
-	Scale100   Scale = 100
-	Scale500   Scale = 500
-	Scale1000  Scale = 1000
-	Scale10000 Scale = 10000
-)
-
 // Current version
 // Should bump this every time we make backward-compatible config schema changes
-const UserConfigVersion = 2
-const RuntimeStateVersion = 1
+const (
+	UserConfigVersion   = 4
+	RuntimeStateVersion = 2
+)
 
 // Minimal version supported by the installer.
 // This should never be modified. Create `config/v2` when breaking changes are introduced.
 // Files with a version lower than this will require additional migration steps.
-const MinUserConfigVersion = 1
-const MinRuntimeStateVersion = 1
+const (
+	MinUserConfigVersion   = 1
+	MinRuntimeStateVersion = 1
+)
 
 type OrchInstallerRuntimeState struct {
 	Version int `yaml:"version"`
@@ -39,6 +33,10 @@ type OrchInstallerRuntimeState struct {
 	// The directory where the logs will be saved
 	LogDir string `yaml:"logDir"`
 	DryRun bool   `yaml:"dryRun"`
+
+	// Targets (Stage or Steps) with any labels matched in this list will be executed (either install, upgrade or uninstall)
+	// The installer will execute all targets if this is empty.
+	TargetLabels []string `yaml:"targetLabels"`
 
 	// Used for state and o11y bucket prefix. lowercase or digit
 	DeploymentID     string `yaml:"deploymentID"`
@@ -66,20 +64,20 @@ type OrchInstallerConfig struct {
 		Scale        Scale  `yaml:"scale"`
 	} `yaml:"global"`
 	Advanced struct { // TODO: form for this part is not done yet
-		// Targets(Stage or Steps) with any labels matched in this list will be executed(either install, upgrade or uninstall)
-		// The installer will execute all targets if this is empty.
-		TargetLabels         []string `yaml:"targetLabels"`
-		AzureADRefreshToken  string   `yaml:"azureADRefreshToken,omitempty"`
-		AzureADTokenEndpoint string   `yaml:"azureADTokenEndpoint,omitempty"`
+		AzureADRefreshToken  string `yaml:"azureADRefreshToken,omitempty"`
+		AzureADTokenEndpoint string `yaml:"azureADTokenEndpoint,omitempty"`
 	} `yaml:"advanced"`
 	AWS struct {
-		Region            string   `yaml:"region"`
-		CustomerTag       string   `yaml:"customerTag,omitempty"`
-		CacheRegistry     string   `yaml:"cacheRegistry,omitempty"`
-		JumpHostWhitelist []string `yaml:"jumpHostWhitelist,omitempty"`
-		VPCID             string   `yaml:"vpcID,omitempty"`
-		ReduceNSTTL       bool     `yaml:"reduceNSTTL,omitempty"` // TODO: do we need this?
-		EKSDNSIP          string   `yaml:"eksDNSIP,omitempty"`    // TODO: do we need this?
+		Region              string   `yaml:"region"`
+		CustomerTag         string   `yaml:"customerTag,omitempty"`
+		CacheRegistry       string   `yaml:"cacheRegistry,omitempty"`
+		JumpHostWhitelist   []string `yaml:"jumpHostWhitelist,omitempty"`
+		JumpHostIP          string   `yaml:"jumpHostIP,omitempty"`
+		JumpHostPrivKeyPath string   `yaml:"jumpHostPrivKeyPath,omitempty"`
+		VPCID               string   `yaml:"vpcID,omitempty"`
+		ReduceNSTTL         bool     `yaml:"reduceNSTTL,omitempty"` // TODO: do we need this?
+		EKSDNSIP            string   `yaml:"eksDNSIP,omitempty"`    // TODO: do we need this?
+		EKSIAMRoles         []string `yaml:"eksIAMRoles,omitempty"`
 	} `yaml:"aws,omitempty"`
 	Onprem struct {
 		ArgoIP         string `yaml:"argoIP"`
@@ -114,12 +112,12 @@ type OrchInstallerConfig struct {
 	Proxy struct {
 		HTTPProxy    string `yaml:"httpProxy,omitempty"`
 		HTTPSProxy   string `yaml:"httpsProxy,omitempty"`
-		SocksProxy   string `yaml:"socksProxy,omitempty"`
+		SOCKSProxy   string `yaml:"socksProxy,omitempty"`
 		NoProxy      string `yaml:"noProxy,omitempty"`
 		ENHTTPProxy  string `yaml:"enHttpProxy,omitempty"`
 		ENHTTPSProxy string `yaml:"enHttpsProxy,omitempty"`
 		ENFTPProxy   string `yaml:"enFtpProxy,omitempty"`
-		ENSocksProxy string `yaml:"enSocksProxy,omitempty"`
+		ENSOCKSProxy string `yaml:"enSocksProxy,omitempty"`
 		ENNoProxy    string `yaml:"enNoProxy,omitempty"`
 	} `yaml:"proxy,omitempty"`
 }
@@ -152,7 +150,7 @@ func (f *FileBaseOrchConfigReaderWriter) WriteOrchConfig(orchConfig OrchInstalle
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(f.OrchConfigFilePath, orchConfigYaml, 0644)
+	return os.WriteFile(f.OrchConfigFilePath, orchConfigYaml, 0o644)
 }
 
 func (f *FileBaseOrchConfigReaderWriter) ReadOrchConfig() (OrchInstallerConfig, error) {
@@ -173,7 +171,7 @@ func (f *FileBaseOrchConfigReaderWriter) WriteRuntimeState(runtimeState OrchInst
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(f.RuntimeStateFilePath, runtimeStateYaml, 0644)
+	return os.WriteFile(f.RuntimeStateFilePath, runtimeStateYaml, 0o644)
 }
 
 func (f *FileBaseOrchConfigReaderWriter) ReadRuntimeState() (OrchInstallerRuntimeState, error) {
