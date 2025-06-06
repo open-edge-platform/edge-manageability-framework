@@ -139,6 +139,10 @@ func CreateVPC(region string, name string) (string, []string, error) {
 						Key:   aws.String("Name"),
 						Value: aws.String(name),
 					},
+					{
+						Key:   aws.String("CustomerTag"),
+						Value: aws.String("test-customer"),
+					},
 				},
 			},
 		},
@@ -151,7 +155,23 @@ func CreateVPC(region string, name string) (string, []string, error) {
 	log.Printf("Created VPC with ID: %s", vpcID)
 
 	// Create Internet Gateway
-	createInternetGatewayInput := &ec2.CreateInternetGatewayInput{}
+	createInternetGatewayInput := &ec2.CreateInternetGatewayInput{
+		TagSpecifications: []*ec2.TagSpecification{
+			{
+				ResourceType: aws.String(ec2.ResourceTypeInternetGateway),
+				Tags: []*ec2.Tag{
+					{
+						Key:   aws.String("Name"),
+						Value: aws.String(fmt.Sprintf("%s-igw", name)),
+					},
+					{
+						Key:   aws.String("CustomerTag"),
+						Value: aws.String("test-customer"),
+					},
+				},
+			},
+		},
+	}
 	igwOutput, err := ec2Client.CreateInternetGateway(createInternetGatewayInput)
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to create Internet Gateway: %w", err)
@@ -179,6 +199,21 @@ func CreateVPC(region string, name string) (string, []string, error) {
 			CidrBlock:        aws.String(cidrBlock),
 			VpcId:            aws.String(vpcID),
 			AvailabilityZone: aws.String(region + zone),
+			TagSpecifications: []*ec2.TagSpecification{
+				{
+					ResourceType: aws.String(ec2.ResourceTypeSubnet),
+					Tags: []*ec2.Tag{
+						{
+							Key:   aws.String("Name"),
+							Value: aws.String(fmt.Sprintf("%s-subnet-%s", name, zone)),
+						},
+						{
+							Key:   aws.String("CustomerTag"),
+							Value: aws.String("test-customer"),
+						},
+					},
+				},
+			},
 		}
 		subnetOutput, err := ec2Client.CreateSubnet(createSubnetInput)
 		if err != nil {
@@ -192,6 +227,21 @@ func CreateVPC(region string, name string) (string, []string, error) {
 	// Create Route Table
 	createRouteTableInput := &ec2.CreateRouteTableInput{
 		VpcId: aws.String(vpcID),
+		TagSpecifications: []*ec2.TagSpecification{
+			{
+				ResourceType: aws.String(ec2.ResourceTypeRouteTable),
+				Tags: []*ec2.Tag{
+					{
+						Key:   aws.String("Name"),
+						Value: aws.String(fmt.Sprintf("%s-rtb", name)),
+					},
+					{
+						Key:   aws.String("CustomerTag"),
+						Value: aws.String("test-customer"),
+					},
+				},
+			},
+		},
 	}
 	routeTableOutput, err := ec2Client.CreateRouteTable(createRouteTableInput)
 	if err != nil {
@@ -421,6 +471,21 @@ func CreateJumpHost(vpcID string, subnetID string, region string, ipCIDRAllowlis
 		GroupName:   aws.String(fmt.Sprintf("jump-host-sg-%s", strings.ToLower(rand.Text()[:8]))),
 		Description: aws.String("Security group for jump host"),
 		VpcId:       aws.String(vpcID),
+		TagSpecifications: []*ec2.TagSpecification{
+			{
+				ResourceType: aws.String(ec2.ResourceTypeSecurityGroup),
+				Tags: []*ec2.Tag{
+					{
+						Key:   aws.String("Name"),
+						Value: aws.String(fmt.Sprintf("jump-host-sg-%s", strings.ToLower(rand.Text()[:8]))),
+					},
+					{
+						Key:   aws.String("CustomerTag"),
+						Value: aws.String("test-customer"),
+					},
+				},
+			},
+		},
 	}
 	securityGroupOutput, err := ec2Client.CreateSecurityGroup(createSecurityGroupInput)
 	if err != nil {
@@ -513,6 +578,21 @@ func CreateJumpHost(vpcID string, subnetID string, region string, ipCIDRAllowlis
 				DeviceIndex:              aws.Int64(0),
 				SubnetId:                 aws.String(subnetID),
 				Groups:                   []*string{&securityGroupID},
+			},
+		},
+		TagSpecifications: []*ec2.TagSpecification{
+			{
+				ResourceType: aws.String(ec2.ResourceTypeInstance),
+				Tags: []*ec2.Tag{
+					{
+						Key:   aws.String("Name"),
+						Value: aws.String(fmt.Sprintf("jump-host-%s", strings.ToLower(rand.Text()[:8]))),
+					},
+					{
+						Key:   aws.String("CustomerTag"),
+						Value: aws.String("test-customer"),
+					},
+				},
 			},
 		},
 	}

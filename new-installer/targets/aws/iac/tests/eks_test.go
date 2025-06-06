@@ -100,7 +100,7 @@ func (s *EKSTestSuite) TearDownTest() {
 
 func (s *EKSTestSuite) TestApplyingModule() {
 	eksVars := steps_aws.EKSVariables{
-		Name:                "test-eks-cluster" + s.randomPostfix,
+		Name:                "test-eks-cluster-" + s.randomPostfix,
 		Region:              DefaultRegion,
 		VPCID:               s.vpcID,
 		CustomerTag:         "test-customer",
