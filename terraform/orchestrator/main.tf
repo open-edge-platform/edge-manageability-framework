@@ -246,7 +246,7 @@ resource "null_resource" "copy_files" {
   }
 
   provisioner "file" {
-    source      = "../../${var.working_directory}/on-prem-installers/onprem/functions.go"
+    source      = "../../${var.working_directory}/on-prem-installers/onprem/onprem_installer.go"
     destination = "/home/ubuntu/functions.go"
     when        = create
   }
