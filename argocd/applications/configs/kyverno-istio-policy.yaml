@@ -41,5 +41,4 @@ excludedNamespaces:
   - capi-system
   - capi-operator-system
   - capr-system
-  - capi-k3s-bootstrap-system
-  - capi-k3s-control-plane-system
+  - capk-system

@@ -55,7 +55,7 @@ bootstrap:
           name: bootstrap-rke2-additional-manifest
           namespace: capr-system
     - name: k3s
-      namespace: capi-k3s-bootstrap-system
+      namespace: capk-system
       spec:
         fetchConfig:
           url: "https://github.com/jdanieck/cluster-api-k3s/releases/v0.2.2-dev-196ba04/bootstrap-components.yaml"
@@ -64,7 +64,7 @@ bootstrap:
           name: capi-variables
         additionalManifests:
           name: bootstrap-k3s-additional-manifest
-          namespace: capi-k3s-bootstrap-system
+          namespace: capk-system
 
 # https://doc.crds.dev/github.com/kubernetes-sigs/cluster-api-operator/operator.cluster.x-k8s.io/ControlPlaneProvider/v1alpha2@v0.15.1
 controlplane:
@@ -92,7 +92,7 @@ controlplane:
 #        args:
 #          "-- concurrency":  "5"
     - name: k3s
-      namespace: capi-k3s-control-plane-system
+      namespace: capk-system
       spec:
         fetchConfig:
           url: "https://github.com/jdanieck/cluster-api-k3s/releases/v0.2.2-dev-196ba04/control-plane-components.yaml"
@@ -101,4 +101,4 @@ controlplane:
           name: capi-variables
         additionalManifests:
           name: controlplane-k3s-additional-manifest
-          namespace: capi-k3s-control-plane-system
+          namespace: capk-system
