@@ -13,9 +13,8 @@ data "aws_ami" "eks_node_ami" {
   }
 }
 
-data "aws_subnet" "eks_subnet" {
-  for_each = var.subnet_ids
-  id       = each.key
+data "aws_vpc" "eks_vpc" {
+  id = var.vpc_id
 }
 
 locals {
@@ -65,15 +64,14 @@ resource "aws_security_group" "eks_cluster" {
   }
 }
 
-# Allow HTTPS traffic from EKS subnets
+# Allow HTTPS traffic from VPC
 resource "aws_security_group_rule" "eks_cluster_ingress" {
-  for_each = data.aws_subnet.eks_subnet
   type              = "ingress"
   from_port         = 443
   to_port           = 443
   protocol          = "tcp"
   security_group_id = aws_security_group.eks_cluster.id
-  cidr_blocks       = [each.value.cidr_block]
+  cidr_blocks       = [data.aws_vpc.eks_vpc.cidr_block]
   description       = "Allow HTTPS traffic from VPC"
 }
 
@@ -145,19 +143,13 @@ resource "null_resource" "set_env" {
   provisioner "local-exec" {
     command = <<EOT
         set -eu
+        sleep 10
         kubectl set env ds aws-node --kubeconfig "${local.kube_config_path}" --context "arn:aws:eks:${var.region}:${local.aws_account_id}:cluster/${var.name}" -n kube-system WARM_PREFIX_TARGET=0
         kubectl set env ds aws-node --kubeconfig "${local.kube_config_path}" --context "arn:aws:eks:${var.region}:${local.aws_account_id}:cluster/${var.name}" -n kube-system WARM_IP_TARGET=2
         kubectl set env ds aws-node --kubeconfig "${local.kube_config_path}" --context "arn:aws:eks:${var.region}:${local.aws_account_id}:cluster/${var.name}" -n kube-system MINIMUM_IP_TARGET=0
 EOT
   }
   depends_on = [null_resource.create_kubecnofig]
-}
-
-data "aws_eks_cluster" "eks_cluster_data" {
-  name = var.name
-  depends_on = [
-    null_resource.set_env
-  ]
 }
 
 # Creating IAM role for EKS nodes to work with other AWS Services.
@@ -239,8 +231,8 @@ resource "aws_launch_template" "eks_launch_template" {
     region = var.region
     enable_cache_registry = var.enable_cache_registry
     cache_registry = var.cache_registry
-    eks_endpoint = data.aws_eks_cluster.eks_cluster_data.endpoint
-    eks_cluster_ca = data.aws_eks_cluster.eks_cluster_data.certificate_authority[0].data
+    eks_endpoint = aws_eks_cluster.eks_cluster.endpoint
+    eks_cluster_ca = aws_eks_cluster.eks_cluster.certificate_authority[0].data
     name = var.name
     eks_node_ami_id = data.aws_ami.eks_node_ami.id
     max_pods = var.max_pods
@@ -289,8 +281,8 @@ resource "aws_launch_template" "additional_node_group_launch_template" {
     region = var.region
     enable_cache_registry = var.enable_cache_registry
     cache_registry = var.cache_registry
-    eks_endpoint = data.aws_eks_cluster.eks_cluster_data.endpoint
-    eks_cluster_ca = data.aws_eks_cluster.eks_cluster_data.certificate_authority[0].data
+    eks_endpoint = aws_eks_cluster.eks_cluster.endpoint
+    eks_cluster_ca = aws_eks_cluster.eks_cluster.certificate_authority[0].data
     name = var.name
     eks_node_ami_id = data.aws_ami.eks_node_ami.id
     max_pods = var.max_pods
