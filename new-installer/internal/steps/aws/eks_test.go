@@ -22,7 +22,7 @@ type EKSStepTest struct {
 	suite.Suite
 	config       config.OrchInstallerConfig
 	runtimeState config.OrchInstallerRuntimeState
-	step         *steps_aws.AWSEKSStep
+	step         *steps_aws.EKSStep
 	randomText   string
 	logDir       string
 	tfUtility    *MockTerraformUtility
@@ -60,7 +60,7 @@ func (s *EKSStepTest) SetupTest() {
 	}
 	s.tfUtility = &MockTerraformUtility{}
 	s.awsUtility = &MockAWSUtility{}
-	s.step = &steps_aws.AWSEKSStep{
+	s.step = &steps_aws.EKSStep{
 		RootPath:           rootPath,
 		KeepGeneratedFiles: true,
 		TerraformUtility:   s.tfUtility,
