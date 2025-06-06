@@ -28,7 +28,6 @@ const (
 	rke2LibPkg                     = "rke2-images.linux-amd64.tar.zst"
 	rke2CalicoLibPkg               = "rke2-images-calico.linux-amd64.tar.zst"
 	rke2LibSHAFile                 = "sha256sum-amd64.txt"
-	openEbsOperatorK8sTemplateFile = "openebs-operator.yaml"
 	rke2ArtifactDownloadPath       = "assets/rke2"
 	rke2CustomImageDownloadPath    = "assets/rke2/offline-images/"
 	rke2ImagesURLFmt               = "https://github.com/rancher/rke2/releases/download/%s/rke2.linux-amd64.tar.gz"

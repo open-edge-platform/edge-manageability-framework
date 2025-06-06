@@ -42,12 +42,6 @@ func (Deploy) rke2Cluster() error { //nolint: cyclop
 		return fmt.Errorf("error applying openEbsOperatorK8sTemplate: %w", err)
 	}
 
-	// deploy openebs-path operator
-	if err := sh.RunV("kubectl", "apply", "-f",
-		filepath.Join("rke2", openEbsOperatorK8sTemplateFile)); err != nil {
-		return fmt.Errorf("error applying openEbsOperatorK8sTemplateFile: %w", err)
-	}
-
 	// create etcd-cert secret
 	if err := sh.RunV("kubectl", "create", "secret", "generic", "etcd-certs",
 		"--from-file=/var/lib/rancher/rke2/server/tls/etcd/server-client.crt",
