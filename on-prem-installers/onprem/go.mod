@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-module example.com/m
+module github.com/open-edge-platform/edge-manageability-framework
 
 go 1.23.4
 
