@@ -31,12 +31,12 @@ const (
 	VPCBackendBucketKey = "vpc.tfstate"
 )
 
-var AWSVPCStepLabels = []string{
+var vpcStepLabels = []string{
 	"aws",
 	"vpc",
 }
 
-var AWSVPCEndpoints = []string{
+var VPCEndpoints = []string{
 	"elasticfilesystem",
 	"s3",
 	"eks",
@@ -49,19 +49,19 @@ var AWSVPCEndpoints = []string{
 }
 
 type VPCVariables struct {
-	Region                 string                  `json:"region" yaml:"region"`
-	Name                   string                  `json:"name" yaml:"name"`
-	CidrBlock              string                  `json:"cidr_block" yaml:"cidr_block"`
-	EnableDnsHostnames     bool                    `json:"enable_dns_hostnames" yaml:"enable_dns_hostnames"`
-	EnableDnsSupport       bool                    `json:"enable_dns_support" yaml:"enable_dns_support"`
-	PrivateSubnets         map[string]AWSVPCSubnet `json:"private_subnets" yaml:"private_subnets"`
-	PublicSubnets          map[string]AWSVPCSubnet `json:"public_subnets" yaml:"public_subnets"`
-	EndpointSGName         string                  `json:"endpoint_sg_name" yaml:"endpoint_sg_name"`
-	JumphostIPAllowList    []string                `json:"jumphost_ip_allow_list" yaml:"jumphost_ip_allow_list"`
-	JumphostInstanceSSHKey string                  `json:"jumphost_instance_ssh_key_pub" yaml:"jumphost_instance_ssh_key_pub"`
-	JumphostSubnet         string                  `json:"jumphost_subnet" yaml:"jumphost_subnet"`
-	Production             bool                    `json:"production" yaml:"production"`
-	CustomerTag            string                  `json:"customer_tag" yaml:"customer_tag"`
+	Region                 string               `json:"region" yaml:"region"`
+	Name                   string               `json:"name" yaml:"name"`
+	CidrBlock              string               `json:"cidr_block" yaml:"cidr_block"`
+	EnableDnsHostnames     bool                 `json:"enable_dns_hostnames" yaml:"enable_dns_hostnames"`
+	EnableDnsSupport       bool                 `json:"enable_dns_support" yaml:"enable_dns_support"`
+	PrivateSubnets         map[string]VPCSubnet `json:"private_subnets" yaml:"private_subnets"`
+	PublicSubnets          map[string]VPCSubnet `json:"public_subnets" yaml:"public_subnets"`
+	EndpointSGName         string               `json:"endpoint_sg_name" yaml:"endpoint_sg_name"`
+	JumphostIPAllowList    []string             `json:"jumphost_ip_allow_list" yaml:"jumphost_ip_allow_list"`
+	JumphostInstanceSSHKey string               `json:"jumphost_instance_ssh_key_pub" yaml:"jumphost_instance_ssh_key_pub"`
+	JumphostSubnet         string               `json:"jumphost_subnet" yaml:"jumphost_subnet"`
+	Production             bool                 `json:"production" yaml:"production"`
+	CustomerTag            string               `json:"customer_tag" yaml:"customer_tag"`
 }
 
 // NewDefaultVPCVariables creates a new VPCVariables with default values
@@ -79,17 +79,17 @@ func NewDefaultVPCVariables() VPCVariables {
 		CustomerTag:            "",
 
 		// Initialize maps
-		PrivateSubnets: make(map[string]AWSVPCSubnet),
-		PublicSubnets:  make(map[string]AWSVPCSubnet),
+		PrivateSubnets: make(map[string]VPCSubnet),
+		PublicSubnets:  make(map[string]VPCSubnet),
 	}
 }
 
-type AWSVPCSubnet struct {
+type VPCSubnet struct {
 	Az        string `json:"az" yaml:"az"`
 	CidrBlock string `json:"cidr_block" yaml:"cidr_block"`
 }
 
-type AWSVPCStep struct {
+type VPCStep struct {
 	variables          VPCVariables
 	backendConfig      TerraformAWSBucketBackendConfig
 	RootPath           string
@@ -99,25 +99,25 @@ type AWSVPCStep struct {
 	AWSUtility         AWSUtility
 }
 
-func CreateAWSVPCStep(rootPath string, keepGeneratedFiles bool, terraformUtility steps.TerraformUtility, awsUtility AWSUtility) *AWSVPCStep {
-	return &AWSVPCStep{
+func CreateVPCStep(rootPath string, keepGeneratedFiles bool, terraformUtility steps.TerraformUtility, awsUtility AWSUtility) *VPCStep {
+	return &VPCStep{
 		RootPath:           rootPath,
 		KeepGeneratedFiles: keepGeneratedFiles,
 		TerraformUtility:   terraformUtility,
 		AWSUtility:         awsUtility,
-		StepLabels:         AWSVPCStepLabels,
+		StepLabels:         vpcStepLabels,
 	}
 }
 
-func (s *AWSVPCStep) Name() string {
-	return "AWSVPCStep"
+func (s *VPCStep) Name() string {
+	return "VPCStep"
 }
 
-func (s *AWSVPCStep) Labels() []string {
+func (s *VPCStep) Labels() []string {
 	return s.StepLabels
 }
 
-func (s *AWSVPCStep) ConfigStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *VPCStep) ConfigStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	if s.skipVPCStep(config) {
 		// If VPC ID is already set, we skip this step.
 		runtimeState.VPCID = config.AWS.VPCID
@@ -175,7 +175,7 @@ func (s *AWSVPCStep) ConfigStep(ctx context.Context, config config.OrchInstaller
 		name := fmt.Sprintf("subnet-%s", availabilityZones[i])
 		ipInt := netAddrInt + (uint32)(i*(1<<uint(32-PrivateSubnetMaskSize)))
 		ip := ipconv.IntToIPv4(ipInt)
-		s.variables.PrivateSubnets[name] = AWSVPCSubnet{
+		s.variables.PrivateSubnets[name] = VPCSubnet{
 			Az:        availabilityZones[i],
 			CidrBlock: fmt.Sprintf("%s/%d", ip.String(), PrivateSubnetMaskSize),
 		}
@@ -185,7 +185,7 @@ func (s *AWSVPCStep) ConfigStep(ctx context.Context, config config.OrchInstaller
 		name := fmt.Sprintf("subnet-%s-pub", availabilityZones[i])
 		ipInt := netAddrInt + (uint32)(i*(1<<uint(32-PublicSubnetMaskSize)))
 		ip := ipconv.IntToIPv4(ipInt)
-		s.variables.PublicSubnets[name] = AWSVPCSubnet{
+		s.variables.PublicSubnets[name] = VPCSubnet{
 			Az:        availabilityZones[i],
 			CidrBlock: fmt.Sprintf("%s/%d", ip.String(), PublicSubnetMaskSize),
 		}
@@ -219,7 +219,7 @@ func (s *AWSVPCStep) ConfigStep(ctx context.Context, config config.OrchInstaller
 	return runtimeState, nil
 }
 
-func (s *AWSVPCStep) PreStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *VPCStep) PreStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	if s.skipVPCStep(config) {
 		return runtimeState, nil
 	}
@@ -272,7 +272,7 @@ func (s *AWSVPCStep) PreStep(ctx context.Context, config config.OrchInstallerCon
 		states[fmt.Sprintf("module.route_table.aws_route_table.private_subnet[%s]", name)] = fmt.Sprintf("aws_route_table.private_subnet[%s]", name)
 		states[fmt.Sprintf("module.route_table.aws_route_table_association.private_subnet[%s]", name)] = fmt.Sprintf("aws_route_table_association.private_subnet[%s]", name)
 	}
-	for _, ep := range AWSVPCEndpoints {
+	for _, ep := range VPCEndpoints {
 		states[fmt.Sprintf("module.endpoint.aws_vpc_endpoint.endpoint[%s]", ep)] = fmt.Sprintf("aws_vpc_endpoint.endpoint[%s]", ep)
 	}
 	mvErr := s.TerraformUtility.MoveStates(ctx, steps.TerraformUtilityMoveStatesInput{
@@ -289,7 +289,7 @@ func (s *AWSVPCStep) PreStep(ctx context.Context, config config.OrchInstallerCon
 	return runtimeState, nil
 }
 
-func (s *AWSVPCStep) RunStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *VPCStep) RunStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	if s.skipVPCStep(config) {
 		return runtimeState, nil
 	}
@@ -398,7 +398,7 @@ func (s *AWSVPCStep) RunStep(ctx context.Context, config config.OrchInstallerCon
 	return runtimeState, nil
 }
 
-func (s *AWSVPCStep) PostStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState, prevStepError *internal.OrchInstallerError) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *VPCStep) PostStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState, prevStepError *internal.OrchInstallerError) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	if s.skipVPCStep(config) {
 		return runtimeState, nil
 	}
@@ -425,6 +425,6 @@ func generateSSHKeyPair() (string, string, error) {
 	return privateKeyString, publicKeyString, nil
 }
 
-func (s *AWSVPCStep) skipVPCStep(config config.OrchInstallerConfig) bool {
+func (s *VPCStep) skipVPCStep(config config.OrchInstallerConfig) bool {
 	return config.AWS.VPCID != ""
 }

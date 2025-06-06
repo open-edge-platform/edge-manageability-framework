@@ -26,7 +26,7 @@ type VPCStepTest struct {
 	suite.Suite
 	config       config.OrchInstallerConfig
 	runtimeState config.OrchInstallerRuntimeState
-	step         *steps_aws.AWSVPCStep
+	step         *steps_aws.VPCStep
 	randomText   string
 	logDir       string
 	tfUtility    *MockTerraformUtility
@@ -66,7 +66,7 @@ func (s *VPCStepTest) SetupTest() {
 	}
 	s.tfUtility = &MockTerraformUtility{}
 	s.awsUtility = &MockAWSUtility{}
-	s.step = &steps_aws.AWSVPCStep{
+	s.step = &steps_aws.VPCStep{
 		RootPath:           rootPath,
 		KeepGeneratedFiles: true,
 		TerraformUtility:   s.tfUtility,
