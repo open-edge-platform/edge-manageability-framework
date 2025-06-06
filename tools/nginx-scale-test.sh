@@ -18,36 +18,36 @@ USER=edge-operator-example-user
 PASSWORD=${ORCH_DEFAULT_PASSWORD}
 WAITFOR="Running"
 
-[ -n "$4" ] && ORCHESTRATOR_DOMAIN=$4 || ORCHESTRATOR_DOMAIN=kind.internal
+[ ! -z "$4" ] && ORCHESTRATOR_DOMAIN=$4 || ORCHESTRATOR_DOMAIN=kind.internal
 
 CATALOG_ENDPOINT="https://app-orch.${ORCHESTRATOR_DOMAIN}"
 DEPLOYMENT_ENDPOINT="https://app-orch.${ORCHESTRATOR_DOMAIN}"
 
-[ -n "$4" ] && CATALOG_ARGS="--deployment-endpoint ${DEPLOYMENT_ENDPOINT} --catalog-endpoint ${CATALOG_ENDPOINT}" || CATALOG_ARGS=""
+[ ! -z "$4" ] && CATALOG_ARGS="--deployment-endpoint ${DEPLOYMENT_ENDPOINT} --catalog-endpoint ${CATALOG_ENDPOINT}" || CATALOG_ARGS=""
 
 waitfor_ready () {
     while (true)
     do
-        COUNT=$(kubectl -n fleet-default get deployments.app.orchestrator.io --no-headers | grep -vc "$WAITFOR")
+        COUNT=$(kubectl -n fleet-default get deployments.app.orchestrator.io --no-headers|grep -v "$WAITFOR"|wc -l)
         echo "Waiting for $COUNT Deployments"
-        if [ "$COUNT" -gt 0 ]
+        if [ $COUNT -gt 0 ]
         then
             sleep 10
         else
-            COUNT=$(kubectl -n fleet-default get deployments.app.orchestrator.io --no-headers | grep -c "$WAITFOR")
+            COUNT=$(kubectl -n fleet-default get deployments.app.orchestrator.io --no-headers|grep "$WAITFOR"|wc -l)
             echo "All $COUNT Deployments are Ready!"
             return
         fi
     done
 }
 
-${CLI} "${CATALOG_ARGS}" logout
-${CLI} "${CATALOG_ARGS}" login --client-id=system-client --trust-cert=true --keycloak "https://keycloak.${ORCHESTRATOR_DOMAIN}/realms/master" ${USER} "${PASSWORD}"
-for _ in $(seq 1 "$APPS")
+${CLI} ${CATALOG_ARGS} logout
+${CLI} ${CATALOG_ARGS} login --client-id=system-client --trust-cert=true --keycloak https://keycloak.${ORCHESTRATOR_DOMAIN}/realms/master ${USER} ${PASSWORD}
+for i in $(seq 1 $APPS)
 do
-   ${CLI} "${CATALOG_ARGS}" create deployment nginx-app "${VERSION}" --application-label nginx.color=blue\
+   ${CLI} ${CATALOG_ARGS} create deployment nginx-app ${VERSION} --application-label nginx.color=blue\
        --application-set nginx.service.type=ClusterIP --publisher intel
    time waitfor_ready
-   echo "Pausing for " "$SLEEP"
-   sleep "$SLEEP"   
+   echo "Pausing for " $SLEEP
+   sleep $SLEEP    
 done
