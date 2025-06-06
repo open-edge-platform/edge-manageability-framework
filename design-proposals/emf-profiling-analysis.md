@@ -27,8 +27,8 @@ The objective of this exercise is to capture the timing and resource consumption
 Two coder instance are deployed with same overall resource configuration
 
 - CPU: 16 cores
-- Memory: 64 GiB
-- Storage: 140 GiB
+- Memory: 64G
+- Storage: 140G
 
 ### Comparing `dev-internal-coder-autocert.yaml` with `enableObservability` set to `false`
 
@@ -45,7 +45,7 @@ Baseline profile `dev-internal-coder-autocert.yaml` with `enableObservability` s
 
 ```sh
 NAME                 CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%
-kind-control-plane   4164m        26%    39464Mi         62%
+kind-control-plane   4719m        29%    38049Mi         60%
 ```
 
 Baseline profile `dev-internal-coder-autocert.yaml` with `enableObservability` set to `false`:
@@ -79,6 +79,15 @@ CPU Used: 6%, CPU Free: 94.0%
 Memory Used: 24.48%, Memory Free: 62.97%
 Disk Used: 22.89%, Disk Free: 74.31%
 ```
+| Metric                | Observability ON         | Observability OFF        | % Delta Increase |
+|-----------------------|-------------------------|--------------------------|------------------|
+| **Kubernetes Requests** |                         |                          |                  |
+| CPU (m)               | 2466                    | 1823                     | 35.3%            |
+| Memory (Mi)           | 4603                    | 2169                     | 112.2%           |
+| **Linux Usage**         |                         |                          |                  |
+| CPU Used (%)          | 22.6                    | 6                        | 276.7%           |
+| Memory Used (%)       | 54.66                   | 24.48                    | 123.4%           |
+| Disk Used (%)         | 33.24                   | 22.89                    | 45.2%            |
 
 ### Takeaways
 
