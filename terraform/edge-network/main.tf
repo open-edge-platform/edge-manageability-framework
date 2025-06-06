@@ -16,6 +16,7 @@ resource "libvirt_network" "edge_network" {
   bridge = var.network_bridge
 
   dhcp {
+    # IMPORTANT: Toggle this later in the steps
     enabled = true
   }
 
