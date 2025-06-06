@@ -69,7 +69,7 @@ func (s *VPCTestSuite) TestApplyingModule() {
 		JumphostInstanceSSHKey: publicSSHKey,
 		JumphostSubnet:         "public-subnet-1",
 		Production:             true,
-		CustomerTag:            "unit-test",
+		CustomerTag:            aws_iac.DefaultCustomerTag,
 	}
 
 	jsonData, err := json.Marshal(variables)
