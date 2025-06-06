@@ -103,6 +103,29 @@ func (s *VPCStepTest) TestInstallAndUninstallVPC() {
 	}
 }
 
+func (s *VPCStepTest) TestUpgradeVPC() {
+	s.runtimeState.Action = "upgrade"
+	s.config.AWS.PreviousS3StateBucket = "old-bucket-name"
+	// We will mostlly test if the prestep make correct calls to AWS and Terraform utilities.
+	s.expectUtiliyCall("upgrade")
+	rs, err := steps.GoThroughStepFunctions(s.step, &s.config, s.runtimeState)
+	if err != nil {
+		s.NoError(err)
+		return
+	}
+	s.Equal("vpc-12345678", rs.AWS.VPCID)
+	s.ElementsMatch([]string{
+		"subnet-1",
+		"subnet-2",
+		"subnet-3",
+	}, rs.AWS.PrivateSubnetIDs)
+	s.ElementsMatch([]string{
+		"subnet-4",
+		"subnet-5",
+		"subnet-6",
+	}, rs.AWS.PublicSubnetIDs)
+}
+
 func (s *VPCStepTest) expectUtiliyCall(action string) {
 	s.awsUtility.On("GetAvailableZones", "us-west-2").Return([]string{"us-west-2a", "us-west-2b", "us-west-2c"}, nil).Once()
 	input := steps.TerraformUtilityInput{
@@ -182,7 +205,93 @@ func (s *VPCStepTest) expectUtiliyCall(action string) {
 				},
 			},
 		}, nil).Once()
-	} else {
+	}
+	if action == "upgrade" {
+		s.tfUtility.On("Run", mock.Anything, input).Return(steps.TerraformUtilityOutput{
+			TerraformState: "",
+			Output: map[string]tfexec.OutputMeta{
+				"vpc_id": {
+					Type:  json.RawMessage(`"string"`),
+					Value: json.RawMessage(`"vpc-12345678"`),
+				},
+				"private_subnets": {
+					Type:  json.RawMessage(`"list"`),
+					Value: json.RawMessage(`{"subnet-us-west-2a":{"id":"subnet-1"},"subnet-us-west-2b":{"id":"subnet-2"},"subnet-us-west-2c":{"id":"subnet-3"}}`),
+				},
+				"public_subnets": {
+					Type:  json.RawMessage(`"list"`),
+					Value: json.RawMessage(`{"subnet-us-west-2a-pub":{"id":"subnet-4"},"subnet-us-west-2b-pub":{"id":"subnet-5"},"subnet-us-west-2c-pub":{"id":"subnet-6"}}`),
+				},
+				"jumphost_ip": {
+					Type:  json.RawMessage(`"string"`),
+					Value: json.RawMessage(`"10.0.0.1"`),
+				},
+			},
+		}, nil).Once()
+
+		s.awsUtility.On("S3CopyToS3",
+			s.config.AWS.Region,
+			s.config.AWS.PreviousS3StateBucket,
+			fmt.Sprintf("%s/vpc/%s", s.config.AWS.Region, s.config.Global.OrchName),
+			s.config.AWS.Region,
+			s.config.Global.OrchName+"-"+s.runtimeState.DeploymentID,
+			"vpc.tfstate",
+		).Return(nil).Once()
+
+		s.tfUtility.On("MoveStates", mock.Anything, steps.TerraformUtilityMoveStatesInput{
+			ModulePath: filepath.Join(s.step.RootPath, steps_aws.VPCModulePath),
+			States: map[string]string{
+				"module.endpoint.aws_security_group.vpc_endpoints":                                        "aws_security_group.vpc_endpoints",
+				"module.endpoint.aws_vpc_endpoint.endpoint[\"ec2\"]":                                      "aws_vpc_endpoint.endpoint[\"ec2\"]",
+				"module.endpoint.aws_vpc_endpoint.endpoint[\"ec2messages\"]":                              "aws_vpc_endpoint.endpoint[\"ec2messages\"]",
+				"module.endpoint.aws_vpc_endpoint.endpoint[\"ecr.api\"]":                                  "aws_vpc_endpoint.endpoint[\"ecr.api\"]",
+				"module.endpoint.aws_vpc_endpoint.endpoint[\"ecr.dkr\"]":                                  "aws_vpc_endpoint.endpoint[\"ecr.dkr\"]",
+				"module.endpoint.aws_vpc_endpoint.endpoint[\"eks\"]":                                      "aws_vpc_endpoint.endpoint[\"eks\"]",
+				"module.endpoint.aws_vpc_endpoint.endpoint[\"elasticfilesystem\"]":                        "aws_vpc_endpoint.endpoint[\"elasticfilesystem\"]",
+				"module.endpoint.aws_vpc_endpoint.endpoint[\"elasticloadbalancing\"]":                     "aws_vpc_endpoint.endpoint[\"elasticloadbalancing\"]",
+				"module.endpoint.aws_vpc_endpoint.endpoint[\"s3\"]":                                       "aws_vpc_endpoint.endpoint[\"s3\"]",
+				"module.endpoint.aws_vpc_endpoint.endpoint[\"sts\"]":                                      "aws_vpc_endpoint.endpoint[\"sts\"]",
+				"module.internet_gateway.aws_internet_gateway.igw":                                        "aws_internet_gateway.igw",
+				"module.jumphost.aws_eip.jumphost":                                                        "aws_eip.jumphost",
+				"module.jumphost.aws_eip_association.jumphost":                                            "aws_eip_association.jumphost",
+				"module.jumphost.aws_iam_instance_profile.ec2":                                            "aws_iam_instance_profile.ec2",
+				"module.jumphost.aws_iam_policy.eks_cluster_access_policy":                                "aws_iam_policy.eks_cluster_access_policy",
+				"module.jumphost.aws_iam_role.ec2":                                                        "aws_iam_role.ec2",
+				"module.jumphost.aws_iam_role_policy_attachment.AmazonSSMManagedInstanceCore":             "aws_iam_role_policy_attachment.AmazonSSMManagedInstanceCore",
+				"module.jumphost.aws_iam_role_policy_attachment.eks_cluster_access":                       "aws_iam_role_policy_attachment.eks_cluster_access",
+				"module.jumphost.aws_instance.jumphost":                                                   "aws_instance.jumphost",
+				"module.jumphost.aws_key_pair.jumphost_instance_launch_key":                               "aws_key_pair.jumphost_instance_launch_key",
+				"module.jumphost.aws_security_group.jumphost":                                             "aws_security_group.jumphost",
+				"module.jumphost.aws_security_group_rule.jumphost_egress_https":                           "aws_security_group_rule.jumphost_egress_https",
+				"module.nat_gateway.aws_eip.ngw[\"subnet-us-west-2a-pub\"]":                               "aws_eip.ngw[\"subnet-us-west-2a-pub\"]",
+				"module.nat_gateway.aws_eip.ngw[\"subnet-us-west-2b-pub\"]":                               "aws_eip.ngw[\"subnet-us-west-2b-pub\"]",
+				"module.nat_gateway.aws_eip.ngw[\"subnet-us-west-2c-pub\"]":                               "aws_eip.ngw[\"subnet-us-west-2c-pub\"]",
+				"module.nat_gateway.aws_nat_gateway.ngw_with_eip[\"subnet-us-west-2a-pub\"]":              "aws_nat_gateway.main[\"subnet-us-west-2a-pub\"]",
+				"module.nat_gateway.aws_nat_gateway.ngw_with_eip[\"subnet-us-west-2b-pub\"]":              "aws_nat_gateway.main[\"subnet-us-west-2b-pub\"]",
+				"module.nat_gateway.aws_nat_gateway.ngw_with_eip[\"subnet-us-west-2c-pub\"]":              "aws_nat_gateway.main[\"subnet-us-west-2c-pub\"]",
+				"module.route_table.aws_route_table.private_subnet[\"subnet-us-west-2a\"]":                "aws_route_table.private_subnet[\"subnet-us-west-2a\"]",
+				"module.route_table.aws_route_table.private_subnet[\"subnet-us-west-2b\"]":                "aws_route_table.private_subnet[\"subnet-us-west-2b\"]",
+				"module.route_table.aws_route_table.private_subnet[\"subnet-us-west-2c\"]":                "aws_route_table.private_subnet[\"subnet-us-west-2c\"]",
+				"module.route_table.aws_route_table.public_subnet[\"subnet-us-west-2a-pub\"]":             "aws_route_table.public_subnet[\"subnet-us-west-2a-pub\"]",
+				"module.route_table.aws_route_table.public_subnet[\"subnet-us-west-2b-pub\"]":             "aws_route_table.public_subnet[\"subnet-us-west-2b-pub\"]",
+				"module.route_table.aws_route_table.public_subnet[\"subnet-us-west-2c-pub\"]":             "aws_route_table.public_subnet[\"subnet-us-west-2c-pub\"]",
+				"module.route_table.aws_route_table_association.private_subnet[\"subnet-us-west-2a\"]":    "aws_route_table_association.private_subnet[\"subnet-us-west-2a\"]",
+				"module.route_table.aws_route_table_association.private_subnet[\"subnet-us-west-2b\"]":    "aws_route_table_association.private_subnet[\"subnet-us-west-2b\"]",
+				"module.route_table.aws_route_table_association.private_subnet[\"subnet-us-west-2c\"]":    "aws_route_table_association.private_subnet[\"subnet-us-west-2c\"]",
+				"module.route_table.aws_route_table_association.public_subnet[\"subnet-us-west-2a-pub\"]": "aws_route_table_association.public_subnet[\"subnet-us-west-2a-pub\"]",
+				"module.route_table.aws_route_table_association.public_subnet[\"subnet-us-west-2b-pub\"]": "aws_route_table_association.public_subnet[\"subnet-us-west-2b-pub\"]",
+				"module.route_table.aws_route_table_association.public_subnet[\"subnet-us-west-2c-pub\"]": "aws_route_table_association.public_subnet[\"subnet-us-west-2c-pub\"]",
+				"module.vpc.aws_subnet.private_subnet[\"subnet-us-west-2a\"]":                             "aws_subnet.private_subnet[\"subnet-us-west-2a\"]",
+				"module.vpc.aws_subnet.private_subnet[\"subnet-us-west-2b\"]":                             "aws_subnet.private_subnet[\"subnet-us-west-2b\"]",
+				"module.vpc.aws_subnet.private_subnet[\"subnet-us-west-2c\"]":                             "aws_subnet.private_subnet[\"subnet-us-west-2c\"]",
+				"module.vpc.aws_subnet.public_subnet[\"subnet-us-west-2a-pub\"]":                          "aws_subnet.public_subnet[\"subnet-us-west-2a-pub\"]",
+				"module.vpc.aws_subnet.public_subnet[\"subnet-us-west-2b-pub\"]":                          "aws_subnet.public_subnet[\"subnet-us-west-2b-pub\"]",
+				"module.vpc.aws_subnet.public_subnet[\"subnet-us-west-2c-pub\"]":                          "aws_subnet.public_subnet[\"subnet-us-west-2c-pub\"]",
+				"module.vpc.main": "aws_vpc.main",
+			},
+		}).Return(nil).Once()
+	}
+	if action == "uninstall" {
 		s.tfUtility.On("Run", mock.Anything, input).Return(steps.TerraformUtilityOutput{
 			TerraformState: "",
 			Output:         map[string]tfexec.OutputMeta{},

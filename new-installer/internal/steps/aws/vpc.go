@@ -261,19 +261,19 @@ func (s *VPCStep) PreStep(ctx context.Context, config config.OrchInstallerConfig
 		"module.jumphost.aws_eip_association.jumphost":                                "aws_eip_association.jumphost",
 	}
 	for name := range s.variables.PublicSubnets {
-		states[fmt.Sprintf("module.vpc.aws_subnet.public_subnet[%s]", name)] = fmt.Sprintf("aws_subnet.public_subnet[%s]", name)
-		states[fmt.Sprintf("module.nat_gateway.aws_eip.ngw[%s]", name)] = fmt.Sprintf("aws_eip.ngw[%s]", name)
-		states[fmt.Sprintf("module.nat_gateway.aws_nat_gateway.ngw_with_eip[%s]", name)] = fmt.Sprintf("aws_nat_gateway.main[%s]", name)
-		states[fmt.Sprintf("module.route_table.aws_route_table.public_subnet[%s]", name)] = fmt.Sprintf("aws_route_table.public_subnet[%s]", name)
-		states[fmt.Sprintf("module.route_table.aws_route_table_association.public_subnet[%s]", name)] = fmt.Sprintf("aws_route_table_association.public_subnet[%s]", name)
+		states[fmt.Sprintf("module.vpc.aws_subnet.public_subnet[\"%s\"]", name)] = fmt.Sprintf("aws_subnet.public_subnet[\"%s\"]", name)
+		states[fmt.Sprintf("module.nat_gateway.aws_eip.ngw[\"%s\"]", name)] = fmt.Sprintf("aws_eip.ngw[\"%s\"]", name)
+		states[fmt.Sprintf("module.nat_gateway.aws_nat_gateway.ngw_with_eip[\"%s\"]", name)] = fmt.Sprintf("aws_nat_gateway.main[\"%s\"]", name)
+		states[fmt.Sprintf("module.route_table.aws_route_table.public_subnet[\"%s\"]", name)] = fmt.Sprintf("aws_route_table.public_subnet[\"%s\"]", name)
+		states[fmt.Sprintf("module.route_table.aws_route_table_association.public_subnet[\"%s\"]", name)] = fmt.Sprintf("aws_route_table_association.public_subnet[\"%s\"]", name)
 	}
 	for name := range s.variables.PrivateSubnets {
-		states[fmt.Sprintf("module.vpc.aws_subnet.private_subnet[%s]", name)] = fmt.Sprintf("aws_subnet.private_subnet[%s]", name)
-		states[fmt.Sprintf("module.route_table.aws_route_table.private_subnet[%s]", name)] = fmt.Sprintf("aws_route_table.private_subnet[%s]", name)
-		states[fmt.Sprintf("module.route_table.aws_route_table_association.private_subnet[%s]", name)] = fmt.Sprintf("aws_route_table_association.private_subnet[%s]", name)
+		states[fmt.Sprintf("module.vpc.aws_subnet.private_subnet[\"%s\"]", name)] = fmt.Sprintf("aws_subnet.private_subnet[\"%s\"]", name)
+		states[fmt.Sprintf("module.route_table.aws_route_table.private_subnet[\"%s\"]", name)] = fmt.Sprintf("aws_route_table.private_subnet[\"%s\"]", name)
+		states[fmt.Sprintf("module.route_table.aws_route_table_association.private_subnet[\"%s\"]", name)] = fmt.Sprintf("aws_route_table_association.private_subnet[\"%s\"]", name)
 	}
 	for _, ep := range VPCEndpoints {
-		states[fmt.Sprintf("module.endpoint.aws_vpc_endpoint.endpoint[%s]", ep)] = fmt.Sprintf("aws_vpc_endpoint.endpoint[%s]", ep)
+		states[fmt.Sprintf("module.endpoint.aws_vpc_endpoint.endpoint[\"%s\"]", ep)] = fmt.Sprintf("aws_vpc_endpoint.endpoint[\"%s\"]", ep)
 	}
 	mvErr := s.TerraformUtility.MoveStates(ctx, steps.TerraformUtilityMoveStatesInput{
 		ModulePath: modulePath,
