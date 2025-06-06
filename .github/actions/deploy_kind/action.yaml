@@ -3,7 +3,6 @@
 
 name: "Deploy Orchestrator on Kind"
 description: "Creates a single node Kind cluster and Deploys the Orchestrator on it"
-
 inputs:
   orch_version:
     required: false
@@ -33,14 +32,10 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Checkout edge-manageability-framework
-      uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
       with:
-        repository: open-edge-platform/edge-manageability-framework
-        ref: ${{ inputs.orch_version }}
-        path: emf
-        token: ${{ inputs.token }}
-        fetch-depth: 0
+        persist-credentials: false
 
     - name: Set up git credentials
       shell: bash
@@ -48,16 +43,9 @@ runs:
         echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
         git config --global url."https://${{ inputs.token }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
-    - name: Change to repo root
-      shell: bash
-      run: |
-        cd "$GITHUB_WORKSPACE"
-        echo "Changed to workspace root: $(pwd)"
-        ls -la
-
     - name: Setup asdf and install dependencies
       id: install-deps
-      uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main
+      uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
 
     - name: Print current git hash
       shell: bash
@@ -73,7 +61,6 @@ runs:
         DOCKERHUB_TOKEN: ${{ inputs.docker_password }}
         DOCKERHUB_USERNAME: ${{ inputs.docker_username }}
       shell: bash
-      working-directory: emf
       run: |
         set +x
         echo "Starting to deploy Orchestrator..."
@@ -86,7 +73,6 @@ runs:
         fi
         mage deploy:kindAll
         echo "Orchestrator deployment done!"
-
     - name: Get Root App Status
       shell: bash
       if: ${{ always() && steps.deploy-external-orchestrator.conclusion != 'success' }}
@@ -94,21 +80,17 @@ runs:
         echo "Root App Status:"
         kubectl get pods -o wide -A
         kubectl -n dev get applications root-app -o yaml || true
-
     - name: Verify Kind Deployment
       id: verify-kind-deployment
       shell: bash
-      working-directory: emf
       run: |
         echo "Starting to verify Orchestrator deployment..."
         mage deploy:waitUntilComplete
         echo "Orchestrator deployment verified!"
         mage router:stop router:start
         echo "Router restarted"
-
     - name: Setup Test environment
       shell: bash
-      working-directory: emf
       run: |
         sudo awk -i inplace '/BEGIN ORCH DEVELOPMENT HOSTS/,/END ORCH DEVELOPMENT HOSTS/ { next } 1' /etc/hosts
         sudo awk -i inplace '/BEGIN ORCH SRE DEVELOPMENT HOST/,/END ORCH SRE DEVELOPMENT HOST/ { next } 1' /etc/hosts
