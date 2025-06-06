@@ -16,6 +16,7 @@ import (
 	terra_test_aws "github.com/gruntwork-io/terratest/modules/aws"
 	"github.com/gruntwork-io/terratest/modules/terraform"
 	steps_aws "github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps/aws"
+	aws_iac "github.com/open-edge-platform/edge-manageability-framework/installer/targets/aws/iac/utils"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -37,11 +38,11 @@ func (s *EKSTestSuite) SetupTest() {
 	// Bucket for EKS state
 	s.randomPostfix = strings.ToLower(rand.Text()[:8])
 	s.stateBucketName = "test-bucket-" + s.randomPostfix
-	terra_test_aws.CreateS3Bucket(s.T(), DefaultRegion, s.stateBucketName)
+	terra_test_aws.CreateS3Bucket(s.T(), aws_iac.DefaultRegion, s.stateBucketName)
 
 	// VPC and subnets for EKS
 	var err error
-	s.vpcID, s.publicSubnetIDs, s.privateSubnetIDs, err = CreateVPC(DefaultRegion, "eks-unit-test-"+s.randomPostfix)
+	s.vpcID, s.publicSubnetIDs, s.privateSubnetIDs, err = aws_iac.CreateVPC(aws_iac.DefaultRegion, "eks-unit-test-"+s.randomPostfix)
 	if err != nil {
 		s.NoError(err, "Failed to create VPC and subnet")
 		return
@@ -59,13 +60,13 @@ func (s *EKSTestSuite) SetupTest() {
 		}
 	}
 	var jumphostPrivateKey, jumphostIP string
-	s.jumphostID, jumphostPrivateKey, jumphostIP, err = CreateJumpHost(s.vpcID, s.publicSubnetIDs[0], DefaultRegion, ipCIDRAllowList)
+	s.jumphostID, jumphostPrivateKey, jumphostIP, err = aws_iac.CreateJumpHost(s.vpcID, s.publicSubnetIDs[0], aws_iac.DefaultRegion, ipCIDRAllowList)
 	if err != nil {
 		s.NoError(err, "Failed to create jump host")
 		return
 	}
 
-	err = StartSshuttle(jumphostIP, jumphostPrivateKey, "10.250.0.0/16")
+	err = aws_iac.StartSshuttle(jumphostIP, jumphostPrivateKey, "10.250.0.0/16")
 	if err != nil {
 		s.NoError(err, "Failed to start sshuttle")
 		return
@@ -73,19 +74,19 @@ func (s *EKSTestSuite) SetupTest() {
 }
 
 func (s *EKSTestSuite) TearDownTest() {
-	err := StopSshuttle()
+	err := aws_iac.StopSshuttle()
 	if err != nil {
 		s.NoError(err, "Failed to stop sshuttle")
 	}
 
-	err = DeleteJumpHost(s.jumphostID, DefaultRegion)
+	err = aws_iac.DeleteJumpHost(s.jumphostID, aws_iac.DefaultRegion)
 	if err != nil {
 		s.NoError(err, "Failed to delete jump host %s", s.jumphostID)
 	}
 	// Note: Deleting a VPC will also delete all subnets.
 	for i := range 10 {
 		time.Sleep(10 * time.Second)
-		err := DeleteVPC(DefaultRegion, s.vpcID)
+		err := aws_iac.DeleteVPC(aws_iac.DefaultRegion, s.vpcID)
 		if err == nil {
 			break
 		}
@@ -94,17 +95,16 @@ func (s *EKSTestSuite) TearDownTest() {
 			break
 		}
 	}
-	terra_test_aws.EmptyS3Bucket(s.T(), DefaultRegion, s.stateBucketName)
-	terra_test_aws.DeleteS3Bucket(s.T(), DefaultRegion, s.stateBucketName)
-
+	terra_test_aws.EmptyS3Bucket(s.T(), aws_iac.DefaultRegion, s.stateBucketName)
+	terra_test_aws.DeleteS3Bucket(s.T(), aws_iac.DefaultRegion, s.stateBucketName)
 }
 
 func (s *EKSTestSuite) TestApplyingModule() {
 	eksVars := steps_aws.EKSVariables{
 		Name:                "test-eks-cluster-" + s.randomPostfix,
-		Region:              DefaultRegion,
+		Region:              aws_iac.DefaultRegion,
 		VPCID:               s.vpcID,
-		CustomerTag:         "test-customer",
+		CustomerTag:         aws_iac.DefaultCustomerTag,
 		SubnetIDs:           s.privateSubnetIDs,
 		EKSVersion:          "1.32",
 		NodeInstanceType:    "t3.medium",
@@ -154,7 +154,7 @@ func (s *EKSTestSuite) TestApplyingModule() {
 		TerraformDir: "../eks",
 		VarFiles:     []string{tempFile.Name()},
 		BackendConfig: map[string]interface{}{
-			"region": DefaultRegion,
+			"region": aws_iac.DefaultRegion,
 			"bucket": s.stateBucketName,
 			"key":    "eks.tfstate",
 		},

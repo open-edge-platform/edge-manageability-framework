@@ -111,9 +111,9 @@ func (s *EKSStep) ConfigStep(ctx context.Context, config config.OrchInstallerCon
 	// With values from config
 	s.variables.Name = config.Global.OrchName
 	s.variables.Region = config.AWS.Region
-	s.variables.VPCID = runtimeState.VPCID
+	s.variables.VPCID = runtimeState.AWS.VPCID
 	s.variables.CustomerTag = config.AWS.CustomerTag
-	s.variables.SubnetIDs = runtimeState.PrivateSubnetIDs
+	s.variables.SubnetIDs = runtimeState.AWS.PrivateSubnetIDs
 	scaleSetup := mapScaleToAWSEKSSetup(config.Global.Scale)
 	s.variables.NodeInstanceType = scaleSetup.General.InstanceType
 	s.variables.DesiredSize = scaleSetup.General.DesiredSize

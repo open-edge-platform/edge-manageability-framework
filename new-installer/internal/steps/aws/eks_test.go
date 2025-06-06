@@ -41,15 +41,19 @@ func (s *EKSStepTest) SetupTest() {
 	}
 	s.randomText = strings.ToLower(rand.Text()[0:8])
 	s.logDir = filepath.Join(rootPath, ".logs")
-	internal.InitLogger("debug", s.logDir)
+	err = internal.InitLogger("debug", s.logDir)
+	if err != nil {
+		s.NoError(err)
+		return
+	}
 	s.config.AWS.Region = "us-west-2"
 	s.config.Global.Scale = config.Scale50
 	s.config.Global.OrchName = "test"
 	s.config.AWS.CacheRegistry = "test-cache-registry"
 	s.runtimeState.DeploymentID = s.randomText
 	s.runtimeState.LogDir = filepath.Join(rootPath, ".logs")
-	s.runtimeState.VPCID = "vpc-12345678"
-	s.runtimeState.PrivateSubnetIDs = []string{"subnet-12345678", "subnet-23456789", "subnet-34567890"}
+	s.runtimeState.AWS.VPCID = "vpc-12345678"
+	s.runtimeState.AWS.PrivateSubnetIDs = []string{"subnet-12345678", "subnet-23456789", "subnet-34567890"}
 
 	if _, err := os.Stat(s.logDir); os.IsNotExist(err) {
 		err := os.MkdirAll(s.logDir, os.ModePerm)
@@ -80,7 +84,6 @@ func (s *EKSStepTest) TestInstallAndUninstallEKS() {
 }
 
 func (s *EKSStepTest) expectUtiliyCall(action string) {
-
 	expectedVariables := steps_aws.EKSVariables{
 		EKSVersion: "1.32",
 		AddOns: []steps_aws.EKSAddOn{
