@@ -21,11 +21,12 @@ import (
 
 type EKSTestSuite struct {
 	suite.Suite
-	stateBucketName string
-	vpcID           string
-	subnetIDs       []string
-	randomPostfix   string
-	jumphostID      string
+	stateBucketName  string
+	vpcID            string
+	publicSubnetIDs  []string
+	privateSubnetIDs []string
+	randomPostfix    string
+	jumphostID       string
 }
 
 func TestEKSTestSuite(t *testing.T) {
@@ -40,7 +41,7 @@ func (s *EKSTestSuite) SetupTest() {
 
 	// VPC and subnets for EKS
 	var err error
-	s.vpcID, s.subnetIDs, err = CreateVPC(DefaultRegion, "eks-unit-test-"+s.randomPostfix)
+	s.vpcID, s.publicSubnetIDs, s.privateSubnetIDs, err = CreateVPC(DefaultRegion, "eks-unit-test-"+s.randomPostfix)
 	if err != nil {
 		s.NoError(err, "Failed to create VPC and subnet")
 		return
@@ -58,7 +59,7 @@ func (s *EKSTestSuite) SetupTest() {
 		}
 	}
 	var jumphostPrivateKey, jumphostIP string
-	s.jumphostID, jumphostPrivateKey, jumphostIP, err = CreateJumpHost(s.vpcID, s.subnetIDs[0], DefaultRegion, ipCIDRAllowList)
+	s.jumphostID, jumphostPrivateKey, jumphostIP, err = CreateJumpHost(s.vpcID, s.publicSubnetIDs[0], DefaultRegion, ipCIDRAllowList)
 	if err != nil {
 		s.NoError(err, "Failed to create jump host")
 		return
@@ -82,7 +83,7 @@ func (s *EKSTestSuite) TearDownTest() {
 		s.NoError(err, "Failed to delete jump host %s", s.jumphostID)
 	}
 	// Note: Deleting a VPC will also delete all subnets.
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		time.Sleep(10 * time.Second)
 		err := DeleteVPC(DefaultRegion, s.vpcID)
 		if err == nil {
@@ -104,7 +105,7 @@ func (s *EKSTestSuite) TestApplyingModule() {
 		Region:              DefaultRegion,
 		VPCID:               s.vpcID,
 		CustomerTag:         "test-customer",
-		SubnetIDs:           s.subnetIDs,
+		SubnetIDs:           s.privateSubnetIDs,
 		EKSVersion:          "1.32",
 		NodeInstanceType:    "t3.medium",
 		DesiredSize:         1,
