@@ -265,7 +265,7 @@ resource "null_resource" "copy_files" {
 
   provisioner "remote-exec" {
     inline = [
-      "chmod +x /home/ubuntu/uninstall_onprem.sh /home/ubuntu/onprem_installer.sh /home/ubuntu/functions.sh /home/ubuntu/access_script.sh /home/ubuntu/.env",
+      "chmod +x /home/ubuntu/uninstall_onprem.sh /home/ubuntu/onprem_installer.sh /home/ubuntu/access_script.sh /home/ubuntu/.env",
     ]
     when = create
   }
