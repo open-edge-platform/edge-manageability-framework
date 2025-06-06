@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package aws_iac_test
+package aws_iac_vpc_test
 
 import (
 	"crypto/rand"
@@ -18,6 +18,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/aws"
 	"github.com/gruntwork-io/terratest/modules/terraform"
 	steps_aws "github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps/aws"
+	aws_iac "github.com/open-edge-platform/edge-manageability-framework/installer/targets/aws/iac/utils"
 	"github.com/stretchr/testify/suite"
 	"golang.org/x/crypto/ssh"
 )
@@ -38,26 +39,26 @@ func (s *VPCTestSuite) TestApplyingModule() {
 	// Bucket for VPC state
 	randomPostfix := strings.ToLower(rand.Text()[:8])
 	bucketName := "test-bucket-" + randomPostfix
-	aws.CreateS3Bucket(s.T(), DefaultRegion, bucketName)
+	aws.CreateS3Bucket(s.T(), aws_iac.DefaultRegion, bucketName)
 	defer func() {
-		aws.EmptyS3Bucket(s.T(), DefaultRegion, bucketName)
-		aws.DeleteS3Bucket(s.T(), DefaultRegion, bucketName)
+		aws.EmptyS3Bucket(s.T(), aws_iac.DefaultRegion, bucketName)
+		aws.DeleteS3Bucket(s.T(), aws_iac.DefaultRegion, bucketName)
 	}()
 
 	_, publicSSHKey, _ := GenerateSSHKeyPair()
 	variables := steps_aws.VPCVariables{
-		Region:             DefaultRegion,
+		Region:             aws_iac.DefaultRegion,
 		Name:               "test-vpc-" + randomPostfix,
 		CidrBlock:          "10.250.0.0/16",
 		EnableDnsHostnames: true,
 		EnableDnsSupport:   true,
-		PrivateSubnets: map[string]steps_aws.AWSVPCSubnet{
+		PrivateSubnets: map[string]steps_aws.VPCSubnet{
 			"private-subnet-1": {
 				Az:        "us-west-2a",
 				CidrBlock: "10.250.0.0/22",
 			},
 		},
-		PublicSubnets: map[string]steps_aws.AWSVPCSubnet{
+		PublicSubnets: map[string]steps_aws.VPCSubnet{
 			"public-subnet-1": {
 				Az:        "us-west-2a",
 				CidrBlock: "10.250.4.0/24",
@@ -68,7 +69,7 @@ func (s *VPCTestSuite) TestApplyingModule() {
 		JumphostInstanceSSHKey: publicSSHKey,
 		JumphostSubnet:         "public-subnet-1",
 		Production:             true,
-		CustomerTag:            "unit-test",
+		CustomerTag:            aws_iac.DefaultCustomerTag,
 	}
 
 	jsonData, err := json.Marshal(variables)
@@ -88,7 +89,7 @@ func (s *VPCTestSuite) TestApplyingModule() {
 		TerraformDir: "../vpc",
 		VarFiles:     []string{tempFile.Name()},
 		BackendConfig: map[string]interface{}{
-			"region": DefaultRegion,
+			"region": aws_iac.DefaultRegion,
 			"bucket": bucketName,
 			"key":    "vpc.tfstate",
 		},
@@ -103,7 +104,7 @@ func (s *VPCTestSuite) TestApplyingModule() {
 		s.NoError(err, "Failed to get VPC ID from Terraform output")
 		return
 	}
-	vpc := aws.GetVpcById(s.T(), vpcID, DefaultRegion)
+	vpc := aws.GetVpcById(s.T(), vpcID, aws_iac.DefaultRegion)
 	s.Equal("10.250.0.0/16", *vpc.CidrBlock, "VPC CIDR block does not match expected value")
 	s.NotEmpty(vpcID, "VPC ID should not be empty")
 	privateSubnets := terraform.OutputMapOfObjects(s.T(), terraformOptions, "private_subnets")
@@ -124,10 +125,10 @@ func (s *VPCTestSuite) TestApplyingModule() {
 		"tag:Name": {"test-vpc-" + randomPostfix + "-jump"},
 		"tag:VPC":  {"test-vpc-" + randomPostfix},
 	}
-	instanceIDs := aws.GetEc2InstanceIdsByFilters(s.T(), DefaultRegion, ec2Filters)
+	instanceIDs := aws.GetEc2InstanceIdsByFilters(s.T(), aws_iac.DefaultRegion, ec2Filters)
 	s.NotEmpty(instanceIDs, "No EC2 instances found with the specified filters")
 
-	_, err = GetInternetGatewaysByTags(DefaultRegion, map[string][]string{
+	_, err = aws_iac.GetInternetGatewaysByTags(aws_iac.DefaultRegion, map[string][]string{
 		"Name": {"test-vpc-" + randomPostfix + "-igw"},
 		"VPC":  {"test-vpc-" + randomPostfix},
 	})
@@ -136,7 +137,7 @@ func (s *VPCTestSuite) TestApplyingModule() {
 		return
 	}
 
-	_, err = GetNATGatewaysByTags(DefaultRegion, map[string][]string{
+	_, err = aws_iac.GetNATGatewaysByTags(aws_iac.DefaultRegion, map[string][]string{
 		"VPC": {"test-vpc-" + randomPostfix},
 	})
 	if err != nil {
