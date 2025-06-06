@@ -32,11 +32,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Checkout code
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-      with:
-        persist-credentials: false
-
     - name: Set up git credentials
       shell: bash
       run: |
@@ -46,6 +41,14 @@ runs:
     - name: Setup asdf and install dependencies
       id: install-deps
       uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
+
+    - name: Checkout EMF repository
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      with:
+        repository: open-edge-platform/edge-manageability-framework
+        ref: ${{ inputs.orch_version }}
+        token: ${{ inputs.token }}
+        persist-credentials: false
 
     - name: Print current git hash
       shell: bash
@@ -71,8 +74,8 @@ runs:
           echo "Deploying full Orchestrator setup..."
           mage deploy:kindAll
         fi
-        mage deploy:kindAll
         echo "Orchestrator deployment done!"
+
     - name: Get Root App Status
       shell: bash
       if: ${{ always() && steps.deploy-external-orchestrator.conclusion != 'success' }}
@@ -80,6 +83,7 @@ runs:
         echo "Root App Status:"
         kubectl get pods -o wide -A
         kubectl -n dev get applications root-app -o yaml || true
+
     - name: Verify Kind Deployment
       id: verify-kind-deployment
       shell: bash
@@ -89,6 +93,7 @@ runs:
         echo "Orchestrator deployment verified!"
         mage router:stop router:start
         echo "Router restarted"
+
     - name: Setup Test environment
       shell: bash
       run: |
