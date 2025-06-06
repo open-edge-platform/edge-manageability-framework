@@ -19,9 +19,9 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
-    - repoURL: https://github.com/open-edge-platform/cluster-api-provider-intel
-      path: deployment/charts/intel-infra-provider
-      targetRevision: check-lost-connection
+    - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
+      chart: cluster/charts/{{$appName}}
+      targetRevision: 1.2.0
       helm:
         releaseName: {{$appName}}
         valuesObject:
@@ -31,9 +31,9 @@ spec:
           {{- $baseConfig := .Files.Get $baseFile|fromYaml}}
           {{- $overwrite := (get .Values.postCustomTemplateOverwrite $appName ) | default dict }}
           {{- mergeOverwrite $baseConfig $customConfig $overwrite | toYaml | nindent 10 }}
-    - repoURL: https://github.com/open-edge-platform/cluster-api-provider-intel
-      path: deployment/charts/intel-infra-provider-crds
-      targetRevision: check-lost-connection
+    - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
+      chart: cluster/charts/intel-infra-provider-crds
+      targetRevision: 1.2.0
   destination:
     namespace: {{$namespace}}
     server: {{ required "A valid targetServer entry required!" .Values.argo.targetServer }}
