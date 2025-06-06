@@ -224,7 +224,7 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 	})
 
 	Describe("Edge Infra services", Ordered, Label(infraManagement), func() {
-		testUrl := baseProjAPIUrl + "/compute"
+		testUrl := baseProjAPIUrl + "/compute/hosts"
 		It("Edge Infrastructure services should NOT be accessible over HTTPS when using valid but expired token", func() { //nolint: dupl, lll
 			Expect(saveTokenUser(cli, testApiUser, testUserPassword)).To(Succeed())
 
