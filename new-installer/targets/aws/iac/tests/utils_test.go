@@ -28,7 +28,8 @@ import (
 )
 
 const (
-	DefaultRegion = "us-west-2"
+	DefaultRegion      = "us-west-2"
+	DefaultCustomerTag = "test-customer"
 )
 
 type AWSS3BackendConfig struct {
@@ -141,7 +142,7 @@ func CreateVPC(region string, name string) (string, []string, []string, error) {
 					},
 					{
 						Key:   aws.String("CustomerTag"),
-						Value: aws.String("test-customer"),
+						Value: aws.String(DefaultCustomerTag),
 					},
 				},
 			},
@@ -166,7 +167,7 @@ func CreateVPC(region string, name string) (string, []string, []string, error) {
 					},
 					{
 						Key:   aws.String("CustomerTag"),
-						Value: aws.String("test-customer"),
+						Value: aws.String(DefaultCustomerTag),
 					},
 				},
 			},
@@ -209,7 +210,7 @@ func CreateVPC(region string, name string) (string, []string, []string, error) {
 						},
 						{
 							Key:   aws.String("CustomerTag"),
-							Value: aws.String("test-customer"),
+							Value: aws.String(DefaultCustomerTag),
 						},
 					},
 				},
@@ -237,7 +238,7 @@ func CreateVPC(region string, name string) (string, []string, []string, error) {
 					},
 					{
 						Key:   aws.String("CustomerTag"),
-						Value: aws.String("test-customer"),
+						Value: aws.String(DefaultCustomerTag),
 					},
 				},
 			},
@@ -292,7 +293,7 @@ func CreateVPC(region string, name string) (string, []string, []string, error) {
 						},
 						{
 							Key:   aws.String("CustomerTag"),
-							Value: aws.String("test-customer"),
+							Value: aws.String(DefaultCustomerTag),
 						},
 					},
 				},
@@ -334,7 +335,7 @@ func CreateVPC(region string, name string) (string, []string, []string, error) {
 						},
 						{
 							Key:   aws.String("CustomerTag"),
-							Value: aws.String("test-customer"),
+							Value: aws.String(DefaultCustomerTag),
 						},
 						{
 							Key:   aws.String("VPC"),
@@ -380,7 +381,7 @@ func CreateVPC(region string, name string) (string, []string, []string, error) {
 						},
 						{
 							Key:   aws.String("CustomerTag"),
-							Value: aws.String("test-customer"),
+							Value: aws.String(DefaultCustomerTag),
 						},
 					},
 				},
@@ -642,7 +643,7 @@ func CreateJumpHost(vpcID string, subnetID string, region string, ipCIDRAllowlis
 					},
 					{
 						Key:   aws.String("CustomerTag"),
-						Value: aws.String("test-customer"),
+						Value: aws.String(DefaultCustomerTag),
 					},
 				},
 			},
@@ -751,7 +752,7 @@ func CreateJumpHost(vpcID string, subnetID string, region string, ipCIDRAllowlis
 					},
 					{
 						Key:   aws.String("CustomerTag"),
-						Value: aws.String("test-customer"),
+						Value: aws.String(DefaultCustomerTag),
 					},
 				},
 			},
