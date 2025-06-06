@@ -5,11 +5,14 @@ package steps_aws_test
 
 import (
 	"crypto/rand"
+	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/hashicorp/terraform-exec/tfexec"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps"
@@ -75,15 +78,109 @@ func (s *EKSStepTest) SetupTest() {
 func (s *EKSStepTest) TestInstallAndUninstallEKS() {
 	s.runtimeState.Action = "install"
 	s.expectUtiliyCall("install")
-	// We won't update the runtime state in this test, so we don't check the return value
-	_, err := steps.GoThroughStepFunctions(s.step, &s.config, s.runtimeState)
+	rs, err := steps.GoThroughStepFunctions(s.step, &s.config, s.runtimeState)
 	if err != nil {
 		s.NoError(err)
 		return
 	}
+	s.Equal("Mock OIDC Issuer", rs.AWS.EKSOIDCIssuer)
+
+	s.runtimeState.Action = "uninstall"
+	s.expectUtiliyCall("uninstall")
+	rs, err = steps.GoThroughStepFunctions(s.step, &s.config, s.runtimeState)
+	if err != nil {
+		s.NoError(err)
+		return
+	}
+	s.Equal("", rs.AWS.EKSOIDCIssuer)
+}
+
+func (s *EKSStepTest) TestUpgradeEKS() {
+	s.runtimeState.Action = "upgrade"
+	s.config.AWS.PreviousS3StateBucket = "old-state-bucket"
+	s.expectUtiliyCall("upgrade")
+	rs, err := steps.GoThroughStepFunctions(s.step, &s.config, s.runtimeState)
+	if err != nil {
+		s.NoError(err)
+		return
+	}
+	s.Equal("Mock OIDC Issuer", rs.AWS.EKSOIDCIssuer)
 }
 
 func (s *EKSStepTest) expectUtiliyCall(action string) {
+	expectTfOutput := steps.TerraformUtilityOutput{}
+	if action == "install" || action == "upgrade" {
+		expectTfOutput.Output = map[string]tfexec.OutputMeta{
+			"eks_oidc_issuer": {
+				Type:  json.RawMessage(`"string"`),
+				Value: json.RawMessage(`"Mock OIDC Issuer"`),
+			},
+		}
+	}
+	if action == "upgrade" {
+		s.awsUtility.On("S3CopyToS3",
+			s.config.AWS.Region,
+			s.config.AWS.PreviousS3StateBucket,
+			fmt.Sprintf("%s/cluster/%s", s.config.AWS.Region, s.config.Global.OrchName),
+			s.config.AWS.Region,
+			s.config.Global.OrchName+"-"+s.runtimeState.DeploymentID,
+			"eks.tfstate",
+		).Return(nil).Once()
+		s.tfUtility.On("MoveStates", mock.Anything, steps.TerraformUtilityMoveStatesInput{
+			ModulePath: filepath.Join(s.step.RootPath, steps_aws.EKSModulePath),
+			States: map[string]string{
+				"module.eks.aws_iam_role.iam_role_eks_cluster":                                   "aws_iam_role.iam_role_eks_cluster",
+				"module.eks.aws_iam_role_policy_attachment.eks_cluster_AmazonEKSClusterPolicy":   "aws_iam_role_policy_attachment.eks_cluster_AmazonEKSClusterPolicy",
+				"module.eks.aws_iam_role_policy_attachment.eks_cluster_AmazonEKSServicePolicy":   "aws_iam_role_policy_attachment.eks_cluster_AmazonEKSServicePolicy",
+				"module.eks.aws_iam_role_policy_attachment.AmazonEKSWorkerNodePolicy":            "aws_iam_role_policy_attachment.AmazonEKSWorkerNodePolicy",
+				"module.eks.aws_iam_role_policy_attachment.AmazonEKS_CNI_Policy":                 "aws_iam_role_policy_attachment.AmazonEKS_CNI_Policy",
+				"module.eks.aws_iam_role_policy_attachment.AmazonEC2ContainerRegistryReadOnly":   "aws_iam_role_policy_attachment.AmazonEC2ContainerRegistryReadOnly",
+				"module.eks.aws_iam_role_policy_attachment.AmazonEBSCSIDriverPolicy":             "aws_iam_role_policy_attachment.AmazonEBSCSIDriverPolicy",
+				"module.eks.aws_iam_role_policy_attachment.AmazonEFSCSIDriverPolicy":             "aws_iam_role_policy_attachment.AmazonEFSCSIDriverPolicy",
+				"module.eks.aws_iam_role_policy_attachment.AmazonSSMManagedInstanceCore":         "aws_iam_role_policy_attachment.AmazonSSMManagedInstanceCore",
+				"module.eks.aws_iam_role_policy_attachment.ELB_Controller":                       "aws_iam_role_policy_attachment.ELB_Controller",
+				"module.eks.aws_iam_role_policy_attachment.additional_policy":                    "aws_iam_role_policy_attachment.additional_policy",
+				"module.eks.aws_iam_role.eks_nodes":                                              "aws_iam_role.eks_nodes",
+				"module.eks.aws_iam_role.cas_controller":                                         "aws_iam_role.cas_controller",
+				"module.eks.aws_iam_role_policy_attachment.cas_controller":                       "aws_iam_role_policy_attachment.cas_controller",
+				"module.eks.aws_iam_role.certmgr":                                                "aws_iam_role.certmgr",
+				"module.eks.aws_iam_role_policy_attachment.certmgr_AmazonSSMManagedInstanceCore": "aws_iam_role_policy_attachment.certmgr_AmazonSSMManagedInstanceCore",
+				"module.eks.aws_iam_role_policy_attachment.certmgr_acm_sync_certmgr":             "aws_iam_role_policy_attachment.certmgr_acm_sync_certmgr",
+				"module.eks.aws_iam_role_policy_attachment.certmgr_acm_sync_eks_node":            "aws_iam_role_policy_attachment.certmgr_acm_sync_eks_node",
+				"module.eks.aws_iam_role_policy_attachment.certmgr_write_route53":                "aws_iam_role_policy_attachment.certmgr_write_route53",
+				"module.eks.aws_iam_policy.certmgr_acm_sync":                                     "aws_iam_policy.certmgr_acm_sync",
+				"module.eks.aws_iam_policy.certmgr_write_route53":                                "aws_iam_policy.certmgr_write_route53",
+				"module.eks.aws_iam_openid_connect_provider.cluster":                             "aws_iam_openid_connect_provider.cluster",
+				"module.eks.aws_iam_policy.cas_controller":                                       "aws_iam_policy.cas_controller",
+				"module.eks.aws_security_group.eks_cluster":                                      "aws_security_group.eks_cluster",
+				"module.eks.aws_eks_cluster.eks_cluster":                                         "aws_eks_cluster.eks_cluster",
+				"module.eks.aws_eks_node_group.nodegroup":                                        "aws_eks_node_group.nodegroup",
+				"module.eks.aws_eks_node_group.additional_node_group":                            "aws_eks_node_group.additional_node_group",
+				"module.eks.aws_eks_addon.addons":                                                "aws_eks_addon.addons",
+				"module.eks.null_resource.wait_eks_complete":                                     "null_resource.wait_eks_complete",
+				"module.eks.null_resource.create_kubecnofig":                                     "null_resource.create_kubecnofig",
+				"module.eks.null_resource.set_env":                                               "null_resource.set_env",
+				"module.eks.aws_launch_template.eks_launch_template":                             "aws_launch_template.eks_launch_template",
+				"module.eks.aws_launch_template.additional_node_group_launch_template":           "aws_launch_template.additional_node_group_launch_template",
+			},
+		}).Return(nil).Once()
+		s.tfUtility.On("RemoveStates", mock.Anything, steps.TerraformUtilityRemoveStatesInput{
+			ModulePath: filepath.Join(s.step.RootPath, steps_aws.EKSModulePath),
+			States: []string{
+				"module.s3",
+				"module.efs",
+				"module.aurora",
+				"module.aurora_database",
+				"module.aurora_import",
+				"module.kms",
+				"module.orch_init",
+				"module.eks_auth",
+				"module.ec2log",
+				"module.aws_lb_controller",
+				"module.gitea",
+			},
+		}).Return(nil).Once()
+	}
 	expectedVariables := steps_aws.EKSVariables{
 		EKSVersion: "1.32",
 		AddOns: []steps_aws.EKSAddOn{
@@ -154,5 +251,5 @@ func (s *EKSStepTest) expectUtiliyCall(action string) {
 		BackendConfig:      expectedBackendConfig,
 		LogFile:            filepath.Join(s.runtimeState.LogDir, "aws_eks.log"),
 		KeepGeneratedFiles: true,
-	}).Return(steps.TerraformUtilityOutput{}, nil).Once()
+	}).Return(expectTfOutput, nil).Once()
 }

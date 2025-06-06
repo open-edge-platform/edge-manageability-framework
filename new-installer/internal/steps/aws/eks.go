@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
@@ -237,13 +238,23 @@ func (s *EKSStep) RunStep(ctx context.Context, config config.OrchInstallerConfig
 		LogFile:            filepath.Join(runtimeState.LogDir, "aws_eks.log"),
 		KeepGeneratedFiles: s.KeepGeneratedFiles,
 	}
-	// No output from EKS module for now
-	_, err := s.TerraformUtility.Run(ctx, terraformStepInput)
+	output, err := s.TerraformUtility.Run(ctx, terraformStepInput)
 	if err != nil {
 		return runtimeState, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeTerraform,
 			ErrorMsg:  fmt.Sprintf("failed to run terraform: %v", err),
 		}
+	}
+	if runtimeState.Action == "uninstall" {
+		return runtimeState, nil
+	}
+	if eksOIDCIssuer, ok := output.Output["eks_oidc_issuer"]; !ok {
+		return runtimeState, &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeTerraform,
+			ErrorMsg:  "eks_oidc_issuer does not exist in terraform output",
+		}
+	} else {
+		runtimeState.AWS.EKSOIDCIssuer = strings.Trim(string(eksOIDCIssuer.Value), "\"")
 	}
 	return runtimeState, nil
 }
