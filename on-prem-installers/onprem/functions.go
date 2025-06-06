@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 	"bufio"
-
+    "os/user"
 	"path/filepath"
 	"regexp"
 
@@ -1070,6 +1070,273 @@ func (OnPrem) InstallRKE2() error {
 
 
 func (OnPrem) Deploy() error {
+
+
+	    setDefault := func(key, def string) {
+        if os.Getenv(key) == "" {
+            os.Setenv(key, def)
+        }
+    }
+
+    setDefault("RELEASE_SERVICE_URL", "registry-rs.edgeorchestration.intel.com")
+    setDefault("ORCH_INSTALLER_PROFILE", "onprem")
+    setDefault("DEPLOY_VERSION", "v3.1.0")
+    setDefault("GITEA_IMAGE_REGISTRY", "docker.io")
+
+    // Variables
+    cwd, err := os.Getwd()
+    if err != nil {
+        return err
+    }
+    os.Setenv("cwd", cwd)
+    os.Setenv("deb_dir_name", "installers")
+    os.Setenv("git_arch_name", "repo_archives")
+    os.Setenv("argo_cd_ns", "argocd")
+    os.Setenv("gitea_ns", "gitea")
+    os.Setenv("archives_rs_path", "edge-orch/common/files/orchestrator")
+    os.Setenv("si_config_repo", "edge-manageability-framework")
+    os.Setenv("installer_rs_path", "edge-orch/common/files")
+
+    tmpDir := filepath.Join(cwd, "repo_archives", "tmp")
+    os.Setenv("tmp_dir", tmpDir)
+
+    usr, err := user.Current()
+    if err != nil {
+        return err
+    }
+    kubeconfig := filepath.Join("/home", usr.Username, ".kube", "config")
+    os.Setenv("KUBECONFIG", kubeconfig)
+
+    os.Setenv("ASSUME_YES", "false")
+    os.Setenv("SKIP_DOWNLOAD", "false")
+    os.Setenv("ENABLE_TRACE", "false")
+    os.Setenv("GIT_REPOS", filepath.Join(cwd, "repo_archives"))
+
+
+
+    args := os.Args[1:]
+    for i := 0; i < len(args); i++ {
+        arg := args[i]
+        switch arg {
+        case "-h", "--help":
+            OnPrem{}.Usage()
+            os.Exit(0)
+        case "-s", "--sre_tls":
+            os.Setenv("SRE_TLS_ENABLED", "true")
+            if i+1 < len(args) && !strings.HasPrefix(args[i+1], "-") {
+                certPath := args[i+1]
+                data, err := os.ReadFile(certPath)
+                if err != nil {
+                    fmt.Fprintf(os.Stderr, "Failed to read SRE CA cert: %v\n", err)
+                    os.Exit(1)
+                }
+                os.Setenv("SRE_DEST_CA_CERT", string(data))
+                i++
+            }
+        case "--skip-download":
+            os.Setenv("SKIP_DOWNLOAD", "true")
+        case "-d", "--notls":
+            os.Setenv("SMTP_SKIP_VERIFY", "true")
+        case "-o", "--override":
+            os.Setenv("ORCH_INSTALLER_PROFILE", "onprem-dev")
+        case "-u", "--url":
+            if i+1 < len(args) {
+                os.Setenv("RELEASE_SERVICE_URL", args[i+1])
+                i++
+            } else {
+                fmt.Fprintf(os.Stderr, "ERROR: %s requires an argument\n", arg)
+                os.Exit(1)
+            }
+        case "-t", "--trace":
+            os.Setenv("ENABLE_TRACE", "true")
+            // No direct equivalent of set -x in Go
+        case "-w", "--write-config":
+            os.Setenv("WRITE_CONFIG", "true")
+        case "-y", "--yes":
+            os.Setenv("ASSUME_YES", "true")
+        default:
+            if strings.HasPrefix(arg, "-") {
+                fmt.Fprintf(os.Stderr, "Unknown argument %s\n", arg)
+                os.Exit(1)
+            } else {
+                break
+            }
+        }
+    }
+
+
+
+	fmt.Println("Running On Premise Edge Orchestrator installers")
+
+    // Print environment variables
+	OnPrem{}.PrintEnvVariables()
+
+    // Check & install script dependencies
+	err = OnPrem{}.CheckOras()
+    if  err != nil {
+        return fmt.Errorf("failed to check oras: %v", err)
+    }
+
+	err = OnPrem{}.InstallYq()
+    if err != nil {
+        return fmt.Errorf("failed to install yq: %v", err)
+    }
+
+
+
+
+    // Download packages
+	err = OnPrem{}.DownloadPackages()
+    if err != nil {
+        return fmt.Errorf("failed to download packages: %v", err)
+    }
+
+    // Find repo file
+    // cwd := os.Getenv("cwd")
+    gitArchName := os.Getenv("git_arch_name")
+    siConfigRepo := os.Getenv("si_config_repo")
+    pattern := fmt.Sprintf("%s/%s/*%s*.tgz", cwd, gitArchName, siConfigRepo)
+    matches, err := filepath.Glob(pattern)
+    if err != nil || len(matches) == 0 {
+        return fmt.Errorf("repo archive not found with pattern: %s", pattern)
+    }
+    repoFile := filepath.Base(matches[0])
+    os.Setenv("repo_file", repoFile)
+
+    // Write configuration to disk if the flag is set
+    if os.Getenv("WRITE_CONFIG") == "true" {
+		err = OnPrem{}.WriteConfigToDisk()
+        if err != nil {
+            return fmt.Errorf("failed to write config to disk: %v", err)
+        }
+    }
+
+    // Config - interactive
+	err = OnPrem{}.AllowConfigInRuntime()
+    if  err != nil {
+        return fmt.Errorf("failed to allow config in runtime: %v", err)
+    }
+
+    // Write out the configs that have explicit overrides
+	err = OnPrem{}.WriteConfigsUsingOverrides() 
+    if err != nil {
+        return fmt.Errorf("failed to write configs using overrides: %v", err)
+    }
+
+    // Validate the configuration file, and set missing values
+	err = OnPrem{}.ValidateConfig()
+    if  err != nil {
+        return fmt.Errorf("failed to validate config: %v", err)
+    }
+	
+	
+	
+    // tmpDir := os.Getenv("tmp_dir")
+
+    // Find the repo file
+    pattern = fmt.Sprintf("%s/%s/*%s*.tgz", cwd, gitArchName, siConfigRepo)
+    matches, err = filepath.Glob(pattern)
+    if err != nil || len(matches) == 0 {
+        return fmt.Errorf("repo archive not found with pattern: %s", pattern)
+    }
+    repoFile = filepath.Base(matches[0])
+
+    // Change to tmpDir
+    if err := os.Chdir(tmpDir); err != nil {
+        return fmt.Errorf("failed to cd to tmpDir: %v", err)
+    }
+
+    // Create tar archive
+    tarCmd := exec.Command("tar", "-zcf", repoFile, "./edge-manageability-framework")
+    tarCmd.Stdout = os.Stdout
+    tarCmd.Stderr = os.Stderr
+    if err := tarCmd.Run(); err != nil {
+        return fmt.Errorf("failed to create tar archive: %v", err)
+    }
+
+    // Move the archive to the destination
+    destPath := fmt.Sprintf("%s/%s/%s", cwd, gitArchName, repoFile)
+    mvCmd := exec.Command("mv", "-f", repoFile, destPath)
+    mvCmd.Stdout = os.Stdout
+    mvCmd.Stderr = os.Stderr
+    if err := mvCmd.Run(); err != nil {
+        return fmt.Errorf("failed to move archive: %v", err)
+    }
+
+    // Change back to cwd
+    if err := os.Chdir(cwd); err != nil {
+        return fmt.Errorf("failed to cd back to cwd: %v", err)
+    }
+
+    // Remove tmpDir
+    rmCmd := exec.Command("rm", "-rf", tmpDir)
+    rmCmd.Stdout = os.Stdout
+    rmCmd.Stderr = os.Stderr
+    if err := rmCmd.Run(); err != nil {
+        return fmt.Errorf("failed to remove tmpDir: %v", err)
+    }
+
+    // Run OS Configuration installer and K8s Installer
+	err = OnPrem{}.InstallRKE2()
+    if err != nil {
+        return fmt.Errorf("failed to install RKE2: %v", err)
+    }
+	
+	
+	fmt.Println("Installing Gitea & ArgoCD...")
+
+    // cwd := os.Getenv("cwd")
+    debDirName := os.Getenv("deb_dir_name")
+    installerPattern := fmt.Sprintf("%s/%s/onprem-argocd-installer_*_amd64.deb", cwd, debDirName)
+    matches, err = filepath.Glob(installerPattern)
+    if err != nil || len(matches) == 0 {
+        return fmt.Errorf("no ArgoCD installer package found at %s", installerPattern)
+    }
+    debFile := matches[0]
+
+    cmd := exec.Command(
+        "sudo",
+        "NEEDRESTART_MODE=a",
+        "DEBIAN_FRONTEND=noninteractive",
+        "apt-get", "install", "-y", debFile,
+    )
+    cmd.Stdout = os.Stdout
+    cmd.Stderr = os.Stderr
+    if err := cmd.Run(); err != nil {
+        return fmt.Errorf("failed to install ArgoCD: %v", err)
+    }
+
+    // Wait for Gitea namespace creation
+    giteaNS := os.Getenv("gitea_ns")
+    if giteaNS == "" {
+        giteaNS = "gitea"
+    }
+	err = OnPrem{}.WaitForNamespaceCreation(giteaNS)
+    if  err != nil {
+        return fmt.Errorf("failed to wait for Gitea namespace: %v", err)
+    }
+
+    fmt.Println("sleep 30s to allow Gitea to start")
+    time.Sleep(30 * time.Second)
+    err = OnPrem{}.WaitForPodsRunning(giteaNS);
+    if err != nil {
+        return fmt.Errorf("failed to wait for Gitea pods: %v", err)
+    }
+    fmt.Println("Gitea Installed")
+
+    // Wait for ArgoCD namespace creation
+    argoCDNS := os.Getenv("argo_cd_ns")
+    if argoCDNS == "" {
+        argoCDNS = "argocd"
+    }
+	err = OnPrem{}.WaitForNamespaceCreation(argoCDNS);
+    if  err != nil {
+        return fmt.Errorf("failed to wait for ArgoCD namespace: %v", err)
+    }
+
+
+
+
     // Sleep 30 seconds to allow ArgoCD to start
     fmt.Println("Sleeping 30s to allow ArgoCD to start...")
     time.Sleep(30 * time.Second)
@@ -1079,7 +1346,7 @@ func (OnPrem) Deploy() error {
     if argoCDNamespace == "" {
         argoCDNamespace = "argocd"
     }
-	err := OnPrem{}.WaitForPodsRunning(argoCDNamespace)
+	err = OnPrem{}.WaitForPodsRunning(argoCDNamespace)
     if err != nil {
         return fmt.Errorf("failed to wait for ArgoCD pods: %v", err)
     }

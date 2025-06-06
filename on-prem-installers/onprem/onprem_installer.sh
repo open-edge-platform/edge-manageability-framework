@@ -46,45 +46,45 @@ cd -
 
 ### Constants
 
-export RELEASE_SERVICE_URL="${RELEASE_SERVICE_URL:-registry-rs.edgeorchestration.intel.com}"
-export ORCH_INSTALLER_PROFILE="${ORCH_INSTALLER_PROFILE:-onprem}"
-export DEPLOY_VERSION="${DEPLOY_VERSION:-v3.1.0}"
-export GITEA_IMAGE_REGISTRY="${GITEA_IMAGE_REGISTRY:-docker.io}"
+# export RELEASE_SERVICE_URL="${RELEASE_SERVICE_URL:-registry-rs.edgeorchestration.intel.com}"
+# export ORCH_INSTALLER_PROFILE="${ORCH_INSTALLER_PROFILE:-onprem}"
+# export DEPLOY_VERSION="${DEPLOY_VERSION:-v3.1.0}"
+# export GITEA_IMAGE_REGISTRY="${GITEA_IMAGE_REGISTRY:-docker.io}"
 
-### Variables
-export cwd=$(pwd)
+# ### Variables
+# export cwd=$(pwd)
 
-export deb_dir_name="installers"
-export git_arch_name="repo_archives"
-export argo_cd_ns=argocd
-export gitea_ns=gitea
-export archives_rs_path="edge-orch/common/files/orchestrator"
-export si_config_repo="edge-manageability-framework"
-export installer_rs_path="edge-orch/common/files"
+# export deb_dir_name="installers"
+# export git_arch_name="repo_archives"
+# export argo_cd_ns=argocd
+# export gitea_ns=gitea
+# export archives_rs_path="edge-orch/common/files/orchestrator"
+# export si_config_repo="edge-manageability-framework"
+# export installer_rs_path="edge-orch/common/files"
 
-export tmp_dir="$cwd/$git_arch_name/tmp"
-export KUBECONFIG=/home/$USER/.kube/config
+# export tmp_dir="$cwd/$git_arch_name/tmp"
+# export KUBECONFIG=/home/$USER/.kube/config
 
-export ASSUME_YES=false
-export SKIP_DOWNLOAD=false
-export ENABLE_TRACE=false
-
+# export ASSUME_YES=false
+# export SKIP_DOWNLOAD=false
+# export ENABLE_TRACE=false
+# export GIT_REPOS=$cwd/$git_arch_name
 
 
 # Variables that depend on the above and might require updating later, are placed in here
-set_artifacts_version() {
-  installer_list=(
-    "onprem-ke-installer:${DEPLOY_VERSION}"
-    "onprem-argocd-installer:${DEPLOY_VERSION}"
-    "onprem-orch-installer:${DEPLOY_VERSION}"
-  )
+# set_artifacts_version() {
+#   installer_list=(
+#     "onprem-ke-installer:${DEPLOY_VERSION}"
+#     "onprem-argocd-installer:${DEPLOY_VERSION}"
+#     "onprem-orch-installer:${DEPLOY_VERSION}"
+#   )
 
-  git_archive_list=(
-    "onpremfull:${DEPLOY_VERSION}"
-  )
-}
+#   git_archive_list=(
+#     "onpremfull:${DEPLOY_VERSION}"
+#   )
+# }
 
-export GIT_REPOS=$cwd/$git_arch_name
+
 
 ### Functions
 
@@ -481,74 +481,71 @@ export GIT_REPOS=$cwd/$git_arch_name
 # export SKIP_DOWNLOAD=false
 # export ENABLE_TRACE=false
 
-if [ -n "${1-}" ]; then
-  while :; do
-    case "$1" in
-      -h|--help)
-        # usage
-        mage onPrem:Usage
-        exit 0
-      ;;
-      -s|--sre_tls)
-        export SRE_TLS_ENABLED="true"
-        if [ "$2" ]; then
-          SRE_DEST_CA_CERT="$(cat "$2")"
-          shift
-        fi
-      ;;
-      --skip-download)
-        export SKIP_DOWNLOAD=true
-      ;;
-      -d|--notls)
-        export SMTP_SKIP_VERIFY="true"
-      ;;
-      -o|--override)
-        export ORCH_INSTALLER_PROFILE="onprem-dev"
-      ;;
-      -u|--url)
-        if [ "$2" ]; then
-          export RELEASE_SERVICE_URL="$2"
-          shift
-        else
-          echo "ERROR: $1 requires an argument"
-          exit 1
-        fi
-      ;;
-      -t|--trace)
-        set -x
-        export ENABLE_TRACE=true
-      ;;
-      -w|--write-config)
-        export WRITE_CONFIG="true"
-      ;;
-      -y|--yes)
-        export ASSUME_YES=true
-      ;;
-      -?*)
-        echo "Unknown argument $1"
-        exit 1
-      ;;
-      *) break
-    esac
-    shift
-  done
-fi
+# if [ -n "${1-}" ]; then
+#   while :; do
+#     case "$1" in
+#       -h|--help)
+#         # usage
+#         mage onPrem:Usage
+#         exit 0
+#       ;;
+#       -s|--sre_tls)
+#         export SRE_TLS_ENABLED="true"
+#         if [ "$2" ]; then
+#           SRE_DEST_CA_CERT="$(cat "$2")"
+#           shift
+#         fi
+#       ;;
+#       --skip-download)
+#         export SKIP_DOWNLOAD=true
+#       ;;
+#       -d|--notls)
+#         export SMTP_SKIP_VERIFY="true"
+#       ;;
+#       -o|--override)
+#         export ORCH_INSTALLER_PROFILE="onprem-dev"
+#       ;;
+#       -u|--url)
+#         if [ "$2" ]; then
+#           export RELEASE_SERVICE_URL="$2"
+#           shift
+#         else
+#           echo "ERROR: $1 requires an argument"
+#           exit 1
+#         fi
+#       ;;
+#       -t|--trace)
+#         set -x
+#         export ENABLE_TRACE=true
+#       ;;
+#       -w|--write-config)
+#         export WRITE_CONFIG="true"
+#       ;;
+#       -y|--yes)
+#         export ASSUME_YES=true
+#       ;;
+#       -?*)
+#         echo "Unknown argument $1"
+#         exit 1
+#       ;;
+#       *) break
+#     esac
+#     shift
+#   done
+# fi
 
 
-### Installer
-echo "Running On Premise Edge Orchestrator installers"
+# ### Installer
+# echo "Running On Premise Edge Orchestrator installers"
 
-# Print environment variables
-# print_env_variables
-mage onPrem:printEnvVariables
+# # Print environment variables
+# # print_env_variables
+# mage onPrem:printEnvVariables
 
-# Set the version of the artifacts to be downloaded
-set_artifacts_version
-
-# Check & install script dependencies
-mage onPrem:checkOras
-#check_oras
-mage onPrem:installYq
+# # Check & install script dependencies
+# mage onPrem:checkOras
+# #check_oras
+# mage onPrem:installYq
 # install_yq
 # download_packages () {
 # if  [[ $SKIP_DOWNLOAD != true  ]]; then 
@@ -593,39 +590,39 @@ mage onPrem:installYq
 # fi
 # }
 # download_packages
-mage onPrem:downloadPackages
+# mage onPrem:downloadPackages
 
-# Write configuration to disk if the flag is set
-export repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n")
-if [[ "$WRITE_CONFIG" == "true" ]]; then
-  #write_config_to_disk
-  mage onPrem:writeConfigToDisk
-fi
+# # Write configuration to disk if the flag is set
+# export repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n")
+# if [[ "$WRITE_CONFIG" == "true" ]]; then
+#   #write_config_to_disk
+#   mage onPrem:writeConfigToDisk
+# fi
 
-# Config - interactive
-# allow_config_in_runtime
-mage onPrem:allowConfigInRuntime
+# # Config - interactive
+# # allow_config_in_runtime
+# mage onPrem:allowConfigInRuntime
 
-# Write out the configs that have explicit overrides
-#write_configs_using_overrides
-mage onPrem:writeConfigsUsingOverrides
-# exit 1
-# Validate the configuration file, and set missing values
-mage onPrem:validateConfig
+# # Write out the configs that have explicit overrides
+# #write_configs_using_overrides
+# mage onPrem:writeConfigsUsingOverrides
+# # exit 1
+# # Validate the configuration file, and set missing values
+# mage onPrem:validateConfig
 # validate_config
 
 ## Tar back the edge-manageability-framework repo. This will be later pushed to Gitea repo in the Orchestrator Installer
 # export tmp_dir="$cwd/$git_arch_name/tmp"
-export repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n")
-cd "$tmp_dir"
-tar -zcf "$repo_file" ./edge-manageability-framework
-mv -f "$repo_file" "$cwd/$git_arch_name/$repo_file"
-cd "$cwd"
-rm -rf "$tmp_dir"
+# export repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n")
+# cd "$tmp_dir"
+# tar -zcf "$repo_file" ./edge-manageability-framework
+# mv -f "$repo_file" "$cwd/$git_arch_name/$repo_file"
+# cd "$cwd"
+# rm -rf "$tmp_dir"
 
 
-# Run OS Configuration installer and K8s Installer
-mage onPrem:InstallRKE2
+# # Run OS Configuration installer and K8s Installer
+# mage onPrem:InstallRKE2
 # echo "Installing RKE2..."
 # if [[ -n "${DOCKER_USERNAME}" && -n "${DOCKER_PASSWORD}" ]]; then
 #   echo "Docker credentials provided. Installing RKE2 with Docker credentials"
@@ -642,36 +639,36 @@ mage onPrem:InstallRKE2
 
 
 
-# Run argo CD installer
-echo "Installing Gitea & ArgoCD..."
-eval "sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y $cwd/$deb_dir_name/onprem-argocd-installer_*_amd64.deb"
-# wait_for_namespace_creation $gitea_ns
-mage onPrem:waitForNamespaceCreation $gitea_ns
-echo "sleep 30s to allow Gitea to start"
-sleep 30s
-mage onPrem:waitForPodsRunning $gitea_ns
-# wait_for_pods_running $gitea_ns
-echo "Gitea Installed"
+# # Run argo CD installer
+# echo "Installing Gitea & ArgoCD..."
+# eval "sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y $cwd/$deb_dir_name/onprem-argocd-installer_*_amd64.deb"
+# # wait_for_namespace_creation $gitea_ns
+# mage onPrem:waitForNamespaceCreation $gitea_ns
+# echo "sleep 30s to allow Gitea to start"
+# sleep 30s
+# mage onPrem:waitForPodsRunning $gitea_ns
+# # wait_for_pods_running $gitea_ns
+# echo "Gitea Installed"
 
-# wait_for_namespace_creation $argo_cd_ns
-mage onPrem:waitForNamespaceCreation $argo_cd_ns
+# # wait_for_namespace_creation $argo_cd_ns
+# mage onPrem:waitForNamespaceCreation $argo_cd_ns
 
-sleep 30s
-mage onPrem:waitForPodsRunning $argo_cd_ns
-# wait_for_pods_running $argo_cd_ns
-echo "ArgoCD installed"
+# sleep 30s
+# mage onPrem:waitForPodsRunning $argo_cd_ns
+# # wait_for_pods_running $argo_cd_ns
+# echo "ArgoCD installed"
 
-# Create namespaces for ArgoCD
-mage onPrem:createNamespaces
-# Create secret with azure credentials
-#create_azure_secret
-# mage onprem:CreateAzureSecret todo: this is not used anymore
-# set_default_sre_env
-# create_sre_secrets
-mage onPrem:createSreSecrets
-# set_default_smtp_env
-# create_smpt_secrets
-mage onPrem:createSmtpSecrets
+# # Create namespaces for ArgoCD
+# mage onPrem:createNamespaces
+# # Create secret with azure credentials
+# #create_azure_secret
+# # mage onprem:CreateAzureSecret todo: this is not used anymore
+# # set_default_sre_env
+# # create_sre_secrets
+# mage onPrem:createSreSecrets
+# # set_default_smtp_env
+# # create_smpt_secrets
+# mage onPrem:createSmtpSecrets
 mage onPrem:Deploy
 # harbor_password=$(mage onPrem:generateHarborPassword)
 # keycloak_password=$(mage onPrem:generatePassword)
