@@ -32,6 +32,11 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Checkout code
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      with:
+        persist-credentials: false
+
     - name: Set up git credentials
       shell: bash
       run: |
@@ -47,6 +52,7 @@ runs:
       with:
         repository: open-edge-platform/edge-manageability-framework
         ref: ${{ inputs.orch_version }}
+        path: emf
         token: ${{ inputs.token }}
         persist-credentials: false
 
@@ -65,6 +71,7 @@ runs:
         DOCKERHUB_USERNAME: ${{ inputs.docker_username }}
       shell: bash
       run: |
+        cd emf
         set +x
         echo "Starting to deploy Orchestrator..."
         if [ "${{ inputs.deployment_type }}" == "minimal" ]; then
@@ -88,6 +95,7 @@ runs:
       id: verify-kind-deployment
       shell: bash
       run: |
+        cd emf
         echo "Starting to verify Orchestrator deployment..."
         mage deploy:waitUntilComplete
         echo "Orchestrator deployment verified!"
@@ -97,6 +105,7 @@ runs:
     - name: Setup Test environment
       shell: bash
       run: |
+        cd emf
         sudo awk -i inplace '/BEGIN ORCH DEVELOPMENT HOSTS/,/END ORCH DEVELOPMENT HOSTS/ { next } 1' /etc/hosts
         sudo awk -i inplace '/BEGIN ORCH SRE DEVELOPMENT HOST/,/END ORCH SRE DEVELOPMENT HOST/ { next } 1' /etc/hosts
         mage gen:hostfileTraefik | sudo tee -a /etc/hosts > /dev/null
