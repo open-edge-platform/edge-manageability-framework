@@ -20,6 +20,14 @@ inputs:
   token:
     required: true
     description: "PAT token for private repositories"
+  deployment_type:
+    required: false
+    description: "Type of deployment to perform"
+    default: "all"
+    type: choice
+    options:
+      - all
+      - minimal
 
 runs:
   using: "composite"
@@ -56,6 +64,13 @@ runs:
     run: |
       set +x
       echo "Starting to deploy Orchestrator..."
+      if [ "${{ inputs.deployment_type }}" == "minimal" ]; then
+        echo "Deploying minimal Orchestrator setup..."
+        mage deploy:kindMinimal
+      else
+        echo "Deploying full Orchestrator setup..."
+        mage deploy:kindAll
+      fi
       mage deploy:kindAll
       echo "Orchestrator deployment done!"
   - name: Get Root App Status
