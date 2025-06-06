@@ -48,7 +48,7 @@ var AWSVPCEndpoints = []string{
 	"elasticloadbalancing",
 }
 
-type AWSVPCVariables struct {
+type VPCVariables struct {
 	Region                 string                  `json:"region" yaml:"region"`
 	Name                   string                  `json:"name" yaml:"name"`
 	CidrBlock              string                  `json:"cidr_block" yaml:"cidr_block"`
@@ -58,23 +58,23 @@ type AWSVPCVariables struct {
 	PublicSubnets          map[string]AWSVPCSubnet `json:"public_subnets" yaml:"public_subnets"`
 	EndpointSGName         string                  `json:"endpoint_sg_name" yaml:"endpoint_sg_name"`
 	JumphostIPAllowList    []string                `json:"jumphost_ip_allow_list" yaml:"jumphost_ip_allow_list"`
-	JumphostInstanceSshKey string                  `json:"jumphost_instance_ssh_key_pub" yaml:"jumphost_instance_ssh_key_pub"`
+	JumphostInstanceSSHKey string                  `json:"jumphost_instance_ssh_key_pub" yaml:"jumphost_instance_ssh_key_pub"`
 	JumphostSubnet         string                  `json:"jumphost_subnet" yaml:"jumphost_subnet"`
 	Production             bool                    `json:"production" yaml:"production"`
 	CustomerTag            string                  `json:"customer_tag" yaml:"customer_tag"`
 }
 
-// NewDefaultAWSVPCVariables creates a new AWSVPCVariables with default values
+// NewDefaultVPCVariables creates a new VPCVariables with default values
 // based on variable.tf default definitions.
-func NewDefaultAWSVPCVariables() AWSVPCVariables {
-	return AWSVPCVariables{
+func NewDefaultVPCVariables() VPCVariables {
+	return VPCVariables{
 		Region:                 "",
 		Name:                   "",
 		CidrBlock:              "",
 		EnableDnsHostnames:     true,
 		EnableDnsSupport:       true,
 		JumphostIPAllowList:    []string{},
-		JumphostInstanceSshKey: "",
+		JumphostInstanceSSHKey: "",
 		Production:             true,
 		CustomerTag:            "",
 
@@ -90,7 +90,7 @@ type AWSVPCSubnet struct {
 }
 
 type AWSVPCStep struct {
-	variables          AWSVPCVariables
+	variables          VPCVariables
 	backendConfig      TerraformAWSBucketBackendConfig
 	RootPath           string
 	KeepGeneratedFiles bool
@@ -131,7 +131,7 @@ func (s *AWSVPCStep) ConfigStep(ctx context.Context, config config.OrchInstaller
 		}
 		return runtimeState, nil
 	}
-	s.variables = NewDefaultAWSVPCVariables()
+	s.variables = NewDefaultVPCVariables()
 	s.variables.Region = config.AWS.Region
 	s.variables.Name = config.Global.OrchName
 	s.variables.CidrBlock = DefaultNetworkCIDR
@@ -203,11 +203,11 @@ func (s *AWSVPCStep) ConfigStep(ctx context.Context, config config.OrchInstaller
 				ErrorMsg:  fmt.Sprintf("failed to generate SSH key pair: %v", err),
 			}
 		}
-		s.variables.JumphostInstanceSshKey = publicKey
+		s.variables.JumphostInstanceSSHKey = publicKey
 		runtimeState.JumpHostSSHKeyPrivateKey = privateKey
 		runtimeState.JumpHostSSHKeyPublicKey = publicKey
 	} else {
-		s.variables.JumphostInstanceSshKey = runtimeState.JumpHostSSHKeyPublicKey
+		s.variables.JumphostInstanceSSHKey = runtimeState.JumpHostSSHKeyPublicKey
 	}
 
 	s.variables.CustomerTag = config.AWS.CustomerTag
@@ -217,118 +217,6 @@ func (s *AWSVPCStep) ConfigStep(ctx context.Context, config config.OrchInstaller
 		Key:    VPCBackendBucketKey,
 	}
 	return runtimeState, nil
-}
-
-func (s *AWSVPCStep) moveVPCAndSubnets(ctx context.Context, modulePath string) []*internal.OrchInstallerError {
-	var mvStateErrors []*internal.OrchInstallerError = make([]*internal.OrchInstallerError, 0)
-	mvErr := s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
-		ModulePath:   modulePath,
-		OldStateName: "module.vpc.main",
-		NewStateName: "aws_vpc.main",
-	})
-	if mvErr != nil {
-		mvStateErrors = append(mvStateErrors, mvErr)
-	}
-
-	for name := range s.variables.PublicSubnets {
-		stateMappings := map[string]string{
-			"module.vpc.aws_subnet.public_subnet[%s]":                          "aws_subnet.public_subnet[%s]",
-			"module.nat_gateway.aws_eip.ngw[%s]":                               "aws_eip.ngw[%s]",
-			"module.nat_gateway.aws_nat_gateway.ngw_with_eip[%s]":              "aws_nat_gateway.main[%s]",
-			"module.route_table.aws_route_table.public_subnet[%s]":             "aws_route_table.public_subnet[%s]",
-			"module.route_table.aws_route_table_association.public_subnet[%s]": "aws_route_table_association.public_subnet[%s]",
-		}
-
-		for oldStateTemplate, newStateTemplate := range stateMappings {
-			mvErr = s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
-				ModulePath:   modulePath,
-				OldStateName: fmt.Sprintf(oldStateTemplate, name),
-				NewStateName: fmt.Sprintf(newStateTemplate, name),
-			})
-			if mvErr != nil {
-				mvStateErrors = append(mvStateErrors, mvErr)
-			}
-		}
-	}
-	for name := range s.variables.PrivateSubnets {
-		stateMappings := map[string]string{
-			"module.vpc.aws_subnet.private_subnet[%s]":                          "aws_subnet.private_subnet[%s]",
-			"module.route_table.aws_route_table.private_subnet[%s]":             "aws_route_table.private_subnet[%s]",
-			"module.route_table.aws_route_table_association.private_subnet[%s]": "aws_route_table_association.private_subnet[%s]",
-		}
-
-		for oldStateTemplate, newStateTemplate := range stateMappings {
-			mvErr = s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
-				ModulePath:   modulePath,
-				OldStateName: fmt.Sprintf(oldStateTemplate, name),
-				NewStateName: fmt.Sprintf(newStateTemplate, name),
-			})
-			if mvErr != nil {
-				mvStateErrors = append(mvStateErrors, mvErr)
-			}
-		}
-	}
-	return mvStateErrors
-}
-
-func (s *AWSVPCStep) moveVPCInternetGatewayAndEndpoints(ctx context.Context, modulePath string) []*internal.OrchInstallerError {
-	var mvStateErrors []*internal.OrchInstallerError = make([]*internal.OrchInstallerError, 0)
-	mvErr := s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
-		ModulePath:   modulePath,
-		OldStateName: "module.internet_gateway.aws_internet_gateway.igw",
-		NewStateName: "aws_internet_gateway.igw",
-	})
-	if mvErr != nil {
-		mvStateErrors = append(mvStateErrors, mvErr)
-	}
-	mvErr = s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
-		ModulePath:   modulePath,
-		OldStateName: "module.endpoint.aws_security_group.vpc_endpoints",
-		NewStateName: "aws_security_group.vpc_endpoints",
-	})
-	if mvErr != nil {
-		mvStateErrors = append(mvStateErrors, mvErr)
-	}
-	for _, ep := range AWSVPCEndpoints {
-		mvErr = s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
-			ModulePath:   modulePath,
-			OldStateName: fmt.Sprintf("module.endpoint.aws_vpc_endpoint.endpoint[%s]", ep),
-			NewStateName: fmt.Sprintf("aws_vpc_endpoint.endpoint[%s]", ep),
-		})
-		if mvErr != nil {
-			mvStateErrors = append(mvStateErrors, mvErr)
-		}
-	}
-	return mvStateErrors
-}
-
-func (s *AWSVPCStep) moveJumphost(ctx context.Context, modulePath string) []*internal.OrchInstallerError {
-	var mvStateErrors []*internal.OrchInstallerError = make([]*internal.OrchInstallerError, 0)
-	stateMappings := map[string]string{
-		"module.jumphost.aws_key_pair.jumphost_instance_launch_key":                   "aws_key_pair.jumphost_instance_launch_key",
-		"module.jumphost.aws_iam_role.ec2":                                            "aws_iam_role.ec2",
-		"module.jumphost.aws_iam_policy.eks_cluster_access_policy":                    "aws_iam_policy.eks_cluster_access_policy",
-		"module.jumphost.aws_iam_role_policy_attachment.eks_cluster_access":           "aws_iam_role_policy_attachment.eks_cluster_access",
-		"module.jumphost.aws_iam_role_policy_attachment.AmazonSSMManagedInstanceCore": "aws_iam_role_policy_attachment.AmazonSSMManagedInstanceCore",
-		"module.jumphost.aws_iam_instance_profile.ec2":                                "aws_iam_instance_profile.ec2",
-		"module.jumphost.aws_instance.jumphost":                                       "aws_instance.jumphost",
-		"module.jumphost.aws_security_group.jumphost":                                 "aws_security_group.jumphost",
-		"module.jumphost.aws_security_group_rule.jumphost_egress_https":               "aws_security_group_rule.jumphost_egress_https",
-		"module.jumphost.aws_eip.jumphost":                                            "aws_eip.jumphost",
-		"module.jumphost.aws_eip_association.jumphost":                                "aws_eip_association.jumphost",
-	}
-
-	for oldState, newState := range stateMappings {
-		mvErr := s.TerraformUtility.MoveState(ctx, steps.TerraformUtilityMoveStateInput{
-			ModulePath:   modulePath,
-			OldStateName: oldState,
-			NewStateName: newState,
-		})
-		if mvErr != nil {
-			mvStateErrors = append(mvStateErrors, mvErr)
-		}
-	}
-	return mvStateErrors
 }
 
 func (s *AWSVPCStep) PreStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
@@ -356,20 +244,48 @@ func (s *AWSVPCStep) PreStep(ctx context.Context, config config.OrchInstallerCon
 	}
 
 	modulePath := filepath.Join(s.RootPath, VPCModulePath)
-	mvStateErrors := s.moveVPCAndSubnets(ctx, modulePath)
-	mvStateErrors = append(mvStateErrors, s.moveVPCInternetGatewayAndEndpoints(ctx, modulePath)...)
-	mvStateErrors = append(mvStateErrors, s.moveJumphost(ctx, modulePath)...)
-
-	if len(mvStateErrors) > 0 {
-		errorMessages := make([]string, len(mvStateErrors))
-		for i, err := range mvStateErrors {
-			errorMessages[i] = err.Error()
-		}
+	states := map[string]string{
+		"module.vpc.main": "aws_vpc.main",
+		"module.internet_gateway.aws_internet_gateway.igw":                            "aws_internet_gateway.igw",
+		"module.endpoint.aws_security_group.vpc_endpoints":                            "aws_security_group.vpc_endpoints",
+		"module.jumphost.aws_key_pair.jumphost_instance_launch_key":                   "aws_key_pair.jumphost_instance_launch_key",
+		"module.jumphost.aws_iam_role.ec2":                                            "aws_iam_role.ec2",
+		"module.jumphost.aws_iam_policy.eks_cluster_access_policy":                    "aws_iam_policy.eks_cluster_access_policy",
+		"module.jumphost.aws_iam_role_policy_attachment.eks_cluster_access":           "aws_iam_role_policy_attachment.eks_cluster_access",
+		"module.jumphost.aws_iam_role_policy_attachment.AmazonSSMManagedInstanceCore": "aws_iam_role_policy_attachment.AmazonSSMManagedInstanceCore",
+		"module.jumphost.aws_iam_instance_profile.ec2":                                "aws_iam_instance_profile.ec2",
+		"module.jumphost.aws_instance.jumphost":                                       "aws_instance.jumphost",
+		"module.jumphost.aws_security_group.jumphost":                                 "aws_security_group.jumphost",
+		"module.jumphost.aws_security_group_rule.jumphost_egress_https":               "aws_security_group_rule.jumphost_egress_https",
+		"module.jumphost.aws_eip.jumphost":                                            "aws_eip.jumphost",
+		"module.jumphost.aws_eip_association.jumphost":                                "aws_eip_association.jumphost",
+	}
+	for name := range s.variables.PublicSubnets {
+		states[fmt.Sprintf("module.vpc.aws_subnet.public_subnet[%s]", name)] = fmt.Sprintf("aws_subnet.public_subnet[%s]", name)
+		states[fmt.Sprintf("module.nat_gateway.aws_eip.ngw[%s]", name)] = fmt.Sprintf("aws_eip.ngw[%s]", name)
+		states[fmt.Sprintf("module.nat_gateway.aws_nat_gateway.ngw_with_eip[%s]", name)] = fmt.Sprintf("aws_nat_gateway.main[%s]", name)
+		states[fmt.Sprintf("module.route_table.aws_route_table.public_subnet[%s]", name)] = fmt.Sprintf("aws_route_table.public_subnet[%s]", name)
+		states[fmt.Sprintf("module.route_table.aws_route_table_association.public_subnet[%s]", name)] = fmt.Sprintf("aws_route_table_association.public_subnet[%s]", name)
+	}
+	for name := range s.variables.PrivateSubnets {
+		states[fmt.Sprintf("module.vpc.aws_subnet.private_subnet[%s]", name)] = fmt.Sprintf("aws_subnet.private_subnet[%s]", name)
+		states[fmt.Sprintf("module.route_table.aws_route_table.private_subnet[%s]", name)] = fmt.Sprintf("aws_route_table.private_subnet[%s]", name)
+		states[fmt.Sprintf("module.route_table.aws_route_table_association.private_subnet[%s]", name)] = fmt.Sprintf("aws_route_table_association.private_subnet[%s]", name)
+	}
+	for _, ep := range AWSVPCEndpoints {
+		states[fmt.Sprintf("module.endpoint.aws_vpc_endpoint.endpoint[%s]", ep)] = fmt.Sprintf("aws_vpc_endpoint.endpoint[%s]", ep)
+	}
+	mvErr := s.TerraformUtility.MoveStates(ctx, steps.TerraformUtilityMoveStatesInput{
+		ModulePath: modulePath,
+		States:     states,
+	})
+	if mvErr != nil {
 		return runtimeState, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInternal,
-			ErrorMsg:  fmt.Sprintf("failed to move Terraform state: %s", strings.Join(errorMessages, "\n")),
+			ErrorMsg:  fmt.Sprintf("failed to move Terraform state: %v", mvErr),
 		}
 	}
+
 	return runtimeState, nil
 }
 

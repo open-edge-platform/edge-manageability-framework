@@ -25,8 +25,8 @@ const (
 type TerraformUtility interface {
 	// Apply or destroy
 	Run(ctx context.Context, input TerraformUtilityInput) (TerraformUtilityOutput, *internal.OrchInstallerError)
-	MoveState(ctx context.Context, input TerraformUtilityMoveStateInput) *internal.OrchInstallerError
-	RemoveState(ctx context.Context, input TerraformUtilityRemoveStateInput) *internal.OrchInstallerError
+	MoveStates(ctx context.Context, input TerraformUtilityMoveStatesInput) *internal.OrchInstallerError
+	RemoveStates(ctx context.Context, input TerraformUtilityRemoveStatesInput) *internal.OrchInstallerError
 }
 
 type TerraformUtilityInput struct {
@@ -45,15 +45,14 @@ type TerraformUtilityOutput struct {
 	TerraformState string                       `json:"terraform_state"`
 }
 
-type TerraformUtilityMoveStateInput struct {
-	ModulePath   string
-	OldStateName string
-	NewStateName string
+type TerraformUtilityMoveStatesInput struct {
+	ModulePath string
+	States     map[string]string
 }
 
-type TerraformUtilityRemoveStateInput struct {
+type TerraformUtilityRemoveStatesInput struct {
 	ModulePath string
-	StateName  string
+	States     []string
 }
 
 type TerraformAWSBucketBackendConfig struct {
@@ -310,7 +309,7 @@ func InstallTerraformAndGetExecPath() (string, error) {
 	return installer.Install(context.Background())
 }
 
-func (tfUtil *terraformUtilityImpl) MoveState(ctx context.Context, input TerraformUtilityMoveStateInput) *internal.OrchInstallerError {
+func (tfUtil *terraformUtilityImpl) MoveStates(ctx context.Context, input TerraformUtilityMoveStatesInput) *internal.OrchInstallerError {
 	tf, err := tfexec.NewTerraform(input.ModulePath, tfUtil.ExecPath)
 	if err != nil {
 		return &internal.OrchInstallerError{
@@ -318,17 +317,19 @@ func (tfUtil *terraformUtilityImpl) MoveState(ctx context.Context, input Terrafo
 			ErrorMsg:  fmt.Sprintf("failed to create terraform instance: %v", err),
 		}
 	}
-	err = tf.StateMv(ctx, input.OldStateName, input.NewStateName)
-	if err != nil {
-		return &internal.OrchInstallerError{
-			ErrorCode: internal.OrchInstallerErrorCodeTerraform,
-			ErrorMsg:  fmt.Sprintf("failed to move terraform state: %v", err),
+	for oldStateName, newStateName := range input.States {
+		err = tf.StateMv(ctx, oldStateName, newStateName)
+		if err != nil {
+			return &internal.OrchInstallerError{
+				ErrorCode: internal.OrchInstallerErrorCodeTerraform,
+				ErrorMsg:  fmt.Sprintf("failed to move terraform state: %v", err),
+			}
 		}
 	}
 	return nil
 }
 
-func (tfUtil *terraformUtilityImpl) RemoveState(ctx context.Context, input TerraformUtilityRemoveStateInput) *internal.OrchInstallerError {
+func (tfUtil *terraformUtilityImpl) RemoveStates(ctx context.Context, input TerraformUtilityRemoveStatesInput) *internal.OrchInstallerError {
 	tf, err := tfexec.NewTerraform(input.ModulePath, tfUtil.ExecPath)
 	if err != nil {
 		return &internal.OrchInstallerError{
@@ -336,11 +337,13 @@ func (tfUtil *terraformUtilityImpl) RemoveState(ctx context.Context, input Terra
 			ErrorMsg:  fmt.Sprintf("failed to create terraform instance: %v", err),
 		}
 	}
-	err = tf.StateRm(ctx, input.StateName)
-	if err != nil {
-		return &internal.OrchInstallerError{
-			ErrorCode: internal.OrchInstallerErrorCodeTerraform,
-			ErrorMsg:  fmt.Sprintf("failed to delete terraform state: %v", err),
+	for _, stateName := range input.States {
+		err = tf.StateRm(ctx, stateName)
+		if err != nil {
+			return &internal.OrchInstallerError{
+				ErrorCode: internal.OrchInstallerErrorCodeTerraform,
+				ErrorMsg:  fmt.Sprintf("failed to delete terraform state: %v", err),
+			}
 		}
 	}
 	return nil

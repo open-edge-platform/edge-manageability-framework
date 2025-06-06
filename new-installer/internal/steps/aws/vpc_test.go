@@ -110,7 +110,7 @@ func (s *VPCStepTest) expectUtiliyCall(action string) {
 		ModulePath:         filepath.Join(s.step.RootPath, steps_aws.VPCModulePath),
 		LogFile:            filepath.Join(s.logDir, "aws_vpc.log"),
 		KeepGeneratedFiles: s.step.KeepGeneratedFiles,
-		Variables: steps_aws.AWSVPCVariables{
+		Variables: steps_aws.VPCVariables{
 			Name:               s.config.Global.OrchName,
 			Region:             s.config.AWS.Region,
 			CidrBlock:          "10.250.0.0/16",
@@ -119,7 +119,7 @@ func (s *VPCStepTest) expectUtiliyCall(action string) {
 			JumphostIPAllowList: []string{
 				"10.250.0.0/16",
 			},
-			JumphostInstanceSshKey: "foobar",
+			JumphostInstanceSSHKey: "foobar",
 			Production:             true,
 			CustomerTag:            "",
 			EndpointSGName:         s.config.Global.OrchName + "-vpc-ep",

@@ -35,7 +35,7 @@ func (m *MockTerraformUtility) Run(ctx context.Context, input steps.TerraformUti
 	return steps.TerraformUtilityOutput{}, args.Get(1).(*internal.OrchInstallerError)
 }
 
-func (m *MockTerraformUtility) MoveState(ctx context.Context, input steps.TerraformUtilityMoveStateInput) *internal.OrchInstallerError {
+func (m *MockTerraformUtility) MoveStates(ctx context.Context, input steps.TerraformUtilityMoveStatesInput) *internal.OrchInstallerError {
 	args := m.Called(ctx, input)
 	if err, ok := args.Get(0).(*internal.OrchInstallerError); ok {
 		return err
@@ -54,7 +54,7 @@ func (m *MockTerraformUtility) MoveState(ctx context.Context, input steps.Terraf
 	return nil
 }
 
-func (m *MockTerraformUtility) RemoveState(ctx context.Context, input steps.TerraformUtilityRemoveStateInput) *internal.OrchInstallerError {
+func (m *MockTerraformUtility) RemoveStates(ctx context.Context, input steps.TerraformUtilityRemoveStatesInput) *internal.OrchInstallerError {
 	args := m.Called(ctx, input)
 	if err, ok := args.Get(0).(*internal.OrchInstallerError); ok {
 		return err
