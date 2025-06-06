@@ -60,7 +60,7 @@ release, technical readiness is targetted even if there are manual steps involve
    - For EMT, Intel GPU drivers and prerequisites for the NVIDIA GPU Operator (including drivers, SR-IOV settings, and
    kernel command line parameters) will be included in the immutable OS image.
 
-4. **ITEP Application Extensions**:
+4. **Open Edge Platform Application Extensions**:
 
    Develop/update the cluster extensions supported by the platform to ease the consumption of GPUs.
    <https://github.com/open-edge-platform/cluster-extensions/blob/main/README.md>
