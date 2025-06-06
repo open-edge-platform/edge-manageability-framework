@@ -40,12 +40,20 @@ runs:
         ref: ${{ inputs.orch_version }}
         path: emf
         token: ${{ inputs.token }}
+        fetch-depth: 0
 
     - name: Set up git credentials
       shell: bash
       run: |
         echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
         git config --global url."https://${{ inputs.token }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+
+    - name: Change to repo root
+      shell: bash
+      run: |
+        cd "$GITHUB_WORKSPACE"
+        echo "Changed to workspace root: $(pwd)"
+        ls -la
 
     - name: Setup asdf and install dependencies
       id: install-deps
@@ -76,6 +84,7 @@ runs:
           echo "Deploying full Orchestrator setup..."
           mage deploy:kindAll
         fi
+        mage deploy:kindAll
         echo "Orchestrator deployment done!"
 
     - name: Get Root App Status
