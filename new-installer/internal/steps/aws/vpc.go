@@ -120,9 +120,9 @@ func (s *VPCStep) Labels() []string {
 func (s *VPCStep) ConfigStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	if s.skipVPCStep(config) {
 		// If VPC ID is already set, we skip this step.
-		runtimeState.VPCID = config.AWS.VPCID
+		runtimeState.AWS.VPCID = config.AWS.VPCID
 		var err error
-		runtimeState.PublicSubnetIDs, runtimeState.PrivateSubnetIDs, err = s.AWSUtility.GetSubnetIDsFromVPC(config.AWS.Region, runtimeState.VPCID)
+		runtimeState.AWS.PublicSubnetIDs, runtimeState.AWS.PrivateSubnetIDs, err = s.AWSUtility.GetSubnetIDsFromVPC(config.AWS.Region, runtimeState.AWS.VPCID)
 		if err != nil {
 			return runtimeState, &internal.OrchInstallerError{
 				ErrorCode: internal.OrchInstallerErrorCodeInternal,
@@ -195,7 +195,7 @@ func (s *VPCStep) ConfigStep(ctx context.Context, config config.OrchInstallerCon
 	s.variables.JumphostIPAllowList = config.AWS.JumpHostWhitelist
 
 	// Generate SSH key pair for the jumphost
-	if runtimeState.JumpHostSSHKeyPrivateKey == "" || runtimeState.JumpHostSSHKeyPublicKey == "" {
+	if runtimeState.AWS.JumpHostSSHKeyPrivateKey == "" || runtimeState.AWS.JumpHostSSHKeyPublicKey == "" {
 		privateKey, publicKey, err := generateSSHKeyPair()
 		if err != nil {
 			return runtimeState, &internal.OrchInstallerError{
@@ -204,10 +204,10 @@ func (s *VPCStep) ConfigStep(ctx context.Context, config config.OrchInstallerCon
 			}
 		}
 		s.variables.JumphostInstanceSSHKey = publicKey
-		runtimeState.JumpHostSSHKeyPrivateKey = privateKey
-		runtimeState.JumpHostSSHKeyPublicKey = publicKey
+		runtimeState.AWS.JumpHostSSHKeyPrivateKey = privateKey
+		runtimeState.AWS.JumpHostSSHKeyPublicKey = publicKey
 	} else {
-		s.variables.JumphostInstanceSSHKey = runtimeState.JumpHostSSHKeyPublicKey
+		s.variables.JumphostInstanceSSHKey = runtimeState.AWS.JumpHostSSHKeyPublicKey
 	}
 
 	s.variables.CustomerTag = config.AWS.CustomerTag
@@ -318,7 +318,7 @@ func (s *VPCStep) RunStep(ctx context.Context, config config.OrchInstallerConfig
 				ErrorMsg:  "vpc_id does not exist in terraform output",
 			}
 		} else {
-			runtimeState.VPCID = strings.Trim(string(vpcIDMeta.Value), "\"")
+			runtimeState.AWS.VPCID = strings.Trim(string(vpcIDMeta.Value), "\"")
 		}
 		// TODO: Reuse same code for public and private subnets
 		if publicSubnets, ok := terraformStepOutput.Output["public_subnets"]; !ok {
@@ -343,7 +343,7 @@ func (s *VPCStep) RunStep(ctx context.Context, config config.OrchInstallerConfig
 					ErrorMsg:  fmt.Sprintf("not able to unmarshal public subnets output: %v", unmarshalErr),
 				}
 			}
-			runtimeState.PublicSubnetIDs = nil
+			runtimeState.AWS.PublicSubnetIDs = nil
 			for subnetName := range s.variables.PublicSubnets {
 				subnetId := k.Get(fmt.Sprintf("%s.id", subnetName))
 				if subnetId == nil {
@@ -352,7 +352,7 @@ func (s *VPCStep) RunStep(ctx context.Context, config config.OrchInstallerConfig
 						ErrorMsg:  fmt.Sprintf("subnet id for %s does not exist in terraform output", subnetName),
 					}
 				}
-				runtimeState.PublicSubnetIDs = append(runtimeState.PublicSubnetIDs, subnetId.(string))
+				runtimeState.AWS.PublicSubnetIDs = append(runtimeState.AWS.PublicSubnetIDs, subnetId.(string))
 			}
 		}
 		if privateSubnets, ok := terraformStepOutput.Output["private_subnets"]; !ok {
@@ -377,7 +377,7 @@ func (s *VPCStep) RunStep(ctx context.Context, config config.OrchInstallerConfig
 					ErrorMsg:  fmt.Sprintf("not able to unmarshal private subnets output: %v", unmarshalErr),
 				}
 			}
-			runtimeState.PrivateSubnetIDs = nil
+			runtimeState.AWS.PrivateSubnetIDs = nil
 			for subnetName := range s.variables.PrivateSubnets {
 				subnetId := k.Get(fmt.Sprintf("%s.id", subnetName))
 				if subnetId == nil {
@@ -386,8 +386,16 @@ func (s *VPCStep) RunStep(ctx context.Context, config config.OrchInstallerConfig
 						ErrorMsg:  fmt.Sprintf("subnet id for %s does not exist in terraform output", subnetName),
 					}
 				}
-				runtimeState.PrivateSubnetIDs = append(runtimeState.PrivateSubnetIDs, subnetId.(string))
+				runtimeState.AWS.PrivateSubnetIDs = append(runtimeState.AWS.PrivateSubnetIDs, subnetId.(string))
 			}
+		}
+		if jumphostIP, ok := terraformStepOutput.Output["jumphost_ip"]; !ok {
+			return runtimeState, &internal.OrchInstallerError{
+				ErrorCode: internal.OrchInstallerErrorCodeTerraform,
+				ErrorMsg:  "jumphost_ip does not exist in terraform output",
+			}
+		} else {
+			runtimeState.AWS.JumpHostIP = strings.Trim(string(jumphostIP.Value), "\"")
 		}
 	} else {
 		return runtimeState, &internal.OrchInstallerError{

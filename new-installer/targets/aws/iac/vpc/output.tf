@@ -11,3 +11,7 @@ output "public_subnets" {
 output "private_subnets" {
   value = aws_subnet.private_subnet
 }
+
+output "jumphost_ip" {
+  value = aws_instance.jumphost.public_ip
+}

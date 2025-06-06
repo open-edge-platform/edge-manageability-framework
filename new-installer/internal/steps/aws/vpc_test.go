@@ -54,8 +54,8 @@ func (s *VPCStepTest) SetupTest() {
 	s.runtimeState.DeploymentID = s.randomText
 	s.config.AWS.JumpHostWhitelist = []string{"10.250.0.0/16"}
 	s.runtimeState.LogDir = filepath.Join(rootPath, ".logs")
-	s.runtimeState.JumpHostSSHKeyPrivateKey = "foobar"
-	s.runtimeState.JumpHostSSHKeyPublicKey = "foobar"
+	s.runtimeState.AWS.JumpHostSSHKeyPrivateKey = "foobar"
+	s.runtimeState.AWS.JumpHostSSHKeyPublicKey = "foobar"
 
 	if _, err := os.Stat(s.logDir); os.IsNotExist(err) {
 		err := os.MkdirAll(s.logDir, os.ModePerm)
@@ -83,17 +83,17 @@ func (s *VPCStepTest) TestInstallAndUninstallVPC() {
 		return
 	}
 
-	s.Equal("vpc-12345678", rs.VPCID)
+	s.Equal("vpc-12345678", rs.AWS.VPCID)
 	s.ElementsMatch([]string{
 		"subnet-1",
 		"subnet-2",
 		"subnet-3",
-	}, rs.PrivateSubnetIDs)
+	}, rs.AWS.PrivateSubnetIDs)
 	s.ElementsMatch([]string{
 		"subnet-4",
 		"subnet-5",
 		"subnet-6",
-	}, rs.PublicSubnetIDs)
+	}, rs.AWS.PublicSubnetIDs)
 
 	s.runtimeState.Action = "uninstall"
 	s.expectUtiliyCall("uninstall")
@@ -123,7 +123,7 @@ func (s *VPCStepTest) expectUtiliyCall(action string) {
 			Production:             true,
 			CustomerTag:            "",
 			EndpointSGName:         s.config.Global.OrchName + "-vpc-ep",
-			PrivateSubnets: map[string]steps_aws.AWSVPCSubnet{
+			PrivateSubnets: map[string]steps_aws.VPCSubnet{
 				"subnet-us-west-2a": {
 					Az:        "us-west-2a",
 					CidrBlock: "10.250.0.0/22",
@@ -137,7 +137,7 @@ func (s *VPCStepTest) expectUtiliyCall(action string) {
 					CidrBlock: "10.250.8.0/22",
 				},
 			},
-			PublicSubnets: map[string]steps_aws.AWSVPCSubnet{
+			PublicSubnets: map[string]steps_aws.VPCSubnet{
 				"subnet-us-west-2a-pub": {
 					Az:        "us-west-2a",
 					CidrBlock: "10.250.12.0/24",
@@ -175,6 +175,10 @@ func (s *VPCStepTest) expectUtiliyCall(action string) {
 				"public_subnets": {
 					Type:  json.RawMessage(`"list"`),
 					Value: json.RawMessage(`{"subnet-us-west-2a-pub":{"id":"subnet-4"},"subnet-us-west-2b-pub":{"id":"subnet-5"},"subnet-us-west-2c-pub":{"id":"subnet-6"}}`),
+				},
+				"jumphost_ip": {
+					Type:  json.RawMessage(`"string"`),
+					Value: json.RawMessage(`"10.0.0.1"`),
 				},
 			},
 		}, nil).Once()
