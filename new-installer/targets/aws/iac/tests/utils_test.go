@@ -120,11 +120,11 @@ func GetNATGatewaysByTags(region string, tags map[string][]string) ([]*ec2.NatGa
 	return result.NatGateways, nil
 }
 
-// This function creates a VPC and three subnets in the specified AWS region.
-func CreateVPC(region string, name string) (string, []string, error) {
+// This function creates a VPC and three public and private subnets in the specified AWS region.
+func CreateVPC(region string, name string) (string, []string, []string, error) {
 	sess, err := session.NewSession(&aws.Config{Region: aws.String(region)})
 	if err != nil {
-		return "", []string{}, fmt.Errorf("failed to create session: %w", err)
+		return "", []string{}, []string{}, fmt.Errorf("failed to create session: %w", err)
 	}
 	ec2Client := ec2.New(sess)
 
@@ -149,7 +149,7 @@ func CreateVPC(region string, name string) (string, []string, error) {
 	}
 	vpcOutput, err := ec2Client.CreateVpc(createVpcInput)
 	if err != nil {
-		return "", nil, fmt.Errorf("failed to create VPC: %w", err)
+		return "", nil, []string{}, fmt.Errorf("failed to create VPC: %w", err)
 	}
 	vpcID := *vpcOutput.Vpc.VpcId
 	log.Printf("Created VPC with ID: %s", vpcID)
@@ -174,7 +174,7 @@ func CreateVPC(region string, name string) (string, []string, error) {
 	}
 	igwOutput, err := ec2Client.CreateInternetGateway(createInternetGatewayInput)
 	if err != nil {
-		return "", nil, fmt.Errorf("failed to create Internet Gateway: %w", err)
+		return "", nil, []string{}, fmt.Errorf("failed to create Internet Gateway: %w", err)
 	}
 	igwID := *igwOutput.InternetGateway.InternetGatewayId
 	log.Printf("Created Internet Gateway with ID: %s", igwID)
@@ -186,12 +186,12 @@ func CreateVPC(region string, name string) (string, []string, error) {
 	}
 	_, err = ec2Client.AttachInternetGateway(attachIgwInput)
 	if err != nil {
-		return "", nil, fmt.Errorf("failed to attach Internet Gateway to VPC: %w", err)
+		return "", nil, []string{}, fmt.Errorf("failed to attach Internet Gateway to VPC: %w", err)
 	}
 	log.Printf("Attached Internet Gateway %s to VPC %s", igwID, vpcID)
 
 	// Create Subnets
-	subnetIDs := []string{}
+	publicSubnetIDs := []string{}
 	availabilityZones := []string{"a", "b", "c"}
 	for i, zone := range availabilityZones {
 		cidrBlock := fmt.Sprintf("10.250.%d.0/24", i)
@@ -217,11 +217,11 @@ func CreateVPC(region string, name string) (string, []string, error) {
 		}
 		subnetOutput, err := ec2Client.CreateSubnet(createSubnetInput)
 		if err != nil {
-			return "", nil, fmt.Errorf("failed to create subnet in zone %s: %w", zone, err)
+			return "", nil, []string{}, fmt.Errorf("failed to create public subnet in zone %s: %w", zone, err)
 		}
 		subnetID := *subnetOutput.Subnet.SubnetId
-		log.Printf("Created Subnet with ID: %s in zone %s", subnetID, zone)
-		subnetIDs = append(subnetIDs, subnetID)
+		log.Printf("Created Public Subnet with ID: %s in zone %s", subnetID, zone)
+		publicSubnetIDs = append(publicSubnetIDs, subnetID)
 	}
 
 	// Create Route Table
@@ -245,7 +245,7 @@ func CreateVPC(region string, name string) (string, []string, error) {
 	}
 	routeTableOutput, err := ec2Client.CreateRouteTable(createRouteTableInput)
 	if err != nil {
-		return "", nil, fmt.Errorf("failed to create route table: %w", err)
+		return "", nil, []string{}, fmt.Errorf("failed to create route table: %w", err)
 	}
 	routeTableID := *routeTableOutput.RouteTable.RouteTableId
 	log.Printf("Created Route Table with ID: %s", routeTableID)
@@ -258,24 +258,166 @@ func CreateVPC(region string, name string) (string, []string, error) {
 	}
 	_, err = ec2Client.CreateRoute(createRouteInput)
 	if err != nil {
-		return "", nil, fmt.Errorf("failed to create route to Internet Gateway: %w", err)
+		return "", nil, []string{}, fmt.Errorf("failed to create route to Internet Gateway: %w", err)
 	}
 	log.Printf("Created route to Internet Gateway %s in Route Table %s", igwID, routeTableID)
 
 	// Associate Subnets with Route Table
-	for _, subnetID := range subnetIDs {
+	for _, subnetID := range publicSubnetIDs {
 		associateRouteTableInput := &ec2.AssociateRouteTableInput{
 			RouteTableId: aws.String(routeTableID),
 			SubnetId:     aws.String(subnetID),
 		}
 		_, err := ec2Client.AssociateRouteTable(associateRouteTableInput)
 		if err != nil {
-			return "", nil, fmt.Errorf("failed to associate subnet %s with route table: %w", subnetID, err)
+			return "", nil, []string{}, fmt.Errorf("failed to associate subnet %s with route table: %w", subnetID, err)
 		}
 		log.Printf("Associated Subnet %s with Route Table %s", subnetID, routeTableID)
 	}
 
-	return vpcID, subnetIDs, nil
+	privateSubnetIDs := []string{}
+	for i, zone := range availabilityZones {
+		cidrBlock := fmt.Sprintf("10.250.%d.0/24", i+3) // Offset CIDR blocks for private subnets
+		createPrivateSubnetInput := &ec2.CreateSubnetInput{
+			CidrBlock:        aws.String(cidrBlock),
+			VpcId:            aws.String(vpcID),
+			AvailabilityZone: aws.String(region + zone),
+			TagSpecifications: []*ec2.TagSpecification{
+				{
+					ResourceType: aws.String(ec2.ResourceTypeSubnet),
+					Tags: []*ec2.Tag{
+						{
+							Key:   aws.String("Name"),
+							Value: aws.String(fmt.Sprintf("%s-private-subnet-%s", name, zone)),
+						},
+						{
+							Key:   aws.String("CustomerTag"),
+							Value: aws.String("test-customer"),
+						},
+					},
+				},
+			},
+		}
+		privateSubnetOutput, err := ec2Client.CreateSubnet(createPrivateSubnetInput)
+		if err != nil {
+			return "", nil, []string{}, fmt.Errorf("failed to create private subnet in zone %s: %w", zone, err)
+		}
+		privateSubnetID := *privateSubnetOutput.Subnet.SubnetId
+		log.Printf("Created Private Subnet with ID: %s in zone %s", privateSubnetID, zone)
+		privateSubnetIDs = append(privateSubnetIDs, privateSubnetID)
+	}
+
+	// Create NAT Gateways and associate them with private subnets
+	for i, zone := range availabilityZones {
+		// Create Elastic IP for NAT Gateway
+		allocateAddressInput := &ec2.AllocateAddressInput{
+			Domain: aws.String(ec2.DomainTypeVpc),
+		}
+		eipOutput, err := ec2Client.AllocateAddress(allocateAddressInput)
+		if err != nil {
+			return "", nil, []string{}, fmt.Errorf("failed to allocate Elastic IP for NAT Gateway in zone %s: %w", zone, err)
+		}
+		eipAllocationID := *eipOutput.AllocationId
+		log.Printf("Allocated Elastic IP with Allocation ID: %s for NAT Gateway in zone %s", eipAllocationID, zone)
+
+		// Create NAT Gateway
+		createNatGatewayInput := &ec2.CreateNatGatewayInput{
+			SubnetId:     aws.String(privateSubnetIDs[i]),
+			AllocationId: aws.String(eipAllocationID),
+			TagSpecifications: []*ec2.TagSpecification{
+				{
+					ResourceType: aws.String(ec2.ResourceTypeNatgateway),
+					Tags: []*ec2.Tag{
+						{
+							Key:   aws.String("Name"),
+							Value: aws.String(fmt.Sprintf("%s-natgw-%s", name, zone)),
+						},
+						{
+							Key:   aws.String("CustomerTag"),
+							Value: aws.String("test-customer"),
+						},
+						{
+							Key:   aws.String("VPC"),
+							Value: aws.String(vpcID),
+						},
+					},
+				},
+			},
+		}
+		natGatewayOutput, err := ec2Client.CreateNatGateway(createNatGatewayInput)
+		if err != nil {
+			return "", nil, []string{}, fmt.Errorf("failed to create NAT Gateway in zone %s: %w", zone, err)
+		}
+		natGatewayID := *natGatewayOutput.NatGateway.NatGatewayId
+		log.Printf("Created NAT Gateway with ID: %s in zone %s", natGatewayID, zone)
+
+		// Wait for NAT Gateway to become available
+		describeNatGatewaysInput := &ec2.DescribeNatGatewaysInput{
+			NatGatewayIds: []*string{aws.String(natGatewayID)},
+		}
+		for {
+			time.Sleep(10 * time.Second)
+			describeNatGatewaysOutput, err := ec2Client.DescribeNatGateways(describeNatGatewaysInput)
+			if err != nil {
+				return "", nil, []string{}, fmt.Errorf("failed to describe NAT Gateway %s: %w", natGatewayID, err)
+			}
+			if len(describeNatGatewaysOutput.NatGateways) > 0 && *describeNatGatewaysOutput.NatGateways[0].State == ec2.NatGatewayStateAvailable {
+				log.Printf("NAT Gateway %s is now available", natGatewayID)
+				break
+			}
+		}
+
+		// Create a route table for the private subnet
+		createPrivateRouteTableInput := &ec2.CreateRouteTableInput{
+			VpcId: aws.String(vpcID),
+			TagSpecifications: []*ec2.TagSpecification{
+				{
+					ResourceType: aws.String(ec2.ResourceTypeRouteTable),
+					Tags: []*ec2.Tag{
+						{
+							Key:   aws.String("Name"),
+							Value: aws.String(fmt.Sprintf("%s-private-rtb-%s", name, zone)),
+						},
+						{
+							Key:   aws.String("CustomerTag"),
+							Value: aws.String("test-customer"),
+						},
+					},
+				},
+			},
+		}
+		privateRouteTableOutput, err := ec2Client.CreateRouteTable(createPrivateRouteTableInput)
+		if err != nil {
+			return "", nil, []string{}, fmt.Errorf("failed to create private route table in zone %s: %w", zone, err)
+		}
+		privateRouteTableID := *privateRouteTableOutput.RouteTable.RouteTableId
+		log.Printf("Created Private Route Table with ID: %s in zone %s", privateRouteTableID, zone)
+
+		// Create a default route to the NAT Gateway
+		createPrivateRouteInput := &ec2.CreateRouteInput{
+			RouteTableId:         aws.String(privateRouteTableID),
+			DestinationCidrBlock: aws.String("0.0.0.0/0"),
+			NatGatewayId:         aws.String(natGatewayID),
+		}
+		_, err = ec2Client.CreateRoute(createPrivateRouteInput)
+		if err != nil {
+			return "", nil, []string{}, fmt.Errorf("failed to create default route to NAT Gateway %s in private route table %s: %w", natGatewayID, privateRouteTableID, err)
+		}
+		log.Printf("Created default route to NAT Gateway %s in Private Route Table %s", natGatewayID, privateRouteTableID)
+
+		// Associate the private subnet with the private route table
+		associatePrivateRouteTableInput := &ec2.AssociateRouteTableInput{
+			RouteTableId: aws.String(privateRouteTableID),
+			SubnetId:     aws.String(privateSubnetIDs[i]),
+		}
+		_, err = ec2Client.AssociateRouteTable(associatePrivateRouteTableInput)
+		if err != nil {
+			return "", nil, []string{}, fmt.Errorf("failed to associate private subnet %s with private route table %s: %w", privateSubnetIDs[i], privateRouteTableID, err)
+		}
+		log.Printf("Associated Private Subnet %s with Private Route Table %s", privateSubnetIDs[i], privateRouteTableID)
+	}
+
+	return vpcID, publicSubnetIDs, privateSubnetIDs, nil
 }
 
 func DeleteVPC(region string, vpcID string) error {
@@ -284,6 +426,49 @@ func DeleteVPC(region string, vpcID string) error {
 		return fmt.Errorf("failed to create session: %w", err)
 	}
 	ec2Client := ec2.New(sess)
+
+	// Retrieve and delete all NAT gateways associated with the VPC
+	describeNatGatewaysInput := &ec2.DescribeNatGatewaysInput{
+		Filter: []*ec2.Filter{
+			{
+				Name:   aws.String("tag:VPC"),
+				Values: []*string{&vpcID},
+			},
+		},
+	}
+	natGatewaysOutput, err := ec2Client.DescribeNatGateways(describeNatGatewaysInput)
+	if err != nil {
+		return fmt.Errorf("failed to describe NAT gateways: %w", err)
+	}
+
+	for _, natGateway := range natGatewaysOutput.NatGateways {
+		// Release the Elastic IP associated with the NAT Gateway
+		if natGateway.NatGatewayAddresses != nil {
+			for _, address := range natGateway.NatGatewayAddresses {
+				if address.AllocationId != nil {
+					releaseAddressInput := &ec2.ReleaseAddressInput{
+						AllocationId: address.AllocationId,
+					}
+					_, err := ec2Client.ReleaseAddress(releaseAddressInput)
+					if err != nil {
+						return fmt.Errorf("failed to release Elastic IP %s associated with NAT gateway %s: %w", *address.AllocationId, *natGateway.NatGatewayId, err)
+					}
+					log.Printf("Released Elastic IP with Allocation ID: %s associated with NAT Gateway ID: %s", *address.AllocationId, *natGateway.NatGatewayId)
+				}
+			}
+		}
+
+		// Delete the NAT Gateway
+		deleteNatGatewayInput := &ec2.DeleteNatGatewayInput{
+			NatGatewayId: natGateway.NatGatewayId,
+		}
+		_, err := ec2Client.DeleteNatGateway(deleteNatGatewayInput)
+		if err != nil {
+			return fmt.Errorf("failed to delete NAT gateway %s: %w", *natGateway.NatGatewayId, err)
+		}
+		log.Printf("Deleted NAT Gateway with ID: %s", *natGateway.NatGatewayId)
+	}
+
 	// Retrieve and delete all internet gateways associated with the VPC
 	describeInternetGatewaysInput := &ec2.DescribeInternetGatewaysInput{
 		Filters: []*ec2.Filter{
@@ -319,30 +504,6 @@ func DeleteVPC(region string, vpcID string) error {
 		log.Printf("Deleted Internet Gateway with ID: %s", *igw.InternetGatewayId)
 	}
 
-	// Retrieve and delete all NAT gateways associated with the VPC
-	describeNatGatewaysInput := &ec2.DescribeNatGatewaysInput{
-		Filter: []*ec2.Filter{
-			{
-				Name:   aws.String("vpc-id"),
-				Values: []*string{&vpcID},
-			},
-		},
-	}
-	natGatewaysOutput, err := ec2Client.DescribeNatGateways(describeNatGatewaysInput)
-	if err != nil {
-		return fmt.Errorf("failed to describe NAT gateways: %w", err)
-	}
-
-	for _, natGateway := range natGatewaysOutput.NatGateways {
-		deleteNatGatewayInput := &ec2.DeleteNatGatewayInput{
-			NatGatewayId: natGateway.NatGatewayId,
-		}
-		_, err := ec2Client.DeleteNatGateway(deleteNatGatewayInput)
-		if err != nil {
-			return fmt.Errorf("failed to delete NAT gateway %s: %w", *natGateway.NatGatewayId, err)
-		}
-		log.Printf("Deleted NAT Gateway with ID: %s", *natGateway.NatGatewayId)
-	}
 	// Retrieve and delete all subnets associated with the VPC
 	describeSubnetsInput := &ec2.DescribeSubnetsInput{
 		Filters: []*ec2.Filter{
@@ -737,7 +898,7 @@ func DeleteJumpHost(instanceID string, region string) error {
 func StartSshuttle(jumphostIP string, jumphostKey string, remoteCIDRBlock string) error {
 	// Create a temporary file for the private key
 	privateKeyFile, err := os.CreateTemp("", "jumphost-key-*.pem")
-	defer os.Remove(privateKeyFile.Name()) // Clean up the temporary file after use
+	defer os.Remove(privateKeyFile.Name()) // Clean up the temporary file after sshuttle started
 	if err != nil {
 		return fmt.Errorf("failed to create temporary private key file: %w", err)
 	}
