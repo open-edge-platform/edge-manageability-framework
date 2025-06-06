@@ -89,6 +89,51 @@ Disk Used: 22.89%, Disk Free: 74.31%
 | Memory Used (%)       | 54.66                   | 24.48                    | 123.4%           |
 | Disk Used (%)         | 33.24                   | 22.89                    | 45.2%            |
 
+Top processes consuming CPU and memory
+
+Baseline profile `dev-internal-coder-autocert.yaml` with `enableObservability` set to `true`:
+
+```sh
+otelcol-contrib 47.7
+kubelet         24.3
+argocd-applicat 20.6
+kube-apiserver  18.8
+mimir            7.3
+containerd       7.0 
+```
+
+```sh
+COMMAND MEM(MiB)
+kube-apiserver       1796.7
+prometheus           1194.4
+java                  797.8
+mimir                 691.4
+mimir                 690.0
+argocd-applicat       658.2
+```
+
+Baseline profile `dev-internal-coder-autocert.yaml` with `enableObservability` set to `false`:
+
+```sh
+kubelet         15.9
+kube-apiserver  13.8
+argocd-applicat 12.9
+etcd             5.3
+containerd       4.6
+envoy            1.6 
+```
+
+```sh
+COMMAND MEM(MiB)
+kube-apiserver       1625.4
+java                  798.0
+argocd-applicat       559.4
+etcd                  249.7
+containerd            235.5
+kubelet               213.8
+```
+
+
 ### Takeaways
 
 - enabling observability in EMF significantly increases the resource consumption, especially in terms of CPU and memory.
