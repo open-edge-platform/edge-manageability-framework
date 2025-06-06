@@ -45,7 +45,7 @@ func (s *VPCTestSuite) TestApplyingModule() {
 	}()
 
 	_, publicSSHKey, _ := GenerateSSHKeyPair()
-	variables := steps_aws.AWSVPCVariables{
+	variables := steps_aws.VPCVariables{
 		Region:             DefaultRegion,
 		Name:               "test-vpc-" + randomPostfix,
 		CidrBlock:          "10.250.0.0/16",

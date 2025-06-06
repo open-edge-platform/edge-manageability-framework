@@ -48,7 +48,7 @@ var AWSVPCEndpoints = []string{
 	"elasticloadbalancing",
 }
 
-type AWSVPCVariables struct {
+type VPCVariables struct {
 	Region                 string                  `json:"region" yaml:"region"`
 	Name                   string                  `json:"name" yaml:"name"`
 	CidrBlock              string                  `json:"cidr_block" yaml:"cidr_block"`
@@ -64,10 +64,10 @@ type AWSVPCVariables struct {
 	CustomerTag            string                  `json:"customer_tag" yaml:"customer_tag"`
 }
 
-// NewDefaultAWSVPCVariables creates a new AWSVPCVariables with default values
+// NewDefaultVPCVariables creates a new VPCVariables with default values
 // based on variable.tf default definitions.
-func NewDefaultAWSVPCVariables() AWSVPCVariables {
-	return AWSVPCVariables{
+func NewDefaultVPCVariables() VPCVariables {
+	return VPCVariables{
 		Region:                 "",
 		Name:                   "",
 		CidrBlock:              "",
@@ -90,7 +90,7 @@ type AWSVPCSubnet struct {
 }
 
 type AWSVPCStep struct {
-	variables          AWSVPCVariables
+	variables          VPCVariables
 	backendConfig      TerraformAWSBucketBackendConfig
 	RootPath           string
 	KeepGeneratedFiles bool
@@ -131,7 +131,7 @@ func (s *AWSVPCStep) ConfigStep(ctx context.Context, config config.OrchInstaller
 		}
 		return runtimeState, nil
 	}
-	s.variables = NewDefaultAWSVPCVariables()
+	s.variables = NewDefaultVPCVariables()
 	s.variables.Region = config.AWS.Region
 	s.variables.Name = config.Global.OrchName
 	s.variables.CidrBlock = DefaultNetworkCIDR
