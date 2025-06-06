@@ -23,7 +23,7 @@ func CreateAWSStages(rootPath string, keepGeneratedFiles bool, orchConfigReaderW
 	return []internal.OrchInstallerStage{
 		NewAWSStage("PreInfra", []steps.OrchInstallerStep{
 			steps_aws.CreateAWSStateBucketStep(rootPath, keepGeneratedFiles, tfUtil),
-			steps_aws.CreateAWSVPCStep(rootPath, keepGeneratedFiles, tfUtil, aws_util),
+			steps_aws.CreateVPCStep(rootPath, keepGeneratedFiles, tfUtil, aws_util),
 		}, []string{"pre-infra"}, orchConfigReaderWriter),
 		NewAWSStage("Infra", []steps.OrchInstallerStep{}, []string{"infra"}, orchConfigReaderWriter),
 	}, nil
