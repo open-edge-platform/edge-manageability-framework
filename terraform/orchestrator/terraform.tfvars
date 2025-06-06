@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Set your own custom values here and uncomment so you don't need to enter them everytime you run terraform apply
+# Set your own custom values here and uncomment so you don't need to enter them every time you run terraform apply
 # deploy_tag = "latest-main-dev"
 
 # Set the following to true to deploy orchestrator from locally built artifacts

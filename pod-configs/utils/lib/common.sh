@@ -565,7 +565,7 @@ get_running_eks_node_ami() {
 
 empty_current_s3buckets() {
     # Important: The backend must have been initialized before this function is called.
-    # The curent directory must be the cluster dirctory.
+    # The current directory must be the cluster directory.
     buckets=$(get_s3buckets)
 
     s3_empty=true
@@ -600,7 +600,7 @@ empty_s3bucket() {
 
 get_s3buckets() {
     # Important: The backend must have been initialized before this function is called.
-    # The curent directory must be the cluster dirctory.
+    # The current directory must be the cluster directory.
 
     for resource in $(terraform state list | grep -oP '^module.s3.aws_s3_bucket.bucket\[".+"\]$'); do
         terraform state show "$resource" | grep -P "^\s* bucket\s*=" | cut -d'=' -f2 | xargs echo

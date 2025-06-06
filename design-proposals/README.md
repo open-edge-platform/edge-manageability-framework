@@ -157,8 +157,9 @@ request or the Feature Request is closed.
 
 ## Help
 
-If you need help with this process, please contact the project maintainers
-by posting to the [Discussions](https://github.com/open-edge-platform/edge-manageability-framework/discussions).
+If you need help with this process, contact project maintainers by posting to the 
+[Discussions](https://github.com/open-edge-platform/edge-manageability-framework/discussions).
+
 
 To learn about contributing to Edge Manageability Framework in general, see the
 [contribution guidelines](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/developer_guide/contributor_guide/index.html).
