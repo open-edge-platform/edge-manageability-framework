@@ -13,7 +13,7 @@ locals {
     "system:serviceaccount:orch-infra:aws-s3-sa-mimir",
     "system:serviceaccount:orch-infra:aws-s3-sa-loki"
   ]
-    buckets = toset([
+  buckets = toset([
     "orch-loki-admin",
     "orch-loki-chunks",
     "orch-loki-ruler",
@@ -66,7 +66,7 @@ data "aws_iam_policy_document" "s3_policy" {
       variable = "${replace(data.aws_eks_cluster.eks.identity[0].oidc[0].issuer, "https://", "")}:sub"
       // https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-logic-multiple-context-keys-or-values.html
       // If a single condition operator includes multiple values for a context key, those values are evaluated using a logical OR.
-      values   = local.service_accounts
+      values = local.service_accounts
     }
     principals {
       identifiers = ["arn:aws:iam::${local.aws_account_id}:oidc-provider/${replace(data.aws_eks_cluster.eks.identity[0].oidc[0].issuer, "https://", "")}"]
@@ -76,9 +76,9 @@ data "aws_iam_policy_document" "s3_policy" {
 }
 
 resource "aws_iam_role" "s3_role" {
-  description         = "Role that can access S3 buckets in ${var.cluster_name} cluster"
-  name                = "${var.cluster_name}-s3-role"
-  assume_role_policy  = data.aws_iam_policy_document.s3_policy.json
+  description        = "Role that can access S3 buckets in ${var.cluster_name} cluster"
+  name               = "${var.cluster_name}-s3-role"
+  assume_role_policy = data.aws_iam_policy_document.s3_policy.json
 }
 
 resource "aws_iam_role_policy_attachment" "s3_role" {
@@ -88,7 +88,7 @@ resource "aws_iam_role_policy_attachment" "s3_role" {
 
 # Key to encrypt S3 buckets
 resource "aws_kms_key" "bucket_key" {
-  description = "KMS key for S3 buckets in ${var.cluster_name} cluster"
+  description         = "KMS key for S3 buckets in ${var.cluster_name} cluster"
   enable_key_rotation = true
 }
 
@@ -102,7 +102,7 @@ resource "aws_s3_bucket" "bucket" {
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "bucket" {
   for_each = aws_s3_bucket.bucket
-  bucket = each.value.id
+  bucket   = each.value.id
   rule {
     apply_server_side_encryption_by_default {
       kms_master_key_id = aws_kms_key.bucket_key.arn
@@ -114,16 +114,16 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "bucket" {
 resource "aws_s3_bucket_public_access_block" "bucket" {
   for_each = aws_s3_bucket.bucket
 
-  bucket              = each.value.id
-  block_public_acls   = true
-  block_public_policy = true
+  bucket                  = each.value.id
+  block_public_acls       = true
+  block_public_policy     = true
   restrict_public_buckets = true
-  ignore_public_acls = true
+  ignore_public_acls      = true
 }
 
 resource "aws_s3_bucket_versioning" "bucket" {
   for_each = aws_s3_bucket.bucket
-  bucket = each.value.id
+  bucket   = each.value.id
   versioning_configuration {
     status = "Enabled"
   }
@@ -193,7 +193,7 @@ resource "aws_s3_bucket" "tracing" {
 
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "tracing" {
-  count         = var.create_tracing ? 1 : 0
+  count  = var.create_tracing ? 1 : 0
   bucket = aws_s3_bucket.tracing[0].id
   rule {
     apply_server_side_encryption_by_default {
@@ -204,16 +204,16 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "tracing" {
 }
 
 resource "aws_s3_bucket_public_access_block" "tracing" {
-  count         = var.create_tracing ? 1 : 0
-  bucket = aws_s3_bucket.tracing[0].id
-  block_public_acls   = true
-  block_public_policy = true
+  count                   = var.create_tracing ? 1 : 0
+  bucket                  = aws_s3_bucket.tracing[0].id
+  block_public_acls       = true
+  block_public_policy     = true
   restrict_public_buckets = true
-  ignore_public_acls = true
+  ignore_public_acls      = true
 }
 
 resource "aws_s3_bucket_versioning" "tracing" {
-  count         = var.create_tracing ? 1 : 0
+  count  = var.create_tracing ? 1 : 0
   bucket = aws_s3_bucket.tracing[0].id
   versioning_configuration {
     status = "Enabled"
