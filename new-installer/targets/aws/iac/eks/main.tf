@@ -13,17 +13,16 @@ data "aws_ami" "eks_node_ami" {
   }
 }
 
-data "aws_subnet" "eks_subnet" {
-  for_each = var.subnet_ids
-  id       = each.key
+data "aws_vpc" "eks_vpc" {
+  id = var.vpc_id
 }
 
 locals {
   eks_nodegroup_role_name = "eks-node-${var.name}"
-  kube_config_path = "/tmp/kubeconfig-${var.name}"
-  aws_account_id = data.aws_caller_identity.current.account_id
-  cas_namespace = "kube-system"
-  cas_service_account = "cluster-autoscaler"
+  kube_config_path        = "/tmp/kubeconfig-${var.name}"
+  aws_account_id          = data.aws_caller_identity.current.account_id
+  cas_namespace           = "kube-system"
+  cas_service_account     = "cluster-autoscaler"
 }
 
 resource "aws_iam_role" "iam_role_eks_cluster" {
@@ -55,25 +54,24 @@ resource "aws_iam_role_policy_attachment" "eks_cluster_AmazonEKSServicePolicy" {
 }
 
 resource "aws_security_group" "eks_cluster" {
-  name   = "eks-${var.name}"
-  vpc_id = var.vpc_id
+  name        = "eks-${var.name}"
+  vpc_id      = var.vpc_id
   description = "Security group for EKS cluster ${var.name}"
   tags = {
-    Name     = "eks-${var.name}"
+    Name        = "eks-${var.name}"
     environment = var.name
-    customer = var.customer_tag
+    customer    = var.customer_tag
   }
 }
 
-# Allow HTTPS traffic from EKS subnets
+# Allow HTTPS traffic from VPC
 resource "aws_security_group_rule" "eks_cluster_ingress" {
-  for_each = data.aws_subnet.eks_subnet
   type              = "ingress"
   from_port         = 443
   to_port           = 443
   protocol          = "tcp"
   security_group_id = aws_security_group.eks_cluster.id
-  cidr_blocks       = each.value.cidr_block
+  cidr_blocks       = [data.aws_vpc.eks_vpc.cidr_block]
   description       = "Allow HTTPS traffic from VPC"
 }
 
@@ -83,10 +81,10 @@ resource "aws_security_group_rule" "eks_cluster_egress" {
   type              = "egress"
   from_port         = 0
   to_port           = 0
-  protocol          = "tcp"
+  protocol          = "-1"
   security_group_id = aws_security_group.eks_cluster.id
   cidr_blocks       = ["0.0.0.0/0"]
-  description       = "Allow HTTPS traffic from VPC"
+  description       = "Allow HTTPS traffic from EKS cluster to the internet"
 }
 
 #trivy:ignore:AVD-AWS-0039 TODO: enable secret encryption
@@ -145,19 +143,13 @@ resource "null_resource" "set_env" {
   provisioner "local-exec" {
     command = <<EOT
         set -eu
+        sleep 10
         kubectl set env ds aws-node --kubeconfig "${local.kube_config_path}" --context "arn:aws:eks:${var.region}:${local.aws_account_id}:cluster/${var.name}" -n kube-system WARM_PREFIX_TARGET=0
         kubectl set env ds aws-node --kubeconfig "${local.kube_config_path}" --context "arn:aws:eks:${var.region}:${local.aws_account_id}:cluster/${var.name}" -n kube-system WARM_IP_TARGET=2
         kubectl set env ds aws-node --kubeconfig "${local.kube_config_path}" --context "arn:aws:eks:${var.region}:${local.aws_account_id}:cluster/${var.name}" -n kube-system MINIMUM_IP_TARGET=0
 EOT
   }
   depends_on = [null_resource.create_kubecnofig]
-}
-
-data "aws_eks_cluster" "eks_cluster_data" {
-  name = var.name
-  depends_on = [
-    null_resource.set_env
-  ]
 }
 
 # Creating IAM role for EKS nodes to work with other AWS Services.
@@ -231,19 +223,19 @@ resource "aws_launch_template" "eks_launch_template" {
   instance_type = var.node_instance_type
 
   user_data = base64encode(templatefile("${path.module}/eks_cloud_init.tpl", {
-    user_script_pre_cloud_init = var.user_script_pre_cloud_init
+    user_script_pre_cloud_init  = var.user_script_pre_cloud_init
     user_script_post_cloud_init = var.user_script_post_cloud_init
-    http_proxy = var.http_proxy
-    https_proxy = var.https_proxy
-    no_proxy = var.no_proxy
-    region = var.region
-    enable_cache_registry = var.enable_cache_registry
-    cache_registry = var.cache_registry
-    eks_endpoint = data.aws_eks_cluster.eks_cluster_data.endpoint
-    eks_cluster_ca = data.aws_eks_cluster.eks_cluster_data.certificate_authority[0].data
-    name = var.name
-    eks_node_ami_id = data.aws_ami.eks_node_ami.id
-    max_pods = var.max_pods
+    http_proxy                  = var.http_proxy
+    https_proxy                 = var.https_proxy
+    no_proxy                    = var.no_proxy
+    region                      = var.region
+    enable_cache_registry       = var.enable_cache_registry
+    cache_registry              = var.cache_registry
+    eks_endpoint                = aws_eks_cluster.eks_cluster.endpoint
+    eks_cluster_ca              = aws_eks_cluster.eks_cluster.certificate_authority[0].data
+    name                        = var.name
+    eks_node_ami_id             = data.aws_ami.eks_node_ami.id
+    max_pods                    = var.max_pods
   }))
   metadata_options {
     http_tokens = "required"
@@ -253,8 +245,8 @@ resource "aws_launch_template" "eks_launch_template" {
     resource_type = "instance"
     tags = {
       "environment" : var.name
-      "customer"    : var.customer_tag
-      "Name"        : "eks-nodegroup-${var.name}-1"
+      "customer" : var.customer_tag
+      "Name" : "eks-nodegroup-${var.name}-1"
     }
   }
 }
@@ -281,19 +273,19 @@ resource "aws_launch_template" "additional_node_group_launch_template" {
   instance_type = each.value.instance_type
 
   user_data = base64encode(templatefile("${path.module}/eks_cloud_init.tpl", {
-    user_script_pre_cloud_init = var.user_script_pre_cloud_init
+    user_script_pre_cloud_init  = var.user_script_pre_cloud_init
     user_script_post_cloud_init = var.user_script_post_cloud_init
-    http_proxy = var.http_proxy
-    https_proxy = var.https_proxy
-    no_proxy = var.no_proxy
-    region = var.region
-    enable_cache_registry = var.enable_cache_registry
-    cache_registry = var.cache_registry
-    eks_endpoint = data.aws_eks_cluster.eks_cluster_data.endpoint
-    eks_cluster_ca = data.aws_eks_cluster.eks_cluster_data.certificate_authority[0].data
-    name = var.name
-    eks_node_ami_id = data.aws_ami.eks_node_ami.id
-    max_pods = var.max_pods
+    http_proxy                  = var.http_proxy
+    https_proxy                 = var.https_proxy
+    no_proxy                    = var.no_proxy
+    region                      = var.region
+    enable_cache_registry       = var.enable_cache_registry
+    cache_registry              = var.cache_registry
+    eks_endpoint                = aws_eks_cluster.eks_cluster.endpoint
+    eks_cluster_ca              = aws_eks_cluster.eks_cluster.certificate_authority[0].data
+    name                        = var.name
+    eks_node_ami_id             = data.aws_ami.eks_node_ami.id
+    max_pods                    = var.max_pods
   }))
   metadata_options {
     http_tokens = "required"
@@ -303,14 +295,14 @@ resource "aws_launch_template" "additional_node_group_launch_template" {
     resource_type = "instance"
     tags = {
       "environment" : var.name
-      "customer"    : var.customer_tag
-      "Name"        : "eks-nodegroup-${var.name}-${each.key}"
+      "customer" : var.customer_tag
+      "Name" : "eks-nodegroup-${var.name}-${each.key}"
     }
   }
 }
 
 resource "aws_eks_node_group" "nodegroup" {
-  cluster_name = aws_eks_cluster.eks_cluster.name
+  cluster_name         = aws_eks_cluster.eks_cluster.name
   node_group_name      = "nodegroup-${var.name}"
   node_role_arn        = aws_iam_role.eks_nodes.arn
   subnet_ids           = var.subnet_ids
