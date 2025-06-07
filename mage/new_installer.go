@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/magefile/mage/mg"
 	"github.com/magefile/mage/sh"
@@ -79,8 +80,9 @@ func (NewInstaller) Test() error {
 	// -r: recursive test
 	// -p: parallel test
 	// --skip-package: skip tests in specific packages
+	// --cover: enable coverage analysis
 	if err := sh.RunV("ginkgo", "-v", "-r", "-p",
-		"--skip-package=new-installer/targets/aws/iac",
+		"--skip-package=targets/aws/iac",
 		"--cover"); err != nil {
 		return err
 	}
@@ -95,7 +97,27 @@ func (NewInstaller) Test() error {
 }
 
 // Test Terraform modules
+// We will not include coverage analysis for IaC tests.
 func (NewInstaller) TestIaC() error {
+	if err := os.Chdir(rootDir); err != nil {
+		return fmt.Errorf("failed to change directory to %s: %w", rootDir, err)
+	}
+
+	defer func() {
+		if err := os.Chdir(".."); err != nil {
+			fmt.Printf("Warning: failed to change back to root directory: %v\n", err)
+		}
+	}()
+
+	// Run tests for the new installer, except for the AWS IaC tests
+	// Ginkgo flags:
+	// -v: verbose output
+	// -r: recursive test
+	// -p: parallel test
+	// --cover: enable coverage analysis
+	if err := sh.RunV("ginkgo", "-v", "-r", "-p", "targets/aws/iac"); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -134,5 +156,83 @@ func (NewInstaller) Clean() error {
 		return fmt.Errorf("failed to remove *.test files: %w", err)
 	}
 
+	return nil
+}
+
+func (NewInstaller) Lint() error {
+	oldWorkingDir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current working directory: %w", err)
+	}
+	err = os.Chdir(rootDir)
+	if err != nil {
+		return fmt.Errorf("failed to change directory to %s: %w", rootDir, err)
+	}
+	defer func() {
+		err := os.Chdir(oldWorkingDir)
+		if err != nil {
+			fmt.Printf("Warning: failed to change back to original directory %s: %v\n", oldWorkingDir, err)
+		}
+	}()
+	if err := sh.RunV("golangci-lint", "run", "--config", oldWorkingDir+"/.golangci.yml", "-v", "--timeout", "5m0s"); err != nil {
+		return fmt.Errorf("Linter returned an error: %w", err)
+	}
+	return nil
+}
+
+func (NewInstaller) ValidateIaC() error {
+	iacDir := filepath.Join(rootDir, "targets", "aws", "iac")
+
+	// Find all first-level directories in the IaC directory
+	dirs, err := os.ReadDir(iacDir)
+	if err != nil {
+		return fmt.Errorf("failed to read IaC directory %s: %w", iacDir, err)
+	}
+
+	var wg sync.WaitGroup
+	errChan := make(chan error, len(dirs))
+
+	for _, dir := range dirs {
+		if !dir.IsDir() {
+			continue
+		}
+
+		wg.Add(1)
+		go func(dir os.DirEntry) {
+			defer wg.Done()
+
+			dirPath := filepath.Join(iacDir, dir.Name())
+
+			// Run "terraform -chdir=<dirPath> init -backend=false -reconfigure -upgrade"
+			if err := sh.RunV("terraform", fmt.Sprintf("-chdir=%s", dirPath), "init", "-backend=false", "-reconfigure", "-upgrade"); err != nil {
+				errChan <- fmt.Errorf("failed to run terraform init in %s: %w", dirPath, err)
+				return
+			}
+
+			// Run "terraform -chdir=<dirPath> validate"
+			if err := sh.RunV("terraform", fmt.Sprintf("-chdir=%s", dirPath), "validate"); err != nil {
+				errChan <- fmt.Errorf("failed to run terraform validate in %s: %w", dirPath, err)
+				return
+			}
+		}(dir)
+	}
+
+	fmt.Println("Starting Terraform validation for IaC directories...")
+	wg.Wait()
+	close(errChan)
+
+	var errors []error
+	for err := range errChan {
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		for _, err := range errors {
+			fmt.Printf("Error: %v\n", err)
+		}
+		return fmt.Errorf("encountered %d errors during Terraform validation", len(errors))
+	}
+
+	fmt.Println("Terraform validation completed successfully for all IaC directories.")
 	return nil
 }
