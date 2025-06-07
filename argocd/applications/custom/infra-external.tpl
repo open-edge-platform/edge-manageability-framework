@@ -87,6 +87,9 @@ loca-templates-manager:
 
 amt:
   mps:
+    postgresql:
+      type: {{ .Values.argo.database.type }}
+      ssl: "{{ .Values.argo.database.ssl }}"
     commonName: "mps-node.{{ .Values.argo.clusterDomain }}"
     traefikReverseProxy:
       host:
@@ -99,6 +102,9 @@ amt:
   {{- end }}
 
   rps:
+    postgresql:
+      type: {{ .Values.argo.database.type }}
+      ssl: "{{ .Values.argo.database.ssl }}"
     traefikReverseProxy:
       host:
         grpc:
@@ -108,7 +114,3 @@ amt:
   {{- if .Values.argo.traefik }}
     tlsOption: {{ .Values.argo.traefik.tlsOption | default "" | quote }}
   {{- end }}
-
-  dm-manager:
-    serviceArgs:
-      clusterDomain: {{ .Values.argo.clusterDomain }}
