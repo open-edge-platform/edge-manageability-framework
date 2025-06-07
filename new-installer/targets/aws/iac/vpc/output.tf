@@ -25,5 +25,5 @@ output "private_subnet_ids" {
 }
 
 output "jumphost_ip" {
-  value = aws_instance.jumphost.public_ip
+  value = aws_eip.jumphost.public_ip
 }
