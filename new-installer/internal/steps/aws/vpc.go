@@ -46,22 +46,24 @@ var VPCEndpoints = []string{
 	"ecr.dkr",
 	"ecr.api",
 	"elasticloadbalancing",
+	"ecs",
 }
 
 type VPCVariables struct {
-	Region                 string               `json:"region" yaml:"region"`
-	Name                   string               `json:"name" yaml:"name"`
-	CidrBlock              string               `json:"cidr_block" yaml:"cidr_block"`
-	EnableDnsHostnames     bool                 `json:"enable_dns_hostnames" yaml:"enable_dns_hostnames"`
-	EnableDnsSupport       bool                 `json:"enable_dns_support" yaml:"enable_dns_support"`
-	PrivateSubnets         map[string]VPCSubnet `json:"private_subnets" yaml:"private_subnets"`
-	PublicSubnets          map[string]VPCSubnet `json:"public_subnets" yaml:"public_subnets"`
-	EndpointSGName         string               `json:"endpoint_sg_name" yaml:"endpoint_sg_name"`
-	JumphostIPAllowList    []string             `json:"jumphost_ip_allow_list" yaml:"jumphost_ip_allow_list"`
-	JumphostInstanceSSHKey string               `json:"jumphost_instance_ssh_key_pub" yaml:"jumphost_instance_ssh_key_pub"`
-	JumphostSubnet         string               `json:"jumphost_subnet" yaml:"jumphost_subnet"`
-	Production             bool                 `json:"production" yaml:"production"`
-	CustomerTag            string               `json:"customer_tag" yaml:"customer_tag"`
+	Region                 string               `json:"region"`
+	Name                   string               `json:"name"`
+	CidrBlock              string               `json:"cidr_block"`
+	EnableDnsHostnames     bool                 `json:"enable_dns_hostnames"`
+	EnableDnsSupport       bool                 `json:"enable_dns_support"`
+	PrivateSubnets         map[string]VPCSubnet `json:"private_subnets"`
+	PublicSubnets          map[string]VPCSubnet `json:"public_subnets"`
+	EndpointSGName         string               `json:"endpoint_sg_name"`
+	JumphostIPAllowList    []string             `json:"jumphost_ip_allow_list"`
+	JumphostInstanceSSHKey string               `json:"jumphost_instance_ssh_key_pub"`
+	JumphostSubnet         string               `json:"jumphost_subnet"`
+	Production             bool                 `json:"production"`
+	CustomerTag            string               `json:"customer_tag,omitempty"`
+	Endpoints              []string             `json:"endpoints,omitempty"`
 }
 
 // NewDefaultVPCVariables creates a new VPCVariables with default values
