@@ -24,3 +24,9 @@ variable "vpc_id" {
   type = string
   description = "VPC ID for EFS to attach"
 }
+
+variable "eks_oidc_issuer" {
+  description = "OIDC issuer URL for EKS cluster"
+  type        = string
+  default     = ""
+}
