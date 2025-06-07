@@ -176,11 +176,11 @@ func CreateVPC(t testing.TestingT, name string) (string, []string, []string, str
 				CidrBlock: "10.250.128.0/24",
 			},
 			name + "pub-2": {
-				Az:        "us-west-2a",
+				Az:        "us-west-2b",
 				CidrBlock: "10.250.129.0/24",
 			},
 			name + "pub-3": {
-				Az:        "us-west-2a",
+				Az:        "us-west-2c",
 				CidrBlock: "10.250.130.0/24",
 			},
 		},
