@@ -19,6 +19,11 @@ const (
 	KMSBackendBucketKey = "kms.tfstate"
 )
 
+var kmsStepLabels = []string{
+	"aws",
+	"kms",
+}
+
 type KMSVariables struct {
 	Region      string `json:"region" yaml:"region"`
 	CustomerTag string `json:"customer_tag" yaml:"customer_tag"`
@@ -38,12 +43,23 @@ type KMSStep struct {
 	backendConfig      steps.TerraformAWSBucketBackendConfig
 	RootPath           string
 	KeepGeneratedFiles bool
-	TerraformUtility   steps.TerraformUtility
 	StepLabels         []string
+	TerraformUtility   steps.TerraformUtility
+	AWSUtility         AWSUtility
+}
+
+func CreateKMSStep(rootPath string, keepGeneratedFiles bool, terraformUtility steps.TerraformUtility, awsUtility AWSUtility) *KMSStep {
+	return &KMSStep{
+		RootPath:           rootPath,
+		KeepGeneratedFiles: keepGeneratedFiles,
+		TerraformUtility:   terraformUtility,
+		AWSUtility:         awsUtility,
+		StepLabels:         kmsStepLabels,
+	}
 }
 
 func (s *KMSStep) Name() string {
-	return "AWSKMSStep"
+	return "KMSStep"
 }
 
 func (s *KMSStep) Labels() []string {
@@ -64,6 +80,46 @@ func (s *KMSStep) ConfigStep(ctx context.Context, config config.OrchInstallerCon
 }
 
 func (s *KMSStep) PreStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+	if config.AWS.PreviousS3StateBucket == "" {
+		// No need to migrate state, since there is no previous state bucket
+		return runtimeState, nil
+	}
+
+	// Need to move Terraform state from old bucket to new bucket:
+	oldKMSBucketKey := fmt.Sprintf("%s/kms/%s", config.AWS.Region, config.Global.OrchName)
+	err := s.AWSUtility.S3CopyToS3(config.AWS.Region,
+		config.AWS.PreviousS3StateBucket,
+		oldKMSBucketKey,
+		config.AWS.Region,
+		s.backendConfig.Bucket,
+		s.backendConfig.Key)
+	if err != nil {
+		return runtimeState, &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeInternal,
+			ErrorMsg:  fmt.Sprintf("failed to move Terraform state from old bucket to new bucket: %v", err),
+		}
+	}
+
+	modulePath := filepath.Join(s.RootPath, KMSModulePath)
+	states := map[string]string{
+		"module.kms.aws_iam_user.vault":       "aws_iam_user.vault",
+		"module.kms.aws_iam_access_key.vault": "aws_iam_access_key.vault",
+		"module.kms.aws_kms_key.vault":        "aws_kms_key.vault",
+		"module.kms.aws_kms_alias.vault":      "aws_kms_alias.vault",
+		"module.kms.aws_kms_key_policy.vault": "aws_kms_key_policy.vault",
+	}
+
+	mvErr := s.TerraformUtility.MoveStates(ctx, steps.TerraformUtilityMoveStatesInput{
+		ModulePath: modulePath,
+		States:     states,
+	})
+	if mvErr != nil {
+		return runtimeState, &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeInternal,
+			ErrorMsg:  fmt.Sprintf("failed to move Terraform state: %v", mvErr),
+		}
+	}
+
 	return runtimeState, nil
 }
 
