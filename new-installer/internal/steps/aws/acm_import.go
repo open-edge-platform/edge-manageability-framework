@@ -141,7 +141,7 @@ func (s *ImportCertificateToACMStep) PreStep(ctx context.Context, config config.
 	}
 
 	// Need to move Terraform state from old bucket to new bucket:
-	oldACMBucketKey := fmt.Sprintf("%s/acm/%s", config.AWS.Region, config.Global.OrchName)
+	oldACMBucketKey := fmt.Sprintf("%s/orch-load-balancer/%s", config.AWS.Region, config.Global.OrchName)
 	err := s.AWSUtility.S3CopyToS3(config.AWS.Region,
 		config.AWS.PreviousS3StateBucket,
 		oldACMBucketKey,
@@ -166,6 +166,26 @@ func (s *ImportCertificateToACMStep) PreStep(ctx context.Context, config config.
 		return runtimeState, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInternal,
 			ErrorMsg:  fmt.Sprintf("failed to move Terraform state: %v", mvErr),
+		}
+	}
+
+	rmErr := s.TerraformUtility.RemoveStates(ctx, steps.TerraformUtilityRemoveStatesInput{
+		ModulePath: modulePath,
+		States: []string{
+			"module.traefik_load_balancer",
+			"module.traefik2_load_balancer",
+			"module.argocd_load_balancer",
+			"module.traefik_lb_target_group_binding",
+			"module.aws_lb_security_group_roles",
+			"module.wait_until_alb_ready",
+			"module.waf_web_acl_traefik",
+			"module.waf_web_acl_argocd",
+		},
+	})
+	if rmErr != nil {
+		return runtimeState, &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeInternal,
+			ErrorMsg:  fmt.Sprintf("failed to remove Terraform states: %v", rmErr),
 		}
 	}
 
