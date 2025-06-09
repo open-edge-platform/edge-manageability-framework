@@ -90,7 +90,8 @@ N/A
 
 ## Affected components and Teams
 
-**EIM - OS profiles, Onboarding Manager, Tinker actions**
+EIM - OS profiles, Onboarding Manager, Tinker actions
+
 - Onboarding Manager:
   - Extract cloud-init template to a separate Go sub-module in infra-onboarding with CI/CD and SemVer versioning
   - Extend Platform Bundle library to handle new YAML format
@@ -101,13 +102,15 @@ N/A
 - OS profiles:
   - Extend YAML of OS profiles that should be extended with Platform Bundle files
 
-**EEF framework**
-  - Adapt EEF certification process to download EIM cloud-init template from Release Service
-  - Implement CI/CD to track Installer script changes and curate new Installer script for each EEF profile
+EEF framework
 
-**Documentation**
-  - Provide developer docs on Platform Bundle integration architecture
-  - Provide developer docs on how use Platform Bundle to customize OS profiles
+- Adapt EEF certification process to download EIM cloud-init template from Release Service
+- Implement CI/CD to track Installer script changes and curate new Installer script for each EEF profile
+
+Documentation
+
+- Provide developer docs on Platform Bundle integration architecture
+- Provide developer docs on how use Platform Bundle to customize OS profiles
 
 ## Implementation plan
 
