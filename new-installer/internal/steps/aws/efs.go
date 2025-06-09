@@ -122,7 +122,11 @@ func (s *EFSStep) PreStep(ctx context.Context, config config.OrchInstallerConfig
 	mvErr := s.TerraformUtility.MoveStates(ctx, steps.TerraformUtilityMoveStatesInput{
 		ModulePath: modulePath,
 		States: map[string]string{
-			"module.efs.aws_efs_file_system.efs": "aws_efs_file_system.efs",
+			"module.efs.aws_efs_file_system.efs":      "aws_efs_file_system.efs",
+			"module.efs.aws_efs_mount_target.target":  "aws_efs_mount_target.target",
+			"module.efs.aws_iam_policy.efs_policy":    "aws_iam_policy.efs_policy",
+			"module.efs.aws_iam_role.efs_role":        "aws_iam_role.efs_role",
+			"module.efs.aws_security_group.allow_nfs": "aws_security_group.allow_nfs",
 		},
 	})
 	if mvErr != nil {

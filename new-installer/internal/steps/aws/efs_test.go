@@ -153,7 +153,11 @@ func (s *EFSStepTest) expectTFUtiliyCall(action string) {
 		s.tfUtility.On("MoveStates", mock.Anything, steps.TerraformUtilityMoveStatesInput{
 			ModulePath: filepath.Join(s.step.RootPath, steps_aws.EFSModulePath),
 			States: map[string]string{
-				"module.efs.aws_efs_file_system.efs": "aws_efs_file_system.efs",
+				"module.efs.aws_efs_file_system.efs":      "aws_efs_file_system.efs",
+				"module.efs.aws_efs_mount_target.target":  "aws_efs_mount_target.target",
+				"module.efs.aws_iam_policy.efs_policy":    "aws_iam_policy.efs_policy",
+				"module.efs.aws_iam_role.efs_role":        "aws_iam_role.efs_role",
+				"module.efs.aws_security_group.allow_nfs": "aws_security_group.allow_nfs",
 			},
 		}).Return(nil).Once()
 
