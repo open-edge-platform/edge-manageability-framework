@@ -10,7 +10,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"time"
 
 	terratest_aws "github.com/gruntwork-io/terratest/modules/aws"
 	"github.com/gruntwork-io/terratest/modules/terraform"
@@ -78,8 +77,6 @@ func (s *ObservabilityBucketsTestSuite) TestApplyingModule() {
 	defer terraform.Destroy(s.T(), terraformOptions)
 
 	terraform.InitAndApply(s.T(), terraformOptions)
-
-	time.Sleep(time.Second * 300) // Wait for resources to be created
 
 	// Verify that the S3 buckets for orch observability are created
 	terratest_aws.AssertS3BucketExists(s.T(), "us-west-2", clusterName+"-pre-"+"orch-loki-admin")
