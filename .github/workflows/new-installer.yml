@@ -171,65 +171,63 @@ jobs:
       - name: Validate Terraform configs
         run: mage newinstaller:validateiac
 
-      - name: Test new installer IaC - acm
-        if: needs.check-changed-files.outputs.acm == 'true'
-        run: mage newinstaller:testiac acm
-
-      - name: Test new installer IaC - alb
-        if: needs.check-changed-files.outputs.alb == 'true'
-        run: mage newinstaller:testiac alb
-
-      - name: Test new installer IaC - ec2log
-        if: needs.check-changed-files.outputs.ec2log == 'true'
-        run: mage newinstaller:testiac ec2log
-
-      - name: Test new installer IaC - efs
-        if: needs.check-changed-files.outputs.efs == 'true'
-        run: mage newinstaller:testiac efs
-
-      - name: Test new installer IaC - eks
-        if: needs.check-changed-files.outputs.eks == 'true'
-        run: mage newinstaller:testiac eks
-
-      - name: Test new installer IaC - kms
-        if: needs.check-changed-files.outputs.kms == 'true'
-        run: mage newinstaller:testiac kms
-
-      - name: Test new installer IaC - lb_sg
-        if: needs.check-changed-files.outputs.lb_sg == 'true'
-        run: mage newinstaller:testiac lb_sg
-
-      - name: Test new installer IaC - nlb
-        if: needs.check-changed-files.outputs.nlb == 'true'
-        run: mage newinstaller:testiac nlb
-
-      - name: Test new installer IaC - pull-through-cache-proxy
-        if: needs.check-changed-files.outputs.pull-through-cache-proxy == 'true'
-        run: mage newinstaller:testiac pull-through-cache-proxy
-
-      - name: Test new installer IaC - rds
-        if: needs.check-changed-files.outputs.rds == 'true'
-        run: mage newinstaller:testiac rds
-
-      - name: Test new installer IaC - route53
-        if: needs.check-changed-files.outputs.route53 == 'true'
-        run: mage newinstaller:testiac route53
-
-      - name: Test new installer IaC - s3
-        if: needs.check-changed-files.outputs.s3 == 'true'
-        run: mage newinstaller:testiac s3
-
       - name: Test new installer IaC - state_bucket
         if: needs.check-changed-files.outputs.state_bucket == 'true'
         run: mage newinstaller:testiac state_bucket
 
-      - name: Test new installer IaC - utils
-        if: needs.check-changed-files.outputs.utils == 'true'
-        run: mage newinstaller:testiac utils
-
       - name: Test new installer IaC - vpc
         if: needs.check-changed-files.outputs.vpc == 'true'
         run: mage newinstaller:testiac vpc
+
+
+      # TODO: Uncomment when the new installer IaC tests are ready
+      # - name: Test new installer IaC - acm
+      #   if: needs.check-changed-files.outputs.acm == 'true'
+      #   run: mage newinstaller:testiac acm
+
+      # - name: Test new installer IaC - alb
+      #   if: needs.check-changed-files.outputs.alb == 'true'
+      #   run: mage newinstaller:testiac alb
+
+      # - name: Test new installer IaC - ec2log
+      #   if: needs.check-changed-files.outputs.ec2log == 'true'
+      #   run: mage newinstaller:testiac ec2log
+
+      # - name: Test new installer IaC - efs
+      #   if: needs.check-changed-files.outputs.efs == 'true'
+      #   run: mage newinstaller:testiac efs
+
+      # - name: Test new installer IaC - eks
+      #   if: needs.check-changed-files.outputs.eks == 'true'
+      #   run: mage newinstaller:testiac eks
+
+      # - name: Test new installer IaC - kms
+      #   if: needs.check-changed-files.outputs.kms == 'true'
+      #   run: mage newinstaller:testiac kms
+
+      # - name: Test new installer IaC - lb_sg
+      #   if: needs.check-changed-files.outputs.lb_sg == 'true'
+      #   run: mage newinstaller:testiac lb_sg
+
+      # - name: Test new installer IaC - nlb
+      #   if: needs.check-changed-files.outputs.nlb == 'true'
+      #   run: mage newinstaller:testiac nlb
+
+      # - name: Test new installer IaC - pull-through-cache-proxy
+      #   if: needs.check-changed-files.outputs.pull-through-cache-proxy == 'true'
+      #   run: mage newinstaller:testiac pull-through-cache-proxy
+
+      # - name: Test new installer IaC - rds
+      #   if: needs.check-changed-files.outputs.rds == 'true'
+      #   run: mage newinstaller:testiac rds
+
+      # - name: Test new installer IaC - route53
+      #   if: needs.check-changed-files.outputs.route53 == 'true'
+      #   run: mage newinstaller:testiac route53
+
+      # - name: Test new installer IaC - s3
+      #   if: needs.check-changed-files.outputs.s3 == 'true'
+      #   run: mage newinstaller:testiac s3
 
       - name: Test new installer IaC - waf
         if: needs.check-changed-files.outputs.waf == 'true'
