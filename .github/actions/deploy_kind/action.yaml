@@ -37,6 +37,16 @@ runs:
       run: |
         echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
         git config --global url."https://${{ inputs.token }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+    - name: Locate and copy .tool-versions file
+      shell: bash
+      run: |
+        TOOL_VERSION_FILE=$(find $GITHUB_WORKSPACE -name ".tool-versions" | head -n 1)
+        if [ -z "$TOOL_VERSION_FILE" ]; then
+          echo "No .tool-versions file found, using default versions." 
+        else
+          echo "Found .tool-versions file at $TOOL_VERSION_FILE"
+          cp "$TOOL_VERSION_FILE" $GITHUB_WORKSPACE/.tool-versions
+        fi
 
     - name: Setup asdf and install dependencies
       id: install-deps
