@@ -13,7 +13,7 @@ locals {
     "system:serviceaccount:orch-infra:aws-s3-sa-mimir",
     "system:serviceaccount:orch-infra:aws-s3-sa-loki"
   ]
-    buckets = toset([
+  buckets = toset([
     "orch-loki-admin",
     "orch-loki-chunks",
     "orch-loki-ruler",
@@ -23,7 +23,8 @@ locals {
     "fm-loki-chunks",
     "fm-loki-ruler",
     "fm-mimir-ruler",
-    "fm-mimir-tsdb"
+    "fm-mimir-tsdb",
+    "tempo-traces"
   ])
 }
 
@@ -52,10 +53,6 @@ resource "aws_iam_policy" "s3_policy" {
 }
 
 ## IAM Role
-# OIDC issuers from EKS clusters
-data "aws_eks_cluster" "eks" {
-  name = var.cluster_name
-}
 
 data "aws_iam_policy_document" "s3_policy" {
   statement {
@@ -63,22 +60,22 @@ data "aws_iam_policy_document" "s3_policy" {
     effect  = "Allow"
     condition {
       test     = "StringEquals"
-      variable = "${replace(data.aws_eks_cluster.eks.identity[0].oidc[0].issuer, "https://", "")}:sub"
+      variable = "${replace(var.oidc_issuer, "https://", "")}:sub"
       // https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-logic-multiple-context-keys-or-values.html
       // If a single condition operator includes multiple values for a context key, those values are evaluated using a logical OR.
-      values   = local.service_accounts
+      values = local.service_accounts
     }
     principals {
-      identifiers = ["arn:aws:iam::${local.aws_account_id}:oidc-provider/${replace(data.aws_eks_cluster.eks.identity[0].oidc[0].issuer, "https://", "")}"]
+      identifiers = ["arn:aws:iam::${local.aws_account_id}:oidc-provider/${replace(var.oidc_issuer, "https://", "")}"]
       type        = "Federated"
     }
   }
 }
 
 resource "aws_iam_role" "s3_role" {
-  description         = "Role that can access S3 buckets in ${var.cluster_name} cluster"
-  name                = "${var.cluster_name}-s3-role"
-  assume_role_policy  = data.aws_iam_policy_document.s3_policy.json
+  description        = "Role that can access S3 buckets in ${var.cluster_name} cluster"
+  name               = "${var.cluster_name}-s3-role"
+  assume_role_policy = data.aws_iam_policy_document.s3_policy.json
 }
 
 resource "aws_iam_role_policy_attachment" "s3_role" {
@@ -88,7 +85,7 @@ resource "aws_iam_role_policy_attachment" "s3_role" {
 
 # Key to encrypt S3 buckets
 resource "aws_kms_key" "bucket_key" {
-  description = "KMS key for S3 buckets in ${var.cluster_name} cluster"
+  description         = "KMS key for S3 buckets in ${var.cluster_name} cluster"
   enable_key_rotation = true
 }
 
@@ -102,7 +99,7 @@ resource "aws_s3_bucket" "bucket" {
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "bucket" {
   for_each = aws_s3_bucket.bucket
-  bucket = each.value.id
+  bucket   = each.value.id
   rule {
     apply_server_side_encryption_by_default {
       kms_master_key_id = aws_kms_key.bucket_key.arn
@@ -114,16 +111,16 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "bucket" {
 resource "aws_s3_bucket_public_access_block" "bucket" {
   for_each = aws_s3_bucket.bucket
 
-  bucket              = each.value.id
-  block_public_acls   = true
-  block_public_policy = true
+  bucket                  = each.value.id
+  block_public_acls       = true
+  block_public_policy     = true
   restrict_public_buckets = true
-  ignore_public_acls = true
+  ignore_public_acls      = true
 }
 
 resource "aws_s3_bucket_versioning" "bucket" {
   for_each = aws_s3_bucket.bucket
-  bucket = each.value.id
+  bucket   = each.value.id
   versioning_configuration {
     status = "Enabled"
   }
@@ -181,96 +178,4 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
   for_each = local.buckets
   bucket   = aws_s3_bucket.bucket[each.key].id
   policy   = data.aws_iam_policy_document.bucket_policy_doc[each.key].json
-}
-
-# Create tracing bucket
-#trivy:ignore:AVD-AWS-0089 Logging disabled
-resource "aws_s3_bucket" "tracing" {
-  count         = var.create_tracing ? 1 : 0
-  bucket        = var.s3_prefix == "" ? "${var.cluster_name}-${random_integer.random_prefix.result}-tempo-traces" : "${var.cluster_name}-${var.s3_prefix}-tempo-traces"
-  force_destroy = true
-}
-
-
-resource "aws_s3_bucket_server_side_encryption_configuration" "tracing" {
-  count         = var.create_tracing ? 1 : 0
-  bucket = aws_s3_bucket.tracing[0].id
-  rule {
-    apply_server_side_encryption_by_default {
-      kms_master_key_id = aws_kms_key.bucket_key.arn
-      sse_algorithm     = "aws:kms"
-    }
-  }
-}
-
-resource "aws_s3_bucket_public_access_block" "tracing" {
-  count         = var.create_tracing ? 1 : 0
-  bucket = aws_s3_bucket.tracing[0].id
-  block_public_acls   = true
-  block_public_policy = true
-  restrict_public_buckets = true
-  ignore_public_acls = true
-}
-
-resource "aws_s3_bucket_versioning" "tracing" {
-  count         = var.create_tracing ? 1 : 0
-  bucket = aws_s3_bucket.tracing[0].id
-  versioning_configuration {
-    status = "Enabled"
-  }
-}
-
-resource "aws_s3_bucket_lifecycle_configuration" "tracing_config" {
-  count  = var.create_tracing ? 1 : 0
-  bucket = aws_s3_bucket.tracing[0].id
-  # name = "intelligent-tiering"
-
-  rule {
-    id = "intelligent-tiering"
-
-    transition {
-      days          = 0
-      storage_class = "INTELLIGENT_TIERING"
-    }
-    filter {
-      prefix = ""
-    }
-    status = "Enabled"
-  }
-}
-
-data "aws_iam_policy_document" "tracing_policy_doc" {
-  count = var.create_tracing ? 1 : 0
-  statement {
-    sid = "OnlyAllowAccessViaSSL"
-    principals {
-      type        = "*"
-      identifiers = ["*"]
-    }
-
-    effect = "Deny"
-    actions = [
-      "s3:*",
-    ]
-
-    resources = [
-      aws_s3_bucket.tracing[0].arn,
-      "${aws_s3_bucket.tracing[0].arn}/*",
-    ]
-
-    condition {
-      test     = "Bool"
-      variable = "aws:SecureTransport"
-
-      values = [
-        "false",
-      ]
-    }
-  }
-}
-
-resource "aws_s3_bucket_policy" "tracing_policy" {
-  count  = var.create_tracing ? 1 : 0
-  bucket = aws_s3_bucket.tracing[0].id
-  policy = data.aws_iam_policy_document.tracing_policy_doc[0].json
 }
