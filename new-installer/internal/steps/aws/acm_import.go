@@ -24,6 +24,11 @@ const (
 	ACMBackendBucketKey = "acm.tfstate"
 )
 
+var AWSACMStepLabels = []string{
+	"aws",
+	"acm_import",
+}
+
 type ACMVariables struct {
 	CertificateBody  string `json:"certificate_body" yaml:"certificate_body"`
 	CertificateChain string `json:"certificate_chain" yaml:"certificate_chain"`
@@ -46,7 +51,7 @@ func NewDefaultACMVariables() ACMVariables {
 	}
 }
 
-type ImportCertificateToACM struct {
+type ImportCertificateToACMStep struct {
 	variables          ACMVariables
 	backendConfig      TerraformAWSBucketBackendConfig
 	RootPath           string
@@ -56,16 +61,30 @@ type ImportCertificateToACM struct {
 	AWSUtility         AWSUtility
 }
 
-func (s *ImportCertificateToACM) Name() string {
-	return "ImportCertificateToACM"
+func CreateImportCertificateToACMStep(rootPath string, keepGeneratedFiles bool, terraformUtility steps.TerraformUtility, awsUtility AWSUtility) *ImportCertificateToACMStep {
+	return &ImportCertificateToACMStep{
+		RootPath:           rootPath,
+		KeepGeneratedFiles: keepGeneratedFiles,
+		TerraformUtility:   terraformUtility,
+		AWSUtility:         awsUtility,
+		StepLabels:         AWSACMStepLabels,
+	}
 }
 
-func (s *ImportCertificateToACM) Labels() []string {
+func (s *ImportCertificateToACMStep) Name() string {
+	return "ImportCertificateToACMStep"
+}
+
+func (s *ImportCertificateToACMStep) Labels() []string {
 	return s.StepLabels
 }
 
-// to do: add code to create a self signed TLS certificate and CA if not provided
-func (s *ImportCertificateToACM) ConfigStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *ImportCertificateToACMStep) ConfigStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+	if s.skipACMStep(config) {
+		// If Cert ID is already set, we skip this step.
+		runtimeState.CertID = config.AWS.CertID
+		return runtimeState, nil
+	}
 	if config.AWS.CustomerTag == "" {
 		return runtimeState, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInvalidArgument,
@@ -110,12 +129,54 @@ func (s *ImportCertificateToACM) ConfigStep(ctx context.Context, config config.O
 	return runtimeState, nil
 }
 
-func (s *ImportCertificateToACM) PreStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
-	// no-op for now
+func (s *ImportCertificateToACMStep) PreStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+	if s.skipACMStep(config) {
+		// If Cert ID is already set, we skip this step.
+		runtimeState.CertID = config.AWS.CertID
+		return runtimeState, nil
+	}
+	if config.AWS.PreviousS3StateBucket == "" {
+		// No need to migrate state, since there is no previous state bucket
+		return runtimeState, nil
+	}
+
+	// Need to move Terraform state from old bucket to new bucket:
+	oldACMBucketKey := fmt.Sprintf("%s/acm/%s", config.AWS.Region, config.Global.OrchName)
+	err := s.AWSUtility.S3CopyToS3(config.AWS.Region,
+		config.AWS.PreviousS3StateBucket,
+		oldACMBucketKey,
+		config.AWS.Region,
+		s.backendConfig.Bucket,
+		s.backendConfig.Key)
+	if err != nil {
+		return runtimeState, &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeInternal,
+			ErrorMsg:  fmt.Sprintf("failed to move Terraform state from old ACM bucket to new ACM bucket: %v", err),
+		}
+	}
+	modulePath := filepath.Join(s.RootPath, ACMModulePath)
+	states := map[string]string{
+		"module.acm_import.aws_acm_certificate.main": "aws_acm_certificate.main",
+	}
+	mvErr := s.TerraformUtility.MoveStates(ctx, steps.TerraformUtilityMoveStatesInput{
+		ModulePath: modulePath,
+		States:     states,
+	})
+	if mvErr != nil {
+		return runtimeState, &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeInternal,
+			ErrorMsg:  fmt.Sprintf("failed to move Terraform state: %v", mvErr),
+		}
+	}
+
 	return runtimeState, nil
+
 }
 
-func (s *ImportCertificateToACM) RunStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *ImportCertificateToACMStep) RunStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+	if s.skipACMStep(config) {
+		return runtimeState, nil
+	}
 	if runtimeState.Action == "" {
 		return runtimeState, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInvalidArgument,
@@ -157,7 +218,10 @@ func (s *ImportCertificateToACM) RunStep(ctx context.Context, config config.Orch
 	return runtimeState, nil
 }
 
-func (s *ImportCertificateToACM) PostStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState, prevStepError *internal.OrchInstallerError) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *ImportCertificateToACMStep) PostStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState, prevStepError *internal.OrchInstallerError) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+	if s.skipACMStep(config) {
+		return runtimeState, nil
+	}
 	return runtimeState, prevStepError
 }
 
@@ -234,4 +298,8 @@ func GenerateSelfSignedTLSCert(commonName string) (tlsCertPEM string, tlsCAPEM s
 	keyPEMBytes := pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: keyBytes})
 
 	return string(leafPEM), string(caPEM), string(keyPEMBytes), nil
+}
+
+func (s *ImportCertificateToACMStep) skipACMStep(config config.OrchInstallerConfig) bool {
+	return config.AWS.CertID != ""
 }
