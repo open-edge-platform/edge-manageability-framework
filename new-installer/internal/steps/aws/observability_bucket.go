@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	ObservabilityBucketsModulePath       = "new-installer/targets/aws/iac/observability_buckets"
-	ObservabilityBucketsBackendBucketKey = "observability_buckets.tfstate"
+	ObservabilityBucketsModulePath       = "new-installer/targets/aws/iac/o11y_buckets"
+	ObservabilityBucketsBackendBucketKey = "o11y_buckets.tfstate"
 )
 
 var observabilityBucketsStepLabels = []string{
@@ -94,7 +94,7 @@ func (s *ObservabilityBucketsStep) PreStep(ctx context.Context, config config.Or
 		return runtimeState, nil
 	}
 
-	oldObservabilityBucketsBucketKey := fmt.Sprintf("%s/observability_buckets/%s", config.AWS.Region, config.Global.OrchName)
+	oldObservabilityBucketsBucketKey := fmt.Sprintf("%s/o11y_buckets/%s", config.AWS.Region, config.Global.OrchName)
 	err := s.AWSUtility.S3CopyToS3(config.AWS.Region,
 		config.AWS.PreviousS3StateBucket,
 		oldObservabilityBucketsBucketKey,
@@ -164,7 +164,10 @@ func (s *ObservabilityBucketsStep) RunStep(ctx context.Context, config config.Or
 		return runtimeState, nil
 	}
 	if terraformStepOutput.Output != nil {
-		fmt.Println("Terraform Output:")
+		return runtimeState, &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeTerraform,
+			ErrorMsg:  fmt.Sprintf("unexpected output from observability buckets module: %v", terraformStepOutput.Output),
+		}
 	}
 	return runtimeState, nil
 }
