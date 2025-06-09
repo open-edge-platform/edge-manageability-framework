@@ -50,9 +50,17 @@ type EFSStep struct {
 	backendConfig      TerraformAWSBucketBackendConfig
 	RootPath           string
 	KeepGeneratedFiles bool
-	StepLabels         []string
 	TerraformUtility   steps.TerraformUtility
 	AWSUtility         AWSUtility
+}
+
+func CreateEFSStep(rootPath string, keepGeneratedFiles bool, terraformUtility steps.TerraformUtility, awsUtility AWSUtility) *EFSStep {
+	return &EFSStep{
+		RootPath:           rootPath,
+		KeepGeneratedFiles: keepGeneratedFiles,
+		TerraformUtility:   terraformUtility,
+		AWSUtility:         awsUtility,
+	}
 }
 
 func (s *EFSStep) Name() string {
@@ -60,7 +68,7 @@ func (s *EFSStep) Name() string {
 }
 
 func (s *EFSStep) Labels() []string {
-	return s.StepLabels
+	return StepLabels
 }
 
 func (s *EFSStep) ConfigStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
@@ -68,6 +76,13 @@ func (s *EFSStep) ConfigStep(ctx context.Context, config config.OrchInstallerCon
 	s.variables.ClusterName = config.Global.OrchName
 	s.variables.Region = config.AWS.Region
 	s.variables.CustomerTag = config.AWS.CustomerTag
+
+	if runtimeState.AWS.EKSOIDCIssuer == "" {
+		return runtimeState, &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeInvalidRuntimeState,
+			ErrorMsg:  fmt.Sprintf("EKSOIDCIssuer should not be empty in runtime state for step %s", s.Name()),
+		}
+	}
 	s.variables.EKSOIDCIssuer = runtimeState.AWS.EKSOIDCIssuer
 
 	if len(runtimeState.AWS.PrivateSubnetIDs) == 0 {
@@ -91,7 +106,6 @@ func (s *EFSStep) ConfigStep(ctx context.Context, config config.OrchInstallerCon
 		Bucket: config.Global.OrchName + "-" + runtimeState.DeploymentID,
 		Key:    EFSBackendBucketKey,
 	}
-	s.StepLabels = StepLabels
 
 	return runtimeState, nil
 }
