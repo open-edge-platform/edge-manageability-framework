@@ -1387,7 +1387,8 @@ func (OnPrem) Deploy() error {
     }
 
 
-    OnPrem{}.CreateHarborPassword("orch-harbor", harborPassword)
+    OnPrem{}.CreateHarborSecret("orch-harbor", harborPassword)
+	OnPrem{}.CreateHarborPassword("orch-harbor", harborPassword)
     OnPrem{}.CreateKeycloakPassword("orch-platform", keycloakPassword)
     OnPrem{}.CreatePostgresPassword("orch-database", postgresPassword)
     
