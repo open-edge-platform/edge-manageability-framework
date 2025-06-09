@@ -19,7 +19,7 @@ const (
 	ObservabilityBucketsBackendBucketKey = "observability_buckets.tfstate"
 )
 
-var ObservabilityBucketsStepLabels = []string{
+var observabilityBucketsStepLabels = []string{
 	"aws",
 	"observability",
 	"s3",
@@ -29,6 +29,7 @@ type ObservabilityBucketsVariables struct {
 	Region        string `json:"region" yaml:"region"`
 	CustomerTag   string `json:"customer_tag" yaml:"customer_tag"`
 	S3Prefix      string `json:"s3_prefix" yaml:"s3_prefix"`
+	OIDCIssuer    string `json:"oidc_issuer" yaml:"oidc_issuer"`
 	ClusterName   string `json:"cluster_name" yaml:"cluster_name"`
 	CreateTracing bool   `json:"create_tracing" yaml:"create_tracing"`
 }
@@ -59,23 +60,24 @@ func CreateObservabilityBucketsStep(rootPath string, keepGeneratedFiles bool, te
 		KeepGeneratedFiles: keepGeneratedFiles,
 		TerraformUtility:   terraformUtility,
 		AWSUtility:         awsUtility,
-		StepLabels:         ObservabilityBucketsStepLabels,
+		StepLabels:         observabilityBucketsStepLabels,
 	}
 }
 
 func (s *ObservabilityBucketsStep) Name() string {
-	return "AWSObservabilityBucketsStep"
+	return "ObservabilityBucketsStep"
 }
 
 func (s *ObservabilityBucketsStep) Labels() []string {
-	return ObservabilityBucketsStepLabels
+	return s.StepLabels
 }
 
 func (s *ObservabilityBucketsStep) ConfigStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	s.variables = NewObservabilityBucketsVariables()
 	s.variables.Region = config.AWS.Region
 	s.variables.CustomerTag = config.AWS.CustomerTag
-	s.variables.S3Prefix = config.Global.OrchName // TODO: set this to the correct value from config
+	s.variables.S3Prefix = runtimeState.DeploymentID
+	s.variables.OIDCIssuer = runtimeState.AWS.EKSOIDCIssuer
 	s.variables.ClusterName = config.Global.OrchName
 	s.variables.CreateTracing = false
 	s.backendConfig = steps.TerraformAWSBucketBackendConfig{
@@ -107,43 +109,27 @@ func (s *ObservabilityBucketsStep) PreStep(ctx context.Context, config config.Or
 	}
 
 	modulePath := filepath.Join(s.RootPath, ObservabilityBucketsModulePath)
+	// TODO: Handle the cases where the state wasn't present in old installer
 	states := map[string]string{
 		"module.s3.aws_iam_policy.s3_policy": "aws_iam_policy.s3_policy",
-		"module.s3.aws_iam_role.s3_role": "aws_iam_role.s3_role",
-		nil: "aws_iam_role_policy_attachment.s3_role",
-		nil: "aws_iam_role_policy_attachment.s3_role",
-		nil: "aws_kms_key.bucket_key",
+		"module.s3.aws_iam_role.s3_role":     "aws_iam_role.s3_role",
+		//nil:                                  "aws_iam_role_policy_attachment.s3_role",
+		//nil:                                  "aws_kms_key.bucket_key",
 		"module.s3.aws_s3_bucket.bucket": "aws_s3_bucket.bucket",
-		nil: "aws_s3_bucket_public_access_block.bucket",
-		nil: "aws_s3_bucket_server_side_encryption_configuration.bucket",
-		nil: "aws_s3_bucket_versioning.bucket",
+		// nil:                                  "aws_s3_bucket_public_access_block.bucket",
+		// nil:                                  "aws_s3_bucket_server_side_encryption_configuration.bucket",
+		// nil:                                  "aws_s3_bucket_versioning.bucket",
 		"module.s3.aws_s3_bucket_lifecycle_configuration.bucket_config": "aws_s3_bucket_lifecycle_configuration.bucket_config",
-		"module.s3.aws_s3_bucket_policy.bucket_policy": "aws_s3_bucket_policy.bucket_policy",
-		"module.s3.aws_s3_bucket.tracing": "aws_s3_bucket.tracing",
-		nil: "aws_s3_bucket_server_side_encryption_configuration.tracing",
-		nil: "aws_s3_bucket_public_access_block.tracing",
-		nil: "aws_s3_bucket_versioning.tracing",
+		"module.s3.aws_s3_bucket_policy.bucket_policy":                  "aws_s3_bucket_policy.bucket_policy",
+		"module.s3.aws_s3_bucket.tracing":                               "aws_s3_bucket.tracing",
+		// nil:                                                             "aws_s3_bucket_server_side_encryption_configuration.tracing",
+		// nil:                                                             "aws_s3_bucket_public_access_block.tracing",
+		// nil:                                                             "aws_s3_bucket_versioning.tracing",
 		"module.s3.aws_s3_bucket_lifecycle_configuration.tracing_config": "aws_s3_bucket_lifecycle_configuration.tracing_config",
-		nil: "aws_iam_policy_document.tracing_policy_doc".
+		// nil: "aws_iam_policy_document.tracing_policy_doc",
 		"module.s3.aws_s3_bucket_policy.tracing_policy": "aws_s3_bucket_policy.tracing_policy",
 	}
 
-
-	for name := range s.variables.PublicSubnets {
-		states[fmt.Sprintf("module.vpc.aws_subnet.public_subnet[%s]", name)] = fmt.Sprintf("aws_subnet.public_subnet[%s]", name)
-		states[fmt.Sprintf("module.nat_gateway.aws_eip.ngw[%s]", name)] = fmt.Sprintf("aws_eip.ngw[%s]", name)
-		states[fmt.Sprintf("module.nat_gateway.aws_nat_gateway.ngw_with_eip[%s]", name)] = fmt.Sprintf("aws_nat_gateway.main[%s]", name)
-		states[fmt.Sprintf("module.route_table.aws_route_table.public_subnet[%s]", name)] = fmt.Sprintf("aws_route_table.public_subnet[%s]", name)
-		states[fmt.Sprintf("module.route_table.aws_route_table_association.public_subnet[%s]", name)] = fmt.Sprintf("aws_route_table_association.public_subnet[%s]", name)
-	}
-	for name := range s.variables.PrivateSubnets {
-		states[fmt.Sprintf("module.vpc.aws_subnet.private_subnet[%s]", name)] = fmt.Sprintf("aws_subnet.private_subnet[%s]", name)
-		states[fmt.Sprintf("module.route_table.aws_route_table.private_subnet[%s]", name)] = fmt.Sprintf("aws_route_table.private_subnet[%s]", name)
-		states[fmt.Sprintf("module.route_table.aws_route_table_association.private_subnet[%s]", name)] = fmt.Sprintf("aws_route_table_association.private_subnet[%s]", name)
-	}
-	for _, ep := range AWSVPCEndpoints {
-		states[fmt.Sprintf("module.endpoint.aws_vpc_endpoint.endpoint[%s]", ep)] = fmt.Sprintf("aws_vpc_endpoint.endpoint[%s]", ep)
-	}
 	mvErr := s.TerraformUtility.MoveStates(ctx, steps.TerraformUtilityMoveStatesInput{
 		ModulePath: modulePath,
 		States:     states,
@@ -167,7 +153,6 @@ func (s *ObservabilityBucketsStep) RunStep(ctx context.Context, config config.Or
 		LogFile:            filepath.Join(runtimeState.LogDir, "aws_observability_bucket.log"),
 		KeepGeneratedFiles: s.KeepGeneratedFiles,
 	}
-	fmt.Printf("Running Terraform util %s with input: %+v\n", s.TerraformUtility, terraformStepInput)
 	terraformStepOutput, err := s.TerraformUtility.Run(ctx, terraformStepInput)
 	if err != nil {
 		return runtimeState, &internal.OrchInstallerError{

@@ -50,6 +50,7 @@ func (s *ObservabilityBucketsStepTest) SetupTest() {
 	s.config.Global.OrchName = "observability-buckets-test"
 	s.config.AWS.CustomerTag = "test"
 	s.runtimeState.DeploymentID = DeploymentID
+	s.runtimeState.AWS.EKSOIDCIssuer = "https://oidc.eks.us-west-2.amazonaws.com/id/test-oidc-id"
 	s.runtimeState.LogDir = filepath.Join(rootPath, ".logs")
 	s.tfUtility = &MockTerraformUtility{}
 	s.step = &steps_aws.ObservabilityBucketsStep{
