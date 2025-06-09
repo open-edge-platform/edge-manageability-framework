@@ -109,25 +109,15 @@ func (s *ObservabilityBucketsStep) PreStep(ctx context.Context, config config.Or
 	}
 
 	modulePath := filepath.Join(s.RootPath, ObservabilityBucketsModulePath)
-	// TODO: Handle the cases where the state wasn't present in old installer
 	states := map[string]string{
-		"module.s3.aws_iam_policy.s3_policy": "aws_iam_policy.s3_policy",
-		"module.s3.aws_iam_role.s3_role":     "aws_iam_role.s3_role",
-		// nil:                                  "aws_iam_role_policy_attachment.s3_role",
-		// nil:                                  "aws_kms_key.bucket_key",
-		"module.s3.aws_s3_bucket.bucket": "aws_s3_bucket.bucket",
-		// nil:                                  "aws_s3_bucket_public_access_block.bucket",
-		// nil:                                  "aws_s3_bucket_server_side_encryption_configuration.bucket",
-		// nil:                                  "aws_s3_bucket_versioning.bucket",
-		"module.s3.aws_s3_bucket_lifecycle_configuration.bucket_config": "aws_s3_bucket_lifecycle_configuration.bucket_config",
-		"module.s3.aws_s3_bucket_policy.bucket_policy":                  "aws_s3_bucket_policy.bucket_policy",
-		"module.s3.aws_s3_bucket.tracing":                               "aws_s3_bucket.tracing",
-		// nil:                                                             "aws_s3_bucket_server_side_encryption_configuration.tracing",
-		// nil:                                                             "aws_s3_bucket_public_access_block.tracing",
-		// nil:                                                             "aws_s3_bucket_versioning.tracing",
+		"module.s3.aws_iam_policy.s3_policy":                             "aws_iam_policy.s3_policy",
+		"module.s3.aws_iam_role.s3_role":                                 "aws_iam_role.s3_role",
+		"module.s3.aws_s3_bucket.bucket":                                 "aws_s3_bucket.bucket",
+		"module.s3.aws_s3_bucket_lifecycle_configuration.bucket_config":  "aws_s3_bucket_lifecycle_configuration.bucket_config",
+		"module.s3.aws_s3_bucket_policy.bucket_policy":                   "aws_s3_bucket_policy.bucket_policy",
+		"module.s3.aws_s3_bucket.tracing":                                "aws_s3_bucket.tracing",
 		"module.s3.aws_s3_bucket_lifecycle_configuration.tracing_config": "aws_s3_bucket_lifecycle_configuration.tracing_config",
-		// nil: "aws_iam_policy_document.tracing_policy_doc",
-		"module.s3.aws_s3_bucket_policy.tracing_policy": "aws_s3_bucket_policy.tracing_policy",
+		"module.s3.aws_s3_bucket_policy.tracing_policy":                  "aws_s3_bucket_policy.tracing_policy",
 	}
 
 	mvErr := s.TerraformUtility.MoveStates(ctx, steps.TerraformUtilityMoveStatesInput{
