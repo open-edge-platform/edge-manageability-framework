@@ -113,8 +113,8 @@ func (s *ObservabilityBucketsStep) PreStep(ctx context.Context, config config.Or
 	states := map[string]string{
 		"module.s3.aws_iam_policy.s3_policy": "aws_iam_policy.s3_policy",
 		"module.s3.aws_iam_role.s3_role":     "aws_iam_role.s3_role",
-		//nil:                                  "aws_iam_role_policy_attachment.s3_role",
-		//nil:                                  "aws_kms_key.bucket_key",
+		// nil:                                  "aws_iam_role_policy_attachment.s3_role",
+		// nil:                                  "aws_kms_key.bucket_key",
 		"module.s3.aws_s3_bucket.bucket": "aws_s3_bucket.bucket",
 		// nil:                                  "aws_s3_bucket_public_access_block.bucket",
 		// nil:                                  "aws_s3_bucket_server_side_encryption_configuration.bucket",
@@ -163,7 +163,7 @@ func (s *ObservabilityBucketsStep) RunStep(ctx context.Context, config config.Or
 	if runtimeState.Action == "uninstall" {
 		return runtimeState, nil
 	}
-	if terraformStepOutput.Output != nil && len(terraformStepOutput.Output) > 0 {
+	if len(terraformStepOutput.Output) > 0 {
 		return runtimeState, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeTerraform,
 			ErrorMsg:  fmt.Sprintf("unexpected output from observability buckets module: %v", terraformStepOutput.Output),
