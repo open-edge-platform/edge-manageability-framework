@@ -38,16 +38,17 @@ func (s *OrchConfigValidationTest) TestValidateAll() {
 			// populate fields for Scale struct here
 		},
 		AWS: struct {
-			Region              string   `yaml:"region"`
-			CustomerTag         string   `yaml:"customerTag,omitempty"`
-			CacheRegistry       string   `yaml:"cacheRegistry,omitempty"`
-			JumpHostWhitelist   []string `yaml:"jumpHostWhitelist,omitempty"`
-			JumpHostIP          string   `yaml:"jumpHostIP,omitempty"`
-			JumpHostPrivKeyPath string   `yaml:"jumpHostPrivKeyPath,omitempty"`
-			VPCID               string   `yaml:"vpcID,omitempty"`
-			ReduceNSTTL         bool     `yaml:"reduceNSTTL,omitempty"` // TODO: do we need this?
-			EKSDNSIP            string   `yaml:"eksDNSIP,omitempty"`    // TODO: do we need this?
-			EKSIAMRoles         []string `yaml:"eksIAMRoles,omitempty"`
+			Region                string   `yaml:"region"`
+			CustomerTag           string   `yaml:"customerTag,omitempty"`
+			CacheRegistry         string   `yaml:"cacheRegistry,omitempty"`
+			JumpHostWhitelist     []string `yaml:"jumpHostWhitelist,omitempty"`
+			JumpHostIP            string   `yaml:"jumpHostIP,omitempty"`
+			JumpHostPrivKeyPath   string   `yaml:"jumpHostPrivKeyPath,omitempty"`
+			VPCID                 string   `yaml:"vpcID,omitempty"`
+			ReduceNSTTL           bool     `yaml:"reduceNSTTL,omitempty"` // TODO: do we need this?
+			EKSDNSIP              string   `yaml:"eksDNSIP,omitempty"`    // TODO: do we need this?
+			EKSIAMRoles           []string `yaml:"eksIAMRoles,omitempty"`
+			PreviousS3StateBucket string   `yaml:"previousS3StateBucket,omitempty"`
 		}{
 			Region: "us-west-2",
 		},
