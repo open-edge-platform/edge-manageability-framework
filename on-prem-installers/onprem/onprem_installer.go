@@ -168,19 +168,6 @@ func (OnPrem) CheckOras() error {
 }
 
 
-// Install yq tool
-func (OnPrem) InstallYq() error {
-	_, err := exec.LookPath("yq")
-	if err == nil {
-		fmt.Println("yq tool found in the path")
-		return nil
-	}
-	cmd := exec.Command("bash", "-c", "curl -jL https://github.com/mikefarah/yq/releases/download/v4.42.1/yq_linux_amd64 -o /tmp/yq && sudo mv /tmp/yq /usr/bin/yq && sudo chmod 755 /usr/bin/yq")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
-}
-
 // Download artifacts from OCI registry in Release Service
 func DownloadArtifacts(cwd, dirName, rsURL, rsPath string, artifacts ...string) error {
 	os.MkdirAll(fmt.Sprintf("%s/%s", cwd, dirName), 0755)
@@ -781,7 +768,7 @@ func (OnPrem) DownloadPackages() error {
 	return nil
 }
 
-// validateAndSetIP checks and sets an IP in the YAML config using yq, prompting the user if needed.
+// validateAndSetIP checks and sets an IP in the YAML config using, prompting the user if needed.
 func validateAndSetIP(yamlPath, yamlFile, ipVarName string) error {
     // Read YAML file
     data, err := os.ReadFile(yamlFile)
@@ -1191,13 +1178,6 @@ func (OnPrem) Deploy() error {
     if  err != nil {
         return fmt.Errorf("failed to check oras: %v", err)
     }
-
-	err = OnPrem{}.InstallYq()
-    if err != nil {
-        return fmt.Errorf("failed to install yq: %v", err)
-    }
-
-
 
 
     // Download packages
