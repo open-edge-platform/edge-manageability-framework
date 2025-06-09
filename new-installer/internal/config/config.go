@@ -53,6 +53,7 @@ type OrchInstallerRuntimeState struct {
 		JumpHostSSHKeyPrivateKey string   `yaml:"jumpHostSSHPrivateKey"`
 		EFSFileSystemID          string   `yaml:"efsFileSystemID"`
 		EKSOIDCIssuer            string   `yaml:"eksOIDCIssuer"`
+		CertID                   string   `yaml:"certID"`
 	} `yaml:"aws,omitempty"`
 	Cert struct {
 		TLSCert string `yaml:"tlsCert"`
@@ -86,6 +87,7 @@ type OrchInstallerConfig struct {
 		EKSDNSIP              string   `yaml:"eksDNSIP,omitempty"`    // TODO: do we need this?
 		EKSIAMRoles           []string `yaml:"eksIAMRoles,omitempty"`
 		PreviousS3StateBucket string   `yaml:"previousS3StateBucket,omitempty"` // The S3 bucket where the previous state is stored, will be deprecated in version 3.2.
+		CertID                string   `yaml:"certID,omitempty"`
 	} `yaml:"aws,omitempty"`
 	Onprem struct {
 		ArgoIP         string `yaml:"argoIP"`

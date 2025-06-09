@@ -27,7 +27,7 @@ type ACMImportTest struct {
 	config       config.OrchInstallerConfig
 	runtimeState config.OrchInstallerRuntimeState
 
-	step              *steps_aws.ImportCertificateToACM
+	step              *steps_aws.ImportCertificateToACMStep
 	randomText        string
 	randomTLSCert     string
 	randomTLSCA       string
@@ -83,7 +83,7 @@ func (s *ACMImportTest) SetupTest() {
 	s.tfUtility = &MockTerraformUtility{}
 	s.awsUtility = &MockAWSUtility{}
 
-	s.step = &steps_aws.ImportCertificateToACM{
+	s.step = &steps_aws.ImportCertificateToACMStep{
 		RootPath:           rootPath,
 		KeepGeneratedFiles: true,
 		TerraformUtility:   s.tfUtility,
@@ -100,7 +100,7 @@ func (s *ACMImportTest) TestInstallAndUninstallACM() {
 		return
 	}
 
-	s.Equal(rs.CertID, "acm-12345678")
+	s.Equal(rs.AWS.CertID, "acm-12345678")
 
 	s.runtimeState.Action = "uninstall"
 	s.expectTFUtiliyyCall("uninstall")

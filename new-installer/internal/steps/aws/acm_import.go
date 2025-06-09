@@ -82,7 +82,7 @@ func (s *ImportCertificateToACMStep) Labels() []string {
 func (s *ImportCertificateToACMStep) ConfigStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	if s.skipACMStep(config) {
 		// If Cert ID is already set, we skip this step.
-		runtimeState.CertID = config.AWS.CertID
+		runtimeState.AWS.CertID = config.AWS.CertID
 		return runtimeState, nil
 	}
 	if config.AWS.CustomerTag == "" {
@@ -132,7 +132,7 @@ func (s *ImportCertificateToACMStep) ConfigStep(ctx context.Context, config conf
 func (s *ImportCertificateToACMStep) PreStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	if s.skipACMStep(config) {
 		// If Cert ID is already set, we skip this step.
-		runtimeState.CertID = config.AWS.CertID
+		runtimeState.AWS.CertID = config.AWS.CertID
 		return runtimeState, nil
 	}
 	if config.AWS.PreviousS3StateBucket == "" {
@@ -207,7 +207,7 @@ func (s *ImportCertificateToACMStep) RunStep(ctx context.Context, config config.
 				ErrorMsg:  "The ACM certificate does not exist in terraform output",
 			}
 		} else {
-			runtimeState.CertID = strings.Trim(string(acmCertMeta.Value), "\"")
+			runtimeState.AWS.CertID = strings.Trim(string(acmCertMeta.Value), "\"")
 		}
 	} else {
 		return runtimeState, &internal.OrchInstallerError{
