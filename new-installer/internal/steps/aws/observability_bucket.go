@@ -163,7 +163,7 @@ func (s *ObservabilityBucketsStep) RunStep(ctx context.Context, config config.Or
 	if runtimeState.Action == "uninstall" {
 		return runtimeState, nil
 	}
-	if terraformStepOutput.Output != nil {
+	if terraformStepOutput.Output != nil && len(terraformStepOutput.Output) > 0 {
 		return runtimeState, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeTerraform,
 			ErrorMsg:  fmt.Sprintf("unexpected output from observability buckets module: %v", terraformStepOutput.Output),
