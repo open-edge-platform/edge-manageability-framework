@@ -56,7 +56,7 @@ func CreateAWSEC2LogStep(rootPath string, keepGeneratedFiles bool, terraformUtil
 		KeepGeneratedFiles: keepGeneratedFiles,
 		TerraformUtility:   terraformUtility,
 		AWSUtility:         awsUtility,
-		StepLabels:         AWSVPCStepLabels,
+		StepLabels:         AWSEC2LOGStepLabels,
 	}
 }
 
@@ -84,19 +84,19 @@ func (s *AWSEC2LogStep) ConfigStep(ctx context.Context, config config.OrchInstal
 			ErrorMsg:  "AWS Region is not set",
 		}
 	}
-	if config.AWS.NodeGroupRole == "" {
+	if runtimeState.AWS.NodeGroupRole == "" {
 		return runtimeState, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInvalidArgument,
 			ErrorMsg:  "NodeGroupRole is not set",
 		}
 	}
 
-	s.variables.Region = config.AWS.Region               // Region is required for AWS resources
-	s.variables.ClusterName = config.Global.OrchName     // ClusterName is required for AWS resources
-	s.variables.NodeGroupRole = config.AWS.NodeGroupRole // NodeGroupRole is required for AWS resources
+	s.variables.Region = config.AWS.Region           // Region is required for AWS resources
+	s.variables.ClusterName = config.Global.OrchName // ClusterName is required for AWS resources
+	s.variables.NodeGroupRole = runtimeState.AWS.NodeGroupRole
 
 	//to do: need to create a default for these 2 variables if not provided
-	s.variables.S3Prefix = config.AWS.S3Prefix
+	s.variables.S3Prefix = runtimeState.DeploymentID
 	s.variables.CustomerTag = config.AWS.CustomerTag
 
 	s.backendConfig = TerraformAWSBucketBackendConfig{

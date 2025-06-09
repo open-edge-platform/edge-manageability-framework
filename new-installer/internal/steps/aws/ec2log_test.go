@@ -52,8 +52,7 @@ func (s *EC2LogStepTest) SetupTest() {
 	internal.InitLogger("debug", s.logDir)
 	s.config.AWS.Region = "us-west-2"
 	s.config.Global.OrchName = "test"
-	s.config.AWS.NodeGroupRole = DefaultNodeGroupRole
-	s.config.AWS.S3Prefix = DefaultS3Prefix
+	s.runtimeState.AWS.NodeGroupRole = DefaultNodeGroupRole
 	s.config.AWS.CustomerTag = DefaultCustomerTag
 	s.runtimeState.LogDir = filepath.Join(rootPath, ".logs")
 
@@ -100,8 +99,8 @@ func (s *EC2LogStepTest) expectTFUtiliyyCall(action string) {
 		Variables: steps_aws.AWSEC2logVariables{
 			ClusterName:   s.config.Global.OrchName,
 			Region:        s.config.AWS.Region,
-			NodeGroupRole: s.config.AWS.NodeGroupRole,
-			S3Prefix:      s.config.AWS.S3Prefix,
+			NodeGroupRole: s.runtimeState.AWS.NodeGroupRole,
+			S3Prefix:      s.runtimeState.DeploymentID,
 			CustomerTag:   s.config.AWS.CustomerTag,
 		},
 		BackendConfig: steps_aws.TerraformAWSBucketBackendConfig{

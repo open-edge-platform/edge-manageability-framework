@@ -53,6 +53,7 @@ type OrchInstallerRuntimeState struct {
 		JumpHostSSHKeyPrivateKey string   `yaml:"jumpHostSSHPrivateKey"`
 		EFSFileSystemID          string   `yaml:"efsFileSystemID"`
 		EKSOIDCIssuer            string   `yaml:"eksOIDCIssuer"`
+		NodeGroupRole            string   `yaml:"nodegroup_role"`
 	} `yaml:"aws,omitempty"`
 	Cert struct {
 		TLSCert string `yaml:"tlsCert"`
