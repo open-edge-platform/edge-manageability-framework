@@ -65,12 +65,11 @@ func (s *ObservabilityBucketsStepTest) SetupTest() {
 func (s *ObservabilityBucketsStepTest) TestInstallAndUninstallObservabilityBucket() {
 	s.runtimeState.Action = "install"
 	s.expectTFUtiliyyCall("install")
-	rs, err := steps.GoThroughStepFunctions(s.step, &s.config, s.runtimeState)
+	_, err := steps.GoThroughStepFunctions(s.step, &s.config, s.runtimeState)
 	if err != nil {
 		s.NoError(err)
 		return
 	}
-	fmt.Println(rs)
 
 	s.runtimeState.Action = "uninstall"
 	s.expectTFUtiliyyCall("uninstall")
