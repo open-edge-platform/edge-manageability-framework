@@ -18,6 +18,7 @@ import (
     "os/user"
 	"path/filepath"
 	"regexp"
+	"gopkg.in/yaml.v3"
 
 	"github.com/magefile/mage/mg"
 )
@@ -39,6 +40,36 @@ var orchNamespaceList = []string{
 }
 
 type OnPrem mg.Namespace
+
+    // Helper to get/set nested keys
+func getNested(m map[string]interface{}, keys []string) (string, bool) {
+    for i, k := range keys {
+        if i == len(keys)-1 {
+            if v, ok := m[k]; ok {
+                if s, ok := v.(string); ok {
+                    return s, true
+                }
+            }
+            return "", false
+        }
+        if next, ok := m[k].(map[string]interface{}); ok {
+            m = next
+        } else {
+            return "", false
+        }
+    }
+    return "", false
+}
+
+func setNested(m map[string]interface{}, keys []string, value string) {
+    for _, k := range keys[:len(keys)-1] {
+        if _, ok := m[k]; !ok {
+            m[k] = make(map[string]interface{})
+        }
+        m = m[k].(map[string]interface{})
+    }
+    m[keys[len(keys)-1]] = value
+}
 
 // Create a harbor admin credential secret
 func (OnPrem) CreateHarborSecret(namespace, password string) error {
@@ -630,73 +661,52 @@ stringData:
 }
 
 func (OnPrem) WriteConfigsUsingOverrides() error {
-	tmpDir := os.Getenv("tmp_dir")
-	siConfigRepo := os.Getenv("si_config_repo")
-	profile := os.Getenv("ORCH_INSTALLER_PROFILE")
-	yamlPath := fmt.Sprintf("%s/%s/orch-configs/clusters/%s.yaml", tmpDir, siConfigRepo, profile)
+    tmpDir := os.Getenv("tmp_dir")
+    siConfigRepo := os.Getenv("si_config_repo")
+    profile := os.Getenv("ORCH_INSTALLER_PROFILE")
+    yamlPath := fmt.Sprintf("%s/%s/orch-configs/clusters/%s.yaml", tmpDir, siConfigRepo, profile)
 
-	clusterDomain := os.Getenv("CLUSTER_DOMAIN")
-	if clusterDomain != "" {
-		fmt.Println("CLUSTER_DOMAIN is set. Updating clusterDomain in the YAML file...")
-		cmd := exec.Command("yq", "-i", fmt.Sprintf(".argo.clusterDomain=\"%s\"", clusterDomain), yamlPath)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		if err := cmd.Run(); err != nil {
-			return err
-		}
-		fmt.Printf("Update complete. clusterDomain is now set to: %s\n", clusterDomain)
-	}
+    // Read YAML file
+    data, err := os.ReadFile(yamlPath)
+    if err != nil {
+        return err
+    }
+    var config map[string]interface{}
+    if err := yaml.Unmarshal(data, &config); err != nil {
+        return err
+    }
 
-	sreTlsEnabled := os.Getenv("SRE_TLS_ENABLED")
-	sreDestCaCert := os.Getenv("SRE_DEST_CA_CERT")
-	if sreTlsEnabled == "true" {
-		cmd := exec.Command("yq", "-i", ".argo.o11y.sre.tls.enabled|=true", yamlPath)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		if err := cmd.Run(); err != nil {
-			return err
-		}
-		if sreDestCaCert != "" {
-			cmd := exec.Command("yq", "-i", ".argo.o11y.sre.tls.caSecretEnabled|=true", yamlPath)
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
-			if err := cmd.Run(); err != nil {
-				return err
-			}
-		}
-	} else {
-		cmd := exec.Command("yq", "-i", ".argo.o11y.sre.tls.enabled|=false", yamlPath)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		if err := cmd.Run(); err != nil {
-			return err
-		}
-	}
+    // Use setNested to update values
+    clusterDomain := os.Getenv("CLUSTER_DOMAIN")
+    if clusterDomain != "" {
+        setNested(config, []string{"argo", "clusterDomain"}, clusterDomain)
+    }
 
-	if os.Getenv("SMTP_SKIP_VERIFY") == "true" {
-		cmd := exec.Command("yq", "-i", ".argo.o11y.alertingMonitor.smtp.insecureSkipVerify|=true", yamlPath)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		if err := cmd.Run(); err != nil {
-			return err
-		}
-	}
+    sreTlsEnabled := os.Getenv("SRE_TLS_ENABLED")
+    sreDestCaCert := os.Getenv("SRE_DEST_CA_CERT")
+    if sreTlsEnabled == "true" {
+        setNested(config, []string{"argo", "o11y", "sre", "tls", "enabled"}, "true")
+        if sreDestCaCert != "" {
+            setNested(config, []string{"argo", "o11y", "sre", "tls", "caSecretEnabled"}, "true")
+        }
+    } else {
+        setNested(config, []string{"argo", "o11y", "sre", "tls", "enabled"}, "false")
+    }
 
-	// Override MetalLB address pools
-	cmds := []*exec.Cmd{
-		exec.Command("yq", "-i", ".postCustomTemplateOverwrite.metallb-config.ArgoIP|=strenv(ARGO_IP)", yamlPath),
-		exec.Command("yq", "-i", ".postCustomTemplateOverwrite.metallb-config.TraefikIP|=strenv(TRAEFIK_IP)", yamlPath),
-		exec.Command("yq", "-i", ".postCustomTemplateOverwrite.metallb-config.NginxIP|=strenv(NGINX_IP)", yamlPath),
-	}
-	for _, cmd := range cmds {
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		if err := cmd.Run(); err != nil {
-			return err
-		}
-	}
+    if os.Getenv("SMTP_SKIP_VERIFY") == "true" {
+        setNested(config, []string{"argo", "o11y", "alertingMonitor", "smtp", "insecureSkipVerify"}, "true")
+    }
 
-	return nil
+    setNested(config, []string{"postCustomTemplateOverwrite", "metallb-config", "ArgoIP"}, os.Getenv("ARGO_IP"))
+    setNested(config, []string{"postCustomTemplateOverwrite", "metallb-config", "TraefikIP"}, os.Getenv("TRAEFIK_IP"))
+    setNested(config, []string{"postCustomTemplateOverwrite", "metallb-config", "NginxIP"}, os.Getenv("NGINX_IP"))
+
+    // Write YAML back
+    out, err := yaml.Marshal(config)
+    if err != nil {
+        return err
+    }
+    return os.WriteFile(yamlPath, out, 0644)
 }
 
 // DownloadPackages cleans up and downloads .deb and .git packages with retry logic.
@@ -773,45 +783,50 @@ func (OnPrem) DownloadPackages() error {
 
 // validateAndSetIP checks and sets an IP in the YAML config using yq, prompting the user if needed.
 func validateAndSetIP(yamlPath, yamlFile, ipVarName string) error {
-	// Read current value from YAML
-	cmd := exec.Command("yq", yamlPath, yamlFile)
-	out, err := cmd.Output()
-	if err != nil {
-		return fmt.Errorf("failed to read %s from %s: %w", yamlPath, yamlFile, err)
-	}
-	val := strings.TrimSpace(string(out))
-	fmt.Printf("Value at %s in %s: %s\n", yamlPath, yamlFile, val)
+    // Read YAML file
+    data, err := os.ReadFile(yamlFile)
+    if err != nil {
+        return fmt.Errorf("failed to read %s: %w", yamlFile, err)
+    }
+    var config map[string]interface{}
+    if err := yaml.Unmarshal(data, &config); err != nil {
+        return fmt.Errorf("failed to unmarshal YAML: %w", err)
+    }
 
-	if val == "" || val == "null" {
-		reader := bufio.NewReader(os.Stdin)
-		ipRegex := regexp.MustCompile(`^\d{1,3}(\.\d{1,3}){3}$`)
-		for {
-			fmt.Printf("%s is not set to a valid value in the configuration file.\n", ipVarName)
-			fmt.Printf("Please provide a value for %s: ", ipVarName)
-			ipValue, _ := reader.ReadString('\n')
-			ipValue = strings.TrimSpace(ipValue)
-			if ipRegex.MatchString(ipValue) {
-				os.Setenv(ipVarName, ipValue)
-				cmd := exec.Command("yq", "-i", fmt.Sprintf("%s|=strenv(%s)", yamlPath, ipVarName), yamlFile)
-				cmd.Stdout = os.Stdout
-				cmd.Stderr = os.Stderr
-				if err := cmd.Run(); err != nil {
-					return fmt.Errorf("failed to set %s in %s: %w", ipVarName, yamlFile, err)
-				}
-				fmt.Printf("%s has been set to: %s\n", ipVarName, ipValue)
-				break
-			} else {
-				os.Unsetenv(ipVarName)
-				fmt.Print("Invalid IP address. Would you like to provide a valid value? (Y/n): ")
-				yn, _ := reader.ReadString('\n')
-				yn = strings.TrimSpace(yn)
-				if strings.ToLower(yn) == "n" {
-					return fmt.Errorf("Exiting as a valid value for %s has not been provided.", ipVarName)
-				}
-			}
-		}
-	}
-	return nil
+    // Parse yamlPath to keys
+    keys := strings.Split(strings.Trim(yamlPath, "."), ".")
+    val, ok := getNested(config, keys)
+    fmt.Printf("Value at %s in %s: %s\n", yamlPath, yamlFile, val)
+
+    reader := bufio.NewReader(os.Stdin)
+    ipRegex := regexp.MustCompile(`^\d{1,3}(\.\d{1,3}){3}$`)
+    for !ok || val == "" || val == "null" {
+        fmt.Printf("%s is not set to a valid value in the configuration file.\n", ipVarName)
+        fmt.Printf("Please provide a value for %s: ", ipVarName)
+        ipValue, _ := reader.ReadString('\n')
+        ipValue = strings.TrimSpace(ipValue)
+        if ipRegex.MatchString(ipValue) {
+            os.Setenv(ipVarName, ipValue)
+            setNested(config, keys, ipValue)
+            fmt.Printf("%s has been set to: %s\n", ipVarName, ipValue)
+            break
+        } else {
+            os.Unsetenv(ipVarName)
+            fmt.Print("Invalid IP address. Would you like to provide a valid value? (Y/n): ")
+            yn, _ := reader.ReadString('\n')
+            yn = strings.TrimSpace(yn)
+            if strings.ToLower(yn) == "n" {
+                return fmt.Errorf("Exiting as a valid value for %s has not been provided.", ipVarName)
+            }
+        }
+    }
+
+    // Write YAML back
+    out, err := yaml.Marshal(config)
+    if err != nil {
+        return err
+    }
+    return os.WriteFile(yamlFile, out, 0644)
 }
 
 // ValidateConfig validates the IP addresses for Argo, Traefik, and Nginx services in the config.
