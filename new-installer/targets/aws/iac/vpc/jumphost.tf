@@ -129,12 +129,11 @@ resource "aws_security_group" "jumphost" {
 }
 
 resource "aws_security_group_rule" "jumphost_egress_private" {
-  for_each          = aws_subnet.private_subnet
   type              = "egress"
   from_port         = 0
   to_port           = 0
   protocol          = -1
-  cidr_blocks       = [each.value.cidr_block]
+  cidr_blocks       = [var.cidr_block]
   description       = "Allow egress traffic only to private subnets"
   security_group_id = aws_security_group.jumphost.id
 }

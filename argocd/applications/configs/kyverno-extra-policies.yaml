@@ -37,8 +37,7 @@ restrictedPolicyOrch:
       - "edgenode-observability-opentelemetry-collector*"
       - "edgenode-observability-minio*"
       - "dkam*"
-      - "mps*"
-      - "rps*"
+      - "rps*" # Added to allow OpenDMT RPC-RPS traffic, which fails due to missing JWT token.
   - namespace: "capi-operator-system"
     names:
       - "capi-operator-cluster-api-operator*"
