@@ -91,7 +91,7 @@ func (s *ObservabilityBucketsStep) PreStep(ctx context.Context, config config.Or
 		return runtimeState, nil
 	}
 
-	oldObservabilityBucketsBucketKey := fmt.Sprintf("%s/o11y_buckets/%s", config.AWS.Region, config.Global.OrchName)
+	oldObservabilityBucketsBucketKey := fmt.Sprintf("%s/cluster/%s", config.AWS.Region, config.Global.OrchName)
 	err := s.AWSUtility.S3CopyToS3(config.AWS.Region,
 		config.AWS.PreviousS3StateBucket,
 		oldObservabilityBucketsBucketKey,
@@ -125,6 +125,29 @@ func (s *ObservabilityBucketsStep) PreStep(ctx context.Context, config config.Or
 		return runtimeState, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInternal,
 			ErrorMsg:  fmt.Sprintf("failed to move Terraform state: %v", mvErr),
+		}
+	}
+
+	rmErr := s.TerraformUtility.RemoveStates(ctx, steps.TerraformUtilityRemoveStatesInput{
+		ModulePath: modulePath,
+		States: []string{
+			"module.eks",
+			"module.efs",
+			"module.aurora",
+			"module.aurora_database",
+			"module.aurora_import",
+			"module.kms",
+			"module.orch_init",
+			"module.eks_auth",
+			"module.ec2log",
+			"module.aws_lb_controller",
+			"module.gitea",
+		},
+	})
+	if rmErr != nil {
+		return runtimeState, &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeInternal,
+			ErrorMsg:  fmt.Sprintf("failed to remove Terraform states: %v", rmErr),
 		}
 	}
 
