@@ -131,7 +131,7 @@ func (s *ObservabilityBucketsStepTest) expectTFUtiliyyCall(action string) {
 		s.awsUtility.On("S3CopyToS3",
 			s.config.AWS.Region,
 			s.config.AWS.PreviousS3StateBucket,
-			fmt.Sprintf("%s/o11y_buckets/%s", s.config.AWS.Region, s.config.Global.OrchName),
+			fmt.Sprintf("%s/cluster/%s", s.config.AWS.Region, s.config.Global.OrchName),
 			s.config.AWS.Region,
 			s.config.Global.OrchName+"-"+s.runtimeState.DeploymentID,
 			"o11y_buckets.tfstate",
@@ -148,6 +148,22 @@ func (s *ObservabilityBucketsStepTest) expectTFUtiliyyCall(action string) {
 				"module.s3.aws_s3_bucket.tracing":                                "aws_s3_bucket.tracing",
 				"module.s3.aws_s3_bucket_lifecycle_configuration.tracing_config": "aws_s3_bucket_lifecycle_configuration.tracing_config",
 				"module.s3.aws_s3_bucket_policy.tracing_policy":                  "aws_s3_bucket_policy.tracing_policy",
+			},
+		}).Return(nil).Once()
+		s.tfUtility.On("RemoveStates", mock.Anything, steps.TerraformUtilityRemoveStatesInput{
+			ModulePath: filepath.Join(s.step.RootPath, steps_aws.ObservabilityBucketsModulePath),
+			States: []string{
+				"module.eks",
+				"module.efs",
+				"module.aurora",
+				"module.aurora_database",
+				"module.aurora_import",
+				"module.kms",
+				"module.orch_init",
+				"module.eks_auth",
+				"module.ec2log",
+				"module.aws_lb_controller",
+				"module.gitea",
 			},
 		}).Return(nil).Once()
 	}
