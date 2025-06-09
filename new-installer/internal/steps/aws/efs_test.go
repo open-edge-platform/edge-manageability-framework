@@ -41,7 +41,10 @@ func (s *EFSStepTest) SetupTest() {
 		return
 	}
 	s.logDir = filepath.Join(rootPath, ".logs")
-	internal.InitLogger("debug", s.logDir)
+	if err := internal.InitLogger("debug", s.logDir); err != nil {
+		s.NoError(err)
+		return
+	}
 	s.config.AWS.Region = "us-west-2"
 	s.config.Global.OrchName = "test"
 	s.config.AWS.CustomerTag = utils.DefaultTestCustomerTag
@@ -75,7 +78,7 @@ func (s *EFSStepTest) TestInstallAndUninstallEFS() {
 		s.NoError(err)
 		return
 	}
-	s.Equal(rs.AWS.EFSFileSystemID, "fs-12345678")
+	s.Equal("fs-12345678", rs.AWS.EFSFileSystemID)
 
 	s.runtimeState.Action = "uninstall"
 	s.expectTFUtiliyCall("uninstall")
@@ -95,7 +98,7 @@ func (s *EFSStepTest) TestUpgradeEFS() {
 		s.NoError(err)
 		return
 	}
-	s.Equal(rs.AWS.EFSFileSystemID, "fs-12345678")
+	s.Equal("fs-12345678", rs.AWS.EFSFileSystemID)
 }
 
 func (s *EFSStepTest) expectTFUtiliyCall(action string) {

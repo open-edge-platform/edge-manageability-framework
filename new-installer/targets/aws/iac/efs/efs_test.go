@@ -108,5 +108,5 @@ func (s *EFSTestSuite) TestApplyingModule() {
 	efsID := terraform.Output(s.T(), terraformOptions, "efs_id")
 	s.NotEmpty(efsID, "Expected EFS ID to be created")
 	s.True(strings.HasPrefix(efsID, "fs-"), "Expected EFS ID to start with 'fs-'")
-	s.True(len(efsID) >= 14, "Expected EFS ID to be at least 14 characters long")
+	s.GreaterOrEqual(len(efsID), 14, "Expected EFS ID to be at least 14 characters long")
 }

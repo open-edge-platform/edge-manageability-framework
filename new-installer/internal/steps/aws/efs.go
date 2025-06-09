@@ -19,9 +19,7 @@ const (
 	EFSBackendBucketKey = "efs.tfstate"
 )
 
-var (
-	StepLabels = []string{"aws", "efs"}
-)
+var StepLabels = []string{"aws", "efs"}
 
 type EFSVariables struct {
 	ClusterName      string   `json:"cluster_name" yaml:"cluster_name"`
