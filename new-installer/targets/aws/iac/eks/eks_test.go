@@ -33,12 +33,12 @@ func TestEKSTestSuite(t *testing.T) {
 func (s *EKSTestSuite) SetupTest() {
 	// Bucket for EKS state
 	s.name = "eks-unit-test-" + strings.ToLower(rand.Text()[0:8])
-	terra_test_aws.CreateS3Bucket(s.T(), utils.DefaultRegion, s.name)
+	terra_test_aws.CreateS3Bucket(s.T(), utils.DefaultTestRegion, s.name)
 
 	// VPC and subnets for EKS
 	var err error
 	var jumphostPrivateKey, jumphostIP string
-	s.vpcID, s.publicSubnetIDs, s.privateSubnetIDs, jumphostPrivateKey, jumphostIP, err = utils.CreateVPC(s.T(), s.name)
+	s.vpcID, s.publicSubnetIDs, s.privateSubnetIDs, jumphostPrivateKey, jumphostIP, err = utils.CreateVPCWithEndpoints(s.T(), s.name, []string{"ec2"})
 	if err != nil {
 		s.NoError(err, "Failed to create VPC and subnet")
 		return
@@ -62,16 +62,16 @@ func (s *EKSTestSuite) TearDownTest() {
 		return
 	}
 
-	terra_test_aws.EmptyS3Bucket(s.T(), utils.DefaultRegion, s.name)
-	terra_test_aws.DeleteS3Bucket(s.T(), utils.DefaultRegion, s.name)
+	terra_test_aws.EmptyS3Bucket(s.T(), utils.DefaultTestRegion, s.name)
+	terra_test_aws.DeleteS3Bucket(s.T(), utils.DefaultTestRegion, s.name)
 }
 
 func (s *EKSTestSuite) TestApplyingModule() {
 	eksVars := steps_aws.EKSVariables{
 		Name:                s.name,
-		Region:              utils.DefaultRegion,
+		Region:              utils.DefaultTestRegion,
 		VPCID:               s.vpcID,
-		CustomerTag:         utils.DefaultCustomerTag,
+		CustomerTag:         utils.DefaultTestCustomerTag,
 		SubnetIDs:           s.privateSubnetIDs,
 		EKSVersion:          "1.32",
 		NodeInstanceType:    "t3.medium",
@@ -121,7 +121,7 @@ func (s *EKSTestSuite) TestApplyingModule() {
 		TerraformDir: ".",
 		VarFiles:     []string{tempFile.Name()},
 		BackendConfig: map[string]interface{}{
-			"region": utils.DefaultRegion,
+			"region": utils.DefaultTestRegion,
 			"bucket": s.name,
 			"key":    "eks.tfstate",
 		},

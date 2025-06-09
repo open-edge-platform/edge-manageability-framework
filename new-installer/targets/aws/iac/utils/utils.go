@@ -31,8 +31,8 @@ import (
 )
 
 const (
-	DefaultRegion             = "us-west-2"
-	DefaultCustomerTag        = "test-customer"
+	DefaultTestRegion         = "us-west-2"
+	DefaultTestCustomerTag    = "test-customer"
 	DefaultJumphostAMIID      = "ami-0a605bc2ef5707a18" // Ubuntu 24.04 LTS in us-west-2
 	DefaultJumphostSSHKeySize = 2048
 )
@@ -155,7 +155,7 @@ func CreateVPCWithEndpoints(t testing.TestingT, name string, enspoints []string)
 
 	privateSSHKey, publicSSHKey, _ := GenerateSSHKeyPair()
 	variables := steps_aws.VPCVariables{
-		Region:             DefaultRegion,
+		Region:             DefaultTestRegion,
 		Name:               name,
 		CidrBlock:          steps_aws.DefaultNetworkCIDR,
 		EnableDnsHostnames: true,
@@ -193,7 +193,7 @@ func CreateVPCWithEndpoints(t testing.TestingT, name string, enspoints []string)
 		JumphostInstanceSSHKey: publicSSHKey,
 		JumphostSubnet:         name + "pub-1",
 		Production:             true,
-		CustomerTag:            DefaultCustomerTag,
+		CustomerTag:            DefaultTestCustomerTag,
 		Endpoints:              enspoints,
 	}
 
@@ -214,7 +214,7 @@ func CreateVPCWithEndpoints(t testing.TestingT, name string, enspoints []string)
 		TerraformDir: "../vpc",
 		VarFiles:     []string{tempFile.Name()},
 		BackendConfig: map[string]interface{}{
-			"region": DefaultRegion,
+			"region": DefaultTestRegion,
 			"bucket": name,
 			"key":    "vpc.tfstate",
 		},
@@ -248,7 +248,7 @@ func CreateVPCWithEndpoints(t testing.TestingT, name string, enspoints []string)
 // Deletes VPC and all its resources
 func DeleteVPC(t testing.TestingT, name string) error {
 	variables := steps_aws.VPCVariables{
-		Region:             DefaultRegion,
+		Region:             DefaultTestRegion,
 		Name:               name,
 		CidrBlock:          steps_aws.DefaultNetworkCIDR,
 		EnableDnsHostnames: true,
@@ -286,7 +286,7 @@ func DeleteVPC(t testing.TestingT, name string) error {
 		JumphostInstanceSSHKey: "",
 		JumphostSubnet:         name + "pub-1",
 		Production:             true,
-		CustomerTag:            DefaultCustomerTag,
+		CustomerTag:            DefaultTestCustomerTag,
 	}
 	jsonData, err := json.Marshal(variables)
 	if err != nil {
@@ -304,7 +304,7 @@ func DeleteVPC(t testing.TestingT, name string) error {
 		TerraformDir: "../vpc",
 		VarFiles:     []string{tempFile.Name()},
 		BackendConfig: map[string]interface{}{
-			"region": DefaultRegion,
+			"region": DefaultTestRegion,
 			"bucket": name,
 			"key":    "vpc.tfstate",
 		},
