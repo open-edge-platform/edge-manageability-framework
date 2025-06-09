@@ -33,7 +33,7 @@ set -o pipefail
 wget https://go.dev/dl/go1.23.4.linux-amd64.tar.gz
 rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.23.4.linux-amd64.tar.gz
 export PATH=$PATH:/usr/local/go/bin
-export PATH=${PATH}:`go env GOPATH`/bin:/home/ubuntu/.asdf/installs/mage/1.15.0/bin
+export PATH="${PATH}:$(go env GOPATH/bin:/home/ubuntu/.asdf/installs/mage/1.15.0/bin"
 cd ../
 go install github.com/asdf-vm/asdf/cmd/asdf@v0.17.0
 asdf plugin add mage
