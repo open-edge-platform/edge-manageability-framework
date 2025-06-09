@@ -42,16 +42,23 @@ type OrchInstallerRuntimeState struct {
 	DeploymentID     string `yaml:"deploymentID"`
 	StateBucketState string `yaml:"stateBucketState"` // The state S3 bucket Terraform state
 	// Move runtime state here?
-	KubeConfig               string   `yaml:"kubeConfig"`
-	TLSCert                  string   `yaml:"tlsCert"`
-	TLSKey                   string   `yaml:"tlsKey"`
-	TLSCa                    string   `yaml:"tlsCa"`
-	CacheRegistry            string   `yaml:"cacheRegistry"`
-	VPCID                    string   `yaml:"vpcID"`
-	PublicSubnetIDs          []string `yaml:"publicSubnetIDs"`
-	PrivateSubnetIDs         []string `yaml:"privateSubnetIDs"`
-	JumpHostSSHKeyPublicKey  string   `yaml:"jumpHostSSHPublicKey"`
-	JumpHostSSHKeyPrivateKey string   `yaml:"jumpHostSSHPrivateKey"`
+	AWS struct {
+		KubeConfig               string   `yaml:"kubeConfig"`
+		CacheRegistry            string   `yaml:"cacheRegistry"`
+		VPCID                    string   `yaml:"vpcID"`
+		PublicSubnetIDs          []string `yaml:"publicSubnetIDs"`
+		PrivateSubnetIDs         []string `yaml:"privateSubnetIDs"`
+		JumpHostIP               string   `yaml:"jumpHostIP"`
+		JumpHostSSHKeyPublicKey  string   `yaml:"jumpHostSSHPublicKey"`
+		JumpHostSSHKeyPrivateKey string   `yaml:"jumpHostSSHPrivateKey"`
+		EFSFileSystemID          string   `yaml:"efsFileSystemID"`
+		EKSOIDCIssuer            string   `yaml:"eksOIDCIssuer"`
+	} `yaml:"aws,omitempty"`
+	Cert struct {
+		TLSCert string `yaml:"tlsCert"`
+		TLSKey  string `yaml:"tlsKey"`
+		TLSCa   string `yaml:"tlsCa"`
+	} `yaml:"cert,omitempty"`
 }
 
 type OrchInstallerConfig struct {
