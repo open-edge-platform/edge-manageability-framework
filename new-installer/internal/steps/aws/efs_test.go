@@ -85,6 +85,19 @@ func (s *EFSStepTest) TestInstallAndUninstallEFS() {
 	}
 }
 
+func (s *EFSStepTest) TestUpgradeEFS() {
+	s.runtimeState.Action = "upgrade"
+	s.config.AWS.PreviousS3StateBucket = "old-bucket-name"
+	// We will mostlly test if the prestep make correct calls to AWS and Terraform utilities.
+	s.expectTFUtiliyCall("upgrade")
+	rs, err := steps.GoThroughStepFunctions(s.step, &s.config, s.runtimeState)
+	if err != nil {
+		s.NoError(err)
+		return
+	}
+	s.Equal(rs.AWS.EFSFileSystemID, "fs-12345678")
+}
+
 func (s *EFSStepTest) expectTFUtiliyCall(action string) {
 	input := steps.TerraformUtilityInput{
 		Action:             action,
@@ -116,7 +129,52 @@ func (s *EFSStepTest) expectTFUtiliyCall(action string) {
 				},
 			},
 		}, nil).Once()
-	} else {
+	}
+	if action == "upgrade" {
+		s.tfUtility.On("Run", mock.Anything, input).Return(steps.TerraformUtilityOutput{
+			TerraformState: "",
+			Output: map[string]tfexec.OutputMeta{
+				"efs_id": {
+					Type:  json.RawMessage(`"string"`),
+					Value: json.RawMessage(`"fs-12345678"`),
+				},
+			},
+		}, nil).Once()
+
+		s.awsUtility.On("S3CopyToS3",
+			s.config.AWS.Region,
+			s.config.AWS.PreviousS3StateBucket,
+			fmt.Sprintf("%s/cluster/%s", s.config.AWS.Region, s.config.Global.OrchName),
+			s.config.AWS.Region,
+			s.config.Global.OrchName+"-"+s.runtimeState.DeploymentID,
+			"efs.tfstate",
+		).Return(nil).Once()
+
+		s.tfUtility.On("MoveStates", mock.Anything, steps.TerraformUtilityMoveStatesInput{
+			ModulePath: filepath.Join(s.step.RootPath, steps_aws.EFSModulePath),
+			States: map[string]string{
+				"module.efs.aws_efs_file_system.efs": "aws_efs_file_system.efs",
+			},
+		}).Return(nil).Once()
+
+		s.tfUtility.On("RemoveStates", mock.Anything, steps.TerraformUtilityRemoveStatesInput{
+			ModulePath: filepath.Join(s.step.RootPath, steps_aws.EFSModulePath),
+			States: []string{
+				"module.s3",
+				"module.eks",
+				"module.aurora",
+				"module.aurora_database",
+				"module.aurora_import",
+				"module.kms",
+				"module.orch_init",
+				"module.eks_auth",
+				"module.ec2log",
+				"module.aws_lb_controller",
+				"module.gitea",
+			},
+		}).Return(nil).Once()
+	}
+	if action == "uninstall" {
 		s.tfUtility.On("Run", mock.Anything, input).Return(steps.TerraformUtilityOutput{
 			TerraformState: "",
 			Output:         map[string]tfexec.OutputMeta{},

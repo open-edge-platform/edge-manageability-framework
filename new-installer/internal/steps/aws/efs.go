@@ -102,10 +102,10 @@ func (s *EFSStep) PreStep(ctx context.Context, config config.OrchInstallerConfig
 		return runtimeState, nil
 	}
 	// Need to move Terraform state from old bucket to new bucket:
-	oldEKSBucketKey := fmt.Sprintf("%s/cluster/%s", config.AWS.Region, config.Global.OrchName)
+	oldEFSBucketKey := fmt.Sprintf("%s/cluster/%s", config.AWS.Region, config.Global.OrchName)
 	err := s.AWSUtility.S3CopyToS3(config.AWS.Region,
 		config.AWS.PreviousS3StateBucket,
-		oldEKSBucketKey,
+		oldEFSBucketKey,
 		config.AWS.Region,
 		s.backendConfig.Bucket,
 		s.backendConfig.Key)
