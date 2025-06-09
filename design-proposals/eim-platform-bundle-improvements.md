@@ -8,18 +8,26 @@ Last updated: 14.05.2025
 
 Platform Bundle is defined as a collection of OS-level files, installation scripts, configurations and packages.
 It's a concept to make any OS profile supported by EIM extensible and customizable. For example,
-we can have different flavors of Ubuntu/EMT images that support various use cases. It's a mechanism that allows EN support features beyond what EIM supports currently.
+we can have different flavors of Ubuntu/EMT images that support various use cases.
+It's a mechanism that allows EN support features beyond what EIM supports currently.
 
-Platform Bundle is already integrated with EIM and gives ability to provide custom cloud-init template and Installer script (for Ubuntu).
-For instance, the `Ubuntu with Intel extensions` OS profile uses Installer script that is curated by EEF (Edge Enablement Framework) to install additional GPU drivers.
+Platform Bundle is already integrated with EIM and gives ability to provide custom cloud-init template
+and Installer script (for Ubuntu).
+For instance, the `Ubuntu with Intel extensions` OS profile uses Installer script that is curated
+by EEF (Edge Enablement Framework) to install additional GPU drivers.
 
 However, the current Platform Bundle design has the following problems:
-1. Co-ownership of cloud-init template and Installer script between EIM and EEF, leading to de-synchronization between the two and error-prone manual processes to update
+
+1. Co-ownership of cloud-init template and Installer script between EIM and EEF, 
+   leading to de-synchronization between the two and error-prone manual processes to update
    Platform Bundle scripts any time cloud-init or Installer script is changed in the EIM codebase.
-2. Currently, Platform Bundle is limited to cloud-init template and Installer script, while the original concept of Platform Bundle was to make it any OS-level extension.
+2. Currently, Platform Bundle is limited to cloud-init template and Installer script,
+   while the original concept of Platform Bundle was to make it any OS-level extension.
 
 This design proposal aims at:
-- Define clear ownership of cloud-init template and Installer script between EIM and EEF, without impacting EEF certification process.
+
+- Define clear ownership of cloud-init template and Installer script between EIM and EEF,
+  without impacting EEF certification process.
 - Extend the Platform Bundle integration to enable providing custom OS-level files and configurations.
 
 ## Proposal
