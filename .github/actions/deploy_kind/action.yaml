@@ -32,34 +32,20 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Checkout code
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      with:
+        persist-credentials: false
+
     - name: Set up git credentials
       shell: bash
       run: |
         echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
         git config --global url."https://${{ inputs.token }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
-    - name: Locate and copy .tool-versions file
-      shell: bash
-      run: |
-        TOOL_VERSION_FILE=$(find $GITHUB_WORKSPACE -name ".tool-versions" | head -n 1)
-        if [ -z "$TOOL_VERSION_FILE" ]; then
-          echo "No .tool-versions file found, using default versions." 
-        else
-          echo "Found .tool-versions file at $TOOL_VERSION_FILE"
-          cp "$TOOL_VERSION_FILE" $GITHUB_WORKSPACE/.tool-versions
-        fi
 
     - name: Setup asdf and install dependencies
       id: install-deps
       uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
-
-    - name: Checkout EMF repository
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-      with:
-        repository: open-edge-platform/edge-manageability-framework
-        ref: ${{ inputs.orch_version }}
-        path: ./edge-manageability-framework
-        token: ${{ inputs.token }}
-        persist-credentials: false
 
     - name: Print current git hash
       shell: bash
@@ -76,44 +62,38 @@ runs:
         DOCKERHUB_USERNAME: ${{ inputs.docker_username }}
       shell: bash
       run: |
-        set -e
-        # Run mage from EMF dir but maintain asdf context
-        (cd ./edge-manageability-framework && ASDF_DIR=$ASDF_DIR PATH=$PATH \
-          echo "Starting to deploy Orchestrator..." && \
-          if [ "${{ inputs.deployment_type }}" == "minimal" ]; then
-            echo "Deploying minimal Orchestrator setup..."
-            mage deploy:kindMinimal
-          else
-            echo "Deploying full Orchestrator setup..."
-            mage deploy:kindAll
-          fi && \
-          echo "Orchestrator deployment done!")
-
+        set +x
+        echo "Starting to deploy Orchestrator..."
+        if [ "${{ inputs.deployment_type }}" == "minimal" ]; then
+          echo "Deploying minimal Orchestrator setup..."
+          mage deploy:kindMinimal
+        else
+          echo "Deploying full Orchestrator setup..."
+          mage deploy:kindAll
+        fi
+        mage deploy:kindAll
+        echo "Orchestrator deployment done!"
     - name: Get Root App Status
       shell: bash
       if: ${{ always() && steps.deploy-external-orchestrator.conclusion != 'success' }}
       run: |
         echo "Root App Status:"
-        kubectl get pods -o wide -A || true
+        kubectl get pods -o wide -A
         kubectl -n dev get applications root-app -o yaml || true
-
     - name: Verify Kind Deployment
       id: verify-kind-deployment
       shell: bash
       run: |
-        (cd ./edge-manageability-framework && ASDF_DIR=$ASDF_DIR PATH=$PATH \
-          echo "Starting to verify Orchestrator deployment..." && \
-          mage deploy:waitUntilComplete && \
-          echo "Orchestrator deployment verified!" && \
-          mage router:stop router:start && \
-          echo "Router restarted")
-
+        echo "Starting to verify Orchestrator deployment..."
+        mage deploy:waitUntilComplete
+        echo "Orchestrator deployment verified!"
+        mage router:stop router:start
+        echo "Router restarted"
     - name: Setup Test environment
       shell: bash
       run: |
-        (cd ./edge-manageability-framework && ASDF_DIR=$ASDF_DIR PATH=$PATH \
-          sudo awk -i inplace '/BEGIN ORCH DEVELOPMENT HOSTS/,/END ORCH DEVELOPMENT HOSTS/ { next } 1' /etc/hosts || true && \
-          sudo awk -i inplace '/BEGIN ORCH SRE DEVELOPMENT HOST/,/END ORCH SRE DEVELOPMENT HOST/ { next } 1' /etc/hosts || true && \
-          mage gen:hostfileTraefik | sudo tee -a /etc/hosts > /dev/null && \
-          echo "Updated Hostfile entries!" && \
-          mage gen:orchCa deploy:orchCa)
+        sudo awk -i inplace '/BEGIN ORCH DEVELOPMENT HOSTS/,/END ORCH DEVELOPMENT HOSTS/ { next } 1' /etc/hosts
+        sudo awk -i inplace '/BEGIN ORCH SRE DEVELOPMENT HOST/,/END ORCH SRE DEVELOPMENT HOST/ { next } 1' /etc/hosts
+        mage gen:hostfileTraefik | sudo tee -a /etc/hosts > /dev/null
+        echo "Updated Hostfile entries!"
+        mage gen:orchCa deploy:orchCa
