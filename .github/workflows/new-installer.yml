@@ -39,22 +39,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       new_installer: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer') }}
-      acm: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/target/aws/acm') }}
-      alb: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/target/aws/alb') }}
-      ec2log: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/target/aws/ec2log') }}
-      efs: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/target/aws/efs') }}
-      eks: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/target/aws/eks') }}
-      kms: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/target/aws/kms') }}
-      lb_sg: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/target/aws/lb_sg') }}
-      nlb: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/target/aws/nlb') }}
-      pull-through-cache-proxy: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/target/aws/pull-through-cache-proxy') }}
-      rds: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/target/aws/rds') }}
-      route53: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/target/aws/route53') }}
-      s3: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/target/aws/s3') }}
-      state_bucket: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/target/aws/state_bucket') }}
-      utils: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/target/aws/utils') }}
-      vpc: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/target/aws/vpc') }}
-      waf: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/target/aws/waf') }}
     steps:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
@@ -170,69 +154,6 @@ jobs:
 
       - name: Validate Terraform configs
         run: mage newinstaller:validateiac
-
-      - name: Test new installer IaC - state_bucket
-        if: needs.check-changed-files.outputs.state_bucket == 'true'
-        run: mage newinstaller:testiac state_bucket
-
-      - name: Test new installer IaC - vpc
-        if: needs.check-changed-files.outputs.vpc == 'true'
-        run: mage newinstaller:testiac vpc
-
-
-      # TODO: Uncomment when the new installer IaC tests are ready
-      # - name: Test new installer IaC - acm
-      #   if: needs.check-changed-files.outputs.acm == 'true'
-      #   run: mage newinstaller:testiac acm
-
-      # - name: Test new installer IaC - alb
-      #   if: needs.check-changed-files.outputs.alb == 'true'
-      #   run: mage newinstaller:testiac alb
-
-      # - name: Test new installer IaC - ec2log
-      #   if: needs.check-changed-files.outputs.ec2log == 'true'
-      #   run: mage newinstaller:testiac ec2log
-
-      # - name: Test new installer IaC - efs
-      #   if: needs.check-changed-files.outputs.efs == 'true'
-      #   run: mage newinstaller:testiac efs
-
-      # - name: Test new installer IaC - eks
-      #   if: needs.check-changed-files.outputs.eks == 'true'
-      #   run: mage newinstaller:testiac eks
-
-      # - name: Test new installer IaC - kms
-      #   if: needs.check-changed-files.outputs.kms == 'true'
-      #   run: mage newinstaller:testiac kms
-
-      # - name: Test new installer IaC - lb_sg
-      #   if: needs.check-changed-files.outputs.lb_sg == 'true'
-      #   run: mage newinstaller:testiac lb_sg
-
-      # - name: Test new installer IaC - nlb
-      #   if: needs.check-changed-files.outputs.nlb == 'true'
-      #   run: mage newinstaller:testiac nlb
-
-      # - name: Test new installer IaC - pull-through-cache-proxy
-      #   if: needs.check-changed-files.outputs.pull-through-cache-proxy == 'true'
-      #   run: mage newinstaller:testiac pull-through-cache-proxy
-
-      # - name: Test new installer IaC - rds
-      #   if: needs.check-changed-files.outputs.rds == 'true'
-      #   run: mage newinstaller:testiac rds
-
-      # - name: Test new installer IaC - route53
-      #   if: needs.check-changed-files.outputs.route53 == 'true'
-      #   run: mage newinstaller:testiac route53
-
-      # - name: Test new installer IaC - s3
-      #   if: needs.check-changed-files.outputs.s3 == 'true'
-      #   run: mage newinstaller:testiac s3
-
-      - name: Test new installer IaC - waf
-        if: needs.check-changed-files.outputs.waf == 'true'
-        run: mage newinstaller:testiac waf
-
       - name: Upload new installer artifacts
         uses: actions/upload-artifact@v4.6.2
         with:

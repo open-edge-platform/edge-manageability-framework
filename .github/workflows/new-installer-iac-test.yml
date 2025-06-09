@@ -1,0 +1,166 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: Orch Installer - IaC Test
+
+on:
+  # Allow manually triggering the workflow
+  workflow_dispatch: {}
+  # Run on all commits that are pushed to all branches
+  push:
+    branches:
+      - main
+      - main-pass-validation
+
+  # Trigger workflow on PRs to all branches
+  pull_request:
+    branches:
+      - "*"
+    types:
+      - opened
+      - synchronize
+      - reopened
+  # Trigger workflow when enqueued to a merge group
+  merge_group:
+
+# Only run at most 1 workflow concurrently per PR, unlimited for branches
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.sha }}
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  check-changed-files:
+    permissions:
+      contents: read
+    name: Filter list of changed files
+    runs-on: ubuntu-latest
+    outputs:
+      acm: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/target/aws/acm') }}
+      alb: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/target/aws/alb') }}
+      ec2log: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/target/aws/ec2log') }}
+      efs: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/target/aws/efs') }}
+      eks: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/target/aws/eks') }}
+      kms: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/target/aws/kms') }}
+      lb_sg: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/target/aws/lb_sg') }}
+      nlb: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/target/aws/nlb') }}
+      pull-through-cache-proxy: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/target/aws/pull-through-cache-proxy') }}
+      rds: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/target/aws/rds') }}
+      route53: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/target/aws/route53') }}
+      s3: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/target/aws/s3') }}
+      state_bucket: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/target/aws/state_bucket') }}
+      utils: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/target/aws/utils') }}
+      vpc: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/target/aws/vpc') }}
+      waf: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/target/aws/waf') }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Discover Changed Files
+        id: check-files
+        uses: open-edge-platform/orch-ci/discover-changed-files@main  # zizmor: ignore[unpinned-uses]
+        with:
+          project_folder: "."
+
+  test-iac:
+    permissions:
+      contents: read
+    name: Test Terraform modules
+    needs:
+      - check-changed-files
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          persist-credentials: false
+
+      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684  # v4.2.3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Set up git credentials
+        shell: bash
+        run: |
+          echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
+          git config --global url."https://${{ secrets.SYS_ORCH_GITHUB }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+
+      - name: Setup asdf and install dependencies
+        uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722  # v4.0.1
+        with:
+          aws-access-key-id: ${{ secrets.ORCH_AWS_NONPROD_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.ORCH_AWS_NONPROD_SECRET_KEY }}
+          aws-region: us-west-2
+
+      - name: Test new installer IaC - state_bucket
+        if: needs.check-changed-files.outputs.state_bucket == 'true'
+        run: mage newinstaller:testiac state_bucket
+
+      - name: Test new installer IaC - vpc
+        if: needs.check-changed-files.outputs.vpc == 'true'
+        run: mage newinstaller:testiac vpc
+
+      - name: Test new installer IaC - acm
+        if: needs.check-changed-files.outputs.acm == 'true'
+        run: mage newinstaller:testiac acm
+
+      - name: Test new installer IaC - alb
+        if: needs.check-changed-files.outputs.alb == 'true'
+        run: mage newinstaller:testiac alb
+
+      - name: Test new installer IaC - ec2log
+        if: needs.check-changed-files.outputs.ec2log == 'true'
+        run: mage newinstaller:testiac ec2log
+
+      - name: Test new installer IaC - efs
+        if: needs.check-changed-files.outputs.efs == 'true'
+        run: mage newinstaller:testiac efs
+
+      - name: Test new installer IaC - eks
+        if: needs.check-changed-files.outputs.eks == 'true'
+        run: mage newinstaller:testiac eks
+
+      - name: Test new installer IaC - kms
+        if: needs.check-changed-files.outputs.kms == 'true'
+        run: mage newinstaller:testiac kms
+
+      - name: Test new installer IaC - lb_sg
+        if: needs.check-changed-files.outputs.lb_sg == 'true'
+        run: mage newinstaller:testiac lb_sg
+
+      - name: Test new installer IaC - nlb
+        if: needs.check-changed-files.outputs.nlb == 'true'
+        run: mage newinstaller:testiac nlb
+
+      - name: Test new installer IaC - pull-through-cache-proxy
+        if: needs.check-changed-files.outputs.pull-through-cache-proxy == 'true'
+        run: mage newinstaller:testiac pull-through-cache-proxy
+
+      - name: Test new installer IaC - rds
+        if: needs.check-changed-files.outputs.rds == 'true'
+        run: mage newinstaller:testiac rds
+
+      - name: Test new installer IaC - route53
+        if: needs.check-changed-files.outputs.route53 == 'true'
+        run: mage newinstaller:testiac route53
+
+      - name: Test new installer IaC - s3
+        if: needs.check-changed-files.outputs.s3 == 'true'
+        run: mage newinstaller:testiac s3
+
+      - name: Test new installer IaC - waf
+        if: needs.check-changed-files.outputs.waf == 'true'
+        run: mage newinstaller:testiac waf
