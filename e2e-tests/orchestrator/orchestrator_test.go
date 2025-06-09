@@ -988,7 +988,7 @@ func secureHeadersAdd() map[string][]string {
 		// {"default-src 'self'; form-action 'self'; object-src 'none';
 		// frame-ancestors 'none'; upgrade-insecure-requests;
 		// block-all-mixed-content"}, //nolint: lll
-		"Content-Security-Policy": {fmt.Sprintf("default-src 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' 'unsafe-eval' https://app-service-proxy.%s; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://keycloak.%s wss://vnc.%s https://app-service-proxy.%s https://app-orch.%s https://api.%s https://cluster-orch.%s https://metadata.%s https://alerting-monitor.%s; upgrade-insecure-requests; block-all-mixed-content", //nolint: lll
+		"Content-Security-Policy": {fmt.Sprintf("default-src 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' https://app-service-proxy.%s; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://keycloak.%s wss://vnc.%s https://app-service-proxy.%s https://app-orch.%s https://api.%s https://cluster-orch.%s https://metadata.%s https://alerting-monitor.%s; upgrade-insecure-requests; block-all-mixed-content", //nolint: lll
 			serviceDomain, serviceDomain, serviceDomain, serviceDomain, serviceDomain, serviceDomain, serviceDomain, serviceDomain, serviceDomain)},
 		"Cross-Origin-Embedder-Policy": {"require-corp"},
 		"Cross-Origin-Opener-Policy":   {"same-origin"},
