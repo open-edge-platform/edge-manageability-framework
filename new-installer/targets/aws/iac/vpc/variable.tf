@@ -70,3 +70,20 @@ variable "customer_tag" {
   description = "For customers to specify a tag for AWS resources"
   default = ""
 }
+
+variable "endpoints" {
+  type = set(string)
+  description = "List of AWS service endpoints to create in the VPC."
+  default = [
+    "elasticfilesystem",
+    "s3",
+    "eks",
+    "sts",
+    "ec2",
+    "ec2messages",
+    "ecr.dkr",
+    "ecr.api",
+    "elasticloadbalancing",
+    "ecs"
+  ]
+}
