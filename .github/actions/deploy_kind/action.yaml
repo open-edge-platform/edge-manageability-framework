@@ -40,7 +40,6 @@ runs:
 
     - name: Checkout EMF repository
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-      run: echo "Checking out edge-manageability-framework repository"
       with:
         repository: open-edge-platform/edge-manageability-framework
         ref: ${{ inputs.orch_version }}
@@ -49,8 +48,8 @@ runs:
         persist-credentials: false
 
     - name: Setup asdf and install dependencies
-      run: echo "Installing asdf dependencies"
       id: install-deps
+      working-directory: ${{ github.workspace }}
       uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
 
     - name: Print current git hash
