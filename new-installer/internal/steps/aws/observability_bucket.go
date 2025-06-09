@@ -15,9 +15,15 @@ import (
 )
 
 const (
-	S3ModulePath                         = "new-installer/targets/aws/iac/observability_buckets"
+	ObservabilityBucketsModulePath       = "new-installer/targets/aws/iac/observability_buckets"
 	ObservabilityBucketsBackendBucketKey = "observability_buckets.tfstate"
 )
+
+var ObservabilityBucketsStepLabels = []string{
+	"aws",
+	"observability",
+	"s3",
+}
 
 type ObservabilityBucketsVariables struct {
 	Region        string `json:"region" yaml:"region"`
@@ -43,7 +49,18 @@ type ObservabilityBucketsStep struct {
 	RootPath           string
 	KeepGeneratedFiles bool
 	TerraformUtility   steps.TerraformUtility
+	AWSUtility         AWSUtility
 	StepLabels         []string
+}
+
+func CreateObservabilityBucketsStep(rootPath string, keepGeneratedFiles bool, terraformUtility steps.TerraformUtility, awsUtility AWSUtility) *ObservabilityBucketsStep {
+	return &ObservabilityBucketsStep{
+		RootPath:           rootPath,
+		KeepGeneratedFiles: keepGeneratedFiles,
+		TerraformUtility:   terraformUtility,
+		AWSUtility:         awsUtility,
+		StepLabels:         ObservabilityBucketsStepLabels,
+	}
 }
 
 func (s *ObservabilityBucketsStep) Name() string {
@@ -51,7 +68,7 @@ func (s *ObservabilityBucketsStep) Name() string {
 }
 
 func (s *ObservabilityBucketsStep) Labels() []string {
-	return s.StepLabels
+	return ObservabilityBucketsStepLabels
 }
 
 func (s *ObservabilityBucketsStep) ConfigStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
@@ -70,13 +87,81 @@ func (s *ObservabilityBucketsStep) ConfigStep(ctx context.Context, config config
 }
 
 func (s *ObservabilityBucketsStep) PreStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+	if config.AWS.PreviousS3StateBucket == "" {
+		// No need to migrate state, since there is no previous state bucket
+		return runtimeState, nil
+	}
+
+	oldObservabilityBucketsBucketKey := fmt.Sprintf("%s/observability_buckets/%s", config.AWS.Region, config.Global.OrchName)
+	err := s.AWSUtility.S3CopyToS3(config.AWS.Region,
+		config.AWS.PreviousS3StateBucket,
+		oldObservabilityBucketsBucketKey,
+		config.AWS.Region,
+		s.backendConfig.Bucket,
+		s.backendConfig.Key)
+	if err != nil {
+		return runtimeState, &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeInternal,
+			ErrorMsg:  fmt.Sprintf("failed to move Terraform state from old bucket to new bucket: %v", err),
+		}
+	}
+
+	modulePath := filepath.Join(s.RootPath, ObservabilityBucketsModulePath)
+	states := map[string]string{
+		"module.s3.aws_iam_policy.s3_policy": "aws_iam_policy.s3_policy",
+		"module.s3.aws_iam_role.s3_role": "aws_iam_role.s3_role",
+		nil: "aws_iam_role_policy_attachment.s3_role",
+		nil: "aws_iam_role_policy_attachment.s3_role",
+		nil: "aws_kms_key.bucket_key",
+		"module.s3.aws_s3_bucket.bucket": "aws_s3_bucket.bucket",
+		nil: "aws_s3_bucket_public_access_block.bucket",
+		nil: "aws_s3_bucket_server_side_encryption_configuration.bucket",
+		nil: "aws_s3_bucket_versioning.bucket",
+		"module.s3.aws_s3_bucket_lifecycle_configuration.bucket_config": "aws_s3_bucket_lifecycle_configuration.bucket_config",
+		"module.s3.aws_s3_bucket_policy.bucket_policy": "aws_s3_bucket_policy.bucket_policy",
+		"module.s3.aws_s3_bucket.tracing": "aws_s3_bucket.tracing",
+		nil: "aws_s3_bucket_server_side_encryption_configuration.tracing",
+		nil: "aws_s3_bucket_public_access_block.tracing",
+		nil: "aws_s3_bucket_versioning.tracing",
+		"module.s3.aws_s3_bucket_lifecycle_configuration.tracing_config": "aws_s3_bucket_lifecycle_configuration.tracing_config",
+		nil: "aws_iam_policy_document.tracing_policy_doc".
+		"module.s3.aws_s3_bucket_policy.tracing_policy": "aws_s3_bucket_policy.tracing_policy",
+	}
+
+
+	for name := range s.variables.PublicSubnets {
+		states[fmt.Sprintf("module.vpc.aws_subnet.public_subnet[%s]", name)] = fmt.Sprintf("aws_subnet.public_subnet[%s]", name)
+		states[fmt.Sprintf("module.nat_gateway.aws_eip.ngw[%s]", name)] = fmt.Sprintf("aws_eip.ngw[%s]", name)
+		states[fmt.Sprintf("module.nat_gateway.aws_nat_gateway.ngw_with_eip[%s]", name)] = fmt.Sprintf("aws_nat_gateway.main[%s]", name)
+		states[fmt.Sprintf("module.route_table.aws_route_table.public_subnet[%s]", name)] = fmt.Sprintf("aws_route_table.public_subnet[%s]", name)
+		states[fmt.Sprintf("module.route_table.aws_route_table_association.public_subnet[%s]", name)] = fmt.Sprintf("aws_route_table_association.public_subnet[%s]", name)
+	}
+	for name := range s.variables.PrivateSubnets {
+		states[fmt.Sprintf("module.vpc.aws_subnet.private_subnet[%s]", name)] = fmt.Sprintf("aws_subnet.private_subnet[%s]", name)
+		states[fmt.Sprintf("module.route_table.aws_route_table.private_subnet[%s]", name)] = fmt.Sprintf("aws_route_table.private_subnet[%s]", name)
+		states[fmt.Sprintf("module.route_table.aws_route_table_association.private_subnet[%s]", name)] = fmt.Sprintf("aws_route_table_association.private_subnet[%s]", name)
+	}
+	for _, ep := range AWSVPCEndpoints {
+		states[fmt.Sprintf("module.endpoint.aws_vpc_endpoint.endpoint[%s]", ep)] = fmt.Sprintf("aws_vpc_endpoint.endpoint[%s]", ep)
+	}
+	mvErr := s.TerraformUtility.MoveStates(ctx, steps.TerraformUtilityMoveStatesInput{
+		ModulePath: modulePath,
+		States:     states,
+	})
+	if mvErr != nil {
+		return runtimeState, &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeInternal,
+			ErrorMsg:  fmt.Sprintf("failed to move Terraform state: %v", mvErr),
+		}
+	}
+
 	return runtimeState, nil
 }
 
 func (s *ObservabilityBucketsStep) RunStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	terraformStepInput := steps.TerraformUtilityInput{
 		Action:             runtimeState.Action,
-		ModulePath:         filepath.Join(s.RootPath, S3ModulePath),
+		ModulePath:         filepath.Join(s.RootPath, ObservabilityBucketsModulePath),
 		Variables:          s.variables,
 		BackendConfig:      s.backendConfig,
 		LogFile:            filepath.Join(runtimeState.LogDir, "aws_observability_bucket.log"),

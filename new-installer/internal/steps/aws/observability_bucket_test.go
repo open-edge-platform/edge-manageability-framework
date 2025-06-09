@@ -80,7 +80,7 @@ func (s *ObservabilityBucketsStepTest) TestInstallAndUninstallOBservabilityBucke
 func (s *ObservabilityBucketsStepTest) expectTFUtiliyyCall(action string) {
 	input := steps.TerraformUtilityInput{
 		Action:             action,
-		ModulePath:         filepath.Join(s.step.RootPath, steps_aws.S3ModulePath),
+		ModulePath:         filepath.Join(s.step.RootPath, steps_aws.ObservabilityBucketsModulePath),
 		LogFile:            filepath.Join(s.logDir, "aws_observability_bucket.log"),
 		KeepGeneratedFiles: s.step.KeepGeneratedFiles,
 		Variables: steps_aws.ObservabilityBucketsVariables{
