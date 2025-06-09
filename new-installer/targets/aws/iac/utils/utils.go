@@ -126,13 +126,14 @@ func GetNATGatewaysByTags(region string, tags map[string][]string) ([]*ec2.NatGa
 	return result.NatGateways, nil
 }
 
-// Creates VPC
+// Creates VPC with all endpoints.
 // Returns VPC ID, public subnet IDs, private subnet IDs, jumphost private key, jumphost IP, and error if any
-// Assume a S3 bucket is already exists with name `name`
 func CreateVPC(t testing.TestingT, name string) (string, []string, []string, string, string, error) {
 	return CreateVPCWithEndpoints(t, name, nil)
 }
 
+// Create VPC with specified endpoints, will create all endpoints if enspoints is nil or empty
+// Returns VPC ID, public subnet IDs, private subnet IDs, jumphost private key, jumphost IP, and error if any
 func CreateVPCWithEndpoints(t testing.TestingT, name string, enspoints []string) (string, []string, []string, string, string, error) {
 	var jumphostAllowList []string = make([]string, 0)
 	publicIP, err := getMyPublicIP()
