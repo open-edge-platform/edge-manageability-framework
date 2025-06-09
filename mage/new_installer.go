@@ -80,8 +80,9 @@ func (NewInstaller) Test() error {
 	// -r: recursive test
 	// -p: parallel test
 	// --skip-package: skip tests in specific packages
+	// --cover: enable coverage analysis
 	if err := sh.RunV("ginkgo", "-v", "-r", "-p",
-		"--skip-package=new-installer/targets/aws/iac",
+		"--skip-package=targets/aws/iac",
 		"--cover"); err != nil {
 		return err
 	}
@@ -96,7 +97,27 @@ func (NewInstaller) Test() error {
 }
 
 // Test Terraform modules
+// We will not include coverage analysis for IaC tests.
 func (NewInstaller) TestIaC() error {
+	if err := os.Chdir(rootDir); err != nil {
+		return fmt.Errorf("failed to change directory to %s: %w", rootDir, err)
+	}
+
+	defer func() {
+		if err := os.Chdir(".."); err != nil {
+			fmt.Printf("Warning: failed to change back to root directory: %v\n", err)
+		}
+	}()
+
+	// Run tests for the new installer, except for the AWS IaC tests
+	// Ginkgo flags:
+	// -v: verbose output
+	// -r: recursive test
+	// -p: parallel test
+	// --cover: enable coverage analysis
+	if err := sh.RunV("ginkgo", "-v", "-r", "-p", "targets/aws/iac"); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -135,6 +156,27 @@ func (NewInstaller) Clean() error {
 		return fmt.Errorf("failed to remove *.test files: %w", err)
 	}
 
+	return nil
+}
+
+func (NewInstaller) Lint() error {
+	oldWorkingDir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current working directory: %w", err)
+	}
+	err = os.Chdir(rootDir)
+	if err != nil {
+		return fmt.Errorf("failed to change directory to %s: %w", rootDir, err)
+	}
+	defer func() {
+		err := os.Chdir(oldWorkingDir)
+		if err != nil {
+			fmt.Printf("Warning: failed to change back to original directory %s: %v\n", oldWorkingDir, err)
+		}
+	}()
+	if err := sh.RunV("golangci-lint", "run", "--config", oldWorkingDir+"/.golangci.yml", "-v", "--timeout", "5m0s"); err != nil {
+		return fmt.Errorf("Linter returned an error: %w", err)
+	}
 	return nil
 }
 

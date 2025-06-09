@@ -163,7 +163,8 @@ jobs:
         uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
 
       - name: Run lint
-        run: shellcheck -x ***/*.sh
+        working-directory: on-prem-installers
+        run: shellcheck ***/*.sh
 
   lint-terraform:
     permissions:
@@ -457,56 +458,17 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
           persist-credentials: false
-
-      - name: Set up git credentials
-        shell: bash
-        run: |
-          echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
-          git config --global url."https://${{ secrets.SYS_ORCH_GITHUB }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
-
-      - name: Setup asdf and install dependencies
-        id: install-deps
-        uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
-
-      - name: Get current git hash of the PR
-        id: get-git-hash
-        run: echo "GIT_HASH=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_ENV"
-      - name: Print current git hash
-        run: echo "Current git hash is ${{ env.GIT_HASH }}"
-
-      - name: Deploy External Orchestrator
-        env:
-          # TODO: create git user secret so we don't have to hardcode it
-          # GIT_USER: ${{ secrets.SYS_ORCH_GITHUB_USERNAME }}
-          GIT_USER: "git"
-          GIT_TOKEN: ${{ secrets.SYS_ORCH_GITHUB }}
-          EDGE_MANAGEABILITY_FRAMEWORK_REV: ${{ env.GIT_HASH }}
-          DOCKERHUB_TOKEN: ${{ secrets.SYS_DOCKERHUB_RO }}
-          DOCKERHUB_USERNAME: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
-        run: |
-          set +x
-          echo "Starting to deploy Orchestrator..."
-          mage deploy:kindAll
-          echo "Orchestrator deployment done!"
-          echo "Root App Status:"
-          kubectl -n dev get applications root-app -o yaml
-      - name: Verify Kind Deployment
-        id: verify-kind-deployment
-        timeout-minutes: 25
-        run: |
-          echo "Starting to verify Orchestrator deployment..."
-          mage deploy:waitUntilComplete
-          echo "Orchestrator deployment verified!"
-          mage router:stop router:start
-          echo "Router restarted"
-      - name: Setup Test environment
-        shell: bash
-        run: |
-          sudo awk -i inplace '/BEGIN ORCH DEVELOPMENT HOSTS/,/END ORCH DEVELOPMENT HOSTS/ { next } 1' /etc/hosts
-          sudo awk -i inplace '/BEGIN ORCH SRE DEVELOPMENT HOST/,/END ORCH SRE DEVELOPMENT HOST/ { next } 1' /etc/hosts
-          mage gen:hostfileTraefik | sudo tee -a /etc/hosts > /dev/null
-          echo "Updated Hostfile entries!"
-          mage gen:orchCa deploy:orchCa
+      - name: Deploy Kind Orchestrator
+        id: deploy-kind-orchestrator
+        uses: ./.github/actions/deploy_kind
+        timeout-minutes: 30
+        with:
+          orch_version: ${{ github.event.pull_request.head.sha || github.sha }}
+          orch_password: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+          docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
+          docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
+          token: ${{ secrets.SYS_ORCH_GITHUB }}
+          deployment_type: all
       - name: Run policy compliance tests
         run: mage test:policyCompliance
       - name: Run image pull policy compliance tests
@@ -535,7 +497,7 @@ jobs:
           mage test:e2eSreObservabilityNoEnic
 
       - name: Deploy ENiC
-        if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' && steps.default-mt-setup.conclusion == 'success' }}
+        if: ${{ always() && steps.deploy-kind-orchestrator.conclusion == 'success' && steps.default-mt-setup.conclusion == 'success' }}
         shell: bash
         timeout-minutes: 5
         env:
@@ -558,11 +520,11 @@ jobs:
           echo "EN_SN=$SN" >> "$GITHUB_ENV"
 
       - name: Print current EN UUID and SN
-        if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' && steps.default-mt-setup.conclusion == 'success' }}
+        if: ${{ always() && steps.deploy-kind-orchestrator.conclusion == 'success' && steps.default-mt-setup.conclusion == 'success' }}
         run: echo "Current ENiC has UUID ${{ env.EN_UUID }} and SN ${{ env.EN_SN }}"
 
       - name: UI E2E Tests
-        if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' && steps.default-mt-setup.conclusion == 'success' }}
+        if: ${{ always() && steps.deploy-kind-orchestrator.conclusion == 'success' && steps.default-mt-setup.conclusion == 'success' }}
         uses: ./.github/actions/cypress
         with:
           token: ${{ secrets.SYS_ORCH_GITHUB }}
@@ -601,7 +563,7 @@ jobs:
           mage test:e2eSreObservability
 
       - name: Wait for cluster agent to be ready
-        if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' }}
+        if: ${{ always() && steps.deploy-kind-orchestrator.conclusion == 'success' }}
         run: |
           mkdir -p smoke-test/logs
           kubectl exec -n enic enic-0 -c edge-node -- bash -c "journalctl -x" > smoke-test/logs/enic-journalctl-pre.log
@@ -609,7 +571,7 @@ jobs:
           timeout 5m kubectl exec -n enic enic-0 -c edge-node -- bash -c "journalctl -f" | grep -m 1 "Cluster Agent state update"
 
       - name: Run AO / CO smoke test
-        if: ${{ always() && steps.verify-kind-deployment.conclusion == 'success' && steps.default-mt-setup.conclusion == 'success' }}
+        if: ${{ always() && steps.deploy-kind-orchestrator.conclusion == 'success' && steps.default-mt-setup.conclusion == 'success' }}
         env:
           PROJECT: sample-project
           NODE_UUID: ${{ env.EN_UUID }}
