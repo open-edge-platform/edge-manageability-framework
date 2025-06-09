@@ -52,7 +52,11 @@ func (s *ACMImportTest) SetupTest() {
 
 	s.randomText = strings.ToLower(rand.Text()[0:8])
 	s.logDir = filepath.Join(rootPath, ".logs")
-	internal.InitLogger("debug", s.logDir)
+	err = internal.InitLogger("debug", s.logDir)
+	if err != nil {
+		s.NoError(err)
+		return
+	}
 	s.randomTLSCert = strings.ToLower(rand.Text()[0:8])
 	s.randomTLSCA = strings.ToLower(rand.Text()[0:8])
 	s.randomTLSKey = strings.ToLower(rand.Text()[0:8])
@@ -99,8 +103,7 @@ func (s *ACMImportTest) TestInstallAndUninstallACM() {
 		s.NoError(err)
 		return
 	}
-
-	s.Equal(rs.AWS.CertID, "acm-12345678")
+	s.Equal("acm-12345678", rs.AWS.CertID)
 
 	s.runtimeState.Action = "uninstall"
 	s.expectTFUtiliyyCall("uninstall")

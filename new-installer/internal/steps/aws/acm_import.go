@@ -182,9 +182,7 @@ func (s *ImportCertificateToACMStep) PreStep(ctx context.Context, config config.
 			ErrorMsg:  fmt.Sprintf("failed to remove Terraform states: %v", rmErr),
 		}
 	}
-
 	return runtimeState, nil
-
 }
 
 func (s *ImportCertificateToACMStep) RunStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
