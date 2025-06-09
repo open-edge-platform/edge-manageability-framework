@@ -80,11 +80,6 @@ func (s *ImportCertificateToACMStep) Labels() []string {
 }
 
 func (s *ImportCertificateToACMStep) ConfigStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
-	if s.skipACMStep(config) {
-		// If Cert ID is already set, we skip this step.
-		runtimeState.AWS.CertID = config.AWS.CertID
-		return runtimeState, nil
-	}
 	if config.AWS.CustomerTag == "" {
 		return runtimeState, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInvalidArgument,
@@ -130,11 +125,6 @@ func (s *ImportCertificateToACMStep) ConfigStep(ctx context.Context, config conf
 }
 
 func (s *ImportCertificateToACMStep) PreStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
-	if s.skipACMStep(config) {
-		// If Cert ID is already set, we skip this step.
-		runtimeState.AWS.CertID = config.AWS.CertID
-		return runtimeState, nil
-	}
 	if config.AWS.PreviousS3StateBucket == "" {
 		// No need to migrate state, since there is no previous state bucket
 		return runtimeState, nil
@@ -194,9 +184,6 @@ func (s *ImportCertificateToACMStep) PreStep(ctx context.Context, config config.
 }
 
 func (s *ImportCertificateToACMStep) RunStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
-	if s.skipACMStep(config) {
-		return runtimeState, nil
-	}
 	if runtimeState.Action == "" {
 		return runtimeState, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInvalidArgument,
@@ -239,9 +226,6 @@ func (s *ImportCertificateToACMStep) RunStep(ctx context.Context, config config.
 }
 
 func (s *ImportCertificateToACMStep) PostStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState, prevStepError *internal.OrchInstallerError) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
-	if s.skipACMStep(config) {
-		return runtimeState, nil
-	}
 	return runtimeState, prevStepError
 }
 
@@ -318,8 +302,4 @@ func GenerateSelfSignedTLSCert(commonName string) (tlsCertPEM string, tlsCAPEM s
 	keyPEMBytes := pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: keyBytes})
 
 	return string(leafPEM), string(caPEM), string(keyPEMBytes), nil
-}
-
-func (s *ImportCertificateToACMStep) skipACMStep(config config.OrchInstallerConfig) bool {
-	return config.AWS.CertID != ""
 }
