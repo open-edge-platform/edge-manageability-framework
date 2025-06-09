@@ -30,10 +30,6 @@ type KMSStepTest struct {
 	tfUtility    *MockTerraformUtility
 }
 
-const (
-	DeploymentID = "test-deployment-id"
-)
-
 func TestKMSStep(t *testing.T) {
 	suite.Run(t, new(KMSStepTest))
 }
@@ -48,7 +44,7 @@ func (s *KMSStepTest) SetupTest() {
 	s.config.AWS.Region = "us-west-2"
 	s.config.Global.OrchName = "kms-test"
 	s.config.AWS.CustomerTag = "test"
-	s.runtimeState.DeploymentID = DeploymentID
+	s.runtimeState.DeploymentID = "test-deployment-id"
 	s.runtimeState.LogDir = filepath.Join(rootPath, ".logs")
 	s.tfUtility = &MockTerraformUtility{}
 	s.step = &steps_aws.KMSStep{
