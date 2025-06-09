@@ -24,8 +24,3 @@ variable "oidc_issuer" {
   type        = string
   description = "OIDC issuer URL for the EKS cluster"
 }
-
-variable "create_tracing" {
-  type    = bool
-  default = false
-}

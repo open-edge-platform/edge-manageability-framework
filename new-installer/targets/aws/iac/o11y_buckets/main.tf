@@ -23,7 +23,8 @@ locals {
     "fm-loki-chunks",
     "fm-loki-ruler",
     "fm-mimir-ruler",
-    "fm-mimir-tsdb"
+    "fm-mimir-tsdb",
+    "tempo-traces"
   ])
 }
 
@@ -177,96 +178,4 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
   for_each = local.buckets
   bucket   = aws_s3_bucket.bucket[each.key].id
   policy   = data.aws_iam_policy_document.bucket_policy_doc[each.key].json
-}
-
-# Create tracing bucket
-#trivy:ignore:AVD-AWS-0089 Logging disabled
-resource "aws_s3_bucket" "tracing" {
-  count         = var.create_tracing ? 1 : 0
-  bucket        = var.s3_prefix == "" ? "${var.cluster_name}-${random_integer.random_prefix.result}-tempo-traces" : "${var.cluster_name}-${var.s3_prefix}-tempo-traces"
-  force_destroy = true
-}
-
-
-resource "aws_s3_bucket_server_side_encryption_configuration" "tracing" {
-  count  = var.create_tracing ? 1 : 0
-  bucket = aws_s3_bucket.tracing[0].id
-  rule {
-    apply_server_side_encryption_by_default {
-      kms_master_key_id = aws_kms_key.bucket_key.arn
-      sse_algorithm     = "aws:kms"
-    }
-  }
-}
-
-resource "aws_s3_bucket_public_access_block" "tracing" {
-  count                   = var.create_tracing ? 1 : 0
-  bucket                  = aws_s3_bucket.tracing[0].id
-  block_public_acls       = true
-  block_public_policy     = true
-  restrict_public_buckets = true
-  ignore_public_acls      = true
-}
-
-resource "aws_s3_bucket_versioning" "tracing" {
-  count  = var.create_tracing ? 1 : 0
-  bucket = aws_s3_bucket.tracing[0].id
-  versioning_configuration {
-    status = "Enabled"
-  }
-}
-
-resource "aws_s3_bucket_lifecycle_configuration" "tracing_config" {
-  count  = var.create_tracing ? 1 : 0
-  bucket = aws_s3_bucket.tracing[0].id
-  # name = "intelligent-tiering"
-
-  rule {
-    id = "intelligent-tiering"
-
-    transition {
-      days          = 0
-      storage_class = "INTELLIGENT_TIERING"
-    }
-    filter {
-      prefix = ""
-    }
-    status = "Enabled"
-  }
-}
-
-data "aws_iam_policy_document" "tracing_policy_doc" {
-  count = var.create_tracing ? 1 : 0
-  statement {
-    sid = "OnlyAllowAccessViaSSL"
-    principals {
-      type        = "*"
-      identifiers = ["*"]
-    }
-
-    effect = "Deny"
-    actions = [
-      "s3:*",
-    ]
-
-    resources = [
-      aws_s3_bucket.tracing[0].arn,
-      "${aws_s3_bucket.tracing[0].arn}/*",
-    ]
-
-    condition {
-      test     = "Bool"
-      variable = "aws:SecureTransport"
-
-      values = [
-        "false",
-      ]
-    }
-  }
-}
-
-resource "aws_s3_bucket_policy" "tracing_policy" {
-  count  = var.create_tracing ? 1 : 0
-  bucket = aws_s3_bucket.tracing[0].id
-  policy = data.aws_iam_policy_document.tracing_policy_doc[0].json
 }

@@ -26,21 +26,19 @@ var observabilityBucketsStepLabels = []string{
 }
 
 type ObservabilityBucketsVariables struct {
-	Region        string `json:"region" yaml:"region"`
-	CustomerTag   string `json:"customer_tag" yaml:"customer_tag"`
-	S3Prefix      string `json:"s3_prefix" yaml:"s3_prefix"`
-	OIDCIssuer    string `json:"oidc_issuer" yaml:"oidc_issuer"`
-	ClusterName   string `json:"cluster_name" yaml:"cluster_name"`
-	CreateTracing bool   `json:"create_tracing" yaml:"create_tracing"`
+	Region      string `json:"region" yaml:"region"`
+	CustomerTag string `json:"customer_tag" yaml:"customer_tag"`
+	S3Prefix    string `json:"s3_prefix" yaml:"s3_prefix"`
+	OIDCIssuer  string `json:"oidc_issuer" yaml:"oidc_issuer"`
+	ClusterName string `json:"cluster_name" yaml:"cluster_name"`
 }
 
 func NewObservabilityBucketsVariables() ObservabilityBucketsVariables {
 	return ObservabilityBucketsVariables{
-		Region:        "",
-		CustomerTag:   "",
-		S3Prefix:      "",
-		ClusterName:   "",
-		CreateTracing: false,
+		Region:      "",
+		CustomerTag: "",
+		S3Prefix:    "",
+		ClusterName: "",
 	}
 }
 
@@ -79,7 +77,6 @@ func (s *ObservabilityBucketsStep) ConfigStep(ctx context.Context, config config
 	s.variables.S3Prefix = runtimeState.DeploymentID
 	s.variables.OIDCIssuer = runtimeState.AWS.EKSOIDCIssuer
 	s.variables.ClusterName = config.Global.OrchName
-	s.variables.CreateTracing = false
 	s.backendConfig = steps.TerraformAWSBucketBackendConfig{
 		Bucket: config.Global.OrchName + "-" + runtimeState.DeploymentID,
 		Region: config.AWS.Region,

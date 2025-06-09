@@ -97,12 +97,11 @@ func (s *ObservabilityBucketsStepTest) expectTFUtiliyyCall(action string) {
 		LogFile:            filepath.Join(s.logDir, "aws_observability_bucket.log"),
 		KeepGeneratedFiles: s.step.KeepGeneratedFiles,
 		Variables: steps_aws.ObservabilityBucketsVariables{
-			Region:        s.config.AWS.Region,
-			CustomerTag:   s.config.AWS.CustomerTag,
-			S3Prefix:      s.runtimeState.DeploymentID,
-			OIDCIssuer:    s.runtimeState.AWS.EKSOIDCIssuer,
-			ClusterName:   s.config.Global.OrchName,
-			CreateTracing: false,
+			Region:      s.config.AWS.Region,
+			CustomerTag: s.config.AWS.CustomerTag,
+			S3Prefix:    s.runtimeState.DeploymentID,
+			OIDCIssuer:  s.runtimeState.AWS.EKSOIDCIssuer,
+			ClusterName: s.config.Global.OrchName,
 		},
 		BackendConfig: steps.TerraformAWSBucketBackendConfig{
 			Region: s.config.AWS.Region,
