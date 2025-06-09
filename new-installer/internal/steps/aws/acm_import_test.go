@@ -110,6 +110,17 @@ func (s *ACMImportTest) TestInstallAndUninstallACM() {
 	}
 }
 
+func (s *ACMImportTest) TestUpgradeACM() {
+	s.config.AWS.PreviousS3StateBucket = "old-bucket-name"
+	s.runtimeState.Action = "upgrade"
+	s.expectTFUtiliyyCall("upgrade")
+	_, err := steps.GoThroughStepFunctions(s.step, &s.config, s.runtimeState)
+	if err != nil {
+		s.NoError(err)
+		return
+	}
+}
+
 func (s *ACMImportTest) expectTFUtiliyyCall(action string) {
 	input := steps.TerraformUtilityInput{
 		Action:             action,
@@ -143,9 +154,46 @@ func (s *ACMImportTest) expectTFUtiliyyCall(action string) {
 				},
 			},
 		}, nil).Once()
-	} else {
+	} else if action == "uninstall" {
 		s.tfUtility.On("Run", mock.Anything, input).Return(steps.TerraformUtilityOutput{
 			TerraformState: "",
 		}, nil).Once()
+	} else {
+		s.tfUtility.On("Run", mock.Anything, input).Return(steps.TerraformUtilityOutput{
+			TerraformState: "",
+			Output: map[string]tfexec.OutputMeta{
+				"cert": {
+					Type:  json.RawMessage(`"string"`),
+					Value: json.RawMessage(`acm-12345678"`),
+				},
+			},
+		}, nil).Once()
+		s.awsUtility.On("S3CopyToS3",
+			s.config.AWS.Region,
+			s.config.AWS.PreviousS3StateBucket,
+			fmt.Sprintf("%s/orch-load-balancer/%s", s.config.AWS.Region, s.config.Global.OrchName),
+			s.config.AWS.Region,
+			s.config.Global.OrchName+"-"+s.runtimeState.DeploymentID,
+			"acm.tfstate",
+		).Return(nil).Once()
+		s.tfUtility.On("MoveStates", mock.Anything, steps.TerraformUtilityMoveStatesInput{
+			ModulePath: filepath.Join(s.step.RootPath, steps_aws.ACMModulePath),
+			States: map[string]string{
+				"module.acm_import.aws_acm_certificate.main": "aws_acm_certificate.main",
+			},
+		}).Return(nil).Once()
+		s.tfUtility.On("RemoveStates", mock.Anything, steps.TerraformUtilityRemoveStatesInput{
+			ModulePath: filepath.Join(s.step.RootPath, steps_aws.ACMModulePath),
+			States: []string{
+				"module.traefik_load_balancer",
+				"module.traefik2_load_balancer",
+				"module.argocd_load_balancer",
+				"module.traefik_lb_target_group_binding",
+				"module.aws_lb_security_group_roles",
+				"module.wait_until_alb_ready",
+				"module.waf_web_acl_traefik",
+				"module.waf_web_acl_argocd",
+			},
+		}).Return(nil).Once()
 	}
 }
