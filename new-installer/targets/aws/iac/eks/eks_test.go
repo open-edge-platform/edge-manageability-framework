@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	terra_test_aws "github.com/gruntwork-io/terratest/modules/aws"
+	terratest_aws "github.com/gruntwork-io/terratest/modules/aws"
 	"github.com/gruntwork-io/terratest/modules/terraform"
 	steps_aws "github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps/aws"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/targets/aws/iac/utils"
@@ -33,7 +33,7 @@ func TestEKSTestSuite(t *testing.T) {
 func (s *EKSTestSuite) SetupTest() {
 	// Bucket for EKS state
 	s.name = "eks-unit-test-" + strings.ToLower(rand.Text()[0:8])
-	terra_test_aws.CreateS3Bucket(s.T(), utils.DefaultTestRegion, s.name)
+	terratest_aws.CreateS3Bucket(s.T(), utils.DefaultTestRegion, s.name)
 
 	// VPC and subnets for EKS
 	var err error
@@ -62,8 +62,8 @@ func (s *EKSTestSuite) TearDownTest() {
 		return
 	}
 
-	terra_test_aws.EmptyS3Bucket(s.T(), utils.DefaultTestRegion, s.name)
-	terra_test_aws.DeleteS3Bucket(s.T(), utils.DefaultTestRegion, s.name)
+	terratest_aws.EmptyS3Bucket(s.T(), utils.DefaultTestRegion, s.name)
+	terratest_aws.DeleteS3Bucket(s.T(), utils.DefaultTestRegion, s.name)
 }
 
 func (s *EKSTestSuite) TestApplyingModule() {

@@ -369,9 +369,9 @@ func mapScaleToAWSEKSSetup(scale config.Scale) EKSScaleSetup {
 				InstanceType: "t3.2xlarge",
 			},
 			O11y: EKSNodeGroup{
-				DesiredSize: 2,
-				MinSize:     2,
-				MaxSize:     2,
+				DesiredSize: 3,
+				MinSize:     3,
+				MaxSize:     3,
 				Labels: map[string]string{
 					"node.kubernetes.io/custom-rule": "observability",
 				},
