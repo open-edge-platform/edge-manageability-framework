@@ -46,7 +46,6 @@ var VPCEndpoints = []string{
 	"ecr.dkr",
 	"ecr.api",
 	"elasticloadbalancing",
-	"ecs",
 }
 
 type VPCVariables struct {
