@@ -101,6 +101,7 @@ runs:
   - name: Get diagnostic information
     id: get-diagnostic-info
     if: always() && steps.install-deps.conclusion == 'success'
+    shell: bash
     run: |
       mkdir -p kind-diagnostics
       kubectl get pods -o wide -A > kind-diagnostics/pods-list.txt
