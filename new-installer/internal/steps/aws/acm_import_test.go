@@ -97,7 +97,7 @@ func (s *ACMImportTest) SetupTest() {
 
 func (s *ACMImportTest) TestInstallAndUninstallACM() {
 	s.runtimeState.Action = "install"
-	s.expectTFUtiliyyCall("install")
+	s.expectUtiliyCall("install")
 	rs, err := steps.GoThroughStepFunctions(s.step, &s.config, s.runtimeState)
 	if err != nil {
 		s.NoError(err)
@@ -106,7 +106,7 @@ func (s *ACMImportTest) TestInstallAndUninstallACM() {
 	s.Equal("acm-12345678", rs.AWS.CertID)
 
 	s.runtimeState.Action = "uninstall"
-	s.expectTFUtiliyyCall("uninstall")
+	s.expectUtiliyCall("uninstall")
 	_, err = steps.GoThroughStepFunctions(s.step, &s.config, s.runtimeState)
 	if err != nil {
 		s.NoError(err)
@@ -116,15 +116,16 @@ func (s *ACMImportTest) TestInstallAndUninstallACM() {
 func (s *ACMImportTest) TestUpgradeACM() {
 	s.config.AWS.PreviousS3StateBucket = "old-bucket-name"
 	s.runtimeState.Action = "upgrade"
-	s.expectTFUtiliyyCall("upgrade")
-	_, err := steps.GoThroughStepFunctions(s.step, &s.config, s.runtimeState)
+	s.expectUtiliyCall("upgrade")
+	rs, err := steps.GoThroughStepFunctions(s.step, &s.config, s.runtimeState)
 	if err != nil {
 		s.NoError(err)
 		return
 	}
+	s.Equal("acm-12345678", rs.AWS.CertID)
 }
 
-func (s *ACMImportTest) expectTFUtiliyyCall(action string) {
+func (s *ACMImportTest) expectUtiliyCall(action string) {
 	input := steps.TerraformUtilityInput{
 		Action:             action,
 		ModulePath:         filepath.Join(s.step.RootPath, steps_aws.ACMModulePath),
@@ -157,11 +158,8 @@ func (s *ACMImportTest) expectTFUtiliyyCall(action string) {
 				},
 			},
 		}, nil).Once()
-	} else if action == "uninstall" {
-		s.tfUtility.On("Run", mock.Anything, input).Return(steps.TerraformUtilityOutput{
-			TerraformState: "",
-		}, nil).Once()
-	} else {
+	}
+	if action == "upgrade" {
 		s.tfUtility.On("Run", mock.Anything, input).Return(steps.TerraformUtilityOutput{
 			TerraformState: "",
 			Output: map[string]tfexec.OutputMeta{
@@ -171,14 +169,16 @@ func (s *ACMImportTest) expectTFUtiliyyCall(action string) {
 				},
 			},
 		}, nil).Once()
+
 		s.awsUtility.On("S3CopyToS3",
 			s.config.AWS.Region,
 			s.config.AWS.PreviousS3StateBucket,
-			fmt.Sprintf("%s/orch-load-balancer/%s", s.config.AWS.Region, s.config.Global.OrchName),
+			fmt.Sprintf("%s/acm_import/%s", s.config.AWS.Region, s.config.Global.OrchName),
 			s.config.AWS.Region,
 			s.config.Global.OrchName+"-"+s.runtimeState.DeploymentID,
 			"acm.tfstate",
 		).Return(nil).Once()
+
 		s.tfUtility.On("MoveStates", mock.Anything, steps.TerraformUtilityMoveStatesInput{
 			ModulePath: filepath.Join(s.step.RootPath, steps_aws.ACMModulePath),
 			States: map[string]string{
@@ -198,5 +198,10 @@ func (s *ACMImportTest) expectTFUtiliyyCall(action string) {
 				"module.waf_web_acl_argocd",
 			},
 		}).Return(nil).Once()
+	}
+	if action == "uninstall" {
+		s.tfUtility.On("Run", mock.Anything, input).Return(steps.TerraformUtilityOutput{
+			TerraformState: "",
+		}, nil).Once()
 	}
 }
