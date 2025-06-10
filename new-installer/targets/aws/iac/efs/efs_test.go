@@ -38,26 +38,15 @@ func (s *EFSTestSuite) SetupTest() {
 
 	// VPC and subnets for EKS
 	var err error
-	var jumphostPrivateKey, jumphostIP string
-	s.vpcID, s.publicSubnetIDs, s.privateSubnetIDs, jumphostPrivateKey, jumphostIP, err = utils.CreateVPC(s.T(), s.name)
+	s.vpcID, s.publicSubnetIDs, s.privateSubnetIDs, _, _, err = utils.CreateVPC(s.T(), s.name)
 	if err != nil {
 		s.NoError(err, "Failed to create VPC and subnet")
-		return
-	}
-	err = utils.StartSshuttle(jumphostIP, jumphostPrivateKey, steps_aws.DefaultNetworkCIDR)
-	if err != nil {
-		s.NoError(err, "Failed to start sshuttle")
 		return
 	}
 }
 
 func (s *EFSTestSuite) TearDownTest() {
-	err := utils.StopSshuttle()
-	if err != nil {
-		s.NoError(err, "Failed to stop sshuttle")
-	}
-
-	err = utils.DeleteVPC(s.T(), s.name)
+	err := utils.DeleteVPC(s.T(), s.name)
 	if err != nil {
 		s.NoError(err, "Failed to delete VPC")
 		return
