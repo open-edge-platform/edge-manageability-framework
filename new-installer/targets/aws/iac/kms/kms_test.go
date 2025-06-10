@@ -10,12 +10,12 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"time"
 
 	aws_sdk "github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/gruntwork-io/terratest/modules/aws"
+	"github.com/open-edge-platform/edge-manageability-framework/installer/targets/aws/iac/utils"
 
 	"github.com/gruntwork-io/terratest/modules/terraform"
 	"github.com/stretchr/testify/suite"
@@ -75,15 +75,15 @@ func TestKMSTestSuite(t *testing.T) {
 func (s *KMSTestSuite) TestApplyingModule() {
 	randomPostfix := strings.ToLower(rand.Text()[:4])
 	bucketName := "kms-test-bucket-" + randomPostfix
-	aws.CreateS3Bucket(s.T(), "us-west-2", bucketName)
+	aws.CreateS3Bucket(s.T(), utils.DefaultTestRegion, bucketName)
 	defer func() {
-		aws.EmptyS3Bucket(s.T(), "us-west-2", bucketName)
-		aws.DeleteS3Bucket(s.T(), "us-west-2", bucketName)
+		aws.EmptyS3Bucket(s.T(), utils.DefaultTestRegion, bucketName)
+		aws.DeleteS3Bucket(s.T(), utils.DefaultTestRegion, bucketName)
 	}()
 	clusterName := "kms-test-" + randomPostfix
 	variables := KMSVariables{
-		Region:      "us-west-2",
-		CustomerTag: "test-customer",
+		Region:      utils.DefaultTestRegion,
+		CustomerTag: utils.DefaultTestCustomerTag,
 		ClusterName: clusterName,
 	}
 	jsonData, err := json.Marshal(variables)
@@ -100,10 +100,10 @@ func (s *KMSTestSuite) TestApplyingModule() {
 	}
 
 	terraformOptions := terraform.WithDefaultRetryableErrors(s.T(), &terraform.Options{
-		TerraformDir: "../kms",
+		TerraformDir: ".",
 		VarFiles:     []string{tempFile.Name()},
 		BackendConfig: map[string]interface{}{
-			"region": "us-west-2",
+			"region": utils.DefaultTestRegion,
 			"bucket": bucketName,
 			"key":    "kms.tfstate",
 		},
@@ -111,12 +111,10 @@ func (s *KMSTestSuite) TestApplyingModule() {
 		Upgrade:     true,
 	})
 	defer terraform.Destroy(s.T(), terraformOptions)
-
 	terraform.InitAndApply(s.T(), terraformOptions)
-	time.Sleep(time.Second * 300)
 
 	// Verify that the IAM User for Vault was created
-	iamClient, err := aws.NewIamClientE(s.T(), "us-west-2")
+	iamClient, err := aws.NewIamClientE(s.T(), utils.DefaultTestRegion)
 	s.Require().NoError(err, "Failed to create IAM client")
 	iamUserOutput, err := iamClient.GetUser(s.T().Context(), &iam.GetUserInput{
 		UserName: aws_sdk.String("vault-" + clusterName),
@@ -125,7 +123,7 @@ func (s *KMSTestSuite) TestApplyingModule() {
 	s.NotNil(iamUserOutput, "IAM User for Vault should be created")
 
 	// Verify that the KMS Key was created
-	kmsClient, err := aws.NewKmsClientE(s.T(), "us-west-2")
+	kmsClient, err := aws.NewKmsClientE(s.T(), utils.DefaultTestRegion)
 	s.Require().NoError(err, "Failed to create KMS client")
 	kmsKeyOutput, err := kmsClient.DescribeKey(s.T().Context(), &kms.DescribeKeyInput{
 		KeyId: aws_sdk.String("alias/vault-kms-unseal-" + clusterName),

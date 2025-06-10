@@ -43,7 +43,6 @@ type KMSStep struct {
 	backendConfig      steps.TerraformAWSBucketBackendConfig
 	RootPath           string
 	KeepGeneratedFiles bool
-	StepLabels         []string
 	TerraformUtility   steps.TerraformUtility
 	AWSUtility         AWSUtility
 }
@@ -54,7 +53,6 @@ func CreateKMSStep(rootPath string, keepGeneratedFiles bool, terraformUtility st
 		KeepGeneratedFiles: keepGeneratedFiles,
 		TerraformUtility:   terraformUtility,
 		AWSUtility:         awsUtility,
-		StepLabels:         kmsStepLabels,
 	}
 }
 
@@ -63,7 +61,7 @@ func (s *KMSStep) Name() string {
 }
 
 func (s *KMSStep) Labels() []string {
-	return s.StepLabels
+	return kmsStepLabels
 }
 
 func (s *KMSStep) ConfigStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
@@ -155,16 +153,13 @@ func (s *KMSStep) RunStep(ctx context.Context, config config.OrchInstallerConfig
 		LogFile:            filepath.Join(runtimeState.LogDir, "aws_kms.log"),
 		KeepGeneratedFiles: s.KeepGeneratedFiles,
 	}
-	fmt.Printf("Running Terraform util %s with input: %+v\n", s.TerraformUtility, terraformStepInput)
+	internal.Logger().Debugf("Running Terraform util %s with input: %+v\n", s.TerraformUtility, terraformStepInput)
 	_, err := s.TerraformUtility.Run(ctx, terraformStepInput)
 	if err != nil {
 		return runtimeState, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeTerraform,
 			ErrorMsg:  fmt.Sprintf("failed to run terraform: %v", err),
 		}
-	}
-	if runtimeState.Action == "uninstall" {
-		return runtimeState, nil
 	}
 	return runtimeState, nil
 }

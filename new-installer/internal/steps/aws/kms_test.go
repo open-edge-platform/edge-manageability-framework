@@ -56,7 +56,7 @@ func (s *KMSStepTest) SetupTest() {
 
 func (s *KMSStepTest) TestInstallAndUninstallKMS() {
 	s.runtimeState.Action = "install"
-	s.expectTFUtiliyyCall("install")
+	s.expectTFUtiliyCall("install")
 	rs, err := steps.GoThroughStepFunctions(s.step, &s.config, s.runtimeState)
 	if err != nil {
 		s.NoError(err)
@@ -65,14 +65,14 @@ func (s *KMSStepTest) TestInstallAndUninstallKMS() {
 	fmt.Println(rs)
 
 	s.runtimeState.Action = "uninstall"
-	s.expectTFUtiliyyCall("uninstall")
+	s.expectTFUtiliyCall("uninstall")
 	_, err = steps.GoThroughStepFunctions(s.step, &s.config, s.runtimeState)
 	if err != nil {
 		s.NoError(err)
 	}
 }
 
-func (s *KMSStepTest) expectTFUtiliyyCall(action string) {
+func (s *KMSStepTest) expectTFUtiliyCall(action string) {
 	input := steps.TerraformUtilityInput{
 		Action:             action,
 		ModulePath:         filepath.Join(s.step.RootPath, steps_aws.KMSModulePath),
@@ -90,15 +90,8 @@ func (s *KMSStepTest) expectTFUtiliyyCall(action string) {
 		},
 		TerraformState: "",
 	}
-	if action == "install" {
-		s.tfUtility.On("Run", mock.Anything, input).Return(steps.TerraformUtilityOutput{
-			TerraformState: "",
-			Output:         map[string]tfexec.OutputMeta{},
-		}, nil).Once()
-	} else {
-		s.tfUtility.On("Run", mock.Anything, input).Return(steps.TerraformUtilityOutput{
-			TerraformState: "",
-			Output:         map[string]tfexec.OutputMeta{},
-		}, nil).Once()
-	}
+	s.tfUtility.On("Run", mock.Anything, input).Return(steps.TerraformUtilityOutput{
+		TerraformState: "",
+		Output:         map[string]tfexec.OutputMeta{},
+	}, nil).Once()
 }
