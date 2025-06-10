@@ -41,3 +41,4 @@ excludedNamespaces:
   - capi-system
   - capi-operator-system
   - capr-system
+  - capk-system
