@@ -157,21 +157,21 @@ Following data was genrated for the Coder deployment with `dev-internal-coder-au
 
 | Section | Start | End | Duration (sec) [min] |
 |---------|---------------------|---------------------|:----------------------:|
-| root-app | 2025-06-09 11:15:43 | 2025-06-09 11:39:31 | <span style="color:#fff;background-color:#e74c3c">1428 [23.8 min]</span> |
-| postgresql-secrets | 2025-06-09 11:17:23 | 2025-06-09 11:38:47 | <span style="color:#fff;background-color:#e74c3c">1284 [21.4 min]</span> |
-| secrets-config | 2025-06-09 11:21:42 | 2025-06-09 11:38:48 | <span style="color:#fff;background-color:#e74c3c">1026 [17.1 min]</span> |
-| tenancy-api-mapping | 2025-06-09 11:28:02 | 2025-06-09 11:39:31 | <span style="color:#fff;background-color:#e74c3c">689 [11.48 min]</span> |
-| tenancy-datamodel | 2025-06-09 11:28:02 | 2025-06-09 11:38:39 | <span style="color:#fff;background-color:#e74c3c">637 [10.62 min]</span> |
-| app-deployment-crd | 2025-06-09 11:31:32 | 2025-06-09 11:35:57 | <span style="color:#fff;background-color:#e74c3c">265 [4.42 min]</span> |
-| fleet-crd | 2025-06-09 11:25:16 | 2025-06-09 11:29:25 | <span style="color:#fff;background-color:#e74c3c">249 [4.15 min]</span> |
-| platform-autocert | 2025-06-09 11:18:02 | 2025-06-09 11:21:41 | <span style="color:#fff;background-color:#e74c3c">219 [3.65 min]</span> |
-| alerting-monitor | 2025-06-09 11:30:12 | 2025-06-09 11:32:56 | <span style="color:#fff;background-color:#e74c3c">164 [2.73 min]</span> |
-| orchestrator-observability | 2025-06-09 11:22:28 | 2025-06-09 11:24:50 | <span style="color:#fff;background-color:#f39c12">142 [2.37 min]</span> |
-| edgenode-observability | 2025-06-09 11:22:27 | 2025-06-09 11:24:48 | <span style="color:#fff;background-color:#f39c12">141 [2.35 min]</span> |
-| harbor-oci | 2025-06-09 11:22:27 | 2025-06-09 11:24:16 | <span style="color:#fff;background-color:#f39c12">109 [1.82 min]</span> |
-| platform-keycloak | 2025-06-09 11:18:02 | 2025-06-09 11:19:40 | <span style="color:#fff;background-color:#f39c12">98 [1.63 min]</span> |
-| kyverno | 2025-06-09 11:16:08 | 2025-06-09 11:17:42 | <span style="color:#fff;background-color:#f39c12">94 [1.57 min]</span> |
-| prometheus-crd | 2025-06-09 11:16:12 | 2025-06-09 11:17:43 | <span style="color:#fff;background-color:#f39c12">91 [1.52 min]</span> |
+| root-app | 2025-06-09 11:15:43 | 2025-06-09 11:39:31 | 1428 [23.8 min] (critical) |
+| postgresql-secrets | 2025-06-09 11:17:23 | 2025-06-09 11:38:47 | 1284 [21.4 min] (critical) |
+| secrets-config | 2025-06-09 11:21:42 | 2025-06-09 11:38:48 | 1026 [17.1 min] (critical) |
+| tenancy-api-mapping | 2025-06-09 11:28:02 | 2025-06-09 11:39:31 | 689 [11.48 min] (critical) |
+| tenancy-datamodel | 2025-06-09 11:28:02 | 2025-06-09 11:38:39 | 637 [10.62 min] (critical) |
+| app-deployment-crd | 2025-06-09 11:31:32 | 2025-06-09 11:35:57 | 265 [4.42 min] (critical) |
+| fleet-crd | 2025-06-09 11:25:16 | 2025-06-09 11:29:25 | 249 [4.15 min] (critical) |
+| platform-autocert | 2025-06-09 11:18:02 | 2025-06-09 11:21:41 | 219 [3.65 min] (critical) |
+| alerting-monitor | 2025-06-09 11:30:12 | 2025-06-09 11:32:56 | 164 [2.73 min] (critical) |
+| orchestrator-observability | 2025-06-09 11:22:28 | 2025-06-09 11:24:50 | 142 [2.37 min] (warning) |
+| edgenode-observability | 2025-06-09 11:22:27 | 2025-06-09 11:24:48 | 141 [2.35 min] (warning) |
+| harbor-oci | 2025-06-09 11:22:27 | 2025-06-09 11:24:16 | 109 [1.82 min] (warning) |
+| platform-keycloak | 2025-06-09 11:18:02 | 2025-06-09 11:19:40 | 98 [1.63 min] (warning) |
+| kyverno | 2025-06-09 11:16:08 | 2025-06-09 11:17:42 | 94 [1.57 min] (warning) |
+| prometheus-crd | 2025-06-09 11:16:12 | 2025-06-09 11:17:43 | 91 [1.52 min] (warning) |
 | nexus-api-gw | 2025-06-09 11:28:02 | 2025-06-09 11:29:32 | 90 [1.5 min] |
 | infra-core | 2025-06-09 11:31:32 | 2025-06-09 11:32:54 | 82 [1.37 min] |
 | infra-external | 2025-06-09 11:34:28 | 2025-06-09 11:35:49 | 81 [1.35 min] |
@@ -345,7 +345,7 @@ gantt
 
 **Note:**
 
-- Any section consuming above 1.5 min is highlighted in orange, above 2.5 min in red.
+- Any section consuming above 1.5 min is marked as (warning), above 2.5 min as (critical).
 - The table lists each section and the total time taken (in seconds and minutes) from the first to last event, sorted by duration.
 - The Gantt chart visualizes the timing of each section and labels each bar with its duration.
 
@@ -353,35 +353,35 @@ gantt
 
 | Section | Start | End | Duration (sec) [min] |
 |---------|---------------------|---------------------|:----------------------:|
-| root-app | 2025-06-09 21:56:24 | 2025-06-09 22:34:25 | <span style="color:#fff;background-color:#e74c3c">2281 [38.02 min]</span> |
-| postgresql-secrets | 2025-06-09 21:58:49 | 2025-06-09 22:34:09 | <span style="color:#fff;background-color:#e74c3c">2120 [35.33 min]</span> |
-| secrets-config | 2025-06-09 22:00:43 | 2025-06-09 22:34:24 | <span style="color:#fff;background-color:#e74c3c">2021 [33.68 min]</span> |
-| tenancy-api-mapping | 2025-06-09 22:11:55 | 2025-06-09 22:33:00 | <span style="color:#fff;background-color:#e74c3c">1265 [21.08 min]</span> |
-| tenancy-datamodel | 2025-06-09 22:11:55 | 2025-06-09 22:32:50 | <span style="color:#fff;background-color:#e74c3c">1255 [20.92 min]</span> |
-| edgenode-observability | 2025-06-09 22:02:00 | 2025-06-09 22:07:47 | <span style="color:#fff;background-color:#e74c3c">347 [5.78 min]</span> |
-| orchestrator-observability | 2025-06-09 22:02:00 | 2025-06-09 22:07:40 | <span style="color:#fff;background-color:#e74c3c">340 [5.67 min]</span> |
-| fleet-crd | 2025-06-09 22:08:11 | 2025-06-09 22:13:21 | <span style="color:#fff;background-color:#e74c3c">310 [5.17 min]</span> |
-| harbor-oci | 2025-06-09 22:02:00 | 2025-06-09 22:07:00 | <span style="color:#fff;background-color:#e74c3c">300 [5.0 min]</span> |
-| orchestrator-prometheus-agent | 2025-06-09 22:02:01 | 2025-06-09 22:06:08 | <span style="color:#fff;background-color:#e74c3c">247 [4.12 min]</span> |
-| capi-operator | 2025-06-09 22:02:00 | 2025-06-09 22:05:34 | <span style="color:#fff;background-color:#e74c3c">214 [3.57 min]</span> |
-| app-deployment-crd | 2025-06-09 22:18:56 | 2025-06-09 22:22:16 | <span style="color:#fff;background-color:#e74c3c">200 [3.33 min]</span> |
-| infra-onboarding | 2025-06-09 22:24:29 | 2025-06-09 22:27:17 | <span style="color:#fff;background-color:#e74c3c">168 [2.8 min]</span> |
-| alerting-monitor | 2025-06-09 22:17:43 | 2025-06-09 22:20:29 | <span style="color:#fff;background-color:#e74c3c">166 [2.77 min]</span> |
-| infra-external | 2025-06-09 22:24:29 | 2025-06-09 22:27:15 | <span style="color:#fff;background-color:#e74c3c">166 [2.77 min]</span> |
-| app-resource-manager | 2025-06-09 22:24:29 | 2025-06-09 22:27:04 | <span style="color:#fff;background-color:#e74c3c">155 [2.58 min]</span> |
-| app-deployment-manager | 2025-06-09 22:24:29 | 2025-06-09 22:26:49 | <span style="color:#fff;background-color:#f39c12">140 [2.33 min]</span> |
-| infra-core | 2025-06-09 22:18:56 | 2025-06-09 22:21:09 | <span style="color:#fff;background-color:#f39c12">133 [2.22 min]</span> |
-| intel-infra-provider | 2025-06-09 22:24:30 | 2025-06-09 22:26:42 | <span style="color:#fff;background-color:#f39c12">132 [2.2 min]</span> |
-| ingress-nginx | 2025-06-09 22:08:43 | 2025-06-09 22:10:46 | <span style="color:#fff;background-color:#f39c12">123 [2.05 min]</span> |
-| platform-keycloak | 2025-06-09 21:59:29 | 2025-06-09 22:01:28 | <span style="color:#fff;background-color:#f39c12">119 [1.98 min]</span> |
-| infra-managers | 2025-06-09 22:24:29 | 2025-06-09 22:26:26 | <span style="color:#fff;background-color:#f39c12">117 [1.95 min]</span> |
-| kyverno | 2025-06-09 21:56:54 | 2025-06-09 21:58:51 | <span style="color:#fff;background-color:#f39c12">117 [1.95 min]</span> |
-| cluster-manager | 2025-06-09 22:19:03 | 2025-06-09 22:20:59 | <span style="color:#fff;background-color:#f39c12">116 [1.93 min]</span> |
-| sre-exporter | 2025-06-09 22:18:56 | 2025-06-09 22:20:48 | <span style="color:#fff;background-color:#f39c12">112 [1.87 min]</span> |
-| prometheus-crd | 2025-06-09 21:56:56 | 2025-06-09 21:58:36 | <span style="color:#fff;background-color:#f39c12">100 [1.67 min]</span> |
-| cluster-connect-gateway | 2025-06-09 22:19:03 | 2025-06-09 22:20:41 | <span style="color:#fff;background-color:#f39c12">98 [1.63 min]</span> |
-| app-service-proxy | 2025-06-09 22:24:29 | 2025-06-09 22:26:06 | <span style="color:#fff;background-color:#f39c12">97 [1.62 min]</span> |
-| metadata-broker | 2025-06-09 22:18:56 | 2025-06-09 22:20:28 | <span style="color:#fff;background-color:#f39c12">92 [1.53 min]</span> |
+| root-app | 2025-06-09 21:56:24 | 2025-06-09 22:34:25 | 2281 [38.02 min] (critical) |
+| postgresql-secrets | 2025-06-09 21:58:49 | 2025-06-09 22:34:09 | 2120 [35.33 min] (critical) |
+| secrets-config | 2025-06-09 22:00:43 | 2025-06-09 22:34:24 | 2021 [33.68 min] (critical) |
+| tenancy-api-mapping | 2025-06-09 22:11:55 | 2025-06-09 22:33:00 | 1265 [21.08 min] (critical) |
+| tenancy-datamodel | 2025-06-09 22:11:55 | 2025-06-09 22:32:50 | 1255 [20.92 min] (critical) |
+| edgenode-observability | 2025-06-09 22:02:00 | 2025-06-09 22:07:47 | 347 [5.78 min] (critical) |
+| orchestrator-observability | 2025-06-09 22:02:00 | 2025-06-09 22:07:40 | 340 [5.67 min] (critical) |
+| fleet-crd | 2025-06-09 22:08:11 | 2025-06-09 22:13:21 | 310 [5.17 min] (critical) |
+| harbor-oci | 2025-06-09 22:02:00 | 2025-06-09 22:07:00 | 300 [5.0 min] (critical) |
+| orchestrator-prometheus-agent | 2025-06-09 22:02:01 | 2025-06-09 22:06:08 | 247 [4.12 min] (critical) |
+| capi-operator | 2025-06-09 22:02:00 | 2025-06-09 22:05:34 | 214 [3.57 min] (critical) |
+| app-deployment-crd | 2025-06-09 22:18:56 | 2025-06-09 22:22:16 | 200 [3.33 min] (critical) |
+| infra-onboarding | 2025-06-09 22:24:29 | 2025-06-09 22:27:17 | 168 [2.8 min] (critical) |
+| alerting-monitor | 2025-06-09 22:17:43 | 2025-06-09 22:20:29 | 166 [2.77 min] (critical) |
+| infra-external | 2025-06-09 22:24:29 | 2025-06-09 22:27:15 | 166 [2.77 min] (critical) |
+| app-resource-manager | 2025-06-09 22:24:29 | 2025-06-09 22:27:04 | 155 [2.58 min] (critical) |
+| app-deployment-manager | 2025-06-09 22:24:29 | 2025-06-09 22:26:49 | 140 [2.33 min] (warning) |
+| infra-core | 2025-06-09 22:18:56 | 2025-06-09 22:21:09 | 133 [2.22 min] (warning) |
+| intel-infra-provider | 2025-06-09 22:24:30 | 2025-06-09 22:26:42 | 132 [2.2 min] (warning) |
+| ingress-nginx | 2025-06-09 22:08:43 | 2025-06-09 22:10:46 | 123 [2.05 min] (warning) |
+| platform-keycloak | 2025-06-09 21:59:29 | 2025-06-09 22:01:28 | 119 [1.98 min] (warning) |
+| infra-managers | 2025-06-09 22:24:29 | 2025-06-09 22:26:26 | 117 [1.95 min] (warning) |
+| kyverno | 2025-06-09 21:56:54 | 2025-06-09 21:58:51 | 117 [1.95 min] (warning) |
+| cluster-manager | 2025-06-09 22:19:03 | 2025-06-09 22:20:59 | 116 [1.93 min] (warning) |
+| sre-exporter | 2025-06-09 22:18:56 | 2025-06-09 22:20:48 | 112 [1.87 min] (warning) |
+| prometheus-crd | 2025-06-09 21:56:56 | 2025-06-09 21:58:36 | 100 [1.67 min] (warning) |
+| cluster-connect-gateway | 2025-06-09 22:19:03 | 2025-06-09 22:20:41 | 98 [1.63 min] (warning) |
+| app-service-proxy | 2025-06-09 22:24:29 | 2025-06-09 22:26:06 | 97 [1.62 min] (warning) |
+| metadata-broker | 2025-06-09 22:18:56 | 2025-06-09 22:20:28 | 92 [1.53 min] (warning) |
 | istiod | 2025-06-09 21:58:22 | 2025-06-09 21:59:51 | 89 [1.48 min] |
 | cert-manager | 2025-06-09 21:56:52 | 2025-06-09 21:58:14 | 82 [1.37 min] |
 | metallb | 2025-06-09 21:56:53 | 2025-06-09 21:58:07 | 74 [1.23 min] |
