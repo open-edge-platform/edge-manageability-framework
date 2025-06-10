@@ -37,11 +37,10 @@ func configureGlobal() *huh.Group {
 			Title("Scale").
 			Description("Select target scale").
 			Options(
-				huh.NewOption("1~10 Edge Nodes", config.Scale10),
-				huh.NewOption("10~100 Edge Nodes", config.Scale100),
+				huh.NewOption("1~50 Edge Nodes", config.Scale50),
+				huh.NewOption("50~100 Edge Nodes", config.Scale100),
 				huh.NewOption("100-500 Edge Nodes", config.Scale500),
 				huh.NewOption("500-1000 Edge Nodes", config.Scale1000),
-				huh.NewOption("1000-10000 Edge Nodes", config.Scale10000),
 			).
 			Value(&input.Global.Scale),
 	).Title("Step 1: Global Settings\n")
@@ -82,7 +81,7 @@ func confirmAwsExpert() *huh.Group {
 			Negative("Skip").
 			Value(&flags.ConfigureAwsExpert),
 	).WithHideFunc(func() bool {
-		return flags.ExpertMode || input.Provider != "aws"
+		return input.Provider != "aws"
 	}).Title("Step 3b: (Optional) AWS Expert Configurations\n")
 }
 
@@ -103,9 +102,21 @@ func configureAwsExpert() *huh.Group {
 		huh.NewInput().
 			Title("Jump Host Whitelist").
 			Description("(Optional) Comma-separated CIDR. Traffic from these CIDRs will be allowed to access the jump host").
-			Placeholder("10.0.0.0/8").
+			Placeholder("10.0.0.0/8, 192.168.0.0/16").
 			Validate(validateAwsJumpHostWhitelist).
 			Value(&tmpJumpHostWhitelist),
+		huh.NewInput().
+			Title("Jump Host IP").
+			Description("(Optional) Jump host IP if it is created outside of installer in advance").
+			Placeholder("10.20.30.1").
+			Validate(validateOptionalIP).
+			Value(&input.AWS.JumpHostIP),
+		huh.NewInput().
+			Title("Jump Host SSH Private Key Path").
+			Description("(Optional) Path to jump host SSH private key if it is created outside of installer in advance").
+			Placeholder("id_rsa").
+			Validate(validateJumpHostPrivKeyPath).
+			Value(&input.AWS.JumpHostPrivKeyPath),
 		huh.NewInput().
 			Title("VPC ID").
 			Description("(Optional) Enter VPC ID if you prefer to reuse existing VPC instead of letting us create one").
@@ -124,8 +135,14 @@ func configureAwsExpert() *huh.Group {
 			Placeholder("").
 			Validate(validateAwsEksDnsIp).
 			Value(&input.AWS.EKSDNSIP),
+		huh.NewInput().
+			Title("EKS IAM Roles").
+			Description("(Optional) Comma-separated EKS IAM Roles if you want to allow other roles to access this cluster").
+			Placeholder("").
+			Validate(validateAwsEKSIAMRoles).
+			Value(&tmpEKSIAMRoles),
 	).WithHideFunc(func() bool {
-		return input.Provider != "aws" || (!flags.ExpertMode && !flags.ConfigureAwsExpert)
+		return input.Provider != "aws" || !flags.ConfigureAwsExpert
 	}).Title("Step 3b: (Optional) AWS Expert Configurations\n")
 }
 
@@ -135,19 +152,19 @@ func configureOnPremBasic() *huh.Group {
 			Title("Argo CD IP Address").
 			Description("This is the IP address of Argo CD.").
 			Placeholder("192.168.1.1").
-			Validate(validateIp).
+			Validate(validateIP).
 			Value(&input.Onprem.ArgoIP),
 		huh.NewInput().
 			Title("Traefik IP Address").
 			Description("This is the IP address of Traefik.").
 			Placeholder("192.168.1.2").
-			Validate(validateIp).
+			Validate(validateIP).
 			Value(&input.Onprem.TraefikIP),
 		huh.NewInput().
 			Title("NGINX IP Address").
 			Description("This is the IP address of NGINX.").
 			Placeholder("192.168.1.3").
-			Validate(validateIp).
+			Validate(validateIP).
 			Value(&input.Onprem.NginxIP),
 	).WithHideFunc(func() bool {
 		return input.Provider != "onprem"
@@ -163,7 +180,7 @@ func confirmOnPremExpert() *huh.Group {
 			Negative("Skip").
 			Value(&flags.ConfigureOnPremExpert),
 	).WithHideFunc(func() bool {
-		return flags.ExpertMode || input.Provider != "onprem"
+		return input.Provider != "onprem"
 	}).Title("Step 3b: (Optional) OnPrem Expert Configurations\n")
 }
 
@@ -180,7 +197,7 @@ func configureOnPremExpert() *huh.Group {
 			Placeholder("").
 			Value(&input.Onprem.DockerToken),
 	).WithHideFunc(func() bool {
-		return input.Provider != "onprem" || (!flags.ExpertMode && !flags.ConfigureOnPremExpert)
+		return input.Provider != "onprem" || !flags.ConfigureOnPremExpert
 	}).Title("Step 3b: (Optional) On-Prem Expert Configurations\n")
 }
 
@@ -193,7 +210,7 @@ func confirmProxy() *huh.Group {
 			Negative("Skip").
 			Value(&flags.ConfigureProxy),
 	).WithHideFunc(func() bool {
-		return flags.ExpertMode
+		return false
 	}).Title("Step 4: (Optional) Proxy\n")
 }
 
@@ -216,7 +233,7 @@ func configureProxy() *huh.Group {
 			Description("(Optional) EMF SOCKS proxy to be used for all outbound traffic").
 			Placeholder("").
 			Validate(validateProxy).
-			Value(&input.Proxy.SocksProxy),
+			Value(&input.Proxy.SOCKSProxy),
 		huh.NewInput().
 			Title("EMF No Proxy").
 			Description("(Optional) Comma separated list of domains that should not use the proxy for EMF").
@@ -246,7 +263,7 @@ func configureProxy() *huh.Group {
 			Description("(Optional) Edge Node SOCKS proxy to be used for all outbound traffic").
 			Placeholder("").
 			Validate(validateProxy).
-			Value(&input.Proxy.ENSocksProxy),
+			Value(&input.Proxy.ENSOCKSProxy),
 		huh.NewInput().
 			Title("Edge Node No Proxy").
 			Description("(Optional) Comma separated list of domains that should not use the proxy by Edge Nodes").
@@ -254,7 +271,7 @@ func configureProxy() *huh.Group {
 			Validate(validateNoProxy).
 			Value(&input.Proxy.ENNoProxy),
 	).WithHideFunc(func() bool {
-		return !flags.ExpertMode && !flags.ConfigureProxy
+		return !flags.ConfigureProxy
 	}).Title("Step 4: (Optional) Proxy\n")
 }
 
@@ -267,7 +284,7 @@ func confirmCert() *huh.Group {
 			Negative("Skip").
 			Value(&flags.ConfigureCert),
 	).WithHideFunc(func() bool {
-		return flags.ExpertMode
+		return false
 	}).Title("Step 5: (Optional) TLS Certificate\n")
 }
 
@@ -292,7 +309,7 @@ func configureCert() *huh.Group {
 			Validate(validateTlsCa).
 			Value(&input.Cert.TLSCA),
 	).WithHideFunc(func() bool {
-		return !flags.ExpertMode && !flags.ConfigureCert
+		return !flags.ConfigureCert
 	}).Title("Step 5: (Optional) TLS Certificate\n")
 }
 
@@ -305,7 +322,7 @@ func confirmSre() *huh.Group {
 			Negative("Skip").
 			Value(&flags.ConfigureSre),
 	).WithHideFunc(func() bool {
-		return flags.ExpertMode
+		return false
 	}).Title("Step 6: (Optional) Site Reliability Engineering (SRE)\n")
 }
 
@@ -335,7 +352,7 @@ func configureSre() *huh.Group {
 			Validate(validateSreCaSecret).
 			Value(&input.SRE.CASecret),
 	).WithHideFunc(func() bool {
-		return !flags.ExpertMode && !flags.ConfigureCert
+		return !flags.ConfigureCert
 	}).Title("Step 6: (Optional) Site Reliability Engineering (SRE)\n")
 }
 
@@ -348,7 +365,7 @@ func confirmSmtp() *huh.Group {
 			Negative("Skip").
 			Value(&flags.ConfigureSmtp),
 	).WithHideFunc(func() bool {
-		return flags.ExpertMode
+		return false
 	}).Title("Step 7: (Optional) Email Notification\n")
 }
 
@@ -384,7 +401,7 @@ func configureSmtp() *huh.Group {
 			Validate(validateSmtpFrom).
 			Value(&input.SMTP.From),
 	).WithHideFunc(func() bool {
-		return !flags.ExpertMode && !flags.ConfigureSmtp
+		return !flags.ConfigureSmtp
 	}).Title("Step 7: (Optional) Email Notification\n")
 }
 
@@ -422,7 +439,8 @@ func simpleMode() *huh.Group {
 	slices.SortFunc(packageList, func(a, b struct {
 		Name    string
 		Package config.OrchPackage
-	}) int {
+	},
+	) int {
 		return strings.Compare(a.Package.Name, b.Package.Name)
 	})
 	for _, item := range packageList {
@@ -463,7 +481,8 @@ func advancedMode() *huh.Group {
 	slices.SortFunc(appList, func(a, b struct {
 		Name string
 		App  config.OrchApp
-	}) int {
+	},
+	) int {
 		return strings.Compare(a.App.Name, b.App.Name)
 	})
 	for _, item := range appList {
