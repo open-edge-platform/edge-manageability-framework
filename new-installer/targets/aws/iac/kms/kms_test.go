@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	aws_sdk "github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
@@ -112,6 +113,7 @@ func (s *KMSTestSuite) TestApplyingModule() {
 	defer terraform.Destroy(s.T(), terraformOptions)
 
 	terraform.InitAndApply(s.T(), terraformOptions)
+	time.Sleep(time.Second * 300)
 
 	// Verify that the IAM User for Vault was created
 	iamClient, err := aws.NewIamClientE(s.T(), "us-west-2")

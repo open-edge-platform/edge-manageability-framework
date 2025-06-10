@@ -120,6 +120,29 @@ func (s *KMSStep) PreStep(ctx context.Context, config config.OrchInstallerConfig
 		}
 	}
 
+	rmErr := s.TerraformUtility.RemoveStates(ctx, steps.TerraformUtilityRemoveStatesInput{
+		ModulePath: modulePath,
+		States: []string{
+			"module.eks",
+			"module.efs",
+			"module.aurora",
+			"module.aurora_database",
+			"module.aurora_import",
+			"module.s3",
+			"module.orch_init",
+			"module.eks_auth",
+			"module.ec2log",
+			"module.aws_lb_controller",
+			"module.gitea",
+		},
+	})
+	if rmErr != nil {
+		return runtimeState, &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeInternal,
+			ErrorMsg:  fmt.Sprintf("failed to remove Terraform states: %v", rmErr),
+		}
+	}
+
 	return runtimeState, nil
 }
 
@@ -133,7 +156,7 @@ func (s *KMSStep) RunStep(ctx context.Context, config config.OrchInstallerConfig
 		KeepGeneratedFiles: s.KeepGeneratedFiles,
 	}
 	fmt.Printf("Running Terraform util %s with input: %+v\n", s.TerraformUtility, terraformStepInput)
-	terraformStepOutput, err := s.TerraformUtility.Run(ctx, terraformStepInput)
+	_, err := s.TerraformUtility.Run(ctx, terraformStepInput)
 	if err != nil {
 		return runtimeState, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeTerraform,
@@ -142,9 +165,6 @@ func (s *KMSStep) RunStep(ctx context.Context, config config.OrchInstallerConfig
 	}
 	if runtimeState.Action == "uninstall" {
 		return runtimeState, nil
-	}
-	if terraformStepOutput.Output != nil {
-		fmt.Println("Terraform Output:")
 	}
 	return runtimeState, nil
 }
