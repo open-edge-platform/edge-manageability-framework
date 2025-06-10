@@ -103,7 +103,7 @@ func (s *ACMImportTest) TestInstallAndUninstallACM() {
 		s.NoError(err)
 		return
 	}
-	s.Equal("acm-12345678", rs.AWS.CertID)
+	s.Equal("acm-12345678", rs.AWS.ACMCertArn)
 
 	s.runtimeState.Action = "uninstall"
 	s.expectUtiliyCall("uninstall")
@@ -122,7 +122,7 @@ func (s *ACMImportTest) TestUpgradeACM() {
 		s.NoError(err)
 		return
 	}
-	s.Equal("acm-12345678", rs.AWS.CertID)
+	s.Equal("acm-12345678", rs.AWS.ACMCertArn)
 }
 
 func (s *ACMImportTest) expectUtiliyCall(action string) {
@@ -145,16 +145,15 @@ func (s *ACMImportTest) expectUtiliyCall(action string) {
 			Bucket: fmt.Sprintf("%s-%s", s.config.Global.OrchName, s.runtimeState.DeploymentID),
 			Key:    "acm.tfstate",
 		},
-
 		TerraformState: "",
 	}
 	if action == "install" {
 		s.tfUtility.On("Run", mock.Anything, input).Return(steps.TerraformUtilityOutput{
 			TerraformState: "",
 			Output: map[string]tfexec.OutputMeta{
-				"cert": {
+				"certArn": {
 					Type:  json.RawMessage(`"string"`),
-					Value: json.RawMessage(`acm-12345678"`),
+					Value: json.RawMessage(`"acm-12345678"`),
 				},
 			},
 		}, nil).Once()
@@ -163,9 +162,9 @@ func (s *ACMImportTest) expectUtiliyCall(action string) {
 		s.tfUtility.On("Run", mock.Anything, input).Return(steps.TerraformUtilityOutput{
 			TerraformState: "",
 			Output: map[string]tfexec.OutputMeta{
-				"cert": {
+				"certArn": {
 					Type:  json.RawMessage(`"string"`),
-					Value: json.RawMessage(`acm-12345678"`),
+					Value: json.RawMessage(`"acm-12345678"`),
 				},
 			},
 		}, nil).Once()
@@ -173,7 +172,7 @@ func (s *ACMImportTest) expectUtiliyCall(action string) {
 		s.awsUtility.On("S3CopyToS3",
 			s.config.AWS.Region,
 			s.config.AWS.PreviousS3StateBucket,
-			fmt.Sprintf("%s/acm_import/%s", s.config.AWS.Region, s.config.Global.OrchName),
+			fmt.Sprintf("%s/orch-load-balancer/%s", s.config.AWS.Region, s.config.Global.OrchName),
 			s.config.AWS.Region,
 			s.config.Global.OrchName+"-"+s.runtimeState.DeploymentID,
 			"acm.tfstate",

@@ -28,7 +28,7 @@ const (
 	ACMBackendBucketKey = "acm.tfstate"
 )
 
-var AWSACMStepLabels = []string{
+var acmStepLabels = []string{
 	"aws",
 	"acm_import",
 }
@@ -61,7 +61,6 @@ type ImportCertificateToACMStep struct {
 	RootPath           string
 	KeepGeneratedFiles bool
 	TerraformUtility   steps.TerraformUtility
-	StepLabels         []string
 	AWSUtility         AWSUtility
 }
 
@@ -71,7 +70,6 @@ func CreateImportCertificateToACMStep(rootPath string, keepGeneratedFiles bool, 
 		KeepGeneratedFiles: keepGeneratedFiles,
 		TerraformUtility:   terraformUtility,
 		AWSUtility:         awsUtility,
-		StepLabels:         AWSACMStepLabels,
 	}
 }
 
@@ -80,16 +78,10 @@ func (s *ImportCertificateToACMStep) Name() string {
 }
 
 func (s *ImportCertificateToACMStep) Labels() []string {
-	return s.StepLabels
+	return acmStepLabels
 }
 
 func (s *ImportCertificateToACMStep) ConfigStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
-	if config.AWS.CustomerTag == "" {
-		return runtimeState, &internal.OrchInstallerError{
-			ErrorCode: internal.OrchInstallerErrorCodeInvalidArgument,
-			ErrorMsg:  "CustomerTag is not set",
-		}
-	}
 	if config.AWS.Region == "" {
 		return runtimeState, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInvalidArgument,
@@ -97,25 +89,32 @@ func (s *ImportCertificateToACMStep) ConfigStep(ctx context.Context, config conf
 		}
 	}
 
-	// Generate TLS Certificate and Private Key if not provided
-	if config.Cert.TLSCert == "" || config.Cert.TLSCA == "" || config.Cert.TLSKey == "" {
-		tlsCert, tlsCA, tlsKey, err := GenerateSelfSignedTLSCert(config.Global.OrchName)
-		if err != nil {
-			return runtimeState, &internal.OrchInstallerError{
-				ErrorCode: internal.OrchInstallerErrorCodeInternal,
-				ErrorMsg:  fmt.Sprintf("failed to generate self-signed TLS certificate: %v", err),
+	// Previous step(let's encrypt step) might generate TLS certificate and private key, so we need to check if they are set.
+	if runtimeState.Cert.TLSCert == "" || runtimeState.Cert.TLSCA == "" || runtimeState.Cert.TLSKey == "" {
+		if config.Cert.TLSCert != "" || config.Cert.TLSCA != "" || config.Cert.TLSKey != "" {
+			runtimeState.Cert.TLSCert = config.Cert.TLSCert
+			runtimeState.Cert.TLSCA = config.Cert.TLSCA
+			runtimeState.Cert.TLSKey = config.Cert.TLSKey
+		} else {
+			// Generate TLS Certificate and Private Key if not provided
+			tlsCert, tlsCA, tlsKey, err := GenerateSelfSignedTLSCert(config.Global.OrchName)
+			if err != nil {
+				return runtimeState, &internal.OrchInstallerError{
+					ErrorCode: internal.OrchInstallerErrorCodeInternal,
+					ErrorMsg:  fmt.Sprintf("failed to generate self-signed TLS certificate: %v", err),
+				}
 			}
+			runtimeState.Cert.TLSCert = tlsCert
+			runtimeState.Cert.TLSCA = tlsCA
+			runtimeState.Cert.TLSKey = tlsKey
 		}
-		config.Cert.TLSCert = tlsCert
-		config.Cert.TLSCA = tlsCA
-		config.Cert.TLSKey = tlsKey
 	}
 
 	s.variables = NewDefaultACMVariables()
 	s.variables = ACMVariables{
-		CertificateBody:  config.Cert.TLSCert,
-		CertificateChain: config.Cert.TLSCA,
-		PrivateKey:       config.Cert.TLSKey,
+		CertificateBody:  runtimeState.Cert.TLSCert,
+		CertificateChain: runtimeState.Cert.TLSCA,
+		PrivateKey:       runtimeState.Cert.TLSKey,
 		ClusterName:      config.Global.OrchName,
 		CustomerTag:      config.AWS.CustomerTag,
 		Region:           config.AWS.Region,
@@ -210,13 +209,13 @@ func (s *ImportCertificateToACMStep) RunStep(ctx context.Context, config config.
 		return runtimeState, nil
 	}
 	if terraformStepOutput.Output != nil {
-		if acmCertMeta, ok := terraformStepOutput.Output["cert"]; !ok {
+		if acmCertMeta, ok := terraformStepOutput.Output["certArn"]; !ok {
 			return runtimeState, &internal.OrchInstallerError{
 				ErrorCode: internal.OrchInstallerErrorCodeTerraform,
 				ErrorMsg:  "The ACM certificate does not exist in terraform output",
 			}
 		} else {
-			runtimeState.AWS.CertID = strings.Trim(string(acmCertMeta.Value), "\"")
+			runtimeState.AWS.ACMCertArn = strings.Trim(string(acmCertMeta.Value), "\"")
 		}
 	} else {
 		return runtimeState, &internal.OrchInstallerError{
@@ -238,7 +237,7 @@ func (s *ImportCertificateToACMStep) PostStep(ctx context.Context, config config
 // This approach is typical for development, testing, or internal use where a trusted CA is not required.
 func GenerateSelfSignedTLSCert(commonName string) (tlsCertPEM string, tlsCAPEM string, keyPEM string, err error) {
 	// Generate CA private key
-	caPriv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	caPriv, err := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
 	if err != nil {
 		return "", "", "", err
 	}

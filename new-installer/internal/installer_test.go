@@ -237,7 +237,7 @@ func (s *OrchInstallerTest) TestUpdateRuntimeState() {
 	newRuntimeState.AWS.JumpHostSSHKeyPrivateKey = "random10"
 	newRuntimeState.Cert.TLSCert = "random4"
 	newRuntimeState.Cert.TLSKey = "random5"
-	newRuntimeState.Cert.TLSCa = "random6"
+	newRuntimeState.Cert.TLSCA = "random6"
 
 	err := internal.UpdateRuntimeState(&runtimeState, newRuntimeState)
 	if err != nil {
@@ -252,7 +252,7 @@ func (s *OrchInstallerTest) TestUpdateRuntimeState() {
 	s.Equal(runtimeState.AWS.KubeConfig, newRuntimeState.AWS.KubeConfig)
 	s.Equal(runtimeState.Cert.TLSCert, newRuntimeState.Cert.TLSCert)
 	s.Equal(runtimeState.Cert.TLSKey, newRuntimeState.Cert.TLSKey)
-	s.Equal(runtimeState.Cert.TLSCa, newRuntimeState.Cert.TLSCa)
+	s.Equal(runtimeState.Cert.TLSCA, newRuntimeState.Cert.TLSCA)
 	s.Equal(runtimeState.AWS.CacheRegistry, newRuntimeState.AWS.CacheRegistry)
 	s.Equal(runtimeState.AWS.VPCID, newRuntimeState.AWS.VPCID)
 	s.Equal(runtimeState.AWS.PublicSubnetIDs, newRuntimeState.AWS.PublicSubnetIDs)
