@@ -73,7 +73,6 @@ runs:
         echo "Deploying full Orchestrator setup..."
         mage deploy:kindAll
       fi
-      mage deploy:kindAll
       echo "Orchestrator deployment done!"
   - name: Get Root App Status
     shell: bash
