@@ -16,14 +16,11 @@ import (
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps"
+	steps_aws "github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps/aws"
 )
 
 type SshuttleStep struct {
-	ShellUtility    steps.ShellUtility
-	JumphostKey     string
-	JumphostIP      string
-	RemoteCIDRBlock string
-	SshuttlePID     string
+	ShellUtility steps.ShellUtility
 }
 
 var sshuttleStepLabels = []string{"common", "sshuttle"}
@@ -87,7 +84,12 @@ func (s *SshuttleStep) PreStep(ctx context.Context, config config.OrchInstallerC
 		}
 		log.Println("Stopped existing sshuttle process.")
 	}
-
+	if runtimeState.AWS.JumpHostSSHKeyPrivateKey == "" {
+		return runtimeState, &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeInternal,
+			ErrorMsg:  "Jump host SSH private key is not set in the runtime state.",
+		}
+	}
 	return runtimeState, nil
 }
 
@@ -101,7 +103,7 @@ func (s *SshuttleStep) RunStep(ctx context.Context, config config.OrchInstallerC
 			ErrorMsg:  fmt.Sprintf("failed to create temporary private key file: %v", err),
 		}
 	}
-	if _, err := privateKeyFile.WriteString(s.JumphostKey); err != nil {
+	if _, err := privateKeyFile.WriteString(runtimeState.AWS.JumpHostSSHKeyPrivateKey); err != nil {
 		return runtimeState, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInternal,
 			ErrorMsg:  fmt.Sprintf("failed to write private key to temporary file: %v", err),
@@ -137,7 +139,20 @@ func (s *SshuttleStep) RunStep(ctx context.Context, config config.OrchInstallerC
 
 	if config.Proxy.SOCKSProxy != "" {
 		_, err := s.ShellUtility.Run(ctx, steps.ShellUtilityInput{
-			Command:         []string{"sshuttle", "--pidfile", pidFile.Name(), "-D", "-e", fmt.Sprintf("ssh -o ProxyCommand='nc -x %s %%h %%p' -i %s -o StrictHostKeyChecking=no", config.Proxy.SOCKSProxy, privateKeyFile.Name()), "-r", fmt.Sprintf("ubuntu@%s", s.JumphostIP), s.RemoteCIDRBlock},
+			Command: []string{
+				"sshuttle",
+				"--pidfile",
+				pidFile.Name(),
+				"-D",
+				"-e",
+				fmt.Sprintf(
+					"ssh -o ProxyCommand='nc -x %s %%h %%p' -i %s -o StrictHostKeyChecking=no",
+					config.Proxy.SOCKSProxy, privateKeyFile.Name(),
+				),
+				"-r",
+				fmt.Sprintf("ubuntu@%s", runtimeState.AWS.JumpHostIP),
+				steps_aws.DefaultNetworkCIDR,
+			},
 			Timeout:         60,
 			SkipError:       false,
 			RunInBackground: false, // We use -D flag to run in the background
@@ -150,7 +165,17 @@ func (s *SshuttleStep) RunStep(ctx context.Context, config config.OrchInstallerC
 		}
 	} else {
 		_, err := s.ShellUtility.Run(ctx, steps.ShellUtilityInput{
-			Command:         []string{"sshuttle", "--pidfile", pidFile.Name(), "-D", "-r", fmt.Sprintf("ubuntu@%s", s.JumphostIP), "--ssh-cmd", fmt.Sprintf("ssh -i %s -o StrictHostKeyChecking=no", privateKeyFile.Name()), s.RemoteCIDRBlock},
+			Command: []string{
+				"sshuttle",
+				"--pidfile",
+				pidFile.Name(),
+				"-D",
+				"-r",
+				fmt.Sprintf("ubuntu@%s", runtimeState.AWS.JumpHostIP),
+				"--ssh-cmd",
+				fmt.Sprintf("ssh -i %s -o StrictHostKeyChecking=no", privateKeyFile.Name()),
+				steps_aws.DefaultNetworkCIDR,
+			},
 			Timeout:         60,
 			SkipError:       false,
 			RunInBackground: false, // We use -D flag to run in the background
@@ -170,8 +195,7 @@ func (s *SshuttleStep) RunStep(ctx context.Context, config config.OrchInstallerC
 		log.Printf("Failed to read sshuttle PID file: %v", err)
 	} else {
 		log.Printf("sshuttle is running with PID: %s", strings.TrimSpace(string(pid)))
-		s.SshuttlePID = strings.TrimSpace(string(pid))
-		runtimeState.SshuttlePID = s.SshuttlePID
+		runtimeState.SshuttlePID = strings.TrimSpace(string(pid))
 	}
 	return runtimeState, nil
 }

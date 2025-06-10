@@ -28,16 +28,15 @@ func TestSshuttleSuite(t *testing.T) {
 func (suite *SshuttletestSuite) SetupTest() {
 	suite.shellUtilityMock = &ShellUtilityMock{}
 	suite.s = &steps_common.SshuttleStep{
-		JumphostKey:     "foo",
-		JumphostIP:      "10.0.0.1",
-		RemoteCIDRBlock: "10.250.0.0/24",
-		ShellUtility:    suite.shellUtilityMock,
+		ShellUtility: suite.shellUtilityMock,
 	}
 }
 
 func (suite *SshuttletestSuite) TestRunSshuttle() {
 	cfg := &config.OrchInstallerConfig{}
 	runtimeState := config.OrchInstallerRuntimeState{}
+	runtimeState.AWS.JumpHostIP = "10.0.0.1"
+	runtimeState.AWS.JumpHostSSHKeyPrivateKey = "foo"
 
 	expectCallsForCmdExists(suite.shellUtilityMock, "sudo", true)
 	expectCallsForCmdExists(suite.shellUtilityMock, "sshuttle", true)
