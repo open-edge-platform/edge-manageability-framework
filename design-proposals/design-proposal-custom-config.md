@@ -193,7 +193,7 @@ A new custom-config resource will be added to the Infra-core data model, which c
   ```
   The instance resource data-model has to be updated to include custom-config resource.
 
-  The relationship between an instance and its custom configuration can be many-to-many. Meaning instance can be associated with multiple custom-config. This can be considered for future implementation as this requires more effort and study of database handling. So for simplicity and faster implementation we can have relationship between an instance and its custom configuration to be one-to-many. Each instance can be associated with one custom configuration. The onboarding manager will create cloud-init file based on number of cloud-init file added by user. 
+  The relationship between an instance and its custom configuration can be many-to-many. Meaning instance can be associated with multiple custom-config. The onboarding manager will create cloud-init file based on number of cloud-init file added by user.
 
 #### 2. EIM API enahncement
 
