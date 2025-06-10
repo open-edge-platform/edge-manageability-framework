@@ -112,10 +112,10 @@ func (s *EC2LogStep) PreStep(ctx context.Context, config config.OrchInstallerCon
 	}
 
 	// Need to move Terraform state from old bucket to new bucket:
-	oldVPCBucketKey := fmt.Sprintf("%s/cluster/%s", config.AWS.Region, config.Global.OrchName)
+	oldEC2LogBucketKey := fmt.Sprintf("%s/ec2log/%s", config.AWS.Region, config.Global.OrchName)
 	err := s.AWSUtility.S3CopyToS3(config.AWS.Region,
 		config.AWS.PreviousS3StateBucket,
-		oldVPCBucketKey,
+		oldEC2LogBucketKey,
 		config.AWS.Region,
 		s.backendConfig.Bucket,
 		s.backendConfig.Key)
