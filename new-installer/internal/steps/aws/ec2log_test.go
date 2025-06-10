@@ -30,7 +30,7 @@ type EC2LogStepTest struct {
 	suite.Suite
 	config       config.OrchInstallerConfig
 	runtimeState config.OrchInstallerRuntimeState
-	step         *steps_aws.AWSEC2LogStep
+	step         *steps_aws.EC2LogStep
 	randomText   string
 	logDir       string
 	tfUtility    *MockTerraformUtility
@@ -65,7 +65,7 @@ func (s *EC2LogStepTest) SetupTest() {
 	}
 	s.tfUtility = &MockTerraformUtility{}
 	s.awsUtility = &MockAWSUtility{}
-	s.step = &steps_aws.AWSEC2LogStep{
+	s.step = &steps_aws.EC2LogStep{
 		RootPath:           rootPath,
 		KeepGeneratedFiles: true,
 		TerraformUtility:   s.tfUtility,
@@ -75,7 +75,7 @@ func (s *EC2LogStepTest) SetupTest() {
 
 func (s *EC2LogStepTest) TestInstallAndUninstallEC2Log() {
 	s.runtimeState.Action = "install"
-	s.expectTFUtiliyyCall("install")
+	s.expectTFUtiliyCall("install")
 	_, err := steps.GoThroughStepFunctions(s.step, &s.config, s.runtimeState)
 	if err != nil {
 		s.NoError(err)
@@ -83,20 +83,20 @@ func (s *EC2LogStepTest) TestInstallAndUninstallEC2Log() {
 	}
 
 	s.runtimeState.Action = "uninstall"
-	s.expectTFUtiliyyCall("uninstall")
+	s.expectTFUtiliyCall("uninstall")
 	_, err = steps.GoThroughStepFunctions(s.step, &s.config, s.runtimeState)
 	if err != nil {
 		s.NoError(err)
 	}
 }
 
-func (s *EC2LogStepTest) expectTFUtiliyyCall(action string) {
+func (s *EC2LogStepTest) expectTFUtiliyCall(action string) {
 	input := steps.TerraformUtilityInput{
 		Action:             action,
 		ModulePath:         filepath.Join(s.step.RootPath, steps_aws.EC2LogModulePath),
 		LogFile:            filepath.Join(s.logDir, "aws_ec2log.log"),
 		KeepGeneratedFiles: s.step.KeepGeneratedFiles,
-		Variables: steps_aws.AWSEC2logVariables{
+		Variables: steps_aws.EC2logVariables{
 			ClusterName:   s.config.Global.OrchName,
 			Region:        s.config.AWS.Region,
 			NodeGroupRole: s.runtimeState.AWS.NodeGroupRole,
@@ -110,13 +110,7 @@ func (s *EC2LogStepTest) expectTFUtiliyyCall(action string) {
 		},
 		TerraformState: "",
 	}
-	if action == "install" {
-		s.tfUtility.On("Run", mock.Anything, input).Return(steps.TerraformUtilityOutput{
-			TerraformState: "",
-		}, nil).Once()
-	} else {
-		s.tfUtility.On("Run", mock.Anything, input).Return(steps.TerraformUtilityOutput{
-			TerraformState: "",
-		}, nil).Once()
-	}
+	s.tfUtility.On("Run", mock.Anything, input).Return(steps.TerraformUtilityOutput{
+		TerraformState: "",
+	}, nil).Once()
 }

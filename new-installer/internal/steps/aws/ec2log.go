@@ -18,12 +18,12 @@ const (
 	EC2LogBackendBucketKey = "ec2log.tfstate"
 )
 
-var AWSEC2LOGStepLabels = []string{
+var EC2LOGStepLabels = []string{
 	"aws",
 	"ec2log",
 }
 
-type AWSEC2logVariables struct {
+type EC2logVariables struct {
 	ClusterName   string `json:"cluster_name" yaml:"cluster_name"`
 	NodeGroupRole string `json:"nodegroup_role" yaml:"nodegroup_role"`
 	S3Prefix      string `json:"s3_prefix" yaml:"s3_prefix"`
@@ -31,46 +31,44 @@ type AWSEC2logVariables struct {
 	CustomerTag   string `json:"customer_tag" yaml:"customer_tag"`
 }
 
-// NewDefaultAWSEC2LogVariables creates a new AWSEC2logVariables with default values
+// NewDefaultEC2LogVariables creates a new EC2logVariables with default values
 // based on variable.tf default definitions.
-func NewDefaultAWSEC2LogVariables() AWSEC2logVariables {
-	return AWSEC2logVariables{
+func NewDefaultEC2LogVariables() EC2logVariables {
+	return EC2logVariables{
 		S3Prefix:    "",
 		CustomerTag: "",
 	}
 }
 
-type AWSEC2LogStep struct {
-	variables          AWSEC2logVariables
+type EC2LogStep struct {
+	variables          EC2logVariables
 	backendConfig      TerraformAWSBucketBackendConfig
 	RootPath           string
 	KeepGeneratedFiles bool
-	StepLabels         []string
 	TerraformUtility   steps.TerraformUtility
 	AWSUtility         AWSUtility
 }
 
-func CreateAWSEC2LogStep(rootPath string, keepGeneratedFiles bool, terraformUtility steps.TerraformUtility, awsUtility AWSUtility) *AWSEC2LogStep {
-	return &AWSEC2LogStep{
+func CreateEC2LogStep(rootPath string, keepGeneratedFiles bool, terraformUtility steps.TerraformUtility, awsUtility AWSUtility) *EC2LogStep {
+	return &EC2LogStep{
 		RootPath:           rootPath,
 		KeepGeneratedFiles: keepGeneratedFiles,
 		TerraformUtility:   terraformUtility,
 		AWSUtility:         awsUtility,
-		StepLabels:         AWSEC2LOGStepLabels,
 	}
 }
 
-func (s *AWSEC2LogStep) Name() string {
-	return "AWSEC2LogStep"
+func (s *EC2LogStep) Name() string {
+	return "EC2LogStep"
 }
 
-func (s *AWSEC2LogStep) Labels() []string {
-	return s.StepLabels
+func (s *EC2LogStep) Labels() []string {
+	return EC2LOGStepLabels
 }
 
-func (s *AWSEC2LogStep) ConfigStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *EC2LogStep) ConfigStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	// no output to check if the EC2Log step is already created. Does it need to be added?
-	s.variables = NewDefaultAWSEC2LogVariables()
+	s.variables = NewDefaultEC2LogVariables()
 
 	if config.Global.OrchName == "" {
 		return runtimeState, &internal.OrchInstallerError{
@@ -107,14 +105,14 @@ func (s *AWSEC2LogStep) ConfigStep(ctx context.Context, config config.OrchInstal
 	return runtimeState, nil
 }
 
-func (s *AWSEC2LogStep) PreStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *EC2LogStep) PreStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	if config.AWS.PreviousS3StateBucket == "" {
 		// No need to migrate state, since there is no previous state bucket
 		return runtimeState, nil
 	}
 
 	// Need to move Terraform state from old bucket to new bucket:
-	oldVPCBucketKey := fmt.Sprintf("%s/ec2log/%s", config.AWS.Region, config.Global.OrchName)
+	oldVPCBucketKey := fmt.Sprintf("%s/cluster/%s", config.AWS.Region, config.Global.OrchName)
 	err := s.AWSUtility.S3CopyToS3(config.AWS.Region,
 		config.AWS.PreviousS3StateBucket,
 		oldVPCBucketKey,
@@ -161,10 +159,32 @@ func (s *AWSEC2LogStep) PreStep(ctx context.Context, config config.OrchInstaller
 		}
 	}
 
+	rmErr := s.TerraformUtility.RemoveStates(ctx, steps.TerraformUtilityRemoveStatesInput{
+		ModulePath: modulePath,
+		States: []string{
+			"module.s3",
+			"module.eks",
+			"module.aurora",
+			"module.aurora_database",
+			"module.aurora_import",
+			"module.kms",
+			"module.orch_init",
+			"module.eks_auth",
+			"module.efs",
+			"module.aws_lb_controller",
+			"module.gitea",
+		},
+	})
+	if rmErr != nil {
+		return runtimeState, &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeInternal,
+			ErrorMsg:  fmt.Sprintf("failed to remove Terraform states: %v", rmErr),
+		}
+	}
 	return runtimeState, nil
 }
 
-func (s *AWSEC2LogStep) RunStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *EC2LogStep) RunStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	terraformStepInput := steps.TerraformUtilityInput{
 		Action:             runtimeState.Action,
 		ModulePath:         filepath.Join(s.RootPath, EC2LogModulePath),
@@ -175,31 +195,16 @@ func (s *AWSEC2LogStep) RunStep(ctx context.Context, config config.OrchInstaller
 	}
 
 	_, err := s.TerraformUtility.Run(ctx, terraformStepInput)
-	// terraformStepOutput, err := s.TerraformUtility.Run(ctx, terraformStepInput)
 	if err != nil {
 		return runtimeState, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeTerraform,
 			ErrorMsg:  fmt.Sprintf("failed to run terraform: %v", err),
 		}
 	}
-	if runtimeState.Action == "uninstall" {
-		return runtimeState, nil
-	}
-	// to do: determine if any terraform output needs to be parsed, using pattern like below
-	/* if terraformStepOutput.Output != nil {
-		if vpcIDMeta, ok := terraformStepOutput.Output["vpc_id"]; !ok {
-			return runtimeState, &internal.OrchInstallerError{
-				ErrorCode: internal.OrchInstallerErrorCodeTerraform,
-				ErrorMsg:  "vpc_id does not exist in terraform output",
-			}
-		} else {
-			runtimeState.VPCID = strings.Trim(string(vpcIDMeta.Value), "\"")
-		}
-	} */
-
+	// No output to be parsed from ec2log Terraform module.
 	return runtimeState, nil
 }
 
-func (s *AWSEC2LogStep) PostStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState, prevStepError *internal.OrchInstallerError) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *EC2LogStep) PostStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState, prevStepError *internal.OrchInstallerError) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	return runtimeState, prevStepError
 }
