@@ -97,8 +97,12 @@ func (NewInstaller) Test() error {
 }
 
 // Test Terraform modules
+func (NewInstaller) TestAllIaC(module string) error {
+	return NewInstaller{}.TestIaC("")
+}
+
 // We will not include coverage analysis for IaC tests.
-func (NewInstaller) TestIaC() error {
+func (NewInstaller) TestIaC(module string) error {
 	if err := os.Chdir(rootDir); err != nil {
 		return fmt.Errorf("failed to change directory to %s: %w", rootDir, err)
 	}
@@ -108,14 +112,23 @@ func (NewInstaller) TestIaC() error {
 			fmt.Printf("Warning: failed to change back to root directory: %v\n", err)
 		}
 	}()
+	if module == "" {
+		if err := sh.RunV("ginkgo", "-v", "-r", "-p", "targets/aws/iac"); err != nil {
+			return err
+		}
+	}
+
+	modulePath := filepath.Join("targets", "aws", "iac", module)
+	if _, err := os.Stat(modulePath); os.IsNotExist(err) {
+		return fmt.Errorf("module %s does not exist in %s", module, modulePath)
+	}
 
 	// Run tests for the new installer, except for the AWS IaC tests
 	// Ginkgo flags:
 	// -v: verbose output
 	// -r: recursive test
 	// -p: parallel test
-	// --cover: enable coverage analysis
-	if err := sh.RunV("ginkgo", "-v", "-r", "-p", "targets/aws/iac"); err != nil {
+	if err := sh.RunV("ginkgo", "-v", "-r", "-p", modulePath); err != nil {
 		return err
 	}
 	return nil
