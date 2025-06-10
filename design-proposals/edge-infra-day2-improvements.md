@@ -20,7 +20,7 @@ currently defined in OS Profiles. Also, new requirements have been identified to
 improve the user experience and to track the day 2 operations, such as the
 versions of EMT a EN passed through its lifecycle.
 
-### Requirements:
+### Requirements
 
 - Improve UX for day 2 operations
 - Unify day 2 workflows between Mutable and Immutable OSes
@@ -80,7 +80,9 @@ Diagram](./schema_day2_changes.drawio.svg)
 > Design Proposal.
 
 Changes:
+
 - **OS Profile**:
+
   - `installed_packages`: field is used to track only packages installed at day
     0, for Immutable these come from the Manifest file published together with
     the EMT image. For Mutable, those are filled using the Ubuntu manifest file.
@@ -129,7 +131,7 @@ New Resources:
   - `kernel_commands`: list of kernel commands to be used during the update.
     This field is used only for Mutable OSes.
   - `update_policy`: enum field, defines which policy to use:
-    - `UPDATE_POLICY_LATEST`: upgrade to latest version. 
+    - `UPDATE_POLICY_LATEST`: upgrade to latest version.
       - mutable: upgrade all packages to latest versions, currently not
         supported, could be supported in the future.
       - immutable: upgrade the OS Profile version to the latest.
@@ -216,6 +218,7 @@ Since a OS Update Run resource will be created every time an update is triggered
 on the Edge Node, even if the update is a no-op. The size of the table can
 easily grow. To avoid this, we can implement a retention policy for the
 resources. The following retention policy is proposed:
+
 - User can delete OS Update Run resources via Northbound REST APIs.
 - By default, OS Update Run resources are kept for 30 days after the update is
   finished
@@ -225,6 +228,7 @@ resources. The following retention policy is proposed:
 #### Day 2 Workflows:
 
 Day2 update workflow for Mutable and Immutable OSes:
+
 ```mermaid
 sequenceDiagram
 %%{wrap}%%
@@ -266,6 +270,7 @@ autonumber
 ```
 
 Automatic Update of the Instance `os_updates_available` field:
+
 ```mermaid
 sequenceDiagram
 %%{wrap}%%
@@ -294,6 +299,7 @@ autonumber
 ```
 
 Installed packages filled in OSProfile and runtime packages in Instances:
+
 ```mermaid
 sequenceDiagram
 %%{wrap}%%
@@ -326,7 +332,8 @@ autonumber
 Given the above schema changes, we need to consider how we are going to support
 orchestrator updates and data migrations in the database.
 
-**Mutable OS** 
+**Mutable OS**
+
 - Any Mutable OSProfile with `update_sources`, `kernel_commands` or
   `installed_packages` fields set, needs to be migrated to the new schema by
   creating OSUpdatePolicy, filling the `install_packages`, `update_sources` and
@@ -341,6 +348,7 @@ orchestrator updates and data migrations in the database.
 > for OSProfile migrated from old orchestrator versions.
 
 **Immutable OSes**
+
   - For any Instance with a `desired_os` set that is different from the
     `current_os`, we must create a OSUpdatePolicy of type `POLICY_TARGET` with
     `target_os` equal to the `desired_os` and link it to the Instance.
@@ -378,6 +386,7 @@ picked `>=0.3.1, <0.4.0`.
 The following sequence diagram consider only one single OSProfile (EMT), the
 same approach applies to all other enabled OSProfiles. The `osProfileRevision`
 in the orchestrator is set to `~0.3.1`:
+
 ```mermaid
 sequenceDiagram
 %%{wrap}%%
@@ -407,6 +416,7 @@ autonumber
 ## Affected components and Teams
 
 Edge Infrastructure Manager:
+
 - **Inventory (inv)**: changes to the schema 
   1. OSProfile updates
   2. Instance updates
@@ -437,6 +447,7 @@ Edge Infrastructure Manager:
      in Inventory.
 
 Edge Node:
+
 - **Platform Update Agent (PUA)**:
   1. For mutable OSes, PUA needs to poll and check for new update to already
      installed packages, and reports back to the MM the new versions available
@@ -444,6 +455,7 @@ Edge Node:
      populate runtime packages on the Instance resource
 
 UI/CLI:
+
 1. Support for creation of OSUpdatePolicy via dedicated page to handle these
    resources
 2. Show History of the Instance, via the OSUpdateRun resources
@@ -465,9 +477,9 @@ desired_os.
 1. Schema and REST API changes (inv.\*, API.\*) with deprecated fields
 2. Update to Maintenance Manager (MM) to handle OSUpdatePolicy, and create and
    update OSUpdateRun (MM.i, MM.ii)
-3. UI/CLI support for OSUpdatePolicy (UI/CLI.1) - UI work is Tentative 
+3. UI/CLI support for OSUpdatePolicy (UI/CLI.1) - UI work is Tentative
 4. OSRM to poll Ubuntu Manifest (OSRM.ii)
-5. CLI support for OSUpdateRun (CLI.2) 
+5. CLI support for OSUpdateRun (CLI.2)
 6. New Integration tests
 7. Update to documentation for the new Day2 operations
 
