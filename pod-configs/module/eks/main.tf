@@ -134,7 +134,7 @@ data "aws_eks_cluster" "eks_cluster_data" {
 # Creating IAM role for EKS nodes to work with other AWS Services.
 resource "aws_iam_role" "eks_nodes" {
   name = local.eks_nodegroup_role_name
-
+  permissions_boundary = var.additional_permission_boundary
   assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
