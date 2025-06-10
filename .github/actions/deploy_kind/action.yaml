@@ -35,6 +35,8 @@ runs:
   - name: Checkout code
     uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
     with:
+      repository: open-edge-platform/edge-manageability-framework
+      ref: ${{ inputs.orch_version }}
       persist-credentials: false
 
   - name: Set up git credentials
