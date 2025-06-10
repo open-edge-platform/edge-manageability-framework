@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -18,6 +19,41 @@ type OrchConfigValidationTest struct {
 
 func TestConfigValidationSuite(t *testing.T) {
 	suite.Run(t, new(OrchConfigValidationTest))
+}
+
+func (s *OrchConfigValidationTest) TestValidateAll() {
+	input = config.OrchInstallerConfig{
+		Version:  1,
+		Provider: "aws", // or "onprem", depending on your use case
+		Global: struct {
+			OrchName     string       `yaml:"orchName"`
+			ParentDomain string       `yaml:"parentDomain"`
+			AdminEmail   string       `yaml:"adminEmail"`
+			Scale        config.Scale `yaml:"scale"`
+		}{
+			OrchName:     "demo",
+			ParentDomain: "example.com",
+			AdminEmail:   "admin@example.com",
+			Scale:        config.Scale(50),
+			// populate fields for Scale struct here
+		},
+		AWS: struct {
+			Region                string   `yaml:"region"`
+			CustomerTag           string   `yaml:"customerTag,omitempty"`
+			CacheRegistry         string   `yaml:"cacheRegistry,omitempty"`
+			JumpHostWhitelist     []string `yaml:"jumpHostWhitelist,omitempty"`
+			JumpHostIP            string   `yaml:"jumpHostIP,omitempty"`
+			JumpHostPrivKeyPath   string   `yaml:"jumpHostPrivKeyPath,omitempty"`
+			VPCID                 string   `yaml:"vpcID,omitempty"`
+			ReduceNSTTL           bool     `yaml:"reduceNSTTL,omitempty"` // TODO: do we need this?
+			EKSDNSIP              string   `yaml:"eksDNSIP,omitempty"`    // TODO: do we need this?
+			EKSIAMRoles           []string `yaml:"eksIAMRoles,omitempty"`
+			PreviousS3StateBucket string   `yaml:"previousS3StateBucket,omitempty"`
+		}{
+			Region: "us-west-2",
+		},
+	}
+	s.NoError(validateAll(), "expected no error for valid config")
 }
 
 func (s *OrchConfigValidationTest) TestValidateOrchName() {
@@ -78,7 +114,7 @@ func (s *OrchConfigValidationTest) TestValidateOrchName() {
 		s.Run(tt.name, func() {
 			err := validateOrchName(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 				if tt.errMsg != "" {
 					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
 				}
@@ -174,7 +210,7 @@ func (s *OrchConfigValidationTest) TestValidateParentDomain() {
 		s.Run(tt.name, func() {
 			err := validateParentDomain(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 				if tt.errMsg != "" {
 					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
 				}
@@ -281,7 +317,7 @@ func (s *OrchConfigValidationTest) TestValidateAdminEmail() {
 		s.Run(tt.name, func() {
 			err := validateAdminEmail(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 				if tt.errMsg != "" {
 					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
 				}
@@ -368,7 +404,7 @@ func (s *OrchConfigValidationTest) TestValidateAwsRegion() {
 		s.Run(tt.name, func() {
 			err := validateAwsRegion(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 				if tt.errMsg != "" {
 					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
 				}
@@ -416,7 +452,7 @@ func (s *OrchConfigValidationTest) TestValidateAwsCustomTag() {
 		s.Run(tt.name, func() {
 			err := validateAwsCustomTag(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 			} else {
 				s.NoError(err, "expected no error")
 			}
@@ -471,7 +507,7 @@ func (s *OrchConfigValidationTest) TestValidateCacheRegistry() {
 		s.Run(tt.name, func() {
 			err := validateCacheRegistry(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 			} else {
 				s.NoError(err, "expected no error")
 			}
@@ -531,7 +567,7 @@ func (s *OrchConfigValidationTest) TestValidateAwsJumpHostWhitelist() {
 		s.Run(tt.name, func() {
 			err := validateAwsJumpHostWhitelist(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 			} else {
 				s.NoError(err, "expected no error")
 			}
@@ -609,7 +645,7 @@ func (s *OrchConfigValidationTest) TestValidateAwsVpcId() {
 		s.Run(tt.name, func() {
 			err := validateAwsVpcId(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 				if tt.errMsg != "" {
 					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
 				}
@@ -684,7 +720,7 @@ func (s *OrchConfigValidationTest) TestValidateAwsEksDnsIp() {
 		s.Run(tt.name, func() {
 			err := validateAwsEksDnsIp(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 				if tt.errMsg != "" {
 					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
 				}
@@ -742,7 +778,7 @@ func (s *OrchConfigValidationTest) TestValidateProxy() {
 		s.Run(tt.name, func() {
 			err := validateProxy(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 			} else {
 				s.NoError(err, "expected no error")
 			}
@@ -876,7 +912,7 @@ func (s *OrchConfigValidationTest) TestValidateNoProxy() {
 		s.Run(tt.name, func() {
 			err := validateNoProxy(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 				if tt.errMsg != "" {
 					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
 				}
@@ -949,7 +985,7 @@ func (s *OrchConfigValidationTest) TestValidateSmtpUrl() {
 		s.Run(tt.name, func() {
 			err := validateSmtpUrl(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 			} else {
 				s.NoError(err, "expected no error")
 			}
@@ -1032,7 +1068,7 @@ func (s *OrchConfigValidationTest) TestValidateSmtpPort() {
 		s.Run(tt.name, func() {
 			err := validateSmtpPort(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 				if tt.errMsg != "" {
 					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
 				}
@@ -1105,7 +1141,7 @@ func (s *OrchConfigValidationTest) TestValidateSmtpFrom() {
 		s.Run(tt.name, func() {
 			err := validateSmtpFrom(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 			} else {
 				s.NoError(err, "expected no error")
 			}
@@ -1229,7 +1265,7 @@ func (s *OrchConfigValidationTest) TestValidateIP() {
 		s.Run(tt.name, func() {
 			err := validateIP(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 				if tt.errMsg != "" {
 					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
 				}
@@ -1243,7 +1279,7 @@ func (s *OrchConfigValidationTest) TestValidateIP() {
 		s.Run(tt.name, func() {
 			err := validateOptionalIP(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 				if tt.errMsg != "" {
 					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
 				}
@@ -1336,7 +1372,7 @@ func (s *OrchConfigValidationTest) TestValidateSimpleMode() {
 		s.Run(tt.name, func() {
 			err := validateSimpleMode(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 				if tt.errMsg != "" {
 					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
 				}
@@ -1384,7 +1420,7 @@ func (s *OrchConfigValidationTest) TestValidateAdvancedMode() {
 		s.Run(tt.name, func() {
 			err := validateAdvancedMode(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 			} else {
 				s.NoError(err, "expected no error")
 			}
@@ -1476,7 +1512,7 @@ func (s *OrchConfigValidationTest) TestValidateAwsEKSIAMRoles() {
 		s.Run(tt.name, func() {
 			err := validateAwsEKSIAMRoles(tt.input)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 				if tt.errMsg != "" {
 					s.Equal(tt.errMsg, err.Error(), "error message mismatch")
 				}
@@ -1489,7 +1525,7 @@ func (s *OrchConfigValidationTest) TestValidateAwsEKSIAMRoles() {
 
 func (s *OrchConfigValidationTest) TestValidateJumpHostPrivKeyPath() {
 	tmpFile, err := os.CreateTemp("", "privkey")
-	s.NoError(err, "Failed to create temp file")
+	s.Require().NoError(err, "Failed to create temp file")
 	defer os.Remove(tmpFile.Name())
 
 	tests := []struct {
@@ -1548,7 +1584,7 @@ func (s *OrchConfigValidationTest) TestValidateJumpHostPrivKeyPath() {
 			}
 			err := validateJumpHostPrivKeyPath(path)
 			if tt.wantErr {
-				s.Error(err, "expected an error but got nil")
+				s.Require().Error(err, "expected an error but got nil")
 				if tt.errMsg != "" {
 					s.Contains(err.Error(), tt.errMsg, "error message mismatch")
 				}
@@ -1656,8 +1692,9 @@ func TestValidateAwsEKSIAMRoles(t *testing.T) {
 		})
 	}
 }
+
 func TestValidateJumpHostPrivKeyPath(t *testing.T) {
-	tmpFile, err := os.CreateTemp("", "privkey")
+	tmpFile, err := os.CreateTemp(t.TempDir(), "privkey")
 	if err != nil {
 		t.Fatalf("failed to create temp file: %v", err)
 	}
@@ -1693,7 +1730,7 @@ func TestValidateJumpHostPrivKeyPath(t *testing.T) {
 		{
 			name: "env var expansion to existing file",
 			setup: func() string {
-				os.Setenv("PRIVKEY_PATH", tmpFile.Name())
+				t.Setenv("PRIVKEY_PATH", tmpFile.Name())
 				return "$PRIVKEY_PATH"
 			},
 			wantErr: false,
@@ -1701,7 +1738,7 @@ func TestValidateJumpHostPrivKeyPath(t *testing.T) {
 		{
 			name: "env var expansion to non-existent file",
 			setup: func() string {
-				os.Setenv("PRIVKEY_PATH", "/tmp/this_file_should_not_exist_987654321")
+				t.Setenv("PRIVKEY_PATH", "/tmp/this_file_should_not_exist_987654321")
 				return "$PRIVKEY_PATH"
 			},
 			wantErr: true,
