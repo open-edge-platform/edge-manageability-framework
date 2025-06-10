@@ -86,7 +86,7 @@ func (s *KMSStep) PreStep(ctx context.Context, config config.OrchInstallerConfig
 	}
 
 	// Need to move Terraform state from old bucket to new bucket:
-	oldKMSBucketKey := fmt.Sprintf("%s/kms/%s", config.AWS.Region, config.Global.OrchName)
+	oldKMSBucketKey := fmt.Sprintf("%s/cluster/%s", config.AWS.Region, config.Global.OrchName)
 	err := s.AWSUtility.S3CopyToS3(config.AWS.Region,
 		config.AWS.PreviousS3StateBucket,
 		oldKMSBucketKey,
