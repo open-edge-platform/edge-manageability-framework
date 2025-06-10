@@ -103,7 +103,7 @@ func (s *ACMImportTest) TestInstallAndUninstallACM() {
 		s.NoError(err)
 		return
 	}
-	s.Equal("acm-12345678", rs.AWS.ACMCertArn)
+	s.Equal("acm-12345678", rs.AWS.ACMCertARN)
 
 	s.runtimeState.Action = "uninstall"
 	s.expectUtiliyCall("uninstall")
@@ -122,7 +122,7 @@ func (s *ACMImportTest) TestUpgradeACM() {
 		s.NoError(err)
 		return
 	}
-	s.Equal("acm-12345678", rs.AWS.ACMCertArn)
+	s.Equal("acm-12345678", rs.AWS.ACMCertARN)
 }
 
 func (s *ACMImportTest) expectUtiliyCall(action string) {

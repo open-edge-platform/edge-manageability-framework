@@ -103,8 +103,8 @@ func configureAwsExpert() *huh.Group {
 			Title("Jump Host Whitelist").
 			Description("(Optional) Comma-separated CIDR. Traffic from these CIDRs will be allowed to access the jump host").
 			Placeholder("10.0.0.0/8, 192.168.0.0/16").
-			Validate(validateAwsJumpHostWhitelist).
-			Value(&tmpJumpHostWhitelist),
+			Validate(validateAwsJumpHostAllowlist).
+			Value(&tmpJumpHostAllowlist),
 		huh.NewInput().
 			Title("Jump Host IP").
 			Description("(Optional) Jump host IP if it is created outside of installer in advance").

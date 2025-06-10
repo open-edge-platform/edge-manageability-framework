@@ -18,6 +18,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go/service/elbv2"
 	"github.com/aws/aws-sdk-go/service/s3"
 )
 
@@ -32,6 +33,7 @@ type AWSUtility interface {
 	GetAvailableZones(region string) ([]string, error)
 	S3CopyToS3(srcRegion, srcBucket, srcKey, destRegion, destBucket, destKey string) error
 	GetSubnetIDsFromVPC(region, vpcID string) ([]string, []string, error)
+	DisableALBDeletionProtection(region, loadBalancerARN string) error
 }
 
 type awsUtilityImpl struct{}
@@ -201,6 +203,29 @@ func (*awsUtilityImpl) GetSubnetIDsFromVPC(region, vpcID string) ([]string, []st
 	}
 
 	return publicSubnetIDs, privateSubnetIDs, nil
+}
+
+func (*awsUtilityImpl) DisableALBDeletionProtection(region, loadBalancerARN string) error {
+	session, err := session.NewSession(&aws.Config{
+		Region: aws.String(region),
+	})
+	if err != nil {
+		return err
+	}
+	elbv2Client := elbv2.New(session)
+	_, err = elbv2Client.ModifyLoadBalancerAttributes(&elbv2.ModifyLoadBalancerAttributesInput{
+		LoadBalancerArn: aws.String(loadBalancerARN),
+		Attributes: []*elbv2.LoadBalancerAttribute{
+			{
+				Key:   aws.String("deletion_protection.enabled"),
+				Value: aws.String("false"),
+			},
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to disable deletion protection for ALB %s: %w", loadBalancerARN, err)
+	}
+	return nil
 }
 
 // GenerateSelfSignedTLSCert generates a self-signed TLS certificate, CA certificate, and private key.

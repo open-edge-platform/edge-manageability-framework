@@ -43,17 +43,25 @@ type OrchInstallerRuntimeState struct {
 	StateBucketState string `yaml:"stateBucketState"` // The state S3 bucket Terraform state
 	// Move runtime state here?
 	AWS struct {
-		KubeConfig               string   `yaml:"kubeConfig"`
-		CacheRegistry            string   `yaml:"cacheRegistry"`
-		VPCID                    string   `yaml:"vpcID"`
-		PublicSubnetIDs          []string `yaml:"publicSubnetIDs"`
-		PrivateSubnetIDs         []string `yaml:"privateSubnetIDs"`
-		JumpHostIP               string   `yaml:"jumpHostIP"`
-		JumpHostSSHKeyPublicKey  string   `yaml:"jumpHostSSHPublicKey"`
-		JumpHostSSHKeyPrivateKey string   `yaml:"jumpHostSSHPrivateKey"`
-		EFSFileSystemID          string   `yaml:"efsFileSystemID"`
-		EKSOIDCIssuer            string   `yaml:"eksOIDCIssuer"`
-		ACMCertArn               string   `yaml:"acmCertArn"`
+		KubeConfig                string   `yaml:"kubeConfig"`
+		CacheRegistry             string   `yaml:"cacheRegistry"`
+		VPCID                     string   `yaml:"vpcID"`
+		PublicSubnetIDs           []string `yaml:"publicSubnetIDs"`
+		PrivateSubnetIDs          []string `yaml:"privateSubnetIDs"`
+		JumpHostIP                string   `yaml:"jumpHostIP"`
+		JumpHostSSHKeyPublicKey   string   `yaml:"jumpHostSSHPublicKey"`
+		JumpHostSSHKeyPrivateKey  string   `yaml:"jumpHostSSHPrivateKey"`
+		EFSFileSystemID           string   `yaml:"efsFileSystemID"`
+		EKSOIDCIssuer             string   `yaml:"eksOIDCIssuer"`
+		ACMCertARN                string   `yaml:"acmCertARN"`
+		TraefikLBARN              string   `yaml:"traefikLBARN"`
+		InfraLBARN                string   `yaml:"infraLBARN"`
+		TraefikDNSName            string   `yaml:"traefikDNSName"`
+		InfraDNSName              string   `yaml:"infraDNSName"`
+		TraefikTargetGroupARN     string   `yaml:"traefikTargetGroupARN"`
+		TraefikGRPCTargetGroupARN string   `yaml:"traefikGRPCTargetGroupARN"`
+		InfraArgoCDTargetGroupARN string   `yaml:"infraArgoCDTargetGroupARN"`
+		InfraGiteaTargetGroupARN  string   `yaml:"infraGiteaTargetGroupARN"`
 	} `yaml:"aws,omitempty"`
 	Cert struct {
 		TLSCert string `yaml:"tlsCert"`
@@ -76,17 +84,19 @@ type OrchInstallerConfig struct {
 		AzureADTokenEndpoint string `yaml:"azureADTokenEndpoint,omitempty"`
 	} `yaml:"advanced"`
 	AWS struct {
-		Region                string   `yaml:"region"`
-		CustomerTag           string   `yaml:"customerTag,omitempty"`
-		CacheRegistry         string   `yaml:"cacheRegistry,omitempty"`
-		JumpHostWhitelist     []string `yaml:"jumpHostWhitelist,omitempty"`
-		JumpHostIP            string   `yaml:"jumpHostIP,omitempty"`
-		JumpHostPrivKeyPath   string   `yaml:"jumpHostPrivKeyPath,omitempty"`
-		VPCID                 string   `yaml:"vpcID,omitempty"`
-		ReduceNSTTL           bool     `yaml:"reduceNSTTL,omitempty"` // TODO: do we need this?
-		EKSDNSIP              string   `yaml:"eksDNSIP,omitempty"`    // TODO: do we need this?
-		EKSIAMRoles           []string `yaml:"eksIAMRoles,omitempty"`
-		PreviousS3StateBucket string   `yaml:"previousS3StateBucket,omitempty"` // The S3 bucket where the previous state is stored, will be deprecated in version 3.2.
+		Region                     string   `yaml:"region"`
+		CustomerTag                string   `yaml:"customerTag,omitempty"`
+		CacheRegistry              string   `yaml:"cacheRegistry,omitempty"`
+		JumpHostAllowlist          []string `yaml:"jumpHostAllowlist,omitempty"`
+		JumpHostIP                 string   `yaml:"jumpHostIP,omitempty"`
+		JumpHostPrivKeyPath        string   `yaml:"jumpHostPrivKeyPath,omitempty"`
+		VPCID                      string   `yaml:"vpcID,omitempty"`
+		ReduceNSTTL                bool     `yaml:"reduceNSTTL,omitempty"` // TODO: do we need this?
+		EKSDNSIP                   string   `yaml:"eksDNSIP,omitempty"`    // TODO: do we need this?
+		EKSIAMRoles                []string `yaml:"eksIAMRoles,omitempty"`
+		PreviousS3StateBucket      string   `yaml:"previousS3StateBucket,omitempty"` // The S3 bucket where the previous state is stored, will be deprecated in version 3.2.
+		LoadBalancerAllowList      []string `yaml:"loadBalancerAllowlist,omitempty"`
+		EnableLBDeletionProtection bool     `yaml:"enableLBDeletionProtection,omitempty"`
 	} `yaml:"aws,omitempty"`
 	Onprem struct {
 		ArgoIP         string `yaml:"argoIP"`

@@ -193,7 +193,7 @@ func (s *VPCStep) ConfigStep(ctx context.Context, config config.OrchInstallerCon
 	}
 
 	s.variables.JumphostSubnet = fmt.Sprintf("subnet-%s-pub", availabilityZones[0])
-	s.variables.JumphostIPAllowList = config.AWS.JumpHostWhitelist
+	s.variables.JumphostIPAllowList = config.AWS.JumpHostAllowlist
 
 	// Generate SSH key pair for the jumphost
 	if runtimeState.AWS.JumpHostSSHKeyPrivateKey == "" || runtimeState.AWS.JumpHostSSHKeyPublicKey == "" {

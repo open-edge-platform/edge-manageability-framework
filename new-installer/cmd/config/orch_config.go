@@ -46,7 +46,7 @@ var input config.OrchInstallerConfig
 var (
 	flags                flag
 	orchPackages         map[string]config.OrchPackage
-	tmpJumpHostWhitelist string
+	tmpJumpHostAllowlist string
 	tmpEKSIAMRoles       string
 	enabledSimple        []string
 	enabledAdvanced      []string
@@ -177,7 +177,7 @@ func saveConfig() {
 
 func preProcessConfig() {
 	// Convert slice to comma separated string
-	tmpJumpHostWhitelist = config.SliceToCommaSeparated(input.AWS.JumpHostWhitelist)
+	tmpJumpHostAllowlist = config.SliceToCommaSeparated(input.AWS.JumpHostAllowlist)
 	tmpEKSIAMRoles = config.SliceToCommaSeparated(input.AWS.EKSIAMRoles)
 }
 
@@ -197,7 +197,7 @@ func postProcessConfig() {
 	}
 
 	// Convert comma separated field into a slice
-	input.AWS.JumpHostWhitelist = config.CommaSeparatedToSlice(tmpJumpHostWhitelist)
+	input.AWS.JumpHostAllowlist = config.CommaSeparatedToSlice(tmpJumpHostAllowlist)
 	input.AWS.EKSIAMRoles = config.CommaSeparatedToSlice(tmpEKSIAMRoles)
 
 	// Setting up default values
