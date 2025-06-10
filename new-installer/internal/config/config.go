@@ -40,9 +40,9 @@ type OrchInstallerRuntimeState struct {
 
 	// Used for state and o11y bucket prefix. lowercase or digit
 	DeploymentID     string `yaml:"deploymentID"`
-	StateBucketState string `yaml:"stateBucketState"` // The state S3 bucket Terraform state
-	// Move runtime state here?
-	AWS struct {
+	StateBucketState string `yaml:"stateBucketState"`      // The state S3 bucket Terraform state
+	SshuttlePID      string `yaml:"sshuttlePID,omitempty"` // The PID of the sshuttle process, if any
+	AWS              struct {
 		KubeConfig               string   `yaml:"kubeConfig"`
 		CacheRegistry            string   `yaml:"cacheRegistry"`
 		VPCID                    string   `yaml:"vpcID"`
