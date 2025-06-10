@@ -1123,7 +1123,7 @@ func (d Deploy) VENWithFlow(ctx context.Context, flow string, serialNumber strin
 	}
 
 	if err := sh.RunV(filepath.Join("scripts", "update_provider_defaultos.sh"), "microvisor"); err != nil {
-		return fmt.Errorf("failed to update provider default OS: %w, with output:%s", err)
+		return fmt.Errorf("failed to update provider default OS: %w", err)
 	}
 
 	if err := sh.RunV(filepath.Join("scripts", "nio_flow_host_config.sh"), "1", serialNumber); err != nil {
@@ -1134,7 +1134,7 @@ func (d Deploy) VENWithFlow(ctx context.Context, flow string, serialNumber strin
 		return fmt.Errorf("failed to change directory to '%s': %w", venDir, err)
 	}
 
-	cmd := exec.CommandContext(context.Background(), "asdf", "install")
+	cmd := exec.CommandContext(ctx, "asdf", "install")
 
 	// Stream the output to stdout and stderr
 	cmd.Stdout = os.Stdout
@@ -1146,7 +1146,7 @@ func (d Deploy) VENWithFlow(ctx context.Context, flow string, serialNumber strin
 
 	// Terraform initialization
 	cmd = exec.CommandContext(
-		context.Background(),
+		ctx,
 		"terraform",
 		"-chdir="+filepath.Join("modules", "pico-vm-libvirt"),
 		"init",
@@ -1163,7 +1163,7 @@ func (d Deploy) VENWithFlow(ctx context.Context, flow string, serialNumber strin
 
 	// Pass parent context to the command to allow for cancellation
 	cmd = exec.CommandContext(
-		context.Background(),
+		ctx,
 		"terraform",
 		"-chdir="+filepath.Join("modules", "pico-vm-libvirt"),
 		"apply",
