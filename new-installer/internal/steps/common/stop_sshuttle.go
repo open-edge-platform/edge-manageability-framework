@@ -20,6 +20,12 @@ type StopSshuttleStep struct {
 
 var stopSshuttleStepLabels = []string{"common", "stop-sshuttle"}
 
+func CreateStopSshuttleStep(shellUtility steps.ShellUtility) *StopSshuttleStep {
+	return &StopSshuttleStep{
+		ShellUtility: shellUtility,
+	}
+}
+
 func (s *StopSshuttleStep) Name() string {
 	return "StopSshuttleStep"
 }

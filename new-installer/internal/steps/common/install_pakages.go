@@ -19,6 +19,12 @@ type InstallPackagesStep struct {
 
 var installPackageStepLabels = []string{"common", "install-packages"}
 
+func CreateInstallPackagesStep(shellUtility steps.ShellUtility) *InstallPackagesStep {
+	return &InstallPackagesStep{
+		ShellUtility: shellUtility,
+	}
+}
+
 func (s *InstallPackagesStep) Name() string {
 	return "InstallPackagesStep"
 }

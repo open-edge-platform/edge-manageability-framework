@@ -9,6 +9,7 @@ import (
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps"
 	steps_aws "github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps/aws"
+	steps_common "github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps/common"
 )
 
 func CreateAWSStages(rootPath string, keepGeneratedFiles bool, orchConfigReaderWriter config.OrchConfigReaderWriter) ([]internal.OrchInstallerStage, error) {
@@ -20,13 +21,19 @@ func CreateAWSStages(rootPath string, keepGeneratedFiles bool, orchConfigReaderW
 		}
 	}
 	aws_util := steps_aws.CreateAWSUtility()
+	shUtil := steps.CreateShellUtility()
+
 	return []internal.OrchInstallerStage{
 		NewAWSStage("PreInfra", []steps.OrchInstallerStep{
+			steps_common.CreateInstallPackagesStep(shUtil),
 			steps_aws.CreateAWSStateBucketStep(rootPath, keepGeneratedFiles, tfUtil),
 			steps_aws.CreateVPCStep(rootPath, keepGeneratedFiles, tfUtil, aws_util),
 		}, []string{"pre-infra"}, orchConfigReaderWriter),
 		NewAWSStage("Infra", []steps.OrchInstallerStep{
 			steps_aws.CreateObservabilityBucketsStep(rootPath, keepGeneratedFiles, tfUtil, aws_util),
+			steps_common.CreateSshuttleStep(shUtil),
+			// Run EKS and RDS steps between Sshuttle and StopSshuttle steps.
+			steps_common.CreateStopSshuttleStep(shUtil),
 		}, []string{"infra"}, orchConfigReaderWriter),
 	}, nil
 }

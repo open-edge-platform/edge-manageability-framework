@@ -25,6 +25,12 @@ type SshuttleStep struct {
 
 var sshuttleStepLabels = []string{"common", "sshuttle"}
 
+func CreateSshuttleStep(shellUtility steps.ShellUtility) *SshuttleStep {
+	return &SshuttleStep{
+		ShellUtility: shellUtility,
+	}
+}
+
 func (s *SshuttleStep) Name() string {
 	return "SshuttleStep"
 }
