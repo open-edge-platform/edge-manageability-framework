@@ -136,7 +136,6 @@ func (OnPrem) GeneratePassword() (string, error){
 	remaining := randomChars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+{}|:<>?", 21)
 	password := lower + upper + digit + special + remaining
 	shuffled := shuffleString(password)
-	fmt.Println(shuffled)
 	return shuffled, nil
 
 }
@@ -154,7 +153,6 @@ func (OnPrem) GenerateHarborPassword() (string, error) {
 		}
 		sb.WriteByte(chars[num.Int64()])
 	}
-	fmt.Printf("%s\n", sb.String())
 	return sb.String(), nil
 }
 
