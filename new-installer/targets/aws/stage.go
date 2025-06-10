@@ -27,6 +27,7 @@ func NewAWSStage(name string, steps []steps.OrchInstallerStep, labels []string, 
 		orchConfigReaderWriter: orchConfigReaderWriter,
 	}
 }
+
 func (a *AWSStage) Name() string {
 	return a.name
 }
@@ -50,7 +51,7 @@ func (a *AWSStage) RunStage(ctx context.Context, config *config.OrchInstallerCon
 	if runtimeState.Action == "uninstall" {
 		a.steps = steps.ReverseSteps(a.steps)
 	}
-	a.steps = steps.FilterSteps(a.steps, config.Advanced.TargetLabels)
+	a.steps = steps.FilterSteps(a.steps, runtimeState.TargetLabels)
 	if len(a.steps) == 0 {
 		return nil
 	}

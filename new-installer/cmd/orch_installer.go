@@ -31,13 +31,14 @@ func main() {
 	}
 
 	// These flags are common to all commands
-	var configFile, runtimeStateFile, logLevel, logDir string
+	var configFile, runtimeStateFile, logLevel, logDir, targets string
 	var keepGeneratedFiles bool
 	rootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "config.yaml", "Path to the configuration file")
 	rootCmd.PersistentFlags().StringVarP(&runtimeStateFile, "runtime-state", "r", "config.yaml", "Path to the runtime state file")
 	rootCmd.PersistentFlags().StringVarP(&logLevel, "log-level", "l", "info", "Log level (debug, info, warn, error)")
 	rootCmd.PersistentFlags().StringVarP(&logDir, "log-dir", "o", ".logs", "Path to the log dir")
 	rootCmd.PersistentFlags().BoolVarP(&keepGeneratedFiles, "keep-generated-files", "k", false, "Keep generated files, such as Terraform backend config and variables files.")
+	rootCmd.PersistentFlags().StringVarP(&targets, "target", "t", "", "Only execute targets with this label")
 
 	commands := []struct {
 		use   string
@@ -59,15 +60,18 @@ func main() {
 				if err != nil {
 					zap.S().Fatalf("error initializing logger: %s", err)
 				}
-				execute(cmd.Name(), configFile, runtimeStateFile, logDir, keepGeneratedFiles)
+				execute(cmd.Name(), configFile, runtimeStateFile, logDir, keepGeneratedFiles, targets)
 			},
 		}
 		rootCmd.AddCommand(c)
 	}
-	rootCmd.Execute()
+	err := rootCmd.Execute()
+	if err != nil {
+		zap.S().Fatalf("error executing command: %s", err)
+	}
 }
 
-func execute(action string, orchConfigFile string, runtimeStateFile string, logDir string, keepGeneratedFiles bool) {
+func execute(action string, orchConfigFile string, runtimeStateFile string, logDir string, keepGeneratedFiles bool, targets string) {
 	logger := zap.S()
 	currentDir, err := os.Getwd()
 	if err != nil {
@@ -108,6 +112,7 @@ func execute(action string, orchConfigFile string, runtimeStateFile string, logD
 
 	runtimeState.Action = action
 	runtimeState.LogDir = logDir
+	runtimeState.TargetLabels = config.CommaSeparatedToSlice(targets)
 
 	logger.Infof("Action: %s", action)
 	logger.Infof("Target environment: %s", orchConfig.Provider)
@@ -141,7 +146,10 @@ func execute(action string, orchConfigFile string, runtimeStateFile string, logD
 		signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 		<-sig
 		logger.Info("Received interrupt signal, cancelling the installation, ctrl+C one more time to force it...")
-		logger.Sync()
+		err := logger.Sync()
+		if err != nil {
+			logger.Errorf("error syncing logger: %s", err)
+		}
 		orchInstaller.CancelInstallation()
 		cancelFunc()
 		<-sig

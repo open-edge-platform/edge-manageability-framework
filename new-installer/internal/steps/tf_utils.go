@@ -23,7 +23,10 @@ const (
 )
 
 type TerraformUtility interface {
+	// Apply or destroy
 	Run(ctx context.Context, input TerraformUtilityInput) (TerraformUtilityOutput, *internal.OrchInstallerError)
+	MoveStates(ctx context.Context, input TerraformUtilityMoveStatesInput) *internal.OrchInstallerError
+	RemoveStates(ctx context.Context, input TerraformUtilityRemoveStatesInput) *internal.OrchInstallerError
 }
 
 type TerraformUtilityInput struct {
@@ -40,6 +43,16 @@ type TerraformUtilityInput struct {
 type TerraformUtilityOutput struct {
 	Output         map[string]tfexec.OutputMeta `json:"output"`
 	TerraformState string                       `json:"terraform_state"`
+}
+
+type TerraformUtilityMoveStatesInput struct {
+	ModulePath string
+	States     map[string]string
+}
+
+type TerraformUtilityRemoveStatesInput struct {
+	ModulePath string
+	States     []string
 }
 
 type TerraformAWSBucketBackendConfig struct {
@@ -135,7 +148,7 @@ func (tfUtil *terraformUtilityImpl) Run(ctx context.Context, input TerraformUtil
 			ErrorMsg:  fmt.Sprintf("failed to marshal variables: %v", err),
 		}
 	}
-	err = os.WriteFile(variableFilePath, variables, 0644)
+	err = os.WriteFile(variableFilePath, variables, 0o644)
 	if err != nil {
 		return TerraformUtilityOutput{}, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInternal,
@@ -159,7 +172,7 @@ func (tfUtil *terraformUtilityImpl) Run(ctx context.Context, input TerraformUtil
 				ErrorMsg:  fmt.Sprintf("failed to marshal backend config: %v", err),
 			}
 		}
-		err = os.WriteFile(backendConfigPath, backendConfig, 0644)
+		err = os.WriteFile(backendConfigPath, backendConfig, 0o644)
 		if err != nil {
 			return TerraformUtilityOutput{}, &internal.OrchInstallerError{
 				ErrorCode: internal.OrchInstallerErrorCodeInternal,
@@ -200,7 +213,7 @@ func (tfUtil *terraformUtilityImpl) Run(ctx context.Context, input TerraformUtil
 		if input.TerraformState != "" {
 			logger.Debug("Loading state bucket state from runtime state")
 			// We already have a state bucket state. Need to load it to the module before init.
-			if err := os.WriteFile(terraformStatePath, []byte(input.TerraformState), 0644); err != nil {
+			if err := os.WriteFile(terraformStatePath, []byte(input.TerraformState), 0o644); err != nil {
 				return TerraformUtilityOutput{}, &internal.OrchInstallerError{
 					ErrorCode: internal.OrchInstallerErrorCodeInternal,
 					ErrorMsg:  fmt.Sprintf("failed to write terraform state file: %v", err),
@@ -294,4 +307,44 @@ func InstallTerraformAndGetExecPath() (string, error) {
 		Version: version.Must(version.NewVersion(TerraformVersion)),
 	}
 	return installer.Install(context.Background())
+}
+
+func (tfUtil *terraformUtilityImpl) MoveStates(ctx context.Context, input TerraformUtilityMoveStatesInput) *internal.OrchInstallerError {
+	tf, err := tfexec.NewTerraform(input.ModulePath, tfUtil.ExecPath)
+	if err != nil {
+		return &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeTerraform,
+			ErrorMsg:  fmt.Sprintf("failed to create terraform instance: %v", err),
+		}
+	}
+	for oldStateName, newStateName := range input.States {
+		err = tf.StateMv(ctx, oldStateName, newStateName)
+		if err != nil {
+			return &internal.OrchInstallerError{
+				ErrorCode: internal.OrchInstallerErrorCodeTerraform,
+				ErrorMsg:  fmt.Sprintf("failed to move terraform state: %v", err),
+			}
+		}
+	}
+	return nil
+}
+
+func (tfUtil *terraformUtilityImpl) RemoveStates(ctx context.Context, input TerraformUtilityRemoveStatesInput) *internal.OrchInstallerError {
+	tf, err := tfexec.NewTerraform(input.ModulePath, tfUtil.ExecPath)
+	if err != nil {
+		return &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeTerraform,
+			ErrorMsg:  fmt.Sprintf("failed to create terraform instance: %v", err),
+		}
+	}
+	for _, stateName := range input.States {
+		err = tf.StateRm(ctx, stateName)
+		if err != nil {
+			return &internal.OrchInstallerError{
+				ErrorCode: internal.OrchInstallerErrorCodeTerraform,
+				ErrorMsg:  fmt.Sprintf("failed to delete terraform state: %v", err),
+			}
+		}
+	}
+	return nil
 }
