@@ -25,6 +25,9 @@ func CreateAWSStages(rootPath string, keepGeneratedFiles bool, orchConfigReaderW
 			steps_aws.CreateAWSStateBucketStep(rootPath, keepGeneratedFiles, tfUtil),
 			steps_aws.CreateVPCStep(rootPath, keepGeneratedFiles, tfUtil, aws_util),
 		}, []string{"pre-infra"}, orchConfigReaderWriter),
-		NewAWSStage("Infra", []steps.OrchInstallerStep{}, []string{"infra"}, orchConfigReaderWriter),
+		NewAWSStage("Infra", []steps.OrchInstallerStep{
+			steps_aws.CreateEFSStep(rootPath, keepGeneratedFiles, tfUtil, aws_util),
+			steps_aws.CreateObservabilityBucketsStep(rootPath, keepGeneratedFiles, tfUtil, aws_util),
+		}, []string{"infra"}, orchConfigReaderWriter),
 	}, nil
 }
