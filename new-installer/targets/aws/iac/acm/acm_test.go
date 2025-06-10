@@ -24,19 +24,20 @@ type ACMTestSuite struct {
 func TestACMSuite(t *testing.T) {
 	suite.Run(t, new(ACMTestSuite))
 }
+
 func (s *ACMTestSuite) SetupTest() {
 	s.name = "efs-unit-test-" + strings.ToLower(rand.Text()[0:8])
 	terratest_aws.CreateS3Bucket(s.T(), utils.DefaultTestRegion, s.name)
-
 }
+
 func (s *ACMTestSuite) TearDownTest() {
 	terratest_aws.EmptyS3Bucket(s.T(), utils.DefaultTestRegion, s.name)
 	terratest_aws.DeleteS3Bucket(s.T(), utils.DefaultTestRegion, s.name)
 }
+
 func (s *ACMTestSuite) TestApplyModule() {
 	testDomain := strings.ToLower(rand.Text()[0:8]) + ".example.com"
 	tlsCertPEM, tlsCAPEM, keyPEM, err := steps_aws.GenerateSelfSignedTLSCert(testDomain)
-
 	if err != nil {
 		s.NoError(err, "Failed to generate self-signed TLS certificate")
 		return
