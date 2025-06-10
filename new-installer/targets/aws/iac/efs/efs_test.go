@@ -32,11 +32,11 @@ func TestEFSTestSuite(t *testing.T) {
 }
 
 func (s *EFSTestSuite) SetupTest() {
-	// Bucket for EKS state
+	// Bucket for EFS state
 	s.name = "efs-unit-test-" + strings.ToLower(rand.Text()[0:8])
 	terratest_aws.CreateS3Bucket(s.T(), utils.DefaultTestRegion, s.name)
 
-	// VPC and subnets for EKS
+	// VPC and subnets for EFS
 	var err error
 	s.vpcID, s.publicSubnetIDs, s.privateSubnetIDs, _, _, err = utils.CreateVPC(s.T(), s.name)
 	if err != nil {
