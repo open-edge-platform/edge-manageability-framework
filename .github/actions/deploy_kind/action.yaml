@@ -53,10 +53,9 @@ runs:
       with:
         repository: open-edge-platform/edge-manageability-framework
         ref: ${{ inputs.orch_version }}
-        path: ./edge-manageability-framework
         token: ${{ inputs.token }}
         persist-credentials: false
-    
+
     - name: Deploy External Orchestrator
       id: deploy-external-orchestrator
       env:
