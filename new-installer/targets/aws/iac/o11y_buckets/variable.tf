@@ -20,7 +20,7 @@ variable "cluster_name" {
   description = "EKS Cluster which will related to the S3 buckets"
 }
 
-variable "create_tracing" {
-  type    = bool
-  default = false
+variable "oidc_issuer" {
+  type        = string
+  description = "OIDC issuer URL for the EKS cluster"
 }
