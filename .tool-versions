@@ -2,7 +2,7 @@ argocd 2.10.10
 awscli 2.17.52
 docker-compose-v1 2.17.3
 ginkgo 2.22.2
-golang 1.24.1
+golang 1.24.4
 golangci-lint 1.64.7
 grpcurl 1.8.9
 helm 3.11.1
