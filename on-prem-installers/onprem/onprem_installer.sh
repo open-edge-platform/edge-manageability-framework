@@ -35,7 +35,7 @@ rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.23.4.linux-amd64.tar.gz
 echo "untar completed"
 export PATH="${PATH}:/usr/local/go/bin:/home/ubuntu/.asdf/installs/mage/1.15.0/bin"
 gopath_bin="$(go env GOPATH)/bin"
-export GOPATH="${PATH}:${gopath_bin}"
+export PATH="${PATH}:${gopath_bin}"
 
 cd ../
 go install github.com/asdf-vm/asdf/cmd/asdf@v0.17.0
