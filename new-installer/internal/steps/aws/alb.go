@@ -188,13 +188,13 @@ func (s *ALBStep) PreStep(ctx context.Context, config config.OrchInstallerConfig
 
 func (s *ALBStep) RunStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	if runtimeState.Action == "uninstall" {
-		if err := s.AWSUtility.DisableALBDeletionProtection(config.AWS.Region, runtimeState.AWS.TraefikLBARN); err != nil {
+		if err := s.AWSUtility.DisableLBDeletionProtection(config.AWS.Region, runtimeState.AWS.TraefikLBARN); err != nil {
 			return runtimeState, &internal.OrchInstallerError{
 				ErrorCode: internal.OrchInstallerErrorCodeInternal,
 				ErrorMsg:  fmt.Sprintf("failed to disable ALB deletion protection: %v", err),
 			}
 		}
-		if err := s.AWSUtility.DisableALBDeletionProtection(config.AWS.Region, runtimeState.AWS.InfraLBARN); err != nil {
+		if err := s.AWSUtility.DisableLBDeletionProtection(config.AWS.Region, runtimeState.AWS.InfraLBARN); err != nil {
 			return runtimeState, &internal.OrchInstallerError{
 				ErrorCode: internal.OrchInstallerErrorCodeInternal,
 				ErrorMsg:  fmt.Sprintf("failed to disable ALB deletion protection: %v", err),

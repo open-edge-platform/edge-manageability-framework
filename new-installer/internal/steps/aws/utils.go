@@ -33,7 +33,7 @@ type AWSUtility interface {
 	GetAvailableZones(region string) ([]string, error)
 	S3CopyToS3(srcRegion, srcBucket, srcKey, destRegion, destBucket, destKey string) error
 	GetSubnetIDsFromVPC(region, vpcID string) ([]string, []string, error)
-	DisableALBDeletionProtection(region, loadBalancerARN string) error
+	DisableLBDeletionProtection(region, loadBalancerARN string) error
 }
 
 type awsUtilityImpl struct{}
@@ -205,7 +205,7 @@ func (*awsUtilityImpl) GetSubnetIDsFromVPC(region, vpcID string) ([]string, []st
 	return publicSubnetIDs, privateSubnetIDs, nil
 }
 
-func (*awsUtilityImpl) DisableALBDeletionProtection(region, loadBalancerARN string) error {
+func (*awsUtilityImpl) DisableLBDeletionProtection(region, loadBalancerARN string) error {
 	session, err := session.NewSession(&aws.Config{
 		Region: aws.String(region),
 	})

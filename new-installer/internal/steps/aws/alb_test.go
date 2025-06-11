@@ -41,7 +41,7 @@ type ALBStepTestSuite struct {
 	awsUtility   *MockAWSUtility
 }
 
-func TestAWSStepSuite(t *testing.T) {
+func TestALBStepSuite(t *testing.T) {
 	suite.Run(t, new(ALBStepTestSuite))
 }
 
@@ -242,8 +242,8 @@ func (s *ALBStepTestSuite) expectUtilityCalls(action string) {
 		}).Return(nil).Once()
 	}
 	if action == "uninstall" {
-		s.awsUtility.On("DisableALBDeletionProtection", utils.DefaultTestRegion, TestTraefikLBARN).Return(nil).Once()
-		s.awsUtility.On("DisableALBDeletionProtection", utils.DefaultTestRegion, TestInfraLBARN).Return(nil).Once()
+		s.awsUtility.On("DisableLBDeletionProtection", utils.DefaultTestRegion, TestTraefikLBARN).Return(nil).Once()
+		s.awsUtility.On("DisableLBDeletionProtection", utils.DefaultTestRegion, TestInfraLBARN).Return(nil).Once()
 		s.tfUtility.On("Run", mock.Anything, input).Return(steps.TerraformUtilityOutput{
 			TerraformState: "",
 			Output:         map[string]tfexec.OutputMeta{},
