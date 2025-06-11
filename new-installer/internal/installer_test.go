@@ -222,22 +222,22 @@ func (s *OrchInstallerTest) TestOrchInstallerInvalidArgument() {
 func (s *OrchInstallerTest) TestUpdateRuntimeState() {
 	runtimeState := config.OrchInstallerRuntimeState{}
 	newRuntimeState := config.OrchInstallerRuntimeState{
-		Action:                   "install",
-		LogDir:                   ".log",
-		DryRun:                   true,
-		DeploymentID:             "random1",
-		StateBucketState:         "random2",
-		KubeConfig:               "random3",
-		TLSCert:                  "random4",
-		TLSKey:                   "random5",
-		TLSCa:                    "random6",
-		CacheRegistry:            "random7",
-		VPCID:                    "random8",
-		PublicSubnetIDs:          []string{"10.0.0.0/16"},
-		PrivateSubnetIDs:         []string{"10.250.0.0/16"},
-		JumpHostSSHKeyPublicKey:  "random9",
-		JumpHostSSHKeyPrivateKey: "random10",
+		Action:           "install",
+		LogDir:           ".log",
+		DryRun:           true,
+		DeploymentID:     "random1",
+		StateBucketState: "random2",
 	}
+	newRuntimeState.AWS.KubeConfig = "random3"
+	newRuntimeState.AWS.CacheRegistry = "random7"
+	newRuntimeState.AWS.VPCID = "random8"
+	newRuntimeState.AWS.PublicSubnetIDs = []string{"10.0.0.0/16"}
+	newRuntimeState.AWS.PrivateSubnetIDs = []string{"10.250.0.0/16"}
+	newRuntimeState.AWS.JumpHostSSHKeyPublicKey = "random9"
+	newRuntimeState.AWS.JumpHostSSHKeyPrivateKey = "random10"
+	newRuntimeState.Cert.TLSCert = "random4"
+	newRuntimeState.Cert.TLSKey = "random5"
+	newRuntimeState.Cert.TLSCA = "random6"
 
 	err := internal.UpdateRuntimeState(&runtimeState, newRuntimeState)
 	if err != nil {
@@ -249,14 +249,14 @@ func (s *OrchInstallerTest) TestUpdateRuntimeState() {
 	s.Equal(runtimeState.LogDir, newRuntimeState.LogDir)
 	s.Equal(runtimeState.DeploymentID, newRuntimeState.DeploymentID)
 	s.Equal(runtimeState.StateBucketState, newRuntimeState.StateBucketState)
-	s.Equal(runtimeState.KubeConfig, newRuntimeState.KubeConfig)
-	s.Equal(runtimeState.TLSCert, newRuntimeState.TLSCert)
-	s.Equal(runtimeState.TLSKey, newRuntimeState.TLSKey)
-	s.Equal(runtimeState.TLSCa, newRuntimeState.TLSCa)
-	s.Equal(runtimeState.CacheRegistry, newRuntimeState.CacheRegistry)
-	s.Equal(runtimeState.VPCID, newRuntimeState.VPCID)
-	s.Equal(runtimeState.PublicSubnetIDs, newRuntimeState.PublicSubnetIDs)
-	s.Equal(runtimeState.PrivateSubnetIDs, newRuntimeState.PrivateSubnetIDs)
-	s.Equal(runtimeState.JumpHostSSHKeyPublicKey, newRuntimeState.JumpHostSSHKeyPublicKey)
-	s.Equal(runtimeState.JumpHostSSHKeyPrivateKey, newRuntimeState.JumpHostSSHKeyPrivateKey)
+	s.Equal(runtimeState.AWS.KubeConfig, newRuntimeState.AWS.KubeConfig)
+	s.Equal(runtimeState.Cert.TLSCert, newRuntimeState.Cert.TLSCert)
+	s.Equal(runtimeState.Cert.TLSKey, newRuntimeState.Cert.TLSKey)
+	s.Equal(runtimeState.Cert.TLSCA, newRuntimeState.Cert.TLSCA)
+	s.Equal(runtimeState.AWS.CacheRegistry, newRuntimeState.AWS.CacheRegistry)
+	s.Equal(runtimeState.AWS.VPCID, newRuntimeState.AWS.VPCID)
+	s.Equal(runtimeState.AWS.PublicSubnetIDs, newRuntimeState.AWS.PublicSubnetIDs)
+	s.Equal(runtimeState.AWS.PrivateSubnetIDs, newRuntimeState.AWS.PrivateSubnetIDs)
+	s.Equal(runtimeState.AWS.JumpHostSSHKeyPublicKey, newRuntimeState.AWS.JumpHostSSHKeyPublicKey)
+	s.Equal(runtimeState.AWS.JumpHostSSHKeyPrivateKey, newRuntimeState.AWS.JumpHostSSHKeyPrivateKey)
 }
