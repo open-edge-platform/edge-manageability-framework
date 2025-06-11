@@ -63,6 +63,7 @@ type DummyOrchConfigReaderWriter struct{}
 func (DummyOrchConfigReaderWriter) WriteOrchConfig(orchConfig config.OrchInstallerConfig) error {
 	return nil
 }
+
 func (DummyOrchConfigReaderWriter) ReadOrchConfig() (config.OrchInstallerConfig, error) {
 	return config.OrchInstallerConfig{}, nil
 }
@@ -70,6 +71,7 @@ func (DummyOrchConfigReaderWriter) ReadOrchConfig() (config.OrchInstallerConfig,
 func (DummyOrchConfigReaderWriter) WriteRuntimeState(runtimeState config.OrchInstallerRuntimeState) error {
 	return nil
 }
+
 func (DummyOrchConfigReaderWriter) ReadRuntimeState() (config.OrchInstallerRuntimeState, error) {
 	return config.OrchInstallerRuntimeState{}, nil
 }
@@ -135,7 +137,7 @@ func (s *OrchInstallerStageTest) TestRunFilteredSteps() {
 	runtimeState := config.OrchInstallerRuntimeState{
 		Action: "install",
 	}
-	orchConfig.Advanced.TargetLabels = []string{"label1"}
+	runtimeState.TargetLabels = []string{"label1"}
 	steps := []steps.OrchInstallerStep{
 		createMockStep("step1", true, []string{"label1", "label2"}),
 		createMockStep("step2", false, []string{"label2", "label3"}),
