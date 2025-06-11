@@ -146,6 +146,7 @@ And here is another example of `k3s-maverick-flats.json`.
 {
     "packages": [
         "k3s",
+        "k3s-addon-essential",
         "k3s-addon-gpu-device-plugin",
         "k3s-addon-virtualization",
     ]
