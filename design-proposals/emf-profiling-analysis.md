@@ -36,6 +36,12 @@ OnPrem deployed on Azure VM
 - Physical RAM  : 64 GB
 - Total Disk    : 176G
 
+OnPrem deployed on Proxmox VM (most typical deployment type)
+
+- CPU Cores     : 32
+- Physical RAM  : 128 GB
+- Total Disk    :  213G
+
 ### Comparing `dev-internal-coder-autocert.yaml` with `enableObservability` set to `false`
 
 #### Kubernetes Resource allocation
@@ -746,6 +752,8 @@ gantt
 - Any section consuming above 1.5 min is highlighted in orange, above 2.5 min in red.
 - The table lists each section and the total time taken (in seconds and minutes) from the first to last event, sorted by duration.
 - The Gantt chart visualizes the timing of each section and labels each bar with its duration.
+
+![CPU and RAM resource usage during OnPrem deployment on Proxmox VM with 32C/128G](image.png)
 
 ### Takeaways
 
