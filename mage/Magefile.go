@@ -1898,26 +1898,6 @@ func (a App) Upload() error {
 	return a.upload()
 }
 
-// Deploys Wordpress via Orchestrator using public charts and images.
-func (a App) Wordpress() error {
-	return a.wordpress()
-}
-
-// Deploys Wordpress via Orchestrator from the private Harbor registry.
-func (a App) WordpressFromPrivateRegistry() error {
-	return a.wordpressFromPrivateRegistry()
-}
-
-// Deploys iPerf-Web VM via Orchestrator from the private Harbor registry.
-func (a App) IperfWebVM() error {
-	return a.iperfWebVM()
-}
-
-// Deploys NGINX via Orchestrator using public charts and images.
-func (a App) Nginx() error {
-	return a.nginx()
-}
-
 type Tarball mg.Namespace
 
 // OnpremFull Creates a Tarball of artifacts for OnPrem deployment of Full orchestrator
