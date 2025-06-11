@@ -442,7 +442,7 @@ Following data was generated for the Coder deployment with `dev-internal-coder-a
 gantt
     dateFormat  YYYY-MM-DDTHH:mm:ss
     axisFormat  %H:%M:%S
-    section Provisioning Timeline
+    section Deployment Timeline
     root-app (1428s [23.8 min]) :crit, 2025-06-09T11:15:43, 2025-06-09T11:39:31
     namespace-label (21s [0.35 min]) : 2025-06-09T11:15:45, 2025-06-09T11:16:06
     cert-manager (66s [1.1 min]) : 2025-06-09T11:16:07, 2025-06-09T11:17:13
@@ -637,7 +637,7 @@ gantt
 gantt
     dateFormat  YYYY-MM-DDTHH:mm:ss
     axisFormat  %H:%M:%S
-    section Provisioning Timeline
+    section Deployment Timeline
     root-app (2281s [38.02 min]) :crit, 2025-06-09T21:56:24, 2025-06-09T22:34:25
     namespace-label (24s [0.4 min]) : 2025-06-09T21:56:27, 2025-06-09T21:56:51
     cert-manager (82s [1.37 min]) : 2025-06-09T21:56:52, 2025-06-09T21:58:14
@@ -830,7 +830,7 @@ gantt
 gantt
     dateFormat  YYYY-MM-DDTHH:mm:ss
     axisFormat  %H:%M:%S
-    section Provisioning Timeline
+    section Deployment Timeline
     root-app (1040s [17.33 min]) :crit, 2025-06-11T09:01:49, 2025-06-11T09:19:09
     namespace-label (19s [0.32 min]) : 2025-06-11T09:01:52, 2025-06-11T09:02:11
     cert-manager (115s [1.92 min]) :active, 2025-06-11T09:02:12, 2025-06-11T09:04:07
