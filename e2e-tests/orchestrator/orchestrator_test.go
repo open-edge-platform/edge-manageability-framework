@@ -28,7 +28,7 @@ import (
 
 	"github.com/open-edge-platform/edge-manageability-framework/internal/retry"
 	util "github.com/open-edge-platform/edge-manageability-framework/mage"
-	invapi "github.com/open-edge-platform/infra-core/api/pkg/api/v0"
+	invapi "github.com/open-edge-platform/infra-core/apiv2/v2/pkg/api/v2"
 	baseorginfrahostcomv1 "github.com/open-edge-platform/orch-utils/tenancy-datamodel/build/apis/org.edge-orchestrator.intel.com/v1"
 	baseprojectinfrahostcomv1 "github.com/open-edge-platform/orch-utils/tenancy-datamodel/build/apis/project.edge-orchestrator.intel.com/v1"
 )
@@ -73,7 +73,7 @@ type Projects struct {
 	Status *baseprojectinfrahostcomv1.ProjectNexusStatus `json:"status,omitempty" yaml:"status,omitempty"`
 }
 
-// serviceDomain is a package-level variable intialized during startup.
+// serviceDomain is a package-level variable initialized during startup.
 var serviceDomain = func() string {
 	sd := os.Getenv("E2E_SVC_DOMAIN")
 	// retrieve svcdomain from configmap
@@ -95,7 +95,7 @@ var serviceDomain = func() string {
 	return sd
 }()
 
-// servicePort is a package-level variable intialized during startup.
+// servicePort is a package-level variable initialized during startup.
 var servicePort = func() int {
 	spStr := os.Getenv("E2E_SVC_PORT")
 	if spStr == "" {
@@ -857,16 +857,16 @@ func parseProject(body io.ReadCloser) (Projects, error) {
 	return proj, nil
 }
 
-func parseRegionsList(body io.ReadCloser) (invapi.RegionsList, error) {
-	var regionsList invapi.RegionsList
+func parseRegionsList(body io.ReadCloser) (*invapi.ListRegionsResponse, error) {
+	regionsList := &invapi.ListRegionsResponse{}
 
 	data, err := io.ReadAll(body)
 	if err != nil {
-		return regionsList, fmt.Errorf("failed to read body: %w", err)
+		return nil, fmt.Errorf("failed to read body: %w", err)
 	}
 
 	if err = json.Unmarshal(data, &regionsList); err != nil {
-		return regionsList, fmt.Errorf("failed to Unmarshal regionsList: %w", err)
+		return nil, fmt.Errorf("failed to Unmarshal regionsList: %w", err)
 	}
 
 	return regionsList, nil
@@ -988,7 +988,7 @@ func secureHeadersAdd() map[string][]string {
 		// {"default-src 'self'; form-action 'self'; object-src 'none';
 		// frame-ancestors 'none'; upgrade-insecure-requests;
 		// block-all-mixed-content"}, //nolint: lll
-		"Content-Security-Policy": {fmt.Sprintf("default-src 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' 'unsafe-eval' https://app-service-proxy.%s; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://keycloak.%s wss://vnc.%s https://app-service-proxy.%s https://app-orch.%s https://api.%s https://cluster-orch.%s https://metadata.%s https://alerting-monitor.%s; upgrade-insecure-requests; block-all-mixed-content", //nolint: lll
+		"Content-Security-Policy": {fmt.Sprintf("default-src 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' https://app-service-proxy.%s; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://keycloak.%s wss://vnc.%s https://app-service-proxy.%s https://app-orch.%s https://api.%s https://cluster-orch.%s https://metadata.%s https://alerting-monitor.%s; upgrade-insecure-requests; block-all-mixed-content", //nolint: lll
 			serviceDomain, serviceDomain, serviceDomain, serviceDomain, serviceDomain, serviceDomain, serviceDomain, serviceDomain, serviceDomain)},
 		"Cross-Origin-Embedder-Policy": {"require-corp"},
 		"Cross-Origin-Opener-Policy":   {"same-origin"},
@@ -1005,7 +1005,6 @@ func secureHeadersAddAppOrch() map[string][]string {
 
 	appOrchSecureHeaders["Content-Security-Policy"] = []string{fmt.Sprintf("default-src 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' ; frame-src 'self' https://keycloak.%s; style-src 'self'; img-src 'self' data:; connect-src 'self' https://keycloak.%s; upgrade-insecure-requests; block-all-mixed-content", //nolint: lll
 		serviceDomain, serviceDomain)}
-	appOrchSecureHeaders["Cross-Origin-Embedder-Policy"] = []string{"unsafe-none"}
 	delete(appOrchSecureHeaders, "X-Content-Type-Options")
 	delete(appOrchSecureHeaders, "X-Frame-Options")
 

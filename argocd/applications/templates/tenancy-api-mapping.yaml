@@ -21,7 +21,7 @@ spec:
   sources:
     - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
       chart: common/charts/{{$appName}}
-      targetRevision: 0.4.1
+      targetRevision: 0.8.0
       helm:
         releaseName: {{$appName}}
         valuesObject:
@@ -49,4 +49,6 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ApplyOutOfSyncOnly=true
+      - Replace=true
+      - Force=true
 {{- end }}
