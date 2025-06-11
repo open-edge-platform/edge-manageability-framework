@@ -1,12 +1,19 @@
 # EMF profiling: Analyze the timing and resource consumption of EMF with various profiles
 
-Author(s): Krishna
+Author(s): EMF-EIM team
 
 Last updated: 05.06.2025
 
 ## Abstract
 
-The objective of this exercise is to capture the timing and resource consumption of EMF when using different profiles. This will help in understanding the timing and resource consumption and guide future optimizations. For this exercise, we will use the EMF 3.0 release and coder instance.
+The objective of this exercise is to capture the timing and resource consumption of EMF under various deployment types and profiles. This will help in understanding the timing and resource consumption and guide future optimizations.
+
+Environment used for analysis
+
+- Coder based EMF deployment support baseline `autocert` profile with observability turned ON.
+- Coder based EMF deployment support baseline `autocert` profile with observability turned OFF.
+- Azure based default OnPrem EMF deployment.In this case EMF is deployed in another ubuntu VM on Azure VM.
+- Proxmox VM based default OnPrem EMF deployment.
 
 ## Tools used
 
@@ -16,6 +23,8 @@ The objective of this exercise is to capture the timing and resource consumption
   - CPU: `top -bn1 | grep "Cpu(s)" | awk '{print "CPU Used: " $2 + $4 "%, CPU Free: " $8 "%"}'`
   - Memory: `free | awk '/Mem:/ {used=$3; total=$2; printf "Memory Used: %.2f%%, Memory Free: %.2f%%\n", used/total*100, $4/total*100}'`
   - Storage: `df --total -k | awk '/^total/ {used=$3; total=$2; free=$4; printf "Disk Used: %.2f%%, Disk Free: %.2f%%\n", used/total*100, free/total*100}'`
+  - Process level CPU usage: `ps -eo pid,comm,%cpu --sort=-%cpu | head -n 7`
+  - Process level Memory usage: `ps -eo comm,rss --sort=-rss | awk 'NR==1 {print $1, "MEM(MiB)"} NR>1 {printf "%-20s %6.1f\n", $1, $2/1024}' | head -n 7`
 - instrumentation in the EMF code base
 
 ## Codebase and configuration
@@ -195,6 +204,7 @@ Top processes consuming CPU and memory
 Baseline profile `dev-internal-coder-autocert.yaml` with `enableObservability` set to `true`:
 
 ```sh
+COMMAND         %CPU
 otelcol-contrib 47.7
 kubelet         24.3
 argocd-applicat 20.6
@@ -213,25 +223,30 @@ mimir                 690.0
 argocd-applicat       658.2
 ```
 
-Baseline profile `dev-internal-coder-autocert.yaml` with `enableObservability` set to `false`:
+profile for OnPrem deployed on Azure VM:
+
+In case of Azure deployment the topology is deploying VM inside Azure VM that run EMF.
+
+profile for OnPrem deployed on Proxmox VM:
 
 ```sh
-kubelet         15.9
-kube-apiserver  13.8
-argocd-applicat 12.9
-etcd             5.3
-containerd       4.6
-envoy            1.6 
+COMMAND         %CPU
+kubelet         69.3
+otelcol-contrib 68.5
+argocd-applicat 52.3
+kube-apiserver  35.4
+mimir           18.4
+prometheus      14.6 
 ```
 
 ```sh
-COMMAND MEM(MiB)
-kube-apiserver       1625.4
-java                  798.0
-argocd-applicat       559.4
-etcd                  249.7
-containerd            235.5
-kubelet               213.8
+COMMAND MEM(MiB)            
+kube-apiserver       2041.4 
+prometheus           1535.8 
+java                  861.3 
+argocd-applicat       829.9 
+mimir                 808.4 
+mimir                 779.7 
 ```
 
 ### Timing analysis
