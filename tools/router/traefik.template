@@ -25,6 +25,10 @@ entryPoints:
     address: ":443"
   tcpamt:
     address: ":4433"
+{{- if index .Values.argo.enabled "pxe-server" }}
+  tftpserver:
+    address: ":69"
+{{- end }}
 providers:
   docker:
     endpoint: "unix:///var/run/docker.sock"
@@ -169,6 +173,20 @@ tcp:
       loadBalancer:
         servers:
           - address: {{ .GiteaIP }}:443
+{{- if index .Values.argo.enabled "pxe-server" }}
+udp:
+  routers:
+    my-udp-router:
+      entryPoints:
+        - "tftpserver"
+      service: tftp-service
+
+  services:
+    tftp-service:
+      loadBalancer:
+        servers:
+          - address: {{ .OrchIP }}:6969
+{{- end }}
 {{- if .IsSandbox }}
 tls:
   stores:

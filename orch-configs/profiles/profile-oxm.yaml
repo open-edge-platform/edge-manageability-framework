@@ -4,6 +4,7 @@
 
 argo:
   enabled:
+    pxe-server: true
     infra-external: false
   infra-managers:
     autoProvision:
