@@ -18,6 +18,8 @@ global:
 import:
   onboarding-manager:
     enabled: {{ index .Values.argo "infra-onboarding" "onboarding-manager" "enabled" }}
+  pxe-server:
+    enabled: {{ index .Values.argo "infra-onboarding" "pxe-server" "enabled" }}
 
 infra-config:
   config:

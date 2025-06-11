@@ -11,6 +11,6 @@ argo:
     os-resource-manager:
       enabledProfiles:
         - microvisor-standalone
-#  infra-onboarding:
-#    pxe-server:
-#      enabled: true
+  infra-onboarding:
+    pxe-server:
+      enabled: true
