@@ -57,13 +57,13 @@ For the K3s build and packaging process integrated into EMT, we will focus on cr
 
 Complete list of assets to build and/or package for K3s installation include the following.
 
-- k3s (binary)
-- [install.sh](https://github.com/k3s-io/k3s/blob/master/install.sh) (install script)
-- addon-images-standard.tar.zst (pre-built addon images for standard edge)
-- addon-images-maverick-flats.tar.zst (pre-built addon images for MF edge)
-- [k3s-selinux](https://github.com/k3s-io/k3s-selinux) (RPM package)
+- K3s binary
+- [Install script](https://github.com/k3s-io/k3s/blob/master/install.sh)
+- Addon container images
+- Addon Helm charts
+- [K3s SELinux policies](https://github.com/k3s-io/k3s-selinux) (optional, as EMT operates in SELinux permissive mode)
 
-K3s will comes with several essential addons, such as CoreDNS, Calico CNI and local-path-provisioner. In the initial implementation, we will utilize pre-built images for these addons rather than building them directly within the EMT build pipeline. See [todo: add addon ADR link] for more details about addon.
+K3s will come with several essential addons by default, such as DNS, CNI and local-path-provisioner. In the initial implementation, we will utilize pre-built images for these addons rather than building them directly within the EMT build pipeline. See [todo: add addon ADR link] for more details about essential and optional addons.
 
 A new EMT image will be released under two additional conditions: when a new K3s version becomes available or when a critical CVE or security patch is required, supplementing the existing release cadence. This decision may evolve based on future user requirements.
 
@@ -71,12 +71,13 @@ A new EMT image will be released under two additional conditions: when a new K3s
 
 To build and package K3s, we will leverage the existing EMT build pipeline. As an RPM-based distribution, EMT simplifies the process of building and creating new RPM packages that can be installed on EMT. This involves writing a SPEC file that specifies the source location and build commands, and placing it in the SPECS folder of the repository. This approach offers significant advantages, such as eliminating the need to maintain forks of upstream repositories while providing the flexibility to apply patches and standardizing the build process for various software components with diverse build requirements. And of course, the subsequent step of integrating Kubernetes into the EMT image becomes very straightforward.
 
-There will be total four new RPMs:
+There will be total five new RPMs:
 
 * k3s: k3s binary, install script
-* k3s-selinux: selinux policies for k3s
-* k3s-standard-addon: standard addon images and charts
-* k3s-maverick-flats-addon: maverick flats addon images and charts
+* k3s-addon-essential: essential addon images and charts
+* k3s-addon-gpu-device-plugin: gpu device plugin addon images and charts
+* k3s-addon-virtualization: virtualization addon images and charts, including kubevirt and CDI
+* k3s-selinux: selinux policies for k3s (optional for 3.1 release)
 
 Here is an example of SPEC file for k3s:
 
@@ -96,33 +97,31 @@ make local-binary
 %install
 mkdir -p %{buildroot}/usr/local/bin
 install -m 0755 bin/k3s %{buildroot}/usr/local/bin/k3s
-
-mkdir %{buildroot}/opt
-install -m 0755 install.sh %{buildroot}/opt/install.sh
+install -m 0755 install.sh %{buildroot}/usr/local/bin/install.sh
 
 %files
 /usr/local/bin/k3s
-/opt/install.sh
+/usr/local/bin/install.sh
 ...
 ```
 
-And here is another example of SPEC file for k3s-standard-addon:
+And here is another example of SPEC file for k3s-addon-essential:
 
 ```
 ...
 # This is not a complete SPEC and hasn't been tested
 
-Source0: https://registry-rs.edgeorchestration.intel.com/en/files/%{version}/k3s-standard-addon-images.tar.zst
+Source0: https://registry-rs.edgeorchestration.intel.com/en/files/%{version}/k3s-addon-images-essential.tar.zst
 Source1: https://github.com/projectcalico/calico/releases/download/v3.30.1/tigera-operator-v3.30.1.tgz
 
 mkdir -p %{buildroot}/var/lib/rancher/k3s/agent/images
-install -m 0644 %{SOURCE0} %{buildroot}/var/lib/rancher/k3s/agent/images/k3s-airgap-images-amd64.tar.zst
+install -m 0644 %{SOURCE0} %{buildroot}/var/lib/rancher/k3s/agent/images/k3s-addon-images-essential.tar.zst
 
 mkdir -p %{buildroot}/var/lib/rancher/k3s/server/static
 install -m 0644 %{SOURCE1} %{buildroot}/var/lib/rancher/k3s/server/static/tigera-operator-v3.30.1.tgz
 
 %files
-/var/lib/rancher/k3s/agent/images/k3s-airgap-images-amd64.tar.zst
+/var/lib/rancher/k3s/agent/images/k3s-addon-images-essential.tar.zst
 /var/lib/rancher/k3s/server/static/tigera-operator-v3.30.1.tgz
 ...
 ```
@@ -135,8 +134,20 @@ Once RPM packages for K3s are ready, integrating them into the EMT image is stra
 {
     "packages": [
         "k3s",
+        "k3s-addon-essential",
         "k3s-selinux",
-        "k3s-standard-addon",
+    ]
+}
+```
+
+And here is another example of `k3s-maverick-flats.json`.
+
+```json
+{
+    "packages": [
+        "k3s",
+        "k3s-addon-gpu-device-plugin",
+        "k3s-addon-virtualization",
     ]
 }
 ```
