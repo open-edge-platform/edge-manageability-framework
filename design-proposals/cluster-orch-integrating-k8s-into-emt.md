@@ -81,7 +81,7 @@ during cluster installation. This decision may evolve as we gain more experience
 
 The table below summarizes the supported operating systems and Kubernetes distributions for each edge type, along with
 the available cluster creation methods.
-<!-- markdownlint-disable MD033
+<!-- markdownlint-disable MD033 MD013
 | **Edge Type**          | **Supported OS** | **Supported Kubernetes** | **Cluster Creation Methods**                                                                                                                                                                                                                            |
 | ---------------------- | ---------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **EMF Managed**        | Ubuntu, EMT      | K3s, RKE2                | **Manual**: Via the cluster management page. **Automated**: Via host registration with a selected template (K3s or RKE2). <br> <br> **Note**: For K3s on EMT, the selected template's K3s version must match the K3s version embedded in the EMT image. |
