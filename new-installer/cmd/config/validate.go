@@ -113,7 +113,7 @@ func validateProxyConfig() error {
 		return fmt.Errorf("invalid EN SOCKS proxy: %w", err)
 	}
 	if err := validateNoProxy(input.Proxy.ENNoProxy); err != nil {
-		return fmt.Errorf("invalid ENno proxy: %w", err)
+		return fmt.Errorf("invalid EN no proxy: %w", err)
 	}
 	return nil
 }
@@ -211,8 +211,8 @@ func validateAwsVpcId(s string) error {
 	if s == "" {
 		return nil
 	}
-	if matched := regexp.MustCompile(`^vpc-[0-9a-f]{8}$`).MatchString(s); !matched {
-		return fmt.Errorf("VPC ID must follow the format '^vpc-[0-9a-f]{8}$', e.g., 'vpc-12345678'")
+	if matched := regexp.MustCompile(`^vpc-[0-9a-f]{8,17}$`).MatchString(s); !matched {
+		return fmt.Errorf("VPC ID must follow the format '^vpc-[0-9a-f]{8,17}$', e.g., 'vpc-12345678'")
 	}
 	return nil
 }
@@ -244,7 +244,7 @@ func validateNoProxy(s string) error {
 	}
 	entries := strings.Split(s, ",")
 	ipRe := regexp.MustCompile(`^([0-9]{1,3}\.){3}[0-9]{1,3}(\/\d{1,2})?$`)
-	domainRe := regexp.MustCompile(`^\.?([a-z0-9.-]+\.[a-z]{2,})$`)
+	domainRe := regexp.MustCompile(`^\.?[a-zA-Z]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9-]+)*$`)
 	for _, entry := range entries {
 		e := strings.TrimSpace(entry)
 		if e == "" {
@@ -403,8 +403,9 @@ func validateAwsEKSIAMRoles(s string) error {
 		if role == "" {
 			continue
 		}
-		if matched := regexp.MustCompile(`^arn:aws:iam::\d{12}:role/[\w+=,.@-]+$`).MatchString(role); !matched {
-			return fmt.Errorf("invalid IAM role ARN: %s", role)
+		//Maximum 64 characters. Use alphanumeric and '+=,.@-_' characters (FROM AWS)
+		if matched := regexp.MustCompile(`^[\w+=,.@-]{1,64}$`).MatchString(role); !matched {
+			return fmt.Errorf("invalid IAM role name: %s", role)
 		}
 	}
 	return nil
