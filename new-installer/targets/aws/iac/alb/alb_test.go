@@ -122,4 +122,10 @@ func (s *ALBTestSuite) TestApplyingModule() {
 
 	defer terraform.Destroy(s.T(), terraformOptions)
 	terraform.InitAndApply(s.T(), terraformOptions)
+	nlbARN := terraform.Output(s.T(), terraformOptions, "nlb_arn")
+	nlbTargetGroupARN := terraform.Output(s.T(), terraformOptions, "nlb_target_group_arn")
+	nlbDNSName := terraform.Output(s.T(), terraformOptions, "nlb_dns_name")
+	s.NotEmpty(nlbARN, "NLB ARN should not be empty")
+	s.NotEmpty(nlbTargetGroupARN, "NLB Target Group ARN should not be empty")
+	s.NotEmpty(nlbDNSName, "NLB DNS Name should not be empty")
 }

@@ -14,18 +14,9 @@ data "aws_nat_gateway" "vpc_nat_gateway" {
 }
 
 locals {
-  subnets_with_eip = var.internal ? [] : var.subnets
+  subnets_with_eip = var.internal ? [] : var.public_subnet_ids
   nat_public_ips = toset([for id, nat in data.aws_nat_gateway.vpc_nat_gateway : "${nat.public_ip}/32" if nat.connectivity_type == "public"])
   ip_allow_list  = setunion(var.ip_allow_list, local.nat_public_ips)
-  nlb_ports = {
-    "https" : {
-      listen              = 443
-      target              = 31443
-      type                = "ip"
-      protocol            = "TCP"
-      enable_health_check = true
-    }
-  }
 }
 
 resource "aws_security_group" "common" {
@@ -43,7 +34,15 @@ resource "aws_security_group_rule" "common" {
   protocol          = "TCP"
   cidr_blocks       = local.ip_allow_list
   security_group_id = aws_security_group.common.id
+}
 
+resource "aws_security_group_rule" "vpro" {
+  type              = "ingress"
+  from_port         = 4433
+  to_port           = 4433
+  protocol          = "TCP"
+  cidr_blocks       = local.ip_allow_list
+  security_group_id = aws_security_group.common.id
 }
 
 # Create EIP(if not internal), NLB, Listener, TargetGroup
@@ -53,8 +52,8 @@ resource "aws_eip" "main" {
 resource "aws_lb" "main" {
   name               = substr(sha256("${var.cluster_name}-traefik2"), 0, 32)
   internal           = var.internal
-  load_balancer_type = var.type
-  subnets            = var.internal ? var.subnets : null
+  load_balancer_type = "network"
+  subnets            = var.internal ? var.public_subnet_ids : null
   dynamic "subnet_mapping" {
     for_each = local.subnets_with_eip
     content {
@@ -90,6 +89,24 @@ resource "aws_lb_target_group" "main" {
   }
 }
 
+resource "aws_lb_target_group" "vpro" {
+  name        = substr(sha256("${var.cluster_name}-vpro"), 0, 32)
+  port        = 4433
+  protocol    = "TCP"
+  vpc_id      = var.vpc_id
+  target_type = "ip"
+  health_check {
+    enabled = true
+    port = "traffic-port"
+    protocol = "TCP"
+    healthy_threshold = 5
+    unhealthy_threshold = 2
+  }
+  tags = {
+    Name = "${var.cluster_name}-vpro"
+  }
+}
+
 resource "aws_lb_listener" "main" {
   load_balancer_arn = aws_lb.main.arn
   port              = 443
@@ -97,5 +114,15 @@ resource "aws_lb_listener" "main" {
   default_action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.main.arn
+  }
+}
+
+resource "aws_lb_listener" "vpro" {
+  load_balancer_arn = aws_lb.main.arn
+  port              = 4433
+  protocol          = "TCP"
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.vpro.arn
   }
 }

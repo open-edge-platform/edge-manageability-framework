@@ -2,15 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-output "lb_dns_name" {
+output "nlb_dns_name" {
   value = aws_lb.main.dns_name
 }
-output "lb_zone_id" {
-  value = aws_lb.main.zone_id
+
+output "nlb_target_group_arn" {
+  value = aws_lb_target_group.main.arn
 }
-output "target_groups" {
-  value = aws_lb_target_group.main
-}
-output "lb_sg_id" {
-  value = aws_security_group.common.id
+
+output "nlb_arn" {
+  value = aws_lb.main.arn
 }

@@ -62,6 +62,9 @@ type OrchInstallerRuntimeState struct {
 		TraefikGRPCTargetGroupARN string   `yaml:"traefikGRPCTargetGroupARN"`
 		InfraArgoCDTargetGroupARN string   `yaml:"infraArgoCDTargetGroupARN"`
 		InfraGiteaTargetGroupARN  string   `yaml:"infraGiteaTargetGroupARN"`
+		NLBDNSName                string   `yaml:"nlbDNSName"`
+		NLBTargetGroupARN         string   `yaml:"nlbTargetGroupARN"`
+		NLBARN                    string   `yaml:"nlbARN"`
 	} `yaml:"aws,omitempty"`
 	Cert struct {
 		TLSCert string `yaml:"tlsCert"`
