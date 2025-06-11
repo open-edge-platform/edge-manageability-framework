@@ -44,6 +44,28 @@ OnPrem deployed on Proxmox VM (most typical deployment type)
 
 ### Comparing `dev-internal-coder-autocert.yaml` with `enableObservability` set to `false`
 
+#### Resource Allocation Comparison
+
+```mermaid
+xychart-beta
+    title "CPU and Memory Resource Allocation (%)"
+    x-axis "Profile" ["Baseline-ObsON", "Baseline-ObsOFF", "OnPrem-Azure", "OnPrem-Proxmox"]
+    y-axis "Percentage"
+    bar "CPU Usage" [29, 9, 27, 20]
+    bar "Memory Usage" [60, 30, 79, 28]
+```
+
+#### Resource Requests Comparison
+
+```mermaid
+xychart-beta
+    title "CPU and Memory Requests (m/mi)"
+    x-axis "Profile" ["Baseline-ObsON", "Baseline-ObsOFF", "OnPrem-Azure", "OnPrem-Proxmox"]
+    y-axis "Value"
+    bar "CPU (m)" [2466, 1823, 3296, 3280]
+    bar "Memory (Mi)" [4603, 2169, 7070, 7378]
+```
+
 #### Kubernetes Resource allocation
 
 Baseline profile `dev-internal-coder-autocert.yaml` with `enableObservability` set to `true`:
@@ -76,6 +98,32 @@ kind-control-plane   1507m        9%     19023Mi         30%
 
 Baseline profile for OnPrem deployed on Azure VM
 
+```sh
+ Resource           Requests      Limits
+ --------           --------      ------
+ cpu                3296m (20%)   16697600m (104359%)
+ memory             7070Mi (14%)  17091840Mi (35482%)
+```
+
+```sh
+NAME      CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%
+orch-tf   4414m        27%    38305Mi         79%    
+```
+
+Baseline profile for OnPrem deployed on Proxmox
+
+```sh
+ Resource           Requests     Limits                      
+ --------           --------     ------                      
+ cpu                3280m (10%)  15548300m (48588%)  
+ memory             7378Mi (5%)  15913878Mi (12354%) 
+```
+
+```sh
+NAME                  CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%  
+coder-proxmox-20008   6704m        20%    37160Mi         28%      
+```
+
 #### Linux Resource allocation
 
 Baseline profile `dev-internal-coder-autocert.yaml` with `enableObservability` set to `true`:
@@ -102,15 +150,45 @@ Memory Used: 81.05%, Memory Free: 7.33%
 Disk Used: 38.05%, Disk Free: 60.98%
 ```
 
-| Metric                | Observability ON         | Observability OFF        | % Delta Increase |
-|-----------------------|-------------------------|--------------------------|------------------|
-| **Kubernetes Requests** |                         |                          |                  |
-| CPU (m)               | 2466                    | 1823                     | 35.3%            |
-| Memory (Mi)           | 4603                    | 2169                     | 112.2%           |
-| **Linux Usage**         |                         |                          |                  |
-| CPU Used (%)          | 22.6                    | 6                        | 276.7%           |
-| Memory Used (%)       | 54.66                   | 24.48                    | 123.4%           |
-| Disk Used (%)         | 33.24                   | 22.89                    | 45.2%            |
+Baseline profile for OnPrem deployed Proxmox VM
+
+```sh
+CPU Used: 23.8%, CPU Free: 75.5%
+Memory Used: 27.55%, Memory Free: 45.49%
+Disk Used: 15.26%, Disk Free: 84.73%
+```
+
+#### Resource Consumption Comparison
+
+**CPU Usage (%)**
+
+```mermaid
+xychart-beta
+    title "CPU Usage (%)"
+    x-axis "Profile" ["Baseline-ObsON", "Baseline-ObsOFF", "OnPrem-Azure", "OnPrem-Proxmox"]
+    y-axis "CPU Used (%)"
+    bar "CPU Used" [22.6, 6, 15, 23.8]
+```
+
+**Memory Usage (%)**
+
+```mermaid
+xychart-beta
+    title "Memory Usage (%)"
+    x-axis "Profile" ["Baseline-ObsON", "Baseline-ObsOFF", "OnPrem-Azure", "OnPrem-Proxmox"]
+    y-axis "Memory Used (%)"
+    bar "Memory Used" [54.66, 24.48, 81.05, 27.55]
+```
+
+**Disk Usage (%)**
+
+```mermaid
+xychart-beta
+    title "Disk Usage (%)"
+    x-axis "Profile" ["Baseline-ObsON", "Baseline-ObsOFF", "OnPrem-Azure", "OnPrem-Proxmox"]
+    y-axis "Disk Used (%)"
+    bar "Disk Used" [33.24, 22.89, 38.05, 15.26]
+```
 
 Top processes consuming CPU and memory
 
