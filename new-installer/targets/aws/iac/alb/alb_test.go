@@ -42,7 +42,7 @@ func (s *ALBTestSuite) SetupTest() {
 
 	// VPC and certificate for ALB
 	var err error
-	s.vpcID, s.publicSubnetIDs, s.privateSubnetIDs, _, _, err = utils.CreateVPC(s.T(), s.name)
+	s.vpcID, s.publicSubnetIDs, s.privateSubnetIDs, _, _, err = utils.CreateVPCWithEndpoints(s.T(), s.name, []string{"ec2"})
 	if err != nil {
 		s.NoError(err, "Failed to create VPC and subnet")
 		return

@@ -22,12 +22,12 @@ const (
 var albStepLabels = []string{"aws", "alb"}
 
 type ALBVariables struct {
-	Internal                 bool     `json:"internal,omitempty"`
+	Internal                 bool     `json:"internal"`
 	VPCID                    string   `json:"vpc_id"`
 	ClusterName              string   `json:"cluster_name"`
 	PublicSubnetIDs          []string `json:"public_subnet_ids"`
 	IPAllowList              []string `json:"ip_allow_list"`
-	EnableDeletionProtection bool     `json:"enable_deletion_protection,omitempty"`
+	EnableDeletionProtection bool     `json:"enable_deletion_protection"`
 	TLSCertARN               string   `json:"tls_cert_arn"`
 	Region                   string   `json:"region"`
 	CustomerTag              string   `json:"customer_tag,omitempty"`
