@@ -15,6 +15,58 @@ Environment used for analysis
 - Azure based default OnPrem EMF deployment.In this case EMF is deployed in another ubuntu VM on Azure VM.
 - Proxmox VM based default OnPrem EMF deployment.
 
+## Key Learnings and Optimization Proposals
+
+### 1. Resource Requirements for Default EMF Deployment
+
+- **Learning:** EMF deployments with default capabilities require significant CPU, memory, and storage resources (minimum: 16 cores, 64 GB RAM, 140 GB storage).
+- **Proposals:**
+  - Provide a standalone edge node like experience for EMF to reduce resource footprint.
+  - Enable deployment of EMF via Helm charts for customers not using GitOps.
+  - Support minimal deployments with CLI-only interaction.
+
+### 2. Deployment Time
+
+- **Learning:** Best deployment time is 25 minutes (with images cached); worst case exceeds 1 hour. A portion time is spent on system configuration, RKE2, Gitea, ArgoCD, and orchestrator installer, with significant delays during syncwave/sync until root-app readiness.
+- **Proposals:**
+  - Set a target deployment time KPI of 5–8 minutes for OnPrem deployments.
+  - Instrument timing to distinguish between artifact download and service startup times.
+  - Analyze and optimize repeated syncwaves and identify bottleneck applications (e.g., postgresql, secrets-config).
+
+### 3. Kubernetes distro in Single-Node OnPrem Deployments
+
+- **Learning:** Most OnPrem deployments use single-node clusters on VMs, not bare metal. RKE2 consumes more resources and time than necessary.
+- **Proposals:**
+  - Evaluate and support alternative Kubernetes distributions (e.g., k3s) for smaller footprints in reference architectures.
+
+### 4. Platform Services in Default Profile
+
+- **Learning:** The default profile deploys 85 ArgoCD apps, 199 pods, and 362 containers, including services like ISTIO and Kiali.
+- **Proposals:**
+  - Review and minimize the set of platform services in the default OnPrem configuration.
+  - Assess the necessity and scope of each deployed service.
+
+### 5. Deployment Configuration complexity
+
+- **Learning:** EMF uses multiple concepts—presets, profiles, and configurations—which increases deployment complexity.
+- **Proposals:**
+  - Streamline and simplify EMF deployment configuration to improve user experience.
+
+### 6. Observability Services Impact Resource Consumption
+
+- **Learning:** Observability services (e.g., Grafana) significantly increase memory and CPU usage.
+- **Proposals:**
+  - Allow customers to integrate their own observability systems for metrics and logging.
+  - Provide options to disable or minimize the built-in observability subsystem to reduce resource consumption.
+
+### 7. Resource Requests and Limits configuration
+
+- **Learning:** Actual CPU and memory usage is often much lower than the minimum configuration. For example, max CPU request is 3.2 cores, but usage can reach 6.7 cores; max memory request is ~7.5 GB, but usage can reach 37 GB (with observability enabled).
+- **Proposals:**
+  - Audit and adjust resource requests and limits for all components, including Kubernetes control plane and OSS/upstream dependencies.
+  - Ensure supported deployment types can configure resource requests and limits appropriately.
+  - Tune resource allocations based on deployment type and observed usage.
+
 ## Tools used
 
 - `kubectl top node` : Shows current real-time usage of CPU and memory.Data is fetched from the Metrics Server, which collects usage stats from kubelet.
@@ -869,26 +921,3 @@ gantt
 - The Gantt chart visualizes the timing of each section and labels each bar with its duration.
 
 ![CPU and RAM resource usage during OnPrem deployment on Proxmox VM with 32C/128G](image.png)
-
-### Takeaways
-
-- Any Kubernetres distro depending on deployment needs (Why Rke2 ?)
-- system config ended 2min, rke2 ended 10min, Gitea ended 15min,  ArgoCD ended 16min, Orch Installer ended 17min,
-- RKE2 install takes 6min
-
-```sh
-...
-null_resource.exec_installer[0]: Still creating... [5m50s elapsed]
-null_resource.exec_installer[0]: Still creating... [6m0s elapsed]
-```
-
-- why same services on co
-- Group different sync-wave into section to improve parallelizati - have we optimized the application stating to get best beifits of
-- instrument image download time and start time
-- enabling observability in EMF significantly increases the resource consumption, especially in terms of CPU and memory.
-
-Next steps for me
-
-- manully deploy application standalone and measure
-- resource measurement for OnPrem
-- Check intermediate syncing
