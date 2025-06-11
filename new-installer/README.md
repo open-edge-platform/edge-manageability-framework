@@ -23,7 +23,7 @@ better user experience, and more consistent behavior across deployment targets.
 For more detailed information about the design decisions behind this architecture,
 see the [Deployment Experience Improvement](design-proposals/deployment-experience-improvement.md) design proposal.
 
-## Build and Test the installer
+## Build and Test
 
 To build the installer and config builder:
 

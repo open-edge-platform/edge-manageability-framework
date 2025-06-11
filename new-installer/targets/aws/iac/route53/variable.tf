@@ -43,7 +43,6 @@ variable "hostname" {
     "observability-ui",
     "onboarding-node",
     "onboarding-stream",
-    "registry",
     "registry-oci",
     "release",
     "telemetry-node",
