@@ -15,3 +15,8 @@ argo:
   infra-onboarding:
     pxe-server:
       enabled: true
+      proxy-dhcp:
+        config:
+          interface: ""
+          bootServerIP: ""
+          subnetAddress: ""
