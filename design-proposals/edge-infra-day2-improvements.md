@@ -225,7 +225,7 @@ resources. The following retention policy is proposed:
 - A configuration flag, at orchestrator level (cross tenant configuration) can
   be provided to change the retention policy.
 
-#### Day 2 Workflows:
+#### Day 2 Workflows
 
 Day2 update workflow for Mutable and Immutable OSes:
 
@@ -332,13 +332,13 @@ autonumber
 Given the above schema changes, we need to consider how we are going to support
 orchestrator updates and data migrations in the database.
 
-**Mutable OS**
+#### Mutable OS
 
 - Any Mutable OSProfile with `update_sources`, `kernel_commands` or
   `installed_packages` fields set, needs to be migrated to the new schema by
   creating OSUpdatePolicy, filling the `install_packages`, `update_sources` and
   `kernel_command` fields with the one coming from the OSprofile and linking it
-  to the related Instances. 
+  to the related Instances.
 - In any Mutable OSProfile the `update_sources`, `kernel_commands` and
   `installed_packages` fields must be cleaned, since the fields are either
   deprecated or change their meaning. This should happen after the creation of
@@ -347,11 +347,11 @@ orchestrator updates and data migrations in the database.
 > Note: The `installed_packages` field for Mutable OSProfile won't be populated
 > for OSProfile migrated from old orchestrator versions.
 
-**Immutable OSes**
+#### Immutable OSes
 
-  - For any Instance with a `desired_os` set that is different from the
-    `current_os`, we must create a OSUpdatePolicy of type `POLICY_TARGET` with
-    `target_os` equal to the `desired_os` and link it to the Instance.
+- For any Instance with a `desired_os` set that is different from the
+  `current_os`, we must create a OSUpdatePolicy of type `POLICY_TARGET` with
+  `target_os` equal to the `desired_os` and link it to the Instance.
 
 We don't expect to create OSUpdateRun for past updates, since we don't have
 information about what happened during updates in the past.
@@ -417,7 +417,7 @@ autonumber
 
 Edge Infrastructure Manager:
 
-- **Inventory (inv)**: changes to the schema 
+- **Inventory (inv)**: changes to the schema
   1. OSProfile updates
   2. Instance updates
   3. New OSUpdatePolicy resource
