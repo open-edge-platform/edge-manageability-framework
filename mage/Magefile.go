@@ -966,33 +966,33 @@ func (d Deploy) VENWithFlow(ctx context.Context, flow string, serialNumber strin
 	}
 
 	tmpl, err := template.New("config").Parse(`
-	CLUSTER='{{.ServiceDomain}}'
+CLUSTER='{{.ServiceDomain}}'
 
-	# IO Flow Configurations
-	ONBOARDING_USERNAME='{{.OnboardingUsername}}'
-	ONBOARDING_PASSWORD='{{.OnboardingPassword}}'
-	# NIO Flow Configurations
-	PROJECT_NAME='{{.ProjectName}}'
-	PROJECT_API_USER='{{.ProjectApiUser}}'
-	PROJECT_API_PASSWORD='{{.ProjectApiPassword}}'
+# IO Flow Configurations
+ONBOARDING_USERNAME='{{.OnboardingUsername}}'
+ONBOARDING_PASSWORD='{{.OnboardingPassword}}'
+# NIO Flow Configurations
+PROJECT_NAME='{{.ProjectName}}'
+PROJECT_API_USER='{{.ProjectApiUser}}'
+PROJECT_API_PASSWORD='{{.ProjectApiPassword}}'
 
-	# VM Resources
-	RAM_SIZE='{{.RamSize}}'
-	NO_OF_CPUS='{{.NoOfCpus}}'
-	SDA_DISK_SIZE='{{.SdaDiskSize}}'
-	LIBVIRT_DRIVER='{{.LibvirtDriver}}'
+# VM Resources
+RAM_SIZE='{{.RamSize}}'
+NO_OF_CPUS='{{.NoOfCpus}}'
+SDA_DISK_SIZE='{{.SdaDiskSize}}'
+LIBVIRT_DRIVER='{{.LibvirtDriver}}'
 
-	USERNAME_LINUX='{{.UsernameLinux}}'
-	PASSWORD_LINUX='{{.PasswordLinux}}'
-	CI_CONFIG='{{.CiConfig}}'
+USERNAME_LINUX='{{.UsernameLinux}}'
+PASSWORD_LINUX='{{.PasswordLinux}}'
+CI_CONFIG='{{.CiConfig}}'
 
-	# Optional: Advance Settings
-	BRIDGE_NAME='{{.BridgeName}}'
-	INTF_NAME='{{.IntfName}}'
-	VM_NAME='{{.VmName}}'
-	POOL_NAME='{{.PoolName}}'
-	STANDALONE=0
-	`)
+# Optional: Advance Settings
+BRIDGE_NAME='{{.BridgeName}}'
+INTF_NAME='{{.IntfName}}'
+VM_NAME='{{.VmName}}'
+POOL_NAME='{{.PoolName}}'
+STANDALONE=0
+`)
 	if err != nil {
 		return fmt.Errorf("failed to parse template: %w", err)
 	}
@@ -1144,11 +1144,24 @@ func (d Deploy) VENWithFlow(ctx context.Context, flow string, serialNumber strin
 		return fmt.Errorf("failed to run asdf install: %w", err)
 	}
 
+	if err := os.Chdir(filepath.Join("modules", "pico-vm-libvirt")); err != nil {
+		return fmt.Errorf("failed to change directory to '%s': %w", venDir, err)
+	}
+
+	// Create provider.tf file for terraform libvirt provider
+	providerTfContent := `
+	provider "libvirt" {
+		uri = "qemu:///system"
+	}
+	`
+	if err := os.WriteFile("provider.tf", []byte(providerTfContent), 0644); err != nil {
+		return fmt.Errorf("failed to write provider.tf: %w", err)
+	}
+
 	// Terraform initialization
 	cmd = exec.CommandContext(
 		ctx,
 		"terraform",
-		"-chdir="+filepath.Join("modules", "pico-vm-libvirt"),
 		"init",
 		"--upgrade",
 	)
@@ -1165,7 +1178,6 @@ func (d Deploy) VENWithFlow(ctx context.Context, flow string, serialNumber strin
 	cmd = exec.CommandContext(
 		ctx,
 		"terraform",
-		"-chdir="+filepath.Join("modules", "pico-vm-libvirt"),
 		"apply",
 		fmt.Sprintf("--parallelism=%d", runtime.NumCPU()), // Set parallelism to the number of CPUs on the machine
 		fmt.Sprintf("-var=vm_name=%s", data.VmName),
