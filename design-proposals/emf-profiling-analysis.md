@@ -193,6 +193,7 @@ Baseline profile `dev-internal-coder-autocert.yaml` with `enableObservability` s
 CPU Used: 22.6%, CPU Free: 76.3%
 Memory Used: 54.66%, Memory Free: 17.65%
 Disk Used: 33.24%, Disk Free: 64.32%
+~19.3G used for container images
 ```
 
 Baseline profile `dev-internal-coder-autocert.yaml` with `enableObservability` set to `false`:
@@ -201,6 +202,7 @@ Baseline profile `dev-internal-coder-autocert.yaml` with `enableObservability` s
 CPU Used: 6%, CPU Free: 94.0%
 Memory Used: 24.48%, Memory Free: 62.97%
 Disk Used: 22.89%, Disk Free: 74.31%
+~16G used for container images
 ```
 
 Baseline profile for OnPrem deployed on Azure VM
@@ -217,6 +219,7 @@ Baseline profile for OnPrem deployed Proxmox VM
 CPU Used: 23.8%, CPU Free: 75.5%
 Memory Used: 27.55%, Memory Free: 45.49%
 Disk Used: 15.26%, Disk Free: 84.73%
+~26.3G used for container images
 ```
 
 #### Resource Consumption Comparison
