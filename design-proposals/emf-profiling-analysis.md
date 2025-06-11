@@ -12,7 +12,7 @@ Environment used for analysis
 
 - Coder based EMF deployment support baseline `autocert` profile with observability turned ON.
 - Coder based EMF deployment support baseline `autocert` profile with observability turned OFF.
-- Azure based default OnPrem EMF deployment.In this case EMF is deployed in another ubuntu VM on Azure VM.
+- Azure based default OnPrem EMF deployment. In this case EMF is deployed in another ubuntu VM on Azure VM.
 - Proxmox VM based default OnPrem EMF deployment.
 
 ## Key Learnings and Optimization Proposals
@@ -66,6 +66,8 @@ Environment used for analysis
   - Audit and adjust resource requests and limits for all components, including Kubernetes control plane and OSS/upstream dependencies.
   - Ensure supported deployment types can configure resource requests and limits appropriately.
   - Tune resource allocations based on deployment type and observed usage.
+
+The rest of the document will has details tools, codebase used and the profiling data captured during the exercise.
 
 ## Tools used
 
