@@ -965,6 +965,19 @@ func (d Deploy) VENWithFlow(ctx context.Context, flow string, serialNumber strin
 		return fmt.Errorf("failed to reload apparmor: %w", err)
 	}
 
+	venDir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current working directory: %w", err)
+	}
+
+	if err := os.Chdir("vm-provisioning"); err != nil {
+		return fmt.Errorf("failed to change directory to 'vm-provisioning': %w", err)
+	}
+
+	if err := os.Setenv("LIBVIRT_DEFAULT_URI", "qemu:///system"); err != nil {
+		return fmt.Errorf("failed to set LIBVIRT_DEFAULT_URI: %w", err)
+	}
+
 	tmpl, err := template.New("config").Parse(`
 CLUSTER='{{.ServiceDomain}}'
 
@@ -1040,20 +1053,11 @@ STANDALONE=0
 		return fmt.Errorf("failed to execute template: %w", err)
 	}
 
-	venDir, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("failed to get current working directory: %w", err)
-	}
-
-	if err := os.Chdir("vm-provisioning"); err != nil {
-		return fmt.Errorf("failed to change directory to 'vm-provisioning': %w", err)
-	}
-
 	if err := os.WriteFile("config", buf.Bytes(), os.ModePerm); err != nil {
 		return fmt.Errorf("failed to write config file: %w", err)
 	}
 
-	for i := 0; i < 60; i++ {
+	for range 60 {
 		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
 
@@ -1118,7 +1122,7 @@ STANDALONE=0
 	}
 
 	// Create the "out/logs" directory if it doesn't exist
-	if err := os.MkdirAll("out/logs", 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join("out", "logs"), 0o755); err != nil {
 		return fmt.Errorf("failed to create out/logs directory: %w", err)
 	}
 
@@ -1144,24 +1148,11 @@ STANDALONE=0
 		return fmt.Errorf("failed to run asdf install: %w", err)
 	}
 
-	if err := os.Chdir(filepath.Join("modules", "pico-vm-libvirt")); err != nil {
-		return fmt.Errorf("failed to change directory to '%s': %w", venDir, err)
-	}
-
-	// Create provider.tf file for terraform libvirt provider
-	providerTfContent := `
-	provider "libvirt" {
-		uri = "qemu:///system"
-	}
-	`
-	if err := os.WriteFile("provider.tf", []byte(providerTfContent), 0644); err != nil {
-		return fmt.Errorf("failed to write provider.tf: %w", err)
-	}
-
 	// Terraform initialization
 	cmd = exec.CommandContext(
 		ctx,
 		"terraform",
+		fmt.Sprintf("-chdir=%s", filepath.Join("modules", "pico-vm-libvirt")),
 		"init",
 		"--upgrade",
 	)
@@ -1178,6 +1169,7 @@ STANDALONE=0
 	cmd = exec.CommandContext(
 		ctx,
 		"terraform",
+		fmt.Sprintf("-chdir=%s", filepath.Join("modules", "pico-vm-libvirt")),
 		"apply",
 		fmt.Sprintf("--parallelism=%d", runtime.NumCPU()), // Set parallelism to the number of CPUs on the machine
 		fmt.Sprintf("-var=vm_name=%s", data.VmName),
