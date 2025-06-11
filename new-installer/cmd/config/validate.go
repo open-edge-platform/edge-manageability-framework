@@ -403,7 +403,6 @@ func validateAwsEKSIAMRoles(s string) error {
 		if role == "" {
 			continue
 		}
-		//Maximum 64 characters. Use alphanumeric and '+=,.@-_' characters (FROM AWS)
 		if matched := regexp.MustCompile(`^[\w+=,.@-]{1,64}$`).MatchString(role); !matched {
 			return fmt.Errorf("invalid IAM role name: %s", role)
 		}
