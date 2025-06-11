@@ -425,46 +425,18 @@ func (u Undeploy) OnPrem(ctx context.Context) error {
 }
 
 // Destroys any local Virtual Edge Nodes.
-func (Undeploy) VEN(ctx context.Context) error {
+func (Undeploy) VEN(ctx context.Context, serialNumber string) error {
 	mg.CtxDeps(
 		ctx,
 		Deps{}.EnsureUbuntu,
 	)
 
-	tempDir, err := os.MkdirTemp("", "ven-clone")
-	if err != nil {
-		return fmt.Errorf("failed to create temporary directory: %w", err)
-	}
-	defer os.RemoveAll(tempDir)
-
-	fmt.Printf("Temporary directory created: %s\n", tempDir)
-
-	if err := os.Chdir(tempDir); err != nil {
-		return fmt.Errorf("failed to change directory to temporary directory: %w", err)
+	if err := sh.RunV("sudo", "virsh", "destroy", fmt.Sprintf("edge-node-%s", serialNumber)); err != nil {
+		fmt.Printf("virsh undefine failed: %v\n", err)
 	}
 
-	if err := sh.RunV("git", "clone", "https://github.com/open-edge-platform/virtual-edge-node", "ven"); err != nil {
-		return fmt.Errorf("failed to clone repository: %w", err)
-	}
-
-	if err := os.Chdir("ven"); err != nil {
-		return fmt.Errorf("failed to change directory to 'ven': %w", err)
-	}
-
-	if err := sh.RunV("git", "checkout", "vm-provisioning/1.0.7"); err != nil {
-		return fmt.Errorf("failed to checkout specific commit: %w", err)
-	}
-
-	if err := os.Setenv("LIBVIRT_DEFAULT_URI", "qemu:///system"); err != nil {
-		return fmt.Errorf("failed to set LIBVIRT_DEFAULT_URI: %w", err)
-	}
-
-	if err := os.Chdir("vm-provisioning"); err != nil {
-		return fmt.Errorf("failed to change directory to 'ven': %w", err)
-	}
-
-	if err := sh.RunV("sudo", filepath.Join("scripts", "destroy_vm.sh")); err != nil {
-		return fmt.Errorf("failed to destroy virtual machine: %w", err)
+	if err := sh.RunV("sudo", "virsh", "undefine", fmt.Sprintf("edge-node-%s", serialNumber), "--nvram"); err != nil {
+		fmt.Printf("virsh undefine failed: %v\n", err)
 	}
 
 	return nil
