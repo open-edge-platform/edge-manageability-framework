@@ -32,6 +32,7 @@ func CreateAWSStages(rootPath string, keepGeneratedFiles bool, orchConfigReaderW
 		NewAWSStage("Infra", []steps.OrchInstallerStep{
 			steps_aws.CreateEFSStep(rootPath, keepGeneratedFiles, tfUtil, aws_util),
 			steps_aws.CreateObservabilityBucketsStep(rootPath, keepGeneratedFiles, tfUtil, aws_util),
+			steps_aws.CreateKMSStep(rootPath, keepGeneratedFiles, tfUtil, aws_util),
 			steps_common.CreateSshuttleStep(shUtil),
 			// Run EKS and RDS steps between Sshuttle and StopSshuttle steps.
 			steps_common.CreateStopSshuttleStep(shUtil),
