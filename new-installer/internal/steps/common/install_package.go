@@ -39,10 +39,10 @@ func (s *InstallPackagesStep) ConfigStep(ctx context.Context, config config.Orch
 
 func (s *InstallPackagesStep) PreStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	os := runtime.GOOS
-	if os != "linux" && os != "darwin" {
+	if os != "linux" {
 		return runtimeState, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInternal,
-			ErrorMsg:  "Unsupported operating system. Only Linux and OSX are supported.",
+			ErrorMsg:  "Unsupported operating system. Only Linux is supported.",
 		}
 	}
 	if s.ShellUtility == nil {
@@ -57,6 +57,13 @@ func (s *InstallPackagesStep) PreStep(ctx context.Context, config config.OrchIns
 		return runtimeState, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInternal,
 			ErrorMsg:  "sudo command is not available. Please install sudo.",
+		}
+	}
+	// Check if apt-get exists
+	if !commandExists(ctx, s.ShellUtility, "apt-get") {
+		return runtimeState, &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeInternal,
+			ErrorMsg:  "apt-get command is not available.",
 		}
 	}
 	return runtimeState, nil
@@ -81,37 +88,16 @@ func (s *InstallPackagesStep) installSshuttle(ctx context.Context) *internal.Orc
 	if err == nil {
 		return nil // sshuttle is already installed
 	}
-
-	// Check if the environment is Debian-based
-	if commandExists(ctx, s.ShellUtility, "apt-get") {
-		logger.Info("Detected Debian-based system, installing sshuttle using apt-get")
-		_, err = s.ShellUtility.Run(ctx, steps.ShellUtilityInput{
-			Command:         []string{"sudo", "apt-get", "install", "-y", "sshuttle"},
-			Timeout:         60,
-			SkipError:       false,
-			RunInBackground: false,
-		})
-		if err != nil {
-			return &internal.OrchInstallerError{
-				ErrorCode: internal.OrchInstallerErrorCodeInternal,
-				ErrorMsg:  "Failed to install sshuttle using apt-get",
-			}
-		}
-	}
-	// Check if the environment is macOS
-	if commandExists(ctx, s.ShellUtility, "brew") {
-		logger.Info("Detected macOS, installing sshuttle using brew")
-		_, err = s.ShellUtility.Run(ctx, steps.ShellUtilityInput{
-			Command:         []string{"brew", "install", "sshuttle"},
-			Timeout:         60,
-			SkipError:       false,
-			RunInBackground: false,
-		})
-		if err != nil {
-			return &internal.OrchInstallerError{
-				ErrorCode: internal.OrchInstallerErrorCodeInternal,
-				ErrorMsg:  "Failed to install sshuttle using brew",
-			}
+	_, err = s.ShellUtility.Run(ctx, steps.ShellUtilityInput{
+		Command:         []string{"sudo", "apt-get", "install", "-y", "sshuttle"},
+		Timeout:         60,
+		SkipError:       false,
+		RunInBackground: false,
+	})
+	if err != nil {
+		return &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeInternal,
+			ErrorMsg:  "Failed to install sshuttle using apt-get",
 		}
 	}
 	logger.Info("sshuttle installed successfully")

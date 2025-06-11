@@ -54,26 +54,3 @@ func (suite *InstallPackageTestSuite) TestInstallPackagesOnDeb() {
 		suite.NoError(err, "Expected no error during step execution")
 	}
 }
-
-func (suite *InstallPackageTestSuite) TestInstallPackagesOnMacOS() {
-	cfg := &config.OrchInstallerConfig{}
-	runtimeState := config.OrchInstallerRuntimeState{}
-	expectCallsForCmdExists(suite.shellUtilityMock, "sudo", true)
-	expectCallsForCmdExists(suite.shellUtilityMock, "sshuttle", true)
-	expectCallsForCmdExists(suite.shellUtilityMock, "apt-get", false)
-	expectCallsForCmdExists(suite.shellUtilityMock, "brew", true)
-	suite.shellUtilityMock.On("Run", mock.Anything, steps.ShellUtilityInput{
-		Command:         []string{"brew", "install", "sshuttle"},
-		Timeout:         60,
-		SkipError:       false,
-		RunInBackground: false,
-	}).Return(&steps.ShellUtilityOutput{
-		Stdout: strings.Builder{},
-		Stderr: strings.Builder{},
-		Error:  nil,
-	}, nil).Once()
-	_, err := steps.GoThroughStepFunctions(suite.s, cfg, runtimeState)
-	if err != nil {
-		suite.NoError(err, "Expected no error during step execution")
-	}
-}
