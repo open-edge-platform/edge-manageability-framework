@@ -87,28 +87,30 @@ loca-templates-manager:
 
 amt:
   mps:
+    postgresql:
+      type: {{ .Values.argo.database.type }}
+      ssl: "{{ .Values.argo.database.ssl }}"
     commonName: "mps-node.{{ .Values.argo.clusterDomain }}"
     traefikReverseProxy:
       host:
         cira:
-          name: "mps-node.{{ .Values.argo.clusterDomain }}"
+          name: "mps.{{ .Values.argo.clusterDomain }}"
         webport: # Define a new name for the other port
-          name: "mps-webport-node.{{ .Values.argo.clusterDomain }}" # Define the name for the new port
+          name: "mps-wss.{{ .Values.argo.clusterDomain }}" # Define the name for the new port
   {{- if .Values.argo.traefik }}
     tlsOption: {{ .Values.argo.traefik.tlsOption | default "" | quote }}
   {{- end }}
 
   rps:
+    postgresql:
+      type: {{ .Values.argo.database.type }}
+      ssl: "{{ .Values.argo.database.ssl }}"
     traefikReverseProxy:
       host:
         grpc:
-          name: "rps-node.{{ .Values.argo.clusterDomain }}"
+          name: "rps.{{ .Values.argo.clusterDomain }}"
         webport: # Define a new name for the other port
-          name: "rps-webport-node.{{ .Values.argo.clusterDomain }}" # Define the name for the new port
+          name: "rps-wss.{{ .Values.argo.clusterDomain }}" # Define the name for the new port
   {{- if .Values.argo.traefik }}
     tlsOption: {{ .Values.argo.traefik.tlsOption | default "" | quote }}
   {{- end }}
-
-  dm-manager:
-    serviceArgs:
-      clusterDomain: {{ .Values.argo.clusterDomain }}

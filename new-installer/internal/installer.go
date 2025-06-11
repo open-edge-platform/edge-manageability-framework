@@ -24,10 +24,28 @@ type OrchInstaller struct {
 
 func UpdateRuntimeState(dest *config.OrchInstallerRuntimeState, source config.OrchInstallerRuntimeState) *OrchInstallerError {
 	srcK := koanf.New(".")
-	srcK.Load(structs.Provider(source, "yaml"), nil)
+	err := srcK.Load(structs.Provider(source, "yaml"), nil)
+	if err != nil {
+		return &OrchInstallerError{
+			ErrorCode: OrchInstallerErrorCodeInternal,
+			ErrorMsg:  fmt.Sprintf("failed to marshal runtime state: %v", err),
+		}
+	}
 	dstK := koanf.New(".")
-	dstK.Load(structs.Provider(dest, "yaml"), nil)
-	dstK.Merge(srcK)
+	err = dstK.Load(structs.Provider(dest, "yaml"), nil)
+	if err != nil {
+		return &OrchInstallerError{
+			ErrorCode: OrchInstallerErrorCodeInternal,
+			ErrorMsg:  fmt.Sprintf("failed to marshal runtime state: %v", err),
+		}
+	}
+	err = dstK.Merge(srcK)
+	if err != nil {
+		return &OrchInstallerError{
+			ErrorCode: OrchInstallerErrorCodeInternal,
+			ErrorMsg:  fmt.Sprintf("failed to merge runtime state: %v", err),
+		}
+	}
 
 	dstData, err := dstK.Marshal(yaml.Parser())
 	if err != nil {
@@ -74,7 +92,7 @@ func (o *OrchInstaller) Run(ctx context.Context, config config.OrchInstallerConf
 	if action == "uninstall" {
 		o.Stages = ReverseStages(o.Stages)
 	}
-	o.Stages = FilterStages(o.Stages, config.Advanced.TargetLabels)
+	o.Stages = FilterStages(o.Stages, runtimeState.TargetLabels)
 	// Nothing to do if no stages are found
 	if len(o.Stages) == 0 {
 		return nil

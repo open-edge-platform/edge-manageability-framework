@@ -21,7 +21,7 @@ spec:
   sources:
     - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
       chart: common/charts/{{$appName}}
-      targetRevision: 4.0.9
+      targetRevision: 4.0.10
       helm:
         releaseName: {{$appName}}
         valuesObject:
