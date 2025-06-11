@@ -824,6 +824,16 @@ func (s *OrchConfigValidationTest) TestValidateNoProxy() {
 			wantErr: false,
 		},
 		{
+			name:    "valid host name without domain",
+			input:   "localhost",
+			wantErr: false,
+		},
+		{
+			name:    "valid domain with leading dot",
+			input:   ".onprem",
+			wantErr: false,
+		},
+		{
 			name:    "multiple valid domains and IPs",
 			input:   "example.com,192.168.1.1,.internal.local",
 			wantErr: false,
@@ -885,10 +895,9 @@ func (s *OrchConfigValidationTest) TestValidateNoProxy() {
 			errMsg:  "invalid no_proxy entry: 10.0.-1.1",
 		},
 		{
-			name:    "invalid domain with uppercase",
+			name:    "valid domain with uppercase",
 			input:   "Example.com",
-			wantErr: true,
-			errMsg:  "invalid no_proxy entry: Example.com",
+			wantErr: false,
 		},
 		{
 			name:    "valid domain with dash",

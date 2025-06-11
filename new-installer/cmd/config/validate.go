@@ -244,7 +244,7 @@ func validateNoProxy(s string) error {
 	}
 	entries := strings.Split(s, ",")
 	ipRe := regexp.MustCompile(`^([0-9]{1,3}\.){3}[0-9]{1,3}(\/\d{1,2})?$`)
-	domainRe := regexp.MustCompile(`^\.?([a-z0-9.-]+\.[a-z]{2,})$`)
+	domainRe := regexp.MustCompile(`^\.?[a-zA-Z]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9-]+)*$`)
 	for _, entry := range entries {
 		e := strings.TrimSpace(entry)
 		if e == "" {
