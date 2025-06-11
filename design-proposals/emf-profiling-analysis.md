@@ -555,9 +555,7 @@ gantt
 - The table lists each section and the total time taken (in seconds and minutes) from the first to last event, sorted by duration.
 - The Gantt chart visualizes the timing of each section and labels each bar with its duration.
 
-# EMF Event Timing Analysis
-
-## Section Durations
+#### Argo applications Durations OnPrem (Proxmox VM)
 
 | Section | Start | End | Duration (sec) [min] |
 |---------|---------------------|---------------------|:----------------------:|
@@ -648,7 +646,7 @@ gantt
 
 ---
 
-## Gantt Chart
+#### Gantt Chart OnPrem (Proxmox VM)
 
 ```mermaid
 gantt
