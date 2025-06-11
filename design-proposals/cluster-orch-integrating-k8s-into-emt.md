@@ -81,7 +81,7 @@ during cluster installation. This decision may evolve as we gain more experience
 
 The table below summarizes the supported operating systems and Kubernetes distributions for each edge type, along with
 the available cluster creation methods.
-<!-- markdownlint-disable MD033 MD013
+<!-- markdownlint-disable
 | **Edge Type**          | **Supported OS** | **Supported Kubernetes** | **Cluster Creation Methods**                                                                                                                                                                                                                            |
 | ---------------------- | ---------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **EMF Managed**        | Ubuntu, EMT      | K3s, RKE2                | **Manual**: Via the cluster management page. **Automated**: Via host registration with a selected template (K3s or RKE2). <br> <br> **Note**: For K3s on EMT, the selected template's K3s version must match the K3s version embedded in the EMT image. |
@@ -110,9 +110,9 @@ Complete list of assets to build and/or package for K3s installation include the
 
 - K3s binary
 - [Install script](https://github.com/k3s-io/k3s/blob/master/install.sh)
+- [K3s SELinux policies](https://github.com/k3s-io/k3s-selinux) (optional, as EMT operates in SELinux permissive mode)
 - Addon container images
 - Addon Helm charts
-- [K3s SELinux policies](https://github.com/k3s-io/k3s-selinux) (optional, as EMT operates in SELinux permissive mode)
 
 K3s will come with several essential addons by default, such as DNS, CNI and local-path-provisioner. In the initial
 implementation, we will utilize pre-built images for these addons rather than building them directly within the EMT
@@ -124,24 +124,27 @@ on future user requirements.
 
 #### How to build
 
-To build and package K3s, we will leverage the existing EMT build pipeline. As an RPM-based distribution, EMT simplifies
-the process of building and creating new RPM packages that can be installed on EMT. This involves writing a SPEC file
-that specifies the source location and build commands, and placing it in the SPECS folder of the repository. This
-approach offers significant advantages, such as eliminating the need to maintain forks of upstream repositories while
-providing the flexibility to apply patches and standardizing the build process for various software components with
-diverse build requirements. And of course, the subsequent step of integrating Kubernetes into the EMT image becomes very
-straightforward.
+To build and package K3s and addons, we will leverage the existing EMT build pipeline. As an RPM-based distribution, EMT
+simplifies the process of building and creating new RPM packages that can be installed on EMT. This involves writing a
+SPEC file that specifies the source location and build commands, and placing it in the SPECS folder of the repository.
+This approach offers significant advantages, such as eliminating the need to maintain forks of upstream repositories
+while providing the flexibility to apply patches and standardizing the build process for various software components
+with diverse build requirements. And of course, the subsequent step of integrating Kubernetes into the EMT image becomes
+very straightforward.
 
-There will be total eight new RPMs:
+There will be two new RPMs for packaging K3s:
 
-- k3s: k3s binary, install script
-- calico: calico cni images and chart
-- network-policy: network policy chart
-- kubevirt-intel: customized kubevirt images and chart
-- cdi: cdi images and chart
-- gpu-device-plugin: gpu device plugin images and chart
-- maverick-flats-device-plugin: maverick flats device plugin images and chart
-- k3s-selinux: selinux policies for k3s (optional for 3.1 release)
+- **k3s**: Contains the K3s binary and the install script.
+- **k3s-selinux**: Includes SELinux policies for K3s (optional for the 3.1 release).
+
+Additionally, several RPMs will be created to package addons for the 3.1 release:
+
+- **calico**: Contains Calico CNI images and Helm chart.
+- **network-policy**: Includes the network policy Helm chart.
+- **kubevirt-intel**: Packages customized KubeVirt images and Helm chart.
+- **cdi**: Contains Containerized Data Importer (CDI) images and Helm chart.
+- **gpu-device-plugin**: Includes GPU device plugin images and Helm chart.
+- **maverick-flats-device-plugin**: Packages Maverick Flats device plugin images and Helm chart.
 
 Here is an example of SPEC file for k3s:
 
