@@ -51,7 +51,8 @@ jobs:
         with:
           project_folder: "."
   
-  # Check if `run-iac-tests` label exists on the PR when IAC folder is changed
+  # Check if `run-iac-tests` label exists on the PR 
+  # fail the pipeline if label does not exist when IAC folder is changed
   check-iac-label:
     permissions:
       contents: read
@@ -66,7 +67,7 @@ jobs:
         with:
           script: |
             if (!${{ contains(github.event.pull_request.labels.*.name, 'run-iac-tests') }}) {
-              core.setFailed('run-iac-tests label not set. Hence skipping the tests.');
+              core.setFailed('run-iac-tests label is not set on the PR. This label is required to execute the IAC tests and qualify the PR to merge.');
             }
         if: |
           needs.check-changed-files.outputs.all-targets == 'true'
