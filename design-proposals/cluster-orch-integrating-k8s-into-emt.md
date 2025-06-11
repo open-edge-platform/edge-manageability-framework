@@ -152,9 +152,13 @@ Here is an example of SPEC file for k3s:
 # This is not a complete SPEC and hasn't been tested
 
 Source0: https://github.com/k3s-io/k3s/archive/refs/tags/%{version}.tar.gz
+Source1: https://github.com/k3s-io/k3s/releases/download/%{version}/k3s-airgap-images-amd64.tar.zst
 
 BuildRequires: make
 BuildRequires: docker
+
+%prep
+%setup -T -a 0
 
 # Build the K3s binary locally using the upstream Makefile target.
 %build
@@ -164,6 +168,9 @@ make local-binary
 mkdir -p %{buildroot}/usr/local/bin
 install -m 0755 bin/k3s %{buildroot}/usr/local/bin/k3s
 install -m 0755 install.sh %{buildroot}/usr/local/bin/install.sh
+
+mkdir -p %{buildroot}/var/lib/rancher/k3s/agent/images
+install -m 0644 %{SOURCE1} %{buildroot}/var/lib/rancher/k3s/agent/images/k3s-airgap-images-amd64.tar.zst
 
 %files
 /usr/local/bin/k3s
