@@ -273,13 +273,17 @@ resource "aws_security_group_rule" "alb_to_ecs_ingress" {
   security_group_id        = aws_security_group.ecs_service.id
 }
 
-// To access the Internet(DNS, HTTPS, Proxy...)
+data "aws_vpc" "main" {
+  id = var.vpc_id
+}
+
+// To access the VPC endpoints.
 resource "aws_security_group_rule" "ecs_to_internet_https" {
   type              = "egress"
-  from_port         = 0
-  to_port           = 0
-  protocol          = "-1"
-  cidr_blocks       = ["0.0.0.0/0"]
+  from_port         = 443
+  to_port           = 443
+  protocol          = "TCP"
+  cidr_blocks       = [data.aws_vpc.main.cidr_block]
   security_group_id = aws_security_group.ecs_service.id
 }
 
