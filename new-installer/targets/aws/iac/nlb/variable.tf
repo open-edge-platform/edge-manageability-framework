@@ -42,7 +42,3 @@ variable "subnets" {
   description = "List of subnet ids for this load balancer"
   type        = set(string)
 }
-variable "certificate_arn" {
-  description = "The ARN of the certificate to use for the load balancer"
-  type        = string
-}
