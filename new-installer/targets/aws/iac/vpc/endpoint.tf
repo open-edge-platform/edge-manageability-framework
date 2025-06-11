@@ -14,7 +14,6 @@ locals {
     "ecr.api" : true,
     "elasticloadbalancing" : true,
     "ecs" : true,
-    "ecr" : true,
   }
 }
 

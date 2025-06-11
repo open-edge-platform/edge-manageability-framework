@@ -84,7 +84,6 @@ variable "endpoints" {
     "ecr.dkr",
     "ecr.api",
     "elasticloadbalancing",
-    "ecs",
-    "ecr",
+    "ecs"
   ]
 }
