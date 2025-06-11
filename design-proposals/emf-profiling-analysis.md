@@ -201,7 +201,7 @@ xychart-beta
 
 Top processes consuming CPU and memory
 
-Baseline profile `dev-internal-coder-autocert.yaml` with `enableObservability` set to `true`:
+##### Baseline profile `dev-internal-coder-autocert.yaml` with `enableObservability` set to `true`
 
 ```sh
 COMMAND         %CPU
@@ -223,11 +223,33 @@ mimir                 690.0
 argocd-applicat       658.2
 ```
 
-profile for OnPrem deployed on Azure VM:
+##### Baseline profile `dev-internal-coder-autocert.yaml` with `enableObservability` set to `false`
+
+```sh
+COMMAND         %CPU
+kubelet         15.9
+kube-apiserver  13.3
+argocd-applicat 12.6
+etcd             5.2
+containerd       4.5
+BESClient        2.1
+```
+
+```sh
+COMMAND MEM(MiB)
+kube-apiserver       1575.5
+java                  819.5
+argocd-applicat       651.2
+etcd                  256.1
+containerd            238.7
+api-gw                229.4
+```
+
+##### Baseline profile for OnPrem deployed on Azure VM
 
 In case of Azure deployment the topology is deploying VM inside Azure VM that run EMF.
 
-profile for OnPrem deployed on Proxmox VM:
+##### Baseline profile for OnPrem deployed on Proxmox VM
 
 ```sh
 COMMAND         %CPU
@@ -262,7 +284,7 @@ kubectl get applications -o yaml -A | tee kind-diagnostics/argocd-applications.y
 kubectl get events -o yaml -A | tee kind-diagnostics/events.yaml
 ```
 
-Following data was generated for the Coder deployment with `dev-internal-coder-autocert.yaml` and [OnPrem deployment on Azure VM](https://github.com/open-edge-platform/edge-manage-docs/blob/main/docs/developer_guide/set_up_dev_env/index.rst)
+Following data was generated for the Coder deployment with `dev-internal-coder-autocert.yaml`, [OnPrem deployment on Azure VM](https://github.com/open-edge-platform/edge-manage-docs/blob/main/docs/developer_guide/set_up_dev_env/index.rst), and [Proxmox VM](https://docs.openedgeplatform.intel.com/edge-manage-docs/dev/deployment_guide/on_prem_deployment/on_prem_get_started/on_prem_install.html)
 
 #### Argo applications Durations `dev-internal-coder-autocert.yaml`
 
