@@ -26,10 +26,11 @@ func (s *OrchConfigValidationTest) TestValidateAll() {
 		Version:  1,
 		Provider: "aws", // or "onprem", depending on your use case
 		Global: struct {
-			OrchName     string       `yaml:"orchName"`
-			ParentDomain string       `yaml:"parentDomain"`
-			AdminEmail   string       `yaml:"adminEmail"`
-			Scale        config.Scale `yaml:"scale"`
+			OrchName      string       `yaml:"orchName"`
+			ParentDomain  string       `yaml:"parentDomain"`
+			AdminEmail    string       `yaml:"adminEmail"`
+			AdminPassword string       `yaml:"adminPassword"`
+			Scale         config.Scale `yaml:"scale"`
 		}{
 			OrchName:     "demo",
 			ParentDomain: "example.com",
