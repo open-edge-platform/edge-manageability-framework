@@ -77,11 +77,11 @@ runs:
       run: |
         mkdir -p onprem-diagnostics
         kubectl config set-cluster default --server="https://${SSH_HOST}:6443" --insecure-skip-tls-verify
-        kubectl get pods -o wide -A | tee onprem-diagnostics/pods-list.txt
-        kubectl describe pods -A | tee onprem-diagnostics/pods-describe.txt
-        mage logutils:collectArgoDiags | tee onprem-diagnostics/argo-diag.txt
-        kubectl get applications -o yaml -A | tee onprem-diagnostics/argocd-applications.yaml
-        kubectl get events -o yaml -A | tee onprem-diagnostics/events.yaml
+        kubectl get pods -o wide -A > onprem-diagnostics/pods-list.txt
+        kubectl describe pods -A > onprem-diagnostics/pods-describe.txt
+        mage logutils:collectArgoDiags > onprem-diagnostics/argo-diag.txt
+        kubectl get applications -o yaml -A > onprem-diagnostics/argocd-applications.yaml
+        kubectl get events -o yaml -A > onprem-diagnostics/events.yaml
 
     - name: Upload diagnostic information to CI artifact store
       if: always() && steps.get-diagnostic-info.conclusion == 'success'
