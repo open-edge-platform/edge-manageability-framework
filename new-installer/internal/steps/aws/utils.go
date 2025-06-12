@@ -13,6 +13,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"math/big"
+	"sort"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -71,9 +72,19 @@ func (*awsUtilityImpl) GetAvailableZones(region string) ([]string, error) {
 		zones = append(zones, *zone.ZoneName)
 	}
 
+	// AWS API does not guarantee that the availability zones are returned in any specific order.
+	// Sort the zones to ensure consistent ordering.
+	sort.Strings(zones)
+
 	if len(zones) < RequiredAvailabilityZones {
 		return nil, fmt.Errorf("cannot get three AWS availability zones from region %s", region)
 	}
+
+	// Only return up to RequiredAvailabilityZones zones
+	if len(zones) > RequiredAvailabilityZones {
+		zones = zones[:RequiredAvailabilityZones]
+	}
+
 	return zones, nil
 }
 
