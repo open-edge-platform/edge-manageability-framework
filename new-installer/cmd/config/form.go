@@ -33,6 +33,13 @@ func configureGlobal() *huh.Group {
 			Placeholder("firstname.lastname@intel.com").
 			Validate(validateAdminEmail).
 			Value(&input.Global.AdminEmail),
+		huh.NewInput().
+			Title("Admin Password").
+			Description("Admin password. This will be used to set up Argo CD, Keycloak and a few other resouces").
+			Placeholder("").
+			EchoMode(huh.EchoModePassword).
+			Validate(huh.ValidateNotEmpty()).
+			Value(&input.Global.AdminPassword),
 		huh.NewSelect[config.Scale]().
 			Title("Scale").
 			Description("Select target scale").
