@@ -39,7 +39,7 @@ func (s *EFSTestSuite) SetupTest() {
 
 	// VPC and subnets for EFS
 	var err error
-	s.vpcID, s.publicSubnetIDs, s.privateSubnetIDs, _, _, err = utils.CreateVPC(s.T(), s.name)
+	s.vpcID, s.publicSubnetIDs, s.privateSubnetIDs, _, _, err = utils.CreateVPCWithEndpoints(s.T(), s.name, []string{})
 	if err != nil {
 		s.NoError(err, "Failed to create VPC and subnet")
 		return
@@ -47,7 +47,7 @@ func (s *EFSTestSuite) SetupTest() {
 }
 
 func (s *EFSTestSuite) TearDownTest() {
-	err := utils.DeleteVPC(s.T(), s.name)
+	err := utils.DeleteVPCWithEndpoints(s.T(), s.name, []string{})
 	if err != nil {
 		s.NoError(err, "Failed to delete VPC")
 		return
