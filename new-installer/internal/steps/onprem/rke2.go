@@ -7,6 +7,7 @@ package onprem
 import (
 	"context"
 	"fmt"
+
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 )
