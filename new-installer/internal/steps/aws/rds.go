@@ -84,6 +84,7 @@ func CreateRDSStep(rootPath string, keepGeneratedFiles bool, terraformUtility st
 func (s *RDSStep) Name() string {
 	return "RDSStep"
 }
+
 func (s *RDSStep) Labels() []string {
 	return rdsStepLabels
 }
