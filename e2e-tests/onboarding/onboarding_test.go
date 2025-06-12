@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -23,22 +24,19 @@ var _ = Describe("Node Onboarding test (Non-Interactive flow)", func() {
 		By("Deploying a new Edge Node")
 
 		// Copy the current working directory to restore it later
-		// This is necessary because the mage.Deploy{}.VENWithFlow function 
-		// changes the current working directory to the directory where 
+		// This is necessary because the mage.Deploy{}.VENWithFlow function
+		// changes the current working directory to the directory where
 		// the Edge Node deployment files are located.
 		initialDir, err := os.Getwd()
-		if err != nil {
-			return fmt.Errorf("failed to get current working directory: %w", err)
-		}
+		Expect(err).NotTo(HaveOccurred())
 
 		serialNumber := "EN123456789"
-		err := mage.Deploy{}.VENWithFlow(ctx, "nio", serialNumber)
+		err = mage.Deploy{}.VENWithFlow(ctx, "nio", serialNumber)
 		Expect(err).NotTo(HaveOccurred())
 
 		// Restore the initial working directory
-		if err := os.Chdir(initialDir); err != nil {
-			return fmt.Errorf("failed to change directory to '%s': %w", initialDir, err)
-		}
+		err = os.Chdir(initialDir)
+		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating an Orchestrator client")
 		httpCli := &http.Client{
@@ -69,8 +67,20 @@ var _ = Describe("Node Onboarding test (Non-Interactive flow)", func() {
 var _ = PDescribe("Node Onboarding test (Interactive Onboarding flow)", func() {
 	It("should onboard a node successfully", func(ctx SpecContext) {
 		By("Deploying a new Edge Node")
+
+		// Copy the current working directory to restore it later
+		// This is necessary because the mage.Deploy{}.VENWithFlow function
+		// changes the current working directory to the directory where
+		// the Edge Node deployment files are located.
+		initialDir, err := os.Getwd()
+		Expect(err).NotTo(HaveOccurred())
+
 		serialNumber := "EN123456789"
-		err := mage.Deploy{}.VENWithFlow(ctx, "io", serialNumber)
+		err = mage.Deploy{}.VENWithFlow(ctx, "io", serialNumber)
+		Expect(err).NotTo(HaveOccurred())
+
+		// Restore the initial working directory
+		err = os.Chdir(initialDir)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating an Orchestrator client")
