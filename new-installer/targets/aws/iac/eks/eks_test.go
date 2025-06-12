@@ -69,7 +69,7 @@ func (s *EKSTestSuite) TearDownTest() {
 			s.NoError(err, "Failed to stop ssh tunnel")
 		}
 	}
-	if err := utils.DeleteVPC(s.T(), s.name); err != nil {
+	if err := utils.DeleteVPCWithEndpoints(s.T(), s.name, []string{"ec2"}); err != nil {
 		s.NoError(err, "Failed to delete VPC")
 		return
 	}
