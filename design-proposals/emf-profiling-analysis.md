@@ -1,4 +1,4 @@
-# EMF profiling: Analyze the timing and resource consumption of EMF with various profiles
+# EMF profiling: Analyze the timing and resource consumption under various deployment configurations
 
 Author(s): EMF-EIM team
 
