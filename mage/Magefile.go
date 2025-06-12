@@ -1164,6 +1164,10 @@ STANDALONE=0
 
 	fmt.Printf("VEN deployment started 🚀\n")
 
+	if err := os.Chdir(venDir); err != nil {
+		return fmt.Errorf("failed to change directory to '%s': %w", venDir, err)
+	}
+
 	return nil
 }
 
