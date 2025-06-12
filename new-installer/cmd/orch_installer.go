@@ -195,16 +195,16 @@ func showActionsForError(err *internal.OrchInstallerError) {
 	logger := zap.S()
 	switch err.ErrorCode {
 	case internal.OrchInstallerErrorCodeUnknown:
-		logger.Error("An unknown error occurred, please check the logs for more details.")
+		logger.Info("An unknown error occurred, please check the logs for more details.")
 	case internal.OrchInstallerErrorCodeInternal:
-		logger.Error("An internal error occurred, please check the logs for more details.")
+		logger.Info("An internal error occurred, please check the logs for more details.")
 	case internal.OrchInstallerErrorCodeInvalidArgument:
-		logger.Error("Invalid argument provided, please check the configuration file and command line arguments.")
+		logger.Info("Invalid argument provided, please check the configuration file and command line arguments.")
 	case internal.OrchInstallerErrorCodeInvalidRuntimeState:
-		logger.Error("Invalid runtime state, please check the runtime state file.")
+		logger.Info("Invalid runtime state, please check the runtime state file.")
 	case internal.OrchInstallerErrorCodeTerraform:
-		logger.Error("An error occurred while running Terraform, please check the Terraform logs for more details.")
+		logger.Info("An error occurred while running Terraform, please check the Terraform logs for more details.")
 	default:
-		logger.Error("An unexpected error occurred, please check the logs for more details.")
+		logger.Info("An unexpected error occurred, please check the logs for more details.")
 	}
 }
