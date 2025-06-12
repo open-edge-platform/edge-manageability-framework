@@ -134,7 +134,7 @@ func CreateVPC(t testing.TestingT, name string) (string, []string, []string, str
 
 // Create VPC with specified endpoints, will create all endpoints if enspoints is nil or empty
 // Returns VPC ID, public subnet IDs, private subnet IDs, jumphost private key, jumphost IP, and error if any
-func CreateVPCWithEndpoints(t testing.TestingT, name string, enspoints []string) (string, []string, []string, string, string, error) {
+func CreateVPCWithEndpoints(t testing.TestingT, name string, endpoints []string) (string, []string, []string, string, string, error) {
 	var jumphostAllowList []string = make([]string, 0)
 	publicIP, err := getMyPublicIP()
 	if err == nil {
@@ -195,7 +195,7 @@ func CreateVPCWithEndpoints(t testing.TestingT, name string, enspoints []string)
 		JumphostSubnet:         name + "pub-1",
 		Production:             true,
 		CustomerTag:            DefaultTestCustomerTag,
-		Endpoints:              enspoints,
+		Endpoints:              endpoints,
 	}
 
 	jsonData, err := json.Marshal(variables)
@@ -463,3 +463,78 @@ func GenerateSSHKeyPair() (string, string, error) {
 	publicKeyString := string(ssh.MarshalAuthorizedKey(pub))
 	return privateKeyString, publicKeyString, nil
 }
+
+func CreateSecurityGroup(t testing.TestingT, name string, vpcID string) (string, error) {
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String(DefaultTestRegion),
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to create session: %w", err)
+	}
+	ec2Client := ec2.New(sess)
+	if err != nil {
+		return "", fmt.Errorf("failed to create EC2 client: %w", err)
+	}
+	sg, err := ec2Client.CreateSecurityGroup(&ec2.CreateSecurityGroupInput{
+		Description: aws.String("Test security group for LB SG testing"),
+		GroupName:   aws.String(name),
+		VpcId:       aws.String(vpcID), // Replace with actual VPC ID
+		TagSpecifications: []*ec2.TagSpecification{
+			{
+				ResourceType: aws.String("security-group"),
+				Tags: []*ec2.Tag{
+					{
+						Key:   aws.String("Name"),
+						Value: aws.String(name),
+					},
+				},
+			},
+		},
+	})
+
+	if err != nil {
+		return "", fmt.Errorf("failed to create security group: %w", err)
+	}
+
+	return *sg.GroupId, nil
+}
+
+func DeleteSecurityGroup(t testing.TestingT, sgID string) error {
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String(DefaultTestRegion),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create session: %w", err)
+	}
+	ec2Client := ec2.New(sess)
+	if err != nil {
+		return fmt.Errorf("failed to create EC2 client: %w", err)
+	}
+	ec2Client.DeleteSecurityGroup(&ec2.DeleteSecurityGroupInput{
+		GroupId: aws.String(sgID), // Replace with actual SG ID
+	})
+	return nil
+}
+
+// resource "aws_security_group" "eks_cluster" {
+//   name   = "eks-${var.cluster_name}"
+//   vpc_id = var.vpc_id
+//   egress {
+//     from_port   = 0
+//     to_port     = 0
+//     protocol    = "-1"
+//     cidr_blocks = var.ip_allow_list
+//   }
+//   ingress {
+//     from_port   = 443
+//     to_port     = 443
+//     protocol    = "tcp"
+//     cidr_blocks = var.ip_allow_list
+//   }
+//   lifecycle {
+//     ignore_changes = [
+//       ingress,
+//       egress
+//     ]
+//   }
+// }
