@@ -67,10 +67,11 @@ type OrchInstallerConfig struct {
 	Version  int    `yaml:"version"`
 	Provider string `yaml:"provider"`
 	Global   struct {
-		OrchName     string `yaml:"orchName"`     // EMF deployment name
-		ParentDomain string `yaml:"parentDomain"` // not including cluster name
-		AdminEmail   string `yaml:"adminEmail"`
-		Scale        Scale  `yaml:"scale"`
+		OrchName      string `yaml:"orchName"`     // EMF deployment name
+		ParentDomain  string `yaml:"parentDomain"` // not including cluster name
+		AdminEmail    string `yaml:"adminEmail"`
+		AdminPassword string `yaml:"adminPassword"`
+		Scale         Scale  `yaml:"scale"`
 	} `yaml:"global"`
 	Advanced struct { // TODO: form for this part is not done yet
 		AzureADRefreshToken  string `yaml:"azureADRefreshToken,omitempty"`
@@ -97,8 +98,7 @@ type OrchInstallerConfig struct {
 		DockerToken    string `yaml:"dockerToken,omitempty"`
 	} `yaml:"onprem,omitempty"`
 	Orch struct {
-		Enabled         []string `yaml:"enabled"`
-		DefaultPassword string   `yaml:"defaultPassword"`
+		Enabled []string `yaml:"enabled"`
 	} `yaml:"orch"`
 	// Optional
 	Cert struct {
