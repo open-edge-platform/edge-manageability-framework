@@ -5,14 +5,48 @@
 package aws
 
 import (
+	"context"
+
+	"github.com/hashicorp/go-version"
+	install "github.com/hashicorp/hc-install"
+	"github.com/hashicorp/hc-install/product"
+	"github.com/hashicorp/hc-install/releases"
+	"github.com/hashicorp/hc-install/src"
+
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps"
 	steps_aws "github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps/aws"
 )
 
+func installTerraform() (execPath string, err error) {
+	ctx := context.Background()
+	i := install.NewInstaller()
+	defer i.Remove(ctx)
+	v1_3 := version.Must(version.NewVersion(steps.TerraformVersion))
+	execPath, err = i.Install(ctx, []src.Installable{
+		&releases.ExactVersion{
+			Product: product.Terraform,
+			Version: v1_3,
+		},
+	})
+	if err != nil {
+		return "", err
+	}
+	internal.Logger().Debugf("Terraform %s installed to %s", v1_3, execPath)
+	return execPath, nil
+}
+
 func CreateAWSStages(rootPath string, keepGeneratedFiles bool, orchConfigReaderWriter config.OrchConfigReaderWriter) ([]internal.OrchInstallerStage, error) {
-	tfUtil, err := steps.CreateTerraformUtility(rootPath)
+	terraformExecPath, installErr := installTerraform()
+	if installErr != nil {
+		return nil, &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeInvalidArgument,
+			ErrorMsg:  "Failed to install Terraform: " + installErr.Error(),
+		}
+	}
+
+	tfUtil, err := steps.CreateTerraformUtility(terraformExecPath)
 	if err != nil {
 		return nil, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInvalidArgument,
