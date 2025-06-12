@@ -104,3 +104,8 @@ func (m *MockAWSUtility) GetSubnetIDsFromVPC(region, vpcID string) ([]string, []
 	}
 	return privateSubnets, publicSubnets, err
 }
+
+func (m *MockAWSUtility) EmptyS3Bucket(region, bucket string) error {
+	args := m.Called(region, bucket)
+	return args.Error(0)
+}

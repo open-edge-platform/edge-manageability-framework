@@ -33,6 +33,7 @@ type AWSUtility interface {
 	GetAvailableZones(region string) ([]string, error)
 	S3CopyToS3(srcRegion, srcBucket, srcKey, destRegion, destBucket, destKey string) error
 	GetSubnetIDsFromVPC(region, vpcID string) ([]string, []string, error)
+	EmptyS3Bucket(region, bucket string) error
 }
 
 type awsUtilityImpl struct{}
@@ -212,6 +213,39 @@ func (*awsUtilityImpl) GetSubnetIDsFromVPC(region, vpcID string) ([]string, []st
 	}
 
 	return publicSubnetIDs, privateSubnetIDs, nil
+}
+
+func (*awsUtilityImpl) EmptyS3Bucket(region, bucket string) error {
+	session, err := session.NewSession(&aws.Config{
+		Region: aws.String(region),
+	})
+	if err != nil {
+		return err
+	}
+
+	s3Client := s3.New(session)
+
+	// List objects in the bucket
+	listInput := &s3.ListObjectsV2Input{
+		Bucket: aws.String(bucket),
+	}
+	listOutput, err := s3Client.ListObjectsV2(listInput)
+	if err != nil {
+		return fmt.Errorf("failed to list objects in bucket %s: %w", bucket, err)
+	}
+
+	// Delete each object
+	for _, item := range listOutput.Contents {
+		deleteInput := &s3.DeleteObjectInput{
+			Bucket: aws.String(bucket),
+			Key:    item.Key,
+		}
+		if _, err := s3Client.DeleteObject(deleteInput); err != nil {
+			return fmt.Errorf("failed to delete object %s from bucket %s: %w", *item.Key, bucket, err)
+		}
+	}
+
+	return nil
 }
 
 // GenerateSelfSignedTLSCert generates a self-signed TLS certificate, CA certificate, and private key.

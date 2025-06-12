@@ -18,7 +18,7 @@ const (
 	StateBucketModulePath = "new-installer/targets/aws/iac/state_bucket"
 )
 
-var StateBucketStepLabels = []string{"aws", "state_bucket"}
+var stateBucketStepLabels = []string{"aws", "state_bucket"}
 
 type StateBucketVariables struct {
 	Region   string `json:"region"`
@@ -26,32 +26,31 @@ type StateBucketVariables struct {
 	Bucket   string `json:"bucket"`
 }
 
-type AWSStateBucketStep struct {
+type StateBucketStep struct {
 	variables          StateBucketVariables
 	RootPath           string
 	KeepGeneratedFiles bool
 	TerraformUtility   steps.TerraformUtility
-	StepLabels         []string
+	AWSUtility         AWSUtility
 }
 
-func CreateAWSStateBucketStep(rootPath string, keepGeneratedFiles bool, terraformUtility steps.TerraformUtility) *AWSStateBucketStep {
-	return &AWSStateBucketStep{
+func CreateStateBucketStep(rootPath string, keepGeneratedFiles bool, terraformUtility steps.TerraformUtility) *StateBucketStep {
+	return &StateBucketStep{
 		RootPath:           rootPath,
 		KeepGeneratedFiles: keepGeneratedFiles,
 		TerraformUtility:   terraformUtility,
-		StepLabels:         StateBucketStepLabels,
 	}
 }
 
-func (s *AWSStateBucketStep) Name() string {
-	return "AWSStateBucketStep"
+func (s *StateBucketStep) Name() string {
+	return "StateBucketStep"
 }
 
-func (s *AWSStateBucketStep) Labels() []string {
-	return s.StepLabels
+func (s *StateBucketStep) Labels() []string {
+	return stateBucketStepLabels
 }
 
-func (s *AWSStateBucketStep) ConfigStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *StateBucketStep) ConfigStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	if config.Global.OrchName == "" {
 		return runtimeState, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInvalidArgument,
@@ -78,16 +77,24 @@ func (s *AWSStateBucketStep) ConfigStep(ctx context.Context, config config.OrchI
 	return runtimeState, nil
 }
 
-func (s *AWSStateBucketStep) PreStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *StateBucketStep) PreStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	// no-op for now
 	return runtimeState, nil
 }
 
-func (s *AWSStateBucketStep) RunStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *StateBucketStep) RunStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	if runtimeState.Action == "" {
 		return runtimeState, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInvalidArgument,
 			ErrorMsg:  "Action is not set",
+		}
+	}
+	if runtimeState.Action == "uninstall" {
+		if err := s.AWSUtility.EmptyS3Bucket(config.AWS.Region, fmt.Sprintf("%s-%s", config.Global.OrchName, runtimeState.DeploymentID)); err != nil {
+			return runtimeState, &internal.OrchInstallerError{
+				ErrorCode: internal.OrchInstallerErrorCodeInternal,
+				ErrorMsg:  fmt.Sprintf("Failed to empty S3 bucket: %v", err),
+			}
 		}
 	}
 	output, err := s.TerraformUtility.Run(ctx, steps.TerraformUtilityInput{
@@ -115,6 +122,6 @@ func (s *AWSStateBucketStep) RunStep(ctx context.Context, config config.OrchInst
 	return runtimeState, err
 }
 
-func (s *AWSStateBucketStep) PostStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState, prevStepError *internal.OrchInstallerError) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *StateBucketStep) PostStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState, prevStepError *internal.OrchInstallerError) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	return runtimeState, prevStepError
 }

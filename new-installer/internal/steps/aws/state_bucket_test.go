@@ -22,9 +22,10 @@ type StateBucketTest struct {
 	config       config.OrchInstallerConfig
 	runtimeState config.OrchInstallerRuntimeState
 
-	step       *steps_aws.AWSStateBucketStep
+	step       *steps_aws.StateBucketStep
 	randomText string
 	tfUtility  *MockTerraformUtility
+	awsUtility *MockAWSUtility
 }
 
 func TestCreateAWSStateBucket(t *testing.T) {
@@ -43,17 +44,19 @@ func (s *StateBucketTest) SetupTest() {
 	s.config.Global.OrchName = "test"
 	s.runtimeState.DeploymentID = s.randomText
 	s.tfUtility = &MockTerraformUtility{}
+	s.awsUtility = &MockAWSUtility{}
 
-	s.step = &steps_aws.AWSStateBucketStep{
+	s.step = &steps_aws.StateBucketStep{
 		RootPath:           rootPath,
 		KeepGeneratedFiles: false,
 		TerraformUtility:   s.tfUtility,
+		AWSUtility:         s.awsUtility,
 	}
 }
 
 func (s *StateBucketTest) TestInstallAndUninstall() {
 	s.runtimeState.Action = "install"
-	s.expectTFUtiliyyCall("install")
+	s.expectTFUtiliyCall("install")
 	_, err := steps.GoThroughStepFunctions(s.step, &s.config, s.runtimeState)
 	if err != nil {
 		s.NoError(err)
@@ -61,14 +64,15 @@ func (s *StateBucketTest) TestInstallAndUninstall() {
 	}
 
 	s.runtimeState.Action = "uninstall"
-	s.expectTFUtiliyyCall("uninstall")
+	s.expectTFUtiliyCall("uninstall")
+	s.expectAWSUtiliyCall("uninstall")
 	_, err = steps.GoThroughStepFunctions(s.step, &s.config, s.runtimeState)
 	if err != nil {
 		s.NoError(err)
 	}
 }
 
-func (s *StateBucketTest) expectTFUtiliyyCall(action string) {
+func (s *StateBucketTest) expectTFUtiliyCall(action string) {
 	input := steps.TerraformUtilityInput{
 		Action: action,
 		Variables: steps_aws.StateBucketVariables{
@@ -89,5 +93,12 @@ func (s *StateBucketTest) expectTFUtiliyyCall(action string) {
 		s.tfUtility.On("Run", mock.Anything, input).Return(steps.TerraformUtilityOutput{
 			TerraformState: "",
 		}, nil).Once()
+	}
+}
+
+func (s *StateBucketTest) expectAWSUtiliyCall(action string) {
+	if action == "uninstall" {
+		s.awsUtility.On("EmptyS3Bucket", s.config.AWS.Region, s.config.Global.OrchName+"-"+s.runtimeState.DeploymentID).
+			Return(nil).Once()
 	}
 }
