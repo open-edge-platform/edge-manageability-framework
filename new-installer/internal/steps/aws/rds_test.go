@@ -135,7 +135,7 @@ func (s *RDSStepTest) expectTFUtiliyCall(action string) {
 			PostgresVerMinor:          "",
 			MinACUs:                   0.5,
 			MaxACUs:                   2,
-			DevMode:                   true,
+			DevMode:                   false,
 			Username:                  "",
 			CACertIdentifier:          "",
 		},

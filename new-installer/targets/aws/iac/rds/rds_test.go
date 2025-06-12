@@ -61,12 +61,11 @@ func (s *RDSTestSuite) TestApplyingModule() {
 		s.T().Fatalf("Failed to get available zones: %v", err)
 	}
 	rdsVars := steps_aws.RDSVariables{
-		ClusterName: s.name,
-		Region:      utils.DefaultTestRegion,
-		CustomerTag: utils.DefaultTestCustomerTag,
-		SubnetIDs:   s.privateSubnetIDs,
-		VPCID:       s.vpcID,
-
+		ClusterName:               s.name,
+		Region:                    utils.DefaultTestRegion,
+		CustomerTag:               utils.DefaultTestCustomerTag,
+		SubnetIDs:                 s.privateSubnetIDs,
+		VPCID:                     s.vpcID,
 		IPAllowList:               []string{steps_aws.DefaultNetworkCIDR},
 		AvailabilityZones:         zones,
 		InstanceAvailabilityZones: zones,
@@ -74,7 +73,7 @@ func (s *RDSTestSuite) TestApplyingModule() {
 		PostgresVerMinor:          "",
 		MinACUs:                   0.5,
 		MaxACUs:                   2,
-		DevMode:                   false,
+		DevMode:                   true,
 		Username:                  "",
 		CACertIdentifier:          "",
 	}
