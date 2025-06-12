@@ -6,7 +6,6 @@ package onprem
 
 import (
 	"context"
-
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 )
@@ -44,7 +43,6 @@ func (s *GenerickStep) PreStep(ctx context.Context, config config.OrchInstallerC
 }
 
 func (s *GenerickStep) RunStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
-
 	return runtimeState, nil
 }
 

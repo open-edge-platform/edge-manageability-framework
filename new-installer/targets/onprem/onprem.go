@@ -18,7 +18,7 @@ func CreateOnPremStages(rootPath string, keepGeneratedFiles bool, orchConfigRead
 	preInfraStage = NewOnPremStage(
 		"PreInfra",
 		[]steps.OrchInstallerStep{
-			onpremSteps.CreateLibvirtStep(rootPath, keepGeneratedFiles, orchConfigReaderWriter),
+			onpremSteps.CreateGenericStep(rootPath, keepGeneratedFiles, orchConfigReaderWriter),
 		},
 		[]string{"pre-infra"},
 		orchConfigReaderWriter,
@@ -27,7 +27,7 @@ func CreateOnPremStages(rootPath string, keepGeneratedFiles bool, orchConfigRead
 	infraStage = NewOnPremStage(
 		"Infra",
 		[]steps.OrchInstallerStep{
-			onpremSteps.CreateGenericStep(rootPath, keepGeneratedFiles, orchConfigReaderWriter),
+			onpremSteps.CreateRke2Step(rootPath, keepGeneratedFiles, orchConfigReaderWriter),
 		},
 		[]string{"infra"},
 		orchConfigReaderWriter,
