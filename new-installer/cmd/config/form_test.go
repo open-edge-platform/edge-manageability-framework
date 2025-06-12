@@ -131,7 +131,7 @@ func (s *OrchConfigFormTest) testConfigureAwsExpert() {
 	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("8.8.8.8")})
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
 	// Enter EKS IAM role
-	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("arn:aws:iam::123456789012:role/EKS-Role")})
+	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("developer_eks_role")})
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
 
 	view := ansi.Strip(model.View())

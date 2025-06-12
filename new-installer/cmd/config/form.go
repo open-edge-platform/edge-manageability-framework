@@ -352,7 +352,7 @@ func configureSre() *huh.Group {
 			Validate(validateSreCaSecret).
 			Value(&input.SRE.CASecret),
 	).WithHideFunc(func() bool {
-		return !flags.ConfigureCert
+		return !flags.ConfigureSre
 	}).Title("Step 6: (Optional) Site Reliability Engineering (SRE)\n")
 }
 
