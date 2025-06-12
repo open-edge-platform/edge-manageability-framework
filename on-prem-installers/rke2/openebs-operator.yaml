@@ -68,6 +68,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.serviceAccountName
+            # CUSTOM: Disable analytics
             - name: OPENEBS_IO_ENABLE_ANALYTICS
               value: "false"
             - name: OPENEBS_IO_INSTALLER_TYPE
@@ -79,6 +80,7 @@ spec:
             # LEADER_ELECTION_ENABLED is used to enable/disable leader election.
             # By default leader election is enabled. However, we disable as we
             # use only one replica of localpv provisioner.
+            # CUSTOM: Set LEADER_ELECTION_ENABLED to false to disable leader election
             - name: LEADER_ELECTION_ENABLED
               value: "false"
           # OPENEBS_IO_IMAGE_PULL_SECRETS environment variable is used to pass the image pull secrets
@@ -99,3 +101,29 @@ spec:
                 - test `pgrep -c "^provisioner-loc.*"` = 1
             initialDelaySeconds: 30
             periodSeconds: 60
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: openebs-hostpath
+  annotations:
+    openebs.io/cas-type: local
+    cas.openebs.io/config: |
+      #hostpath type will create a PV by 
+      # creating a sub-directory under the
+      # BASEPATH provided below.
+      - name: StorageType
+        value: "hostpath"
+      #Specify the location (directory) where
+      # where PV(volume) data will be saved. 
+      # A sub-directory with pv-name will be 
+      # created. When the volume is deleted, 
+      # the PV sub-directory will be deleted.
+      #Default value is /var/openebs/local
+      - name: BasePath
+        value: "/var/openebs/local/"
+    # CUSTOM: Set openebs-hostpath as the default storage class
+    storageclass.kubernetes.io/is-default-class: "true"
+provisioner: openebs.io/local
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Delete
