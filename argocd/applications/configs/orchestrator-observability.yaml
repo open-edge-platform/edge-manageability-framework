@@ -20,7 +20,7 @@ mimir-distributed:
       exitCommand: ""
 
 opentelemetry-collector:
-  config:
+  alternateConfig:
     receivers:
       otlp:
         protocols:
@@ -35,7 +35,7 @@ opentelemetry-collector:
         sampling_percentage: 50
 
 opentelemetry-collector-daemonset:
-  config:
+  alternateConfig:
     receivers:
       otlp:
         protocols:
