@@ -49,6 +49,9 @@ func (s *OrchConfigFormTest) testConfigureGlobal() {
 	// enter admin email
 	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("admin@example.com")})
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
+	// enter admin password
+	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("dummy-password")})
+	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
 	// Select 10~100 ENs
 	model.Update(tea.KeyMsg{Type: tea.KeyDown})
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
