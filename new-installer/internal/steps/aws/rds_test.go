@@ -259,6 +259,5 @@ func (s *RDSStepTest) expectAWSUtiliyCall(action string) {
 		s.awsUtility.On("DisableRDSDeletionProtection",
 			s.config.AWS.Region, s.config.Global.OrchName,
 		).Return(nil).Once()
-
 	}
 }
