@@ -57,6 +57,7 @@ func (s *EKSStepTest) SetupTest() {
 	s.runtimeState.LogDir = filepath.Join(rootPath, ".logs")
 	s.runtimeState.AWS.VPCID = "vpc-12345678"
 	s.runtimeState.AWS.PrivateSubnetIDs = []string{"subnet-12345678", "subnet-23456789", "subnet-34567890"}
+	s.runtimeState.AWS.JumpHostSocks5TunnelPort = 12345
 
 	if _, err := os.Stat(s.logDir); os.IsNotExist(err) {
 		err := os.MkdirAll(s.logDir, os.ModePerm)
@@ -236,6 +237,7 @@ func (s *EKSStepTest) expectUtiliyCall(action string) {
 		HTTPProxy:           "",
 		HTTPSProxy:          "",
 		NoProxy:             "",
+		KubectlSocksProxy:   "socks5://127.0.0.1:12345",
 	}
 
 	expectedBackendConfig := steps_aws.TerraformAWSBucketBackendConfig{
