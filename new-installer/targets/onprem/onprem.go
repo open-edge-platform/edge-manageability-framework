@@ -12,7 +12,6 @@ import (
 )
 
 func CreateOnPremStages(rootPath string, keepGeneratedFiles bool, orchConfigReaderWriter config.OrchConfigReaderWriter) ([]internal.OrchInstallerStage, error) {
-
 	var preInfraStage, infraStage, orchStage internal.OrchInstallerStage
 
 	preInfraStage = NewOnPremStage(
