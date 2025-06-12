@@ -144,6 +144,13 @@ resource "null_resource" "set_env" {
     command = <<EOT
         set -eu
         sleep 10
+        for i in $(seq 1 10); do
+          if ! kubectl get nodes --kubeconfig "${local.kube_config_path}" --context "arn:aws:eks:${var.region}:${local.aws_account_id}:cluster/${var.name}"; then
+              sleep 20
+          else
+              break
+          fi
+        done
         kubectl set env ds aws-node --kubeconfig "${local.kube_config_path}" --context "arn:aws:eks:${var.region}:${local.aws_account_id}:cluster/${var.name}" -n kube-system WARM_PREFIX_TARGET=0
         kubectl set env ds aws-node --kubeconfig "${local.kube_config_path}" --context "arn:aws:eks:${var.region}:${local.aws_account_id}:cluster/${var.name}" -n kube-system WARM_IP_TARGET=2
         kubectl set env ds aws-node --kubeconfig "${local.kube_config_path}" --context "arn:aws:eks:${var.region}:${local.aws_account_id}:cluster/${var.name}" -n kube-system MINIMUM_IP_TARGET=0
