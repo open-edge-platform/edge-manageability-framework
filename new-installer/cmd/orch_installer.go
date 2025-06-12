@@ -35,7 +35,7 @@ func main() {
 	var configFile, runtimeStateFile, logLevel, logDir, targets string
 	var keepGeneratedFiles bool
 	rootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "config.yaml", "Path to the configuration file")
-	rootCmd.PersistentFlags().StringVarP(&runtimeStateFile, "runtime-state", "r", "config.yaml", "Path to the runtime state file")
+	rootCmd.PersistentFlags().StringVarP(&runtimeStateFile, "runtime-state", "r", "runtime-state.yaml", "Path to the runtime state file")
 	rootCmd.PersistentFlags().StringVarP(&logLevel, "log-level", "l", "info", "Log level (debug, info, warn, error)")
 	rootCmd.PersistentFlags().StringVarP(&logDir, "log-dir", "o", ".logs", "Path to the log dir")
 	rootCmd.PersistentFlags().BoolVarP(&keepGeneratedFiles, "keep-generated-files", "k", false, "Keep generated files, such as Terraform backend config and variables files.")
@@ -100,6 +100,13 @@ func execute(action string, orchConfigFile string, runtimeStateFile string, logD
 	orchConfig, err := orchConfigReaderWriter.ReadOrchConfig()
 	if err != nil {
 		logger.Fatalf("error reading config file %s: %s", orchConfigFile, err)
+	}
+	if _, err := os.Stat(runtimeStateFile); os.IsNotExist(err) {
+		logger.Infof("Runtime state file %s does not exist, creating a new one.", runtimeStateFile)
+		err = orchConfigReaderWriter.WriteRuntimeState(config.OrchInstallerRuntimeState{})
+		if err != nil {
+			logger.Fatalf("error creating runtime state file: %s", err)
+		}
 	}
 	runtimeState, err := orchConfigReaderWriter.ReadRuntimeState()
 	if err != nil {
