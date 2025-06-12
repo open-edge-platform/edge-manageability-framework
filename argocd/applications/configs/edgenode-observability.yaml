@@ -20,7 +20,7 @@ mimir-distributed:
       exitCommand: ""
 
 opentelemetry-collector:
-  config:
+  alternateConfig:
     receivers:
       otlp:
         protocols:

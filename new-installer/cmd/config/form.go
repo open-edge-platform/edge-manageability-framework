@@ -33,6 +33,13 @@ func configureGlobal() *huh.Group {
 			Placeholder("firstname.lastname@intel.com").
 			Validate(validateAdminEmail).
 			Value(&input.Global.AdminEmail),
+		huh.NewInput().
+			Title("Admin Password").
+			Description("Admin password. This will be used to set up Argo CD, Keycloak and a few other resouces").
+			Placeholder("").
+			EchoMode(huh.EchoModePassword).
+			Validate(huh.ValidateNotEmpty()).
+			Value(&input.Global.AdminPassword),
 		huh.NewSelect[config.Scale]().
 			Title("Scale").
 			Description("Select target scale").
@@ -352,7 +359,7 @@ func configureSre() *huh.Group {
 			Validate(validateSreCaSecret).
 			Value(&input.SRE.CASecret),
 	).WithHideFunc(func() bool {
-		return !flags.ConfigureCert
+		return !flags.ConfigureSre
 	}).Title("Step 6: (Optional) Site Reliability Engineering (SRE)\n")
 }
 
