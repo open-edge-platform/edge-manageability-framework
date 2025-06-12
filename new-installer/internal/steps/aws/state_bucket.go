@@ -97,6 +97,12 @@ func (s *AWSStateBucketStep) RunStep(ctx context.Context, config config.OrchInst
 		LogFile:            filepath.Join(s.RootPath, ".logs", "aws_state_bucket.log"),
 		KeepGeneratedFiles: s.KeepGeneratedFiles,
 	})
+	if err != nil {
+		return runtimeState, &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeInternal,
+			ErrorMsg:  fmt.Sprintf("Failed to run Terraform for AWS state bucket: %v", err),
+		}
+	}
 	if runtimeState.Action != "uninstall" && output.TerraformState == "" {
 		return runtimeState, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInternal,
