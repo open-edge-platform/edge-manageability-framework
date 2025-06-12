@@ -51,6 +51,7 @@ type OrchInstallerRuntimeState struct {
 		JumpHostIP               string   `yaml:"jumpHostIP"`
 		JumpHostSSHKeyPublicKey  string   `yaml:"jumpHostSSHPublicKey"`
 		JumpHostSSHKeyPrivateKey string   `yaml:"jumpHostSSHPrivateKey"`
+		JumpHostSocks5TunnelPort int      `yaml:"jumpHostSocks5TunnelPort"` // Socks5 port that forwarded traffic via the jumphost.
 		EFSFileSystemID          string   `yaml:"efsFileSystemID"`
 		EKSOIDCIssuer            string   `yaml:"eksOIDCIssuer"`
 		ACMCertArn               string   `yaml:"acmCertArn"`

@@ -7,9 +7,12 @@ package aws_iac_test
 import (
 	"crypto/rand"
 	"encoding/json"
+	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 	"testing"
+	"time"
 
 	terratest_aws "github.com/gruntwork-io/terratest/modules/aws"
 	"github.com/gruntwork-io/terratest/modules/terraform"
@@ -24,6 +27,8 @@ type EKSTestSuite struct {
 	vpcID            string
 	publicSubnetIDs  []string
 	privateSubnetIDs []string
+	sshTunnelCmd     *exec.Cmd
+	tunnelSocksPort  int
 }
 
 func TestEKSTestSuite(t *testing.T) {
@@ -43,25 +48,31 @@ func (s *EKSTestSuite) SetupTest() {
 		s.NoError(err, "Failed to create VPC and subnet")
 		return
 	}
-	err = utils.StartSshuttle(jumphostIP, jumphostPrivateKey, steps_aws.DefaultNetworkCIDR)
-	if err != nil {
-		s.NoError(err, "Failed to start sshuttle")
+	if err := utils.WaitUntilJumphostIsReachable(jumphostPrivateKey, jumphostIP); err != nil {
+		s.NoError(err, "Failed to wait until jumphost is reachable")
 		return
+	}
+	s.sshTunnelCmd, s.tunnelSocksPort, err = utils.StartSSHSocks5Tunnel(jumphostIP, jumphostPrivateKey)
+	if err != nil {
+		s.NoError(err, "Failed to start ssh tunnel")
+		return
+	}
+	time.Sleep(5 * time.Second) // Wait for the tunnel to be established
+	if s.sshTunnelCmd.Process == nil {
+		s.T().Fatal("SSH tunnel process is nil, failed to start tunnel")
 	}
 }
 
 func (s *EKSTestSuite) TearDownTest() {
-	err := utils.StopSshuttle()
-	if err != nil {
-		s.NoError(err, "Failed to stop sshuttle")
+	if s.sshTunnelCmd == nil && s.sshTunnelCmd.Process == nil {
+		if err := s.sshTunnelCmd.Process.Kill(); err != nil {
+			s.NoError(err, "Failed to stop ssh tunnel")
+		}
 	}
-
-	err = utils.DeleteVPC(s.T(), s.name)
-	if err != nil {
+	if err := utils.DeleteVPC(s.T(), s.name); err != nil {
 		s.NoError(err, "Failed to delete VPC")
 		return
 	}
-
 	terratest_aws.EmptyS3Bucket(s.T(), utils.DefaultTestRegion, s.name)
 	terratest_aws.DeleteS3Bucket(s.T(), utils.DefaultTestRegion, s.name)
 }
@@ -102,6 +113,7 @@ func (s *EKSTestSuite) TestApplyingModule() {
 			},
 		},
 		AdditionalNodeGroups: map[string]steps_aws.EKSNodeGroup{},
+		KubectlSocksProxy:    fmt.Sprintf("socks5://127.0.0.1:%d", s.tunnelSocksPort),
 	}
 
 	jsonData, err := json.Marshal(eksVars)

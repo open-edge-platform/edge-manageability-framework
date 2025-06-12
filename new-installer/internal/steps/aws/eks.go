@@ -69,6 +69,7 @@ type EKSVariables struct {
 	HTTPProxy               string                  `json:"http_proxy"`
 	HTTPSProxy              string                  `json:"https_proxy"`
 	NoProxy                 string                  `json:"no_proxy"`
+	KubectlSocksProxy       string                  `json:"kubectl_socks_proxy,omitempty"`
 }
 
 type EKSStep struct {
@@ -130,6 +131,7 @@ func (s *EKSStep) ConfigStep(ctx context.Context, config config.OrchInstallerCon
 	s.variables.HTTPProxy = config.Proxy.HTTPProxy
 	s.variables.HTTPSProxy = config.Proxy.HTTPSProxy
 	s.variables.NoProxy = config.Proxy.NoProxy
+	s.variables.KubectlSocksProxy = fmt.Sprintf("socks5://127.0.0.1:%d", runtimeState.AWS.JumpHostSocks5TunnelPort)
 
 	s.backendConfig.Key = EKSBackendBucketKey
 	s.backendConfig.Region = config.AWS.Region

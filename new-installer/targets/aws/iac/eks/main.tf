@@ -110,7 +110,6 @@ resource "null_resource" "wait_eks_complete" {
   provisioner "local-exec" {
     command = <<EOT
         set -eu
-
         # Wait the eks cluster to be available in 200 seconds.
         for i in $(seq 1 10); do
             if ! aws eks update-kubeconfig --name "${var.name}" --region "${var.region}" --kubeconfig "${local.kube_config_path}"; then
@@ -119,7 +118,6 @@ resource "null_resource" "wait_eks_complete" {
                 break
             fi
         done
-
         test $i -le 10
 EOT
   }
@@ -143,14 +141,14 @@ resource "null_resource" "set_env" {
   provisioner "local-exec" {
     command = <<EOT
         set -eu
-        sleep 10
-        for i in $(seq 1 10); do
-          if ! kubectl get nodes --kubeconfig "${local.kube_config_path}" --context "arn:aws:eks:${var.region}:${local.aws_account_id}:cluster/${var.name}"; then
-              sleep 20
-          else
-              break
-          fi
-        done
+        # Unset all proxy variables to avoid issues with kubectl commands.
+        # Use socks proxy for kubectl to connect to the EKS cluster via the jumphost if any.
+        HTTPS_PROXY="${var.kubectl_socks_proxy}"
+        HTTP_PROXY=""
+        NO_PROXY=""
+        http_proxy=""
+        https_proxy=""
+        no_proxy=""
         kubectl set env ds aws-node --kubeconfig "${local.kube_config_path}" --context "arn:aws:eks:${var.region}:${local.aws_account_id}:cluster/${var.name}" -n kube-system WARM_PREFIX_TARGET=0
         kubectl set env ds aws-node --kubeconfig "${local.kube_config_path}" --context "arn:aws:eks:${var.region}:${local.aws_account_id}:cluster/${var.name}" -n kube-system WARM_IP_TARGET=2
         kubectl set env ds aws-node --kubeconfig "${local.kube_config_path}" --context "arn:aws:eks:${var.region}:${local.aws_account_id}:cluster/${var.name}" -n kube-system MINIMUM_IP_TARGET=0

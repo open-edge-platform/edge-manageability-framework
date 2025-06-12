@@ -25,6 +25,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/gruntwork-io/terratest/modules/terraform"
 	"github.com/gruntwork-io/terratest/modules/testing"
+	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
 	steps_aws "github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps/aws"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/ssh"
@@ -316,7 +317,7 @@ func DeleteVPC(t testing.TestingT, name string) error {
 	return nil
 }
 
-func WaitUnitlJumphostIsReachable(privateKey string, jumphostIP string) error {
+func WaitUntilJumphostIsReachable(privateKey string, jumphostIP string) error {
 	privateKeyFile, err := os.CreateTemp("", "jumphost-key-*.pem")
 	defer os.Remove(privateKeyFile.Name()) // Clean up the temporary file after use
 	if err != nil {
@@ -382,66 +383,78 @@ func getMyPublicIP() (string, error) {
 	return publicIP, nil
 }
 
-func StartSshuttle(jumphostIP string, jumphostKey string, remoteCIDRBlock string) error {
+func StartSSHSocks5Tunnel(jumphostIP string, jumphostKey string) (cmd *exec.Cmd, socksPort int, err error) {
 	// Create a temporary file for the private key
 	privateKeyFile, err := os.CreateTemp("", "jumphost-key-*.pem")
-	defer os.Remove(privateKeyFile.Name()) // Clean up the temporary file after sshuttle started
 	if err != nil {
-		return fmt.Errorf("failed to create temporary private key file: %w", err)
+		return nil, 0, fmt.Errorf("failed to create temporary private key file: %w", err)
 	}
 	if _, err := privateKeyFile.WriteString(jumphostKey); err != nil {
-		return fmt.Errorf("failed to write private key to temporary file: %w", err)
+		return nil, 0, fmt.Errorf("failed to write private key to temporary file: %w", err)
 	}
 	if err := privateKeyFile.Close(); err != nil {
-		return fmt.Errorf("failed to close temporary private key file: %w", err)
+		return nil, 0, fmt.Errorf("failed to close temporary private key file: %w", err)
 	}
 	// Set the file permissions to read/write for the owner only
 	if err := os.Chmod(privateKeyFile.Name(), 0o400); err != nil {
-		return fmt.Errorf("failed to set permissions on temporary private key file: %w", err)
+		return nil, 0, fmt.Errorf("failed to set permissions on temporary private key file: %w", err)
 	}
-	// Construct the sshuttle command
-	var cmd *exec.Cmd
+	listener, err := net.Listen("tcp", ":0")
+	if err != nil {
+		return nil, 0, err
+	}
+	listener.Close()
+	socksPort = listener.Addr().(*net.TCPAddr).Port
+	sshConfig := fmt.Sprintf(`Host jumphost
+	HostName %s
+	User ubuntu
+	IdentityFile %s
+	StrictHostKeyChecking no
+	BatchMode yes
+	UserKnownHostsFile /dev/null
+	ExitOnForwardFailure yes`, jumphostIP, privateKeyFile.Name())
 	if socksProxy := os.Getenv("SOCKS_PROXY"); socksProxy != "" {
-		cmd = exec.Command("sshuttle", "--pidfile", "/tmp/sshuttle.pid", "-D", "-e", fmt.Sprintf("ssh -o ProxyCommand='nc -x %s %%h %%p' -i %s -o StrictHostKeyChecking=no", socksProxy, privateKeyFile.Name()), "-r", fmt.Sprintf("ubuntu@%s", jumphostIP), remoteCIDRBlock)
-	} else {
-		cmd = exec.Command("sshuttle", "--pidfile", "/tmp/sshuttle.pid", "-D", "-r", fmt.Sprintf("ubuntu@%s", jumphostIP), "--ssh-cmd", fmt.Sprintf("ssh -i %s -o StrictHostKeyChecking=no", privateKeyFile.Name()), remoteCIDRBlock)
+		sshConfig += fmt.Sprintf("\n\tProxyCommand nc -x %s %%h %%p\n", socksProxy)
 	}
-	log.Printf("Starting sshuttle command: %s", cmd.String())
-
-	// It will actually run in the background due to the -D flag
-	// Use /tmp/sshuttle.pid to track the process
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to start sshuttle command: %w", err)
-	}
-	time.Sleep(5 * time.Second) // Wait for sshuttle to establish the connection
-	// Print the PID of the sshuttle process
-	pid, err := os.ReadFile("/tmp/sshuttle.pid")
+	sshConfigFile, err := os.CreateTemp("", "ssh-config-*.txt")
 	if err != nil {
-		log.Printf("Failed to read sshuttle PID file: %v", err)
-	} else {
-		log.Printf("sshuttle is running with PID: %s", strings.TrimSpace(string(pid)))
+		return nil, 0, fmt.Errorf("failed to create temporary SSH config file: %w", err)
 	}
-	return nil
-}
-
-func StopSshuttle() error {
-	// Read the PID from the sshuttle PID file
-	pidFile := "/tmp/sshuttle.pid"
-	pidData, err := os.ReadFile(pidFile)
+	if err := os.Chmod(sshConfigFile.Name(), 0o400); err != nil {
+		return nil, 0, fmt.Errorf("failed to set permissions on temporary SSH config file: %w", err)
+	}
+	if _, err := sshConfigFile.WriteString(sshConfig); err != nil {
+		return nil, 0, fmt.Errorf("failed to write SSH config to temporary file: %w", err)
+	}
+	cmd = exec.Command("ssh",
+		"-f",                               // Run in the background
+		"-N",                               // Do not execute any commands
+		"-n",                               // Redirect stdin to /dev/null
+		"-D", fmt.Sprintf("%d", socksPort), // Set up a SOCKS proxy on the specified port
+		"-F", sshConfigFile.Name(), // Use the temporary SSH config file
+		"jumphost")
+	tempFile, err := os.CreateTemp("", "ssh-tunnel-stdout-*.log")
 	if err != nil {
-		// Failed to read it, assume the process is not running
-		return nil
+		return nil, 0, fmt.Errorf("failed to create temporary stdout log file: %w", err)
 	}
-
-	// Convert the PID to an integer
-	pid := strings.TrimSpace(string(pidData))
-	cmd := exec.Command("kill", pid)
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to terminate sshuttle process with PID %s: %w", pid, err)
+	cmd.Stdout, err = internal.FileLogWriter(tempFile.Name())
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to create stdout log writer: %w", err)
 	}
-
-	log.Println("Stopped sshuttle successfully")
-	return nil
+	tempFile, err = os.CreateTemp("", "ssh-tunnel-stderr-*.log")
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to create temporary stderr log file: %w", err)
+	}
+	cmd.Stderr, err = internal.FileLogWriter(tempFile.Name())
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to create stderr log writer: %w", err)
+	}
+	log.Printf("Starting ssh tunnel command: %s", cmd.String())
+	if err := cmd.Start(); err != nil {
+		log.Printf("failed to start ssh tunnel: %v", err)
+	}
+	log.Printf("SSH tunnel started with pid: %d", cmd.Process.Pid)
+	return cmd, socksPort, nil
 }
 
 func GenerateSSHKeyPair() (string, string, error) {
