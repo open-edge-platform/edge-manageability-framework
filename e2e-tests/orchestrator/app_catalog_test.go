@@ -159,7 +159,7 @@ var (
 				It("should determine that the new registry was created", func() {
 					r := GetRegistry(ctx, c, accessToken, testProject, "bitnami-helm-oci", http.StatusOK, checkRESTResponse)
 					Expect(r.Name).To(Equal("bitnami-helm-oci"))
-					Expect(r.Description).To(Equal("bitnami-helm-oci"))
+					Expect(r.Description).To(Equal("Bitnami helm registry"))
 					Expect(r.Type).To(Equal("HELM"))
 					Expect(r.RootURL).To(Equal("oci://registry-1.docker.io/bitnamicharts"))
 				})
