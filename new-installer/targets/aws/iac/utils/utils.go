@@ -491,7 +491,6 @@ func CreateSecurityGroup(t testing.TestingT, name string, vpcID string) (string,
 			},
 		},
 	})
-
 	if err != nil {
 		return "", fmt.Errorf("failed to create security group: %w", err)
 	}
@@ -510,8 +509,11 @@ func DeleteSecurityGroup(t testing.TestingT, sgID string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create EC2 client: %w", err)
 	}
-	ec2Client.DeleteSecurityGroup(&ec2.DeleteSecurityGroupInput{
+	_, err = ec2Client.DeleteSecurityGroup(&ec2.DeleteSecurityGroupInput{
 		GroupId: aws.String(sgID), // Replace with actual SG ID
 	})
+	if err != nil {
+		return fmt.Errorf("failed to delete security group: %w", err)
+	}
 	return nil
 }

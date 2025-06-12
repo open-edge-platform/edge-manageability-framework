@@ -50,23 +50,56 @@ func (s *LBSGTestSuite) SetupTest() {
 	randomPostfix := strings.ToLower(rand.Text()[:8])
 	s.name = "lbsg-test-" + randomPostfix
 	terratest_aws.CreateS3Bucket(s.T(), utils.DefaultTestRegion, s.name)
-	vpcID, _, _, _, _, err := utils.CreateVPC(s.T(), s.name)
+	vpcID, _, _, _, _, err := utils.CreateVPC(s.T(), s.name) //nolint:dogsled
 	s.Require().NoError(err, "Failed to create VPC for LB SG test")
 	s.vpcID = vpcID
+	// Create parent security group for EKS
 	s.eksSGID, err = utils.CreateSecurityGroup(s.T(), s.name+"-eks", s.vpcID)
+	if err != nil {
+		s.T().Fatalf("Failed to create EKS Node security group: %v", err)
+	}
+	// Create security groups for Traefik, Traefik2, and ArgoCD
 	s.traefikSGID, err = utils.CreateSecurityGroup(s.T(), s.name+"-traefik", s.vpcID)
+	if err != nil {
+		s.T().Fatalf("Failed to create Traefik security group: %v", err)
+	}
 	s.traefik2SGID, err = utils.CreateSecurityGroup(s.T(), s.name+"-traefik2", s.vpcID)
+	if err != nil {
+		s.T().Fatalf("Failed to create Traefik2 security group: %v", err)
+	}
 	s.argocdSGID, err = utils.CreateSecurityGroup(s.T(), s.name+"-argocd", s.vpcID)
-	s.Require().NoError(err, "Failed to create test security group")
-
+	if err != nil {
+		s.T().Fatalf("Failed to create ArgoCD security group: %v", err)
+	}
 }
 
 func (s *LBSGTestSuite) TearDownTest() {
-	utils.DeleteSecurityGroup(s.T(), s.eksSGID)
-	utils.DeleteSecurityGroup(s.T(), s.traefikSGID)
-	utils.DeleteSecurityGroup(s.T(), s.traefik2SGID)
-	utils.DeleteSecurityGroup(s.T(), s.argocdSGID)
-	utils.DeleteVPC(s.T(), s.name)
+	// Delete the EKS Node security group
+	err := utils.DeleteSecurityGroup(s.T(), s.eksSGID)
+	if err != nil {
+		s.T().Fatalf("Failed to delete EKS Node security group: %v", err)
+	}
+	// Delete the Traefik security group
+	err = utils.DeleteSecurityGroup(s.T(), s.traefikSGID)
+	if err != nil {
+		s.T().Fatalf("Failed to delete Traefik security group: %v", err)
+	}
+	// Delete the security groups created for the test
+	err = utils.DeleteSecurityGroup(s.T(), s.traefik2SGID)
+	if err != nil {
+		s.T().Fatalf("Failed to delete Traefik2 security group: %v", err)
+	}
+	// Delete the ArgoCD security group
+	err = utils.DeleteSecurityGroup(s.T(), s.argocdSGID)
+	if err != nil {
+		s.T().Fatalf("Failed to delete ArgoCD security group: %v", err)
+	}
+	// Delete the VPC created for the test
+	err = utils.DeleteVPC(s.T(), s.name)
+	if err != nil {
+		s.T().Fatalf("Failed to delete VPC: %v", err)
+	}
+	// Empty and delete the S3 bucket created for the test
 	terratest_aws.EmptyS3Bucket(s.T(), utils.DefaultTestRegion, s.name)
 	terratest_aws.DeleteS3Bucket(s.T(), utils.DefaultTestRegion, s.name)
 }
@@ -121,16 +154,17 @@ func (s *LBSGTestSuite) TestApplyingModule() {
 				Values: []string{s.eksSGID},
 			},
 			{
-				Name:   aws_sdk.String("referenced-security-group-id"),
-				Values: []string{s.traefikSGID},
+				Name:   aws_sdk.String("tag:name"),
+				Values: []string{"traefik_ingress_rule"},
 			},
 		},
 	})
 	s.Require().NoError(err, "Failed to describe security group rules")
-	s.Assert().Len(traefikRule.SecurityGroupRules, 1, "Expected 1 rule for Traefik access to EKS Nodes")
-	s.Assert().Equal(int32(8443), traefikRule.SecurityGroupRules[0].ToPort, "Expected Traefik rule to allow traffic to port 8843")
-	s.Assert().Equal(int32(8443), traefikRule.SecurityGroupRules[0].FromPort, "Expected Traefik rule to allow traffic from port 8843")
-	s.Assert().Equal("tcp", traefikRule.SecurityGroupRules[0].IpProtocol, "Expected Traefik rule to use TCP protocol")
+	s.Len(traefikRule.SecurityGroupRules, 1, "Expected 1 rule for Traefik access to EKS Nodes")
+	s.Equal(int32(8443), *traefikRule.SecurityGroupRules[0].ToPort, "Expected Traefik rule to allow traffic to port 8443")
+	s.Equal(int32(8443), *traefikRule.SecurityGroupRules[0].FromPort, "Expected Traefik rule to allow traffic from port 8443")
+	s.Equal("tcp", *traefikRule.SecurityGroupRules[0].IpProtocol, "Expected Traefik rule to use TCP protocol")
+	s.Equal(s.traefikSGID, *traefikRule.SecurityGroupRules[0].ReferencedGroupInfo.GroupId, "Traefik rule should reference the Traefik security group")
 	// Check if traefik2 rule is valid
 	traefik2Rule, err := ec2Client.DescribeSecurityGroupRules(s.T().Context(), &ec2.DescribeSecurityGroupRulesInput{
 		Filters: []types.Filter{
@@ -139,16 +173,17 @@ func (s *LBSGTestSuite) TestApplyingModule() {
 				Values: []string{s.eksSGID},
 			},
 			{
-				Name:   aws_sdk.String("referenced-security-group-id"),
-				Values: []string{s.traefik2SGID},
+				Name:   aws_sdk.String("tag:name"),
+				Values: []string{"traefik2_ingress_rule"},
 			},
 		},
 	})
 	s.Require().NoError(err, "Failed to describe security group rules")
-	s.Assert().Len(traefik2Rule.SecurityGroupRules, 1, "Expected 1 rule for Traefik2 access to EKS Nodes")
-	s.Assert().Equal(int32(8843), traefik2Rule.SecurityGroupRules[0].ToPort, "Expected Traefik2 rule to allow traffic to port 8843")
-	s.Assert().Equal(int32(8843), traefik2Rule.SecurityGroupRules[0].FromPort, "Expected Traefik2 rule to allow traffic from port 8843")
-	s.Assert().Equal("tcp", traefik2Rule.SecurityGroupRules[0].IpProtocol, "Expected Traefik2 rule to use TCP protocol")
+	s.Len(traefik2Rule.SecurityGroupRules, 1, "Expected 1 rule for Traefik2 access to EKS Nodes")
+	s.Equal(int32(443), *traefik2Rule.SecurityGroupRules[0].ToPort, "Expected Traefik2 rule to allow traffic to port 443")
+	s.Equal(int32(443), *traefik2Rule.SecurityGroupRules[0].FromPort, "Expected Traefik2 rule to allow traffic from port 443")
+	s.Equal("tcp", *traefik2Rule.SecurityGroupRules[0].IpProtocol, "Expected Traefik2 rule to use TCP protocol")
+	s.Equal(s.traefik2SGID, *traefik2Rule.SecurityGroupRules[0].ReferencedGroupInfo.GroupId, "Traefik2 rule should reference the Traefik2 security group")
 	// Check if ArgoCD rule is valid
 	argocdRule, err := ec2Client.DescribeSecurityGroupRules(s.T().Context(), &ec2.DescribeSecurityGroupRulesInput{
 		Filters: []types.Filter{
@@ -157,20 +192,17 @@ func (s *LBSGTestSuite) TestApplyingModule() {
 				Values: []string{s.eksSGID},
 			},
 			{
-				Name:   aws_sdk.String("referenced-security-group-id"),
-				Values: []string{s.argocdSGID},
-			},
-			{
 				Name:   aws_sdk.String("tag:name"),
 				Values: []string{"argocd_ingress_rule"},
 			},
 		},
 	})
 	s.Require().NoError(err, "Failed to describe security group rules")
-	s.Assert().Len(argocdRule.SecurityGroupRules, 1, "Expected 1 rule for ArgoCD access to EKS Nodes")
-	s.Assert().Equal(int32(8080), argocdRule.SecurityGroupRules[0].ToPort, "Expected ArgoCD rule to allow traffic to port 8080")
-	s.Assert().Equal(int32(8080), argocdRule.SecurityGroupRules[0].FromPort, "Expected ArgoCD rule to allow traffic from port 8080")
-	s.Assert().Equal("tcp", argocdRule.SecurityGroupRules[0].IpProtocol, "Expected ArgoCD rule to use TCP protocol")
+	s.Len(argocdRule.SecurityGroupRules, 1, "Expected 1 rule for ArgoCD access to EKS Nodes")
+	s.Equal(int32(8080), *argocdRule.SecurityGroupRules[0].ToPort, "Expected ArgoCD rule to allow traffic to port 8080")
+	s.Equal(int32(8080), *argocdRule.SecurityGroupRules[0].FromPort, "Expected ArgoCD rule to allow traffic from port 8080")
+	s.Equal("tcp", *argocdRule.SecurityGroupRules[0].IpProtocol, "Expected ArgoCD rule to use TCP protocol")
+	s.Equal(s.argocdSGID, *argocdRule.SecurityGroupRules[0].ReferencedGroupInfo.GroupId, "Argocd rule should reference the ArgoCD security group")
 	// Check if Gitea rule is valid
 	giteaRule, err := ec2Client.DescribeSecurityGroupRules(s.T().Context(), &ec2.DescribeSecurityGroupRulesInput{
 		Filters: []types.Filter{
@@ -179,19 +211,15 @@ func (s *LBSGTestSuite) TestApplyingModule() {
 				Values: []string{s.eksSGID},
 			},
 			{
-				Name:   aws_sdk.String("referenced-security-group-id"),
-				Values: []string{s.argocdSGID},
-			},
-			{
 				Name:   aws_sdk.String("tag:name"),
 				Values: []string{"gitea_ingress_rule"},
 			},
 		},
 	})
 	s.Require().NoError(err, "Failed to describe security group rules")
-	s.Assert().Len(giteaRule.SecurityGroupRules, 1, "Expected 1 rule for Gitea access to EKS Nodes")
-	s.Assert().Equal(int32(3000), giteaRule.SecurityGroupRules[0].ToPort, "Expected Gitea rule to allow traffic to port 3000")
-	s.Assert().Equal(int32(3000), giteaRule.SecurityGroupRules[0].FromPort, "Expected Gitea rule to allow traffic from port 3000")
-	s.Assert().Equal("tcp", giteaRule.SecurityGroupRules[0].IpProtocol, "Expected Gitea rule to use TCP protocol")
-
+	s.Len(giteaRule.SecurityGroupRules, 1, "Expected 1 rule for Gitea access to EKS Nodes")
+	s.Equal(int32(3000), *giteaRule.SecurityGroupRules[0].ToPort, "Expected Gitea rule to allow traffic to port 3000")
+	s.Equal(int32(3000), *giteaRule.SecurityGroupRules[0].FromPort, "Expected Gitea rule to allow traffic from port 3000")
+	s.Equal("tcp", *giteaRule.SecurityGroupRules[0].IpProtocol, "Expected Gitea rule to use TCP protocol")
+	s.Equal(s.argocdSGID, *giteaRule.SecurityGroupRules[0].ReferencedGroupInfo.GroupId, "Gitea rule should reference the ArgoCD security group")
 }
