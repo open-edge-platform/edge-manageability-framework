@@ -90,5 +90,5 @@ func (a *AWSStage) RunStage(ctx context.Context, config *config.OrchInstallerCon
 }
 
 func (a *AWSStage) PostStage(ctx context.Context, config *config.OrchInstallerConfig, runtimeState *config.OrchInstallerRuntimeState, prevStageError *internal.OrchInstallerError) *internal.OrchInstallerError {
-	return nil
+	return prevStageError
 }
