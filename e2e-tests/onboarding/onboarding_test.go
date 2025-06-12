@@ -21,9 +21,24 @@ import (
 var _ = Describe("Node Onboarding test (Non-Interactive flow)", func() {
 	It("should onboard a node successfully", func(ctx SpecContext) {
 		By("Deploying a new Edge Node")
+
+		// Copy the current working directory to restore it later
+		// This is necessary because the mage.Deploy{}.VENWithFlow function 
+		// changes the current working directory to the directory where 
+		// the Edge Node deployment files are located.
+		initialDir, err := os.Getwd()
+		if err != nil {
+			return fmt.Errorf("failed to get current working directory: %w", err)
+		}
+
 		serialNumber := "EN123456789"
 		err := mage.Deploy{}.VENWithFlow(ctx, "nio", serialNumber)
 		Expect(err).NotTo(HaveOccurred())
+
+		// Restore the initial working directory
+		if err := os.Chdir(initialDir); err != nil {
+			return fmt.Errorf("failed to change directory to '%s': %w", initialDir, err)
+		}
 
 		By("Creating an Orchestrator client")
 		httpCli := &http.Client{

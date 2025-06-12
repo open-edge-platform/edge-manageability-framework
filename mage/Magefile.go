@@ -883,11 +883,6 @@ func (d Deploy) VENWithFlow(ctx context.Context, flow string, serialNumber strin
 		return fmt.Errorf("failed to get default Orchestrator password: %w", err)
 	}
 
-	initialDir, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("failed to get current working directory: %w", err)
-	}
-
 	tempDir, err := os.MkdirTemp("", "ven-clone")
 	if err != nil {
 		return fmt.Errorf("failed to create temporary directory: %w", err)
@@ -908,7 +903,7 @@ func (d Deploy) VENWithFlow(ctx context.Context, flow string, serialNumber strin
 		return fmt.Errorf("failed to change directory to 'ven': %w", err)
 	}
 
-	if err := sh.RunV("git", "checkout", "pico/1.5.0"); err != nil {
+	if err := sh.RunV("git", "checkout", "pico/1.5.2"); err != nil {
 		return fmt.Errorf("failed to checkout specific commit: %w", err)
 	}
 
@@ -1168,10 +1163,6 @@ STANDALONE=0
 	}
 
 	fmt.Printf("VEN deployment started 🚀\n")
-
-	if err := os.Chdir(initialDir); err != nil {
-		return fmt.Errorf("failed to change directory to '%s': %w", initialDir, err)
-	}
 
 	return nil
 }
