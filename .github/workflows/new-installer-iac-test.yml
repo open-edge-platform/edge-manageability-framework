@@ -171,3 +171,10 @@ jobs:
       - name: Test new installer IaC - waf
         if: needs.check-changed-files.outputs.waf == 'true'
         run: mage newinstaller:testiac waf
+
+      - name: Upload test artifacts
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: installer-artifacts
+          path: |
+            /tmp
