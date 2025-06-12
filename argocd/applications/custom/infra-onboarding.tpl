@@ -177,8 +177,7 @@ onboarding-manager:
   {{- end}}
 
 pxe-server:
-  proxy-dhcp:
-    config:
-      interface: {{ index .Values.argo "infra-onboarding" "pxe-server" "interface" | default "" }}
-      bootServerIP: {{ index .Values.argo "infra-onboarding" "pxe-server" "bootServerIP" | default "" }}
-      subnetAddress: {{ index .Values.argo "infra-onboarding" "pxe-server" "subnetAddress" | default "" }}
+  config:
+    interface: {{ index .Values.argo "infra-onboarding" "pxe-server" "interface" | default "" }}
+    bootServerIP: {{ index .Values.argo "infra-onboarding" "pxe-server" "bootServerIP" | default "" }}
+    subnetAddress: {{ index .Values.argo "infra-onboarding" "pxe-server" "subnetAddress" | default "" }}
