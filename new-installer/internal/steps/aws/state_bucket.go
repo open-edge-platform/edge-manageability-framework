@@ -96,6 +96,7 @@ func (s *AWSStateBucketStep) RunStep(ctx context.Context, config config.OrchInst
 		Variables:          s.variables,
 		LogFile:            filepath.Join(s.RootPath, ".logs", "aws_state_bucket.log"),
 		KeepGeneratedFiles: s.KeepGeneratedFiles,
+		TerraformState:     runtimeState.StateBucketState,
 	})
 	if err != nil {
 		return runtimeState, &internal.OrchInstallerError{
