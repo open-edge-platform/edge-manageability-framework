@@ -2,13 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-locals {
-  rds_identifier = "${var.cluster_name}-aurora-postgresql"
-}
-
 resource "aws_security_group" "rds" {
   vpc_id = var.vpc_id
-  name   = local.rds_identifier
+  name   = var.cluster_name
   # Allow connections only from EKS subnets
   ingress {
     from_port   = 5432
@@ -32,7 +28,7 @@ resource "aws_db_subnet_group" "main" {
 resource "aws_rds_cluster" "main" {
   skip_final_snapshot         = var.dev_mode ? true : false
   deletion_protection         = var.dev_mode ? false : true
-  cluster_identifier          = local.rds_identifier
+  cluster_identifier          = var.cluster_name
   engine                      = "aurora-postgresql"
   engine_mode                 = "provisioned"
   engine_version              = "${var.postgres_ver_major}.${var.postgres_ver_minor}"
@@ -44,7 +40,7 @@ resource "aws_rds_cluster" "main" {
   preferred_backup_window         = "02:00-03:00"
   db_subnet_group_name            = aws_db_subnet_group.main.name
   vpc_security_group_ids          = [aws_security_group.rds.id]
-  final_snapshot_identifier       = "${local.rds_identifier}-final-snapshot"
+  final_snapshot_identifier       = "${var.cluster_name}-final-snapshot"
   enabled_cloudwatch_logs_exports = ["postgresql"]
   db_cluster_parameter_group_name = aws_rds_cluster_parameter_group.default.name
   apply_immediately               = var.dev_mode ? true : false
@@ -60,9 +56,9 @@ resource "aws_rds_cluster" "main" {
 }
 
 resource "aws_rds_cluster_parameter_group" "default" {
-  name        = "${local.rds_identifier}-cluster-pg"
+  name        = "${var.cluster_name}-cluster-pg"
   family      = "aurora-postgresql${var.postgres_ver_major}"
-  description = "${local.rds_identifier} default cluster parameter group"
+  description = "${var.cluster_name} default cluster parameter group"
 
   parameter {
     name  = "rds.force_ssl"
@@ -73,7 +69,7 @@ resource "aws_rds_cluster_parameter_group" "default" {
 resource "aws_rds_cluster_instance" "main" {
   // Create one instance per AZ to withstand failure of any AZ
   for_each                              = var.instance_availability_zones
-  identifier                            = "${local.rds_identifier}-instance-${each.key}"
+  identifier                            = "${var.cluster_name}-instance-${each.key}"
   cluster_identifier                    = aws_rds_cluster.main.id
   instance_class                        = "db.serverless"
   engine                                = aws_rds_cluster.main.engine
