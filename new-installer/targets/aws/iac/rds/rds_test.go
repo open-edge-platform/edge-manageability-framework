@@ -24,7 +24,6 @@ type RDSTestSuite struct {
 	vpcID            string
 	publicSubnetIDs  []string
 	privateSubnetIDs []string
-	randomPostfix    string
 }
 
 func TestRDSTestSuite(t *testing.T) {
@@ -32,9 +31,8 @@ func TestRDSTestSuite(t *testing.T) {
 }
 
 func (s *RDSTestSuite) SetupTest() {
-	randomPostfix := strings.ToLower(rand.Text()[:8])
 	// Bucket for RDS state
-	s.name = "rds-unit-test-" + randomPostfix
+	s.name = "rds-unit-test-" + strings.ToLower(rand.Text()[:8])
 	terratest_aws.CreateS3Bucket(s.T(), utils.DefaultTestRegion, s.name)
 
 	// VPC and subnets for RDS
@@ -63,7 +61,7 @@ func (s *RDSTestSuite) TestApplyingModule() {
 		s.T().Fatalf("Failed to get available zones: %v", err)
 	}
 	rdsVars := steps_aws.RDSVariables{
-		ClusterName: "test-rds-cluster" + s.randomPostfix,
+		ClusterName: s.name,
 		Region:      utils.DefaultTestRegion,
 		CustomerTag: utils.DefaultTestCustomerTag,
 		SubnetIDs:   s.privateSubnetIDs,

@@ -24,7 +24,6 @@ type EFSTestSuite struct {
 	vpcID            string
 	publicSubnetIDs  []string
 	privateSubnetIDs []string
-	randomPostfix    string
 }
 
 func TestEFSTestSuite(t *testing.T) {
@@ -32,9 +31,8 @@ func TestEFSTestSuite(t *testing.T) {
 }
 
 func (s *EFSTestSuite) SetupTest() {
-	randomPostfix := strings.ToLower(rand.Text()[:8])
 	// Bucket for EFS state
-	s.name = "efs-unit-test-" + randomPostfix
+	s.name = "efs-unit-test-" + strings.ToLower(rand.Text()[:8])
 	terratest_aws.CreateS3Bucket(s.T(), utils.DefaultTestRegion, s.name)
 
 	// VPC and subnets for EFS
@@ -59,7 +57,7 @@ func (s *EFSTestSuite) TearDownTest() {
 
 func (s *EFSTestSuite) TestApplyingModule() {
 	efsVars := steps_aws.EFSVariables{
-		ClusterName:      "test-efs-cluster" + s.randomPostfix,
+		ClusterName:      s.name,
 		Region:           utils.DefaultTestRegion,
 		CustomerTag:      utils.DefaultTestCustomerTag,
 		PrivateSubnetIDs: s.privateSubnetIDs,
