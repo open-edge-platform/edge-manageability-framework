@@ -26,10 +26,11 @@ func (s *OrchConfigValidationTest) TestValidateAll() {
 		Version:  1,
 		Provider: "aws", // or "onprem", depending on your use case
 		Global: struct {
-			OrchName     string       `yaml:"orchName"`
-			ParentDomain string       `yaml:"parentDomain"`
-			AdminEmail   string       `yaml:"adminEmail"`
-			Scale        config.Scale `yaml:"scale"`
+			OrchName      string       `yaml:"orchName"`
+			ParentDomain  string       `yaml:"parentDomain"`
+			AdminEmail    string       `yaml:"adminEmail"`
+			AdminPassword string       `yaml:"adminPassword"`
+			Scale         config.Scale `yaml:"scale"`
 		}{
 			OrchName:     "demo",
 			ParentDomain: "example.com",
@@ -603,43 +604,43 @@ func (s *OrchConfigValidationTest) TestValidateAwsVpcId() {
 			name:    "valid vpc id all hex",
 			input:   "vpcabcdef0",
 			wantErr: true,
-			errMsg:  "VPC ID must follow the format '^vpc-[0-9a-f]{8}$', e.g., 'vpc-12345678'",
+			errMsg:  "VPC ID must follow the format '^vpc-[0-9a-f]{8,17}$', e.g., 'vpc-12345678'",
 		},
 		{
 			name:    "invalid vpc id uppercase",
 			input:   "vpc-1234ABCD",
 			wantErr: true,
-			errMsg:  "VPC ID must follow the format '^vpc-[0-9a-f]{8}$', e.g., 'vpc-12345678'",
+			errMsg:  "VPC ID must follow the format '^vpc-[0-9a-f]{8,17}$', e.g., 'vpc-12345678'",
 		},
 		{
 			name:    "invalid vpc id too short",
 			input:   "vpc-1234abc",
 			wantErr: true,
-			errMsg:  "VPC ID must follow the format '^vpc-[0-9a-f]{8}$', e.g., 'vpc-12345678'",
+			errMsg:  "VPC ID must follow the format '^vpc-[0-9a-f]{8,17}$', e.g., 'vpc-12345678'",
 		},
 		{
 			name:    "invalid vpc id too long",
-			input:   "vpc-1234abcdef",
+			input:   "vpc-1234abcdef88888888888",
 			wantErr: true,
-			errMsg:  "VPC ID must follow the format '^vpc-[0-9a-f]{8}$', e.g., 'vpc-12345678'",
+			errMsg:  "VPC ID must follow the format '^vpc-[0-9a-f]{8,17}$', e.g., 'vpc-12345678'",
 		},
 		{
 			name:    "invalid vpc id missing dash",
 			input:   "vpc12345678",
 			wantErr: true,
-			errMsg:  "VPC ID must follow the format '^vpc-[0-9a-f]{8}$', e.g., 'vpc-12345678'",
+			errMsg:  "VPC ID must follow the format '^vpc-[0-9a-f]{8,17}$', e.g., 'vpc-12345678'",
 		},
 		{
 			name:    "invalid vpc id wrong prefix",
 			input:   "vcp-12345678",
 			wantErr: true,
-			errMsg:  "VPC ID must follow the format '^vpc-[0-9a-f]{8}$', e.g., 'vpc-12345678'",
+			errMsg:  "VPC ID must follow the format '^vpc-[0-9a-f]{8,17}$', e.g., 'vpc-12345678'",
 		},
 		{
 			name:    "invalid vpc id with special char",
 			input:   "vpc-1234abc!",
 			wantErr: true,
-			errMsg:  "VPC ID must follow the format '^vpc-[0-9a-f]{8}$', e.g., 'vpc-12345678'",
+			errMsg:  "VPC ID must follow the format '^vpc-[0-9a-f]{8,17}$', e.g., 'vpc-12345678'",
 		},
 	}
 
@@ -826,6 +827,16 @@ func (s *OrchConfigValidationTest) TestValidateNoProxy() {
 			wantErr: false,
 		},
 		{
+			name:    "valid host name without domain",
+			input:   "localhost",
+			wantErr: false,
+		},
+		{
+			name:    "valid domain with leading dot",
+			input:   ".onprem",
+			wantErr: false,
+		},
+		{
 			name:    "multiple valid domains and IPs",
 			input:   "example.com,192.168.1.1,.internal.local",
 			wantErr: false,
@@ -887,10 +898,9 @@ func (s *OrchConfigValidationTest) TestValidateNoProxy() {
 			errMsg:  "invalid no_proxy entry: 10.0.-1.1",
 		},
 		{
-			name:    "invalid domain with uppercase",
+			name:    "valid domain with uppercase",
 			input:   "Example.com",
-			wantErr: true,
-			errMsg:  "invalid no_proxy entry: Example.com",
+			wantErr: false,
 		},
 		{
 			name:    "valid domain with dash",
@@ -1444,68 +1454,56 @@ func (s *OrchConfigValidationTest) TestValidateAwsEKSIAMRoles() {
 		},
 		{
 			name:    "single valid IAM role",
-			input:   "arn:aws:iam::123456789012:role/MyRole",
+			input:   "AWSReservedSSO_Developer_EKS_12345678_a5fb2d53123456778",
 			wantErr: false,
 		},
 		{
 			name:    "multiple valid IAM roles",
-			input:   "arn:aws:iam::123456789012:role/MyRole,arn:aws:iam::210987654321:role/AnotherRole",
+			input:   "AWSReservedSSO_Developer_EKS_12345678_a5fb2d53123456778,vpc-123456667777-jumphost",
 			wantErr: false,
 		},
 		{
-			name:    "valid IAM role with special chars",
-			input:   "arn:aws:iam::123456789012:role/My-Role_1+=,.@",
-			wantErr: true,
+			name:    "valid role with allowed special chars",
+			input:   "vpc-123456667777-jumphost+=,.@",
+			wantErr: false,
 		},
 		{
 			name:    "valid IAM roles with spaces",
-			input:   " arn:aws:iam::123456789012:role/MyRole , arn:aws:iam::210987654321:role/AnotherRole ",
+			input:   " AWSReservedSSO_Developer_EKS_12345678_a5fb2d53123456778 , vpc-123456667777-jumphost ",
 			wantErr: false,
 		},
 		{
-			name:    "invalid IAM role missing arn prefix",
-			input:   "aws:iam::123456789012:role/MyRole",
+			name:    "invalid IAM role invalid char",
+			input:   "vpc-123456667777-jumphost$",
 			wantErr: true,
-			errMsg:  "invalid IAM role ARN: aws:iam::123456789012:role/MyRole",
+			errMsg:  "invalid IAM role name: vpc-123456667777-jumphost$",
 		},
 		{
-			name:    "invalid IAM role missing role name",
-			input:   "arn:aws:iam::123456789012:role/",
+			name:    "invalid IAM role with too many char",
+			input:   "AWSReservedSSO_Developer_EKS_12345678_a5fb2d53123456778_a12345678901234567890123456789012345678901234567890123456789012345",
 			wantErr: true,
-			errMsg:  "invalid IAM role ARN: arn:aws:iam::123456789012:role/",
+			errMsg:  "invalid IAM role name: AWSReservedSSO_Developer_EKS_12345678_a5fb2d53123456778_a12345678901234567890123456789012345678901234567890123456789012345",
 		},
 		{
-			name:    "invalid IAM role with short account id",
-			input:   "arn:aws:iam::1234567890:role/MyRole",
+			name:    "invalid IAM role with space",
+			input:   "vpc-123456667777 jumphost",
 			wantErr: true,
-			errMsg:  "invalid IAM role ARN: arn:aws:iam::1234567890:role/MyRole",
-		},
-		{
-			name:    "invalid IAM role with extra fields",
-			input:   "arn:aws:iam::123456789012:role/MyRole:extra",
-			wantErr: true,
-			errMsg:  "invalid IAM role ARN: arn:aws:iam::123456789012:role/MyRole:extra",
-		},
-		{
-			name:    "invalid IAM role with invalid chars",
-			input:   "arn:aws:iam::123456789012:role/My Role!",
-			wantErr: true,
-			errMsg:  "invalid IAM role ARN: arn:aws:iam::123456789012:role/My Role!",
+			errMsg:  "invalid IAM role name: vpc-123456667777 jumphost",
 		},
 		{
 			name:    "multiple roles, one invalid",
-			input:   "arn:aws:iam::123456789012:role/MyRole,invalid-arn",
+			input:   "AWSReservedSSO_Developer_EKS_12345678_a5fb2d53123456778,invalid-role%$",
 			wantErr: true,
-			errMsg:  "invalid IAM role ARN: invalid-arn",
+			errMsg:  "invalid IAM role name: invalid-role%$",
 		},
 		{
 			name:    "only spaces between commas",
-			input:   "arn:aws:iam::123456789012:role/MyRole, ,arn:aws:iam::210987654321:role/AnotherRole",
+			input:   "AWSReservedSSO_Developer_EKS_12345678_a5fb2d53123456778, ,vpc-123456667777-jumphost",
 			wantErr: false,
 		},
 		{
 			name:    "empty entry between commas",
-			input:   "arn:aws:iam::123456789012:role/MyRole,,arn:aws:iam::210987654321:role/AnotherRole",
+			input:   "AWSReservedSSO_Developer_EKS_12345678_a5fb2d53123456778,,vpc-123456667777-jumphost",
 			wantErr: false,
 		},
 	}
@@ -1611,68 +1609,56 @@ func TestValidateAwsEKSIAMRoles(t *testing.T) {
 		},
 		{
 			name:    "single valid IAM role",
-			input:   "arn:aws:iam::123456789012:role/MyRole",
+			input:   "AWSReservedSSO_Developer_EKS_12345678_a5fb2d53123456778",
 			wantErr: false,
 		},
 		{
 			name:    "multiple valid IAM roles",
-			input:   "arn:aws:iam::123456789012:role/MyRole,arn:aws:iam::210987654321:role/AnotherRole",
+			input:   "AWSReservedSSO_Developer_EKS_12345678_a5fb2d53123456778,vpc-123456667777-jumphost",
 			wantErr: false,
 		},
 		{
-			name:    "valid IAM role with special chars",
-			input:   "arn:aws:iam::123456789012:role/My-Role_1+=,.@",
-			wantErr: true,
+			name:    "valid role with allowed special chars",
+			input:   "vpc-123456667777-jumphost+=,.@",
+			wantErr: false,
 		},
 		{
 			name:    "valid IAM roles with spaces",
-			input:   " arn:aws:iam::123456789012:role/MyRole , arn:aws:iam::210987654321:role/AnotherRole ",
+			input:   " AWSReservedSSO_Developer_EKS_12345678_a5fb2d53123456778 , vpc-123456667777-jumphost ",
 			wantErr: false,
 		},
 		{
-			name:    "invalid IAM role missing arn prefix",
-			input:   "aws:iam::123456789012:role/MyRole",
+			name:    "invalid IAM role invalid char",
+			input:   "vpc-123456667777-jumphost$",
 			wantErr: true,
-			errMsg:  "invalid IAM role ARN: aws:iam::123456789012:role/MyRole",
+			errMsg:  "invalid IAM role name: vpc-123456667777-jumphost$",
 		},
 		{
-			name:    "invalid IAM role missing role name",
-			input:   "arn:aws:iam::123456789012:role/",
+			name:    "invalid IAM role with more than allowed char",
+			input:   "AWSReservedSSO_Developer_EKS_12345678_a5fb2d53123456778_a12345678901234567890123456789012345678901234567890123456789012345",
 			wantErr: true,
-			errMsg:  "invalid IAM role ARN: arn:aws:iam::123456789012:role/",
+			errMsg:  "invalid IAM role name: AWSReservedSSO_Developer_EKS_12345678_a5fb2d53123456778_a12345678901234567890123456789012345678901234567890123456789012345",
 		},
 		{
-			name:    "invalid IAM role with short account id",
-			input:   "arn:aws:iam::1234567890:role/MyRole",
+			name:    "invalid IAM role with space",
+			input:   "vpc-123456667777 jumphost",
 			wantErr: true,
-			errMsg:  "invalid IAM role ARN: arn:aws:iam::1234567890:role/MyRole",
-		},
-		{
-			name:    "invalid IAM role with extra fields",
-			input:   "arn:aws:iam::123456789012:role/MyRole:extra",
-			wantErr: true,
-			errMsg:  "invalid IAM role ARN: arn:aws:iam::123456789012:role/MyRole:extra",
-		},
-		{
-			name:    "invalid IAM role with invalid chars",
-			input:   "arn:aws:iam::123456789012:role/My Role!",
-			wantErr: true,
-			errMsg:  "invalid IAM role ARN: arn:aws:iam::123456789012:role/My Role!",
+			errMsg:  "invalid IAM role name: vpc-123456667777 jumphost",
 		},
 		{
 			name:    "multiple roles, one invalid",
-			input:   "arn:aws:iam::123456789012:role/MyRole,invalid-arn",
+			input:   "AWSReservedSSO_Developer_EKS_12345678_a5fb2d53123456778,invalid-role%$",
 			wantErr: true,
-			errMsg:  "invalid IAM role ARN: invalid-arn",
+			errMsg:  "invalid IAM role name: invalid-role%$",
 		},
 		{
 			name:    "only spaces between commas",
-			input:   "arn:aws:iam::123456789012:role/MyRole, ,arn:aws:iam::210987654321:role/AnotherRole",
+			input:   "AWSReservedSSO_Developer_EKS_12345678_a5fb2d53123456778, ,vpc-123456667777-jumphost",
 			wantErr: false,
 		},
 		{
 			name:    "empty entry between commas",
-			input:   "arn:aws:iam::123456789012:role/MyRole,,arn:aws:iam::210987654321:role/AnotherRole",
+			input:   "AWSReservedSSO_Developer_EKS_12345678_a5fb2d53123456778,,vpc-123456667777-jumphost",
 			wantErr: false,
 		},
 	}

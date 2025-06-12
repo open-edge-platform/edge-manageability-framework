@@ -62,7 +62,7 @@ type VPCVariables struct {
 	JumphostSubnet         string               `json:"jumphost_subnet"`
 	Production             bool                 `json:"production"`
 	CustomerTag            string               `json:"customer_tag,omitempty"`
-	Endpoints              []string             `json:"endpoints,omitempty"`
+	Endpoints              []string             `json:"endpoints"`
 }
 
 // NewDefaultVPCVariables creates a new VPCVariables with default values
@@ -172,22 +172,23 @@ func (s *VPCStep) ConfigStep(ctx context.Context, config config.OrchInstallerCon
 			ErrorMsg:  fmt.Sprintf("failed to convert IP to int: %v", err),
 		}
 	}
-	for i := range RequiredAvailabilityZones {
-		name := fmt.Sprintf("subnet-%s", availabilityZones[i])
+	for i, zone := range availabilityZones {
+		name := fmt.Sprintf("subnet-%s", zone)
 		ipInt := netAddrInt + (uint32)(i*(1<<uint(32-PrivateSubnetMaskSize)))
 		ip := ipconv.IntToIPv4(ipInt)
 		s.variables.PrivateSubnets[name] = VPCSubnet{
-			Az:        availabilityZones[i],
+			Az:        zone,
 			CidrBlock: fmt.Sprintf("%s/%d", ip.String(), PrivateSubnetMaskSize),
 		}
 	}
-	netAddrInt += RequiredAvailabilityZones * (1 << uint(32-PrivateSubnetMaskSize))
-	for i := range RequiredAvailabilityZones {
-		name := fmt.Sprintf("subnet-%s-pub", availabilityZones[i])
+	netAddrInt += uint32(len(availabilityZones)) * (1 << uint(32-PrivateSubnetMaskSize))
+
+	for i, zone := range availabilityZones {
+		name := fmt.Sprintf("subnet-%s-pub", zone)
 		ipInt := netAddrInt + (uint32)(i*(1<<uint(32-PublicSubnetMaskSize)))
 		ip := ipconv.IntToIPv4(ipInt)
 		s.variables.PublicSubnets[name] = VPCSubnet{
-			Az:        availabilityZones[i],
+			Az:        zone,
 			CidrBlock: fmt.Sprintf("%s/%d", ip.String(), PublicSubnetMaskSize),
 		}
 	}
