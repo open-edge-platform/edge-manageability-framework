@@ -22,7 +22,6 @@ import (
 func installTerraform() (execPath string, err error) {
 	ctx := context.Background()
 	i := install.NewInstaller()
-	defer i.Remove(ctx)
 	v1_3 := version.Must(version.NewVersion(steps.TerraformVersion))
 	execPath, err = i.Install(ctx, []src.Installable{
 		&releases.ExactVersion{
