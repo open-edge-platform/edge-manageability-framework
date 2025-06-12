@@ -6,8 +6,10 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -117,10 +119,17 @@ func execute(action string, orchConfigFile string, runtimeStateFile string, logD
 		logger.Fatalf("error: orchestrator config version %s does not match installer version %s", orchConfig.Version, config.UserConfigVersion)
 	}
 	// We will check and migrate runtime state version later in the installer.
-
+	if runtimeState.DeploymentID == "" {
+		runtimeState.DeploymentID = strings.ToLower(rand.Text()[:8])
+	}
 	runtimeState.Action = action
 	runtimeState.LogDir = logDir
 	runtimeState.TargetLabels = config.CommaSeparatedToSlice(targets)
+	rsWriteErr := orchConfigReaderWriter.WriteRuntimeState(runtimeState)
+	if rsWriteErr != nil {
+		logger.Errorf("error writing runtime state file: %s", rsWriteErr)
+		return
+	}
 
 	logger.Infof("Action: %s", action)
 	logger.Infof("Target environment: %s", orchConfig.Provider)
@@ -168,7 +177,7 @@ func execute(action string, orchConfigFile string, runtimeStateFile string, logD
 	}()
 
 	runErr := orchInstaller.Run(ctx, orchConfig, &runtimeState)
-	rsWriteErr := orchConfigReaderWriter.WriteRuntimeState(runtimeState) // TODO: handle error here
+	rsWriteErr = orchConfigReaderWriter.WriteRuntimeState(runtimeState)
 	if rsWriteErr != nil {
 		logger.Errorf("error writing runtime state file: %s", rsWriteErr)
 	}
