@@ -136,9 +136,7 @@ func (s *RDSStep) ConfigStep(ctx context.Context, cfg config.OrchInstallerConfig
 	}
 	s.variables.AvailabilityZones = zones
 	s.variables.InstanceAvailabilityZones = zones
-
-	// TODO:
-	s.variables.DevMode = false
+	s.variables.DevMode = cfg.Advanced.DevMode
 
 	s.backendConfig = TerraformAWSBucketBackendConfig{
 		Region: cfg.AWS.Region,
@@ -216,6 +214,15 @@ func (s *RDSStep) PreStep(ctx context.Context, cfg config.OrchInstallerConfig, r
 }
 
 func (s *RDSStep) RunStep(ctx context.Context, cfg config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+	if runtimeState.Action == "uninstall" {
+		if err := s.AWSUtility.DisableRDSDeletionProtection(cfg.AWS.Region, s.variables.ClusterName); err != nil {
+			return runtimeState, &internal.OrchInstallerError{
+				ErrorCode: internal.OrchInstallerErrorCodeInternal,
+				ErrorMsg:  fmt.Sprintf("failed to disable RDS deletion protection: %v", err),
+			}
+		}
+	}
+
 	terraformStepInput := steps.TerraformUtilityInput{
 		Action:             runtimeState.Action,
 		ModulePath:         filepath.Join(s.RootPath, RDSModulePath),

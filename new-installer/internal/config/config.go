@@ -85,6 +85,7 @@ type OrchInstallerConfig struct {
 	Advanced struct { // TODO: form for this part is not done yet
 		AzureADRefreshToken  string `yaml:"azureADRefreshToken,omitempty"`
 		AzureADTokenEndpoint string `yaml:"azureADTokenEndpoint,omitempty"`
+		DevMode              bool   `yaml:"devMode,omitempty"`
 	} `yaml:"advanced"`
 	AWS struct {
 		Region                string   `yaml:"region"`

@@ -52,6 +52,7 @@ func (s *RDSStepTest) SetupTest() {
 	s.config.Global.OrchName = "test"
 	s.config.Global.Scale = config.Scale100
 	s.config.AWS.CustomerTag = utils.DefaultTestCustomerTag
+	s.config.Advanced.DevMode = true
 	s.runtimeState.AWS.PrivateSubnetIDs = []string{"subnet-12345678", "subnet-87654321"}
 	s.runtimeState.AWS.VPCID = "vpc-12345678"
 
@@ -135,7 +136,7 @@ func (s *RDSStepTest) expectTFUtiliyCall(action string) {
 			PostgresVerMinor:          "",
 			MinACUs:                   0.5,
 			MaxACUs:                   2,
-			DevMode:                   false,
+			DevMode:                   true,
 			Username:                  "",
 			CACertIdentifier:          "",
 		},
@@ -254,5 +255,10 @@ func (s *RDSStepTest) expectAWSUtiliyCall(action string) {
 		s.awsUtility.On("GetAvailableZones", s.config.AWS.Region).
 			Return(availabilityZones, nil).
 			Once()
+	} else if action == "uninstall" {
+		s.awsUtility.On("DisableRDSDeletionProtection",
+			s.config.AWS.Region, s.config.Global.OrchName,
+		).Return(nil).Once()
+
 	}
 }
