@@ -515,26 +515,3 @@ func DeleteSecurityGroup(t testing.TestingT, sgID string) error {
 	})
 	return nil
 }
-
-// resource "aws_security_group" "eks_cluster" {
-//   name   = "eks-${var.cluster_name}"
-//   vpc_id = var.vpc_id
-//   egress {
-//     from_port   = 0
-//     to_port     = 0
-//     protocol    = "-1"
-//     cidr_blocks = var.ip_allow_list
-//   }
-//   ingress {
-//     from_port   = 443
-//     to_port     = 443
-//     protocol    = "tcp"
-//     cidr_blocks = var.ip_allow_list
-//   }
-//   lifecycle {
-//     ignore_changes = [
-//       ingress,
-//       egress
-//     ]
-//   }
-// }
