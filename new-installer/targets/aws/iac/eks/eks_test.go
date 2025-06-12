@@ -132,6 +132,6 @@ func (s *EKSTestSuite) TestApplyingModule() {
 	defer terraform.Destroy(s.T(), terraformOptions)
 	terraform.InitAndApply(s.T(), terraformOptions)
 
-	// No outputs from EKS module, so we just check if everything we need is created
-	// TODO: Check if EKS cluster is created and has the expected properties
+	eksOIDCIssuer := terraform.Output(s.T(), terraformOptions, "eks_oidc_issuer")
+	s.NotEmpty(eksOIDCIssuer, "EKS OIDC issuer should not be empty")
 }
