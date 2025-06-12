@@ -6,7 +6,7 @@ package onprem
 
 import (
 	"context"
-    "fmt"
+	"fmt"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 )
@@ -45,7 +45,6 @@ func (s *Rke2Step) PreStep(ctx context.Context, config config.OrchInstallerConfi
 }
 
 func (s *Rke2Step) RunStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
-
 	return runtimeState, nil
 }
 
