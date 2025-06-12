@@ -23,7 +23,7 @@ jobs:
     name: Filter list of changed files
     runs-on: ubuntu-latest
     outputs:
-      all-targets: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/targets/aws/iac/') }}
+      iac: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/targets/aws/iac/') }}
       acm: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/targets/aws/iac/acm') }}
       alb: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/targets/aws/iac/alb') }}
       ec2log: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/targets/aws/iac/ec2log') }}
@@ -70,7 +70,7 @@ jobs:
               core.setFailed('run-iac-tests label is not set on the PR. This label is required to execute the IAC tests and qualify the PR to merge.');
             }
         if: |
-          needs.check-changed-files.outputs.all-targets == 'true'
+          needs.check-changed-files.outputs.iac == 'true'
 
   test-iac:
     permissions:
