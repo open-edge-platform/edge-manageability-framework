@@ -113,7 +113,7 @@ func validateProxyConfig() error {
 		return fmt.Errorf("invalid EN SOCKS proxy: %w", err)
 	}
 	if err := validateNoProxy(input.Proxy.ENNoProxy); err != nil {
-		return fmt.Errorf("invalid ENno proxy: %w", err)
+		return fmt.Errorf("invalid EN no proxy: %w", err)
 	}
 	return nil
 }
@@ -211,8 +211,8 @@ func validateAwsVpcId(s string) error {
 	if s == "" {
 		return nil
 	}
-	if matched := regexp.MustCompile(`^vpc-[0-9a-f]{8}$`).MatchString(s); !matched {
-		return fmt.Errorf("VPC ID must follow the format '^vpc-[0-9a-f]{8}$', e.g., 'vpc-12345678'")
+	if matched := regexp.MustCompile(`^vpc-[0-9a-f]{8,17}$`).MatchString(s); !matched {
+		return fmt.Errorf("VPC ID must follow the format '^vpc-[0-9a-f]{8,17}$', e.g., 'vpc-12345678'")
 	}
 	return nil
 }
@@ -403,8 +403,8 @@ func validateAwsEKSIAMRoles(s string) error {
 		if role == "" {
 			continue
 		}
-		if matched := regexp.MustCompile(`^arn:aws:iam::\d{12}:role/[\w+=,.@-]+$`).MatchString(role); !matched {
-			return fmt.Errorf("invalid IAM role ARN: %s", role)
+		if matched := regexp.MustCompile(`^[\w+=,.@-]{1,64}$`).MatchString(role); !matched {
+			return fmt.Errorf("invalid IAM role name: %s", role)
 		}
 	}
 	return nil
