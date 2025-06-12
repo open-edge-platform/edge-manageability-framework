@@ -32,8 +32,9 @@ func TestRDSTestSuite(t *testing.T) {
 }
 
 func (s *RDSTestSuite) SetupTest() {
+	randomPostfix := strings.ToLower(rand.Text()[:8])
 	// Bucket for RDS state
-	s.name = "rds-unit-test-" + strings.ToLower(rand.Text()[0:8])
+	s.name = "rds-unit-test-" + randomPostfix
 	terratest_aws.CreateS3Bucket(s.T(), utils.DefaultTestRegion, s.name)
 
 	// VPC and subnets for RDS

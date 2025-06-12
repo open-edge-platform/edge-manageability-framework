@@ -32,8 +32,9 @@ func TestEFSTestSuite(t *testing.T) {
 }
 
 func (s *EFSTestSuite) SetupTest() {
+	randomPostfix := strings.ToLower(rand.Text()[:8])
 	// Bucket for EFS state
-	s.name = "efs-unit-test-" + strings.ToLower(rand.Text()[0:8])
+	s.name = "efs-unit-test-" + randomPostfix
 	terratest_aws.CreateS3Bucket(s.T(), utils.DefaultTestRegion, s.name)
 
 	// VPC and subnets for EFS
