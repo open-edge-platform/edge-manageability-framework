@@ -74,7 +74,8 @@ func NewDefaultVPCVariables() VPCVariables {
 		CidrBlock:              "",
 		EnableDnsHostnames:     true,
 		EnableDnsSupport:       true,
-		JumphostIPAllowList:    []string{},
+		Endpoints:              VPCEndpoints,
+		JumphostIPAllowList:    make([]string, 0),
 		JumphostInstanceSSHKey: "",
 		Production:             true,
 		CustomerTag:            "",
@@ -137,6 +138,7 @@ func (s *VPCStep) ConfigStep(ctx context.Context, config config.OrchInstallerCon
 	s.variables.Name = config.Global.OrchName
 	s.variables.CidrBlock = DefaultNetworkCIDR
 	s.variables.EndpointSGName = config.Global.OrchName + "-vpc-ep"
+	s.variables.Endpoints = VPCEndpoints
 
 	// Based on the region, we need to get the availability zones.
 	availabilityZones, err := s.AWSUtility.GetAvailableZones(config.AWS.Region)
