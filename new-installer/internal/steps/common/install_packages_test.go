@@ -5,6 +5,7 @@
 package steps_common_test
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -19,6 +20,7 @@ type InstallPackageTestSuite struct {
 	suite.Suite
 	s                *steps_common.InstallPackagesStep
 	shellUtilityMock *ShellUtilityMock
+	rootDir          string
 }
 
 func TestInstallPackageSuite(t *testing.T) {
@@ -26,21 +28,31 @@ func TestInstallPackageSuite(t *testing.T) {
 }
 
 func (suite *InstallPackageTestSuite) SetupTest() {
-	// Setup code for each test can go here
+	suite.rootDir = suite.T().TempDir()
 	suite.shellUtilityMock = &ShellUtilityMock{}
-	suite.s = &steps_common.InstallPackagesStep{
-		ShellUtility: suite.shellUtilityMock,
-	}
+	suite.s = steps_common.CreateInstallPackagesStep(
+		suite.rootDir,
+		suite.shellUtilityMock,
+	)
 }
 
-func (suite *InstallPackageTestSuite) TestInstallPackagesOnDeb() {
+func (suite *InstallPackageTestSuite) TestInstallPackages() {
 	cfg := &config.OrchInstallerConfig{}
 	runtimeState := config.OrchInstallerRuntimeState{}
 	expectCallsForCmdExists(suite.shellUtilityMock, "sudo", true)
-	expectCallsForCmdExists(suite.shellUtilityMock, "sshuttle", true)
-	expectCallsForCmdExists(suite.shellUtilityMock, "apt-get", true)
+	expectCallsForCmdExists(suite.shellUtilityMock, "python3", true)
 	suite.shellUtilityMock.On("Run", mock.Anything, steps.ShellUtilityInput{
-		Command:         []string{"sudo", "apt-get", "install", "-y", "sshuttle"},
+		Command:         []string{"python3", "-m", "venv", fmt.Sprintf("%s/.deploy/venv", suite.rootDir)},
+		Timeout:         60,
+		SkipError:       false,
+		RunInBackground: false,
+	}).Return(&steps.ShellUtilityOutput{
+		Stdout: strings.Builder{},
+		Stderr: strings.Builder{},
+		Error:  nil,
+	}, nil).Once()
+	suite.shellUtilityMock.On("Run", mock.Anything, steps.ShellUtilityInput{
+		Command:         []string{"bash", "-c", fmt.Sprintf("source %s/.deploy/venv/bin/activate && pip3 install sshuttle==1.3.1", suite.rootDir)},
 		Timeout:         60,
 		SkipError:       false,
 		RunInBackground: false,

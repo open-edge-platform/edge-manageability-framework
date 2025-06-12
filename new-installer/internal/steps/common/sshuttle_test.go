@@ -5,6 +5,8 @@
 package steps_common_test
 
 import (
+	"fmt"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -19,6 +21,7 @@ type SshuttletestSuite struct {
 	suite.Suite
 	s                *steps_common.SshuttleStep
 	shellUtilityMock *ShellUtilityMock
+	rootPath         string
 }
 
 func TestSshuttleSuite(t *testing.T) {
@@ -27,9 +30,11 @@ func TestSshuttleSuite(t *testing.T) {
 
 func (suite *SshuttletestSuite) SetupTest() {
 	suite.shellUtilityMock = &ShellUtilityMock{}
-	suite.s = &steps_common.SshuttleStep{
-		ShellUtility: suite.shellUtilityMock,
-	}
+	suite.rootPath = suite.T().TempDir()
+	suite.s = steps_common.CreateSshuttleStep(
+		suite.rootPath,
+		suite.shellUtilityMock,
+	)
 }
 
 func (suite *SshuttletestSuite) TestRunSshuttle() {
@@ -39,7 +44,6 @@ func (suite *SshuttletestSuite) TestRunSshuttle() {
 	runtimeState.AWS.JumpHostSSHKeyPrivateKey = "foo"
 
 	expectCallsForCmdExists(suite.shellUtilityMock, "sudo", true)
-	expectCallsForCmdExists(suite.shellUtilityMock, "sshuttle", true)
 	expectCallsForCmdExists(suite.shellUtilityMock, "nc", true)
 
 	pgrepOut := strings.Builder{}
@@ -76,5 +80,20 @@ func (suite *SshuttletestSuite) TestRunSshuttle() {
 	_, err := steps.GoThroughStepFunctions(suite.s, cfg, runtimeState)
 	if err != nil {
 		suite.NoError(err, "Expected no error during step execution")
+	}
+	// Since the PID and jumphost key files are random generated, we cannot assert the exact command.
+	// Instead, we can check that the last command executed was the expected one.
+	lastCall := suite.shellUtilityMock.Calls[len(suite.shellUtilityMock.Calls)-1]
+	suite.Len(lastCall.Arguments, 2, "Expected the last command to have two arguments")
+	if secondArg, ok := lastCall.Arguments[1].(steps.ShellUtilityInput); ok {
+		if suite.Len(secondArg.Command, 3, "Expected the last command to have three parts") {
+			script := secondArg.Command[2]
+			regex := fmt.Sprintf("source %s/.deploy/venv/bin/activate && sshuttle --pidfile .* -D -r ubuntu@10.0.0.1 --ssh-cmd 'ssh -i .* -o StrictHostKeyChecking=no' 10.250.0.0/16", suite.rootPath)
+			matched, err := regexp.MatchString(regex, script)
+			suite.NoError(err, "Error while matching the script with regex")
+			suite.True(matched, "The script does not match the expected pattern")
+		}
+	} else {
+		suite.Fail("Expected the last command to be of type ShellUtilityInput")
 	}
 }

@@ -7,7 +7,6 @@ package steps_common
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -17,17 +16,22 @@ import (
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps"
 	steps_aws "github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps/aws"
+	"go.uber.org/zap"
 )
 
 type SshuttleStep struct {
 	ShellUtility steps.ShellUtility
+	rootPath     string
+	logger       *zap.SugaredLogger
 }
 
 var sshuttleStepLabels = []string{"common", "sshuttle"}
 
-func CreateSshuttleStep(shellUtility steps.ShellUtility) *SshuttleStep {
+func CreateSshuttleStep(rootPath string, shellUtility steps.ShellUtility) *SshuttleStep {
 	return &SshuttleStep{
 		ShellUtility: shellUtility,
+		rootPath:     rootPath,
+		logger:       internal.Logger(),
 	}
 }
 
@@ -56,12 +60,6 @@ func (s *SshuttleStep) PreStep(ctx context.Context, config config.OrchInstallerC
 			ErrorMsg:  "sudo command is not available. Please install sudo.",
 		}
 	}
-	if !commandExists(ctx, s.ShellUtility, "sshuttle") {
-		return runtimeState, &internal.OrchInstallerError{
-			ErrorCode: internal.OrchInstallerErrorCodeInternal,
-			ErrorMsg:  "sshuttle command is not available. Please install sshuttle.",
-		}
-	}
 	if !commandExists(ctx, s.ShellUtility, "nc") {
 		return runtimeState, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInternal,
@@ -88,7 +86,7 @@ func (s *SshuttleStep) PreStep(ctx context.Context, config config.OrchInstallerC
 				ErrorMsg:  fmt.Sprintf("failed to stop existing sshuttle process: %v", err),
 			}
 		}
-		log.Println("Stopped existing sshuttle process.")
+		s.logger.Info("Stopped existing sshuttle process.")
 	}
 	if runtimeState.AWS.JumpHostSSHKeyPrivateKey == "" {
 		return runtimeState, &internal.OrchInstallerError{
@@ -142,55 +140,41 @@ func (s *SshuttleStep) RunStep(ctx context.Context, config config.OrchInstallerC
 			ErrorMsg:  fmt.Sprintf("failed to close temporary PID file: %v", err),
 		}
 	}
-
+	var sshuttleShellCmd string
 	if config.Proxy.SOCKSProxy != "" {
-		_, err := s.ShellUtility.Run(ctx, steps.ShellUtilityInput{
-			Command: []string{
-				"sshuttle",
-				"--pidfile",
-				pidFile.Name(),
-				"-D",
-				"-e",
-				fmt.Sprintf(
-					"ssh -o ProxyCommand='nc -x %s %%h %%p' -i %s -o StrictHostKeyChecking=no",
-					config.Proxy.SOCKSProxy, privateKeyFile.Name(),
-				),
-				"-r",
-				fmt.Sprintf("ubuntu@%s", runtimeState.AWS.JumpHostIP),
-				steps_aws.DefaultNetworkCIDR,
-			},
-			Timeout:         60,
-			SkipError:       false,
-			RunInBackground: false, // We use -D flag to run in the background
-		})
-		if err != nil {
-			return runtimeState, &internal.OrchInstallerError{
-				ErrorCode: internal.OrchInstallerErrorCodeInternal,
-				ErrorMsg:  fmt.Sprintf("failed to start sshuttle command proxy with socks proxy: %v", err),
-			}
-		}
+		sshuttleShellCmd = fmt.Sprintf(
+			`source %s/%s/bin/activate && sshuttle --pidfile %s -D -e 'ssh -o ProxyCommand="nc -x %s %%h %%p" -i %s -o StrictHostKeyChecking=no' -r ubuntu@%s %s`,
+			s.rootPath,
+			PythonVenvPath,
+			pidFile.Name(),
+			config.Proxy.SOCKSProxy,
+			privateKeyFile.Name(),
+			runtimeState.AWS.JumpHostIP,
+			steps_aws.DefaultNetworkCIDR,
+		)
+
 	} else {
-		_, err := s.ShellUtility.Run(ctx, steps.ShellUtilityInput{
-			Command: []string{
-				"sshuttle",
-				"--pidfile",
-				pidFile.Name(),
-				"-D",
-				"-r",
-				fmt.Sprintf("ubuntu@%s", runtimeState.AWS.JumpHostIP),
-				"--ssh-cmd",
-				fmt.Sprintf("ssh -i %s -o StrictHostKeyChecking=no", privateKeyFile.Name()),
-				steps_aws.DefaultNetworkCIDR,
-			},
-			Timeout:         60,
-			SkipError:       false,
-			RunInBackground: false, // We use -D flag to run in the background
-		})
-		if err != nil {
-			return runtimeState, &internal.OrchInstallerError{
-				ErrorCode: internal.OrchInstallerErrorCodeInternal,
-				ErrorMsg:  fmt.Sprintf("failed to start sshuttle command proxy: %v", err),
-			}
+		sshuttleShellCmd = fmt.Sprintf(
+			`source %s/%s/bin/activate && sshuttle --pidfile %s -D -r ubuntu@%s --ssh-cmd 'ssh -i %s -o StrictHostKeyChecking=no' %s`,
+			s.rootPath,
+			PythonVenvPath,
+			pidFile.Name(),
+			runtimeState.AWS.JumpHostIP,
+			privateKeyFile.Name(),
+			steps_aws.DefaultNetworkCIDR,
+		)
+	}
+	internal.Logger().Infof("Running sshuttle command: %s", sshuttleShellCmd)
+	_, sshuttleErr := s.ShellUtility.Run(ctx, steps.ShellUtilityInput{
+		Command:         []string{"bash", "-c", sshuttleShellCmd},
+		Timeout:         60,
+		SkipError:       false,
+		RunInBackground: false, // We use -D flag to run in the background
+	})
+	if sshuttleErr != nil {
+		return runtimeState, &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeInternal,
+			ErrorMsg:  fmt.Sprintf("failed to start sshuttle command: %v", err),
 		}
 	}
 
@@ -198,9 +182,9 @@ func (s *SshuttleStep) RunStep(ctx context.Context, config config.OrchInstallerC
 	// Print the PID of the sshuttle process
 	pid, err := os.ReadFile(pidFile.Name())
 	if err != nil {
-		log.Printf("Failed to read sshuttle PID file: %v", err)
+		s.logger.Error("Failed to read sshuttle PID file: %v", err)
 	} else {
-		log.Printf("sshuttle is running with PID: %s", strings.TrimSpace(string(pid)))
+		s.logger.Info("sshuttle is running with PID: %s", strings.TrimSpace(string(pid)))
 		runtimeState.SshuttlePID = strings.TrimSpace(string(pid))
 	}
 	return runtimeState, nil
@@ -225,7 +209,5 @@ func StopSshuttle() error {
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to terminate sshuttle process with PID %s: %w", pid, err)
 	}
-
-	log.Println("Stopped sshuttle successfully")
 	return nil
 }
