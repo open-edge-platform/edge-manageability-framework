@@ -84,6 +84,22 @@ func (s *EKSTestSuite) checkAndStartSSHTunnel() error {
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", s.tunnelSocksPort))
 	if err != nil {
 		log.Printf("Port %d is already in use, SSH tunnel is running", s.tunnelSocksPort)
+		// Use nc to test if the port is really working
+		cmd := exec.Command("nc", "-zv", "localhost", fmt.Sprintf("%d", s.tunnelSocksPort))
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			log.Printf("nc command failed: %v, output: %s", err, string(output))
+		} else {
+			log.Printf("nc command succeeded, output: %s", string(output))
+		}
+		// Verify connection using curl
+		curlCmd := exec.Command("curl", "-x", fmt.Sprintf("socks5://localhost:%d", s.tunnelSocksPort), "https://www.google.com")
+		curlOutput, err := curlCmd.CombinedOutput()
+		if err != nil {
+			log.Printf("curl command failed: %v, output: %s", err, string(curlOutput))
+		} else {
+			log.Printf("curl command succeeded, output: %s", string(curlOutput))
+		}
 		return nil
 	}
 	listener.Close()
@@ -143,7 +159,7 @@ func (s *EKSTestSuite) TestApplyingModule() {
 			},
 		},
 		AdditionalNodeGroups: map[string]steps_aws.EKSNodeGroup{},
-		KubectlSocksProxy:    fmt.Sprintf("socks5://127.0.0.1:%d", s.tunnelSocksPort),
+		KubectlSocksProxy:    fmt.Sprintf("socks5://localhost:%d", s.tunnelSocksPort),
 	}
 
 	jsonData, err := json.Marshal(eksVars)
