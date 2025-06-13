@@ -250,12 +250,15 @@ func (s *RDSStepTest) expectAWSUtiliyCall(action string) {
 	if action == "install" {
 		s.awsUtility.On("GetAvailableZones", s.config.AWS.Region).
 			Return(availabilityZones, nil).
-			Times(2) // One for install, and one for uninstall
+			Once()
 	} else if action == "upgrade" {
 		s.awsUtility.On("GetAvailableZones", s.config.AWS.Region).
 			Return(availabilityZones, nil).
 			Once()
 	} else if action == "uninstall" {
+		s.awsUtility.On("GetAvailableZones", s.config.AWS.Region).
+			Return(availabilityZones, nil).
+			Once()
 		s.awsUtility.On("DisableRDSDeletionProtection",
 			s.config.AWS.Region, s.config.Global.OrchName,
 		).Return(nil).Once()

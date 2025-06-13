@@ -92,7 +92,7 @@ func (s *RDSTestSuite) TestApplyingModule() {
 	}
 
 	terraformOptions := terraform.WithDefaultRetryableErrors(s.T(), &terraform.Options{
-		TerraformDir: "../rds",
+		TerraformDir: ".",
 		VarFiles:     []string{tempFile.Name()},
 		BackendConfig: map[string]interface{}{
 			"region": utils.DefaultTestRegion,

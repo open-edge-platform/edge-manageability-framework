@@ -79,7 +79,7 @@ func (s *EFSTestSuite) TestApplyingModule() {
 	}
 
 	terraformOptions := terraform.WithDefaultRetryableErrors(s.T(), &terraform.Options{
-		TerraformDir: "../efs",
+		TerraformDir: ".",
 		VarFiles:     []string{tempFile.Name()},
 		BackendConfig: map[string]interface{}{
 			"region": utils.DefaultTestRegion,
