@@ -72,53 +72,6 @@ jobs:
         uses: open-edge-platform/orch-ci/discover-changed-files@main  # zizmor: ignore[unpinned-uses]
         with:
           project_folder: "."
-  
-run-matrix-jobs:
-    needs: check-changed-files
-    if: always()
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: true
-      matrix:
-        job-type: [ci, go, markdown, orch, on-prem, onboarding, shell, terraform, yaml, helm]
-        include:
-          - job-type: ci
-            if: ${{ fromJson(needs.check-changed-files.outputs.ci) }}
-          - job-type: go
-            run: ${{ fromJson(needs.check-changed-files.outputs.go) }}
-          - job-type: markdown
-            run: ${{ fromJson(needs.check-changed-files.outputs.markdown) }}
-          - job-type: orch
-            run: ${{ fromJson(needs.check-changed-files.outputs.orch) }}
-          - job-type: on-prem
-            run: ${{ fromJson(needs.check-changed-files.outputs.on-prem) }}
-          - job-type: onboarding
-            run: ${{ fromJson(needs.check-changed-files.outputs.onboarding) }}
-          - job-type: shell
-            run: ${{ fromJson(needs.check-changed-files.outputs.shell) }}
-          - job-type: terraform
-            run: ${{ fromJson(needs.check-changed-files.outputs.terraform) }}
-          - job-type: yaml
-            run: ${{ fromJson(needs.check-changed-files.outputs.yaml) }}
-          - job-type: helm
-            run: ${{ fromJson(needs.check-changed-files.outputs.helm) }}
-      steps:
-      - name: Run ${{ matrix.job-type }} job
-        if: matrix.run == 'true'
-        run: echo "Running job for ${{ matrix.job-type }}"
-
-  pre-merge:
-    if: github.event_name == 'pull_request'
-    permissions:
-      contents: read
-    uses: open-edge-platform/orch-ci/.github/workflows/pre-merge.yml@3bdd409ccf738472c6e1547d14628b51c70dbe99  # 0.1.21
-    with:
-      run_version_check: false
-      run_build: false
-      run_lint: false
-      run_test: false
-      bootstrap_tools: ""
-      trivy_config_path: trivy.yaml
 
   scan-viruses:
     permissions:
