@@ -71,17 +71,6 @@ resource "aws_security_group" "allow_nfs" {
   }
 }
 
-# resource "aws_security_group_rule" "allow_nfs" {
-#   type              = "ingress"
-#   from_port         = 2049
-#   to_port           = 2049
-#   protocol          = "tcp"
-#   cidr_blocks       = [data.aws_vpc.main.cidr_block]
-#   security_group_id = aws_security_group.allow_nfs.id
-#   description       = "Allow NFS traffic from VPC"
-
-# }
-
 resource "aws_vpc_security_group_ingress_rule" "allow_nfs" {
   for_each          = data.aws_vpc.main.cidr_block
   security_group_id = aws_security_group.allow_nfs.id

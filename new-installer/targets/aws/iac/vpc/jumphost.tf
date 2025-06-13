@@ -128,16 +128,6 @@ resource "aws_security_group" "jumphost" {
   }
 }
 
-# resource "aws_security_group_rule" "jumphost_egress_private" {
-#   type              = "egress"
-#   from_port         = 0
-#   to_port           = 0
-#   protocol          = -1
-#   cidr_blocks       = [var.cidr_block]
-#   description       = "Allow egress traffic only to private subnets"
-#   security_group_id = aws_security_group.jumphost.id
-# }
-
 resource "aws_vpc_security_group_egress_rule" "jumphost_egress_private" {
   security_group_id = aws_security_group.jumphost.id
   from_port         = 0
@@ -147,17 +137,6 @@ resource "aws_vpc_security_group_egress_rule" "jumphost_egress_private" {
   description       = "Allow egress traffic only to private subnets"
 }
 
-#trivy:ignore:AVD-AWS-0104
-# resource "aws_security_group_rule" "jumphost_egress_https" {
-#   type              = "egress"
-#   from_port         = 443
-#   to_port           = 443
-#   protocol          = "tcp"
-#   cidr_blocks       = ["0.0.0.0/0"]
-#   description       = "Allow traffic to the endpoints and repos"
-#   security_group_id = aws_security_group.jumphost.id
-# }
-
 resource "aws_vpc_security_group_egress_rule" "jumphost_egress_https" {
   security_group_id = aws_security_group.jumphost.id
   from_port         = 443
@@ -166,17 +145,6 @@ resource "aws_vpc_security_group_egress_rule" "jumphost_egress_https" {
   cidr_ipv4         = "0.0.0.0/0"
   description       = "Allow traffic to the endpoints and repos"
 }
-
-# resource "aws_security_group_rule" "jumphost_ingress_ssh" {
-#   for_each          = var.jumphost_ip_allow_list
-#   type              = "ingress"
-#   from_port         = 22
-#   to_port           = 22
-#   protocol          = "tcp"
-#   cidr_blocks       = [each.key]
-#   description       = "Allow SSH access"
-#   security_group_id = aws_security_group.jumphost.id
-# }
 
 resource "aws_vpc_security_group_ingress_rule" "jumphost_ingress_ssh" {
   for_each          = var.jumphost_ip_allow_list

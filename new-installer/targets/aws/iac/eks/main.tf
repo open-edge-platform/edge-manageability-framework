@@ -65,18 +65,6 @@ resource "aws_security_group" "eks_cluster" {
   }
 }
 
-# Allow HTTPS traffic from EKS subnets
-# resource "aws_security_group_rule" "eks_cluster_ingress" {
-#   for_each          = data.aws_subnet.eks_subnet
-#   type              = "ingress"
-#   from_port         = 443
-#   to_port           = 443
-#   protocol          = "tcp"
-#   security_group_id = aws_security_group.eks_cluster.id
-#   cidr_blocks       = each.value.cidr_block
-#   description       = "Allow HTTPS traffic from VPC"
-# }
-
 resource "aws_vpc_security_group_ingress_rule" "eks_cluster_ingress" {
   for_each          = data.aws_subnet.eks_subnet
   security_group_id = aws_security_group.eks_cluster.id
@@ -86,18 +74,6 @@ resource "aws_vpc_security_group_ingress_rule" "eks_cluster_ingress" {
   cidr_ipv4         = each.value.cidr_block
   description       = "Allow HTTPS traffic from VPC from ${each.value.cidr_block}"
 }
-
-# Allow EKS to connect to the internet(e.g., release service)
-#trivy:ignore:AVD-AWS-0104
-# resource "aws_security_group_rule" "eks_cluster_egress" {
-#   type              = "egress"
-#   from_port         = 0
-#   to_port           = 0
-#   protocol          = "tcp"
-#   security_group_id = aws_security_group.eks_cluster.id
-#   cidr_blocks       = ["0.0.0.0/0"]
-#   description       = "Allow HTTPS traffic from VPC"
-# }
 
 resource "aws_vpc_security_group_egress_rule" "eks_cluster_egress" {
   security_group_id = aws_security_group.eks_cluster.id

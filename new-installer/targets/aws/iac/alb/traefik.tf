@@ -12,16 +12,6 @@ resource "aws_security_group" "traefik" {
   }
 }
 
-# resource "aws_security_group_rule" "traefik_allow_https" {
-#   type              = "ingress"
-#   from_port         = 443
-#   to_port           = 443
-#   protocol          = "tcp"
-#   cidr_blocks       = tolist(local.ip_allow_list)
-#   security_group_id = aws_security_group.traefik.id
-#   description       = "Allow HTTPS traffic from IP allow list"
-# }
-
 resource "aws_vpc_security_group_ingress_rule" "traefik_allow_https" {
   for_each          = local.ip_allow_list
   security_group_id = aws_security_group.traefik.id

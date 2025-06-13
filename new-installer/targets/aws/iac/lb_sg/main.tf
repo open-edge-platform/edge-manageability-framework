@@ -24,17 +24,6 @@ locals {
   }
 }
 
-# resource "aws_security_group_rule" "node_sg_rule" {
-#   for_each                 = local.lb_sg_ids
-#   type                     = "ingress"
-#   from_port                = each.value.port
-#   to_port                  = each.value.port
-#   protocol                 = "tcp"
-#   source_security_group_id = each.value.security_group_id
-#   security_group_id        = var.eks_node_sg_id
-#   description              = "From sg ${each.value.security_group_id} to eks node port ${each.value.port}"
-# }
-
 resource "aws_vpc_security_group_ingress_rule" "node_sg_rule" {
   for_each                     = local.lb_sg_ids
   security_group_id            = aws_security_group.eks_cluster.id

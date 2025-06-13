@@ -36,16 +36,6 @@ resource "aws_security_group" "common" {
   }
 }
 
-# resource "aws_security_group_rule" "common" {
-#   type              = "ingress"
-#   from_port         = 443
-#   to_port           = 443
-#   protocol          = "TCP"
-#   cidr_blocks       = local.ip_allow_list
-#   security_group_id = aws_security_group.common.id
-
-# }
-
 resource "aws_vpc_security_group_ingress_rule" "common" {
   for_each          = local.ip_allow_list
   security_group_id = aws_security_group.common.id
