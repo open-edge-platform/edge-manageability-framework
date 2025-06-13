@@ -7,10 +7,8 @@ package common
 import (
   "fmt"
   "io/ioutil"
-	"os"
 
 	"context"
-	"os/exec"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 )
@@ -230,13 +228,7 @@ dex:
       //return fmt.Errorf("failed to copy values.tmpl: %v", err)  
     }
 
-    // // Write proxy-values.yaml
-    // httpProxy := os.Getenv("http_proxy")
-    // httpsProxy := os.Getenv("https_proxy")
-func argocdValues(config config.OrchInstallerConfig){
-
-    // noProxy := os.Getenv("no_proxy")
-    proxyYaml := fmt.Sprintf("http_proxy: %s\nhttps_proxy: %s\nno_proxy: %s\n", config.Proxy.NoProxy, config.Proxy.NoProxy, config.Proxy.NoProxy)
+    proxyYaml := fmt.Sprintf("http_proxy: %s\nhttps_proxy: %s\nno_proxy: %s\n", config.Proxy.HTTPProxy, config.Proxy.HTTPProxy, config.Proxy.NoProxy)
     if err := ioutil.WriteFile("/tmp/argo-cd/proxy-values.yaml", []byte(proxyYaml), 0644); err != nil {
         // return fmt.Errorf("failed to write proxy-values.yaml: %v", err)
 		fmt.Printf("failed to write proxy-values.yaml: %v\n", err)
