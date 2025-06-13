@@ -7,7 +7,7 @@ Last updated: 14.05.2025
 ## Abstract
 
 Platform Bundle is defined as a collection of OS-level files, installation scripts, configurations and packages.
-It's a concept to make any OS profile supported by EIM extensible and customizable. For example,
+It's a concept to allow support for any OS (debian based) by making EIM extensible and customizable. For example,
 we can have different flavors of Ubuntu/EMT images that support various use cases.
 It's a mechanism that allows EN support features beyond what EIM supports currently.
 
