@@ -52,12 +52,6 @@ variable "route53_zone_name" {
   type        = string
 }
 
-variable "with_public_ip" {
-  description = "Whether to assign a public IP to the ECS service"
-  type        = bool
-  default     = false
-}
-
 variable "ip_allow_list" {
   description = "The IP address allow list for the deployment"
   type        = list(string)

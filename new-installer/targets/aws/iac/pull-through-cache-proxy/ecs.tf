@@ -298,7 +298,7 @@ resource "aws_ecs_service" "pull_through_cache_proxy" {
   network_configuration {
     subnets          = var.subnet_ids
     security_groups  = [aws_security_group.ecs_service.id]
-    assign_public_ip = var.with_public_ip
+    assign_public_ip = false
   }
 
   load_balancer {
