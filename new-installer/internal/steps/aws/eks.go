@@ -23,6 +23,22 @@ const (
 
 var eksStepLabels = []string{"aws", "eks"}
 
+var DefaultEKSAddons = []EKSAddOn{
+	{
+		Name:    "aws-ebs-csi-driver",
+		Version: "v1.39.0-eksbuild.1",
+	},
+	{
+		Name:                "vpc-cni",
+		Version:             "v1.19.2-eksbuild.1",
+		ConfigurationValues: "{\"enableNetworkPolicy\": \"true\", \"nodeAgent\": {\"healthProbeBindAddr\": \"8163\", \"metricsBindAddr\": \"8162\"}}",
+	},
+	{
+		Name:    "aws-efs-csi-driver",
+		Version: "v2.1.4-eksbuild.1",
+	},
+}
+
 type EKSAddOn struct {
 	Name                string `json:"name"`
 	Version             string `json:"version"`
@@ -92,21 +108,7 @@ func (s *EKSStep) Labels() []string {
 func (s *EKSStep) ConfigStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	// With fixed default values
 	s.variables.EKSVersion = DefaultEKSVersion
-	s.variables.AddOns = []EKSAddOn{
-		{
-			Name:    "aws-ebs-csi-driver",
-			Version: "v1.39.0-eksbuild.1",
-		},
-		{
-			Name:                "vpc-cni",
-			Version:             "v1.19.2-eksbuild.1",
-			ConfigurationValues: "{\"enableNetworkPolicy\": \"true\", \"nodeAgent\": {\"healthProbeBindAddr\": \"8163\", \"metricsBindAddr\": \"8162\"}}",
-		},
-		{
-			Name:    "aws-efs-csi-driver",
-			Version: "v2.1.4-eksbuild.1",
-		},
-	}
+	s.variables.AddOns = DefaultEKSAddons
 	s.variables.UserScriptPreCloudInit = ""
 	s.variables.UserScriptPostCloudInit = ""
 

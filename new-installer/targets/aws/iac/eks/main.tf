@@ -201,7 +201,7 @@ resource "aws_iam_role_policy_attachment" "AmazonSSMManagedInstanceCore" {
 }
 
 resource "aws_launch_template" "eks_launch_template" {
-  name = "eks-nodegroup-${var.name}-1"
+  name = "eks-nodegroup-${var.name}"
 
   vpc_security_group_ids = [
     aws_security_group.eks_cluster.id,
