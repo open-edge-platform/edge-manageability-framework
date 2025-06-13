@@ -34,6 +34,7 @@ type EKSTestSuite struct {
 	jumphostPrivateKey string
 	jumphostIP         string
 	stopTunnelRefresh  bool
+	tmpDir             string // Temporary directory for storing files
 }
 
 func TestEKSTestSuite(t *testing.T) {
@@ -56,6 +57,7 @@ func (s *EKSTestSuite) SetupTest() {
 		s.NoError(err, "Failed to wait until jumphost is reachable")
 		return
 	}
+	s.tmpDir = s.T().TempDir()
 	// Find an open port for the SSH tunnel
 	listener, err := net.Listen("tcp", ":0")
 	if err != nil {
@@ -91,7 +93,7 @@ func (s *EKSTestSuite) checkAndStartSSHTunnel() error {
 
 func (s *EKSTestSuite) TearDownTest() {
 	s.stopTunnelRefresh = true
-	if s.sshTunnelCmd == nil && s.sshTunnelCmd.Process == nil {
+	if s.sshTunnelCmd != nil && s.sshTunnelCmd.Process != nil {
 		if err := s.sshTunnelCmd.Process.Kill(); err != nil {
 			s.NoError(err, "Failed to stop ssh tunnel")
 		}

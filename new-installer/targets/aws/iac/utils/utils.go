@@ -206,10 +206,10 @@ func CreateVPCWithEndpoints(t testing.TestingT, name string, endpoints []string)
 		t.Fatalf("Failed to marshal variables: %v", err)
 	}
 	tempFile, err := os.CreateTemp("", "variables-*.tfvar.json")
+	defer os.Remove(tempFile.Name())
 	if err != nil {
 		t.Fatalf("Failed to create temporary file: %v", err)
 	}
-	defer os.Remove(tempFile.Name())
 	if _, err := tempFile.Write(jsonData); err != nil {
 		t.Fatalf("Failed to write to temporary file: %v", err)
 	}
@@ -306,10 +306,10 @@ func DeleteVPCWithEndpoints(t testing.TestingT, name string, endpoints []string)
 		t.Fatalf("Failed to marshal variables: %v", err)
 	}
 	tempFile, err := os.CreateTemp("", "variables-*.tfvar.json")
+	defer os.Remove(tempFile.Name())
 	if err != nil {
 		t.Fatalf("Failed to create temporary file: %v", err)
 	}
-	defer os.Remove(tempFile.Name())
 	if _, err := tempFile.Write(jsonData); err != nil {
 		t.Fatalf("Failed to write to temporary file: %v", err)
 	}
@@ -355,6 +355,7 @@ func WaitUntilJumphostIsReachable(privateKey string, jumphostIP string) error {
 		sshConfig += fmt.Sprintf("\n\tProxyCommand nc -x %s %%h %%p\n", socksProxy)
 	}
 	sshConfigFile, err := os.CreateTemp("", "ssh-config-*.txt")
+	defer os.Remove(sshConfigFile.Name()) // Clean up the temporary file after use
 	if err != nil {
 		return fmt.Errorf("failed to create temporary SSH config file: %w", err)
 	}
@@ -412,6 +413,7 @@ func getMyPublicIP() (string, error) {
 func StartSSHSocks5Tunnel(jumphostIP string, jumphostKey string, socksPort int) (cmd *exec.Cmd, err error) {
 	// Create a temporary file for the private key
 	privateKeyFile, err := os.CreateTemp("", "jumphost-key-*.pem")
+	defer os.Remove(privateKeyFile.Name()) // Clean up the temporary file after use
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temporary private key file: %w", err)
 	}
@@ -440,6 +442,7 @@ func StartSSHSocks5Tunnel(jumphostIP string, jumphostKey string, socksPort int) 
 		sshConfig += fmt.Sprintf("\n\tProxyCommand nc -x %s %%h %%p\n", socksProxy)
 	}
 	sshConfigFile, err := os.CreateTemp("", "ssh-config-*.txt")
+	defer os.Remove(sshConfigFile.Name()) // Clean up the temporary file after use
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temporary SSH config file: %w", err)
 	}
