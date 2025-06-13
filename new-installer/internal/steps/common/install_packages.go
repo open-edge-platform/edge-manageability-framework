@@ -6,8 +6,6 @@ package steps_common
 
 import (
 	"context"
-	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
@@ -17,8 +15,8 @@ import (
 )
 
 const (
-	PythonVenvPath  = ".deploy/venv"
-	SshuttleVersion = "1.3.1"
+	KubectlVersion    = "v1.32.5"
+	DefaultBinaryPath = ".deploy/bin"
 )
 
 type InstallPackagesStep struct {
@@ -30,7 +28,6 @@ type InstallPackagesStep struct {
 var installPackageStepLabels = []string{"common", "install-packages"}
 
 func CreateInstallPackagesStep(rootPath string, shellUtility steps.ShellUtility) *InstallPackagesStep {
-
 	return &InstallPackagesStep{
 		ShellUtility: shellUtility,
 		rootPath:     rootPath,
@@ -57,72 +54,30 @@ func (s *InstallPackagesStep) PreStep(ctx context.Context, config config.OrchIns
 			ErrorMsg:  "Shell utility is not initialized.",
 		}
 	}
-	if !commandExists(ctx, s.ShellUtility, "sudo") {
-		return runtimeState, &internal.OrchInstallerError{
-			ErrorCode: internal.OrchInstallerErrorCodeInternal,
-			ErrorMsg:  "sudo command is not available. Please install sudo.",
-		}
-	}
-	if !commandExists(ctx, s.ShellUtility, "python3") {
-		return runtimeState, &internal.OrchInstallerError{
-			ErrorCode: internal.OrchInstallerErrorCodeInternal,
-			ErrorMsg:  "apt-get command is not available.",
-		}
-	}
 	return runtimeState, nil
 }
 
 func (s *InstallPackagesStep) RunStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
-	if err := s.initPythonVenvDir(ctx); err != nil {
-		return runtimeState, err
-	}
-	if err := s.installSshuttle(ctx); err != nil {
-		return runtimeState, err
-	}
-	return runtimeState, nil
+	return runtimeState, s.installKubectl(ctx)
 }
 
 func (s *InstallPackagesStep) PostStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState, prevStepError *internal.OrchInstallerError) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	return runtimeState, nil
 }
 
-func (s *InstallPackagesStep) initPythonVenvDir(ctx context.Context) *internal.OrchInstallerError {
-	// Create the Python virtual environment directory if it doesn't exist
-	venvPath := filepath.Join(s.rootPath, PythonVenvPath)
-	_, err := os.Stat(venvPath)
-	if os.IsNotExist(err) {
-		s.logger.Infof("Creating Python virtual environment at %s", venvPath)
-		_, venvErr := s.ShellUtility.Run(ctx, steps.ShellUtilityInput{
-			Command:         []string{"python3", "-m", "venv", venvPath},
-			Timeout:         60,
-			SkipError:       false,
-			RunInBackground: false,
-		})
-		if venvErr != nil {
-			return &internal.OrchInstallerError{
-				ErrorCode: internal.OrchInstallerErrorCodeInternal,
-				ErrorMsg:  fmt.Sprintf("Failed to create Python virtual environment: %v", err),
-			}
-		}
+func (s *InstallPackagesStep) installKubectl(ctx context.Context) *internal.OrchInstallerError {
+	url := "https://dl.k8s.io/release/" + KubectlVersion + "/bin/linux/amd64/kubectl"
+	outputPath := filepath.Join(s.rootPath, DefaultBinaryPath, "kubectl")
+	input := steps.ShellUtilityInput{
+		Command: []string{"curl", "-Lo", outputPath, url},
+		Timeout: 30 * 60, // 30 minutes
 	}
-	return nil
-}
-
-func (s *InstallPackagesStep) installSshuttle(ctx context.Context) *internal.OrchInstallerError {
-	s.logger.Infof("installing sshuttle to %s", filepath.Join(s.rootPath, PythonVenvPath))
-	script := fmt.Sprintf(`source %s/bin/activate && pip3 install sshuttle==%s`, filepath.Join(s.rootPath, PythonVenvPath), SshuttleVersion)
-	_, err := s.ShellUtility.Run(ctx, steps.ShellUtilityInput{
-		Command:         []string{"bash", "-c", script},
-		Timeout:         60,
-		SkipError:       false,
-		RunInBackground: false,
-	})
-	if err != nil {
+	if _, err := s.ShellUtility.Run(ctx, input); err != nil {
 		return &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInternal,
-			ErrorMsg:  "Failed to install sshuttle using apt-get",
+			ErrorMsg:  "Failed to download kubectl: " + err.Error(),
 		}
 	}
-	s.logger.Info("sshuttle installed successfully")
+	s.logger.Infof("Successfully downloaded kubectl to %s", outputPath)
 	return nil
 }

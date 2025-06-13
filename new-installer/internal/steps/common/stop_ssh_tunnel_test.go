@@ -5,7 +5,6 @@
 package steps_common_test
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
@@ -15,40 +14,33 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type StopSshuttletestSuite struct {
+type StopSSHTunnelTestSuite struct {
 	suite.Suite
-	s                *steps_common.StopSshuttleStep
+	s                *steps_common.StopSSHTunnelStep
 	shellUtilityMock *ShellUtilityMock
 }
 
-func TestStopSshuttleSuite(t *testing.T) {
-	suite.Run(t, new(StopSshuttletestSuite))
+func TestStopSSHTunnelSuite(t *testing.T) {
+	suite.Run(t, new(StopSSHTunnelTestSuite))
 }
 
-func (suite *StopSshuttletestSuite) SetupTest() {
+func (suite *StopSSHTunnelTestSuite) SetupTest() {
 	suite.shellUtilityMock = &ShellUtilityMock{}
-	suite.s = &steps_common.StopSshuttleStep{
-		ShellUtility: suite.shellUtilityMock,
-	}
+	suite.s = steps_common.CreateStopSSHTunnelStep(
+		suite.shellUtilityMock,
+	)
 }
 
-func (suite *StopSshuttletestSuite) TestStopSshuttle() {
+func (suite *StopSSHTunnelTestSuite) TestStartStopSSHTunnel() {
 	cfg := &config.OrchInstallerConfig{}
-	runtimeState := config.OrchInstallerRuntimeState{
-		SshuttlePID: "12345",
-	}
-
+	runtimeState := config.OrchInstallerRuntimeState{}
+	runtimeState.AWS.JumpHostSocks5TunnelPID = 12345
 	suite.shellUtilityMock.On("Run", mock.Anything, steps.ShellUtilityInput{
-		Command:         []string{"sudo", "kill", "12345"},
+		Command:         []string{"kill", "12345"},
 		Timeout:         10,
-		SkipError:       false,
+		SkipError:       true,
 		RunInBackground: false,
-	}).Return(&steps.ShellUtilityOutput{
-		Stdout: strings.Builder{},
-		Stderr: strings.Builder{},
-		Error:  nil,
-	}, nil).Once()
-
+	}).Return(&steps.ShellUtilityOutput{}, nil).Once()
 	_, err := steps.GoThroughStepFunctions(suite.s, cfg, runtimeState)
 	if err != nil {
 		suite.NoError(err, "Expected no error during step execution")

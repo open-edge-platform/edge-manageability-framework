@@ -40,8 +40,7 @@ type OrchInstallerRuntimeState struct {
 
 	// Used for state and o11y bucket prefix. lowercase or digit
 	DeploymentID     string `yaml:"deploymentID"`
-	StateBucketState string `yaml:"stateBucketState"`      // The state S3 bucket Terraform state
-	SshuttlePID      string `yaml:"sshuttlePID,omitempty"` // The PID of the sshuttle process, if any
+	StateBucketState string `yaml:"stateBucketState"` // The state S3 bucket Terraform state
 	AWS              struct {
 		KubeConfig               string   `yaml:"kubeConfig"`
 		CacheRegistry            string   `yaml:"cacheRegistry"`
@@ -51,6 +50,8 @@ type OrchInstallerRuntimeState struct {
 		JumpHostIP               string   `yaml:"jumpHostIP"`
 		JumpHostSSHKeyPublicKey  string   `yaml:"jumpHostSSHPublicKey"`
 		JumpHostSSHKeyPrivateKey string   `yaml:"jumpHostSSHPrivateKey"`
+		JumpHostSocks5TunnelPort int      `yaml:"jumpHostSocks5TunnelPort"` // Socks5 port that forwarded traffic via the jumphost.
+		JumpHostSocks5TunnelPID  int      `yaml:"jumpHostSocks5TunnelPID"`  // PID of the Socks5 tunnel process on the jumphost.
 		EFSFileSystemID          string   `yaml:"efsFileSystemID"`
 		EKSOIDCIssuer            string   `yaml:"eksOIDCIssuer"`
 		ACMCertArn               string   `yaml:"acmCertArn"`

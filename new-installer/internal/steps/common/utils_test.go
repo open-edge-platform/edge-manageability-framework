@@ -8,7 +8,6 @@ import (
 	"context"
 	"errors"
 	"os"
-	"strings"
 
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps"
@@ -43,26 +42,4 @@ func (m *ShellUtilityMock) Kill() error {
 func (m *ShellUtilityMock) Wait() error {
 	args := m.Called()
 	return args.Error(0)
-}
-
-func expectCallsForCmdExists(shellUtilityMock *ShellUtilityMock, cmd string, exists bool) {
-	var err *internal.OrchInstallerError // error to return
-	if exists {
-		err = nil
-	} else {
-		err = &internal.OrchInstallerError{
-			ErrorCode: internal.OrchInstallerErrorCodeInternal,
-			ErrorMsg:  "Command not found: " + cmd,
-		}
-	}
-	shellUtilityMock.On("Run", mock.Anything, steps.ShellUtilityInput{
-		Command:         []string{"which", cmd},
-		Timeout:         60,
-		SkipError:       false,
-		RunInBackground: false,
-	}).Return(&steps.ShellUtilityOutput{
-		Stdout: strings.Builder{},
-		Stderr: strings.Builder{},
-		Error:  err,
-	}, err).Once()
 }
