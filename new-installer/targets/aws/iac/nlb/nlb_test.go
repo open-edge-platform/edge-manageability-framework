@@ -2,19 +2,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package aws_iac_alb_test
+package aws_iac_nlb_test
 
 import (
-	"context"
 	"crypto/rand"
 	"encoding/json"
 	"os"
 	"strings"
 	"testing"
 
-	"github.com/aws/aws-sdk-go-v2/service/acm"
-	"github.com/aws/aws-sdk-go-v2/service/acm/types"
-	"github.com/aws/aws-sdk-go/aws"
 	terratest_aws "github.com/gruntwork-io/terratest/modules/aws"
 	"github.com/gruntwork-io/terratest/modules/terraform"
 	steps_aws "github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps/aws"
@@ -22,75 +18,49 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type ALBTestSuite struct {
+type NLBTestSuite struct {
 	suite.Suite
 	name             string
 	vpcID            string
 	publicSubnetIDs  []string
 	privateSubnetIDs []string
-	certARN          string
 }
 
-func TestALBTestSuite(t *testing.T) {
-	suite.Run(t, new(ALBTestSuite))
+func TestNLBTestSuite(t *testing.T) {
+	suite.Run(t, new(NLBTestSuite))
 }
 
-func (s *ALBTestSuite) SetupTest() {
-	// Bucket for ALB state
-	s.name = "alb-unit-test-" + strings.ToLower(rand.Text()[0:8])
+func (s *NLBTestSuite) SetupTest() {
+	// Bucket for NLB state
+	s.name = "nlb-unit-test-" + strings.ToLower(rand.Text()[0:8])
 	terratest_aws.CreateS3Bucket(s.T(), utils.DefaultTestRegion, s.name)
 
-	// VPC and certificate for ALB
+	// VPC NLB
 	var err error
 	s.vpcID, s.publicSubnetIDs, s.privateSubnetIDs, _, _, err = utils.CreateVPCWithEndpoints(s.T(), s.name, []string{})
 	if err != nil {
 		s.NoError(err, "Failed to create VPC and subnet")
 		return
 	}
-	tlsCert, tlsCA, tlsKey, err := steps_aws.GenerateSelfSignedTLSCert("alb-unit-test.example.com")
-	if err != nil {
-		s.NoError(err, "Failed to generate self-signed TLS certificate")
-		return
-	}
-	acmClient := terratest_aws.NewAcmClient(s.T(), utils.DefaultTestRegion)
-	output, err := acmClient.ImportCertificate(context.Background(), &acm.ImportCertificateInput{
-		Certificate:      []byte(tlsCert),
-		PrivateKey:       []byte(tlsKey),
-		CertificateChain: []byte(tlsCA),
-		Tags:             []types.Tag{{Key: aws.String("customer"), Value: aws.String(utils.DefaultTestCustomerTag)}},
-	})
-	if err != nil {
-		s.NoError(err, "Failed to import certificate")
-		return
-	}
-	s.certARN = *output.CertificateArn
 }
 
-func (s *ALBTestSuite) TearDownTest() {
+func (s *NLBTestSuite) TearDownTest() {
 	err := utils.DeleteVPCWithEndpoints(s.T(), s.name, []string{})
 	if err != nil {
 		s.NoError(err, "Failed to delete VPC %s", s.name)
-	}
-	acmClient := terratest_aws.NewAcmClient(s.T(), utils.DefaultTestRegion)
-	_, err = acmClient.DeleteCertificate(context.Background(), &acm.DeleteCertificateInput{
-		CertificateArn: aws.String(s.certARN),
-	})
-	if err != nil {
-		s.NoError(err, "Failed to delete ACM certificate %s", s.certARN)
 	}
 	terratest_aws.EmptyS3Bucket(s.T(), utils.DefaultTestRegion, s.name)
 	terratest_aws.DeleteS3Bucket(s.T(), utils.DefaultTestRegion, s.name)
 }
 
-func (s *ALBTestSuite) TestApplyingModule() {
-	variables := steps_aws.ALBVariables{
+func (s *NLBTestSuite) TestApplyingModule() {
+	variables := steps_aws.NLBVariables{
 		Internal:                 false,
 		VPCID:                    s.vpcID,
 		ClusterName:              s.name,
-		PublicSubnetIDs:          s.publicSubnetIDs,
+		SubnetIDs:                s.publicSubnetIDs,
 		IPAllowList:              []string{"10.0.0.0/8"},
 		EnableDeletionProtection: false,
-		TLSCertARN:               s.certARN,
 		Region:                   utils.DefaultTestRegion,
 		CustomerTag:              utils.DefaultTestCustomerTag,
 	}
@@ -114,7 +84,7 @@ func (s *ALBTestSuite) TestApplyingModule() {
 		BackendConfig: map[string]interface{}{
 			"region": utils.DefaultTestRegion,
 			"bucket": s.name,
-			"key":    "alb.tfstate",
+			"key":    "nlb.tfstate",
 		},
 		Reconfigure: true,
 		Upgrade:     true,
@@ -122,10 +92,4 @@ func (s *ALBTestSuite) TestApplyingModule() {
 
 	defer terraform.Destroy(s.T(), terraformOptions)
 	terraform.InitAndApply(s.T(), terraformOptions)
-	nlbARN := terraform.Output(s.T(), terraformOptions, "nlb_arn")
-	nlbTargetGroupARN := terraform.Output(s.T(), terraformOptions, "nlb_target_group_arn")
-	nlbDNSName := terraform.Output(s.T(), terraformOptions, "nlb_dns_name")
-	s.NotEmpty(nlbARN, "NLB ARN should not be empty")
-	s.NotEmpty(nlbTargetGroupARN, "NLB Target Group ARN should not be empty")
-	s.NotEmpty(nlbDNSName, "NLB DNS Name should not be empty")
 }

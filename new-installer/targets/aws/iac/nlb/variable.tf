@@ -16,9 +16,9 @@ variable "vpc_id" {
   description = "The VPC ID where the load balancer will be created"
   type        = string
 }
-variable "public_subnet_ids" {
-  description = "The list of public subnet IDs where the load balancer will be created"
-  type        = list(string)
+variable "subnet_ids" {
+  description = "The list of subnet IDs where the load balancer will be created"
+  type        = set(string)
 }
 variable "ip_allow_list" {
   description = "The list of IP addresses that are allowed to access the load balancer"
@@ -33,16 +33,4 @@ variable "enable_deletion_protection" {
 variable "internal" {
   description = "Create load balancers for internal VPC"
   default     = false
-}
-variable "type" {
-  description = "Load balancer type"
-  default     = "network"
-}
-variable "subnets" {
-  description = "List of subnet ids for this load balancer"
-  type        = set(string)
-}
-variable "certificate_arn" {
-  description = "The ARN of the certificate to use for the load balancer"
-  type        = string
 }
