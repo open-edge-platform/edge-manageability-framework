@@ -46,7 +46,7 @@ func (s *PTCPTestSuite) SetupTest() {
 }
 
 func (s *PTCPTestSuite) TearDownTest() {
-	err := utils.DeleteVPC(s.T(), s.name)
+	err := utils.DeleteVPCWithEndpoints(s.T(), s.name, []string{})
 	if err != nil {
 		s.NoError(err, "Failed to delete VPC")
 		return
