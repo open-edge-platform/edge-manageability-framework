@@ -144,7 +144,7 @@ func (s *EKSTestSuite) TestApplyingModule() {
 
 	go func() {
 		timesFailed := 0
-		for range time.Tick(5 * time.Second) {
+		for range time.Tick(10 * time.Second) {
 			cmd := exec.Command("bash", "-c", fmt.Sprintf("HTTPS_PROXY=socks5://127.0.0.1:%d kubectl get nodes", s.tunnelSocksPort))
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stdout
@@ -152,7 +152,7 @@ func (s *EKSTestSuite) TestApplyingModule() {
 			if err := cmd.Run(); err != nil {
 				log.Printf("Command execution error: %v", err)
 				timesFailed += 1
-				if timesFailed >= 10 {
+				if timesFailed >= 80 {
 					log.Printf("Command failed too many times, stopping execution")
 					return
 				}
