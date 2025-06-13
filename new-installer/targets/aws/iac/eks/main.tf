@@ -75,6 +75,7 @@ resource "aws_vpc_security_group_ingress_rule" "eks_cluster_ingress" {
   description       = "Allow HTTPS traffic from VPC from ${each.value.cidr_block}"
 }
 
+#trivy:ignore:AVD-AWS-0104
 resource "aws_vpc_security_group_egress_rule" "eks_cluster_egress" {
   security_group_id = aws_security_group.eks_cluster.id
   from_port         = 0

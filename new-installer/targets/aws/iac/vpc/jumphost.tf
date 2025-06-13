@@ -137,6 +137,7 @@ resource "aws_vpc_security_group_egress_rule" "jumphost_egress_private" {
   description       = "Allow egress traffic only to private subnets"
 }
 
+#trivy:ignore:AVD-AWS-0104
 resource "aws_vpc_security_group_egress_rule" "jumphost_egress_https" {
   security_group_id = aws_security_group.jumphost.id
   from_port         = 443

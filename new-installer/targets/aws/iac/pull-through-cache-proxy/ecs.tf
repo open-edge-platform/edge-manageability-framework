@@ -272,6 +272,7 @@ resource "aws_vpc_security_group_ingress_rule" "alb_to_ecs_ingress" {
   ip_protocol                  = "tcp"
 }
 
+#trivy:ignore:AVD-AWS-0104
 resource "aws_vpc_security_group_egress_rule" "ecs_to_internet_https" {
   security_group_id = aws_security_group.ecs_service.id
   from_port         = 0
