@@ -23,25 +23,11 @@ import (
 
 const (
 	// RKE2 related constants.
-	rke2Version      = "v1.30.10+rke2r1"
-	rke2ImagesPkg    = "rke2.linux-amd64.tar.gz"
-	rke2LibPkg       = "rke2-images.linux-amd64.tar.zst"
-	rke2CalicoLibPkg = "rke2-images-calico.linux-amd64.tar.zst"
-	rke2LibSHAFile   = "sha256sum-amd64.txt"
 	// openEbsOperatorK8sCustomPatchFile contains custom patches to the OpenEBS operator.
 	openEbsOperatorK8sCustomPatchFile = "openebs-operator.yaml"
 	rke2ArtifactDownloadPath          = "assets/rke2"
 	rke2CustomImageDownloadPath       = "assets/rke2/offline-images/"
-	rke2ImagesURLFmt                  = "https://github.com/rancher/rke2/releases/download/%s/rke2.linux-amd64.tar.gz"
-	//nolint: all
-	rke2LibURLFmt = "https://github.com/rancher/rke2/releases/download/%s/rke2-images.linux-amd64.tar.zst"
-
-	//nolint: all
-	rke2CNICalicoURLFmt = "https://github.com/rancher/rke2/releases/download/%s/rke2-images-calico.linux-amd64.tar.zst"
-	//nolint: all
-	openEbsOperatorK8sTemplate = "https://raw.githubusercontent.com/openebs/charts/gh-pages/versioned/3.9.0/openebs-operator.yaml"
-	//nolint: all
-	openEbsHostPathStorageK8sTemplate = "https://raw.githubusercontent.com/openebs/dynamic-localpv-provisioner/refs/heads/release/4.2/deploy/kubectl/hostpath-operator.yaml"
+	openEbsOperatorK8sTemplate        = "https://raw.githubusercontent.com/openebs/charts/gh-pages/versioned/3.9.0/openebs-operator.yaml"
 
 	deploymentTimeoutEnv     = "DEPLOYMENT_TIMEOUT"
 	defaultDeploymentTimeout = "1200s" // timeout must be a valid string
