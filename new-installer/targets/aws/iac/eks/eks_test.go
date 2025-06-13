@@ -75,19 +75,6 @@ func (s *EKSTestSuite) TearDownTest() {
 	}
 	terratest_aws.EmptyS3Bucket(s.T(), utils.DefaultTestRegion, s.name)
 	terratest_aws.DeleteS3Bucket(s.T(), utils.DefaultTestRegion, s.name)
-
-	content, err := os.ReadFile("/tmp/ssh-tunnel-stdout.log")
-	if err != nil {
-		s.T().Logf("Failed to read SSH tunnel log file: %v", err)
-	} else {
-		s.T().Logf("SSH tunnel log content:\n%s", string(content))
-	}
-	content, err = os.ReadFile("/tmp/ssh-tunnel-stderr.log")
-	if err != nil {
-		s.T().Logf("Failed to read SSH tunnel log file: %v", err)
-	} else {
-		s.T().Logf("SSH tunnel log content:\n%s", string(content))
-	}
 }
 
 func (s *EKSTestSuite) TestApplyingModule() {

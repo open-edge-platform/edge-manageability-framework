@@ -344,21 +344,36 @@ func WaitUntilJumphostIsReachable(privateKey string, jumphostIP string) error {
 		return fmt.Errorf("failed to set permissions on temporary private key file: %w", err)
 	}
 	log.Printf("Private key written to temporary file: %s", privateKeyFile.Name())
+	sshConfig := fmt.Sprintf(`Host jumphost
+	HostName %s
+	User ubuntu
+	IdentityFile %s
+	StrictHostKeyChecking no
+	BatchMode yes
+	UserKnownHostsFile /dev/null
+	ExitOnForwardFailure yes`, jumphostIP, privateKeyFile.Name())
+	if socksProxy := os.Getenv("SOCKS_PROXY"); socksProxy != "" {
+		sshConfig += fmt.Sprintf("\n\tProxyCommand nc -x %s %%h %%p\n", socksProxy)
+	}
+	sshConfigFile, err := os.CreateTemp("", "ssh-config-*.txt")
+	if err != nil {
+		return fmt.Errorf("failed to create temporary SSH config file: %w", err)
+	}
+	if err := os.Chmod(sshConfigFile.Name(), 0o400); err != nil {
+		return fmt.Errorf("failed to set permissions on temporary SSH config file: %w", err)
+	}
+	if _, err := sshConfigFile.WriteString(sshConfig); err != nil {
+		return fmt.Errorf("failed to write SSH config to temporary file: %w", err)
+	}
 	// Wait for the instance to be reachable via SSH
 	var reachable bool = false
 	for range 10 {
 		time.Sleep(10 * time.Second)
-		var sshCmd *exec.Cmd
-		if socksProxy := os.Getenv("SOCKS_PROXY"); socksProxy != "" {
-			sshCmd = exec.Command("ssh", "-T", "-o", fmt.Sprintf("ProxyCommand=nc -x %s %%h %%p", socksProxy), "-o", "StrictHostKeyChecking=no", "-i", privateKeyFile.Name(), fmt.Sprintf("ubuntu@%s", jumphostIP), "true")
-		} else {
-			sshCmd = exec.Command("ssh", "-T", "-o", "StrictHostKeyChecking=no", "-i", privateKeyFile.Name(), fmt.Sprintf("ubuntu@%s", jumphostIP), "true")
-		}
+		sshCmd := exec.Command("ssh", "-T", "-F", sshConfigFile.Name(), "jumphost", "whoami")
 		if err := sshCmd.Run(); err == nil {
 			reachable = true
 			break
 		}
-
 	}
 	if !reachable {
 		return fmt.Errorf("jump host instance is not reachable via SSH at %s", jumphostIP)
