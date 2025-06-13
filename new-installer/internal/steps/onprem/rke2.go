@@ -52,15 +52,8 @@ func (s *Rke2Step) RunStep(ctx context.Context, config config.OrchInstallerConfi
 	if runtimeState.Action == "install" {
 		fmt.Println("Running RKE2 installation step")
 
-		var cwd, dockerUsername, dockerPassword string
+		var dockerUsername, dockerPassword string
 		var err error
-		if cwd, err = os.Getwd(); err != nil {
-			return runtimeState, &internal.OrchInstallerError{
-				ErrorMsg:  fmt.Sprintf("failed to get current working directory: %s", err),
-				ErrorCode: internal.OrchInstallerErrorCodeInternal,
-			}
-		}
-
 		dockerUsername = config.Onprem.DockerUsername
 		dockerPassword = config.Onprem.DockerToken
 		currentUser, err := user.Current()
