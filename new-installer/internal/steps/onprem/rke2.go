@@ -106,7 +106,7 @@ func installRKE2(debDirName, dockerUsername, dockerPassword, currentUser string)
 	fmt.Println("OS level configuration installed and RKE2 Installed")
 
 	kubeDir := fmt.Sprintf("/home/%s/.kube", currentUser)
-	if err := os.MkdirAll(kubeDir, 0700); err != nil {
+	if err := os.MkdirAll(kubeDir, 0o700); err != nil {
 		return fmt.Errorf("failed to create kube dir: %w", err)
 	}
 	if err := exec.Command("sudo", "cp", "/etc/rancher/rke2/rke2.yaml", fmt.Sprintf("%s/config", kubeDir)).Run(); err != nil {

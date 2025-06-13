@@ -24,12 +24,10 @@ const (
 	INSTALLERS_DIR     = "/tmp/installers"
 )
 
-var (
-	installerList = []string{
-		"onprem-ke-installer",
-		"onprem-orch-installer",
-	}
-)
+var installerList = []string{
+	"onprem-ke-installer",
+	"onprem-orch-installer",
+}
 
 type ArtifactDownloader struct {
 	RootPath               string
@@ -64,22 +62,23 @@ func (s *ArtifactDownloader) PreStep(ctx context.Context, config config.OrchInst
 }
 
 func (s *ArtifactDownloader) RunStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
-
 	if runtimeState.Action == "install" {
 		fmt.Println("Running ArtifactDownloader step")
 
 		// Create directories for installers and archives
-		if err := os.MkdirAll(INSTALLERS_DIR, 0755); err != nil {
-			return runtimeState, &internal.OrchInstallerError{ErrorCode: internal.OrchInstallerErrorCodeInternal,
-				ErrorMsg: fmt.Sprintf("failed to create installers directory %s: %s", INSTALLERS_DIR, err),
+		if err := os.MkdirAll(INSTALLERS_DIR, 0o755); err != nil {
+			return runtimeState, &internal.OrchInstallerError{
+				ErrorCode: internal.OrchInstallerErrorCodeInternal,
+				ErrorMsg:  fmt.Sprintf("failed to create installers directory %s: %s", INSTALLERS_DIR, err),
 			}
 		}
 
 		fmt.Println("Created directories for installers")
 
 		if err := downloadArtifacts(ctx, RS_URL, INSTALLERS_RS_PATH, ORCH_VERSION, INSTALLERS_DIR, installerList); err != nil {
-			return runtimeState, &internal.OrchInstallerError{ErrorCode: internal.OrchInstallerErrorCodeInternal,
-				ErrorMsg: fmt.Sprintf("failed to download installers: %s", err),
+			return runtimeState, &internal.OrchInstallerError{
+				ErrorCode: internal.OrchInstallerErrorCodeInternal,
+				ErrorMsg:  fmt.Sprintf("failed to download installers: %s", err),
 			}
 		}
 
