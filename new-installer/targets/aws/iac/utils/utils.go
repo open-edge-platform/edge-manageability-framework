@@ -459,7 +459,7 @@ func StartSSHSocks5Tunnel(jumphostIP string, jumphostKey string, socksPort int) 
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stdout
 	log.Printf("Starting ssh tunnel command: %s", cmd.String())
-	if err := cmd.Start(); err != nil {
+	if err := cmd.Run(); err != nil {
 		log.Printf("failed to start ssh tunnel: %v", err)
 	}
 	log.Printf("SSH tunnel started with pid: %d", cmd.Process.Pid)

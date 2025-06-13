@@ -64,7 +64,6 @@ func (s *EKSTestSuite) SetupTest() {
 	}
 	listener.Close()
 	s.tunnelSocksPort = listener.Addr().(*net.TCPAddr).Port
-	_ = s.checkAndStartSSHTunnel()
 	s.stopTunnelRefresh = false
 	go func() {
 		ticker := time.NewTicker(10 * time.Second)
