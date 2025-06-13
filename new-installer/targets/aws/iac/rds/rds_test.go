@@ -120,4 +120,7 @@ func (s *RDSTestSuite) TestApplyingModule() {
 
 	password := terraform.Output(s.T(), terraformOptions, "password")
 	s.NotEmpty(password, "Expected RDS Password to be created")
+
+	passwordID := terraform.Output(s.T(), terraformOptions, "password_id")
+	s.NotEmpty(passwordID, "Expected RDS Password ID to be created")
 }
