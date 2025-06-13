@@ -445,19 +445,11 @@ func StartSSHSocks5Tunnel(jumphostIP string, jumphostKey string) (cmd *exec.Cmd,
 		"-D", fmt.Sprintf("%d", socksPort), // Set up a SOCKS proxy on the specified port
 		"-F", sshConfigFile.Name(), // Use the temporary SSH config file
 		"jumphost")
-	tempFile, err := os.CreateTemp("", "ssh-tunnel-stdout-*.log")
-	if err != nil {
-		return nil, 0, fmt.Errorf("failed to create temporary stdout log file: %w", err)
-	}
-	cmd.Stdout, err = internal.FileLogWriter(tempFile.Name())
+	cmd.Stdout, err = internal.FileLogWriter("/tmp/ssh-tunnel-stdout.log")
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to create stdout log writer: %w", err)
 	}
-	tempFile, err = os.CreateTemp("", "ssh-tunnel-stderr-*.log")
-	if err != nil {
-		return nil, 0, fmt.Errorf("failed to create temporary stderr log file: %w", err)
-	}
-	cmd.Stderr, err = internal.FileLogWriter(tempFile.Name())
+	cmd.Stderr, err = internal.FileLogWriter("/tmp/ssh-tunnel-stderr.log")
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to create stderr log writer: %w", err)
 	}
