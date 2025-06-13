@@ -6,8 +6,10 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -35,7 +37,7 @@ func main() {
 	var configFile, runtimeStateFile, logLevel, logDir, targets string
 	var keepGeneratedFiles bool
 	rootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "config.yaml", "Path to the configuration file")
-	rootCmd.PersistentFlags().StringVarP(&runtimeStateFile, "runtime-state", "r", "config.yaml", "Path to the runtime state file")
+	rootCmd.PersistentFlags().StringVarP(&runtimeStateFile, "runtime-state", "r", "runtime-state.yaml", "Path to the runtime state file")
 	rootCmd.PersistentFlags().StringVarP(&logLevel, "log-level", "l", "info", "Log level (debug, info, warn, error)")
 	rootCmd.PersistentFlags().StringVarP(&logDir, "log-dir", "o", ".logs", "Path to the log dir")
 	rootCmd.PersistentFlags().BoolVarP(&keepGeneratedFiles, "keep-generated-files", "k", false, "Keep generated files, such as Terraform backend config and variables files.")
@@ -101,6 +103,13 @@ func execute(action string, orchConfigFile string, runtimeStateFile string, logD
 	if err != nil {
 		logger.Fatalf("error reading config file %s: %s", orchConfigFile, err)
 	}
+	if _, err := os.Stat(runtimeStateFile); os.IsNotExist(err) {
+		logger.Infof("Runtime state file %s does not exist, creating a new one.", runtimeStateFile)
+		err = orchConfigReaderWriter.WriteRuntimeState(config.OrchInstallerRuntimeState{})
+		if err != nil {
+			logger.Fatalf("error creating runtime state file: %s", err)
+		}
+	}
 	runtimeState, err := orchConfigReaderWriter.ReadRuntimeState()
 	if err != nil {
 		logger.Fatalf("error reading runtime state file: %s", err)
@@ -110,10 +119,17 @@ func execute(action string, orchConfigFile string, runtimeStateFile string, logD
 		logger.Fatalf("error: orchestrator config version %s does not match installer version %s", orchConfig.Version, config.UserConfigVersion)
 	}
 	// We will check and migrate runtime state version later in the installer.
-
+	if runtimeState.DeploymentID == "" {
+		runtimeState.DeploymentID = strings.ToLower(rand.Text()[:8])
+	}
 	runtimeState.Action = action
 	runtimeState.LogDir = logDir
 	runtimeState.TargetLabels = config.CommaSeparatedToSlice(targets)
+	rsWriteErr := orchConfigReaderWriter.WriteRuntimeState(runtimeState)
+	if rsWriteErr != nil {
+		logger.Errorf("error writing runtime state file: %s", rsWriteErr)
+		return
+	}
 
 	logger.Infof("Action: %s", action)
 	logger.Infof("Target environment: %s", orchConfig.Provider)
@@ -161,7 +177,7 @@ func execute(action string, orchConfigFile string, runtimeStateFile string, logD
 	}()
 
 	runErr := orchInstaller.Run(ctx, orchConfig, &runtimeState)
-	rsWriteErr := orchConfigReaderWriter.WriteRuntimeState(runtimeState) // TODO: handle error here
+	rsWriteErr = orchConfigReaderWriter.WriteRuntimeState(runtimeState)
 	if rsWriteErr != nil {
 		logger.Errorf("error writing runtime state file: %s", rsWriteErr)
 	}
@@ -179,16 +195,16 @@ func showActionsForError(err *internal.OrchInstallerError) {
 	logger := zap.S()
 	switch err.ErrorCode {
 	case internal.OrchInstallerErrorCodeUnknown:
-		logger.Error("An unknown error occurred, please check the logs for more details.")
+		logger.Info("An unknown error occurred, please check the logs for more details.")
 	case internal.OrchInstallerErrorCodeInternal:
-		logger.Error("An internal error occurred, please check the logs for more details.")
+		logger.Info("An internal error occurred, please check the logs for more details.")
 	case internal.OrchInstallerErrorCodeInvalidArgument:
-		logger.Error("Invalid argument provided, please check the configuration file and command line arguments.")
+		logger.Info("Invalid argument provided, please check the configuration file and command line arguments.")
 	case internal.OrchInstallerErrorCodeInvalidRuntimeState:
-		logger.Error("Invalid runtime state, please check the runtime state file.")
+		logger.Info("Invalid runtime state, please check the runtime state file.")
 	case internal.OrchInstallerErrorCodeTerraform:
-		logger.Error("An error occurred while running Terraform, please check the Terraform logs for more details.")
+		logger.Info("An error occurred while running Terraform, please check the Terraform logs for more details.")
 	default:
-		logger.Error("An unexpected error occurred, please check the logs for more details.")
+		logger.Info("An unexpected error occurred, please check the logs for more details.")
 	}
 }
