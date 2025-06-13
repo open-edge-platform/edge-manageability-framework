@@ -225,7 +225,7 @@ func (s *ALBStep) RunStep(ctx context.Context, config config.OrchInstallerConfig
 		} else {
 			return runtimeState, &internal.OrchInstallerError{
 				ErrorCode: internal.OrchInstallerErrorCodeTerraform,
-				ErrorMsg:  fmt.Sprintf("cannot find efs id in %s module output", s.Name()),
+				ErrorMsg:  fmt.Sprintf("cannot find Traefik DNS name in %s module output", s.Name()),
 			}
 		}
 		if infraDNSName, ok := terraformStepOutput.Output["infra_dns_name"]; ok {
