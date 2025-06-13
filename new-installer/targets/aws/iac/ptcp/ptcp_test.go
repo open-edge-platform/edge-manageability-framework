@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package aws_iac_efs_test
+package aws_iac_ptcp_test
 
 import (
 	"crypto/rand"
@@ -15,58 +15,65 @@ import (
 	"github.com/gruntwork-io/terratest/modules/terraform"
 	steps_aws "github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps/aws"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/targets/aws/iac/utils"
+
 	"github.com/stretchr/testify/suite"
 )
 
-type EFSTestSuite struct {
+type PTCPTestSuite struct {
 	suite.Suite
 	name             string
 	vpcID            string
 	publicSubnetIDs  []string
 	privateSubnetIDs []string
-	randomPostfix    string
 }
 
-func TestEFSTestSuite(t *testing.T) {
-	suite.Run(t, new(EFSTestSuite))
+func TestPTCPSuite(t *testing.T) {
+	suite.Run(t, new(PTCPTestSuite))
 }
 
-func (s *EFSTestSuite) SetupTest() {
-	// Bucket for EFS state
-	s.name = "efs-unit-test-" + strings.ToLower(rand.Text()[0:8])
+func (s *PTCPTestSuite) SetupTest() {
+	// Bucket for PTCP state
+	s.name = "ptcp-unit-test-" + strings.ToLower(rand.Text()[0:8])
 	terratest_aws.CreateS3Bucket(s.T(), utils.DefaultTestRegion, s.name)
 
-	// VPC and subnets for EFS
+	// VPC and subnets for PTCP
 	var err error
-	s.vpcID, s.publicSubnetIDs, s.privateSubnetIDs, _, _, err = utils.CreateVPC(s.T(), s.name)
+	s.vpcID, s.publicSubnetIDs, s.privateSubnetIDs, _, _, err = utils.CreateVPCWithEndpoints(s.T(), s.name, []string{})
 	if err != nil {
 		s.NoError(err, "Failed to create VPC and subnet")
 		return
 	}
 }
 
-func (s *EFSTestSuite) TearDownTest() {
+func (s *PTCPTestSuite) TearDownTest() {
 	err := utils.DeleteVPC(s.T(), s.name)
 	if err != nil {
 		s.NoError(err, "Failed to delete VPC")
 		return
 	}
-
 	terratest_aws.EmptyS3Bucket(s.T(), utils.DefaultTestRegion, s.name)
 	terratest_aws.DeleteS3Bucket(s.T(), utils.DefaultTestRegion, s.name)
 }
 
-func (s *EFSTestSuite) TestApplyingModule() {
-	efsVars := steps_aws.EFSVariables{
-		ClusterName:      "test-efs-cluster" + s.randomPostfix,
-		Region:           utils.DefaultTestRegion,
-		CustomerTag:      utils.DefaultTestCustomerTag,
-		PrivateSubnetIDs: s.privateSubnetIDs,
-		VPCID:            s.vpcID,
-		EKSOIDCIssuer:    "oidc.eks.us-west-2.amazonaws.com/id/mock-issuer",
+func (s *PTCPTestSuite) TestApplyingModule() {
+	testDomain := strings.ToLower(rand.Text()[0:8]) + "." + utils.DefaultTestRoute53Zone
+	tlsCertPEM, _, keyPEM, err := steps_aws.GenerateSelfSignedTLSCert(testDomain)
+	if err != nil {
+		s.NoError(err, "Failed to generate self-signed TLS certificate")
+		return
 	}
-
-	jsonData, err := json.Marshal(efsVars)
+	variables := steps_aws.PTCPVariables{
+		ClusterName:     s.name,
+		Region:          utils.DefaultTestRegion,
+		VPCID:           s.vpcID,
+		SubnetIDs:       s.privateSubnetIDs,
+		CustomerTag:     utils.DefaultTestCustomerTag,
+		Route53ZoneName: utils.DefaultTestRoute53Zone,
+		IPAllowList:     []string{steps_aws.DefaultNetworkCIDR},
+		TLSCertKey:      keyPEM,
+		TLSCertBody:     tlsCertPEM,
+	}
+	jsonData, err := json.Marshal(variables)
 	if err != nil {
 		s.T().Fatalf("Failed to marshal variables: %v", err)
 	}
@@ -80,19 +87,17 @@ func (s *EFSTestSuite) TestApplyingModule() {
 	}
 
 	terraformOptions := terraform.WithDefaultRetryableErrors(s.T(), &terraform.Options{
-		TerraformDir: "../efs",
+		TerraformDir: ".",
 		VarFiles:     []string{tempFile.Name()},
 		BackendConfig: map[string]interface{}{
 			"region": utils.DefaultTestRegion,
 			"bucket": s.name,
-			"key":    "efs.tfstate",
+			"key":    "ptcp.tfstate",
 		},
 		Reconfigure: true,
 		Upgrade:     true,
 	})
 
-	efsID := terraform.Output(s.T(), terraformOptions, "efs_id")
-	s.NotEmpty(efsID, "Expected EFS ID to be created")
-	s.True(strings.HasPrefix(efsID, "fs-"), "Expected EFS ID to start with 'fs-'")
-	s.GreaterOrEqual(len(efsID), 14, "Expected EFS ID to be at least 14 characters long")
+	defer terraform.Destroy(s.T(), terraformOptions)
+	terraform.InitAndApply(s.T(), terraformOptions)
 }

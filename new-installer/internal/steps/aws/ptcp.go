@@ -32,15 +32,15 @@ type PTCPVariables struct {
 	Region          string   `json:"region"`
 	VPCID           string   `json:"vpc_id"`
 	SubnetIDs       []string `json:"subnet_ids"`
-	HTTPProxy       string   `json:"http_proxy"`
-	HTTPSProxy      string   `json:"https_proxy"`
-	NoProxy         string   `json:"no_proxy"`
-	CustomerTag     string   `json:"customer_tag"`
+	HTTPProxy       string   `json:"http_proxy,omitempty"`
+	HTTPSProxy      string   `json:"https_proxy,omitempty"`
+	NoProxy         string   `json:"no_proxy,omitempty"`
+	CustomerTag     string   `json:"customer_tag,omitempty"`
 	Route53ZoneName string   `json:"route53_zone_name"`
 	IPAllowList     []string `json:"ip_allow_list"`
-	CPU             int      `json:"cpu"`
-	Memory          int      `json:"memory"`
-	DesiredCount    int      `json:"desired_count"`
+	CPU             int      `json:"cpu,omitempty"`
+	Memory          int      `json:"memory,omitempty"`
+	DesiredCount    int      `json:"desired_count,omitempty"`
 	TLSCertKey      string   `json:"tls_cert_key"`
 	TLSCertBody     string   `json:"tls_cert_body"`
 }
@@ -177,11 +177,30 @@ func (s *PTCPStep) PreStep(ctx context.Context, config config.OrchInstallerConfi
 }
 
 func (s *PTCPStep) RunStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
-
+	if runtimeState.Action == "" {
+		return runtimeState, &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeInvalidArgument,
+			ErrorMsg:  "Action is not set",
+		}
+	}
+	// No output from pull through cache proxy terraform module, so we don't need to update runtimeState with any outputs.
+	_, err := s.TerraformUtility.Run(ctx, steps.TerraformUtilityInput{
+		Action:             runtimeState.Action,
+		ModulePath:         filepath.Join(s.RootPath, PTCPModulePath),
+		Variables:          s.variables,
+		BackendConfig:      s.backendConfig,
+		LogFile:            filepath.Join(s.RootPath, ".logs", "aws_ptcp.log"),
+		KeepGeneratedFiles: s.KeepGeneratedFiles,
+	})
+	if err != nil {
+		return runtimeState, &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeTerraform,
+			ErrorMsg:  fmt.Sprintf("failed to run terraform: %v", err),
+		}
+	}
 	return runtimeState, nil
 }
 
 func (s *PTCPStep) PostStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState, prevStepError *internal.OrchInstallerError) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
-
 	return runtimeState, prevStepError
 }

@@ -32,7 +32,7 @@ jobs:
       kms: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/targets/aws/iac/kms') }}
       lb_sg: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/targets/aws/iac/lb_sg') }}
       nlb: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/targets/aws/iac/nlb') }}
-      pull-through-cache-proxy: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/targets/aws/iac/pull-through-cache-proxy') }}
+      ptcp: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/targets/aws/iac/ptcp') }}
       rds: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/targets/aws/iac/rds') }}
       route53: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/targets/aws/iac/route53') }}
       s3: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/targets/aws/iac/s3') }}
@@ -50,8 +50,8 @@ jobs:
         uses: open-edge-platform/orch-ci/discover-changed-files@main  # zizmor: ignore[unpinned-uses]
         with:
           project_folder: "."
-  
-  # Check if `run-iac-tests` label exists on the PR 
+
+  # Check if `run-iac-tests` label exists on the PR
   # fail the pipeline if label does not exist when IAC folder is changed
   check-iac-label:
     permissions:
@@ -152,9 +152,9 @@ jobs:
         if: needs.check-changed-files.outputs.nlb == 'true'
         run: mage newinstaller:testiac nlb
 
-      - name: Test new installer IaC - pull-through-cache-proxy
-        if: needs.check-changed-files.outputs.pull-through-cache-proxy == 'true'
-        run: mage newinstaller:testiac pull-through-cache-proxy
+      - name: Test new installer IaC - ptcp
+        if: needs.check-changed-files.outputs.ptcp == 'true'
+        run: mage newinstaller:testiac ptcp
 
       - name: Test new installer IaC - rds
         if: needs.check-changed-files.outputs.rds == 'true'
