@@ -14,7 +14,7 @@ data "aws_nat_gateway" "vpc_nat_gateway" {
 }
 
 locals {
-  subnets_with_eip = var.internal ? [] : var.public_subnet_ids
+  subnets_with_eip = var.internal ? [] : var.subnet_ids
   nat_public_ips = toset([for id, nat in data.aws_nat_gateway.vpc_nat_gateway : "${nat.public_ip}/32" if nat.connectivity_type == "public"])
   ip_allow_list  = setunion(var.ip_allow_list, local.nat_public_ips)
 }
@@ -53,7 +53,7 @@ resource "aws_lb" "main" {
   name               = substr(sha256("${var.cluster_name}-traefik2"), 0, 32)
   internal           = var.internal
   load_balancer_type = "network"
-  subnets            = var.internal ? var.public_subnet_ids : null
+  subnets            = var.internal ? var.subnet_ids : null
   dynamic "subnet_mapping" {
     for_each = local.subnets_with_eip
     content {

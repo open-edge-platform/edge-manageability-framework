@@ -58,7 +58,7 @@ func (s *NLBTestSuite) TestApplyingModule() {
 		Internal:                 false,
 		VPCID:                    s.vpcID,
 		ClusterName:              s.name,
-		PublicSubnetIDs:          s.publicSubnetIDs,
+		SubnetIDs:                s.publicSubnetIDs,
 		IPAllowList:              []string{"10.0.0.0/8"},
 		EnableDeletionProtection: false,
 		Region:                   utils.DefaultTestRegion,

@@ -16,8 +16,8 @@ variable "vpc_id" {
   description = "The VPC ID where the load balancer will be created"
   type        = string
 }
-variable "public_subnet_ids" {
-  description = "The list of public subnet IDs where the load balancer will be created"
+variable "subnet_ids" {
+  description = "The list of subnet IDs where the load balancer will be created"
   type        = set(string)
 }
 variable "ip_allow_list" {

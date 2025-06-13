@@ -25,7 +25,7 @@ type NLBVariables struct {
 	Internal                 bool     `json:"internal"`
 	VPCID                    string   `json:"vpc_id"`
 	ClusterName              string   `json:"cluster_name"`
-	PublicSubnetIDs          []string `json:"public_subnet_ids"`
+	SubnetIDs                []string `json:"subnet_ids"`
 	IPAllowList              []string `json:"ip_allow_list"`
 	EnableDeletionProtection bool     `json:"enable_deletion_protection"`
 	Region                   string   `json:"region"`
@@ -93,7 +93,7 @@ func (s *NLBStep) ConfigStep(ctx context.Context, config config.OrchInstallerCon
 		Internal:                 config.AWS.VPCID != "",
 		VPCID:                    runtimeState.AWS.VPCID,
 		ClusterName:              config.Global.OrchName,
-		PublicSubnetIDs:          runtimeState.AWS.PublicSubnetIDs,
+		SubnetIDs:                runtimeState.AWS.PublicSubnetIDs,
 		IPAllowList:              config.AWS.LoadBalancerAllowList,
 		EnableDeletionProtection: config.AWS.EnableLBDeletionProtection,
 		Region:                   config.AWS.Region,

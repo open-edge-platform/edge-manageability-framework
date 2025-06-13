@@ -117,7 +117,7 @@ func (s *NLBStepTestSuite) expectUtilityCalls(action string) {
 			Internal:                 false,
 			VPCID:                    s.runtimeState.AWS.VPCID,
 			ClusterName:              s.config.Global.OrchName,
-			PublicSubnetIDs:          s.runtimeState.AWS.PublicSubnetIDs,
+			SubnetIDs:                s.runtimeState.AWS.PublicSubnetIDs,
 			IPAllowList:              s.config.AWS.LoadBalancerAllowList,
 			EnableDeletionProtection: s.config.AWS.EnableLBDeletionProtection,
 			Region:                   s.config.AWS.Region,
