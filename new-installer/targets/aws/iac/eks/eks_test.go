@@ -80,30 +80,11 @@ func (s *EKSTestSuite) SetupTest() {
 }
 
 func (s *EKSTestSuite) checkAndStartSSHTunnel() error {
-	log.Printf("Checking if SSH tunnel is running on port %d", s.tunnelSocksPort)
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", s.tunnelSocksPort))
 	if err != nil {
-		log.Printf("Port %d is already in use, SSH tunnel is running", s.tunnelSocksPort)
-		// Use nc to test if the port is really working
-		cmd := exec.Command("nc", "-zv", "localhost", fmt.Sprintf("%d", s.tunnelSocksPort))
-		output, err := cmd.CombinedOutput()
-		if err != nil {
-			log.Printf("nc command failed: %v, output: %s", err, string(output))
-		} else {
-			log.Printf("nc command succeeded, output: %s", string(output))
-		}
-		// Verify connection using curl
-		curlCmd := exec.Command("curl", "-x", fmt.Sprintf("socks5://localhost:%d", s.tunnelSocksPort), "https://www.google.com")
-		curlOutput, err := curlCmd.CombinedOutput()
-		if err != nil {
-			log.Printf("curl command failed: %v, output: %s", err, string(curlOutput))
-		} else {
-			log.Printf("curl command succeeded, output: %s", string(curlOutput))
-		}
 		return nil
 	}
 	listener.Close()
-	log.Printf("Port %d is not listening, restarting SSH tunnel", s.tunnelSocksPort)
 	s.sshTunnelCmd, err = utils.StartSSHSocks5Tunnel(s.jumphostIP, s.jumphostPrivateKey, s.tunnelSocksPort)
 	return err
 }
