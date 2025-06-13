@@ -42,7 +42,7 @@ func (s *ALBTestSuite) SetupTest() {
 
 	// VPC and certificate for ALB
 	var err error
-	s.vpcID, s.publicSubnetIDs, s.privateSubnetIDs, _, _, err = utils.CreateVPCWithEndpoints(s.T(), s.name, []string{"ec2"})
+	s.vpcID, s.publicSubnetIDs, s.privateSubnetIDs, _, _, err = utils.CreateVPCWithEndpoints(s.T(), s.name, []string{})
 	if err != nil {
 		s.NoError(err, "Failed to create VPC and subnet")
 		return
@@ -67,7 +67,7 @@ func (s *ALBTestSuite) SetupTest() {
 }
 
 func (s *ALBTestSuite) TearDownTest() {
-	err := utils.DeleteVPC(s.T(), s.name)
+	err := utils.DeleteVPCWithEndpoints(s.T(), s.name, []string{})
 	if err != nil {
 		s.NoError(err, "Failed to delete VPC %s", s.name)
 	}
