@@ -93,6 +93,7 @@ func (s *EKSTestSuite) checkAndStartSSHTunnel() error {
 }
 
 func (s *EKSTestSuite) TearDownTest() {
+	s.stopTunnelRefresh = true
 	if s.sshTunnelCmd == nil && s.sshTunnelCmd.Process == nil {
 		if err := s.sshTunnelCmd.Process.Kill(); err != nil {
 			s.NoError(err, "Failed to stop ssh tunnel")
