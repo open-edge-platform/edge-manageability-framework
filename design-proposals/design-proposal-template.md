@@ -14,13 +14,13 @@ solved by the proposed change. Include useful persona flows.]
 
 ## Proposal
 
-[A precise statement of the proposed change. Including sub-paragrpahs
-and diagrams]
+[A precise statement of the proposed change. Including sub-paragraphs and
+diagrams.]
 
 ## Rationale
 
-[A discussion of alternate approaches that have been considered and the trade
-offs, advantages, and disadvantages of the chosen approach.]
+[A discussion of alternate approaches that have been considered and the
+trade-offs, advantages, and disadvantages of the chosen approach.]
 
 ## Affected components and Teams
 
