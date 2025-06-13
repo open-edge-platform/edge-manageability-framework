@@ -18,6 +18,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/terraform"
 	steps_aws "github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps/aws"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/targets/aws/iac/utils"
+	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -140,6 +141,24 @@ func (s *EKSTestSuite) TestApplyingModule() {
 		Reconfigure: true,
 		Upgrade:     true,
 	})
+
+	go func() {
+		timesFailed := 0
+		for range time.Tick(5 * time.Second) {
+			cmd := exec.Command("bash", "-c", fmt.Sprintf("HTTPS_PROXY=socks5://127.0.0.1:%d kubectl get nodes", s.tunnelSocksPort))
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stdout
+			log.Printf("Executing command: %s", cmd.String())
+			if err := cmd.Run(); err != nil {
+				log.Printf("Command execution error: %v", err)
+				timesFailed += 1
+				if timesFailed >= 10 {
+					log.Printf("Command failed too many times, stopping execution")
+					return
+				}
+			}
+		}
+	}()
 
 	defer terraform.Destroy(s.T(), terraformOptions)
 	terraform.InitAndApply(s.T(), terraformOptions)
