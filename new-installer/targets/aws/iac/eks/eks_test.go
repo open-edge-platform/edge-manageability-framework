@@ -8,6 +8,7 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -18,7 +19,6 @@ import (
 	"github.com/gruntwork-io/terratest/modules/terraform"
 	steps_aws "github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps/aws"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/targets/aws/iac/utils"
-	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/suite"
 )
 
