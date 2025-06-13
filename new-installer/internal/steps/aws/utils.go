@@ -5,7 +5,16 @@
 package steps_aws
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
 	"fmt"
+	"math/big"
+	"sort"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -63,9 +72,19 @@ func (*awsUtilityImpl) GetAvailableZones(region string) ([]string, error) {
 		zones = append(zones, *zone.ZoneName)
 	}
 
+	// AWS API does not guarantee that the availability zones are returned in any specific order.
+	// Sort the zones to ensure consistent ordering.
+	sort.Strings(zones)
+
 	if len(zones) < RequiredAvailabilityZones {
 		return nil, fmt.Errorf("cannot get three AWS availability zones from region %s", region)
 	}
+
+	// Only return up to RequiredAvailabilityZones zones
+	if len(zones) > RequiredAvailabilityZones {
+		zones = zones[:RequiredAvailabilityZones]
+	}
+
 	return zones, nil
 }
 
@@ -193,4 +212,79 @@ func (*awsUtilityImpl) GetSubnetIDsFromVPC(region, vpcID string) ([]string, []st
 	}
 
 	return publicSubnetIDs, privateSubnetIDs, nil
+}
+
+// GenerateSelfSignedTLSCert generates a self-signed TLS certificate, CA certificate, and private key.
+// Returns the leaf certificate, CA certificate, and private key as PEM-encoded strings.
+// This CA is not an external or trusted third-party CA, but a local, self-signed CA created on the fly. The leaf (end-entity) certificate
+// is then signed by this self-generated CA, establishing a trust chain between the two. Both the CA certificate
+// This approach is typical for development, testing, or internal use where a trusted CA is not required.
+func GenerateSelfSignedTLSCert(commonName string) (tlsCertPEM string, tlsCAPEM string, keyPEM string, err error) {
+	// Generate CA private key
+	caPriv, err := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
+	if err != nil {
+		return "", "", "", err
+	}
+
+	// Create CA certificate template
+	caSerialNumber, err := rand.Int(rand.Reader, big.NewInt(1<<62))
+	if err != nil {
+		return "", "", "", err
+	}
+	caTemplate := x509.Certificate{
+		SerialNumber: caSerialNumber,
+		Subject: pkix.Name{
+			CommonName: commonName + "-CA",
+		},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().Add(10 * 365 * 24 * time.Hour), // CA valid for 10 years
+		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageCRLSign,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
+		BasicConstraintsValid: true,
+		IsCA:                  true,
+	}
+
+	// Self-sign CA certificate
+	caDER, err := x509.CreateCertificate(rand.Reader, &caTemplate, &caTemplate, &caPriv.PublicKey, caPriv)
+	if err != nil {
+		return "", "", "", err
+	}
+	caPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: caDER})
+
+	// Generate leaf private key (reuse CA key for simplicity, or generate a new one if preferred)
+	leafPriv := caPriv
+
+	// Create leaf certificate template
+	leafSerialNumber, err := rand.Int(rand.Reader, big.NewInt(1<<62))
+	if err != nil {
+		return "", "", "", err
+	}
+	leafTemplate := x509.Certificate{
+		SerialNumber: leafSerialNumber,
+		Subject: pkix.Name{
+			CommonName: commonName,
+		},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().Add(365 * 24 * time.Hour), // valid for 1 year
+		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
+		BasicConstraintsValid: true,
+		IsCA:                  false,
+	}
+
+	// Sign leaf certificate with CA
+	leafDER, err := x509.CreateCertificate(rand.Reader, &leafTemplate, &caTemplate, &leafPriv.PublicKey, caPriv)
+	if err != nil {
+		return "", "", "", err
+	}
+	leafPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: leafDER})
+
+	// PEM encode the private key
+	keyBytes, err := x509.MarshalECPrivateKey(leafPriv)
+	if err != nil {
+		return "", "", "", err
+	}
+	keyPEMBytes := pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: keyBytes})
+
+	return string(leafPEM), string(caPEM), string(keyPEMBytes), nil
 }
