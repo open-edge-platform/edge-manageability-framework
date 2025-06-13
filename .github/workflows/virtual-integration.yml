@@ -32,6 +32,19 @@ concurrency:
 permissions: {}
 
 jobs:
+  pre-merge:
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+    uses: open-edge-platform/orch-ci/.github/workflows/pre-merge.yml@3bdd409ccf738472c6e1547d14628b51c70dbe99  # 0.1.21
+    with:
+      run_version_check: false
+      run_build: false
+      run_lint: false
+      run_test: false
+      bootstrap_tools: ""
+      trivy_config_path: trivy.yaml
+
   check-changed-files:
     permissions:
       contents: read
