@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"os/exec"
 	"strings"
@@ -24,12 +25,15 @@ import (
 
 type EKSTestSuite struct {
 	suite.Suite
-	name             string // for everything, such as vpc, bucket, eks cluster, etc.
-	vpcID            string
-	publicSubnetIDs  []string
-	privateSubnetIDs []string
-	sshTunnelCmd     *exec.Cmd
-	tunnelSocksPort  int
+	name               string // for everything, such as vpc, bucket, eks cluster, etc.
+	vpcID              string
+	publicSubnetIDs    []string
+	privateSubnetIDs   []string
+	sshTunnelCmd       *exec.Cmd
+	tunnelSocksPort    int
+	jumphostPrivateKey string
+	jumphostIP         string
+	stopTunnelRefresh  bool
 }
 
 func TestEKSTestSuite(t *testing.T) {
@@ -43,25 +47,49 @@ func (s *EKSTestSuite) SetupTest() {
 
 	// VPC and subnets for EKS
 	var err error
-	var jumphostPrivateKey, jumphostIP string
-	s.vpcID, s.publicSubnetIDs, s.privateSubnetIDs, jumphostPrivateKey, jumphostIP, err = utils.CreateVPCWithEndpoints(s.T(), s.name, []string{"ec2"})
+	s.vpcID, s.publicSubnetIDs, s.privateSubnetIDs, s.jumphostPrivateKey, s.jumphostIP, err = utils.CreateVPCWithEndpoints(s.T(), s.name, []string{"ec2"})
 	if err != nil {
 		s.NoError(err, "Failed to create VPC and subnet")
 		return
 	}
-	if err := utils.WaitUntilJumphostIsReachable(jumphostPrivateKey, jumphostIP); err != nil {
+	if err := utils.WaitUntilJumphostIsReachable(s.jumphostPrivateKey, s.jumphostIP); err != nil {
 		s.NoError(err, "Failed to wait until jumphost is reachable")
 		return
 	}
-	s.sshTunnelCmd, s.tunnelSocksPort, err = utils.StartSSHSocks5Tunnel(jumphostIP, jumphostPrivateKey)
+	// Find an open port for the SSH tunnel
+	listener, err := net.Listen("tcp", ":0")
 	if err != nil {
-		s.NoError(err, "Failed to start ssh tunnel")
+		s.T().Fatalf("Failed to find a open port for SSH tunnel: %v", err)
 		return
 	}
-	time.Sleep(5 * time.Second) // Wait for the tunnel to be established
-	if s.sshTunnelCmd.Process == nil {
-		s.T().Fatal("SSH tunnel process is nil, failed to start tunnel")
+	listener.Close()
+	s.tunnelSocksPort = listener.Addr().(*net.TCPAddr).Port
+	_ = s.checkAndStartSSHTunnel()
+	s.stopTunnelRefresh = false
+	go func() {
+		ticker := time.NewTicker(10 * time.Second)
+		defer ticker.Stop()
+		for range ticker.C {
+			if s.stopTunnelRefresh {
+				return
+			}
+			if err := s.checkAndStartSSHTunnel(); err != nil {
+				log.Printf("Failed to check and start SSH tunnel: %v", err)
+			}
+		}
+	}()
+}
+
+func (s *EKSTestSuite) checkAndStartSSHTunnel() error {
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", s.tunnelSocksPort))
+	if err != nil {
+		// tunnel is still running, no need to restart
+		return nil
 	}
+	listener.Close()
+	log.Printf("Port %d is not listening, restarting SSH tunnel", s.tunnelSocksPort)
+	s.sshTunnelCmd, err = utils.StartSSHSocks5Tunnel(s.jumphostIP, s.jumphostPrivateKey, s.tunnelSocksPort)
+	return err
 }
 
 func (s *EKSTestSuite) TearDownTest() {

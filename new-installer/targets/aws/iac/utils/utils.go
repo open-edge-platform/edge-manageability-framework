@@ -25,7 +25,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/gruntwork-io/terratest/modules/terraform"
 	"github.com/gruntwork-io/terratest/modules/testing"
-	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
 	steps_aws "github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps/aws"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/ssh"
@@ -410,28 +409,23 @@ func getMyPublicIP() (string, error) {
 	return publicIP, nil
 }
 
-func StartSSHSocks5Tunnel(jumphostIP string, jumphostKey string) (cmd *exec.Cmd, socksPort int, err error) {
+func StartSSHSocks5Tunnel(jumphostIP string, jumphostKey string, socksPort int) (cmd *exec.Cmd, err error) {
 	// Create a temporary file for the private key
 	privateKeyFile, err := os.CreateTemp("", "jumphost-key-*.pem")
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to create temporary private key file: %w", err)
+		return nil, fmt.Errorf("failed to create temporary private key file: %w", err)
 	}
 	if _, err := privateKeyFile.WriteString(jumphostKey); err != nil {
-		return nil, 0, fmt.Errorf("failed to write private key to temporary file: %w", err)
+		return nil, fmt.Errorf("failed to write private key to temporary file: %w", err)
 	}
 	if err := privateKeyFile.Close(); err != nil {
-		return nil, 0, fmt.Errorf("failed to close temporary private key file: %w", err)
+		return nil, fmt.Errorf("failed to close temporary private key file: %w", err)
 	}
 	// Set the file permissions to read/write for the owner only
 	if err := os.Chmod(privateKeyFile.Name(), 0o400); err != nil {
-		return nil, 0, fmt.Errorf("failed to set permissions on temporary private key file: %w", err)
+		return nil, fmt.Errorf("failed to set permissions on temporary private key file: %w", err)
 	}
-	listener, err := net.Listen("tcp", ":0")
-	if err != nil {
-		return nil, 0, err
-	}
-	listener.Close()
-	socksPort = listener.Addr().(*net.TCPAddr).Port
+
 	sshConfig := fmt.Sprintf(`Host jumphost
 	HostName %s
 	User ubuntu
@@ -447,13 +441,13 @@ func StartSSHSocks5Tunnel(jumphostIP string, jumphostKey string) (cmd *exec.Cmd,
 	}
 	sshConfigFile, err := os.CreateTemp("", "ssh-config-*.txt")
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to create temporary SSH config file: %w", err)
+		return nil, fmt.Errorf("failed to create temporary SSH config file: %w", err)
 	}
 	if err := os.Chmod(sshConfigFile.Name(), 0o400); err != nil {
-		return nil, 0, fmt.Errorf("failed to set permissions on temporary SSH config file: %w", err)
+		return nil, fmt.Errorf("failed to set permissions on temporary SSH config file: %w", err)
 	}
 	if _, err := sshConfigFile.WriteString(sshConfig); err != nil {
-		return nil, 0, fmt.Errorf("failed to write SSH config to temporary file: %w", err)
+		return nil, fmt.Errorf("failed to write SSH config to temporary file: %w", err)
 	}
 	cmd = exec.Command("ssh",
 		"-f",                               // Run in the background
@@ -462,20 +456,14 @@ func StartSSHSocks5Tunnel(jumphostIP string, jumphostKey string) (cmd *exec.Cmd,
 		"-D", fmt.Sprintf("%d", socksPort), // Set up a SOCKS proxy on the specified port
 		"-F", sshConfigFile.Name(), // Use the temporary SSH config file
 		"jumphost")
-	cmd.Stdout, err = internal.FileLogWriter("/tmp/ssh-tunnel-stdout.log")
-	if err != nil {
-		return nil, 0, fmt.Errorf("failed to create stdout log writer: %w", err)
-	}
-	cmd.Stderr, err = internal.FileLogWriter("/tmp/ssh-tunnel-stderr.log")
-	if err != nil {
-		return nil, 0, fmt.Errorf("failed to create stderr log writer: %w", err)
-	}
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stdout
 	log.Printf("Starting ssh tunnel command: %s", cmd.String())
 	if err := cmd.Start(); err != nil {
 		log.Printf("failed to start ssh tunnel: %v", err)
 	}
 	log.Printf("SSH tunnel started with pid: %d", cmd.Process.Pid)
-	return cmd, socksPort, nil
+	return cmd, nil
 }
 
 func GenerateSSHKeyPair() (string, string, error) {
