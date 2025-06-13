@@ -1,0 +1,20 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+argo:
+  enabled:
+    pxe-server: true
+    infra-external: false
+  infra-managers:
+    autoProvision:
+      defaultProfile: microvisor-standalone
+    os-resource-manager:
+      enabledProfiles:
+        - microvisor-standalone
+  infra-onboarding:
+    pxe-server:
+      enabled: true
+      interface: ""
+      bootServerIP: ""
+      subnetAddress: ""
