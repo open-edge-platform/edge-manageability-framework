@@ -58,10 +58,10 @@ resource "aws_lb_target_group" "traefik" {
 }
 
 resource "aws_lb_target_group" "traefik_grpc" {
-  name             = substr(sha256("${var.cluster_name}-traefik"), 0, 32)
+  name             = substr(sha256("${var.cluster_name}-traefik-grpc"), 0, 32)
   port             = 1
   protocol         = "HTTPS"
-  protocol_version = "HTTP1"
+  protocol_version = "GRPC"
   vpc_id           = var.vpc_id
   target_type      = "ip"
   health_check {

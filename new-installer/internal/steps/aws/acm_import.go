@@ -207,7 +207,7 @@ func (s *ImportCertificateToACMStep) RunStep(ctx context.Context, config config.
 				ErrorMsg:  "The ACM certificate does not exist in terraform output",
 			}
 		} else {
-			runtimeState.AWS.ACMCertArn = strings.Trim(string(acmCertMeta.Value), "\"")
+			runtimeState.AWS.ACMCertARN = strings.Trim(string(acmCertMeta.Value), "\"")
 		}
 	} else {
 		return runtimeState, &internal.OrchInstallerError{

@@ -66,7 +66,7 @@ func validateAWSConfig() error {
 	if err := validateCacheRegistry(input.AWS.CacheRegistry); err != nil {
 		return fmt.Errorf("invalid cache registry: %w", err)
 	}
-	if err := validateAwsJumpHostWhitelist(config.SliceToCommaSeparated(input.AWS.JumpHostWhitelist)); err != nil {
+	if err := validateAwsJumpHostAllowlist(config.SliceToCommaSeparated(input.AWS.JumpHostAllowlist)); err != nil {
 		return fmt.Errorf("invalid AWS jump host whitelist: %w", err)
 	}
 	if err := validateOptionalIP(input.AWS.JumpHostIP); err != nil {
@@ -203,7 +203,7 @@ func validateCacheRegistry(s string) error {
 	return nil
 }
 
-func validateAwsJumpHostWhitelist(s string) error {
+func validateAwsJumpHostAllowlist(s string) error {
 	return nil
 }
 

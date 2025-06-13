@@ -25,3 +25,11 @@ output "infra_argocd_target_group_arn" {
 output "infra_gitea_target_group_arn" {
   value = aws_lb_target_group.infra_gitea.arn
 }
+
+output "traefik_lb_arn" {
+  value = aws_lb.traefik.arn
+}
+
+output "infra_lb_arn" {
+  value = aws_lb.infra.arn
+}

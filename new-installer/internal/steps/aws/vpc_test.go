@@ -52,7 +52,7 @@ func (s *VPCStepTest) SetupTest() {
 	s.config.AWS.Region = "us-west-2"
 	s.config.Global.OrchName = "test"
 	s.runtimeState.DeploymentID = s.randomText
-	s.config.AWS.JumpHostWhitelist = []string{"10.250.0.0/16"}
+	s.config.AWS.JumpHostAllowlist = []string{"10.250.0.0/16"}
 	s.runtimeState.LogDir = filepath.Join(rootPath, ".logs")
 	s.runtimeState.AWS.JumpHostSSHKeyPrivateKey = "foobar"
 	s.runtimeState.AWS.JumpHostSSHKeyPublicKey = "foobar"
