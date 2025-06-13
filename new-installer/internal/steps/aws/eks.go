@@ -97,6 +97,17 @@ type EKSStep struct {
 	AWSUtility         AWSUtility
 }
 
+func CreateEKSStep(rootPath string, keepGeneratedFiles bool, tfUtility steps.TerraformUtility, awsUtility AWSUtility) *EKSStep {
+	return &EKSStep{
+		variables:          EKSVariables{},
+		backendConfig:      TerraformAWSBucketBackendConfig{},
+		RootPath:           rootPath,
+		KeepGeneratedFiles: keepGeneratedFiles,
+		TerraformUtility:   tfUtility,
+		AWSUtility:         awsUtility,
+	}
+}
+
 func (s *EKSStep) Name() string {
 	return eksStepName
 }
