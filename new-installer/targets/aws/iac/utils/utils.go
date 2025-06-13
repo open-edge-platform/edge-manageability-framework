@@ -439,7 +439,9 @@ func StartSSHSocks5Tunnel(jumphostIP string, jumphostKey string) (cmd *exec.Cmd,
 	StrictHostKeyChecking no
 	BatchMode yes
 	UserKnownHostsFile /dev/null
-	ExitOnForwardFailure yes`, jumphostIP, privateKeyFile.Name())
+	ExitOnForwardFailure yes
+	ServerAliveCountMax 100
+	ServerAliveInterval 20`, jumphostIP, privateKeyFile.Name())
 	if socksProxy := os.Getenv("SOCKS_PROXY"); socksProxy != "" {
 		sshConfig += fmt.Sprintf("\n\tProxyCommand nc -x %s %%h %%p\n", socksProxy)
 	}
