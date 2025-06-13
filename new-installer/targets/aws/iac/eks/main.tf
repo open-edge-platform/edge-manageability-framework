@@ -141,17 +141,10 @@ resource "null_resource" "set_env" {
   provisioner "local-exec" {
     command = <<EOT
         set -eu
-        # Unset all proxy variables to avoid issues with kubectl commands.
         # Use socks proxy for kubectl to connect to the EKS cluster via the jumphost if any.
-        HTTPS_PROXY="${var.kubectl_socks_proxy}"
-        https_proxy="${var.kubectl_socks_proxy}"
-        HTTP_PROXY=""
-        NO_PROXY=""
-        http_proxy=""
-        no_proxy=""
-        kubectl set env ds aws-node --kubeconfig "${local.kube_config_path}" --context "arn:aws:eks:${var.region}:${local.aws_account_id}:cluster/${var.name}" -n kube-system WARM_PREFIX_TARGET=0
-        kubectl set env ds aws-node --kubeconfig "${local.kube_config_path}" --context "arn:aws:eks:${var.region}:${local.aws_account_id}:cluster/${var.name}" -n kube-system WARM_IP_TARGET=2
-        kubectl set env ds aws-node --kubeconfig "${local.kube_config_path}" --context "arn:aws:eks:${var.region}:${local.aws_account_id}:cluster/${var.name}" -n kube-system MINIMUM_IP_TARGET=0
+        HTTPS_PROXY="${var.kubectl_socks_proxy}" https_proxy="${var.kubectl_socks_proxy}" kubectl set env ds aws-node --kubeconfig "${local.kube_config_path}" --context "arn:aws:eks:${var.region}:${local.aws_account_id}:cluster/${var.name}" -n kube-system WARM_PREFIX_TARGET=0
+        HTTPS_PROXY="${var.kubectl_socks_proxy}" https_proxy="${var.kubectl_socks_proxy}" kubectl set env ds aws-node --kubeconfig "${local.kube_config_path}" --context "arn:aws:eks:${var.region}:${local.aws_account_id}:cluster/${var.name}" -n kube-system WARM_IP_TARGET=2
+        HTTPS_PROXY="${var.kubectl_socks_proxy}" https_proxy="${var.kubectl_socks_proxy}" kubectl set env ds aws-node --kubeconfig "${local.kube_config_path}" --context "arn:aws:eks:${var.region}:${local.aws_account_id}:cluster/${var.name}" -n kube-system MINIMUM_IP_TARGET=0
 EOT
   }
   depends_on = [null_resource.create_kubecnofig]
