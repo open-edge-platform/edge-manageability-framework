@@ -14,7 +14,7 @@ metadata:
   labels:
     name: openebs-localpv-provisioner
     openebs.io/component-name: openebs-localpv-provisioner
-    openebs.io/version: 3.5.0
+    openebs.io/version: 4.3.0
 spec:
   selector:
     matchLabels:
@@ -28,15 +28,13 @@ spec:
       labels:
         name: openebs-localpv-provisioner
         openebs.io/component-name: openebs-localpv-provisioner
-        openebs.io/version: 3.5.0
+        openebs.io/version: 4.3.0
     spec:
       serviceAccountName: openebs-maya-operator
       containers:
         - name: openebs-provisioner-hostpath
           imagePullPolicy: IfNotPresent
-          image: openebs/provisioner-localpv:3.4.0
-          args:
-            - "--bd-time-out=$(BDC_BD_BIND_RETRIES)"
+          image: openebs/provisioner-localpv:4.3.0
           env:
             # OPENEBS_IO_K8S_MASTER enables openebs provisioner to connect to K8s
             # based on this address. This is ignored if empty.
@@ -74,7 +72,7 @@ spec:
             - name: OPENEBS_IO_INSTALLER_TYPE
               value: "openebs-operator"
             - name: OPENEBS_IO_HELPER_IMAGE
-              value: "openebs/linux-utils:3.5.0"
+              value: "openebs/linux-utils:4.2.0"
             - name: OPENEBS_IO_BASE_PATH
               value: "/var/openebs/local"
             # LEADER_ELECTION_ENABLED is used to enable/disable leader election.
