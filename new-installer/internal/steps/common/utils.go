@@ -5,8 +5,12 @@
 package common
 
 import (
-    "fmt"
-    "os/exec"
+	"fmt"
+	"os"
+	"os/exec"
+	"os/user"
+	"path/filepath"
+	"strconv"
 	"time"
 )
 
@@ -25,4 +29,20 @@ func WaitForNamespaceCreation(namespace string) error {
 		time.Sleep(5 * time.Second)
 	}
 	return nil
+}
+
+func chownToCurrentUserRecursive(root string) error {
+	u, err := user.Current()
+	if err != nil {
+		return err
+	}
+	uid, _ := strconv.Atoi(u.Uid)
+	gid, _ := strconv.Atoi(u.Gid)
+
+	return filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		return os.Chown(path, uid, gid)
+	})
 }

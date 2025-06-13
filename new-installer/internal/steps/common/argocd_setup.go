@@ -5,10 +5,12 @@
 package common
 
 import (
-  "fmt"
-  "io/ioutil"
+	"fmt"
+	"os"
+	"os/exec"
 
 	"context"
+
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 )
@@ -37,144 +39,154 @@ func (s *ArgoCDStep) Labels() []string {
 }
 
 func (s *ArgoCDStep) ConfigStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
-	argocdValues(config)
+
 	return runtimeState, nil
 }
 
 func (s *ArgoCDStep) PreStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	// no-op for now
+	argocdValues(config)
 	return runtimeState, nil
 }
 
 func (s *ArgoCDStep) RunStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	// InstallArgoCD
+	err := InstallArgoCD()
+	// if err != nil {
+	// 	// fmt.Printf("Error installing Argocd %v \n", err)
+	// }
+
+	if err != nil {
+		return runtimeState, &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeInternal,
+			ErrorMsg:  fmt.Sprintf("Error installing Argocd %v \n", err),
+		}
+	}
 	return runtimeState, nil
 }
 
 func (s *ArgoCDStep) PostStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState, prevStepError *internal.OrchInstallerError) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
-	    // Wait for ArgoCD namespace creation normally taken from an env var
-    argoCDNS := "argocd"
-    if argoCDNS == "" {
-        argoCDNS = "argocd"
-    }
-	err := WaitForNamespaceCreation(argoCDNS);
-    if  err != nil {
-        // return nil,fmt.Errorf("failed to wait for ArgoCD namespace: %v", err)
+	// Wait for ArgoCD namespace creation normally taken from an env var
+	argoCDNS := "argocd"
+	if argoCDNS == "" {
+		argoCDNS = "argocd"
+	}
+	err := WaitForNamespaceCreation(argoCDNS)
+	if err != nil {
+		// return nil,fmt.Errorf("failed to wait for ArgoCD namespace: %v", err)
 		fmt.Printf("failed to wait for ArgoCD namespace: %v\n", err)
-    }
-	
+	}
+
 	return runtimeState, prevStepError
 }
 
+func InstallArgoCD() error {
+	// Print ASCII art
+	fmt.Println(`
+     _                     ____ ____
+    / \   _ __ __ _  ___  / ___|  _ \
+   / _ \ | '__/ _  |/ _ \| |   | | | |
+  / ___ \| | | (_| | (_) | |___| |_| |
+ /_/   \_\_|  \__, |\___/ \____|____/
+              |___/
+`)
 
+	// Run helm template
+	helmTemplateCmd := exec.Command(
+		"helm", "template", "-s", "templates/values.tmpl", "/tmp/argo-cd/argo-cd/",
+		"--values", "/tmp/argo-cd/proxy-values.yaml",
+	)
 
-// func InstallArgoCD() error {
-//     // Print ASCII art
-//     fmt.Println(`
-//      _                     ____ ____
-//     / \   _ __ __ _  ___  / ___|  _ \
-//    / _ \ | '__/ _  |/ _ \| |   | | | |
-//   / ___ \| | | (_| | (_) | |___| |_| |
-//  /_/   \_\_|  \__, |\___/ \____|____/
-//               |___/
-// `)
+	valuesYaml, err := helmTemplateCmd.Output()
+	if err != nil {
+		return fmt.Errorf("failed to run helm template: %v", err)
+	}
 
-   
+	if err := os.WriteFile("/tmp/argo-cd/values.yaml", valuesYaml, 0644); err != nil {
+		return fmt.Errorf("failed to write values.yaml: %v", err)
+	}
 
-//     // Run helm template
-//     helmTemplateCmd := exec.Command(
-//         "helm", "template", "-s", "templates/values.tmpl", "/tmp/argo-cd/argo-cd/",
-//         "--values", "/tmp/argo-cd/proxy-values.yaml",
-//     )
-//     valuesYaml, err := helmTemplateCmd.Output()
-//     if err != nil {
-//         return fmt.Errorf("failed to run helm template: %v", err)
-//     }
-//     if err := ioutil.WriteFile("/tmp/argo-cd/values.yaml", valuesYaml, 0644); err != nil {
-//         return fmt.Errorf("failed to write values.yaml: %v", err)
-//     }
+	// Remove values.tmpl
+	if err := os.Remove("/tmp/argo-cd/argo-cd/templates/values.tmpl"); err != nil {
+		return fmt.Errorf("failed to remove values.tmpl: %v", err)
+	}
+	fmt.Println(`JOHN HERE`)
+	// Write mounts.yaml
+	mountsYaml := `
+notifications:
+  extraVolumeMounts:
+  - mountPath: /etc/ssl/certs/ca-certificates.crt
+    name: tls-from-node
+  - mountPath: /etc/ssl/certs/gitea_cert.crt
+    name: gitea-tls
+  extraVolumes:
+  - name: tls-from-node
+    hostPath:
+      path: /etc/ssl/certs/ca-certificates.crt
+  - name: gitea-tls
+    hostPath:
+      path: /usr/local/share/ca-certificates/gitea_cert.crt
+server:
+  volumeMounts:
+  - mountPath: /etc/ssl/certs/ca-certificates.crt
+    name: tls-from-node
+  - mountPath: /etc/ssl/certs/gitea_cert.crt
+    name: gitea-tls
+  volumes:
+  - name: tls-from-node
+    hostPath:
+      path: /etc/ssl/certs/ca-certificates.crt
+  - name: gitea-tls
+    hostPath:
+      path: /usr/local/share/ca-certificates/gitea_cert.crt
+repoServer:
+  volumeMounts:
+  - mountPath: /etc/ssl/certs/ca-certificates.crt
+    name: tls-from-node
+  - mountPath: /etc/ssl/certs/gitea_cert.crt
+    name: gitea-tls
+  volumes:
+  - name: tls-from-node
+    hostPath:
+      path: /etc/ssl/certs/ca-certificates.crt
+  - name: gitea-tls
+    hostPath:
+      path: /usr/local/share/ca-certificates/gitea_cert.crt
+applicationSet:
+  extraVolumeMounts:
+  - mountPath: /etc/ssl/certs/ca-certificates.crt
+    name: tls-from-node
+  - mountPath: /etc/ssl/certs/gitea_cert.crt
+    name: gitea-tls
+  extraVolumes:
+  - name: tls-from-node
+    hostPath:
+      path: /etc/ssl/certs/ca-certificates.crt
+  - name: gitea-tls
+    hostPath:
+      path: /usr/local/share/ca-certificates/gitea_cert.crt
+`
+	if err := os.WriteFile("/tmp/argo-cd/mounts.yaml", []byte(mountsYaml), 0644); err != nil {
+		return fmt.Errorf("failed to write mounts.yaml: %v", err)
+	}
 
-//     // Remove values.tmpl
-//     if err := os.Remove("/tmp/argo-cd/argo-cd/templates/values.tmpl"); err != nil {
-//         return fmt.Errorf("failed to remove values.tmpl: %v", err)
-//     }
+	// Run helm install
+	helmInstallCmd := exec.Command(
+		"helm", "install", "argocd", "/tmp/argo-cd/argo-cd",
+		"--values", "/tmp/argo-cd/values.yaml",
+		"-f", "/tmp/argo-cd/mounts.yaml",
+		"-n", "argocd", "--create-namespace",
+	)
+	helmInstallCmd.Stdout = os.Stdout
+	helmInstallCmd.Stderr = os.Stderr
+	if err := helmInstallCmd.Run(); err != nil {
+		return fmt.Errorf("failed to run helm install: %v", err)
+	}
 
-//     // Write mounts.yaml
-//     mountsYaml := `
-// notifications:
-//   extraVolumeMounts:
-//   - mountPath: /etc/ssl/certs/ca-certificates.crt
-//     name: tls-from-node
-//   - mountPath: /etc/ssl/certs/gitea_cert.crt
-//     name: gitea-tls
-//   extraVolumes:
-//   - name: tls-from-node
-//     hostPath:
-//       path: /etc/ssl/certs/ca-certificates.crt
-//   - name: gitea-tls
-//     hostPath:
-//       path: /usr/local/share/ca-certificates/gitea_cert.crt
-// server:
-//   volumeMounts:
-//   - mountPath: /etc/ssl/certs/ca-certificates.crt
-//     name: tls-from-node
-//   - mountPath: /etc/ssl/certs/gitea_cert.crt
-//     name: gitea-tls
-//   volumes:
-//   - name: tls-from-node
-//     hostPath:
-//       path: /etc/ssl/certs/ca-certificates.crt
-//   - name: gitea-tls
-//     hostPath:
-//       path: /usr/local/share/ca-certificates/gitea_cert.crt
-// repoServer:
-//   volumeMounts:
-//   - mountPath: /etc/ssl/certs/ca-certificates.crt
-//     name: tls-from-node
-//   - mountPath: /etc/ssl/certs/gitea_cert.crt
-//     name: gitea-tls
-//   volumes:
-//   - name: tls-from-node
-//     hostPath:
-//       path: /etc/ssl/certs/ca-certificates.crt
-//   - name: gitea-tls
-//     hostPath:
-//       path: /usr/local/share/ca-certificates/gitea_cert.crt
-// applicationSet:
-//   extraVolumeMounts:
-//   - mountPath: /etc/ssl/certs/ca-certificates.crt
-//     name: tls-from-node
-//   - mountPath: /etc/ssl/certs/gitea_cert.crt
-//     name: gitea-tls
-//   extraVolumes:
-//   - name: tls-from-node
-//     hostPath:
-//       path: /etc/ssl/certs/ca-certificates.crt
-//   - name: gitea-tls
-//     hostPath:
-//       path: /usr/local/share/ca-certificates/gitea_cert.crt
-// `
-//     if err := ioutil.WriteFile("/tmp/argo-cd/mounts.yaml", []byte(mountsYaml), 0644); err != nil {
-//         return fmt.Errorf("failed to write mounts.yaml: %v", err)
-//     }
+	return nil
+}
 
-//     // Run helm install
-//     helmInstallCmd := exec.Command(
-//         "helm", "install", "argocd", "/tmp/argo-cd/argo-cd",
-//         "--values", "/tmp/argo-cd/values.yaml",
-//         "-f", "/tmp/argo-cd/mounts.yaml",
-//         "-n", "argocd", "--create-namespace",
-//     )
-//     helmInstallCmd.Stdout = os.Stdout
-//     helmInstallCmd.Stderr = os.Stderr
-//     if err := helmInstallCmd.Run(); err != nil {
-//         return fmt.Errorf("failed to run helm install: %v", err)
-//     }
-
-//     return nil
-// }
-
-func argocdValues(config config.OrchInstallerConfig){
+func argocdValues(config config.OrchInstallerConfig) {
 	valuesFile := `
 server:
   service:
@@ -223,17 +235,22 @@ dex:
   enabled: false
 `
 
-    if err := ioutil.WriteFile("/tmp/argo-cd/argo-cd/templates/values.tmpl", []byte(valuesFile), 0644); err != nil {
-      fmt.Printf("failed to copy values.tmpl: %v", err)
-      //return fmt.Errorf("failed to copy values.tmpl: %v", err)  
-    }
+	path := "/tmp/argo-cd/argo-cd/templates/"
+	if err := os.MkdirAll(path, 0755); err != nil {
+		fmt.Printf("failed to create directory %s: %v", path, err)
+		//return fmt.Errorf("failed to create directory %s: %v", path, err)
+	}
+	chownToCurrentUserRecursive("/tmp/argo-cd/")
 
-    proxyYaml := fmt.Sprintf("http_proxy: %s\nhttps_proxy: %s\nno_proxy: %s\n", config.Proxy.HTTPProxy, config.Proxy.HTTPProxy, config.Proxy.NoProxy)
-    if err := ioutil.WriteFile("/tmp/argo-cd/proxy-values.yaml", []byte(proxyYaml), 0644); err != nil {
-        // return fmt.Errorf("failed to write proxy-values.yaml: %v", err)
+	if err := os.WriteFile("/tmp/argo-cd/argo-cd/templates/values.tmpl", []byte(valuesFile), 0644); err != nil {
+		fmt.Printf("failed to copy values.tmpl: %v", err)
+		//return fmt.Errorf("failed to copy values.tmpl: %v", err)
+	}
+
+	proxyYaml := fmt.Sprintf("http_proxy: %s\nhttps_proxy: %s\nno_proxy: %s\n", config.Proxy.HTTPProxy, config.Proxy.HTTPProxy, config.Proxy.NoProxy)
+	if err := os.WriteFile("/tmp/argo-cd/proxy-values.yaml", []byte(proxyYaml), 0644); err != nil {
+		// return fmt.Errorf("failed to write proxy-values.yaml: %v", err)
 		fmt.Printf("failed to write proxy-values.yaml: %v\n", err)
-    }
-
-
+	}
 
 }
