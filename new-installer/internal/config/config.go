@@ -6,16 +6,6 @@ package config
 
 import "os"
 
-type Scale int
-
-const (
-	Scale10    Scale = 10
-	Scale100   Scale = 100
-	Scale500   Scale = 500
-	Scale1000  Scale = 1000
-	Scale10000 Scale = 10000
-)
-
 // Current version
 // Should bump this every time we make backward-compatible config schema changes
 const (
@@ -52,42 +42,52 @@ type OrchInstallerRuntimeState struct {
 	DeploymentID     string `yaml:"deploymentID"`
 	StateBucketState string `yaml:"stateBucketState"` // The state S3 bucket Terraform state
 	// Move runtime state here?
-	KubeConfig               string   `yaml:"kubeConfig"`
-	TLSCert                  string   `yaml:"tlsCert"`
-	TLSKey                   string   `yaml:"tlsKey"`
-	TLSCa                    string   `yaml:"tlsCa"`
-	CacheRegistry            string   `yaml:"cacheRegistry"`
-	VPCID                    string   `yaml:"vpcID"`
-	PublicSubnetIDs          []string `yaml:"publicSubnetIDs"`
-	PrivateSubnetIDs         []string `yaml:"privateSubnetIDs"`
-	JumpHostSSHKeyPublicKey  string   `yaml:"jumpHostSSHPublicKey"`
-	JumpHostSSHKeyPrivateKey string   `yaml:"jumpHostSSHPrivateKey"`
+	AWS struct {
+		KubeConfig               string   `yaml:"kubeConfig"`
+		CacheRegistry            string   `yaml:"cacheRegistry"`
+		VPCID                    string   `yaml:"vpcID"`
+		PublicSubnetIDs          []string `yaml:"publicSubnetIDs"`
+		PrivateSubnetIDs         []string `yaml:"privateSubnetIDs"`
+		JumpHostIP               string   `yaml:"jumpHostIP"`
+		JumpHostSSHKeyPublicKey  string   `yaml:"jumpHostSSHPublicKey"`
+		JumpHostSSHKeyPrivateKey string   `yaml:"jumpHostSSHPrivateKey"`
+		EFSFileSystemID          string   `yaml:"efsFileSystemID"`
+		EKSOIDCIssuer            string   `yaml:"eksOIDCIssuer"`
+		ACMCertArn               string   `yaml:"acmCertArn"`
+	} `yaml:"aws,omitempty"`
+	Cert struct {
+		TLSCert string `yaml:"tlsCert"`
+		TLSKey  string `yaml:"tlsKey"`
+		TLSCA   string `yaml:"tlsCA"`
+	} `yaml:"cert,omitempty"`
 }
 
 type OrchInstallerConfig struct {
 	Version  int    `yaml:"version"`
 	Provider string `yaml:"provider"`
 	Global   struct {
-		OrchName     string `yaml:"orchName"`     // EMF deployment name
-		ParentDomain string `yaml:"parentDomain"` // not including cluster name
-		AdminEmail   string `yaml:"adminEmail"`
-		Scale        Scale  `yaml:"scale"`
+		OrchName      string `yaml:"orchName"`     // EMF deployment name
+		ParentDomain  string `yaml:"parentDomain"` // not including cluster name
+		AdminEmail    string `yaml:"adminEmail"`
+		AdminPassword string `yaml:"adminPassword"`
+		Scale         Scale  `yaml:"scale"`
 	} `yaml:"global"`
 	Advanced struct { // TODO: form for this part is not done yet
 		AzureADRefreshToken  string `yaml:"azureADRefreshToken,omitempty"`
 		AzureADTokenEndpoint string `yaml:"azureADTokenEndpoint,omitempty"`
 	} `yaml:"advanced"`
 	AWS struct {
-		Region              string   `yaml:"region"`
-		CustomerTag         string   `yaml:"customerTag,omitempty"`
-		CacheRegistry       string   `yaml:"cacheRegistry,omitempty"`
-		JumpHostWhitelist   []string `yaml:"jumpHostWhitelist,omitempty"`
-		JumpHostIP          string   `yaml:"jumpHostIP,omitempty"`
-		JumpHostPrivKeyPath string   `yaml:"jumpHostPrivKeyPath,omitempty"`
-		VPCID               string   `yaml:"vpcID,omitempty"`
-		ReduceNSTTL         bool     `yaml:"reduceNSTTL,omitempty"` // TODO: do we need this?
-		EKSDNSIP            string   `yaml:"eksDNSIP,omitempty"`    // TODO: do we need this?
-		EKSIAMRoles         []string `yaml:"eksIAMRoles,omitempty"`
+		Region                string   `yaml:"region"`
+		CustomerTag           string   `yaml:"customerTag,omitempty"`
+		CacheRegistry         string   `yaml:"cacheRegistry,omitempty"`
+		JumpHostWhitelist     []string `yaml:"jumpHostWhitelist,omitempty"`
+		JumpHostIP            string   `yaml:"jumpHostIP,omitempty"`
+		JumpHostPrivKeyPath   string   `yaml:"jumpHostPrivKeyPath,omitempty"`
+		VPCID                 string   `yaml:"vpcID,omitempty"`
+		ReduceNSTTL           bool     `yaml:"reduceNSTTL,omitempty"` // TODO: do we need this?
+		EKSDNSIP              string   `yaml:"eksDNSIP,omitempty"`    // TODO: do we need this?
+		EKSIAMRoles           []string `yaml:"eksIAMRoles,omitempty"`
+		PreviousS3StateBucket string   `yaml:"previousS3StateBucket,omitempty"` // The S3 bucket where the previous state is stored, will be deprecated in version 3.2.
 	} `yaml:"aws,omitempty"`
 	Onprem struct {
 		ArgoIP         string `yaml:"argoIP"`
@@ -97,8 +97,7 @@ type OrchInstallerConfig struct {
 		DockerToken    string `yaml:"dockerToken,omitempty"`
 	} `yaml:"onprem,omitempty"`
 	Orch struct {
-		Enabled         []string `yaml:"enabled"`
-		DefaultPassword string   `yaml:"defaultPassword"`
+		Enabled []string `yaml:"enabled"`
 	} `yaml:"orch"`
 	// Optional
 	Cert struct {
@@ -122,12 +121,12 @@ type OrchInstallerConfig struct {
 	Proxy struct {
 		HTTPProxy    string `yaml:"httpProxy,omitempty"`
 		HTTPSProxy   string `yaml:"httpsProxy,omitempty"`
-		SocksProxy   string `yaml:"socksProxy,omitempty"`
+		SOCKSProxy   string `yaml:"socksProxy,omitempty"`
 		NoProxy      string `yaml:"noProxy,omitempty"`
 		ENHTTPProxy  string `yaml:"enHttpProxy,omitempty"`
 		ENHTTPSProxy string `yaml:"enHttpsProxy,omitempty"`
 		ENFTPProxy   string `yaml:"enFtpProxy,omitempty"`
-		ENSocksProxy string `yaml:"enSocksProxy,omitempty"`
+		ENSOCKSProxy string `yaml:"enSocksProxy,omitempty"`
 		ENNoProxy    string `yaml:"enNoProxy,omitempty"`
 	} `yaml:"proxy,omitempty"`
 }

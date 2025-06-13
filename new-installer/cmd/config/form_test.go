@@ -49,6 +49,9 @@ func (s *OrchConfigFormTest) testConfigureGlobal() {
 	// enter admin email
 	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("admin@example.com")})
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
+	// enter admin password
+	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("dummy-password")})
+	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
 	// Select 10~100 ENs
 	model.Update(tea.KeyMsg{Type: tea.KeyDown})
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
@@ -131,7 +134,7 @@ func (s *OrchConfigFormTest) testConfigureAwsExpert() {
 	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("8.8.8.8")})
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
 	// Enter EKS IAM role
-	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("arn:aws:iam::123456789012:role/EKS-Role")})
+	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("developer_eks_role")})
 	batchUpdate(model.Update(tea.KeyMsg{Type: tea.KeyEnter}))
 
 	view := ansi.Strip(model.View())
@@ -411,7 +414,7 @@ func initTest() error {
 	flags.ConfigureSmtp = false
 	configMode = Simple
 
-	loadOrchPackagesFromString(embedPackages)
+	loadOrchPackages()
 	form = orchInstallerForm()
 	model, _ = form.Update(form.Init())
 
