@@ -81,9 +81,10 @@ func (s *EKSTestSuite) SetupTest() {
 }
 
 func (s *EKSTestSuite) checkAndStartSSHTunnel() error {
+	log.Printf("Checking if SSH tunnel is running on port %d", s.tunnelSocksPort)
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", s.tunnelSocksPort))
 	if err != nil {
-		// tunnel is still running, no need to restart
+		log.Printf("Port %d is already in use, SSH tunnel is running", s.tunnelSocksPort)
 		return nil
 	}
 	listener.Close()
@@ -170,28 +171,8 @@ func (s *EKSTestSuite) TestApplyingModule() {
 		Reconfigure: true,
 		Upgrade:     true,
 	})
-
-	go func() {
-		timesFailed := 0
-		for range time.Tick(10 * time.Second) {
-			cmd := exec.Command("bash", "-c", fmt.Sprintf("HTTPS_PROXY=socks5://127.0.0.1:%d kubectl get nodes", s.tunnelSocksPort))
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stdout
-			log.Printf("Executing command: %s", cmd.String())
-			if err := cmd.Run(); err != nil {
-				log.Printf("Command execution error: %v", err)
-				timesFailed += 1
-				if timesFailed >= 80 {
-					log.Printf("Command failed too many times, stopping execution")
-					return
-				}
-			}
-		}
-	}()
-
 	defer terraform.Destroy(s.T(), terraformOptions)
 	terraform.InitAndApply(s.T(), terraformOptions)
-
 	eksOIDCIssuer := terraform.Output(s.T(), terraformOptions, "eks_oidc_issuer")
 	s.NotEmpty(eksOIDCIssuer, "EKS OIDC issuer should not be empty")
 }
