@@ -12,14 +12,24 @@ resource "aws_security_group" "infra" {
   description = "Security group for the infrastructure load balancer for cluster ${var.cluster_name}"
 }
 
-resource "aws_security_group_rule" "infra_allow_https" {
-  type              = "ingress"
+# resource "aws_security_group_rule" "infra_allow_https" {
+#   type              = "ingress"
+#   from_port         = 443
+#   to_port           = 443
+#   protocol          = "tcp"
+#   cidr_blocks       = tolist(local.ip_allow_list)
+#   security_group_id = aws_security_group.infra.id
+#   description       = "Allow HTTPS traffic from IP allow list"
+# }
+
+resource "aws_vpc_security_group_ingress_rule" "infra_allow_https" {
+  for_each          = local.ip_allow_list
+  security_group_id = aws_security_group.infra.id
   from_port         = 443
   to_port           = 443
-  protocol          = "tcp"
-  cidr_blocks       = tolist(local.ip_allow_list)
-  security_group_id = aws_security_group.infra.id
-  description = "Allow HTTPS traffic from IP allow list"
+  ip_protocol       = "tcp"
+  cidr_ipv4         = each.value
+  description       = "Allow HTTPS traffic from IP ${each.value} allow list"
 }
 
 #trivy:ignore:AVD-AWS-0053 Allow public access to the load balancer
@@ -85,7 +95,7 @@ resource "aws_lb_listener" "infra" {
   certificate_arn   = var.tls_cert_arn
   ssl_policy        = local.ssl_polocy
   default_action {
-    type             = "fixed-response"
+    type = "fixed-response"
     fixed_response {
       content_type = "text/plain"
       message_body = "Not Found"

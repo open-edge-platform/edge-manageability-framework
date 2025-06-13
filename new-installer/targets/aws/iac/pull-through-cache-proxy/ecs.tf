@@ -264,24 +264,41 @@ resource "aws_security_group" "ecs_service" {
   vpc_id = var.vpc_id
 }
 
-resource "aws_security_group_rule" "alb_to_ecs_ingress" {
-  type                     = "ingress"
-  from_port                = 8443
-  to_port                  = 8443
-  protocol                 = "tcp"
-  source_security_group_id = aws_security_group.alb.id
-  security_group_id        = aws_security_group.ecs_service.id
+# resource "aws_security_group_rule" "alb_to_ecs_ingress" {
+#   type                     = "ingress"
+#   from_port                = 8443
+#   to_port                  = 8443
+#   protocol                 = "tcp"
+#   source_security_group_id = aws_security_group.alb.id
+#   security_group_id        = aws_security_group.ecs_service.id
+# }
+
+resource "aws_vpc_security_group_ingress_rule" "alb_to_ecs_ingress" {
+  security_group_id            = aws_security_group.ecs_service.id
+  referenced_security_group_id = aws_security_group.alb.id
+  from_port                    = 8443
+  to_port                      = 8443
+  ip_protocol                  = "tcp"
 }
 
 // To access the Internet(DNS, HTTPS, Proxy...)
-resource "aws_security_group_rule" "ecs_to_internet_https" {
-  type              = "egress"
+# resource "aws_security_group_rule" "ecs_to_internet_https" {
+#   type              = "egress"
+#   from_port         = 0
+#   to_port           = 0
+#   protocol          = "-1"
+#   cidr_blocks       = ["0.0.0.0/0"]
+#   security_group_id = aws_security_group.ecs_service.id
+# }
+
+resource "aws_vpc_security_group_egress_rule" "ecs_to_internet_https" {
+  security_group_id = aws_security_group.ecs_service.id
   from_port         = 0
   to_port           = 0
-  protocol          = "-1"
-  cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = aws_security_group.ecs_service.id
+  ip_protocol       = "-1"
+  cidr_ipv4         = "0.0.0.0/0"
 }
+
 
 resource "aws_ecs_service" "pull_through_cache_proxy" {
   depends_on      = [aws_ecs_task_definition.pull_through_cache_proxy, aws_lb.pull_through_cache_proxy]

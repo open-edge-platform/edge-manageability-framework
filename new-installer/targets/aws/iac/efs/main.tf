@@ -9,12 +9,12 @@ data "aws_vpc" "main" {
 data "aws_caller_identity" "current" {}
 
 locals {
-  account_id = data.aws_caller_identity.current.account_id
-  efs_policy_source = "https://raw.githubusercontent.com/kubernetes-sigs/aws-efs-csi-driver/v1.5.4/docs/iam-policy-example.json"
-  eks_issuer        = replace(var.eks_oidc_issuer, "https://", "")
-  efs_throughput_mode = "elastic"
-  efs_encryption = true
-  transition_to_ia = "AFTER_7_DAYS"
+  account_id                          = data.aws_caller_identity.current.account_id
+  efs_policy_source                   = "https://raw.githubusercontent.com/kubernetes-sigs/aws-efs-csi-driver/v1.5.4/docs/iam-policy-example.json"
+  eks_issuer                          = replace(var.eks_oidc_issuer, "https://", "")
+  efs_throughput_mode                 = "elastic"
+  efs_encryption                      = true
+  transition_to_ia                    = "AFTER_7_DAYS"
   transition_to_primary_storage_class = "AFTER_1_ACCESS"
 }
 
@@ -51,8 +51,8 @@ data "aws_iam_policy_document" "efs_assume_role_policy" {
 }
 
 resource "aws_iam_role" "efs_role" {
-  name                = "${var.cluster_name}-EFS_CSI_DriverRole"
-  assume_role_policy  = data.aws_iam_policy_document.efs_assume_role_policy.json
+  name               = "${var.cluster_name}-EFS_CSI_DriverRole"
+  assume_role_policy = data.aws_iam_policy_document.efs_assume_role_policy.json
 }
 
 resource "aws_iam_role_policy_attachment" "efs_role" {
@@ -62,24 +62,34 @@ resource "aws_iam_role_policy_attachment" "efs_role" {
 
 # Create Security Group
 resource "aws_security_group" "allow_nfs" {
-  name   = "${var.cluster_name}-efs-nfs"
-  vpc_id = var.vpc_id
+  name        = "${var.cluster_name}-efs-nfs"
+  vpc_id      = var.vpc_id
   description = "Allow NFS traffic from VPC"
   tags = {
-    Name = "${var.cluster_name}-efs-nfs"
+    Name        = "${var.cluster_name}-efs-nfs"
     environment = var.cluster_name
   }
 }
 
-resource "aws_security_group_rule" "allow_nfs" {
-  type              = "ingress"
+# resource "aws_security_group_rule" "allow_nfs" {
+#   type              = "ingress"
+#   from_port         = 2049
+#   to_port           = 2049
+#   protocol          = "tcp"
+#   cidr_blocks       = [data.aws_vpc.main.cidr_block]
+#   security_group_id = aws_security_group.allow_nfs.id
+#   description       = "Allow NFS traffic from VPC"
+
+# }
+
+resource "aws_vpc_security_group_ingress_rule" "allow_nfs" {
+  for_each          = data.aws_vpc.main.cidr_block
+  security_group_id = aws_security_group.allow_nfs.id
   from_port         = 2049
   to_port           = 2049
-  protocol          = "tcp"
-  cidr_blocks       = [data.aws_vpc.main.cidr_block]
-  security_group_id = aws_security_group.allow_nfs.id
-  description       = "Allow NFS traffic from VPC"
-
+  ip_protocol       = "tcp"
+  cidr_ipv4         = each.value
+  description       = "Allow NFS traffic from VPC from ${each.value}"
 }
 
 # EFS

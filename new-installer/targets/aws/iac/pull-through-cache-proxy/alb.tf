@@ -7,22 +7,39 @@ resource "aws_security_group" "alb" {
   vpc_id = var.vpc_id
 }
 
-resource "aws_security_group_rule" "sg_to_alb" {
-  type                     = "ingress"
-  from_port                = 443
-  to_port                  = 443
-  protocol                 = "tcp"
-  cidr_blocks              = var.ip_allow_list
-  security_group_id        = aws_security_group.alb.id
+# resource "aws_security_group_rule" "sg_to_alb" {
+#   type                     = "ingress"
+#   from_port                = 443
+#   to_port                  = 443
+#   protocol                 = "tcp"
+#   cidr_blocks              = var.ip_allow_list
+#   security_group_id        = aws_security_group.alb.id
+# }
+
+resource "aws_vpc_security_group_ingress_rule" "sg_to_alb" {
+  for_each          = var.ip_allow_list
+  security_group_id = aws_security_group.alb.id
+  from_port         = 443
+  to_port           = 443
+  ip_protocol       = "tcp"
+  cidr_ipv4         = each.value.cidr_block
 }
 
-resource "aws_security_group_rule" "alb_to_ecs_egress" {
-  type                     = "egress"
-  from_port                = 8443
-  to_port                  = 8443
-  protocol                 = "tcp"
-  source_security_group_id = aws_security_group.ecs_service.id
-  security_group_id        = aws_security_group.alb.id
+# resource "aws_security_group_rule" "alb_to_ecs_egress" {
+#   type                     = "egress"
+#   from_port                = 8443
+#   to_port                  = 8443
+#   protocol                 = "tcp"
+#   source_security_group_id = aws_security_group.ecs_service.id
+#   security_group_id        = aws_security_group.alb.id
+# }
+
+resource "aws_vpc_security_group_egress_rule" "alb_to_ecs_egress" {
+  security_group_id            = aws_security_group.alb.id
+  referenced_security_group_id = aws_security_group.ecs_service.id
+  from_port                    = 8443
+  to_port                      = 8443
+  ip_protocol                  = "tcp"
 }
 
 resource "aws_lb" "pull_through_cache_proxy" {

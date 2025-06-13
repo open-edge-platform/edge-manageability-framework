@@ -15,8 +15,8 @@ data "aws_nat_gateway" "vpc_nat_gateway" {
 
 locals {
   subnets_with_eip = var.internal ? [] : var.subnets
-  nat_public_ips = toset([for id, nat in data.aws_nat_gateway.vpc_nat_gateway : "${nat.public_ip}/32" if nat.connectivity_type == "public"])
-  ip_allow_list  = setunion(var.ip_allow_list, local.nat_public_ips)
+  nat_public_ips   = toset([for id, nat in data.aws_nat_gateway.vpc_nat_gateway : "${nat.public_ip}/32" if nat.connectivity_type == "public"])
+  ip_allow_list    = setunion(var.ip_allow_list, local.nat_public_ips)
   nlb_ports = {
     "https" : {
       listen              = 443
@@ -36,15 +36,25 @@ resource "aws_security_group" "common" {
   }
 }
 
-resource "aws_security_group_rule" "common" {
-  type              = "ingress"
+# resource "aws_security_group_rule" "common" {
+#   type              = "ingress"
+#   from_port         = 443
+#   to_port           = 443
+#   protocol          = "TCP"
+#   cidr_blocks       = local.ip_allow_list
+#   security_group_id = aws_security_group.common.id
+
+# }
+
+resource "aws_vpc_security_group_ingress_rule" "common" {
+  for_each          = local.ip_allow_list
+  security_group_id = aws_security_group.common.id
   from_port         = 443
   to_port           = 443
-  protocol          = "TCP"
-  cidr_blocks       = local.ip_allow_list
-  security_group_id = aws_security_group.common.id
-
+  ip_protocol       = "tcp"
+  cidr_ipv4         = each.value
 }
+
 
 # Create EIP(if not internal), NLB, Listener, TargetGroup
 resource "aws_eip" "main" {
@@ -79,10 +89,10 @@ resource "aws_lb_target_group" "main" {
   vpc_id      = var.vpc_id
   target_type = "ip"
   health_check {
-    enabled = true
-    port = "traffic-port"
-    protocol = "TCP"
-    healthy_threshold = 5
+    enabled             = true
+    port                = "traffic-port"
+    protocol            = "TCP"
+    healthy_threshold   = 5
     unhealthy_threshold = 2
   }
   tags = {

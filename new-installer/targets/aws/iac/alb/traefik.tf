@@ -3,23 +3,33 @@
 # SPDX-License-Identifier: Apache-2.0
 
 resource "aws_security_group" "traefik" {
-  name   = "${var.cluster_name}-traefik-load-balancer-sg"
-  vpc_id = var.vpc_id
+  name        = "${var.cluster_name}-traefik-load-balancer-sg"
+  vpc_id      = var.vpc_id
   description = "Security group for the infrastructure load balancer for cluster ${var.cluster_name}"
   tags = {
     Name : "${var.cluster_name}-traefik-load-balancer-sg"
-    environment: var.cluster_name
+    environment : var.cluster_name
   }
 }
 
-resource "aws_security_group_rule" "traefik_allow_https" {
-  type              = "ingress"
+# resource "aws_security_group_rule" "traefik_allow_https" {
+#   type              = "ingress"
+#   from_port         = 443
+#   to_port           = 443
+#   protocol          = "tcp"
+#   cidr_blocks       = tolist(local.ip_allow_list)
+#   security_group_id = aws_security_group.traefik.id
+#   description       = "Allow HTTPS traffic from IP allow list"
+# }
+
+resource "aws_vpc_security_group_ingress_rule" "traefik_allow_https" {
+  for_each          = local.ip_allow_list
+  security_group_id = aws_security_group.traefik.id
   from_port         = 443
   to_port           = 443
-  protocol          = "tcp"
-  cidr_blocks       = tolist(local.ip_allow_list)
-  security_group_id = aws_security_group.traefik.id
-  description = "Allow HTTPS traffic from IP allow list"
+  ip_protocol       = "tcp"
+  cidr_ipv4         = each.value
+  description       = "Allow HTTPS traffic from ${each.value} allow list"
 }
 
 #trivy:ignore:AVD-AWS-0053 Allow public access to the load balancer
