@@ -9,6 +9,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -408,9 +409,24 @@ func (u Undeploy) OnPrem(ctx context.Context) error {
 		return fmt.Errorf("terraform destroy failed: %w", err)
 	}
 
-	// HACK: Sometimes the destroy command fails to remove the VM, so we need to undefine it manually
-	if err := sh.RunV("sudo", "virsh", "undefine", "orch-tf"); err != nil {
-		fmt.Printf("virsh undefine failed: %v\n", err)
+	// Sometimes the destroy command fails to remove the VM,
+	// so we need to undefine it manually
+	// Check if a VM named "orch-tf" still exists
+	_, err := exec.Command("sudo", "virsh", "domuuid", "orch-tf").Output()
+	if err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
+			fmt.Printf("no VM named 'orch-tf' found, nothing to destroy.\n")
+		}
+	} else {
+		// Try to destroy the VM if it's running
+		if err := sh.RunV("sudo", "virsh", "destroy", "orch-tf"); err != nil {
+			fmt.Printf("virsh destroy failed (may not be running): %v\n", err)
+		}
+		// Undefine and remove all storage
+		if err := sh.RunV("sudo", "virsh", "undefine", "orch-tf", "--remove-all-storage"); err != nil {
+			fmt.Printf("virsh undefine failed: %v\n", err)
+		}
 	}
 
 	mg.CtxDeps(
