@@ -4,7 +4,7 @@
 
 resource "aws_security_group" "rds" {
   vpc_id = var.vpc_id
-  name   = var.cluster_name
+  name   = "${var.cluster_name}-rds-sg"
   # Allow connections only from EKS subnets
   ingress {
     from_port   = 5432
