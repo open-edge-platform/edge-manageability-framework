@@ -27,6 +27,7 @@ type TerraformUtility interface {
 	Run(ctx context.Context, input TerraformUtilityInput) (TerraformUtilityOutput, *internal.OrchInstallerError)
 	MoveStates(ctx context.Context, input TerraformUtilityMoveStatesInput) *internal.OrchInstallerError
 	RemoveStates(ctx context.Context, input TerraformUtilityRemoveStatesInput) *internal.OrchInstallerError
+	DestroyResource(ctx context.Context, input TerraformUtilityDestroyResourceInput) *internal.OrchInstallerError
 }
 
 type TerraformUtilityInput struct {
@@ -53,6 +54,11 @@ type TerraformUtilityMoveStatesInput struct {
 type TerraformUtilityRemoveStatesInput struct {
 	ModulePath string
 	States     []string
+}
+
+type TerraformUtilityDestroyResourceInput struct {
+	ModulePath string
+	Resource   string
 }
 
 type TerraformAWSBucketBackendConfig struct {
@@ -344,6 +350,24 @@ func (tfUtil *terraformUtilityImpl) RemoveStates(ctx context.Context, input Terr
 				ErrorCode: internal.OrchInstallerErrorCodeTerraform,
 				ErrorMsg:  fmt.Sprintf("failed to delete terraform state: %v", err),
 			}
+		}
+	}
+	return nil
+}
+
+func (tfUtil *terraformUtilityImpl) DestroyResource(ctx context.Context, input TerraformUtilityDestroyResourceInput) *internal.OrchInstallerError {
+	tf, err := tfexec.NewTerraform(input.ModulePath, tfUtil.ExecPath)
+	if err != nil {
+		return &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeTerraform,
+			ErrorMsg:  fmt.Sprintf("failed to create terraform instance: %v", err),
+		}
+	}
+	err = tf.Destroy(ctx, tfexec.Target(input.Resource))
+	if err != nil {
+		return &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeTerraform,
+			ErrorMsg:  fmt.Sprintf("failed to destroy terraform resource: %v", err),
 		}
 	}
 	return nil
