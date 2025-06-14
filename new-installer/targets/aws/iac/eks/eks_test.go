@@ -8,10 +8,7 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
-	"log"
-	"net"
 	"os"
-	"os/exec"
 	"strings"
 	"testing"
 	"time"
@@ -25,16 +22,14 @@ import (
 
 type EKSTestSuite struct {
 	suite.Suite
-	name               string // for everything, such as vpc, bucket, eks cluster, etc.
-	vpcID              string
-	publicSubnetIDs    []string
-	privateSubnetIDs   []string
-	sshTunnelCmd       *exec.Cmd
-	tunnelSocksPort    int
-	jumphostPrivateKey string
-	jumphostIP         string
-	stopTunnelRefresh  bool
-	tmpDir             string // Temporary directory for storing files
+	name                 string // for everything, such as vpc, bucket, eks cluster, etc.
+	vpcID                string
+	publicSubnetIDs      []string
+	privateSubnetIDs     []string
+	sshTunnelCheckTicker *time.Ticker
+	tunnelSocksPort      int
+	jumphostPrivateKey   string
+	jumphostIP           string
 }
 
 func TestEKSTestSuite(t *testing.T) {
@@ -53,57 +48,29 @@ func (s *EKSTestSuite) SetupTest() {
 		s.NoError(err, "Failed to create VPC and subnet")
 		return
 	}
-	if err := utils.WaitUntilJumphostIsReachable(s.jumphostPrivateKey, s.jumphostIP); err != nil {
-		s.NoError(err, "Failed to wait until jumphost is reachable")
+	s.sshTunnelCheckTicker, s.tunnelSocksPort, err = utils.StartSSHSocks5Tunnel(s.name, s.jumphostIP, s.jumphostPrivateKey)
+	if err != nil {
+		s.NoError(err, "Failed to start SSH tunnel: %v", err)
 		return
 	}
-	s.tmpDir = s.T().TempDir()
-	// Find an open port for the SSH tunnel
-	listener, err := net.Listen("tcp", ":0")
-	if err != nil {
-		s.T().Fatalf("Failed to find a open port for SSH tunnel: %v", err)
-		return
-	}
-	listener.Close()
-	s.tunnelSocksPort = listener.Addr().(*net.TCPAddr).Port
-	s.stopTunnelRefresh = false
-	go func() {
-		ticker := time.NewTicker(10 * time.Second)
-		defer ticker.Stop()
-		for range ticker.C {
-			if s.stopTunnelRefresh {
-				return
-			}
-			if err := s.checkAndStartSSHTunnel(); err != nil {
-				log.Printf("Failed to check and start SSH tunnel: %v", err)
-			}
-		}
-	}()
-}
-
-func (s *EKSTestSuite) checkAndStartSSHTunnel() error {
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", s.tunnelSocksPort))
-	if err != nil {
-		return nil
-	}
-	listener.Close()
-	s.sshTunnelCmd, err = utils.StartSSHSocks5Tunnel(s.jumphostIP, s.jumphostPrivateKey, s.tunnelSocksPort)
-	return err
 }
 
 func (s *EKSTestSuite) TearDownTest() {
-	s.stopTunnelRefresh = true
-	if s.sshTunnelCmd != nil && s.sshTunnelCmd.Process != nil {
-		if err := s.sshTunnelCmd.Process.Kill(); err != nil {
-			s.NoError(err, "Failed to stop ssh tunnel")
-		}
-	}
+	s.sshTunnelCheckTicker.Stop()
 	if err := utils.DeleteVPCWithEndpoints(s.T(), s.name, []string{"ec2"}); err != nil {
 		s.NoError(err, "Failed to delete VPC")
 		return
 	}
 	terratest_aws.EmptyS3Bucket(s.T(), utils.DefaultTestRegion, s.name)
 	terratest_aws.DeleteS3Bucket(s.T(), utils.DefaultTestRegion, s.name)
+	privateKeyFileName := fmt.Sprintf("/tmp/%s-jumphost-key.pem", s.name)
+	sshConfigFileName := fmt.Sprintf("/tmp/%s-ssh-config.txt", s.name)
+	if err := os.Remove(privateKeyFileName); err != nil && !os.IsNotExist(err) {
+		s.T().Logf("Failed to remove private key file %s: %v", privateKeyFileName, err)
+	}
+	if err := os.Remove(sshConfigFileName); err != nil && !os.IsNotExist(err) {
+		s.T().Logf("Failed to remove SSH config file %s: %v", sshConfigFileName, err)
+	}
 }
 
 func (s *EKSTestSuite) TestApplyingModule() {
