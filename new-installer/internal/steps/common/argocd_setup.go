@@ -47,7 +47,14 @@ func (s *ArgoCDStep) ConfigStep(ctx context.Context, config config.OrchInstaller
 
 func (s *ArgoCDStep) PreStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	// no-op for now
-	argocdValues(config)
+	err := argocdValues(config)
+	fmt.Printf("Error installing Argocd %v \n", err)
+	if err != nil {
+		return runtimeState, &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeInternal,
+			ErrorMsg:  fmt.Sprintf("Error installing Argocd %v \n", err),
+		}
+	}
 	return runtimeState, nil
 }
 
@@ -85,12 +92,14 @@ func addArgoHelmRepo() error {
 	argocdHelmVersion := "8.0.0"
 	argocdPath := "/tmp/argo-cd/"
 	if err := os.RemoveAll(filepath.Join(argocdPath, "argo-cd")); err != nil {
+		fmt.Println("Failed to remove file:", err)
 		return err
 	}
 	cmd := exec.Command("helm", "repo", "add", "argo-helm", "https://argoproj.github.io/argo-helm", "--force-update")
 	cmd.Stdout = nil // or os.Stdout to print output
 	cmd.Stderr = nil // or os.Stderr to print errors
 	if err := cmd.Run(); err != nil {
+		fmt.Println("Failed to add argo-helm repo:", err)
 		return fmt.Errorf("failed to add argo-helm repo: %v", err)
 	}
 
