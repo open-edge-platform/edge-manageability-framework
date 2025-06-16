@@ -28,9 +28,9 @@ We report hereafter the affected components and teams:
 
 To perform the A/B upgrade procedure for an immutable Microvisor OS, follow the steps below:
 
-**Step 1:** Admin logs in to the EMT-S EN and executes the script located at `/etc/scripts/os-update.sh`. This script is responsible for initiating the OS update process.
+**Step 1:** Admin logs in to the EMT-S EN and executes the script located at `/etc/cloud/os-update.sh`. This script is responsible for initiating the OS update process.
 
-**Step 2:** `/etc/scripts/os-update.sh` requires two arguments:
+**Step 2:** `/etc/cloud/os-update.sh` requires two arguments:
 
 - The URL or USB mount path where the desired OS image is located.
 - The URL or USB mount path for the SHA file corresponding to the OS image, which is used for integrity verification.
@@ -43,7 +43,7 @@ To perform the A/B upgrade procedure for an immutable Microvisor OS, follow the 
 - URL Command:
   `os-update.sh -u <url_to_microvisor_os_image> <url_to_sha_file>`
 
-**Step 3:** The script `/etc/scripts/os-update.sh` calls another script `/usr/bin/os-update-tool.sh` to perform the actual update procedure.
+**Step 3:** The script `/etc/cloud/os-update.sh` calls another script `/usr/bin/os-update-tool.sh` to perform the actual update procedure.
 
 - Execute the update tool script with the write command to write into the inactive partition:  
   `os-update-tool.sh -w -u <file_path_to_EMT_image> -s <check_sum_value>`
