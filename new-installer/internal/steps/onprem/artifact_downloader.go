@@ -7,13 +7,15 @@ package onprem
 import (
 	"context"
 	"fmt"
-	"io"
 	"net/url"
 	"os"
 	"os/exec"
 
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
+	"oras.land/oras-go/v2"
+	"oras.land/oras-go/v2/content/file"
+	"oras.land/oras-go/v2/registry/remote"
 	// oras "oras.land/oras-go/v2"
 	// "oras.land/oras-go/v2/content/file"
 	// "oras.land/oras-go/v2/registry/remote"
@@ -33,7 +35,6 @@ const (
 	rke2LibSHAFile     = "sha256sum-amd64.txt"
 	rke2ImagesUrl      = "https://github.com/rancher/rke2/releases/download"
 	rke2InstallerUrl   = "https://get.rke2.io"
-	rke2ImagesDir      = "/var/lib/rancher/rke2/agent/images"
 )
 
 var installerList = []string{
@@ -87,7 +88,7 @@ func (s *ArtifactDownloader) RunStep(ctx context.Context, config config.OrchInst
 
 		fmt.Println("Created directories for installers")
 
-		if err := downloadImages(ctx, INSTALLERS_DIR); err != nil {
+		if err := downloadRKE2Images(ctx, INSTALLERS_DIR); err != nil {
 			return runtimeState, &internal.OrchInstallerError{
 				ErrorMsg:  fmt.Sprintf("failed to download RKE2 artifacts: %s", err),
 				ErrorCode: internal.OrchInstallerErrorCodeInternal,
@@ -96,32 +97,14 @@ func (s *ArtifactDownloader) RunStep(ctx context.Context, config config.OrchInst
 
 		fmt.Println("RKE2 images and install script downloaded successfully")
 
-		if err := createImagesDir(rke2ImagesDir); err != nil {
+		if err := downloadArtifacts(ctx, RS_URL, INSTALLERS_RS_PATH, ORCH_VERSION, INSTALLERS_DIR, installerList); err != nil {
 			return runtimeState, &internal.OrchInstallerError{
-				ErrorMsg:  fmt.Sprintf("failed to create RKE2 images dir %s: %s", rke2ImagesDir, err),
 				ErrorCode: internal.OrchInstallerErrorCodeInternal,
+				ErrorMsg:  fmt.Sprintf("failed to download installers: %s", err),
 			}
 		}
 
-		fmt.Println("RKE2 images directory created successfully")
-
-		if err := copyImages(ctx, INSTALLERS_DIR, rke2ImagesDir); err != nil {
-			return runtimeState, &internal.OrchInstallerError{
-				ErrorMsg:  fmt.Sprintf("failed to copy RKE2 images to %s: %s", rke2ImagesDir, err),
-				ErrorCode: internal.OrchInstallerErrorCodeInternal,
-			}
-		}
-
-		fmt.Println("RKE2 images copied successfully")
-
-		// if err := downloadArtifacts(ctx, RS_URL, INSTALLERS_RS_PATH, ORCH_VERSION, INSTALLERS_DIR, installerList); err != nil {
-		// 	return runtimeState, &internal.OrchInstallerError{
-		// 		ErrorCode: internal.OrchInstallerErrorCodeInternal,
-		// 		ErrorMsg:  fmt.Sprintf("failed to download installers: %s", err),
-		// 	}
-		// }
-
-		// fmt.Println("Downloaded installers successfully")
+		fmt.Println("Downloaded installers successfully")
 	}
 
 	return runtimeState, nil
@@ -131,30 +114,30 @@ func (s *ArtifactDownloader) PostStep(ctx context.Context, config config.OrchIns
 	return runtimeState, prevStepError
 }
 
-// func downloadArtifacts(ctx context.Context, registryUrl, registryPath, orchVersion, artifactDir string, artifactList []string) error {
-// 	fileStore, err := file.New(artifactDir)
-// 	if err != nil {
-// 		return fmt.Errorf("failed to create file store: %w", err)
-// 	}
-// 	defer fileStore.Close()
+func downloadArtifacts(ctx context.Context, registryUrl, registryPath, orchVersion, artifactDir string, artifactList []string) error {
+	fileStore, err := file.New(artifactDir)
+	if err != nil {
+		return fmt.Errorf("failed to create file store: %w", err)
+	}
+	defer fileStore.Close()
 
-// 	for _, artifact := range artifactList {
-// 		fmt.Println("downloading artifact: " + artifact)
-// 		repo, err := remote.NewRepository(registryUrl + "/" + registryPath + "/" + artifact)
-// 		if err != nil {
-// 			return fmt.Errorf("failed to create repository for %s: %w", artifact, err)
-// 		}
+	for _, artifact := range artifactList {
+		fmt.Println("downloading artifact: " + artifact)
+		repo, err := remote.NewRepository(registryUrl + "/" + registryPath + "/" + artifact)
+		if err != nil {
+			return fmt.Errorf("failed to create repository for %s: %w", artifact, err)
+		}
 
-// 		manifestDescriptor, err := oras.Copy(ctx, repo, orchVersion, fileStore, orchVersion, oras.DefaultCopyOptions)
-// 		if err != nil {
-// 			return fmt.Errorf("failed to copy artifact %s: %w", artifact, err)
-// 		}
-// 		fmt.Println("manifest descriptor:", manifestDescriptor)
-// 	}
-// 	return nil
-// }
+		manifestDescriptor, err := oras.Copy(ctx, repo, orchVersion, fileStore, orchVersion, oras.DefaultCopyOptions)
+		if err != nil {
+			return fmt.Errorf("failed to copy artifact %s: %w", artifact, err)
+		}
+		fmt.Println("manifest descriptor:", manifestDescriptor)
+	}
+	return nil
+}
 
-func downloadImages(ctx context.Context, artifactDir string) error {
+func downloadRKE2Images(ctx context.Context, artifactDir string) error {
 	fmt.Println("Downloading RKE2 images and install script...")
 	rke2VersionEscaped := url.QueryEscape(rke2Version)
 
@@ -182,46 +165,6 @@ func downloadImages(ctx context.Context, artifactDir string) error {
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to download install script: %w", err)
-	}
-
-	return nil
-}
-
-func createImagesDir(imagesDir string) error {
-
-	// Create the images directory if it doesn't exist
-	if err := os.MkdirAll(imagesDir, 0o755); err != nil {
-		return fmt.Errorf("failed to create images directory: %w", err)
-	}
-
-	return nil
-}
-
-func copyImages(ctx context.Context, source, destination string) error {
-
-	// List of images to copy
-	for _, image := range []string{
-		rke2ImagesPkg,
-		rke2CalicoImagePkg,
-	} {
-		src := fmt.Sprintf("%s/%s", source, image)
-		dst := fmt.Sprintf("%s/%s", destination, image)
-
-		input, err := os.Open(src)
-		if err != nil {
-			return fmt.Errorf("failed to open source image %s: %w", src, err)
-		}
-		defer input.Close()
-
-		output, err := os.Create(dst)
-		if err != nil {
-			return fmt.Errorf("failed to create destination image %s: %w", dst, err)
-		}
-		defer output.Close()
-
-		if _, err := io.Copy(output, input); err != nil {
-			return fmt.Errorf("failed to copy image from %s to %s: %w", src, dst, err)
-		}
 	}
 
 	return nil
