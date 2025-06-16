@@ -38,6 +38,7 @@ type TerraformUtilityInput struct {
 	TerraformState     string
 	LogFile            string
 	KeepGeneratedFiles bool
+	Targets            []string // Optional, used only for destroy specific resource
 }
 
 type TerraformUtilityOutput struct {
@@ -121,6 +122,7 @@ func CreateTerraformUtility(terraformCommandPath string) (TerraformUtility, *int
 	}, nil
 }
 
+//nolint:gocyclo,maintidx
 func (tfUtil *terraformUtilityImpl) Run(ctx context.Context, input TerraformUtilityInput) (TerraformUtilityOutput, *internal.OrchInstallerError) {
 	logger := internal.Logger()
 	validationErr := validateInput(input)
@@ -230,9 +232,18 @@ func (tfUtil *terraformUtilityImpl) Run(ctx context.Context, input TerraformUtil
 			ErrorMsg:  fmt.Sprintf("failed to create file log writer: %v", err),
 		}
 	}
+
 	if input.Action == "install" || input.Action == "upgrade" {
 		logger.Debugf("Applying Terraform with variables file: %s", variableFilePath)
-		err = tf.ApplyJSON(ctx, fileLogWriter, tfexec.VarFile(variableFilePath))
+		options := []tfexec.ApplyOption{
+			tfexec.VarFile(variableFilePath),
+		}
+		for _, target := range input.Targets {
+			if target != "" {
+				options = append(options, tfexec.Target(target))
+			}
+		}
+		err = tf.ApplyJSON(ctx, fileLogWriter, options...)
 		if err != nil {
 			return TerraformUtilityOutput{}, &internal.OrchInstallerError{
 				ErrorCode: internal.OrchInstallerErrorCodeTerraform,
@@ -242,7 +253,17 @@ func (tfUtil *terraformUtilityImpl) Run(ctx context.Context, input TerraformUtil
 		logger.Debugf("Terraform applied successfully")
 	} else if input.Action == "uninstall" {
 		logger.Debugf("Destroying Terraform with variables file: %s", variableFilePath)
-		err = tf.DestroyJSON(ctx, fileLogWriter, tfexec.VarFile(variableFilePath), tfexec.Refresh(false))
+		options := []tfexec.DestroyOption{
+			tfexec.VarFile(variableFilePath),
+			tfexec.Refresh(false),
+		}
+		for _, target := range input.Targets {
+			if target != "" {
+				options = append(options, tfexec.Target(target))
+			}
+		}
+
+		err = tf.DestroyJSON(ctx, fileLogWriter, options...)
 		if err != nil {
 			return TerraformUtilityOutput{}, &internal.OrchInstallerError{
 				ErrorCode: internal.OrchInstallerErrorCodeTerraform,

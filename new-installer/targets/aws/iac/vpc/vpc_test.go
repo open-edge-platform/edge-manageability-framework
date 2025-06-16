@@ -55,7 +55,11 @@ func (s *VPCTestSuite) TestApplyingModule() {
 				CidrBlock: "10.250.4.0/24",
 			},
 		},
-		EndpointSGName:         "test-vpc-" + randomPostfix + "-ep-sg",
+		EndpointSGName: "test-vpc-" + randomPostfix + "-ep-sg",
+		Endpoints: []string{
+			"elasticfilesystem",
+			"s3",
+		},
 		JumphostIPAllowList:    []string{"10.0.0.0/16"},
 		JumphostInstanceSSHKey: publicSSHKey,
 		JumphostSubnet:         "public-subnet-1",

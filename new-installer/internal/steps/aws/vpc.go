@@ -288,6 +288,23 @@ func (s *VPCStep) PreStep(ctx context.Context, config config.OrchInstallerConfig
 		}
 	}
 
+	_, destroyErr := s.TerraformUtility.Run(ctx, steps.TerraformUtilityInput{
+		Action:             "uninstall",
+		ModulePath:         modulePath,
+		Variables:          s.variables,
+		BackendConfig:      s.backendConfig,
+		LogFile:            filepath.Join(runtimeState.LogDir, "aws_vpc.log"),
+		KeepGeneratedFiles: s.KeepGeneratedFiles,
+		Targets:            []string{"aws_security_group_rule.jumphost_egress_https"},
+	})
+
+	if destroyErr != nil {
+		return runtimeState, &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeInternal,
+			ErrorMsg:  fmt.Sprintf("failed to destroy old security group rule: %v", destroyErr),
+		}
+	}
+
 	return runtimeState, nil
 }
 
