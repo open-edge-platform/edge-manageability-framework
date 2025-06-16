@@ -38,6 +38,7 @@ type TerraformUtilityInput struct {
 	TerraformState     string
 	LogFile            string
 	KeepGeneratedFiles bool
+	DestroyTarget      string // Optional, used only for destroy specific resource
 }
 
 type TerraformUtilityOutput struct {
@@ -121,6 +122,7 @@ func CreateTerraformUtility(terraformCommandPath string) (TerraformUtility, *int
 	}, nil
 }
 
+//nolint:gocyclo,maintidx
 func (tfUtil *terraformUtilityImpl) Run(ctx context.Context, input TerraformUtilityInput) (TerraformUtilityOutput, *internal.OrchInstallerError) {
 	logger := internal.Logger()
 	validationErr := validateInput(input)
@@ -242,7 +244,12 @@ func (tfUtil *terraformUtilityImpl) Run(ctx context.Context, input TerraformUtil
 		logger.Debugf("Terraform applied successfully")
 	} else if input.Action == "uninstall" {
 		logger.Debugf("Destroying Terraform with variables file: %s", variableFilePath)
-		err = tf.DestroyJSON(ctx, fileLogWriter, tfexec.VarFile(variableFilePath), tfexec.Refresh(false))
+		if input.DestroyTarget != "" {
+			logger.Debugf("Destroying only specific resource: %s", input.DestroyTarget)
+			err = tf.DestroyJSON(ctx, fileLogWriter, tfexec.VarFile(variableFilePath), tfexec.Refresh(false), tfexec.Target(input.DestroyTarget))
+		} else {
+			err = tf.DestroyJSON(ctx, fileLogWriter, tfexec.VarFile(variableFilePath), tfexec.Refresh(false))
+		}
 		if err != nil {
 			return TerraformUtilityOutput{}, &internal.OrchInstallerError{
 				ErrorCode: internal.OrchInstallerErrorCodeTerraform,
