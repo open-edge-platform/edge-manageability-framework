@@ -13,7 +13,7 @@ description: "NGINX"
 
 # CLI tool will look up registry by name and convert to an ID.
 
-helmRegistry: "bitnami"
+helmRegistry: "bitnami-helm-oci"
 chartName: "nginx"
 chartVersion: "15.9.3"
 

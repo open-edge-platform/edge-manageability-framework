@@ -9,18 +9,27 @@ import (
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps"
 	onpremSteps "github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps/onprem"
+<<<<<<< argo_installer
 	commonSteps "github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps/common"
 )
 
 func CreateOnPremStages(rootPath string, keepGeneratedFiles bool, orchConfigReaderWriter config.OrchConfigReaderWriter) ([]internal.OrchInstallerStage, error) {
 
+=======
+)
+
+func CreateOnPremStages(rootPath string, keepGeneratedFiles bool, orchConfigReaderWriter config.OrchConfigReaderWriter) ([]internal.OrchInstallerStage, error) {
+>>>>>>> main
 	var preInfraStage, infraStage, orchStage internal.OrchInstallerStage
 
 	preInfraStage = NewOnPremStage(
 		"PreInfra",
 		[]steps.OrchInstallerStep{
 			onpremSteps.CreateGenericStep(rootPath, keepGeneratedFiles, orchConfigReaderWriter),
+<<<<<<< argo_installer
 			commonSteps.CreateGenericStep(rootPath, keepGeneratedFiles, orchConfigReaderWriter),
+=======
+>>>>>>> main
 		},
 		[]string{"pre-infra"},
 		orchConfigReaderWriter,

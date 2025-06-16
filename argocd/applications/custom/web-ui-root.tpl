@@ -37,6 +37,8 @@ api:
   metadataBroker: "https://api.{{ .Values.argo.clusterDomain }}"
   alertManager: "https://api.{{ .Values.argo.clusterDomain }}"
   tenantManager: "https://api.{{ .Values.argo.clusterDomain }}"
+  rps: "https://api.{{ .Values.argo.clusterDomain }}"
+  mps: "https://api.{{ .Values.argo.clusterDomain }}"
 
 {{- with .Values.argo.resources.webUiRoot }}
 resources:
