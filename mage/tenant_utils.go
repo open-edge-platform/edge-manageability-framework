@@ -29,8 +29,8 @@ import (
 
 const (
 	KeycloakRealm  = "master"
-	defaultOrg     = "sample-org"
-	defaultProject = "sample-project"
+	defaultOrg     = "pkimak-org"
+	defaultProject = "pkimak-project"
 )
 
 // CreateDefaultMtSetup creates one Org, one Project, one Project admin, CO and Edge Infrastructure Manager users in the Project.
