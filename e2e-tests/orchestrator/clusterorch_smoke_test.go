@@ -324,7 +324,7 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 			Expect(len(*templateList.TemplateInfoList)).To(BeNumerically(">=", 3), "expecting n cluster templates")
 			for _, ctpl := range *templateList.TemplateInfoList {
 				Expect(ctpl.Controlplaneprovidertype).ToNot(BeNil(), "checking if controlplane provider type is not nil for cluster template %s", ctpl.Name)
-				Expect(*ctpl.Controlplaneprovidertype).To(Equal(cm.Rke2), "verifying the control plane provider type for cluster template %s", ctpl.Name)
+				Expect(*ctpl.Controlplaneprovidertype).To(Or(Equal(cm.Rke2), Equal(cm.K3s)), "verifying the control plane provider type for cluster template %s", ctpl.Name)
 			}
 		})
 	})
