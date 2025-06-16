@@ -16,9 +16,6 @@ import (
 	"oras.land/oras-go/v2"
 	"oras.land/oras-go/v2/content/file"
 	"oras.land/oras-go/v2/registry/remote"
-	// oras "oras.land/oras-go/v2"
-	// "oras.land/oras-go/v2/content/file"
-	// "oras.land/oras-go/v2/registry/remote"
 )
 
 const (
