@@ -22,6 +22,7 @@ output "password" {
   value     = jsondecode(data.aws_secretsmanager_secret_version.rds_master_password.secret_string)["password"]
   sensitive = true
 }
+
 output "password_id" {
   value     = data.aws_secretsmanager_secret.rds_master_password.id
 }
