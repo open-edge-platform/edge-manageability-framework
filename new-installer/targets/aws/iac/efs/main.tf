@@ -72,13 +72,12 @@ resource "aws_security_group" "allow_nfs" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "allow_nfs" {
-  for_each          = data.aws_vpc.main.cidr_block
   security_group_id = aws_security_group.allow_nfs.id
   from_port         = 2049
   to_port           = 2049
   ip_protocol       = "tcp"
-  cidr_ipv4         = each.value
-  description       = "Allow NFS traffic from VPC from ${each.value}"
+  cidr_ipv4         = data.aws_vpc.main.cidr_block
+  description       = "Allow NFS traffic from VPC from ${data.aws_vpc.main.cidr_block}"
 }
 
 # EFS
