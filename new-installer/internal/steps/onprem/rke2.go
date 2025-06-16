@@ -7,7 +7,7 @@ package onprem
 import (
 	"context"
 	"fmt"
-	"net/url"
+	//"net/url"
 	"os"
 	"os/exec"
 	"os/user"
@@ -16,14 +16,6 @@ import (
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 )
 
-const (
-	rke2Version          = "v1.30.10+rke2r1"
-	rke2Binary           = "rke2.linux-amd64.tar.gz"
-	rke2ImagesPkg        = "rke2-images.linux-amd64.tar.zst"
-	rke2CalicoImagePkg   = "rke2-images-calico.linux-amd64.tar.zst"
-	rke2LibSHAFile       = "sha256sum-amd64.txt"
-	rke2DownloadBasePath = "https://github.com/rancher/rke2/releases/download"
-)
 
 type Rke2Step struct {
 	RootPath               string
@@ -74,14 +66,6 @@ func (s *Rke2Step) RunStep(ctx context.Context, config config.OrchInstallerConfi
 			}
 		}
 
-		// if err := downloadRKE2(); err != nil {
-		// 	return runtimeState, &internal.OrchInstallerError{
-		// 		ErrorMsg:  fmt.Sprintf("failed to download RKE2: %s", err),
-		// 		ErrorCode: internal.OrchInstallerErrorCodeInternal,
-		// 	}
-		// }
-		// fmt.Println("RKE2 images and install script downloaded successfully")
-
 		if err := installRKE2(INSTALLERS_DIR, dockerUsername, dockerPassword, currentUser.Username); err != nil {
 			return runtimeState, &internal.OrchInstallerError{
 				ErrorMsg:  fmt.Sprintf("failed to install RKE2: %s", err),
@@ -95,45 +79,6 @@ func (s *Rke2Step) RunStep(ctx context.Context, config config.OrchInstallerConfi
 
 func (s *Rke2Step) PostStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState, prevStepError *internal.OrchInstallerError) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	return runtimeState, prevStepError
-}
-
-func downloadRKE2() error {
-	fmt.Println("Downloading RKE2 images and install script...")
-	imagesDir := "./installers/"
-	if err := os.MkdirAll(imagesDir, 0o755); err != nil {
-		return fmt.Errorf("failed to create images directory: %w", err)
-	}
-
-	rke2VersionEscaped := url.QueryEscape(rke2Version)
-
-	for _, image := range []string{
-		rke2Binary,
-		rke2ImagesPkg,
-		rke2CalicoImagePkg,
-		rke2LibSHAFile,
-	} {
-		rke2DownloadURL := fmt.Sprintf("%s/%s/%s", rke2DownloadBasePath, rke2VersionEscaped, image)
-		fmt.Printf("Downloading RKE2 from %s\n", rke2DownloadURL)
-		cmd := exec.Command("curl", "-L", rke2DownloadURL, "-o", fmt.Sprintf("%s/%s", imagesDir, image))
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("failed to download RKE2 image %s: %w", image, err)
-		}
-	}
-
-	// Download the RKE2 install script
-	installScriptURL := "https://get.rke2.io"
-	fmt.Printf("Downloading RKE2 install script from %s\n", installScriptURL)
-	cmd := exec.Command("curl", "-sfL", installScriptURL, "-o", fmt.Sprintf("%s/%s", imagesDir, "install.sh"))
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to download install script: %w", err)
-	}
-
-	fmt.Println("RKE2 images and install script downloaded successfully")
-	return nil
 }
 
 func installRKE2(debDirName, dockerUsername, dockerPassword, currentUser string) error {

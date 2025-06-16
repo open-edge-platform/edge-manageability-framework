@@ -27,7 +27,7 @@ func CreateOnPremStages(rootPath string, keepGeneratedFiles bool, orchConfigRead
 		"Infra",
 		[]steps.OrchInstallerStep{
 			onpremSteps.CreateArtifactDownloader(rootPath, keepGeneratedFiles, orchConfigReaderWriter),
-			onpremSteps.CreateRke2Step(rootPath, keepGeneratedFiles, orchConfigReaderWriter),
+			//onpremSteps.CreateRke2Step(rootPath, keepGeneratedFiles, orchConfigReaderWriter),
 		},
 		[]string{"infra"},
 		orchConfigReaderWriter,
