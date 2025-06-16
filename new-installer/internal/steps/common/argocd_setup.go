@@ -8,9 +8,11 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	"context"
 
+	"github.com/bitfield/script"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 )
@@ -80,7 +82,28 @@ func (s *ArgoCDStep) PostStep(ctx context.Context, config config.OrchInstallerCo
 	return runtimeState, prevStepError
 }
 
+func addArgoHelmRepo() error {
+	argocdHelmVersion := "8.0.0"
+	argocdPath := "/tmp/argo-cd/"
+	if err := os.RemoveAll(filepath.Join(argocdPath, "argo-cd")); err != nil {
+		return err
+	}
+	cmd := exec.Command("helm", "repo", "add", "argo-helm", "https://argoproj.github.io/argo-helm", "--force-update")
+	cmd.Stdout = nil // or os.Stdout to print output
+	cmd.Stderr = nil // or os.Stderr to print errors
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to add argo-helm repo: %v", err)
+	}
+
+	cmd_str := fmt.Sprintf("helm fetch argo-helm/argo-cd --version %v --untar --untardir %v", argocdHelmVersion, argocdPath)
+	if _, err := script.Exec(cmd_str).Stdout(); err != nil {
+		return fmt.Errorf("failed to fetch argo-cd chart: %w", err)
+	}
+	return nil
+}
+
 func InstallArgoCD() error {
+
 	// Print ASCII art
 	fmt.Println(`
      _                     ____ ____
@@ -93,7 +116,7 @@ func InstallArgoCD() error {
 
 	// Run helm template
 	helmTemplateCmd := exec.Command(
-		"helm", "template", "-s", "templates/values.tmpl", "/tmp/argo-cd/argo-cd/",
+		"helm", "template", "-s", "templates/values.tmpl", "/tmp/argo-cd/argo-cd",
 		"--values", "/tmp/argo-cd/proxy-values.yaml",
 	)
 
@@ -110,7 +133,7 @@ func InstallArgoCD() error {
 	if err := os.Remove("/tmp/argo-cd/argo-cd/templates/values.tmpl"); err != nil {
 		return fmt.Errorf("failed to remove values.tmpl: %v", err)
 	}
-	fmt.Println(`JOHN HERE`)
+
 	// Write mounts.yaml
 	mountsYaml := `
 notifications:
@@ -186,7 +209,11 @@ applicationSet:
 	return nil
 }
 
-func argocdValues(config config.OrchInstallerConfig) {
+func argocdValues(config config.OrchInstallerConfig) error {
+	err := addArgoHelmRepo()
+	if err != nil {
+		return fmt.Errorf("failed to add helm template: %v", err)
+	}
 	valuesFile := `
 server:
   service:
@@ -252,5 +279,5 @@ dex:
 		// return fmt.Errorf("failed to write proxy-values.yaml: %v", err)
 		fmt.Printf("failed to write proxy-values.yaml: %v\n", err)
 	}
-
+	return nil
 }
