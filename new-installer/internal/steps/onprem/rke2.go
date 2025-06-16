@@ -55,6 +55,23 @@ func (s *Rke2Step) PreStep(ctx context.Context, config config.OrchInstallerConfi
 }
 
 func (s *Rke2Step) RunStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+	if runtimeState.Action == "uninstall" {
+		fmt.Println("Running RKE2 uninstallation step")
+		// Stop RKE2 service
+		if err := exec.Command("sudo", "/usr/local/bin/rke2-killall.sh").Run(); err != nil {
+			// Upon failure, just log the error and continue
+			fmt.Printf("Failed to stop RKE2 service(may not be running), continuing with uninstall...: %s\n", err)
+		}
+
+		// Remove RKE2 service
+		if err := exec.Command("sudo", "/usr/local/bin/rke2-uninstall.sh").Run(); err != nil {
+			return runtimeState, &internal.OrchInstallerError{
+				ErrorMsg:  fmt.Sprintf("failed to disable RKE2 service: %s", err),
+				ErrorCode: internal.OrchInstallerErrorCodeInternal,
+			}
+		}
+	}
+
 	if runtimeState.Action == "install" {
 		fmt.Println("Running RKE2 installation step")
 
@@ -71,13 +88,17 @@ func (s *Rke2Step) RunStep(ctx context.Context, config config.OrchInstallerConfi
 				}
 			}
 
-			if err := installRKE2(INSTALLERS_DIR, dockerUsername, dockerPassword, currentUser.Username); err != nil {
+			var kubeConfig string
+			if kubeConfig, err = installRKE2(INSTALLERS_DIR, dockerUsername, dockerPassword, currentUser.Username); err != nil {
 				return runtimeState, &internal.OrchInstallerError{
 					ErrorMsg:  fmt.Sprintf("failed to install RKE2: %s", err),
 					ErrorCode: internal.OrchInstallerErrorCodeInternal,
 				}
 			}
+
+			runtimeState.Onprem.KubeConfig = kubeConfig
 			fmt.Println("RKE2 installation completed successfully")
+
 		} else {
 
 			if err := installRKE2New(ctx, INSTALLERS_DIR); err != nil {
@@ -94,7 +115,6 @@ func (s *Rke2Step) RunStep(ctx context.Context, config config.OrchInstallerConfi
 					ErrorCode: internal.OrchInstallerErrorCodeInternal,
 				}
 			}
-
 			fmt.Println("RKE2 images directory created successfully")
 
 			if err := copyRKE2Images(INSTALLERS_DIR, rke2ImagesDir); err != nil {
@@ -116,6 +136,7 @@ func (s *Rke2Step) RunStep(ctx context.Context, config config.OrchInstallerConfi
 			fmt.Println("RKE2 service enabled and started successfully")
 		}
 	}
+
 	return runtimeState, nil
 }
 
@@ -209,9 +230,10 @@ func enableRKE2Service(ctx context.Context) error {
 	return nil
 }
 
-func installRKE2(debDirName, dockerUsername, dockerPassword, currentUser string) error {
+func installRKE2(debDirName, dockerUsername, dockerPassword, currentUser string) (string, error) {
 	fmt.Println("Installing RKE2...")
 	var cmd *exec.Cmd
+	var kubeconfig string
 	if dockerUsername != "" && dockerPassword != "" {
 		fmt.Println("Docker credentials provided. Installing RKE2 with Docker credentials")
 		cmd = exec.Command("sudo", "env",
@@ -231,23 +253,33 @@ func installRKE2(debDirName, dockerUsername, dockerPassword, currentUser string)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to install RKE2: %w", err)
+		return "", fmt.Errorf("failed to install RKE2: %w", err)
 	}
 	fmt.Println("OS level configuration installed and RKE2 Installed")
 
 	kubeDir := fmt.Sprintf("/home/%s/.kube", currentUser)
 	if err := os.MkdirAll(kubeDir, 0o700); err != nil {
-		return fmt.Errorf("failed to create kube dir: %w", err)
+		return "", fmt.Errorf("failed to create kube dir: %w", err)
 	}
-	if err := exec.Command("sudo", "cp", "/etc/rancher/rke2/rke2.yaml", fmt.Sprintf("%s/config", kubeDir)).Run(); err != nil {
-		return fmt.Errorf("failed to copy kube config: %w", err)
+
+	rke2ConfigPath := "/etc/rancher/rke2/rke2.yaml"
+	if err := exec.Command("sudo", "cp", rke2ConfigPath, fmt.Sprintf("%s/config", kubeDir)).Run(); err != nil {
+		return "", fmt.Errorf("failed to copy kube config: %w", err)
 	}
+	// Read config file from /etc/rancher/rke2/rke2.yaml and store the value as string in a variable
+
+	rke2ConfigBytes, err := os.ReadFile(rke2ConfigPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read RKE2 config file %s: %s", rke2ConfigPath, err)
+	}
+	kubeconfig = string(rke2ConfigBytes)
+
 	if err := exec.Command("sudo", "chown", "-R", fmt.Sprintf("%s:%s", currentUser, currentUser), kubeDir).Run(); err != nil {
-		return fmt.Errorf("failed to chown kube dir: %w", err)
+		return "", fmt.Errorf("failed to chown kube dir: %w", err)
 	}
 	if err := exec.Command("sudo", "chmod", "600", fmt.Sprintf("%s/config", kubeDir)).Run(); err != nil {
-		return fmt.Errorf("failed to chmod kube config: %w", err)
+		return "", fmt.Errorf("failed to chmod kube config: %w", err)
 	}
 	os.Setenv("KUBECONFIG", fmt.Sprintf("/home/%s/.kube/config", currentUser))
-	return nil
+	return kubeconfig, nil
 }
