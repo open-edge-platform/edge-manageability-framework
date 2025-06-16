@@ -66,11 +66,16 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            if (!${{ contains(github.event.pull_request.labels.*.name, 'run-iac-tests') }}) {
-              core.setFailed('run-iac-tests label is not set on the PR. This label is required to execute the IAC tests and qualify the PR to merge.');
+            if (github.event_name === 'pull_request') {
+              const labels = github.event.pull_request.labels.map(label => label.name);
+              if (!labels.includes('run-iac-tests')) {
+                core.setFailed('run-iac-tests label is not set on the PR. This label is required to execute the IAC tests and qualify the PR to merge.');
+              }
+            } else {
+              core.info('Skipping label check: not a pull_request event (likely merge_group).');
             }
-        if: |
-          needs.check-changed-files.outputs.iac == 'true'
+    if: needs.check-changed-files.outputs.iac == 'true'
+
 
   test-iac:
     permissions:
