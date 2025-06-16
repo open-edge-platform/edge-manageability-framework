@@ -27,7 +27,6 @@ type TerraformUtility interface {
 	Run(ctx context.Context, input TerraformUtilityInput) (TerraformUtilityOutput, *internal.OrchInstallerError)
 	MoveStates(ctx context.Context, input TerraformUtilityMoveStatesInput) *internal.OrchInstallerError
 	RemoveStates(ctx context.Context, input TerraformUtilityRemoveStatesInput) *internal.OrchInstallerError
-	DestroyResource(ctx context.Context, input TerraformUtilityDestroyResourceInput) *internal.OrchInstallerError
 }
 
 type TerraformUtilityInput struct {
@@ -39,6 +38,7 @@ type TerraformUtilityInput struct {
 	TerraformState     string
 	LogFile            string
 	KeepGeneratedFiles bool
+	DestroyTarget      string // Optional, used only for destroy specific resource
 }
 
 type TerraformUtilityOutput struct {
@@ -54,11 +54,6 @@ type TerraformUtilityMoveStatesInput struct {
 type TerraformUtilityRemoveStatesInput struct {
 	ModulePath string
 	States     []string
-}
-
-type TerraformUtilityDestroyResourceInput struct {
-	ModulePath string
-	Resource   string
 }
 
 type TerraformAWSBucketBackendConfig struct {
@@ -127,6 +122,7 @@ func CreateTerraformUtility(terraformCommandPath string) (TerraformUtility, *int
 	}, nil
 }
 
+//nolint:gocyclo,maintidx
 func (tfUtil *terraformUtilityImpl) Run(ctx context.Context, input TerraformUtilityInput) (TerraformUtilityOutput, *internal.OrchInstallerError) {
 	logger := internal.Logger()
 	validationErr := validateInput(input)
@@ -248,7 +244,12 @@ func (tfUtil *terraformUtilityImpl) Run(ctx context.Context, input TerraformUtil
 		logger.Debugf("Terraform applied successfully")
 	} else if input.Action == "uninstall" {
 		logger.Debugf("Destroying Terraform with variables file: %s", variableFilePath)
-		err = tf.DestroyJSON(ctx, fileLogWriter, tfexec.VarFile(variableFilePath), tfexec.Refresh(false))
+		if input.DestroyTarget != "" {
+			logger.Debugf("Destroying only specific resource: %s", input.DestroyTarget)
+			err = tf.DestroyJSON(ctx, fileLogWriter, tfexec.VarFile(variableFilePath), tfexec.Refresh(false), tfexec.Target(input.DestroyTarget))
+		} else {
+			err = tf.DestroyJSON(ctx, fileLogWriter, tfexec.VarFile(variableFilePath), tfexec.Refresh(false))
+		}
 		if err != nil {
 			return TerraformUtilityOutput{}, &internal.OrchInstallerError{
 				ErrorCode: internal.OrchInstallerErrorCodeTerraform,
@@ -350,24 +351,6 @@ func (tfUtil *terraformUtilityImpl) RemoveStates(ctx context.Context, input Terr
 				ErrorCode: internal.OrchInstallerErrorCodeTerraform,
 				ErrorMsg:  fmt.Sprintf("failed to delete terraform state: %v", err),
 			}
-		}
-	}
-	return nil
-}
-
-func (tfUtil *terraformUtilityImpl) DestroyResource(ctx context.Context, input TerraformUtilityDestroyResourceInput) *internal.OrchInstallerError {
-	tf, err := tfexec.NewTerraform(input.ModulePath, tfUtil.ExecPath)
-	if err != nil {
-		return &internal.OrchInstallerError{
-			ErrorCode: internal.OrchInstallerErrorCodeTerraform,
-			ErrorMsg:  fmt.Sprintf("failed to create terraform instance: %v", err),
-		}
-	}
-	err = tf.Destroy(ctx, tfexec.Target(input.Resource))
-	if err != nil {
-		return &internal.OrchInstallerError{
-			ErrorCode: internal.OrchInstallerErrorCodeTerraform,
-			ErrorMsg:  fmt.Sprintf("failed to destroy terraform resource: %v", err),
 		}
 	}
 	return nil

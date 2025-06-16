@@ -62,14 +62,6 @@ func (m *MockTerraformUtility) RemoveStates(ctx context.Context, input steps.Ter
 	return nil
 }
 
-func (m *MockTerraformUtility) DestroyResource(ctx context.Context, input steps.TerraformUtilityDestroyResourceInput) *internal.OrchInstallerError {
-	args := m.Called(ctx, input)
-	if err, ok := args.Get(0).(*internal.OrchInstallerError); ok {
-		return err
-	}
-	return nil
-}
-
 type MockAWSUtility struct {
 	mock.Mock
 }

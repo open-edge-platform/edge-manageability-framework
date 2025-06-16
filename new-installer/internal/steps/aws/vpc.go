@@ -288,10 +288,16 @@ func (s *VPCStep) PreStep(ctx context.Context, config config.OrchInstallerConfig
 		}
 	}
 
-	destroyErr := s.TerraformUtility.DestroyResource(ctx, steps.TerraformUtilityDestroyResourceInput{
-		ModulePath: modulePath,
-		Resource:   "aws_security_group_rule.jumphost_egress_https",
+	_, destroyErr := s.TerraformUtility.Run(ctx, steps.TerraformUtilityInput{
+		Action:             "uninstall",
+		ModulePath:         modulePath,
+		Variables:          s.variables,
+		BackendConfig:      s.backendConfig,
+		LogFile:            filepath.Join(runtimeState.LogDir, "aws_vpc_destroy.log"),
+		KeepGeneratedFiles: s.KeepGeneratedFiles,
+		DestroyTarget:      "aws_security_group_rule.jumphost_egress_https",
 	})
+
 	if destroyErr != nil {
 		return runtimeState, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInternal,

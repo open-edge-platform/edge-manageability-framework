@@ -139,3 +139,45 @@ func (s *TerraformUtilityTest) deleteTerraformFiles() {
 		}
 	}
 }
+
+func (s *TerraformUtilityTest) TestDestroyResource() {
+	tfUtil, initErr := steps.CreateTerraformUtility(s.tfExecPath)
+	if initErr != nil {
+		s.NoError(initErr)
+		return
+	}
+	ctx := context.Background()
+	tfState, err := os.ReadFile(filepath.Join(s.testdataDir, "teststate.json"))
+	s.Require().NoError(err)
+	tfStateJson, err := json.Parser().Unmarshal(tfState)
+	s.Require().NoError(err, "Expected to unmarshal the Terraform state JSON")
+	s.NotNil(tfStateJson["resources"], "Expected resources in the state file")
+	s.Len(tfStateJson["resources"].([]any), 2, "Expected two resources in the state file")
+	s.Equal("res1", tfStateJson["resources"].([]interface{})[0].(map[string]interface{})["name"], "Expected first resource name to be res1")
+	s.Equal("res2", tfStateJson["resources"].([]interface{})[1].(map[string]interface{})["name"], "Expected first resource name to be res2")
+
+	variables := TestTfVariables{
+		Var1: "value1",
+		Var2: 2,
+	}
+
+	output, utilErr := tfUtil.Run(ctx, steps.TerraformUtilityInput{
+		Action:             "uninstall",
+		ModulePath:         s.testdataDir,
+		LogFile:            filepath.Join(s.testdataDir, "terraform.log"),
+		KeepGeneratedFiles: false,
+		Variables:          variables,
+		TerraformState:     string(tfState),
+		DestroyTarget:      "null_resource.res1",
+	})
+	if utilErr != nil {
+		s.NoError(utilErr, "Expected no error while destroying resource")
+		return
+	}
+	tfStateOutput := output.TerraformState
+	tfStateJson, err = json.Parser().Unmarshal([]byte(tfStateOutput))
+	s.Require().NoError(err, "Expected to unmarshal the Terraform state JSON")
+	s.NotNil(tfStateJson["resources"], "Expected resources in the state file")
+	s.Len(tfStateJson["resources"].([]any), 1, "Expected one resources in the state file")
+	s.Equal("res2", tfStateJson["resources"].([]interface{})[0].(map[string]interface{})["name"], "Expected first resource name to be res2")
+}
