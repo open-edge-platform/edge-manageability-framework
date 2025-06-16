@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"github.com/bitfield/script"
-	"github.com/magefile/mage/sh"
 	"github.com/open-edge-platform/edge-manageability-framework/on-prem-installers/mage"
 )
 
@@ -112,10 +111,6 @@ func installSystemConfig() error {
 		return err
 	}
 
-	if err := configModules(); err != nil {
-		return err
-	}
-
 	fmt.Println("OnPrem OS configure completed!")
 	return nil
 }
@@ -133,30 +128,6 @@ func privateCmdExcute(cmdline string) error {
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("error executing %s commands: %w", cmdline, err)
 	}
-	return nil
-}
-
-// Enable kernel modules required for LV snapshots
-func configModules() error {
-	fmt.Println("config kernel modules...")
-
-	mods, err := os.OpenFile("/etc/modules-load.d/lv-snapshots.conf", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o644)
-	if err != nil {
-		return err
-	}
-	defer mods.Close()
-
-	if _, err = mods.WriteString("dm-snapshot\ndm-mirror\n"); err != nil {
-		return err
-	}
-
-	if err = sh.RunV("modprobe", "dm-snapshot"); err != nil {
-		return err
-	}
-	if err = sh.RunV("modprobe", "dm-mirror"); err != nil {
-		return err
-	}
-
 	return nil
 }
 

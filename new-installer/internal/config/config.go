@@ -41,7 +41,8 @@ type OrchInstallerRuntimeState struct {
 	// Used for state and o11y bucket prefix. lowercase or digit
 	DeploymentID     string `yaml:"deploymentID"`
 	StateBucketState string `yaml:"stateBucketState"` // The state S3 bucket Terraform state
-	// Move runtime state here?
+
+	// AWS specific states
 	AWS struct {
 		KubeConfig               string   `yaml:"kubeConfig"`
 		CacheRegistry            string   `yaml:"cacheRegistry"`
@@ -59,6 +60,15 @@ type OrchInstallerRuntimeState struct {
 		Traefik2SecurityGroupID  string   `yaml:"traefik2SecurityGroupID"`
 		ArgoCDSecurityGroupID    string   `yaml:"argoCDSecurityGroupID"`
 	} `yaml:"aws,omitempty"`
+
+	// Database connection information. Used for both cloud and on-prem deployments.
+	Database struct {
+		Host       string `yaml:"host"`
+		ReaderHost string `yaml:"readerHost"`
+		Port       int    `yaml:"port"`
+		Username   string `yaml:"username"`
+		Password   string `yaml:"password"`
+	}
 	Cert struct {
 		TLSCert string `yaml:"tlsCert"`
 		TLSKey  string `yaml:"tlsKey"`
@@ -70,14 +80,16 @@ type OrchInstallerConfig struct {
 	Version  int    `yaml:"version"`
 	Provider string `yaml:"provider"`
 	Global   struct {
-		OrchName     string `yaml:"orchName"`     // EMF deployment name
-		ParentDomain string `yaml:"parentDomain"` // not including cluster name
-		AdminEmail   string `yaml:"adminEmail"`
-		Scale        Scale  `yaml:"scale"`
+		OrchName      string `yaml:"orchName"`     // EMF deployment name
+		ParentDomain  string `yaml:"parentDomain"` // not including cluster name
+		AdminEmail    string `yaml:"adminEmail"`
+		AdminPassword string `yaml:"adminPassword"`
+		Scale         Scale  `yaml:"scale"`
 	} `yaml:"global"`
 	Advanced struct { // TODO: form for this part is not done yet
 		AzureADRefreshToken  string `yaml:"azureADRefreshToken,omitempty"`
 		AzureADTokenEndpoint string `yaml:"azureADTokenEndpoint,omitempty"`
+		DevMode              bool   `yaml:"devMode,omitempty"`
 	} `yaml:"advanced"`
 	AWS struct {
 		Region                string   `yaml:"region"`
@@ -100,8 +112,7 @@ type OrchInstallerConfig struct {
 		DockerToken    string `yaml:"dockerToken,omitempty"`
 	} `yaml:"onprem,omitempty"`
 	Orch struct {
-		Enabled         []string `yaml:"enabled"`
-		DefaultPassword string   `yaml:"defaultPassword"`
+		Enabled []string `yaml:"enabled"`
 	} `yaml:"orch"`
 	// Optional
 	Cert struct {

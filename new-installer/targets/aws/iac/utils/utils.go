@@ -132,7 +132,10 @@ func CreateVPC(t testing.TestingT, name string) (string, []string, []string, str
 	return CreateVPCWithEndpoints(t, name, nil)
 }
 
-// Create VPC with specified endpoints, will create all endpoints if enspoints is nil or empty
+// Create VPC with specified endpoints
+// If endpoints is nil, it will create all endpoints.
+// If endpoints is empty slice, it will create no endpoints.
+// If endpoints is non-empty slice, it will create only those endpoints.
 // Returns VPC ID, public subnet IDs, private subnet IDs, jumphost private key, jumphost IP, and error if any
 func CreateVPCWithEndpoints(t testing.TestingT, name string, endpoints []string) (string, []string, []string, string, string, error) {
 	var jumphostAllowList []string = make([]string, 0)
@@ -246,8 +249,16 @@ func CreateVPCWithEndpoints(t testing.TestingT, name string, endpoints []string)
 	return vpcID, publicSubnetIDs, privateSubnetIDs, privateSSHKey, jumphostIP, err
 }
 
-// Deletes VPC and all its resources
+// Deletes VPC and all its resources and all endpoints
 func DeleteVPC(t testing.TestingT, name string) error {
+	return DeleteVPCWithEndpoints(t, name, nil)
+}
+
+// Delete VPC with specified endpoints
+// If endpoints is nil, it will create all endpoints.
+// If endpoints is empty slice, it will create no endpoints.
+// If endpoints is non-empty slice, it will create only those endpoints.
+func DeleteVPCWithEndpoints(t testing.TestingT, name string, endpoints []string) error {
 	variables := steps_aws.VPCVariables{
 		Region:             DefaultTestRegion,
 		Name:               name,
@@ -288,6 +299,7 @@ func DeleteVPC(t testing.TestingT, name string) error {
 		JumphostSubnet:         name + "pub-1",
 		Production:             true,
 		CustomerTag:            DefaultTestCustomerTag,
+		Endpoints:              endpoints,
 	}
 	jsonData, err := json.Marshal(variables)
 	if err != nil {
