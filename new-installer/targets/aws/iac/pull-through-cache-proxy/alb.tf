@@ -8,7 +8,7 @@ resource "aws_security_group" "alb" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "sg_to_alb" {
-  for_each          = var.ip_allow_list
+  for_each          = toset(var.ip_allow_list)
   security_group_id = aws_security_group.alb.id
   from_port         = 443
   to_port           = 443
