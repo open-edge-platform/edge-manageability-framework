@@ -24,7 +24,6 @@ type EFSTestSuite struct {
 	vpcID            string
 	publicSubnetIDs  []string
 	privateSubnetIDs []string
-	randomPostfix    string
 }
 
 func TestEFSTestSuite(t *testing.T) {
@@ -33,12 +32,12 @@ func TestEFSTestSuite(t *testing.T) {
 
 func (s *EFSTestSuite) SetupTest() {
 	// Bucket for EFS state
-	s.name = "efs-unit-test-" + strings.ToLower(rand.Text()[0:8])
+	s.name = "efs-unit-test-" + strings.ToLower(rand.Text()[:8])
 	terratest_aws.CreateS3Bucket(s.T(), utils.DefaultTestRegion, s.name)
 
 	// VPC and subnets for EFS
 	var err error
-	s.vpcID, s.publicSubnetIDs, s.privateSubnetIDs, _, _, err = utils.CreateVPC(s.T(), s.name)
+	s.vpcID, s.publicSubnetIDs, s.privateSubnetIDs, _, _, err = utils.CreateVPCWithEndpoints(s.T(), s.name, []string{})
 	if err != nil {
 		s.NoError(err, "Failed to create VPC and subnet")
 		return
@@ -46,7 +45,7 @@ func (s *EFSTestSuite) SetupTest() {
 }
 
 func (s *EFSTestSuite) TearDownTest() {
-	err := utils.DeleteVPC(s.T(), s.name)
+	err := utils.DeleteVPCWithEndpoints(s.T(), s.name, []string{})
 	if err != nil {
 		s.NoError(err, "Failed to delete VPC")
 		return
@@ -58,7 +57,7 @@ func (s *EFSTestSuite) TearDownTest() {
 
 func (s *EFSTestSuite) TestApplyingModule() {
 	efsVars := steps_aws.EFSVariables{
-		ClusterName:      "test-efs-cluster" + s.randomPostfix,
+		ClusterName:      s.name,
 		Region:           utils.DefaultTestRegion,
 		CustomerTag:      utils.DefaultTestCustomerTag,
 		PrivateSubnetIDs: s.privateSubnetIDs,
@@ -80,7 +79,7 @@ func (s *EFSTestSuite) TestApplyingModule() {
 	}
 
 	terraformOptions := terraform.WithDefaultRetryableErrors(s.T(), &terraform.Options{
-		TerraformDir: "../efs",
+		TerraformDir: ".",
 		VarFiles:     []string{tempFile.Name()},
 		BackendConfig: map[string]interface{}{
 			"region": utils.DefaultTestRegion,
