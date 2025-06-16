@@ -14,6 +14,7 @@ import (
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/targets/aws"
+	"github.com/open-edge-platform/edge-manageability-framework/installer/targets/onprem"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )
@@ -127,6 +128,8 @@ func execute(action string, orchConfigFile string, runtimeStateFile string, logD
 	switch orchConfig.Provider {
 	case "aws":
 		stages, err = aws.CreateAWSStages(currentDir, keepGeneratedFiles, &orchConfigReaderWriter)
+	case "onprem":
+		stages, err = onprem.CreateOnPremStages(currentDir, keepGeneratedFiles, &orchConfigReaderWriter)
 	default:
 		logger.Fatalf("error: target environment %s not supported", orchConfig.Provider)
 	}
@@ -181,6 +184,8 @@ func showActionsForError(err *internal.OrchInstallerError) {
 		logger.Error("An internal error occurred, please check the logs for more details.")
 	case internal.OrchInstallerErrorCodeInvalidArgument:
 		logger.Error("Invalid argument provided, please check the configuration file and command line arguments.")
+	case internal.OrchInstallerErrorCodeInvalidRuntimeState:
+		logger.Error("Invalid runtime state, please check the runtime state file.")
 	case internal.OrchInstallerErrorCodeTerraform:
 		logger.Error("An error occurred while running Terraform, please check the Terraform logs for more details.")
 	default:

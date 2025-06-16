@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-output "cert" {
-  description = "The ACM certificate"
-  value = aws_acm_certificate.main
+output "certArn" {
+  description = "The ACM certificate Arn."
+  value = aws_acm_certificate.main.arn
 }
