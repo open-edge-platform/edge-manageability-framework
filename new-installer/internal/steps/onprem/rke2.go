@@ -7,12 +7,18 @@ package onprem
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"os/user"
 
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
+)
+
+const (
+	rke2ImagesDir   = "/var/lib/rancher/rke2/agent/images"
+	useDebInstaller = true // Set to true if using deb package installation
 )
 
 type Rke2Step struct {
@@ -52,31 +58,155 @@ func (s *Rke2Step) RunStep(ctx context.Context, config config.OrchInstallerConfi
 	if runtimeState.Action == "install" {
 		fmt.Println("Running RKE2 installation step")
 
-		var dockerUsername, dockerPassword string
-		var err error
-		dockerUsername = config.Onprem.DockerUsername
-		dockerPassword = config.Onprem.DockerToken
-		currentUser, err := user.Current()
-		if err != nil {
-			return runtimeState, &internal.OrchInstallerError{
-				ErrorMsg:  fmt.Sprintf("failed to get current user: %s", err),
-				ErrorCode: internal.OrchInstallerErrorCodeInternal,
+		if useDebInstaller {
+			var dockerUsername, dockerPassword string
+			var err error
+			dockerUsername = config.Onprem.DockerUsername
+			dockerPassword = config.Onprem.DockerToken
+			currentUser, err := user.Current()
+			if err != nil {
+				return runtimeState, &internal.OrchInstallerError{
+					ErrorMsg:  fmt.Sprintf("failed to get current user: %s", err),
+					ErrorCode: internal.OrchInstallerErrorCodeInternal,
+				}
 			}
-		}
 
-		if err := installRKE2(INSTALLERS_DIR, dockerUsername, dockerPassword, currentUser.Username); err != nil {
-			return runtimeState, &internal.OrchInstallerError{
-				ErrorMsg:  fmt.Sprintf("failed to install RKE2: %s", err),
-				ErrorCode: internal.OrchInstallerErrorCodeInternal,
+			if err := installRKE2(INSTALLERS_DIR, dockerUsername, dockerPassword, currentUser.Username); err != nil {
+				return runtimeState, &internal.OrchInstallerError{
+					ErrorMsg:  fmt.Sprintf("failed to install RKE2: %s", err),
+					ErrorCode: internal.OrchInstallerErrorCodeInternal,
+				}
 			}
+			fmt.Println("RKE2 installation completed successfully")
+		} else {
+
+			if err := installRKE2New(ctx, INSTALLERS_DIR); err != nil {
+				return runtimeState, &internal.OrchInstallerError{
+					ErrorMsg:  fmt.Sprintf("failed to install RKE2: %s", err),
+					ErrorCode: internal.OrchInstallerErrorCodeInternal,
+				}
+			}
+			fmt.Println("RKE2 installation completed successfully")
+
+			if err := createRKE2ImagesDir(rke2ImagesDir); err != nil {
+				return runtimeState, &internal.OrchInstallerError{
+					ErrorMsg:  fmt.Sprintf("failed to create RKE2 images dir %s: %s", rke2ImagesDir, err),
+					ErrorCode: internal.OrchInstallerErrorCodeInternal,
+				}
+			}
+
+			fmt.Println("RKE2 images directory created successfully")
+
+			if err := copyRKE2Images(INSTALLERS_DIR, rke2ImagesDir); err != nil {
+				return runtimeState, &internal.OrchInstallerError{
+					ErrorMsg:  fmt.Sprintf("failed to copy RKE2 images to %s: %s", rke2ImagesDir, err),
+					ErrorCode: internal.OrchInstallerErrorCodeInternal,
+				}
+			}
+
+			fmt.Println("RKE2 images copied successfully")
+
+			if err := enableRKE2Service(ctx); err != nil {
+				return runtimeState, &internal.OrchInstallerError{
+					ErrorMsg:  fmt.Sprintf("failed to enable RKE2 service: %s", err),
+					ErrorCode: internal.OrchInstallerErrorCodeInternal,
+				}
+			}
+
+			fmt.Println("RKE2 service enabled and started successfully")
 		}
-		fmt.Println("RKE2 installation completed successfully")
 	}
 	return runtimeState, nil
 }
 
 func (s *Rke2Step) PostStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState, prevStepError *internal.OrchInstallerError) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	return runtimeState, prevStepError
+}
+
+func installRKE2New(ctx context.Context, artifactDir string) error {
+	fmt.Println("Installing RKE2...")
+
+	if err := os.Chmod(fmt.Sprintf("%s/install.sh", artifactDir), 0o755); err != nil {
+		return fmt.Errorf("modifying install script permissions: %w", err)
+	}
+
+	cmd := exec.CommandContext(ctx, "sudo", "env",
+		fmt.Sprintf("INSTALL_RKE2_ARTIFACT_PATH=%s", artifactDir),
+		fmt.Sprintf("INSTALL_RKE2_METHOD=%s", "tar"),
+		fmt.Sprintf("INSTALL_RKE2_VERSION=%s", rke2Version),
+		"sh", "-c", fmt.Sprintf("%s/install.sh", artifactDir),
+	)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to run the install script: %w", err)
+	}
+
+	return nil
+}
+
+func createRKE2ImagesDir(imagesDir string) error {
+	if err := os.MkdirAll(imagesDir, 0o755); err != nil {
+		return fmt.Errorf("failed to create images directory: %w", err)
+	}
+
+	return nil
+}
+
+func copyRKE2Images(source, destination string) error {
+	for _, image := range []string{
+		rke2ImagesPkg,
+		rke2CalicoImagePkg,
+	} {
+		src := fmt.Sprintf("%s/%s", source, image)
+		dst := fmt.Sprintf("%s/%s", destination, image)
+
+		input, err := os.Open(src)
+		if err != nil {
+			return fmt.Errorf("failed to open source image %s: %w", src, err)
+		}
+		defer input.Close()
+
+		output, err := os.Create(dst)
+		if err != nil {
+			return fmt.Errorf("failed to create destination image %s: %w", dst, err)
+		}
+		defer output.Close()
+
+		if _, err := io.Copy(output, input); err != nil {
+			return fmt.Errorf("failed to copy image from %s to %s: %w", src, dst, err)
+		}
+	}
+
+	return nil
+}
+
+func enableRKE2Service(ctx context.Context) error {
+	cmd := exec.CommandContext(ctx, "sudo", "systemctl", "enable", "--now", "rke2-server.service")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to enable rke2-server.service: %w", err)
+	}
+
+	cmd = exec.CommandContext(ctx, "sudo", "systemctl", "start", "rke2-server.service")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to enable rke2-server.service: %w", err)
+	}
+
+	cmd = exec.CommandContext(ctx, "sudo", "systemctl", "is-active", "rke2-server.service")
+	output, err := cmd.Output()
+	if err != nil {
+		return fmt.Errorf("failed to check rke2-server.service status: %w", err)
+	}
+	if string(output) != "active\n" {
+		return fmt.Errorf("RKE2 server is not in active (running) state")
+	}
+
+	return nil
 }
 
 func installRKE2(debDirName, dockerUsername, dockerPassword, currentUser string) error {

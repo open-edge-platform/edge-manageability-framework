@@ -13,7 +13,7 @@ import (
 
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
-	oras "oras.land/oras-go/v2"
+	"oras.land/oras-go/v2"
 	"oras.land/oras-go/v2/content/file"
 	"oras.land/oras-go/v2/registry/remote"
 )
@@ -85,9 +85,9 @@ func (s *ArtifactDownloader) RunStep(ctx context.Context, config config.OrchInst
 
 		fmt.Println("Created directories for installers")
 
-		if err := downloadRKE2(ctx, INSTALLERS_DIR); err != nil {
+		if err := downloadRKE2Images(ctx, INSTALLERS_DIR); err != nil {
 			return runtimeState, &internal.OrchInstallerError{
-				ErrorMsg:  fmt.Sprintf("failed to download RKE2: %s", err),
+				ErrorMsg:  fmt.Sprintf("failed to download RKE2 artifacts: %s", err),
 				ErrorCode: internal.OrchInstallerErrorCodeInternal,
 			}
 		}
@@ -134,7 +134,7 @@ func downloadArtifacts(ctx context.Context, registryUrl, registryPath, orchVersi
 	return nil
 }
 
-func downloadRKE2(ctx context.Context, artifactDir string) error {
+func downloadRKE2Images(ctx context.Context, artifactDir string) error {
 	fmt.Println("Downloading RKE2 images and install script...")
 	rke2VersionEscaped := url.QueryEscape(rke2Version)
 
