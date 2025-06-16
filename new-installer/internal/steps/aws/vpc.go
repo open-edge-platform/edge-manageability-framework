@@ -290,7 +290,8 @@ func (s *VPCStep) PreStep(ctx context.Context, config config.OrchInstallerConfig
 
 	destroyErr := s.TerraformUtility.DestroyResource(ctx, steps.TerraformUtilityDestroyResourceInput{
 		ModulePath: modulePath,
-		Resource:   "aws_security_group_rule.jumphost_egress_https"})
+		Resource:   "aws_security_group_rule.jumphost_egress_https",
+	})
 	if destroyErr != nil {
 		return runtimeState, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInternal,
