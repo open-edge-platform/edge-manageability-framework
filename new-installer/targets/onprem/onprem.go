@@ -19,10 +19,7 @@ func CreateOnPremStages(rootPath string, keepGeneratedFiles bool, orchConfigRead
 		"PreInfra",
 		[]steps.OrchInstallerStep{
 			onpremSteps.CreateGenericStep(rootPath, keepGeneratedFiles, orchConfigReaderWriter),
-<<<<<<< argo_installer
 			commonSteps.CreateGenericStep(rootPath, keepGeneratedFiles, orchConfigReaderWriter),
-=======
->>>>>>> main
 		},
 		[]string{"pre-infra"},
 		orchConfigReaderWriter,
