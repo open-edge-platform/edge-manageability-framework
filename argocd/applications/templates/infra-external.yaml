@@ -19,9 +19,9 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
-    - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
-      chart: infra/charts/{{$appName}}
-      targetRevision: 2.5.0
+    - repoURL: "https://github.com/open-edge-platform/infra-charts.git"
+      path: "infra-external"
+      targetRevision: "fix-cronjob-issue"
       helm:
         releaseName: {{$appName}}
         valuesObject:
