@@ -33,6 +33,7 @@ import (
 const (
 	DefaultTestRegion         = "us-west-2"
 	DefaultTestCustomerTag    = "test-customer"
+	DefaultTestRoute53Zone    = "iteptest.infra-host.com"
 	DefaultJumphostAMIID      = "ami-0a605bc2ef5707a18" // Ubuntu 24.04 LTS in us-west-2
 	DefaultJumphostSSHKeySize = 2048
 )
