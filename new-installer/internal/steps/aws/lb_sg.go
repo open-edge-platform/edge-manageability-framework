@@ -121,7 +121,7 @@ func (s *LBSGStep) PreStep(ctx context.Context, config config.OrchInstallerConfi
 		BackendConfig:      s.backendConfig,
 		LogFile:            filepath.Join(runtimeState.LogDir, "aws_lbsg.log"),
 		KeepGeneratedFiles: s.KeepGeneratedFiles,
-		DestroyTarget:      "module.aws_lb_security_group_roles.aws_security_group_rule.node_sg_rule",
+		Targets:            []string{"module.aws_lb_security_group_roles.aws_security_group_rule.node_sg_rule"},
 	})
 
 	if destroyErr != nil {

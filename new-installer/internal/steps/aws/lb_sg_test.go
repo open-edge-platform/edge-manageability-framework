@@ -134,7 +134,7 @@ func (s *LBSGStepTest) expectTFUtiliyCall(action string) {
 		).Return(nil).Once()
 
 		input.Action = "uninstall"
-		input.DestroyTarget = "module.aws_lb_security_group_roles.aws_security_group_rule.node_sg_rule"
+		input.Targets = []string{"module.aws_lb_security_group_roles.aws_security_group_rule.node_sg_rule"}
 		s.tfUtility.On("Run", mock.Anything, input).Return(steps.TerraformUtilityOutput{
 			TerraformState: "",
 			Output:         map[string]tfexec.OutputMeta{},
