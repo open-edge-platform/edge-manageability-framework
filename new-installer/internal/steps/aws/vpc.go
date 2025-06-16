@@ -295,7 +295,7 @@ func (s *VPCStep) PreStep(ctx context.Context, config config.OrchInstallerConfig
 		BackendConfig:      s.backendConfig,
 		LogFile:            filepath.Join(runtimeState.LogDir, "aws_vpc.log"),
 		KeepGeneratedFiles: s.KeepGeneratedFiles,
-		DestroyTarget:      "aws_security_group_rule.jumphost_egress_https",
+		Targets:            []string{"aws_security_group_rule.jumphost_egress_https"},
 	})
 
 	if destroyErr != nil {

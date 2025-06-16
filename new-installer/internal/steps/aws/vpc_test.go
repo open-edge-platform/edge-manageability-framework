@@ -208,14 +208,14 @@ func (s *VPCStepTest) expectUtiliyCall(action string) {
 	}
 	if action == "upgrade" {
 		input.Action = "uninstall"
-		input.DestroyTarget = "aws_security_group_rule.jumphost_egress_https"
+		input.Targets = []string{"aws_security_group_rule.jumphost_egress_https"}
 		s.tfUtility.On("Run", mock.Anything, input).Return(steps.TerraformUtilityOutput{
 			TerraformState: "",
 			Output:         map[string]tfexec.OutputMeta{},
 		}, nil).Once()
 
 		input.Action = "upgrade"
-		input.DestroyTarget = ""
+		input.Targets = nil
 		s.tfUtility.On("Run", mock.Anything, input).Return(steps.TerraformUtilityOutput{
 			TerraformState: "",
 			Output: map[string]tfexec.OutputMeta{
