@@ -7,10 +7,7 @@ package onprem
 import (
 	"context"
 	"fmt"
-<<<<<<< argo_installer
-=======
 
->>>>>>> main
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 )
