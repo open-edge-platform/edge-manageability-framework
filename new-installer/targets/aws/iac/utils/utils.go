@@ -206,10 +206,10 @@ func CreateVPCWithEndpoints(t testing.TestingT, name string, endpoints []string)
 		t.Fatalf("Failed to marshal variables: %v", err)
 	}
 	tempFile, err := os.CreateTemp("", "variables-*.tfvar.json")
+	defer os.Remove(tempFile.Name())
 	if err != nil {
 		t.Fatalf("Failed to create temporary file: %v", err)
 	}
-	defer os.Remove(tempFile.Name())
 	if _, err := tempFile.Write(jsonData); err != nil {
 		t.Fatalf("Failed to write to temporary file: %v", err)
 	}
@@ -306,10 +306,10 @@ func DeleteVPCWithEndpoints(t testing.TestingT, name string, endpoints []string)
 		t.Fatalf("Failed to marshal variables: %v", err)
 	}
 	tempFile, err := os.CreateTemp("", "variables-*.tfvar.json")
+	defer os.Remove(tempFile.Name())
 	if err != nil {
 		t.Fatalf("Failed to create temporary file: %v", err)
 	}
-	defer os.Remove(tempFile.Name())
 	if _, err := tempFile.Write(jsonData); err != nil {
 		t.Fatalf("Failed to write to temporary file: %v", err)
 	}
@@ -325,44 +325,6 @@ func DeleteVPCWithEndpoints(t testing.TestingT, name string, endpoints []string)
 		Upgrade:     true,
 	})
 	terraform.Destroy(t, terraformOptions)
-	return nil
-}
-
-func WaitUnitlJumphostIsReachable(privateKey string, jumphostIP string) error {
-	privateKeyFile, err := os.CreateTemp("", "jumphost-key-*.pem")
-	defer os.Remove(privateKeyFile.Name()) // Clean up the temporary file after use
-	if err != nil {
-		return fmt.Errorf("failed to create temporary private key file: %w", err)
-	}
-	defer privateKeyFile.Close()
-
-	if _, err := privateKeyFile.WriteString(privateKey); err != nil {
-		return fmt.Errorf("failed to write private key to temporary file: %w", err)
-	}
-	if err := os.Chmod(privateKeyFile.Name(), 0o400); err != nil {
-		return fmt.Errorf("failed to set permissions on temporary private key file: %w", err)
-	}
-	log.Printf("Private key written to temporary file: %s", privateKeyFile.Name())
-	// Wait for the instance to be reachable via SSH
-	var reachable bool = false
-	for range 10 {
-		time.Sleep(10 * time.Second)
-		var sshCmd *exec.Cmd
-		if socksProxy := os.Getenv("SOCKS_PROXY"); socksProxy != "" {
-			sshCmd = exec.Command("ssh", "-T", "-o", fmt.Sprintf("ProxyCommand=nc -x %s %%h %%p", socksProxy), "-o", "StrictHostKeyChecking=no", "-i", privateKeyFile.Name(), fmt.Sprintf("ubuntu@%s", jumphostIP), "true")
-		} else {
-			sshCmd = exec.Command("ssh", "-T", "-o", "StrictHostKeyChecking=no", "-i", privateKeyFile.Name(), fmt.Sprintf("ubuntu@%s", jumphostIP), "true")
-		}
-		if err := sshCmd.Run(); err == nil {
-			reachable = true
-			break
-		}
-
-	}
-	if !reachable {
-		return fmt.Errorf("jump host instance is not reachable via SSH at %s", jumphostIP)
-	}
-	log.Printf("Successfully connected to Jump Host Instance via SSH at %s", jumphostIP)
 	return nil
 }
 
@@ -394,66 +356,105 @@ func getMyPublicIP() (string, error) {
 	return publicIP, nil
 }
 
-func StartSshuttle(jumphostIP string, jumphostKey string, remoteCIDRBlock string) error {
+func StartSSHSocks5Tunnel(name string, jumphostIP string, jumphostKey string) (ticker *time.Ticker, socksPort int, err error) {
 	// Create a temporary file for the private key
-	privateKeyFile, err := os.CreateTemp("", "jumphost-key-*.pem")
-	defer os.Remove(privateKeyFile.Name()) // Clean up the temporary file after sshuttle started
+	privateKeyFileName := fmt.Sprintf("/tmp/%s-jumphost-key.pem", name)
+	privateKeyFile, err := os.OpenFile(privateKeyFileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
 	if err != nil {
-		return fmt.Errorf("failed to create temporary private key file: %w", err)
+		return nil, 0, fmt.Errorf("failed to open private key file: %w", err)
 	}
 	if _, err := privateKeyFile.WriteString(jumphostKey); err != nil {
-		return fmt.Errorf("failed to write private key to temporary file: %w", err)
+		return nil, 0, fmt.Errorf("failed to write private key to temporary file: %w", err)
 	}
 	if err := privateKeyFile.Close(); err != nil {
-		return fmt.Errorf("failed to close temporary private key file: %w", err)
+		return nil, 0, fmt.Errorf("failed to close temporary private key file: %w", err)
 	}
 	// Set the file permissions to read/write for the owner only
 	if err := os.Chmod(privateKeyFile.Name(), 0o400); err != nil {
-		return fmt.Errorf("failed to set permissions on temporary private key file: %w", err)
+		return nil, 0, fmt.Errorf("failed to set permissions on temporary private key file: %w", err)
 	}
-	// Construct the sshuttle command
-	var cmd *exec.Cmd
+
+	sshConfig := fmt.Sprintf(`Host jumphost
+	HostName %s
+	User ubuntu
+	IdentityFile %s
+	StrictHostKeyChecking no
+	BatchMode yes
+	UserKnownHostsFile /dev/null
+	ExitOnForwardFailure yes
+	ServerAliveCountMax 100
+	ServerAliveInterval 20`, jumphostIP, privateKeyFile.Name())
 	if socksProxy := os.Getenv("SOCKS_PROXY"); socksProxy != "" {
-		cmd = exec.Command("sshuttle", "--pidfile", "/tmp/sshuttle.pid", "-D", "-e", fmt.Sprintf("ssh -o ProxyCommand='nc -x %s %%h %%p' -i %s -o StrictHostKeyChecking=no", socksProxy, privateKeyFile.Name()), "-r", fmt.Sprintf("ubuntu@%s", jumphostIP), remoteCIDRBlock)
-	} else {
-		cmd = exec.Command("sshuttle", "--pidfile", "/tmp/sshuttle.pid", "-D", "-r", fmt.Sprintf("ubuntu@%s", jumphostIP), "--ssh-cmd", fmt.Sprintf("ssh -i %s -o StrictHostKeyChecking=no", privateKeyFile.Name()), remoteCIDRBlock)
+		sshConfig += fmt.Sprintf("\n\tProxyCommand nc -x %s %%h %%p\n", socksProxy)
 	}
-	log.Printf("Starting sshuttle command: %s", cmd.String())
-
-	// It will actually run in the background due to the -D flag
-	// Use /tmp/sshuttle.pid to track the process
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to start sshuttle command: %w", err)
-	}
-	time.Sleep(5 * time.Second) // Wait for sshuttle to establish the connection
-	// Print the PID of the sshuttle process
-	pid, err := os.ReadFile("/tmp/sshuttle.pid")
+	sshConfigFileName := fmt.Sprintf("/tmp/%s-ssh-config.txt", name)
+	sshConfigFile, err := os.OpenFile(sshConfigFileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
 	if err != nil {
-		log.Printf("Failed to read sshuttle PID file: %v", err)
-	} else {
-		log.Printf("sshuttle is running with PID: %s", strings.TrimSpace(string(pid)))
+		return nil, 0, fmt.Errorf("failed to open SSH config file: %w", err)
 	}
-	return nil
-}
+	if err := os.Chmod(sshConfigFile.Name(), 0o400); err != nil {
+		return nil, 0, fmt.Errorf("failed to set permissions on temporary SSH config file: %w", err)
+	}
+	if _, err := sshConfigFile.WriteString(sshConfig); err != nil {
+		return nil, 0, fmt.Errorf("failed to write SSH config to temporary file: %w", err)
+	}
 
-func StopSshuttle() error {
-	// Read the PID from the sshuttle PID file
-	pidFile := "/tmp/sshuttle.pid"
-	pidData, err := os.ReadFile(pidFile)
+	// Wait for the instance to be reachable via SSH
+	var reachable bool = false
+	for range 10 {
+		time.Sleep(10 * time.Second)
+		sshCmd := exec.Command("ssh", "-T", "-F", sshConfigFile.Name(), "jumphost", "whoami")
+		if err := sshCmd.Run(); err == nil {
+			reachable = true
+			break
+		}
+	}
+	if !reachable {
+		return nil, 0, fmt.Errorf("jump host instance is not reachable via SSH at %s", jumphostIP)
+	}
+	log.Printf("Successfully connected to Jump Host Instance via SSH at %s", jumphostIP)
+
+	// Find an open port for the SSH tunnel
+	listener, err := net.Listen("tcp", ":0")
 	if err != nil {
-		// Failed to read it, assume the process is not running
-		return nil
+		return nil, 0, fmt.Errorf("Failed to find a open port for SSH tunnel: %w", err)
 	}
+	listener.Close()
+	socksPort = listener.Addr().(*net.TCPAddr).Port
 
-	// Convert the PID to an integer
-	pid := strings.TrimSpace(string(pidData))
-	cmd := exec.Command("kill", pid)
+	cmd := exec.Command("ssh",
+		"-f",                               // Run in the background
+		"-N",                               // Do not execute any commands
+		"-n",                               // Redirect stdin to /dev/null
+		"-D", fmt.Sprintf("%d", socksPort), // Set up a SOCKS proxy on the specified port
+		"-F", sshConfigFile.Name(), // Use the temporary SSH config file
+		"jumphost")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stdout
+	log.Printf("Starting ssh tunnel command: %s", cmd.String())
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to terminate sshuttle process with PID %s: %w", pid, err)
+		log.Printf("failed to start ssh tunnel: %v", err)
 	}
+	log.Printf("SSH tunnel started with pid: %d", cmd.Process.Pid)
+	ticker = time.NewTicker(10 * time.Second)
+	go func(ticker *time.Ticker, cmd *exec.Cmd) {
+		for range ticker.C {
+			// Check if the SSH tunnel is still running
+			if cmd.ProcessState != nil && cmd.ProcessState.Exited() {
+				log.Printf("SSH tunnel process has exited, restarting...")
+				if err := cmd.Start(); err != nil {
+					log.Printf("Failed to restart SSH tunnel: %v", err)
+					return
+				}
+				log.Printf("SSH tunnel restarted with pid: %d", cmd.Process.Pid)
+			} else {
+				log.Printf("SSH tunnel is still running with pid: %d", cmd.Process.Pid)
+			}
+		}
+		_ = cmd.Process.Kill()
+	}(ticker, cmd)
 
-	log.Println("Stopped sshuttle successfully")
-	return nil
+	return ticker, socksPort, nil
 }
 
 func GenerateSSHKeyPair() (string, string, error) {

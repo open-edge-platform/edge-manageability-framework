@@ -165,3 +165,9 @@ variable "no_proxy" {
   default     = ""
   description = "No proxy to use for EKS nodes"
 }
+
+variable "kubectl_socks_proxy" {
+  type        = string
+  default     = ""
+  description = "Use socks5 proxy to connect to EKS Kubernetes API"
+}
