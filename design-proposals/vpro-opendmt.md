@@ -2,7 +2,7 @@
 
 Author(s): Edge Infrastructure Manager Team
 
-Last updated: 05/15/2025
+Last updated: 06/12/2025
 
 ## Abstract
 
@@ -47,9 +47,10 @@ graph TD
     end
     %% Connections
     RPC -->|443/RPS-WS| Traefik
-    AMT -->|4433/CIRA| MPS
+    AMT -->|4433/CIRA| Traefik
     User -->|443| Traefik
     Traefik -->|443| MTGW
+    Traefik -->|4433/CIRA| MPS
     MTGW -->|3000/AMT-Device|MPS
     MTGW -->|8081/Domain|RPS
     MTGW -->|8080/WS|RPS
