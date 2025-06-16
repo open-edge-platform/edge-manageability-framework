@@ -20,7 +20,7 @@ spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
     - repoURL: https://github.com/open-edge-platform/o11y-charts.git
-      path: charts/orchestrator-observability/deployments/orchestrator-observability/
+      path: charts/orchestrator-observability/deployments/orchestrator-observability
       targetRevision: pkimak-processor
       helm:
         releaseName: {{$appName}}
