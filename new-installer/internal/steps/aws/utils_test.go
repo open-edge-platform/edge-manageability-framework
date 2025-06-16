@@ -104,3 +104,8 @@ func (m *MockAWSUtility) GetSubnetIDsFromVPC(region, vpcID string) ([]string, []
 	}
 	return privateSubnets, publicSubnets, err
 }
+
+func (m *MockAWSUtility) DisableRDSDeletionProtection(region, dbIdentifier string) error {
+	args := m.Called(region, dbIdentifier)
+	return args.Error(0)
+}

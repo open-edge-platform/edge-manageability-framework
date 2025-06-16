@@ -23,7 +23,7 @@ jobs:
     name: Filter list of changed files
     runs-on: ubuntu-latest
     outputs:
-      all-targets: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/targets/') }}
+      iac: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/targets/aws/iac/') }}
       acm: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/targets/aws/iac/acm') }}
       alb: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/targets/aws/iac/alb') }}
       ec2log: ${{ contains(steps.check-files.outputs.changed_files, 'new-installer/targets/aws/iac/ec2log') }}
@@ -50,8 +50,8 @@ jobs:
         uses: open-edge-platform/orch-ci/discover-changed-files@main  # zizmor: ignore[unpinned-uses]
         with:
           project_folder: "."
-  
-  # Check if `run-iac-tests` label exists on the PR 
+
+  # Check if `run-iac-tests` label exists on the PR
   # fail the pipeline if label does not exist when IAC folder is changed
   check-iac-label:
     permissions:
@@ -70,7 +70,7 @@ jobs:
               core.setFailed('run-iac-tests label is not set on the PR. This label is required to execute the IAC tests and qualify the PR to merge.');
             }
         if: |
-          needs.check-changed-files.outputs.all-targets == 'true'
+          needs.check-changed-files.outputs.iac == 'true'
 
   test-iac:
     permissions:
@@ -80,7 +80,7 @@ jobs:
       - check-changed-files
       - check-iac-label
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2

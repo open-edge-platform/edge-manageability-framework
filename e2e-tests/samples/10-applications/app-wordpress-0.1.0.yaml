@@ -13,7 +13,7 @@ description: "Wordpress"
 
 # CLI tool will look up registry by name and convert to an ID.
 
-helmRegistry: "bitnami"
+helmRegistry: "bitnami-helm-oci"
 chartName: "wordpress"
 chartVersion: "15.2.42"
 
