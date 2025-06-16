@@ -168,7 +168,7 @@ func (s *TerraformUtilityTest) TestDestroyResource() {
 		KeepGeneratedFiles: false,
 		Variables:          variables,
 		TerraformState:     string(tfState),
-		DestroyTarget:      "null_resource.res1",
+		Targets:            []string{"null_resource.res1"},
 	})
 	if utilErr != nil {
 		s.NoError(utilErr, "Expected no error while destroying resource")
