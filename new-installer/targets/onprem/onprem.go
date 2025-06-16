@@ -8,8 +8,8 @@ import (
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps"
-	onpremSteps "github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps/onprem"
 	commonSteps "github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps/common"
+	onpremSteps "github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps/onprem"
 )
 
 func CreateOnPremStages(rootPath string, keepGeneratedFiles bool, orchConfigReaderWriter config.OrchConfigReaderWriter) ([]internal.OrchInstallerStage, error) {
@@ -19,7 +19,7 @@ func CreateOnPremStages(rootPath string, keepGeneratedFiles bool, orchConfigRead
 		"PreInfra",
 		[]steps.OrchInstallerStep{
 			onpremSteps.CreateGenericStep(rootPath, keepGeneratedFiles, orchConfigReaderWriter),
-			commonSteps.CreateGenericStep(rootPath, keepGeneratedFiles, orchConfigReaderWriter),
+			commonSteps.CreateArgoStep(rootPath, keepGeneratedFiles, orchConfigReaderWriter),
 		},
 		[]string{"pre-infra"},
 		orchConfigReaderWriter,

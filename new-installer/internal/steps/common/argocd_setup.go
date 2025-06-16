@@ -24,7 +24,7 @@ type ArgoCDStep struct {
 	StepLabels             []string
 }
 
-func CreateGenericStep(rootPath string, keepGeneratedFiles bool, orchConfigReaderWriter config.OrchConfigReaderWriter) *ArgoCDStep {
+func CreateArgoStep(rootPath string, keepGeneratedFiles bool, orchConfigReaderWriter config.OrchConfigReaderWriter) *ArgoCDStep {
 	return &ArgoCDStep{
 		RootPath:               rootPath,
 		KeepGeneratedFiles:     keepGeneratedFiles,
@@ -33,7 +33,7 @@ func CreateGenericStep(rootPath string, keepGeneratedFiles bool, orchConfigReade
 }
 
 func (s *ArgoCDStep) Name() string {
-	return "GenericStep"
+	return "ArgoStep"
 }
 
 func (s *ArgoCDStep) Labels() []string {
@@ -54,9 +54,6 @@ func (s *ArgoCDStep) PreStep(ctx context.Context, config config.OrchInstallerCon
 func (s *ArgoCDStep) RunStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	// InstallArgoCD
 	err := InstallArgoCD()
-	// if err != nil {
-	// 	// fmt.Printf("Error installing Argocd %v \n", err)
-	// }
 
 	if err != nil {
 		return runtimeState, &internal.OrchInstallerError{
@@ -75,8 +72,10 @@ func (s *ArgoCDStep) PostStep(ctx context.Context, config config.OrchInstallerCo
 	}
 	err := WaitForNamespaceCreation(argoCDNS)
 	if err != nil {
-		// return nil,fmt.Errorf("failed to wait for ArgoCD namespace: %v", err)
-		fmt.Printf("failed to wait for ArgoCD namespace: %v\n", err)
+		return runtimeState, &internal.OrchInstallerError{
+			ErrorCode: internal.OrchInstallerErrorCodeInternal,
+			ErrorMsg:  fmt.Sprintf("Error installing Argocd %v \n", err),
+		}
 	}
 
 	return runtimeState, prevStepError
@@ -264,20 +263,17 @@ dex:
 
 	path := "/tmp/argo-cd/argo-cd/templates/"
 	if err := os.MkdirAll(path, 0755); err != nil {
-		fmt.Printf("failed to create directory %s: %v", path, err)
-		//return fmt.Errorf("failed to create directory %s: %v", path, err)
+		return fmt.Errorf("failed to create directory %s: %v", path, err)
 	}
 	chownToCurrentUserRecursive("/tmp/argo-cd/")
 
 	if err := os.WriteFile("/tmp/argo-cd/argo-cd/templates/values.tmpl", []byte(valuesFile), 0644); err != nil {
-		fmt.Printf("failed to copy values.tmpl: %v", err)
-		//return fmt.Errorf("failed to copy values.tmpl: %v", err)
+		return fmt.Errorf("failed to copy values.tmpl: %v", err)
 	}
 
 	proxyYaml := fmt.Sprintf("http_proxy: %s\nhttps_proxy: %s\nno_proxy: %s\n", config.Proxy.HTTPProxy, config.Proxy.HTTPProxy, config.Proxy.NoProxy)
 	if err := os.WriteFile("/tmp/argo-cd/proxy-values.yaml", []byte(proxyYaml), 0644); err != nil {
-		// return fmt.Errorf("failed to write proxy-values.yaml: %v", err)
-		fmt.Printf("failed to write proxy-values.yaml: %v\n", err)
+		return fmt.Errorf("failed to write proxy-values.yaml: %v", err)
 	}
 	return nil
 }
