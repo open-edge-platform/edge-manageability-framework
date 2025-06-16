@@ -270,7 +270,7 @@ func installRKE2(debDirName, dockerUsername, dockerPassword, currentUser string)
 
 	rke2ConfigBytes, err := os.ReadFile(rke2ConfigPath)
 	if err != nil {
-		return "", fmt.Errorf("failed to read RKE2 config file %s: %s", rke2ConfigPath, err)
+		return "", fmt.Errorf("failed to read RKE2 config file %s: %w", rke2ConfigPath, err)
 	}
 	kubeconfig = string(rke2ConfigBytes)
 
