@@ -7,8 +7,8 @@ package onprem
 import (
 	"context"
 	"fmt"
-	"os"
 	"net/url"
+	"os"
 	"os/exec"
 
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
@@ -25,14 +25,13 @@ const (
 	ORCH_VERSION       = "3.1.0-dev-eca1939"
 	INSTALLERS_DIR     = "/tmp/installers"
 
-
-	rke2Version          = "v1.30.10+rke2r1"
-	rke2Binary           = "rke2.linux-amd64.tar.gz"
-	rke2ImagesPkg        = "rke2-images.linux-amd64.tar.zst"
-	rke2CalicoImagePkg   = "rke2-images-calico.linux-amd64.tar.zst"
-	rke2LibSHAFile       = "sha256sum-amd64.txt"
-	rke2ImagesUrl 		= "https://github.com/rancher/rke2/releases/download"
-	rke2InstallerUrl     = "https://get.rke2.io"
+	rke2Version        = "v1.30.10+rke2r1"
+	rke2Binary         = "rke2.linux-amd64.tar.gz"
+	rke2ImagesPkg      = "rke2-images.linux-amd64.tar.zst"
+	rke2CalicoImagePkg = "rke2-images-calico.linux-amd64.tar.zst"
+	rke2LibSHAFile     = "sha256sum-amd64.txt"
+	rke2ImagesUrl      = "https://github.com/rancher/rke2/releases/download"
+	rke2InstallerUrl   = "https://get.rke2.io"
 )
 
 var installerList = []string{
@@ -104,7 +103,7 @@ func (s *ArtifactDownloader) RunStep(ctx context.Context, config config.OrchInst
 
 		fmt.Println("Downloaded installers successfully")
 	}
-	
+
 	return runtimeState, nil
 }
 
@@ -165,6 +164,5 @@ func downloadRKE2(ctx context.Context, artifactDir string) error {
 		return fmt.Errorf("failed to download install script: %w", err)
 	}
 
-	fmt.Println("RKE2 images and install script downloaded successfully")
 	return nil
 }

@@ -7,7 +7,6 @@ package onprem
 import (
 	"context"
 	"fmt"
-	//"net/url"
 	"os"
 	"os/exec"
 	"os/user"
@@ -15,7 +14,6 @@ import (
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 )
-
 
 type Rke2Step struct {
 	RootPath               string
