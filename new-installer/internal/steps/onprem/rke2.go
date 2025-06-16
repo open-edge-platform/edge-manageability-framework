@@ -64,7 +64,7 @@ func (s *Rke2Step) RunStep(ctx context.Context, config config.OrchInstallerConfi
 			}
 		}
 
-		if err := installRKE2(INSTALLERS_DIR, dockerUsername, dockerPassword, currentUser.Username); err != nil {
+		if err := installRKE2(ctx, INSTALLERS_DIR, dockerUsername, dockerPassword, currentUser.Username); err != nil {
 			return runtimeState, &internal.OrchInstallerError{
 				ErrorMsg:  fmt.Sprintf("failed to install RKE2: %s", err),
 				ErrorCode: internal.OrchInstallerErrorCodeInternal,
@@ -79,31 +79,50 @@ func (s *Rke2Step) PostStep(ctx context.Context, config config.OrchInstallerConf
 	return runtimeState, prevStepError
 }
 
-func installRKE2(debDirName, dockerUsername, dockerPassword, currentUser string) error {
+func installRKE2(ctx context.Context, artifactDir, dockerUsername, dockerPassword, currentUser string) error {
 	fmt.Println("Installing RKE2...")
-	var cmd *exec.Cmd
-	if dockerUsername != "" && dockerPassword != "" {
-		fmt.Println("Docker credentials provided. Installing RKE2 with Docker credentials")
-		cmd = exec.Command("sudo", "env",
-			fmt.Sprintf("DOCKER_USERNAME=%s", dockerUsername),
-			fmt.Sprintf("DOCKER_PASSWORD=%s", dockerPassword),
-			"NEEDRESTART_MODE=a", "DEBIAN_FRONTEND=noninteractive",
-			"apt-get", "install", "-y",
-			fmt.Sprintf("%s/onprem-ke-installer_%s_amd64.deb", debDirName, ORCH_VERSION),
-		)
-	} else {
-		cmd = exec.Command("sudo",
-			"NEEDRESTART_MODE=a", "DEBIAN_FRONTEND=noninteractive",
-			"apt-get", "install", "-y",
-			fmt.Sprintf("%s/onprem-ke-installer_%s_amd64.deb", debDirName, ORCH_VERSION),
-		)
+
+	if err := os.Chmod(fmt.Sprintf("%s/install.sh", artifactDir), 0o755); err != nil {
+		return fmt.Errorf("modifying install script permissions: %w", err)
 	}
+	
+	cmd := exec.CommandContext(ctx, "sudo", "sh", "-c", fmt.Sprintf("%s/install.sh", artifactDir))
+	cmd.Env = append(os.Environ(), fmt.Sprintf("INSTALL_RKE2_ARTIFACT_PATH=%s", artifactDir))
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to install RKE2: %w", err)
+		return fmt.Errorf("failed to run the install script: %w", err)
 	}
-	fmt.Println("OS level configuration installed and RKE2 Installed")
+
+	return nil
+}
+
+func configureRKE2(artifactDir, dockerUsername, dockerPassword, currentUser string) error {
+	fmt.Println("Configuring RKE2...")
+	// var cmd *exec.Cmd
+	// if dockerUsername != "" && dockerPassword != "" {
+	// 	fmt.Println("Docker credentials provided. Installing RKE2 with Docker credentials")
+	// 	cmd = exec.Command("sudo", "env",
+	// 		fmt.Sprintf("DOCKER_USERNAME=%s", dockerUsername),
+	// 		fmt.Sprintf("DOCKER_PASSWORD=%s", dockerPassword),
+	// 		"NEEDRESTART_MODE=a", "DEBIAN_FRONTEND=noninteractive",
+	// 		"apt-get", "install", "-y",
+	// 		fmt.Sprintf("%s/onprem-ke-installer_%s_amd64.deb", debDirName, ORCH_VERSION),
+	// 	)
+	// } else {
+	// 	cmd = exec.Command("sudo",
+	// 		"NEEDRESTART_MODE=a", "DEBIAN_FRONTEND=noninteractive",
+	// 		"apt-get", "install", "-y",
+	// 		fmt.Sprintf("%s/onprem-ke-installer_%s_amd64.deb", debDirName, ORCH_VERSION),
+	// 	)
+	// }
+	// cmd.Stdout = os.Stdout
+	// cmd.Stderr = os.Stderr
+	// if err := cmd.Run(); err != nil {
+	// 	return fmt.Errorf("failed to install RKE2: %w", err)
+	// }
+	// fmt.Println("OS level configuration installed and RKE2 Installed")
 
 	kubeDir := fmt.Sprintf("/home/%s/.kube", currentUser)
 	if err := os.MkdirAll(kubeDir, 0o700); err != nil {
