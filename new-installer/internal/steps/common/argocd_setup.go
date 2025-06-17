@@ -40,7 +40,6 @@ func (s *ArgoCDStep) Labels() []string {
 }
 
 func (s *ArgoCDStep) ConfigStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
-
 	return runtimeState, nil
 }
 
@@ -59,7 +58,6 @@ func (s *ArgoCDStep) PreStep(ctx context.Context, config config.OrchInstallerCon
 func (s *ArgoCDStep) RunStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	// InstallArgoCD
 	err := InstallArgoCD()
-
 	if err != nil {
 		return runtimeState, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInternal,
@@ -97,7 +95,6 @@ func addArgoHelmRepo() error {
 	cmd.Stdout = nil // or os.Stdout to print output
 	cmd.Stderr = nil // or os.Stderr to print errors
 	if err := cmd.Run(); err != nil {
-		fmt.Println("Failed to add argo-helm repo:", err)
 		return fmt.Errorf("failed to add argo-helm repo: %w", err)
 	}
 
@@ -109,7 +106,6 @@ func addArgoHelmRepo() error {
 }
 
 func InstallArgoCD() error {
-
 	// Print ASCII art
 	fmt.Println(`
      _                     ____ ____
@@ -117,8 +113,7 @@ func InstallArgoCD() error {
    / _ \ | '__/ _  |/ _ \| |   | | | |
   / ___ \| | | (_| | (_) | |___| |_| |
  /_/   \_\_|  \__, |\___/ \____|____/
-              |___/
-`)
+              |___/`)
 
 	// Run helm template
 	helmTemplateCmd := exec.Command(
@@ -270,10 +265,11 @@ dex:
 		return fmt.Errorf("failed to create directory %s: %w", path, err)
 	}
 
-	chownToCurrentUserRecursive("/tmp/argo-cd/")
-	err := addArgoHelmRepo()
+	if err := chownToCurrentUserRecursive("/tmp/argo-cd/"); err != nil {
+		return fmt.Errorf("failed to change ownership of /tmp/argo-cd/: %w", err)
+	}
 
-	if err != nil {
+	if err := addArgoHelmRepo(); err != nil {
 		return fmt.Errorf("failed to add helm template: %w", err)
 	}
 
@@ -283,7 +279,7 @@ dex:
 
 	proxyYaml := fmt.Sprintf("http_proxy: %s\nhttps_proxy: %s\nno_proxy: %s\n", config.Proxy.HTTPProxy, config.Proxy.HTTPProxy, config.Proxy.NoProxy)
 	if err := os.WriteFile("/tmp/argo-cd/proxy-values.yaml", []byte(proxyYaml), 0644); err != nil {
-		return fmt.Errorf("failed to write proxy-values.yaml: %v", err)
+		return fmt.Errorf("failed to write proxy-values.yaml: %w", err)
 	}
 	return nil
 }
