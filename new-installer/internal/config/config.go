@@ -55,6 +55,10 @@ type OrchInstallerRuntimeState struct {
 		EFSFileSystemID          string   `yaml:"efsFileSystemID"`
 		EKSOIDCIssuer            string   `yaml:"eksOIDCIssuer"`
 		ACMCertArn               string   `yaml:"acmCertArn"`
+		EKSNodeSecurityGroupID   string   `yaml:"eksNodeSecurityGroupID"`
+		TraefikSecurityGroupID   string   `yaml:"traefikSecurityGroupID"`
+		Traefik2SecurityGroupID  string   `yaml:"traefik2SecurityGroupID"`
+		ArgoCDSecurityGroupID    string   `yaml:"argoCDSecurityGroupID"`
 	} `yaml:"aws,omitempty"`
 
 	// Database connection information. Used for both cloud and on-prem deployments.

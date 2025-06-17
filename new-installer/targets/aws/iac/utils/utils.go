@@ -475,3 +475,57 @@ func GenerateSSHKeyPair() (string, string, error) {
 	publicKeyString := string(ssh.MarshalAuthorizedKey(pub))
 	return privateKeyString, publicKeyString, nil
 }
+
+func CreateSecurityGroup(t testing.TestingT, name string, vpcID string) (string, error) {
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String(DefaultTestRegion),
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to create session: %w", err)
+	}
+	ec2Client := ec2.New(sess)
+	if err != nil {
+		return "", fmt.Errorf("failed to create EC2 client: %w", err)
+	}
+	sg, err := ec2Client.CreateSecurityGroup(&ec2.CreateSecurityGroupInput{
+		Description: aws.String("Test security group for LB SG testing"),
+		GroupName:   aws.String(name),
+		VpcId:       aws.String(vpcID), // Replace with actual VPC ID
+		TagSpecifications: []*ec2.TagSpecification{
+			{
+				ResourceType: aws.String("security-group"),
+				Tags: []*ec2.Tag{
+					{
+						Key:   aws.String("Name"),
+						Value: aws.String(name),
+					},
+				},
+			},
+		},
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to create security group: %w", err)
+	}
+
+	return *sg.GroupId, nil
+}
+
+func DeleteSecurityGroup(t testing.TestingT, sgID string) error {
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String(DefaultTestRegion),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create session: %w", err)
+	}
+	ec2Client := ec2.New(sess)
+	if err != nil {
+		return fmt.Errorf("failed to create EC2 client: %w", err)
+	}
+	_, err = ec2Client.DeleteSecurityGroup(&ec2.DeleteSecurityGroupInput{
+		GroupId: aws.String(sgID), // Replace with actual SG ID
+	})
+	if err != nil {
+		return fmt.Errorf("failed to delete security group: %w", err)
+	}
+	return nil
+}
