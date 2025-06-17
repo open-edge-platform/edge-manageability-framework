@@ -218,10 +218,7 @@ applicationSet:
 }
 
 func argocdValues(config config.OrchInstallerConfig) error {
-	err := addArgoHelmRepo()
-	if err != nil {
-		return fmt.Errorf("failed to add helm template: %v", err)
-	}
+
 	valuesFile := `
 server:
   service:
@@ -274,7 +271,13 @@ dex:
 	if err := os.MkdirAll(path, 0755); err != nil {
 		return fmt.Errorf("failed to create directory %s: %v", path, err)
 	}
+
 	chownToCurrentUserRecursive("/tmp/argo-cd/")
+	err := addArgoHelmRepo()
+
+	if err != nil {
+		return fmt.Errorf("failed to add helm template: %v", err)
+	}
 
 	if err := os.WriteFile("/tmp/argo-cd/argo-cd/templates/values.tmpl", []byte(valuesFile), 0644); err != nil {
 		return fmt.Errorf("failed to copy values.tmpl: %v", err)
