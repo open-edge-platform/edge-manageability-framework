@@ -1,0 +1,15 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: rke2-coredns
+  namespace: {{ .Namespace }}
+spec:
+  valuesContent: |-
+    global:
+      clusterCIDR: 10.42.0.0/16
+      clusterCIDRv4: 10.42.0.0/16
+      clusterDNS: 10.43.0.10
+      rke2DataDir: /var/lib/rancher/rke2
+      serviceCIDR: 10.43.0.0/16
+    service:
+      name: "kube-dns"
