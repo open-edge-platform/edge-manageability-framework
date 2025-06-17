@@ -5,12 +5,11 @@
 package common
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
-
-	"context"
 
 	"github.com/bitfield/script"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
@@ -48,7 +47,6 @@ func (s *ArgoCDStep) ConfigStep(ctx context.Context, config config.OrchInstaller
 func (s *ArgoCDStep) PreStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	// no-op for now
 	err := argocdValues(config)
-	fmt.Printf("Error installing Argocd %v \n", err)
 	if err != nil {
 		return runtimeState, &internal.OrchInstallerError{
 			ErrorCode: internal.OrchInstallerErrorCodeInternal,
@@ -100,7 +98,7 @@ func addArgoHelmRepo() error {
 	cmd.Stderr = nil // or os.Stderr to print errors
 	if err := cmd.Run(); err != nil {
 		fmt.Println("Failed to add argo-helm repo:", err)
-		return fmt.Errorf("failed to add argo-helm repo: %v", err)
+		return fmt.Errorf("failed to add argo-helm repo: %w", err)
 	}
 
 	cmd_str := fmt.Sprintf("helm fetch argo-helm/argo-cd --version %v --untar --untardir %v", argocdHelmVersion, argocdPath)
@@ -130,16 +128,16 @@ func InstallArgoCD() error {
 
 	valuesYaml, err := helmTemplateCmd.Output()
 	if err != nil {
-		return fmt.Errorf("failed to run helm template: %v", err)
+		return fmt.Errorf("failed to run helm template: %w", err)
 	}
 
 	if err := os.WriteFile("/tmp/argo-cd/values.yaml", valuesYaml, 0644); err != nil {
-		return fmt.Errorf("failed to write values.yaml: %v", err)
+		return fmt.Errorf("failed to write values.yaml: %w", err)
 	}
 
 	// Remove values.tmpl
 	if err := os.Remove("/tmp/argo-cd/argo-cd/templates/values.tmpl"); err != nil {
-		return fmt.Errorf("failed to remove values.tmpl: %v", err)
+		return fmt.Errorf("failed to remove values.tmpl: %w", err)
 	}
 
 	// Write mounts.yaml
@@ -198,7 +196,7 @@ applicationSet:
       path: /usr/local/share/ca-certificates/gitea_cert.crt
 `
 	if err := os.WriteFile("/tmp/argo-cd/mounts.yaml", []byte(mountsYaml), 0644); err != nil {
-		return fmt.Errorf("failed to write mounts.yaml: %v", err)
+		return fmt.Errorf("failed to write mounts.yaml: %w", err)
 	}
 
 	// Run helm install
@@ -211,7 +209,7 @@ applicationSet:
 	helmInstallCmd.Stdout = os.Stdout
 	helmInstallCmd.Stderr = os.Stderr
 	if err := helmInstallCmd.Run(); err != nil {
-		return fmt.Errorf("failed to run helm install: %v", err)
+		return fmt.Errorf("failed to run helm install: %w", err)
 	}
 
 	return nil
@@ -269,18 +267,18 @@ dex:
 
 	path := "/tmp/argo-cd/argo-cd/templates/"
 	if err := os.MkdirAll(path, 0755); err != nil {
-		return fmt.Errorf("failed to create directory %s: %v", path, err)
+		return fmt.Errorf("failed to create directory %s: %w", path, err)
 	}
 
 	chownToCurrentUserRecursive("/tmp/argo-cd/")
 	err := addArgoHelmRepo()
 
 	if err != nil {
-		return fmt.Errorf("failed to add helm template: %v", err)
+		return fmt.Errorf("failed to add helm template: %w", err)
 	}
 
 	if err := os.WriteFile("/tmp/argo-cd/argo-cd/templates/values.tmpl", []byte(valuesFile), 0644); err != nil {
-		return fmt.Errorf("failed to copy values.tmpl: %v", err)
+		return fmt.Errorf("failed to copy values.tmpl: %w", err)
 	}
 
 	proxyYaml := fmt.Sprintf("http_proxy: %s\nhttps_proxy: %s\nno_proxy: %s\n", config.Proxy.HTTPProxy, config.Proxy.HTTPProxy, config.Proxy.NoProxy)
