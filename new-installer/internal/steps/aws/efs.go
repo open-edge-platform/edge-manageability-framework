@@ -19,7 +19,7 @@ const (
 	EFSBackendBucketKey = "efs.tfstate"
 )
 
-var StepLabels = []string{"aws", "efs"}
+var efsStepLabels = []string{"aws", "efs"}
 
 type EFSVariables struct {
 	ClusterName      string   `json:"cluster_name" yaml:"cluster_name"`
@@ -30,7 +30,7 @@ type EFSVariables struct {
 	EKSOIDCIssuer    string   `json:"eks_oidc_issuer" yaml:"eks_oidc_issuer"`
 }
 
-// NewDefaultEFSVariables creates a new AWSVPCVariables with default values
+// NewDefaultEFSVariables creates a new EFSVariables with default values
 // based on variable.tf default definitions.
 func NewDefaultEFSVariables() EFSVariables {
 	return EFSVariables{
@@ -66,7 +66,7 @@ func (s *EFSStep) Name() string {
 }
 
 func (s *EFSStep) Labels() []string {
-	return StepLabels
+	return efsStepLabels
 }
 
 func (s *EFSStep) ConfigStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {

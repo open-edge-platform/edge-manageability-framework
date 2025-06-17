@@ -13,11 +13,13 @@ import (
 	"encoding/pem"
 	"fmt"
 	"math/big"
+	"sort"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go/service/rds"
 	"github.com/aws/aws-sdk-go/service/s3"
 )
 
@@ -32,6 +34,7 @@ type AWSUtility interface {
 	GetAvailableZones(region string) ([]string, error)
 	S3CopyToS3(srcRegion, srcBucket, srcKey, destRegion, destBucket, destKey string) error
 	GetSubnetIDsFromVPC(region, vpcID string) ([]string, []string, error)
+	DisableRDSDeletionProtection(region, dbIdentifier string) error
 }
 
 type awsUtilityImpl struct{}
@@ -71,9 +74,19 @@ func (*awsUtilityImpl) GetAvailableZones(region string) ([]string, error) {
 		zones = append(zones, *zone.ZoneName)
 	}
 
+	// AWS API does not guarantee that the availability zones are returned in any specific order.
+	// Sort the zones to ensure consistent ordering.
+	sort.Strings(zones)
+
 	if len(zones) < RequiredAvailabilityZones {
 		return nil, fmt.Errorf("cannot get three AWS availability zones from region %s", region)
 	}
+
+	// Only return up to RequiredAvailabilityZones zones
+	if len(zones) > RequiredAvailabilityZones {
+		zones = zones[:RequiredAvailabilityZones]
+	}
+
 	return zones, nil
 }
 
@@ -201,6 +214,25 @@ func (*awsUtilityImpl) GetSubnetIDsFromVPC(region, vpcID string) ([]string, []st
 	}
 
 	return publicSubnetIDs, privateSubnetIDs, nil
+}
+
+func (*awsUtilityImpl) DisableRDSDeletionProtection(region, dbIdentifier string) error {
+	session, err := session.NewSession(&aws.Config{
+		Region: aws.String(region),
+	})
+	if err != nil {
+		return err
+	}
+	rdsClient := rds.New(session)
+
+	_, err = rdsClient.ModifyDBCluster(&rds.ModifyDBClusterInput{
+		DBClusterIdentifier: aws.String(dbIdentifier),
+		DeletionProtection:  aws.Bool(false),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to disable deletion protection for RDS instance %s: %w", dbIdentifier, err)
+	}
+	return nil
 }
 
 // GenerateSelfSignedTLSCert generates a self-signed TLS certificate, CA certificate, and private key.

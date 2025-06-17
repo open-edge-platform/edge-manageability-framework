@@ -199,11 +199,6 @@ func postProcessConfig() {
 	// Convert comma separated field into a slice
 	input.AWS.JumpHostWhitelist = config.CommaSeparatedToSlice(tmpJumpHostWhitelist)
 	input.AWS.EKSIAMRoles = config.CommaSeparatedToSlice(tmpEKSIAMRoles)
-
-	// Setting up default values
-	if input.Orch.DefaultPassword == "" {
-		input.Orch.DefaultPassword = "ChangeMeOn1stLogin!"
-	}
 }
 
 func main() {
