@@ -8,8 +8,10 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
+	"text/template"
 
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
@@ -60,11 +62,19 @@ func (s *CustomizeRKE2Step) RunStep(ctx context.Context, config config.OrchInsta
 			{"rke2-config.yaml", "/etc/rancher/rke2", "config.yaml"},
 			{"rke2-coredns-config.yaml", "/var/lib/rancher/rke2/server/manifests", "rke2-coredns-config.yaml"},
 		} {
-			if err := copyAssetFile(s.AssetsDir, entry[0], entry[1], entry[2]); err != nil {
+			if err := copyConfig(s.AssetsDir, entry[0], entry[1], entry[2]); err != nil {
 				return runtimeState, &internal.OrchInstallerError{
 					ErrorMsg:  fmt.Sprintf("failed install %s into %s: %s", entry[0], entry[1], err),
 					ErrorCode: internal.OrchInstallerErrorCodeInternal,
 				}
+			}
+		}
+
+		// Render the
+		if err := renderConfig("/var/lib/rancher/rke2/server/manifests/rke2-coredns-config.yaml", map[string]string{"Namespace": "kube-system"}); err != nil {
+			return runtimeState, &internal.OrchInstallerError{
+				ErrorMsg:  fmt.Sprintf("failed to render rke2-config.yaml: %s", err),
+				ErrorCode: internal.OrchInstallerErrorCodeInternal,
 			}
 		}
 	}
@@ -76,7 +86,7 @@ func (s *CustomizeRKE2Step) PostStep(ctx context.Context, config config.OrchInst
 	return runtimeState, prevStepError
 }
 
-func copyAssetFile(assetsDir, srcFile, destDir, destFile string) error {
+func copyConfig(assetsDir, srcFile, destDir, destFile string) error {
 	srcPath := filepath.Join(assetsDir, srcFile)
 	if _, err := os.Stat(srcPath); err != nil {
 		return fmt.Errorf("file does not exist at path: %s", srcPath)
@@ -104,5 +114,25 @@ func copyAssetFile(assetsDir, srcFile, destDir, destFile string) error {
 	}
 
 	fmt.Printf("Copied %s to %s\n", srcFile, destPath)
+	return nil
+}
+
+func renderConfig(file string, data interface{}) error {
+	tmpl, err := template.ParseFiles(file)
+	if err != nil {
+		return fmt.Errorf("parsing template: %w", err)
+	}
+
+	f, err := os.OpenFile(file, os.O_WRONLY|os.O_TRUNC, 0)
+	if err != nil {
+		return fmt.Errorf("opening file: %w", err)
+	}
+	defer f.Close()
+
+	if err := tmpl.Execute(f, data); err != nil {
+		return fmt.Errorf("executing template: %w", err)
+	}
+
+	log.Printf("Rendered config file in place: %s\n", file)
 	return nil
 }
