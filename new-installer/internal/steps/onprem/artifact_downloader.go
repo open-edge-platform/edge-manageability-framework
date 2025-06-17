@@ -7,7 +7,6 @@ package onprem
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"os"
 	"os/exec"
 
@@ -136,31 +135,23 @@ func downloadArtifacts(ctx context.Context, registryUrl, registryPath, orchVersi
 
 func downloadRKE2Images(ctx context.Context, artifactDir string) error {
 	fmt.Println("Downloading RKE2 images and install script...")
-	rke2VersionEscaped := url.QueryEscape(rke2Version)
 
-	// Download the RKE2 images and binaries
 	for _, image := range []string{
 		rke2Binary,
 		rke2ImagesPkg,
 		rke2CalicoImagePkg,
 		rke2LibSHAFile,
 	} {
-		rke2DownloadURL := fmt.Sprintf("%s/%s/%s", rke2ImagesUrl, rke2VersionEscaped, image)
-		fmt.Printf("Downloading RKE2 from %s\n", rke2DownloadURL)
-		cmd := exec.CommandContext(ctx, "curl", "-L", rke2DownloadURL, "-o", fmt.Sprintf("%s/%s", artifactDir, image))
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("failed to download RKE2 image %s: %w", image, err)
+		url := fmt.Sprintf("%s/%s/%s", rke2ImagesUrl, rke2Version, image)
+		out := fmt.Sprintf("%s/%s", artifactDir, image)
+		fmt.Printf("Downloading %s\n", url)
+		if err := exec.CommandContext(ctx, "curl", "-L", url, "-o", out).Run(); err != nil {
+			return fmt.Errorf("failed to download %s: %w", image, err)
 		}
 	}
 
-	// Download the RKE2 install script
-	fmt.Printf("Downloading RKE2 install script from %s\n", rke2InstallerUrl)
-	cmd := exec.CommandContext(ctx, "curl", "-sfL", rke2InstallerUrl, "-o", fmt.Sprintf("%s/%s", artifactDir, "install.sh"))
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
+	installScript := fmt.Sprintf("%s/rke2-install.sh", artifactDir)
+	if err := exec.CommandContext(ctx, "curl", "-sfL", rke2InstallerUrl, "-o", installScript).Run(); err != nil {
 		return fmt.Errorf("failed to download install script: %w", err)
 	}
 
