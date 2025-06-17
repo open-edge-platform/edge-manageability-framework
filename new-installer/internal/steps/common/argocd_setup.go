@@ -211,7 +211,7 @@ applicationSet:
 }
 
 func argocdValues(config config.OrchInstallerConfig) error {
-
+	// revive:disable:dupword
 	valuesFile := `
 server:
   service:
@@ -259,6 +259,7 @@ global:
 dex:
   enabled: false
 `
+	// revive:enable:dupword
 
 	path := "/tmp/argo-cd/argo-cd/templates/"
 	if err := os.MkdirAll(path, 0755); err != nil {
