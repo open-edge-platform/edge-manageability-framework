@@ -58,11 +58,12 @@ func (s *CustomizeRKE2Step) RunStep(ctx context.Context, config config.OrchInsta
 		fmt.Println("Running RKE2 customization step")
 
 		for _, entry := range [][]string{
-			{"audit-policy.yaml", "/etc/rancher/rke2", "audit-policy.yaml"},
-			{"rke2-config.yaml", "/etc/rancher/rke2", "config.yaml"},
-			{"rke2-coredns-config.yaml", "/var/lib/rancher/rke2/server/manifests", "rke2-coredns-config.yaml"},
+			{"audit-policy.yaml", "/etc/rancher/rke2/audit-policy.yaml"},
+			{"rke2-config.yaml", "/etc/rancher/rke2/config.yaml"},
+			{"rke2-coredns-config.yaml", "/var/lib/rancher/rke2/server/manifests/rke2-coredns-config.yaml"},
+			{"rke2-registries.yaml", "/etc/rancher/rke2/registries.yaml"},
 		} {
-			if err := copyConfig(s.AssetsDir, entry[0], entry[1], entry[2]); err != nil {
+			if err := copyConfig(s.AssetsDir, entry[0], entry[1]); err != nil {
 				return runtimeState, &internal.OrchInstallerError{
 					ErrorMsg:  fmt.Sprintf("failed install %s into %s: %s", entry[0], entry[1], err),
 					ErrorCode: internal.OrchInstallerErrorCodeInternal,
@@ -70,11 +71,25 @@ func (s *CustomizeRKE2Step) RunStep(ctx context.Context, config config.OrchInsta
 			}
 		}
 
-		// Render the
-		if err := renderConfig("/var/lib/rancher/rke2/server/manifests/rke2-coredns-config.yaml", map[string]string{"Namespace": "kube-system"}); err != nil {
+		if err := renderConfig("/var/lib/rancher/rke2/server/manifests/rke2-coredns-config.yaml", map[string]string{
+			"Namespace": "kube-system",
+		}); err != nil {
 			return runtimeState, &internal.OrchInstallerError{
-				ErrorMsg:  fmt.Sprintf("failed to render rke2-config.yaml: %s", err),
+				ErrorMsg:  fmt.Sprintf("failed to render rke2-coredns-config.yaml: %s", err),
 				ErrorCode: internal.OrchInstallerErrorCodeInternal,
+			}
+		}
+
+		if config.Onprem.DockerUsername != "" && config.Onprem.DockerToken != "" {
+			// Render the registries.yaml file with the Docker credentials
+			if err := renderConfig("/etc/rancher/rke2/registries.yaml", map[string]string{
+				"DockerUsername": config.Onprem.DockerUsername,
+				"DockerToken":    config.Onprem.DockerToken,
+			}); err != nil {
+				return runtimeState, &internal.OrchInstallerError{
+					ErrorMsg:  fmt.Sprintf("failed to render registries.yaml: %s", err),
+					ErrorCode: internal.OrchInstallerErrorCodeInternal,
+				}
 			}
 		}
 	}
@@ -86,12 +101,13 @@ func (s *CustomizeRKE2Step) PostStep(ctx context.Context, config config.OrchInst
 	return runtimeState, prevStepError
 }
 
-func copyConfig(assetsDir, srcFile, destDir, destFile string) error {
+func copyConfig(assetsDir, srcFile, destFile string) error {
 	srcPath := filepath.Join(assetsDir, srcFile)
 	if _, err := os.Stat(srcPath); err != nil {
 		return fmt.Errorf("file does not exist at path: %s", srcPath)
 	}
 
+	destDir := filepath.Dir(destFile)
 	if err := os.MkdirAll(destDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", destDir, err)
 	}
@@ -102,18 +118,17 @@ func copyConfig(assetsDir, srcFile, destDir, destFile string) error {
 	}
 	defer src.Close()
 
-	destPath := filepath.Join(destDir, destFile)
-	dest, err := os.Create(destPath)
+	dest, err := os.Create(destFile)
 	if err != nil {
-		return fmt.Errorf("failed to create destination file %s: %w", destPath, err)
+		return fmt.Errorf("failed to create destination file %s: %w", destFile, err)
 	}
 	defer dest.Close()
 
 	if _, err := io.Copy(dest, src); err != nil {
-		return fmt.Errorf("failed to copy %s to %s: %w", srcFile, destPath, err)
+		return fmt.Errorf("failed to copy %s to %s: %w", srcFile, destFile, err)
 	}
 
-	fmt.Printf("Copied %s to %s\n", srcFile, destPath)
+	fmt.Printf("Copied %s to %s\n", srcFile, destFile)
 	return nil
 }
 
