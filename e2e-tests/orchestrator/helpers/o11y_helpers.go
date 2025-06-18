@@ -17,7 +17,7 @@ import (
 	"strings"
 	"time"
 
-	invapi "github.com/open-edge-platform/infra-core/api/pkg/api/v0"
+	invapi "github.com/open-edge-platform/infra-core/apiv2/v2/pkg/api/v2"
 )
 
 const (
@@ -283,7 +283,7 @@ func GetHostByUUID(client *APIClient, uuid string) (string, error) {
 	}
 
 	// one host is expected in o11y tests, no need to check the pagination
-	hostsList := new(invapi.HostsList)
+	hostsList := new(invapi.ListHostsResponse)
 	statusCode, err := client.MakeAPICallParseResp(http.MethodGet, "/compute/hosts", nil, hostsList)
 	if err != nil {
 		return "", fmt.Errorf("error accessing get hosts API endpoint: %w", err)
@@ -292,8 +292,8 @@ func GetHostByUUID(client *APIClient, uuid string) (string, error) {
 		return "", fmt.Errorf("get hosts API endpoint returned non 200 status, returned code: %v", statusCode)
 	}
 
-	for _, host := range *hostsList.Hosts {
-		if host.Uuid.String() == uuid {
+	for _, host := range hostsList.Hosts {
+		if host.Uuid != nil && *host.Uuid == uuid {
 			hostID := *host.ResourceId
 			if hostID == "" {
 				return "", errors.New("empty host resource ID")

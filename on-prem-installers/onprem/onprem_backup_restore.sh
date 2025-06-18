@@ -78,13 +78,13 @@ vg_name=lvmvg
 namespaces=$(kubectl get namespaces -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}')
 for ns in $namespaces; do
   # Find what applications are deployed in current namespace
-  apps_in_ns=$(kubectl get applications.argoproj.io -n onprem -o json | jq -r --arg NAMESPACE "$ns" '.items[] | select(.spec.destination.namespace == $NAMESPACE) | .metadata.name')
+  apps_in_ns=$(kubectl get applications.argoproj.io -n onprem --no-headers -o custom-columns=NAME:.metadata.name,NAMESPACE:.spec.destination.namespace | awk -v ns="$ns" '$2 == ns {print $1}')
 
-  # Disable autoSync for ArgoCD appllications so pods can be scaled down to zero for the time of backup restore
+  # Disable autoSync for ArgoCD applications so pods can be scaled down to zero for the time of backup restore
   declare -A sync_policy_map
   for app in $apps_in_ns; do
     echo "Disabling ArgoCD auto sync for application: $app"
-    sync_policy_map[$app]=$(kubectl get application "$app" -n onprem -ojson | jq -r '{spec: {syncPolicy: .spec.syncPolicy}}')
+    sync_policy_map[$app]=$(kubectl get application "$app" -n onprem -ojsonpath='{.spec.syncPolicy}' | sed 's/^/{"spec":{"syncPolicy":/' | sed 's/$/}}/')
     kubectl -n onprem patch application "$app" --type=merge -p "$stop_sync_patch"
   done
 

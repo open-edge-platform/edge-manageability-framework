@@ -59,7 +59,7 @@ variable "hostname" {
     "web-ui"]
 }
 
-# No host list varibale for the LB of argocd is needed because "argocd" is the only subdomain on that LB
+# No host list variable for the LB of argocd is needed because "argocd" is the only subdomain on that LB
 
 variable "traefik2_hostname" {
   type    = list(string)
@@ -69,7 +69,7 @@ variable "traefik2_hostname" {
 
 variable "lb_created" {
   type        = bool
-  description = "Wether the LBs for the Orchestrator are created. The CNAME of {orch_name}.{parent_zone} will be created if it is true."
+  description = "Whether the LBs for the Orchestrator are created. The CNAME of {orch_name}.{parent_zone} will be created if it is true."
   default     = false
 }
 

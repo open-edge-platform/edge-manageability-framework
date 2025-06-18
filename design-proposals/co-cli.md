@@ -107,7 +107,7 @@ The CLI is to be implemented in the `go` programming language, using the popular
 
 ## Out of scope Features
 
-- hardware information, currently retreivable via EIM CLI
+- hardware information, currently retrievable via EIM CLI
 - add another node to cluster, currently not supported feature in cluster-orchestration.
 
 ## Open issues (if applicable)
