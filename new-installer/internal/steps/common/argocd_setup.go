@@ -211,7 +211,7 @@ applicationSet:
 }
 
 func argocdValues(config config.OrchInstallerConfig) error {
-	// revive:disable:dupword
+	//nolint
 	valuesFile := `
 server:
   service:
