@@ -31,6 +31,12 @@ core:
         args:
           "--insecure-diagnostics": "true"
           "--additional-sync-machine-labels": ".*"
+          "--cluster-concurrency": "10"
+          "--clustercache-client-burst": "150"
+          "--clustercache-client-qps": "100"
+          "--kube-api-burst": "150"
+          "--kube-api-qps": "100"
+          "--machine-concurrency": "10"
     additionalManifests:
       name: core-additional-manifest
       namespace: capi-system
@@ -51,6 +57,7 @@ bootstrap:
             - name: manager
               args:
                 "--insecure-diagnostics": "true"
+                "--concurrency": "10"
         additionalManifests:
           name: bootstrap-rke2-additional-manifest
           namespace: capr-system
