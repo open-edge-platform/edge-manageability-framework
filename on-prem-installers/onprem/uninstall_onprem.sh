@@ -13,6 +13,7 @@ packages=(
     onprem-orch-installer
     onprem-argocd-installer
     onprem-ke-installer
+    onprem-config-installer
 )
 
 remove_package() {
