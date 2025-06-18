@@ -126,7 +126,7 @@ func InstallArgoCD() error {
 		return fmt.Errorf("failed to run helm template: %w", err)
 	}
 
-	if err := os.WriteFile("/tmp/argo-cd/values.yaml", valuesYaml, 0644); err != nil {
+	if err := os.WriteFile("/tmp/argo-cd/values.yaml", valuesYaml, 0o644); err != nil {
 		return fmt.Errorf("failed to write values.yaml: %w", err)
 	}
 
@@ -190,7 +190,7 @@ applicationSet:
     hostPath:
       path: /usr/local/share/ca-certificates/gitea_cert.crt
 `
-	if err := os.WriteFile("/tmp/argo-cd/mounts.yaml", []byte(mountsYaml), 0644); err != nil {
+	if err := os.WriteFile("/tmp/argo-cd/mounts.yaml", []byte(mountsYaml), 0o644); err != nil {
 		return fmt.Errorf("failed to write mounts.yaml: %w", err)
 	}
 
@@ -262,7 +262,7 @@ dex:
 	// revive:enable:dupword
 
 	path := "/tmp/argo-cd/argo-cd/templates/"
-	if err := os.MkdirAll(path, 0755); err != nil {
+	if err := os.MkdirAll(path, 0o755); err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", path, err)
 	}
 
@@ -274,12 +274,12 @@ dex:
 		return fmt.Errorf("failed to add helm template: %w", err)
 	}
 
-	if err := os.WriteFile("/tmp/argo-cd/argo-cd/templates/values.tmpl", []byte(valuesFile), 0644); err != nil {
+	if err := os.WriteFile("/tmp/argo-cd/argo-cd/templates/values.tmpl", []byte(valuesFile), 0o644); err != nil {
 		return fmt.Errorf("failed to copy values.tmpl: %w", err)
 	}
 
 	proxyYaml := fmt.Sprintf("http_proxy: %s\nhttps_proxy: %s\nno_proxy: %s\n", config.Proxy.HTTPProxy, config.Proxy.HTTPProxy, config.Proxy.NoProxy)
-	if err := os.WriteFile("/tmp/argo-cd/proxy-values.yaml", []byte(proxyYaml), 0644); err != nil {
+	if err := os.WriteFile("/tmp/argo-cd/proxy-values.yaml", []byte(proxyYaml), 0o644); err != nil {
 		return fmt.Errorf("failed to write proxy-values.yaml: %w", err)
 	}
 	return nil
