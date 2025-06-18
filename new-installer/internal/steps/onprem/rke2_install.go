@@ -17,44 +17,65 @@ import (
 )
 
 const (
+	rke2BaseDir     = "/var/lib/rancher/rke2"
 	rke2ImagesDir   = "/var/lib/rancher/rke2/agent/images"
+	rke2ConfigFile  = "/etc/rancher/rke2/rke2.yaml"
+	rke2BinaryPath  = "/usr/local/bin/rke2"
 	useDebInstaller = true // Set to true if using deb package installation
 )
 
-type Rke2Step struct {
+type RKE2InstallStep struct {
 	RootPath               string
 	KeepGeneratedFiles     bool
-	orchConfigReaderWriter config.OrchConfigReaderWriter
+	OrchConfigReaderWriter config.OrchConfigReaderWriter
 	StepLabels             []string
 }
 
-func CreateRke2Step(rootPath string, keepGeneratedFiles bool, orchConfigReaderWriter config.OrchConfigReaderWriter) *Rke2Step {
-	return &Rke2Step{
+func CreateRKE2InstallStep(rootPath string, keepGeneratedFiles bool, orchConfigReaderWriter config.OrchConfigReaderWriter) *RKE2InstallStep {
+	return &RKE2InstallStep{
 		RootPath:               rootPath,
 		KeepGeneratedFiles:     keepGeneratedFiles,
-		orchConfigReaderWriter: orchConfigReaderWriter,
+		OrchConfigReaderWriter: orchConfigReaderWriter,
 	}
 }
 
-func (s *Rke2Step) Name() string {
-	return "Rke2InfraStep"
+func (s *RKE2InstallStep) Name() string {
+	return "InstallRke2Step"
 }
 
-func (s *Rke2Step) Labels() []string {
+func (s *RKE2InstallStep) Labels() []string {
 	return s.StepLabels
 }
 
-func (s *Rke2Step) ConfigStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *RKE2InstallStep) ConfigStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	return runtimeState, nil
 }
 
-func (s *Rke2Step) PreStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
-	// no-op for now
-	fmt.Println("PreStep for Rke2Step is a no-op")
+func (s *RKE2InstallStep) PreStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+	if _, err := os.Stat(rke2BinaryPath); err == nil {
+		// RKE2 binary exists
+		if runtimeState.Action == "install" {
+			fmt.Println("RKE2 is already installed, skipping installation step")
+			return runtimeState, &internal.OrchInstallerError{
+				ErrorMsg:  "RKE2 is already installed, skipping installation step",
+				ErrorCode: internal.OrchInstallerErrorCodeInternal,
+			}
+		}
+	} else if os.IsNotExist(err) {
+		// RKE2 binary does not exist
+		fmt.Println("RKE2 is not installed")
+	} else {
+		// Some other error occurred
+		fmt.Printf("Error checking RKE2 installation: %v\n", err)
+		return runtimeState, &internal.OrchInstallerError{
+			ErrorMsg:  fmt.Sprintf("Error checking RKE2 installation: %v", err),
+			ErrorCode: internal.OrchInstallerErrorCodeInternal,
+		}
+	}
 	return runtimeState, nil
 }
 
-func (s *Rke2Step) RunStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *RKE2InstallStep) RunStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	if runtimeState.Action == "uninstall" {
 		fmt.Println("Running RKE2 uninstallation step")
 		// Stop RKE2 service
@@ -70,10 +91,8 @@ func (s *Rke2Step) RunStep(ctx context.Context, config config.OrchInstallerConfi
 				ErrorCode: internal.OrchInstallerErrorCodeInternal,
 			}
 		}
-	}
-
-	if runtimeState.Action == "install" {
-		fmt.Println("Running RKE2 installation step")
+	} else if runtimeState.Action == "install" {
+		fmt.Printf("Running %s run-step\n", s.Name())
 
 		if useDebInstaller {
 			var dockerUsername, dockerPassword string
@@ -89,7 +108,7 @@ func (s *Rke2Step) RunStep(ctx context.Context, config config.OrchInstallerConfi
 			}
 
 			var kubeConfig string
-			if kubeConfig, err = installRKE2(INSTALLERS_DIR, dockerUsername, dockerPassword, currentUser.Username); err != nil {
+			if kubeConfig, err = installRKE2Deb(installersDir, dockerUsername, dockerPassword, currentUser.Username); err != nil {
 				return runtimeState, &internal.OrchInstallerError{
 					ErrorMsg:  fmt.Sprintf("failed to install RKE2: %s", err),
 					ErrorCode: internal.OrchInstallerErrorCodeInternal,
@@ -101,7 +120,7 @@ func (s *Rke2Step) RunStep(ctx context.Context, config config.OrchInstallerConfi
 
 		} else {
 
-			if err := installRKE2New(ctx, INSTALLERS_DIR); err != nil {
+			if err := installRKE2(ctx, installersDir); err != nil {
 				return runtimeState, &internal.OrchInstallerError{
 					ErrorMsg:  fmt.Sprintf("failed to install RKE2: %s", err),
 					ErrorCode: internal.OrchInstallerErrorCodeInternal,
@@ -117,7 +136,7 @@ func (s *Rke2Step) RunStep(ctx context.Context, config config.OrchInstallerConfi
 			}
 			fmt.Println("RKE2 images directory created successfully")
 
-			if err := copyRKE2Images(INSTALLERS_DIR, rke2ImagesDir); err != nil {
+			if err := copyRKE2Images(installersDir, rke2ImagesDir); err != nil {
 				return runtimeState, &internal.OrchInstallerError{
 					ErrorMsg:  fmt.Sprintf("failed to copy RKE2 images to %s: %s", rke2ImagesDir, err),
 					ErrorCode: internal.OrchInstallerErrorCodeInternal,
@@ -135,16 +154,74 @@ func (s *Rke2Step) RunStep(ctx context.Context, config config.OrchInstallerConfi
 
 			fmt.Println("RKE2 service enabled and started successfully")
 		}
+	} else {
+		return runtimeState, &internal.OrchInstallerError{
+			ErrorMsg:  "Invalid action for RKE2 step. Expected 'install' or 'uninstall'",
+			ErrorCode: internal.OrchInstallerErrorCodeInternal,
+		}
 	}
 
 	return runtimeState, nil
 }
 
-func (s *Rke2Step) PostStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState, prevStepError *internal.OrchInstallerError) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *RKE2InstallStep) PostStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState, prevStepError *internal.OrchInstallerError) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+
+	if runtimeState.Action == "install" {
+		// Set up kubeconfig for the current user
+		currentUser, err := user.Current()
+		if err != nil {
+			return runtimeState, &internal.OrchInstallerError{
+				ErrorMsg:  fmt.Sprintf("failed to get current user: %s", err),
+				ErrorCode: internal.OrchInstallerErrorCodeInternal,
+			}
+		}
+
+		// Create the .kube directory in the user's home directory
+		kubeDir := fmt.Sprintf("/home/%s/.kube", currentUser.Username)
+		if err := os.MkdirAll(kubeDir, 0o700); err != nil {
+			return runtimeState, &internal.OrchInstallerError{
+				ErrorMsg:  fmt.Sprintf("failed to create kube dir %s: %s", kubeDir, err),
+				ErrorCode: internal.OrchInstallerErrorCodeInternal,
+			}
+		}
+
+		// Copy the RKE2 config file to the user's kube directory
+		if err := exec.CommandContext(ctx, "sudo", "cp", rke2ConfigFile, fmt.Sprintf("%s/config", kubeDir)).Run(); err != nil {
+			return runtimeState, &internal.OrchInstallerError{
+				ErrorMsg:  fmt.Sprintf("failed to copy kube config %s to %s: %s", rke2ConfigFile, kubeDir, err),
+				ErrorCode: internal.OrchInstallerErrorCodeInternal,
+			}
+		}
+
+		// Change ownership of the kube directory and its contents to the current user
+		if err := exec.CommandContext(ctx, "sudo", "chown", "-R", fmt.Sprintf("%s:%s", currentUser.Username, currentUser.Username), kubeDir).Run(); err != nil {
+			return runtimeState, &internal.OrchInstallerError{
+				ErrorMsg:  fmt.Sprintf("failed to chown in kube dir %s: %s", kubeDir, err),
+				ErrorCode: internal.OrchInstallerErrorCodeInternal,
+			}
+		}
+
+		// Set permissions for the kube config file
+		if err := exec.CommandContext(ctx, "sudo", "chmod", "600", fmt.Sprintf("%s/config", kubeDir)).Run(); err != nil {
+			return runtimeState, &internal.OrchInstallerError{
+				ErrorMsg:  fmt.Sprintf("failed to chmod kube config %s: %s", fmt.Sprintf("%s/config", kubeDir), err),
+				ErrorCode: internal.OrchInstallerErrorCodeInternal,
+			}
+		}
+
+		// Set the KUBECONFIG environment variable for the current user
+		if err := os.Setenv("KUBECONFIG", fmt.Sprintf("/home/%s/.kube/config", currentUser.Username)); err != nil {
+			return runtimeState, &internal.OrchInstallerError{
+				ErrorMsg:  fmt.Sprintf("failed to set KUBECONFIG environment variable: %s", err),
+				ErrorCode: internal.OrchInstallerErrorCodeInternal,
+			}
+		}
+	}
+
 	return runtimeState, prevStepError
 }
 
-func installRKE2New(ctx context.Context, artifactDir string) error {
+func installRKE2(ctx context.Context, artifactDir string) error {
 	fmt.Println("Installing RKE2...")
 
 	if err := os.Chmod(fmt.Sprintf("%s/install.sh", artifactDir), 0o755); err != nil {
@@ -177,8 +254,8 @@ func createRKE2ImagesDir(imagesDir string) error {
 
 func copyRKE2Images(source, destination string) error {
 	for _, image := range []string{
-		rke2ImagesPkg,
-		rke2CalicoImagePkg,
+		rke2ImagesPackage,
+		rke2CalicoImagePackage,
 	} {
 		src := fmt.Sprintf("%s/%s", source, image)
 		dst := fmt.Sprintf("%s/%s", destination, image)
@@ -230,7 +307,8 @@ func enableRKE2Service(ctx context.Context) error {
 	return nil
 }
 
-func installRKE2(debDirName, dockerUsername, dockerPassword, currentUser string) (string, error) {
+// TODO: Remove this function once the installer is fully migrated from the deb package to the tarball installation method.
+func installRKE2Deb(debDirName, dockerUsername, dockerPassword, currentUser string) (string, error) {
 	fmt.Println("Installing RKE2...")
 	var cmd *exec.Cmd
 	var kubeconfig string
@@ -241,13 +319,13 @@ func installRKE2(debDirName, dockerUsername, dockerPassword, currentUser string)
 			fmt.Sprintf("DOCKER_PASSWORD=%s", dockerPassword),
 			"NEEDRESTART_MODE=a", "DEBIAN_FRONTEND=noninteractive",
 			"apt-get", "install", "-y",
-			fmt.Sprintf("%s/onprem-ke-installer_%s_amd64.deb", debDirName, ORCH_VERSION),
+			fmt.Sprintf("%s/onprem-ke-installer_%s_amd64.deb", debDirName, orchVersion),
 		)
 	} else {
 		cmd = exec.Command("sudo",
 			"NEEDRESTART_MODE=a", "DEBIAN_FRONTEND=noninteractive",
 			"apt-get", "install", "-y",
-			fmt.Sprintf("%s/onprem-ke-installer_%s_amd64.deb", debDirName, ORCH_VERSION),
+			fmt.Sprintf("%s/onprem-ke-installer_%s_amd64.deb", debDirName, orchVersion),
 		)
 	}
 	cmd.Stdout = os.Stdout
