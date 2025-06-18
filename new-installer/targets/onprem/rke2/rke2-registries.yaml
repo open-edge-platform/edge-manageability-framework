@@ -1,0 +1,5 @@
+configs:
+  "registry-1.docker.io":
+    auth:
+      username: "{{ .DockerUsername }}"
+      password: "{{ .DockerToken }}"
