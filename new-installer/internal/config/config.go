@@ -70,6 +70,9 @@ type OrchInstallerRuntimeState struct {
 		TLSKey  string `yaml:"tlsKey"`
 		TLSCA   string `yaml:"tlsCA"`
 	} `yaml:"cert,omitempty"`
+	Onprem struct {
+		KubeConfig string `yaml:"kubeConfig"`
+	} `yaml:"onprem,omitempty"`
 }
 
 type OrchInstallerConfig struct {
