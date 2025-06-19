@@ -6,11 +6,7 @@ package aws_iac_vpc_test
 
 import (
 	"crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
 	"encoding/json"
-	"encoding/pem"
-	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -18,13 +14,8 @@ import (
 	"github.com/gruntwork-io/terratest/modules/aws"
 	"github.com/gruntwork-io/terratest/modules/terraform"
 	steps_aws "github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps/aws"
-	aws_iac "github.com/open-edge-platform/edge-manageability-framework/installer/targets/aws/iac/utils"
+	"github.com/open-edge-platform/edge-manageability-framework/installer/targets/aws/iac/utils"
 	"github.com/stretchr/testify/suite"
-	"golang.org/x/crypto/ssh"
-)
-
-const (
-	JumphostSSHKeySize = 2048
 )
 
 type VPCTestSuite struct {
@@ -39,15 +30,15 @@ func (s *VPCTestSuite) TestApplyingModule() {
 	// Bucket for VPC state
 	randomPostfix := strings.ToLower(rand.Text()[:8])
 	bucketName := "test-bucket-" + randomPostfix
-	aws.CreateS3Bucket(s.T(), aws_iac.DefaultRegion, bucketName)
+	aws.CreateS3Bucket(s.T(), utils.DefaultTestRegion, bucketName)
 	defer func() {
-		aws.EmptyS3Bucket(s.T(), aws_iac.DefaultRegion, bucketName)
-		aws.DeleteS3Bucket(s.T(), aws_iac.DefaultRegion, bucketName)
+		aws.EmptyS3Bucket(s.T(), utils.DefaultTestRegion, bucketName)
+		aws.DeleteS3Bucket(s.T(), utils.DefaultTestRegion, bucketName)
 	}()
 
-	_, publicSSHKey, _ := GenerateSSHKeyPair()
+	_, publicSSHKey, _ := utils.GenerateSSHKeyPair()
 	variables := steps_aws.VPCVariables{
-		Region:             aws_iac.DefaultRegion,
+		Region:             utils.DefaultTestRegion,
 		Name:               "test-vpc-" + randomPostfix,
 		CidrBlock:          "10.250.0.0/16",
 		EnableDnsHostnames: true,
@@ -69,7 +60,7 @@ func (s *VPCTestSuite) TestApplyingModule() {
 		JumphostInstanceSSHKey: publicSSHKey,
 		JumphostSubnet:         "public-subnet-1",
 		Production:             true,
-		CustomerTag:            aws_iac.DefaultCustomerTag,
+		CustomerTag:            utils.DefaultTestCustomerTag,
 	}
 
 	jsonData, err := json.Marshal(variables)
@@ -89,7 +80,7 @@ func (s *VPCTestSuite) TestApplyingModule() {
 		TerraformDir: "../vpc",
 		VarFiles:     []string{tempFile.Name()},
 		BackendConfig: map[string]interface{}{
-			"region": aws_iac.DefaultRegion,
+			"region": utils.DefaultTestRegion,
 			"bucket": bucketName,
 			"key":    "vpc.tfstate",
 		},
@@ -104,7 +95,7 @@ func (s *VPCTestSuite) TestApplyingModule() {
 		s.NoError(err, "Failed to get VPC ID from Terraform output")
 		return
 	}
-	vpc := aws.GetVpcById(s.T(), vpcID, aws_iac.DefaultRegion)
+	vpc := aws.GetVpcById(s.T(), vpcID, utils.DefaultTestRegion)
 	s.Equal("10.250.0.0/16", *vpc.CidrBlock, "VPC CIDR block does not match expected value")
 	s.NotEmpty(vpcID, "VPC ID should not be empty")
 	privateSubnets := terraform.OutputMapOfObjects(s.T(), terraformOptions, "private_subnets")
@@ -125,10 +116,10 @@ func (s *VPCTestSuite) TestApplyingModule() {
 		"tag:Name": {"test-vpc-" + randomPostfix + "-jump"},
 		"tag:VPC":  {"test-vpc-" + randomPostfix},
 	}
-	instanceIDs := aws.GetEc2InstanceIdsByFilters(s.T(), aws_iac.DefaultRegion, ec2Filters)
+	instanceIDs := aws.GetEc2InstanceIdsByFilters(s.T(), utils.DefaultTestRegion, ec2Filters)
 	s.NotEmpty(instanceIDs, "No EC2 instances found with the specified filters")
 
-	_, err = aws_iac.GetInternetGatewaysByTags(aws_iac.DefaultRegion, map[string][]string{
+	_, err = utils.GetInternetGatewaysByTags(utils.DefaultTestRegion, map[string][]string{
 		"Name": {"test-vpc-" + randomPostfix + "-igw"},
 		"VPC":  {"test-vpc-" + randomPostfix},
 	})
@@ -137,31 +128,11 @@ func (s *VPCTestSuite) TestApplyingModule() {
 		return
 	}
 
-	_, err = aws_iac.GetNATGatewaysByTags(aws_iac.DefaultRegion, map[string][]string{
+	_, err = utils.GetNATGatewaysByTags(utils.DefaultTestRegion, map[string][]string{
 		"VPC": {"test-vpc-" + randomPostfix},
 	})
 	if err != nil {
 		s.NoError(err, "Failed to get NAT Gateway for VPC")
 		return
 	}
-}
-
-func GenerateSSHKeyPair() (string, string, error) {
-	privateKey, err := rsa.GenerateKey(rand.Reader, JumphostSSHKeySize)
-	if err != nil {
-		return "", "", fmt.Errorf("failed to generate private key: %w", err)
-	}
-
-	privateKeyBytes := x509.MarshalPKCS1PrivateKey(privateKey)
-	privateKeyPEM := &pem.Block{
-		Type:  "RSA PRIVATE KEY",
-		Bytes: privateKeyBytes,
-	}
-	privateKeyString := string(pem.EncodeToMemory(privateKeyPEM))
-	pub, err := ssh.NewPublicKey(&privateKey.PublicKey)
-	if err != nil {
-		return "", "", err
-	}
-	publicKeyString := string(ssh.MarshalAuthorizedKey(pub))
-	return privateKeyString, publicKeyString, nil
 }
