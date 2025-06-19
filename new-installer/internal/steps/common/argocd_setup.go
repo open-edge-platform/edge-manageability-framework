@@ -74,7 +74,7 @@ func (s *ArgoCDStep) RunStep(ctx context.Context, config config.OrchInstallerCon
 		if err != nil {
 			return runtimeState, &internal.OrchInstallerError{
 				ErrorCode: internal.OrchInstallerErrorCodeInternal,
-				ErrorMsg:  fmt.Sprintf("Error installing Argocd %v \n", err),
+				ErrorMsg:  fmt.Sprintf("Error uninstalling Argocd %v \n", err),
 			}
 		}
 	}
@@ -131,12 +131,12 @@ func UninstallArgoCD() error {
               |___/`)
 
 	cmd := exec.Command("helm", "delete", "argocd", "-n", "argocd")
-	_ = cmd.Run() // ignore error, like '|| true' in shell
+	_ = cmd.Run()
 
 	// Remove artifacts
-	_ = os.RemoveAll("/tmp/argo-cd") // ignore error, like '|| true' in shell
+	err := os.RemoveAll("/tmp/argo-cd")
 
-	return nil
+	return err
 }
 
 func InstallArgoCD() error {
