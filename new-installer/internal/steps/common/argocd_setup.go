@@ -44,43 +44,58 @@ func (s *ArgoCDStep) ConfigStep(ctx context.Context, config config.OrchInstaller
 }
 
 func (s *ArgoCDStep) PreStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
-	// no-op for now
-	err := argocdValues(config)
-	if err != nil {
-		return runtimeState, &internal.OrchInstallerError{
-			ErrorCode: internal.OrchInstallerErrorCodeInternal,
-			ErrorMsg:  fmt.Sprintf("Error installing Argocd %v \n", err),
+	if runtimeState.Action == "install" {
+		// no-op for now
+		err := argocdValues(config)
+		if err != nil {
+			return runtimeState, &internal.OrchInstallerError{
+				ErrorCode: internal.OrchInstallerErrorCodeInternal,
+				ErrorMsg:  fmt.Sprintf("Error installing Argocd %v \n", err),
+			}
 		}
 	}
 	return runtimeState, nil
 }
 
 func (s *ArgoCDStep) RunStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
-	// InstallArgoCD
-	err := InstallArgoCD()
-	if err != nil {
-		return runtimeState, &internal.OrchInstallerError{
-			ErrorCode: internal.OrchInstallerErrorCodeInternal,
-			ErrorMsg:  fmt.Sprintf("Error installing Argocd %v \n", err),
+	if runtimeState.Action == "install" {
+		// InstallArgoCD
+		err := InstallArgoCD()
+		if err != nil {
+			return runtimeState, &internal.OrchInstallerError{
+				ErrorCode: internal.OrchInstallerErrorCodeInternal,
+				ErrorMsg:  fmt.Sprintf("Error installing Argocd %v \n", err),
+			}
+		}
+	}
+	if runtimeState.Action == "uninstall" {
+		// UninstallArgoCD
+		err := UninstallArgoCD()
+		if err != nil {
+			return runtimeState, &internal.OrchInstallerError{
+				ErrorCode: internal.OrchInstallerErrorCodeInternal,
+				ErrorMsg:  fmt.Sprintf("Error installing Argocd %v \n", err),
+			}
 		}
 	}
 	return runtimeState, nil
 }
 
 func (s *ArgoCDStep) PostStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState, prevStepError *internal.OrchInstallerError) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
-	// Wait for ArgoCD namespace creation normally taken from an env var
-	argoCDNS := "argocd"
-	if argoCDNS == "" {
-		argoCDNS = "argocd"
-	}
-	err := WaitForNamespaceCreation(argoCDNS)
-	if err != nil {
-		return runtimeState, &internal.OrchInstallerError{
-			ErrorCode: internal.OrchInstallerErrorCodeInternal,
-			ErrorMsg:  fmt.Sprintf("Error installing Argocd %v \n", err),
+	if runtimeState.Action == "install" {
+		// Wait for ArgoCD namespace creation normally taken from an env var
+		argoCDNS := "argocd"
+		if argoCDNS == "" {
+			argoCDNS = "argocd"
+		}
+		err := WaitForNamespaceCreation(argoCDNS)
+		if err != nil {
+			return runtimeState, &internal.OrchInstallerError{
+				ErrorCode: internal.OrchInstallerErrorCodeInternal,
+				ErrorMsg:  fmt.Sprintf("Error installing Argocd %v \n", err),
+			}
 		}
 	}
-
 	return runtimeState, prevStepError
 }
 
@@ -102,6 +117,25 @@ func addArgoHelmRepo() error {
 	if _, err := script.Exec(cmd_str).Stdout(); err != nil {
 		return fmt.Errorf("failed to fetch argo-cd chart: %w", err)
 	}
+	return nil
+}
+
+func UninstallArgoCD() error {
+	// Print ASCII art
+	fmt.Println(`
+     _                     ____ ____    ____
+    / \   _ __ __ _  ___  / ___|  _ \  |  _ \ ___ _ __ ___   _____   _____
+   / _ \ | '__/ _  |/ _ \| |   | | | | | |_) / _ \  _   _ \ /_  \ \ / / _ \
+  / ___ \| | | (_| | (_) | |___| |_| | |  _ <  __/ | | | | | (_) \ V /  __/
+ /_/   \_\_|  \__, |\___/ \____|____/  |_| \_\___|_| |_| |_|\___/ \_/ \___|
+              |___/`)
+
+	cmd := exec.Command("helm", "delete", "argocd", "-n", "argocd")
+	_ = cmd.Run() // ignore error, like '|| true' in shell
+
+	// Remove artifacts
+	_ = os.RemoveAll("/tmp/argo-cd") // ignore error, like '|| true' in shell
+
 	return nil
 }
 
