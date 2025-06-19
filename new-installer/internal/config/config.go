@@ -41,7 +41,8 @@ type OrchInstallerRuntimeState struct {
 	// Used for state and o11y bucket prefix. lowercase or digit
 	DeploymentID     string `yaml:"deploymentID"`
 	StateBucketState string `yaml:"stateBucketState"` // The state S3 bucket Terraform state
-	// Move runtime state here?
+
+	// AWS specific states
 	AWS struct {
 		KubeConfig               string   `yaml:"kubeConfig"`
 		CacheRegistry            string   `yaml:"cacheRegistry"`
@@ -55,11 +56,23 @@ type OrchInstallerRuntimeState struct {
 		EKSOIDCIssuer            string   `yaml:"eksOIDCIssuer"`
 		ACMCertArn               string   `yaml:"acmCertArn"`
 	} `yaml:"aws,omitempty"`
+
+	// Database connection information. Used for both cloud and on-prem deployments.
+	Database struct {
+		Host       string `yaml:"host"`
+		ReaderHost string `yaml:"readerHost"`
+		Port       int    `yaml:"port"`
+		Username   string `yaml:"username"`
+		Password   string `yaml:"password"`
+	}
 	Cert struct {
 		TLSCert string `yaml:"tlsCert"`
 		TLSKey  string `yaml:"tlsKey"`
 		TLSCA   string `yaml:"tlsCA"`
 	} `yaml:"cert,omitempty"`
+	Onprem struct {
+		KubeConfig string `yaml:"kubeConfig"`
+	} `yaml:"onprem,omitempty"`
 }
 
 type OrchInstallerConfig struct {
@@ -75,6 +88,7 @@ type OrchInstallerConfig struct {
 	Advanced struct { // TODO: form for this part is not done yet
 		AzureADRefreshToken  string `yaml:"azureADRefreshToken,omitempty"`
 		AzureADTokenEndpoint string `yaml:"azureADTokenEndpoint,omitempty"`
+		DevMode              bool   `yaml:"devMode,omitempty"`
 	} `yaml:"advanced"`
 	AWS struct {
 		Region                string   `yaml:"region"`
