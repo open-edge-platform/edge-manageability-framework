@@ -8,6 +8,9 @@ server:
 configs:
   params:
     application.namespaces: "*"
+    controller.operation.processors: "100"
+    controller.status.processors: "200"
+    reposerver.parallelism.limit: "300"
     server.tls.minversion: "1.2"
     # // Note that for TLS v1.3, cipher suites are not configurable and will be chosen automatically.
     server.tls.ciphers: "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384:TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384:TLS_AES_256_GCM_SHA384"
