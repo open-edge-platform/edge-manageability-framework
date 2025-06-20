@@ -45,10 +45,10 @@ for initiating the OS update process.
 **Sample commands:**  
 
 - Direct Path Command:
-  `os-update.sh /mnt/edge-readonly-3.0.20250518.2200-signed.raw.gz 8aadeadc9a44af9703de59604b12364534b32c34408d087e2358fecc87ef277a`
-  `os-update.sh /home/user/edge-readonly-3.0.20250518.2200-signed.raw.gz 8aadeadc9a44af9703de59604b12364534b32c34408d087e2358fecc87ef277a`
+`os-update.sh /mnt/edge-readonly-3.0.20250518.2200-signed.raw.gz 8aadeadc9a44af9703de59604b12364534b32c34408d087e2358fecc87ef277a`
+`os-update.sh /home/user/edge-readonly-3.0.20250518.2200-signed.raw.gz 8aadeadc9a44af9703de59604b12364534b32c34408d087e2358fecc87ef277a`
 - URL Command:
-  `os-update.sh -u <url_to_microvisor_os_image> <url_to_sha_file>`
+`os-update.sh -u <url_to_microvisor_os_image> <url_to_sha_file>`
 
 **Step 3:** The script `/etc/cloud/os-update.sh` calls another script `/usr/bin/os-update-tool.sh` to perform the actual update procedure.
 
