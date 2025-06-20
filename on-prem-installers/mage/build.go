@@ -99,8 +99,6 @@ func (Build) onpremKeInstaller() error {
 		"-t", "deb",
 		"--name", "onprem-ke-installer",
 		"-p", "./dist/",
-		"-d", "jq,libpq5,apparmor,lvm2,mosquitto,net-tools,ntp,openssh-server", //nolint:misspell
-		"-d", "software-properties-common,tpm2-abrmd,tpm2-tools,unzip",
 		"--version", debVersion,
 		"--architecture", "amd64",
 		"--description", "Installs Intel onprem-ke",
@@ -115,8 +113,86 @@ func (Build) onpremKeInstaller() error {
 	)
 }
 
+func (Build) osConfigInstaller() error {
+	fmt.Println("Compile configuration installer executable")
+	mg.SerialDeps(
+		mg.F(
+			compile,
+			filepath.Join(".", "cmd", "onprem-config-installer", "main.go"),
+			filepath.Join(".", "dist", "bin", "onprem-config-installer"),
+		),
+	)
+
+	debVersion, err := mage.GetDebVersion()
+	if err != nil {
+		return fmt.Errorf("failed to get DEB version for osConfigInstaller: %w", err)
+	}
+
+	fmt.Println("Build onprem-config-installer package 📦")
+	return sh.RunV(
+		"fpm",
+		"-s", "dir",
+		"-t", "deb",
+		"--name", "onprem-config-installer",
+		"-p", "./dist",
+		"-d", "jq,libpq5,apparmor,lvm2,mosquitto,net-tools,ntp,openssh-server", //nolint:misspell
+		"-d", "software-properties-common,tpm2-abrmd,tpm2-tools,unzip",
+		"--version", debVersion,
+		"--architecture", "amd64",
+		"--description", "OS Configuration Powered By Intel",
+		"--url", "https://github.com/open-edge-platform/edge-manageability-framework/on-prem-installers",
+		"--maintainer", "Intel Corporation",
+		"--after-install", "./cmd/onprem-config-installer/after-install.sh",
+		"--after-remove", "./cmd/onprem-config-installer/after-remove.sh",
+		"./dist/bin/onprem-config-installer=/usr/bin/onprem-config-installer",
+		"./cmd/onprem-config-installer/onprem-config-installer.1=/usr/share/man/man1/onprem-config-installer.1",
+	)
+}
+
+func (Build) giteaInstaller() error {
+	cmd := "helm repo add gitea-charts https://dl.gitea.com/charts/ --force-update"
+	if _, err := script.Exec(cmd).Stdout(); err != nil {
+		return fmt.Errorf("failed to add gitea helm repo: %w", err)
+	}
+
+	if err := os.RemoveAll(filepath.Join(giteaPath, "gitea")); err != nil {
+		return err
+	}
+
+	cmd = fmt.Sprintf("helm fetch gitea-charts/gitea --version %v --untar --untardir %v", giteaChartVersion, giteaPath)
+	if _, err := script.Exec(cmd).Stdout(); err != nil {
+		return fmt.Errorf("failed to fetch gitea chart: %w", err)
+	}
+
+	debVersion, err := mage.GetDebVersion()
+	if err != nil {
+		return fmt.Errorf("failed to get DEB version for giteaInstaller: %w", err)
+	}
+
+	fmt.Println("Build gitea package 📦")
+	if err := sh.RunV(
+		"fpm",
+		"-s", "dir",
+		"-t", "deb",
+		"--name", "onprem-gitea-installer",
+		"-p", "./dist/",
+		"--version", debVersion,
+		"--architecture", "amd64",
+		"--description", "Installs Gitea",
+		"--url", "https://github.com/go-gitea/gitea",
+		"--maintainer", "Intel Corporation",
+		"--after-install", "cmd/onprem-gitea/after-install.sh",
+		"--after-remove", "cmd/onprem-gitea/after-remove.sh",
+		"--after-upgrade", "cmd/onprem-gitea/after-upgrade.sh",
+		giteaPath+"=/tmp",
+	); err != nil {
+		return err
+	}
+
+	return os.RemoveAll(filepath.Join(giteaPath, "gitea"))
+}
+
 func (Build) argoCdInstaller() error {
-	// ArgoCD helm installation
 	cmd := "helm repo add argo-helm https://argoproj.github.io/argo-helm --force-update"
 	if _, err := script.Exec(cmd).Stdout(); err != nil {
 		return fmt.Errorf("failed to add argo helm repo: %w", err)
@@ -129,21 +205,6 @@ func (Build) argoCdInstaller() error {
 	cmd = fmt.Sprintf("helm fetch argo-helm/argo-cd --version %v --untar --untardir %v", argocdHelmVersion, argocdPath)
 	if _, err := script.Exec(cmd).Stdout(); err != nil {
 		return fmt.Errorf("failed to fetch argo-cd chart: %w", err)
-	}
-
-	// Gitea helm installation
-	cmd = "helm repo add gitea-charts https://dl.gitea.com/charts/ --force-update"
-	if _, err := script.Exec(cmd).Stdout(); err != nil {
-		return fmt.Errorf("failed to add gitea helm repo: %w", err)
-	}
-
-	if err := os.RemoveAll(filepath.Join(giteaPath, "gitea")); err != nil {
-		return err
-	}
-
-	cmd = fmt.Sprintf("helm fetch gitea-charts/gitea --version %v --untar --untardir %v", giteaChartVersion, giteaPath)
-	if _, err := script.Exec(cmd).Stdout(); err != nil {
-		return fmt.Errorf("failed to fetch gitea chart: %w", err)
 	}
 
 	debVersion, err := mage.GetDebVersion()
@@ -167,7 +228,6 @@ func (Build) argoCdInstaller() error {
 		"--after-remove", filepath.Join("cmd/onprem-argo-cd", "after-remove.sh"),
 		"--after-upgrade", filepath.Join("cmd/onprem-argo-cd", "after-upgrade.sh"),
 		argocdPath+"=/tmp/",
-		giteaPath+"=/tmp/",
 	); err != nil {
 		return err
 	}
