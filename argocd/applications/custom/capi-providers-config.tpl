@@ -31,6 +31,12 @@ core:
         args:
           "--insecure-diagnostics": "true"
           "--additional-sync-machine-labels": ".*"
+          "--cluster-concurrency": "10"
+          "--clustercache-client-burst": "150"
+          "--clustercache-client-qps": "100"
+          "--kube-api-burst": "150"
+          "--kube-api-qps": "100"
+          "--machine-concurrency": "10"
     additionalManifests:
       name: core-additional-manifest
       namespace: capi-system
@@ -51,6 +57,7 @@ bootstrap:
             - name: manager
               args:
                 "--insecure-diagnostics": "true"
+                "--concurrency": "10"
         additionalManifests:
           name: bootstrap-rke2-additional-manifest
           namespace: capr-system
@@ -79,18 +86,24 @@ controlplane:
         deployment:
           containers:
             - name: manager
+              # image from fork with configurable Cluster Cache concurency (not yet upstreamed)
+              imageUrl: ghcr.io/jdanieck/cluster-api-provider-rke2/rancher/cluster-api-provider-rke2-controlplane:v0.16.3-dev-b0f7976
               args:
                 "--insecure-diagnostics": "true"
+                "--sync-period": "30m"
+                "--concurrency":  "250"
+                "--clustercachetracker-client-burst": "500"
+                "--clustercachetracker-client-qps": "250"
+              resources:
+                requests:
+                  cpu: "2"
+                  memory: "512Mi"
+                limits:
+                  cpu: "8"
+                  memory: "2Gi"
         additionalManifests:
           name: controlplane-rke2-additional-manifest
           namespace: capr-system
-# example deployment configuration      
-#    deployment:
-#      containers:
-#      - name: manager
-#        imageUrl:  docker.io/user/patched-rke2-controlplane:latest
-#        args:
-#          "-- concurrency":  "5"
     - name: k3s
       namespace: capk-system
       spec:
