@@ -20,8 +20,8 @@ roll back to the original partition (A) in case of failure.
 
 ## Rationale
 
-We are developing a new script that calls the os-update-tool, rather than modifying and expanding the os-update-tool itself to
-include the functionality needed for pulling an image and executing the update.
+We are developing a new script that calls the os-update-tool, rather than modifying and expanding the os-update-tool
+itself to include the functionality needed for pulling an image and executing the update.
 
 ## Affected Components and Teams
 
@@ -50,7 +50,8 @@ for initiating the OS update process.
 - URL Command:
 `os-update.sh -u <url_to_microvisor_os_image> <url_to_sha_file>`
 
-**Step 3:** The script `/etc/cloud/os-update.sh` calls another script `/usr/bin/os-update-tool.sh` to perform the actual update procedure.
+**Step 3:** The script `/etc/cloud/os-update.sh` calls another script `/usr/bin/os-update-tool.sh` to perform the
+actual update procedure.
 
 - Execute the update tool script with the write command to write into the inactive partition:  
   `os-update-tool.sh -w -u <file_path_to_EMT_image> -s <check_sum_value>`
