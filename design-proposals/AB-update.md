@@ -7,15 +7,21 @@ Last updated: 06/05/2025
 ## Abstract
 
 This document is a design proposal for the A/B Partition Day 2 update of an Edge Node (EN) with an immutable Microvisor OS.
-This design proposal aims to enhance the Microvisor OS update process for edge nodes, ensuring that new features can be delivered without requiring end users to reinstall their software.
+This design proposal aims to enhance the Microvisor OS update process for edge nodes, ensuring that new features can be
+delivered without requiring end users to reinstall their software.
 
 ## Proposal
 
-For the immutable Microvisor OS, the OS packages are part of the image, and the way to update the OS packages is by providing a new OS image with updated package versions. To achieve this, two read-only partitions will be created: the A and B partitions. The A partition will persist the original OS installation, and the B partition will be used to install a new OS. Depending on the success of the updated OS installation, the OS will boot from the new partition (B) or roll back to the original partition (A) in case of failure.
+For the immutable Microvisor OS, the OS packages are part of the image, and the way to update the OS packages is by providing
+a new OS image with updated package versions. To achieve this, two read-only partitions will be created: the A and B partitions.
+The A partition will persist the original OS installation, and the B partition will be used to install a new OS.
+Depending on the success of the updated OS installation, the OS will boot from the new partition (B) or
+roll back to the original partition (A) in case of failure.
 
 ## Rationale
 
-We are developing a new script that calls the os-update-tool, rather than modifying and expanding the os-update-tool itself to include the functionality needed for pulling an image and executing the update.
+We are developing a new script that calls the os-update-tool, rather than modifying and expanding the os-update-tool itself to
+include the functionality needed for pulling an image and executing the update.
 
 ## Affected Components and Teams
 
@@ -28,7 +34,8 @@ We report hereafter the affected components and teams:
 
 To perform the A/B upgrade procedure for an immutable Microvisor OS, follow the steps below:
 
-**Step 1:** Admin logs in to the EMT-S EN and executes the script located at `/etc/cloud/os-update.sh`. This script is responsible for initiating the OS update process.
+**Step 1:** Admin logs in to the EMT-S EN and executes the script located at `/etc/cloud/os-update.sh`. This script is responsible
+for initiating the OS update process.
 
 **Step 2:** `/etc/cloud/os-update.sh` requires two arguments:
 
