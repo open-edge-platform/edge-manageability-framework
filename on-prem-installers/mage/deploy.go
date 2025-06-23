@@ -37,11 +37,14 @@ func (Deploy) rke2Cluster() error { //nolint: cyclop
 		return fmt.Errorf("error testing deployments and pods: %w", err)
 	}
 
-	// Remove old CRDs
+	// Remove CRDs installed by RKE2 that are not needed for OpenEBS
 	if err := sh.RunV("kubectl", "delete", "crd", "volumesnapshotcontents.snapshot.storage.k8s.io"); err != nil {
 		return fmt.Errorf("error deleting volumesnapshotcontents CRD: %w", err)
 	}
 	if err := sh.RunV("kubectl", "delete", "crd", "volumesnapshots.snapshot.storage.k8s.io"); err != nil {
+		return fmt.Errorf("error deleting volumesnapshots CRD: %w", err)
+	}
+	if err := sh.RunV("kubectl", "delete", "crd", "volumesnapshotclasses.snapshot.storage.k8s.io"); err != nil {
 		return fmt.Errorf("error deleting volumesnapshots CRD: %w", err)
 	}
 
