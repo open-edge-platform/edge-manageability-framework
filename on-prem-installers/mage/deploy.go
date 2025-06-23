@@ -37,15 +37,34 @@ func (Deploy) rke2Cluster() error { //nolint: cyclop
 		return fmt.Errorf("error testing deployments and pods: %w", err)
 	}
 
-	// deploy openebs operator
-	if err := sh.RunV("kubectl", "apply", "-f", openEbsOperatorK8sTemplate); err != nil {
-		return fmt.Errorf("error applying openEbsOperatorK8sTemplate: %w", err)
+	// Add and update the OpenEBS Helm repository
+	if err := sh.RunV("helm", "repo", "add", "openebs", "https://openebs.github.io/openebs"); err != nil {
+		return fmt.Errorf("error adding OpenEBS Helm repo: %w", err)
+	}
+	if err := sh.RunV("helm", "repo", "update"); err != nil {
+		return fmt.Errorf("error updating Helm repos: %w", err)
 	}
 
-	// deploy openebs-path operator
-	if err := sh.RunV("kubectl", "apply", "-f",
-		filepath.Join("rke2", openEbsOperatorK8sTemplateFile)); err != nil {
-		return fmt.Errorf("error applying openEbsOperatorK8sTemplateFile: %w", err)
+	// Install OpenEBS Helm chart with customized values
+	helmArgs := []string{
+		"install", "openebs", "openebs/openebs",
+		"--namespace", "openebs",
+		"--create-namespace",
+		"--version", "4.3.0",
+		"--set", "engines.replicated.mayastor.enabled=false",
+		"--set", "engines.local.zfs.enabled=false",
+		"--set", "engines.local.lvm.enabled=false",
+		"--set", "zfs-localpv.enabled=false",
+		"--set", "lvm-localpv.enabled=false",
+		"--set", "localpv-provisioner.hostpathClass.isDefaultClass=true",
+		"--set", "localpv-provisioner.localpv.enableLeaderElection=false",
+		"--set", "localpv-provisioner.localpv.replicas=1",
+		"--set", "localpv-provisioner.analytics.enabled=false",
+		"--set", "loki.enabled=false",
+		"--set", "alloy.enabled=false",
+	}
+	if err := sh.RunV("helm", helmArgs...); err != nil {
+		return fmt.Errorf("error installing OpenEBS Helm chart: %w", err)
 	}
 
 	// create etcd-cert secret
