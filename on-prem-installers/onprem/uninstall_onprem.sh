@@ -11,8 +11,10 @@ set -o pipefail
 # Packages in order of removal - reverse order to installation
 packages=(
     onprem-orch-installer
+    onprem-gitea-installer
     onprem-argocd-installer
     onprem-ke-installer
+    onprem-config-installer
 )
 
 remove_package() {
