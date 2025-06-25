@@ -35,7 +35,7 @@ var (
 	kubeletMetrics = []string{
 		"k8s_node_allocatable_cpu",
 		"k8s_node_allocatable_memory",
-		"k8s_node_cpu_utilization",
+		"k8s_node_cpu_usage",
 		"k8s_node_filesystem_capacity",
 		"k8s_node_filesystem_usage",
 		"k8s_node_memory_available",
@@ -43,10 +43,10 @@ var (
 		"k8s_node_memory_working_set",
 		"k8s_node_network_errors",
 		"k8s_node_network_io",
-		"k8s_pod_cpu_utilization",
+		"k8s_pod_cpu_usage",
 		"k8s_pod_memory_usage",
 		"k8s_pod_memory_working_set",
-		"container_cpu_utilization",
+		"container_cpu_usage",
 		"container_memory_working_set",
 	}
 	kubeMetrics = []string{
