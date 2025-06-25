@@ -19,8 +19,8 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
-    - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
-      chart: orch-ui/charts/orch-ui-app-orch
+    - repoURL: https://github.com/open-edge-platform/orch-ui
+      path: apps/app-orch/deploy/
       targetRevision: feature/k3s
       helm:
         releaseName: web-ui
