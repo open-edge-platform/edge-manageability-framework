@@ -18,7 +18,7 @@ root:
     - orch-configs/profiles/artifact-rs-production-noauth.yaml
     - orch-configs/profiles/enable-explicit-proxy.yaml
     - orch-configs/profiles/resource-default.yaml
-    - orch-configs/clusters/oxm.yaml
+    - orch-configs/clusters/onprem-oxm.yaml
 
 # Values applied to both root app and shared among all child apps
 argo:
