@@ -2,7 +2,7 @@
 
 Author(s): Edge Infrastructure Manager Team
 
-Last updated: 05/12/2025
+Last updated: 06/20/2025
 
 ## Abstract
 
@@ -19,27 +19,19 @@ the EN sw and propose a solution on how to manage the device activation during t
 
 ## Proposal
 
-Remote Provisioning Client (RPC) is launched during the provisioning flow (uOS stage).
+Remote Provisioning Client (RPC) is integrated as part of Platform Manageability Agent, which operates within the final operating system environment. 
 
-vPRO (AMT & ISM) capable devices need to have the `rpc-go` utility embedded in the uOS image (the so called
-Tink-EMT image - replacement of HookOS), as this is required to activate AMT. This also requires the `heci` driver to
-be included in the kernel as the `rpc-go` utility communicates with CSME over PCIe/HECI to activate the device.
+The Platform Manageability Agent which includes RPC, will be provided as RPM packages. These RPMs will be included in the OS image, enabling the agent binaries to be installed automatically during the OS installation process. This ensures that all required manageability features are available as soon as the OS is deployed.
+
+For vPRO (DMT & ISM) capable devices, the Platform Manageability Agent will include the `rpc-go` utility, enabling DMT activations. The agent will ensure that all necessary drivers, such as heci, are available in the final OS to facilitate communication with CSME over PCIe/HECI.
 
 `Local Manageability Service` (LMS) must to be included as it is still required to enable the communication between RPC
 and AMT device. Additionally, it offers the support for in-band commands too.
 
-Adding the `rpc-go` to the Tink-EMT image allows for the AMT/ISM device to be activated independently of the target
-operating system being deployed on the edge node. Not every device will support AMT & ISM. Introspection of the device
-capabilites will be added to the `Device Discovery` to determine:
+Device capability introspection—such as detecting vPRO, ISM, or no OOB support—will be performed by the agent, enabling dynamic selection of workflows in Tinkerbell based on the detected device features.
 
-1. vPRO Supported Device
-2. ISM Supported Device
-3. No OOB Supported
+In cases where activation is attempted on unsupported or faulty devices, the agent will report errors to Device Management.
 
-This will also allow for a custom workflows in Tinkerbell to be used based on whether the device support AMT or ISM.
-
-If an attempt is made to activate an unsupported or faulty device, the `rpc-go` client will yield an error. The
-tinkerbell workflow should appropriately be handling the common error scenarios, please refer to the official
 [DMT/rpc-go documentation](https://device-management-toolkit.github.io/docs/2.27/Reference/RPC/libraryRPC/#rpc-error-code-charts)
 
 Let us now analyze the device activation, the user must do the following steps before starting AMT activation
@@ -51,69 +43,49 @@ Let us now analyze the device activation, the user must do the following steps b
 
 ```mermaid
 sequenceDiagram
-    title AMT provisioning through Tinker action
+    title DMT provisioning through Agent
     actor us as User
     participant inv as Inventory
     participant ps as Provisioning
     participant dm as Device Management
     participant en as Edge Node
+    participant agent as Platform Manageability Agent
     participant mps as Management Presence Server
     participant rps as Remote Provisioning Server
+
     us ->> en: Boot device
     activate en
-    Note right of en: AMT eligibiliy as part of the discovery
     en ->> ps: Device discovery
     activate ps
     ps ->> inv: Onboard the device
     ps ->> en: Done
     deactivate ps
     deactivate en
+
+    en ->> en: OS installation (Agent RPMs included)
+    en ->> agent: Install Agent as part of OS
+
+    Note right of agent: AMT eligibility and capability introspection<br>performed by Agent after install
+
     alt Device supports vPRO/ISM
-        inv ->> ps: Notify
-        activate ps
-        inv ->> dm: Notify
-        activate dm
-        ps ->> ps: Reconcile the device
-        alt AMT CurrentState provisioned
-            ps ->> en: Provision the device
-            activate en
-            ps ->> en: Activate vPRO
-            Note right of en: Provisioning will log the error and update AMT status
-            en ->> rps: vPRO remote configuration
-            activate rps
-            rps ->> en: Done
-            deactivate rps
-            en ->> mps: CIRA connection
-            en ->> ps: Done
-            deactivate en
-        else
-            ps ->> ps: Retry
-        end
-        deactivate ps
-        dm ->> dm: Reconcile the device
-        dm ->> mps: Authorize the device through MPS
-        activate mps
-        mps ->> dm: Done
-        deactivate mps
+        us ->> agent: Activate command
+        agent ->> rps: vPRO remote configuration
+        activate rps
+        rps ->> agent: Success
+        deactivate rps
+        agent ->> mps: CIRA connection
+        agent ->> dm: Report AMT status (Provisioned)
         dm ->> inv: Update AMT Status IN_PROGRESS (Connecting)
         dm ->> inv: Update AMT CurrentState Provisioned
-        deactivate dm
     else [Device is not eligible]
-        inv ->> ps: Notify
-        activate ps
-        inv ->> dm: Notify
-        activate dm
-        ps ->> ps: Reconcile the device
-        ps ->> en: Provision the device
-        activate en
-        en ->> ps: Done
-        deactivate en
-        deactivate ps
-        dm ->> dm: Reconcile the device
+        agent ->> dm: Report AMT status (Unsupported)
         dm ->> inv: Update AMT Status IDLE (Unsupported)
-        deactivate dm
     end
-    Note right of dm: Check periodically the connection status<br>and use internal timers to track disconnection
+
+    alt Failure during activation
+        agent ->> dm: Report AMT status (Failure)
+        dm ->> inv: Update AMT Status FAILURE
+    end
 ```
 
 **Note1** - MPS requires the creation of a device before accepting CIRA connections which is part of the 2-way auth
@@ -140,43 +112,18 @@ activation of Device Management feature.
 However, such flow is considered not mandatory and this penalty might be accepted by the user to have in exchange extra
 manageability features.
 
-## Rationale
-
-Alternative solutions have been carefully considered and will be taken into account in future releases, in particular:
-
-- **Late Binding** where RPC is integrated in the image of the final OS. If this on one side, addresses the need to
-support remote deactivation and day2 reconfiguration, it does not provide a solution to recover the device if something
-goes wrong during the provisioning flow and require the integration with a **Platform Manageability Agent**.
-- **Cloud-Init** provisioning where AMT is activated at the end of the provisioning flow. This solution does not offer
-better integrations compared to the others and has the inherent disadvantage of not supporting feedback to the
-provisioning system that becomes completely blind on the result of the activation
-
-Both solutions provide a seamless integration of the EMT-Standalone devices. However, the first solution is considered
-more flexible and provide better control compared to the second solution.
-
 ## Affected components and Teams
 
 We report hereafter the affected components and Teams:
 
 - Onboarding Manager and Tinker Actions (Edge Infrastructure Manager team)
-- EMT and EMT-Tinker (Edge Microvisor Toolkit team)
 
 ## Implementation plan
 
 Hereafter we present as steps the proposed plan to manage the device activation in the release 3.1. Edge Infrastructure
 manager will implement the following functionality to support this design proposal:
 
-- Device discovery reports device eligibility
-- Activation will be always performed without user consent
-- EMF EN will be activated during the provisionig flow through a custom Tinker action
-- Ignition of the Platform Manageability Agent and definition of the SB gRPC APIs of the DM Resource Manager
-
-As dependency we expect the EMT team to deliver:
-
-- EMT-Tinker image supporting RPC-go, LMS, kernel drivers and all the dependencies;
-
-**Not mandatory but nice to have** is to support the installation of the RPC and its dependencies in all the Ubuntu
-flavors support by the Edge Orchestrator and have EMT image supporting RPC and its dependencies;
+After provisioning is complete and the final OS is deployed, the Platform Manageability Agent will be installed and initialized as part of the OS. This includes RPC, LMS and exposing the SB gRPC APIs of the Device Management Resource Manager.
 
 ### Test Plan
 
