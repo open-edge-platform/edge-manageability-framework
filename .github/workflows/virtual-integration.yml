@@ -589,7 +589,6 @@ jobs:
           kubectl logs -n orch-app -l app=app-deployment-manager --tail=-1 > smoke-test/logs/app-deployment-manager.log
           kubectl logs -n orch-app -l app=app-resource-manager -c app-resource-manager --tail=-1 > smoke-test/logs/app-resource-manager.log
           kubectl logs -n orch-app -l app.kubernetes.io/name=app-orch-catalog --tail=-1 > smoke-test/logs/application-catalog.log
-          kubectl exec -n enic enic-0 -c edge-node -- bash -c "journalctl -xeu cluster-agent" > smoke-test/logs/enic-cluster-agent-post.log
           echo "Collect logs from all pods in orch-infra namespace"
           pods=$(kubectl get pods -n orch-infra -o name | cut -d'/' -f2)
           echo "$pods"
