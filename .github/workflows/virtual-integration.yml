@@ -590,6 +590,15 @@ jobs:
           kubectl logs -n orch-app -l app=app-resource-manager -c app-resource-manager --tail=-1 > smoke-test/logs/app-resource-manager.log
           kubectl logs -n orch-app -l app.kubernetes.io/name=app-orch-catalog --tail=-1 > smoke-test/logs/application-catalog.log
           kubectl exec -n enic enic-0 -c edge-node -- bash -c "journalctl -xeu cluster-agent" > smoke-test/logs/enic-cluster-agent-post.log
+          echo "Collect logs from all pods in orch-infra namespace"
+          pods=$(kubectl get pods -n orch-infra -o name | cut -d'/' -f2)
+          echo "$pods"
+          for pod in $pods; do
+            containers=$(kubectl get pod $pod -n orch-infra -o jsonpath='{.spec.containers[*].name}')
+            for container in $containers; do
+              kubectl logs $pod -c $container -n orch-infra > "smoke-test/$pod/${container}.log"
+            done
+          done
 
       - name: Upload smoke test logs
         if: always()
