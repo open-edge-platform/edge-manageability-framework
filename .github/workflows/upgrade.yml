@@ -22,14 +22,19 @@ jobs:
         version-tags: [v3.0.0]
     runs-on: ubuntu-24.04-16core-64GB
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
+        with:
+          egress-policy: audit
+
       - name: Checkout ${{ matrix.version-tags }}
-        uses: actions/checkout@v4.2.1
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
         with:
           ref: refs/tags/${{ matrix.version-tags }}
 
       - name: Setup asdf and install dependencies
         id: install-deps
-        uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main
+        uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@2b14d3ac351c09b086252c5989566333ef96bb6d # main
 
       - name: Deploy Orchestrator ${{ matrix.version-tags }}
         env:
@@ -48,7 +53,7 @@ jobs:
         run: mage -v deploy:waitUntilComplete
 
       - name: Checkout Code Under Test
-        uses: actions/checkout@v4.2.1
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
 
       - name: Upgrade Orchestrator
         timeout-minutes: 90
