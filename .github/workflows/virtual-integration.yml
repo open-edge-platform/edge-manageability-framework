@@ -592,10 +592,14 @@ jobs:
           echo "Collect logs from all pods in orch-infra namespace"
           pods=$(kubectl get pods -n orch-infra -o name | cut -d'/' -f2)
           echo "$pods"
+          kubectl get pods -o wide -A > smoke-test/logs/pods-list.txt
+          kubectl describe pods -A > smoke-test/logs/pods-describe.txt
+          kubectl get applications -o yaml -A > smoke-test/logs/argocd-applications.yaml
           for pod in $pods; do
+            mkdir -p smoke-test/logs/$pod
             containers=$(kubectl get pod $pod -n orch-infra -o jsonpath='{.spec.containers[*].name}')
             for container in $containers; do
-              kubectl logs $pod -c $container -n orch-infra > "smoke-test/$pod/${container}.log"
+              kubectl logs $pod -c $container -n orch-infra > "smoke-test/logs/$pod/${container}.log"
             done
           done
 
