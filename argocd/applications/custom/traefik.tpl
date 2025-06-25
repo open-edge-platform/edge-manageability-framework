@@ -45,10 +45,3 @@ ports:
     exposedPort: 4433
     expose: true
     protocol: TCP
-{{- if index .Values.argo.enabled "pxe-server" }}
-  tftp-server:
-    port: 6969
-    exposedPort: 69
-    expose: true
-    protocol: UDP
-{{- end }}
