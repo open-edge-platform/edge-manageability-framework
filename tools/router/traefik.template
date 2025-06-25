@@ -25,8 +25,6 @@ entryPoints:
     address: ":443"
   tcpamt:
     address: ":4433"
-  tftpserver:
-    address: ":69"
 providers:
   docker:
     endpoint: "unix:///var/run/docker.sock"
@@ -171,18 +169,6 @@ tcp:
       loadBalancer:
         servers:
           - address: {{ .GiteaIP }}:443
-udp:
-  routers:
-    my-udp-router:
-      entryPoints:
-        - "tftpserver"
-      service: tftp-service
-
-  services:
-    tftp-service:
-      loadBalancer:
-        servers:
-          - address: {{ .OrchIP }}:6969
 {{- if .IsSandbox }}
 tls:
   stores:

@@ -12,7 +12,6 @@ services:
     ports:
       - "443:443"
       - "4433:4433"
-      - "69:69"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
       - "./traefik.yml:/traefik.yml:ro"
