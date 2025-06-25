@@ -7,21 +7,15 @@ root:
   useLocalValues: false
   clusterValues:
     - orch-configs/profiles/enable-platform.yaml
-    - orch-configs/profiles/enable-o11y.yaml
     - orch-configs/profiles/enable-kyverno.yaml
-    - orch-configs/profiles/enable-app-orch.yaml
-    - orch-configs/profiles/enable-cluster-orch.yaml
     - orch-configs/profiles/enable-edgeinfra.yaml
     - orch-configs/profiles/enable-full-ui.yaml
     - orch-configs/profiles/enable-onprem.yaml
-    - orch-configs/profiles/enable-sre.yaml
     # proxy group should be specified as the first post-"enable" profile
     - orch-configs/profiles/proxy-none.yaml
     - orch-configs/profiles/profile-onprem.yaml
     - orch-configs/profiles/profile-oxm.yaml
-    - orch-configs/profiles/alerting-emails.yaml
     - orch-configs/profiles/artifact-rs-production-noauth.yaml
-    - orch-configs/profiles/o11y-onprem.yaml
     - orch-configs/profiles/enable-explicit-proxy.yaml
     - orch-configs/profiles/resource-default.yaml
     - orch-configs/clusters/oxm.yaml
