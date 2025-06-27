@@ -110,4 +110,13 @@ argo:
         limits:
           memory: "64Gi"
           cpu: "64"
+    pxe-server:
+      enabled: false
+      resources:
+        requests:
+          memory: "64Mi"
+          cpu: "100m"
+        limits:
+          memory: "64Gi"
+          cpu: "64"
   infra-external: {}
