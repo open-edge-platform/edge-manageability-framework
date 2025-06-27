@@ -8,6 +8,10 @@ inputs:
     required: false
     description: "Orchestrator version to deploy"
     default: "main"
+  orch_profile:
+    required: false
+    description: "Orchestrator profile to deploy"
+    default: "onprem"
   docker_username:
     required: true
     description: "Docker Hub username for pulling images"
@@ -46,6 +50,7 @@ runs:
     - name: Deploy Orchestrator
       env:
         TF_VAR_deploy_tag: ${{ env.DEPLOY_TAG }}
+        TF_VAR_orch_profile: ${{ inputs.orch_profile }}
         TF_VAR_FILE: ${{ github.workspace }}/terraform/orchestrator/terraform.tfvars
         TF_VAR_docker_username: ${{ inputs.docker_username }}
         TF_VAR_docker_password: ${{ inputs.docker_password }}
