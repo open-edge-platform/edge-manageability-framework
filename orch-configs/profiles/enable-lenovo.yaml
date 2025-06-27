@@ -7,7 +7,6 @@ argo:
     onboarding-manager:
       enabled: false
     os-resource-manager:
-      disableProviderAutomation: true
       enabledProfiles:
         - ubuntu-lenovo
   infra-external:
