@@ -108,12 +108,16 @@ os-resource-manager:
   managerArgs:
     enableTracing: {{ index .Values.argo "infra-managers" "enableTracing" | default false }}
     manualMode: {{ index .Values.argo "infra-managers" "os-resource-manager-manual-mode" | default false }}
+    {{- if index .Values.argo "infra-managers" "os-resource-manager" }}
+    {{- if index .Values.argo "infra-managers" "os-resource-manager" "enabledProfiles" }}
+    enabledProfiles:
+    {{- with index .Values.argo "infra-managers" "os-resource-manager" "enabledProfiles" }}
+      {{- toYaml . | nindent 4 }}
+    {{- end}}
+    {{- end}}
+    {{- end}}
 {{- if and (index .Values.argo "infra-external") (index .Values.argo "infra-external" "loca") }}
     disableProviderAutomation: true
-    enabledProfiles:
-      - ubuntu-lenovo
-    profileVersions:
-      - 0.1.0
 {{- end }}
   metrics:
     enabled: {{ index .Values.argo "infra-managers" "enableMetrics" | default false }}
