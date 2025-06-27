@@ -698,7 +698,7 @@ jobs:
 
   deploy-oxm-profile:
     permissions:
-    contents: read
+      contents: read
     name: Deploy OXM Orchestrator Profile
     needs:
       - lint-go
