@@ -76,3 +76,38 @@ postCustomTemplateOverwrite:
     logs:
       general:
         level: DEBUG
+  web-ui-root:
+    image:
+      registry:
+        name: 080137407410.dkr.ecr.us-west-2.amazonaws.com
+      pullPolicy: Always
+      repository: edge-orch/orch-ui/root
+      tag: 2.0.17-dev-pr-199
+  web-ui-admin:
+    image:
+      registry:
+        name: 080137407410.dkr.ecr.us-west-2.amazonaws.com
+      pullPolicy: Always
+      repository: edge-orch/orch-ui/admin
+      tag: 2.0.17-dev-pr-199
+  web-ui-app-orch:
+    image:
+      registry:
+        name: 080137407410.dkr.ecr.us-west-2.amazonaws.com
+      pullPolicy: Always
+      repository: edge-orch/orch-ui/app-orch
+      tag: 2.0.17-dev-pr-199
+  web-ui-cluster-orch:
+    image:
+      registry:
+        name: 080137407410.dkr.ecr.us-west-2.amazonaws.com
+      pullPolicy: Always
+      repository: edge-orch/orch-ui/cluster-orch
+      tag: 2.0.17-dev-pr-199
+  web-ui-infra:
+    image:
+      registry:
+        name: 080137407410.dkr.ecr.us-west-2.amazonaws.com
+      pullPolicy: Always
+      repository: edge-orch/orch-ui/infra
+      tag: 2.0.17-dev-pr-199
