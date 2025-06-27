@@ -5,10 +5,11 @@
 package onprem
 
 import (
+	"path/filepath"
+
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps"
-	commonSteps "github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps/common"
 	onpremSteps "github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps/onprem"
 )
 
@@ -27,9 +28,14 @@ func CreateOnPremStages(rootPath string, keepGeneratedFiles bool, orchConfigRead
 	infraStage = NewOnPremStage(
 		"Infra",
 		[]steps.OrchInstallerStep{
-			onpremSteps.CreateArtifactDownloader(rootPath, keepGeneratedFiles, orchConfigReaderWriter),
-			onpremSteps.CreateRke2Step(rootPath, keepGeneratedFiles, orchConfigReaderWriter),
-			commonSteps.CreateArgoStep(rootPath, keepGeneratedFiles, orchConfigReaderWriter),
+			//onpremSteps.CreateArtifactDownloader(rootPath, keepGeneratedFiles, orchConfigReaderWriter),
+			//onpremSteps.CreateRke2Step(rootPath, keepGeneratedFiles, orchConfigReaderWriter),
+			onpremSteps.CreateCustomizeRKE2Step(
+				rootPath,
+				keepGeneratedFiles,
+				orchConfigReaderWriter,
+				filepath.Join(rootPath, "new-installer", "targets", "onprem", "rke2"),
+			),
 		},
 		[]string{"infra"},
 		orchConfigReaderWriter,
