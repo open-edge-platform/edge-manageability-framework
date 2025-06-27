@@ -15,9 +15,9 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/magefile/mage v1.15.0
 	github.com/onsi/ginkgo/v2 v2.23.4
-	github.com/onsi/gomega v1.36.3
+	github.com/onsi/gomega v1.37.0
 	github.com/open-edge-platform/app-orch-deployment/app-deployment-manager/api/nbi/v2 v2.3.21
-	github.com/open-edge-platform/cluster-manager/v2 v2.0.2
+	github.com/open-edge-platform/cluster-manager/v2 v2.1.5
 	github.com/open-edge-platform/infra-core/apiv2/v2 v2.0.0-20250523082429-138b179945c5
 	github.com/open-edge-platform/infra-managers/attestationstatus v0.4.0
 	github.com/open-edge-platform/infra-managers/host v1.21.0

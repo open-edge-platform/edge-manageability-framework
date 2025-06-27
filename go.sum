@@ -171,12 +171,12 @@ github.com/oasdiff/yaml3 v0.0.0-20250309153720-d2182401db90 h1:bQx3WeLcUWy+RletI
 github.com/oasdiff/yaml3 v0.0.0-20250309153720-d2182401db90/go.mod h1:y5+oSEHCPT/DGrS++Wc/479ERge0zTFxaF8PbGKcg2o=
 github.com/onsi/ginkgo/v2 v2.23.4 h1:ktYTpKJAVZnDT4VjxSbiBenUjmlL/5QkBEocaWXiQus=
 github.com/onsi/ginkgo/v2 v2.23.4/go.mod h1:Bt66ApGPBFzHyR+JO10Zbt0Gsp4uWxu5mIOTusL46e8=
-github.com/onsi/gomega v1.36.3 h1:hID7cr8t3Wp26+cYnfcjR6HpJ00fdogN6dqZ1t6IylU=
-github.com/onsi/gomega v1.36.3/go.mod h1:8D9+Txp43QWKhM24yyOBEdpkzN8FvJyAwecBgsU4KU0=
+github.com/onsi/gomega v1.37.0 h1:CdEG8g0S133B4OswTDC/5XPSzE1OeP29QOioj2PID2Y=
+github.com/onsi/gomega v1.37.0/go.mod h1:8D9+Txp43QWKhM24yyOBEdpkzN8FvJyAwecBgsU4KU0=
 github.com/open-edge-platform/app-orch-deployment/app-deployment-manager/api/nbi/v2 v2.3.21 h1:PMBtl5R1gewAGepck4oASMjs0i2K5W138zs631RNV9U=
 github.com/open-edge-platform/app-orch-deployment/app-deployment-manager/api/nbi/v2 v2.3.21/go.mod h1:sNH1Uwy/u/7aPLrvJFTc5L3Fu0WN+TxrAo+7WyHpxvc=
-github.com/open-edge-platform/cluster-manager/v2 v2.0.2 h1:VN+VZCfRcDaRBEnr9zmkje9p39iQVwzVUMbMJReiC6Y=
-github.com/open-edge-platform/cluster-manager/v2 v2.0.2/go.mod h1:41JE0HclkqzMWoMeds1EVfxk5FMCCgqv/YFxRJfvK2E=
+github.com/open-edge-platform/cluster-manager/v2 v2.1.5 h1:ywvQ3Dw0lyuc+wpFa6RELEU7IUarqKAQwNMiWPz2rio=
+github.com/open-edge-platform/cluster-manager/v2 v2.1.5/go.mod h1:S6AL41ApnSn4hXm1WHvjOtdKhB0R+85EkMy3zUteUXk=
 github.com/open-edge-platform/infra-core/apiv2/v2 v2.0.0-20250523082429-138b179945c5 h1:wx4WEa8OwoITc20cHN7pd5D2imoVXHpIsC3y4U5Wm7Y=
 github.com/open-edge-platform/infra-core/apiv2/v2 v2.0.0-20250523082429-138b179945c5/go.mod h1:o0kMWN0rB+Qd2R/KTTtm17/NLGlk3Lvt6v32w3/OyS0=
 github.com/open-edge-platform/infra-managers/attestationstatus v0.4.0 h1:fAdQlDKrqjh1cxk/vRPgLvD0RZ8y9cNC2Gf1HdXjU40=
