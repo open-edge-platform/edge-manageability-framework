@@ -26,11 +26,12 @@ const (
 	installersDir    = "/tmp/installers"
 
 	rke2Version            = "v1.30.10+rke2r1"
-	rke2BinaryFile         = "rke2.linux-amd64.tar.gz"
+	rke2BinaryPackage      = "rke2.linux-amd64.tar.gz"
 	rke2ImagesPackage      = "rke2-images.linux-amd64.tar.zst"
 	rke2CalicoImagePackage = "rke2-images-calico.linux-amd64.tar.zst"
 	rke2LibSHAFile         = "sha256sum-amd64.txt"
 	rke2ImagesURL          = "https://github.com/rancher/rke2/releases/download"
+	rke2InstallerFile      = "rke2-install.sh"
 	rke2InstallerURL       = "https://get.rke2.io"
 )
 
@@ -95,16 +96,12 @@ func (s *RKE2DownloadStep) RunStep(ctx context.Context, config config.OrchInstal
 			}
 		}
 
-		fmt.Println("RKE2 images and install script downloaded successfully")
-
 		if err := downloadArtifacts(ctx, rsURL, installersRSPath, orchVersion, installersDir, installerList); err != nil {
 			return runtimeState, &internal.OrchInstallerError{
 				ErrorCode: internal.OrchInstallerErrorCodeInternal,
 				ErrorMsg:  fmt.Sprintf("failed to download installers: %s", err),
 			}
 		}
-
-		fmt.Println("Downloaded installers successfully")
 	}
 
 	return runtimeState, nil
@@ -149,23 +146,26 @@ func downloadRKE2Images(ctx context.Context, artifactDir string) error {
 	}
 
 	for _, image := range []string{
-		rke2BinaryFile,
+		rke2BinaryPackage,
 		rke2ImagesPackage,
 		rke2CalicoImagePackage,
 		rke2LibSHAFile,
 	} {
 		out := filepath.Join(artifactDir, image)
 		url := fmt.Sprintf("%s/%s/%s", rke2ImagesURL, rke2Version, image)
-		fmt.Printf("Downloading %s\n", url)
+		fmt.Printf("Downloading %s\n", image)
 		if err := exec.CommandContext(ctx, "curl", "-L", url, "-o", out).Run(); err != nil {
 			return fmt.Errorf("failed to download %s: %w", image, err)
 		}
+		fmt.Printf("Finished downloading %s\n", image)
 	}
 
-	installScript := filepath.Join(artifactDir, "rke2-install.sh")
+	installScript := filepath.Join(artifactDir, rke2InstallerFile)
+	fmt.Printf("Downloading %s\n", rke2InstallerFile)
 	if err := exec.CommandContext(ctx, "curl", "-sfL", rke2InstallerURL, "-o", installScript).Run(); err != nil {
 		return fmt.Errorf("failed to download install script: %w", err)
 	}
+	fmt.Printf("Finished downloading %s\n", rke2InstallerFile)
 
 	return nil
 }

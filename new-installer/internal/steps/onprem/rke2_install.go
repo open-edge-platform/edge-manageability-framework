@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"path/filepath"
 
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
@@ -20,8 +21,8 @@ const (
 	rke2BaseDir     = "/var/lib/rancher/rke2"
 	rke2ImagesDir   = "/var/lib/rancher/rke2/agent/images"
 	rke2ConfigFile  = "/etc/rancher/rke2/rke2.yaml"
-	rke2BinaryPath  = "/usr/local/bin/rke2"
-	useDebInstaller = true // Set to true if using deb package installation
+	rke2BinaryFile  = "/usr/local/bin/rke2"
+	useDebInstaller = false // Set to true if using deb package installation
 )
 
 type RKE2InstallStep struct {
@@ -52,7 +53,7 @@ func (s *RKE2InstallStep) ConfigStep(ctx context.Context, config config.OrchInst
 }
 
 func (s *RKE2InstallStep) PreStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
-	if _, err := os.Stat(rke2BinaryPath); err == nil {
+	if _, err := os.Stat(rke2BinaryFile); err == nil {
 		// RKE2 binary exists
 		if runtimeState.Action == "install" {
 			fmt.Println("RKE2 is already installed, skipping installation step")
@@ -223,7 +224,9 @@ func (s *RKE2InstallStep) PostStep(ctx context.Context, config config.OrchInstal
 func installRKE2(ctx context.Context, artifactDir string) error {
 	fmt.Println("Installing RKE2...")
 
-	if err := os.Chmod(fmt.Sprintf("%s/install.sh", artifactDir), 0o755); err != nil {
+	installerFile := filepath.Join(artifactDir, rke2InstallerFile)
+
+	if err := os.Chmod(installerFile, 0o755); err != nil {
 		return fmt.Errorf("modifying install script permissions: %w", err)
 	}
 
@@ -231,7 +234,7 @@ func installRKE2(ctx context.Context, artifactDir string) error {
 		fmt.Sprintf("INSTALL_RKE2_ARTIFACT_PATH=%s", artifactDir),
 		fmt.Sprintf("INSTALL_RKE2_METHOD=%s", "tar"),
 		fmt.Sprintf("INSTALL_RKE2_VERSION=%s", rke2Version),
-		"sh", "-c", fmt.Sprintf("%s/install.sh", artifactDir),
+		"sh", "-c", installerFile,
 	)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
