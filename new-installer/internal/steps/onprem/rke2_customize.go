@@ -8,7 +8,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"text/template"
@@ -17,46 +16,44 @@ import (
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 )
 
-type CustomizeRKE2Step struct {
+type RKE2CustomizeStep struct {
 	RootPath               string
 	KeepGeneratedFiles     bool
-	orchConfigReaderWriter config.OrchConfigReaderWriter
+	OrchConfigReaderWriter config.OrchConfigReaderWriter
 	AssetsDir              string
 	StepLabels             []string
 }
 
-func CreateCustomizeRKE2Step(rootPath string, keepGeneratedFiles bool, orchConfigReaderWriter config.OrchConfigReaderWriter, assetsDir string) *CustomizeRKE2Step {
-	return &CustomizeRKE2Step{
+func CreateRKE2CustomizeStep(rootPath string, keepGeneratedFiles bool, orchConfigReaderWriter config.OrchConfigReaderWriter, assetsDir string) *RKE2CustomizeStep {
+	return &RKE2CustomizeStep{
 		RootPath:               rootPath,
 		KeepGeneratedFiles:     keepGeneratedFiles,
-		orchConfigReaderWriter: orchConfigReaderWriter,
+		OrchConfigReaderWriter: orchConfigReaderWriter,
 		AssetsDir:              assetsDir,
 	}
 }
 
-func (s *CustomizeRKE2Step) Name() string {
-	return "Rke2InfraStep"
+func (s *RKE2CustomizeStep) Name() string {
+	return "CustomizeRKE2Step"
 }
 
-func (s *CustomizeRKE2Step) Labels() []string {
+func (s *RKE2CustomizeStep) Labels() []string {
 	return s.StepLabels
 }
 
-func (s *CustomizeRKE2Step) ConfigStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *RKE2CustomizeStep) ConfigStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	return runtimeState, nil
 }
 
-func (s *CustomizeRKE2Step) PreStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *RKE2CustomizeStep) PreStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	return runtimeState, nil
 }
 
-func (s *CustomizeRKE2Step) RunStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *RKE2CustomizeStep) RunStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	if runtimeState.Action == "install" {
-		// Perform customization for RKE2 installation
-		// This could include copying configuration files, setting up directories, etc.
-		// For now, we will just print a message indicating the step is running
-		fmt.Println("Running RKE2 customization step")
+		fmt.Printf("Running %s run-step\n", s.Name())
 
+		// Copy configuration files and render templates for audit policy, RKE2 config, CoreDNS, and registries.
 		for _, entry := range [][]string{
 			{"audit-policy.yaml", "/etc/rancher/rke2/audit-policy.yaml"},
 			{"rke2-config.yaml", "/etc/rancher/rke2/config.yaml"},
@@ -71,6 +68,7 @@ func (s *CustomizeRKE2Step) RunStep(ctx context.Context, config config.OrchInsta
 			}
 		}
 
+		// Render rke2-coredns-config.yaml with namespace value to avoid Trivy warnings
 		if err := renderConfig("/var/lib/rancher/rke2/server/manifests/rke2-coredns-config.yaml", map[string]string{
 			"Namespace": "kube-system",
 		}); err != nil {
@@ -80,6 +78,7 @@ func (s *CustomizeRKE2Step) RunStep(ctx context.Context, config config.OrchInsta
 			}
 		}
 
+		// Render RKE2 registries.yaml with Docker credentials if provided
 		if config.Onprem.DockerUsername != "" && config.Onprem.DockerToken != "" {
 			// Render the registries.yaml file with the Docker credentials
 			if err := renderConfig("/etc/rancher/rke2/registries.yaml", map[string]string{
@@ -97,7 +96,7 @@ func (s *CustomizeRKE2Step) RunStep(ctx context.Context, config config.OrchInsta
 	return runtimeState, nil
 }
 
-func (s *CustomizeRKE2Step) PostStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState, prevStepError *internal.OrchInstallerError) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
+func (s *RKE2CustomizeStep) PostStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState, prevStepError *internal.OrchInstallerError) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	return runtimeState, prevStepError
 }
 
@@ -132,8 +131,14 @@ func copyConfig(assetsDir, srcFile, destFile string) error {
 	return nil
 }
 
-func renderConfig(file string, data interface{}) error {
-	tmpl, err := template.ParseFiles(file)
+func renderConfig(file string, data any) error {
+	// Read file content to check for template delimiters
+	content, err := os.ReadFile(file)
+	if err != nil {
+		return fmt.Errorf("reading file: %w", err)
+	}
+
+	tmpl, err := template.New(filepath.Base(file)).Parse(string(content))
 	if err != nil {
 		return fmt.Errorf("parsing template: %w", err)
 	}
@@ -148,6 +153,6 @@ func renderConfig(file string, data interface{}) error {
 		return fmt.Errorf("executing template: %w", err)
 	}
 
-	log.Printf("Rendered config file in place: %s\n", file)
+	fmt.Printf("Rendered config file in place: %s\n", file)
 	return nil
 }
