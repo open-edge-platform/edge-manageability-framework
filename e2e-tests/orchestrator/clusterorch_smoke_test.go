@@ -726,12 +726,18 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 
 				siteDeleted := func() bool {
 					url := fmt.Sprintf(apiBaseURLTemplate+"/regions/%s/sites/%s", serviceDomain, project, regionID, siteID)
+					fmt.Printf("Deleting site with URL: %s\n", url)
 					resp, err := makeAuthorizedRequest(http.MethodDelete, url, *edgeInfraToken, nil, cli)
 					if err != nil {
 						fmt.Printf("Error creating new HTTP request: %v\n", err)
 						return false
 					}
 					defer resp.Body.Close()
+
+					if resp.StatusCode == http.StatusBadRequest {
+						fmt.Printf("Site %s not found, it may have already been deleted.\n", siteID)
+						return true
+					}
 
 					if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusNoContent {
 						fmt.Printf("Site %s has been successfully deleted.\n", siteID)
@@ -751,12 +757,18 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 			if regionID != "" {
 				regionDeleted := func() bool {
 					url := fmt.Sprintf(apiBaseURLTemplate+"/regions/%s", serviceDomain, project, regionID)
+					fmt.Printf("Deleting region with URL: %s\n", url)
 					resp, err := makeAuthorizedRequest(http.MethodDelete, url, *edgeInfraToken, nil, cli)
 					if err != nil {
 						fmt.Printf("Error creating new HTTP request: %v\n", err)
 						return false
 					}
 					defer resp.Body.Close()
+
+					if resp.StatusCode == http.StatusBadRequest {
+						fmt.Printf("Region %s not found, it may have already been deleted.\n", regionID)
+						return true
+					}
 
 					if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusNoContent {
 						fmt.Printf("Region %s has been successfully deleted.\n", regionID)
