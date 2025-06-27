@@ -79,16 +79,6 @@ func (s *RKE2DownloadStep) PreStep(ctx context.Context, config config.OrchInstal
 		}
 
 		fmt.Printf("Created directories for installers (%s)\n", installersDir)
-
-		// Create additional directories if needed
-		if err := os.MkdirAll(archivesRSPath, 0o755); err != nil {
-			return runtimeState, &internal.OrchInstallerError{
-				ErrorCode: internal.OrchInstallerErrorCodeInternal,
-				ErrorMsg:  fmt.Sprintf("failed to create archives directory %s: %s", archivesRSPath, err),
-			}
-		}
-
-		fmt.Printf("Created directories for archives (%s)\n", archivesRSPath)
 	}
 
 	return runtimeState, nil
@@ -164,8 +154,8 @@ func downloadRKE2Images(ctx context.Context, artifactDir string) error {
 		rke2CalicoImagePackage,
 		rke2LibSHAFile,
 	} {
-		url := fmt.Sprintf("%s/%s/%s", rke2ImagesURL, rke2Version, image)
 		out := filepath.Join(artifactDir, image)
+		url := fmt.Sprintf("%s/%s/%s", rke2ImagesURL, rke2Version, image)
 		fmt.Printf("Downloading %s\n", url)
 		if err := exec.CommandContext(ctx, "curl", "-L", url, "-o", out).Run(); err != nil {
 			return fmt.Errorf("failed to download %s: %w", image, err)

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
 write-kubeconfig-mode: "0644"
 audit-policy-file: "/etc/rancher/rke2/audit-policy.yaml"
 cni:
