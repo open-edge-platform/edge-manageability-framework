@@ -123,7 +123,6 @@ func (s *RKE2DownloadStep) RunStep(ctx context.Context, config config.OrchInstal
 func (s *RKE2DownloadStep) PostStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState, prevStepError *internal.OrchInstallerError) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
 	if runtimeState.Action == "install" {
 		fmt.Printf("Running %s post-step\n", s.Name())
-
 	}
 
 	return runtimeState, prevStepError

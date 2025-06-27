@@ -165,7 +165,6 @@ func (s *RKE2InstallStep) RunStep(ctx context.Context, config config.OrchInstall
 }
 
 func (s *RKE2InstallStep) PostStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState, prevStepError *internal.OrchInstallerError) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
-
 	if runtimeState.Action == "install" {
 		// Set up kubeconfig for the current user
 		currentUser, err := user.Current()
