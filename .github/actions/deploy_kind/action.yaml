@@ -100,7 +100,7 @@ runs:
       mage gen:orchCa deploy:orchCa
   - name: Get diagnostic information
     id: get-diagnostic-info
-    if: always() && steps.install-deps.conclusion == 'success'
+    if: always()
     shell: bash
     run: |
       mkdir -p kind-diagnostics
@@ -111,7 +111,7 @@ runs:
       kubectl get events -o yaml -A > kind-diagnostics/events.yaml
 
   - name: Upload diagnostic information to CI artifact store
-    if: always() && steps.get-diagnostic-info.conclusion == 'success'
+    if: always()
     uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
     with:
       name: kind-diagnostics
@@ -121,3 +121,4 @@ runs:
         kind-diagnostics/argo-diag.txt
         kind-diagnostics/argocd-applications.yaml
         kind-diagnostics/events.yaml
+      if-no-files-found: warn
