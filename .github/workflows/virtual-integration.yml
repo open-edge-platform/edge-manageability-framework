@@ -562,6 +562,30 @@ jobs:
         run: |
           mage test:e2eSreObservability
 
+      - name: Re-deploy ENiC (as previous one was deatuhorized)
+        if: ${{ always() && steps.deploy-kind-orchestrator.conclusion == 'success' && steps.default-mt-setup.conclusion == 'success' }}
+        shell: bash
+        timeout-minutes: 5
+        env:
+          ORCH_ORG: sample-org
+          ORCH_PROJECT: sample-project
+          ORCH_USER: sample-project-onboarding-user
+          ORCH_USER_API: sample-project-api-user
+          EDGE_MANAGEABILITY_FRAMEWORK_REV: ${{ env.GIT_HASH }}
+        run: |
+          kubectl delete ns enic
+          mage devUtils:deployEnic 1 dev
+
+          # wait until SN and UUID are available
+          mage devUtils:getEnicSerialNumber
+          mage devUtils:getEnicUUID
+
+          # then get then and store them in the env
+          UUID=$(kubectl exec -it -n enic enic-0 -c edge-node -- bash -c "dmidecode -s system-uuid")
+          SN=$(kubectl exec -it -n enic enic-0 -c edge-node -- bash -c "dmidecode -s system-serial-number")
+          echo "EN_UUID=$UUID" >> "$GITHUB_ENV"
+          echo "EN_SN=$SN" >> "$GITHUB_ENV"
+
       - name: Wait for cluster agent to be ready
         if: ${{ always() && steps.deploy-kind-orchestrator.conclusion == 'success' }}
         run: |
