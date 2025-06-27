@@ -10,6 +10,7 @@ import (
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps"
+	commonSteps "github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps/common"
 	onpremSteps "github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps/onprem"
 )
 
@@ -36,6 +37,7 @@ func CreateOnPremStages(rootPath string, keepGeneratedFiles bool, orchConfigRead
 				orchConfigReaderWriter,
 				filepath.Join(rootPath, "new-installer", "targets", "onprem", "rke2"),
 			),
+			commonSteps.CreateArgoStep(rootPath, keepGeneratedFiles, orchConfigReaderWriter),
 		},
 		[]string{"infra"},
 		orchConfigReaderWriter,
