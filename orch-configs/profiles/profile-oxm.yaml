@@ -12,6 +12,13 @@ argo:
     os-resource-manager:
       enabledProfiles:
         - microvisor-standalone
+  infra-core:
+    tenant-config:
+      enabled: true
+      config:
+        defaultUser: local-admin # must be different from 'admin'
+        defaultOrganization: local-admin
+        defaultTenant: local-admin
   infra-onboarding:
     pxe-server:
       enabled: true
