@@ -183,3 +183,4 @@ pxe-server:
     bootServerIP: {{ index .Values.argo "infra-onboarding" "pxe-server" "bootServerIP" | default "" }}
     subnetAddress: {{ index .Values.argo "infra-onboarding" "pxe-server" "subnetAddress" | default "" }}
 {{- end }}
+
