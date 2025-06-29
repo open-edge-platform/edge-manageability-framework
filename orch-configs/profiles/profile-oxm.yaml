@@ -16,7 +16,7 @@ argo:
     tenant-config:
       enabled: true
       config:
-        defaultUser: local-admin # must different from 'admin'
+        defaultUser: local-admin # must be different from 'admin'
         defaultOrganization: local-admin
         defaultTenant: local-admin
   infra-onboarding:
