@@ -5,7 +5,7 @@
 {{- $appName        := "copy-ca-cert-gitea-to-app" }}
 {{- $chartName      := "copy-secret" }}
 {{- $namespace      := "orch-app" }}
-{{- $syncWave       := "180" }}
+{{- $syncWave       := "100" }}
 ---
 {{- if (index .Values.argo.enabled $appName) }}
 apiVersion: argoproj.io/v1alpha1

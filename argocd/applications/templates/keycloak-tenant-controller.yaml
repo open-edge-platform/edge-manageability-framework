@@ -4,7 +4,7 @@
 
 {{- $appName        := "keycloak-tenant-controller" }}
 {{- $namespace      := "orch-gateway" }}
-{{- $syncWave       := "1250" }}
+{{- $syncWave       := "100" }}
 ---
 {{- if (index .Values.argo.enabled "multitenant_gateway") }}
 apiVersion: argoproj.io/v1alpha1

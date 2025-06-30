@@ -4,7 +4,7 @@
 
 {{- $appName        := "botkube" }}
 {{- $namespace      := "orch-gateway" }}
-{{- $syncWave       := "1200" }}
+{{- $syncWave       := "100" }}
 ---
 {{- if and (default false ((.Values.argo.autoCert).enabled)) (index .Values.argo.enabled $appName) }}
 apiVersion: argoproj.io/v1alpha1

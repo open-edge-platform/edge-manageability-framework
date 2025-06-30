@@ -4,7 +4,7 @@
 
 {{- $appName        := "tenancy-manager" }}
 {{- $namespace      := "orch-iam" }}
-{{- $syncWave       := "1200" }}
+{{- $syncWave       := "100" }}
 ---
 {{- if (index .Values.argo.enabled "multitenant_gateway") }}
 apiVersion: argoproj.io/v1alpha1

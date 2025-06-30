@@ -4,7 +4,7 @@
 
 {{- $appName        := "namespace-label" }}
 {{- $namespace      := "ns-label" }}
-{{- $syncWave       := "90" }}
+{{- $syncWave       := "100" }}
 ---
 # always deploy this app
 apiVersion: argoproj.io/v1alpha1
