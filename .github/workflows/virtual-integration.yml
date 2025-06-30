@@ -691,6 +691,8 @@ jobs:
           needs.check-changed-files.outputs.on-prem == 'true' ||
           needs.check-changed-files.outputs.orch == 'true' ||
           needs.check-changed-files.outputs.ci == 'true'
+        env:
+          DEFAULT_OS_PROFILE: ubuntu
         run: mage test:onboarding
 
   tag-repo:
