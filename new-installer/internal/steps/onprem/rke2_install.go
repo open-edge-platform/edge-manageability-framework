@@ -53,24 +53,10 @@ func (s *RKE2InstallStep) ConfigStep(ctx context.Context, config config.OrchInst
 }
 
 func (s *RKE2InstallStep) PreStep(ctx context.Context, config config.OrchInstallerConfig, runtimeState config.OrchInstallerRuntimeState) (config.OrchInstallerRuntimeState, *internal.OrchInstallerError) {
-	if _, err := os.Stat(rke2BinaryFile); err == nil {
-		// RKE2 binary exists
-		if runtimeState.Action == "install" {
-			fmt.Println("RKE2 is already installed, skipping installation step")
-			return runtimeState, &internal.OrchInstallerError{
-				ErrorMsg:  "RKE2 is already installed, skipping installation step",
-				ErrorCode: internal.OrchInstallerErrorCodeInternal,
-			}
-		}
-	} else if os.IsNotExist(err) {
-		// RKE2 binary does not exist
-		fmt.Println("RKE2 is not installed")
-	} else {
-		// Some other error occurred
-		fmt.Printf("Error checking RKE2 installation: %v\n", err)
-		return runtimeState, &internal.OrchInstallerError{
-			ErrorMsg:  fmt.Sprintf("Error checking RKE2 installation: %v", err),
-			ErrorCode: internal.OrchInstallerErrorCodeInternal,
+	if runtimeState.Action == "install" {
+		if _, err := os.Stat(rke2BinaryFile); err == nil {
+			fmt.Println("RKE2 is already installed and executable")
+			return runtimeState, nil
 		}
 	}
 	return runtimeState, nil

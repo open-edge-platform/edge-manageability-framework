@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"text/template"
 
@@ -89,6 +90,26 @@ func (s *RKE2CustomizeStep) RunStep(ctx context.Context, config config.OrchInsta
 					ErrorMsg:  fmt.Sprintf("failed to render registries.yaml: %s", err),
 					ErrorCode: internal.OrchInstallerErrorCodeInternal,
 				}
+			}
+		}
+
+		// Create the etcd-certs secret in the kube-system namespace
+		if err := exec.CommandContext(ctx, "kubectl", "create", "secret", "generic", "etcd-certs",
+			"--from-file=/var/lib/rancher/rke2/server/tls/etcd/server-client.crt",
+			"--from-file=/var/lib/rancher/rke2/server/tls/etcd/server-client.key",
+			"--from-file=/var/lib/rancher/rke2/server/tls/etcd/server-ca.crt").Run(); err != nil {
+			return runtimeState, &internal.OrchInstallerError{
+				ErrorMsg:  fmt.Sprintf("failed to create etcd-certs secret %s", err),
+				ErrorCode: internal.OrchInstallerErrorCodeInternal,
+			}
+		}
+
+		// Create cron job that periodically defrags etcd
+		if err := exec.CommandContext(ctx, "kubectl", "apply", "-f",
+			filepath.Join(s.AssetsDir, "defrag-etcd-job.yaml")).Run(); err != nil {
+			return runtimeState, &internal.OrchInstallerError{
+				ErrorMsg:  fmt.Sprintf("failed to apply defrag-etcd-job.yaml: %s", err),
+				ErrorCode: internal.OrchInstallerErrorCodeInternal,
 			}
 		}
 	}

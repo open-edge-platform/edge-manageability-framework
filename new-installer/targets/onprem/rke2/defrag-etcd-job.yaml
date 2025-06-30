@@ -1,0 +1,52 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: etcd-defrag-cronjob
+spec:
+  schedule: "0 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: etcd-defrag
+            image: quay.io/coreos/etcd:v3.5.19
+            command: ["/bin/sh"]
+            args:
+            - -c
+            - |
+              #!/bin/sh
+              # Set the threshold size in bytes (4GB in this case)
+              THRESHOLD_SIZE=$((4 * 1024 * 1024 * 1024))
+
+              # Get the current etcd database size
+              CURRENT_SIZE=$(ETCDCTL_API=3 etcdctl --endpoints=https://localhost:2379 --write-out="json" \
+                --cert="/etc/etcd/certs/server-client.crt" \
+                --key="/etc/etcd/certs/server-client.key" \
+                --cacert="/etc/etcd/certs/server-ca.crt" endpoint status | awk -F'dbSize":' '{split($2,a,","); print a[1]}')
+
+              # Check if the current size exceeds the threshold
+              if [ "$CURRENT_SIZE" -gt "$THRESHOLD_SIZE" ]; then
+                echo "Database size ($CURRENT_SIZE) is greater than the threshold ($THRESHOLD_SIZE). Running defragmentation..."
+                ETCDCTL_API=3 etcdctl --endpoints=https://localhost:2379 \
+                  --cert="/etc/etcd/certs/server-client.crt" \
+                  --key="/etc/etcd/certs/server-client.key" \
+                  --cacert="/etc/etcd/certs/server-ca.crt" \
+                  defrag --command-timeout=30s
+              else
+                echo "Database size ($CURRENT_SIZE) is below the threshold ($THRESHOLD_SIZE). No action needed."
+              fi
+            volumeMounts:
+            - name: etcd-certs
+              mountPath: /etc/etcd/certs
+              readOnly: true
+          restartPolicy: OnFailure
+          hostNetwork: true
+          volumes:
+          - name: etcd-certs
+            secret:
+              secretName: etcd-certs
