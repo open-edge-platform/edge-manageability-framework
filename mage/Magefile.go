@@ -862,8 +862,21 @@ func (flow OnboardingFlow) IsValid() bool {
 }
 
 // Deploy a local Virtual Edge Node using libvirt. An Orchestrator must be running locally.
-func (d Deploy) VEN(ctx context.Context, flow string, serialNumber string) error {
-	err := d.VENWithFlow(ctx, flow, serialNumber)
+func (d Deploy) VEN(ctx context.Context, flow string, serialNumber string, osType string) error {
+	// Validate osType
+	validOsTypes := map[string]struct{}{
+		"ubuntu":        {},
+		"microvisor":    {},
+		"microvisor-se": {},
+	}
+	if osType == "" {
+		osType = "microvisor"
+	}
+	if _, ok := validOsTypes[osType]; !ok {
+		return fmt.Errorf("invalid osType: %s (must be one of: ubuntu, microvisor, microvisor-se)", osType)
+	}
+
+	err := d.VENWithFlow(ctx, flow, serialNumber, osType)
 	if err != nil {
 		return fmt.Errorf("failed to deploy virtual Edge Node: %w", err)
 	}
@@ -874,7 +887,7 @@ func (d Deploy) VEN(ctx context.Context, flow string, serialNumber string) error
 }
 
 // VENWithFlow deploys a local Virtual Edge Node using libvirt and returns the serial number of the deployed node.
-func (d Deploy) VENWithFlow(ctx context.Context, flow string, serialNumber string) error { //nolint:gocyclo,maintidx
+func (d Deploy) VENWithFlow(ctx context.Context, flow string, serialNumber string, osType string) error { //nolint:gocyclo,maintidx
 	mg.CtxDeps(
 		ctx,
 		Deps{}.EnsureUbuntu,
@@ -1114,7 +1127,11 @@ STANDALONE=0
 		return fmt.Errorf("failed to create out/logs directory: %w", err)
 	}
 
-	if err := sh.RunV(filepath.Join("scripts", "update_provider_defaultos.sh"), "microvisor"); err != nil {
+	// Use the provided osType argument, default to "microvisor" if empty
+	if osType == "" {
+		osType = "microvisor"
+	}
+	if err := sh.RunV(filepath.Join("scripts", "update_provider_defaultos.sh"), osType); err != nil {
 		return fmt.Errorf("failed to update provider default OS: %w", err)
 	}
 
