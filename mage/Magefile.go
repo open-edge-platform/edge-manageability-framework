@@ -1120,6 +1120,19 @@ STANDALONE=0
 		defaultOS = "microvisor"
 	}
 
+	// Validate DEFAULT_OS_PROFILE value
+	validOSProfiles := []string{"ubuntu", "microvisor", "microvisor-standalone"}
+	isValid := false
+	for _, validProfile := range validOSProfiles {
+		if defaultOS == validProfile {
+			isValid = true
+			break
+		}
+	}
+	if !isValid {
+		return fmt.Errorf("invalid DEFAULT_OS_PROFILE value: %s. Valid options are: %s", defaultOS, strings.Join(validOSProfiles, ", "))
+	}
+
 	if err := sh.RunV(filepath.Join("scripts", "update_provider_defaultos.sh"), defaultOS); err != nil {
 		return fmt.Errorf("failed to update provider default OS: %w", err)
 	}
