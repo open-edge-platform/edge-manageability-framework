@@ -10,6 +10,8 @@ import:
     enabled: true
   onboarding-manager:
     enabled: true
+  pxe-server:
+    enabled: false
 
 tinkerbell:
   pvc:
