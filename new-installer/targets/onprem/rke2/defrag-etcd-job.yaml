@@ -6,6 +6,7 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: etcd-defrag-cronjob
+  namespace: {{ .Namespace }}
 spec:
   schedule: "0 * * * *"
   jobTemplate:
@@ -44,8 +45,8 @@ spec:
             - name: etcd-certs
               mountPath: /etc/etcd/certs
               readOnly: true
-          restartPolicy: OnFailure
-          hostNetwork: true
+          restartPolicy: OnFailure          
+          hostNetwork: {{ .HostNetwork }}
           volumes:
           - name: etcd-certs
             secret:

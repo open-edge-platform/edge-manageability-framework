@@ -60,6 +60,7 @@ func (s *RKE2CustomizeStep) RunStep(ctx context.Context, config config.OrchInsta
 			{"rke2-config.yaml", "/etc/rancher/rke2/config.yaml"},
 			{"rke2-coredns-config.yaml", "/var/lib/rancher/rke2/server/manifests/rke2-coredns-config.yaml"},
 			{"rke2-registries.yaml", "/etc/rancher/rke2/registries.yaml"},
+			{"defrag-etcd-job.yaml", "/tmp/defrag-etcd-job.yaml"},
 		} {
 			if err := copyConfig(s.AssetsDir, entry[0], entry[1]); err != nil {
 				return runtimeState, &internal.OrchInstallerError{
@@ -104,9 +105,19 @@ func (s *RKE2CustomizeStep) RunStep(ctx context.Context, config config.OrchInsta
 			}
 		}
 
+		// Render defrag-etcd-job.yaml with namespace value to avoid Trivy warnings
+		if err := renderConfig("/tmp/defrag-etcd-job.yaml", map[string]string{
+			"Namespace":   "kube-system",
+			"HostNetwork": "true",
+		}); err != nil {
+			return runtimeState, &internal.OrchInstallerError{
+				ErrorMsg:  fmt.Sprintf("failed to render rke2-coredns-config.yaml: %s", err),
+				ErrorCode: internal.OrchInstallerErrorCodeInternal,
+			}
+		}
+
 		// Create cron job that periodically defrags etcd
-		if err := exec.CommandContext(ctx, "kubectl", "apply", "-f",
-			filepath.Join(s.AssetsDir, "defrag-etcd-job.yaml")).Run(); err != nil {
+		if err := exec.CommandContext(ctx, "kubectl", "apply", "-f", "/tmp/defrag-etcd-job.yaml").Run(); err != nil {
 			return runtimeState, &internal.OrchInstallerError{
 				ErrorMsg:  fmt.Sprintf("failed to apply defrag-etcd-job.yaml: %s", err),
 				ErrorCode: internal.OrchInstallerErrorCodeInternal,
