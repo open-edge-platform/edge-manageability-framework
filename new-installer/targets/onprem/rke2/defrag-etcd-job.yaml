@@ -41,6 +41,15 @@ spec:
               else
                 echo "Database size ($CURRENT_SIZE) is below the threshold ($THRESHOLD_SIZE). No action needed."
               fi
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop:
+                  - ALL
+              readOnlyRootFilesystem: true
+              seccompProfile:
+                  type: RuntimeDefault
+              privileged: false        
             volumeMounts:
             - name: etcd-certs
               mountPath: /etc/etcd/certs
@@ -51,3 +60,4 @@ spec:
           - name: etcd-certs
             secret:
               secretName: etcd-certs
+
