@@ -18,6 +18,8 @@ global:
 import:
   onboarding-manager:
     enabled: {{ index .Values.argo "infra-onboarding" "onboarding-manager" "enabled" }}
+  pxe-server:
+    enabled: {{ index .Values.argo "infra-onboarding" "pxe-server" "enabled" }}
 
 infra-config:
   config:
@@ -38,10 +40,6 @@ infra-config:
     orchAttestationStatus: attest-node.{{ .Values.argo.clusterDomain }}:443
     orchRegistry: {{ .Values.argo.releaseService.ociRegistry }}:9443
     orchFileServer: {{ .Values.argo.releaseService.fileServer }}:60444
-    orchMPSHost: mps-node.{{ .Values.argo.clusterDomain }}:4433
-    orchMPSWHost: mps-webport-node.{{ .Values.argo.clusterDomain }}:443
-    orchRPSHost: rps-node.{{ .Values.argo.clusterDomain }}:443
-    orchRPSWHost: rps-webport-node.{{ .Values.argo.clusterDomain }}:443
 
     rsType: "{{ index .Values.argo "infra-onboarding" "rsType" | default "no-auth" }}"
     netIp: "{{ index .Values.argo "infra-onboarding" "netIp" | default "dynamic" }}"
@@ -177,3 +175,11 @@ onboarding-manager:
   {{- end}}
   {{- end}}
   {{- end}}
+
+{{- if index .Values.argo "infra-onboarding" "pxe-server" "enabled" }}
+pxe-server:
+  config:
+    interface: {{ index .Values.argo "infra-onboarding" "pxe-server" "interface" | default "" }}
+    bootServerIP: {{ index .Values.argo "infra-onboarding" "pxe-server" "bootServerIP" | default "" }}
+    subnetAddress: {{ index .Values.argo "infra-onboarding" "pxe-server" "subnetAddress" | default "" }}
+{{- end }}

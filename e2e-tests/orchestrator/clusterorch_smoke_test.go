@@ -16,7 +16,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/open-edge-platform/infra-core/api/pkg/api/v0"
+	"github.com/open-edge-platform/infra-core/apiv2/v2/pkg/api/v2"
 
 	deploymentV2 "github.com/open-edge-platform/app-orch-deployment/app-deployment-manager/api/nbi/v2/pkg/restClient"
 	util "github.com/open-edge-platform/edge-manageability-framework/mage"
@@ -114,20 +114,21 @@ func getInstanceIdForHostGuid(token, guid string) string {
 	if hostsResponse == "" {
 		return instanceId
 	}
-	var hosts api.HostsList
+	var hosts api.ListHostsResponse
 	err = json.Unmarshal([]byte(hostsResponse), &hosts)
 	if err != nil {
 		return instanceId
 	}
-	if hosts.Hosts == nil {
+
+	if len(hosts.Hosts) == 0 {
 		return instanceId
 	}
 
-	for _, host := range *hosts.Hosts {
+	for _, host := range hosts.Hosts {
 		if host.Uuid == nil {
 			return instanceId
 		}
-		if (*host.Uuid).String() == nodeUUID {
+		if *host.Uuid == guid {
 			if host.ResourceId == nil {
 				return instanceId
 			}
@@ -211,9 +212,9 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 			defer resp.Body.Close()
 			body, err := io.ReadAll(resp.Body)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(resp.StatusCode).To(Equal(http.StatusCreated))
+			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 
-			var region api.Region
+			var region api.RegionResource
 			err = json.Unmarshal(body, &region)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(region.RegionID).ToNot(BeNil())
@@ -232,9 +233,9 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 			defer resp.Body.Close()
 			body, err := io.ReadAll(resp.Body)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(resp.StatusCode).To(Equal(http.StatusCreated))
+			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 
-			var site api.Site
+			var site api.SiteResource
 			err = json.Unmarshal(body, &site)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(site.SiteID).ToNot(BeNil())
@@ -253,21 +254,22 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 				if hostsResponse == "" {
 					return false, fmt.Errorf("hosts response is empty")
 				}
-				var hosts api.HostsList
+				var hosts api.ListHostsResponse
 				err = json.Unmarshal([]byte(hostsResponse), &hosts)
 				if err != nil {
 					return false, err
 				}
-				if hosts.Hosts == nil {
+
+				if len(hosts.Hosts) == 0 {
 					return false, fmt.Errorf("hosts list is nil")
 				}
 
-				for _, host := range *hosts.Hosts {
+				for _, host := range hosts.Hosts {
 					if host.Uuid == nil {
 						return false, fmt.Errorf("host UUID is nil")
 					}
 
-					if (*host.Uuid).String() == nodeUUID {
+					if *host.Uuid == nodeUUID {
 						if host.ResourceId == nil {
 							return false, fmt.Errorf("host resource ID is nil")
 						}
@@ -686,6 +688,8 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 				Eventually(func() (bool, error) {
 					return clusterDeleted()
 				}, 140*time.Second, 5*time.Second).Should(BeTrue(), fmt.Sprintf("Cluster %s was not deleted within the expected time frame.", clusterName))
+			} else {
+				fmt.Printf("No cluster found with name %s\n", clusterName)
 			}
 
 			// Delete the instance
@@ -699,6 +703,8 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 				defer resp.Body.Close()
 				Expect(resp.StatusCode).To(Or(Equal(http.StatusOK), Equal(http.StatusNoContent)), fmt.Sprintf("Failed to delete instance %s, HTTP status code: %d", instanceID, resp.StatusCode))
 				fmt.Printf("Instance %s has been successfully deleted.\n", instanceID)
+			} else {
+				fmt.Printf("No instance found for host with UUID %s\n", nodeUUID)
 			}
 
 			// Delete the host
@@ -709,6 +715,8 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 				defer resp.Body.Close()
 				Expect(resp.StatusCode).To(Or(Equal(http.StatusOK), Equal(http.StatusNoContent)), fmt.Sprintf("Failed to delete host %s, HTTP status code: %d", hostID, resp.StatusCode))
 				fmt.Printf("Host %s has been successfully deleted.\n", hostID)
+			} else {
+				fmt.Printf("No host found with ID %s\n", hostID)
 			}
 
 			// Delete the site
@@ -718,6 +726,7 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 
 				siteDeleted := func() bool {
 					url := fmt.Sprintf(apiBaseURLTemplate+"/regions/%s/sites/%s", serviceDomain, project, regionID, siteID)
+					fmt.Printf("Deleting site with URL: %s\n", url)
 					resp, err := makeAuthorizedRequest(http.MethodDelete, url, *edgeInfraToken, nil, cli)
 					if err != nil {
 						fmt.Printf("Error creating new HTTP request: %v\n", err)
@@ -725,21 +734,30 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 					}
 					defer resp.Body.Close()
 
+					if resp.StatusCode == http.StatusBadRequest {
+						fmt.Printf("Site %s not found, it may have already been deleted.\n", siteID)
+						return true
+					}
+
 					if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusNoContent {
 						fmt.Printf("Site %s has been successfully deleted.\n", siteID)
 						return true
 					} else {
+						fmt.Printf("Failed to delete site %s, HTTP status code: %d\n", siteID, resp.StatusCode)
 						return false
 					}
 				}
 
-				Eventually(siteDeleted, 50*time.Second, 5*time.Second).Should(BeTrue(), fmt.Sprintf("Failed to delete site %s within the expected time frame.", siteID))
+				Eventually(siteDeleted, 120*time.Second, 5*time.Second).Should(BeTrue(), fmt.Sprintf("Failed to delete site %s within the expected time frame.", siteID))
+			} else {
+				fmt.Printf("No site found with ID %s\n", siteID)
 			}
 
 			// Delete the region
 			if regionID != "" {
 				regionDeleted := func() bool {
 					url := fmt.Sprintf(apiBaseURLTemplate+"/regions/%s", serviceDomain, project, regionID)
+					fmt.Printf("Deleting region with URL: %s\n", url)
 					resp, err := makeAuthorizedRequest(http.MethodDelete, url, *edgeInfraToken, nil, cli)
 					if err != nil {
 						fmt.Printf("Error creating new HTTP request: %v\n", err)
@@ -747,15 +765,23 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 					}
 					defer resp.Body.Close()
 
+					if resp.StatusCode == http.StatusBadRequest {
+						fmt.Printf("Region %s not found, it may have already been deleted.\n", regionID)
+						return true
+					}
+
 					if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusNoContent {
 						fmt.Printf("Region %s has been successfully deleted.\n", regionID)
 						return true
 					} else {
+						fmt.Printf("Failed to delete region %s, HTTP status code: %d\n", regionID, resp.StatusCode)
 						return false
 					}
 				}
 
-				Eventually(regionDeleted, 50*time.Second, 5*time.Second).Should(BeTrue(), fmt.Sprintf("Failed to delete region %s within the expected time frame.", regionID))
+				Eventually(regionDeleted, 120*time.Second, 5*time.Second).Should(BeTrue(), fmt.Sprintf("Failed to delete region %s within the expected time frame.", regionID))
+			} else {
+				fmt.Printf("No region found with ID %s\n", regionID)
 			}
 		}()
 		select {

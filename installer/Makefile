@@ -36,7 +36,7 @@ TARGET_ENV     ?= ${CLUSTER_NAME}
 
 ARGO_IP   ?= 127.0.0.1
 ARGO_PORT ?= 32443
-ARGO_VERSION ?= 7.4.4
+ARGO_VERSION ?= 8.0.0
 
 HARBOR_PASSWORD := $(shell head -c 512 /dev/urandom | tr -dc A-Za-z0-9 | cut -c1-100)
 KEYCLOAK_PASSWORD := $(shell  head -c 512 /dev/urandom | tr -dc 'A-Za-z0-9!@#$%^&*()_+|:<>?=' | cut -c1-14)
