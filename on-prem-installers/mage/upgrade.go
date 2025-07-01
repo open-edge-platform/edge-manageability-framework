@@ -59,8 +59,9 @@ func (Upgrade) rke2Cluster() error {
 	/* NOTE: MINOR version cannot be skipped when upgrading Kubernetes e.g. if you're planning to go from 1.26 to 1.28,
 	   1.27 needs to be installed first.
 	   TODO: Add logic to determine version hops dynamically instead of hardcoding them.
+	   NOTE: EMF v3.0.0 uses "v1.30.10+rke2r1"
 	*/
-	for i, rke2UpgradeVersion := range []string{"v1.30.6+rke2r1", "v1.30.7+rke2r1", "v1.30.8+rke2r1", "v1.30.9+rke2r1", "v1.30.10+rke2r1"} {
+	for i, rke2UpgradeVersion := range []string{"v1.30.10+rke2r1"} {
 		// Set version in upgrade Plan and render template.
 		tmpl, err := template.ParseFiles(filepath.Join("rke2", "upgrade-plan.tmpl"))
 		if err != nil {
