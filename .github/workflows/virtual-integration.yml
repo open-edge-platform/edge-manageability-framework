@@ -461,7 +461,7 @@ jobs:
       - name: Deploy Kind Orchestrator
         id: deploy-kind-orchestrator
         uses: ./.github/actions/deploy_kind
-        timeout-minutes: 30
+        timeout-minutes: 35
         with:
           orch_version: ${{ github.event.pull_request.head.sha || github.sha }}
           orch_password: ${{ secrets.ORCH_DEFAULT_PASSWORD }}

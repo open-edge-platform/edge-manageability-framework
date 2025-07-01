@@ -16,6 +16,8 @@ argo:
     web-ui-infra: true
     copy-keycloak-admin-to-infra: true
   infra-core:
+    tenant-config:
+      enabled: false
     api:
       resources:
         requests:
