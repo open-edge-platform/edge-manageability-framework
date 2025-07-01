@@ -10,6 +10,8 @@ import:
     enabled: true
   onboarding-manager:
     enabled: true
+  pxe-server:
+    enabled: false
 
 tinkerbell:
   pvc:
@@ -27,7 +29,7 @@ onboarding-manager:
     tlsOption: "gateway-tls"
     gatewayNamespace: orch-gateway
   env:
-    tinkerActionsVersion: "1.17.2"
+    tinkerActionsVersion: "1.18.3"
     oidc:
       oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
       # Skip AuthZ for CDN-boots
@@ -54,4 +56,4 @@ dkam:
 
 infra-config:
   config:
-    enAgentManifestTag: "1.1.4"
+    enAgentManifestTag: "1.1.5"
