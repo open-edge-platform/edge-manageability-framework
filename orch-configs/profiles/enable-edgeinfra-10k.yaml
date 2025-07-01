@@ -6,6 +6,8 @@
 
 argo:
   infra-core:
+    tenant-config:
+      enabled: false
     inventory:
       resources:
         requests:
