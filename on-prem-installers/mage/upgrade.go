@@ -99,31 +99,6 @@ func (Upgrade) rke2Cluster() error {
 		}
 	}
 
-	// Add new pvc
-	// create openebs-lvm shared storage class
-	if err := sh.RunV("kubectl", "apply", "-f",
-		filepath.Join("rke2", "openebs-lvm-sc-shared.yaml")); err != nil {
-		return err
-	}
-
-	// Enable kernel modules required for LV snapshots
-	mods, err := os.OpenFile("/etc/modules-load.d/lv-snapshots.conf", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644) //nolint:gofumpt
-	if err != nil {
-		return err
-	}
-	defer mods.Close()
-
-	if _, err = mods.WriteString("dm-snapshot\ndm-mirror\n"); err != nil {
-		return err
-	}
-
-	if err = sh.RunV("modprobe", "dm-snapshot"); err != nil {
-		return err
-	}
-	if err = sh.RunV("modprobe", "dm-mirror"); err != nil {
-		return err
-	}
-
 	// Clean up after upgrade
 	if err := sh.RunV("kubectl", "label", nodeName, "rke2-upgrade=false", "--overwrite"); err != nil {
 		return err
