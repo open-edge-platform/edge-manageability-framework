@@ -5,26 +5,23 @@
 package onprem
 
 import (
-	"path/filepath"
-
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/config"
 	"github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps"
-	onpremSteps "github.com/open-edge-platform/edge-manageability-framework/installer/internal/steps/onprem"
 )
 
 func CreateOnPremStages(rootPath string, keepGeneratedFiles bool, orchConfigReaderWriter config.OrchConfigReaderWriter) ([]internal.OrchInstallerStage, error) {
 	infraStage := NewOnPremStage(
 		"Infra",
 		[]steps.OrchInstallerStep{
-			//onpremSteps.CreateRKE2DownloadStep(rootPath, keepGeneratedFiles, orchConfigReaderWriter),
-			onpremSteps.CreateRKE2InstallStep(rootPath, keepGeneratedFiles, orchConfigReaderWriter),
-			onpremSteps.CreateRKE2CustomizeStep(
-				rootPath,
-				keepGeneratedFiles,
-				orchConfigReaderWriter,
-				filepath.Join(rootPath, "new-installer", "targets", "onprem", "rke2"),
-			),
+			// onpremSteps.CreateRKE2DownloadStep(rootPath, keepGeneratedFiles, orchConfigReaderWriter),
+			// onpremSteps.CreateRKE2InstallStep(rootPath, keepGeneratedFiles, orchConfigReaderWriter),
+			// onpremSteps.CreateRKE2CustomizeStep(
+			// 	rootPath,
+			// 	keepGeneratedFiles,
+			// 	orchConfigReaderWriter,
+			// 	filepath.Join(rootPath, "new-installer", "targets", "onprem", "rke2"),
+			// ),
 			// commonSteps.CreateArgoStep(rootPath, keepGeneratedFiles, orchConfigReaderWriter),
 		},
 		[]string{"infra"},
