@@ -21,8 +21,8 @@ require (
 	github.com/open-edge-platform/infra-core/apiv2/v2 v2.0.0-20250523082429-138b179945c5
 	github.com/open-edge-platform/infra-managers/attestationstatus v0.4.0
 	github.com/open-edge-platform/infra-managers/host v1.21.0
-	github.com/open-edge-platform/infra-managers/maintenance v1.21.0
-	github.com/open-edge-platform/infra-managers/telemetry v1.21.0
+	github.com/open-edge-platform/infra-managers/maintenance v1.21.1
+	github.com/open-edge-platform/infra-managers/telemetry v1.21.1
 	github.com/open-edge-platform/infra-onboarding/onboarding-manager v1.33.1
 	github.com/open-edge-platform/orch-library/go v0.6.1
 	github.com/open-edge-platform/orch-utils/tenancy-datamodel v0.0.0-20250401180309-9c2571c45857
@@ -33,9 +33,9 @@ require (
 	golang.org/x/crypto v0.38.0
 	golang.org/x/oauth2 v0.30.0
 	golang.org/x/sync v0.14.0
-	google.golang.org/grpc v1.72.1
+	google.golang.org/grpc v1.72.2
 	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/apimachinery v0.32.5
+	k8s.io/apimachinery v0.32.6
 	k8s.io/client-go v0.32.5
 	oras.land/oras-go/v2 v2.5.0
 	sigs.k8s.io/controller-runtime v0.20.4
