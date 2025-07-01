@@ -86,7 +86,11 @@ controlplane:
         deployment:
           containers:
             - name: manager
-              # image from fork with configurable Cluster Cache concurency (not yet upstreamed)
+              # image from rke2 fork with configurable Cluster Cache concurrency - replace it with official one once it is released
+              # upstremead in https://github.com/rancher/cluster-api-provider-rke2/pull/690
+              # WARNING: please be aware, that upstremed version is slightly different then the one used here,
+              # you will need to add new --clustercache-concurrency flag to the rke2 binary to configure the Cluster Cachce concurrency
+              # (in the v0.16.3-dev-b0f7976 the --concurrency flag was used, but it was seperated into 2 distinct flags)
               imageUrl: ghcr.io/jdanieck/cluster-api-provider-rke2/rancher/cluster-api-provider-rke2-controlplane:v0.16.3-dev-b0f7976
               args:
                 "--insecure-diagnostics": "true"
