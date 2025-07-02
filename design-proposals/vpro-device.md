@@ -23,12 +23,9 @@ Remote Provisioning Client (RPC) is integrated as part of Platform Manageability
 
 The Platform Manageability Agent which includes RPC, will be provided as RPM packages. These RPMs will be included in the OS image, enabling the agent binaries to be installed automatically during the OS installation process. This ensures that all required manageability features are available as soon as the OS is deployed.
 
-For vPRO (DMT & ISM) capable devices, the Platform Manageability Agent will include the `rpc-go` utility, enabling DMT activations. The agent will ensure that all necessary drivers, such as heci, are available in the final OS to facilitate communication with CSME over PCIe/HECI.
+Upon installation, the Platform Manageability Agent performs AMT eligibility and capability detection on the Edge Node and reports the findings to the Device Management Resource Manager. The agent comes bundled with the `rpc-go` utility and necessary drivers (including heci) to enable communication with CSME over PCIe/HECI. Based on the capability detection results, the agent either enables DMT activation features for vPRO/AMT/ISM capable devices or reports an error status for non-capable devices.
 
-`Local Manageability Service` (LMS) must to be included as it is still required to enable the communication between RPC
-and AMT device. Additionally, it offers the support for in-band commands too.
-
-Device capability introspection—such as detecting vPRO, ISM, or no OOB support—will be performed by the agent, enabling dynamic selection of workflows in Tinkerbell based on the detected device features.
+`Local Manageability Service` (LMS) must be included as it is still required to enable the communication between RPC and AMT device. Additionally, it offers the support for in-band commands too.
 
 In cases where activation is attempted on unsupported or faulty devices, the agent will report errors to Device Management.
 
@@ -68,7 +65,8 @@ sequenceDiagram
     Note right of agent: AMT eligibility and capability introspection<br>performed by Agent after install
 
     alt Device supports vPRO/ISM
-        us ->> agent: Activate command
+        us ->> dm: Request activation via API
+        dm ->> agent: Activate command (based on desired state)
         agent ->> rps: vPRO remote configuration
         activate rps
         rps ->> agent: Success
@@ -78,8 +76,8 @@ sequenceDiagram
         dm ->> inv: Update AMT Status IN_PROGRESS (Connecting)
         dm ->> inv: Update AMT CurrentState Provisioned
     else [Device is not eligible]
-        agent ->> dm: Report AMT status (Unsupported)
-        dm ->> inv: Update AMT Status IDLE (Unsupported)
+        agent ->> dm: Report AMT status (Not Supported)
+        dm ->> inv: Update AMT Status ERROR (Not Supported)
     end
 
     alt Failure during activation
@@ -88,15 +86,19 @@ sequenceDiagram
     end
 ```
 
-**Note1** - MPS requires the creation of a device before accepting CIRA connections which is part of the 2-way auth
+**Note 1** - The user interacts with the Device Management API, and the Device Management Resource Manager instructs the agent to perform activation/deactivation based on desired states.
+
+**Note 2** - MPS requires the creation of a device before accepting CIRA connections which is part of the 2-way auth
 implemented between MPS and AMT;
 
-**Note 2** - Device Management Resource Manager will provide a `staticPassword` profile where the AMT and MEBx
+**Note 3** - Device Management Resource Manager will provide a `staticPassword` profile where the AMT and MEBx
 passwords are set to a well know value. Disabling this option the RM will randomly generate a password for each device
 (using RPS auto-generation) or it will generate a random password and store as secret.
 
-**Note 3** - Passwords are stored in `Vault` and can be always retrieved either using the Vault APIs or through the
+**Note 4** - Passwords are stored in `Vault` and can be always retrieved either using the Vault APIs or through the
 web-ui.
+
+**Note 5** - When a device does not support vPRO/ISM capabilities, this is treated as an error condition that needs to be surfaced to the user. The UX team will determine the best way to present this information to users.
 
 ### MVP Requirements
 
