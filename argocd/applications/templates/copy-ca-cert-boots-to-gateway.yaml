@@ -5,7 +5,7 @@
 {{- $appName        := "copy-ca-cert-boots-to-gateway" }}
 {{- $chartName      := "copy-secret" }}
 {{- $namespace      := "orch-gateway" }}
-{{- $syncWave       := "1400" }}
+{{- $syncWave       := "100" }}
 ---
 {{- if (index .Values.argo.enabled $appName) }}
 apiVersion: argoproj.io/v1alpha1

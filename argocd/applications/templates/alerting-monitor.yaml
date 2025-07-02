@@ -4,7 +4,7 @@
 
 {{- $appName        := "alerting-monitor" }}
 {{- $namespace      := "orch-infra" }}
-{{- $syncWave       := "1900" }}
+{{- $syncWave       := "100" }}
 ---
 {{- if (index .Values.argo.enabled $appName) }}
 apiVersion: argoproj.io/v1alpha1

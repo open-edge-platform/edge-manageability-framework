@@ -4,7 +4,7 @@
 
 {{- $appName        := "orchestrator-observability" }}
 {{- $namespace      := "orch-platform" }}
-{{- $syncWave       := "1000" }}
+{{- $syncWave       := "100" }}
 ---
 {{- if (index .Values.argo.enabled $appName) }}
 apiVersion: argoproj.io/v1alpha1

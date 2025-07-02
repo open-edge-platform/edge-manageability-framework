@@ -4,7 +4,7 @@
 
 {{- $appName := "fleet-controller" }}
 {{- $namespace := "cattle-fleet-system" }}
-{{- $syncWave := "1020" }}
+{{- $syncWave := "100" }}
 ---
 {{- if (index .Values.argo.enabled $appName) }}
 apiVersion: argoproj.io/v1alpha1

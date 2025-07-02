@@ -4,7 +4,7 @@
 
 {{- $appName        := "observability-tenant-controller" }}
 {{- $namespace      := "orch-platform" }}
-{{- $syncWave       := "2005" }}
+{{- $syncWave       := "100" }}
 ---
 {{- if and (index .Values.argo.enabled "multitenant_gateway") (index .Values.argo.enabled "alerting-monitor") (index .Values.argo.enabled "edgenode-observability") }}
 apiVersion: argoproj.io/v1alpha1
