@@ -65,7 +65,7 @@ bootstrap:
       namespace: capk-system
       spec:
         fetchConfig:
-          url: "https://github.com/jdanieck/cluster-api-k3s/releases/v0.2.2-dev-196ba04/bootstrap-components.yaml"
+          url: "https://github.com/k3s-io/cluster-api-k3s/releases/v0.3.0/bootstrap-components.yaml"
         configSecret:
           namespace: capi-variables
           name: capi-variables
@@ -86,7 +86,11 @@ controlplane:
         deployment:
           containers:
             - name: manager
-              # image from fork with configurable Cluster Cache concurency (not yet upstreamed)
+              # image from rke2 fork with configurable Cluster Cache concurrency - replace it with official one once it is released
+              # upstreamed in https://github.com/rancher/cluster-api-provider-rke2/pull/690
+              # WARNING: please be aware, that upstreamed version is slightly different from the one used here,
+              # you will need to add new --clustercache-concurrency flag to the rke2 binary to configure the Cluster Cache concurrency
+              # (in the v0.16.3-dev-b0f7976 the --concurrency flag was used, but it was seperated into 2 distinct flags)
               imageUrl: ghcr.io/jdanieck/cluster-api-provider-rke2/rancher/cluster-api-provider-rke2-controlplane:v0.16.3-dev-b0f7976
               args:
                 "--insecure-diagnostics": "true"
@@ -108,7 +112,7 @@ controlplane:
       namespace: capk-system
       spec:
         fetchConfig:
-          url: "https://github.com/jdanieck/cluster-api-k3s/releases/v0.2.2-dev-196ba04/control-plane-components.yaml"
+          url: "https://github.com/k3s-io/cluster-api-k3s/releases/v0.3.0/control-plane-components.yaml"
         configSecret:
           namespace: capi-variables
           name: capi-variables
