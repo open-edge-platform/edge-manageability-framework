@@ -40,6 +40,7 @@ infra-config:
     orchAttestationStatus: attest-node.{{ .Values.argo.clusterDomain }}:443
     orchRegistry: {{ .Values.argo.releaseService.ociRegistry }}:9443
     orchFileServer: {{ .Values.argo.releaseService.fileServer }}:60444
+    # TODO: Revisit the below routes - limit exposure and switch to MT GW endpoints.
     orchMPSHost: mps-node.{{ .Values.argo.clusterDomain }}:4433
     orchMPSWHost: mps-webport-node.{{ .Values.argo.clusterDomain }}:443
     orchRPSHost: rps-node.{{ .Values.argo.clusterDomain }}:443
