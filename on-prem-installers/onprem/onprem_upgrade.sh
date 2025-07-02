@@ -27,6 +27,7 @@ set -o pipefail
 # Import shared functions
 # shellcheck disable=SC1091
 source "$(dirname "${0}")/functions.sh"
+source "$(dirname "${0}")/upgrade_postgres.sh"
 
 ### Constants
 
@@ -46,6 +47,7 @@ si_config_repo="edge-manageability-framework"
 apps_ns=onprem
 argo_cd_ns=argocd
 gitea_ns=gitea
+root_app=root-app
 
 # Variables that depend on the above and might require updating later, are placed in here
 set_artifacts_version() {
@@ -322,6 +324,21 @@ if [[ $HELP ]]; then
     exit 1
 fi
 
+
+# Check if postgres is running and if it is safe to backup
+check_postgres
+if [[ $? -ne 0 ]]; then
+    echo "PostgreSQL is not running or backup file already exists. Exiting..."
+    exit 1
+fi
+
+# Perform postgreSQL backup
+kubectl get secret -n $postgres_namespace postgresql -o yaml > postgres_secret.yaml
+
+# Backup PostgreSQL databases
+backup_postgres
+
+
 ### Upgrade existing Orch installation
 echo "Running On Premise Edge Orchestrator upgrade to $DEPLOY_VERSION"
 
@@ -394,13 +411,13 @@ echo "ArgoCD upgraded to $(dpkg-query -W -f='${Version}' onprem-argocd-installer
 echo "Upgrading Edge Orchestrator Packages..."
 
 # Save PostgreSQL passwords as they will get overwritten during orch-installer package upgrade
-ALERTING=$(kubectl get secret alerting-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}')
-CATALOG_SERVICE=$(kubectl get secret app-orch-catalog-local-postgresql -n orch-app -o jsonpath='{.data.PGPASSWORD}')
-INVENTORY=$(kubectl get secret inventory-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}')
-IAM_TENANCY=$(kubectl get secret iam-tenancy-local-postgresql -n orch-iam -o jsonpath='{.data.PGPASSWORD}')
-PLATFORM_KEYCLOAK=$(kubectl get secret platform-keycloak-local-postgresql -n orch-platform -o jsonpath='{.data.PGPASSWORD}')
-VAULT=$(kubectl get secret vault-local-postgresql -n orch-platform -o jsonpath='{.data.PGPASSWORD}')
-POSTGRESQL=$(kubectl get secret postgresql -n orch-database -o jsonpath='{.data.postgres-password}')
+# ALERTING=$(kubectl get secret alerting-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}')
+# CATALOG_SERVICE=$(kubectl get secret app-orch-catalog-local-postgresql -n orch-app -o jsonpath='{.data.PGPASSWORD}')
+# INVENTORY=$(kubectl get secret inventory-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}')
+# IAM_TENANCY=$(kubectl get secret iam-tenancy-local-postgresql -n orch-iam -o jsonpath='{.data.PGPASSWORD}')
+# PLATFORM_KEYCLOAK=$(kubectl get secret platform-keycloak-local-postgresql -n orch-platform -o jsonpath='{.data.PGPASSWORD}')
+# VAULT=$(kubectl get secret vault-local-postgresql -n orch-platform -o jsonpath='{.data.PGPASSWORD}')
+# POSTGRESQL=$(kubectl get secret postgresql -n orch-database -o jsonpath='{.data.postgres-password}')
 
 # Idea is the same as in postrm_patch but for orch-installer whole new script is required
 sudo tee /var/lib/dpkg/info/onprem-orch-installer.postrm >/dev/null <<'EOF'
@@ -463,37 +480,77 @@ while true; do
 done
 set -e
 
-kubectl patch secret -n orch-app app-orch-catalog-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$CATALOG_SERVICE\"}}" --type=merge
-kubectl patch secret -n orch-app app-orch-catalog-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$CATALOG_SERVICE\"}}" --type=merge
-
-kubectl patch secret -n orch-iam iam-tenancy-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$IAM_TENANCY\"}}" --type=merge
-kubectl patch secret -n orch-iam iam-tenancy-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$IAM_TENANCY\"}}" --type=merge
-
-kubectl patch secret -n orch-infra alerting-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$ALERTING\"}}" --type=merge
-kubectl patch secret -n orch-infra alerting-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$ALERTING\"}}" --type=merge
-kubectl patch secret -n orch-infra inventory-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$INVENTORY\"}}" --type=merge
-kubectl patch secret -n orch-infra inventory-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$INVENTORY\"}}" --type=merge
-
-kubectl patch secret -n orch-platform platform-keycloak-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$PLATFORM_KEYCLOAK\"}}" --type=merge
-kubectl patch secret -n orch-platform platform-keycloak-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$PLATFORM_KEYCLOAK\"}}" --type=merge
-kubectl patch secret -n orch-platform vault-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$VAULT\"}}" --type=merge
-kubectl patch secret -n orch-platform vault-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$VAULT\"}}" --type=merge
-
-kubectl patch secret -n orch-database passwords -p "$(cat <<EOF
-{
-  "data": {
-    "alerting": "$ALERTING",
-    "app-orch-catalog": "$CATALOG_SERVICE",
-    "iam-tenancy": "$IAM_TENANCY",
-    "inventory": "$INVENTORY",
-    "platform-keycloak": "$PLATFORM_KEYCLOAK",
-    "vault": "$VAULT"
-  }
-}
-EOF
-)" --type=merge
+# kubectl patch secret -n orch-app app-orch-catalog-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$CATALOG_SERVICE\"}}" --type=merge
+# kubectl patch secret -n orch-app app-orch-catalog-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$CATALOG_SERVICE\"}}" --type=merge
+# kubectl patch secret -n orch-iam iam-tenancy-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$IAM_TENANCY\"}}" --type=merge
+# kubectl patch secret -n orch-iam iam-tenancy-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$IAM_TENANCY\"}}" --type=merge
+# kubectl patch secret -n orch-infra alerting-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$ALERTING\"}}" --type=merge
+# kubectl patch secret -n orch-infra alerting-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$ALERTING\"}}" --type=merge
+# kubectl patch secret -n orch-infra inventory-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$INVENTORY\"}}" --type=merge
+# kubectl patch secret -n orch-infra inventory-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$INVENTORY\"}}" --type=merge
+# kubectl patch secret -n orch-platform platform-keycloak-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$PLATFORM_KEYCLOAK\"}}" --type=merge
+# kubectl patch secret -n orch-platform platform-keycloak-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$PLATFORM_KEYCLOAK\"}}" --type=merge
+# kubectl patch secret -n orch-platform vault-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$VAULT\"}}" --type=merge
+# kubectl patch secret -n orch-platform vault-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$VAULT\"}}" --type=merge
+# kubectl patch secret -n orch-database passwords -p "$(cat <<EOF
+# {
+#   "data": {
+#     "alerting": "$ALERTING",
+#     "app-orch-catalog": "$CATALOG_SERVICE",
+#     "iam-tenancy": "$IAM_TENANCY",
+#     "inventory": "$INVENTORY",
+#     "platform-keycloak": "$PLATFORM_KEYCLOAK",
+#     "vault": "$VAULT"
+#   }
+# }
+# EOF
+# )" --type=merge
 
 # Patch postgresql secret
-kubectl patch secret -n orch-database postgresql -p "{\"data\": {\"postgres-password\": \"$POSTGRESQL\"}}" --type=merge
+#kubectl patch secret -n orch-database postgresql -p "{\"data\": {\"postgres-password\": \"$POSTGRESQL\"}}" --type=merge
+
+# echo "upgrade argo chart HERE"
+
+delete_postgres
+
+# Restore secret after app delete but before postgress restored
+yq e 'del(.metadata.labels, .metadata.annotations, .metadata.uid, .metadata.creationTimestamp)' postgres_secret.yaml | kubectl apply -f -
+
+# Stop sync operation for root-app, so it won't be synced with the old version of the application.
+kubectl patch application root-app -n onprem --type merge -p '{"operation":null}'
+kubectl patch application root-app -n onprem --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
+
+# Force postgresql application to sync with the new version of the application.
+echo "
+operation:
+  sync:
+    syncStrategy:
+      hook: {}
+" | sudo tee /tmp/sync-postgresql-patch.yaml
+
+kubectl patch -n "$apps_ns" application postgresql --patch-file /tmp/sync-postgresql-patch --type merge >/dev/null 2>&1
+
+# Wait until PostgreSQL pod is running (Re-sync)
+start_time=$(date +%s)
+timeout=300  # 5 minutes in seconds
+while true; do
+    podname=$(kubectl get pods -n orch-database -l app.kubernetes.io/name=postgresql -o jsonpath='{.items[0].metadata.name}')
+    pod_status=$(kubectl get pods -n orch-database $podname -o jsonpath='{.status.phase}')
+    if [[ "$pod_status" == "Running" ]]; then
+        echo "PostgreSQL pod is Running."
+        break
+    fi
+    current_time=$(date +%s)
+    elapsed=$((current_time - start_time))
+    if (( elapsed > timeout )); then
+        echo "Timeout waiting for PostgreSQL pod to be Running."
+        exit 1
+    fi
+    echo "Waiting for PostgreSQL pod to be Running... (status: $pod_status)"
+    sleep 5
+done
+
+# Now that PostgreSQL is running, we can restore the secret
+restore_postgres
 
 echo "Upgrade completed! Wait for ArgoCD applications to be in 'Healthy' state"
