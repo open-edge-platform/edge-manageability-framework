@@ -10,7 +10,7 @@ POSTGRES_LOCAL_BACKUP_PATH="./"
 local_backup_file="${postgres_namespace}_${podname}_backup.sql"
 local_backup_path="${POSTGRES_LOCAL_BACKUP_PATH}${local_backup_file}"
 POSTGRES_USERNAME="postgres"  
-application_namespace=dev
+application_namespace=onprem
 
 
 prechecks() {
