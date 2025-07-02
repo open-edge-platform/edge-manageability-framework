@@ -61,7 +61,7 @@ var _ = Describe("Node Onboarding test (Non-Interactive flow)", func() {
 			return checkNodeOnboarding(ctx, httpCli, *token, serialNumber)
 		}, 10*time.Minute, 15*time.Second).Should(Succeed(), "Edge Node did not onboard in time")
 
-		By("Waiting for the Edge Node to be in the 'Running' state")
+		By("Waiting for the Edge Node to reach 'Running' status")
 		Eventually(func() error {
 			return checkHostStatus(ctx, httpCli, *token, serialNumber)
 		}, 10*time.Minute, 15*time.Second).Should(Succeed(), "Edge Node did not reach 'Running' status in time")
@@ -111,7 +111,7 @@ var _ = PDescribe("Node Onboarding test (Interactive Onboarding flow)", func() {
 			return checkNodeOnboarding(ctx, httpCli, *token, serialNumber)
 		}, 10*time.Minute, 15*time.Second).Should(Succeed(), "Edge Node did not onboard in time")
 
-		By("Waiting for the Edge Node to be in the 'Running' state")
+		By("Waiting for the Edge Node to reach 'Running' status")
 		Eventually(func() error {
 			return checkHostStatus(ctx, httpCli, *token, serialNumber)
 		}, 10*time.Minute, 15*time.Second).Should(Succeed(), "Edge Node did not reach 'Running' status in time")
