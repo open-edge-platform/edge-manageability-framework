@@ -53,6 +53,10 @@ A collection of services that support the deployment and management of the Edge 
 access management, multitenancy management, ingress route configuration, secrets and certificate management, cloud and
 on-prem infrastructure life-cycle management and more.
 
+### Demos
+-[Simplified Device Onboarding and Provisioning using the Edge Manageability Framework](https://www.youtube.com/watch?v=YjWtDJXXuCQ)
+
+
 ## Get Started
 
 There are multiple ways to begin to learn about, use, or contribute to Edge Orchestrator.
