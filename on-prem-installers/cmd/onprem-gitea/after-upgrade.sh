@@ -102,7 +102,7 @@ createGiteaAccount() {
 
   userToken=$(kubectl exec -n gitea "$giteaPod" -c gitea -- gitea admin user generate-access-token --scopes write:repository,write:user --username "$accountName" --token-name "${accountName}-$(date +%s)")
   token=$(echo "$userToken" | awk '{print $NF}')
-  kubectl create secret generic gitea-"$accountName"-token -n gitea --from-literal=token="$token"
+  kubectl create secret generic gitea-"$accountName"-token -n gitea --from-literal=token="$token" --dry-run=client -o yaml | kubectl apply -f -
 }
 
 kubectl create ns gitea >/dev/null 2>&1 || true

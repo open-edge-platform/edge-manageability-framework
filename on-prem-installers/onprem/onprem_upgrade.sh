@@ -429,7 +429,7 @@ eval "sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l ORCH_INSTALLER_PROF
 echo "Edge Orchestrator getting upgraded to version $(dpkg-query -W -f='${Version}' onprem-orch-installer), wait for SW to deploy... "
 
 # Allow adjustments as some PVCs sizes might have changed
-kubectl patch storageclass openebs-lvmpv -p '{"allowVolumeExpansion": true}'
+#kubectl patch storageclass openebs-lvmpv -p '{"allowVolumeExpansion": true}'
 
 # Delete rke2-metrics-server chart. If it fails ignore
 helm delete -n kube-system rke2-metrics-server || true
