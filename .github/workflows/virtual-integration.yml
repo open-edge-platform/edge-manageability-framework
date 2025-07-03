@@ -526,7 +526,6 @@ jobs:
     needs:
       - lint-version
       - build-publish
-      - deploy-kind
       - deploy-on-prem
     if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
     runs-on: ubuntu-latest
