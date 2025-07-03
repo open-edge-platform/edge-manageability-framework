@@ -28,7 +28,7 @@ configProvisioner:
   releaseServiceRootUrl: oci://{{ .Values.argo.releaseService.ociRegistry }}
   {{- end}}
 
-  manifestTag: "v1.1.2"
+  manifestTag: "v1.1.6"
 
   # http proxy settings
   {{- if .Values.argo.proxy.httpProxy}}
