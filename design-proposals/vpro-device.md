@@ -19,13 +19,21 @@ the EN sw and propose a solution on how to manage the device activation during t
 
 ## Proposal
 
-Remote Provisioning Client (RPC) is integrated as part of Platform Manageability Agent, which operates within the final operating system environment. 
+Remote Provisioning Client (RPC) is integrated as part of Platform Manageability Agent, which operates within the
+final operating system environment.
 
-The Platform Manageability Agent which includes RPC, will be provided as RPM packages. These RPMs will be included in the OS image, enabling the agent binaries to be installed automatically during the OS installation process. This ensures that all required manageability features are available as soon as the OS is deployed.
+The Platform Manageability Agent which includes RPC, will be provided as RPM packages. These RPMs will be included
+in the OS image, enabling the agent binaries to be installed automatically during the OS installation process. This
+ensures that all required manageability features are available as soon as the OS is deployed.
 
-Upon installation, the Platform Manageability Agent performs AMT eligibility and capability detection on the Edge Node and reports the findings to the Device Management Resource Manager. The agent comes bundled with the `rpc-go` utility and necessary drivers (including heci) to enable communication with CSME over PCIe/HECI. Based on the capability detection results, the agent either enables DMT activation features for vPRO/AMT/ISM capable devices or reports an error status for non-capable devices.
+Upon installation, the Platform Manageability Agent performs AMT eligibility and capability detection on the Edge
+Node and reports the findings to the Device Management Resource Manager. The agent comes bundled with the `rpc-go`
+utility and necessary drivers (including heci) to enable communication with CSME over PCIe/HECI. Based on the
+capability detection results, the agent either enables DMT activation features for vPRO/AMT/ISM capable devices or
+reports an error status for non-capable devices.
 
-`Local Manageability Service` (LMS) must be included as it is still required to enable the communication between RPC and AMT device. Additionally, it offers the support for in-band commands too.
+`Local Manageability Service` (LMS) must be included as it is still required to enable the communication between
+RPC and AMT device. Additionally, it offers the support for in-band commands too.
 
 In cases where activation is attempted on unsupported or faulty devices, the agent will report errors to Device Management.
 
@@ -92,13 +100,14 @@ sequenceDiagram
 implemented between MPS and AMT;
 
 **Note 3** - Device Management Resource Manager will provide a `staticPassword` profile where the AMT and MEBx
-passwords are set to a well know value. Disabling this option the RM will randomly generate a password for each device
-(using RPS auto-generation) or it will generate a random password and store as secret.
+passwords are set to a well know value. Disabling this option the RM will randomly generate a password for each
+device (using RPS auto-generation) or it will generate a random password and store as secret.
 
 **Note 4** - Passwords are stored in `Vault` and can be always retrieved either using the Vault APIs or through the
 web-ui.
 
-**Note 5** - When a device does not support vPRO/ISM capabilities, this is treated as an error condition that needs to be surfaced to the user. The UX team will determine the best way to present this information to users.
+**Note 5** - When a device does not support vPRO/ISM capabilities, this is treated as an error condition that needs
+to be surfaced to the user. The UX team will determine the best way to present this information to users.
 
 ### MVP Requirements
 
@@ -125,7 +134,9 @@ We report hereafter the affected components and Teams:
 Hereafter we present as steps the proposed plan to manage the device activation in the release 3.1. Edge Infrastructure
 manager will implement the following functionality to support this design proposal:
 
-After provisioning is complete and the final OS is deployed, the Platform Manageability Agent will be installed and initialized as part of the OS. This includes RPC, LMS and exposing the SB gRPC APIs of the Device Management Resource Manager.
+After provisioning is complete and the final OS is deployed, the Platform Manageability Agent will be installed and
+initialized as part of the OS. This includes RPC, LMS and exposing the SB gRPC APIs of the Device Management
+Resource Manager.
 
 ### Test Plan
 
