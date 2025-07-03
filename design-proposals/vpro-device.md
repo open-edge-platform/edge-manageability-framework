@@ -94,7 +94,8 @@ sequenceDiagram
     end
 ```
 
-**Note 1** - The user interacts with the Device Management API, and the Device Management Resource Manager instructs the agent to perform activation/deactivation based on desired states.
+**Note 1** - The user interacts with the Device Management API, and the Device Management Resource
+Manager instructs the agent to perform activation/deactivation based on desired states.
 
 **Note 2** - MPS requires the creation of a device before accepting CIRA connections which is part of the 2-way auth
 implemented between MPS and AMT;
