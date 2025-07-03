@@ -463,6 +463,7 @@ jobs:
 
       - name: Read test-automation dependency Version
         id: read-test-automation-version
+        shell: bash
         run: |
            pwd
            ls
