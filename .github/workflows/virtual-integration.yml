@@ -487,8 +487,6 @@ jobs:
       - name: Setup virtual environment
         working-directory: edge-manage-test-automation
         run: |
-          cat /etc/os-release
-          ls -lrt /usr/share/OVMF/
           make asdf-install
           make venv_edge-manage-test-automation
 
