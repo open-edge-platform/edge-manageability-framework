@@ -40,7 +40,7 @@
 /.test-dependencies.yaml
 
 # Changes to the .github directory must be reviewed by these Maintainers. Has coverage in Poland, Ireland, India, and US.
-.github/ @se-chris-thach @rad-szulim @charlesmcchan @mdbalvin @palade @Irakus @yi-tseng-intel @SushilLakra
+.github/ @se-chris-thach @rad-szulim @charlesmcchan @mdbalvin @palade @Irakus @yi-tseng-intel @SushilLakra @garyloug @johnoloughlin
 
 # Cypress tests require UI team review
 .github/actions/cypress/ @soniabha-intc @teone @satya-in @sys-orch-approve
