@@ -467,10 +467,9 @@ jobs:
         run: |
            pwd
            ls
-           version=$(yq '.test-automation.version' ${{ github.workspace }}/.test-dependencies.yaml)
-           echo $version
+           version=$(yq '.test-automation.version' ${{ github.workspace }}/.test-dependencies.yaml | tr -d '\n' | xargs)
+           echo '$version'
            echo "testVer=0.1.1" >> $GITHUB_ENV
-           echo "testAutomationVersion=$version" >> "$GITHUB_ENV"
            echo "testAutomationVersion=$version" >> $GITHUB_ENV
 
       - name: Checkout edge-manage-test-automation repository
