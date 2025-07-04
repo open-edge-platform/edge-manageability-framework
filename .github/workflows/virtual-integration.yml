@@ -465,18 +465,9 @@ jobs:
         id: read-test-automation-version
         shell: bash
         run: |
-           pwd
-           ls -lart
            version=$(yq '.test-automation.version' ${{ github.workspace }}/.test-dependencies.yaml | tr -d '\n' | xargs)
            echo $version
-
-      - name: Deploy On-Prem Orchestrator
-        id: deploy-on-prem
-        uses: ./.github/actions/deploy_on_prem
-        with:
-          orch_version: ${{ github.event.pull_request.head.sha }}
-          docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
-          docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
+           echo "version=$version" >> $GITHUB_OUTPUT
 
       - name: Checkout edge-manage-test-automation repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
