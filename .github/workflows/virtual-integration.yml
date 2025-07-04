@@ -637,7 +637,7 @@ jobs:
   deploy-on-prem:
     permissions:
       contents: read
-    name: Deploy On-Prem Orchestrator
+    name: Deploy On-Prem Orchestrator and Run Golden Suite Core Foundation Tests
     needs:
       - lint-go
       - lint-markdown
