@@ -466,18 +466,16 @@ jobs:
         shell: bash
         run: |
            pwd
-           ls
+           ls -lart
            version=$(yq '.test-automation.version' ${{ github.workspace }}/.test-dependencies.yaml | tr -d '\n' | xargs)
-           echo '$version'
-           echo "testVer=0.1.1" >> $GITHUB_ENV
-           echo "testAutomationVersion=$version" >> $GITHUB_ENV
+           echo $version
 
       - name: Checkout edge-manage-test-automation repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
           repository: open-edge-platform/edge-manage-test-automation
           path: edge-manage-test-automation
-          ref: ${{ env.testAutomationVersion }}
+          ref: ${{ steps.read-test-automation-version.outputs.version }}
           token: ${{ secrets.SYS_ORCH_GITHUB }}
           persist-credentials: false
 
