@@ -53,7 +53,9 @@ runs:
 
   - name: Print current git hash
     shell: bash
-    run: echo "Current git hash is ${{ inputs.orch_version }}"
+    env:
+      EDGE_MANAGEABILITY_FRAMEWORK_REV: ${{ inputs.orch_version }}
+    run: echo "Current git hash is \"$EDGE_MANAGEABILITY_FRAMEWORK_REV\""
 
   - name: Deploy External Orchestrator
     id: deploy-external-orchestrator
@@ -64,11 +66,12 @@ runs:
       ORCH_DEFAULT_PASSWORD: ${{ inputs.orch_password }}
       DOCKERHUB_TOKEN: ${{ inputs.docker_password }}
       DOCKERHUB_USERNAME: ${{ inputs.docker_username }}
+      DEPLOYMENT_TYPE: ${{ inputs.deployment_type }}
     shell: bash
     run: |
       set +x
       echo "Starting to deploy Orchestrator..."
-      if [ "${{ inputs.deployment_type }}" == "minimal" ]; then
+      if [ "$DEPLOYMENT_TYPE" == "minimal" ]; then
         echo "Deploying minimal Orchestrator setup..."
         mage deploy:kindMinimal
       else
