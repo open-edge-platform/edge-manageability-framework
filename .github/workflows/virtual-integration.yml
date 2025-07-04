@@ -469,6 +469,9 @@ jobs:
           docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
           token: ${{ secrets.SYS_ORCH_GITHUB }}
           deployment_type: all
+      - name: Collect diagnostics
+        uses: ./.github/actions/collect_diagnostics
+        timeout-minutes: 15
       - name: Run policy compliance tests
         run: mage test:policyCompliance
       - name: Run image pull policy compliance tests
