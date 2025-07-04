@@ -531,6 +531,14 @@ jobs:
             -V orchestrator-configs/on-prem.yaml \
             tests/core_foundation/
 
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: ${{ github.event_name }}-${{ github.event.number }}-robot
+          path: |
+            edge-manage-test-automation/robot_output/**/*
+
   tag-repo:
     permissions:
       contents: read
