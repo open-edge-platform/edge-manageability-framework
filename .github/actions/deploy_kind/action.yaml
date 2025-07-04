@@ -41,9 +41,11 @@ runs:
 
   - name: Set up git credentials
     shell: bash
+    env:
+      TOKEN: ${{ inputs.token }}
     run: |
       echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
-      git config --global url."https://${{ inputs.token }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+      git config --global url."https://$TOKEN:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
   - name: Setup asdf and install dependencies
     id: install-deps
