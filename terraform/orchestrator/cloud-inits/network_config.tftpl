@@ -8,7 +8,9 @@ network:
     ens:
       match:
         name: ens*
+        macaddress: "52:54:00:12:34:56"
       dhcp4: true
+      set-name: orchnet
       addresses:
 %{ for vmnet_ip in vmnet_ips ~}
       - ${vmnet_ip}
