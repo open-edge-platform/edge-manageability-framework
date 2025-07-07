@@ -61,17 +61,17 @@ TODO: Document high level steps here, such as running the provision scipt in upg
 
 ##### Upgrade On-prem Installation
 
-### Overview
+#### Overview
 
 The [`onprem_upgrade.sh`](https://github.com/open-edge-platform/edge-manageability-framework/blob/add_upgrade_script/on-prem-installers/onprem/onprem_upgrade.sh) script upgrades your OnPrem Edge Orchestrator installation from v3.0 to v3.1.
 
-### Prerequisites
+#### Prerequisites
 
 1. **Current Installation**: OnPrem Edge Orchestrator v3.0 must be installed
 2. **PostgreSQL**: Service must be running
 3. **Edge Nodes**: Remove all Edge Nodes before upgrade (v3.0 uses RKE2, v3.1 uses K3s)
 
-### Usage
+#### Usage
 
 ```bash
 # orch Main terminal
@@ -84,8 +84,7 @@ export DEPLOY_VERSION="v3.1.0"
 ./onprem_upgrade.sh
 ```
 
-
-### Upgrade Process
+#### Upgrade Process
 
 The script performs the following:
 
