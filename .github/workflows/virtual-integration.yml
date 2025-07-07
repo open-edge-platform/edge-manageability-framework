@@ -657,7 +657,7 @@ jobs:
       github.ref == 'refs/heads/main' ||
       github.ref == 'refs/heads/main-pass-validation'
       )
-    runs-on: ubuntu-22.04-16core-64GB
+    runs-on: ubuntu-22.04-32core-128GB
     timeout-minutes: 120
     env:
       KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
@@ -671,6 +671,7 @@ jobs:
         id: read-test-automation-version
         shell: bash
         run: |
+           cat /proc/cpuinfo
            version=$(yq '.test-automation.version' ${{ github.workspace }}/.test-dependencies.yaml | tr -d '\n' | xargs)
            echo $version
            echo "version=$version" >> $GITHUB_OUTPUT
