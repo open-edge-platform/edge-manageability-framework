@@ -49,8 +49,9 @@ processCerts() {
   san=$(processSAN "$@")
   # Generate the certificate with the name infra-tls.crt
   $openssl req -key "$tmpDir/infra-tls.key" -new -x509 -days 365 -out "$tmpDir/infra-tls.crt" -subj "/C=US/O=Orch Deploy/OU=Open Edge Platform" -addext "$san"
-  cp "${tmpDir}"/infra-tls.crt /usr/local/share/ca-certificates/gitea_cert.crt
-  update-ca-certificates
+  cp -f "${tmpDir}"/infra-tls.crt /usr/local/share/ca-certificates/gitea_cert.crt
+
+  update-ca-certificates -f
 
   # Create a tls secret with custom key names
   kubectl create secret tls gitea-tls-certs -n gitea \
