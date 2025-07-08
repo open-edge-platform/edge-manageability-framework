@@ -65,7 +65,42 @@ Detailed steps will be captured in user guide.
 
 ##### Upgrade On-prem Installation
 
-TODO: Document high level steps here, such as running the on-prem 3.1 upgrade script with required config etc
+#### Overview
+
+The [`onprem_upgrade.sh`](https://github.com/open-edge-platform/edge-manageability-framework/blob/add_upgrade_script/on-prem-installers/onprem/onprem_upgrade.sh) script upgrades your OnPrem Edge Orchestrator installation from v3.0 to v3.1.
+
+#### Prerequisites
+
+1. **Current Installation**: OnPrem Edge Orchestrator v3.0 must be installed
+2. **PostgreSQL**: Service must be running
+3. **Edge Nodes**: Remove all Edge Nodes before upgrade (v3.0 uses RKE2, v3.1 uses K3s)
+
+#### Usage
+
+```bash
+# orch Main terminal
+source .env
+unset PROCEED
+# Set version
+export DEPLOY_VERSION="v3.1.0"
+
+# Run upgrade with backup (recommended)
+./onprem_upgrade.sh
+```
+
+#### Upgrade Process
+
+The script performs the following:
+
+1. **Validates** current installation and PostgreSQL status
+2. **Downloads** deb packages and repository artifacts
+3. **Prompts** for configuration and manual config file review
+4. **Upgrades** components in sequence:
+   - OS Configuration
+   - Gitea
+   - ArgoCD
+   - Edge Orchestrator
+5. **Restores** PostgreSQL databases and syncs ArgoCD applications
 
 #### Step 3: Re-onboard edge nodes and deploy apps
 
