@@ -166,10 +166,10 @@ check_orch_install() {
         installed_ver=$(dpkg-query -W -f='${Version}' "$package_name")
         incoming_ver="${package#*:}"
         incoming_ver="${incoming_ver#v}"
-        if [[ $installed_ver = "$incoming_ver" ]]; then
-            echo "Package: $package_name is already at version: $incoming_ver"
-            exit 1
-        fi
+        # if [[ $installed_ver = "$incoming_ver" ]]; then
+        #     echo "Package: $package_name is already at version: $incoming_ver"
+        #     exit 1
+        # fi
     done
 }
 
@@ -509,12 +509,8 @@ set -e
 # Patch postgresql secret
 #kubectl patch secret -n orch-database postgresql -p "{\"data\": {\"postgres-password\": \"$POSTGRESQL\"}}" --type=merge
 
-# echo "upgrade argo chart HERE"
+# delete_postgres
 
-delete_postgres
-
-# Restore secret after app delete but before postgress restored
-yq e 'del(.metadata.labels, .metadata.annotations, .metadata.uid, .metadata.creationTimestamp)' postgres_secret.yaml | kubectl apply -f -
 
 # Stop sync operation for root-app, so it won't be synced with the old version of the application.
 kubectl patch application root-app -n onprem --type merge -p '{"operation":null}'
@@ -528,16 +524,55 @@ operation:
       hook: {}
 " | sudo tee /tmp/sync-postgresql-patch.yaml
 
-kubectl patch -n "$apps_ns" application postgresql --patch-file /tmp/sync-postgresql-patch --type merge >/dev/null 2>&1
+#kubectl patch -n "$apps_ns" application postgresql-secrets --patch-file /tmp/sync-postgresql-patch.yaml --type merge
+kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/sync-postgresql-patch.yaml --type merge
+
+
+# kubectl patch -n "$apps_ns" application postgresql --patch-file /tmp/sync-postgresql-patch.yaml --type merge
+
+start_time=$(date +%s)
+timeout=300  # 5 minutes in seconds
+set +e
+while true; do
+    echo "Checking postgresql-secrets application status..."
+    app_status=$(kubectl get application postgresql-secrets -n onprem -o jsonpath='{.status.sync.status} {.status.health.status}')
+    if [[ "$app_status" == "Synced Healthy" ]]; then
+        echo "postgresql-secrets application is Synced and Healthy."
+        break
+    fi
+    current_time=$(date +%s)
+    elapsed=$((current_time - start_time))
+    if (( elapsed > timeout )); then
+        echo "Timeout waiting for postgresql-secrets to be Synced and Healthy."
+        exit 1
+    fi
+    echo "Waiting for postgresql-secrets to be Synced and Healthy... (status: $app_status)"
+    sleep 5
+done
+set -e
+
+delete_postgres
+
+# Stop sync operation for root-app, so it won't be synced with the old version of the application.
+kubectl patch application root-app -n onprem --type merge -p '{"operation":null}'
+kubectl patch application root-app -n onprem --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
+sleep 10
+kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/sync-postgresql-patch.yaml --type merge
+
+# Restore secret after app delete but before postgress restored
+yq e 'del(.metadata.labels, .metadata.annotations, .metadata.uid, .metadata.creationTimestamp)' postgres_secret.yaml | kubectl apply -f -
 
 # Wait until PostgreSQL pod is running (Re-sync)
 start_time=$(date +%s)
 timeout=300  # 5 minutes in seconds
+set +e
 while true; do
+    echo "Checking PostgreSQL pod status..."
     podname=$(kubectl get pods -n orch-database -l app.kubernetes.io/name=postgresql -o jsonpath='{.items[0].metadata.name}')
     pod_status=$(kubectl get pods -n orch-database $podname -o jsonpath='{.status.phase}')
     if [[ "$pod_status" == "Running" ]]; then
         echo "PostgreSQL pod is Running."
+        sleep 30
         break
     fi
     current_time=$(date +%s)
@@ -549,7 +584,7 @@ while true; do
     echo "Waiting for PostgreSQL pod to be Running... (status: $pod_status)"
     sleep 5
 done
-
+set -e
 # Now that PostgreSQL is running, we can restore the secret
 restore_postgres
 
