@@ -21,8 +21,9 @@ Any edge node onboarded on EMF 3.1 (or later versions in the future) and EMF 3.0
 run k3s cluster and rke2 cluster respectively.
 When an EMF 3.0 instance has to be upgraded to 3.1,
 the existing 3.0 edge nodes will need to be re-onboarded post EMF upgrade.
-Edge node operators must make sure to manually back up any application manifests,
-EMF deployment packages and data on the nodes before commencing the EMF 3.0 to 3.1 upgrade.
+Edge node operators must make sure to manually back up any required application manifests  
+and data on the nodes, and EMF deployed applications before commencing  
+the EMF 3.0 to 3.1 upgrade.
 And manually restore the apps and data after EMF upgrade and re-onboarding the nodes.
 Future upgrades from 3.1 to 3.2 or later will be non-disruptive
 as we dont plan to include breaking changes in the edge node architecture in 3.2.
@@ -57,7 +58,10 @@ the instance is ready to be upgraded to 3.1.
 
 ##### Upgrade Cloud Installation
 
-TODO: Document high level steps here, such as running the provision scipt in upgrade mode etc
+Run the cloud installer script (refer [here][Cloud installer script]) in upgrade mode.  
+Detailed steps will be captured in user guide.
+
+[Cloud installer script]: https://docs.openedgeplatform.intel.com/edge-manage-docs/dev/deployment_guide/cloud_deployment/cloud_get_started/cloud_start_installer.html
 
 ##### Upgrade On-prem Installation
 
