@@ -54,7 +54,7 @@ access management, multitenancy management, ingress route configuration, secrets
 on-prem infrastructure life-cycle management and more.
 
 ### Demos
--[Simplified Device Onboarding and Provisioning using the Edge Manageability Framework](https://www.youtube.com/watch?v=YjWtDJXXuCQ)
+- [Simplified Device Onboarding and Provisioning using the Edge Manageability Framework](https://www.youtube.com/watch?v=YjWtDJXXuCQ)
 
 
 ## Get Started
