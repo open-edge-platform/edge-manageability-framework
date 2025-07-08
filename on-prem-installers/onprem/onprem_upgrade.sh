@@ -114,10 +114,10 @@ retrieve_and_apply_config() {
         fi
     done
 
-    sre_tls=$(kubectl get applications -n onprem sre-exporter -o jsonpath='{.spec.sources[*].helm.valuesObject.otelCollector.tls.enabled}')
+    sre_tls=$(kubectl get applications -n "$apps_ns" sre-exporter -o jsonpath='{.spec.sources[*].helm.valuesObject.otelCollector.tls.enabled}')
     if [[ $sre_tls = 'true' ]]; then
         yq -i '.argo.o11y.sre.tls.enabled|=true' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
-        sre_dest_ca_cert=$(kubectl get applications -n onprem sre-exporter -o jsonpath='{.spec.sources[*].helm.valuesObject.otelCollector.tls.caSecret.enabled}')
+        sre_dest_ca_cert=$(kubectl get applications -n "$apps_ns" sre-exporter -o jsonpath='{.spec.sources[*].helm.valuesObject.otelCollector.tls.caSecret.enabled}')
         if [[ "${sre_dest_ca_cert}" == "true" ]]; then
             yq -i '.argo.o11y.sre.tls.caSecretEnabled|=true' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
         fi
@@ -460,7 +460,7 @@ operation:
       hook: {}
 " | sudo tee /tmp/argo-cd/sync-patch.yaml
 
-apps=$(kubectl get applications -n onprem --no-headers -o custom-columns=":metadata.name")
+apps=$(kubectl get applications -n "$apps_ns" --no-headers -o custom-columns=":metadata.name")
 for app in $apps; do
     echo "Syncing ArgoCD application: $app"
     kubectl patch -n "$apps_ns" applications "$app" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge >/dev/null 2>&1
@@ -513,8 +513,8 @@ set -e
 
 
 # Stop sync operation for root-app, so it won't be synced with the old version of the application.
-kubectl patch application root-app -n onprem --type merge -p '{"operation":null}'
-kubectl patch application root-app -n onprem --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
+kubectl patch application root-app -n "$apps_ns" --type merge -p '{"operation":null}'
+kubectl patch application root-app -n "$apps_ns" --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
 
 # Force postgresql application to sync with the new version of the application.
 echo "
@@ -535,7 +535,7 @@ timeout=300  # 5 minutes in seconds
 set +e
 while true; do
     echo "Checking postgresql-secrets application status..."
-    app_status=$(kubectl get application postgresql-secrets -n onprem -o jsonpath='{.status.sync.status} {.status.health.status}')
+    app_status=$(kubectl get application postgresql-secrets -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}')
     if [[ "$app_status" == "Synced Healthy" ]]; then
         echo "postgresql-secrets application is Synced and Healthy."
         break
@@ -554,8 +554,8 @@ set -e
 delete_postgres
 
 # Stop sync operation for root-app, so it won't be synced with the old version of the application.
-kubectl patch application root-app -n onprem --type merge -p '{"operation":null}'
-kubectl patch application root-app -n onprem --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
+kubectl patch application root-app -n "$apps_ns" --type merge -p '{"operation":null}'
+kubectl patch application root-app -n "$apps_ns" --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
 sleep 10
 kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/sync-postgresql-patch.yaml --type merge
 
