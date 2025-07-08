@@ -56,7 +56,6 @@ on-prem infrastructure life-cycle management and more.
 ### Demos
 - [Simplified Device Onboarding and Provisioning using the Edge Manageability Framework](https://www.youtube.com/watch?v=YjWtDJXXuCQ)
 
-
 ## Get Started
 
 There are multiple ways to begin to learn about, use, or contribute to Edge Orchestrator.
