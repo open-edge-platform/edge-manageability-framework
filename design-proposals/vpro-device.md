@@ -26,6 +26,10 @@ The Platform Manageability Agent which includes RPC, will be provided as RPM pac
 in the OS image, enabling the agent binaries to be installed automatically during the OS installation process. This
 ensures that all required manageability features are available as soon as the OS is deployed.
 
+The Platform Manageability Agent template will follow similar design patterns and conventions established by other
+agent templates in the EMF, ensuring consistency in configuration, deployment, and management approaches across all
+platform agents.
+
 Upon installation, the Platform Manageability Agent performs AMT eligibility and capability detection on the Edge
 Node and reports the findings to the Device Management Resource Manager. The agent comes bundled with the `rpc-go`
 utility and necessary drivers (including heci) to enable communication with CSME over PCIe/HECI. Based on the
@@ -34,6 +38,16 @@ reports an error status for non-capable devices.
 
 `Local Manageability Service` (LMS) must be included as it is still required to enable the communication between
 RPC and AMT device. Additionally, it offers the support for in-band commands too.
+
+By default, all AMT dependencies including LMS are disabled to prevent service activation timeouts on devices that
+do not support vPRO/AMT/ISM. The Platform Manageability Agent will be installed and activated on all devices, but
+will only enable AMT-related services after successful capability detection via RPC Info command.
+
+For devices that do not support vPRO/AMT/ISM capabilities, the agent will continue running but will report errors
+through the RPC Info command, ensuring proper error handling and status reporting to the Device Management Resource Manager.
+
+**Note**: Caddy integration should be reevaluated to support token-based authentication for RPS WebSocket connections,
+particularly for the initial WebSocket establishment during vPRO activation.
 
 In cases where activation is attempted on unsupported or faulty devices, the agent will report errors to Device Management.
 
@@ -50,47 +64,52 @@ Let us now analyze the device activation, the user must do the following steps b
 sequenceDiagram
     title DMT provisioning through Agent
     actor us as User
+  
+    box rgb(173, 216, 230) Orchestrator Components
     participant inv as Inventory
     participant ps as Provisioning
     participant dm as Device Management
-    participant en as Edge Node
-    participant agent as Platform Manageability Agent
     participant mps as Management Presence Server
     participant rps as Remote Provisioning Server
+    end
+ 
+    box rgb(144, 238, 144) Edge Node Components
+    participant en as Edge Node
+    participant agent as Platform Manageability Agent
+    end
 
-    us ->> en: Boot device
+    us ->> en: 1. Boot device
     activate en
-    en ->> ps: Device discovery
+    en ->> ps: 2. Device discovery
     activate ps
-    ps ->> inv: Onboard the device
-    ps ->> en: Done
+    ps ->> inv: 3. Onboard the device
+    ps ->> en: 4. Done
     deactivate ps
     deactivate en
 
-    en ->> en: OS installation (Agent RPMs included)
-    en ->> agent: Install Agent as part of OS
+    en ->> en: 5. OS installation (Agent RPMs included)
+    en ->> agent: 6. Install/Enable Agent as part of OS
 
     Note right of agent: AMT eligibility and capability introspection<br>performed by Agent after install
 
     alt Device supports vPRO/ISM
-        us ->> dm: Request activation via API
-        dm ->> agent: Activate command (based on desired state)
-        agent ->> rps: vPRO remote configuration
+        us ->> dm: 7. Request activation via API
+        dm ->> agent: 8. Activate command (based on desired state)
+        agent ->> rps: 9. vPRO remote configuration
         activate rps
-        rps ->> agent: Success
+        rps ->> agent: 10. Success
         deactivate rps
-        agent ->> mps: CIRA connection
-        agent ->> dm: Report AMT status (Provisioned)
-        dm ->> inv: Update AMT Status IN_PROGRESS (Connecting)
-        dm ->> inv: Update AMT CurrentState Provisioned
+        agent ->> dm: 11. Report AMT status (Provisioned)
+        dm ->> inv: 12. Update AMT Status IN_PROGRESS (Connecting)
+        dm ->> inv: 13. Update AMT CurrentState Provisioned
     else [Device is not eligible]
-        agent ->> dm: Report AMT status (Not Supported)
-        dm ->> inv: Update AMT Status ERROR (Not Supported)
+        agent ->> dm: 7a. Report AMT status (Not Supported)
+        dm ->> inv: 7b. Update AMT Status ERROR (Not Supported)
     end
 
     alt Failure during activation
-        agent ->> dm: Report AMT status (Failure)
-        dm ->> inv: Update AMT Status FAILURE
+        agent ->> dm: 8a. Report AMT status (Failure)
+        dm ->> inv: 8b. Update AMT Status FAILURE
     end
 ```
 
@@ -109,6 +128,18 @@ web-ui.
 
 **Note 5** - When a device does not support vPRO/ISM capabilities, this is treated as an error condition that needs
 to be surfaced to the user. The UX team will determine the best way to present this information to users.
+
+**Note 6** - The deactivation flow is not captured in the current sequence diagram but will be addressed in future
+design iterations. Deactivation will be triggered by device deauth/deletion events and processed through the Platform
+Manageability Agent.
+
+**Deactivation Flow**: Deactivation will not be explicit by design. However, if a user performs device deauth or
+deletion, that event will be captured by the Device Management Resource Manager, and deactivation will be performed
+through the agent. After deactivation, if the user wants to activate AMT again, they will need to onboard the device
+again.
+
+**Note**: Users should be clearly informed that in the current release, once activated, deactivation is tied to device
+deregistration, and reactivation requires a complete re-onboarding process.
 
 ### MVP Requirements
 
@@ -154,7 +185,14 @@ operations.
 
 We expect EMT team to conduct integration tests before releasing EMT images supporting RPC and its deps.
 
-## Open issues (if applicable)
+## Limitations
 
-Platform Manageability Agent and SB APIs will not be integrated which implies that the device reconfiguration will not
-be supported in 3.1.
+The decision to move away from activating DMT at the micro OS level results in the following limitation that should be
+captured as a record:
+In the previous design where DMT was activated at the micro OS level, if
+something went wrong during the final OS provisioning, users still
+had access to DMT capabilities. This provided critical recovery mechanisms
+including the ability to remotely reboot the device if provisioning
+got stuck, access the device out-of-band for troubleshooting, and
+recover from provisioning failures without requiring physical access to the device.
+By moving activation to post-OS deployment, we lose all these recovery capabilities during the critical OS provisioning phase.
