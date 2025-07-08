@@ -387,23 +387,23 @@ retrieve_and_apply_config
 
 # Run OS Configuration upgrade
 echo "Upgrading the OS level configuration..."
-eval "sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get install --only-upgrade -y $cwd/$deb_dir_name/onprem-config-installer_*_amd64.deb"
+eval "sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get install --allow-downgrades -y $cwd/$deb_dir_name/onprem-config-installer_*_amd64.deb"
 echo "OS level configuration upgraded to $(dpkg-query -W -f='${Version}' onprem-config-installer)"
 
 # Run RKE2 upgrade
 echo "Upgrading RKE2..."
-eval "sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get install --only-upgrade -y $cwd/$deb_dir_name/onprem-ke-installer_*_amd64.deb"
+eval "sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get install --allow-downgrades -y $cwd/$deb_dir_name/onprem-ke-installer_*_amd64.deb"
 echo "RKE2 upgraded to $(dpkg-query -W -f='${Version}' onprem-ke-installer)"
 
 # Run Gitea upgrade
 echo "Upgrading Gitea..."
-eval "sudo IMAGE_REGISTRY=${GITEA_IMAGE_REGISTRY} DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get install --only-upgrade -y $cwd/$deb_dir_name/onprem-gitea-installer_*_amd64.deb"
+eval "sudo IMAGE_REGISTRY=${GITEA_IMAGE_REGISTRY} DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get install --allow-downgrades -y $cwd/$deb_dir_name/onprem-gitea-installer_*_amd64.deb"
 wait_for_pods_running $gitea_ns
 echo "Gitea upgraded to $(dpkg-query -W -f='${Version}' onprem-gitea-installer)"
 
 # Run ArgoCD upgrade
 echo "Upgrading ArgoCD..."
-eval "sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get install --only-upgrade -y $cwd/$deb_dir_name/onprem-argocd-installer_*_amd64.deb"
+eval "sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get install --allow-downgrades -y $cwd/$deb_dir_name/onprem-argocd-installer_*_amd64.deb"
 wait_for_pods_running $argo_cd_ns
 echo "ArgoCD upgraded to $(dpkg-query -W -f='${Version}' onprem-argocd-installer)"
 
@@ -442,7 +442,7 @@ kubectl delete secret -l managed-by=edge-manageability-framework -A || true
 
 EOF
 
-eval "sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l ORCH_INSTALLER_PROFILE=$ORCH_INSTALLER_PROFILE GIT_REPOS=$GIT_REPOS apt-get install --only-upgrade -y $cwd/$deb_dir_name/onprem-orch-installer_*_amd64.deb"
+eval "sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l ORCH_INSTALLER_PROFILE=$ORCH_INSTALLER_PROFILE GIT_REPOS=$GIT_REPOS apt-get install --allow-downgrades -y $cwd/$deb_dir_name/onprem-orch-installer_*_amd64.deb"
 echo "Edge Orchestrator getting upgraded to version $(dpkg-query -W -f='${Version}' onprem-orch-installer), wait for SW to deploy... "
 
 # Allow adjustments as some PVCs sizes might have changed
