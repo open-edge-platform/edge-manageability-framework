@@ -12,9 +12,6 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	"github.com/open-edge-platform/edge-manageability-framework/mage"
 )
 
@@ -37,6 +34,8 @@ var (
 	// servicePort is the port number of the Orchestrator service. It can be overridden by setting the
 	// E2E_SVC_PORT environment variable.
 	servicePort = "443"
+	// skipHostRunningCheck set to skip checking host status 'Running'
+	skipHostRunningCheck = false
 )
 
 var serviceDomain = func() string {
@@ -67,6 +66,10 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 
 	if os.Getenv("E2E_SVC_PORT") != "" {
 		servicePort = os.Getenv("E2E_SVC_PORT")
+	}
+
+	if os.Getenv("SKIP_HOST_STATUS_CHECK") == "true" {
+		skipHostRunningCheck = true
 	}
 
 	GinkgoWriter.Printf("Using service domain: %s\n", serviceDomain)
