@@ -122,6 +122,18 @@ variable "socks_proxy" {
   default     = ""
 }
 
+variable "en_http_proxy" {
+  type        = string
+  description = "Generally this is the same as the http_proxy variable, but it can be different if the EN needs a different proxy."
+  default     = ""
+}
+
+variable "en_https_proxy" {
+  type        = string
+  description = "Generally this is the same as the https_proxy variable, but it can be different if the EN needs a different proxy."
+  default     = ""
+}
+
 variable "ca_certificates" {
   type        = list(string)
   description = "List of CA certificates file paths for the VM to trust."
@@ -149,6 +161,12 @@ variable "ssh_public_key" {
 variable "runcmd" {
   type        = list(string)
   description = "List of commands to run on the VM after the first boot."
+  default     = []
+}
+
+variable "overwrite_profiles" {
+  type        = list(tuple([string, string]))
+  description = "List of profiles to overwrite with their respective values."
   default     = []
 }
 
