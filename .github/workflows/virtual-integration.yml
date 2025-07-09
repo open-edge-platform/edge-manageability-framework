@@ -743,19 +743,19 @@ jobs:
           docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
           docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
 
-       - name: Test Edge Node onboarding
-         env:
-           E2E_SVC_DOMAIN: cluster.onprem
-           EDGE_CLUSTER_NAME: test-cluster
-           EN_PROFILE: "microvisor-standalone"
-           SKIP_HOST_STATUS_CHECK: true
-         timeout-minutes: 20
-         if: |
-           needs.check-changed-files.outputs.onboarding == 'true' ||
-           needs.check-changed-files.outputs.on-prem == 'true' ||
-           needs.check-changed-files.outputs.orch == 'true' ||
-           needs.check-changed-files.outputs.ci == 'true'
-         run: mage test:onboarding
+      - name: Test Edge Node onboarding
+        env:
+          E2E_SVC_DOMAIN: cluster.onprem
+          EDGE_CLUSTER_NAME: test-cluster
+          EN_PROFILE: "microvisor-standalone"
+          SKIP_HOST_STATUS_CHECK: true
+        timeout-minutes: 20
+        if: |
+          needs.check-changed-files.outputs.onboarding == 'true' ||
+          needs.check-changed-files.outputs.on-prem == 'true' ||
+          needs.check-changed-files.outputs.orch == 'true' ||
+          needs.check-changed-files.outputs.ci == 'true'
+        run: mage test:onboarding
 
   tag-repo:
     permissions:
