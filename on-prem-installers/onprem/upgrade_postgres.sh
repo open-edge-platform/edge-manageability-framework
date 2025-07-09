@@ -62,7 +62,7 @@ delete_postgres() {
   kubectl patch application -n $application_namespace postgresql  -p '{"metadata": {"finalizers": ["resources-finalizer.argocd.argoproj.io"]}}' --type merge
   kubectl delete application -n $application_namespace postgresql --cascade=background
 
-  kubectl delete secret -n $postgres_namespace postgresql
+  kubectl delete secret --ignore-not-found=true -n $postgres_namespace postgresql
 }
 
 restore_postgres() {
