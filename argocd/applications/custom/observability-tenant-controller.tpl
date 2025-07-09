@@ -11,4 +11,4 @@ imagePullSecrets:
 {{- end }}
 
 sre:
-  enabled: {{ index .Values.argo.enabled "sre-exporter"}}
+  enabled: {{ index .Values.argo.enabled "sre-exporter" | default false }}
