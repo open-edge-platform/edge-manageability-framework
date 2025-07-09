@@ -16,10 +16,6 @@ import (
 	"github.com/open-edge-platform/edge-manageability-framework/mage"
 )
 
-var (
-	skipHostRunningCheck = getEnv("NODE_UUID", "")
-)
-
 var _ = Describe("Node Onboarding test (Non-Interactive flow)", func() {
 	It("should onboard a node successfully", func(ctx SpecContext) {
 		By("Deploying a new Edge Node")
@@ -234,7 +230,7 @@ func checkNodeProvisioning(ctx SpecContext, httpCli *http.Client, token string, 
 
 func checkHostStatus(ctx SpecContext, httpCli *http.Client, token string, serialNumber string) error {
 	if skipHostRunningCheck {
-		GinkgoWriter.Printf("Skipping to check that Edge Node reached 'Running' status\n")
+		GinkgoWriter.Printf("Skipping to check that Edge Node reached 'Running' status (disabled by flag)\n")
 		return nil
 	}
 
