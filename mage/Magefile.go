@@ -1114,7 +1114,14 @@ STANDALONE=0
 		return fmt.Errorf("failed to create out/logs directory: %w", err)
 	}
 
-	if err := sh.RunV(filepath.Join("scripts", "update_provider_defaultos.sh"), "microvisor"); err != nil {
+	profile := os.Getenv("EN_PROFILE")
+	if profile == "" {
+		profile = "microvisor"
+	}
+
+	fmt.Printf("Using profile: %s\n", profile)
+
+	if err := sh.RunV(filepath.Join("scripts", "update_provider_defaultos.sh"), profile); err != nil {
 		return fmt.Errorf("failed to update provider default OS: %w", err)
 	}
 
