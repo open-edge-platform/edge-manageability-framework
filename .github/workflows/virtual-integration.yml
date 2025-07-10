@@ -748,6 +748,67 @@ jobs:
           path: |
             edge-manage-test-automation/robot_output/**/*
 
+  deploy-oxm-profile:
+    permissions:
+      contents: read
+    name: Deploy OXM Orchestrator Profile
+    needs:
+      - lint-go
+      - lint-markdown
+      - lint-shell
+      - lint-terraform
+      - lint-version
+      - lint-helm
+      - lint-yaml
+      - build-publish
+      - check-changed-files
+    if: |
+      always() &&
+      needs.build-publish.result == 'success' && (
+      needs.check-changed-files.outputs.orch == 'true' ||
+      needs.check-changed-files.outputs.on-prem == 'true' ||
+      needs.check-changed-files.outputs.ci == 'true' ||
+      github.ref == 'refs/heads/main' ||
+      github.ref == 'refs/heads/main-pass-validation'
+      )
+    runs-on: ubuntu-22.04-16core-64GB
+    timeout-minutes: 120
+    env:
+      KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
+    steps:
+      - name: Checkout Orchestrator repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Deploy OXM Orchestrator Profile
+        id: deploy-oxm-profile
+        uses: ./.github/actions/deploy_on_prem
+        env:
+          TF_VAR_no_proxy: "localhost,127.0.0.0/8,10.0.0.0/8,192.168.0.0/16,.svc,.cluster.local,.default,.internal,.orch-platform,.orch-app,.orch-cluster,.orch-infra,.orch-database,.cattle-system,.orch-secret,.onprem"
+          TF_VAR_en_http_proxy: "https://192.168.99.30:8080"
+          TF_VAR_en_https_proxy: "https://192.168.99.30:8080"          
+          TF_VAR_overwrite_profiles: '[["profile-oxm", "argo:\n  infra-onboarding:\n    pxe-server:\n      interface: \"orchnet\"\n      bootServerIP: \"192.168.99.20\"\n      subnetAddress: \"192.168.99.0\""]]'
+        with:
+          orch_version: ${{ github.event.pull_request.head.sha }}
+          orch_profile: onprem-oxm
+          docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
+          docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
+
+      # TODO: Enable this step when the onboarding tests are ready for OXM
+      # - name: Test Edge Node onboarding
+      #   env:
+      #     E2E_SVC_DOMAIN: cluster.onprem
+      #     EDGE_CLUSTER_NAME: test-cluster
+      #     EN_PROFILE: "microvisor-standalone"
+      #   timeout-minutes: 20
+      #   if: |
+      #     needs.check-changed-files.outputs.onboarding == 'true' ||
+      #     needs.check-changed-files.outputs.on-prem == 'true' ||
+      #     needs.check-changed-files.outputs.orch == 'true' ||
+      #     needs.check-changed-files.outputs.ci == 'true'
+      #   run: mage test:onboarding
+
   tag-repo:
     permissions:
       contents: read
@@ -757,6 +818,7 @@ jobs:
       - build-publish
       - deploy-kind
       - deploy-on-prem
+      - deploy-oxm-profile
     if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
     runs-on: ubuntu-latest
     timeout-minutes: 10
