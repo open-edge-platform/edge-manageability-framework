@@ -61,15 +61,17 @@ var _ = Describe("Node Onboarding test (Non-Interactive flow)", func() {
 			return checkNodeOnboarding(ctx, httpCli, *token, serialNumber)
 		}, 10*time.Minute, 15*time.Second).Should(Succeed(), "Edge Node did not onboard in time")
 
-		By("Waiting for the Edge Node to provision")
-		Eventually(func() error {
-			return checkNodeProvisioning(ctx, httpCli, *token, serialNumber)
-		}, 10*time.Minute, 15*time.Second).Should(Succeed(), "Edge Node did not provision in time")
-
-		By("Waiting for the Edge Node to reach 'Running' status")
-		Eventually(func() error {
-			return checkHostStatus(ctx, httpCli, *token, serialNumber)
-		}, 20*time.Minute, 15*time.Second).Should(Succeed(), "Edge Node did not reach 'Running' status in time")
+		if os.Getenv("EN_PROFILE") == "microvisor-standalone" {
+			By("Waiting for the Edge Node to reach 'Provisioned' status")
+			Eventually(func() error {
+				return checkNodeProvisioning(ctx, httpCli, *token, serialNumber)
+			}, 10*time.Minute, 15*time.Second).Should(Succeed(), "Edge Node did not provision in time")
+		} else {
+			By("Waiting for the Edge Node to reach 'Running' status")
+			Eventually(func() error {
+				return checkHostStatus(ctx, httpCli, *token, serialNumber)
+			}, 20*time.Minute, 15*time.Second).Should(Succeed(), "Edge Node did not reach 'Running' status in time")
+		}
 	})
 })
 
@@ -116,15 +118,17 @@ var _ = PDescribe("Node Onboarding test (Interactive Onboarding flow)", func() {
 			return checkNodeOnboarding(ctx, httpCli, *token, serialNumber)
 		}, 10*time.Minute, 15*time.Second).Should(Succeed(), "Edge Node did not onboard in time")
 
-		By("Waiting for the Edge Node to provision")
-		Eventually(func() error {
-			return checkNodeProvisioning(ctx, httpCli, *token, serialNumber)
-		}, 10*time.Minute, 15*time.Second).Should(Succeed(), "Edge Node did not provision in time")
-
-		By("Waiting for the Edge Node to reach 'Running' status")
-		Eventually(func() error {
-			return checkHostStatus(ctx, httpCli, *token, serialNumber)
-		}, 20*time.Minute, 15*time.Second).Should(Succeed(), "Edge Node did not reach 'Running' status in time")
+		if os.Getenv("EN_PROFILE") == "microvisor-standalone" {
+			By("Waiting for the Edge Node to reach 'Provisioned' status")
+			Eventually(func() error {
+				return checkNodeProvisioning(ctx, httpCli, *token, serialNumber)
+			}, 10*time.Minute, 15*time.Second).Should(Succeed(), "Edge Node did not provision in time")
+		} else {
+			By("Waiting for the Edge Node to reach 'Running' status")
+			Eventually(func() error {
+				return checkHostStatus(ctx, httpCli, *token, serialNumber)
+			}, 20*time.Minute, 15*time.Second).Should(Succeed(), "Edge Node did not reach 'Running' status in time")
+		}
 	})
 })
 
@@ -232,11 +236,6 @@ func checkNodeProvisioning(ctx SpecContext, httpCli *http.Client, token string, 
 }
 
 func checkHostStatus(ctx SpecContext, httpCli *http.Client, token string, serialNumber string) error {
-	if skipHostRunningCheck {
-		GinkgoWriter.Printf("Skipping to check that Edge Node reached 'Running' status (disabled by flag)\n")
-		return nil
-	}
-
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodGet,
