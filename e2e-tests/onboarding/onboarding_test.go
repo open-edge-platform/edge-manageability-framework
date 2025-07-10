@@ -14,7 +14,7 @@ import (
 	"time"
 
         . "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+        . "github.com/onsi/gomega"
 
 	"github.com/open-edge-platform/edge-manageability-framework/mage"
 )
