@@ -17,7 +17,7 @@ import (
 
 const (
 	baselineClusterTemplatePath = "./node/capi/baseline.json"
-	defaultTemplate             = "baseline-v2.0.2"
+	defaultTemplate             = "baseline-k3s-v0.0.2"
 	clusterApiBaseURLTemplate   = "https://api.%s/v2/projects/%s"
 )
 
@@ -93,7 +93,7 @@ func (cu CoUtils) CreateDefaultClusterTemplate() error {
 		return fmt.Errorf("failed to create default template for project '%s': %s", project, string(body))
 	}
 
-	err = cu.SetDefaultTemplate("baseline", "v2.0.2")
+	err = cu.SetDefaultTemplate("baseline-k3s", "v0.0.2")
 	if err != nil {
 		return err
 	}
