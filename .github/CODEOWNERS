@@ -62,21 +62,21 @@
 /argocd/applications/**/metadata-broker* @soniabha-intc @teone @satya-in @dlemiech @riyaz-ghati @vigneshintel @sys-orch-approve
 
 # Cluster Orch Tests
-/e2e-tests/orchestrator/clusterorch_smoke_test.go @gcgirish @andybavier @hyunsun @jdanieck @jokuniew @eoghanlawless @sys-orch-approve
-/mage/edge_cluster.go @gcgirish @andybavier @hyunsun @jdanieck @jokuniew @eoghanlawless @sys-orch-approve
+/e2e-tests/orchestrator/clusterorch_smoke_test.go @gcgirish @andybavier @hyunsun @jdanieck @eoghanlawless @sys-orch-approve
+/mage/edge_cluster.go @gcgirish @andybavier @hyunsun @jdanieck @eoghanlawless @sys-orch-approve
 
 # cluster orch templates and values
-/argocd/applications/templates/cluster* @gcgirish @andybavier @hyunsun @jdanieck @jokuniew @eoghanlawless @sys-orch-approve
-/argocd/applications/templates/capi* @gcgirish @andybavier @hyunsun @jdanieck @jokuniew @eoghanlawless @sys-orch-approve
-/argocd/applications/templates/intel-infra-provider* @gcgirish @andybavier @hyunsun @jdanieck @jokuniew @eoghanlawless @sys-orch-approve
+/argocd/applications/templates/cluster* @gcgirish @andybavier @hyunsun @jdanieck @eoghanlawless @sys-orch-approve
+/argocd/applications/templates/capi* @gcgirish @andybavier @hyunsun @jdanieck @eoghanlawless @sys-orch-approve
+/argocd/applications/templates/intel-infra-provider* @gcgirish @andybavier @hyunsun @jdanieck @eoghanlawless @sys-orch-approve
 
-/argocd/applications/configs/capi* @gcgirish @andybavier @hyunsun @jdanieck @jokuniew @eoghanlawless @sys-orch-approve
-/argocd/applications/configs/cluster* @gcgirish @andybavier @hyunsun @jdanieck @jokuniew @eoghanlawless @sys-orch-approve
-/argocd/applications/configs/intel-infra-provider* @gcgirish @andybavier @hyunsun @jdanieck @jokuniew @eoghanlawless @sys-orch-approve
+/argocd/applications/configs/capi* @gcgirish @andybavier @hyunsun @jdanieck @eoghanlawless @sys-orch-approve
+/argocd/applications/configs/cluster* @gcgirish @andybavier @hyunsun @jdanieck @eoghanlawless @sys-orch-approve
+/argocd/applications/configs/intel-infra-provider* @gcgirish @andybavier @hyunsun @jdanieck @eoghanlawless @sys-orch-approve
 
-/argocd/applications/custom/capi* @gcgirish @andybavier @hyunsun @jdanieck @jokuniew @eoghanlawless @sys-orch-approve
-/argocd/applications/custom/cluster* @gcgirish @andybavier @hyunsun @jdanieck @jokuniew @eoghanlawless @sys-orch-approve
-/argocd/applications/custom/intel-infra-provider* @gcgirish @andybavier @hyunsun @jdanieck @jokuniew @eoghanlawless @sys-orch-approve
+/argocd/applications/custom/capi* @gcgirish @andybavier @hyunsun @jdanieck @eoghanlawless @sys-orch-approve
+/argocd/applications/custom/cluster* @gcgirish @andybavier @hyunsun @jdanieck @eoghanlawless @sys-orch-approve
+/argocd/applications/custom/intel-infra-provider* @gcgirish @andybavier @hyunsun @jdanieck @eoghanlawless @sys-orch-approve
 
 # Obaas Tests
 /e2e-tests/orchestrator/o11y_* @pperycz @ltalarcz @jakubsikorski @mholowni @p-zak @tdorauintc @sys-orch-approve
