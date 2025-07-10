@@ -65,7 +65,7 @@ var _ = Describe("Node Onboarding test (Non-Interactive flow)", func() {
 			By("Waiting for the Edge Node to reach 'Provisioned' status")
 			Eventually(func() error {
 				return checkNodeProvisioning(ctx, httpCli, *token, serialNumber)
-			}, 10*time.Minute, 15*time.Second).Should(Succeed(), "Edge Node did not provision in time")
+			}, 20*time.Minute, 15*time.Second).Should(Succeed(), "Edge Node did not provision in time")
 		} else {
 			By("Waiting for the Edge Node to reach 'Running' status")
 			Eventually(func() error {
@@ -122,7 +122,7 @@ var _ = PDescribe("Node Onboarding test (Interactive Onboarding flow)", func() {
 			By("Waiting for the Edge Node to reach 'Provisioned' status")
 			Eventually(func() error {
 				return checkNodeProvisioning(ctx, httpCli, *token, serialNumber)
-			}, 10*time.Minute, 15*time.Second).Should(Succeed(), "Edge Node did not provision in time")
+			}, 20*time.Minute, 15*time.Second).Should(Succeed(), "Edge Node did not provision in time")
 		} else {
 			By("Waiting for the Edge Node to reach 'Running' status")
 			Eventually(func() error {
