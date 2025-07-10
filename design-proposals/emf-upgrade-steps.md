@@ -25,8 +25,9 @@ Edge node operators must make sure to manually back up any required application 
 and data on the nodes, and EMF deployed applications before commencing  
 the EMF 3.0 to 3.1 upgrade.
 And manually restore the apps and data after EMF upgrade and re-onboarding the nodes.
-Future upgrades from 3.1 to 3.2 or later will be non-disruptive
-as we dont plan to include breaking changes in the edge node architecture in 3.2.
+We should plan to make future upgrades from 3.1 to 3.2 or  
+later as non-disruptive as we dont plan to include breaking changes  
+in the edge node architecture in 3.2.
 
 Any effort to provide an automated edge node rke2 to k3s cluster replacement
 in an attempt to build a complete non-disruptive upgrade,
@@ -45,11 +46,14 @@ deployed in the edge cluster.
 The deployment packages can be applied to the host once they are re-onboarded and re-provisioned.
 
 - Manually back up any desired apps data in the edge node/cluster
+- Delete cluster by following the steps give in the doc [here][Delete cluster]
 - De-authorize the host by following the steps given in the doc [here][De-auth Host Documentation]
 - Delete the host by following the steps given in the doc [here][Delete Host Documentation]
+- Optionally delete Deployment Packages and Deployments for base extensions
 
 [De-auth Host Documentation]: https://docs.openedgeplatform.intel.com/edge-manage-docs/dev/user_guide/set_up_edge_infra/deauthorize_host.html
 [Delete Host Documentation]: https://docs.openedgeplatform.intel.com/edge-manage-docs/dev/user_guide/set_up_edge_infra/delete_host.html
+[Delete cluster]: https://docs.openedgeplatform.intel.com/edge-manage-docs/dev/user_guide/set_up_edge_infra/clusters/delete_clusters.html
 
 #### Step 2: Upgrade EMF from 3.0 to 3.1
 
