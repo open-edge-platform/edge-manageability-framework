@@ -743,6 +743,9 @@ jobs:
           docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
           docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
 
+      - name: Create MT Sample Org and Project with default users
+        run: mage tenantUtils:createDefaultMtSetup
+
       - name: Test Edge Node onboarding
         env:
           E2E_SVC_DOMAIN: cluster.onprem
