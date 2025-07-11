@@ -687,6 +687,12 @@ jobs:
           docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
           docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
 
+      - name: Run E2E tests
+        env:
+          E2E_SVC_DOMAIN: cluster.onprem
+          EDGE_CLUSTER_NAME: test-cluster
+        run: mage -v test:e2eOnPrem
+
       - name: Checkout edge-manage-test-automation repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
@@ -712,7 +718,7 @@ jobs:
           asdf install
           popd
 
-      - name: Run Robot Framework Tests
+      - name: Run Golden Suite Robot Framework Tests
         id: robot-tests
         timeout-minutes: 45
         working-directory: edge-manage-test-automation
