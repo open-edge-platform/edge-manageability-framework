@@ -626,4 +626,17 @@ set -e
 # Now that PostgreSQL is running, we can restore the secret
 restore_postgres
 
+
+
+## Delete Vault
+kubectl delete -n orch-platform vault-0
+
+sleep 20
+
+# unseal vault
+
+keys=$(kubectl -n orch-platform get secret vault-keys -o jsonpath='{.data.vault-keys}' | base64 -d | jq '.keys_base64 | .[]' | sed 's/"//g')
+kubectl -n orch-platform exec -it vault-0 -- vault operator unseal $keys
+
+
 echo "Upgrade completed! Wait for ArgoCD applications to be in 'Healthy' state"
