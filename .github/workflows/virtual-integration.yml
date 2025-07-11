@@ -821,8 +821,9 @@ jobs:
           mkdir -p debug-onprem-oxm
           kubectl get pods -A | grep onboarding-manager | awk '{print $2 " -n " $1}' | xargs -I {} sh -c 'kubectl logs {}' > debug-onprem-oxm/onboarding-manager-logs.txt
           kubectl get workflows -A --no-headers > debug-onprem-oxm/workflows.txt
-          pod=$(kubectl get workflows -A --no-headers | grep orch-infra | awk '{print $2}')
-          kubectl get workflows -n orch-infra $pod -o yaml > debug-onprem-oxm/workflows-orch-infra-microvisor.txt
+          workflow=$(kubectl get workflows -A --no-headers | grep orch-infra | awk '{print $2}')
+          kubectl get workflows -n orch-infra $workflow -o yaml > debug-onprem-oxm/workflows-orch-infra-microvisor.txt
+          kubectl describe workflow -n orch-infra $workflow -o yaml > debug-onprem-oxm/workflows-orch-infra-microvisor-describe.txt
 
       - name: Collect diagnostics vm
         if: always()
@@ -838,6 +839,7 @@ jobs:
           path: |
             debug-onprem-oxm/workflows.txt
             debug-onprem-oxm/workflows-orch-infra-microvisor.txt
+            debug-onprem-oxm/workflows-orch-infra-microvisor-describe.txt
             debug-onprem-oxm/onboarding-manager-logs.txt
             debug-onprem-oxm/edge-vm-console-logs.txt
             debug-onprem-oxm/edge-vm-logs.txt
