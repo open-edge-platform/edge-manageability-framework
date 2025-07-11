@@ -50,17 +50,22 @@ backup_postgres() {
   if kubectl exec -n $postgres_namespace $podname -- /bin/bash -c "pg_dumpall -U $POSTGRES_USERNAME -f '$remote_backup_path'"; then
     echo "Backup completed successfully for pod $podname in namespace $postgres_namespace."
     kubectl cp "$postgres_namespace/$podname:$remote_backup_path" "$local_backup_path"
+    cp "$local_backup_path" "${local_backup_path}.bak"
+    sed -ni '1,/-- Roles/p;/-- User Configurations/,$p' "$local_backup_path"
   else
     echo "Backup failed for pod $podname in namespace $postgres_namespace."
   fi
 }
 
 delete_postgres() {
+  kubectl patch application -n $application_namespace postgresql-secrets  -p '{"metadata": {"finalizers": ["resources-finalizer.argocd.argoproj.io"]}}' --type merge
+  kubectl delete application -n $application_namespace postgresql-secrets --cascade=background
   # backgrounbd as pvc will not be deleted until app deletion
   kubectl delete pvc -n $postgres_namespace data-postgresql-0 &
   # patch ensures cascade delete
   kubectl patch application -n $application_namespace postgresql  -p '{"metadata": {"finalizers": ["resources-finalizer.argocd.argoproj.io"]}}' --type merge
   kubectl delete application -n $application_namespace postgresql --cascade=background
+
 
   kubectl delete secret --ignore-not-found=true -n $postgres_namespace postgresql
 }
