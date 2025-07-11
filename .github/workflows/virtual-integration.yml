@@ -815,13 +815,17 @@ jobs:
           needs.check-changed-files.outputs.ci == 'true'
         run: mage test:onboarding
 
-      - name: Collect diagnostics
+      - name: Collect diagnostics orch
         if: always()
         run: |
           mkdir -p debug-onprem-oxm
+          kubectl get pods -A | grep onboarding-manager | awk '{print $2 " -n " $1}' | xargs -I {} sh -c 'kubectl logs {}' > debug-onprem-oxm/onboarding-manager-logs.txt
           kubectl get workflows -A  > debug-onprem-oxm/workflows.txt
           kubectl get workflows -n orch-infra microvisor -o yaml > debug-onprem-oxm/workflows-orch-infra-microvisor.txt
-          kubectl get pods -A | grep onboarding-manager | awk '{print $2 " -n " $1}' | xargs -I {} sh -c 'kubectl logs {}' > debug-onprem-oxm/onboarding-manager-logs.txt
+
+      - name: Collect diagnostics vm
+        if: always()
+        run: |
           sudo cat /var/log/libvirt/qemu/edge-node-EN123456789-console.log > debug-onprem-oxm/edge-vm-console-logs.txt
           sudo cat /var/log/libvirt/qemu/edge-node-EN123456789.log > debug-onprem-oxm/edge-vm-logs.txt
 
