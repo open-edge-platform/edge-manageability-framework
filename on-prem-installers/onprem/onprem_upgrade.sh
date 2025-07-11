@@ -30,11 +30,11 @@ source "$(dirname "${0}")/functions.sh"
 source "$(dirname "${0}")/upgrade_postgres.sh"
 
 ### Constants
+
 RELEASE_SERVICE_URL="${RELEASE_SERVICE_URL:-registry-rs.edgeorchestration.intel.com}"
 ORCH_INSTALLER_PROFILE="${ORCH_INSTALLER_PROFILE:-onprem}"
-DEPLOY_VERSION="${DEPLOY_VERSION:-v3.1.0}"  # Updated to v3.1.0
+DEPLOY_VERSION="${DEPLOY_VERSION:-v3.0.0}"
 GITEA_IMAGE_REGISTRY="${GITEA_IMAGE_REGISTRY:-docker.io}"
-USE_LOCAL_PACKAGES="${USE_LOCAL_PACKAGES:-false}"  # New flag for local packages
 
 ### Variables
 cwd=$(pwd)
@@ -72,11 +72,11 @@ retrieve_and_apply_config() {
     tmp_dir="$cwd/$git_arch_name/tmp"
     rm -rf "$tmp_dir"
     mkdir -p "$tmp_dir"
-
+    
     ## Untar edge-manageability-framework repo
     repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n")
     tar -xf "$cwd/$git_arch_name/$repo_file" -C "$tmp_dir"
-
+   
     # Get the external IP address of the LoadBalancer services
     ARGO_IP=$(kubectl get svc argocd-server -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
     TRAEFIK_IP=$(kubectl get svc traefik -n orch-gateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
@@ -290,19 +290,17 @@ EOF
 usage() {
     cat >&2 <<EOF
 Purpose:
-Upgrade OnPrem Edge Orchestrator to v3.1.0.
+Upgrade OnPrem Edge Orchestrator to v24.08.
 
 Usage:
 $(basename "$0") [option...] [argument]
 
 ex:
+./onprem_upgrade.sh
 ./onprem_upgrade.sh -b
-./onprem_upgrade.sh -bl  # Use local packages with backup
 
 Options:
     -b:             enable backup of Orchestrator PVs before upgrade (optional)
-    -l:             use local packages instead of downloading (optional)
-    -o:             override production values with dev values (optional)
     -h:             help (optional)
 
 EOF
@@ -312,12 +310,11 @@ EOF
 ##### UPGRADE SCRIPT START #####
 ################################
 
-while getopts 'v:hbol' flag; do
+while getopts 'v:hbo' flag; do
     case "${flag}" in
     h) HELP='true' ;;
     b) BACKUP='true' ;;
     o) OVERRIDE='true' ;;
-    l) USE_LOCAL_PACKAGES='true' ;;  # New local packages flag
     *) HELP='true' ;;
     esac
 done
@@ -373,49 +370,14 @@ if [[ $BACKUP ]]; then
     echo "Snapshot saved to /var/orch-backups/"
 fi
 
-# Skip artifact download if using local packages
-if [[ $USE_LOCAL_PACKAGES != "true" ]]; then
-    # Cleanup and download .deb packages
-    sudo rm -rf "${cwd:?}/${deb_dir_name:?}/"
-    download_artifacts "$cwd" "$deb_dir_name" "$RELEASE_SERVICE_URL" "$installer_rs_path" "${installer_list[@]}"
-    sudo chown -R _apt:root "$deb_dir_name"
+# Cleanup and download .deb packages
+sudo rm -rf "${cwd:?}/${deb_dir_name:?}/"
+download_artifacts "$cwd" "$deb_dir_name" "$RELEASE_SERVICE_URL" "$installer_rs_path" "${installer_list[@]}"
+sudo chown -R _apt:root "$deb_dir_name"
 
-    # Cleanup and download .git packages
-    sudo rm -rf "${cwd:?}/${git_arch_name:?}/"
-    download_artifacts "$cwd" "$git_arch_name" "$RELEASE_SERVICE_URL" "$archives_rs_path" "${git_archive_list[@]}"
-else
-    echo "Using local packages..."
-
-    # Ensure local directories exist with required files
-    if [[ ! -d "$deb_dir_name" ]]; then
-        echo "Error: Local $deb_dir_name directory not found!"
-        echo "Please place your .deb files in: $cwd/$deb_dir_name/"
-        exit 1
-    fi
-
-    if [[ ! -d "$git_arch_name" ]]; then
-        echo "Error: Local $git_arch_name directory not found!"
-        echo "Please place your onpremFull_edge-manageability-framework_3.1.0-dev.tgz in: $cwd/$git_arch_name/"
-        exit 1
-    fi
-
-    # Verify required .deb files exist
-    for package in "${installer_list[@]}"; do
-        package_name="${package%%:*}"
-        if ! ls "$cwd/$deb_dir_name/${package_name}"_*_amd64.deb 1> /dev/null 2>&1; then
-            echo "Error: ${package_name} .deb file not found in $cwd/$deb_dir_name/"
-            exit 1
-        fi
-    done
-
-    # Verify .tgz file exists
-    if ! ls "$cwd/$git_arch_name/"*edge-manageability-framework*.tgz 1> /dev/null 2>&1; then
-        echo "Error: edge-manageability-framework .tgz file not found in $cwd/$git_arch_name/"
-        exit 1
-    fi
-
-    sudo chown -R _apt:root "$deb_dir_name"
-fi
+# Cleanup and download .git packages
+sudo rm -rf "${cwd:?}/${git_arch_name:?}/"
+download_artifacts "$cwd" "$git_arch_name" "$RELEASE_SERVICE_URL" "$archives_rs_path" "${git_archive_list[@]}"
 
 # Retrieve config that was set during onprem installation and apply it to orch-configs
 # Modify orch-configs settings for upgrade procedure
@@ -425,23 +387,23 @@ retrieve_and_apply_config
 
 # Run OS Configuration upgrade
 echo "Upgrading the OS level configuration..."
-eval "sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get install --only-upgrade --allow-downgrades -y $cwd/$deb_dir_name/onprem-config-installer_*_amd64.deb"
+eval "sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get install --only-upgrade -y $cwd/$deb_dir_name/onprem-config-installer_*_amd64.deb"
 echo "OS level configuration upgraded to $(dpkg-query -W -f='${Version}' onprem-config-installer)"
 
 # Run RKE2 upgrade
 echo "Upgrading RKE2..."
-eval "sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get install --only-upgrade --allow-downgrades -y $cwd/$deb_dir_name/onprem-ke-installer_*_amd64.deb"
+eval "sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get install --only-upgrade -y $cwd/$deb_dir_name/onprem-ke-installer_*_amd64.deb"
 echo "RKE2 upgraded to $(dpkg-query -W -f='${Version}' onprem-ke-installer)"
 
 # Run Gitea upgrade
 echo "Upgrading Gitea..."
-eval "sudo IMAGE_REGISTRY=${GITEA_IMAGE_REGISTRY} DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get install --only-upgrade --allow-downgrades -y $cwd/$deb_dir_name/onprem-gitea-installer_*_amd64.deb"
+eval "sudo IMAGE_REGISTRY=${GITEA_IMAGE_REGISTRY} DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get install --only-upgrade -y $cwd/$deb_dir_name/onprem-gitea-installer_*_amd64.deb"
 wait_for_pods_running $gitea_ns
 echo "Gitea upgraded to $(dpkg-query -W -f='${Version}' onprem-gitea-installer)"
 
 # Run ArgoCD upgrade
 echo "Upgrading ArgoCD..."
-eval "sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get install --only-upgrade --allow-downgrades -y $cwd/$deb_dir_name/onprem-argocd-installer_*_amd64.deb"
+eval "sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get install --only-upgrade -y $cwd/$deb_dir_name/onprem-argocd-installer_*_amd64.deb"
 wait_for_pods_running $argo_cd_ns
 echo "ArgoCD upgraded to $(dpkg-query -W -f='${Version}' onprem-argocd-installer)"
 
@@ -480,7 +442,7 @@ kubectl delete secret -l managed-by=edge-manageability-framework -A || true
 
 EOF
 
-eval "sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l ORCH_INSTALLER_PROFILE=$ORCH_INSTALLER_PROFILE GIT_REPOS=$GIT_REPOS apt-get install --only-upgrade --allow-downgrades -y $cwd/$deb_dir_name/onprem-orch-installer_*_amd64.deb"
+eval "sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l ORCH_INSTALLER_PROFILE=$ORCH_INSTALLER_PROFILE GIT_REPOS=$GIT_REPOS apt-get install --only-upgrade -y $cwd/$deb_dir_name/onprem-orch-installer_*_amd64.deb"
 echo "Edge Orchestrator getting upgraded to version $(dpkg-query -W -f='${Version}' onprem-orch-installer), wait for SW to deploy... "
 
 # Allow adjustments as some PVCs sizes might have changed
@@ -630,6 +592,8 @@ restore_postgres
 
 ## Delete Vault
 kubectl delete pod --ignore-not-found=true -n orch-platform vault-0
+## delete platform-keycloak
+kubectl delete pod --ignore-not-found=true -n orch-platform platform-keycloak-0
 
 sleep 20
 
