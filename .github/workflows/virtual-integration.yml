@@ -696,9 +696,6 @@ jobs:
           token: ${{ secrets.SYS_ORCH_GITHUB }}
           persist-credentials: false
 
-      - name: Setup asdf and install dependencies
-        uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
-
       - name: Install vEN Deps
         working-directory: edge-manage-test-automation
         run: |
