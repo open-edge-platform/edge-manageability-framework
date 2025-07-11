@@ -287,6 +287,54 @@ EOF
     done
 }
 
+# Function to search and delete specific secrets in the 'gitea' namespace
+cleanup_gitea_secrets() {
+  echo "Checking for secrets in namespace: gitea"
+
+  local secrets=(
+    "gitea-apporch-token"
+    "gitea-argocd-token"
+    "gitea-clusterorch-token"
+  )
+
+  for secret in "${secrets[@]}"; do
+    if kubectl get secret "$secret" -n gitea >/dev/null 2>&1; then
+      echo "Secret found: $secret - Deleting..."
+      kubectl delete secret "$secret" -n gitea
+    else
+      echo "Secret not found: $secret"
+    fi
+  done
+
+  echo "Secret cleanup completed."
+}
+
+# Function to delete Vault pod and unseal it when it comes back
+delete_and_unseal_vault() {
+  local namespace="orch-platform"
+  local pod_name="vault-0"
+
+  echo "Deleting Vault pod: $pod_name in namespace: $namespace"
+  kubectl delete pod -n "$namespace" "$pod_name"
+
+  echo "Waiting 20 seconds for pod to restart..."
+  sleep 20
+
+  echo "Fetching Vault unseal keys..."
+  keys=$(kubectl -n "$namespace" get secret vault-keys -o jsonpath='{.data.vault-keys}' | base64 -d | jq '.keys_base64 | .[]' | sed 's/"//g')
+
+  echo "Unsealing Vault..."
+  for key in $keys; do
+    kubectl -n "$namespace" exec -i "$pod_name" -- vault operator unseal "$key"
+  done
+  
+  echo "Waiting for Vault pod to be Ready..."
+  kubectl wait pod -n "$namespace" -l "app.kubernetes.io/name=vault" \
+    --for=condition=Ready --timeout=300s
+
+  echo "Vault pod restarted and unsealed successfully."
+}
+
 usage() {
     cat >&2 <<EOF
 Purpose:
@@ -337,6 +385,9 @@ fi
 
 # Perform postgreSQL backup
 kubectl get secret -n $postgres_namespace postgresql -o yaml > postgres_secret.yaml
+
+# delete gitea secrets before backup
+cleanup_gitea_secrets
 
 # Backup PostgreSQL databases
 backup_postgres
@@ -626,17 +677,8 @@ set -e
 # Now that PostgreSQL is running, we can restore the secret
 restore_postgres
 
-
-
-## Delete Vault
-kubectl delete -n orch-platform vault-0
-
-sleep 20
-
-# unseal vault
-
-keys=$(kubectl -n orch-platform get secret vault-keys -o jsonpath='{.data.vault-keys}' | base64 -d | jq '.keys_base64 | .[]' | sed 's/"//g')
-kubectl -n orch-platform exec -it vault-0 -- vault operator unseal $keys
-
+## Vault Delete and Unseal
+delete_and_unseal_vault
 
 echo "Upgrade completed! Wait for ArgoCD applications to be in 'Healthy' state"
+
