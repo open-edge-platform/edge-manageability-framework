@@ -629,7 +629,7 @@ restore_postgres
 
 
 ## Delete Vault
-kubectl delete pod --ignore-not-found=true -n orch-platform vault-0
+kubectl delete -n orch-platform vault-0
 
 sleep 20
 
