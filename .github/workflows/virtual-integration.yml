@@ -820,8 +820,9 @@ jobs:
         run: |
           mkdir -p debug-onprem-oxm
           kubectl get pods -A | grep onboarding-manager | awk '{print $2 " -n " $1}' | xargs -I {} sh -c 'kubectl logs {}' > debug-onprem-oxm/onboarding-manager-logs.txt
-          kubectl get workflows -A  > debug-onprem-oxm/workflows.txt
-          kubectl get workflows -n orch-infra microvisor -o yaml > debug-onprem-oxm/workflows-orch-infra-microvisor.txt
+          kubectl get workflows -A --no-headers > debug-onprem-oxm/workflows.txt
+          pod=$(kubectl get workflows -A --no-headers | grep orch-infra | awk '{print $2}')
+          kubectl get workflows -n orch-infra $pod -o yaml > debug-onprem-oxm/workflows-orch-infra-microvisor.txt
 
       - name: Collect diagnostics vm
         if: always()
