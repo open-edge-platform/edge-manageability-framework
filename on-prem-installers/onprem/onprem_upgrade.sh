@@ -287,6 +287,29 @@ EOF
     done
 }
 
+# Function to search and delete specific secrets in the 'gitea' namespace
+cleanup_gitea_secrets() {
+  echo "Checking for secrets in namespace: gitea"
+
+  local secrets=(
+    "gitea-apporch-token"
+    "gitea-argocd-token"
+    "gitea-clusterorch-token"
+  )
+
+  for secret in "${secrets[@]}"; do
+    if kubectl get secret "$secret" -n gitea >/dev/null 2>&1; then
+      echo "Secret found: $secret - Deleting..."
+      kubectl delete secret "$secret" -n gitea
+    else
+      echo "Secret not found: $secret"
+    fi
+  done
+
+  echo "Secret cleanup completed."
+}
+
+
 usage() {
     cat >&2 <<EOF
 Purpose:
@@ -337,6 +360,9 @@ fi
 
 # Perform postgreSQL backup
 kubectl get secret -n $postgres_namespace postgresql -o yaml > postgres_secret.yaml
+
+# delete gitea secrets before backup
+cleanup_gitea_secrets
 
 # Backup PostgreSQL databases
 backup_postgres
