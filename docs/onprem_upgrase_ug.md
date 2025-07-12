@@ -137,24 +137,21 @@ dpkg -l | grep onprem-
 
 # Check cluster status
 kubectl get nodes
-kubectl get pods --all-namespaces
+kubectl get pods -A
 
 # Verify ArgoCD applications
-kubectl get applications -n onprem
-```
+kubectl get applications -A
 
 ### Service Validation
 - Watch ArgoCD applications until they are in 'Healthy' state
-- Verify Gitea repository access
-- Test PostgreSQL connectivity
 
 ### Web UI Access Verification
-After successful EMF upgrade, verify you can access the web UI with the same project/user/credentials.
+After successful EMF upgrade, verify you can access the web UI with the same project/user/credentials used in before upgrade.
 
 ### ArgoCD
 
 - **Username:** `admin`
-- **Retrieve initial password:**
+- **Retrieve argocd password:**
   ```bash
   kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
   ```
