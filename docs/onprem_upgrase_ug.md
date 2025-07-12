@@ -37,7 +37,8 @@ This document provides step-by-step instructions to upgrade your On-Prem Edge Ma
 On the orchestrator deployed node, copy the latest upgrade script:
 
 ```bash
-cp edge-manageability-framework/on-prem-installers/onprem/onprem_upgrade.sh .
+cd
+cp edge-manageability-framework/on-prem-installers/onprem/*.sh ~/
 chmod +x onprem_upgrade.sh
 ```
 
