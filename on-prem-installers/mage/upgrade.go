@@ -49,7 +49,10 @@ func (Upgrade) rke2Cluster() error {
 
 	// Delete all existing upgrade Plans
 	// Ignore error as CRD might not yet have been created and it's fine for us
-	_ = sh.RunV("kubectl", "delete", "-n", "system-upgrade", "plans.upgrade.cattle.io", "--all")
+	if err := sh.RunV("kubectl", "delete", "-n", "system-upgrade", "plans.upgrade.cattle.io", "--all"); err != nil {
+		fmt.Printf("failed to delete existing upgrade plans: %s\n", err)
+		fmt.Printf("ignoring this error as it might be caused by the CRD not being created yet\n")
+	}
 
 	// Label Orchestrator node to mark it as ready for the upgrade
 	if err := sh.RunV("kubectl", "label", nodeName, "rke2-upgrade=true", "--overwrite"); err != nil {
@@ -72,11 +75,11 @@ func (Upgrade) rke2Cluster() error {
 		if err != nil {
 			return err
 		}
+		defer upgradePlan.Close()
 
 		if err := tmpl.Execute(upgradePlan, struct{ Version string }{Version: rke2UpgradeVersion}); err != nil {
 			return err
 		}
-		upgradePlan.Close()
 
 		// Apply the upgrade Plan CRD
 		if err := sh.RunV("kubectl", "apply", "-f", filepath.Join("rke2", "upgrade-plan.yaml")); err != nil {
@@ -86,6 +89,7 @@ func (Upgrade) rke2Cluster() error {
 		fmt.Printf("RKE2 upgrade Plan applied, waiting for upgrade to version %s to complete...\n", rke2UpgradeVersion)
 
 		// Wait for node to upgrade to new rke2 version
+		// The kubeletVersion field uses "+" instead of "-" in its version string, so we replace "-" with "+" here.
 		if err := waitForNewVersion(nodeName, strings.ReplaceAll(rke2UpgradeVersion, "-", "+")); err != nil {
 			return err
 		}
@@ -176,14 +180,16 @@ func waitForNodeStatus(nodeName, status string) error {
 		}
 
 		return nil
-	},
-		5*time.Second,
-	); err != nil {
+	}, 5*time.Second); err != nil {
 		return fmt.Errorf("orchestrator not in %s state and timeout elapsed ❌", status)
 	}
 
-	// Include time spent on waiting in deploymentTimeout
-	timeRemaining := fmt.Sprintf("%ds", int(time.Until(expireTime).Seconds()))
+	secondsRemaining := int(time.Until(expireTime).Seconds())
+	if secondsRemaining < 0 {
+		secondsRemaining = 0
+	}
+
+	timeRemaining := fmt.Sprintf("%ds", secondsRemaining)
 	if err := setDeploymentTimeout(timeRemaining); err != nil {
 		return err
 	}
@@ -224,8 +230,7 @@ func waitForNewVersion(nodeName, version string) error {
 		}
 
 		return nil
-	}, 5*time.Second,
-	); err != nil {
+	}, 5*time.Second); err != nil {
 		return fmt.Errorf("RKE2 version is not %s and timeout elapsed ❌", version)
 	}
 
@@ -236,13 +241,10 @@ func waitForNewVersion(nodeName, version string) error {
 	}
 
 	fmt.Printf("RKE2 has version %s, proceed ✅\n", version)
-
 	return nil
 }
 
+// remove newline and double quote characters from the input string.
 func sanitizeString(str string) string {
-	sanitized := strings.ReplaceAll(str, "\n", "")
-	sanitized = strings.ReplaceAll(sanitized, `"`, "")
-
-	return sanitized
+	return strings.Trim(str, "\"\n\r\t ")
 }
