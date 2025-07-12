@@ -151,14 +151,36 @@ kubectl get applications -n onprem
 ### Web UI Access Verification
 After successful EMF upgrade, verify you can access the web UI with the same project/user/credentials.
 
-## Edge Node Re-onboarding
+### ArgoCD
 
-After successful EMF upgrade and web UI access verification:
+- **Username:** `admin`
+- **Retrieve initial password:**
+  ```bash
+  kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+  ```
 
-1. **Re-onboard edge nodes:** Follow [onboarding guide](https://docs.openedgeplatform.intel.com/edge-manage-docs/dev/user_guide/set_up_edge_infra/edge_node_onboard.html)
-2. **Create edge clusters:** Follow [cluster creation guide](https://docs.openedgeplatform.intel.com/edge-manage-docs/dev/user_guide/set_up_edge_infra/create_clusters.html)
-3. **Restore applications:** Redeploy applications and restore backed-up data
+### Gitea
 
+- **Retrieve Gitea username:**
+  ```bash
+  kubectl get secret gitea-cred -n gitea -o jsonpath="{.data.username}" | base64 -d
+  ```
+  
+ **Reset Gitea password**
+  ```bash
+  # Get Gitea pod name
+  GITEA_POD=$(kubectl get pods -n gitea -l app=gitea -o jsonpath='{.items[0].metadata.name}')
+  
+  # Reset password (replace 'test12345' with your desired password)
+  kubectl exec -n gitea $GITEA_POD -- \
+    bash -c 'export GITEAPASSWORD=test12345 && gitea admin user change-password --username gitea_admin --password $GITEAPASSWORD'
+  ```
+
+- **Login to Gitea web UI:**
+  ```bash
+  kubectl -n gitea port-forward svc/gitea-http 3000:443 --address 0.0.0.0
+  ```
+  Then open [https://localhost:3000](https://localhost:3000) in your browser and use the above credentials.
 ## Troubleshooting
 
 ### Common Issues
