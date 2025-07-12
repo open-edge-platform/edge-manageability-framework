@@ -317,7 +317,7 @@ delete_and_unseal_vault() {
   echo "Deleting Vault pod: $pod_name in namespace: $namespace"
   kubectl delete pod -n "$namespace" "$pod_name"
 
-  echo "Waiting 20 seconds for pod to restart..."
+  echo "Waiting 20 seconds for pod: $pod_name to restart..."
   sleep 20
 
   echo "Fetching Vault unseal keys..."
@@ -679,6 +679,9 @@ restore_postgres
 
 ## Vault Delete and Unseal
 delete_and_unseal_vault
+
+## delete platform-keycloak
+kubectl delete pod --ignore-not-found=true -n orch-platform platform-keycloak-0
 
 echo "Upgrade completed! Wait for ArgoCD applications to be in 'Healthy' state"
 
