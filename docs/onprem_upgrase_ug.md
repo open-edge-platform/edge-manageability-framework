@@ -180,5 +180,7 @@ After successful EMF upgrade, verify you can access the web UI with the same pro
   Then open [https://localhost:3000](https://localhost:3000) in your browser and use the above credentials.
 ## Troubleshooting
 
+ vault unseal issue delect vault secret  "vault-keys" and restart upgrade
+
 ### Common Issues
 
