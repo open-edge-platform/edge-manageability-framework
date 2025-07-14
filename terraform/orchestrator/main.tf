@@ -30,11 +30,13 @@ resource "local_file" "proxy_config_file" {
   content = templatefile(
     "${path.module}/templates/proxy_config.tftpl",
     {
-      http_proxy  = var.http_proxy,
-      https_proxy = var.https_proxy,
-      no_proxy    = var.no_proxy,
-      ftp_proxy   = var.ftp_proxy,
-      socks_proxy = var.socks_proxy,
+      http_proxy     = var.http_proxy,
+      https_proxy    = var.https_proxy,
+      no_proxy       = var.no_proxy,
+      ftp_proxy      = var.ftp_proxy,
+      socks_proxy    = var.socks_proxy,
+      en_http_proxy  = var.en_http_proxy,
+      en_https_proxy = var.en_https_proxy,
     },
   )
   filename = "${path.module}/files/proxy_config.yaml"
@@ -155,6 +157,7 @@ resource "libvirt_domain" "orch-vm" {
     hostname       = "vmnet"
     wait_for_lease = false
     addresses      = local.vmnet_ips
+    mac            = "52:54:00:12:34:56"
   }
 
   console {
@@ -192,6 +195,7 @@ resource "null_resource" "wait_for_cloud_init" {
   }
 
   provisioner "remote-exec" {
+    # The following uses concat and flatten to merge all profile overwrite commands into a single list for remote execution.
     inline = [
       "set -o errexit",
       "until [ -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 15; done",
@@ -288,6 +292,15 @@ resource "null_resource" "copy_local_orch_installer" {
     destination = "/home/ubuntu/installers/onprem-argocd-installer_${var.deploy_tag}_amd64.deb"
   }
 
+  provisioner "file" {
+    source      = "../../${var.working_directory}/${var.local_installers_path}/onprem-config-installer_${var.deploy_tag}_amd64.deb"
+    destination = "/home/ubuntu/installers/onprem-config-installer_${var.deploy_tag}_amd64.deb"
+  }
+
+  provisioner "file" {
+    source      = "../../${var.working_directory}/${var.local_installers_path}/onprem-gitea-installer_${var.deploy_tag}_amd64.deb"
+    destination = "/home/ubuntu/installers/onprem-gitea-installer_${var.deploy_tag}_amd64.deb"
+  }
 
   provisioner "file" {
     source      = "../../${var.working_directory}/${var.local_installers_path}/onprem-ke-installer_${var.deploy_tag}_amd64.deb"
@@ -300,8 +313,8 @@ resource "null_resource" "copy_local_orch_installer" {
   }
 
   provisioner "file" {
-    source      = "../../${var.working_directory}/${var.local_repo_archives_path}/onpremFull_edge-manageability-framework_${split("\n",data.local_file.version_file.content)[0]}.tgz"
-    destination = "/home/ubuntu/repo_archives/onpremFull_edge-manageability-framework_${split("\n",data.local_file.version_file.content)[0]}.tgz"
+    source      = "../../${var.working_directory}/${var.local_repo_archives_path}/onpremFull_edge-manageability-framework_${split("\n", data.local_file.version_file.content)[0]}.tgz"
+    destination = "/home/ubuntu/repo_archives/onpremFull_edge-manageability-framework_${split("\n", data.local_file.version_file.content)[0]}.tgz"
   }
 }
 
@@ -355,7 +368,42 @@ resource "null_resource" "set_proxy_config" {
       "set -o errexit",
       "cp /home/ubuntu/proxy_config.yaml /home/ubuntu/repo_archives/tmp/edge-manageability-framework/orch-configs/profiles/proxy-none.yaml",
       "cat /home/ubuntu/repo_archives/tmp/edge-manageability-framework/orch-configs/profiles/proxy-none.yaml",
-     ]
+    ]
+    when = create
+  }
+}
+
+resource "null_resource" "overwrite_profile_config" {
+  for_each = var.enable_auto_install && length(var.overwrite_profiles) > 0 ? { for profile in var.overwrite_profiles : profile[0] => profile[1] } : {}
+
+  depends_on = [
+    null_resource.copy_files,
+    null_resource.write_installer_config
+  ]
+
+  connection {
+    type     = "ssh"
+    host     = local.vmnet_ip0
+    port     = var.vm_ssh_port
+    user     = var.vm_ssh_user
+    password = var.vm_ssh_password
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "set -o errexit",
+      "profile_file=\"/home/ubuntu/repo_archives/tmp/edge-manageability-framework/orch-configs/profiles/${each.key}.yaml\"",
+      "if [ -f \"$profile_file\" ]; then",
+      "  echo 'Overwriting profile: ${each.key}'",
+      "  echo 'Overwriting profile with: ${each.value}'",
+      "  echo \"${each.value}\" > /tmp/overwrite_profile.yaml",
+      "  yq eval-all 'select(fileIndex == 0) * select(fileIndex == 1)' \"$profile_file\" /tmp/overwrite_profile.yaml > \"$profile_file.tmp\" && mv \"$profile_file.tmp\" \"$profile_file\"",
+      "  rm -f /tmp/overwrite_profile.yaml",
+      "  cat \"$profile_file\"",
+      "else",
+      "  echo \"$profile_file does not exist\"",
+      "fi"
+    ]
     when = create
   }
 }
@@ -368,7 +416,8 @@ resource "null_resource" "exec_installer" {
   depends_on = [
     null_resource.write_installer_config,
     null_resource.set_proxy_config,
-    null_resource.wait_for_cloud_init
+    null_resource.overwrite_profile_config,
+    null_resource.wait_for_cloud_init,
   ]
 
   connection {

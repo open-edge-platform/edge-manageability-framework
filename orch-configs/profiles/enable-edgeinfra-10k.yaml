@@ -6,6 +6,8 @@
 
 argo:
   infra-core:
+    tenant-config:
+      enabled: false
     inventory:
       resources:
         requests:
@@ -89,6 +91,7 @@ argo:
           cpu: "1"
   infra-onboarding:
     onboarding-manager:
+      enabled: true
       resources:
         requests:
           memory: "256Mi"
@@ -97,6 +100,15 @@ argo:
           memory: "512Mi"
           cpu: "1"
     dkam:
+      resources:
+        requests:
+          memory: "256Mi"
+          cpu: "500m"
+        limits:
+          memory: "512Mi"
+          cpu: "1"
+    pxe-server:
+      enabled: false
       resources:
         requests:
           memory: "256Mi"

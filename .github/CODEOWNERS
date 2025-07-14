@@ -7,7 +7,7 @@
 # someone opens a pull request.
 
 # Everything requires Platform team review by default
-* @se-chris-thach @mdbalvin @rad-szulim @charlesmcchan @yi-tseng-intel @ashridatta @teone @callumnobleintel @daniele-moro @SeanCondon @pierventre @cgoea john.oloughlin@intel.com gary.loughnane@intel.com @palade @pperycz @ltalarcz @jakubsikorski @sys-orch-approve @ahalimx86
+* @SeanCondon @cgoea john.oloughlin@intel.com gary.loughnane@intel.com @palade @pperycz @ltalarcz @jakubsikorski @sys-orch-approve @ahalimx86 @mparamas-zz @osinstom @rranjan3 @krishnajs
 
 # Dependabot is used to manage dependencies in this repository. It is configured to automatically open pull requests to
 # update dependencies when new versions are available. The following files are managed by Dependabot and do not require
@@ -40,7 +40,7 @@
 /.test-dependencies.yaml
 
 # Changes to the .github directory must be reviewed by these Maintainers. Has coverage in Poland, Ireland, India, and US.
-.github/ @se-chris-thach @rad-szulim @charlesmcchan @mdbalvin @palade @Irakus @yi-tseng-intel @SushilLakra
+.github/ @se-chris-thach @rad-szulim @charlesmcchan @mdbalvin @palade @Irakus @yi-tseng-intel @SushilLakra @garyloug @johnoloughlin
 
 # Cypress tests require UI team review
 .github/actions/cypress/ @soniabha-intc @teone @satya-in @sys-orch-approve
@@ -62,21 +62,21 @@
 /argocd/applications/**/metadata-broker* @soniabha-intc @teone @satya-in @dlemiech @riyaz-ghati @vigneshintel @sys-orch-approve
 
 # Cluster Orch Tests
-/e2e-tests/orchestrator/clusterorch_smoke_test.go @gcgirish @andybavier @hyunsun @jdanieck @jokuniew @eoghanlawless @sys-orch-approve
-/mage/edge_cluster.go @gcgirish @andybavier @hyunsun @jdanieck @jokuniew @eoghanlawless @sys-orch-approve
+/e2e-tests/orchestrator/clusterorch_smoke_test.go @gcgirish @andybavier @hyunsun @eoghanlawless @sys-orch-approve
+/mage/edge_cluster.go @gcgirish @andybavier @hyunsun @eoghanlawless @sys-orch-approve
 
 # cluster orch templates and values
-/argocd/applications/templates/cluster* @gcgirish @andybavier @hyunsun @jdanieck @jokuniew @eoghanlawless @sys-orch-approve
-/argocd/applications/templates/capi* @gcgirish @andybavier @hyunsun @jdanieck @jokuniew @eoghanlawless @sys-orch-approve
-/argocd/applications/templates/intel-infra-provider* @gcgirish @andybavier @hyunsun @jdanieck @jokuniew @eoghanlawless @sys-orch-approve
+/argocd/applications/templates/cluster* @gcgirish @andybavier @hyunsun @eoghanlawless @sys-orch-approve
+/argocd/applications/templates/capi* @gcgirish @andybavier @hyunsun @eoghanlawless @sys-orch-approve
+/argocd/applications/templates/intel-infra-provider* @gcgirish @andybavier @hyunsun @eoghanlawless @sys-orch-approve
 
-/argocd/applications/configs/capi* @gcgirish @andybavier @hyunsun @jdanieck @jokuniew @eoghanlawless @sys-orch-approve
-/argocd/applications/configs/cluster* @gcgirish @andybavier @hyunsun @jdanieck @jokuniew @eoghanlawless @sys-orch-approve
-/argocd/applications/configs/intel-infra-provider* @gcgirish @andybavier @hyunsun @jdanieck @jokuniew @eoghanlawless @sys-orch-approve
+/argocd/applications/configs/capi* @gcgirish @andybavier @hyunsun @eoghanlawless @sys-orch-approve
+/argocd/applications/configs/cluster* @gcgirish @andybavier @hyunsun @eoghanlawless @sys-orch-approve
+/argocd/applications/configs/intel-infra-provider* @gcgirish @andybavier @hyunsun @eoghanlawless @sys-orch-approve
 
-/argocd/applications/custom/capi* @gcgirish @andybavier @hyunsun @jdanieck @jokuniew @eoghanlawless @sys-orch-approve
-/argocd/applications/custom/cluster* @gcgirish @andybavier @hyunsun @jdanieck @jokuniew @eoghanlawless @sys-orch-approve
-/argocd/applications/custom/intel-infra-provider* @gcgirish @andybavier @hyunsun @jdanieck @jokuniew @eoghanlawless @sys-orch-approve
+/argocd/applications/custom/capi* @gcgirish @andybavier @hyunsun @eoghanlawless @sys-orch-approve
+/argocd/applications/custom/cluster* @gcgirish @andybavier @hyunsun @eoghanlawless @sys-orch-approve
+/argocd/applications/custom/intel-infra-provider* @gcgirish @andybavier @hyunsun @eoghanlawless @sys-orch-approve
 
 # Obaas Tests
 /e2e-tests/orchestrator/o11y_* @pperycz @ltalarcz @jakubsikorski @mholowni @p-zak @tdorauintc @sys-orch-approve
@@ -96,4 +96,4 @@
 /design-proposals/ @scottmbaker @hyunsun @teone @krishnajs @Andrea-Campanella @se-chris-thach @charlesmcchan @yi-tseng-intel @ashridatta @callumnobleintel @daniele-moro @SeanCondon @pierventre @cgoea john.oloughlin@intel.com gary.loughnane@intel.com @palade @pperycz @ltalarcz @jakubsikorski @sys-orch-approve @ahalimx86
 
 # New installer work
-/new-installer @charlesmcchan @yi-tseng-intel @ashridatta @se-chris-thach @paulfhncw patryk.iracki@intel.com
+/new-installer @charlesmcchan @yi-tseng-intel @ashridatta @se-chris-thach @paulfhncw patryk.iracki@intel.com @ahalimx86 @garyloug @palade @johnoloughlin

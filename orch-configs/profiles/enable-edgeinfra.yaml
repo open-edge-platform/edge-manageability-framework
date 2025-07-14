@@ -16,6 +16,8 @@ argo:
     web-ui-infra: true
     copy-keycloak-admin-to-infra: true
   infra-core:
+    tenant-config:
+      enabled: false
     api:
       resources:
         requests:
@@ -100,6 +102,15 @@ argo:
           memory: "64Gi"
           cpu: "64"
     dkam:
+      resources:
+        requests:
+          memory: "16Mi"
+          cpu: "10m"
+        limits:
+          memory: "64Gi"
+          cpu: "64"
+    pxe-server:
+      enabled: false
       resources:
         requests:
           memory: "16Mi"

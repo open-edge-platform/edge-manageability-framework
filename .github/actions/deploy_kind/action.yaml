@@ -35,13 +35,17 @@ runs:
   - name: Checkout code
     uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
     with:
+      repository: open-edge-platform/edge-manageability-framework
+      ref: ${{ inputs.orch_version }}
       persist-credentials: false
 
   - name: Set up git credentials
     shell: bash
+    env:
+      TOKEN: ${{ inputs.token }}
     run: |
       echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
-      git config --global url."https://${{ inputs.token }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+      git config --global url."https://$TOKEN:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
   - name: Setup asdf and install dependencies
     id: install-deps
@@ -49,7 +53,9 @@ runs:
 
   - name: Print current git hash
     shell: bash
-    run: echo "Current git hash is ${{ inputs.orch_version }}"
+    env:
+      EDGE_MANAGEABILITY_FRAMEWORK_REV: ${{ inputs.orch_version }}
+    run: echo "Current git hash is \"$EDGE_MANAGEABILITY_FRAMEWORK_REV\""
 
   - name: Deploy External Orchestrator
     id: deploy-external-orchestrator
@@ -60,18 +66,18 @@ runs:
       ORCH_DEFAULT_PASSWORD: ${{ inputs.orch_password }}
       DOCKERHUB_TOKEN: ${{ inputs.docker_password }}
       DOCKERHUB_USERNAME: ${{ inputs.docker_username }}
+      DEPLOYMENT_TYPE: ${{ inputs.deployment_type }}
     shell: bash
     run: |
       set +x
       echo "Starting to deploy Orchestrator..."
-      if [ "${{ inputs.deployment_type }}" == "minimal" ]; then
+      if [ "$DEPLOYMENT_TYPE" == "minimal" ]; then
         echo "Deploying minimal Orchestrator setup..."
         mage deploy:kindMinimal
       else
         echo "Deploying full Orchestrator setup..."
         mage deploy:kindAll
       fi
-      mage deploy:kindAll
       echo "Orchestrator deployment done!"
   - name: Get Root App Status
     shell: bash
