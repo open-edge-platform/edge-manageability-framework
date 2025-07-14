@@ -40,7 +40,7 @@ runs:
       with:
         repository: open-edge-platform/orch-ui
         path: orch-ui
-        ref: fix/xdescribe-CO-e2e
+        ref: e0567da1361001d643d0ed0ebe8677752e77e191
         persist-credentials: false
     - run: git log -1
       shell: bash
