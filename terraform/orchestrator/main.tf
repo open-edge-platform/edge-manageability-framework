@@ -37,7 +37,6 @@ resource "local_file" "proxy_config_file" {
       socks_proxy    = var.socks_proxy,
       en_http_proxy  = var.en_http_proxy,
       en_https_proxy = var.en_https_proxy,
-      en_no_proxy    = var.en_no_proxy == "" ? var.no_proxy : var.en_no_proxy, # Use no_proxy if en_no_proxy is empty
     },
   )
   filename = "${path.module}/files/proxy_config.yaml"
