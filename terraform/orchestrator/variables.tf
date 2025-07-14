@@ -134,6 +134,12 @@ variable "en_https_proxy" {
   default     = ""
 }
 
+variable "en_no_proxy" {
+  type        = string
+  description = "Generally this is the same as the no_proxy variable, but it can be different if the EN needs a different proxy."
+  default     = ""
+}
+
 variable "ca_certificates" {
   type        = list(string)
   description = "List of CA certificates file paths for the VM to trust."
