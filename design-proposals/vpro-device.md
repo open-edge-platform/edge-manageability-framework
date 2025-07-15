@@ -22,10 +22,6 @@ the EN sw and propose a solution on how to manage the device activation during t
 Remote Provisioning Client (RPC) is integrated as part of Platform Manageability Agent, which operates within the
 final operating system environment.
 
-The Platform Manageability Agent which includes RPC, will be provided as RPM packages. These RPMs will be included
-in the OS image, enabling the agent binaries to be installed automatically during the OS installation process. This
-ensures that all required manageability features are available as soon as the OS is deployed.
-
 The Platform Manageability Agent template will follow similar design patterns and conventions established by other
 agent templates in the EMF, ensuring consistency in configuration, deployment, and management approaches across all
 platform agents.
