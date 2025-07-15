@@ -547,6 +547,13 @@ jobs:
         run: |
           mage test:e2eOrchObservability
 
+      # TODO - The base extension deployment including observability stack has been removed. Need to revist this test stack later and see how to proceed further.
+      # - name: "Test Observability EdgeNode Stack"
+      #   env:
+      #     ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+      #   run: |
+      #     mage test:e2eENObservability
+
       - name: "Test Observability Alerts"
         env:
           ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}

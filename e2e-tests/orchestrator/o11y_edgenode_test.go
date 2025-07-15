@@ -6,6 +6,7 @@ package orchestrator_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os/exec"
@@ -136,6 +137,20 @@ var _ = Describe("Edgenode Observability Test:", Ordered, Label(edgenodeObs), fu
 			defer resp.Body.Close()
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		})
+
+		It("Check if metrics started coming from edgenode", func() {
+			Eventually(func() error {
+				found, err := helpers.CheckMetric(cli, metricsAddr, "cpu_usage_idle", projectID)
+				if err != nil {
+					return err
+				}
+				if found {
+					return nil
+				}
+				return errors.New("metrics are not present yet")
+			}, 10*time.Minute, 20*time.Second).Should(Succeed(), "eventually metrics should come from ENiC")
+		})
+
 
 		It("Edgenode metrics must be present in mimir", func() {
 			for _, metric := range enMetrics {
