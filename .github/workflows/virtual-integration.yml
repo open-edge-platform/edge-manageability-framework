@@ -533,7 +533,7 @@ jobs:
           token: ${{ secrets.SYS_ORCH_GITHUB }}
           en_serial_number: ${{ env.EN_SN }}
           en_uuid: ${{ env.EN_UUID }}
-          infra: "cypress/e2e/infra/locations.cy.ts,cypress/e2e/infra/provision-hosts.cy.ts,cypress/e2e/infra/verify-host.cy.ts"
+          infra: "cypress/e2e/infra/locations.cy.ts,cypress/e2e/infra/new-host-provision.cy.ts,cypress/e2e/infra/verify-host.cy.ts"
 
       - name: "Test Observability Public Endpoints"
         env:
@@ -547,23 +547,26 @@ jobs:
         run: |
           mage test:e2eOrchObservability
 
-      - name: "Test Observability EdgeNode Stack"
-        env:
-          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-        run: |
-          mage test:e2eENObservability
+      # TODO - The base extension deployment including observability stack has been removed. Need to revist this test stack later and see how to proceed further.
+      # - name: "Test Observability EdgeNode Stack"
+      #   env:
+      #     ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+      #   run: |
+      #     mage test:e2eENObservability
 
-      - name: "Test Observability Alerts"
-        env:
-          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-        run: |
-          mage test:e2eAlertsObservability
+      # TODO - The base extension deployment including observability stack has been removed. Need to revist this test stack later and see how to proceed further.
+      # - name: "Test Observability Alerts"
+      #   env:
+      #     ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+      #   run: |
+      #     mage test:e2eAlertsObservability
 
-      - name: "Test Observability SRE Exporter"
-        env:
-          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-        run: |
-          mage test:e2eSreObservability
+      # TODO - The base extension deployment including observability stack has been removed. Need to revist this test stack later and see how to proceed further.
+      # - name: "Test Observability SRE Exporter"
+      #   env:
+      #     ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+      #   run: |
+      #     mage test:e2eSreObservability
 
       - name: deploy, register & provision new ENiC instance # previous instance was deatuhorized by the cluster delete in UI tests
         if: ${{ always() && steps.deploy-kind-orchestrator.conclusion == 'success' && steps.default-mt-setup.conclusion == 'success' }}
