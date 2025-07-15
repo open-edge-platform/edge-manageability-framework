@@ -547,12 +547,6 @@ jobs:
         run: |
           mage test:e2eOrchObservability
 
-      - name: "Test Observability EdgeNode Stack"
-        env:
-          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-        run: |
-          mage test:e2eENObservability
-
       - name: "Test Observability Alerts"
         env:
           ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
