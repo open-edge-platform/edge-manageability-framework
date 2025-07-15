@@ -151,7 +151,6 @@ var _ = Describe("Edgenode Observability Test:", Ordered, Label(edgenodeObs), fu
 			}, 10*time.Minute, 20*time.Second).Should(Succeed(), "eventually metrics should come from ENiC")
 		})
 
-
 		It("Edgenode metrics must be present in mimir", func() {
 			for _, metric := range enMetrics {
 				found, err := helpers.CheckMetric(cli, metricsAddr, metric, projectID)
