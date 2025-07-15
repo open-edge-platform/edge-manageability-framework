@@ -6,7 +6,6 @@ package orchestrator_test
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"os/exec"
