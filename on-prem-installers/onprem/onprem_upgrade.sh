@@ -312,13 +312,26 @@ cleanup_gitea_secrets() {
 # Function to delete Vault pod and unseal it when it comes back
 delete_and_unseal_vault() {
   local namespace="orch-platform"
-  local pod_name="vault-0"
+  local pod_label="app.kubernetes.io/name=vault"
 
-  echo "Deleting Vault pod: $pod_name in namespace: $namespace"
-  kubectl delete pod -n "$namespace" "$pod_name"
+  echo "Deleting Vault pod(s) in namespace: $namespace"
+  kubectl delete pod -n "$namespace" -l "$pod_label"
 
-  echo "Waiting 20 seconds for pod: $pod_name to restart..."
-  sleep 20
+  echo "Waiting for Vault pod(s) to be in Running phase..."
+  while true; do
+    pod_phase=$(kubectl get pods -n "$namespace" -l "$pod_label" -o jsonpath='{.items[0].status.phase}' 2>/dev/null)
+    if [[ "$pod_phase" == "Running" ]]; then
+      echo "✅ Vault pod is Running."
+      break
+    else
+      echo "⏳ Current phase: $pod_phase ... waiting..."
+      sleep 5
+    fi
+  done
+
+  echo "Fetching new Vault pod name..."
+  pod_name=$(kubectl get pods -n "$namespace" -l "$pod_label" -o jsonpath='{.items[0].metadata.name}')
+  echo "New Vault pod is: $pod_name"
 
   echo "Fetching Vault unseal keys..."
   keys=$(kubectl -n "$namespace" get secret vault-keys -o jsonpath='{.data.vault-keys}' | base64 -d | jq '.keys_base64 | .[]' | sed 's/"//g')
@@ -327,12 +340,20 @@ delete_and_unseal_vault() {
   for key in $keys; do
     kubectl -n "$namespace" exec -i "$pod_name" -- vault operator unseal "$key"
   done
-  
-  echo "Waiting for Vault pod to be Ready..."
-  kubectl wait pod -n "$namespace" -l "app.kubernetes.io/name=vault" \
-    --for=condition=Ready --timeout=300s
 
-  echo "Vault pod restarted and unsealed successfully."
+  echo "Verifying Vault pod is Running..."
+  while true; do
+    pod_phase=$(kubectl get pods -n "$namespace" -l "$pod_label" -o jsonpath='{.items[0].status.phase}' 2>/dev/null)
+    if [[ "$pod_phase" == "Running" ]]; then
+      echo "✅ Vault pod is Running."
+      break
+    else
+      echo "⏳ Current phase: $pod_phase ... waiting..."
+      sleep 5
+    fi
+  done
+
+  echo "✅ Vault pod restarted and unsealed successfully."
 }
 
 usage() {
