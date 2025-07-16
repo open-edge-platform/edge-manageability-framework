@@ -58,7 +58,7 @@ In **Terminal 1**, set the required environment variables:
 # Load environment configuration
 source .env
 
-Note: if any dokcer limit hit issue user should set docker login credential as env 
+Note: if any docker limit hit issue user should set docker login credential as env 
 
 # Unset PROCEED to allow manual confirmation
 unset PROCEED
