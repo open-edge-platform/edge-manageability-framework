@@ -11,7 +11,8 @@ This document provides step-by-step instructions to upgrade your On-Prem Edge Ma
 
 > **⚠️ DISRUPTIVE UPGRADE WARNING**  
 > This upgrade requires edge node re-onboarding due to architecture changes (RKE2 → K3s).  
-> Plan for service downtime and manual data backup/restore procedures.
+> Plan for edge nodes service downtime and
+manual data backup/restore procedures in edge nodes.
 
 ## Prerequisites
 
