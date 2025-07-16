@@ -57,44 +57,59 @@ Let us now analyze the device activation, the user must do the following steps b
 - MEBx has been set either to default or pre-provisioned by OXM
 
 ```mermaid
-graph TD
-    subgraph "Orchestrator Components"
-        inv([**Inventory**]):::orch
-        ps([**Provisioning**]):::orch
-        dm([**Device Management**]):::orch
-        mps([**Management Presence Server**]):::orch
-        rps([**Remote Provisioning Server**]):::orch
+sequenceDiagram
+    title DMT provisioning through Agent
+    actor us as User
+  
+    box rgb(173, 216, 230) Orchestrator Components
+    participant inv as Inventory
+    participant ps as Provisioning
+    participant dm as Device Management
+    participant mps as Management Presence Server
+    participant rps as Remote Provisioning Server
+    end
+ 
+    box rgb(144, 238, 144) Edge Node Components
+    participant en as Edge Node
+    participant agent as Platform Manageability Agent
     end
 
-    subgraph "Edge Node Components"
-        en([**Edge Node**]):::edge
-        agent([**Platform Manageability Agent**]):::edge
+    us ->> en: 1. Boot device
+    activate en
+    en ->> ps: 2. Device discovery
+    activate ps
+    ps ->> inv: 3. Onboard the device
+    ps ->> en: 4. Done
+    deactivate ps
+    deactivate en
+
+    en ->> en: 5. OS installation (Agent RPMs included)
+    en ->> agent: 6. Install/Enable Agent as part of OS
+
+    Note right of agent: AMT eligibility and capability introspection<br>performed by Agent after install
+
+    alt Device supports vPRO/ISM
+        agent ->> dm: 7. Report DMT status [Supported/Enabled]
+        dm ->> inv: 8. Update DMT Status ENABLED (Supported)
+        us ->> dm: 9. Request activation via API
+        dm ->> agent: 10. Provide activation profile name
+        agent ->> agent: 11. Activate/Enable LMS  
+        agent ->> rps: 12. Initiate RPC activate command
+        activate rps
+        rps ->> agent: 13. Success/Configured
+        deactivate rps
+        agent ->> dm: 14. Report AMT status (Provisioned)
+        dm ->> inv: 15. Update AMT Status IN_PROGRESS (Connecting)
+        dm ->> inv: 16. Update AMT CurrentState Provisioned
+    else [Device is not eligible]
+        agent ->> dm: 7a. Report DMT status (Not Supported)
+        dm ->> inv: 7b. Update DMT Status ERROR (Not Supported)
     end
 
-    us([**User**]) -->|1. Boot device| en
-    en -->|2. Device discovery| ps
-    ps -->|3. Onboard the device| inv
-    ps -->|4. Done| en
-    en -->|5. OS installation (Agent RPMs included)| en
-    en -->|6. Install/Enable Agent as part of OS| agent
-    agent -.->|AMT eligibility and capability introspection performed by Agent after install| agent
-
-    us -->|7. Request activation via API| dm
-    dm -->|8. Activate command (based on desired state)| agent
-    agent -->|9. vPRO remote configuration| rps
-    rps -->|10. Success| agent
-    agent -->|11. Report AMT status (Provisioned)| dm
-    dm -->|12. Update AMT Status IN_PROGRESS (Connecting)| inv
-    dm -->|13. Update AMT CurrentState Provisioned| inv
-
-    agent -.->|7a. Report AMT status (Not Supported)| dm
-    dm -.->|7b. Update AMT Status ERROR (Not Supported)| inv
-    agent -.->|8a. Report AMT status (Failure)| dm
-    dm -.->|8b. Update AMT Status FAILURE| inv
-
-    classDef orch fill:#fff,stroke:#003366,stroke-width:3px,color:#003366,font-weight:bold;
-    classDef edge fill:#fff,stroke:#228B22,stroke-width:3px,color:#228B22,font-weight:bold;
-    classDef default color:#222,stroke-width:2px;
+    alt Failure during activation
+        agent ->> dm: 12a. Report DMT status (Failure)
+        dm ->> inv: 12b. Update DMT Status FAILURE
+    end
 ```
 
 **Note 1** - The user interacts with the Device Management API, and the Device Management Resource
