@@ -5,7 +5,8 @@
 
 ## Overview
 
-This document provides step-by-step instructions to upgrade your On-Prem Edge Manageability Framework (EMF) from version 3.0 to 3.1.
+This document provides step-by-step instructions to upgrade
+On-Prem Edge Manageability Framework (EMF) from version 3.0 to 3.1.
 
 ### Important Notes
 
@@ -17,6 +18,7 @@ manual data backup/restore procedures in edge nodes.
 ## Prerequisites
 
 ### System Requirements
+
 - Current EMF On-Prem installation version 3.0
 - Root/sudo privileges on orchestrator node
 - PostgreSQL service running and accessible
@@ -24,6 +26,7 @@ manual data backup/restore procedures in edge nodes.
 - docker user credential if any pull limit hit
 
 ### Pre-Upgrade Checklist
+
 - [ ] Back up critical application data from edge nodes
 - [ ] Document current edge node configurations  
 - [ ] Remove all edge clusters and hosts:
@@ -76,34 +79,37 @@ In **Terminal 1**, execute the upgrade script:
 ```
 
 The script will:
+
 - Validate current installation
 - Check PostgreSQL status
 - Download packages and artifacts
 - Eventually prompt for confirmation:
 
-```
+```bash
 Ready to proceed with installation? (yes/no)
 ```
 
-**⚠️ DO NOT enter "yes" yet - proceed to Step 5 first**
+- **⚠️ DO NOT enter "yes" yet - proceed to Step 5 first**
 
 ### Step 5: Terminal 2 - Update Configuration
 
 Before confirming in Terminal 1, open **Terminal 2** and update configurations:
 
 1. **Update proxy settings (if applicable):**
+
    ```bash
    cp proxy_config.yaml repo_archives/tmp/edge-manageability-framework/orch-configs/profiles/proxy-none.yaml
    ```
 
 2. **Verify load balancer IP configuration:**
+
    ```bash
    # Check current LoadBalancer IPs
    kubectl get svc argocd-server -n argocd
    kubectl get svc traefik -n orch-gateway
    kubectl get svc ingress-nginx-controller -n orch-boots
    
-   # Verity LB IP configuration are updated
+   # Verify LB IP configuration are updated
    nano repo_archives/tmp/edge-manageability-framework/orch-configs/clusters/onprem.yaml
    ```
 
@@ -122,16 +128,17 @@ The upgrade will then proceed automatically through all components.
 ### Step 7: Monitor Upgrade Progress
 
 The upgrade process includes:
-1. OS Configuration upgrade
-3. Gitea upgrade
-4. ArgoCD upgrade
-5. Edge Orchestrator upgrade
-5. Unseal Vault
 
+- OS Configuration upgrade
+- Gitea upgrade
+- ArgoCD upgrade
+- Edge Orchestrator upgrade
+- Unseal Vault
 
 ## Post-Upgrade Verification
 
 ### System Health Check
+
 ```bash
 # Verify package versions
 dpkg -l | grep onprem-
@@ -160,11 +167,13 @@ After successful EMF upgrade, verify you can access the web UI with the same pro
 ### Gitea
 
 - **Retrieve Gitea username:**
+
   ```bash
   kubectl get secret gitea-cred -n gitea -o jsonpath="{.data.username}" | base64 -d
   ```
   
- **Reset Gitea password**
+- **Reset Gitea password**
+
   ```bash
   # Get Gitea pod name
   GITEA_POD=$(kubectl get pods -n gitea -l app=gitea -o jsonpath='{.items[0].metadata.name}')
@@ -175,11 +184,80 @@ After successful EMF upgrade, verify you can access the web UI with the same pro
   ```
 
 - **Login to Gitea web UI:**
+
   ```bash
   kubectl -n gitea port-forward svc/gitea-http 3000:443 --address 0.0.0.0
+  #Then open [https://localhost:3000](https://localhost:3000) in your browser and use the above credentials.
   ```
-  Then open [https://localhost:3000](https://localhost:3000) in your browser and use the above credentials.
+
 ## Troubleshooting
 
-### Common Issues
+**Symptom:**
+Sometimes the `infra-managers` application in ArgoCD may show as **Not Healthy** or **Out of Sync**. This can impact dependent components or cluster state.
 
+**Resolution Steps:**
+
+1. **Delete the application from ArgoCD: and resync reoo-app**
+
+During the `onprem_upgrade`, if Vault appears **sealed** or becomes **unavailable**, manual intervention may be required.
+
+**Symptom:**
+
+- **Vault Unseal Problem**
+  
+  Vault pod status shows sealed, causing issues with secret access or platform services.
+  After running the on-prem upgrade script, if you see the following  vault waiting output: then further vault unseal require
+
+  ```bash
+  Deleting Vault pod: vault-0 in namespace: orch-platform
+  pod "vault-0" deleted
+  Waiting for pod 'vault-0' in namespace 'orch-platform' to be in Running state...
+  ```
+
+- **Check Vault status**
+
+   ```bash
+   kubectl get pod -A | grep vault-0
+   kubectl -n orch-platform exec -i vault-0 -- vault status
+   ```
+
+- **Vault Unseal Procedure**
+
+   ```bash
+   #Run the Vault unseal script
+   source ./vault_unseal.sh
+   vault_unseal
+   ```
+
+## Open Issues:
+
+**API Gateway does not reflect API changes from v1 to v2 automatically**  
+*Workaround:* Manually delete the `nexus-api-gw` pod to recover API changes.
+
+**After upgrade, both RKE2 and K3s Cluster Templates are labeled as default**  
+*Workaround:* Manually delete all old cluster templates related to 3.0 release RKE2 base.
+
+**Deployment package extensions are not updated after upgrade**  
+*Workaround:* Manually delete the `app-orch-tenant-controller` pod.
+
+---
+
+### Automation Script for Workarounds
+
+To simplify post-upgrade recovery, the following script should be executed as part of the upgrade validation steps:
+
+**Script Name:** `after_upgrade_restart.sh`  
+**Purpose:** Automates the following workaround actions:
+- Restarts the `nexus-api-gw` pod to reflect API changes from v1 to v2
+- Deletes outdated RKE2-based cluster templates from the 3.0 release
+- Restarts the `app-orch-tenant-controller` pod to trigger deployment extension updates
+
+> ✅ Run the script after the on-prem upgrade using:
+> ```bash
+> ./after_upgrade_restart.sh
+> ```
+
+**EdgeNode local SSH connection error**
+**RPS pod Postgres DB query failure**  
+**Host filter in the UI is not functioning correctly**  
+**Docker rate limit encountered despite using valid credentials**  
