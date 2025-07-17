@@ -25,27 +25,19 @@ import (
 )
 
 var (
-	regionName              = getEnv("REGION_NAME", randomString(8))
-	siteName                = getEnv("SITE_NAME", randomString(8))
-	clusterName             = getEnv("CLUSTER_NAME", randomString(8))
-	nodeUUID                = getEnv("NODE_UUID", "")
-	edgeMgrUser             = getEnv("EDGE_MGR_USER", "robot-edge-mgr")
-	edgeInfraUser           = getEnv("EDGE_INFRA_USER", "robot-api-user")
-	project                 = getEnv("PROJECT", "robot-project-1")
-	extensionDeploymentPath = "../samples/"
-	extensionPackageName    = "baseline-extensions-lite"
-	appName                 = "baseline-extension-lite"
+	regionName    = getEnv("REGION_NAME", randomString(8))
+	siteName      = getEnv("SITE_NAME", randomString(8))
+	clusterName   = getEnv("CLUSTER_NAME", randomString(8))
+	nodeUUID      = getEnv("NODE_UUID", "")
+	edgeMgrUser   = getEnv("EDGE_MGR_USER", "robot-edge-mgr")
+	edgeInfraUser = getEnv("EDGE_INFRA_USER", "robot-api-user")
+	project       = getEnv("PROJECT", "robot-project-1")
 )
 
 const (
 	apiBaseURLTemplate        = "https://api.%s/v1/projects/%s"
 	clusterApiBaseURLTemplate = "https://api.%s/v2/projects/%s"
 	catalogApiBaseURLTemplate = "https://api.%s/v3/projects/%s"
-	extensionProfileName      = "baseline-lite"
-	extensionDeploymentType   = "auto-scaling"
-	extensionAppVersion       = "0.1.0"
-	extensionLabelKey         = "default-extension"
-	extensionLabelValue       = "baseline"
 )
 
 type Node struct {
@@ -167,7 +159,6 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 	regionID := ""
 	hostID := ""
 	instanceID := ""
-	baseExtensionLineDeploymentId := ""
 	fleetClusterId := ""
 
 	defaultTemplate := ""
@@ -493,146 +484,6 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 			}
 			Expect(fleetClusterId).ToNot(BeEmpty())
 			fmt.Printf("Fleet Cluster ID: %s\n", fleetClusterId)
-		})
-	})
-
-	Describe("Load baseline lite deployment package", Label(clusterOrchSmoke), func() {
-		It("should load the baseline lite deployment package successfully", func() {
-			paths := []string{
-				extensionDeploymentPath + extensionPackageName,
-			}
-			// Upload the files
-			err := util.UploadFiles(paths, serviceDomain, project, edgeMgrUser, keycloakSecret)
-			Expect(err).ToNot(HaveOccurred())
-
-			type CatalogDeploymentPackagesResp struct {
-				DeploymentPackages []struct {
-					Name string `json:"name"`
-				}
-			}
-
-			var catalog CatalogDeploymentPackagesResp
-
-			// List the deployment packages
-			url := fmt.Sprintf(catalogApiBaseURLTemplate+"/catalog/deployment_packages", serviceDomain, project)
-			resp, err := makeAuthorizedRequest(http.MethodGet, url, *edgeMgrToken, nil, cli)
-			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
-			Expect(resp.StatusCode).To(Equal(http.StatusOK))
-			body, err := io.ReadAll(resp.Body)
-			Expect(err).ToNot(HaveOccurred())
-			err = json.Unmarshal(body, &catalog)
-			Expect(err).ToNot(HaveOccurred())
-
-			dpLoaded := func() (bool, error) {
-				for _, dp := range catalog.DeploymentPackages {
-					if dp.Name == extensionPackageName {
-						return true, nil
-					}
-				}
-				return false, nil
-			}
-
-			Eventually(func() (bool, error) {
-				return dpLoaded()
-			}, 1*time.Minute, 10*time.Second).Should(BeTrue(), "timeout reached. Did not find baseline lite deployment package")
-		})
-	})
-
-	Describe("Create a deployment using the baseline lite package", Label(clusterOrchSmoke), func() {
-		It("should create a deployment using the baseline lite package successfully", func() {
-			url := fmt.Sprintf(apiBaseURLTemplate+"/appdeployment/deployments", serviceDomain, project)
-			targetClusters := deploymentV2.TargetClusters{
-				AppName: &appName,
-				Labels: &map[string]string{
-					extensionLabelKey: extensionLabelValue,
-				},
-			}
-			profileName := extensionProfileName
-			displayName := extensionPackageName
-			deploymentType := extensionDeploymentType
-
-			// Create the request body using deploymentV2.Deployment
-			requestBody := deploymentV2.Deployment{
-				AppName:     extensionPackageName,
-				AppVersion:  extensionAppVersion,
-				ProfileName: &profileName,
-				TargetClusters: &[]deploymentV2.TargetClusters{
-					targetClusters,
-				},
-				DisplayName:    &displayName,
-				DeploymentType: &deploymentType,
-				OverrideValues: nil,
-			}
-
-			// Encode the request body to JSON
-			jsonData, err := json.Marshal(requestBody)
-			Expect(err).ToNot(HaveOccurred())
-
-			// Create the HTTP POST request using makeAuthorizedRequest
-			resp, err := makeAuthorizedRequest(http.MethodPost, url, *edgeMgrToken, jsonData, cli)
-			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
-
-			// Check for expected 200 OK response
-			Expect(resp.StatusCode).To(Equal(http.StatusOK))
-
-			// Decode the response body into deploymentV2.CreateDeploymentResponse
-			var createDeploymentResponse deploymentV2.CreateDeploymentResponse
-			body, err := io.ReadAll(resp.Body)
-			Expect(err).ToNot(HaveOccurred())
-			err = json.Unmarshal(body, &createDeploymentResponse)
-			Expect(err).ToNot(HaveOccurred())
-
-			// Store the DeploymentId for future use
-			baseExtensionLineDeploymentId = createDeploymentResponse.DeploymentId
-			Expect(baseExtensionLineDeploymentId).ToNot(BeEmpty())
-			fmt.Printf("Deployment ID: %s\n", baseExtensionLineDeploymentId)
-		})
-	})
-
-	Describe("Wait for Extension Deployment to be Ready", func() {
-		It("should wait for the extension deployment to be ready", func() {
-			extensionReady := func() (bool, error) {
-				url := fmt.Sprintf(apiBaseURLTemplate+"/appdeployment/deployments/%s", serviceDomain, project, baseExtensionLineDeploymentId)
-
-				// Initiate the GET request using makeAuthorizedRequest
-				resp, err := makeAuthorizedRequest(http.MethodGet, url, *edgeMgrToken, nil, cli)
-				if err != nil {
-					return false, err
-				}
-				defer resp.Body.Close()
-
-				// Expect 200 OK response
-				if resp.StatusCode != http.StatusOK {
-					return false, fmt.Errorf("failed to get cluster info, HTTP status code: %d", resp.StatusCode)
-				}
-
-				// Decode the GET response to deploymentV2.GetDeploymentResponse
-				var deployment deploymentV2.GetDeploymentResponse
-				body, err := io.ReadAll(resp.Body)
-				if err != nil {
-					return false, err
-				}
-				if err = json.Unmarshal(body, &deployment); err != nil {
-					return false, err
-				}
-
-				if deployment.Deployment.Status == nil || deployment.Deployment.Status.State == nil {
-					return false, fmt.Errorf("deployment status or state is nil")
-				}
-
-				// Use Eventually function to wait for deployment to be State_RUNNING
-				if *deployment.Deployment.Status.State != deploymentV2.RUNNING {
-					return false, nil
-				}
-				fmt.Printf("Deployment is ready\n")
-				return true, nil
-			}
-
-			Eventually(func() (bool, error) {
-				return extensionReady()
-			}, 600*time.Second, 10*time.Second).Should(BeTrue(), "timeout reached. deployment not in RUNNING state.")
 		})
 	})
 

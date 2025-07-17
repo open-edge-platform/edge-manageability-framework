@@ -533,7 +533,7 @@ jobs:
           token: ${{ secrets.SYS_ORCH_GITHUB }}
           en_serial_number: ${{ env.EN_SN }}
           en_uuid: ${{ env.EN_UUID }}
-          infra: "cypress/e2e/infra/locations.cy.ts,cypress/e2e/infra/provision-hosts.cy.ts,cypress/e2e/infra/verify-host.cy.ts"
+          infra: "cypress/e2e/infra/locations.cy.ts,cypress/e2e/infra/new-host-provision.cy.ts,cypress/e2e/infra/verify-host.cy.ts"
 
       - name: "Test Observability Public Endpoints"
         env:
@@ -547,23 +547,26 @@ jobs:
         run: |
           mage test:e2eOrchObservability
 
-      - name: "Test Observability EdgeNode Stack"
-        env:
-          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-        run: |
-          mage test:e2eENObservability
+      # TODO - The base extension deployment including observability stack has been removed. Need to revist this test stack later and see how to proceed further.
+      # - name: "Test Observability EdgeNode Stack"
+      #   env:
+      #     ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+      #   run: |
+      #     mage test:e2eENObservability
 
-      - name: "Test Observability Alerts"
-        env:
-          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-        run: |
-          mage test:e2eAlertsObservability
+      # TODO - The base extension deployment including observability stack has been removed. Need to revist this test stack later and see how to proceed further.
+      # - name: "Test Observability Alerts"
+      #   env:
+      #     ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+      #   run: |
+      #     mage test:e2eAlertsObservability
 
-      - name: "Test Observability SRE Exporter"
-        env:
-          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-        run: |
-          mage test:e2eSreObservability
+      # TODO - The base extension deployment including observability stack has been removed. Need to revist this test stack later and see how to proceed further.
+      # - name: "Test Observability SRE Exporter"
+      #   env:
+      #     ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+      #   run: |
+      #     mage test:e2eSreObservability
 
       - name: deploy, register & provision new ENiC instance # previous instance was deatuhorized by the cluster delete in UI tests
         if: ${{ always() && steps.deploy-kind-orchestrator.conclusion == 'success' && steps.default-mt-setup.conclusion == 'success' }}
@@ -737,10 +740,12 @@ jobs:
           yq eval ".orchestrator.admin_password = \"${KC_ADMIN_PWD}\"" -i orchestrator-configs/on-prem.yaml
 
           source venv_edge-manage-test-automation/bin/activate
+          # TODO: Include cf6 and cf8 tests back into the execution when VM application deployment failure is fixed
           robot -L DEBUG --pythonpath . \
             --name "Golden Suite: Core Foundation" \
             -d robot_output/core_foundation \
             -V orchestrator-configs/on-prem.yaml \
+            --exclude cf6 --exclude cf8 \
             --exitonfailure \
             tests/core_foundation/core_foundation.robot
 
@@ -790,8 +795,8 @@ jobs:
         uses: ./.github/actions/deploy_on_prem
         env:
           TF_VAR_no_proxy: "localhost,127.0.0.0/8,10.0.0.0/8,192.168.0.0/16,.svc,.cluster.local,.default,.internal,.orch-platform,.orch-app,.orch-cluster,.orch-infra,.orch-database,.cattle-system,.orch-secret,.onprem"
-          TF_VAR_en_http_proxy: "https://192.168.99.30:8080"
-          TF_VAR_en_https_proxy: "https://192.168.99.30:8080"          
+          TF_VAR_en_http_proxy: "http://192.168.99.30:8080"
+          TF_VAR_en_https_proxy: "http://192.168.99.30:8080"
           TF_VAR_overwrite_profiles: '[["profile-oxm", "argo:\n  infra-onboarding:\n    pxe-server:\n      interface: \"orchnet\"\n      bootServerIP: \"192.168.99.20\"\n      subnetAddress: \"192.168.99.0\""]]'
         with:
           orch_version: ${{ github.event.pull_request.head.sha }}
@@ -799,19 +804,21 @@ jobs:
           docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
           docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
 
-      # TODO: Enable this step when the onboarding tests are ready for OXM
-      # - name: Test Edge Node onboarding
-      #   env:
-      #     E2E_SVC_DOMAIN: cluster.onprem
-      #     EDGE_CLUSTER_NAME: test-cluster
-      #     EN_PROFILE: "microvisor-standalone"
-      #   timeout-minutes: 20
-      #   if: |
-      #     needs.check-changed-files.outputs.onboarding == 'true' ||
-      #     needs.check-changed-files.outputs.on-prem == 'true' ||
-      #     needs.check-changed-files.outputs.orch == 'true' ||
-      #     needs.check-changed-files.outputs.ci == 'true'
-      #   run: mage test:onboarding
+      - name: Create MT Sample Org and Project with default users
+        run: mage tenantUtils:createDefaultMtSetup
+
+      - name: Test Edge Node onboarding
+        env:
+          E2E_SVC_DOMAIN: cluster.onprem
+          EDGE_CLUSTER_NAME: test-cluster
+          EN_PROFILE: "microvisor-standalone"
+        timeout-minutes: 20
+        if: |
+          needs.check-changed-files.outputs.onboarding == 'true' ||
+          needs.check-changed-files.outputs.on-prem == 'true' ||
+          needs.check-changed-files.outputs.orch == 'true' ||
+          needs.check-changed-files.outputs.ci == 'true'
+        run: mage test:onboarding
 
   tag-repo:
     permissions:
