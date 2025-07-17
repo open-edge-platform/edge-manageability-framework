@@ -315,30 +315,23 @@ cleanup_gitea_secrets() {
 # Function to delete Vault pod and unseal it when it comes back
 delete_and_unseal_vault() {
   local namespace="orch-platform"
-  local pod_label="app.kubernetes.io/name=vault"
+  local pod_name="vault-0"
 
-  echo "Deleting Vault pod(s) in namespace: $namespace"
-  kubectl delete pod -n "$namespace" -l "$pod_label"
+  echo "Deleting Vault pod: $pod_name in namespace: $namespace"
+  kubectl delete pod -n "$namespace" "$pod_name"
 
-  echo "Waiting for Vault pod(s) to be in Running phase..."
-  while true; do
-    pod_phase=$(kubectl get pods -n "$namespace" -l "$pod_label" -o jsonpath='{.items[0].status.phase}' 2>/dev/null)
-    if [[ "$pod_phase" == "Running" ]]; then
-      echo "✅ Vault pod is Running."
-      break
-    else
-      echo "⏳ Current phase: $pod_phase ... waiting..."
-      sleep 5
-    fi
-  done
+  echo "Waiting for pod '$pod_name' in namespace '$namespace' to be in Running state..."
 
-
-  echo "Waiting 40 seconds for pod: $pod_name to restart..."
-  sleep 40
-  echo "Fetching new Vault pod name..."
-  pod_name=$(kubectl get pods -n "$namespace" -l "$pod_label" -o jsonpath='{.items[0].metadata.name}')
-  echo "New Vault pod is: $pod_name"
-
+while true; do
+  status=$(kubectl get pod "$pod_name" -n "$namespace" 2>/dev/null | grep Running)
+  if [[ -n "$status" ]]; then
+    echo "Pod '$pod_name' is Running."
+    break
+  else
+    echo "Still waiting... checking again in 5 seconds."
+    sleep 5
+  fi
+done
 
   echo "Fetching Vault unseal keys..."
   keys=$(kubectl -n "$namespace" get secret vault-keys -o jsonpath='{.data.vault-keys}' | base64 -d | jq '.keys_base64 | .[]' | sed 's/"//g')
@@ -348,20 +341,13 @@ delete_and_unseal_vault() {
     kubectl -n "$namespace" exec -i "$pod_name" -- vault operator unseal "$key"
   done
 
-  echo "Verifying Vault pod is Running..."
-  while true; do
-    pod_phase=$(kubectl get pods -n "$namespace" -l "$pod_label" -o jsonpath='{.items[0].status.phase}' 2>/dev/null)
-    if [[ "$pod_phase" == "Running" ]]; then
-      echo "✅ Vault pod is Running."
-      break
-    else
-      echo "⏳ Current phase: $pod_phase ... waiting..."
-      sleep 5
-    fi
-  done
+  echo "Waiting for Vault pod to be Ready..."
+  kubectl wait pod -n "$namespace" -l "app.kubernetes.io/name=vault" \
+    --for=condition=Ready --timeout=300s
 
-  echo "✅ Vault pod restarted and unsealed successfully."
+  echo "Vault pod restarted and unsealed successfully."
 }
+
 
 usage() {
     cat >&2 <<EOF
