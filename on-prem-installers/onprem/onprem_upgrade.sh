@@ -27,6 +27,7 @@ set -o pipefail
 # Import shared functions
 # shellcheck disable=SC1091
 source "$(dirname "${0}")/functions.sh"
+# shellcheck disable=SC1091
 source "$(dirname "${0}")/upgrade_postgres.sh"
 
 ### Constants
@@ -47,6 +48,7 @@ si_config_repo="edge-manageability-framework"
 apps_ns=onprem
 argo_cd_ns=argocd
 gitea_ns=gitea
+# shellcheck disable=SC2034
 root_app=root-app
 
 # Variables that depend on the above and might require updating later, are placed in here
@@ -163,6 +165,7 @@ check_orch_install() {
             exit 1
         fi
 
+        # shellcheck disable=SC2034
         installed_ver=$(dpkg-query -W -f='${Version}' "$package_name")
         incoming_ver="${package#*:}"
         incoming_ver="${incoming_ver#v}"
@@ -312,13 +315,30 @@ cleanup_gitea_secrets() {
 # Function to delete Vault pod and unseal it when it comes back
 delete_and_unseal_vault() {
   local namespace="orch-platform"
-  local pod_name="vault-0"
+  local pod_label="app.kubernetes.io/name=vault"
 
-  echo "Deleting Vault pod: $pod_name in namespace: $namespace"
-  kubectl delete pod -n "$namespace" "$pod_name"
+  echo "Deleting Vault pod(s) in namespace: $namespace"
+  kubectl delete pod -n "$namespace" -l "$pod_label"
+
+  echo "Waiting for Vault pod(s) to be in Running phase..."
+  while true; do
+    pod_phase=$(kubectl get pods -n "$namespace" -l "$pod_label" -o jsonpath='{.items[0].status.phase}' 2>/dev/null)
+    if [[ "$pod_phase" == "Running" ]]; then
+      echo "✅ Vault pod is Running."
+      break
+    else
+      echo "⏳ Current phase: $pod_phase ... waiting..."
+      sleep 5
+    fi
+  done
+
 
   echo "Waiting 40 seconds for pod: $pod_name to restart..."
   sleep 40
+  echo "Fetching new Vault pod name..."
+  pod_name=$(kubectl get pods -n "$namespace" -l "$pod_label" -o jsonpath='{.items[0].metadata.name}')
+  echo "New Vault pod is: $pod_name"
+
 
   echo "Fetching Vault unseal keys..."
   keys=$(kubectl -n "$namespace" get secret vault-keys -o jsonpath='{.data.vault-keys}' | base64 -d | jq '.keys_base64 | .[]' | sed 's/"//g')
@@ -327,12 +347,20 @@ delete_and_unseal_vault() {
   for key in $keys; do
     kubectl -n "$namespace" exec -i "$pod_name" -- vault operator unseal "$key"
   done
-  
-  echo "Waiting for Vault pod to be Ready..."
-  kubectl wait pod -n "$namespace" -l "app.kubernetes.io/name=vault" \
-    --for=condition=Ready --timeout=300s
 
-  echo "Vault pod restarted and unsealed successfully."
+  echo "Verifying Vault pod is Running..."
+  while true; do
+    pod_phase=$(kubectl get pods -n "$namespace" -l "$pod_label" -o jsonpath='{.items[0].status.phase}' 2>/dev/null)
+    if [[ "$pod_phase" == "Running" ]]; then
+      echo "✅ Vault pod is Running."
+      break
+    else
+      echo "⏳ Current phase: $pod_phase ... waiting..."
+      sleep 5
+    fi
+  done
+
+  echo "✅ Vault pod restarted and unsealed successfully."
 }
 
 usage() {
@@ -360,6 +388,7 @@ EOF
 ##### UPGRADE SCRIPT START #####
 ################################
 
+# shellcheck disable=SC2034
 while getopts 'v:hbol' flag; do
     case "${flag}" in
     h) HELP='true' ;;
@@ -378,13 +407,13 @@ fi
 
 # Check if postgres is running and if it is safe to backup
 check_postgres
-if [[ $? -ne 0 ]]; then
+if ! check_postgres; then
     echo "PostgreSQL is not running or backup file already exists. Exiting..."
     exit 1
 fi
 
 # Perform postgreSQL backup
-kubectl get secret -n $postgres_namespace postgresql -o yaml > postgres_secret.yaml
+kubectl get secret -n orch-database postgresql -o yaml > postgres_secret.yaml
 
 # delete gitea secrets before backup
 cleanup_gitea_secrets
@@ -671,7 +700,7 @@ set +e
 while true; do
     echo "Checking PostgreSQL pod status..."
     podname=$(kubectl get pods -n orch-database -l app.kubernetes.io/name=postgresql -o jsonpath='{.items[0].metadata.name}')
-    pod_status=$(kubectl get pods -n orch-database $podname -o jsonpath='{.status.phase}')
+    pod_status=$(kubectl get pods -n orch-database "$podname" -o jsonpath='{.status.phase}')
     if [[ "$pod_status" == "Running" ]]; then
         echo "PostgreSQL pod is Running."
         sleep 30
