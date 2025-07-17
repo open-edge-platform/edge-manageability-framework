@@ -86,6 +86,15 @@ loca-templates-manager:
 {{- end }}
 
 amt:
+  dm-manager:
+    traefikReverseProxy:
+      host:
+        grpc:
+          name: "device-manager-node.{{ .Values.argo.clusterDomain }}"
+  {{- if .Values.argo.traefik }}
+    tlsOption: {{ .Values.argo.traefik.tlsOption | default "" | quote }}
+  {{- end }}
+
   mps:
     postgresql:
       type: {{ .Values.argo.database.type }}
