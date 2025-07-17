@@ -30,7 +30,7 @@ MINIO_BUCKET="velero-backups"
 backup_namespace_list=(  
   #"orch-boots"
   "orch-database"
-  "gitea"
+  #"gitea"
   "orch-platform"
   #"orch-app"
   #"orch-cluster"
