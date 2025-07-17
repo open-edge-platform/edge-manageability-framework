@@ -58,20 +58,21 @@ Let us now analyze the device activation, the user must do the following steps b
 
 ```mermaid
 sequenceDiagram
-    title DMT provisioning through Agent
+    title DMT Provisioning Through Agent
+
     actor us as User
-  
+
     box rgb(173, 216, 230) Orchestrator Components
-    participant inv as Inventory
-    participant ps as Provisioning
-    participant dm as Device Management
-    participant mps as Management Presence Server
-    participant rps as Remote Provisioning Server
+        participant inv as Inventory
+        participant ps as Provisioning
+        participant dm as Device Management
+        participant mps as Management Presence Server
+        participant rps as Remote Provisioning Server
     end
- 
+
     box rgb(144, 238, 144) Edge Node Components
-    participant en as Edge Node
-    participant agent as Platform Manageability Agent
+        participant en as Edge Node
+        participant agent as Platform Manageability Agent
     end
 
     us ->> en: 1. Boot device
@@ -83,32 +84,38 @@ sequenceDiagram
     deactivate ps
     deactivate en
 
-    en ->> en: 5. OS installation (Agent RPMs included)
+    en ->> en: 5. OS installation (includes Agent RPMs)
     en ->> agent: 6. Install/Enable Agent as part of OS
 
-    Note right of agent: AMT eligibility and capability introspection<br>performed by Agent after install
+    Note right of agent: Agent performs AMT eligibility & capability introspection
 
     alt Device supports vPRO/ISM
-        agent ->> dm: 7. Report DMT status [Supported/Enabled]
-        dm ->> inv: 8. Update DMT Status ENABLED (Supported)
+        agent ->> dm: 7. Report DMT status as Supported/Enabled
+        dm ->> inv: 8. Update DMT Status as SUPPORTED and Populate AMTInfo
+
         us ->> dm: 9. Request activation via API
         dm ->> agent: 10. Provide activation profile name
-        agent ->> agent: 11. Activate/Enable LMS  
+
+        Note right of agent: Activation is async (periodic ticker)
+
+        agent ->> agent: 11. Activate/Enable LMS (periodic)
         agent ->> rps: 12. Initiate RPC activate command
         activate rps
-        rps ->> agent: 13. Success/Configured
+        rps ->> agent: 13. Success / Configured
         deactivate rps
-        agent ->> dm: 14. Report AMT status (Provisioned)
-        dm ->> inv: 15. Update AMT Status IN_PROGRESS (Connecting)
-        dm ->> inv: 16. Update AMT CurrentState Provisioned
-    else [Device is not eligible]
-        agent ->> dm: 7a. Report DMT status (Not Supported)
-        dm ->> inv: 7b. Update DMT Status ERROR (Not Supported)
+
+        agent ->> dm: 14. Report AMT status as Activated
+        dm ->> inv: 15. Update AMT Status as IN_PROGRESS (Connecting)
+        dm ->> inv: 16. Update AMT CurrentState as Provisioned
+
+    else Device not eligible
+        agent ->> dm: 7a. Report DMT status as Not Supported
+        dm ->> inv: 7b. Update DMT Status as ERROR (Not Supported)
     end
 
     alt Failure during activation
-        agent ->> dm: 12a. Report DMT status (Failure)
-        dm ->> inv: 12b. Update DMT Status FAILURE
+        agent ->> dm: 12a. Report DMT status as FAILURE
+        dm ->> inv: 12b. Update DMT Status as FAILURE
     end
 ```
 
