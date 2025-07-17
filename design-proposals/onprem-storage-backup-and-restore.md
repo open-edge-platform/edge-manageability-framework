@@ -20,7 +20,9 @@ Kubernetes nodes using the OpenEBS HostPath provisioner. This approach is
 simple to set up and is suitable for development or testing environments,
 but it may not provide the durability or scalability required for
 production workloads, since data is tied to the specific node where it was
-created. Furthermore, in case that the node that runs the orchestrator fails during the upgrade, currently it becomes difficult to rollback to a previous version.
+created. 
+
+Furthermore, in case that the node that runs the orchestrator fails during the upgrade, currently it becomes difficult to rollback to a previous version.
 
 ## Proposal
 
