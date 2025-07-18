@@ -41,10 +41,11 @@ infra-config:
     orchRegistry: {{ .Values.argo.releaseService.ociRegistry }}:9443
     orchFileServer: {{ .Values.argo.releaseService.fileServer }}:60444
     # TODO: Revisit the below routes - limit exposure and switch to MT GW endpoints.
-    orchMPSHost: mps-node.{{ .Values.argo.clusterDomain }}:4433
-    orchMPSWHost: mps-webport-node.{{ .Values.argo.clusterDomain }}:443
-    orchRPSHost: rps-node.{{ .Values.argo.clusterDomain }}:443
-    orchRPSWHost: rps-webport-node.{{ .Values.argo.clusterDomain }}:443
+    orchMPSHost: mps.{{ .Values.argo.clusterDomain }}:4433
+    orchMPSWHost: mps-wss.{{ .Values.argo.clusterDomain }}:443
+    orchRPSHost: rps.{{ .Values.argo.clusterDomain }}:443
+    orchRPSWHost: rps-wss.{{ .Values.argo.clusterDomain }}:443
+    orchDeviceManager: device-manager-node.{{ .Values.argo.clusterDomain }}:443
 
     rsType: "{{ index .Values.argo "infra-onboarding" "rsType" | default "no-auth" }}"
     netIp: "{{ index .Values.argo "infra-onboarding" "netIp" | default "dynamic" }}"
