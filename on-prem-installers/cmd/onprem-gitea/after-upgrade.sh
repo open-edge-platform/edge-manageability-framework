@@ -49,8 +49,9 @@ processCerts() {
   san=$(processSAN "$@")
   # Generate the certificate with the name infra-tls.crt
   $openssl req -key "$tmpDir/infra-tls.key" -new -x509 -days 365 -out "$tmpDir/infra-tls.crt" -subj "/C=US/O=Orch Deploy/OU=Open Edge Platform" -addext "$san"
-  cp "${tmpDir}"/infra-tls.crt /usr/local/share/ca-certificates/gitea_cert.crt
-  update-ca-certificates
+  cp -f "${tmpDir}"/infra-tls.crt /usr/local/share/ca-certificates/gitea_cert.crt
+
+  update-ca-certificates -f
 
   # Create a tls secret with custom key names
   kubectl create secret tls gitea-tls-certs -n gitea \
@@ -100,9 +101,10 @@ createGiteaAccount() {
     kubectl exec -n gitea "$giteaPod" -c gitea -- gitea admin user change-password --username "$accountName" --password "$password" --must-change-password=false
   fi
 
+  echo "No Gitea pods found. Exiting."
   userToken=$(kubectl exec -n gitea "$giteaPod" -c gitea -- gitea admin user generate-access-token --scopes write:repository,write:user --username "$accountName" --token-name "${accountName}-$(date +%s)")
   token=$(echo "$userToken" | awk '{print $NF}')
-  kubectl create secret generic gitea-"$accountName"-token -n gitea --from-literal=token="$token"
+  kubectl create secret generic gitea-"$accountName"-token -n gitea --from-literal=token="$token" --dry-run=client -o yaml | kubectl apply -f -
 }
 
 kubectl create ns gitea >/dev/null 2>&1 || true
