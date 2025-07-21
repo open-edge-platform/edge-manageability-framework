@@ -664,7 +664,7 @@ jobs:
       github.ref == 'refs/heads/main-pass-validation'
       )
     runs-on: ubuntu-22.04-32core-128GB
-    timeout-minutes: 120
+    timeout-minutes: 90
     env:
       KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
     steps:
@@ -781,7 +781,7 @@ jobs:
       github.ref == 'refs/heads/main-pass-validation'
       )
     runs-on: ubuntu-22.04-16core-64GB
-    timeout-minutes: 120
+    timeout-minutes: 90
     env:
       KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
     steps:
@@ -797,7 +797,9 @@ jobs:
           TF_VAR_no_proxy: "localhost,127.0.0.0/8,10.0.0.0/8,192.168.0.0/16,.svc,.cluster.local,.default,.internal,.orch-platform,.orch-app,.orch-cluster,.orch-infra,.orch-database,.cattle-system,.orch-secret,.onprem"
           TF_VAR_en_http_proxy: "http://192.168.99.30:8080"
           TF_VAR_en_https_proxy: "http://192.168.99.30:8080"
-          TF_VAR_overwrite_profiles: '[["profile-oxm", "argo:\n  infra-onboarding:\n    pxe-server:\n      interface: \"orchnet\"\n      bootServerIP: \"192.168.99.20\"\n      subnetAddress: \"192.168.99.0\""]]'
+          PXE_INTERFACE: "orchnet"
+          PXE_BOOT_SERVER_IP: "192.168.99.20"
+          PXE_SUBNET_ADDRESS: "192.168.99.0"
         with:
           orch_version: ${{ github.event.pull_request.head.sha }}
           orch_profile: onprem-oxm
