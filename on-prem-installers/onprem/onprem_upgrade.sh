@@ -23,11 +23,50 @@
 set -e
 set -o pipefail
 
+# Setup logging - capture all output to log file while still displaying on console
+LOG_FILE="onprem_upgrade_$(date +'%Y%m%d_%H%M%S').log"
+LOG_DIR="/var/log/orch-upgrade"
+
+# Create log directory if it doesn't exist
+sudo mkdir -p "$LOG_DIR"
+sudo chown "$(whoami):$(whoami)" "$LOG_DIR"
+
+# Full path to log file
+FULL_LOG_PATH="$LOG_DIR/$LOG_FILE"
+
+# Function to log messages with timestamp
+log_message() {
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] $*" | tee -a "$FULL_LOG_PATH"
+}
+
+# Function to log info messages
+log_info() {
+    log_message "INFO: $*"
+}
+
+# Function to log warning messages
+log_warn() {
+    log_message "WARN: $*"
+}
+
+# Function to log error messages
+log_error() {
+    log_message "ERROR: $*"
+}
+
+# Redirect all output to both console and log file
+exec > >(tee -a "$FULL_LOG_PATH")
+exec 2> >(tee -a "$FULL_LOG_PATH" >&2)
+
+log_info "Starting OnPrem Edge Orchestrator upgrade script"
+log_info "Log file: $FULL_LOG_PATH"
+
 # Import shared functions
 # shellcheck disable=SC1091
 source "$(dirname "${0}")/functions.sh"
 # shellcheck disable=SC1091
 source "$(dirname "${0}")/upgrade_postgres.sh"
+# shellcheck disable=SC1091
 source "$(dirname "${0}")/vault_unseal.sh"
 ### Constants
 RELEASE_SERVICE_URL="${RELEASE_SERVICE_URL:-registry-rs.edgeorchestration.intel.com}"
@@ -85,19 +124,19 @@ retrieve_and_apply_config() {
 
     while true; do
         if [[ -z ${ARGO_IP} ]]; then
-            echo "Enter Argo IP:"
+            log_info "Enter Argo IP:"
             read -r ARGO_IP
             export ARGO_IP
         fi
 
         if [[ -z ${TRAEFIK_IP} ]]; then
-            echo "Enter Traefik IP:"
+            log_info "Enter Traefik IP:"
             read -r TRAEFIK_IP
             export TRAEFIK_IP
         fi
 
         if [[ -z ${NGINX_IP} ]]; then
-            echo "Enter Nginx IP:"
+            log_info "Enter Nginx IP:"
             read -r NGINX_IP
             export NGINX_IP
         fi
