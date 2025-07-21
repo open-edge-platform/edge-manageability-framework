@@ -28,7 +28,7 @@ set -o pipefail
 source "$(dirname "${0}")/functions.sh"
 # shellcheck disable=SC1091
 source "$(dirname "${0}")/upgrade_postgres.sh"
-
+source "$(dirname "${0}")/vault_unseal.sh"
 ### Constants
 RELEASE_SERVICE_URL="${RELEASE_SERVICE_URL:-registry-rs.edgeorchestration.intel.com}"
 ORCH_INSTALLER_PROFILE="${ORCH_INSTALLER_PROFILE:-onprem}"
@@ -310,43 +310,6 @@ cleanup_gitea_secrets() {
 
   echo "Secret cleanup completed."
 }
-
-# Function to delete Vault pod and unseal it when it comes back
-delete_and_unseal_vault() {
-  local namespace="orch-platform"
-  local pod_name="vault-0"
-
-  echo "Deleting Vault pod: $pod_name in namespace: $namespace"
-  kubectl delete pod -n "$namespace" "$pod_name"  
-  echo "Waiting for pod '$pod_name' in namespace '$namespace' to be in Running state..."
-  sleep 30
-
-while true; do
-  status=$(kubectl get pod "$pod_name" -n "$namespace" 2>/dev/null | grep Running)
-  if [[ -n "$status" ]]; then
-    echo "Pod '$pod_name' is Running."
-    break
-  else
-    echo "Still waiting... checking again in 5 seconds."
-    sleep 5
-  fi
-done
-
-  echo "Fetching Vault unseal keys..."
-  keys=$(kubectl -n "$namespace" get secret vault-keys -o jsonpath='{.data.vault-keys}' | base64 -d | jq '.keys_base64 | .[]' | sed 's/"//g')
-
-  echo "Unsealing Vault..."
-  for key in $keys; do
-    kubectl -n "$namespace" exec -i "$pod_name" -- vault operator unseal "$key"
-  done
-
-  echo "Waiting for Vault pod to be Ready..."
-  kubectl wait pod -n "$namespace" -l "app.kubernetes.io/name=vault" \
-    --for=condition=Ready --timeout=300s
-
-  echo "Vault pod restarted and unsealed successfully."
-}
-
 
 usage() {
     cat >&2 <<EOF
@@ -707,11 +670,8 @@ set -e
 # Now that PostgreSQL is running, we can restore the secret
 restore_postgres
 
-## Vault Delete and Unseal
-delete_and_unseal_vault
-
-## delete platform-keycloak
-kubectl delete pod --ignore-not-found=true -n orch-platform platform-keycloak-0
+## Vault Unseal
+vault_unseal
 
 echo "Upgrade completed! Wait for ArgoCD applications to be in 'Healthy' state"
 
