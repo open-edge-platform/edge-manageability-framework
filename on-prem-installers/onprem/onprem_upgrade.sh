@@ -7,7 +7,6 @@
 # Script Name: onprem_upgrade.sh
 # Description: This script:
 #               If requested - does a backup of PVs and cluster's ETCD
-#               Reads AZURE AD refresh_token credential from user input,
 #               Downloads debian packages and repo artifacts,
 #               Upgrades packages to v3.1.0:
 #                 - OS config,
