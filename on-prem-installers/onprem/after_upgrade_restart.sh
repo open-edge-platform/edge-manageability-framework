@@ -63,6 +63,7 @@ kubectl get clustertemplate -A
 }
 #restart pod after upgrade call:
 restart_and_wait_pod "orch-iam" "nexus-api-gw"
+restart_and_wait_pod "orch-cluster" "cluster-manager"
 restart_and_wait_pod "orch-cluster" "cluster-manager-template-controller"
 restart_and_wait_pod "orch-app" "app-orch-tenant-controller"
 #delete old cluster template
