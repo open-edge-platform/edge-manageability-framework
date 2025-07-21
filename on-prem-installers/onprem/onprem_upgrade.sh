@@ -673,10 +673,11 @@ delete_postgres
 # Stop sync operation for root-app, so it won't be synced with the old version of the application.
 kubectl patch application root-app -n "$apps_ns" --type merge -p '{"operation":null}'
 kubectl patch application root-app -n "$apps_ns" --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
-sleep 10
+sleep 30
 kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/sync-postgresql-patch.yaml --type merge
-
+sleep 30
 patch_secret
+sleep 10
 
 # Restore secret after app delete but before postgress restored
 yq e 'del(.metadata.labels, .metadata.annotations, .metadata.uid, .metadata.creationTimestamp)' postgres_secret.yaml | kubectl apply -f -
