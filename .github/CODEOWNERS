@@ -7,7 +7,7 @@
 # someone opens a pull request.
 
 # Everything requires Platform team review by default
-* @johnoloughlin @garyloug @palade @rranjan3 @krishnajs @hyunsun @scottmbaker @damiankopyto @cjnolan @SushilLakra @sys-orch-approve @soniabha-intc
+* @johnoloughlin @garyloug @palade @rranjan3 @krishnajs @hyunsun @scottmbaker @damiankopyto @cjnolan @SushilLakra @soniabha-intc @guptagunjan @sys-orch-approve
 
 # Dependabot is used to manage dependencies in this repository. It is configured to automatically open pull requests to
 # update dependencies when new versions are available. The following files are managed by Dependabot and do not require
