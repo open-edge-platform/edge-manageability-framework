@@ -318,9 +318,9 @@ delete_and_unseal_vault() {
   local pod_name="vault-0"
 
   echo "Deleting Vault pod: $pod_name in namespace: $namespace"
-  kubectl delete pod -n "$namespace" "$pod_name"
-
+  kubectl delete pod -n "$namespace" "$pod_name"  
   echo "Waiting for pod '$pod_name' in namespace '$namespace' to be in Running state..."
+  sleep 30
 
 while true; do
   status=$(kubectl get pod "$pod_name" -n "$namespace" 2>/dev/null | grep Running)
