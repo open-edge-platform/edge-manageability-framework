@@ -104,5 +104,6 @@ amt:
       # User-provided password
       # Should have One uppercase letter, one lowercase letter, one digit, one special character, and be at least 8 characters long.
       password: "P@ssw0rd"
+    useToken: true
     keycloakServer: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
     vaultServer: "http://vault.orch-platform.svc.cluster.local:8200"
