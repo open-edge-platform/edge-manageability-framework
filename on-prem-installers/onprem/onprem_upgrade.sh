@@ -522,13 +522,15 @@ IAM_TENANCY=$(kubectl get secret iam-tenancy-local-postgresql -n orch-iam -o jso
 PLATFORM_KEYCLOAK=$(kubectl get secret platform-keycloak-local-postgresql -n orch-platform -o jsonpath='{.data.PGPASSWORD}')
 VAULT=$(kubectl get secret vault-local-postgresql -n orch-platform -o jsonpath='{.data.PGPASSWORD}')
 POSTGRESQL=$(kubectl get secret postgresql -n orch-database -o jsonpath='{.data.postgres-password}')
-echo "Alerting: $ALERTING"  > postgres-secrets-password.txt
-echo "CatalogService: $CATALOG_SERVICE" >> postgres-secrets-password.txt
-echo "Inventory: $INVENTORY" >> postgres-secrets-password.txt
-echo "IAMTenancy: $IAM_TENANCY" >> postgres-secrets-password.txt
-echo "PlatformKeycloak: $PLATFORM_KEYCLOAK" >> postgress-secrets-password.txt
-echo "Vault: $VAULT" >> postgres-secrets-password.txt
-echo "PostgreSQL: $POSTGRESQL" >> postgres-secrets-password.txt
+{
+    echo "Alerting: $ALERTING"
+    echo "CatalogService: $CATALOG_SERVICE"
+    echo "Inventory: $INVENTORY"
+    echo "IAMTenancy: $IAM_TENANCY"
+    echo "PlatformKeycloak: $PLATFORM_KEYCLOAK"
+    echo "Vault: $VAULT"
+    echo "PostgreSQL: $POSTGRESQL"
+} > postgres-secrets-password.txt
 
 # Idea is the same as in postrm_patch but for orch-installer whole new script is required
 sudo tee /var/lib/dpkg/info/onprem-orch-installer.postrm >/dev/null <<'EOF'
