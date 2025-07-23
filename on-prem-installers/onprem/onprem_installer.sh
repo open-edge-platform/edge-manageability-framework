@@ -411,6 +411,15 @@ write_configs_using_overrides() {
     yq -i '.argo.o11y.alertingMonitor.smtp.insecureSkipVerify|=true' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
   fi
 
+  # Patch PXE configuration if profile is onprem-oxm
+  if [[ "$ORCH_INSTALLER_PROFILE" == "onprem-oxm" ]]; then
+    config_file="$tmp_dir/$si_config_repo/orch-configs/clusters/$ORCH_INSTALLER_PROFILE.yaml"
+    yq -i '.argo."infra-onboarding"."pxe-server".enabled = true' "$config_file"
+    yq -i '.argo."infra-onboarding"."pxe-server".interface = strenv(PXE_INTERFACE)' "$config_file"
+    yq -i '.argo."infra-onboarding"."pxe-server".bootServerIP = strenv(PXE_BOOT_SERVER_IP)' "$config_file"
+    yq -i '.argo."infra-onboarding"."pxe-server".subnetAddress = strenv(PXE_SUBNET_ADDRESS)' "$config_file"
+  fi
+
   # Override MetalLB address pools
   yq -i '.postCustomTemplateOverwrite.metallb-config.ArgoIP|=strenv(ARGO_IP)' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
   yq -i '.postCustomTemplateOverwrite.metallb-config.TraefikIP|=strenv(TRAEFIK_IP)' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
