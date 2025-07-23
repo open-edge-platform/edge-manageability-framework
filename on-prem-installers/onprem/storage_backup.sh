@@ -88,10 +88,10 @@ disable_sync() {
     kubectl patch application "root-app" -n onprem --type merge -p '{"spec":{"syncPolicy":null}}'
 
     for ns in "${backup_namespace_list[@]}"; do
-        kubectl get applications -A -o yaml | yq ".items[] | select(.spec.destination.namespace == \"$ns\") | .metadata.name" | while read -r app; do
+        while read -r app; do
             echo "Disable sync on $app"
             kubectl patch application "$app" -n onprem --type merge -p '{"spec":{"syncPolicy":null}}'
-        done
+        done < <(kubectl get applications -A -o yaml | yq ".items[] | select(.spec.destination.namespace == \"$ns\") | .metadata.name")
     done
 }
 
@@ -102,10 +102,10 @@ enable_sync() {
     fi
 
     for ns in "${backup_namespace_list[@]}"; do
-        kubectl get applications -A -o yaml | yq ".items[] | select(.spec.destination.namespace == \"$ns\") | .metadata.name" | while read -r app; do
+        while read -r app; do
             echo "Enabling sync on $app"
             kubectl patch application "$app" -n onprem --type merge -p '{"spec":{"syncPolicy":{"automated":{"prune":true,"selfHeal":true}}}}'
-        done
+        done < <(kubectl get applications -A -o yaml | yq ".items[] | select(.spec.destination.namespace == \"$ns\") | .metadata.name")
     done
 
     # root-app is the root application that manages all other applications
@@ -121,7 +121,7 @@ cleanup() {
 
     namespaces=$(IFS=, ; echo "${backup_namespace_list[*]}")
     echo "You are about to delete all resources in the following namespaces: $namespaces"
-    read -p "Are you sure you want to proceed? (yes/no): " confirm
+    read -r -p "Are you sure you want to proceed? (yes/no): " confirm
     if [[ "$confirm" != "yes" ]]; then
         echo "Cleanup aborted."
         return
@@ -146,11 +146,6 @@ EOF
 }
 
 download_velero() {
-    if [[ -d "$VELERO_DIR" ]]; then
-        echo "Velero directory already exists. Skipping download."
-        return
-    fi
-
     if $VELERO_BIN --version &>/dev/null; then
         echo "Velero is already installed. Skipping download."
         return
@@ -175,7 +170,7 @@ install_velero() {
     fi
 
     "$VELERO_BIN" install \
-        --kubeconfig $kubeconfig \
+        --kubeconfig "$kubeconfig" \
         --provider aws \
         --plugins velero/velero-plugin-for-aws:v1.1.0 \
         --bucket "$MINIO_BUCKET" \
@@ -183,7 +178,7 @@ install_velero() {
         --use-volume-snapshots=false \
         --use-node-agent \
         --default-volumes-to-fs-backup \
-        --backup-location-config region=minio,s3ForcePathStyle="true",s3Url="$MINIO_URL"
+        --backup-location-config "region=minio,s3ForcePathStyle=true,s3Url=$MINIO_URL"
 }
 
 backup() {
