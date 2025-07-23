@@ -19,8 +19,8 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
-    - repoURL: https://github.com/open-edge-platform/orch-utils
-      path: charts/{{$appName}}
+    - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
+      chart: common/charts/{{$appName}}
       targetRevision: dm_ingress
       helm:
         releaseName: {{$appName}}

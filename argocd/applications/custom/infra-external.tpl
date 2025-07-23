@@ -99,7 +99,7 @@ amt:
     postgresql:
       type: {{ .Values.argo.database.type }}
       ssl: "{{ .Values.argo.database.ssl }}"
-    commonName: "mps-node.{{ .Values.argo.clusterDomain }}"
+    commonName: "mps.{{ .Values.argo.clusterDomain }}"
     traefikReverseProxy:
       host:
         cira:
