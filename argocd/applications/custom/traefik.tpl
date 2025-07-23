@@ -41,6 +41,8 @@ ports:
       {{- end }}
       {{- end }}
   tcpamt:
+    middlewaretcp:
+      - orch-gateway-tcp-rate-limit@kubernetescrd
     port: 4433
     exposedPort: 4433
     expose: true
