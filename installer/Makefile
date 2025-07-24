@@ -38,8 +38,6 @@ ARGO_IP   ?= 127.0.0.1
 ARGO_PORT ?= 32443
 ARGO_VERSION ?= 8.0.0
 
-USE_TEST_ADMIN ?= false
-
 HARBOR_PASSWORD := $(shell head -c 512 /dev/urandom | tr -dc A-Za-z0-9 | cut -c1-100)
 KEYCLOAK_PASSWORD := $(shell  head -c 512 /dev/urandom | tr -dc 'A-Za-z0-9!@#$%^&*()_+|:<>?=' | cut -c1-14)
 
@@ -136,9 +134,7 @@ upgrade: | ${M}/release-secrets ${M}/argocd-ready
 		--values ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/bootstrap/argocd.yaml \
 		--values ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/bootstrap/nodeport.yaml ${ARGO_PROXY} ${ARGO_REGISTRY_CERTS} ${ARGO_TEST_SESSION} \
 		--create-namespace --wait
-	@if [ "${USE_TEST_ADMIN}" = "true" ]; then\
-		kubectl -n argocd patch secret argocd-secret --type='merge' -p '{"stringData": {"admin.password": "${ARGO_AUTH_BCRYPT}"}}';\
-	fi
+	@[ "${USE_TEST_ADMIN}" = "true" ] && kubectl -n argocd patch secret argocd-secret --type='merge' -p '{"stringData": {"admin.password": "${ARGO_AUTH_BCRYPT}"}}';
 	@[ -z "${TARGET_ENV}" ] && echo "*** TARGET_ENV not set" && exit 1 || true
 	helm upgrade --install root-app ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/argocd/root-app -n ${TARGET_ENV} -f ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/orch-configs/clusters/${TARGET_ENV}.yaml --create-namespace
 
