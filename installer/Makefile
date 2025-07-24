@@ -109,7 +109,7 @@ ${M}/argocd-release: | ${M}/create-namespaces ${M}/release-secrets ${M}/keycloak
 		${ARGO_PROXY} ${ARGO_REGISTRY_CERTS} ${ARGO_TEST_SESSION} \
 		--create-namespace --wait
 ifeq (${USE_TEST_ADMIN},true)
-	@kubectl -n argocd patch secret argocd-secret --type='merge' -p '{"stringData": {"admin.password": "${ARGO_AUTH_BCRYPT}"}}'
+	kubectl -n argocd patch secret argocd-secret --type='merge' -p '{"stringData": {"admin.password": "${ARGO_AUTH_BCRYPT}"}}'
 endif
 	touch $@
 
