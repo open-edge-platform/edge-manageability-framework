@@ -268,6 +268,12 @@ resource "null_resource" "copy_files" {
   }
 
   provisioner "file" {
+    source      = "../../${var.working_directory}/on-prem-installers/onprem/onprem_upgrade.sh"
+    destination = "/home/ubuntu/onprem_upgrade.sh"
+    when        = create
+  }
+
+  provisioner "file" {
     source      = "../../${var.working_directory}/on-prem-installers/onprem/storage_backup.sh"
     destination = "/home/ubuntu/storage_backup.sh"
     when        = create
@@ -290,6 +296,7 @@ resource "null_resource" "copy_files" {
       "chmod +x /home/ubuntu/vault_unseal.sh",
       "chmod +x /home/ubuntu/after_upgrade_restart.sh",
       "chmod +x /home/ubuntu/storage_backup.sh",
+      "chmod +x /home/ubuntu/onprem_upgrade.sh",
     ]
     when = create
   }
