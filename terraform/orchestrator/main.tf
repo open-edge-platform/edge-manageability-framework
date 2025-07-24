@@ -250,6 +250,30 @@ resource "null_resource" "copy_files" {
   }
 
   provisioner "file" {
+    source      = "../../${var.working_directory}/on-prem-installers/onprem/upgrade_postgres.sh"
+    destination = "/home/ubuntu/upgrade_postgres.sh"
+    when        = create
+  }
+
+  provisioner "file" {
+    source      = "../../${var.working_directory}/on-prem-installers/onprem/vault_unseal.sh"
+    destination = "/home/ubuntu/vault_unseal.sh"
+    when        = create
+  }
+
+  provisioner "file" {
+    source      = "../../${var.working_directory}/on-prem-installers/onprem/after_upgrade_restart.sh"
+    destination = "/home/ubuntu/after_upgrade_restart.sh"
+    when        = create
+  }
+
+  provisioner "file" {
+    source      = "../../${var.working_directory}/on-prem-installers/onprem/storage_backup.sh"
+    destination = "/home/ubuntu/storage_backup.sh"
+    when        = create
+  }
+
+  provisioner "file" {
     source      = "${var.working_directory}/scripts/access_script.tftpl"
     destination = "/home/ubuntu/access_script.sh"
     when        = create
@@ -257,7 +281,15 @@ resource "null_resource" "copy_files" {
 
   provisioner "remote-exec" {
     inline = [
-      "chmod +x /home/ubuntu/uninstall_onprem.sh /home/ubuntu/onprem_installer.sh /home/ubuntu/functions.sh /home/ubuntu/access_script.sh /home/ubuntu/.env",
+      "chmod +x /home/ubuntu/uninstall_onprem.sh",
+      "chmod +x /home/ubuntu/onprem_installer.sh",
+      "chmod +x /home/ubuntu/functions.sh",
+      "chmod +x /home/ubuntu/access_script.sh",
+      "chmod +x /home/ubuntu/.env",
+      "chmod +x /home/ubuntu/upgrade_postgres.sh",
+      "chmod +x /home/ubuntu/vault_unseal.sh",
+      "chmod +x /home/ubuntu/after_upgrade_restart.sh",
+      "chmod +x /home/ubuntu/storage_backup.sh",
     ]
     when = create
   }
