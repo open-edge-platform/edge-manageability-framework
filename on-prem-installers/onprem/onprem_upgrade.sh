@@ -713,4 +713,3 @@ restore_postgres
 vault_unseal
 
 echo "Upgrade completed! Wait for ArgoCD applications to be in 'Healthy' state"
-
