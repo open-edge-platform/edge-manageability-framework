@@ -58,8 +58,23 @@ You will need two terminals for this upgrade process:
 In **Terminal 1**, set the required environment variables:
 
 ```bash
-# Load environment configuration
-source .env
+# get LB IP
+   kubectl get svc argocd-server -n argocd
+   kubectl get svc traefik -n orch-gateway
+   kubectl get svc ingress-nginx-controller -n orch-boots
+
+# Set Enviromnet
+
+  export RELEASE_SERVICE_URL=registry-rs.edgeorchestration.intel.com
+  export ORCH_INSTALLER_PROFILE=onprem
+  export CLUSTER_DOMAIN=cluster.onprem
+  export GITEA_IMAGE_REGISTRY='docker.io'
+  export DOCKER_USERNAME=<docker-username>
+  export DOCKER_PASSWORD=<docker-password>
+  export ARGO_IP=<ARGO_LodeBalanceIP>
+  export TRAEFIK_IP=<TRAEFIK_LodeBalanceIP>
+  export NGINX_IP=<NGINX_LodeBalanceIP>
+  
 
 Note: if any docker limit hit issue user should set docker login credential as env 
 
@@ -67,7 +82,7 @@ Note: if any docker limit hit issue user should set docker login credential as e
 unset PROCEED
 
 # Set deployment version (replace with your actual version tag)
-export DEPLOY_VERSION="3.1.0-dev-a4bba78"
+export DEPLOY_VERSION=v3.1.0-rc1
 ```
 
 ### Step 4: Terminal 1 - Run OnPrem Upgrade Script
@@ -98,8 +113,20 @@ Before confirming in Terminal 1, open **Terminal 2** and update configurations:
 1. **Update proxy settings (if applicable):**
 
    ```bash
-   cp proxy_config.yaml repo_archives/tmp/edge-manageability-framework/orch-configs/profiles/proxy-none.yaml
+   file:repo_archives/tmp/edge-manageability-framework/orch-configs/profiles/proxy-none.yaml
+   
+   argo:
+    proxy:
+      httpProxy: ""
+      httpsProxy: ""
+      noProxy: ""
+      enHttpProxy: ""
+      enHttpsProxy: ""
+      enFtpProxy: ""
+      enSocksProxy: ""
+      enNoProxy: ""
    ```
+   Note: Update the proxy settings according to your network configuration.
 
 2. **Verify load balancer IP configuration:**
 
