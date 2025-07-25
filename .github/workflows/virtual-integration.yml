@@ -740,12 +740,10 @@ jobs:
           yq eval ".orchestrator.admin_password = \"${KC_ADMIN_PWD}\"" -i orchestrator-configs/on-prem.yaml
 
           source venv_edge-manage-test-automation/bin/activate
-          # TODO: Include cf6 and cf8 tests back into the execution when VM application deployment failure is fixed
           robot -L DEBUG --pythonpath . \
             --name "Golden Suite: Core Foundation" \
             -d robot_output/core_foundation \
             -V orchestrator-configs/on-prem.yaml \
-            --exclude cf6 --exclude cf8 \
             --exitonfailure \
             tests/core_foundation/core_foundation.robot
 
