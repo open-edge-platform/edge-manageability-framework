@@ -59,7 +59,7 @@ type (
 )
 
 // constructADMURL constructs a URL for the catalog service give a project and an object
-func constructADMURL(projectName string, endpoint string) string {
+func constructADMURL(projectName string, endpoint string) string { //nolint:unused
 	retval := fmt.Sprintf("%s/%s/projects/%s/appdeployment", apiBaseURL, ADMApiVersion, projectName)
 	if endpoint != "" {
 		retval = retval + "/" + endpoint
@@ -68,7 +68,7 @@ func constructADMURL(projectName string, endpoint string) string {
 }
 
 // doADMRest executes a REST API request to the app deployment manager service
-func doADMREST(
+func doADMREST( //nolint:unused
 	ctx context.Context,
 	c *http.Client,
 	method string,
@@ -84,7 +84,7 @@ func doADMREST(
 }
 
 // listDeploymentsByDisplayName use the ADM REST API to query a deployment
-func listDeploymentsByDisplayName(
+func listDeploymentsByDisplayName( //nolint:unused
 	ctx context.Context,
 	c *http.Client,
 	accessToken string,
@@ -118,7 +118,7 @@ func listDeploymentsByDisplayName(
 }
 
 // getDeploymentByDisplayNameAndProfileName finds a specific deployment by its display name and profile name
-func getDeploymentByDisplayNameAndProfileName(
+func getDeploymentByDisplayNameAndProfileName( //nolint:unused
 	ctx context.Context,
 	c *http.Client,
 	accessToken string,
