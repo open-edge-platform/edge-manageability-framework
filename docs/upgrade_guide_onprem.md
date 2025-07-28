@@ -287,4 +287,9 @@ To simplify post-upgrade recovery, the following script should be executed as pa
 **EdgeNode local SSH connection error**
 **RPS pod Postgres DB query failure**  
 **Host filter in the UI is not functioning correctly**  
-**Docker rate limit encountered despite using valid credentials**  
+**Docker rate limit encountered despite using valid credentials** 
+
+### Post-Upgrade Steps EdgeNode onboarding process
+
+After a successful upgrade, follow the EN onboarding process as outlined in the official documentation:  
+[Set Up Edge Infrastructure – Intel Open Edge Platform](https://docs.openedgeplatform.intel.com/edge-manage-docs/dev/user_guide/set_up_edge_infra/index.html)
