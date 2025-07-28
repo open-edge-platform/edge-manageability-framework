@@ -399,8 +399,10 @@ if ! check_postgres; then
     exit 1
 fi
 
-# Perform postgreSQL backup
-kubectl get secret -n orch-database postgresql -o yaml > postgres_secret.yaml
+# Perform postgreSQL secret backup if not done already
+if [[ ! -f postgres_secret.yaml ]]; then
+    kubectl get secret -n orch-database postgresql -o yaml > postgres_secret.yaml
+fi
 
 # delete gitea secrets before backup
 cleanup_gitea_secrets

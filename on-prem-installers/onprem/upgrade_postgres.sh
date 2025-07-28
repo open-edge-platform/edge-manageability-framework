@@ -80,21 +80,3 @@ restore_postgres() {
   kubectl exec -n $postgres_namespace $podname -- /bin/bash -c "psql -U $POSTGRES_USERNAME <  $remote_backup_path "
   kubectl exec -n $postgres_namespace $podname -- /bin/bash -c "$(typeset -f enable_security); enable_security"
 }
-
-#### Check if the PostgreSQL pod is running
-# prechecks
-
-## Backup secret
-# kubectl get secret -n $postgres_namespace postgresql -o yaml > postgres_secret.yaml
-
-# backup_postgres
-# delete_postgres
-## Delete secret
-# kubectl delete secret -n $postgres_namespace postgresql
-
-# echo "upgrade argo chart HERE"
-# # Restore secret after app delete but before postgress restored
-# yq e 'del(.metadata.labels, .metadata.annotations, .metadata.uid, .metadata.creationTimestamp)' postgres_secret.yaml | kubectl apply -f -
-# sleep 30
-
-# restore_postgres
