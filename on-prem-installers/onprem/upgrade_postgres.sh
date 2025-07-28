@@ -15,7 +15,7 @@ application_namespace=onprem
 check_postgres() {
   if [ -f "$local_backup_path" ]; then
     echo "Backup file already exists. Please remove/rename it before proceeding."
-    echo "If you want to restore an already created file please comment out the prechecks and backup functions"
+    echo "If you want to restore an already created file please comment out check_postgres and backup_postgres functions from the upgrade script."
     exit 1
   fi
 

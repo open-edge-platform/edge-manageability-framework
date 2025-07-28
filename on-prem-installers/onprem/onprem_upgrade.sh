@@ -517,23 +517,28 @@ echo "ArgoCD upgraded to $(dpkg-query -W -f='${Version}' onprem-argocd-installer
 # Run Orchestrator upgrade
 echo "Upgrading Edge Orchestrator Packages..."
 
-# Save PostgreSQL passwords as they will get overwritten during orch-installer package upgrade
-ALERTING=$(kubectl get secret alerting-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}')
-CATALOG_SERVICE=$(kubectl get secret app-orch-catalog-local-postgresql -n orch-app -o jsonpath='{.data.PGPASSWORD}')
-INVENTORY=$(kubectl get secret inventory-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}')
-IAM_TENANCY=$(kubectl get secret iam-tenancy-local-postgresql -n orch-iam -o jsonpath='{.data.PGPASSWORD}')
-PLATFORM_KEYCLOAK=$(kubectl get secret platform-keycloak-local-postgresql -n orch-platform -o jsonpath='{.data.PGPASSWORD}')
-VAULT=$(kubectl get secret vault-local-postgresql -n orch-platform -o jsonpath='{.data.PGPASSWORD}')
-POSTGRESQL=$(kubectl get secret postgresql -n orch-database -o jsonpath='{.data.postgres-password}')
-{
-    echo "Alerting: $ALERTING"
-    echo "CatalogService: $CATALOG_SERVICE"
-    echo "Inventory: $INVENTORY"
-    echo "IAMTenancy: $IAM_TENANCY"
-    echo "PlatformKeycloak: $PLATFORM_KEYCLOAK"
-    echo "Vault: $VAULT"
-    echo "PostgreSQL: $POSTGRESQL"
-} > postgres-secrets-password.txt
+# Skip saving passwords if postgres-secrets-password.txt exists and is not empty
+if [[ ! -s postgres-secrets-password.txt ]]; then
+    ALERTING=$(kubectl get secret alerting-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}')
+    CATALOG_SERVICE=$(kubectl get secret app-orch-catalog-local-postgresql -n orch-app -o jsonpath='{.data.PGPASSWORD}')
+    INVENTORY=$(kubectl get secret inventory-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}')
+    IAM_TENANCY=$(kubectl get secret iam-tenancy-local-postgresql -n orch-iam -o jsonpath='{.data.PGPASSWORD}')
+    PLATFORM_KEYCLOAK=$(kubectl get secret platform-keycloak-local-postgresql -n orch-platform -o jsonpath='{.data.PGPASSWORD}')
+    VAULT=$(kubectl get secret vault-local-postgresql -n orch-platform -o jsonpath='{.data.PGPASSWORD}')
+    POSTGRESQL=$(kubectl get secret postgresql -n orch-database -o jsonpath='{.data.postgres-password}')
+    {
+        echo "Alerting: $ALERTING"
+        echo "CatalogService: $CATALOG_SERVICE"
+        echo "Inventory: $INVENTORY"
+        echo "IAMTenancy: $IAM_TENANCY"
+        echo "PlatformKeycloak: $PLATFORM_KEYCLOAK"
+        echo "Vault: $VAULT"
+        echo "PostgreSQL: $POSTGRESQL"
+    } > postgres-secrets-password.txt
+else
+    echo "postgres-secrets-password.txt exists and is not empty, skipping password save."
+fi
+
 
 # Idea is the same as in postrm_patch but for orch-installer whole new script is required
 sudo tee /var/lib/dpkg/info/onprem-orch-installer.postrm >/dev/null <<'EOF'
@@ -598,6 +603,31 @@ set -e
 
 patch_secret(){
 
+# Patch secrets with passwords from postgres-secrets-password.txt
+# If the file is not empty, read the passwords and patch the secrets accordingly
+if [[ -s postgres-secrets-password.txt ]]; then
+    echo "Patching secrets with passwords from postgres-secrets-password.txt"
+    for var in ALERTING CATALOG_SERVICE INVENTORY IAM_TENANCY PLATFORM_KEYCLOAK VAULT POSTGRESQL; do
+        value="${!var}"
+        if [[ -n "$value" ]]; then
+            echo "$var: $value"
+        else
+            echo "$var: (empty)"
+        fi
+    done
+
+    while IFS=': ' read -r key value; do
+        case "$key" in
+            Alerting) ALERTING="$value" ;;
+            CatalogService) CATALOG_SERVICE="$value" ;;
+            Inventory) INVENTORY="$value" ;;
+            IAMTenancy) IAM_TENANCY="$value" ;;
+            PlatformKeycloak) PLATFORM_KEYCLOAK="$value" ;;
+            Vault) VAULT="$value" ;;
+            PostgreSQL) POSTGRESQL="$value" ;;
+        esac
+    done < postgres-secrets-password.txt
+fi
 
 kubectl patch secret -n orch-app app-orch-catalog-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$CATALOG_SERVICE\"}}" --type=merge
 kubectl patch secret -n orch-app app-orch-catalog-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$CATALOG_SERVICE\"}}" --type=merge
