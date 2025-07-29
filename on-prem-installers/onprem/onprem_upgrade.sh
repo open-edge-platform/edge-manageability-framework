@@ -190,6 +190,27 @@ retrieve_and_apply_config() {
     rm -rf "$tmp_dir"
 }
 
+resync_all_apps() {
+    # Re-create the patch file for ArgoCD sync operation if it doesn't exist
+    if [[ ! -f /tmp/argo-cd/sync-patch.yaml ]]; then
+        sudo mkdir -p /tmp/argo-cd
+        cat <<EOF | sudo tee /tmp/argo-cd/sync-patch.yaml >/dev/null
+operation:
+  sync:
+    syncStrategy:
+      hook: {}
+EOF
+fi
+
+    # Force sync all applications on the cluster. We need to ensure that new version of
+    # ArgoCD properly picked Applications definitions that were governed by older version.
+    apps=$(kubectl get applications -n "$apps_ns" --no-headers -o custom-columns=":metadata.name")
+    for app in $apps; do
+        echo "Syncing ArgoCD application: $app"
+        kubectl patch -n "$apps_ns" applications "$app" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+    done
+}
+
 # Checks if orchestrator is currently installed on the node
 # check_orch_install <array[@] of package names>
 check_orch_install() {
@@ -583,20 +604,7 @@ echo "Edge Orchestrator getting upgraded to version $(dpkg-query -W -f='${Versio
 # Delete rke2-metrics-server chart. If it fails ignore
 helm delete -n kube-system rke2-metrics-server || true
 
-# Force sync all applications on the cluster. We need to ensure that new version of
-# ArgoCD properly picked Applications definitions that were governed by older version.
-echo "
-operation:
-  sync:
-    syncStrategy:
-      hook: {}
-" | sudo tee /tmp/argo-cd/sync-patch.yaml
-
-apps=$(kubectl get applications -n "$apps_ns" --no-headers -o custom-columns=":metadata.name")
-for app in $apps; do
-    echo "Syncing ArgoCD application: $app"
-    kubectl patch -n "$apps_ns" applications "$app" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge >/dev/null 2>&1
-done
+resync_all_apps
 
 # Restore PostgreSQL passwords after they have been overwritten
 set +e
@@ -612,38 +620,40 @@ while true; do
 done
 set -e
 
-patch_secret(){
+patch_secret() {
 
-# Patch secrets with passwords from postgres-secrets-password.txt
-# If the file is not empty, read the passwords and patch the secrets accordingly
-if [[ -s postgres-secrets-password.txt ]]; then
-    echo "Patching secrets with passwords from postgres-secrets-password.txt"
-    while IFS=': ' read -r key value; do
-        case "$key" in
-            Alerting) ALERTING="$value" ;;
-            CatalogService) CATALOG_SERVICE="$value" ;;
-            Inventory) INVENTORY="$value" ;;
-            IAMTenancy) IAM_TENANCY="$value" ;;
-            PlatformKeycloak) PLATFORM_KEYCLOAK="$value" ;;
-            Vault) VAULT="$value" ;;
-            PostgreSQL) POSTGRESQL="$value" ;;
-        esac
-    done < postgres-secrets-password.txt
-fi
+    # Patch secrets with passwords from postgres-secrets-password.txt
+    # If the file is not empty, read the passwords and patch the secrets accordingly
+    if [[ -s postgres-secrets-password.txt ]]; then
+        echo "Patching secrets with passwords from postgres-secrets-password.txt"
+        while IFS=': ' read -r key value; do
+            case "$key" in
+                Alerting) ALERTING="$value" ;;
+                CatalogService) CATALOG_SERVICE="$value" ;;
+                Inventory) INVENTORY="$value" ;;
+                IAMTenancy) IAM_TENANCY="$value" ;;
+                PlatformKeycloak) PLATFORM_KEYCLOAK="$value" ;;
+                Vault) VAULT="$value" ;;
+                PostgreSQL) POSTGRESQL="$value" ;;
+            esac
+        done < postgres-secrets-password.txt
+    fi
 
-kubectl patch secret -n orch-app app-orch-catalog-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$CATALOG_SERVICE\"}}" --type=merge
-kubectl patch secret -n orch-app app-orch-catalog-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$CATALOG_SERVICE\"}}" --type=merge
-kubectl patch secret -n orch-iam iam-tenancy-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$IAM_TENANCY\"}}" --type=merge
-kubectl patch secret -n orch-iam iam-tenancy-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$IAM_TENANCY\"}}" --type=merge
-kubectl patch secret -n orch-infra alerting-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$ALERTING\"}}" --type=merge
-kubectl patch secret -n orch-infra alerting-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$ALERTING\"}}" --type=merge
-kubectl patch secret -n orch-infra inventory-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$INVENTORY\"}}" --type=merge
-kubectl patch secret -n orch-infra inventory-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$INVENTORY\"}}" --type=merge
-kubectl patch secret -n orch-platform platform-keycloak-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$PLATFORM_KEYCLOAK\"}}" --type=merge
-kubectl patch secret -n orch-platform platform-keycloak-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$PLATFORM_KEYCLOAK\"}}" --type=merge
-kubectl patch secret -n orch-platform vault-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$VAULT\"}}" --type=merge
-kubectl patch secret -n orch-platform vault-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$VAULT\"}}" --type=merge
-kubectl patch secret -n orch-database passwords -p "$(cat <<EOF
+    kubectl patch secret -n orch-app app-orch-catalog-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$CATALOG_SERVICE\"}}" --type=merge
+    kubectl patch secret -n orch-app app-orch-catalog-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$CATALOG_SERVICE\"}}" --type=merge
+    kubectl patch secret -n orch-iam iam-tenancy-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$IAM_TENANCY\"}}" --type=merge
+    kubectl patch secret -n orch-iam iam-tenancy-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$IAM_TENANCY\"}}" --type=merge
+    kubectl patch secret -n orch-infra alerting-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$ALERTING\"}}" --type=merge
+    kubectl patch secret -n orch-infra alerting-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$ALERTING\"}}" --type=merge
+    kubectl patch secret -n orch-infra inventory-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$INVENTORY\"}}" --type=merge
+    kubectl patch secret -n orch-infra inventory-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$INVENTORY\"}}" --type=merge
+    kubectl patch secret -n orch-platform platform-keycloak-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$PLATFORM_KEYCLOAK\"}}" --type=merge
+    kubectl patch secret -n orch-platform platform-keycloak-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$PLATFORM_KEYCLOAK\"}}" --type=merge
+    kubectl patch secret -n orch-platform vault-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$VAULT\"}}" --type=merge
+    kubectl patch secret -n orch-platform vault-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$VAULT\"}}" --type=merge    
+    # Use a temporary file for the patch payload
+    patch_file=$(mktemp)
+    cat > "$patch_file" <<EOF
 {
   "data": {
     "alerting": "$ALERTING",
@@ -655,10 +665,11 @@ kubectl patch secret -n orch-database passwords -p "$(cat <<EOF
   }
 }
 EOF
-)" --type=merge
+    kubectl patch secret -n orch-database passwords --type=merge --patch-file "$patch_file"
+    rm -f "$patch_file"
 
-# Patch postgresql secret
-#kubectl patch secret -n orch-database postgresql -p "{\"data\": {\"postgres-password\": \"$POSTGRESQL\"}}" --type=merge
+    # Patch postgresql secret
+    #kubectl patch secret -n orch-database postgresql -p "{\"data\": {\"postgres-password\": \"$POSTGRESQL\"}}" --type=merge
 }
 # delete_postgres
 
@@ -682,7 +693,7 @@ kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/sync-postgres
 #kubectl patch -n "$apps_ns" application postgresql --patch-file /tmp/sync-postgresql-patch.yaml --type merge
 
 start_time=$(date +%s)
-timeout=300  # 5 minutes in seconds
+timeout=3600 # 1 hour in seconds
 set +e
 while true; do
     echo "Checking postgresql-secrets application status..."
@@ -754,18 +765,6 @@ if [[ -s rps_secret.yaml ]]; then
     kubectl apply -f rps_secret.yaml
 fi
 
-# Re-create the patch file for ArgoCD sync operation if it doesn't exist
-if [[ ! -f /tmp/argo-cd/sync-patch.yaml ]]; then
-    sudo mkdir -p /tmp/argo-cd
-    cat <<EOF | sudo tee /tmp/argo-cd/sync-patch.yaml >/dev/null
-operation:
-  sync:
-    syncStrategy:
-      hook: {}
-EOF
-fi
-
-# Force sync all applications on the cluster
-kubectl patch application root-app -n "$apps_ns" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+resync_all_apps
 
 echo "Upgrade completed! Wait for ArgoCD applications to be in 'Healthy' state"
