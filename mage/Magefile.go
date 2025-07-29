@@ -1174,7 +1174,7 @@ STANDALONE=0
 		fmt.Sprintf("-var=libvirt_network_name=%s", data.BridgeName),
 		fmt.Sprintf("-var=libvirt_pool_name=%s", data.PoolName),
 		fmt.Sprintf("-var=vm_console=%s", "file"),
-		fmt.Sprintf("-var=boot_order=%s", "network"),
+		fmt.Sprintf("-var=boot_order=%s", `["hd","network"]`),
 		"--auto-approve",
 	)
 
