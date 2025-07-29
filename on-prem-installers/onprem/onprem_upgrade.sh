@@ -106,8 +106,6 @@ set_artifacts_version() {
 
 export GIT_REPOS=$cwd/$git_arch_name
 
-### Functions
-
 retrieve_and_apply_config() {
     tmp_dir="$cwd/$git_arch_name/tmp"
     rm -rf "$tmp_dir"
@@ -393,6 +391,7 @@ fi
 
 
 # Check if postgres is running and if it is safe to backup
+# Comment out the following check in case you want to restore an already created backup
 check_postgres
 if ! check_postgres; then
     echo "PostgreSQL is not running or backup file already exists. Exiting..."
@@ -404,14 +403,14 @@ if [[ ! -f postgres_secret.yaml ]]; then
     kubectl get secret -n orch-database postgresql -o yaml > postgres_secret.yaml
 fi
 
-# delete gitea secrets before backup
+# Delete gitea secrets before backup
 cleanup_gitea_secrets
 
 # Backup PostgreSQL databases
+# Comment out the following check in case you want to restore an already created backup
 backup_postgres
 
 
-### Upgrade existing Orch installation
 echo "Running On Premise Edge Orchestrator upgrade to $DEPLOY_VERSION"
 
 # Refresh variables after checking user args
@@ -680,7 +679,7 @@ operation:
 kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/sync-postgresql-patch.yaml --type merge
 
 
-# kubectl patch -n "$apps_ns" application postgresql --patch-file /tmp/sync-postgresql-patch.yaml --type merge
+#kubectl patch -n "$apps_ns" application postgresql --patch-file /tmp/sync-postgresql-patch.yaml --type merge
 
 start_time=$(date +%s)
 timeout=300  # 5 minutes in seconds
