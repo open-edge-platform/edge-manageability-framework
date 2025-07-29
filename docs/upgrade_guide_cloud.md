@@ -37,168 +37,197 @@ manual data backup/restore procedures in edge nodes.
 
 ### Step 1: Prepare Edge Orchestrator Upgrade Environment
 
-You need to follow the steps mentioned in [Prerequisites section] (https://docs.openedgeplatform.intel.com/edge-manage-docs/3.0/deployment_guide/cloud_deployment/cloud_get_started/cloud_start_installer.html#prerequisites) with some changes as listed below:
+You need to follow the steps mentioned in [Prerequisites section][1] with some changes as listed below.
 
-1. Pull the intended 3.1 cloud installer image and extract it
-```bash
-# Replace <3.1-TAG> with actual tag
-oras pull registry-rs.edgeorchestration.intel.com/edge-orch/common/files/cloud-orchestrator-installer:<3.1-TAG>
-tar -xzf _build/cloud-orchestrator-installer.tgz
-```
+[1]: https://docs.openedgeplatform.intel.com/edge-manage-docs/3.0/deployment_guide/cloud_deployment/cloud_get_started/cloud_start_installer.html#prerequisites
 
-2. Start the installation Environment
+1. **Pull the intended 3.1 cloud installer image and extract it**
 
-- Start the Edge Orchestrator installer
-```bash
-./start-orchestrator-install.sh
-```
--- Type 2 for managing an existing cluster
+   ```bash
+   # Replace <3.1-TAG> with actual tag
+   oras pull registry-rs.edgeorchestration.intel.com/edge-orch/common/files/cloud-orchestrator-installer:<3.1-TAG>
+   tar -xzf _build/cloud-orchestrator-installer.tgz
+   ```
 
--- Type in cluster details, including cluster name and the AWS region. (Same values as were passed during cluster provisioning)
+2. **Start the installation Environment**
 
--- Specify a location to store the installer settings. (Same values as were passed during cluster provisioning)
+   Start the Edge Orchestrator installer
 
-3. Provision the Environment
+   ```bash
+   ./start-orchestrator-install.sh
+   ```
 
-- Go to pod-configs directory
-```bash
-orchestrator-admin:~$ cd ~/pod-configs
-```
+   Type 2 for managing an existing cluster
 
-- Configure the cluster provisioning parameters
-```bash
-orchestrator-admin:~/pod-configs$ ./utils/provision.sh config \
---aws-account [AWS account] \
---customer-state-prefix [S3 bucket name prefix to store provision state] \
---environment [Cluster name] \
---parent-domain [Root domain for deployment] \
---region [AWS region to install the cluster] \
---jumphost-ip-allow-list [IPs to permit cluster administration access]
-```
-> **⚠️ Note**
-> Follow the official guide (https://docs.openedgeplatform.intel.com/edge-manage-docs/3.0/deployment_guide/cloud_deployment/cloud_get_started/cloud_orchestrator_install.html#create-provisioning-configuration) to get details about each parameter
+   Type in cluster details, including cluster name and the AWS region. (Same values as were passed during cluster provisioning)
 
-- Run the following command to begin upgrade
-```bash
-orchestrator-admin:~/pod-configs$ ./utils/provision.sh upgrade \
---aws-account [AWS account] \
---customer-state-prefix [S3 bucket name prefix to store provision state] \
---environment [Cluster name] \
---parent-domain [Root domain for deployment] \
---region [AWS region to install the cluster] \
---jumphost-ip-allow-list [IPs to permit cluster administration access]
-```
+   Specify a location to store the installer settings. (Same values as were passed during cluster provisioning)
 
-4. Upgrade Edge Orchestrator
+3. **Provision the Environment**
 
-- Go to home directory
-```bash
-orchestrator-admin:~$ cd ~
-```
+   Go to pod-configs directory
 
-- Configure the cluster deployment options. From the ~ directory in the orchestrator-admin container, run the following command:
-```bash
-orchestrator-admin:~$ ./configure-cluster.sh
-```
+   ```bash
+   orchestrator-admin:~$ cd ~/pod-configs
+   ```
 
-- Upgrade the Edge Orchestrator on the cluster
-```bash
-orchestrator-admin:~$ make upgrade
-```
+   Configure the cluster provisioning parameters
 
-This process will start redeploying the upgraded applications in the cluster starting with root-app. 
-Let it continue and you would observe "infra-external" app is failing due to orch-infra-rps and orch-infra-mps databases.
-In order to fix the above problem, you need to follow below steps.
+   ```bash
+   orchestrator-admin:~/pod-configs$ ./utils/provision.sh config \
+   --aws-account [AWS account] \
+   --customer-state-prefix [S3 bucket name prefix to store provision state] \
+   --environment [Cluster name] \
+   --parent-domain [Root domain for deployment] \
+   --region [AWS region to install the cluster] \
+   --jumphost-ip-allow-list [IPs to permit cluster administration access]
+   ```
+
+   > **⚠️ Note**
+   > [Follow the official guide][2] to get details about each parameter
+
+   [2]: https://docs.openedgeplatform.intel.com/edge-manage-docs/3.0/deployment_guide/cloud_deployment/cloud_get_started/cloud_orchestrator_install.html#create-provisioning-configuration
+
+   - Run the following command to begin upgrade
+
+   ```bash
+   orchestrator-admin:~/pod-configs$ ./utils/provision.sh upgrade \
+   --aws-account [AWS account] \
+   --customer-state-prefix [S3 bucket name prefix to store provision state] \
+   --environment [Cluster name] \
+   --parent-domain [Root domain for deployment] \
+   --region [AWS region to install the cluster] \
+   --jumphost-ip-allow-list [IPs to permit cluster administration access]
+   ```
+
+4. **Upgrade Edge Orchestrator**
+
+   Go to home directory
+
+   ```bash
+   orchestrator-admin:~$ cd ~
+   ```
+
+   Configure the cluster deployment options. From the ~ directory in the orchestrator-admin container,
+   run the following command:
+
+   ```bash
+   orchestrator-admin:~$ ./configure-cluster.sh
+   ```
+
+   Upgrade the Edge Orchestrator on the cluster
+
+   ```bash
+   orchestrator-admin:~$ make upgrade
+   ```
+
+   This process will start redeploying the upgraded applications in the cluster starting with root-app.
+   Let it continue and you would observe "infra-external" app is failing due to orch-infra-rps and orch-infra-mps databases.
+   In order to fix the above problem, you need to follow below steps.
 
 ### Step 2: Create orch-infra-rps DB
 
-1. Login to aurora postgres DB cluster running in AWS
-```bash
-PGPASSWORD='<password>' psql -h <host-endpoint-url> -U postgres -d postgres
-```
-> **⚠️ Note**
-> <password> can be obtained from AWS Secret Manager for this specific cluster DB
-> <host-endpoint-url> This is the cluster DB endpoint and can be obtained from Aurora and RDS service in AWS
+1. **Login to aurora postgres DB cluster running in AWS**
 
-This will take you to postgres prompt where you need to execute DB and user creation commands as given in next steps
-```bash
-postgres=>
-```
+   ```bash
+   PGPASSWORD='[PWD]' psql -h [HostEndpoint] -U postgres -d postgres
+   ```
 
-2. Create orch-infra-rps DB and user
-```bash
-CREATE DATABASE "orch-infra-rps";
-REVOKE CREATE ON SCHEMA public FROM PUBLIC;
-REVOKE ALL ON DATABASE "orch-infra-rps" FROM PUBLIC;
-CREATE USER "orch-infra-rps-user" WITH PASSWORD '<USER_DEFINED_PASSWORD>';
-GRANT CONNECT ON DATABASE "orch-infra-rps" TO "orch-infra-rps-user";
-GRANT ALL PRIVILEGES ON DATABASE "orch-infra-rps" TO "orch-infra-rps-user";
-ALTER DATABASE "orch-infra-rps" OWNER TO "orch-infra-rps-user";
-```
+   > **⚠️ Note**
+   > [PWD] can be obtained from AWS Secret Manager for this specific cluster DB
+   > [HostEndpoint] This is the cluster DB endpoint and can be obtained from Aurora and RDS service in AWS
 
-3. Create orch-infra-mps DB and user
-```bash
-CREATE DATABASE "orch-infra-mps";
-REVOKE CREATE ON SCHEMA public FROM PUBLIC;
-REVOKE ALL ON DATABASE "orch-infra-mps" FROM PUBLIC;
-CREATE USER "orch-infra-mps-user" WITH PASSWORD '<USER_DEFINED_PASSWORD>';
-GRANT CONNECT ON DATABASE "orch-infra-mps" TO "orch-infra-mps-user";
-GRANT ALL PRIVILEGES ON DATABASE "orch-infra-mps" TO "orch-infra-mps-user";
-ALTER DATABASE "orch-infra-mps" OWNER TO "orch-infra-mps-user";
-\q
-```
-> **⚠️ Note**
-> <USER_DEFINED_PASSWORD> This is the password of your choice. Use the same password everywhere where this appears.
+   This will take you to postgres prompt where you need to execute DB and user creation commands as given in next steps
+  
+   ```bash
+   postgres=>
+   ```
 
-4. Create kubernetes secrets for DB users created above
-```bash
-kubectl create secret generic mps-aurora-postgresql \
-  --from-literal=PGDATABASE=orch-infra-mps \
-  --from-literal=PGHOST=<host-endpoint-url> \
-  --from-literal=PGPASSWORD=<USER_DEFINED_PASSWORD> \
-  --from-literal=PGPORT=5432 \
-  --from-literal=PGUSER=orch-infra-mps-user \
-  --from-literal=password=<USER_DEFINED_PASSWORD> \
-  -n orch-infra
-```
+2. **Create orch-infra-rps DB and user**
 
-```bash
-kubectl create secret generic mps-reader-aurora-postgresql \
-  --from-literal=PGDATABASE=orch-infra-mps \
-  --from-literal=PGHOST=<host-endpoint-url> \
-  --from-literal=PGPASSWORD=<USER_DEFINED_PASSWORD> \
-  --from-literal=PGPORT=5432 \
-  --from-literal=PGUSER=orch-infra-mps-user \
- --from-literal=password=<USER_DEFINED_PASSWORD> \
-  -n orch-infra
-```
+   ```bash
+   CREATE DATABASE "orch-infra-rps";
+   REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+   REVOKE ALL ON DATABASE "orch-infra-rps" FROM PUBLIC;
+   CREATE USER "orch-infra-rps-user" WITH PASSWORD '<USER_DEFINED_PASSWORD>';
+   GRANT CONNECT ON DATABASE "orch-infra-rps" TO "orch-infra-rps-user";
+   GRANT ALL PRIVILEGES ON DATABASE "orch-infra-rps" TO "orch-infra-rps-user";
+   ALTER DATABASE "orch-infra-rps" OWNER TO "orch-infra-rps-user";
+   ```
 
-```bash
-kubectl create secret generic rps-aurora-postgresql \
-  --from-literal=PGDATABASE=orch-infra-rps \
-  --from-literal=PGHOST=<host-endpoint-url> \
-  --from-literal=PGPASSWORD=<USER_DEFINED_PASSWORD> \
-  --from-literal=PGPORT=5432 \
-  --from-literal=PGUSER=orch-infra-rps-user \
- --from-literal=password=<USER_DEFINED_PASSWORD> \
-  -n orch-infra
-```
+3. **Create orch-infra-mps DB and user**
 
-```bash
-kubectl create secret generic rps-reader-aurora-postgresql \
-  --from-literal=PGDATABASE=orch-infra-rps \
-  --from-literal=PGHOST=<host-endpoint-url> \
-  --from-literal=PGPASSWORD=<USER_DEFINED_PASSWORD> \
-  --from-literal=PGPORT=5432 \
-  --from-literal=PGUSER=orch-infra-rps-user \
- --from-literal=password=<USER_DEFINED_PASSWORD> \
-  -n orch-infra
-```
+   ```bash
+   CREATE DATABASE "orch-infra-mps";
+   REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+   REVOKE ALL ON DATABASE "orch-infra-mps" FROM PUBLIC;
+   CREATE USER "orch-infra-mps-user" WITH PASSWORD '<USER_DEFINED_PASSWORD>';
+   GRANT CONNECT ON DATABASE "orch-infra-mps" TO "orch-infra-mps-user";
+   GRANT ALL PRIVILEGES ON DATABASE "orch-infra-mps" TO "orch-infra-mps-user";
+   ALTER DATABASE "orch-infra-mps" OWNER TO "orch-infra-mps-user";
+   \q
+   ```
+
+   > **⚠️ Note**
+   > <USER_DEFINED_PASSWORD> This is the password of your choice. Use the same password everywhere where this appears.
+
+4. **Create kubernetes secrets for DB users created above**
+
+   ```bash
+   kubectl create secret generic mps-aurora-postgresql \
+    --from-literal=PGDATABASE=orch-infra-mps \
+    --from-literal=PGHOST=<host-endpoint-url> \
+    --from-literal=PGPASSWORD=<USER_DEFINED_PASSWORD> \
+    --from-literal=PGPORT=5432 \
+    --from-literal=PGUSER=orch-infra-mps-user \
+    --from-literal=password=<USER_DEFINED_PASSWORD> \
+    -n orch-infra
+   ```
+
+   ```bash
+   kubectl create secret generic mps-reader-aurora-postgresql \
+    --from-literal=PGDATABASE=orch-infra-mps \
+    --from-literal=PGHOST=<host-endpoint-url> \
+    --from-literal=PGPASSWORD=<USER_DEFINED_PASSWORD> \
+    --from-literal=PGPORT=5432 \
+    --from-literal=PGUSER=orch-infra-mps-user \
+    --from-literal=password=<USER_DEFINED_PASSWORD> \
+    -n orch-infra
+   ```
+
+   ```bash
+   kubectl create secret generic rps-aurora-postgresql \
+    --from-literal=PGDATABASE=orch-infra-rps \
+    --from-literal=PGHOST=<host-endpoint-url> \
+    --from-literal=PGPASSWORD=<USER_DEFINED_PASSWORD> \
+    --from-literal=PGPORT=5432 \
+    --from-literal=PGUSER=orch-infra-rps-user \
+    --from-literal=password=<USER_DEFINED_PASSWORD> \
+    -n orch-infra
+   ```
+
+   ```bash
+   kubectl create secret generic rps-reader-aurora-postgresql \
+    --from-literal=PGDATABASE=orch-infra-rps \
+    --from-literal=PGHOST=<host-endpoint-url> \
+    --from-literal=PGPASSWORD=<USER_DEFINED_PASSWORD> \
+    --from-literal=PGPORT=5432 \
+    --from-literal=PGUSER=orch-infra-rps-user \
+    --from-literal=password=<USER_DEFINED_PASSWORD> \
+    -n orch-infra
+   ```
 
 ### Step 3: Delete/resync amt-dbpassword-secret-job pod in infra-extermal app
-Once DB, user and secrets creation is done, you need to delete/resync amt-dbpassword-secret-job pod and it should make infra-external app healthy.
 
+Once DB, user and secrets creation is done, you need to delete/resync amt-dbpassword-secret-job pod and it should make
+infra-external app healthy.
 
 ### Step 4: Verification
+
 Log into web UI of the orchestrator.
 Go to Settings->OS profiles. There you should see the any of the toolkit version upgraded to latest.
+
+### Post-Upgrade Steps EdgeNode onboarding process
+
+After a successful upgrade, follow the EN onboarding process as outlined in the official documentation:  
+[Set Up Edge Infrastructure – Intel Open Edge Platform](https://docs.openedgeplatform.intel.com/edge-manage-docs/dev/user_guide/set_up_edge_infra/index.html)
