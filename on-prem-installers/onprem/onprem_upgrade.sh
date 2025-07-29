@@ -539,11 +539,17 @@ else
     echo "postgres-secrets-password.txt exists and is not empty, skipping password save."
 fi
 
-# Export the 'mps' secret to a file
-kubectl get secret mps -n orch-infra -o yaml > mps_secret.yaml
 
-# To recreate the secret from the file, use:
-# kubectl apply -f mps_secret.yaml
+# Delete secrets for mps and rps if they exist, so that they can be recreated later
+if kubectl get secret mps -n orch-infra >/dev/null 2>&1; then
+    kubectl get secret mps -n orch-infra -o yaml > mps_secret.yaml
+    kubectl delete secret mps -n orch-infra
+fi
+
+if kubectl get secret rps -n orch-infra >/dev/null 2>&1; then
+    kubectl get secret rps -n orch-infra -o yaml > rps_secret.yaml
+    kubectl delete secret rps -n orch-infra
+fi
 
 
 # Idea is the same as in postrm_patch but for orch-installer whole new script is required
@@ -739,6 +745,15 @@ set -e
 restore_postgres
 
 vault_unseal
+
+# Re-create the secrets for mps and rps if they were deleted
+if [[ -s mps_secret.yaml ]]; then
+    kubectl apply -f mps_secret.yaml
+fi
+
+if [[ -s rps_secret.yaml ]]; then
+    kubectl apply -f rps_secret.yaml
+fi
 
 # Re-create the patch file for ArgoCD sync operation if it doesn't exist
 if [[ ! -f /tmp/argo-cd/sync-patch.yaml ]]; then
