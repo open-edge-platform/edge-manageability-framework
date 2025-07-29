@@ -60,7 +60,7 @@ backup_postgres() {
 delete_postgres() {
   kubectl patch application -n $application_namespace postgresql-secrets  -p '{"metadata": {"finalizers": ["resources-finalizer.argocd.argoproj.io"]}}' --type merge
   kubectl delete application -n $application_namespace postgresql-secrets --cascade=background
-  # backgrounbd as pvc will not be deleted until app deletion
+  # background as pvc will not be deleted until app deletion
   kubectl delete pvc -n $postgres_namespace data-postgresql-0 &
   # patch ensures cascade delete
   kubectl patch application -n $application_namespace postgresql  -p '{"metadata": {"finalizers": ["resources-finalizer.argocd.argoproj.io"]}}' --type merge

@@ -214,6 +214,27 @@ check_orch_install() {
     done
 }
 
+resync_all_apps() {
+    # Re-create the patch file for ArgoCD sync operation if it doesn't exist
+    if [[ ! -f /tmp/argo-cd/sync-patch.yaml ]]; then
+        sudo mkdir -p /tmp/argo-cd
+        cat <<EOF | sudo tee /tmp/argo-cd/sync-patch.yaml >/dev/null
+operation:
+  sync:
+    syncStrategy:
+      hook: {}
+EOF
+fi
+
+    # Force sync all applications on the cluster. We need to ensure that new version of
+    # ArgoCD properly picked Applications definitions that were governed by older version.
+    apps=$(kubectl get applications -n "$apps_ns" --no-headers -o custom-columns=":metadata.name")
+    for app in $apps; do
+        echo "Syncing ArgoCD application: $app"
+        kubectl patch -n "$apps_ns" applications "$app" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+    done
+}
+
 # Get LV size and format it to be ready for lvcreate command
 # get_lv_size <lv_path> returns <formatted size>
 get_lv_size() {
@@ -565,20 +586,7 @@ echo "Edge Orchestrator getting upgraded to version $(dpkg-query -W -f='${Versio
 # Delete rke2-metrics-server chart. If it fails ignore
 helm delete -n kube-system rke2-metrics-server || true
 
-# Force sync all applications on the cluster. We need to ensure that new version of
-# ArgoCD properly picked Applications definitions that were governed by older version.
-echo "
-operation:
-  sync:
-    syncStrategy:
-      hook: {}
-" | sudo tee /tmp/argo-cd/sync-patch.yaml
-
-apps=$(kubectl get applications -n "$apps_ns" --no-headers -o custom-columns=":metadata.name")
-for app in $apps; do
-    echo "Syncing ArgoCD application: $app"
-    kubectl patch -n "$apps_ns" applications "$app" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge >/dev/null 2>&1
-done
+resync_all_apps
 
 # Restore PostgreSQL passwords after they have been overwritten
 set +e
@@ -648,7 +656,7 @@ kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/sync-postgres
 # kubectl patch -n "$apps_ns" application postgresql --patch-file /tmp/sync-postgresql-patch.yaml --type merge
 
 start_time=$(date +%s)
-timeout=300  # 5 minutes in seconds
+timeout=3600
 set +e
 while true; do
     echo "Checking postgresql-secrets application status..."
@@ -711,18 +719,6 @@ restore_postgres
 
 vault_unseal
 
-# Re-create the patch file for ArgoCD sync operation if it doesn't exist
-if [[ ! -f /tmp/argo-cd/sync-patch.yaml ]]; then
-    sudo mkdir -p /tmp/argo-cd
-    cat <<EOF | sudo tee /tmp/argo-cd/sync-patch.yaml >/dev/null
-operation:
-  sync:
-    syncStrategy:
-      hook: {}
-EOF
-fi
-
-# Force sync all applications on the cluster
-kubectl patch application root-app -n "$apps_ns" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+resync_all_apps
 
 echo "Upgrade completed! Wait for ArgoCD applications to be in 'Healthy' state"
