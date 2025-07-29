@@ -15,7 +15,7 @@ application_namespace=onprem
 check_postgres() {
   if [ -f "$local_backup_path" ]; then
     echo "Backup file already exists. Please remove/rename it before proceeding."
-    echo "If you want to restore an already created file please comment out check_postgres and backup_postgres functions from the upgrade script."
+    echo "If you want to restore an already created file please comment out the following functions from the upgrade script: check_postgres and backup_postgres"
     exit 1
   fi
 
@@ -44,7 +44,6 @@ backup_postgres() {
   echo "Backing up databases from pod $podname in namespace $postgres_namespace..."
 
   remote_backup_path="/tmp/${postgres_namespace}_${podname}_backup.sql"
-    
   kubectl exec -n $postgres_namespace $podname -- /bin/bash -c "$(typeset -f disable_security); disable_security"
 
   if kubectl exec -n $postgres_namespace $podname -- /bin/bash -c "pg_dumpall -U $POSTGRES_USERNAME -f '$remote_backup_path'"; then
@@ -60,7 +59,7 @@ backup_postgres() {
 delete_postgres() {
   kubectl patch application -n $application_namespace postgresql-secrets  -p '{"metadata": {"finalizers": ["resources-finalizer.argocd.argoproj.io"]}}' --type merge
   kubectl delete application -n $application_namespace postgresql-secrets --cascade=background
-  # backgrounbd as pvc will not be deleted until app deletion
+  # background as pvc will not be deleted until app deletion
   kubectl delete pvc -n $postgres_namespace data-postgresql-0 &
   # patch ensures cascade delete
   kubectl patch application -n $application_namespace postgresql  -p '{"metadata": {"finalizers": ["resources-finalizer.argocd.argoproj.io"]}}' --type merge

@@ -539,6 +539,12 @@ else
     echo "postgres-secrets-password.txt exists and is not empty, skipping password save."
 fi
 
+# Export the 'mps' secret to a file
+kubectl get secret mps -n orch-infra -o yaml > mps_secret.yaml
+
+# To recreate the secret from the file, use:
+# kubectl apply -f mps_secret.yaml
+
 
 # Idea is the same as in postrm_patch but for orch-installer whole new script is required
 sudo tee /var/lib/dpkg/info/onprem-orch-installer.postrm >/dev/null <<'EOF'
@@ -607,15 +613,6 @@ patch_secret(){
 # If the file is not empty, read the passwords and patch the secrets accordingly
 if [[ -s postgres-secrets-password.txt ]]; then
     echo "Patching secrets with passwords from postgres-secrets-password.txt"
-    for var in ALERTING CATALOG_SERVICE INVENTORY IAM_TENANCY PLATFORM_KEYCLOAK VAULT POSTGRESQL; do
-        value="${!var}"
-        if [[ -n "$value" ]]; then
-            echo "$var: $value"
-        else
-            echo "$var: (empty)"
-        fi
-    done
-
     while IFS=': ' read -r key value; do
         case "$key" in
             Alerting) ALERTING="$value" ;;
