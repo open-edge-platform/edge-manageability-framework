@@ -820,7 +820,7 @@ jobs:
           set +e
           mage test:onboarding
           TEST_EXIT_CODE=$?
-          sudo cat edge-node-EN123456789-console.log || true
+          sudo cat /var/log/libvirt/qemu/edge-node-EN123456789-console.log || true
           exit $TEST_EXIT_CODE
 
   tag-repo:
