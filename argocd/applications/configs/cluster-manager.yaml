@@ -4,9 +4,7 @@
 
 clusterManager:
   extraArgs:
-    disable-mt: false
     disable-metrics: false
-    disable-k3s-templates: false
 
 metrics:
   enabled: true
