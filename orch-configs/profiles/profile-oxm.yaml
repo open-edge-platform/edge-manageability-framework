@@ -12,6 +12,7 @@ argo:
     os-resource-manager:
       enabledProfiles:
         - microvisor-standalone
+        - microvisor-idv
   infra-core:
     tenant-config:
       enabled: true
