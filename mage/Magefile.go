@@ -919,7 +919,7 @@ func (d Deploy) VENWithFlow(ctx context.Context, flow string, serialNumber strin
 		return fmt.Errorf("failed to change directory to 'ven': %w", err)
 	}
 
-	if err := sh.RunV("git", "checkout", "pxe-server"); err != nil {
+	if err := sh.RunV("git", "checkout", "pico/1.5.4"); err != nil {
 		return fmt.Errorf("failed to checkout specific commit: %w", err)
 	}
 
