@@ -29,7 +29,7 @@ onboarding-manager:
     tlsOption: "gateway-tls"
     gatewayNamespace: orch-gateway
   env:
-    tinkerActionsVersion: "1.19.0"
+    tinkerActionsVersion: "1.19.1"
     oidc:
       oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
       # Skip AuthZ for CDN-boots
