@@ -820,7 +820,7 @@ jobs:
           set +e
           mage test:onboarding
           TEST_EXIT_CODE=$?
-          sudo cat pico-node-libvirt-console.log || true
+          sudo cat edge-node-EN123456789-console.log || true
           exit $TEST_EXIT_CODE
 
   tag-repo:
