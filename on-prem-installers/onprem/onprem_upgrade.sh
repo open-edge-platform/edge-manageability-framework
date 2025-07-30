@@ -709,7 +709,20 @@ set -e
 # Now that PostgreSQL is running, we can restore the secret
 restore_postgres
 
-## Vault Unseal
 vault_unseal
+
+# Re-create the patch file for ArgoCD sync operation if it doesn't exist
+if [[ ! -f /tmp/argo-cd/sync-patch.yaml ]]; then
+    sudo mkdir -p /tmp/argo-cd
+    cat <<EOF | sudo tee /tmp/argo-cd/sync-patch.yaml >/dev/null
+operation:
+  sync:
+    syncStrategy:
+      hook: {}
+EOF
+fi
+
+# Force sync all applications on the cluster
+kubectl patch application root-app -n "$apps_ns" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
 echo "Upgrade completed! Wait for ArgoCD applications to be in 'Healthy' state"
