@@ -816,7 +816,12 @@ jobs:
           needs.check-changed-files.outputs.on-prem == 'true' ||
           needs.check-changed-files.outputs.orch == 'true' ||
           needs.check-changed-files.outputs.ci == 'true'
-        run: mage test:onboarding
+        run: |
+          set +e
+          mage test:onboarding
+          TEST_EXIT_CODE=$?
+          sudo cat pico-node-libvirt-console.log || true
+          exit $TEST_EXIT_CODE
 
   tag-repo:
     permissions:
