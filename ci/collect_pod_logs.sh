@@ -4,7 +4,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 #
-# Script Name: collect_failed_pod_logs.sh
+# Script Name: collect_pod_logs.sh
 # Description: This script performs the following actions:
 #              - Collects a summary of all pods and applications in the cluster.
 #              - Identifies pods that are not in a healthy state (i.e., not in Running or Completed phase).
