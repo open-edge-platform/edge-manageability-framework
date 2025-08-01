@@ -35,7 +35,7 @@ require (
 	golang.org/x/sync v0.14.0
 	google.golang.org/grpc v1.72.2
 	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/apimachinery v0.32.6
+	k8s.io/apimachinery v0.32.7
 	k8s.io/client-go v0.32.5
 	oras.land/oras-go/v2 v2.5.0
 	sigs.k8s.io/controller-runtime v0.20.4
