@@ -104,7 +104,7 @@ runs:
       echo "Updated Hostfile entries!"
       mage gen:orchCa deploy:orchCa
 
-  - name: Collect Pod Logs After Deploymnet
+  - name: Collect Orch-Deploy Pod Logs After Deploymnet
     if: always()
     shell: bash
     run: |
@@ -114,3 +114,11 @@ runs:
       cat pod_logs/summary-applications.txt || echo "summary-applications.txt not found"  
       echo "Pod Summary:"
       cat pod_logs/summary-pods.txt || echo "summary-pods.txt not found"
+
+  - name: Orch-Deploy Pod logs
+    if: always()
+    uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+    with:
+      name: Orch-Deploy Pod logs
+      path: |
+    	pod_logs/*
