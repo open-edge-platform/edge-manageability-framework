@@ -8,7 +8,7 @@ go 1.24.1
 
 require (
 	github.com/Nerzal/gocloak/v13 v13.9.0
-	github.com/aws/aws-sdk-go v1.55.7
+	github.com/aws/aws-sdk-go v1.55.8
 	github.com/bitfield/script v0.24.1
 	github.com/docker/docker v27.3.1+incompatible
 	github.com/golang-jwt/jwt/v5 v5.2.2
