@@ -461,7 +461,7 @@ jobs:
       - name: Deploy Kind Orchestrator
         id: deploy-kind-orchestrator
         uses: ./.github/actions/deploy_kind
-        timeout-minutes: 35
+        timeout-minutes: 45
         with:
           orch_version: ${{ github.event.pull_request.head.sha || github.sha }}
           orch_password: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
@@ -740,12 +740,10 @@ jobs:
           yq eval ".orchestrator.admin_password = \"${KC_ADMIN_PWD}\"" -i orchestrator-configs/on-prem.yaml
 
           source venv_edge-manage-test-automation/bin/activate
-          # TODO: Include cf6 and cf8 tests back into the execution when VM application deployment failure is fixed
           robot -L DEBUG --pythonpath . \
             --name "Golden Suite: Core Foundation" \
             -d robot_output/core_foundation \
             -V orchestrator-configs/on-prem.yaml \
-            --exclude cf6 --exclude cf8 \
             --exitonfailure \
             tests/core_foundation/core_foundation.robot
 
@@ -818,7 +816,12 @@ jobs:
           needs.check-changed-files.outputs.on-prem == 'true' ||
           needs.check-changed-files.outputs.orch == 'true' ||
           needs.check-changed-files.outputs.ci == 'true'
-        run: mage test:onboarding
+        run: |
+          set +e
+          mage test:onboarding
+          TEST_EXIT_CODE=$?
+          sudo cat /var/log/libvirt/qemu/edge-node-EN123456789-console.log || true
+          exit $TEST_EXIT_CODE
 
   tag-repo:
     permissions:
