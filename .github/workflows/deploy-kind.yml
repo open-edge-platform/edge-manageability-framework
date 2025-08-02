@@ -1,0 +1,21 @@
+name: Run Deploy Orchestrator on Kind Every Hour
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # ⏰ Every 60 minutes (at minute 0 of every hour, UTC)
+  workflow_dispatch:      # Optional: allows manual run
+
+jobs:
+  deploy-kind:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy Orchestrator
+        uses: ./.github/actions/deploy-kind
+        with:
+          orch_version: "main"
+          orch_password: ${{ secrets.ORCH_PASSWORD }}
+          docker_username: ${{ secrets.DOCKER_USERNAME }}
+          docker_password: ${{ secrets.DOCKER_PASSWORD }}
+          token: ${{ secrets.PAT_TOKEN }}   # Make sure to store this as a secret
+          deployment_type: "all"
