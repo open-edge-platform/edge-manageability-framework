@@ -2,11 +2,11 @@ name: Run Deploy Orchestrator on Kind Every Hour
 
 on:
   schedule:
-    - cron: '0 * * * *'  # ⏰ Every 60 minutes (UTC)
-  push:                  # ✅ Run on every new commit
-  workflow_dispatch:     # ✅ Allow manual trigger
+    - cron: '0 * * * *'  # Every 60 minutes (UTC)
+  push:                  # On every new commit
+  workflow_dispatch:     # Manual trigger
 
-  concurrency:
+concurrency:
   group: deploy-kind-${{ github.ref }}
   cancel-in-progress: true
 
@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
 
