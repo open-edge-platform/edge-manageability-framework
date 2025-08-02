@@ -3,7 +3,8 @@ name: Run Deploy Orchestrator on Kind Every Hour
 on:
   schedule:
     - cron: '0 * * * *'  # ⏰ Every 60 minutes (at minute 0 of every hour, UTC)
-  workflow_dispatch:      # Optional: allows manual run
+  push:                  # ✅ Run on every new commit
+  workflow_dispatch:     # ✅ Allow manual trigger
 
 jobs:
   deploy-kind:
