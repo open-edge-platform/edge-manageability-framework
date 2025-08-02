@@ -21,6 +21,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
+          ref: kind-stability
           persist-credentials: false
 
       - name: Deploy Kind Orchestrator
