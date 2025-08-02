@@ -470,6 +470,7 @@ jobs:
           token: ${{ secrets.SYS_ORCH_GITHUB }}
           deployment_type: all
       - name: Collect diagnostics
+        if: always()
         uses: ./.github/actions/collect_diagnostics
         timeout-minutes: 15
       - name: Run policy compliance tests
