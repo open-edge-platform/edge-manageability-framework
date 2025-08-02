@@ -1,8 +1,8 @@
-name: Run Deploy Orchestrator on Kind Every Hour
+name: Run Deploy Orchestrator on Kind Every 10 Minutes
 
 on:
   schedule:
-    - cron: '*/10 * * * *'  # Every 30 minutes (UTC)
+    - cron: '*/10 * * * *'  # Every 10 minutes (UTC)
   push:
     branches:
       - kind-stability
@@ -14,7 +14,8 @@ concurrency:
 
 jobs:
   deploy-kind:
-    if: github.ref == 'refs/heads/kind-stability'
+    # Only run scheduled jobs on kind-stability branch
+    if: github.ref == 'refs/heads/kind-stability' || github.event_name != 'schedule'
     runs-on: ubuntu-24.04-16core-64GB
 
     env:
