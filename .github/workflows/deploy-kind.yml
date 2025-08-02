@@ -2,9 +2,11 @@ name: Run Deploy Orchestrator on Kind Every Hour
 
 on:
   schedule:
-    - cron: '0 * * * *'  # Every 60 minutes (UTC)
-  push:                  # On every new commit
-  workflow_dispatch:     # Manual trigger
+    - cron: '0 * * * *'  # Every hour (UTC)
+  push:
+    branches:
+      - kind-stability
+  workflow_dispatch:
 
 concurrency:
   group: deploy-kind-${{ github.ref }}
@@ -36,7 +38,7 @@ jobs:
           token: ${{ secrets.SYS_ORCH_GITHUB }}
           deployment_type: all
 
-      - name: Collect pod logs 
+      - name: Collect pod logs
         if: always()
         uses: ./.github/actions/collect_diagnostics
         timeout-minutes: 15
