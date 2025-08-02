@@ -19,3 +19,8 @@ jobs:
           docker_password: ${{ secrets.DOCKER_PASSWORD }}
           token: ${{ secrets.PAT_TOKEN }}   # Make sure to store this as a secret
           deployment_type: "all"
+      - name: Collect pod logs 
+        if: always()
+        uses: ./.github/actions/collect_diagnostics
+        timeout-minutes: 15
+
