@@ -6,6 +6,10 @@ on:
   push:                  # ✅ Run on every new commit
   workflow_dispatch:     # ✅ Allow manual trigger
 
+  concurrency:
+  group: deploy-kind-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   deploy-kind:
     runs-on: ubuntu-24.04-16core-64GB
