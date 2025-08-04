@@ -24,9 +24,10 @@ PATCH_FILE="./sync-patch.yaml"
 
 # Create the patch file
 cat <<EOF > "$PATCH_FILE"
-metadata:
-  annotations:
-    argocd.argoproj.io/refresh: "hard"
+operation:
+  sync:
+    syncStrategy:
+      hook: {}
 EOF
 
 echo "📄 Patch file created: $PATCH_FILE"
