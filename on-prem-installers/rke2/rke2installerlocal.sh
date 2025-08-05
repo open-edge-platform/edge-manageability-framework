@@ -108,6 +108,15 @@ sudo mkdir -p /etc/rancher/rke2
 sudo bash -c 'cat << EOF >  /etc/rancher/rke2/config.yaml
 write-kubeconfig-mode: "0644"
 audit-policy-file: "/etc/rancher/rke2/audit-policy.yaml"
+bind-address: 127.0.0.1
+kube-apiserver-arg:
+  - "bind-address=127.0.0.1"
+kubelet-arg:
+  - address=127.0.0.1
+etcd-arg:
+  - listen-client-urls=https://127.0.0.1:2379
+  - listen-peer-urls=https://127.0.0.1:2380
+advertise-address: 127.0.0.1
 cni:
   - calico
 disable:
