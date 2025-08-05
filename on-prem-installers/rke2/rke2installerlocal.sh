@@ -117,6 +117,14 @@ etcd-arg:
   - listen-client-urls=https://127.0.0.1:2379
   - listen-peer-urls=https://127.0.0.1:2380
 advertise-address: 127.0.0.1
+tls-san:
+  - "127.0.0.1"                           # Localhost IPv4
+  - "::1"                                 # Localhost IPv6
+  - "localhost"                           # Localhost hostname
+  - "kubernetes"                          # Kubernetes service
+  - "kubernetes.default"                  # Kubernetes service FQDN
+  - "kubernetes.default.svc"
+  - "kubernetes.default.svc.cluster.local"
 cni:
   - calico
 disable:
