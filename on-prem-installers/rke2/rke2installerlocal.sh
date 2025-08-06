@@ -105,26 +105,19 @@ sudo cp rke2/audit-policy.yaml /etc/rancher/rke2/audit-policy.yaml
 
 # Enable Calico CNI. Disable Canal CNI and Nginx Ingress.
 sudo mkdir -p /etc/rancher/rke2
-sudo bash -c 'cat << EOF >  /etc/rancher/rke2/config.yaml
+export rancher_ip=`hostname -i`
+sudo -E bash -c 'cat << EOF >  /etc/rancher/rke2/config.yaml
 write-kubeconfig-mode: "0644"
 audit-policy-file: "/etc/rancher/rke2/audit-policy.yaml"
-bind-address: 127.0.0.1
+bind-address: $rancher_ip
 kube-apiserver-arg:
-  - "bind-address=127.0.0.1"
+  - "bind-address=$rancher_ip"
 kubelet-arg:
-  - address=127.0.0.1
+  - address=$rancher_ip
 etcd-arg:
-  - listen-client-urls=https://127.0.0.1:2379
-  - listen-peer-urls=https://127.0.0.1:2380
-advertise-address: 127.0.0.1
-tls-san:
-  - "127.0.0.1"                           # Localhost IPv4
-  - "::1"                                 # Localhost IPv6
-  - "localhost"                           # Localhost hostname
-  - "kubernetes"                          # Kubernetes service
-  - "kubernetes.default"                  # Kubernetes service FQDN
-  - "kubernetes.default.svc"
-  - "kubernetes.default.svc.cluster.local"
+  - listen-client-urls=https://$rancher_ip:2379
+  - listen-peer-urls=https://$rancher_ip:2380
+advertise-address: $rancher_ip
 cni:
   - calico
 disable:
