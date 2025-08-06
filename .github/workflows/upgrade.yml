@@ -9,12 +9,16 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+permissions: {}
+
 # Manual Trigger
 on:
   workflow_dispatch:
 
 jobs:
   upgrade-from-version:
+    permissions:
+      contents: read
     name: Upgrade from version
     strategy:
       matrix:
