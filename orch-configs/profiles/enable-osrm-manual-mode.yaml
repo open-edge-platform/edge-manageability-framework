@@ -7,4 +7,4 @@
 
 argo:
   infra-managers:
-    os-resource-manager-manual-mode: false
+    os-resource-manager-manual-mode: true
