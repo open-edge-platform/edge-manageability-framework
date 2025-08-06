@@ -29,6 +29,7 @@ root:
     - orch-configs/profiles/profile-aws.yaml
     - orch-configs/profiles/alerting-emails.yaml
     - orch-configs/profiles/enable-explicit-proxy.yaml
+    - orch-configs/profiles/enable-osrm-manual-mode.yaml
     - orch-configs/profiles/resource-default.yaml
     - orch-configs/clusters/bkc.yaml
 
