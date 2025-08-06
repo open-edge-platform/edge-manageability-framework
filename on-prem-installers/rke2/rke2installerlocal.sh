@@ -111,7 +111,7 @@ write-kubeconfig-mode: "0644"
 audit-policy-file: "/etc/rancher/rke2/audit-policy.yaml"
 bind-address: $rancher_ip
 kube-apiserver-arg:
-  - "bind-address=$rancher_ip"
+  - "bind-address=127.0.0.1"
 kubelet-arg:
   - address=$rancher_ip
 etcd-arg:
