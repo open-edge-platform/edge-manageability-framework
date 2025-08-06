@@ -110,8 +110,10 @@ sudo -E bash -c 'cat << EOF >  /etc/rancher/rke2/config.yaml
 write-kubeconfig-mode: "0644"
 audit-policy-file: "/etc/rancher/rke2/audit-policy.yaml"
 bind-address: $rancher_ip
+#could cause issues
+node-ip: $rancher_ip
 kube-apiserver-arg:
-  - "bind-address=127.0.0.1"
+  - "bind-address=$rancher_ip"
 kubelet-arg:
   - address=$rancher_ip
 etcd-arg:
