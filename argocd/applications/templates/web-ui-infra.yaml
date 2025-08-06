@@ -19,10 +19,10 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
-    - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
-      chart: orch-ui/charts/orch-ui-infra
-      targetRevision: 1.0.22
-      helm:
+      - repoURL: https://github.com/open-edge-platform/orch-ui
+        path: apps/infra/deploy/
+        targetRevision: main
+        helm:
         releaseName: web-ui
         valuesObject:
           {{- $customFile := printf "custom/%s.tpl" $appName }}
