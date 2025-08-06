@@ -22,6 +22,7 @@ root:
     - orch-configs/profiles/artifact-rs-production-noauth.yaml
     - orch-configs/profiles/o11y-onprem.yaml
     - orch-configs/profiles/enable-explicit-proxy.yaml
+    - orch-configs/profiles/enable-osrm-manual-mode.yaml
     - orch-configs/profiles/resource-default.yaml
     - orch-configs/clusters/onprem-explicit-proxy.yaml
 
