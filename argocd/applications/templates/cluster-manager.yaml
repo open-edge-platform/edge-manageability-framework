@@ -21,7 +21,7 @@ spec:
   sources:
     - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
       chart: cluster/charts/{{$appName}}
-      targetRevision: 2.1.8
+      targetRevision: 2.1.13
       helm:
         releaseName: {{$appName}}
         valuesObject:
@@ -33,7 +33,7 @@ spec:
           {{- mergeOverwrite $baseConfig $customConfig $overwrite | toYaml | nindent 10 }}
     - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
       chart: cluster/charts/cluster-template-crd
-      targetRevision: 2.1.8
+      targetRevision: 2.1.13
   destination:
     namespace: {{$namespace}}
     server: {{ required "A valid targetServer entry required!" .Values.argo.targetServer }}

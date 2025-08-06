@@ -8,10 +8,10 @@ go 1.24.1
 
 require (
 	github.com/Nerzal/gocloak/v13 v13.9.0
-	github.com/aws/aws-sdk-go v1.55.7
+	github.com/aws/aws-sdk-go v1.55.8
 	github.com/bitfield/script v0.24.1
 	github.com/docker/docker v27.3.1+incompatible
-	github.com/golang-jwt/jwt/v5 v5.2.2
+	github.com/golang-jwt/jwt/v5 v5.2.3
 	github.com/google/uuid v1.6.0
 	github.com/magefile/mage v1.15.0
 	github.com/onsi/ginkgo/v2 v2.23.4
@@ -35,7 +35,7 @@ require (
 	golang.org/x/sync v0.14.0
 	google.golang.org/grpc v1.72.2
 	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/apimachinery v0.32.6
+	k8s.io/apimachinery v0.32.7
 	k8s.io/client-go v0.32.5
 	oras.land/oras-go/v2 v2.5.0
 	sigs.k8s.io/controller-runtime v0.20.4
