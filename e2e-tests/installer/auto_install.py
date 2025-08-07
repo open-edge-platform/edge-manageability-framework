@@ -547,6 +547,18 @@ class AutoInstall:
         self.current_step = "Configure Provision"
         print(f"Step: {self.current_step}")
 
+        print(f"provision config command "
+            f"utils/provision.sh config --aws-account {self.aws_account} "
+            f"--customer-state-prefix {self.state_bucket_prefix} "
+            f"--environment $CLUSTER_NAME --parent-domain {self.cluster_domain} "
+            f"--region $AWS_REGION --email builder@infra-host.com "
+            f"--profile {self.cluster_profile} "
+            f"{self.vpc_params} {self.vpc_jumphost_params} {self.jumphost_allow_list} "
+            f"{self.auto_cert} {self.internal_params} {self.socks_proxy_params} --auto "
+            f"{self.enable_cache_registry} "
+            f"{self.eks_internal_params}"
+        )
+
         self.installer_session.sendline("cd ~/pod-configs")
         self.installer_session.expect("orchestrator-admin:pod-configs")
         self.installer_session.sendline(
