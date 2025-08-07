@@ -113,7 +113,7 @@ bind-address: $rancher_ip
 #could cause issues
 node-ip: $rancher_ip
 kube-apiserver-arg:
-  - "bind-address=$rancher_ip"
+  - "bind-address=0.0.0.0"
 kubelet-arg:
   - address=$rancher_ip
   - "max-pods=200"
@@ -126,6 +126,8 @@ disable:
   - rke2-snapshot-controller
   - rke2-snapshot-validation-webhook
 etcd-arg:
+  - --listen-client-urls=https://$rancher_ip:2379,https://127.0.0.1:2379
+  - --listen-peer-urls=https://$rancher_ip:2380,https://127.0.0.1:2380
   - --debug=false
   - --log-package-levels=INFO
   - --config-file=/var/lib/rancher/rke2/server/db/etcd/config
