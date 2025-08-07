@@ -741,12 +741,10 @@ jobs:
           yq eval ".orchestrator.admin_password = \"${KC_ADMIN_PWD}\"" -i orchestrator-configs/on-prem.yaml
 
           source venv_edge-manage-test-automation/bin/activate
-          # Include cf7 back when issue: ITEP-73427 is resolved
           robot -L DEBUG --pythonpath . \
             --name "Golden Suite: Core Foundation" \
             -d robot_output/core_foundation \
             -V orchestrator-configs/on-prem.yaml \
-            --exclude cf7 \
             --exitonfailure \
             tests/core_foundation/core_foundation.robot
 
