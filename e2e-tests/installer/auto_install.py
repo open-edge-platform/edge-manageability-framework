@@ -663,6 +663,20 @@ class AutoInstall:
         self.current_step = "Provision"
         print(f"Step: {self.current_step}")
 
+        print(f"provision install command "
+            f"utils/provision.sh install --aws-account {self.aws_account} "
+            f"--customer-state-prefix {self.state_bucket_prefix} "
+            f"--environment $CLUSTER_NAME --parent-domain {self.cluster_domain} "
+            f"--region $AWS_REGION --email builder@infra-host.com "
+            f"--aws-admin-roles {self.aws_roles} "
+            f"--azuread-refresh-token {self.refresh_token} "
+            f"--profile {self.cluster_profile} "
+            f"{self.vpc_params} {self.vpc_jumphost_params} {self.jumphost_allow_list} "
+            f"{self.auto_cert} {self.internal_params} {self.socks_proxy_params} --auto --reduce-ns-ttl "
+            f"{self.enable_cache_registry} "
+            f"{self.eks_internal_params}"
+        )
+
         self.installer_session.sendline("cd ~/pod-configs")
 
         self.installer_session.expect("orchestrator-admin:pod-configs")
@@ -740,6 +754,11 @@ class AutoInstall:
             self.installer_session.expect("orchestrator-admin:~")
 
         # configure cluster
+        print(f"environment variables ")
+        print(os.environ)
+        print(f"configure cluster command "
+            f"DISABLE_AWS_PROD_PROFILE={self.disable_aws_prod_profile} ./configure-cluster.sh {self.vpc_jumphost_params}"
+        )
         self.installer_session.sendline(f"DISABLE_AWS_PROD_PROFILE={self.disable_aws_prod_profile} ./configure-cluster.sh {self.vpc_jumphost_params}")
 
         editor_prompt = False
