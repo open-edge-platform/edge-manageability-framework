@@ -732,10 +732,10 @@ username=$(kubectl get secret app-gitea-credential -n orch-platform -o jsonpath=
 # Store Gitea credentials in Vault 
 kubectl exec -it vault-0 -n orch-platform -c vault -- vault kv put secret/ma_git_service username=$username password=$password
  
-# Delete all pods with name containing 'fleet-gitrepo-cred'
-kubectl get pods --all-namespaces --no-headers | awk '/fleet-gitrepo-cred/ {print $1, $2}' | while read ns pod; do
-    echo "Deleting pod $pod in namespace $ns"
-    kubectl delete pod "$pod" -n "$ns"
+# Delete all secret with name containing 'fleet-gitrepo-cred'
+kubectl get secret --all-namespaces --no-headers | awk '/fleet-gitrepo-cred/ {print $1, $2}' | while read ns pod; do
+    echo "Deleting secret $pod in namespace $ns"
+    kubectl delete secret "$pod" -n "$ns"
 done
 
 echo "Upgrade completed! Wait for ArgoCD applications to be in 'Healthy' state"
