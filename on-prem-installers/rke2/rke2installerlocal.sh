@@ -116,6 +116,7 @@ kube-apiserver-arg:
   - "bind-address=$rancher_ip"
 kubelet-arg:
   - address=$rancher_ip
+  - "max-pods=200"
 etcd-arg:
   - listen-client-urls=https://$rancher_ip:2379
   - listen-peer-urls=https://$rancher_ip:2380
@@ -127,8 +128,6 @@ disable:
   - rke2-ingress-nginx
   - rke2-snapshot-controller
   - rke2-snapshot-validation-webhook
-kubelet-arg:
-  - "max-pods=200"
 etcd-arg:
   - --debug=false
   - --log-package-levels=INFO
