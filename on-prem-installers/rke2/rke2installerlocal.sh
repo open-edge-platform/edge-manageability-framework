@@ -118,8 +118,8 @@ kubelet-arg:
   - address=$rancher_ip
   - "max-pods=200"
 etcd-arg:
-  - listen-client-urls=https://$rancher_ip:2379
-  - listen-peer-urls=https://$rancher_ip:2380
+  - listen-client-urls=https://$rancher_ip:2379,https://127.0.0.1:2379
+  - listen-peer-urls=https://$rancher_ip:2380,https://127.0.0.1:2380
 advertise-address: $rancher_ip
 cni:
   - calico
