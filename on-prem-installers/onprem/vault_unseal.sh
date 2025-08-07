@@ -80,6 +80,15 @@ vault_unseal() {
   fi
 
   echo "Vault unsealed successfully."
+   
+  token=$(echo "$secret_json" | jq -r '.root_token?' 2>/dev/null)
+  if [[ -z "$token" ]]; then
+    echo "Error: Failed to retrieve Vault root token. 'root_token' field may be missing or malformed in secret 'vault-keys'."
+    return 1
+  fi
+
+  echo "Logging in to Vault with root token..."
+  kubectl exec -it vault-0 -n orch-platform -c vault -- vault login token="$token"
 
   kubectl delete pod --ignore-not-found=true -n orch-platform platform-keycloak-0
 }
