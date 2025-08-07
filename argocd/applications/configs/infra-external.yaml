@@ -108,4 +108,10 @@ amt:
     params:
       # User-provided password
       # Should have One uppercase letter, one lowercase letter, one digit, one special character, and be at least 8 characters long.
-      password: "P@ssw0rd"
+      password: ""
+    env:
+      oidc:
+        oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
+        oidc_tls_insecure_skip_verify_env_name: "OIDC_TLS_INSECURE_SKIP_VERIFY"
+        oidc_tls_insecure_skip_verify_value: "true"
+
