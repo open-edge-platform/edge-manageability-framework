@@ -105,10 +105,10 @@ else
 fi
 
 if [ -z $SMTP_URL ]; then
-    echo "SMTP_URL enabled!"
+    echo "SMTP_URL not enabled! HERE1"
     export EMAIL_PROFILE="#- orch-configs/profiles/alerting-emails.yaml"
 else
-    echo "SMTP_URL not enabled!"
+    echo "SMTP_URL enabled! HERE2"
     export EMAIL_PROFILE="- orch-configs/profiles/alerting-emails.yaml"
 fi
 
