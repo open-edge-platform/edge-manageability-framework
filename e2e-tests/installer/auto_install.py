@@ -756,10 +756,11 @@ class AutoInstall:
         # configure cluster
         print(f"environment variables ")
         print(os.environ)
+        smtp_url = os.environ['SMTP_URL']
         print(f"configure cluster command "
-            f"DISABLE_AWS_PROD_PROFILE={self.disable_aws_prod_profile} ./configure-cluster.sh {self.vpc_jumphost_params}"
+            f"DISABLE_AWS_PROD_PROFILE={self.disable_aws_prod_profile} SMTP_URL={smtp_url} ./configure-cluster.sh {self.vpc_jumphost_params}"
         )
-        self.installer_session.sendline(f"DISABLE_AWS_PROD_PROFILE={self.disable_aws_prod_profile} ./configure-cluster.sh {self.vpc_jumphost_params}")
+        self.installer_session.sendline(f"DISABLE_AWS_PROD_PROFILE={self.disable_aws_prod_profile} SMTP_URL={smtp_url} ./configure-cluster.sh {self.vpc_jumphost_params}")
 
         editor_prompt = False
         while not editor_prompt:
