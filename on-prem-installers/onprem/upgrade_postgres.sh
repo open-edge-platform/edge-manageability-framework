@@ -14,7 +14,7 @@ application_namespace=onprem
 
 check_postgres() {
   if [[ -f "$local_backup_path" ]]; then
-    read -p "A backfile file already exists. 
+    read -rp "A backfile file already exists. 
     If you would like to continue using this backup file type Continue :
     " confirm && [[ $confirm == [cC][oO][nN][tT][iI][nN][uU][eE] ]] || exit 1
     # avoid the rest of the check function as this could be a recovery from a failed update
