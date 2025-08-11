@@ -13,10 +13,12 @@ POSTGRES_USERNAME="postgres"
 application_namespace=onprem
 
 check_postgres() {
-  if [ -f "$local_backup_path" ]; then
-    echo "Backup file already exists. Please remove/rename it before proceeding."
-    echo "If you want to restore an already created file please comment out the prechecks and backup functions"
-    exit 1
+  if [[ -f "$local_backup_path" ]]; then
+    read -rp "A backfile file already exists. 
+    If you would like to continue using this backup file type Continue :
+    " confirm && [[ $confirm == [cC][oO][nN][tT][iI][nN][uU][eE] ]] || exit 1
+    # avoid the rest of the check function as this could be a recovery from a failed update
+    return
   fi
 
   # Check if the PostgreSQL pod is running
@@ -41,10 +43,13 @@ enable_security() {
 }
 
 backup_postgres() {
+  if [[ -f "$local_backup_path" ]]; then
+  echo "Backup file detected skipping backup"
+  return
+  fi
   echo "Backing up databases from pod $podname in namespace $postgres_namespace..."
 
   remote_backup_path="/tmp/${postgres_namespace}_${podname}_backup.sql"
-    
   kubectl exec -n $postgres_namespace $podname -- /bin/bash -c "$(typeset -f disable_security); disable_security"
 
   if kubectl exec -n $postgres_namespace $podname -- /bin/bash -c "pg_dumpall -U $POSTGRES_USERNAME -f '$remote_backup_path'"; then
@@ -60,7 +65,7 @@ backup_postgres() {
 delete_postgres() {
   kubectl patch application -n $application_namespace postgresql-secrets  -p '{"metadata": {"finalizers": ["resources-finalizer.argocd.argoproj.io"]}}' --type merge
   kubectl delete application -n $application_namespace postgresql-secrets --cascade=background
-  # backgrounbd as pvc will not be deleted until app deletion
+  # background as pvc will not be deleted until app deletion
   kubectl delete pvc -n $postgres_namespace data-postgresql-0 &
   # patch ensures cascade delete
   kubectl patch application -n $application_namespace postgresql  -p '{"metadata": {"finalizers": ["resources-finalizer.argocd.argoproj.io"]}}' --type merge
@@ -80,21 +85,3 @@ restore_postgres() {
   kubectl exec -n $postgres_namespace $podname -- /bin/bash -c "psql -U $POSTGRES_USERNAME <  $remote_backup_path "
   kubectl exec -n $postgres_namespace $podname -- /bin/bash -c "$(typeset -f enable_security); enable_security"
 }
-
-#### Check if the PostgreSQL pod is running
-# prechecks
-
-## Backup secret
-# kubectl get secret -n $postgres_namespace postgresql -o yaml > postgres_secret.yaml
-
-# backup_postgres
-# delete_postgres
-## Delete secret
-# kubectl delete secret -n $postgres_namespace postgresql
-
-# echo "upgrade argo chart HERE"
-# # Restore secret after app delete but before postgress restored
-# yq e 'del(.metadata.labels, .metadata.annotations, .metadata.uid, .metadata.creationTimestamp)' postgres_secret.yaml | kubectl apply -f -
-# sleep 30
-
-# restore_postgres
