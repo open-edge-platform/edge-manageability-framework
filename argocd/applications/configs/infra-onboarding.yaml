@@ -29,7 +29,7 @@ onboarding-manager:
     tlsOption: "gateway-tls"
     gatewayNamespace: orch-gateway
   env:
-    tinkerActionsVersion: "1.19.0"
+    tinkerActionsVersion: "1.19.3"
     oidc:
       oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
       # Skip AuthZ for CDN-boots
@@ -56,5 +56,5 @@ dkam:
 
 infra-config:
   config:
-    enAgentManifestTag: "1.1.6"
+    enAgentManifestTag: "1.2.1"
     embImageUrl: files-edge-orch/repository/microvisor/uos/emb_uos_x86_64_20250717.tar.gz

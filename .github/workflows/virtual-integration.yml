@@ -461,7 +461,7 @@ jobs:
       - name: Deploy Kind Orchestrator
         id: deploy-kind-orchestrator
         uses: ./.github/actions/deploy_kind
-        timeout-minutes: 35
+        timeout-minutes: 45
         with:
           orch_version: ${{ github.event.pull_request.head.sha || github.sha }}
           orch_password: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
@@ -470,6 +470,7 @@ jobs:
           token: ${{ secrets.SYS_ORCH_GITHUB }}
           deployment_type: all
       - name: Collect diagnostics
+        if: always()
         uses: ./.github/actions/collect_diagnostics
         timeout-minutes: 15
       - name: Run policy compliance tests
@@ -663,8 +664,8 @@ jobs:
       github.ref == 'refs/heads/main' ||
       github.ref == 'refs/heads/main-pass-validation'
       )
-    runs-on: ubuntu-22.04-32core-128GB
-    timeout-minutes: 120
+    runs-on: ubuntu-22.04-16core-64GB
+    timeout-minutes: 90
     env:
       KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
     steps:
@@ -779,7 +780,7 @@ jobs:
       github.ref == 'refs/heads/main-pass-validation'
       )
     runs-on: ubuntu-22.04-16core-64GB
-    timeout-minutes: 120
+    timeout-minutes: 90
     env:
       KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
     steps:
@@ -816,7 +817,12 @@ jobs:
           needs.check-changed-files.outputs.on-prem == 'true' ||
           needs.check-changed-files.outputs.orch == 'true' ||
           needs.check-changed-files.outputs.ci == 'true'
-        run: mage test:onboarding
+        run: |
+          set +e
+          mage test:onboarding
+          TEST_EXIT_CODE=$?
+          sudo cat /var/log/libvirt/qemu/edge-node-EN123456789-console.log || true
+          exit $TEST_EXIT_CODE
 
   tag-repo:
     permissions:
