@@ -412,7 +412,6 @@ fi
 
 
 # Check if postgres is running and if it is safe to backup
-# Comment out the following check in case you want to restore an already created backup
 check_postgres
 if ! check_postgres; then
     echo "PostgreSQL is not running or backup file already exists. Exiting..."
@@ -428,7 +427,6 @@ fi
 cleanup_gitea_secrets
 
 # Backup PostgreSQL databases
-# Comment out the following check in case you want to restore an already created backup
 backup_postgres
 
 
