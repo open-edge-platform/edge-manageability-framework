@@ -14,9 +14,11 @@ application_namespace=onprem
 
 check_postgres() {
   if [[ -f "$local_backup_path" ]]; then
-    echo "Backup file already exists. Please remove/rename it before proceeding."
-    echo "If you want to restore an already created file please comment out the following functions from the upgrade script: check_postgres and backup_postgres"
-    exit 1
+    read -p "A backfile file already exists. 
+    If you would like to continue using this backup file type Continue :
+    " confirm && [[ $confirm == [cC][oO][nN][tT][iI][nN][uU][eE] ]] || exit 1
+    # avoid the rest of the check function as this could be a recovery from a failed update
+    return
   fi
 
   # Check if the PostgreSQL pod is running
@@ -41,6 +43,10 @@ enable_security() {
 }
 
 backup_postgres() {
+  if [[ -f "$local_backup_path" ]]; then
+  echo "Backup file detected skipping backup"
+  return
+  fi
   echo "Backing up databases from pod $podname in namespace $postgres_namespace..."
 
   remote_backup_path="/tmp/${postgres_namespace}_${podname}_backup.sql"
