@@ -105,9 +105,19 @@ sudo cp rke2/audit-policy.yaml /etc/rancher/rke2/audit-policy.yaml
 
 # Enable Calico CNI. Disable Canal CNI and Nginx Ingress.
 sudo mkdir -p /etc/rancher/rke2
-sudo bash -c 'cat << EOF >  /etc/rancher/rke2/config.yaml
+export rancher_ip=`hostname -i`
+sudo -E bash -c 'cat << EOF >  /etc/rancher/rke2/config.yaml
 write-kubeconfig-mode: "0644"
 audit-policy-file: "/etc/rancher/rke2/audit-policy.yaml"
+bind-address: $rancher_ip
+#could cause issues
+node-ip: $rancher_ip
+kube-apiserver-arg:
+  - "bind-address=0.0.0.0"
+kubelet-arg:
+  - address=$rancher_ip
+  - "max-pods=200"
+advertise-address: $rancher_ip
 cni:
   - calico
 disable:
@@ -115,8 +125,6 @@ disable:
   - rke2-ingress-nginx
   - rke2-snapshot-controller
   - rke2-snapshot-validation-webhook
-kubelet-arg:
-  - "max-pods=200"
 etcd-arg:
   - --debug=false
   - --log-package-levels=INFO
