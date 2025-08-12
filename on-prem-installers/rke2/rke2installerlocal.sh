@@ -115,7 +115,6 @@ disable:
   - rke2-ingress-nginx
   - rke2-snapshot-controller
   - rke2-snapshot-validation-webhook
-disable-cloud-controller: true  
 kubelet-arg:
   - "max-pods=200"
 etcd-arg:
