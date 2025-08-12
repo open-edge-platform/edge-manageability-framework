@@ -135,7 +135,7 @@ func (Build) osConfigInstaller() error {
 		"-t", "deb",
 		"--name", "onprem-config-installer",
 		"-p", "./dist",
-		"-d", "jq,libpq5,apparmor,lvm2,net-tools,ntp,openssh-server", //nolint:misspell
+		"-d", "jq,libpq5,apparmor,lvm2,net-tools,ntp,openssh-server",
 		"-d", "software-properties-common,tpm2-abrmd,tpm2-tools,unzip",
 		"--version", debVersion,
 		"--architecture", "amd64",
