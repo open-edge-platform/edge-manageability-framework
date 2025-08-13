@@ -205,10 +205,10 @@ fi
     # Force sync all applications on the cluster. We need to ensure that new version of
     # ArgoCD properly picked Applications definitions that were governed by older version.
     apps=$(kubectl get applications -n "$apps_ns" --no-headers -o custom-columns=":metadata.name")
-    #for app in $apps; do
-    #    echo "Syncing ArgoCD application: $app"
-    #    kubectl patch -n "$apps_ns" applications "$app" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
-    #done
+    for app in $apps; do
+        echo "Syncing ArgoCD application: $app"
+        kubectl patch -n "$apps_ns" applications "$app" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+    done
     kubectl patch -n "$apps_ns" applications root-app --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 }
 
@@ -538,22 +538,22 @@ echo "Upgrading Edge Orchestrator Packages..."
 
 # Skip saving passwords if postgres-secrets-password.txt exists and is not empty
 if [[ ! -s postgres-secrets-password.txt ]]; then
-    ALERTING=$(kubectl get secret alerting-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}')
-    CATALOG_SERVICE=$(kubectl get secret app-orch-catalog-local-postgresql -n orch-app -o jsonpath='{.data.PGPASSWORD}')
-    INVENTORY=$(kubectl get secret inventory-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}')
-    IAM_TENANCY=$(kubectl get secret iam-tenancy-local-postgresql -n orch-iam -o jsonpath='{.data.PGPASSWORD}')
-    PLATFORM_KEYCLOAK=$(kubectl get secret platform-keycloak-local-postgresql -n orch-platform -o jsonpath='{.data.PGPASSWORD}')
-    VAULT=$(kubectl get secret vault-local-postgresql -n orch-platform -o jsonpath='{.data.PGPASSWORD}')
-    POSTGRESQL=$(kubectl get secret postgresql -n orch-database -o jsonpath='{.data.postgres-password}')
-    {
-        echo "Alerting: $ALERTING"
-        echo "CatalogService: $CATALOG_SERVICE"
-        echo "Inventory: $INVENTORY"
-        echo "IAMTenancy: $IAM_TENANCY"
-        echo "PlatformKeycloak: $PLATFORM_KEYCLOAK"
-        echo "Vault: $VAULT"
-        echo "PostgreSQL: $POSTGRESQL"
-    } > postgres-secrets-password.txt
+ALERTING=$(kubectl get secret alerting-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}')
+CATALOG_SERVICE=$(kubectl get secret app-orch-catalog-local-postgresql -n orch-app -o jsonpath='{.data.PGPASSWORD}')
+INVENTORY=$(kubectl get secret inventory-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}')
+IAM_TENANCY=$(kubectl get secret iam-tenancy-local-postgresql -n orch-iam -o jsonpath='{.data.PGPASSWORD}')
+PLATFORM_KEYCLOAK=$(kubectl get secret platform-keycloak-local-postgresql -n orch-platform -o jsonpath='{.data.PGPASSWORD}')
+VAULT=$(kubectl get secret vault-local-postgresql -n orch-platform -o jsonpath='{.data.PGPASSWORD}')
+POSTGRESQL=$(kubectl get secret postgresql -n orch-database -o jsonpath='{.data.postgres-password}')
+{
+    echo "Alerting: $ALERTING"
+    echo "CatalogService: $CATALOG_SERVICE"
+    echo "Inventory: $INVENTORY"
+    echo "IAMTenancy: $IAM_TENANCY"
+    echo "PlatformKeycloak: $PLATFORM_KEYCLOAK"
+    echo "Vault: $VAULT"
+    echo "PostgreSQL: $POSTGRESQL"
+} > postgres-secrets-password.txt
 else
     echo "postgres-secrets-password.txt exists and is not empty, skipping password save."
 fi
@@ -638,21 +638,19 @@ patch_secret() {
         done < postgres-secrets-password.txt
     fi
 
-    kubectl patch secret -n orch-app app-orch-catalog-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$CATALOG_SERVICE\"}}" --type=merge
-    kubectl patch secret -n orch-app app-orch-catalog-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$CATALOG_SERVICE\"}}" --type=merge
-    kubectl patch secret -n orch-iam iam-tenancy-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$IAM_TENANCY\"}}" --type=merge
-    kubectl patch secret -n orch-iam iam-tenancy-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$IAM_TENANCY\"}}" --type=merge
-    kubectl patch secret -n orch-infra alerting-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$ALERTING\"}}" --type=merge
-    kubectl patch secret -n orch-infra alerting-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$ALERTING\"}}" --type=merge
-    kubectl patch secret -n orch-infra inventory-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$INVENTORY\"}}" --type=merge
-    kubectl patch secret -n orch-infra inventory-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$INVENTORY\"}}" --type=merge
-    kubectl patch secret -n orch-platform platform-keycloak-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$PLATFORM_KEYCLOAK\"}}" --type=merge
-    kubectl patch secret -n orch-platform platform-keycloak-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$PLATFORM_KEYCLOAK\"}}" --type=merge
-    kubectl patch secret -n orch-platform vault-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$VAULT\"}}" --type=merge
-    kubectl patch secret -n orch-platform vault-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$VAULT\"}}" --type=merge    
-    # Use a temporary file for the patch payload
-    patch_file=$(mktemp)
-    cat > "$patch_file" <<EOF
+kubectl patch secret -n orch-app app-orch-catalog-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$CATALOG_SERVICE\"}}" --type=merge
+kubectl patch secret -n orch-app app-orch-catalog-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$CATALOG_SERVICE\"}}" --type=merge
+kubectl patch secret -n orch-iam iam-tenancy-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$IAM_TENANCY\"}}" --type=merge
+kubectl patch secret -n orch-iam iam-tenancy-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$IAM_TENANCY\"}}" --type=merge
+kubectl patch secret -n orch-infra alerting-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$ALERTING\"}}" --type=merge
+kubectl patch secret -n orch-infra alerting-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$ALERTING\"}}" --type=merge
+kubectl patch secret -n orch-infra inventory-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$INVENTORY\"}}" --type=merge
+kubectl patch secret -n orch-infra inventory-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$INVENTORY\"}}" --type=merge
+kubectl patch secret -n orch-platform platform-keycloak-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$PLATFORM_KEYCLOAK\"}}" --type=merge
+kubectl patch secret -n orch-platform platform-keycloak-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$PLATFORM_KEYCLOAK\"}}" --type=merge
+kubectl patch secret -n orch-platform vault-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$VAULT\"}}" --type=merge
+kubectl patch secret -n orch-platform vault-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$VAULT\"}}" --type=merge
+kubectl patch secret -n orch-database passwords -p "$(cat <<EOF
 {
   "data": {
     "alerting": "$ALERTING",
@@ -664,11 +662,10 @@ patch_secret() {
   }
 }
 EOF
-    kubectl patch secret -n orch-database passwords --type=merge --patch-file "$patch_file"
-    rm -f "$patch_file"
+)" --type=merge
 
-    # Patch postgresql secret
-    #kubectl patch secret -n orch-database postgresql -p "{\"data\": {\"postgres-password\": \"$POSTGRESQL\"}}" --type=merge
+# Patch postgresql secret
+#kubectl patch secret -n orch-database postgresql -p "{\"data\": {\"postgres-password\": \"$POSTGRESQL\"}}" --type=merge
 }
 # delete_postgres
 
@@ -766,13 +763,13 @@ fi
 
 resync_all_apps
 
-# Restore Gitea credentials to Vault 
+# Restore Gitea credentials to Vault
 password=$(kubectl get secret app-gitea-credential -n orch-platform -o jsonpath="{.data.password}" | base64 -d)
 username=$(kubectl get secret app-gitea-credential -n orch-platform -o jsonpath="{.data.username}" | base64 -d)
 
-# Store Gitea credentials in Vault 
+# Store Gitea credentials in Vault
 kubectl exec -it vault-0 -n orch-platform -c vault -- vault kv put secret/ma_git_service username="$username" password="$password"
- 
+
 # Delete all secrets with name containing 'fleet-gitrepo-cred'
 kubectl get secret --all-namespaces --no-headers | awk '/fleet-gitrepo-cred/ {print $1, $2}' | \
 while IFS=' ' read -r ns secret; do
