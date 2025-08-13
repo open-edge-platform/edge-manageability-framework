@@ -763,7 +763,7 @@ if [[ -s rps_secret.yaml ]]; then
     kubectl apply -f rps_secret.yaml
 fi
 
-resync_all_apps
+kubectl patch application root-app -n "$apps_ns" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
 # Restore Gitea credentials to Vault 
 password=$(kubectl get secret app-gitea-credential -n orch-platform -o jsonpath="{.data.password}" | base64 -d)
