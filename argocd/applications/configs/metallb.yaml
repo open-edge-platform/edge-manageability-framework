@@ -7,5 +7,3 @@
 speaker:
   frr:
     enabled: false
-  memberlist:
-    enabled: false
