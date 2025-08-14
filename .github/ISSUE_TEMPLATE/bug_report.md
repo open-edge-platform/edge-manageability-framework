@@ -23,16 +23,14 @@ A clear and concise description of what you expected to happen.
 **Screenshots**
 If applicable, add screenshots to help explain your problem.
 
-**Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
-
-**Smartphone (please complete the following information):**
- - Device: [e.g. iPhone6]
- - OS: [e.g. iOS8.1]
- - Browser [e.g. stock browser, safari]
- - Version [e.g. 22]
-
+**Hardware and software Enviroment (please complete the following information):**
+ - EMF version [e.g. chrome, safari]
+ - EMF Deployment type: [OnPrem VM/OnPrem Baremetal/Cloud] - 
+ - Edge node Hardware: [Model, CPU, Memory, storage, GPU, NPU, NIC]
+ - Edge node OS: [e.g. EMT or Ubuntu 22.04] 
+   
 **Additional context**
 Add any other context about the problem here.
+
+**Logs**
+Attach any relevent logs from Edge node and EMF 
