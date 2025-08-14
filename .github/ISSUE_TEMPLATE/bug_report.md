@@ -24,7 +24,7 @@ A clear and concise description of what you expected to happen.
 If applicable, add screenshots to help explain your problem.
 
 **Hardware and software Enviroment (please complete the following information):**
- - EMF version [e.g. chrome, safari]
+ - EMF version [e.g. 3.0, 3.1]
  - EMF Deployment type: [OnPrem VM/OnPrem Baremetal/Cloud] - 
  - Edge node Hardware: [Model, CPU, Memory, storage, GPU, NPU, NIC]
  - Edge node OS: [e.g. EMT or Ubuntu 22.04] 
