@@ -543,7 +543,6 @@ if [[ ! -s postgres-secrets-password.txt ]]; then
     IAM_TENANCY=$(kubectl get secret iam-tenancy-local-postgresql -n orch-iam -o jsonpath='{.data.PGPASSWORD}')
     PLATFORM_KEYCLOAK=$(kubectl get secret platform-keycloak-local-postgresql -n orch-platform -o jsonpath='{.data.PGPASSWORD}')
     VAULT=$(kubectl get secret vault-local-postgresql -n orch-platform -o jsonpath='{.data.PGPASSWORD}')
-    POSTGRESQL=$(kubectl get secret postgresql -n orch-database -o jsonpath='{.data.postgres-password}')
     {
         echo "Alerting: $ALERTING"
         echo "CatalogService: $CATALOG_SERVICE"
@@ -551,7 +550,6 @@ if [[ ! -s postgres-secrets-password.txt ]]; then
         echo "IAMTenancy: $IAM_TENANCY"
         echo "PlatformKeycloak: $PLATFORM_KEYCLOAK"
         echo "Vault: $VAULT"
-        echo "PostgreSQL: $POSTGRESQL"
     } > postgres-secrets-password.txt
 else
     echo "postgres-secrets-password.txt exists and is not empty, skipping password save."
@@ -596,9 +594,6 @@ EOF
 eval "sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l ORCH_INSTALLER_PROFILE=$ORCH_INSTALLER_PROFILE GIT_REPOS=$GIT_REPOS apt-get install --only-upgrade --allow-downgrades -y $cwd/$deb_dir_name/onprem-orch-installer_*_amd64.deb"
 echo "Edge Orchestrator getting upgraded to version $(dpkg-query -W -f='${Version}' onprem-orch-installer), wait for SW to deploy... "
 
-# Allow adjustments as some PVCs sizes might have changed
-#kubectl patch storageclass openebs-lvmpv -p '{"allowVolumeExpansion": true}'
-
 # Delete rke2-metrics-server chart. If it fails ignore
 helm delete -n kube-system rke2-metrics-server || true
 
@@ -632,7 +627,6 @@ patch_secret() {
                 IAMTenancy) IAM_TENANCY="$value" ;;
                 PlatformKeycloak) PLATFORM_KEYCLOAK="$value" ;;
                 Vault) VAULT="$value" ;;
-                PostgreSQL) POSTGRESQL="$value" ;;
             esac
         done < postgres-secrets-password.txt
     fi
@@ -648,7 +642,7 @@ patch_secret() {
     kubectl patch secret -n orch-platform platform-keycloak-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$PLATFORM_KEYCLOAK\"}}" --type=merge
     kubectl patch secret -n orch-platform platform-keycloak-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$PLATFORM_KEYCLOAK\"}}" --type=merge
     kubectl patch secret -n orch-platform vault-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$VAULT\"}}" --type=merge
-    kubectl patch secret -n orch-platform vault-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$VAULT\"}}" --type=merge    
+    kubectl patch secret -n orch-platform vault-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$VAULT\"}}" --type=merge
     # Use a temporary file for the patch payload
     patch_file=$(mktemp)
     cat > "$patch_file" <<EOF
@@ -665,11 +659,7 @@ patch_secret() {
 EOF
     kubectl patch secret -n orch-database passwords --type=merge --patch-file "$patch_file"
     rm -f "$patch_file"
-
-    # Patch postgresql secret
-    #kubectl patch secret -n orch-database postgresql -p "{\"data\": {\"postgres-password\": \"$POSTGRESQL\"}}" --type=merge
 }
-# delete_postgres
 
 
 # Stop sync operation for root-app, so it won't be synced with the old version of the application.
@@ -684,11 +674,9 @@ operation:
       hook: {}
 " | sudo tee /tmp/sync-postgresql-patch.yaml
 
-#kubectl patch -n "$apps_ns" application postgresql-secrets --patch-file /tmp/sync-postgresql-patch.yaml --type merge
+
 kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/sync-postgresql-patch.yaml --type merge
 
-
-#kubectl patch -n "$apps_ns" application postgresql --patch-file /tmp/sync-postgresql-patch.yaml --type merge
 
 start_time=$(date +%s)
 timeout=3600 # 1 hour in seconds
@@ -765,13 +753,13 @@ fi
 
 kubectl patch application root-app -n "$apps_ns" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
-# Restore Gitea credentials to Vault 
+# Restore Gitea credentials to Vault
 password=$(kubectl get secret app-gitea-credential -n orch-platform -o jsonpath="{.data.password}" | base64 -d)
 username=$(kubectl get secret app-gitea-credential -n orch-platform -o jsonpath="{.data.username}" | base64 -d)
 
-# Store Gitea credentials in Vault 
+# Store Gitea credentials in Vault
 kubectl exec -it vault-0 -n orch-platform -c vault -- vault kv put secret/ma_git_service username="$username" password="$password"
- 
+
 # Delete all secrets with name containing 'fleet-gitrepo-cred'
 kubectl get secret --all-namespaces --no-headers | awk '/fleet-gitrepo-cred/ {print $1, $2}' | \
 while IFS=' ' read -r ns secret; do
