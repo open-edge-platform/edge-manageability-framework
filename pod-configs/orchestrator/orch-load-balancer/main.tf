@@ -190,6 +190,12 @@ module "traefik_lb_target_group_binding" {
       servicePort      = 443
       target_id        = module.traefik2_load_balancer[0].target_groups["https"].arn
     },
+    "traefik-vpro" : {
+      serviceNamespace = "orch-gateway"
+      serviceName      = "traefik"
+      servicePort      = 4433
+      target_id        = module.traefik3_load_balancer.target_groups["vpro"].arn
+    },
     "argocd" : {
       serviceNamespace = "argocd"
       serviceName      = "argocd-server"
