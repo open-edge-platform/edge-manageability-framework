@@ -59,7 +59,7 @@ while IFS= read -r line; do
 done <<< "$all_templates"
 
 echo "✅ Cleanup complete."
-kubectl get clustertemplate -A
+kubectl get clustertemplate -A | grep k3s
 }
 #restart pod after upgrade call:
 restart_and_wait_pod "orch-iam" "nexus-api-gw"
