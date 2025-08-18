@@ -779,4 +779,7 @@ while IFS=' ' read -r ns secret; do
     kubectl delete secret "$secret" -n "$ns"
 done
 
-echo "Upgrade completed! Wait for ArgoCD applications to be in 'Healthy' state"
+# Run after upgrade script
+./after_upgrade_restart.sh
+
+echo "Upgrade completed! Wait for ArgoCD applications to be in 'Synced' and 'Healthy' state"
