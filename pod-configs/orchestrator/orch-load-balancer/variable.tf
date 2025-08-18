@@ -48,9 +48,9 @@ variable "create_traefik2_load_balancer" {
   default     = true
 }
 
-variable "create_traefik3_load_balancer" {
+variable "create_traefikVpro_load_balancer" {
   type        = bool
-  description = "Set true to create dedicated load balancer for traefik3"
+  description = "Set true to create dedicated load balancer for traefikVpro"
   default     = true
 }
 
