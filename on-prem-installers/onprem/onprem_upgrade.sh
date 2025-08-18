@@ -779,7 +779,14 @@ while IFS=' ' read -r ns secret; do
     kubectl delete secret "$secret" -n "$ns"
 done
 
-# Run after upgrade script
-./after_upgrade_restart.sh
+#Restart nexus-api-gw for api change
+api_gw_pod_name=$(kubectl get pods -n orch-iam | grep nexus-api-gw | awk '{print $1}')
+kubectl delete pod "$api_gw_pod_name" -n orch-iam
+kubectl wait deployment/nexus-api-gw -n orch-iam --for=condition=Available --timeout=120s
+
+# Apply patches after api change
+kubectl patch application tenancy-api-mapping -n "$apps_ns" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+kubectl patch application tenancy-datamodel -n "$apps_ns" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+kubectl patch application root-app -n "$apps_ns" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
 echo "Upgrade completed! Wait for ArgoCD applications to be in 'Synced' and 'Healthy' state"
