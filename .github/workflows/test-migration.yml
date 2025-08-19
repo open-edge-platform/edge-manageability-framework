@@ -10,8 +10,7 @@ on:
   # Run on all commits that are pushed to all branches
   push:
     branches:
-      - main
-      - main-pass-validation
+      - release-3.1
 
   # Trigger workflow on PRs to all branches
   pull_request:

@@ -20,7 +20,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         if: github.actor == github.actor == 'sys-orch' && 
-          github.event.pull_request.base.ref == 'main-pass-validation'
+          github.event.pull_request.base.ref == '3.1-pass-validation'
         run: |
           echo "Approving PR #${{ github.event.pull_request.number }} by ${{ github.actor }}"
           gh pr review ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --approve --body "Auto approved by sys-orch-github-approve bot"
@@ -36,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       github.actor == 'sys-orch' && 
-      github.event.pull_request.base.ref == 'main-pass-validation'
+      github.event.pull_request.base.ref == '3.1-pass-validation'
     steps:
       - name: Auto merge
         env:
