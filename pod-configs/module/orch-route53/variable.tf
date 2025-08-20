@@ -57,8 +57,7 @@ variable "hostname" {
     "vault-edge-node",
     "vcm",
     "vnc",
-    "web-ui",
-    "device-manager-node"]
+    "web-ui"]
 }
 
 # No host list variable for the LB of argocd is needed because "argocd" is the only subdomain on that LB
