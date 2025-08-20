@@ -135,11 +135,11 @@ module "traefik2_load_balancer" {
   enable_deletion_protection = var.enable_deletion_protection
 }
 
-module "traefikVpro_load_balancer" {
-  count = var.create_traefikVpro_load_balancer ? 1 : 0
+module "traefik3_load_balancer" {
+  count = var.create_traefik3_load_balancer ? 1 : 0
 
   source                     = "../../module/load-balancer"
-  name                       = "traefikVpro"
+  name                       = "traefik3"
   internal                   = var.internal
   vpc_id                     = local.vpc_id
   cluster_name               = var.cluster_name
@@ -194,7 +194,7 @@ module "traefik_lb_target_group_binding" {
       serviceNamespace = "orch-gateway"
       serviceName      = "traefik"
       servicePort      = 4433
-      target_id        = module.traefikVpro_load_balancer.target_groups["vpro"].arn
+      target_id        = module.traefik3_load_balancer[0].target_groups["vpro"].arn
     },
     "argocd" : {
       serviceNamespace = "argocd"
@@ -233,7 +233,7 @@ module "aws_lb_security_group_roles" {
     },
     "vpro": {
       port = 4433,
-      security_group_id = module.traefikVpro_load_balancer[0].lb_sg_id
+      security_group_id = module.traefik3_load_balancer[0].lb_sg_id
     }
   }
 }
