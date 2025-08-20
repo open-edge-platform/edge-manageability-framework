@@ -57,7 +57,7 @@ variable "hostname" {
     "vault-edge-node",
     "vcm",
     "vnc",
-    "web-ui".
+    "web-ui",
     "device-manager-node"]
 }
 
