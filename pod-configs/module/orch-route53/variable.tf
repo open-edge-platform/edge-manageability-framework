@@ -39,7 +39,6 @@ variable "hostname" {
     "log-query",
     "metadata",
     "metrics-node",
-    "mps",
     "mps-wss",
     "observability-admin",
     "observability-ui",
@@ -66,6 +65,12 @@ variable "traefik2_hostname" {
   type    = list(string)
   default = [
     "tinkerbell-nginx"]
+}
+
+variable "traefik3_hostname" {
+  type    = list(string)
+  default = [
+    "mps"]
 }
 
 variable "lb_created" {
