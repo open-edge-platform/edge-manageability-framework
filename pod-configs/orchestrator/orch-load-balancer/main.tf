@@ -140,6 +140,7 @@ module "traefik3_load_balancer" {
 
   source                     = "../../module/load-balancer"
   name                       = "traefik3"
+  type                       = "network"
   internal                   = var.internal
   vpc_id                     = local.vpc_id
   cluster_name               = var.cluster_name
