@@ -95,6 +95,16 @@ locals {
       enable_health_check = true
     }
   }
+
+  vpro_ports = {
+    "vpro" : {
+      listen              = 4433
+      target              = 4433
+      type                = "ip"
+      protocol            = "TCP"
+      enable_health_check = true
+    }
+  }
 }
 
 module "traefik_load_balancer" {
@@ -122,6 +132,21 @@ module "traefik2_load_balancer" {
   subnets                    = local.public_subnet_ids
   ip_allow_list              = local.ip_allow_list
   ports                      = local.nlb_ports
+  enable_deletion_protection = var.enable_deletion_protection
+}
+
+module "traefik3_load_balancer" {
+  count = var.create_traefik3_load_balancer ? 1 : 0
+
+  source                     = "../../module/load-balancer"
+  name                       = "traefik3"
+  type                       = "network"
+  internal                   = var.internal
+  vpc_id                     = local.vpc_id
+  cluster_name               = var.cluster_name
+  subnets                    = local.public_subnet_ids
+  ip_allow_list              = local.ip_allow_list
+  ports                      = local.vpro_ports
   enable_deletion_protection = var.enable_deletion_protection
 }
 
@@ -166,6 +191,12 @@ module "traefik_lb_target_group_binding" {
       servicePort      = 443
       target_id        = module.traefik2_load_balancer[0].target_groups["https"].arn
     },
+    "traefik-vpro" : {
+      serviceNamespace = "orch-gateway"
+      serviceName      = "traefik"
+      servicePort      = 4433
+      target_id        = module.traefik3_load_balancer[0].target_groups["vpro"].arn
+    },
     "argocd" : {
       serviceNamespace = "argocd"
       serviceName      = "argocd-server"
@@ -200,6 +231,10 @@ module "aws_lb_security_group_roles" {
     "gitea": {
       port = 3000,
       security_group_id = module.argocd_load_balancer[0].lb_sg_id
+    },
+    "vpro": {
+      port = 4433,
+      security_group_id = module.traefik3_load_balancer[0].lb_sg_id
     }
   }
 }
