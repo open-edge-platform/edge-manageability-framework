@@ -7,6 +7,7 @@ root:
   useLocalValues: false
   clusterValues:
     - orch-configs/profiles/enable-platform.yaml
+    - orch-configs/profiles/enable-multitenancy.yaml
     - orch-configs/profiles/enable-o11y.yaml
     - orch-configs/profiles/enable-kyverno.yaml
     - orch-configs/profiles/enable-app-orch.yaml
@@ -21,10 +22,8 @@ root:
     - orch-configs/profiles/alerting-emails.yaml
     - orch-configs/profiles/artifact-rs-production-noauth.yaml
     - orch-configs/profiles/o11y-onprem.yaml
-    - orch-configs/profiles/enable-osrm-manual-mode.yaml
     - orch-configs/profiles/resource-default.yaml
     - orch-configs/clusters/onprem.yaml
-
 # Values applied to both root app and shared among all child apps
 argo:
   ## Basic cluster information
@@ -35,26 +34,22 @@ argo:
   # name to produce the service's domain name. For example, given the domain name of `orchestrator.io`, the Web UI
   # service will be accessible via `web-ui.orchestrator.io`. Not to be confused with the K8s cluster domain.
   clusterDomain: cluster.onprem
-
   ## Argo CD configs
   utilsRepoURL: "https://gitea-http.gitea.svc.cluster.local/argocd/orch-utils"
   utilsRepoRevision: main
   deployRepoURL: "https://gitea-http.gitea.svc.cluster.local/argocd/edge-manageability-framework"
   deployRepoRevision: main
-
   targetServer: "https://kubernetes.default.svc"
   autosync: true
-
   o11y:
     # If the cluster has a node dedicated to edgenode observability services
     dedicatedEdgenodeEnabled: false
-
     sre:
       customerLabel: local
-
+      tls:
+        enabled: false
 orchestratorDeployment:
   targetCluster: onprem
-
 # Post custom template overwrite values should go to /root-app/environments/<env>/<appName>.yaml
 # This is a placeholder to prevent error when there isn't any overwrite needed
 postCustomTemplateOverwrite:
@@ -72,4 +67,7 @@ postCustomTemplateOverwrite:
       service:
         annotations:
           metallb.universe.tf/address-pool: ingress-nginx-controller
-
+  metallb-config:
+    ArgoIP: 192.168.99.20
+    TraefikIP: 192.168.99.30
+    NginxIP: 192.168.99.40
