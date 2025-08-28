@@ -8,25 +8,30 @@ metadata:
   name: etcd-defrag-cronjob
 spec:
   schedule: "0 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
   jobTemplate:
     spec:
       template:
         spec:
           containers:
           - name: etcd-defrag
-            image: quay.io/coreos/etcd:v3.5.19
+            image: quay.io/coreos/etcd:v3.5.22
             command: ["/bin/sh"]
             args:
             - -c
             - |
               #!/bin/sh
               # Set the threshold size in bytes (4GB in this case)
+              # 4GB is chosen based on etcd recommendations to avoid performance degradation and excessive disk usage.
               THRESHOLD_SIZE=$((4 * 1024 * 1024 * 1024))
 
-              # Get the current etcd database size
               CURRENT_SIZE=$(ETCDCTL_API=3 etcdctl --endpoints=https://localhost:2379 --write-out="json" \
                 --cert="/etc/etcd/certs/server-client.crt" \
                 --key="/etc/etcd/certs/server-client.key" \
+                --cacert="/etc/etcd/certs/server-ca.crt" \
+                --command-timeout=30s endpoint status | awk -F'dbSize":' '{split($2,a,","); print a[1]}')
                 --cacert="/etc/etcd/certs/server-ca.crt" endpoint status | awk -F'dbSize":' '{split($2,a,","); print a[1]}')
 
               # Check if the current size exceeds the threshold
@@ -45,6 +50,7 @@ spec:
               mountPath: /etc/etcd/certs
               readOnly: true
           restartPolicy: OnFailure
+          # hostNetwork is required to access etcd on localhost:2379; ensure this is necessary for your environment.
           hostNetwork: true
           volumes:
           - name: etcd-certs
