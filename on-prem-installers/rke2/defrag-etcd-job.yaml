@@ -1,25 +1,43 @@
-# SPDX-FileCopyrightText: 2025 Intel Corporation
-#
-# SPDX-License-Identifier: Apache-2.0
-
 apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: etcd-defrag-cronjob
+  namespace: default
 spec:
-  schedule: "0 * * * *"
+  schedule: "0 0 * * *"
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 1
-  failedJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 2
   jobTemplate:
     spec:
       template:
         spec:
-          containers:
-          - name: etcd-defrag
-            image: quay.io/coreos/etcd:v3.5.22
-            command: ["/bin/sh"]
+          hostNetwork: true
+          securityContext:
+            seccompProfile:
+              type: RuntimeDefault
+          initContainers:
+          - name: install-etcdctl
+            image: ubuntu:22.04
+            command: ["/bin/bash", "-c"]
             args:
+            - |
+              apt-get update
+              apt-get install -y etcd-client
+              cp /usr/bin/etcdctl /shared/etcdctl
+              chmod +x /shared/etcdctl
+            volumeMounts:
+            - name: shared-bin
+              mountPath: /shared
+            securityContext:
+              runAsUser: 0
+              seccompProfile:
+                type: RuntimeDefault
+          containers:
+          - name: etcdctl
+            image: ubuntu:22.04
+            command:
+            - /bin/sh            
             - -c
             - |
               #!/bin/sh
@@ -32,7 +50,6 @@ spec:
                 --key="/etc/etcd/certs/server-client.key" \
                 --cacert="/etc/etcd/certs/server-ca.crt" \
                 --command-timeout=30s endpoint status | awk -F'dbSize":' '{split($2,a,","); print a[1]}')
-                --cacert="/etc/etcd/certs/server-ca.crt" endpoint status | awk -F'dbSize":' '{split($2,a,","); print a[1]}')
 
               # Check if the current size exceeds the threshold
               if [ "$CURRENT_SIZE" -gt "$THRESHOLD_SIZE" ]; then
@@ -45,14 +62,41 @@ spec:
               else
                 echo "Database size ($CURRENT_SIZE) is below the threshold ($THRESHOLD_SIZE). No action needed."
               fi
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+              runAsGroup: 1001
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop:
+                - ALL
+              readOnlyRootFilesystem: true
+              seccompProfile:
+                type: RuntimeDefault
+            resources:
+              requests:
+                memory: "64Mi"
+                cpu: "50m"
+              limits:
+                memory: "128Mi"
+                cpu: "100m"
             volumeMounts:
+            - name: shared-bin
+              mountPath: /usr/local/bin
+            - name: tmp
+              mountPath: /tmp
             - name: etcd-certs
               mountPath: /etc/etcd/certs
               readOnly: true
+            env:
+            - name: PATH
+              value: "/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
           restartPolicy: OnFailure
-          # hostNetwork is required to access etcd on localhost:2379; ensure this is necessary for your environment.
-          hostNetwork: true
           volumes:
+          - name: shared-bin
+            emptyDir: {}
+          - name: tmp
+            emptyDir: {}
           - name: etcd-certs
             secret:
               secretName: etcd-certs
