@@ -10,7 +10,7 @@ require (
 	github.com/Nerzal/gocloak/v13 v13.9.0
 	github.com/aws/aws-sdk-go v1.55.8
 	github.com/bitfield/script v0.24.1
-	github.com/docker/docker v28.0.0+incompatible
+	github.com/docker/docker v28.0.4+incompatible
 	github.com/golang-jwt/jwt/v5 v5.2.3
 	github.com/google/uuid v1.6.0
 	github.com/magefile/mage v1.15.0
