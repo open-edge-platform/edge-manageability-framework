@@ -18,13 +18,15 @@ spec:
               type: RuntimeDefault
           initContainers:
           - name: install-etcdctl
-            image: ubuntu:22.04
-            command: ["/bin/bash", "-c"]
+            image: alpine:3.22.1
+            command: ["/bin/sh", "-c"]
             args:
             - |
-              apt-get update
-              apt-get install -y etcd-client
-              cp /usr/bin/etcdctl /shared/etcdctl
+              apk add wget
+              ETCD_VER=v3.5.19
+              wget -q -O /tmp/etcd.tar.gz https://github.com/etcd-io/etcd/releases/download/${ETCD_VER}/etcd-${ETCD_VER}-linux-amd64.tar.gz
+              tar -xzf /tmp/etcd.tar.gz -C /tmp --strip-components=1
+              cp /tmp/etcdctl /shared/etcdctl
               chmod +x /shared/etcdctl
             volumeMounts:
             - name: shared-bin
@@ -33,11 +35,14 @@ spec:
               runAsUser: 0
               seccompProfile:
                 type: RuntimeDefault
+            envFrom:
+            - configMapRef:
+                name: proxy-config
           containers:
           - name: etcdctl
-            image: ubuntu:22.04
+            image: alpine:3.22.1
             command:
-            - /bin/sh            
+            - /bin/sh
             - -c
             - |
               #!/bin/sh

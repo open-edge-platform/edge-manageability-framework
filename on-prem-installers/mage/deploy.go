@@ -56,6 +56,40 @@ func (Deploy) rke2Cluster() error { //nolint: cyclop
 		return fmt.Errorf("error creating etcd-certs secret: %w", err)
 	}
 
+	// Create config map for proxy settings if any
+	// Get HTTP_PROXY and HTTPS_PROXY env vars from the current environment
+	// and create a config map that can be used in the defrag-etcd-job.yaml
+	// to set the proxy settings in the job's pod.
+	http_proxy := os.Getenv("http_proxy")
+	if http_proxy == "" {
+		http_proxy = os.Getenv("HTTP_PROXY")
+	}
+	if http_proxy != "" {
+		http_proxy = fmt.Sprintf("http_proxy: %s", http_proxy)
+	}
+
+	https_proxy := os.Getenv("http_proxy")
+	if https_proxy == "" {
+		https_proxy = os.Getenv("HTTP_PROXY")
+	}
+	if https_proxy != "" {
+		https_proxy = fmt.Sprintf("https_proxy: %s", https_proxy)
+	}
+
+	configMapYaml := fmt.Sprintf(`
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: proxy-config
+data:
+  %s
+  %s
+`, http_proxy, https_proxy)
+	cmd := sh.RunCmd("kubectl", "apply", "-f", "-")
+	if err := cmd(configMapYaml); err != nil {
+		return fmt.Errorf("error applying proxy-config.yaml: %w", err)
+	}
+
 	// create cron job that periodically defrags etcd
 	if err := sh.RunV("kubectl", "apply", "-f",
 		filepath.Join("rke2", "defrag-etcd-job.yaml")); err != nil {
