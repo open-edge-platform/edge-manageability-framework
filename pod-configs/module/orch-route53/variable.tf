@@ -39,7 +39,6 @@ variable "hostname" {
     "log-query",
     "metadata",
     "metrics-node",
-    "mps",
     "mps-wss",
     "observability-admin",
     "observability-ui",
@@ -57,8 +56,7 @@ variable "hostname" {
     "vault-edge-node",
     "vcm",
     "vnc",
-    "web-ui".
-    "device-manager-node"]
+    "web-ui"]
 }
 
 # No host list variable for the LB of argocd is needed because "argocd" is the only subdomain on that LB
@@ -67,6 +65,12 @@ variable "traefik2_hostname" {
   type    = list(string)
   default = [
     "tinkerbell-nginx"]
+}
+
+variable "traefik3_hostname" {
+  type    = list(string)
+  default = [
+    "mps"]
 }
 
 variable "lb_created" {
