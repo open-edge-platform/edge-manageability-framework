@@ -95,6 +95,11 @@ amt:
       tlsOption: "gateway-tls"
       gatewayNamespace: orch-gateway
   dm-manager:
+    traefikReverseProxy:
+      enabled: true
+      secretName: "tls-orch"
+      tlsOption: "gateway-tls"
+      gatewayNamespace: orch-gateway
     serviceArgs:
       # Password policy for AMT
       # If 'static', then password from params.password will be used for every AMT device.
@@ -103,4 +108,9 @@ amt:
     params:
       # User-provided password
       # Should have One uppercase letter, one lowercase letter, one digit, one special character, and be at least 8 characters long.
-      password: "P@ssw0rd"
+      password: ""
+    env:
+      oidc:
+        oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
+        oidc_tls_insecure_skip_verify_value: "true"
+

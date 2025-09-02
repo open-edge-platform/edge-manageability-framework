@@ -461,7 +461,7 @@ jobs:
       - name: Deploy Kind Orchestrator
         id: deploy-kind-orchestrator
         uses: ./.github/actions/deploy_kind
-        timeout-minutes: 35
+        timeout-minutes: 45
         with:
           orch_version: ${{ github.event.pull_request.head.sha || github.sha }}
           orch_password: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
@@ -470,6 +470,7 @@ jobs:
           token: ${{ secrets.SYS_ORCH_GITHUB }}
           deployment_type: all
       - name: Collect diagnostics
+        if: always()
         uses: ./.github/actions/collect_diagnostics
         timeout-minutes: 15
       - name: Run policy compliance tests
@@ -533,7 +534,7 @@ jobs:
           token: ${{ secrets.SYS_ORCH_GITHUB }}
           en_serial_number: ${{ env.EN_SN }}
           en_uuid: ${{ env.EN_UUID }}
-          infra: "cypress/e2e/infra/locations.cy.ts,cypress/e2e/infra/provision-hosts.cy.ts,cypress/e2e/infra/verify-host.cy.ts"
+          infra: "cypress/e2e/infra/locations.cy.ts,cypress/e2e/infra/new-host-provision.cy.ts,cypress/e2e/infra/verify-host.cy.ts"
 
       - name: "Test Observability Public Endpoints"
         env:
@@ -547,23 +548,26 @@ jobs:
         run: |
           mage test:e2eOrchObservability
 
-      - name: "Test Observability EdgeNode Stack"
-        env:
-          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-        run: |
-          mage test:e2eENObservability
+      # TODO - The base extension deployment including observability stack has been removed. Need to revist this test stack later and see how to proceed further.
+      # - name: "Test Observability EdgeNode Stack"
+      #   env:
+      #     ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+      #   run: |
+      #     mage test:e2eENObservability
 
-      - name: "Test Observability Alerts"
-        env:
-          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-        run: |
-          mage test:e2eAlertsObservability
+      # TODO - The base extension deployment including observability stack has been removed. Need to revist this test stack later and see how to proceed further.
+      # - name: "Test Observability Alerts"
+      #   env:
+      #     ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+      #   run: |
+      #     mage test:e2eAlertsObservability
 
-      - name: "Test Observability SRE Exporter"
-        env:
-          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-        run: |
-          mage test:e2eSreObservability
+      # TODO - The base extension deployment including observability stack has been removed. Need to revist this test stack later and see how to proceed further.
+      # - name: "Test Observability SRE Exporter"
+      #   env:
+      #     ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+      #   run: |
+      #     mage test:e2eSreObservability
 
       - name: deploy, register & provision new ENiC instance # previous instance was deatuhorized by the cluster delete in UI tests
         if: ${{ always() && steps.deploy-kind-orchestrator.conclusion == 'success' && steps.default-mt-setup.conclusion == 'success' }}
@@ -640,7 +644,7 @@ jobs:
   deploy-on-prem:
     permissions:
       contents: read
-    name: Deploy On-Prem Orchestrator
+    name: Deploy On-Prem Orchestrator and Run Golden Suite Core Foundation Tests
     needs:
       - lint-go
       - lint-markdown
@@ -661,7 +665,7 @@ jobs:
       github.ref == 'refs/heads/main-pass-validation'
       )
     runs-on: ubuntu-22.04-16core-64GB
-    timeout-minutes: 120
+    timeout-minutes: 90
     env:
       KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
     steps:
@@ -669,6 +673,15 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
           persist-credentials: false
+
+      - name: Read test-automation dependency Version
+        id: read-test-automation-version
+        shell: bash
+        run: |
+           cat /proc/cpuinfo
+           version=$(yq '.test-automation.version' ${{ github.workspace }}/.test-dependencies.yaml | tr -d '\n' | xargs)
+           echo $version
+           echo "version=$version" >> $GITHUB_OUTPUT
 
       - name: Deploy On-Prem Orchestrator
         id: deploy-on-prem
@@ -684,17 +697,132 @@ jobs:
           EDGE_CLUSTER_NAME: test-cluster
         run: mage -v test:e2eOnPrem
 
+      - name: Checkout edge-manage-test-automation repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          repository: open-edge-platform/edge-manage-test-automation
+          path: edge-manage-test-automation
+          ref: ${{ steps.read-test-automation-version.outputs.version }}
+          token: ${{ secrets.SYS_ORCH_GITHUB }}
+          persist-credentials: false
+
+      - name: Install vEN Deps
+        working-directory: edge-manage-test-automation
+        run: |
+          git submodule update --init --recursive
+
+      - name: Setup virtual environment
+        working-directory: edge-manage-test-automation
+        run: |
+          make asdf-install
+          make venv_edge-manage-test-automation
+
+          # install required versions for Pico
+          pushd repos/ven/pico
+          asdf install
+          popd
+
+      - name: Run Golden Suite Robot Framework Tests
+        id: robot-tests
+        timeout-minutes: 45
+        working-directory: edge-manage-test-automation
+        if: |
+          needs.check-changed-files.outputs.onboarding == 'true' ||
+          needs.check-changed-files.outputs.on-prem == 'true' ||
+          needs.check-changed-files.outputs.orch == 'true' ||
+          needs.check-changed-files.outputs.ci == 'true'
+        env:
+          KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
+          REQUESTS_CA_BUNDLE: /usr/local/share/ca-certificates/orch-ca.crt
+          LIBVIRT_DEFAULT_URI: 'qemu:///system'
+        run: |
+          KC_ADMIN_PWD=$(kubectl -n orch-platform get secrets platform-keycloak -o jsonpath='{.data.admin-password}' | base64 -d)
+          # Add the password to the orchestrator config
+          yq eval ".orchestrator.admin_password = \"${KC_ADMIN_PWD}\"" -i orchestrator-configs/on-prem.yaml
+
+          source venv_edge-manage-test-automation/bin/activate
+          robot -L DEBUG --pythonpath . \
+            --name "Golden Suite: Core Foundation" \
+            -d robot_output/core_foundation \
+            -V orchestrator-configs/on-prem.yaml \
+            --exitonfailure \
+            tests/core_foundation/core_foundation.robot
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: on-prem-${{ github.event_name }}-${{ github.event.number }}-robot-report
+          path: |
+            edge-manage-test-automation/robot_output/**/*
+
+  deploy-oxm-profile:
+    permissions:
+      contents: read
+    name: Deploy OXM Orchestrator Profile
+    needs:
+      - lint-go
+      - lint-markdown
+      - lint-shell
+      - lint-terraform
+      - lint-version
+      - lint-helm
+      - lint-yaml
+      - build-publish
+      - check-changed-files
+    if: |
+      always() &&
+      needs.build-publish.result == 'success' && (
+      needs.check-changed-files.outputs.orch == 'true' ||
+      needs.check-changed-files.outputs.on-prem == 'true' ||
+      needs.check-changed-files.outputs.ci == 'true' ||
+      github.ref == 'refs/heads/main' ||
+      github.ref == 'refs/heads/main-pass-validation'
+      )
+    runs-on: ubuntu-22.04-16core-64GB
+    timeout-minutes: 90
+    env:
+      KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
+    steps:
+      - name: Checkout Orchestrator repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Deploy OXM Orchestrator Profile
+        id: deploy-oxm-profile
+        uses: ./.github/actions/deploy_on_prem
+        env:
+          TF_VAR_no_proxy: "localhost,127.0.0.0/8,10.0.0.0/8,192.168.0.0/16,.svc,.cluster.local,.default,.internal,.orch-platform,.orch-app,.orch-cluster,.orch-infra,.orch-database,.cattle-system,.orch-secret,.onprem"
+          TF_VAR_en_http_proxy: "http://192.168.99.30:8080"
+          TF_VAR_en_https_proxy: "http://192.168.99.30:8080"
+          TF_VAR_overwrite_profiles: '[["profile-oxm", "argo:\n  infra-onboarding:\n    pxe-server:\n      interface: \"orchnet\"\n      bootServerIP: \"192.168.99.20\"\n      subnetAddress: \"192.168.99.0\""]]'
+        with:
+          orch_version: ${{ github.event.pull_request.head.sha }}
+          orch_profile: onprem-oxm
+          docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
+          docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
+
       - name: Create MT Sample Org and Project with default users
         run: mage tenantUtils:createDefaultMtSetup
 
       - name: Test Edge Node onboarding
+        env:
+          E2E_SVC_DOMAIN: cluster.onprem
+          EDGE_CLUSTER_NAME: test-cluster
+          EN_PROFILE: "microvisor-standalone"
         timeout-minutes: 20
         if: |
           needs.check-changed-files.outputs.onboarding == 'true' ||
           needs.check-changed-files.outputs.on-prem == 'true' ||
           needs.check-changed-files.outputs.orch == 'true' ||
           needs.check-changed-files.outputs.ci == 'true'
-        run: mage test:onboarding
+        run: |
+          set +e
+          mage test:onboarding
+          TEST_EXIT_CODE=$?
+          sudo cat /var/log/libvirt/qemu/edge-node-EN123456789-console.log || true
+          exit $TEST_EXIT_CODE
 
   tag-repo:
     permissions:
@@ -705,6 +833,7 @@ jobs:
       - build-publish
       - deploy-kind
       - deploy-on-prem
+      - deploy-oxm-profile
     if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
     runs-on: ubuntu-latest
     timeout-minutes: 10

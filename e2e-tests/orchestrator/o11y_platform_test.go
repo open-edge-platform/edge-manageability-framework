@@ -67,7 +67,6 @@ var (
 		"kube_statefulset_replicas",
 	}
 	controllerMetrics = []string{"controller_runtime_reconcile_errors_total", "controller_runtime_reconcile_total"}
-	admMetrics        = []string{"adm_deployment_status"}
 	otelMetrics       = []string{
 		"otelcol_exporter_queue_capacity",
 		"otelcol_exporter_queue_size",
@@ -261,18 +260,6 @@ var _ = Describe("Orchestrator Observability Test:", Ordered, Label(orchObs), fu
 		It("Controller metrics should be present in orchestrator", func() {
 			metricsNotFound := make(map[string]struct{})
 			for _, metric := range controllerMetrics {
-				found, err := helpers.CheckMetric(cli, metricsAddr, metric, orchSystem)
-				Expect(err).ToNot(HaveOccurred())
-				if !found {
-					metricsNotFound[metric] = struct{}{}
-				}
-			}
-			Expect(metricsNotFound).To(BeEmpty(), "%v metrics not found", metricsNotFound)
-		})
-
-		It("ADM metrics should be present in orchestrator", func() {
-			metricsNotFound := make(map[string]struct{})
-			for _, metric := range admMetrics {
 				found, err := helpers.CheckMetric(cli, metricsAddr, metric, orchSystem)
 				Expect(err).ToNot(HaveOccurred())
 				if !found {

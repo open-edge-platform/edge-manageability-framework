@@ -30,6 +30,7 @@ variable "hostname" {
     "cluster-orch-edge-node",
     "cluster-orch-node",
     "connect-gateway",
+    "device-manager-node",
     "fleet",
     "infra-node",
     "keycloak",
@@ -38,8 +39,7 @@ variable "hostname" {
     "log-query",
     "metadata",
     "metrics-node",
-    "mps-node",
-    "mps-webport-node",
+    "mps-wss",
     "observability-admin",
     "observability-ui",
     "onboarding-node",
@@ -47,8 +47,8 @@ variable "hostname" {
     "registry",
     "registry-oci",
     "release",
-    "rps-node",
-    "rps-webport-node",
+    "rps",
+    "rps-wss",
     "telemetry-node",
     "tinkerbell-server",
     "update-node",
@@ -65,6 +65,12 @@ variable "traefik2_hostname" {
   type    = list(string)
   default = [
     "tinkerbell-nginx"]
+}
+
+variable "traefik3_hostname" {
+  type    = list(string)
+  default = [
+    "mps"]
 }
 
 variable "lb_created" {
