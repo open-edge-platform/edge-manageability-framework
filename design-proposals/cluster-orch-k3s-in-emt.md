@@ -58,27 +58,80 @@ source, ensuring all artifacts are verifiable and compliant.
 
 ![k3s-build-procedure](images/cluster-orch-k3s-build.png)
 
-K3s also depends on several essential addons (such as CoreDNS, kube-router, and local-path-provisioner) that are
-deployed as separate Pods after initialization. Building and packaging these addons is out of scope for this proposal;
-they will be downloaded or preloaded for air-gapped deployments according to [K3s
-documentation](https://docs.k3s.io/import-images#pre-import-images).
+K3s relies on several essential addons (such as CoreDNS, kube-router, and local-path-provisioner) that are deployed as
+separate Pods after initialization. There are three options to handling these addon images:
+
+**Option 1:** Exclude addon image building and packaging from this proposal. For air-gapped deployments, users must manually import addon images into EMT following the [K3s documentation](https://docs.k3s.io/import-images#pre-import-images). This approach avoids additional OSPDT compliance but requires users to manage external dependencies or custom image creation for full K3s functionality.
+
+**Option 2:** Build and package essential addon images (such as pause, busybox, coredns, and klipper-helm) and embed them directly in EMT. This makes EMT self-sufficient for running K3s in air-gapped environments and simplifies cluster setup for users. However, it introduces complexity to the EMT build pipeline as it doesn't support container image build and requires OSPDT compliance for these container images.
 
 EMT images will be released regularly and in response to new K3s versions or critical security patches to keep edge
 deployments secure and up to date.
 
 #### How to build
 
-To build and package K3s for EMT, we'll use EMT’s RPM build pipeline by creating a SPEC file in the repository’s `SPECS`
-directory. The SPEC file should reference the official K3s source and invoke upstream build and packaging scripts,
-ensuring compatibility and minimizing maintenance. Any required customizations or patches can be added to the SRPM.
+To build and package K3s for EMT, leverage EMT’s RPM build pipeline by creating a SPEC file in the repository’s `SPECS`
+directory. The SPEC file should reference the official K3s source and invoke upstream build and packaging scripts to
+maintain compatibility and reduce maintenance overhead. Any required customizations or patches can be included in the
+SRPM, ensuring a reproducible, source-based build for all K3s components within EMT without maintaining forks.
 
-Additionally, create a separate RPM package for `k3s-root` and build it entirely from source. Since the upstream
-`k3s-root` build uses Dapper and a containerized environment, adapt the process by listing all dependencies in the SPEC
-file and ensuring the build runs natively in the EMT pipeline. Upload the resulting artifact to an internal repository
-and reference it during the K3s build by patching the download script.
+For the `k3s-root` environment, two main approaches are considered:
 
-This approach avoids maintaining forks, streamlines patching, and ensures a reproducible, source-based build for all K3s
-components within EMT.
+- **Option 1:** Build `k3s-root` as a standalone RPM package from source. Adapt the upstream containerized build
+  (Dapper-based) to run natively in the EMT pipeline, listing all dependencies in the SPEC file. This ensures clear
+  separation between EMT and K3s, simplifies maintenance, and enables independent updates.
+
+- **Option 2:** Use the EMT chroot environment as the base for `k3s-root` to minimize OSPDT approval effort. This
+  approach reuses the existing EMT build environment, potentially reducing duplication and simplifying compliance, but
+  may require additional integration to meet K3s requirements.
+
+##### Comparison: `k3s-root` vs EMT Toolchain Chroot
+
+| Metric              | k3s-root | EMT Toolchain |
+| ------------------- | -------- | ------------- |
+| Total binaries      | 348      | 603           |
+| Direct binaries     | 24       | 517           |
+| Symbolic links      | 324      | 86            |
+| Overlapped binaries | 139      | 139           |
+| Missing in EMT      | 209      | -             |
+
+- 139 out of 348 `k3s-root` binaries overlap with the EMT toolchain (ignoring version differences).
+- 209 `k3s-root` binaries are missing from EMT, mostly container/networking and BusyBox utilities.
+- EMT covers most standard POSIX utilities but lacks embedded system and container runtime tools required by `k3s-root`.
+- Option 1 is preferred for clear separation and maintainability; Option 2 may reduce compliance effort but needs more
+  integration.
+
+##### Direct Binaries in `k3s-root` and Their Presence in EMT
+
+| #   | Binary               | Exists in EMT | Notes                                    |
+| --- | -------------------- | :-----------: | ---------------------------------------- |
+| 1   | blkid                |     ❌ No      | Block device identification utility      |
+| 2   | busybox              |     ❌ No      | Multi-call binary for embedded systems   |
+| 3   | conntrack            |     ❌ No      | Connection tracking tool for netfilter   |
+| 4   | coreutils            |     ❌ No      | Multi-call binary for GNU core utilities |
+| 5   | ethtool              |     ❌ No      | Ethernet device configuration utility    |
+| 6   | find                 |     ✅ Yes     | File search utility                      |
+| 7   | fuse-overlayfs       |     ❌ No      | FUSE implementation of overlayfs         |
+| 8   | ip                   |     ❌ No      | Network configuration utility (iproute2) |
+| 9   | ipset                |     ❌ No      | IP sets administration tool              |
+| 10  | losetup              |     ❌ No      | Loop device setup utility                |
+| 11  | nsenter              |     ✅ Yes     | Enter namespaces utility                 |
+| 12  | pigz                 |     ❌ No      | Parallel gzip implementation             |
+| 13  | slirp4netns          |     ❌ No      | User-mode networking for containers      |
+| 14  | xargs                |     ✅ Yes     | Execute commands from standard input     |
+| 15  | ebtables-legacy      |     ❌ No      | Ethernet bridge tables (legacy)          |
+| 16  | ebtablesd            |     ❌ No      | Ethernet bridge tables daemon            |
+| 17  | ebtablesu            |     ❌ No      | Ethernet bridge tables user utility      |
+| 18  | iptables-apply       |     ❌ No      | Apply iptables rules safely              |
+| 19  | iptables-detect.sh   |     ❌ No      | Detect iptables backend script           |
+| 20  | nft                  |     ❌ No      | nftables command line utility            |
+| 21  | xtables-legacy-multi |     ❌ No      | Legacy xtables multi-call binary         |
+| 22  | xtables-nft-multi    |     ❌ No      | NFT xtables multi-call binary            |
+| 23  | xtables-set-mode.sh  |     ❌ No      | Set xtables mode script                  |
+
+**Summary** Only a few direct binaries from `k3s-root` (such as `find`, `nsenter`, and `xargs`) exist in EMT. Most
+container, networking, and embedded utilities are missing, making Option 1 the preferred approach for maintainability
+and compliance.
 
 ### Making K3s part of EMT
 
