@@ -110,6 +110,20 @@ keycloakConfigCli:
         "maxDeltaTimeSeconds": 43200,
         "failureFactor": 5,
         "roles": {
+        "realm": [
+            {
+              "name": "org-read-role"
+            },
+            {
+              "name": "org-write-role"
+            },
+            {
+              "name": "org-update-role"
+            },
+            {
+              "name": "org-delete-role"
+            }
+          ],
           "client": {
             "alerts-m2m-client": [],
             "host-manager-m2m-client": [],
