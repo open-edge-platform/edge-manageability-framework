@@ -18,7 +18,7 @@ require (
 	github.com/onsi/gomega v1.37.0
 	github.com/open-edge-platform/app-orch-deployment/app-deployment-manager/api/nbi/v2 v2.3.21
 	github.com/open-edge-platform/cluster-manager/v2 v2.1.5
-	github.com/open-edge-platform/infra-core/apiv2/v2 v2.0.0-20250523082429-138b179945c5
+	github.com/open-edge-platform/infra-core/apiv2/v2 v2.0.0
 	github.com/open-edge-platform/infra-managers/attestationstatus v0.4.0
 	github.com/open-edge-platform/infra-managers/host v1.21.0
 	github.com/open-edge-platform/infra-managers/maintenance v1.21.1
