@@ -101,37 +101,40 @@ For the `k3s-root` environment, two main approaches are considered:
 - Option 1 is preferred for clear separation and maintainability; Option 2 may reduce compliance effort but needs more
   integration.
 
-##### Direct Binaries in `k3s-root` and Their Presence in EMT
+  ##### Direct Binaries in k3s-root
 
-| #   | Binary               | Exists in EMT | Notes                                    |
-| --- | -------------------- | :-----------: | ---------------------------------------- |
-| 1   | blkid                |     ❌ No      | Block device identification utility      |
-| 2   | busybox              |     ❌ No      | Multi-call binary for embedded systems   |
-| 3   | conntrack            |     ❌ No      | Connection tracking tool for netfilter   |
-| 4   | coreutils            |     ❌ No      | Multi-call binary for GNU core utilities |
-| 5   | ethtool              |     ❌ No      | Ethernet device configuration utility    |
-| 6   | find                 |     ✅ Yes     | File search utility                      |
-| 7   | fuse-overlayfs       |     ❌ No      | FUSE implementation of overlayfs         |
-| 8   | ip                   |     ❌ No      | Network configuration utility (iproute2) |
-| 9   | ipset                |     ❌ No      | IP sets administration tool              |
-| 10  | losetup              |     ❌ No      | Loop device setup utility                |
-| 11  | nsenter              |     ✅ Yes     | Enter namespaces utility                 |
-| 12  | pigz                 |     ❌ No      | Parallel gzip implementation             |
-| 13  | slirp4netns          |     ❌ No      | User-mode networking for containers      |
-| 14  | xargs                |     ✅ Yes     | Execute commands from standard input     |
-| 15  | ebtables-legacy      |     ❌ No      | Ethernet bridge tables (legacy)          |
-| 16  | ebtablesd            |     ❌ No      | Ethernet bridge tables daemon            |
-| 17  | ebtablesu            |     ❌ No      | Ethernet bridge tables user utility      |
-| 18  | iptables-apply       |     ❌ No      | Apply iptables rules safely              |
-| 19  | iptables-detect.sh   |     ❌ No      | Detect iptables backend script           |
-| 20  | nft                  |     ❌ No      | nftables command line utility            |
-| 21  | xtables-legacy-multi |     ❌ No      | Legacy xtables multi-call binary         |
-| 22  | xtables-nft-multi    |     ❌ No      | NFT xtables multi-call binary            |
-| 23  | xtables-set-mode.sh  |     ❌ No      | Set xtables mode script                  |
+  The following table summarizes the direct binaries required by `k3s-root`, indicating their presence in EMT, whether a
+  SPEC file exists, and the version differences. This helps identify which binaries are already available in EMT and
+  which require new packaging or updates.
 
-**Summary** Only a few direct binaries from `k3s-root` (such as `find`, `nsenter`, and `xargs`) exist in EMT. Most
-container, networking, and embedded utilities are missing, making Option 1 the preferred approach for maintainability
-and compliance.
+  | #   | Binary (Package)                | In EMT Chroot | SPEC in EMT | EMT Version | k3s-root Version | Notes / Action Needed                     |
+  | --- | ------------------------------- | :-----------: | :---------: | ----------: | ---------------: | ----------------------------------------- |
+  | 1   | blkid (util-linux)              |       ❌       |      ✅      |      2.40.2 |           2.40.2 |                                           |
+  | 2   | busybox                         |       ❌       |      ✅      |      1.36.1 |           1.37.0 | Version mismatch                          |
+  | 3   | conntrack (conntrack-tools)     |       ❌       |      ✅      |       1.4.8 |            1.4.7 | Version mismatch                          |
+  | 4   | coreutils                       |       ❌       |      ✅      |         9.4 |              9.5 | Version mismatch                          |
+  | 5   | ethtool                         |       ❌       |      ✅      |         6.4 |             6.11 | Version mismatch                          |
+  | 6   | find (findutils)                |       ✅       |      ✅      |       4.9.0 |           4.10.0 | Version mismatch                          |
+  | 7   | fuse-overlayfs                  |       ❌       |      ❌      |           - |             1.13 | Needs new RPM                             |
+  | 8   | ip (iproute2)                   |       ❌       |      ✅      |       6.7.0 |           6.13.0 | Version mismatch                          |
+  | 9   | ipset                           |       ❌       |      ✅      |        7.17 |             7.16 | Version mismatch                          |
+  | 10  | losetup (util-linux)            |       ❌       |      ✅      |      2.40.2 |           2.40.2 |                                           |
+  | 11  | nsenter                         |       ✅       |      ✅      |      2.40.2 |           2.40.2 |                                           |
+  | 12  | pigz                            |       ❌       |      ✅      |         2.8 |              2.8 |                                           |
+  | 13  | slirp4netns                     |       ❌       |      ❌      |           - |            1.3.1 | Needs new RPM                             |
+  | 14  | xargs (findutils)               |       ✅       |      ✅      |       4.9.0 |           4.10.0 | Version mismatch                          |
+  | 15  | ebtables-legacy (ebtables)      |       ❌       |      ✅      |      2.0.11 |           2.0.11 |                                           |
+  | 16  | ebtablesd (ebtables)            |       ❌       |      ✅      |      2.0.11 |           2.0.11 |                                           |
+  | 17  | ebtablesu (ebtables)            |       ❌       |      ✅      |      2.0.11 |           2.0.11 |                                           |
+  | 18  | iptables-apply (iptables)       |       ❌       |      ✅      |      1.8.10 |           1.8.11 | Version mismatch                          |
+  | 19  | iptables-detect.sh              |       ❌       |      ❌      |           - |           script | Needs new RPM (script from k3s-root repo) |
+  | 20  | nft (nftables)                  |       ❌       |      ✅      |       1.0.9 |            1.1.0 | Version mismatch                          |
+  | 21  | xtables-legacy-multi (iptables) |       ❌       |      ✅      |      1.8.10 |           1.8.11 | Version mismatch                          |
+  | 22  | xtables-nft-multi (iptables)    |       ❌       |      ✅      |      1.8.10 |           1.8.11 | Version mismatch                          |
+  | 23  | xtables-set-mode.sh             |       ❌       |      ❌      |           - |           script | Needs new RPM (script from k3s-root repo) |
+
+  Even for binaries with matching versions, non-CVE patches from buildroot or k3s-root may need to be applied for full
+  compatibility.
 
 ### Making K3s part of EMT
 
