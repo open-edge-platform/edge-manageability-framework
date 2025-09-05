@@ -208,7 +208,7 @@ It is Cluster Manager's job to detect if the target host is running EMT (using h
 EMT is present, it must automatically enable the `airGapped` configuration for K3s setup. For other environments (e.g.,
 K3s on Ubuntu), the `airGapped` option should remain disabled.
 
-### Workflow Update 
+### Workflow Update
 
 #### Create Cluster
 
