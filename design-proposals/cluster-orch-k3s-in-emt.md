@@ -50,11 +50,11 @@ The K3s build and packaging process for EMT produces the following essential art
 - **Install script**: The official [install.sh](https://github.com/k3s-io/k3s/blob/master/install.sh) used to bootstrap
   K3s on EMT.
 
-To satisfy OSPDT compliance, all components—including `k3s-server` and dependencies such as `containerd`, CNI plugins,
-and the `k3s-root` (buildroot) environment—are built entirely from source. Although upstream K3s build scripts compile
-most dependencies from source, they currently download pre-built `k3s-root` binaries during the initial build stage (see
-diagram below). To achieve full traceability and compliance, the build process must be modified to build `k3s-root` from
-source, ensuring all artifacts are verifiable and compliant.
+To satisfy OSPDT compliance, all components bundled into K3s binary—including `k3s-server` and dependencies such as
+`containerd`, CNI plugins, and the `k3s-root` (buildroot) environment—are built entirely from source. Although upstream
+K3s build scripts compile most dependencies from source, they currently download pre-built `k3s-root` binaries during
+the initial build stage (see diagram below). To achieve full traceability and compliance, the build process must be
+modified to build `k3s-root` from source, ensuring all artifacts are verifiable and compliant.
 
 ![k3s-build-procedure](images/cluster-orch-k3s-build.png)
 
@@ -83,16 +83,14 @@ embedded in EMT:
 - `pause`
 - `coredns`
 
-All other addons—including `local-path-provisioner`, `metrics-server`, `service-lb`, and `traefik`—will be disabled in
-the K3s configuration for both EMF-managed edges and EMT-S.
+All other addons—including `local-path-provisioner`, `metrics-server`, `service-lb`, and `traefik`—will be disabled by
+default in the K3s configuration for both EMF-managed edges and EMT-S. If a user enables any of these addons through a
+custom cluster template or custom EMT-S configuration, their images will be pulled from the Internet unless the user
+builds a custom EMT image that includes the required addon images.
 
-To build and maintain these addon images, a new repository—modeled after
-[rancher/image-mirror](https://github.com/rancher/image-mirror)—will be created. This repository will provide a build
-pipeline for producing the required images from source, with the ability to apply patches as needed to meet Intel’s
-security guidelines and compliance requirements.
-
-EMT images will be released regularly and in response to new K3s versions or critical security patches to keep edge
-deployments secure and up to date.
+Lastly, EMT images will be released on a regular cadence and promptly in response to new K3s releases or critical
+security patches. This ensures that edge deployments remain secure and up to date with the latest Kubernetes features
+and fixes.
 
 #### How to build
 
@@ -101,17 +99,19 @@ directory. The SPEC file should reference the official K3s source and invoke ups
 maintain compatibility and reduce maintenance overhead. Any required customizations or patches can be included in the
 SRPM, ensuring a reproducible, source-based build for all K3s components within EMT without maintaining forks.
 
-For the `k3s-root` environment, two main approaches are considered:
+For building `k3s-root`, two approaches are considered:
 
-- **Option 1:** Build `k3s-root` as a standalone RPM package from source. Adapt the upstream containerized build
-  (Dapper-based) to run natively in the EMT pipeline, listing all dependencies in the SPEC file. This ensures clear
-  separation between EMT and K3s, simplifies maintenance, and enables independent updates.
+- **Option 1:** Mirror the `k3s-root` repository and build `k3s-root` as a separate step outside the EMT build pipeline.
+  This approach closely follows the upstream K3s build process, minimizing additional effort to build `k3s-root` itself
+  and simplifying maintenance. All sources and build artifacts must be reviewed to ensure compliance with Intel’s
+  security and OSPDT requirements.
 
 - **Option 2:** Use the EMT chroot environment as the base for `k3s-root` to minimize OSPDT approval effort. This
-  approach reuses the existing EMT build environment, potentially reducing duplication and simplifying compliance, but
-  may require additional integration to meet K3s requirements.
+  approach leverages the existing EMT toolchain and binaries, potentially reducing duplication and simplifying
+  compliance review. However, it may require additional integration work to ensure all required utilities and versions
+  are present for K3s compatibility. For more details about the integration work required, see below analysis.
 
-##### Comparison: `k3s-root` vs EMT Toolchain Chroot
+**Comparison: `k3s-root` vs EMT Toolchain Chroot**
 
 | Metric              | k3s-root | EMT Toolchain |
 | ------------------- | -------- | ------------- |
@@ -124,43 +124,87 @@ For the `k3s-root` environment, two main approaches are considered:
 - 139 out of 348 `k3s-root` binaries overlap with the EMT toolchain (ignoring version differences).
 - 209 `k3s-root` binaries are missing from EMT, mostly container/networking and BusyBox utilities.
 - EMT covers most standard POSIX utilities but lacks embedded system and container runtime tools required by `k3s-root`.
-- Option 1 is preferred for clear separation and maintainability; Option 2 may reduce compliance effort but needs more
-  integration.
 
-  ##### Direct Binaries in k3s-root
+The following table summarizes the direct binaries required by `k3s-root`, indicating their presence in EMT, whether a
+SPEC exists in EMT, and the version differences.
 
-  The following table summarizes the direct binaries required by `k3s-root`, indicating their presence in EMT, whether a
-  SPEC file exists, and the version differences. This helps identify which binaries are already available in EMT and
-  which require new packaging or updates.
+| #   | Binary (Package)                | In EMT Chroot | SPEC in EMT | EMT Version | k3s-root Version | Notes / Action Needed                     |
+| --- | ------------------------------- | :-----------: | :---------: | ----------: | ---------------: | ----------------------------------------- |
+| 1   | blkid (util-linux)              |       ❌       |      ✅      |      2.40.2 |           2.40.2 |                                           |
+| 2   | busybox                         |       ❌       |      ✅      |      1.36.1 |           1.37.0 | Version mismatch                          |
+| 3   | conntrack (conntrack-tools)     |       ❌       |      ✅      |       1.4.8 |            1.4.7 | Version mismatch                          |
+| 4   | coreutils                       |       ❌       |      ✅      |         9.4 |              9.5 | Version mismatch                          |
+| 5   | ethtool                         |       ❌       |      ✅      |         6.4 |             6.11 | Version mismatch                          |
+| 6   | find (findutils)                |       ✅       |      ✅      |       4.9.0 |           4.10.0 | Version mismatch                          |
+| 7   | fuse-overlayfs                  |       ❌       |      ❌      |           - |             1.13 | Needs new RPM                             |
+| 8   | ip (iproute2)                   |       ❌       |      ✅      |       6.7.0 |           6.13.0 | Version mismatch                          |
+| 9   | ipset                           |       ❌       |      ✅      |        7.17 |             7.16 | Version mismatch                          |
+| 10  | losetup (util-linux)            |       ❌       |      ✅      |      2.40.2 |           2.40.2 |                                           |
+| 11  | nsenter                         |       ✅       |      ✅      |      2.40.2 |           2.40.2 |                                           |
+| 12  | pigz                            |       ❌       |      ✅      |         2.8 |              2.8 |                                           |
+| 13  | slirp4netns                     |       ❌       |      ❌      |           - |            1.3.1 | Needs new RPM                             |
+| 14  | xargs (findutils)               |       ✅       |      ✅      |       4.9.0 |           4.10.0 | Version mismatch                          |
+| 15  | ebtables-legacy (ebtables)      |       ❌       |      ✅      |      2.0.11 |           2.0.11 |                                           |
+| 16  | ebtablesd (ebtables)            |       ❌       |      ✅      |      2.0.11 |           2.0.11 |                                           |
+| 17  | ebtablesu (ebtables)            |       ❌       |      ✅      |      2.0.11 |           2.0.11 |                                           |
+| 18  | iptables-apply (iptables)       |       ❌       |      ✅      |      1.8.10 |           1.8.11 | Version mismatch                          |
+| 19  | iptables-detect.sh              |       ❌       |      ❌      |           - |           script | Needs new RPM (script from k3s-root repo) |
+| 20  | nft (nftables)                  |       ❌       |      ✅      |       1.0.9 |            1.1.0 | Version mismatch                          |
+| 21  | xtables-legacy-multi (iptables) |       ❌       |      ✅      |      1.8.10 |           1.8.11 | Version mismatch                          |
+| 22  | xtables-nft-multi (iptables)    |       ❌       |      ✅      |      1.8.10 |           1.8.11 | Version mismatch                          |
+| 23  | xtables-set-mode.sh             |       ❌       |      ❌      |           - |           script | Needs new RPM (script from k3s-root repo) |
 
-  | #   | Binary (Package)                | In EMT Chroot | SPEC in EMT | EMT Version | k3s-root Version | Notes / Action Needed                     |
-  | --- | ------------------------------- | :-----------: | :---------: | ----------: | ---------------: | ----------------------------------------- |
-  | 1   | blkid (util-linux)              |       ❌       |      ✅      |      2.40.2 |           2.40.2 |                                           |
-  | 2   | busybox                         |       ❌       |      ✅      |      1.36.1 |           1.37.0 | Version mismatch                          |
-  | 3   | conntrack (conntrack-tools)     |       ❌       |      ✅      |       1.4.8 |            1.4.7 | Version mismatch                          |
-  | 4   | coreutils                       |       ❌       |      ✅      |         9.4 |              9.5 | Version mismatch                          |
-  | 5   | ethtool                         |       ❌       |      ✅      |         6.4 |             6.11 | Version mismatch                          |
-  | 6   | find (findutils)                |       ✅       |      ✅      |       4.9.0 |           4.10.0 | Version mismatch                          |
-  | 7   | fuse-overlayfs                  |       ❌       |      ❌      |           - |             1.13 | Needs new RPM                             |
-  | 8   | ip (iproute2)                   |       ❌       |      ✅      |       6.7.0 |           6.13.0 | Version mismatch                          |
-  | 9   | ipset                           |       ❌       |      ✅      |        7.17 |             7.16 | Version mismatch                          |
-  | 10  | losetup (util-linux)            |       ❌       |      ✅      |      2.40.2 |           2.40.2 |                                           |
-  | 11  | nsenter                         |       ✅       |      ✅      |      2.40.2 |           2.40.2 |                                           |
-  | 12  | pigz                            |       ❌       |      ✅      |         2.8 |              2.8 |                                           |
-  | 13  | slirp4netns                     |       ❌       |      ❌      |           - |            1.3.1 | Needs new RPM                             |
-  | 14  | xargs (findutils)               |       ✅       |      ✅      |       4.9.0 |           4.10.0 | Version mismatch                          |
-  | 15  | ebtables-legacy (ebtables)      |       ❌       |      ✅      |      2.0.11 |           2.0.11 |                                           |
-  | 16  | ebtablesd (ebtables)            |       ❌       |      ✅      |      2.0.11 |           2.0.11 |                                           |
-  | 17  | ebtablesu (ebtables)            |       ❌       |      ✅      |      2.0.11 |           2.0.11 |                                           |
-  | 18  | iptables-apply (iptables)       |       ❌       |      ✅      |      1.8.10 |           1.8.11 | Version mismatch                          |
-  | 19  | iptables-detect.sh              |       ❌       |      ❌      |           - |           script | Needs new RPM (script from k3s-root repo) |
-  | 20  | nft (nftables)                  |       ❌       |      ✅      |       1.0.9 |            1.1.0 | Version mismatch                          |
-  | 21  | xtables-legacy-multi (iptables) |       ❌       |      ✅      |      1.8.10 |           1.8.11 | Version mismatch                          |
-  | 22  | xtables-nft-multi (iptables)    |       ❌       |      ✅      |      1.8.10 |           1.8.11 | Version mismatch                          |
-  | 23  | xtables-set-mode.sh             |       ❌       |      ❌      |           - |           script | Needs new RPM (script from k3s-root repo) |
+> Note: The following comparison uses EMT 3.0 and k3s-root 2025.02.
 
-  Even for binaries with matching versions, non-CVE patches from buildroot or k3s-root may need to be applied for full
-  compatibility.
+Another key distinction is how `k3s-root` and the EMT toolchain chroot are used during the build process. The EMT chroot
+acts solely as the build environment for RPM packaging and is not included in the final EMT image. In contrast,
+`k3s-root` must be copied into the K3s source tree during the build and bundled into the K3s binary, so that it is
+ultimately installed as part of the EMT image.
+
+```
+./emt_worker_chroot
+├── bin -> usr/bin
+├── boot
+├── dev
+├── etc
+├── home
+├── lib -> usr/lib
+├── lib64 -> usr/lib
+├── media
+├── mnt
+├── opt
+├── proc
+├── root
+├── run
+├── sbin -> usr/sbin
+├── sys
+├── tmp
+├── usr
+└── var
+
+./k3s-root
+├── bin
+└── etc
+```
+
+**Summary of Additional Integration Work for Option 2**
+
+- Develop or update the 23 RPM SPEC files listed in the table above. For each binary, apply any required patches from
+  buildroot or k3s-root to ensure compatibility with both K3s and EMT. Where binaries require symbolic links, ensure the
+  SPEC file creates these links during packaging.
+- Maintain synchronization of these binaries and symbolic links with upstream buildroot and k3s-root repositories to
+  ensure ongoing compatibility.
+- Implement a new workflow in EMT to generate a tarball containing required `k3s-root` binaries only, formatted for
+  direct use by the K3s build process.
+
+**Decision: Pending**
+
+##### Building addon images
+
+To build and maintain addon images, a new repository—modeled after
+[rancher/image-mirror](https://github.com/rancher/image-mirror)—will be created. This repository will provide a build
+pipeline for producing the required images from source, with the ability to apply patches as needed to meet Intel’s
+security guidelines and compliance requirements.
 
 ### Making K3s part of EMT
 
