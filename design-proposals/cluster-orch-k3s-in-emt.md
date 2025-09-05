@@ -58,12 +58,38 @@ source, ensuring all artifacts are verifiable and compliant.
 
 ![k3s-build-procedure](images/cluster-orch-k3s-build.png)
 
-K3s relies on several essential addons (such as CoreDNS, kube-router, and local-path-provisioner) that are deployed as
-separate Pods after initialization. There are three options to handling these addon images:
+K3s includes several addons (such as CoreDNS, metrics-server, and local-path-provisioner) that are deployed as separate
+Pods after cluster initialization. Managing the container images for these addons is critical for reliable, air-gapped
+deployments. Three approaches were considered:
 
-**Option 1:** Exclude addon image building and packaging from this proposal. For air-gapped deployments, users must manually import addon images into EMT following the [K3s documentation](https://docs.k3s.io/import-images#pre-import-images). This approach avoids additional OSPDT compliance but requires users to manage external dependencies or custom image creation for full K3s functionality.
+- **Option 1:** Exclude addon image building and packaging from this proposal. In this case, users must manually import
+  addon images into EMT as described in the [K3s documentation](https://docs.k3s.io/import-images#pre-import-images).
+  This avoids additional OSPDT compliance requirements but places the burden of image management on users, who must
+  ensure all required images are available for full K3s functionality.
 
-**Option 2:** Build and package essential addon images (such as pause, busybox, coredns, and klipper-helm) and embed them directly in EMT. This makes EMT self-sufficient for running K3s in air-gapped environments and simplifies cluster setup for users. However, it introduces complexity to the EMT build pipeline as it doesn't support container image build and requires OSPDT compliance for these container images.
+- **Option 2:** Build and package essential addon images and embed them directly in EMT. This approach makes EMT
+  self-sufficient for running K3s in air-gapped environments, simplifying cluster setup and reducing operational
+  friction. However, it requires additional OSPDT compliance for these container images.
+
+- **Option 3:** Build and embed all K3s addon images in EMT, ensuring complete out-of-the-box functionality for all K3s
+  features. This maximizes convenience but significantly increases compliance and maintenance overhead.
+
+**Decision:** Option 2 is selected, as it best balances user experience, additional disk usage at the edge and
+compliance effort.
+
+For the 2025.2 release, only the following essential addon images will be built, packaged as part of the K3s RPM, and
+embedded in EMT:
+
+- `pause`
+- `coredns`
+
+All other addons—including `local-path-provisioner`, `metrics-server`, `service-lb`, and `traefik`—will be disabled in
+the K3s configuration for both EMF-managed edges and EMT-S.
+
+To build and maintain these addon images, a new repository—modeled after
+[rancher/image-mirror](https://github.com/rancher/image-mirror)—will be created. This repository will provide a build
+pipeline for producing the required images from source, with the ability to apply patches as needed to meet Intel’s
+security guidelines and compliance requirements.
 
 EMT images will be released regularly and in response to new K3s versions or critical security patches to keep edge
 deployments secure and up to date.
@@ -229,25 +255,33 @@ cluster deletion process are required.
 
 #### Upgrade Cluster
 
-Upgrading the K3s version in EMT requires updating the EMT image itself, which replaces the embedded K3s binary and
-install script while preserving user data in the mutable partition (such as cluster configurations and workloads).
+Upgrading the K3s version in EMT is accomplished only by upgrading the EMT image in low level. This process replaces the
+embedded K3s binary and install script while preserving user data—including cluster configurations and workloads—in the
+mutable partition.
 
-As of EMT release 3.1, in-place upgrades of Kubernetes clusters are not supported due to limitations in Cluster API.
-Efforts are ongoing in the community to enable this functionality (see [Cluster API Proposal: In-Place
+As of EMT release 2025.1 and likely 2025.2, in-place upgrades of Kubernetes clusters are not supported due to current
+limitations in Cluster API. The Cluster API community is actively working to address this gap (see [Cluster API
+Proposal: In-Place
 Updates](https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/proposals/20240807-in-place-updates.md) and [PR:
-Add in-place update hooks to API](https://github.com/kubernetes-sigs/cluster-api/pull/12343)). Until these features are
-available, cluster upgrades via Cluster Manager are not supported. Users must provision a new cluster with the desired
-Kubernetes version and migrate workloads, which may result in loss of user data.
+Add in-place update hooks to API](https://github.com/kubernetes-sigs/cluster-api/pull/12343)). Until these enhancements
+are available and adopted, cluster upgrades via Cluster Manager are not supported. Users who need a newer Kubernetes
+version must provision a new cluster and migrate workloads, which may result in loss of user data. Once in-place
+upgrades are supported, this will become the recommended and supported upgrade path.
 
-Upgrading K3s by updating the EMT image is supported, but this can lead to mismatches between the new embedded K3s
-version and the configuration specified in the original cluster template, potentially causing upgrade failures. To
-address this, two approaches are considered:
+Although technically possible to update K3s by upgrading the EMT image, this approach introduces the risk of version
+mismatches. After an EMT image upgrade, the embedded K3s version may differ from the version specified in the original
+cluster template which conflicts with the configuration there or from other nodes in a multi-node cluster, potentially
+causing instability or failures. To address this, two strategies are proposed:
 
-- **Option 1:** Allow host OS upgrades to any EMT image version, but require users to manually verify compatibility
-  between the cluster template and the upgraded K3s version. This approach provides flexibility but places the
-  responsibility for compatibility checks on the user.
+- **Option 1:** Allow host OS upgrades to any EMT image version, but require users to manually ensure compatibility
+  between the cluster template and the embedded K3s version. This maximizes flexibility but places the responsibility
+  for version management on the user.
 
-- **Option 2:** Restrict host OS upgrades to EMT image versions that embed the same K3s major and minor version as the
-  running cluster. Infra Manager would validate K3s version compatibility during upgrade requests, or EMT versioning
-  could be aligned with K3s releases. This approach reduces the risk of mismatches but may limit upgrade options.
+- **Option 2:** Restrict host OS upgrades to EMT image versions that contain the same K3s major and minor version as the
+  currently running cluster. The Infra Manager would enforce version compatibility during upgrade requests, or EMT
+  versioning could be aligned with K3s releases. This approach reduces the risk of mismatches but may limit upgrade
+  options.
 
+**Decision:** Option 1 is selected, as the risk of version mismatch is limited until multiple K3s versions are released
+and multi-node clusters are supported. The documentation will clearly describe this risk and provide guidance for users
+to perform upgrades carefully.
