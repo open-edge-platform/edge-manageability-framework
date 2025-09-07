@@ -47,3 +47,9 @@ variable "production" {
   description = "Whether it is a production environment, this will disable the metadata service and login shell"
   default = true
 }
+
+variable "permissions_boundary" {
+  description = "ARN of the IAM permissions boundary policy"
+  type        = string
+  default     = ""
+}

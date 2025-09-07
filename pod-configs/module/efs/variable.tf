@@ -77,3 +77,9 @@ variable "throughput_mode" {
   type    = string
   default = "bursting"
 }
+
+variable "permissions_boundary" {
+  description = "ARN of the IAM permissions boundary policy"
+  type        = string
+  default     = ""
+}

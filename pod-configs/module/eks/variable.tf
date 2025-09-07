@@ -174,3 +174,9 @@ variable "eks_cluster_dns_ip" {
   default = ""
   description = "IP address of the DNS server for the cluster, leave empty to use the default DNS server"
 }
+
+variable "permissions_boundary" {
+  description = "ARN of the IAM permissions boundary policy"
+  type        = string
+  default     = ""
+}

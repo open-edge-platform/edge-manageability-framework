@@ -22,6 +22,7 @@ resource "aws_iam_role" "iam_role_eks_cluster" {
   ]
  }
 EOF
+   permissions_boundary = var.permissions_boundary != "" ? var.permissions_boundary : null
 }
 
 resource "aws_iam_role_policy_attachment" "eks_cluster_AmazonEKSClusterPolicy" {
@@ -149,6 +150,7 @@ resource "aws_iam_role" "eks_nodes" {
   ]
 }
 EOF
+permissions_boundary = var.permissions_boundary != "" ? var.permissions_boundary : null
 }
 
 resource "aws_iam_role_policy_attachment" "AmazonEKSWorkerNodePolicy" {
@@ -464,6 +466,7 @@ resource "aws_iam_role" "cas_controller" {
     ]
 }
   EOF
+  permissions_boundary = var.permissions_boundary != "" ? var.permissions_boundary : null
 }
 
 resource "aws_iam_role_policy_attachment" "cas_controller" {
@@ -496,6 +499,7 @@ resource "aws_iam_role" "certmgr" {
   ]
 }
 EOF
+permissions_boundary = var.permissions_boundary != "" ? var.permissions_boundary : null
 }
 
 resource "aws_iam_role_policy_attachment" "certmgr_AmazonSSMManagedInstanceCore" {

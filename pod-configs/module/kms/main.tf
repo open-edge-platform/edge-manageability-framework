@@ -5,6 +5,7 @@
 # Set up IAM user for Vault to access KMS
 resource "aws_iam_user" "vault" {
   name = "vault-${var.cluster_name}"
+  permissions_boundary = var.permissions_boundary != "" ? var.permissions_boundary : null
 }
 
 resource "aws_iam_access_key" "vault" {
