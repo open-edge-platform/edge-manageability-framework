@@ -2,11 +2,11 @@
 
 Author(s): Scott Baker
 
-Last updated: 2025-09-03
+Last updated: 2025-09-08
 
 ## Abstract
 
-This document provides summary of the current EMF installer approach, highlights key issues
+This document provides a summary of the current EMF installer approach, highlights key issues
 posed by the approach due to the shift in consumption model from closed source to open source.
 It also states the higher order goals to be met by the installation and covers recommended
 approach to achieving the goals in a phased rollout manner.
@@ -15,8 +15,8 @@ approach to achieving the goals in a phased rollout manner.
 
 EMF currently is installed using a custom installer that provides full automation of installation
 by bundling all the layers together such as provisioning infrastructure, installing and configuring
-Kubernetes cluster and deploying EMF microservices. This approach was intended to provide platform
-as a product experience to customers, which naturally had led to curated set of installers targeting
+Kubernetes cluster and deploying EMF microservices. This approach was intended to provide a platform
+as a product experience to customers, which naturally had led to a curated set of installers targeting
 different infrastructure kinds. When EMF was distributed through GSI partners, this approach had
 served well. However, with the shift to open sourcing EMF, this approach has already led to and will
 continue to lead to sprawl of installers and adoption issues due to the opinionated cluster approach.
@@ -30,7 +30,7 @@ Aspects may be undertaken simultaneously.
 
 ### Goal #1 - Standardize and Simplify EMF Installation
 
-The scope of the “installer “ must be reduced to the functions necessary to install EMF on any suitable
+The scope of the "installer" must be reduced to the functions necessary to install EMF on any suitable
 Kubernetes infrastructure., such as cloud VMs, on-prem machines and managed Kubernetes clusters.
 EMF must be installable on this Kubernetes cluster using standard tools and techniques such as
 Helm, Kubernetes, ArgoCD, etc. The requirements must be well documented.
@@ -39,7 +39,7 @@ Helm, Kubernetes, ArgoCD, etc. The requirements must be well documented.
 EMF must be deployable as an edge application on Intel platforms.
 
 Once installation is simplified and standardized, EMF becomes a regular Kubernetes application that can
-run on Intel Edge Platforms if one decides to run so. However, the footprint of EMF is still substantial,
+run on Intel Edge Platforms if one decides to do so. However, the footprint of EMF is still substantial,
 with production grade gitops using ArgoCD, Platform observability, multitenancy etc. We must provide
 sufficient controls to reduce the footprint, enabling EMF to run on smaller environments, including typical
 Intel Edge hardware.
@@ -179,7 +179,7 @@ customers to write their own AWS installers.
 
 Intel will continue to provide guidance and assistance for select partners wishing to perform and AWS
 install, with the goal that as documentation of the AWS installation improves, the documentaiton will
-eventually become self-sufficient and a sufficiently skilled parter will be able to setup the AWS
+eventually become self-sufficient and a sufficiently skilled partner will be able to set up the AWS
 infrastructure with minimum assistance required.
 
 #### Migrate any remaining Helm/Kubernetes services from pre-installer to the installer.
@@ -307,11 +307,105 @@ Eliminating argocd will allow the following pods to be eliminated from the platf
 
 ## Rationale
 
+The rationale for simplification is that it is infeasible to continue to proceed with maintaining three independent
+installers. Convergence is necessary, with a focus on installing EMF itself rather than provisioning infrastructure,
+which differs on a customer-by-customer basis.
+
 ## Affected components and Teams
+
+Primarily this affects the Platform team, as it involves modifying the installers. It will also have a secondary effect on other teams who are working with the installers.
 
 ## Implementation plan
 
+The implementation plan shall be carried out in phases.
+
+### Phase 0
+
+#### Story: Document Installer Configuration
+
+This is probably mostly a yaml file, the “cluster profile” that is passed to Argo. Document the fields that are typically used inside this file. Determine whether sufficient knobs are present to configure EMF for a particular installation. Try deploying EMF directly using this file and Argo, on your own Kubernetes and assess feasibility.
+
+#### Story: Document Installer Kubernetes Requirements
+
+Document the requirements of the Kubernetes environment. This includes not only the resource requirements, but also the set of ports and DNS names that must be exposed.
+
+#### Story: Document which services / subsystems are created by the pre-installers
+
+Document services such as MetalLB, Gitea, Postgres, etc., as well as cloud services such as ALB, NLB, Aurora, etc. Produce a summary of how the three pre-installers (Coder, Onprem, AWS) differ. Identify which services should be migrated from pre-installer to installer in phase 1.
+
+#### Story: Refactor coder installer to split pre-installer from installer
+
+Ensure the installer has a distinct entry point, and the final action of the pre-installer is to invoke the installer.
+
+#### Story: Refactor onprem installer to split pre-installer from installer
+
+Do the same for the onprem installer.
+
+#### Story: Refactor aws installer to split pre-installer from installer
+
+Do the same for the aws installer.
+
+#### Story: Validate upgrade procedures
+
+Upgrades should still work as expected. Validate this and correct any issues.
+
+#### Story: Assess feasibility of Phase 2
+
+We'd like to accelerate the development of phase 2, where subsystems are made optional. Plan some work in Phase 0
+to try out a lightweight POC of that approach.
+
+### Phase 1
+
+#### Story: Eliminate installer dependency on local gitea deployment and git repo clone
+
+Point ArgoCD directly at the edge-manageability-framework repo. Pass in the “cluster profile” as a valuesOption instead of as a valuesFile. Update EMF repo so this is the standard method of deploying EMF.
+
+#### Story: Migrate Gitea deployment from pre-installer to installer, as an app-orch dependency.
+
+Remove Gitea as a pre-installer (i.e. “happens before ArgoCD”) dependency and make it a component that is installed by ArgoCD as part of the app-orch subsystem.
+
+#### Story: Deprecate AWS installer
+
+Deprecate the AWS installer, removing documentation as necessary and relocating scripts and other assets to clarify that it is an “example” or “starting point” and not intended to serve as a production solution. Write procedural documentation on how to install an cloud orchestrator with high level description – i.e. talk about creating ALBs, NLBs, DNS, etc., such that an experienced AWS engineer at a customer partner could reasonably setup an AWS infrastructure that would support EMF.
+
+#### Story: Migrate services from pre-installer to installer or vice-versa
+
+Based on the analysis done in phase 1, migrate functionality between pre-installer and installer as necessary.
+
+#### Story: Ensure pre-installer and installers are noninteractive
+
+Ensure that the pre-installers and the installer take input only when started and do not pause to ask for additional input.
+Note: The small budget for this item assumes AWS installer has been deprecated and is out of scope. Making the AWS installer noninteractive would add considerable additional time.
+
+#### Story: Document upgrade procedures
+
+Ensure upgrades still function as expected. Particularly if services are moved (i.e. Gitea from pre-installer to installer) then we need to either migrate the data, or ensure the new release is able to operate in a compatibility mode to use the old service. Same conditions may be an issue for other services that are migrated/modified.
+
+### Phase 2
+
+#### Story: Make AO, CO, and Observability easy to disable
+
+All three of these components should have options exposed in the installer config (cluster profile) to disable them.
+
+#### Story: Add REST endpoint that describes which subsystems are enabled
+
+We will need this so the UI can introspect the set of installed components.
+
+#### Story: Update UI to exclude disabled subsystems
+
+If a subsystem is disabled, then the UI should avoid showing pages for that subsystem.
+
+#### Story: Add single-tenant initialization job
+
+Add a Kubernetes job that creates a single project and the associated users for that project. The project name, usernames, passwords, etc., should all be parameters.
+
+#### Story: Make multi-tenancy disable-able
+
+If the customer wishes to restrict themselves to single-tenant, with no possibility of ever adding another tenant/project, then make it so the tenant-controller pods can be turned off. 
+
 ## Decision
+
+Proceed with Phase 0. Accelerate Phase 2 into Q1-2026 timeframe. Defer commitment of Phase 3 for future discussion.
 
 ## Open issues (if applicable)
 
