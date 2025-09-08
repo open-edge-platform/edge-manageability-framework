@@ -66,7 +66,7 @@ There are three installers maintained today:
 
 3.	A lightweight development installer which provisions a Kind clusters and deploys EMF
 
-TODO: Picture
+![Current EMF Installers](images/platform-installer-simplification-3-installers.png)
 
 ## Problems with the current approach
 
@@ -109,7 +109,7 @@ The Installer is based on ArgoCD. The installer requires two things to run:
 2.	A set of Installer Configuration values, including the credentials to the Kubernetes environment. This may
    include database configuration, root/admin passwords, public IP addresses, repository URLs, etc. 
 
-TODO: picture
+![Installer and Pre-Installer Split](images/platform-installer-simplification-split.png)
  
 The installer configuration is primarily composed of a set of service profiles and a cluster profile.
 These profiles are inputs to the ArgoCD root app, which in turn configures the other applications.
@@ -127,7 +127,7 @@ of Pre-installer Configuration values, and does the following:
 
 4.	(optionally) Invokes the Installer to complete the installation.
 
-TODO: picture
+![Pre-Installers Overview](images/platform-installer-simplification-3-preinstallers.png)
  
 In Phase 0 there will be three pre-installers:
 
