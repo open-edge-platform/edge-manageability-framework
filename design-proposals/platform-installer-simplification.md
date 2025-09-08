@@ -379,7 +379,7 @@ to try out a lightweight POC of that approach.
 Point ArgoCD directly at the edge-manageability-framework repo. Pass in the “cluster profile” as a valuesOption
 instead of as a valuesFile. Update EMF repo so this is the standard method of deploying EMF.
 
-#### Story: Migrate Gitea deployment from pre-installer to installer, as an app-orch dependency.
+#### Story: Migrate Gitea deployment from pre-installer to installer, as an app-orch dependency
 
 Remove Gitea as a pre-installer (i.e. “happens before ArgoCD”) dependency and make it a component that is installed
 by ArgoCD as part of the app-orch subsystem.
@@ -430,7 +430,7 @@ usernames, passwords, etc., should all be parameters.
 #### Story: Make multi-tenancy disable-able
 
 If the customer wishes to restrict themselves to single-tenant, with no possibility of ever adding another
-tenant/project, then make it so the tenant-controller pods can be turned off. 
+tenant/project, then make it so the tenant-controller pods can be turned off.
 
 ## Decision
 
