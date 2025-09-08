@@ -376,20 +376,21 @@ to try out a lightweight POC of that approach.
 
 #### Story: Eliminate installer dependency on local gitea deployment and git repo clone
 
-Point ArgoCD directly at the edge-manageability-framework repo. Pass in the “cluster profile” as a valuesOption instead of as
-a valuesFile. Update EMF repo so this is the standard method of deploying EMF.
+Point ArgoCD directly at the edge-manageability-framework repo. Pass in the “cluster profile” as a valuesOption
+instead of as a valuesFile. Update EMF repo so this is the standard method of deploying EMF.
 
 #### Story: Migrate Gitea deployment from pre-installer to installer, as an app-orch dependency.
 
-Remove Gitea as a pre-installer (i.e. “happens before ArgoCD”) dependency and make it a component that is installed by ArgoCD
-as part of the app-orch subsystem.
+Remove Gitea as a pre-installer (i.e. “happens before ArgoCD”) dependency and make it a component that is installed
+by ArgoCD as part of the app-orch subsystem.
 
 #### Story: Deprecate AWS installer
 
-Deprecate the AWS installer, removing documentation as necessary and relocating scripts and other assets to clarify that it
-is an “example” or “starting point” and not intended to serve as a production solution. Write procedural documentation on
-how to install a cloud orchestrator with high level description – i.e. talk about creating ALBs, NLBs, DNS, etc., such
-that an experienced AWS engineer at a customer partner could reasonably setup an AWS infrastructure that would support EMF.
+Deprecate the AWS installer, removing documentation as necessary and relocating scripts and other assets to clarify
+that it is an “example” or “starting point” and not intended to serve as a production solution. Write procedural
+documentation on how to install a cloud orchestrator with high level description – i.e. talk about creating ALBs,
+NLBs, DNS, etc., such that an experienced AWS engineer at a customer partner could reasonably setup an AWS
+infrastructure that would support EMF.
 
 #### Story: Migrate services from pre-installer to installer or vice-versa
 
@@ -423,13 +424,13 @@ If a subsystem is disabled, then the UI should avoid showing pages for that subs
 
 #### Story: Add single-tenant initialization job
 
-Add a Kubernetes job that creates a single project and the associated users for that project. The project name, usernames,
-passwords, etc., should all be parameters.
+Add a Kubernetes job that creates a single project and the associated users for that project. The project name,
+usernames, passwords, etc., should all be parameters.
 
 #### Story: Make multi-tenancy disable-able
 
-If the customer wishes to restrict themselves to single-tenant, with no possibility of ever adding another tenant/project, then make
-it so the tenant-controller pods can be turned off. 
+If the customer wishes to restrict themselves to single-tenant, with no possibility of ever adding another
+tenant/project, then make it so the tenant-controller pods can be turned off. 
 
 ## Decision
 
@@ -437,3 +438,4 @@ Proceed with Phase 0. Accelerate Phase 2 into Q1-2026 timeframe. Defer commitmen
 
 ## Open issues (if applicable)
 
+None.
