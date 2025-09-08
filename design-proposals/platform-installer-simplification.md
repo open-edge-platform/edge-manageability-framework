@@ -147,7 +147,7 @@ pre-installer, or to fork and customize our pre-installers for their production 
 Converge on the single installer as the way to install EMF on any infrastructure, while continuing to support
 the pre-installers as necessary for our customers.
 
-#### Eliminate Gitea as a pre-installer dependency.
+#### Eliminate Gitea as a pre-installer dependency
 
 The current behavior of cloning the EMF repo into a local gitea shall be eliminated. ArgoCD shall point to a
 public github source.
@@ -181,7 +181,7 @@ AWS install, with the goal that as documentation of the AWS installation improve
 eventually become self-sufficient and a sufficiently skilled partner will be able to set up the AWS
 infrastructure with minimum assistance required.
 
-#### Migrate any remaining Helm/Kubernetes services from pre-installer to the installer.
+#### Migrate any remaining Helm/Kubernetes services from pre-installer to the installer
 
 The 3.1 installers may contain some helm-based components, such as Postgres, or other services that were
 installed prior to the invocation of ArgoCD. These should be moved from these pre-installers into the
@@ -208,10 +208,10 @@ own Kubernetes, without using a pre-installer.
 
 The following need to be taken care to support this model
 
--	All Kubernetes objects including namespaces, databases, secrets, configs, policies etc must be treated as
-   application components. They must be created via Helm and Argo
+- All Kubernetes objects including namespaces, databases, secrets, configs, policies etc must be treated as
+  application components. They must be created via Helm and Argo
 
--	Expose proper helm value overrides for customers to provide configuration values as appropriate
+- Expose proper helm value overrides for customers to provide configuration values as appropriate
 
 #### Make subsystems easy to disable
 
@@ -219,27 +219,44 @@ Make sure the installer configuration allows the following to be individually di
 for customers who do not require all components. This will allow the following services and their pods to be disabled,
 reducing the footprint of the platform:
 
--	Observability
+- Observability
+
   - Telemetry pods
+
   - Grafana
+
   - Loki
+
   - Mimir
 
 - Cluster Orchestration
+
   - cluster-connect-gateway
+
   - cluster-manager
+
   - intel-infra-provider
+
   - capi-core-provider
+
   - cluster-api-k3s-provider
 
 - Application Orchestration
+
   - app-deployment
+
   - app-interconnect
+
   - app-orch-catalog
+
   - app-orch-tenant-controller
+
   - app-resource-manager
+
   - app-service-proxy
+
   - fleet
+
   - gitea
 
 #### Add optional single-tenant initialization job
@@ -263,6 +280,7 @@ jobs. This includes the following components:
 - (eim) tenant-controller
 
 ### Phase 3 – “EMF Lite” / installation without ArgoCD
+
 Support lighter weight deployment by eliminating argocd components. Use techniques such as umbrella helm charts or tools
 such as helmfile. We will move away from heavy weight services such as ArgoCD that are always running and consuming resources.
 If the customer wishes to use a gitops tool (such as ArgoCD) to maintain their EMF installation, they are free to do so.
