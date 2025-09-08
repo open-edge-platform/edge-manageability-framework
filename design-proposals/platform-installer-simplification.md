@@ -6,7 +6,7 @@ Last updated: 2025-09-08
 
 ## Abstract
 
-This document provides a summary of the current EMF installer approach, highlights key issues
+This document provides a summary of the current EMF installer approach, highlighting key issues
 posed by the approach due to the shift in consumption model from closed source to open source.
 It also states the higher order goals to be met by the installation and covers recommended
 approach to achieving the goals in a phased rollout manner.
@@ -15,15 +15,15 @@ approach to achieving the goals in a phased rollout manner.
 
 EMF currently is installed using a custom installer that provides full automation of installation
 by bundling all the layers together such as provisioning infrastructure, installing and configuring
-Kubernetes cluster and deploying EMF microservices. This approach was intended to provide a platform
-as a product experience to customers, which naturally had led to a curated set of installers targeting
-different infrastructure kinds. When EMF was distributed through GSI partners, this approach had
-served well. However, with the shift to open sourcing EMF, this approach has already led to and will
-continue to lead to sprawl of installers and adoption issues due to the opinionated cluster approach.
-Most customers would either already have or would like to have control over their Kubernetes clusters.
-It’s critical to provide an installation approach that’s using standards and simplified for end customer
-adoption, as well as contribution. To that end, the first goal below is defined to simplify EMF
-installation.
+Kubernetes cluster and deploying EMF microservices. This approach was intended to provide a
+platform-as-a-product experience to customers, which naturally led to a curated set of installers
+targeting different infrastructure kinds. When EMF was distributed through GSI partners, this approach
+had served well. However, with the shift to open sourcing EMF, this approach has already led to and
+will continue to lead to sprawl of installers and adoption issues due to the opinionated cluster
+approach. Most customers would either already have or would like to have control over their Kubernetes
+clusters. It’s critical to provide an installation approach that’s using standards and simplified for
+end customer adoption, as well as contribution. To that end, the first goal below is defined to simplify
+EMF installation.
 
 Note: The following goals do not necessarily need to be tackled sequentially.
 Aspects may be undertaken simultaneously.
@@ -36,6 +36,7 @@ EMF must be installable on this Kubernetes cluster using standard tools and tech
 Helm, Kubernetes, ArgoCD, etc. The requirements must be well documented.
 
 ### Goal #2 – EMF is deployable as an Edge Application
+
 EMF must be deployable as an edge application on Intel platforms.
 
 Once installation is simplified and standardized, EMF becomes a regular Kubernetes application that can
@@ -71,21 +72,21 @@ There are three installers maintained today:
 ## Problems with the current approach
 
 -	Multiple installers – hard to maintain multiple installers each one catering to different infrastructure
-   provider
+  provider
 
 -	Infrastructure provisioning – automating customer infrastructure is not our responsibility. Customers
-   might want to do this differently and take care of their infrastructure provisioning in public clouds
-   and on-prem
+  might want to do this differently and take care of their infrastructure provisioning in public clouds
+  and on-prem
 
 -	Cluster creation – same as “Infrastructure provisioning” in the previous point
 
 -	Shell script – Shell scripting is not the idiomatic approach in the cloud native application ecosystem to
-   provision infrastructure, create cluster and deploy applications. Scripts become brittle and make testing
-   and debugging harder. Scripts also lack monitoring, error handling and reliability
+  provision infrastructure, create clusters, and deploy applications. Scripts become brittle and make testing
+  and debugging harder. Scripts also lack monitoring, error handling, and reliability.
 
 -	Multiple mechanisms to solve identical processes – There are a mix of Magefiles and Shell scripts for such
-   actions as configuring a tenant. Sometimes within the Magefiles there are even multiple mechanisms for doing
-   the same thing. Duplication leads to additional maintenance effort as well as unintentional divergence of behavior.
+  actions as configuring a tenant. Sometimes within the Magefiles there are even multiple mechanisms for doing
+  the same thing. Duplication leads to additional maintenance effort as well as unintentional divergence of behavior.
 
 ## Phased Approach
 
@@ -109,11 +110,11 @@ The Installer is based on ArgoCD. The installer requires two things to run:
 2.	A set of Installer Configuration values, including the credentials to the Kubernetes environment. This may
    include database configuration, root/admin passwords, public IP addresses, repository URLs, etc. 
 
-![Installer and Pre-Installer Split](images/platform-installer-simplification-split.png)
- 
 The installer configuration is primarily composed of a set of service profiles and a cluster profile.
 These profiles are inputs to the ArgoCD root app, which in turn configures the other applications.
 
+![Installer and Pre-Installer Split](images/platform-installer-simplification-split.png)
+ 
 #### Pre-Installer
 
 The job of the pre-installer is to prepare the environment that the installer will run in. It accepts a set
@@ -123,7 +124,7 @@ of Pre-installer Configuration values, and does the following:
 
 2.	Creates any necessary assets to enable that environment (ALBs, NLBs, Databases, etc).
 
-3.	Creates or updates the Installer Configuration that may be passed to the Installer
+3.	Creates or updates the Installer Configuration that may be passed to the Installer.
 
 4.	(optionally) Invokes the Installer to complete the installation.
 
@@ -157,7 +158,7 @@ public github source.
   the installer at their fork.
 
 
-- Local customizations to the installation (i.e. the installer configuration mentioned in Phase 0) may be
+- Local customizations of the installation (i.e. the installer configuration mentioned in Phase 0) may be
   passed to the ArgoCD root app as a valuesObject parameter, overriding default values that are obtained
   from git.
 
@@ -171,14 +172,14 @@ public github source.
 
 #### Deprecate the production-ready AWS pre-installer
 
-Intel will no longer be responsible for provisioning production cloud infrastructure.
+The EMF team will no longer be directly responsible for provisioning production cloud infrastructure.
 
-Intel shall retain the AWS pre-installer as a validation tool to ensure that EMF remains compatible with
-popular cloud services on AWS. Intel may distribute the AWS pre-installer as a “starting point” for our
+The EMF team shall retain the AWS pre-installer as a validation tool to ensure that EMF remains compatible
+with popular cloud services on AWS. We may distribute the AWS pre-installer as a “starting point” for our
 customers to write their own AWS installers.
 
-Intel will continue to provide guidance and assistance for select partners wishing to perform and AWS
-install, with the goal that as documentation of the AWS installation improves, the documentaiton will
+The EMF team will continue to provide guidance and assistance for select partners wishing to perform and
+AWS install, with the goal that as documentation of the AWS installation improves, the documentaiton will
 eventually become self-sufficient and a sufficiently skilled partner will be able to set up the AWS
 infrastructure with minimum assistance required.
 
