@@ -61,30 +61,30 @@ hot fixes. These capabilities are expected of modern Helm-based software.
 
 There are three installers maintained today:
 
-1.	AWS installer which provisions a EKS cluster and deploys EMF
+1. AWS installer which provisions a EKS cluster and deploys EMF
 
-2.	On-prem installer which provisions an RKE2 cluster and deploys EMF
+2. On-prem installer which provisions an RKE2 cluster and deploys EMF
 
-3.	A lightweight development installer which provisions a Kind clusters and deploys EMF
+3. A lightweight development installer which provisions a Kind clusters and deploys EMF
 
 ![Current EMF Installers](images/platform-installer-simplification-3-installers.png)
 
 ## Problems with the current approach
 
--	Multiple installers – hard to maintain multiple installers each one catering to different infrastructure
+- Multiple installers – hard to maintain multiple installers each one catering to different infrastructure
   provider
 
--	Infrastructure provisioning – automating customer infrastructure is not our responsibility. Customers
+- Infrastructure provisioning – automating customer infrastructure is not our responsibility. Customers
   might want to do this differently and take care of their infrastructure provisioning in public clouds
   and on-prem
 
--	Cluster creation – same as “Infrastructure provisioning” in the previous point
+- Cluster creation – same as “Infrastructure provisioning” in the previous point
 
--	Shell script – Shell scripting is not the idiomatic approach in the cloud native application ecosystem to
+- Shell script – Shell scripting is not the idiomatic approach in the cloud native application ecosystem to
   provision infrastructure, create clusters, and deploy applications. Scripts become brittle and make testing
   and debugging harder. Scripts also lack monitoring, error handling, and reliability.
 
--	Multiple mechanisms to solve identical processes – There are a mix of Magefiles and Shell scripts for such
+- Multiple mechanisms to solve identical processes – There are a mix of Magefiles and Shell scripts for such
   actions as configuring a tenant. Sometimes within the Magefiles there are even multiple mechanisms for doing
   the same thing. Duplication leads to additional maintenance effort as well as unintentional divergence of behavior.
 
@@ -92,49 +92,49 @@ There are three installers maintained today:
 
 EMF installation problems listed above will be addressed in multiple phases as follows:
 
-- Phase 0 	Establish a clear boundary between “installer” and “pre-installer”
+- Phase 0: Establish a clear boundary between “installer” and “pre-installer”
 
-- Phase 1	Installer Simplification
+- Phase 1: Installer Simplification
 
-- Phase 2	Composable Installation (EMF Lite)
+- Phase 2: Composable Installation (EMF Lite)
 
-- Phase 3	Eliminate dependency on ArgoCD
+- Phase 3: Eliminate dependency on ArgoCD
 
 ### Phase 0: Establish a clear boundary between installer and pre-installer
 
 The Installer is based on ArgoCD. The installer requires two things to run:
 
-1.	A Kubernetes environment. The installer installs EMF into this environment. It also uses the environment to
+1. A Kubernetes environment. The installer installs EMF into this environment. It also uses the environment to
    run the installer itself.
 
-2.	A set of Installer Configuration values, including the credentials to the Kubernetes environment. This may
-   include database configuration, root/admin passwords, public IP addresses, repository URLs, etc. 
+2. A set of Installer Configuration values, including the credentials to the Kubernetes environment. This may
+   include database configuration, root/admin passwords, public IP addresses, repository URLs, etc.
 
 The installer configuration is primarily composed of a set of service profiles and a cluster profile.
 These profiles are inputs to the ArgoCD root app, which in turn configures the other applications.
 
 ![Installer and Pre-Installer Split](images/platform-installer-simplification-split.png)
- 
+
 #### Pre-Installer
 
 The job of the pre-installer is to prepare the environment that the installer will run in. It accepts a set
 of Pre-installer Configuration values, and does the following:
 
-1.	Creates a Kubernetes environment.
+1. Creates a Kubernetes environment.
 
-2.	Creates any necessary assets to enable that environment (ALBs, NLBs, Databases, etc).
+2. Creates any necessary assets to enable that environment (ALBs, NLBs, Databases, etc).
 
-3.	Creates or updates the Installer Configuration that may be passed to the Installer.
+3. Creates or updates the Installer Configuration that may be passed to the Installer.
 
-4.	(optionally) Invokes the Installer to complete the installation.
+4. (optionally) Invokes the Installer to complete the installation.
 
 In Phase 0 there will be three pre-installers:
 
-1.	Development/Preview. Creates a kind-based environment that is not intended to be used in production.
+1. Development/Preview. Creates a kind-based environment that is not intended to be used in production.
 
-2.	OnPrem. Creates an OnPrem Kubernetes on an Ubuntu node.
+2. OnPrem. Creates an OnPrem Kubernetes on an Ubuntu node.
 
-3.	AWS. Creates an EKS Kubernetes on AWS together with the necessary ALBs, NLBs, Aurora, etc.
+3. AWS. Creates an EKS Kubernetes on AWS together with the necessary ALBs, NLBs, Aurora, etc.
 
 ![Pre-Installers Overview](images/platform-installer-simplification-3-preinstallers.png)
 
@@ -147,16 +147,15 @@ pre-installer, or to fork and customize our pre-installers for their production 
 Converge on the single installer as the way to install EMF on any infrastructure, while continuing to support
 the pre-installers as necessary for our customers.
 
-#### Eliminate Gitea as a pre-installer dependency. 
+#### Eliminate Gitea as a pre-installer dependency.
 
 The current behavior of cloning the EMF repo into a local gitea shall be eliminated. ArgoCD shall point to a
-public github source. 
+public github source.
 
 - The open-edge-platform/edge-manageability-framework repository is one potential github source that may be
   used. Alternatively, our customers who wish to significantly customize the orchestrator installation in
   ways above and beyond what we support are free to fork the edge-manageability-framework repo and point
   the installer at their fork.
-
 
 - Local customizations of the installation (i.e. the installer configuration mentioned in Phase 0) may be
   passed to the ArgoCD root app as a valuesObject parameter, overriding default values that are obtained
@@ -168,7 +167,6 @@ public github source.
 - Gitea is still used as an app-orch dependency by Fleet. As such, when Gitea is removed as a pre-installer
   dependency, at the same time, it will be added as an app-orch dependency and managed for app-orch use by
   ArgoCD.
-
 
 #### Deprecate the production-ready AWS pre-installer
 
@@ -372,7 +370,7 @@ as part of the app-orch subsystem.
 
 Deprecate the AWS installer, removing documentation as necessary and relocating scripts and other assets to clarify that it
 is an “example” or “starting point” and not intended to serve as a production solution. Write procedural documentation on
-how to install an cloud orchestrator with high level description – i.e. talk about creating ALBs, NLBs, DNS, etc., such
+how to install a cloud orchestrator with high level description – i.e. talk about creating ALBs, NLBs, DNS, etc., such
 that an experienced AWS engineer at a customer partner could reasonably setup an AWS infrastructure that would support EMF.
 
 #### Story: Migrate services from pre-installer to installer or vice-versa
