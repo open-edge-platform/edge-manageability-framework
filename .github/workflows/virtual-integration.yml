@@ -472,6 +472,8 @@ jobs:
       - name: Collect diagnostics-kind 
         if: always()
         uses: ./.github/actions/collect_diagnostics
+        with:
+          artifact-name: diagnostics-kind
         timeout-minutes: 15
       - name: Run policy compliance tests
         run: mage test:policyCompliance
@@ -694,6 +696,8 @@ jobs:
       - name: Collect diagnostics-onprem
         if: always()
         uses: ./.github/actions/collect_diagnostics
+        with:
+          artifact-name: diagnostics-onprem
         timeout-minutes: 15
         
       - name: Run E2E tests
@@ -811,6 +815,8 @@ jobs:
       - name: Collect diagnostics-oxm
         if: always()
         uses: ./.github/actions/collect_diagnostics
+        with:
+          artifact-name: diagnostics-oxm
         timeout-minutes: 15
         
       - name: Create MT Sample Org and Project with default users
