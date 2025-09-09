@@ -59,7 +59,7 @@ while IFS= read -r line; do
 done <<< "$all_templates"
 
 echo "✅ Cleanup complete."
-kubectl get clustertemplate -A
+kubectl get clustertemplate -A | grep k3s
 }
 #restart pod after upgrade call:
 restart_and_wait_pod "orch-iam" "nexus-api-gw"
@@ -68,3 +68,11 @@ restart_and_wait_pod "orch-cluster" "cluster-manager-template-controller"
 restart_and_wait_pod "orch-app" "app-orch-tenant-controller"
 #delete old cluster template
 delete_old_template
+
+# Get the namespace where root-app is running
+onprem_namespace=$(kubectl get applications.argoproj.io -A | grep root-app | awk '{print $1}')
+
+# Apply patches using the detected namespace
+kubectl patch application tenancy-api-mapping -n "${onprem_namespace}" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+kubectl patch application tenancy-datamodel -n "${onprem_namespace}" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+kubectl patch application root-app -n "${onprem_namespace}" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
