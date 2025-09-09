@@ -265,7 +265,7 @@ Add an optional Kubernetes job that initializes a single tenant in the tenancy m
 “EMF Lite”. By implementing this as a Kubernetes Job rather than a script, initialization of single-tenant
 configuration may be fully encapsulated within the Helm (and ArgoCD) layers, and avoid requiring any external scripts.
 
-Note: There is an existing job that can be re-used and/or extended, as part of the infra-charts repository.
+
 
 The various tenant-controllers will remain deployed, but will be left in an idle state once the single tenant has been created.
 
@@ -332,7 +332,7 @@ phase 2 goals, such as ensuring the UI works correctly if a subsystem was not in
 
 ## Implementation plan
 
-The implementation plan shall be carried out in phases. This section outlines the Jira stories for each phase.
+The implementation plan shall be carried out in phases. This section outlines the stories for each phase.
 
 ### Phase 0
 
