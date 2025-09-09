@@ -9,23 +9,23 @@ runs:
     if: always()
     shell: bash
     run: |
-      mkdir -p kind-diagnostics
+      mkdir -p diagnostics
       ./ci/collect_pod_logs.sh
-      kubectl get pods -o wide -A > kind-diagnostics/pods-list.txt
-      kubectl describe pods -A > kind-diagnostics/pods-describe.txt
-      mage logutils:collectArgoDiags > kind-diagnostics/argo-diag.txt
-      kubectl get applications -o yaml -A > kind-diagnostics/argocd-applications.yaml
-      kubectl get events -o yaml -A > kind-diagnostics/events.yaml
+      kubectl get pods -o wide -A > diagnostics/pods-list.txt
+      kubectl describe pods -A > diagnostics/pods-describe.txt
+      mage logutils:collectArgoDiags > diagnostics/argo-diag.txt
+      kubectl get applications -o yaml -A > diagnostics/argocd-applications.yaml
+      kubectl get events -o yaml -A > diagnostics/events.yaml
   - name: Upload diagnostic information to CI artifact store
     if: always()
     uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
     with:
-      name: kind-diagnostics
+      name: diagnostics-artifact-${{ github.run_id }}
       path: |
         pod_logs/*
-        kind-diagnostics/pods-list.txt
-        kind-diagnostics/pods-describe.txt
-        kind-diagnostics/argo-diag.txt
-        kind-diagnostics/argocd-applications.yaml
-        kind-diagnostics/events.yaml        
+        diagnostics/pods-list.txt
+        diagnostics/pods-describe.txt
+        diagnostics/argo-diag.txt
+        diagnostics/argocd-applications.yaml
+        diagnostics/events.yaml        
       if-no-files-found: warn
