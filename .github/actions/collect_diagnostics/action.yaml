@@ -1,6 +1,11 @@
 # SPDX-FileCopyrightText: (C) 2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+inputs:
+  artifact-name:
+    description: "Unique artifact name for diagnostics"
+    required: true
+
 runs:
   using: "composite"
   steps:
@@ -16,16 +21,17 @@ runs:
       mage logutils:collectArgoDiags > diagnostics/argo-diag.txt
       kubectl get applications -o yaml -A > diagnostics/argocd-applications.yaml
       kubectl get events -o yaml -A > diagnostics/events.yaml
+
   - name: Upload diagnostic information to CI artifact store
     if: always()
     uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
     with:
-      name: diagnostics-artifact-${{ github.run_id }}
+      name: ${{ inputs.artifact-name }}-${{ github.run_id }}
       path: |
         pod_logs/*
         diagnostics/pods-list.txt
         diagnostics/pods-describe.txt
         diagnostics/argo-diag.txt
         diagnostics/argocd-applications.yaml
-        diagnostics/events.yaml        
+        diagnostics/events.yaml
       if-no-files-found: warn
