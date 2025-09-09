@@ -469,7 +469,7 @@ jobs:
           docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
           token: ${{ secrets.SYS_ORCH_GITHUB }}
           deployment_type: all
-      - name: Collect diagnostics
+      - name: Collect diagnostics-kind 
         if: always()
         uses: ./.github/actions/collect_diagnostics
         timeout-minutes: 15
@@ -691,7 +691,7 @@ jobs:
           docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
           docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
           
-      - name: Collect diagnostics
+      - name: Collect diagnostics-onprem
         if: always()
         uses: ./.github/actions/collect_diagnostics
         timeout-minutes: 15
@@ -808,7 +808,7 @@ jobs:
           docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
           docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
           
-      - name: Collect diagnostics
+      - name: Collect diagnostics-oxm
         if: always()
         uses: ./.github/actions/collect_diagnostics
         timeout-minutes: 15
