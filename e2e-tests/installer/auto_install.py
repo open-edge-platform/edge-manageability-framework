@@ -274,6 +274,7 @@ class AutoInstall:
 
         self.cluster_profile = os.getenv("CLUSTER_PROFILE", "default")
         self.disable_aws_prod_profile = os.getenv("DISABLE_AWS_PROD_PROFILE", "false")
+        self.smtp_url = os.getenv("SMTP_URL", "false")
 
         # Init Account Settings
         self.enable_account_init = os.getenv("ENABLE_ACCOUNT_INIT")
@@ -728,7 +729,7 @@ class AutoInstall:
             self.installer_session.expect("orchestrator-admin:~")
 
         # configure cluster
-        self.installer_session.sendline(f"DISABLE_AWS_PROD_PROFILE={self.disable_aws_prod_profile} ./configure-cluster.sh {self.vpc_jumphost_params}")
+        self.installer_session.sendline(f"DISABLE_AWS_PROD_PROFILE={self.disable_aws_prod_profile} SMTP_URL={self.smtp_url} ./configure-cluster.sh {self.vpc_jumphost_params}")
 
         editor_prompt = False
         while not editor_prompt:
