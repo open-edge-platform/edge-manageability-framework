@@ -61,6 +61,7 @@ jobs:
       terraform: ${{ contains(steps.check-files.outputs.changed_files, '.hcl') || contains(steps.check-files.outputs.changed_files, '.tf') || contains(steps.check-files.outputs.changed_files, '.tfvars') }}
       yaml: ${{ contains(steps.check-files.outputs.changed_files, '.yaml') || contains(steps.check-files.outputs.changed_files, '.yml') }}
       helm: ${{ contains(steps.check-files.outputs.changed_files, 'argocd/') || contains(steps.check-files.outputs.changed_files, 'argocd-internal/') }}
+      test-automation: ${{ contains(steps.check-files.outputs.changed_files, '.test-dependencies.yaml') }}
     steps:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
@@ -311,6 +312,7 @@ jobs:
       needs.check-changed-files.outputs.orch == 'true' ||
       needs.check-changed-files.outputs.on-prem == 'true' ||
       needs.check-changed-files.outputs.ci == 'true' ||
+      needs.check-changed-files.outputs.test-automation = 'true' ||
       github.ref == 'refs/heads/main' ||
       github.ref == 'refs/heads/main-pass-validation'
       )
@@ -661,6 +663,7 @@ jobs:
       needs.check-changed-files.outputs.orch == 'true' ||
       needs.check-changed-files.outputs.on-prem == 'true' ||
       needs.check-changed-files.outputs.ci == 'true' ||
+      needs.check-changed-files.outputs.test-automation = 'true' ||
       github.ref == 'refs/heads/main' ||
       github.ref == 'refs/heads/main-pass-validation'
       )
