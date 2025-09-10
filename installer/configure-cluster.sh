@@ -134,7 +134,7 @@ fi
 if [ -z $SMTP_URL ]; then
     export EMAIL_PROFILE="#- orch-configs/profiles/alerting-emails.yaml"
 else
-    export EMAIL_PROFILE="- orch-configs/profiles/alerting-emails.yaml"
+    export EMAIL_PROFILE="- orch-configs/profiles/alerting-emails-dev.yaml"
 fi
 
 if [ -z $AUTO_CERT ]; then
