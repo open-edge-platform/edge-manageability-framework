@@ -274,6 +274,7 @@ class AutoInstall:
 
         self.cluster_profile = os.getenv("CLUSTER_PROFILE", "default")
         self.disable_aws_prod_profile = os.getenv("DISABLE_AWS_PROD_PROFILE", "false")
+        self.smtp_url = os.getenv("SMTP_URL", "false")
 
         # Init Account Settings
         self.enable_account_init = os.getenv("ENABLE_ACCOUNT_INIT")
@@ -565,6 +566,13 @@ class AutoInstall:
         # download may take a minute or so before the editor starts up.
         time.sleep(120)
         # in provision config editor
+        self.installer_session.sendline(':%s/smtp_url=""//g')
+        self.installer_session.sendline(':%s/smtp_port=587//g')
+        self.installer_session.sendline(':%s/smtp_from=""//g')
+
+        self.installer_session.sendline('G$osmtp_url="smtp.intel.com"')
+        self.installer_session.sendline('G$osmtp_port=25)
+        self.installer_session.sendline('G$osmtp_from="test@intel.com"')
         self.installer_session.sendline(":wq")
 
         # Confirm config save if prompted
@@ -728,7 +736,7 @@ class AutoInstall:
             self.installer_session.expect("orchestrator-admin:~")
 
         # configure cluster
-        self.installer_session.sendline(f"DISABLE_AWS_PROD_PROFILE={self.disable_aws_prod_profile} ./configure-cluster.sh {self.vpc_jumphost_params}")
+        self.installer_session.sendline(f"DISABLE_AWS_PROD_PROFILE={self.disable_aws_prod_profile} SMTP_URL={self.smtp_url} ./configure-cluster.sh {self.vpc_jumphost_params}")
 
         editor_prompt = False
         while not editor_prompt:
