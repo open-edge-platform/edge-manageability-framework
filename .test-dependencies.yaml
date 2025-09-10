@@ -3,4 +3,4 @@
 # SPDX-License-Identifier: Apache-2.0
 
 test-automation:
-  version: 0.2.1
+  version: hw_cfSuiteTeardown
