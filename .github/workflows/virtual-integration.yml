@@ -312,7 +312,7 @@ jobs:
       needs.check-changed-files.outputs.orch == 'true' ||
       needs.check-changed-files.outputs.on-prem == 'true' ||
       needs.check-changed-files.outputs.ci == 'true' ||
-      needs.check-changed-files.outputs.test-automation = 'true' ||
+      needs.check-changed-files.outputs.test-automation == 'true' ||
       github.ref == 'refs/heads/main' ||
       github.ref == 'refs/heads/main-pass-validation'
       )
@@ -663,7 +663,7 @@ jobs:
       needs.check-changed-files.outputs.orch == 'true' ||
       needs.check-changed-files.outputs.on-prem == 'true' ||
       needs.check-changed-files.outputs.ci == 'true' ||
-      needs.check-changed-files.outputs.test-automation = 'true' ||
+      needs.check-changed-files.outputs.test-automation == 'true' ||
       github.ref == 'refs/heads/main' ||
       github.ref == 'refs/heads/main-pass-validation'
       )
