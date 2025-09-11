@@ -500,7 +500,7 @@ jobs:
       - name: Setup Sample Org and Project with default users
         id: default-mt-setup
         run: mage tenantUtils:createDefaultMtSetup
-      - name: setup dnsmask
+      - name: config dnsmask
         run: |
           cd virtual-edge-node/vm-provisioning/scripts
           ./install_packages.sh "kind.internal" config
