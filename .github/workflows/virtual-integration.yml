@@ -468,13 +468,12 @@ jobs:
           ref: pico/1.5.5
           path: virtual-edge-node
           persist-credentials: false
-
-     - name: setup dnsmask
+      - name: setup dnsmask
         run: |
           cd virtual-edge-node/vm-provisioning/scripts
           chmod +x ci_setup_dnsmasq.sh || true
-          # original logic invoked install_packages.sh with arguments
-          ./install_packages.sh "kind.internal" setup
+          # original logic invoked ci_setup_dnsmasq.sh with arguments
+          ./ci_setup_dnsmasq.sh "kind.internal" setup
 
       - name: Start install_packages for libvirt
         run: |
@@ -498,14 +497,11 @@ jobs:
         if: always()
         uses: ./.github/actions/collect_diagnostics
         timeout-minutes: 15
-
       - name: config dnsmask
         run: |
           cd virtual-edge-node/vm-provisioning/scripts
-          ./install_packages.sh "kind.internal" config
-          dig web-ui.kind.internal || true
-          sudo apt-get update
-          
+          ./ci_setup_dnsmasq.sh "kind.internal" config
+          dig web-ui.kind.internal  
       - name: Run policy compliance tests
         run: mage test:policyCompliance
       - name: Run image pull policy compliance tests
