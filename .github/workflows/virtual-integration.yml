@@ -500,7 +500,7 @@ jobs:
       - name: config dnsmask
         run: |
           cd virtual-edge-node/vm-provisioning/scripts
-          ./ci_setup_dnsmasq.sh "kind.internal" config
+          /ci_setup_dnsmasq.sh "kind.internal" config
           dig web-ui.kind.internal  
       - name: Run policy compliance tests
         run: mage test:policyCompliance
@@ -509,16 +509,6 @@ jobs:
       - name: Setup Sample Org and Project with default users
         id: default-mt-setup
         run: mage tenantUtils:createDefaultMtSetup
-      - name: config dnsmask (post deploy)
-        run: |
-          cd virtual-edge-node/vm-provisioning/scripts
-          ./install_packages.sh "kind.internal" config
-          dig web-ui.kind.internal || true
-      - name: Start pico ven deploy (post deploy)
-        run: |
-          cd virtual-edge-node/vm-provisioning/scripts
-          ./install_packages.sh "kind.internal" config
-          dig web-ui.kind.internal || true
       - name: Deploy Victoria Metrics instance
         env:
           ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
@@ -535,6 +525,7 @@ jobs:
           LIBVIRT_DEFAULT_URI: 'qemu:///system'
         run: |
           asdf install terraform
+          cd virtual-edge-node/pico/modules/pico-vm-libvirt/
           virsh list --all;virsh net-list  --all;virsh net-list  --all
           cat <<EOF > terraform.tfvars
           tinkerbell_nginx_domain = "tinkerbell-nginx.kind.internal"
