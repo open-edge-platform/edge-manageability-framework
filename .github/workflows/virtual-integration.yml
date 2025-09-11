@@ -471,9 +471,11 @@ jobs:
           docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
           token: ${{ secrets.SYS_ORCH_GITHUB }}
           deployment_type: all
-      - name: Collect diagnostics
+      - name: Collect diagnostics-kind 
         if: always()
         uses: ./.github/actions/collect_diagnostics
+        with:
+          artifact-name: diagnostics-kind
         timeout-minutes: 15
       - name: Run policy compliance tests
         run: mage test:policyCompliance
@@ -693,7 +695,14 @@ jobs:
           orch_version: ${{ github.event.pull_request.head.sha }}
           docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
           docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
-
+          
+      - name: Collect diagnostics-onprem
+        if: always()
+        uses: ./.github/actions/collect_diagnostics
+        with:
+          artifact-name: diagnostics-onprem
+        timeout-minutes: 15
+        
       - name: Run E2E tests
         env:
           E2E_SVC_DOMAIN: cluster.onprem
@@ -805,7 +814,14 @@ jobs:
           orch_profile: onprem-oxm
           docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
           docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
-
+          
+      - name: Collect diagnostics-oxm
+        if: always()
+        uses: ./.github/actions/collect_diagnostics
+        with:
+          artifact-name: diagnostics-oxm
+        timeout-minutes: 15
+        
       - name: Create MT Sample Org and Project with default users
         run: mage tenantUtils:createDefaultMtSetup
 
