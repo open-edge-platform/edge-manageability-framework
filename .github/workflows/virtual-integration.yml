@@ -469,26 +469,19 @@ jobs:
           path: virtual-edge-node
           persist-credentials: false
 
-      - name: Start install_packages for libvirt
-        run: |
-          cd virtual-edge-node/vm-provisioning
-          # ensure script is executable
-          chmod +x install_packages.sh
-          ./install_packages.sh
-
-      - name: setup dnsmask
+     - name: setup dnsmask
         run: |
           cd virtual-edge-node/vm-provisioning/scripts
           chmod +x ci_setup_dnsmasq.sh || true
           # original logic invoked install_packages.sh with arguments
           ./install_packages.sh "kind.internal" setup
 
-      - name: config dnsmask
+      - name: Start install_packages for libvirt
         run: |
-          cd virtual-edge-node/vm-provisioning/scripts
-          ./install_packages.sh "kind.internal" config
-          dig web-ui.kind.internal || true
-          sudo apt-get update
+          cd virtual-edge-node/vm-provisioning
+          # ensure script is executable
+          chmod +x install_packages.sh
+          ./install_packages.sh
 
       - name: Deploy Kind Orchestrator
         id: deploy-kind-orchestrator
@@ -505,6 +498,14 @@ jobs:
         if: always()
         uses: ./.github/actions/collect_diagnostics
         timeout-minutes: 15
+
+      - name: config dnsmask
+        run: |
+          cd virtual-edge-node/vm-provisioning/scripts
+          ./install_packages.sh "kind.internal" config
+          dig web-ui.kind.internal || true
+          sudo apt-get update
+          
       - name: Run policy compliance tests
         run: mage test:policyCompliance
       - name: Run image pull policy compliance tests
