@@ -531,8 +531,11 @@ jobs:
         run: mage devUtils:createDefaultUser test:e2e
 
       - name: Start VEN Deploy
+        env:
+          LIBVIRT_DEFAULT_URI: 'qemu:///system'
         run: |
           asdf install terraform
+          virsh list --all;virsh net-list  --all;virsh net-list  --all
           cat <<EOF > terraform.tfvars
           tinkerbell_nginx_domain = "tinkerbell-nginx.kind.internal"
           smbios_serial           = "ventesten1"
