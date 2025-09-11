@@ -499,6 +499,8 @@ jobs:
         timeout-minutes: 15
       - name: config dnsmask
         run: |
+          pwd
+          ls -lrt
           cd virtual-edge-node/vm-provisioning/scripts
           ./ci_setup_dnsmasq.sh "kind.internal" config
           dig web-ui.kind.internal  
