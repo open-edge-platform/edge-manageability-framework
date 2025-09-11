@@ -500,7 +500,7 @@ jobs:
       - name: config dnsmask
         run: |
           cd virtual-edge-node/vm-provisioning/scripts
-          /ci_setup_dnsmasq.sh "kind.internal" config
+          ./ci_setup_dnsmasq.sh "kind.internal" config
           dig web-ui.kind.internal  
       - name: Run policy compliance tests
         run: mage test:policyCompliance
