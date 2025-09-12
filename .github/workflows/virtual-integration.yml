@@ -472,6 +472,8 @@ jobs:
         run: |
           pwd
           ls -lrt
+          cp -rf virtual-edge-node $HOME/
+          ls -lrt $HOME/
           cd virtual-edge-node/vm-provisioning/scripts
           chmod +x ci_setup_dnsmasq.sh || true
           # original logic invoked ci_setup_dnsmasq.sh with arguments
@@ -505,6 +507,8 @@ jobs:
         run: |
           pwd
           ls -lrt
+          ls -lrt $HOME/
+          cp -rf $HOME/virtual-edge-node .
           cd virtual-edge-node/vm-provisioning/scripts
           ./ci_setup_dnsmasq.sh "kind.internal" config
           dig web-ui.kind.internal  
