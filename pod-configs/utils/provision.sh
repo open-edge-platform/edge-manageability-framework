@@ -1153,8 +1153,8 @@ EOF
 orch_loadbalancer_variable_internal_default() {
     cat <<EOF
 vpc_terraform_backend_bucket = "${BUCKET_NAME}"
-vpc_terraform_backend_key    = "us-west-2/vpc/${VPC_ID}"
-vpc_terraform_backend_region = "us-west-2"
+vpc_terraform_backend_key    = "${AWS_REGION}/vpc/${VPC_ID}"
+vpc_terraform_backend_region = "${BUCKET_REGION}"
 
 cluster_terraform_backend_bucket = "${BUCKET_NAME}"
 cluster_terraform_backend_key    = "${AWS_REGION}/cluster/${ENV_NAME}"
