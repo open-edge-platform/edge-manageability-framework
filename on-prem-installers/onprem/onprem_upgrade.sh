@@ -782,4 +782,8 @@ done
 # Run after upgrade script
 ./after_upgrade_restart.sh
 
+# Delete platform-keycloak-keycloak-config-cli Job
+kubectl get job platform-keycloak-keycloak-config-cli -n orch-platform -o jsonpath='{.status.conditions[?(@.type=="Failed")].status}' | grep -q "True" && kubectl delete job platform-keycloak-keycloak-config-cli -n orch-platform || echo "Job is not in failed state"
+kubectl patch application platform-keycloak  -n onprem --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+
 echo "Upgrade completed! Wait for ArgoCD applications to be in 'Synced' and 'Healthy' state"
