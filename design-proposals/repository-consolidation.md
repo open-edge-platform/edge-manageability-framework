@@ -2,7 +2,7 @@
 
 Author(s): Christopher Nolan
 
-Last updated: 2025/09/04
+Last updated: 2025/09/12
 
 ## Abstract
 
@@ -18,12 +18,13 @@ This is a significant number of repositories to maintain and it makes it difficu
 specific areas of the EMF.
 
 To improve the usability and maintenance of the EMF and its dependent repositories, it is intended to combine the current
-number of repositories in EMF down to five to improve maintainability:
+number of repositories in EMF down to six to improve maintainability:
 
 - edge-manageability-framework - will remain as is
 - edge-infrastructure-manager
 - application-orchestration
 - cluster-orchestration
+- orch-ci - will remain as is
 - others
 
 ## Proposal
@@ -112,11 +113,10 @@ This repository will include the following repositories:
 - [orch-library](https://github.com/open-edge-platform/orch-library)
 - [cluster-extensions](https://github.com/open-edge-platform/cluster-extensions)
 - [trusted-compute](https://github.com/open-edge-platform/trusted-compute)
-- [orch-ci](https://github.com/open-edge-platform/orch-ci)*
 
 ```mermaid
 flowchart
-    edge-manage-docs* --> others
+    edge-manage-docs --> others
     orch-library --> others
     orch-utils --> others
     orch-ui --> ui
@@ -132,10 +132,9 @@ flowchart
     edge-node --> others
     cluster-extensions --> others
     trusted-compute --> others
-    orch-ci* --> others
 ```
 
-> Note: * denotes repository with open question on consolidation.
+> Note: it is still to be determined if the edge-manage-docs repository can be moved into the others repo without impact.
 
 ### New repository formatting
 
@@ -335,7 +334,7 @@ nested subfolders that have been created from steps 1 and 2.
 - Confirm the name for the Others repository that will contain multiple repositories that do not align with the other
 three consolidated repostories.
 - Can the current CI repository be consolidated into the `others` repository or should it be kept separate due to it
-storing the shared workflows for all repositories?
+storing the shared workflows for all repositories? The `orch-ci` repository will be kept separate and as is.
 - `edge-manage-docs` contains the Developer, User and Deployment Guides that are rendered to
 [the documentation site](https://docs.openedgeplatform.intel.com/edge-manage-docs/dev/index.html), need to confirm if
 this repository needs to be kept separate so it can be rendered to the documentation site.
