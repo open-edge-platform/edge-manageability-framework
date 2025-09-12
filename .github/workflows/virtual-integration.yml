@@ -538,7 +538,10 @@ jobs:
           asdf install terraform
           cp -rf $HOME/virtual-edge-node .
           cd virtual-edge-node/pico/modules/pico-vm-libvirt/
-          virsh list --all;virsh net-list  --all;virsh net-list  --all
+          sudo usermod -aG libvirt $USER
+          virsh list --all || true
+          virsh net-list  --all || true
+          virsh pool-list  --all || true
           cat <<EOF > terraform.tfvars
           tinkerbell_nginx_domain = "tinkerbell-nginx.kind.internal"
           smbios_serial           = "ventesten1"
