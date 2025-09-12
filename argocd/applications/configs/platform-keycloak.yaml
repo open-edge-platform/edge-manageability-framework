@@ -110,7 +110,7 @@ keycloakConfigCli:
         "maxDeltaTimeSeconds": 43200,
         "failureFactor": 5,
         "roles": {
-        "realm": [
+          "realm": [
             {
               "name": "org-read-role"
             },
