@@ -24,11 +24,11 @@ versions of EMT a EN passed through its lifecycle.
 
 - Improve UX for day 2 operations
 - Unify day 2 workflows between Mutable and Immutable OSes
-- Track all the day 2 operations that happened to a given Edge Node
-- Track packages installed into an Edge Node in both Mutable and Immutable OSes
 - New OSProfiles for EMT created in EIM at runtime, without orchestrator upgrade
 - Provide an easy way to the UI to signal that an update is available for an
   Edge Node
+- Track all the day 2 operations that happened to a given Edge Node
+- Track packages installed into an Edge Node in both Mutable and Immutable OSes
 
 ### Limitations and Debt of The Current Design
 
@@ -64,7 +64,7 @@ operations. OSProfiles are still used for Day 2 operations for immutable OSes,
 but they will be used only to track the target EMT version, and the current
 installed EMT version. Interaction with OSProfile APIs are now reserved for
 advanced use case only, users should not interact with them during Day 2
-operations. Instances instead handles all the runtime information of the
+operations. Instances instead handle all the runtime information of the
 software running on the Edge Node, including the installed packages (that could
 change during the lifecycle of the Edge Node), and information about available
 updates for the Edge Node.
@@ -88,7 +88,7 @@ Changes:
     the EMT image. For Mutable, those are filled using the Ubuntu manifest file.
     For Mutable, this won't include Bare Metal Agents packages, since those are
     installed during Day 0, but they are not part of the Ubuntu manifest.
-  - `installed_packages_source`: field is the URL where the Manifest file is
+  - `installed_packages_url`: field is the URL where the Manifest file is
     stored. The field is immutable. This is added to allow manual creation of
     OSProfiles (advanced feature).
   - `update_sources`: the field is deprecated, and should not be used anymore.
@@ -106,7 +106,7 @@ Changes:
     installed in the Edge Node at runtime. For Immutable OSes, we expect this to
     be equal to the content of `installed_packages` in the OS Profile. For
     Mutable OSes, this could change during the lifetime of the Edge Node.
-  - `os_updates_available`: signals that new updates are available. This field
+  - `os_update_available`: signals that new updates are available. This field
     doesn't tell anything about the fact that the update will be done in the
     next scheduled maintenance. The field is a string.
     - mutable: list of packages ready to be upgraded on the Edge Node, empty if
@@ -147,7 +147,7 @@ New Resources:
     implement it via a new OS Update Policy. Currently, this feature will not be
     supported.
   
-- **OS Update Run**: stores the information about the update job that run on the
+- **OS Update Run**: stores the information about the update job that runs on the
   Edge Node. This resource is created when the update is started, and stores
   information about what happened in the Edge Node during the Update. If there
   are concerns about the size of this table, we can add retention policies for
@@ -168,6 +168,7 @@ New Resources:
   - `end_time`: timestamp of when the update job ended.
   - `applied_policy`: the policy that was applied during the update. Provides
     information of what was the target Update Policy for this update.
+  - `instance`: the Instance on which the update runs.
 
 Resource and Field Handling:
 
@@ -193,8 +194,8 @@ Resource and Field Handling:
   change the content of this resource. Default OS Update Policies could be
   agreed and created upon Tenant creation (for example, update to latest
   policy). OS Update Policies is immutable and cannot be updated after creation.
-  Also, it cannot be deleted if any OS Update Run or any Instances refers to it.
-  Only a subset of fields in a OS Update Policy can be set depending on the
+  Also, it cannot be deleted if any OS Update Run or any Instances refer to it.
+  Only a subset of fields in an OS Update Policy can be set depending on the
   target policy, if it targets Mutable or Immutable OSes:
 
   - Policies for mutable OS: `install_packages`, `update_sources`,
@@ -202,7 +203,7 @@ Resource and Field Handling:
   - Policies for immutable OS: `target_os` and `update_policy` fields can be
     set, only.
   
-  Also, when linking an Instance to a OS Update Policy, only policies for
+  Also, when linking an Instance to an OS Update Policy, only policies for
   Mutable OS can be linked to Instance with Mutable OSes, and policies for
   Immutable OS can be linked to Instances with Immutable OSes. These constraints
   are enforced at API or Inventory level by EIM directly.
@@ -214,7 +215,7 @@ Resource and Field Handling:
 
 #### Retention policy for "OS Update Run"
 
-Since a OS Update Run resource will be created every time an update is triggered
+Since an OS Update Run resource will be created every time an update is triggered
 on the Edge Node, even if the update is a no-op. The size of the table can
 easily grow. To avoid this, we can implement a retention policy for the
 resources. The following retention policy is proposed:
@@ -257,8 +258,12 @@ autonumber
     
     note over MM,PUA: Update Schedule Start
     PUA->>PUA: Start Update
-    PUA->>MM: PlatformUpdateStatusRequest with updateStatu "STATUS_TYPE_STARTED"
-    MM->>Inventory: Create a OSUpdateRun, with start_time, linking to the OSUpdatePolicy
+    alt Update of Mutable OS
+      PUA->>MM: PlatformUpdateStatusRequest with updateStatu "STATUS_TYPE_STARTED"
+    else Update of Immutable OS
+      PUA->>MM: PlatformUpdateStatusRequest with updateStatu "STATUS_TYPE_DOWNLOADING"
+    end
+    MM->>Inventory: Create an OSUpdateRun, with start_time, linking to the OSUpdatePolicy
     
     alt Update successful on the Edge Node
         Edge Node->>MM: PlatformUpdateStatusRequest with updateStatus "STATUS_TYPE_UPDATED"
@@ -269,7 +274,7 @@ autonumber
     end
 ```
 
-Automatic Update of the Instance `os_updates_available` field:
+Automatic Update of the Instance `os_update_available` field:
 
 ```mermaid
 sequenceDiagram
@@ -431,9 +436,9 @@ Edge Infrastructure Manager:
   OSUpdatePolicy and OSUpdateRun resources.
   1. Handle OSUpdatePolicy
   2. Create and Update OSUpdateRun
-  3. Handle `os_updates_available` for Immutable OSes
+  3. Handle `os_update_available` for Immutable OSes
   4. Update southbound APIs to allow PUA to provide packages ready to be
-     updated, and handle `os_updates_available` for Mutable OSes
+     updated, and handle `os_update_available` for Mutable OSes
   5. Update southbound APIs to allow PUA to provide the list of packages
      installed on the EN (could be merged with point iv above).
   6. Handle OS Update Run retention policy, and delete resources older than the
@@ -459,51 +464,44 @@ UI/CLI:
 1. Support for creation of OSUpdatePolicy via dedicated page to handle these
    resources
 2. Show History of the Instance, via the OSUpdateRun resources
-3. Update to support the `os_updates_available` field in the Instance resource,
+3. Update to support the `os_update_available` field in the Instance resource,
    instead of using `desired_os` to support update badge
 4. Update to properly show runtime packages from the Instance instead of
    OSProfile
 
 ## Implementation plan
 
-The implementation plan is divided into 3 phases.
+The implementation plan is divided into 2 phases.
 
-### Phase 1 (for EMF 3.1 release)
+### Phase 1 (for EMF 2025.2 release)
 
 Goal: streamline day 2 workflows and support EN history. Keeping the notice of
 updates for EMT backward compatible, with MM that updates the Instance
-desired_os.
+desired_os. Automatically create new OSProfile, notice of new updates for both mutable
+and immutable automatically done.
 
 1. Schema and REST API changes (inv.\*, API.\*) with deprecated fields
 2. Update to Maintenance Manager (MM) to handle OSUpdatePolicy, and create and
    update OSUpdateRun (MM.i, MM.ii)
 3. UI/CLI support for OSUpdatePolicy (UI/CLI.1) - UI work is Tentative
-4. OSRM to poll Ubuntu Manifest (OSRM.ii)
-5. CLI support for OSUpdateRun (CLI.2)
-6. New Integration tests
-7. Update to documentation for the new Day2 operations
-
-### Phase 2 (for EMF 3.2 release)
-
-Goal: automatically create new OSProfile, notice of new updates for both mutable
-and immutable automatically done.
-
-1. Remove deprecated fields from the schema and REST APIs
-2. OSRM to automatically populate new OSProfiles (OSRM.i)
-3. PUA update to check for new updates available (PUA.i)
-4. MM to populate `os_updates_available` for Mutable and Immutable OSes (MM.
+4. CLI support for OSUpdateRun (CLI.2)
+5. Remove deprecated fields from the schema and REST APIs
+6. OSRM to automatically populate new OSProfiles (OSRM.i)
+7. PUA update to check for new updates available (PUA.i)
+8. MM to populate `os_updates_available` for Mutable and Immutable OSes (MM.
    iii, MM.iv)
-5. UI to support new `os_updates_available` field (UI/CLI.3)
-6. New Integration tests
-7. Update to documentation
+9. UI to support new `os_updates_available` field (UI/CLI.3)
+10. New Integration tests
+11. Update to documentation
 
-### Phase 3 (for EMF.next release)
+### Phase 2 (for EMF next release)
 
-Goal: installed_packages available for both mutable and immutable, and implement
-OS Update Run retention policy.
+Goal: installed_packages available for both mutable and immutable, and
+OS Update Run retention policy implemented.
 
 1. MM update to SBI APIs (MM.v)
-2. PUA update to report runtime packages (PUA.ii)
+2. OSRM to poll Ubuntu Manifest (OSRM.ii)
+3. PUA update to report runtime packages (PUA.ii)
 3. UI to support runtime packages from Instance (UI.4)
 4. MM to handle OS Update Run retention policy (MM.vi)
 5. New Integration tests
