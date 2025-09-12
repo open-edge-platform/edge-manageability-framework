@@ -488,9 +488,9 @@ and immutable automatically done.
 5. Remove deprecated fields from the schema and REST APIs
 6. OSRM to automatically populate new OSProfiles (OSRM.i)
 7. PUA update to check for new updates available (PUA.i)
-8. MM to populate `os_updates_available` for Mutable and Immutable OSes (MM.
+8. MM to populate `os_update_available` for Mutable and Immutable OSes (MM.
    iii, MM.iv)
-9. UI to support new `os_updates_available` field (UI/CLI.3)
+9. UI to support new `os_update_available` field (UI/CLI.3)
 10. New Integration tests
 11. Update to documentation
 
@@ -502,9 +502,9 @@ OS Update Run retention policy implemented.
 1. MM update to SBI APIs (MM.v)
 2. OSRM to poll Ubuntu Manifest (OSRM.ii)
 3. PUA update to report runtime packages (PUA.ii)
-3. UI to support runtime packages from Instance (UI.4)
-4. MM to handle OS Update Run retention policy (MM.vi)
-5. New Integration tests
-6. Update to documentation
+4. UI to support runtime packages from Instance (UI.4)
+5. MM to handle OS Update Run retention policy (MM.vi)
+6. New Integration tests
+7. Update to documentation
 
 ## Open issues (if applicable)
