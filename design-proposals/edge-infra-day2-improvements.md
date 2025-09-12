@@ -475,17 +475,16 @@ The implementation plan is divided into 2 phases.
 
 ### Phase 1 (for EMF 2025.2 release)
 
-Goal: streamline day 2 workflows and support EN history. Keeping the notice of
-updates for EMT backward compatible, with MM that updates the Instance
-desired_os. Automatically create new OSProfile, notice of new updates for both mutable
-and immutable automatically done.
+Goal: Streamline day 2 workflows and support EN update history. Automatically
+create new OSProfile. Signal update availability for both mutable
+and immutable OSes.
 
 1. Schema and REST API changes (inv.\*, API.\*) with deprecated fields
 2. Update to Maintenance Manager (MM) to handle OSUpdatePolicy, and create and
    update OSUpdateRun (MM.i, MM.ii)
 3. UI/CLI support for OSUpdatePolicy (UI/CLI.1) - UI work is Tentative
 4. CLI support for OSUpdateRun (CLI.2)
-5. Remove deprecated fields from the schema and REST APIs
+5. Remove deprecated fields from the schema and REST APIs.
 6. OSRM to automatically populate new OSProfiles (OSRM.i)
 7. PUA update to check for new updates available (PUA.i)
 8. MM to populate `os_update_available` for Mutable and Immutable OSes (MM.
@@ -496,8 +495,9 @@ and immutable automatically done.
 
 ### Phase 2 (for EMF next release)
 
-Goal: installed_packages available for both mutable and immutable, and
-OS Update Run retention policy implemented.
+Goal: List of installed packages available for both mutable and immutable OS profiles.
+List of currently installed packages updated in the Instance at runtime.
+Implemented OS Update Run retention policy.
 
 1. MM update to SBI APIs (MM.v)
 2. OSRM to poll Ubuntu Manifest (OSRM.ii)
