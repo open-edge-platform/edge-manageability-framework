@@ -225,6 +225,7 @@ EOF
 }
 
 # This script allows making changes to the configuration during its runtime.
+#
 # The function performs the following steps:
 # 1. Runs the on-premises installation.
 # 2. Extracts the repository archive.
@@ -232,6 +233,7 @@ EOF
 # 4. Once the user has edited the file, they respond to the prompt with 'yes'.
 # 5. Upon receiving a 'yes' response, the script re-archives the repository.
 # 6. Continues with the installation of the orchestrator.
+#
 # Note: If the configuration already exists, the script will prompt the user to confirm if they want to overwrite it.
 allow_config_in_runtime() {
   if [ "$ENABLE_TRACE" = true ]; then
