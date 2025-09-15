@@ -112,6 +112,15 @@ keycloakConfigCli:
         "roles": {
           "realm": [
             {
+              "name": "secrets-root-role"
+            },
+            {
+              "name": "rs-access-r"
+            },
+            {
+              "name": "rs-proxy-r"
+            },
+            {
               "name": "app-service-proxy-read-role"
             },
             {
