@@ -78,7 +78,7 @@ jobs:
       - name: Calculate only_design_proposals
         id: only-design-proposals
         run: |
-          files="${{ steps.check-files.outputs.changed_files }}"
+          files="["design-proposals/cluster-orch-k3s-in-emt.md","design-proposals/images/cluster-orch-k3s-build.png"]"
           only_design=true
           for file in $(echo $files | tr ',' '\n'); do
             echo "$file"
@@ -89,6 +89,7 @@ jobs:
           done
           echo "$only_design"
           echo "only_design_proposals=$only_design" >> $GITHUB_OUTPUT
+          echo $GITHUB_OUTPUT
 
   scan-viruses:
     permissions:
@@ -366,6 +367,8 @@ jobs:
         run: |
           output=$(mage version:getVersionTag)
           echo "versionTag=$output" >> $GITHUB_ENV
+          echo "${{ steps.only-design-proposals.outputs.only_design_proposals }}"
+          echo "needs.check-changed-files.outputs.only_design_proposals"
 
       - name: Build DEB packages
         working-directory: on-prem-installers
