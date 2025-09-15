@@ -389,74 +389,6 @@ jobs:
           mage build:debVersion
           echo "DEB_VERSION=$(mage build:debVersion)" >> "$GITHUB_OUTPUT"
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722  # v4.0.1
-        with:
-          aws-access-key-id: ${{ secrets.NO_AUTH_ECR_PUSH_USERNAME }}
-          aws-secret-access-key: ${{ secrets.NO_AUTH_ECR_PUSH_PASSWD }}
-          aws-region: us-west-2
-
-      - name: Login to ECR
-        run: aws ecr get-login-password --region us-west-2 | oras login -u AWS --password-stdin 080137407410.dkr.ecr.us-west-2.amazonaws.com
-
-      - name: Publish on-prem installer artifacts
-        env:
-          BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
-        working-directory: on-prem-installers
-        run: mage publish:all
-
-      - name: Publish Orchestrator source code artifacts
-        env:
-          BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
-        run: mage publish:sourceTarballs
-
-      - name: Login to ECR
-        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772  # v3.4.0
-        with:
-          registry: 080137407410.dkr.ecr.us-west-2.amazonaws.com
-
-      - name: Build Cloud Installer and release bundle artifacts
-        run: |
-          mage installer:build
-          mage installer:bundle
-
-      - name: Scan Cloud Installer Image
-        uses: aquasecurity/trivy-action@6c175e9c4083a92bbca2f9724c8a5e33bc2d97a5  # v0.30.0
-        with:
-          image-ref: 080137407410.dkr.ecr.us-west-2.amazonaws.com/edge-orch/common/orchestrator-installer-cloudfull:${{ env.versionTag }}
-          format: table
-          output: "trivy-orchestrator-installer-cloudfull.txt"
-          ignore-unfixed: true
-
-      - name: Calculate MD5 Checksum
-        id: checksum
-        run: |
-          md5sum_value=$(md5sum "trivy-orchestrator-installer-cloudfull.txt" | cut -d " " -f 1)
-          echo "md5sum is $md5sum_value"
-          echo "md5sum_value=$md5sum_value" >> "$GITHUB_ENV"
-
-      - name: Upload Trivy Image Scan Report
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
-        with:
-          name: trivy-scan-report-orchestrator-installer-cloudfull-${{ env.md5sum_value }}
-          path: trivy-orchestrator-installer-cloudfull.txt
-
-      - name: Publish Cloud Installer artifact
-        if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
-        run: mage publish:cloudInstaller
-
-      - name: Build release manifest artifact
-        if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
-        run: |
-          mkdir -p release-manifest
-          mage -v gen:releaseManifest release-manifest/chart-manifest.yaml
-          mage -v gen:releaseImageManifest release-manifest/image-manifest.yaml
-
-      - name: Publish release manifest artifact
-        if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
-        run: |
-          mage publish:releaseManifest
-
   deploy-kind:
     permissions:
       contents: read
@@ -550,7 +482,7 @@ jobs:
     if: |
       always() &&
       needs.build-publish.result == 'success' &&
-      needs.check-changed-files.outputs.only_design_proposals != 'true' && (
+      needs.check-changed-files.outputs.only_design_proposals != false && (
       needs.check-changed-files.outputs.orch == 'true' ||
       needs.check-changed-files.outputs.on-prem == 'true' ||
       needs.check-changed-files.outputs.ci == 'true' ||
