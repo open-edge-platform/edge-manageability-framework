@@ -62,7 +62,7 @@ sequenceDiagram
 
     actor us as User
 
-    box rgba(24, 11, 213, 1) Orchestrator Components
+    box rgba(11, 164, 230, 1) Orchestrator Components
         participant inv as Inventory
         participant ps as Provisioning
         participant dm as Device Management
@@ -70,7 +70,7 @@ sequenceDiagram
         participant rps as Remote Provisioning Server
     end
 
-    box rgba(3, 34, 1, 1) Edge Node Components
+    box rgba(206, 19, 19, 1) Edge Node Components
         participant en as Edge Node
         participant nagent as Node Agent
         participant agent as Platform Manageability Agent
