@@ -80,7 +80,11 @@ jobs:
         run: |
           files="${{ steps.check-files.outputs.changed_files }}"
           only_design=true
-          for file in $(echo $files | jq -r '.[]'); do
+          echo "$files"
+          clean_files=$(echo "$files" | sed 's/\[//;s/\]//;s/"//g')
+          echo "$clean_files"
+          for file in $(echo "$clean_files" | tr ',' '\n'); do
+            file=$(echo $file | xargs) # trim whitespace
             echo "$file"
             if [[ $file != design-proposals/* ]]; then
               only_design=false
