@@ -80,12 +80,16 @@ jobs:
         run: |
           files="${{ steps.check-files.outputs.changed_files }}"
           only_design=true
-          for file in $(echo $files | tr ',' '\n'); do
+          # Remove brackets and quotes, then split on comma
+          clean_files=$(echo "$files" | sed 's/\[//;s/\]//;s/"//g')
+          for file in $(echo "$clean_files" | tr ',' '\n'); do
+            file=$(echo $file | xargs) # trim whitespace
             if [[ $file != design-proposals/* ]]; then
               only_design=false
               break
             fi
           done
+          echo "only_design=$only_design"
           echo "only_design_proposals=$only_design" >> $GITHUB_OUTPUT
 
   scan-viruses:
