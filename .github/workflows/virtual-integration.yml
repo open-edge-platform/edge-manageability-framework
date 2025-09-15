@@ -80,7 +80,7 @@ jobs:
         run: |
           files="${{ steps.check-files.outputs.changed_files }}"
           only_design=true
-          for file in $(echo $files | tr ',' '\n'); do
+          for file in $(echo $files | jq -r '.[]'); do
             echo "$file"
             if [[ $file != design-proposals/* ]]; then
               only_design=false
