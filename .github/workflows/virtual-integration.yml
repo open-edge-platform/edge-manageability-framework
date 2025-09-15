@@ -62,7 +62,7 @@ jobs:
       yaml: ${{ contains(steps.check-files.outputs.changed_files, '.yaml') || contains(steps.check-files.outputs.changed_files, '.yml') }}
       helm: ${{ contains(steps.check-files.outputs.changed_files, 'argocd/') || contains(steps.check-files.outputs.changed_files, 'argocd-internal/') }}
       test-automation: ${{ contains(steps.check-files.outputs.changed_files, '.test-dependencies.yaml') }}
-      only_design_proposals: ${{ steps.only-design-proposals.outputs.only_design_proposals }}
+      only_design_proposals: ${{ contains(steps.only-design-proposals.outputs.only_design_proposals) }}
     steps:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
@@ -369,13 +369,14 @@ jobs:
       - name: Setup asdf and install dependencies
         uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
 
+      - name: Debug only_design_proposals output
+        run: echo "only_design_proposals=${{ needs.check-changed-files.outputs.only_design_proposals }}"
+
       - name: Get version tag
         id: get_version_tag
         run: |
           output=$(mage version:getVersionTag)
           echo "versionTag=$output" >> $GITHUB_ENV
-          echo "${{ steps.only-design-proposals.outputs.only_design_proposals }}"
-          echo "needs.check-changed-files.outputs.only_design_proposals"
 
       - name: Build DEB packages
         working-directory: on-prem-installers
