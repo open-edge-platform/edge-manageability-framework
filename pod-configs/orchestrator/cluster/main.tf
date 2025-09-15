@@ -50,6 +50,7 @@ module "eks" {
   https_proxy                 = var.eks_https_proxy
   no_proxy                    = var.eks_no_proxy
   eks_cluster_dns_ip          = var.eks_cluster_dns_ip
+  permissions_boundary        = var.permissions_boundary
 }
 
 resource "time_sleep" "wait_eks" {
