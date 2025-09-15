@@ -78,7 +78,7 @@ jobs:
       - name: Calculate only_design_proposals
         id: only-design-proposals
         run: |
-          files="["design-proposals/cluster-orch-k3s-in-emt.md","design-proposals/images/cluster-orch-k3s-build.png"]"
+          files="${{ steps.check-files.outputs.changed_files }}"
           only_design=true
           for file in $(echo $files | tr ',' '\n'); do
             echo "$file"
@@ -87,9 +87,12 @@ jobs:
               break
             fi
           done
-          echo "$only_design"
+          echo "only_design=$only_design"
           echo "only_design_proposals=$only_design" >> $GITHUB_OUTPUT
           echo $GITHUB_OUTPUT
+
+      - name: Debug only_design_proposals output
+        run: echo "only_design_proposals=${{ needs.check-changed-files.outputs.only_design_proposals }}"
 
   scan-viruses:
     permissions:
@@ -498,7 +501,7 @@ jobs:
     if: |
       always() &&
       needs.build-publish.result == 'success' &&
-      needs.check-changed-files.outputs.only_design_proposals != 'true' && (
+      needs.check-changed-files.outputs.only_design_proposals == 'false' && (
       needs.check-changed-files.outputs.orch == 'true' ||
       needs.check-changed-files.outputs.on-prem == 'true' ||
       needs.check-changed-files.outputs.ci == 'true' ||
