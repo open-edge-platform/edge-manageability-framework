@@ -533,7 +533,7 @@ jobs:
 
       - name: Start VEN Deploy
         env:
-          LIBVIRT_DEFAULT_URI: 'qemu+tcp://localhost/system'
+          LIBVIRT_DEFAULT_URI: 'qemu:///system'
         run: |
           set -euo pipefail
       
