@@ -88,12 +88,14 @@ amt:
       secretName: "tls-orch"
       tlsOption: "gateway-tls"
       gatewayNamespace: orch-gateway
+    vault_url: "http://vault.orch-platform.svc.cluster.local:8200"
   rps:
     traefikReverseProxy:
       enabled: true
       secretName: "tls-orch"
       tlsOption: "gateway-tls"
       gatewayNamespace: orch-gateway
+    vault_url: "http://vault.orch-platform.svc.cluster.local:8200"
   dm-manager:
     traefikReverseProxy:
       enabled: true
