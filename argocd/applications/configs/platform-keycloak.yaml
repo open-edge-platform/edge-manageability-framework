@@ -112,16 +112,43 @@ keycloakConfigCli:
         "roles": {
           "realm": [
             {
-              "name": "en-agent-rw"
+              "name": "app-service-proxy-read-role"
             },
             {
-              "name": "secrets-root-role"
+              "name": "app-service-proxy-write-role"
             },
             {
-              "name": "rs-access-r"
+              "name": "app-deployment-manager-read-role"
             },
             {
-              "name": "rs-proxy-r"
+              "name": "app-deployment-manager-write-role"
+            },
+            {
+              "name": "app-resource-manager-read-role"
+            },
+            {
+              "name": "app-resource-manager-write-role"
+            },
+            {
+              "name": "app-vm-console-write-role"
+            },
+            {
+              "name": "catalog-publisher-read-role"
+            },
+            {
+              "name": "catalog-publisher-write-role"
+            },
+            {
+              "name": "catalog-other-read-role"
+            },
+            {
+              "name": "catalog-other-write-role"
+            },
+            {
+              "name": "catalog-restricted-read-role"
+            },
+            {
+              "name": "catalog-restricted-write-role"
             },
             {
               "name": "clusters-read-role"
