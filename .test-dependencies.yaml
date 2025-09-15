@@ -3,4 +3,4 @@
 # SPDX-License-Identifier: Apache-2.0
 
 test-automation:
-  version: hw_orchCli
+  version: 0.2.4
