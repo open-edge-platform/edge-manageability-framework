@@ -36,7 +36,7 @@ jobs:
     if: github.event_name == 'pull_request'
     permissions:
       contents: read
-    uses: open-edge-platform/orch-ci/.github/workflows/pre-merge.yml@e6058fe60cbb803e7d7935571ccd50753bc31ec8  # 0.1.28
+    uses: open-edge-platform/orch-ci/.github/workflows/pre-merge.yml@7221fef1cf3ce70185cbe8c3f53a85be4e7e7cbd  # 0.1.48
     with:
       run_version_check: false
       run_build: false
@@ -61,6 +61,8 @@ jobs:
       terraform: ${{ contains(steps.check-files.outputs.changed_files, '.hcl') || contains(steps.check-files.outputs.changed_files, '.tf') || contains(steps.check-files.outputs.changed_files, '.tfvars') }}
       yaml: ${{ contains(steps.check-files.outputs.changed_files, '.yaml') || contains(steps.check-files.outputs.changed_files, '.yml') }}
       helm: ${{ contains(steps.check-files.outputs.changed_files, 'argocd/') || contains(steps.check-files.outputs.changed_files, 'argocd-internal/') }}
+      test-automation: ${{ contains(steps.check-files.outputs.changed_files, '.test-dependencies.yaml') }}
+      only_design_proposals: ${{ steps.only-design-proposals.outputs.only_design_proposals }}
     steps:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
@@ -72,6 +74,23 @@ jobs:
         uses: open-edge-platform/orch-ci/discover-changed-files@main  # zizmor: ignore[unpinned-uses]
         with:
           project_folder: "."
+
+      - name: Calculate only_design_proposals
+        id: only-design-proposals
+        run: |
+          files="${{ steps.check-files.outputs.changed_files }}"
+          only_design=true
+          # Remove brackets and quotes, then split on comma
+          clean_files=$(echo "$files" | sed 's/\[//;s/\]//;s/"//g')
+          for file in $(echo "$clean_files" | tr ',' '\n'); do
+            file=$(echo $file | xargs) # trim whitespace
+            if [[ $file != design-proposals/* ]]; then
+              only_design=false
+              break
+            fi
+          done
+          echo "only_design=$only_design"
+          echo "only_design_proposals=$only_design" >> $GITHUB_OUTPUT
 
   scan-viruses:
     permissions:
@@ -311,6 +330,7 @@ jobs:
       needs.check-changed-files.outputs.orch == 'true' ||
       needs.check-changed-files.outputs.on-prem == 'true' ||
       needs.check-changed-files.outputs.ci == 'true' ||
+      needs.check-changed-files.outputs.test-automation == 'true' ||
       github.ref == 'refs/heads/main' ||
       github.ref == 'refs/heads/main-pass-validation'
       )
@@ -443,7 +463,8 @@ jobs:
       - check-changed-files
     if: |
       always() &&
-      needs.lint-version.result == 'success' && (
+      needs.lint-version.result == 'success' &&
+      needs.check-changed-files.outputs.only_design_proposals != 'true' && (
       needs.check-changed-files.outputs.orch == 'true' ||
       needs.check-changed-files.outputs.ci == 'true' ||
       github.ref == 'refs/heads/main' ||
@@ -657,10 +678,12 @@ jobs:
       - check-changed-files
     if: |
       always() &&
-      needs.build-publish.result == 'success' && (
+      needs.build-publish.result == 'success' &&
+      needs.check-changed-files.outputs.only_design_proposals != 'true' && (
       needs.check-changed-files.outputs.orch == 'true' ||
       needs.check-changed-files.outputs.on-prem == 'true' ||
       needs.check-changed-files.outputs.ci == 'true' ||
+      needs.check-changed-files.outputs.test-automation == 'true' ||
       github.ref == 'refs/heads/main' ||
       github.ref == 'refs/heads/main-pass-validation'
       )
@@ -772,7 +795,8 @@ jobs:
       - check-changed-files
     if: |
       always() &&
-      needs.build-publish.result == 'success' && (
+      needs.build-publish.result == 'success' &&
+      needs.check-changed-files.outputs.only_design_proposals != 'true' && (
       needs.check-changed-files.outputs.orch == 'true' ||
       needs.check-changed-files.outputs.on-prem == 'true' ||
       needs.check-changed-files.outputs.ci == 'true' ||
@@ -864,7 +888,7 @@ jobs:
       security-events: write
       id-token: write
     if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
-    uses: open-edge-platform/orch-ci/.github/workflows/post-merge.yml@e6058fe60cbb803e7d7935571ccd50753bc31ec8  # 0.1.28
+    uses: open-edge-platform/orch-ci/.github/workflows/post-merge.yml@7221fef1cf3ce70185cbe8c3f53a85be4e7e7cbd  # 0.1.48
     with:
       run_build: false
       run_version_tag: false
