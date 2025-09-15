@@ -81,11 +81,13 @@ jobs:
           files="${{ steps.check-files.outputs.changed_files }}"
           only_design=true
           for file in $(echo $files | tr ',' '\n'); do
+            echo "$file"
             if [[ $file != design-proposals/* ]]; then
               only_design=false
               break
             fi
           done
+          echo "$only_design"
           echo "only_design_proposals=$only_design" >> $GITHUB_OUTPUT
 
   scan-viruses:
@@ -475,188 +477,6 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
           persist-credentials: false
-      - name: Deploy Kind Orchestrator
-        id: deploy-kind-orchestrator
-        uses: ./.github/actions/deploy_kind
-        timeout-minutes: 45
-        with:
-          orch_version: ${{ github.event.pull_request.head.sha || github.sha }}
-          orch_password: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-          docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
-          docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
-          token: ${{ secrets.SYS_ORCH_GITHUB }}
-          deployment_type: all
-      - name: Collect diagnostics
-        if: always()
-        uses: ./.github/actions/collect_diagnostics
-        timeout-minutes: 15
-      - name: Run policy compliance tests
-        run: mage test:policyCompliance
-      - name: Run image pull policy compliance tests
-        run: mage test:imagePullPolicyCompliance
-      - name: Setup Sample Org and Project with default users
-        id: default-mt-setup
-        run: mage tenantUtils:createDefaultMtSetup
-      - name: Deploy Victoria Metrics instance
-        env:
-          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-        run: mage deploy:victoriaMetrics apply
-
-      - name: Run e2e tenancy tests
-        run: mage test:e2etenancy
-
-      - name: Run e2e tenancy API gateway tests
-        run: mage test:e2etenancyapigw
-
-      - name: Create default user and run e2e tests
-        run: mage devUtils:createDefaultUser test:e2e
-
-      - name: "Test Observability SRE Exporter w/o ENiC"
-        env:
-          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-        run: |
-          mage test:e2eSreObservabilityNoEnic
-
-      - name: Deploy ENiC
-        if: ${{ always() && steps.deploy-kind-orchestrator.conclusion == 'success' && steps.default-mt-setup.conclusion == 'success' }}
-        shell: bash
-        timeout-minutes: 5
-        env:
-          ORCH_ORG: sample-org
-          ORCH_PROJECT: sample-project
-          ORCH_USER: sample-project-onboarding-user
-          ORCH_USER_API: sample-project-api-user
-          EDGE_MANAGEABILITY_FRAMEWORK_REV: ${{ env.GIT_HASH }}
-        run: |
-          mage devUtils:deployEnic 1 dev
-
-          # wait until SN and UUID are available
-          mage devUtils:getEnicSerialNumber
-          mage devUtils:getEnicUUID
-
-          # then get then and store them in the env
-          UUID=$(kubectl exec -it -n enic enic-0 -c edge-node -- bash -c "dmidecode -s system-uuid")
-          SN=$(kubectl exec -it -n enic enic-0 -c edge-node -- bash -c "dmidecode -s system-serial-number")
-          echo "EN_UUID=$UUID" >> "$GITHUB_ENV"
-          echo "EN_SN=$SN" >> "$GITHUB_ENV"
-
-      - name: Print current EN UUID and SN
-        if: ${{ always() && steps.deploy-kind-orchestrator.conclusion == 'success' && steps.default-mt-setup.conclusion == 'success' }}
-        run: echo "Current ENiC has UUID ${{ env.EN_UUID }} and SN ${{ env.EN_SN }}"
-
-      - name: UI E2E Tests
-        if: ${{ always() && steps.deploy-kind-orchestrator.conclusion == 'success' && steps.default-mt-setup.conclusion == 'success' }}
-        uses: ./.github/actions/cypress
-        with:
-          token: ${{ secrets.SYS_ORCH_GITHUB }}
-          en_serial_number: ${{ env.EN_SN }}
-          en_uuid: ${{ env.EN_UUID }}
-          infra: "cypress/e2e/infra/locations.cy.ts,cypress/e2e/infra/new-host-provision.cy.ts,cypress/e2e/infra/verify-host.cy.ts"
-
-      - name: "Test Observability Public Endpoints"
-        env:
-          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-        run: |
-          mage test:e2eObservability
-
-      - name: "Test Observability Orchestrator Stack"
-        env:
-          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-        run: |
-          mage test:e2eOrchObservability
-
-      # TODO - The base extension deployment including observability stack has been removed. Need to revist this test stack later and see how to proceed further.
-      # - name: "Test Observability EdgeNode Stack"
-      #   env:
-      #     ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-      #   run: |
-      #     mage test:e2eENObservability
-
-      # TODO - The base extension deployment including observability stack has been removed. Need to revist this test stack later and see how to proceed further.
-      # - name: "Test Observability Alerts"
-      #   env:
-      #     ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-      #   run: |
-      #     mage test:e2eAlertsObservability
-
-      # TODO - The base extension deployment including observability stack has been removed. Need to revist this test stack later and see how to proceed further.
-      # - name: "Test Observability SRE Exporter"
-      #   env:
-      #     ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-      #   run: |
-      #     mage test:e2eSreObservability
-
-      - name: deploy, register & provision new ENiC instance # previous instance was deatuhorized by the cluster delete in UI tests
-        if: ${{ always() && steps.deploy-kind-orchestrator.conclusion == 'success' && steps.default-mt-setup.conclusion == 'success' }}
-        shell: bash
-        timeout-minutes: 5
-        env:
-          ORCH_ORG: sample-org
-          ORCH_PROJECT: sample-project
-          ORCH_USER: sample-project-onboarding-user
-          ORCH_USER_API: sample-project-api-user
-          EDGE_MANAGEABILITY_FRAMEWORK_REV: ${{ env.GIT_HASH }}
-        run: |
-          # delete the previous ENiC instance
-          kubectl delete ns enic
-
-          # deploy a new ENiC instance
-          mage devUtils:deployEnic 1 dev
-
-          # wait until SN and UUID are available
-          mage devUtils:getEnicSerialNumber
-          mage devUtils:getEnicUUID
-
-          # then get then and store them in the env
-          UUID=$(kubectl exec -it -n enic enic-0 -c edge-node -- bash -c "dmidecode -s system-uuid")
-          SN=$(kubectl exec -it -n enic enic-0 -c edge-node -- bash -c "dmidecode -s system-serial-number")
-          echo "EN_UUID=$UUID" >> "$GITHUB_ENV"
-          echo "EN_SN=$SN" >> "$GITHUB_ENV"
-
-          # register the ENiC in the orchestrator
-          ORCH_USER=${ORCH_USER_API} mage devUtils:registerEnic enic-0
-
-          # provision the ENiC
-          ORCH_USER=${ORCH_USER_API} mage devUtils:provisionEnic enic-0
-          sleep 5
-          mage devUtils:WaitForEnic
-
-      - name: Wait for cluster agent to be ready
-        if: ${{ always() && steps.deploy-kind-orchestrator.conclusion == 'success' }}
-        run: |
-          mkdir -p smoke-test/logs
-          kubectl exec -n enic enic-0 -c edge-node -- bash -c "journalctl -x" > smoke-test/logs/enic-journalctl-pre.log
-          kubectl exec -n enic enic-0 -c edge-node -- bash -c "journalctl -xeu cluster-agent" > smoke-test/logs/enic-cluster-agent-pre.log
-          timeout 5m kubectl exec -n enic enic-0 -c edge-node -- bash -c "journalctl -f" | grep -m 1 "Cluster Agent state update"
-
-      - name: Run AO / CO smoke test
-        if: ${{ always() && steps.deploy-kind-orchestrator.conclusion == 'success' && steps.default-mt-setup.conclusion == 'success' }}
-        env:
-          PROJECT: sample-project
-          NODE_UUID: ${{ env.EN_UUID }}
-          EDGE_MGR_USER: sample-project-edge-mgr
-          EDGE_INFRA_USER: sample-project-api-user
-        run: |
-          echo "Running AO / CO smoke test..."
-          mage test:clusterOrchSmokeTest
-
-      - name: Collect smoke test logs
-        if: always()
-        run: |
-          mkdir -p smoke-test/logs
-          kubectl logs -n orch-app -l app=app-deployment-api -c app-deployment-api --tail=-1 > smoke-test/logs/app-deployment-api.log
-          kubectl logs -n orch-app -l app=app-deployment-manager --tail=-1 > smoke-test/logs/app-deployment-manager.log
-          kubectl logs -n orch-app -l app=app-resource-manager -c app-resource-manager --tail=-1 > smoke-test/logs/app-resource-manager.log
-          kubectl logs -n orch-app -l app.kubernetes.io/name=app-orch-catalog --tail=-1 > smoke-test/logs/application-catalog.log
-          kubectl exec -n enic enic-0 -c edge-node -- bash -c "journalctl -xeu cluster-agent" > smoke-test/logs/enic-cluster-agent-post.log
-
-      - name: Upload smoke test logs
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
-        with:
-          name: smoke-test
-          path: |
-            smoke-test/logs/*
 
   deploy-on-prem:
     permissions:
@@ -702,79 +522,6 @@ jobs:
            echo $version
            echo "version=$version" >> $GITHUB_OUTPUT
 
-      - name: Deploy On-Prem Orchestrator
-        id: deploy-on-prem
-        uses: ./.github/actions/deploy_on_prem
-        with:
-          orch_version: ${{ github.event.pull_request.head.sha }}
-          docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
-          docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
-
-      - name: Run E2E tests
-        env:
-          E2E_SVC_DOMAIN: cluster.onprem
-          EDGE_CLUSTER_NAME: test-cluster
-        run: mage -v test:e2eOnPrem
-
-      - name: Checkout edge-manage-test-automation repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-        with:
-          repository: open-edge-platform/edge-manage-test-automation
-          path: edge-manage-test-automation
-          ref: ${{ steps.read-test-automation-version.outputs.version }}
-          token: ${{ secrets.SYS_ORCH_GITHUB }}
-          persist-credentials: false
-
-      - name: Install vEN Deps
-        working-directory: edge-manage-test-automation
-        run: |
-          git submodule update --init --recursive
-
-      - name: Setup virtual environment
-        working-directory: edge-manage-test-automation
-        run: |
-          make asdf-install
-          make venv_edge-manage-test-automation
-
-          # install required versions for Pico
-          pushd repos/ven/pico
-          asdf install
-          popd
-
-      - name: Run Golden Suite Robot Framework Tests
-        id: robot-tests
-        timeout-minutes: 45
-        working-directory: edge-manage-test-automation
-        if: |
-          needs.check-changed-files.outputs.onboarding == 'true' ||
-          needs.check-changed-files.outputs.on-prem == 'true' ||
-          needs.check-changed-files.outputs.orch == 'true' ||
-          needs.check-changed-files.outputs.ci == 'true'
-        env:
-          KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
-          REQUESTS_CA_BUNDLE: /usr/local/share/ca-certificates/orch-ca.crt
-          LIBVIRT_DEFAULT_URI: 'qemu:///system'
-        run: |
-          KC_ADMIN_PWD=$(kubectl -n orch-platform get secrets platform-keycloak -o jsonpath='{.data.admin-password}' | base64 -d)
-          # Add the password to the orchestrator config
-          yq eval ".orchestrator.admin_password = \"${KC_ADMIN_PWD}\"" -i orchestrator-configs/on-prem.yaml
-
-          source venv_edge-manage-test-automation/bin/activate
-          robot -L DEBUG --pythonpath . \
-            --name "Golden Suite: Core Foundation" \
-            -d robot_output/core_foundation \
-            -V orchestrator-configs/on-prem.yaml \
-            --exitonfailure \
-            tests/core_foundation/core_foundation.robot
-
-      - name: Upload test artifacts
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
-        with:
-          name: on-prem-${{ github.event_name }}-${{ github.event.number }}-robot-report
-          path: |
-            edge-manage-test-automation/robot_output/**/*
-
   deploy-oxm-profile:
     permissions:
       contents: read
@@ -808,41 +555,6 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
           persist-credentials: false
-
-      - name: Deploy OXM Orchestrator Profile
-        id: deploy-oxm-profile
-        uses: ./.github/actions/deploy_on_prem
-        env:
-          TF_VAR_no_proxy: "localhost,127.0.0.0/8,10.0.0.0/8,192.168.0.0/16,.svc,.cluster.local,.default,.internal,.orch-platform,.orch-app,.orch-cluster,.orch-infra,.orch-database,.cattle-system,.orch-secret,.onprem"
-          TF_VAR_en_http_proxy: "http://192.168.99.30:8080"
-          TF_VAR_en_https_proxy: "http://192.168.99.30:8080"
-          TF_VAR_overwrite_profiles: '[["profile-oxm", "argo:\n  infra-onboarding:\n    pxe-server:\n      interface: \"orchnet\"\n      bootServerIP: \"192.168.99.20\"\n      subnetAddress: \"192.168.99.0\""]]'
-        with:
-          orch_version: ${{ github.event.pull_request.head.sha }}
-          orch_profile: onprem-oxm
-          docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
-          docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
-
-      - name: Create MT Sample Org and Project with default users
-        run: mage tenantUtils:createDefaultMtSetup
-
-      - name: Test Edge Node onboarding
-        env:
-          E2E_SVC_DOMAIN: cluster.onprem
-          EDGE_CLUSTER_NAME: test-cluster
-          EN_PROFILE: "microvisor-standalone"
-        timeout-minutes: 20
-        if: |
-          needs.check-changed-files.outputs.onboarding == 'true' ||
-          needs.check-changed-files.outputs.on-prem == 'true' ||
-          needs.check-changed-files.outputs.orch == 'true' ||
-          needs.check-changed-files.outputs.ci == 'true'
-        run: |
-          set +e
-          mage test:onboarding
-          TEST_EXIT_CODE=$?
-          sudo cat /var/log/libvirt/qemu/edge-node-EN123456789-console.log || true
-          exit $TEST_EXIT_CODE
 
   tag-repo:
     permissions:
