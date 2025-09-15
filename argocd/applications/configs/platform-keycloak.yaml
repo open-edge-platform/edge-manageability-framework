@@ -112,6 +112,33 @@ keycloakConfigCli:
         "roles": {
           "realm": [
             {
+              "name": "en-agent-rw"
+            },
+            {
+              "name": "secrets-root-role"
+            },
+            {
+              "name": "rs-access-r"
+            },
+            {
+              "name": "rs-proxy-r"
+            },
+            {
+              "name": "alrt-r"
+            },
+            {
+              "name": "alrt-rw"
+            },
+            {
+              "name": "alrt-rx-rw"
+            },
+            {
+              "name": "ao-m2m-rw"
+            },
+            {
+              "name": "co-m2m-rw"
+            },
+            {
               "name": "org-read-role"
             },
             {
