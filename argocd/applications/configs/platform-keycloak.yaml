@@ -124,6 +124,30 @@ keycloakConfigCli:
               "name": "rs-proxy-r"
             },
             {
+              "name": "clusters-read-role"
+            },
+            {
+              "name": "clusters-write-role"
+            },
+            {
+              "name": "cluster-templates-read-role"
+            },
+            {
+              "name": "cluster-templates-write-role"
+            },
+            {
+              "name": "cluster-artifacts-read-role"
+            },
+            {
+              "name": "cluster-artifacts-write-role"
+            },
+            {
+              "name": "infra-manager-core-read-role"
+            },
+            {
+              "name": "infra-manager-core-write-role"
+            },
+            {
               "name": "alrt-r"
             },
             {
