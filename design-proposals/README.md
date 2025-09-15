@@ -1,4 +1,4 @@
-# Proposing Features and Changes to Edge Manageability Framework
+# Proposing Features and Changes to Edge Manageability Framework (EMF)
 
 ## Introduction
 
