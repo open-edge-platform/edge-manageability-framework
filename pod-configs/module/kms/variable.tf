@@ -15,3 +15,8 @@ variable "permissions_boundary" {
   type        = string
   default     = ""
 }
+
+variable "region" {
+  description = "AWS region"
+  type        = string
+}

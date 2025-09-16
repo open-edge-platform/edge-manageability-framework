@@ -154,6 +154,8 @@ module "kms" {
   source             = "../../module/kms"
   cluster_name       = var.eks_cluster_name
   aws_account_number = var.aws_account_number
+  permissions_boundary = var.permissions_boundary
+  region             = var.aws_region
 }
 
 module "orch_init" {
