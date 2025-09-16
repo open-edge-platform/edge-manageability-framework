@@ -1391,6 +1391,11 @@ disable_lb_protect() {
         aws elbv2 modify-load-balancer-attributes --load-balancer-arn $traefik2_lb_arn --attributes "Key=deletion_protection.enabled,Value=false" --region "${AWS_REGION}" > /dev/null
         lb_created=true
     fi
+    traefik3_lb_arn=$(jq -r '.resources[] | select((.module == "module.traefik3_load_balancer[0]") and (.type == "aws_lb")) | .instances[0].attributes.arn' $outfile)
+    if [[ -n "$traefik3_lb_arn" ]]; then
+        aws elbv2 modify-load-balancer-attributes --load-balancer-arn $traefik3_lb_arn --attributes "Key=deletion_protection.enabled,Value=false" --region "${AWS_REGION}" > /dev/null
+        lb_created=true
+    fi
     argocd_lb_arn=$(jq -r '.resources[] | select((.module == "module.argocd_load_balancer[0]") and (.type == "aws_lb")) | .instances[0].attributes.arn' $outfile)
     if [[ -n "$argocd_lb_arn" ]]; then
         aws elbv2 modify-load-balancer-attributes --load-balancer-arn $argocd_lb_arn --attributes "Key=deletion_protection.enabled,Value=false" --region "${AWS_REGION}" > /dev/null
