@@ -919,7 +919,7 @@ func (d Deploy) VENWithFlow(ctx context.Context, flow string, serialNumber strin
 		return fmt.Errorf("failed to change directory to 'ven': %w", err)
 	}
 
-	if err := sh.RunV("git", "checkout", "pico/1.5.2"); err != nil {
+	if err := sh.RunV("git", "checkout", "pico/1.5.5"); err != nil {
 		return fmt.Errorf("failed to checkout specific commit: %w", err)
 	}
 
@@ -1114,7 +1114,14 @@ STANDALONE=0
 		return fmt.Errorf("failed to create out/logs directory: %w", err)
 	}
 
-	if err := sh.RunV(filepath.Join("scripts", "update_provider_defaultos.sh"), "microvisor"); err != nil {
+	profile := os.Getenv("EN_PROFILE")
+	if profile == "" {
+		profile = "microvisor"
+	}
+
+	fmt.Printf("Using profile: %s\n", profile)
+
+	if err := sh.RunV(filepath.Join("scripts", "update_provider_defaultos.sh"), profile); err != nil {
 		return fmt.Errorf("failed to update provider default OS: %w", err)
 	}
 
@@ -1167,6 +1174,7 @@ STANDALONE=0
 		fmt.Sprintf("-var=libvirt_network_name=%s", data.BridgeName),
 		fmt.Sprintf("-var=libvirt_pool_name=%s", data.PoolName),
 		fmt.Sprintf("-var=vm_console=%s", "file"),
+		fmt.Sprintf("-var=boot_order=%s", `["hd","network"]`),
 		"--auto-approve",
 	)
 

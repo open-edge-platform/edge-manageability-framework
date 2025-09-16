@@ -48,6 +48,12 @@ variable "create_traefik2_load_balancer" {
   default     = true
 }
 
+variable "create_traefik3_load_balancer" {
+  type        = bool
+  description = "Set true to create dedicated load balancer for traefik3"
+  default     = true
+}
+
 variable "create_argocd_load_balancer" {
   type        = bool
   description = "Set true to create dedicated load balancer for infra service like ArgoCD and Gitea"

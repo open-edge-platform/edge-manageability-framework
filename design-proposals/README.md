@@ -130,10 +130,9 @@ Architecture Decision Record (ADR)
 - It is expected that the design doc may go through multiple checked-in
   revisions.
 
-- For ease of review with Github, design documents should be compliant with
-  the `markdownlit` rules express in this
-- repo, that will be checked by `CI`.
-  The writer can check conformace by issuing the `make lint` command.
+- For easier review on GitHub, design documents should comply with the `markdownlint` rules defined in this repository.
+  These rules will be enforced by the CI pipeline.
+  Writers can verify compliance locally by running the `make lint` command.
 
 ### Quick Start for Experienced Committers
 

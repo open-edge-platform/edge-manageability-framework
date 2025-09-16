@@ -20,6 +20,7 @@ This module defines the following:
 
 - **Traefik ALB**: Main application load balancer for HTTP/HTTPS traffic
 - **Traefik2 NLB**: Optional network load balancer (created when `create_traefik2_load_balancer = true`)
+- **Traefik3 NLB**: Optional network load balancer for vPRO (created when `create_traefik3_load_balancer = true`)
 - **ArgoCD ALB**: Optional dedicated load balancer for ArgoCD and Gitea (created when `create_argocd_load_balancer = true`)
 
 ### Security
