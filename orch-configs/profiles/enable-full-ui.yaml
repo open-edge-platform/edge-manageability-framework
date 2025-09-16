@@ -8,8 +8,8 @@
 argo:
   enabled:
     web-ui-root: true
-    web-ui-app-orch: true
-    web-ui-cluster-orch: true
+#    web-ui-app-orch: true
+#    web-ui-cluster-orch: true
     web-ui-infra: true
     web-ui-admin: true
   cors:
