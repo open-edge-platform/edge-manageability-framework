@@ -112,9 +112,6 @@ keycloakConfigCli:
         "roles": {
           "realm": [
             {
-              "name": "en-agent-rw"
-            },
-            {
               "name": "secrets-root-role"
             },
             {
