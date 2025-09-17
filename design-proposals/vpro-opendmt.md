@@ -229,6 +229,27 @@ Hereafter we present as steps the proposed plan in the release 3.1.
   - Requests from the south will have only the JWT token
 - UI to integrate with the necessary APIs exposed by RPS and MPS
 
+### Implementation plan for Admin Control Mode
+
+For the 2025.2 release, the implementation will be extended to allow the DMT stack to activate devices using Admin Control Mode (ACM). The proposed plan for the release is:
+
+- UI:
+  - Extend vPRO UI to allow User to specify whether ACM or Client Control Mode (CCM) is used.
+  - Add option to UI to allow User to specify DNS Suffix for domain profiles.
+  - Add option to UI to allow User to upload required provisioning cert (in PFX format) and password for domain profiles.
+- CLI
+  - Add option for CLI to be used to provide the device activation mode is ACM or CCM for an instance.
+  - Extend CLI to add method to provide DNS Suffix for domain profiles.
+  - Add option for CLI to be used for uploading provisioning cert and password for domain profiles.
+- Vault
+  - Add storage option for provisioning cert and password for domain profiles.
+  - API for adding cert and password to Vault for use by CLI and UI.
+  - Add option for Device Management Manager to extract required cert and password for each instance.
+- Onboarding
+  - Update BIOS with DNS Suffix value when running in admin mode
+
+Device Management Manager updates are documented in the [Device Management documentation](./vpro-rm.md).
+
 ## Test plan
 
 **Unit tests** will be extended accordingly in the affected components and possibly in the DTM components the

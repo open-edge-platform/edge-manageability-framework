@@ -254,6 +254,20 @@ Edge Infrastructure Manager team will implement the following functionality to s
 - Intelligement Remote Power Management
 - Device de-activation
 
+### Implementation plan for Admin Control Mode
+
+For the 2025.2 release, the DM Manager implementation will be updated to activate devices using Admin Control Mode (ACM) or Client Control Mode (CCM). The proposed plan for the release is:
+
+- Extend inventory to store the DNS Suffix and activation mode (ACM or CCM) alongside the instance ID.
+  - DNS Suffix added from UI or CLI during set up.
+- Extend DM Manager device activation to check for activation mode from inventory.
+- Add domain profile creation when activation mode is set to admin.
+- DM Manager retrieves DNS Suffix from inventory.
+- DM Manager retrieves provisioning certificate and password from Vault for domain profile creation.
+- Update AMT profile configuration to align with the requested activation mode selected.
+
+Additional updates to support admin mode are documented in the [OpenDMT documentation](./vpro-opendmt.md).
+
 ### Test Plan
 
 DM RM **Unit tests** will be extended to cover 80% of the functionality at least - these tests will include mocks for
