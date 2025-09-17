@@ -37,7 +37,7 @@ save_cluster_env() {
     fi
 
     if [[ -z $BUCKET_REGION ]]; then
-        echo BUCKET_NAME=${BUCKET_REGION} >> ${HOME}/.env
+        echo BUCKET_REGION=${BUCKET_REGION} >> ${HOME}/.env
     fi
 
     if [[ -z $CLUSTER_FQDN ]]; then
