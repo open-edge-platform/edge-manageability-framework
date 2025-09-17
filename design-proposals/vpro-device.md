@@ -58,6 +58,7 @@ Let us now analyze the device activation, the user must do the following steps b
 
 ```mermaid
 sequenceDiagram
+    autonumber
     title DMT Provisioning Through Agent
 
     actor us as User
@@ -76,50 +77,50 @@ sequenceDiagram
         participant agent as Platform Manageability Agent
     end
 
-    us ->> en: 1. Boot device
+    us ->> en: Boot device
     activate en
-    en ->> ps: 2. Device discovery
+    en ->> ps:  Device discovery
     activate ps
-    ps ->> inv: 3. Onboard the device
-    ps ->> en: 4. Done
+    ps ->> inv:  Onboard the device
+    ps ->> en:  Done
     deactivate ps
     deactivate en
 
-    en ->> en: 5. OS installation (includes Agent RPMs)
+    en ->> en:  OS installation (includes Agent RPMs)
     en ->> en: Determining hardware is AMT/ISM or None in installer
     Note right of en: Installer performs AMT eligibility & capability introspection
-    en ->> nagent: 6. Determining Agent count
-    en ->> agent: 7. Install/Enable Agent as part of OS
+    en ->> nagent:  Exclude PMA from status reporting if AMT not available
+    en ->> agent:  Install/Enable Agent as part of OS
 
     
 
     alt Device supports vPRO/ISM
-        agent ->> dm: 8. Report DMT status as Supported/Enabled
-        dm ->> inv: 9. Update DMT Status as SUPPORTED and AMTSku to disable/AMT/ISM
+        agent ->> dm:  Report DMT status as Supported/Enabled
+        dm ->> inv:  Update DMT Status as SUPPORTED and AMTSku to disable/AMT/ISM
 
-        us ->> dm: 10. Request activation via API
-        dm ->> agent: 11. Provide activation profile name
+        us ->> dm:  Request activation via API
+        dm ->> agent:  Provide activation profile name
 
         Note right of agent: Activation is async (periodic ticker)
 
-        agent ->> agent: 12. Activate/Enable LMS (periodic)
-        agent ->> rps: 13. Initiate RPC activate command
+        agent ->> agent:  Activate/Enable LMS (periodic)
+        agent ->> rps:  Initiate RPC activate command
         activate rps
-        rps ->> agent: 14. Success / Configured
+        rps ->> agent:  Success / Configured
         deactivate rps
 
-        agent ->> dm: 15. Report AMT status as Activated
-        dm ->> inv: 16. Update AMT Status as IN_PROGRESS (Connecting)
-        dm ->> inv: 17. Update AMT CurrentState as Provisioned
+        agent ->> dm:  Report AMT status as Activated
+        dm ->> inv:  Update AMT Status as IN_PROGRESS (Connecting)
+        dm ->> inv:  Update AMT CurrentState as Provisioned
 
     else Device not eligible
-        agent ->> dm: 8a. Report DMT status as Not Supported
-        dm ->> inv: 8b. Update DMT Status as ERROR (Not Supported)
+        agent ->> dm:  Report DMT status as Not Supported
+        dm ->> inv:  Update DMT Status as ERROR (Not Supported)
     end
 
     alt Failure during activation
-        agent ->> dm: 13a. Report DMT status as FAILURE
-        dm ->> inv: 13b. Update DMT Status as FAILURE
+        agent ->> dm:  Report DMT status as FAILURE
+        dm ->> inv:  Update DMT Status as FAILURE
     end
 ```
 
