@@ -171,7 +171,7 @@ docker run -ti --rm --name orchestrator-admin \
     --cap-add NET_ADMIN --cap-add NET_RAW \
     -e http_proxy -e https_proxy -e socks_proxy -e no_proxy=${no_proxy},.eks.amazonaws.com \
     -e CLUSTER_NAME=${cluster} -e TARGET_ENV=${cluster} -e AWS_REGION=${region} -e CUSTOMER_STATE_PREFIX=${state_prefix} \
-    -e AWS_PROFILE -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN \
+    -e BUCKET_REGION=${bucket_region} -e AWS_PROFILE -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN \
     -e USER="root" -e ORCH_DEFAULT_PASSWORD -e DEPLOY_OP=${deploy_op} \
     ${image_name}:${image_tag} \
     bash
