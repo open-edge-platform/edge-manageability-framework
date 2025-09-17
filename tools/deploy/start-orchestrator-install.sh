@@ -9,7 +9,7 @@
 embedded_images=1
 release_service_url=${RELEASE_SERVICE:-registry-rs.edgeorchestration.intel.com}
 AWS_REGION="${AWS_REGION:-us-west-2}"
-BUCKET_REGION="${BUCKET_REGION:-us-west-2}"
+BUCKET_REGION="${BUCKET_REGION:-$AWS_REGION}"
 
 # echo "Embedded Images: $embedded_images"
 # echo "Release Service URL: $release_service_url"
@@ -81,9 +81,9 @@ while true; do
     fi
 done
 
-# Prompt for the AWS region for state bucket. Default to BUCKET_REGION environment variable.
+# Prompt for the AWS region for installer state bucket. Default to BUCKET_REGION environment variable.
 while true; do
-    read -p "Specify the AWS region for the bucket to store the state (default [$BUCKET_REGION]): " bucket_region
+    read -p "Specify the AWS region for the bucket to store the installer state (default [$BUCKET_REGION]): " bucket_region
     if [[ -z ${region} ]]; then
         bucket_region=$BUCKET_REGION
     fi
