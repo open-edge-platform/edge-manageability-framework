@@ -231,7 +231,8 @@ Hereafter we present as steps the proposed plan in the release 3.1.
 
 ### Implementation plan for Admin Control Mode
 
-For the 2025.2 release, the implementation will be extended to allow the DMT stack to activate devices using Admin Control Mode (ACM). The proposed plan for the release is:
+For the 2025.2 release, the implementation will be extended to allow the DMT stack to activate devices using Admin
+Control Mode (ACM). The proposed plan for the release is:
 
 - UI:
   - Extend vPRO UI to allow User to specify whether ACM or Client Control Mode (CCM) is used.
