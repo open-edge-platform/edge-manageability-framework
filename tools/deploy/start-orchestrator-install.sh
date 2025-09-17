@@ -8,6 +8,8 @@
 #embedded_images=0
 embedded_images=1
 release_service_url=${RELEASE_SERVICE:-registry-rs.edgeorchestration.intel.com}
+AWS_REGION="${AWS_REGION:-us-west-2}"
+BUCKET_REGION="${BUCKET_REGION:-$AWS_REGION}"
 
 # echo "Embedded Images: $embedded_images"
 # echo "Release Service URL: $release_service_url"
@@ -76,6 +78,20 @@ while true; do
         break
     else
         echo "Error: Invalid AWS region. Please enter the region where your cluster is or will be deployed."
+    fi
+done
+
+# Prompt for the AWS region for installer state bucket. Default to BUCKET_REGION environment variable.
+while true; do
+    read -p "Specify the AWS region for the bucket to store the installer state (default [$BUCKET_REGION]): " bucket_region
+    if [[ -z ${region} ]]; then
+        bucket_region=$BUCKET_REGION
+    fi
+
+    if [[ "$bucket_region" =~ ^(us|ca|eu|ap)\-[a-z]+\-[0-9]+$ ]]; then
+        break
+    else
+        echo "Error: Invalid bucket region. Please enter the region where your bucket is or will be deployed."
     fi
 done
 
@@ -155,7 +171,7 @@ docker run -ti --rm --name orchestrator-admin \
     --cap-add NET_ADMIN --cap-add NET_RAW \
     -e http_proxy -e https_proxy -e socks_proxy -e no_proxy=${no_proxy},.eks.amazonaws.com \
     -e CLUSTER_NAME=${cluster} -e TARGET_ENV=${cluster} -e AWS_REGION=${region} -e CUSTOMER_STATE_PREFIX=${state_prefix} \
-    -e AWS_PROFILE -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN \
+    -e BUCKET_REGION=${bucket_region} -e AWS_PROFILE -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN \
     -e USER="root" -e ORCH_DEFAULT_PASSWORD -e DEPLOY_OP=${deploy_op} \
     ${image_name}:${image_tag} \
     bash
