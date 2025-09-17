@@ -10,7 +10,6 @@ set -o pipefail
 . utils/lib/common.sh
 
 # Consts
-BUCKET_REGION="us-west-2"
 VPC_DEFAULT_CIDR_PREFIX="192.168."
 VPC_FIRST_CIDR="192.168.248.0/21"
 ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd) # The repository root directory
@@ -26,6 +25,7 @@ AWS_REGION="${AWS_REGION:-}"
 AWS_ACCOUNT="${AWS_ACCOUNT:-}"
 CUSTOMER_STATE_PREFIX="${CUSTOMER_STATE_PREFIX:-}"
 BUCKET_NAME=""
+BUCKET_REGION="${BUCKET_REGION:-us-west-2}"
 PARENT_DOMAIN=""
 ROOT_DOMAIN=""
 ROOT_DOMAIN_HOST=""

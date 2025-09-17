@@ -58,7 +58,7 @@ parse_params() {
 }
 
 # Consts
-BUCKET_REGION="us-west-2"
+BUCKET_REGION="${BUCKET_REGION:-us-west-2}"
 SAVE_DIR="${SAVE_DIR:-${HOME}/pod-configs/SAVEME}"
 SOCKS_PROXY="${socks_proxy:-}"
 

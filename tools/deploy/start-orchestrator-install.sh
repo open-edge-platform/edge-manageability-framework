@@ -8,6 +8,8 @@
 #embedded_images=0
 embedded_images=1
 release_service_url=${RELEASE_SERVICE:-registry-rs.edgeorchestration.intel.com}
+AWS_REGION="${AWS_REGION:-us-west-2}"
+BUCKET_REGION="${BUCKET_REGION:-us-west-2}"
 
 # echo "Embedded Images: $embedded_images"
 # echo "Release Service URL: $release_service_url"
@@ -76,6 +78,20 @@ while true; do
         break
     else
         echo "Error: Invalid AWS region. Please enter the region where your cluster is or will be deployed."
+    fi
+done
+
+# Prompt for the AWS region for state bucket. Default to BUCKET_REGION environment variable.
+while true; do
+    read -p "Specify the AWS region for the bucket to store the state (default [$BUCKET_REGION]): " bucket_region
+    if [[ -z ${region} ]]; then
+        bucket_region=$BUCKET_REGION
+    fi
+
+    if [[ "$bucket_region" =~ ^(us|ca|eu|ap)\-[a-z]+\-[0-9]+$ ]]; then
+        break
+    else
+        echo "Error: Invalid bucket region. Please enter the region where your bucket is or will be deployed."
     fi
 done
 

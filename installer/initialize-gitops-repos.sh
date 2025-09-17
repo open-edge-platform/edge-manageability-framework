@@ -7,7 +7,7 @@
 . ${HOME}/utils.sh
 
 # Consts
-BUCKET_REGION="us-west-2"
+BUCKET_REGION="${BUCKET_REGION:-us-west-2}"
 SAVE_DIR="${SAVE_DIR:-$HOME/pod-configs/SAVEME}"
 
 load_provision_env
