@@ -85,11 +85,14 @@ sequenceDiagram
     deactivate en
 
     en ->> en: 5. OS installation (includes Agent RPMs)
-    en ->> agent: 6. Install/Enable Agent as part of OS
-
-    Note right of agent: Agent performs AMT eligibility & capability introspection
-
+    
+    en ->> en: 5a. Installer check hardware capability for vPRO/ISM support
+    
     alt Device supports vPRO/ISM
+        en ->> agent: 6. Install/Enable Agent as part of OS
+
+        Note right of agent: Agent performs AMT eligibility & capability introspection
+
         agent ->> dm: 7. Report DMT status as Supported/Enabled
         dm ->> inv: 8. Update DMT Status as SUPPORTED and Populate AMTInfo
 
@@ -109,13 +112,7 @@ sequenceDiagram
         dm ->> inv: 16. Update AMT CurrentState as Provisioned
 
     else Device not eligible
-        agent ->> dm: 7a. Report DMT status as Not Supported
-        dm ->> inv: 7b. Update DMT Status as ERROR (Not Supported)
-    end
-
-    alt Failure during activation
-        agent ->> dm: 12a. Report DMT status as FAILURE
-        dm ->> inv: 12b. Update DMT Status as FAILURE
+        en ->> en: 6a. Installer skips PMA installtion
     end
 ```
 
