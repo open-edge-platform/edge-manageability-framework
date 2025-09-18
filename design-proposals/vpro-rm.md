@@ -269,6 +269,57 @@ or Client Control Mode (CCM). The proposed plan for the release is:
 
 Additional updates to support admin mode are documented in the [OpenDMT documentation](./vpro-opendmt.md).
 
+Device onboarding and activation will be performed in the following flow when running in admin mode.
+
+```mermaid
+sequenceDiagram
+  title: AMT device provisioning and activation
+  %%{wrap}%%
+  autonumber
+  participant US as User
+  participant UI as UI/CLI
+  participant ON as Onboarding
+  participant DM as DM Manager
+  participant VT as Vault
+  participant IN as Inventory
+  participant PM as Platform Manageability Agent (PMA)
+  participant RP as RPS
+  activate UI
+  US ->> UI: Set activation mode as admin
+  US ->> UI: Set DNS Suffix
+  US ->> UI: Upload Provisioning Certificate
+  US ->> UI: Upload Provisioning Certificate password
+  UI ->> VT: Store Provisioning Certificate
+  UI ->> VT: Store Provisioning Certificate password
+  UI ->> IN: Store DNS Suffix for edge node instance
+  UI ->> IN: Store activation mode for edge node instance
+  UI ->> US: Report success
+  deactivate UI
+  US ->> ON: Start Onboarding
+  activate ON
+  ON ->> IN: Retrieve DNS Suffix
+  ON ->> ON: Apply DNS Suffix to BIOS
+  ON ->> PM: Install PMA
+  ON ->> US: Report success
+  deactivate ON
+  US ->> DM: Start device activation
+  activate DM
+  DM ->> IN: Retrieve activation mode for instance
+  DM ->> IN: Retrieve DNS Suffix for instance
+  DM ->> VT: Retrieve Provisioning Certificate and password
+  DM ->> DM: Create Domain Profile
+  DM ->> RP: Send Domain Profile
+  DM ->> DM: Create AMT Profile
+  DM ->> RP: Send AMT Profile
+  DM ->> PM: Send AMT Profile Name
+  activate PM
+  PM ->> PM: Start Device Activation
+  PM ->> DM: Report Device Activation Status
+  deactivate PM
+  DM ->> US: Report Device Activation Status
+  deactivate DM
+````
+
 ### Test Plan
 
 DM RM **Unit tests** will be extended to cover 80% of the functionality at least - these tests will include mocks for
