@@ -54,7 +54,7 @@ func (Build) DEBVersion() error {
 
 const (
 	giteaPath             = "assets/gitea"
-	giteaChartVersion     = "10.4.0"
+	giteaChartVersion     = "12.3.0"
 	argocdPath            = "assets/argo-cd"
 	argocdHelmVersion     = "8.0.0"
 	deployOnlineDirectory = "onprem-ke-installer"
