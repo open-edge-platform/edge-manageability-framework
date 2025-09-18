@@ -6,6 +6,10 @@ redis-cluster:
   enabled: false
 postgresql:
   enabled: true
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/postgresql
+    tag: 16.3.0-debian-12-r23
   primary:
     persistence:
       enabled: true
