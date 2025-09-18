@@ -28,6 +28,7 @@ spec:
           {{- $baseFile := printf "configs/%s.yaml" $appName }}
           {{- $baseConfig := .Files.Get $baseFile|fromYaml}}
           {{- $overwrite := (get .Values.postCustomTemplateOverwrite $appName ) | default dict }}
+          {{- $imageOverwrite := dict "image" (dict "repository" "bitnamilegacy/postgresql") }}
           {{- mergeOverwrite $baseConfig $customConfig $overwrite | toYaml | nindent 10 }}
   destination:
     namespace: {{$namespace}}
