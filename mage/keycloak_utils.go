@@ -118,7 +118,7 @@ func set_keycloak_password(encoded_password string) {
 }
 
 func start_local_psql_pod() {
-	command := "kubectl run -n " + keycloakNamespace + " keycloak-recovery-psql --image=bitnami/postgresql -- sh -c 'sleep 10000'"
+	command := "kubectl run -n " + keycloakNamespace + " keycloak-recovery-psql --image=bitnamilegacy/postgresql -- sh -c 'sleep 10000'"
 	_, err := exec.Command("bash", "-c", command).CombinedOutput()
 	if err != nil {
 		fmt.Println(err.Error())
