@@ -3,6 +3,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 namespace: orch-database
+
+image:
+  registry: docker.io
+  repository: bitnamilegacy/postgresql
+  tag: 17.4.0-debian-12-r15
+  pullPolicy: IfNotPresent
+
 primary:
   containerSecurityContext:
     allowPrivilegeEscalation: false
