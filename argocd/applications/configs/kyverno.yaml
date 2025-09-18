@@ -21,7 +21,7 @@ cleanupJobs:
       tag: 1.28.5
   ephemeralReports:
     image:
-      registry: docker.io 
+      registry: docker.io
       repository: bitnami/kubectl
       tag: 1.28.5
 

@@ -21,7 +21,7 @@ jwtMiddlewareException:
       - "cluster-connect-gateway-ws"
       - "cluster-connect-gateway-kubeapi"
       - "orch-platform-keycloak"
-      - "amt-api-rps" # Added to allow OpenDMT RPC-RPS traffic, which fails due to missing JWT token.
+      - "amt-api-rps"  # Added to allow OpenDMT RPC-RPS traffic, which fails due to missing JWT token.
   - namespace: "orch-boots"
     names:
       - "tinkerbell-nginx-ingress"
