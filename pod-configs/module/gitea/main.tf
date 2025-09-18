@@ -48,6 +48,7 @@ resource "helm_release" "gitea" {
   namespace    = "gitea"
   force_update = false
   replace      = true
+  timeout      = 600
 }
 
 resource "random_password" "gitea_user_password" {
