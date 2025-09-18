@@ -105,9 +105,9 @@ failures manually.
 Manual cluster creation enables users to dynamically create a cluster by selecting a template and hosts. We'll keep the
 current workflow and implementation. For the record, following options has been considered:
 
-**Option 1:** Restrict cluster creation to `onboarded and provisioned` hosts only, as in the current implementation. During target host
-selection, provide a list of eligible hosts based on the selected region and site. This approach introduces no changes
-to the user experience compared to previous releases.
+**Option 1:** Restrict cluster creation to `onboarded and provisioned` hosts only, as in the current implementation.
+During target host selection, provide a list of eligible hosts based on the selected region and site. This approach
+introduces no changes to the user experience compared to previous releases.
 
 **Option 2:** Allow cluster creation on any `onboarded` host, removing the requirement for the host to be `provisioned`.
 During cluster creation, users can select an OS profile, cluster template, and optionally provide custom cloud-init
@@ -117,4 +117,3 @@ releases.
 
 **Decision:** Continue with Option 1 for now, maintaining the current restriction to onboarded and provisioned hosts for
 cluster creation.
-
