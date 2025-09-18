@@ -7,22 +7,22 @@ cleanupJobs:
   admissionReports:
     image:
       registry: docker.io
-      repository: bitnami/kubectl
+      repository: bitnamilegacy/kubectl
       tag: 1.28.5
   clusterAdmissionReports:
     image:
       registry:
-      repository: bitnami/kubectl
+      repository: bitnamilegacy/kubectl
       tag: 1.28.5
   clusterEphemeralReports:
     image:
       registry: docker.io
-      repository: bitnami/kubectl
+      repository: bitnamilegacy/kubectl
       tag: 1.28.5
   ephemeralReports:
     image:
       registry: docker.io
-      repository: bitnami/kubectl
+      repository: bitnamilegacy/kubectl
       tag: 1.28.5
 
 # Deploy minimally viable HA config. See https://kyverno.io/docs/installation/methods/#high-availability
