@@ -4,9 +4,6 @@
 
 namespace: orch-database
 
-global:
-  security:
-    allowInsecureImages: true
 image:
   registry: docker.io
   repository: bitnamilegacy/postgresql
