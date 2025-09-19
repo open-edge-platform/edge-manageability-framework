@@ -106,7 +106,7 @@ sequenceDiagram
                         dm ->> inv: Update AMT Status as IN_PROGRESS (Recovering)
                         Note right of agent: Wait for current recovery to complete
                         
-                    else In backoff period (< 10 minutes since last attempt)
+                    else In backoff period (< 2 minutes since last attempt)
                         agent ->> dm: Report status as ACTIVATING
                         dm ->> inv: Update AMT Status as IN_PROGRESS (Backoff)
                         Note right of agent: Waiting for backoff period before retry
