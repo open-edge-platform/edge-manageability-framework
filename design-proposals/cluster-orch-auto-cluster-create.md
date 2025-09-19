@@ -34,9 +34,9 @@ configurations.
 
 Clusters for a specific host can be created in two ways:
 
-**1. Automatically during host registration**: This new option is designed for users with simple use cases who want
-Kubernetes to be available with a pre-defined template, reducing user interactions during onboarding and cluster
-creation.
+**1. Automatically during host registration**: This option enables users to create clusters as part of the host
+registration process, using a predefined cluster template. It is ideal for scenarios where edge usage is well-defined
+and minimal manual intervention is desired for infrastructure setup.
 
 **2. Manually through a direct request to the Cluster Manager**: This method allows users to create clusters on hosts
 that have already been onboarded. It is particularly useful in scenarios where host onboarding and workload creation
