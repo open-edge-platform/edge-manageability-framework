@@ -4,14 +4,10 @@
 
 namespace: orch-database
 
-global:
-  security:
-    allowInsecureImages: true
 image:
   registry: docker.io
   repository: bitnamilegacy/postgresql
   tag: 17.4.0-debian-12-r15
-  pullPolicy: IfNotPresent
 
 primary:
   containerSecurityContext:

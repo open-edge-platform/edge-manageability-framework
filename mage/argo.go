@@ -20,7 +20,7 @@ import (
 	"github.com/bitfield/script"
 )
 
-var dockerHubChartOrgs = []string{"bitnamicharts"}
+var dockerHubChartOrgs = []string{"bitnamicharts", "bitnamilegacy"}
 
 func initialSecretInternal() (string, error) {
 	kubeCmd := "kubectl get secret -n argocd argocd-initial-admin-secret -o json"
