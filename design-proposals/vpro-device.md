@@ -90,7 +90,7 @@ sequenceDiagram
                         
                         rect rgb(255, 245, 235)
                             Note right of agent: Recovery Process (Sequential)
-                            agent ->> amt: Execute "sudo rpc deactivate -local"
+                            agent ->> amt: Execute "rpc deactivate -u wss://server/activate"
                             Note right of agent: Deactivate stuck AMT connection
                             agent ->> agent: AMT settlement period (30 * attempt_number seconds)
                             Note right of agent: Allow AMT hardware to stabilize
