@@ -66,8 +66,9 @@ installed EMT version. Interaction with OSProfile APIs are now reserved for
 advanced use case only, users should not interact with them during Day 2
 operations. Instances instead handle all the runtime information of the
 software running on the Edge Node, including the installed packages (that could
-change during the lifecycle of the Edge Node), and information about available
-updates for the Edge Node.
+change during the lifecycle of the Edge Node), information about available
+updates for the Edge Node, and the status of the update currently in progress
+(used by the UI to display the current update status).
 
 The following represents the schema changes to be applied to EIM schema to
 fulfill the above requirements:
@@ -127,7 +128,8 @@ New Resources:
     field is used only for Mutable OSes.
   - `update_sources`: 'DEB822 Source Format' for Debian style OSs, contains the
     sources of the packages to be installed during the update, if new sources
-    needs to be added.
+    needs to be added. Holds only custom repositories; the default Ubuntu repos
+    are preconfigured on the provisioned OS and cannot be modified later. 
   - `kernel_commands`: list of kernel commands to be used during the update.
     This field is used only for Mutable OSes.
   - `update_policy`: enum field, defines which policy to use:
@@ -153,7 +155,7 @@ New Resources:
   are concerns about the size of this table, we can add retention policies for
   this resource.
   - `status`: stores the short description of what happened during the update.
-  - `status_indicator`: enum field, moder status indicator:
+  - `status_indicator`: enum field, modern status indicator:
     - `STATUS_INDICATION_ERROR`: an error happened during the update.
     - `STATUS_INDICATION_IN_PROGRESS`: unused, the progress about the update is
       kept into the `update_status` field of the Instance.
@@ -455,7 +457,7 @@ Edge Node:
 
 - **Platform Update Agent (PUA)**:
   1. For mutable OSes, PUA needs to poll and check for new update to already
-     installed packages, and reports back to the MM the new versions available
+     installed packages, including the edge node agents, and reports back to the MM the new versions available
   2. Propagate installed packaged on the EN to the maintenance manager to
      populate runtime packages on the Instance resource
 
