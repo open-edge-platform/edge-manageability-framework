@@ -20,6 +20,10 @@ postgresql-ha:
   enabled: false
 postgresql:
   enabled: true
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/postgresql
+    tag: 16.3.0-debian-12-r23
   primary:
     resourcesPreset: none
     resource: {}
@@ -44,6 +48,10 @@ ingress:
   enabled: false
 redis:
   enabled: true
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/redis
+    tag: 7.2.5-debian-12-r4  
   master:
     resourcesPreset: none
     resources: {}
