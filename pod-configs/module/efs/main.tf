@@ -52,6 +52,7 @@ resource "aws_iam_role" "efs_role" {
   name                = "${var.cluster_name}-${var.role_name}"
   assume_role_policy  = data.aws_iam_policy_document.efs_assume_role_policy.json
   managed_policy_arns = var.generate_eks_policy ? [aws_iam_policy.efs_policy[0].arn] : []
+  permissions_boundary = var.permissions_boundary != "" ? var.permissions_boundary : null
 }
 
 # Create Security Group

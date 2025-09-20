@@ -917,6 +917,7 @@ vpc_terraform_backend_key          = "${VPC_TERRAFORM_BACKEND_KEY}"
 vpc_terraform_backend_region       = "${BUCKET_REGION}" # region of the S3 bucket to store the TF state
 eks_cluster_name                   = "$ENV_NAME"
 aws_account_number                 = "$AWS_ACCOUNT"
+permissions_boundary               = "${PERMISSIONS_BOUNDARY:-}"
 eks_volume_size                    = 128
 eks_desired_size                   = $EKS_DESIRED_SIZE
 eks_min_size                       = $EKS_MIN_SIZE

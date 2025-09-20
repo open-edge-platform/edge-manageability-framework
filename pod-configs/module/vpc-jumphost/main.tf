@@ -23,6 +23,7 @@ resource "aws_iam_role" "ec2" {
   ]
 }
 EOF
+permissions_boundary = var.permissions_boundary != "" ? var.permissions_boundary : null
   tags = {
     Creator = "terraform"
     Module  = path.module

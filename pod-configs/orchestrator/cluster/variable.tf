@@ -418,3 +418,13 @@ variable "eks_cluster_dns_ip" {
   description = "IP address of the DNS server for the cluster, leave empty to use the default DNS server"
 }
 
+variable "permissions_boundary" {
+  description = "ARN of the IAM permissions boundary policy to apply to all IAM roles and users"
+  type        = string
+  default     = ""
+
+  validation {
+    condition = can(regex("^(|arn:aws:iam::[0-9]{12}:policy/.+)$", var.permissions_boundary))
+    error_message = "The permissions_boundary must be empty or a valid IAM policy ARN."
+  }
+}

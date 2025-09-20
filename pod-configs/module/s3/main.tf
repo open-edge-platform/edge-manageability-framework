@@ -64,6 +64,7 @@ resource "aws_iam_role" "s3_role" {
   name                = "${var.cluster_name}-s3-role"
   assume_role_policy  = data.aws_iam_policy_document.s3_policy.json
   managed_policy_arns = [aws_iam_policy.s3_policy.arn]
+  permissions_boundary = var.permissions_boundary != "" ? var.permissions_boundary : null
 }
 
 # S3
