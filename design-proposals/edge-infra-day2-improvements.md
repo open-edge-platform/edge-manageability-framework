@@ -124,7 +124,7 @@ New Resources:
 - **OS Update Policy**: defines the Policy that must be applied during an
   update. This resource can be linked to multiple Instances, Regions and or
   Sites. Some fields and edges are valid for Mutable or Immutable OSes.
-  - `install_packages`: list of packages to be installed during the update. This
+  - `update_packages`: list of packages to be installed during the update. This
     field is used only for Mutable OSes.
   - `update_sources`: 'DEB822 Source Format' for Debian style OSs, contains the
     sources of the packages to be installed during the update, if new sources
@@ -200,7 +200,7 @@ Resource and Field Handling:
   Only a subset of fields in an OS Update Policy can be set depending on the
   target policy, if it targets Mutable or Immutable OSes:
 
-  - Policies for mutable OS: `install_packages`, `update_sources`,
+  - Policies for mutable OS: `update_packages`, `update_sources`,
     `kernel_commands` and `update_policy` fields can be set only.
   - Policies for immutable OS: `target_os` and `update_policy` fields can be
     set, only.
@@ -343,7 +343,7 @@ orchestrator updates and data migrations in the database.
 
 - Any Mutable OSProfile with `update_sources`, `kernel_commands` or
   `installed_packages` fields set, needs to be migrated to the new schema by
-  creating OSUpdatePolicy, filling the `install_packages`, `update_sources` and
+  creating OSUpdatePolicy, filling the `update_packages`, `update_sources` and
   `kernel_command` fields with the one coming from the OSprofile and linking it
   to the related Instances.
 - In any Mutable OSProfile the `update_sources`, `kernel_commands` and
