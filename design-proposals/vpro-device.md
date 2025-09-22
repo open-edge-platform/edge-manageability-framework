@@ -86,10 +86,10 @@ sequenceDiagram
 
     en ->> en: 5. OS installation (includes Agent RPMs)
     
-    en ->> en: 5a. Installer check hardware capability for vPRO/ISM support
+    en ->> en: 5a. Installer/cloudInit check hardware capability for vPRO/ISM support
     
     alt Device supports vPRO/ISM
-        en ->> agent: 6. Install/Enable Agent as part of OS
+        en ->> agent: 6. Install/CloudInit Enable Agent as part of OS
 
         Note right of agent: Agent performs AMT eligibility & capability introspection
 
@@ -112,7 +112,7 @@ sequenceDiagram
         dm ->> inv: 16. Update AMT CurrentState as Provisioned
 
     else Device not eligible
-        en ->> en: 6a. Installer skips PMA installtion
+        en ->> en: 6a. Installer/cloudInit skips PMA installtion
     end
 ```
 
