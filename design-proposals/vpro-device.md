@@ -71,7 +71,7 @@ sequenceDiagram
         participant rps as Remote Provisioning Server
     end
 
-    box rgba(206, 19, 19, 1) Edge Node Components
+    box rgba(230, 100, 215, 1) Edge Node Components
         participant en as Edge Node
         participant nagent as Node Agent
         participant agent as Platform Manageability Agent
