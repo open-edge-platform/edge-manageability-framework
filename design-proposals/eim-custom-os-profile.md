@@ -40,7 +40,7 @@ autonumber
         participant tb as Tinkerbell     
     end
 
-    box rgba(22, 105, 22, 1) Edge Node with EMT-uOS
+    box rgba(32, 194, 142, 1) Edge Node with EMT-uOS
         participant tw as Tink worker
         participant nbd as nbd_img2disk
         participant disk as disk
