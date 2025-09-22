@@ -1,25 +1,27 @@
 # SPDX-FileCopyrightText: 2025 Intel Corporation
-#
-# SPDX-License-Identifier: Apache-2.0
-
-global:
-  imagePullSecrets:
-  {{- with .Values.argo.imagePullSecrets }}
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
-
-server:
-  {{- if .Values.argo.vault.ha}}
-  # Run Vault in "HA" mode. There are no storage requirements unless the audit log
-  # persistence is required.  In HA mode Vault will configure itself to use Consul
-  # for its storage backend.  The default configuration provided will work the Consul
-  # Helm project by default.  It is possible to manually configure Vault to use a
-  # different HA backend.
-  ha:
-    enabled: true
-    replicas: {{.Values.argo.vault.replicas}}
-  {{- else}}
-  standalone:
+#                                                                                                                                                                                            
+# SPDX-License-Identifier: Apache-2.0                                                                                                                                                        
+                                                                                                                                                                                             
+global:                                                                                                                                                                                      
+  imagePullSecrets:                                                                                                                                                                          
+  {{- with .Values.argo.imagePullSecrets }}                                                                                                                                                  
+    {{- toYaml . | nindent 4 }}                                                                                                                                                              
+  {{- end }}                                                                                                                                                                                 
+                                                                                                                                                                                             
+server:                                                                                                                                                                                      
+  # Configure service account for IRSA                                                                                                                                                       
+  serviceAccount:                                                                                                                                                                            
+    create: false                                                                                                                               
+    name: "vault-service-account"
+    annotations:                                                                                                                                                                             
+      eks.amazonaws.com/role-arn: "arn:aws:iam::{{.Values.argo.aws.accountId}}:role/{{.Values.argo.clusterName}}-vault-kms-role"                                                             
+                                                                                                                                                                                             
+  {{- if .Values.argo.vault.ha}}                                                                                                                                                             
+  ha:                                                                                                                                                                                        
+    enabled: true                                                                                                                                                                            
+    replicas: {{.Values.argo.vault.replicas}}                                                                                                                                                
+  {{- else}}                                                                                                                                                                                 
+  standalone:                                                                                                                                                                     
   {{- end}}
     # config is a raw string of default configuration when using a Stateful
     # deployment. Default is to use a PersistentVolumeClaim mounted at /vault/data
@@ -34,12 +36,14 @@ server:
       # Internal cluster traffic will leverage the mTLS service mesh
       listener "tcp" {
         tls_disable = 1
-
         address = "[::]:8200"
         cluster_address = "[::]:8201"
       }
   {{- if and .Values.argo.vault.autoUnseal (ne .Values.argo.namespace "onprem")}}
-      seal "awskms" {}
+      seal "awskms" {
+        region     = "{{.Values.argo.aws.region}}"
+        kms_key_id = "alias/vault-kms-unseal-{{.Values.argo.clusterName}}"
+      }
 
   # extraEnvironmentVars is a list of extra environment variables to set with the stateful set. These could be
   # used to include variables required for auto-unseal.
@@ -51,20 +55,12 @@ server:
     AWS_REGION: {{.Values.argo.aws.region}}
     VAULT_AWSKMS_SEAL_KEY_ID: alias/vault-kms-unseal-{{.Values.argo.clusterName}}
 
-  # extraSecretEnvironmentVars is a list of extra environment variables to set with the stateful set.
-  # These variables take value from existing Secret objects.
-  extraSecretEnvironmentVars:
-    - envName: AWS_ACCESS_KEY_ID
-      secretName: vault-kms-unseal
-      secretKey: AWS_ACCESS_KEY_ID
-    - envName: AWS_SECRET_ACCESS_KEY
-      secretName: vault-kms-unseal
-      secretKey: AWS_SECRET_ACCESS_KEY
-
-  # https://jira.devtools.intel.com/browse/NEXENPL-1126
+  # https://jira.devtools.intel.com/browse/NEXENPL-1126                                                                       
   # enable liveness probe such that pod is restarted when auto-unseal failed
   livenessProbe:
     enabled: true
+    path: "/v1/sys/health?standbyok=true"
+    initialDelaySeconds: 60
   {{- end}}
 
   extraInitContainers:
@@ -79,14 +75,14 @@ server:
         seccompProfile:
           type: RuntimeDefault
       command: [sh, -c]
-      args:
+      args:                                                                                                                                                                                  
         - echo "storage \"postgresql\" { connection_url = \"postgres://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE\" ha_enabled=\"$HA_ENABLED\" }" > /vault/userconfig/vault-storage-config/storage.hcl
       volumeMounts:
         - mountPath: /vault/userconfig/vault-storage-config
           name: vault-storage-config
       env:
         - name: PGUSER
-          valueFrom:
+          valueFrom:  
             secretKeyRef:
               # TODO Unify the database name and secret between local and cloud deployments
               name: vault-{{.Values.argo.database.type}}-postgresql
@@ -97,12 +93,12 @@ server:
               name: vault-{{.Values.argo.database.type}}-postgresql
               key: PGPASSWORD
         - name: PGHOST
-          valueFrom:
+          valueFrom:  
             secretKeyRef:
               name: vault-{{.Values.argo.database.type}}-postgresql
               key: PGHOST
-        - name: PGPORT
-          valueFrom:
+        - name: PGPORT   
+          valueFrom:  
             secretKeyRef:
               name: vault-{{.Values.argo.database.type}}-postgresql
               key: PGPORT
@@ -111,7 +107,7 @@ server:
             secretKeyRef:
               name: vault-{{.Values.argo.database.type}}-postgresql
               key: PGDATABASE
-        - name: HA_ENABLED
+        - name: HA_ENABLED   
           value: {{ .Values.argo.vault.ha | default false | quote }}
     # This initContainer creates database tables for vault
     - name: init-table
@@ -176,7 +172,7 @@ server:
             secretKeyRef:
               name: vault-{{.Values.argo.database.type}}-postgresql
               key: PGDATABASE
-{{- with .Values.argo.resources.vault.server }}
+{{- with .Values.argo.resources.vault.server }} 
   resources:
     {{- toYaml . | nindent 4 }}
 {{- end }}

@@ -150,7 +150,7 @@ module "aurora_import" {
 
 module "kms" {
   # kms module creates K8s secrets, which depends on the namespaces created in orch_init
-  depends_on         = [module.orch_init]
+  depends_on         = [module.orch_init, time_sleep.wait_eks]
   source             = "../../module/kms"
   cluster_name       = var.eks_cluster_name
   aws_account_number = var.aws_account_number
