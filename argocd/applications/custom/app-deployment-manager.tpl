@@ -19,6 +19,12 @@ image:
     {{- end }}
 
 adm:
+{{- if .Values.argo.proxy.httpsProxy}}
+  httpsProxy: {{.Values.argo.proxy.httpsProxy}}
+{{- end}}
+{{- if .Values.argo.proxy.noProxy}}
+  noProxy: {{.Values.argo.proxy.noProxy}}
+{{- end}}
   gitProxy: {{ .Values.argo.git.gitProxy }}
 {{- if .Values.argo.git.gitServer }}
   gitServer: {{ .Values.argo.git.gitServer }}
