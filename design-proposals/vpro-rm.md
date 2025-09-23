@@ -256,7 +256,7 @@ Edge Infrastructure Manager team will implement the following functionality to s
 
 ### Implementation plan for Admin Control Mode
 
-For the 2025.2 release, the DM Manager implementation will be updated to activate devices using Admin Control Mode (ACM)
+To enable Admin Control Mode, the DM Manager implementation will be updated to activate devices using Admin Control Mode (ACM)
 or Client Control Mode (CCM). The proposed plan for the release is:
 
 - Extend inventory to store the DNS Suffix and activation mode (ACM or CCM) alongside the instance ID.
@@ -268,6 +268,8 @@ or Client Control Mode (CCM). The proposed plan for the release is:
 - Update AMT profile configuration to align with the requested activation mode selected.
 
 Additional updates to support admin mode are documented in the [OpenDMT documentation](./vpro-opendmt.md).
+
+> Note: this will be included in the next release after the 2025.2 release.
 
 Device onboarding and activation will be performed in the following flow when running in admin mode.
 

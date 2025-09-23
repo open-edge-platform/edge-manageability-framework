@@ -231,7 +231,7 @@ Hereafter we present as steps the proposed plan in the release 3.1.
 
 ### Implementation plan for Admin Control Mode
 
-For the 2025.2 release, the implementation will be extended to allow the DMT stack to activate devices using Admin
+To enable Admin Control Mode, the implementation will be extended to allow the DMT stack to activate devices using Admin
 Control Mode (ACM). The proposed plan for the release is:
 
 - UI:
@@ -244,12 +244,15 @@ Control Mode (ACM). The proposed plan for the release is:
   - Add option for CLI to be used for uploading provisioning cert and password for domain profiles.
 - Vault
   - Add storage option for provisioning cert and password for domain profiles.
-  - API for adding cert and password to Vault for use by CLI and UI.
+  - API for adding cert and password to Vault for use by CLI and UI. This API and storage should be tenant aware
+  as different tenants may use different certs and passwords for ACM.
   - Add option for Device Management Manager to extract required cert and password for each instance.
 - Onboarding
   - Update BIOS with DNS Suffix value when running in admin mode
 
 Device Management Manager updates are documented in the [Device Management documentation](./vpro-rm.md).
+
+> Note: this will be included in the next release after the 2025.2 release.
 
 ## Test plan
 
