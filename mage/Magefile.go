@@ -37,7 +37,7 @@ const (
 	argoVersion              = "8.0.0"
 	argoRetryCount           = 30
 	argoRetryInterval        = 30
-	giteaVersion             = "10.6.0"
+	giteaVersion             = "12.3.0"
 )
 
 var (
