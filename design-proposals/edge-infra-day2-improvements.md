@@ -129,7 +129,7 @@ New Resources:
   - `update_sources`: 'DEB822 Source Format' for Debian style OSs, contains the
     sources of the packages to be installed during the update, if new sources
     needs to be added. Holds only custom repositories; the default Ubuntu repos
-    are preconfigured on the provisioned OS and cannot be modified later. 
+    are preconfigured on the provisioned OS and cannot be modified later.
   - `kernel_commands`: list of kernel commands to be used during the update.
     This field is used only for Mutable OSes.
   - `update_policy`: enum field, defines which policy to use:
