@@ -45,22 +45,6 @@ core:
 # https://doc.crds.dev/github.com/kubernetes-sigs/cluster-api-operator/operator.cluster.x-k8s.io/BootstrapProvider/v1alpha2@v0.15.1
 bootstrap:
   providers:
-    - name: rke2
-      namespace: capr-system
-      spec:
-        version: v0.16.2
-        configSecret:
-          namespace: capi-variables
-          name: capi-variables
-        deployment:
-          containers:
-            - name: manager
-              args:
-                "--insecure-diagnostics": "true"
-                "--concurrency": "10"
-        additionalManifests:
-          name: bootstrap-rke2-additional-manifest
-          namespace: capr-system
     - name: k3s
       namespace: capk-system
       spec:
@@ -76,38 +60,6 @@ bootstrap:
 # https://doc.crds.dev/github.com/kubernetes-sigs/cluster-api-operator/operator.cluster.x-k8s.io/ControlPlaneProvider/v1alpha2@v0.15.1
 controlplane:
   providers:
-    - name: rke2
-      namespace: capr-system
-      spec:
-        version: v0.16.2
-        configSecret:
-          namespace: capi-variables
-          name: capi-variables
-        deployment:
-          containers:
-            - name: manager
-              # image from rke2 fork with configurable Cluster Cache concurrency - replace it with official one once it is released
-              # upstreamed in https://github.com/rancher/cluster-api-provider-rke2/pull/690
-              # WARNING: please be aware, that upstreamed version is slightly different from the one used here,
-              # you will need to add new --clustercache-concurrency flag to the rke2 binary to configure the Cluster Cache concurrency
-              # (in the v0.16.3-dev-b0f7976 the --concurrency flag was used, but it was seperated into 2 distinct flags)
-              imageUrl: ghcr.io/jdanieck/cluster-api-provider-rke2/rancher/cluster-api-provider-rke2-controlplane:v0.16.3-dev-b0f7976
-              args:
-                "--insecure-diagnostics": "true"
-                "--sync-period": "30m"
-                "--concurrency":  "250"
-                "--clustercachetracker-client-burst": "500"
-                "--clustercachetracker-client-qps": "250"
-              resources:
-                requests:
-                  cpu: "2"
-                  memory: "512Mi"
-                limits:
-                  cpu: "8"
-                  memory: "2Gi"
-        additionalManifests:
-          name: controlplane-rke2-additional-manifest
-          namespace: capr-system
     - name: k3s
       namespace: capk-system
       spec:
