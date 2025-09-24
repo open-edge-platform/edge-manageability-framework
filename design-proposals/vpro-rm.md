@@ -256,8 +256,8 @@ Edge Infrastructure Manager team will implement the following functionality to s
 
 ### Implementation plan for Admin Control Mode
 
-To enable Admin Control Mode, the DM Manager implementation will be updated to activate devices using Admin Control Mode (ACM)
-or Client Control Mode (CCM). The proposed plan for the release is:
+To enable Admin Control Mode, the DM Manager implementation will be updated to activate devices using Admin Control
+Mode (ACM) or Client Control Mode (CCM). The proposed plan for the release is:
 
 - Extend inventory to store the DNS Suffix and activation mode (ACM or CCM) alongside the instance ID.
   - DNS Suffix added from UI or CLI during set up.
