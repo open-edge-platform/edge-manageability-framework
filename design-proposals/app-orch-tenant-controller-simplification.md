@@ -11,7 +11,11 @@ of creating new projects.
 
 ## Problem Statement
 
-App-Orch-Tenant-Controller is a component that is used to bootstrap new projects. When a new project is created, App-Orch-Tenant-Controller populates AO assets in the project, such as harbor projects, default registries, etc. One of the things it is responsible for is populating the initial set of deployment packages. These deployment packages typically contain cluster extensions, and there is about a dozen of them for various features including examples such as cert-manager, intel-gpu, virtualization, etc.
+App-Orch-Tenant-Controller is a component that is used to bootstrap new projects. When a new project is created,
+App-Orch-Tenant-Controller populates AO assets in the project, such as harbor projects, default registries, etc.
+One of the things it is responsible for is populating the initial set of deployment packages. These deployment
+packages typically contain cluster extensions, and there is about a dozen of them for various features including
+examples such as cert-manager, intel-gpu, virtualization, etc.
 
 App-Orch-Tenant-Controller currently downloads a cluster manifest and deployment packages from the release service.
 The Cluster Manifest is versioned and names the set of Deployment Packages to download.
@@ -29,7 +33,6 @@ Each deployment package is downloaded as a separate "ORAS LOAD" operation. This 
 3. There is no real advantage to using the Release Service to store these deployment packages now that
    EMF is now open-source. There are much simpler alternatives.
 
-
 ## Proposal 1: Specify Deployment Packages directly inside the App-Orch-Tenant-Controller Helm Chart
 
 In this proposal, we cease fetching the cluster-manifest and the deployment packages from the
@@ -42,7 +45,11 @@ realized as a config map, which is then loaded by App-Orch-Tenant-Controller.
 This is similar to the solution that Cluster Orchestration uses to load cluster templates.
 
 A disadvantage of this approach is that any change to Cluster-Extensions must be followed by
-a change to App-Orch-Tenant-Controller. The two repositories must be kept in sync. If Custer-Extensions was updated without updating App-Orch-Tenant-Controller, then in the best case new extensions would be ignored. In the worst case, missing assets could be fetched, leading to project creation failure. Dependencies like this often lead to the developer cycling back and forth between repos, having to commit one repo before the other repo can be tested.
+a change to App-Orch-Tenant-Controller. The two repositories must be kept in sync. If Custer-Extensions was
+updated without updating App-Orch-Tenant-Controller, then in the best case new extensions would be ignored.
+In the worst case, missing assets could be fetched, leading to project creation failure. Dependencies like
+this often lead to the developer cycling back and forth between repos, having to commit one repo before the
+other repo can be tested.
 
 ## Proposal 2: Specify packages using a Helm Chart in cluster extensions
 
@@ -73,15 +80,16 @@ without needing to alter the app-orch-tenant-controller helm chart.
 
 The following stories must be completed:
 
-1. Create a cluster-extensions helm chart in the cluster-extensions repo, and populate the helm chart with a configmap that contains the list of deployment packages.
+1. Create a cluster-extensions helm chart in the cluster-extensions repo, and populate the helm chart with a
+   configmap that contains the list of deployment packages.
 
 2. Update app-orch-tenant-controller to use the configmap rather than the release service.
 
-3. Implement logic in app-orch-tenant-controller to detect the configmap change and process updates to the extensions. This may be as simple as detecting a configmap change and then restarting the component.
+3. Implement logic in app-orch-tenant-controller to detect the configmap change and process updates to the
+   extensions. This may be as simple as detecting a configmap change and then restarting the component.
 
 ## Decision
 
 Decision is to hold until necessary and/or when time permits to address tech debt.
 
 ## Open issues (if applicable)
-
