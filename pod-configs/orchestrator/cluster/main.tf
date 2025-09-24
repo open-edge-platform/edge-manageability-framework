@@ -50,6 +50,7 @@ module "eks" {
   https_proxy                 = var.eks_https_proxy
   no_proxy                    = var.eks_no_proxy
   eks_cluster_dns_ip          = var.eks_cluster_dns_ip
+  permissions_boundary        = var.permissions_boundary
 }
 
 resource "time_sleep" "wait_eks" {
@@ -70,6 +71,7 @@ module "s3" {
   cluster_name   = var.eks_cluster_name
   create_tracing = var.s3_create_tracing
   import_buckets = var.import_s3_buckets
+  permissions_boundary = var.permissions_boundary
 }
 
 module "efs" {
@@ -87,6 +89,7 @@ module "efs" {
   cluster_name                        = var.eks_cluster_name
   vpc_id                              = local.vpc_id
   throughput_mode                     = var.efs_throughput_mode
+  permissions_boundary                = var.permissions_boundary
 }
 
 module "aurora" {
@@ -154,6 +157,7 @@ module "kms" {
   cluster_name       = var.eks_cluster_name
   aws_account_number = var.aws_account_number
   region             = var.aws_region
+  permissions_boundary = var.permissions_boundary
 }
 
 module "orch_init" {
@@ -205,6 +209,7 @@ module "ec2log" {
   s3_expire         = var.ec2log_s3_expire
   cloudwatch_expire = var.ec2log_cw_expire
   s3_prefix         = var.s3_prefix
+  permissions_boundary = var.permissions_boundary
 }
 
 module "aws_lb_controller" {

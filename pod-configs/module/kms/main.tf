@@ -60,6 +60,7 @@ resource "aws_iam_role" "vault_kms" {
   name                = "${var.cluster_name}-vault-kms-role"
   assume_role_policy  = data.aws_iam_policy_document.vault_trust_policy.json
   managed_policy_arns = [aws_iam_policy.vault_kms_policy.arn]
+  permissions_boundary = var.permissions_boundary != "" ? var.permissions_boundary : null
 }
 
 # Create service account with role annotation

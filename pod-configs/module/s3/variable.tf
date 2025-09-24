@@ -27,3 +27,9 @@ variable "import_buckets" {
   type    = bool
   default = false
 }
+
+variable "permissions_boundary" {
+  description = "ARN of the permissions boundary policy to attach to IAM roles"
+  type        = string
+  default     = ""
+}

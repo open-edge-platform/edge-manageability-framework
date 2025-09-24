@@ -92,3 +92,9 @@ variable "customer_tag" {
   description = "For customers to specify a tag for AWS resources"
   default = ""
 }
+
+variable "permissions_boundary" {
+  description = "ARN of the permissions boundary policy to attach to IAM roles"
+  type        = string
+  default     = ""
+}

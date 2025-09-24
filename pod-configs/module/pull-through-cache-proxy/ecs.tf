@@ -42,6 +42,7 @@ data "aws_iam_policy_document" "ecs_task_execution_role" {
 resource "aws_iam_role" "ecs_task_execution_role" {
   name               = "${var.name}-ecs-execution-role"
   assume_role_policy = data.aws_iam_policy_document.ecs_task_execution_role.json
+  permissions_boundary = var.permissions_boundary != "" ? var.permissions_boundary : null
 }
 
 resource "aws_iam_role_policy_attachment" "ecs_task_execution_role" {
@@ -90,6 +91,7 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution_secrets_policy_att
 resource "aws_iam_role" "ecs_task_role" {
   name               = "${var.name}-ecs-task"
   assume_role_policy = data.aws_iam_policy_document.ecs_task_role.json
+  permissions_boundary = var.permissions_boundary != "" ? var.permissions_boundary : null
 }
 
 resource "aws_iam_policy" "ecs_task_ecr_policy" {

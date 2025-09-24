@@ -36,3 +36,9 @@ variable "s3_prefix" {
   type    = string
   default = ""
 }
+
+variable "permissions_boundary" {
+  description = "ARN of the permissions boundary policy to attach to IAM roles"
+  type        = string
+  default     = ""
+}
