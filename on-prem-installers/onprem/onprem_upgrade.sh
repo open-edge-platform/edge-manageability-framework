@@ -202,13 +202,8 @@ operation:
 EOF
 fi
 
-    # Force sync all applications on the cluster. We need to ensure that new version of
-    # ArgoCD properly picked Applications definitions that were governed by older version.
-    apps=$(kubectl get applications -n "$apps_ns" --no-headers -o custom-columns=":metadata.name")
-    for app in $apps; do
-        echo "Syncing ArgoCD application: $app"
-        kubectl patch -n "$apps_ns" applications "$app" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
-    done
+    kubectl patch -n "$apps_ns" application postgresql-secrets --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+    kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 }
 
 # Checks if orchestrator is currently installed on the node
@@ -781,9 +776,5 @@ done
 
 # Run after upgrade script
 ./after_upgrade_restart.sh
-
-# Delete platform-keycloak-keycloak-config-cli Job
-kubectl get job platform-keycloak-keycloak-config-cli -n orch-platform -o jsonpath='{.status.conditions[?(@.type=="Failed")].status}' | grep -q "True" && kubectl delete job platform-keycloak-keycloak-config-cli -n orch-platform || echo "Job is not in failed state"
-kubectl patch application platform-keycloak  -n onprem --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
 echo "Upgrade completed! Wait for ArgoCD applications to be in 'Synced' and 'Healthy' state"
