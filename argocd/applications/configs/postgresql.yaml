@@ -23,12 +23,6 @@ primary:
   extraEnvVars:
     - name: PGDATA
       value: /var/lib/postgresql/data/pgdata
-  extraVolumeMounts:
-    - mountPath: /var/run/postgresql
-      name: postgresql-run
-  extraVolumes:
-    - emptyDir: {}
-      name: postgresql-run
 
 auth:
   existingSecret: postgresql
