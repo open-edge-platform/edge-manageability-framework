@@ -13,7 +13,10 @@ data:
       "realm": "master",
       "accountTheme": "keycloak",
       "displayName": "Keycloak",
-      "displayNameHtml": "<img src='https://raw.githubusercontent.com/open-edge-platform/orch-utils/73df5d1e99a81ae333d94b1c47dd9bef7fa03ae9/keycloak/one-edge-platform-login-title.png'></img>",
+      "displayNameHtml": |
+        <img src='https://raw.githubusercontent.com/open-edge-platform/orch-utils/
+        73df5d1e99a81ae333d94b1c47dd9bef7fa03ae9/keycloak/
+        one-edge-platform-login-title.png'></img>
       "defaultSignatureAlgorithm": "PS512",
       "accessTokenLifespan": 3600,
       "ssoSessionIdleTimeout": 5400,
@@ -114,7 +117,7 @@ data:
             "name": "alrt-rx-rw"
           },
           {
-            "name": "ao-m2m-rw"  
+            "name": "ao-m2m-rw"
           },
           {
             "name": "co-m2m-rw"

@@ -70,7 +70,6 @@ extraEnv: |
       secretKeyRef:
         name: platform-keycloak
         key: admin-password
-  
   # HTTP/HTTPS configuration
   - name: KC_HOSTNAME_STRICT
     value: "false"
@@ -80,13 +79,11 @@ extraEnv: |
     value: "true"
   - name: KC_PROXY
     value: "passthrough"
-  
   # Feature enablement
   - name: KC_HEALTH_ENABLED
     value: "true"
   - name: KC_METRICS_ENABLED
     value: "true"
-  
   # Database configuration
   - name: KC_DB
     value: "postgres"
@@ -137,8 +134,7 @@ livenessProbe:
   periodSeconds: 30
   timeoutSeconds: 5
   failureThreshold: 3
-
-readinessProbe:  
+readinessProbe:
   httpGet:
     path: /realms/master
     port: http

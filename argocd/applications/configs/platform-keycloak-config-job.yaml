@@ -32,60 +32,60 @@ spec:
         seccompProfile:
           type: "RuntimeDefault"
       containers:
-      - name: keycloak-config-cli
-        image: quay.io/adorsys/keycloak-config-cli:6.1.4-26.0.2
-        imagePullPolicy: IfNotPresent
-        env:
-        - name: KEYCLOAK_URL
-          value: "http://platform-keycloak:8080"
-        - name: KEYCLOAK_USER
-          value: "admin"
-        - name: KEYCLOAK_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: platform-keycloak
-              key: admin-password
-        - name: IMPORT_MANAGED_GROUP
-          value: "no-delete"
-        - name: IMPORT_MANAGED_REQUIRED_ACTION
-          value: "no-delete"
-        - name: IMPORT_MANAGED_ROLE
-          value: "no-delete"
-        - name: IMPORT_MANAGED_CLIENT
-          value: "no-delete"
-        - name: KEYCLOAK_AVAILABILITYCHECK_ENABLED
-          value: "true"
-        - name: KEYCLOAK_AVAILABILITYCHECK_TIMEOUT
-          value: "120s"
-        volumeMounts:
-        - name: keycloak-config
-          mountPath: /opt/keycloak-config-cli/configs
-          readOnly: true
-        - name: tmp-volume
-          mountPath: /tmp
-        - name: var-tmp-volume
-          mountPath: /var/tmp
-        securityContext:
-          runAsNonRoot: true
-          runAsUser: 1000
-          allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: true
-          capabilities:
-            drop: ["ALL"]
-          seccompProfile:
-            type: "RuntimeDefault"
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "100m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
+        - name: keycloak-config-cli
+          image: quay.io/adorsys/keycloak-config-cli:6.1.4-26.0.2
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: KEYCLOAK_URL
+              value: "http://platform-keycloak:8080"
+            - name: KEYCLOAK_USER
+              value: "admin"
+            - name: KEYCLOAK_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: platform-keycloak
+                  key: admin-password
+            - name: IMPORT_MANAGED_GROUP
+              value: "no-delete"
+            - name: IMPORT_MANAGED_REQUIRED_ACTION
+              value: "no-delete"
+            - name: IMPORT_MANAGED_ROLE
+              value: "no-delete"
+            - name: IMPORT_MANAGED_CLIENT
+              value: "no-delete"
+            - name: KEYCLOAK_AVAILABILITYCHECK_ENABLED
+              value: "true"
+            - name: KEYCLOAK_AVAILABILITYCHECK_TIMEOUT
+              value: "120s"
+          volumeMounts:
+            - name: keycloak-config
+              mountPath: /opt/keycloak-config-cli/configs
+              readOnly: true
+            - name: tmp-volume
+              mountPath: /tmp
+            - name: var-tmp-volume
+              mountPath: /var/tmp
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: "RuntimeDefault"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
       volumes:
-      - name: keycloak-config
-        configMap:
-          name: platform-keycloak-config
-      - name: tmp-volume
-        emptyDir: {}
-      - name: var-tmp-volume
-        emptyDir: {}
+        - name: keycloak-config
+          configMap:
+            name: platform-keycloak-config
+        - name: tmp-volume
+          emptyDir: {}
+        - name: var-tmp-volume
+          emptyDir: {}
