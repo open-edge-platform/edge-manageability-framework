@@ -11,6 +11,11 @@ metadata:
     helm.sh/hook: post-install,post-upgrade
     helm.sh/hook-weight: "1"
     helm.sh/hook-delete-policy: hook-succeeded
+    # Security annotations for image registry approval
+    security.approved-registries: "quay.io"
+    security.image-purpose: "keycloak-config-cli for realm configuration import"
+    security.image-vendor: "adorsys/keycloak-config-cli"
+    security.image-verification: "official-keycloak-tooling"
 spec:
   template:
     metadata:
@@ -19,9 +24,16 @@ spec:
         sidecar.istio.io/inject: "false"
     spec:
       restartPolicy: OnFailure
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: "RuntimeDefault"
       containers:
       - name: keycloak-config-cli
-        image: quay.io/adorsys/keycloak-config-cli:5.12.0-26.0.7
+        image: quay.io/adorsys/keycloak-config-cli:6.1.4-26.0.2
         imagePullPolicy: IfNotPresent
         env:
         - name: KEYCLOAK_URL
@@ -49,10 +61,15 @@ spec:
         - name: keycloak-config
           mountPath: /opt/keycloak-config-cli/configs
           readOnly: true
+        - name: tmp-volume
+          mountPath: /tmp
+        - name: var-tmp-volume
+          mountPath: /var/tmp
         securityContext:
           runAsNonRoot: true
           runAsUser: 1000
           allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
           capabilities:
             drop: ["ALL"]
           seccompProfile:
@@ -68,3 +85,7 @@ spec:
       - name: keycloak-config
         configMap:
           name: platform-keycloak-config
+      - name: tmp-volume
+        emptyDir: {}
+      - name: var-tmp-volume
+        emptyDir: {}
