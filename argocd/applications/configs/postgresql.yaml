@@ -12,8 +12,8 @@ image:
 
 primary:
   containerSecurityContext:
-    runAsUser: 1001
-    runAsGroup: 1001
+    runAsUser: 999
+    runAsGroup: 999
     readOnlyRootFilesystem: false
     allowPrivilegeEscalation: false
     capabilities:
