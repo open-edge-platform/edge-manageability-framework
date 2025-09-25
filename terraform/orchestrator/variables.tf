@@ -59,7 +59,7 @@ variable "vm_vcpu" {
 variable "vm_memory" {
   type        = number
   description = "The amount of memory to use for the VM."
-  default     = 36864
+  default     = 32768
 }
 
 variable "vm_enable_hugepages" {
