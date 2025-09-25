@@ -73,6 +73,5 @@ delete_old_template
 onprem_namespace=$(kubectl get applications.argoproj.io -A | grep root-app | awk '{print $1}')
 
 # Apply patches using the detected namespace
-kubectl patch application tenancy-api-mapping -n "${onprem_namespace}" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
-kubectl patch application tenancy-datamodel -n "${onprem_namespace}" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+kubectl patch application sre-exporter -n "${onprem_namespace}" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 kubectl patch application root-app -n "${onprem_namespace}" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
