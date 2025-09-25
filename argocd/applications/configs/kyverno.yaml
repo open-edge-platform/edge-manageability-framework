@@ -2,6 +2,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+webhooksCleanup:
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/kubectl
+    tag: 1.28.5
+policyReportCleanup:
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/kubectl
+    tag: 1.28.5
 
 cleanupJobs:
   admissionReports:
@@ -20,6 +30,11 @@ cleanupJobs:
       repository: bitnamilegacy/kubectl
       tag: 1.28.5
   ephemeralReports:
+    image:
+      registry: docker.io
+      repository: bitnamilegacy/kubectl
+      tag: 1.28.5
+  updateRequests:
     image:
       registry: docker.io
       repository: bitnamilegacy/kubectl
