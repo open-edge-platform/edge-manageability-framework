@@ -23,17 +23,17 @@ primary:
     shared_buffers = {{.Values.argo.postgresql.sharedBuffers | default "24MB"}}
     {{- end }}
   extraVolumes:
-  - name: passwords
-    secret:
-      secretName: passwords
-  - emptyDir: {}
-      name: postgresql-run    
+    - name: passwords
+      secret:
+        secretName: passwords
+    - name: postgresql-run
+      emptyDir: {}
   extraVolumeMounts:
-  - name: passwords
-    readOnly: true
-    mountPath: "/var/lib/postgres/pgpass"
-  - mountPath: /var/run/postgresql
-      name: postgresql-run
+    - name: passwords
+      readOnly: true
+      mountPath: "/var/lib/postgres/pgpass"
+    - name: postgresql-run
+      mountPath: /var/run/postgresql
   initdb:
     scripts:
     {{- range .Values.argo.database.databases }}
