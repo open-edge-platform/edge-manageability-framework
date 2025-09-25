@@ -2,6 +2,29 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+
+cleanupJobs:
+  admissionReports:
+    image:
+      registry: docker.io
+      repository: alpine/kubectl
+      tag: 1.34.1
+  clusterAdmissionReports:
+    image:
+      registry: docker.io
+      repository: alpine/kubectl
+      tag: 1.34.1
+  clusterEphemeralReports:
+    image:
+      registry: docker.io
+      repository: alpine/kubectl
+      tag: 1.34.1
+  ephemeralReports:
+    image:
+      registry: docker.io
+      repository: alpine/kubectl
+      tag: 1.34.1
+
 # Deploy minimally viable HA config. See https://kyverno.io/docs/installation/methods/#high-availability
 admissionController:
   replicas: 3
