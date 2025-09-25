@@ -1,0 +1,70 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: platform-keycloak-config-import
+  namespace: orch-platform
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "1"
+    helm.sh/hook-delete-policy: hook-succeeded
+spec:
+  template:
+    metadata:
+      labels:
+        app: keycloak-config-import
+        sidecar.istio.io/inject: "false"
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: keycloak-config-cli
+        image: quay.io/adorsys/keycloak-config-cli:5.12.0-26.0.7
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: KEYCLOAK_URL
+          value: "http://platform-keycloak:8080"
+        - name: KEYCLOAK_USER
+          value: "admin"
+        - name: KEYCLOAK_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: platform-keycloak
+              key: admin-password
+        - name: IMPORT_MANAGED_GROUP
+          value: "no-delete"
+        - name: IMPORT_MANAGED_REQUIRED_ACTION
+          value: "no-delete"
+        - name: IMPORT_MANAGED_ROLE
+          value: "no-delete"
+        - name: IMPORT_MANAGED_CLIENT
+          value: "no-delete"
+        - name: KEYCLOAK_AVAILABILITYCHECK_ENABLED
+          value: "true"
+        - name: KEYCLOAK_AVAILABILITYCHECK_TIMEOUT
+          value: "120s"
+        volumeMounts:
+        - name: keycloak-config
+          mountPath: /opt/keycloak-config-cli/configs
+          readOnly: true
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
+          seccompProfile:
+            type: "RuntimeDefault"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      volumes:
+      - name: keycloak-config
+        configMap:
+          name: platform-keycloak-config

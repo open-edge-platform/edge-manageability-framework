@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # CodeCentric Keycloak Chart Template
-# Updated for CodeCentric keycloakx chart instead of Bitnami chart
+# This template provides cluster-specific configuration for the CodeCentric keycloakx chart
 
 ## Cluster-Specific values for realm configuration
 ## These values parameterize the realm configuration for different environments
@@ -19,21 +19,8 @@ clusterSpecific:
   telemetryClientRootUrl: "https://observability-ui.{{ .Values.argo.clusterDomain }}"
   telemetryRedirectUrls: ["https://observability-admin.{{ .Values.argo.clusterDomain }}/login/generic_oauth", "https://observability-ui.{{ .Values.argo.clusterDomain }}/login/generic_oauth"]
 
-## Database configuration for CodeCentric chart
-## CodeCentric chart uses different database configuration structure than Bitnami
-database:
-  vendor: postgres
-  existingSecret: platform-keycloak-{{.Values.argo.database.type}}-postgresql
-  # CodeCentric chart automatically maps standard PostgreSQL secret keys
-
-## Storage configuration (if local registry is used)
-{{- if index .Values.argo "platform-keycloak" "localRegistrySize"}}
-persistence:
-  storageClass: ""
-  size: {{index .Values.argo "platform-keycloak" "localRegistrySize"}}
-{{- end}}
-
-## Environment variables for CodeCentric chart (uses extraEnv instead of extraEnvVars)
+## Environment variables for CodeCentric chart
+## These replace Bitnami's extraEnvVars with CodeCentric's extraEnv format
 extraEnv: |
   # Proxy configuration
   - name: HTTPS_PROXY
@@ -43,7 +30,7 @@ extraEnv: |
   - name: NO_PROXY
     value: "{{ .Values.argo.proxy.noProxy }}"
   
-  # Database pool configuration
+  # Database pool configuration (CodeCentric chart format)
   {{ if index .Values.argo "platform-keycloak" "db" }}
   - name: KC_DB_POOL_INITIAL_SIZE
     value: {{ index .Values.argo "platform-keycloak" "db" "poolInitSize" | default "5" | quote}}
@@ -53,9 +40,32 @@ extraEnv: |
     value: {{ index .Values.argo "platform-keycloak" "db" "poolMaxSize" | default "100" | quote}}
   {{ end }}
   
-  # Proxy headers configuration
+  # Proxy headers for CodeCentric chart
   - name: KC_PROXY_HEADERS
     value: "xforwarded"
+
+## Database configuration for CodeCentric chart
+## CodeCentric chart uses different database configuration structure
+database:
+  vendor: postgres
+  existingSecret: platform-keycloak-{{.Values.argo.database.type}}-postgresql
+  # CodeCentric chart automatically maps secret keys
+
+## External database secret configuration
+## This maintains compatibility with existing secret structure
+dbSecretKeys:
+  host: PGHOST
+  port: PGPORT
+  user: PGUSER
+  database: PGDATABASE
+  password: PGPASSWORD
+
+## Storage configuration (if local registry is used)
+{{- if index .Values.argo "platform-keycloak" "localRegistrySize"}}
+persistence:
+  storageClass: ""
+  size: {{index .Values.argo "platform-keycloak" "localRegistrySize"}}
+{{- end}}
 
 ## Resource configuration
 {{- with .Values.argo.resources.platformKeycloak }}
