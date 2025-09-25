@@ -3,7 +3,15 @@
 # SPDX-License-Identifier: Apache-2.0
 
 webhooksCleanup:
-  image: alpine/kubectl:1.34.1
+  image:
+    registry: docker.io
+    repository: alpine/kubectl
+    tag: 1.34.1
+policyReportCleanup:
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/kubectl
+    tag: 1.28.4
 
 cleanupJobs:
   admissionReports:
@@ -22,6 +30,11 @@ cleanupJobs:
       repository: alpine/kubectl
       tag: 1.34.1
   ephemeralReports:
+    image:
+      registry: docker.io
+      repository: alpine/kubectl
+      tag: 1.34.1
+  updateRequests:
     image:
       registry: docker.io
       repository: alpine/kubectl
