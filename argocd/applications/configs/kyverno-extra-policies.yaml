@@ -2,6 +2,40 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+blockBitnamiImages:
+  FailureAction: "Enforce"
+  rules:
+    - name: block_bitnami_images
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+                - Deployment
+                - StatefulSet
+                - DaemonSet
+                - Job
+                - CronJob
+      validate:
+        message: "Bitnami images (bitnami/*) are not allowed."
+        deny:
+          conditions:
+            any:
+              # For Pod resources
+              - key: "{{ request.object.kind == 'Pod' && request.object.spec.containers[?contains(image, 'bitnami/')] | length(@) }}"
+                operator: GreaterThan
+                value: 0
+              - key: "{{ request.object.kind == 'Pod' && request.object.spec.initContainers[?contains(image, 'bitnami/')] | length(@) }}"
+                operator: GreaterThan
+                value: 0
+              # For other workload resources (Deployment, StatefulSet, etc.)
+              - key: "{{ request.object.kind != 'Pod' && request.object.spec.template.spec.containers[?contains(image, 'bitnami/')] | length(@) }}"
+                operator: GreaterThan
+                value: 0
+              - key: "{{ request.object.kind != 'Pod' && request.object.spec.template.spec.initContainers[?contains(image, 'bitnami/')] | length(@) }}"
+                operator: GreaterThan
+                value: 0
+
 require_ro_rootfs:
   FailureAction: "Audit"
   exclude:
@@ -42,3 +76,7 @@ restrictedPolicyOrch:
   - namespace: "capi-operator-system"
     names:
       - "capi-operator-cluster-api-operator*"
+      imagePolicy:
+        deny:
+          repositories:
+            - "bitnami/*"
