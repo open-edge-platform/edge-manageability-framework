@@ -204,9 +204,6 @@ jobs:
       - name: Setup asdf and install dependencies
         uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
 
-      - name: Install yamllint properly
-        run: pip install yamllint
-
       - name: Run lint
         run: mage lint:yaml
 
