@@ -2,14 +2,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-## Cluster-Specific values
-## These values are not part of bitnami helm chart and are used to parameterize substrings in
-## the larger keycloakConfigCli.configuration.realm-master.json value.
-## @param clusterSpecific.webuiClientRootUrl The Keycloak Master realm UI Client's rootUrl value as a quoted JSON string
-## @param clusterSpecific.webuiRedirectUrls The Keycloak Master realm UI Client's reirectUrl values as a JSON array of quoted JSON strings
-## @param clusterSpecific.registryClientRootUrl The Keycloak Master realm Harbor Client's rootUrl value as a quoted JSON string
-## @param clusterSpecific.telemetryClientRootUrl The Keycloak Master realm Grafana Client's rootUrl value as a quoted JSON string
-## @param clusterSpecific.telemetryRedirectUrls The Keycloak Master realm Grafana Client's reirectUrl values as a JSON array of quoted JSON strings
+# CodeCentric Keycloak Chart Template
+# Updated for CodeCentric keycloakx chart instead of Bitnami chart
+
+## Cluster-Specific values for realm configuration
+## These values parameterize the realm configuration for different environments
+## @param clusterSpecific.webuiClientRootUrl The Keycloak Master realm UI Client's rootUrl value
+## @param clusterSpecific.webuiRedirectUrls The Keycloak Master realm UI Client's redirectUrl values
+## @param clusterSpecific.registryClientRootUrl The Keycloak Master realm Harbor Client's rootUrl value
+## @param clusterSpecific.telemetryClientRootUrl The Keycloak Master realm Grafana Client's rootUrl value
+## @param clusterSpecific.telemetryRedirectUrls The Keycloak Master realm Grafana Client's redirectUrl values
 clusterSpecific:
   webuiClientRootUrl: "https://web-ui.{{ .Values.argo.clusterDomain }}"
   webuiRedirectUrls: ["https://web-ui.{{ .Values.argo.clusterDomain }}", "https://app-service-proxy.{{ .Values.argo.clusterDomain }}/app-service-proxy-index.html*", "https://vnc.{{ .Values.argo.clusterDomain }}/*", "https://{{ .Values.argo.clusterDomain }}"{{- if index .Values.argo "platform-keycloak" "extraUiRedirects" -}}, {{- index .Values.argo "platform-keycloak" "extraUiRedirects" -}}{{- end -}}]
@@ -17,37 +19,31 @@ clusterSpecific:
   telemetryClientRootUrl: "https://observability-ui.{{ .Values.argo.clusterDomain }}"
   telemetryRedirectUrls: ["https://observability-admin.{{ .Values.argo.clusterDomain }}/login/generic_oauth", "https://observability-ui.{{ .Values.argo.clusterDomain }}/login/generic_oauth"]
 
-## External PostgreSQL configuration
-## All of these values are only used when postgresql.enabled is set to false
-## @param externalDatabase.existingSecret Name of an existing secret resource containing the database credentials
-## @param externalDatabase.existingSecretHostKey Name of an existing secret key containing the database host name
-## @param externalDatabase.existingSecretPortKey Name of an existing secret key containing the database port
-## @param externalDatabase.existingSecretUserKey Name of an existing secret key containing the database user
-## @param externalDatabase.existingSecretDatabaseKey Name of an existing secret key containing the database name
-## @param externalDatabase.existingSecretPasswordKey Name of an existing secret key containing the database credentials
-externalDatabase:
+## Database configuration for CodeCentric chart
+## CodeCentric chart uses different database configuration structure than Bitnami
+database:
+  vendor: postgres
   existingSecret: platform-keycloak-{{.Values.argo.database.type}}-postgresql
-  existingSecretHostKey: PGHOST
-  existingSecretPortKey: PGPORT
-  existingSecretUserKey: PGUSER
-  existingSecretDatabaseKey: PGDATABASE
-  existingSecretPasswordKey: PGPASSWORD
+  # CodeCentric chart automatically maps standard PostgreSQL secret keys
 
-# Use index to handle values with hyphen
+## Storage configuration (if local registry is used)
 {{- if index .Values.argo "platform-keycloak" "localRegistrySize"}}
 persistence:
-  persistentVolumeClaim:
-    registry:
-      size: {{index .Values.argo "platform-keycloak" "localRegistrySize"}}
+  storageClass: ""
+  size: {{index .Values.argo "platform-keycloak" "localRegistrySize"}}
 {{- end}}
 
-extraEnvVars:
+## Environment variables for CodeCentric chart (uses extraEnv instead of extraEnvVars)
+extraEnv: |
+  # Proxy configuration
   - name: HTTPS_PROXY
-    value: {{.Values.argo.proxy.httpsProxy}}
+    value: "{{ .Values.argo.proxy.httpsProxy }}"
   - name: HTTP_PROXY
-    value: {{.Values.argo.proxy.httpProxy}}
+    value: "{{ .Values.argo.proxy.httpProxy }}"
   - name: NO_PROXY
-    value: {{.Values.argo.proxy.noProxy}}
+    value: "{{ .Values.argo.proxy.noProxy }}"
+  
+  # Database pool configuration
   {{ if index .Values.argo "platform-keycloak" "db" }}
   - name: KC_DB_POOL_INITIAL_SIZE
     value: {{ index .Values.argo "platform-keycloak" "db" "poolInitSize" | default "5" | quote}}
@@ -56,10 +52,58 @@ extraEnvVars:
   - name: KC_DB_POOL_MAX_SIZE
     value: {{ index .Values.argo "platform-keycloak" "db" "poolMaxSize" | default "100" | quote}}
   {{ end }}
+  
+  # Proxy headers configuration
   - name: KC_PROXY_HEADERS
     value: "xforwarded"
 
+## Resource configuration
 {{- with .Values.argo.resources.platformKeycloak }}
 resources:
   {{- toYaml . | nindent 2}}
 {{- end }}
+
+## Service configuration for compatibility
+service:
+  type: ClusterIP
+  httpPort: 8080
+
+## Network policy (typically disabled for simplicity)
+networkPolicy:
+  enabled: false
+
+## Pod labels to avoid sidecar injection
+podLabels:
+  sidecar.istio.io/inject: "false"
+
+## Additional volumes for realm configuration
+extraVolumes: |
+  - name: keycloak-config
+    configMap:
+      name: platform-keycloak-config
+
+## Health probes configuration
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 60
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:  
+  httpGet:
+    path: /realms/master
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+## Enable metrics and health endpoints
+metrics:
+  enabled: true
+
+health:
+  enabled: true
