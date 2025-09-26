@@ -76,7 +76,3 @@ restrictedPolicyOrch:
   - namespace: "capi-operator-system"
     names:
       - "capi-operator-cluster-api-operator*"
-      imagePolicy:
-        deny:
-          repositories:
-            - "bitnami/*"
