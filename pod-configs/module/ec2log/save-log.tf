@@ -225,6 +225,7 @@ resource "aws_iam_role" "lambda" {
     ]
   })
 
+  permissions_boundary = var.permissions_boundary != "" ? var.permissions_boundary : null
   tags = {
     tag-key = "orch-ec2log-lambda-${var.cluster_name}"
   }
