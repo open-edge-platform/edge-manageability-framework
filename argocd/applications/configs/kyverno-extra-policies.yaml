@@ -2,7 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-blockBitnamiImages:
+# Kyverno policies to block use of Bitnami images.
+block_bitnami_images:
   FailureAction: "Enforce"
   rules:
     - name: block_bitnami_images
