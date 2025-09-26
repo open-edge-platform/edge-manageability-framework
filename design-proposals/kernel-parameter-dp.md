@@ -56,6 +56,18 @@ autonumber
 ```
 
 ### Proposed changes
-EIM
-PUA
-Orch-CLI
+
+#### EMT image
+An updated EMT image will be provided to support kernel parameter updates.
+This functionality is currently not allowed.
+
+#### EIM and Maintenance Manager 
+The validation logic that blocks kernel parameter updates for immutable operating systems will be removed.This change enables kernel parameter modifications on all supported OS types, ensuring consistent manageability.
+
+#### Platform Update Agent (PUA)
+The Platform Update Agent (PUA) will be updated to manage kernel parameter modifications on immutable operating systems. The current implementation, which disallows these changes, will be refactored to provide a unified update mechanism for both mutable and immutable operating systems. This ensures a consistent application of kernel parameters across all supported OS types.
+
+#### Orch-CLI
+- Update Orch-cli to pass kernel parameter as part of OSProfileUpdate.
+- Schedule the Edgenode in maintainance mode so that Kernel Paramter changes can be applied. 
+
