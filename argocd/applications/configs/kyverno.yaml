@@ -105,28 +105,19 @@ customPolicies:
           - DaemonSet
           - Job
           - CronJob
-      exclude:
-        any:
-        - resources:
-          namespaces:
-          - "kube-system"
-          - "kyverno"
-          - "argocd"
       validate:
-        message: "Bitnami images are not allowed by security policy"
-        deny:
-        conditions:
-          any:
-          - key: "{{ request.object.spec.containers[?contains(image, 'bitnami/')] | length(@) }}"
-          operator: GreaterThan
-          value: 0
-          - key: "{{ request.object.spec.template.spec.containers[?contains(image, 'bitnami/')] | length(@) }}"
-          operator: GreaterThan
-          value: 0
-          - key: "{{ request.object.spec.initContainers[?contains(image, 'bitnami/')] | length(@) }}"
-          operator: GreaterThan
-          value: 0
-          - key: "{{ request.object.spec.template.spec.initContainers[?contains(image, 'bitnami/')] | length(@) }}"
-          operator: GreaterThan
-          value: 0
+        message: "Test"
+        foreach:
+        - list: "request.object.spec.containers"
+          pattern:
+            image: "!bitnami/*"
+        - list: "request.object.spec.template.spec.containers"
+          pattern:
+            image: "!bitnami/*"    
+        - list: "request.object.spec.initContainers"
+          pattern:
+            image: "!bitnami/*"
+        - list: "request.object.spec.ephemeralContainers"
+          pattern:
+            image: "!bitnami/*"
           
