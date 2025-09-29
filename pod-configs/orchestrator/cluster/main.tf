@@ -50,6 +50,7 @@ module "eks" {
   https_proxy                 = var.eks_https_proxy
   no_proxy                    = var.eks_no_proxy
   eks_cluster_dns_ip          = var.eks_cluster_dns_ip
+  permissions_boundary        = var.permissions_boundary
 }
 
 resource "time_sleep" "wait_eks" {
@@ -149,10 +150,12 @@ module "aurora_import" {
 
 module "kms" {
   # kms module creates K8s secrets, which depends on the namespaces created in orch_init
-  depends_on         = [module.orch_init]
+  depends_on         = [module.orch_init, time_sleep.wait_eks]
   source             = "../../module/kms"
   cluster_name       = var.eks_cluster_name
   aws_account_number = var.aws_account_number
+  permissions_boundary = var.permissions_boundary
+  region             = var.aws_region
 }
 
 module "orch_init" {
