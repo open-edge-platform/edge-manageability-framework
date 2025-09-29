@@ -69,9 +69,30 @@ restart_and_wait_pod "orch-app" "app-orch-tenant-controller"
 #delete old cluster template
 delete_old_template
 
+
 # Get the namespace where root-app is running
 onprem_namespace=$(kubectl get applications.argoproj.io -A | grep root-app | awk '{print $1}')
-
 # Apply patches using the detected namespace
-kubectl patch application sre-exporter -n "${onprem_namespace}" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
-kubectl patch application root-app -n "${onprem_namespace}" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+
+    for i in $(seq 1 40); do
+        if kubectl get application root-app -n "${onprem_namespace}" -o jsonpath='{.status.sync.status}' | grep -q "Synced" && \
+           kubectl get application root-app -n "${onprem_namespace}" -o jsonpath='{.status.health.status}' | grep -q "Healthy"; then
+            echo " Root app is ready, patching applications..."
+	    kubectl patch application sre-exporter -n "${onprem_namespace}" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+	    kubectl patch application tenancy-api-mapping -n "${onprem_namespace}" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+            kubectl patch application tenancy-datamodel -n "${onprem_namespace}" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+            break
+        fi
+
+	if [ $i -eq 40 ]; then
+	    kubectl patch application sre-exporter -n "${onprem_namespace}" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+            kubectl patch application tenancy-api-mapping -n "${onprem_namespace}" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+            kubectl patch application tenancy-datamodel -n "${onprem_namespace}" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+	fi
+
+        if [ $i -lt 40 ]; then
+            echo "❌ root-app not ready. Waiting 5s..."
+            sleep 5
+        fi
+    done
+
