@@ -19,12 +19,8 @@ clusterSpecific:
   telemetryClientRootUrl: "https://observability-ui.{{ .Values.argo.clusterDomain }}"
   telemetryRedirectUrls: ["https://observability-admin.{{ .Values.argo.clusterDomain }}/login/generic_oauth", "https://observability-ui.{{ .Values.argo.clusterDomain }}/login/generic_oauth"]
 
-## Database configuration for CodeCentric chart
-## CodeCentric chart uses different database configuration structure than Bitnami
-database:
-  vendor: postgres
-  existingSecret: platform-keycloak-{{.Values.argo.database.type}}-postgresql
-  # CodeCentric chart automatically maps standard PostgreSQL secret keys
+## Database configuration is defined in the base config file (platform-keycloak.yaml)
+## This template only provides cluster-specific overrides
 
 ## Storage configuration (if local registry is used)
 {{- if index .Values.argo "platform-keycloak" "localRegistrySize"}}
@@ -33,29 +29,8 @@ persistence:
   size: {{index .Values.argo "platform-keycloak" "localRegistrySize"}}
 {{- end}}
 
-## Environment variables for CodeCentric chart (uses extraEnv instead of extraEnvVars)
-extraEnv: |
-  # Proxy configuration
-  - name: HTTPS_PROXY
-    value: "{{ .Values.argo.proxy.httpsProxy }}"
-  - name: HTTP_PROXY
-    value: "{{ .Values.argo.proxy.httpProxy }}"
-  - name: NO_PROXY
-    value: "{{ .Values.argo.proxy.noProxy }}"
-  
-  # Database pool configuration
-  {{ if index .Values.argo "platform-keycloak" "db" }}
-  - name: KC_DB_POOL_INITIAL_SIZE
-    value: {{ index .Values.argo "platform-keycloak" "db" "poolInitSize" | default "5" | quote}}
-  - name: KC_DB_POOL_MIN_SIZE
-    value: {{ index .Values.argo "platform-keycloak" "db" "poolMinSize" | default "5" | quote}}
-  - name: KC_DB_POOL_MAX_SIZE
-    value: {{ index .Values.argo "platform-keycloak" "db" "poolMaxSize" | default "100" | quote}}
-  {{ end }}
-  
-  # Proxy headers configuration
-  - name: KC_PROXY_HEADERS
-    value: "xforwarded"
+## Environment variables are defined in the base config file (platform-keycloak.yaml)
+## This template only provides cluster-specific overrides
 
 ## Resource configuration
 {{- with .Values.argo.resources.platformKeycloak }}
@@ -83,7 +58,7 @@ extraVolumes: |
       name: platform-keycloak-config
 
 ## Health probes configuration
-livenessProbe:
+livenessProbe: |
   httpGet:
     path: /
     port: http
@@ -92,7 +67,7 @@ livenessProbe:
   timeoutSeconds: 5
   failureThreshold: 3
 
-readinessProbe:  
+readinessProbe: |
   httpGet:
     path: /realms/master
     port: http

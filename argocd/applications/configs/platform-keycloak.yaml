@@ -56,7 +56,6 @@ command:
 
 args:
   - "start"
-  - "--optimized"
   - "--spi-login-protocol-openid-connect-legacy-logout-redirect-uri=true"
   - "--spi-brute-force-protector-default-brute-force-detector-allow-concurrent-requests=true"
 
@@ -84,41 +83,30 @@ extraEnv: |
     value: "true"
   - name: KC_METRICS_ENABLED
     value: "true"
-  # Database configuration
-  - name: KC_DB
-    value: "postgres"
-  - name: KC_DB_URL_HOST
-    valueFrom:
-      secretKeyRef:
-        name: platform-keycloak-local-postgresql
-        key: PGHOST
-  - name: KC_DB_URL_PORT
-    valueFrom:
-      secretKeyRef:
-        name: platform-keycloak-local-postgresql
-        key: PGPORT
-  - name: KC_DB_URL_DATABASE
-    valueFrom:
-      secretKeyRef:
-        name: platform-keycloak-local-postgresql
-        key: PGDATABASE
+  # Database username from secret (password is handled by database: section)
   - name: KC_DB_USERNAME
     valueFrom:
       secretKeyRef:
         name: platform-keycloak-local-postgresql
         key: PGUSER
-  - name: KC_DB_PASSWORD
-    valueFrom:
-      secretKeyRef:
-        name: platform-keycloak-local-postgresql
-        key: PGPASSWORD
+  # Proxy configuration
+  - name: HTTPS_PROXY
+    value: "http://proxy-dmz.intel.com:912"
+  - name: HTTP_PROXY
+    value: "http://proxy-dmz.intel.com:912"
+  - name: NO_PROXY
+    value: "localhost,svc,cluster.local,default,internal,caas.intel.com,certificates.intel.com,localhost,127.0.0.0/8,10.0.0.0/8,192.168.0.0/16,172.16.0.0/12,169.254.169.254,orch-platform,orch-app,orch-cluster,orch-infra,orch-database,cattle-system,orch-secret,s3.amazonaws.com,s3.us-west-2.amazonaws.com,ec2.us-west-2.amazonaws.com,eks.amazonaws.com,elb.us-west-2.amazonaws.com,dkr.ecr.us-west-2.amazonaws.com,espd.infra-host.com,pid.infra-host.com,espdqa.infra-host.com,argocd-repo-server"
 
 #################################
 # DATABASE CONFIGURATION
 #################################
 database:
   vendor: postgres
+  hostname: postgresql.orch-database.svc.cluster.local
+  port: 5432
+  database: keycloak
   existingSecret: platform-keycloak-local-postgresql
+  existingSecretKey: PGPASSWORD
 
 dbchecker:
   enabled: true
@@ -127,21 +115,23 @@ dbchecker:
 # HEALTH & MONITORING
 #################################
 livenessProbe:
-  httpGet:
-    path: /
-    port: http
-  initialDelaySeconds: 60
-  periodSeconds: 30
-  timeoutSeconds: 5
-  failureThreshold: 3
+  |
+    httpGet:
+      path: /
+      port: http
+    initialDelaySeconds: 60
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
 readinessProbe:
-  httpGet:
-    path: /realms/master
-    port: http
-  initialDelaySeconds: 30
-  periodSeconds: 10
-  timeoutSeconds: 5
-  failureThreshold: 3
+  |
+    httpGet:
+      path: /realms/master
+      port: http
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
 
 metrics:
   enabled: true
