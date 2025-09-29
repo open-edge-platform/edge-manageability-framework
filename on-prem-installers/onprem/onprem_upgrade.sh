@@ -639,7 +639,7 @@ patch_secret() {
             break
         fi
 
-        if [ $i -lt 40 ]; then
+        if [ "$i" -lt 40 ]; then
             echo "❌ Secret not found. Waiting 5s..."
             sleep 5
         fi
