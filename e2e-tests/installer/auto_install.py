@@ -567,6 +567,7 @@ class AutoInstall:
         # in provision config editor
         self.installer_session.sendline(":wq")
 
+        print("[debug] here 1")
         # Confirm config save if prompted
         match_id = self.installer_session.expect(
             [
@@ -574,10 +575,12 @@ class AutoInstall:
                 "Info: Values are saved. Execute the config command to update them if it is needed.",
             ]
         )
+        print("[debug] here 2")
         if match_id == 0:
             print("  - confirm config save")
             self.installer_session.sendline("yes")
 
+        print("[debug] here 3")
         self.installer_session.expect("orchestrator-admin:pod-configs", timeout=60)
 
     def provision_upgrade(self):
