@@ -1118,17 +1118,25 @@ class AutoInstall:
 
         try:
             option = 1
+            print("[debug] before start_installer")
             self.start_installer(installer_option=option)
+            print("[debug] before start_time_cryer")
             self.start_time_cryer()
+            print("[debug] before init_account")
             self.init_account()
+            print("[debug] before configure_provision")
             self.configure_provision()
             # This must be set prior to the provision.sh call as both successful and partial failed
             # provision attempts need to be cleaned up on overall AutoInstall failure. This has to be
             # set by run_install() as an upgrade provision must not be deprovisioned on failure.
             self.deprovision_on_cleanup = False
+            print("[debug] before provision")
             self.provision()
+            print("[debug] before configure_cluster")
             self.configure_cluster()
+            print("[debug] before makefile_install")
             self.makefile_install()
+            print("[debug] before exit_install_container")
             self.exit_install_container()
 
             self.result = 0
