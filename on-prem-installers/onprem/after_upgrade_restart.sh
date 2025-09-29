@@ -78,19 +78,19 @@ onprem_namespace=$(kubectl get applications.argoproj.io -A | grep root-app | awk
         if kubectl get application root-app -n "${onprem_namespace}" -o jsonpath='{.status.sync.status}' | grep -q "Synced" && \
            kubectl get application root-app -n "${onprem_namespace}" -o jsonpath='{.status.health.status}' | grep -q "Healthy"; then
             echo " Root app is ready, patching applications..."
-	    kubectl patch application sre-exporter -n "${onprem_namespace}" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
-	    kubectl patch application tenancy-api-mapping -n "${onprem_namespace}" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+	        kubectl patch application sre-exporter -n "${onprem_namespace}" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+	        kubectl patch application tenancy-api-mapping -n "${onprem_namespace}" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
             kubectl patch application tenancy-datamodel -n "${onprem_namespace}" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
             break
         fi
 
-	if [ $i -eq 40 ]; then
-	    kubectl patch application sre-exporter -n "${onprem_namespace}" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+	    if [ "$i" -eq 40 ]; then
+	        kubectl patch application sre-exporter -n "${onprem_namespace}" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
             kubectl patch application tenancy-api-mapping -n "${onprem_namespace}" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
             kubectl patch application tenancy-datamodel -n "${onprem_namespace}" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
-	fi
+	    fi
 
-        if [ $i -lt 40 ]; then
+        if [ "$i" -lt 40 ]; then
             echo "❌ root-app not ready. Waiting 5s..."
             sleep 5
         fi
