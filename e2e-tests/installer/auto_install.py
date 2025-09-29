@@ -565,9 +565,10 @@ class AutoInstall:
         # download may take a minute or so before the editor starts up.
         time.sleep(120)
         # in provision config editor
-        self.installer_session.sendline(":wq")
 
         print("[debug] here 1")
+        self.installer_session.sendline(":wq")
+
         # Confirm config save if prompted
         match_id = self.installer_session.expect(
             [
