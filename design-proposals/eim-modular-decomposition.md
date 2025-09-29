@@ -136,6 +136,31 @@ These solutions demonstrate that modular edge management platforms rely on clear
 * End-to-end multi-tenant solution covering Day 0 (onboarding and provisioning), Day 1 (configuration and operations), and Day 2 (lifecycle management) that can deploy on-premises or in the cloud.
 * Use EIM as a validation bridge for customer orchestration layers against new Intel CPU and GPU platforms prior to production rollout.
 
+### Current Complexity
+
+EIM’s core workflows share a tightly coupled dependency graph. Day-2 upgrade flows, for example, require the JWT credentials minted by the Onboarding Manager during Day-0 operations. Resource Managers, inventory reconciliation, and observability exporters assume the presence of shared infrastructure (PostgreSQL schemas, Keycloak realms, Foundation Platform Service) delivered by the monolithic chart. This coupling makes it difficult for customers to consume only a subset—such as Day-2 upgrades—without deploying onboarding or adding bespoke credential bootstrapping.
+
+### Modular Evolution Tracks
+
+To unlock incremental modularity without disrupting existing customers, we propose three progressive maturity levels:
+
+1. **Bulky Track (Status Quo + Use Case Enablement)**
+   * Continue leveraging the existing Argo CD Application-of-Applications pattern and our inventory plus Foundation Platform Service (FPS) stack.
+   * Package “use-case specific” overlays that expose Day-0 onboarding, Day-1 configuration, and Day-2 upgrade workflows via API, CLI, resource manager, and (where applicable) edge node agent bundles.
+   * Provide prescriptive automation (Helm values, scripts) that stitches together required modules while documenting cross-service credential dependencies (for example, onboarding-issued tokens for upgrade services).
+
+2. **Medium Track (Bring-Your-Own Infrastructure)**
+   * Introduce configuration surfaces that allow customers to plug in third-party identity and secrets backends such as Keycloak, Vault, or managed databases—mirroring the flexibility currently offered by the Device Management Toolkit (DMT).
+   * Refactor services to tolerate absent EMF-managed infrastructure by supporting pluggable credential providers, externalized storage endpoints, and configurable messaging backbones.
+   * Deliver migration helpers that map existing Helm values to third-party equivalents, enabling gradual adoption without rewriting downstream integrations.
+
+3. **Lightweight Track (Reimagined Data Model + Kubernetes-Native Controllers)**
+   * Evolve the inventory schema and contract so that Resource Managers can persist state through an abstraction layer capable of targeting multiple database providers or CRD-backed stores.
+   * Recast managers as Kubernetes Operators/CRDs, enabling declarative reconciliation, native lifecycle hooks, and alignment with platform SRE practices.
+   * Provide adapters for database and identity integration so operators can authenticate using cluster or external credentials, drastically reducing prerequisites for partial deployments.
+
+Each successive track reduces infrastructure coupling, increases module portability, and lowers the barrier for consuming targeted workflows.
+
 ## Rationale
 
 ### Alternative 1 – Maintain monolithic chart
