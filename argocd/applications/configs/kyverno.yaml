@@ -86,3 +86,38 @@ crds:
     # -- Enable CRDs migration using helm post upgrade hook
     # disabling CRD migration as a workaround to https://github.com/kyverno/kyverno/issues/10283
     enabled: false
+
+customPolicies:
+  block-bitnami-images:
+    enabled: true
+    spec:
+      validationFailureAction: enforce
+      background: true
+      rules:
+      - name: block-bitnami-images
+      match:
+        any:
+        - resources:
+          kinds:
+          - Pod
+          - Deployment
+          - StatefulSet
+          - DaemonSet
+          - Job
+          - CronJob
+      validate:
+        message: "Test"
+        foreach:
+        - list: "request.object.spec.containers"
+          pattern:
+            image: "!bitnami/*"
+        - list: "request.object.spec.template.spec.containers"
+          pattern:
+            image: "!bitnami/*"    
+        - list: "request.object.spec.initContainers"
+          pattern:
+            image: "!bitnami/*"
+        - list: "request.object.spec.ephemeralContainers"
+          pattern:
+            image: "!bitnami/*"
+          
