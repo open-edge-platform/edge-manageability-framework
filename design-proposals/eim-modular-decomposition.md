@@ -1,12 +1,24 @@
 # Design Proposal: Edge Infrastructure Manager Modular Decomposition
 
-Author(s): 
+Author(s): Edge Manageability Architecture Team
 
 Last updated: 2025-09-29
 
 ## Abstract
 
 Edge Infrastructure Manager (EIM) today ships as an integrated collection of services that are deployed together by Argo CD. Customers have asked for the ability to consume only the subsets of functionality they need—such as device onboarding or out-of-band device management—without inheriting the full solution footprint. This proposal defines how to decompose EIM into modular building blocks with clear consumables (Helm charts, container images, APIs, scripts) while still enabling a full-stack deployment for customers that want the entire framework.
+
+## Background and Context
+
+Edge Manageability Framework (EMF) spans seven domains that are orchestrated through Argo CD and Helm charts: Edge Infrastructure Manager, Edge Cluster Orchestration, Edge Application Orchestration, UI, CLI, Observability, and Platform Services. Each domain is composed of microservices that are deployed via a GitOps flow rooted in this repository. Within that ecosystem, EIM focuses on policy-driven lifecycle management of distributed edge fleets and collaborates with adjacent domains for shared services such as identity, telemetry, and higher-layer orchestration.
+
+Key API specifications are published in the `orch-utils` repository:
+
+* EIM northbound APIs: <https://github.com/open-edge-platform/orch-utils/blob/main/tenancy-api-mapping/openapispecs/generated/amc-infra-core-edge-infrastructure-manager-openapi-all.yaml>
+* Edge Cluster Orchestration APIs: <https://github.com/open-edge-platform/orch-utils/blob/main/tenancy-api-mapping/openapispecs/generated/amc-cluster-manager-openapi.yaml>
+* Edge Application Orchestration APIs: <https://github.com/open-edge-platform/orch-utils/blob/main/tenancy-api-mapping/openapispecs/generated/amc-app-orch-deployment-app-deployment-manager-openapi.yaml>
+
+The EIM software supply chain spans multiple repositories—`infra-core`, `infra-managers`, `infra-onboarding`, `infra-external`, and `infra-charts`—that jointly deliver the APIs, resource managers, onboarding flows, and Helm packaging required to operate the framework.
 
 ## Proposal
 
@@ -102,17 +114,70 @@ These solutions demonstrate that modular edge management platforms rely on clear
 * **Out-of-band Device Management** – Deploy `eim-device-management-toolkit` plus `eim-core` (for tenant APIs) and the relevant resource manager connectors.
 * **Custom bundle** – Compose desired module charts in a customer-owned GitOps repo, leveraging documented dependencies and values.
 
+### Consumer Personas and Reference Workflows
+
+#### Independent Software Vendor / OS Vendor
+
+* Fully automated, dynamic out-of-band device management using Intel® vPro™ AMT and ISM to manage fleets of edge devices.
+* Edge node hardware and software observability surfacing Intel silicon metrics for higher-level management stacks.
+* Secure device onboarding and OS provisioning with reusable scripts and Helm values.
+* Day-two device lifecycle management covering immutable OS updates, firmware updates, and CVE remediation.
+* Day-one CPU, GPU, and NPU configuration workflows that expose resource partitioning APIs to upper-layer applications.
+* Device configuration and northbound APIs that integrate with trusted compute, cluster orchestration, and customer control planes.
+
+#### Original Equipment Manufacturer
+
+* Fully automated device onboarding, OS provisioning, Kubernetes deployment, and add-on installation at fleet scale in factories or warehouses, with hooks for QA validation.
+* Automated device upgrades (OS and firmware) for field deployments with staged rollouts and rollback controls.
+* Automated device activation and out-of-band management using Intel® vPro™ AMT and ISM across large fleets.
+
+#### End Customer / Systems Integrator
+
+* End-to-end multi-tenant solution covering Day 0 (onboarding and provisioning), Day 1 (configuration and operations), and Day 2 (lifecycle management) that can deploy on-premises or in the cloud.
+* Use EIM as a validation bridge for customer orchestration layers against new Intel CPU and GPU platforms prior to production rollout.
+
 ## Rationale
 
 ### Alternative 1 – Maintain monolithic chart
 
-* **Pros**: Minimal change, easy to manage version matrix.
-* **Cons**: Customers cannot consume subsets; upgrades require synchronized releases; difficult to scale contributor teams.
+This option keeps the current `infra-charts` umbrella chart intact and continues shipping all services together. EIM remains a single Argo CD Application with hard-wired dependencies.
+
+* **Pros**
+   * Minimal change to existing GitOps repositories and automation.
+   * Straightforward version matrix—one chart version maps to one platform release.
+   * Existing documentation and support processes remain unchanged.
+* **Cons**
+   * Customers who only need Device Onboarding or vPro tooling must install the entire stack (PostgreSQL, resource managers, observability exporters, etc.).
+   * Upgrades force synchronized downtime windows across all services and increase risk of regression in unrelated components.
+   * Contributor teams cannot iterate independently; even a small fix in `infra-onboarding` requires full regression testing of all modules.
+
+**Example:** An ISV seeking only the vPro Device Management Toolkit must deploy the entire suite (inventory, onboarding, resource managers, telemetry) even if those services conflict with their existing stack, leading to duplicated infrastructure and operational overhead.
 
 ### Alternative 2 – Break into separate repositories per module
 
-* **Pros**: Strong isolation, independent lifecycles.
-* **Cons**: Increased repo sprawl, duplicated CI/CD infrastructure, harder to coordinate cross-module releases.
+This approach would split each EIM capability into its own Git repository (for example, `infra-onboarding`, `infra-vpro`, `infra-resource-managers`) with discrete Helm charts, pipelines, and release schedules.
+
+* **Pros**
+   * Strong isolation between modules—teams can release without cross-repo coordination.
+   * Each repository can tailor CI pipelines, code owners, and branching models to its needs.
+   * Easier for external contributors to focus on a single capability without onboarding to the whole stack.
+* **Cons**
+   * Rapid repository proliferation increases maintenance cost (CI runners, issue tracking, security scanning).
+   * Coordinating platform-wide releases becomes harder; consumers must stitch together compatible versions manually.
+   * Shared assets (SDKs, API specs, documentation) risk divergence or duplication across repos.
+
+**Example:** Shipping `eim-onboarding` from a dedicated repo accelerates onboarding innovation, but release engineering must coordinate simultaneous tags across five repositories when producing a full-suite build—raising risk of mismatched versions in customer environments.
+
+### Alternative Comparison
+
+| Dimension | Alternative 1: Monolithic Chart | Alternative 2: Separate Repos per Module |
+|-----------|---------------------------------|-------------------------------------------|
+| Customer modular adoption | Very limited—entire suite required | High—modules can be consumed independently |
+| Release coordination | Centralized, simple | Decentralized, complex |
+| Operational overhead | Single pipeline, lower infra cost | Multiple pipelines, higher infra cost |
+| Developer autonomy | Low—shared release train | High—repo-level ownership |
+| Documentation/SDK maintenance | Unified | Risk of duplication and drift |
+| Backward compatibility guarantees | Strong but rigid | Flexible but harder to enforce |
 
 ### Chosen Approach Benefits
 
