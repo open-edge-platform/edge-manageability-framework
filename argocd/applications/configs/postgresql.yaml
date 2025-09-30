@@ -4,25 +4,22 @@
 
 namespace: orch-database
 
+global:
+  security:
+    allowInsecureImages: true
 image:
   registry: docker.io
-  repository: postgres
-  tag: 17.4
+  repository: bitnamilegacy/postgresql
+  tag: 17.4.0-debian-12-r15
   pullPolicy: IfNotPresent
 
 primary:
   containerSecurityContext:
-    runAsUser: 999
-    runAsGroup: 999
-    readOnlyRootFilesystem: false
     allowPrivilegeEscalation: false
     capabilities:
       drop: ["ALL"]
     seccompProfile:
       type: "RuntimeDefault"
-  extraEnvVars:
-    - name: PGDATA
-      value: /var/lib/postgresql/data/pgdata
 
 auth:
   existingSecret: postgresql
