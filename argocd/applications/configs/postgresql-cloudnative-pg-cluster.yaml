@@ -3,3 +3,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 namespace: orch-database
+
+type: postgresql
+mode: standalone
+
+cluster:
+  instances: 1
+
+backups:
+  enabled: false
