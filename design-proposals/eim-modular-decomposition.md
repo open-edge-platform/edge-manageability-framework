@@ -6,19 +6,60 @@ Last updated: 2025-09-29
 
 ## Abstract
 
-Edge Infrastructure Manager (EIM) today ships as an integrated collection of services that are deployed together by Argo CD. Customers have asked for the ability to consume only the subsets of functionality they need—such as device onboarding or out-of-band device management—without inheriting the full solution footprint. This proposal defines how to decompose EIM into modular building blocks with clear consumables (Helm charts, container images, APIs, scripts) while still enabling a full-stack deployment for customers that want the entire framework.
+Edge Infrastructure Manager (EIM) today ships as an integrated collection of services that are deployed together by Argo CD as part of overall EMF. To enable diverse user persona it is desirable for users having ability to consume only the subsets of functionality they need—such as device onboarding or out-of-band device management—without inheriting the full solution footprint. This proposal defines how to decompose EIM into modular building blocks with clear consumables (Helm charts, container images, APIs, scripts) while still enabling a full-stack deployment for customers that want the entire framework.
 
 ## Background and Context
 
-Edge Manageability Framework (EMF) spans seven domains that are orchestrated through Argo CD and Helm charts: Edge Infrastructure Manager, Edge Cluster Orchestration, Edge Application Orchestration, UI, CLI, Observability, and Platform Services. Each domain is composed of microservices that are deployed via a GitOps flow rooted in this repository. Within that ecosystem, EIM focuses on policy-driven lifecycle management of distributed edge fleets and collaborates with adjacent domains for shared services such as identity, telemetry, and higher-layer orchestration.
+Edge Manageability Framework (EMF) spans seven domains that are orchestrated through Argo CD and Helm charts: Edge Infrastructure Manager, Edge Cluster Orchestration, Edge Application Orchestration, UI, CLI, Observability, and Platform Services. Each domain is composed of microservices that are deployed via a GitOps flow rooted in [this repository](https://github.com/open-edge-platform/edge-manageability-framework). Within that ecosystem, EIM focuses on policy-driven lifecycle management of distributed edge fleets and collaborates with adjacent domains for shared services such as identity, telemetry, and higher-layer orchestration.
 
 Key API specifications are published in the `orch-utils` repository:
 
 * EIM northbound APIs: <https://github.com/open-edge-platform/orch-utils/blob/main/tenancy-api-mapping/openapispecs/generated/amc-infra-core-edge-infrastructure-manager-openapi-all.yaml>
-* Edge Cluster Orchestration APIs: <https://github.com/open-edge-platform/orch-utils/blob/main/tenancy-api-mapping/openapispecs/generated/amc-cluster-manager-openapi.yaml>
-* Edge Application Orchestration APIs: <https://github.com/open-edge-platform/orch-utils/blob/main/tenancy-api-mapping/openapispecs/generated/amc-app-orch-deployment-app-deployment-manager-openapi.yaml>
 
-The EIM software supply chain spans multiple repositories—`infra-core`, `infra-managers`, `infra-onboarding`, `infra-external`, and `infra-charts`—that jointly deliver the APIs, resource managers, onboarding flows, and Helm packaging required to operate the framework.
+The EIM software supply chain spans multiple repositories
+
+* [infra-core](https://github.com/open-edge-platform/infra-core): Core services for the Edge Infrastructure Manager including inventory, APIs, tenancy and more.
+* [infra-managers](https://github.com/open-edge-platform/infra-managers): Provides life-cycle management services for edge infrastructure resources via a collection of resource managers.
+* [infra-onboarding](https://github.com/open-edge-platform/infra-onboarding): A collection of services that enable remote onboarding and provisioning of Edge Nodes.
+* [infra-external](https://github.com/open-edge-platform/infra-external): Vendor extensions for the Edge Infrastructure Manager allowing integration with 3rd party software
+* [infra-charts](https://github.com/open-edge-platform/infra-charts): Helm charts for deploying Edge Infrastructure Manager services.
+
+### Objectives
+
+Typically, EIM customers fall into three personas:
+
+* Independent Software Vendors (ISVs) or OS Vendors
+* Original Equipment Manufacturers (OEMs)
+* End Customers or Systems Integrators.
+
+Each persona has distinct needs that can be better served through modular consumption of EIM capabilities.
+
+#### User stories
+
+Before diving into the proposal, here are some representative user stories that illustrate the need for modular decomposition:
+
+**Independent Software Vendor/Edge solution vendor** can leverage as a reference EIM design and implementation of the following workflows
+
+* **Out-of-band Device Management:** As an ISV or edge solution vendor, I want a End-to-end reference solution to automate out-of-band device management using Intel vPRO AMT and ISM, so that I can manage fleets of edge devices efficiently and securely.
+* **Hardware and Software Observability:** As an ISV or edge solution vendor, I want to access hardware and software observability for Intel Architecture devices, so that higher management stacks can schedule workloads and monitor fleet health using key silicon metrics.
+* **Automated Edge Device Configuration:** As an ISV or edge solution vendor, I want to automate edge device configuration, including BIOS and firmware settings, so that I can achieve zero-touch management of edge devices.
+* **Secure Device Onboarding and OS Provisioning:** As an ISV or edge solution vendor, I want to securely onboard and provision operating systems on edge devices using technologies like HTTPS boot, full-disk encryption, and secure boot, so that device deployments are protected from unauthorized access.
+* **Day-Two Device Lifecycle Management:** As an ISV or edge solution vendor, I want to manage day-two device lifecycle operations, including immutable OS updates, firmware updates, and CVE remediation, so that edge devices remain secure and up-to-date.
+* **Custom Hardware Resource Configuration:** As an ISV or edge solution vendor, I want to customize device configuration for Intel CPU, GPU, and NPU resources during day-one lifecycle management, so that applications can be allocated appropriate hardware resources.
+* **Reference API Integration:** As an ISV or edge solution vendor, I want to use reference APIs for higher-layer services such as trusted compute and cluster orchestration, so that my solutions can integrate seamlessly with existing platforms.
+* **Partner Vendor Orchestration Validation:** As an ISV or edge solution vendor, I want to validate partner vendor orchestration layers against new Intel BIOS, firmware, CPU, and GPU platforms using EIM, so that device management enablement can be shifted earlier in the development lifecycle.
+
+**Original Equipment manufacturer** can leverage as a reference EIM design and implementation of the following workflows
+
+* **Automated Edge Device Commissioning:** As an OEM, I want to orchestrate device onboarding, OS provisioning, Kubernetes and application deployment across warehouse fleets with optional QA validation, so that production readiness stays consistent at scale.
+* **Fleet-wide Firmware and OS Upgrades:** As an OEM, I want to run automated OS and firmware upgrades across field fleets, so that devices remain current without manual intervention.
+* **Out-of-band Activation and Control:** As an OEM, I want to automate device activation and manage fleets using Intel vPro AMT and ISM, so that field operations stay secure and responsive.
+
+**End customer or Systems integrator** can leverage the complete EIM stack as a reference achieve following workflows
+
+* **Multi-tenant Day-0 Onboarding and Provisioning:** As an end customer or systems integrator, I want to onboard devices and provision operating systems across tenants on-premises or in the cloud so that deployments remain consistent from the start.
+* **Multi-tenant Day-1 Configuration and Operations:** As an end customer or systems integrator, I want to configure and operate edge devices per tenant across on-prem and cloud environments so that ongoing management stays streamlined and isolated.
+* **Multi-tenant Day-2 Lifecycle Management:** As an end customer or systems integrator, I want to manage device updates and lifecycle tasks for each tenant wherever the solution is deployed so that fleets remain secure and compliant.
 
 ## Proposal
 
@@ -168,13 +209,13 @@ Each successive track reduces infrastructure coupling, increases module portabil
 This option keeps the current `infra-charts` umbrella chart intact and continues shipping all services together. EIM remains a single Argo CD Application with hard-wired dependencies.
 
 * **Pros**
-   * Minimal change to existing GitOps repositories and automation.
-   * Straightforward version matrix—one chart version maps to one platform release.
-   * Existing documentation and support processes remain unchanged.
+  * Minimal change to existing GitOps repositories and automation.
+  * Straightforward version matrix—one chart version maps to one platform release.
+  * Existing documentation and support processes remain unchanged.
 * **Cons**
-   * Customers who only need Device Onboarding or vPro tooling must install the entire stack (PostgreSQL, resource managers, observability exporters, etc.).
-   * Upgrades force synchronized downtime windows across all services and increase risk of regression in unrelated components.
-   * Contributor teams cannot iterate independently; even a small fix in `infra-onboarding` requires full regression testing of all modules.
+  * Customers who only need Device Onboarding or vPro tooling must install the entire stack (PostgreSQL, resource managers, observability exporters, etc.).
+  * Upgrades force synchronized downtime windows across all services and increase risk of regression in unrelated components.
+  * Contributor teams cannot iterate independently; even a small fix in `infra-onboarding` requires full regression testing of all modules.
 
 **Example:** An ISV seeking only the vPro Device Management Toolkit must deploy the entire suite (inventory, onboarding, resource managers, telemetry) even if those services conflict with their existing stack, leading to duplicated infrastructure and operational overhead.
 
@@ -183,13 +224,13 @@ This option keeps the current `infra-charts` umbrella chart intact and continues
 This approach would split each EIM capability into its own Git repository (for example, `infra-onboarding`, `infra-vpro`, `infra-resource-managers`) with discrete Helm charts, pipelines, and release schedules.
 
 * **Pros**
-   * Strong isolation between modules—teams can release without cross-repo coordination.
-   * Each repository can tailor CI pipelines, code owners, and branching models to its needs.
-   * Easier for external contributors to focus on a single capability without onboarding to the whole stack.
+  * Strong isolation between modules—teams can release without cross-repo coordination.
+  * Each repository can tailor CI pipelines, code owners, and branching models to its needs.
+  * Easier for external contributors to focus on a single capability without onboarding to the whole stack.
 * **Cons**
-   * Rapid repository proliferation increases maintenance cost (CI runners, issue tracking, security scanning).
-   * Coordinating platform-wide releases becomes harder; consumers must stitch together compatible versions manually.
-   * Shared assets (SDKs, API specs, documentation) risk divergence or duplication across repos.
+  * Rapid repository proliferation increases maintenance cost (CI runners, issue tracking, security scanning).
+  * Coordinating platform-wide releases becomes harder; consumers must stitch together compatible versions manually.
+  * Shared assets (SDKs, API specs, documentation) risk divergence or duplication across repos.
 
 **Example:** Shipping `eim-onboarding` from a dedicated repo accelerates onboarding innovation, but release engineering must coordinate simultaneous tags across five repositories when producing a full-suite build—raising risk of mismatched versions in customer environments.
 
