@@ -263,7 +263,7 @@ reducing the footprint of the platform:
 
 Only certain combinations of subsystems are supported. This document refers to these as
 _subsystem selections_ (to avoid confusion with the word "configuration" which is generally
-use to describe how the subsystems themselves are configured). 
+use to describe how the subsystems themselves are configured).
 Supported configurations begin with EIM, and then progressively add CO and then AO.
 Observability may be added to any configuration. This is the set of supported
 subsystem selections:
@@ -311,9 +311,9 @@ The various tenant-controllers will remain deployed, but will be left in an idle
 
 #### Make multitenancy fully optional
 
-*Note: This option is only for customers who wish to commit to a single-tenant / single-project installation
+_Note: This option is only for customers who wish to commit to a single-tenant / single-project installation
 of the orchestrator with no capability to create additional projects. This choice is permanent for the life
-of the orchestrator.*
+of the orchestrator._
 
 Above, we introduced a job that creates a single-tenant. In a truly single-tenant / single-project configuration, there
 is no need for the various tenant-controllers to exist. These long-running controllers would be replaced with one-time
