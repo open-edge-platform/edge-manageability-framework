@@ -61,15 +61,7 @@ Before diving into the proposal, here are some representative user stories that 
 * **Multi-tenant Day-1 Configuration and Operations:** As an end customer or systems integrator, I want to configure and operate edge devices per tenant across on-prem and cloud environments so that ongoing management stays streamlined and isolated.
 * **Multi-tenant Day-2 Lifecycle Management:** As an end customer or systems integrator, I want to manage device updates and lifecycle tasks for each tenant wherever the solution is deployed so that fleets remain secure and compliant.
 
-## Proposal
-
-### Scope
-
-* The proposal covers only the Edge Infrastructure Manager domain of the Edge Manageability Framework.
-* Edge Cluster Orchestration, Edge Application Orchestration, UI, CLI, Observability, and Platform Services are included only where they integrate with EIM modules (for example, shared identity or telemetry connectors).
-* Changes are limited to packaging, deployment flows, API surfacing, and build processes; no core business logic changes are in-scope unless explicitly required to achieve modular boundaries.
-
-### Objectives and Requirements
+#### Deliverables
 
 1. **Modular consumption** – Customers must be able to deploy the whole EIM stack or any subset of modules (for example, Device Onboarding, vPro device management) with minimal dependency drag.
 2. **Clear consumables** – Each module publishes:
@@ -80,6 +72,14 @@ Before diving into the proposal, here are some representative user stories that 
 3. **Build flexibility** – CI/CD pipelines must produce artifacts for the whole stack and for each module. Consumers can build locally or pull pre-built images.
 4. **Operational coherence** – Observability, IAM, and shared services must remain pluggable so that partial deployments still receive security and monitoring coverage.
 5. **Backward compatibility** – Existing full-stack deployment flows continue to work (Argo Application of Applications) with new composable sub-charts.
+
+## Proposal
+
+### Scope
+
+* The proposal covers only the Edge Infrastructure Manager domain of the Edge Manageability Framework.
+* Edge Cluster Orchestration, Edge Application Orchestration, UI, CLI, Observability, and Platform Services are included only where they integrate with EIM modules (for example, shared identity or telemetry connectors).
+* Changes are limited to packaging, deployment flows, API surfacing, and build processes; no core business logic changes are in-scope unless explicitly required to achieve modular boundaries.
 
 ### Definition of Decomposition
 
@@ -154,28 +154,6 @@ These solutions demonstrate that modular edge management platforms rely on clear
 * **Device Onboarding Only** – Deploy `eim-onboarding` chart; optionally depend on `eim-foundation` for shared services or point to existing IAM/DB endpoints via Helm values.
 * **Out-of-band Device Management** – Deploy `eim-device-management-toolkit` plus `eim-core` (for tenant APIs) and the relevant resource manager connectors.
 * **Custom bundle** – Compose desired module charts in a customer-owned GitOps repo, leveraging documented dependencies and values.
-
-### Consumer Personas and Reference Workflows
-
-#### Independent Software Vendor / OS Vendor
-
-* Fully automated, dynamic out-of-band device management using Intel® vPro™ AMT and ISM to manage fleets of edge devices.
-* Edge node hardware and software observability surfacing Intel silicon metrics for higher-level management stacks.
-* Secure device onboarding and OS provisioning with reusable scripts and Helm values.
-* Day-two device lifecycle management covering immutable OS updates, firmware updates, and CVE remediation.
-* Day-one CPU, GPU, and NPU configuration workflows that expose resource partitioning APIs to upper-layer applications.
-* Device configuration and northbound APIs that integrate with trusted compute, cluster orchestration, and customer control planes.
-
-#### Original Equipment Manufacturer
-
-* Fully automated device onboarding, OS provisioning, Kubernetes deployment, and add-on installation at fleet scale in factories or warehouses, with hooks for QA validation.
-* Automated device upgrades (OS and firmware) for field deployments with staged rollouts and rollback controls.
-* Automated device activation and out-of-band management using Intel® vPro™ AMT and ISM across large fleets.
-
-#### End Customer / Systems Integrator
-
-* End-to-end multi-tenant solution covering Day 0 (onboarding and provisioning), Day 1 (configuration and operations), and Day 2 (lifecycle management) that can deploy on-premises or in the cloud.
-* Use EIM as a validation bridge for customer orchestration layers against new Intel CPU and GPU platforms prior to production rollout.
 
 ### Current Complexity
 
