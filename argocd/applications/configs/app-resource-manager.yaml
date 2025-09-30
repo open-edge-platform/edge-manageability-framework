@@ -15,5 +15,5 @@ traefikReverseProxy:
 resources: null
 vncProxyResources: null
 vaultServer: "http://vault.orch-platform.svc.cluster.local:8200"
-keycloakServer: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
+keycloakServer: "http://platform-keycloak-http.orch-platform.svc.cluster.local:8080"
 defaultNamespace: "orch-app"

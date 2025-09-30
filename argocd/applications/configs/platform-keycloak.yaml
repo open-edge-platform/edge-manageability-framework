@@ -41,6 +41,8 @@ podLabels:
 # NETWORK & SERVICE
 #################################
 service:
+  metadata:
+    name: platform-keycloak
   type: ClusterIP
   httpPort: 8080
 

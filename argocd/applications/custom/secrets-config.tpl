@@ -16,3 +16,10 @@ imagePullSecrets:
   {{- with .Values.argo.imagePullSecrets }}
     {{- toYaml . | nindent 2 }}
   {{- end }}
+# Disable Istio sidecar injection for the secrets-config job pods so
+# they can talk to Keycloak instances that intentionally have injection
+# disabled (prevents mTLS/sidecar mismatch issues).
+podAnnotations:
+  sidecar.istio.io/inject: "false"
+podLabels:
+  sidecar.istio.io/inject: "false"
