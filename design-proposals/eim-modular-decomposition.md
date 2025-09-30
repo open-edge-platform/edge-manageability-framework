@@ -241,11 +241,11 @@ This approach would split each EIM capability into its own Git repository (for e
 
 | Phase | Timeline (est.) | Milestones |
 |-------|-----------------|------------|
-| Phase 0 – Planning & Inventory | Q4 2025 | Identify module boundaries, audit dependencies, document APIs and helm values per service. |
-| Phase 1 – Chart Extraction | Q1 2026 | Extract module charts into `infra-charts`; create CI for module builds; produce alpha releases of `eim-core`, `eim-onboarding`, `eim-device-management-toolkit`. |
-| Phase 2 – Artifact & API Hardening | Q2 2026 | Publish versioned APIs, SBOMs, signed images; update docs; release beta for customer pilots. |
-| Phase 3 – Production Rollout | Q3 2026 | General availability of modular charts; deliver `eim-suite` meta-chart; deprecate legacy monolithic chart with migration guide. |
-| Phase 4 – Optimization | Q4 2026 | Automate dependency validation, implement per-module usage analytics, iterate on reference automation scripts. |
+| Phase 0 – Planning & Inventory |  | Identify module boundaries, audit dependencies, document APIs and helm values per service. |
+| Phase 1 – Chart Extraction |  | Extract module charts into `infra-charts`; create CI for module builds; produce alpha releases of `eim-core`, `eim-onboarding`, `eim-device-management-toolkit`. |
+| Phase 2 – Artifact & API Hardening |  | Publish versioned APIs, SBOMs, signed images; update docs; release beta for customer pilots. |
+| Phase 3 – Production Rollout |  | General availability of modular charts; deliver `eim-suite` meta-chart; deprecate legacy monolithic chart with migration guide. |
+| Phase 4 – Optimization |  | Automate dependency validation, implement per-module usage analytics, iterate on reference automation scripts. |
 
 ## Open Issues
 
