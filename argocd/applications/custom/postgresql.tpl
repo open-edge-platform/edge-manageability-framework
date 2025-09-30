@@ -26,14 +26,10 @@ primary:
     - name: passwords
       secret:
         secretName: passwords
-    - name: postgresql-run
-      emptyDir: {}
   extraVolumeMounts:
     - name: passwords
       readOnly: true
       mountPath: "/var/lib/postgres/pgpass"
-    - name: postgresql-run
-      mountPath: /var/run/postgresql
   initdb:
     scripts:
     {{- range .Values.argo.database.databases }}
