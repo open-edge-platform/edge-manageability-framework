@@ -21,7 +21,7 @@ spec:
   sources:
     - repoURL: {{ required "A valid deployRepoURL entry required!" .Values.argo.deployRepoURL }}
       path: argocd/applications/configs
-      targetRevision: {{ required "A valid deployRepoRevision entry required!" .Values.argo.deployRepoRevision }}
+      targetRevision: {{ required "A valid deployRepoRevision entry required!" .Values.argo.deployRepoRevision | quote }}
       directory:
         include: "platform-keycloak-config-job.yaml"
   destination:
