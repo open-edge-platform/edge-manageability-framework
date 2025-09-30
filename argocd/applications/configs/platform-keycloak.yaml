@@ -61,10 +61,19 @@ args:
 
 ## Environment variables for Keycloak configuration
 extraEnv: |
+  - name: JAVA_OPTS_APPEND
+    value: >-
+      -Djgroups.dns.query=platform-keycloak-headless.orch-platform.svc.cluster.local
+  - name: KC_HTTP_RELATIVE_PATH
+    value: "/"
+  - name: KC_CACHE
+    value: "ispn"
+  - name: KC_CACHE_STACK
+    value: "kubernetes"
   # Admin credentials
-  - name: KEYCLOAK_ADMIN
+  - name: KC_BOOTSTRAP_ADMIN_USERNAME
     value: "admin"
-  - name: KEYCLOAK_ADMIN_PASSWORD
+  - name: KC_BOOTSTRAP_ADMIN_PASSWORD
     valueFrom:
       secretKeyRef:
         name: platform-keycloak
@@ -72,6 +81,7 @@ extraEnv: |
   # HTTP/HTTPS configuration
   - name: KC_HOSTNAME_STRICT
     value: "false"
+  # HTTP/HTTPS configuration
   - name: KC_HOSTNAME_STRICT_HTTPS
     value: "false"
   - name: KC_HTTP_ENABLED
@@ -104,52 +114,45 @@ database:
   vendor: postgres
   hostname: postgresql.orch-database.svc.cluster.local
   port: 5432
-  database: keycloak
+  database: orch-platform-platform-keycloak
   existingSecret: platform-keycloak-local-postgresql
   existingSecretKey: PGPASSWORD
 
 dbchecker:
   enabled: true
+  securityContext:
+    seccompProfile:
+      type: RuntimeDefault
+    capabilities:
+      drop:
+        - ALL
 
 #################################
 # HEALTH & MONITORING
 #################################
-livenessProbe:
-  |
-    httpGet:
-      path: /
-      port: http
-    initialDelaySeconds: 60
-    periodSeconds: 30
-    timeoutSeconds: 5
-    failureThreshold: 3
-readinessProbe:
-  |
-    httpGet:
-      path: /realms/master
-      port: http
-    initialDelaySeconds: 30
-    periodSeconds: 10
-    timeoutSeconds: 5
-    failureThreshold: 3
-
-metrics:
-  enabled: true
-
-health:
-  enabled: true
-
-#################################
-# CLUSTERING & CACHE
-#################################
+livenessProbe: |
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 60
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 3
+readinessProbe: |
+  httpGet:
+    path: /realms/master
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+startupProbe: |
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 15
+  periodSeconds: 5
+  timeoutSeconds: 1
+  failureThreshold: 60
 cache:
-  stack: default
-
-#################################
-# STORAGE & CONFIGURATION
-#################################
-## Volume for realm configuration import
-extraVolumes: |
-  - name: keycloak-config
-    configMap:
-      name: platform-keycloak-config
+  stack: kubernetes
