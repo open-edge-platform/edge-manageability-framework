@@ -29,6 +29,8 @@ approach to achieving the goals in a phased rollout manner.
 
   - Added composability notes.
 
+  - Remove deprecation of the AWS pre-installer.
+
 ## Problem Statement
 
 EMF currently is installed using a custom installer that provides full automation of installation
@@ -259,9 +261,12 @@ reducing the footprint of the platform:
 
   - gitea
 
-Only certain combinations of subsystems are supported. Supported configurations begin with EIM, and then
-progressively add CO and then AO. Observability may be added to any configuration.
-This is the set of supported subsystem selections:
+Only certain combinations of subsystems are supported. This document refers to these as
+_subsystem selections_ (to avoid confusion with the word "configuration" which is generally
+use to describe how the subsystems themselves are configured). 
+Supported configurations begin with EIM, and then progressively add CO and then AO.
+Observability may be added to any configuration. This is the set of supported
+subsystem selections:
 
 Subsystem selections without observability:
 
@@ -307,7 +312,8 @@ The various tenant-controllers will remain deployed, but will be left in an idle
 #### Make multitenancy fully optional
 
 *Note: This option is only for customers who wish to commit to a single-tenant / single-project installation
-of the orchestrator with no capability to create additional projects.*
+of the orchestrator with no capability to create additional projects. This choice is permanent for the life
+of the orchestrator.*
 
 Above, we introduced a job that creates a single-tenant. In a truly single-tenant / single-project configuration, there
 is no need for the various tenant-controllers to exist. These long-running controllers would be replaced with one-time
@@ -325,7 +331,7 @@ jobs. This includes the following components:
 
 These components cannot simply be excluded, because they perform functions that need to be executed, even in a single
 tenant / single project scenario. For example, the app-orch-tenant-controller is needed to load extension deployment
-package. The cluster-manager is needed to load cluster templates.
+packages. The cluster-manager is needed to load cluster templates.
 
 It will be necessary to take each one of these tenant-controllers and convert it to a job that runs to completion
 and exits after one project as been setup. This will require some changes to the tenant controllers:
@@ -415,7 +421,8 @@ The implementation shall be carried out in the phases outlined in the "Phased Ap
 
 It was determined that AO, CO, and O11y can easily be turned off by excluding their particular `enable-`
 profiles from the cluster profile. This yielded an installation with the pods and services for the
-excluded subsystems as expected. It was determined that there were two issues with the user interface:
+excluded subsystems absent, as expected. It was determined that there were two issues with the user
+interface:
 
 - The GUI displayed error boxes on pages that were tied to their respective substystems, as well as
   common pages. For example, disabling AO would lead to broken pages for Deployments, Deployment Packages,
@@ -429,7 +436,7 @@ excluded subsystems as expected. It was determined that there were two issues wi
 ## Decision
 
 Workstreams 1 and 2 are committed and will be delivered as part of the December release. Workstream 2 may
-be delivered in a CLI-only manner as necessary.
+be delivered in a CLI-only manner as necessary. Workstream 3 is deferred until a future date.
 
 ## Open issues (if applicable)
 
