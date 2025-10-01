@@ -57,7 +57,7 @@ Before diving into the proposal, here are some representative user stories that 
 
 **End customer or Systems integrator** can leverage the complete EIM stack as a reference achieve following workflows
 
-* **Multi-tenant Day-0 Onboarding and Provisioning:** As an end customer or systems integrator, I want to onboard devices and provision operating systems across tenants on-premises or in the cloud so that deployments remain consistent from the start.
+* **Multi-tenant Day-0 Onboarding and Provisioning:** As an end customer or systems integrator, I want to onboard devices and provision any (not just Ubuntu or EMT) operating systems across tenants on-premises or in the cloud so that deployments remain consistent from the start.
 * **Multi-tenant Day-1 Configuration and Operations:** As an end customer or systems integrator, I want to configure and operate edge devices per tenant across on-prem and cloud environments so that ongoing management stays streamlined and isolated.
 * **Multi-tenant Day-2 Lifecycle Management:** As an end customer or systems integrator, I want to manage device updates and lifecycle tasks for each tenant wherever the solution is deployed so that fleets remain secure and compliant.
 
@@ -150,6 +150,19 @@ To unlock incremental modularity without disrupting existing customers, three tr
    * Continue leveraging the existing Argo CD Application-of-Applications pattern and our inventory plus Foundation Platform Service (FPS) stack.
    * Package “use-case specific” overlays that expose Day-0 onboarding, Day-1 configuration, and Day-2 upgrade workflows via API, CLI, resource manager, and (where applicable) edge node agent bundles.
    * Provide prescriptive automation (Helm values, scripts) that stitches together required modules while documenting cross-service credential dependencies (for example, onboarding-issued tokens for upgrade services).
+   * EIM `infra-charts` will be updated to support deployment of managers that are required for the usecase. For example, for OXM deployment profile only onboarding and OS resource manager will be deployed.
+   * Clear ArgoCD profiles will be made available to deploy EIM for specific usecase supporting following workflows.
+     * Out-of-band Device Management
+     * Hardware and Software Observability
+     * Automated Edge Device Configuration
+     * Secure Device Onboarding and OS Provisioning 
+     * Day-Two Device Lifecycle Management
+     * Custom Hardware Resource Configuration
+     * Complete EIM stack supporting day-0, day-1 and day-2 workflows.
+
+The updated OXM profile architecture supporting Secure Device Onboarding and OS Provisioning is illustrated below.
+
+![Updated modular EIM OXM profile](images/updated-oxm-architecture.png)
 
 1. **Track #2 (Bring-Your-Own Infrastructure)**
    * Introduce configuration surfaces that allow customers to plug in third-party identity and secrets backends such as Keycloak, Vault, or managed databases—mirroring the flexibility currently offered by the Device Management Toolkit (DMT).
