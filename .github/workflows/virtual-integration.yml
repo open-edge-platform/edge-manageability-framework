@@ -663,7 +663,7 @@ jobs:
       needs.check-changed-files.outputs.ci == 'true' ||
       github.ref == 'refs/heads/release-3.1'
       )
-    runs-on: ubuntu-22.04-16core-64GB
+    runs-on: ubuntu-24.04-16core-64GB
     timeout-minutes: 90
     env:
       KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
