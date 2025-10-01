@@ -100,7 +100,11 @@ The modular blueprint introduces three tiers:
 
 The proposal adopts a **Domain-Driven, Helm-Packaged Microservice Mesh** pattern:
 
-* **Domain-driven design (DDD)** provides bounded contexts that map to Helm sub-charts and release artifacts.
+* **Domain-driven design (DDD)** provides bounded contexts that map to Helm sub-charts and release artifacts. Here are some example contexts:
+  * Onboarding Context: Handles secure enrollment, certificate issuance, tenant binding.
+  * Observability Context: Collects metrics, heartbeats, logs, exposes to monitoring stack.
+  * OOB Management Context: Provides remote power control, KVM access, watchdog reset.
+  * Upgrades Context: Manages OS, container runtime, agent upgrades in a safe manner.Configuration Context: Applies tenant-defined desired state to node agents.
 * **Strangler Fig modernization** approach is used to gradually peel existing monolithic Helm definitions into independent sub-charts while keeping the legacy entry points alive until migration is complete.
 
 ### Reference Solutions in the Industry
@@ -114,6 +118,29 @@ These solutions demonstrate that modular edge management platforms rely on clear
 ### Current Complexity
 
 EIM’s core workflows share a tightly coupled dependency graph. Day-2 upgrade flows, for example, require the JWT credentials created by the Onboarding Manager during Day-0 operations. Resource Managers, inventory reconciliation, and observability exporters assume the presence of shared infrastructure (PostgreSQL schemas, Keycloak realms, Foundation Platform Service) delivered by the monolithic chart. This coupling makes it difficult for customers to consume only a subset—such as Day-2 upgrades—without deploying onboarding or adding bespoke credential bootstrapping.
+
+The current high-level architecture of EMF is illustrated below with an extended depiction of EIM components and shared infrastructure. 
+
+![current high-level architecture](images/current-architecture.png)
+
+* **Inventory**: State store and reconciliation service. Exposes NB API.
+* **Host manager** Updating Host hardware information of the fleet of Edge nodes and maintains the heartbeat
+* **Onboarding manager** Provides mechanism to associate OS profile and onboarding  workflow to be executed on the Edge node
+* **Device management manager** Provides interface to Out-of-band Device management services and platform manageability agent to support Intel vPRO AMT/ISM.
+* **Maintenance manger** Provides interface for scheduling updates (OS) on fleet of Edge nodes
+* **Networking manager** Reconciles the state of the IP Address resource in inventory by  Validating its uniqueness on a per Site basis.
+* **Telemetry manager** control plane to configure metrics/log collection from the Edge Nodes
+* **OS resource manger** Provides mechanism to manage the OSs supported by the EIM (Does not interface with EN)
+* **LOCA manager Provides** Lenovo Fleet manager to onboard edge nodes.Vendor manager are optional.
+* **DKAM** Provides curation of Edge node OS and post OS install agents on Ubuntu only. Signing of ipxe and uOS.
+* **CDN NGINX** Hosts Boot artefact for EN in case of HTTPs boot and other OS artefact.
+* **Tinker bell** Open-source component supporting OS provisioning
+* **Tenant controller** Interfaces with Tenant manger and Inventory to enable multi-tenancy in EIM.
+* **API** EIM Open API definition
+
+EMF also supports OXM deployment profile targeted at Equipment Manufacturers for scale provisioning of edge devices in factory or warehouse environments. This profile leverages the same EIM services but with a reduced footprint of not deploying Application and Cluster orchestration. The OXM architecture is illustrated below. It is apparent that the all EIM components are deployed even though the usecase only requires device OS provisioning. Also the deployment should EIM deployment is tightly coupled with each other and share dependencies on common infrastructure services such as PostgreSQL, Redis, Keycloak, and Foundation Platform Service.
+
+![current OXM architecture](images/current-oxm-architecture.png)
 
 ### Modular Evolution Tracks
 
