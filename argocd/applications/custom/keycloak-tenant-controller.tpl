@@ -29,7 +29,7 @@ securityContext:
   allowPrivilegeEscalation: false
 keycloakAdmin:
   user: admin
-  client: system-client
+  client: admin-cli
   passwordSecret:
     name: platform-keycloak # name of the secret
     key: admin-password # key of the secret
