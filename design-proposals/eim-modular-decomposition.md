@@ -263,7 +263,8 @@ The updated Track #2 of OXM profile architecture supporting Secure Device Onboar
   - Provide adapters for database and identity integration so operators can authenticate using cluster or external
     credentials, drastically reducing prerequisites for partial deployments.
 
-Each successive track reduces infrastructure coupling, increases module portability, and lowers the barrier for consuming targeted workflows.
+Each successive track reduces infrastructure coupling, increases module portability, and lowers the barrier for
+consuming targeted workflows.
 
 ==================== TBD ====================
 
@@ -324,7 +325,8 @@ Each successive track reduces infrastructure coupling, increases module portabil
 
 ### Alternative 1 – Maintain monolithic chart
 
-This option keeps the current `infra-charts` umbrella chart intact and continues shipping all services together. EIM remains a single Argo CD Application with hard-wired dependencies.
+This option keeps the current `infra-charts` umbrella chart intact and continues shipping all services together.
+EIM remains a single Argo CD Application with hard-wired dependencies.
 
 - **Pros**
   - Minimal change to existing GitOps repositories and automation.
@@ -338,11 +340,14 @@ This option keeps the current `infra-charts` umbrella chart intact and continues
   - Contributor teams cannot iterate independently; even a small fix in `infra-onboarding` requires full regression
     testing of all modules.
 
-**Example:** An ISV seeking only the vPro Device Management Toolkit must deploy the entire suite (inventory, onboarding, resource managers, telemetry) even if those services conflict with their existing stack, leading to duplicated infrastructure and operational overhead.
+**Example:** An ISV seeking only the vPro Device Management Toolkit must deploy the entire suite (inventory,
+onboarding, resource managers, telemetry) even if those services conflict with their existing stack, leading to
+duplicated infrastructure and operational overhead.
 
 ### Alternative 2 – Break into separate repositories per module
 
-This approach would split each EIM capability into its own Git repository (for example, `infra-onboarding`, `infra-vpro`, `infra-resource-managers`) with discrete Helm charts, pipelines, and release schedules.
+This approach would split each EIM capability into its own Git repository (for example, `infra-onboarding`,
+`infra-vpro`, `infra-resource-managers`) with discrete Helm charts, pipelines, and release schedules.
 
 - **Pros**
   - Strong isolation between modules—teams can release without cross-repo coordination.
@@ -353,7 +358,9 @@ This approach would split each EIM capability into its own Git repository (for e
   - Coordinating platform-wide releases becomes harder; consumers must stitch together compatible versions manually.
   - Shared assets (SDKs, API specs, documentation) risk divergence or duplication across repos.
 
-**Example:** Shipping `eim-onboarding` from a dedicated repo accelerates onboarding innovation, but release engineering must coordinate simultaneous tags across five repositories when producing a full-suite build—raising risk of mismatched versions in customer environments.
+**Example:** Shipping `eim-onboarding` from a dedicated repo accelerates onboarding innovation, but release
+engineering must coordinate simultaneous tags across five repositories when producing a full-suite build—raising
+risk of mismatched versions in customer environments.
 
 ### Alternative Comparison
 
