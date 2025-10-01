@@ -169,7 +169,12 @@ The updated OXM profile architecture supporting Secure Device Onboarding and OS 
    * Refactor services to tolerate absent EMF-managed infrastructure by supporting pluggable credential providers, externalized storage endpoints, and configurable messaging backbones.
    * Deliver migration helpers that map existing Helm values to third-party equivalents, enabling gradual adoption without rewriting downstream integrations.
 
-Track #2 can be delivered in parallel with Track #1 to enable customers to consume specific workflows leveraging the Foundational platform services decomposition activity.
+Track #2 can be delivered in parallel with Track #1 to enable customers to consume specific workflows leveraging the Foundational platform services decomposition activity. This track further reduces the dependency coupling between EIM services and the shared infrastructure services such as PostgreSQL, Redis, Keycloak and Foundation Platform Service.
+
+The updated Track #2 of OXM profile architecture supporting Secure Device Onboarding and OS Provisioning is illustrated below.
+
+![alt text](images/updated-t2-oxm-architecture.png)
+
 
 1. **Track #3 (Reimagined Data Model + Kubernetes-Native Controllers)**
    * Evolve the inventory schema and contract so that Resource Managers can persist state through an abstraction layer capable of targeting multiple database providers or CRD-backed stores.
