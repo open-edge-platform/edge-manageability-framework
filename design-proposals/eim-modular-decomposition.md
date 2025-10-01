@@ -101,7 +101,6 @@ The modular blueprint introduces three tiers:
 The proposal adopts a **Domain-Driven, Helm-Packaged Microservice Mesh** pattern:
 
 * **Domain-driven design (DDD)** provides bounded contexts that map to Helm sub-charts and release artifacts.
-* **Microservice mesh with sidecar-enabled observability** ensures each module can be composed via service discovery and policy without tight coupling.
 * **Strangler Fig modernization** approach is used to gradually peel existing monolithic Helm definitions into independent sub-charts while keeping the legacy entry points alive until migration is complete.
 
 ### Reference Solutions in the Industry
@@ -111,6 +110,33 @@ The proposal adopts a **Domain-Driven, Helm-Packaged Microservice Mesh** pattern
 * **Azure Arc-enabled services** shows a pattern where core control plane is optional and capabilities such as Kubernetes configuration, data services, or VM management can be onboarded independently.
 
 These solutions demonstrate that modular edge management platforms rely on clear packaging, API-first integration, and layered observability—the same principles applied here.
+
+### Current Complexity
+
+EIM’s core workflows share a tightly coupled dependency graph. Day-2 upgrade flows, for example, require the JWT credentials created by the Onboarding Manager during Day-0 operations. Resource Managers, inventory reconciliation, and observability exporters assume the presence of shared infrastructure (PostgreSQL schemas, Keycloak realms, Foundation Platform Service) delivered by the monolithic chart. This coupling makes it difficult for customers to consume only a subset—such as Day-2 upgrades—without deploying onboarding or adding bespoke credential bootstrapping.
+
+### Modular Evolution Tracks
+
+To unlock incremental modularity without disrupting existing customers, three tracks of work are proposed:
+
+1. **Track #1 (Status Quo + Use Case Enablement)**
+   * Continue leveraging the existing Argo CD Application-of-Applications pattern and our inventory plus Foundation Platform Service (FPS) stack.
+   * Package “use-case specific” overlays that expose Day-0 onboarding, Day-1 configuration, and Day-2 upgrade workflows via API, CLI, resource manager, and (where applicable) edge node agent bundles.
+   * Provide prescriptive automation (Helm values, scripts) that stitches together required modules while documenting cross-service credential dependencies (for example, onboarding-issued tokens for upgrade services).
+
+1. **Track #2 (Bring-Your-Own Infrastructure)**
+   * Introduce configuration surfaces that allow customers to plug in third-party identity and secrets backends such as Keycloak, Vault, or managed databases—mirroring the flexibility currently offered by the Device Management Toolkit (DMT).
+   * Refactor services to tolerate absent EMF-managed infrastructure by supporting pluggable credential providers, externalized storage endpoints, and configurable messaging backbones.
+   * Deliver migration helpers that map existing Helm values to third-party equivalents, enabling gradual adoption without rewriting downstream integrations.
+
+Track #2 can be delivered in parallel with Track #1 to enable customers to consume specific workflows leveragining the Foundational platform services decomposition activity.
+
+1. **Track #3 (Reimagined Data Model + Kubernetes-Native Controllers)**
+   * Evolve the inventory schema and contract so that Resource Managers can persist state through an abstraction layer capable of targeting multiple database providers or CRD-backed stores.
+   * Recast managers as Kubernetes Operators/CRDs, enabling declarative reconciliation, native lifecycle hooks, and alignment with platform SRE practices.
+   * Provide adapters for database and identity integration so operators can authenticate using cluster or external credentials, drastically reducing prerequisites for partial deployments.
+
+Each successive track reduces infrastructure coupling, increases module portability, and lowers the barrier for consuming targeted workflows.
 
 ### Modular Packaging Model
 
@@ -154,31 +180,6 @@ These solutions demonstrate that modular edge management platforms rely on clear
 * **Device Onboarding Only** – Deploy `eim-onboarding` chart; optionally depend on `eim-foundation` for shared services or point to existing IAM/DB endpoints via Helm values.
 * **Out-of-band Device Management** – Deploy `eim-device-management-toolkit` plus `eim-core` (for tenant APIs) and the relevant resource manager connectors.
 * **Custom bundle** – Compose desired module charts in a customer-owned GitOps repo, leveraging documented dependencies and values.
-
-### Current Complexity
-
-EIM’s core workflows share a tightly coupled dependency graph. Day-2 upgrade flows, for example, require the JWT credentials minted by the Onboarding Manager during Day-0 operations. Resource Managers, inventory reconciliation, and observability exporters assume the presence of shared infrastructure (PostgreSQL schemas, Keycloak realms, Foundation Platform Service) delivered by the monolithic chart. This coupling makes it difficult for customers to consume only a subset—such as Day-2 upgrades—without deploying onboarding or adding bespoke credential bootstrapping.
-
-### Modular Evolution Tracks
-
-To unlock incremental modularity without disrupting existing customers, we propose three progressive maturity levels:
-
-1. **Bulky Track (Status Quo + Use Case Enablement)**
-   * Continue leveraging the existing Argo CD Application-of-Applications pattern and our inventory plus Foundation Platform Service (FPS) stack.
-   * Package “use-case specific” overlays that expose Day-0 onboarding, Day-1 configuration, and Day-2 upgrade workflows via API, CLI, resource manager, and (where applicable) edge node agent bundles.
-   * Provide prescriptive automation (Helm values, scripts) that stitches together required modules while documenting cross-service credential dependencies (for example, onboarding-issued tokens for upgrade services).
-
-2. **Medium Track (Bring-Your-Own Infrastructure)**
-   * Introduce configuration surfaces that allow customers to plug in third-party identity and secrets backends such as Keycloak, Vault, or managed databases—mirroring the flexibility currently offered by the Device Management Toolkit (DMT).
-   * Refactor services to tolerate absent EMF-managed infrastructure by supporting pluggable credential providers, externalized storage endpoints, and configurable messaging backbones.
-   * Deliver migration helpers that map existing Helm values to third-party equivalents, enabling gradual adoption without rewriting downstream integrations.
-
-3. **Lightweight Track (Reimagined Data Model + Kubernetes-Native Controllers)**
-   * Evolve the inventory schema and contract so that Resource Managers can persist state through an abstraction layer capable of targeting multiple database providers or CRD-backed stores.
-   * Recast managers as Kubernetes Operators/CRDs, enabling declarative reconciliation, native lifecycle hooks, and alignment with platform SRE practices.
-   * Provide adapters for database and identity integration so operators can authenticate using cluster or external credentials, drastically reducing prerequisites for partial deployments.
-
-Each successive track reduces infrastructure coupling, increases module portability, and lowers the barrier for consuming targeted workflows.
 
 ## Rationale
 
