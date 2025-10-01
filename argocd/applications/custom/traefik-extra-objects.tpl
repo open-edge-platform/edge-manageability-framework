@@ -6,7 +6,7 @@
 #        Revisit this once the porting is done.
 orchSecretName: tls-orch
 # internal keycloak JWKS URL should be static but providing a way to modify it here
-keycloakJwksUrl: http://platform-keycloak-http.orch-platform.svc
+keycloakJwksUrl: http://platform-keycloak-http.orch-platform.svc.cluster.local:8080
 # internal keycloak JWKS Path should be static but providing a way to modify it here
 keycloakJwksPath: /realms/master/protocol/openid-connect/certs
 keycloakServicePort: 8080

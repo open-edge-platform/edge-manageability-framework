@@ -31,7 +31,7 @@ onboarding-manager:
   env:
     tinkerActionsVersion: "1.19.3"
     oidc:
-  oidc_server_url: "http://platform-keycloak-http.orch-platform.svc/realms/master"
+  oidc_server_url: "http://platform-keycloak-http.orch-platform.svc.cluster.local:8080/realms/master"
       # Skip AuthZ for CDN-boots
       clients:
         bypass:
@@ -51,7 +51,7 @@ dkam:
   env:
     rs_proxy_address: "rs-proxy.orch-platform.svc.cluster.local:8081/"
     oidc:
-  oidc_server_url: "http://platform-keycloak-http.orch-platform.svc/realms/master"
+  oidc_server_url: "http://platform-keycloak-http.orch-platform.svc.cluster.local:8080/realms/master"
   resources: null
 
 infra-config:

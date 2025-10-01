@@ -31,7 +31,7 @@ adm:
 
 openidc:
   # -- the endpoint of a Keycloak Realm e.g. http://keycloak/realms/master
-  issuer: "http://platform-keycloak-http.orch-platform.svc/realms/master"
+  issuer: "http://platform-keycloak-http.orch-platform.svc.cluster.local:8080/realms/master"
   insecureSkipVerify: false
 
 gitea:
