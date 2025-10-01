@@ -15,7 +15,7 @@ credentials:
   serviceAccount:
     name: "orch-svc"
   params:
-  keycloakUrl: "http://platform-keycloak-http.orch-platform.svc.cluster.local:8080"
+  keycloakUrl: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
     vaultUrl: "http://vault.orch-platform.svc.cluster.local:8200"
 
 api:
@@ -31,7 +31,7 @@ api:
   oidc:
     name: "keycloak-api"
     oidc_env_name: "OIDC_SERVER_URL"
-  oidc_server_url: "http://platform-keycloak-http.orch-platform.svc.cluster.local:8080/realms/master"
+  oidc_server_url: "http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master"
     oidc_tls_insecure_skip_verify_env_name: "OIDC_TLS_INSECURE_SKIP_VERIFY"
     oidc_tls_insecure_skip_verify_value: "true"
   multiTenancy:
@@ -56,7 +56,7 @@ apiv2:
   oidc:
     name: "keycloak-api"
     oidc_env_name: "OIDC_SERVER_URL"
-  oidc_server_url: "http://platform-keycloak-http.orch-platform.svc.cluster.local:8080/realms/master"
+  oidc_server_url: "http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master"
     oidc_tls_insecure_skip_verify_env_name: "OIDC_TLS_INSECURE_SKIP_VERIFY"
     oidc_tls_insecure_skip_verify_value: "true"
   resources: null
@@ -80,7 +80,7 @@ tenant-controller:
     inventoryAddress: "inventory.orch-infra.svc.cluster.local:50051"
     traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
   oidc:
-  oidc_server_url: "http://platform-keycloak-http.orch-platform.svc.cluster.local:8080/realms/master"
+  oidc_server_url: "http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master"
   resources: null
   serviceAccount:
     name: "orch-svc"

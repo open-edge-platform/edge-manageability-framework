@@ -1,0 +1,30 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Backward-compatible service for platform-keycloak
+# This service ensures existing references to platform-keycloak.orch-platform.svc
+# continue to work after migrating to the codecentric keycloakx chart
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: platform-keycloak
+  namespace: orch-platform
+  labels:
+    app.kubernetes.io/component: http
+    app.kubernetes.io/instance: platform-keycloak
+    app.kubernetes.io/name: keycloakx
+    argocd.argoproj.io/managed-by: platform-keycloak-compat
+  annotations:
+    argocd.argoproj.io/sync-wave: "151"
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 8080
+    protocol: TCP
+    targetPort: http
+  selector:
+    app.kubernetes.io/instance: platform-keycloak
+    app.kubernetes.io/name: keycloakx

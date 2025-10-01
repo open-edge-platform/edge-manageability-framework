@@ -6,4 +6,4 @@ manager:
   inventory:
     endpoint: "inventory.orch-infra.svc.cluster.local:50051"
 oidc:
-  oidc_server_url: "http://platform-keycloak-http.orch-platform.svc/realms/master"
+  oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"

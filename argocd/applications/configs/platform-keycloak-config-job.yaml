@@ -37,7 +37,7 @@ spec:
           imagePullPolicy: IfNotPresent
           env:
             - name: KEYCLOAK_URL
-              value: "http://platform-keycloak-http.orch-platform.svc.cluster.local:8080"
+              value: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
             - name: KEYCLOAK_USER
               value: "admin"
             - name: KEYCLOAK_PASSWORD

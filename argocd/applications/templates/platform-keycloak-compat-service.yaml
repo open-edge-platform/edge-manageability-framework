@@ -1,0 +1,45 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+{{- $appName        := "platform-keycloak-compat-service" }}
+{{- $namespace      := "orch-platform" }}
+{{- $syncWave       := "151" }}
+---
+{{- if (index .Values.argo.enabled "platform-keycloak") }}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "{{ $syncWave }}"
+  name: {{$appName}}
+  namespace: {{ required "A valid namespace entry required!" .Values.argo.namespace }}
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ required "A valid projectName entry required!" .Values.argo.project }}
+  sources:
+    - repoURL: {{ required "A valid deployRepoURL entry required!" .Values.argo.deployRepoURL }}
+      path: argocd/applications/configs
+      targetRevision: {{ required "A valid deployRepoRevision entry required!" .Values.argo.deployRepoRevision | quote }}
+      directory:
+        include: "platform-keycloak-compat-service.yaml"
+  destination:
+    namespace: {{$namespace}}
+    server: {{ required "A valid targetServer entry required!" .Values.argo.targetServer }}
+  syncPolicy:
+    {{- if .Values.argo.autosync }}
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        maxDuration: 3m0s
+        factor: 2
+    {{- end }}
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
+{{- end }}
