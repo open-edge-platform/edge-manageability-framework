@@ -156,7 +156,7 @@ To unlock incremental modularity without disrupting existing customers, three tr
    * Refactor services to tolerate absent EMF-managed infrastructure by supporting pluggable credential providers, externalized storage endpoints, and configurable messaging backbones.
    * Deliver migration helpers that map existing Helm values to third-party equivalents, enabling gradual adoption without rewriting downstream integrations.
 
-Track #2 can be delivered in parallel with Track #1 to enable customers to consume specific workflows leveragining the Foundational platform services decomposition activity.
+Track #2 can be delivered in parallel with Track #1 to enable customers to consume specific workflows leveraging the Foundational platform services decomposition activity.
 
 1. **Track #3 (Reimagined Data Model + Kubernetes-Native Controllers)**
    * Evolve the inventory schema and contract so that Resource Managers can persist state through an abstraction layer capable of targeting multiple database providers or CRD-backed stores.
