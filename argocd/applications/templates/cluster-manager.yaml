@@ -19,9 +19,15 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
+    # NOTE: Chart must include co-manager M2M automation templates:
+    # - co-manager-credentials-configmap.yaml
+    # - co-manager-credentials-job.yaml
+    # - co-manager-credentials-rbac.yaml
+    # For embedded automation implementation, see:
+    # https://github.com/your-org/cluster-manager/tree/co-manager-m2m-automation
     - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
       chart: cluster/charts/{{$appName}}
-      targetRevision: 2.1.15
+      targetRevision: 2.1.15  # TODO: Update to version with co-manager M2M automation
       helm:
         releaseName: {{$appName}}
         valuesObject:
