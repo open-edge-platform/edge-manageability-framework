@@ -175,13 +175,14 @@ The updated Track #2 of OXM profile architecture supporting Secure Device Onboar
 
 ![alt text](images/updated-t2-oxm-architecture.png)
 
-
 1. **Track #3 (Reimagined Data Model + Kubernetes-Native Controllers)**
    * Evolve the inventory schema and contract so that Resource Managers can persist state through an abstraction layer capable of targeting multiple database providers or CRD-backed stores.
    * Recast managers as Kubernetes Operators/CRDs, enabling declarative reconciliation, native lifecycle hooks, and alignment with platform SRE practices.
    * Provide adapters for database and identity integration so operators can authenticate using cluster or external credentials, drastically reducing prerequisites for partial deployments.
 
 Each successive track reduces infrastructure coupling, increases module portability, and lowers the barrier for consuming targeted workflows.
+
+==================== TBD ====================
 
 ### Modular Packaging Model
 
