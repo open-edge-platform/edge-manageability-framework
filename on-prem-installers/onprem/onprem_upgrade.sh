@@ -201,14 +201,8 @@ operation:
       hook: {}
 EOF
 fi
-
-    # Force sync all applications on the cluster. We need to ensure that new version of
-    # ArgoCD properly picked Applications definitions that were governed by older version.
-    apps=$(kubectl get applications -n "$apps_ns" --no-headers -o custom-columns=":metadata.name")
-    for app in $apps; do
-        echo "Syncing ArgoCD application: $app"
-        kubectl patch -n "$apps_ns" applications "$app" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
-    done
+    kubectl patch -n "$apps_ns" application postgresql-secrets --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+    kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 }
 
 # Checks if orchestrator is currently installed on the node
@@ -636,6 +630,20 @@ patch_secret() {
             esac
         done < postgres-secrets-password.txt
     fi
+
+    # Check for secret every 5 sec for 10 times
+    for i in $(seq 1 40); do
+
+        if kubectl get secret app-orch-catalog-local-postgresql -n orch-app >/dev/null 2>&1; then
+            echo "✅ Secret found!"
+            break
+        fi
+
+        if [ "$i" -lt 40 ]; then
+            echo "❌ Secret not found. Waiting 5s..."
+            sleep 5
+        fi
+    done
 
     kubectl patch secret -n orch-app app-orch-catalog-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$CATALOG_SERVICE\"}}" --type=merge
     kubectl patch secret -n orch-app app-orch-catalog-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$CATALOG_SERVICE\"}}" --type=merge
