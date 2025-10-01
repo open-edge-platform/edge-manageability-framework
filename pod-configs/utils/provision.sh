@@ -1153,8 +1153,8 @@ EOF
 orch_loadbalancer_variable_internal_default() {
     cat <<EOF
 vpc_terraform_backend_bucket = "${BUCKET_NAME}"
-vpc_terraform_backend_key    = "us-west-2/vpc/${VPC_ID}"
-vpc_terraform_backend_region = "us-west-2"
+vpc_terraform_backend_key    = "${AWS_REGION}/vpc/${VPC_ID}"
+vpc_terraform_backend_region = "${BUCKET_REGION}"
 
 cluster_terraform_backend_bucket = "${BUCKET_NAME}"
 cluster_terraform_backend_key    = "${AWS_REGION}/cluster/${ENV_NAME}"
@@ -1389,6 +1389,11 @@ disable_lb_protect() {
     traefik2_lb_arn=$(jq -r '.resources[] | select((.module == "module.traefik2_load_balancer[0]") and (.type == "aws_lb")) | .instances[0].attributes.arn' $outfile)
     if [[ -n "$traefik2_lb_arn" ]]; then
         aws elbv2 modify-load-balancer-attributes --load-balancer-arn $traefik2_lb_arn --attributes "Key=deletion_protection.enabled,Value=false" --region "${AWS_REGION}" > /dev/null
+        lb_created=true
+    fi
+    traefik3_lb_arn=$(jq -r '.resources[] | select((.module == "module.traefik3_load_balancer[0]") and (.type == "aws_lb")) | .instances[0].attributes.arn' $outfile)
+    if [[ -n "$traefik3_lb_arn" ]]; then
+        aws elbv2 modify-load-balancer-attributes --load-balancer-arn $traefik3_lb_arn --attributes "Key=deletion_protection.enabled,Value=false" --region "${AWS_REGION}" > /dev/null
         lb_created=true
     fi
     argocd_lb_arn=$(jq -r '.resources[] | select((.module == "module.argocd_load_balancer[0]") and (.type == "aws_lb")) | .instances[0].attributes.arn' $outfile)

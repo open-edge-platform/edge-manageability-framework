@@ -17,13 +17,13 @@ require (
 	github.com/onsi/ginkgo/v2 v2.23.4
 	github.com/onsi/gomega v1.37.0
 	github.com/open-edge-platform/app-orch-deployment/app-deployment-manager/api/nbi/v2 v2.3.21
-	github.com/open-edge-platform/cluster-manager/v2 v2.1.5
+	github.com/open-edge-platform/cluster-manager/v2 v2.1.15
 	github.com/open-edge-platform/infra-core/apiv2/v2 v2.0.0-20250523082429-138b179945c5
 	github.com/open-edge-platform/infra-managers/attestationstatus v0.4.0
-	github.com/open-edge-platform/infra-managers/host v1.21.0
+	github.com/open-edge-platform/infra-managers/host v1.21.1
 	github.com/open-edge-platform/infra-managers/maintenance v1.21.1
 	github.com/open-edge-platform/infra-managers/telemetry v1.21.1
-	github.com/open-edge-platform/infra-onboarding/onboarding-manager v1.33.1
+	github.com/open-edge-platform/infra-onboarding/onboarding-manager v1.34.2
 	github.com/open-edge-platform/orch-library/go v0.6.1
 	github.com/open-edge-platform/orch-utils/tenancy-datamodel v0.0.0-20250401180309-9c2571c45857
 	github.com/opencontainers/image-spec v1.1.1
