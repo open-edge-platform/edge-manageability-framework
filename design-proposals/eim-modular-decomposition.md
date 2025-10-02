@@ -6,22 +6,14 @@ Last updated: 2025-09-29
 
 ## Abstract
 
-Edge Infrastructure Manager (EIM) today ships as an - **Tra- **Tra  - EIM `infra-charts` will be updated to support deployment of managers that are required for the usecase. For
-    example, for OXM deployment profile only onboarding and OS resource manager will be deployed.(Status Quo + Use Case Enablement)**
+Edge Infrastructure Manager (EIM) today ships as an i- **Track #1 (Status Quo + Use Case Enablement)**
   - Continue leveraging the existing Argo CD Application-of-Applications pattern and our inventory plus
     Foundation Platform Service (FPS) stack.
   - Package "use-case specific" overlays that expose Day-0 onboarding, Day-1 configuration, and Day-2 upgrade
     workflows via API, CLI, resource manager, and (where applicable) edge node agent bundles.
   - Provide prescriptive automation (Helm values, scripts) that stitches together required modules while
     documenting cross-service credential dependencies (for example, onboarding-issued tokens for upgrade
-    services).1 (Status Quo + Use Case Enablement)**
-  - Continue leveraging the existing Argo CD Application-of-Applications pattern and our inventory plus
-    Foundation Platform Service (FPS) stack.
-  - Package "use-case specific" overlays that expose Day-0 onboarding, Day-1 configuration, and Day-2 upgrade
-    workflows via API, CLI, resource manager, and (where applicable) edge node agent bundles.
-  - Provide prescriptive automation (Helm values, scripts) that stitches together required modules while
-    documenting cross-service credential dependencies (for example, onboarding-issued tokens for upgrade
-    services).grated collection of services that are deployed together by
+    services).rated collection of services that are deployed together by
 Argo CD as part of overall EMF. To enable diverse user persona it is desirable for users having ability to consume
 only the subsets of functionality they need—such as device onboarding or out-of-band device management—without
 inheriting the full solution footprint. This proposal defines how to decompose EIM into modular building blocks with
@@ -207,12 +199,13 @@ The current high-level architecture of EMF is illustrated below with an extended
 - **Device management manager**: Provides interface to Out-of-band Device management services and platform
   manageability agent to support Intel vPRO AMT/ISM.
 - **Maintenance manger**: Provides interface for scheduling updates (OS) on fleet of Edge nodes
-- **Networking manager**: Reconciles the state of the IP Address resource in inventory by Validating its uniqueness
-  on a per Site basis.
+- **Networking manager**: Reconciles the state of the IP Address resource in inventory by Validating its
+  uniqueness on a per Site basis.
 - **Telemetry manager**: control plane to configure metrics/log collection from the Edge Nodes
 - **OS resource manger**: Provides mechanism to manage the OSs supported by the EIM (Does not interface with EN)
 - **LOCA manager**: Provides Lenovo Fleet manager to onboard edge nodes. Vendor manager are optional.
-- **DKAM**: Provides curation of Edge node OS and post OS install agents on Ubuntu only. Signing of ipxe and uOS.
+- **DKAM**: Provides curation of Edge node OS and post OS install agents on Ubuntu only. Signing of ipxe and
+  uOS.
 - **CDN NGINX**: Hosts Boot artefact for EN in case of HTTPs boot and other OS artefact.
 - **Tinker bell**: Open-source component supporting OS provisioning
 - **Tenant controller**: Interfaces with Tenant manger and Inventory to enable multi-tenancy in EIM.
@@ -235,16 +228,16 @@ To unlock incremental modularity without disrupting existing customers, three tr
   * Continue leveraging the existing Argo CD Application-of-Applications pattern and our inventory plus Foundation Platform Service (FPS) stack.
   * Package “use-case specific” overlays that expose Day-0 onboarding, Day-1 configuration, and Day-2 upgrade workflows via API, CLI, resource manager, and (where applicable) edge node agent bundles.
   * Provide prescriptive automation (Helm values, scripts) that stitches together required modules while documenting cross-service credential dependencies (for example, onboarding-issued tokens for upgrade services).
-  - EIM `infra-charts` will be updated to support deployment of managers that are required for the usecase. For
+    - EIM `infra-charts` will be updated to support deployment of managers that are required for the usecase. For
     example, for OXM deployment profile only onboarding and OS resource manager will be deployed.
-  - Clear ArgoCD profiles will be made available to deploy EIM for specific usecase supporting following workflows:
-    - Out-of-band Device Management
-    - Hardware and Software Observability
-    - Automated Edge Device Configuration
-    - Secure Device Onboarding and OS Provisioning
-    - Day-Two Device Lifecycle Management
-    - Custom Hardware Resource Configuration
-    - Complete EIM stack supporting day-0, day-1 and day-2 workflows.
+    - Clear ArgoCD profiles will be made available to deploy EIM for specific usecase supporting following workflows:
+      - Out-of-band Device Management
+      - Hardware and Software Observability
+      - Automated Edge Device Configuration
+      - Secure Device Onboarding and OS Provisioning
+      - Day-Two Device Lifecycle Management
+      - Custom Hardware Resource Configuration
+      - Complete EIM stack supporting day-0, day-1 and day-2 workflows.
 
 The updated OXM profile architecture supporting Secure Device Onboarding and OS Provisioning is illustrated below.
 
