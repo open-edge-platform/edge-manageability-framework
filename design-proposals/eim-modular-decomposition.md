@@ -356,6 +356,6 @@ The proposal introduces a **three-track modular evolution strategy** that enable
 
 #### Track #3: Kubernetes-Native Operators
 
-- Transforms resource managers into Kubernetes operators with CRD-based state management
-- Enables declarative reconciliation and native lifecycle hooks aligned with platform SRE practices
-- Dramatically reduces infrastructure prerequisites for partial deployments
+- Transforms resource managers into Kubernetes operators with CRD-based state management.
+- Enables declarative reconciliation and native lifecycle hooks aligned with platform SRE practices.
+- Dramatically reduces infrastructure prerequisites for partial deployments.
