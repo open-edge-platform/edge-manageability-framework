@@ -6,20 +6,7 @@ Last updated: 2025-09-29
 
 ## Abstract
 
-Edge Infrastructure Manager (EIM) today ships as an i- **Track #1 (Status Quo + Use Case Enablement)**
-
-- Continue leveraging the existing Argo CD Application-of-Applications pattern and our inventory plus
-    Foundation Platform Service (FPS) stack.
-- Package "use-case specific" overlays that expose Day-0 onboarding, Day-1 configuration, and Day-2 upgrade
-    workflows via API, CLI, resource manager, and (where applicable) edge node agent bundles.
-- Provide prescriptive automation (Helm values, scripts) that stitches together required modules while
-    documenting cross-service credential dependencies (for example, onboarding-issued tokens for upgrade
-    services).rated collection of services that are deployed together by
-Argo CD as part of overall EMF. To enable diverse user persona it is desirable for users having ability to consume
-only the subsets of functionality they need—such as device onboarding or out-of-band device management—without
-inheriting the full solution footprint. This proposal defines how to decompose EIM into modular building blocks with
-clear consumables (Helm charts, container images, APIs, scripts) while still enabling a full-stack deployment for
-customers that want the entire framework.
+Edge Infrastructure Manager (EIM) the device manageability solution in EMF today ships as an integrated collection of services that are deployed together by Argo CD as part of overall EMF. EIM's core workflows share a tightly coupled dependency graph. Day-2 upgrade flows, for example, require the JWT credentials created by the Onboarding Manager during Day-0 operations. Resource Managers, inventory reconciliation, and observability exporters assume the presence of shared infrastructure (PostgreSQL schemas, Keycloak realms, Foundation Platform Service) delivered by the monolithic chart. This coupling makes it difficult for customers to consume only a subset—such as Day-2 upgrades—without deploying onboarding or adding bespoke credential bootstrapping. To enable diverse user persona it is desirable for users having ability to consume only the subsets of functionality they need—such as device onboarding or out-of-band device management—without inheriting the full solution footprint. This proposal defines how to decompose EIM into modular building blocks with clear consumables (Helm charts, container images, APIs, scripts) while still enabling a full-stack deployment for customers that want the entire framework.
 
 ## Background and Context
 
