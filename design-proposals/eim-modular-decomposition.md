@@ -7,11 +7,12 @@ Last updated: 2025-09-29
 ## Abstract
 
 Edge Infrastructure Manager (EIM) today ships as an i- **Track #1 (Status Quo + Use Case Enablement)**
-  - Continue leveraging the existing Argo CD Application-of-Applications pattern and our inventory plus
+
+- Continue leveraging the existing Argo CD Application-of-Applications pattern and our inventory plus
     Foundation Platform Service (FPS) stack.
-  - Package "use-case specific" overlays that expose Day-0 onboarding, Day-1 configuration, and Day-2 upgrade
+- Package "use-case specific" overlays that expose Day-0 onboarding, Day-1 configuration, and Day-2 upgrade
     workflows via API, CLI, resource manager, and (where applicable) edge node agent bundles.
-  - Provide prescriptive automation (Helm values, scripts) that stitches together required modules while
+- Provide prescriptive automation (Helm values, scripts) that stitches together required modules while
     documenting cross-service credential dependencies (for example, onboarding-issued tokens for upgrade
     services).rated collection of services that are deployed together by
 Argo CD as part of overall EMF. To enable diverse user persona it is desirable for users having ability to consume
@@ -224,10 +225,10 @@ infrastructure services such as PostgreSQL, Redis, Keycloak, and Foundation Plat
 
 To unlock incremental modularity without disrupting existing customers, three tracks of work are proposed:
 
-* **Track #1 (Status Quo + Use Case Enablement)**
-  * Continue leveraging the existing Argo CD Application-of-Applications pattern and our inventory plus Foundation Platform Service (FPS) stack.
-  * Package “use-case specific” overlays that expose Day-0 onboarding, Day-1 configuration, and Day-2 upgrade workflows via API, CLI, resource manager, and (where applicable) edge node agent bundles.
-  * Provide prescriptive automation (Helm values, scripts) that stitches together required modules while documenting cross-service credential dependencies (for example, onboarding-issued tokens for upgrade services).
+- **Track #1 (Status Quo + Use Case Enablement)**
+  - Continue leveraging the existing Argo CD Application-of-Applications pattern and our inventory plus Foundation Platform Service (FPS) stack.
+  - Package “use-case specific” overlays that expose Day-0 onboarding, Day-1 configuration, and Day-2 upgrade workflows via API, CLI, resource manager, and (where applicable) edge node agent bundles.
+  - Provide prescriptive automation (Helm values, scripts) that stitches together required modules while documenting cross-service credential dependencies (for example, onboarding-issued tokens for upgrade services).
     - EIM `infra-charts` will be updated to support deployment of managers that are required for the usecase. For
     example, for OXM deployment profile only onboarding and OS resource manager will be deployed.
     - Clear ArgoCD profiles will be made available to deploy EIM for specific usecase supporting following workflows:
