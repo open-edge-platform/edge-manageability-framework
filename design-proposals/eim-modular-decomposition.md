@@ -156,7 +156,8 @@ The modular blueprint introduces three tiers:
 
 1. **Foundational services** – Identity, tenancy, inventory database, common event bus.
 2. **Service bundles** – Device Onboarding, Resource Management, Observability exporters, Device Management Toolkit.
-3. **Integration adapters** – External integrations (e.g., infra-external, partner connectors) that can be plugged in based on customer needs.
+3. **Integration adapters** – External integrations (e.g., infra-external, partner connectors)
+that can be plugged in based on customer needs.
 
 ### Architectural Design Pattern
 
@@ -183,11 +184,17 @@ The proposal adopts a **Domain-Driven, Helm-Packaged Microservice Mesh** pattern
   Kubernetes configuration, data services, or VM management can be onboarded
   independently.
 
-These solutions demonstrate that modular edge management platforms rely on clear packaging, API-first integration, and layered observability—the same principles applied here.
+These solutions demonstrate that modular edge management platforms rely on clear packaging,
+API-first integration, and layered observability—the same principles applied here.
 
 ### Current Complexity
 
-EIM’s core workflows share a tightly coupled dependency graph. Day-2 upgrade flows, for example, require the JWT credentials created by the Onboarding Manager during Day-0 operations. Resource Managers, inventory reconciliation, and observability exporters assume the presence of shared infrastructure (PostgreSQL schemas, Keycloak realms, Foundation Platform Service) delivered by the monolithic chart. This coupling makes it difficult for customers to consume only a subset—such as Day-2 upgrades—without deploying onboarding or adding bespoke credential bootstrapping.
+EIM’s core workflows share a tightly coupled dependency graph. Day-2 upgrade flows, for example,
+require the JWT credentials created by the Onboarding Manager during Day-0 operations. Resource Managers,
+inventory reconciliation, and observability exporters assume the presence of shared infrastructure
+(PostgreSQL schemas, Keycloak realms, Foundation Platform Service) delivered by the monolithic chart.
+This coupling makes it difficult for customers to consume only a subset—such as Day-2 upgrades—without
+deploying onboarding or adding bespoke credential bootstrapping.
 
 The current high-level architecture of EMF is illustrated below with an extended depiction of EIM components and shared infrastructure.
 
@@ -226,9 +233,12 @@ infrastructure services such as PostgreSQL, Redis, Keycloak, and Foundation Plat
 To unlock incremental modularity without disrupting existing customers, three tracks of work are proposed:
 
 - **Track #1 (Status Quo + Use Case Enablement)**
-  - Continue leveraging the existing Argo CD Application-of-Applications pattern and our inventory plus Foundation Platform Service (FPS) stack.
-  - Package “use-case specific” overlays that expose Day-0 onboarding, Day-1 configuration, and Day-2 upgrade workflows via API, CLI, resource manager, and (where applicable) edge node agent bundles.
-  - Provide prescriptive automation (Helm values, scripts) that stitches together required modules while documenting cross-service credential dependencies (for example, onboarding-issued tokens for upgrade services).
+  - Continue leveraging the existing Argo CD Application-of-Applications pattern and our inventory plus
+    Foundation Platform Service (FPS) stack.
+  - Package “use-case specific” overlays that expose Day-0 onboarding, Day-1 configuration, and Day-2 upgrade
+    workflows via API, CLI, resource manager, and (where applicable) edge node agent bundles.
+  - Provide prescriptive automation (Helm values, scripts) that stitches together required modules while 
+    documenting cross-service credential dependencies (for example, onboarding-issued tokens for upgrade services).
     - EIM `infra-charts` will be updated to support deployment of managers that are required for the usecase. For
     example, for OXM deployment profile only onboarding and OS resource manager will be deployed.
     - Clear ArgoCD profiles will be made available to deploy EIM for specific usecase supporting following workflows:
