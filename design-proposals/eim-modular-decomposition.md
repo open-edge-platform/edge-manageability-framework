@@ -6,16 +6,27 @@ Last updated: 2025-09-29
 
 ## Abstract
 
-Edge Infrastructure Manager (EIM) the device manageability solution in EMF today ships as an integrated collection of services that are deployed together by Argo CD as part of overall EMF. EIM's core workflows share a tightly coupled dependency graph. Day-2 upgrade flows, for example, require the JWT credentials created by the Onboarding Manager during Day-0 operations. Resource Managers, inventory reconciliation, and observability exporters assume the presence of shared infrastructure (PostgreSQL schemas, Keycloak realms, Foundation Platform Service) delivered by the monolithic chart. This coupling makes it difficult for customers to consume only a subset—such as Day-2 upgrades—without deploying onboarding or adding bespoke credential bootstrapping. To enable diverse user persona it is desirable for users having ability to consume only the subsets of functionality they need—such as device onboarding or out-of-band device management—without inheriting the full solution footprint. This proposal defines how to decompose EIM into modular building blocks with clear consumables (Helm charts, container images, APIs, scripts) while still enabling a full-stack deployment for customers that want the entire framework.
+Edge Infrastructure Manager (EIM) the device manageability solution in EMF today ships as an integrated collection
+of services that are deployed together by Argo CD as part of overall EMF. EIM's core workflows share a tightly
+coupled dependency graph. Day-2 upgrade flows, for example, require the JWT credentials created by the Onboarding
+Manager during Day-0 operations. Resource Managers, inventory reconciliation, and observability exporters assume
+the presence of shared infrastructure (PostgreSQL schemas, Keycloak realms, Foundation Platform Service) delivered
+by the monolithic chart. This coupling makes it difficult for customers to consume only a subset—such as Day-2
+upgrades—without deploying onboarding or adding bespoke credential bootstrapping. To enable diverse user persona
+it is desirable for users having ability to consume only the subsets of functionality they need—such as device
+onboarding or out-of-band device management—without inheriting the full solution footprint. This proposal defines
+how to decompose EIM into modular building blocks with clear consumables (Helm charts, container images, APIs,
+scripts) while still enabling a full-stack deployment for customers that want the entire framework.
 
 ## Background and Context
 
-Edge Manageability Framework (EMF) spans seven domains that are orchestrated through Argo CD and Helm charts:
-Edge Infrastructure Manager, Edge Cluster Orchestration, Edge Application Orchestration, UI, CLI, Observability, and
-Platform Services. Each domain is composed of microservices that are deployed via a GitOps flow rooted in
-[this repository](https://github.com/open-edge-platform/edge-manageability-framework). Within that ecosystem, EIM
-focuses on policy-driven lifecycle management of distributed edge fleets and collaborates with adjacent domains for
-shared services such as identity, telemetry, and higher-layer orchestration.
+Edge Manageability Framework (EMF) spans seven domains that are orchestrated through Argo CD
+and Helm charts: Edge Infrastructure Manager, Edge Cluster Orchestration, Edge Application Orchestration,
+UI, CLI, Observability, and Platform Services. Each domain is composed of microservices that are
+deployed via a GitOps flow rooted in
+[this repository](https://github.com/open-edge-platform/edge-manageability-framework). Within that
+ecosystem, EIM focuses on policy-driven lifecycle management of distributed edge fleets and collaborates
+with adjacent domains for shared services such as identity, telemetry, and higher-layer orchestration.
 
 Key API specifications are published in the `orch-utils` repository:
 
