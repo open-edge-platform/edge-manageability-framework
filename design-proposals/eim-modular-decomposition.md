@@ -6,11 +6,22 @@ Last updated: 2025-09-29
 
 ## Abstract
 
-Edge InEIM's core workflows share a tightly coupled dependency graph. Day-2 upgrade flows, for example, require the JWT
-credentials created by the Onboarding Manager during Day-0 operations. Resource Managers, inventory reconciliation,
-and observability exporters assume the presence of shared infrastructure (PostgreSQL schemas, Keycloak realms,
-Foundation Platform Service) delivered by the monolithic chart. This coupling makes it difficult for customers to
-consume only a subset—such as Day-2 upgrades—without deploying onboarding or adding bespoke credential bootstrapping.rastructure Manager (EIM) today ships as an integrated collection of services that are deployed together by
+Edge Infrastructure Manager (EIM) today ships as an - **Tra- **Tra  - EIM `infra-charts` will be updated to support deployment of managers that are required for the usecase. For
+    example, for OXM deployment profile only onboarding and OS resource manager will be deployed.(Status Quo + Use Case Enablement)**
+  - Continue leveraging the existing Argo CD Application-of-Applications pattern and our inventory plus
+    Foundation Platform Service (FPS) stack.
+  - Package "use-case specific" overlays that expose Day-0 onboarding, Day-1 configuration, and Day-2 upgrade
+    workflows via API, CLI, resource manager, and (where applicable) edge node agent bundles.
+  - Provide prescriptive automation (Helm values, scripts) that stitches together required modules while
+    documenting cross-service credential dependencies (for example, onboarding-issued tokens for upgrade
+    services).1 (Status Quo + Use Case Enablement)**
+  - Continue leveraging the existing Argo CD Application-of-Applications pattern and our inventory plus
+    Foundation Platform Service (FPS) stack.
+  - Package "use-case specific" overlays that expose Day-0 onboarding, Day-1 configuration, and Day-2 upgrade
+    workflows via API, CLI, resource manager, and (where applicable) edge node agent bundles.
+  - Provide prescriptive automation (Helm values, scripts) that stitches together required modules while
+    documenting cross-service credential dependencies (for example, onboarding-issued tokens for upgrade
+    services).grated collection of services that are deployed together by
 Argo CD as part of overall EMF. To enable diverse user persona it is desirable for users having ability to consume
 only the subsets of functionality they need—such as device onboarding or out-of-band device management—without
 inheriting the full solution footprint. This proposal defines how to decompose EIM into modular building blocks with
@@ -161,7 +172,8 @@ The proposal adopts a **Domain-Driven, Helm-Packaged Microservice Mesh** pattern
 - **Domain-driven design (DDD)** provides bounded contexts that map to Helm sub-charts and release artifacts.
   Here are some example contexts:
   - Onboarding Context: Handles secure enrollment, certificate issuance, tenant binding.
-  - Observability Context: Collects metrics, heartbeats, logs, exposes to monitoring stack.
+  - Observability Context: Collects metrics, heartbeats, logs, exposes to monitoring
+    stack.
   - OOB Management Context: Provides remote power control, KVM access, watchdog reset.
   - Upgrades Context: Manages OS, container runtime, agent upgrades in a safe manner.
   - Configuration Context: Applies tenant-defined desired state to node agents.
@@ -175,7 +187,8 @@ The proposal adopts a **Domain-Driven, Helm-Packaged Microservice Mesh** pattern
 - **VMware Edge Compute Stack** provides optional services (device onboarding, secure access, observability) that
   can be deployed individually via Helm charts and APIs.
 - **Azure Arc-enabled services** shows a pattern where core control plane is optional and capabilities such as
-  Kubernetes configuration, data services, or VM management can be onboarded independently.
+  Kubernetes configuration, data services, or VM management can be onboarded
+  independently.
 
 These solutions demonstrate that modular edge management platforms rely on clear packaging, API-first integration, and layered observability—the same principles applied here.
 
