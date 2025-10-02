@@ -70,7 +70,7 @@ the following workflows
   efficiently and securely
 
 > **Note:** Out-of-band management has multiple unique usecases and work flows. e.g. device power management,
-> remote KVM access, Boot control, hardware and software inventory etc. Each of these capabilities can be 
+> remote KVM access, Boot control, hardware and software inventory etc. Each of these capabilities can be
 > of consumed by customer as an independent workflow.
 
 - **Hardware and Software Observability:** As an ISV or edge solution vendor, I want to access hardware and software
@@ -288,6 +288,12 @@ The updated Track #2 of OXM profile architecture supporting Secure Device Onboar
 Design principles for Track #3 include:
 
 - Bounded Contexts per Operator: Each operator owns its slice of the domain (Onboarding, Config, Observability, OOB, Upgrades).
+  - Onboarding Context: Handles secure enrollment, certificate issuance, tenant binding.
+  - Provisioning Context: Handles secure installation of Operating System.
+  - Observability Context: Collects metrics, heartbeats, logs, exposes to monitoring stack.
+  - OOB Management Context: Provides remote power control, KVM access, watchdog reset.
+  - Upgrades Context: Manages OS, container runtime, agent upgrades in a safe manner.
+Configuration Context: Applies tenant-defined desired state to node agents.
 - Event-Driven Integration: Prefer LISTEN/NOTIFY or Kafka over polling the DB.
 - Idempotent Reconciliations: Operators must retry safely without side effects.
 - Compensating Actions: Instead of distributed transactions, use rollback workflows.
@@ -295,6 +301,13 @@ Design principles for Track #3 include:
 - Edge-Initiated Connectivity: Edge agents always connect out to operators (never inbound).
 Each successive track reduces infrastructure coupling, increases module portability, and lowers the barrier for
 consuming targeted workflows.
+
+The high-level architecture of Track #3 is illustrated below with EIM components implemented as Kubernetes-native
+operators and pluggable infrastructure.
+
+![Updated modular EIM architecture using kubernetes-native operators](images/updated-t3-eim-operators-arch.png)
+
+The updated Track #3 of OXM profile architecture supporting Secure Device Onboarding and OS Provisioning is illustrated below.
 
 ## TBD
 
