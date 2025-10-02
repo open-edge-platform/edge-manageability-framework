@@ -28,10 +28,7 @@ deployed via a GitOps flow rooted in
 ecosystem, EIM focuses on policy-driven lifecycle management of distributed edge fleets and collaborates
 with adjacent domains for shared services such as identity, telemetry, and higher-layer orchestration.
 
-Key API specifications are published in the `orch-utils` repository:
-
-- EIM northbound APIs:
-  <https://github.com/open-edge-platform/orch-utils/blob/main/tenancy-api-mapping/openapispecs/generated/amc-infra-core-edge-infrastructure-manager-openapi-all.yaml>
+Key API specifications are published in the `orch-utils` repository: [EIM northbound APIs](https://github.com/open-edge-platform/orch-utils/blob/main/tenancy-api-mapping/openapispecs/generated/amc-infra-core-edge-infrastructure-manager-openapi-all.yaml)
 
 The EIM software supply chain spans multiple repositories
 
