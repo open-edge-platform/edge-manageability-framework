@@ -317,3 +317,5 @@ that can be consumed by the customer as per their requirements. In the current a
 need to have basic Inventory and OS provisioning as these capabilities are required for vPRO device activation.
 
 ![EIM resources managers for OOB meeting separation of concerns](images/oob-resource-manager-eim.png)
+
+## Deliverables for modular decomposition
