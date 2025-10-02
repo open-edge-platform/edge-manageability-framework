@@ -128,6 +128,8 @@ workflows
    deployments still receive security and monitoring coverage.
 5. **Backward compatibility** – Existing full-stack deployment flows continue to work (Argo Application of
    Applications) with new composable sub-charts.
+6. **Upgrades** - Each module must support independent versioning and upgrade paths while maintaining
+   compatibility with the overall EIM stack.
 
 ## Proposal
 
@@ -318,4 +320,42 @@ need to have basic Inventory and OS provisioning as these capabilities are requi
 
 ![EIM resources managers for OOB meeting separation of concerns](images/oob-resource-manager-eim.png)
 
-## Deliverables for modular decomposition
+## Executive Summary
+
+This design proposal addresses a critical need for modular consumption of Edge Infrastructure Manager (EIM)
+capabilities within the Edge Manageability Framework. Currently, customers must deploy the entire EIM stack even
+when they only need specific functionality like device onboarding or out-of-band management, creating unnecessary
+infrastructure overhead and operational complexity.
+
+### Key Problem Statement
+
+EIM's current full stack architecture creates tight coupling between components, forcing customers to deploy:
+
+- Full PostgreSQL, Redis, and Keycloak infrastructure for any EIM capability
+- All resource managers and services regardless of actual needs
+- Complete observability and telemetry stack even for simple use cases
+- Synchronized upgrade windows across all services, increasing deployment risk
+
+### Proposed Solution
+
+The proposal introduces a **three-track modular evolution strategy** that enables incremental adoption:
+
+#### Track #1: Status Quo + Use Case Enablement
+
+- Maintains existing infrastructure while adding use-case-specific deployment profiles
+- Provides targeted overlays for Day-0 onboarding, Day-1 configuration, and Day-2 upgrade workflows
+- Enables customers to deploy only required resource managers for specific scenarios (e.g., OXM profile for
+  OS provisioning)
+
+#### Track #2: Bring-Your-Own Infrastructure
+
+- Introduces pluggable infrastructure backends allowing customers to use existing identity, secrets, and database
+  services
+- Reduces dependency on EMF-managed PostgreSQL, Redis, and Keycloak instances
+- Provides migration helpers for gradual adoption without breaking downstream integrations
+
+#### Track #3: Kubernetes-Native Operators
+
+- Transforms resource managers into Kubernetes operators with CRD-based state management
+- Enables declarative reconciliation and native lifecycle hooks aligned with platform SRE practices
+- Dramatically reduces infrastructure prerequisites for partial deployments
