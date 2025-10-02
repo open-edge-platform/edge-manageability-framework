@@ -307,144 +307,16 @@ operators and pluggable infrastructure.
 
 The updated Track #3 of OXM profile architecture supporting Secure Device Onboarding and OS Provisioning is illustrated below.
 
-## TBD
+## Out-of-band Device Management
 
-### Modular Packaging Model
+As stated earlier, out-of-band management has multiple unique usecases and work flows. e.g. device power
+management, remote KVM access, Boot control, hardware and software inventory etc. Each of these capabilities can be
+of consumed by customer as an independent workflow. In the current-architecture this can be implemented by
+developing multiple unique resources managers that are specific to the out-of-band workflow.
 
-- **Helm chart hierarchy**
-  - `eim-core` (inventory API, tenancy controller, identity integration).
-  - `eim-resource-managers` (resource-specific controllers, agent orchestration).
-  - `eim-onboarding` (remote onboarding services, DKAM, Tinkerbell workflows).
-  - `eim-device-management-toolkit` (vPro/AMT services and gateway).
-  - `eim-observability-exporters` (inventory exporter, custom metrics, alert rules).
-  - `eim-foundation` (shared postgres/redis, IAM sidecars) – optional if supplied externally.
-  - `eim-suite` (meta-chart that depends on all of the above to deliver the full stack).
-- **Container images**
-  - Each module houses its own `Dockerfile` and GitHub Actions workflow to publish tagged images.
-  - Images include SBOMs and signatures to satisfy supply chain requirements.
-- **APIs and SDKs**
-  - OpenAPI specs remain in `orch-utils`. Each module references the relevant spec in its chart README and provides
-    client snippets.
-  - Generate language bindings (Go, Python, TypeScript) during CI to accelerate integration.
-- **Automation scripts**
-  - `scripts/eim/<module>/install.ps1|sh` for day-0 setup.
-  - Terraform modules for cloud prerequisites (IAM roles, load balancers) embedded in the module repository or
-    published to the Terraform registry.
+The diagram below illustrates feature out-of-band specific resource managers that can be developed to support
+the various out-of-band management workflows. Each of these resource managers can be packaged as an independent module
+that can be consumed by the customer as per their requirements. In the current architecture the customer would still
+need to have basic Inventory and OS provisioning as these capabilities are required for vPRO device activation.
 
-### Build and Release Strategy
-
-1. **Repo alignment**
-   - Continue using existing repositories (`infra-core`, `infra-managers`, etc.) but add module-specific `helm/`
-     directories hosting the decomposed charts.
-   - `infra-charts` becomes the authoritative aggregation point; each module chart is managed there and versioned
-     via semantic release.
-2. **CI pipeline**
-   - Multi-stage pipeline generates container images, runs integration tests, and packages Helm charts.
-   - Matrix builds allow `--module=<name>` to build and test individual modules, while `--module=all` produces the
-     full suite.
-3. **Artifact publication**
-   - Helm charts pushed to OCI registry `ghcr.io/open-edge-platform/eim/<module>`.
-   - Images pushed to `ghcr.io/open-edge-platform/eim/<module-service>`.
-   - Release notes list module versions, dependencies, and migration steps.
-4. **Argo CD integration**
-   - Introduce Argo Application sets per module, referencing the new charts.
-   - The existing umbrella application (`edge-manageability-framework`) depends on module apps; customers can
-     disable modules by omitting specific applications in their GitOps repo.
-
-### Customer Consumption Flows
-
-- **Full Stack** – Install `eim-suite` meta-chart via Argo CD for a turn-key deployment; all modules enabled with
-  default profiles.
-- **Device Onboarding Only** – Deploy `eim-onboarding` chart; optionally depend on `eim-foundation` for shared
-  services or point to existing IAM/DB endpoints via Helm values.
-- **Out-of-band Device Management** – Deploy `eim-device-management-toolkit` plus `eim-core` (for tenant APIs) and
-  the relevant resource manager connectors.
-- **Custom bundle** – Compose desired module charts in a customer-owned GitOps repo, leveraging documented
-  dependencies and values.
-
-## Rationale
-
-### Alternative 1 – Maintain monolithic chart
-
-This option keeps the current `infra-charts` umbrella chart intact and continues shipping all services together.
-EIM remains a single Argo CD Application with hard-wired dependencies.
-
-- **Pros**
-  - Minimal change to existing GitOps repositories and automation.
-  - Straightforward version matrix—one chart version maps to one platform release.
-  - Existing documentation and support processes remain unchanged.
-- **Cons**
-  - Customers who only need Device Onboarding or vPro tooling must install the entire stack (PostgreSQL, resource
-    managers, observability exporters, etc.).
-  - Upgrades force synchronized downtime windows across all services and increase risk of regression in unrelated
-    components.
-  - Contributor teams cannot iterate independently; even a small fix in `infra-onboarding` requires full regression
-    testing of all modules.
-
-**Example:** An ISV seeking only the vPro Device Management Toolkit must deploy the entire suite (inventory,
-onboarding, resource managers, telemetry) even if those services conflict with their existing stack, leading to
-duplicated infrastructure and operational overhead.
-
-### Alternative 2 – Break into separate repositories per module
-
-This approach would split each EIM capability into its own Git repository (for example, `infra-onboarding`,
-`infra-vpro`, `infra-resource-managers`) with discrete Helm charts, pipelines, and release schedules.
-
-- **Pros**
-  - Strong isolation between modules—teams can release without cross-repo coordination.
-  - Each repository can tailor CI pipelines, code owners, and branching models to its needs.
-  - Easier for external contributors to focus on a single capability without onboarding to the whole stack.
-- **Cons**
-  - Rapid repository proliferation increases maintenance cost (CI runners, issue tracking, security scanning).
-  - Coordinating platform-wide releases becomes harder; consumers must stitch together compatible versions manually.
-  - Shared assets (SDKs, API specs, documentation) risk divergence or duplication across repos.
-
-**Example:** Shipping `eim-onboarding` from a dedicated repo accelerates onboarding innovation, but release
-engineering must coordinate simultaneous tags across five repositories when producing a full-suite build—raising
-risk of mismatched versions in customer environments.
-
-### Alternative Comparison
-
-| Dimension | Alternative 1: Monolithic Chart | Alternative 2: Separate Repos per Module |
-|-----------|---------------------------------|-------------------------------------------|
-| Customer modular adoption | Very limited—entire suite required | High—modules can be consumed independently |
-| Release coordination | Centralized, simple | Decentralized, complex |
-| Operational overhead | Single pipeline, lower infra cost | Multiple pipelines, higher infra cost |
-| Developer autonomy | Low—shared release train | High—repo-level ownership |
-| Documentation/SDK maintenance | Unified | Risk of duplication and drift |
-| Backward compatibility guarantees | Strong but rigid | Flexible but harder to enforce |
-
-### Chosen Approach Benefits
-
-- Balanced modularity with centralized governance through `infra-charts` and `edge-manageability-framework`.
-- Reuses existing GitOps patterns (Argo CD Application of Applications) with minimal disruption.
-- Enables customer choice while keeping shared observability and IAM pluggable.
-
-## Affected Components and Teams
-
-- `infra-core`, `infra-managers`, `infra-onboarding`, `infra-external`, `infra-charts` repositories.
-- Edge Manageability GitOps configurations (Argo CD apps, Helm charts).
-- Release Engineering (new pipelines and artifact publishing).
-- Developer Experience (documentation, SDK generation).
-- Observability and IAM teams (ensuring optional integrations remain supported).
-
-## Implementation Plan
-
-| Phase | Timeline (est.) | Milestones |
-|-------|-----------------|------------|
-| Phase 0 – Planning & Inventory |  | Identify module boundaries, audit dependencies, document APIs and helm values per service. |
-| Phase 1 – Chart Extraction |  | Extract module charts into `infra-charts`; create CI for module builds; produce alpha releases of `eim-core`, `eim-onboarding`, `eim-device-management-toolkit`. |
-| Phase 2 – Artifact & API Hardening |  | Publish versioned APIs, SBOMs, signed images; update docs; release beta for customer pilots. |
-| Phase 3 – Production Rollout |  | General availability of modular charts; deliver `eim-suite` meta-chart; deprecate legacy monolithic chart with migration guide. |
-| Phase 4 – Optimization |  | Automate dependency validation, implement per-module usage analytics, iterate on reference automation scripts. |
-
-## Open Issues
-
-- **Dependency Minimization** – Additional work is required to refactor runtime assumptions (for example, shared
-  PostgreSQL schemas) so modules can operate with external managed services.
-- **Licensing Attribution** – Helm chart decomposition must ensure third-party license notices remain accurate when
-  modules are installed standalone.
-- **Version Compatibility Matrix** – Need tooling to surface compatible module version sets (e.g., `eim-core` v1.3
-  works with `eim-onboarding` v1.2+).
-- **Edge Agent Coordination** – Define how edge node agent versions map to modular Resource Manager releases to
-  avoid drift.
+![EIM resources managers for OOB meeting separation of concerns](images/oob-resource-manager-eim.png)
