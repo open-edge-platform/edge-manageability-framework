@@ -237,7 +237,7 @@ To unlock incremental modularity without disrupting existing customers, three tr
     Foundation Platform Service (FPS) stack.
   - Package “use-case specific” overlays that expose Day-0 onboarding, Day-1 configuration, and Day-2 upgrade
     workflows via API, CLI, resource manager, and (where applicable) edge node agent bundles.
-  - Provide prescriptive automation (Helm values, scripts) that stitches together required modules while 
+  - Provide prescriptive automation (Helm values, scripts) that stitches together required modules while
     documenting cross-service credential dependencies (for example, onboarding-issued tokens for upgrade services).
     - EIM `infra-charts` will be updated to support deployment of managers that are required for the usecase. For
     example, for OXM deployment profile only onboarding and OS resource manager will be deployed.
