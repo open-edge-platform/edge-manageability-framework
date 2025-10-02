@@ -67,7 +67,12 @@ the following workflows
 
 - **Out-of-band Device Management:** As an ISV or edge solution vendor, I want a End-to-end reference solution to
   automate out-of-band device management using Intel vPRO AMT and ISM, so that I can manage fleets of edge devices
-  efficiently and securely.
+  efficiently and securely
+
+> **Note:** Out-of-band management has multiple unique usecases and work flows. e.g. device power management,
+> remote KVM access, Boot control, hardware and software inventory etc. Each of these capabilities can be 
+> of consumed by customer as an independent workflow.
+
 - **Hardware and Software Observability:** As an ISV or edge solution vendor, I want to access hardware and software
   observability for Intel Architecture devices, so that higher management stacks can schedule workloads and monitor
   fleet health using key silicon metrics.
@@ -280,10 +285,18 @@ The updated Track #2 of OXM profile architecture supporting Secure Device Onboar
   - Provide adapters for database and identity integration so operators can authenticate using cluster or external
     credentials, drastically reducing prerequisites for partial deployments.
 
+Design principles for Track #3 include:
+
+- Bounded Contexts per Operator: Each operator owns its slice of the domain (Onboarding, Config, Observability, OOB, Upgrades).
+- Event-Driven Integration: Prefer LISTEN/NOTIFY or Kafka over polling the DB.
+- Idempotent Reconciliations: Operators must retry safely without side effects.
+- Compensating Actions: Instead of distributed transactions, use rollback workflows.
+- Multi-Tenancy and RLS: Use Postgres Row Level Security for isolation between tenants.
+- Edge-Initiated Connectivity: Edge agents always connect out to operators (never inbound).
 Each successive track reduces infrastructure coupling, increases module portability, and lowers the barrier for
 consuming targeted workflows.
 
-==================== TBD ====================
+## TBD
 
 ### Modular Packaging Model
 
