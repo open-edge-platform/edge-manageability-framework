@@ -43,6 +43,46 @@ The EIM software supply chain spans multiple repositories
 - [infra-charts](https://github.com/open-edge-platform/infra-charts): Helm charts for deploying Edge Infrastructure
   Manager services.
 
+Following are the high-level EIM Value propositions:
+
+**Fleet management spanning Day 0, 1 and 2 of device lifecycle**
+
+- Organizing devices into projects/regions/sites.
+- Support for workflows at site/region level (multiple ENs).  
+- Scale support: Provisioning, onboarding, upgrades, decommissioning and observability.
+- User Interface: UI, CLI, OpenAPI
+- Deployment: Cloud and OnPrem support
+- Hardware: Support Atom, Core and Xeon CPU. Intel and Nvidia GPU.
+- Scalability: Day 0 (100s of ENs), Day 1: 10k, Day 2: 1k.
+
+**Secure and at scale Device onboarding and OS Provisioning [Day 0]**
+
+- Standalone Device provisioning support for OXMs
+- Device onboarding - installing credentials for centralized management.
+- Full disk encryption and Secure boot (Si specific)
+
+**Out-of-Band device management, Device customization and Observability [Day 1]**
+
+- Support for Intel vPRO AMT/ISM based out-of-band management at fleet level.
+  More details in the [section](#out-of-band-device-management).
+- Per Edge node OS environment configuration using standards like cloud-init.
+  - GPU, NPU, Network and Storage configuration
+- Exposing APIs to Cluster, App management and Trusted Compute services.
+- Device health, H/W and S/W Telemetry and logging.
+- Telemetry and logging profiles for amount of data transfer.
+- Edge node resource usage and Alert management.
+- Remote edge node access and user management.
+
+**Secure and at scale Device upgrades [Day 2]**
+
+- Mutable and immutable OS update along with CVE tracking
+- Secure device de-authorization and decommissioning.
+
+**Third-party integration**
+
+- Interfacing with 3rd party device or fleet manager (Lenovo LOCA) enabling Device
+  manageability and Edge AI usecases on 3rd party edge solutions.
+
 ### Objectives
 
 Typically, EIM customers fall into three personas:
@@ -307,6 +347,34 @@ operators and pluggable infrastructure.
 The updated Track #3 of OXM profile architecture supporting Secure Device Onboarding and OS Provisioning is illustrated below.
 
 ## Out-of-band Device Management
+
+Edge Infrastructure Manager provides a reference end-to-end automated fleet management solution
+using [Intel Device manageability toolkit](https://github.com/device-management-toolkit/docs) (DMT). E.g. EIM provides
+a reference cloud or OnPremises Fleet management solution that can be deployed by customer Similar to Intel managed
+vPRO fleet solution. ISVs and Edge stack vendors can leverage EIM as a reference implementation and software components to
+integrate vPRO device management capabilities into their edge solution stack.
+
+Here are some of the value additions EIM provides on top of the core Intel DMT.
+
+- Unified provisioning that chains PXE/HTTPS boot, OS imaging, and DMT agent activation
+  into a single zero-touch workflow, shrinking factory floor and field deployment effort.
+- Vendor-neutral policy engine that detects device-specific vPRO/ISM capabilities at runtime
+  and drives conditional actions (power, KVM, remediation) without custom scripting.
+- Managed upgrade pipelines that coordinate firmware, OS, and DMT service rollouts with
+  staged approvals, compliance gating, and automated CVE closure reporting.
+- Multi-tenant governance model with regional/site hierarchies, granular RBAC, and per-tenant
+  secrets isolation that scales DMT beyond single-customer environments.
+- Automated recovery playbooks that restore OS, agents, credentials, and application payloads
+  end-to-end, giving operations a deterministic “return-to-known-good” button.
+- Cross-layer Inventory and telemetry lake that fuses hardware counters, OS health,
+  Kubernetes state, and application metrics to expose Intel silicon insights alongside fleet KPIs.
+- Secure device retirement workflows that orchestrate de-authorization, cryptographic wipe,
+  audit evidence capture, and re-inventory of reclaimed assets.
+- Integrated secure remote operations combining audited KVM, just-in-time SSH, and policy-bound
+  break-glass controls to keep remediation compliant.
+- Edge-aware reliability features that prevent repeated vPRO activations on lossy or intermittent networks.
+
+### Fine grained E2E vPRO workflows
 
 As stated earlier, out-of-band management has multiple unique usecases and work flows. e.g. device power
 management, remote KVM access, Boot control, hardware and software inventory etc. Each of these capabilities can be
