@@ -17,9 +17,13 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
-    - repoURL: "cloudnative-pg.github.io/charts"
-      chart: cluster
-      targetRevision: 0.3.1
+    - repoURL: https://github.com/cloudnative-pg/charts.git
+      path: charts/cluster
+      targetRevision: HEAD
+    # Replace with code below once cluster v0.3.2 has been released.  
+    # - repoURL: "cloudnative-pg.github.io/charts"
+    #   chart: cluster
+    #   targetRevision: 0.3.1
       helm:
         releaseName: {{$appName}}
         valuesObject:
