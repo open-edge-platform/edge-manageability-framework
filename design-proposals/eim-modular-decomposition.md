@@ -344,6 +344,16 @@ operators and pluggable infrastructure.
 
 ![Updated modular EIM architecture using kubernetes-native operators](images/updated-t3-eim-operators-arch.png)
 
+The re-architected resource managers to device inventory can be implemented in multiple ways.
+
+- EIM operators can communicate directly with with a SQL Datastore like PostgreSQL using an ORM library retaining the current data model.
+- EIM operators can communicate directly with with a non-SQL Datastore like etcd or Consul using their native APIs.
+  This would have impact on the current data model and would require a migration path.
+- EIM operators can leverage native Kubernetes-API server and the etcd as the device inventory. This would have impact
+  on the current data model and also might have side effect on the EMF/EIM cluster instance because of sharing the same etcd instance.
+- It is also possible to have a dedicated instance of API server and etcd for EIM operators to manage the device
+  inventory.
+
 The updated Track #3 of OXM profile architecture supporting Secure Device Onboarding and OS Provisioning is illustrated below.
 
 ## Out-of-band Device Management
@@ -354,7 +364,7 @@ a reference cloud or OnPremises Fleet management solution that can be deployed b
 vPRO fleet solution. ISVs and Edge stack vendors can leverage EIM as a reference implementation and software components to
 integrate vPRO device management capabilities into their edge solution stack.
 
-Here are some of the value additions EIM provides on top of the core Intel DMT.
+Here are some of the **value additions EIM provides on top of the core Intel DMT**.
 
 - Unified provisioning that chains PXE/HTTPS boot, OS imaging, and DMT agent activation
   into a single zero-touch workflow, shrinking factory floor and field deployment effort.
