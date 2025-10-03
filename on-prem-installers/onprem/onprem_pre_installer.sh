@@ -1,0 +1,484 @@
+#!/bin/bash
+
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Script Name: onprem_installer.sh
+# Description: This script:
+#               Reads AZURE AD refresh_token credential from user input,
+#               Downloads installer and repo artifacts,
+#               Set's up OS level dependencies,
+#               Installs RKE2 and basic cluster components,
+#               Installs Gitea
+#               Installs ArgoCD
+
+# Usage: ./onprem_installer
+#    -s:             Enables TLS for SRE Exporter. Private TLS CA cert may be provided for SRE destination as an additional argument - provide path to cert (optional)
+#    -d:             Disable TLS verification for SMTP endpoint
+#    -h:             help (optional)
+#    -o:             Override production values with dev values
+#    -u:             Set the Release Service URL
+
+set -e
+set -o pipefail
+
+# Import shared functions
+# shellcheck disable=SC1091
+source "$(dirname "$0")/functions.sh"
+
+### Constants
+
+RELEASE_SERVICE_URL="${RELEASE_SERVICE_URL:-registry-rs.edgeorchestration.intel.com}"
+ORCH_INSTALLER_PROFILE="${ORCH_INSTALLER_PROFILE:-onprem}"
+DEPLOY_VERSION="${DEPLOY_VERSION:-v2025.2.0}"
+GITEA_IMAGE_REGISTRY="${GITEA_IMAGE_REGISTRY:-docker.io}"
+
+### Variables
+cwd=$(pwd)
+
+deb_dir_name="installers"
+git_arch_name="repo_archives"
+argo_cd_ns="argocd"
+gitea_ns="gitea"
+archives_rs_path="edge-orch/common/files/orchestrator"
+si_config_repo="edge-manageability-framework"
+installer_rs_path="edge-orch/common/files"
+export GIT_REPOS=$cwd/$git_arch_name
+
+# Variables that depend on the above and might require updating later, are placed in here
+set_artifacts_version() {
+  installer_list=(
+    "onprem-config-installer:${DEPLOY_VERSION}"
+    "onprem-ke-installer:${DEPLOY_VERSION}"
+    "onprem-argocd-installer:${DEPLOY_VERSION}"
+    "onprem-gitea-installer:${DEPLOY_VERSION}"
+    "onprem-orch-installer:${DEPLOY_VERSION}"
+  )
+
+  git_archive_list=(
+    "onpremfull:${DEPLOY_VERSION}"
+  )
+}
+
+
+# This script allows making changes to the configuration during its runtime.
+# The function performs the following steps:
+# 1. Runs the on-premises installation.
+# 2. Extracts the repository archive.
+# 3. Prompts the user to edit the YAML configuration file and waits for their response.
+# 4. Once the user has edited the file, they respond to the prompt with 'yes'.
+# 5. Upon receiving a 'yes' response, the script re-archives the repository.
+# 6. Continues with the installation of the orchestrator.
+# Note: If the configuration already exists, the script will prompt the user to confirm if they want to overwrite it.
+allow_config_in_runtime() {
+  if [ "$ENABLE_TRACE" = true ]; then
+    echo "Tracing is enabled. Temporarily disabling tracing"
+    set +x
+  fi
+
+  tmp_dir="$cwd/$git_arch_name/tmp"
+
+  if [ -d "$tmp_dir/$si_config_repo" ]; then
+    echo "Configuration already exists at $tmp_dir/$si_config_repo."
+    if [ "$ASSUME_YES" = true ]; then
+      echo "Assuming yes to use existing configuration."
+      return
+    fi
+    while true; do
+      read -rp "Do you want to overwrite the existing configuration? (yes/no): " yn
+      case $yn in
+        [Yy]* ) rm -rf "${tmp_dir:?}/${si_config_repo:?}"; break;;
+        [Nn]* ) echo "Using existing configuration."; return;;
+        * ) echo "Please answer yes or no.";;
+      esac
+    done
+  fi
+
+  ## Untar edge-manageability-framework repo
+  repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n")
+
+  rm -rf "$tmp_dir"
+  mkdir -p "$tmp_dir"
+  tar -xf "$cwd/$git_arch_name/$repo_file" -C "$tmp_dir"
+
+  # Prompt for Docker.io credentials
+  ## Docker Hub usage and limits: https://docs.docker.com/docker-hub/usage/
+  while true; do
+    if [[ -z $DOCKER_USERNAME && -z $DOCKER_PASSWORD ]]; then
+      read -rp "Would you like to provide Docker credentials? (Y/n): " yn
+      case $yn in
+        [Yy]* ) echo "Enter Docker Username:"; read -r DOCKER_USERNAME; export DOCKER_USERNAME; echo "Enter Docker Password:"; read -r -s DOCKER_PASSWORD; export DOCKER_PASSWORD; break;;
+        [Nn]* ) echo "The installation will proceed without using Docker credentials."; unset DOCKER_USERNAME; unset DOCKER_PASSWORD; break;;
+        * ) echo "Please answer yes or no.";;
+      esac
+    else
+      echo "Setting Docker credentials."
+      export DOCKER_USERNAME
+      export DOCKER_PASSWORD
+      break
+    fi
+  done
+
+  if [[ -n $DOCKER_USERNAME && -n $DOCKER_PASSWORD ]]; then
+    echo "Docker credentials are set."
+  else
+    echo "Docker credentials are not valid. The installation will proceed without using Docker credentials."
+    unset DOCKER_USERNAME
+    unset DOCKER_PASSWORD
+  fi
+
+  # Prompt for IP addresses for Argo, Traefik and Nginx services
+  echo "Provide IP addresses for Argo, Traefik and Nginx services."
+  while true; do
+    if [[ -z ${ARGO_IP} ]]; then
+      echo "Enter Argo IP:"
+      read -r ARGO_IP
+      export ARGO_IP
+    fi
+
+    if [[ -z ${TRAEFIK_IP} ]]; then
+      echo "Enter Traefik IP:"
+      read -r TRAEFIK_IP
+      export TRAEFIK_IP
+    fi
+
+    if [[ -z ${NGINX_IP} ]]; then
+      echo "Enter Nginx IP:"
+      read -r NGINX_IP
+      export NGINX_IP
+    fi
+
+    if [[ $ARGO_IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ && $TRAEFIK_IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ && $NGINX_IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+      echo "IP addresses are valid."
+      break
+    else
+      echo "Inputted values are not valid IPs. Please input correct IPs without any masks."
+      unset ARGO_IP
+      unset TRAEFIK_IP
+      unset NGINX_IP
+    fi
+  done
+
+  ## Wait for SI to confirm that they have made changes
+  while true; do
+    if [[ -n ${PROCEED} ]]; then
+      break
+    fi
+    read -rp "Edit config values.yaml files with custom configurations if necessary!!!
+The files are located at:
+$tmp_dir/$si_config_repo/orch-configs/profiles/<profile>.yaml
+$tmp_dir/$si_config_repo/orch-configs/clusters/$ORCH_INSTALLER_PROFILE.yaml
+Enter 'yes' to confirm that configuration is done in order to progress with installation
+('no' will exit the script) !!!
+
+Ready to proceed with installation? " yn
+    case $yn in
+      [Yy]* ) break;;
+      [Nn]* ) exit 1;;
+      * ) echo "Please answer yes or no.";;
+    esac
+  done
+
+  if [ "$ENABLE_TRACE" = true ]; then
+    echo "Tracing is enabled. Re-enabling tracing"
+    set -x
+  fi
+}
+
+usage() {
+  cat >&2 <<EOF
+Purpose:
+Install OnPrem Edge Orchestrator.
+
+Usage:
+$(basename "$0") [option...] [argument]
+
+ex:
+./$(basename "$0")
+./$(basename "$0") -c <certificate string>
+
+Options:
+    -h, --help         Print this help message and exit
+    -c, --cert         Path to Release Service/ArgoCD certificate
+    -s, --sre          Path to SRE destination CA certificate (enables TLS for SRE Exporter)
+    --skip-download    Skip downloading installer packages 
+    -d, --notls        Disable TLS verification for SMTP endpoint
+    -o, --override     Override production values with dev values
+    -u, --url          Set the Release Service URL
+    -t, --trace        Enable tracing
+    -w, --write-config Write configuration to disk and exit
+    -y, --yes          Assume yes for using existing configuration if it exists
+
+Environment Variables:
+    DOCKER_USERNAME    Docker.io username
+    DOCKER_PASSWORD    Docker.io password
+
+EOF
+}
+
+print_env_variables() {
+  echo; echo "========================================"
+  echo "         Environment Variables"
+  echo "========================================"
+  printf "%-25s: %s\n" "RELEASE_SERVICE_URL" "$RELEASE_SERVICE_URL"
+  printf "%-25s: %s\n" "ORCH_INSTALLER_PROFILE" "$ORCH_INSTALLER_PROFILE"
+  printf "%-25s: %s\n" "DEPLOY_VERSION" "$DEPLOY_VERSION"
+  echo "========================================"; echo
+}
+
+write_configs_using_overrides() {
+  ## Option to override clusterDomain in onprem yaml by setting env variable
+  if [[ -n ${CLUSTER_DOMAIN} ]]; then
+    echo "CLUSTER_DOMAIN is set. Updating clusterDomain in the YAML file..."
+    yq -i ".argo.clusterDomain=\"${CLUSTER_DOMAIN}\"" "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
+    echo "Update complete. clusterDomain is now set to: $CLUSTER_DOMAIN"
+  fi
+
+  ## Override TLS setting for SRE depending on user's input (presence of flag with SRE CA cert)
+  if [[ "${SRE_TLS_ENABLED-}" == "true" ]]; then
+    yq -i '.argo.o11y.sre.tls.enabled|=true' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
+    if [[ -n "${SRE_DEST_CA_CERT-}" ]]; then
+      yq -i '.argo.o11y.sre.tls.caSecretEnabled|=true' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
+    fi
+  else
+    yq -i '.argo.o11y.sre.tls.enabled|=false' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
+  fi
+
+  if [[ ${SMTP_SKIP_VERIFY} == "true" ]]; then
+    yq -i '.argo.o11y.alertingMonitor.smtp.insecureSkipVerify|=true' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
+  fi
+
+  # Override MetalLB address pools
+  yq -i '.postCustomTemplateOverwrite.metallb-config.ArgoIP|=strenv(ARGO_IP)' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
+  yq -i '.postCustomTemplateOverwrite.metallb-config.TraefikIP|=strenv(TRAEFIK_IP)' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
+  yq -i '.postCustomTemplateOverwrite.metallb-config.NginxIP|=strenv(NGINX_IP)' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
+}
+
+write_config_to_disk() {
+  tmp_dir="$cwd/$git_arch_name/tmp"
+  rm -rf "$tmp_dir"
+  mkdir -p "$tmp_dir"
+  repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n")
+  tar -xf "$cwd/$git_arch_name/$repo_file" -C "$tmp_dir"
+
+  # If overrides are set, ensure the written out configs are updated with them
+  write_configs_using_overrides
+
+  echo "Configuration files have been written to disk at $tmp_dir/$si_config_repo"
+  exit 0
+}
+
+validate_and_set_ip() {
+  local yaml_path="$1"
+  local yaml_file="$2"
+  local ip_var_name="$3"
+  local ip_value
+
+  echo "Value at $yaml_path in $yaml_file: $(yq "$yaml_path" "$yaml_file")"
+
+  if [[ -z $(yq "$yaml_path" "$yaml_file") || $(yq "$yaml_path" "$yaml_file") == "null" ]]; then
+    echo "${ip_var_name} is not set to a valid value in the configuration file."
+    while true; do
+      read -rp "Please provide a value for ${ip_var_name}: " ip_value
+      if [[ $ip_value =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        export "$ip_var_name"="$ip_value"
+        yq -i "$yaml_path|=strenv($ip_var_name)" "$yaml_file"
+        echo "${ip_var_name} has been set to: $ip_value"
+        break
+      else
+        unset "$ip_var_name"
+        echo "Invalid IP address. Would you like to provide a valid value? (Y/n): "
+        read -r yn
+        case $yn in
+          [Nn]* ) echo "Exiting as a valid value for ${ip_var_name} has not been provided."; exit 1;;
+          * ) ;;
+        esac
+      fi
+    done
+  fi
+}
+
+validate_config() {
+
+  # Validate the IP addresses for Argo, Traefik and Nginx services
+  validate_and_set_ip '.postCustomTemplateOverwrite.metallb-config.ArgoIP' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml ARGO_IP
+  validate_and_set_ip '.postCustomTemplateOverwrite.metallb-config.TraefikIP' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml TRAEFIK_IP
+  validate_and_set_ip '.postCustomTemplateOverwrite.metallb-config.NginxIP' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml NGINX_IP
+}
+
+################################
+##### INSTALL SCRIPT START #####
+################################
+
+ASSUME_YES=false
+SKIP_DOWNLOAD=false
+ENABLE_TRACE=false
+
+if [ -n "${1-}" ]; then
+  while :; do
+    case "$1" in
+      -h|--help)
+        usage
+        exit 0
+      ;;
+      -s|--sre_tls)
+        SRE_TLS_ENABLED="true"
+        if [ "$2" ]; then
+          SRE_DEST_CA_CERT="$(cat "$2")"
+          shift
+        fi
+      ;;
+      --skip-download)
+        SKIP_DOWNLOAD=true
+      ;;
+      -d|--notls)
+        SMTP_SKIP_VERIFY="true"
+      ;;
+      -o|--override)
+        ORCH_INSTALLER_PROFILE="onprem-dev"
+      ;;
+      -u|--url)
+        if [ "$2" ]; then
+          RELEASE_SERVICE_URL="$2"
+          shift
+        else
+          echo "ERROR: $1 requires an argument"
+          exit 1
+        fi
+      ;;
+      -t|--trace)
+        set -x
+        ENABLE_TRACE=true
+      ;;
+      -w|--write-config)
+        WRITE_CONFIG="true"
+      ;;
+      -y|--yes)
+        ASSUME_YES=true
+      ;;
+      -?*)
+        echo "Unknown argument $1"
+        exit 1
+      ;;
+      *) break
+    esac
+    shift
+  done
+fi
+
+### Installer
+echo "Running On Premise Edge Orchestrator pre-installers"
+
+# Print environment variables
+print_env_variables
+
+# Set the version of the artifacts to be downloaded
+set_artifacts_version
+
+# Check & install script dependencies
+check_oras
+install_yq
+
+if  [[ $SKIP_DOWNLOAD != true  ]]; then 
+  # Cleanup and download .deb packages
+  sudo rm -rf "${cwd:?}/${deb_dir_name:?}/"
+
+  retry_count=0
+  max_retries=10
+  retry_delay=15
+
+  until download_artifacts "$cwd" "$deb_dir_name" "$RELEASE_SERVICE_URL" "$installer_rs_path" "${installer_list[@]}"; do
+    ((retry_count++))
+    if [ "$retry_count" -ge "$max_retries" ]; then
+      echo "Failed to download deb artifacts after $max_retries attempts."
+      exit 1
+    fi
+    echo "Download failed. Retrying in $retry_delay seconds... ($retry_count/$max_retries)"
+    sleep "$retry_delay"
+  done
+
+  sudo chown -R _apt:root $deb_dir_name
+
+  ## Cleanup and download .git packages
+  sudo rm -rf  "${cwd:?}/${git_arch_name:?}/"
+
+  retry_count=0
+  max_retries=10
+  retry_delay=15
+
+  until download_artifacts "$cwd" "$git_arch_name" "$RELEASE_SERVICE_URL" "$archives_rs_path" "${git_archive_list[@]}"; do
+    ((retry_count++))
+    if [ "$retry_count" -ge "$max_retries" ]; then
+      echo "Failed to download git artifacts after $max_retries attempts."
+      exit 1
+    fi
+    echo "Download failed. Retrying in $retry_delay seconds... ($retry_count/$max_retries)"
+    sleep "$retry_delay"
+  done
+else 
+  echo "Skipping packages download"
+  sudo chown -R _apt:root $deb_dir_name
+fi
+
+# Write configuration to disk if the flag is set
+if [[ "$WRITE_CONFIG" == "true" ]]; then
+  write_config_to_disk
+fi
+
+# Config - interactive
+allow_config_in_runtime
+
+# Write out the configs that have explicit overrides
+write_configs_using_overrides
+
+# Validate the configuration file, and set missing values
+validate_config
+
+## Tar back the edge-manageability-framework repo. This will be later pushed to Gitea repo in the Orchestrator Installer
+tmp_dir="$cwd/$git_arch_name/tmp"
+repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n")
+cd "$tmp_dir"
+tar -zcf "$repo_file" ./edge-manageability-framework
+mv -f "$repo_file" "$cwd/$git_arch_name/$repo_file"
+cd "$cwd"
+rm -rf "$tmp_dir"
+
+# Run OS Configuration installer
+echo "Installing the OS level configuration..."
+eval "sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y $cwd/$deb_dir_name/onprem-config-installer_*_amd64.deb"
+echo "OS level configuration installed"
+
+# Run K8s Installer
+echo "Installing RKE2..."
+if [[ -n "${DOCKER_USERNAME}" && -n "${DOCKER_PASSWORD}" ]]; then
+  echo "Docker credentials provided. Installing RKE2 with Docker credentials"
+  sudo DOCKER_USERNAME="${DOCKER_USERNAME}" DOCKER_PASSWORD="${DOCKER_PASSWORD}" NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y "$cwd"/$deb_dir_name/onprem-ke-installer_*_amd64.deb
+else
+  sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y "$cwd"/$deb_dir_name/onprem-ke-installer_*_amd64.deb
+fi
+echo "RKE2 Installed"
+
+mkdir -p /home/"$USER"/.kube
+sudo cp  /etc/rancher/rke2/rke2.yaml /home/"$USER"/.kube/config
+sudo chown -R "$USER":"$USER"  /home/"$USER"/.kube
+sudo chmod 600 /home/"$USER"/.kube/config
+export KUBECONFIG=/home/$USER/.kube/config
+
+# Run gitea installer
+echo "Installing Gitea"
+eval "sudo IMAGE_REGISTRY=${GITEA_IMAGE_REGISTRY} NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y $cwd/$deb_dir_name/onprem-gitea-installer_*_amd64.deb"
+wait_for_namespace_creation $gitea_ns
+sleep 30s
+wait_for_pods_running $gitea_ns
+echo "Gitea Installed"
+
+# Run argo CD installer
+echo "Installing ArgoCD..."
+eval "sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y $cwd/$deb_dir_name/onprem-argocd-installer_*_amd64.deb"
+wait_for_namespace_creation $argo_cd_ns
+sleep 30s
+wait_for_pods_running $argo_cd_ns
+echo "ArgoCD installed"
+
+echo "End On Premise Edge Orchestrator pre-installers"
