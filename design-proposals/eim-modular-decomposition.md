@@ -45,7 +45,7 @@ The EIM software supply chain spans multiple repositories
 
 Following are the high-level EIM Value propositions:
 
-**Fleet management spanning Day 0, 1 and 2 of device lifecycle**
+### Fleet management spanning Day 0, 1 and 2 of device lifecycle
 
 - Organizing devices into projects/regions/sites.
 - Support for workflows at site/region level (multiple ENs).  
@@ -55,13 +55,13 @@ Following are the high-level EIM Value propositions:
 - Hardware: Support Atom, Core and Xeon CPU. Intel and Nvidia GPU.
 - Scalability: Day 0 (100s of ENs), Day 1: 10k, Day 2: 1k.
 
-**Secure and at scale Device onboarding and OS Provisioning [Day 0]**
+### Secure and at scale Device onboarding and OS Provisioning [Day 0]
 
 - Standalone Device provisioning support for OXMs
 - Device onboarding - installing credentials for centralized management.
 - Full disk encryption and Secure boot (Si specific)
 
-**Out-of-Band device management, Device customization and Observability [Day 1]**
+### Out-of-Band device management, Device customization and Observability [Day 1]
 
 - Support for Intel vPRO AMT/ISM based out-of-band management at fleet level.
   More details in the [section](#out-of-band-device-management).
@@ -73,17 +73,17 @@ Following are the high-level EIM Value propositions:
 - Edge node resource usage and Alert management.
 - Remote edge node access and user management.
 
-**Secure and at scale Device upgrades [Day 2]**
+### Secure and at scale Device upgrades [Day 2]
 
 - Mutable and immutable OS update along with CVE tracking
 - Secure device de-authorization and decommissioning.
 
-**Third-party integration**
+### Third-party integration
 
 - Interfacing with 3rd party device or fleet manager (Lenovo LOCA) enabling Device
   manageability and Edge AI usecases on 3rd party edge solutions.
 
-### Objectives
+## Objectives
 
 Typically, EIM customers fall into three personas:
 
@@ -93,7 +93,7 @@ Typically, EIM customers fall into three personas:
 
 Each persona has distinct needs that can be better served through modular consumption of EIM capabilities.
 
-#### User stories
+### User stories
 
 Before diving into the proposal, here are some representative user stories that illustrate the need for modular decomposition:
 
@@ -153,7 +153,7 @@ workflows
   updates and lifecycle tasks for each tenant wherever the solution is deployed so that fleets remain secure and
   compliant.
 
-#### Deliverables
+### Deliverables
 
 1. **Modular consumption** – Customers must be able to deploy the whole EIM stack or any subset of modules (for
    example, Device Onboarding, vPro device management) with minimal dependency drag.
@@ -346,11 +346,13 @@ operators and pluggable infrastructure.
 
 The re-architected resource managers to device inventory can be implemented in multiple ways.
 
-- EIM operators can communicate directly with with a SQL Datastore like PostgreSQL using an ORM library retaining the current data model.
+- EIM operators can communicate directly with with a SQL Datastore like PostgreSQL using an
+  ORM library retaining the current data model.
 - EIM operators can communicate directly with with a non-SQL Datastore like etcd or Consul using their native APIs.
   This would have impact on the current data model and would require a migration path.
 - EIM operators can leverage native Kubernetes-API server and the etcd as the device inventory. This would have impact
-  on the current data model and also might have side effect on the EMF/EIM cluster instance because of sharing the same etcd instance.
+  on the current data model and also might have side effect on the EMF/EIM cluster instance because of
+  sharing the same etcd instance.
 - It is also possible to have a dedicated instance of API server and etcd for EIM operators to manage the device
   inventory.
 
