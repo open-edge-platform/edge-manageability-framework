@@ -20,8 +20,8 @@ cluster:
     parameters:
       huge_pages: 'off'
       {{- if .Values.argo.postgresql }}
-      max_connections: {{ .Values.argo.postgresql.maxConnections | default '200' }}
-      shared_buffers: {{.Values.argo.postgresql.sharedBuffers | default '24MB' }}
+      max_connections: {{ .Values.argo.postgresql.maxConnections | default 200 }}
+      shared_buffers: {{.Values.argo.postgresql.sharedBuffers | default "24MB"}}
       {{- end }}
   initdb:
     database: postgres
@@ -30,7 +30,15 @@ cluster:
     {{- range .Values.argo.database.databases }}
     {{- $dbName := printf "%s-%s" .namespace .name }}
     {{- $userName := printf "%s-%s_user" .namespace .name }}
+    {{- $password := printf "%s_password" $userName | replace "-" "_" | upper }}
     - CREATE DATABASE "{{ $dbName }}";
-    - BEGIN; REVOKE CREATE ON SCHEMA public FROM PUBLIC; REVOKE ALL ON DATABASE "{{ $dbName }}" FROM PUBLIC; COMMIT;
-    - BEGIN; CREATE USER "{{ $userName }}" WITH PASSWORD ${"{{ .name | replace "-" "_" | upper }}"_PASSWORD}; COMMIT;
+    - |-
+      BEGIN;
+      REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+      REVOKE ALL ON DATABASE "{{ $dbName }}" FROM PUBLIC;
+      CREATE USER "{{ $userName }}" WITH PASSWORD '${{ printf "{%s}" $password }}';
+      GRANT CONNECT ON DATABASE "{{ $dbName }}" TO "{{ $userName }}";
+      GRANT ALL PRIVILEGES ON DATABASE "{{ $dbName }}" TO "{{ $userName }}";
+      ALTER DATABASE "{{ $dbName }}" OWNER TO "{{ $userName }}";
+      COMMIT;
     {{- end }}
