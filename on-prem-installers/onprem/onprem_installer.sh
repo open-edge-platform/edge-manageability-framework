@@ -268,7 +268,7 @@ create_harbor_password orch-harbor "$harbor_password"
 create_keycloak_password orch-platform "$keycloak_password"
 create_postgres_password orch-database "$postgres_password"
 
-if ls "$cwd/$deb_dir_name/onprem-orch-installer_*_amd64.deb" 1> /dev/null 2>&1; then
+if find "$cwd/$deb_dir_name" -name "onprem-orch-installer_*_amd64.deb" -type f | grep -q .; then
     # Run orchestrator installer
     echo "Installing Edge Orchestrator Packages"
     eval "sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive ORCH_INSTALLER_PROFILE=$ORCH_INSTALLER_PROFILE GIT_REPOS=$GIT_REPOS apt-get install -y $cwd/$deb_dir_name/onprem-orch-installer_*_amd64.deb"
