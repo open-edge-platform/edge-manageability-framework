@@ -28,52 +28,36 @@ cluster:
     owner: postgres
     postInitSQL:
     - |
-      CREATE OR REPLACE FUNCTION get_env_var(env_name TEXT) 
-      RETURNS TEXT AS $getenv$
-      DECLARE
-          temp_table_name TEXT;
-          password_val TEXT;
-      BEGIN
-          temp_table_name := 'temp_env_' || replace(env_name, '-', '_');
-          EXECUTE format('CREATE TEMP TABLE %I (value TEXT)', temp_table_name);
-          EXECUTE format('COPY %I FROM PROGRAM ''printenv %s || echo NOTFOUND''', temp_table_name, env_name);
-          EXECUTE format('SELECT trim(value) FROM %I LIMIT 1', temp_table_name) INTO password_val;
-          EXECUTE format('DROP TABLE %I', temp_table_name);
-          
-          IF password_val = 'NOTFOUND' OR password_val = '' THEN
-              RETURN NULL;
-          END IF;
-          
-          RETURN password_val;
-      END;
-      $getenv$ LANGUAGE plpgsql;
-    - |
       CREATE OR REPLACE FUNCTION setup_database_and_user(
-          db_name TEXT,
-          username TEXT,
-          env_var_name TEXT
-      ) RETURNS VOID AS $setup$
-      DECLARE
+        db_name TEXT,
+        user_name TEXT,
+        env_var_name TEXT
+      ) RETURNS VOID AS $setup$ DECLARE
           password_val TEXT;
+          temp_table TEXT;
       BEGIN
-          password_val := get_env_var(env_var_name);
-          
-          IF password_val IS NULL THEN
-              RAISE EXCEPTION 'Environment variable % not found', env_var_name;
-          END IF;
-          
-          EXECUTE 'REVOKE CREATE ON SCHEMA public FROM PUBLIC';
-          EXECUTE format('REVOKE ALL ON DATABASE %I FROM PUBLIC', db_name);
-          EXECUTE format('CREATE USER %I WITH PASSWORD %L', username, password_val);
-          EXECUTE format('GRANT CONNECT ON DATABASE %I TO %I', db_name, username);
-          EXECUTE format('GRANT ALL PRIVILEGES ON DATABASE %I TO %I', db_name, username);
-          EXECUTE format('ALTER DATABASE %I OWNER TO %I', db_name, username);
-      END;
-      $setup$ LANGUAGE plpgsql;
+        temp_table := 'temp_' || replace(replace(env_var_name, '-', '_'), '.', '_');
+        EXECUTE format('CREATE TEMP TABLE %I (value TEXT)', temp_table);
+        EXECUTE format('COPY %I FROM PROGRAM ''printenv %s || echo NOTFOUND''', temp_table, env_var_name);
+        EXECUTE format('SELECT trim(value) FROM %I WHERE value != ''NOTFOUND'' AND value != '''' LIMIT 1', temp_table) INTO password_val;
+        EXECUTE format('DROP TABLE %I', temp_table);
+        IF password_val IS NULL THEN
+          RAISE EXCEPTION 'Environment variable % not found or empty', env_var_name;
+        END IF;
+        EXECUTE format('CREATE USER %I WITH PASSWORD %L', user_name, password_val);
+      END; $setup$ LANGUAGE plpgsql;
     {{- range .Values.argo.database.databases }}
     {{- $dbName := printf "%s-%s" .namespace .name }}
     {{- $userName := printf "%s-%s_user" .namespace .name }}
     {{- $password := printf "%s_password" $userName | replace "-" "_" | upper }}
     - CREATE DATABASE "{{ $dbName }}";
-    - SELECT setup_database_and_user("{{ $dbName }}", "{{ $userName }}", "{{ $password }}");
+    - SELECT setup_database_and_user('{{ $dbName }}', '{{ $userName }}', '{{ $password }}');
+    - |-
+      BEGIN;
+      REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+      REVOKE ALL ON DATABASE "{{ $dbName }}" FROM PUBLIC;
+      GRANT CONNECT ON DATABASE "{{ $dbName }}" TO "{{ $userName }}";
+      GRANT ALL PRIVILEGES ON DATABASE "{{ $dbName }}" TO "{{ $userName }}";
+      ALTER DATABASE "{{ $dbName }}" OWNER TO "{{ $userName }}";
+      COMMIT;
     {{- end }}
