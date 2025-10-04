@@ -233,6 +233,8 @@ randomPassword() {
 ##### INSTALL SCRIPT START #####
 ################################
 
+./onprem_pre_installer.sh
+
 ### Installer
 echo "Running On Premise Edge Orchestrator installers"
 
