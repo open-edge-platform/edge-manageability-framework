@@ -30,7 +30,6 @@ cwd=$(pwd)
 
 deb_dir_name="installers"
 git_arch_name="repo_archives"
-si_config_repo="edge-manageability-framework"
 export GIT_REPOS=$cwd/$git_arch_name
 tmp_dir="$cwd/$git_arch_name/tmp"
 export KUBECONFIG=/home/$USER/.kube/config
