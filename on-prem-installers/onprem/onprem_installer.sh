@@ -31,7 +31,6 @@ cwd=$(pwd)
 deb_dir_name="installers"
 git_arch_name="repo_archives"
 export GIT_REPOS=$cwd/$git_arch_name
-tmp_dir="$cwd/$git_arch_name/tmp"
 export KUBECONFIG=/home/$USER/.kube/config
 
 set_default_sre_env() {
