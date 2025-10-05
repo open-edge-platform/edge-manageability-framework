@@ -231,7 +231,7 @@ randomPassword() {
 ##### INSTALL SCRIPT START #####
 ################################
 
-chown 775 onprem_pre_installer.sh
+sudo chown 775 onprem_pre_installer.sh
 ./onprem_pre_installer.sh
 
 ### Installer
