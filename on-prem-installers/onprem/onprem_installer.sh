@@ -16,7 +16,7 @@ set -e
 set -o pipefail
 
 # Import shared functions
-
+# shellcheck disable=SC1091
 source "$(dirname "$0")/functions.sh"
 
 ### Constants
@@ -218,9 +218,9 @@ createGiteaAccount() {
     kubectl exec -n gitea "$giteaPod" -c "gitea" -- gitea admin user change-password --username "$accountName" --password "$password" --must-change-password=false
   fi
 
-  userToken=$(kubectl exec -n gitea "$giteaPod" -c gitea -- gitea admin user generate-access-token --scopes write:repository,write:user --username $accountName --token-name "${accountName}-$(date +%s)")
-  token=$(echo $userToken | awk '{print $NF}')
-  kubectl create secret generic gitea-$accountName-token -n gitea --from-literal=token=$token
+  userToken=$(kubectl exec -n gitea "$giteaPod" -c gitea -- gitea admin user generate-access-token --scopes write:repository,write:user --username "$accountName" --token-name "${accountName}-$(date +%s)")
+  token=$(echo "$userToken" | awk '{print $NF}')
+  kubectl create secret generic gitea-"$accountName"-token -n gitea --from-literal=token="$token"
 }
 
 randomPassword() {
