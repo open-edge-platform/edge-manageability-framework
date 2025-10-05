@@ -231,6 +231,7 @@ randomPassword() {
 ##### INSTALL SCRIPT START #####
 ################################
 
+chown +x onprem_pre_installer.sh
 ./onprem_pre_installer.sh
 
 ### Installer
