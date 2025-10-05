@@ -35,4 +35,4 @@ rm -rf "oras_${ORAS_VERSION}_*.tar.gz" oras-install/
 oras logout $REGISTRY_URL
 oras pull "$REGISTRY_URL/$RS_PATH:$ORCH_VERSION"
 
-chmod +x ./onprem_installer.sh ./uninstall_onprem.sh
+chmod +x ./onprem_installer.sh ./uninstall_onprem.sh ./onprem_pre_installer.sh

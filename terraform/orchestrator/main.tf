@@ -244,6 +244,12 @@ resource "null_resource" "copy_files" {
   }
 
   provisioner "file" {
+    source      = "../../${var.working_directory}/on-prem-installers/onprem/onprem_pre_installer.sh"
+    destination = "/home/ubuntu/onprem_pre_installer.sh"
+    when        = create
+  }
+
+  provisioner "file" {
     source      = "../../${var.working_directory}/on-prem-installers/onprem/functions.sh"
     destination = "/home/ubuntu/functions.sh"
     when        = create
