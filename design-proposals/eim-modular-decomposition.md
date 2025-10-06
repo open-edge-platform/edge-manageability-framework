@@ -324,7 +324,7 @@ The updated Track #2 of OXM profile architecture supporting Secure Device Onboar
     alignment with platform SRE practices.
   - Provide adapters for database and identity integration so operators can authenticate using cluster or external
     credentials, drastically reducing prerequisites for partial deployments.
-  - Existing   
+  - Existing database objects needs to be decouple.
 
 Design principles for Track #3 include:
 
