@@ -4,6 +4,7 @@
 
 {{- $appName        := "postgresql-cloudnative-pg-operator" }}
 {{- $namespace      := "postgresql-operator" }}
+{{- $syncWave       := "1" }}
 ---
 {{- if (index .Values.argo.enabled $appName) }}
 apiVersion: argoproj.io/v1alpha1
