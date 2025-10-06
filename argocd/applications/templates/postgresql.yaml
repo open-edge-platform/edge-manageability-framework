@@ -17,9 +17,9 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
-    - repoURL: "cloudnative-pg.github.io/charts"
-      chart: cloudnative-pg
-      targetRevision: 0.26.0
+    - repoURL: "registry-1.docker.io/bitnamicharts"
+      chart: postgresql
+      targetRevision: 16.6.3
       helm:
         releaseName: {{$appName}}
         valuesObject:
