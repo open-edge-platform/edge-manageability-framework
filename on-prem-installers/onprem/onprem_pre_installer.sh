@@ -4,7 +4,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Script Name: onprem_installer.sh
+# Script Name: onprem_pre_installer.sh
 # Description: This script:
 #               Reads AZURE AD refresh_token credential from user input,
 #               Downloads installer and repo artifacts,
@@ -13,7 +13,7 @@
 #               Installs Gitea
 #               Installs ArgoCD
 
-# Usage: ./onprem_installer
+# Usage: ./onprem_pre_installer
 #    -s:             Enables TLS for SRE Exporter. Private TLS CA cert may be provided for SRE destination as an additional argument - provide path to cert (optional)
 #    -d:             Disable TLS verification for SMTP endpoint
 #    -h:             help (optional)
