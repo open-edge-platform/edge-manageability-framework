@@ -125,9 +125,12 @@ the following workflows
 - **Reference API Integration:** As an ISV or edge solution vendor, I want to use reference APIs for higher-layer
   services such as trusted compute and cluster orchestration, so that my solutions can integrate seamlessly with
   existing platforms.
-- **Partner Vendor Orchestration Validation:** As an ISV or edge solution vendor, I want to validate partner vendor
-  orchestration layers against new Intel BIOS, firmware, CPU, and GPU platforms using EIM, so that device management
-  enablement can be shifted earlier in the development lifecycle.
+  > Note: customer might not adopt our APIs (There are no industry standards for Infra APIs) but us the schema and
+  > the data structure to understand what information was used to implement the higher layer services.
+- **Partner Vendor Orchestration Validation:** As an ISV or edge solution vendor, I want to validate our Device management
+  and Edge orchestration solution against new Intel Silicon with BIOS, firmware, CPU, and GPU platforms using EIM,
+  so that our Edge orchestration solution is ready earlier in the development lifecycle and ready at
+  the same time of Intel Silicon launch.
 
 **Original Equipment manufacturer** can leverage as a reference EIM design and implementation of the following
 workflows
@@ -321,6 +324,7 @@ The updated Track #2 of OXM profile architecture supporting Secure Device Onboar
     alignment with platform SRE practices.
   - Provide adapters for database and identity integration so operators can authenticate using cluster or external
     credentials, drastically reducing prerequisites for partial deployments.
+  - Existing   
 
 Design principles for Track #3 include:
 
