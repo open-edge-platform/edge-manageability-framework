@@ -57,10 +57,6 @@ autonumber
 
 ### Proposed changes
 
-#### EMT image
-An updated EMT image will be provided to support kernel parameter updates.
-This functionality is currently not allowed.
-
 #### EIM and Maintenance Manager 
 The validation logic that blocks kernel parameter updates for immutable operating systems will be removed.This change enables kernel parameter modifications on all supported OS types, ensuring consistent manageability.
 
@@ -71,3 +67,5 @@ The Platform Update Agent (PUA) will be updated to manage kernel parameter modif
 - Update Orch-cli to pass kernel parameter as part of OSProfileUpdate.
 - Schedule the Edgenode in maintainance mode so that Kernel Paramter changes can be applied. 
 
+### Limitation
+- On EMT the Kernel parameter can be applied only in non Secure boot mode.
