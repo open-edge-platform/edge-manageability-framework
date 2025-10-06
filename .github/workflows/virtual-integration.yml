@@ -223,7 +223,6 @@ jobs:
 
       - name: Configure yamllint pip packages
         run: echo "ASDF_YAMLLINT_PIP_PACKAGES=pyyaml" >> $GITHUB_ENV
-
       - name: Setup asdf and install dependencies
         uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]  
       - name: Run lint
@@ -689,7 +688,7 @@ jobs:
       github.ref == 'refs/heads/main' ||
       github.ref == 'refs/heads/main-pass-validation'
       )
-    runs-on: ubuntu-22.04-16core-64GB
+    runs-on: ubuntu-24.04-16core-64GB
     timeout-minutes: 90
     env:
       KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
