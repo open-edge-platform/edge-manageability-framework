@@ -386,7 +386,6 @@ resource "null_resource" "write_installer_config" {
     inline = [
       "set -o errexit",
       "bash -c 'cd /home/ubuntu; source .env; ./onprem_pre_installer.sh  ${var.use_local_build_artifact ? "--skip-download" : ""} --trace ${var.override_flag ? "--override" : ""} --write-config'",
-      "bash -c 'cd /home/ubuntu; source .env; ./onprem_installer.sh'",
     ]
     when = create
   }
