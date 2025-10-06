@@ -477,7 +477,8 @@ resource "null_resource" "exec_installer" {
   provisioner "remote-exec" {
     inline = [
       "set -o errexit",
-      "bash -c 'cd /home/ubuntu; source .env; env; ./onprem_installer.sh --skip-download --trace --yes ${var.override_flag ? "--override" : ""} | tee ./install_output.log; exit $${PIPESTATUS[0]}'",
+      "bash -c 'cd /home/ubuntu; source .env; env; ./onprem_pre_installer.sh --skip-download --trace --yes ${var.override_flag ? "--override" : ""} | tee ./install_pre_output.log; exit $${PIPESTATUS[0]}'",
+      "bash -c 'cd /home/ubuntu; source .env; env; ./onprem_installer.sh | tee ./install_output.log; exit $${PIPESTATUS[0]}'",
     ]
     when = create
   }
