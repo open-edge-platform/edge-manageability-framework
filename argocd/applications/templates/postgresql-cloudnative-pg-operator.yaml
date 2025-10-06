@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 {{- $appName        := "postgresql-cloudnative-pg-operator" }}
-{{- $namespace      := "orch-database" }}
+{{- $namespace      := "postgresql-operator" }}
 {{- $syncWave       := "140" }}
 ---
 {{- if (index .Values.argo.enabled $appName) }}
@@ -17,7 +17,7 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
-    - repoURL: "cloudnative-pg.github.io/charts"
+    - repoURL: "ghcr.io/cloudnative-pg/charts"
       chart: cloudnative-pg
       targetRevision: 0.26.0
       helm:

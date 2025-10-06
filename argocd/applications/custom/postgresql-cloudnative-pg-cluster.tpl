@@ -26,7 +26,7 @@ cluster:
     parameters:
       huge_pages: "off"
       {{- if .Values.argo.postgresql }}
-      max_connections: {{ .Values.argo.postgresql.maxConnections | default "200" }}
+      max_connections: {{ .Values.argo.postgresql.maxConnections | default "200" | quote }}
       shared_buffers: {{.Values.argo.postgresql.sharedBuffers | default "24MB"}}
       {{- end }}
   initdb:
@@ -35,14 +35,17 @@ cluster:
     postInitSQL:
     {{- range .Values.argo.database.databases }}
     {{- $dbName := printf "%s-%s" .namespace .name }}
-    {{- $userName := printf "%s-%s_user" .namespace .name }}
     - CREATE DATABASE "{{ $dbName }}";
-    - |-
-      BEGIN;
-      REVOKE CREATE ON SCHEMA public FROM PUBLIC;
-      REVOKE ALL ON DATABASE "{{ $dbName }}" FROM PUBLIC;
-      GRANT CONNECT ON DATABASE "{{ $dbName }}" TO "{{ $userName }}";
-      GRANT ALL PRIVILEGES ON DATABASE "{{ $dbName }}" TO "{{ $userName }}";
-      ALTER DATABASE "{{ $dbName }}" OWNER TO "{{ $userName }}";
+    {{- end }}
+    postInitApplicationSQL:
+    {{- range .Values.argo.database.databases }}
+    {{- $dbName := printf "%s-%s" .namespace .name }}
+    {{- $userName := printf "%s-%s_user" .namespace .name }}
+    - BEGIN; \
+      REVOKE CREATE ON SCHEMA public FROM PUBLIC; \
+      REVOKE ALL ON DATABASE "{{ $dbName }}" FROM PUBLIC; \
+      GRANT CONNECT ON DATABASE "{{ $dbName }}" TO "{{ $userName }}"; \
+      GRANT ALL PRIVILEGES ON DATABASE "{{ $dbName }}" TO "{{ $userName }}"; \
+      ALTER DATABASE "{{ $dbName }}" OWNER TO "{{ $userName }}"; \
       COMMIT;
     {{- end }}
