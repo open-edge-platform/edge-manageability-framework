@@ -3,13 +3,19 @@
 # SPDX-License-Identifier: Apache-2.0
 
 cluster:
-  env:
+  {{- with .Values.argo.resources.postgresql.cluster }}
+  resources:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  roles:
     {{- range .Values.argo.database.databases }}
-    - name: {{ printf "%s-%s_user_password" .namespace .name | replace "-" "_" | upper }}
-      valueFrom:
-        secretKeyRef:
-          name: passwords
-          key: {{ .name }}
+    {{- $secretName := printf "%s-%s" .namespace .name }}
+    {{- $userName := printf "%s-%s_user" .namespace .name }}
+    - ensure: present
+      login: true
+      name: {{ $userName }}
+      passwordSecret:
+        name: {{ $secretName }}
     {{- end }}
   storage:
     size: {{ .Values.argo.postgresql.storageSize | default "1Gi" }}
@@ -27,31 +33,10 @@ cluster:
     database: postgres
     owner: postgres
     postInitSQL:
-    - |
-      CREATE OR REPLACE FUNCTION setup_database_and_user(
-        db_name TEXT,
-        user_name TEXT,
-        env_var_name TEXT
-      ) RETURNS VOID AS $setup$ DECLARE
-          password_val TEXT;
-          temp_table TEXT;
-      BEGIN
-        temp_table := 'temp_' || replace(replace(env_var_name, '-', '_'), '.', '_');
-        EXECUTE format('CREATE TEMP TABLE %I (value TEXT)', temp_table);
-        EXECUTE format('COPY %I FROM PROGRAM ''printenv %s || echo NOTFOUND''', temp_table, env_var_name);
-        EXECUTE format('SELECT trim(value) FROM %I WHERE value != ''NOTFOUND'' AND value != '''' LIMIT 1', temp_table) INTO password_val;
-        EXECUTE format('DROP TABLE %I', temp_table);
-        IF password_val IS NULL THEN
-          RAISE EXCEPTION 'Environment variable % not found or empty', env_var_name;
-        END IF;
-        EXECUTE format('CREATE USER %I WITH PASSWORD %L', user_name, password_val);
-      END; $setup$ LANGUAGE plpgsql;
     {{- range .Values.argo.database.databases }}
     {{- $dbName := printf "%s-%s" .namespace .name }}
     {{- $userName := printf "%s-%s_user" .namespace .name }}
-    {{- $password := printf "%s_password" $userName | replace "-" "_" | upper }}
     - CREATE DATABASE "{{ $dbName }}";
-    - SELECT setup_database_and_user('{{ $dbName }}', '{{ $userName }}', '{{ $password }}');
     - |-
       BEGIN;
       REVOKE CREATE ON SCHEMA public FROM PUBLIC;

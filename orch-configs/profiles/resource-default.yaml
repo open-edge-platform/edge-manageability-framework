@@ -390,6 +390,13 @@ argo:
         limits:
           cpu: "64"
           memory: "64Gi"
+      cluster:
+        requests:
+          cpu: "1m"
+          memory: "1Mi"
+        limits:
+          cpu: "64"
+          memory: "64Gi"
     kyverno:
       admissionController:
         initContainer:
