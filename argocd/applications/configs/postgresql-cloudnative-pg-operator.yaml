@@ -2,6 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-namespace: orch-database
+namespace: postgresql-operator
 
 replicaCount: 1
