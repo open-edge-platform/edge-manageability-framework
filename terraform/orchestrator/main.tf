@@ -295,6 +295,7 @@ resource "null_resource" "copy_files" {
     inline = [
       "chmod +x /home/ubuntu/uninstall_onprem.sh",
       "chmod +x /home/ubuntu/onprem_installer.sh",
+      "chmod +x /home/ubuntu/onprem_pre_installer.sh",
       "chmod +x /home/ubuntu/functions.sh",
       "chmod +x /home/ubuntu/access_script.sh",
       "chmod +x /home/ubuntu/.env",
