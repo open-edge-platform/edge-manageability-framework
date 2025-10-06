@@ -3,10 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 cluster:
-  {{- with .Values.argo.resources.postgresql.cluster }}
-  resources:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
   roles:
     {{- range .Values.argo.database.databases }}
     {{- $secretName := printf "%s-%s" .namespace .name }}
