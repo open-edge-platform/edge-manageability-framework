@@ -439,3 +439,17 @@ The proposal introduces a **three-track modular evolution strategy** that enable
 - Transforms resource managers into Kubernetes operators with CRD-based state management.
 - Enables declarative reconciliation and native lifecycle hooks aligned with platform SRE practices.
 - Dramatically reduces infrastructure prerequisites for partial deployments.
+
+#### Complexity and high-level estimate
+
+**Track #1** can be delivered with moderate effort by leveraging existing Helm charts, deployment patterns and
+the current EIM architecture. The primary complexity lies in defining clear use-case boundaries and ensuring
+consistent behavior across different deployment profiles.
+
+**Track #2** will require significant effort to implement the necessary abstractions and integration points for
+pluggable infrastructure backends. This includes developing a robust API layer and migration tools to support
+customer-specific configurations.
+
+**Track #3** represents the ambitious transformation, necessitating a complete re-architecture of resource
+managers as Kubernetes operators. This will involve substantial engineering effort to align with Kubernetes
+best practices and ensure seamless integration with existing workflows.
