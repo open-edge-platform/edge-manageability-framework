@@ -101,11 +101,9 @@ if [ -z $APP_ORCH_PROFILE ]; then
     export AO_PROFILE="#- orch-configs/profiles/enable-app-orch.yaml"
 else
     export AO_PROFILE="- orch-configs/profiles/enable-app-orch.yaml"
-    export CO_PROFILE="- orch-configs/profiles/enable-cluster-orch.yaml"
 fi
 
 if [ -z $CLUSTER_ORCH_PROFILE ]; then
-    export AO_PROFILE="#- orch-configs/profiles/enable-app-orch.yaml"
     export CO_PROFILE="#- orch-configs/profiles/enable-cluster-orch.yaml"
 else
     export CO_PROFILE="- orch-configs/profiles/enable-cluster-orch.yaml"
