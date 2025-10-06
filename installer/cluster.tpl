@@ -9,8 +9,8 @@ root:
     - orch-configs/profiles/enable-platform.yaml
     - orch-configs/profiles/enable-o11y.yaml
     - orch-configs/profiles/enable-kyverno.yaml
-    ${APP_ORCH_PROFILE}
-    ${CLUSTER_ORCH_PROFILE}
+    ${AO_PROFILE}
+    ${CO_PROFILE}
     - orch-configs/profiles/enable-edgeinfra.yaml
     - orch-configs/profiles/enable-full-ui.yaml
     - orch-configs/profiles/enable-aws.yaml
