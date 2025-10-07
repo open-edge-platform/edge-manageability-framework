@@ -306,7 +306,10 @@ The updated OXM profile architecture supporting Secure Device Onboarding and OS 
 
 ![Updated modular EIM OXM profile](images/updated-oxm-architecture.png)
 
-> Note:
+> Note: Device onboarding workflow installs the edge device credentials, These credentials in the from of JWT token is
+> used by other workflows. This means that with track #1 device onboarding is a prerequisite for other workflows.
+> To avoid this we can leverage and automate the device credentials injection and bootstrapping mechanism used by EIM
+> scale testing framework where EIM agents are running in docker containers simulating edge nodes.
 
 - **Track #2 (Bring-Your-Own Infrastructure)**
   - Introduce configuration surfaces that allow customers to plug in third-party identity and secrets backends such
