@@ -104,6 +104,12 @@ else
     export SRE_PROFILE="#- orch-configs/profiles/enable-sre.yaml"
 fi
 
+if [ -z $O11Y_ENABLE ]; then
+    export O11Y_ENABLE_PROFILE="#- orch-configs/profiles/enable-o11y.yaml"
+else
+    export O11Y_ENABLE_PROFILE="- orch-configs/profiles/enable-o11y.yaml"
+fi
+
 if [ -z $SMTP_URL ]; then
     export EMAIL_PROFILE="#- orch-configs/profiles/alerting-emails.yaml"
 else
