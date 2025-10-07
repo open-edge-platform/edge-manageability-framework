@@ -1,0 +1,44 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+{{- $appName        := "keycloak-system-client-setup-job" }}
+{{- $namespace      := "orch-platform" }}
+{{- $syncWave       := "165" }}
+---
+{{- if (index .Values.argo.enabled "platform-keycloak") }}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "{{ $syncWave }}"
+  name: {{$appName}}
+  namespace: {{ required "A valid namespace entry required!" .Values.argo.namespace }}
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ required "A valid projectName entry required!" .Values.argo.project }}
+  sources:
+    - repoURL: {{ required "A valid deployRepoURL entry required!" .Values.argo.deployRepoURL }}
+      path: argocd/applications/configs
+      targetRevision: {{ required "A valid deployRepoRevision entry required!" .Values.argo.deployRepoRevision | quote }}
+      directory:
+        include: "keycloak-system-client-setup-job.yaml"
+  destination:
+    namespace: {{$namespace}}
+    server: {{ required "A valid targetServer entry required!" .Values.argo.targetServer }}
+  syncPolicy:
+    {{- if .Values.argo.autosync }}
+    automated:
+      prune: true
+      selfHeal: true  
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        maxDuration: 2m0s
+        factor: 2
+    {{- end }}
+    syncOptions:
+      - CreateNamespace=true
+{{- end }}
