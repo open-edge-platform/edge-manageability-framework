@@ -95,7 +95,8 @@ Each persona has distinct needs that can be better served through modular consum
 
 ### User stories
 
-Before diving into the proposal, here are some representative user stories that illustrate the need for modular decomposition:
+Before diving into the proposal, here are some representative user stories that illustrate the need for modular
+decomposition:
 
 **Independent Software Vendor/Edge solution vendor** can leverage as a reference EIM design and implementation of
 the following workflows
@@ -122,15 +123,16 @@ the following workflows
 - **Custom Hardware Resource Configuration:** As an ISV or edge solution vendor, I want to customize device
   configuration for Intel CPU, GPU, and NPU resources during day-one lifecycle management, so that applications can
   be allocated appropriate hardware resources.
-- **Reference API Integration:** As an ISV or edge solution vendor, I want to use reference APIs for higher-layer
-  services such as trusted compute and cluster orchestration, so that my solutions can integrate seamlessly with
+- **Partner Vendor Orchestration Validation:** As an ISV or edge solution vendor, I want to validate our Device
+  management and Edge orchestration solution against new Intel Silicon with BIOS, firmware, CPU, and GPU platforms
+  using EIM, so that our Edge orchestration solution is ready earlier in the development lifecycle and ready at
+  the same time of Intel Silicon launch.
+- **Reference Data model and APIs:** As an ISV or edge solution vendor, I want to use data model and APIs of EIM
+  as reference to understand what information was used to implement the higher layer service such as
+  trusted compute and cluster orchestration, so that my solutions can integrate seamlessly with
   existing platforms.
   > Note: customer might not adopt our APIs (There are no industry standards for Infra APIs) but us the schema and
   > the data structure to understand what information was used to implement the higher layer services.
-- **Partner Vendor Orchestration Validation:** As an ISV or edge solution vendor, I want to validate our Device management
-  and Edge orchestration solution against new Intel Silicon with BIOS, firmware, CPU, and GPU platforms using EIM,
-  so that our Edge orchestration solution is ready earlier in the development lifecycle and ready at
-  the same time of Intel Silicon launch.
 
 **Original Equipment manufacturer** can leverage as a reference EIM design and implementation of the following
 workflows
@@ -241,7 +243,8 @@ inventory reconciliation, and observability exporters assume the presence of sha
 This coupling makes it difficult for customers to consume only a subset—such as Day-2 upgrades—without
 deploying onboarding or adding bespoke credential bootstrapping.
 
-The current high-level architecture of EMF is illustrated below with an extended depiction of EIM components and shared infrastructure.
+The current high-level architecture of EMF is illustrated below with an extended depiction of EIM components
+and shared infrastructure.
 
 ![current high-level architecture](images/current-architecture.png)
 
@@ -281,7 +284,11 @@ To unlock incremental modularity without disrupting existing customers, three tr
   - Continue leveraging the existing Argo CD Application-of-Applications pattern and our inventory plus
     Foundation Platform Service (FPS) stack.
   - Package “use-case specific” overlays that expose Day-0 onboarding, Day-1 configuration, and Day-2 upgrade
-    workflows via API, CLI, resource manager, and (where applicable) edge node agent bundles.
+    workflows via API, CLI, resource manager, and (where applicable) edge node agent bundles. The usecase
+    specific overlays will be a release and deployment package build system that bundle the necessary artifacts
+    for the centralized control plane (Helm charts, container images, manifest files, scripts) and edge node agents
+    (Debian or RPM binaries of the agents, configuration files, optionally EMT image) specific to the usecase.
+    Helm charts for each module (Onboarding, Resource Managers, Observability, Device Management
   - Provide prescriptive automation (Helm values, scripts) that stitches together required modules while
     documenting cross-service credential dependencies (for example, onboarding-issued tokens for upgrade services).
     - EIM `infra-charts` will be updated to support deployment of managers that are required for the usecase. For
@@ -299,10 +306,12 @@ The updated OXM profile architecture supporting Secure Device Onboarding and OS 
 
 ![Updated modular EIM OXM profile](images/updated-oxm-architecture.png)
 
+> Note:
+
 - **Track #2 (Bring-Your-Own Infrastructure)**
   - Introduce configuration surfaces that allow customers to plug in third-party identity and secrets backends such
-    as Keycloak, Vault, or managed databases—mirroring the flexibility currently offered by the Device Management
-    Toolkit (DMT).
+    as Keycloak, Vault, load balancers, Kubernetes clusters, or database services mirroring the flexibility
+    currently offered by the Device Management Toolkit (DMT).
   - Refactor services to tolerate absent EMF-managed infrastructure by supporting pluggable credential providers,
     externalized storage endpoints, and configurable messaging backbones.
   - Deliver migration helpers that map existing Helm values to third-party equivalents, enabling gradual adoption
@@ -313,7 +322,8 @@ the Foundational platform services decomposition activity. This track further re
 between EIM services and the shared infrastructure services such as PostgreSQL, Redis, Keycloak and Foundation
 Platform Service.
 
-The updated Track #2 of OXM profile architecture supporting Secure Device Onboarding and OS Provisioning is illustrated below.
+The updated Track #2 of OXM profile architecture supporting Secure Device Onboarding and OS Provisioning is
+illustrated below.
 
 ![Updated modular EIM OXM profile with Bring-Your-Own Infrastructure](images/updated-t2-oxm-architecture.png)
 
@@ -328,7 +338,8 @@ The updated Track #2 of OXM profile architecture supporting Secure Device Onboar
 
 Design principles for Track #3 include:
 
-- Bounded Contexts per Operator: Each operator owns its slice of the domain (Onboarding, Config, Observability, OOB, Upgrades).
+- Bounded Contexts per Operator: Each operator owns its slice of the domain (Onboarding, Config, Observability,
+  OOB, Upgrades).
   - Onboarding Context: Handles secure enrollment, certificate issuance, tenant binding.
   - Provisioning Context: Handles secure installation of Operating System.
   - Observability Context: Collects metrics, heartbeats, logs, exposes to monitoring stack.
@@ -360,15 +371,16 @@ The re-architected resource managers to device inventory can be implemented in m
 - It is also possible to have a dedicated instance of API server and etcd for EIM operators to manage the device
   inventory.
 
-The updated Track #3 of OXM profile architecture supporting Secure Device Onboarding and OS Provisioning is illustrated below.
+The updated Track #3 of OXM profile architecture supporting Secure Device Onboarding and OS Provisioning is
+illustrated below.
 
 ## Out-of-band Device Management
 
 Edge Infrastructure Manager provides a reference end-to-end automated fleet management solution
 using [Intel Device manageability toolkit](https://github.com/device-management-toolkit/docs) (DMT). E.g. EIM provides
 a reference cloud or OnPremises Fleet management solution that can be deployed by customer Similar to Intel managed
-vPRO fleet solution. ISVs and Edge stack vendors can leverage EIM as a reference implementation and software components to
-integrate vPRO device management capabilities into their edge solution stack.
+vPRO fleet solution. ISVs and Edge stack vendors can leverage EIM as a reference implementation and software
+components to integrate vPRO device management capabilities into their edge solution stack.
 
 Here are some of the **value additions EIM provides on top of the core Intel DMT**.
 
