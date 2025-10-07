@@ -4,3 +4,5 @@
 
 databases:
   {{ .Values.argo.database.databases | toYaml | nindent 2 }}
+annotations:
+  cnpg.io/reload: "false"
