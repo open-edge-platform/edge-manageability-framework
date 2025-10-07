@@ -40,7 +40,7 @@ runs:
       with:
         repository: open-edge-platform/orch-ui
         path: orch-ui
-        ref: punam20-patch-1
+        ref: d17f65821d4879b80300d942966ca919f2a51924
         persist-credentials: false
     - run: git log -1
       shell: bash
