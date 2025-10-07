@@ -51,8 +51,11 @@ EOF
 }
 
 create_postgres_password() {
-    kubectl -n "$1" delete secret platform-keycloak --ignore-not-found
 
+    # TODO: Remove once migration to cloudnative-pg chart is over
+    kubectl -n "$1" delete secret postgresql --ignore-not-found
+
+    # TODO: Remove once migration to cloudnative-pg chart is over
     kubectl apply -f - <<EOF
 apiVersion: v1
 kind: Secret
@@ -61,6 +64,20 @@ metadata:
   namespace: $1
 stringData:
   postgres-password: "$2"
+EOF
+
+    kubectl -n "$1" delete secret "$1-postgresql" --ignore-not-found
+
+    kubectl apply -f - <<EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: "$1-postgresql"
+  namespace: $1
+type: kubernetes.io/basic-auth
+stringData:
+  username: "$1-postgresql_user"
+  password: "$2"
 EOF
 }
 

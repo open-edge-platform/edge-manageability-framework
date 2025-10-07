@@ -36,22 +36,20 @@ cluster:
       {{- end }}
   initdb:
     database: postgres
-    owner: postgres
+    owner: orch-database-postgresql_user
+    secret:
+      name: "orch-database-postgresql"
     postInitSQL:
     {{- range .Values.argo.database.databases }}
     {{- $dbName := printf "%s-%s" .namespace .name }}
-    - CREATE DATABASE "{{ $dbName }}";
-    {{- end }}
-    postInitApplicationSQL:
-    {{- range .Values.argo.database.databases }}
-    {{- $dbName := printf "%s-%s" .namespace .name }}
     {{- $userName := printf "%s-%s_user" .namespace .name }}
+    - CREATE ROLE "{{ $userName }}";
+    - CREATE DATABASE "{{ $dbName }}";
     - BEGIN;
     - REVOKE CREATE ON SCHEMA public FROM PUBLIC;
     - REVOKE ALL ON DATABASE "{{ $dbName }}" FROM PUBLIC;
     - GRANT CONNECT ON DATABASE "{{ $dbName }}" TO "{{ $userName }}";
     - GRANT ALL PRIVILEGES ON DATABASE "{{ $dbName }}" TO "{{ $userName }}";
-    - ALTER SCHEMA public OWNER TO "{{ $userName }}";
     - ALTER DATABASE "{{ $dbName }}" OWNER TO "{{ $userName }}";
     - COMMIT;
     {{- end }}
