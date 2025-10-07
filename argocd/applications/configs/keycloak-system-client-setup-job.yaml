@@ -69,35 +69,21 @@ spec:
           echo "Keycloak URL: $KEYCLOAK_URL"
           echo "Admin User: $ADMIN_USER"
           
-          # URL encode password function
-          urlencode() {
-            local string="${1}"
-            local strlen=${#string}
-            local encoded=""
-            for (( pos=0 ; pos<strlen ; pos++ )); do
-              c=${string:$pos:1}
-              case "$c" in
-                [-_.~a-zA-Z0-9] ) o="${c}" ;;
-                * ) printf -v o '%%%02x' "'$c"
-              esac
-              encoded+="${o}"
-            done
-            echo "${encoded}"
-          }
-          
-          # Wait for Keycloak
+          # Wait for Keycloak to be ready
           echo "Waiting for Keycloak to be ready..."
-          for i in {1..30}; do
-            if curl -s -f "$KEYCLOAK_URL/realms/master/.well-known/openid_configuration" >/dev/null; then
+          i=0
+          while [ $i -lt 30 ]; do
+            if curl -s -f "$KEYCLOAK_URL/realms/master/.well-known/openid_configuration" >/dev/null 2>&1; then
               echo "✓ Keycloak is ready"
               break
             fi
             echo "Waiting for Keycloak... ($i/30)"
             sleep 10
+            i=$((i + 1))
           done
           
-          # URL encode the password
-          ENCODED_PASSWORD=$(urlencode "$ADMIN_PASSWORD")
+          # URL encode password (handle & character)
+          ENCODED_PASSWORD=$(echo "$ADMIN_PASSWORD" | sed 's/&/%26/g')
           
           # Get admin token  
           echo "Getting admin token..."
