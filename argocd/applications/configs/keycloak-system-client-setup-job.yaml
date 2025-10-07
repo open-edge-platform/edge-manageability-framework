@@ -64,105 +64,125 @@ spec:
         args:
         - -c
         - |
-          # Wait for Keycloak to be ready
+          set -e
+          echo "=== System Client Setup Job ==="
+          echo "Keycloak URL: $KEYCLOAK_URL"
+          echo "Admin User: $ADMIN_USER"
+          
+          # URL encode password function
+          urlencode() {
+            local string="${1}"
+            local strlen=${#string}
+            local encoded=""
+            for (( pos=0 ; pos<strlen ; pos++ )); do
+              c=${string:$pos:1}
+              case "$c" in
+                [-_.~a-zA-Z0-9] ) o="${c}" ;;
+                * ) printf -v o '%%%02x' "'$c"
+              esac
+              encoded+="${o}"
+            done
+            echo "${encoded}"
+          }
+          
+          # Wait for Keycloak
           echo "Waiting for Keycloak to be ready..."
-          until curl -s ${KEYCLOAK_URL}/realms/master/.well-known/openid_configuration >/dev/null 2>&1; do
-            echo "Keycloak not ready, waiting..."
+          for i in {1..30}; do
+            if curl -s -f "$KEYCLOAK_URL/realms/master/.well-known/openid_configuration" >/dev/null; then
+              echo "✓ Keycloak is ready"
+              break
+            fi
+            echo "Waiting for Keycloak... ($i/30)"
             sleep 10
           done
           
-          # Get admin token
-          echo "Getting admin token..."
-          ADMIN_TOKEN=$(curl -s -X POST "${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token" \
-            -H "Content-Type: application/x-www-form-urlencoded" \
-            -d "grant_type=password&client_id=admin-cli&username=${ADMIN_USER}&password=${ADMIN_PASSWORD}" | jq -r ".access_token")
+          # URL encode the password
+          ENCODED_PASSWORD=$(urlencode "$ADMIN_PASSWORD")
           
-          if [ "$ADMIN_TOKEN" = "null" ] || [ -z "$ADMIN_TOKEN" ]; then
-            echo "Failed to get admin token"
+          # Get admin token  
+          echo "Getting admin token..."
+          ADMIN_TOKEN=$(curl -s -X POST "$KEYCLOAK_URL/realms/master/protocol/openid-connect/token" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "grant_type=password&client_id=admin-cli&username=$ADMIN_USER&password=$ENCODED_PASSWORD" \
+            | jq -r ".access_token // \"null\"")
+          
+          if [ "$ADMIN_TOKEN" = "null" ]; then
+            echo "❌ Failed to get admin token"
             exit 1
           fi
-          
-          echo "Admin token obtained"
+          echo "✓ Got admin token"
           
           # Check if system-client already exists
-          EXISTING_CLIENT=$(curl -s "${KEYCLOAK_URL}/admin/realms/master/clients?clientId=system-client" \
+          EXISTING_CLIENT=$(curl -s "$KEYCLOAK_URL/admin/realms/master/clients?clientId=system-client" \
             -H "Authorization: Bearer $ADMIN_TOKEN")
           
           if echo "$EXISTING_CLIENT" | jq -e '.[0]' >/dev/null 2>&1; then
-            echo "system-client already exists"
+            echo "✓ system-client already exists"
             SYSTEM_CLIENT_ID=$(echo "$EXISTING_CLIENT" | jq -r '.[0].id')
           else
             echo "Creating system-client..."
-            # Create system-client
-            curl -s -X POST "${KEYCLOAK_URL}/admin/realms/master/clients" \
+            curl -s -X POST "$KEYCLOAK_URL/admin/realms/master/clients" \
               -H "Authorization: Bearer $ADMIN_TOKEN" \
               -H "Content-Type: application/json" \
-              -d "{
-                \"clientId\": \"system-client\",
-                \"name\": \"System Client for KTC\",
-                \"description\": \"System client for Keycloak Tenant Controller with groups scope support\",
-                \"enabled\": true,
-                \"publicClient\": true,
-                \"directAccessGrantsEnabled\": true,
-                \"standardFlowEnabled\": false,
-                \"implicitFlowEnabled\": false,
-                \"serviceAccountsEnabled\": false,
-                \"protocol\": \"openid-connect\",
-                \"fullScopeAllowed\": true,
-                \"defaultClientScopes\": [\"web-origins\", \"acr\", \"roles\", \"profile\", \"basic\", \"email\"]
-              }"
+              -d '{
+                "clientId": "system-client",
+                "name": "System Client for KTC", 
+                "enabled": true,
+                "publicClient": true,
+                "directAccessGrantsEnabled": true,
+                "protocol": "openid-connect",
+                "defaultClientScopes": ["web-origins", "acr", "roles", "profile", "basic", "email"]
+              }'
             
-            # Get the created client ID
-            SYSTEM_CLIENT_ID=$(curl -s "${KEYCLOAK_URL}/admin/realms/master/clients?clientId=system-client" \
+            SYSTEM_CLIENT_ID=$(curl -s "$KEYCLOAK_URL/admin/realms/master/clients?clientId=system-client" \
               -H "Authorization: Bearer $ADMIN_TOKEN" | jq -r '.[0].id')
-            
-            echo "system-client created with ID: $SYSTEM_CLIENT_ID"
+            echo "✓ system-client created with ID: $SYSTEM_CLIENT_ID"
           fi
           
-          # Get groups scope ID
-          GROUPS_SCOPE_ID=$(curl -s "${KEYCLOAK_URL}/admin/realms/master/client-scopes" \
+          # Get or create groups scope
+          GROUPS_SCOPE_ID=$(curl -s "$KEYCLOAK_URL/admin/realms/master/client-scopes" \
             -H "Authorization: Bearer $ADMIN_TOKEN" | jq -r '.[] | select(.name == "groups") | .id')
           
           if [ -z "$GROUPS_SCOPE_ID" ] || [ "$GROUPS_SCOPE_ID" = "null" ]; then
             echo "Creating groups scope..."
-            curl -s -X POST "${KEYCLOAK_URL}/admin/realms/master/client-scopes" \
+            curl -s -X POST "$KEYCLOAK_URL/admin/realms/master/client-scopes" \
               -H "Authorization: Bearer $ADMIN_TOKEN" \
               -H "Content-Type: application/json" \
-              -d "{
-                \"name\": \"groups\",
-                \"description\": \"Groups scope for backward compatibility with Bitnami Keycloak\",
-                \"protocol\": \"openid-connect\",
-                \"attributes\": {
-                  \"include.in.token.scope\": \"true\",
-                  \"display.on.consent.screen\": \"true\"
+              -d '{
+                "name": "groups",
+                "description": "Groups scope for backward compatibility",
+                "protocol": "openid-connect",
+                "attributes": {
+                  "include.in.token.scope": "true",
+                  "display.on.consent.screen": "true"
                 }
-              }"
+              }'
             
-            GROUPS_SCOPE_ID=$(curl -s "${KEYCLOAK_URL}/admin/realms/master/client-scopes" \
+            GROUPS_SCOPE_ID=$(curl -s "$KEYCLOAK_URL/admin/realms/master/client-scopes" \
               -H "Authorization: Bearer $ADMIN_TOKEN" | jq -r '.[] | select(.name == "groups") | .id')
           fi
           
-          echo "Groups scope ID: $GROUPS_SCOPE_ID"
+          echo "✓ Groups scope ID: $GROUPS_SCOPE_ID"
           
           # Add groups scope to system-client
           echo "Adding groups scope to system-client..."
           curl -s -X PUT \
-            "${KEYCLOAK_URL}/admin/realms/master/clients/$SYSTEM_CLIENT_ID/default-client-scopes/$GROUPS_SCOPE_ID" \
+            "$KEYCLOAK_URL/admin/realms/master/clients/$SYSTEM_CLIENT_ID/default-client-scopes/$GROUPS_SCOPE_ID" \
             -H "Authorization: Bearer $ADMIN_TOKEN"
           
-          # Test authentication
-          echo "Testing authentication with system-client..."
-          AUTH_RESULT=$(curl -s -X POST "${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token" \
+          # Test authentication with URL-encoded password
+          echo "Testing system-client authentication..."
+          AUTH_RESULT=$(curl -s -X POST "$KEYCLOAK_URL/realms/master/protocol/openid-connect/token" \
             -H "Content-Type: application/x-www-form-urlencoded" \
-            -d "grant_type=password&client_id=system-client&username=${ADMIN_USER}&password=${ADMIN_PASSWORD}&scope=openid profile email groups")
+            -d "grant_type=password&client_id=system-client&username=$ADMIN_USER&password=$ENCODED_PASSWORD&scope=openid profile email groups")
           
-          ACCESS_TOKEN=$(echo "$AUTH_RESULT" | jq -r ".access_token // \"null\"")
+          TOKEN=$(echo "$AUTH_RESULT" | jq -r ".access_token // \"null\"")
           
-          if [ "$ACCESS_TOKEN" != "null" ] && [ -n "$ACCESS_TOKEN" ]; then
-            echo "SUCCESS: system-client authentication works with groups scope!"
+          if [ "$TOKEN" != "null" ]; then
+            echo "✅ SUCCESS: system-client authentication works with groups scope!"
             echo "Setup complete - system-client is ready for keycloak-tenant-controller"
           else
-            echo "FAILED: Authentication test failed"
+            echo "❌ FAILED: Authentication test failed"
             echo "Response: $AUTH_RESULT"
             exit 1
           fi
