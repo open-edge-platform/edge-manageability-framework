@@ -31,7 +31,7 @@ cwd=$(pwd)
 deb_dir_name="installers"
 git_arch_name="repo_archives"
 export GIT_REPOS=$cwd/$git_arch_name
-export KUBECONFIG=/home/$USER/.kube/config
+export KUBECONFIG="${KUBECONFIG:-/home/$USER/.kube/config}"
 
 set_default_sre_env() {
   if [[ -z ${SRE_USERNAME} ]]; then
@@ -233,6 +233,11 @@ randomPassword() {
 
 ### Installer
 echo "Running On Premise Edge Orchestrator installers"
+
+if [ $(dpkg -l | grep -i onprem-ke-installer| wc -l) -eq 0 ]; then
+    echo "Please run pre-installer script first"
+    exit 1
+fi
 
 # Print environment variables
 print_env_variables
