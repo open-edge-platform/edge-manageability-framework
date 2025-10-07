@@ -234,7 +234,7 @@ randomPassword() {
 ### Installer
 echo "Running On Premise Edge Orchestrator installers"
 
-if [ $(dpkg -l | grep -i onprem-ke-installer| wc -l) -eq 0 ]; then
+if [ "$(dpkg -l | grep -ci onprem-ke-installer)"  -eq 0 ]; then
     echo "Please run pre-installer script first"
     exit 1
 fi
