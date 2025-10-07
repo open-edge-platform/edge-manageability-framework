@@ -19,12 +19,6 @@ set -o pipefail
 # shellcheck disable=SC1091
 source "$(dirname "$0")/functions.sh"
 
-### Constants
-
-RELEASE_SERVICE_URL="${RELEASE_SERVICE_URL:-registry-rs.edgeorchestration.intel.com}"
-ORCH_INSTALLER_PROFILE="${ORCH_INSTALLER_PROFILE:-onprem}"
-DEPLOY_VERSION="${DEPLOY_VERSION:-v2025.2.0}"
-
 ### Variables
 cwd=$(pwd)
 
@@ -32,6 +26,13 @@ deb_dir_name="installers"
 git_arch_name="repo_archives"
 export GIT_REPOS=$cwd/$git_arch_name
 export KUBECONFIG="${KUBECONFIG:-/home/$USER/.kube/config}"
+# Source shared configuration if it exists
+SHARED_CONFIG="$(dirname "$0")/onprem_shared_config.env"
+if [[ -f "$SHARED_CONFIG" ]]; then
+  echo "Loading shared configuration from: $SHARED_CONFIG"
+  # shellcheck disable=SC1090
+  source "$SHARED_CONFIG"
+fi
 
 set_default_sre_env() {
   if [[ -z ${SRE_USERNAME} ]]; then
@@ -238,6 +239,9 @@ if [ "$(dpkg -l | grep -ci onprem-ke-installer)"  -eq 0 ]; then
     echo "Please run pre-installer script first"
     exit 1
 fi
+if [ "$ENABLE_TRACE" = true ]; then
+    set -x
+fi
 
 # Print environment variables
 print_env_variables
@@ -282,7 +286,13 @@ else
     exit 1
 fi
 
+
 printf "\nEdge Orchestrator SW is being deployed, please wait for all applications to deploy...\n
 To check the status of the deployment run 'kubectl get applications -A'.\n
 Installation is completed when 'root-app' Application is in 'Healthy' and 'Synced' state.\n
 Once it is completed, you might want to configure DNS for UI and other services by running generate_fqdn script and following instructions\n"
+
+# Cleanup: Remove the shared configuration file now that installation is complete
+if [[ -f "$SHARED_CONFIG" ]]; then
+  rm -f "$SHARED_CONFIG"
+fi
