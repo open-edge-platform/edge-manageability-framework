@@ -18,6 +18,15 @@ cluster:
     {{- if and .Values.argo.postgresql.persistence .Values.argo.postgresql.persistence.storageClass }}
     storageClass: {{ .Values.argo.postgresql.persistence.storageClass }}
     {{- end }}
+  services:
+    additional:
+      - selectorType: rw
+        serviceTemplate:
+          metadata:
+            name: postgresql
+          spec:
+            type: ClusterIP
+    disabledDefaultServices: ["ro", "r"]
   postgresql:
     parameters:
       huge_pages: "off"
@@ -37,11 +46,12 @@ cluster:
     {{- range .Values.argo.database.databases }}
     {{- $dbName := printf "%s-%s" .namespace .name }}
     {{- $userName := printf "%s-%s_user" .namespace .name }}
-    - BEGIN; \
-      REVOKE CREATE ON SCHEMA public FROM PUBLIC; \
-      REVOKE ALL ON DATABASE "{{ $dbName }}" FROM PUBLIC; \
-      GRANT CONNECT ON DATABASE "{{ $dbName }}" TO "{{ $userName }}"; \
-      GRANT ALL PRIVILEGES ON DATABASE "{{ $dbName }}" TO "{{ $userName }}"; \
-      ALTER DATABASE "{{ $dbName }}" OWNER TO "{{ $userName }}"; \
-      COMMIT;
+    - BEGIN;
+    - REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+    - REVOKE ALL ON DATABASE "{{ $dbName }}" FROM PUBLIC;
+    - GRANT CONNECT ON DATABASE "{{ $dbName }}" TO "{{ $userName }}";
+    - GRANT ALL PRIVILEGES ON DATABASE "{{ $dbName }}" TO "{{ $userName }}";
+    - ALTER SCHEMA public OWNER TO "{{ $userName }}";
+    - ALTER DATABASE "{{ $dbName }}" OWNER TO "{{ $userName }}";
+    - COMMIT;
     {{- end }}
