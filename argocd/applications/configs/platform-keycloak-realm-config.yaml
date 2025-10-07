@@ -260,7 +260,8 @@ data:
             "roles",
             "profile",
             "email",
-            "basic"
+            "basic",
+            "groups"
           ],
           "optionalClientScopes": [
             "groups",

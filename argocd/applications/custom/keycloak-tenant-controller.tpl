@@ -9,7 +9,7 @@ image:
 proxy:
   httpProxy: {{.Values.argo.proxy.httpProxy}}
   httpsProxy: {{.Values.argo.proxy.httpsProxy}}
-  noProxy: {{.Values.argo.proxy.noProxy}}
+  noProxy: {{.Values.argo.proxy.noProxy}},*.svc,*.svc.cluster.local,platform-keycloak.orch-platform.svc,vault.orch-platform.svc
 imagePullSecrets:
   {{- with .Values.argo.imagePullSecrets }}
     {{- toYaml . | nindent 2 }}
@@ -29,7 +29,7 @@ securityContext:
   allowPrivilegeEscalation: false
 keycloakAdmin:
   user: admin
-  client: admin-cli
+  client: system-client
   passwordSecret:
     name: platform-keycloak # name of the secret
     key: admin-password # key of the secret
