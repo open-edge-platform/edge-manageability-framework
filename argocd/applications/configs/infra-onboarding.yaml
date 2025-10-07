@@ -29,6 +29,7 @@ onboarding-manager:
     tlsOption: "gateway-tls"
     gatewayNamespace: orch-gateway
   env:
+    mode: "prod"  # Override dev profile to use prod mode since latest-dev manifest doesn't exist
     tinkerActionsVersion: "1.19.3"
     oidc:
       oidc_server_url: "http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master"
@@ -49,6 +50,7 @@ dkam:
   managerArgs:
     traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
   env:
+    mode: "prod"  # Override dev profile to use prod mode since latest-dev manifest doesn't exist
     rs_proxy_address: "rs-proxy.orch-platform.svc.cluster.local:8081/"
     oidc:
       oidc_server_url: "http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master"

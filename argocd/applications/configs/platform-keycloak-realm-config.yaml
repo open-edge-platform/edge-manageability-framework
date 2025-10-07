@@ -13,10 +13,7 @@ data:
       "realm": "master",
       "accountTheme": "keycloak",
       "displayName": "Keycloak",
-      "displayNameHtml": |
-        <img src='https://raw.githubusercontent.com/open-edge-platform/orch-utils/
-        73df5d1e99a81ae333d94b1c47dd9bef7fa03ae9/keycloak/
-        one-edge-platform-login-title.png'></img>
+      "displayNameHtml": "<img src='https://raw.githubusercontent.com/open-edge-platform/orch-utils/73df5d1e99a81ae333d94b1c47dd9bef7fa03ae9/keycloak/one-edge-platform-login-title.png'></img>",
       "defaultSignatureAlgorithm": "PS512",
       "accessTokenLifespan": 3600,
       "ssoSessionIdleTimeout": 5400,
@@ -266,6 +263,49 @@ data:
           "optionalClientScopes": [
             "groups",
             "offline_access"
+          ]
+        },
+        {
+          "clientId": "admin-cli",
+          "name": "Admin CLI",
+          "description": "Admin CLI client with groups scope for compatibility",
+          "surrogateAuthRequired": false,
+          "enabled": true,
+          "alwaysDisplayInConsole": false,
+          "clientAuthenticatorType": "client-secret",
+          "redirectUris": [],
+          "webOrigins": [],
+          "notBefore": 0,
+          "bearerOnly": false,
+          "consentRequired": false,
+          "standardFlowEnabled": false,
+          "implicitFlowEnabled": false,
+          "directAccessGrantsEnabled": true,
+          "serviceAccountsEnabled": false,
+          "publicClient": true,
+          "frontchannelLogout": false,
+          "protocol": "openid-connect",
+          "attributes": {
+            "realm_client": "false",
+            "client.use.lightweight.access.token.enabled": "true"
+          },
+          "authenticationFlowBindingOverrides": {},
+          "fullScopeAllowed": true,
+          "defaultClientScopes": [
+            "web-origins",
+            "acr",
+            "profile",
+            "roles",
+            "basic",
+            "email",
+            "groups"
+          ],
+          "optionalClientScopes": [
+            "address",
+            "phone",
+            "offline_access",
+            "organization",
+            "microprofile-jwt"
           ]
         }
       ],

@@ -33,7 +33,7 @@ spec:
           type: "RuntimeDefault"
       containers:
         - name: keycloak-config-cli
-          image: quay.io/adorsys/keycloak-config-cli:6.1.4-26.0.2
+          image: quay.io/adorsys/keycloak-config-cli:6.4.0-26
           imagePullPolicy: IfNotPresent
           env:
             - name: KEYCLOAK_URL
@@ -57,6 +57,8 @@ spec:
               value: "true"
             - name: KEYCLOAK_AVAILABILITYCHECK_TIMEOUT
               value: "120s"
+            - name: IMPORT_FILES_LOCATIONS
+              value: "/opt/keycloak-config-cli/configs/*"
           volumeMounts:
             - name: keycloak-config
               mountPath: /opt/keycloak-config-cli/configs
