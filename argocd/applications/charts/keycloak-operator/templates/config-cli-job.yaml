@@ -38,6 +38,8 @@ spec:
           value: {{ .Values.keycloak.configCli.auth.username | default "admin" }}
         - name: KEYCLOAK_PASSWORD
           value: {{ .Values.keycloak.configCli.auth.password | default "admin" }}
+        - name: IMPORT_FILES_LOCATIONS
+          value: /config/*
         - name: IMPORT_PATH
           value: /config
         - name: KEYCLOAK_AVAILABILITYCHECK_ENABLED
