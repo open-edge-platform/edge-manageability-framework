@@ -1,34 +1,15 @@
-# SPDX-FileCopyrightText: 2025 Intel Corporation# SPDX-FileCopyrightText: 2025 Intel Corporation
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
 
-##
+# Keycloak Operator configuration via OLM
+# This deploys only the operator, not a Keycloak instance
 
-# SPDX-License-Identifier: Apache-2.0# SPDX-License-Identifier: Apache-2.0
-
-
-
-# Keycloak Operator configuration via OLM# Configuration for Keycloak operator only
-
-# This deploys only the operator, not a Keycloak instance# Phase 1: Install operator alongside existing Bitnami Keycloak
-
-
-
-operator:# Operator configuration via OLM
-
-  name: keycloak-operatoroperator:
-
-  namespace: keycloak-system  name: keycloak-operator
-
-  packageName: keycloak-operator  namespace: keycloak-system
-
-  channel: fast  packageName: keycloak-operator
-
-  source: operatorhubio-catalog  channel: fast
-
-  sourceNamespace: olm  source: operatorhubio-catalog
-
-  installPlanApproval: Automatic  sourceNamespace: olm
+operator:
+  name: keycloak-operator
+  namespace: keycloak-system
+  packageName: keycloak-operator
+  channel: fast
+  source: operatorhubio-catalog
+  sourceNamespace: olm
   installPlanApproval: Automatic
-
-# Keycloak instance - DISABLED for Phase 1
-keycloak:
-  enabled: false
