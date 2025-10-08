@@ -1,0 +1,145 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: keycloak-admin-cli-config
+  namespace: orch-platform
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "2"
+    helm.sh/hook-delete-policy: hook-succeeded
+    # Security annotations for image registry approval
+    security.approved-registries: "quay.io"
+    security.image-purpose: "keycloak-config-cli for admin-cli client configuration"
+    security.image-vendor: "adorsys/keycloak-config-cli"
+    security.image-verification: "official-keycloak-tooling"
+spec:
+  template:
+    metadata:
+      labels:
+        app: keycloak-admin-cli-config
+        sidecar.istio.io/inject: "false"
+    spec:
+      restartPolicy: OnFailure
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: "RuntimeDefault"
+      containers:
+        - name: keycloak-admin-cli-config
+          image: quay.io/adorsys/keycloak-config-cli:6.4.0-26
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: KEYCLOAK_URL
+              value: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
+            - name: KEYCLOAK_USER
+              value: "admin"
+            - name: KEYCLOAK_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: platform-keycloak
+                  key: admin-password
+            - name: KEYCLOAK_AVAILABILITYCHECK_ENABLED
+              value: "true"
+            - name: KEYCLOAK_AVAILABILITYCHECK_TIMEOUT
+              value: "120s"
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              echo "Waiting for Keycloak to be ready..."
+              
+              # Wait for Keycloak to be available
+              timeout=120
+              while [ $timeout -gt 0 ]; do
+                if curl -f -s "$KEYCLOAK_URL/realms/master/.well-known/openid_configuration" >/dev/null 2>&1; then
+                  echo "Keycloak is ready"
+                  break
+                fi
+                echo "Waiting for Keycloak... ($timeout seconds left)"
+                sleep 5
+                timeout=$((timeout - 5))
+              done
+              
+              if [ $timeout -le 0 ]; then
+                echo "Timeout waiting for Keycloak"
+                exit 1
+              fi
+              
+              # Configure kcadm
+              /opt/keycloak/bin/kcadm.sh config credentials --server "$KEYCLOAK_URL" --realm master --user "$KEYCLOAK_USER" --password "$KEYCLOAK_PASSWORD"
+              
+              # Get admin-cli client ID
+              ADMIN_CLI_ID=$(/opt/keycloak/bin/kcadm.sh get clients -r master -q clientId=admin-cli --fields id | grep '"id"' | sed 's/.*"id" : "\([^"]*\)".*/\1/')
+              
+              if [ -z "$ADMIN_CLI_ID" ]; then
+                echo "admin-cli client not found"
+                exit 1
+              fi
+              
+              echo "Found admin-cli client with ID: $ADMIN_CLI_ID"
+              
+              # Get groups scope ID
+              GROUPS_SCOPE_ID=$(/opt/keycloak/bin/kcadm.sh get client-scopes -r master -q name=groups --fields id | grep '"id"' | sed 's/.*"id" : "\([^"]*\)".*/\1/')
+              
+              if [ -z "$GROUPS_SCOPE_ID" ]; then
+                echo "groups scope not found"
+                exit 1
+              fi
+              
+              echo "Found groups scope with ID: $GROUPS_SCOPE_ID"
+              
+              # Check if admin-cli already has groups scope
+              CURRENT_SCOPES=$(/opt/keycloak/bin/kcadm.sh get clients/$ADMIN_CLI_ID -r master --fields defaultClientScopes)
+              
+              if echo "$CURRENT_SCOPES" | grep -q "groups"; then
+                echo "admin-cli client already has groups scope"
+              else
+                echo "Adding groups scope to admin-cli client"
+                /opt/keycloak/bin/kcadm.sh update clients/$ADMIN_CLI_ID -r master -s 'defaultClientScopes=["web-origins","acr","roles","profile","basic","email","groups"]'
+                echo "Successfully added groups scope to admin-cli client"
+              fi
+              
+              # Check if groups scope has protocol mapper
+              MAPPERS=$(/opt/keycloak/bin/kcadm.sh get client-scopes/$GROUPS_SCOPE_ID -r master --fields protocolMappers)
+              
+              if echo "$MAPPERS" | grep -q "oidc-group-membership-mapper"; then
+                echo "groups scope already has protocol mapper"
+              else
+                echo "Adding protocol mapper to groups scope"
+                MAPPER_ID=$(/opt/keycloak/bin/kcadm.sh create client-scopes/$GROUPS_SCOPE_ID/protocol-mappers/models -r master -s name=groups -s protocol=openid-connect -s protocolMapper=oidc-group-membership-mapper -s consentRequired=false 2>&1 | grep "Created new model with id" | sed "s/.*Created new model with id '\([^']*\)'.*/\1/")
+                
+                if [ -n "$MAPPER_ID" ]; then
+                  echo "Created protocol mapper with ID: $MAPPER_ID"
+                  /opt/keycloak/bin/kcadm.sh update client-scopes/$GROUPS_SCOPE_ID/protocol-mappers/models/$MAPPER_ID -r master -s 'config={"multivalued":"true","full.path":"false","id.token.claim":"true","access.token.claim":"true","claim.name":"groups","userinfo.token.claim":"true","jsonType.label":"String"}'
+                  echo "Successfully configured groups protocol mapper"
+                else
+                  echo "Failed to create protocol mapper"
+                  exit 1
+                fi
+              fi
+              
+              echo "Keycloak admin-cli configuration completed successfully"
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: "RuntimeDefault"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
