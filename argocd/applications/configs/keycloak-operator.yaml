@@ -32,7 +32,7 @@ keycloak:
   
   db:
     vendor: postgres
-    host: postgresql.orch-database
+    host: postgresql.orch-database.svc.cluster.local
     port: 5432
     database: orch-platform-platform-keycloak
     usernameSecret:
