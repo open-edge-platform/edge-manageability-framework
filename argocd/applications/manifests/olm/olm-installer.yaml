@@ -85,12 +85,15 @@ spec:
       serviceAccountName: olm-installer
       containers:
       - name: olm-installer
-        image: docker.io/eclipsefdn/kubectl:okd-c1
+        image: bitnamilegacy/kubectl:latest
         command: ["/bin/sh"]
         args:
           - -c
           - |
             set -e
+            echo "Installing curl..."
+            apt-get update && apt-get install -y curl
+            
             echo "Installing OLM v0.28.0..."
             
             # Check if OLM is already installed
