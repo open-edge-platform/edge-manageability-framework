@@ -65,17 +65,10 @@ keycloak:
 # Keycloak configuration CLI for bootstrapping realms and clients
   configCli:
     enabled: true
-    image:
-      registry: docker.io
-      repository: bitnamilegacy/keycloak-config-cli
-      tag: 6.4.0-debian-12-r0
-      pullPolicy: IfNotPresent
     
-    args:
-      - --import.managed.group="no-delete"
-      - --import.managed.required-action="no-delete"
-      - --import.managed.role="no-delete"
-      - --import.managed.client="no-delete"
+    # Bootstrap job configuration - using custom REST API approach
+    # This creates a ConfigMap with realm configurations and a Job that applies them
+    # via direct REST API calls to Keycloak Admin API
     
     auth:
       username: admin
@@ -89,6 +82,9 @@ keycloak:
         cpu: 500m
         memory: 512Mi
     
+    # Configuration files to be applied to Keycloak
+    # Each key becomes a file in the ConfigMap
+    # The bootstrap job will process each file and apply the configuration
     configuration:
       realm-master.json: |
         {
