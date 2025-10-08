@@ -7,7 +7,7 @@
 
 argo:
   enabled:
-    postgresql-cloudnative-pg-operator: true
-    postgresql-cloudnative-pg-cluster: true
-    postgresql: true
+    postgresql-operator: true
+    postgresql-cluster: true
+    postgresql: false
     postgresql-secrets: true

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-{{- $appName        := "postgresql-cloudnative-pg-cluster" }}
+{{- $appName        := "postgresql-cluster" }}
 {{- $namespace      := "orch-database" }}
 {{- $syncWave       := "140" }}
 ---

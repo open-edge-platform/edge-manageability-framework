@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-{{- $appName        := "postgresql-cloudnative-pg-operator" }}
+{{- $appName        := "postgresql-operator" }}
 {{- $namespace      := "postgresql-operator" }}
 {{- $syncWave       := "1" }}
 ---
