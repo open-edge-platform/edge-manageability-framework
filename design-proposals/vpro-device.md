@@ -113,10 +113,10 @@ sequenceDiagram
                 agent ->> agent: resetAllRecoveryState()
                 Note right of agent: Fresh start - clear all recovery tracking
                 
-                agent ->> agent: Activate/Enable LMS
-                agent ->> rps: Execute "rpc activate" command
+                agent ->> agent: Activate/Enable LMS (periodic)
+                agent ->> rps: Initiate RPC activate command
                 activate rps
-                rps ->> agent: Activation response
+                rps ->> agent: Activation response Success / Configured
                 deactivate rps
                 Note right of agent: RPS processes activation request and responds
                 
@@ -186,17 +186,6 @@ sequenceDiagram
                 Note right of agent: Activation completed successfully
             end
         end        
-
-        agent ->> agent:  Activate/Enable LMS (periodic)
-        agent ->> rps:  Initiate RPC activate command
-        activate rps
-        rps ->> agent:  Success / Configured
-        deactivate rps
-
-        agent ->> dm:  Report AMT status as Activated
-        dm ->> inv:  Update AMT Status as IN_PROGRESS (Connecting)
-        dm ->> inv:  Update AMT CurrentState as Provisioned
-
     else Device not eligible
         agent ->> dm:  Report DMT status as Not Supported
         dm ->> inv:  Update DMT Status as ERROR (Not Supported)
@@ -258,10 +247,6 @@ User will be able to activate vPro on a vPro-capable device by going to the Host
 and then clicking the “Activate vPro” button.
 
 - PATCH /compute/hosts/{resourceId}
-  - desiredAmtState: "AMT_STATE_PROVISIONED"The “Activate vPro” button will only be shown if the device is vPro capable.
-
-- GET /compute/hosts/{resourceId}
-  - Use host.amtSku to know whether the device is vPro capable.---
   - desiredAmtState: "AMT_STATE_PROVISIONED"
 
 The “Activate vPro” button will only be shown if the device is vPro capable.
