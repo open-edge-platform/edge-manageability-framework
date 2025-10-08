@@ -97,13 +97,16 @@ if [ -z $ARGOCD_TG_ARN ]; then
     export ARGOCD_TG_ARN=$(aws elbv2 describe-target-groups --names ${CLUSTER_NAME}-argocd-https | jq -r '.TargetGroups[].TargetGroupArn')
 fi
 
-if [ -z $APP_ORCH_PROFILE ]; then
+
+# AO_PROFILE  disabled check
+if [ "${DISABLE_CO_PROFILE:-false}" = "true" ] || [ "${DISABLE_AO_PROFILE:-false}" = "true" ]; then
     export AO_PROFILE="#- orch-configs/profiles/enable-app-orch.yaml"
 else
     export AO_PROFILE="- orch-configs/profiles/enable-app-orch.yaml"
 fi
 
-if [ -z $CLUSTER_ORCH_PROFILE ]; then
+# CO_PROFILE disabled check
+if [ "${DISABLE_CO_PROFILE:-false}" = "true" ]; then
     export CO_PROFILE="#- orch-configs/profiles/enable-cluster-orch.yaml"
 else
     export CO_PROFILE="- orch-configs/profiles/enable-cluster-orch.yaml"
