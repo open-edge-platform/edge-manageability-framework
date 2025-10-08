@@ -104,10 +104,10 @@ else
     export SRE_PROFILE="#- orch-configs/profiles/enable-sre.yaml"
 fi
 
-if [ -z $DISABLE_O11Y ]; then
-    export O11Y_ENABLE_PROFILE="- orch-configs/profiles/enable-o11y.yaml"
-else
+if [ "${DISABLE_O11Y :-false}" = "true" ]; then
     export O11Y_ENABLE_PROFILE="#- orch-configs/profiles/enable-o11y.yaml"
+else
+    export O11Y_ENABLE_PROFILE="- orch-configs/profiles/enable-o11y.yaml"
 fi
 
 if [ -z $SMTP_URL ]; then
@@ -127,11 +127,11 @@ if [[ "$DISABLE_AWS_PROD_PROFILE" == "true" ]]; then
     export AWS_PROD_PROFILE="#- orch-configs/profiles/profile-aws-production.yaml"
 fi
 
-if [ -z $DISABLE_O11Y ]; then
+if [ "${DISABLE_O11Y :-false}" = "true" ]; then
     export O11Y_PROFILE="#- orch-configs/profiles/o11y-release.yaml"
 else
     export O11Y_PROFILE="- orch-configs/profiles/o11y-release.yaml"
-      if [[ "$CLUSTER_SCALE_PROFILE" == "500en" || "$CLUSTER_SCALE_PROFILE" == "1ken" || "$CLUSTER_SCALE_PROFILE" == "10ken" ]]; then
+    if [[ "$CLUSTER_SCALE_PROFILE" == "500en" || "$CLUSTER_SCALE_PROFILE" == "1ken" || "$CLUSTER_SCALE_PROFILE" == "10ken" ]]; then
       export O11Y_PROFILE="- orch-configs/profiles/o11y-release-large.yaml"
     fi
 fi
