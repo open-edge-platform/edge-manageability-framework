@@ -9,5 +9,4 @@ argo:
   enabled:
     postgresql-operator: true
     postgresql-cluster: true
-    postgresql: false
     postgresql-secrets: true
