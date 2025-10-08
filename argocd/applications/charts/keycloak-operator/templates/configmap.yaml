@@ -1,0 +1,18 @@
+{{- if and .Values.keycloak.enabled .Values.keycloak.configCli.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.keycloak.instanceName }}-config
+  namespace: {{ .Values.keycloak.instanceNamespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "140"
+  labels:
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/instance: {{ .Values.keycloak.instanceName }}
+    app.kubernetes.io/managed-by: keycloak-operator-helm
+data:
+  {{- range $key, $value := .Values.keycloak.configCli.configuration }}
+  {{ $key }}: |
+{{ $value | indent 4 }}
+  {{- end }}
+{{- end }}

@@ -1,0 +1,75 @@
+{{- if and .Values.keycloak.enabled .Values.keycloak.configCli.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Values.keycloak.instanceName }}-config-cli
+  namespace: {{ .Values.keycloak.instanceNamespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "150"
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+  labels:
+    app.kubernetes.io/name: keycloak-config-cli
+    app.kubernetes.io/instance: {{ .Values.keycloak.instanceName }}
+    app.kubernetes.io/managed-by: keycloak-operator-helm
+spec:
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+      labels:
+        app.kubernetes.io/name: keycloak-config-cli
+        app.kubernetes.io/instance: {{ .Values.keycloak.instanceName }}
+        app.kubernetes.io/managed-by: keycloak-operator-helm
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: keycloak-config-cli
+        image: {{ .Values.keycloak.configCli.image.registry }}/{{ .Values.keycloak.configCli.image.repository }}:{{ .Values.keycloak.configCli.image.tag }}
+        imagePullPolicy: {{ .Values.keycloak.configCli.image.pullPolicy | default "IfNotPresent" }}
+        args:
+          {{- range .Values.keycloak.configCli.args }}
+          - {{ . | quote }}
+          {{- end }}
+        env:
+        - name: KEYCLOAK_URL
+          value: "http://{{ .Values.keycloak.instanceName }}-service:8080"
+        - name: KEYCLOAK_USER
+          value: {{ .Values.keycloak.configCli.auth.username | default "admin" }}
+        - name: KEYCLOAK_PASSWORD
+          value: {{ .Values.keycloak.configCli.auth.password | default "admin" }}
+        - name: IMPORT_PATH
+          value: /config
+        - name: KEYCLOAK_AVAILABILITYCHECK_ENABLED
+          value: "true"
+        - name: KEYCLOAK_AVAILABILITYCHECK_TIMEOUT
+          value: "120s"
+        {{- if .Values.keycloak.configCli.extraEnv }}
+        {{- range .Values.keycloak.configCli.extraEnv }}
+        - name: {{ .name }}
+          value: {{ .value | quote }}
+        {{- end }}
+        {{- end }}
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        resources:
+          {{- toYaml .Values.keycloak.configCli.resources | nindent 10 }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1001
+          seccompProfile:
+            type: RuntimeDefault
+      volumes:
+      - name: config
+        configMap:
+          name: {{ .Values.keycloak.instanceName }}-config
+      securityContext:
+        fsGroup: 1001
+        fsGroupChangePolicy: Always
+{{- end }}

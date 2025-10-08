@@ -61,3 +61,69 @@ keycloak:
     limits:
       cpu: 500m
       memory: 1Gi
+
+# Keycloak configuration CLI for bootstrapping realms and clients
+  configCli:
+    enabled: true
+    image:
+      registry: docker.io
+      repository: bitnamilegacy/keycloak-config-cli
+      tag: 6.4.0-debian-12-r0
+      pullPolicy: IfNotPresent
+    
+    args:
+      - --import.managed.group="no-delete"
+      - --import.managed.required-action="no-delete"
+      - --import.managed.role="no-delete"
+      - --import.managed.client="no-delete"
+    
+    auth:
+      username: admin
+      password: admin
+    
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    
+    configuration:
+      realm-master.json: |
+        {
+          "realm": "master",
+          "accountTheme": "keycloak",
+          "displayName": "Keycloak",
+          "displayNameHtml": "<img src='https://raw.githubusercontent.com/open-edge-platform/orch-utils/73df5d1e99a81ae333d94b1c47dd9bef7fa03ae9/keycloak/one-edge-platform-login-title.png'></img>",
+          "defaultSignatureAlgorithm": "PS512",
+          "accessTokenLifespan": 3600,
+          "ssoSessionIdleTimeout": 5400,
+          "ssoSessionMaxLifespan": 43200,
+          "passwordPolicy": "length(14) and digits(1) and specialChars(1) and upperCase(1) and lowerCase(1)",
+          "bruteForceProtected": true,
+          "permanentLockout": false,
+          "maxFailureWaitSeconds": 900,
+          "minimumQuickLoginWaitSeconds": 60,
+          "waitIncrementSeconds": 300,
+          "quickLoginCheckMilliSeconds": 200,
+          "maxDeltaTimeSeconds": 43200,
+          "failureFactor": 5,
+          "clients": [
+            {
+              "clientId": "system-client",
+              "name": "System Client",
+              "description": "Client for System Operations",
+              "enabled": true,
+              "clientAuthenticatorType": "client-secret",
+              "secret": "system-client-secret",
+              "redirectUris": ["*"],
+              "webOrigins": ["*"],
+              "serviceAccountsEnabled": true,
+              "authorizationServicesEnabled": false,
+              "directAccessGrantsEnabled": true,
+              "implicitFlowEnabled": false,
+              "standardFlowEnabled": true
+            }
+          ]
+        }
