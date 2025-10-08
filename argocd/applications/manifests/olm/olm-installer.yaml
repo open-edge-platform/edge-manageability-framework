@@ -68,12 +68,10 @@ roleRef:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: olm-installer
+  name: olm-installer-job
   namespace: olm
   annotations:
     argocd.argoproj.io/sync-wave: "10"
-    argocd.argoproj.io/hook: PreSync
-    argocd.argoproj.io/hook-delete-policy: HookSucceeded
   labels:
     app.kubernetes.io/name: olm-installer
     app.kubernetes.io/managed-by: argocd
