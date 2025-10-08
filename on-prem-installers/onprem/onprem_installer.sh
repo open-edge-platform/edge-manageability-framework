@@ -8,6 +8,7 @@
 # Description: This script:
 #               Creates secrets (with user inputs where required)
 #               Creates namespaces
+#               Installs ArgoCD
 #               Installs Edge Orchestrator SW:
 #                   Untars and populates Gitea repos with Edge Orchestrator deployment code
 #                   Kickstarts deployment via ArgoCD
@@ -275,6 +276,21 @@ create_harbor_password orch-harbor "$harbor_password"
 create_keycloak_password orch-platform "$keycloak_password"
 create_postgres_password orch-database "$postgres_password"
 
+if find "$cwd/$deb_dir_name" -name "onprem-argocd-installer_*_amd64.deb" -type f | grep -q .; then
+    # Run argo CD installer
+    echo "Installing ArgoCD..."
+    eval "sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y $cwd/$deb_dir_name/onprem-argocd-installer_*_amd64.deb"
+    wait_for_namespace_creation $argo_cd_ns
+    sleep 30s
+    wait_for_pods_running $argo_cd_ns
+    echo "ArgoCD installed"
+else
+    echo "❌ Package file NOT found: $cwd/$deb_dir_name/onprem-argocd-installer_*_amd64.deb"
+    echo "Please ensure the package file exists and the path is correct."
+    exit 1
+fi
+
+
 if find "$cwd/$deb_dir_name" -name "onprem-orch-installer_*_amd64.deb" -type f | grep -q .; then
     # Run orchestrator installer
     echo "Installing Edge Orchestrator Packages"
@@ -295,4 +311,7 @@ Once it is completed, you might want to configure DNS for UI and other services 
 # Cleanup: Remove the shared configuration file now that installation is complete
 if [[ -f "$SHARED_CONFIG" ]]; then
   rm -f "$SHARED_CONFIG"
+fi
+if [[ -f "$cwd/$deb_dir_name"]]; then
+  rm -rf "$cwd/$deb_dir_name"
 fi

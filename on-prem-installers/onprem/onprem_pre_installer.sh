@@ -11,7 +11,6 @@
 #               Set's up OS level dependencies,
 #               Installs RKE2 and basic cluster components,
 #               Installs Gitea
-#               Installs ArgoCD
 
 # Usage: ./onprem_pre_installer
 #    -s:             Enables TLS for SRE Exporter. Private TLS CA cert may be provided for SRE destination as an additional argument - provide path to cert (optional)
@@ -505,14 +504,6 @@ wait_for_namespace_creation $gitea_ns
 sleep 30s
 wait_for_pods_running $gitea_ns
 echo "Gitea Installed"
-
-# Run argo CD installer
-echo "Installing ArgoCD..."
-eval "sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y $cwd/$deb_dir_name/onprem-argocd-installer_*_amd64.deb"
-wait_for_namespace_creation $argo_cd_ns
-sleep 30s
-wait_for_pods_running $argo_cd_ns
-echo "ArgoCD installed"
 
 # Write shared variables to configuration file for use by onprem_installer.sh
 write_shared_variables
