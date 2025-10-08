@@ -1,0 +1,23 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# OLM (Operator Lifecycle Manager) configuration
+# This installs the prerequisite for running Kubernetes operators
+
+olm:
+  enabled: true
+  namespace: olm
+  version: v0.28.0
+  
+  # Installation method - using official OLM releases
+  installMethod: job
+  
+  # Resource configuration for installer job
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
