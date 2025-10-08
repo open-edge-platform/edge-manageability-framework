@@ -13,11 +13,6 @@ cluster:
       passwordSecret:
         name: {{ $secretName }}
     {{- end }}
-  storage:
-    size: {{ .Values.argo.postgresql.storageSize | default "1Gi" }}
-    {{- if and .Values.argo.postgresql.persistence .Values.argo.postgresql.persistence.storageClass }}
-    storageClass: {{ .Values.argo.postgresql.persistence.storageClass }}
-    {{- end }}
   services:
     additional:
       - selectorType: rw
