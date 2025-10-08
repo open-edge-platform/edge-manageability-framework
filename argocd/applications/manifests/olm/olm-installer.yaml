@@ -85,7 +85,7 @@ spec:
       serviceAccountName: olm-installer
       containers:
       - name: olm-installer
-        image: registry.k8s.io/kubectl/kubectl:v1.28.0
+        image: docker.io/eclipsefdn/kubectl:latest
         command: ["/bin/sh"]
         args:
           - -c
