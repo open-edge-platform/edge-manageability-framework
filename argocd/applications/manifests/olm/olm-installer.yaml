@@ -1,0 +1,136 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: olm
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  labels:
+    app.kubernetes.io/name: olm
+    app.kubernetes.io/managed-by: argocd
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: operators
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  labels:
+    app.kubernetes.io/name: olm
+    app.kubernetes.io/managed-by: argocd
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: olm-installer
+  namespace: olm
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+  labels:
+    app.kubernetes.io/name: olm-installer
+    app.kubernetes.io/managed-by: argocd
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: olm-installer
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+  labels:
+    app.kubernetes.io/name: olm-installer
+    app.kubernetes.io/managed-by: argocd
+rules:
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: olm-installer
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+  labels:
+    app.kubernetes.io/name: olm-installer
+    app.kubernetes.io/managed-by: argocd
+subjects:
+- kind: ServiceAccount
+  name: olm-installer
+  namespace: olm
+roleRef:
+  kind: ClusterRole
+  name: olm-installer
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: olm-installer
+  namespace: olm
+  annotations:
+    argocd.argoproj.io/sync-wave: "10"
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+  labels:
+    app.kubernetes.io/name: olm-installer
+    app.kubernetes.io/managed-by: argocd
+spec:
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: olm-installer
+    spec:
+      restartPolicy: Never
+      serviceAccountName: olm-installer
+      containers:
+      - name: olm-installer
+        image: registry.k8s.io/kubectl/kubectl:v1.28.0
+        command: ["/bin/sh"]
+        args:
+          - -c
+          - |
+            set -e
+            echo "Installing OLM v0.28.0..."
+            
+            # Check if OLM is already installed
+            if kubectl get deployment olm-operator -n olm > /dev/null 2>&1; then
+              echo "OLM is already installed and running!"
+              exit 0
+            fi
+            
+            # Install OLM CRDs first
+            echo "Installing OLM CRDs..."
+            kubectl apply -f https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.28.0/crds.yaml
+            
+            # Install OLM
+            echo "Installing OLM components..."
+            kubectl apply -f https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.28.0/olm.yaml
+            
+            # Wait for OLM to be ready
+            echo "Waiting for OLM to be ready..."
+            kubectl wait --for=condition=ready pod -l app=olm-operator -n olm --timeout=300s
+            kubectl wait --for=condition=ready pod -l app=catalog-operator -n olm --timeout=300s
+            
+            echo "OLM installation completed successfully!"
+            echo "Available PackageManifests:"
+            kubectl get packagemanifests -n olm | head -10
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 65534
+          seccompProfile:
+            type: RuntimeDefault
