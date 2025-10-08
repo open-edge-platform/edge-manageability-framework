@@ -87,6 +87,19 @@ spec:
       - name: olm-installer
         image: docker.io/eclipsefdn/kubectl:okd-c1
         command: ["/bin/sh"]
+        env:
+        - name: HTTP_PROXY
+          value: "http://proxy-dmz.intel.com:912"
+        - name: HTTPS_PROXY
+          value: "http://proxy-dmz.intel.com:912"
+        - name: http_proxy
+          value: "http://proxy-dmz.intel.com:912"
+        - name: https_proxy
+          value: "http://proxy-dmz.intel.com:912"
+        - name: NO_PROXY
+          value: "localhost,svc,cluster.local,default,internal,caas.intel.com,certificates.intel.com,localhost,127.0.0.0/8,10.0.0.0/8,192.168.0.0/16,172.16.0.0/12,169.254.169.254,orch-platform,orch-app,orch-cluster,orch-infra,orch-database,cattle-system,orch-secret,s3.amazonaws.com,s3.us-west-2.amazonaws.com,ec2.us-west-2.amazonaws.com,eks.amazonaws.com,elb.us-west-2.amazonaws.com,dkr.ecr.us-west-2.amazonaws.com,espd.infra-host.com,pid.infra-host.com,espdqa.infra-host.com,argocd-repo-server"
+        - name: no_proxy
+          value: "localhost,svc,cluster.local,default,internal,caas.intel.com,certificates.intel.com,localhost,127.0.0.0/8,10.0.0.0/8,192.168.0.0/16,172.16.0.0/12,169.254.169.254,orch-platform,orch-app,orch-cluster,orch-infra,orch-database,cattle-system,orch-secret,s3.amazonaws.com,s3.us-west-2.amazonaws.com,ec2.us-west-2.amazonaws.com,eks.amazonaws.com,elb.us-west-2.amazonaws.com,dkr.ecr.us-west-2.amazonaws.com,espd.infra-host.com,pid.infra-host.com,espdqa.infra-host.com,argocd-repo-server"
         args:
           - -c
           - |
@@ -99,13 +112,27 @@ spec:
               exit 0
             fi
             
+            # Test network connectivity first
+            echo "Testing network connectivity..."
+            if ! wget --timeout=30 --tries=3 -qO- https://api.github.com > /dev/null; then
+              echo "ERROR: Cannot reach GitHub. Network connectivity issue."
+              echo "This might be due to network restrictions in the cluster."
+              exit 1
+            fi
+            
             # Install OLM CRDs first
             echo "Installing OLM CRDs..."
-            wget -qO- https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.28.0/crds.yaml | kubectl apply -f -
+            if ! wget --timeout=60 --tries=3 -qO- https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.28.0/crds.yaml | kubectl apply -f -; then
+              echo "ERROR: Failed to download or apply OLM CRDs"
+              exit 1
+            fi
             
             # Install OLM
             echo "Installing OLM components..."
-            wget -qO- https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.28.0/olm.yaml | kubectl apply -f -
+            if ! wget --timeout=60 --tries=3 -qO- https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.28.0/olm.yaml | kubectl apply -f -; then
+              echo "ERROR: Failed to download or apply OLM components"
+              exit 1
+            fi
             
             # Wait for OLM to be ready
             echo "Waiting for OLM to be ready..."
