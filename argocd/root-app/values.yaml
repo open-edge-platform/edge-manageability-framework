@@ -15,7 +15,7 @@ argo:
   clusterDomain: ""
 
   deployRepoURL: ""
-  deployRepoRevision: "f48c8e3"
+  deployRepoRevision: "bitnami-to-redhat-keycloak"
 
   targetServer: ""
   autosync: true
