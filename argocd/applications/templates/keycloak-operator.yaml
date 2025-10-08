@@ -1,0 +1,102 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation# SPDX-FileCopyrightText: 2025 Intel Corporation
+
+##
+
+# SPDX-License-Identifier: Apache-2.0# SPDX-License-Identifier: Apache-2.0
+
+
+
+{{- $appName        := "keycloak-operator" }}{{- $appName        := "keycloak-operator" }}
+
+{{- $namespace      := "keycloak-system" }}{{- $namespace      := "keycloak-system" }}
+
+{{- $syncWave       := "140" }}{{- $syncWave       := "140" }}
+
+------
+
+{{- if (index .Values.argo.enabled $appName) }}{{- if (index .Values.argo.enabled $appName) }}
+
+apiVersion: argoproj.io/v1alpha1apiVersion: argoproj.io/v1alpha1
+
+kind: Applicationkind: Application
+
+metadata:metadata:
+
+  annotations:  annotations:
+
+    argocd.argoproj.io/sync-wave: "{{ $syncWave }}"    argocd.argoproj.io/sync-wave: "{{ $syncWave }}"
+
+  name: {{$appName}}  name: {{$appName}}
+
+  namespace: {{ required "A valid namespace entry required!" .Values.argo.namespace }}  namespace: {{ required "A valid namespace entry required!" .Values.argo.namespace }}
+
+  finalizers:  finalizers:
+
+    - resources-finalizer.argocd.argoproj.io    - resources-finalizer.argocd.argoproj.io
+
+spec:spec:
+
+  project: {{ required "A valid projectName entry required!" .Values.argo.project }}  project: {{ required "A valid projectName entry required!" .Values.argo.project }}
+
+  source:  source:
+
+    repoURL: {{ .Values.argo.deployRepoURL }}    repoURL: {{ .Values.argo.deployRepoURL }}
+
+    path: argocd/applications/charts/keycloak-operator    path: argocd/applications/charts/keycloak-operator
+
+    targetRevision: {{ .Values.argo.deployRepoRevision }}    targetRevision: {{ .Values.argo.deployRepoRevision | quote}}
+
+    helm:    helm:
+
+      releaseName: {{$appName}}      releaseName: {{$appName}}
+
+      valuesObject:      valuesObject:
+
+        {{- $customFile := printf "custom/%s.tpl" $appName }}        {{- $customFile := printf "custom/%s.tpl" $appName }}
+
+        {{- $customConfig := tpl (.Files.Get $customFile) . | fromYaml }}        {{- $customConfig := tpl (.Files.Get $customFile) . | fromYaml }}
+
+        {{- $baseFile := printf "configs/%s.yaml" $appName }}        {{- $baseFile := printf "configs/%s.yaml" $appName }}
+
+        {{- $baseConfig := .Files.Get $baseFile|fromYaml}}        {{- $baseConfig := .Files.Get $baseFile|fromYaml}}
+
+        {{- $overwrite := (get .Values.postCustomTemplateOverwrite $appName ) | default dict }}        {{- $overwrite := (get .Values.postCustomTemplateOverwrite $appName ) | default dict }}
+
+        {{- mergeOverwrite $baseConfig $customConfig $overwrite | toYaml | nindent 8 }}        {{- mergeOverwrite $baseConfig $customConfig $overwrite | toYaml | nindent 8 }}
+
+  destination:  destination:
+
+    namespace: {{$namespace}}    namespace: {{$namespace}}
+
+    server: {{ required "A valid targetServer entry required!" .Values.argo.targetServer }}    server: {{ required "A valid targetServer entry required!" .Values.argo.targetServer }}
+
+  syncPolicy:  syncPolicy:
+
+    {{- if .Values.argo.autosync }}    {{- if .Values.argo.autosync }}
+
+    automated:    automated:
+
+      prune: true      prune: true
+
+      selfHeal: true      selfHeal: true
+
+    retry:    retry:
+
+      limit: 5      limit: 5
+
+      backoff:      backoff:
+
+        duration: 5s        duration: 5s
+
+        maxDuration: 3m0s        maxDuration: 3m0s
+
+        factor: 2        factor: 2
+
+    {{- end }}    {{- end }}
+
+    syncOptions:    syncOptions:
+
+      - CreateNamespace=true      - CreateNamespace=true
+
+{{- end }}      - ApplyOutOfSyncOnly=true
+{{- end }}

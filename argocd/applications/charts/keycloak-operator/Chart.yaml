@@ -1,0 +1,6 @@
+apiVersion: v2
+name: keycloak-operator
+description: Keycloak Operator via OLM
+type: application
+version: 1.0.0
+appVersion: "26.4.0"
