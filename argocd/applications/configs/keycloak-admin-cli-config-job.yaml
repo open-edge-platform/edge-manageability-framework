@@ -127,44 +127,6 @@ spec:
               fi
               
               echo "Keycloak admin-cli configuration completed successfully"
-              
-              # Ensure service account user has group membership (required for groups claim)
-              echo "Checking service account user group membership..."
-              
-              # Get service account user ID
-              SERVICE_ACCOUNT_USER_ID=$(/opt/keycloak/bin/kcadm.sh get clients/$ADMIN_CLI_ID/service-account-user -r master --fields id | grep '"id"' | sed 's/.*"id" : "\([^"]*\)".*/\1/')
-              
-              if [ -z "$SERVICE_ACCOUNT_USER_ID" ]; then
-                echo "Service account user not found"
-                exit 1
-              fi
-              
-              echo "Found service account user with ID: $SERVICE_ACCOUNT_USER_ID"
-              
-              # Check if service-accounts group exists
-              SERVICE_ACCOUNTS_GROUP_ID=$(/opt/keycloak/bin/kcadm.sh get groups -r master -q name=service-accounts --fields id 2>/dev/null | grep '"id"' | sed 's/.*"id" : "\([^"]*\)".*/\1/' | head -1)
-              
-              if [ -z "$SERVICE_ACCOUNTS_GROUP_ID" ]; then
-                echo "Creating service-accounts group"
-                /opt/keycloak/bin/kcadm.sh create groups -r master -s name=service-accounts -s path=/service-accounts
-                SERVICE_ACCOUNTS_GROUP_ID=$(/opt/keycloak/bin/kcadm.sh get groups -r master -q name=service-accounts --fields id | grep '"id"' | sed 's/.*"id" : "\([^"]*\)".*/\1/' | head -1)
-                echo "Created service-accounts group with ID: $SERVICE_ACCOUNTS_GROUP_ID"
-              else
-                echo "service-accounts group already exists with ID: $SERVICE_ACCOUNTS_GROUP_ID"
-              fi
-              
-              # Check if service account user is in the group
-              USER_GROUPS=$(/opt/keycloak/bin/kcadm.sh get users/$SERVICE_ACCOUNT_USER_ID/groups -r master)
-              
-              if echo "$USER_GROUPS" | grep -q "service-accounts"; then
-                echo "Service account user is already in service-accounts group"
-              else
-                echo "Adding service account user to service-accounts group"
-                /opt/keycloak/bin/kcadm.sh update users/$SERVICE_ACCOUNT_USER_ID/groups/$SERVICE_ACCOUNTS_GROUP_ID -r master -n
-                echo "Successfully added service account user to service-accounts group"
-              fi
-              
-              echo "Keycloak admin-cli configuration and group setup completed successfully"
           securityContext:
             runAsNonRoot: true
             runAsUser: 1000

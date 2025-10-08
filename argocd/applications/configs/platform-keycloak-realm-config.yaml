@@ -280,9 +280,9 @@ data:
           "consentRequired": false,
           "standardFlowEnabled": false,
           "implicitFlowEnabled": false,
-          "directAccessGrantsEnabled": false,
-          "serviceAccountsEnabled": true,
-          "publicClient": false,
+          "directAccessGrantsEnabled": true,
+          "serviceAccountsEnabled": false,
+          "publicClient": true,
           "frontchannelLogout": false,
           "protocol": "openid-connect",
           "attributes": {
