@@ -31,15 +31,18 @@ spec:
         image: {{ .Values.keycloak.configCli.image.registry }}/{{ .Values.keycloak.configCli.image.repository }}:{{ .Values.keycloak.configCli.image.tag }}
         imagePullPolicy: {{ .Values.keycloak.configCli.image.pullPolicy | default "IfNotPresent" }}
         args:
-          - --keycloak.url=http://{{ .Values.keycloak.instanceName }}-service:8080
-          - --keycloak.user={{ .Values.keycloak.configCli.auth.username | default "admin" }}
-          - --keycloak.password={{ .Values.keycloak.configCli.auth.password | default "admin" }}
-          - --import.files.locations=/config
-          - --import.var-substitution=true
           {{- range .Values.keycloak.configCli.args }}
           - {{ . | quote }}
           {{- end }}
         env:
+        - name: KEYCLOAK_URL
+          value: "http://{{ .Values.keycloak.instanceName }}-service:8080"
+        - name: KEYCLOAK_USER
+          value: {{ .Values.keycloak.configCli.auth.username | default "admin" }}
+        - name: KEYCLOAK_PASSWORD
+          value: {{ .Values.keycloak.configCli.auth.password | default "admin" }}
+        - name: IMPORT_PATH
+          value: "/config"
         - name: SPRING_PROFILES_ACTIVE
           value: "default"
         - name: KEYCLOAK_AVAILABILITYCHECK_ENABLED
