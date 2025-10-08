@@ -21,6 +21,9 @@ spec:
         app.kubernetes.io/name: keycloak-config-cli
         app.kubernetes.io/instance: {{ .Values.keycloak.instanceName }}
         app.kubernetes.io/managed-by: keycloak-operator-helm
+        # Add Keycloak labels for network policy access
+        app: keycloak
+        app.kubernetes.io/component: config-cli
     spec:
       restartPolicy: Never
       containers:
@@ -32,6 +35,7 @@ spec:
           - --keycloak.user={{ .Values.keycloak.configCli.auth.username | default "admin" }}
           - --keycloak.password={{ .Values.keycloak.configCli.auth.password | default "admin" }}
           - --import.files.locations=/config
+          - --import.var-substitution=true
           {{- range .Values.keycloak.configCli.args }}
           - {{ . | quote }}
           {{- end }}
@@ -41,7 +45,7 @@ spec:
         - name: KEYCLOAK_AVAILABILITYCHECK_ENABLED
           value: "true"
         - name: KEYCLOAK_AVAILABILITYCHECK_TIMEOUT
-          value: "120s"
+          value: "300s"
         {{- if .Values.keycloak.configCli.extraEnv }}
         {{- range .Values.keycloak.configCli.extraEnv }}
         - name: {{ .name }}
