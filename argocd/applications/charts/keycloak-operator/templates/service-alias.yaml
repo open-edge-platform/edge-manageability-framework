@@ -1,0 +1,24 @@
+{{- if .Values.keycloak.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: platform-keycloak
+  namespace: {{ .Values.keycloak.instanceNamespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "135"
+  labels:
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/instance: platform-keycloak-alias
+    app.kubernetes.io/managed-by: keycloak-operator-helm
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+      name: http
+  selector:
+    app: keycloak
+    app.kubernetes.io/managed-by: keycloak-operator
+    app.kubernetes.io/instance: {{ .Values.keycloak.instanceName }}
+{{- end }}
