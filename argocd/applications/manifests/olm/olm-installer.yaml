@@ -85,15 +85,12 @@ spec:
       serviceAccountName: olm-installer
       containers:
       - name: olm-installer
-        image: bitnamilegacy/kubectl:latest
+        image: docker.io/eclipsefdn/kubectl:okd-c1
         command: ["/bin/sh"]
         args:
           - -c
           - |
             set -e
-            echo "Installing curl..."
-            apt-get update && apt-get install -y curl
-            
             echo "Installing OLM v0.28.0..."
             
             # Check if OLM is already installed
@@ -104,11 +101,11 @@ spec:
             
             # Install OLM CRDs first
             echo "Installing OLM CRDs..."
-            curl -sL https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.28.0/crds.yaml | kubectl apply -f -
+            wget -qO- https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.28.0/crds.yaml | kubectl apply -f -
             
             # Install OLM
             echo "Installing OLM components..."
-            curl -sL https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.28.0/olm.yaml | kubectl apply -f -
+            wget -qO- https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.28.0/olm.yaml | kubectl apply -f -
             
             # Wait for OLM to be ready
             echo "Waiting for OLM to be ready..."
@@ -130,7 +127,8 @@ spec:
           capabilities:
             drop:
             - ALL
-          runAsNonRoot: false
-          runAsUser: 0
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 65534
           seccompProfile:
             type: RuntimeDefault
