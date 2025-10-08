@@ -15,7 +15,7 @@ argo:
   clusterDomain: ""
 
   deployRepoURL: ""
-  deployRepoRevision: "4b5bc10"
+  deployRepoRevision: "f48c8e3"
 
   targetServer: ""
   autosync: true
