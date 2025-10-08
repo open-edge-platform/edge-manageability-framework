@@ -186,6 +186,17 @@ sequenceDiagram
                 Note right of agent: Activation completed successfully
             end
         end        
+
+        agent ->> agent:  Activate/Enable LMS (periodic)
+        agent ->> rps:  Initiate RPC activate command
+        activate rps
+        rps ->> agent:  Success / Configured
+        deactivate rps
+
+        agent ->> dm:  Report AMT status as Activated
+        dm ->> inv:  Update AMT Status as IN_PROGRESS (Connecting)
+        dm ->> inv:  Update AMT CurrentState as Provisioned
+
     else Device not eligible
         agent ->> dm:  Report DMT status as Not Supported
         dm ->> inv:  Update DMT Status as ERROR (Not Supported)
@@ -251,6 +262,14 @@ and then clicking the “Activate vPro” button.
 
 - GET /compute/hosts/{resourceId}
   - Use host.amtSku to know whether the device is vPro capable.---
+  - desiredAmtState: "AMT_STATE_PROVISIONED"
+
+The “Activate vPro” button will only be shown if the device is vPro capable.
+
+- GET /compute/hosts/{resourceId}
+  - Use host.amtSku to know whether the device is vPro capable.
+
+---
 
 Power buttons will be shown in the host details page to change the power status of the vPro device.
 
