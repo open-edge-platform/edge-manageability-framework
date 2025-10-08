@@ -17,8 +17,9 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "110"
 spec:
-  # AllNamespaces mode - empty targetNamespaces
-  targetNamespaces: []
+  # SingleNamespace mode - target orch-platform where Keycloak will run
+  targetNamespaces:
+  - orch-platform
 ---
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription

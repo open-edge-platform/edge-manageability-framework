@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Keycloak Operator configuration via OLM
-# This deploys only the operator, not a Keycloak instance
+# This deploys both the operator and a Keycloak instance
 
 operator:
   name: keycloak-operator
@@ -13,3 +13,51 @@ operator:
   source: operatorhubio-catalog
   sourceNamespace: olm
   installPlanApproval: Automatic
+
+keycloak:
+  enabled: true
+  instanceName: keycloak-operator-instance
+  instanceNamespace: orch-platform
+  instances: 1
+  
+  hostname:
+    strict: false
+  
+  http:
+    httpEnabled: true
+    httpPort: 8080
+  
+  proxy:
+    headers: xforwarded
+  
+  db:
+    vendor: postgres
+    host: postgresql.orch-database
+    port: 5432
+    database: orch-platform-platform-keycloak
+    usernameSecret:
+      name: platform-keycloak-local-postgresql
+      key: PGUSER
+    passwordSecret:
+      name: platform-keycloak-local-postgresql
+      key: PGPASSWORD
+  
+  additionalOptions:
+    - name: KC_BOOTSTRAP_ADMIN_USERNAME
+      value: admin
+    - name: KC_BOOTSTRAP_ADMIN_PASSWORD
+      value: admin
+    - name: KC_PROXY_HEADERS
+      value: xforwarded
+    - name: KC_HOSTNAME_STRICT
+      value: "false"
+    - name: KC_HOSTNAME_STRICT_HTTPS
+      value: "false"
+  
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
