@@ -17,12 +17,51 @@ resource "aws_security_group" "common" {
   name   = "${var.cluster_name}-${var.name}-load-balancer-sg"
   vpc_id = var.vpc_id
 
+  # Allow HTTPS outbound for health checks and API calls
+  egress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "HTTPS outbound for health checks and AWS API calls"
+  }
+
+  # Allow HTTP outbound for health checks
+  egress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "HTTP outbound for health checks"
+  }
+
+  # Allow outbound to VPC CIDR for internal communication
   egress {
     from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    to_port     = 65535
+    protocol    = "tcp"
+    cidr_blocks = [data.aws_vpc.main.cidr_block]
+    description = "All TCP traffic within VPC"
   }
+
+  # Allow DNS resolution
+  egress {
+    from_port   = 53
+    to_port     = 53
+    protocol    = "udp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "DNS resolution"
+  }
+
+  # Allow NTP for time synchronization
+  egress {
+    from_port   = 123
+    to_port     = 123
+    protocol    = "udp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "NTP time synchronization"
+  }
+
   dynamic "ingress" {
     for_each = var.ports
     content {
@@ -35,6 +74,10 @@ resource "aws_security_group" "common" {
   tags = {
     Name : "${var.cluster_name}-${var.name}-load-balancer-sg"
   }
+}
+
+data "aws_vpc" "main" {
+  id = var.vpc_id
 }
 
 # Create EIP(if not internal), NLB, Listener, TargetGroup
