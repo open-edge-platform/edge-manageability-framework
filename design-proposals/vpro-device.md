@@ -170,21 +170,23 @@ manageability features.
 
 These are the UI features that will be supported, along with the APIs that will be used:
 
-User will be able to activate vPro on a vPro-capable device by going to the Host Actions menu, and then clicking the “Activate vPro” button. 
+User will be able to activate vPro on a vPro-capable device by going to the Host Actions menu,
+and then clicking the “Activate vPro” button.
+
 - PATCH /compute/hosts/{resourceId}
-    - desiredAmtState: "AMT_STATE_PROVISIONED"
+  - desiredAmtState: "AMT_STATE_PROVISIONED"
 
 The “Activate vPro” button will only be shown if the device is vPro capable.
 
 - GET /compute/hosts/{resourceId}
-    - Use host.amtSku to know whether the device is vPro capable.
+  - Use host.amtSku to know whether the device is vPro capable.
 
 ---
 
 Power buttons will be shown in the host details page to change the power status of the vPro device.
 
 - PATCH /compute/hosts/{resourceId}
-    - desiredPowerState: "POWER_STATE_ON" | "POWER_STATE_OFF" | "POWER_STATE_RESET"
+  - desiredPowerState: "POWER_STATE_ON" | "POWER_STATE_OFF" | "POWER_STATE_RESET"
 
 ---
 
@@ -198,7 +200,7 @@ Additional vPro-related info will be shown in a dedicated vPro details tab in th
 The power status, power buttons, and vPro Details tab will only be shown if the AMT state is provisioned:
 
 - GET /compute/hosts/{resourceId}
-    - if host.currentAmtState == AMT_STATE_PROVISIONED, then the vPro UI will be shown.
+  - if host.currentAmtState == AMT_STATE_PROVISIONED, then the vPro UI will be shown.
 
 ## Affected components and Teams
 
