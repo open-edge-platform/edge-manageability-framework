@@ -88,13 +88,11 @@ sequenceDiagram
 
     en ->> en:  OS installation (includes Agent RPMs)
     en ->> en: Determining hardware is AMT/ISM or None in installer
-    Note right of en: Installer performs AMT eligibility & capability introspection
-    en ->> nagent:  Exclude PMA from status reporting if AMT not available
-    en ->> agent:  Install/Enable Agent as part of OS
-
+    Note right of en: Installer/cloudInit performs AMT eligibility & capability introspection    
     
 
     alt Device supports vPRO/ISM
+        en ->> agent:  Installer/CloudInit Enable Agent as part of OS
         agent ->> dm:  Report DMT status as Supported/Enabled
         dm ->> inv:  Update DMT Status as SUPPORTED and AMTSku to disable/AMT/ISM
 
@@ -187,8 +185,8 @@ sequenceDiagram
             end
         end        
     else Device not eligible
-        agent ->> dm:  Report DMT status as Not Supported
-        dm ->> inv:  Update DMT Status as ERROR (Not Supported)
+        en ->> en: Installer/cloudInit skips PMA installtion
+        en ->> nagent:  Exclude PMA from status reporting if AMT/ISM not available
     end
 
     alt Failure during activation
