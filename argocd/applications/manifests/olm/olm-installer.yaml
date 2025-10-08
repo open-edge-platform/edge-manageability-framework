@@ -85,7 +85,7 @@ spec:
       serviceAccountName: olm-installer
       containers:
       - name: olm-installer
-        image: bitnami/kubectl:1.28
+        image: docker.io/eclipsefdn/kubectl:okd-c1
         command: ["/bin/sh"]
         args:
           - -c
