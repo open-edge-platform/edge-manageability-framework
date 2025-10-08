@@ -38,7 +38,6 @@ cwd=$(pwd)
 
 deb_dir_name="installers"
 git_arch_name="repo_archives"
-argo_cd_ns="argocd"
 gitea_ns="gitea"
 archives_rs_path="edge-orch/common/files/orchestrator"
 si_config_repo="edge-manageability-framework"

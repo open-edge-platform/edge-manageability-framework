@@ -25,6 +25,7 @@ cwd=$(pwd)
 
 deb_dir_name="installers"
 git_arch_name="repo_archives"
+argo_cd_ns="argocd"
 export GIT_REPOS=$cwd/$git_arch_name
 export KUBECONFIG="${KUBECONFIG:-/home/$USER/.kube/config}"
 # Source shared configuration if it exists
@@ -312,6 +313,6 @@ Once it is completed, you might want to configure DNS for UI and other services 
 if [[ -f "$SHARED_CONFIG" ]]; then
   rm -f "$SHARED_CONFIG"
 fi
-if [[ -f "$cwd/$deb_dir_name"]]; then
+if [[ -f "$cwd/$deb_dir_name" ]]; then
   rm -rf "$cwd/$deb_dir_name"
 fi
