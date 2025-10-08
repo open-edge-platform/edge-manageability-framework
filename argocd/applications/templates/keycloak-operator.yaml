@@ -20,7 +20,7 @@ spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   source:
     repoURL: {{ .Values.argo.deployRepoURL }}
-    path: argocd/applications/charts/keycloak-operator
+    path: argocd/charts/keycloak-operator
     targetRevision: {{ .Values.argo.deployRepoRevision | quote}}
     helm:
       releaseName: {{$appName}}

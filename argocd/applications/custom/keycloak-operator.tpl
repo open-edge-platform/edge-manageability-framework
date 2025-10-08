@@ -6,10 +6,38 @@
 ## This file provides environment-specific configuration overrides
 ## for the Keycloak Operator deployment
 
-# Database configuration - use cluster-specific database settings
+# Operator configuration
+operator:
+  name: keycloak-operator
+  namespace: keycloak-system
+  packageName: keycloak-operator
+  channel: fast
+  source: operatorhubio-catalog
+  sourceNamespace: olm
+  installPlanApproval: Automatic
+
+# Keycloak instance configuration
 keycloak:
+  enabled: true
+  instanceName: keycloak-operator-instance
+  instanceNamespace: orch-platform
+  instances: 1
+  
+  hostname:
+    strict: false
+  
+  http:
+    httpEnabled: true
+    httpPort: 8080
+  
+  proxy:
+    headers: xforwarded
+
+  # Database configuration - use cluster-specific database settings
   db:
+    vendor: postgres
     host: postgresql.{{ .Values.argo.database.namespace }}.svc.cluster.local
+    port: 5432
     database: {{ .Values.argo.database.prefix }}-platform-keycloak
     usernameSecret:
       name: platform-keycloak-{{ .Values.argo.database.type }}-postgresql
@@ -18,10 +46,14 @@ keycloak:
       name: platform-keycloak-{{ .Values.argo.database.type }}-postgresql
       key: PGPASSWORD
 
-  # Proxy configuration for cluster networking
+  # Additional options including proxy configuration
   additionalOptions:
+    - name: KC_BOOTSTRAP_ADMIN_USERNAME
+      value: admin
+    - name: KC_BOOTSTRAP_ADMIN_PASSWORD
+      value: admin
     - name: KC_PROXY_HEADERS
-      value: "xforwarded"
+      value: xforwarded
     - name: KC_HOSTNAME_STRICT
       value: "false"
     - name: KC_HOSTNAME_STRICT_HTTPS  
@@ -39,8 +71,31 @@ keycloak:
       value: {{ .Values.argo.proxy.noProxy }}
     {{- end }}
 
+  # Resource configuration
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
   # Configuration CLI - customize realm configuration with cluster-specific URLs
   configCli:
+    enabled: true
+    
+    auth:
+      username: admin
+      password: admin
+    
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    
     configuration:
       realm-master.json: |
         {
