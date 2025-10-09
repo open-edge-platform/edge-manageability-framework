@@ -3,6 +3,27 @@
 # SPDX-License-Identifier: Apache-2.0
 
 cluster:
+  {{- $defaultResources := dict }}
+  {{- if and .Values.argo.postgresql .Values.argo.postgresql.resourcesPreset }}
+  {{- $preset := .Values.argo.postgresql.resourcesPreset }}
+  {{- if eq $preset "large" }}
+  {{- $defaultResources = dict "requests" (dict "memory" "2048Mi" "cpu" "1.0") "limits" (dict "memory" "3072Mi" "cpu" "1.5") }}
+  {{- else }}
+  {{- $defaultResources = dict "requests" (dict "memory" "256Mi" "cpu" "250m") "limits" (dict "memory" "384Mi" "cpu" "375m") }}
+  {{- end }}
+  {{- end }}
+
+  # Following resource setting will override resourcesPreset
+  {{- $finalResources := $defaultResources }}
+  {{- if .Values.argo.resources.postgresql.cluster }}
+  {{- $finalResources = .Values.argo.resources.postgresql.cluster }}
+  {{- end }}
+
+  {{- if $finalResources }}
+  resources:
+    {{- toYaml $finalResources | nindent 4 }}
+  {{- end }}
+
   roles:
     {{- range .Values.argo.database.databases }}
     {{- $secretName := printf "%s-%s" .namespace .name }}
@@ -32,6 +53,8 @@ cluster:
   initdb:
     database: postgres
     owner: orch-database-postgresql_user
+    localeCType: "en_US.UTF-8"
+    localeCollate: "en_US.UTF-8"
     secret:
       name: "orch-database-postgresql"
     postInitSQL:
