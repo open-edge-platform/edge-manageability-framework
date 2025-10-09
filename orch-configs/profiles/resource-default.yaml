@@ -393,7 +393,7 @@ argo:
       cluster:
         requests:
           cpu: "1m"
-          memory: "1Mi"
+          memory: "256Mi"
         limits:
           cpu: "64"
           memory: "64Gi"
