@@ -124,7 +124,7 @@ set_default_sre_env() {
 }
 
 update_cluster_profile() {
-    local TARGET_FILE="$tmp_dir/$si_config_repo/orch-configs/clusters/$ORCH_INSTALLER_PROFILE.yaml"
+    local TARGET_FILE="$tmp_dir/$si_config_repo/orch-configs/clusters/${ORCH_INSTALLER_PROFILE}.yaml"
 
     # Check if file exists
     if [ ! -f "$TARGET_FILE" ]; then
