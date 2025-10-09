@@ -58,11 +58,12 @@ Let us now analyze the device activation, the user must do the following steps b
 
 ```mermaid
 sequenceDiagram
+    autonumber
     title DMT Provisioning Through Agent
 
     actor us as User
 
-    box rgb(173, 216, 230) Orchestrator Components
+    box rgba(11, 164, 230, 1) Orchestrator Components
         participant inv as Inventory
         participant ps as Provisioning
         participant dm as Device Management
@@ -70,52 +71,127 @@ sequenceDiagram
         participant rps as Remote Provisioning Server
     end
 
-    box rgb(144, 238, 144) Edge Node Components
+    box rgba(230, 100, 215, 1) Edge Node Components
         participant en as Edge Node
+        participant nagent as Node Agent
         participant agent as Platform Manageability Agent
     end
 
-    us ->> en: 1. Boot device
+    us ->> en: Boot device
     activate en
-    en ->> ps: 2. Device discovery
+    en ->> ps:  Device discovery
     activate ps
-    ps ->> inv: 3. Onboard the device
-    ps ->> en: 4. Done
+    ps ->> inv:  Onboard the device
+    ps ->> en:  Done
     deactivate ps
     deactivate en
 
-    en ->> en: 5. OS installation (includes Agent RPMs)
-    en ->> agent: 6. Install/Enable Agent as part of OS
-
-    Note right of agent: Agent performs AMT eligibility & capability introspection
+    en ->> en:  OS installation (includes Agent RPMs)
+    en ->> en: Determining hardware is AMT/ISM or None in installer
+    Note right of en: Installer/cloudInit performs AMT eligibility & capability introspection    
+    
 
     alt Device supports vPRO/ISM
-        agent ->> dm: 7. Report DMT status as Supported/Enabled
-        dm ->> inv: 8. Update DMT Status as SUPPORTED and Populate AMTInfo
+        en ->> agent:  Installer/CloudInit Enable Agent as part of OS
+        agent ->> dm:  Report DMT status as Supported/Enabled
+        dm ->> inv:  Update DMT Status as SUPPORTED and AMTSku to disable/AMT/ISM
 
-        us ->> dm: 9. Request activation via API
-        dm ->> agent: 10. Provide activation profile name
+        us ->> dm:  Request activation via API
+        dm ->> agent:  Provide activation profile name
 
         Note right of agent: Activation is async (periodic ticker)
-
-        agent ->> agent: 11. Activate/Enable LMS (periodic)
-        agent ->> rps: 12. Initiate RPC activate command
-        activate rps
-        rps ->> agent: 13. Success / Configured
-        deactivate rps
-
-        agent ->> dm: 14. Report AMT status as Activated
-        dm ->> inv: 15. Update AMT Status as IN_PROGRESS (Connecting)
-        dm ->> inv: 16. Update AMT CurrentState as Provisioned
-
+         loop Every HeartbeatInterval (e.g., 30 seconds)
+            agent ->> dm: RetrieveActivationDetails(hostID)
+            dm ->> agent: Activation profile & credentials
+            
+            agent ->> amt: Execute "rpc amtinfo" command
+            amt ->> agent: RAS Remote Status response
+            
+            alt RAS Remote Status: "not connected"
+                agent ->> agent: resetAllRecoveryState()
+                Note right of agent: Fresh start - clear all recovery tracking
+                
+                agent ->> agent: Activate/Enable LMS (periodic)
+                agent ->> rps: Initiate RPC activate command
+                activate rps
+                rps ->> agent: Activation response Success / Configured
+                deactivate rps
+                Note right of agent: RPS processes activation request and responds
+                
+                agent ->> dm: Report status as ACTIVATING
+                dm ->> inv: Update AMT Status as IN_PROGRESS (Connecting)
+                Note right of agent: AMT will transition to "connecting"
+                
+            else RAS Remote Status: "connecting"
+                agent ->> agent: handleConnectingStateWithTimeout()
+                
+                alt First time "connecting" detected
+                    agent ->> agent: Start connecting timer
+                    agent ->> dm: Report status as ACTIVATING
+                    dm ->> inv: Update AMT Status as IN_PROGRESS (Connecting)
+                    Note right of agent: Begin 3-minute timeout monitoring
+                    
+                else Connecting < 3 minutes
+                    agent ->> agent: Continue monitoring
+                    agent ->> dm: Report status as ACTIVATING
+                    dm ->> inv: Update AMT Status as IN_PROGRESS (Connecting)
+                    Note right of agent: Normal connecting progress
+                    
+                else Connecting >= 3 minutes AND recovery attempts < 3
+                    Note right of agent: Timeout reached - trigger recovery
+                    
+                    alt No recovery in progress
+                        agent ->> agent: Start recovery (background goroutine)
+                        Note right of agent: Recovery Attempt N/3
+                        
+                        rect rgb(255, 245, 235)
+                            Note right of agent: Recovery Process (Sequential)
+                            agent ->> amt: Execute "rpc deactivate -u wss://server/activate"
+                            Note right of agent: Deactivate stuck AMT connection
+                            agent ->> agent: AMT settlement period (30 * attempt_number seconds)
+                            Note right of agent: Allow AMT hardware to stabilize
+                            agent ->> agent: Reset connecting timer & mark recovery complete
+                        end
+                        
+                        agent ->> dm: Report status as ACTIVATING
+                        dm ->> inv: Update AMT Status as IN_PROGRESS (Recovering)
+                        Note right of agent: Recovery in progress, continue monitoring
+                        
+                    else Recovery already in progress
+                        agent ->> dm: Report status as ACTIVATING
+                        dm ->> inv: Update AMT Status as IN_PROGRESS (Recovering)
+                        Note right of agent: Wait for current recovery to complete
+                        
+                    else In backoff period (< 2 minutes since last attempt)
+                        agent ->> dm: Report status as ACTIVATING
+                        dm ->> inv: Update AMT Status as IN_PROGRESS (Backoff)
+                        Note right of agent: Waiting for backoff period before retry
+                    end
+                    
+                else Connecting >= 3 minutes AND recovery attempts >= 3
+                    Note right of agent: Maximum recovery attempts exhausted
+                    agent ->> dm: Report status as ACTIVATION_FAILED
+                    dm ->> inv: Update DMT Status as FAILURE (Max Retries Exceeded)
+                    Note right of agent: Mark as permanently failed
+                end
+                
+            else RAS Remote Status: "connected"
+                agent ->> agent: resetAllRecoveryState()
+                Note right of agent: Success! Clear all recovery state
+                agent ->> dm: Report status as ACTIVATED
+                dm ->> inv: Update AMT Status as ACTIVATED
+                dm ->> inv: Update AMT CurrentState as Provisioned
+                Note right of agent: Activation completed successfully
+            end
+        end        
     else Device not eligible
-        agent ->> dm: 7a. Report DMT status as Not Supported
-        dm ->> inv: 7b. Update DMT Status as ERROR (Not Supported)
+        en ->> en: Installer/cloudInit skips PMA installtion
+        en ->> nagent:  Exclude PMA from status reporting if AMT/ISM not available
     end
 
     alt Failure during activation
-        agent ->> dm: 12a. Report DMT status as FAILURE
-        dm ->> inv: 12b. Update DMT Status as FAILURE
+        agent ->> dm:  Report DMT status as FAILURE
+        dm ->> inv:  Update DMT Status as FAILURE
     end
 ```
 
@@ -160,6 +236,42 @@ activation of Device Management feature.
 
 However, such flow is considered not mandatory and this penalty might be accepted by the user to have in exchange extra
 manageability features.
+
+### UI Features
+
+These are the UI features that will be supported, along with the APIs that will be used:
+
+User will be able to activate vPro on a vPro-capable device by going to the Host Actions menu,
+and then clicking the “Activate vPro” button.
+
+- PATCH /compute/hosts/{resourceId}
+  - desiredAmtState: "AMT_STATE_PROVISIONED"
+
+The “Activate vPro” button will only be shown if the device is vPro capable.
+
+- GET /compute/hosts/{resourceId}
+  - Use host.amtSku to know whether the device is vPro capable.
+
+---
+
+Power buttons will be shown in the host details page to change the power status of the vPro device.
+
+- PATCH /compute/hosts/{resourceId}
+  - desiredPowerState: "POWER_STATE_ON" | "POWER_STATE_OFF" | "POWER_STATE_RESET"
+
+---
+
+Additional vPro-related info will be shown in a dedicated vPro details tab in the host details page.
+
+- GET /dm/devices/{guid}
+- GET /dm/amt/generalSettings/{guid}
+
+---
+
+The power status, power buttons, and vPro Details tab will only be shown if the AMT state is provisioned:
+
+- GET /compute/hosts/{resourceId}
+  - if host.currentAmtState == AMT_STATE_PROVISIONED, then the vPro UI will be shown.
 
 ## Affected components and Teams
 
