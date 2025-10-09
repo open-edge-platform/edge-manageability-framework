@@ -313,6 +313,4 @@ Once it is completed, you might want to configure DNS for UI and other services 
 if [[ -f "$SHARED_CONFIG" ]]; then
   rm -f "$SHARED_CONFIG"
 fi
-if [[ -f "$cwd/$deb_dir_name" ]]; then
-  rm -rf "$cwd/$deb_dir_name"
-fi
+
