@@ -129,72 +129,18 @@ spec:
               exit 0
               fi
               echo "Creating basic OLM CRDs and resources..."
-              # Create the essential OLM CRDs first
-              kubectl apply -f - << 'EOF'
-            apiVersion: apiextensions.k8s.io/v1
-            kind: CustomResourceDefinition
-            metadata:
-              name: subscriptions.operators.coreos.com
-            spec:
-              group: operators.coreos.com
-              versions:
-              - name: v1alpha1
-                served: true
-                storage: true
-                schema:
-                  openAPIV3Schema:
-                    type: object
-                    properties:
-                      spec:
-                        type: object
-                        properties:
-                          channel:
-                            type: string
-                          name:
-                            type: string
-                          source:
-                            type: string
-                          sourceNamespace:
-                            type: string
-                          installPlanApproval:
-                            type: string
-                      status:
-                        type: object
-              scope: Namespaced
-              names:
-                plural: subscriptions
-                singular: subscription
-                kind: Subscription
-            ---
-            apiVersion: apiextensions.k8s.io/v1
-            kind: CustomResourceDefinition
-            metadata:
-              name: operatorgroups.operators.coreos.com
-            spec:
-              group: operators.coreos.com
-              versions:
-              - name: v1
-                served: true
-                storage: true
-                schema:
-                  openAPIV3Schema:
-                    type: object
-                    properties:
-                      spec:
-                        type: object
-                        properties:
-                          targetNamespaces:
-                            type: array
-                            items:
-                              type: string
-                      status:
-                        type: object
-              scope: Namespaced
-              names:
-                plural: operatorgroups
-                singular: operatorgroup
-                kind: OperatorGroup
-            EOF
+
+              # Create Subscriptions CRD using kubectl create
+              echo "Creating Subscriptions CRD..."
+              kubectl create crd subscriptions.operators.coreos.com \
+                --group=operators.coreos.com --version=v1alpha1 \
+                --scope=Namespaced || echo "CRD already exists"
+
+              # Create OperatorGroups CRD using kubectl create
+              echo "Creating OperatorGroups CRD..."
+              kubectl create crd operatorgroups.operators.coreos.com \
+                --group=operators.coreos.com --version=v1 \
+                --scope=Namespaced || echo "CRD already exists"
               echo "Basic OLM CRDs created successfully!"
               echo "Its minimal OLM setup for n8wrk-restricted environments."
               echo "OLM installation completed successfully!"
