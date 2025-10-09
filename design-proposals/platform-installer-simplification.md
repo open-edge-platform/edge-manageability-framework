@@ -180,6 +180,8 @@ The steps the installer shall take to invoke ArgoCD include:
 - Performing any template operations on the cluster.yaml that are necessary to override settings for
   the installation.
 
+- Install any namespaces or secrets that are required by the ArgoCD installation.
+
 - Install the ArgoCD helm chart.
 
 - Install the ArgoCD applications (i.e. Root App, etc)
@@ -234,9 +236,9 @@ Some properties of how this configuration shall be done:
 2. The bash script shall ingest environment variables. The environment variable names will be the
    same regardless of whether cloud, onprem, or coder installation is performed.
 
-3. Features will default to `ENABLED` and will only be disabled by the presence of an environment
+3. Subsystems will default to `ENABLED` and will only be disabled by the presence of an environment
    variable that disables the feature. In the absence of any such environment variables, the
-   maximal configuration is apply, i.e. the orchestrator is installed with the same feature set
+   maximal configuration is applied, i.e. the orchestrator is installed with the same feature set
    that it had in 3.1.
 
 #### Ensure no DEB files are used in the installer (using them in the pre-installer is fine)
@@ -247,7 +249,7 @@ OnPrem, AWS, and Coder preinstallers to have divergent implementations.
 
 However, DEB files should not be used in the `installer`, as we expect to converge the AWS and
 OnPrem installers, and AWS does not support the use of DEB files. The OnPrem Installer incldued
-two DEB files, for installing ArgoCD and for installing the apps withing ArgoCD. These two DEB
+two DEB files, for installing ArgoCD and for installing the apps within ArgoCD. These two DEB
 files will have to be replaced by alternate functionality as we converge.
 
 #### Ensure all pre-installers and the installer are noninteractive
