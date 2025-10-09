@@ -123,6 +123,45 @@ set_default_sre_env() {
   ## we don't create SRE_DEST_CA_CERT by default
 }
 
+update_cluster_profile() {
+    local TARGET_FILE="$tmp_dir/$si_config_repo/orch-configs/clusters/$ORCH_INSTALLER_PROFILE.yaml"
+
+    # Check if file exists
+    if [ ! -f "$TARGET_FILE" ]; then
+        echo "❌ File not found: $TARGET_FILE"
+        return 1
+    fi
+
+    echo "🔍 Checking flags for: $TARGET_FILE"
+
+    # AO or CO disable → remove enable-app-orch.yaml
+    if [ "${DISABLE_AO_PROFILE:-false}" = "true" ] || [ "${DISABLE_CO_PROFILE:-false}" = "true" ]; then
+        echo "AO/CO disable flag detected — removing lines containing 'enable-app-orch.yaml'"
+        sed -i '/enable-app-orch.yaml/d' "$TARGET_FILE"
+    else
+        echo "AO/CO disable flags not true — skipping app-orch update."
+    fi
+
+    # CO disable → remove enable-cluster-orch.yaml
+    if [ "${DISABLE_CO_PROFILE:-false}" = "true" ]; then
+        echo "CO disable flag detected — removing lines containing 'enable-app-orch.yaml' and 'enable-cluster-orch.yaml'"
+        sed -i '/enable-cluster-orch.yaml/d' "$TARGET_FILE"
+        sed -i '/enable-app-orch.yaml/d' "$TARGET_FILE"
+    else
+        echo "DISABLE_CO_PROFILE not true — skipping cluster-orch update."
+    fi
+
+    # OBS disable → remove observability profiles
+    if [ "${DISABLE_OBS_PROFILE:-false}" = "true" ]; then
+        echo "DISABLE_OBS_PROFILE=true — removing lines containing observability profiles"
+        sed -i '/enable-o11y.yaml/d' "$TARGET_FILE"
+        sed -i "/o11y-${ORCH_INSTALLER_PROFILE}\.yaml/d" "$TARGET_FILE"
+    else
+        echo "DISABLE_OBS_PROFILE not true — skipping observability update."
+    fi
+
+}
+
 set_default_smtp_env() {
   if [[ -z ${SMTP_ADDRESS} ]]; then
     export SMTP_ADDRESS="smtp.serveraddress.com"
@@ -321,7 +360,10 @@ allow_config_in_runtime() {
       unset NGINX_IP
     fi
   done
-
+  
+  ## if AO/CO and OBJ Flag enabled then disable profile
+  update_cluster_profile
+  
   ## Wait for SI to confirm that they have made changes
   while true; do
     if [[ -n ${PROCEED} ]]; then
