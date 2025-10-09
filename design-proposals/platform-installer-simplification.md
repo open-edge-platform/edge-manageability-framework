@@ -131,7 +131,7 @@ All three Workstreams may be parallelized as necessary.
 
 ### Workstream 1: Installer Simplification
 
-Installation is broken into two phases, the installer and the pre-installer. 
+Installation is broken into two phases, the installer and the pre-installer.
 
 ![Installer and Pre-Installer Split](images/platform-installer-simplification-split.png)
 
