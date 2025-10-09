@@ -33,10 +33,12 @@ approach to achieving the goals in a phased rollout manner.
 
 - Revision 2.1
 
-  - Added "Cleanup and migrate configuration tasks from pre-installer to the installer"
+  - Added "Cleanup and migrate configuration tasks from pre-installer to the installer".
 
   - Add more details on the steps the installer takes, such as installing the ArgoCD helm
     chart and applying configuration to templates.
+
+  - Add note on DEB files.
 
 ## Problem Statement
 
@@ -236,6 +238,17 @@ Some properties of how this configuration shall be done:
    variable that disables the feature. In the absence of any such environment variables, the
    maximal configuration is apply, i.e. the orchestrator is installed with the same feature set
    that it had in 3.1.
+
+#### Ensure no DEB files are used in the installer (using them in the pre-installer is fine)
+
+It's fine to use DEB files in a `pre-installer`, such as the OnPrem `pre-installer`. The pre-
+installers are specific to the type of installation that is being performed, and we expect the
+OnPrem, AWS, and Coder preinstallers to have divergent implementations.
+
+However, DEB files should not be used in the `installer`, as we expect to converge the AWS and
+OnPrem installers, and AWS does not support the use of DEB files. The OnPrem Installer incldued
+two DEB files, for installing ArgoCD and for installing the apps withing ArgoCD. These two DEB
+files will have to be replaced by alternate functionality as we converge.
 
 #### Ensure all pre-installers and the installer are noninteractive
 
