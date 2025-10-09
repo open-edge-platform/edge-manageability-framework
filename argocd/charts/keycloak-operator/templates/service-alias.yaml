@@ -5,7 +5,7 @@ metadata:
   name: platform-keycloak
   namespace: {{ .Values.keycloak.instanceNamespace }}
   annotations:
-    argocd.argoproj.io/sync-wave: "135"
+    argocd.argoproj.io/sync-wave: "155"
   labels:
     app.kubernetes.io/name: keycloak
     app.kubernetes.io/instance: platform-keycloak-alias
