@@ -71,15 +71,6 @@ cleanupController:
 reportsController:
   replicas: 2
 
-# FIXME This will become default value in the future Kyverno 1.12.0 release per https://github.com/kyverno/kyverno/pull/9948
-# Revert this once we upgrade to Kyverno >= 1.12.0
-webhookConfiguration:
-  namespaceSelector:
-    matchExpressions:
-      - key: kubernetes.io/metadata.name
-        operator: NotIn
-        values:
-          - kube-system
 crds:
   migration:
     # -- Enable CRDs migration using helm post upgrade hook
