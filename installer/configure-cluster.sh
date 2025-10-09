@@ -108,6 +108,7 @@ fi
 # CO_PROFILE disabled check
 if [ "${DISABLE_CO_PROFILE:-false}" = "true" ]; then
     export CO_PROFILE="#- orch-configs/profiles/enable-cluster-orch.yaml"
+    export AO_PROFILE="#- orch-configs/profiles/enable-app-orch.yaml"
 else
     export CO_PROFILE="- orch-configs/profiles/enable-cluster-orch.yaml"
 fi
