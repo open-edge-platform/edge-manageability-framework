@@ -116,70 +116,70 @@ spec:
             
             # Create the essential OLM CRDs first
             kubectl apply -f - << 'EOF'
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  name: subscriptions.operators.coreos.com
-spec:
-  group: operators.coreos.com
-  versions:
-  - name: v1alpha1
-    served: true
-    storage: true
-    schema:
-      openAPIV3Schema:
-        type: object
-        properties:
-          spec:
-            type: object
-            properties:
-              channel:
-                type: string
-              name:
-                type: string
-              source:
-                type: string
-              sourceNamespace:
-                type: string
-              installPlanApproval:
-                type: string
-          status:
-            type: object
-  scope: Namespaced
-  names:
-    plural: subscriptions
-    singular: subscription
-    kind: Subscription
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  name: operatorgroups.operators.coreos.com
-spec:
-  group: operators.coreos.com
-  versions:
-  - name: v1
-    served: true
-    storage: true
-    schema:
-      openAPIV3Schema:
-        type: object
-        properties:
-          spec:
-            type: object
-            properties:
-              targetNamespaces:
-                type: array
-                items:
-                  type: string
-          status:
-            type: object
-  scope: Namespaced
-  names:
-    plural: operatorgroups
-    singular: operatorgroup
-    kind: OperatorGroup
-EOF
+            apiVersion: apiextensions.k8s.io/v1
+            kind: CustomResourceDefinition
+            metadata:
+              name: subscriptions.operators.coreos.com
+            spec:
+              group: operators.coreos.com
+              versions:
+              - name: v1alpha1
+                served: true
+                storage: true
+                schema:
+                  openAPIV3Schema:
+                    type: object
+                    properties:
+                      spec:
+                        type: object
+                        properties:
+                          channel:
+                            type: string
+                          name:
+                            type: string
+                          source:
+                            type: string
+                          sourceNamespace:
+                            type: string
+                          installPlanApproval:
+                            type: string
+                      status:
+                        type: object
+              scope: Namespaced
+              names:
+                plural: subscriptions
+                singular: subscription
+                kind: Subscription
+            ---
+            apiVersion: apiextensions.k8s.io/v1
+            kind: CustomResourceDefinition
+            metadata:
+              name: operatorgroups.operators.coreos.com
+            spec:
+              group: operators.coreos.com
+              versions:
+              - name: v1
+                served: true
+                storage: true
+                schema:
+                  openAPIV3Schema:
+                    type: object
+                    properties:
+                      spec:
+                        type: object
+                        properties:
+                          targetNamespaces:
+                            type: array
+                            items:
+                              type: string
+                      status:
+                        type: object
+              scope: Namespaced
+              names:
+                plural: operatorgroups
+                singular: operatorgroup
+                kind: OperatorGroup
+            EOF
             
             echo "Basic OLM CRDs created successfully!"
             echo "Note: This is a minimal OLM setup for network-restricted environments."
