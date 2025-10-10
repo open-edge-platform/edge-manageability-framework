@@ -8,12 +8,12 @@
 
 # Operator configuration
 operator:
-  namespace: keycloak-system
+  namespace: orch-platform
 
 # Keycloak instance configuration
 keycloak:
   enabled: true
-  instanceName: keycloak-operator-instance
+  instanceName: platform-keycloak
   instanceNamespace: orch-platform
   instances: 1
   
@@ -32,7 +32,7 @@ keycloak:
     vendor: postgres
     host: postgresql.orch-database.svc.cluster.local
     port: 5432
-    database: orch-platform-keycloak
+    database: orch-platform-platform-keycloak
     usernameSecret:
       name: platform-keycloak-{{ .Values.argo.database.type }}-postgresql
       key: PGUSER
