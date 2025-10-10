@@ -106,21 +106,26 @@ createGiteaAccount() {
 }
 
 kubectl create ns gitea >/dev/null 2>&1 || true
+kubectl create ns orch-platform >/dev/null 2>&1 || true
 kubectl -n gitea get secret gitea-tls-certs >/dev/null 2>&1 || processCerts gitea-http.gitea.svc.cluster.local
 
 adminGiteaPassword=$(randomPassword)
 argocdGiteaPassword=$(randomPassword)
+appGiteaPassword=$(randomPassword)
+clusterGiteaPassword=$(randomPassword)
 
 # Create secret for Gitea admin user but should not be used for normal operations
 createGiteaSecret "gitea-cred" "gitea_admin" "$adminGiteaPassword" "gitea"
 
 # Create user credential secrets for ArgoCD, AppOrch and ClusterOrch
 createGiteaSecret "argocd-gitea-credential" "argocd" "$argocdGiteaPassword" "gitea"
-
+createGiteaSecret "app-gitea-credential" "apporch" "$appGiteaPassword" "orch-platform"
+createGiteaSecret "cluster-gitea-credential" "clusterorch" "$clusterGiteaPassword" "orch-platform"
 
 # More helm values are set in ../assets/gitea/values.yaml
 helm install gitea /tmp/gitea/gitea --values /tmp/gitea/values.yaml --set gitea.admin.existingSecret=gitea-cred --set image.registry="${IMAGE_REGISTRY}" -n gitea --timeout 15m0s --wait
 
 # Create Gitea accounts for ArgoCD, AppOrch and ClusterOrch
 createGiteaAccount "argocd-gitea-credential" "argocd" "$argocdGiteaPassword" "argocd@orch-installer.com"
-
+createGiteaAccount "app-gitea-credential" "apporch" "$appGiteaPassword" "apporch@orch-installer.com"
+createGiteaAccount "cluster-gitea-credential" "clusterorch" "$clusterGiteaPassword" "clusterorch@orch-installer.com"
