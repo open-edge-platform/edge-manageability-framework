@@ -34,10 +34,10 @@ keycloak:
     port: 5432
     database: orch-platform-platform-keycloak
     usernameSecret:
-      name: platform-keycloak-{{ .Values.argo.database.type }}-postgresql
+      name: platform-keycloak-local-postgresql
       key: PGUSER
     passwordSecret:
-      name: platform-keycloak-{{ .Values.argo.database.type }}-postgresql
+      name: platform-keycloak-local-postgresql
       key: PGPASSWORD
 
   # Additional options including proxy configuration
@@ -57,15 +57,24 @@ keycloak:
       value: "false"
     {{- if .Values.argo.proxy.httpsProxy }}
     - name: HTTPS_PROXY
-      value: {{ .Values.argo.proxy.httpsProxy }}
+      value: http://proxy-dmz.intel.com:912
+    {{- else }}
+    - name: HTTPS_PROXY
+      value: http://proxy-dmz.intel.com:912
     {{- end }}
     {{- if .Values.argo.proxy.httpProxy }}
     - name: HTTP_PROXY
-      value: {{ .Values.argo.proxy.httpProxy }}
+      value: http://proxy-dmz.intel.com:912
+    {{- else }}
+    - name: HTTP_PROXY
+      value: http://proxy-dmz.intel.com:912
     {{- end }}
     {{- if .Values.argo.proxy.noProxy }}
     - name: NO_PROXY
-      value: {{ .Values.argo.proxy.noProxy }}
+      value: localhost,svc,cluster.local,default,internal,caas.intel.com,certificates.intel.com,localhost,127.0.0.0/8,10.0.0.0/8,192.168.0.0/16,172.16.0.0/12,169.254.169.254,orch-platform,orch-app,orch-cluster,orch-infra,orch-database,cattle-system,orch-secret,s3.amazonaws.com,s3.us-west-2.amazonaws.com,ec2.us-west-2.amazonaws.com,eks.amazonaws.com,elb.us-west-2.amazonaws.com,dkr.ecr.us-west-2.amazonaws.com,espd.infra-host.com,pid.infra-host.com,espdqa.infra-host.com,argocd-repo-server
+    {{- else }}
+    - name: NO_PROXY
+      value: localhost,svc,cluster.local,default,internal,caas.intel.com,certificates.intel.com,localhost,127.0.0.0/8,10.0.0.0/8,192.168.0.0/16,172.16.0.0/12,169.254.169.254,orch-platform,orch-app,orch-cluster,orch-infra,orch-database,cattle-system,orch-secret,s3.amazonaws.com,s3.us-west-2.amazonaws.com,ec2.us-west-2.amazonaws.com,eks.amazonaws.com,elb.us-west-2.amazonaws.com,dkr.ecr.us-west-2.amazonaws.com,espd.infra-host.com,pid.infra-host.com,espdqa.infra-host.com,argocd-repo-server
     {{- end }}
 
   # Ingress configuration - disabled since no ingress controller is available
