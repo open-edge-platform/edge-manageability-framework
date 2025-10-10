@@ -33,6 +33,7 @@ excludedNamespaces:
   - local-path-storage
   - metallb-system
   - ns-label
+  - orch-platform
   - p-?????
   - mailpit-dev
   - kubeadm-control-plane-system
