@@ -84,6 +84,7 @@ module "jumphost" {
   subnet                        = var.jumphost_subnet
   ip_allow_list                 = var.jumphost_ip_allow_list
   production                    = var.production
+  permissions_boundary          = var.permissions_boundary
 }
 
 # Prepare for output

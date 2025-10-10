@@ -9,3 +9,14 @@ variable "cluster_name" {
 variable "aws_account_number" {
   type = string
 }
+
+variable "permissions_boundary" {
+  description = "ARN of the IAM permissions boundary policy"
+  type        = string
+  default     = ""
+}
+
+variable "region" {
+  description = "AWS region"
+  type        = string
+}
