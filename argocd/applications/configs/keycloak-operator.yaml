@@ -5,14 +5,9 @@
 # Keycloak Operator configuration - Direct deployment
 # This deploys the operator directly and creates a Keycloak instance
 
+# Operator deployment configuration
 operator:
-  name: keycloak-operator
   namespace: keycloak-system
-  packageName: keycloak-operator
-  channel: fast
-  source: operatorhubio-catalog
-  sourceNamespace: olm
-  installPlanApproval: Automatic
 
 keycloak:
   enabled: true
@@ -124,5 +119,5 @@ keycloak:
           ]
         }
 
-# Direct operator deployment (no longer using OLM)
-# The operator is now deployed directly with embedded CRDs
+# Configuration bootstrap via REST API
+# The bootstrap job uses direct Keycloak Admin API calls to configure realms and clients
