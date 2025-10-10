@@ -6,9 +6,10 @@
 
 # Script Name: onprem_installer.sh
 # Description: This script:
-#               Creates secrets (with user inputs where required)
-#               Creates namespaces
+#               Installs Gitea
 #               Installs ArgoCD
+#               Creates namespaces
+#               Creates secrets (with user inputs where required)
 #               Installs Edge Orchestrator SW:
 #                   Untars and populates Gitea repos with Edge Orchestrator deployment code
 #                   Kickstarts deployment via ArgoCD
@@ -26,6 +27,7 @@ cwd=$(pwd)
 deb_dir_name="installers"
 git_arch_name="repo_archives"
 argo_cd_ns="argocd"
+gitea_ns="gitea"
 export GIT_REPOS=$cwd/$git_arch_name
 export KUBECONFIG="${KUBECONFIG:-/home/$USER/.kube/config}"
 # Source shared configuration if it exists
@@ -248,20 +250,35 @@ fi
 # Print environment variables
 print_env_variables
 
+if find "$cwd/$deb_dir_name" -name "onprem-gitea-installer_*_amd64.deb" -type f | grep -q .; then
+    # Run gitea installer
+    echo "Installing Gitea"
+    eval "sudo IMAGE_REGISTRY=${GITEA_IMAGE_REGISTRY} NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y $cwd/$deb_dir_name/onprem-gitea-installer_*_amd64.deb"
+    wait_for_namespace_creation $gitea_ns
+    sleep 30s
+    wait_for_pods_running $gitea_ns
+    echo "Gitea Installed"
+else
+    echo "❌ Package file NOT found: $cwd/$deb_dir_name/onprem-gitea-installer_*_amd64.deb"
+    echo "Please ensure the package file exists and the path is correct."
+    exit 1
+fi
+if find "$cwd/$deb_dir_name" -name "onprem-argocd-installer_*_amd64.deb" -type f | grep -q .; then
+    # Run argo CD installer
+    echo "Installing ArgoCD..."
+    eval "sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y $cwd/$deb_dir_name/onprem-argocd-installer_*_amd64.deb"
+    wait_for_namespace_creation $argo_cd_ns
+    sleep 30s
+    wait_for_pods_running $argo_cd_ns
+    echo "ArgoCD installed"
+else
+    echo "❌ Package file NOT found: $cwd/$deb_dir_name/onprem-argocd-installer_*_amd64.deb"
+    echo "Please ensure the package file exists and the path is correct."
+    exit 1
+fi
+
 # Create required namespaces
 create_namespaces
-
-# Create secret for Gitea
-appGiteaPassword=$(randomPassword)
-clusterGiteaPassword=$(randomPassword)
-
-# Create user credential secrets for  AppOrch and ClusterOrch
-createGiteaSecret "app-gitea-credential" "apporch" "$appGiteaPassword" "orch-platform"
-createGiteaSecret "cluster-gitea-credential" "clusterorch" "$clusterGiteaPassword" "orch-platform"
-
-# Create Gitea accounts for AppOrch and ClusterOrch
-createGiteaAccount "app-gitea-credential" "apporch" "$appGiteaPassword" "apporch@orch-installer.com"
-createGiteaAccount "cluster-gitea-credential" "clusterorch" "$clusterGiteaPassword" "clusterorch@orch-installer.com"
 
 # create sre and smtp secrets
 set_default_sre_env
@@ -277,21 +294,6 @@ create_harbor_password orch-harbor "$harbor_password"
 create_keycloak_password orch-platform "$keycloak_password"
 create_postgres_password orch-database "$postgres_password"
 
-if find "$cwd/$deb_dir_name" -name "onprem-argocd-installer_*_amd64.deb" -type f | grep -q .; then
-    # Run argo CD installer
-    echo "Installing ArgoCD..."
-    eval "sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y $cwd/$deb_dir_name/onprem-argocd-installer_*_amd64.deb"
-    wait_for_namespace_creation $argo_cd_ns
-    sleep 30s
-    wait_for_pods_running $argo_cd_ns
-    echo "ArgoCD installed"
-else
-    echo "❌ Package file NOT found: $cwd/$deb_dir_name/onprem-argocd-installer_*_amd64.deb"
-    echo "Please ensure the package file exists and the path is correct."
-    exit 1
-fi
-
-
 if find "$cwd/$deb_dir_name" -name "onprem-orch-installer_*_amd64.deb" -type f | grep -q .; then
     # Run orchestrator installer
     echo "Installing Edge Orchestrator Packages"
@@ -303,14 +305,7 @@ else
     exit 1
 fi
 
-
 printf "\nEdge Orchestrator SW is being deployed, please wait for all applications to deploy...\n
 To check the status of the deployment run 'kubectl get applications -A'.\n
 Installation is completed when 'root-app' Application is in 'Healthy' and 'Synced' state.\n
 Once it is completed, you might want to configure DNS for UI and other services by running generate_fqdn script and following instructions\n"
-
-# Cleanup: Remove the shared configuration file now that installation is complete
-if [[ -f "$SHARED_CONFIG" ]]; then
-  rm -f "$SHARED_CONFIG"
-fi
-

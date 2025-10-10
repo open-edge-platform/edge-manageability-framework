@@ -10,7 +10,6 @@
 #               Downloads installer and repo artifacts,
 #               Set's up OS level dependencies,
 #               Installs RKE2 and basic cluster components,
-#               Installs Gitea
 
 # Usage: ./onprem_pre_installer
 #    -s:             Enables TLS for SRE Exporter. Private TLS CA cert may be provided for SRE destination as an additional argument - provide path to cert (optional)
@@ -38,7 +37,6 @@ cwd=$(pwd)
 
 deb_dir_name="installers"
 git_arch_name="repo_archives"
-gitea_ns="gitea"
 archives_rs_path="edge-orch/common/files/orchestrator"
 si_config_repo="edge-manageability-framework"
 installer_rs_path="edge-orch/common/files"
@@ -495,14 +493,6 @@ sudo cp  /etc/rancher/rke2/rke2.yaml /home/"$USER"/.kube/config
 sudo chown -R "$USER":"$USER"  /home/"$USER"/.kube
 sudo chmod 600 /home/"$USER"/.kube/config
 export KUBECONFIG=/home/$USER/.kube/config
-
-# Run gitea installer
-echo "Installing Gitea"
-eval "sudo IMAGE_REGISTRY=${GITEA_IMAGE_REGISTRY} NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y $cwd/$deb_dir_name/onprem-gitea-installer_*_amd64.deb"
-wait_for_namespace_creation $gitea_ns
-sleep 30s
-wait_for_pods_running $gitea_ns
-echo "Gitea Installed"
 
 # Write shared variables to configuration file for use by onprem_installer.sh
 write_shared_variables
