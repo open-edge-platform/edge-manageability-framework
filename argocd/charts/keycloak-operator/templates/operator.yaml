@@ -83,6 +83,36 @@ spec:
                       type: string
                     value:
                       type: string
+                    valueFrom:
+                      type: object
+                      properties:
+                        secretKeyRef:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            key:
+                              type: string
+                            optional:
+                              type: boolean
+              ingress:
+                type: object
+                description: "The deployment is, by default, exposed through a basic ingress. You can change this behaviour by setting the enabled property to false."
+                properties:
+                  enabled:
+                    type: boolean
+                  className:
+                    type: string
+                  annotations:
+                    type: object
+                    additionalProperties:
+                      type: string
+                  labels:
+                    type: object
+                    additionalProperties:
+                      type: string
+                  tlsSecret:
+                    type: string
               resources:
                 type: object
                 properties:
@@ -100,6 +130,14 @@ spec:
                         type: string
                       memory:
                         type: string
+              networkPolicy:
+                type: object
+                description: "Controls the ingress traffic flow into Keycloak pods."
+                properties:
+                  enabled:
+                    type: boolean
+                    default: true
+                    description: "Enables or disables the ingress traffic control."
           status:
             type: object
     subresources:
@@ -171,7 +209,7 @@ rules:
   resources: ["jobs"]
   verbs: ["*"]
 - apiGroups: ["networking.k8s.io"]
-  resources: ["ingresses"]
+  resources: ["ingresses", "networkpolicies"]
   verbs: ["*"]
 - apiGroups: ["k8s.keycloak.org"]
   resources: ["keycloaks", "keycloakrealmimports"]
@@ -222,7 +260,7 @@ spec:
       serviceAccountName: keycloak-operator
       containers:
       - name: keycloak-operator
-        image: quay.io/keycloak/keycloak-operator:26.0.7
+        image: quay.io/keycloak/keycloak-operator:26.4.0
         ports:
         - containerPort: 8080
           name: http
