@@ -538,6 +538,8 @@ if [[ ! -s postgres-secrets-password.txt ]]; then
     PLATFORM_KEYCLOAK=$(kubectl get secret platform-keycloak-local-postgresql -n orch-platform -o jsonpath='{.data.PGPASSWORD}')
     VAULT=$(kubectl get secret vault-local-postgresql -n orch-platform -o jsonpath='{.data.PGPASSWORD}')
     POSTGRESQL=$(kubectl get secret postgresql -n orch-database -o jsonpath='{.data.postgres-password}')
+    MPS=$(kubectl get secret mps-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}')
+    RPS=$(kubectl get secret rps-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}')
     {
         echo "Alerting: $ALERTING"
         echo "CatalogService: $CATALOG_SERVICE"
@@ -546,6 +548,8 @@ if [[ ! -s postgres-secrets-password.txt ]]; then
         echo "PlatformKeycloak: $PLATFORM_KEYCLOAK"
         echo "Vault: $VAULT"
         echo "PostgreSQL: $POSTGRESQL"
+        echo "Mps: $MPS"
+        echo "Rps: $RPS"
     } > postgres-secrets-password.txt
 else
     echo "postgres-secrets-password.txt exists and is not empty, skipping password save."
@@ -627,6 +631,8 @@ patch_secret() {
                 PlatformKeycloak) PLATFORM_KEYCLOAK="$value" ;;
                 Vault) VAULT="$value" ;;
                 PostgreSQL) POSTGRESQL="$value" ;;
+                Mps) MPS="$value" ;;
+                Rps) RPS="$value" ;;
             esac
         done < postgres-secrets-password.txt
     fi
@@ -656,7 +662,11 @@ patch_secret() {
     kubectl patch secret -n orch-platform platform-keycloak-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$PLATFORM_KEYCLOAK\"}}" --type=merge
     kubectl patch secret -n orch-platform platform-keycloak-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$PLATFORM_KEYCLOAK\"}}" --type=merge
     kubectl patch secret -n orch-platform vault-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$VAULT\"}}" --type=merge
-    kubectl patch secret -n orch-platform vault-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$VAULT\"}}" --type=merge    
+    kubectl patch secret -n orch-platform vault-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$VAULT\"}}" --type=merge
+    kubectl patch secret -n orch-infra mps-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$MPS\"}}" --type=merge
+    kubectl patch secret -n orch-infra mps-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$MPS\"}}" --type=merge
+    kubectl patch secret -n orch-infra rps-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$RPS\"}}" --type=merge
+    kubectl patch secret -n orch-infra rps-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$RPS\"}}" --type=merge
     # Use a temporary file for the patch payload
     patch_file=$(mktemp)
     cat > "$patch_file" <<EOF
@@ -667,7 +677,9 @@ patch_secret() {
     "iam-tenancy": "$IAM_TENANCY",
     "inventory": "$INVENTORY",
     "platform-keycloak": "$PLATFORM_KEYCLOAK",
-    "vault": "$VAULT"
+    "vault": "$VAULT",
+    "mps": "$MPS",
+    "rps": "$RPS"
   }
 }
 EOF
