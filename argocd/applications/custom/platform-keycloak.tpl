@@ -45,7 +45,10 @@ keycloak:
     - name: KC_BOOTSTRAP_ADMIN_USERNAME
       value: admin
     - name: KC_BOOTSTRAP_ADMIN_PASSWORD
-      value: admin
+      valueFrom:
+        secretKeyRef:
+          name: platform-keycloak
+          key: admin-password
     - name: KC_PROXY_HEADERS
       value: xforwarded
     - name: KC_HOSTNAME_STRICT
@@ -64,6 +67,14 @@ keycloak:
     - name: NO_PROXY
       value: {{ .Values.argo.proxy.noProxy }}
     {{- end }}
+
+  # Ingress configuration - disabled since no ingress controller is available
+  ingress:
+    enabled: false
+
+  # Network Policy configuration - disabled to avoid needing networkpolicies RBAC
+  networkPolicy:
+    enabled: false
 
   # Resource configuration
   resources:
