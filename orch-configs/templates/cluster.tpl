@@ -48,7 +48,6 @@ root:
     - orch-configs/profiles/enable-osrm-manual-mode.yaml
 {{- end }}
     - orch-configs/profiles/resource-default.yaml
-    - orch-configs/clusters/{{ .Values.name }}.yaml
     # # rate limit is applicable to each cluster.
     # # please see https://doc.traefik.io/traefik/middlewares/http/ratelimit/
     # # if you enable default traefik rate limit, do not specify custom rate limit
