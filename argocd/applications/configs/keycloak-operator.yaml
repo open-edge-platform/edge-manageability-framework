@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Keycloak Operator configuration via OLM
-# This deploys both the operator and a Keycloak instance
+# Keycloak Operator configuration - Direct deployment
+# This deploys the operator directly and creates a Keycloak instance
 
 operator:
   name: keycloak-operator
@@ -34,7 +34,7 @@ keycloak:
     vendor: postgres
     host: postgresql.orch-database.svc.cluster.local
     port: 5432
-    database: orch-platform-platform-keycloak
+    database: orch-platform-keycloak
     usernameSecret:
       name: platform-keycloak-local-postgresql
       key: PGUSER

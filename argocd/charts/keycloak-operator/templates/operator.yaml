@@ -209,7 +209,3 @@ spec:
           limits:
             cpu: 500m
             memory: 512Mi
-  name: {{ .Values.operator.packageName }}
-  source: {{ .Values.operator.source }}
-  sourceNamespace: {{ .Values.operator.sourceNamespace }}
-  installPlanApproval: {{ .Values.operator.installPlanApproval }}
