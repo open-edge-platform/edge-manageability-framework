@@ -15,7 +15,7 @@ operator:
   installPlanApproval: Automatic
 
 keycloak:
-  enabled: true
+  enabled: false
   instanceName: keycloak-operator-instance
   instanceNamespace: orch-platform
   instances: 1
