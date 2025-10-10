@@ -98,6 +98,21 @@ if [ -z $ARGOCD_TG_ARN ]; then
 fi
 
 
+# AO_PROFILE  disabled check
+if [ "${DISABLE_CO_PROFILE:-false}" = "true" ] || [ "${DISABLE_AO_PROFILE:-false}" = "true" ]; then
+    export AO_PROFILE="#- orch-configs/profiles/enable-app-orch.yaml"
+else
+    export AO_PROFILE="- orch-configs/profiles/enable-app-orch.yaml"
+fi
+
+# CO_PROFILE disabled check
+if [ "${DISABLE_CO_PROFILE:-false}" = "true" ]; then
+    export CO_PROFILE="#- orch-configs/profiles/enable-cluster-orch.yaml"
+    export AO_PROFILE="#- orch-configs/profiles/enable-app-orch.yaml"
+else
+    export CO_PROFILE="- orch-configs/profiles/enable-cluster-orch.yaml"
+fi
+
 if [ -n "$SRE_BASIC_AUTH_USERNAME" ] || [ -n "$SRE_BASIC_AUTH_PASSWORD" ] || [ -n "$SRE_DESTINATION_SECRET_URL" ] || [ -n "$SRE_DESTINATION_CA_SECRET" ]; then
     export SRE_PROFILE="- orch-configs/profiles/enable-sre.yaml"
 else
