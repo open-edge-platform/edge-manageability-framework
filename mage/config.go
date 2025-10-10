@@ -13,7 +13,6 @@ import (
 	"strings"
 	"text/template"
 
-	goforj_godump "github.com/goforj/godump"
 	"gopkg.in/yaml.v3"
 )
 
@@ -136,6 +135,16 @@ func parseClusterValues(clusterConfigPath string) (map[string]interface{}, error
 	} else {
 		return nil, fmt.Errorf("invalid cluster definition: 'root' key is missing in the configuration")
 	}
+
+	// merge the cluster template into itself
+	var fileValues map[string]interface{}
+	if err := yaml.Unmarshal(data, &fileValues); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal cluster template: %w", err)
+	}
+	if root, ok := fileValues["root"].(map[string]interface{}); ok {
+		delete(root, "clusterValues")
+	}
+	deepMerge(clusterValues, fileValues)
 
 	return clusterValues, nil
 }
@@ -413,8 +422,6 @@ func (c Config) getTargetEnvType(targetEnv string) (string, error) {
 	if err != nil {
 		return defaultEnv, fmt.Errorf("failed to get target values: %w", err)
 	}
-
-	goforj_godump.Dump(clusterValues)
 
 	orchestratorDeploymentConfig, ok := clusterValues["orchestratorDeployment"].(map[string]interface{})
 	if !ok {
