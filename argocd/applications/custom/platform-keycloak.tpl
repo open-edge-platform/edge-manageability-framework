@@ -8,13 +8,7 @@
 
 # Operator configuration
 operator:
-  name: keycloak-operator
   namespace: keycloak-system
-  packageName: keycloak-operator
-  channel: fast
-  source: operatorhubio-catalog
-  sourceNamespace: olm
-  installPlanApproval: Automatic
 
 # Keycloak instance configuration
 keycloak:
