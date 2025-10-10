@@ -103,6 +103,7 @@ EKS_HTTPS_PROXY=""
 EKS_NO_PROXY=""
 EKS_USER_SCRIPT_PRE_CLOUD_INIT=""
 EKS_USER_SCRIPT_POST_CLOUD_INIT=""
+PERMISSIONS_BOUNDARY="${PERMISSIONS_BOUNDARY:-}"
 
 OPTIONS_LIST=(
     "auto"
@@ -145,6 +146,7 @@ OPTIONS_LIST=(
     "num-rds-instances:"
     "o11y-node-type:"
     "parent-domain:"
+    "permissions-boundary:"
     "profile:"
     "reduce-ns-ttl"
     "region:"
@@ -207,6 +209,7 @@ usage() {
         echo "    [ --num-rds-instance {Number of RDS instances} ] \\"
         echo "    [ --o11y-node-type {Observability node type} ] \\"
         echo "    [ --parent-domain {PARENT DOMAIN} ] \\"
+        echo "    [ --permissions-boundary {PERMISSIONS BOUNDARY ARN} ] \\"
         echo "    [ --profile {CLUSTER PROFILE TO DEPLOY} ] \\"
         echo "    [ --reduce-ns-ttl ] \\"
         echo "    --region {AWS REGION} \\"
@@ -296,6 +299,7 @@ parse_params() {
             --node-type) EKS_NODE_TYPE=$(eval echo $2); OVERRIDE_EKS_NODE_TYPE=true; shift;;
             --o11y-node-type) EKS_O11Y_NODE_TYPE=$(eval echo $2); OVERRIDE_EKS_O11Y_NODE_TYPE=true; shift;;
             -p|--parent-domain) PARENT_DOMAIN=$(eval echo $2); shift;;
+            --permissions-boundary) PERMISSIONS_BOUNDARY=$(eval echo $2); shift;;
             --profile) CLUSTER_PROFILE=$(eval echo $2); shift;;
             -r|--region) AWS_REGION=$(eval echo $2); shift;;
             --reduce-ns-ttl) REDUCE_NS_TTL=true;;
@@ -954,6 +958,10 @@ eks_no_proxy                           = "$EKS_NO_PROXY"
 eks_cluster_dns_ip                 = "$EKS_CLUSTER_DNS_IP"
 EOF
 
+    if [[ -n "$PERMISSIONS_BOUNDARY" ]]; then
+        echo "permissions_boundary = \"${PERMISSIONS_BOUNDARY}\""
+    fi
+    
     if [[ -n "$CUSTOMER_TAG" ]]; then
         echo "customer_tag = \"${CUSTOMER_TAG}\""
     fi
