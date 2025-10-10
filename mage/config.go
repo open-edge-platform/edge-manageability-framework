@@ -198,6 +198,7 @@ func renderClusterTemplate(presetData map[string]interface{}) (string, error) {
 		return "", fmt.Errorf("failed to render cluster template: %w", err)
 	}
 
+	var proxyProfilePath string
 	if proxyProfile, ok := presetData["proxyProfile"].(string); ok && proxyProfile != "" {
 		proxyValuesData, err := os.ReadFile(proxyProfile)
 		if err != nil {
@@ -231,6 +232,40 @@ func renderClusterTemplate(presetData map[string]interface{}) (string, error) {
 		if err := proxyTmpl.Execute(proxyOutputFile, proxyValues); err != nil {
 			return "", fmt.Errorf("failed to render proxy template: %w", err)
 		}
+
+		proxyProfilePath = proxyOutputPath
+	} else {
+		proxyProfilePath = "orch-configs/profiles/proxy-none.yaml"
+	}
+
+	// Merge the generated cluster values file with the proxy profile values file.
+	clusterValuesData, err := os.ReadFile(outputPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read cluster values file '%s': %w", outputPath, err)
+	}
+	proxyValuesData, err := os.ReadFile(proxyProfilePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read proxy profile file '%s': %w", proxyProfilePath, err)
+	}
+
+	var clusterValues map[string]interface{}
+	if err := yaml.Unmarshal(clusterValuesData, &clusterValues); err != nil {
+		return "", fmt.Errorf("failed to unmarshal cluster values: %w", err)
+	}
+	var proxyValues map[string]interface{}
+	if err := yaml.Unmarshal(proxyValuesData, &proxyValues); err != nil {
+		return "", fmt.Errorf("failed to unmarshal proxy values: %w", err)
+	}
+
+	deepMerge(clusterValues, proxyValues)
+
+	mergedYaml, err := writeMapAsYAML(clusterValues)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal merged values: %w", err)
+	}
+
+	if err := os.WriteFile(outputPath, []byte(mergedYaml), 0644); err != nil {
+		return "", fmt.Errorf("failed to write merged values to file: %w", err)
 	}
 
 	return clusterName, nil

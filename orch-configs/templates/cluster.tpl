@@ -32,12 +32,6 @@ root:
 {{- if .Values.enableAutoProvision }}
     - orch-configs/profiles/enable-autoprovision.yaml
 {{- end }}
-    # proxy group should be specified as the first post-"enable" profile
-{{- if (not (eq .Values.proxyProfile "" )) }}
-    - orch-configs/profiles/proxy-{{ .Values.name }}.yaml
-{{- else }}
-    - orch-configs/profiles/proxy-none.yaml
-{{- end }}
     - orch-configs/profiles/profile-{{ .Values.deployProfile }}.yaml
 {{- if .Values.enableAutoCert }}
     - orch-configs/profiles/profile-autocert.yaml
