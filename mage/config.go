@@ -13,6 +13,7 @@ import (
 	"strings"
 	"text/template"
 
+	goforj_godump "github.com/goforj/godump"
 	"gopkg.in/yaml.v3"
 )
 
@@ -396,6 +397,7 @@ func (Config) getTargetValues(targetEnv string) (map[string]interface{}, error) 
 	}
 
 	clusterFilePath := fmt.Sprintf("orch-configs/clusters/%s.yaml", targetEnv)
+	fmt.Printf("Loading cluster values from: %s\n", clusterFilePath)
 	targetValues, err := parseClusterValues(clusterFilePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse cluster values: %w", err)
@@ -411,6 +413,8 @@ func (c Config) getTargetEnvType(targetEnv string) (string, error) {
 	if err != nil {
 		return defaultEnv, fmt.Errorf("failed to get target values: %w", err)
 	}
+
+	goforj_godump.Dump(clusterValues)
 
 	orchestratorDeploymentConfig, ok := clusterValues["orchestratorDeployment"].(map[string]interface{})
 	if !ok {
