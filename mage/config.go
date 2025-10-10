@@ -33,7 +33,7 @@ var (
 		"enableMailpit":       false,
 		"dockerCache":         "",
 		"dockerCacheCert":     "",
-		"deployRepoURL":       "https://gitea-http.gitea.svc.cluster.local/argocd/edge-manageability-framework",
+		"deployRepoURL":       "https://github.com/open-edge-platform/edge-manageability-framework", //"https://gitea-http.gitea.svc.cluster.local/argocd/edge-manageability-framework",
 	}
 )
 

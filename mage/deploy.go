@@ -1215,7 +1215,7 @@ func (d Deploy) orchLocal(targetEnv string) error {
 	targetConfig := getTargetConfig(targetEnv)
 
 	var subDomain string
-	deployRevision := "main" // giteaDeployRevisionParam()
+	deployRevision := "--set-string argo.deployRepoRevision=HEAD" // giteaDeployRevisionParam()
 	orchVersion, err := getOrchestratorVersionParam()
 	if err != nil {
 		return fmt.Errorf("failed to get orchestrator version: %w", err)
@@ -1225,8 +1225,6 @@ func (d Deploy) orchLocal(targetEnv string) error {
 
 	cmd := fmt.Sprintf("helm upgrade --install root-app argocd/root-app -f %s  -n %s --create-namespace %s %s"+
 		"--set root.useLocalValues=true", targetConfig, targetEnv, deployRevision, orchVersion)
-
-	fmt.Printf("exec: %s\n", cmd)
 
 	// only for coder deployments
 	targetAutoCertEnabled, _ := (Config{}).isAutoCertEnabled(targetEnv)
