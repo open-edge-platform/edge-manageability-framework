@@ -2,64 +2,156 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-## Cluster-Specific values
-## These values are not part of bitnami helm chart and are used to parameterize substrings in
-## the larger keycloakConfigCli.configuration.realm-master.json value.
-## @param clusterSpecific.webuiClientRootUrl The Keycloak Master realm UI Client's rootUrl value as a quoted JSON string
-## @param clusterSpecific.webuiRedirectUrls The Keycloak Master realm UI Client's reirectUrl values as a JSON array of quoted JSON strings
-## @param clusterSpecific.registryClientRootUrl The Keycloak Master realm Harbor Client's rootUrl value as a quoted JSON string
-## @param clusterSpecific.telemetryClientRootUrl The Keycloak Master realm Grafana Client's rootUrl value as a quoted JSON string
-## @param clusterSpecific.telemetryRedirectUrls The Keycloak Master realm Grafana Client's reirectUrl values as a JSON array of quoted JSON strings
-clusterSpecific:
-  webuiClientRootUrl: "https://web-ui.{{ .Values.argo.clusterDomain }}"
-  webuiRedirectUrls: ["https://web-ui.{{ .Values.argo.clusterDomain }}", "https://app-service-proxy.{{ .Values.argo.clusterDomain }}/app-service-proxy-index.html*", "https://vnc.{{ .Values.argo.clusterDomain }}/*", "https://{{ .Values.argo.clusterDomain }}"{{- if index .Values.argo "platform-keycloak" "extraUiRedirects" -}}, {{- index .Values.argo "platform-keycloak" "extraUiRedirects" -}}{{- end -}}]
-  registryClientRootUrl: "https://registry-oci.{{ .Values.argo.clusterDomain }}"
-  telemetryClientRootUrl: "https://observability-ui.{{ .Values.argo.clusterDomain }}"
-  telemetryRedirectUrls: ["https://observability-admin.{{ .Values.argo.clusterDomain }}/login/generic_oauth", "https://observability-ui.{{ .Values.argo.clusterDomain }}/login/generic_oauth"]
+## Custom template for keycloak-operator application
+## This file provides environment-specific configuration overrides
+## for the Keycloak Operator deployment
 
-## External PostgreSQL configuration
-## All of these values are only used when postgresql.enabled is set to false
-## @param externalDatabase.existingSecret Name of an existing secret resource containing the database credentials
-## @param externalDatabase.existingSecretHostKey Name of an existing secret key containing the database host name
-## @param externalDatabase.existingSecretPortKey Name of an existing secret key containing the database port
-## @param externalDatabase.existingSecretUserKey Name of an existing secret key containing the database user
-## @param externalDatabase.existingSecretDatabaseKey Name of an existing secret key containing the database name
-## @param externalDatabase.existingSecretPasswordKey Name of an existing secret key containing the database credentials
-externalDatabase:
-  existingSecret: platform-keycloak-{{.Values.argo.database.type}}-postgresql
-  existingSecretHostKey: PGHOST
-  existingSecretPortKey: PGPORT
-  existingSecretUserKey: PGUSER
-  existingSecretDatabaseKey: PGDATABASE
-  existingSecretPasswordKey: PGPASSWORD
+# Operator configuration
+operator:
+  name: keycloak-operator
+  namespace: keycloak-system
+  packageName: keycloak-operator
+  channel: fast
+  source: operatorhubio-catalog
+  sourceNamespace: olm
+  installPlanApproval: Automatic
 
-# Use index to handle values with hyphen
-{{- if index .Values.argo "platform-keycloak" "localRegistrySize"}}
-persistence:
-  persistentVolumeClaim:
-    registry:
-      size: {{index .Values.argo "platform-keycloak" "localRegistrySize"}}
-{{- end}}
+# Keycloak instance configuration
+keycloak:
+  enabled: true
+  instanceName: keycloak-operator-instance
+  instanceNamespace: orch-platform
+  instances: 1
+  
+  hostname:
+    strict: false
+  
+  http:
+    httpEnabled: true
+    httpPort: 8080
+  
+  proxy:
+    headers: xforwarded
 
-extraEnvVars:
-  - name: HTTPS_PROXY
-    value: {{.Values.argo.proxy.httpsProxy}}
-  - name: HTTP_PROXY
-    value: {{.Values.argo.proxy.httpProxy}}
-  - name: NO_PROXY
-    value: {{.Values.argo.proxy.noProxy}}
-  {{ if index .Values.argo "platform-keycloak" "db" }}
-  - name: KC_DB_POOL_INITIAL_SIZE
-    value: {{ index .Values.argo "platform-keycloak" "db" "poolInitSize" | default "5" | quote}}
-  - name: KC_DB_POOL_MIN_SIZE
-    value: {{ index .Values.argo "platform-keycloak" "db" "poolMinSize" | default "5" | quote}}
-  - name: KC_DB_POOL_MAX_SIZE
-    value: {{ index .Values.argo "platform-keycloak" "db" "poolMaxSize" | default "100" | quote}}
-  {{ end }}
-  - name: KC_PROXY_HEADERS
-    value: "xforwarded"
+  # Database configuration - use cluster-specific database settings
+  db:
+    vendor: postgres
+    host: postgresql.orch-database.svc.cluster.local
+    port: 5432
+    database: orch-platform-keycloak
+    usernameSecret:
+      name: platform-keycloak-{{ .Values.argo.database.type }}-postgresql
+      key: PGUSER
+    passwordSecret:
+      name: platform-keycloak-{{ .Values.argo.database.type }}-postgresql
+      key: PGPASSWORD
 
-{{- with .Values.argo.resources.platformKeycloak }}
-resources:
-  {{- toYaml . | nindent 2}}
-{{- end }}
+  # Additional options including proxy configuration
+  additionalOptions:
+    - name: KC_BOOTSTRAP_ADMIN_USERNAME
+      value: admin
+    - name: KC_BOOTSTRAP_ADMIN_PASSWORD
+      value: admin
+    - name: KC_PROXY_HEADERS
+      value: xforwarded
+    - name: KC_HOSTNAME_STRICT
+      value: "false"
+    - name: KC_HOSTNAME_STRICT_HTTPS  
+      value: "false"
+    {{- if .Values.argo.proxy.httpsProxy }}
+    - name: HTTPS_PROXY
+      value: {{ .Values.argo.proxy.httpsProxy }}
+    {{- end }}
+    {{- if .Values.argo.proxy.httpProxy }}
+    - name: HTTP_PROXY
+      value: {{ .Values.argo.proxy.httpProxy }}
+    {{- end }}
+    {{- if .Values.argo.proxy.noProxy }}
+    - name: NO_PROXY
+      value: {{ .Values.argo.proxy.noProxy }}
+    {{- end }}
+
+  # Resource configuration
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+  # Configuration CLI - customize realm configuration with cluster-specific URLs
+  configCli:
+    enabled: true
+    
+    auth:
+      username: admin
+      password: admin
+    
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    
+    configuration:
+      realm-master.json: |
+        {
+          "realm": "master",
+          "accountTheme": "keycloak",
+          "displayName": "Keycloak",
+          "displayNameHtml": "<img src='https://raw.githubusercontent.com/open-edge-platform/orch-utils/73df5d1e99a81ae333d94b1c47dd9bef7fa03ae9/keycloak/one-edge-platform-login-title.png'></img>",
+          "defaultSignatureAlgorithm": "PS512",
+          "accessTokenLifespan": 3600,
+          "ssoSessionIdleTimeout": 5400,
+          "ssoSessionMaxLifespan": 43200,
+          "passwordPolicy": "length(14) and digits(1) and specialChars(1) and upperCase(1) and lowerCase(1)",
+          "bruteForceProtected": true,
+          "permanentLockout": false,
+          "maxFailureWaitSeconds": 900,
+          "minimumQuickLoginWaitSeconds": 60,
+          "waitIncrementSeconds": 300,
+          "quickLoginCheckMilliSeconds": 200,
+          "maxDeltaTimeSeconds": 43200,
+          "failureFactor": 5,
+          "clients": [
+            {
+              "clientId": "system-client",
+              "name": "System Client",
+              "description": "Client for System Operations",
+              "enabled": true,
+              "clientAuthenticatorType": "client-secret",
+              "secret": "system-client-secret",
+              "redirectUris": ["*"],
+              "webOrigins": ["*"],
+              "serviceAccountsEnabled": true,
+              "authorizationServicesEnabled": false,
+              "directAccessGrantsEnabled": true,
+              "implicitFlowEnabled": false,
+              "standardFlowEnabled": true
+            },
+            {
+              "clientId": "web-ui",
+              "name": "Web UI Client",
+              "description": "Client for Web UI Application",
+              "enabled": true,
+              "clientAuthenticatorType": "client-secret",
+              "secret": "web-ui-client-secret",
+              "rootUrl": "https://web-ui.{{ .Values.argo.clusterDomain }}",
+              "redirectUris": [
+                "https://web-ui.{{ .Values.argo.clusterDomain }}/*",
+                "https://app-service-proxy.{{ .Values.argo.clusterDomain }}/app-service-proxy-index.html*",
+                "https://vnc.{{ .Values.argo.clusterDomain }}/*"
+              ],
+              "webOrigins": ["https://web-ui.{{ .Values.argo.clusterDomain }}"],
+              "serviceAccountsEnabled": false,
+              "authorizationServicesEnabled": false,
+              "directAccessGrantsEnabled": false,
+              "implicitFlowEnabled": false,
+              "standardFlowEnabled": true,
+              "publicClient": false
+            }
+          ]
+        }
