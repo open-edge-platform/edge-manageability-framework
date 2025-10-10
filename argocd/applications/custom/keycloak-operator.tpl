@@ -36,9 +36,9 @@ keycloak:
   # Database configuration - use cluster-specific database settings
   db:
     vendor: postgres
-    host: postgresql.{{ .Values.argo.database.namespace }}.svc.cluster.local
+    host: postgresql.orch-database.svc.cluster.local
     port: 5432
-    database: {{ .Values.argo.database.prefix }}-platform-keycloak
+    database: orch-platform-keycloak
     usernameSecret:
       name: platform-keycloak-{{ .Values.argo.database.type }}-postgresql
       key: PGUSER
