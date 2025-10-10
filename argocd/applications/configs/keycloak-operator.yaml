@@ -15,7 +15,7 @@ operator:
   installPlanApproval: Automatic
 
 keycloak:
-  enabled: false
+  enabled: true
   instanceName: keycloak-operator-instance
   instanceNamespace: orch-platform
   instances: 1
@@ -124,71 +124,5 @@ keycloak:
           ]
         }
 
-# OLM CRD definitions for fresh deployments
-extraValueObjects:
-  olmCrds:
-    subscriptionsCrd: |
-      apiVersion: apiextensions.k8s.io/v1
-      kind: CustomResourceDefinition
-      metadata:
-        name: subscriptions.operators.coreos.com
-      spec:
-        group: operators.coreos.com
-        versions:
-        - name: v1alpha1
-          served: true
-          storage: true
-          schema:
-            openAPIV3Schema:
-              type: object
-              properties:
-                spec:
-                  type: object
-                  properties:
-                    channel:
-                      type: string
-                    name:
-                      type: string
-                    source:
-                      type: string
-                    sourceNamespace:
-                      type: string
-                    installPlanApproval:
-                      type: string
-                status:
-                  type: object
-        scope: Namespaced
-        names:
-          plural: subscriptions
-          singular: subscription
-          kind: Subscription
-    
-    operatorGroupsCrd: |
-      apiVersion: apiextensions.k8s.io/v1
-      kind: CustomResourceDefinition
-      metadata:
-        name: operatorgroups.operators.coreos.com
-      spec:
-        group: operators.coreos.com
-        versions:
-        - name: v1
-          served: true
-          storage: true
-          schema:
-            openAPIV3Schema:
-              type: object
-              properties:
-                spec:
-                  type: object
-                  properties:
-                    targetNamespaces:
-                      type: array
-                      items:
-                        type: string
-                status:
-                  type: object
-        scope: Namespaced
-        names:
-          plural: operatorgroups
-          singular: operatorgroup
-          kind: OperatorGroup
+# Direct operator deployment (no longer using OLM)
+# The operator is now deployed directly with embedded CRDs

@@ -9,27 +9,203 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "100"
 ---
-apiVersion: operators.coreos.com/v1
-kind: OperatorGroup
+# Keycloak CRDs
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
 metadata:
-  name: {{ .Values.operator.name }}-group
-  namespace: {{ .Values.operator.namespace }}
+  name: keycloaks.k8s.keycloak.org
   annotations:
     argocd.argoproj.io/sync-wave: "110"
 spec:
-  # SingleNamespace mode - target orch-platform where Keycloak will run
-  targetNamespaces:
-  - orch-platform
+  group: k8s.keycloak.org
+  versions:
+  - name: v2alpha1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            properties:
+              instances:
+                type: integer
+                minimum: 1
+              hostname:
+                type: object
+                properties:
+                  strict:
+                    type: boolean
+              http:
+                type: object
+                properties:
+                  httpEnabled:
+                    type: boolean
+                  httpPort:
+                    type: integer
+              proxy:
+                type: object
+                properties:
+                  headers:
+                    type: string
+              db:
+                type: object
+                properties:
+                  vendor:
+                    type: string
+                  host:
+                    type: string
+                  port:
+                    type: integer
+                  database:
+                    type: string
+                  usernameSecret:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      key:
+                        type: string
+                  passwordSecret:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      key:
+                        type: string
+              additionalOptions:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    value:
+                      type: string
+              resources:
+                type: object
+                properties:
+                  requests:
+                    type: object
+                    properties:
+                      cpu:
+                        type: string
+                      memory:
+                        type: string
+                  limits:
+                    type: object
+                    properties:
+                      cpu:
+                        type: string
+                      memory:
+                        type: string
+          status:
+            type: object
+  scope: Namespaced
+  names:
+    plural: keycloaks
+    singular: keycloak
+    kind: Keycloak
 ---
-apiVersion: operators.coreos.com/v1alpha1
-kind: Subscription
+# ServiceAccount for the operator
+apiVersion: v1
+kind: ServiceAccount
 metadata:
-  name: {{ .Values.operator.name }}
+  name: keycloak-operator
+  namespace: {{ .Values.operator.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "115"
+---
+# ClusterRole for the operator
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: keycloak-operator
+  annotations:
+    argocd.argoproj.io/sync-wave: "115"
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "endpoints", "persistentvolumeclaims", "events", "configmaps", "secrets"]
+  verbs: ["*"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "daemonsets", "replicasets", "statefulsets"]
+  verbs: ["*"]
+- apiGroups: ["k8s.keycloak.org"]
+  resources: ["keycloaks"]
+  verbs: ["*"]
+---
+# ClusterRoleBinding for the operator
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: keycloak-operator
+  annotations:
+    argocd.argoproj.io/sync-wave: "115"
+roleRef:
+  kind: ClusterRole
+  name: keycloak-operator
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: keycloak-operator
+  namespace: {{ .Values.operator.namespace }}
+---
+# Keycloak Operator Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak-operator
   namespace: {{ .Values.operator.namespace }}
   annotations:
     argocd.argoproj.io/sync-wave: "120"
+  labels:
+    app.kubernetes.io/name: keycloak-operator
+    app.kubernetes.io/instance: keycloak-operator
 spec:
-  channel: {{ .Values.operator.channel }}
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: keycloak-operator
+      app.kubernetes.io/instance: keycloak-operator
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: keycloak-operator
+        app.kubernetes.io/instance: keycloak-operator
+    spec:
+      serviceAccountName: keycloak-operator
+      containers:
+      - name: keycloak-operator
+        image: quay.io/keycloak/keycloak-operator:26.0.7
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        env:
+        - name: WATCH_NAMESPACE
+          value: ""
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: OPERATOR_NAME
+          value: "keycloak-operator"
+        {{- if .Values.keycloak.additionalOptions }}
+        {{- range .Values.keycloak.additionalOptions }}
+        {{- if or (eq .name "HTTPS_PROXY") (eq .name "HTTP_PROXY") (eq .name "NO_PROXY") }}
+        - name: {{ .name }}
+          value: {{ .value | quote }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
   name: {{ .Values.operator.packageName }}
   source: {{ .Values.operator.source }}
   sourceNamespace: {{ .Values.operator.sourceNamespace }}
