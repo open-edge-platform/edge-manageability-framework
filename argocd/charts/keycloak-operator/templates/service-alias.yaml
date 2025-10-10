@@ -1,3 +1,4 @@
+{{- if .Values.keycloak }}
 {{- if .Values.keycloak.enabled }}
 apiVersion: v1
 kind: Service
@@ -21,4 +22,5 @@ spec:
     app: keycloak
     app.kubernetes.io/managed-by: keycloak-operator
     app.kubernetes.io/instance: {{ .Values.keycloak.instanceName }}
+{{- end }}
 {{- end }}

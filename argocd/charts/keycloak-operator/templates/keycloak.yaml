@@ -43,8 +43,39 @@ spec:
   additionalOptions:
     {{- range .Values.keycloak.additionalOptions }}
     - name: {{ .name }}
+      {{- if .value }}
       value: {{ .value | quote }}
+      {{- else if .valueFrom }}
+      valueFrom:
+        secretKeyRef:
+          name: {{ .valueFrom.secretKeyRef.name }}
+          key: {{ .valueFrom.secretKeyRef.key }}
+      {{- end }}
     {{- end }}
+  {{- end }}
+  
+  {{- if .Values.keycloak.ingress }}
+  ingress:
+    enabled: {{ .Values.keycloak.ingress.enabled | default false }}
+    {{- if .Values.keycloak.ingress.className }}
+    className: {{ .Values.keycloak.ingress.className }}
+    {{- end }}
+    {{- if .Values.keycloak.ingress.annotations }}
+    annotations:
+      {{- toYaml .Values.keycloak.ingress.annotations | nindent 6 }}
+    {{- end }}
+    {{- if .Values.keycloak.ingress.labels }}
+    labels:
+      {{- toYaml .Values.keycloak.ingress.labels | nindent 6 }}
+    {{- end }}
+    {{- if .Values.keycloak.ingress.tlsSecret }}
+    tlsSecret: {{ .Values.keycloak.ingress.tlsSecret }}
+    {{- end }}
+  {{- end }}
+  
+  {{- if .Values.keycloak.networkPolicy }}
+  networkPolicy:
+    enabled: {{ .Values.keycloak.networkPolicy.enabled | default false }}
   {{- end }}
   
   {{- if .Values.keycloak.resources }}

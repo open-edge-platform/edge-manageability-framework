@@ -1,4 +1,7 @@
-{{- if and .Values.keycloak.enabled .Values.keycloak.configCli.enabled }}
+{{- if .Values.keycloak }}
+{{- if .Values.keycloak.enabled }}
+{{- if .Values.keycloak.configCli }}
+{{- if .Values.keycloak.configCli.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -11,8 +14,11 @@ metadata:
     app.kubernetes.io/instance: {{ .Values.keycloak.instanceName }}
     app.kubernetes.io/managed-by: keycloak-operator-helm
 data:
-  {{- range $key, $value := .Values.keycloak.configCli.configuration }}
+{{- range $key, $value := .Values.keycloak.configCli.configuration }}
   {{ $key }}: |
 {{ $value | indent 4 }}
-  {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
 {{- end }}
