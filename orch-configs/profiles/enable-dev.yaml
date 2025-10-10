@@ -7,5 +7,6 @@
 
 argo:
   enabled:
-    postgresql: true
+    postgresql-operator: true
+    postgresql-cluster: true
     postgresql-secrets: true

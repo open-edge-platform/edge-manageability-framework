@@ -51,16 +51,20 @@ EOF
 }
 
 create_postgres_password() {
-    kubectl -n "$1" delete secret platform-keycloak --ignore-not-found
+    kubectl -n "$1" delete secret "$1-postgresql" --ignore-not-found
 
     kubectl apply -f - <<EOF
 apiVersion: v1
 kind: Secret
 metadata:
-  name: postgresql
+  name: "$1-postgresql"
   namespace: $1
+  annotations:
+    cnpg.io/reload: "false"
+type: kubernetes.io/basic-auth
 stringData:
-  postgres-password: "$2"
+  username: "$1-postgresql_user"
+  password: "$2"
 EOF
 }
 

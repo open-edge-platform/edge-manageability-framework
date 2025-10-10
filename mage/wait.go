@@ -28,6 +28,8 @@ var appDeployMaxDurationOverrides = map[string]time.Duration{
 	"kyverno":                    15 * time.Minute,
 	"mimir":                      20 * time.Minute,
 	"orchestrator-observability": 40 * time.Minute,
+	"postgresql-operator":        10 * time.Minute,
+	"postgresql-cluster":         30 * time.Minute,
 	"postgresql":                 30 * time.Minute,
 	"edgenode-observability":     40 * time.Minute,
 	"root-app":                   120 * time.Minute, // Represents the full Orchestrator deployment

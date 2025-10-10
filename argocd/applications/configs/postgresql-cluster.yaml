@@ -4,7 +4,13 @@
 
 namespace: orch-database
 
-annotations:
-  cnpg.io/reload: "false"
+type: postgresql
+mode: standalone
 
-host: "postgresql-cluster-rw.orch-database"
+version:
+  postgresql: "17"
+
+cluster:
+  instances: 1
+  storage:
+    size: "8Gi"
