@@ -1183,7 +1183,10 @@ func getOrchestratorVersionParam() (string, error) {
 func (d Deploy) orch(targetEnv string) error {
 	targetConfig := getTargetConfig(targetEnv)
 
+	fmt.Printf("Deploying Orchestrator with config: %s\n", targetConfig)
+
 	cmd := fmt.Sprintf("helm upgrade --install root-app argocd/root-app -f %s -n %s --create-namespace", targetConfig, targetEnv)
+	fmt.Printf("exec: %s\n", cmd)
 	_, err := script.Exec(cmd).Stdout()
 	return err
 }
@@ -1218,8 +1221,12 @@ func (d Deploy) orchLocal(targetEnv string) error {
 		return fmt.Errorf("failed to get orchestrator version: %w", err)
 	}
 
+	fmt.Printf("Deploying Orchestrator with config: %s\n", targetConfig)
+
 	cmd := fmt.Sprintf("helm upgrade --install root-app argocd/root-app -f %s  -n %s --create-namespace %s %s"+
 		"--set root.useLocalValues=true", targetConfig, targetEnv, deployRevision, orchVersion)
+
+	fmt.Printf("exec: %s\n", cmd)
 
 	// only for coder deployments
 	targetAutoCertEnabled, _ := (Config{}).isAutoCertEnabled(targetEnv)
