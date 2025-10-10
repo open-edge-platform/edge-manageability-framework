@@ -55,9 +55,8 @@ var argoNamespaces = []string{
 	"orch-infra",    // used when creating a secret for mailpit
 }
 
-// FIXME: Ideally this could be extracted from the cluster configuration and aligned with auth secrets - out of scope for now
-var giteaRepos = []string{
-	"https://gitea-http.gitea.svc.cluster.local/argocd/edge-manageability-framework",
+var EMFRepos = []string{
+	"https://github.com/open-edge-platform/edge-manageability-framework",
 }
 
 // Public GitHub repositories can be useful for specific development workflows.
@@ -1973,10 +1972,7 @@ type Version mg.Namespace
 
 // Get the Release Tag for the current source version
 func (Version) GetVersionTag() error {
-	tag, err := getDeployTag()
-	if err != nil {
-		return fmt.Errorf("failed to get deploy tag: %w", err)
-	}
+	tag := "UNSUPPORTED"
 	fmt.Println(tag)
 	return nil
 }
