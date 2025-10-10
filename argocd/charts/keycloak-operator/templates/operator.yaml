@@ -131,8 +131,11 @@ rules:
 - apiGroups: ["apps"]
   resources: ["deployments", "daemonsets", "replicasets", "statefulsets"]
   verbs: ["*"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses"]
+  verbs: ["*"]
 - apiGroups: ["k8s.keycloak.org"]
-  resources: ["keycloaks"]
+  resources: ["keycloaks", "keycloakrealmimports"]
   verbs: ["*"]
 ---
 # ClusterRoleBinding for the operator
