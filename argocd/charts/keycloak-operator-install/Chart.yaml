@@ -1,0 +1,6 @@
+apiVersion: v2
+name: keycloak-operator-install
+description: Installs the official Keycloak operator using kubectl apply with GitHub download
+type: application
+version: 0.1.0
+appVersion: "26.4.0"

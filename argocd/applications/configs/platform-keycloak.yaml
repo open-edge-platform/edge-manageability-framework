@@ -2,18 +2,24 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Keycloak Operator configuration - Direct deployment
-# This deploys the operator directly and creates a Keycloak instance
-
-# Operator deployment configuration
-operator:
-  namespace: keycloak-system
+# Keycloak configuration using official operator
+# This creates a Keycloak instance using the official operator
 
 keycloak:
   enabled: true
-  instanceName: keycloak-operator-instance
-  instanceNamespace: orch-platform
+  instanceName: platform-keycloak
+  instanceNamespace: keycloak-system
   instances: 1
+  
+  # Bootstrap admin from generated secret (created by deploy.go)
+  bootstrapAdmin:
+    user:
+      nameSecret:
+        name: platform-keycloak
+        key: admin-username
+      passwordSecret:
+        name: platform-keycloak
+        key: admin-password
   
   hostname:
     strict: false
@@ -29,7 +35,7 @@ keycloak:
     vendor: postgres
     host: postgresql.orch-database.svc.cluster.local
     port: 5432
-    database: orch-platform-keycloak
+    database: orch-platform-platform-keycloak
     usernameSecret:
       name: platform-keycloak-local-postgresql
       key: PGUSER
@@ -38,17 +44,13 @@ keycloak:
       key: PGPASSWORD
   
   additionalOptions:
-    - name: KC_BOOTSTRAP_ADMIN_USERNAME
-      value: admin
-    - name: KC_BOOTSTRAP_ADMIN_PASSWORD
-      value: admin
     - name: KC_PROXY_HEADERS
       value: xforwarded
     - name: KC_HOSTNAME_STRICT
       value: "false"
     - name: KC_HOSTNAME_STRICT_HTTPS
       value: "false"
-  
+
   resources:
     requests:
       cpu: 200m

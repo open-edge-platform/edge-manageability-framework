@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-{{- $appName        := "platform-keycloak" }}
-{{- $namespace      := "orch-platform" }}
-{{- $syncWave       := "140" }}
+{{- $appName        := "keycloak-operator-install" }}
+{{- $namespace      := "keycloak-system" }}
+{{- $syncWave       := "100" }}
 ---
 {{- if (index .Values.argo.enabled $appName) }}
 apiVersion: argoproj.io/v1alpha1
@@ -20,17 +20,13 @@ spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   source:
     repoURL: {{ .Values.argo.deployRepoURL }}
-    path: argocd/charts/keycloak-config
+    path: argocd/charts/keycloak-operator-install
     targetRevision: {{ .Values.argo.deployRepoRevision | quote}}
     helm:
       releaseName: {{$appName}}
       valuesObject:
-        {{- $customFile := printf "custom/%s.tpl" $appName }}
-        {{- $customConfig := tpl (.Files.Get $customFile) . | fromYaml }}
-        {{- $baseFile := printf "configs/%s.yaml" $appName }}
-        {{- $baseConfig := .Files.Get $baseFile|fromYaml}}
-        {{- $overwrite := (get .Values.postCustomTemplateOverwrite $appName ) | default dict }}
-        {{- mergeOverwrite $baseConfig $customConfig $overwrite | toYaml | nindent 8 }}
+        operator:
+          namespace: {{$namespace}}
   destination:
     namespace: {{$namespace}}
     server: {{ required "A valid targetServer entry required!" .Values.argo.targetServer }}
@@ -48,5 +44,5 @@ spec:
     {{- end }}
     syncOptions:
       - CreateNamespace=true
-      - ApplyOutOfSyncOnly=true
+      - Replace=true
 {{- end }}

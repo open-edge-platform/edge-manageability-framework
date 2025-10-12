@@ -2,20 +2,25 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-## Custom template for keycloak-operator application
+## Custom template for platform-keycloak application
 ## This file provides environment-specific configuration overrides
-## for the Keycloak Operator deployment
-
-# Operator configuration
-operator:
-  namespace: orch-platform
+## for the Keycloak deployment using official operator
 
 # Keycloak instance configuration
 keycloak:
-  enabled: true
   instanceName: platform-keycloak
-  instanceNamespace: orch-platform
+  instanceNamespace: keycloak-system
   instances: 1
+  
+  # Bootstrap admin from generated secret (matches deploy.go)
+  bootstrapAdmin:
+    user:
+      nameSecret:
+        name: platform-keycloak
+        key: admin-username
+      passwordSecret:
+        name: platform-keycloak
+        key: admin-password
   
   hostname:
     strict: false
@@ -42,13 +47,6 @@ keycloak:
 
   # Additional options including proxy configuration
   additionalOptions:
-    - name: KC_BOOTSTRAP_ADMIN_USERNAME
-      value: admin
-    - name: KC_BOOTSTRAP_ADMIN_PASSWORD
-      valueFrom:
-        secretKeyRef:
-          name: platform-keycloak
-          key: admin-password
     - name: KC_PROXY_HEADERS
       value: xforwarded
     - name: KC_HOSTNAME_STRICT

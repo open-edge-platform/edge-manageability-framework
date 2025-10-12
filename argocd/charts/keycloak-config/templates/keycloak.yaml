@@ -1,0 +1,87 @@
+apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: {{ .Values.keycloak.name | default "platform-keycloak" }}
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "150"
+spec:
+  instances: {{ .Values.keycloak.instances | default 1 }}
+  
+  # Bootstrap admin from secret - OFFICIAL FORMAT!
+  {{- if .Values.keycloak.bootstrapAdmin }}
+  bootstrapAdmin:
+    user:
+      {{- if .Values.keycloak.bootstrapAdmin.user.secret }}
+      secret: {{ .Values.keycloak.bootstrapAdmin.user.secret }}
+      {{- else }}
+      secret: {{ .Values.keycloak.bootstrapAdmin.user.nameSecret.name | default "platform-keycloak" }}
+      {{- end }}
+  {{- end }}
+  
+  {{- if .Values.keycloak.db }}
+  # Database configuration  
+  db:
+    vendor: {{ .Values.keycloak.db.vendor | default "postgres" }}
+    host: {{ .Values.keycloak.db.host }}
+    port: {{ .Values.keycloak.db.port | default 5432 }}
+    database: {{ .Values.keycloak.db.database }}
+    usernameSecret:
+      name: {{ .Values.keycloak.db.usernameSecret.name }}
+      key: {{ .Values.keycloak.db.usernameSecret.key }}
+    passwordSecret:
+      name: {{ .Values.keycloak.db.passwordSecret.name }}
+      key: {{ .Values.keycloak.db.passwordSecret.key }}
+  {{- end }}
+  
+  {{- if .Values.keycloak.additionalOptions }}
+  # Additional options (proxy settings, etc.)
+  additionalOptions:
+    {{- range .Values.keycloak.additionalOptions }}
+    - name: {{ .name }}
+      value: {{ .value | quote }}
+    {{- end }}
+  {{- end }}
+  
+  {{- if .Values.keycloak.http }}
+  # HTTP settings
+  http:
+    httpEnabled: {{ .Values.keycloak.http.httpEnabled | default true }}
+    httpPort: {{ .Values.keycloak.http.httpPort | default 8080 }}
+  {{- end }}
+  
+  {{- if .Values.keycloak.hostname }}
+  # Hostname settings
+  hostname:
+    strict: {{ .Values.keycloak.hostname.strict | default false }}
+  {{- end }}
+  
+  {{- if .Values.keycloak.proxy }}
+  # Proxy settings
+  proxy:
+    headers: {{ .Values.keycloak.proxy.headers | default "xforwarded" }}
+  {{- end }}
+  
+  {{- if .Values.keycloak.resources }}
+  # Resource settings
+  resources:
+    {{- if .Values.keycloak.resources.requests }}
+    requests:
+      cpu: {{ .Values.keycloak.resources.requests.cpu | default "200m" }}
+      memory: {{ .Values.keycloak.resources.requests.memory | default "512Mi" }}
+    {{- end }}
+    {{- if .Values.keycloak.resources.limits }}
+    limits:
+      cpu: {{ .Values.keycloak.resources.limits.cpu | default "500m" }}
+      memory: {{ .Values.keycloak.resources.limits.memory | default "1Gi" }}
+    {{- end }}
+  {{- end }}
+  
+  {{- if .Values.keycloak.ingress }}
+  # Ingress configuration
+  ingress:
+    enabled: {{ .Values.keycloak.ingress.enabled | default false }}
+    {{- if .Values.keycloak.ingress.className }}
+    className: {{ .Values.keycloak.ingress.className }}
+    {{- end }}
+  {{- end }}

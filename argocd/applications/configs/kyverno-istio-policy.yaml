@@ -43,3 +43,5 @@ excludedNamespaces:
   - capi-operator-system
   - capr-system
   - capk-system
+  - keycloak-operator
+  - keycloak-system
