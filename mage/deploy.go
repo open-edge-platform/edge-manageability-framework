@@ -448,7 +448,17 @@ func localSecret(targetEnv string, createRSToken bool) error {
 
 	// creating platform-keycloak secret that contains the randomly generated keycloak admin password
 	if err := kubectlCreateAndApply("secret", "generic", "-n", "orch-platform", "platform-keycloak",
-		"--from-literal=admin-username=admin --from-literal=admin-password="+keycloakPassword); err != nil {
+		"--from-literal=username=admin", "--from-literal=password="+keycloakPassword); err != nil {
+		return err
+	}
+
+	// Create keycloak-system namespace for operator
+	if err := kubectlCreateAndApply("namespace", "keycloak-system"); err != nil {
+		return err
+	}
+
+	// Download and create Keycloak operator resources as ConfigMaps
+	if err := createKeycloakOperatorConfigMaps(); err != nil {
 		return err
 	}
 
@@ -1628,4 +1638,82 @@ func (d Deploy) orchLocal(targetEnv string) error {
 		fmt.Printf("Orchestrator will be available at domain : %s\n", subDomain)
 	}
 	return err
+}
+
+// createKeycloakOperatorConfigMaps downloads Keycloak operator resources and creates ConfigMaps
+func createKeycloakOperatorConfigMaps() error {
+	const keycloakVersion = "26.4.0"
+	
+	// URLs for Keycloak operator resources
+	crdURL := fmt.Sprintf("https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/%s/kubernetes/keycloaks.k8s.keycloak.org-v1.yml", keycloakVersion)
+	operatorURL := fmt.Sprintf("https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/%s/kubernetes/kubernetes.yml", keycloakVersion)
+	
+	// Download CRDs
+	crdContent, err := downloadKeycloakResource(crdURL)
+	if err != nil {
+		return fmt.Errorf("failed to download Keycloak CRDs: %w", err)
+	}
+	
+	// Download operator
+	operatorContent, err := downloadKeycloakResource(operatorURL)
+	if err != nil {
+		return fmt.Errorf("failed to download Keycloak operator: %w", err)
+	}
+	
+	// Create CA certificates ConfigMap from host
+	if err := kubectlCreateAndApply("configmap", "ca-certificates", "-n", "keycloak-system",
+		"--from-file=/etc/ssl/certs/ca-certificates.crt"); err != nil {
+		return fmt.Errorf("failed to create CA certificates ConfigMap: %w", err)
+	}
+	
+	// Create CRDs ConfigMap
+	if err := createConfigMapFromContent("keycloak-crds", "keycloak-system", "keycloak-crds.yaml", crdContent); err != nil {
+		return fmt.Errorf("failed to create Keycloak CRDs ConfigMap: %w", err)
+	}
+	
+	// Create operator ConfigMap
+	if err := createConfigMapFromContent("keycloak-operator", "keycloak-system", "keycloak-operator.yaml", operatorContent); err != nil {
+		return fmt.Errorf("failed to create Keycloak operator ConfigMap: %w", err)
+	}
+	
+	return nil
+}
+
+// downloadKeycloakResource downloads a resource from GitHub
+func downloadKeycloakResource(url string) (string, error) {
+	resp, err := http.Get(url) //nolint: gosec
+	if err != nil {
+		return "", fmt.Errorf("failed to download %s: %w", url, err)
+	}
+	defer resp.Body.Close()
+	
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("failed to download %s: HTTP %d", url, resp.StatusCode)
+	}
+	
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read response body: %w", err)
+	}
+	
+	return string(body), nil
+}
+
+// createConfigMapFromContent creates a ConfigMap with the given content
+func createConfigMapFromContent(name, namespace, filename, content string) error {
+	// Create a temporary file
+	tmpFile, err := os.CreateTemp("", fmt.Sprintf("%s-*.yaml", name))
+	if err != nil {
+		return fmt.Errorf("failed to create temp file: %w", err)
+	}
+	defer os.Remove(tmpFile.Name())
+	
+	// Write content to temp file
+	if _, err := tmpFile.WriteString(content); err != nil {
+		return fmt.Errorf("failed to write to temp file: %w", err)
+	}
+	tmpFile.Close()
+	
+	// Create ConfigMap from file
+	return kubectlCreateAndApply("configmap", name, "-n", namespace, "--from-file="+filename+"="+tmpFile.Name())
 }
