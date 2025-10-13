@@ -41,7 +41,7 @@ Release Service. We eliminate the Cluster-Manifest entirely.
 ### Proposal 1: Specify Deployment Packages directly inside the App-Orch-Tenant-Controller docker image
 
 One option is to include the set of deployment packages as a series of yaml files located inside the
-app-orch-tenant-controller docker images. This leads to a very simple implementation, the tenant controller
+app-orch-tenant-controller docker image. This leads to a very simple implementation, the tenant controller
 would simply loop through the directory of local yaml files and submit them to the application
 catalog.
 
