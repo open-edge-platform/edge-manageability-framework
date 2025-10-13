@@ -19,9 +19,9 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
-    - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
-      chart: cluster/charts/{{$appName}}
-      targetRevision: 2.2.0
+    - repoURL: https://github.com/open-edge-platform/cluster-manager
+      path: deployment/charts/cluster-manager
+      targetRevision: fix-vault-storage
       helm:
         releaseName: {{$appName}}
         valuesObject:
