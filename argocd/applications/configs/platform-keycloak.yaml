@@ -10,7 +10,6 @@ keycloak:
   instanceName: platform-keycloak
   instanceNamespace: keycloak-system
   instances: 1
-  
   # Bootstrap admin from generated secret (created by deploy.go)
   bootstrapAdmin:
     user:
@@ -20,17 +19,13 @@ keycloak:
       passwordSecret:
         name: platform-keycloak
         key: admin-password
-  
   hostname:
     strict: false
-  
   http:
     httpEnabled: true
     httpPort: 8080
-  
   proxy:
     headers: xforwarded
-  
   db:
     vendor: postgres
     host: postgresql.orch-database.svc.cluster.local
@@ -42,7 +37,6 @@ keycloak:
     passwordSecret:
       name: platform-keycloak-local-postgresql
       key: PGPASSWORD
-  
   additionalOptions:
     - name: KC_PROXY_HEADERS
       value: xforwarded
@@ -59,18 +53,15 @@ keycloak:
       cpu: 500m
       memory: 1Gi
 
-# Keycloak configuration CLI for bootstrapping realms and clients
+  # Keycloak configuration CLI for bootstrapping realms and clients
   configCli:
     enabled: true
-    
     # Bootstrap job configuration - using custom REST API approach
     # This creates a ConfigMap with realm configurations and a Job that applies them
     # via direct REST API calls to Keycloak Admin API
-    
     auth:
       username: admin
       password: admin
-    
     resources:
       requests:
         cpu: 100m
@@ -78,7 +69,6 @@ keycloak:
       limits:
         cpu: 500m
         memory: 512Mi
-    
     # Configuration files to be applied to Keycloak
     # Each key becomes a file in the ConfigMap
     # The bootstrap job will process each file and apply the configuration
@@ -88,7 +78,6 @@ keycloak:
           "realm": "master",
           "accountTheme": "keycloak",
           "displayName": "Keycloak",
-          "displayNameHtml": "<img src='https://raw.githubusercontent.com/open-edge-platform/orch-utils/73df5d1e99a81ae333d94b1c47dd9bef7fa03ae9/keycloak/one-edge-platform-login-title.png'></img>",
           "defaultSignatureAlgorithm": "PS512",
           "accessTokenLifespan": 3600,
           "ssoSessionIdleTimeout": 5400,
