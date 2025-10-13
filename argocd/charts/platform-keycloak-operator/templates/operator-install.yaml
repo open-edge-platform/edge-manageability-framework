@@ -30,10 +30,10 @@ metadata:
     app.kubernetes.io/name: keycloak-operator-installer
     app.kubernetes.io/instance: keycloak-operator-installer
 rules:
-# CRD management
+# CRD read access (for verification only, not creation)
 - apiGroups: ["apiextensions.k8s.io"]
   resources: ["customresourcedefinitions"]
-  verbs: ["create", "get", "list", "patch", "update"]
+  verbs: ["get", "list"]
 # Operator deployment
 - apiGroups: ["apps"]
   resources: ["deployments", "statefulsets"]
@@ -120,11 +120,22 @@ spec:
           - -c
           - |
             set -e
-            echo "Installing Keycloak operator CRDs and operator..."
+            echo "Installing Keycloak operator..."
             
-            # Apply Keycloak CRDs from ConfigMap
-            echo "Applying Keycloak CRDs..."
-            kubectl apply -f /etc/keycloak/crds/keycloak-crds.yaml
+            # Note: CRDs are pre-installed during cluster bootstrapping (mage deploy)
+            # This job only installs the operator deployment
+            
+            # Verify CRDs exist
+            echo "Verifying Keycloak CRDs are installed..."
+            if ! kubectl get crd keycloaks.k8s.keycloak.org >/dev/null 2>&1; then
+              echo "ERROR: Keycloak CRDs not found. They should be installed during cluster bootstrap."
+              exit 1
+            fi
+            if ! kubectl get crd keycloakrealmimports.k8s.keycloak.org >/dev/null 2>&1; then
+              echo "ERROR: KeycloakRealmImport CRDs not found. They should be installed during cluster bootstrap."
+              exit 1
+            fi
+            echo "CRDs verified successfully."
             
             # Apply Keycloak operator from ConfigMap
             echo "Applying Keycloak operator..."
@@ -135,9 +146,6 @@ spec:
         - name: ca-certificates
           mountPath: /etc/ssl/certs/ca-certificates.crt
           subPath: ca-certificates.crt
-          readOnly: true
-        - name: keycloak-crds
-          mountPath: /etc/keycloak/crds
           readOnly: true
         - name: keycloak-operator
           mountPath: /etc/keycloak/operator
@@ -159,9 +167,6 @@ spec:
           items:
           - key: ca-certificates.crt
             path: ca-certificates.crt
-      - name: keycloak-crds
-        configMap:
-          name: keycloak-crds
       - name: keycloak-operator
         configMap:
           name: keycloak-operator

@@ -3,6 +3,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Operator configuration
+# Note: Keycloak CRDs (keycloaks.k8s.keycloak.org and keycloakrealmimports.k8s.keycloak.org)
+# are pre-installed during cluster bootstrapping (mage deploy).
+# This chart only installs the operator deployment itself.
 operator:
   enabled: true
   namespace: keycloak-system
