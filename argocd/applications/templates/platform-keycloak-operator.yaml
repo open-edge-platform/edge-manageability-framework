@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-{{- $appName        := "keycloak-operator-install" }}
+{{- $appName        := "platform-keycloak-operator" }}
 {{- $namespace      := "keycloak-system" }}
-{{- $syncWave       := "100" }}
+{{- $syncWave       := "130" }}
 ---
 {{- if (index .Values.argo.enabled $appName) }}
 apiVersion: argoproj.io/v1alpha1
@@ -20,13 +20,10 @@ spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   source:
     repoURL: {{ .Values.argo.deployRepoURL }}
-    path: argocd/charts/keycloak-operator-install
+    path: argocd/charts/platform-keycloak-operator
     targetRevision: {{ .Values.argo.deployRepoRevision | quote}}
     helm:
       releaseName: {{$appName}}
-      valuesObject:
-        operator:
-          namespace: {{$namespace}}
   destination:
     namespace: {{$namespace}}
     server: {{ required "A valid targetServer entry required!" .Values.argo.targetServer }}
@@ -44,5 +41,4 @@ spec:
     {{- end }}
     syncOptions:
       - CreateNamespace=true
-      - Replace=true
 {{- end }}

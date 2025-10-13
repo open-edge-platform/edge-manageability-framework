@@ -1,3 +1,0 @@
-# Default values for keycloak-operator-install chart
-operator:
-  namespace: keycloak-system

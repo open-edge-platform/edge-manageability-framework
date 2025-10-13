@@ -2,22 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Platform Keycloak configuration
-# This manages the complete Keycloak lifecycle: operator installation, instance deployment, and configuration
-
-# Operator installation settings
-operator:
-  enabled: true
-  namespace: keycloak-system
-  install:
-    image: eclipsefdn/kubectl:okd-c1
-    resources:
-      requests:
-        cpu: 100m
-        memory: 256Mi
-      limits:
-        cpu: 500m
-        memory: 512Mi
+# Default values for platform-keycloak chart
+# This chart manages the Keycloak instance deployment and configuration
+# Note: Operator installation is handled by the separate platform-keycloak-operator chart
 
 # Keycloak instance configuration
 keycloak:
@@ -25,13 +12,21 @@ keycloak:
   instanceName: platform-keycloak
   instanceNamespace: orch-platform
   instances: 1
+  
+  # Hostname configuration
   hostname:
     strict: false
+    
+  # HTTP configuration
   http:
     httpEnabled: true
     httpPort: 8080
+    
+  # Proxy configuration
   proxy:
     headers: xforwarded
+    
+  # Database configuration
   db:
     vendor: postgres
     host: postgresql.orch-database.svc.cluster.local
@@ -43,6 +38,8 @@ keycloak:
     passwordSecret:
       name: platform-keycloak-local-postgresql
       key: PGPASSWORD
+      
+  # Resource limits for Keycloak pods
   resources:
     requests:
       cpu: 200m
@@ -50,8 +47,8 @@ keycloak:
     limits:
       cpu: 500m
       memory: 1Gi
+      
   # Additional Keycloak options (environment variables)
-  # Admin credentials are read from the platform-keycloak secret created by deploy.go
   additionalOptions:
     - name: KC_BOOTSTRAP_ADMIN_USERNAME
       valueFrom:
@@ -69,8 +66,12 @@ keycloak:
       value: "false"
     - name: KC_HOSTNAME_STRICT_HTTPS
       value: "false"
+  
+  # Ingress configuration (disabled by default, use Istio)
   ingress:
     enabled: false
+    
+  # Network policy configuration
   networkPolicy:
     enabled: false
 
@@ -86,12 +87,14 @@ service:
 # Configuration CLI for realm setup
 configCli:
   enabled: true
+  # Image for config bootstrap job
   image: curlimages/curl:8.4.0
   # Authentication using the platform-keycloak secret
   auth:
     secretName: platform-keycloak
     usernameKey: username
     passwordKey: password
+  # Resources for config job
   resources:
     requests:
       cpu: 100m
@@ -100,44 +103,10 @@ configCli:
       cpu: 500m
       memory: 512Mi
   # Realm configuration files
-  # Each key becomes a file in the ConfigMap that will be applied to Keycloak
   configuration:
     realm-master.json: |
       {
         "realm": "master",
         "accountTheme": "keycloak",
-        "displayName": "Keycloak",
-        "defaultSignatureAlgorithm": "PS512",
-        "accessTokenLifespan": 3600,
-        "ssoSessionIdleTimeout": 5400,
-        "ssoSessionMaxLifespan": 43200,
-        "passwordPolicy": "length(14) and digits(1) and specialChars(1) and upperCase(1) and lowerCase(1)",
-        "bruteForceProtected": true,
-        "permanentLockout": false,
-        "maxFailureWaitSeconds": 900,
-        "minimumQuickLoginWaitSeconds": 60,
-        "waitIncrementSeconds": 300,
-        "quickLoginCheckMilliSeconds": 200,
-        "maxDeltaTimeSeconds": 43200,
-        "failureFactor": 5,
-        "clients": [
-          {
-            "clientId": "system-client",
-            "name": "System Client",
-            "description": "Client for System Operations",
-            "enabled": true,
-            "clientAuthenticatorType": "client-secret",
-            "secret": "system-client-secret",
-            "redirectUris": ["*"],
-            "webOrigins": ["*"],
-            "serviceAccountsEnabled": true,
-            "authorizationServicesEnabled": false,
-            "directAccessGrantsEnabled": true,
-            "implicitFlowEnabled": false,
-            "standardFlowEnabled": true
-          }
-        ]
+        "displayName": "Keycloak"
       }
-
-# Configuration bootstrap via REST API
-# The bootstrap job uses direct Keycloak Admin API calls to configure realms and clients

@@ -1,26 +1,28 @@
-{{- if .Values.keycloak }}
-{{- if .Values.keycloak.enabled }}
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+{{- if and .Values.keycloak.enabled .Values.service.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
-  name: platform-keycloak
-  namespace: {{ .Values.keycloak.instanceNamespace }}
+  name: {{ .Values.service.name }}
+  namespace: {{ .Values.service.namespace }}
   annotations:
     argocd.argoproj.io/sync-wave: "155"
   labels:
     app.kubernetes.io/name: keycloak
     app.kubernetes.io/instance: platform-keycloak-alias
-    app.kubernetes.io/managed-by: keycloak-operator-helm
+    app.kubernetes.io/managed-by: platform-keycloak-helm
 spec:
   type: ClusterIP
   ports:
-    - port: 8080
-      targetPort: 8080
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.port }}
       protocol: TCP
       name: http
   selector:
     app: keycloak
     app.kubernetes.io/managed-by: keycloak-operator
     app.kubernetes.io/instance: {{ .Values.keycloak.instanceName }}
-{{- end }}
 {{- end }}

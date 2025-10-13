@@ -1,7 +1,8 @@
-{{- if .Values.keycloak }}
-{{- if .Values.keycloak.enabled }}
-{{- if .Values.keycloak.configCli }}
-{{- if .Values.keycloak.configCli.enabled }}
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+{{- if and .Values.keycloak.enabled .Values.configCli.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -12,13 +13,10 @@ metadata:
   labels:
     app.kubernetes.io/name: keycloak
     app.kubernetes.io/instance: {{ .Values.keycloak.instanceName }}
-    app.kubernetes.io/managed-by: keycloak-operator-helm
+    app.kubernetes.io/managed-by: platform-keycloak-helm
 data:
-{{- range $key, $value := .Values.keycloak.configCli.configuration }}
+{{- range $key, $value := .Values.configCli.configuration }}
   {{ $key }}: |
 {{ $value | indent 4 }}
-{{- end }}
-{{- end }}
-{{- end }}
 {{- end }}
 {{- end }}

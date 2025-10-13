@@ -20,7 +20,7 @@ spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   source:
     repoURL: {{ .Values.argo.deployRepoURL }}
-    path: argocd/charts/keycloak-config
+    path: argocd/charts/platform-keycloak
     targetRevision: {{ .Values.argo.deployRepoRevision | quote}}
     helm:
       releaseName: {{$appName}}

@@ -1,4 +1,8 @@
-{{- if and .Values.keycloak.enabled .Values.keycloak.configCli.enabled }}
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+{{- if and .Values.keycloak.enabled .Values.configCli.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -11,7 +15,7 @@ metadata:
   labels:
     app.kubernetes.io/name: keycloak-config-bootstrap
     app.kubernetes.io/instance: {{ .Values.keycloak.instanceName }}
-    app.kubernetes.io/managed-by: keycloak-operator-helm
+    app.kubernetes.io/managed-by: platform-keycloak-helm
 spec:
   template:
     metadata:
@@ -20,7 +24,7 @@ spec:
       labels:
         app.kubernetes.io/name: keycloak-config-bootstrap
         app.kubernetes.io/instance: {{ .Values.keycloak.instanceName }}
-        app.kubernetes.io/managed-by: keycloak-operator-helm
+        app.kubernetes.io/managed-by: platform-keycloak-helm
         # Add Keycloak labels for network policy access
         app: keycloak
         app.kubernetes.io/component: config-bootstrap
@@ -28,7 +32,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: keycloak-config-bootstrap
-        image: curlimages/curl:8.4.0
+        image: {{ .Values.configCli.image }}
         imagePullPolicy: IfNotPresent
         command: ["/bin/sh"]
         args:
@@ -88,14 +92,20 @@ spec:
         - name: KEYCLOAK_URL
           value: "http://{{ .Values.keycloak.instanceName }}-service:8080"
         - name: KEYCLOAK_USER
-          value: {{ .Values.keycloak.configCli.auth.username | default "admin" }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.configCli.auth.secretName }}
+              key: {{ .Values.configCli.auth.usernameKey }}
         - name: KEYCLOAK_PASSWORD
-          value: {{ .Values.keycloak.configCli.auth.password | default "admin" }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.configCli.auth.secretName }}
+              key: {{ .Values.configCli.auth.passwordKey }}
         volumeMounts:
         - name: config
           mountPath: /config
         resources:
-          {{- toYaml .Values.keycloak.configCli.resources | nindent 10 }}
+          {{- toYaml .Values.configCli.resources | nindent 10 }}
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:

@@ -1,5 +1,0 @@
-apiVersion: v2
-name: keycloak-config
-description: Keycloak configuration using official operator
-version: 1.0.0
-appVersion: "26.4.0"

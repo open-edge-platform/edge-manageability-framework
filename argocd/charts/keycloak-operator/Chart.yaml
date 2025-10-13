@@ -1,6 +1,0 @@
-apiVersion: v2
-name: keycloak-operator
-description: Keycloak Operator Direct Deployment
-type: application
-version: 1.0.0
-appVersion: "26.4.0"

@@ -6,21 +6,16 @@
 ## This file provides environment-specific configuration overrides
 ## for the Keycloak deployment using official operator
 
+# Operator settings (usually no customization needed)
+operator:
+  enabled: true
+  namespace: keycloak-system
+
 # Keycloak instance configuration
 keycloak:
   instanceName: platform-keycloak
-  instanceNamespace: keycloak-system
+  instanceNamespace: orch-platform
   instances: 1
-  
-  # Bootstrap admin from generated secret (matches deploy.go)
-  bootstrapAdmin:
-    user:
-      nameSecret:
-        name: platform-keycloak
-        key: admin-username
-      passwordSecret:
-        name: platform-keycloak
-        key: admin-password
   
   hostname:
     strict: false
@@ -45,8 +40,19 @@ keycloak:
       name: platform-keycloak-local-postgresql
       key: PGPASSWORD
 
-  # Additional options including proxy configuration
+  # Additional options including proxy configuration and admin credentials
   additionalOptions:
+    # Admin credentials from secret (created by deploy.go)
+    - name: KC_BOOTSTRAP_ADMIN_USERNAME
+      valueFrom:
+        secretKeyRef:
+          name: platform-keycloak
+          key: username
+    - name: KC_BOOTSTRAP_ADMIN_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: platform-keycloak
+          key: password
     - name: KC_PROXY_HEADERS
       value: xforwarded
     - name: KC_HOSTNAME_STRICT
@@ -92,23 +98,34 @@ keycloak:
       cpu: 500m
       memory: 1Gi
 
-  # Configuration CLI - customize realm configuration with cluster-specific URLs
-  configCli:
-    enabled: true
-    
-    auth:
-      username: admin
-      password: admin
-    
-    resources:
-      requests:
-        cpu: 100m
-        memory: 256Mi
-      limits:
-        cpu: 500m
-        memory: 512Mi
-    
-    configuration:
+# Service alias configuration
+service:
+  enabled: true
+  name: platform-keycloak
+  namespace: orch-platform
+  port: 8080
+
+# Configuration CLI - customize realm configuration with cluster-specific URLs
+configCli:
+  enabled: true
+  image: curlimages/curl:8.4.0
+  
+  # Authentication using the platform-keycloak secret
+  auth:
+    secretName: platform-keycloak
+    usernameKey: username
+    passwordKey: password
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  
+  # Realm configuration with cluster-specific URLs
+  configuration:
       realm-master.json: |
         {
           "realm": "master",

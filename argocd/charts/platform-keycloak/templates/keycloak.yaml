@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
 {{- if .Values.keycloak.enabled }}
 apiVersion: k8s.keycloak.org/v2alpha1
 kind: Keycloak

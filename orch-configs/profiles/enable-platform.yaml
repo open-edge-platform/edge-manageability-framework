@@ -28,7 +28,7 @@ argo:
     multitenant_gateway: true
     nginx-ingress-pxe-boots: true
     platform-autocert: true
-    keycloak-operator-install: true
+    platform-keycloak-operator: true
     platform-keycloak: true
     prometheus-crd: true
     reloader: true
