@@ -65,7 +65,7 @@ The proposed format of the configmap is as follows:
 2. The configmap shall have the label `app-orch-tenant-controller-desired-state: present` if
    the deployment package should be loaded or `absent` if it should not be unloaded.
 
-3. The confimap shall contain a set of yaml files that contain the deployment-package, 
+3. The confimap shall contain a set of yaml files that contain the deployment-package,
    application, registry (if necessary), etc. These yaml files are identical to the yaml files
    that have been previously located in the cluster-extensions repo.
 
