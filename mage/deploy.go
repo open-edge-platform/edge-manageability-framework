@@ -447,8 +447,9 @@ func localSecret(targetEnv string, createRSToken bool) error {
 	}
 
 	// creating platform-keycloak secret that contains the randomly generated keycloak admin password
+	// Note: Keycloak operator's bootstrapAdmin.user.secret expects 'username' and 'password' keys
 	if err := kubectlCreateAndApply("secret", "generic", "-n", "orch-platform", "platform-keycloak",
-		"--from-literal=username=admin", "--from-literal=admin-password="+keycloakPassword); err != nil {
+		"--from-literal=username=admin", "--from-literal=password="+keycloakPassword); err != nil {
 		return err
 	}
 

@@ -17,6 +17,11 @@ keycloak:
   instanceNamespace: orch-platform
   instances: 1
   
+  # Bootstrap admin credentials from the secret created by deploy.go
+  bootstrapAdmin:
+    user:
+      secret: platform-keycloak
+  
   hostname:
     strict: false
   
@@ -40,19 +45,8 @@ keycloak:
       name: platform-keycloak-local-postgresql
       key: PGPASSWORD
 
-  # Additional options including proxy configuration and admin credentials
+  # Additional options including proxy configuration
   additionalOptions:
-    # Admin credentials from secret (created by deploy.go)
-    - name: KC_BOOTSTRAP_ADMIN_USERNAME
-      valueFrom:
-        secretKeyRef:
-          name: platform-keycloak
-          key: username
-    - name: KC_BOOTSTRAP_ADMIN_PASSWORD
-      valueFrom:
-        secretKeyRef:
-          name: platform-keycloak
-          key: password
     - name: KC_PROXY_HEADERS
       value: xforwarded
     - name: KC_HOSTNAME_STRICT
