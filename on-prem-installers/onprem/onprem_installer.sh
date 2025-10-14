@@ -151,13 +151,13 @@ update_cluster_profile() {
         echo "DISABLE_CO_PROFILE not true — skipping cluster-orch update."
     fi
 
-    # OBS disable → remove observability profiles
-    if [ "${DISABLE_OBS_PROFILE:-false}" = "true" ]; then
+    # Observability disable → remove observability profiles
+    if [ "${DISABLE_O11Y_PROFILE:-false}" = "true" ]; then
         echo "DISABLE_OBS_PROFILE=true — removing lines containing observability profiles"
         sed -i '/enable-o11y.yaml/d' "$TARGET_FILE"
         sed -i "/o11y-${ORCH_INSTALLER_PROFILE}\.yaml/d" "$TARGET_FILE"
     else
-        echo "DISABLE_OBS_PROFILE not true — skipping observability update."
+        echo "DISABLE_O11Y_PROFILE not true — skipping observability update."
     fi
 
 }
