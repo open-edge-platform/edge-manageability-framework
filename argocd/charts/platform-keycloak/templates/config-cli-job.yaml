@@ -41,26 +41,59 @@ spec:
             set -e
             echo "Starting Keycloak configuration bootstrap..."
             
-            # Wait for Keycloak to be ready
+            # Wait for Keycloak to be ready with retries
             echo "Waiting for Keycloak to be available..."
+            MAX_RETRIES=60
+            RETRY_COUNT=0
             until curl -f -s "$KEYCLOAK_URL/realms/master" > /dev/null; do
-              echo "Waiting for Keycloak..."
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
+                echo "ERROR: Keycloak did not become available after $MAX_RETRIES attempts"
+                exit 1
+              fi
+              echo "Waiting for Keycloak... (attempt $RETRY_COUNT/$MAX_RETRIES)"
               sleep 10
             done
             echo "Keycloak is available!"
             
-            # Get admin token
-            echo "Getting admin access token..."
-            TOKEN=$(curl -s -X POST "$KEYCLOAK_URL/realms/master/protocol/openid-connect/token" \
-              -H "Content-Type: application/x-www-form-urlencoded" \
-              -d "username=$KEYCLOAK_USER" \
-              -d "password=$KEYCLOAK_PASSWORD" \
-              -d "grant_type=password" \
-              -d "client_id=admin-cli" | \
-              sed -n 's/.*"access_token":"\([^"]*\)".*/\1/p')
+            # Function to get admin token with retry
+            get_token() {
+              local retries=0
+              local max_retries=5
+              local token=""
+              
+              while [ $retries -lt $max_retries ]; do
+                echo "Getting admin access token... (attempt $((retries + 1))/$max_retries)"
+                
+                response=$(curl -s -w "\n%{http_code}" -X POST "$KEYCLOAK_URL/realms/master/protocol/openid-connect/token" \
+                  -H "Content-Type: application/x-www-form-urlencoded" \
+                  -d "username=$KEYCLOAK_USER" \
+                  -d "password=$KEYCLOAK_PASSWORD" \
+                  -d "grant_type=password" \
+                  -d "client_id=admin-cli")
+                
+                http_code=$(echo "$response" | tail -n1)
+                body=$(echo "$response" | sed '$d')
+                
+                if [ "$http_code" = "200" ]; then
+                  token=$(echo "$body" | sed -n 's/.*"access_token":"\([^"]*\)".*/\1/p')
+                  if [ -n "$token" ]; then
+                    echo "$token"
+                    return 0
+                  fi
+                fi
+                
+                echo "Failed to get token (HTTP $http_code), retrying..."
+                retries=$((retries + 1))
+                sleep 5
+              done
+              
+              echo "ERROR: Failed to get access token after $max_retries attempts"
+              return 1
+            }
             
+            TOKEN=$(get_token)
             if [ -z "$TOKEN" ]; then
-              echo "Failed to get access token"
               exit 1
             fi
             echo "Got access token successfully"
@@ -77,13 +110,48 @@ spec:
                 REALM_NAME=$(cat "$config_file" | sed -n 's/.*"realm":"\([^"]*\)".*/\1/p')
                 echo "Configuring realm: $REALM_NAME"
                 
-                # Update realm configuration
-                curl -s -X PUT "$KEYCLOAK_URL/admin/realms/$REALM_NAME" \
-                  -H "Authorization: Bearer $TOKEN" \
-                  -H "Content-Type: application/json" \
-                  -d @"$config_file"
+                # Check if realm exists
+                realm_response=$(curl -s -w "\n%{http_code}" -X GET "$KEYCLOAK_URL/admin/realms/$REALM_NAME" \
+                  -H "Authorization: Bearer $TOKEN")
+                realm_http_code=$(echo "$realm_response" | tail -n1)
                 
-                echo "Realm $REALM_NAME configuration applied"
+                if [ "$realm_http_code" = "200" ]; then
+                  echo "Realm $REALM_NAME exists, updating configuration..."
+                  # Update existing realm
+                  response=$(curl -s -w "\n%{http_code}" -X PUT "$KEYCLOAK_URL/admin/realms/$REALM_NAME" \
+                    -H "Authorization: Bearer $TOKEN" \
+                    -H "Content-Type: application/json" \
+                    -d @"$config_file")
+                  
+                  http_code=$(echo "$response" | tail -n1)
+                  body=$(echo "$response" | sed '$d')
+                  
+                  if [ "$http_code" = "204" ] || [ "$http_code" = "200" ]; then
+                    echo "✓ Realm $REALM_NAME updated successfully"
+                  else
+                    echo "WARNING: Failed to update realm $REALM_NAME (HTTP $http_code)"
+                    echo "Response: $body"
+                    # Continue with other configs instead of failing
+                  fi
+                else
+                  echo "Realm $REALM_NAME does not exist, creating..."
+                  # Create new realm
+                  response=$(curl -s -w "\n%{http_code}" -X POST "$KEYCLOAK_URL/admin/realms" \
+                    -H "Authorization: Bearer $TOKEN" \
+                    -H "Content-Type: application/json" \
+                    -d @"$config_file")
+                  
+                  http_code=$(echo "$response" | tail -n1)
+                  body=$(echo "$response" | sed '$d')
+                  
+                  if [ "$http_code" = "201" ] || [ "$http_code" = "200" ]; then
+                    echo "✓ Realm $REALM_NAME created successfully"
+                  else
+                    echo "ERROR: Failed to create realm $REALM_NAME (HTTP $http_code)"
+                    echo "Response: $body"
+                    exit 1
+                  fi
+                fi
               fi
             done
             
@@ -104,6 +172,9 @@ spec:
         volumeMounts:
         - name: config
           mountPath: /config
+          readOnly: true
+        - name: tmp
+          mountPath: /tmp
         resources:
           {{- toYaml .Values.configCli.resources | nindent 10 }}
         securityContext:
@@ -120,6 +191,8 @@ spec:
       - name: config
         configMap:
           name: {{ .Values.keycloak.instanceName }}-config
+      - name: tmp
+        emptyDir: {}
       securityContext:
         fsGroup: 65532
         fsGroupChangePolicy: Always
