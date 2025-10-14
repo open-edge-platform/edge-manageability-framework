@@ -56,47 +56,42 @@ spec:
             done
             echo "Keycloak is available!"
             
-            # Function to get admin token with retry
-            get_token() {
-              local retries=0
-              local max_retries=5
-              local token=""
-              
-              while [ $retries -lt $max_retries ]; do
-                echo "Getting admin access token... (attempt $((retries + 1))/$max_retries)"
-                
-                response=$(curl -s -w "\n%{http_code}" -X POST "$KEYCLOAK_URL/realms/master/protocol/openid-connect/token" \
-                  -H "Content-Type: application/x-www-form-urlencoded" \
-                  -d "username=$KEYCLOAK_USER" \
-                  -d "password=$KEYCLOAK_PASSWORD" \
-                  -d "grant_type=password" \
-                  -d "client_id=admin-cli")
-                
-                http_code=$(echo "$response" | tail -n1)
-                body=$(echo "$response" | sed '$d')
-                
-                if [ "$http_code" = "200" ]; then
-                  token=$(echo "$body" | sed -n 's/.*"access_token":"\([^"]*\)".*/\1/p')
-                  if [ -n "$token" ]; then
-                    echo "$token"
-                    return 0
-                  fi
-                fi
-                
-                echo "Failed to get token (HTTP $http_code), retrying..."
-                retries=$((retries + 1))
-                sleep 5
-              done
-              
-              echo "ERROR: Failed to get access token after $max_retries attempts"
-              return 1
-            }
+            # Get admin token with retry (POSIX-compliant, no functions)
+            echo "Getting admin access token..."
+            retries=0
+            max_retries=5
+            TOKEN=""
             
-            TOKEN=$(get_token)
+            while [ $retries -lt $max_retries ]; do
+              echo "Token attempt $((retries + 1))/$max_retries..."
+              
+              response=$(curl -s -w "\n%{http_code}" -X POST "$KEYCLOAK_URL/realms/master/protocol/openid-connect/token" \
+                -H "Content-Type: application/x-www-form-urlencoded" \
+                -d "username=$KEYCLOAK_USER" \
+                -d "password=$KEYCLOAK_PASSWORD" \
+                -d "grant_type=password" \
+                -d "client_id=admin-cli")
+              
+              http_code=$(echo "$response" | tail -n1)
+              body=$(echo "$response" | sed '$d')
+              
+              if [ "$http_code" = "200" ]; then
+                TOKEN=$(echo "$body" | sed -n 's/.*"access_token":"\([^"]*\)".*/\1/p')
+                if [ -n "$TOKEN" ]; then
+                  echo "✓ Got access token successfully"
+                  break
+                fi
+              fi
+              
+              echo "Failed to get token (HTTP $http_code), retrying..."
+              retries=$((retries + 1))
+              sleep 5
+            done
+            
             if [ -z "$TOKEN" ]; then
+              echo "ERROR: Failed to get access token after $max_retries attempts"
               exit 1
             fi
-            echo "Got access token successfully"
             
             # Apply realm configuration from ConfigMap
             echo "Applying realm configuration..."
