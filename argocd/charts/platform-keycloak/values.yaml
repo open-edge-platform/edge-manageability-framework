@@ -59,7 +59,7 @@ keycloak:
       valueFrom:
         secretKeyRef:
           name: platform-keycloak
-          key: password
+          key: admin-password
     - name: KC_PROXY_HEADERS
       value: xforwarded
     - name: KC_HOSTNAME_STRICT
@@ -93,7 +93,7 @@ configCli:
   auth:
     secretName: platform-keycloak
     usernameKey: username
-    passwordKey: password
+    passwordKey: admin-password
   # Resources for config job
   resources:
     requests:
