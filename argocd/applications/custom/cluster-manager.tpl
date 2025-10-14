@@ -5,6 +5,10 @@
 clusterManager:
   args:
     clusterdomain: {{ .Values.argo.clusterDomain }}
+    # JWT TTL configuration for kubeconfig
+    # If kubeconfig-ttl-hours=0 token expires at creation
+    # keycloak realm settings and upbounded by the SSO sessions max: 12h
+    kubeconfig-ttl-hours: 3
   image:
     repository: cluster/cluster-manager
     registry:
@@ -30,3 +34,7 @@ templateController:
   resources:
     {{- toYaml . | nindent 4 }}
   {{- end }}
+
+# co-manager M2M client configuration
+credentialsM2M:
+  enabled: true
