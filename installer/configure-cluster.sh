@@ -104,6 +104,12 @@ else
     export SRE_PROFILE="#- orch-configs/profiles/enable-sre.yaml"
 fi
 
+if [ -z $SINGLE_TENANCY ]; then
+    export SINGLE_TENANCY_PROFILE="#- orch-configs/profiles/enable-singleTenancy.yaml"
+else
+    export SINGLE_TENANCY_PROFILE="- orch-configs/profiles/enable-singleTenancy.yaml"
+fi
+
 if [ -z $SMTP_URL ]; then
     export EMAIL_PROFILE="#- orch-configs/profiles/alerting-emails.yaml"
 else

@@ -411,6 +411,9 @@ write_configs_using_overrides() {
     yq -i '.argo.o11y.alertingMonitor.smtp.insecureSkipVerify|=true' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
   fi
 
+  if [[ ${SINGLE_TENANCY} == "true" ]]; then
+    yq -i '.root.clusterValues += ["orch-configs/profiles/enable-singleTenancy.yaml"]' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
+  fi
   # Override MetalLB address pools
   yq -i '.postCustomTemplateOverwrite.metallb-config.ArgoIP|=strenv(ARGO_IP)' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
   yq -i '.postCustomTemplateOverwrite.metallb-config.TraefikIP|=strenv(TRAEFIK_IP)' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
@@ -476,6 +479,7 @@ validate_config() {
 ASSUME_YES=false
 SKIP_DOWNLOAD=false
 ENABLE_TRACE=false
+SINGLE_TENANCY=false
 
 if [ -n "${1-}" ]; then
   while :; do
@@ -512,6 +516,9 @@ if [ -n "${1-}" ]; then
       -t|--trace)
         set -x
         ENABLE_TRACE=true
+      ;;
+      -st|--single_tenancy)
+        SINGLE_TENANCY="true"
       ;;
       -w|--write-config)
         WRITE_CONFIG="true"

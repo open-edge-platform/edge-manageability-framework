@@ -21,6 +21,7 @@ root:
     - orch-configs/profiles/resource-default.yaml
     ${AWS_PROD_PROFILE}
     ${O11Y_PROFILE}
+    ${SINGLE_TENANCY_PROFILE}
     ${EMAIL_PROFILE}
     ${AUTOCERT_PROFILE}
     - orch-configs/profiles/artifact-rs-production-noauth.yaml
