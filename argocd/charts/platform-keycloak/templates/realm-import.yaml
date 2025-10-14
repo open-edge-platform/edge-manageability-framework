@@ -1,0 +1,27 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+{{- if and .Values.keycloak.enabled .Values.configCli.enabled }}
+apiVersion: k8s.keycloak.org/v2alpha1
+kind: KeycloakRealmImport
+metadata:
+  name: {{ .Values.keycloak.instanceName }}-realm-import
+  namespace: {{ .Values.keycloak.instanceNamespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "170"
+  labels:
+    app.kubernetes.io/name: keycloak-realm-import
+    app.kubernetes.io/instance: {{ .Values.keycloak.instanceName }}
+    app.kubernetes.io/managed-by: platform-keycloak-helm
+spec:
+  keycloakCRName: {{ .Values.keycloak.instanceName }}
+  realm:
+    {{- if .Values.configCli.configuration }}
+    {{- $realmConfig := index .Values.configCli.configuration "realm-master.json" }}
+    {{- if $realmConfig }}
+    {{- $realmData := $realmConfig | fromJson }}
+    {{- toYaml $realmData | nindent 4 }}
+    {{- end }}
+    {{- end }}
+{{- end }}

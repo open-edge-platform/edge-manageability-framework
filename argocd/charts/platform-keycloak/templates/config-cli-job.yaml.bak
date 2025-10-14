@@ -1,0 +1,126 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+{{- if and .Values.keycloak.enabled .Values.configCli.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Values.keycloak.instanceName }}-config-bootstrap
+  namespace: {{ .Values.keycloak.instanceNamespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "170"
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+  labels:
+    app.kubernetes.io/name: keycloak-config-bootstrap
+    app.kubernetes.io/instance: {{ .Values.keycloak.instanceName }}
+    app.kubernetes.io/managed-by: platform-keycloak-helm
+spec:
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+      labels:
+        app.kubernetes.io/name: keycloak-config-bootstrap
+        app.kubernetes.io/instance: {{ .Values.keycloak.instanceName }}
+        app.kubernetes.io/managed-by: platform-keycloak-helm
+        # Add Keycloak labels for network policy access
+        app: keycloak
+        app.kubernetes.io/component: config-bootstrap
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: keycloak-config-bootstrap
+        image: {{ .Values.configCli.image }}
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/sh"]
+        args:
+          - -c
+          - |
+            set -e
+            echo "Starting Keycloak configuration bootstrap..."
+            
+            # Wait for Keycloak to be ready
+            echo "Waiting for Keycloak to be available..."
+            until curl -f -s "$KEYCLOAK_URL/realms/master" > /dev/null; do
+              echo "Waiting for Keycloak..."
+              sleep 10
+            done
+            echo "Keycloak is available!"
+            
+            # Get admin token
+            echo "Getting admin access token..."
+            TOKEN=$(curl -s -X POST "$KEYCLOAK_URL/realms/master/protocol/openid-connect/token" \
+              -H "Content-Type: application/x-www-form-urlencoded" \
+              -d "username=$KEYCLOAK_USER" \
+              -d "password=$KEYCLOAK_PASSWORD" \
+              -d "grant_type=password" \
+              -d "client_id=admin-cli" | \
+              sed -n 's/.*"access_token":"\([^"]*\)".*/\1/p')
+            
+            if [ -z "$TOKEN" ]; then
+              echo "Failed to get access token"
+              exit 1
+            fi
+            echo "Got access token successfully"
+            
+            # Apply realm configuration from ConfigMap
+            echo "Applying realm configuration..."
+            
+            # Read and apply each configuration file
+            for config_file in /config/*; do
+              if [ -f "$config_file" ]; then
+                echo "Processing $config_file..."
+                
+                # Extract realm name from config
+                REALM_NAME=$(cat "$config_file" | sed -n 's/.*"realm":"\([^"]*\)".*/\1/p')
+                echo "Configuring realm: $REALM_NAME"
+                
+                # Update realm configuration
+                curl -s -X PUT "$KEYCLOAK_URL/admin/realms/$REALM_NAME" \
+                  -H "Authorization: Bearer $TOKEN" \
+                  -H "Content-Type: application/json" \
+                  -d @"$config_file"
+                
+                echo "Realm $REALM_NAME configuration applied"
+              fi
+            done
+            
+            echo "Keycloak configuration bootstrap completed successfully!"
+        env:
+        - name: KEYCLOAK_URL
+          value: "http://{{ .Values.keycloak.instanceName }}-service:8080"
+        - name: KEYCLOAK_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.configCli.auth.secretName }}
+              key: {{ .Values.configCli.auth.usernameKey }}
+        - name: KEYCLOAK_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.configCli.auth.secretName }}
+              key: {{ .Values.configCli.auth.passwordKey }}
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        resources:
+          {{- toYaml .Values.configCli.resources | nindent 10 }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 65532
+          seccompProfile:
+            type: RuntimeDefault
+      volumes:
+      - name: config
+        configMap:
+          name: {{ .Values.keycloak.instanceName }}-config
+      securityContext:
+        fsGroup: 65532
+        fsGroupChangePolicy: Always
+{{- end }}
