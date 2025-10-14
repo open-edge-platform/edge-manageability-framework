@@ -13,6 +13,12 @@ keycloak:
   instanceNamespace: orch-platform
   instances: 1
   
+  # Bootstrap admin credentials from the secret created by deploy.go
+  # The operator expects a secret with 'username' and 'password' keys
+  bootstrapAdmin:
+    user:
+      secret: platform-keycloak
+  
   # Hostname configuration
   hostname:
     strict: false
@@ -50,16 +56,6 @@ keycloak:
       
   # Additional Keycloak options (environment variables)
   additionalOptions:
-    - name: KC_BOOTSTRAP_ADMIN_USERNAME
-      valueFrom:
-        secretKeyRef:
-          name: platform-keycloak
-          key: username
-    - name: KC_BOOTSTRAP_ADMIN_PASSWORD
-      valueFrom:
-        secretKeyRef:
-          name: platform-keycloak
-          key: admin-password
     - name: KC_PROXY_HEADERS
       value: xforwarded
     - name: KC_HOSTNAME_STRICT
@@ -93,7 +89,7 @@ configCli:
   auth:
     secretName: platform-keycloak
     usernameKey: username
-    passwordKey: admin-password
+    passwordKey: password
   # Resources for config job
   resources:
     requests:

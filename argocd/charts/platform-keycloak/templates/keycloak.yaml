@@ -13,6 +13,18 @@ metadata:
 spec:
   instances: {{ .Values.keycloak.instances | default 1 }}
   
+  {{- if .Values.keycloak.bootstrapAdmin }}
+  bootstrapAdmin:
+    {{- if .Values.keycloak.bootstrapAdmin.user }}
+    user:
+      secret: {{ .Values.keycloak.bootstrapAdmin.user.secret }}
+    {{- end }}
+    {{- if .Values.keycloak.bootstrapAdmin.service }}
+    service:
+      secret: {{ .Values.keycloak.bootstrapAdmin.service.secret }}
+    {{- end }}
+  {{- end }}
+  
   {{- if .Values.keycloak.hostname }}
   hostname:
     strict: {{ .Values.keycloak.hostname.strict | default false }}
