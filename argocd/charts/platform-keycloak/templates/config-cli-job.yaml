@@ -156,48 +156,7 @@ spec:
               exit 1
             fi
             
-            # Create system-client directly via REST API
-            echo "Creating system-client..."
-            SYSTEM_CLIENT_JSON='{
-              "clientId": "system-client",
-              "name": "System Client",
-              "enabled": true,
-              "publicClient": true,
-              "directAccessGrantsEnabled": true,
-              "standardFlowEnabled": false,
-              "implicitFlowEnabled": false,
-              "serviceAccountsEnabled": false,
-              "protocol": "openid-connect",
-              "attributes": {
-                "oidc.ciba.grant.enabled": "false",
-                "oauth2.device.authorization.grant.enabled": "true",
-                "backchannel.logout.session.required": "true",
-                "backchannel.logout.revoke.offline.tokens": "false"
-              }
-            }'
-            
-            response=$(curl -s -w "\n%{http_code}" -X POST \
-              "$KEYCLOAK_URL/admin/realms/master/clients" \
-              -H "Authorization: Bearer $TOKEN" \
-              -H "Content-Type: application/json" \
-              -d "$SYSTEM_CLIENT_JSON")
-            
-            http_code=$(echo "$response" | tail -n1)
-            body=$(echo "$response" | sed '$d')
-            
-            echo "HTTP Code: $http_code"
-            if [ -n "$body" ]; then
-              echo "Response Body: $body"
-            fi
-            
-            if [ "$http_code" = "201" ]; then
-              echo "✓ system-client created successfully"
-            else
-              echo "WARNING: Client creation returned HTTP $http_code"
-              exit 1
-            fi
-            
-            # Create openid and groups client scopes if they don't exist
+            echo ""
             echo "Ensuring openid and groups client scopes exist..."
             
             # Create openid scope
