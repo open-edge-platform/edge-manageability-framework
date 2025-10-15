@@ -76,3 +76,8 @@ crds:
     # -- Enable CRDs migration using helm post upgrade hook
     # disabling CRD migration as a workaround to https://github.com/kyverno/kyverno/issues/10283
     enabled: false
+
+features:
+  policyExceptions:
+    enabled: true
+  namespace: '*'
