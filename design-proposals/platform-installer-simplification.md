@@ -2,9 +2,9 @@
 
 Author(s): Scott Baker
 
-Last updated: 2025-10-9
+Last updated: 2025-09-08
 
-Revision: 2.1
+Revision: 2
 
 ## Abstract
 
@@ -30,15 +30,6 @@ approach to achieving the goals in a phased rollout manner.
   - Added composability notes.
 
   - Remove deprecation of the AWS pre-installer.
-
-- Revision 2.1
-
-  - Added "Cleanup and migrate configuration tasks from pre-installer to the installer".
-
-  - Add more details on the steps the installer takes, such as installing the ArgoCD helm
-    chart and applying configuration to templates.
-
-  - Add note on DEB files.
 
 ## Problem Statement
 
@@ -131,7 +122,16 @@ All three Workstreams may be parallelized as necessary.
 
 ### Workstream 1: Installer Simplification
 
-Installation is broken into two phases, the installer and the pre-installer.
+The Installer is based on ArgoCD. The installer requires two things to run:
+
+1. A Kubernetes environment. The installer installs EMF into this environment. It also uses the environment to
+   run the installer itself.
+
+2. A set of Installer Configuration values, including the credentials to the Kubernetes environment. This may
+   include database configuration, root/admin passwords, public IP addresses, repository URLs, etc.
+
+The installer configuration is primarily composed of a set of service profiles and a cluster profile.
+These profiles are inputs to the ArgoCD root app, which in turn configures the other applications.
 
 ![Installer and Pre-Installer Split](images/platform-installer-simplification-split.png)
 
@@ -162,32 +162,6 @@ The most important contribution of this task is to document the inputs to the In
 user-facing documentation into separate pre-install and install sections. This allows any partner to write
 their own pre-installer, or to fork and customize our pre-installers for their production use.
 
-#### The Installer handles configuring and installing the Orchestrator software
-
-The Installer is based on ArgoCD. The installer requires two things to run:
-
-1. A Kubernetes environment. The installer installs EMF into this environment. It also uses the environment to
-   run the installer itself.
-
-2. A set of Installer Configuration values, including the credentials to the Kubernetes environment. This may
-   include database configuration, root/admin passwords, public IP addresses, repository URLs, etc.
-
-The installer configuration is primarily composed of a set of service profiles and a cluster profile.
-These profiles are inputs to the ArgoCD root app, which in turn configures the other applications.
-
-The steps the installer shall take to invoke ArgoCD include:
-
-- Performing any template operations on the cluster.yaml that are necessary to override settings for
-  the installation.
-
-- Install any namespaces or secrets that are required by the ArgoCD installation.
-
-- Install the ArgoCD helm chart.
-
-- Install the ArgoCD applications (i.e. Root App, etc)
-
-- At this point ArgoCD begins installing the orchestrator software.
-
 #### Eliminate Gitea as a pre-installer dependency
 
 The current behavior of cloning the EMF repo into a local gitea shall be eliminated. ArgoCD shall point to a
@@ -217,40 +191,6 @@ installer and handled by ArgoCD. We should have a consistent mechanism for insta
 
 Redundant components in can always be disabled. For example, if a cloud-based database such as Aurora is
 used, then we will have a knob that disables installation of Postgres.
-
-#### Cleanup and migrate configuration tasks from pre-installer to the installer
-
-The pre-installer phase contained some tasks, such as applying environment variables to cluster.tpl
-files to create a cluster profile yaml specific to the cluster being installed. In 3.1 this was done
-using three different mechanisms. As part of installer simplification, we will converge on a single
-mechanism for rendering this template, and move the template rendering from the pre-installer to
-the installer.
-
-The reason for moving this to the installer is to facilitate bring-your-own-kubernetes situations and
-to simplify configuration of the installation.
-
-Some properties of how this configuration shall be done:
-
-1. Configurate shall use a bash script, for example configure-cluster.sh.
-
-2. The bash script shall ingest environment variables. The environment variable names will be the
-   same regardless of whether cloud, onprem, or coder installation is performed.
-
-3. Subsystems will default to `ENABLED` and will only be disabled by the presence of an environment
-   variable that disables the feature. In the absence of any such environment variables, the
-   maximal configuration is applied, i.e. the orchestrator is installed with the same feature set
-   that it had in 3.1.
-
-#### Ensure no DEB files are used in the installer (using them in the pre-installer is fine)
-
-It's fine to use DEB files in a `pre-installer`, such as the OnPrem `pre-installer`. The pre-
-installers are specific to the type of installation that is being performed, and we expect the
-OnPrem, AWS, and Coder preinstallers to have divergent implementations.
-
-However, DEB files should not be used in the `installer`, as we expect to converge the AWS and
-OnPrem installers, and AWS does not support the use of DEB files. The OnPrem Installer incldued
-two DEB files, for installing ArgoCD and for installing the apps within ArgoCD. These two DEB
-files will have to be replaced by alternate functionality as we converge.
 
 #### Ensure all pre-installers and the installer are noninteractive
 
