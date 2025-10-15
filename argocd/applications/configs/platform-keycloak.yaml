@@ -547,6 +547,15 @@ configCli:
         ],
         "clientScopes": [
           {
+            "name": "openid",
+            "description": "OpenID Connect built-in scope: openid",
+            "protocol": "openid-connect",
+            "attributes": {
+              "include.in.token.scope": "true",
+              "display.on.consent.screen": "false"
+            }
+          },
+          {
             "name": "groups",
             "description": "Groups scope",
             "type": "Optional",
