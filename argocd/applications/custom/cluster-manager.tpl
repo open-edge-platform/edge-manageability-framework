@@ -41,11 +41,11 @@ credentialsM2M:
 
   job:
     # job execution settings
-    backoffLimit: 3
-    activeDeadlineSeconds: 300  # timeout 5 minutes
+    backoffLimit: 6
+    activeDeadlineSeconds: 600  # timeout 10 minutes
     ttlSecondsAfterFinished: 86400  # auto-deletion 24 hours
     retryAttempts: 5
-    retryDelay: 10
+    retryDelay: 30
 
     resources:
       limits:
