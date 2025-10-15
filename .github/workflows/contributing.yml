@@ -16,6 +16,8 @@ permissions: {}
 jobs:
   remind-contributing:
     permissions:
+      issues: write
+      pull-requests: write
       contents: read
     name: Remind Contributor
     runs-on: ubuntu-latest
