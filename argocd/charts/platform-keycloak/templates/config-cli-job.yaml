@@ -200,8 +200,29 @@ spec:
             
             if [ "$GROUPS_HTTP" = "201" ]; then
               echo "  ✓ Created groups scope"
-              # Extract the UUID from the Location header or response
-              GROUPS_UUID=$(echo "$GROUPS_BODY" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+              
+              # Query to get the UUID since POST response doesn't include it
+              echo "    Querying for groups scope UUID..."
+              GROUPS_QUERY=$(curl -s -w "\n%{http_code}" -X GET \
+                "$KEYCLOAK_URL/admin/realms/master/client-scopes" \
+                -H "Authorization: Bearer $TOKEN")
+              GROUPS_QUERY_HTTP=$(echo "$GROUPS_QUERY" | tail -n1)
+              GROUPS_QUERY_BODY=$(echo "$GROUPS_QUERY" | head -n-1)
+              
+              GROUPS_UUID=$(echo "$GROUPS_QUERY_BODY" | awk '
+                BEGIN { RS="},"; FS="\""; found=0 }
+                {
+                  if ($0 ~ "\"name\":\"groups\"") {
+                    for (i=1; i<=NF; i++) {
+                      if ($i == "id" && $(i+2) != "") {
+                        print $(i+2);
+                        found=1;
+                        exit;
+                      }
+                    }
+                  }
+                }
+              ')
               echo "    Groups scope UUID: $GROUPS_UUID"
               
               # Now add the protocol mapper to the created scope
@@ -229,7 +250,10 @@ spec:
                   echo "    ✓ Added protocol mapper"
                 else
                   echo "    WARNING: Protocol mapper returned HTTP $MAPPER_HTTP"
+                  echo "$MAPPER_RESULT" | head -n-1
                 fi
+              else
+                echo "    ERROR: Could not find groups scope UUID"
               fi
             elif [ "$GROUPS_HTTP" = "409" ]; then
               echo "  ✓ groups scope already exists"
