@@ -50,10 +50,10 @@ credentialsM2M:
     resources:
       limits:
         cpu: 100m
-        memory: 128Mi
-      requests:
-        cpu: 50m
         memory: 64Mi
+      requests:
+        cpu: 10m
+        memory: 16Mi
 
   vault:
     service: "vault.orch-platform.svc.cluster.local" # overriding .cluster.local
