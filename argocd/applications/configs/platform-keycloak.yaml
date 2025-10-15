@@ -515,8 +515,8 @@ configCli:
               "backchannel.logout.revoke.offline.tokens": "false"
             },
             "fullScopeAllowed": true,
-            "defaultClientScopes": ["roles", "profile", "email", "basic"],
-            "optionalClientScopes": ["groups", "offline_access"]
+            "defaultClientScopes": ["openid", "roles", "profile", "email", "basic", "groups"],
+            "optionalClientScopes": ["offline_access"]
           },
           {
             "frontchannelLogout": true,

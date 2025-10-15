@@ -10,8 +10,6 @@ metadata:
   namespace: {{ .Values.keycloak.instanceNamespace }}
   annotations:
     argocd.argoproj.io/sync-wave: "170"
-    argocd.argoproj.io/hook: PostSync
-    argocd.argoproj.io/hook-delete-policy: HookSucceeded
   labels:
     app.kubernetes.io/name: keycloak-config-bootstrap
     app.kubernetes.io/instance: {{ .Values.keycloak.instanceName }}
@@ -32,7 +30,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: keycloak-config-bootstrap
-        image: {{ .Values.configCli.image }}
+        image: curlimages/curl:8.4.0
         imagePullPolicy: IfNotPresent
         command: ["/bin/sh"]
         args:
@@ -41,167 +39,211 @@ spec:
             set -e
             echo "Starting Keycloak configuration bootstrap..."
             
-            # Wait for Keycloak to be ready with retries
+            # Append Keycloak services to no_proxy to avoid proxy issues
+            if [ -n "$no_proxy" ]; then
+              export no_proxy="${no_proxy},platform-keycloak,platform-keycloak-service"
+            else
+              export no_proxy="platform-keycloak,platform-keycloak-service"
+            fi
+            if [ -n "$NO_PROXY" ]; then
+              export NO_PROXY="${NO_PROXY},platform-keycloak,platform-keycloak-service"
+            else
+              export NO_PROXY="platform-keycloak,platform-keycloak-service"
+            fi
+            
+            echo "no_proxy set to: $no_proxy"
+            
+            # Wait for Keycloak
             echo "Waiting for Keycloak to be available..."
-            MAX_RETRIES=60
-            RETRY_COUNT=0
-            until curl -f -s "$KEYCLOAK_URL/realms/master" > /dev/null; do
-              RETRY_COUNT=$((RETRY_COUNT + 1))
-              if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
-                echo "ERROR: Keycloak did not become available after $MAX_RETRIES attempts"
-                exit 1
+            for i in $(seq 1 60); do
+              if curl -f -s "$KEYCLOAK_URL/realms/master" > /dev/null; then
+                echo "✓ Keycloak is available!"
+                break
               fi
-              echo "Waiting for Keycloak... (attempt $RETRY_COUNT/$MAX_RETRIES)"
+              echo "Waiting... ($i/60)"
               sleep 10
             done
-            echo "Keycloak is available!"
             
-            # Get admin token with retry (POSIX-compliant, no functions)
-            echo "Getting admin access token..."
-            retries=0
-            max_retries=5
-            TOKEN=""
-            
-            while [ $retries -lt $max_retries ]; do
-              echo "Token attempt $((retries + 1))/$max_retries..."
-              
-              response=$(curl -s -w "\n%{http_code}" -X POST "$KEYCLOAK_URL/realms/master/protocol/openid-connect/token" \
-                -H "Content-Type: application/x-www-form-urlencoded" \
-                -d "username=$KEYCLOAK_USER" \
-                -d "password=$KEYCLOAK_PASSWORD" \
-                -d "grant_type=password" \
-                -d "client_id=admin-cli")
-              
-              http_code=$(echo "$response" | tail -n1)
-              body=$(echo "$response" | sed '$d')
-              
-              if [ "$http_code" = "200" ]; then
-                TOKEN=$(echo "$body" | sed -n 's/.*"access_token":"\([^"]*\)".*/\1/p')
-                if [ -n "$TOKEN" ]; then
-                  echo "✓ Got access token successfully"
-                  break
-                fi
-              fi
-              
-              echo "Failed to get token (HTTP $http_code), retrying..."
-              retries=$((retries + 1))
-              sleep 5
-            done
+            # Get admin token
+            echo "Getting admin token..."
+            TOKEN=$(curl -s -X POST "$KEYCLOAK_URL/realms/master/protocol/openid-connect/token" \
+              -d "username=$KEYCLOAK_USER" \
+              -d "password=$KEYCLOAK_PASSWORD" \
+              -d "grant_type=password" \
+              -d "client_id=admin-cli" | sed -n 's/.*"access_token":"\([^"]*\)".*/\1/p')
             
             if [ -z "$TOKEN" ]; then
-              echo "ERROR: Failed to get access token after $max_retries attempts"
+              echo "ERROR: Failed to get admin token"
+              exit 1
+            fi
+            echo "✓ Got admin token"
+            
+            # Delete existing system-client if it exists to ensure clean import
+            echo "Checking for existing system-client..."
+            CLIENT_ID=$(curl -s -X GET \
+              "$KEYCLOAK_URL/admin/realms/master/clients?clientId=system-client" \
+              -H "Authorization: Bearer $TOKEN" \
+              -H "Content-Type: application/json" | sed -n 's/.*"id":"\([^"]*\)".*/\1/p' | head -n1)
+            
+            if [ -n "$CLIENT_ID" ]; then
+              echo "Found existing system-client with ID: $CLIENT_ID, deleting..."
+              curl -s -X DELETE \
+                "$KEYCLOAK_URL/admin/realms/master/clients/$CLIENT_ID" \
+                -H "Authorization: Bearer $TOKEN"
+              echo "✓ Deleted existing system-client"
+            else
+              echo "No existing system-client found"
+            fi
+            
+            # Create system-client directly via REST API
+            echo "Creating system-client..."
+            SYSTEM_CLIENT_JSON='{
+              "clientId": "system-client",
+              "name": "System Client",
+              "enabled": true,
+              "publicClient": true,
+              "directAccessGrantsEnabled": true,
+              "standardFlowEnabled": false,
+              "implicitFlowEnabled": false,
+              "serviceAccountsEnabled": false,
+              "protocol": "openid-connect",
+              "attributes": {
+                "oidc.ciba.grant.enabled": "false",
+                "oauth2.device.authorization.grant.enabled": "true",
+                "backchannel.logout.session.required": "true",
+                "backchannel.logout.revoke.offline.tokens": "false"
+              }
+            }'
+            
+            response=$(curl -s -w "\n%{http_code}" -X POST \
+              "$KEYCLOAK_URL/admin/realms/master/clients" \
+              -H "Authorization: Bearer $TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "$SYSTEM_CLIENT_JSON")
+            
+            http_code=$(echo "$response" | tail -n1)
+            body=$(echo "$response" | sed '$d')
+            
+            echo "HTTP Code: $http_code"
+            if [ -n "$body" ]; then
+              echo "Response Body: $body"
+            fi
+            
+            if [ "$http_code" = "201" ]; then
+              echo "✓ system-client created successfully"
+            else
+              echo "WARNING: Client creation returned HTTP $http_code"
               exit 1
             fi
             
-            # Apply realm configuration from ConfigMap
-            echo "Applying realm configuration..."
+            # Create openid and groups client scopes if they don't exist
+            echo "Ensuring openid and groups client scopes exist..."
             
-            # Install jq for JSON parsing
-            echo "Installing jq..."
-            wget -q https://github.com/jqlang/jq/releases/download/jq-1.7.1/jq-linux-amd64 -O /tmp/jq
-            chmod +x /tmp/jq
-            JQ=/tmp/jq
+            # Create openid scope
+            OPENID_SCOPE='{
+              "name": "openid",
+              "protocol": "openid-connect",
+              "attributes": {
+                "include.in.token.scope": "true",
+                "display.on.consent.screen": "true"
+              }
+            }'
+            curl -s -X POST "$KEYCLOAK_URL/admin/realms/master/client-scopes" \
+              -H "Authorization: Bearer $TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "$OPENID_SCOPE" 2>/dev/null || echo "  openid scope may already exist"
             
-            # Read and apply each configuration file
-            for config_file in /config/*; do
-              if [ -f "$config_file" ]; then
-                echo "Processing $config_file..."
-                
-                # Extract realm name from config
-                REALM_NAME=$($JQ -r '.realm' "$config_file")
-                echo "Configuring realm: $REALM_NAME"
-                
-                # Check if realm exists
-                realm_response=$(curl -s -w "\n%{http_code}" -X GET "$KEYCLOAK_URL/admin/realms/$REALM_NAME" \
-                  -H "Authorization: Bearer $TOKEN")
-                realm_http_code=$(echo "$realm_response" | tail -n1)
-                realm_body=$(echo "$realm_response" | sed '$d')
-                
-                if [ "$realm_http_code" = "404" ]; then
-                  echo "Realm $REALM_NAME does not exist, creating..."
-                  response=$(curl -s -w "\n%{http_code}" -X POST "$KEYCLOAK_URL/admin/realms" \
-                    -H "Authorization: Bearer $TOKEN" \
-                    -H "Content-Type: application/json" \
-                    -d @"$config_file")
-                  
-                  http_code=$(echo "$response" | tail -n1)
-                  body=$(echo "$response" | sed '$d')
-                  
-                  if [ "$http_code" = "201" ] || [ "$http_code" = "200" ]; then
-                    echo "✓ Realm $REALM_NAME created successfully"
-                  else
-                    echo "ERROR: Failed to create realm $REALM_NAME (HTTP $http_code)"
-                    echo "Response: $body"
-                    exit 1
-                  fi
-                elif [ "$realm_http_code" = "200" ]; then
-                  echo "Realm $REALM_NAME exists, applying incremental updates..."
-                  
-                  # Update realm settings (partial update)
-                  echo "Updating realm settings..."
-                  realm_update=$(cat <<REALM_JSON
-{
-  "displayName": $($JQ -r '.displayName' "$config_file"),
-  "displayNameHtml": $($JQ -r '.displayNameHtml' "$config_file"),
-  "accessTokenLifespan": $($JQ -r '.accessTokenLifespan' "$config_file"),
-  "ssoSessionIdleTimeout": $($JQ -r '.ssoSessionIdleTimeout' "$config_file"),
-  "ssoSessionMaxLifespan": $($JQ -r '.ssoSessionMaxLifespan' "$config_file"),
-  "passwordPolicy": $($JQ -r '.passwordPolicy' "$config_file"),
-  "bruteForceProtected": $($JQ -r '.bruteForceProtected' "$config_file")
-}
-REALM_JSON
-)
-                  
-                  response=$(curl -s -w "\n%{http_code}" -X PUT "$KEYCLOAK_URL/admin/realms/$REALM_NAME" \
-                    -H "Authorization: Bearer $TOKEN" \
-                    -H "Content-Type: application/json" \
-                    -d "$realm_update")
-                  http_code=$(echo "$response" | tail -n1)
-                  
-                  if [ "$http_code" = "204" ] || [ "$http_code" = "200" ]; then
-                    echo "✓ Realm settings updated"
-                  else
-                    echo "WARNING: Failed to update realm settings (HTTP $http_code)"
-                  fi
-                  
-                  # Create/update clients
-                  echo "Processing clients..."
-                  client_count=$($JQ '.clients | length' "$config_file")
-                  i=0
-                  while [ $i -lt $client_count ]; do
-                    client=$($JQ ".clients[$i]" "$config_file")
-                    client_id=$($JQ -r '.clientId' <<< "$client")
-                    
-                    # Check if client exists
-                    existing_client=$(curl -s -X GET "$KEYCLOAK_URL/admin/realms/$REALM_NAME/clients?clientId=$client_id" \
-                      -H "Authorization: Bearer $TOKEN")
-                    
-                    if [ "$existing_client" = "[]" ]; then
-                      echo "Creating client: $client_id"
-                      response=$(curl -s -w "\n%{http_code}" -X POST "$KEYCLOAK_URL/admin/realms/$REALM_NAME/clients" \
-                        -H "Authorization: Bearer $TOKEN" \
-                        -H "Content-Type: application/json" \
-                        -d "$client")
-                      http_code=$(echo "$response" | tail -n1)
-                      
-                      if [ "$http_code" = "201" ]; then
-                        echo "✓ Client $client_id created"
-                      else
-                        echo "WARNING: Failed to create client $client_id (HTTP $http_code)"
-                      fi
-                    else
-                      echo "Client $client_id already exists, skipping"
-                    fi
-                    
-                    i=$((i + 1))
-                  done
-                  
-                  echo "✓ Configuration applied to realm $REALM_NAME"
-                fi
+            # Create groups scope
+            GROUPS_SCOPE='{
+              "name": "groups",
+              "protocol": "openid-connect",
+              "attributes": {
+                "include.in.token.scope": "true",
+                "display.on.consent.screen": "true"
+              },
+              "protocolMappers": [{
+                "name": "groups",
+                "protocol": "openid-connect",
+                "protocolMapper": "oidc-group-membership-mapper",
+                "config": {
+                  "claim.name": "groups",
+                  "full.path": "false",
+                  "id.token.claim": "true",
+                  "access.token.claim": "true",
+                  "userinfo.token.claim": "true"
+                }
+              }]
+            }'
+            curl -s -X POST "$KEYCLOAK_URL/admin/realms/master/client-scopes" \
+              -H "Authorization: Bearer $TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "$GROUPS_SCOPE" 2>/dev/null || echo "  groups scope may already exist"
+            
+            echo "✓ Client scopes ensured"
+            
+            # Get the system-client UUID
+            echo "Getting system-client UUID..."
+            SYSTEM_CLIENT_UUID=$(curl -s -X GET \
+              "$KEYCLOAK_URL/admin/realms/master/clients?clientId=system-client" \
+              -H "Authorization: Bearer $TOKEN" \
+              -H "Content-Type: application/json" | sed -n 's/.*"id":"\([^"]*\)".*/\1/p' | head -n1)
+            
+            if [ -z "$SYSTEM_CLIENT_UUID" ]; then
+              echo "ERROR: Could not find system-client UUID"
+              exit 1
+            fi
+            echo "system-client UUID: $SYSTEM_CLIENT_UUID"
+            
+            # Assign default client scopes to system-client
+            echo "Assigning client scopes to system-client..."
+            for scope_name in openid roles profile email basic groups; do
+              echo "  Assigning scope: $scope_name"
+              
+              # Query for the specific scope by name
+              SCOPE_RESPONSE=$(curl -s -X GET \
+                "$KEYCLOAK_URL/admin/realms/master/client-scopes" \
+                -H "Authorization: Bearer $TOKEN")
+              
+              # Extract UUID for this specific scope
+              # Use awk to find the scope object and extract its id
+              SCOPE_UUID=$(echo "$SCOPE_RESPONSE" | awk -v name="$scope_name" '
+                BEGIN { RS="},"; FS="\""; found=0 }
+                {
+                  if ($0 ~ "\"name\":\"" name "\"") {
+                    for (i=1; i<=NF; i++) {
+                      if ($i == "id" && $(i+2) != "") {
+                        print $(i+2);
+                        found=1;
+                        exit;
+                      }
+                    }
+                  }
+                }
+              ')
+              
+              if [ -z "$SCOPE_UUID" ]; then
+                echo "    WARNING: Client scope '$scope_name' not found, skipping"
+                continue
+              fi
+              
+              echo "    Found scope UUID: $SCOPE_UUID"
+              
+              # Assign the scope to the client
+              ASSIGN_RESULT=$(curl -s -w "\n%{http_code}" -X PUT \
+                "$KEYCLOAK_URL/admin/realms/master/clients/$SYSTEM_CLIENT_UUID/default-client-scopes/$SCOPE_UUID" \
+                -H "Authorization: Bearer $TOKEN")
+              
+              HTTP_CODE=$(echo "$ASSIGN_RESULT" | tail -n1)
+              if [ "$HTTP_CODE" = "204" ] || [ "$HTTP_CODE" = "200" ]; then
+                echo "    ✓ Assigned $scope_name"
+              else
+                echo "    WARNING: Assignment returned HTTP $HTTP_CODE"
               fi
             done
             
-            echo "Keycloak configuration bootstrap completed successfully!"
+            echo "✓ All scopes assigned to system-client"
+            
+            echo "✓ Keycloak configuration bootstrap completed!"
         env:
         - name: KEYCLOAK_URL
           value: "http://{{ .Values.keycloak.instanceName }}-service:8080"
@@ -215,6 +257,26 @@ REALM_JSON
             secretKeyRef:
               name: {{ .Values.configCli.auth.secretName }}
               key: {{ .Values.configCli.auth.passwordKey }}
+        {{- if .Values.keycloak.additionalOptions }}
+        {{- range .Values.keycloak.additionalOptions }}
+        {{- if or (eq .name "HTTP_PROXY") (eq .name "HTTPS_PROXY") (eq .name "NO_PROXY") }}
+        - name: {{ .name }}
+          value: {{ .value | quote }}
+        {{- if eq .name "HTTP_PROXY" }}
+        - name: http_proxy
+          value: {{ .value | quote }}
+        {{- end }}
+        {{- if eq .name "HTTPS_PROXY" }}
+        - name: https_proxy
+          value: {{ .value | quote }}
+        {{- end }}
+        {{- if eq .name "NO_PROXY" }}
+        - name: no_proxy
+          value: {{ .value | quote }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
         volumeMounts:
         - name: config
           mountPath: /config
