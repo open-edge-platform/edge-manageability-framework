@@ -49,8 +49,8 @@ credentialsM2M:
 
     resources:
       limits:
-        cpu: 100m
-        memory: 64Mi
+        cpu: "64"
+        memory: 64Gi
       requests:
         cpu: 10m
         memory: 16Mi
