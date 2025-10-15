@@ -148,10 +148,18 @@ spec:
                 "display.on.consent.screen": "true"
               }
             }'
-            curl -s -X POST "$KEYCLOAK_URL/admin/realms/master/client-scopes" \
+            OPENID_CREATE=$(curl -s -w "\n%{http_code}" -X POST "$KEYCLOAK_URL/admin/realms/master/client-scopes" \
               -H "Authorization: Bearer $TOKEN" \
               -H "Content-Type: application/json" \
-              -d "$OPENID_SCOPE" 2>/dev/null || echo "  openid scope may already exist"
+              -d "$OPENID_SCOPE")
+            OPENID_HTTP=$(echo "$OPENID_CREATE" | tail -n1)
+            if [ "$OPENID_HTTP" = "201" ]; then
+              echo "  ✓ Created openid scope"
+            elif [ "$OPENID_HTTP" = "409" ]; then
+              echo "  ✓ openid scope already exists"
+            else
+              echo "  WARNING: openid scope creation returned HTTP $OPENID_HTTP"
+            fi
             
             # Create groups scope
             GROUPS_SCOPE='{
@@ -174,10 +182,19 @@ spec:
                 }
               }]
             }'
-            curl -s -X POST "$KEYCLOAK_URL/admin/realms/master/client-scopes" \
+            GROUPS_CREATE=$(curl -s -w "\n%{http_code}" -X POST "$KEYCLOAK_URL/admin/realms/master/client-scopes" \
               -H "Authorization: Bearer $TOKEN" \
               -H "Content-Type: application/json" \
-              -d "$GROUPS_SCOPE" 2>/dev/null || echo "  groups scope may already exist"
+              -d "$GROUPS_SCOPE")
+            GROUPS_HTTP=$(echo "$GROUPS_CREATE" | tail -n1)
+            if [ "$GROUPS_HTTP" = "201" ]; then
+              echo "  ✓ Created groups scope"
+            elif [ "$GROUPS_HTTP" = "409" ]; then
+              echo "  ✓ groups scope already exists"
+            else
+              echo "  WARNING: groups scope creation returned HTTP $GROUPS_HTTP"
+              echo "$GROUPS_CREATE" | head -n-1
+            fi
             
             echo "✓ Client scopes ensured"
             
