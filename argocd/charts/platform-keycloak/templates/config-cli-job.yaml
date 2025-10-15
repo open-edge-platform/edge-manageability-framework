@@ -78,10 +78,10 @@ spec:
             # Get admin token
             echo "Getting admin token..."
             TOKEN_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$KEYCLOAK_URL/realms/master/protocol/openid-connect/token" \
-              -d "username=$KEYCLOAK_USER" \
-              -d "password=$KEYCLOAK_PASSWORD" \
-              -d 'grant_type=password' \
-              -d 'client_id=admin-cli')
+              --data-urlencode "username=$KEYCLOAK_USER" \
+              --data-urlencode "password=$KEYCLOAK_PASSWORD" \
+              --data-urlencode 'grant_type=password' \
+              --data-urlencode 'client_id=admin-cli')
             
             TOKEN_HTTP=$(echo "$TOKEN_RESPONSE" | tail -n1)
             TOKEN_BODY=$(echo "$TOKEN_RESPONSE" | head -n-1)
