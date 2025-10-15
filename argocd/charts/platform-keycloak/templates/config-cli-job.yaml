@@ -181,39 +181,61 @@ spec:
               echo "  WARNING: openid scope creation returned HTTP $OPENID_HTTP"
             fi
             
-            # Create groups scope
+            # Create groups scope - simplified without protocol mappers
+            # Protocol mappers can be added later if needed
             GROUPS_SCOPE='{
               "name": "groups",
               "protocol": "openid-connect",
               "attributes": {
                 "include.in.token.scope": "true",
                 "display.on.consent.screen": "true"
-              },
-              "protocolMappers": [{
-                "name": "groups",
-                "protocol": "openid-connect",
-                "protocolMapper": "oidc-group-membership-mapper",
-                "config": {
-                  "claim.name": "groups",
-                  "full.path": "false",
-                  "id.token.claim": "true",
-                  "access.token.claim": "true",
-                  "userinfo.token.claim": "true"
-                }
-              }]
+              }
             }'
             GROUPS_CREATE=$(curl -s -w "\n%{http_code}" -X POST "$KEYCLOAK_URL/admin/realms/master/client-scopes" \
               -H "Authorization: Bearer $TOKEN" \
               -H "Content-Type: application/json" \
               -d "$GROUPS_SCOPE")
             GROUPS_HTTP=$(echo "$GROUPS_CREATE" | tail -n1)
+            GROUPS_BODY=$(echo "$GROUPS_CREATE" | head -n-1)
+            
             if [ "$GROUPS_HTTP" = "201" ]; then
               echo "  ✓ Created groups scope"
+              # Extract the UUID from the Location header or response
+              GROUPS_UUID=$(echo "$GROUPS_BODY" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+              echo "    Groups scope UUID: $GROUPS_UUID"
+              
+              # Now add the protocol mapper to the created scope
+              if [ -n "$GROUPS_UUID" ]; then
+                echo "    Adding groups protocol mapper..."
+                MAPPER_JSON='{
+                  "name": "groups",
+                  "protocol": "openid-connect",
+                  "protocolMapper": "oidc-group-membership-mapper",
+                  "config": {
+                    "claim.name": "groups",
+                    "full.path": "false",
+                    "id.token.claim": "true",
+                    "access.token.claim": "true",
+                    "userinfo.token.claim": "true"
+                  }
+                }'
+                MAPPER_RESULT=$(curl -s -w "\n%{http_code}" -X POST \
+                  "$KEYCLOAK_URL/admin/realms/master/client-scopes/$GROUPS_UUID/protocol-mappers/models" \
+                  -H "Authorization: Bearer $TOKEN" \
+                  -H "Content-Type: application/json" \
+                  -d "$MAPPER_JSON")
+                MAPPER_HTTP=$(echo "$MAPPER_RESULT" | tail -n1)
+                if [ "$MAPPER_HTTP" = "201" ]; then
+                  echo "    ✓ Added protocol mapper"
+                else
+                  echo "    WARNING: Protocol mapper returned HTTP $MAPPER_HTTP"
+                fi
+              fi
             elif [ "$GROUPS_HTTP" = "409" ]; then
               echo "  ✓ groups scope already exists"
             else
               echo "  WARNING: groups scope creation returned HTTP $GROUPS_HTTP"
-              echo "$GROUPS_CREATE" | head -n-1
+              echo "  Response: $GROUPS_BODY"
             fi
             
             echo "✓ Client scopes ensured"
