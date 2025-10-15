@@ -285,10 +285,11 @@ spec:
             echo "  system-client UUID: $SYSTEM_CLIENT_UUID"
             
             # Assign default client scopes to system-client
+            # Note: groups scope is excluded due to Keycloak API issue causing 404 on assignment
             echo "Assigning client scopes to system-client..."
             echo "  Client UUID: $SYSTEM_CLIENT_UUID"
             
-            for scope_name in openid roles profile email basic groups; do
+            for scope_name in openid roles profile email basic; do
               echo ""
               echo "  Processing scope: $scope_name"
               
