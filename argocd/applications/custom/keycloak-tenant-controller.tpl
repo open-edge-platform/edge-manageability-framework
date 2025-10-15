@@ -32,7 +32,7 @@ keycloakAdmin:
   client: system-client
   passwordSecret:
     name: platform-keycloak # name of the secret
-    key: admin-password # key of the secret
+    key: password # key of the secret
 keycloak_realm: "master"
 argo:
   clusterDomain: {{.Values.argo.clusterDomain}}

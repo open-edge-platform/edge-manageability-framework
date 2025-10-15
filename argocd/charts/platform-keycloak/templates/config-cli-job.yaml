@@ -37,7 +37,14 @@ spec:
           - -c
           - |
             set -e
-            echo "Starting Keycloak configuration bootstrap..."
+            
+            echo "========================================"
+            echo "Keycloak Configuration Bootstrap"
+            echo "========================================"
+            echo "Keycloak URL: $KEYCLOAK_URL"
+            echo "Keycloak User: $KEYCLOAK_USER"
+            echo "Starting at: $(date)"
+            echo ""
             
             # Append Keycloak services to no_proxy to avoid proxy issues
             if [ -n "$no_proxy" ]; then
@@ -51,7 +58,11 @@ spec:
               export NO_PROXY="platform-keycloak,platform-keycloak-service"
             fi
             
-            echo "no_proxy set to: $no_proxy"
+            echo "Proxy configuration:"
+            echo "  http_proxy: ${http_proxy:-<not set>}"
+            echo "  https_proxy: ${https_proxy:-<not set>}"
+            echo "  no_proxy: $no_proxy"
+            echo ""
             
             # Wait for Keycloak
             echo "Waiting for Keycloak to be available..."
@@ -66,33 +77,83 @@ spec:
             
             # Get admin token
             echo "Getting admin token..."
-            TOKEN=$(curl -s -X POST "$KEYCLOAK_URL/realms/master/protocol/openid-connect/token" \
+            TOKEN_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$KEYCLOAK_URL/realms/master/protocol/openid-connect/token" \
               -d "username=$KEYCLOAK_USER" \
               -d "password=$KEYCLOAK_PASSWORD" \
-              -d "grant_type=password" \
-              -d "client_id=admin-cli" | sed -n 's/.*"access_token":"\([^"]*\)".*/\1/p')
+              -d 'grant_type=password' \
+              -d 'client_id=admin-cli')
+            
+            TOKEN_HTTP=$(echo "$TOKEN_RESPONSE" | tail -n1)
+            TOKEN_BODY=$(echo "$TOKEN_RESPONSE" | head -n-1)
+            echo "  HTTP Code: $TOKEN_HTTP"
+            
+            TOKEN=$(echo "$TOKEN_BODY" | grep -o '"access_token":"[^"]*' | cut -d'"' -f4)
             
             if [ -z "$TOKEN" ]; then
-              echo "ERROR: Failed to get admin token"
+              echo "  ERROR: Failed to get admin token"
+              echo "  Response: $TOKEN_BODY"
               exit 1
             fi
-            echo "✓ Got admin token"
+            echo "  ✓ Got admin token (length: ${#TOKEN})"
             
             # Delete existing system-client if it exists to ensure clean import
             echo "Checking for existing system-client..."
-            CLIENT_ID=$(curl -s -X GET \
+            EXISTING_CLIENT=$(curl -s -w "\n%{http_code}" -X GET \
               "$KEYCLOAK_URL/admin/realms/master/clients?clientId=system-client" \
               -H "Authorization: Bearer $TOKEN" \
-              -H "Content-Type: application/json" | sed -n 's/.*"id":"\([^"]*\)".*/\1/p' | head -n1)
+              -H "Content-Type: application/json")
             
-            if [ -n "$CLIENT_ID" ]; then
-              echo "Found existing system-client with ID: $CLIENT_ID, deleting..."
-              curl -s -X DELETE \
+            CHECK_HTTP=$(echo "$EXISTING_CLIENT" | tail -n1)
+            EXISTING_CLIENT_BODY=$(echo "$EXISTING_CLIENT" | head -n-1)
+            echo "  HTTP Code: $CHECK_HTTP"
+            
+            if echo "$EXISTING_CLIENT_BODY" | grep -q '"id"'; then
+              echo "Existing system-client found, deleting it..."
+              CLIENT_ID=$(echo "$EXISTING_CLIENT_BODY" | sed -n 's/.*"id":"\([^"]*\)".*/\1/p' | head -n1)
+              echo "  Existing client UUID: $CLIENT_ID"
+              
+              DELETE_RESULT=$(curl -s -w "\n%{http_code}" -X DELETE \
                 "$KEYCLOAK_URL/admin/realms/master/clients/$CLIENT_ID" \
-                -H "Authorization: Bearer $TOKEN"
-              echo "✓ Deleted existing system-client"
+                -H "Authorization: Bearer $TOKEN")
+              DELETE_HTTP=$(echo "$DELETE_RESULT" | tail -n1)
+              echo "  Delete HTTP Code: $DELETE_HTTP"
+              
+              if [ "$DELETE_HTTP" = "204" ] || [ "$DELETE_HTTP" = "200" ]; then
+                echo "  ✓ Deleted existing system-client"
+              else
+                echo "  WARNING: Delete returned HTTP $DELETE_HTTP"
+              fi
             else
               echo "No existing system-client found"
+            fi
+            
+            # Create the system-client
+            echo "Creating system-client..."
+            CLIENT_DATA='{
+              "clientId": "system-client",
+              "enabled": true,
+              "publicClient": true,
+              "directAccessGrantsEnabled": true,
+              "standardFlowEnabled": true,
+              "implicitFlowEnabled": false,
+              "serviceAccountsEnabled": false
+            }'
+            
+            CREATE_RESULT=$(curl -s -w "\n%{http_code}" -X POST \
+              "$KEYCLOAK_URL/admin/realms/master/clients" \
+              -H "Authorization: Bearer $TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "$CLIENT_DATA")
+            
+            HTTP_CODE=$(echo "$CREATE_RESULT" | tail -n1)
+            echo "  HTTP Code: $HTTP_CODE"
+            
+            if [ "$HTTP_CODE" = "201" ]; then
+              echo "  ✓ system-client created successfully"
+            else
+              echo "  ERROR: Failed to create system-client"
+              echo "$CREATE_RESULT" | head -n-1
+              exit 1
             fi
             
             # Create system-client directly via REST API
@@ -200,30 +261,44 @@ spec:
             
             # Get the system-client UUID
             echo "Getting system-client UUID..."
-            SYSTEM_CLIENT_UUID=$(curl -s -X GET \
+            GET_CLIENT=$(curl -s -w "\n%{http_code}" -X GET \
               "$KEYCLOAK_URL/admin/realms/master/clients?clientId=system-client" \
               -H "Authorization: Bearer $TOKEN" \
-              -H "Content-Type: application/json" | sed -n 's/.*"id":"\([^"]*\)".*/\1/p' | head -n1)
+              -H "Content-Type: application/json")
+            
+            GET_HTTP=$(echo "$GET_CLIENT" | tail -n1)
+            GET_CLIENT_BODY=$(echo "$GET_CLIENT" | head -n-1)
+            echo "  HTTP Code: $GET_HTTP"
+            
+            SYSTEM_CLIENT_UUID=$(echo "$GET_CLIENT_BODY" | sed -n 's/.*"id":"\([^"]*\)".*/\1/p' | head -n1)
             
             if [ -z "$SYSTEM_CLIENT_UUID" ]; then
-              echo "ERROR: Could not find system-client UUID"
+              echo "  ERROR: Could not find system-client UUID"
+              echo "  Response body: $GET_CLIENT_BODY"
               exit 1
             fi
-            echo "system-client UUID: $SYSTEM_CLIENT_UUID"
+            echo "  system-client UUID: $SYSTEM_CLIENT_UUID"
             
             # Assign default client scopes to system-client
             echo "Assigning client scopes to system-client..."
+            echo "  Client UUID: $SYSTEM_CLIENT_UUID"
+            
             for scope_name in openid roles profile email basic groups; do
-              echo "  Assigning scope: $scope_name"
+              echo ""
+              echo "  Processing scope: $scope_name"
               
               # Query for the specific scope by name
-              SCOPE_RESPONSE=$(curl -s -X GET \
+              SCOPE_RESPONSE=$(curl -s -w "\n%{http_code}" -X GET \
                 "$KEYCLOAK_URL/admin/realms/master/client-scopes" \
                 -H "Authorization: Bearer $TOKEN")
               
+              SCOPE_HTTP=$(echo "$SCOPE_RESPONSE" | tail -n1)
+              SCOPE_BODY=$(echo "$SCOPE_RESPONSE" | head -n-1)
+              echo "    List scopes HTTP: $SCOPE_HTTP"
+              
               # Extract UUID for this specific scope
               # Use awk to find the scope object and extract its id
-              SCOPE_UUID=$(echo "$SCOPE_RESPONSE" | awk -v name="$scope_name" '
+              SCOPE_UUID=$(echo "$SCOPE_BODY" | awk -v name="$scope_name" '
                 BEGIN { RS="},"; FS="\""; found=0 }
                 {
                   if ($0 ~ "\"name\":\"" name "\"") {
@@ -239,11 +314,14 @@ spec:
               ')
               
               if [ -z "$SCOPE_UUID" ]; then
-                echo "    WARNING: Client scope '$scope_name' not found, skipping"
+                echo "    WARNING: Client scope '$scope_name' not found in response, skipping"
+                echo "    Available scopes:"
+                echo "$SCOPE_BODY" | grep -o '"name":"[^"]*"' | head -10
                 continue
               fi
               
               echo "    Found scope UUID: $SCOPE_UUID"
+              echo "    Assigning to client: PUT /clients/$SYSTEM_CLIENT_UUID/default-client-scopes/$SCOPE_UUID"
               
               # Assign the scope to the client
               ASSIGN_RESULT=$(curl -s -w "\n%{http_code}" -X PUT \
@@ -251,15 +329,42 @@ spec:
                 -H "Authorization: Bearer $TOKEN")
               
               HTTP_CODE=$(echo "$ASSIGN_RESULT" | tail -n1)
+              ASSIGN_BODY=$(echo "$ASSIGN_RESULT" | head -n-1)
+              
               if [ "$HTTP_CODE" = "204" ] || [ "$HTTP_CODE" = "200" ]; then
-                echo "    ✓ Assigned $scope_name"
+                echo "    ✓ Assigned $scope_name (HTTP $HTTP_CODE)"
               else
-                echo "    WARNING: Assignment returned HTTP $HTTP_CODE"
+                echo "    ✗ Assignment FAILED: HTTP $HTTP_CODE"
+                if [ -n "$ASSIGN_BODY" ]; then
+                  echo "    Error response: $ASSIGN_BODY"
+                fi
               fi
             done
             
-            echo "✓ All scopes assigned to system-client"
+            echo ""
+            echo "✓ Scope assignment process completed"
             
+            # Verify the scopes were actually assigned
+            echo ""
+            echo "Verifying assigned scopes..."
+            VERIFY_RESULT=$(curl -s -w "\n%{http_code}" -X GET \
+              "$KEYCLOAK_URL/admin/realms/master/clients/$SYSTEM_CLIENT_UUID/default-client-scopes" \
+              -H "Authorization: Bearer $TOKEN")
+            
+            VERIFY_HTTP=$(echo "$VERIFY_RESULT" | tail -n1)
+            VERIFY_BODY=$(echo "$VERIFY_RESULT" | head -n-1)
+            
+            echo "  HTTP Code: $VERIFY_HTTP"
+            if [ "$VERIFY_HTTP" = "200" ]; then
+              echo "  Assigned scopes:"
+              echo "$VERIFY_BODY" | grep -o '"name":"[^"]*"' | cut -d'"' -f4 | while read scope; do
+                echo "    - $scope"
+              done
+            else
+              echo "  WARNING: Could not verify scopes (HTTP $VERIFY_HTTP)"
+            fi
+            
+            echo ""
             echo "✓ Keycloak configuration bootstrap completed!"
         env:
         - name: KEYCLOAK_URL

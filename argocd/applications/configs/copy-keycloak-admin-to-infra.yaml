@@ -9,3 +9,6 @@ sourceSecretName: platform-keycloak
 keyName:
   - source: password
     target: password
+  - source: username
+    target: username
+
