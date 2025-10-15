@@ -38,3 +38,33 @@ templateController:
 # co-manager M2M client configuration
 credentialsM2M:
   enabled: true
+
+  job:
+    # job execution settings
+    backoffLimit: 3
+    activeDeadlineSeconds: 300  # timeout 5 minutes
+    ttlSecondsAfterFinished: 86400  # auto-deletion 24 hours
+    retryAttempts: 5
+    retryDelay: 10
+
+    resources:
+      limits:
+        cpu: 100m
+        memory: 128Mi
+      requests:
+        cpu: 50m
+        memory: 64Mi
+
+  vault:
+    service: "vault.orch-platform.svc.cluster.local" # overriding .cluster.local
+    port: 8200
+    secretPath: "secret/data/co-manager-m2m-client-secret"
+    authPath: "auth/kubernetes"
+
+  keycloak:
+    service: "platform-keycloak.orch-platform.svc.cluster.local" # overriding .cluster.local
+    port: 8080
+    realm: "master"
+    adminSecretName: "platform-keycloak"
+    adminSecretNamespace: "orch-platform"
+    clientId: "co-manager-m2m-client"
