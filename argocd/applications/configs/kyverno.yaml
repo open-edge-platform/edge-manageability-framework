@@ -80,4 +80,4 @@ crds:
 features:
   policyExceptions:
     enabled: true
-    namespace: '*'
+    namespace: 'kyverno'
