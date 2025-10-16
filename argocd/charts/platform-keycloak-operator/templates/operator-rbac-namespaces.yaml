@@ -1,0 +1,94 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+{{- if and .Values.operator.enabled .Values.operator.managedNamespaces }}
+{{- $operatorNamespace := .Values.operator.namespace }}
+{{- range $ns := .Values.operator.managedNamespaces }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: keycloak-operator-role
+  namespace: {{ $ns }}
+  labels:
+    app.kubernetes.io/name: keycloak-operator
+    app.kubernetes.io/managed-by: platform-keycloak-operator-helm
+rules:
+- apiGroups: ["apps"]
+  resources: ["statefulsets"]
+  verbs: ["get", "list", "watch", "create", "delete", "patch", "update"]
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["secrets", "services"]
+  verbs: ["get", "list", "watch", "create", "delete", "patch", "update"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["list"]
+- apiGroups: [""]
+  resources: ["pods/log"]
+  verbs: ["get"]
+- apiGroups: ["batch"]
+  resources: ["jobs"]
+  verbs: ["get", "list", "watch", "create", "delete", "patch", "update"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses"]
+  verbs: ["get", "list", "watch", "create", "delete", "patch", "update"]
+- apiGroups: ["monitoring.coreos.com"]
+  resources: ["servicemonitors"]
+  verbs: ["create", "delete", "get", "list", "update", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: keycloak-operator-role-binding
+  namespace: {{ $ns }}
+  labels:
+    app.kubernetes.io/name: keycloak-operator
+    app.kubernetes.io/managed-by: platform-keycloak-operator-helm
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: keycloak-operator-role
+subjects:
+- kind: ServiceAccount
+  name: keycloak-operator
+  namespace: {{ $operatorNamespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: keycloakcontroller-role-binding
+  namespace: {{ $ns }}
+  labels:
+    app.kubernetes.io/name: keycloak-operator
+    app.kubernetes.io/managed-by: platform-keycloak-operator-helm
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: keycloakcontroller-cluster-role
+subjects:
+- kind: ServiceAccount
+  name: keycloak-operator
+  namespace: {{ $operatorNamespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: keycloakrealmimportcontroller-role-binding
+  namespace: {{ $ns }}
+  labels:
+    app.kubernetes.io/name: keycloak-operator
+    app.kubernetes.io/managed-by: platform-keycloak-operator-helm
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: keycloakrealmimportcontroller-cluster-role
+subjects:
+- kind: ServiceAccount
+  name: keycloak-operator
+  namespace: {{ $operatorNamespace }}
+{{- end }}
+{{- end }}

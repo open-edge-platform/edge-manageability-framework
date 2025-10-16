@@ -12,3 +12,7 @@ operator:
   
   install:
     image: bitnamilegacy/kubectl:1.31
+
+  # Namespaces where the operator manages Keycloak resources (in addition to the operator namespace)
+  managedNamespaces:
+    - orch-platform

@@ -28,11 +28,12 @@ securityContext:
       - ALL
   allowPrivilegeEscalation: false
 keycloakAdmin:
-  user: admin
-  client: system-client
-  passwordSecret:
-    name: platform-keycloak # name of the secret
-    key: password # key of the secret
+  # Use ktc-m2m-client service account with client credentials grant
+  # The ktc-client-secret-job creates this secret with the client credentials
+  client: ktc-m2m-client
+  clientSecret:
+    name: ktc-m2m-client # name of the secret created by ktc-client-secret-job
+    key: client-secret # key containing the client secret
 keycloak_realm: "master"
 argo:
   clusterDomain: {{.Values.argo.clusterDomain}}
