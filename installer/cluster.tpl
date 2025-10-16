@@ -7,6 +7,7 @@ root:
   useLocalValues: true
   clusterValues:
     - orch-configs/profiles/enable-platform.yaml
+    ${O11Y_ENABLE_PROFILE}
     - orch-configs/profiles/enable-o11y.yaml
     - orch-configs/profiles/enable-kyverno.yaml
     ${AO_PROFILE}
