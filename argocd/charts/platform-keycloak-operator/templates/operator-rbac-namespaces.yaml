@@ -11,6 +11,8 @@ kind: Role
 metadata:
   name: keycloak-operator-role
   namespace: {{ $ns }}
+  annotations:
+    argocd.argoproj.io/sync-options: ServerSideApply=true
   labels:
     app.kubernetes.io/name: keycloak-operator
     app.kubernetes.io/managed-by: platform-keycloak-operator-helm
@@ -45,6 +47,8 @@ kind: RoleBinding
 metadata:
   name: keycloak-operator-role-binding
   namespace: {{ $ns }}
+  annotations:
+    argocd.argoproj.io/sync-options: ServerSideApply=true
   labels:
     app.kubernetes.io/name: keycloak-operator
     app.kubernetes.io/managed-by: platform-keycloak-operator-helm
@@ -62,6 +66,8 @@ kind: RoleBinding
 metadata:
   name: keycloakcontroller-role-binding
   namespace: {{ $ns }}
+  annotations:
+    argocd.argoproj.io/sync-options: ServerSideApply=true
   labels:
     app.kubernetes.io/name: keycloak-operator
     app.kubernetes.io/managed-by: platform-keycloak-operator-helm
@@ -79,6 +85,8 @@ kind: RoleBinding
 metadata:
   name: keycloakrealmimportcontroller-role-binding
   namespace: {{ $ns }}
+  annotations:
+    argocd.argoproj.io/sync-options: ServerSideApply=true
   labels:
     app.kubernetes.io/name: keycloak-operator
     app.kubernetes.io/managed-by: platform-keycloak-operator-helm
