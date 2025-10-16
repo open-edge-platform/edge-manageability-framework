@@ -41,15 +41,11 @@ credentialsM2M:
 
   job:
     # job execution settings
-    backoffLimit: 6
-    activeDeadlineSeconds: 600  # timeout 10 minutes
-    ttlSecondsAfterFinished: 86400  # auto-deletion 24 hours
+    backoffLimit: 10
+    activeDeadlineSeconds: 1200  # timeout 20 minutes
+    ttlSecondsAfterFinished: 14400  # auto-deletion 4 hours
     retryAttempts: 5
     retryDelay: 30
-    # Pod template annotations for Istio configuration
-    # podAnnotations:
-    #  proxy.istio.io/config: |
-    #    terminationDrainDuration: 5s
 
     resources:
       limits:
