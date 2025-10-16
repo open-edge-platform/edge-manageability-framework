@@ -559,7 +559,9 @@ mimir-distributed:
       config: |
         # Buffer settings to handle large headers/cookies
         client_header_buffer_size 32k;
-        large_client_header_buffers 16 80k;
+        large_client_header_buffers 32 128k;
+        client_body_buffer_size 32k;
+        client_max_body_size 100m;
     {{- if and .edgeNode .edgeNode.mimir .edgeNode.mimir.gateway }}
     {{- if .edgeNode.mimir.gateway.replicas }}
     replicas: {{ .edgeNode.mimir.gateway.replicas }}
