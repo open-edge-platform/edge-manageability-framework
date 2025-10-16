@@ -47,9 +47,9 @@ credentialsM2M:
     retryAttempts: 5
     retryDelay: 30
     # Pod template annotations for Istio configuration
-    podAnnotations:
-      proxy.istio.io/config: |
-        terminationDrainDuration: 5s
+    # podAnnotations:
+    #  proxy.istio.io/config: |
+    #    terminationDrainDuration: 5s
 
     resources:
       limits:
