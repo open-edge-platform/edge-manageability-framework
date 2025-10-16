@@ -56,13 +56,13 @@ credentialsM2M:
         memory: 16Mi
 
   vault:
-    service: "vault.orch-platform.svc.{{ .Values.argo.clusterDomain }}" # overriding .cluster.local
+    service: "vault.orch-platform.svc.cluster.local" # internal k8s DNS always uses cluster.local
     port: 8200
     secretPath: "secret/data/co-manager-m2m-client-secret"
     authPath: "auth/kubernetes"
 
   keycloak:
-    service: "platform-keycloak.orch-platform.svc.{{ .Values.argo.clusterDomain }}" # overriding .cluster.local
+    service: "platform-keycloak.orch-platform.svc.cluster.local" # internal k8s DNS always uses cluster.local
     port: 8080
     realm: "master"
     adminSecretName: "platform-keycloak"
