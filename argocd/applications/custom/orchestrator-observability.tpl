@@ -246,7 +246,7 @@ mimir-distributed:
   gateway:
     ingress:
       enabled: false
-    nginxConfig:
+    nginx:
       config: |
         # Buffer settings to handle large headers/cookies
         client_header_buffer_size 32k;
