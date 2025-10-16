@@ -46,14 +46,9 @@ credentialsM2M:
     ttlSecondsAfterFinished: 86400  # auto-deletion 24 hours
     retryAttempts: 5
     retryDelay: 30
-    # enable proper Istio sidecar termination
-    terminateIstioSidecar: true
-    # istio annotations for graceful job completion
-    annotations:
-      sidecar.istio.io/inject: "true"
+    # Pod template annotations for Istio configuration
+    podAnnotations:
       proxy.istio.io/config: |
-        holdApplicationUntilProxyStarts: true
-        # terminate sidecar when main container exits
         terminationDrainDuration: 5s
 
     resources:
