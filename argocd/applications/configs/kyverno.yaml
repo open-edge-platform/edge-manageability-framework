@@ -62,14 +62,48 @@ cleanupJobs:
       runAsUser: 1001
 
 # Deploy minimally viable HA config. See https://kyverno.io/docs/installation/methods/#high-availability
+# Migrate to v1.13 https://kyverno.io/docs/installation/upgrading/#upgrading-to-kyverno-v113
 admissionController:
   replicas: 3
+  rbac:
+    clusterRole:
+      extraResources:
+        - apiGroups:
+            - '*'
+          resources:
+            - '*'
+          verbs:
+            - get
+            - list
+            - watch
 backgroundController:
   replicas: 2
+  rbac:
+    clusterRole:
+      extraResources:
+        - apiGroups:
+            - '*'
+          resources:
+            - '*'
+          verbs:
+            - get
+            - list
+            - watch
 cleanupController:
   replicas: 2
 reportsController:
   replicas: 2
+  rbac:
+    clusterRole:
+      extraResources:
+        - apiGroups:
+            - '*'
+          resources:
+            - '*'
+          verbs:
+            - get
+            - list
+            - watch
 
 crds:
   migration:
@@ -77,6 +111,7 @@ crds:
     # disabling CRD migration as a workaround to https://github.com/kyverno/kyverno/issues/10283
     enabled: false
 
+# Migrate to v1.13 https://kyverno.io/docs/installation/upgrading/#upgrading-to-kyverno-v113
 features:
   policyExceptions:
     enabled: true

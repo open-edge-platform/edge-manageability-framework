@@ -39,6 +39,14 @@ restrictedPolicyOrch:
       - "dkam*"
       - "rps*"  # Added to allow OpenDMT RPC-RPS traffic, which fails due to missing JWT token.
       - "pxe-server*"  # Needs host networking and special capabilities, on-prem only.
-  - namespace: "capi-operator-system"
+  - namespace: "orch-ui"
     names:
-      - "capi-operator-cluster-api-operator*"
+      - "web-ui-app-orch-*"
+      - "web-ui-infra-*"
+      - "web-ui-admin-*"
+      - "web-ui-root-*"
+      - "web-ui-cluster-orch-*"
+      - "metadata-broker-orch-metadata-broker-*"
+  - namespace: "orch-platform"
+    names:
+      - "keycloak-tenant-controller-set-*"
