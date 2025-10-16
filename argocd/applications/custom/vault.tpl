@@ -115,7 +115,7 @@ server:
           value: {{ .Values.argo.vault.ha | default false | quote }}
     # This initContainer creates database tables for vault
     - name: init-table
-      image: bitnami/postgresql:14.5.0-debian-11-r2
+      image: bitnamilegacy/postgresql:14.5.0-debian-11-r2
       securityContext:
         allowPrivilegeEscalation: false
         capabilities:
