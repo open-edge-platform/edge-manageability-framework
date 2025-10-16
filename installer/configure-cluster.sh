@@ -119,6 +119,12 @@ else
     export SRE_PROFILE="#- orch-configs/profiles/enable-sre.yaml"
 fi
 
+if [ "${DISABLE_O11Y:-false}" = "true" ]; then
+    export O11Y_ENABLE_PROFILE="#- orch-configs/profiles/enable-o11y.yaml"
+else
+    export O11Y_ENABLE_PROFILE="- orch-configs/profiles/enable-o11y.yaml"
+fi
+
 if [ -z $SMTP_URL ]; then
     export EMAIL_PROFILE="#- orch-configs/profiles/alerting-emails.yaml"
 else
@@ -136,11 +142,16 @@ if [[ "$DISABLE_AWS_PROD_PROFILE" == "true" ]]; then
     export AWS_PROD_PROFILE="#- orch-configs/profiles/profile-aws-production.yaml"
 fi
 
-export O11Y_PROFILE="- orch-configs/profiles/o11y-release.yaml"
-export CLUSTER_SCALE_PROFILE=$(grep -oP '^# Profile: "\K[^"]+' ~/pod-configs/SAVEME/${AWS_ACCOUNT}-${CLUSTER_NAME}-profile.tfvar)
-if [[ "$CLUSTER_SCALE_PROFILE" == "500en" || "$CLUSTER_SCALE_PROFILE" == "1ken" || "$CLUSTER_SCALE_PROFILE" == "10ken" ]]; then
-    export O11Y_PROFILE="- orch-configs/profiles/o11y-release-large.yaml"
+if [ "${DISABLE_O11Y:-false}" = "true" ]; then
+    export O11Y_PROFILE="#- orch-configs/profiles/o11y-release.yaml"
+else
+    export O11Y_PROFILE="- orch-configs/profiles/o11y-release.yaml"
+    if [[ "$CLUSTER_SCALE_PROFILE" == "500en" || "$CLUSTER_SCALE_PROFILE" == "1ken" || "$CLUSTER_SCALE_PROFILE" == "10ken" ]]; then
+      export O11Y_PROFILE="- orch-configs/profiles/o11y-release-large.yaml"
+    fi
 fi
+
+export CLUSTER_SCALE_PROFILE=$(grep -oP '^# Profile: "\K[^"]+' ~/pod-configs/SAVEME/${AWS_ACCOUNT}-${CLUSTER_NAME}-profile.tfvar)
 
 echo
 echo "Creating cluster definition for ${CLUSTER_NAME}"
