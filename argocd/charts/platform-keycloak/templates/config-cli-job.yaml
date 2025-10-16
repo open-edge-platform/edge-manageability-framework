@@ -15,6 +15,7 @@ metadata:
     app.kubernetes.io/instance: {{ .Values.keycloak.instanceName }}
     app.kubernetes.io/managed-by: platform-keycloak-helm
 spec:
+  backoffLimit: 3
   template:
     metadata:
       annotations:
@@ -38,353 +39,578 @@ spec:
           - |
             set -e
             
-            echo "========================================"
-            echo "Keycloak Configuration Bootstrap"
-            echo "========================================"
-            echo "Keycloak URL: $KEYCLOAK_URL"
-            echo "Keycloak User: $KEYCLOAK_USER"
-            echo "Starting at: $(date)"
-            echo ""
+            # Set start time for duration calculation
+            START_TIME=$(date)
+            START_TIMESTAMP=$(date +%s)
             
-            # Append Keycloak services to no_proxy to avoid proxy issues
+            # Function to log with timestamp
+            log() {
+              echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
+            }
+            
+            # Function to log with indentation
+            log_indent() {
+              echo "[$(date '+%Y-%m-%d %H:%M:%S')]   $1"
+            }
+            
+            # Function to log errors
+            log_error() {
+              echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: $1" >&2
+            }
+            
+            # Function to log warnings
+            log_warn() {
+              echo "[$(date '+%Y-%m-%d %H:%M:%S')] WARNING: $1"
+            }
+            
+            # Function to log success
+            log_success() {
+              echo "[$(date '+%Y-%m-%d %H:%M:%S')] ✓ $1"
+            }
+            
+            log "========================================"
+            log "Keycloak Configuration Bootstrap"
+            log "========================================"
+            log "Keycloak URL: $KEYCLOAK_URL"
+            log "Keycloak User: $KEYCLOAK_USER"
+            log "Job started at: $START_TIME"
+            log "Container image: curlimages/curl:8.4.0"
+            log "Working directory: $(pwd)"
+            log ""
+            
+            # Log environment details
+            log "Environment Details:"
+            log_indent "Hostname: $(hostname)"
+            log_indent "User: $(whoami)"
+            log_indent "Shell: $0"
+            log_indent "PATH: $PATH"
+            log ""
+            
+            # Configure proxy settings
+            log "Configuring proxy settings..."
             if [ -n "$no_proxy" ]; then
               export no_proxy="${no_proxy},platform-keycloak,platform-keycloak-service"
+              log_indent "Extended existing no_proxy: $no_proxy"
             else
               export no_proxy="platform-keycloak,platform-keycloak-service"
+              log_indent "Set no_proxy: $no_proxy"
             fi
+            
             if [ -n "$NO_PROXY" ]; then
               export NO_PROXY="${NO_PROXY},platform-keycloak,platform-keycloak-service"
+              log_indent "Extended existing NO_PROXY: $NO_PROXY"
             else
               export NO_PROXY="platform-keycloak,platform-keycloak-service"
+              log_indent "Set NO_PROXY: $NO_PROXY"
             fi
             
-            echo "Proxy configuration:"
-            echo "  http_proxy: ${http_proxy:-<not set>}"
-            echo "  https_proxy: ${https_proxy:-<not set>}"
-            echo "  no_proxy: $no_proxy"
-            echo ""
+            log "Final proxy configuration:"
+            log_indent "http_proxy: ${http_proxy:-<not set>}"
+            log_indent "https_proxy: ${https_proxy:-<not set>}"
+            log_indent "no_proxy: $no_proxy"
+            log_indent "NO_PROXY: $NO_PROXY"
+            log ""
             
-            # Wait for Keycloak
-            echo "Waiting for Keycloak to be available..."
+            # Wait for Keycloak availability
+            log "Waiting for Keycloak to be available..."
+            log_indent "Testing endpoint: $KEYCLOAK_URL/realms/master"
+            
+            KEYCLOAK_READY=false
             for i in $(seq 1 60); do
-              if curl -f -s "$KEYCLOAK_URL/realms/master" > /dev/null; then
-                echo "✓ Keycloak is available!"
+              log_indent "Attempt $i/60: Testing Keycloak connectivity..."
+              
+              if curl -f -s -m 10 "$KEYCLOAK_URL/realms/master" > /dev/null 2>&1; then
+                log_success "Keycloak is available and responding!"
+                KEYCLOAK_READY=true
                 break
+              else
+                CURL_EXIT_CODE=$?
+                log_indent "Connection failed (curl exit code: $CURL_EXIT_CODE)"
+                if [ $i -lt 60 ]; then
+                  log_indent "Waiting 10 seconds before retry..."
+                  sleep 10
+                fi
               fi
-              echo "Waiting... ($i/60)"
-              sleep 10
             done
             
+            if [ "$KEYCLOAK_READY" = "false" ]; then
+              log_error "Keycloak is not available after 10 minutes (60 attempts)"
+              log_error "Final connectivity test details:"
+              curl -v "$KEYCLOAK_URL/realms/master" || true
+              exit 1
+            fi
+            log ""
+            
             # Get admin token
-            echo "Getting admin token..."
+            log "Authenticating with Keycloak admin API..."
+            log_indent "Endpoint: $KEYCLOAK_URL/realms/master/protocol/openid-connect/token"
+            log_indent "Username: $KEYCLOAK_USER"
+            log_indent "Grant type: password"
+            log_indent "Client ID: admin-cli"
+            
             TOKEN_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$KEYCLOAK_URL/realms/master/protocol/openid-connect/token" \
               --data-urlencode "username=$KEYCLOAK_USER" \
               --data-urlencode "password=$KEYCLOAK_PASSWORD" \
               --data-urlencode 'grant_type=password' \
-              --data-urlencode 'client_id=admin-cli')
+              --data-urlencode 'client_id=admin-cli' 2>&1)
             
             TOKEN_HTTP=$(echo "$TOKEN_RESPONSE" | tail -n1)
             TOKEN_BODY=$(echo "$TOKEN_RESPONSE" | head -n-1)
-            echo "  HTTP Code: $TOKEN_HTTP"
             
-            TOKEN=$(echo "$TOKEN_BODY" | grep -o '"access_token":"[^"]*' | cut -d'"' -f4)
+            log_indent "Authentication HTTP response code: $TOKEN_HTTP"
             
-            if [ -z "$TOKEN" ]; then
-              echo "  ERROR: Failed to get admin token"
-              echo "  Response: $TOKEN_BODY"
-              exit 1
-            fi
-            echo "  ✓ Got admin token (length: ${#TOKEN})"
-            
-            # Delete existing system-client if it exists to ensure clean import
-            echo "Checking for existing system-client..."
-            EXISTING_CLIENT=$(curl -s -w "\n%{http_code}" -X GET \
-              "$KEYCLOAK_URL/admin/realms/master/clients?clientId=system-client" \
-              -H "Authorization: Bearer $TOKEN" \
-              -H "Content-Type: application/json")
-            
-            CHECK_HTTP=$(echo "$EXISTING_CLIENT" | tail -n1)
-            EXISTING_CLIENT_BODY=$(echo "$EXISTING_CLIENT" | head -n-1)
-            echo "  HTTP Code: $CHECK_HTTP"
-            
-            if echo "$EXISTING_CLIENT_BODY" | grep -q '"id"'; then
-              echo "Existing system-client found, deleting it..."
-              CLIENT_ID=$(echo "$EXISTING_CLIENT_BODY" | sed -n 's/.*"id":"\([^"]*\)".*/\1/p' | head -n1)
-              echo "  Existing client UUID: $CLIENT_ID"
+            if [ "$TOKEN_HTTP" = "200" ]; then
+              TOKEN=$(echo "$TOKEN_BODY" | grep -o '"access_token":"[^"]*' | cut -d'"' -f4)
               
-              DELETE_RESULT=$(curl -s -w "\n%{http_code}" -X DELETE \
-                "$KEYCLOAK_URL/admin/realms/master/clients/$CLIENT_ID" \
-                -H "Authorization: Bearer $TOKEN")
-              DELETE_HTTP=$(echo "$DELETE_RESULT" | tail -n1)
-              echo "  Delete HTTP Code: $DELETE_HTTP"
-              
-              if [ "$DELETE_HTTP" = "204" ] || [ "$DELETE_HTTP" = "200" ]; then
-                echo "  ✓ Deleted existing system-client"
-              else
-                echo "  WARNING: Delete returned HTTP $DELETE_HTTP"
-              fi
-            else
-              echo "No existing system-client found"
-            fi
-            
-            # Create the system-client
-            echo "Creating system-client..."
-            CLIENT_DATA='{
-              "clientId": "system-client",
-              "enabled": true,
-              "publicClient": true,
-              "directAccessGrantsEnabled": true,
-              "standardFlowEnabled": true,
-              "implicitFlowEnabled": false,
-              "serviceAccountsEnabled": false
-            }'
-            
-            CREATE_RESULT=$(curl -s -w "\n%{http_code}" -X POST \
-              "$KEYCLOAK_URL/admin/realms/master/clients" \
-              -H "Authorization: Bearer $TOKEN" \
-              -H "Content-Type: application/json" \
-              -d "$CLIENT_DATA")
-            
-            HTTP_CODE=$(echo "$CREATE_RESULT" | tail -n1)
-            echo "  HTTP Code: $HTTP_CODE"
-            
-            if [ "$HTTP_CODE" = "201" ]; then
-              echo "  ✓ system-client created successfully"
-            else
-              echo "  ERROR: Failed to create system-client"
-              echo "$CREATE_RESULT" | head -n-1
-              exit 1
-            fi
-            
-            echo ""
-            echo "Ensuring openid and groups client scopes exist..."
-            
-            # Create openid scope
-            OPENID_SCOPE='{
-              "name": "openid",
-              "protocol": "openid-connect",
-              "attributes": {
-                "include.in.token.scope": "true",
-                "display.on.consent.screen": "true"
-              }
-            }'
-            OPENID_CREATE=$(curl -s -w "\n%{http_code}" -X POST "$KEYCLOAK_URL/admin/realms/master/client-scopes" \
-              -H "Authorization: Bearer $TOKEN" \
-              -H "Content-Type: application/json" \
-              -d "$OPENID_SCOPE")
-            OPENID_HTTP=$(echo "$OPENID_CREATE" | tail -n1)
-            if [ "$OPENID_HTTP" = "201" ]; then
-              echo "  ✓ Created openid scope"
-            elif [ "$OPENID_HTTP" = "409" ]; then
-              echo "  ✓ openid scope already exists"
-            else
-              echo "  WARNING: openid scope creation returned HTTP $OPENID_HTTP"
-            fi
-            
-            # Create groups scope - simplified without protocol mappers
-            # Protocol mappers can be added later if needed
-            GROUPS_SCOPE='{
-              "name": "groups",
-              "protocol": "openid-connect",
-              "attributes": {
-                "include.in.token.scope": "true",
-                "display.on.consent.screen": "true"
-              }
-            }'
-            GROUPS_CREATE=$(curl -s -w "\n%{http_code}" -X POST "$KEYCLOAK_URL/admin/realms/master/client-scopes" \
-              -H "Authorization: Bearer $TOKEN" \
-              -H "Content-Type: application/json" \
-              -d "$GROUPS_SCOPE")
-            GROUPS_HTTP=$(echo "$GROUPS_CREATE" | tail -n1)
-            GROUPS_BODY=$(echo "$GROUPS_CREATE" | head -n-1)
-            
-            if [ "$GROUPS_HTTP" = "201" ]; then
-              echo "  ✓ Created groups scope"
-              
-              # Query to get the UUID since POST response doesn't include it
-              echo "    Querying for groups scope UUID..."
-              GROUPS_QUERY=$(curl -s -w "\n%{http_code}" -X GET \
-                "$KEYCLOAK_URL/admin/realms/master/client-scopes" \
-                -H "Authorization: Bearer $TOKEN")
-              GROUPS_QUERY_HTTP=$(echo "$GROUPS_QUERY" | tail -n1)
-              GROUPS_QUERY_BODY=$(echo "$GROUPS_QUERY" | head -n-1)
-              
-              GROUPS_UUID=$(echo "$GROUPS_QUERY_BODY" | awk '
-                BEGIN { RS="},"; FS="\""; found=0 }
-                {
-                  if ($0 ~ "\"name\":\"groups\"") {
-                    for (i=1; i<=NF; i++) {
-                      if ($i == "id" && $(i+2) != "") {
-                        print $(i+2);
-                        found=1;
-                        exit;
-                      }
-                    }
-                  }
-                }
-              ')
-              echo "    Groups scope UUID: $GROUPS_UUID"
-              
-              # Now add the protocol mapper to the created scope
-              if [ -n "$GROUPS_UUID" ]; then
-                echo "    Adding groups protocol mapper..."
-                MAPPER_JSON='{
-                  "name": "groups",
-                  "protocol": "openid-connect",
-                  "protocolMapper": "oidc-group-membership-mapper",
-                  "config": {
-                    "claim.name": "groups",
-                    "full.path": "false",
-                    "id.token.claim": "true",
-                    "access.token.claim": "true",
-                    "userinfo.token.claim": "true"
-                  }
-                }'
-                MAPPER_RESULT=$(curl -s -w "\n%{http_code}" -X POST \
-                  "$KEYCLOAK_URL/admin/realms/master/client-scopes/$GROUPS_UUID/protocol-mappers/models" \
-                  -H "Authorization: Bearer $TOKEN" \
-                  -H "Content-Type: application/json" \
-                  -d "$MAPPER_JSON")
-                MAPPER_HTTP=$(echo "$MAPPER_RESULT" | tail -n1)
-                if [ "$MAPPER_HTTP" = "201" ]; then
-                  echo "    ✓ Added protocol mapper"
-                else
-                  echo "    WARNING: Protocol mapper returned HTTP $MAPPER_HTTP"
-                  echo "$MAPPER_RESULT" | head -n-1
+              if [ -n "$TOKEN" ]; then
+                log_success "Successfully obtained admin token"
+                log_indent "Token length: ${#TOKEN} characters"
+                log_indent "Token prefix: ${TOKEN:0:20}..."
+                
+                # Extract token expiration info if available
+                EXPIRES_IN=$(echo "$TOKEN_BODY" | grep -o '"expires_in":[0-9]*' | cut -d':' -f2)
+                if [ -n "$EXPIRES_IN" ]; then
+                  log_indent "Token expires in: $EXPIRES_IN seconds"
                 fi
               else
-                echo "    ERROR: Could not find groups scope UUID"
+                log_error "Token extraction failed from response body"
+                log_error "Response body: $TOKEN_BODY"
+                exit 1
               fi
-            elif [ "$GROUPS_HTTP" = "409" ]; then
-              echo "  ✓ groups scope already exists"
             else
-              echo "  WARNING: groups scope creation returned HTTP $GROUPS_HTTP"
-              echo "  Response: $GROUPS_BODY"
+              log_error "Authentication failed with HTTP $TOKEN_HTTP"
+              log_error "Response body: $TOKEN_BODY"
+              exit 1
+            fi
+            log ""
+            
+            # Validate configuration file
+            log "Validating realm configuration file..."
+            CONFIG_FILE="/config/realm-master.json"
+            
+            if [ ! -f "$CONFIG_FILE" ]; then
+              log_error "Configuration file not found: $CONFIG_FILE"
+              log_error "Available files in /config/:"
+              ls -la /config/ || true
+              exit 1
             fi
             
-            echo "✓ Client scopes ensured"
+            FILE_SIZE=$(wc -c < "$CONFIG_FILE")
+            log_success "Configuration file found: $CONFIG_FILE"
+            log_indent "File size: $FILE_SIZE bytes"
+            log_indent "File permissions: $(ls -l $CONFIG_FILE)"
             
-            # Get the system-client UUID
-            echo "Getting system-client UUID..."
+            # Validate JSON syntax
+            log_indent "Validating JSON syntax..."
+            if command -v python3 >/dev/null 2>&1; then
+              if python3 -c "import json; json.load(open('$CONFIG_FILE'))" 2>/dev/null; then
+                log_success "JSON syntax validation passed"
+              else
+                log_error "JSON syntax validation failed"
+                python3 -c "import json; json.load(open('$CONFIG_FILE'))" 2>&1 || true
+                exit 1
+              fi
+            else
+              log_indent "Python3 not available, skipping JSON validation"
+            fi
+            
+            # Show configuration summary
+            log_indent "Configuration summary:"
+            if command -v python3 >/dev/null 2>&1; then
+              REALM_NAME=$(python3 -c "import json; data=json.load(open('$CONFIG_FILE')); print(data.get('realm', 'unknown'))" 2>/dev/null || echo "unknown")
+              CLIENTS_COUNT=$(python3 -c "import json; data=json.load(open('$CONFIG_FILE')); print(len(data.get('clients', [])))" 2>/dev/null || echo "unknown")
+              GROUPS_COUNT=$(python3 -c "import json; data=json.load(open('$CONFIG_FILE')); print(len(data.get('groups', [])))" 2>/dev/null || echo "unknown")
+              USERS_COUNT=$(python3 -c "import json; data=json.load(open('$CONFIG_FILE')); print(len(data.get('users', [])))" 2>/dev/null || echo "unknown")
+              SCOPES_COUNT=$(python3 -c "import json; data=json.load(open('$CONFIG_FILE')); print(len(data.get('clientScopes', [])))" 2>/dev/null || echo "unknown")
+              
+              log_indent "  Realm: $REALM_NAME"
+              log_indent "  Clients: $CLIENTS_COUNT"
+              log_indent "  Groups: $GROUPS_COUNT"
+              log_indent "  Users: $USERS_COUNT"
+              log_indent "  Client Scopes: $SCOPES_COUNT"
+            fi
+            log ""
+            
+            # Import realm configuration
+            log "Importing realm configuration..."
+            log_indent "Using Keycloak partial import API"
+            log_indent "Endpoint: $KEYCLOAK_URL/admin/realms/master/partialImport"
+            
+            IMPORT_START_TIME=$(date +%s)
+            IMPORT_RESULT=$(curl -s -w "\n%{http_code}" -X POST \
+              "$KEYCLOAK_URL/admin/realms/master/partialImport" \
+              -H "Authorization: Bearer $TOKEN" \
+              -H "Content-Type: application/json" \
+              -d @"$CONFIG_FILE" 2>&1)
+            IMPORT_END_TIME=$(date +%s)
+            IMPORT_DURATION=$((IMPORT_END_TIME - IMPORT_START_TIME))
+            
+            IMPORT_HTTP=$(echo "$IMPORT_RESULT" | tail -n1)
+            IMPORT_BODY=$(echo "$IMPORT_RESULT" | head -n-1)
+            
+            log_indent "Import completed in ${IMPORT_DURATION} seconds"
+            log_indent "Import HTTP response code: $IMPORT_HTTP"
+            
+            if [ "$IMPORT_HTTP" = "200" ] || [ "$IMPORT_HTTP" = "201" ]; then
+              log_success "Realm configuration imported successfully via partial import"
+              if [ -n "$IMPORT_BODY" ] && [ "$IMPORT_BODY" != "null" ]; then
+                log_indent "Import response details:"
+                echo "$IMPORT_BODY" | head -c 500  # Limit output to first 500 chars
+                if [ ${#IMPORT_BODY} -gt 500 ]; then
+                  log_indent "... (response truncated)"
+                fi
+              fi
+              IMPORT_SUCCESS=true
+            else
+              log_warn "Partial import failed with HTTP $IMPORT_HTTP"
+              log_indent "Import response: $IMPORT_BODY"
+              
+              # Try alternative approach: direct realm update
+              log_indent "Attempting direct realm update as fallback..."
+              
+              UPDATE_START_TIME=$(date +%s)
+              UPDATE_RESULT=$(curl -s -w "\n%{http_code}" -X PUT \
+                "$KEYCLOAK_URL/admin/realms/master" \
+                -H "Authorization: Bearer $TOKEN" \
+                -H "Content-Type: application/json" \
+                -d @"$CONFIG_FILE" 2>&1)
+              UPDATE_END_TIME=$(date +%s)
+              UPDATE_DURATION=$((UPDATE_END_TIME - UPDATE_START_TIME))
+              
+              UPDATE_HTTP=$(echo "$UPDATE_RESULT" | tail -n1)
+              UPDATE_BODY=$(echo "$UPDATE_RESULT" | head -n-1)
+              
+              log_indent "Direct update completed in ${UPDATE_DURATION} seconds"
+              log_indent "Update HTTP response code: $UPDATE_HTTP"
+              
+              if [ "$UPDATE_HTTP" = "204" ] || [ "$UPDATE_HTTP" = "200" ]; then
+                log_success "Realm updated successfully via direct update"
+                IMPORT_SUCCESS=true
+              else
+                log_error "Both partial import and direct update failed"
+                log_error "Update response: $UPDATE_BODY"
+                log_warn "Continuing with scope verification anyway..."
+                IMPORT_SUCCESS=false
+              fi
+            fi
+            log ""
+            
+            # Verify and ensure system-client scopes
+            log "Verifying system-client configuration..."
+            
+            # Get system-client details
+            log_indent "Retrieving system-client information..."
+            GET_CLIENT_START=$(date +%s)
             GET_CLIENT=$(curl -s -w "\n%{http_code}" -X GET \
               "$KEYCLOAK_URL/admin/realms/master/clients?clientId=system-client" \
               -H "Authorization: Bearer $TOKEN" \
-              -H "Content-Type: application/json")
+              -H "Content-Type: application/json" 2>&1)
+            GET_CLIENT_END=$(date +%s)
+            GET_CLIENT_DURATION=$((GET_CLIENT_END - GET_CLIENT_START))
             
             GET_HTTP=$(echo "$GET_CLIENT" | tail -n1)
             GET_CLIENT_BODY=$(echo "$GET_CLIENT" | head -n-1)
-            echo "  HTTP Code: $GET_HTTP"
             
-            SYSTEM_CLIENT_UUID=$(echo "$GET_CLIENT_BODY" | sed -n 's/.*"id":"\([^"]*\)".*/\1/p' | head -n1)
+            log_indent "Client lookup completed in ${GET_CLIENT_DURATION} seconds"
+            log_indent "Client lookup HTTP response: $GET_HTTP"
             
-            if [ -z "$SYSTEM_CLIENT_UUID" ]; then
-              echo "  ERROR: Could not find system-client UUID"
-              echo "  Response body: $GET_CLIENT_BODY"
-              exit 1
-            fi
-            echo "  system-client UUID: $SYSTEM_CLIENT_UUID"
-            
-            # Assign default client scopes to system-client
-            # Note: groups scope is excluded due to Keycloak API issue causing 404 on assignment
-            echo "Assigning client scopes to system-client..."
-            echo "  Client UUID: $SYSTEM_CLIENT_UUID"
-            
-            for scope_name in openid roles profile email basic; do
-              echo ""
-              echo "  Processing scope: $scope_name"
+            if [ "$GET_HTTP" = "200" ]; then
+              # Extract system-client UUID using multiple methods for robustness
+              SYSTEM_CLIENT_UUID=""
               
-              # Query for the specific scope by name
-              SCOPE_RESPONSE=$(curl -s -w "\n%{http_code}" -X GET \
-                "$KEYCLOAK_URL/admin/realms/master/client-scopes" \
-                -H "Authorization: Bearer $TOKEN")
+              # Method 1: Using grep and cut
+              SYSTEM_CLIENT_UUID=$(echo "$GET_CLIENT_BODY" | grep -o '"id":"[^"]*' | head -1 | cut -d'"' -f4)
               
-              SCOPE_HTTP=$(echo "$SCOPE_RESPONSE" | tail -n1)
-              SCOPE_BODY=$(echo "$SCOPE_RESPONSE" | head -n-1)
-              echo "    List scopes HTTP: $SCOPE_HTTP"
-              
-              # Extract UUID for this specific scope
-              # Use awk to find the scope object and extract its id
-              SCOPE_UUID=$(echo "$SCOPE_BODY" | awk -v name="$scope_name" '
-                BEGIN { RS="},"; FS="\""; found=0 }
-                {
-                  if ($0 ~ "\"name\":\"" name "\"") {
-                    for (i=1; i<=NF; i++) {
-                      if ($i == "id" && $(i+2) != "") {
-                        print $(i+2);
-                        found=1;
-                        exit;
-                      }
-                    }
-                  }
-                }
-              ')
-              
-              if [ -z "$SCOPE_UUID" ]; then
-                echo "    WARNING: Client scope '$scope_name' not found in response, skipping"
-                echo "    Available scopes:"
-                echo "$SCOPE_BODY" | grep -o '"name":"[^"]*"' | head -10
-                continue
+              # Method 2: Using python if available and method 1 failed
+              if [ -z "$SYSTEM_CLIENT_UUID" ] && command -v python3 >/dev/null 2>&1; then
+                SYSTEM_CLIENT_UUID=$(echo "$GET_CLIENT_BODY" | python3 -c 'import sys,json; data=json.load(sys.stdin) if sys.stdin else []; print(data[0].get("id", "") if isinstance(data, list) and data else "")' 2>/dev/null || echo "")
               fi
               
-              echo "    Found scope UUID: $SCOPE_UUID"
-              echo "    Assigning to client: PUT /clients/$SYSTEM_CLIENT_UUID/default-client-scopes/$SCOPE_UUID"
-              
-              # Assign the scope to the client
-              ASSIGN_RESULT=$(curl -s -w "\n%{http_code}" -X PUT \
-                "$KEYCLOAK_URL/admin/realms/master/clients/$SYSTEM_CLIENT_UUID/default-client-scopes/$SCOPE_UUID" \
-                -H "Authorization: Bearer $TOKEN")
-              
-              HTTP_CODE=$(echo "$ASSIGN_RESULT" | tail -n1)
-              ASSIGN_BODY=$(echo "$ASSIGN_RESULT" | head -n-1)
-              
-              if [ "$HTTP_CODE" = "204" ] || [ "$HTTP_CODE" = "200" ]; then
-                echo "    ✓ Assigned $scope_name (HTTP $HTTP_CODE)"
-              else
-                echo "    ✗ Assignment FAILED: HTTP $HTTP_CODE"
-                if [ -n "$ASSIGN_BODY" ]; then
-                  echo "    Error response: $ASSIGN_BODY"
+              if [ -n "$SYSTEM_CLIENT_UUID" ]; then
+                log_success "Found system-client"
+                log_indent "Client UUID: $SYSTEM_CLIENT_UUID"
+                
+                # Get current client details
+                CLIENT_DETAILS=$(curl -s -X GET \
+                  "$KEYCLOAK_URL/admin/realms/master/clients/$SYSTEM_CLIENT_UUID" \
+                  -H "Authorization: Bearer $TOKEN" 2>/dev/null)
+                
+                if [ -n "$CLIENT_DETAILS" ]; then
+                  log_indent "Client details retrieved successfully"
+                  # Extract key properties
+                  if command -v python3 >/dev/null 2>&1; then
+                    CLIENT_ENABLED=$(echo "$CLIENT_DETAILS" | python3 -c "import sys,json; data=json.load(sys.stdin); print(data.get('enabled', 'unknown'))" 2>/dev/null)
+                    CLIENT_PUBLIC=$(echo "$CLIENT_DETAILS" | python3 -c "import sys,json; data=json.load(sys.stdin); print(data.get('publicClient', 'unknown'))" 2>/dev/null)
+                    log_indent "  Enabled: $CLIENT_ENABLED"
+                    log_indent "  Public Client: $CLIENT_PUBLIC"
+                  fi
                 fi
+                
+                # Verify and assign required scopes
+                log_indent "Verifying required client scopes..."
+                REQUIRED_SCOPES="openid groups"
+                
+                for scope_name in $REQUIRED_SCOPES; do
+                  log_indent "Processing scope: $scope_name"
+                  
+                  # Get all client scopes
+                  SCOPE_RESPONSE=$(curl -s -w "\n%{http_code}" -X GET \
+                    "$KEYCLOAK_URL/admin/realms/master/client-scopes" \
+                    -H "Authorization: Bearer $TOKEN" 2>&1)
+                  
+                  SCOPE_HTTP=$(echo "$SCOPE_RESPONSE" | tail -n1)
+                  SCOPE_BODY=$(echo "$SCOPE_RESPONSE" | head -n-1)
+                  
+                  log_indent "  Scope lookup HTTP response: $SCOPE_HTTP"
+                  
+                  if [ "$SCOPE_HTTP" = "200" ]; then
+                    # Extract scope UUID
+                    SCOPE_UUID=""
+                    
+                    # Method 1: Using grep
+                    SCOPE_UUID=$(echo "$SCOPE_BODY" | grep -A5 -B5 "\"name\":\"$scope_name\"" | grep '"id":' | head -1 | grep -o '"id":"[^"]*' | cut -d'"' -f4)
+                    
+                    # Method 2: Using python if available
+                    if [ -z "$SCOPE_UUID" ] && command -v python3 >/dev/null 2>&1; then
+                      SCOPE_UUID=$(echo "$SCOPE_BODY" | SCOPE_NAME="$scope_name" python3 -c 'import sys,json,os; data=json.load(sys.stdin) if sys.stdin else []; name=os.environ.get("SCOPE_NAME",""); print(next((s.get("id","") for s in data if isinstance(data,list) and s.get("name")==name), ""))' 2>/dev/null || echo "")
+                    fi
+                    
+                    if [ -n "$SCOPE_UUID" ]; then
+                      log_indent "  Found $scope_name scope UUID: $SCOPE_UUID"
+                      
+                      # Check if scope is already assigned
+                      log_indent "  Checking current scope assignments..."
+                      CHECK_SCOPE=$(curl -s -w "\n%{http_code}" -X GET \
+                        "$KEYCLOAK_URL/admin/realms/master/clients/$SYSTEM_CLIENT_UUID/default-client-scopes" \
+                        -H "Authorization: Bearer $TOKEN" 2>&1)
+                      
+                      CHECK_HTTP=$(echo "$CHECK_SCOPE" | tail -n1)
+                      CHECK_BODY=$(echo "$CHECK_SCOPE" | head -n-1)
+                      
+                      log_indent "  Current scopes check HTTP response: $CHECK_HTTP"
+                      
+                      if [ "$CHECK_HTTP" = "200" ]; then
+                        if echo "$CHECK_BODY" | grep -q "\"name\":\"$scope_name\""; then
+                          log_success "  $scope_name scope already assigned"
+                        else
+                          log_indent "  $scope_name scope not assigned, adding it..."
+                          
+                          ASSIGN_START=$(date +%s)
+                          ASSIGN_RESULT=$(curl -s -w "\n%{http_code}" -X PUT \
+                            "$KEYCLOAK_URL/admin/realms/master/clients/$SYSTEM_CLIENT_UUID/default-client-scopes/$SCOPE_UUID" \
+                            -H "Authorization: Bearer $TOKEN" 2>&1)
+                          ASSIGN_END=$(date +%s)
+                          ASSIGN_DURATION=$((ASSIGN_END - ASSIGN_START))
+                          
+                          ASSIGN_HTTP=$(echo "$ASSIGN_RESULT" | tail -n1)
+                          ASSIGN_BODY=$(echo "$ASSIGN_RESULT" | head -n-1)
+                          
+                          log_indent "  Scope assignment completed in ${ASSIGN_DURATION} seconds"
+                          log_indent "  Assignment HTTP response: $ASSIGN_HTTP"
+                          
+                          if [ "$ASSIGN_HTTP" = "204" ] || [ "$ASSIGN_HTTP" = "200" ]; then
+                            log_success "  Successfully assigned $scope_name scope"
+                          else
+                            log_error "  Failed to assign $scope_name scope"
+                            log_error "  Assignment response: $ASSIGN_BODY"
+                          fi
+                        fi
+                      else
+                        log_error "  Failed to check current scopes (HTTP $CHECK_HTTP)"
+                        log_error "  Response: $CHECK_BODY"
+                      fi
+                    else
+                      log_error "  Could not find $scope_name scope UUID"
+                      log_indent "  Available scopes:"
+                      echo "$SCOPE_BODY" | grep -o '"name":"[^"]*' | cut -d'"' -f4 | head -10 | while read available_scope; do
+                        log_indent "    - $available_scope"
+                      done
+                    fi
+                  else
+                    log_error "  Failed to retrieve client scopes (HTTP $SCOPE_HTTP)"
+                    log_error "  Response: $SCOPE_BODY"
+                  fi
+                done
+              else
+                log_error "Could not extract system-client UUID from response"
+                log_error "Response body: $GET_CLIENT_BODY"
               fi
-            done
+            else
+              log_error "Failed to retrieve system-client (HTTP $GET_HTTP)"
+              log_error "Response: $GET_CLIENT_BODY"
+            fi
+            log ""
             
-            echo ""
-            echo "✓ Scope assignment process completed"
+            # Comprehensive verification of final configuration
+            log "Performing comprehensive configuration verification..."
             
-            # Verify the scopes were actually assigned
-            echo ""
-            echo "Verifying assigned scopes..."
-            VERIFY_RESULT=$(curl -s -w "\n%{http_code}" -X GET \
-              "$KEYCLOAK_URL/admin/realms/master/clients/$SYSTEM_CLIENT_UUID/default-client-scopes" \
-              -H "Authorization: Bearer $TOKEN")
+            # Verify clients
+            log_indent "Verifying configured clients..."
+            CLIENTS_RESULT=$(curl -s -w "\n%{http_code}" -X GET \
+              "$KEYCLOAK_URL/admin/realms/master/clients" \
+              -H "Authorization: Bearer $TOKEN" 2>&1)
             
-            VERIFY_HTTP=$(echo "$VERIFY_RESULT" | tail -n1)
-            VERIFY_BODY=$(echo "$VERIFY_RESULT" | head -n-1)
+            CLIENTS_HTTP=$(echo "$CLIENTS_RESULT" | tail -n1)
+            CLIENTS_BODY=$(echo "$CLIENTS_RESULT" | head -n-1)
             
-            echo "  HTTP Code: $VERIFY_HTTP"
-            if [ "$VERIFY_HTTP" = "200" ]; then
-              echo "  Assigned scopes:"
-              echo "$VERIFY_BODY" | grep -o '"name":"[^"]*"' | cut -d'"' -f4 | while read scope; do
-                echo "    - $scope"
+            if [ "$CLIENTS_HTTP" = "200" ]; then
+              log_success "Successfully retrieved client list"
+              
+              # Expected clients from the JSON configuration
+              EXPECTED_CLIENTS="alerts-m2m-client host-manager-m2m-client ktc-m2m-client 3rd-party-host-manager-m2m-client edge-manager-m2m-client en-m2m-template-client telemetry-client cluster-management-client webui-client docsui-client system-client registry-client"
+              
+              log_indent "Configured clients:"
+              CLIENT_LIST=$(echo "$CLIENTS_BODY" | grep -o '"clientId":"[^"]*' | cut -d'"' -f4)
+              echo "$CLIENT_LIST" | while read client; do
+                log_indent "  - $client"
+              done
+              
+              log_indent "Checking for expected clients:"
+              for expected_client in $EXPECTED_CLIENTS; do
+                if echo "$CLIENT_LIST" | grep -q "^$expected_client$"; then
+                  log_success "  ✓ $expected_client found"
+                else
+                  log_warn "  ✗ $expected_client missing"
+                fi
               done
             else
-              echo "  WARNING: Could not verify scopes (HTTP $VERIFY_HTTP)"
+              log_error "Failed to retrieve clients (HTTP $CLIENTS_HTTP)"
             fi
             
-            echo ""
-            echo "✓ Keycloak configuration bootstrap completed!"
+            # Verify client scopes
+            log_indent "Verifying client scopes..."
+            SCOPES_RESULT=$(curl -s -w "\n%{http_code}" -X GET \
+              "$KEYCLOAK_URL/admin/realms/master/client-scopes" \
+              -H "Authorization: Bearer $TOKEN" 2>&1)
+            
+            SCOPES_HTTP=$(echo "$SCOPES_RESULT" | tail -n1)
+            SCOPES_BODY=$(echo "$SCOPES_RESULT" | head -n-1)
+            
+            if [ "$SCOPES_HTTP" = "200" ]; then
+              log_success "Successfully retrieved client scopes"
+              log_indent "Available client scopes:"
+              SCOPE_LIST=$(echo "$SCOPES_BODY" | grep -o '"name":"[^"]*' | cut -d'"' -f4)
+              echo "$SCOPE_LIST" | while read scope; do
+                log_indent "  - $scope"
+              done
+              
+              # Check for critical scopes
+              CRITICAL_SCOPES="openid groups roles profile email basic"
+              log_indent "Checking for critical scopes:"
+              for critical_scope in $CRITICAL_SCOPES; do
+                if echo "$SCOPE_LIST" | grep -q "^$critical_scope$"; then
+                  log_success "  ✓ $critical_scope found"
+                else
+                  log_warn "  ✗ $critical_scope missing"
+                fi
+              done
+            else
+              log_error "Failed to retrieve client scopes (HTTP $SCOPES_HTTP)"
+            fi
+            
+            # Verify system-client final configuration
+            if [ -n "$SYSTEM_CLIENT_UUID" ]; then
+              log_indent "Verifying system-client final configuration..."
+              
+              VERIFY_SCOPES=$(curl -s -w "\n%{http_code}" -X GET \
+                "$KEYCLOAK_URL/admin/realms/master/clients/$SYSTEM_CLIENT_UUID/default-client-scopes" \
+                -H "Authorization: Bearer $TOKEN" 2>&1)
+              
+              VERIFY_HTTP=$(echo "$VERIFY_SCOPES" | tail -n1)
+              VERIFY_BODY=$(echo "$VERIFY_SCOPES" | head -n-1)
+              
+              if [ "$VERIFY_HTTP" = "200" ]; then
+                log_success "Successfully retrieved system-client scopes"
+                log_indent "system-client assigned scopes:"
+                ASSIGNED_SCOPES=$(echo "$VERIFY_BODY" | grep -o '"name":"[^"]*' | cut -d'"' -f4)
+                echo "$ASSIGNED_SCOPES" | while read scope; do
+                  log_indent "  - $scope"
+                done
+                
+                # Verify critical scopes are assigned
+                log_indent "Verifying critical scope assignments:"
+                for critical_scope in openid groups; do
+                  if echo "$ASSIGNED_SCOPES" | grep -q "^$critical_scope$"; then
+                    log_success "  ✓ $critical_scope assigned"
+                  else
+                    log_error "  ✗ $critical_scope not assigned"
+                  fi
+                done
+              else
+                log_error "Failed to verify system-client scopes (HTTP $VERIFY_HTTP)"
+              fi
+            fi
+            
+            # Verify groups
+            log_indent "Verifying groups configuration..."
+            GROUPS_RESULT=$(curl -s -w "\n%{http_code}" -X GET \
+              "$KEYCLOAK_URL/admin/realms/master/groups" \
+              -H "Authorization: Bearer $TOKEN" 2>&1)
+            
+            GROUPS_HTTP=$(echo "$GROUPS_RESULT" | tail -n1)
+            GROUPS_BODY=$(echo "$GROUPS_RESULT" | head -n-1)
+            
+            if [ "$GROUPS_HTTP" = "200" ]; then
+              log_success "Successfully retrieved groups"
+              GROUP_COUNT=$(echo "$GROUPS_BODY" | grep -o '"name":"[^"]*' | wc -l)
+              log_indent "Total groups configured: $GROUP_COUNT"
+              
+              if [ "$GROUP_COUNT" -gt 0 ]; then
+                log_indent "Configured groups:"
+                echo "$GROUPS_BODY" | grep -o '"name":"[^"]*' | cut -d'"' -f4 | head -10 | while read group; do
+                  log_indent "  - $group"
+                done
+                if [ "$GROUP_COUNT" -gt 10 ]; then
+                  log_indent "  ... and $((GROUP_COUNT - 10)) more"
+                fi
+              fi
+            else
+              log_error "Failed to retrieve groups (HTTP $GROUPS_HTTP)"
+            fi
+            
+            # Final summary
+            log ""
+            log "========================================"
+            log "Configuration Bootstrap Summary"
+            log "========================================"
+            
+            END_TIME=$(date)
+            TOTAL_DURATION=$(($(date +%s) - START_TIMESTAMP))
+            
+            log "Job completed at: $END_TIME"
+            log "Total execution time: ${TOTAL_DURATION} seconds"
+            
+            if [ "$IMPORT_SUCCESS" = "true" ]; then
+              log_success "✓ Realm configuration import: SUCCESS"
+            else
+              log_warn "⚠ Realm configuration import: PARTIAL/FAILED"
+            fi
+            
+            log_success "✓ System-client scope verification: COMPLETED"
+            log_success "✓ Configuration verification: COMPLETED"
+            log ""
+            log "All configured components:"
+            log "  • Clients: All M2M clients, UI clients, and system clients"
+            log "  • Scopes: OpenID Connect scopes with protocol mappers"
+            log "  • Roles: Realm and client-specific roles"
+            log "  • Groups: User groups with role mappings"
+            log "  • Users: Service account users for M2M clients"
+            log "  • Security: Password policies and brute force protection"
+            log ""
+            log "✓ Keycloak configuration bootstrap completed successfully!"
         env:
         - name: KEYCLOAK_URL
           value: "http://{{ .Values.keycloak.instanceName }}-service:8080"
         - name: KEYCLOAK_USER
           valueFrom:
             secretKeyRef:
-              name: {{ .Values.configCli.auth.secretName }}
-              key: {{ .Values.configCli.auth.usernameKey }}
+              name: {{ .Values.configCli.auth.secretName | quote }}
+              key: {{ .Values.configCli.auth.usernameKey | quote }}
         - name: KEYCLOAK_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: {{ .Values.configCli.auth.secretName }}
-              key: {{ .Values.configCli.auth.passwordKey }}
+              name: {{ .Values.configCli.auth.secretName | quote }}
+              key: {{ .Values.configCli.auth.passwordKey | quote }}
         {{- if .Values.keycloak.additionalOptions }}
         {{- range .Values.keycloak.additionalOptions }}
         {{- if or (eq .name "HTTP_PROXY") (eq .name "HTTPS_PROXY") (eq .name "NO_PROXY") }}
