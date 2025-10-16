@@ -1,3 +1,4 @@
+---
 # SPDX-FileCopyrightText: 2025 Intel Corporation
 #
 # SPDX-License-Identifier: Apache-2.0
@@ -19,7 +20,7 @@ jobs:
       - name: Auto approve PR
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        if: github.actor == github.actor == 'sys-orch' && 
+        if: github.actor == github.actor == 'sys-orch' &&
           github.event.pull_request.base.ref == 'main-pass-validation'
         run: |
           echo "Approving PR #${{ github.event.pull_request.number }} by ${{ github.actor }}"
@@ -31,11 +32,11 @@ jobs:
       pull-requests: write
       contents: write
     name: Auto merge PR
-    needs: 
+    needs:
       - auto-approve
     runs-on: ubuntu-latest
     if: |
-      github.actor == 'sys-orch' && 
+      github.actor == 'sys-orch' &&
       github.event.pull_request.base.ref == 'main-pass-validation'
     steps:
       - name: Auto merge
@@ -44,4 +45,3 @@ jobs:
         run: |
           echo "Enabling auto-merge for PR #${{ github.event.pull_request.number }} by ${{ github.actor }}"
           gh pr merge ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --auto --squash
-          

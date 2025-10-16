@@ -1,3 +1,4 @@
+---
 # SPDX-FileCopyrightText: 2025 Intel Corporation
 #
 # SPDX-License-Identifier: Apache-2.0
@@ -15,6 +16,8 @@ permissions: {}
 jobs:
   remind-contributing:
     permissions:
+      issues: write
+      pull-requests: write
       contents: read
     name: Remind Contributor
     runs-on: ubuntu-latest
