@@ -555,6 +555,11 @@ mimir-distributed:
     {{- end }}
     ingress:
       enabled: false
+    nginxConfig:
+      httpSnippet: |
+        # Buffer settings to handle large headers/cookies
+        client_header_buffer_size 32k;
+        large_client_header_buffers 16 80k;
     {{- if and .edgeNode .edgeNode.mimir .edgeNode.mimir.gateway }}
     {{- if .edgeNode.mimir.gateway.replicas }}
     replicas: {{ .edgeNode.mimir.gateway.replicas }}
