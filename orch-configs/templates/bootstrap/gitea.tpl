@@ -28,12 +28,16 @@ postgresql:
     resourcesPreset: none
     resource: {}
     containerSecurityContext:
+      readOnlyRootFilesystem: false
       allowPrivilegeEscalation: false
       capabilities:
         drop:
           - ALL
       seccompProfile:
         type: RuntimeDefault
+    extraEnvVars:
+    - name: PGDATA
+      value: /var/lib/postgresql/data/pgdata
   persistence:
     size: 1Gi
   containerSecurityContext:

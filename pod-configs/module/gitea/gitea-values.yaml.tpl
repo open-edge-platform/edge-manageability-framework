@@ -25,6 +25,7 @@ postgresql:
     tag: 16.3
   primary:
     containerSecurityContext:
+      readOnlyRootFilesystem: false    
       allowPrivilegeEscalation: false
       capabilities:
         drop:
@@ -34,6 +35,9 @@ postgresql:
       # Storage class efs-1000 uses user 1000
       runAsUser: 1000
       runAsGroup: 1000
+    extraEnvVars:
+    - name: PGDATA
+      value: /var/lib/postgresql/data/pgdata      
     persistence:
       storageClass: "efs-1000"
     resourcesPreset: none
