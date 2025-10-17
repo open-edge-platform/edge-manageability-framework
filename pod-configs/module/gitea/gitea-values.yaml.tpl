@@ -35,7 +35,7 @@ postgresql:
       # Storage class efs-1000 uses user 1000
       runAsUser: 1000
       runAsGroup: 1000
-    extraEnvVars:
+    env:
     - name: PGDATA
       value: /var/lib/postgresql/data/pgdata
     extraVolumeMounts:

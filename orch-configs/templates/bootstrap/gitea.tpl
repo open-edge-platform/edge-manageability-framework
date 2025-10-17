@@ -35,7 +35,7 @@ postgresql:
           - ALL
       seccompProfile:
         type: RuntimeDefault
-    extraEnvVars:
+    env:
     - name: PGDATA
       value: /var/lib/postgresql/data/pgdata
     extraVolumeMounts:
