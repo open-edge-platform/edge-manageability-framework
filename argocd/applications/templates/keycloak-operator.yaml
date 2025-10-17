@@ -19,11 +19,11 @@ spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
     - repoURL: "https://github.com/keycloak/keycloak-k8s-resources"
-      path: kubernetes
-      targetRevision: 25.0.0
+      path: .
+      targetRevision: 26.4.1
       directory:
         recurse: true
-        include: "keycloak-operator-*.yaml"
+        include: "*.yml"
   destination:
     namespace: {{$namespace}}
     server: {{ required "A valid targetServer entry required!" .Values.argo.targetServer }}

@@ -10,10 +10,10 @@ metadata:
   labels:
     app.kubernetes.io/name: keycloak
     app.kubernetes.io/instance: platform-keycloak
-    app.kubernetes.io/version: "25.0.0"
+    app.kubernetes.io/version: "26.4.1"
 spec:
   # Image configuration - Using latest stable Keycloak
-  image: quay.io/keycloak/keycloak:25.0.0
+  image: quay.io/keycloak/keycloak:26.4.1
   imagePullPolicy: IfNotPresent
 
   # Bootstrap admin credentials
