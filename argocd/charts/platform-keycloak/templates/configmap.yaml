@@ -1,0 +1,22 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+{{- if and .Values.keycloak.enabled .Values.configCli.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.keycloak.instanceName }}-config
+  namespace: {{ .Values.keycloak.instanceNamespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "160"
+  labels:
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/instance: {{ .Values.keycloak.instanceName }}
+    app.kubernetes.io/managed-by: platform-keycloak-helm
+data:
+{{- range $key, $value := .Values.configCli.configuration }}
+  {{ $key }}: |
+{{ $value | indent 4 }}
+{{- end }}
+{{- end }}

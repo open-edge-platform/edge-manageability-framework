@@ -1,0 +1,9 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+operator:
+  enabled: true
+  namespace: keycloak-system
+  install:
+    image: bitnamilegacy/kubectl:1.31

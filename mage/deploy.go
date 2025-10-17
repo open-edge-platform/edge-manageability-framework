@@ -447,10 +447,22 @@ func localSecret(targetEnv string, createRSToken bool) error {
 	}
 
 	// creating platform-keycloak secret that contains the randomly generated keycloak admin password
+	// Note: Keycloak operator's bootstrapAdmin.user.secret expects 'username' and 'password' keys
 	if err := kubectlCreateAndApply("secret", "generic", "-n", "orch-platform", "platform-keycloak",
-		"--from-literal=admin-password="+keycloakPassword); err != nil {
+		"--from-literal=username=admin", "--from-literal=password="+keycloakPassword); err != nil {
 		return err
 	}
+
+	// Create keycloak-system namespace for operator
+	if err := kubectlCreateAndApply("namespace", "keycloak-system"); err != nil {
+		return err
+	}
+
+	// Download and create Keycloak operator resources as ConfigMaps
+	if err := createKeycloakOperatorConfigMaps(); err != nil {
+		return err
+	}
+
 	if err := kubectlCreateAndApply("namespace", "orch-database"); err != nil {
 		return err
 	}
@@ -1627,4 +1639,157 @@ func (d Deploy) orchLocal(targetEnv string) error {
 		fmt.Printf("Orchestrator will be available at domain : %s\n", subDomain)
 	}
 	return err
+}
+
+// createKeycloakOperatorConfigMaps downloads Keycloak operator resources and prepares them for deployment.
+// CRDs (keycloaks.k8s.keycloak.org and keycloakrealmimports.k8s.keycloak.org) are applied directly to the cluster.
+// The operator manifest is stored in a ConfigMap and applied later by the platform-keycloak-operator Helm chart.
+func createKeycloakOperatorConfigMaps() error {
+	const keycloakVersion = "26.4.0"
+	
+	// URLs for Keycloak operator resources
+	keycloakCRDURL := fmt.Sprintf("https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/%s/kubernetes/keycloaks.k8s.keycloak.org-v1.yml", keycloakVersion)
+	realmImportCRDURL := fmt.Sprintf("https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/%s/kubernetes/keycloakrealmimports.k8s.keycloak.org-v1.yml", keycloakVersion)
+	operatorURL := fmt.Sprintf("https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/%s/kubernetes/kubernetes.yml", keycloakVersion)
+	
+	// Download Keycloak CRD
+	keycloakCRDContent, err := downloadKeycloakResource(keycloakCRDURL)
+	if err != nil {
+		return fmt.Errorf("failed to download Keycloak CRD: %w", err)
+	}
+	
+	// Download KeycloakRealmImport CRD
+	realmImportCRDContent, err := downloadKeycloakResource(realmImportCRDURL)
+	if err != nil {
+		return fmt.Errorf("failed to download KeycloakRealmImport CRD: %w", err)
+	}
+	
+	// Combine both CRDs into one file separated by ---
+	combinedCRDs := keycloakCRDContent + "\n---\n" + realmImportCRDContent
+	
+	// Download operator
+	operatorContent, err := downloadKeycloakResource(operatorURL)
+	if err != nil {
+		return fmt.Errorf("failed to download Keycloak operator: %w", err)
+	}
+	
+	// Patch operator manifest to work in our environment
+	operatorContent = patchKeycloakOperatorManifest(operatorContent)
+	
+	// Create CA certificates ConfigMap from host
+	if err := kubectlCreateAndApply("configmap", "ca-certificates", "-n", "keycloak-system",
+		"--from-file=/etc/ssl/certs/ca-certificates.crt"); err != nil {
+		return fmt.Errorf("failed to create CA certificates ConfigMap: %w", err)
+	}
+	
+	// Apply CRDs directly to cluster (not as ConfigMap)
+	if err := applyManifestContent(combinedCRDs); err != nil {
+		return fmt.Errorf("failed to apply Keycloak CRDs: %w", err)
+	}
+	
+	// Create operator ConfigMap
+	if err := createConfigMapFromContent("keycloak-operator", "keycloak-system", "keycloak-operator.yaml", operatorContent); err != nil {
+		return fmt.Errorf("failed to create Keycloak operator ConfigMap: %w", err)
+	}
+	
+	return nil
+}
+
+// patchKeycloakOperatorManifest patches the downloaded operator manifest to work in our environment
+func patchKeycloakOperatorManifest(content string) string {
+	// Replace hardcoded "namespace: keycloak" with "namespace: keycloak-system"
+	content = strings.ReplaceAll(content, "namespace: keycloak\n", "namespace: keycloak-system\n")
+	
+	// Add environment variables to watch multiple namespaces
+	// Quarkus Operator SDK requires specific controller namespace configuration
+	// List all namespaces where Keycloak instances will be deployed
+	// Currently only orch-platform deploys Keycloak instances
+	namespaces := "keycloak-system,orch-platform"
+	
+	envVars := fmt.Sprintf(`- name: WATCH_NAMESPACE
+              value: "%s"
+            - name: QUARKUS_OPERATOR_SDK_CONTROLLERS_KEYCLOAKCONTROLLER_NAMESPACES
+              value: "%s"
+            - name: QUARKUS_OPERATOR_SDK_CONTROLLERS_KEYCLOAKREALMIMPORTCONTROLLER_NAMESPACES
+              value: "%s"
+            - name: RELATED_IMAGE_KEYCLOAK`, namespaces, namespaces, namespaces)
+	
+	content = strings.ReplaceAll(content,
+		"- name: RELATED_IMAGE_KEYCLOAK",
+		envVars)
+	
+	// Remove KUBERNETES_NAMESPACE environment variable if it exists
+	// This is a fallback in case the format changes
+	content = strings.ReplaceAll(content,
+		`- name: KUBERNETES_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            `,
+		"")
+	
+	return content
+}
+
+// downloadKeycloakResource downloads a resource from GitHub
+func downloadKeycloakResource(url string) (string, error) {
+	resp, err := http.Get(url) //nolint: gosec
+	if err != nil {
+		return "", fmt.Errorf("failed to download %s: %w", url, err)
+	}
+	defer resp.Body.Close()
+	
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("failed to download %s: HTTP %d", url, resp.StatusCode)
+	}
+	
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read response body: %w", err)
+	}
+	
+	return string(body), nil
+}
+
+// applyManifestContent applies Kubernetes manifest content directly using kubectl apply
+func applyManifestContent(content string) error {
+	// Create a temporary file
+	tmpFile, err := os.CreateTemp("", "k8s-manifest-*.yaml")
+	if err != nil {
+		return fmt.Errorf("failed to create temp file: %w", err)
+	}
+	defer os.Remove(tmpFile.Name())
+	
+	// Write content to temp file
+	if _, err := tmpFile.WriteString(content); err != nil {
+		return fmt.Errorf("failed to write to temp file: %w", err)
+	}
+	tmpFile.Close()
+	
+	// Apply the manifest
+	cmd := fmt.Sprintf("kubectl apply -f %s", tmpFile.Name())
+	if _, err := script.Exec(cmd).Stdout(); err != nil {
+		return fmt.Errorf("failed to apply manifest: %w", err)
+	}
+	
+	return nil
+}
+
+// createConfigMapFromContent creates a ConfigMap with the given content
+func createConfigMapFromContent(name, namespace, filename, content string) error {
+	// Create a temporary file
+	tmpFile, err := os.CreateTemp("", fmt.Sprintf("%s-*.yaml", name))
+	if err != nil {
+		return fmt.Errorf("failed to create temp file: %w", err)
+	}
+	defer os.Remove(tmpFile.Name())
+	
+	// Write content to temp file
+	if _, err := tmpFile.WriteString(content); err != nil {
+		return fmt.Errorf("failed to write to temp file: %w", err)
+	}
+	tmpFile.Close()
+	
+	// Create ConfigMap from file
+	return kubectlCreateAndApply("configmap", name, "-n", namespace, "--from-file="+filename+"="+tmpFile.Name())
 }

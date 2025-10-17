@@ -2,64 +2,118 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-## Cluster-Specific values
-## These values are not part of bitnami helm chart and are used to parameterize substrings in
-## the larger keycloakConfigCli.configuration.realm-master.json value.
-## @param clusterSpecific.webuiClientRootUrl The Keycloak Master realm UI Client's rootUrl value as a quoted JSON string
-## @param clusterSpecific.webuiRedirectUrls The Keycloak Master realm UI Client's reirectUrl values as a JSON array of quoted JSON strings
-## @param clusterSpecific.registryClientRootUrl The Keycloak Master realm Harbor Client's rootUrl value as a quoted JSON string
-## @param clusterSpecific.telemetryClientRootUrl The Keycloak Master realm Grafana Client's rootUrl value as a quoted JSON string
-## @param clusterSpecific.telemetryRedirectUrls The Keycloak Master realm Grafana Client's reirectUrl values as a JSON array of quoted JSON strings
-clusterSpecific:
-  webuiClientRootUrl: "https://web-ui.{{ .Values.argo.clusterDomain }}"
-  webuiRedirectUrls: ["https://web-ui.{{ .Values.argo.clusterDomain }}", "https://app-service-proxy.{{ .Values.argo.clusterDomain }}/app-service-proxy-index.html*", "https://vnc.{{ .Values.argo.clusterDomain }}/*", "https://{{ .Values.argo.clusterDomain }}"{{- if index .Values.argo "platform-keycloak" "extraUiRedirects" -}}, {{- index .Values.argo "platform-keycloak" "extraUiRedirects" -}}{{- end -}}]
-  registryClientRootUrl: "https://registry-oci.{{ .Values.argo.clusterDomain }}"
-  telemetryClientRootUrl: "https://observability-ui.{{ .Values.argo.clusterDomain }}"
-  telemetryRedirectUrls: ["https://observability-admin.{{ .Values.argo.clusterDomain }}/login/generic_oauth", "https://observability-ui.{{ .Values.argo.clusterDomain }}/login/generic_oauth"]
+## Custom template for platform-keycloak application
+## This file provides environment-specific configuration overrides
+## for the Keycloak deployment using official operator
 
-## External PostgreSQL configuration
-## All of these values are only used when postgresql.enabled is set to false
-## @param externalDatabase.existingSecret Name of an existing secret resource containing the database credentials
-## @param externalDatabase.existingSecretHostKey Name of an existing secret key containing the database host name
-## @param externalDatabase.existingSecretPortKey Name of an existing secret key containing the database port
-## @param externalDatabase.existingSecretUserKey Name of an existing secret key containing the database user
-## @param externalDatabase.existingSecretDatabaseKey Name of an existing secret key containing the database name
-## @param externalDatabase.existingSecretPasswordKey Name of an existing secret key containing the database credentials
-externalDatabase:
-  existingSecret: platform-keycloak-{{.Values.argo.database.type}}-postgresql
-  existingSecretHostKey: PGHOST
-  existingSecretPortKey: PGPORT
-  existingSecretUserKey: PGUSER
-  existingSecretDatabaseKey: PGDATABASE
-  existingSecretPasswordKey: PGPASSWORD
+# Operator settings (usually no customization needed)
+operator:
+  enabled: true
+  namespace: keycloak-system
 
-# Use index to handle values with hyphen
-{{- if index .Values.argo "platform-keycloak" "localRegistrySize"}}
-persistence:
-  persistentVolumeClaim:
-    registry:
-      size: {{index .Values.argo "platform-keycloak" "localRegistrySize"}}
-{{- end}}
+# Keycloak instance configuration
+keycloak:
+  instanceName: platform-keycloak
+  instanceNamespace: orch-platform
+  instances: 1
+  
+  # Bootstrap admin credentials from the secret created by deploy.go
+  bootstrapAdmin:
+    user:
+      secret: platform-keycloak
+  
+  hostname:
+    strict: false
+  
+  http:
+    httpEnabled: true
+    httpPort: 8080
+  
+  proxy:
+    headers: xforwarded
 
-extraEnvVars:
-  - name: HTTPS_PROXY
-    value: {{.Values.argo.proxy.httpsProxy}}
-  - name: HTTP_PROXY
-    value: {{.Values.argo.proxy.httpProxy}}
-  - name: NO_PROXY
-    value: {{.Values.argo.proxy.noProxy}}
-  {{ if index .Values.argo "platform-keycloak" "db" }}
-  - name: KC_DB_POOL_INITIAL_SIZE
-    value: {{ index .Values.argo "platform-keycloak" "db" "poolInitSize" | default "5" | quote}}
-  - name: KC_DB_POOL_MIN_SIZE
-    value: {{ index .Values.argo "platform-keycloak" "db" "poolMinSize" | default "5" | quote}}
-  - name: KC_DB_POOL_MAX_SIZE
-    value: {{ index .Values.argo "platform-keycloak" "db" "poolMaxSize" | default "100" | quote}}
-  {{ end }}
-  - name: KC_PROXY_HEADERS
-    value: "xforwarded"
+  # Database configuration - use cluster-specific database settings
+  db:
+    vendor: postgres
+    host: postgresql.orch-database.svc.cluster.local
+    port: 5432
+    database: orch-platform-platform-keycloak
+    usernameSecret:
+      name: platform-keycloak-local-postgresql
+      key: PGUSER
+    passwordSecret:
+      name: platform-keycloak-local-postgresql
+      key: PGPASSWORD
 
-{{- with .Values.argo.resources.platformKeycloak }}
-resources:
-  {{- toYaml . | nindent 2}}
-{{- end }}
+  # Additional options including proxy configuration
+  additionalOptions:
+    - name: KC_PROXY_HEADERS
+      value: xforwarded
+    - name: KC_HOSTNAME_STRICT
+      value: "false"
+    - name: KC_HOSTNAME_STRICT_HTTPS  
+      value: "false"
+    {{- if .Values.argo.proxy.httpsProxy }}
+    - name: HTTPS_PROXY
+      value: http://proxy-dmz.intel.com:912
+    {{- else }}
+    - name: HTTPS_PROXY
+      value: http://proxy-dmz.intel.com:912
+    {{- end }}
+    {{- if .Values.argo.proxy.httpProxy }}
+    - name: HTTP_PROXY
+      value: http://proxy-dmz.intel.com:912
+    {{- else }}
+    - name: HTTP_PROXY
+      value: http://proxy-dmz.intel.com:912
+    {{- end }}
+    {{- if .Values.argo.proxy.noProxy }}
+    - name: NO_PROXY
+      value: localhost,svc,cluster.local,default,internal,caas.intel.com,certificates.intel.com,localhost,127.0.0.0/8,10.0.0.0/8,192.168.0.0/16,172.16.0.0/12,169.254.169.254,orch-platform,orch-app,orch-cluster,orch-infra,orch-database,cattle-system,orch-secret,s3.amazonaws.com,s3.us-west-2.amazonaws.com,ec2.us-west-2.amazonaws.com,eks.amazonaws.com,elb.us-west-2.amazonaws.com,dkr.ecr.us-west-2.amazonaws.com,espd.infra-host.com,pid.infra-host.com,espdqa.infra-host.com,argocd-repo-server
+    {{- else }}
+    - name: NO_PROXY
+      value: localhost,svc,cluster.local,default,internal,caas.intel.com,certificates.intel.com,localhost,127.0.0.0/8,10.0.0.0/8,192.168.0.0/16,172.16.0.0/12,169.254.169.254,orch-platform,orch-app,orch-cluster,orch-infra,orch-database,cattle-system,orch-secret,s3.amazonaws.com,s3.us-west-2.amazonaws.com,ec2.us-west-2.amazonaws.com,eks.amazonaws.com,elb.us-west-2.amazonaws.com,dkr.ecr.us-west-2.amazonaws.com,espd.infra-host.com,pid.infra-host.com,espdqa.infra-host.com,argocd-repo-server
+    {{- end }}
+
+  # Ingress configuration - disabled since no ingress controller is available
+  ingress:
+    enabled: false
+
+  # Network Policy configuration - disabled to avoid needing networkpolicies RBAC
+  networkPolicy:
+    enabled: false
+
+  # Resource configuration
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+# Service alias configuration
+service:
+  enabled: true
+  name: platform-keycloak
+  namespace: orch-platform
+  port: 8080
+
+# Configuration CLI - customize realm configuration with cluster-specific URLs
+configCli:
+  enabled: true
+  image: curlimages/curl:8.4.0
+  
+  # Authentication using the platform-keycloak secret
+  auth:
+    secretName: platform-keycloak
+    usernameKey: username
+    passwordKey: password
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi

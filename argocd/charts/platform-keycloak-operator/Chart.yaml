@@ -1,0 +1,10 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v2
+name: platform-keycloak-operator
+description: Keycloak Operator CRD and operator installation
+type: application
+version: 1.0.0
+appVersion: "26.4.0"
