@@ -33,9 +33,11 @@ spec:
     database: keycloak
     usernameSecret:
       name: orch-database-postgresql
+      namespace: orch-database
       key: PGUSER
     passwordSecret:
       name: orch-database-postgresql
+      namespace: orch-database
       key: PGPASSWORD
     sslMode: disable
     poolInitialSize: 5
