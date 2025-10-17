@@ -821,6 +821,11 @@ jobs:
           TEST_EXIT_CODE=$?
           sudo cat /var/log/libvirt/qemu/edge-node-EN123456789-console.log || true
           exit $TEST_EXIT_CODE
+          
+      - name: Collect VEN Console logs
+        if: always()
+        run: |
+          sudo cat /var/log/libvirt/qemu/edge-node-EN123456789-console.log
 
   tag-repo:
     permissions:
