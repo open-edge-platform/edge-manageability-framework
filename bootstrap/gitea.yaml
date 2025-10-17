@@ -20,12 +20,11 @@ postgresql:
   image:
     registry: docker.io
     repository: library/postgres
-    tag: 16.3
+    tag: 16.3-alpine
   primary:
     resourcesPreset: none
     resource: {}
     containerSecurityContext:
-      readOnlyRootFilesystem: false
       allowPrivilegeEscalation: false
       capabilities:
         drop:

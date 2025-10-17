@@ -22,10 +22,9 @@ postgresql:
   image:
     registry: docker.io
     repository: library/postgres
-    tag: 16.3
+    tag: 16.3-alpine
   primary:
     containerSecurityContext:
-      readOnlyRootFilesystem: false    
       allowPrivilegeEscalation: false
       capabilities:
         drop:
@@ -37,7 +36,7 @@ postgresql:
       runAsGroup: 1000
     extraEnvVars:
     - name: PGDATA
-      value: /var/lib/postgresql/data/pgdata      
+      value: /var/lib/postgresql/data/pgdata
     persistence:
       storageClass: "efs-1000"
     resourcesPreset: none
