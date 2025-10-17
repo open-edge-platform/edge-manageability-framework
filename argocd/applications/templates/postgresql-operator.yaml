@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-{{- $appName        := "postgresql" }}
-{{- $namespace      := "orch-database" }}
-{{- $syncWave       := "140" }}
+{{- $appName        := "postgresql-operator" }}
+{{- $namespace      := "postgresql-operator" }}
+{{- $syncWave       := "1" }}
 ---
 {{- if (index .Values.argo.enabled $appName) }}
 apiVersion: argoproj.io/v1alpha1
@@ -17,9 +17,9 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
-    - repoURL: "registry-1.docker.io/bitnamicharts"
-      chart: postgresql
-      targetRevision: 16.6.3
+    - repoURL: "ghcr.io/cloudnative-pg/charts"
+      chart: cloudnative-pg
+      targetRevision: 0.26.0
       helm:
         releaseName: {{$appName}}
         valuesObject:
@@ -47,4 +47,5 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ApplyOutOfSyncOnly=true
+      - ServerSideApply=true # See https://github.com/argoproj/argo-cd/issues/820
 {{- end }}

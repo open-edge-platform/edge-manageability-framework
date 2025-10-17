@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-{{- $appName        := "postgresql-secrets" }}
+{{- $appName        := "postgresql-cluster" }}
 {{- $namespace      := "orch-database" }}
-{{- $syncWave       := "130" }}
+{{- $syncWave       := "140" }}
 ---
 {{- if (index .Values.argo.enabled $appName) }}
 apiVersion: argoproj.io/v1alpha1
@@ -17,9 +17,9 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
-    - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
-      chart: common/charts/{{$appName}}
-      targetRevision: 25.2.4
+    - repoURL: "ghcr.io/cloudnative-pg/charts"
+      chart: cluster
+      targetRevision: 0.3.1
       helm:
         releaseName: {{$appName}}
         valuesObject:
@@ -47,20 +47,4 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ApplyOutOfSyncOnly=true
-      - RespectIgnoreDifferences=true
-  ignoreDifferences:
-{{- range .Values.argo.database.databases }}
-    - group: ""
-      kind: Secret
-      namespace: {{ .namespace }}
-      name: {{ .name }}-local-postgresql
-      jsonPointers:
-        - /data/PGPASSWORD
-    - group: ""
-      kind: Secret
-      namespace: {{ $namespace }}
-      name: {{ .namespace }}-{{ .name }}
-      jsonPointers:
-        - /data/password
-{{- end }}
 {{- end }}
