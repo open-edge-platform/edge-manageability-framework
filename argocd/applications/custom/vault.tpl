@@ -70,7 +70,7 @@ server:
   extraInitContainers:
     # This initContainer consumes Postgres credential via secret and converts it into a config file that can be consumed by vault
     - name: storage-config
-      image: alpine:3.18.2
+      image: alpine:3.22.2
       securityContext:
         allowPrivilegeEscalation: false
         capabilities:
