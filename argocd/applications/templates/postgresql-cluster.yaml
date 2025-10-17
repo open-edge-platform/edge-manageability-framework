@@ -2,12 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-{{- $appName        := "wait-istio-job" }}
-{{- $chartName      := "job-wait" }}
-{{- $namespace      := "ns-label" }}
-{{- $syncWave       := "110" }}
+{{- $appName        := "postgresql-cluster" }}
+{{- $namespace      := "orch-database" }}
+{{- $syncWave       := "140" }}
 ---
-# always deploy this app
+{{- if (index .Values.argo.enabled $appName) }}
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -15,14 +14,12 @@ metadata:
     argocd.argoproj.io/sync-wave: "{{ $syncWave }}"
   name: {{$appName}}
   namespace: {{ required "A valid namespace entry required!" .Values.argo.namespace }}
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
-    - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
-      chart: common/charts/{{$chartName}}
-      targetRevision: 25.2.1
+    - repoURL: "ghcr.io/cloudnative-pg/charts"
+      chart: cluster
+      targetRevision: 0.3.1
       helm:
         releaseName: {{$appName}}
         valuesObject:
@@ -30,7 +27,8 @@ spec:
           {{- $customConfig := tpl (.Files.Get $customFile) . | fromYaml }}
           {{- $baseFile := printf "configs/%s.yaml" $appName }}
           {{- $baseConfig := .Files.Get $baseFile|fromYaml}}
-          {{- mergeOverwrite $baseConfig $customConfig | toYaml | nindent 10 }}
+          {{- $overwrite := (get .Values.postCustomTemplateOverwrite $appName ) | default dict }}
+          {{- mergeOverwrite $baseConfig $customConfig $overwrite | toYaml | nindent 10 }}
   destination:
     namespace: {{$namespace}}
     server: {{ required "A valid targetServer entry required!" .Values.argo.targetServer }}
@@ -49,3 +47,4 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ApplyOutOfSyncOnly=true
+{{- end }}
