@@ -20,9 +20,9 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
-    - repoURL: {{ .Values.argo.repoURL }}
+    - repoURL: {{ required "A valid deployRepoURL entry required!" .Values.argo.deployRepoURL }}
       path: argocd/keycloak-operator
-      targetRevision: {{ .Values.argo.targetRevision }}
+      targetRevision: {{ required "A valid deployRepoRevision entry required!" .Values.argo.deployRepoRevision }}
       helm:
         valuesObject:
           {{- $customFile := printf "custom/%s.tpl" $appName }}
