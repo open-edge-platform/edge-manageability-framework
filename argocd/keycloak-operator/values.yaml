@@ -2,8 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# This file defines the default values for the keycloak-operator Helm chart
-# These values are overridden by the platform-keycloak Application's valuesObject
+# This file defines the schema and default values for the keycloak-operator Helm chart
+# Values are provided directly by the platform-keycloak Application's valuesObject
+# section in argocd/applications/templates/platform-keycloak.yaml
+# The values.yaml here serves as documentation and defaults if no valuesObject is provided
 
 clusterSpecific:
   # WebUI Client configuration
