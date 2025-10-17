@@ -21,8 +21,8 @@ postgresql:
   enabled: true
   image:
     registry: docker.io
-    repository: bitnamilegacy/postgresql
-    tag: 16.3.0-debian-12-r23
+    repository: library/postgresql
+    tag: 16.3
   primary:
     containerSecurityContext:
       allowPrivilegeEscalation: false
