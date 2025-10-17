@@ -1,0 +1,73 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: keycloak-pod-reader
+  namespace: orch-platform
+  labels:
+    app.kubernetes.io/name: keycloak
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["platform-keycloak"]
+    verbs: ["get", "watch"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["orch-database-postgresql"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["pods", "pods/log"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: keycloak-pod-reader
+  namespace: orch-platform
+  labels:
+    app.kubernetes.io/name: keycloak
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: keycloak-pod-reader
+subjects:
+  - kind: ServiceAccount
+    name: keycloak-operator
+    namespace: keycloak-system
+---
+# Allow keycloak-system operator to read realm imports in orch-platform
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: keycloak-operator-orch-platform
+  labels:
+    app.kubernetes.io/name: keycloak-operator
+rules:
+  - apiGroups: ["keycloak.org"]
+    resources: ["keycloakrealmimports"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["keycloak.org"]
+    resources: ["keycloakrealmimports/status"]
+    verbs: ["get", "patch", "update"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list", "watch"]
+    namespaces: ["orch-platform"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: keycloak-operator-orch-platform
+  labels:
+    app.kubernetes.io/name: keycloak-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: keycloak-operator-orch-platform
+subjects:
+  - kind: ServiceAccount
+    name: keycloak-operator
+    namespace: keycloak-system

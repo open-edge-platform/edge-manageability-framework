@@ -2,64 +2,97 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-## Cluster-Specific values
-## These values are not part of bitnami helm chart and are used to parameterize substrings in
-## the larger keycloakConfigCli.configuration.realm-master.json value.
-## @param clusterSpecific.webuiClientRootUrl The Keycloak Master realm UI Client's rootUrl value as a quoted JSON string
-## @param clusterSpecific.webuiRedirectUrls The Keycloak Master realm UI Client's reirectUrl values as a JSON array of quoted JSON strings
-## @param clusterSpecific.registryClientRootUrl The Keycloak Master realm Harbor Client's rootUrl value as a quoted JSON string
-## @param clusterSpecific.telemetryClientRootUrl The Keycloak Master realm Grafana Client's rootUrl value as a quoted JSON string
-## @param clusterSpecific.telemetryRedirectUrls The Keycloak Master realm Grafana Client's reirectUrl values as a JSON array of quoted JSON strings
+## Cluster-Specific values for Keycloak Operator
+## These values are used to configure:
+## 1. Realm import configuration (clients, redirect URIs, etc.)
+## 2. Keycloak instance deployment parameters
+
 clusterSpecific:
+  # WebUI Client configuration
   webuiClientRootUrl: "https://web-ui.{{ .Values.argo.clusterDomain }}"
   webuiRedirectUrls: ["https://web-ui.{{ .Values.argo.clusterDomain }}", "https://app-service-proxy.{{ .Values.argo.clusterDomain }}/app-service-proxy-index.html*", "https://vnc.{{ .Values.argo.clusterDomain }}/*", "https://{{ .Values.argo.clusterDomain }}"{{- if index .Values.argo "platform-keycloak" "extraUiRedirects" -}}, {{- index .Values.argo "platform-keycloak" "extraUiRedirects" -}}{{- end -}}]
+  
+  # DocsUI Client configuration
+  docsuiClientRootUrl: "https://docs-ui.{{ .Values.argo.clusterDomain }}"
+  docsuiRedirectUrls: ["https://docs-ui.{{ .Values.argo.clusterDomain }}", "https://docs-ui.{{ .Values.argo.clusterDomain }}/"]
+  
+  # Registry Client configuration (Harbor)
   registryClientRootUrl: "https://registry-oci.{{ .Values.argo.clusterDomain }}"
+  
+  # Telemetry Client configuration (Grafana, Observability)
   telemetryClientRootUrl: "https://observability-ui.{{ .Values.argo.clusterDomain }}"
   telemetryRedirectUrls: ["https://observability-admin.{{ .Values.argo.clusterDomain }}/login/generic_oauth", "https://observability-ui.{{ .Values.argo.clusterDomain }}/login/generic_oauth"]
+  
+  # Cluster Management Client configuration
+  clusterManagementClientRootUrl: "https://cluster-management.{{ .Values.argo.clusterDomain }}"
+  clusterManagementRedirectUrls: ["https://cluster-management.{{ .Values.argo.clusterDomain }}", "https://cluster-management.{{ .Values.argo.clusterDomain }}/"]
 
-## External PostgreSQL configuration
-## All of these values are only used when postgresql.enabled is set to false
-## @param externalDatabase.existingSecret Name of an existing secret resource containing the database credentials
-## @param externalDatabase.existingSecretHostKey Name of an existing secret key containing the database host name
-## @param externalDatabase.existingSecretPortKey Name of an existing secret key containing the database port
-## @param externalDatabase.existingSecretUserKey Name of an existing secret key containing the database user
-## @param externalDatabase.existingSecretDatabaseKey Name of an existing secret key containing the database name
-## @param externalDatabase.existingSecretPasswordKey Name of an existing secret key containing the database credentials
-externalDatabase:
-  existingSecret: platform-keycloak-{{.Values.argo.database.type}}-postgresql
+# Keycloak Operator configuration
+keycloak:
+  # Number of replicas
+  instances: 1
+  
+  # Proxy configuration (for egress through corporate proxies)
+  proxy:
+    headers: xforwarded
+
+# Database configuration (external PostgreSQL)
+database:
+  vendor: postgres
+  host: orch-database-postgresql.orch-database.svc.cluster.local
+  port: 5432
+  database: keycloak
+  existingSecret: orch-database-postgresql
   existingSecretHostKey: PGHOST
   existingSecretPortKey: PGPORT
   existingSecretUserKey: PGUSER
-  existingSecretDatabaseKey: PGDATABASE
   existingSecretPasswordKey: PGPASSWORD
+  existingSecretDatabaseKey: PGDATABASE
+  
+  # Connection pool configuration
+  {{- if index .Values.argo "platform-keycloak" "db" }}
+  poolInitSize: {{ index .Values.argo "platform-keycloak" "db" "poolInitSize" | default "5" }}
+  poolMinSize: {{ index .Values.argo "platform-keycloak" "db" "poolMinSize" | default "5" }}
+  poolMaxSize: {{ index .Values.argo "platform-keycloak" "db" "poolMaxSize" | default "100" }}
+  {{- end }}
 
-# Use index to handle values with hyphen
-{{- if index .Values.argo "platform-keycloak" "localRegistrySize"}}
-persistence:
-  persistentVolumeClaim:
-    registry:
-      size: {{index .Values.argo "platform-keycloak" "localRegistrySize"}}
-{{- end}}
+# HTTP configuration
+http:
+  port: 8080
+  relativeUrls: true
 
-extraEnvVars:
-  - name: HTTPS_PROXY
-    value: {{.Values.argo.proxy.httpsProxy}}
-  - name: HTTP_PROXY
-    value: {{.Values.argo.proxy.httpProxy}}
-  - name: NO_PROXY
-    value: {{.Values.argo.proxy.noProxy}}
-  {{ if index .Values.argo "platform-keycloak" "db" }}
-  - name: KC_DB_POOL_INITIAL_SIZE
-    value: {{ index .Values.argo "platform-keycloak" "db" "poolInitSize" | default "5" | quote}}
-  - name: KC_DB_POOL_MIN_SIZE
-    value: {{ index .Values.argo "platform-keycloak" "db" "poolMinSize" | default "5" | quote}}
-  - name: KC_DB_POOL_MAX_SIZE
-    value: {{ index .Values.argo "platform-keycloak" "db" "poolMaxSize" | default "100" | quote}}
-  {{ end }}
-  - name: KC_PROXY_HEADERS
-    value: "xforwarded"
+# Environment proxy settings
+envProxy:
+  httpsProxy: {{.Values.argo.proxy.httpsProxy}}
+  httpProxy: {{.Values.argo.proxy.httpProxy}}
+  noProxy: {{.Values.argo.proxy.noProxy}}
 
+# Resource limits
 {{- with .Values.argo.resources.platformKeycloak }}
 resources:
   {{- toYaml . | nindent 2}}
 {{- end }}
+
+# Realm configuration settings (used by realm-import.yaml)
+realmConfig:
+  # Display name and theme
+  displayName: "Keycloak"
+  accountTheme: "keycloak"
+  displayNameHtml: "<img src='https://raw.githubusercontent.com/open-edge-platform/orch-utils/73df5d1e99a81ae333d94b1c47dd9bef7fa03ae9/keycloak/one-edge-platform-login-title.png'></img>"
+  
+  # Security settings
+  defaultSignatureAlgorithm: "PS512"
+  accessTokenLifespan: 3600
+  ssoSessionIdleTimeout: 5400
+  ssoSessionMaxLifespan: 43200
+  passwordPolicy: "length(14) and digits(1) and specialChars(1) and upperCase(1) and lowerCase(1)"
+  
+  # Brute force protection
+  bruteForceProtected: true
+  permanentLockout: false
+  maxFailureWaitSeconds: 900
+  minimumQuickLoginWaitSeconds: 60
+  waitIncrementSeconds: 300
+  quickLoginCheckMilliSeconds: 200
+  maxDeltaTimeSeconds: 43200
+  failureFactor: 5

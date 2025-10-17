@@ -1,0 +1,23 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: orch-platform
+
+commonLabels:
+  app.kubernetes.io/name: keycloak
+  app.kubernetes.io/instance: platform-keycloak
+  app.kubernetes.io/version: "25.0.0"
+  app.kubernetes.io/managed-by: argocd
+
+commonAnnotations:
+  description: "Keycloak Server deployment with RealmImport configuration"
+
+resources:
+  - keycloak.yaml
+  - realm-import.yaml
+  - service.yaml
+  - rbac-config.yaml

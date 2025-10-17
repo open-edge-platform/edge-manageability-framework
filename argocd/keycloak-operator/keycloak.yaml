@@ -1,0 +1,102 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: platform-keycloak
+  namespace: orch-platform
+  labels:
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/instance: platform-keycloak
+    app.kubernetes.io/version: "25.0.0"
+spec:
+  # Image configuration - Using latest stable Keycloak
+  image: quay.io/keycloak/keycloak:25.0.0
+  imagePullPolicy: IfNotPresent
+
+  # Bootstrap admin credentials
+  # The secret must have 'username' and 'password' keys
+  bootstrapAdmin:
+    username: admin
+    secret:
+      name: platform-keycloak
+      namespace: orch-platform
+
+  # Database configuration
+  # Connects to external PostgreSQL deployed separately
+  db:
+    vendor: postgres
+    host: orch-database-postgresql.orch-database.svc.cluster.local
+    port: 5432
+    database: keycloak
+    usernameSecret:
+      name: orch-database-postgresql
+      key: PGUSER
+    passwordSecret:
+      name: orch-database-postgresql
+      key: PGPASSWORD
+    sslMode: disable
+    poolInitialSize: 5
+    poolMinSize: 5
+    poolMaxSize: 100
+
+  # HTTP/HTTPS configuration
+  http:
+    relativePath: /
+    enabled: true
+    port: 8080
+
+  # Proxy configuration for load balancers
+  # Important for integration with ingress controllers and reverse proxies
+  proxy:
+    headers: xforwarded
+
+  # Resource requests and limits
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+
+  # Additional startup arguments
+  # Legacy logout for Grafana compatibility
+  # Concurrent requests for performance
+  additionalOptions:
+    - name: spi-login-protocol-openid-connect-legacy-logout-redirect-uri
+      value: "true"
+    - name: spi-brute-force-protector-default-brute-force-detector-allow-concurrent-requests
+      value: "true"
+    - name: log-level
+      value: "INFO"
+    - name: log-console-output
+      value: "json"
+
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 8080
+
+  # Number of replicas for high availability
+  # Set to 1 for initial deployment, increase to 3+ for production HA
+  instances: 1
+
+  # Pod Security Context
+  podSecurityContext:
+    fsGroup: 1000
+    seccompProfile:
+      type: RuntimeDefault
+
+  # Container Security Context
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: false
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
