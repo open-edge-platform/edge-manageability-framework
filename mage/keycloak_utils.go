@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	keycloakNamespace = "orch-platform"
+	keycloakNamespace = "keycloak-system"
 	minPasswordLength = 10
 )
 

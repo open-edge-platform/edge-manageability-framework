@@ -99,8 +99,8 @@ ${M}/release-secrets: | ${M}/create-namespaces
 	touch $@
 
 ${M}/keycloak-secret: | ${M}/create-namespaces
-	@if ! kubectl get secret platform-keycloak -n orch-platform > /dev/null 2>&1; then \
-		kubectl create secret generic -n orch-platform platform-keycloak \
+	@if ! kubectl get secret platform-keycloak -n keycloak-system > /dev/null 2>&1; then \
+		kubectl create secret generic -n keycloak-system platform-keycloak \
 			--from-literal=admin-password="$(KEYCLOAK_PASSWORD)" \
 			--from-literal=username="admin" \
 			--from-literal=password="$(KEYCLOAK_PASSWORD)" \

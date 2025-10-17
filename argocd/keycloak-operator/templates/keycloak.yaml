@@ -6,7 +6,7 @@ apiVersion: k8s.keycloak.org/v2alpha1
 kind: Keycloak
 metadata:
   name: platform-keycloak
-  namespace: orch-platform
+  namespace: keycloak-system
   labels:
     app.kubernetes.io/name: keycloak
     app.kubernetes.io/instance: platform-keycloak
@@ -22,7 +22,7 @@ spec:
     username: admin
     secret:
       name: platform-keycloak
-      namespace: orch-platform
+      namespace: keycloak-system
 
   # Database configuration
   # Connects to external PostgreSQL deployed separately
