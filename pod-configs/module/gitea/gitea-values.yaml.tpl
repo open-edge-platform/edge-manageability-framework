@@ -25,6 +25,7 @@ postgresql:
     tag: 16.3-alpine
   primary:
     containerSecurityContext:
+      readOnlyRootFilesystem: true
       allowPrivilegeEscalation: false
       capabilities:
         drop:
@@ -37,6 +38,12 @@ postgresql:
     extraEnvVars:
     - name: PGDATA
       value: /var/lib/postgresql/data/pgdata
+    extraVolumeMounts:
+    - mountPath: /var/run/postgresql
+      name: postgresql-run
+    extraVolumes:
+    - emptyDir: {}
+      name: postgresql-run
     persistence:
       storageClass: "efs-1000"
     resourcesPreset: none
