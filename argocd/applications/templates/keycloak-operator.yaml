@@ -20,7 +20,7 @@ spec:
   sources:
     - repoURL: "https://github.com/keycloak/keycloak-k8s-resources"
       path: kubernetes
-      targetRevision: main
+      targetRevision: 25.0.0
       directory:
         recurse: true
         include: "keycloak-operator-*.yaml"
