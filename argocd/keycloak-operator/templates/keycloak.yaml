@@ -12,43 +12,44 @@ metadata:
     app.kubernetes.io/instance: platform-keycloak
     app.kubernetes.io/version: "26.4.1"
 spec:
-  # Image configuration - Using latest stable Keycloak
+  # Image configuration - Using stable Keycloak v26.4.1
   image: quay.io/keycloak/keycloak:26.4.1
-  imagePullPolicy: IfNotPresent
 
   # Bootstrap admin credentials
-  # The secret must have 'username' and 'password' keys
+  # The secret must exist in the same namespace (keycloak-system)
+  # and have 'username' and 'password' keys
   bootstrapAdmin:
-    username: admin
-    secret:
-      name: platform-keycloak
-      namespace: keycloak-system
+    user:
+      secret: platform-keycloak
 
   # Database configuration
   # Connects to external PostgreSQL deployed separately
+  # NOTE: v2alpha1 API does NOT support namespace field in secret references
+  #       Secrets must be in the same namespace as the Keycloak resource
+  # PostgreSQL service: postgresql-cluster-rw (read-write endpoint)
   db:
     vendor: postgres
-    host: orch-database-postgresql.orch-database.svc.cluster.local
+    host: postgresql-cluster-rw.orch-database.svc.cluster.local
     port: 5432
-    database: keycloak
+    database: platform-keycloak
     usernameSecret:
       name: orch-database-postgresql
-      namespace: orch-database
-      key: PGUSER
+      key: username
     passwordSecret:
       name: orch-database-postgresql
-      namespace: orch-database
-      key: PGPASSWORD
-    sslMode: disable
-    poolInitialSize: 5
-    poolMinSize: 5
-    poolMaxSize: 100
+      key: password
+    # Increased pool sizes to handle schema initialization
+    poolInitialSize: 10
+    poolMinSize: 10
+    poolMaxSize: 50
 
   # HTTP/HTTPS configuration
+  # NOTE: v2alpha1 uses httpEnabled (not 'enabled'), httpPort (not 'port')
   http:
-    relativePath: /
-    enabled: true
-    port: 8080
+    httpEnabled: true
+    httpPort: 8080
+    annotations: {}
+    labels: {}
 
   # Proxy configuration for load balancers
   # Important for integration with ingress controllers and reverse proxies
@@ -64,10 +65,27 @@ spec:
       cpu: 2000m
       memory: 2Gi
 
+  # Start Optimization
+  # Set to false for first-time startup to allow Keycloak to build
+  # Can be set to true after initial deployment for better performance
+  startOptimized: false
+
   # Additional startup arguments
+  # NOTE: http-relative-path moved here since relativePath not supported in http spec
+  # Hostname configuration - required for Keycloak v26.4.1
+  # hostname-strict set to false to allow any hostname
+  # Database timeout increased for schema initialization
   # Legacy logout for Grafana compatibility
   # Concurrent requests for performance
   additionalOptions:
+    - name: hostname
+      value: "keycloak.orch-platform.svc.cluster.local"
+    - name: hostname-strict
+      value: "false"
+    - name: db-url-properties
+      value: "?tcpKeepAlives=true&socketTimeout=30"
+    - name: http-relative-path
+      value: "/"
     - name: spi-login-protocol-openid-connect-legacy-logout-redirect-uri
       value: "true"
     - name: spi-brute-force-protector-default-brute-force-detector-allow-concurrent-requests
@@ -77,28 +95,6 @@ spec:
     - name: log-console-output
       value: "json"
 
-  # Service configuration
-  service:
-    type: ClusterIP
-    port: 8080
-
   # Number of replicas for high availability
   # Set to 1 for initial deployment, increase to 3+ for production HA
   instances: 1
-
-  # Pod Security Context
-  podSecurityContext:
-    fsGroup: 1000
-    seccompProfile:
-      type: RuntimeDefault
-
-  # Container Security Context
-  securityContext:
-    allowPrivilegeEscalation: false
-    capabilities:
-      drop:
-        - ALL
-    readOnlyRootFilesystem: false
-    runAsNonRoot: true
-    runAsUser: 1000
-    runAsGroup: 1000

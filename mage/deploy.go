@@ -270,6 +270,11 @@ spec:
       - resources:
           kinds:
           - Pod
+    exclude:
+      any:
+      - resources:
+          namespaces:
+          - keycloak-system
     validate:
       message: "Root filesystem must be read-only."
       pattern:

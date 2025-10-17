@@ -1,0 +1,13 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+remoteNamespace: orch-database
+refreshInterval: "1h"
+targetSecretName: orch-database-postgresql
+sourceSecretName: orch-database-postgresql
+keyName:
+  - source: username
+    target: username
+  - source: password
+    target: password
