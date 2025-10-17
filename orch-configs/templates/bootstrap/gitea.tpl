@@ -22,7 +22,7 @@ postgresql:
   enabled: true
   image:
     registry: docker.io
-    repository: library/postgresql
+    repository: library/postgres
     tag: 16.3
   primary:
     resourcesPreset: none
