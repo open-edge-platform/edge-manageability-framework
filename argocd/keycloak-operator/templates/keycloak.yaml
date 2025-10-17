@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-apiVersion: keycloak.org/v2alpha1
+apiVersion: k8s.keycloak.org/v1
 kind: Keycloak
 metadata:
   name: platform-keycloak

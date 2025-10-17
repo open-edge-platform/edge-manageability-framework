@@ -7,8 +7,8 @@
 # Source: argocd/applications/configs/platform-keycloak-bitnami-backup.yaml
 #         (keycloakConfigCli.configuration.realm-master.json)
 
-apiVersion: keycloak.org/v2alpha1
-kind: RealmImport
+apiVersion: k8s.keycloak.org/v1
+kind: KeycloakRealmImport
 metadata:
   name: master
   namespace: orch-platform
