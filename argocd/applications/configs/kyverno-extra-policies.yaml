@@ -25,6 +25,7 @@ restrictedPolicyOrch:
       - "orchestrator-observability-minio*"
       - "orchestrator-observability-mimir-make-minio-buckets*"
       - "adm-secret*"
+      - "keycloak-tenant-controller-set-*"
   - namespace: "orch-infra"
     names:
       - "alerting-monitor-alertmanager*"
@@ -47,6 +48,3 @@ restrictedPolicyOrch:
       - "web-ui-root-*"
       - "web-ui-cluster-orch-*"
       - "metadata-broker-orch-metadata-broker-*"
-  - namespace: "orch-platform"
-    names:
-      - "keycloak-tenant-controller-set-*"
