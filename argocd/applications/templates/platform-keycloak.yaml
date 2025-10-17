@@ -25,10 +25,80 @@ spec:
       targetRevision: {{ required "A valid deployRepoRevision entry required!" .Values.argo.deployRepoRevision }}
       helm:
         valuesObject:
-          {{- $customFile := printf "custom/%s.tpl" $appName }}
-          {{- $customConfig := tpl (.Files.Get $customFile) . | fromYaml }}
-          {{- $overwrite := (get .Values.postCustomTemplateOverwrite $appName ) | default dict }}
-          {{- mergeOverwrite $customConfig $overwrite | toYaml | nindent 10 }}
+          # Cluster-specific values for Keycloak Operator realm configuration
+          clusterSpecific:
+            webuiClientRootUrl: "https://web-ui.{{ .Values.argo.clusterDomain }}"
+            webuiRedirectUrls:
+              - "https://web-ui.{{ .Values.argo.clusterDomain }}"
+              - "https://app-service-proxy.{{ .Values.argo.clusterDomain }}/app-service-proxy-index.html*"
+              - "https://vnc.{{ .Values.argo.clusterDomain }}/*"
+              - "https://{{ .Values.argo.clusterDomain }}"
+              {{- if index .Values.argo "platform-keycloak" "extraUiRedirects" }}
+              {{- range index .Values.argo "platform-keycloak" "extraUiRedirects" }}
+              - {{ . | quote }}
+              {{- end }}
+              {{- end }}
+            docsuiClientRootUrl: "https://docs-ui.{{ .Values.argo.clusterDomain }}"
+            docsuiRedirectUrls:
+              - "https://docs-ui.{{ .Values.argo.clusterDomain }}"
+              - "https://docs-ui.{{ .Values.argo.clusterDomain }}/"
+            registryClientRootUrl: "https://registry-oci.{{ .Values.argo.clusterDomain }}"
+            telemetryClientRootUrl: "https://observability-ui.{{ .Values.argo.clusterDomain }}"
+            telemetryRedirectUrls:
+              - "https://observability-admin.{{ .Values.argo.clusterDomain }}/login/generic_oauth"
+              - "https://observability-ui.{{ .Values.argo.clusterDomain }}/login/generic_oauth"
+            clusterManagementClientRootUrl: "https://cluster-management.{{ .Values.argo.clusterDomain }}"
+            clusterManagementRedirectUrls:
+              - "https://cluster-management.{{ .Values.argo.clusterDomain }}"
+              - "https://cluster-management.{{ .Values.argo.clusterDomain }}/"
+          keycloak:
+            instances: 1
+            proxy:
+              headers: xforwarded
+          database:
+            vendor: postgres
+            host: orch-database-postgresql.orch-database.svc.cluster.local
+            port: 5432
+            database: keycloak
+            existingSecret: orch-database-postgresql
+            existingSecretHostKey: PGHOST
+            existingSecretPortKey: PGPORT
+            existingSecretUserKey: PGUSER
+            existingSecretPasswordKey: PGPASSWORD
+            existingSecretDatabaseKey: PGDATABASE
+            {{- if index .Values.argo "platform-keycloak" "db" }}
+            poolInitSize: {{ index .Values.argo "platform-keycloak" "db" "poolInitSize" | default "5" }}
+            poolMinSize: {{ index .Values.argo "platform-keycloak" "db" "poolMinSize" | default "5" }}
+            poolMaxSize: {{ index .Values.argo "platform-keycloak" "db" "poolMaxSize" | default "100" }}
+            {{- end }}
+          http:
+            port: 8080
+            relativeUrls: true
+          envProxy:
+            httpsProxy: {{ .Values.argo.proxy.httpsProxy | quote }}
+            httpProxy: {{ .Values.argo.proxy.httpProxy | quote }}
+            noProxy: {{ .Values.argo.proxy.noProxy | quote }}
+          {{- with .Values.argo.resources.platformKeycloak }}
+          resources:
+            {{- toYaml . | nindent 12}}
+          {{- end }}
+          realmConfig:
+            displayName: "Keycloak"
+            accountTheme: "keycloak"
+            displayNameHtml: "<img src='https://raw.githubusercontent.com/open-edge-platform/orch-utils/73df5d1e99a81ae333d94b1c47dd9bef7fa03ae9/keycloak/one-edge-platform-login-title.png'></img>"
+            defaultSignatureAlgorithm: "PS512"
+            accessTokenLifespan: 3600
+            ssoSessionIdleTimeout: 5400
+            ssoSessionMaxLifespan: 43200
+            passwordPolicy: "length(14) and digits(1) and specialChars(1) and upperCase(1) and lowerCase(1)"
+            bruteForceProtected: true
+            permanentLockout: false
+            maxFailureWaitSeconds: 900
+            minimumQuickLoginWaitSeconds: 60
+            waitIncrementSeconds: 300
+            quickLoginCheckMilliSeconds: 200
+            maxDeltaTimeSeconds: 43200
+            failureFactor: 5
   destination:
     namespace: {{$namespace}}
     server: {{ required "A valid targetServer entry required!" .Values.argo.targetServer }}
