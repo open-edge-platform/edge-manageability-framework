@@ -48,3 +48,6 @@ restrictedPolicyOrch:
       - "web-ui-root-*"
       - "web-ui-cluster-orch-*"
       - "metadata-broker-orch-metadata-broker-*"
+  - namespace: "capi-operator-system"
+    names:
+      - "capi-operator-cluster-api-operator-*"
