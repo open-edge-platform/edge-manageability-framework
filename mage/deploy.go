@@ -450,7 +450,6 @@ func localSecret(targetEnv string, createRSToken bool) error {
 	// includes dual-key format: admin-password (backward compatible) and username/password (operator compatible)
 	// Secret must be in keycloak-system namespace where the Keycloak Operator watches
 	if err := kubectlCreateAndApply("secret", "generic", "-n", "keycloak-system", "platform-keycloak",
-		"--from-literal=admin-password="+keycloakPassword,
 		"--from-literal=username=admin",
 		"--from-literal=password="+keycloakPassword); err != nil {
 		return err
