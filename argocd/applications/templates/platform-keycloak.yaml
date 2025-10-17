@@ -34,8 +34,15 @@ spec:
               - "https://vnc.{{ .Values.argo.clusterDomain }}/*"
               - "https://{{ .Values.argo.clusterDomain }}"
               {{- if index .Values.argo "platform-keycloak" "extraUiRedirects" }}
-              {{- range index .Values.argo "platform-keycloak" "extraUiRedirects" }}
+              {{- $extraUiRedirects := index .Values.argo "platform-keycloak" "extraUiRedirects" }}
+              {{- if typeIs "string" $extraUiRedirects }}
+              {{- range $extraUiRedirects | split "," }}
               - {{ . | quote }}
+              {{- end }}
+              {{- else }}
+              {{- range $extraUiRedirects }}
+              - {{ . | quote }}
+              {{- end }}
               {{- end }}
               {{- end }}
             docsuiClientRootUrl: "https://docs-ui.{{ .Values.argo.clusterDomain }}"
