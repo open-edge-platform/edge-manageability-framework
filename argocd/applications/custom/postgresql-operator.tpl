@@ -1,6 +1,3 @@
 # SPDX-FileCopyrightText: 2025 Intel Corporation
 #
 # SPDX-License-Identifier: Apache-2.0
-
-test-automation:
-  version: 0.2.8
