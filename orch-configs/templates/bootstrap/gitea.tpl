@@ -23,7 +23,7 @@ postgresql:
   image:
     registry: docker.io
     repository: library/postgres
-    tag: 16.3-alpine3.20
+    tag: 16.10-alpine3.22
   primary:
     resourcesPreset: none
     resource: {}
