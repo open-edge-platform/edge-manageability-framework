@@ -25,16 +25,12 @@ postgresql:
     resourcesPreset: none
     resource: {}
     containerSecurityContext:
-      readOnlyRootFilesystem: true
       allowPrivilegeEscalation: false
       capabilities:
         drop:
           - ALL
       seccompProfile:
         type: RuntimeDefault
-    env:
-    - name: PGDATA
-      value: /var/lib/postgresql/data/pgdata
     extraVolumeMounts:
     - mountPath: /var/run/postgresql
       name: postgresql-run
