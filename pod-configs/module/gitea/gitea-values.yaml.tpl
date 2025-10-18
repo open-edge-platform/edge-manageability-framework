@@ -21,8 +21,8 @@ postgresql:
   enabled: true
   image:
     registry: docker.io
-    repository: bitnamilegacy/postgresql
-    tag: 16.3.0-debian-12-r23
+    repository: library/postgres
+    tag: 16.10-alpine3.22
   primary:
     containerSecurityContext:
       allowPrivilegeEscalation: false
@@ -34,6 +34,12 @@ postgresql:
       # Storage class efs-1000 uses user 1000
       runAsUser: 1000
       runAsGroup: 1000
+    extraVolumeMounts:
+    - mountPath: /var/run/postgresql
+      name: postgresql-run
+    extraVolumes:
+    - emptyDir: {}
+      name: postgresql-run
     persistence:
       storageClass: "efs-1000"
     resourcesPreset: none
