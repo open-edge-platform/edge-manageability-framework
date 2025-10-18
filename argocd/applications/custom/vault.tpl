@@ -124,6 +124,12 @@ server:
         seccompProfile:
           type: RuntimeDefault
       command: [bash, -x, -c]
+      extraVolumeMounts:
+      - mountPath: /var/run/postgresql
+        name: postgresql-run
+      extraVolumes:
+      - emptyDir: {}
+        name: postgresql-run
       args:
         - |
           EXIST=$(psql -h $PGHOST -p $PGPORT -U $PGUSER -d $PGDATABASE -t -A -c \
