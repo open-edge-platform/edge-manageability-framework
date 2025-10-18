@@ -22,7 +22,7 @@ postgresql:
   image:
     registry: docker.io
     repository: library/postgres
-    tag: 16.3-alpine
+    tag: 16.3-alpine3.20
   primary:
     containerSecurityContext:
       allowPrivilegeEscalation: false
