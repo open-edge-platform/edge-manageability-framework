@@ -115,7 +115,7 @@ server:
           value: {{ .Values.argo.vault.ha | default false | quote }}
     # This initContainer creates database tables for vault
     - name: init-table
-      image: bitnamilegacy/postgresql:14.5.0-debian-11-r2
+      image: library/postgres:14.19-alpine3.22
       securityContext:
         allowPrivilegeEscalation: false
         capabilities:
@@ -124,6 +124,12 @@ server:
         seccompProfile:
           type: RuntimeDefault
       command: [bash, -x, -c]
+      extraVolumeMounts:
+      - mountPath: /var/run/postgresql
+        name: postgresql-run
+      extraVolumes:
+      - emptyDir: {}
+        name: postgresql-run
       args:
         - |
           EXIST=$(psql -h $PGHOST -p $PGPORT -U $PGUSER -d $PGDATABASE -t -A -c \

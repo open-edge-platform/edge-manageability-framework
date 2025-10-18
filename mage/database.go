@@ -38,7 +38,7 @@ func (d Database) psql(commands ...string) error {
 	var args []string
 	args = append(args, "run", "postgresql-db-client", "--rm", "--tty", "-i",
 		"--restart=Never", "--namespace", "orch-database", "--image",
-		"docker.io/bitnamilegacy/postgresql:14.5.0-debian-11-r2", "--env=PGPASSWORD=$POSTGRES_PASSWORD",
+		"docker.io/library/postgres:14.19-alpine3.22", "--env=PGPASSWORD=$POSTGRES_PASSWORD",
 		"--command", "--", "psql", "--host", "postgresql-cluster-rw", "-U", "orch-database-postgresql_user", "-d", "postgres", "-p", "5432")
 
 	if len(commands) > 0 {
