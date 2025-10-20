@@ -57,8 +57,8 @@ redis:
   enabled: true
   image:
     registry: docker.io
-    repository: bitnamilegacy/redis
-    tag: 7.2.5-debian-12-r4 
+    repository: library/redis
+    tag: 7.2.11
   master:
     persistence:
       storageClass: "efs-1000"
