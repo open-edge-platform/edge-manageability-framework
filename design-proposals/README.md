@@ -12,6 +12,9 @@ can be implemented.
 This document describes the process for proposing, documenting, and
 implementing changes.
 
+**New to ADRs?** Read our [Understanding ADRs guide](./understanding-adrs.md) to learn what Architecture Decision
+Records are, why we use them, and how to read them effectively.
+
 To learn more about the different components please check
 the [Edge Manageability Framework documentation](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/index.html)
 
@@ -77,7 +80,10 @@ contribution.
 - A **design document**, is the expanded form of a proposal,
   written when the proposal needs more careful explanation and consideration.
 - An **ADR, Architecture Decision Record** is the merged version of the **design
-  document**.
+  document**. It represents an accepted architectural decision with full context,
+  rationale, and implementation details. ADRs serve as the project's architectural
+  memory, documenting not just what decisions were made, but why they were made,
+  what alternatives were considered, and what trade-offs were accepted.
 
 ### Scope
 
