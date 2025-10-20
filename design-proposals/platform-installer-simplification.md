@@ -2,7 +2,9 @@
 
 Author(s): Scott Baker
 
-Last updated: 2025-09-08
+Last updated: 2025-10-9
+
+Revision: 2.1
 
 ## Abstract
 
@@ -10,6 +12,33 @@ This document provides a summary of the current EMF installer approach, highligh
 posed by the approach due to the shift in consumption model from closed source to open source.
 It also states the higher order goals to be met by the installation and covers recommended
 approach to achieving the goals in a phased rollout manner.
+
+## Changelog
+
+- Revision 2
+
+  - Combine phases 0 and 1, using the name "Workstream 1: Installer Simplification".
+
+  - Phase 2 has been renamed "Workstream 2: Composable Installation".
+
+  - Phase 3 has been renamed "Workstream 3: Argo-less Installation".
+
+  - Added details on supported subsystem selections.
+
+  - Add description of making multitenancy optional using tenant-controller jobs.
+
+  - Added composability notes.
+
+  - Remove deprecation of the AWS pre-installer.
+
+- Revision 2.1
+
+  - Added "Cleanup and migrate configuration tasks from pre-installer to the installer".
+
+  - Add more details on the steps the installer takes, such as installing the ArgoCD helm
+    chart and applying configuration to templates.
+
+  - Add note on DEB files.
 
 ## Problem Statement
 
@@ -90,32 +119,23 @@ There are three installers maintained today:
 
 ## Phased Approach
 
-EMF installation problems listed above will be addressed in multiple phases as follows:
+EMF installation problems listed above will be addressed in multiple workstreams as follows:
 
-- Phase 0: Establish a clear boundary between “installer” and “pre-installer”
+- Workstream 1: Installer Simplification
 
-- Phase 1: Installer Simplification
+- Workstream 2: Composable Installation
 
-- Phase 2: Composable Installation (EMF Lite)
+- Workstream 3: Eliminate dependency on ArgoCD
 
-- Phase 3: Eliminate dependency on ArgoCD
+All three Workstreams may be parallelized as necessary.
 
-### Phase 0: Establish a clear boundary between installer and pre-installer
+### Workstream 1: Installer Simplification
 
-The Installer is based on ArgoCD. The installer requires two things to run:
-
-1. A Kubernetes environment. The installer installs EMF into this environment. It also uses the environment to
-   run the installer itself.
-
-2. A set of Installer Configuration values, including the credentials to the Kubernetes environment. This may
-   include database configuration, root/admin passwords, public IP addresses, repository URLs, etc.
-
-The installer configuration is primarily composed of a set of service profiles and a cluster profile.
-These profiles are inputs to the ArgoCD root app, which in turn configures the other applications.
+Installation is broken into two phases, the installer and the pre-installer.
 
 ![Installer and Pre-Installer Split](images/platform-installer-simplification-split.png)
 
-#### Pre-Installer
+#### The Pre-Installer is separate from the Installer
 
 The job of the pre-installer is to prepare the environment that the installer will run in. It accepts a set
 of Pre-installer Configuration values, and does the following:
@@ -128,7 +148,7 @@ of Pre-installer Configuration values, and does the following:
 
 4. (optionally) Invokes the Installer to complete the installation.
 
-In Phase 0 there will be three pre-installers:
+There will be three pre-installers:
 
 1. Development/Preview. Creates a kind-based environment that is not intended to be used in production.
 
@@ -138,14 +158,35 @@ In Phase 0 there will be three pre-installers:
 
 ![Pre-Installers Overview](images/platform-installer-simplification-3-preinstallers.png)
 
-The most important contribution of Phase 0 is to document the inputs to the Installer and to break our user-facing
-documentation into separate pre-install and install sections. This allows any partner to write their own
-pre-installer, or to fork and customize our pre-installers for their production use.
+The most important contribution of this task is to document the inputs to the Installer and to break our
+user-facing documentation into separate pre-install and install sections. This allows any partner to write
+their own pre-installer, or to fork and customize our pre-installers for their production use.
 
-### Phase 1: Installer Simplification
+#### The Installer handles configuring and installing the Orchestrator software
 
-Converge on the single installer as the way to install EMF on any infrastructure, while continuing to support
-the pre-installers as necessary for our customers.
+The Installer is based on ArgoCD. The installer requires two things to run:
+
+1. A Kubernetes environment. The installer installs EMF into this environment. It also uses the environment to
+   run the installer itself.
+
+2. A set of Installer Configuration values, including the credentials to the Kubernetes environment. This may
+   include database configuration, root/admin passwords, public IP addresses, repository URLs, etc.
+
+The installer configuration is primarily composed of a set of service profiles and a cluster profile.
+These profiles are inputs to the ArgoCD root app, which in turn configures the other applications.
+
+The steps the installer shall take to invoke ArgoCD include:
+
+- Performing any template operations on the cluster.yaml that are necessary to override settings for
+  the installation.
+
+- Install any namespaces or secrets that are required by the ArgoCD installation.
+
+- Install the ArgoCD helm chart.
+
+- Install the ArgoCD applications (i.e. Root App, etc)
+
+- At this point ArgoCD begins installing the orchestrator software.
 
 #### Eliminate Gitea as a pre-installer dependency
 
@@ -168,19 +209,6 @@ public github source.
   dependency, at the same time, it will be added as an app-orch dependency and managed for app-orch use by
   ArgoCD.
 
-#### Deprecate the production-ready AWS pre-installer
-
-EMF will no longer be directly responsible for provisioning production cloud infrastructure.
-
-The EMF team shall retain the AWS pre-installer as a validation tool to ensure that EMF remains compatible
-with popular cloud services on AWS. We may distribute the AWS pre-installer as a “starting point” for our
-customers to write their own AWS installers.
-
-The EMF team will continue to provide guidance and assistance for select partners wishing to perform and
-AWS install, with the goal that as documentation of the AWS installation improves, the documentaiton will
-eventually become self-sufficient and a sufficiently skilled partner will be able to set up the AWS
-infrastructure with minimum assistance required.
-
 #### Migrate any remaining Helm/Kubernetes services from pre-installer to the installer
 
 The 3.1 installers may contain some helm-based components, such as Postgres, or other services that were
@@ -190,13 +218,47 @@ installer and handled by ArgoCD. We should have a consistent mechanism for insta
 Redundant components in can always be disabled. For example, if a cloud-based database such as Aurora is
 used, then we will have a knob that disables installation of Postgres.
 
+#### Cleanup and migrate configuration tasks from pre-installer to the installer
+
+The pre-installer phase contained some tasks, such as applying environment variables to cluster.tpl
+files to create a cluster profile yaml specific to the cluster being installed. In 3.1 this was done
+using three different mechanisms. As part of installer simplification, we will converge on a single
+mechanism for rendering this template, and move the template rendering from the pre-installer to
+the installer.
+
+The reason for moving this to the installer is to facilitate bring-your-own-kubernetes situations and
+to simplify configuration of the installation.
+
+Some properties of how this configuration shall be done:
+
+1. Configurate shall use a bash script, for example configure-cluster.sh.
+
+2. The bash script shall ingest environment variables. The environment variable names will be the
+   same regardless of whether cloud, onprem, or coder installation is performed.
+
+3. Subsystems will default to `ENABLED` and will only be disabled by the presence of an environment
+   variable that disables the feature. In the absence of any such environment variables, the
+   maximal configuration is applied, i.e. the orchestrator is installed with the same feature set
+   that it had in 3.1.
+
+#### Ensure no DEB files are used in the installer (using them in the pre-installer is fine)
+
+It's fine to use DEB files in a `pre-installer`, such as the OnPrem `pre-installer`. The pre-
+installers are specific to the type of installation that is being performed, and we expect the
+OnPrem, AWS, and Coder preinstallers to have divergent implementations.
+
+However, DEB files should not be used in the `installer`, as we expect to converge the AWS and
+OnPrem installers, and AWS does not support the use of DEB files. The OnPrem Installer incldued
+two DEB files, for installing ArgoCD and for installing the apps within ArgoCD. These two DEB
+files will have to be replaced by alternate functionality as we converge.
+
 #### Ensure all pre-installers and the installer are noninteractive
 
 The pre-installers and the installer should be fully configured from the configuration values that are passed
 to them initially. There should be no interactive prompts given to the user and no pausing of the installer
 to solicit additional input.
 
-### Phase 2 - Composable Installer
+### Workstream 2 - Composable Installation
 
 In the prior phase, we moved terraform recipes to the pre-installers only, but if for any reason terraform files
 still exist within the installer, we will move them in this phase. We continue to remove shell scripts and replace
@@ -259,6 +321,44 @@ reducing the footprint of the platform:
 
   - gitea
 
+Only certain combinations of subsystems are supported. This document refers to these as
+_subsystem selections_ (to avoid confusion with the word "configuration" which is generally
+use to describe how the subsystems themselves are configured).
+Supported configurations begin with EIM, and then progressively add CO and then AO.
+Observability may be added to any configuration. This is the set of supported
+subsystem selections:
+
+Subsystem selections without observability:
+
+- EIM
+
+- EIM + CO
+
+- EIM + CO + AO
+
+Subsystem selections with observability:
+
+- EIM + Observability
+
+- EIM + CO + Observability
+
+- EIM + CO + AO + Observability
+
+Once a selection is chosen, it may not be changed during an upgrade. For example, if a customer chose to install
+only EIM and CO in release 2025.3, then they are not allowed to add AO in 2026.1. If the customer wishes to change
+the subsystem selection, then they would need to reinstall.
+
+#### Update CLI to gracefully handle absent subsystems
+
+If a subsystem is absent, the CLI must emit an intuitive error message if the user attempts to execute a command
+that uses that subsystem.
+
+#### Update GUI  to gracefully handle absent subsystems
+
+If a subsystem is absent, the GUI must remove all pages and all navigation links associated with the the absent
+subsystem. Additionally, the GUI must gracefully degrade any dashboard or other common pages where the missing
+subsystem would have displayed data.
+
 #### Add optional single-tenant initialization job
 
 Add an optional Kubernetes job that initializes a single tenant in the tenancy model. This is intended to facilitate
@@ -271,17 +371,61 @@ The various tenant-controllers will remain deployed, but will be left in an idle
 
 #### Make multitenancy fully optional
 
+_Note: This option is only for customers who wish to commit to a single-tenant / single-project installation
+of the orchestrator with no capability to create additional projects. This choice is permanent for the life
+of the orchestrator._
+
 Above, we introduced a job that creates a single-tenant. In a truly single-tenant / single-project configuration, there
 is no need for the various tenant-controllers to exist. These long-running controllers would be replaced with one-time
 jobs. This includes the following components:
 
 - app-orch-tenant-controller
+
 - cluster-manager (part of this service listens to tenant events)
+
 - keycloak-tenant-controller
+
 - observability-tenant-controller
+
 - (eim) tenant-controller
 
-### Phase 3 – “EMF Lite” / installation without ArgoCD
+These components cannot simply be excluded, because they perform functions that need to be executed, even in a single
+tenant / single project scenario. For example, the app-orch-tenant-controller is needed to load extension deployment
+packages. The cluster-manager is needed to load cluster templates.
+
+It will be necessary to take each one of these tenant-controllers and convert it to a job that runs to completion
+and exits after one project as been setup. This will require some changes to the tenant controllers:
+
+- Add a command-line option to tell the tenant-controller to exit after a project has been successfully
+  completed.
+  
+  Note: This may not be necessary for cluster-manager, if the tenant controller is part of cluster-
+  manager, rather than a separate pod.
+
+- Amend the helm chart to include a job. The same docker image for the tenant controller may be re-used, with
+  the option passed to the tenant-controller to tell it to exit on project create completion.
+
+- The appropriate conditionals would need to be added to the helm chart to launch the tenant-controller as
+  either a long-running service or as a job depending on customer perference.
+
+#### Validation
+
+Composaibility exposes 6 new subsystem selections that must all be tested using automation. Recommended tests
+include:
+
+- Deploy using EIM only and onboard an edge node.
+
+- Deploy using EIM and CO, onboard an edge node, and create a cluster.
+
+- Deploy using EIM, CO, and AO, onboard an edge node, create a cluster, and deploy an application. This selection
+  matches the existing VIP, HIP, and Golden Suite validation.
+
+Testing each of the above in both of "with observability" and "without observability" configurations would double
+the number of configurations to test from 3 to 6. It would be less resource and time intensive to just pick one
+of the above and use it for the "with observability" test and a different one to use for the "without observability"
+test.
+
+### Workstream 3 – Argo-less Installation
 
 Support lighter weight deployment by eliminating argocd components. Use techniques such as umbrella helm charts or tools
 such as helmfile. We will move away from heavy weight services such as ArgoCD that are always running and consuming resources.
@@ -326,16 +470,33 @@ which differs on a customer-by-customer basis.
 
 ## Affected components and Teams
 
-The installer and the team working on the installer will be affected for all phases. The UI team may be affected
-for phase 2, as disabling subsystems will impact the UI.
+The installer and the team working on the installer will be affected for all workstreams. CLI and GUI teams will
+be affected to update the CLI and GUI to tolerate missing subsystems as part of the composability deliverable.
 
-## Implementation plan
+## Implementation plan and Implementation notes
 
 The implementation shall be carried out in the phases outlined in the "Phased Approach" section above.
 
+### Composability Notes
+
+It was determined that AO, CO, and O11y can easily be turned off by excluding their particular `enable-`
+profiles from the cluster profile. This yielded an installation with the pods and services for the
+excluded subsystems absent, as expected. It was determined that there were two issues with the user
+interface:
+
+- The GUI displayed error boxes on pages that were tied to their respective substystems, as well as
+  common pages. For example, disabling AO would lead to broken pages for Deployments, Deployment Packages,
+  and Applications and also issues with the common dashboard page. Disabling CO has the additional
+  impact of affecting the node registration page where cluster templates may be selected.
+
+- The CLI displayed error messages when functionality was unavailable. The error messages did not
+  clearly indicate that a subsystem was disabled, for example sometimes only a "500 internal error"
+  was displayed.
+
 ## Decision
 
-Proceed with Phase 0. Accelerate Phase 2 into Q1-2026 timeframe. Defer commitment of Phase 3 for future discussion.
+Workstreams 1 and 2 are committed and will be delivered as part of the December release. Workstream 2 may
+be delivered in a CLI-only manner as necessary. Workstream 3 is deferred until a future date.
 
 ## Open issues (if applicable)
 
