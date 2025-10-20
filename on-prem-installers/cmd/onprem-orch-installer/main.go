@@ -104,7 +104,7 @@ spec:
           secretName: gitea-tls-certs
       containers:
       - name: alpine
-        image: alpine/git:2.43.0
+        image: alpine/git:2.49.1
         env:
         - name: GITEA_USERNAME
           valueFrom:
