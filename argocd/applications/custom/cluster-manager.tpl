@@ -43,6 +43,14 @@ credentialsM2M:
     # job execution settings
     terminationGracePeriodSeconds: 90
 
+    resources:
+      limits:
+        cpu: "2"
+        memory: 2Gi
+      requests:
+        cpu: 10m
+        memory: 16Mi
+
   vault:
     service: "vault.orch-platform.svc.cluster.local" # internal k8s DNS always uses cluster.local
     port: 8200
