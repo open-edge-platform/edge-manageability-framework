@@ -183,6 +183,56 @@ required anymore or not applicable.
 Once a proposal is Declined, the Pull request or the Feature Request it is
 closed.
 
+## Browsing Existing ADRs
+
+To help you discover relevant Architecture Decision Records, here are some key ADRs organized by component:
+
+### Application Orchestrator
+
+- [Deploy Applications](./app-orch-deploy-applications.md) - Application deployment strategy
+- [Helm to Deployment Package](./app-orch-helm-to-dp.md) - Converting Helm charts to Deployment Packages
+- [Deployment Package Import](./app-orch-dp-import.md) - Importing Deployment Packages
+- [Tenant Controller Simplification](./app-orch-tenant-controller-simplification.md) - Simplifying tenant management
+
+### Cluster Orchestrator
+
+- [K3s Support](./cluster-orch-k3s.md) - K3s cluster support
+- [Cluster Addons](./cluster-orch-addon.md) - Managing cluster addons
+- [Auto Cluster Create](./cluster-orch-auto-cluster-create.md) - Automatic cluster creation
+- [Cluster Orchestrator CLI](./co-cli.md) - CLI for cluster orchestration
+
+### Edge Infrastructure Manager
+
+- [EIM CLI](./eim-cli.md) - Infrastructure Manager CLI design
+- [Custom OS Profile](./eim-custom-os-profile.md) - Custom operating system profiles
+- [PXE with Managed EMF](./eim-pxe-with-managed-emf.md) - PXE boot integration
+- [CVE Tracking](./edge-infra-cve-tracking.md) - Vulnerability tracking
+- [Day 2 Improvements](./edge-infra-day2-improvements.md) - Post-deployment operations
+
+### Cross-Component & Platform
+
+- [Orchestrator CLI](./orch-cli.md) - Unified CLI for Edge Orchestrator
+- [Deploy Experience Improvement](./deploy-experience-improvement.md) - Improving deployment experience
+- [Platform Installer Simplification](./platform-installer-simplification.md) - Simplified installation
+- [Custom Config](./design-proposal-custom-config.md) - Custom configuration support
+- [EMF Upgrade Steps](./emf-upgrade-steps.md) - Framework upgrade procedures
+
+### Hardware Support
+
+- [vPro Device Support](./vpro-device.md) - Intel vPro device integration
+- [vPro EIM Integration](./vpro-eim.md) - vPro with Edge Infrastructure Manager
+- [vPro OpenDMT](./vpro-opendmt.md) - Open Device Management Toolkit integration
+- [vPro Resource Manager](./vpro-rm.md) - vPro resource management
+- [dGPU Support](./dgpu-support.md) - Discrete GPU support
+
+### Storage & Operations
+
+- [On-Prem Storage Backup](./onprem-storage-backup-and-restore.md) - Backup and restore for on-premises storage
+- [Kernel Parameter DP](./kernel-parameter-dp.md) - Kernel parameter deployment packages
+- [EMTS Scale Provisioning](./emts-scale-provisioning.md) - Scale provisioning for EMT services
+
+For a complete list, see all markdown files in the [design-proposals directory](./).
+
 ## Help
 
 If you need help with this process, please contact the Project's maintainers
