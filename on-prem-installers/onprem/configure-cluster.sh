@@ -191,5 +191,19 @@ fi
 yq -i ".argo.o11y.sre.tls.enabled |= ${TLS_ENABLED}" "$OUTPUT_FILE"
 yq -i ".argo.o11y.sre.tls.caSecretEnabled |= ${CA_SECRET_ENABLED}" "$OUTPUT_FILE"
 yq -i ".argo.o11y.alertingMonitor.smtp.insecureSkipVerify |= ${SMTP_SKIP_VERIFY}" "$OUTPUT_FILE"
+# --- Review generated file only if PROCEED is set and not yes ---
+if [[ -n "${PROCEED}" && "${PROCEED}" != "yes" ]]; then
+  echo
+  echo "=============================================================================="
+  echo "Please review the cluster settings in the generated configuration and make"
+  echo "any necessary updates."
+  echo
+  echo "Press any key to open your editor..."
+  echo "=============================================================================="
+  echo
+  read -n 1 -s  # wait for a single key press silently
+  "${EDITOR:-vi}" "$OUTPUT_FILE"
+fi
 
 echo "✅ File generated: $OUTPUT_FILE"
+cat $OUTPUT_FILE
