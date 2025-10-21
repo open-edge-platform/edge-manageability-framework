@@ -5,11 +5,15 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # --- Check if ORCH_INSTALLER_PROFILE is set ---
-if [ -z "${ORCH_INSTALLER_PROFILE}" ]; then
-  echo "❌ ORCH_INSTALLER_PROFILE not set. Please export one of the following profiles:"
-  echo "   onprem | onprem-1k | onprem-oxm | onprem-explicit-proxy"
-  exit 1
-fi
+case "$ORCH_INSTALLER_PROFILE" in
+  onprem|onprem-1k|onprem-oxm|onprem-explicit-proxy)
+    ;;  # ✅ Valid profiles — do nothing, execution continues
+  *)
+    echo "❌ Invalid ORCH_INSTALLER_PROFILE: ${ORCH_INSTALLER_PROFILE}"
+    echo "Valid options: onprem | onprem-1k | onprem-oxm | onprem-explicit-proxy"
+    exit 1  # ❌ Stop script on invalid value
+    ;;
+esac
 
 TEMPLATE_FILE=./onprem_cluster.tpl
 OUTPUT_FILE=cluster_${ORCH_INSTALLER_PROFILE}.yaml
