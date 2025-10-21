@@ -1,4 +1,3 @@
- cat update-cluster-template.sh
 #!/bin/bash
 
 # SPDX-FileCopyrightText: 2025 Intel Corporation
@@ -190,3 +189,4 @@ yq -i ".argo.o11y.sre.tls.caSecretEnabled |= ${CA_SECRET_ENABLED}" "$OUTPUT_FILE
 yq -i ".argo.o11y.alertingMonitor.smtp.insecureSkipVerify |= ${SMTP_SKIP_VERIFY}" "$OUTPUT_FILE"
 
 echo "✅ File generated: $OUTPUT_FILE"
+echo "ORCH INSTALLER PROFILE NAME:$ORCH_INSTALLER_PROFILE"
