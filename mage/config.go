@@ -145,7 +145,7 @@ func (Config) overrideFromEnvironment(presetData map[string]interface{}) error {
 	}
 
 	var disableCO bool
-	disableCOStr := os.Getenv("DISABLE_AO_PROFILE")
+	disableCOStr := os.Getenv("DISABLE_CO_PROFILE")
 	if disableCOStr != "" {
 		disableCO, err = strconv.ParseBool(disableCOStr)
 		if err != nil {
