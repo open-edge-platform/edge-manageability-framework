@@ -131,29 +131,39 @@ func (Config) overrideFromEnvironment(presetData map[string]interface{}) error {
 	// names are chosen to maintain parity with the AWS and OnPrem installer environment
 	// variable names.
 
+	var err error
+	var disableAO bool
 	disableAOStr := os.Getenv("DISABLE_AO_PROFILE")
-	disableAO, err := strconv.ParseBool(disableAOStr)
-	if err != nil {
-		return fmt.Errorf("failed to parse DISABLE_AO_PROFILE environment variable: %w", err)
+	if disableAOStr != "" {
+		disableAO, err = strconv.ParseBool(disableAOStr)
+		if err != nil {
+			return fmt.Errorf("failed to parse DISABLE_AO_PROFILE environment variable: %w", err)
+		}
 	}
 	if disableAO {
 		presetData["enableAppOrch"] = false
 	}
 
+	var disableCO bool
 	disableCOStr := os.Getenv("DISABLE_AO_PROFILE")
-	disableCO, err := strconv.ParseBool(disableCOStr)
-	if err != nil {
-		return fmt.Errorf("failed to parse DISABLE_CO_PROFILE environment variable: %w", err)
+	if disableCOStr != "" {
+		disableCO, err = strconv.ParseBool(disableCOStr)
+		if err != nil {
+			return fmt.Errorf("failed to parse DISABLE_CO_PROFILE environment variable: %w", err)
+		}
 	}
 	if disableCO {
 		presetData["enableClusterOrch"] = false
 		presetData["enableAppOrch"] = false
 	}
 
+	var disableO11y bool
 	disableO11yStr := os.Getenv("DISABLE_O11Y_PROFILE")
-	disableO11y, err := strconv.ParseBool(disableO11yStr)
-	if err != nil {
-		return fmt.Errorf("failed to parse DISABLE_O11Y_PROFILE environment variable: %w", err)
+	if disableO11yStr != "" {
+		disableO11y, err = strconv.ParseBool(disableO11yStr)
+		if err != nil {
+			return fmt.Errorf("failed to parse DISABLE_O11Y_PROFILE environment variable: %w", err)
+		}
 	}
 	if disableO11y {
 		presetData["enableObservability"] = false
