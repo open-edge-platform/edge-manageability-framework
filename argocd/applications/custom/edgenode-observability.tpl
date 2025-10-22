@@ -556,23 +556,20 @@ mimir-distributed:
     ingress:
       enabled: false
     # Try ALL possible nginx configuration methods to see which one works:
-    nginxConfig:
-      httpSnippet: |
-        # Buffer settings to handle large headers/cookies (httpSnippet method)
-        client_header_buffer_size 32k;
-        large_client_header_buffers 32 128k;
-      serverSnippet: |
-        # Buffer settings to handle large headers/cookies (serverSnippet method)
-        client_header_buffer_size 64k;
-        large_client_header_buffers 64 128k;
-      mainSnippet: |
-        # Buffer settings to handle large headers/cookies (mainSnippet method)
-        worker_rlimit_nofile 16384;
     nginx:
-      config: |
-        # Buffer settings to handle large headers/cookies (nginx.config method)
-        client_header_buffer_size 80k;
-        large_client_header_buffers 80 128k;
+      config:
+        httpSnippet: |
+          # Buffer settings to handle large headers/cookies (httpSnippet method)
+          client_header_buffer_size 32k;
+          large_client_header_buffers 32 128k;
+        serverSnippet: |
+          # Buffer settings to handle large headers/cookies (serverSnippet method)
+          client_header_buffer_size 64k;
+          large_client_header_buffers 64 128k;
+        mainSnippet: |
+          # Buffer settings to handle large headers/cookies (mainSnippet method)
+          client_header_buffer_size 80k;
+          large_client_header_buffers 80 128k;
     {{- if and .edgeNode .edgeNode.mimir .edgeNode.mimir.gateway }}
     {{- if .edgeNode.mimir.gateway.replicas }}
     replicas: {{ .edgeNode.mimir.gateway.replicas }}
