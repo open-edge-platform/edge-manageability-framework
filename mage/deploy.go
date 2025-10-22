@@ -1567,13 +1567,13 @@ func (d Deploy) handleEnvOverride(targetConfig string) (string, error) {
 	disableAOStr := os.Getenv("DISABLE_AO_PROFILE")
 	disableAO, err := strconv.ParseBool(disableAOStr)
 	if err != nil {
-		return fmt.Errorf("failed to parse DISABLE_AO_PROFILE environment variable: %w", err)
+		return "", fmt.Errorf("failed to parse DISABLE_AO_PROFILE environment variable: %w", err)
 	}
 
 	disableCOStr := os.Getenv("DISABLE_AO_PROFILE")
 	disableCO, err := strconv.ParseBool(disableCOStr)
 	if err != nil {
-		return fmt.Errorf("failed to parse DISABLE_CO_PROFILE environment variable: %w", err)
+		return "", fmt.Errorf("failed to parse DISABLE_CO_PROFILE environment variable: %w", err)
 	}
 	if disableCO {
 		disableAO = true
@@ -1582,29 +1582,28 @@ func (d Deploy) handleEnvOverride(targetConfig string) (string, error) {
 	disableO11yStr := os.Getenv("DISABLE_O11Y_PROFILE")
 	disableO11y, err := strconv.ParseBool(disableO11yStr)
 	if err != nil {
-		return fmt.Errorf("failed to parse DISABLE_O11Y_PROFILE environment variable: %w", err)
+		return "", fmt.Errorf("failed to parse DISABLE_O11Y_PROFILE environment variable: %w", err)
 	}
 
 	// Parse the YAML file in targetConfig
 	yamlData, err := os.ReadFile(targetConfig)
 	if err != nil {
 		fmt.Printf("failed to read target config file: %v\n", err)
-		return targetConfig
+		return targetConfig, nil
 	}
 	var configMap map[string]interface{}
 	if err := yaml.Unmarshal(yamlData, &configMap); err != nil {
-		fmt.Printf("failed to parse target config YAML: %v\n", err)
-		return targetConfig
+		return "", fmt.Errorf("failed to unmarshal config YAML: %v", err)
 	}
 
 	if disableAO {
-		removeProfile(configMap, "orch-configs/profiles/enable-app-orch.yaml")
+		d.removeProfile(configMap, "orch-configs/profiles/enable-app-orch.yaml")
 	}
 	if disableCO {
-		removeProfile(configMap, "orch-configs/profiles/enable-cluster-orch.yaml")
+		d.removeProfile(configMap, "orch-configs/profiles/enable-cluster-orch.yaml")
 	}
 	if disableO11y {
-		removeProfile(configMap, "orch-configs/profiles/enable-o11y.yaml")
+		d.removeProfile(configMap, "orch-configs/profiles/enable-o11y.yaml")
 	}
 
 	// Write the modified configMap to a new profile file and return its path
@@ -1634,7 +1633,7 @@ func (d Deploy) orch(targetEnv string) error {
 	}
 
 	cmd := fmt.Sprintf("helm upgrade --install root-app argocd/root-app -f %s -n %s --create-namespace", finalConfig, targetEnv)
-	_, err := script.Exec(cmd).Stdout()
+	_, err = script.Exec(cmd).Stdout()
 	return err
 }
 
