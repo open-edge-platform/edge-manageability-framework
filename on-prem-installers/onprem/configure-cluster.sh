@@ -4,26 +4,44 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# --- Check if ORCH_INSTALLER_PROFILE is set ---
-case "$ORCH_INSTALLER_PROFILE" in
-  onprem|onprem-1k|onprem-oxm|onprem-explicit-proxy)
-    ;;  # ✅ Valid profiles — do nothing, execution continues
-  *)
-    echo "❌ Invalid ORCH_INSTALLER_PROFILE: ${ORCH_INSTALLER_PROFILE}"
-    echo "Valid options: onprem | onprem-1k | onprem-oxm | onprem-explicit-proxy"
-    exit 1  # ❌ Stop script on invalid value
-    ;;
-esac
+if [ $# -lt 1 ]; then
+    echo "Usage: $0 <deploy-type>"
+    echo "Valid options: aws | onprem"
+    exit 1
+fi
 
-TEMPLATE_FILE=./onprem_cluster.tpl
-OUTPUT_FILE=cluster_${ORCH_INSTALLER_PROFILE}.yaml
+DEPLOY_TYPE=$1
+echo "🚀 Starting Cluster Template Generation"
+if [ "$DEPLOY_TYPE" = "aws" ]; then
+    source "./aws_cluster.env"
+    TEMPLATE_FILE="./cluster_aws.tpl"
+    OUTPUT_FILE="cluster_aws_${CLUSTER_NAME}.yaml"
 
-echo "🔧 Using ORCH_INSTALLER_PROFILE=${ORCH_INSTALLER_PROFILE}"
+
+elif [ "$DEPLOY_TYPE" = "onprem" ]; then
+    source .env
+    # Validate ORCH_INSTALLER_PROFILE
+    if [[ "$ORCH_INSTALLER_PROFILE" =~ ^(onprem|onprem-1k|onprem-oxm|onprem-explicit-proxy)$ ]]; then
+        TEMPLATE_FILE="./cluster_onprem.tpl"
+        OUTPUT_FILE="cluster_${ORCH_INSTALLER_PROFILE}.yaml"
+        echo "🔧 Using ORCH_INSTALLER_PROFILE=${ORCH_INSTALLER_PROFILE}"
+        export O11Y_ENABLE_PROFILE='- orch-configs/profiles/enable-o11y.yaml'
+        export O11Y_PROFILE='- orch-configs/profiles/o11y-onprem.yaml'
+        export ONPREM_PROFILE='- orch-configs/profiles/enable-onprem.yaml'
+    else
+        echo "❌ Invalid ORCH_INSTALLER_PROFILE: ${ORCH_INSTALLER_PROFILE}"
+        echo "Valid options: onprem | onprem-1k | onprem-oxm | onprem-explicit-proxy"
+        exit 1
+    fi
+
+else
+    echo "❌ Invalid deploy type: $DEPLOY_TYPE"
+    echo "Valid options: aws | onprem"
+    exit 1
+fi
 
 # --- Default profile exports ---
 export PLATFORM_PROFILE='- orch-configs/profiles/enable-platform.yaml'
-export O11Y_PROFILE='- orch-configs/profiles/enable-o11y.yaml'
-export O11Y_ONPREM_PROFILE='- orch-configs/profiles/o11y-onprem.yaml'
 export KYVERNO_PROFILE='- orch-configs/profiles/enable-kyverno.yaml'
 export EDGEINFRA_PROFILE='- orch-configs/profiles/enable-edgeinfra.yaml'
 export FULL_UI_PROFILE='- orch-configs/profiles/enable-full-ui.yaml'
@@ -36,32 +54,8 @@ export EMAIL_PROFILE='- orch-configs/profiles/alerting-emails.yaml'
 export ARTIFACT_RS_PROFILE='- orch-configs/profiles/artifact-rs-production-noauth.yaml'
 export OSRM_MANUAL_PROFILE='- orch-configs/profiles/enable-osrm-manual-mode.yaml'
 export RESOURCE_DEFAULT_PROFILE='- orch-configs/profiles/resource-default.yaml'
-export ORCH_INSTALLER_FILE_NAME="- orch-configs/clusters/cluster_${ORCH_INSTALLER_PROFILE}.yaml"
 
-# --- AO/CO profile conditions ---
-if [ "${DISABLE_CO_PROFILE:-false}" = "true" ] || [ "${DISABLE_AO_PROFILE:-false}" = "true" ]; then
-  export AO_PROFILE="#- orch-configs/profiles/enable-app-orch.yaml"
-else
-  export AO_PROFILE="- orch-configs/profiles/enable-app-orch.yaml"
-fi
-
-if [ "${DISABLE_CO_PROFILE:-false}" = "true" ]; then
-  export CO_PROFILE="#- orch-configs/profiles/enable-cluster-orch.yaml"
-  export AO_PROFILE="#- orch-configs/profiles/enable-app-orch.yaml"
-else
-  export CO_PROFILE="- orch-configs/profiles/enable-cluster-orch.yaml"
-fi
-
-# --- O11Y_PROFILE disable check ---
-if [ "${DISABLE_O11Y_PROFILE:-false}" = "true" ]; then
-  export O11Y_PROFILE="#- orch-configs/profiles/enable-o11y.yaml"
-  export O11Y_ONPREM_PROFILE="#- orch-configs/profiles/o11y-onprem.yaml"
-else
-  export O11Y_PROFILE="- orch-configs/profiles/enable-o11y.yaml"
-  export O11Y_ONPREM_PROFILE="- orch-configs/profiles/o11y-onprem.yaml"
-fi
-
-# --- Default values for optional environment variables ---
+# --- Default environment variables ---
 export PROJECT="${PROJECT:-onprem}"
 export NAMESPACE="${NAMESPACE:-onprem}"
 export CLUSTER_NAME="${CLUSTER_NAME:-onprem}"
@@ -71,139 +65,210 @@ export SRE_TLS_ENABLED="${SRE_TLS_ENABLED:-false}"
 export SRE_DEST_CA_CERT="${SRE_DEST_CA_CERT:-}"
 export SMTP_SKIP_VERIFY="${SMTP_SKIP_VERIFY:-false}"
 
-# --- Function: Validate IPv4 format ---
+# --- Function: Validate IPv4 ---
 is_valid_ip() {
-  local ip=$1
-  if [[ $ip =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
-    IFS='.' read -r -a octets <<< "$ip"
-    for octet in "${octets[@]}"; do
-      if (( octet < 0 || octet > 255 )); then
+    local ip=$1
+    if [[ $ip =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+        IFS='.' read -r -a octets <<< "$ip"
+        for octet in "${octets[@]}"; do
+            if (( octet < 0 || octet > 255 )); then
+                return 1
+            fi
+        done
+        return 0
+    else
         return 1
-      fi
-    done
-    return 0
-  else
-    return 1
-  fi
+    fi
 }
 
-# --- Function: Prompt for IP if not set or invalid ---
+# --- Function: Prompt for IP ---
 prompt_for_ip() {
-  local var_name=$1
-  local prompt_msg=$2
-  local value="${!var_name}"
+    local var_name=$1
+    local prompt_msg=$2
+    local value="${!var_name}"
 
-  while true; do
-    if [ -z "$value" ]; then
-      read -rp "Enter ${prompt_msg}: " value
-    fi
+    while true; do
+        if [ -z "$value" ]; then
+            read -rp "Enter ${prompt_msg}: " value
+        fi
 
-    if is_valid_ip "$value"; then
-      export "$var_name"="$value"
-      break
-    else
-      echo "❌ Invalid IP address: $value"
-      value=""
-      unset "$var_name"
-      read -rp "Do you want to retry? (y/n): " choice
-      case "$choice" in
-        [Yy]*) continue ;;
-        [Nn]*) echo "Exiting."; exit 1 ;;
-        *) echo "Please answer y or n." ;;
-      esac
-    fi
-  done
+        if is_valid_ip "$value"; then
+            export "$var_name"="$value"
+            break
+        else
+            echo "❌ Invalid IP address: $value"
+            value=""
+            unset "$var_name"
+            read -rp "Do you want to retry? (y/n): " choice
+            case "$choice" in
+                [Yy]*) continue ;;
+                [Nn]*) echo "Exiting."; exit 1 ;;
+                *) echo "Please answer y or n." ;;
+            esac
+        fi
+    done
 }
 
 # --- TLS and CA Secret configuration ---
 if [[ "$SRE_TLS_ENABLED" == "true" ]]; then
-  TLS_ENABLED=true
-  CA_SECRET_ENABLED=false
-  [[ -n "$SRE_DEST_CA_CERT" ]] && CA_SECRET_ENABLED=true
+    TLS_ENABLED=true
+    CA_SECRET_ENABLED=false
+    [[ -n "$SRE_DEST_CA_CERT" ]] && CA_SECRET_ENABLED=true
 else
-  TLS_ENABLED=false
-  CA_SECRET_ENABLED=false
+    TLS_ENABLED=false
+    CA_SECRET_ENABLED=false
 fi
 
-# --- Switch-case for ORCH_INSTALLER_PROFILE ---
-case "${ORCH_INSTALLER_PROFILE}" in
-  onprem)
-    echo "📦 Profile: Standard On-Prem Deployment"
-    export ONPREM_PROFILE='- orch-configs/profiles/enable-onprem.yaml'
-    export PROFILE_FILE_NAME='- orch-configs/profiles/profile-onprem.yaml'
-    ;;
 
-  onprem-1k)
-    echo "📦 Profile: On-Prem 1K Deployment"
-    export EDGEINFRA_PROFILE='- orch-configs/profiles/enable-edgeinfra-1k.yaml'
-    if [ "${DISABLE_O11Y_PROFILE:-false}" = "true" ]; then
-      export O11Y_ONPREM_PROFILE="#- orch-configs/profiles/o11y-onprem-1k.yaml"
-    else
-      export O11Y_ONPREM_PROFILE="- orch-configs/profiles/o11y-onprem-1k.yaml"
-    fi
-    ;;
+# --- AO/CO profile logic ---
+if [ "${DISABLE_CO_PROFILE:-false}" = "true" ] || [ "${DISABLE_AO_PROFILE:-false}" = "true" ]; then
+    export AO_PROFILE="#- orch-configs/profiles/enable-app-orch.yaml"
+else
+    export AO_PROFILE="- orch-configs/profiles/enable-app-orch.yaml"
+fi
 
-  onprem-oxm)
-    echo "📦 Profile: On-Prem with OXM Integration"
-    export PROFILE_FILE_NAME_EXT='- orch-configs/profiles/profile-oxm.yaml'
-    export EXPLICIT_PROXY_PROFILE='- orch-configs/profiles/enable-explicit-proxy.yaml'
-    export O11Y_PROFILE="#- orch-configs/profiles/enable-o11y.yaml"
-    export O11Y_ONPREM_PROFILE="#- orch-configs/profiles/o11y-onprem.yaml"
+if [ "${DISABLE_CO_PROFILE:-false}" = "true" ]; then
     export CO_PROFILE="#- orch-configs/profiles/enable-cluster-orch.yaml"
     export AO_PROFILE="#- orch-configs/profiles/enable-app-orch.yaml"
-    ;;
+else
+    export CO_PROFILE="- orch-configs/profiles/enable-cluster-orch.yaml"
+fi
 
-  onprem-explicit-proxy)
-    echo "📦 Profile: On-Prem with Explicit Proxy Configuration"
-    export EXPLICIT_PROXY_PROFILE='- orch-configs/profiles/enable-explicit-proxy.yaml'
-    ;;
+if [ "$DEPLOY_TYPE" = "onprem" ]; then
 
-  *)
-    echo "❌ Invalid ORCH_INSTALLER_PROFILE: ${ORCH_INSTALLER_PROFILE}"
-    echo "Valid options: onprem | onprem-1k | onprem-oxm | onprem-explicit-proxy"
-    exit 1
-    ;;
-esac
+	# --- IP prompts ---
+	prompt_for_ip "ARGO_IP" "Argo IP"
+	prompt_for_ip "TRAEFIK_IP" "Traefik IP"
+	prompt_for_ip "NGINX_IP" "Nginx IP"
 
-# --- IP prompts ---
-prompt_for_ip "ARGO_IP" "Argo IP"
-prompt_for_ip "TRAEFIK_IP" "Traefik IP"
-prompt_for_ip "NGINX_IP" "Nginx IP"
+	echo
+	echo "✅ Using the following valid IPs:"
+	echo "   ArgoIP:     $ARGO_IP"
+	echo "   TraefikIP:  $TRAEFIK_IP"
+	echo "   NginxIP:    $NGINX_IP"
+	
+	# --- O11Y_PROFILE disable check ---
+	if [ "${DISABLE_O11Y_PROFILE:-false}" = "true" ]; then
+		export O11Y_ENABLE_PROFILE="#- orch-configs/profiles/enable-o11y.yaml"
+		export O11Y_PROFILE="#- orch-configs/profiles/o11y-onprem.yaml"
+	else
+		export O11Y_ENABLE_PROFILE="- orch-configs/profiles/enable-o11y.yaml"
+		export O11Y_PROFILE="- orch-configs/profiles/o11y-onprem.yaml"
+	fi
+	
+    case "${ORCH_INSTALLER_PROFILE}" in
+        onprem)
+            echo "📦 Profile: Standard On-Prem Deployment"
+            export ONPREM_PROFILE='- orch-configs/profiles/enable-onprem.yaml'
+            export PROFILE_FILE_NAME='- orch-configs/profiles/profile-onprem.yaml'
+            ;;
+        onprem-1k)
+            echo "📦 Profile: On-Prem 1K Deployment"
+            export EDGEINFRA_PROFILE='- orch-configs/profiles/enable-edgeinfra-1k.yaml'
+            if [ "${DISABLE_O11Y_PROFILE:-false}" = "true" ]; then
+                export O11Y_PROFILE="#- orch-configs/profiles/o11y-onprem-1k.yaml"
+            else
+                export O11Y_PROFILE="- orch-configs/profiles/o11y-onprem-1k.yaml"
+            fi
+            ;;
+        onprem-oxm)
+            echo "📦 Profile: On-Prem with OXM Integration"
+            export PROFILE_FILE_NAME_EXT='- orch-configs/profiles/profile-oxm.yaml'
+            export EXPLICIT_PROXY_PROFILE='- orch-configs/profiles/enable-explicit-proxy.yaml'
+            export O11Y_ENABLE_PROFILE="#- orch-configs/profiles/enable-o11y.yaml"
+            export O11Y_PROFILE="#- orch-configs/profiles/o11y-onprem.yaml"
+            export CO_PROFILE="#- orch-configs/profiles/enable-cluster-orch.yaml"
+            export AO_PROFILE="#- orch-configs/profiles/enable-app-orch.yaml"
+            ;;
+        onprem-explicit-proxy)
+            echo "📦 Profile: On-Prem with Explicit Proxy Configuration"
+            export EXPLICIT_PROXY_PROFILE='- orch-configs/profiles/enable-explicit-proxy.yaml'
+            ;;
+        *)
+            echo "❌ Invalid ORCH_INSTALLER_PROFILE: ${ORCH_INSTALLER_PROFILE}"
+            echo "Valid on-prem profiles: onprem | onprem-1k | onprem-oxm | onprem-explicit-proxy"
+            exit 1
+            ;;
+    esac
 
-echo
-echo "✅ Using the following valid IPs:"
-echo "   ArgoIP:     $ARGO_IP"
-echo "   TraefikIP:  $TRAEFIK_IP"
-echo "   NginxIP:    $NGINX_IP"
+elif [ "$DEPLOY_TYPE" = "aws" ]; then
+
+	# --- O11Y_PROFILE disable check ---
+	export CLUSTER_SCALE_PROFILE=$(grep -oP '^# Profile: "\K[^"]+' ~/pod-configs/SAVEME/${AWS_ACCOUNT}-${CLUSTER_NAME}-profile.tfvar)
+	if [ "${DISABLE_O11Y_PROFILE:-false}" = "true" ]; then
+	    export O11Y_ENABLE_PROFILE="#- orch-configs/profiles/enable-o11y.yaml"
+		export O11Y_PROFILE="#- orch-configs/profiles/o11y-release.yaml"
+	else		
+	    export O11Y_ENABLE_PROFILE="- orch-configs/profiles/enable-o11y.yaml"
+		export O11Y_PROFILE="- orch-configs/profiles/o11y-release.yaml"
+		if [[ "$CLUSTER_SCALE_PROFILE" == "500en" || "$CLUSTER_SCALE_PROFILE" == "1ken" || "$CLUSTER_SCALE_PROFILE" == "10ken" ]]; then
+		  export O11Y_PROFILE="- orch-configs/profiles/o11y-release-large.yaml"
+		fi
+	fi
+
+    # SRE Profile
+    if [ -n "${SRE_BASIC_AUTH_USERNAME:-}" ] || [ -n "${SRE_BASIC_AUTH_PASSWORD:-}" ] || [ -n "${SRE_DESTINATION_SECRET_URL:-}" ] || [ -n "${SRE_DESTINATION_CA_SECRET:-}" ]; then
+        export SRE_PROFILE="- orch-configs/profiles/enable-sre.yaml"
+    else
+        export SRE_PROFILE="#- orch-configs/profiles/enable-sre.yaml"
+    fi
+
+    # Email Profile
+    if [ -z "${SMTP_URL:-}" ]; then
+        export EMAIL_PROFILE="#- orch-configs/profiles/alerting-emails.yaml"
+    else
+        export EMAIL_PROFILE="- orch-configs/profiles/alerting-emails.yaml"
+    fi
+
+    # AutoCert Profile
+    if [ -z "${AUTO_CERT:-}" ]; then
+        export AUTOCERT_PROFILE="#- orch-configs/profiles/profile-autocert.yaml"
+    else
+        export AUTOCERT_PROFILE="- orch-configs/profiles/profile-autocert.yaml"
+    fi
+
+    # AWS Production Profile
+    if [ "${DISABLE_AWS_PROD_PROFILE:-false}" = "true" ]; then
+        export AWS_PROD_PROFILE="#- orch-configs/profiles/profile-aws-production.yaml"
+    else
+        export AWS_PROD_PROFILE="- orch-configs/profiles/profile-aws-production.yaml"
+    fi
+
+    # O11Y Profile override for large clusters
+    if [[ "$CLUSTER_SCALE_PROFILE" == "500en" || "$CLUSTER_SCALE_PROFILE" == "1ken" || "$CLUSTER_SCALE_PROFILE" == "10ken" ]]; then
+        export O11Y_PROFILE="- orch-configs/profiles/o11y-release-large.yaml"
+    fi
+fi
 
 # --- Generate cluster YAML ---
 echo "🔧 Generating cluster config..."
-
 envsubst < "$TEMPLATE_FILE" \
-  | sed -E '/^[[:space:]]*#/d; /^[[:space:]]*#!/d; /^[[:space:]]*$/d' \
-  > "$OUTPUT_FILE"
+    | sed -E '/^[[:space:]]*#/d; /^[[:space:]]*#!/d; /^[[:space:]]*$/d' \
+    > "$OUTPUT_FILE"
 
+# --- Post-processing for onprem-1k ---
 if [ "${ORCH_INSTALLER_PROFILE}" = "onprem-1k" ]; then
-  echo "ℹ️  Using ONPREM-1K deployment profile (EdgeInfra + O11Y optional)"
-  yq -i '.argo.postgresql.resourcesPreset |= "large"' "$OUTPUT_FILE"
+    echo "ℹ️  Using ONPREM-1K deployment profile (EdgeInfra + O11Y optional)"
+    yq -i '.argo.postgresql.resourcesPreset |= "large"' "$OUTPUT_FILE"
 fi
 
 yq -i ".argo.o11y.sre.tls.enabled |= ${TLS_ENABLED}" "$OUTPUT_FILE"
 yq -i ".argo.o11y.sre.tls.caSecretEnabled |= ${CA_SECRET_ENABLED}" "$OUTPUT_FILE"
 yq -i ".argo.o11y.alertingMonitor.smtp.insecureSkipVerify |= ${SMTP_SKIP_VERIFY}" "$OUTPUT_FILE"
-# --- Review generated file only if PROCEED is set and not yes ---
+
+# --- Review generated file if PROCEED is set and not 'yes' ---
 if [[ -n "${PROCEED}" && "${PROCEED}" != "yes" ]]; then
-  echo
-  echo "=============================================================================="
-  echo "Please review the cluster settings in the generated configuration and make"
-  echo "any necessary updates."
-  echo
-  echo "Press any key to open your editor..."
-  echo "=============================================================================="
-  echo
-  read -n 1 -s  # wait for a single key press silently
-  "${EDITOR:-vi}" "$OUTPUT_FILE"
+    echo
+    echo "=============================================================================="
+    echo "Please review the cluster settings in the generated configuration and make any necessary updates."
+    echo
+    echo "Press any key to open your editor..."
+    echo "=============================================================================="
+    echo
+    read -n 1 -s  # wait for a single key press silently
+    "${EDITOR:-vi}" "$OUTPUT_FILE"
 fi
 
 echo "✅ File generated: $OUTPUT_FILE"
-cat $OUTPUT_FILE
+cat "$OUTPUT_FILE"
+
