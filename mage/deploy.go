@@ -1539,19 +1539,6 @@ func getOrchestratorVersionParam() (string, error) {
 	return fmt.Sprintf("--set-string argo.orchestratorVersion=%s ", version), nil
 }
 
-func (d Deploy) removeProfile(configMap map[string]interface{}, profilePath string) {
-	// Modify the profiles list to remove "ao" profile
-	if profiles, ok := configMap["profiles"].([]interface{}); ok {
-		var updatedProfiles []interface{}
-		for _, profile := range profiles {
-			if profileStr, ok := profile.(string); ok && profileStr != "ao" {
-				updatedProfiles = append(updatedProfiles, profileStr)
-			}
-		}
-		configMap["profiles"] = updatedProfiles
-	}
-}
-
 // Root app that starts the deployment of children apps.
 func (d Deploy) orch(targetEnv string) error {
 	targetConfig := getTargetConfig(targetEnv)
