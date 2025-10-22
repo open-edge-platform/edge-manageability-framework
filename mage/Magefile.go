@@ -1831,14 +1831,6 @@ func (g Gen) FirewallDoc() error {
 
 type Config mg.Namespace
 
-func (c Config) CreateCluster() error {
-	_, err := c.createCluster()
-	if err != nil {
-		return fmt.Errorf("failed to create cluster: %w", err)
-	}
-	return nil
-}
-
 // Create a cluster deployment configuration from a cluster values file.
 func (c Config) UsePreset(clusterPresetFile string) error {
 	_, err := c.usePreset(clusterPresetFile)
