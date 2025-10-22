@@ -18,7 +18,7 @@ root:
 {{- end }}
 {{- if .Values.enableAppOrch }}
     - orch-configs/profiles/enable-app-orch.yaml
-{{- endif }}
+{{- end }}
 {{- if .Values.enableClusterOrch }}
     - orch-configs/profiles/enable-cluster-orch.yaml
 {{ -end }}
