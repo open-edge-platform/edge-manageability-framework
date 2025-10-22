@@ -232,6 +232,7 @@ keycloakConfigCli:
           "client": {
             "alerts-m2m-client": [],
             "host-manager-m2m-client": [],
+            "co-manager-m2m-client": [],
             "ktc-m2m-client": [],
             "3rd-party-host-manager-m2m-client": [],
             "edge-manager-m2m-client": [],
@@ -367,6 +368,45 @@ keycloakConfigCli:
               "phone",
               "offline_access",
               "microprofile-jwt"
+            ]
+          },
+          {
+            "clientId": "co-manager-m2m-client",
+            "name": "Cluster Orchestrator Manager M2M Client",
+            "description": "Client for cluster-manager to access Keycloak for JWT TTL management",
+            "surrogateAuthRequired": false,
+            "enabled": true,
+            "alwaysDisplayInConsole": false,
+            "clientAuthenticatorType": "client-secret",
+            "notBefore": 0,
+            "bearerOnly": false,
+            "consentRequired": false,
+            "standardFlowEnabled": false,
+            "implicitFlowEnabled": false,
+            "directAccessGrantsEnabled": false,
+            "serviceAccountsEnabled": true,
+            "authorizationServicesEnabled": true,
+            "publicClient": false,
+            "frontchannelLogout": true,
+            "protocol": "openid-connect",
+            "attributes": {
+              "oidc.ciba.grant.enabled": "false",
+              "oauth2.device.authorization.grant.enabled": "false",
+              "backchannel.logout.session.required": "true",
+              "backchannel.logout.revoke.offline.tokens": "false"
+            },
+            "fullScopeAllowed": true,
+            "defaultClientScopes": [
+              "web-origins",
+              "acr",
+              "profile",
+              "roles",
+              "email",
+              "basic",
+              "groups"
+            ],
+            "optionalClientScopes": [
+              "offline_access"
             ]
           },
           {
@@ -1096,6 +1136,29 @@ keycloakConfigCli:
               ]
             },
             "notBefore": 0
+          },
+          {
+            "username": "service-account-co-manager-m2m-client",
+            "enabled": true,
+            "totp": false,
+            "serviceAccountClientId": "co-manager-m2m-client",
+            "realmRoles": [
+              "default-roles-master"
+            ],
+            "clientRoles": {
+              "co-manager-m2m-client": [
+                "uma_protection"
+              ],
+              "master-realm": [
+                "view-clients",
+                "manage-clients"
+              ]
+            },
+            "notBefore": 0,
+            "groups": [
+              "/edge-manager-group",
+              "/apps-m2m-service-account"
+            ]
           },
           {
             "username": "service-account-ktc-m2m-client",
