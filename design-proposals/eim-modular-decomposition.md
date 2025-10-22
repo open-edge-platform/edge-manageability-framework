@@ -311,6 +311,11 @@ The updated OXM profile architecture supporting Secure Device Onboarding and OS 
 > To avoid this we can leverage and automate the device credentials injection and bootstrapping mechanism used by EIM
 > scale testing framework where EIM agents are running in docker containers simulating edge nodes.
 
+Here is another example of **Track #1 (Status Quo + Use Case Enablement)** with Out-of-Band Device Management workflow
+for device vPRO/AMT activation management.
+
+![Modular Workflow for vPRO/AMT Activation Management](images/modular-vpro-amt-activation.png)
+
 - **Track #2 (Bring-Your-Own Infrastructure)**
   - Introduce configuration surfaces that allow customers to plug in third-party identity and secrets backends such
     as Keycloak, Vault, load balancers, Kubernetes clusters, or database services mirroring the flexibility
@@ -387,23 +392,37 @@ components to integrate vPRO device management capabilities into their edge solu
 
 Here are some of the **value additions EIM provides on top of the core Intel DMT**.
 
-- Unified provisioning that chains PXE/HTTPS boot, OS imaging, and DMT agent activation
+- Unified provisioning that chains PXE/HTTPS boot, OS provisioning, and DMT agent activation
   into a single zero-touch workflow, shrinking factory floor and field deployment effort.
 - Vendor-neutral policy engine that detects device-specific vPRO/ISM capabilities at runtime
   and drives conditional actions (power, KVM, remediation) without custom scripting.
-- Managed upgrade pipelines that coordinate firmware, OS, and DMT service rollouts with
+- Managed upgrade pipelines that coordinate firmware, OS, and DMT service rollout with
   staged approvals, compliance gating, and automated CVE closure reporting.
+- Policy based support for vPRO Device management in both Admin (Admin control mode) and
+  Client control mode (CCM) across fleet of devices.
+- Policy-Driven Lifecycle & Compliance:  
+  - Activation intents (conditional profile selection based on hardware inventory).
+  - Ongoing compliance (password rotation cadence, Wi-Fi credential expiry, secure boot posture).
+  - Conditional remediation triggers (auto power cycle on heartbeat failure).
+  - Integrate DMT profile constructs as resources referenced in EMF policies.  
 - Multi-tenant governance model with regional/site hierarchies, granular RBAC, and per-tenant
   secrets isolation that scales DMT beyond single-customer environments.
 - Automated recovery playbooks that restore OS, agents, credentials, and application payloads
   end-to-end, giving operations a deterministic “return-to-known-good” button.
-- Cross-layer Inventory and telemetry lake that fuses hardware counters, OS health,
-  Kubernetes state, and application metrics to expose Intel silicon insights alongside fleet KPIs.
+- Intelligent Telemetry & Analytics Layer:
+  - Cross-layer Inventory and telemetry lake that fuses hardware counters, OS health,
+    Kubernetes state, and application metrics to expose Intel silicon insights alongside fleet KPIs.
+  - Stream device state (connected/disconnected, KVM sessions, SOL usage, boot events) into EMF’s data lake.
+  - ML-driven anomaly detection: flag devices with abnormal remote session frequency or provisioning failures.
+  - Predictive maintenance: combine hardware inventory (via AMT) with performance metrics to forecast failures.  
 - Secure device retirement workflows that orchestrate de-authorization, cryptographic wipe,
   audit evidence capture, and re-inventory of reclaimed assets.
 - Integrated secure remote operations combining audited KVM, just-in-time SSH, and policy-bound
   break-glass controls to keep remediation compliant.
 - Edge-aware reliability features that prevent repeated vPRO activations on lossy or intermittent networks.
+- Enhanced Security & Attestation:
+  - Combine AMT hardware data with EMF’s attestation pipeline: TPM quotes, firmware hash checks, secure boot status.
+  - Cross-correlate with SBOM/HW inventory to produce compliance scorecards.
 
 ### Fine grained E2E vPRO workflows
 
