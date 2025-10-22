@@ -21,7 +21,7 @@ root:
 {{- end }}
 {{- if .Values.enableClusterOrch }}
     - orch-configs/profiles/enable-cluster-orch.yaml
-{{ -end }}
+{{- end }}
 {{- if .Values.enableEdgeInfra }}
     - orch-configs/profiles/enable-edgeinfra.yaml
 {{- end }}
