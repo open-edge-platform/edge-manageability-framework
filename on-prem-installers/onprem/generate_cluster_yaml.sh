@@ -155,21 +155,21 @@ if [ "$DEPLOY_TYPE" = "onprem" ]; then
 		export O11Y_ENABLE_PROFILE="- orch-configs/profiles/enable-o11y.yaml"
 		export O11Y_PROFILE="- orch-configs/profiles/o11y-onprem.yaml"
 	fi
+
+	if [ "${CLUSTER_SCALE_PROFILE}" = "1ken" ]; then
+    	   export EDGEINFRA_PROFILE='- orch-configs/profiles/enable-edgeinfra-1k.yaml'
+           if [ "${DISABLE_O11Y_PROFILE:-false}" = "true" ]; then
+               export O11Y_PROFILE="#- orch-configs/profiles/o11y-onprem-1k.yaml"
+           else
+              export O11Y_PROFILE="- orch-configs/profiles/o11y-onprem-1k.yaml"
+           fi
+        fi
 	
     case "${ORCH_INSTALLER_PROFILE}" in
         onprem)
             echo "📦 Profile: Standard On-Prem Deployment"
             export ONPREM_PROFILE='- orch-configs/profiles/enable-onprem.yaml'
             export PROFILE_FILE_NAME='- orch-configs/profiles/profile-onprem.yaml'
-            ;;
-        onprem-1k)
-            echo "📦 Profile: On-Prem 1K Deployment"
-            export EDGEINFRA_PROFILE='- orch-configs/profiles/enable-edgeinfra-1k.yaml'
-            if [ "${DISABLE_O11Y_PROFILE:-false}" = "true" ]; then
-                export O11Y_PROFILE="#- orch-configs/profiles/o11y-onprem-1k.yaml"
-            else
-                export O11Y_PROFILE="- orch-configs/profiles/o11y-onprem-1k.yaml"
-            fi
             ;;
         onprem-oxm)
             echo "📦 Profile: On-Prem with OXM Integration"
@@ -179,10 +179,6 @@ if [ "$DEPLOY_TYPE" = "onprem" ]; then
             export O11Y_PROFILE="#- orch-configs/profiles/o11y-onprem.yaml"
             export CO_PROFILE="#- orch-configs/profiles/enable-cluster-orch.yaml"
             export AO_PROFILE="#- orch-configs/profiles/enable-app-orch.yaml"
-            ;;
-        onprem-explicit-proxy)
-            echo "📦 Profile: On-Prem with Explicit Proxy Configuration"
-            export EXPLICIT_PROXY_PROFILE='- orch-configs/profiles/enable-explicit-proxy.yaml'
             ;;
         *)
             echo "❌ Invalid ORCH_INSTALLER_PROFILE: ${ORCH_INSTALLER_PROFILE}"
@@ -247,7 +243,7 @@ envsubst < "$TEMPLATE_FILE" \
     > "$OUTPUT_FILE"
 
 # --- Post-processing for onprem-1k ---
-if [ "${ORCH_INSTALLER_PROFILE}" = "onprem-1k" ]; then
+if [ "${CLUSTER_SCALE_PROFILE}" = "1ken" ]; then
     echo "ℹ️  Using ONPREM-1K deployment profile (EdgeInfra + O11Y optional)"
     yq -i '.argo.postgresql.resourcesPreset |= "large"' "$OUTPUT_FILE"
 fi
@@ -255,6 +251,34 @@ fi
 yq -i ".argo.o11y.sre.tls.enabled |= ${TLS_ENABLED}" "$OUTPUT_FILE"
 yq -i ".argo.o11y.sre.tls.caSecretEnabled |= ${CA_SECRET_ENABLED}" "$OUTPUT_FILE"
 yq -i ".argo.o11y.alertingMonitor.smtp.insecureSkipVerify |= ${SMTP_SKIP_VERIFY}" "$OUTPUT_FILE"
+
+
+update_proxy() {
+    local yaml_key=$1
+    local var_name=$2
+    local value=${!var_name:-}  # Get the env var or empty
+
+    # If unset or empty, default to empty string
+    if [ -z "$value" ]; then
+        value=""
+    fi
+
+    # Export TMP_VALUE for strenv
+    export TMP_VALUE="$value"
+    echo "🛠️ Setting .argo.proxy.${yaml_key} = \"$value\""
+    yq eval -i ".argo.proxy.${yaml_key} = strenv(TMP_VALUE)" "$OUTPUT_FILE"
+    unset TMP_VALUE
+}
+
+# --- Update all proxy variables ---
+update_proxy "httpProxy" "HTTP_PROXY"
+update_proxy "httpsProxy" "HTTPS_PROXY"
+update_proxy "noProxy" "NO_PROXY"
+update_proxy "enHttpProxy" "EN_HTTP_PROXY"
+update_proxy "enHttpsProxy" "EN_HTTPS_PROXY"
+update_proxy "enFtpProxy" "EN_FTP_PROXY"
+update_proxy "enSocksProxy" "EN_SOCKS_PROXY"
+update_proxy "enNoProxy" "EN_NO_PROXY"
 
 # --- Review generated file if PROCEED is set and not 'yes' ---
 if [[ -n "${PROCEED}" && "${PROCEED}" != "yes" ]]; then
