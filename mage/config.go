@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"text/template"
 
@@ -124,8 +125,6 @@ func parseClusterValues(clusterConfigPath string) (map[string]interface{}, error
 	return clusterValues, nil
 }
 
-// XXX smbaker - cleanup - abandoned this approach
-/*
 func (Config) overrideFromEnvironment(presetData map[string]interface{}) error {
 	// DISABLE_AO_PROFILE, DISABLE_CO_PROFILE, DISABLE_O11Y_PROFILE environment
 	// variables may be used to disable specific subsystems. These environment variable
@@ -159,8 +158,8 @@ func (Config) overrideFromEnvironment(presetData map[string]interface{}) error {
 	if disableO11y {
 		presetData["enableObservability"] = false
 	}
+	return nil
 }
-*/
 
 // Create a cluster deployment configuration from a cluster values file.
 func (c Config) usePreset(clusterPresetFile string) (string, error) {
@@ -187,12 +186,10 @@ func (c Config) usePreset(clusterPresetFile string) (string, error) {
 		presetData["proxyProfile"] = proxyProfilePath
 	}
 
-	// XXX smbaker - cleanup - abandoned this approach
-	// apply any overrides from environment variables
-	//err = c.overrideFromEnvironment(presetData)
-	//if err != nil {
-	//return "", fmt.Errorf("failed to override preset data from environment: %w", err)
-	//}
+	err = c.overrideFromEnvironment(presetData)
+	if err != nil {
+		return "", fmt.Errorf("failed to override preset data from environment: %w", err)
+	}
 
 	var clusterName string
 	if clusterName, err = renderClusterTemplate(presetData); err != nil {

@@ -464,12 +464,12 @@ type Deploy mg.Namespace
 
 // Deploy kind cluster, Argo CD, and all Orchestrator services.
 func (d Deploy) KindAll() error {
-	return d.all("dev")
+	return d.KindPreset("../orch-configs/presets/dev-coder.yaml")
 }
 
 // Deploy kind cluster, Argo CD, and all Orchestrator services except o11y and kyverno.
 func (d Deploy) KindMinimal() error {
-	return d.all("dev-minimal")
+	return d.KindPreset("../orch-configs/presets/dev-coder-minimal.yaml")
 }
 
 // Deploy kind cluster, Argo CD, and Orchestrator services with customized settings.
@@ -1200,6 +1200,7 @@ func (d Deploy) OrchLocal(targetEnv string) error {
 	return d.orchLocal(targetEnv)
 }
 
+// OrchCA Saves Orchestrators's CA certificate to `orch-ca.crt` so it can be imported to trust store for web access.
 func (d Deploy) OrchCA() error {
 	return d.orchCA()
 }
