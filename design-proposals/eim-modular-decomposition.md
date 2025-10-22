@@ -311,6 +311,11 @@ The updated OXM profile architecture supporting Secure Device Onboarding and OS 
 > To avoid this we can leverage and automate the device credentials injection and bootstrapping mechanism used by EIM
 > scale testing framework where EIM agents are running in docker containers simulating edge nodes.
 
+Here is another example of **Track #1 (Status Quo + Use Case Enablement)** with Out-of-Band Device Management workflow
+for device vPRO/AMT activation management.
+
+![Modular Workflow for vPRO/AMT Activation Management](images/modular-vpro-amt-activation.png)
+
 - **Track #2 (Bring-Your-Own Infrastructure)**
   - Introduce configuration surfaces that allow customers to plug in third-party identity and secrets backends such
     as Keycloak, Vault, load balancers, Kubernetes clusters, or database services mirroring the flexibility
@@ -393,6 +398,8 @@ Here are some of the **value additions EIM provides on top of the core Intel DMT
   and drives conditional actions (power, KVM, remediation) without custom scripting.
 - Managed upgrade pipelines that coordinate firmware, OS, and DMT service rollouts with
   staged approvals, compliance gating, and automated CVE closure reporting.
+- Policy based support for vPRO Device management in both Admin (Admin control mode) and
+  Client control mode (CCM) across fleet of devices.  
 - Multi-tenant governance model with regional/site hierarchies, granular RBAC, and per-tenant
   secrets isolation that scales DMT beyond single-customer environments.
 - Automated recovery playbooks that restore OS, agents, credentials, and application payloads
