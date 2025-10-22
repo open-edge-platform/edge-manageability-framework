@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -28,6 +29,7 @@ import (
 	"github.com/bitfield/script"
 	"github.com/magefile/mage/mg"
 	"github.com/magefile/mage/sh"
+	"gopkg.in/yaml.v3"
 )
 
 var pwChars = []rune(`abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789`)
@@ -1539,16 +1541,99 @@ func getOrchestratorVersionParam() (string, error) {
 	return fmt.Sprintf("--set-string argo.orchestratorVersion=%s ", version), nil
 }
 
+func (d Deploy) removeProfile(configMap map[string]interface{}, profilePath string) {
+	// Modify the profiles list to remove "ao" profile
+	if profiles, ok := configMap["profiles"].([]interface{}); ok {
+		var updatedProfiles []interface{}
+		for _, profile := range profiles {
+			if profileStr, ok := profile.(string); ok && profileStr != "ao" {
+				updatedProfiles = append(updatedProfiles, profileStr)
+			}
+		}
+		configMap["profiles"] = updatedProfiles
+	}
+}
+
+// There are multiple ways that cluster templates might be use.
+//   1. By using a preset, which in turn uses cluster.tpl to generate a cluster.yaml
+//   2. By using "deploy:kind" or "deploy:kindminimal" which uses a specifically-named cluster.yaml
+//   3. By using "deploy:orch" or "deploy:orchLocal" which uses a user-named cluster.yaml
+// To handle environment variable overrides from any of these paths that might have led us here,
+// just do a final pass over the cluster.yaml we were given, and modify it.
+
+func (d Deploy) handleEnvOverride(targetConfig string) (string, error) {
+	orchConfigsDir := getConfigsDir()
+
+	disableAOStr := os.Getenv("DISABLE_AO_PROFILE")
+	disableAO, err := strconv.ParseBool(disableAOStr)
+	if err != nil {
+		return fmt.Errorf("failed to parse DISABLE_AO_PROFILE environment variable: %w", err)
+	}
+
+	disableCOStr := os.Getenv("DISABLE_AO_PROFILE")
+	disableCO, err := strconv.ParseBool(disableCOStr)
+	if err != nil {
+		return fmt.Errorf("failed to parse DISABLE_CO_PROFILE environment variable: %w", err)
+	}
+	if disableCO {
+		disableAO = true
+	}
+
+	disableO11yStr := os.Getenv("DISABLE_O11Y_PROFILE")
+	disableO11y, err := strconv.ParseBool(disableO11yStr)
+	if err != nil {
+		return fmt.Errorf("failed to parse DISABLE_O11Y_PROFILE environment variable: %w", err)
+	}
+
+	// Parse the YAML file in targetConfig
+	yamlData, err := os.ReadFile(targetConfig)
+	if err != nil {
+		fmt.Printf("failed to read target config file: %v\n", err)
+		return targetConfig
+	}
+	var configMap map[string]interface{}
+	if err := yaml.Unmarshal(yamlData, &configMap); err != nil {
+		fmt.Printf("failed to parse target config YAML: %v\n", err)
+		return targetConfig
+	}
+
+	if disableAO {
+		removeProfile(configMap, "orch-configs/profiles/enable-app-orch.yaml")
+	}
+	if disableCO {
+		removeProfile(configMap, "orch-configs/profiles/enable-cluster-orch.yaml")
+	}
+	if disableO11y {
+		removeProfile(configMap, "orch-configs/profiles/enable-o11y.yaml")
+	}
+
+	// Write the modified configMap to a new profile file and return its path
+	newProfilePath := fmt.Sprintf("%s/clusters/deploy.yaml", orchConfigsDir)
+	outData, err := yaml.Marshal(configMap)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal modified config YAML: %v", err)
+	}
+	if err := os.WriteFile(newProfilePath, outData, 0o644); err != nil {
+		return "", fmt.Errorf("failed to write new profile file: %v", err)
+	}
+	return newProfilePath, nil
+}
+
 // Root app that starts the deployment of children apps.
 func (d Deploy) orch(targetEnv string) error {
 	targetConfig := getTargetConfig(targetEnv)
+
+	finalConfig, err := d.handleEnvOverride(targetConfig)
+	if err != nil {
+		return err
+	}
 
 	// Clone and update the Gitea deployment repo
 	if err := (Deploy{}).updateDeployRepo(targetEnv, deployRepoPath, deployRepoName, deployGiteaRepoDir); err != nil {
 		return fmt.Errorf("error updating deployment repo content: %w", err)
 	}
 
-	cmd := fmt.Sprintf("helm upgrade --install root-app argocd/root-app -f %s -n %s --create-namespace", targetConfig, targetEnv)
+	cmd := fmt.Sprintf("helm upgrade --install root-app argocd/root-app -f %s -n %s --create-namespace", finalConfig, targetEnv)
 	_, err := script.Exec(cmd).Stdout()
 	return err
 }
@@ -1576,6 +1661,11 @@ func getAWSAvailabilityZone() (string, error) {
 func (d Deploy) orchLocal(targetEnv string) error {
 	targetConfig := getTargetConfig(targetEnv)
 
+	finalConfig, err := d.handleEnvOverride(targetConfig)
+	if err != nil {
+		return err
+	}
+
 	// Clone and update the Gitea deployment repo
 	if err := (Deploy{}).updateDeployRepo(targetEnv, deployRepoPath, deployRepoName, deployGiteaRepoDir); err != nil {
 		return fmt.Errorf("error updating deployment repo content: %w", err)
@@ -1589,7 +1679,7 @@ func (d Deploy) orchLocal(targetEnv string) error {
 	}
 
 	cmd := fmt.Sprintf("helm upgrade --install root-app argocd/root-app -f %s  -n %s --create-namespace %s %s"+
-		"--set root.useLocalValues=true", targetConfig, targetEnv, deployRevision, orchVersion)
+		"--set root.useLocalValues=true", finalConfig, targetEnv, deployRevision, orchVersion)
 
 	// only for coder deployments
 	targetAutoCertEnabled, _ := (Config{}).isAutoCertEnabled(targetEnv)

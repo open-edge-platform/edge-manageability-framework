@@ -22,6 +22,8 @@ var (
 		"targetCluster":       "kind",
 		"clusterDomain":       serviceDomain,
 		"argoServiceType":     "LoadBalancer",
+		"enableAppOrch":       true,
+		"enableClusterOrch":   true,
 		"enableObservability": true,
 		"enableAuditLogging":  false,
 		"enableKyverno":       true,
@@ -36,23 +38,6 @@ var (
 		"deployRepoURL":       "https://gitea-http.gitea.svc.cluster.local/argocd/edge-manageability-framework",
 	}
 )
-
-func (c Config) createCluster() (string, error) {
-	fmt.Println("Interactive cluster configuration is not currently supported.")
-	fmt.Println("Use config:usePreset with a manually generated preset file until this functionality is supported.")
-
-	// TBD: Implement interactive queryClusterPresetSettings interface
-	// clusterSettings, err := queryClusterPresetSettings()
-	// if err != nil {
-	// 	return "", fmt.Errorf("invalid cluster settings: %w", err)
-	// }
-
-	// Render the cluster deployment configuration template.
-	// clusterName, err := renderClusterTemplate(clusterSettings)
-	// return clusterName, nil
-
-	return "", nil
-}
 
 // writeMapAsYAML writes a map[string]interface{} as a YAML string.
 func writeMapAsYAML(data map[string]interface{}) (string, error) {
@@ -139,8 +124,46 @@ func parseClusterValues(clusterConfigPath string) (map[string]interface{}, error
 	return clusterValues, nil
 }
 
+// XXX smbaker - cleanup - abandoned this approach
+/*
+func (Config) overrideFromEnvironment(presetData map[string]interface{}) error {
+	// DISABLE_AO_PROFILE, DISABLE_CO_PROFILE, DISABLE_O11Y_PROFILE environment
+	// variables may be used to disable specific subsystems. These environment variable
+	// names are chosen to maintain parity with the AWS and OnPrem installer environment
+	// variable names.
+
+	disableAOStr := os.Getenv("DISABLE_AO_PROFILE")
+	disableAO, err := strconv.ParseBool(disableAOStr)
+	if err != nil {
+		return fmt.Errorf("failed to parse DISABLE_AO_PROFILE environment variable: %w", err)
+	}
+	if disableAO {
+		presetData["enableAppOrch"] = false
+	}
+
+	disableCOStr := os.Getenv("DISABLE_AO_PROFILE")
+	disableCO, err := strconv.ParseBool(disableCOStr)
+	if err != nil {
+		return fmt.Errorf("failed to parse DISABLE_CO_PROFILE environment variable: %w", err)
+	}
+	if disableCO {
+		presetData["enableClusterOrch"] = false
+		presetData["enableAppOrch"] = false
+	}
+
+	disableO11yStr := os.Getenv("DISABLE_O11Y_PROFILE")
+	disableO11y, err := strconv.ParseBool(disableO11yStr)
+	if err != nil {
+		return fmt.Errorf("failed to parse DISABLE_O11Y_PROFILE environment variable: %w", err)
+	}
+	if disableO11y {
+		presetData["enableObservability"] = false
+	}
+}
+*/
+
 // Create a cluster deployment configuration from a cluster values file.
-func (Config) usePreset(clusterPresetFile string) (string, error) {
+func (c Config) usePreset(clusterPresetFile string) (string, error) {
 	clusterValues, err := os.ReadFile(clusterPresetFile)
 	if err != nil {
 		return "", fmt.Errorf("failed to read cluster preset file: %w", err)
@@ -163,6 +186,13 @@ func (Config) usePreset(clusterPresetFile string) (string, error) {
 		proxyProfilePath := fmt.Sprintf("%s/%s", filepath.Dir(clusterPresetFile), proxyProfile)
 		presetData["proxyProfile"] = proxyProfilePath
 	}
+
+	// XXX smbaker - cleanup - abandoned this approach
+	// apply any overrides from environment variables
+	//err = c.overrideFromEnvironment(presetData)
+	//if err != nil {
+	//return "", fmt.Errorf("failed to override preset data from environment: %w", err)
+	//}
 
 	var clusterName string
 	if clusterName, err = renderClusterTemplate(presetData); err != nil {
