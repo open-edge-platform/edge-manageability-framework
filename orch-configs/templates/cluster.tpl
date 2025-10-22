@@ -16,8 +16,12 @@ root:
 {{- if .Values.enableKyverno }}
     - orch-configs/profiles/enable-kyverno.yaml
 {{- end }}
+{{- if .Values.enableAppOrch }}
     - orch-configs/profiles/enable-app-orch.yaml
+{{- endif }}
+{{- if .Values.enableClusterOrch }}
     - orch-configs/profiles/enable-cluster-orch.yaml
+{{ -endif }}
 {{- if .Values.enableEdgeInfra }}
     - orch-configs/profiles/enable-edgeinfra.yaml
 {{- end }}

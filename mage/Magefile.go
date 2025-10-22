@@ -474,12 +474,9 @@ func (d Deploy) KindMinimal() error {
 
 // Deploy kind cluster, Argo CD, and Orchestrator services with customized settings.
 func (d Deploy) KindCustom() error {
-	targetEnv, err := Config{}.createCluster()
-	if err != nil {
-		return fmt.Errorf("failed to create cluster: %w", err)
-	}
-
-	return d.all(targetEnv)
+	fmt.Println("Interactive cluster configuration is not currently supported.")
+	fmt.Println("Use config:usePreset with a manually generated preset file until this functionality is supported.")
+	return fmt.Errorf("unsupported")
 }
 
 // Deploy kind cluster, Argo CD, and Orchestrator services with preset settings.
