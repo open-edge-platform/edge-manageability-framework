@@ -30,7 +30,7 @@
 #   ${ARTIFACT_RS_PROFILE}      line for artifact-rs-production-noauth profile
 #   ${OSRM_MANUAL_PROFILE}      line for enable-osrm-manual-mode profile
 #   ${RESOURCE_DEFAULT_PROFILE} line for resource-default profile
-#   ${ORCH_INSTALLER_FILE}  line for orch-configs/clusters/${ORCH_INSTALLER_PROFILE}.yaml include
+#   ${ORCH_INSTALLER_FILE_NAME}  line for orch-configs/clusters/${ORCH_INSTALLER_PROFILE}.yaml include
 
 # Cluster specific values applied to root-app only
 root:
