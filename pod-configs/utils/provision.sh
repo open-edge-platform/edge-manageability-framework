@@ -1093,6 +1093,12 @@ EOF
         gitea_argo_token=$(terraform show -json | jq '.values.outputs.gitea_user_passwords.value.argocd')
         gitea_co_user="\"clusterorch\""
         gitea_co_token=$(terraform show -json | jq '.values.outputs.gitea_user_passwords.value.clusterorch')
+        
+        # export EFS file system ID to .env
+        efs_file_system_id=$(terraform show -json | jq -r '.values.outputs.efs_file_system_id.value')
+        if [[ -n "$efs_file_system_id" && "$efs_file_system_id" != "null" ]]; then
+            echo "FILE_SYSTEM_ID=${efs_file_system_id}" >> ~/.env
+        fi
         popd
 
         jq  -n ". += {\"gitea_argo_user\":${gitea_argo_user}}" | \
@@ -1288,6 +1294,29 @@ action_orch_loadbalancer() {
         exit 1
     fi
     rm -rf "$logs_file"
+
+    # export target group ARNs to .env
+    if [[ "$action" = "apply" ]]; then
+        pushd $module
+        traefik_tg_arn=$(terraform show -json | jq -r '.values.outputs.traefik_target_groups.value.default.arn // empty')
+        traefikgrpc_tg_arn=$(terraform show -json | jq -r '.values.outputs.traefik_target_groups.value.grpc.arn // empty')
+        nginx_tg_arn=$(terraform show -json | jq -r '.values.outputs.traefik2_target_groups.value.https.arn // empty')
+        argocd_tg_arn=$(terraform show -json | jq -r '.values.outputs.argocd_target_groups.value.argocd.arn // empty')
+        
+        if [[ -n "$traefik_tg_arn" ]]; then
+            echo "TRAEFIK_TG_ARN=${traefik_tg_arn}" >> ~/.env
+        fi
+        if [[ -n "$traefikgrpc_tg_arn" ]]; then
+            echo "TRAEFIKGRPC_TG_ARN=${traefikgrpc_tg_arn}" >> ~/.env
+        fi
+        if [[ -n "$nginx_tg_arn" ]]; then
+            echo "NGINX_TG_ARN=${nginx_tg_arn}" >> ~/.env
+        fi
+        if [[ -n "$argocd_tg_arn" ]]; then
+            echo "ARGOCD_TG_ARN=${argocd_tg_arn}" >> ~/.env
+        fi
+        popd
+    fi
 
     rm -rf $dir
 }
