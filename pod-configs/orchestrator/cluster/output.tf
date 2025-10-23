@@ -35,3 +35,7 @@ output "gitea_master_password" {
   value = module.gitea.gitea_master_password
   sensitive = true
 }
+
+output "efs_file_system_id" {
+  value = module.efs.efs.id
+}

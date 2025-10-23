@@ -73,29 +73,18 @@ update_kube_config
 #
 # Create Cluster Configuration
 #
-export FILE_SYSTEM_ID=$(aws efs --region ${AWS_REGION} describe-file-systems --query "FileSystems[?Name == '${CLUSTER_NAME}'].FileSystemId" --output text)
-export S3_PREFIX=$(get_s3_prefix)
-
-export TRAEFIK_TG_HASH=$(echo -n "${CLUSTER_NAME}-traefik-default" | sha256sum | cut -c-32)
-export TRAEFIKGRPC_TG_HASH=$(echo -n "${CLUSTER_NAME}-traefik-grpc" | sha256sum | cut -c-32)
-export NGINX_TG_HASH=$(echo -n "${CLUSTER_NAME}-traefik2-https" | sha256sum | cut -c-32)
-export ARGOCD_TG_HASH=$(echo -n "${CLUSTER_NAME}-argocd-default" | sha256sum | cut -c-32)
-
-export TRAEFIK_TG_ARN=$(aws elbv2 describe-target-groups --names ${TRAEFIK_TG_HASH} | jq -r '.TargetGroups[].TargetGroupArn')
-if [ -z $TRAEFIK_TG_ARN ]; then
-    export TRAEFIK_TG_ARN=$(aws elbv2 describe-target-groups --names ${CLUSTER_NAME}-traefik-https | jq -r '.TargetGroups[].TargetGroupArn')
-fi
-if [ -z $TRAEFIK_TG_ARN ]; then
-    echo "  error: Load balancer Target Group for ${CLUSTER_NAME} not found."
+if [ -z "$FILE_SYSTEM_ID" ] || [ -z "$TRAEFIK_TG_ARN" ] || [ -z "$ARGOCD_TG_ARN" ]; then
+    echo "  Missing one or more of: FILE_SYSTEM_ID, TRAEFIK_TG_ARN, ARGOCD_TG_ARN"
+    echo "  Please run provision.sh first."
     exit 1
 fi
 
-export TRAEFIKGRPC_TG_ARN=$(aws elbv2 describe-target-groups --names ${TRAEFIKGRPC_TG_HASH} | jq -r '.TargetGroups[].TargetGroupArn')
-export NGINX_TG_ARN=$(aws elbv2 describe-target-groups --names ${NGINX_TG_HASH} | jq -r '.TargetGroups[].TargetGroupArn')
-export ARGOCD_TG_ARN=$(aws elbv2 describe-target-groups --names ${ARGOCD_TG_HASH} | jq -r '.TargetGroups[].TargetGroupArn')
-if [ -z $ARGOCD_TG_ARN ]; then
-    export ARGOCD_TG_ARN=$(aws elbv2 describe-target-groups --names ${CLUSTER_NAME}-argocd-https | jq -r '.TargetGroups[].TargetGroupArn')
-fi
+export FILE_SYSTEM_ID
+export TRAEFIK_TG_ARN
+export TRAEFIKGRPC_TG_ARN
+export NGINX_TG_ARN
+export ARGOCD_TG_ARN
+export S3_PREFIX=$(get_s3_prefix) # TODO
 
 
 # AO_PROFILE  disabled check
