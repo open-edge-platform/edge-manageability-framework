@@ -46,13 +46,9 @@ argo_cd_ns="argocd"
 gitea_ns="gitea"
 si_config_repo="edge-manageability-framework"
 export GIT_REPOS=$cwd/$git_arch_name
+
 # Source main environment configuration if it exists
 MAIN_ENV_CONFIG="$(dirname "$0")/onprem.env"
-if [[ -f "$MAIN_ENV_CONFIG" ]]; then
-  echo "Loading environment configuration from: $MAIN_ENV_CONFIG"
-  # shellcheck disable=SC1090
-  source "$MAIN_ENV_CONFIG"
-fi
 
 create_smtp_secrets() {
   # Check if SMTP variables are set
@@ -159,6 +155,30 @@ print_env_variables() {
   printf "%-25s: %s\n" "ORCH_INSTALLER_PROFILE" "$ORCH_INSTALLER_PROFILE"
   printf "%-25s: %s\n" "DEPLOY_VERSION" "$DEPLOY_VERSION"
   echo "========================================"; echo
+}
+
+reset_runtime_variables() {
+  local config_file="$cwd/onprem.env"
+  
+  echo "Cleaning up runtime variables from previous runs..."
+  
+  # Remove runtime variables if they exist in the file
+  sed -i '/^export SRE_TLS_ENABLED=/d' "$config_file"
+  sed -i '/^export SRE_DEST_CA_CERT=/d' "$config_file"
+  sed -i '/^export SMTP_SKIP_VERIFY=/d' "$config_file"
+  sed -i '/^export DISABLE_CO_PROFILE=/d' "$config_file"
+  sed -i '/^export DISABLE_AO_PROFILE=/d' "$config_file"
+  sed -i '/^export DISABLE_O11Y_PROFILE=/d' "$config_file"
+  
+  # Unset in current shell as well
+  unset SRE_TLS_ENABLED
+  unset SRE_DEST_CA_CERT
+  unset SMTP_SKIP_VERIFY
+  unset DISABLE_CO_PROFILE
+  unset DISABLE_AO_PROFILE
+  unset DISABLE_O11Y_PROFILE
+  
+  echo "Runtime variables cleaned successfully."
 }
 
 create_namespaces() {
@@ -280,6 +300,15 @@ if [ "$(dpkg -l | grep -ci onprem-ke-installer)"  -eq 0 ]; then
     exit 1
 fi
 
+# Remove runtime variables from previous runs
+reset_runtime_variables
+
+# Re-source the config file after cleanup to get fresh values
+if [[ -f "$MAIN_ENV_CONFIG" ]]; then
+  # shellcheck disable=SC1090
+  source "$MAIN_ENV_CONFIG"
+fi
+
 ENABLE_TRACE=false
 
 if [ -n "${1-}" ]; then
@@ -289,7 +318,7 @@ if [ -n "${1-}" ]; then
         usage
         exit 0
       ;;
-      -s|--sre_tls)
+      -s|--sre)
         SRE_TLS_ENABLED="true"
         if [ "$2" ]; then
           SRE_DEST_CA_CERT="$(cat "$2")"
