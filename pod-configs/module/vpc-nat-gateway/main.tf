@@ -4,6 +4,9 @@
 
 resource "aws_eip" "ngw" {
   for_each = var.subnets_with_eip
+  tags = {
+    Name = "${var.vpc_name}-nat-gateway"
+  }
 }
 
 data "aws_subnet" "subnets_with_eip" {
