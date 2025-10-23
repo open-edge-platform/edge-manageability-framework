@@ -30,8 +30,8 @@ root:
 # Values applied to both root app and shared among all child apps
 argo:
   ## Basic cluster information
-  project: ${PROJECT}
-  namespace: ${NAMESPACE}
+  project: ${CLUSTER_NAME}
+  namespace: ${CLUSTER_NAME}
   clusterName: ${CLUSTER_NAME}
   # Base domain name for all Orchestrator services. This base domain will be concatenated with a service's subdomain
   # name to produce the service's domain name. For example, given the domain name of `orchestrator.io`, the Web UI

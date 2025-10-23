@@ -29,6 +29,8 @@ elif [ "$DEPLOY_TYPE" = "onprem" ]; then
         export O11Y_ENABLE_PROFILE='- orch-configs/profiles/enable-o11y.yaml'
         export O11Y_PROFILE='- orch-configs/profiles/o11y-onprem.yaml'
         export ONPREM_PROFILE='- orch-configs/profiles/enable-onprem.yaml'
+	export CLUSTER_NAME="${CLUSTER_NAME:-onprem}"
+	export CLUSTER_DOMAIN="${CLUSTER_DOMAIN:-cluster.onprem}"
     else
         echo "❌ Invalid ORCH_INSTALLER_PROFILE: ${ORCH_INSTALLER_PROFILE}"
         echo "Valid options: onprem | onprem-1k | onprem-oxm | onprem-explicit-proxy"
@@ -57,10 +59,6 @@ export OSRM_MANUAL_PROFILE='- orch-configs/profiles/enable-osrm-manual-mode.yaml
 export RESOURCE_DEFAULT_PROFILE='- orch-configs/profiles/resource-default.yaml'
 
 # --- Default environment variables ---
-export PROJECT="${PROJECT:-onprem}"
-export NAMESPACE="${NAMESPACE:-onprem}"
-export CLUSTER_NAME="${CLUSTER_NAME:-onprem}"
-export CLUSTER_DOMAIN="${CLUSTER_DOMAIN:-cluster.onprem}"
 
 export SRE_TLS_ENABLED="${SRE_TLS_ENABLED:-false}"
 export SRE_DEST_CA_CERT="${SRE_DEST_CA_CERT:-}"
@@ -133,6 +131,13 @@ if [ "${DISABLE_CO_PROFILE:-false}" = "true" ]; then
     export AO_PROFILE="#- orch-configs/profiles/enable-app-orch.yaml"
 else
     export CO_PROFILE="- orch-configs/profiles/enable-cluster-orch.yaml"
+fi
+
+# Check if EXPLICIT_PROXY is Enabled
+if [ "${EXPLICIT_PROXY:-false}" = "true" ]; then
+    export EXPLICIT_PROXY_PROFILE="- orch-configs/profiles/enable-explicit-proxy.yaml"
+else
+    export EXPLICIT_PROXY_PROFILE="#- orch-configs/profiles/enable-explicit-proxy.yaml"
 fi
 
 if [ "$DEPLOY_TYPE" = "onprem" ]; then
