@@ -423,6 +423,8 @@ cleanup_gitea_secrets
 # Backup PostgreSQL databases
 backup_postgres
 
+# Backup Gitea database
+backup_gitea
 
 echo "Running On Premise Edge Orchestrator upgrade to $DEPLOY_VERSION"
 
@@ -519,6 +521,9 @@ echo "Upgrading Gitea..."
 eval "sudo IMAGE_REGISTRY=${GITEA_IMAGE_REGISTRY} DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get install --only-upgrade --allow-downgrades -y $cwd/$deb_dir_name/onprem-gitea-installer_*_amd64.deb"
 wait_for_pods_running $gitea_ns
 echo "Gitea upgraded to $(dpkg-query -W -f='${Version}' onprem-gitea-installer)"
+
+# Restore Gitea database
+restore_gitea
 
 # Run ArgoCD upgrade
 echo "Upgrading ArgoCD..."

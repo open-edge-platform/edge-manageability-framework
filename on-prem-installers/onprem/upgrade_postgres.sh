@@ -85,3 +85,47 @@ restore_postgres() {
   kubectl exec -n $postgres_namespace $podname -- /bin/bash -c "psql -U $POSTGRES_USERNAME <  $remote_backup_path "
   kubectl exec -n $postgres_namespace $podname -- /bin/bash -c "$(typeset -f enable_security); enable_security"
 }
+
+
+backup_gitea() {
+  # Gitea uses postgresql for storage, backup and restore before upgrade.
+
+  local_backup_path=/tmp/gitea-backup.sql
+  remote_backup_path=/tmp/gitea-backup.sql
+  gitea_namespace=gitea
+  gitea_podname=gitea-postgresql-0
+  gitea_deployment=gitea-postgresql
+  gitea_pvc=data-gitea-postgresql-0
+
+
+  if kubectl exec -n $gitea_namespace $gitea_podname -- /bin/bash -c "PGPASSWORD=\$POSTGRES_PASSWORD pg_dump -U gitea -f '$remote_backup_path'"; then
+    echo "Backup completed successfully for pod $gitea_podname in namespace $gitea_namespace."
+
+    kubectl cp "$gitea_namespace/$gitea_podname:$remote_backup_path" "$local_backup_path"
+
+    # Scale down the gitea replicas so we can remove the PVC
+    kubectl scale statefulset $gitea_deployment -n $gitea_namespace --replicas=0
+
+    # Remove the PVC
+    kubectl delete pvc $gitea_pvc -n $gitea_namespace
+  else
+    echo "Backup failed for pod $podname in namespace $postgres_namespace."
+  fi
+}
+
+restore_gitea() {
+  # Gitea uses postgresql for storage, backup and restore before upgrade.
+
+  local_backup_path=/tmp/gitea-backup.sql
+  remote_backup_path=/tmp/gitea-backup.sql
+  gitea_namespace=gitea
+  gitea_podname=gitea-postgresql-0
+  gitea_deployment=gitea-postgresql
+  gitea_pvc=data-gitea-postgresql-0
+
+  kubectl cp "$local_backup_path" "$gitea_namespace/$gitea_podname:$remote_backup_path"
+
+  echo "Restoring backup databases from pod $gitea_podname in namespace $gitea_namespace..."
+
+  kubectl exec -n $gitea_namespace $gitea_podname -- /bin/bash -c "psql -U gitea < $remote_backup_path"
+}
