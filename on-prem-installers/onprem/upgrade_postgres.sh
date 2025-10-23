@@ -109,7 +109,7 @@ backup_gitea() {
     # Remove the PVC
     kubectl delete pvc $gitea_pvc -n $gitea_namespace
   else
-    echo "Backup failed for pod $podname in namespace $postgres_namespace."
+    echo "Backup failed for pod $gitea_podname in namespace $gitea_namespace."
   fi
 }
 
@@ -127,5 +127,9 @@ restore_gitea() {
 
   echo "Restoring backup databases from pod $gitea_podname in namespace $gitea_namespace..."
 
-  kubectl exec -n $gitea_namespace $gitea_podname -- /bin/bash -c "psql -U gitea < $remote_backup_path"
+  if kubectl exec -n $gitea_namespace $gitea_podname -- /bin/bash -c "PGPASSWORD=\$POSTGRES_PASSWORD psql -U gitea < $remote_backup_path"; then
+    echo "Restore completed successfully for pod $gitea_podname in namespace $gitea_namespace."
+  else
+    echo "Restore failed for pod $gitea_podname in namespace $gitea_namespace."
+  fi
 }
