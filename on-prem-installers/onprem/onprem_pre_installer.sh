@@ -5,18 +5,20 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Script Name: onprem_pre_installer.sh
-# Description: This script:
-#               Reads AZURE AD refresh_token credential from user input,
-#               Downloads installer and repo artifacts,
-#               Set's up OS level dependencies,
-#               Installs RKE2 and basic cluster components,
-
-# Usage: ./onprem_pre_installer
-#    -s:             Enables TLS for SRE Exporter. Private TLS CA cert may be provided for SRE destination as an additional argument - provide path to cert (optional)
-#    -d:             Disable TLS verification for SMTP endpoint
-#    -h:             help (optional)
-#    -o:             Override production values with dev values
-#    -u:             Set the Release Service URL
+# Description: This script prepares the system for Edge Orchestrator installation by:
+#               - Loading configuration from onprem.env file
+#               - Downloading installer and repository artifacts
+#               - Setting up OS level dependencies
+#               - Installing RKE2 Kubernetes cluster
+#               - Configuring basic cluster components
+#
+# Usage: ./onprem_pre_installer.sh [OPTIONS]
+#   Options:
+#     -h, --help         Show help message
+#     --skip-download    Skip downloading packages (use existing ones)
+#     -t, --trace        Enable debug tracing
+#
+# Prerequisites: onprem.env file must exist with proper configuration
 
 set -e
 set -o pipefail
@@ -25,12 +27,16 @@ set -o pipefail
 # shellcheck disable=SC1091
 source "$(dirname "$0")/functions.sh"
 
-### Constants
-
-RELEASE_SERVICE_URL="${RELEASE_SERVICE_URL:-registry-rs.edgeorchestration.intel.com}"
-ORCH_INSTALLER_PROFILE="${ORCH_INSTALLER_PROFILE:-onprem}"
-DEPLOY_VERSION="${DEPLOY_VERSION:-v2025.2.0}"
-GITEA_IMAGE_REGISTRY="${GITEA_IMAGE_REGISTRY:-docker.io}"
+# Source main environment configuration if it exists
+MAIN_ENV_CONFIG="$(dirname "$0")/onprem.env"
+if [[ -f "$MAIN_ENV_CONFIG" ]]; then
+  echo "Loading environment configuration from: $MAIN_ENV_CONFIG"
+  # shellcheck disable=SC1090
+  source "$MAIN_ENV_CONFIG"
+else
+  echo "Warning: onprem.env file not found. Please ensure it exists with proper configuration."
+  exit 1
+fi
 
 ### Variables
 cwd=$(pwd)
@@ -58,15 +64,6 @@ set_artifacts_version() {
 }
 
 
-# This script allows making changes to the configuration during its runtime.
-# The function performs the following steps:
-# 1. Runs the on-premises installation.
-# 2. Extracts the repository archive.
-# 3. Prompts the user to edit the YAML configuration file and waits for their response.
-# 4. Once the user has edited the file, they respond to the prompt with 'yes'.
-# 5. Upon receiving a 'yes' response, the script re-archives the repository.
-# 6. Continues with the installation of the orchestrator.
-# Note: If the configuration already exists, the script will prompt the user to confirm if they want to overwrite it.
 allow_config_in_runtime() {
   if [ "$ENABLE_TRACE" = true ]; then
     echo "Tracing is enabled. Temporarily disabling tracing"
@@ -74,22 +71,6 @@ allow_config_in_runtime() {
   fi
 
   tmp_dir="$cwd/$git_arch_name/tmp"
-
-  if [ -d "$tmp_dir/$si_config_repo" ]; then
-    echo "Configuration already exists at $tmp_dir/$si_config_repo."
-    if [ "$ASSUME_YES" = true ]; then
-      echo "Assuming yes to use existing configuration."
-      return
-    fi
-    while true; do
-      read -rp "Do you want to overwrite the existing configuration? (yes/no): " yn
-      case $yn in
-        [Yy]* ) rm -rf "${tmp_dir:?}/${si_config_repo:?}"; break;;
-        [Nn]* ) echo "Using existing configuration."; return;;
-        * ) echo "Please answer yes or no.";;
-      esac
-    done
-  fi
 
   ## Untar edge-manageability-framework repo
   repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n")
@@ -124,91 +105,42 @@ allow_config_in_runtime() {
     unset DOCKER_PASSWORD
   fi
 
-  # Prompt for IP addresses for Argo, Traefik and Nginx services
-  echo "Provide IP addresses for Argo, Traefik and Nginx services."
-  while true; do
-    if [[ -z ${ARGO_IP} ]]; then
-      echo "Enter Argo IP:"
-      read -r ARGO_IP
-      export ARGO_IP
-    fi
-
-    if [[ -z ${TRAEFIK_IP} ]]; then
-      echo "Enter Traefik IP:"
-      read -r TRAEFIK_IP
-      export TRAEFIK_IP
-    fi
-
-    if [[ -z ${NGINX_IP} ]]; then
-      echo "Enter Nginx IP:"
-      read -r NGINX_IP
-      export NGINX_IP
-    fi
-
-    if [[ $ARGO_IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ && $TRAEFIK_IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ && $NGINX_IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-      echo "IP addresses are valid."
-      break
-    else
-      echo "Inputted values are not valid IPs. Please input correct IPs without any masks."
-      unset ARGO_IP
-      unset TRAEFIK_IP
-      unset NGINX_IP
-    fi
-  done
-
-  ## Wait for SI to confirm that they have made changes
-  while true; do
-    if [[ -n ${PROCEED} ]]; then
-      break
-    fi
-    read -rp "Edit config values.yaml files with custom configurations if necessary!!!
-The files are located at:
-$tmp_dir/$si_config_repo/orch-configs/profiles/<profile>.yaml
-$tmp_dir/$si_config_repo/orch-configs/clusters/$ORCH_INSTALLER_PROFILE.yaml
-Enter 'yes' to confirm that configuration is done in order to progress with installation
-('no' will exit the script) !!!
-
-Ready to proceed with installation? " yn
-    case $yn in
-      [Yy]* ) break;;
-      [Nn]* ) exit 1;;
-      * ) echo "Please answer yes or no.";;
-    esac
-  done
-
-  if [ "$ENABLE_TRACE" = true ]; then
-    echo "Tracing is enabled. Re-enabling tracing"
-    set -x
-  fi
 }
 
 usage() {
   cat >&2 <<EOF
 Purpose:
-Install OnPrem Edge Orchestrator.
+Install OnPrem Edge Orchestrator pre-installation components including RKE2, dependencies, 
+and package downloads. This script prepares the system for the main orchestrator installation.
+
+Prerequisites:
+- onprem.env file must exist in the same directory with proper configuration
+- Root/sudo access for package installation
+- Internet connectivity for downloading packages
 
 Usage:
-$(basename "$0") [option...] [argument]
+$(basename "$0") [OPTIONS]
 
-ex:
-./$(basename "$0")
-./$(basename "$0") -c <certificate string>
+Examples:
+./$(basename "$0")                    # Basic installation with onprem.env config
+./$(basename "$0") --skip-download    # Skip package downloads (use existing packages)
+./$(basename "$0") -t                 # Enable debug tracing
 
 Options:
-    -h, --help         Print this help message and exit
-    -c, --cert         Path to Release Service/ArgoCD certificate
-    -s, --sre          Path to SRE destination CA certificate (enables TLS for SRE Exporter)
-    --skip-download    Skip downloading installer packages 
-    -d, --notls        Disable TLS verification for SMTP endpoint
-    -o, --override     Override production values with dev values
-    -u, --url          Set the Release Service URL
-    -t, --trace        Enable tracing
-    -w, --write-config Write configuration to disk and exit
-    -y, --yes          Assume yes for using existing configuration if it exists
+    -h, --help                 Show this help message and exit
+    
+    --skip-download            Skip downloading installer packages from registry
+                               Useful for development/testing when packages already exist
+    
+    -t, --trace                Enable bash debug tracing (set -x)
+                               Shows detailed command execution for troubleshooting
 
-Environment Variables:
-    DOCKER_USERNAME    Docker.io username
-    DOCKER_PASSWORD    Docker.io password
+Configuration:
+    All configuration is read from onprem.env file. Key variables include:
+    - RELEASE_SERVICE_URL: Registry for packages and images
+    - DEPLOY_VERSION: Version of Edge Orchestrator to deploy
+    - ORCH_INSTALLER_PROFILE: Deployment profile (onprem/onprem-dev)
+    - DOCKER_USERNAME/DOCKER_PASSWORD: Docker Hub credentials
 
 EOF
 }
@@ -223,116 +155,32 @@ print_env_variables() {
   echo "========================================"; echo
 }
 
-write_configs_using_overrides() {
-  ## Option to override clusterDomain in onprem yaml by setting env variable
-  if [[ -n ${CLUSTER_DOMAIN} ]]; then
-    echo "CLUSTER_DOMAIN is set. Updating clusterDomain in the YAML file..."
-    yq -i ".argo.clusterDomain=\"${CLUSTER_DOMAIN}\"" "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
-    echo "Update complete. clusterDomain is now set to: $CLUSTER_DOMAIN"
-  fi
-
-  ## Override TLS setting for SRE depending on user's input (presence of flag with SRE CA cert)
-  if [[ "${SRE_TLS_ENABLED-}" == "true" ]]; then
-    yq -i '.argo.o11y.sre.tls.enabled|=true' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
-    if [[ -n "${SRE_DEST_CA_CERT-}" ]]; then
-      yq -i '.argo.o11y.sre.tls.caSecretEnabled|=true' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
-    fi
-  else
-    yq -i '.argo.o11y.sre.tls.enabled|=false' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
-  fi
-
-  if [[ ${SMTP_SKIP_VERIFY} == "true" ]]; then
-    yq -i '.argo.o11y.alertingMonitor.smtp.insecureSkipVerify|=true' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
-  fi
-
-  # Override MetalLB address pools
-  yq -i '.postCustomTemplateOverwrite.metallb-config.ArgoIP|=strenv(ARGO_IP)' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
-  yq -i '.postCustomTemplateOverwrite.metallb-config.TraefikIP|=strenv(TRAEFIK_IP)' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
-  yq -i '.postCustomTemplateOverwrite.metallb-config.NginxIP|=strenv(NGINX_IP)' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
-}
-
-write_config_to_disk() {
-  tmp_dir="$cwd/$git_arch_name/tmp"
-  rm -rf "$tmp_dir"
-  mkdir -p "$tmp_dir"
-  repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n")
-  tar -xf "$cwd/$git_arch_name/$repo_file" -C "$tmp_dir"
-
-  # If overrides are set, ensure the written out configs are updated with them
-  write_configs_using_overrides
-
-  echo "Configuration files have been written to disk at $tmp_dir/$si_config_repo"
-  exit 0
-}
-
-validate_and_set_ip() {
-  local yaml_path="$1"
-  local yaml_file="$2"
-  local ip_var_name="$3"
-  local ip_value
-
-  echo "Value at $yaml_path in $yaml_file: $(yq "$yaml_path" "$yaml_file")"
-
-  if [[ -z $(yq "$yaml_path" "$yaml_file") || $(yq "$yaml_path" "$yaml_file") == "null" ]]; then
-    echo "${ip_var_name} is not set to a valid value in the configuration file."
-    while true; do
-      read -rp "Please provide a value for ${ip_var_name}: " ip_value
-      if [[ $ip_value =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-        export "$ip_var_name"="$ip_value"
-        yq -i "$yaml_path|=strenv($ip_var_name)" "$yaml_file"
-        echo "${ip_var_name} has been set to: $ip_value"
-        break
-      else
-        unset "$ip_var_name"
-        echo "Invalid IP address. Would you like to provide a valid value? (Y/n): "
-        read -r yn
-        case $yn in
-          [Nn]* ) echo "Exiting as a valid value for ${ip_var_name} has not been provided."; exit 1;;
-          * ) ;;
-        esac
-      fi
-    done
-  fi
-}
-
-validate_config() {
-
-  # Validate the IP addresses for Argo, Traefik and Nginx services
-  validate_and_set_ip '.postCustomTemplateOverwrite.metallb-config.ArgoIP' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml ARGO_IP
-  validate_and_set_ip '.postCustomTemplateOverwrite.metallb-config.TraefikIP' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml TRAEFIK_IP
-  validate_and_set_ip '.postCustomTemplateOverwrite.metallb-config.NginxIP' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml NGINX_IP
-}
-
 # Function to write shared variables to a configuration file for use by onprem_installer.sh
 write_shared_variables() {
-  local config_file="$cwd/onprem_shared_config.env"
+  local config_file="$cwd/onprem.env"
   
-  {
-    echo "# Shared configuration variables for onprem installer scripts"
-    echo "# Generated by onprem_pre_installer.sh on $(date)"
-    echo ""
-    
-    # Write environment variables that are used by onprem_installer.sh
-    echo "export RELEASE_SERVICE_URL='${RELEASE_SERVICE_URL}'"
-    echo "export ORCH_INSTALLER_PROFILE='${ORCH_INSTALLER_PROFILE}'"
-    echo "export DEPLOY_VERSION='${DEPLOY_VERSION}'"
-    
-    # Write command line argument variables that are actually used in onprem_installer.sh
-    echo "export SRE_TLS_ENABLED='${SRE_TLS_ENABLED:-false}'"
-    if [[ -n "${SRE_DEST_CA_CERT:-}" ]]; then
-      # SRE_DEST_CA_CERT is used for creating SRE secrets
-      echo "export SRE_DEST_CA_CERT='${SRE_DEST_CA_CERT}'"
+  # Update Docker credentials in place if they were provided during runtime and differ from file
+  if [[ -n "${DOCKER_USERNAME:-}" ]]; then
+    if grep -q "^export DOCKER_USERNAME=" "$config_file"; then
+      # Update existing line
+      sed -i "s|^export DOCKER_USERNAME=.*|export DOCKER_USERNAME='${DOCKER_USERNAME}'|" "$config_file"
+    else
+      # Append if not exists
+      echo "export DOCKER_USERNAME='${DOCKER_USERNAME}'" >> "$config_file"
     fi
-    
-    # ENABLE_TRACE is used to set -x for debugging
-    echo "export ENABLE_TRACE='${ENABLE_TRACE:-false}'"
-    
-    echo ""
-    echo "# Working directory where script was executed"
-    echo "export ONPREM_WORKING_DIR='${cwd}'"
-  } > "$config_file"
+  fi
   
-  echo "Shared configuration written to: $config_file"
+  if [[ -n "${DOCKER_PASSWORD:-}" ]]; then
+    if grep -q "^export DOCKER_PASSWORD=" "$config_file"; then
+      # Update existing line
+      sed -i "s|^export DOCKER_PASSWORD=.*|export DOCKER_PASSWORD='${DOCKER_PASSWORD}'|" "$config_file"
+    else
+      # Append if not exists
+      echo "export DOCKER_PASSWORD='${DOCKER_PASSWORD}'" >> "$config_file"
+    fi
+  fi
+  
+  echo "Runtime configuration updated in: $config_file"
   echo "To use in onprem_installer.sh, source this file: source $config_file"
 }
 
@@ -340,7 +188,6 @@ write_shared_variables() {
 ##### INSTALL SCRIPT START #####
 ################################
 
-ASSUME_YES=false
 SKIP_DOWNLOAD=false
 ENABLE_TRACE=false
 
@@ -351,40 +198,12 @@ if [ -n "${1-}" ]; then
         usage
         exit 0
       ;;
-      -s|--sre_tls)
-        SRE_TLS_ENABLED="true"
-        if [ "$2" ]; then
-          SRE_DEST_CA_CERT="$(cat "$2")"
-          shift
-        fi
-      ;;
       --skip-download)
         SKIP_DOWNLOAD=true
-      ;;
-      -d|--notls)
-        SMTP_SKIP_VERIFY="true"
-      ;;
-      -o|--override)
-        ORCH_INSTALLER_PROFILE="onprem-dev"
-      ;;
-      -u|--url)
-        if [ "$2" ]; then
-          RELEASE_SERVICE_URL="$2"
-          shift
-        else
-          echo "ERROR: $1 requires an argument"
-          exit 1
-        fi
       ;;
       -t|--trace)
         set -x
         ENABLE_TRACE=true
-      ;;
-      -w|--write-config)
-        WRITE_CONFIG="true"
-      ;;
-      -y|--yes)
-        ASSUME_YES=true
       ;;
       -?*)
         echo "Unknown argument $1"
@@ -450,19 +269,8 @@ else
   sudo chown -R _apt:root $deb_dir_name
 fi
 
-# Write configuration to disk if the flag is set
-if [[ "$WRITE_CONFIG" == "true" ]]; then
-  write_config_to_disk
-fi
-
 # Config - interactive
 allow_config_in_runtime
-
-# Write out the configs that have explicit overrides
-write_configs_using_overrides
-
-# Validate the configuration file, and set missing values
-validate_config
 
 ## Tar back the edge-manageability-framework repo. This will be later pushed to Gitea repo in the Orchestrator Installer
 tmp_dir="$cwd/$git_arch_name/tmp"
@@ -471,7 +279,6 @@ cd "$tmp_dir"
 tar -zcf "$repo_file" ./edge-manageability-framework
 mv -f "$repo_file" "$cwd/$git_arch_name/$repo_file"
 cd "$cwd"
-rm -rf "$tmp_dir"
 
 # Run OS Configuration installer
 echo "Installing the OS level configuration..."
@@ -492,7 +299,6 @@ mkdir -p /home/"$USER"/.kube
 sudo cp  /etc/rancher/rke2/rke2.yaml /home/"$USER"/.kube/config
 sudo chown -R "$USER":"$USER"  /home/"$USER"/.kube
 sudo chmod 600 /home/"$USER"/.kube/config
-export KUBECONFIG=/home/$USER/.kube/config
 
 # Write shared variables to configuration file for use by onprem_installer.sh
 write_shared_variables
