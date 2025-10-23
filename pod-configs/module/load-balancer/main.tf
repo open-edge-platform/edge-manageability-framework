@@ -39,6 +39,9 @@ resource "aws_security_group" "common" {
 
 # Create EIP(if not internal), NLB, Listener, TargetGroup
 resource "aws_eip" "main" {
+  tags = {
+    Name = "${var.cluster_name}-nlb"
+  }
   for_each = local.subnets_with_eip
 }
 resource "aws_lb" "main" {
