@@ -279,41 +279,46 @@ sequenceDiagram
   %%{wrap}%%
   autonumber
   participant US as User
+  box rgb(235,255,255) Edge Orchestrator
   participant UI as UI/CLI
   participant ON as Onboarding
   participant DM as DM Manager
   participant VT as Vault
   participant IN as Inventory
-  participant PM as Platform Manageability Agent (PMA)
   participant RP as RPS
+  end
+  box rgba(255,255,235) Edge Orchestrator
+  participant PM as Platform Manageability Agent (PMA)
+  participant OS as BIOS
+  end
   activate UI
   US ->> UI: Set activation mode as admin
   US ->> UI: Set DNS Suffix
   US ->> UI: Upload Provisioning Certificate
   US ->> UI: Upload Provisioning Certificate password
-  UI ->> VT: Store Provisioning Certificate
-  UI ->> VT: Store Provisioning Certificate password
-  UI ->> IN: Store DNS Suffix for edge node instance
-  UI ->> IN: Store activation mode for edge node instance
+  UI ->> VT: Store Provisioning Certificate and password
+  UI ->> IN: Store DNS Suffix and activation mode for edge node instance
   UI ->> US: Report success
   deactivate UI
-  US ->> ON: Start Onboarding
-  activate ON
-  ON ->> IN: Retrieve DNS Suffix
-  ON ->> ON: Apply DNS Suffix to BIOS
-  ON ->> PM: Install PMA
-  ON ->> US: Report success
-  deactivate ON
-  US ->> DM: Start device activation
+  US ->> DM: Start profile creation for tenant
   activate DM
-  DM ->> IN: Retrieve activation mode for instance
-  DM ->> IN: Retrieve DNS Suffix for instance
+  DM ->> IN: Retrieve activation mode and DNS Suffix for instance
   DM ->> VT: Retrieve Provisioning Certificate and password
   DM ->> DM: Create Domain Profile
   DM ->> RP: Send Domain Profile
   DM ->> DM: Create AMT Profile
   DM ->> RP: Send AMT Profile
-  DM ->> PM: Send AMT Profile Name
+  deactivate DM
+  US ->> ON: Start Onboarding
+  activate ON
+  ON ->> IN: Retrieve DNS Suffix
+  ON ->> OS: Apply DNS Suffix to BIOS
+  ON ->> PM: Install PMA
+  ON ->> US: Report success
+  deactivate ON
+  US ->> DM: Start device activation
+  activate DM
+  DM ->> PM: Send AMT Profile Name, websocket details, AMT and Provisioning Cert password
   activate PM
   PM ->> PM: Start Device Activation
   PM ->> DM: Report Device Activation Status
