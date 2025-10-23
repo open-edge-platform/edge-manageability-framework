@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-{{- $appName        := "cluster-manager" }}
-{{- $namespace      := "orch-cluster" }}
-{{- $syncWave       := "2000" }}
+{{- $appName        := "postgresql-cluster" }}
+{{- $namespace      := "orch-database" }}
+{{- $syncWave       := "140" }}
 ---
 {{- if (index .Values.argo.enabled $appName) }}
 apiVersion: argoproj.io/v1alpha1
@@ -14,14 +14,12 @@ metadata:
     argocd.argoproj.io/sync-wave: "{{ $syncWave }}"
   name: {{$appName}}
   namespace: {{ required "A valid namespace entry required!" .Values.argo.namespace }}
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
-    - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
-      chart: cluster/charts/{{$appName}}
-      targetRevision: 2.2.2
+    - repoURL: "ghcr.io/cloudnative-pg/charts"
+      chart: cluster
+      targetRevision: 0.3.1
       helm:
         releaseName: {{$appName}}
         valuesObject:
@@ -31,9 +29,6 @@ spec:
           {{- $baseConfig := .Files.Get $baseFile|fromYaml}}
           {{- $overwrite := (get .Values.postCustomTemplateOverwrite $appName ) | default dict }}
           {{- mergeOverwrite $baseConfig $customConfig $overwrite | toYaml | nindent 10 }}
-    - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
-      chart: cluster/charts/cluster-template-crd
-      targetRevision: 2.2.2
   destination:
     namespace: {{$namespace}}
     server: {{ required "A valid targetServer entry required!" .Values.argo.targetServer }}
