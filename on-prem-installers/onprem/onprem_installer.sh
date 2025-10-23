@@ -162,21 +162,34 @@ reset_runtime_variables() {
   
   echo "Cleaning up runtime variables from previous runs..."
   
-  # Remove runtime variables if they exist in the file
-  sed -i '/^export SRE_TLS_ENABLED=/d' "$config_file"
-  sed -i '/^export SRE_DEST_CA_CERT=/d' "$config_file"
-  sed -i '/^export SMTP_SKIP_VERIFY=/d' "$config_file"
-  sed -i '/^export DISABLE_CO_PROFILE=/d' "$config_file"
-  sed -i '/^export DISABLE_AO_PROFILE=/d' "$config_file"
-  sed -i '/^export DISABLE_O11Y_PROFILE=/d' "$config_file"
+  local temp_file="${config_file}.tmp"
+  local in_multiline=0
   
-  # Unset in current shell as well
-  unset SRE_TLS_ENABLED
-  unset SRE_DEST_CA_CERT
-  unset SMTP_SKIP_VERIFY
-  unset DISABLE_CO_PROFILE
-  unset DISABLE_AO_PROFILE
-  unset DISABLE_O11Y_PROFILE
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    # Skip lines while inside a multi-line variable
+    if [[ $in_multiline -eq 1 ]]; then
+      [[ "$line" =~ [\'\"][[:space:]]*$ ]] && in_multiline=0
+      continue
+    fi
+    
+    # Check if line is a runtime variable
+    if [[ "$line" =~ ^export\ (SRE_TLS_ENABLED|SRE_DEST_CA_CERT|SMTP_SKIP_VERIFY|DISABLE_CO_PROFILE|DISABLE_AO_PROFILE|DISABLE_O11Y_PROFILE)= ]]; then
+      # Check if it's multi-line (opening quote without closing quote on same line)
+      if [[ "$line" =~ =[\'\"]. ]] && ! [[ "$line" =~ =[\'\"].*[\'\"][[:space:]]*$ ]]; then
+        in_multiline=1
+      fi
+      continue
+    fi
+    
+    # Keep non-runtime variable lines
+    echo "$line" >> "$temp_file"
+  done < "$config_file"
+  
+  mv "$temp_file" "$config_file"
+  
+  # Unset variables in current shell
+  unset SRE_TLS_ENABLED SRE_DEST_CA_CERT SMTP_SKIP_VERIFY
+  unset DISABLE_CO_PROFILE DISABLE_AO_PROFILE DISABLE_O11Y_PROFILE
   
   echo "Runtime variables cleaned successfully."
 }
