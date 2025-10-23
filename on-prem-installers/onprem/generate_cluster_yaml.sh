@@ -19,11 +19,12 @@ if [ "$DEPLOY_TYPE" = "aws" ]; then
 
 
 elif [ "$DEPLOY_TYPE" = "onprem" ]; then
-    source .env
+    # shellcheck disable=SC1091
+    source "$(dirname "$0")/${DEPLOY_TYPE}.env"
     # Validate ORCH_INSTALLER_PROFILE
     if [[ "$ORCH_INSTALLER_PROFILE" =~ ^(onprem|onprem-1k|onprem-oxm|onprem-explicit-proxy)$ ]]; then
         TEMPLATE_FILE="./cluster_onprem.tpl"
-        OUTPUT_FILE="cluster_${ORCH_INSTALLER_PROFILE}.yaml"
+        OUTPUT_FILE="${ORCH_INSTALLER_PROFILE}.yaml"
         echo "🔧 Using ORCH_INSTALLER_PROFILE=${ORCH_INSTALLER_PROFILE}"
         export O11Y_ENABLE_PROFILE='- orch-configs/profiles/enable-o11y.yaml'
         export O11Y_PROFILE='- orch-configs/profiles/o11y-onprem.yaml'
@@ -271,9 +272,9 @@ update_proxy() {
 }
 
 # --- Update all proxy variables ---
-update_proxy "httpProxy" "HTTP_PROXY"
-update_proxy "httpsProxy" "HTTPS_PROXY"
-update_proxy "noProxy" "NO_PROXY"
+update_proxy "httpProxy" "ORCH_HTTP_PROXY"
+update_proxy "httpsProxy" "ORCH_HTTPS_PROXY"
+update_proxy "noProxy" "ORCH_NO_PROXY"
 update_proxy "enHttpProxy" "EN_HTTP_PROXY"
 update_proxy "enHttpsProxy" "EN_HTTPS_PROXY"
 update_proxy "enFtpProxy" "EN_FTP_PROXY"
@@ -296,3 +297,4 @@ fi
 echo "✅ File generated: $OUTPUT_FILE"
 cat "$OUTPUT_FILE"
 
+chmod 644 "$OUTPUT_FILE"

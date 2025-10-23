@@ -5,14 +5,30 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Script Name: onprem_installer.sh
-# Description: This script:
-#               Installs Gitea
-#               Installs ArgoCD
-#               Creates namespaces
-#               Creates secrets (with user inputs where required)
-#               Installs Edge Orchestrator SW:
-#                   Untars and populates Gitea repos with Edge Orchestrator deployment code
-#                   Kickstarts deployment via ArgoCD
+# Description: Main Edge Orchestrator installation script that:
+#               - Loads configuration from onprem.env file
+#               - Updates proxy configuration in deployment repository
+#               - Installs Gitea Git repository server
+#               - Installs ArgoCD for GitOps deployment
+#               - Creates required Kubernetes namespaces
+#               - Creates secrets (Harbor, Keycloak, Postgres, SRE, SMTP)
+#               - Installs Edge Orchestrator software packages
+#                 * Populates Gitea with Edge Orchestrator deployment code
+#                 * Kickstarts deployment via ArgoCD
+#
+# Usage: ./onprem_installer.sh [OPTIONS]
+#   Options:
+#     -h, --help         Show help message
+#     -s, --sre [PATH]   Enable SRE TLS with optional CA certificate path
+#     -d, --notls        Disable SMTP TLS verification
+#     --disable-co       Disable Cluster Orchestrator profile
+#     --disable-ao       Disable Application Orchestrator profile
+#     --disable-o11y     Disable Observability profile
+#     -t, --trace        Enable debug tracing
+#
+# Prerequisites: 
+#   - onprem_pre_installer.sh must have completed successfully
+#   - onprem.env file must exist with proper configuration
 
 set -e
 set -o pipefail
@@ -28,53 +44,24 @@ deb_dir_name="installers"
 git_arch_name="repo_archives"
 argo_cd_ns="argocd"
 gitea_ns="gitea"
+si_config_repo="edge-manageability-framework"
 export GIT_REPOS=$cwd/$git_arch_name
-export KUBECONFIG="${KUBECONFIG:-/home/$USER/.kube/config}"
-# Source shared configuration if it exists
-SHARED_CONFIG="$(dirname "$0")/onprem_shared_config.env"
-if [[ -f "$SHARED_CONFIG" ]]; then
-  echo "Loading shared configuration from: $SHARED_CONFIG"
+# Source main environment configuration if it exists
+MAIN_ENV_CONFIG="$(dirname "$0")/onprem.env"
+if [[ -f "$MAIN_ENV_CONFIG" ]]; then
+  echo "Loading environment configuration from: $MAIN_ENV_CONFIG"
   # shellcheck disable=SC1090
-  source "$SHARED_CONFIG"
+  source "$MAIN_ENV_CONFIG"
 fi
 
-set_default_sre_env() {
-  if [[ -z ${SRE_USERNAME} ]]; then
-    export SRE_USERNAME=sre
-  fi
-  if [[ -z ${SRE_PASSWORD} ]]; then
-    if [[ -z ${ORCH_DEFAULT_PASSWORD} ]]; then
-      export SRE_PASSWORD=123
-    else
-      export SRE_PASSWORD=$ORCH_DEFAULT_PASSWORD
-    fi
-  fi
-  if [[ -z ${SRE_DEST_URL} ]]; then
-    export SRE_DEST_URL="http://sre-exporter-destination.orch-sre.svc.cluster.local:8428/api/v1/write"
-  fi
-  ## we don't create SRE_DEST_CA_CERT by default
-}
-
-set_default_smtp_env() {
-  if [[ -z ${SMTP_ADDRESS} ]]; then
-    export SMTP_ADDRESS="smtp.serveraddress.com"
-  fi
-  if [[ -z ${SMTP_PORT} ]]; then
-    export SMTP_PORT="587"
-  fi
-  # Firstname Lastname <email@example.com> format expected
-  if [[ -z ${SMTP_HEADER} ]]; then
-    export SMTP_HEADER="foo bar <foo@bar.com>"
-  fi
-  if [[ -z ${SMTP_USERNAME} ]]; then
-    export SMTP_USERNAME="uSeR"
-  fi
-  if [[ -z ${SMTP_PASSWORD} ]]; then
-    export SMTP_PASSWORD=T@123sfD
-  fi
-}
-
 create_smtp_secrets() {
+  # Check if SMTP variables are set
+  if [[ -z "${SMTP_ADDRESS:-}" || -z "${SMTP_PORT:-}" || -z "${SMTP_HEADER:-}" || -z "${SMTP_USERNAME:-}" || -z "${SMTP_PASSWORD:-}" ]]; then
+    echo "Warning: SMTP configuration variables not set. Skipping SMTP secrets creation."
+    echo "To enable SMTP, uncomment and configure SMTP variables in onprem.env file."
+    return
+  fi
+
   namespace=orch-infra
   kubectl -n $namespace delete secret smtp --ignore-not-found
   kubectl -n $namespace delete secret smtp-auth --ignore-not-found
@@ -106,6 +93,13 @@ EOF
 }
 
 create_sre_secrets() {
+  # Check if SRE variables are set
+  if [[ -z "${SRE_USERNAME:-}" || -z "${SRE_PASSWORD:-}" || -z "${SRE_DEST_URL:-}" ]]; then
+    echo "Warning: SRE configuration variables not set. Skipping SRE secrets creation."
+    echo "To enable SRE, uncomment and configure SRE variables in onprem.env file."
+    return
+  fi
+
   namespace=orch-sre
   kubectl -n $namespace delete secret basic-auth-username --ignore-not-found
   kubectl -n $namespace delete secret basic-auth-password --ignore-not-found
@@ -188,50 +182,92 @@ create_namespaces() {
   done
 }
 
-createGiteaSecret() {
-  local secretName=$1
-  local accountName=$2
-  local password=$3
-  local namespace=$4
+usage() {
+  cat >&2 <<EOF
+Purpose:
+Install OnPrem Edge Orchestrator main components including Gitea, ArgoCD, and all orchestrator services.
+This script should be run after onprem_pre_installer.sh has completed successfully.
 
-  kubectl create secret generic "$secretName" -n "$namespace" \
-    --from-literal=username="$accountName" \
-    --from-literal=password="$password" \
-    --dry-run=client -o yaml | kubectl apply -f -
+Prerequisites:
+- onprem_pre_installer.sh must have been run successfully
+- onprem.env file must exist with proper configuration
+- RKE2 Kubernetes cluster must be running
+- Root/sudo access for package installation
+
+Usage:
+$(basename "$0") [OPTIONS]
+
+Examples:
+./$(basename "$0")                    # Basic installation with onprem.env config
+./$(basename "$0") -s /path/to/ca.crt # Enable SRE TLS with custom CA certificate
+./$(basename "$0") -d                 # Disable SMTP TLS verification
+./$(basename "$0") -t                 # Enable debug tracing
+
+Options:
+    -h, --help                 Show this help message and exit
+    
+    -s, --sre [CA_CERT_PATH]   Enable TLS for SRE (Site Reliability Engineering) Exporter
+                               Optionally provide path to SRE destination CA certificate
+                               Example: -s /path/to/sre-ca.crt
+    
+    -d, --notls                Disable TLS verification for SMTP endpoint
+                               Use when SMTP server has self-signed certificates
+    
+    --disable-co               Disable Cluster Orchestrator profile
+                               Skips AO and CO related component installation
+    
+    --disable-ao               Disable Application Orchestrator profile
+                               Skips AO related component installation
+    
+    --disable-o11y             Disable Observability (O11y) profile
+                               Skips monitoring and observability component installation
+    
+    -t, --trace                Enable bash debug tracing (set -x)
+                               Shows detailed command execution for troubleshooting
+
+Configuration:
+    All configuration is read from onprem.env file. Key variables include:
+    - RELEASE_SERVICE_URL: Registry for packages and images
+    - DEPLOY_VERSION: Version of Edge Orchestrator to deploy
+    - ORCH_INSTALLER_PROFILE: Deployment profile (onprem/onprem-dev)
+    - GITEA_IMAGE_REGISTRY: Registry for Gitea images
+    - SRE and SMTP credentials: For monitoring and email notifications
+
+Output:
+    After installation, monitor deployment status with: kubectl get applications -A
+    Installation is complete when 'root-app' is 'Healthy' and 'Synced'
+
+EOF
 }
-
-createGiteaAccount() {
-  local secretName=$1
-  local accountName=$2
-  local password=$3
-  local email=$4
-  local giteaPods=""
-  local giteaPod=""
-
-  giteaPods=$(kubectl get pods -n gitea -l app=gitea -o jsonpath="{.items[*].metadata.name}")
-  if [ -z "$giteaPods" ]; then
-    echo "No Gitea pods found. Exiting."
-    exit 1
+write_shared_variables() {
+  local config_file="$cwd/onprem.env"
+  
+  # Update SRE TLS configuration using common function
+  if [[ -n "${SRE_TLS_ENABLED:-}" && "${SRE_TLS_ENABLED}" != "false" ]]; then
+    update_config_variable "$config_file" "SRE_TLS_ENABLED" "${SRE_TLS_ENABLED}"
+    update_config_variable "$config_file" "SRE_DEST_CA_CERT" "${SRE_DEST_CA_CERT}"
   fi
 
-  giteaPod=$(echo "$giteaPods" | cut -d ' ' -f1)
-  if ! kubectl exec -n gitea "$giteaPod" -c "gitea" -- gitea admin user list | grep -q "$accountName"; then
-    echo "Creating Gitea account for $accountName"
-    kubectl exec -n gitea "$giteaPod" -c "gitea" -- gitea admin user create --username "$accountName" --password "$password" --email "$email" --must-change-password=false
-  else
-    echo "Gitea account for $accountName already exists, updating password"
-    kubectl exec -n gitea "$giteaPod" -c "gitea" -- gitea admin user change-password --username "$accountName" --password "$password" --must-change-password=false
+  # Update SMTP configuration using common function
+  if [[ -n "${SMTP_SKIP_VERIFY:-}" && "${SMTP_SKIP_VERIFY}" == "true" ]]; then
+    update_config_variable "$config_file" "SMTP_SKIP_VERIFY" "${SMTP_SKIP_VERIFY}"
   fi
-
-  userToken=$(kubectl exec -n gitea "$giteaPod" -c gitea -- gitea admin user generate-access-token --scopes write:repository,write:user --username "$accountName" --token-name "${accountName}-$(date +%s)")
-  token=$(echo "$userToken" | awk '{print $NF}')
-  kubectl create secret generic gitea-"$accountName"-token -n gitea --from-literal=token="$token"
+  
+  # Update profile disable flags using common function
+  if [[ -n "${DISABLE_CO_PROFILE:-}" && "${DISABLE_CO_PROFILE}" == "true" ]]; then
+    update_config_variable "$config_file" "DISABLE_CO_PROFILE" "${DISABLE_CO_PROFILE}"
+  fi
+  
+  if [[ -n "${DISABLE_AO_PROFILE:-}" && "${DISABLE_AO_PROFILE}" == "true" ]]; then
+    update_config_variable "$config_file" "DISABLE_AO_PROFILE" "${DISABLE_AO_PROFILE}"
+  fi
+  
+  if [[ -n "${DISABLE_O11Y_PROFILE:-}" && "${DISABLE_O11Y_PROFILE}" == "true" ]]; then
+    update_config_variable "$config_file" "DISABLE_O11Y_PROFILE" "${DISABLE_O11Y_PROFILE}"
+  fi
+  
+  echo "Runtime configuration updated in: $config_file"
 }
-
-randomPassword() {
-  head -c 512 /dev/urandom | tr -dc A-Za-z0-9 | head -c 16
-}
-
 ################################
 ##### INSTALL SCRIPT START #####
 ################################
@@ -243,12 +279,72 @@ if [ "$(dpkg -l | grep -ci onprem-ke-installer)"  -eq 0 ]; then
     echo "Please run pre-installer script first"
     exit 1
 fi
+
+ENABLE_TRACE=false
+
+if [ -n "${1-}" ]; then
+  while :; do
+    case "$1" in
+      -h|--help)
+        usage
+        exit 0
+      ;;
+      -s|--sre_tls)
+        SRE_TLS_ENABLED="true"
+        if [ "$2" ]; then
+          SRE_DEST_CA_CERT="$(cat "$2")"
+          shift
+        fi
+      ;;
+      -d|--notls)
+        SMTP_SKIP_VERIFY="true"
+      ;;
+      --disable-co)
+        DISABLE_CO_PROFILE="true"
+      ;;
+      --disable-ao)
+        DISABLE_AO_PROFILE="true"
+      ;;
+      --disable-o11y)
+        DISABLE_O11Y_PROFILE="true"
+      ;;
+      -t|--trace)
+        set -x
+        ENABLE_TRACE=true
+      ;;
+      -?*)
+        echo "Unknown argument $1"
+        exit 1
+      ;;
+      *) break
+    esac
+    shift
+  done
+fi
+
 if [ "$ENABLE_TRACE" = true ]; then
     set -x
 fi
 
 # Print environment variables
 print_env_variables
+
+# Update env file with runtime configuration from command-line arguments
+write_shared_variables
+
+# Generate Cluster Config
+./generate_cluster_yaml.sh onprem
+
+# cp changes to tmp repo
+tmp_dir="$cwd/$git_arch_name/tmp"
+cp "$ORCH_INSTALLER_PROFILE".yaml "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
+
+## Tar back the edge-manageability-framework repo. This will be later pushed to Gitea repo in the Orchestrator Installer
+repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n")
+cd "$tmp_dir"
+tar -zcf "$repo_file" ./edge-manageability-framework
+mv -f "$repo_file" "$cwd/$git_arch_name/$repo_file"
+cd "$cwd"
 
 if find "$cwd/$deb_dir_name" -name "onprem-gitea-installer_*_amd64.deb" -type f | grep -q .; then
     # Run gitea installer
@@ -281,9 +377,7 @@ fi
 create_namespaces
 
 # create sre and smtp secrets
-set_default_sre_env
 create_sre_secrets
-set_default_smtp_env
 create_smtp_secrets
 # Create secrets for Harbor, Keycloak and Postgres
 harbor_password=$(head -c 512 /dev/urandom | tr -dc A-Za-z0-9 | cut -c1-100)

@@ -25,7 +25,7 @@ root:
     - orch-configs/profiles/enable-osrm-manual-mode.yaml
     - orch-configs/profiles/resource-default.yaml
     - orch-configs/profiles/artifact-rs-production-noauth.yaml
-    - orch-configs/clusters/cluster_${ORCH_INSTALLER_PROFILE}.yaml
+    - orch-configs/clusters/${ORCH_INSTALLER_PROFILE}.yaml
 
 # Values applied to both root app and shared among all child apps
 argo:
