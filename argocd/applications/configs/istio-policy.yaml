@@ -2,4 +2,29 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Intentionally left blank
+# EnvoyFilter to increase header size limits for Grafana observability workloads
+additionalManifests:
+  - |
+    apiVersion: networking.istio.io/v1alpha3
+    kind: EnvoyFilter
+    metadata:
+      name: grafana-increase-header-size-limits
+      namespace: istio-system
+    spec:
+      workloadSelector:
+        labels:
+          app.kubernetes.io/name: grafana
+      configPatches:
+        - applyTo: NETWORK_FILTER
+          match:
+            context: SIDECAR_INBOUND
+            listener:
+              filterChain:
+                filter:
+                  name: envoy.filters.network.http_connection_manager
+          patch:
+            operation: MERGE
+            value:
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                max_request_headers_kb: 128
