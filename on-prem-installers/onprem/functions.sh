@@ -152,3 +152,21 @@ wait_for_namespace_creation() {
         sleep 5
     done
 }
+
+# Updates or appends a variable in the config file
+# update_config_variable <config_file> <variable_name> <variable_value>
+update_config_variable() {
+    local config_file="$1"
+    local var_name="$2"
+    local var_value="$3"
+    
+    if [[ -n "${var_value:-}" ]]; then
+        if grep -q "^export ${var_name}=" "$config_file"; then
+            # Update existing line
+            sed -i "s|^export ${var_name}=.*|export ${var_name}='${var_value}'|" "$config_file"
+        else
+            # Append if not exists
+            echo "export ${var_name}='${var_value}'" >> "$config_file"
+        fi
+    fi
+}
