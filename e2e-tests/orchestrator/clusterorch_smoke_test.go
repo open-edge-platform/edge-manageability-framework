@@ -434,6 +434,25 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 		})
 	})
 
+	Describe("Download Kubeconfig", Label(clusterOrchSmoke), func() {
+		It("should download kubeconfig successfully", func() {
+			Expect(clusterName).ToNot(BeEmpty(), "Cluster name should not be empty")
+
+			// download kubeconfig
+			url := fmt.Sprintf(clusterApiBaseURLTemplate+"/clusters/%s/kubeconfigs", serviceDomain, project, clusterName)
+			resp, err := makeAuthorizedRequest(http.MethodGet, url, *edgeMgrToken, nil, cli)
+			Expect(err).ToNot(HaveOccurred())
+			defer resp.Body.Close()
+
+			Expect(resp.StatusCode).To(Equal(http.StatusOK))
+
+			// check kubeconfig content not empty and readable
+			body, err := io.ReadAll(resp.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(body).ToNot(BeEmpty(), "Kubeconfig should not be empty")
+		})
+	})
+
 	Describe("Attempt to Delete Cluster Template in Use", Label(clusterOrchSmoke), func() {
 		It("should fail to delete the cluster template while it is in use", func() {
 			Expect(defaultTemplateName).ToNot(BeEmpty(), "Default template name should not be empty")
