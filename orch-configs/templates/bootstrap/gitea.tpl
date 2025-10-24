@@ -26,6 +26,18 @@ postgresql:
     tag: 16.10-bookworm
   postgresqlDataDir: /var/postgres/data
   primary:
+    lifecycleHooks:
+      postStart:
+        exec:
+          command:
+          - /bin/bash
+          - -c
+          - |
+            set -e
+            if [ -f "/var/postgres/data/PG_VERSION" ]; then
+              cp /var/postgres/postgresql.conf /var/postgres/data/postgresql.conf
+              cp /var/postgres/pg_hba.conf /var/postgres/data/pg_hba.conf
+            fi
     extraEnvVars:
     - name: HOME
       value: /var/postgres
@@ -42,10 +54,10 @@ postgresql:
     - name: postgresql-run
       mountPath: /var/run
     - name: postgresql-config
-      mountPath: /var/postgres/data/postgresql.conf
+      mountPath: /var/postgres/postgresql.conf
       subPath: postgresql.conf
     - name: postgresql-hba
-      mountPath: /var/postgres/data/pg_hba.conf
+      mountPath: /var/postgres/pg_hba.conf
       subPath: pg_hba.conf
     extraVolumes:
     - name: postgresql-run
@@ -91,6 +103,7 @@ postgresql:
         local   replication     all                                     trust
         host    replication     all             127.0.0.1/32            trust
         host    replication     all             ::1/128                 trust
+        host all all all scram-sha-256
   persistence:
     size: 1Gi
     mountPath: /var/postgres
