@@ -387,6 +387,7 @@ cd "$tmp_dir"
 tar -zcf "$repo_file" ./edge-manageability-framework
 mv -f "$repo_file" "$cwd/$git_arch_name/$repo_file"
 cd "$cwd"
+rm -rf "$tmp_dir"
 
 if find "$cwd/$deb_dir_name" -name "onprem-gitea-installer_*_amd64.deb" -type f | grep -q .; then
     # Run gitea installer
