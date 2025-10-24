@@ -23,8 +23,12 @@ postgresql:
   image:
     registry: docker.io
     repository: library/postgres
-    tag: 16.10-alpine3.22
+    tag: 16.10-bookworm
+  postgresqlDataDir: /var/postgres/data
   primary:
+    extraEnvVars:
+    - name: HOME
+      value: /var/postgres
     resourcesPreset: none
     resource: {}
     containerSecurityContext:
@@ -35,13 +39,61 @@ postgresql:
       seccompProfile:
         type: RuntimeDefault
     extraVolumeMounts:
-    - mountPath: /var/run/postgresql
-      name: postgresql-run
+    - name: postgresql-run
+      mountPath: /var/run
+    - name: postgresql-config
+      mountPath: /var/postgres/data/postgresql.conf
+      subPath: postgresql.conf
+    - name: postgresql-hba
+      mountPath: /var/postgres/data/pg_hba.conf
+      subPath: pg_hba.conf
     extraVolumes:
-    - emptyDir: {}
-      name: postgresql-run
+    - name: postgresql-run
+      emptyDir: {}
+    - name: postgresql-config
+      configMap:
+        name: postgresql-config
+    - name: postgresql-hba
+      configMap:
+        name: postgresql-hba
+  extraDeploy:
+  - apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: postgresql-config
+    data:
+      postgresql.conf: |-
+        huge_pages = 'off'
+        listen_addresses = '*'
+        port = 5432
+        max_connections = 100
+        shared_buffers = 128MB
+        dynamic_shared_memory_type = posix
+        max_wal_size = 1GB
+        min_wal_size = 80MB
+        log_timezone = UTC
+        datestyle = 'iso, mdy'
+        timezone = UTC
+        lc_messages = 'en_US.utf8'
+        lc_monetary = 'en_US.utf8'
+        lc_time = 'en_US.utf8'
+        default_text_search_config = 'pg_catalog.english'
+  - apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: postgresql-hba
+    data:
+      pg_hba.conf: |-
+        # TYPE  DATABASE        USER            ADDRESS                 METHOD
+        local   all             all                                     trust
+        host    all             all             127.0.0.1/32            trust
+        host    all             all             ::1/128                 trust
+        local   replication     all                                     trust
+        host    replication     all             127.0.0.1/32            trust
+        host    replication     all             ::1/128                 trust
   persistence:
     size: 1Gi
+    mountPath: /var/postgres
   containerSecurityContext:
     runAsUser: 1000
   podSecurityContext:
