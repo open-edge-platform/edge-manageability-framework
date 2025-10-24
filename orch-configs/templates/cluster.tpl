@@ -7,6 +7,9 @@ root:
   useLocalValues: false
   clusterValues:
     - orch-configs/profiles/enable-platform.yaml
+{{- if .Values.enableDefaultTenancy }}
+    - orch-configs/profiles/enable-singleTenancy.yaml
+{{- end }}
 {{- if .Values.enableObservability }}
     - orch-configs/profiles/enable-o11y.yaml
 {{- end }}
