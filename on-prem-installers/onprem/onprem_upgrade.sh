@@ -68,6 +68,9 @@ source "$(dirname "${0}")/functions.sh"
 source "$(dirname "${0}")/upgrade_postgres.sh"
 # shellcheck disable=SC1091
 source "$(dirname "${0}")/vault_unseal.sh"
+# shellcheck disable=SC1091
+source "$(dirname "$0")/onprem.env"
+
 ### Constants
 RELEASE_SERVICE_URL="${RELEASE_SERVICE_URL:-registry-rs.edgeorchestration.intel.com}"
 ORCH_INSTALLER_PROFILE="${ORCH_INSTALLER_PROFILE:-onprem}"
@@ -107,6 +110,7 @@ set_artifacts_version() {
 export GIT_REPOS=$cwd/$git_arch_name
 
 retrieve_and_apply_config() {
+    local config_file="$cwd/onprem.env"
     tmp_dir="$cwd/$git_arch_name/tmp"
     rm -rf "$tmp_dir"
     mkdir -p "$tmp_dir"
@@ -120,48 +124,73 @@ retrieve_and_apply_config() {
     TRAEFIK_IP=$(kubectl get svc traefik -n orch-gateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
     NGINX_IP=$(kubectl get svc ingress-nginx-controller -n orch-boots -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 
-    while true; do
-        if [[ -z ${ARGO_IP} ]]; then
-            log_info "Enter Argo IP:"
-            read -r ARGO_IP
-            export ARGO_IP
-        fi
-
-        if [[ -z ${TRAEFIK_IP} ]]; then
-            log_info "Enter Traefik IP:"
-            read -r TRAEFIK_IP
-            export TRAEFIK_IP
-        fi
-
-        if [[ -z ${NGINX_IP} ]]; then
-            log_info "Enter Nginx IP:"
-            read -r NGINX_IP
-            export NGINX_IP
-        fi
-
-        if [[ $ARGO_IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ && $TRAEFIK_IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ && $NGINX_IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            yq -i '.postCustomTemplateOverwrite.metallb-config.ArgoIP|=strenv(ARGO_IP)' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
-            yq -i '.postCustomTemplateOverwrite.metallb-config.TraefikIP|=strenv(TRAEFIK_IP)' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
-            yq -i '.postCustomTemplateOverwrite.metallb-config.NginxIP|=strenv(NGINX_IP)' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
-            break
-        else
-            echo "Inputted values are not valid IPs. Please input correct IPs without any masks."
-            ARGO_IP=""
-            TRAEFIK_IP=""
-            NGINX_IP=""
-        fi
-    done
+    update_config_variable "$config_file" "ARGO_IP" "${ARGO_IP}"
+    update_config_variable "$config_file" "TRAEFIK_IP" "${TRAEFIK_IP}"
+    update_config_variable "$config_file" "NGINX_IP" "${NGINX_IP}"
 
     sre_tls=$(kubectl get applications -n "$apps_ns" sre-exporter -o jsonpath='{.spec.sources[*].helm.valuesObject.otelCollector.tls.enabled}')
     if [[ $sre_tls = 'true' ]]; then
-        yq -i '.argo.o11y.sre.tls.enabled|=true' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
+        update_config_variable "$config_file" "SRE_TLS_ENABLED" "${sre_tls}"
         sre_dest_ca_cert=$(kubectl get applications -n "$apps_ns" sre-exporter -o jsonpath='{.spec.sources[*].helm.valuesObject.otelCollector.tls.caSecret.enabled}')
         if [[ "${sre_dest_ca_cert}" == "true" ]]; then
-            yq -i '.argo.o11y.sre.tls.caSecretEnabled|=true' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
+            update_config_variable "$config_file" "SRE_DEST_CA_CERT" "${sre_dest_ca_cert}"
         fi
     else
-        yq -i '.argo.o11y.sre.tls.enabled|=false' "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
+        update_config_variable "$config_file" "SRE_TLS_ENABLED" "false"
     fi
+    
+    VALUE_FILES=$(kubectl get application root-app -n onprem -o jsonpath='{.spec.sources[0].helm.valueFiles[*]}')
+
+    if [[ -z "$VALUE_FILES" ]]; then
+        echo "⚠️  Warning: No value files found in root-app spec"
+        exit 1
+    fi
+
+    echo "Found value files:"
+    echo "$VALUE_FILES" | tr ' ' '\n' | sed 's/^/  - /'
+    echo
+
+    # Initialize all profiles as disabled (true means profile is disabled)
+    DISABLE_CO_PROFILE="false"
+    DISABLE_AO_PROFILE="false"
+    DISABLE_O11Y_PROFILE="false"
+
+    # Check for enabled profiles (inverse logic)
+    # If we find enable-cluster-orch.yaml, then CO is enabled, so DISABLE_CO=false
+    if echo "$VALUE_FILES" | grep -q "enable-cluster-orch.yaml"; then
+        echo "✅ Cluster Orchestrator (CO) profile is ENABLED"
+    else
+        DISABLE_CO_PROFILE="true"
+        echo "⛔ Cluster Orchestrator (CO) profile is DISABLED"
+    fi
+
+    if echo "$VALUE_FILES" | grep -q "enable-app-orch.yaml"; then
+        echo "✅ Application Orchestrator (AO) profile is ENABLED"
+    else
+        DISABLE_AO_PROFILE="true"
+        echo "⛔ Application Orchestrator (AO) profile is DISABLED"
+    fi
+
+    if echo "$VALUE_FILES" | grep -qE "(enable-o11y\.yaml|o11y-onprem-1k\.yaml)"; then
+        echo "✅ Observability (O11y) profile is ENABLED"
+    else
+        DISABLE_O11Y_PROFILE="true"
+        echo "⛔ Observability (O11y) profile is DISABLED"
+    fi
+
+    update_config_variable "$config_file" "DISABLE_CO_PROFILE" "$DISABLE_CO_PROFILE"
+    update_config_variable "$config_file" "DISABLE_AO_PROFILE" "$DISABLE_AO_PROFILE"
+    update_config_variable "$config_file" "DISABLE_O11Y_PROFILE" "$DISABLE_O11Y_PROFILE"
+
+    #cleanup old file
+    rm -rf "$ORCH_INSTALLER_PROFILE".yaml   
+
+    # Generate Cluster Config
+    ./generate_cluster_yaml.sh onprem
+
+    # cp changes to tmp repo
+    tmp_dir="$cwd/$git_arch_name/tmp"
+    cp "$ORCH_INSTALLER_PROFILE".yaml "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
 
     while true; do
         if [[ -n ${PROCEED} ]]; then
@@ -201,14 +230,8 @@ operation:
       hook: {}
 EOF
 fi
-
-    # Force sync all applications on the cluster. We need to ensure that new version of
-    # ArgoCD properly picked Applications definitions that were governed by older version.
-    apps=$(kubectl get applications -n "$apps_ns" --no-headers -o custom-columns=":metadata.name")
-    for app in $apps; do
-        echo "Syncing ArgoCD application: $app"
-        kubectl patch -n "$apps_ns" applications "$app" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
-    done
+    kubectl patch -n "$apps_ns" application postgresql-secrets --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+    kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 }
 
 # Checks if orchestrator is currently installed on the node
@@ -544,6 +567,8 @@ if [[ ! -s postgres-secrets-password.txt ]]; then
     PLATFORM_KEYCLOAK=$(kubectl get secret platform-keycloak-local-postgresql -n orch-platform -o jsonpath='{.data.PGPASSWORD}')
     VAULT=$(kubectl get secret vault-local-postgresql -n orch-platform -o jsonpath='{.data.PGPASSWORD}')
     POSTGRESQL=$(kubectl get secret postgresql -n orch-database -o jsonpath='{.data.postgres-password}')
+    MPS=$(kubectl get secret mps-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}')
+    RPS=$(kubectl get secret rps-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}')
     {
         echo "Alerting: $ALERTING"
         echo "CatalogService: $CATALOG_SERVICE"
@@ -552,6 +577,8 @@ if [[ ! -s postgres-secrets-password.txt ]]; then
         echo "PlatformKeycloak: $PLATFORM_KEYCLOAK"
         echo "Vault: $VAULT"
         echo "PostgreSQL: $POSTGRESQL"
+        echo "Mps: $MPS"
+        echo "Rps: $RPS"
     } > postgres-secrets-password.txt
 else
     echo "postgres-secrets-password.txt exists and is not empty, skipping password save."
@@ -633,9 +660,25 @@ patch_secret() {
                 PlatformKeycloak) PLATFORM_KEYCLOAK="$value" ;;
                 Vault) VAULT="$value" ;;
                 PostgreSQL) POSTGRESQL="$value" ;;
+                Mps) MPS="$value" ;;
+                Rps) RPS="$value" ;;
             esac
         done < postgres-secrets-password.txt
     fi
+
+    # Check for secret every 5 sec for 10 times
+    for i in $(seq 1 40); do
+
+        if kubectl get secret app-orch-catalog-local-postgresql -n orch-app >/dev/null 2>&1; then
+            echo "✅ Secret found!"
+            break
+        fi
+
+        if [ "$i" -lt 40 ]; then
+            echo "❌ Secret not found. Waiting 5s..."
+            sleep 5
+        fi
+    done
 
     kubectl patch secret -n orch-app app-orch-catalog-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$CATALOG_SERVICE\"}}" --type=merge
     kubectl patch secret -n orch-app app-orch-catalog-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$CATALOG_SERVICE\"}}" --type=merge
@@ -648,7 +691,11 @@ patch_secret() {
     kubectl patch secret -n orch-platform platform-keycloak-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$PLATFORM_KEYCLOAK\"}}" --type=merge
     kubectl patch secret -n orch-platform platform-keycloak-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$PLATFORM_KEYCLOAK\"}}" --type=merge
     kubectl patch secret -n orch-platform vault-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$VAULT\"}}" --type=merge
-    kubectl patch secret -n orch-platform vault-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$VAULT\"}}" --type=merge    
+    kubectl patch secret -n orch-platform vault-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$VAULT\"}}" --type=merge
+    kubectl patch secret -n orch-infra mps-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$MPS\"}}" --type=merge
+    kubectl patch secret -n orch-infra mps-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$MPS\"}}" --type=merge
+    kubectl patch secret -n orch-infra rps-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$RPS\"}}" --type=merge
+    kubectl patch secret -n orch-infra rps-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$RPS\"}}" --type=merge
     # Use a temporary file for the patch payload
     patch_file=$(mktemp)
     cat > "$patch_file" <<EOF
@@ -659,7 +706,9 @@ patch_secret() {
     "iam-tenancy": "$IAM_TENANCY",
     "inventory": "$INVENTORY",
     "platform-keycloak": "$PLATFORM_KEYCLOAK",
-    "vault": "$VAULT"
+    "vault": "$VAULT",
+    "mps": "$MPS",
+    "rps": "$RPS"
   }
 }
 EOF
@@ -765,13 +814,13 @@ fi
 
 kubectl patch application root-app -n "$apps_ns" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
-# Restore Gitea credentials to Vault 
+# Restore Gitea credentials to Vault
 password=$(kubectl get secret app-gitea-credential -n orch-platform -o jsonpath="{.data.password}" | base64 -d)
 username=$(kubectl get secret app-gitea-credential -n orch-platform -o jsonpath="{.data.username}" | base64 -d)
 
-# Store Gitea credentials in Vault 
+# Store Gitea credentials in Vault
 kubectl exec -it vault-0 -n orch-platform -c vault -- vault kv put secret/ma_git_service username="$username" password="$password"
- 
+
 # Delete all secrets with name containing 'fleet-gitrepo-cred'
 kubectl get secret --all-namespaces --no-headers | awk '/fleet-gitrepo-cred/ {print $1, $2}' | \
 while IFS=' ' read -r ns secret; do

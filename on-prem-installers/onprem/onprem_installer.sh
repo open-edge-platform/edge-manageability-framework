@@ -21,6 +21,7 @@
 #     -h, --help         Show help message
 #     -s, --sre [PATH]   Enable SRE TLS with optional CA certificate path
 #     -d, --notls        Disable SMTP TLS verification
+#     -y, --yes          Assume 'yes' to all prompts and run non-interactively
 #     --disable-co       Disable Cluster Orchestrator profile
 #     --disable-ao       Disable Application Orchestrator profile
 #     --disable-o11y     Disable Observability profile
@@ -246,6 +247,9 @@ Options:
     -d, --notls                Disable TLS verification for SMTP endpoint
                                Use when SMTP server has self-signed certificates
     
+    -y, --yes                  Assume 'yes' to all prompts and run non-interactively
+                               Skips configuration review prompt
+    
     --disable-co               Disable Cluster Orchestrator profile
                                Skips AO and CO related component installation
     
@@ -321,7 +325,7 @@ if [[ -f "$MAIN_ENV_CONFIG" ]]; then
   # shellcheck disable=SC1090
   source "$MAIN_ENV_CONFIG"
 fi
-
+ASSUME_YES=false
 ENABLE_TRACE=false
 
 if [ -n "${1-}" ]; then
@@ -337,6 +341,9 @@ if [ -n "${1-}" ]; then
           SRE_DEST_CA_CERT="$(cat "$2")"
           shift
         fi
+      ;;
+      -y|--yes)
+        ASSUME_YES=true
       ;;
       -d|--notls)
         SMTP_SKIP_VERIFY="true"
@@ -380,6 +387,27 @@ write_shared_variables
 # cp changes to tmp repo
 tmp_dir="$cwd/$git_arch_name/tmp"
 cp "$ORCH_INSTALLER_PROFILE".yaml "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
+
+if [ "$ASSUME_YES" = false ]; then
+  while true; do
+      if [[ -n ${PROCEED} ]]; then
+          break
+      fi
+      read -rp "Edit config values.yaml files with custom configurations if necessary!!!
+  The files are located at:
+  $tmp_dir/$si_config_repo/orch-configs/profiles/<profile>.yaml
+  $tmp_dir/$si_config_repo/orch-configs/clusters/$ORCH_INSTALLER_PROFILE.yaml
+  Enter 'yes' to confirm that configuration is done in order to progress with installation
+  ('no' will exit the script) !!!
+
+  Ready to proceed with installation? " yn
+      case $yn in
+          [Yy]* ) break;;
+          [Nn]* ) exit 1;;
+          * ) echo "Please answer yes or no.";;
+      esac
+  done
+fi
 
 ## Tar back the edge-manageability-framework repo. This will be later pushed to Gitea repo in the Orchestrator Installer
 repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n")

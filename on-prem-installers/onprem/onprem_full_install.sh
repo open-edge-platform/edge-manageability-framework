@@ -59,6 +59,9 @@ Examples:
 ./$(basename "$0") -t -- --disable-co --disable-ao
     # Enable trace in pre-installer, disable CO and AO profiles in main installer
 
+./$(basename "$0") -- -y -s /path/to/ca.crt
+    # Run with non-interactive mode, enable SRE with CA cert in main installer
+
 Pre-Installer Options (before --):
     -h, --help                 Show this help message and exit
     --skip-download            Skip downloading installer packages from registry
@@ -68,6 +71,7 @@ Main Installer Options (after --):
     -h, --help                 Show help message (will only show main installer help)
     -s, --sre [CA_CERT_PATH]   Enable TLS for SRE with optional CA certificate
     -d, --notls                Disable TLS verification for SMTP endpoint
+    -y, --yes                  Assume 'yes' to all prompts and run non-interactively
     --disable-co               Disable Cluster Orchestrator profile
     --disable-ao               Disable Application Orchestrator profile
     --disable-o11y             Disable Observability profile
