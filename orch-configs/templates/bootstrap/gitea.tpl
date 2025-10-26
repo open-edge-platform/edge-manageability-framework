@@ -24,34 +24,7 @@ postgresql:
     registry: docker.io
     repository: library/postgres
     tag: 16.10-bookworm
-  postgresqlDataDir: /var/postgres/data
   primary:
-    initContainers:
-    - name: init-config-check
-      image: busybox:1.36
-      command:
-        - "sh"
-        - "-c"
-        - |
-          if [ -f "/var/postgres/data/PG_VERSION" ]; then
-            echo "Previous database detected. Install postgresql.conf and pg_hba.conf."
-            cp /var/postgres/postgresql.conf /var/postgres/data/postgresql.conf
-            cp /var/postgres/pg_hba.conf /var/postgres/data/pg_hba.conf
-          else
-            echo "Fresh install. Allowing official entrypoint to generate default configuration."
-          fi
-      volumeMounts:
-      - name: postgresql-config
-        mountPath: /var/postgres/postgresql.conf
-        subPath: postgresql.conf
-      - name: postgresql-hba
-        mountPath: /var/postgres/pg_hba.conf
-        subPath: pg_hba.conf
-      - name: data
-        mountPath: /var/postgres
-    extraEnvVars:
-    - name: HOME
-      value: /var/postgres
     resourcesPreset: none
     resource: {}
     containerSecurityContext:
@@ -67,51 +40,8 @@ postgresql:
     extraVolumes:
     - name: postgresql-run
       emptyDir: {}
-    - name: postgresql-config
-      configMap:
-        name: postgresql-config
-    - name: postgresql-hba
-      configMap:
-        name: postgresql-hba
-  extraDeploy:
-  - apiVersion: v1
-    kind: ConfigMap
-    metadata:
-      name: postgresql-config
-    data:
-      postgresql.conf: |-
-        huge_pages = 'off'
-        listen_addresses = '*'
-        port = 5432
-        max_connections = 100
-        shared_buffers = 128MB
-        dynamic_shared_memory_type = posix
-        max_wal_size = 1GB
-        min_wal_size = 80MB
-        log_timezone = UTC
-        datestyle = 'iso, mdy'
-        timezone = UTC
-        lc_messages = 'en_US.utf8'
-        lc_monetary = 'en_US.utf8'
-        lc_time = 'en_US.utf8'
-        default_text_search_config = 'pg_catalog.english'
-  - apiVersion: v1
-    kind: ConfigMap
-    metadata:
-      name: postgresql-hba
-    data:
-      pg_hba.conf: |-
-        # TYPE  DATABASE        USER            ADDRESS                 METHOD
-        local   all             all                                     trust
-        host    all             all             127.0.0.1/32            trust
-        host    all             all             ::1/128                 trust
-        local   replication     all                                     trust
-        host    replication     all             127.0.0.1/32            trust
-        host    replication     all             ::1/128                 trust
-        host all all all scram-sha-256
   persistence:
     size: 1Gi
-    mountPath: /var/postgres
   containerSecurityContext:
     runAsUser: 1000
   podSecurityContext:
