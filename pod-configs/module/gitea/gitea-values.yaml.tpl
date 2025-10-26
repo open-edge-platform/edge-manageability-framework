@@ -25,18 +25,29 @@ postgresql:
     tag: 16.10-bookworm
   postgresqlDataDir: /var/postgres/data
   primary:
-    lifecycleHooks:
-      postStart:
-        exec:
-          command:
-          - /bin/bash
-          - -c
-          - |
-            set -e
-            if [ -f "/var/postgres/data/PG_VERSION" ]; then
-              cp /var/postgres/postgresql.conf /var/postgres/data/postgresql.conf
-              cp /var/postgres/pg_hba.conf /var/postgres/data/pg_hba.conf
-            fi
+    initContainers:
+    - name: init-config-check
+      image: busybox:1.36
+      command:
+        - "sh"
+        - "-c"
+        - |
+          if [ -f "/var/postgres/data/PG_VERSION" ]; then
+            echo "Previous database detected. Install postgresql.conf and pg_hba.conf."
+            cp /var/postgres/postgresql.conf /var/postgres/data/postgresql.conf
+            cp /var/postgres/pg_hba.conf /var/postgres/data/pg_hba.conf
+          else
+            echo "Fresh install. Allowing official entrypoint to generate default configuration."
+          fi
+      volumeMounts:
+      - name: postgresql-config
+        mountPath: /var/postgres/postgresql.conf
+        subPath: postgresql.conf
+      - name: postgresql-hba
+        mountPath: /var/postgres/pg_hba.conf
+        subPath: pg_hba.conf
+      - name: data
+        mountPath: /var/postgres
     extraEnvVars:
     - name: HOME
       value: /var/postgres
@@ -53,12 +64,6 @@ postgresql:
     extraVolumeMounts:
     - name: postgresql-run
       mountPath: /var/run
-    - name: postgresql-config
-      mountPath: /var/postgres/postgresql.conf
-      subPath: postgresql.conf
-    - name: postgresql-hba
-      mountPath: /var/postgres/pg_hba.conf
-      subPath: pg_hba.conf
     extraVolumes:
     - name: postgresql-run
       emptyDir: {}
