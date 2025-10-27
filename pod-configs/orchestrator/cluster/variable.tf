@@ -160,7 +160,7 @@ variable "aurora_postgres_ver_major" {
 }
 variable "aurora_postgres_ver_minor" {
   type    = string
-  default = "11"
+  default = "15"
 }
 variable "aurora_min_acus" {
   # 1 ACU ~= 2GB memory
