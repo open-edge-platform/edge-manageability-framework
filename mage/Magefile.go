@@ -1025,7 +1025,7 @@ STANDALONE=0
 		ProjectApiPassword: password,
 		RamSize:            "8192",
 		NoOfCpus:           "4",
-		SdaDiskSize:        "110G",
+		SdaDiskSize:        "110",
 		LibvirtDriver:      "kvm",
 		UsernameLinux:      "user",
 		PasswordLinux:      "user",
