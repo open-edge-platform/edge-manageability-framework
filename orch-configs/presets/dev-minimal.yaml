@@ -8,7 +8,7 @@ enableObservability: false
 enableKyverno: false
 enableUiDev: true
 enableAutoProvision: false
-enableAutoCert: true
+enableAutoCert: false
 enableCoder: true
 enableMailpit: true
 targetCluster: kind

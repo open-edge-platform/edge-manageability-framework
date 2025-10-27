@@ -9,7 +9,7 @@ enableAuditLogging: true
 enableKyverno: true
 enableAutoProvision: false
 enableUiDev: true
-enableAutoCert: true
+enableAutoCert: false
 enableCoder: true
 enableMailpit: true
 targetCluster: kind
