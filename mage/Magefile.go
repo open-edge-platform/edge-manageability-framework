@@ -1171,6 +1171,7 @@ STANDALONE=0
 		fmt.Sprintf("-var=tinkerbell_nginx_domain=%s", fmt.Sprintf("tinkerbell-nginx.%s", serviceDomain)),
 		fmt.Sprintf("-var=smbios_serial=%s", serialNumber),
 		fmt.Sprintf("-var=smbios_uuid=%s", ""),
+		fmt.Sprintf("-var=disk_size=%s", data.SdaDiskSize),
 		fmt.Sprintf("-var=libvirt_network_name=%s", data.BridgeName),
 		fmt.Sprintf("-var=libvirt_pool_name=%s", data.PoolName),
 		fmt.Sprintf("-var=vm_console=%s", "file"),
