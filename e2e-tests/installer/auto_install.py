@@ -566,13 +566,14 @@ class AutoInstall:
         # download may take a minute or so before the editor starts up.
         time.sleep(120)
         # in provision config editor
-        self.installer_session.sendline(':%s/smtp_url=""//g\x1b')
-        self.installer_session.sendline(':%s/smtp_port=587//g\x1b')
-        self.installer_session.sendline(':%s/smtp_from=""//g\x1b')
 
-        self.installer_session.sendline('\x1bG$osmtp_url="smtp.intel.com"\x1b')
-        self.installer_session.sendline('\x1bG$osmtp_port=25\x1b')
-        self.installer_session.sendline('\x1bG$osmtp_from="test@intel.com"\x1b')
+        # Test adding smtp vars to the config file
+        self.installer_session.sendline('\x1bG$oTF_VAR_smtp_url="10.138.167.51"\x1b')
+        self.installer_session.sendline('\x1bG$oTF_VAR_smtp_port=587\x1b')
+        self.installer_session.sendline('\x1bG$oTF_VAR_smtp_from="Example User <mail@example.com>"\x1b')
+        self.installer_session.sendline('\x1bG$oTF_VAR_smtp_user="root"\x1b')
+        self.installer_session.sendline('\x1bG$oTF_VAR_smtp_pass="root123"\x1b')
+
         self.installer_session.sendline(":wq")
 
         # Confirm config save if prompted
