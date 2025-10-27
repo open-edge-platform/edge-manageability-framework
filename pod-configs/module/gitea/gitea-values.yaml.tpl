@@ -49,6 +49,8 @@ postgresql:
       - name: data
         mountPath: /var/postgres
       securityContext:
+        runAsUser: 1001
+        runAsGroup: 1001
         runAsNonRoot: true
         allowPrivilegeEscalation: false
         readOnlyRootFilesystem: true
