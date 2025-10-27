@@ -32,18 +32,18 @@ postgresql:
         - "sh"
         - "-c"
         - |
-          if [ -f "/var/postgres/data/PG_VERSION" ]; then
-            echo "Previous database detected. Install postgresql.conf and pg_hba.conf."
+          if [ -s "/var/postgres/data/PG_VERSION" ]; then
+            echo "Previous database detected. Installing postgresql.conf and pg_hba.conf."            
             cp /var/postgres/postgresql.conf /var/postgres/data/postgresql.conf
             cp /var/postgres/pg_hba.conf /var/postgres/data/pg_hba.conf
           else
-            echo "Fresh install. Allowing official entrypoint to generate default configuration."
+            echo "Fresh install. The official entrypoint will generate the default configuration."
           fi
       volumeMounts:
-      - name: postgresql-config
+      - name: postgres-config
         mountPath: /var/postgres/postgresql.conf
         subPath: postgresql.conf
-      - name: postgresql-hba
+      - name: postgres-hba
         mountPath: /var/postgres/pg_hba.conf
         subPath: pg_hba.conf
       - name: data
@@ -62,22 +62,22 @@ postgresql:
       runAsUser: 1000
       runAsGroup: 1000
     extraVolumeMounts:
-    - name: postgresql-run
+    - name: postgres-run
       mountPath: /var/run
     extraVolumes:
-    - name: postgresql-run
+    - name: postgres-run
       emptyDir: {}
-    - name: postgresql-config
+    - name: postgres-config
       configMap:
-        name: postgresql-config
-    - name: postgresql-hba
+        name: postgres-config
+    - name: postgres-hba
       configMap:
-        name: postgresql-hba
+        name: postgres-hba
   extraDeploy:
   - apiVersion: v1
     kind: ConfigMap
     metadata:
-      name: postgresql-config
+      name: postgres-config
     data:
       postgresql.conf: |-
         huge_pages = 'off'
@@ -98,7 +98,7 @@ postgresql:
   - apiVersion: v1
     kind: ConfigMap
     metadata:
-      name: postgresql-hba
+      name: postgres-hba
     data:
       pg_hba.conf: |-
         # TYPE  DATABASE        USER            ADDRESS                 METHOD
