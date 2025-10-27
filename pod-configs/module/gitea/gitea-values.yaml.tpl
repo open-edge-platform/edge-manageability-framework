@@ -48,14 +48,15 @@ postgresql:
         subPath: pg_hba.conf
       - name: data
         mountPath: /var/postgres
-      containerSecurityContext:
+      securityContext:
+        runAsNonRoot: true
         allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
         capabilities:
           drop:
-          - ALL
+            - ALL
         seccompProfile:
           type: RuntimeDefault
-        runAsNonRoot: true
     extraEnvVars:
     - name: HOME
       value: /var/postgres
