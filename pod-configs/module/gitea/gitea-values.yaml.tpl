@@ -33,7 +33,7 @@ postgresql:
         - "-c"
         - |
           if [ -s "/var/postgres/data/PG_VERSION" ]; then
-            echo "Previous database detected. Installing postgresql.conf and pg_hba.conf."            
+            echo "Previous database detected. Installing postgresql.conf and pg_hba.conf."
             cp /var/postgres/postgresql.conf /var/postgres/data/postgresql.conf
             cp /var/postgres/pg_hba.conf /var/postgres/data/pg_hba.conf
           else
@@ -48,6 +48,14 @@ postgresql:
         subPath: pg_hba.conf
       - name: data
         mountPath: /var/postgres
+      containerSecurityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+          - ALL
+        seccompProfile:
+          type: RuntimeDefault
+        runAsNonRoot: true
     extraEnvVars:
     - name: HOME
       value: /var/postgres
