@@ -1099,6 +1099,12 @@ EOF
         if [[ -n "$efs_file_system_id" && "$efs_file_system_id" != "null" ]]; then
             echo "FILE_SYSTEM_ID=${efs_file_system_id}" >> ~/.env
         fi
+
+        # export S3 prefix to .env
+        s3_prefix=$(terraform show -json | jq -r '.values.outputs.s3_prefix.value')
+        if [[ -n "$s3_prefix" && "$s3_prefix" != "null" ]]; then
+            echo "S3_PREFIX=${s3_prefix}" >> ~/.env
+        fi
         popd
 
         jq  -n ". += {\"gitea_argo_user\":${gitea_argo_user}}" | \
