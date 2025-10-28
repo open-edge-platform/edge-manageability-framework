@@ -431,8 +431,8 @@ func localSecret(targetEnv string, createRSToken bool) error {
 		return err
 	}
 	// creating postgres secret that contains the randomly generated postgres admin password
-	if err := kubectlCreateAndApply("secret", "generic", "-n", "orch-database", "postgresql",
-		"--from-literal=postgres-password="+postgresPassword); err != nil {
+	if err := kubectlCreateAndApply("secret", "generic", "-n", "orch-database", "orch-database-postgresql",
+		"--from-literal=password="+postgresPassword, "--from-literal=username=orch-database-postgresql_user"); err != nil {
 		return err
 	}
 	// FIXME: Extend support for generally configurable token based release service authentication.

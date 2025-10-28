@@ -29,6 +29,7 @@ sidecarInjectorWebhook:
         # - secrets-config job since it needs to communicate with Keycloak via VirtualService
         # - credentials job since it needs to communicate with Keycloak and Vault
         # - loca-credentials job since it needs to communicate with Keycloak and Vault
+        # - cluster-manager job since it needs to communicate with Keycloak and Vault
         - key: app.kubernetes.io/name
           operator: NotIn
-          values: [secrets-config, credentials, loca-credentials]
+          values: [secrets-config, credentials, loca-credentials, cluster-manager]
