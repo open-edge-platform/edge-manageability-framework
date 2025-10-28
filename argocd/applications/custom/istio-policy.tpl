@@ -5,3 +5,6 @@
 {{- if .Values.argo.aws }}
 enableDatabaseNamespace: false
 {{- end }}
+
+# Enable EnvoyFilter for Grafana header size limits
+enableGrafanaHeaderSizeLimits: true
