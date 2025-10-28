@@ -68,8 +68,6 @@ if ! load_scm_auth; then
 fi
 save_scm_auth
 
-update_kube_config
-
 #
 # Create Cluster Configuration
 #
