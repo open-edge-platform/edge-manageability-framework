@@ -56,12 +56,6 @@ func (Deploy) rke2Cluster() error { //nolint: cyclop
 		return fmt.Errorf("error creating etcd-certs secret: %w", err)
 	}
 
-	// create cron job that periodically defrags etcd
-	if err := sh.RunV("kubectl", "apply", "-f",
-		filepath.Join("rke2", "defrag-etcd-job.yaml")); err != nil {
-		return fmt.Errorf("error applying defrag-etcd-job.yaml: %w", err)
-	}
-
 	// Do a final verification (after installing OpenEBS) of all deployments and pods
 	// before declaring cluster is ready
 	// We need to wait for all deployments and pods to be Ready also before deploying OpenEBS

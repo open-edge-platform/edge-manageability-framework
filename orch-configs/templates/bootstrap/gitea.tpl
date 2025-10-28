@@ -20,6 +20,10 @@ postgresql-ha:
   enabled: false
 postgresql:
   enabled: true
+  image:
+    registry: docker.io
+    repository: library/postgres
+    tag: 16.10-alpine3.22
   primary:
     resourcesPreset: none
     resource: {}
@@ -30,6 +34,12 @@ postgresql:
           - ALL
       seccompProfile:
         type: RuntimeDefault
+    extraVolumeMounts:
+    - mountPath: /var/run/postgresql
+      name: postgresql-run
+    extraVolumes:
+    - emptyDir: {}
+      name: postgresql-run
   persistence:
     size: 1Gi
   containerSecurityContext:
@@ -44,6 +54,10 @@ ingress:
   enabled: false
 redis:
   enabled: true
+  image:
+    registry: docker.io
+    repository: library/redis
+    tag: 7.2.11
   master:
     resourcesPreset: none
     resources: {}

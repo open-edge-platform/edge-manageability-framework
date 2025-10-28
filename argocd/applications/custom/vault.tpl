@@ -70,7 +70,7 @@ server:
   extraInitContainers:
     # This initContainer consumes Postgres credential via secret and converts it into a config file that can be consumed by vault
     - name: storage-config
-      image: alpine:3.18.2
+      image: alpine:3.22.2
       securityContext:
         allowPrivilegeEscalation: false
         capabilities:
@@ -115,7 +115,7 @@ server:
           value: {{ .Values.argo.vault.ha | default false | quote }}
     # This initContainer creates database tables for vault
     - name: init-table
-      image: bitnami/postgresql:14.5.0-debian-11-r2
+      image: library/postgres:14.19-alpine3.22
       securityContext:
         allowPrivilegeEscalation: false
         capabilities:

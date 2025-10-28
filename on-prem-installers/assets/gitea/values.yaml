@@ -6,6 +6,10 @@ redis-cluster:
   enabled: false
 postgresql:
   enabled: true
+  image:
+    registry: docker.io
+    repository: library/postgres
+    tag: 16.10-alpine3.22
   primary:
     persistence:
       enabled: true
@@ -14,6 +18,12 @@ postgresql:
       huge_pages = off
     initdb:
       args: "--set huge_pages=off"
+    extraVolumeMounts:
+    - mountPath: /var/run/postgresql
+      name: postgresql-run
+    extraVolumes:
+    - emptyDir: {}
+      name: postgresql-run
 postgresql-ha:
   enabled: false
 

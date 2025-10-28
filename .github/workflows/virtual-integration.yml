@@ -36,7 +36,7 @@ jobs:
     if: github.event_name == 'pull_request'
     permissions:
       contents: read
-    uses: open-edge-platform/orch-ci/.github/workflows/pre-merge.yml@7221fef1cf3ce70185cbe8c3f53a85be4e7e7cbd  # 0.1.48
+    uses: open-edge-platform/orch-ci/.github/workflows/pre-merge.yml@76700c2fb6d547733b9218d9638dca43f5296399  # 0.1.52
     with:
       run_version_check: false
       run_build: false
@@ -221,9 +221,11 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Setup asdf and install dependencies
-        uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
+      - name: Configure yamllint pip packages
+        run: echo "ASDF_YAMLLINT_PIP_PACKAGES=pyyaml" >> $GITHUB_ENV
 
+      - name: Setup asdf and install dependencies
+        uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]  
       - name: Run lint
         run: mage lint:yaml
 
@@ -687,7 +689,7 @@ jobs:
       github.ref == 'refs/heads/main' ||
       github.ref == 'refs/heads/main-pass-validation'
       )
-    runs-on: ubuntu-22.04-16core-64GB
+    runs-on: ubuntu-24.04-16core-64GB
     timeout-minutes: 90
     env:
       KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
@@ -884,7 +886,7 @@ jobs:
       security-events: write
       id-token: write
     if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
-    uses: open-edge-platform/orch-ci/.github/workflows/post-merge.yml@7221fef1cf3ce70185cbe8c3f53a85be4e7e7cbd  # 0.1.48
+    uses: open-edge-platform/orch-ci/.github/workflows/post-merge.yml@76700c2fb6d547733b9218d9638dca43f5296399  # 0.1.52
     with:
       run_build: false
       run_version_tag: false
