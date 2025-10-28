@@ -6,93 +6,116 @@
   default: 3
   variable: "eks_min_size"
   type: integer
+
 - name: "EKS Nodegroup Maximum Size"
   default: 3
   variable: "eks_max_size"
   type: integer
+
 - name: "EKS Nodegroup Desired Size"
   default: 3
   variable: "eks_desired_size"
   type: integer
+
 - name: "EKS Instance Type"
   default: "t3.2xlarge"
   variable: "eks_node_instance_type"
   type: string
   listFrom: instanceTypes
-- name: "EKS Nodegrouop Node Volume Size"
+
+- name: "EKS Nodegroup Node Volume Size"
   default: 20
   variable: "eks_volume_size"
   type: integer
+
 - name: "EKS Default Nodegroup Maximum Pod Number"
   default: 58
   variable: "eks_max_pods"
   type: integer
+
 - name: "Aurora Minimum ACU Number"
   default: 0.5
   variable: "aurora_min_acus"
   type: number
+
 - name: "Aurora Max ACU Number"
   default: 2
   variable: "aurora_max_acus"
   type: integer
+
 - name: "Aurora Development Mode"
   default: true
   variable: "aurora_dev_mode"
   type: bool
+
 - name: "SRE Basic Auth Username"
   default: ""
   variable: "sre_basic_auth_username"
   type: string
+
 - name: "SRE Basic Auth Password"
   default: ""
   variable: "sre_basic_auth_password"
   type: string
+
 - name: "SRE Destination Secret URL"
   default: ""
   variable: "sre_destination_secret_url"
   type: string
+
 - name: "SRE Destination CA Secret"
   default: ""
   variable: "sre_destination_ca_secret"
   type: string
+
+# SMTP Configuration
 - name: "SMTP user name"
-  default: ""
+  default: "root"
   variable: "smtp_user"
   type: string
+
 - name: "SMTP password"
-  default: ""
+  default: "root123"
   variable: "smtp_pass"
   type: string
+
 - name: "SMTP URL"
-  default: "r01s32-r01.igk.intel.com"
+  default: "10.138.167.51"
   variable: "smtp_url"
   type: string
+
 - name: "SMTP port"
   default: 587
   variable: "smtp_port"
   type: integer
+
 - name: "SMTP from address"
-  default: ""
+  default: "Sunil Parida <sunil@sunil.com>"
   variable: "smtp_from"
   type: string
+
+# Observability Nodegroup Settings
 - name: "Observability EKS Nodegroup Desired Size"
   default: 1
   type: integer
   variableField:
     variable: "eks_additional_node_groups"
     field: "[\"observability\"].desired_size"
+
 - name: "Observability EKS Nodegroup Minimum Size"
   default: 1
   type: integer
   variableField:
     variable: "eks_additional_node_groups"
     field: "[\"observability\"].min_size"
+
 - name: "Observability EKS Nodegroup Maximum Size"
   default: 1
   type: integer
   variableField:
     variable: "eks_additional_node_groups"
     field: "[\"observability\"].max_size"
+
 - name: "Observability EKS Nodegroup Instance Type"
   default: "t3.2xlarge"
   type: string
@@ -100,6 +123,7 @@
   variableField:
     variable: "eks_additional_node_groups"
     field: "[\"observability\"].instance_type"
+
 - name: "Observability EKS Nodegroup Volume Size"
   default: 20
   type: integer
