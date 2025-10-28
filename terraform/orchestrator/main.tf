@@ -244,12 +244,6 @@ resource "null_resource" "copy_files" {
   }
 
   provisioner "file" {
-    source      = "../../${var.working_directory}/on-prem-installers/onprem/onprem_pre_installer.sh"
-    destination = "/home/ubuntu/onprem_pre_installer.sh"
-    when        = create
-  }
-
-  provisioner "file" {
     source      = "../../${var.working_directory}/on-prem-installers/onprem/functions.sh"
     destination = "/home/ubuntu/functions.sh"
     when        = create
@@ -295,7 +289,6 @@ resource "null_resource" "copy_files" {
     inline = [
       "chmod +x /home/ubuntu/uninstall_onprem.sh",
       "chmod +x /home/ubuntu/onprem_installer.sh",
-      "chmod +x /home/ubuntu/onprem_pre_installer.sh",
       "chmod +x /home/ubuntu/functions.sh",
       "chmod +x /home/ubuntu/access_script.sh",
       "chmod +x /home/ubuntu/.env",
@@ -385,7 +378,7 @@ resource "null_resource" "write_installer_config" {
   provisioner "remote-exec" {
     inline = [
       "set -o errexit",
-      "bash -c 'cd /home/ubuntu; source .env; ./onprem_pre_installer.sh  ${var.use_local_build_artifact ? "--skip-download" : ""} --trace ${var.override_flag ? "--override" : ""} --write-config'",
+      "bash -c 'cd /home/ubuntu; source .env; ./onprem_installer.sh  ${var.use_local_build_artifact ? "--skip-download" : ""} --trace ${var.override_flag ? "--override" : ""} --write-config'",
     ]
     when = create
   }
@@ -477,8 +470,7 @@ resource "null_resource" "exec_installer" {
   provisioner "remote-exec" {
     inline = [
       "set -o errexit",
-      "bash -c 'cd /home/ubuntu; source .env; env; ./onprem_pre_installer.sh --skip-download --trace --yes ${var.override_flag ? "--override" : ""} | tee ./install_pre_output.log; exit $${PIPESTATUS[0]}'",
-      "bash -c 'cd /home/ubuntu; source .env; env; ./onprem_installer.sh | tee ./install_output.log; exit $${PIPESTATUS[0]}'",
+      "bash -c 'cd /home/ubuntu; source .env; env; ./onprem_installer.sh --skip-download --trace --yes ${var.override_flag ? "--override" : ""} | tee ./install_output.log; exit $${PIPESTATUS[0]}'",
     ]
     when = create
   }
