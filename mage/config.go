@@ -130,6 +130,10 @@ func (Config) overrideFromEnvironment(presetData map[string]interface{}) error {
 	// variables may be used to disable specific subsystems. These environment variable
 	// names are chosen to maintain parity with the AWS and OnPrem installer environment
 	// variable names.
+	//
+	// Note that these are only use when using presents, i.e. "mage deploy:kindPreset".
+	// The "mage deploy:Kind" and "deploy: KindMinimal" targets do not use presets and
+	// are not affected by these environment variables.
 
 	var err error
 	var disableAO bool
