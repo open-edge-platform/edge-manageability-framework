@@ -33,8 +33,10 @@ import (
 
 // Deploys the ENiC (indicates the number of instances, optionally set env variables: ORCH_FQDN, ORCH_IP, ORCH_USER, ORCH_PASS, ORCH_ORG, ORCH_PROJECT).
 func (DevUtils) DeployEnic(replicas int, targetEnv string) error {
-	var err error
-	targetEnv, err = Config{}.usePreset(targetEnv)
+	targetEnv, err := Config{}.usePreset(targetEnv)
+	if err != nil {
+		return err
+	}
 
 	deployRevision := giteaDeployRevisionParam()
 	namespace := "utils"
