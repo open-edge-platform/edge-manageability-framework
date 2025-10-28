@@ -73,8 +73,8 @@ update_kube_config
 #
 # Create Cluster Configuration
 #
-if [ -z "$FILE_SYSTEM_ID" ] || [ -z "$TRAEFIK_TG_ARN" ] || [ -z "$ARGOCD_TG_ARN" ]; then
-    echo "  Missing one or more of: FILE_SYSTEM_ID, TRAEFIK_TG_ARN, ARGOCD_TG_ARN"
+if [ -z "$FILE_SYSTEM_ID" ] || [ -z "$TRAEFIK_TG_ARN" ] || [ -z "$ARGOCD_TG_ARN" ] || [ -z "$S3_PREFIX" ]; then
+    echo "  Missing one or more of: FILE_SYSTEM_ID, TRAEFIK_TG_ARN, ARGOCD_TG_ARN, S3_PREFIX"
     echo "  Please run provision.sh first."
     exit 1
 fi
@@ -84,7 +84,7 @@ export TRAEFIK_TG_ARN
 export TRAEFIKGRPC_TG_ARN
 export NGINX_TG_ARN
 export ARGOCD_TG_ARN
-export S3_PREFIX=$(get_s3_prefix) # TODO
+export S3_PREFIX
 
 
 # AO_PROFILE  disabled check

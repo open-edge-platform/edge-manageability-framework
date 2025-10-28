@@ -39,3 +39,7 @@ output "gitea_master_password" {
 output "efs_file_system_id" {
   value = module.efs.efs.id
 }
+
+output "s3_prefix" {
+  value = var.s3_prefix
+}
