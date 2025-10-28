@@ -464,12 +464,12 @@ type Deploy mg.Namespace
 
 // Deploy kind cluster, Argo CD, and all Orchestrator services.
 func (d Deploy) KindAll() error {
-	return d.KindPreset("dev")
+	return d.all("dev")
 }
 
 // Deploy kind cluster, Argo CD, and all Orchestrator services except o11y and kyverno.
 func (d Deploy) KindMinimal() error {
-	return d.KindPreset("dev-minimal")
+	return d.all("dev-minimal")
 }
 
 // Deploy kind cluster, Argo CD, and Orchestrator services with customized settings.

@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -174,18 +173,6 @@ func (Config) overrideFromEnvironment(presetData map[string]interface{}) error {
 
 // Create a cluster deployment configuration from a cluster template and a preset file.
 func (c Config) usePreset(clusterPresetFile string) (string, error) {
-	// For compatibility with older mage usage
-	//   "dev" -> use the dev.yaml preset
-	//   "dev-minimal" -> use the dev-minimal.yaml preset
-	switch clusterPresetFile {
-	case "dev":
-		clusterPresetFile = filepath.Join(getConfigsDir(), "presets", "dev.yaml")
-		log.Printf("Using preset file: %s\n", clusterPresetFile)
-	case "dev-minimal":
-		clusterPresetFile = filepath.Join(getConfigsDir(), "presets", "dev-minimal.yaml")
-		log.Printf("Using preset file: %s\n", clusterPresetFile)
-	}
-
 	clusterValues, err := os.ReadFile(clusterPresetFile)
 	if err != nil {
 		return "", fmt.Errorf("failed to read cluster preset file: %w", err)
