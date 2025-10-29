@@ -4,7 +4,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Script Name: onprem_pre_installer.sh
+# Script Name: onprem_pre_install.sh
 # Description: This script prepares the system for Edge Orchestrator installation by:
 #               - Loading configuration from onprem.env file
 #               - Downloading installer and repository artifacts
@@ -12,7 +12,7 @@
 #               - Installing RKE2 Kubernetes cluster
 #               - Configuring basic cluster components
 #
-# Usage: ./onprem_pre_installer.sh [OPTIONS]
+# Usage: ./onprem_pre_install.sh [OPTIONS]
 #   Options:
 #     -h, --help         Show help message
 #     --skip-download    Skip downloading packages (use existing ones)
@@ -155,7 +155,7 @@ print_env_variables() {
   echo "========================================"; echo
 }
 
-# Function to write shared variables to a configuration file for use by onprem_installer.sh
+# Function to write shared variables to a configuration file for use by onprem_orch_install.sh
 write_shared_variables() {
   local config_file="$cwd/onprem.env"
   
@@ -164,7 +164,7 @@ write_shared_variables() {
   update_config_variable "$config_file" "DOCKER_PASSWORD" "${DOCKER_PASSWORD}"
   
   echo "Runtime configuration updated in: $config_file"
-  echo "To use in onprem_installer.sh, source this file: source $config_file"
+  echo "To use in onprem_orch_install.sh, source this file: source $config_file"
 }
 
 ################################
@@ -199,7 +199,7 @@ if [ -n "${1-}" ]; then
 fi
 
 ### Installer
-echo "Running On Premise Edge Orchestrator pre-installers"
+echo "Running On Premise Edge Orchestrator pre-install"
 
 # Print environment variables
 print_env_variables
@@ -275,7 +275,7 @@ sudo cp  /etc/rancher/rke2/rke2.yaml /home/"$USER"/.kube/config
 sudo chown -R "$USER":"$USER"  /home/"$USER"/.kube
 sudo chmod 600 /home/"$USER"/.kube/config
 
-# Write shared variables to configuration file for use by onprem_installer.sh
+# Write shared variables to configuration file for use by onprem_orch_install.sh
 write_shared_variables
 
-echo "End On Premise Edge Orchestrator pre-installers"
+echo "End On Premise Edge Orchestrator pre-install"

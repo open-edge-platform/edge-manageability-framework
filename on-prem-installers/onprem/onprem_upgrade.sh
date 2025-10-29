@@ -154,6 +154,7 @@ retrieve_and_apply_config() {
     DISABLE_CO_PROFILE="false"
     DISABLE_AO_PROFILE="false"
     DISABLE_O11Y_PROFILE="false"
+    SINGLE_TENANCY_PROFILE="false"
 
     # Check for enabled profiles (inverse logic)
     # If we find enable-cluster-orch.yaml, then CO is enabled, so DISABLE_CO=false
@@ -177,10 +178,24 @@ retrieve_and_apply_config() {
         DISABLE_O11Y_PROFILE="true"
         echo "⛔ Observability (O11y) profile is DISABLED"
     fi
+    
+    if echo "$VALUE_FILES" | grep -q "enable-singleTenancy.yaml"; then
+        SINGLE_TENANCY_PROFILE="true"
+        echo "✅ Single Tenancy is ENABLED"
+    else
+        echo "⛔ Single Tenancy is DISABLED"
+    fi
 
     update_config_variable "$config_file" "DISABLE_CO_PROFILE" "$DISABLE_CO_PROFILE"
     update_config_variable "$config_file" "DISABLE_AO_PROFILE" "$DISABLE_AO_PROFILE"
     update_config_variable "$config_file" "DISABLE_O11Y_PROFILE" "$DISABLE_O11Y_PROFILE"
+    update_config_variable "$config_file" "SINGLE_TENANCY_PROFILE" "$SINGLE_TENANCY_PROFILE"
+
+    # Get SMTP_SKIP_VERIFY from alerting-monitor application
+    SMTP_SKIP_VERIFY=$(kubectl get application alerting-monitor -n "$apps_ns" -o jsonpath='{.spec.sources[*].helm.valuesObject.alertingMonitor.smtp.insecureSkipVerify}' 2>/dev/null || echo "false")
+    if [[ -n "$SMTP_SKIP_VERIFY" ]]; then
+        update_config_variable "$config_file" "SMTP_SKIP_VERIFY" "$SMTP_SKIP_VERIFY"
+    fi
 
     #cleanup old file
     rm -rf "$ORCH_INSTALLER_PROFILE".yaml   
