@@ -307,19 +307,19 @@ variable "sre_destination_ca_secret" {
 variable "smtp_user" {
   description = "SMTP server username"
   type        = string
-  default     = "29761a7bdbcceb6b"
+  default     = "root"
 }
 
 variable "smtp_pass" {
   description = "SMTP server password"
   type        = string
-  default     = ""
+  default     = "root123"
 }
 
 variable "smtp_url" {
   description = "SMTP server address"
   type        = string
-  default     = "r01s32-r01.igk.intel.com"
+  default     = "10.138.167.51"
 }
 
 variable "smtp_port" {
@@ -331,7 +331,7 @@ variable "smtp_port" {
 variable "smtp_from" {
   description = "SMTP from header"
   type        = string
-  default     = ""
+  default     = "Sunil Parida <sunil@sunil.com>"
 }
 
 variable "auto_cert" {
