@@ -19,8 +19,12 @@ root:
 {{- if .Values.enableKyverno }}
     - orch-configs/profiles/enable-kyverno.yaml
 {{- end }}
+{{- if .Values.enableAppOrch }}
     - orch-configs/profiles/enable-app-orch.yaml
+{{- end }}
+{{- if .Values.enableClusterOrch }}
     - orch-configs/profiles/enable-cluster-orch.yaml
+{{- end }}
 {{- if .Values.enableEdgeInfra }}
     - orch-configs/profiles/enable-edgeinfra.yaml
 {{- end }}
@@ -126,7 +130,9 @@ orchestratorDeployment:
   targetCluster: {{ .Values.targetCluster }}
   enableMailpit: {{ .Values.enableMailpit }}
   argoServiceType: {{ .Values.argoServiceType }}
+{{- if .Values.dockerCache }}  
   dockerCache: "{{ .Values.dockerCache }}"
+{{- end }}
 {{- if and .Values.dockerCacheCert }}
   dockerCacheCert: |
 {{ .Values.dockerCacheCert | indent 4 }}
