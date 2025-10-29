@@ -104,11 +104,8 @@ else
     export SRE_PROFILE="#- orch-configs/profiles/enable-sre.yaml"
 fi
 
-if [ -z $SMTP_URL ]; then
-    export EMAIL_PROFILE="#- orch-configs/profiles/alerting-emails.yaml"
-else
-    export EMAIL_PROFILE="- orch-configs/profiles/alerting-emails.yaml"
-fi
+export EMAIL_PROFILE="- orch-configs/profiles/alerting-emails-dev.yaml"
+
 
 if [ -z $AUTO_CERT ]; then
     export AUTOCERT_PROFILE="#- orch-configs/profiles/profile-autocert.yaml"
