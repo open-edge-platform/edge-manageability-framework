@@ -127,9 +127,9 @@ else
 fi
 
 if [ "${SINGLE_TENANCY_PROFILE:-false}" = "true" ]; then
-    export SINGLE_TENANCY_PROFILE="#- orch-configs/profiles/enable-singleTenancy.yaml"
-else
     export SINGLE_TENANCY_PROFILE="- orch-configs/profiles/enable-singleTenancy.yaml"
+else
+    export SINGLE_TENANCY_PROFILE="#- orch-configs/profiles/enable-singleTenancy.yaml"
 fi
 
 if [ "${DISABLE_CO_PROFILE:-false}" = "true" ]; then
