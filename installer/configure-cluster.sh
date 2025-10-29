@@ -59,7 +59,6 @@ parse_params "$@"
 
 load_cluster_state_env
 check_provision_env -p
-load_provision_values
 save_cluster_env
 
 load_cluster_state_env

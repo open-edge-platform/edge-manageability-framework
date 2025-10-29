@@ -43,3 +43,33 @@ output "efs_file_system_id" {
 output "s3_prefix" {
   value = var.s3_prefix
 }
+
+output "sre_basic_auth_username" {
+  value = var.sre_basic_auth_username
+  sensitive = true
+}
+
+output "sre_basic_auth_password" {
+  value = var.sre_basic_auth_password
+  sensitive = true
+}
+
+output "sre_destination_secret_url" {
+  value = var.sre_destination_secret_url
+}
+
+output "sre_destination_ca_secret" {
+  value = var.sre_destination_ca_secret
+}
+
+output "auto_cert" {
+  value = var.auto_cert
+}
+
+output "smtp_url" {
+  value = var.smtp_url
+}
+
+output "single_tenancy" {
+  value = var.single_tenancy
+}

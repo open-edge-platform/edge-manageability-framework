@@ -1105,7 +1105,44 @@ EOF
         if [[ -n "$s3_prefix" && "$s3_prefix" != "null" ]]; then
             echo "S3_PREFIX=${s3_prefix}" >> ~/.env
         fi
+
+        # export configuration values to .env
+        sre_basic_auth_username=$(terraform show -json | jq -r '.values.outputs.sre_basic_auth_username.value')
+        if [[ -n "$sre_basic_auth_username" && "$sre_basic_auth_username" != "null" ]]; then
+            echo "SRE_BASIC_AUTH_USERNAME=${sre_basic_auth_username}" >> ~/.env
+        fi
+
+        sre_basic_auth_password=$(terraform show -json | jq -r '.values.outputs.sre_basic_auth_password.value')
+        if [[ -n "$sre_basic_auth_password" && "$sre_basic_auth_password" != "null" ]]; then
+            echo "SRE_BASIC_AUTH_PASSWORD=${sre_basic_auth_password}" >> ~/.env
+        fi
+
+        sre_destination_secret_url=$(terraform show -json | jq -r '.values.outputs.sre_destination_secret_url.value')
+        if [[ -n "$sre_destination_secret_url" && "$sre_destination_secret_url" != "null" ]]; then
+            echo "SRE_DESTINATION_SECRET_URL=${sre_destination_secret_url}" >> ~/.env
+        fi
+
+        sre_destination_ca_secret=$(terraform show -json | jq -r '.values.outputs.sre_destination_ca_secret.value')
+        if [[ -n "$sre_destination_ca_secret" && "$sre_destination_ca_secret" != "null" ]]; then
+            echo "SRE_DESTINATION_CA_SECRET=${sre_destination_ca_secret}" >> ~/.env
+        fi
+
+        auto_cert=$(terraform show -json | jq -r '.values.outputs.auto_cert.value')
+        if [[ -n "$auto_cert" && "$auto_cert" != "null" ]]; then
+            echo "AUTO_CERT=${auto_cert}" >> ~/.env
+        fi
+
+        smtp_url=$(terraform show -json | jq -r '.values.outputs.smtp_url.value')
+        if [[ -n "$smtp_url" && "$smtp_url" != "null" ]]; then
+            echo "SMTP_URL=${smtp_url}" >> ~/.env
+        fi
+
+        single_tenancy=$(terraform show -json | jq -r '.values.outputs.single_tenancy.value')
+        if [[ -n "$single_tenancy" && "$single_tenancy" != "null" ]]; then
+            echo "SINGLE_TENANCY=${single_tenancy}" >> ~/.env
+        fi
         popd
+
 
         jq  -n ". += {\"gitea_argo_user\":${gitea_argo_user}}" | \
         jq  ". += {\"gitea_argo_token\":${gitea_argo_token}}" | \
