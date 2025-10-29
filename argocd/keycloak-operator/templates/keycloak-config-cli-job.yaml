@@ -473,7 +473,8 @@ data:
         {"username": "service-account-ktc-m2m-client", "enabled": true, "totp": false, "serviceAccountClientId": "ktc-m2m-client", "realmRoles": ["admin", "create-realm", "default-roles-master", "rs-access-r"], "clientRoles": {"ktc-m2m-client": ["uma_protection"], "master-realm": ["query-clients", "manage-authorization", "view-clients", "view-users", "create-client", "manage-users", "manage-clients"]}},
         {"username": "service-account-3rd-party-host-manager-m2m-client", "enabled": true, "totp": false, "serviceAccountClientId": "3rd-party-host-manager-m2m-client", "realmRoles": ["default-roles-master", "rs-access-r"], "clientRoles": {"3rd-party-host-manager-m2m-client": ["uma_protection"], "master-realm": ["query-clients", "manage-authorization", "view-clients", "view-users", "create-client", "manage-users", "manage-clients", "view-realm"]}},
         {"username": "service-account-en-m2m-template-client", "enabled": true, "totp": false, "serviceAccountClientId": "en-m2m-template-client", "realmRoles": ["default-roles-master", "rs-access-r", "en-agent-rw"], "clientRoles": {"en-m2m-template-client": ["uma_protection"]}},
-        {"username": "service-account-edge-manager-m2m-client", "enabled": true, "totp": false, "serviceAccountClientId": "edge-manager-m2m-client", "realmRoles": ["default-roles-master"], "clientRoles": {"edge-manager-m2m-client": ["uma_protection"]}, "groups": ["/edge-manager-group", "/apps-m2m-service-account"]}
+        {"username": "service-account-edge-manager-m2m-client", "enabled": true, "totp": false, "serviceAccountClientId": "edge-manager-m2m-client", "realmRoles": ["default-roles-master"], "clientRoles": {"edge-manager-m2m-client": ["uma_protection"]}, "groups": ["/edge-manager-group", "/apps-m2m-service-account"]},
+        {"username": "service-account-co-manager-m2m-client", "enabled": true, "totp": false, "serviceAccountClientId": "co-manager-m2m-client", "realmRoles": ["default-roles-master", "co-m2m-rw"], "clientRoles": {"co-manager-m2m-client": ["uma_protection"], "master-realm": ["view-users"]}}
       ],
       "components": {
         "org.keycloak.keys.KeyProvider": [
@@ -551,12 +552,14 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
             runAsNonRoot: true
-            runAsUser: 1000
+            runAsUser: 1001
+            runAsGroup: 1001
             seccompProfile:
               type: RuntimeDefault
             capabilities:
               drop:
                 - ALL
+            readOnlyRootFilesystem: true
       containers:
         - name: keycloak-config-cli
           # Using official adorsys image from Docker Hub (Keycloak 26 compatible)
@@ -636,7 +639,8 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
             runAsNonRoot: true
-            runAsUser: 1000
+            runAsUser: 1001
+            runAsGroup: 1001
             seccompProfile:
               type: RuntimeDefault
             capabilities:

@@ -40,9 +40,10 @@ subjects:
 ---
 # Allow keycloak-system operator to read realm imports in orch-platform
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
+kind: Role
 metadata:
   name: keycloak-operator-orch-platform
+  namespace: orch-platform
   labels:
     app.kubernetes.io/name: keycloak-operator
 rules:
@@ -54,18 +55,19 @@ rules:
     verbs: ["get", "patch", "update"]
   - apiGroups: [""]
     resources: ["secrets"]
+    resourceNames: ["platform-keycloak"]
     verbs: ["get", "list", "watch"]
-    namespaces: ["orch-platform"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
+kind: RoleBinding
 metadata:
   name: keycloak-operator-orch-platform
+  namespace: orch-platform
   labels:
     app.kubernetes.io/name: keycloak-operator
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
+  kind: Role
   name: keycloak-operator-orch-platform
 subjects:
   - kind: ServiceAccount
