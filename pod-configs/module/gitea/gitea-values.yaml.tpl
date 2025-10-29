@@ -22,46 +22,8 @@ postgresql:
   image:
     registry: docker.io
     repository: library/postgres
-    tag: 16.10-bookworm
-  postgresqlDataDir: /var/postgres/data
+    tag: 16.10-alpine3.22
   primary:
-    initContainers:
-    - name: init-config-check
-      image: busybox:1.36
-      command:
-        - "sh"
-        - "-c"
-        - |
-          if [ -s "/var/postgres/data/PG_VERSION" ]; then
-            echo "Previous database detected. Installing postgresql.conf and pg_hba.conf."
-            cp /var/postgres/postgresql.conf /var/postgres/data/postgresql.conf
-            cp /var/postgres/pg_hba.conf /var/postgres/data/pg_hba.conf
-          else
-            echo "Fresh install. The official entrypoint will generate the default configuration."
-          fi
-      volumeMounts:
-      - name: postgres-config
-        mountPath: /var/postgres/postgresql.conf
-        subPath: postgresql.conf
-      - name: postgres-hba
-        mountPath: /var/postgres/pg_hba.conf
-        subPath: pg_hba.conf
-      - name: data
-        mountPath: /var/postgres
-      securityContext:
-        runAsUser: 1000
-        runAsGroup: 1000
-        runAsNonRoot: true
-        allowPrivilegeEscalation: false
-        readOnlyRootFilesystem: true
-        capabilities:
-          drop:
-            - ALL
-        seccompProfile:
-          type: RuntimeDefault
-    extraEnvVars:
-    - name: HOME
-      value: /var/postgres
     containerSecurityContext:
       allowPrivilegeEscalation: false
       capabilities:
@@ -73,60 +35,17 @@ postgresql:
       runAsUser: 1000
       runAsGroup: 1000
     extraVolumeMounts:
-    - name: postgres-run
-      mountPath: /var/run
+    - mountPath: /var/run/postgresql
+      name: postgresql-run
     extraVolumes:
-    - name: postgres-run
-      emptyDir: {}
-    - name: postgres-config
-      configMap:
-        name: postgres-config
-    - name: postgres-hba
-      configMap:
-        name: postgres-hba
-  extraDeploy:
-  - apiVersion: v1
-    kind: ConfigMap
-    metadata:
-      name: postgres-config
-    data:
-      postgresql.conf: |-
-        huge_pages = 'off'
-        listen_addresses = '*'
-        port = 5432
-        max_connections = 100
-        shared_buffers = 128MB
-        dynamic_shared_memory_type = posix
-        max_wal_size = 1GB
-        min_wal_size = 80MB
-        log_timezone = UTC
-        datestyle = 'iso, mdy'
-        timezone = UTC
-        lc_messages = 'en_US.utf8'
-        lc_monetary = 'en_US.utf8'
-        lc_time = 'en_US.utf8'
-        default_text_search_config = 'pg_catalog.english'
-  - apiVersion: v1
-    kind: ConfigMap
-    metadata:
-      name: postgres-hba
-    data:
-      pg_hba.conf: |-
-        # TYPE  DATABASE        USER            ADDRESS                 METHOD
-        local   all             all                                     trust
-        host    all             all             127.0.0.1/32            trust
-        host    all             all             ::1/128                 trust
-        local   replication     all                                     trust
-        host    replication     all             127.0.0.1/32            trust
-        host    replication     all             ::1/128                 trust
-        host all all all scram-sha-256
+    - emptyDir: {}
+      name: postgresql-run
     persistence:
       storageClass: "efs-1000"
     resourcesPreset: none
     resource: {}
   persistence:
     size: 1Gi
-    mountPath: /var/postgres
   containerSecurityContext:
     runAsUser: 1000
   podSecurityContext:

@@ -52,10 +52,11 @@ postgresql:
     persistence:
       enabled: true
       storageClass: "openebs-hostpath"
-      mountPath: /var/postgres
     extraVolumeMounts:
     - name: postgres-run
       mountPath: /var/run
+    - name: data
+      mountPath: /var/postgres
     extraVolumes:
     - name: postgres-run
       emptyDir: {}
