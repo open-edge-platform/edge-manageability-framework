@@ -4,6 +4,10 @@
 
 ---
 jwtMiddlewareException:
+  - namespace: "keycloak-system"
+    names:
+      - "platform-keycloak"
+      - "platform-keycloak-*"
   - namespace: "orch-gateway"
     names:
       - "harbor-oci"

@@ -1,0 +1,107 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: platform-keycloak
+  namespace: keycloak-system
+  labels:
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/instance: platform-keycloak
+    app.kubernetes.io/version: "26.4.2"
+spec:
+  # Image configuration - Using stable Keycloak v26.4.2
+  image: quay.io/keycloak/keycloak:26.4.2
+
+  # Bootstrap admin credentials
+  # The secret must exist in the same namespace (keycloak-system)
+  # and have 'username' and 'password' keys
+  bootstrapAdmin:
+    user:
+      secret: platform-keycloak
+
+  # Database configuration
+  # Connects to external PostgreSQL deployed separately
+  # NOTE: v2alpha1 API does NOT support namespace field in secret references
+  #       Secrets must be in the same namespace as the Keycloak resource
+  # PostgreSQL service: postgresql-cluster-rw (read-write endpoint)
+  # Database name: keycloak-system-platform-keycloak (follows namespace-app pattern)
+  # Database credentials: keycloak-platform-db secret (synced from orch-database via copy-database-to-keycloak app)
+  db:
+    vendor: postgres
+    host: postgresql-cluster-rw.orch-database.svc.cluster.local
+    port: 5432
+    database: keycloak-system-platform-keycloak
+    usernameSecret:
+      name: keycloak-platform-db
+      key: username
+    passwordSecret:
+      name: keycloak-platform-db
+      key: password
+    # Connection pool settings for schema initialization
+    # High initial values to avoid pool exhaustion during startup
+    poolInitialSize: 5
+    poolMinSize: 5
+    poolMaxSize: 50
+
+  # HTTP/HTTPS configuration
+  # NOTE: v2alpha1 uses httpEnabled (not 'enabled'), httpPort (not 'port')
+  http:
+    httpEnabled: true
+    httpPort: 8080
+    annotations: {}
+    labels: {}
+
+  # Ingress configuration
+  # Disabled as Keycloak is accessed via service alias in orch-platform namespace
+  # and through Istio VirtualService configured separately
+  ingress:
+    enabled: false
+
+  # Proxy configuration for load balancers
+  # Important for integration with ingress controllers and reverse proxies
+  proxy:
+    headers: xforwarded
+
+  # Resource requests and limits
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+
+  # Start Optimization
+  # Set to false for first-time startup to allow Keycloak to build
+  # Can be set to true after initial deployment for better performance
+  startOptimized: false
+
+  # Additional startup arguments
+  # NOTE: http-relative-path moved here since relativePath not supported in http spec
+  additionalOptions:
+    - name: hostname
+      value: "platform-keycloak.orch-platform.svc"
+    - name: hostname-strict
+      value: "true"
+    # Database URL properties for Keycloak v26.4.2
+    - name: db-url-properties
+      value: "?tcpKeepAlives=true&socketTimeout=120&connectTimeout=120"
+    - name: http-relative-path
+      value: "/"
+    - name: http-management-port
+      value: "9000"
+    - name: spi-login-protocol-openid-connect-legacy-logout-redirect-uri
+      value: "true"
+    - name: spi-brute-force-protector-default-brute-force-detector-allow-concurrent-requests
+      value: "true"
+    - name: log-level
+      value: "INFO"
+    - name: log-console-output
+      value: "json"
+
+  # Number of replicas for high availability
+  # Set to 1 for initial deployment, increase to 3+ for production HA
+  instances: 1

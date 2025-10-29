@@ -1,0 +1,28 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Keycloak Realm Import CRD - DISABLED
+# NOTE: KeycloakRealmImport CRD has issues with client creation in v26.4.2 Operator
+# The realm configuration and clients are now applied via keycloak-config-cli job instead
+# See: keycloak-config-cli-job.yaml
+#
+# Previous issues:
+# - CRD marked as "Done" but clients were not created in Keycloak
+# - Keycloak logs showed "client_not_found" errors
+# - No error reported despite complete failure
+#
+# keycloak-config-cli job is more reliable and follows the pattern used in Bitnami Keycloak
+# It supports variable substitution for dynamic cluster-specific URLs
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-realm-import-disabled
+  namespace: keycloak-system
+  labels:
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/instance: keycloak
+data:
+  note: "KeycloakRealmImport CRD disabled - using keycloak-config-cli job instead"

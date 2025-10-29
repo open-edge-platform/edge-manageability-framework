@@ -1,0 +1,30 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# This is an alias/proxy service that forwards traffic from orch-platform
+# to the actual Keycloak service in keycloak-system namespace.
+# This allows downstream applications to continue using the original URL:
+# platform-keycloak.orch-platform.svc.cluster.local
+#
+# Without this alias, all downstream apps would need URL updates.
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: platform-keycloak
+  namespace: orch-platform
+  labels:
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/instance: platform-keycloak
+    app.kubernetes.io/version: "26.4.2"
+    app.kubernetes.io/component: alias
+  annotations:
+    description: "Alias service forwarding to keycloak-system/platform-keycloak"
+spec:
+  type: ExternalName
+  externalName: platform-keycloak.keycloak-system.svc.cluster.local
+  ports:
+    - name: http
+      port: 8080
+      protocol: TCP

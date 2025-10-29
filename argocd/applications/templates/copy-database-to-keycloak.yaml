@@ -2,10 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-{{- $appName        := "copy-keycloak-admin-to-infra" }}
+{{- $appName        := "copy-database-to-keycloak" }}
 {{- $chartName      := "copy-secret" }}
-{{- $namespace      := "orch-infra" }}
-{{- $syncWave       := "180" }}
+{{- $namespace      := "keycloak-system" }}
+{{- $syncWave       := "100" }}
 ---
 {{- if (index .Values.argo.enabled $appName) }}
 apiVersion: argoproj.io/v1alpha1
@@ -20,7 +20,7 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
-    - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
+    - repoURL: {{ required "A valid chartRepoURL" .Values.argo.chartRepoURL }}
       chart: common/charts/{{$chartName}}
       targetRevision: 1.0.1
       helm:

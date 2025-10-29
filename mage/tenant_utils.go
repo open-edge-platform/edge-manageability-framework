@@ -455,7 +455,7 @@ func GetDefaultOrchPassword() (string, error) {
 }
 
 func GetKeycloakSecret() (string, error) {
-	kubecmd := fmt.Sprintf("kubectl get secret -n %s platform-keycloak -o jsonpath='{.data.admin-password}' ", "orch-platform")
+	kubecmd := fmt.Sprintf("kubectl get secret -n %s platform-keycloak -o jsonpath='{.data.password}' ", "keycloak-system")
 	pass, err := script.Exec(kubecmd).String()
 	if err != nil {
 		return "", err
