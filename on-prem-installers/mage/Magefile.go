@@ -343,16 +343,16 @@ func (Publish) Files(ctx context.Context) error {
 	// Copy generate_cluster_yaml.sh from ../installer to onprem folder
 	srcFile := filepath.Join("..", "installer", "generate_cluster_yaml.sh")
 	dstFile := filepath.Join("onprem", "generate_cluster_yaml.sh")
-
+	
 	srcData, err := os.ReadFile(srcFile)
 	if err != nil {
 		return fmt.Errorf("failed to read source file %s: %w", srcFile, err)
 	}
-
-	if err := os.WriteFile(dstFile, srcData, 0644); err != nil {
+	
+	if err := os.WriteFile(dstFile, srcData, 0o644); err != nil {
 		return fmt.Errorf("failed to write destination file %s: %w", dstFile, err)
 	}
-
+	
 	fmt.Printf("Copied %s to %s\n", srcFile, dstFile)
 
 	// Collect all .sh, .env, and .tpl files from onprem directory
@@ -393,7 +393,7 @@ func (Publish) Files(ctx context.Context) error {
 		return fmt.Errorf("failed to push to registry: %w: %s", err, string(stdouterr))
 	}
 	fmt.Printf("All files pushed to the registry ✅\n")
-
+	
 	// delete the copied file
 	if err := os.Remove(dstFile); err != nil {
 		return fmt.Errorf("failed to delete copied file %s: %w", dstFile, err)
