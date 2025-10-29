@@ -388,6 +388,7 @@ resource "null_resource" "exec_installer" {
 
   depends_on = [
     null_resource.update_env_variables,
+    null_resource.copy_local_orch_installer,
     null_resource.wait_for_cloud_init,
   ]
 
