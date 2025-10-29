@@ -337,7 +337,7 @@ fi
 
 ASSUME_YES=false
 ENABLE_TRACE=false
-SINGLE_TENANCY=false
+SINGLE_TENANCY_PROFILE=false
 
 if [ -n "${1-}" ]; then
   while :; do
