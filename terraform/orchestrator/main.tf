@@ -194,8 +194,8 @@ resource "null_resource" "copy_files" {
   }
 
   provisioner "file" {
-    source      = "../../${var.working_directory}/on-prem-installers/onprem/onprem_install.sh"
-    destination = "/home/ubuntu/onprem_install.sh"
+    source      = "../../${var.working_directory}/on-prem-installers/onprem/onprem_orch_install.sh"
+    destination = "/home/ubuntu/onprem_orch_install.sh"
     when        = create
   }
 
@@ -264,7 +264,7 @@ resource "null_resource" "copy_files" {
       "chmod +x /home/ubuntu/uninstall_onprem.sh",
       "chmod +x /home/ubuntu/onprem_installer.sh",
       "chmod +x /home/ubuntu/onprem_pre_install.sh",
-      "chmod +x /home/ubuntu/onprem_install.sh",
+      "chmod +x /home/ubuntu/onprem_orch_install.sh",
       "chmod +x /home/ubuntu/onprem.env",
       "chmod +x /home/ubuntu/cluster_onprem.tpl",
       "chmod +x /home/ubuntu/generate_cluster_yaml.sh",
