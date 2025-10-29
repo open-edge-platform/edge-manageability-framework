@@ -56,15 +56,15 @@
   variable: "sre_destination_ca_secret"
   type: string
 - name: "SMTP user name"
-  default: ""
+  default: "root"
   variable: "smtp_user"
   type: string
 - name: "SMTP password"
-  default: ""
+  default: "root123"
   variable: "smtp_pass"
   type: string
 - name: "SMTP URL"
-  default: "r01s32-r01.igk.intel.com"
+  default: "10.138.167.51"
   variable: "smtp_url"
   type: string
 - name: "SMTP port"
@@ -72,7 +72,7 @@
   variable: "smtp_port"
   type: integer
 - name: "SMTP from address"
-  default: ""
+  default: "Sunil Parida <sunil@sunil.com>"
   variable: "smtp_from"
   type: string
 - name: "Observability EKS Nodegroup Desired Size"
