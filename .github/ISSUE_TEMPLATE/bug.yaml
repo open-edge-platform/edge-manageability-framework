@@ -15,6 +15,18 @@ body:
     validations:
       required: true
 
+  - type: dropdown
+    attributes:
+      label: Type
+      description: Select the type of issue
+      options:
+        - Bug
+        - Epic
+        - Feature
+        - Task
+    validations:
+      required: true
+
   - type: textarea
     attributes:
       label: System Setup
