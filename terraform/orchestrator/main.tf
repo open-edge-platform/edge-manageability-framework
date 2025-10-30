@@ -277,24 +277,6 @@ resource "null_resource" "copy_files" {
     ]
     when = create
   }
-}
-
-resource "null_resource" "update_env_variables" {
-
-  count = var.use_local_build_artifact ? 1 : 0
-
-  depends_on = [
-    null_resource.copy_files,
-    null_resource.resize_and_restart_vm
-  ]
-
-  connection {
-    type     = "ssh"
-    host     = local.vmnet_ip0
-    port     = var.vm_ssh_port
-    user     = var.vm_ssh_user
-    password = var.vm_ssh_password
-  }
 
   provisioner "remote-exec" {
     inline = [
@@ -387,7 +369,7 @@ resource "null_resource" "exec_installer" {
   depends_on = [
     null_resource.copy_local_orch_installer,
     null_resource.wait_for_cloud_init,
-    null_resource.update_env_variables
+    null_resource.copy_files
   ]
 
   connection {
@@ -401,7 +383,7 @@ resource "null_resource" "exec_installer" {
   provisioner "remote-exec" {
     inline = [
       "set -o errexit",
-      "bash -c 'cd /home/ubuntu; source .env; env; ./onprem_installer.sh --trace --skip-download -- --yes --trace | tee ./install_output.log; exit $${PIPESTATUS[0]}'",
+      "bash -c 'cd /home/ubuntu; source .env; env; ./onprem_installer.sh --trace -- --yes --trace | tee ./install_output.log; exit $${PIPESTATUS[0]}'",
     ]
     when = create
   }
