@@ -10,6 +10,7 @@
 
 . ${HOME}/utils.sh
 
+load_provision_values
 load_provision_env
 load_cluster_state_env
 update_kube_config
