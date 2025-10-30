@@ -49,10 +49,10 @@ var argoNamespaces = []string{
 	"dev",
 	"argocd",
 	"gitea",
-	"orch-platform", // used when creating a secret for gitea
-	"orch-sre",      // used when creating a secret for kindAll
-	"orch-harbor",   // used when creating a secret for integration
-	"orch-infra",    // used when creating a secret for mailpit
+	"orch-platform",   // used when creating a secret for gitea
+	"orch-sre",        // used when creating a secret for kindAll
+	"orch-harbor",     // used when creating a secret for integration
+	"orch-infra",      // used when creating a secret for mailpit
 	"keycloak-system", // where Keycloak Operator and instances are deployed
 }
 
