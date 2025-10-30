@@ -145,15 +145,11 @@ else
     export AO_PROFILE="- orch-configs/profiles/enable-app-orch.yaml"
 fi
 
-<<<<<<< HEAD
 if [ "${SINGLE_TENANCY_PROFILE:-false}" = "true" ]; then
     export SINGLE_TENANCY_PROFILE="- orch-configs/profiles/enable-singleTenancy.yaml"
 else
     export SINGLE_TENANCY_PROFILE="#- orch-configs/profiles/enable-singleTenancy.yaml"
 fi
-=======
-
->>>>>>> 91c4a79b2963466e6cd675c385f4bc772e5ed9c9
 
 if [ "${DISABLE_CO_PROFILE:-false}" = "true" ]; then
     export CO_PROFILE="#- orch-configs/profiles/enable-cluster-orch.yaml"
