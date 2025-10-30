@@ -46,5 +46,6 @@ ports:
       - orch-gateway-tcp-rate-limit@kubernetescrd
     port: 4433
     exposedPort: 4433
-    expose: true
+    expose:
+      default: true
     protocol: TCP
