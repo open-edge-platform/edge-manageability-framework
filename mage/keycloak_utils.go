@@ -101,8 +101,7 @@ func clean_up_psql_pod() {
 }
 
 func set_keycloak_password(encoded_password string) {
-	// Update all three password fields for consistency: admin-password (legacy), password (new), and username
-	command := "kubectl -n " + keycloakNamespace + " get secret platform-keycloak -o yaml | yq e '.data.admin-password = \"" + encoded_password + "\" | .data.password = \"" + encoded_password + "\" | .data.username = \"YWRtaW4=\"' | kubectl apply --force -f -"
+	command := "kubectl -n " + keycloakNamespace + " get secret platform-keycloak -o yaml | yq e '.data.password = \"" + encoded_password + "\"' | kubectl apply --force -f -"
 	_, err := exec.Command("bash", "-c", command).CombinedOutput()
 	if err != nil {
 		fmt.Println("Error executing command:", err.Error())

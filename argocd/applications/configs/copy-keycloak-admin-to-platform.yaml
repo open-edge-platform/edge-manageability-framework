@@ -3,11 +3,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Sync the Keycloak bootstrap admin credentials from keycloak-system namespace to orch-platform
-# Source: platform-keycloak secret (created by Keycloak Operator with bootstrap admin password)
+# Source: platform-keycloak secret (created during bootstrap, in deploy.go)
 # Target: platform-keycloak secret (required by keycloak-tenant-controller init container)
 # Note: Maps 'password' key to 'admin-password' for keycloak-tenant-controller compatibility
 remoteNamespace: keycloak-system
-refreshInterval: "1h"
+refreshInterval: "0m"
 targetSecretName: platform-keycloak
 sourceSecretName: platform-keycloak
 keyName:
