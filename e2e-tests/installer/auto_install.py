@@ -567,11 +567,11 @@ class AutoInstall:
         # in provision config editor
 
         # Test adding smtp vars to the config file
-        self.installer_session.sendline('\x1bG$oTF_VAR_smtp_url="10.138.167.51"\x1b')
-        self.installer_session.sendline('\x1bG$oTF_VAR_smtp_port=587\x1b')
-        self.installer_session.sendline('\x1bG$oTF_VAR_smtp_from="Example User <mail@example.com>"\x1b')
-        self.installer_session.sendline('\x1bG$oTF_VAR_smtp_user="root"\x1b')
-        self.installer_session.sendline('\x1bG$oTF_VAR_smtp_pass="root123"\x1b')
+        self.installer_session.sendline('\x1bG$osmtp_url="10.138.167.51"\x1b')
+        self.installer_session.sendline('\x1bG$osmtp_port=587\x1b')
+        self.installer_session.sendline('\x1bG$osmtp_from="Example User <mail@example.com>"\x1b')
+        self.installer_session.sendline('\x1bG$osmtp_user="root"\x1b')
+        self.installer_session.sendline('\x1bG$osmtp_pass="root123"\x1b')
 
         self.installer_session.sendline(":wq")
 
