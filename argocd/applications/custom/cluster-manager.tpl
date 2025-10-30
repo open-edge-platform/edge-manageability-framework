@@ -5,6 +5,10 @@
 clusterManager:
   args:
     clusterdomain: {{ .Values.argo.clusterDomain }}
+    # JWT TTL configuration for kubeconfig
+    # If kubeconfig-ttl-hours=0 token expires at creation
+    # keycloak realm settings and upbounded by the SSO sessions max: 12h
+    kubeconfig-ttl-hours: 3
   image:
     repository: cluster/cluster-manager
     registry:
@@ -30,3 +34,38 @@ templateController:
   resources:
     {{- toYaml . | nindent 4 }}
   {{- end }}
+
+# co-manager M2M client configuration
+credentialsM2M:
+  enabled: true
+
+  job:
+    # job execution settings
+    terminationGracePeriodSeconds: 90
+    backoffLimit: 15
+    activeDeadlineSeconds: 1200  # timeout 20 minutes
+    ttlSecondsAfterFinished: 14400  # auto-deletion 4 hours
+    retryAttempts: 10
+    retryDelay: 30
+
+    resources:
+      limits:
+        cpu: "2"
+        memory: 2Gi
+      requests:
+        cpu: 10m
+        memory: 16Mi
+
+  vault:
+    service: "vault.orch-platform.svc.cluster.local" # internal k8s DNS always uses cluster.local
+    port: 8200
+    secretPath: "secret/data/co-manager-m2m-client-secret"
+    authPath: "auth/kubernetes"
+
+  keycloak:
+    service: "platform-keycloak.orch-platform.svc.cluster.local" # internal k8s DNS always uses cluster.local
+    port: 8080
+    realm: "master"
+    adminSecretName: "platform-keycloak"
+    adminSecretNamespace: "orch-platform"
+    clientId: "co-manager-m2m-client"

@@ -15,7 +15,7 @@ import (
 // getPassword retrieves the admin password for the local postgres database.
 func (Database) getPassword() (string, error) {
 	encPass, err := sh.Output("kubectl", "get", "secret", "--namespace", "orch-database",
-		"postgresql", "-o", "jsonpath={.data.postgres-password}")
+		"orch-database-postgresql", "-o", "jsonpath={.data.password}")
 	if err != nil {
 		return "", err
 	}
@@ -38,8 +38,8 @@ func (d Database) psql(commands ...string) error {
 	var args []string
 	args = append(args, "run", "postgresql-db-client", "--rm", "--tty", "-i",
 		"--restart=Never", "--namespace", "orch-database", "--image",
-		"docker.io/bitnami/postgresql:14.5.0-debian-11-r2", "--env=PGPASSWORD=$POSTGRES_PASSWORD",
-		"--command", "--", "psql", "--host", "postgresql", "-U", "postgres", "-d", "postgres", "-p", "5432")
+		"docker.io/library/postgres:14.19-alpine3.22", "--env=PGPASSWORD=$POSTGRES_PASSWORD",
+		"--command", "--", "psql", "--host", "postgresql-cluster-rw", "-U", "orch-database-postgresql_user", "-d", "postgres", "-p", "5432")
 
 	if len(commands) > 0 {
 		commandStr := strings.Join(commands, " ")
