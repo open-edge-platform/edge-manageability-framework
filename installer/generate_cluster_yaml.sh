@@ -23,14 +23,14 @@ echo "🚀 Starting Cluster Template Generation"
 if [ "$DEPLOY_TYPE" = "aws" ]; then
     source "$HOME/.env"
     TEMPLATE_FILE="./cluster_aws.tpl"
-    OUTPUT_FILE="cluster_aws_${CLUSTER_NAME}.yaml"
+    OUTPUT_FILE="${CLUSTER_NAME}.yaml"
 
 elif [ "$DEPLOY_TYPE" = "onprem" ]; then
     # shellcheck disable=SC1091
     source "$(dirname "$0")/${DEPLOY_TYPE}.env"
 
     # Validate ORCH_INSTALLER_PROFILE
-    if [[ "$ORCH_INSTALLER_PROFILE" =~ ^(onprem|onprem-1k|onprem-oxm|onprem-explicit-proxy)$ ]]; then
+    if [[ "$ORCH_INSTALLER_PROFILE" =~ ^(onprem|onprem-oxm)$ ]]; then
         TEMPLATE_FILE="./cluster_onprem.tpl"
         OUTPUT_FILE="${ORCH_INSTALLER_PROFILE}.yaml"
 
@@ -42,7 +42,7 @@ elif [ "$DEPLOY_TYPE" = "onprem" ]; then
         export CLUSTER_DOMAIN="${CLUSTER_DOMAIN:-cluster.onprem}"
     else
         echo "❌ Invalid ORCH_INSTALLER_PROFILE: ${ORCH_INSTALLER_PROFILE}"
-        echo "Valid options: onprem | onprem-1k | onprem-oxm | onprem-explicit-proxy"
+        echo "Valid options: onprem | onprem-oxm"
         exit 1
     fi
 
@@ -59,7 +59,6 @@ export PLATFORM_PROFILE='- orch-configs/profiles/enable-platform.yaml'
 export KYVERNO_PROFILE='- orch-configs/profiles/enable-kyverno.yaml'
 export EDGEINFRA_PROFILE='- orch-configs/profiles/enable-edgeinfra.yaml'
 export FULL_UI_PROFILE='- orch-configs/profiles/enable-full-ui.yaml'
-export ONPREM_PROFILE='- orch-configs/profiles/enable-onprem.yaml'
 export SRE_PROFILE='- orch-configs/profiles/enable-sre.yaml'
 export PROXY_NONE_PROFILE='- orch-configs/profiles/proxy-none.yaml'
 export PROFILE_FILE_NAME='- orch-configs/profiles/profile-onprem.yaml'
