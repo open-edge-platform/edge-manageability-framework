@@ -2,7 +2,7 @@ name: Feature Request
 description: File a feature request. 
 title: '[FEATURE]: <Software> - <Summary>'
 labels: ['FEATURE','TRIAGE']
-type: FEATURE
+type: feature
 body:
 
   - type: markdown
