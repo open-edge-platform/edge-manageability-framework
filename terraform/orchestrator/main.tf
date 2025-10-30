@@ -284,6 +284,7 @@ resource "null_resource" "update_env_variables" {
   count = var.use_local_build_artifact ? 1 : 0
 
   depends_on = [
+    null_resource.copy_files,
     null_resource.resize_and_restart_vm
   ]
 
@@ -384,9 +385,9 @@ resource "null_resource" "exec_installer" {
   count = var.enable_auto_install ? 1 : 0
 
   depends_on = [
-    null_resource.update_env_variables,
     null_resource.copy_local_orch_installer,
     null_resource.wait_for_cloud_init,
+    null_resource.update_env_variables
   ]
 
   connection {
