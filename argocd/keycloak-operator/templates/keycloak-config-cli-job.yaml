@@ -517,6 +517,13 @@ spec:
     spec:
       serviceAccountName: keycloak-config-cli
       restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+        fsGroup: 65534
       initContainers:
         # Wait for Keycloak to be ready
         - name: wait-for-keycloak
@@ -552,8 +559,8 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
             runAsNonRoot: true
-            runAsUser: 1001
-            runAsGroup: 1001
+            runAsUser: 65534
+            runAsGroup: 65534
             seccompProfile:
               type: RuntimeDefault
             capabilities:
@@ -639,8 +646,8 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
             runAsNonRoot: true
-            runAsUser: 1001
-            runAsGroup: 1001
+            runAsUser: 65534
+            runAsGroup: 65534
             seccompProfile:
               type: RuntimeDefault
             capabilities:
