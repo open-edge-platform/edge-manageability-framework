@@ -163,7 +163,6 @@ resource "null_resource" "wait_for_cloud_init" {
 
 resource "null_resource" "copy_files" {
   depends_on = [
-    local_file.env_data_file,
     null_resource.resize_and_restart_vm
   ]
 
@@ -285,7 +284,6 @@ resource "null_resource" "update_env_variables" {
   count = var.use_local_build_artifact ? 1 : 0
 
   depends_on = [
-    local_file.env_data_file,
     null_resource.resize_and_restart_vm
   ]
 
@@ -331,7 +329,6 @@ resource "null_resource" "copy_local_orch_installer" {
   count = var.use_local_build_artifact ? 1 : 0
 
   depends_on = [
-    local_file.env_data_file,
     null_resource.resize_and_restart_vm
   ]
 
