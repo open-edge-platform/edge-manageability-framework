@@ -1,5 +1,4 @@
 # SPDX-FileCopyrightText: 2025 Intel Corporation
-#
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: k8s.keycloak.org/v2alpha1
@@ -12,23 +11,15 @@ metadata:
     app.kubernetes.io/instance: platform-keycloak
     app.kubernetes.io/version: "26.4.2"
 spec:
-  # Image configuration - Using stable Keycloak v26.4.2
   image: quay.io/keycloak/keycloak:26.4.2
-
-  # Bootstrap admin credentials
-  # The secret must exist in the same namespace (keycloak-system)
-  # and have 'username' and 'password' keys
+  
+  # NOW TRUE - init container will build it
+  startOptimized: true
+  
   bootstrapAdmin:
     user:
       secret: platform-keycloak
-
-  # Database configuration
-  # Connects to external PostgreSQL deployed separately
-  # NOTE: v2alpha1 API does NOT support namespace field in secret references
-  #       Secrets must be in the same namespace as the Keycloak resource
-  # PostgreSQL service: postgresql-cluster-rw (read-write endpoint)
-  # Database name: keycloak-system-platform-keycloak (follows namespace-app pattern)
-  # Database credentials: keycloak-platform-db secret (synced from orch-database via copy-database-to-keycloak app)
+  
   db:
     vendor: postgres
     host: postgresql-cluster-rw.orch-database.svc.cluster.local
@@ -40,32 +31,22 @@ spec:
     passwordSecret:
       name: keycloak-platform-db
       key: password
-    # Connection pool settings for schema initialization
-    # High initial values to avoid pool exhaustion during startup
     poolInitialSize: 5
     poolMinSize: 5
     poolMaxSize: 50
-
-  # HTTP/HTTPS configuration
-  # NOTE: v2alpha1 uses httpEnabled (not 'enabled'), httpPort (not 'port')
+  
   http:
     httpEnabled: true
     httpPort: 8080
     annotations: {}
     labels: {}
-
-  # Ingress configuration
-  # Disabled as Keycloak is accessed via service alias in orch-platform namespace
-  # and through Istio VirtualService configured separately
+  
   ingress:
     enabled: false
-
-  # Proxy configuration for load balancers
-  # Important for integration with ingress controllers and reverse proxies
+  
   proxy:
     headers: xforwarded
-
-  # Resource requests and limits
+  
   resources:
     requests:
       cpu: 500m
@@ -73,24 +54,15 @@ spec:
     limits:
       cpu: 2000m
       memory: 2Gi
-
-  # Start Optimization
-  # Set to false for first-time startup to allow Keycloak to build
-  # Can be set to true after initial deployment for better performance
-  startOptimized: false
-
-  # Additional startup arguments
-  # NOTE: http-relative-path moved here since relativePath not supported in http spec
+  
+  # All your runtime options (these become environment variables)
   additionalOptions:
     - name: hostname
       value: "platform-keycloak.orch-platform.svc"
     - name: hostname-strict
       value: "true"
-    # Database URL properties for Keycloak v26.4.2
     - name: db-url-properties
       value: "?tcpKeepAlives=true&socketTimeout=120&connectTimeout=120"
-    - name: http-relative-path
-      value: "/"
     - name: http-management-port
       value: "9000"
     - name: spi-login-protocol-openid-connect-legacy-logout-redirect-uri
@@ -101,7 +73,103 @@ spec:
       value: "INFO"
     - name: log-console-output
       value: "json"
-
-  # Number of replicas for high availability
-  # Set to 1 for initial deployment, increase to 3+ for production HA
+  
   instances: 1
+  
+  # Init container + security hardening
+  unsupported:
+    podTemplate:
+      spec:
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1000
+          fsGroup: 1000
+          seccompProfile:
+            type: RuntimeDefault
+        
+        # Init container with ONLY valid build options
+        initContainers:
+          - name: keycloak-builder
+            image: quay.io/keycloak/keycloak:26.4.2
+            command: ["/bin/bash"]
+            args:
+              - -c
+              - |
+                set -e
+                echo "Starting Keycloak build process..."
+                
+                # Use ONLY valid build-time options
+                /opt/keycloak/bin/kc.sh build \
+                  --db=postgres \
+                  --health-enabled=true \
+                  --metrics-enabled=true \
+                  --http-relative-path=/
+                
+                echo "Build completed successfully!"
+                echo "Copying built artifacts to shared volume..."
+                
+                mkdir -p /shared/keycloak
+                cp -r /opt/keycloak/* /shared/keycloak/
+                
+                echo "✅ Keycloak build and copy completed successfully!"
+            
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: false
+              runAsNonRoot: true
+              runAsUser: 1000
+              runAsGroup: 1000
+              capabilities:
+                drop:
+                  - ALL
+              seccompProfile:
+                type: RuntimeDefault
+            
+            volumeMounts:
+              - name: shared-keycloak
+                mountPath: /shared/keycloak
+              - name: tmp
+                mountPath: /tmp
+            
+            resources:
+              requests:
+                cpu: 500m
+                memory: 512Mi
+              limits:
+                cpu: 1500m
+                memory: 1Gi
+        
+        # Main container with read-only filesystem
+        containers:
+          - name: keycloak
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true  # ✅ Security compliant!
+              runAsNonRoot: true
+              runAsUser: 1000
+              runAsGroup: 1000
+              capabilities:
+                drop:
+                  - ALL
+              seccompProfile:
+                type: RuntimeDefault
+            
+            volumeMounts:
+              - name: shared-keycloak
+                mountPath: /opt/keycloak
+                readOnly: true
+              - name: tmp
+                mountPath: /tmp
+              - name: keycloak-data
+                mountPath: /opt/keycloak/data
+        
+        volumes:
+          - name: shared-keycloak
+            emptyDir:
+              sizeLimit: 1Gi
+          - name: tmp
+            emptyDir:
+              sizeLimit: 100Mi
+          - name: keycloak-data
+            emptyDir:
+              sizeLimit: 500Mi
