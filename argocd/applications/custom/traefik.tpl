@@ -29,7 +29,8 @@ ports:
     protocol: TCP
 {{- end }}
   web:
-    expose: false
+    expose:
+      default: false
   websecure:
     nodePort: 30443
     # NOTE the middlewared name is <namespace>-<name>
