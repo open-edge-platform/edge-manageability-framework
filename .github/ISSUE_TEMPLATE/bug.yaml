@@ -2,7 +2,8 @@
 name: Bug report
 description: Create an issue to help us improve
 title: '[BUG] <Software> - <Summary>'
-labels: ['BUG','TRIAGE']
+labels: ["bug", "TRIAGE"]
+type: bug
 body:
   - type: markdown
     attributes:
@@ -33,3 +34,7 @@ body:
     attributes:
       label: Root Cause Analysis
       description: Provide any initial triage, if possible.
+
+
+
+
