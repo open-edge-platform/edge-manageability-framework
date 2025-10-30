@@ -22,10 +22,14 @@ body:
       label: Type
       description: Select the type of issue
       options:
-        - Bug
-        - Epic
-        - Feature
-        - Task
+        - label: Bug
+          description: A defect or error in the software
+        - label: Epic
+          description: A large body of work that can be broken down into smaller tasks
+        - label: Feature
+          description: A new capability or enhancement to the software
+        - label: Task
+          description: A standalone piece of work to be completed
     validations:
       required: true
 
