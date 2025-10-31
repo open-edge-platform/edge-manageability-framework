@@ -16,6 +16,7 @@
 #   Options:
 #     -h, --help         Show help message
 #     --skip-download    Skip downloading packages (use existing ones)
+#     -y, --yes          Assume 'yes' to all prompts and run non-interactively
 #     -t, --trace        Enable debug tracing
 #
 # Prerequisites: onprem.env file must exist with proper configuration
@@ -140,6 +141,7 @@ $(basename "$0") [OPTIONS]
 Examples:
 ./$(basename "$0")                    # Basic installation with onprem.env config
 ./$(basename "$0") --skip-download    # Skip package downloads (use existing packages)
+./$(basename "$0") -y                 # Run non-interactively, assume yes to all prompts
 ./$(basename "$0") -t                 # Enable debug tracing
 
 Options:
@@ -147,6 +149,9 @@ Options:
     
     --skip-download            Skip downloading installer packages from registry
                                Useful for development/testing when packages already exist
+    
+    -y, --yes                  Assume 'yes' to all prompts and run non-interactively
+                               Skips Docker credential prompt and configuration overwrite prompt
     
     -t, --trace                Enable bash debug tracing (set -x)
                                Shows detailed command execution for troubleshooting
