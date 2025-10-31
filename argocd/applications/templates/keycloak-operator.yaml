@@ -17,13 +17,10 @@ metadata:
   namespace: {{ required "A valid namespace entry required!" .Values.argo.namespace }}
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
-  sources:
-    - repoURL: "https://github.com/keycloak/keycloak-k8s-resources"
-      path: .
-      targetRevision: 26.4.2
-      directory:
-        recurse: true
-        include: "*.yml"
+  source:
+    repoURL: {{ required "A valid deployRepoURL entry required!" .Values.argo.deployRepoURL }}
+    path: argocd/keycloak-operator
+    targetRevision: {{ required "A valid deployRepoRevision entry required!" .Values.argo.deployRepoRevision }}
   destination:
     namespace: {{$namespace}}
     server: {{ required "A valid targetServer entry required!" .Values.argo.targetServer }}
@@ -41,4 +38,5 @@ spec:
     {{- end }}
     syncOptions:
       - CreateNamespace=true
+      - RespectIgnoreDifferences=true
 {{- end }}

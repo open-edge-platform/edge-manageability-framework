@@ -21,7 +21,7 @@ spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
     - repoURL: {{ required "A valid deployRepoURL entry required!" .Values.argo.deployRepoURL }}
-      path: argocd/keycloak-operator
+      path: argocd/keycloak-operator/keycloak-instance
       targetRevision: {{ required "A valid deployRepoRevision entry required!" .Values.argo.deployRepoRevision }}
       helm:
         valuesObject:
@@ -63,7 +63,7 @@ spec:
             proxy:
               headers: xforwarded
           # Database configuration is now directly managed via Keycloak CRD v2alpha1
-          # in argocd/keycloak-operator/templates/keycloak.yaml
+          # in argocd/keycloak-operator/keycloak-instance/templates/keycloak.yaml
           # These values are kept for reference but not used by the operator
           # database:
           #   vendor: postgres
