@@ -58,3 +58,6 @@ infra-config:
   config:
     enAgentManifestTag: "1.2.3"
     embImageUrl: files-edge-orch/repository/microvisor/uos/emb_uos_x86_64_20250717.tar.gz
+
+# https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
+traefikApiGroup: "traefik.io/v1alpha1"
