@@ -246,6 +246,12 @@ mimir-distributed:
   gateway:
     ingress:
       enabled: false
+    # Buffer settings to handle large headers/cookies
+    nginx:
+      config:
+        serverSnippet: |
+          client_header_buffer_size 64k;
+          large_client_header_buffers 64 128k;
     {{- if and .Values.argo.o11y .Values.argo.o11y.orchestrator .Values.argo.o11y.orchestrator.mimir }}
     {{- with .Values.argo.o11y.orchestrator.mimir }}
     {{- if .replicas }}
