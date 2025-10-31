@@ -2,4 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Intentionally left blank
+# Enable EnvoyFilter for Grafana header size limits
+enableGrafanaHeaderSizeLimits: true
+
+# Configure the header size limit (in KB)
+grafanaHeaderSizeLimits:
+  maxRequestHeadersKb: 128
