@@ -299,6 +299,7 @@ resource "null_resource" "copy_files" {
       "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env EN_FTP_PROXY ${var.ftp_proxy}'",
       "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env EN_SOCKS_PROXY ${var.socks_proxy}'",
       "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env EN_NO_PROXY ${var.no_proxy}'",
+      "cat /home/ubuntu/onprem.env"
       "echo 'onprem.env updated successfully'"
     ]
     when = create
