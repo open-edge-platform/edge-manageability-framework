@@ -59,6 +59,15 @@ rules:
       - list
       - patch
       - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    app.kubernetes.io/name: keycloak-operator
+    app.kubernetes.io/version: 26.4.2
+  name: keycloakrealmimportcontroller-role
+rules:
   - apiGroups:
       - ""
     resources:
@@ -95,18 +104,6 @@ rules:
       - create
       - delete
   - apiGroups:
-      - ""
-    resources:
-      - services
-    verbs:
-      - create
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
-  - apiGroups:
       - monitoring.coreos.com
     resources:
       - servicemonitors
@@ -119,9 +116,30 @@ rules:
       - update
       - watch
   - apiGroups:
-      - networking.k8s.io
+      - apps
     resources:
-      - networkpolicies
+      - statefulsets
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    app.kubernetes.io/name: keycloak-operator
+    app.kubernetes.io/version: 26.4.2
+  name: keycloakcontroller-role
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - services
     verbs:
       - create
       - delete
@@ -131,9 +149,9 @@ rules:
       - update
       - watch
   - apiGroups:
-      - apps
+      - networking.k8s.io
     resources:
-      - statefulsets
+      - networkpolicies
     verbs:
       - create
       - delete
@@ -216,10 +234,6 @@ rules:
       - get
       - list
       - watch
-      - create
-      - delete
-      - patch
-      - update
   - apiGroups:
       - ""
     resources:
@@ -252,10 +266,6 @@ rules:
       - get
       - list
       - watch
-      - create
-      - delete
-      - patch
-      - update
   - apiGroups:
       - monitoring.coreos.com
     resources:
@@ -303,11 +313,41 @@ metadata:
   labels:
     app.kubernetes.io/name: keycloak-operator
     app.kubernetes.io/version: 26.4.2
+  name: keycloakrealmimportcontroller-secrets-role-binding
+roleRef:
+  kind: Role
+  apiGroup: rbac.authorization.k8s.io
+  name: keycloakrealmimportcontroller-role
+subjects:
+  - kind: ServiceAccount
+    name: keycloak-operator
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/name: keycloak-operator
+    app.kubernetes.io/version: 26.4.2
   name: keycloakcontroller-role-binding
 roleRef:
   kind: ClusterRole
   apiGroup: rbac.authorization.k8s.io
   name: keycloakcontroller-cluster-role
+subjects:
+  - kind: ServiceAccount
+    name: keycloak-operator
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/name: keycloak-operator
+    app.kubernetes.io/version: 26.4.2
+  name: keycloakcontroller-secrets-role-binding
+roleRef:
+  kind: Role
+  apiGroup: rbac.authorization.k8s.io
+  name: keycloakcontroller-role
 subjects:
   - kind: ServiceAccount
     name: keycloak-operator
@@ -377,6 +417,10 @@ spec:
         app.kubernetes.io/version: 26.4.2
         app.kubernetes.io/name: keycloak-operator
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
       containers:
         - env:
             - name: KUBERNETES_NAMESPACE
@@ -387,6 +431,12 @@ spec:
               value: quay.io/keycloak/keycloak:26.4.2
           image: quay.io/keycloak/keycloak-operator:26.4.2
           imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
           livenessProbe:
             failureThreshold: 3
             httpGet:

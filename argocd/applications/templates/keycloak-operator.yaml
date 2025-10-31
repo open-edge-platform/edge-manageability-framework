@@ -20,7 +20,7 @@ spec:
   source:
     repoURL: {{ required "A valid deployRepoURL entry required!" .Values.argo.deployRepoURL }}
     path: argocd/keycloak-operator
-    targetRevision: {{ required "A valid deployRepoRevision entry required!" .Values.argo.deployRepoRevision }}
+    targetRevision: {{ required "A valid deployRepoRevision entry required!" .Values.argo.deployRepoRevision | quote }}
   destination:
     namespace: {{$namespace}}
     server: {{ required "A valid targetServer entry required!" .Values.argo.targetServer }}
