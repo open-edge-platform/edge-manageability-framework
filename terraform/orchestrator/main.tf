@@ -382,7 +382,7 @@ resource "null_resource" "exec_installer" {
   provisioner "remote-exec" {
     inline = [
       "set -o errexit",
-      "bash -c 'cd /home/ubuntu; source onprem.env; ./onprem_installer.sh --trace ${var.use_local_build_artifact ? "--skip-download" : ""} -- --yes --trace | tee ./install_output.log; exit $${PIPESTATUS[0]}'",
+      "bash -c 'cd /home/ubuntu; source onprem.env; ./onprem_installer.sh --yes --trace ${var.use_local_build_artifact ? "--skip-download" : ""} -- --yes --trace | tee ./install_output.log; exit $${PIPESTATUS[0]}'",
     ]
     when = create
   }
