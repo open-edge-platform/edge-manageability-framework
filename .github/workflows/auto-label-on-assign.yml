@@ -1,6 +1,7 @@
 name: Auto Label on Issue Assignment
 
 on:
+  workflow_dispatch:
   issues:
     types: [assigned]
 
