@@ -23,7 +23,6 @@ root:
     ${O11Y_PROFILE}
     ${SINGLE_TENANCY_PROFILE}
     ${EXPLICIT_PROXY_PROFILE}
-    - orch-configs/profiles/enable-osrm-manual-mode.yaml
     - orch-configs/profiles/resource-default.yaml
     - orch-configs/profiles/artifact-rs-production-noauth.yaml
     - orch-configs/clusters/${ORCH_INSTALLER_PROFILE}.yaml
