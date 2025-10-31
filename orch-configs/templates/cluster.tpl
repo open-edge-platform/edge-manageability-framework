@@ -51,9 +51,6 @@ root:
 {{- if .Values.enableSquid }}
     - orch-configs/profiles/enable-explicit-proxy.yaml
 {{- end }}
-{{- if .Values.enableOsrmManualMode }}
-    - orch-configs/profiles/enable-osrm-manual-mode.yaml
-{{- end }}
     - orch-configs/profiles/resource-default.yaml
     # # rate limit is applicable to each cluster.
     # # please see https://doc.traefik.io/traefik/middlewares/http/ratelimit/
