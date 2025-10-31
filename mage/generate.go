@@ -262,11 +262,9 @@ func getManifest() (*Manifest, error) {
 	manifest.Components = make(map[string]ComponentDetails)
 	manifest.Type = "argocd"
 
-	manifest.GitHash = getDeployRevision()
-	manifest.GitOrigin, err = getGitOriginPath(repoDir)
-	if err != nil {
-		return nil, fmt.Errorf("unable to get deploy repo origins: %w", err)
-	}
+	manifest.GitHash = "UNSUPPORTED"
+	manifest.GitOrigin = "UNSUPPORTED"
+	return nil, fmt.Errorf("unsupported") // XXX
 
 	commitDateTime, err := getGitCommitDate(repoDir, manifest.GitHash)
 	if err != nil {
@@ -759,10 +757,8 @@ func getImageManifest() ([]string, []string, error) {
 	tarballVariants := []string{"cloudFull", "onpremFull"}
 	installVariants := []string{"cloudFull"}
 
-	deployTag, err := getDeployTag()
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get tag for deployment artifacts: %w", err)
-	}
+	deployTag := "UNSUPPORTED"
+	return nil, nil, fmt.Errorf("usupported")
 
 	for _, variant := range tarballVariants {
 		for _, repo := range tarballRepos {
@@ -851,10 +847,8 @@ func getLocalImageManifest() ([]string, []string, error) {
 	tarballVariants := []string{"cloudFull", "onpremFull"}
 	installVariants := []string{"cloudFull"}
 
-	deployTag, err := getDeployTag()
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get tag for deployment artifacts: %w", err)
-	}
+	deployTag := "UNSUPPORTED"
+	return nil, nil, fmt.Errorf("unsupported")
 
 	for _, variant := range tarballVariants {
 		for _, repo := range tarballRepos {

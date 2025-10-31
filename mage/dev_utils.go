@@ -33,7 +33,9 @@ import (
 
 // Deploys the ENiC (indicates the number of instances, optionally set env variables: ORCH_FQDN, ORCH_IP, ORCH_USER, ORCH_PASS, ORCH_ORG, ORCH_PROJECT).
 func (DevUtils) DeployEnic(replicas int, targetEnv string) error {
-	deployRevision := giteaDeployRevisionParam()
+	deployRevision := "UNSUPPORTED"
+	return fmt.Errorf("unsupported")
+
 	namespace := "utils"
 	orchestratorIp, err := getPrimaryIP()
 	if err != nil {
@@ -92,7 +94,7 @@ func (DevUtils) DeployEnic(replicas int, targetEnv string) error {
 	if err != nil {
 		return fmt.Errorf("failed to get current working directory: %w", err)
 	}
-	deploymentDir := filepath.Join(deployGiteaRepoDir, deployRepoName)
+	deploymentDir := filepath.Join("UNSUPPORTED", "UNSUPPORTED") // XXX
 	if err := os.Chdir(deploymentDir); err != nil {
 		return fmt.Errorf("failed to change directory to %s: %w", deploymentDir, err)
 	}
