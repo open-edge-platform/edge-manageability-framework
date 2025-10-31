@@ -1,0 +1,19 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Reference the upstream keycloak-operator manifest and CRDs
+resources:
+  - base/keycloaks-crd.yml
+  - base/keycloakrealmimports-crd.yml
+  - base/kubernetes.yml
+
+# Apply strategic merge patches to add security contexts
+patchesStrategicMerge:
+  - patches/keycloak-operator-security-patch.yaml
+
+# Set namespace for all resources
+namespace: keycloak-system
