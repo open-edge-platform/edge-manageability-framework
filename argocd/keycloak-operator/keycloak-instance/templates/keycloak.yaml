@@ -91,6 +91,7 @@ spec:
         initContainers:
           - name: keycloak-builder
             image: quay.io/keycloak/keycloak:26.4.2
+            imagePullPolicy: IfNotPresent
             command: ["/bin/bash"]
             args:
               - -c
@@ -142,6 +143,7 @@ spec:
         # Main container with read-only filesystem
         containers:
           - name: keycloak
+            imagePullPolicy: IfNotPresent
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true  # ✅ Security compliant!

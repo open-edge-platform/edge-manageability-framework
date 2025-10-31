@@ -430,7 +430,7 @@ spec:
             - name: RELATED_IMAGE_KEYCLOAK
               value: quay.io/keycloak/keycloak:26.4.2
           image: quay.io/keycloak/keycloak-operator:26.4.2
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
