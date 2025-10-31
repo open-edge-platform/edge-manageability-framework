@@ -273,7 +273,7 @@ resource "null_resource" "copy_files" {
       "chmod +x /home/ubuntu/vault_unseal.sh",
       "chmod +x /home/ubuntu/after_upgrade_restart.sh",
       "chmod +x /home/ubuntu/storage_backup.sh",
-      "chmod +x /home/ubuntu/onprem_upgrade.sh",
+      "chmod +x /home/ubuntu/onprem_upgrade.sh"
     ]
     when = create
   }
@@ -281,27 +281,25 @@ resource "null_resource" "copy_files" {
   provisioner "remote-exec" {
     inline = [
       "set -o errexit",
-      "cd /home/ubuntu",
-      "source functions.sh",
-      "update_config_variable onprem.env RELEASE_SERVICE_URL '${var.rs_url}'",
-      "update_config_variable onprem.env DEPLOY_VERSION '${var.deploy_tag}'",
-      "update_config_variable onprem.env ORCH_INSTALLER_PROFILE '${var.orch_profile}'",
-      "update_config_variable onprem.env CLUSTER_DOMAIN '${var.cluster_domain}'",
-      "update_config_variable onprem.env DOCKER_USERNAME '${var.docker_username}'",
-      "update_config_variable onprem.env DOCKER_PASSWORD '${var.docker_password}'",
-      "update_config_variable onprem.env GITEA_IMAGE_REGISTRY '${var.gitea_image_registry}'",
-      "update_config_variable onprem.env ARGO_IP '${local.vmnet_ip1}'",
-      "update_config_variable onprem.env TRAEFIK_IP '${local.vmnet_ip2}'",
-      "update_config_variable onprem.env NGINX_IP '${local.vmnet_ip3}'",
-      "update_config_variable onprem.env ORCH_HTTP_PROXY '${var.http_proxy}'",
-      "update_config_variable onprem.env ORCH_HTTPS_PROXY '${var.https_proxy}'",
-      "update_config_variable onprem.env ORCH_NO_PROXY '${var.no_proxy}'",
-      "update_config_variable onprem.env EN_HTTP_PROXY '${var.en_http_proxy}'",
-      "update_config_variable onprem.env EN_HTTPS_PROXY '${var.en_https_proxy}'",
-      "update_config_variable onprem.env EN_FTP_PROXY '${var.ftp_proxy}'",
-      "update_config_variable onprem.env EN_SOCKS_PROXY '${var.socks_proxy}'",
-      "update_config_variable onprem.env EN_NO_PROXY '${var.no_proxy}'",
-      "echo 'onprem.env updated successfully'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env RELEASE_SERVICE_URL ${var.rs_url}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env DEPLOY_VERSION ${var.deploy_tag}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env ORCH_INSTALLER_PROFILE ${var.orch_profile}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env CLUSTER_DOMAIN ${var.cluster_domain}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env DOCKER_USERNAME ${var.docker_username}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env DOCKER_PASSWORD ${var.docker_password}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env GITEA_IMAGE_REGISTRY ${var.gitea_image_registry}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env ARGO_IP ${local.vmnet_ip1}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env TRAEFIK_IP ${local.vmnet_ip2}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env NGINX_IP ${local.vmnet_ip3}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env ORCH_HTTP_PROXY ${var.http_proxy}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env ORCH_HTTPS_PROXY ${var.https_proxy}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env ORCH_NO_PROXY ${var.no_proxy}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env EN_HTTP_PROXY ${var.en_http_proxy}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env EN_HTTPS_PROXY ${var.en_https_proxy}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env EN_FTP_PROXY ${var.ftp_proxy}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env EN_SOCKS_PROXY ${var.socks_proxy}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env EN_NO_PROXY ${var.no_proxy}'",
+      "echo 'onprem.env updated successfully'"
     ]
     when = create
   }
@@ -383,7 +381,7 @@ resource "null_resource" "exec_installer" {
   provisioner "remote-exec" {
     inline = [
       "set -o errexit",
-      "bash -c 'cd /home/ubuntu; source .env; env; ./onprem_installer.sh --trace -- --yes --trace | tee ./install_output.log; exit $${PIPESTATUS[0]}'",
+      "bash -c 'cd /home/ubuntu; source onprem.env; ./onprem_installer.sh --trace ${var.use_local_build_artifact ? "--skip-download" : ""} -- --yes --trace | tee ./install_output.log; exit $${PIPESTATUS[0]}'",
     ]
     when = create
   }
