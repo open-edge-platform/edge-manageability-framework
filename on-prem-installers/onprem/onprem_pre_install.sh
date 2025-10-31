@@ -79,6 +79,22 @@ allow_config_in_runtime() {
   mkdir -p "$tmp_dir"
   tar -xf "$cwd/$git_arch_name/$repo_file" -C "$tmp_dir"
 
+  if [ -d "$tmp_dir/$si_config_repo" ]; then
+    echo "Configuration already exists at $tmp_dir/$si_config_repo."
+    if [ "$ASSUME_YES" = true ]; then
+      echo "Assuming yes to use existing configuration."
+      return
+    fi
+    while true; do
+      read -rp "Do you want to overwrite the existing configuration? (yes/no): " yn
+      case $yn in
+        [Yy]* ) rm -rf "${tmp_dir:?}/${si_config_repo:?}"; break;;
+        [Nn]* ) echo "Using existing configuration."; return;;
+        * ) echo "Please answer yes or no.";;
+      esac
+    done
+  fi
+
   # Prompt for Docker.io credentials
   ## Docker Hub usage and limits: https://docs.docker.com/docker-hub/usage/
   while true; do
@@ -173,6 +189,7 @@ write_shared_variables() {
 
 SKIP_DOWNLOAD=false
 ENABLE_TRACE=false
+ASSUME_YES=false
 
 if [ -n "${1-}" ]; then
   while :; do
@@ -187,6 +204,9 @@ if [ -n "${1-}" ]; then
       -t|--trace)
         set -x
         ENABLE_TRACE=true
+      ;;
+      -y|--yes)
+        ASSUME_YES=true
       ;;
       -?*)
         echo "Unknown argument $1"
