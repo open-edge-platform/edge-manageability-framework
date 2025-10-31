@@ -21,6 +21,8 @@ host-manager:
   multiTenancy:
     enforceMultiTenancy: "true"
   resources: null
+  # https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
+  traefikApiGroup: "traefik.io/v1alpha1"
 
 maintenance-manager:
   inventory:
@@ -42,6 +44,8 @@ maintenance-manager:
   resources: null
   mimaintmgr:
     traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
+  # https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
+  traefikApiGroup: "traefik.io/v1alpha1"
 
 networking-manager:
   image:
@@ -66,6 +70,8 @@ telemetry-manager:
   multiTenancy:
     enforceMultiTenancy: "true"
   resources: null
+  # https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
+  traefikApiGroup: "traefik.io/v1alpha1"
 
 os-resource-manager:
   managerArgs:
@@ -102,6 +108,5 @@ attestationstatus-manager:
   multiTenancy:
     enforceMultiTenancy: "true"
   resources: null
-
-# https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
-traefikApiGroup: "traefik.io/v1alpha1"
+  # https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
+  traefikApiGroup: "traefik.io/v1alpha1"
