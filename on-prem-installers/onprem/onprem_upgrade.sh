@@ -727,6 +727,19 @@ patch_secret() {
   }
 }
 EOF
+
+    # New secrets needed for postgresql chart migration to cloudnative-pg
+    if kubectl get secret orch-app-app-orch-catalog -n orch-app >/dev/null 2>&1; then
+      kubectl patch secret -n orch-app orch-app-app-orch-catalog-local-postgresql -p "{\"data\": {\"password\": \"$CATALOG_SERVICE\"}}" --type=merge
+      kubectl patch secret -n orch-iam orch-iam-iam-tenancy -p "{\"data\": {\"password\": \"$IAM_TENANCY\"}}" --type=merge
+      kubectl patch secret -n orch-infra orch-infra-alerting -p "{\"data\": {\"password\": \"$ALERTING\"}}" --type=merge
+      kubectl patch secret -n orch-infra orch-infra-inventory -p "{\"data\": {\"password\": \"$INVENTORY\"}}" --type=merge
+      kubectl patch secret -n orch-platform orch-platform-platform-keycloak -p "{\"data\": {\"password\": \"$PLATFORM_KEYCLOAK\"}}" --type=merge
+      kubectl patch secret -n orch-platform orch-platform-vault -p "{\"data\": {\"password\": \"$VAULT\"}}" --type=merge
+      kubectl patch secret -n orch-infra orch-infra-mps -p "{\"data\": {\"password\": \"$MPS\"}}" --type=merge
+      kubectl patch secret -n orch-infra orch-infra-rps -p "{\"data\": {\"password\": \"$RPS\"}}" --type=merge
+    fi
+
     kubectl patch secret -n orch-database passwords --type=merge --patch-file "$patch_file"
     rm -f "$patch_file"
 
