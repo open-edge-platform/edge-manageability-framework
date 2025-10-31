@@ -474,12 +474,9 @@ func (d Deploy) KindMinimal() error {
 
 // Deploy kind cluster, Argo CD, and Orchestrator services with customized settings.
 func (d Deploy) KindCustom() error {
-	targetEnv, err := Config{}.createCluster()
-	if err != nil {
-		return fmt.Errorf("failed to create cluster: %w", err)
-	}
-
-	return d.all(targetEnv)
+	fmt.Println("Interactive cluster configuration is not currently supported.")
+	fmt.Println("Use config:usePreset with a manually generated preset file until this functionality is supported.")
+	return fmt.Errorf("unsupported")
 }
 
 // Deploy kind cluster, Argo CD, and Orchestrator services with preset settings.
@@ -1025,7 +1022,7 @@ STANDALONE=0
 		ProjectApiPassword: password,
 		RamSize:            "8192",
 		NoOfCpus:           "4",
-		SdaDiskSize:        "110G",
+		SdaDiskSize:        "110",
 		LibvirtDriver:      "kvm",
 		UsernameLinux:      "user",
 		PasswordLinux:      "user",
@@ -1171,6 +1168,7 @@ STANDALONE=0
 		fmt.Sprintf("-var=tinkerbell_nginx_domain=%s", fmt.Sprintf("tinkerbell-nginx.%s", serviceDomain)),
 		fmt.Sprintf("-var=smbios_serial=%s", serialNumber),
 		fmt.Sprintf("-var=smbios_uuid=%s", ""),
+		fmt.Sprintf("-var=disk_size=%s", data.SdaDiskSize),
 		fmt.Sprintf("-var=libvirt_network_name=%s", data.BridgeName),
 		fmt.Sprintf("-var=libvirt_pool_name=%s", data.PoolName),
 		fmt.Sprintf("-var=vm_console=%s", "file"),
@@ -1203,6 +1201,7 @@ func (d Deploy) OrchLocal(targetEnv string) error {
 	return d.orchLocal(targetEnv)
 }
 
+// OrchCA Saves Orchestrators's CA certificate to `orch-ca.crt` so it can be imported to trust store for web access.
 func (d Deploy) OrchCA() error {
 	return d.orchCA()
 }
@@ -1833,14 +1832,6 @@ func (g Gen) FirewallDoc() error {
 }
 
 type Config mg.Namespace
-
-func (c Config) CreateCluster() error {
-	_, err := c.createCluster()
-	if err != nil {
-		return fmt.Errorf("failed to create cluster: %w", err)
-	}
-	return nil
-}
 
 // Create a cluster deployment configuration from a cluster values file.
 func (c Config) UsePreset(clusterPresetFile string) error {
