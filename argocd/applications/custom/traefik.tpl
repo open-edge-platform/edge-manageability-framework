@@ -25,7 +25,7 @@ ports:
     dashboard: false
 {{- if index .Values.argo.enabled "squid-proxy" }}
   squidproxy:
-    port: 8080
+    port: 9000
     exposedPort: 8080
     expose:
       default: true
@@ -52,7 +52,3 @@ ports:
     expose:
       default: true
     protocol: TCP
-  traefik:
-    # Default is 8080
-    # Changed to avoid conflict with the squid-proxy port
-    port: 9000
