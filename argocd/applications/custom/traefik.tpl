@@ -21,8 +21,6 @@ service:
   type: NodePort
   {{- end}}
 ports:
-  api:
-    dashboard: false
 {{- if index .Values.argo.enabled "squid-proxy" }}
   squidproxy:
     port: 9000
