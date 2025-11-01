@@ -22,9 +22,7 @@ providers:
 ingressRoute:
   dashboard:
     enabled: false
-experimental:
-  plugins:
-    enabled: true
+
 logs:
   general:
     format: json
