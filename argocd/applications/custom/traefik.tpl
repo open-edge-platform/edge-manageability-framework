@@ -50,3 +50,5 @@ ports:
     expose:
       default: true
     protocol: TCP
+  traefik:
+    port: 9000
