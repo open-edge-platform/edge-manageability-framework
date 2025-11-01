@@ -25,7 +25,7 @@ ports:
     dashboard: false
 {{- if index .Values.argo.enabled "squid-proxy" }}
   squidproxy:
-    port: 8081
+    port: 8080
     exposedPort: 8080
     expose:
       default: true
