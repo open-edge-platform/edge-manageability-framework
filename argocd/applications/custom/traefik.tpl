@@ -25,7 +25,8 @@ ports:
   squidproxy:
     port: 8080
     exposedPort: 8080
-    expose: true
+    expose:
+      default: true
     protocol: TCP
 {{- end }}
   web:
