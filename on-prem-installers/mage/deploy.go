@@ -37,11 +37,6 @@ func (Deploy) rke2Cluster() error { //nolint: cyclop
 		return fmt.Errorf("error testing deployments and pods: %w", err)
 	}
 
-	// deploy openebs operator
-	if err := sh.RunV("kubectl", "apply", "-f", openEbsOperatorK8sTemplate); err != nil {
-		return fmt.Errorf("error applying openEbsOperatorK8sTemplate: %w", err)
-	}
-
 	// deploy openebs-path operator
 	if err := sh.RunV("kubectl", "apply", "-f",
 		filepath.Join("rke2", openEbsOperatorK8sTemplateFile)); err != nil {
