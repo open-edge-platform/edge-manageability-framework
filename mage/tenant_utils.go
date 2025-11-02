@@ -31,7 +31,7 @@ const (
 	KeycloakRealm             = "master"
 	defaultOrg                = "sample-org"
 	defaultProject            = "sample-project"
-	keycloakInternalServiceURL = "http://platform-keycloak.orch-platform.svc:8080"
+	keycloakInternalServiceURL = "http://platform-keycloak.orch-platform.svc"
 )
 
 // CreateDefaultMtSetup creates one Org, one Project, one Project admin, CO and Edge Infrastructure Manager users in the Project.
