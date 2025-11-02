@@ -37,10 +37,28 @@ func (Deploy) rke2Cluster() error { //nolint: cyclop
 		return fmt.Errorf("error testing deployments and pods: %w", err)
 	}
 
-	// deploy openebs-path operator
-	if err := sh.RunV("kubectl", "apply", "-f",
-		filepath.Join("rke2", openEbsOperatorK8sTemplateFile)); err != nil {
-		return fmt.Errorf("error applying openEbsOperatorK8sTemplateFile: %w", err)
+	// deploy openebs with hostpath only using helm with pinned version
+	if err := sh.RunV("helm", "repo", "add", "openebs", "https://openebs.github.io/charts"); err != nil {
+		return fmt.Errorf("error adding openebs helm repo: %w", err)
+	}
+
+	if err := sh.RunV("helm", "repo", "update"); err != nil {
+		return fmt.Errorf("error updating helm repos: %w", err)
+	}
+
+	if err := sh.RunV("helm", "install", "openebs", "openebs/openebs",
+		"--version", "4.3.3", // Pin to specific chart version
+		"--namespace", "openebs-system",
+		"--create-namespace",
+		"--set", "engines.local.lvm.enabled=false",
+		"--set", "engines.local.zfs.enabled=false",
+		"--set", "engines.replicated.mayastor.enabled=false",
+		"--set", "engines.replicated.jiva.enabled=false",
+		"--set", "engines.replicated.cstor.enabled=false",
+		"--set", "localpv-provisioner.enabled=true",
+		"--set", "localpv-provisioner.hostpathClass.enabled=true",
+		"--set", "localpv-provisioner.deviceClass.enabled=false"); err != nil {
+		return fmt.Errorf("error installing openebs with helm: %w", err)
 	}
 
 	// create etcd-cert secret
