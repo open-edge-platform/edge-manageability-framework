@@ -17,7 +17,7 @@ host-manager:
     secretName: "tls-orch"
     tlsOption: "gateway-tls"
   oidc:
-    oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
+    oidc_server_url: http://platform-keycloak.orch-platform.svc:8080/realms/master
   multiTenancy:
     enforceMultiTenancy: "true"
   resources: null
@@ -34,7 +34,7 @@ maintenance-manager:
     secretName: "tls-orch"
     tlsOption: "gateway-tls"
   oidc:
-    oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
+    oidc_server_url: "http://platform-keycloak.orch-platform.svc:8080/realms/master"
   telemetryMgrArgs:
     enableVal: false  # disable telemetry profile validation
   multiTenancy:
@@ -62,7 +62,7 @@ telemetry-manager:
     secretName: "tls-orch"
     tlsOption: "gateway-tls"
   oidc:
-    oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
+    oidc_server_url: "http://platform-keycloak.orch-platform.svc:8080/realms/master"
   multiTenancy:
     enforceMultiTenancy: "true"
   resources: null
@@ -98,7 +98,7 @@ attestationstatus-manager:
     secretName: "tls-orch"
     tlsOption: "gateway-tls"
   oidc:
-    oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
+    oidc_server_url: "http://platform-keycloak.orch-platform.svc:8080/realms/master"
   multiTenancy:
     enforceMultiTenancy: "true"
   resources: null

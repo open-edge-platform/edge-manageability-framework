@@ -28,9 +28,10 @@ import (
 )
 
 const (
-	KeycloakRealm  = "master"
-	defaultOrg     = "sample-org"
-	defaultProject = "sample-project"
+	KeycloakRealm             = "master"
+	defaultOrg                = "sample-org"
+	defaultProject            = "sample-project"
+	keycloakInternalServiceURL = "http://platform-keycloak.orch-platform.svc:8080"
 )
 
 // CreateDefaultMtSetup creates one Org, one Project, one Project admin, CO and Edge Infrastructure Manager users in the Project.
@@ -478,7 +479,9 @@ func GetKeycloakSecret() (string, error) {
 }
 
 func KeycloakLogin(ctx context.Context) (*gocloak.GoCloak, *gocloak.JWT, error) {
-	keycloakURL := "https://keycloak." + serviceDomainWithPort
+	// Use internal cluster service URL for in-cluster communication
+	// External URL (https://keycloak.<serviceDomain>) is for browser/external access
+	keycloakURL := keycloakInternalServiceURL
 
 	// retrieve admin user and password from keycloak secret
 	adminPass, err := GetKeycloakSecret()

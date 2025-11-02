@@ -58,9 +58,9 @@ spec:
   # All your runtime options (these become environment variables)
   additionalOptions:
     - name: hostname
-      value: "platform-keycloak.orch-platform.svc"
+      value: {{ .Values.keycloak.hostname | default "platform-keycloak.orch-platform.svc" | quote }}
     - name: hostname-strict
-      value: "true"
+      value: "false"
     - name: db-url-properties
       value: "?tcpKeepAlives=true&socketTimeout=120&connectTimeout=120"
     - name: http-management-port

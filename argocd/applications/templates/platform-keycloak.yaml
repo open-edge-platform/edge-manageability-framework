@@ -22,7 +22,7 @@ spec:
   sources:
     - repoURL: {{ required "A valid deployRepoURL entry required!" .Values.argo.deployRepoURL }}
       path: argocd/keycloak-operator/keycloak-instance
-      targetRevision: {{ required "A valid deployRepoRevision entry required!" .Values.argo.deployRepoRevision }}
+      targetRevision: {{ required "A valid deployRepoRevision entry required!" .Values.argo.deployRepoRevision | quote }}
       helm:
         valuesObject:
           # Cluster-specific values for Keycloak Operator realm configuration
