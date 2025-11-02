@@ -17,7 +17,7 @@ host-manager:
     secretName: "tls-orch"
     tlsOption: "gateway-tls"
   oidc:
-    oidc_server_url: http://platform-keycloak.orch-platform.svc/realms/master
+    oidc_server_url: http://platform-keycloak.orch-platform.svc.cluster.local/realms/master
   multiTenancy:
     enforceMultiTenancy: "true"
   resources: null
