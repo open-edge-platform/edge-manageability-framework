@@ -54,7 +54,7 @@ func (Deploy) rke2Cluster() error { //nolint: cyclop
 		"--create-namespace",
 		"--set", "hostpathClass.enabled=true",
 		"--set", "hostpathClass.name=openebs-hostpath",
-		"--set", "hostpathClass.isDefaultClass=false",
+		"--set", "hostpathClass.isDefaultClass=true",
 		"--set", "deviceClass.enabled=false"); err != nil {
 		return fmt.Errorf("error installing openebs-localpv with helm: %w", err)
 	}
