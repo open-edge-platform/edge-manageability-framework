@@ -88,6 +88,7 @@ runs:
         mage logutils:collectArgoDiags > "$ORCH_PROFILE-diagnostics/argo-diag.txt"
         kubectl get applications -o yaml -A > "$ORCH_PROFILE-diagnostics/argocd-applications.yaml"
         kubectl get events -o yaml -A > "$ORCH_PROFILE-diagnostics/events.yaml"
+        ./ci/collect_pod_logs.sh
 
     - name: Upload diagnostic information to CI artifact store
       if: always() && steps.get-diagnostic-info.conclusion == 'success'
@@ -100,3 +101,4 @@ runs:
           ${{ inputs.orch_profile }}-diagnostics/argo-diag.txt
           ${{ inputs.orch_profile }}-diagnostics/argocd-applications.yaml
           ${{ inputs.orch_profile }}-diagnostics/events.yaml
+          ${{ inputs.orch_profile }}-pod_logs/*
