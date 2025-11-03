@@ -822,6 +822,7 @@ jobs:
           TF_VAR_oxm_pxe_server_int: "orchnet"
           TF_VAR_oxm_pxe_server_ip: "192.168.99.20"
           TF_VAR_oxm_pxe_server_subnet: "192.168.99.0"
+          TF_VAR_enable_explicit_proxy: "true"
         with:
           orch_version: ${{ github.event.pull_request.head.sha }}
           orch_profile: onprem-oxm
