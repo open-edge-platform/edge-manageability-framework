@@ -494,7 +494,7 @@ func getKeycloakBaseURL() string {
 	// Compute serviceDomainWithPort dynamically to use the latest serviceDomain value
 	// (avoids module-level initialization timing issues in CI)
 	serviceDomainWithPort := fmt.Sprintf("%s:%d", serviceDomain, defaultServicePort)
-	
+
 	// Only try external domain if not using the default Kind cluster domain
 	// (Kind cluster doesn't have cloud deployment, so external URL would be meaningless)
 	isKindCluster := serviceDomain == "kind.internal"
@@ -561,7 +561,7 @@ func setupKeycloakPortForward() error {
 	// Start port-forward in background
 	fmt.Printf("[Keycloak] Starting kubectl port-forward to Keycloak service...\n")
 	pfCmd := exec.Command("kubectl", "port-forward", "-n", "keycloak-system", "svc/platform-keycloak", "8080:8080")
-	
+
 	// Run in background without blocking
 	if err := pfCmd.Start(); err != nil {
 		return fmt.Errorf("failed to start port-forward: %w", err)
