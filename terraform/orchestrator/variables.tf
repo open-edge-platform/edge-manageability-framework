@@ -295,3 +295,21 @@ variable "vmnet_ips" {
   description = "List of IP addresses with CIDR."
   default     = ["192.168.99.10/24", "192.168.99.20/24", "192.168.99.30/24", "192.168.99.40/24"]
 }
+
+variable "oxm_pxe_server_int" {
+  type        = string
+  description = "The interface to be used for OXM traffic."
+  default     = ""
+}
+
+variable "oxm_pxe_server_ip" {
+  type        = string
+  description = "The boot server IP address for OXM."
+  default     = ""
+}
+
+variable "oxm_pxe_server_subnet" {
+  type        = string
+  description = "The subnet address for OXM."
+  default     = ""
+}
