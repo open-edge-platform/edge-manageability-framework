@@ -64,7 +64,7 @@ func (Upgrade) rke2Cluster() error {
 	   TODO: Add logic to determine version hops dynamically instead of hardcoding them.
 	   NOTE: EMF v3.0.0 uses "v1.30.10+rke2r1"
 	*/
-	for i, rke2UpgradeVersion := range []string{"v1.30.10+rke2r1", "v1.30.14+rke2r4"} {
+	for i, rke2UpgradeVersion := range []string{"v1.30.10+rke2r1", "v1.30.14+rke2r2"} {
 		// Set version in upgrade Plan and render template.
 		tmpl, err := template.ParseFiles(filepath.Join("rke2", "upgrade-plan.tmpl"))
 		if err != nil {
