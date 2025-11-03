@@ -160,10 +160,10 @@ fi
 # -----------------------------------------------------------------------------
 # Explicit proxy configuration
 # -----------------------------------------------------------------------------
-if [ "${EXPLICIT_PROXY:-false}" = "true" ]; then
+if [ "${ENABLE_EXPLICIT_PROXY:-false}" = "true" ]; then
     export EXPLICIT_PROXY_PROFILE="- orch-configs/profiles/enable-explicit-proxy.yaml"
 else
-    export EXPLICIT_PROXY_PROFILE="#- orch-configs/profiles/enable-explicit-proxy.yaml"
+    export ENABLE_EXPLICIT_PROXY="#- orch-configs/profiles/enable-explicit-proxy.yaml"
 fi
 
 # -----------------------------------------------------------------------------
