@@ -11,11 +11,11 @@ traefikReverseProxy:
   # -- secretName is name of k8s secret containing TLS server cert.
   secretName: "tls-orch"
   # -- matchRoute defines routing rules (e.g. Host(`http.sample.com`))
-  matchRoute:
+  matchRoute: ""
 oidc:
   name: "keycloak-api"
   oidc_env_name: "OIDC_SERVER_URL"
   # TODO: Use `platform-keycloak.orch-platform.svc.cluster.local` to avoid possible DNS search domain problems.
-    oidc_server_url: http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master
+  oidc_server_url: http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master
   oidc_tls_insecure_skip_verify_env_name: "OIDC_TLS_INSECURE_SKIP_VERIFY"
   oidc_tls_insecure_skip_verify_value: "true"
