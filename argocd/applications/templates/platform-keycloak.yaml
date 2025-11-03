@@ -25,6 +25,8 @@ spec:
       targetRevision: {{ required "A valid deployRepoRevision entry required!" .Values.argo.deployRepoRevision | quote }}
       helm:
         valuesObject:
+          argo:
+            clusterDomain: {{ .Values.argo.clusterDomain | quote }}
           # Cluster-specific values for Keycloak Operator realm configuration
           clusterSpecific:
             webuiClientRootUrl: "https://web-ui.{{ .Values.argo.clusterDomain }}"
