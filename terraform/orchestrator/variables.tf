@@ -313,3 +313,9 @@ variable "oxm_pxe_server_subnet" {
   description = "The subnet address for OXM."
   default     = ""
 }
+
+variable "enable_explicit_proxy" {
+  type        = bool
+  description = "Whether to enable explicit proxy settings for the VM."
+  default     = false
+}

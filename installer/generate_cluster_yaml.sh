@@ -144,12 +144,6 @@ else
     export AO_PROFILE="- orch-configs/profiles/enable-app-orch.yaml"
 fi
 
-if [ "${SINGLE_TENANCY_PROFILE:-false}" = "true" ]; then
-    export SINGLE_TENANCY_PROFILE="- orch-configs/profiles/enable-singleTenancy.yaml"
-else
-    export SINGLE_TENANCY_PROFILE="#- orch-configs/profiles/enable-singleTenancy.yaml"
-fi
-
 if [ "${DISABLE_CO_PROFILE:-false}" = "true" ]; then
     export CO_PROFILE="#- orch-configs/profiles/enable-cluster-orch.yaml"
     export AO_PROFILE="#- orch-configs/profiles/enable-app-orch.yaml"
@@ -166,7 +160,7 @@ fi
 # -----------------------------------------------------------------------------
 # Explicit proxy configuration
 # -----------------------------------------------------------------------------
-if [ "${EXPLICIT_PROXY:-false}" = "true" ]; then
+if [ "${ENABLE_EXPLICIT_PROXY:-false}" = "true" ]; then
     export EXPLICIT_PROXY_PROFILE="- orch-configs/profiles/enable-explicit-proxy.yaml"
 else
     export EXPLICIT_PROXY_PROFILE="#- orch-configs/profiles/enable-explicit-proxy.yaml"
@@ -303,9 +297,11 @@ yq -i ".argo.o11y.sre.tls.caSecretEnabled |= ${CA_SECRET_ENABLED}" "$OUTPUT_FILE
 yq -i ".argo.o11y.alertingMonitor.smtp.insecureSkipVerify |= ${SMTP_SKIP_VERIFY}" "$OUTPUT_FILE"
 
 if [ "$ORCH_INSTALLER_PROFILE" = "onprem-oxm" ]; then
-  yq -i ".argo.infra-onboarding.pxe-server.interface |= \"${OXM_PXE_SERVER_INT}\"" "$OUTPUT_FILE"
-  yq -i ".argo.infra-onboarding.pxe-server.bootServerIP |= \"${OXM_PXE_SERVER_IP}\"" "$OUTPUT_FILE"
-  yq -i ".argo.infra-onboarding.pxe-server.subnetAddress |= \"${OXM_PXE_SERVER_SUBNET}\"" "$OUTPUT_FILE"
+  yq -i "
+  .argo.infra-onboarding.pxe-server.interface = \"${OXM_PXE_SERVER_INT}\" |
+  .argo.infra-onboarding.pxe-server.bootServerIP = \"${OXM_PXE_SERVER_IP}\" |
+  .argo.infra-onboarding.pxe-server.subnetAddress = \"${OXM_PXE_SERVER_SUBNET}\"
+  " "$OUTPUT_FILE"
 fi
 
 # -----------------------------------------------------------------------------
