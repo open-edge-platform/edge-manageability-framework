@@ -481,10 +481,8 @@ const (
 	defaultServicePort = 443
 )
 
-var serviceDomainWithPort = fmt.Sprintf("%s:%d", serviceDomain, defaultServicePort)
-
 // getKeycloakBaseURL returns the Keycloak base URL with smart detection
-// Priority 1: KEYCLOAK_URL env var | 2: External domain (Traefik/ingress)
+// Priority 1: KEYCLOAK_URL env var | 2: External domain (only if not using default Kind domain)
 // 3: Internal cluster DNS (CI/CD pods) | 4: localhost:8080 (port-forward)
 func getKeycloakBaseURL() string {
 	if url := os.Getenv("KEYCLOAK_URL"); url != "" {
@@ -493,10 +491,19 @@ func getKeycloakBaseURL() string {
 	}
 
 	fmt.Printf("[Keycloak] Attempting to detect Keycloak URL...\n")
-	externalURL := "https://keycloak." + serviceDomainWithPort
-	if canReachKeycloak(externalURL) {
-		fmt.Printf("[Keycloak] Successfully using external domain: %s\n", externalURL)
-		return externalURL
+	// Compute serviceDomainWithPort dynamically to use the latest serviceDomain value
+	// (avoids module-level initialization timing issues in CI)
+	serviceDomainWithPort := fmt.Sprintf("%s:%d", serviceDomain, defaultServicePort)
+	
+	// Only try external domain if not using the default Kind cluster domain
+	// (Kind cluster doesn't have cloud deployment, so external URL would be meaningless)
+	isKindCluster := serviceDomain == "kind.internal"
+	if !isKindCluster {
+		externalURL := "https://keycloak." + serviceDomainWithPort
+		if canReachKeycloak(externalURL) {
+			fmt.Printf("[Keycloak] Successfully using external domain: %s\n", externalURL)
+			return externalURL
+		}
 	}
 
 	internalURL := "http://platform-keycloak.keycloak-system.svc.cluster.local:8080"
@@ -505,8 +512,18 @@ func getKeycloakBaseURL() string {
 		return internalURL
 	}
 
+	// For local CI/dev environments, try to set up port-forward automatically
 	localhostURL := "http://localhost:8080"
-	fmt.Printf("[Keycloak] Falling back to: %s (requires: kubectl port-forward -n keycloak-system svc/platform-keycloak 8080:8080)\n", localhostURL)
+	if !canReachKeycloak(localhostURL) {
+		fmt.Printf("[Keycloak] localhost:8080 not accessible, attempting to set up port-forward...\n")
+		if err := setupKeycloakPortForward(); err != nil {
+			fmt.Printf("[Keycloak] Warning: Failed to set up port-forward: %v\n", err)
+		}
+		// Give port-forward time to establish
+		time.Sleep(2 * time.Second)
+	}
+
+	fmt.Printf("[Keycloak] Using: %s (via kubectl port-forward or direct access)\n", localhostURL)
 	return localhostURL
 }
 
@@ -529,6 +546,29 @@ func canReachKeycloak(url string) bool {
 		fmt.Printf("  [Keycloak] %s - HTTP %d (failed)\n", url, resp.StatusCode)
 	}
 	return success
+}
+
+// setupKeycloakPortForward establishes a kubectl port-forward to Keycloak service
+// This is needed for local CI/dev environments that run outside the cluster
+func setupKeycloakPortForward() error {
+	// Check if port-forward already exists
+	checkCmd := exec.Command("bash", "-c", "lsof -i :8080 2>/dev/null | grep -q kubectl || netstat -tuln 2>/dev/null | grep -q ':8080'")
+	if err := checkCmd.Run(); err == nil {
+		fmt.Printf("[Keycloak] Port-forward already active on port 8080\n")
+		return nil
+	}
+
+	// Start port-forward in background
+	fmt.Printf("[Keycloak] Starting kubectl port-forward to Keycloak service...\n")
+	pfCmd := exec.Command("kubectl", "port-forward", "-n", "keycloak-system", "svc/platform-keycloak", "8080:8080")
+	
+	// Run in background without blocking
+	if err := pfCmd.Start(); err != nil {
+		return fmt.Errorf("failed to start port-forward: %w", err)
+	}
+
+	fmt.Printf("[Keycloak] Port-forward started (PID: %d)\n", pfCmd.Process.Pid)
+	return nil
 }
 
 func GetClient() (*http.Client, error) {
