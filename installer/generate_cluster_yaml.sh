@@ -163,7 +163,7 @@ fi
 if [ "${ENABLE_EXPLICIT_PROXY:-false}" = "true" ]; then
     export EXPLICIT_PROXY_PROFILE="- orch-configs/profiles/enable-explicit-proxy.yaml"
 else
-    export ENABLE_EXPLICIT_PROXY="#- orch-configs/profiles/enable-explicit-proxy.yaml"
+    export EXPLICIT_PROXY_PROFILE="#- orch-configs/profiles/enable-explicit-proxy.yaml"
 fi
 
 # -----------------------------------------------------------------------------
