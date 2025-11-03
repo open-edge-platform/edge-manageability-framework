@@ -12,6 +12,10 @@ traefikReverseProxy:
   secretName: "tls-orch"
   # -- matchRoute defines routing rules (e.g. Host(`http.sample.com`))
   matchRoute: ""
+
+# https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
+traefikApiGroup: "traefik.io/v1alpha1"
+
 oidc:
   name: "keycloak-api"
   oidc_env_name: "OIDC_SERVER_URL"
