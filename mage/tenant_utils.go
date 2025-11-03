@@ -478,29 +478,26 @@ func GetKeycloakSecret() (string, error) {
 }
 
 func KeycloakLogin(ctx context.Context) (*gocloak.GoCloak, *gocloak.JWT, error) {
-	// Keycloak URL: use orchestrator domain first, fallback to KEYCLOAK_URL env var for local dev
 	keycloakURL := getKeycloakBaseURL()
+	fmt.Printf("[KEYCLOAK] Logging in to: %s\n", keycloakURL)
 
-	// Retrieve admin credentials
 	adminPass, err := GetKeycloakSecret()
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get keycloak admin password: %w", err)
 	}
 
-	// Create GoCloak client
 	client := gocloak.NewClient(keycloakURL)
 
-	// Configure HTTP client: extended timeout and disable proxy for reliability
 	restyClient := client.RestyClient()
 	restyClient.SetTimeout(60 * time.Second)
-	restyClient.RemoveProxy() // Don't route through corporate proxy
+	restyClient.RemoveProxy()
 	client.SetRestyClient(restyClient)
 
-	// Authenticate with Keycloak admin credentials
 	jwtToken, err := client.LoginAdmin(ctx, adminUser, adminPass, KeycloakRealm)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to login to keycloak %s: %w", keycloakURL, err)
 	}
+	fmt.Printf("[KEYCLOAK] Login successful\n")
 
 	return client, jwtToken, nil
 }
@@ -998,12 +995,14 @@ func createKeycloakUser(ctx context.Context, client *gocloak.GoCloak, token *goc
 
 	users, err := client.GetUsers(ctx, token.AccessToken, KeycloakRealm, params)
 	if err != nil {
-		fmt.Printf("error getting user %s: %v", edgeInfraUser, err)
+		fmt.Printf("[KEYCLOAK] Error getting user %s: %v\n", edgeInfraUser, err)
 		return "", "", err
 	}
 	for _, user = range users {
 		if *user.Username == edgeInfraUser {
-			return "", "", status.Errorf(codes.AlreadyExists, "user %s already found in realm %s", edgeInfraUser, KeycloakRealm)
+			orgId, _ := getOrgId(ctx, orgName)
+			fmt.Printf("[KEYCLOAK] User %s already exists (ID: %s), skipping creation\n", edgeInfraUser, *user.ID)
+			return *user.ID, orgId, nil
 		}
 	}
 
@@ -1023,9 +1022,10 @@ func createKeycloakUser(ctx context.Context, client *gocloak.GoCloak, token *goc
 
 	userId, err := client.CreateUser(ctx, token.AccessToken, KeycloakRealm, *user)
 	if err != nil {
-		fmt.Printf("error creating user %s", edgeInfraUser)
+		fmt.Printf("[KEYCLOAK] Error creating user %s: %v\n", edgeInfraUser, err)
 		return "", "", err
 	}
+	fmt.Printf("[KEYCLOAK] User %s created successfully (ID: %s)\n", edgeInfraUser, userId)
 
 	defaultOrchPass, err := GetDefaultOrchPassword()
 	if err != nil {
