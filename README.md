@@ -77,6 +77,40 @@ There are multiple ways to begin to learn about, use, or contribute to Edge Orch
   script can clone all the repos, build the Helm chart and container images required to deploy the Edge Orchestrator
   from source, push the artifacts to a repository of your choice, and locally test in your developer environment.
 
+## Local Development Setup
+
+### Tenant Creation Setup
+
+When running Edge Orchestrator development commands locally (e.g., `mage tenantUtils:*` commands), you may need to access Keycloak
+for identity and access management. If you're running these commands from your host machine rather than inside a Kubernetes pod,
+follow these steps:
+
+1. **Start kubectl port-forward to Keycloak**:
+   ```bash
+   kubectl port-forward -n keycloak-system svc/platform-keycloak 8080:8080 &
+   ```
+
+2. **(Optional) Set environment variable**:
+   ```bash
+   export KEYCLOAK_URL=http://localhost:8080
+   ```
+   If not set, the default `http://localhost:8080` will be used.
+
+3. **Run tenant setup commands**:
+   ```bash
+   mage tenantUtils:createDefaultMtSetup
+   ```
+
+> **Note**: This port-forwarding requirement is for local development only. In production environments, Keycloak access is handled
+> internally through Kubernetes networking within the cluster.
+
+### Troubleshooting
+
+If you encounter connection errors when running mage tenant commands:
+- Ensure `kubectl port-forward` is running in another terminal
+- Verify Keycloak pod is running: `kubectl get pods -n keycloak-system`
+- Test connectivity: `curl http://localhost:8080/realms/master`
+
 ### Repositories
 
 There are several repos that make up the Edge Manageability Framework in the Open Edge Platform.

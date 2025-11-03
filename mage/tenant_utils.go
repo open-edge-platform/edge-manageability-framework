@@ -31,8 +31,19 @@ const (
 	KeycloakRealm             = "master"
 	defaultOrg                = "sample-org"
 	defaultProject            = "sample-project"
-	keycloakInternalServiceURL = "http://platform-keycloak.orch-platform.svc.cluster.local"
+	// Default URL for Keycloak access from host machine
+	// Can be overridden via KEYCLOAK_URL environment variable
+	// For local development, use: kubectl port-forward -n keycloak-system svc/platform-keycloak 8080:8080
+	// Then set: KEYCLOAK_URL=http://localhost:8080
+	defaultKeycloakInternalURL = "http://localhost:8080"
 )
+
+var keycloakInternalServiceURL = func() string {
+	if url := os.Getenv("KEYCLOAK_URL"); url != "" {
+		return url
+	}
+	return defaultKeycloakInternalURL
+}()
 
 // CreateDefaultMtSetup creates one Org, one Project, one Project admin, CO and Edge Infrastructure Manager users in the Project.
 func (TenantUtils) CreateDefaultMtSetup(ctx context.Context) error {
@@ -483,19 +494,28 @@ func KeycloakLogin(ctx context.Context) (*gocloak.GoCloak, *gocloak.JWT, error) 
 	// External URL (https://keycloak.<serviceDomain>) is for browser/external access
 	keycloakURL := keycloakInternalServiceURL
 
-	// retrieve admin user and password from keycloak secret
+	// Retrieve admin credentials
 	adminPass, err := GetKeycloakSecret()
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get keycloak admin password")
+		return nil, nil, fmt.Errorf("failed to get keycloak admin password: %w", err)
 	}
 
+	// Create GoCloak client with HTTP configuration
 	client := gocloak.NewClient(keycloakURL)
 
+	// Configure resty HTTP client: extended timeout and proxy disabled for in-cluster communication
+	// This ensures Keycloak authentication works reliably in environments with corporate proxies
+	restyClient := client.RestyClient()
+	restyClient.SetTimeout(60 * time.Second)
+	restyClient.RemoveProxy() // Don't route Kubernetes cluster IPs through corporate proxy
+	client.SetRestyClient(restyClient)
+
+	// Authenticate with Keycloak admin credentials
 	jwtToken, err := client.LoginAdmin(ctx, adminUser, adminPass, KeycloakRealm)
 	if err != nil {
-		fmt.Printf("%v", err)
-		return nil, nil, fmt.Errorf("failed to login to keycloak %s", keycloakURL)
+		return nil, nil, fmt.Errorf("failed to login to keycloak %s: %w", keycloakURL, err)
 	}
+
 	return client, jwtToken, nil
 }
 
