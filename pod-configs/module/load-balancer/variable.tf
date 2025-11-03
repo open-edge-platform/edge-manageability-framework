@@ -51,7 +51,7 @@ variable "enable_deletion_protection" {
 }
 
 variable "external_egress_rules" {
-  description = "Additional external egress rules (use sparingly for security)"
+  description = "Additional external egress rules"
   type = list(object({
     from_port   = number
     to_port     = number

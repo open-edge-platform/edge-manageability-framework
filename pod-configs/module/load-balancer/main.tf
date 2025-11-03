@@ -79,11 +79,6 @@ resource "aws_security_group" "common" {
       to_port     = 443
       protocol    = "tcp"
       cidr_blocks = [for ip in data.dns_a_record_set.letsencrypt.addrs : "${ip}/32"]
-      #cidr_blocks = [
-      #  "64.78.149.56/32",   # Let's Encrypt Boulder
-      #  "66.33.205.233/32",  # Let's Encrypt
-      #  "209.148.19.20/32"   # Let's Encrypt staging
-      #]
       description = "HTTPS to Let's Encrypt for ACME certificate validation"
     }
   }
