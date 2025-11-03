@@ -212,13 +212,21 @@ if [ "$DEPLOY_TYPE" = "onprem" ]; then
             export PROFILE_FILE_NAME='- orch-configs/profiles/profile-onprem.yaml'
             ;;
         onprem-oxm)
-            echo "📦 Profile: On-Prem with OXM Integration"
+            echo "📦 Profile: On-Prem with OXM Integration"            
+            if [ -z "$OXM_PXE_SERVER_INT" ] || [ -z "$OXM_PXE_SERVER_IP" ] || [ -z "$OXM_PXE_SERVER_SUBNET" ]; then
+              echo "❌ Error: Required environment variables not set!"
+              echo "Please export:"
+              echo "  OXM_PXE_SERVER_INT"
+              echo "  OXM_PXE_SERVER_IP"
+              echo "  OXM_PXE_SERVER_SUBNET"
+              exit 1
+            fi            
             export PROFILE_FILE_NAME_EXT='- orch-configs/profiles/profile-oxm.yaml'
             export EXPLICIT_PROXY_PROFILE='- orch-configs/profiles/enable-explicit-proxy.yaml'
             export O11Y_ENABLE_PROFILE="#- orch-configs/profiles/enable-o11y.yaml"
             export O11Y_PROFILE="#- orch-configs/profiles/o11y-onprem.yaml"
             export CO_PROFILE="#- orch-configs/profiles/enable-cluster-orch.yaml"
-            export AO_PROFILE="#- orch-configs/profiles/enable-app-orch.yaml"
+            export AO_PROFILE="#- orch-configs/profiles/enable-app-orch.yaml"            
             ;;
         *)
             echo "❌ Invalid ORCH_INSTALLER_PROFILE: ${ORCH_INSTALLER_PROFILE}"
@@ -293,6 +301,12 @@ fi
 yq -i ".argo.o11y.sre.tls.enabled |= ${TLS_ENABLED}" "$OUTPUT_FILE"
 yq -i ".argo.o11y.sre.tls.caSecretEnabled |= ${CA_SECRET_ENABLED}" "$OUTPUT_FILE"
 yq -i ".argo.o11y.alertingMonitor.smtp.insecureSkipVerify |= ${SMTP_SKIP_VERIFY}" "$OUTPUT_FILE"
+
+if [ "$ORCH_INSTALLER_PROFILE" = "onprem-oxm" ]; then
+  yq -i ".argo.infra-onboarding.pxe-server.interface |= \"${OXM_PXE_SERVER_INT}\"" "$OUTPUT_FILE"
+  yq -i ".argo.infra-onboarding.pxe-server.bootServerIP |= \"${OXM_PXE_SERVER_IP}\"" "$OUTPUT_FILE"
+  yq -i ".argo.infra-onboarding.pxe-server.subnetAddress |= \"${OXM_PXE_SERVER_SUBNET}\"" "$OUTPUT_FILE"
+fi
 
 # -----------------------------------------------------------------------------
 # Proxy variable updates

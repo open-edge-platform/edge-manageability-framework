@@ -10,8 +10,8 @@
 #               2. onprem_orch_install.sh - Main orchestrator components installation
 #
 # Usage: ./onprem_installer.sh [PRE_OPTIONS] [-- MAIN_OPTIONS]
-#   PRE_OPTIONS: Options for onprem_pre_install.sh (--skip-download, -t/--trace)
-#   MAIN_OPTIONS: Options for onprem_orch_install.sh (after --) (-s/--sre, -d/--notls, --disable-*, -t/--trace)
+#   PRE_OPTIONS: Options for onprem_pre_install.sh (--skip-download, -y/--yes, -t/--trace)
+#   MAIN_OPTIONS: Options for onprem_orch_install.sh (after --) (-s/--sre, -d/--notls, -y/--yes, --disable-*, -t/--trace)
 #
 # Prerequisites: onprem.env file must exist with proper configuration
 
@@ -60,7 +60,7 @@ Examples:
     # Enable trace in pre-install, disable CO and AO profiles in main install
 
 ./$(basename "$0") -- -y -s /path/to/ca.crt
-    # Run with non-interactive mode, enable SRE with CA cert in main install
+    # Skip Docker credentials in pre-install, enable SRE with CA cert in main install
 
 ./$(basename "$0") -- -st --disable-o11y
     # Enable single tenancy mode and disable observability in main install
@@ -68,6 +68,7 @@ Examples:
 Pre-Install Options (before --):
     -h, --help                 Show this help message and exit
     --skip-download            Skip downloading install packages from registry
+    -y, --yes                  Skip Docker credentials prompt and run non-interactively
     -t, --trace                Enable bash debug tracing
 
 Main Install Options (after --):

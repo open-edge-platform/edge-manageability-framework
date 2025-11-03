@@ -16,7 +16,7 @@
 #   Options:
 #     -h, --help         Show help message
 #     --skip-download    Skip downloading packages (use existing ones)
-#     -y, --yes          Assume 'yes' to all prompts and run non-interactively
+#     -y, --yes          Skip Docker credentials prompt and run non-interactively
 #     -t, --trace        Enable debug tracing
 #
 # Prerequisites: onprem.env file must exist with proper configuration
@@ -80,20 +80,9 @@ allow_config_in_runtime() {
   mkdir -p "$tmp_dir"
   tar -xf "$cwd/$git_arch_name/$repo_file" -C "$tmp_dir"
 
-  if [ -d "$tmp_dir/$si_config_repo" ]; then
-    echo "Configuration already exists at $tmp_dir/$si_config_repo."
-    if [ "$ASSUME_YES" = true ]; then
-      echo "Assuming yes to use existing configuration."
-      return
-    fi
-    while true; do
-      read -rp "Do you want to overwrite the existing configuration? (yes/no): " yn
-      case $yn in
-        [Yy]* ) rm -rf "${tmp_dir:?}/${si_config_repo:?}"; break;;
-        [Nn]* ) echo "Using existing configuration."; return;;
-        * ) echo "Please answer yes or no.";;
-      esac
-    done
+  if [ "$ASSUME_YES" = true ]; then
+    echo "Assuming yes to use existing configuration."
+    return
   fi
 
   # Prompt for Docker.io credentials
@@ -141,7 +130,7 @@ $(basename "$0") [OPTIONS]
 Examples:
 ./$(basename "$0")                    # Basic installation with onprem.env config
 ./$(basename "$0") --skip-download    # Skip package downloads (use existing packages)
-./$(basename "$0") -y                 # Run non-interactively, assume yes to all prompts
+./$(basename "$0") -y                 # Skip Docker credentials prompt, run non-interactively
 ./$(basename "$0") -t                 # Enable debug tracing
 
 Options:
@@ -150,8 +139,8 @@ Options:
     --skip-download            Skip downloading installer packages from registry
                                Useful for development/testing when packages already exist
     
-    -y, --yes                  Assume 'yes' to all prompts and run non-interactively
-                               Skips Docker credential prompt and configuration overwrite prompt
+    -y, --yes                  Skip Docker credentials prompt and run non-interactively
+                               Useful for automated deployments or CI/CD pipelines
     
     -t, --trace                Enable bash debug tracing (set -x)
                                Shows detailed command execution for troubleshooting
