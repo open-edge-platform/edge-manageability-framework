@@ -57,8 +57,8 @@ spec:
   
   # All your runtime options (these become environment variables)
   additionalOptions:
-    - name: hostname
-      value: {{ .Values.keycloak.hostname | default "platform-keycloak.orch-platform.svc.cluster.local" | quote }}
+    - name: hostname-url
+      value: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
     - name: hostname-strict
       value: "false"
     - name: db-url-properties
