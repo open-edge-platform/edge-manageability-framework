@@ -476,24 +476,59 @@ func (DevUtils) WaitForEnicNodeAgent() error {
 }
 
 const (
-	defaultUser = "all-groups-example-user"
-	adminUser   = "admin"
+	defaultUser        = "all-groups-example-user"
+	adminUser          = "admin"
+	defaultServicePort = 443
 )
 
-// getKeycloakBaseURL returns the Keycloak base URL
-// Priority 1: Use KEYCLOAK_URL environment variable (for local development with port-forward)
-// Priority 2: Use internal cluster DNS for CI/CD and Kubernetes workflows
+var serviceDomainWithPort = fmt.Sprintf("%s:%d", serviceDomain, defaultServicePort)
+
+// getKeycloakBaseURL returns the Keycloak base URL with smart detection
+// Priority 1: KEYCLOAK_URL env var | 2: External domain (Traefik/ingress)
+// 3: Internal cluster DNS (CI/CD pods) | 4: localhost:8080 (port-forward)
 func getKeycloakBaseURL() string {
-	// Priority 1: KEYCLOAK_URL env var - for local development with port-forward
-	// Example: KEYCLOAK_URL=http://localhost:8080
 	if url := os.Getenv("KEYCLOAK_URL"); url != "" {
+		fmt.Printf("[Keycloak] Using KEYCLOAK_URL env var: %s\n", url)
 		return url
 	}
 
-	// Priority 2: Use internal cluster DNS for CI/CD and Kubernetes workflows
-	// This works reliably inside the cluster without TLS issues
-	// The platform-keycloak service runs on port 8080 internally
-	return "http://platform-keycloak.keycloak-system.svc.cluster.local:8080"
+	fmt.Printf("[Keycloak] Attempting to detect Keycloak URL...\n")
+	externalURL := "https://keycloak." + serviceDomainWithPort
+	if canReachKeycloak(externalURL) {
+		fmt.Printf("[Keycloak] Successfully using external domain: %s\n", externalURL)
+		return externalURL
+	}
+
+	internalURL := "http://platform-keycloak.keycloak-system.svc.cluster.local:8080"
+	if canReachKeycloak(internalURL) {
+		fmt.Printf("[Keycloak] Successfully using internal cluster DNS: %s\n", internalURL)
+		return internalURL
+	}
+
+	localhostURL := "http://localhost:8080"
+	fmt.Printf("[Keycloak] Falling back to: %s (requires: kubectl port-forward -n keycloak-system svc/platform-keycloak 8080:8080)\n", localhostURL)
+	return localhostURL
+}
+
+// canReachKeycloak checks if Keycloak is reachable at the given URL
+func canReachKeycloak(url string) bool {
+	client := &http.Client{Timeout: 2 * time.Second}
+	if strings.HasPrefix(url, "https://") {
+		client.Transport = &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+	}
+	resp, err := client.Get(url + "/realms/master")
+	if err != nil {
+		fmt.Printf("  [Keycloak] %s - Failed: %v\n", url, err)
+		return false
+	}
+	defer resp.Body.Close()
+	success := resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusUnauthorized
+	if !success {
+		fmt.Printf("  [Keycloak] %s - HTTP %d (failed)\n", url, resp.StatusCode)
+	}
+	return success
 }
 
 func GetClient() (*http.Client, error) {
