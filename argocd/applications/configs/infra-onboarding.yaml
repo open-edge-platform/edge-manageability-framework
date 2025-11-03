@@ -31,7 +31,7 @@ onboarding-manager:
   env:
     tinkerActionsVersion: "1.19.7"
     oidc:
-    oidc_server_url: http://platform-keycloak.orch-platform.svc.cluster.local/realms/master
+    oidc_server_url: http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master
       # Skip AuthZ for CDN-boots
       clients:
         bypass:
