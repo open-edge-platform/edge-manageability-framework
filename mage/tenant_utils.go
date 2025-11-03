@@ -28,14 +28,14 @@ import (
 )
 
 const (
-	KeycloakRealm             = "master"
-	defaultOrg                = "sample-org"
-	defaultProject            = "sample-project"
+	KeycloakRealm              = "master"
+	defaultOrg                 = "sample-org"
+	defaultProject             = "sample-project"
+	defaultKeycloakInternalURL = "http://localhost:8080"
 	// Default URL for Keycloak access from host machine
 	// Can be overridden via KEYCLOAK_URL environment variable
 	// For local development, use: kubectl port-forward -n keycloak-system svc/platform-keycloak 8080:8080
 	// Then set: KEYCLOAK_URL=http://localhost:8080
-	defaultKeycloakInternalURL = "http://localhost:8080"
 )
 
 var keycloakInternalServiceURL = func() string {
