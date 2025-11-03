@@ -141,6 +141,8 @@ upgrade: | ${M}/release-secrets ${M}/argocd-ready
 	fi
 	@[ -z "${TARGET_ENV}" ] && echo "*** TARGET_ENV not set" && exit 1 || true
 	helm upgrade --install root-app ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/argocd/root-app -n ${TARGET_ENV} -f ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/orch-configs/clusters/${TARGET_ENV}.yaml --create-namespace
+    # 25.02 - tls secret needs to be deleted as helm can't handle size change
+    kubectl delete secret tls-boots -n orch-boots
 
 clean: ## Remove the milestones directory
 	rm -rf ${M}
