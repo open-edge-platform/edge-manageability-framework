@@ -119,6 +119,12 @@ else
     export SRE_PROFILE="#- orch-configs/profiles/enable-sre.yaml"
 fi
 
+if [ -z $SINGLE_TENANCY ]; then
+    export SINGLE_TENANCY_PROFILE="#- orch-configs/profiles/enable-singleTenancy.yaml"
+else
+    export SINGLE_TENANCY_PROFILE="- orch-configs/profiles/enable-singleTenancy.yaml"
+fi
+
 if [ "${DISABLE_O11Y:-false}" = "true" ]; then
     export O11Y_ENABLE_PROFILE="#- orch-configs/profiles/enable-o11y.yaml"
 else

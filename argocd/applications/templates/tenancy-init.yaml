@@ -2,11 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-{{- $appName        := "k8s-metrics-server" }}
-{{- $namespace      := "kube-system" }}
-{{- $syncWave       := "100" }}
+{{- $appName        := "tenancy-init" }}
+{{- $namespace      := "orch-iam" }}
+{{- $syncWave       := "1200" }}
 ---
-{{- if (index .Values.argo.enabled $appName) }}
+{{- if and (index .Values.argo.enabled "multitenant_gateway") (index .Values.argo.enabled "defaultTenancy") }}
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -21,7 +21,7 @@ spec:
   sources:
     - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
       chart: common/charts/{{$appName}}
-      targetRevision: 25.2.1
+      targetRevision: 25.2.7
       helm:
         releaseName: {{$appName}}
         valuesObject:
@@ -37,8 +37,8 @@ spec:
   syncPolicy:
     {{- if .Values.argo.autosync }}
     automated:
-      prune: true
-      selfHeal: true
+      prune: false
+      selfHeal: false
     retry:
       limit: 5
       backoff:
@@ -48,5 +48,4 @@ spec:
     {{- end }}
     syncOptions:
       - CreateNamespace=true
-      - ApplyOutOfSyncOnly=true
 {{- end }}
