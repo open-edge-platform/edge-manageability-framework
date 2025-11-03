@@ -77,56 +77,6 @@ There are multiple ways to begin to learn about, use, or contribute to Edge Orch
   script can clone all the repos, build the Helm chart and container images required to deploy the Edge Orchestrator
   from source, push the artifacts to a repository of your choice, and locally test in your developer environment.
 
-## Local Development Setup
-
-### Tenant Creation Setup
-
-When running Edge Orchestrator development commands locally (e.g., `mage tenantUtils:*` commands), the framework automatically handles Keycloak access for identity and access management. 
-
-**Automatic Port-Forwarding (Recommended)**:
-
-Simply run tenant setup commands - the automatic port-forwarding mechanism will set up Keycloak access on demand:
-```bash
-mage tenantUtils:createDefaultMtSetup
-```
-
-The framework will:
-1. Automatically detect if Keycloak is accessible at `localhost:8080`
-2. If not accessible, start `kubectl port-forward` to establish the connection
-3. Wait for port-forward to be ready before proceeding
-4. Clean up the port-forward process when complete
-
-This works seamlessly in both local development environments and CI/CD pipelines (GitHub Actions).
-
-**Custom Keycloak URL (Optional)**:
-
-If you need to use a different Keycloak URL:
-```bash
-export KEYCLOAK_URL=http://your-keycloak-host:8080
-mage tenantUtils:createDefaultMtSetup
-```
-
-When `KEYCLOAK_URL` is set, the automatic port-forwarding is skipped.
-
-**Manual Port-Forwarding (Legacy - Not Required)**:
-
-For advanced scenarios where you need manual control:
-```bash
-kubectl port-forward -n keycloak-system svc/platform-keycloak 8080:8080 &
-mage tenantUtils:createDefaultMtSetup
-```
-
-> **Note**: The automatic port-forwarding feature eliminates the need for manual setup in both local development and CI/CD environments.
-> In production environments, Keycloak access is handled internally through Kubernetes networking within the cluster.
-
-### Troubleshooting
-
-If you encounter connection errors when running mage tenant commands:
-- Verify Keycloak pod is running: `kubectl get pods -n keycloak-system`
-- Test connectivity: `curl http://localhost:8080/realms/master`
-- Check for port conflicts: `sudo lsof -i :8080`
-- Review automatic port-forward logs (output to stderr)
-
 ### Repositories
 
 There are several repos that make up the Edge Manageability Framework in the Open Edge Platform.
