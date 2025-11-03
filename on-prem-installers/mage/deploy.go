@@ -74,10 +74,6 @@ func (Deploy) rke2Cluster() error { //nolint: cyclop
 		return fmt.Errorf("error testing deployments and pods after OpenEBS installation: %w", err)
 	}
 
-	if err := sh.RunV(filepath.Join("rke2", "customize-rke2.sh")); err != nil {
-		return fmt.Errorf("error running customize-rke2.sh after OpenEBS installation: %w", err)
-	}
-
 	fmt.Println("RKE2 cluster ready: 😊")
 	return nil
 }
