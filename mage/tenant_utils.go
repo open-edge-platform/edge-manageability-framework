@@ -400,8 +400,8 @@ func GetDefaultOrchPassword() (string, error) {
 			"get",
 			"secret",
 			"platform-keycloak",
-			"-n", "orch-platform",
-			"-o", "jsonpath={.data.admin-password}",
+			"-n", "keycloak-system",
+			"-o", "jsonpath={.data.password}",
 		).CombinedOutput()
 		if err != nil {
 			return "", fmt.Errorf("failed to get password from kubectl command: %w\noutput: %s", err, string(output))
@@ -478,7 +478,7 @@ func GetKeycloakSecret() (string, error) {
 }
 
 func KeycloakLogin(ctx context.Context) (*gocloak.GoCloak, *gocloak.JWT, error) {
-	keycloakURL := getKeycloakBaseURL()
+	keycloakURL := "https://keycloak." + serviceDomainWithPort
 	fmt.Printf("[KEYCLOAK] Logging in to: %s\n", keycloakURL)
 
 	adminPass, err := GetKeycloakSecret()

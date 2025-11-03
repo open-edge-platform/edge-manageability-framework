@@ -36,10 +36,13 @@ func getAccessToken(c *http.Client, username string, password string) string {
 	data.Set("username", username)
 	data.Set("password", password)
 	data.Set("grant_type", "password")
+
+	keycloakURL := "https://keycloak." + serviceDomainWithPort + "/realms/master/protocol/openid-connect/token"
+
 	req, err := http.NewRequestWithContext(
 		context.TODO(),
 		http.MethodPost,
-		"https://keycloak."+serviceDomainWithPort+"/realms/master/protocol/openid-connect/token",
+		keycloakURL,
 		strings.NewReader(data.Encode()),
 	)
 	Expect(err).ToNot(HaveOccurred())
@@ -51,8 +54,8 @@ func getAccessToken(c *http.Client, username string, password string) string {
 	Expect(resp.StatusCode).To(Equal(http.StatusOK), func() string {
 		b, err := io.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
-		return fmt.Sprintf("error accessing https://keycloak.%s/realms/master/protocol/openid-connect/token %s",
-			serviceDomainWithPort, string(b))
+		return fmt.Sprintf("error accessing %s %s",
+			keycloakURL, string(b))
 	})
 	rawTokenData, err := io.ReadAll(resp.Body)
 	Expect(err).ToNot(HaveOccurred())
