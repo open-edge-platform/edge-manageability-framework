@@ -58,7 +58,13 @@ spec:
   # All your runtime options (these become environment variables)
   additionalOptions:
     - name: hostname
-      value: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
+      value: "https://keycloak.{{ .Values.argo.clusterDomain }}"
+    - name: hostname-admin
+      value: "https://keycloak.{{ .Values.argo.clusterDomain }}"
+    - name: hostname-strict
+      value: "false"
+    - name: proxy
+      value: "xforwarded"
     - name: db-url-properties
       value: "?tcpKeepAlives=true&socketTimeout=120&connectTimeout=120"
     - name: http-management-port
