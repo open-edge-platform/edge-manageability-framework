@@ -8,7 +8,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"net/http"
 	"os"
 	"os/exec"
 	"slices"
@@ -29,34 +28,15 @@ import (
 )
 
 const (
-	KeycloakRealm              = "master"
-	defaultOrg                 = "sample-org"
-	defaultProject             = "sample-project"
-	defaultKeycloakInternalURL = "http://localhost:8080"
-	// Default URL for Keycloak access from host machine
-	// Can be overridden via KEYCLOAK_URL environment variable
-	// For local development, use: kubectl port-forward -n keycloak-system svc/platform-keycloak 8080:8080
-	// Then set: KEYCLOAK_URL=http://localhost:8080
+	KeycloakRealm  = "master"
+	defaultOrg     = "sample-org"
+	defaultProject = "sample-project"
 )
-
-var keycloakInternalServiceURL = func() string {
-	if url := os.Getenv("KEYCLOAK_URL"); url != "" {
-		return url
-	}
-	return defaultKeycloakInternalURL
-}()
 
 // CreateDefaultMtSetup creates one Org, one Project, one Project admin, CO and Edge Infrastructure Manager users in the Project.
 func (TenantUtils) CreateDefaultMtSetup(ctx context.Context) error {
-	// Ensure port-forward is running throughout the entire setup process
-	cleanup, err := ensureKeycloakPortForward(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to ensure keycloak port-forward: %w", err)
-	}
-	defer cleanup()
-
 	fmt.Println("Creating default organization...")
-	err = TenantUtils{}.CreateOrg(ctx, defaultOrg)
+	err := TenantUtils{}.CreateOrg(ctx, defaultOrg)
 	if err != nil {
 		return fmt.Errorf("failed to create org: %w", err)
 	}
@@ -497,72 +477,9 @@ func GetKeycloakSecret() (string, error) {
 	return adminPass, nil
 }
 
-// portForwardProcess holds the running port-forward command
-var portForwardProcess *exec.Cmd
-
-// ensureKeycloakPortForward ensures Keycloak is accessible, setting up port-forward if needed
-func ensureKeycloakPortForward(ctx context.Context) (func(), error) {
-	// If using custom URL, skip auto port-forward
-	if os.Getenv("KEYCLOAK_URL") != "" {
-		return func() {}, nil
-	}
-
-	// Try to connect to localhost:8080 to see if port-forward is already running
-	client := &http.Client{Timeout: 2 * time.Second}
-	resp, err := client.Get("http://localhost:8080/realms/master")
-	if err == nil && resp.StatusCode == 200 {
-		resp.Body.Close()
-		return func() {}, nil // Already accessible
-	}
-	if resp != nil {
-		resp.Body.Close()
-	}
-
-	// Port-forward not running, start it
-	fmt.Fprintf(os.Stderr, "Starting kubectl port-forward to Keycloak...\n")
-	cmd := exec.CommandContext(ctx, "kubectl", "port-forward", "-n", "keycloak-system", "svc/platform-keycloak", "8080:8080")
-	cmd.Stdout = os.Stderr // Send port-forward output to stderr to avoid polluting stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Start(); err != nil {
-		return nil, fmt.Errorf("failed to start port-forward: %w", err)
-	}
-
-	// Store globally so we can clean up
-	portForwardProcess = cmd
-
-	// Wait for port-forward to be ready
-	maxRetries := 30
-	for i := 0; i < maxRetries; i++ {
-		resp, err := client.Get("http://localhost:8080/realms/master")
-		if err == nil && resp.StatusCode == 200 {
-			resp.Body.Close()
-			fmt.Fprintf(os.Stderr, "Port-forward to Keycloak established\n")
-			// Return cleanup function to kill port-forward
-			return func() {
-				if portForwardProcess != nil {
-					if err := portForwardProcess.Process.Kill(); err != nil {
-						fmt.Fprintf(os.Stderr, "failed to kill port-forward process: %v\n", err)
-					}
-					portForwardProcess = nil
-				}
-			}, nil
-		}
-		if resp != nil {
-			resp.Body.Close()
-		}
-		time.Sleep(200 * time.Millisecond)
-	}
-
-	cmd.Process.Kill()
-	portForwardProcess = nil
-	return nil, fmt.Errorf("port-forward failed to become ready after %d retries", maxRetries)
-}
-
 func KeycloakLogin(ctx context.Context) (*gocloak.GoCloak, *gocloak.JWT, error) {
-	// Use internal cluster service URL for in-cluster communication
-	// External URL (https://keycloak.<serviceDomain>) is for browser/external access
-	keycloakURL := keycloakInternalServiceURL
+	// Keycloak URL: use orchestrator domain first, fallback to KEYCLOAK_URL env var for local dev
+	keycloakURL := getKeycloakBaseURL()
 
 	// Retrieve admin credentials
 	adminPass, err := GetKeycloakSecret()
@@ -570,14 +487,13 @@ func KeycloakLogin(ctx context.Context) (*gocloak.GoCloak, *gocloak.JWT, error) 
 		return nil, nil, fmt.Errorf("failed to get keycloak admin password: %w", err)
 	}
 
-	// Create GoCloak client with HTTP configuration
+	// Create GoCloak client
 	client := gocloak.NewClient(keycloakURL)
 
-	// Configure resty HTTP client: extended timeout and proxy disabled for in-cluster communication
-	// This ensures Keycloak authentication works reliably in environments with corporate proxies
+	// Configure HTTP client: extended timeout and disable proxy for reliability
 	restyClient := client.RestyClient()
 	restyClient.SetTimeout(60 * time.Second)
-	restyClient.RemoveProxy() // Don't route Kubernetes cluster IPs through corporate proxy
+	restyClient.RemoveProxy() // Don't route through corporate proxy
 	client.SetRestyClient(restyClient)
 
 	// Authenticate with Keycloak admin credentials

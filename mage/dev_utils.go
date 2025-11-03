@@ -476,13 +476,25 @@ func (DevUtils) WaitForEnicNodeAgent() error {
 }
 
 const (
-	defaultUser        = "all-groups-example-user"
-	adminUser          = "admin"
-	defaultServicePort = 443
+	defaultUser = "all-groups-example-user"
+	adminUser   = "admin"
 )
 
-// NOTE do we need to parametrize this for different envs?
-var serviceDomainWithPort = fmt.Sprintf("%s:%d", serviceDomain, defaultServicePort)
+// getKeycloakBaseURL returns the Keycloak base URL
+// Priority 1: Use KEYCLOAK_URL environment variable (for local development with port-forward)
+// Priority 2: Use internal cluster DNS for CI/CD and Kubernetes workflows
+func getKeycloakBaseURL() string {
+	// Priority 1: KEYCLOAK_URL env var - for local development with port-forward
+	// Example: KEYCLOAK_URL=http://localhost:8080
+	if url := os.Getenv("KEYCLOAK_URL"); url != "" {
+		return url
+	}
+
+	// Priority 2: Use internal cluster DNS for CI/CD and Kubernetes workflows
+	// This works reliably inside the cluster without TLS issues
+	// The platform-keycloak service runs on port 8080 internally
+	return "http://platform-keycloak.keycloak-system.svc.cluster.local:8080"
+}
 
 func GetClient() (*http.Client, error) {
 	caPool := x509.NewCertPool()
@@ -518,7 +530,7 @@ func GetApiToken(client *http.Client, username string, password string) (*string
 	req, err := http.NewRequestWithContext(
 		context.Background(),
 		http.MethodPost,
-		"https://keycloak."+serviceDomainWithPort+"/realms/master/protocol/openid-connect/token",
+		getKeycloakBaseURL()+"/realms/master/protocol/openid-connect/token",
 		strings.NewReader(v.Encode()),
 	)
 	if err != nil {
@@ -579,7 +591,7 @@ func GetUserID(cli *http.Client, username, token string) (string, error) {
 	req, err := http.NewRequestWithContext(
 		context.TODO(), // TODO: Allow the user to pass a proper context.
 		http.MethodGet,
-		"https://keycloak."+serviceDomainWithPort+"/admin/realms/master/users?username="+username,
+		getKeycloakBaseURL()+"/admin/realms/master/users?username="+username,
 		nil,
 	)
 	if err != nil {
@@ -781,7 +793,7 @@ func GetRoleFromKeycloak(ctx context.Context, cli *http.Client, token, roleName 
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodGet,
-		"https://keycloak."+serviceDomainWithPort+"/admin/realms/master/roles",
+		getKeycloakBaseURL()+"/admin/realms/master/roles",
 		nil,
 	)
 	if err != nil {
@@ -842,7 +854,7 @@ func manageRole(ctx context.Context, cli *http.Client, token, action, userID, ro
 	req, err := http.NewRequestWithContext(
 		ctx, // TODO: Allow the user to pass a proper context.
 		action,
-		fmt.Sprintf("https://keycloak."+serviceDomainWithPort+"/admin/realms/master/users/%s/role-mappings/realm", userID),
+		fmt.Sprintf(getKeycloakBaseURL()+"/admin/realms/master/users/%s/role-mappings/realm", userID),
 		bytes.NewReader(jsonData),
 	)
 	if err != nil {
