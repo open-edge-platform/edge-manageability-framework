@@ -1,0 +1,13 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+remoteNamespace: orch-gateway
+refreshInterval: "10m"
+targetSecretName: keycloak-tls
+sourceSecretName: tls-orch
+keyName:
+  - source: tls.crt
+    target: tls.crt
+  - source: tls.key
+    target: tls.key
