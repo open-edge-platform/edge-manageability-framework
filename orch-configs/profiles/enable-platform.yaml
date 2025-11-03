@@ -21,7 +21,6 @@ argo:
     copy-cluster-gitea-cred-to-fleet: true
     copy-database-to-keycloak: true
     copy-keycloak-admin-to-platform: true
-    copy-tls-orch-to-keycloak: true
     external-secrets: true
     istio-base: true
     istio-policy: true
