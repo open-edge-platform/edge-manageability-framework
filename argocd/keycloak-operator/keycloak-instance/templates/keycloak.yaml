@@ -59,8 +59,6 @@ spec:
   additionalOptions:
     - name: hostname
       value: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
-    - name: hostname-strict
-      value: "false"
     - name: db-url-properties
       value: "?tcpKeepAlives=true&socketTimeout=120&connectTimeout=120"
     - name: http-management-port
