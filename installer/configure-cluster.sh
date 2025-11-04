@@ -83,71 +83,9 @@ export NGINX_TG_ARN
 export ARGOCD_TG_ARN
 export S3_PREFIX
 
+source ./generate_cluster_yaml.sh aws
 
-# AO_PROFILE  disabled check
-if [ "${DISABLE_CO_PROFILE:-false}" = "true" ] || [ "${DISABLE_AO_PROFILE:-false}" = "true" ]; then
-    export AO_PROFILE="#- orch-configs/profiles/enable-app-orch.yaml"
-else
-    export AO_PROFILE="- orch-configs/profiles/enable-app-orch.yaml"
-fi
-
-# CO_PROFILE disabled check
-if [ "${DISABLE_CO_PROFILE:-false}" = "true" ]; then
-    export CO_PROFILE="#- orch-configs/profiles/enable-cluster-orch.yaml"
-    export AO_PROFILE="#- orch-configs/profiles/enable-app-orch.yaml"
-else
-    export CO_PROFILE="- orch-configs/profiles/enable-cluster-orch.yaml"
-fi
-
-if [ -n "$SRE_BASIC_AUTH_USERNAME" ] || [ -n "$SRE_BASIC_AUTH_PASSWORD" ] || [ -n "$SRE_DESTINATION_SECRET_URL" ] || [ -n "$SRE_DESTINATION_CA_SECRET" ]; then
-    export SRE_PROFILE="- orch-configs/profiles/enable-sre.yaml"
-else
-    export SRE_PROFILE="#- orch-configs/profiles/enable-sre.yaml"
-fi
-
-if [ -z $SINGLE_TENANCY ]; then
-    export SINGLE_TENANCY_PROFILE="#- orch-configs/profiles/enable-singleTenancy.yaml"
-else
-    export SINGLE_TENANCY_PROFILE="- orch-configs/profiles/enable-singleTenancy.yaml"
-fi
-
-if [ "${DISABLE_O11Y:-false}" = "true" ]; then
-    export O11Y_ENABLE_PROFILE="#- orch-configs/profiles/enable-o11y.yaml"
-else
-    export O11Y_ENABLE_PROFILE="- orch-configs/profiles/enable-o11y.yaml"
-fi
-
-if [ -z $SMTP_URL ]; then
-    export EMAIL_PROFILE="#- orch-configs/profiles/alerting-emails.yaml"
-else
-    export EMAIL_PROFILE="- orch-configs/profiles/alerting-emails.yaml"
-fi
-
-if [ -z $AUTO_CERT ]; then
-    export AUTOCERT_PROFILE="#- orch-configs/profiles/profile-autocert.yaml"
-else
-    export AUTOCERT_PROFILE="- orch-configs/profiles/profile-autocert.yaml"
-fi
-
-export AWS_PROD_PROFILE="- orch-configs/profiles/profile-aws-production.yaml"
-if [[ "$DISABLE_AWS_PROD_PROFILE" == "true" ]]; then
-    export AWS_PROD_PROFILE="#- orch-configs/profiles/profile-aws-production.yaml"
-fi
-
-if [ "${DISABLE_O11Y:-false}" = "true" ]; then
-    export O11Y_PROFILE="#- orch-configs/profiles/o11y-release.yaml"
-else
-    export O11Y_PROFILE="- orch-configs/profiles/o11y-release.yaml"
-    if [[ "$CLUSTER_SCALE_PROFILE" == "500en" || "$CLUSTER_SCALE_PROFILE" == "1ken" || "$CLUSTER_SCALE_PROFILE" == "10ken" ]]; then
-      export O11Y_PROFILE="- orch-configs/profiles/o11y-release-large.yaml"
-    fi
-fi
-
-export CLUSTER_SCALE_PROFILE=$(grep -oP '^# Profile: "\K[^"]+' ~/pod-configs/SAVEME/${AWS_ACCOUNT}-${CLUSTER_NAME}-profile.tfvar)
-
-echo
-echo "Creating cluster definition for ${CLUSTER_NAME}"
-cat cluster.tpl | envsubst > edge-manageability-framework/orch-configs/clusters/${CLUSTER_NAME}.yaml
+cp -rf ${CLUSTER_NAME}.yaml edge-manageability-framework/orch-configs/clusters/
 
 echo
 echo =============================================================================
