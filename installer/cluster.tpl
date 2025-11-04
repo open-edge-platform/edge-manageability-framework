@@ -7,10 +7,11 @@ root:
   useLocalValues: true
   clusterValues:
     - orch-configs/profiles/enable-platform.yaml
+    ${O11Y_ENABLE_PROFILE}
     - orch-configs/profiles/enable-o11y.yaml
     - orch-configs/profiles/enable-kyverno.yaml
-    - orch-configs/profiles/enable-app-orch.yaml
-    - orch-configs/profiles/enable-cluster-orch.yaml
+    ${AO_PROFILE}
+    ${CO_PROFILE}
     - orch-configs/profiles/enable-edgeinfra.yaml
     - orch-configs/profiles/enable-full-ui.yaml
     - orch-configs/profiles/enable-aws.yaml
@@ -21,6 +22,7 @@ root:
     - orch-configs/profiles/resource-default.yaml
     ${AWS_PROD_PROFILE}
     ${O11Y_PROFILE}
+    ${SINGLE_TENANCY_PROFILE}
     ${EMAIL_PROFILE}
     ${AUTOCERT_PROFILE}
     - orch-configs/profiles/artifact-rs-production-noauth.yaml
