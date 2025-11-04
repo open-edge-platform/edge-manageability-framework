@@ -56,7 +56,7 @@ argo:
         enabled: ${SRE_TLS_ENABLED}
         caSecretEnabled: ${SRE_DEST_CA_CERT}
 orchestratorDeployment:
-  targetCluster: ${TARGET_CLUSTER}
+  targetCluster: ${CLUSTER_NAME}
 
 # Post custom template overwrite values should go to /root-app/environments/<env>/<appName>.yaml
 # This is a placeholder to prevent error when there isn't any overwrite needed
