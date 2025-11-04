@@ -76,6 +76,8 @@ service:
     type: LoadBalancer
     port: 443
 gitea:
+  startupProbe:
+    enabled: true
   config:
     server:
       APP_DATA_PATH: /data
