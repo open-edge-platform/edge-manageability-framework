@@ -1935,7 +1935,7 @@ get_upgrade_files() {
 }
 
 upgrade() {
-  upgrade
+  install
   echo "Info: The upgrade completed successfully."
 }
 
