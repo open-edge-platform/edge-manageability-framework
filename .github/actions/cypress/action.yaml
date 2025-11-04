@@ -32,6 +32,9 @@ inputs:
     required: false # NOTE this is required if the infra tests are running
     description: "UUID of the EN"
     default: ""
+  orch_password:
+    required: true
+    description: "Orchestrator default password"
 runs:
   using: "composite"
   steps:
@@ -58,6 +61,8 @@ runs:
       if: ${{ always() && inputs.admin == 'true' }}
       working-directory: orch-ui/tests
       shell: bash
+      env:
+        ORCH_DEFAULT_PASSWORD: ${{ inputs.orch_password }}
       run: |
         npx cypress run --e2e \
           -s "cypress/e2e/admin/non-org-admin-smoke.cy.ts,cypress/e2e/admin/org-admin-smoke.cy.ts"
