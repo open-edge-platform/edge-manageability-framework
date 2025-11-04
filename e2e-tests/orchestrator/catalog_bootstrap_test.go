@@ -378,7 +378,7 @@ var _ = Describe("Provisioned registries push test", Label("orchestrator-integra
 				chart := `
 # SPDX-FileCopyrightText: (C) 2024 Intel Corporation
 #
-# SPDX-License-Identifier: LicenseRef-Intel
+# SPDX-License-Identifier: Apache-2.0
 ---
 apiVersion: v2
 `
