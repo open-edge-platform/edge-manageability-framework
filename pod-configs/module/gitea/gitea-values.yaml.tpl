@@ -86,6 +86,8 @@ service:
     port: 443
     clusterIP: ""
 gitea:
+  startupProbe:
+    enabled: true
   admin:
     password: ${gitea_password}
     passwordMode: initialOnlyNoReset
