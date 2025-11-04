@@ -27,8 +27,6 @@ spec:
         valuesObject:
           argo:
             clusterDomain: {{ .Values.argo.clusterDomain | quote }}
-          keycloak:
-            hostname: "https://keycloak.{{ .Values.argo.clusterDomain }}"
           # Cluster-specific values for Keycloak Operator realm configuration
           clusterSpecific:
             webuiClientRootUrl: "https://web-ui.{{ .Values.argo.clusterDomain }}"
