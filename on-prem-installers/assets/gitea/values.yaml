@@ -110,6 +110,8 @@ persistence:
   storageClass: "openebs-hostpath"
 
 gitea:
+  startupProbe:
+    enabled: true
   config:
     database:
       DB_TYPE: postgres
