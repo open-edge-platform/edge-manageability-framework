@@ -23,7 +23,7 @@ postgresql:
   image:
     registry: docker.io
     repository: library/postgres
-    tag: 16.10-alpine3.22
+    tag: 16.10-bookworm
   primary:
     resourcesPreset: none
     resource: {}
@@ -35,11 +35,11 @@ postgresql:
       seccompProfile:
         type: RuntimeDefault
     extraVolumeMounts:
-    - mountPath: /var/run/postgresql
-      name: postgresql-run
+    - name: postgresql-run
+      mountPath: /var/run
     extraVolumes:
-    - emptyDir: {}
-      name: postgresql-run
+    - name: postgresql-run
+      emptyDir: {}
   persistence:
     size: 1Gi
   containerSecurityContext:
@@ -76,6 +76,8 @@ service:
     type: LoadBalancer
     port: 443
 gitea:
+  startupProbe:
+    enabled: true
   config:
     server:
       APP_DATA_PATH: /data
