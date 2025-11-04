@@ -58,9 +58,9 @@ spec:
   # All your runtime options (these become environment variables)
   additionalOptions:
     - name: hostname
-      value: "https://keycloak.{{ .Values.argo.clusterDomain }}"
+      value: "http://platform-keycloak.keycloak-system.svc.cluster.local:8080"
     - name: hostname-admin
-      value: "https://keycloak.{{ .Values.argo.clusterDomain }}"
+      value: "http://platform-keycloak.keycloak-system.svc.cluster.local:8080"
     - name: hostname-strict
       value: "false"
     - name: proxy
