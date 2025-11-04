@@ -1935,38 +1935,8 @@ get_upgrade_files() {
 }
 
 upgrade() {
-    parse_params "$@"
-    echo "Info: Checking deployed version..."
-
-    download_savedir
-    load_values
-    check_running_sshuttle
-    refresh_sshuttle
-
-    deployed_version=$(get_deployed_version)
-    echo "Info: The deployed version is $deployed_version."
-
-    fs=$(get_upgrade_files $deployed_version)
-    echo "Info: The following upgrades will be applied:"
-    for f in $fs; do
-        echo "    $f"
-    done
-    echo -n "Enter 'yes' to start the upgrades. Enter others to exit: "; read s
-    s=$(echo $s | tr '[:upper:]' '[:lower:]')
-    if [[ "$s" != "yes" ]]; then
-        exit
-    fi
-
-    for f in $fs; do
-        if [[ -f $f ]]; then
-            echo "Info: Executing $f."
-            source $f
-        else
-            echo "Warning: File $f does not exist."
-        fi
-    done
-
-    echo "Info: The upgrade completed successfully."
+  upgrade
+  echo "Info: The upgrade completed successfully."
 }
 
 account() {
