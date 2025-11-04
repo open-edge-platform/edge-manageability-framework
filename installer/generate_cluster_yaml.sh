@@ -300,8 +300,9 @@ if [ "$ORCH_INSTALLER_PROFILE" = "onprem-oxm" ]; then
   yq -i "
   .argo.infra-onboarding.pxe-server.interface = \"${OXM_PXE_SERVER_INT}\" |
   .argo.infra-onboarding.pxe-server.bootServerIP = \"${OXM_PXE_SERVER_IP}\" |
-  .argo.infra-onboarding.pxe-server.subnetAddress = \"${OXM_PXE_SERVER_SUBNET}\"
-  " "$OUTPUT_FILE"
+  .argo.infra-onboarding.pxe-server.subnetAddress = \"${OXM_PXE_SERVER_SUBNET}\" |
+  .postCustomTemplateOverwrite.traefik.deployment.podAnnotations.\"traffic.sidecar.istio.io/excludeInboundPorts\" = \"8000,8443,8080,4433,9000\"
+" "$OUTPUT_FILE"
 fi
 
 # -----------------------------------------------------------------------------
