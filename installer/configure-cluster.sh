@@ -70,8 +70,8 @@ save_scm_auth
 #
 # Create Cluster Configuration
 #
-if [ -z "$FILE_SYSTEM_ID" ] || [ -z "$TRAEFIK_TG_ARN" ] || [ -z "$ARGOCD_TG_ARN" ] || [ -z "$S3_PREFIX" ]; then
-    echo "  Missing one or more of: FILE_SYSTEM_ID, TRAEFIK_TG_ARN, ARGOCD_TG_ARN, S3_PREFIX"
+if [ -z "$FILE_SYSTEM_ID" ] || [ -z "$TRAEFIK_TG_ARN" ] || [ -z "$ARGOCD_TG_ARN" ]; then
+    echo "  Missing one or more of: FILE_SYSTEM_ID, TRAEFIK_TG_ARN, ARGOCD_TG_ARN"
     echo "  Please run provision.sh first."
     exit 1
 fi
@@ -169,6 +169,12 @@ echo Initializing GitOps Repos
 
 echo Starting VPC tunnel
 ./start-tunnel.sh
+
+# Setup kubectl config in default location
+echo "  Setting up kubectl configuration"
+mkdir -p ~/.kube
+cp "${KUBECONFIG}" ~/.kube/config
+chmod 600 ~/.kube/config
 
 echo
 echo =============================================================================

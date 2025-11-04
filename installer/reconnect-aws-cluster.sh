@@ -4,13 +4,18 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Run this script to re-establish connection to a provisioned AWS EKS cluster
-# from a new shell session. This updates your kubeconfig with the cluster
-# credentials before running configure-cluster.sh.
+# reconnect-cluster.sh - Re-establish connection to provisioned cluster
+#
+# Use this script when running the installer in a new shell session after
+# provision.sh has completed. This updates the kubeconfig to connect to
+# the EKS cluster.
 
 . ${HOME}/utils.sh
 
-load_provision_values
 load_provision_env
 load_cluster_state_env
+
 update_kube_config
+
+echo "Successfully updated kubeconfig for cluster ${CLUSTER_NAME}"
+echo "You can now run: ./configure-cluster.sh"

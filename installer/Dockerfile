@@ -65,6 +65,7 @@ ENV DEBIAN_FRONTEND=noninteractive DEPLOY_TYPE=$DEPLOY_TYPE SSHUTTLE_ARGS="--dis
 
 COPY Makefile configure-cluster.sh initialize-gitops-repos.sh start-tunnel.sh utils.sh await-argo.sh \
     prepare-upgrade.sh update-cluster.sh query-git-user.sh get-argo-login.sh cluster.tpl \
+    reconnect-aws-cluster.sh \
     ./
 ADD $DEPLOY_TARBALL .
 ADD $POD_CONFIGS_TARBALL .

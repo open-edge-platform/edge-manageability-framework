@@ -1719,11 +1719,11 @@ install() {
     upload_savedir
     rm -f ${values_changed} || true
 
-    terminate_sshuttle
-
     if ! $SKIP_APPLY_CLUSTER; then
         wait_for_gitea
     fi
+
+    terminate_sshuttle
 
     echo "Info: Installation completed successfully. Please back up the files in ${SAVE_DIR} directory."
 }

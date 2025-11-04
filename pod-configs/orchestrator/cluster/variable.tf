@@ -418,3 +418,9 @@ variable "eks_cluster_dns_ip" {
   description = "IP address of the DNS server for the cluster, leave empty to use the default DNS server"
 }
 
+variable "single_tenancy" {
+  type = bool
+  default = false
+  description = "Whether the cluster is single-tenant or multi-tenant"
+}
+
