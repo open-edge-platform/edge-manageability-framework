@@ -37,3 +37,6 @@ anyMiddlewareException:
       - "onboardingmgr-api-grpc-stream"
       - "cluster-connect-gateway-ws"
       - "cluster-connect-gateway-kubeapi"
+
+# https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
+traefikApiGroup: "traefik.io/v1alpha1"
