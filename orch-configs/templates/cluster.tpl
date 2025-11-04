@@ -7,6 +7,9 @@ root:
   useLocalValues: false
   clusterValues:
     - orch-configs/profiles/enable-platform.yaml
+{{- if .Values.enableDefaultTenancy }}
+    - orch-configs/profiles/enable-singleTenancy.yaml
+{{- end }}
 {{- if .Values.enableObservability }}
     - orch-configs/profiles/enable-o11y.yaml
 {{- end }}
@@ -16,8 +19,12 @@ root:
 {{- if .Values.enableKyverno }}
     - orch-configs/profiles/enable-kyverno.yaml
 {{- end }}
+{{- if .Values.enableAppOrch }}
     - orch-configs/profiles/enable-app-orch.yaml
+{{- end }}
+{{- if .Values.enableClusterOrch }}
     - orch-configs/profiles/enable-cluster-orch.yaml
+{{- end }}
 {{- if .Values.enableEdgeInfra }}
     - orch-configs/profiles/enable-edgeinfra.yaml
 {{- end }}
@@ -49,9 +56,6 @@ root:
 {{- end }}
 {{- if .Values.enableSquid }}
     - orch-configs/profiles/enable-explicit-proxy.yaml
-{{- end }}
-{{- if .Values.enableOsrmManualMode }}
-    - orch-configs/profiles/enable-osrm-manual-mode.yaml
 {{- end }}
     - orch-configs/profiles/resource-default.yaml
     - orch-configs/clusters/{{ .Values.name }}.yaml
@@ -130,7 +134,9 @@ orchestratorDeployment:
   targetCluster: {{ .Values.targetCluster }}
   enableMailpit: {{ .Values.enableMailpit }}
   argoServiceType: {{ .Values.argoServiceType }}
+{{- if .Values.dockerCache }}  
   dockerCache: "{{ .Values.dockerCache }}"
+{{- end }}
 {{- if and .Values.dockerCacheCert }}
   dockerCacheCert: |
 {{ .Values.dockerCacheCert | indent 4 }}

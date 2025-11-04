@@ -37,15 +37,26 @@ func (Deploy) rke2Cluster() error { //nolint: cyclop
 		return fmt.Errorf("error testing deployments and pods: %w", err)
 	}
 
-	// deploy openebs operator
-	if err := sh.RunV("kubectl", "apply", "-f", openEbsOperatorK8sTemplate); err != nil {
-		return fmt.Errorf("error applying openEbsOperatorK8sTemplate: %w", err)
+	// Add OpenEBS LocalPV helm repository
+	if err := sh.RunV("helm", "repo", "add", "openebs-localpv", "https://openebs.github.io/dynamic-localpv-provisioner"); err != nil {
+		return fmt.Errorf("error adding openebs-localpv helm repo: %w", err)
 	}
 
-	// deploy openebs-path operator
-	if err := sh.RunV("kubectl", "apply", "-f",
-		filepath.Join("rke2", openEbsOperatorK8sTemplateFile)); err != nil {
-		return fmt.Errorf("error applying openEbsOperatorK8sTemplateFile: %w", err)
+	// Update helm repositories
+	if err := sh.RunV("helm", "repo", "update"); err != nil {
+		return fmt.Errorf("error updating helm repos: %w", err)
+	}
+
+	// Install/upgrade OpenEBS LocalPV provisioner
+	if err := sh.RunV("helm", "upgrade", "--install", "openebs-localpv", "openebs-localpv/localpv-provisioner",
+		"--version", "4.3.0",
+		"--namespace", "openebs-system",
+		"--create-namespace",
+		"--set", "hostpathClass.enabled=true",
+		"--set", "hostpathClass.name=openebs-hostpath",
+		"--set", "hostpathClass.isDefaultClass=true",
+		"--set", "deviceClass.enabled=false"); err != nil {
+		return fmt.Errorf("error installing openebs-localpv with helm: %w", err)
 	}
 
 	// create etcd-cert secret
@@ -54,12 +65,6 @@ func (Deploy) rke2Cluster() error { //nolint: cyclop
 		"--from-file=/var/lib/rancher/rke2/server/tls/etcd/server-client.key",
 		"--from-file=/var/lib/rancher/rke2/server/tls/etcd/server-ca.crt"); err != nil {
 		return fmt.Errorf("error creating etcd-certs secret: %w", err)
-	}
-
-	// create cron job that periodically defrags etcd
-	if err := sh.RunV("kubectl", "apply", "-f",
-		filepath.Join("rke2", "defrag-etcd-job.yaml")); err != nil {
-		return fmt.Errorf("error applying defrag-etcd-job.yaml: %w", err)
 	}
 
 	// Do a final verification (after installing OpenEBS) of all deployments and pods
