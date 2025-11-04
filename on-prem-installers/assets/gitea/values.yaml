@@ -136,6 +136,9 @@ gitea:
       PROTOCOL: https
       CERT_FILE: /tmp/secret-volume/tls.crt
       KEY_FILE: /tmp/secret-volume/tls.key
+image:
+  rootless: true
+  tag: 1.25.0
 
 service:
   http:

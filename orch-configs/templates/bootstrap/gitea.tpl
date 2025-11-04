@@ -8,6 +8,7 @@ image:
 {{- end }}
   pullPolicy: IfNotPresent
   rootless: true
+  tag: 1.25.0
 containerSecurityContext:
   allowPrivilegeEscalation: false
   capabilities:
