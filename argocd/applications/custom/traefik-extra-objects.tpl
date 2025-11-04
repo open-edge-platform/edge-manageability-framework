@@ -9,6 +9,9 @@ orchSecretName: tls-orch
 keycloakJwksUrl: http://platform-keycloak.keycloak-system.svc
 # internal keycloak JWKS Path should be static but providing a way to modify it here
 keycloakJwksPath: /realms/master/protocol/openid-connect/certs
+# Keycloak service configuration for IngressRoute
+keycloakServiceName: platform-keycloak
+keycloakServiceNamespace: keycloak-system
 keycloakServicePort: 8080
 fleetMatchHost: Host(`fleet.{{ .Values.argo.clusterDomain }}`)
 harborOciMatchHost: Host(`registry-oci.{{ .Values.argo.clusterDomain }}`)
