@@ -227,15 +227,6 @@ if [[ ${COMMAND:-""} != upgrade ]]; then
     exit 1
 fi
 
-echo "Info: Checking data file..."
-if ! check_s3_savedir_empty; then
-    download_savedir
-    echo "Info: Pulled S3 ${SAVE_DIR}."
-fi
- if [[ ! -f ${SAVE_DIR}/${VALUES} ]]; then
-     echo -n "Error: There is no value file found."
-     exit 1
- fi
 # Terminate existing sshuttle
 refresh_sshuttle
 connect_cluster
