@@ -604,27 +604,27 @@ spec:
               value: "true"
             # Dynamic URL environment variables for variable substitution in realm config
             # These will be substituted into the JSON realm config using $(env:VARIABLE_NAME) syntax
-            # Set to cluster-specific values as needed; defaults are example.com values
+            # Values are dynamically set from the cluster domain
             - name: TELEMETRY_ROOT_URL
-              value: "https://telemetry.example.com"
+              value: "https://observability-ui.{{ .Values.argo.clusterDomain }}"
             - name: TELEMETRY_REDIRECT_URL_1
-              value: "https://telemetry.example.com/oidc/callback"
+              value: "https://observability-ui.{{ .Values.argo.clusterDomain }}/oidc/callback"
             - name: CLUSTER_MANAGEMENT_ROOT_URL
-              value: "https://cluster-mgmt.example.com"
+              value: "https://connect-gateway.{{ .Values.argo.clusterDomain }}"
             - name: CLUSTER_MANAGEMENT_REDIRECT_URL_1
-              value: "https://cluster-mgmt.example.com/oidc/callback"
+              value: "https://connect-gateway.{{ .Values.argo.clusterDomain }}/oidc/callback"
             - name: CLUSTER_MANAGEMENT_REDIRECT_URL_2
-              value: "https://cluster-mgmt.example.com/auth/callback"
+              value: "https://connect-gateway.{{ .Values.argo.clusterDomain }}/auth/callback"
             - name: WEBUI_ROOT_URL
-              value: "https://webui.example.com"
+              value: "https://web-ui.{{ .Values.argo.clusterDomain }}"
             - name: WEBUI_REDIRECT_URL_1
-              value: "https://webui.example.com/auth/callback"
+              value: "https://web-ui.{{ .Values.argo.clusterDomain }}/auth/callback"
             - name: DOCSUI_ROOT_URL
-              value: "https://docs.example.com"
+              value: "https://docs.{{ .Values.argo.clusterDomain }}"
             - name: DOCSUI_REDIRECT_URL_1
-              value: "https://docs.example.com/oidc/callback"
+              value: "https://docs.{{ .Values.argo.clusterDomain }}/oidc/callback"
             - name: REGISTRY_ROOT_URL
-              value: "https://registry.example.com"
+              value: "https://registry-oci.{{ .Values.argo.clusterDomain }}"
             # Log configuration
             - name: LOGGING_LEVEL_ROOT
               value: "INFO"
