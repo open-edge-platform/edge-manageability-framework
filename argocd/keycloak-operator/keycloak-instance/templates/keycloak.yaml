@@ -64,6 +64,11 @@ spec:
     # This allows Vault to validate OIDC discovery using the internal K8s FQDN
     - name: hostname-admin
       value: "http://platform-keycloak.keycloak-system.svc.cluster.local:8080"
+    # Enable dynamic backchannel URLs - THIS IS THE KEY!
+    # When internal services access Keycloak via internal FQDN, they get internal issuer
+    # When browsers access via Traefik, they get external issuer for OAuth redirects
+    - name: hostname-backchannel-dynamic
+      value: "true"
     # Accept requests from any hostname (Traefik adds X-Forwarded-Host header)
     - name: hostname-strict
       value: "false"
