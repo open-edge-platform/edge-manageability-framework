@@ -34,10 +34,7 @@ func (k Keycloak) GetPassword() {
 		fmt.Println("Error executing command:", err)
 		return
 	}
-	fmt.Println("Password retrieved successfully. For security reasons, the password is not displayed.")
-	fmt.Println("To retrieve the password manually, run:")
 	fmt.Printf("  kubectl get secret -n %s platform-keycloak -o jsonpath='{.data.admin-password}' | base64 --decode\n", keycloakNamespace)
-}
 }
 
 // SetPassword '<password>' sets the admin keycloak password, make sure you use quotes around the password
