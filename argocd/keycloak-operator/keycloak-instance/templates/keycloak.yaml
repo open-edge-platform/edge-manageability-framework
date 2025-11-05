@@ -57,10 +57,17 @@ spec:
   
   # All your runtime options (these become environment variables)
   additionalOptions:
+    # External hostname used for OAuth redirects and issuer URL (via Traefik)
     - name: hostname
       value: "https://keycloak.{{ .Values.argo.clusterDomain }}"
+    # Internal hostname used for Vault and internal service access (NOT used for OAuth)
+    # This allows Vault to validate OIDC discovery using the internal K8s FQDN
+    - name: hostname-admin
+      value: "http://platform-keycloak.keycloak-system.svc.cluster.local:8080"
+    # Accept requests from any hostname (Traefik adds X-Forwarded-Host header)
     - name: hostname-strict
       value: "false"
+    # Read X-Forwarded-* headers from Traefik for correct hostname in OAuth flows
     - name: proxy
       value: "xforwarded"
     - name: db-url-properties
