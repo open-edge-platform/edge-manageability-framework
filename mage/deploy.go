@@ -79,6 +79,10 @@ func (Deploy) all(targetEnv string) error {
 		return err
 	}
 
+	if err := (Deploy{}).preOrchDeploy(targetEnv); err != nil {
+		return err
+	}
+
 	if err := (Deploy{}).orchLocal(targetEnv); err != nil {
 		return err
 	}
@@ -142,6 +146,11 @@ func (d Deploy) kind(targetEnv string) error { //nolint:gocyclo
 		}
 	}
 
+	fmt.Println("kind cluster ready: 😊")
+	return nil
+}
+
+func (d Deploy) preOrchDeploy(targetEnv string) error { //nolint:gocyclo
 	if err := createNamespaces(); err != nil {
 		return fmt.Errorf("error creating namespaces: %w", err)
 	}
@@ -153,6 +162,7 @@ func (d Deploy) kind(targetEnv string) error { //nolint:gocyclo
 
 	// Check if the tls-orch secret exists on the filesystem
 	// if it does, then read it and create the tls-orch secret with it
+	targetAutoCertEnabled, _ := (Config{}).isAutoCertEnabled(targetEnv)
 	if autoCert && targetAutoCertEnabled {
 		fmt.Println("Restoring existing tls-orch secret")
 		if err := restoreGatewayTLSSecret("aws"); err != nil {
@@ -214,7 +224,7 @@ func (d Deploy) kind(targetEnv string) error { //nolint:gocyclo
 	if err := (Argo{}).dockerHubChartOrgAdd(); err != nil {
 		return err
 	}
-	fmt.Println("kind cluster ready: 😊")
+	fmt.Println("Pre-Orchestrator installer tasks run successfully")
 	return nil
 }
 

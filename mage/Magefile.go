@@ -490,7 +490,10 @@ func (d Deploy) KindPreset(clusterPreset string) error {
 
 // Deploy kind cluster and Argo CD.
 func (d Deploy) Kind(targetEnv string) error {
-	return d.kind(targetEnv)
+	if err := d.kind(targetEnv); err != nil {
+		return err
+	}
+	return d.preOrchDeploy(targetEnv)
 }
 
 func (d Deploy) Gitea(targetEnv string) error {
