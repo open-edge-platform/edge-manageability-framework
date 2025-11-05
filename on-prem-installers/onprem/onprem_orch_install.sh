@@ -42,6 +42,9 @@ source "$(dirname "$0")/functions.sh"
 ### Variables
 cwd=$(pwd)
 
+ASSUME_YES=false
+ENABLE_TRACE=false
+SINGLE_TENANCY_PROFILE=false
 deb_dir_name="installers"
 git_arch_name="repo_archives"
 argo_cd_ns="argocd"
@@ -334,10 +337,6 @@ if [[ -f "$MAIN_ENV_CONFIG" ]]; then
   # shellcheck disable=SC1090
   source "$MAIN_ENV_CONFIG"
 fi
-
-ASSUME_YES=false
-ENABLE_TRACE=false
-SINGLE_TENANCY_PROFILE=false
 
 if [ -n "${1-}" ]; then
   while :; do
