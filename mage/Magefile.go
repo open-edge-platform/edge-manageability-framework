@@ -1498,10 +1498,15 @@ func (l Lint) Yaml() error {
 type Database mg.Namespace
 
 // Retrieves the admin password for local postgres database.
+// WARNING: This function does not print the password for security reasons.
+// To retrieve the password, use:kubectl get secret orch-database-postgresql -n orch-database -o jsonpath='{.data.password}' | base64 --decode
 func (d Database) GetPassword() error {
-	pass, err := d.getPassword()
-	fmt.Println(pass)
-	return err
+_, err := d.getPassword()
+	if err != nil {
+		return err
+	}
+	fmt.Println("kubectl get secret orch-database-postgresql -n orch-database -o jsonpath='{.data.password}' | base64 --decode")
+	return nil
 }
 
 // Starts an interactive psql client and connects to local postgres database.

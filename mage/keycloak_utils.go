@@ -24,15 +24,20 @@ var (
 
 type Keycloak mg.Namespace
 
-// GetPassword retrieves the admin keycloak password
+// GetPassword retrieves the admin keycloak password.
+// WARNING: This function does not print the password for security reasons.
+// To retrieve the password, use: kubectl get secret -n orch-platform platform-keycloak -o jsonpath='{.data.admin-password}' | base64 --decode
 func (k Keycloak) GetPassword() {
 	command := "kubectl get secret -n " + keycloakNamespace + " platform-keycloak -o jsonpath='{.data.admin-password}' | base64 --decode"
-	out, err := exec.Command("bash", "-c", command).CombinedOutput()
+	_, err := exec.Command("bash", "-c", command).CombinedOutput()
 	if err != nil {
 		fmt.Println("Error executing command:", err)
 		return
 	}
-	fmt.Println(string(out))
+	fmt.Println("Password retrieved successfully. For security reasons, the password is not displayed.")
+	fmt.Println("To retrieve the password manually, run:")
+	fmt.Printf("  kubectl get secret -n %s platform-keycloak -o jsonpath='{.data.admin-password}' | base64 --decode\n", keycloakNamespace)
+}
 }
 
 // SetPassword '<password>' sets the admin keycloak password, make sure you use quotes around the password

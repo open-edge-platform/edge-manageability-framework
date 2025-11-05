@@ -46,12 +46,15 @@ func initialSecretInternal() (string, error) {
 	return string(secret), nil
 }
 
+// initSecret retrieves the ArgoCD admin password.
+// WARNING: This function does not print the password for security reasons.
+// To retrieve the password, use: kubectl get secret -n argocd argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 --decode
 func (Argo) initSecret() error {
-	secret, err := initialSecretInternal()
+	_, err := initialSecretInternal()
 	if err != nil {
 		return err
 	}
-	fmt.Println(secret)
+	fmt.Println("  kubectl get secret -n argocd argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 --decode")
 	return nil
 }
 
