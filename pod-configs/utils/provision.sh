@@ -1140,10 +1140,6 @@ EOF
             echo "SMTP_URL=${smtp_url}" >> ~/.env
         fi
 
-        single_tenancy=$(terraform show -json | jq -r '.values.outputs.single_tenancy.value')
-        if [[ -n "$single_tenancy" && "$single_tenancy" != "null" ]]; then
-            echo "SINGLE_TENANCY=${single_tenancy}" >> ~/.env
-        fi
         popd
 
 

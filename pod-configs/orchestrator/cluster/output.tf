@@ -70,6 +70,3 @@ output "smtp_url" {
   value = var.smtp_url
 }
 
-output "single_tenancy" {
-  value = var.single_tenancy
-}
