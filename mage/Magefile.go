@@ -1501,7 +1501,7 @@ type Database mg.Namespace
 // WARNING: This function does not print the password for security reasons.
 // To retrieve the password, use:kubectl get secret orch-database-postgresql -n orch-database -o jsonpath='{.data.password}' | base64 --decode
 func (d Database) GetPassword() error {
-_, err := d.getPassword()
+	_, err := d.getPassword()
 	if err != nil {
 		return err
 	}
