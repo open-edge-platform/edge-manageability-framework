@@ -17,7 +17,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.23.4
 	github.com/onsi/gomega v1.37.0
 	github.com/open-edge-platform/app-orch-deployment/app-deployment-manager/api/nbi/v2 v2.3.21
-	github.com/open-edge-platform/cluster-manager/v2 v2.1.15
+	github.com/open-edge-platform/cluster-manager/v2 v2.1.17
 	github.com/open-edge-platform/infra-core/apiv2/v2 v2.0.0-20250523082429-138b179945c5
 	github.com/open-edge-platform/infra-managers/attestationstatus v0.4.0
 	github.com/open-edge-platform/infra-managers/host v1.21.1
@@ -33,7 +33,7 @@ require (
 	golang.org/x/crypto v0.38.0
 	golang.org/x/oauth2 v0.30.0
 	golang.org/x/sync v0.14.0
-	google.golang.org/grpc v1.72.2
+	google.golang.org/grpc v1.72.3
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/apimachinery v0.32.7
 	k8s.io/client-go v0.32.5
