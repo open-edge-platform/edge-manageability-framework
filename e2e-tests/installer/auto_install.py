@@ -568,7 +568,7 @@ class AutoInstall:
 
         self.installer_session.sendline('\x1bG$osmtp_url="10.138.167.51"\x1b')
         self.installer_session.sendline('\x1bG$osmtp_port=587\x1b')
-
+        self.installer_session.sendline('\x1bG$osmtp_from="kevin test <kevin@test.com>"\x1b')
 
         self.installer_session.sendline(":wq")
 
