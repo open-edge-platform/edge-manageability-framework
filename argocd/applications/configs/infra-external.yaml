@@ -83,6 +83,9 @@ loca-credentials:
 
 amt:
   mps:
+    postgresql:
+      image:
+        tag: 16:10-bookworm
     traefikReverseProxy:
       enabled: true
       secretName: "tls-orch"
@@ -91,6 +94,9 @@ amt:
     # https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
     traefikApiGroup: "traefik.io/v1alpha1"
   rps:
+    postgresql:
+      image:
+        tag: 16:10-bookworm
     traefikReverseProxy:
       enabled: true
       secretName: "tls-orch"
