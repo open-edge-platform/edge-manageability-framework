@@ -73,6 +73,7 @@ inventory:
   postgresql:
     pod:
       enabled: false
+      tag: 16.10-bookworm
     ssl: false
     secrets: inventory-local-postgresql
   resources: null
