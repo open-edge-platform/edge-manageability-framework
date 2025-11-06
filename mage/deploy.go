@@ -909,41 +909,20 @@ func (Deploy) generateInfraCerts() error {
 }
 
 func (d Deploy) gitea(bootstrapValues []string, targetEnv string) error {
-	// Deploy Gitea
-	giteaRegistry := "oci://registry-1.docker.io/giteacharts/gitea"
-
-	bootstrapParam := joinNamedParams("values", bootstrapValues)
-	cmd := fmt.Sprintf("helm -n gitea upgrade --install gitea %s --version %s "+
-		bootstrapParam+" --set gitea.admin.username='%s' --set gitea.admin.password='%s' --create-namespace --wait",
-		giteaRegistry, giteaVersion, adminGiteaUsername, adminGiteaPassword)
-	fmt.Printf("Deploying Gitea with cmd: %s\n", cmd)
-	if _, err := script.Exec(cmd).Stdout(); err != nil {
-		return err
-	}
 	// Store admin credential in K8s Secret
 	// This is not consumed during normal situlations
 	fmt.Println("Creating admin-gitea-credential secret")
 	if err := createOrUpdateGiteaSecret("admin-gitea-credential", adminGiteaUsername, adminGiteaPassword); err != nil {
 		return err
 	}
-	// Create argocd account in Gitea
-	fmt.Println("Creating argocd account in Gitea")
-	if err := createOrUpdateGiteaAccount(argoGiteaUsername, argoGiteaPassword); err != nil {
-		fmt.Println("Error creating argocd account in Gitea")
-		return err
-	}
+
 	// Store argocd gitea credential in K8s Secret
 	fmt.Println("Creating argocd-gitea-credential secret")
 	if err := createOrUpdateGiteaSecret("argocd-gitea-credential", argoGiteaUsername, argoGiteaPassword); err != nil {
 		fmt.Println("Error creating argocd-gitea-credential secret")
 		return err
 	}
-	// Create apporch account in Gitea
-	fmt.Println("Creating apporch account in Gitea")
-	if err := createOrUpdateGiteaAccount(appGiteaUsername, appGiteaPassword); err != nil {
-		fmt.Println("Error creating apporch account in Gitea")
-		return err
-	}
+
 	// Store app orch gitea credential in K8s Secret
 	// This will later be connsumed by adm-secret to create Vault secret ma_git_service
 	fmt.Println("Creating app-gitea-credential secret")
@@ -951,18 +930,49 @@ func (d Deploy) gitea(bootstrapValues []string, targetEnv string) error {
 		fmt.Println("Error creating app-gitea-credential secret")
 		return err
 	}
-	// Create clusterorch account in Gitea
-	fmt.Println("Creating clusterorch account in Gitea")
-	if err := createOrUpdateGiteaAccount(clusterGiteaUsername, clusterGiteaPassword); err != nil {
-		fmt.Println("Error creating clusterorch account in Gitea")
-		return err
-	}
+
 	// Store cluster orch gitea credential in K8s Secret
 	// This will later be connsumed by adm-secret to create Vault secret mc_git_service
 	fmt.Println("Creating cluster-gitea-credential secret")
 	if err := createOrUpdateGiteaSecret("cluster-gitea-credential", clusterGiteaUsername, clusterGiteaPassword); err != nil {
 		fmt.Println("Error creating cluster-gitea-credential secret")
 		return err
+	}
+
+	// Deploy Gitea if AO is enabled
+	aoEnabled, _ := (Config{}).isAOEnabled(targetEnv)
+	if aoEnabled {
+		giteaRegistry := "oci://registry-1.docker.io/giteacharts/gitea"
+
+		bootstrapParam := joinNamedParams("values", bootstrapValues)
+		cmd := fmt.Sprintf("helm -n gitea upgrade --install gitea %s --version %s "+
+			bootstrapParam+" --set gitea.admin.username='%s' --set gitea.admin.password='%s' --create-namespace --wait",
+			giteaRegistry, giteaVersion, adminGiteaUsername, adminGiteaPassword)
+		fmt.Printf("Deploying Gitea with cmd: %s\n", cmd)
+		if _, err := script.Exec(cmd).Stdout(); err != nil {
+			return err
+		}
+
+		// Create argocd account in Gitea
+		fmt.Println("Creating argocd account in Gitea")
+		if err := createOrUpdateGiteaAccount(argoGiteaUsername, argoGiteaPassword); err != nil {
+			fmt.Println("Error creating argocd account in Gitea")
+			return err
+		}
+
+		// Create apporch account in Gitea
+		fmt.Println("Creating apporch account in Gitea")
+		if err := createOrUpdateGiteaAccount(appGiteaUsername, appGiteaPassword); err != nil {
+			fmt.Println("Error creating apporch account in Gitea")
+			return err
+		}
+
+		// Create clusterorch account in Gitea
+		fmt.Println("Creating clusterorch account in Gitea")
+		if err := createOrUpdateGiteaAccount(clusterGiteaUsername, clusterGiteaPassword); err != nil {
+			fmt.Println("Error creating clusterorch account in Gitea")
+			return err
+		}
 	}
 
 	return nil

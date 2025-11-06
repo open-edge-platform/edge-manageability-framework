@@ -520,6 +520,30 @@ func (c Config) isMailpitEnabled(targetEnv string) (bool, error) {
 	return enableMailpit, nil
 }
 
+func (c Config) isAOEnabled(targetEnv string) (bool, error) {
+	clusterValues, err := c.getTargetValues(targetEnv)
+	if err != nil {
+		return false, fmt.Errorf("failed to get target values: %w", err)
+	}
+
+	root, ok := clusterValues["root"].(map[string]interface{})
+	if !ok {
+		return false, fmt.Errorf("'root' configuration is missing or invalid")
+	}
+
+	if clusterValuesPaths, ok := root["clusterValues"].([]interface{}); ok {
+		for _, path := range clusterValuesPaths {
+			if pathStr, ok := path.(string); ok {
+				if strings.Contains(pathStr, "enable-app-orch.yaml") {
+					return true, nil
+				}
+			}
+		}
+	}
+
+	return false, nil
+}
+
 func (c Config) getDockerCache(targetEnv string) (string, error) {
 	clusterValues, err := c.getTargetValues(targetEnv)
 	if err != nil {
