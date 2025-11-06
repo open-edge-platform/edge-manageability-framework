@@ -65,7 +65,8 @@ runs:
         ORCH_DEFAULT_PASSWORD: ${{ inputs.orch_password }}
       run: |
         npx cypress run --e2e \
-          -s "cypress/e2e/admin/non-org-admin-smoke.cy.ts,cypress/e2e/admin/org-admin-smoke.cy.ts"
+          -s "cypress/e2e/admin/non-org-admin-smoke.cy.ts,cypress/e2e/admin/org-admin-smoke.cy.ts" \
+          --env ORCH_DEFAULT_PASSWORD=${ORCH_DEFAULT_PASSWORD}
     - name: Collect Admin related logs
       if: ${{ always() && inputs.admin == 'true' }}
       working-directory: orch-ui/tests
