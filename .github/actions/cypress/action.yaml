@@ -96,10 +96,11 @@ runs:
       env:
         EN_SERIAL_NUMBER: ${{ inputs.en_serial_number }}
         INPUTS_INFRA: ${{inputs.infra}}
+        ORCH_DEFAULT_PASSWORD: ${{ inputs.orch_password }}
       run: |
         npx cypress run --e2e \
           -s ${INPUTS_INFRA} \
-          --env EN_SERIAL_NUMBER=${EN_SERIAL_NUMBER}
+          --env EN_SERIAL_NUMBER=${EN_SERIAL_NUMBER},ORCH_DEFAULT_PASSWORD=${ORCH_DEFAULT_PASSWORD}
     - name: Collect Edge Infra Manager logs
       if: ${{ always() && inputs.infra != '' }}
       working-directory: orch-ui/tests
@@ -138,10 +139,12 @@ runs:
       if: ${{ always() && inputs.cluster_orch == 'true' }}
       working-directory: orch-ui/tests
       shell: bash
+      env:
+        ORCH_DEFAULT_PASSWORD: ${{ inputs.orch_password }}
       run: |
         npx cypress run --e2e \
           -s "cypress/e2e/cluster-orch/cluster-orch-smoke.cy.ts" \
-          --env EN_UUID=${{ env.EN_UUID }}
+          --env EN_UUID=${{ env.EN_UUID }},ORCH_DEFAULT_PASSWORD=${ORCH_DEFAULT_PASSWORD}
     - name: Collect ClusterOrch logs
       if: ${{ always() && inputs.cluster_orch == 'true' }}
       working-directory: orch-ui/tests
@@ -167,9 +170,12 @@ runs:
       if: ${{ always() && inputs.app_orch == 'true' }}
       working-directory: orch-ui/tests
       shell: bash
+      env:
+        ORCH_DEFAULT_PASSWORD: ${{ inputs.orch_password }}
       run: |
         npx cypress run --e2e \
-          -s "cypress/e2e/app-orch/deployment-package-smoke.cy.ts"
+          -s "cypress/e2e/app-orch/deployment-package-smoke.cy.ts" \
+          --env ORCH_DEFAULT_PASSWORD=${ORCH_DEFAULT_PASSWORD}
         # These tests are not stable yet, will be enabled in a separate PR
         # npx cypress run --e2e \
         #   -s cypress/e2e/app-orch/deployment-smoke.cy.ts
