@@ -331,9 +331,6 @@ var _ = Describe("Provisioned registries push test", Label("orchestrator-integra
 					"check docker response does not contain 'unauthorized'")
 				Expect(buf.String()).ToNot(ContainSubstring("failed to verify certificate"),
 					"check docker response is OK with registry CA")
-				fmt.Println("--------------------------------------------------------------")
-				fmt.Println(buf.String())
-				fmt.Println("--------------------------------------------------------------")
 				Expect(buf.String()).To(ContainSubstring(imageVer),
 					"check docker response contains %s", imageVer)
 
