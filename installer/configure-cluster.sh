@@ -108,12 +108,6 @@ echo Initializing GitOps Repos
 echo Starting VPC tunnel
 ./start-tunnel.sh
 
-# Setup kubectl config in default location
-echo "  Setting up kubectl configuration"
-mkdir -p ~/.kube
-cp "${KUBECONFIG}" ~/.kube/config
-chmod 600 ~/.kube/config
-
 echo
 echo =============================================================================
 echo The ${CLUSTER_NAME} should now be ready for deployment.
