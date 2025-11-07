@@ -10,6 +10,10 @@
 BUCKET_REGION="us-west-2"
 SAVE_DIR="${SAVE_DIR:-${HOME}/pod-configs/SAVEME}"
 
+export DISABLE_AO_PROFILE=true
+export DISABLE_CO_PROFILE=true
+export DISABLE_O11Y_PROFILE=true
+
 usage() {
         echo "Usage:"
         echo "configure-cluster.sh [--jumphost-ip {JUMPHOST IP ADDRESS}] [--cidr-block {CIDR BLOCK}]"
