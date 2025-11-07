@@ -85,7 +85,7 @@ amt:
   mps:
     postgresql:
       image:
-        tag: 16:10-bookworm
+        tag: 16.10-bookworm
     traefikReverseProxy:
       enabled: true
       secretName: "tls-orch"
@@ -96,7 +96,7 @@ amt:
   rps:
     postgresql:
       image:
-        tag: 16:10-bookworm
+        tag: 16.10-bookworm
     traefikReverseProxy:
       enabled: true
       secretName: "tls-orch"
