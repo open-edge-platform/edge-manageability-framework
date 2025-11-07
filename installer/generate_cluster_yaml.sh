@@ -315,8 +315,10 @@ update_proxy() {
     local var_name=$2
     local value=${!var_name:-}
 
+    # Skip if variable is undefined or empty
     if [ -z "$value" ]; then
-        value=""
+        echo "⚠️ Skipping ${yaml_key} (env var ${var_name} is undefined or empty)"
+        return
     fi
 
     export TMP_VALUE="$value"
