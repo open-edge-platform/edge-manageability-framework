@@ -1125,10 +1125,10 @@ EOF
             echo "SRE_DESTINATION_SECRET_URL=${sre_destination_secret_url}" >> ~/.env
         fi
 
-        sre_destination_ca_secret=$(terraform show -json | jq -r '.values.outputs.sre_destination_ca_secret.value')
-        if [[ -n "$sre_destination_ca_secret" && "$sre_destination_ca_secret" != "null" ]]; then
-            echo "SRE_DESTINATION_CA_SECRET=${sre_destination_ca_secret}" >> ~/.env
-        fi
+        #sre_destination_ca_secret=$(terraform show -json | jq -r '.values.outputs.sre_destination_ca_secret.value')
+        #if [[ -n "$sre_destination_ca_secret" && "$sre_destination_ca_secret" != "null" ]]; then
+        #    echo "SRE_DESTINATION_CA_SECRET=${sre_destination_ca_secret}" >> ~/.env
+        #fi
 
         auto_cert=$(terraform show -json | jq -r '.values.outputs.auto_cert.value')
         if [[ -n "$auto_cert" && "$auto_cert" != "null" ]]; then
