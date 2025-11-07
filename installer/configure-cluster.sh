@@ -53,6 +53,10 @@ parse_params() {
     fi
 }
 
+export DISABLE_AO_PROFILE=true      # Disable Application Orchestrator
+export DISABLE_CO_PROFILE=true      # Disable Cluster Orchestrator
+export DISABLE_O11Y_PROFILE=true    # Disable Observability
+
 load_provision_env
 
 parse_params "$@"
