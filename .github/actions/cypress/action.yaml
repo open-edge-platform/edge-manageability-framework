@@ -43,7 +43,7 @@ runs:
       with:
         repository: open-edge-platform/orch-ui
         path: orch-ui
-        ref: remove_old_pw
+        ref: ce920d21cc755825c3dc74ad3d2f54ac9a4a5195
         persist-credentials: false
     - run: git log -1
       shell: bash
