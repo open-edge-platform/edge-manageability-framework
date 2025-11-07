@@ -423,6 +423,3 @@ variable "enable_observability_node" {
   default     = true
   description = "Whether to create the observability node group"
 }
-
-
-
