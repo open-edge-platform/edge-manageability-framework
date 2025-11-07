@@ -21,7 +21,7 @@ spec:
   sources:
     - repoURL: https://helm.goharbor.io
       chart: harbor
-      targetRevision: 1.17.0
+      targetRevision: 1.17.2
       helm:
         releaseName: {{$appName}}
         valuesObject:
@@ -50,6 +50,31 @@ spec:
       - CreateNamespace=true
       - ApplyOutOfSyncOnly=true
   ignoreDifferences:
+    - kind: Secret
+      name: harbor-admin-password
+      namespace: {{ $namespace }}
+      jsonPointers:
+        - /data
+    - kind: Secret
+      name: harbor-admin-credential
+      namespace: {{ $namespace }}
+      jsonPointers:
+        - /data
+    - kind: Secret
+      name: harbor-oci-database
+      namespace: {{ $namespace }}
+      jsonPointers:
+        - /data
+    - kind: Secret
+      name: harbor-oci-trivy
+      namespace: {{ $namespace }}
+      jsonPointers:
+        - /data
+    - kind: Secret
+      name: harbor-oci-registryctl
+      namespace: {{ $namespace }}
+      jsonPointers:
+        - /data
     - group: ''
       kind: 'Secret'
       name: harbor-oci-registry
@@ -71,18 +96,6 @@ spec:
     - group: ''
       kind: 'Secret'
       name: harbor-oci-jobservice
-      namespace: {{ $namespace }}
-      jsonPointers:
-        - /data
-    - group: ''
-      kind: 'Secret'
-      name: jobservice
-      namespace: {{ $namespace }}
-      jsonPointers:
-        - /data
-    - group: ''
-      kind: 'Secret'
-      name: secret-jobservice
       namespace: {{ $namespace }}
       jsonPointers:
         - /data

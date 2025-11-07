@@ -28,6 +28,10 @@ set -o pipefail
 # shellcheck disable=SC1091
 source "$(dirname "$0")/functions.sh"
 
+SKIP_DOWNLOAD=false
+ENABLE_TRACE=false
+ASSUME_YES=false
+
 # Source main environment configuration if it exists
 MAIN_ENV_CONFIG="$(dirname "$0")/onprem.env"
 if [[ -f "$MAIN_ENV_CONFIG" ]]; then
@@ -180,10 +184,6 @@ write_shared_variables() {
 ################################
 ##### INSTALL SCRIPT START #####
 ################################
-
-SKIP_DOWNLOAD=false
-ENABLE_TRACE=false
-ASSUME_YES=false
 
 if [ -n "${1-}" ]; then
   while :; do

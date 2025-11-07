@@ -73,7 +73,6 @@ export RESOURCE_DEFAULT_PROFILE='- orch-configs/profiles/resource-default.yaml'
 # -----------------------------------------------------------------------------
 export SRE_TLS_ENABLED="${SRE_TLS_ENABLED:-false}"
 export SRE_DEST_CA_CERT="${SRE_DEST_CA_CERT:-}"
-export SMTP_SKIP_VERIFY="${SMTP_SKIP_VERIFY:-false}"
 
 # -----------------------------------------------------------------------------
 # Function: Validate IPv4
@@ -294,7 +293,10 @@ fi
 # Update YAML parameters
 yq -i ".argo.o11y.sre.tls.enabled |= ${TLS_ENABLED}" "$OUTPUT_FILE"
 yq -i ".argo.o11y.sre.tls.caSecretEnabled |= ${CA_SECRET_ENABLED}" "$OUTPUT_FILE"
-yq -i ".argo.o11y.alertingMonitor.smtp.insecureSkipVerify |= ${SMTP_SKIP_VERIFY}" "$OUTPUT_FILE"
+
+if [ -n "${SMTP_SKIP_VERIFY}" ]; then
+  yq -i ".argo.o11y.alertingMonitor.smtp.insecureSkipVerify |= ${SMTP_SKIP_VERIFY}" "$OUTPUT_FILE"
+fi
 
 if [ "$ORCH_INSTALLER_PROFILE" = "onprem-oxm" ]; then
   yq -i "
