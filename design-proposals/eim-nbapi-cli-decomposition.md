@@ -69,7 +69,7 @@ The following are the usual options to decomposing or exposing subsets of APIs.
 
 - ~~API Gateway that would only expose certain endpoints to user~~ - this is a no go for us as we plan to remove the existing API Gateway and it does not actually solve the problem of releasing only specific flavours of EMF.
 - Maintain multiple OpenAPI specification - while possible to create multiple OpenAPI specs, the maintenance of same APIs across specs will be a large burden - still let's keep this option in consideration in terms of auto generating multiple specs from top spec.
-- ~~Authentication & Authorization Based Filtering ~~ - this is a no go for us as we do not control the end users of the EMF, and we want to provide tailored modular product for each workflow.
+- ~~Authentication & Authorization Based Filtering~~ - this is a no go for us as we do not control the end users of the EMF, and we want to provide tailored modular product for each workflow.
 - ~~API Versioning strategy~~ - Creating different API versions for each use-case - too much overhead without benefits similar to maintaining multiple OpenAPI specs.
 - ~~Proxy/Middleware Layer~~ - Similar to API Gateway - does not fit our use cases
 - OpenAPI Spec Manipulation - This approach uses OpenAPI's extension mechanism (properties starting with x-) to add metadata that describes which audiences, use cases, or clients should have access to specific endpoints, operations, or schemas. This approach is worth investigating to see if it can give use the automated approach for creating individual OpenAPI specs for workflows based on labels.
