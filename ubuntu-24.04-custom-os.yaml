@@ -1,0 +1,25 @@
+---
+# SPDX-FileCopyrightText: (C) 2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+appVersion: apps/v1
+metadata:
+  release: 0.0.0-dev
+  version: 0.1.0
+spec:
+  name: Ubuntu-24.04.2-LTS-Custom-OS
+  type: OS_TYPE_MUTABLE
+  provider: OS_PROVIDER_KIND_INFRA
+  architecture: x86_64
+  profileName: Ubuntu-24.04.2-LTS-Custom-OS
+  osImageUrl: >-
+    https://10.139.218.20:8443/images/noble-server-cloudimg-amd64.img
+  osImageVersion: 24.04.2
+  osImageSha256: 02dc186dc491514254df58df29a5877c93ca90ac790cc91a164ea90ed3a0bb05
+  osPackageManifestURL: ""
+  securityFeature: SECURITY_FEATURE_SECURE_BOOT_AND_FULL_DISK_ENCRYPTION
+  description: Ubuntu 24.04.2 LTS for x86_64 architecture
+  platformBundle:
+  metadata: "{}"
+  updateSources: []
+  tlsCaCert:

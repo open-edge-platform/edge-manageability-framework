@@ -1,0 +1,23 @@
+---
+# SPDX-FileCopyrightText: (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+appVersion: apps/v1
+metadata:
+  release: 0.0.0-dev
+  kubernetes-version: v1.32.4+k3s1
+spec:
+  name: Edge Microvisor Toolkit Dev 3.0.20250722.0234
+  type: OS_TYPE_MUTABLE
+  provider: OS_PROVIDER_KIND_INFRA
+  architecture: x86_64
+  profileName: microvisor-dev  # Name has to be identical to this file's name
+  osImageUrl: https://tinkerbell-nginx.orch-10-139-218-20.pid.infra-host.com/tink-stack/microvisor-dev-3.0.20250722.0234.raw.gz
+  osImageVersion: 3.0.20250722.0234
+  osImageSha256: 36f9e0b47ceb51df43ce177693a4a6820d7588e6bc6a61ac8c706f05ae1a0ca4
+  osPackageManifestURL: https://tinkerbell-nginx.orch-10-139-218-20.pid.infra-host.com/tink-stack/microvisor-dev-image_pkg_manifest.json
+  osExistingCvesURL: files-edge-orch/microvisor/iso/EdgeMicrovisorToolkit-3.1_cve.json
+  osFixedCvesURL:
+  securityFeature: SECURITY_FEATURE_NONE
+  description: Edge Microvisor Toolkit Dev for x86_64 architecture
+  platformBundle:
