@@ -39,7 +39,7 @@ module "eks" {
   addons                      = var.eks_addons
   eks_version                 = var.eks_version
   max_pods                    = var.eks_max_pods
-  additional_node_groups      = var.eks_additional_node_groups
+  additional_node_groups      = var.enable_observability_node ? var.eks_additional_node_groups : {}
   public_cloud                = var.public_cloud
   enable_cache_registry       = var.enable_cache_registry
   cache_registry              = var.cache_registry
