@@ -137,8 +137,7 @@ gitea:
       CERT_FILE: /tmp/secret-volume/tls.crt
       KEY_FILE: /tmp/secret-volume/tls.key
 image:
-  rootless: true
-  tag: 1.25.0
+  tag: 1.25.1
 
 service:
   http:

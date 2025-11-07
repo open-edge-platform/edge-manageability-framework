@@ -7,7 +7,7 @@ global:
 image:
   pullPolicy: IfNotPresent
   rootless: true
-  tag: 1.25.0
+  tag: 1.25.1
 containerSecurityContext:
   allowPrivilegeEscalation: false
   capabilities:
