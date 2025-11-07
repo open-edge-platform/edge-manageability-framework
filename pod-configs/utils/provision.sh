@@ -1129,7 +1129,6 @@ EOF
         #if [[ -n "$sre_destination_ca_secret" && "$sre_destination_ca_secret" != "null" ]]; then
         #    echo "SRE_DESTINATION_CA_SECRET=${sre_destination_ca_secret}" >> ~/.env
         #fi
-
         auto_cert=$(terraform show -json | jq -r '.values.outputs.auto_cert.value')
         if [[ -n "$auto_cert" && "$auto_cert" != "null" ]]; then
             echo "AUTO_CERT=${auto_cert}" >> ~/.env
