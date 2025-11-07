@@ -53,6 +53,10 @@ parse_params() {
     fi
 }
 
+export DISABLE_AO_PROFILE=true      # Disable Application Orchestrator
+export DISABLE_CO_PROFILE=true      # Disable Cluster Orchestrator
+export DISABLE_O11Y_PROFILE=true    # Disable Observability
+
 load_provision_env
 
 parse_params "$@"
@@ -107,6 +111,12 @@ echo Initializing GitOps Repos
 
 echo Starting VPC tunnel
 ./start-tunnel.sh
+
+# Setup kubectl config in default location
+echo "  Setting up kubectl configuration"
+mkdir -p ~/.kube
+cp "${KUBECONFIG}" ~/.kube/config
+chmod 600 ~/.kube/config
 
 echo
 echo =============================================================================
