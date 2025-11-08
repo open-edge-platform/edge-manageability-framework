@@ -18,4 +18,4 @@ controller:
 traefikApiGroup: "traefik.io/v1alpha1"
 
 openpolicyagent:
-  tag: 1.10.0-envoy-static
+  tag: 1.10.0-static

@@ -7,7 +7,7 @@ caSecretKey: ca.crt
 
 openPolicyAgent:
   image:
-    tag: 1.10.0-envoy-static
+    tag: 1.10.0-static
   config:
     profile: "compressed"
 
