@@ -88,9 +88,9 @@ export NGINX_TG_ARN
 export ARGOCD_TG_ARN
 export S3_PREFIX
 
-# -------------------------------
-# Disable Profile for Upgrade
-# -------------------------------
+
+# For ORCH upgrade, check the existing deployment 'root-app'
+
 if [ "$ORCH_UPGRADE" = "true" ]; then
     echo "Running Orch Upgrade Checks..."
 
