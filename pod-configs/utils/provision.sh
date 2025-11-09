@@ -409,9 +409,6 @@ parse_params() {
 
     echo CLUSTER_FQDN=${ROOT_DOMAIN} >> ~/.env
     echo ADMIN_EMAIL=${EMAIL} >> ~/.env
-    echo DISABLE_CO_PROFILE=${DISABLE_CO_PROFILE:-false} >> ~/.env
-    echo DISABLE_AO_PROFILE=${DISABLE_AO_PROFILE:-false} >> ~/.env
-    echo DISABLE_O11Y_PROFILE=${DISABLE_O11Y_PROFILE:-false} >> ~/.env
     export AWS_DEFAULT_REGION=$AWS_REGION
 
     if [[ $COMMAND != "account" ]]; then
@@ -1126,9 +1123,9 @@ EOF
         fi
 
         sre_destination_ca_secret=$(terraform show -json | jq -r '.values.outputs.sre_destination_ca_secret.value')
-        if [[ -n "$sre_destination_ca_secret" && "$sre_destination_ca_secret" != "null" ]]; then
-            echo "SRE_DESTINATION_CA_SECRET=${sre_destination_ca_secret}" >> ~/.env
-        fi
+        #if [[ -n "$sre_destination_ca_secret" && "$sre_destination_ca_secret" != "null" ]]; then
+        #    echo "SRE_DESTINATION_CA_SECRET=${sre_destination_ca_secret}" >> ~/.env
+        #fi
 
         auto_cert=$(terraform show -json | jq -r '.values.outputs.auto_cert.value')
         if [[ -n "$auto_cert" && "$auto_cert" != "null" ]]; then
