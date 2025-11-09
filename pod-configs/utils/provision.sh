@@ -162,7 +162,10 @@ OPTIONS_LIST=(
     "skip-quota-checks"
     "sm-proxy-region:"
     "socks-proxy:"
-    "vpc-id:"
+    "vpc-id:"    
+    "disable-ao-profile"
+    "disable-co-profile"
+    "disable-o11y-profile"
 )
 
 usage() {
@@ -223,7 +226,10 @@ usage() {
         echo "    [ --skip-destroy-route53 ] \\"
         echo "    [ --skip-quota-checks ] \\"
         echo "    [ --sm-proxy-region ] \\"
-        echo "    [ --socks-proxy {SOCKS PROXY} ] \\"
+        echo "    [ --socks-proxy {SOCKS PROXY} ] \\"        
+        echo "    [ --disable-ao-profile ] \\"
+        echo "    [ --disable-co-profile ] \\"
+         echo "   [ --disable-o11y-profile ] \\"
         echo "    [ --vpc-id ] {EXISTING VPC ID}"
         echo ""
         echo "Example:"
@@ -270,6 +276,9 @@ parse_params() {
             --customer-tag) CUSTOMER_TAG=$(eval echo $2); shift;;
             --desired-nodes) EKS_DESIRED_SIZE=$(eval echo $2); OVERRIDE_EKS_SIZE=true; shift;;
             --desired-o11y-nodes) EKS_O11Y_DESIRED_SIZE=$(eval echo $2); OVERRIDE_EKS_O11Y_SIZE=true; shift;;
+            --disable-ao-profile) DISABLE_AO_PROFILE=true;;
+            --disable-co-profile) DISABLE_CO_PROFILE=true;;
+            --disable-o11y-profile) DISABLE_O11Y_PROFILE=true;;
             --eks-cluster-dns-ip) EKS_CLUSTER_DNS_IP=$(eval echo $2); shift;;
             --eks-http-proxy) EKS_HTTP_PROXY=$(eval echo $2); shift;;
             --eks-https-proxy) EKS_HTTPS_PROXY=$(eval echo $2); shift;;
