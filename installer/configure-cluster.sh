@@ -65,6 +65,8 @@ load_cluster_state_env
 if ! load_scm_auth; then
     exit 1
 fi
+
+update_kube_config
 save_scm_auth
 
 #
