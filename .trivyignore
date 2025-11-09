@@ -1,0 +1,48 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+AVD-KSV-0009  #(HIGH): DaemonSet 'openebs-ndm' should not set 'spec.template.spec.hostNetwork' to true
+AVD-KSV-0014  #(HIGH): Container 'ndm-cluster-exporter' of Deployment 'openebs-ndm-cluster-exporter' should set 'securityContext.readOnlyRootFilesystem' to true
+AVD-KSV-0017  #(HIGH): Container 'node-disk-exporter' of DaemonSet 'openebs-ndm-node-exporter' should set 'securityContext.privileged' to false
+AVD-KSV-0041  #(CRITICAL): ClusterRole 'openebs-maya-operator' shouldn't have access to manage resource 'secrets'
+AVD-KSV-0045  #(CRITICAL): Role permits wildcard verb on specific resources
+AVD-KSV-0046  #(CRITICAL): ClusterRole 'openebs-maya-operator' shouldn't manage all resources
+AVD-KSV-0053  #(HIGH): ClusterRole 'openebs-maya-operator' should not have access to resource '["pods/exec"]' for verbs ["create", "update", "patch", "delete", "deletecollection", "impersonate", "*"]
+AVD-KSV-0056  #(HIGH): ClusterRole 'openebs-maya-operator' should not have access to resources ["services", "endpoints", "endpointslices", "networkpolicies", "ingresses"] for verbs ["create", "update", "patch", "delete", "deletecollection", "impersonate", "*"]
+AVD-KSV-0114  #(CRITICAL): ClusterRole 'openebs-maya-operator' should not have access to resources ["mutatingwebhookconfigurations", "validatingwebhookconfigurations"] for verbs ["create", "update", "patch", "delete", "deletecollection", "impersonate", "*"]
+AVD-KSV-0118  #(HIGH): container openebs-localpv-provisioner in openebs namespace is using the default security context
+AVD-KSV-0121  #(HIGH): daemonset openebs-ndm in openebs namespace shouldn't have volumes set to {"/dev", "/proc"}
+
+AVD-AWS-0086  #(HIGH): No public access block so not blocking public acls
+AVD-AWS-0087  #(HIGH): No public access block so not blocking public policies
+AVD-AWS-0088  #(HIGH): Bucket does not have encryption enabled
+AVD-AWS-0091  #(HIGH): No public access block so not blocking public acls
+AVD-AWS-0093  #(HIGH): No public access block so not restricting public buckets
+AVD-AWS-0132  #(HIGH): Bucket does not encrypt data with a customer managed key.
+AVD-AWS-0052  #(HIGH): Application load balancer is not set to drop invalid headers.
+AVD-AWS-0053  #(HIGH): Load balancer is exposed publicly.
+AVD-AWS-0104  #(CRITICAL): Security group rule allows unrestricted egress to any IP address.
+AVD-AWS-0079  #(HIGH): Cluster does not specify a customer managed key for storage encryption.
+AVD-AWS-0104  #(CRITICAL): Security group rule allows unrestricted egress to any IP address.
+AVD-AWS-0086  #(HIGH): No public access block so not blocking public acls
+AVD-AWS-0087  #(HIGH): No public access block so not blocking public policies
+AVD-AWS-0088  #(HIGH): Bucket does not have encryption enabled
+AVD-AWS-0091  #(HIGH): No public access block so not blocking public acls
+AVD-AWS-0093  #(HIGH): No public access block so not restricting public buckets
+AVD-AWS-0132  #(HIGH): Bucket does not encrypt data with a customer managed key.
+AVD-AWS-0037  #(HIGH): File system is not encrypted.
+AVD-AWS-0104  #(CRITICAL): Security group rule allows unrestricted egress to any IP address.
+AVD-AWS-0039  #(HIGH): Cluster does not have secret encryption enabled.
+AVD-AWS-0053  #(HIGH): Load balancer is exposed publicly.
+AVD-AWS-0104  #(CRITICAL): Security group rule allows unrestricted egress to any IP address.
+AVD-AWS-0052  #(HIGH): Application load balancer is not set to drop invalid headers.
+AVD-AWS-0104  #(CRITICAL): Security group rule allows unrestricted egress to any IP address.
+AVD-AWS-0086  #(HIGH): No public access block so not blocking public acls
+AVD-AWS-0087  #(HIGH): No public access block so not blocking public policies
+AVD-AWS-0088  #(HIGH): Bucket does not have encryption enabled
+AVD-AWS-0091  #(HIGH): No public access block so not blocking public acls
+AVD-AWS-0093  #(HIGH): No public access block so not restricting public buckets
+AVD-AWS-0132  #(HIGH): Bucket does not encrypt data with a customer managed key.
+AVD-AWS-0345  #(HIGH): IAM policy allows 's3:*' action
+AVD-AWS-0104  #(CRITICAL): Security group rule allows unrestricted egress to any IP address.
