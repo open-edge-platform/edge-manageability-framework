@@ -24,7 +24,7 @@ usage() {
 }
 
 parse_params() {
-    if ! options=$(getopt -o h -l cidr-block:,help,jumphost-ip: -- "$@")
+    if ! options=$(getopt -o h -l cidr-block:,help,jumphost-ip:,upgrade: -- "$@")
     then
         usage
         exit 1
@@ -37,6 +37,7 @@ parse_params() {
         case $1 in
             --cidr-block) VPC_CIDR=$(eval echo $2); shift;;
             --jumphost-ip) JUMPHOST_IP=$(eval echo $2); shift;;
+            --upgrade) ORCH_UPGRADE=$(eval echo $2); shift;;
             -h|--help) usage; exit;;
             (--) shift; break;;
             (-*) echo "$0: error - unrecognized option $1" 1>&2; exit 1;;
@@ -51,6 +52,8 @@ parse_params() {
     if [ -n "$JUMPHOST_IP" ]; then
         export JUMPHOST_IP=${JUMPHOST_IP}
     fi
+    ORCH_UPGRADE="${ORCH_UPGRADE:-false}"
+    export ORCH_UPGRADE
 }
 
 load_provision_env
@@ -84,6 +87,56 @@ export TRAEFIKGRPC_TG_ARN
 export NGINX_TG_ARN
 export ARGOCD_TG_ARN
 export S3_PREFIX
+
+
+# For ORCH upgrade, check the existing deployment 'root-app'
+
+if [ "$ORCH_UPGRADE" = "true" ]; then
+    echo "Running Orch Upgrade Checks..."
+
+    # Get root-app YAML
+    root_ns=$(kubectl get application -A | grep root-app | awk '{print $1}')
+    VALUE_FILES=$(kubectl get application root-app -n "$root_ns" -o yaml)
+
+	# Exit if namespace OR YAML is empty
+	if [ -z "$root_ns" ] || [ -z "$VALUE_FILES" ]; then
+		echo "❌ Error: root-app namespace or YAML not found!"
+		exit 1
+	fi
+
+    # Check CO
+    if echo "$VALUE_FILES" | grep -q "enable-cluster-orch.yaml"; then
+        DISABLE_CO_PROFILE=false
+    else
+        DISABLE_CO_PROFILE=true
+    fi
+
+    # Check AO
+    if echo "$VALUE_FILES" | grep -q "enable-app-orch.yaml"; then
+        DISABLE_AO_PROFILE=false
+    else
+        DISABLE_AO_PROFILE=true
+    fi
+
+    # Check O11Y
+    if echo "$VALUE_FILES" | grep -q "enable-o11y"; then
+        DISABLE_O11Y_PROFILE=false
+    else
+        DISABLE_O11Y_PROFILE=true
+    fi
+
+    # Update ~/.env (replace or append)
+    for key in DISABLE_CO_PROFILE DISABLE_AO_PROFILE DISABLE_O11Y_PROFILE; do
+        value="${!key}"
+        if grep -q "^$key=" ~/.env 2>/dev/null; then
+            sed -i "s|^$key=.*|$key=$value|" ~/.env
+        else
+            echo "$key=$value" >> ~/.env
+        fi
+    done
+
+    echo "✅ Orch profile status saved to ~/.env"
+fi
 
 source ./generate_cluster_yaml.sh aws
 
