@@ -61,7 +61,10 @@ ARG DEPLOY_TARBALL
 #ARG CONFIGS_TARBALL
 ARG POD_CONFIGS_TARBALL
 ARG DEPLOY_TYPE
-ENV DEBIAN_FRONTEND=noninteractive DEPLOY_TYPE=$DEPLOY_TYPE SSHUTTLE_ARGS="--disable-ipv6" USER=root
+ENV DEBIAN_FRONTEND=noninteractive DEPLOY_TYPE=$DEPLOY_TYPE SSHUTTLE_ARGS="--disable-ipv6" USER=root \
+DISABLE_AO_PROFILE=true \
+DISABLE_CO_PROFILE=true \
+DISABLE_O11Y_PROFILE=true
 
 COPY Makefile configure-cluster.sh initialize-gitops-repos.sh start-tunnel.sh utils.sh await-argo.sh \
     prepare-upgrade.sh update-cluster.sh query-git-user.sh get-argo-login.sh cluster_aws.tpl generate_cluster_yaml.sh \
