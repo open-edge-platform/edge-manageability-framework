@@ -14,7 +14,12 @@ traefikReverseProxy:
   enabled: true
   secretName: tls-orch          ## must be created in orch-gateway namespace
 openidc:
-  issuer: https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master
+  issuer: >-
+    {{ if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") -}}
+    http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master
+    {{- else -}}
+    https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master
+    {{- end }}
 storage:
   size: 1Gi
 postgres:

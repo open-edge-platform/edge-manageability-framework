@@ -17,7 +17,12 @@ host-manager:
     secretName: "tls-orch"
     tlsOption: "gateway-tls"
   oidc:
-    oidc_server_url: https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master
+    oidc_server_url: >-
+      {{ if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") -}}
+      http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master
+      {{- else -}}
+      https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master
+      {{- end }}
   multiTenancy:
     enforceMultiTenancy: "true"
   resources: null
@@ -36,7 +41,12 @@ maintenance-manager:
     secretName: "tls-orch"
     tlsOption: "gateway-tls"
   oidc:
-    oidc_server_url: "https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master"
+    oidc_server_url: >-
+      {{ if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") -}}
+      http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master
+      {{- else -}}
+      https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master
+      {{- end }}
   telemetryMgrArgs:
     enableVal: false  # disable telemetry profile validation
   multiTenancy:
@@ -66,7 +76,12 @@ telemetry-manager:
     secretName: "tls-orch"
     tlsOption: "gateway-tls"
   oidc:
-    oidc_server_url: "https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master"
+    oidc_server_url: >-
+      {{ if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") -}}
+      http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master
+      {{- else -}}
+      https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master
+      {{- end }}
   multiTenancy:
     enforceMultiTenancy: "true"
   resources: null
@@ -85,7 +100,12 @@ os-resource-manager:
   image:
     pullPolicy: IfNotPresent
   oidc:
-    oidc_server_url: "https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master"
+    oidc_server_url: >-
+      {{ if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") -}}
+      http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master
+      {{- else -}}
+      https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master
+      {{- end }}
   autoProvision:
     enabled: false  # autoprovisioning disabled by default, can be enabled by enable-autoprovision profile
   multiTenancy:
@@ -104,7 +124,12 @@ attestationstatus-manager:
     secretName: "tls-orch"
     tlsOption: "gateway-tls"
   oidc:
-    oidc_server_url: "https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master"
+    oidc_server_url: >-
+      {{ if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") -}}
+      http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master
+      {{- else -}}
+      https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master
+      {{- end }}
   multiTenancy:
     enforceMultiTenancy: "true"
   resources: null

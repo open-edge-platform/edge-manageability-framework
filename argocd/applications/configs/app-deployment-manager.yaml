@@ -31,7 +31,12 @@ adm:
 
 openidc:
   # -- the endpoint of a Keycloak Realm e.g. http://keycloak/realms/master
-  issuer: "https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master"
+  issuer: >-
+    {{ if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") -}}
+    http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master
+    {{- else -}}
+    https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master
+    {{- end }}
   insecureSkipVerify: false
 
 gitea:

@@ -58,13 +58,14 @@ spec:
   # All your runtime options (these become environment variables)
   additionalOptions:
     # External hostname used for OAuth redirects and issuer URL
-    # Updated to use external URL so browsers can resolve Keycloak
-    # All service configs updated to use this external issuer for token validation
+    # For local-only domains (kind.internal), use internal hostname
+    # For real external domains, use external hostname so browsers can resolve Keycloak
+    # All service configs updated to use conditional issuer URLs matching this configuration
     - name: hostname
-      value: "https://keycloak.{{ .Values.argo.clusterDomain }}"
+      value: {{ if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}"http://platform-keycloak.orch-platform.svc.cluster.local:8080"{{ else }}"https://keycloak.{{ .Values.argo.clusterDomain }}"{{ end }}
     # Admin hostname for console access
     - name: hostname-admin
-      value: "https://keycloak.{{ .Values.argo.clusterDomain }}"
+      value: {{ if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}"http://platform-keycloak.orch-platform.svc.cluster.local:8080"{{ else }}"https://keycloak.{{ .Values.argo.clusterDomain }}"{{ end }}
     # Enable dynamic backchannel URLs - THIS IS THE KEY!
     # When internal services access Keycloak via internal FQDN, they get internal issuer
     # When browsers access via Traefik, they get external issuer for OAuth redirects
