@@ -14,7 +14,3 @@ cluster:
   instances: 1
   storage:
     size: "8Gi"
-  ## do not inject sidecar to pods
-  inheritedMetadata:
-    annotations:
-      sidecar.istio.io/inject: "false"
