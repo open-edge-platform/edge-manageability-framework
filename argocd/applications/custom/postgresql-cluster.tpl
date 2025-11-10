@@ -3,6 +3,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 cluster:
+  ## do not inject sidecar to pods
+  inheritedMetadata:
+    annotations:
+      sidecar.istio.io/inject: "false"
+
   {{- $defaultResources := dict }}
   {{- if and .Values.argo.postgresql .Values.argo.postgresql.resourcesPreset }}
   {{- $preset := .Values.argo.postgresql.resourcesPreset }}
