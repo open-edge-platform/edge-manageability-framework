@@ -33,20 +33,21 @@ full zero-touch automation of OS provisioning, installation of required edge age
 agents to talk to the control plane that hosts both EIM and Intel DMT. Without this automation customers will have the
 ownership burden of manually activating each device, which is not feasible at scale and adds to CAPEx cost.
 
-### Scope
+### Scope 1.a
 
 In this modular workflow EIM device onboarding, OS provisioning will be left to the customer. The focus will be on
 implementing and delivering the minimum steps required for automated vPRO/AMT based out-of-band device activation. If
 the customer intends to get the reference for device onboarding and OS provisioning, they can refer to the full EMF
 Day-0 workflow.
 
-### Workflow
+### Workflow 1.a
 
-user documentation. Customer has a choice of using vPRO/AMT, vPRO/ISM or non-vPRO devices.
+1. Customer prepared the Edge node and configures the BIOS for vPRO/AMT/ISM as per the user documentation. Customer
+   has a choice of using vPRO/AMT, vPRO/ISM or non-vPRO devices.
 2. Edge device is connected to the network and powered on.
 3. Customer installs the supported OS on to the edge device.
 4. Customer allocates a kubernetes cluster that will be used to run the EIM control plane. This can be a VM. The
-requirements for the OS + cluster will be part of the user documentation.
+   requirements for the OS + cluster will be part of the user documentation.
 5. Customer downloads the vPRO device activation release package from the Intel Release service.
 6. Customer using the automated installer for EIM control plane deploys the EIM control plane on the allocated
 control plane cluster. This steps should already create the default tenant.
@@ -55,9 +56,10 @@ part of the user documentation.
 8. Customer using the automated installer for Edge node installs the Platform manageability agent and Device
 manageability toolkit edge node components like rpc-go, rpc etc.
 9. Automated edge node installer also configures the agents to communicate with the control plane. This includes setting
-up the channel for the agents to talk to the control plane.
+up the channel for the agents to talk to the control plane. The configuration includes provisioning credentials and
+password to setup the required CIRA (Client initiated remote access) channel.
 10. Customer using CLI is able to list the connected edge node from the control plane as part of listing hosts.
-11. Customer using CLI initiate the vPRO/AMT device activation workflow on the connected edge node.
+11. Customer using CLI initiate the vPRO/AMT device activation workflow on the connected edge node. This step should support for ACM (Admin Control Mode) and CCM (Client Control Mode) activation modes. It should also support.
 12. Customer using CLI is able to monitor the progress of the vPRO/AMT device activation workflow.
 13. Upon successful completion of the workflow, the edge node is now activated and ready for out-of-band
  management using Intel DMT. Customer can verify this using the CLI command.
@@ -109,7 +111,7 @@ sequenceDiagram
  Note over Customer,OrchCLI: 14. ISM/non-vPRO devices show activation not performed
 ```
 
-### Deliverables
+### Deliverables 1.a
 
 - **Foundational services**
   - ArgoCD that uses EMF repos for git ops based deployment
@@ -125,3 +127,40 @@ sequenceDiagram
     Platform Manageability agent and DMT Edge node components
 - **Integration adapters**
   - None for this release
+
+## Requirement 1.b
+
+With out-of-band device management activated on the edge device, customers can now perform the first and the basic OOB
+operation of power management operations. vPRO/AMT and vPRO/ISM devices can leverage the following
+[power states](https://device-management-toolkit.github.io/docs/2.28/Reference/powerstates/#out-of-band). It should be
+noted that activation is not needed for vPRO/ISM devices.
+
+### Scope 1.b
+
+In this modular workflow EIM device onboarding, OS provisioning will be left to the customer. The focus will be on
+implementing and delivering the minimum steps required for automated vPRO/AMT based out-of-band device activation. If
+the customer intends to get the reference for device onboarding and OS provisioning, they can refer to the full EMF
+Day-0 workflow.
+
+### Workflow 1.b
+
+user documentation. Customer has a choice of using vPRO/AMT, vPRO/ISM or non-vPRO devices.
+2. Edge device is connected to the network and powered on.
+3. Customer installs the supported OS on to the edge device.
+4. Customer allocates a kubernetes cluster that will be used to run the EIM control plane. This can be a VM. The
+requirements for the OS + cluster will be part of the user documentation.
+5. Customer downloads the vPRO device activation release package from the Intel Release service.
+6. Customer using the automated installer for EIM control plane deploys the EIM control plane on the allocated
+control plane cluster. This steps should already create the default tenant.
+7. Customer should be able to use the Orch-CLI to run sample commands to verify the control plane is up. This will be
+part of the user documentation.
+8. Customer using the automated installer for Edge node installs the Platform manageability agent and Device
+manageability toolkit edge node components like rpc-go, rpc etc.
+9. Automated edge node installer also configures the agents to communicate with the control plane. This includes setting
+up the channel for the agents to talk to the control plane.
+10. Customer using CLI is able to list the connected edge node from the control plane as part of listing hosts.
+11. Customer using CLI initiate the vPRO/AMT device activation workflow on the connected edge node.
+12. Customer using CLI is able to monitor the progress of the vPRO/AMT device activation workflow.
+13. Upon successful completion of the workflow, the edge node is now activated and ready for out-of-band
+ management using Intel DMT. Customer can verify this using the CLI command.
+14. Customer should also be able to see the status of AMT activation not performed on ISM and non-vPRO devices.
