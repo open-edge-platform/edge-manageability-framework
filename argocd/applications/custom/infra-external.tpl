@@ -123,3 +123,14 @@ amt:
   {{- if .Values.argo.traefik }}
     tlsOption: {{ .Values.argo.traefik.tlsOption | default "" | quote }}
   {{- end }}
+
+# Keycloak OIDC server URL based on clusterDomain
+{{- if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}
+amt:
+  dm-manager:
+    oidc_server_url: "http://platform-keycloak.orch-platform.svc:8080/realms/master"
+{{- else }}
+amt:
+  dm-manager:
+    oidc_server_url: "https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master"
+{{- end }}

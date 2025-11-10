@@ -15,4 +15,17 @@ image:
 imagePullSecrets:
   {{- with .Values.argo.imagePullSecrets }}
     {{- toYaml . | nindent 2 }}
-  {{- end }}
+  {{- end }}  {{- end }}
+
+# Keycloak URLs based on clusterDomain
+{{- if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}
+auth:
+  oidc:
+    idPAddr: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
+    idPDiscoveryURL: "http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master"
+{{- else }}
+auth:
+  oidc:
+    idPAddr: "https://keycloak.{{ .Values.argo.clusterDomain }}"
+    idPDiscoveryURL: "https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master"
+{{- end }}

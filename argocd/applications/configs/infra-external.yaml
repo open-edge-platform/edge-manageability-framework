@@ -117,11 +117,4 @@ amt:
       password: ""
     env:
       oidc:
-        oidc_server_url: >-
-      {{ if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") -}}
-      http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master
-      {{- else -}}
-      https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master
-      {{- end }}
-        oidc_tls_insecure_skip_verify_value: "true"
-
+        oidc_server_url: "http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master"  # Overridden in template based on clusterDomain

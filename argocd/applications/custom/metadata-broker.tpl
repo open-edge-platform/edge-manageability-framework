@@ -25,3 +25,12 @@ resources:
 opaResources:
   {{- toYaml . | nindent 2}}
 {{- end }}
+
+# Keycloak issuer based on clusterDomain
+{{- if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}
+openidc:
+  issuer: "http://platform-keycloak.orch-platform.svc:8080/realms/master"
+{{- else }}
+openidc:
+  issuer: "https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master"
+{{- end }}

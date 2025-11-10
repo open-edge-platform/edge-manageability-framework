@@ -150,3 +150,22 @@ attestationstatus-manager:
   {{- end}}
   metrics:
     enabled: {{ index .Values.argo "infra-managers" "enableMetrics" | default false }}
+
+# Keycloak OIDC server URL based on clusterDomain
+{{- $keycloakUrl := "" }}
+{{- if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}
+{{- $keycloakUrl = "http://platform-keycloak.orch-platform.svc:8080/realms/master" }}
+{{- else }}
+{{- $keycloakUrl = printf "https://keycloak.%s/realms/master" .Values.argo.clusterDomain }}
+{{- end }}
+
+host-manager:
+  oidc_server_url: {{ $keycloakUrl }}
+maintenance-manager:
+  oidc_server_url: {{ $keycloakUrl }}
+networking-manager:
+  oidc_server_url: {{ $keycloakUrl }}
+telemetry-manager:
+  oidc_server_url: {{ $keycloakUrl }}
+attestationstatus-manager:
+  oidc_server_url: {{ $keycloakUrl }}

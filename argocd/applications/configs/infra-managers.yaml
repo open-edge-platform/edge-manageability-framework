@@ -17,13 +17,7 @@ host-manager:
     secretName: "tls-orch"
     tlsOption: "gateway-tls"
   oidc:
-    oidc_server_url: >-
-      {{ if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") -}}
-      http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master
-      {{- else -}}
-      https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master
-      {{- end }}
-  multiTenancy:
+    oidc_server_url: "http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master"  # Overridden in template based on clusterDomain
     enforceMultiTenancy: "true"
   resources: null
   # https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
@@ -41,13 +35,7 @@ maintenance-manager:
     secretName: "tls-orch"
     tlsOption: "gateway-tls"
   oidc:
-    oidc_server_url: >-
-      {{ if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") -}}
-      http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master
-      {{- else -}}
-      https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master
-      {{- end }}
-  telemetryMgrArgs:
+    oidc_server_url: "http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master"  # Overridden in template based on clusterDomain
     enableVal: false  # disable telemetry profile validation
   multiTenancy:
     enforceMultiTenancy: "true"
@@ -76,13 +64,7 @@ telemetry-manager:
     secretName: "tls-orch"
     tlsOption: "gateway-tls"
   oidc:
-    oidc_server_url: >-
-      {{ if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") -}}
-      http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master
-      {{- else -}}
-      https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master
-      {{- end }}
-  multiTenancy:
+    oidc_server_url: "http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master"  # Overridden in template based on clusterDomain
     enforceMultiTenancy: "true"
   resources: null
   # https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
@@ -100,13 +82,7 @@ os-resource-manager:
   image:
     pullPolicy: IfNotPresent
   oidc:
-    oidc_server_url: >-
-      {{ if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") -}}
-      http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master
-      {{- else -}}
-      https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master
-      {{- end }}
-  autoProvision:
+    oidc_server_url: "http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master"  # Overridden in template based on clusterDomain
     enabled: false  # autoprovisioning disabled by default, can be enabled by enable-autoprovision profile
   multiTenancy:
     enforceMultiTenancy: "true"
@@ -124,13 +100,7 @@ attestationstatus-manager:
     secretName: "tls-orch"
     tlsOption: "gateway-tls"
   oidc:
-    oidc_server_url: >-
-      {{ if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") -}}
-      http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master
-      {{- else -}}
-      https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master
-      {{- end }}
-  multiTenancy:
+    oidc_server_url: "http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master"  # Overridden in template based on clusterDomain
     enforceMultiTenancy: "true"
   resources: null
   # https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous

@@ -189,3 +189,16 @@ pxe-server:
     bootServerIP: {{ index .Values.argo "infra-onboarding" "pxe-server" "bootServerIP" | default "" }}
     subnetAddress: {{ index .Values.argo "infra-onboarding" "pxe-server" "subnetAddress" | default "" }}
 {{- end }}
+
+# Keycloak OIDC server URL based on clusterDomain
+{{- $keycloakUrl := "" }}
+{{- if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}
+{{- $keycloakUrl = "http://platform-keycloak.orch-platform.svc:8080/realms/master" }}
+{{- else }}
+{{- $keycloakUrl = printf "https://keycloak.%s/realms/master" .Values.argo.clusterDomain }}
+{{- end }}
+
+dkam:
+  oidc_server_url: {{ $keycloakUrl }}
+onboarding-manager:
+  oidc_server_url: {{ $keycloakUrl }}

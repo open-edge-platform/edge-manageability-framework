@@ -24,8 +24,14 @@ traefikReverseProxy:
 {{- if .Values.argo.traefik }}
   tlsOption: {{ .Values.argo.traefik.tlsOption | default "" | quote }}
 {{- end }}
+# Keycloak issuer based on clusterDomain
+{{- if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}
+openidc:
+  external: "http://platform-keycloak.orch-platform.svc:8080/realms/master"
+{{- else }}
 openidc:
   external: "https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master"
+{{- end }}
 {{- if .Values.argo.catalog.storageClass }}
 storageClassName: {{ .Values.argo.catalog.storageClass }}
 {{- end }}
