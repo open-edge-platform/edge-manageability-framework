@@ -409,6 +409,9 @@ parse_params() {
 
     echo CLUSTER_FQDN=${ROOT_DOMAIN} >> ~/.env
     echo ADMIN_EMAIL=${EMAIL} >> ~/.env
+    echo DISABLE_CO_PROFILE=${DISABLE_CO_PROFILE:-false} >> ~/.env
+    echo DISABLE_AO_PROFILE=${DISABLE_AO_PROFILE:-false} >> ~/.env
+    echo DISABLE_O11Y_PROFILE=${DISABLE_O11Y_PROFILE:-false} >> ~/.env
     export AWS_DEFAULT_REGION=$AWS_REGION
 
     if [[ $COMMAND != "account" ]]; then
@@ -1093,7 +1096,52 @@ EOF
         gitea_argo_token=$(terraform show -json | jq '.values.outputs.gitea_user_passwords.value.argocd')
         gitea_co_user="\"clusterorch\""
         gitea_co_token=$(terraform show -json | jq '.values.outputs.gitea_user_passwords.value.clusterorch')
+        
+        # export EFS file system ID to .env
+        efs_file_system_id=$(terraform show -json | jq -r '.values.outputs.efs_file_system_id.value')
+        if [[ -n "$efs_file_system_id" && "$efs_file_system_id" != "null" ]]; then
+            echo "FILE_SYSTEM_ID=${efs_file_system_id}" >> ~/.env
+        fi
+
+        # export S3 prefix to .env
+        s3_prefix=$(terraform show -json | jq -r '.values.outputs.s3_prefix.value')
+        if [[ -n "$s3_prefix" && "$s3_prefix" != "null" ]]; then
+            echo "S3_PREFIX=${s3_prefix}" >> ~/.env
+        fi
+
+        # export configuration values to .env
+        sre_basic_auth_username=$(terraform show -json | jq -r '.values.outputs.sre_basic_auth_username.value')
+        if [[ -n "$sre_basic_auth_username" && "$sre_basic_auth_username" != "null" ]]; then
+            echo "SRE_BASIC_AUTH_USERNAME=${sre_basic_auth_username}" >> ~/.env
+        fi
+
+        sre_basic_auth_password=$(terraform show -json | jq -r '.values.outputs.sre_basic_auth_password.value')
+        if [[ -n "$sre_basic_auth_password" && "$sre_basic_auth_password" != "null" ]]; then
+            echo "SRE_BASIC_AUTH_PASSWORD=${sre_basic_auth_password}" >> ~/.env
+        fi
+
+        sre_destination_secret_url=$(terraform show -json | jq -r '.values.outputs.sre_destination_secret_url.value')
+        if [[ -n "$sre_destination_secret_url" && "$sre_destination_secret_url" != "null" ]]; then
+            echo "SRE_DESTINATION_SECRET_URL=${sre_destination_secret_url}" >> ~/.env
+        fi
+
+        sre_destination_ca_secret=$(terraform show -json | jq -r '.values.outputs.sre_destination_ca_secret.value')
+        if [[ -n "$sre_destination_ca_secret" && "$sre_destination_ca_secret" != "null" ]]; then
+            echo "SRE_DESTINATION_CA_SECRET=${sre_destination_ca_secret}" >> ~/.env
+        fi
+
+        auto_cert=$(terraform show -json | jq -r '.values.outputs.auto_cert.value')
+        if [[ -n "$auto_cert" && "$auto_cert" != "null" ]]; then
+            echo "AUTO_CERT=${auto_cert}" >> ~/.env
+        fi
+
+        smtp_url=$(terraform show -json | jq -r '.values.outputs.smtp_url.value')
+        if [[ -n "$smtp_url" && "$smtp_url" != "null" ]]; then
+            echo "SMTP_URL=${smtp_url}" >> ~/.env
+        fi
+
         popd
+
 
         jq  -n ". += {\"gitea_argo_user\":${gitea_argo_user}}" | \
         jq  ". += {\"gitea_argo_token\":${gitea_argo_token}}" | \
@@ -1288,6 +1336,29 @@ action_orch_loadbalancer() {
         exit 1
     fi
     rm -rf "$logs_file"
+
+    # export target group ARNs to .env
+    if [[ "$action" = "apply" ]]; then
+        pushd $module
+        traefik_tg_arn=$(terraform show -json | jq -r '.values.outputs.traefik_target_groups.value.default.arn // empty')
+        traefikgrpc_tg_arn=$(terraform show -json | jq -r '.values.outputs.traefik_target_groups.value.grpc.arn // empty')
+        nginx_tg_arn=$(terraform show -json | jq -r '.values.outputs.traefik2_target_groups.value.https.arn // empty')
+        argocd_tg_arn=$(terraform show -json | jq -r '.values.outputs.argocd_target_groups.value.argocd.arn // empty')
+        
+        if [[ -n "$traefik_tg_arn" ]]; then
+            echo "TRAEFIK_TG_ARN=${traefik_tg_arn}" >> ~/.env
+        fi
+        if [[ -n "$traefikgrpc_tg_arn" ]]; then
+            echo "TRAEFIKGRPC_TG_ARN=${traefikgrpc_tg_arn}" >> ~/.env
+        fi
+        if [[ -n "$nginx_tg_arn" ]]; then
+            echo "NGINX_TG_ARN=${nginx_tg_arn}" >> ~/.env
+        fi
+        if [[ -n "$argocd_tg_arn" ]]; then
+            echo "ARGOCD_TG_ARN=${argocd_tg_arn}" >> ~/.env
+        fi
+        popd
+    fi
 
     rm -rf $dir
 }
@@ -1647,11 +1718,11 @@ install() {
     upload_savedir
     rm -f ${values_changed} || true
 
-    terminate_sshuttle
-
     if ! $SKIP_APPLY_CLUSTER; then
         wait_for_gitea
     fi
+
+    terminate_sshuttle
 
     echo "Info: Installation completed successfully. Please back up the files in ${SAVE_DIR} directory."
 }
