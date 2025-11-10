@@ -40,12 +40,18 @@ implementing and delivering the minimum steps required for automated vPRO/AMT ba
 the customer intends to get the reference for device onboarding and OS provisioning, they can refer to the full EMF
 Day-0 workflow.
 
+The installer that will be used by the customer to deploy the EIM control plane can be a common installer that can
+install full EMF or any modular workflow. A dedicated modular installer is required for the edge node that can be based
+of ansible.
+
 - Supported OS: Ubuntu 24.04 LTS
 - Supported hardware: Intel Core based vPRO/AMT devices, vPRO/ISM devices and non-vPRO devices.
 - Supported activation modes: ACM (Admin Control Mode) and CCM (Client Control Mode)
 - Supported network environment: Devices connected to the internet with direct access to Intel Release service for
   downloading vPRO activation packages.
 - Supported deployment environment for EIM control plane: RKE2 based Kubernetes cluster (can be a VM based cluster)
+- Upgrades are only supported within the same modular workflow. E.g. modular workflow 1.a can be upgraded to a future
+  release of modular workflow 1.a but not to full EMF workflow.
 
 ### Workflow 1.a
 
@@ -88,7 +94,7 @@ sequenceDiagram
 
   Note over Customer,EIMControlPlaneCluster: Steps 4-7: Control Plane Setup
   Customer->>EIMControlPlaneCluster: 4. Allocate K8s cluster for EIM
-  Customer->>Customer: 5. Download vPRO activation package
+  Customer->>Customer: 5. Download installer that supports vPRO activation
   Customer->>EIMControlPlane: 6. Deploy EIM control plane (creates default tenant)
   Customer->>OrchCLI: 7. Verify control plane with sample commands
 
@@ -123,7 +129,7 @@ sequenceDiagram
 
 KPIs
 
-- Customer able to deploy control plane and activate vPRO/AMT devices using the modular workflow in less than 30min
+- Customer able to deploy control plane and activate vPRO/AMT devices using the modular workflow in less than 20min
 - Modular workflow can support at minimum 50 devices in parallel with clear resource requirement documentation
 
 ## Requirement 1.b
@@ -138,12 +144,18 @@ It is assumed that customer has already activated the vPRO devices using the mod
 as detailed in the user documentation. Device power management operations will be supported only on vPRO/AMT and
 vPRO/ISM devices.
 
+The installer that will be used by the customer to deploy the EIM control plane can be a common installer that can
+install full EMF or any modular workflow. A dedicated modular installer is required for the edge node that can be based
+of ansible.
+
 - Supported OS: Ubuntu 24.04 LTS
 - Supported hardware: Intel Core based vPRO/AMT devices, vPRO/ISM devices and non-vPRO devices.
 - Supported activation modes: ACM (Admin Control Mode) and CCM (Client Control Mode)
 - Supported network environment: Devices connected to the internet with direct access to Intel Release service for
   downloading vPRO activation packages.
 - Supported deployment environment for EIM control plane: RKE2 based Kubernetes cluster (can be a VM based cluster)
+- Upgrades are only supported within the same modular workflow. E.g. modular workflow 1.b can be upgraded to a future
+  release of modular workflow 1.b but not to full EMF workflow.
 
 ### Workflow 1.b
 
@@ -192,7 +204,7 @@ sequenceDiagram
 
   Note over Customer,EIMControlPlaneCluster: Steps 4-7: Control Plane Setup
   Customer->>EIMControlPlaneCluster: 4. Allocate K8s cluster for EIM
-  Customer->>Customer: 5. Download vPRO activation package
+  Customer->>Customer: 5. Download installer that supports vPRO activation
   Customer->>EIMControlPlane: 6. Deploy EIM control plane (creates default tenant)
   Customer->>OrchCLI: 7. Verify control plane with sample commands
 
@@ -240,7 +252,7 @@ than one operation) and scheduling capabilities. This might require a dedicated 
 
 KPIs
 
-- Customer able to deploy control plane and activate vPRO/AMT devices using the modular workflow in less than 30min
+- Customer able to deploy control plane and activate vPRO/AMT devices using the modular workflow in less than 20min
 - Modular workflow can support at minimum 50 devices in parallel with clear resource requirement documentation
 
 ## Requirement 2
@@ -257,33 +269,84 @@ This modular workflow assumes that customer would like to perform automated OS p
 and customize it using cloud-init based approach. Automation of running QA like test is not in the scope of
 this release.
 
+The installer that will be used by the customer to deploy the EIM control plane can be a common installer that can
+install full EMF or any modular workflow. A dedicated modular installer is required for the edge node that can be based
+of ansible.
+
 - Supported OS: Ubuntu 24.04 LTS and EMT
 - Supported hardware: Intel Core based devices
 - Supported network environment: Edge Devices connected to the internet with direct access to Intel Release service or
   indirectly via a proxy running on the EIM control plane cluster network for downloading required OS images and
   packages.
 - Supported deployment environment for EIM control plane: RKE2 based Kubernetes cluster (can be a VM based cluster)
+- Upgrades are only supported within the same modular workflow. E.g. modular workflow 2 can be upgraded to a future
+  release of modular workflow 2 but not to full EMF workflow.
 
 ### Workflow 2
 
 1. Customer prepared the Edge node and configures the BIOS for for device provisioning as per the user documentation.
-   For scale deployment customer can use PXE boot or HTTPs boot methods.
+  For scale deployment customer can use PXE boot or HTTPs boot methods.
 2. Customer installs the OS for the EIM Control plane. This can also be a VM instance.
 3. Customer allocates a kubernetes cluster that will be used to run the EIM control plane. This can be a VM. The
-   requirements for the OS + cluster will be part of the user documentation.
+  requirements for the OS + cluster will be part of the user documentation.
 4. Customer downloads the OEM device provisioning release package from the Intel Release service.
 5. Customer using the automated installer for EIM control plane deploys the EIM control plane on the allocated
-   control plane cluster. This steps should already create the default tenant.  
+  control plane cluster. This steps should already create the default tenant.  
 6. Customer using the Orch-CLI tests the working of the control plane by running sample commands to verify the control
-   plane is up. This will be part of the user documentation.
+  plane is up. This will be part of the user documentation.
 7. Customer ensure the required OS profiles, SSH keys needed to access edge node, Edge node Cluster template,
-   Deployment packages  are available in the EIM.
+  Deployment packages  are available in the EIM.
 8. Customer using the Orch-CLI pre-registers the edge node to the inventory using the information like serial number
-   and, UUID. The pre-registration step also configures the kubernetes cluster, addons details and the applications to
-   be pre-installed on the edge node are available on the control plane.
+  and, UUID. The pre-registration step also configures the kubernetes cluster, addons details and the applications to
+  be pre-installed on the edge node are available on the control plane.
 9. Edge device is connected to the network and powered on.
 10. The control plane detects the new edge node via PXE/HTTPs boot and provisions the OS as per the profile
-    configured during pre-registration. It then goes ahead to install kubernetes and the required applications as per
-    the deployment package configured during pre-registration. Upon reboot the customer configured cloud-init is
-    executed to complete the configuration.
+   configured during pre-registration. It then goes ahead to install kubernetes and the required applications as per
+   the deployment package configured during pre-registration. Upon reboot the customer configured cloud-init is
+   executed to complete the configuration.
 11. Customer using CLI is able to list the connected edge node from the control plane as part of listing hosts.
+
+```mermaid
+sequenceDiagram
+  participant Customer
+  participant EdgeNode
+  participant EIMControlPlaneCluster
+  participant EIMControlPlane
+  participant OrchCLI
+
+  Note over Customer,EdgeNode: Step 1: Edge Node Preparation
+  Customer->>EdgeNode: 1. Configure BIOS for device provisioning (PXE/HTTPS boot)
+
+  Note over Customer,EIMControlPlaneCluster: Steps 2-6: Control Plane Setup
+  Customer->>EIMControlPlaneCluster: 2. Install OS for EIM Control plane (can be VM)
+  Customer->>EIMControlPlaneCluster: 3. Allocate K8s cluster for EIM
+  Customer->>Customer: 4. Download installer that supports OEM device provisioning
+  Customer->>EIMControlPlane: 5. Deploy EIM control plane (creates default tenant)
+  Customer->>OrchCLI: 6. Verify control plane with sample commands
+
+  Note over Customer,EIMControlPlane: Steps 7-8: Configuration & Pre-registration
+  Customer->>EIMControlPlane: 7. Upload OS profiles, SSH keys, cluster templates, deployment packages
+  Customer->>OrchCLI: 8. Pre-register edge node (serial, UUID, K8s, apps config)
+
+  Note over EdgeNode,EIMControlPlane: Steps 9-11: Automated Provisioning
+  Customer->>EdgeNode: 9. Connect to network and power on
+  EIMControlPlane->>EdgeNode: 10. Detect via PXE/HTTPS, provision OS, install K8s & apps, run cloud-init
+  Customer->>OrchCLI: 11. List connected edge nodes
+```
+
+### Deliverables 2
+
+- **Foundational services**
+  - ArgoCD that uses EMF repos for git ops based deployment
+  - ArgoCD application definitions for required minimal foundational services, EIM control plane
+  - Simplified Multi-tenancy manager that can create a default tenant
+  - Orch-CLI with commands supporting pre-registration of edge nodes, configuring ssh and cloud-init profiles,
+    cluster templates and deployment packages
+- **Service bundles**
+  - EIM control plane services charts and image reference for inventory, tenant-controller, Host resource manger, 
+    Onboarding manager, OS profile manager, DKAM and Tinker bell services.
+  - Configuration manifest for EIM control plane.
+  
+- **Integration adapters**
+  - None for this release
+  
