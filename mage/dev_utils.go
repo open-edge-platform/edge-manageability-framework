@@ -18,7 +18,6 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -33,10 +32,10 @@ import (
 
 // Deploys the ENiC (indicates the number of instances, optionally set env variables: ORCH_FQDN, ORCH_IP, ORCH_USER, ORCH_PASS, ORCH_ORG, ORCH_PROJECT).
 func (DevUtils) DeployEnic(replicas int, targetEnv string) error {
-	deployRevision := "UNSUPPORTED"
+	// deployRevision := "UNSUPPORTED"
 	return fmt.Errorf("unsupported")
 
-	namespace := "utils"
+	/* namespace := "utils"
 	orchestratorIp, err := getPrimaryIP()
 	if err != nil {
 		return err
@@ -106,7 +105,7 @@ func (DevUtils) DeployEnic(replicas int, targetEnv string) error {
 
 	fmt.Printf("exec: %s\n", cmd)
 	_, err = script.Exec(cmd).Stdout()
-	return err
+	return err */
 }
 
 func isEnicArgoAppReady() (bool, error) {

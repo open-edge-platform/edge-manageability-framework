@@ -315,7 +315,7 @@ func renderClusterTemplate(presetData map[string]interface{}) (string, error) {
 		return "", fmt.Errorf("failed to marshal merged values: %w", err)
 	}
 
-	if err := os.WriteFile(outputPath, []byte(mergedYaml), 0644); err != nil {
+	if err := os.WriteFile(outputPath, []byte(mergedYaml), 0o644); err != nil {
 		return "", fmt.Errorf("failed to write merged values to file: %w", err)
 	}
 

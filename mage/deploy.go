@@ -101,7 +101,7 @@ func kubectlDebugNamespace(name string) error {
 	return nil
 }
 
-func (d Deploy) kind(targetEnv string) error { //nolint:gocyclo
+func (d Deploy) kind(targetEnv string) error {
 	targetEnvType, err := (Config{}).getTargetEnvType(targetEnv)
 	if err != nil {
 		return fmt.Errorf("error getting target environment type: %w", err)
@@ -150,7 +150,7 @@ func (d Deploy) kind(targetEnv string) error { //nolint:gocyclo
 	return nil
 }
 
-func (d Deploy) preOrchDeploy(targetEnv string) error { //nolint:gocyclo
+func (d Deploy) preOrchDeploy(targetEnv string) error {
 	if err := createNamespaces(); err != nil {
 		return fmt.Errorf("error creating namespaces: %w", err)
 	}
@@ -1085,14 +1085,6 @@ func (Deploy) startGiteaPortForward() (*exec.Cmd, error) {
 	fmt.Printf("Port-forward started with PID: %d\n", portForwardCmd.Process.Pid)
 
 	return portForwardCmd, nil
-}
-
-// stopGiteaPortForward stops the Gitea port-forward process.
-func (Deploy) stopGiteaPortForward(portForwardCmd *exec.Cmd) error {
-	if err := portForwardCmd.Process.Kill(); err != nil {
-		return fmt.Errorf("error stopping port-forward: %w", err)
-	}
-	return nil
 }
 
 // Deploy ArgoCD using helm chart
