@@ -2,50 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-resource "local_file" "env_data_file" {
-  content = templatefile(
-    "${var.working_directory}/scripts/env.tftpl",
-    {
-      release_service_refresh_token = var.release_service_refresh_token,
-      rs_url                        = var.rs_url,
-      orch_profile                  = var.orch_profile,
-      deploy_tag                    = var.deploy_tag,
-      cluster_domain                = var.cluster_domain,
-      docker_username               = var.docker_username,
-      docker_password               = var.docker_password,
-      gitea_image_registry          = var.gitea_image_registry,
-      vmnet_ip1                     = local.vmnet_ip1,
-      vmnet_ip2                     = local.vmnet_ip2,
-      vmnet_ip3                     = local.vmnet_ip3,
-    },
-  )
-  filename = "${path.module}/files/.env"
-
-  lifecycle {
-    prevent_destroy = false
-  }
-}
-
-resource "local_file" "proxy_config_file" {
-  content = templatefile(
-    "${path.module}/templates/proxy_config.tftpl",
-    {
-      http_proxy     = var.http_proxy,
-      https_proxy    = var.https_proxy,
-      no_proxy       = var.no_proxy,
-      ftp_proxy      = var.ftp_proxy,
-      socks_proxy    = var.socks_proxy,
-      en_http_proxy  = var.en_http_proxy,
-      en_https_proxy = var.en_https_proxy,
-    },
-  )
-  filename = "${path.module}/files/proxy_config.yaml"
-
-  lifecycle {
-    prevent_destroy = false
-  }
-}
-
 resource "local_file" "cloud_init_user_data_file" {
   content = templatefile(
     "${var.working_directory}/cloud-inits/cloud_config.tftpl",
@@ -207,7 +163,6 @@ resource "null_resource" "wait_for_cloud_init" {
 
 resource "null_resource" "copy_files" {
   depends_on = [
-    local_file.env_data_file,
     null_resource.resize_and_restart_vm
   ]
 
@@ -217,18 +172,6 @@ resource "null_resource" "copy_files" {
     port     = var.vm_ssh_port
     user     = var.vm_ssh_user
     password = var.vm_ssh_password
-  }
-
-  provisioner "file" {
-    source      = local_file.env_data_file.filename
-    destination = "/home/ubuntu/.env"
-    when        = create
-  }
-
-  provisioner "file" {
-    source      = "${path.module}/files/proxy_config.yaml"
-    destination = "/home/ubuntu/proxy_config.yaml"
-    when        = create
   }
 
   provisioner "file" {
@@ -242,6 +185,36 @@ resource "null_resource" "copy_files" {
     destination = "/home/ubuntu/onprem_installer.sh"
     when        = create
   }
+
+  provisioner "file" {
+    source      = "../../${var.working_directory}/on-prem-installers/onprem/cluster_onprem.tpl"
+    destination = "/home/ubuntu/cluster_onprem.tpl"
+    when        = create
+  }
+
+  provisioner "file" {
+    source      = "../../${var.working_directory}/on-prem-installers/onprem/onprem_orch_install.sh"
+    destination = "/home/ubuntu/onprem_orch_install.sh"
+    when        = create
+  }
+
+  provisioner "file" {
+    source      = "../../${var.working_directory}/on-prem-installers/onprem/onprem_pre_install.sh"
+    destination = "/home/ubuntu/onprem_pre_install.sh"
+    when        = create
+  }
+
+  provisioner "file" {
+    source      = "../../${var.working_directory}/on-prem-installers/onprem/onprem.env"
+    destination = "/home/ubuntu/onprem.env"
+    when        = create
+  }
+
+  provisioner "file" {
+    source      = "../../${var.working_directory}/installer/generate_cluster_yaml.sh"
+    destination = "/home/ubuntu/generate_cluster_yaml.sh"
+    when        = create
+  } 
 
   provisioner "file" {
     source      = "../../${var.working_directory}/on-prem-installers/onprem/functions.sh"
@@ -289,14 +262,49 @@ resource "null_resource" "copy_files" {
     inline = [
       "chmod +x /home/ubuntu/uninstall_onprem.sh",
       "chmod +x /home/ubuntu/onprem_installer.sh",
+      "chmod +x /home/ubuntu/onprem_pre_install.sh",
+      "chmod +x /home/ubuntu/onprem_orch_install.sh",
+      "chmod +x /home/ubuntu/onprem.env",
+      "chmod +x /home/ubuntu/cluster_onprem.tpl",
+      "chmod +x /home/ubuntu/generate_cluster_yaml.sh",
       "chmod +x /home/ubuntu/functions.sh",
       "chmod +x /home/ubuntu/access_script.sh",
-      "chmod +x /home/ubuntu/.env",
       "chmod +x /home/ubuntu/upgrade_postgres.sh",
       "chmod +x /home/ubuntu/vault_unseal.sh",
       "chmod +x /home/ubuntu/after_upgrade_restart.sh",
       "chmod +x /home/ubuntu/storage_backup.sh",
-      "chmod +x /home/ubuntu/onprem_upgrade.sh",
+      "chmod +x /home/ubuntu/onprem_upgrade.sh"
+    ]
+    when = create
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "set -o errexit",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env RELEASE_SERVICE_URL ${var.rs_url}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env DEPLOY_VERSION ${var.deploy_tag}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env ORCH_INSTALLER_PROFILE ${var.orch_profile}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env CLUSTER_DOMAIN ${var.cluster_domain}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env DOCKER_USERNAME ${var.docker_username}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env DOCKER_PASSWORD ${var.docker_password}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env GITEA_IMAGE_REGISTRY ${var.gitea_image_registry}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env ARGO_IP ${local.vmnet_ip1}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env TRAEFIK_IP ${local.vmnet_ip2}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env NGINX_IP ${local.vmnet_ip3}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env ENABLE_EXPLICIT_PROXY ${var.enable_explicit_proxy}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env ORCH_HTTP_PROXY ${var.http_proxy}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env ORCH_HTTPS_PROXY ${var.https_proxy}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env ORCH_NO_PROXY ${var.no_proxy}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env EN_HTTP_PROXY ${var.en_http_proxy}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env EN_HTTPS_PROXY ${var.en_https_proxy}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env EN_FTP_PROXY ${var.ftp_proxy}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env EN_SOCKS_PROXY ${var.socks_proxy}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env EN_NO_PROXY ${var.no_proxy}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env OXM_PXE_SERVER_INT ${var.oxm_pxe_server_int}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env OXM_PXE_SERVER_IP ${var.oxm_pxe_server_ip}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env OXM_PXE_SERVER_SUBNET ${var.oxm_pxe_server_subnet}'",
+      "cat /home/ubuntu/onprem.env",
+      "echo 'onprem.env updated successfully'"
     ]
     when = create
   }
@@ -307,7 +315,6 @@ resource "null_resource" "copy_local_orch_installer" {
   count = var.use_local_build_artifact ? 1 : 0
 
   depends_on = [
-    local_file.env_data_file,
     null_resource.resize_and_restart_vm
   ]
 
@@ -357,106 +364,15 @@ resource "null_resource" "copy_local_orch_installer" {
   }
 }
 
-resource "null_resource" "write_installer_config" {
-
-  // Enable this resource if auto-install is enabled
-  count = var.enable_auto_install ? 1 : 0
-
-  depends_on = [
-    null_resource.copy_files,
-    null_resource.wait_for_cloud_init
-  ]
-
-  connection {
-    type     = "ssh"
-    host     = local.vmnet_ip0
-    port     = var.vm_ssh_port
-    user     = var.vm_ssh_user
-    password = var.vm_ssh_password
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "set -o errexit",
-      "bash -c 'cd /home/ubuntu; source .env; ./onprem_installer.sh  ${var.use_local_build_artifact ? "--skip-download" : ""} --trace ${var.override_flag ? "--override" : ""} --write-config'",
-    ]
-    when = create
-  }
-}
-
-resource "null_resource" "set_proxy_config" {
-
-  // Enable this resource if auto-install is enabled and a proxy is set
-  count = var.enable_auto_install && local.is_proxy_set ? 1 : 0
-
-  depends_on = [
-    null_resource.copy_files,
-    null_resource.write_installer_config
-  ]
-
-  connection {
-    type     = "ssh"
-    host     = local.vmnet_ip0
-    port     = var.vm_ssh_port
-    user     = var.vm_ssh_user
-    password = var.vm_ssh_password
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "set -o errexit",
-      "cp /home/ubuntu/proxy_config.yaml /home/ubuntu/repo_archives/tmp/edge-manageability-framework/orch-configs/profiles/proxy-none.yaml",
-      "cat /home/ubuntu/repo_archives/tmp/edge-manageability-framework/orch-configs/profiles/proxy-none.yaml",
-    ]
-    when = create
-  }
-}
-
-resource "null_resource" "overwrite_profile_config" {
-  for_each = var.enable_auto_install && length(var.overwrite_profiles) > 0 ? { for profile in var.overwrite_profiles : profile[0] => profile[1] } : {}
-
-  depends_on = [
-    null_resource.copy_files,
-    null_resource.write_installer_config
-  ]
-
-  connection {
-    type     = "ssh"
-    host     = local.vmnet_ip0
-    port     = var.vm_ssh_port
-    user     = var.vm_ssh_user
-    password = var.vm_ssh_password
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "set -o errexit",
-      "profile_file=\"/home/ubuntu/repo_archives/tmp/edge-manageability-framework/orch-configs/profiles/${each.key}.yaml\"",
-      "if [ -f \"$profile_file\" ]; then",
-      "  echo 'Overwriting profile: ${each.key}'",
-      "  echo 'Overwriting profile with: ${each.value}'",
-      "  echo \"${each.value}\" > /tmp/overwrite_profile.yaml",
-      "  yq eval-all 'select(fileIndex == 0) * select(fileIndex == 1)' \"$profile_file\" /tmp/overwrite_profile.yaml > \"$profile_file.tmp\" && mv \"$profile_file.tmp\" \"$profile_file\"",
-      "  rm -f /tmp/overwrite_profile.yaml",
-      "  cat \"$profile_file\"",
-      "else",
-      "  echo \"$profile_file does not exist\"",
-      "fi"
-    ]
-    when = create
-  }
-}
-
 resource "null_resource" "exec_installer" {
 
   // Enable this resource if auto-install is enabled
   count = var.enable_auto_install ? 1 : 0
 
   depends_on = [
-    null_resource.write_installer_config,
-    null_resource.set_proxy_config,
-    null_resource.overwrite_profile_config,
+    null_resource.copy_local_orch_installer,
     null_resource.wait_for_cloud_init,
+    null_resource.copy_files
   ]
 
   connection {
@@ -470,7 +386,7 @@ resource "null_resource" "exec_installer" {
   provisioner "remote-exec" {
     inline = [
       "set -o errexit",
-      "bash -c 'cd /home/ubuntu; source .env; env; ./onprem_installer.sh --skip-download --trace --yes ${var.override_flag ? "--override" : ""} | tee ./install_output.log; exit $${PIPESTATUS[0]}'",
+      "bash -c 'cd /home/ubuntu; source onprem.env; ./onprem_installer.sh --yes --trace ${var.use_local_build_artifact ? "--skip-download" : ""} -- --yes --trace | tee ./install_output.log; exit $${PIPESTATUS[0]}'",
     ]
     when = create
   }
