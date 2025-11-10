@@ -1321,9 +1321,8 @@ func commitAndPushGiteaRepo(gitRepoPath, gitUsername, gitPassword string) error 
 
 // configureCoreDNSKeycloak configures CoreDNS to rewrite Keycloak external URL to internal Traefik service
 // This is needed because pods inside the cluster cannot reach the external load balancer IP (hairpin routing issue)
+// For local-only domains (e.g., kind.internal), this configuration is skipped since no external LB exists
 func (d Deploy) configureCoreDNSKeycloak(targetEnv string) error {
-	fmt.Println("Configuring CoreDNS rewrite for Keycloak external URL...")
-
 	// Get cluster domain from target config
 	targetConfig := getTargetConfig(targetEnv)
 	clusterDomain, err := script.Exec(fmt.Sprintf("yq eval '.argo.clusterDomain' %s", targetConfig)).String()
@@ -1333,9 +1332,25 @@ func (d Deploy) configureCoreDNSKeycloak(targetEnv string) error {
 	clusterDomain = strings.TrimSpace(clusterDomain)
 
 	if clusterDomain == "" || clusterDomain == "null" {
-		fmt.Println("No clusterDomain configured, skipping CoreDNS configuration")
+		fmt.Println("No clusterDomain configured, skipping CoreDNS Keycloak rewrite")
 		return nil
 	}
+
+	// Skip CoreDNS rewrite for local-only domains (no external load balancer)
+	// These domains are used in dev/CI environments where services are accessed internally only
+	localOnlyDomains := []string{
+		"kind.internal",
+		"localhost",
+		"127.0.0.1",
+	}
+	for _, localDomain := range localOnlyDomains {
+		if strings.Contains(clusterDomain, localDomain) {
+			fmt.Printf("Skipping CoreDNS Keycloak rewrite for local-only domain: %s\n", clusterDomain)
+			return nil
+		}
+	}
+
+	fmt.Printf("Configuring CoreDNS rewrite for Keycloak external URL: %s\n", clusterDomain)
 
 	// Run the configure script
 	scriptPath := filepath.Join("installer", "configure-coredns-keycloak.sh")
