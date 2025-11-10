@@ -2,7 +2,7 @@
 
 Author(s): Edge Manageability Architecture Team
 
-Last updated: 2025-09-29
+Last updated: 10th Nov 2025
 
 ## Abstract
 
@@ -39,6 +39,13 @@ In this modular workflow EIM device onboarding, OS provisioning will be left to 
 implementing and delivering the minimum steps required for automated vPRO/AMT based out-of-band device activation. If
 the customer intends to get the reference for device onboarding and OS provisioning, they can refer to the full EMF
 Day-0 workflow.
+
+- Supported OS: Ubuntu 24.04 LTS
+- Supported hardware: Intel Core based vPRO/AMT devices, vPRO/ISM devices and non-vPRO devices.
+- Supported activation modes: ACM (Admin Control Mode) and CCM (Client Control Mode)
+- Supported network environment: Devices connected to the internet with direct access to Intel Release service for
+  downloading vPRO activation packages.
+- Supported deployment environment for EIM control plane: RKE2 based Kubernetes cluster (can be a VM based cluster)
 
 ### Workflow 1.a
 
@@ -114,6 +121,11 @@ sequenceDiagram
 - **Integration adapters**
   - None for this release
 
+KPIs
+
+- Customer able to deploy control plane and activate vPRO/AMT devices using the modular workflow in less than 30min
+- Modular workflow can support at minimum 50 devices in parallel with clear resource requirement documentation
+
 ## Requirement 1.b
 
 With out-of-band device management activated on the edge device, customers can now perform the first and the basic OOB
@@ -125,6 +137,13 @@ operation of power management operations. vPRO/AMT and vPRO/ISM devices can leve
 It is assumed that customer has already activated the vPRO devices using the modular workflow 1.a or the full EMF Day-0
 as detailed in the user documentation. Device power management operations will be supported only on vPRO/AMT and
 vPRO/ISM devices.
+
+- Supported OS: Ubuntu 24.04 LTS
+- Supported hardware: Intel Core based vPRO/AMT devices, vPRO/ISM devices and non-vPRO devices.
+- Supported activation modes: ACM (Admin Control Mode) and CCM (Client Control Mode)
+- Supported network environment: Devices connected to the internet with direct access to Intel Release service for
+  downloading vPRO activation packages.
+- Supported deployment environment for EIM control plane: RKE2 based Kubernetes cluster (can be a VM based cluster)
 
 ### Workflow 1.b
 
@@ -202,7 +221,7 @@ activation as listed in the deliverables for 1.a.
 
 This workflow in future releases can be enhanced to include more advanced power management operations (combining more
 than one operation) and scheduling capabilities. This might require a dedicated OOB power management service in the
-control plane and updates to the edge node agents.
+-control plane and updates to the edge node agents.
 
 - **Foundational services**
   - ArgoCD that uses EMF repos for git ops based deployment
@@ -218,3 +237,53 @@ control plane and updates to the edge node agents.
     Platform Manageability agent and DMT Edge node components
 - **Integration adapters**
   - None for this release
+
+KPIs
+
+- Customer able to deploy control plane and activate vPRO/AMT devices using the modular workflow in less than 30min
+- Modular workflow can support at minimum 50 devices in parallel with clear resource requirement documentation
+
+## Requirement 2
+
+A key capability that is required from an Edge device OEM vendor is the ability at scale to provision OS, kubernetes,
+applications,  configure and test before shipping to the installation location. This requirements is does not include
+day 2 manageability but focuses on the day 0 commissioning of the edge devices. This workflow is already supported as
+part of the "OXM profile" based full EMF Day-0 workflow. The requirement here is to modularize and deliver this workflow
+as a standalone modular workflow that can be consumed by OEMs and system integrators.
+
+### Scope 2
+
+This modular workflow assumes that customer would like to perform automated OS provisioning, Kubernetes and application
+and customize it using cloud-init based approach. Automation of running QA like test is not in the scope of
+this release.
+
+- Supported OS: Ubuntu 24.04 LTS and EMT
+- Supported hardware: Intel Core based devices
+- Supported network environment: Edge Devices connected to the internet with direct access to Intel Release service or
+  indirectly via a proxy running on the EIM control plane cluster network for downloading required OS images and
+  packages.
+- Supported deployment environment for EIM control plane: RKE2 based Kubernetes cluster (can be a VM based cluster)
+
+### Workflow 2
+
+1. Customer prepared the Edge node and configures the BIOS for for device provisioning as per the user documentation.
+   For scale deployment customer can use PXE boot or HTTPs boot methods.
+2. Customer installs the OS for the EIM Control plane. This can also be a VM instance.
+3. Customer allocates a kubernetes cluster that will be used to run the EIM control plane. This can be a VM. The
+   requirements for the OS + cluster will be part of the user documentation.
+4. Customer downloads the OEM device provisioning release package from the Intel Release service.
+5. Customer using the automated installer for EIM control plane deploys the EIM control plane on the allocated
+   control plane cluster. This steps should already create the default tenant.  
+6. Customer using the Orch-CLI tests the working of the control plane by running sample commands to verify the control
+   plane is up. This will be part of the user documentation.
+7. Customer ensure the required OS profiles, SSH keys needed to access edge node, Edge node Cluster template,
+   Deployment packages  are available in the EIM.
+8. Customer using the Orch-CLI pre-registers the edge node to the inventory using the information like serial number
+   and, UUID. The pre-registration step also configures the kubernetes cluster, addons details and the applications to
+   be pre-installed on the edge node are available on the control plane.
+9. Edge device is connected to the network and powered on.
+10. The control plane detects the new edge node via PXE/HTTPs boot and provisions the OS as per the profile
+    configured during pre-registration. It then goes ahead to install kubernetes and the required applications as per
+    the deployment package configured during pre-registration. Upon reboot the customer configured cloud-init is
+    executed to complete the configuration.
+11. Customer using CLI is able to list the connected edge node from the control plane as part of listing hosts.
