@@ -14,3 +14,7 @@ cluster:
   instances: 1
   storage:
     size: "8Gi"
+
+## do not inject sidecar to pods for job
+podLabels:
+  sidecar.istio.io/inject: "false"
