@@ -59,11 +59,11 @@ spec:
   additionalOptions:
     # External hostname used for OAuth redirects and issuer URL (via Traefik)
     - name: hostname
-      value: "https://keycloak.{{ .Values.argo.clusterDomain }}"
+      value: "http://platform-keycloak.keycloak-system.svc.cluster.local:8080"
     # Internal hostname used for Vault and internal service access (NOT used for OAuth)
     # This allows Vault to validate OIDC discovery using the internal K8s FQDN
     - name: hostname-admin
-      value: "http://platform-keycloak.keycloak-system.svc.cluster.local:8080"
+      value: "https://keycloak.{{ .Values.argo.clusterDomain }}"
     # Enable dynamic backchannel URLs - THIS IS THE KEY!
     # When internal services access Keycloak via internal FQDN, they get internal issuer
     # When browsers access via Traefik, they get external issuer for OAuth redirects
