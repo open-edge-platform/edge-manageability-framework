@@ -1319,6 +1319,41 @@ func commitAndPushGiteaRepo(gitRepoPath, gitUsername, gitPassword string) error 
 	return nil
 }
 
+// configureCoreDNSKeycloak configures CoreDNS to rewrite Keycloak external URL to internal Traefik service
+// This is needed because pods inside the cluster cannot reach the external load balancer IP (hairpin routing issue)
+func (d Deploy) configureCoreDNSKeycloak(targetEnv string) error {
+	fmt.Println("Configuring CoreDNS rewrite for Keycloak external URL...")
+
+	// Get cluster domain from target config
+	targetConfig := getTargetConfig(targetEnv)
+	clusterDomain, err := script.Exec(fmt.Sprintf("yq eval '.argo.clusterDomain' %s", targetConfig)).String()
+	if err != nil {
+		return fmt.Errorf("error reading clusterDomain from config: %w", err)
+	}
+	clusterDomain = strings.TrimSpace(clusterDomain)
+
+	if clusterDomain == "" || clusterDomain == "null" {
+		fmt.Println("No clusterDomain configured, skipping CoreDNS configuration")
+		return nil
+	}
+
+	// Run the configure script
+	scriptPath := filepath.Join("installer", "configure-coredns-keycloak.sh")
+	if _, err := os.Stat(scriptPath); err != nil {
+		return fmt.Errorf("CoreDNS configuration script not found: %w", err)
+	}
+
+	cmd := exec.Command(scriptPath, clusterDomain)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("error running CoreDNS configuration script: %w", err)
+	}
+
+	fmt.Println("✓ CoreDNS configured successfully")
+	return nil
+}
+
 // updateDeployRepo updates the deployment repository with the latest changes
 func (d Deploy) updateDeployRepo(targetEnv, gitRepoPath, repoName, localClonePath string) error {
 	// Get the current working directory so we can return to it when this function exits
@@ -1586,6 +1621,11 @@ func (d Deploy) orchLocal(targetEnv string) error {
 	// Clone and update the Gitea deployment repo
 	if err := (Deploy{}).updateDeployRepo(targetEnv, deployRepoPath, deployRepoName, deployGiteaRepoDir); err != nil {
 		return fmt.Errorf("error updating deployment repo content: %w", err)
+	}
+
+	// Configure CoreDNS rewrite for Keycloak external URL
+	if err := d.configureCoreDNSKeycloak(targetEnv); err != nil {
+		return fmt.Errorf("error configuring CoreDNS for Keycloak: %w", err)
 	}
 
 	var subDomain string

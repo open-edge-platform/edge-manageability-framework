@@ -6,6 +6,6 @@ manager:
   inventory:
     endpoint: "inventory.orch-infra.svc.cluster.local:50051"
 oidc:
-  oidc_server_url: http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master
+  oidc_server_url: https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master
 # https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
 traefikApiGroup: "traefik.io/v1alpha1"

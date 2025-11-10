@@ -57,11 +57,12 @@ spec:
   
   # All your runtime options (these become environment variables)
   additionalOptions:
-    # External hostname used for OAuth redirects and issuer URL (via Traefik)
+    # External hostname used for OAuth redirects and issuer URL
+    # Updated to use external URL so browsers can resolve Keycloak
+    # All service configs updated to use this external issuer for token validation
     - name: hostname
-      value: "http://platform-keycloak.keycloak-system.svc.cluster.local:8080"
-    # Internal hostname used for Vault and internal service access (NOT used for OAuth)
-    # This allows Vault to validate OIDC discovery using the internal K8s FQDN
+      value: "https://keycloak.{{ .Values.argo.clusterDomain }}"
+    # Admin hostname for console access
     - name: hostname-admin
       value: "https://keycloak.{{ .Values.argo.clusterDomain }}"
     # Enable dynamic backchannel URLs - THIS IS THE KEY!

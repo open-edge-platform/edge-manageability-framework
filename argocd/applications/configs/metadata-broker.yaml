@@ -5,7 +5,7 @@
 # Intentionally blank. There are no base settings overrides.
 
 openidc:
-  issuer: http://platform-keycloak.orch-platform.svc:8080/realms/master
+  issuer: https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master
 
 service:
   traefik:
