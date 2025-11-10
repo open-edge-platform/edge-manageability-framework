@@ -43,11 +43,11 @@ Day-0 workflow.
 ### Workflow 1.a
 
 1. Customer prepared the Edge node and configures the BIOS for vPRO/AMT/ISM as per the user documentation. Customer
-   has a choice of using vPRO/AMT, vPRO/ISM or non-vPRO devices.
+  has a choice of using vPRO/AMT, vPRO/ISM or non-vPRO devices.
 2. Edge device is connected to the network and powered on.
 3. Customer installs the supported OS on to the edge device.
 4. Customer allocates a kubernetes cluster that will be used to run the EIM control plane. This can be a VM. The
-   requirements for the OS + cluster will be part of the user documentation.
+  requirements for the OS + cluster will be part of the user documentation.
 5. Customer downloads the vPRO device activation release package from the Intel Release service.
 6. Customer using the automated installer for EIM control plane deploys the EIM control plane on the allocated
 control plane cluster. This steps should already create the default tenant.
@@ -67,48 +67,34 @@ password to setup the required CIRA (Client initiated remote access) channel.
 
 ```mermaid
 sequenceDiagram
- participant Customer
- participant EdgeDevice as Edge Device
- participant ControlPlaneCluster as EIM Control Plane Cluster
- participant EIMControlPlane as EIM Control Plane
- participant OrchCLI as Orch-CLI
- participant EdgeAgents as Edge Node Agents
+  participant Customer
+  participant EdgeNode
+  participant EIMControlPlaneCluster
+  participant EIMControlPlane
+  participant OrchCLI
+  participant EdgeAgents
 
- Note over Customer,EdgeDevice: Device Preparation
- Customer->>EdgeDevice: 1. Configure BIOS for vPRO/AMT
- Customer->>EdgeDevice: 2. Connect to network and power on
- Customer->>EdgeDevice: 3. Install supported OS
+  Note over Customer,EdgeNode: Steps 1-3: Edge Node Preparation
+  Customer->>EdgeNode: 1. Configure BIOS for vPRO/AMT/ISM
+  Customer->>EdgeNode: 2. Connect to network and power on
+  Customer->>EdgeNode: 3. Install supported OS
 
- Note over Customer,ControlPlaneCluster: Control Plane Setup
- Customer->>ControlPlaneCluster: 4. Allocate K8s cluster for control plane
- Customer->>Customer: 5. Download vPRO activation release package
- Customer->>EIMControlPlane: 6. Deploy EIM control plane (creates default tenant)
- Customer->>OrchCLI: 7. Verify control plane with CLI commands
- 
- Note over Customer,EdgeAgents: Edge Node Configuration
- Customer->>EdgeAgents: 8. Install Platform Manageability agent & DMT components
- Customer->>EdgeAgents: 9. Configure agents to communicate with control plane
- EdgeAgents->>EIMControlPlane: Establish communication channel
- 
- Note over Customer,EIMControlPlane: Device Activation
- Customer->>OrchCLI: 10. List connected edge nodes
- OrchCLI->>EIMControlPlane: Query hosts
- EIMControlPlane-->>OrchCLI: Return connected hosts
- 
- Customer->>OrchCLI: 11. Initiate vPRO/AMT activation workflow
- OrchCLI->>EIMControlPlane: Trigger activation
- EIMControlPlane->>EdgeAgents: Execute activation steps
- 
- Customer->>OrchCLI: 12. Monitor activation progress
- OrchCLI->>EIMControlPlane: Query workflow status
- EIMControlPlane-->>OrchCLI: Return status updates
- 
- EdgeAgents-->>EIMControlPlane: Activation complete
- Customer->>OrchCLI: 13. Verify AMT activation status
- OrchCLI->>EIMControlPlane: Query activation result
- EIMControlPlane-->>OrchCLI: Return success/failure status
- 
- Note over Customer,OrchCLI: 14. ISM/non-vPRO devices show activation not performed
+  Note over Customer,EIMControlPlaneCluster: Steps 4-7: Control Plane Setup
+  Customer->>EIMControlPlaneCluster: 4. Allocate K8s cluster for EIM
+  Customer->>Customer: 5. Download vPRO activation package
+  Customer->>EIMControlPlane: 6. Deploy EIM control plane (creates default tenant)
+  Customer->>OrchCLI: 7. Verify control plane with sample commands
+
+  Note over Customer,EdgeAgents: Steps 8-10: Edge Node Agent Setup
+  Customer->>EdgeAgents: 8. Install Platform manageability & DMT agents
+  Customer->>EdgeAgents: 9. Configure agents & CIRA channel with credentials
+  Customer->>OrchCLI: 10. List connected edge nodes
+
+  Note over Customer,EdgeNode: Steps 11-14: vPRO/AMT Activation
+  Customer->>OrchCLI: 11. Initiate vPRO/AMT activation (ACM/CCM mode)
+  Customer->>OrchCLI: 12. Monitor activation workflow progress
+  OrchCLI-->>Customer: 13. Verify successful activation
+  OrchCLI-->>Customer: 14. Check activation status (including ISM/non-vPRO)
 ```
 
 ### Deliverables 1.a
@@ -132,35 +118,103 @@ sequenceDiagram
 
 With out-of-band device management activated on the edge device, customers can now perform the first and the basic OOB
 operation of power management operations. vPRO/AMT and vPRO/ISM devices can leverage the following
-[power states](https://device-management-toolkit.github.io/docs/2.28/Reference/powerstates/#out-of-band). It should be
-noted that activation is not needed for vPRO/ISM devices.
+[power states](https://device-management-toolkit.github.io/docs/2.28/Reference/powerstates/#out-of-band).
 
 ### Scope 1.b
 
-In this modular workflow EIM device onboarding, OS provisioning will be left to the customer. The focus will be on
-implementing and delivering the minimum steps required for automated vPRO/AMT based out-of-band device activation. If
-the customer intends to get the reference for device onboarding and OS provisioning, they can refer to the full EMF
-Day-0 workflow.
+It is assumed that customer has already activated the vPRO devices using the modular workflow 1.a or the full EMF Day-0
+as detailed in the user documentation. Device power management operations will be supported only on vPRO/AMT and
+vPRO/ISM devices.
 
 ### Workflow 1.b
 
-user documentation. Customer has a choice of using vPRO/AMT, vPRO/ISM or non-vPRO devices.
+1. Customer prepared the Edge node and configures the BIOS for vPRO/AMT/ISM as per the user documentation. Customer
+  has a choice of using vPRO/AMT, vPRO/ISM or non-vPRO devices.
 2. Edge device is connected to the network and powered on.
 3. Customer installs the supported OS on to the edge device.
 4. Customer allocates a kubernetes cluster that will be used to run the EIM control plane. This can be a VM. The
-requirements for the OS + cluster will be part of the user documentation.
+  requirements for the OS + cluster will be part of the user documentation.
 5. Customer downloads the vPRO device activation release package from the Intel Release service.
 6. Customer using the automated installer for EIM control plane deploys the EIM control plane on the allocated
-control plane cluster. This steps should already create the default tenant.
+  control plane cluster. This steps should already create the default tenant.
 7. Customer should be able to use the Orch-CLI to run sample commands to verify the control plane is up. This will be
-part of the user documentation.
+  part of the user documentation.
 8. Customer using the automated installer for Edge node installs the Platform manageability agent and Device
-manageability toolkit edge node components like rpc-go, rpc etc.
+  manageability toolkit edge node components like rpc-go, rpc etc.
 9. Automated edge node installer also configures the agents to communicate with the control plane. This includes setting
-up the channel for the agents to talk to the control plane.
+  up the channel for the agents to talk to the control plane. The configuration includes provisioning credentials and
+  password to setup the required CIRA (Client initiated remote access) channel.
 10. Customer using CLI is able to list the connected edge node from the control plane as part of listing hosts.
-11. Customer using CLI initiate the vPRO/AMT device activation workflow on the connected edge node.
+11. Customer using CLI initiate the vPRO/AMT device activation workflow on the connected edge node. This step should
+   support for ACM (Admin Control Mode) and CCM (Client Control Mode) activation modes.
 12. Customer using CLI is able to monitor the progress of the vPRO/AMT device activation workflow.
 13. Upon successful completion of the workflow, the edge node is now activated and ready for out-of-band
- management using Intel DMT. Customer can verify this using the CLI command.
+   management using Intel DMT. Customer can verify this using the CLI command.
 14. Customer should also be able to see the status of AMT activation not performed on ISM and non-vPRO devices.
+15. Customer using CLI initiate out-of-band power management operations on the activated edge node. Supported
+   operations include Power On, Power Off, Power Cycle, Soft Power Off, and Get Power State.
+16. Customer using CLI is able to monitor the status and result of the power management operations on the edge node.
+17. Customer verifies the power state changes on the edge node as per the requested operations in ACM and CCM mode.
+    There should be no impact to the vPRO activation status.
+
+```mermaid
+sequenceDiagram
+  participant Customer
+  participant EdgeNode
+  participant EIMControlPlaneCluster
+  participant EIMControlPlane
+  participant OrchCLI
+  participant EdgeAgents
+
+  Note over Customer,EdgeNode: Steps 1-3: Edge Node Preparation
+  Customer->>EdgeNode: 1. Configure BIOS for vPRO/AMT/ISM
+  Customer->>EdgeNode: 2. Connect to network and power on
+  Customer->>EdgeNode: 3. Install supported OS
+
+  Note over Customer,EIMControlPlaneCluster: Steps 4-7: Control Plane Setup
+  Customer->>EIMControlPlaneCluster: 4. Allocate K8s cluster for EIM
+  Customer->>Customer: 5. Download vPRO activation package
+  Customer->>EIMControlPlane: 6. Deploy EIM control plane (creates default tenant)
+  Customer->>OrchCLI: 7. Verify control plane with sample commands
+
+  Note over Customer,EdgeAgents: Steps 8-10: Edge Node Agent Setup
+  Customer->>EdgeAgents: 8. Install Platform manageability & DMT agents
+  Customer->>EdgeAgents: 9. Configure agents & CIRA channel with credentials
+  Customer->>OrchCLI: 10. List connected edge nodes
+
+  Note over Customer,EdgeNode: Steps 11-14: vPRO/AMT Activation
+  Customer->>OrchCLI: 11. Initiate vPRO/AMT activation (ACM/CCM mode)
+  Customer->>OrchCLI: 12. Monitor activation workflow progress
+  OrchCLI-->>Customer: 13. Verify successful activation
+  OrchCLI-->>Customer: 14. Check activation status (including ISM/non-vPRO)
+
+  Note over Customer,EdgeNode: Steps 15-17: Power Management Operations
+  Customer->>OrchCLI: 15. Initiate OOB power operations (On/Off/Cycle/Soft-Off/Get) ACM/CCM mode.
+  Customer->>OrchCLI: 16. Monitor power operation status
+  Customer->>EdgeNode: 17. Verify power state changes & activation status
+```
+
+### Deliverables 1.b
+
+Since EMF control plane components are not involved directly in the device power management control other than having
+the device power state in the inventory this work flow can leverage the release package supported as part of the vPRO
+activation as listed in the deliverables for 1.a.
+
+This workflow in future releases can be enhanced to include more advanced power management operations (combining more
+than one operation) and scheduling capabilities. This might require a dedicated OOB power management service in the
+control plane and updates to the edge node agents.
+
+- **Foundational services**
+  - ArgoCD that uses EMF repos for git ops based deployment
+  - ArgoCD application definitions for required minimal foundational services, EIM control plane and DMT services
+  - Simplified Multi-tenancy manager that can create a default tenant
+  - Orch-CLI with commands to List and get host and initiate and monitor vPRO/AMT device activation workflow
+- **Service bundles**
+  - EIM control plane services charts and image reference for inventory, tenant-controller, Host resource manger,
+    OOB device activation resource manager
+  - DMT services charts and image references
+  - Configuration manifest for EIM control plane and DMT services
+  - EIM edge node components installer and configuration (e.g. Ansible) that downloads, installs and configures
+    Platform Manageability agent and DMT Edge node components
+- **Integration adapters**
+  - None for this release
