@@ -40,8 +40,9 @@ spec:
     # See: https://github.com/istio/istio/issues/44285
     - group: admissionregistration.k8s.io
       kind: ValidatingWebhookConfiguration
-      jqPathExpressions:
-        - .webhooks[]?.failurePolicy
+      name: istio-validator-istio-system
+      jsonPointers:
+        - /webhooks/0/failurePolicy
   syncPolicy:
     {{- if .Values.argo.autosync }}
     automated:
