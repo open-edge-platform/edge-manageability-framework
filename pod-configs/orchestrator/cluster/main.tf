@@ -195,7 +195,7 @@ module "eks_auth" {
 }
 
 module "ec2log" {
-  count             = var.enable_ec2log ? 1 : 0
+  count             = var.enable_ec2log && var.enable_observability_node ? 1 : 0
   depends_on        = [time_sleep.wait_eks]
   source            = "../../module/ec2log"
   cluster_name      = var.eks_cluster_name
