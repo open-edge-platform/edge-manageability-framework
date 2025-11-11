@@ -1887,7 +1887,7 @@ tls_cert=""
 ca_cert=""
 
 # Launch an additional EC2 instance dedicated to observability (true/false)
-enable_observability_node="true"
+enable_observability_node="false"
 EOF
 
         if $AUTO_CERT; then
