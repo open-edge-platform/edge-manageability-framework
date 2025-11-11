@@ -36,7 +36,7 @@ mimir-distributed:
       distributor:
         remote_timeout: null
       ingester:
-        push_grpc_method_enabled: null
+        push_grpc_method_enabled: true
 
 opentelemetry-collector:
   alternateConfig:
