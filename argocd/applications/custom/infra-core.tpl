@@ -137,6 +137,8 @@ api:
 apiv2:
   oidc:
     oidc_server_url: {{ $keycloakUrl }}
+inventory:
+  oidc_server_url: {{ $keycloakUrl }}
 tenant-controller:
   oidc:
     oidc_server_url: {{ $keycloakUrl }}
