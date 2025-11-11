@@ -9,6 +9,9 @@
 {{- $keycloakUrl = printf "https://keycloak.%s/realms/master" .Values.argo.clusterDomain }}
 {{- end }}
 
+openidc:
+  issuer: {{ $keycloakUrl }}
+
 clusterManager:
   args:
     clusterdomain: {{ .Values.argo.clusterDomain }}
@@ -16,8 +19,6 @@ clusterManager:
     # If kubeconfig-ttl-hours=0 token expires at creation
     # keycloak realm settings and upbounded by the SSO sessions max: 12h
     kubeconfig-ttl-hours: 3
-  env:
-    oidcServerUrl: {{ $keycloakUrl }}
   image:
     repository: cluster/cluster-manager
     registry:
