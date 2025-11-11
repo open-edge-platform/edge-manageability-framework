@@ -21,7 +21,7 @@ spec:
   sources:
     - repoURL: https://istio-release.storage.googleapis.com/charts
       chart: istiod
-      targetRevision: 1.21.0
+      targetRevision: 1.28.0
       helm:
         releaseName: {{$appName}}
         valuesObject:
@@ -34,6 +34,14 @@ spec:
   destination:
     namespace: {{$namespace}}
     server: {{ required "A valid targetServer entry required!" .Values.argo.targetServer }}
+  ignoreDifferences:
+    # Istio's webhook controller dynamically updates failurePolicy from Ignore to Fail
+    # when the webhook is ready. This is intentional behavior to prevent bootstrap issues.
+    # See: https://github.com/istio/istio/issues/44285
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      jqPathExpressions:
+        - .webhooks[]?.failurePolicy
   syncPolicy:
     {{- if .Values.argo.autosync }}
     automated:
