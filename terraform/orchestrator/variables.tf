@@ -319,3 +319,9 @@ variable "enable_explicit_proxy" {
   description = "Whether to enable explicit proxy settings for the VM."
   default     = false
 }
+
+variable "git_proxy" {
+  type        = string
+  description = "Sets the GIT_PROXY environment variable in the VM."
+  default     = ""
+}
