@@ -186,13 +186,19 @@ mimir-distributed:
     # Need to set a few values to null when using IRSA
     structuredConfig:
     {{- if and .Values.argo.o11y .Values.argo.o11y.orchestrator .Values.argo.o11y.orchestrator.mimir .Values.argo.o11y.orchestrator.mimir.structuredConfig }}
+      ingest_storage:
+        enabled: false
+        kafka:
+          address: null
+          topic: null
+          auto_create_topic_default_partitions: null
+      distributor:
+        remote_timeout: null
+      ingester:
+        push_grpc_method_enabled: null
       {{- if .Values.argo.o11y.orchestrator.mimir.structuredConfig.querySchedulerMaxOutstandingRequestsPerTenant }}
       query_scheduler:
         max_outstanding_requests_per_tenant: {{ .Values.argo.o11y.orchestrator.mimir.structuredConfig.querySchedulerMaxOutstandingRequestsPerTenant }}
-      {{- end }}
-      {{- if .Values.argo.o11y.orchestrator.mimir.structuredConfig.frontendMaxOutstandingRequestsPerTenant }}
-      frontend:
-        max_outstanding_per_tenant: {{ .Values.argo.o11y.orchestrator.mimir.structuredConfig.frontendMaxOutstandingRequestsPerTenant }}
       {{- end }}
       {{- if .Values.argo.o11y.orchestrator.mimir.structuredConfig.querierTime }}
       querier:
