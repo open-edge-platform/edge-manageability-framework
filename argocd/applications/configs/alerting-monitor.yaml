@@ -6,6 +6,8 @@ caSecretName: gateway-ca-cert
 caSecretKey: ca.crt
 
 openPolicyAgent:
+  image:
+    tag: 1.10.0-static
   config:
     profile: "compressed"
 
