@@ -300,6 +300,8 @@ load_cluster_state_env() {
     #     fi
     #     export ADMIN_EMAIL=$(openssl x509 -in ${SAVE_DIR}/fullchain-${AWS_ACCOUNT}-${CLUSTER_NAME}.pem -noout -email)
     #  fi
+
+    restore_env_from_s3
 }
 
 clone_repo() {
