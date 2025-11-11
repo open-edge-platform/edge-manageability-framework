@@ -17,9 +17,14 @@ else
 fi
 
 load_provision_env() {
-    # Does $HOME/.env exist? If so, load it.
+    # Load .env, but don't clobber existing env values set by Jenkins
     if [ -f ${HOME}/.env ]; then
-        export $(cat ${HOME}/.env | xargs)
+        while IFS='=' read -r key value; do
+            # Only export if not already present or is empty
+            if [ -z "${!key}" ]; then
+                export ${key}="${value}"
+            fi
+        done < "${HOME}/.env"
     fi
 }
 
