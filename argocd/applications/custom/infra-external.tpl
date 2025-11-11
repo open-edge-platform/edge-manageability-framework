@@ -130,7 +130,7 @@ amt:
   dm-manager:
     env:
       oidc:
-        oidc_server_url: "http://platform-keycloak.orch-platform.svc:8080/realms/master"
+        oidc_server_url: "http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master"
 {{- else }}
 amt:
   dm-manager:
