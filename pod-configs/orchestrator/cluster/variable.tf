@@ -418,4 +418,8 @@ variable "eks_cluster_dns_ip" {
   description = "IP address of the DNS server for the cluster, leave empty to use the default DNS server"
 }
 
-
+variable "enable_observability_node" {
+  type        = bool
+  default     = false
+  description = "Whether to create the observability node group"
+}
