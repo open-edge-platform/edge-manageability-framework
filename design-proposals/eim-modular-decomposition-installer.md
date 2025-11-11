@@ -43,9 +43,16 @@ required EIM services onto an Orchestrator as well as installing the required se
   that the Edge Node has been manually configured by a customer without using the current onboarding workflow in EIM.
 - Proposal also assumes that customer has configured the required foundational services (identity, storage, Kubernetes,
   etc.) either using the EMF stack or their own infrastructure environment.
-- Edge Node design considerations cover installation onto Ubuntu OS environments only.
+- The Edge Node design considerations outlined in this proposal are scoped to Ubuntu OS environments only.
+- The packaging and installation methods described herein are intended for on-premises deployment environments.
 
 ### Architectural Design
+
+#### Platform Components Packaging
+
+The current EMF deployment utilizes installation scripts and Debian packages for on-premises environment provisioning. With the introduction of modular EIM capabilities, the packaging strategy for platform components requires modification to align with the new architecture. As part of the modular decomposition, certain Debian packages that were previously required for full EMF deployments will no longer be necessary for all use cases. Specifically, packages such as the RKE2 installer and configuration installer will be excluded from modular EIM installations, as these components are part of the foundational infrastructure layer that may already be provided by the customer's environment in Track 2 scenarios.
+
+For Track 1 deployments, the essential platform components—including Gitea for repository management and ArgoCD for application lifecycle management—will be integrated into the Orchestrator installation script. This approach streamlines the installation process while maintaining the necessary tooling to support GitOps-based deployment workflows for modular EIM services.
 
 #### EIM Modular Service Packaging and Installation
 
