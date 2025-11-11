@@ -192,13 +192,21 @@ pxe-server:
 
 # Keycloak OIDC server URL based on clusterDomain
 {{- $keycloakUrl := "" }}
+{{- $keycloakBaseUrl := "" }}
 {{- if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}
 {{- $keycloakUrl = "http://platform-keycloak.orch-platform.svc:8080/realms/master" }}
+{{- $keycloakBaseUrl = "http://platform-keycloak.orch-platform.svc.cluster.local:8080" }}
 {{- else }}
 {{- $keycloakUrl = printf "https://keycloak.%s/realms/master" .Values.argo.clusterDomain }}
+{{- $keycloakBaseUrl = printf "https://keycloak.%s" .Values.argo.clusterDomain }}
 {{- end }}
 
 dkam:
-  oidc_server_url: {{ $keycloakUrl }}
+  env:
+    oidc:
+      oidc_server_url: {{ $keycloakUrl }}
 onboarding-manager:
-  oidc_server_url: {{ $keycloakUrl }}
+  env:
+    oidc:
+      oidc_server_url: {{ $keycloakUrl }}
+    keycloakUrl: {{ $keycloakBaseUrl }}
