@@ -1885,6 +1885,9 @@ smtp_from=""
 tls_key=""
 tls_cert=""
 ca_cert=""
+
+# Launch an additional EC2 instance dedicated to observability (true/false)
+enable_observability_node="true"
 EOF
 
         if $AUTO_CERT; then
