@@ -32,10 +32,8 @@ import (
 
 // Deploys the ENiC (indicates the number of instances, optionally set env variables: ORCH_FQDN, ORCH_IP, ORCH_USER, ORCH_PASS, ORCH_ORG, ORCH_PROJECT).
 func (DevUtils) DeployEnic(replicas int, targetEnv string) error {
-	// deployRevision := "UNSUPPORTED"
-	return fmt.Errorf("unsupported")
-
-	/* namespace := "utils"
+	deployRevision := "--set-string argo.deployRepoRevision=HEAD"
+	namespace := "utils"
 	orchestratorIp, err := getPrimaryIP()
 	if err != nil {
 		return err
@@ -93,7 +91,7 @@ func (DevUtils) DeployEnic(replicas int, targetEnv string) error {
 	if err != nil {
 		return fmt.Errorf("failed to get current working directory: %w", err)
 	}
-	deploymentDir := filepath.Join("UNSUPPORTED", "UNSUPPORTED") // XXX
+	deploymentDir := "."
 	if err := os.Chdir(deploymentDir); err != nil {
 		return fmt.Errorf("failed to change directory to %s: %w", deploymentDir, err)
 	}
@@ -105,7 +103,7 @@ func (DevUtils) DeployEnic(replicas int, targetEnv string) error {
 
 	fmt.Printf("exec: %s\n", cmd)
 	_, err = script.Exec(cmd).Stdout()
-	return err */
+	return err
 }
 
 func isEnicArgoAppReady() (bool, error) {

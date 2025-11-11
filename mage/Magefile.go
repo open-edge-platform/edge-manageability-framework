@@ -1966,7 +1966,10 @@ type Version mg.Namespace
 
 // Get the Release Tag for the current source version
 func (Version) GetVersionTag() error {
-	tag := "UNSUPPORTED"
+	tag, err := getDeployTag()
+	if err != nil {
+		return fmt.Errorf("failed to get deploy tag: %w", err)
+	}
 	fmt.Println(tag)
 	return nil
 }
