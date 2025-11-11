@@ -420,6 +420,6 @@ variable "eks_cluster_dns_ip" {
 
 variable "enable_observability_node" {
   type        = bool
-  default     = true
+  default     = false
   description = "Whether to create the observability node group"
 }
