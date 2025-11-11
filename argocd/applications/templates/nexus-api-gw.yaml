@@ -19,9 +19,9 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
-    - repoURL: https://github.com/open-edge-platform/orch-utils.git
-      path: charts/{{$appName}}
-      targetRevision: cveFix-goversion-update-for-tenancy-components
+    - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
+      chart: common/charts/nexus-api-gw
+      targetRevision: 25.2.3      
       helm:
         releaseName: {{$appName}}
         valuesObject:
