@@ -159,5 +159,6 @@ docker run -ti --rm --name orchestrator-admin \
     -e USER="root" -e ORCH_DEFAULT_PASSWORD -e DEPLOY_OP=${deploy_op} \
     -e DISABLE_CO_PROFILE="${DISABLE_CO_PROFILE:-false}" \
     -e DISABLE_AO_PROFILE="${DISABLE_AO_PROFILE:-false}" \
+    -e DISABLE_O11Y_PROFILE="${DISABLE_O11Y_PROFILE:-false}" \
     ${image_name}:${image_tag} \
     bash
