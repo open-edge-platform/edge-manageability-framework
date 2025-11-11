@@ -11,3 +11,6 @@ openidc:
 service:
   traefik:
     namespace: "orch-gateway"
+
+openpolicyagent:
+  tag: 1.10.0-static

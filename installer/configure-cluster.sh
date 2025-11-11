@@ -24,7 +24,7 @@ usage() {
 }
 
 parse_params() {
-    if ! options=$(getopt -o h -l cidr-block:,help,jumphost-ip: -- "$@")
+    if ! options=$(getopt -o h -l cidr-block:,help,jumphost-ip:,upgrade: -- "$@")
     then
         usage
         exit 1
@@ -37,6 +37,7 @@ parse_params() {
         case $1 in
             --cidr-block) VPC_CIDR=$(eval echo $2); shift;;
             --jumphost-ip) JUMPHOST_IP=$(eval echo $2); shift;;
+            --upgrade) ORCH_UPGRADE=$(eval echo $2); shift;;
             -h|--help) usage; exit;;
             (--) shift; break;;
             (-*) echo "$0: error - unrecognized option $1" 1>&2; exit 1;;
@@ -51,6 +52,8 @@ parse_params() {
     if [ -n "$JUMPHOST_IP" ]; then
         export JUMPHOST_IP=${JUMPHOST_IP}
     fi
+    ORCH_UPGRADE="${ORCH_UPGRADE:-false}"
+    export ORCH_UPGRADE
 }
 
 load_provision_env
@@ -59,109 +62,85 @@ parse_params "$@"
 
 load_cluster_state_env
 check_provision_env -p
-load_provision_values
 save_cluster_env
 
 load_cluster_state_env
 if ! load_scm_auth; then
     exit 1
 fi
-save_scm_auth
 
 update_kube_config
+save_scm_auth
 
 #
 # Create Cluster Configuration
 #
-export FILE_SYSTEM_ID=$(aws efs --region ${AWS_REGION} describe-file-systems --query "FileSystems[?Name == '${CLUSTER_NAME}'].FileSystemId" --output text)
-export S3_PREFIX=$(get_s3_prefix)
-
-export TRAEFIK_TG_HASH=$(echo -n "${CLUSTER_NAME}-traefik-default" | sha256sum | cut -c-32)
-export TRAEFIKGRPC_TG_HASH=$(echo -n "${CLUSTER_NAME}-traefik-grpc" | sha256sum | cut -c-32)
-export NGINX_TG_HASH=$(echo -n "${CLUSTER_NAME}-traefik2-https" | sha256sum | cut -c-32)
-export ARGOCD_TG_HASH=$(echo -n "${CLUSTER_NAME}-argocd-default" | sha256sum | cut -c-32)
-
-export TRAEFIK_TG_ARN=$(aws elbv2 describe-target-groups --names ${TRAEFIK_TG_HASH} | jq -r '.TargetGroups[].TargetGroupArn')
-if [ -z $TRAEFIK_TG_ARN ]; then
-    export TRAEFIK_TG_ARN=$(aws elbv2 describe-target-groups --names ${CLUSTER_NAME}-traefik-https | jq -r '.TargetGroups[].TargetGroupArn')
-fi
-if [ -z $TRAEFIK_TG_ARN ]; then
-    echo "  error: Load balancer Target Group for ${CLUSTER_NAME} not found."
+if [ -z "$FILE_SYSTEM_ID" ] || [ -z "$TRAEFIK_TG_ARN" ] || [ -z "$ARGOCD_TG_ARN" ]; then
+    echo "  Missing one or more of: FILE_SYSTEM_ID, TRAEFIK_TG_ARN, ARGOCD_TG_ARN"
+    echo "  Please run provision.sh first."
     exit 1
 fi
 
-export TRAEFIKGRPC_TG_ARN=$(aws elbv2 describe-target-groups --names ${TRAEFIKGRPC_TG_HASH} | jq -r '.TargetGroups[].TargetGroupArn')
-export NGINX_TG_ARN=$(aws elbv2 describe-target-groups --names ${NGINX_TG_HASH} | jq -r '.TargetGroups[].TargetGroupArn')
-export ARGOCD_TG_ARN=$(aws elbv2 describe-target-groups --names ${ARGOCD_TG_HASH} | jq -r '.TargetGroups[].TargetGroupArn')
-if [ -z $ARGOCD_TG_ARN ]; then
-    export ARGOCD_TG_ARN=$(aws elbv2 describe-target-groups --names ${CLUSTER_NAME}-argocd-https | jq -r '.TargetGroups[].TargetGroupArn')
-fi
+export FILE_SYSTEM_ID
+export TRAEFIK_TG_ARN
+export TRAEFIKGRPC_TG_ARN
+export NGINX_TG_ARN
+export ARGOCD_TG_ARN
+export S3_PREFIX
 
 
-# AO_PROFILE  disabled check
-if [ "${DISABLE_CO_PROFILE:-false}" = "true" ] || [ "${DISABLE_AO_PROFILE:-false}" = "true" ]; then
-    export AO_PROFILE="#- orch-configs/profiles/enable-app-orch.yaml"
-else
-    export AO_PROFILE="- orch-configs/profiles/enable-app-orch.yaml"
-fi
+# For ORCH upgrade, check the existing deployment 'root-app'
 
-# CO_PROFILE disabled check
-if [ "${DISABLE_CO_PROFILE:-false}" = "true" ]; then
-    export CO_PROFILE="#- orch-configs/profiles/enable-cluster-orch.yaml"
-    export AO_PROFILE="#- orch-configs/profiles/enable-app-orch.yaml"
-else
-    export CO_PROFILE="- orch-configs/profiles/enable-cluster-orch.yaml"
-fi
+if [ "$ORCH_UPGRADE" = "true" ]; then
+    echo "Running Orch Upgrade Checks..."
 
-if [ -n "$SRE_BASIC_AUTH_USERNAME" ] || [ -n "$SRE_BASIC_AUTH_PASSWORD" ] || [ -n "$SRE_DESTINATION_SECRET_URL" ] || [ -n "$SRE_DESTINATION_CA_SECRET" ]; then
-    export SRE_PROFILE="- orch-configs/profiles/enable-sre.yaml"
-else
-    export SRE_PROFILE="#- orch-configs/profiles/enable-sre.yaml"
-fi
+    # Get root-app YAML
+    root_ns=$(kubectl get application -A | grep root-app | awk '{print $1}')
+    VALUE_FILES=$(kubectl get application root-app -n "$root_ns" -o yaml)
 
-if [ -z $SINGLE_TENANCY ]; then
-    export SINGLE_TENANCY_PROFILE="#- orch-configs/profiles/enable-singleTenancy.yaml"
-else
-    export SINGLE_TENANCY_PROFILE="- orch-configs/profiles/enable-singleTenancy.yaml"
-fi
+	# Exit if namespace OR YAML is empty
+	if [ -z "$root_ns" ] || [ -z "$VALUE_FILES" ]; then
+		echo "❌ Error: root-app namespace or YAML not found!"
+		exit 1
+	fi
 
-if [ "${DISABLE_O11Y:-false}" = "true" ]; then
-    export O11Y_ENABLE_PROFILE="#- orch-configs/profiles/enable-o11y.yaml"
-else
-    export O11Y_ENABLE_PROFILE="- orch-configs/profiles/enable-o11y.yaml"
-fi
-
-if [ -z $SMTP_URL ]; then
-    export EMAIL_PROFILE="#- orch-configs/profiles/alerting-emails.yaml"
-else
-    export EMAIL_PROFILE="- orch-configs/profiles/alerting-emails.yaml"
-fi
-
-if [ -z $AUTO_CERT ]; then
-    export AUTOCERT_PROFILE="#- orch-configs/profiles/profile-autocert.yaml"
-else
-    export AUTOCERT_PROFILE="- orch-configs/profiles/profile-autocert.yaml"
-fi
-
-export AWS_PROD_PROFILE="- orch-configs/profiles/profile-aws-production.yaml"
-if [[ "$DISABLE_AWS_PROD_PROFILE" == "true" ]]; then
-    export AWS_PROD_PROFILE="#- orch-configs/profiles/profile-aws-production.yaml"
-fi
-
-if [ "${DISABLE_O11Y:-false}" = "true" ]; then
-    export O11Y_PROFILE="#- orch-configs/profiles/o11y-release.yaml"
-else
-    export O11Y_PROFILE="- orch-configs/profiles/o11y-release.yaml"
-    if [[ "$CLUSTER_SCALE_PROFILE" == "500en" || "$CLUSTER_SCALE_PROFILE" == "1ken" || "$CLUSTER_SCALE_PROFILE" == "10ken" ]]; then
-      export O11Y_PROFILE="- orch-configs/profiles/o11y-release-large.yaml"
+    # Check CO
+    if echo "$VALUE_FILES" | grep -q "enable-cluster-orch.yaml"; then
+        DISABLE_CO_PROFILE=false
+    else
+        DISABLE_CO_PROFILE=true
     fi
+
+    # Check AO
+    if echo "$VALUE_FILES" | grep -q "enable-app-orch.yaml"; then
+        DISABLE_AO_PROFILE=false
+    else
+        DISABLE_AO_PROFILE=true
+    fi
+
+    # Check O11Y
+    if echo "$VALUE_FILES" | grep -q "enable-o11y"; then
+        DISABLE_O11Y_PROFILE=false
+    else
+        DISABLE_O11Y_PROFILE=true
+    fi
+
+    # Update ~/.env (replace or append)
+    for key in DISABLE_CO_PROFILE DISABLE_AO_PROFILE DISABLE_O11Y_PROFILE; do
+        value="${!key}"
+        if grep -q "^$key=" ~/.env 2>/dev/null; then
+            sed -i "s|^$key=.*|$key=$value|" ~/.env
+        else
+            echo "$key=$value" >> ~/.env
+        fi
+    done
+
+    echo "✅ Orch profile status saved to ~/.env"
 fi
 
-export CLUSTER_SCALE_PROFILE=$(grep -oP '^# Profile: "\K[^"]+' ~/pod-configs/SAVEME/${AWS_ACCOUNT}-${CLUSTER_NAME}-profile.tfvar)
+source ./generate_cluster_yaml.sh aws
 
-echo
-echo "Creating cluster definition for ${CLUSTER_NAME}"
-cat cluster.tpl | envsubst > edge-manageability-framework/orch-configs/clusters/${CLUSTER_NAME}.yaml
+cp -rf ${CLUSTER_NAME}.yaml edge-manageability-framework/orch-configs/clusters/
 
 echo
 echo =============================================================================

@@ -917,7 +917,7 @@ func (d Deploy) VENWithFlow(ctx context.Context, flow string, serialNumber strin
 		return fmt.Errorf("failed to change directory to 'ven': %w", err)
 	}
 
-	if err := sh.RunV("git", "checkout", "pico/1.5.5"); err != nil {
+	if err := sh.RunV("git", "checkout", "pico/1.5.6"); err != nil {
 		return fmt.Errorf("failed to checkout specific commit: %w", err)
 	}
 
@@ -1023,7 +1023,7 @@ STANDALONE=0
 		ProjectApiPassword: password,
 		RamSize:            "8192",
 		NoOfCpus:           "4",
-		SdaDiskSize:        "110",
+		SdaDiskSize:        "100",
 		LibvirtDriver:      "kvm",
 		UsernameLinux:      "user",
 		PasswordLinux:      "user",
