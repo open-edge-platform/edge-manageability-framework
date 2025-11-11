@@ -3,11 +3,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 cluster:
-  ## do not inject sidecar to pods
-  inheritedMetadata:
-    annotations:
-      sidecar.istio.io/inject: "false"
-
+  # Istio annotations to fix TLS handshake errors with health checks
+  annotations:
+    traffic.sidecar.istio.io/excludeInboundPorts: "8000"
+    traffic.sidecar.istio.io/excludeOutboundPorts: "8000"
   {{- $defaultResources := dict }}
   {{- if and .Values.argo.postgresql .Values.argo.postgresql.resourcesPreset }}
   {{- $preset := .Values.argo.postgresql.resourcesPreset }}
