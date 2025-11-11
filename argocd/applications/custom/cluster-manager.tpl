@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+{{- $keycloakUrl := "" }}
+{{- if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}
+{{- $keycloakUrl = "http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master" }}
+{{- else }}
+{{- $keycloakUrl = printf "https://keycloak.%s/realms/master" .Values.argo.clusterDomain }}
+{{- end }}
+
 clusterManager:
   args:
     clusterdomain: {{ .Values.argo.clusterDomain }}
@@ -9,6 +16,8 @@ clusterManager:
     # If kubeconfig-ttl-hours=0 token expires at creation
     # keycloak realm settings and upbounded by the SSO sessions max: 12h
     kubeconfig-ttl-hours: 3
+  env:
+    oidcServerUrl: {{ $keycloakUrl }}
   image:
     repository: cluster/cluster-manager
     registry:
