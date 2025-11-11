@@ -2,11 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-cluster:
-  # Istio annotations to fix TLS handshake errors with health checks
+# Istio annotations to fix TLS handshake errors with health checks
+inheritedMetadata:
   annotations:
     traffic.sidecar.istio.io/excludeInboundPorts: "8000"
     traffic.sidecar.istio.io/excludeOutboundPorts: "8000"
+
+cluster:
   {{- $defaultResources := dict }}
   {{- if and .Values.argo.postgresql .Values.argo.postgresql.resourcesPreset }}
   {{- $preset := .Values.argo.postgresql.resourcesPreset }}
