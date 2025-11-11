@@ -36,6 +36,10 @@ onboarding-manager:
     tinkerActionsVersion: "1.19.8"
     oidc:
       oidc_server_url: "http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master"  # Overridden in template based on clusterDomain
+      # Skip AuthZ for CDN-boots
+      clients:
+        bypass:
+          - cdn-boots
     vaultUrl: "http://vault.orch-platform.svc.cluster.local:8200"
     vaultRole: "orch-svc"
     keycloakUrl: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
@@ -52,6 +56,7 @@ dkam:
     rs_proxy_address: "rs-proxy.orch-platform.svc.cluster.local:8081/"
     oidc:
       oidc_server_url: "http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master"  # Overridden in template based on clusterDomain
+  resources: null
 infra-config:
   config:
     enAgentManifestTag: "1.3.10"
