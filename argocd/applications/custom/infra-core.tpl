@@ -132,8 +132,11 @@ tenant-config:
 {{- end }}
 
 api:
-  oidc_server_url: {{ $keycloakUrl }}
+  oidc:
+    oidc_server_url: {{ $keycloakUrl }}
 apiv2:
-  oidc_server_url: {{ $keycloakUrl }}
-inventory:
-  oidc_server_url: {{ $keycloakUrl }}
+  oidc:
+    oidc_server_url: {{ $keycloakUrl }}
+tenant-controller:
+  oidc:
+    oidc_server_url: {{ $keycloakUrl }}

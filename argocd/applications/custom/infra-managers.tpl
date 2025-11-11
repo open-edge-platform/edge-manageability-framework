@@ -160,12 +160,17 @@ attestationstatus-manager:
 {{- end }}
 
 host-manager:
-  oidc_server_url: {{ $keycloakUrl }}
+  oidc:
+    oidc_server_url: {{ $keycloakUrl }}
 maintenance-manager:
-  oidc_server_url: {{ $keycloakUrl }}
+  oidc:
+    oidc_server_url: {{ $keycloakUrl }}
 networking-manager:
-  oidc_server_url: {{ $keycloakUrl }}
+  oidc:
+    oidc_server_url: {{ $keycloakUrl }}
 telemetry-manager:
-  oidc_server_url: {{ $keycloakUrl }}
+  oidc:
+    oidc_server_url: {{ $keycloakUrl }}
 attestationstatus-manager:
-  oidc_server_url: {{ $keycloakUrl }}
+  oidc:
+    oidc_server_url: {{ $keycloakUrl }}
