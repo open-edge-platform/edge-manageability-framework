@@ -254,6 +254,79 @@ Edge Infrastructure Manager team will implement the following functionality to s
 - Intelligement Remote Power Management
 - Device de-activation
 
+### Implementation plan for Admin Control Mode
+
+To enable Admin Control Mode, the DM Manager implementation will be updated to activate devices using Admin Control
+Mode (ACM) or Client Control Mode (CCM). The proposed plan for the release is:
+
+- Extend inventory to store the DNS Suffix and activation mode (ACM or CCM) alongside the instance ID.
+  - DNS Suffix added from UI or CLI during set up.
+- Extend DM Manager device activation to check for activation mode from inventory.
+- Add domain profile creation when activation mode is set to admin.
+- DM Manager retrieves DNS Suffix from inventory.
+- DM Manager retrieves provisioning certificate and password from Vault for domain profile creation.
+- Update AMT profile configuration to align with the requested activation mode selected.
+
+Additional updates to support admin mode are documented in the [OpenDMT documentation](./vpro-opendmt.md).
+
+> Note: this will be included in the next release after the 2025.2 release.
+
+Device onboarding and activation will be performed in the following flow when running in admin mode.
+
+```mermaid
+sequenceDiagram
+  title: AMT device provisioning and activation
+  %%{wrap}%%
+  autonumber
+  participant US as User
+  box rgb(235,255,255) Edge Orchestrator
+  participant UI as UI/CLI
+  participant ON as Onboarding
+  participant DM as DM Manager
+  participant VT as Vault
+  participant IN as Inventory
+  participant RP as RPS
+  end
+  box rgba(255,255,235) Edge Orchestrator
+  participant PM as Platform Manageability Agent (PMA)
+  participant OS as BIOS
+  end
+  activate UI
+  US ->> UI: Set activation mode as admin
+  US ->> UI: Set DNS Suffix
+  US ->> UI: Upload Provisioning Certificate
+  US ->> UI: Upload Provisioning Certificate password
+  UI ->> VT: Store Provisioning Certificate and password
+  UI ->> IN: Store DNS Suffix and activation mode for edge node instance
+  UI ->> US: Report success
+  deactivate UI
+  US ->> DM: Start profile creation for tenant
+  activate DM
+  DM ->> IN: Retrieve activation mode and DNS Suffix for instance
+  DM ->> VT: Retrieve Provisioning Certificate and password
+  DM ->> DM: Create Domain Profile
+  DM ->> RP: Send Domain Profile
+  DM ->> DM: Create AMT Profile
+  DM ->> RP: Send AMT Profile
+  deactivate DM
+  US ->> ON: Start Onboarding
+  activate ON
+  ON ->> IN: Retrieve DNS Suffix
+  ON ->> OS: Apply DNS Suffix to BIOS
+  ON ->> PM: Install PMA
+  ON ->> US: Report success
+  deactivate ON
+  US ->> DM: Start device activation
+  activate DM
+  DM ->> PM: Send AMT Profile Name, websocket details, AMT and Provisioning Cert password
+  activate PM
+  PM ->> PM: Start Device Activation
+  PM ->> DM: Report Device Activation Status
+  deactivate PM
+  DM ->> US: Report Device Activation Status
+  deactivate DM
+````
+
 ### Test Plan
 
 DM RM **Unit tests** will be extended to cover 80% of the functionality at least - these tests will include mocks for
