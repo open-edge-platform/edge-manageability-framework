@@ -5,16 +5,19 @@
 package mage
 
 import (
+	"bufio"
 	"encoding/base64"
 	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
 	"sort"
 	"strings"
 
 	// "text/template"
 	"path/filepath"
 	"time"
+	"unicode"
 
 	"github.com/bitfield/script"
 	"gopkg.in/yaml.v3"
@@ -51,8 +54,262 @@ type Manifest struct {
 	Type              string                      `yaml:"type"`
 }
 
+func getIndentSize(str string) int {
+	indent := 0
+	for _, char := range str {
+		if !unicode.IsSpace(char) {
+			break
+		}
+		indent++
+	}
+	return indent
+}
+
+func getGitOriginPath(dir string) (string, error) {
+	cmd := exec.Command("git", "remote", "get-url", "origin")
+	cmd.Dir = dir
+	out, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(out)), nil
+}
+
+func getGitCommitDate(repoPath string, commitHash string) (string, error) {
+	cmdArgs := []string{"-C", repoPath, "log", "-1", "--format=%cI"}
+	if commitHash != "" {
+		cmdArgs = append(cmdArgs, commitHash)
+	}
+
+	cmd := exec.Command("git", cmdArgs...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(string(output)), nil
+}
+
+func splitOnLastSlash(str string) (string, string) {
+	lastSlashIndex := strings.LastIndex(str, "/")
+	if lastSlashIndex == -1 {
+		return "", str
+	}
+	return str[:lastSlashIndex], str[lastSlashIndex+1:]
+}
+
+//nolint:gocyclo
+func parseAppConfig(filename string) ([]*ComponentDetails, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, fmt.Errorf("unable to open file: %w", err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	values := make(map[string]string)
+	var commonDetails ComponentDetails
+	var components []*ComponentDetails
+	fmValueRegex := regexp.MustCompile(`{{-\s+\$([\w]+)\s+:=\s+"([^"]+)".*}}`)
+	inFrontmatter := true
+	inSpec := false
+	inSources := false
+	sourcesIndent := 2
+	currentComponent := &ComponentDetails{}
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		if inFrontmatter {
+			if line == "---" {
+				inFrontmatter = false
+				continue
+			}
+			matches := fmValueRegex.FindStringSubmatch(line)
+			if len(matches) != 3 {
+				continue
+			}
+			values[matches[1]] = matches[2]
+			if matches[1] == "appName" {
+				commonDetails.AppName = matches[2]
+			}
+			if matches[1] == "namespace" {
+				commonDetails.Namespace = matches[2]
+			}
+			if matches[1] == "syncWave" {
+				commonDetails.Order = matches[2]
+			}
+		} else {
+			if strings.HasPrefix(line, "spec:") {
+				inSpec = true
+				continue
+			}
+			if inSpec {
+				if sourcesIndent = strings.Index(line, "sources:"); sourcesIndent > 0 {
+					inSpec = false
+					inSources = true
+					continue
+				}
+			}
+			if inSources {
+				indent := getIndentSize(line)
+				// Check if this is a new source entry (starts with a dash)
+				if indent >= sourcesIndent && strings.HasPrefix(strings.TrimSpace(line), "-") {
+					if currentComponent.Repo != "" || currentComponent.Chart != "" {
+						// Save the previous component before starting a new one
+						components = append(components, currentComponent)
+					}
+					// Create a new component with common details
+					currentComponent = &ComponentDetails{
+						AppName:   commonDetails.AppName,
+						Namespace: commonDetails.Namespace,
+						Order:     commonDetails.Order,
+					}
+				}
+
+				// If we've moved out of the sources section
+				if indent <= sourcesIndent && !strings.HasPrefix(strings.TrimSpace(line), "-") {
+					break
+				}
+
+				match := regexp.MustCompile(`repoURL:\s*(.*)$`).FindStringSubmatch(line)
+				if match != nil {
+					if strings.Contains(match[1], ".Values.argo.chartRepoURL") {
+						currentComponent.Repo = "oci://registry-rs.edgeorchestration.intel.com/edge-orch"
+					} else if strings.Contains(match[1], ".Values.argo.rsChartRepoURL") {
+						currentComponent.Repo = "oci://registry-rs.edgeorchestration.intel.com/edge-orch"
+					} else {
+						currentComponent.Repo = strings.Trim(match[1], " ")
+					}
+					continue
+				}
+
+				match = regexp.MustCompile(`targetRevision:\s*(.*)$`).FindStringSubmatch(line)
+				if match != nil {
+					currentComponent.Version = strings.Trim(match[1], " ")
+					continue
+				}
+
+				match = regexp.MustCompile(`chart:\s*(.*)$`).FindStringSubmatch(line)
+				if match != nil {
+					chartStr := strings.Trim(match[1], " ")
+					if _, ok := values["appName"]; ok {
+						chartStr = regexp.MustCompile(`{{\s*\$appName\s*}}`).ReplaceAllString(chartStr, values["appName"])
+					}
+					if _, ok := values["chartName"]; ok {
+						chartStr = regexp.MustCompile(`{{\s*\$chartName\s*}}`).ReplaceAllString(chartStr, values["chartName"])
+					}
+					path, chart := splitOnLastSlash(strings.Trim(chartStr, " "))
+					currentComponent.Chart = chart
+					if path != "" {
+						currentComponent.Repo = currentComponent.Repo + "/" + path
+					}
+					continue
+				}
+
+				match = regexp.MustCompile(`path:\s*(.*)$`).FindStringSubmatch(line)
+				if match != nil {
+					pathStr := strings.Trim(match[1], " ")
+					if _, ok := values["appName"]; ok {
+						pathStr = regexp.MustCompile(`{{\s*\$appName\s*}}`).ReplaceAllString(pathStr, values["appName"])
+					}
+					if _, ok := values["chartName"]; ok {
+						pathStr = regexp.MustCompile(`{{\s*\$chartName\s*}}`).ReplaceAllString(pathStr, values["chartName"])
+					}
+					currentComponent.Chart = pathStr
+					continue
+				}
+
+				match = regexp.MustCompile(`releaseName:\s*(.*)$`).FindStringSubmatch(line)
+				if match != nil {
+					if strings.Contains(match[1], "$appName") {
+						currentComponent.ReleaseName = values["appName"]
+					} else {
+						currentComponent.ReleaseName = strings.Trim(match[1], " ")
+					}
+					continue
+				}
+			}
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	// Add the last component if it exists
+	if currentComponent.Repo != "" || currentComponent.Chart != "" {
+		components = append(components, currentComponent)
+	}
+
+	// If no components were found, return an empty slice
+	if len(components) == 0 {
+		return []*ComponentDetails{}, nil
+	}
+
+	return components, nil
+}
+
 func getManifest() (*Manifest, error) {
-	return nil, fmt.Errorf("unsupported") // XXX
+	var manifest Manifest
+	var err error
+
+	repoDir := getDeployDir()
+	configsDir := getConfigsDir()
+	if _, err := os.Stat(configsDir); os.IsNotExist(err) {
+		return nil, fmt.Errorf("invalid config directory: %s", configsDir)
+	}
+
+	manifest.Components = make(map[string]ComponentDetails)
+	manifest.Type = "argocd"
+
+	manifest.GitHash = getDeployRevision()
+	manifest.GitOrigin, err = getGitOriginPath(repoDir)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get deploy repo origins: %w", err)
+	}
+
+	commitDateTime, err := getGitCommitDate(repoDir, manifest.GitHash)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get deploy commit time: %w", err)
+	}
+	t, err := time.Parse(time.RFC3339, commitDateTime)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse deploy commit time: %w", err)
+	}
+	utc := t.UTC()
+	manifest.Date = utc.Format("2006-01-02")
+	manifest.Time = utc.Format("15:04:05")
+	manifest.Tag = utc.Format("20060102.15")
+
+	appPath := filepath.Join(repoDir, "argocd", "applications", "templates")
+	appEntries, err := os.ReadDir(appPath)
+	if err != nil {
+		return nil, fmt.Errorf("unable to read app configs: %w", err)
+	}
+
+	for _, appfile := range appEntries {
+		if !appfile.IsDir() && strings.HasSuffix(appfile.Name(), ".yaml") {
+			configList, err := parseAppConfig(filepath.Join(appPath, appfile.Name()))
+			if err != nil {
+				fmt.Println("  error parsing app config: %w", err)
+			} else {
+				for i, config := range configList {
+					var manifestEntryName string
+					if i == 0 {
+						manifestEntryName = config.AppName
+					} else {
+						manifestEntryName = config.AppName + "-" + config.Chart
+					}
+					if config.ReleaseName == "" {
+						config.ReleaseName = manifestEntryName
+					}
+					manifest.Components[manifestEntryName] = *config
+				}
+			}
+		}
+	}
+
+	return &manifest, nil
 }
 
 // save a release manifest file that contains all included helm component versions.
@@ -329,6 +586,79 @@ const (
 	// OpenEdgePlatformFilesRegistry     = OpenEdgePlatformRegistryRepoURL + "/" + OpenEdgePlatformRepository + "/" + RegistryRepoSubProj + "/files"  //nolint: lll
 )
 
+func parseChartFileForImageValues(filePath string) ([]string, error) {
+	var values []string
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	buf := make([]byte, 0, 16*1024)
+	scanner.Buffer(buf, 1024*1024)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.Contains(line, "image:") {
+			// DBG: fmt.Println(line)
+			re := regexp.MustCompile(`image:\s*"?([^"\s]+)"?`)
+			match := re.FindStringSubmatch(line)
+			if len(match) > 1 {
+				value := strings.TrimSpace(match[1])
+				values = append(values, value)
+			}
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	return values, nil
+}
+
+func uniqueSortedValues(values []string) []string {
+	unique := make(map[string]bool)
+	for _, value := range values {
+		unique[value] = true
+	}
+
+	result := make([]string, 0, len(unique))
+	for value := range unique {
+		result = append(result, value)
+	}
+
+	sort.Strings(result)
+	return result
+}
+
+func parseTemplatedChartsForImageValues(rootDir string) ([]string, error) {
+	var imageValues []string
+	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if !info.IsDir() && (strings.HasSuffix(info.Name(), ".yaml") ||
+			strings.HasSuffix(info.Name(), ".yml")) {
+			values, err := parseChartFileForImageValues(path)
+			if err != nil {
+				return err
+			}
+			imageValues = append(imageValues, values...)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error walking directory: %w", err)
+	}
+
+	imageValues = uniqueSortedValues(imageValues)
+	return imageValues, nil
+}
+
 func filterNoProxy(noProxyEnv string, substringsToRemove []string) string {
 	entries := strings.Split(noProxyEnv, ",")
 	filteredEntries := []string{}
@@ -418,7 +748,42 @@ func getImageManifest() ([]string, []string, error) {
 		}
 	}
 
-	return nil, nil, fmt.Errorf("usupported")
+	imageList, err := parseTemplatedChartsForImageValues(tempDir)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error parsing templated charts: %w", err)
+	}
+
+	binaryList := []string{}
+	// Add OCI Tarball deployment artifacts
+	tarballRepos := []string{"orchestrator"}
+	tarballVariants := []string{"cloudFull", "onpremFull"}
+	installVariants := []string{"cloudFull"}
+
+	deployTag, err := getDeployTag()
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get tag for deployment artifacts: %w", err)
+	}
+
+	for _, variant := range tarballVariants {
+		for _, repo := range tarballRepos {
+			// buildImageBasePath = ${REGISTRY}"/"${REGISTRY_PROJECT}"/"${SUB_COMPONENT_NAME}"/"${ARTIFACT_TYPE}"
+			// oras push $buildImageBasePath"/"${repo}"/"${VARIANT_LC}":"${TAG}"
+			binaryList = append(binaryList, fmt.Sprintf("%s/%s/%s:%s", binaryBasePath, repo,
+				strings.ToLower(variant), deployTag))
+		}
+	}
+
+	binaryList = append(binaryList, fmt.Sprintf("%s/cloud-orchestrator-installer:%s", binaryBasePath, deployTag))
+
+	// Add OCI installer deployment artifacts
+	for _, installVariant := range installVariants {
+		// buildImageBasePath = ${REGISTRY}"/"${REGISTRY_PROJECT}"/
+		// oras push $buildImageBasePath"/"${repo}"/"${VARIANT_LC}":"${TAG}"
+		imageList = append(imageList, fmt.Sprintf("%s/orchestrator-installer-%s:%s", installBasePath,
+			strings.ToLower(installVariant), deployTag))
+	}
+
+	return imageList, binaryList, nil
 }
 
 // Basically the same as getImageManifest but works only on local copies of helm files with buildall
@@ -475,7 +840,42 @@ func getLocalImageManifest() ([]string, []string, error) {
 		}
 	}
 
-	return nil, nil, fmt.Errorf("unsupported")
+	imageList, err := parseTemplatedChartsForImageValues(tempDir)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error parsing templated charts: %w", err)
+	}
+
+	binaryList := []string{}
+	// Add OCI Tarball deployment artifacts
+	tarballRepos := []string{"orchestrator"}
+	tarballVariants := []string{"cloudFull", "onpremFull"}
+	installVariants := []string{"cloudFull"}
+
+	deployTag, err := getDeployTag()
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get tag for deployment artifacts: %w", err)
+	}
+
+	for _, variant := range tarballVariants {
+		for _, repo := range tarballRepos {
+			// buildImageBasePath = ${REGISTRY}"/"${REGISTRY_PROJECT}"/"${SUB_COMPONENT_NAME}"/"${ARTIFACT_TYPE}"
+			// oras push $buildImageBasePath"/"${repo}"/"${VARIANT_LC}":"${TAG}"
+			binaryList = append(binaryList, fmt.Sprintf("%s/%s/%s:%s", binaryBasePath, repo,
+				strings.ToLower(variant), deployTag))
+		}
+	}
+
+	binaryList = append(binaryList, fmt.Sprintf("%s/cloud-orchestrator-installer:%s", binaryBasePath, deployTag))
+
+	// Add OCI installer deployment artifacts
+	for _, installVariant := range installVariants {
+		// buildImageBasePath = ${REGISTRY}"/"${REGISTRY_PROJECT}"/
+		// oras push $buildImageBasePath"/"${repo}"/"${VARIANT_LC}":"${TAG}"
+		imageList = append(imageList, fmt.Sprintf("%s/orchestrator-installer-%s:%s", installBasePath,
+			strings.ToLower(installVariant), deployTag))
+	}
+
+	return imageList, binaryList, nil
 }
 
 func GetBranchName() (string, error) {

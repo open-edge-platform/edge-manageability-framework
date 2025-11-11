@@ -1168,6 +1168,69 @@ func getDeployDir() string {
 	return edgeManageabilityFrameworkDir
 }
 
+func getDeployRevision() string {
+	deployRevision := os.Getenv("EDGE_MANAGEABILITY_FRAMEWORK_REV")
+	if deployRevision == "" {
+		deployDir := getDeployDir()
+		if _, err := os.Stat(deployDir); os.IsNotExist(err) {
+			fmt.Println("failed to locate deploy (.) repo, using cluster default deploy revision")
+			return ""
+		} else {
+			cmd := fmt.Sprintf("bash -c 'cd %s; git rev-parse --short HEAD'", deployDir)
+			out, err := script.Exec(cmd).String()
+			if err != nil {
+				fmt.Println("failed to determine deployRevision: %w", err)
+				fmt.Println("  using cluster default configs revision")
+				return ""
+			}
+			deployRevision = strings.TrimSpace(out)
+		}
+	}
+	return deployRevision
+}
+
+/* func giteaDeployRevisionParam() string {
+	// Get the Gitea credentials from the Kubernetes secret, the randomly generated password constants are not
+	giteaDeployDir := ".deploy/gitea/edge-manageability-framework"
+	if _, err := os.Stat(giteaDeployDir); os.IsNotExist(err) {
+		fmt.Println("failed to locate deploy (.) repo, using cluster default deploy revision")
+		return ""
+	} else {
+		cmd := fmt.Sprintf("bash -c 'cd %s; git rev-parse --short HEAD'", giteaDeployDir)
+		out, err := script.Exec(cmd).String()
+		if err != nil {
+			fmt.Println("failed to determine deployRevision: %w", err)
+			fmt.Println("  using cluster default configs revision")
+			return ""
+		}
+		deployRevision := strings.TrimSpace(out)
+		return fmt.Sprintf("--set-string argo.deployRepoRevision=%s ", deployRevision)
+	}
+} */
+
+func getDeployTag() (string, error) {
+	var deployTag string
+	deployDir := getDeployDir()
+	if _, err := os.Stat(deployDir); os.IsNotExist(err) {
+		return "", fmt.Errorf("failed to locate deploy repo: %w", err)
+	}
+	if versionBuf, err := os.ReadFile(filepath.Join(deployDir, "VERSION")); err != nil {
+		return "", fmt.Errorf("failed to read version file: %w", err)
+	} else {
+		deployTag = strings.TrimSpace(string(versionBuf))
+	}
+	if strings.Contains(deployTag, "-dev") {
+		deployRevision := getDeployRevision()
+		if len(deployRevision) == 0 {
+			return "", fmt.Errorf("failed to get edge-manageability-framework revision")
+		}
+		deployTag = deployTag + "-" + deployRevision
+	}
+
+	deployTag = "v" + deployTag
+	return deployTag, nil
+}
+
 func getOrchestratorVersion() (string, error) {
 	version, err := getVersionFromFile()
 	if err != nil {
