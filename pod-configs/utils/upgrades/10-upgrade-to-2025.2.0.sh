@@ -189,8 +189,15 @@ action_cluster() {
     echo "Creating backend & variable files"
     backend="$(cluster_backend)" && echo "$backend" > $dir/backend.tf
     variable="$(cluster_variable)" && echo "$variable" > $dir/variable.tfvar
-
-
+    BUCKET=$(grep -E '^bucket' $dir/backend.tf | awk -F'=' '{print $2}' | tr -d ' "')
+    CLUSTER_PATH="s3://${BUCKET}/${AWS_REGION}/cluster/${ENV_NAME}"
+    LB_PATH="s3://${BUCKET}/${AWS_REGION}/orch-load-balancer/${ENV_NAME}"
+    aws s3 cp $CLUSTER_PATH cluster_state.json
+    aws s3 cp $LB_PATH lb_state.json
+    echo "export FILE_SYSTEM_ID=$(cat cluster_state.json | jq -r '.outputs.efs_file_system_id.value')" > ~/pod-configs/.env
+    echo "export ARGOCD_TG_ARN=$(cat lb_state.json | jq -r '.outputs.argocd_target_groups.value.argocd.arn // empty')" >> ~/pod-configs/.env
+    echo "export TRAEFIK_TG_ARN=$(cat lb_state.json | jq -r '.outputs.traefik_target_groups.value.default.arn // empty')" >> ~/pod-configs/.env
+    sed -i '/^#!\/bin\/bash$/a source ~/pod-configs/.env' /root/configure-cluster.sh
 }
 
 
