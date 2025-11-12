@@ -12,3 +12,5 @@ keyName:
     target: username
   - source: password
     target: password
+
+externalSecretsApiGroup: external-secrets.io/v1
