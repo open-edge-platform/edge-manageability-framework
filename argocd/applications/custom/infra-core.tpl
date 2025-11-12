@@ -71,7 +71,25 @@ inventory:
   {{- with index .Values.argo "infra-core" "inventory" "resources" }}
     {{- toYaml . | nindent 4 }}
   {{- end}}
+  {{- else }}
+  # Default resources - increase memory to prevent OOMKilled
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
   {{- end}}
+  {{- else }}
+  # Default resources - increase memory to prevent OOMKilled
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
   {{- end}}
   metrics:
     enabled: {{ index .Values.argo "infra-core" "enableMetrics" | default false }}

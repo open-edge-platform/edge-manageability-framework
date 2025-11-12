@@ -2,6 +2,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+# Keycloak OIDC server URL based on clusterDomain
+{{- $keycloakUrl := "" }}
+{{- $keycloakBaseUrl := "" }}
+{{- if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}
+{{- $keycloakUrl = "http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master" }}
+{{- $keycloakBaseUrl = "http://platform-keycloak.orch-platform.svc.cluster.local:8080" }}
+{{- else }}
+{{- $keycloakUrl = printf "https://keycloak.%s/realms/master" .Values.argo.clusterDomain }}
+{{- $keycloakBaseUrl = printf "https://keycloak.%s" .Values.argo.clusterDomain }}
+{{- end }}
+
 global:
   registry:
     name: "{{ .Values.argo.containerRegistryURL }}/"
@@ -139,6 +150,8 @@ dkam:
     enabled: {{ index .Values.argo "infra-onboarding" "enableMetrics" | default false }}
   env:
     mode: "{{ index .Values.argo "infra-onboarding" "dkamMode" | default "prod" }}"
+    oidc:
+      oidc_server_url: {{ $keycloakUrl }}
   proxies:
     http_proxy: {{ .Values.argo.proxy.httpProxy }}
     https_proxy: {{ .Values.argo.proxy.httpsProxy }}
@@ -190,21 +203,6 @@ pxe-server:
     subnetAddress: {{ index .Values.argo "infra-onboarding" "pxe-server" "subnetAddress" | default "" }}
 {{- end }}
 
-# Keycloak OIDC server URL based on clusterDomain
-{{- $keycloakUrl := "" }}
-{{- $keycloakBaseUrl := "" }}
-{{- if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}
-{{- $keycloakUrl = "http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master" }}
-{{- $keycloakBaseUrl = "http://platform-keycloak.orch-platform.svc.cluster.local:8080" }}
-{{- else }}
-{{- $keycloakUrl = printf "https://keycloak.%s/realms/master" .Values.argo.clusterDomain }}
-{{- $keycloakBaseUrl = printf "https://keycloak.%s" .Values.argo.clusterDomain }}
-{{- end }}
-
-dkam:
-  env:
-    oidc:
-      oidc_server_url: {{ $keycloakUrl }}
 onboarding-manager:
   env:
     oidc:
