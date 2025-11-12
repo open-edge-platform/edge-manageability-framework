@@ -40,6 +40,8 @@ TBD
 ```mermaid
 sequenceDiagram
     participant CLI as orch-cli
+    participant Browser as Browser<br/>(web-ui)
+    participant Traefik as Traefik Gateway<br/>(amt-api-mps)
     participant APIV2 as apiv2<br/>(infra-core)
     participant INV as inventory<br/>(infra-core)
     participant DM as dm-manager<br/>(infra-external)
