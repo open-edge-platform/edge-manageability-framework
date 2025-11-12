@@ -80,7 +80,7 @@ requests to the EIM services.
 sequenceDiagram
   autonumber
   participant US as User
-  box rgba(156, 65, 65, 1) Orchestrator Components
+  box rgba(50, 219, 219, 1) Orchestrator Components
     participant CLI as Orchestrator CLI
     participant DM as Device Management (DM) Manager
     participant INV as Inventory
@@ -160,7 +160,7 @@ support detection moved to the PMA.
 sequenceDiagram
   autonumber
   participant US as User
-  box rgba(165, 65, 65, 1) Orchestrator Components
+  box rgba(50, 219, 219, 1) Orchestrator Components
     participant CLI as Orchestrator CLI
     participant DM as Device Management (DM) Manager
     participant INV as Inventory
@@ -168,7 +168,7 @@ sequenceDiagram
     participant MPS as Management Presence Server (MPS)
     participant FPS as Foundational Platform Services (FPS)
   end
-  box rgba(66, 146, 50, 1)
+  box rgba(37, 182, 21, 1)
     participant NA as Node Agent
     participant PMA as Platform Manageability Agent
     participant RPC as Remote Provisioning Client
