@@ -45,7 +45,7 @@ argo:
 
   o11y:
     # If the cluster has a node dedicated to edgenode observability services
-    dedicatedEdgenodeEnabled: true
+    dedicatedEdgenodeEnabled: false
 
   ## AWS Account Info
   aws:
