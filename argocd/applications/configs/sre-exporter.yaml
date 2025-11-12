@@ -27,3 +27,5 @@ otelCollector:
 configReloader:
   o11yTenantController:
     namespace: orch-platform
+
+externalSecretsApiGroup: external-secrets.io/v1
