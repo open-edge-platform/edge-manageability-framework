@@ -233,6 +233,7 @@ Generate authorization tokens from MPS for establishing KVM sessions
   }
 }
 ```
+**Note**: The authorization endpoint in swagger.json is used by the code generator (oapi-codegen) to create a Go client package that dm-manager uses to call the MPS API. This generated client method retrieves the JWT token from MPS, which is then used to authenticate and open the KVM WebSocket session.
 
 ##### B. WebSocket Relay Endpoint (KVM Session)
 
