@@ -2,7 +2,7 @@
 
 Author(s): Edge Infrastructure Manager Team
 
-Last Updated: 2025-11-10
+Last Updated: 2025-11-12
 
 ## Abstract
 
@@ -97,3 +97,30 @@ new installation scripts can be pulled down onto the edge node and run directly.
 configuration of the OS to enable communication with the Orchestrator as well as pulling down the required agent Debian
 packages from the release apt repository using standard apt commands. It will also perform any configuration of the
 agents that is needed to support the use case deployment.
+
+Below is an outline of the installation flow for the edge node agents:
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant US as User
+  participant CLI as Orchestrator CLI
+  participant RS as Release Service
+  participant EN as Edge Node
+  US ->> CLI: Request edge node installation script
+  activate CLI
+  CLI ->> RS: Retrieve edge node installation script
+  RS ->> CLI: Return installation script
+  CLI ->> US: Return installation script
+  deactivate CLI
+  US ->> EN: Copy and run installation script
+  activate EN
+  EN ->> EN: Initial node configuration
+  EN ->> EN: Update apt repositories
+  EN ->> EN: Add agent configuration settings
+  EN ->> RS: Pull required agent packages
+  RS ->> EN: Return agent packages
+  EN ->> EN: Install agents
+  EN ->> US: Report install status
+  deactivate EN
+```
