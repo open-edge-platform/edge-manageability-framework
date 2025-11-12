@@ -132,3 +132,6 @@ sequenceDiagram
   immediate communication.
   - Can also be extended to full EMF stack installation method.
   - Installer script creates environment file as part of installation flow using FQDN from Orchestrator environment.
+- Single installer script for Orchestrator, including installer script for edge node, which installs all services needed
+  for the required use case.
+  - Can also cover installation of the current full EMF stack.
