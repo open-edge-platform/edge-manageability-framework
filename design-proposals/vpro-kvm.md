@@ -195,7 +195,44 @@ MPS Swagger documentation:
 
 ##### A. Authorization Endpoint (Token Generation)
 
-TBD
+Generate authorization tokens from MPS for establishing KVM sessions
+
+**Endpoint**: `GET /api/v1/authorize/redirection/{guid}`
+
+**The authorization endpoint in swagger.json**:
+
+<https://github.com/open-edge-platform/infra-external/blob/main/dm-manager/pkg/api/mps/swagger.json>
+
+```json
+{
+  "/api/v1/authorize/redirection/{guid}": {
+    "get": {
+      "summary": "Issue Short-lived Bearer Token for Redirection Sessions",
+      "parameters": [
+        {
+          "name": "guid",
+          "in": "path",
+          "required": true,
+          "schema": { "type": "string" }
+        }
+      ],
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "token": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
 
 ##### B. WebSocket Relay Endpoint (KVM Session)
 
