@@ -136,6 +136,28 @@ upload_savedir() {
     fi
 }
 
+restore_env_from_s3() {
+    if [ ! -f ${HOME}/.env ] && [ -n "${BUCKET_NAME:-}" ] && [ -n "${AWS_REGION:-}" ] && [ -n "${SAVE_DIR_S3:-}" ]; then
+        if check_s3_savedir_file .env 2>/dev/null; then
+            echo "Info: Restoring .env file from S3..."
+            download_savedir_file .env
+            if [ -f ${SAVE_DIR}/.env ]; then
+                cp ${SAVE_DIR}/.env ${HOME}/.env
+                chmod 600 ${HOME}/.env
+                echo "Info: .env file restored from S3."
+                export $(cat ${HOME}/.env | xargs)
+            fi
+        fi
+    fi
+}
+
+backup_env_to_s3() {
+    if [[ -f ~/.env ]]; then
+        cp ~/.env ${SAVE_DIR}/.env
+        upload_savedir_file .env
+    fi
+}
+
 remove_s3_data() {
     files=$(all_data_files_v2)
     for file in $files; do
