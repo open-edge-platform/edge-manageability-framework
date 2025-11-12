@@ -3,3 +3,5 @@
 # SPDX-License-Identifier: Apache-2.0
 
 refreshInterval: "10m"
+
+externalSecretsApiGroup: external-secrets.io/v1
