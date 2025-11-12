@@ -13,3 +13,5 @@ sourceSecretName: platform-keycloak
 keyName:
   - source: password
     target: admin-password
+
+externalSecretsApiGroup: external-secrets.io/v1
