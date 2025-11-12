@@ -186,6 +186,9 @@ onboarding-manager:
     userName: "{{ index .Values.argo "infra-onboarding" "userName" | default "user" }}"
     passWord: "{{ index .Values.argo "infra-onboarding" "passWord" | default "user" }}"
     enableTinkActionTimestamp: {{ index .Values.argo "infra-onboarding" "enableTinkActionTimestamp" | default false }}
+    oidc:
+      oidc_server_url: {{ $keycloakUrl }}
+    keycloakUrl: {{ $keycloakBaseUrl }}
   {{- if index .Values.argo "infra-onboarding" "onboarding-manager" }}
   {{- if index .Values.argo "infra-onboarding" "onboarding-manager" "resources" }}
   resources:
@@ -202,9 +205,3 @@ pxe-server:
     bootServerIP: {{ index .Values.argo "infra-onboarding" "pxe-server" "bootServerIP" | default "" }}
     subnetAddress: {{ index .Values.argo "infra-onboarding" "pxe-server" "subnetAddress" | default "" }}
 {{- end }}
-
-onboarding-manager:
-  env:
-    oidc:
-      oidc_server_url: {{ $keycloakUrl }}
-    keycloakUrl: {{ $keycloakBaseUrl }}

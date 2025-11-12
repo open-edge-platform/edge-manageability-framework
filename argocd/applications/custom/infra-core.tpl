@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+# Keycloak OIDC server URL based on clusterDomain
+{{- $keycloakUrl := "" }}
+{{- if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}
+{{- $keycloakUrl = "http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master" }}
+{{- else }}
+{{- $keycloakUrl = printf "https://keycloak.%s/realms/master" .Values.argo.clusterDomain }}
+{{- end }}
+
 global:
   registry:
     name: "{{ .Values.argo.containerRegistryURL }}/"
@@ -22,6 +30,11 @@ import:
 api:
   serviceArgs:
     enableTracing: {{ index .Values.argo "infra-core" "enableTracing" | default false }}
+  oidc:
+    oidc_server_url: {{ $keycloakUrl }}
+    name: "keycloak-api"
+    oidc_tls_insecure_skip_verify_env_name: "OIDC_TLS_INSECURE_SKIP_VERIFY"
+    oidc_tls_insecure_skip_verify_value: "true"
   {{- if index .Values.argo "infra-core" "api" }}
   {{- if index .Values.argo "infra-core" "api" "resources" }}
   resources:
@@ -40,6 +53,11 @@ apiv2:
   serviceArgsGrpc:
     globalLogLevel: "debug"
     enableTracing: {{ index .Values.argo "infra-core" "enableTracing" | default false }}
+  oidc:
+    oidc_server_url: {{ $keycloakUrl }}
+    name: "keycloak-api"
+    oidc_tls_insecure_skip_verify_env_name: "OIDC_TLS_INSECURE_SKIP_VERIFY"
+    oidc_tls_insecure_skip_verify_value: "true"
   {{- if index .Values.argo "infra-core" "api" }}
   {{- if index .Values.argo "infra-core" "api" "resources" }}
   resources:
@@ -65,6 +83,11 @@ inventory:
     readOnlyReplicasEnabled: false
     {{- end }}
     readOnlyReplicasSecrets: inventory-reader-{{ .Values.argo.database.type }}-postgresql
+  oidc:
+    oidc_server_url: {{ $keycloakUrl }}
+    name: "keycloak-inventory"
+    oidc_tls_insecure_skip_verify_env_name: "OIDC_TLS_INSECURE_SKIP_VERIFY"
+    oidc_tls_insecure_skip_verify_value: "true"
   {{- if index .Values.argo "infra-core" "inventory" }}
   {{- if index .Values.argo "infra-core" "inventory" "resources" }}
   resources:
@@ -112,6 +135,9 @@ tenant-controller:
       {{ end }}
   {{- end }}
 {{- end }}
+  oidc:
+    oidc_server_url: {{ $keycloakUrl }}
+    name: "orch-svc"
   {{- if index .Values.argo "infra-core" "tenant-controller" }}
   {{- if index .Values.argo "infra-core" "tenant-controller" "resources" }}
   resources:
@@ -140,25 +166,3 @@ tenant-config:
     defaultOrganization: {{ index .Values.argo "infra-core" "tenant-config" "defaultOrganization" | default "local-admin" }}
     defaultTenant: {{ index .Values.argo "infra-core" "tenant-config" "defaultTenant" | default "local-admin" }}
 {{- end }}
-
-# Keycloak OIDC server URL based on clusterDomain
-{{- $keycloakUrl := "" }}
-{{- if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}
-{{- $keycloakUrl = "http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master" }}
-{{- else }}
-{{- $keycloakUrl = printf "https://keycloak.%s/realms/master" .Values.argo.clusterDomain }}
-{{- end }}
-
-api:
-  oidc_server_url: {{ $keycloakUrl }}
-  oidc:
-    oidc_server_url: {{ $keycloakUrl }}
-apiv2:
-  oidc_server_url: {{ $keycloakUrl }}
-  oidc:
-    oidc_server_url: {{ $keycloakUrl }}
-inventory:
-  oidc_server_url: {{ $keycloakUrl }}
-tenant-controller:
-  oidc:
-    oidc_server_url: {{ $keycloakUrl }}
