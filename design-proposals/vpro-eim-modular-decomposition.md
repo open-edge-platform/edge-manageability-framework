@@ -221,6 +221,19 @@ sequenceDiagram
   end
 ```
 
+## Implementation Plan
+
+- EIM services:
+  - Create new Helm chart for EIM services for use case.
+  - Update Orchestrator CLI to add any APIs needed for setting the CIRA configuration or domain profile for a device.
+  - Update Orchestrator CLI to add APIs for device activation and power cycling.
+  - Test use case Helm chart installation.
+    - Confirm that Out-of-band Device Management flow remains the same with new Helm chart.
+- Edge Node Agents:
+  - Update Node Agent to only manage agent tokens and statuses.
+  - Update Platform Management Agent to perform device vPRO/AMT/ISM support on installation.
+  - Modify Platform Management Agent flow when edge node device does not support vPRO/AMT/ISM.
+
 ## Open Issues
 
 - Will the Host Resource Manager service always be deployed with the EIM services regardless of the use case?
