@@ -125,6 +125,24 @@ sequenceDiagram
   deactivate EN
 ```
 
+## Implementation Plan
+
+- EIM services installation:
+  - Create use case specific Helm chart for 2026.00 requirements.
+    - **Requirement 1:** Out-of-band Device Management.
+    - **Requirement 2:** Automated Edge Device Commissioning.
+  - Create single configurable ArgoCD profile to manage service installation.
+  - Update Orchestrator CLI to add new installation commands.
+  - Update CI to push and store new Helm charts to Release Service.
+  - Test Helm chart installation using ArgoCD.
+  - Test Helm chart installation using Helm commands.
+  - Update User Guide installation steps.
+- Edge Node agent installation:
+  - Update current installation script to be configurable based on use case.
+  - Modify agent configuration updates on start to ensure communication on install with
+    modular workflows.
+  - Test configurable installation script
+
 ## Opens
 
 - Update installation flow for edge node agents to use a central environment file to list required FQDN and other
