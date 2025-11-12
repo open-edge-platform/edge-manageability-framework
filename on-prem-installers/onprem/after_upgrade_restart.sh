@@ -68,3 +68,6 @@ restart_and_wait_pod "orch-cluster" "cluster-manager-template-controller"
 restart_and_wait_pod "orch-app" "app-orch-tenant-controller"
 #delete old cluster template
 delete_old_template
+sleep 30s
+#delete old secrets
+kubectl delete secret tls-boots -n orch-boots

@@ -9,3 +9,5 @@ sourceSecretName: tls-boots
 keyName:
   - source: tls.crt
     target: ca.crt
+
+externalSecretsApiGroup: external-secrets.io/v1
