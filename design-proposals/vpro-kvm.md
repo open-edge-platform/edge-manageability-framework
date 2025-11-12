@@ -61,6 +61,17 @@ The KVM state machine:
 | `KVM_STATE_STOPPED` | User requested session termination |
 | `KVM_STATE_ERROR` | Error occurred during session establishment |
 
+### KVM Streaming (Data Plane - Direct Browser Connection):
+```
+Session Setup (Control Plane):
+  orch-cli → apiv2 → inventory → dm-manager → MPS (get token)
+
+Video Streaming (Data Plane):
+  web-ui → browser (KVM console) → (Direct WebSocket connection ) Traefik Gateway → MPS → AMT Device
+
+  Persistent connection and Real-time bidirectional data flow
+```
+
 ### orch-cli Commands
 
 **Command structure**:
