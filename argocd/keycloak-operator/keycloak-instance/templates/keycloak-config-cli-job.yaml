@@ -275,7 +275,10 @@ data:
           "name": "Telemetry Client",
           "enabled": true,
           "clientAuthenticatorType": "client-secret",
-          "redirectUris": ["$(env:TELEMETRY_REDIRECT_URL_1)"],
+          "redirectUris": [
+            "$(env:TELEMETRY_REDIRECT_URL_1)",
+            "$(env:TELEMETRY_REDIRECT_URL_2)"
+          ],
           "webOrigins": ["+"],
           "protocol": "openid-connect",
           "directAccessGrantsEnabled": true,
@@ -352,7 +355,11 @@ data:
             "$(env:WEBUI_REDIRECT_URL_2)",
             "$(env:WEBUI_REDIRECT_URL_3)",
             "$(env:WEBUI_REDIRECT_URL_4)",
-            "$(env:WEBUI_REDIRECT_URL_5)"
+            "$(env:WEBUI_REDIRECT_URL_5)",
+            "$(env:WEBUI_REDIRECT_URL_6)",
+            "$(env:WEBUI_REDIRECT_URL_7)",
+            "$(env:WEBUI_REDIRECT_URL_8)",
+            "$(env:WEBUI_REDIRECT_URL_9)"
           ],
           "webOrigins": ["+"],
           "protocol": "openid-connect",
@@ -367,12 +374,12 @@ data:
           "name": "DocsUI Client",
           "enabled": true,
           "clientAuthenticatorType": "client-secret",
-          "redirectUris": ["$(env:DOCSUI_REDIRECT_URL_1)"],
+          "redirectUris": [],
           "webOrigins": ["+"],
           "protocol": "openid-connect",
           "directAccessGrantsEnabled": false,
           "fullScopeAllowed": true,
-          "rootUrl": "$(env:DOCSUI_ROOT_URL)",
+          "rootUrl": null,
           "defaultClientScopes": ["roles", "profile", "email", "basic"],
           "optionalClientScopes": ["groups", "offline_access"]
         },
@@ -381,7 +388,7 @@ data:
           "name": "Registry Client",
           "enabled": true,
           "clientAuthenticatorType": "client-secret",
-          "redirectUris": ["$(env:REGISTRY_ROOT_URL)/c/oidc/callback"],
+          "redirectUris": ["/c/oidc/callback"],
           "webOrigins": ["+"],
           "protocol": "openid-connect",
           "directAccessGrantsEnabled": true,
@@ -614,7 +621,9 @@ spec:
             - name: TELEMETRY_ROOT_URL
               value: "https://observability-ui.{{ .Values.argo.clusterDomain }}"
             - name: TELEMETRY_REDIRECT_URL_1
-              value: "https://observability-ui.{{ .Values.argo.clusterDomain }}/oidc/callback"
+              value: "https://observability-admin.{{ .Values.argo.clusterDomain }}/login/generic_oauth"
+            - name: TELEMETRY_REDIRECT_URL_2
+              value: "https://observability-ui.{{ .Values.argo.clusterDomain }}/login/generic_oauth"
             - name: CLUSTER_MANAGEMENT_ROOT_URL
               value: "https://connect-gateway.{{ .Values.argo.clusterDomain }}"
             - name: CLUSTER_MANAGEMENT_REDIRECT_URL_1
@@ -624,15 +633,23 @@ spec:
             - name: WEBUI_ROOT_URL
               value: "https://web-ui.{{ .Values.argo.clusterDomain }}"
             - name: WEBUI_REDIRECT_URL_1
-              value: "https://web-ui.{{ .Values.argo.clusterDomain }}"
+              value: "http://localhost:8084"
             - name: WEBUI_REDIRECT_URL_2
-              value: "https://web-ui.{{ .Values.argo.clusterDomain }}/auth/callback"
+              value: "http://localhost:8083"
             - name: WEBUI_REDIRECT_URL_3
-              value: "https://app-service-proxy.{{ .Values.argo.clusterDomain }}/app-service-proxy-index.html*"
+              value: "http://localhost:8080"
             - name: WEBUI_REDIRECT_URL_4
-              value: "https://vnc.{{ .Values.argo.clusterDomain }}/*"
+              value: "https://app-service-proxy.{{ .Values.argo.clusterDomain }}/app-service-proxy-index.html*"
             - name: WEBUI_REDIRECT_URL_5
+              value: "http://localhost:8082"
+            - name: WEBUI_REDIRECT_URL_6
+              value: "http://localhost:8081"
+            - name: WEBUI_REDIRECT_URL_7
+              value: "https://vnc.{{ .Values.argo.clusterDomain }}/*"
+            - name: WEBUI_REDIRECT_URL_8
               value: "https://{{ .Values.argo.clusterDomain }}"
+            - name: WEBUI_REDIRECT_URL_9
+              value: "https://web-ui.{{ .Values.argo.clusterDomain }}"
             - name: DOCSUI_ROOT_URL
               value: "https://docs.{{ .Values.argo.clusterDomain }}"
             - name: DOCSUI_REDIRECT_URL_1
