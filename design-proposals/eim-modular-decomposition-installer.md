@@ -50,9 +50,11 @@ required EIM services onto an Orchestrator as well as installing the required se
 
 #### Platform Components Packaging
 
-The current EMF deployment utilizes installation scripts and Debian packages for on-premises environment provisioning. With the introduction of modular EIM capabilities, the packaging strategy for platform components requires modification to align with the new architecture. As part of the modular decomposition, certain Debian packages that were previously required for full EMF deployments will no longer be necessary for all use cases. Specifically, packages such as the RKE2 installer and configuration installer will be excluded from modular EIM installations, as these components are part of the foundational infrastructure layer that may already be provided by the customer's environment in Track 2 scenarios.
+The current EMF deployment utilizes installation scripts and Debian packages for on-premises environment provisioning. With the introduction of modular EIM capabilities, the packaging strategy for platform components requires modification to align with the new architecture. As part of the modular decomposition, certain Debian packages that were previously required for full EMF deployments will no longer be necessary for all use cases. Specifically, packages such as the RKE2 installer, configuration installer, orchestrator installer will be excluded from modular EIM installations, as these components are part of the foundational infrastructure layer that may already be provided by the customer's environment in Track 2 scenarios.
 
 For Track 1 deployments, the essential platform components—including Gitea for repository management and ArgoCD for application lifecycle management—will be integrated into the Orchestrator installation script. This approach streamlines the installation process while maintaining the necessary tooling to support GitOps-based deployment workflows for modular EIM services.
+
+The Edge Node agent installation scripts (or Ansible playbooks, to be determined) will be included as part of the EMF deployment package scripts.
 
 #### EIM Modular Service Packaging and Installation
 
