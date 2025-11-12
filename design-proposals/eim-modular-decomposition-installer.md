@@ -124,3 +124,11 @@ sequenceDiagram
   EN ->> US: Report install status
   deactivate EN
 ```
+
+## Opens
+
+- Update installation flow for edge node agents to use a central environment file to list required FQDN and other
+  configuration settings and have wrapper scripts update the edge node configuration files on service start up to enable
+  immediate communication.
+  - Can also be extended to full EMF stack installation method.
+  - Installer script creates environment file as part of installation flow using FQDN from Orchestrator environment.
