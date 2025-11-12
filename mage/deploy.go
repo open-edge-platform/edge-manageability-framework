@@ -565,7 +565,7 @@ func kindCluster(name string, targetEnv string) error {
 
 	//nolint: lll
 	kindTemplate := template.Must(template.New("kind-cluster").
-		Parse(`kind create cluster --name {{ .Name }} --image kindest/node:v1.30.3 --config - <<EOF
+		Parse(`kind create cluster --name {{ .Name }} --image kindest/node:v1.33.4 --config - <<EOF
     kind: Cluster
     apiVersion: kind.x-k8s.io/v1alpha4
     networking:
