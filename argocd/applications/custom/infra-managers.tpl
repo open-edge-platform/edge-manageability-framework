@@ -154,7 +154,7 @@ attestationstatus-manager:
 # Keycloak OIDC server URL based on clusterDomain
 {{- $keycloakUrl := "" }}
 {{- if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}
-{{- $keycloakUrl = "http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master" }}
+{{- $keycloakUrl = "http://platform-keycloak.keycloak-system.svc.cluster.local:8080/realms/master" }}
 {{- else }}
 {{- $keycloakUrl = printf "https://keycloak.%s/realms/master" .Values.argo.clusterDomain }}
 {{- end }}

@@ -4,7 +4,7 @@
 
 {{- $keycloakUrl := "" }}
 {{- if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}
-{{- $keycloakUrl = "http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master" }}
+{{- $keycloakUrl = "http://platform-keycloak.keycloak-system.svc.cluster.local:8080/realms/master" }}
 {{- else }}
 {{- $keycloakUrl = printf "https://keycloak.%s/realms/master" .Values.argo.clusterDomain }}
 {{- end }}
@@ -73,7 +73,7 @@ credentialsM2M:
     authPath: "auth/kubernetes"
 
   keycloak:
-    service: "platform-keycloak.orch-platform.svc.cluster.local" # internal k8s DNS always uses cluster.local
+    service: "platform-keycloak.keycloak-system.svc.cluster.local" # internal k8s DNS always uses cluster.local
     port: 8080
     realm: "master"
     adminSecretName: "platform-keycloak"

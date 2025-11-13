@@ -21,8 +21,8 @@ imagePullSecrets:
 {{- if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}
 auth:
   oidc:
-    idPAddr: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
-    idPDiscoveryURL: "http://platform-keycloak.orch-platform.svc.cluster.local:8080/realms/master"
+    idPAddr: "http://platform-keycloak.keycloak-system.svc.cluster.local:8080"
+    idPDiscoveryURL: "http://platform-keycloak.keycloak-system.svc.cluster.local:8080/realms/master"
 {{- else }}
 auth:
   oidc:
