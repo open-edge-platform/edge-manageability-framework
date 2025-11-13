@@ -3,10 +3,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 {{- $keycloakUrl := "" }}
+{{- $keycloakHost := "" }}
 {{- if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}
 {{- $keycloakUrl = "http://platform-keycloak.keycloak-system.svc.cluster.local:8080/realms/master" }}
+{{- $keycloakHost = "platform-keycloak.keycloak-system.svc.cluster.local:8080" }}
 {{- else }}
 {{- $keycloakUrl = printf "https://keycloak.%s/realms/master" .Values.argo.clusterDomain }}
+{{- $keycloakHost = printf "keycloak.%s:443" .Values.argo.clusterDomain }}
 {{- end }}
 
 openidc:
@@ -19,6 +22,30 @@ clusterManager:
     # If kubeconfig-ttl-hours=0 token expires at creation
     # keycloak realm settings and upbounded by the SSO sessions max: 12h
     kubeconfig-ttl-hours: 3
+  # Add init container to wait for Keycloak to be ready
+  # This prevents cluster-manager from crashing when Keycloak is not ready
+  initContainers:
+    - name: wait-for-keycloak
+      image: curlimages/curl:8.5.0
+      command:
+        - sh
+        - -c
+        - |
+          echo "Waiting for Keycloak at {{ $keycloakHost }} to be ready..."
+          until curl --fail --connect-timeout 5 --max-time 10 -s {{ $keycloakUrl }} > /dev/null 2>&1; do
+            echo "Keycloak not ready yet, retrying in 5 seconds..."
+            sleep 5
+          done
+          echo "Keycloak is ready!"
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        allowPrivilegeEscalation: false
+        seccompProfile:
+          type: RuntimeDefault
+        capabilities:
+          drop:
+            - ALL
   image:
     repository: cluster/cluster-manager
     registry:
