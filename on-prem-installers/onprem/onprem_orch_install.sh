@@ -45,6 +45,7 @@ cwd=$(pwd)
 ASSUME_YES=false
 ENABLE_TRACE=false
 SINGLE_TENANCY_PROFILE=false
+INSTALL_GITEA=true
 deb_dir_name="installers"
 git_arch_name="repo_archives"
 argo_cd_ns="argocd"
@@ -192,6 +193,8 @@ reset_runtime_variables() {
   
   mv "$temp_file" "$config_file"
   
+  INSTALL_GITEA=$([[ "${DISABLE_CO_PROFILE:-}" == "true" || "${DISABLE_AO_PROFILE:-}" == "true" ]] && echo "false" || echo "true")
+
   # Unset variables in current shell
   unset SRE_TLS_ENABLED SRE_DEST_CA_CERT SMTP_SKIP_VERIFY
   unset DISABLE_CO_PROFILE DISABLE_AO_PROFILE DISABLE_O11Y_PROFILE
@@ -433,7 +436,7 @@ rm -rf "$tmp_dir"
 if find "$cwd/$deb_dir_name" -name "onprem-gitea-installer_*_amd64.deb" -type f | grep -q .; then
     # Run gitea installer
     echo "Installing Gitea"
-    INSTALL_GITEA=$([[ "${DISABLE_CO_PROFILE:-}" == "true" || "${DISABLE_AO_PROFILE:-}" == "true" ]] && echo "false" || echo "true")
+    # INSTALL_GITEA=$([[ "${DISABLE_CO_PROFILE:-}" == "true" || "${DISABLE_AO_PROFILE:-}" == "true" ]] && echo "false" || echo "true")
     eval "sudo IMAGE_REGISTRY=${GITEA_IMAGE_REGISTRY} INSTALL_GITEA=${INSTALL_GITEA} NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y $cwd/$deb_dir_name/onprem-gitea-installer_*_amd64.deb"
     wait_for_namespace_creation $gitea_ns
     sleep 30s
