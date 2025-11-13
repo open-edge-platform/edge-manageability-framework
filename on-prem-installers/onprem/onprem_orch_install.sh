@@ -193,8 +193,6 @@ reset_runtime_variables() {
   
   mv "$temp_file" "$config_file"
   
-  INSTALL_GITEA=$([[ "${DISABLE_CO_PROFILE:-}" == "true" || "${DISABLE_AO_PROFILE:-}" == "true" ]] && echo "false" || echo "true")
-
   # Unset variables in current shell
   unset SRE_TLS_ENABLED SRE_DEST_CA_CERT SMTP_SKIP_VERIFY
   unset DISABLE_CO_PROFILE DISABLE_AO_PROFILE DISABLE_O11Y_PROFILE
@@ -317,6 +315,10 @@ write_shared_variables() {
   if [[ -n "${SINGLE_TENANCY_PROFILE:-}" && "${SINGLE_TENANCY_PROFILE}" == "true" ]]; then
     update_config_variable "$config_file" "SINGLE_TENANCY_PROFILE" "${SINGLE_TENANCY_PROFILE}"
   fi
+
+  INSTALL_GITEA=$([[ "${DISABLE_CO_PROFILE:-}" == "true" || "${DISABLE_AO_PROFILE:-}" == "true" ]] && echo "false" || echo "true")
+
+  echo "Gitea installation set to: $INSTALL_GITEA"
 
   echo "Runtime configuration updated in: $config_file"
 }
