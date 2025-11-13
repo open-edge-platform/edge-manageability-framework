@@ -514,11 +514,32 @@ func GetApiToken(client *http.Client, username string, password string) (*string
 	v.Add("client_id", "system-client")
 	v.Add("scope", "openid")
 
+	// Try internal Keycloak service URL first (works when running in-cluster)
+	tokenEndpointInternal := "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master/protocol/openid-connect/token"
+	tokenEndpointExternal := "https://keycloak." + serviceDomainWithPort + "/realms/master/protocol/openid-connect/token"
+
+	// Try internal endpoint first
+	tokenResp, err := attemptTokenRequest(client, v, tokenEndpointInternal)
+	if err != nil {
+		// Fallback to external endpoint
+		fmt.Printf("[TOKEN] Internal endpoint failed, falling back to external: %s\n", err)
+		tokenResp, err = attemptTokenRequest(client, v, tokenEndpointExternal)
+		if err != nil {
+			return nil, fmt.Errorf("cannot login with both endpoints (internal: %s, external: %s): %w", tokenEndpointInternal, tokenEndpointExternal, err)
+		}
+	}
+
+	return &tokenResp.AccessToken, nil
+}
+
+func attemptTokenRequest(client *http.Client, values url.Values, tokenEndpoint string) (*struct {
+	AccessToken string `json:"access_token"`
+}, error) {
 	req, err := http.NewRequestWithContext(
 		context.Background(),
 		http.MethodPost,
-		"https://keycloak."+serviceDomainWithPort+"/realms/master/protocol/openid-connect/token",
-		strings.NewReader(v.Encode()),
+		tokenEndpoint,
+		strings.NewReader(values.Encode()),
 	)
 	if err != nil {
 		return nil, err
@@ -537,7 +558,7 @@ func GetApiToken(client *http.Client, username string, password string) (*string
 			return nil, err
 		}
 		bodyString := string(bodyBytes)
-		return nil, fmt.Errorf("cannot login: [%d] %s", resp.StatusCode, bodyString)
+		return nil, fmt.Errorf("[%d] %s", resp.StatusCode, bodyString)
 	}
 
 	var tokenResp struct {
@@ -550,7 +571,7 @@ func GetApiToken(client *http.Client, username string, password string) (*string
 	if len(tokenResp.AccessToken) == 0 {
 		return nil, errors.New("empty access token")
 	}
-	return &tokenResp.AccessToken, nil
+	return &tokenResp, nil
 }
 
 // Deprecated: use tenantUtils.GetProjectID

@@ -37,25 +37,24 @@ func getAccessToken(c *http.Client, username string, password string) string {
 	data.Set("password", password)
 	data.Set("grant_type", "password")
 
-	keycloakURL := "https://keycloak." + serviceDomainWithPort + "/realms/master/protocol/openid-connect/token"
+	// Try internal Keycloak service URL first (works when running in-cluster)
+	keycloakURLInternal := "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master/protocol/openid-connect/token"
+	keycloakURLExternal := "https://keycloak." + serviceDomainWithPort + "/realms/master/protocol/openid-connect/token"
 
-	req, err := http.NewRequestWithContext(
-		context.TODO(),
-		http.MethodPost,
-		keycloakURL,
-		strings.NewReader(data.Encode()),
-	)
-	Expect(err).ToNot(HaveOccurred())
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-
-	resp, err := c.Do(req) //nolint: bodyclose
-	Expect(err).ToNot(HaveOccurred())
+	// Try internal endpoint first
+	resp, err := attemptGetToken(c, data, keycloakURLInternal)
+	if err != nil {
+		// Fallback to external endpoint
+		resp, err = attemptGetToken(c, data, keycloakURLExternal)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to get token from both endpoints (internal: %s, external: %s)", keycloakURLInternal, keycloakURLExternal))
+	}
+	
 	defer resp.Body.Close()
 	Expect(resp.StatusCode).To(Equal(http.StatusOK), func() string {
 		b, err := io.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
-		return fmt.Sprintf("error accessing %s %s",
-			keycloakURL, string(b))
+		return fmt.Sprintf("error accessing Keycloak token endpoint: %s",
+			string(b))
 	})
 	rawTokenData, err := io.ReadAll(resp.Body)
 	Expect(err).ToNot(HaveOccurred())
@@ -66,6 +65,25 @@ func getAccessToken(c *http.Client, username string, password string) string {
 	accessToken := tokenData["access_token"].(string)
 	Expect(accessToken).To(Not(ContainSubstring(`named cookie not present`)))
 	return accessToken
+}
+
+func attemptGetToken(c *http.Client, data url.Values, keycloakURL string) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(
+		context.TODO(),
+		http.MethodPost,
+		keycloakURL,
+		strings.NewReader(data.Encode()),
+	)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := c.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }
 
 // doREST uses the REST API to perform a REST operation.
