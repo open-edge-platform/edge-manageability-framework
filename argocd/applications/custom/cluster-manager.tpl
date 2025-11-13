@@ -5,8 +5,8 @@
 {{- $keycloakUrl := "" }}
 {{- $keycloakHost := "" }}
 {{- if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}
-{{- $keycloakUrl = "http://platform-keycloak.keycloak-system.svc.cluster.local:8080/realms/master" }}
-{{- $keycloakHost = "platform-keycloak.keycloak-system.svc.cluster.local:8080" }}
+{{- $keycloakUrl = "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master" }}
+{{- $keycloakHost = "platform-keycloak.keycloak-system.svc.cluster.local" }}
 {{- else }}
 {{- $keycloakUrl = printf "https://keycloak.%s/realms/master" .Values.argo.clusterDomain }}
 {{- $keycloakHost = printf "keycloak.%s:443" .Values.argo.clusterDomain }}

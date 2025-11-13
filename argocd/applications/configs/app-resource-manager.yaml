@@ -19,5 +19,5 @@ traefikApiGroup: "traefik.io/v1alpha1"
 resources: null
 vncProxyResources: null
 vaultServer: "http://vault.orch-platform.svc.cluster.local:8200"
-keycloakServer: "http://platform-keycloak.keycloak-system.svc.cluster.local:8080"
+keycloakServer: "http://platform-keycloak.keycloak-system.svc.cluster.local"
 defaultNamespace: "orch-app"

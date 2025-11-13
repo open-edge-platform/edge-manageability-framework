@@ -57,26 +57,46 @@ spec:
   
   # All your runtime options (these become environment variables)
   additionalOptions:
-    # External hostname used for OAuth redirects and issuer URL
-    # For local-only domains (kind.internal), use internal hostname
-    # For real external domains, use external hostname so browsers can resolve Keycloak
-    # All service configs updated to use conditional issuer URLs matching this configuration
+    # Keycloak Hostname v2 Configuration (Keycloak 25+)
+    # IMPORTANT: Keycloak always runs on HTTP port 8080 internally (defined in http.httpPort)
+    # 
+    # When using hostname-backchannel-dynamic=true, hostname MUST be a full URL (with scheme)
+    # This allows Keycloak to dynamically resolve backchannel URLs from incoming requests
+    # 
+    # Strategy for different deployment types:
+    # - Internal deployments (kind.internal): 
+    #     Full URL with HTTP using standard port 80 (service maps 80→8080)
+    #     OIDC URLs: http://platform-keycloak.keycloak-system.svc.cluster.local/...
+    # 
+    # - External deployments (real domains):
+    #     Full URL with HTTPS (port 443 implicit for standard HTTPS)
+    #     Traefik terminates HTTPS:443 and forwards to Keycloak's HTTP:8080
+    #     OIDC URLs: https://keycloak.domain/... (port 443 implicit)
+    #     hostname-backchannel-dynamic allows internal services to use actual request URL
+    {{- if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}
+    # Internal-only: Full URL with internal K8s service DNS (using port 80 mapped to 8080)
     - name: hostname
-      value: {{ if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}"http://platform-keycloak.keycloak-system.svc.cluster.local:8080"{{ else }}"https://keycloak.{{ .Values.argo.clusterDomain }}"{{ end }}
-    # Admin hostname for console access
+      value: "http://platform-keycloak.keycloak-system.svc.cluster.local"
     - name: hostname-admin
-      value: {{ if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}"http://platform-keycloak.keycloak-system.svc.cluster.local:8080"{{ else }}"https://keycloak.{{ .Values.argo.clusterDomain }}"{{ end }}
-    # Enable dynamic backchannel URLs - THIS IS THE KEY!
-    # When internal services access Keycloak via internal FQDN, they get internal issuer
-    # When browsers access via Traefik, they get external issuer for OAuth redirects
+      value: "http://platform-keycloak.keycloak-system.svc.cluster.local"
+    {{- else }}
+    # External: Full URL with HTTPS on standard port (443, implicit - don't add :443)
+    - name: hostname
+      value: "https://keycloak.{{ .Values.argo.clusterDomain }}"
+    - name: hostname-admin
+      value: "https://keycloak.{{ .Values.argo.clusterDomain }}"
+    # Read X-Forwarded-* headers from Traefik for correct hostname in OAuth flows
+    - name: proxy
+      value: "xforwarded"
+    {{- end }}
+    # Enable dynamic backchannel URLs
+    # When internal services access Keycloak via internal DNS, they get URLs matching their request
+    # When browsers access via Traefik (external), they get external HTTPS URLs
     - name: hostname-backchannel-dynamic
       value: "true"
     # Accept requests from any hostname (Traefik adds X-Forwarded-Host header)
     - name: hostname-strict
       value: "false"
-    # Read X-Forwarded-* headers from Traefik for correct hostname in OAuth flows
-    - name: proxy
-      value: "xforwarded"
     - name: db-url-properties
       value: "?tcpKeepAlives=true&socketTimeout=120&connectTimeout=120"
     - name: http-management-port

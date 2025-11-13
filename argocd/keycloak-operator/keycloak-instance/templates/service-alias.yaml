@@ -2,12 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# This is an alias/proxy service that forwards traffic from orch-platform
-# to the actual Keycloak service in keycloak-system namespace.
-# This allows downstream applications to continue using the original URL:
-# platform-keycloak.orch-platform.svc.cluster.local
+# This is an alias service that provides DNS access from orch-platform namespace
+# to the Keycloak service in keycloak-system namespace.
+# This allows downstream applications to access Keycloak at:
+#   http://platform-keycloak.orch-platform.svc.cluster.local (port 80, default HTTP)
+# which resolves to:
+#   http://platform-keycloak.keycloak-system.svc.cluster.local (port 80)
 #
-# Without this alias, all downstream apps would need URL updates.
+# This uses an ExternalName service for clean DNS resolution.
 
 apiVersion: v1
 kind: Service
@@ -20,11 +22,11 @@ metadata:
     app.kubernetes.io/version: "26.4.2"
     app.kubernetes.io/component: alias
   annotations:
-    description: "Alias service forwarding to keycloak-system/platform-keycloak"
+    description: "ExternalName service providing DNS alias to keycloak-system/platform-keycloak"
 spec:
   type: ExternalName
   externalName: platform-keycloak.keycloak-system.svc.cluster.local
   ports:
     - name: http
-      port: 8080
+      port: 80
       protocol: TCP

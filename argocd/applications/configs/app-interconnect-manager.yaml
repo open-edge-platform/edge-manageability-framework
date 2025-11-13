@@ -8,5 +8,5 @@ interconnect_manager:
     create: false
     name: orch-svc
   vaultServer: "http://vault.orch-platform.svc.cluster.local:8200"
-  keycloakServer: "http://platform-keycloak.keycloak-system.svc.cluster.local:8080"
+  keycloakServer: "http://platform-keycloak.keycloak-system.svc.cluster.local"
 resources: null

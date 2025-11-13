@@ -587,7 +587,7 @@ spec:
           imagePullPolicy: IfNotPresent
           env:
             - name: KEYCLOAK_URL
-              value: "http://platform-keycloak.keycloak-system.svc:8080/"
+              value: "http://platform-keycloak.keycloak-system.svc/"
             - name: KEYCLOAK_USER
               value: "admin"
             - name: KEYCLOAK_PASSWORD

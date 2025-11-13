@@ -15,7 +15,7 @@ traefikReverseProxy:
   secretName: tls-orch          ## must be created in orch-gateway namespace
 openidc:
   # This value is overridden in the template based on clusterDomain
-  issuer: "http://platform-keycloak.keycloak-system.svc.cluster.local:8080/realms/master"
+  issuer: "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master"
 storage:
   size: 1Gi
 postgres:

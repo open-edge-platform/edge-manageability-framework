@@ -19,6 +19,6 @@ traefikApiGroup: "traefik.io/v1alpha1"
 oidc:
   name: "keycloak-api"
   oidc_env_name: "OIDC_SERVER_URL"
-  oidc_server_url: "http://platform-keycloak.keycloak-system.svc.cluster.local:8080/realms/master"  # Overridden in template based on clusterDomain
+  oidc_server_url: "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master"  # Overridden in template based on clusterDomain
   oidc_tls_insecure_skip_verify_env_name: "OIDC_TLS_INSECURE_SKIP_VERIFY"
   oidc_tls_insecure_skip_verify_value: "true"
