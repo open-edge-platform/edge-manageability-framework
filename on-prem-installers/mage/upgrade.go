@@ -67,7 +67,7 @@ func (Upgrade) rke2Cluster() error {
 	*/
 	for i, rke2UpgradeVersion := range []string{
 		"v1.30.14+rke2r2", // Patch update within 1.30
-		"v1.31.13+rke2r1",  // Upgrade to 1.31
+		"v1.31.13+rke2r1", // Upgrade to 1.31
 		"v1.32.9+rke2r1",  // Upgrade to 1.32
 		"v1.33.5+rke2r1",  // Upgrade to 1.33
 		"v1.34.1+rke2r1",  // Final target version
