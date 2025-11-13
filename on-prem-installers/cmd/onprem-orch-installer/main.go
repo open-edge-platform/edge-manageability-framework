@@ -27,6 +27,8 @@ const gitReposEnv = "GIT_REPOS"
 
 const orchInstallerProfileEnv = "ORCH_INSTALLER_PROFILE"
 
+const installGitea = "INSTALL_GITEA"
+
 func main() {
 	tarFilesLocation := os.Getenv(gitReposEnv)
 	if tarFilesLocation == "" {
@@ -51,15 +53,19 @@ func main() {
 	}
 	defer os.RemoveAll(edgeManageabilityFrameworkFolder)
 
-	giteaServiceURL, err := getGiteaServiceURL()
-	if err != nil {
-		log.Fatalf("failed to get Gitea service URL - %v", err)
-	}
+	giteaInstalled := os.Getenv(installGitea)
+	giteaServiceURL := ""
+	if giteaInstalled == "true" {
+		giteaServiceURL, err := getGiteaServiceURL()
+		if err != nil {
+			log.Fatalf("failed to get Gitea service URL - %v", err)
+		}
 
-	err = pushArtifactRepoToGitea(edgeManageabilityFrameworkFolder, getArtifactPath(tarFilesLocation, edgeManageabilityFrameworkRepo),
-		edgeManageabilityFrameworkRepo, giteaServiceURL)
-	if err != nil {
-		log.Panicf("%v", err)
+		err = pushArtifactRepoToGitea(edgeManageabilityFrameworkFolder, getArtifactPath(tarFilesLocation, edgeManageabilityFrameworkRepo),
+			edgeManageabilityFrameworkRepo, giteaServiceURL)
+		if err != nil {
+			log.Panicf("%v", err)
+		}
 	}
 
 	err = installRootApp(edgeManageabilityFrameworkFolder, orchInstallerProfile, giteaServiceURL)
@@ -251,7 +257,9 @@ EOF
 	_, _ = sh.Output("kubectl", "delete", "secret", repoName, "-n", "argocd")
 
 	buf := &bytes.Buffer{}
-
+	if giteaServiceURL == "" {
+		giteaServiceURL = "https://github.com"
+	}
 	templateParams := map[string]string{
 		"repoName":  repoName,
 		"namespace": namespace,

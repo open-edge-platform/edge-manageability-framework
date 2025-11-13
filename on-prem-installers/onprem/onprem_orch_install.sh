@@ -479,7 +479,7 @@ create_postgres_password orch-database "$postgres_password"
 if find "$cwd/$deb_dir_name" -name "onprem-orch-installer_*_amd64.deb" -type f | grep -q .; then
     # Run orchestrator installer
     echo "Installing Edge Orchestrator Packages"
-    eval "sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive ORCH_INSTALLER_PROFILE=$ORCH_INSTALLER_PROFILE GIT_REPOS=$GIT_REPOS apt-get install -y $cwd/$deb_dir_name/onprem-orch-installer_*_amd64.deb"
+    eval "sudo INSTALL_GITEA=${INSTALL_GITEA} NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive ORCH_INSTALLER_PROFILE=$ORCH_INSTALLER_PROFILE GIT_REPOS=$GIT_REPOS apt-get install -y $cwd/$deb_dir_name/onprem-orch-installer_*_amd64.deb"
     echo "Edge Orchestrator getting installed, wait for SW to deploy... "
 else
     echo "❌ Package file NOT found: $cwd/$deb_dir_name/onprem-orch-installer_*_amd64.deb"
