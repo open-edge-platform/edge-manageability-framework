@@ -533,64 +533,65 @@ jobs:
           cd virtual-edge-node/vm-provisioning/scripts
            chmod +x ci_setup_dnsmasq.sh || true
           ./ci_setup_dnsmasq.sh "kind.internal" config
-          dig web-ui.kind.internal  
+          dig web-ui.kind.internal
+          
       - name: Run policy compliance tests
         run: mage test:policyCompliance
+        
       - name: Run image pull policy compliance tests
         run: mage test:imagePullPolicyCompliance
-      - name: Setup Sample Org and Project with default users
-        id: default-mt-setup
-        run: mage tenantUtils:createDefaultMtSetup
-      - name: Deploy Victoria Metrics instance
+      
+      - name: Checkout edge-manage-test-automation repository with submodules
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          repository: open-edge-platform/edge-manage-test-automation
+          path: edge-manage-test-automation
+          ref: ${{ steps.read-test-automation-version.outputs.version }}
+          submodules: 'recursive'
+          token: ${{ secrets.SYS_ORCH_GITHUB }}
+          persist-credentials: false
+
+      - name: Install vEN Deps
+        working-directory: edge-manage-test-automation
+        run: |
+          git submodule update --init --recursive
+
+      - name: Setup virtual environment
+        working-directory: edge-manage-test-automation
+        run: |
+          make asdf-install
+          make venv_edge-manage-test-automation
+
+          # install required versions for Pico
+          pushd repos/ven/pico
+          asdf install
+          popd
+
+      - name: Run Golden Suite Robot Framework Tests
+        id: robot-tests
+        timeout-minutes: 45
+        working-directory: edge-manage-test-automation
         env:
-          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-        run: mage deploy:victoriaMetrics apply
-
-      - name: Run e2e tenancy tests
-        run: mage test:e2etenancy
-
-      - name: Run e2e tenancy API gateway tests
-        run: mage test:e2etenancyapigw
-
-      - name: Create default user and run e2e tests
-        run: mage devUtils:createDefaultUser test:e2e
-      - name: Start VEN Deploy
-        env:
+          KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
+          REQUESTS_CA_BUNDLE: /usr/local/share/ca-certificates/orch-ca.crt
           LIBVIRT_DEFAULT_URI: 'qemu:///system'
         run: |
-          set -euo pipefail
-      
-          # Prepare sources
-          cp -rf $HOME/virtual-edge-node .
-          cd virtual-edge-node/pico/
-      
-          # Ensure asdf plugins
-          asdf plugin-add terraform https://github.com/asdf-community/asdf-hashicorp.git || true
-          asdf plugin-add tflint https://github.com/skyzyx/asdf-tflint.git || true
-          asdf install
-      
-          cd modules/pico-vm-libvirt/
-      
-          echo "Terraform version:"
-          terraform version
-      
-          # Libvirt checks (run with sudo since CI user may not be in libvirt group)
-          sudo virsh list --all || true
-          sudo virsh net-list --all || true
-          sudo virsh pool-list --all || true
-      
-          # Write tfvars
-          cat > terraform.tfvars <<EOF
-          tinkerbell_nginx_domain = "tinkerbell-nginx.kind.internal"
-          smbios_serial           = "ventesten1"
-          libvirt_pool_name       = "default"
-          libvirt_network_name    = "default"
-          vm_console              = "file"
-          EOF
-      
-          # Terraform apply
-          terraform init -input=false
-          terraform apply --var-file=terraform.tfvars -auto-approve
-      
-          # Show last 100 lines of console log instead of blocking forever
-          sudo tail -n 100 /var/log/libvirt/qemu/pico-node-libvirt-console.log || true
+          KC_ADMIN_PWD=$(kubectl -n orch-platform get secrets platform-keycloak -o jsonpath='{.data.admin-password}' | base64 -d)
+          # Add the password to the orchestrator config
+          yq eval ".orchestrator.admin_password = \"${KC_ADMIN_PWD}\"" -i orchestrator-configs/on-prem.yaml
+
+          source venv_edge-manage-test-automation/bin/activate
+          robot -L DEBUG --pythonpath . \
+            --name "Golden Suite: Core Foundation" \
+            -d robot_output/core_foundation \
+            -V orchestrator-configs/on-prem.yaml \
+            --exitonfailure \
+            tests/core_foundation/core_foundation.robot
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: on-prem-${{ github.event_name }}-${{ github.event.number }}-robot-report
+          path: |
+            edge-manage-test-automation/robot_output/**/*
