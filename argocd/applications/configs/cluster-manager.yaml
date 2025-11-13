@@ -8,6 +8,3 @@ clusterManager:
 
 metrics:
   enabled: true
-
-openpolicyagent:
-  tag: 1.10.0-static
