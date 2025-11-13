@@ -482,7 +482,7 @@ func KeycloakLogin(ctx context.Context) (*gocloak.GoCloak, *gocloak.JWT, error) 
 	// If that fails, fallback to external HTTPS URL
 	keycloakURL := "http://platform-keycloak.keycloak-system.svc.cluster.local"
 	externalKeycloakURL := "https://keycloak." + serviceDomainWithPort
-	
+
 	fmt.Printf("[KEYCLOAK] Attempting to login to: %s\n", keycloakURL)
 
 	adminPass, err := GetKeycloakSecret()
@@ -506,7 +506,7 @@ func KeycloakLogin(ctx context.Context) (*gocloak.GoCloak, *gocloak.JWT, error) 
 		restyClient.SetTimeout(60 * time.Second)
 		restyClient.RemoveProxy()
 		client.SetRestyClient(restyClient)
-		
+
 		jwtToken, err = client.LoginAdmin(ctx, adminUser, adminPass, KeycloakRealm)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to login to keycloak (tried %s and %s): %w", keycloakURL, externalKeycloakURL, err)

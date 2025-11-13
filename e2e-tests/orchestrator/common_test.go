@@ -41,14 +41,22 @@ func getAccessToken(c *http.Client, username string, password string) string {
 	keycloakURLInternal := "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master/protocol/openid-connect/token"
 	keycloakURLExternal := "https://keycloak." + serviceDomainWithPort + "/realms/master/protocol/openid-connect/token"
 
+	var resp *http.Response
+	var err error
+
 	// Try internal endpoint first
-	resp, err := attemptGetToken(c, data, keycloakURLInternal)
+	resp, err = attemptGetToken(c, data, keycloakURLInternal) //nolint:bodyclose // Body is closed via defer below after checking for nil
 	if err != nil {
+		// Close the first response if it exists
+		if resp != nil && resp.Body != nil {
+			resp.Body.Close()
+		}
 		// Fallback to external endpoint
-		resp, err = attemptGetToken(c, data, keycloakURLExternal)
+		resp, err = attemptGetToken(c, data, keycloakURLExternal) //nolint:bodyclose // Body is closed via defer below after checking for nil
 		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to get token from both endpoints (internal: %s, external: %s)", keycloakURLInternal, keycloakURLExternal))
 	}
-	
+
+	Expect(resp).ToNot(BeNil())
 	defer resp.Body.Close()
 	Expect(resp.StatusCode).To(Equal(http.StatusOK), func() string {
 		b, err := io.ReadAll(resp.Body)

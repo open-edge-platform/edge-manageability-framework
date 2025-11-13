@@ -534,7 +534,9 @@ func GetApiToken(client *http.Client, username string, password string) (*string
 
 func attemptTokenRequest(client *http.Client, values url.Values, tokenEndpoint string) (*struct {
 	AccessToken string `json:"access_token"`
-}, error) {
+},
+	error,
+) {
 	req, err := http.NewRequestWithContext(
 		context.Background(),
 		http.MethodPost,
