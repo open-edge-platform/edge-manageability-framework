@@ -61,17 +61,6 @@ The KVM state machine:
 | `KVM_STATE_STOPPED` | User requested session termination |
 | `KVM_STATE_ERROR` | Error occurred during session establishment |
 
-### KVM Streaming (Data Plane - Direct Browser Connection):
-```
-Session Setup (Control Plane):
-  orch-cli → apiv2 → inventory → dm-manager → MPS (get token)
-
-Video Streaming (Data Plane):
-  web-ui → browser (KVM console) → (Direct WebSocket connection ) Traefik Gateway → MPS → AMT Device
-
-  Persistent connection and Real-time bidirectional data flow
-```
-
 ### orch-cli Commands
 
 **Command structure**:
@@ -83,7 +72,7 @@ Video Streaming (Data Plane):
 - `get host <host-id>`: Query current KVM state and session details
 - Uses standard flags: `--project`, `--api-endpoint`
 
-#### 1. Start KVM Session
+#### Start KVM Session
 
 ```bash
 # First, authenticate with Keycloak 
@@ -192,6 +181,140 @@ The KVM operation involves the following EMF components:
 }
 ```
 
+### KVM APIs
+
+This section provides API endpoints for KVM remote console operations.
+
+#### 1. Start KVM Session
+
+**Endpoint:** `POST /api/v1/amt/kvm/{deviceGuid}`
+
+**Request:**
+
+```json
+{
+  "action": "connect"
+}
+```
+
+**Response (CCM Mode - Success):**
+
+```json
+{
+  "status": "connected",
+  "wsUrl": "wss://mps.example.com/ws/relay?host=4c4c4544-004b&port=16994&p=2&mode=kvm"
+}
+```
+
+**Response (ACM Mode - Consent Required):**
+
+```json
+{
+  "status": "consent_required",
+  "consentExpiry": "",
+  "consentTimeout": 120
+}
+```
+
+---
+
+#### 2. WebSocket Connection (Client to MPS)
+
+**URL:** `wss://mps.example.com/ws/relay?host={guid}&port=16994&p=2&mode=kvm`
+
+**Headers:**
+
+```text
+Sec-WebSocket-Protocol: {jwt_token}
+```
+
+#### 3. Submit Consent Code
+
+**Endpoint:** `POST /api/v1/amt/kvm/{deviceGuid}/consent`
+
+**Request:**
+
+```json
+{
+  "consentCode": "123456"
+}
+```
+
+**Response (Success):**
+
+```json
+{
+  "status": "success",
+  "consentGranted": true,
+  "wsUrl": "wss://mps.example.com/ws/relay?host=4c4c4544-004b&port=16994&p=2&mode=kvm"
+}
+```
+
+**Response (Invalid Code):**
+
+```json
+{
+  "status": "error",
+  "consentGranted": false,
+  "errorCode": "INVALID_CODE"
+}
+```
+
+---
+
+#### 4. Get Consent Status
+
+**Endpoint:** `GET /api/v1/amt/kvm/{deviceGuid}/consent/status`
+
+**Response:**
+
+```json
+{
+  "consentActive": true,
+  "consentGranted": false,
+  "timeRemaining": 87,
+  "consentExpiry": ""
+}
+```
+
+---
+
+#### 5. Cancel Consent Request
+
+**Endpoint:** `POST /api/v1/amt/kvm/{deviceGuid}/consent/cancel`
+
+**Response:**
+
+```json
+{
+  "status": "cancelled",
+  "message": "Consent request cancelled"
+}
+```
+
+---
+
+#### 6. Stop KVM Session (Disconnect)
+
+**Endpoint:** `POST /api/v1/amt/kvm/{deviceGuid}`
+
+**Request:**
+
+```json
+{
+  "action": "disconnect"
+}
+```
+
+**Response:**
+
+```json
+{
+  "status": "disconnected",
+  "message": "KVM session stopped"
+}
+```
+
 #### orch-utils Tenancy API Mapping
 
 To enable KVM operations through the Edge Manageability Framework with
@@ -246,7 +369,12 @@ Generate authorization tokens from MPS for establishing KVM sessions
   }
 }
 ```
-**Note**: The authorization endpoint in swagger.json is used by the code generator (oapi-codegen) to create a Go client package that dm-manager uses to call the MPS API. This generated client method retrieves the JWT token from MPS, which is then used to authenticate and open the KVM WebSocket session.
+
+**Note**: The authorization endpoint in swagger.json is used by the code
+generator (oapi-codegen) to create a Go client package that dm-manager uses
+to call the MPS API. This generated client method retrieves the JWT token
+from MPS, which is then used to authenticate and open the KVM WebSocket
+session.
 
 ##### B. WebSocket Relay Endpoint (KVM Session)
 
@@ -338,6 +466,41 @@ to AMT device
 - 500: Internal server error
 
 ---
+
+### KVM Flow
+
+The following illustrates the control plane (session setup) and data plane
+(video streaming) separation in KVM operations.
+
+#### Session Setup
+
+```text
+orch-cli → apiv2 → inventory → dm-manager → MPS
+```
+
+#### dm-manager to MPS Operations
+
+<!-- markdownlint-disable MD013 -->
+
+| Operation | Endpoint | Method | Purpose |
+|-----------|----------|--------|---------|
+| Check Power State | `/api/v1/devices/{guid}/power/state` | GET | Check device is powered on |
+| Start KVM Session | `/api/v1/amt/kvm/{guid}` | POST | Start KVM session |
+| Submit Consent Code | `/api/v1/amt/kvm/{guid}/consent` | POST | Submit 6-digit consent code |
+| Check Consent Status | `/api/v1/amt/kvm/{guid}/consent/status` | GET | Check consent status |
+| Cancel Consent | `/api/v1/amt/kvm/{guid}/consent/cancel` | POST | Cancel pending consent |
+| Stop KVM Session | `/api/v1/amt/kvm/{guid}` | POST | Stop KVM session |
+
+<!-- markdownlint-enable MD013 -->
+
+#### Video Streaming (Data Plane)
+
+Direct browser connection with persistent WebSocket for real-time
+bidirectional data flow:
+
+```text
+web-ui → KVM console → (Direct WebSocket) → Traefik Gateway → MPS → AMT Device
+```
 
 ## Implementation Design
 
