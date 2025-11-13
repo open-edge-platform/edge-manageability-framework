@@ -47,14 +47,14 @@ Uncertainties:
 
 ### Decomposing the release of API service as a module
 
-Once the investigation is completed on how the API service is create today decisions must be done on a the service will be build and released as a module.
+Once the investigation is completed on how the API service is created today decisions must be done on how the service will be build and released as a module.
 
-- The build of the API service itself will depend on the results of top2bottom and bottom2top decomposition investigations.
+- The build of the API service itself will depend on the results of "top to bottom" and "bottom to top" decomposition investigations.
 - The individual versions of API service can be packaged as versioned container images:
   - apiv2-emf:x.x.x
   - apiv2-workflow1:x.x.x
   - apiv2-workflow2:x.x.x
-- Alternatively if the decomposition does not result in multiple version of the API service the service could be released as same docker image but managed by flags provided to container that alter the behavior of the API service in runtime.
+- Alternatively if the decomposition does not result in multiple version of the API service the service could be released as same docker image but managed by flags provided to container that alter the behaviour of the API service in runtime.
 - The API service itself should still be packaged for deployment as a helmchart regardless of deployment via ArgoCD or other medium/technique. Decision should be made if common helmchart is used with override values for container image and other related values (preferred) or individual helmcharts need to be released.
 
 ### Decomposing the API service
@@ -63,7 +63,7 @@ An investigation needs to be conducted into how the API service can be decompose
 
 - Preferably the total set of APIs serves as the main source of the API service, and other flavours/subsets are automatically derived from this based on the required functionality. Making the maintenance of the API simple and in one place.
 - The APIs service should be decomposed at the domain level meaning that all domains or subset of domains should be available as part of the API service flavour. This should allows us to provide as an example EIM related APIs only as needed by workflow. We know that currently the domains have separate generated OpenAPI specs available as consumed by orch-cli.
-- The APIs service should be decomposed within the domain level meaning that only subset of the available APIs may need to be released and/or exposed at API service level. As an example within the EIM domain we may not want to expose the Day 2 functionality for some workflows which currently part of the EIM OpenAPI spec.
+- The APIs service should be decomposed within the domain level meaning that only subset of the available APIs may need to be released and/or exposed at API service level. As an example within the EIM domain we may not want to expose the Day 2 functionality for some workflows which currently are part of the EIM OpenAPI spec.
 
 The following are the usual options to decomposing or exposing subsets of APIs.
 
@@ -72,7 +72,7 @@ The following are the usual options to decomposing or exposing subsets of APIs.
 - ~~Authentication & Authorization Based Filtering~~ - this is a no go for us as we do not control the end users of the EMF, and we want to provide tailored modular product for each workflow.
 - ~~API Versioning strategy~~ - Creating different API versions for each use-case - too much overhead without benefits similar to maintaining multiple OpenAPI specs.
 - ~~Proxy/Middleware Layer~~ - Similar to API Gateway - does not fit our use cases
-- OpenAPI Spec Manipulation - This approach uses OpenAPI's extension mechanism (properties starting with x-) to add metadata that describes which audiences, use cases, or clients should have access to specific endpoints, operations, or schemas. This approach is worth investigating to see if it can give use the automated approach for creating individual OpenAPI specs for workflows based on labels.
+- OpenAPI Spec Manipulation - This approach uses OpenAPI's extension mechanism (properties starting with x-) to add metadata that describes which audiences, use cases, or clients should have access to specific endpoints, operations, or schemas. This approach is worth investigating to see if it can give us the automated approach for creating individual OpenAPI specs for workflows based on labels.
 - Other approach to manipulate how a flavour of OpenAPIs spec can be generated from main spec, or how the API service can be build conditionally using same spec.
 
 ### Consuming the APIs from the CLI
@@ -181,11 +181,11 @@ Currently apiv2 (infra-core repository) stores REST API definitions of services 
 
 Content of api/proto Directory - two folders:
 services - API Operations (Service Layer) - this is one file services.yaml that  contains API operation on all the available resources.
-resources - Data Models (DTOs/Entities) - seperate file per each resource.
+resources - Data Models (DTOs/Entities) - separate file per each resource.
 
 Protoc-gen-connect-openapi is the tool that is indirectly used to build the openapi spec - it is configured as a plugin in buf (buf.gen.yaml). User calls "buf generate" within the "make generate" or "make buf-gen" target. This plugin generates OpenAPI 3.0 specifications directly from .proto files in api/proto/ directory.
 
-The following it the current, full buf configuration:# (buf.gen.yaml)
+The following is the current, full buf configuration:# (buf.gen.yaml)
 
 ```yaml
 plugins:
