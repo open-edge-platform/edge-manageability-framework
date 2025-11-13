@@ -63,8 +63,15 @@ func (Upgrade) rke2Cluster() error {
 	   1.27 needs to be installed first.
 	   TODO: Add logic to determine version hops dynamically instead of hardcoding them.
 	   NOTE: EMF v3.0.0 uses "v1.30.10+rke2r1"
+	   NOTE: Upgrading from 1.30.10 to 1.34.1 requires intermediate versions: 1.30 → 1.31 → 1.32 → 1.33 → 1.34
 	*/
-	for i, rke2UpgradeVersion := range []string{"v1.30.10+rke2r1", "v1.30.14+rke2r2"} {
+	for i, rke2UpgradeVersion := range []string{
+		"v1.30.14+rke2r2", // Patch update within 1.30
+		"v1.31.13+rke2r1",  // Upgrade to 1.31
+		"v1.32.9+rke2r1",  // Upgrade to 1.32
+		"v1.33.5+rke2r1",  // Upgrade to 1.33
+		"v1.34.1+rke2r1",  // Final target version
+	} {
 		// Set version in upgrade Plan and render template.
 		tmpl, err := template.ParseFiles(filepath.Join("rke2", "upgrade-plan.tmpl"))
 		if err != nil {
@@ -99,8 +106,14 @@ func (Upgrade) rke2Cluster() error {
 			return err
 		}
 
-		if i == 0 {
-			fmt.Printf("RKE2 upgraded to intermediate version %s, starting another upgrade...\n", rke2UpgradeVersion)
+		if i < len([]string{
+			"v1.30.14+rke2r2",
+			"v1.31.13+rke2r1",
+			"v1.32.9+rke2r1",
+			"v1.33.5+rke2r1",
+			"v1.34.1+rke2r1",
+		})-1 {
+			fmt.Printf("RKE2 upgraded to intermediate version %s, starting next upgrade...\n", rke2UpgradeVersion)
 		}
 	}
 
