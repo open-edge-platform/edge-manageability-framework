@@ -322,8 +322,16 @@ update_proxy() {
     fi
 
     export TMP_VALUE="$value"
-    echo "🛠️ Setting .argo.proxy.${yaml_key} = \"$value\""
-    yq eval -i ".argo.proxy.${yaml_key} = strenv(TMP_VALUE)" "$OUTPUT_FILE"
+    
+    # Special handling for gitProxy - update at .argo.git location
+    if [ "$yaml_key" = "gitProxy" ]; then
+        echo "🛠️ Setting .argo.git.${yaml_key} = \"$value\""
+        yq eval -i ".argo.git.${yaml_key} = strenv(TMP_VALUE)" "$OUTPUT_FILE"
+    else
+        echo "🛠️ Setting .argo.proxy.${yaml_key} = \"$value\""
+        yq eval -i ".argo.proxy.${yaml_key} = strenv(TMP_VALUE)" "$OUTPUT_FILE"
+    fi
+    
     unset TMP_VALUE
 }
 
@@ -335,6 +343,7 @@ update_proxy "enHttpsProxy" "EN_HTTPS_PROXY"
 update_proxy "enFtpProxy" "EN_FTP_PROXY"
 update_proxy "enSocksProxy" "EN_SOCKS_PROXY"
 update_proxy "enNoProxy" "EN_NO_PROXY"
+update_proxy "gitProxy" "GIT_PROXY"
 
 # -----------------------------------------------------------------------------
 # Manual review (if PROCEED != yes)
