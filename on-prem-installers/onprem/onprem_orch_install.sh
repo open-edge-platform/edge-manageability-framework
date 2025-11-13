@@ -205,6 +205,7 @@ create_namespaces() {
     "orch-boots"
     "orch-database"
     "orch-platform"
+    "keycloak-system"
     "orch-app"
     "orch-cluster"
     "orch-infra"
