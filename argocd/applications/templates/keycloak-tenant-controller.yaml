@@ -19,9 +19,9 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
-    - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
-      chart: common/charts/keycloak-tenant-controller
-      targetRevision: 25.2.2
+    - repoURL: https://github.com/open-edge-platform/orch-utils
+      path: charts/keycloak-tenant-controller
+      targetRevision: cveFix-goversion-update-for-ktc
       helm:
         releaseName: {{$appName}}
         valuesObject:
