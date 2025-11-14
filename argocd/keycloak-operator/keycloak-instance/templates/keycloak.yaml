@@ -63,24 +63,13 @@ spec:
     # When using hostname-backchannel-dynamic=true, hostname MUST be a full URL (with scheme)
     # This allows Keycloak to dynamically resolve backchannel URLs from incoming requests
     # 
-    # Strategy for different deployment types:
-    # - Internal deployments (kind.internal): 
-    #     Full URL with HTTP using standard port 80 (service maps 80→8080)
-    #     OIDC URLs: http://platform-keycloak.keycloak-system.svc.cluster.local/...
+    # Strategy: ALWAYS use external domain for hostname to ensure browser cookies work
+    # - Browser access: Uses HTTPS via Traefik IngressRoute (e.g., https://keycloak.kind.internal)
+    # - Backend services: Use internal service URL directly (e.g., http://platform-keycloak.keycloak-system.svc.cluster.local)
+    # - Traefik terminates HTTPS and forwards to Keycloak's HTTP:8080
+    # - hostname-backchannel-dynamic allows internal services to work with internal URLs
     # 
-    # - External deployments (real domains):
-    #     Full URL with HTTPS (port 443 implicit for standard HTTPS)
-    #     Traefik terminates HTTPS:443 and forwards to Keycloak's HTTP:8080
-    #     OIDC URLs: https://keycloak.domain/... (port 443 implicit)
-    #     hostname-backchannel-dynamic allows internal services to use actual request URL
-    {{- if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}
-    # Internal-only: Full URL with internal K8s service DNS (using port 80 mapped to 8080)
-    - name: hostname
-      value: "http://platform-keycloak.keycloak-system.svc.cluster.local"
-    - name: hostname-admin
-      value: "http://platform-keycloak.keycloak-system.svc.cluster.local"
-    {{- else }}
-    # External: Full URL with HTTPS on standard port (443, implicit - don't add :443)
+    # This ensures session cookies are set for the correct domain that browsers use
     - name: hostname
       value: "https://keycloak.{{ .Values.argo.clusterDomain }}"
     - name: hostname-admin
@@ -88,7 +77,6 @@ spec:
     # Read X-Forwarded-* headers from Traefik for correct hostname in OAuth flows
     - name: proxy
       value: "xforwarded"
-    {{- end }}
     # Enable dynamic backchannel URLs
     # When internal services access Keycloak via internal DNS, they get URLs matching their request
     # When browsers access via Traefik (external), they get external HTTPS URLs
