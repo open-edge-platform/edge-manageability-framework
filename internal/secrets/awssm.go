@@ -28,14 +28,14 @@ func NewAWSSM(name string, region string) *AWSSM {
 	if region == "" {
 		region = "us-west-2"
 	}
-	
+
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion(region),
 	)
 	if err != nil {
 		panic(fmt.Sprintf("not able to configure aws session: %v", err))
 	}
-	
+
 	svc := secretsmanager.NewFromConfig(cfg)
 	return &AWSSM{
 		Name: name,
