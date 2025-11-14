@@ -82,7 +82,6 @@ The following are the usual options to decomposing or exposing subsets of APIs.
 
 The best approach would be for the EMF to provide a service/endpoint that will communicate which endpoints/APIs are currently supported by the deployed API service. The CLI would then request that information on login, save the configuration and prevent from using non-supported APIs/commands. The prevention could happen at command call level where a configuration would be checked before a RUNe command is called for a given command.
 
-
 ## Summary
 
 1. Assuming that in phase 1 we will retain Traefik for all workflows, we need to check how the Traefik->EIM mapping will behave and needs to behave when EIM only supports subset of APIs, and establish if the set of API calls supported by Treafik API Gateway maps to the supported APIs in EIM API service subset.
@@ -91,15 +90,21 @@ The best approach would be for the EMF to provide a service/endpoint that will c
 
 ## How NB API is Currently Built
 
-Currently apiv2 (infra-core repository) stores REST API definitions of services in protocol buffer files (.proto) and uses protoc-gen-connect-openapi to autogenerate the openapi spec - openapi.yaml .  
+Currently, apiv2 (infra-core repository) holds definition of REST API services in protocol buffer files (.proto) and uses protoc-gen-connect-openapi to autogenerate the openapi spec - openapi.yaml .  
 
-Content of api/proto Directory - two folders:
-services - API Operations (Service Layer) - this is one file services.yaml that  contains API operation on all the available resources.
-resources - Data Models (DTOs/Entities) - separate file per each resource.
+The input to protoc-gen-connect-openapi comes from:
+api/proto/services directory - one file (services.yaml) containing API pperations on all the available resources (Service Layer).
+api/proto/resources directory - multiple files with data models - separate file with data model per single inventory resource.
 
-Protoc-gen-connect-openapi is the tool that is indirectly used to build the openapi spec - it is configured as a plugin in buf (buf.gen.yaml). User calls "buf generate" within the "make generate" or "make buf-gen" target. This plugin generates OpenAPI 3.0 specifications directly from .proto files in api/proto/ directory.
+Protoc-gen-connect-openapi is the tool that is indirectly used to build the openapi spec. It is configured as a plugin within buf (buf.gen.yaml). 
 
-The following is the current, full buf configuration:# (buf.gen.yaml)
+### What is Buf
+
+Buf is a replacement for protoc (the standard Protocol Buffers compiler). It makes working with .proto files easier as it replaces messy protoc commands with clean config file. It is a all-in-one tool as it provides compiling, linting, breaking change detection, and dependency management.
+
+In infra-core/apiv2, "buf generate" command is executed within the "make generate" or "make buf-gen" target to generate the OpenAPI 3.0 spec directly from .proto files in api/proto/ directory.
+
+The following is the current, full buf configuration (buf.gen.yaml):
 
 ```yaml
 plugins:
@@ -146,7 +151,7 @@ plugins:
       - paths=source_relative
 ```
 
-The plugin takes as an input one full openapi spec that includes all services (services.proto).
+Protoc-gen-connect-openapi plugin takes as an input one full openapi spec that includes all services (services.proto) and outputs the openapi spec in api/openapi.
 
 Key Items:
 - Input: api/proto/**/*.proto
@@ -154,108 +159,24 @@ Key Items:
 - Output: openapi.yaml
 - Tool: protoc-gen-connect-openapi
 
-Buf also generates:
+Based on the content of api/proto/ , buf also generates:
 - the Go code ( Go structs, gRPC clients/services) in internal/pbapi
 - gRPC gateway: REST to gRPC proxy code - HTTP handlers that proxy REST calls to gRPC (in internal/pbapi/**/*.pb.gw.go )
 - documentation: docs/proto.md
 
-Next, targets "oapi-patch" and "oapi-banner" are executed on the generated openapi.yaml file:
+## Building REST API Spec per Scenario
 
-"make oapi-patch" - post-process: cleans up the generated OpenAPI by removing verbose proto package prefixes (e.g.: resources.compute.v1.HostResource → HostResource)
+The following is the proposed solution (draft) to the requirement for decomposistion of EMF, where the exposed REST API is limited to support specific scenario and maintains comatibility with other scenarios.
 
-## Solution 1
-
-Split services.yaml file into multiple files per service, then change make buf-gen target to process only services used by the scenario, example:
+1. Split services.yaml file into multiple folders/files per service.
+2. Maintain a manifest that lists names of REST API services suported by scenario.
+3. Expose a new endpoint that list supported services in current scenario.
+4. Change "buf-gen" make target to process only services used by the scenario, by using additional parameter "path", list of services need to come from the manifest in step 2). Example to use service1 and service2 services:
 
 ```bash
-bug generate --path api/proto/services/instance/v1 api/proto/services/os/v1
+bug generate --path api/proto/services/service1/v1 api/proto/services/service2/v1
 ```
 
-This generates the openapi spec openapi.yaml only for the services supported by particular scenario.
+5. Step 4 generated the openapi spec openapi.yaml only for the services supported by particular scenario.
+6. CLI is built based on the full REST API spec (also built earlier), but gets the list of supported services from the new API andpoint (step 3) and adjust its internal logic so it calls only supported REST API services/endpoints. When simple curl calls are used to unsupported endpoints, - default message about unsupported service is returned.
 
-## Soultion 2 - more robust
-
-- Generate full openapi.yaml file with "buf generate" same way it is done now. buf already generates the spec with option 'short-service-tags'.  This means it adds a tag to each service in the openapi spec matching its service name.
-- Write a small filter that will parse the spec and select only operations per service with a certain service-tag and generate a new spec supporting only the particular scenario.
-
-We can add some manifest that will store the list of services per scenario.
-
-## Solution 3
-
-No splitting of service.yaml .
-This approach uses custom annotations/options to connect services to scenarios.
-
-- define custom option/annotations by extending google.protobuf.ServiceOptions and google.protobuf.MethodOptions, example:
-
-```go
-syntax = "proto3";
-package annotations.common.v1;
-
-import "google/protobuf/descriptor.proto";
-
-// Service-level: applies to the whole service (default)
-extend google.protobuf.ServiceOptions {
-  repeated string scenario = 50001; // e.g., ["scenario-1", "scenario-2"]
-}
-
-// Method-level: override/add per RPC if needed
-extend google.protobuf.MethodOptions {
-  repeated string scenario = 50011;
-}
-```
-Add the file to api/proto/annotations.
-
-Use it in api/proto/services/services.proto:
-
-Service level selection per scenario:
-```go
-(...)
-import "annotations/scenario_annotations.proto";
-(...)
-service OSUpdateRun {
-  option (annotations.common.v1.scenario) = "scenario-1";
-  // Get a list of OS Update Runs.
-  rpc ListOSUpdateRun(ListOSUpdateRunRequest) returns (ListOSUpdateRunResponse) {
-    option (google.api.http) = {get: "/edge-infra.orchestrator.apis/v2/os_update_run"};
-  }
-  // Get a specific OS Update Run.
-  rpc GetOSUpdateRun(GetOSUpdateRunRequest) returns (resources.compute.v1.OSUpdateRun) {
-    option (google.api.http) = {get: "/edge-infra.orchestrator.apis/v2/os_update_run/{resourceId}"};
-  }
-  // Delete a OS Update Run.
-  rpc DeleteOSUpdateRun(DeleteOSUpdateRunRequest) returns (DeleteOSUpdateRunResponse) {
-    option (google.api.http) = {delete: "/edge-infra.orchestrator.apis/v2/os_update_run/{resourceId}"};
-  }
-}
-(...)
-```
-
-Or:
-
-Method level selection per scenario:
-```go
-(...)
-import "annotations/scenario_annotations.proto";
-(...)
-service OSUpdateRun {
-  // Get a list of OS Update Runs.
-  rpc ListOSUpdateRun(ListOSUpdateRunRequest) returns (ListOSUpdateRunResponse) {
-    option (annotations.common.v1.scenario) = "scenario-1";
-    option (google.api.http) = {get: "/edge-infra.orchestrator.apis/v2/os_update_run"};
-  }
-  // Get a specific OS Update Run.
-  rpc GetOSUpdateRun(GetOSUpdateRunRequest) returns (resources.compute.v1.OSUpdateRun) {
-    option (google.api.http) = {get: "/edge-infra.orchestrator.apis/v2/os_update_run/{resourceId}"};
-  }
-  // Delete a OS Update Run.
-  rpc DeleteOSUpdateRun(DeleteOSUpdateRunRequest) returns (DeleteOSUpdateRunResponse) {
-    option (google.api.http) = {delete: "/edge-infra.orchestrator.apis/v2/os_update_run/{resourceId}"};
-  }
-}
-(...)
-```
-
-- Use buf generate to generate the full openapi.yaml spec.
-
-- Create and run a filter that reads generated .pb file that contains new service annotations, takes openapi.yaml as input and removes all services without the scenario annotation. The filter also takes as input the scenario name and returns a scenario specific openapi spec.
-- OR patch the spec generating tool ( protoc-gen-connect-openapi) so it supports new annotations and includes them in the new full spec - so it reads your annotations directly and writes x-* fields into the OpenAPI. It will create an openapi spec with fields and services annotatted by a specific scenario.  This requires literally creating a custom plugin that takes scenario as input and generates openapi spec per scenario only - wrapper of protoc-gen-connect-openapi. 
