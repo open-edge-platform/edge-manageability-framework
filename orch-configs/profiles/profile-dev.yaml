@@ -112,6 +112,9 @@ argo:
     userName: ""
     passWord: ""
     enableTinkActionTimestamp: false
+    disableCoProfile: true
+    disableAoProfile: false
+    disableO11yProfile: false
 
     # User should update to Firewall Allow config to their environment.
     # Existing ports, ipVer and protocol configuration should be retained.
