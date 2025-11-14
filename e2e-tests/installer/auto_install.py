@@ -303,6 +303,7 @@ class AutoInstall:
         self.SMTP_URL = os.getenv("SMTP_URL")
         self.SMTP_PORT = os.getenv("SMTP_PORT")
         self.SMTP_FROM = os.getenv("SMTP_FROM")
+        self.SMTP_DEV = os.getenv("SMTP_DEV")
 
         self.jumphost_sshkey_copied = False
         if self.jumphost_sshkey_path and len(self.jumphost_sshkey_path) > 0:
@@ -573,8 +574,6 @@ class AutoInstall:
 
         self.installer_session.sendline(f'\x1bG$osmtp_url="{self.SMTP_URL}"\x1b')
         self.installer_session.sendline(f'\x1bG$osmtp_port={self.SMTP_PORT}\x1b')
-        # self.installer_session.sendline('\x1bG$osmtp_url="10.138.167.51"\x1b')
-        # self.installer_session.sendline('\x1bG$osmtp_port=587\x1b')
         self.installer_session.sendline(f'\x1bG$osmtp_from="{self.SMTP_FROM}"\x1b')
 
         self.installer_session.sendline(":wq")
