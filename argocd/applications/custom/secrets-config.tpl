@@ -17,13 +17,9 @@ imagePullSecrets:
     {{- toYaml . | nindent 2 }}
   {{- end }}
 
-# Keycloak URLs based on clusterDomain
+# Keycloak URLs - always use external domain to match Keycloak's configured hostname
+# This ensures consistency with browser flows and prevents hostname mismatch errors
 auth:
   oidc:
-{{- if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}
-    idPAddr: "http://platform-keycloak.keycloak-system.svc.cluster.local"
-    idPDiscoveryURL: "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master"
-{{- else }}
     idPAddr: "https://keycloak.{{ .Values.argo.clusterDomain }}"
     idPDiscoveryURL: "https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master"
-{{- end }}

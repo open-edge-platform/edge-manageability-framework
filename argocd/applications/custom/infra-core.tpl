@@ -2,13 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Keycloak OIDC server URL based on clusterDomain
-{{- $keycloakUrl := "" }}
-{{- if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}
-{{- $keycloakUrl = "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master" }}
-{{- else }}
-{{- $keycloakUrl = printf "https://keycloak.%s/realms/master" .Values.argo.clusterDomain }}
-{{- end }}
+# Keycloak OIDC server URL - always use external domain to match Keycloak's configured hostname
+{{- $keycloakUrl := printf "https://keycloak.%s/realms/master" .Values.argo.clusterDomain }}
 
 global:
   registry:

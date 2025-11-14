@@ -96,11 +96,8 @@ amt:
   {{- end }}
     env:
       oidc:
-{{- if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}
-        oidc_server_url: "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master"
-{{- else }}
+        # Keycloak OIDC URL - always use external domain to match Keycloak's configured hostname
         oidc_server_url: "https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master"
-{{- end }}
 
   mps:
     postgresql:

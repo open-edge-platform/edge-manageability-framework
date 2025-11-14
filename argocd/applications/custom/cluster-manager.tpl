@@ -2,15 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-{{- $keycloakUrl := "" }}
-{{- $keycloakHost := "" }}
-{{- if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}
-{{- $keycloakUrl = "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master" }}
-{{- $keycloakHost = "platform-keycloak.keycloak-system.svc.cluster.local" }}
-{{- else }}
-{{- $keycloakUrl = printf "https://keycloak.%s/realms/master" .Values.argo.clusterDomain }}
-{{- $keycloakHost = printf "keycloak.%s:443" .Values.argo.clusterDomain }}
-{{- end }}
+# Keycloak URLs - always use external domain to match Keycloak's configured hostname
+{{- $keycloakUrl := printf "https://keycloak.%s/realms/master" .Values.argo.clusterDomain }}
+{{- $keycloakHost := printf "keycloak.%s" .Values.argo.clusterDomain }}
 
 openidc:
   issuer: {{ $keycloakUrl }}

@@ -59,10 +59,6 @@ openpolicyagent:
     {{- toYaml . | nindent 4 }}
 {{- end }}
 
-# Keycloak issuer based on clusterDomain
+# Keycloak issuer - always use external domain to match Keycloak's configured hostname
 openidc:
-{{- if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}
-  issuer: "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master"
-{{- else }}
   issuer: "https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master"
-{{- end }}
