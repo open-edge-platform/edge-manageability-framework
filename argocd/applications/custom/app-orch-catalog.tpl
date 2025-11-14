@@ -24,6 +24,7 @@ traefikReverseProxy:
 {{- if .Values.argo.traefik }}
   tlsOption: {{ .Values.argo.traefik.tlsOption | default "" | quote }}
 {{- end }}
+# Keycloak external URL - always use external domain to match Keycloak's configured hostname
 openidc:
   external: "https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master"
 {{- if .Values.argo.catalog.storageClass }}

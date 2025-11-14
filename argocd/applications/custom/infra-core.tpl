@@ -2,6 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+# Keycloak OIDC server URL - always use external domain to match Keycloak's configured hostname
+{{- $keycloakUrl := printf "https://keycloak.%s/realms/master" .Values.argo.clusterDomain }}
+
 global:
   registry:
     name: "{{ .Values.argo.containerRegistryURL }}/"
@@ -22,6 +25,11 @@ import:
 api:
   serviceArgs:
     enableTracing: {{ index .Values.argo "infra-core" "enableTracing" | default false }}
+  oidc:
+    oidc_server_url: {{ $keycloakUrl }}
+    name: "keycloak-api"
+    oidc_tls_insecure_skip_verify_env_name: "OIDC_TLS_INSECURE_SKIP_VERIFY"
+    oidc_tls_insecure_skip_verify_value: "true"
   {{- if index .Values.argo "infra-core" "api" }}
   {{- if index .Values.argo "infra-core" "api" "resources" }}
   resources:
@@ -40,6 +48,11 @@ apiv2:
   serviceArgsGrpc:
     globalLogLevel: "debug"
     enableTracing: {{ index .Values.argo "infra-core" "enableTracing" | default false }}
+  oidc:
+    oidc_server_url: {{ $keycloakUrl }}
+    name: "keycloak-api"
+    oidc_tls_insecure_skip_verify_env_name: "OIDC_TLS_INSECURE_SKIP_VERIFY"
+    oidc_tls_insecure_skip_verify_value: "true"
   {{- if index .Values.argo "infra-core" "api" }}
   {{- if index .Values.argo "infra-core" "api" "resources" }}
   resources:
@@ -65,13 +78,36 @@ inventory:
     readOnlyReplicasEnabled: false
     {{- end }}
     readOnlyReplicasSecrets: inventory-reader-{{ .Values.argo.database.type }}-postgresql
+  oidc:
+    oidc_server_url: {{ $keycloakUrl }}
+    name: "keycloak-inventory"
+    oidc_tls_insecure_skip_verify_env_name: "OIDC_TLS_INSECURE_SKIP_VERIFY"
+    oidc_tls_insecure_skip_verify_value: "true"
   {{- if index .Values.argo "infra-core" "inventory" }}
   {{- if index .Values.argo "infra-core" "inventory" "resources" }}
   resources:
   {{- with index .Values.argo "infra-core" "inventory" "resources" }}
     {{- toYaml . | nindent 4 }}
   {{- end}}
+  {{- else }}
+  # Default resources - increase memory to prevent OOMKilled
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
   {{- end}}
+  {{- else }}
+  # Default resources - increase memory to prevent OOMKilled
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
   {{- end}}
   metrics:
     enabled: {{ index .Values.argo "infra-core" "enableMetrics" | default false }}
@@ -94,6 +130,9 @@ tenant-controller:
       {{ end }}
   {{- end }}
 {{- end }}
+  oidc:
+    oidc_server_url: {{ $keycloakUrl }}
+    name: "orch-svc"
   {{- if index .Values.argo "infra-core" "tenant-controller" }}
   {{- if index .Values.argo "infra-core" "tenant-controller" "resources" }}
   resources:

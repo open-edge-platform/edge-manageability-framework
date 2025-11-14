@@ -2,6 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+# Keycloak URLs - always use external domain to match Keycloak's configured hostname
+{{- $keycloakUrl := printf "https://keycloak.%s/realms/master" .Values.argo.clusterDomain }}
+{{- $keycloakBaseUrl := printf "https://keycloak.%s" .Values.argo.clusterDomain }}
+
 global:
   registry:
     name: "{{ .Values.argo.containerRegistryURL }}/"
@@ -139,6 +143,8 @@ dkam:
     enabled: {{ index .Values.argo "infra-onboarding" "enableMetrics" | default false }}
   env:
     mode: "{{ index .Values.argo "infra-onboarding" "dkamMode" | default "prod" }}"
+    oidc:
+      oidc_server_url: {{ $keycloakUrl }}
   proxies:
     http_proxy: {{ .Values.argo.proxy.httpProxy }}
     https_proxy: {{ .Values.argo.proxy.httpsProxy }}
@@ -173,6 +179,9 @@ onboarding-manager:
     userName: "{{ index .Values.argo "infra-onboarding" "userName" | default "user" }}"
     passWord: "{{ index .Values.argo "infra-onboarding" "passWord" | default "user" }}"
     enableTinkActionTimestamp: {{ index .Values.argo "infra-onboarding" "enableTinkActionTimestamp" | default false }}
+    oidc:
+      oidc_server_url: {{ $keycloakUrl }}
+    keycloakUrl: {{ $keycloakBaseUrl }}
   {{- if index .Values.argo "infra-onboarding" "onboarding-manager" }}
   {{- if index .Values.argo "infra-onboarding" "onboarding-manager" "resources" }}
   resources:

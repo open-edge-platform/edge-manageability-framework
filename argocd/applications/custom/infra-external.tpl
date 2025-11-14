@@ -94,6 +94,10 @@ amt:
   {{- if .Values.argo.traefik }}
     tlsOption: {{ .Values.argo.traefik.tlsOption | default "" | quote }}
   {{- end }}
+    env:
+      oidc:
+        # Keycloak OIDC URL - always use external domain to match Keycloak's configured hostname
+        oidc_server_url: "https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master"
 
   mps:
     postgresql:

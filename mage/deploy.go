@@ -270,6 +270,11 @@ spec:
       - resources:
           kinds:
           - Pod
+    exclude:
+      any:
+      - resources:
+          namespaces:
+          - keycloak-system
     validate:
       message: "Root filesystem must be read-only."
       pattern:
@@ -447,8 +452,10 @@ func localSecret(targetEnv string, createRSToken bool) error {
 	}
 
 	// creating platform-keycloak secret that contains the randomly generated keycloak admin password
-	if err := kubectlCreateAndApply("secret", "generic", "-n", "orch-platform", "platform-keycloak",
-		"--from-literal=admin-password="+keycloakPassword); err != nil {
+	// Secret must be in keycloak-system namespace where the Keycloak Operator watches
+	if err := kubectlCreateAndApply("secret", "generic", "-n", "keycloak-system", "platform-keycloak",
+		"--from-literal=username=admin",
+		"--from-literal=password="+keycloakPassword); err != nil {
 		return err
 	}
 	if err := kubectlCreateAndApply("namespace", "orch-database"); err != nil {
@@ -1312,6 +1319,56 @@ func commitAndPushGiteaRepo(gitRepoPath, gitUsername, gitPassword string) error 
 	return nil
 }
 
+// configureCoreDNSKeycloak configures CoreDNS to rewrite Keycloak external URL to internal Traefik service
+// This is needed because pods inside the cluster cannot reach the external load balancer IP (hairpin routing issue)
+// For local-only domains (e.g., kind.internal), this configuration is skipped since no external LB exists
+func (d Deploy) configureCoreDNSKeycloak(targetEnv string) error {
+	// Get cluster domain from target config
+	targetConfig := getTargetConfig(targetEnv)
+	clusterDomain, err := script.Exec(fmt.Sprintf("yq eval '.argo.clusterDomain' %s", targetConfig)).String()
+	if err != nil {
+		return fmt.Errorf("error reading clusterDomain from config: %w", err)
+	}
+	clusterDomain = strings.TrimSpace(clusterDomain)
+
+	if clusterDomain == "" || clusterDomain == "null" {
+		fmt.Println("No clusterDomain configured, skipping CoreDNS Keycloak rewrite")
+		return nil
+	}
+
+	// Skip CoreDNS rewrite for local-only domains (no external load balancer)
+	// These domains are used in dev/CI environments where services are accessed internally only
+	localOnlyDomains := []string{
+		"kind.internal",
+		"localhost",
+		"127.0.0.1",
+	}
+	for _, localDomain := range localOnlyDomains {
+		if strings.Contains(clusterDomain, localDomain) {
+			fmt.Printf("Skipping CoreDNS Keycloak rewrite for local-only domain: %s\n", clusterDomain)
+			return nil
+		}
+	}
+
+	fmt.Printf("Configuring CoreDNS rewrite for Keycloak external URL: %s\n", clusterDomain)
+
+	// Run the configure script
+	scriptPath := filepath.Join("installer", "configure-coredns-keycloak.sh")
+	if _, err := os.Stat(scriptPath); err != nil {
+		return fmt.Errorf("CoreDNS configuration script not found: %w", err)
+	}
+
+	cmd := exec.Command(scriptPath, clusterDomain)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("error running CoreDNS configuration script: %w", err)
+	}
+
+	fmt.Println("✓ CoreDNS configured successfully")
+	return nil
+}
+
 // updateDeployRepo updates the deployment repository with the latest changes
 func (d Deploy) updateDeployRepo(targetEnv, gitRepoPath, repoName, localClonePath string) error {
 	// Get the current working directory so we can return to it when this function exits
@@ -1579,6 +1636,11 @@ func (d Deploy) orchLocal(targetEnv string) error {
 	// Clone and update the Gitea deployment repo
 	if err := (Deploy{}).updateDeployRepo(targetEnv, deployRepoPath, deployRepoName, deployGiteaRepoDir); err != nil {
 		return fmt.Errorf("error updating deployment repo content: %w", err)
+	}
+
+	// Configure CoreDNS rewrite for Keycloak external URL
+	if err := d.configureCoreDNSKeycloak(targetEnv); err != nil {
+		return fmt.Errorf("error configuring CoreDNS for Keycloak: %w", err)
 	}
 
 	var subDomain string

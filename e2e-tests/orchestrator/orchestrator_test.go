@@ -236,6 +236,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			resp, err := cli.Get(url)
 			Expect(err).ToNot(HaveOccurred())
 			defer resp.Body.Close()
+
 			Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
 		})
 	})

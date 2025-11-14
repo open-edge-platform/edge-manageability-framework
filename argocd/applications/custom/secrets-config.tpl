@@ -16,3 +16,10 @@ imagePullSecrets:
   {{- with .Values.argo.imagePullSecrets }}
     {{- toYaml . | nindent 2 }}
   {{- end }}
+
+# Keycloak URLs - always use external domain to match Keycloak's configured hostname
+# This ensures consistency with browser flows and prevents hostname mismatch errors
+auth:
+  oidc:
+    idPAddr: "https://keycloak.{{ .Values.argo.clusterDomain }}"
+    idPDiscoveryURL: "https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master"

@@ -31,3 +31,7 @@ southboundApi:
   resources:
     {{- toYaml . | nindent 4 }}
 {{- end }}
+
+# Keycloak OIDC server URL - always use external domain to match Keycloak's configured hostname
+oidc:
+  oidc_server_url: "https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master"

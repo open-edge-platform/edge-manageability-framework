@@ -1,0 +1,10 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v2
+name: keycloak-operator
+description: Keycloak Operator deployment with realm configuration
+type: application
+version: 1.0.0
+appVersion: "26.4.2"

@@ -58,3 +58,7 @@ openpolicyagent:
   resources:
     {{- toYaml . | nindent 4 }}
 {{- end }}
+
+# Keycloak issuer - always use external domain to match Keycloak's configured hostname
+openidc:
+  issuer: "https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master"

@@ -99,8 +99,11 @@ ${M}/release-secrets: | ${M}/create-namespaces
 	touch $@
 
 ${M}/keycloak-secret: | ${M}/create-namespaces
-	@if ! kubectl get secret platform-keycloak -n orch-platform > /dev/null 2>&1; then \
-		kubectl create secret generic -n orch-platform platform-keycloak --from-literal=admin-password="$(KEYCLOAK_PASSWORD)" --dry-run=client -o yaml | kubectl apply -f - ;\
+	@if ! kubectl get secret platform-keycloak -n keycloak-system > /dev/null 2>&1; then \
+		kubectl create secret generic -n keycloak-system platform-keycloak \
+			--from-literal=username="admin" \
+			--from-literal=password="$(KEYCLOAK_PASSWORD)" \
+			--dry-run=client -o yaml | kubectl apply -f - ;\
 	fi
 	touch $@
 
@@ -119,7 +122,17 @@ ${M}/argocd-ready: | ${M}/argocd-release
 	${HOME}/await-argo.sh
 	touch $@
 
-${M}/deploy-orch: | ${M}/argocd-ready
+${M}/coredns-keycloak: | ${M}/argocd-ready
+	@echo "Configuring CoreDNS for Keycloak external URL..."
+	@CLUSTER_DOMAIN=$$(yq -r '.argo.clusterDomain' ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/orch-configs/clusters/${TARGET_ENV}.yaml); \
+	if [ -n "$$CLUSTER_DOMAIN" ] && [ "$$CLUSTER_DOMAIN" != "null" ]; then \
+		${HOME}/configure-coredns-keycloak.sh "$$CLUSTER_DOMAIN"; \
+	else \
+		echo "Warning: clusterDomain not found in cluster config, skipping CoreDNS configuration"; \
+	fi
+	touch $@
+
+${M}/deploy-orch: | ${M}/coredns-keycloak
 	@[ -z "${TARGET_ENV}" ] && echo "*** TARGET_ENV not set" && exit 1 || true
 	helm upgrade --install root-app ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/argocd/root-app -n ${TARGET_ENV} -f ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/orch-configs/clusters/${TARGET_ENV}.yaml --create-namespace
 	touch $@
