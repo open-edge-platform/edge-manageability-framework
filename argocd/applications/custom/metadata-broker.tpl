@@ -27,10 +27,9 @@ opaResources:
 {{- end }}
 
 # Keycloak issuer based on clusterDomain
-{{- if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}
 openidc:
+{{- if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}
   issuer: "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master"
 {{- else }}
-openidc:
   issuer: "https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master"
 {{- end }}

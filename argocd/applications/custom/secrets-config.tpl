@@ -18,14 +18,12 @@ imagePullSecrets:
   {{- end }}
 
 # Keycloak URLs based on clusterDomain
-{{- if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}
 auth:
   oidc:
+{{- if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}
     idPAddr: "http://platform-keycloak.keycloak-system.svc.cluster.local"
     idPDiscoveryURL: "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master"
 {{- else }}
-auth:
-  oidc:
     idPAddr: "https://keycloak.{{ .Values.argo.clusterDomain }}"
     idPDiscoveryURL: "https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master"
 {{- end }}

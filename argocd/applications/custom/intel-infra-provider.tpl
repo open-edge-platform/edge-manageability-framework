@@ -33,10 +33,9 @@ southboundApi:
 {{- end }}
 
 # Keycloak OIDC server URL based on clusterDomain
-{{- if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}
 oidc:
+{{- if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}
   oidc_server_url: "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master"
 {{- else }}
-oidc:
   oidc_server_url: "https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master"
 {{- end }}

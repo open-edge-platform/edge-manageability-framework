@@ -94,6 +94,13 @@ amt:
   {{- if .Values.argo.traefik }}
     tlsOption: {{ .Values.argo.traefik.tlsOption | default "" | quote }}
   {{- end }}
+    env:
+      oidc:
+{{- if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}
+        oidc_server_url: "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master"
+{{- else }}
+        oidc_server_url: "https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master"
+{{- end }}
 
   mps:
     postgresql:
@@ -123,18 +130,3 @@ amt:
   {{- if .Values.argo.traefik }}
     tlsOption: {{ .Values.argo.traefik.tlsOption | default "" | quote }}
   {{- end }}
-
-# Keycloak OIDC server URL based on clusterDomain
-{{- if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}
-amt:
-  dm-manager:
-    env:
-      oidc:
-        oidc_server_url: "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master"
-{{- else }}
-amt:
-  dm-manager:
-    env:
-      oidc:
-        oidc_server_url: "https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master"
-{{- end }}
