@@ -201,10 +201,11 @@ action_cluster() {
 }
 
 
-apply_kms() {
+apply_modules() {
 
 dir="${ROOT_DIR}/${ORCH_DIR}/cluster"
 sed -i '/module "kms"/,/^}/ s/^\([[:space:]]*\)depends_on/\1# depends_on/' $dir/main.tf
+sed -i '/module "gitea" {/,/}/ s/^\(\s*\)depends_on/\1# depends_on/' $dir/main.tf
 echo "Changing directory to $dir..."
 cd "$dir"
 
@@ -224,6 +225,13 @@ else
     exit 1
 fi
 
+echo "Applying changes for Gitea module..."
+if terraform apply -target=module.gitea -var-file="environments/${ENV_NAME}/variable.tfvar" -auto-approve; then
+    echo " ^|^e Terraform apply for Gitea module succeeded."
+else
+    echo " ^}^l Terraform apply for Gitea module failed!"
+    exit 1
+fi
 }
 # Main
 
@@ -240,8 +248,7 @@ connect_cluster
 
 echo "Starting action cluster"
 action_cluster
-apply_kms
-
+apply_modules
 
 # Terminate existing sshuttle
 terminate_sshuttle
