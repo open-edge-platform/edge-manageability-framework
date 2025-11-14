@@ -93,7 +93,7 @@ restore_postgres() {
 
   # CloudNativePG doesn't need security disable/enable, just use credentials
   # Use the remote backup file that was copied to the pod
-  kubectl exec -n $postgres_namespace $podname -c postgres -- env PGPASSWORD="$PGPASSWORD" psql -U $POSTGRES_USERNAME -f "$remote_backup_path"
+  kubectl exec -n $postgres_namespace "$podname" -c postgres -- env PGPASSWORD="$PGPASSWORD" psql -U $POSTGRES_USERNAME -f "$remote_backup_path"
 
   echo "Restore completed successfully."
 }
