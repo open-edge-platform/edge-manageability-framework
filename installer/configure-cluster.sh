@@ -131,10 +131,14 @@ else
     export O11Y_ENABLE_PROFILE="- orch-configs/profiles/enable-o11y.yaml"
 fi
 
-if [ -z $SMTP_URL ]; then
+if [ -z "$SMTP_URL" ]; then
     export EMAIL_PROFILE="#- orch-configs/profiles/alerting-emails.yaml"
 else
-    export EMAIL_PROFILE="- orch-configs/profiles/alerting-emails-dev.yaml"
+    if [ "${SMTP_DEV:-false}" = "true" ]; then
+        export EMAIL_PROFILE="- orch-configs/profiles/alerting-emails-dev.yaml"
+    else
+        export EMAIL_PROFILE="- orch-configs/profiles/alerting-emails.yaml"
+    fi
 fi
 
 if [ -z $AUTO_CERT ]; then
