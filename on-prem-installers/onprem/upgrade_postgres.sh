@@ -75,13 +75,25 @@ delete_postgres() {
   kubectl delete secret --ignore-not-found=true -n $postgres_namespace postgresql
 }
 
+get_postgres_pod() {
+  kubectl get pods -n orch-database -l cnpg.io/cluster=postgresql-cluster,cnpg.io/instanceRole=primary -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "postgresql-0"
+}
+
 restore_postgres() {
-  kubectl exec -n $postgres_namespace $podname -- /bin/bash -c "$(typeset -f disable_security); disable_security"
-  remote_backup_path="/tmp/${postgres_namespace}_${podname}_backup.sql"
-  kubectl cp "$local_backup_path" "$postgres_namespace/$podname:$remote_backup_path"
+  podname=$(get_postgres_pod)
+ # kubectl exec -n $postgres_namespace $podname -- /bin/bash -c "$(typeset -f disable_security); disable_security"
+  remote_backup_path="/var/lib/postgresql/data/${postgres_namespace}_${podname}_backup.sql"
+
+  kubectl cp "$local_backup_path" "$postgres_namespace/$podname:$remote_backup_path" -c postgres
 
   echo "Restoring backup databases from pod $podname in namespace $postgres_namespace..."
 
-  kubectl exec -n $postgres_namespace $podname -- /bin/bash -c "psql -U $POSTGRES_USERNAME <  $remote_backup_path "
-  kubectl exec -n $postgres_namespace $podname -- /bin/bash -c "$(typeset -f enable_security); enable_security"
+  # Get postgres password from secret
+  PGPASSWORD=$(kubectl get secret -n $postgres_namespace postgresql -o jsonpath='{.data.postgres-password}' | base64 -d)
+
+  # CloudNativePG doesn't need security disable/enable, just use credentials
+  # Use the remote backup file that was copied to the pod
+  kubectl exec -n $postgres_namespace $podname -c postgres -- env PGPASSWORD="$PGPASSWORD" psql -U $POSTGRES_USERNAME -f "$remote_backup_path"
+
+  echo "Restore completed successfully."
 }
