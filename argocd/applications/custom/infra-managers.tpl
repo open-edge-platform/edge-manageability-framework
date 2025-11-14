@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+# Keycloak OIDC server URL based on clusterDomain
+{{- $keycloakUrl := "" }}
+{{- if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}
+{{- $keycloakUrl = "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master" }}
+{{- else }}
+{{- $keycloakUrl = printf "https://keycloak.%s/realms/master" .Values.argo.clusterDomain }}
+{{- end }}
+
 global:
   registry:
     name: "{{ .Values.argo.containerRegistryURL }}/"
@@ -35,6 +43,9 @@ host-manager:
   {{- end}}
   metrics:
     enabled: {{ index .Values.argo "infra-managers" "enableMetrics" | default false }}
+  oidc_server_url: {{ $keycloakUrl }}
+  oidc:
+    oidc_server_url: {{ $keycloakUrl }}
 
 maintenance-manager:
   mimaintmgr:
@@ -56,6 +67,9 @@ maintenance-manager:
   {{- end}}
   metrics:
     enabled: {{ index .Values.argo "infra-managers" "enableMetrics" | default false }}
+  oidc_server_url: {{ $keycloakUrl }}
+  oidc:
+    oidc_server_url: {{ $keycloakUrl }}
 
 networking-manager:
   serviceArgs:
@@ -70,6 +84,9 @@ networking-manager:
   {{- end}}
   metrics:
     enabled: {{ index .Values.argo "infra-managers" "enableMetrics" | default false }}
+  oidc_server_url: {{ $keycloakUrl }}
+  oidc:
+    oidc_server_url: {{ $keycloakUrl }}
 
 telemetry-manager:
   telemetryMgrArgs:
@@ -91,6 +108,9 @@ telemetry-manager:
   {{- end}}
   {{- end}}
   {{- end}}
+  oidc_server_url: {{ $keycloakUrl }}
+  oidc:
+    oidc_server_url: {{ $keycloakUrl }}
 
 os-resource-manager:
   autoProvision:
@@ -150,32 +170,7 @@ attestationstatus-manager:
   {{- end}}
   metrics:
     enabled: {{ index .Values.argo "infra-managers" "enableMetrics" | default false }}
+  oidc_server_url: {{ $keycloakUrl }}
+  oidc:
+    oidc_server_url: {{ $keycloakUrl }}
 
-# Keycloak OIDC server URL based on clusterDomain
-{{- $keycloakUrl := "" }}
-{{- if or (contains "kind.internal" .Values.argo.clusterDomain) (contains "localhost" .Values.argo.clusterDomain) (eq .Values.argo.clusterDomain "") }}
-{{- $keycloakUrl = "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master" }}
-{{- else }}
-{{- $keycloakUrl = printf "https://keycloak.%s/realms/master" .Values.argo.clusterDomain }}
-{{- end }}
-
-host-manager:
-  oidc_server_url: {{ $keycloakUrl }}
-  oidc:
-    oidc_server_url: {{ $keycloakUrl }}
-maintenance-manager:
-  oidc_server_url: {{ $keycloakUrl }}
-  oidc:
-    oidc_server_url: {{ $keycloakUrl }}
-networking-manager:
-  oidc_server_url: {{ $keycloakUrl }}
-  oidc:
-    oidc_server_url: {{ $keycloakUrl }}
-telemetry-manager:
-  oidc_server_url: {{ $keycloakUrl }}
-  oidc:
-    oidc_server_url: {{ $keycloakUrl }}
-attestationstatus-manager:
-  oidc_server_url: {{ $keycloakUrl }}
-  oidc:
-    oidc_server_url: {{ $keycloakUrl }}
