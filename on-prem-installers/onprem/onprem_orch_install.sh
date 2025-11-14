@@ -45,7 +45,7 @@ cwd=$(pwd)
 ASSUME_YES=false
 ENABLE_TRACE=false
 SINGLE_TENANCY_PROFILE=false
-INSTALL_GITEA=true
+INSTALL_GITEA="true"
 deb_dir_name="installers"
 git_arch_name="repo_archives"
 argo_cd_ns="argocd"
@@ -316,10 +316,6 @@ write_shared_variables() {
     update_config_variable "$config_file" "SINGLE_TENANCY_PROFILE" "${SINGLE_TENANCY_PROFILE}"
   fi
 
-  INSTALL_GITEA=$([[ "${DISABLE_CO_PROFILE:-}" == "true" || "${DISABLE_AO_PROFILE:-}" == "true" ]] && echo "false" || echo "true")
-
-  echo "Gitea installation set to: $INSTALL_GITEA"
-
   echo "Runtime configuration updated in: $config_file"
 }
 ################################
@@ -401,6 +397,13 @@ write_shared_variables
 
 # Generate Cluster Config
 ./generate_cluster_yaml.sh onprem
+
+# Check if enable-app-orch.yaml is present and uncommented in the cluster config file
+if grep -q "^[[:space:]]*[^#]*-[[:space:]]*.*enable-app-orch\.yaml" "$ORCH_INSTALLER_PROFILE".yaml; then
+  INSTALL_GITEA="true"
+else
+  INSTALL_GITEA="false"
+fi
 
 # cp changes to tmp repo
 tmp_dir="$cwd/$git_arch_name/tmp"
