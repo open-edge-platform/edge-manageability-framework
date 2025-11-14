@@ -303,6 +303,8 @@ class AutoInstall:
         self.SMTP_URL = os.getenv("SMTP_URL")
         self.SMTP_PORT = os.getenv("SMTP_PORT")
         self.SMTP_FROM = os.getenv("SMTP_FROM")
+        self.SMTP_USER = os.getenv("SMTP_USER")
+        self.SMTP_PASS = os.getenv("SMTP_PASS")
         self.SMTP_DEV = os.getenv("SMTP_DEV")
 
         self.jumphost_sshkey_copied = False
@@ -545,6 +547,54 @@ class AutoInstall:
             if not long_task.succeeded():
                 raise AccountInitFailed()
 
+    def insert_smtp_details_helper(self, to_replace, to_replace_value):
+
+        current_user = os.getlogin()
+        current_directory = os.getcwd()
+
+        config_file = f"{self.aws_account}-{self.cluster_name}-values.tfvar"
+        config_path = os.path.join(current_directory, "state", config_file)
+        state_dir = os.path.join(current_directory, "state")
+
+        print(f"dir contents of state ({state_dir}):")
+        print(os.listdir(state_dir))
+
+        count = 1
+
+        print(f"here {count}")
+        count += 1 
+        os.system(f"sudo chown -R {current_user}:{current_user} {state_dir}")
+
+        print(f"here {count}")
+        count += 1 
+        print(f"opening config path ${config_path}")
+        with open(config_path, "r") as f:
+            lines = f.readlines()
+
+        print(f"here {count}")
+        count += 1 
+
+        # Check if smtp_url exists
+        found = False
+        for i, line in enumerate(lines):
+            if line.strip().startswith(f"{to_replace}="):
+                lines[i] = f'{to_replace}="{to_replace_value}"\n'
+                found = True
+                break
+
+        print(f"here {count}")
+        count += 1 
+
+        # If not found, append at the end
+        if not found:
+            lines.append(f'{to_replace}="{to_replace_value}"\n')
+
+        print(f"here {count}")
+        count += 1 
+
+        with open(config_path, "w") as f:
+            f.writelines(lines)
+
     def configure_provision(self):
         """
         Configures the provision settings for the installation process.
@@ -572,9 +622,9 @@ class AutoInstall:
         time.sleep(120)
         # in provision config editor
 
-        self.installer_session.sendline(f'\x1bG$osmtp_url="{self.SMTP_URL}"\x1b')
-        self.installer_session.sendline(f'\x1bG$osmtp_port={self.SMTP_PORT}\x1b')
-        self.installer_session.sendline(f'\x1bG$osmtp_from="{self.SMTP_FROM}"\x1b')
+        # self.installer_session.sendline(f'\x1bG$osmtp_url="{self.SMTP_URL}"\x1b')
+        # self.installer_session.sendline(f'\x1bG$osmtp_port={self.SMTP_PORT}\x1b')
+        # self.installer_session.sendline(f'\x1bG$osmtp_from="{self.SMTP_FROM}"\x1b')
 
         self.installer_session.sendline(":wq")
 
@@ -590,6 +640,12 @@ class AutoInstall:
             self.installer_session.sendline("yes")
 
         self.installer_session.expect("orchestrator-admin:pod-configs", timeout=60)
+
+        self.insert_smtp_details_helper("smtp_url", self.SMTP_URL)
+        self.insert_smtp_details_helper("smtp_port", self.SMTP_PORT)
+        self.insert_smtp_details_helper("smtp_from", self.SMTP_FROM)
+        self.insert_smtp_details_helper("smtp_user", self.SMTP_USER)
+        self.insert_smtp_details_helper("smtp_pass", self.SMTP_PASS)
 
     def provision_upgrade(self):
         """
