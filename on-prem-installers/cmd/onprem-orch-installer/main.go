@@ -66,6 +66,11 @@ func main() {
 		if err != nil {
 			log.Panicf("%v", err)
 		}
+	} else {
+		_, err := sh.Output("tar", "-xf", getArtifactPath(tarFilesLocation, edgeManageabilityFrameworkRepo), "-C", edgeManageabilityFrameworkFolder)
+		if err != nil {
+			log.Fatalf("failed to untar artifact - %v", err)
+		}
 	}
 
 	err = installRootApp(edgeManageabilityFrameworkFolder, orchInstallerProfile, giteaServiceURL)

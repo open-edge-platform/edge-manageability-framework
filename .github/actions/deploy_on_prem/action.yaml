@@ -85,7 +85,7 @@ runs:
         kubectl config set-cluster default --server="https://${SSH_HOST}:6443" --insecure-skip-tls-verify
         kubectl get pods -o wide -A > "$ORCH_PROFILE-diagnostics/pods-list.txt"
         kubectl describe pods -A > "$ORCH_PROFILE-diagnostics/pods-describe.txt"
-        mage logutils:collectArgoDiags > "$ORCH_PROFILE-diagnostics/argo-diag.txt"
+        # mage logutils:collectArgoDiags > "$ORCH_PROFILE-diagnostics/argo-diag.txt"
         kubectl get applications -o yaml -A > "$ORCH_PROFILE-diagnostics/argocd-applications.yaml"
         kubectl get events -o yaml -A > "$ORCH_PROFILE-diagnostics/events.yaml"
 
@@ -97,6 +97,6 @@ runs:
         path: |
           ${{ inputs.orch_profile }}-diagnostics/pods-list.txt
           ${{ inputs.orch_profile }}-diagnostics/pods-describe.txt
-          ${{ inputs.orch_profile }}-diagnostics/argo-diag.txt
+          # ${{ inputs.orch_profile }}-diagnostics/argo-diag.txt
           ${{ inputs.orch_profile }}-diagnostics/argocd-applications.yaml
           ${{ inputs.orch_profile }}-diagnostics/events.yaml
