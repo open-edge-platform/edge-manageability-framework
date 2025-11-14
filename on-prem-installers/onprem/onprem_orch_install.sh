@@ -441,11 +441,12 @@ rm -rf "$tmp_dir"
 if find "$cwd/$deb_dir_name" -name "onprem-gitea-installer_*_amd64.deb" -type f | grep -q .; then
     # Run gitea installer
     echo "Installing Gitea"
-    # INSTALL_GITEA=$([[ "${DISABLE_CO_PROFILE:-}" == "true" || "${DISABLE_AO_PROFILE:-}" == "true" ]] && echo "false" || echo "true")
     eval "sudo IMAGE_REGISTRY=${GITEA_IMAGE_REGISTRY} INSTALL_GITEA=${INSTALL_GITEA} NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y $cwd/$deb_dir_name/onprem-gitea-installer_*_amd64.deb"
     wait_for_namespace_creation $gitea_ns
     sleep 30s
-    wait_for_pods_running $gitea_ns
+    if [ "$INSTALL_GITEA" = "true" ]; then
+      wait_for_pods_running $gitea_ns
+    fi
     echo "Gitea Installed"
 else
     echo "❌ Package file NOT found: $cwd/$deb_dir_name/onprem-gitea-installer_*_amd64.deb"
