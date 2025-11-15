@@ -17,3 +17,8 @@ argo:
     malware-scanner: false
     app-deployment-manager-secret: true
     app-interconnect-manager: true
+    harbor-oci: true
+    harbor-oci-security-patch: true
+    app-orch-tenant-controller: true
+    fleet-crd: true
+    fleet-controller: true    
