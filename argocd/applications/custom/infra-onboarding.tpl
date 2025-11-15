@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Keycloak URLs - always use external domain to match Keycloak's configured hostname
-{{- $keycloakUrl := printf "https://keycloak.%s/realms/master" .Values.argo.clusterDomain }}
-{{- $keycloakBaseUrl := printf "https://keycloak.%s" .Values.argo.clusterDomain }}
+# Keycloak URLs - use internal service URL to avoid unnecessary Traefik load
+{{- $keycloakUrl := "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master" }}
+{{- $keycloakBaseUrl := "http://platform-keycloak.keycloak-system.svc.cluster.local" }}
 
 global:
   registry:

@@ -25,6 +25,7 @@ logging:
   level: info
 {{- end }}
 
-# Keycloak OIDC server URL - always use external domain to match Keycloak's configured hostname
+# Keycloak OIDC server URL - use internal service URL to avoid unnecessary Traefik load
+# Backend services access Keycloak directly via cluster DNS, bypassing Traefik
 oidc:
-  oidc_server_url: "https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master"
+  oidc_server_url: "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master"

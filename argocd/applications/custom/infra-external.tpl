@@ -96,8 +96,8 @@ amt:
   {{- end }}
     env:
       oidc:
-        # Keycloak OIDC URL - always use external domain to match Keycloak's configured hostname
-        oidc_server_url: "https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master"
+        # Keycloak OIDC URL - use internal service URL to avoid unnecessary Traefik load
+        oidc_server_url: "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master"
 
   mps:
     postgresql:

@@ -10,6 +10,9 @@ keycloakJwksUrl: http://platform-keycloak.keycloak-system.svc
 # internal keycloak JWKS Path should be static but providing a way to modify it here
 keycloakJwksPath: /realms/master/protocol/openid-connect/certs
 keycloakServicePort: 8080
+# Keycloak service configuration for traefik-extra-objects IngressRoute
+keycloakServiceName: platform-keycloak
+keycloakServiceNamespace: keycloak-system
 fleetMatchHost: Host(`fleet.{{ .Values.argo.clusterDomain }}`)
 harborOciMatchHost: Host(`registry-oci.{{ .Values.argo.clusterDomain }}`)
 observabilityMatchHost: Host(`observability-ui.{{ .Values.argo.clusterDomain }}`)

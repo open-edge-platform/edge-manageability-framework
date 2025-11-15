@@ -19,7 +19,7 @@ metadata:
   labels:
     app.kubernetes.io/name: keycloak
     app.kubernetes.io/instance: platform-keycloak
-    app.kubernetes.io/version: "26.4.2"
+    app.kubernetes.io/version: "26.4.5"
     app.kubernetes.io/component: alias
   annotations:
     description: "ExternalName service providing DNS alias to keycloak-system/platform-keycloak"

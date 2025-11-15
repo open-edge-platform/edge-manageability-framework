@@ -10,7 +10,7 @@ metadata:
   labels:
     app.kubernetes.io/name: keycloak
     app.kubernetes.io/instance: platform-keycloak
-    app.kubernetes.io/version: "26.4.2"
+    app.kubernetes.io/version: "26.4.5"
   annotations:
     description: "Service for Keycloak platform-keycloak instance"
 spec:

@@ -26,6 +26,6 @@ opaResources:
   {{- toYaml . | nindent 2}}
 {{- end }}
 
-# Keycloak issuer - always use external domain to match Keycloak's configured hostname
+# Keycloak issuer - use internal service URL to avoid unnecessary Traefik load
 openidc:
-  issuer: "https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master"
+  issuer: "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master"

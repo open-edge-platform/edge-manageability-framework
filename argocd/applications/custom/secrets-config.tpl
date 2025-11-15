@@ -17,9 +17,9 @@ imagePullSecrets:
     {{- toYaml . | nindent 2 }}
   {{- end }}
 
-# Keycloak URLs - always use external domain to match Keycloak's configured hostname
-# This ensures consistency with browser flows and prevents hostname mismatch errors
+# Keycloak URLs - use internal service URL to avoid unnecessary Traefik load
+# Backend services access Keycloak directly via cluster DNS, bypassing Traefik
 auth:
   oidc:
-    idPAddr: "https://keycloak.{{ .Values.argo.clusterDomain }}"
-    idPDiscoveryURL: "https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master"
+    idPAddr: "http://platform-keycloak.keycloak-system.svc.cluster.local"
+    idPDiscoveryURL: "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master"

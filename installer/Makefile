@@ -122,14 +122,20 @@ ${M}/argocd-ready: | ${M}/argocd-release
 	${HOME}/await-argo.sh
 	touch $@
 
-${M}/coredns-keycloak: | ${M}/argocd-ready
-	@echo "Configuring CoreDNS for Keycloak external URL..."
-	@CLUSTER_DOMAIN=$$(yq -r '.argo.clusterDomain' ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/orch-configs/clusters/${TARGET_ENV}.yaml); \
-	if [ -n "$$CLUSTER_DOMAIN" ] && [ "$$CLUSTER_DOMAIN" != "null" ]; then \
-		${HOME}/configure-coredns-keycloak.sh "$$CLUSTER_DOMAIN"; \
-	else \
-		echo "Warning: clusterDomain not found in cluster config, skipping CoreDNS configuration"; \
-	fi
+# CoreDNS rewrite for Keycloak is not needed - backend services use internal service URL directly
+# Keeping this target for reference, can be re-enabled if needed
+# ${M}/coredns-keycloak: | ${M}/argocd-ready
+# 	@echo "Configuring CoreDNS for Keycloak external URL..."
+# 	@CLUSTER_DOMAIN=$$(yq -r '.argo.clusterDomain' ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/orch-configs/clusters/${TARGET_ENV}.yaml); \
+# 	if [ -n "$$CLUSTER_DOMAIN" ] && [ "$$CLUSTER_DOMAIN" != "null" ]; then \
+# 		${HOME}/configure-coredns-keycloak.sh "$$CLUSTER_DOMAIN"; \
+# 	else \
+# 		echo "Warning: clusterDomain not found in cluster config, skipping CoreDNS configuration"; \
+# 	fi
+# 	touch $@
+
+${M}/coredns-keycloak:
+	@echo "CoreDNS rewrite not needed - backend services use internal Keycloak URL"
 	touch $@
 
 ${M}/deploy-orch: | ${M}/coredns-keycloak
