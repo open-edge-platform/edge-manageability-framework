@@ -516,7 +516,9 @@ jobs:
           # Restart libvirtd to refresh socket
           sudo systemctl restart libvirtd || true
           virsh list --all || true
-          virsh pool-list --all || true          
+          virsh pool-list --all || true
+          sudo apt update
+          sudo apt install xsltproc -y
 
       - name: Deploy Kind Orchestrator
         id: deploy-kind-orchestrator
