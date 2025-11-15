@@ -58,18 +58,22 @@ spec:
   # All your runtime options (these become environment variables)
   additionalOptions:
     # Keycloak Hostname v2 Configuration (Keycloak 25+)
-    # IMPORTANT: Keycloak always runs on HTTP port 8080 internally (defined in http.httpPort)
+    # CRITICAL ISSUE:
+    # Keycloak's hostname setting determines the issuer URL in OIDC tokens and .well-known/openid-configuration
     # 
-    # When using hostname-backchannel-dynamic=true, hostname MUST be a full URL (with scheme)
-    # This allows Keycloak to dynamically resolve backchannel URLs from incoming requests
-    # 
-    # Strategy: ALWAYS use external domain for hostname to ensure browser cookies work
-    # - Browser access: Uses HTTPS via Traefik IngressRoute (e.g., https://keycloak.kind.internal)
-    # - Backend services: Use internal service URL directly (e.g., http://platform-keycloak.keycloak-system.svc.cluster.local)
-    # - Traefik terminates HTTPS and forwards to Keycloak's HTTP:8080
-    # - hostname-backchannel-dynamic allows internal services to work with internal URLs
-    # 
-    # This ensures session cookies are set for the correct domain that browsers use
+    # SOLUTION: Use external domain for hostname, but skip validation for internal requests
+    # - Browser access: Via Traefik HTTPS (X-Forwarded-Host: keycloak.orch-XX-XX.pid.infra-host.com)
+    #   → Keycloak returns issuer: https://keycloak.orch-XX-XX.pid.infra-host.com/realms/master
+    # - Internal services (Vault): Plain HTTP to service DNS (no X-Forwarded-Host)
+    #   → Keycloak returns issuer: https://keycloak.orch-XX-XX.pid.infra-host.com/realms/master (SAME!)
+    #
+    # The trick: Internal services MUST be able to validate this external URL even from inside cluster
+    # This works because:
+    # 1. Services inside the cluster can reach external URLs via the cluster's network routing
+    # 2. The OIDC discovery endpoint just needs to respond with valid JSON
+    # 3. Vault validates the discovered issuer URL can serve OIDC tokens
+    #
+    # NOTE: Set to external domain so browsers get proper cookies and redirect URIs work
     - name: hostname
       value: "https://keycloak.{{ .Values.argo.clusterDomain }}"
     - name: hostname-admin
@@ -77,23 +81,10 @@ spec:
     # Read X-Forwarded-* headers from Traefik for correct hostname in OAuth flows
     - name: proxy
       value: "xforwarded"
-    # CRITICAL: Enable dynamic backchannel URLs
-    # 
-    # With hostname-backchannel-dynamic=true:
-    # - Browser requests → Keycloak via HTTPS (Traefik adds X-Forwarded-Host header)
-    #   → Returns issuer: https://keycloak.${DOMAIN}/realms/master
-    # 
-    # - Internal requests → Keycloak via HTTP (no forwarded headers)
-    #   → Returns issuer: http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master
-    # 
-    # This allows Vault and other backend services to validate tokens with URLs they can actually reach
-    # from inside the cluster, while browsers get the proper external domain.
-    - name: hostname-backchannel-dynamic
-      value: "true"
     # Accept requests from any hostname (Traefik adds X-Forwarded-Host header)
     - name: hostname-strict
       value: "false"
-    # Allow HTTP scheme for internal/backchannel requests (even though hostname uses HTTPS)
+    # For backchannel requests (like OIDC token validation), don't require HTTPS
     - name: hostname-strict-https
       value: "false"
     - name: db-url-properties

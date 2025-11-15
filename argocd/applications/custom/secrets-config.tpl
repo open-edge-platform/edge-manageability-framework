@@ -17,9 +17,13 @@ imagePullSecrets:
     {{- toYaml . | nindent 2 }}
   {{- end }}
 
-# Keycloak URLs - use internal service URL to avoid unnecessary Traefik load
-# Backend services access Keycloak directly via cluster DNS, bypassing Traefik
+# Keycloak OIDC configuration
+# Use external domain with HTTPS so that:
+# 1. CoreDNS rewrites keycloak.orch-X-X.pid.infra-host.com → traefik service
+# 2. Traefik routes HTTPS requests to Keycloak pod
+# 3. OIDC discovery validation succeeds (issuer URL is reachable)
+# 4. Browsers can also access via same external domain
 auth:
   oidc:
-    idPAddr: "http://platform-keycloak.keycloak-system.svc.cluster.local"
-    idPDiscoveryURL: "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master"
+    idPAddr: "https://keycloak.{{ .Values.argo.clusterDomain }}"
+    idPDiscoveryURL: "https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master"
