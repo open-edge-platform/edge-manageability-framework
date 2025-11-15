@@ -19,22 +19,35 @@ if [ -z "$CLUSTER_DOMAIN" ]; then
 fi
 
 KEYCLOAK_DOMAIN="keycloak.${CLUSTER_DOMAIN}"
+KEYCLOAK_INTERNAL="keycloak.kind.internal"
 TARGET_SERVICE="traefik.orch-gateway.svc.cluster.local"
 
 echo "Configuring CoreDNS rewrite for Keycloak external URL..."
-echo "  Domain: ${KEYCLOAK_DOMAIN}"
+echo "  External Domain: ${KEYCLOAK_DOMAIN}"
+echo "  Internal Domain: ${KEYCLOAK_INTERNAL}"
 echo "  Target: ${TARGET_SERVICE}"
 
-# Check if rewrite already exists
-if kubectl get configmap coredns -n kube-system -o yaml | grep -q "rewrite.*${KEYCLOAK_DOMAIN}"; then
-    echo "✓ CoreDNS rewrite rule already exists, skipping"
+# Check if rewrite already exists for external domain
+REWRITE_COUNT=$(kubectl get configmap coredns -n kube-system -o yaml | grep -c "rewrite.*keycloak" || true)
+if [ "$REWRITE_COUNT" -ge 2 ]; then
+    echo "✓ CoreDNS rewrite rules already exist, skipping"
     exit 0
 fi
 
-echo "Adding CoreDNS rewrite rule..."
-kubectl get configmap coredns -n kube-system -o yaml | \
-    sed "/^    \.:53 {$/a\        rewrite name ${KEYCLOAK_DOMAIN} ${TARGET_SERVICE}" | \
-    kubectl apply -f -
+echo "Adding CoreDNS rewrite rules..."
+# Add external domain rewrite
+if ! kubectl get configmap coredns -n kube-system -o yaml | grep -q "rewrite.*${KEYCLOAK_DOMAIN}"; then
+    kubectl get configmap coredns -n kube-system -o yaml | \
+        sed "/^    \.:53 {$/a\        rewrite name ${KEYCLOAK_DOMAIN} ${TARGET_SERVICE}" | \
+        kubectl apply -f -
+fi
+
+# Add internal domain rewrite (for backward compatibility with kind.internal references)
+if ! kubectl get configmap coredns -n kube-system -o yaml | grep -q "rewrite.*${KEYCLOAK_INTERNAL}"; then
+    kubectl get configmap coredns -n kube-system -o yaml | \
+        sed "/^    \.:53 {$/a\        rewrite name ${KEYCLOAK_INTERNAL} ${TARGET_SERVICE}" | \
+        kubectl apply -f -
+fi
 
 echo "Restarting CoreDNS to apply changes..."
 kubectl rollout restart deployment/coredns -n kube-system
@@ -45,10 +58,11 @@ kubectl rollout status deployment/coredns -n kube-system --timeout=60s
 echo "✓ CoreDNS configured successfully"
 echo
 echo "Verifying configuration..."
-if kubectl get configmap coredns -n kube-system -o yaml | grep -q "rewrite.*${KEYCLOAK_DOMAIN}"; then
-    echo "✓ Rewrite rule verified in CoreDNS config"
+REWRITE_COUNT=$(kubectl get configmap coredns -n kube-system -o yaml | grep -c "rewrite.*keycloak" || true)
+if [ "$REWRITE_COUNT" -ge 2 ]; then
+    echo "✓ Rewrite rules verified in CoreDNS config (found $REWRITE_COUNT rules)"
 else
-    echo "✗ Warning: Rewrite rule not found in CoreDNS config"
+    echo "✗ Warning: Expected 2 rewrite rules but found $REWRITE_COUNT"
     exit 1
 fi
 
