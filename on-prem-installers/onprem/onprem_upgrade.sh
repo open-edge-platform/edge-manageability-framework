@@ -803,13 +803,15 @@ sleep 10
 # Restore secret after app delete but before postgress restored
 yq e 'del(.metadata.labels, .metadata.annotations, .metadata.uid, .metadata.creationTimestamp)' postgres_secret.yaml | kubectl apply -f -
 
+sleep 30
 # Wait until PostgreSQL pod is running (Re-sync)
 start_time=$(date +%s)
 timeout=300  # 5 minutes in seconds
 set +e
 while true; do
     echo "Checking PostgreSQL pod status..."
-    podname=$(kubectl get pods -n orch-database -l app.kubernetes.io/name=postgresql -o jsonpath='{.items[0].metadata.name}')
+    # CloudNativePG uses cnpg.io/cluster label instead of app.kubernetes.io/name
+    podname=$(kubectl get pods -n orch-database -l cnpg.io/cluster=postgresql-cluster,cnpg.io/instanceRole=primary -o jsonpath='{.items[0].metadata.name}')
     pod_status=$(kubectl get pods -n orch-database "$podname" -o jsonpath='{.status.phase}')
     if [[ "$pod_status" == "Running" ]]; then
         echo "PostgreSQL pod is Running."
