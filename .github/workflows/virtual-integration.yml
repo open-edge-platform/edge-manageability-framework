@@ -501,13 +501,22 @@ jobs:
           ./ci_setup_dnsmasq.sh "kind.internal" setup
 
       - name: Start install_packages for libvirt
+        env:
+           LIBVIRT_DEFAULT_URI: 'qemu:///system'
         run: |
           cp -rf virtual-edge-node $HOME/
           cd virtual-edge-node/vm-provisioning
           # ensure script is executable
           chmod +x install_packages.sh
           ./install_packages.sh
-          
+          sudo usermod -aG libvirt $(whoami)
+          # Grant access to libvirt sockets (works immediately, no logout needed)
+          sudo chmod 666 /var/run/libvirt/libvirt-sock || true
+          sudo chmod 666 /var/run/libvirt/libvirt-sock-ro || true
+          # Restart libvirtd to refresh socket
+          sudo systemctl restart libvirtd || true
+          virsh list --all || true
+          virsh pool-list --all || true          
 
       - name: Deploy Kind Orchestrator
         id: deploy-kind-orchestrator
@@ -576,12 +585,6 @@ jobs:
           REQUESTS_CA_BUNDLE: /usr/local/share/ca-certificates/orch-ca.crt
           LIBVIRT_DEFAULT_URI: 'qemu:///system'
         run: |
-          sudo usermod -aG libvirt $(whoami)
-          # Grant access to libvirt sockets (works immediately, no logout needed)
-          sudo chmod 666 /var/run/libvirt/libvirt-sock || true
-          sudo chmod 666 /var/run/libvirt/libvirt-sock-ro || true
-          # Restart libvirtd to refresh socket
-          sudo systemctl restart libvirtd || true
           virsh list --all || true
           virsh pool-list --all || true
           KC_ADMIN_PWD=$(kubectl -n orch-platform get secrets platform-keycloak -o jsonpath='{.data.admin-password}' | base64 -d)
