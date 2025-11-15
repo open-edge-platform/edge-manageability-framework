@@ -577,6 +577,11 @@ jobs:
           LIBVIRT_DEFAULT_URI: 'qemu:///system'
         run: |
           sudo usermod -aG libvirt $(whoami)
+          # Grant access to libvirt sockets (works immediately, no logout needed)
+          sudo chmod 666 /var/run/libvirt/libvirt-sock || true
+          sudo chmod 666 /var/run/libvirt/libvirt-sock-ro || true
+          # Restart libvirtd to refresh socket
+          sudo systemctl restart libvirtd || true
           virsh list --all || true
           virsh pool-list --all || true
           KC_ADMIN_PWD=$(kubectl -n orch-platform get secrets platform-keycloak -o jsonpath='{.data.admin-password}' | base64 -d)
