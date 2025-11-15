@@ -58,35 +58,25 @@ spec:
   # All your runtime options (these become environment variables)
   additionalOptions:
     # Keycloak Hostname v2 Configuration (Keycloak 25+)
-    # CRITICAL ISSUE:
-    # Keycloak's hostname setting determines the issuer URL in OIDC tokens and .well-known/openid-configuration
-    # 
-    # SOLUTION: Use external domain for hostname, but skip validation for internal requests
-    # - Browser access: Via Traefik HTTPS (X-Forwarded-Host: keycloak.orch-XX-XX.pid.infra-host.com)
-    #   → Keycloak returns issuer: https://keycloak.orch-XX-XX.pid.infra-host.com/realms/master
-    # - Internal services (Vault): Plain HTTP to service DNS (no X-Forwarded-Host)
-    #   → Keycloak returns issuer: https://keycloak.orch-XX-XX.pid.infra-host.com/realms/master (SAME!)
-    #
-    # The trick: Internal services MUST be able to validate this external URL even from inside cluster
-    # This works because:
-    # 1. Services inside the cluster can reach external URLs via the cluster's network routing
-    # 2. The OIDC discovery endpoint just needs to respond with valid JSON
-    # 3. Vault validates the discovered issuer URL can serve OIDC tokens
-    #
-    # NOTE: Set to external domain so browsers get proper cookies and redirect URIs work
+    # Strategy: Use external HTTPS domain as hostname so that:
+    # - Browsers can access via HTTPS through Traefik
+    # - OIDC issuer URL is consistent and reachable from everywhere
+    # - Internal services (Vault) can validate the issuer URL via CoreDNS + Traefik routing
     - name: hostname
       value: "https://keycloak.{{ .Values.argo.clusterDomain }}"
     - name: hostname-admin
       value: "https://keycloak.{{ .Values.argo.clusterDomain }}"
-    # Read X-Forwarded-* headers from Traefik for correct hostname in OAuth flows
-    - name: proxy
-      value: "xforwarded"
-    # Accept requests from any hostname (Traefik adds X-Forwarded-Host header)
+    # Use relative path for health checks and metrics
+    - name: http-relative-path
+      value: "/"
+    # Accept requests with X-Forwarded-* headers from reverse proxy (Traefik)
+    - name: http-enabled
+      value: "true"
+    # Don't require strict hostname matching (Traefik may use different headers)
     - name: hostname-strict
       value: "false"
-    # For backchannel requests (like OIDC token validation), don't require HTTPS
-    - name: hostname-strict-https
-      value: "false"
+    - name: hostname-debug
+      value: "true"
     - name: db-url-properties
       value: "?tcpKeepAlives=true&socketTimeout=120&connectTimeout=120"
     - name: http-management-port
