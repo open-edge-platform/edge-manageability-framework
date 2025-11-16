@@ -52,6 +52,23 @@ This script creates two DNS rewrite rules:
 - `keycloak.orch-10-139-218-125.pid.infra-host.com` → `traefik.orch-gateway.svc.cluster.local`
 - `keycloak.kind.internal` → `traefik.orch-gateway.svc.cluster.local`
 
+## CI/Mage Deployment Note
+
+When using the Mage build system (`./.github/actions/deploy_kind`), CoreDNS configuration is automatically handled:
+
+```go
+// In mage/deploy.go - CoreDNS configuration function
+// This function is called by the mage deploy command
+// It now ALWAYS configures CoreDNS, even for local-only domains like kind.internal
+// Previously it had a skip condition for local domains, which caused CI failures
+
+// CoreDNS rewrite is REQUIRED for all deployments because secrets-config pod uses
+// keycloak.kind.internal to reach Keycloak for OIDC discovery validation.
+// Without the DNS rewrite rules, the pod cannot reach OIDC endpoint and will timeout.
+```
+
+**Important**: The Mage build system was previously skipping CoreDNS configuration for local-only domains. This has been fixed - CoreDNS is now always configured regardless of domain type.
+
 ## Verification
 
 After deployment, verify the setup with:
