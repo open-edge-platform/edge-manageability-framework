@@ -1336,21 +1336,13 @@ func (d Deploy) configureCoreDNSKeycloak(targetEnv string) error {
 		return nil
 	}
 
-	// Skip CoreDNS rewrite for local-only domains (no external load balancer)
-	// These domains are used in dev/CI environments where services are accessed internally only
-	localOnlyDomains := []string{
-		"kind.internal",
-		"localhost",
-		"127.0.0.1",
-	}
-	for _, localDomain := range localOnlyDomains {
-		if strings.Contains(clusterDomain, localDomain) {
-			fmt.Printf("Skipping CoreDNS Keycloak rewrite for local-only domain: %s\n", clusterDomain)
-			return nil
-		}
-	}
+	// CoreDNS rewrite is REQUIRED for all deployments because secrets-config pod uses
+	// keycloak.kind.internal to reach Keycloak for OIDC discovery validation.
+	// Without the DNS rewrite rules, the pod cannot reach OIDC endpoint and will timeout.
+	// Previously this was only configured for external domains, but local-only domains
+	// like kind.internal also need the rewrite rules to work properly.
 
-	fmt.Printf("Configuring CoreDNS rewrite for Keycloak external URL: %s\n", clusterDomain)
+	fmt.Printf("Configuring CoreDNS rewrite for Keycloak OIDC discovery with domain: %s\n", clusterDomain)
 
 	// Run the configure script
 	scriptPath := filepath.Join("installer", "configure-coredns-keycloak.sh")
