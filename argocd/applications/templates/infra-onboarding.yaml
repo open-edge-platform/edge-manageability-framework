@@ -20,7 +20,7 @@ spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
     - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
-      path: {{$appName}}
+      path: infra/charts/{{$appName}}
       targetRevision: COAO_Changes
       helm:
         releaseName: {{$appName}}
