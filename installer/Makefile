@@ -122,20 +122,22 @@ ${M}/argocd-ready: | ${M}/argocd-release
 	${HOME}/await-argo.sh
 	touch $@
 
-# CoreDNS rewrite for Keycloak is required for OIDC discovery
-# secrets-config pod uses keycloak.kind.internal to reach Keycloak via OIDC discovery
-# CoreDNS rewrites both external cluster domain and kind.internal to Traefik service
-${M}/coredns-keycloak: | ${M}/argocd-ready
-	@echo "Configuring CoreDNS for Keycloak OIDC discovery..."
-	@CLUSTER_DOMAIN=$$(yq -r '.argo.clusterDomain' ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/orch-configs/clusters/${TARGET_ENV}.yaml); \
-	if [ -n "$$CLUSTER_DOMAIN" ] && [ "$$CLUSTER_DOMAIN" != "null" ]; then \
-		${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/installer/configure-coredns-keycloak.sh "$$CLUSTER_DOMAIN"; \
-	else \
-		echo "Warning: clusterDomain not found in cluster config, skipping CoreDNS configuration"; \
-	fi
-	touch $@
+# CoreDNS configuration is NO LONGER NEEDED after Keycloak migration
+# Services now use internal Keycloak URL: http://platform-keycloak.keycloak-system.svc.cluster.local
+# External browser access via https://keycloak.{domain} is handled by Traefik IngressRoute
+# Keycloak uses hostname-strict=false to dynamically resolve URLs from request headers
+#${M}/coredns-keycloak: | ${M}/argocd-ready
+#	@echo "Configuring CoreDNS for Keycloak OIDC discovery..."
+#	@CLUSTER_DOMAIN=$$(yq -r '.argo.clusterDomain' ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/orch-configs/clusters/${TARGET_ENV}.yaml); \
+#	if [ -n "$$CLUSTER_DOMAIN" ] && [ "$$CLUSTER_DOMAIN" != "null" ]; then \
+#		${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/installer/configure-coredns-keycloak.sh "$$CLUSTER_DOMAIN"; \
+#	else \
+#		echo "Warning: clusterDomain not found in cluster config, skipping CoreDNS configuration"; \
+#	fi
+#	touch $@
 
-${M}/deploy-orch: | ${M}/coredns-keycloak
+# Remove coredns-keycloak dependency since it's no longer needed
+${M}/deploy-orch: | ${M}/argocd-ready
 	@[ -z "${TARGET_ENV}" ] && echo "*** TARGET_ENV not set" && exit 1 || true
 	helm upgrade --install root-app ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/argocd/root-app -n ${TARGET_ENV} -f ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/orch-configs/clusters/${TARGET_ENV}.yaml --create-namespace
 	touch $@

@@ -1630,10 +1630,15 @@ func (d Deploy) orchLocal(targetEnv string) error {
 		return fmt.Errorf("error updating deployment repo content: %w", err)
 	}
 
-	// Configure CoreDNS rewrite for Keycloak external URL
+	// CoreDNS configuration is NO LONGER NEEDED after Keycloak migration
+	// Services now use internal Keycloak URL: http://platform-keycloak.keycloak-system.svc.cluster.local
+	// External browser access via https://keycloak.{domain} is handled by Traefik IngressRoute
+	// Keycloak uses hostname-strict=false to dynamically resolve URLs from request headers
+	/*
 	if err := d.configureCoreDNSKeycloak(targetEnv); err != nil {
 		return fmt.Errorf("error configuring CoreDNS for Keycloak: %w", err)
 	}
+	*/
 
 	var subDomain string
 	deployRevision := giteaDeployRevisionParam()
