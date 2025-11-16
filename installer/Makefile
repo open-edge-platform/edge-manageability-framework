@@ -122,20 +122,17 @@ ${M}/argocd-ready: | ${M}/argocd-release
 	${HOME}/await-argo.sh
 	touch $@
 
-# CoreDNS rewrite for Keycloak is not needed - backend services use internal service URL directly
-# Keeping this target for reference, can be re-enabled if needed
-# ${M}/coredns-keycloak: | ${M}/argocd-ready
-# 	@echo "Configuring CoreDNS for Keycloak external URL..."
-# 	@CLUSTER_DOMAIN=$$(yq -r '.argo.clusterDomain' ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/orch-configs/clusters/${TARGET_ENV}.yaml); \
-# 	if [ -n "$$CLUSTER_DOMAIN" ] && [ "$$CLUSTER_DOMAIN" != "null" ]; then \
-# 		${HOME}/configure-coredns-keycloak.sh "$$CLUSTER_DOMAIN"; \
-# 	else \
-# 		echo "Warning: clusterDomain not found in cluster config, skipping CoreDNS configuration"; \
-# 	fi
-# 	touch $@
-
-${M}/coredns-keycloak:
-	@echo "CoreDNS rewrite not needed - backend services use internal Keycloak URL"
+# CoreDNS rewrite for Keycloak is required for OIDC discovery
+# secrets-config pod uses keycloak.kind.internal to reach Keycloak via OIDC discovery
+# CoreDNS rewrites both external cluster domain and kind.internal to Traefik service
+${M}/coredns-keycloak: | ${M}/argocd-ready
+	@echo "Configuring CoreDNS for Keycloak OIDC discovery..."
+	@CLUSTER_DOMAIN=$$(yq -r '.argo.clusterDomain' ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/orch-configs/clusters/${TARGET_ENV}.yaml); \
+	if [ -n "$$CLUSTER_DOMAIN" ] && [ "$$CLUSTER_DOMAIN" != "null" ]; then \
+		${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/installer/configure-coredns-keycloak.sh "$$CLUSTER_DOMAIN"; \
+	else \
+		echo "Warning: clusterDomain not found in cluster config, skipping CoreDNS configuration"; \
+	fi
 	touch $@
 
 ${M}/deploy-orch: | ${M}/coredns-keycloak
