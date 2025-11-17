@@ -2,9 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Keycloak internal service URL
-{{- $keycloakUrl := "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master" }}
-
 global:
   registry:
     name: "{{ .Values.argo.containerRegistryURL }}/"
@@ -38,9 +35,6 @@ host-manager:
   {{- end}}
   metrics:
     enabled: {{ index .Values.argo "infra-managers" "enableMetrics" | default false }}
-  oidc_server_url: {{ $keycloakUrl }}
-  oidc:
-    oidc_server_url: {{ $keycloakUrl }}
 
 maintenance-manager:
   mimaintmgr:
@@ -62,9 +56,6 @@ maintenance-manager:
   {{- end}}
   metrics:
     enabled: {{ index .Values.argo "infra-managers" "enableMetrics" | default false }}
-  oidc_server_url: {{ $keycloakUrl }}
-  oidc:
-    oidc_server_url: {{ $keycloakUrl }}
 
 networking-manager:
   serviceArgs:
@@ -79,9 +70,6 @@ networking-manager:
   {{- end}}
   metrics:
     enabled: {{ index .Values.argo "infra-managers" "enableMetrics" | default false }}
-  oidc_server_url: {{ $keycloakUrl }}
-  oidc:
-    oidc_server_url: {{ $keycloakUrl }}
 
 telemetry-manager:
   telemetryMgrArgs:
@@ -103,9 +91,6 @@ telemetry-manager:
   {{- end}}
   {{- end}}
   {{- end}}
-  oidc_server_url: {{ $keycloakUrl }}
-  oidc:
-    oidc_server_url: {{ $keycloakUrl }}
 
 os-resource-manager:
   autoProvision:
@@ -165,7 +150,3 @@ attestationstatus-manager:
   {{- end}}
   metrics:
     enabled: {{ index .Values.argo "infra-managers" "enableMetrics" | default false }}
-  oidc_server_url: {{ $keycloakUrl }}
-  oidc:
-    oidc_server_url: {{ $keycloakUrl }}
-

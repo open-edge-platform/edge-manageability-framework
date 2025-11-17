@@ -94,10 +94,6 @@ amt:
   {{- if .Values.argo.traefik }}
     tlsOption: {{ .Values.argo.traefik.tlsOption | default "" | quote }}
   {{- end }}
-    env:
-      oidc:
-        # Keycloak internal service URL
-        oidc_server_url: "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master"
 
   mps:
     postgresql:

@@ -24,8 +24,3 @@ resources:
 logging:
   level: info
 {{- end }}
-
-# Keycloak internal service URL
-# Backend services access Keycloak directly via cluster DNS, bypassing Traefik
-oidc:
-  oidc_server_url: "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master"

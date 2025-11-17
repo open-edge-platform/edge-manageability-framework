@@ -16,8 +16,3 @@ imagePullSecrets:
   {{- with .Values.argo.imagePullSecrets }}
     {{- toYaml . | nindent 2 }}
   {{- end }}
-
-auth:
-  oidc:
-    idPAddr: "http://platform-keycloak.keycloak-system.svc.cluster.local"
-    idPDiscoveryURL: "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master"

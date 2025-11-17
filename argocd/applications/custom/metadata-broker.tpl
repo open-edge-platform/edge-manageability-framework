@@ -25,7 +25,3 @@ resources:
 opaResources:
   {{- toYaml . | nindent 2}}
 {{- end }}
-
-# Keycloak internal service URL
-openidc:
-  issuer: "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master"
