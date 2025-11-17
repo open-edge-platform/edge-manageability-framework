@@ -54,7 +54,7 @@ sequenceDiagram
 The KVM state machine:
 
 | State | Description |
-|-------|-------------|
+| ----- | ----------- |
 | `KVM_STATE_IDLE` | No active session, default state |
 | `KVM_STATE_REQUESTED` | User requested KVM access (desired state) |
 | `KVM_STATE_ACTIVE` | Session established with valid token |
@@ -269,7 +269,7 @@ Sec-WebSocket-Protocol: {jwt_token}
 **Query Parameters:**
 
 | Parameter | Value | Description |
-|-----------|-------|-------------|
+| --------- | ----- | ----------- |
 | `host` | Device GUID | AMT device identifier |
 | `port` | `16994` | KVM redirection port (16995=SOL, 16996=IDER) |
 | `p` | `2` | Protocol type (2=redirection) |
@@ -467,7 +467,7 @@ MPS Route Implementation: <https://github.com/device-management-toolkit/mps/blob
 <!-- markdownlint-disable MD013 -->
 
 | Endpoint | Method | Purpose | Used For | WSMAN Call |
-|----------|--------|---------|----------|------------|
+| -------- | ------ | ------- | -------- | ---------- |
 | `/api/v1/amt/userConsentCode/{guid}` | GET | Request consent code (ACM mode) | Trigger 6-digit code display | IPS_OptInService.StartOptIn |
 | `/api/v1/amt/userConsentCode/{guid}` | POST | Submit user consent code | Validate 6-digit code | IPS_OptInService.SendOptInCode |
 | `/api/v1/amt/userConsentCode/cancel/{guid}` | GET | Cancel consent request | Abort pending consent | IPS_OptInService.CancelOptIn |
