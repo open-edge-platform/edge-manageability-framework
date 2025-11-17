@@ -580,30 +580,6 @@ jobs:
           asdf install
           popd
 
-      - name: Install KubeVirt
-        run: |
-          set -e
-          KUBEVIRT_VERSION=$(curl -s https://api.github.com/repos/kubevirt/kubevirt/releases/latest | grep tag_name | cut -d '"' -f4)
-          echo "Installing KubeVirt version: $KUBEVIRT_VERSION"
-  
-          kubectl apply -f https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VERSION}/kubevirt-operator.yaml
-          kubectl apply -f https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VERSION}/kubevirt-cr.yaml
-  
-          echo "Waiting for KubeVirt to become available..."
-          kubectl -n kubevirt wait kv kubevirt --for condition=Available --timeout=10m
-
-      - name: Install CDI
-        run: |
-          set -e
-          CDI_VERSION=$(curl -s https://api.github.com/repos/kubevirt/containerized-data-importer/releases/latest | grep tag_name | cut -d '"' -f4)
-          echo "Installing CDI version: $CDI_VERSION"
-  
-          kubectl apply -f https://github.com/kubevirt/containerized-data-importer/releases/download/${CDI_VERSION}/cdi-operator.yaml
-          kubectl apply -f https://github.com/kubevirt/containerized-data-importer/releases/download/${CDI_VERSION}/cdi-cr.yaml
-          
-          echo "Waiting for CDI..."
-          kubectl -n cdi wait cdi cdi --for condition=Available --timeout=10m 
-
       - name: Run Golden Suite Robot Framework Tests
         id: robot-tests
         timeout-minutes: 45
