@@ -19,9 +19,9 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
-    - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
-      chart: orch-ui/charts/orch-metadata-broker
-      targetRevision: 0.4.11
+    - repoURL: https://github.com/open-edge-platform/orch-metadata-broker
+      path: deployments/orch-metadata-broker
+      targetRevision: vignesh-test
       helm:
         releaseName: {{$appName}}
         valuesObject:
