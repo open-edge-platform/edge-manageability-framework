@@ -1,11 +1,11 @@
 # EMF System Architecture - Kubernetes Pods Overview
 
-This document provides an overview of the Kubernetes pods running in the EMF system, grouped by namespace with functionality descriptions.
+This document provides an overview of the Kubernetes pods running in the EMF system, grouped by namespace.
 
 ## Pod Distribution by Namespace
 
 | **Namespace** | **Pod Count** | **Functionality** |
-|---------------|---------------|-------------------|
+| --------------- | --------------- | ------------------- |
 | **argocd** | 6 | GitOps continuous delivery for Kubernetes application deployment and lifecycle management |
 | **calico-system** | 3 | Container networking and security policy enforcement for pod-to-pod communication |
 | **capi-operator-system** | 1 | Cluster API operator for managing Kubernetes cluster lifecycle automation |
@@ -53,7 +53,7 @@ The EMF system consists of **212 pods** across **29 namespaces**, providing comp
 ## Individual Pod Details
 
 | **Pod Name** | **Namespace** | **Functionality** |
-|--------------|---------------|-------------------|
+| -------------- | --------------- | ------------------- |
 | argocd-application-controller | argocd | Manages application resources and reconciles desired state with actual cluster state |
 | argocd-applicationset-controller | argocd | Generates and manages multiple ArgoCD applications from templates |
 | argocd-notifications-controller | argocd | Sends notifications about application deployment status and events |
