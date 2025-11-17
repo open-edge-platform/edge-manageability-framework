@@ -75,11 +75,11 @@ The KVM state machine:
 #### Start KVM Session
 
 ```bash
-# First, authenticate with Keycloak 
+# First, authenticate with Keycloak
 orch-cli login <keycloakuser> <userpassword> \
   --keycloak https://api.${CLUSTER}/realms/master
 
-# Start KVM session 
+# Start KVM session
 orch-cli set host <host-resource-id> --project <project name> \
   --api-endpoint "https://api.${CLUSTER}" \
   --kvm start
@@ -92,14 +92,14 @@ KVM Session Requested:
   Host: <host-resource-id>
   Session URL: wss://mps.${CLUSTER}/kvm/<session-id>
   Expires:
-  
+
 Open the URL in a browser to access the KVM console.
 ```
 
 #### 2. Stop KVM Session
 
 ```bash
-# Stop active KVM session 
+# Stop active KVM session
 orch-cli set host <host-resource-id> --project <project name> \
   --api-endpoint "https://api.${CLUSTER}" \
   --kvm stop
@@ -116,7 +116,7 @@ KVM Session Stopped:
 #### 3. Check KVM Status
 
 ```bash
-# Query current KVM state 
+# Query current KVM state
 orch-cli get host <host-resource-id> --project <project name> \
   --api-endpoint "https://api.${CLUSTER}"
 ```
@@ -185,56 +185,117 @@ The KVM operation involves the following EMF components:
 
 This section provides API endpoints for KVM remote console operations.
 
-#### 1. Start KVM Session
+#### 1. Enable KVM Session
 
+**Endpoint:** `POST /api/v1/amt/features/{guid}`
 
+**Purpose:** Enable KVM, SOL, and IDER redirection features on AMT device
 
-**Response (CCM Mode - Success):**
+**Request:**
 
+```bash
+curl -sk -X POST https://{MPS_URL}/api/v1/amt/features/{DEVICE_GUID} \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userConsent": "none",
+    "enableKVM": true,
+    "enableSOL": true,
+    "enableIDER": true
+  }'
+```
 
+**Request Body Schema (SetAMTFeaturesRequest):**
 
-**Response (ACM Mode - Consent Required):**
+```json
+{
+  "userConsent": "none",       // Required: "kvm", "all", or "none"
+  "enableKVM": true,           // Required: Enable Keyboard-Video-Mouse redirection
+  "enableSOL": true,           // Required: Enable Serial Over LAN
+  "enableIDER": true,          // Required: Enable IDE Redirection
+  "redirection": true,         // Optional: Enable all redirection
+  "enableAll": false,          // Optional: Enable all features
+  "ocr": false                 // Optional: Enable Optical Character Recognition
+}
+```
 
+**User Consent Values:**
 
+- `"none"` = CCM mode (Client Control Mode) - No consent required
+- `"kvm"` = ACM mode (Admin Control Mode) - 6-digit consent code
+  required for KVM only
+- `"all"` = ACM mode - Consent required for all redirection operations
+
+**Response (SetAMTFeaturesResponse):**
+
+```json
+{
+  "status": "Updated AMT Features"
+}
+```
+
+**To Verify Configuration, Get Current Features:**
+
+**Endpoint:** `GET /api/v1/amt/features/{guid}`
+
+**Response (GetAMTFeaturesResponse):**
+
+```json
+{
+  "userConsent": "none",
+  "redirection": false,
+  "KVM": true,
+  "SOL": true,
+  "IDER": true,
+  "optInState": 0,
+  "ocr": true,
+  "httpsBootSupported": true,
+  "winREBootSupported": true,
+  "localPBABootSupported": true,
+  "remoteErase": false
+}
+```
 
 #### 2. WebSocket Connection (Client to MPS)
 
+**URL:** `wss://{MPS_URL}/relay/webrelay.ashx?host={guid}&port=16994&p=2&mode=kvm`
 
+**Headers:**
+
+```text
+Sec-WebSocket-Protocol: {jwt_token}
+```
+
+**Query Parameters:**
+
+| Parameter | Value | Description |
+|-----------|-------|-------------|
+| `host` | Device GUID | AMT device identifier |
+| `port` | `16994` | KVM redirection port (16995=SOL, 16996=IDER) |
+| `p` | `2` | Protocol type (2=redirection) |
+| `mode` | `kvm` | Session mode (kvm, sol, or ider) |
+| `tls` | `0` or `1` | TLS encryption flag |
+| `tls1only` | `0` or `1` | Restrict to TLS 1.x only |
 
 #### 3. Submit Consent Code
 
-**Endpoint:** 
+**Endpoint:**
 
 **Request:**
-
-
 
 **Response (Invalid Code):**
 
-
-
 #### 4. Get Consent Status
 
-**Endpoint:** 
+**Endpoint:**
 
 **Response:**
-
 
 #### 5. Cancel Consent Request
 
-**Endpoint:** 
+**Endpoint:**
 
 **Response:**
-
-
-#### 6. Stop KVM Session (Disconnect)
-
-**Endpoint:** 
-
-**Request:**
-
-**Response:**
-
 
 #### orch-utils Tenancy API Mapping
 
@@ -399,9 +460,7 @@ The following illustrates the control plane (session setup) and data plane
 orch-cli → apiv2 → inventory → dm-manager → MPS
 ```
 
-#### dm-manager to MPS Operations
-
-**Primary KVM Endpoints:**
+#### Primary KVM Endpoints
 
 MPS Route Implementation: <https://github.com/device-management-toolkit/mps/blob/main/src/routes/amt/index.ts>
 
@@ -409,7 +468,6 @@ MPS Route Implementation: <https://github.com/device-management-toolkit/mps/blob
 
 | Endpoint | Method | Purpose | Used For | WSMAN Call |
 |----------|--------|---------|----------|------------|
-| `/api/v1/amt/kvm/{deviceId}` | POST | Start/Stop KVM session | Connect/disconnect KVM | CIM_KVMRedirectionSAP |
 | `/api/v1/amt/userConsentCode/{guid}` | GET | Request consent code (ACM mode) | Trigger 6-digit code display | IPS_OptInService.StartOptIn |
 | `/api/v1/amt/userConsentCode/{guid}` | POST | Submit user consent code | Validate 6-digit code | IPS_OptInService.SendOptInCode |
 | `/api/v1/amt/userConsentCode/cancel/{guid}` | GET | Cancel consent request | Abort pending consent | IPS_OptInService.CancelOptIn |
