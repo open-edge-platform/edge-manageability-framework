@@ -86,7 +86,6 @@ runs:
         kubectl get pods -o wide -A > "$ORCH_PROFILE-diagnostics/pods-list.txt"
         kubectl describe pods -A > "$ORCH_PROFILE-diagnostics/pods-describe.txt"
         # mage logutils:collectArgoDiags > "$ORCH_PROFILE-diagnostics/argo-diag.txt"
-        kubectl get IPAddressPool -o yaml -A > "$ORCH_PROFILE-diagnostics/ippools.yaml"
         kubectl get applications -o yaml -A > "$ORCH_PROFILE-diagnostics/argocd-applications.yaml"
         kubectl get events -o yaml -A > "$ORCH_PROFILE-diagnostics/events.yaml"
 
@@ -99,6 +98,5 @@ runs:
           ${{ inputs.orch_profile }}-diagnostics/pods-list.txt
           ${{ inputs.orch_profile }}-diagnostics/pods-describe.txt
           # ${{ inputs.orch_profile }}-diagnostics/argo-diag.txt
-          ${{ inputs.orch_profile }}-diagnostics/ippools.yaml
           ${{ inputs.orch_profile }}-diagnostics/argocd-applications.yaml
           ${{ inputs.orch_profile }}-diagnostics/events.yaml
