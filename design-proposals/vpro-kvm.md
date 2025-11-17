@@ -286,10 +286,23 @@ mode is enabled, requiring user consent for all redirection operations.
 
 **URL:** `wss://{MPS_URL}/relay/webrelay.ashx?host={guid}&port=16994&p=2&mode=kvm`
 
+**Authentication Requirements:**
+
+The WebSocket connection requires two-step authentication:
+
+1. Keycloak JWT token from `/realms/master/protocol/openid-connect/token`
+2. MPS redirect token from `/api/v1/authorize/redirection/{guid}` using
+   Keycloak JWT
+3. WebSocket connection requires BOTH tokens:
+   - Redirect token → `Sec-WebSocket-Protocol` header
+   - Keycloak JWT → `Cookie: jwt={token}` header (Traefik middleware
+     requirement)
+
 **Headers:**
 
 ```text
-Sec-WebSocket-Protocol: {jwt_token}
+Sec-WebSocket-Protocol: {redirect_token}
+Cookie: jwt={keycloak_jwt_token}
 ```
 
 **Query Parameters:**
@@ -302,6 +315,33 @@ Sec-WebSocket-Protocol: {jwt_token}
 | `mode` | `kvm` | Session mode (kvm, sol, or ider) |
 | `tls` | `0` or `1` | TLS encryption flag |
 | `tls1only` | `0` or `1` | Restrict to TLS 1.x only |
+
+**Example Implementation:**
+
+```bash
+# Step 1: Get Keycloak JWT token
+JWT_TOKEN=$(curl -s -X POST \
+  "https://keycloak.{host}/realms/master/protocol/openid-connect/token" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=password" \
+  -d "client_id=system-client" \
+  -d "username=edgeinfra-api-user" \
+  -d "password=ChangeMeOn1stLogin!" | jq -r '.access_token')
+
+# Step 2: Get MPS redirect token
+REDIRECT_TOKEN=$(curl -s -X GET \
+  "https://mps-wss.{host}/api/v1/authorize/redirection/{guid}" \
+  -H "Authorization: Bearer ${JWT_TOKEN}" | jq -r '.token')
+
+# Step 3: Connect to WebSocket with both tokens
+# URL: wss://mps-wss.{host}/relay/webrelay.ashx?host={guid}&port=16994&p=2&mode=kvm
+# Headers:
+#   Sec-WebSocket-Protocol: {REDIRECT_TOKEN}
+#   Cookie: jwt={JWT_TOKEN}
+```
+
+**Note:** The WebSocket connection opens an RFB protocol
+stream for KVM data transmission between the browser/client and the AMT device.
 
 #### 3. Submit Consent Code
 
@@ -498,7 +538,7 @@ MPS Route Implementation: <https://github.com/device-management-toolkit/mps/blob
 | `/api/v1/amt/userConsentCode/{guid}` | POST | Submit user consent code | Validate 6-digit code | IPS_OptInService.SendOptInCode |
 | `/api/v1/amt/userConsentCode/cancel/{guid}` | GET | Cancel consent request | Abort pending consent | IPS_OptInService.CancelOptIn |
 | `/api/v1/amt/redirection/{deviceId}` | GET | Get redirection capabilities | Check KVM/SOL/IDER status | CIM_RedirectionService |
-| `/ws/relay` or `/relay/webrelay.ashx` | WebSocket | KVM data relay (RFB protocol) | Video/keyboard/mouse stream | CIRA tunnel |
+| `/relay/webrelay.ashx` | WebSocket | KVM data relay (RFB protocol) | Video/keyboard/mouse stream | CIRA tunnel |
 
 ## Implementation Design
 
