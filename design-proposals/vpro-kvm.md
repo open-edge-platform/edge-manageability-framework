@@ -251,10 +251,36 @@ curl -sk -X POST https://{MPS_URL}/api/v1/amt/features/{DEVICE_GUID} \
   "ocr": true,
   "httpsBootSupported": true,
   "winREBootSupported": true,
-  "localPBABootSupported": true,
-  "remoteErase": false
+```
+
+**Default Features After Device Connection:**
+
+By default, when a device is connected and activated, the following features
+are enabled:
+
+```bash
+curl -s -X GET "https://{MPS_URL}/api/v1/amt/features/{guid}" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ${JWT_TOKEN}" | jq '.'
+```
+
+**Default Response:**
+
+```json
+{
+  "userConsent": "all",
+  "redirection": true,
+  "KVM": true,
+  "SOL": true,
+  "IDER": false,
+  "optInState": 0,
+  "kvmAvailable": true
 }
 ```
+
+**Note:** The default configuration has `userConsent: "all"` which means ACM
+mode is enabled, requiring user consent for all redirection operations.
+`kvmAvailable: true` indicates the device supports KVM functionality.
 
 #### 2. WebSocket Connection (Client to MPS)
 
