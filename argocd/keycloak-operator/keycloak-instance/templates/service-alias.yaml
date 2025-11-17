@@ -23,6 +23,7 @@ metadata:
     app.kubernetes.io/component: alias
   annotations:
     description: "ExternalName service providing DNS alias to keycloak-system/platform-keycloak"
+    # trivy:ignore:AVD-KSV-0108 This uses ExternalName (not externalIPs), which is NOT vulnerable to CVE-2020-8554
 spec:
   type: ExternalName
   externalName: platform-keycloak.keycloak-system.svc.cluster.local
