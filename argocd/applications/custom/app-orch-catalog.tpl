@@ -24,9 +24,8 @@ traefikReverseProxy:
 {{- if .Values.argo.traefik }}
   tlsOption: {{ .Values.argo.traefik.tlsOption | default "" | quote }}
 {{- end }}
-# Keycloak internal service URL
 openidc:
-  external: "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master"
+  external: "https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master"
 {{- if .Values.argo.catalog.storageClass }}
 storageClassName: {{ .Values.argo.catalog.storageClass }}
 {{- end }}

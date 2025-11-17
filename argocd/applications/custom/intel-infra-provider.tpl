@@ -31,7 +31,3 @@ southboundApi:
   resources:
     {{- toYaml . | nindent 4 }}
 {{- end }}
-
-# Keycloak internal service URL
-oidc:
-  oidc_server_url: "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master"
