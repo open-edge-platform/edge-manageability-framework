@@ -5,7 +5,7 @@
 {{- $appName        := "copy-database-to-keycloak" }}
 {{- $chartName      := "copy-secret" }}
 {{- $namespace      := "keycloak-system" }}
-{{- $syncWave       := "100" }}
+{{- $syncWave       := "145" }}
 ---
 {{- if (index .Values.argo.enabled $appName) }}
 apiVersion: argoproj.io/v1alpha1
