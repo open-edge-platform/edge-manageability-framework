@@ -96,7 +96,7 @@ amt:
   {{- end }}
     env:
       oidc:
-        # Keycloak OIDC URL - use internal service URL to avoid unnecessary Traefik load
+        # Keycloak internal service URL
         oidc_server_url: "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master"
 
   mps:

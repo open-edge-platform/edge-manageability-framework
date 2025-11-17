@@ -1319,48 +1319,6 @@ func commitAndPushGiteaRepo(gitRepoPath, gitUsername, gitPassword string) error 
 	return nil
 }
 
-// configureCoreDNSKeycloak configures CoreDNS to rewrite Keycloak external URL to internal Traefik service
-// This is needed because pods inside the cluster cannot reach the external load balancer IP (hairpin routing issue)
-// For local-only domains (e.g., kind.internal), this configuration is skipped since no external LB exists
-// func (d Deploy) configureCoreDNSKeycloak(targetEnv string) error {
-// 	// Get cluster domain from target config
-// 	targetConfig := getTargetConfig(targetEnv)
-// 	clusterDomain, err := script.Exec(fmt.Sprintf("yq eval '.argo.clusterDomain' %s", targetConfig)).String()
-// 	if err != nil {
-// 		return fmt.Errorf("error reading clusterDomain from config: %w", err)
-// 	}
-// 	clusterDomain = strings.TrimSpace(clusterDomain)
-
-// 	if clusterDomain == "" || clusterDomain == "null" {
-// 		fmt.Println("No clusterDomain configured, skipping CoreDNS Keycloak rewrite")
-// 		return nil
-// 	}
-
-// 	// CoreDNS rewrite is REQUIRED for all deployments because secrets-config pod uses
-// 	// keycloak.kind.internal to reach Keycloak for OIDC discovery validation.
-// 	// Without the DNS rewrite rules, the pod cannot reach OIDC endpoint and will timeout.
-// 	// Previously this was only configured for external domains, but local-only domains
-// 	// like kind.internal also need the rewrite rules to work properly.
-
-// 	fmt.Printf("Configuring CoreDNS rewrite for Keycloak OIDC discovery with domain: %s\n", clusterDomain)
-
-// 	// Run the configure script
-// 	scriptPath := filepath.Join("installer", "configure-coredns-keycloak.sh")
-// 	if _, err := os.Stat(scriptPath); err != nil {
-// 		return fmt.Errorf("CoreDNS configuration script not found: %w", err)
-// 	}
-
-// 	cmd := exec.Command(scriptPath, clusterDomain)
-// 	cmd.Stdout = os.Stdout
-// 	cmd.Stderr = os.Stderr
-// 	if err := cmd.Run(); err != nil {
-// 		return fmt.Errorf("error running CoreDNS configuration script: %w", err)
-// 	}
-
-// 	fmt.Println("✓ CoreDNS configured successfully")
-// 	return nil
-// }
-
 // updateDeployRepo updates the deployment repository with the latest changes
 func (d Deploy) updateDeployRepo(targetEnv, gitRepoPath, repoName, localClonePath string) error {
 	// Get the current working directory so we can return to it when this function exits
@@ -1629,16 +1587,6 @@ func (d Deploy) orchLocal(targetEnv string) error {
 	if err := (Deploy{}).updateDeployRepo(targetEnv, deployRepoPath, deployRepoName, deployGiteaRepoDir); err != nil {
 		return fmt.Errorf("error updating deployment repo content: %w", err)
 	}
-
-	// CoreDNS configuration is NO LONGER NEEDED after Keycloak migration
-	// Services now use internal Keycloak URL: http://platform-keycloak.keycloak-system.svc.cluster.local
-	// External browser access via https://keycloak.{domain} is handled by Traefik IngressRoute
-	// Keycloak uses hostname-strict=false to dynamically resolve URLs from request headers
-	/*
-		if err := d.configureCoreDNSKeycloak(targetEnv); err != nil {
-			return fmt.Errorf("error configuring CoreDNS for Keycloak: %w", err)
-		}
-	*/
 
 	var subDomain string
 	deployRevision := giteaDeployRevisionParam()

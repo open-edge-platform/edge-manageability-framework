@@ -55,23 +55,13 @@ spec:
       cpu: 2000m
       memory: 2Gi
   
-  # All your runtime options (these become environment variables)
+  # Keycloak runtime configuration options
   additionalOptions:
-    # Keycloak Hostname Configuration
-    # Strategy: Match Bitnami mainline behavior - no explicit hostname, use header-based resolution
-    # - hostname-strict=false allows Keycloak to resolve URLs from request headers (like Bitnami)
-    # - Internal services access via http://platform-keycloak.keycloak-system.svc.cluster.local
-    # - External browsers access via https://keycloak.{{ .Values.argo.clusterDomain }} through Traefik
-    # - Keycloak dynamically resolves issuer based on incoming request Host/X-Forwarded-* headers
-    # - This matches the working Bitnami deployment behavior
-    
-    # Disable strict hostname checking (allows header-based URL resolution like Bitnami)
+    # Hostname configuration: use header-based resolution for dynamic URL discovery
     - name: hostname-strict
       value: "false"
-    # Use relative path for health checks and metrics
     - name: http-relative-path
       value: "/"
-    # Accept requests with X-Forwarded-* headers from reverse proxy (Traefik)
     - name: http-enabled
       value: "true"
     - name: db-url-properties
@@ -89,7 +79,7 @@ spec:
   
   instances: 1
   
-  # Init container + security hardening
+  # Pod template for security hardening and init container
   unsupported:
     podTemplate:
       spec:
@@ -100,7 +90,7 @@ spec:
           seccompProfile:
             type: RuntimeDefault
         
-        # Init container with ONLY valid build options
+        # Init container for building optimized Keycloak image
         initContainers:
           - name: keycloak-builder
             image: quay.io/keycloak/keycloak:26.4.5
@@ -110,22 +100,14 @@ spec:
               - -c
               - |
                 set -e
-                echo "Starting Keycloak build process..."
-                
-                # Use ONLY valid build-time options
                 /opt/keycloak/bin/kc.sh build \
                   --db=postgres \
                   --health-enabled=true \
                   --metrics-enabled=true \
                   --http-relative-path=/
                 
-                echo "Build completed successfully!"
-                echo "Copying built artifacts to shared volume..."
-                
                 mkdir -p /shared/keycloak
                 cp -r /opt/keycloak/* /shared/keycloak/
-                
-                echo "✅ Keycloak build and copy completed successfully!"
             
             securityContext:
               allowPrivilegeEscalation: false

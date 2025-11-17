@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Keycloak URLs - use internal service URL to avoid unnecessary Traefik load
+# Keycloak internal service URL
 {{- $keycloakUrl := "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master" }}
 {{- $keycloakBaseUrl := "http://platform-keycloak.keycloak-system.svc.cluster.local" }}
 

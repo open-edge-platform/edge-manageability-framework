@@ -17,9 +17,6 @@ imagePullSecrets:
     {{- toYaml . | nindent 2 }}
   {{- end }}
 
-# Keycloak OIDC configuration
-# Use internal service URL (like Bitnami mainline) - no CoreDNS rewrites needed
-# Internal cluster communication uses cluster-internal DNS
 auth:
   oidc:
     idPAddr: "http://platform-keycloak.keycloak-system.svc.cluster.local"

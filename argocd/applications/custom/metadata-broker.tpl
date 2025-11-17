@@ -26,6 +26,6 @@ opaResources:
   {{- toYaml . | nindent 2}}
 {{- end }}
 
-# Keycloak issuer - use internal service URL to avoid unnecessary Traefik load
+# Keycloak internal service URL
 openidc:
   issuer: "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master"
