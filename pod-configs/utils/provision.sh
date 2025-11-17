@@ -1103,8 +1103,8 @@ EOF
             echo "FILE_SYSTEM_ID=${efs_file_system_id}" >> ~/.env
         fi
 
-        # export S3 prefix to .env
-        s3_prefix=$(terraform show -json | jq -r '.values.outputs.s3_prefix.value')
+        # export S3 prefix to .env (use s3_prefix_used which returns the actual prefix)
+        s3_prefix=$(terraform show -json | jq -r '.values.outputs.s3_prefix_used.value')
         if [[ -n "$s3_prefix" && "$s3_prefix" != "null" ]]; then
             echo "S3_PREFIX=${s3_prefix}" >> ~/.env
         fi
