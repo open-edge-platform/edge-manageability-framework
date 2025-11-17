@@ -3,8 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 loki:
-  image:
-    tag: 3.5.7
   loki:
     storage:
       s3:
@@ -12,7 +10,7 @@ loki:
 
 mimir-distributed:
   image:
-    tag: 2.17.2
+    tag: 3.0.0
   minio:
     deploymentUpdate:
       type: Recreate
@@ -51,7 +49,3 @@ opentelemetry-collector:
           http:
             endpoint: ${env:MY_POD_IP}:4318
             include_metadata: true
-
-grafana:
-  image:
-    tag: 12.2.1
