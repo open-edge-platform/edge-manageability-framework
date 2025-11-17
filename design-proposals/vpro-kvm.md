@@ -187,133 +187,54 @@ This section provides API endpoints for KVM remote console operations.
 
 #### 1. Start KVM Session
 
-**Endpoint:** `POST /api/v1/amt/kvm/{deviceGuid}`
 
-**Request:**
-
-```json
-{
-  "action": "connect"
-}
-```
 
 **Response (CCM Mode - Success):**
 
-```json
-{
-  "status": "connected",
-  "wsUrl": "wss://mps.example.com/ws/relay?host=4c4c4544-004b&port=16994&p=2&mode=kvm"
-}
-```
+
 
 **Response (ACM Mode - Consent Required):**
 
-```json
-{
-  "status": "consent_required",
-  "consentExpiry": "",
-  "consentTimeout": 120
-}
-```
 
----
 
 #### 2. WebSocket Connection (Client to MPS)
 
-**URL:** `wss://mps.example.com/ws/relay?host={guid}&port=16994&p=2&mode=kvm`
 
-**Headers:**
-
-```text
-Sec-WebSocket-Protocol: {jwt_token}
-```
 
 #### 3. Submit Consent Code
 
-**Endpoint:** `POST /api/v1/amt/kvm/{deviceGuid}/consent`
+**Endpoint:** 
 
 **Request:**
 
-```json
-{
-  "consentCode": "123456"
-}
-```
 
-**Response (Success):**
-
-```json
-{
-  "status": "success",
-  "consentGranted": true,
-  "wsUrl": "wss://mps.example.com/ws/relay?host=4c4c4544-004b&port=16994&p=2&mode=kvm"
-}
-```
 
 **Response (Invalid Code):**
 
-```json
-{
-  "status": "error",
-  "consentGranted": false,
-  "errorCode": "INVALID_CODE"
-}
-```
 
----
 
 #### 4. Get Consent Status
 
-**Endpoint:** `GET /api/v1/amt/kvm/{deviceGuid}/consent/status`
+**Endpoint:** 
 
 **Response:**
 
-```json
-{
-  "consentActive": true,
-  "consentGranted": false,
-  "timeRemaining": 87,
-  "consentExpiry": ""
-}
-```
-
----
 
 #### 5. Cancel Consent Request
 
-**Endpoint:** `POST /api/v1/amt/kvm/{deviceGuid}/consent/cancel`
+**Endpoint:** 
 
 **Response:**
 
-```json
-{
-  "status": "cancelled",
-  "message": "Consent request cancelled"
-}
-```
-
----
 
 #### 6. Stop KVM Session (Disconnect)
 
-**Endpoint:** `POST /api/v1/amt/kvm/{deviceGuid}`
+**Endpoint:** 
 
 **Request:**
 
-```json
-{
-  "action": "disconnect"
-}
-```
-
 **Response:**
 
-```json
-{
-  "status": "disconnected",
-  "message": "KVM session stopped"
-}
-```
 
 #### orch-utils Tenancy API Mapping
 
@@ -480,27 +401,20 @@ orch-cli → apiv2 → inventory → dm-manager → MPS
 
 #### dm-manager to MPS Operations
 
+**Primary KVM Endpoints:**
+
+MPS Route Implementation: <https://github.com/device-management-toolkit/mps/blob/main/src/routes/amt/index.ts>
+
 <!-- markdownlint-disable MD013 -->
 
-| Operation | Endpoint | Method | Purpose |
-|-----------|----------|--------|---------|
-| Check Power State | `/api/v1/devices/{guid}/power/state` | GET | Check device is powered on |
-| Start KVM Session | `/api/v1/amt/kvm/{guid}` | POST | Start KVM session |
-| Submit Consent Code | `/api/v1/amt/kvm/{guid}/consent` | POST | Submit 6-digit consent code |
-| Check Consent Status | `/api/v1/amt/kvm/{guid}/consent/status` | GET | Check consent status |
-| Cancel Consent | `/api/v1/amt/kvm/{guid}/consent/cancel` | POST | Cancel pending consent |
-| Stop KVM Session | `/api/v1/amt/kvm/{guid}` | POST | Stop KVM session |
-
-<!-- markdownlint-enable MD013 -->
-
-#### Video Streaming (Data Plane)
-
-Direct browser connection with persistent WebSocket for real-time
-bidirectional data flow:
-
-```text
-web-ui → KVM console → (Direct WebSocket) → Traefik Gateway → MPS → AMT Device
-```
+| Endpoint | Method | Purpose | Used For | WSMAN Call |
+|----------|--------|---------|----------|------------|
+| `/api/v1/amt/kvm/{deviceId}` | POST | Start/Stop KVM session | Connect/disconnect KVM | CIM_KVMRedirectionSAP |
+| `/api/v1/amt/userConsentCode/{guid}` | GET | Request consent code (ACM mode) | Trigger 6-digit code display | IPS_OptInService.StartOptIn |
+| `/api/v1/amt/userConsentCode/{guid}` | POST | Submit user consent code | Validate 6-digit code | IPS_OptInService.SendOptInCode |
+| `/api/v1/amt/userConsentCode/cancel/{guid}` | GET | Cancel consent request | Abort pending consent | IPS_OptInService.CancelOptIn |
+| `/api/v1/amt/redirection/{deviceId}` | GET | Get redirection capabilities | Check KVM/SOL/IDER status | CIM_RedirectionService |
+| `/ws/relay` or `/relay/webrelay.ashx` | WebSocket | KVM data relay (RFB protocol) | Video/keyboard/mouse stream | CIRA tunnel |
 
 ## Implementation Design
 
