@@ -10,11 +10,15 @@ loki:
   minio:
     image:
       tag: RELEASE.2025-09-07T16-13-09Z
+    mcImage:
+      tag: RELEASE.2025-08-13T08-35-41Z
 
 mimir-distributed:
   minio:
     image:
       tag: RELEASE.2025-09-07T16-13-09Z
+    mcImage:
+      tag: RELEASE.2025-08-13T08-35-41Z
     deploymentUpdate:
       type: Recreate
     makeBucketJob:
