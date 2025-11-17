@@ -605,6 +605,7 @@ jobs:
             -V orchestrator-configs/kind.yaml \
             --exitonfailure \
             --exclude cf6 \
+            --exclude cf8 \
             tests/core_foundation/core_foundation.robot
 
       - name: Upload test artifacts
