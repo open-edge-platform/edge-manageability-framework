@@ -9,8 +9,6 @@ loki:
         endpoint: edgenode-observability-minio:9000
 
 mimir-distributed:
-  image:
-    tag: 3.0.0
   minio:
     deploymentUpdate:
       type: Recreate
