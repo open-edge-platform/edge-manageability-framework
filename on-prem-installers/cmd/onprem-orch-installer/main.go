@@ -27,7 +27,7 @@ const gitReposEnv = "GIT_REPOS"
 
 const orchInstallerProfileEnv = "ORCH_INSTALLER_PROFILE"
 
-var giteaInstalled = os.Getenv("INSTALL_GITEA")
+var giteaInstalled = "true"
 
 func main() {
 	tarFilesLocation := os.Getenv(gitReposEnv)
