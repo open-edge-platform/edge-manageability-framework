@@ -5,7 +5,7 @@
 adm:
   resources: null
   catalogService: app-orch-catalog-grpc-server:8080
-  keycloakServerEndpoint: "http://platform-keycloak.keycloak-system.svc.cluster.local"
+  keycloakServerEndpoint: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
   secretService:
     enabled: true
     endpoint: "http://vault.orch-platform.svc.cluster.local:8200"
@@ -31,8 +31,7 @@ adm:
 
 openidc:
   # -- the endpoint of a Keycloak Realm e.g. http://keycloak/realms/master
-  # This value is overridden in the template based on clusterDomain
-  issuer: "http://platform-keycloak.keycloak-system.svc/realms/master"
+  issuer: "http://platform-keycloak.orch-platform.svc/realms/master"
   insecureSkipVerify: false
 
 gitea:
