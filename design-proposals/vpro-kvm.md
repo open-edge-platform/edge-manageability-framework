@@ -194,7 +194,7 @@ This section provides API endpoints for KVM remote console operations.
 **Request:**
 
 ```bash
-curl -sk -X POST https://{MPS_URL}/api/v1/amt/features/{DEVICE_GUID} \
+curl -sk -X POST https://mps-wss.{domain}/api/v1/amt/features/{DEVICE_GUID} \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -259,7 +259,7 @@ By default, when a device is connected and activated, the following features
 are enabled:
 
 ```bash
-curl -s -X GET "https://{MPS_URL}/api/v1/amt/features/{guid}" \
+curl -s -X GET "https://mps-wss.{domain}/api/v1/amt/features/{guid}" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer ${JWT_TOKEN}" | jq '.'
 ```
@@ -284,7 +284,7 @@ mode is enabled, requiring user consent for all redirection operations.
 
 #### 2. WebSocket Connection (Client to MPS)
 
-**URL:** `wss://{MPS_URL}/relay/webrelay.ashx?host={guid}&port=16994&p=2&mode=kvm`
+**URL:** `wss://mps-wss.{domain}/relay/webrelay.ashx?host={guid}&port=16994&p=2&mode=kvm`
 
 **Authentication Requirements:**
 
@@ -330,7 +330,7 @@ JWT_TOKEN=$(curl -s -X POST \
 
 # Step 2: Get MPS redirect token
 REDIRECT_TOKEN=$(curl -s -X GET \
-  "https://mps-wss.{host}/api/v1/authorize/redirection/{guid}" \
+  "https://mps-wss.{domain}/api/v1/authorize/redirection/{guid}" \
   -H "Authorization: Bearer ${JWT_TOKEN}" | jq -r '.token')
 
 # Step 3: Connect to WebSocket with both tokens
