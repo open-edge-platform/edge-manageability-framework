@@ -7,9 +7,14 @@ loki:
     storage:
       s3:
         endpoint: edgenode-observability-minio:9000
+  minio:
+    image:
+      tag: RELEASE.2025-09-07T16-13-09Z
 
 mimir-distributed:
   minio:
+    image:
+      tag: RELEASE.2025-09-07T16-13-09Z
     deploymentUpdate:
       type: Recreate
     makeBucketJob:
