@@ -57,6 +57,54 @@ runs:
       EDGE_MANAGEABILITY_FRAMEWORK_REV: ${{ inputs.orch_version }}
     run: echo "Current git hash is \"$EDGE_MANAGEABILITY_FRAMEWORK_REV\""
 
+  - name: Wait for Kind cluster to be fully ready
+    id: wait-kind-ready
+    shell: bash
+    run: |
+      set -euo pipefail
+      echo "==> Waiting for Kind cluster core components to be ready..."
+
+      # Wait for node(s) to be Ready
+      echo "Waiting for node(s) to be Ready..."
+      kubectl wait --for=condition=Ready node --all --timeout=180s || true
+
+      # Wait for CoreDNS to be Available (DNS must be up for many charts)
+      echo "Waiting for CoreDNS deployment to be Available..."
+      kubectl -n kube-system wait --for=condition=Available deployment/coredns --timeout=180s || true
+
+      # Wait for system pods in kube-system to be Ready (best-effort)
+      echo "Waiting for kube-system pods to be ready (best-effort)..."
+      kubectl -n kube-system wait --for=condition=Ready pod --all --timeout=180s || true
+
+      # local-path provisioner may be in either 'local-path-storage' or 'local-path' namespace - try both
+      if kubectl get ns local-path-storage >/dev/null 2>&1; then
+        echo "Found local-path-storage namespace, waiting for provisioner..."
+        kubectl -n local-path-storage wait --for=condition=Available deploy --all --timeout=180s || true
+        kubectl -n local-path-storage wait --for=condition=Ready pod --all --timeout=180s || true
+      elif kubectl get ns local-path >/dev/null 2>&1; then
+        echo "Found local-path namespace, waiting for provisioner..."
+        kubectl -n local-path wait --for=condition=Available deploy --all --timeout=180s || true
+        kubectl -n local-path wait --for=condition=Ready pod --all --timeout=180s || true
+      else
+        echo "No local-path provisioner namespace detected; skipping local-path wait"
+      fi
+
+      # If MetalLB installed, wait for its controller & speaker
+      if kubectl get ns metallb-system >/dev/null 2>&1; then
+        echo "MetalLB namespace found — waiting for controller and speaker..."
+        kubectl -n metallb-system wait --for=condition=Available deployment/controller --timeout=180s || true
+        kubectl -n metallb-system wait --for=condition=Ready daemonset/speaker --timeout=180s || true
+        kubectl -n metallb-system wait --for=condition=Ready pod --all --timeout=180s || true
+      else
+        echo "No metallb-system namespace detected; skipping MetalLB wait"
+      fi
+
+      # Show current pod status for diagnostics
+      echo "Current cluster pods (all namespaces):"
+      kubectl get pods -A --no-headers || true
+
+      echo "Kind cluster readiness gate completed."
+
   - name: Deploy External Orchestrator
     id: deploy-external-orchestrator
     env:
@@ -69,16 +117,58 @@ runs:
       DEPLOYMENT_TYPE: ${{ inputs.deployment_type }}
     shell: bash
     run: |
+      set -euo pipefail
       set +x
       echo "Starting to deploy Orchestrator..."
-      if [ "$DEPLOYMENT_TYPE" == "minimal" ]; then
-        echo "Deploying minimal Orchestrator setup..."
-        mage deploy:kindMinimal
-      else
-        echo "Deploying full Orchestrator setup..."
-        mage deploy:kindAll
+
+      # Final quick check before deploy
+      echo "Quick cluster health check before running mage deploy:"
+      kubectl get nodes -o wide || true
+      kubectl get pods -n kube-system || true
+      kubectl get sc || true
+
+      # Retry wrapper for transient failures (3 attempts)
+      attempts=0
+      max_attempts=3
+      backoff_seconds=15
+
+      while [ $attempts -lt $max_attempts ]; do
+        attempts=$((attempts + 1))
+        echo "Deploy attempt #${attempts} of ${max_attempts}..."
+
+        if [ "${DEPLOYMENT_TYPE}" = "minimal" ]; then
+          echo "Deploying minimal Orchestrator setup..."
+          if mage deploy:kindMinimal; then
+            echo "Deploy succeeded on attempt #${attempts}"
+            break
+          fi
+        else
+          echo "Deploying full Orchestrator setup..."
+          if mage deploy:kindAll; then
+            echo "Deploy succeeded on attempt #${attempts}"
+            break
+          fi
+        fi
+
+        echo "Deploy attempt #${attempts} failed."
+        if [ $attempts -lt $max_attempts ]; then
+          echo "Sleeping ${backoff_seconds}s before retry..."
+          sleep ${backoff_seconds}
+        fi
+      done
+
+      if [ $attempts -ge $max_attempts ]; then
+        echo "ERROR: Deployment failed after ${max_attempts} attempts."
+        # Dump diagnostics to help debugging
+        echo "=== Diagnostics ==="
+        kubectl get pods -A -o wide || true
+        kubectl get pvc -A || true
+        kubectl describe nodes || true
+        exit 1
       fi
+
       echo "Orchestrator deployment done!"
+
   - name: Get Root App Status
     shell: bash
     if: ${{ always() && steps.deploy-external-orchestrator.conclusion != 'success' }}
@@ -86,6 +176,7 @@ runs:
       echo "Root App Status:"
       kubectl get pods -o wide -A
       kubectl -n dev get applications root-app -o yaml || true
+
   - name: Verify Kind Deployment
     id: verify-kind-deployment
     shell: bash
@@ -95,6 +186,7 @@ runs:
       echo "Orchestrator deployment verified!"
       mage router:stop router:start
       echo "Router restarted"
+
   - name: Setup Test environment
     shell: bash
     run: |
