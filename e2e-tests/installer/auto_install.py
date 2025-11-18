@@ -574,11 +574,11 @@ class AutoInstall:
         print(f"here {count}")
         count += 1 
 
-        # Check if smtp_url exists
+        # Check if pattern exists
         found = False
         for i, line in enumerate(lines):
-            if line.strip().startswith(f"{to_replace}="):
-                lines[i] = f'{to_replace}="{to_replace_value}"\n'
+            if line.strip().startswith(f"{to_replace} ="):
+                lines[i] = f'{to_replace} = "{to_replace_value}"\n'
                 found = True
                 break
 
@@ -587,7 +587,7 @@ class AutoInstall:
 
         # If not found, append at the end
         if not found:
-            lines.append(f'{to_replace}="{to_replace_value}"\n')
+            lines.append(f'{to_replace} = "{to_replace_value}"\n')
 
         print(f"here {count}")
         count += 1 
