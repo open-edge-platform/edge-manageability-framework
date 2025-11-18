@@ -394,6 +394,8 @@ data:
           "directAccessGrantsEnabled": true,
           "fullScopeAllowed": true,
           "rootUrl": "$(env:REGISTRY_ROOT_URL)",
+          "standardFlowEnabled": true,
+          "frontchannelLogout": true,
           "defaultClientScopes": ["roles", "profile", "email", "groups", "basic"],
           "optionalClientScopes": ["offline_access"]
         }
@@ -467,27 +469,173 @@ data:
         }
       ],
       "groups": [
-        {"name": "registry-app-admin-group", "path": "/registry-app-admin-group"},
-        {"name": "registry-app-editor-group", "path": "/registry-app-editor-group"},
-        {"name": "registry-app-viewer-group", "path": "/registry-app-viewer-group"},
-        {"name": "apps-m2m-service-account", "path": "/apps-m2m-service-account", "realmRoles": ["ao-m2m-rw", "co-m2m-rw"]},
-        {"name": "org-admin-group", "path": "/org-admin-group", "realmRoles": ["org-read-role", "org-update-role", "org-delete-role", "org-write-role"]},
-        {"name": "sre-admin-group", "path": "/sre-admin-group", "realmRoles": ["alrt-r"], "clientRoles": {"account": ["view-profile", "manage-account"], "telemetry-client": ["viewer"]}},
-        {"name": "iam-admin-group", "path": "/iam-admin-group", "realmRoles": ["admin", "secrets-root-role"], "clientRoles": {"account": ["view-profile", "manage-account"]}},
-        {"name": "service-admin-group", "path": "/service-admin-group", "realmRoles": ["alrt-rx-rw", "rs-access-r", "infra-manager-core-read-role", "infra-manager-core-write-role", "alrt-rw"], "clientRoles": {"account": ["view-profile", "manage-account"], "telemetry-client": ["admin"], "cluster-management-client": ["restricted-role", "standard-role", "base-role"], "registry-client": ["registry-admin-role"]}},
-        {"name": "edge-manager-group", "path": "/edge-manager-group", "realmRoles": ["app-service-proxy-read-role", "app-service-proxy-write-role", "app-deployment-manager-read-role", "app-deployment-manager-write-role", "app-resource-manager-read-role", "app-resource-manager-write-role", "app-vm-console-write-role", "catalog-publisher-read-role", "catalog-publisher-write-role", "catalog-other-read-role", "catalog-other-write-role", "catalog-restricted-read-role", "catalog-restricted-write-role", "clusters-read-role", "clusters-write-role", "cluster-templates-read-role", "cluster-templates-write-role", "cluster-artifacts-read-role", "cluster-artifacts-write-role", "infra-manager-core-read-role", "alrt-rw"], "clientRoles": {"telemetry-client": ["viewer"], "cluster-management-client": ["standard-role", "base-role"], "registry-client": ["registry-editor-role"]}},
-        {"name": "edge-operator-group", "path": "/edge-operator-group", "realmRoles": ["app-service-proxy-read-role", "app-service-proxy-write-role", "app-deployment-manager-read-role", "app-deployment-manager-write-role", "app-resource-manager-read-role", "app-resource-manager-write-role", "app-vm-console-write-role", "catalog-publisher-read-role", "catalog-other-read-role", "clusters-read-role", "clusters-write-role", "cluster-templates-read-role", "cluster-artifacts-read-role", "cluster-artifacts-write-role", "infra-manager-core-read-role", "alrt-r"], "clientRoles": {"telemetry-client": ["viewer"], "registry-client": ["registry-viewer-role"]}},
-        {"name": "host-manager-group", "path": "/host-manager-group", "realmRoles": ["infra-manager-core-read-role", "infra-manager-core-write-role"], "clientRoles": {"telemetry-client": ["viewer"]}},
-        {"name": "sre-group", "path": "/sre-group", "realmRoles": ["alrt-r", "clusters-read-role", "clusters-write-role", "cluster-templates-read-role", "infra-manager-core-read-role"], "clientRoles": {"telemetry-client": ["viewer"], "cluster-management-client": ["base-role", "restricted-role"]}}
+        {
+          "name": "registry-app-admin-group",
+          "path": "/registry-app-admin-group"
+        },
+        {
+          "name": "registry-app-editor-group",
+          "path": "/registry-app-editor-group"
+        },
+        {
+          "name": "registry-app-viewer-group",
+          "path": "/registry-app-viewer-group"
+        },
+        {
+          "name": "apps-m2m-service-account",
+          "path": "/apps-m2m-service-account",
+          "realmRoles": ["ao-m2m-rw", "co-m2m-rw"]
+        },
+        {
+          "name": "org-admin-group",
+          "path": "/org-admin-group",
+          "realmRoles": ["org-read-role", "org-update-role", "org-delete-role", "org-write-role"]
+        },
+        {
+          "name": "sre-admin-group",
+          "path": "/sre-admin-group",
+          "realmRoles": ["alrt-r"],
+          "clientRoles": {
+            "account": ["view-profile", "manage-account"],
+            "telemetry-client": ["viewer"]
+          }
+        },
+        {
+          "name": "iam-admin-group",
+          "path": "/iam-admin-group",
+          "realmRoles": ["admin", "secrets-root-role"],
+          "clientRoles": {
+            "account": ["view-profile", "manage-account"],
+            "master-realm": ["view-users", "query-users", "manage-clients"]
+          }
+        },
+        {
+          "name": "service-admin-group",
+          "path": "/service-admin-group",
+          "realmRoles": ["alrt-rx-rw", "rs-access-r", "infra-manager-core-read-role", "infra-manager-core-write-role", "alrt-rw"],
+          "clientRoles": {
+            "account": ["view-profile", "manage-account"],
+            "telemetry-client": ["admin"],
+            "cluster-management-client": ["restricted-role", "standard-role", "base-role"],
+            "registry-client": ["registry-admin-role"],
+            "master-realm": ["view-users", "query-users", "manage-clients"]
+          }
+        },
+        {
+          "name": "edge-manager-group",
+          "path": "/edge-manager-group",
+          "realmRoles": ["app-service-proxy-read-role", "app-service-proxy-write-role", "app-deployment-manager-read-role", "app-deployment-manager-write-role", "app-resource-manager-read-role", "app-resource-manager-write-role", "app-vm-console-write-role", "catalog-publisher-read-role", "catalog-publisher-write-role", "catalog-other-read-role", "catalog-other-write-role", "catalog-restricted-read-role", "catalog-restricted-write-role", "clusters-read-role", "clusters-write-role", "cluster-templates-read-role", "cluster-templates-write-role", "cluster-artifacts-read-role", "cluster-artifacts-write-role", "infra-manager-core-read-role", "alrt-rw"],
+          "clientRoles": {
+            "telemetry-client": ["viewer"],
+            "cluster-management-client": ["standard-role", "base-role"],
+            "registry-client": ["registry-editor-role"]
+          }
+        },
+        {
+          "name": "edge-operator-group",
+          "path": "/edge-operator-group",
+          "realmRoles": ["app-service-proxy-read-role", "app-service-proxy-write-role", "app-deployment-manager-read-role", "app-deployment-manager-write-role", "app-resource-manager-read-role", "app-resource-manager-write-role", "app-vm-console-write-role", "catalog-publisher-read-role", "catalog-other-read-role", "clusters-read-role", "clusters-write-role", "cluster-templates-read-role", "cluster-artifacts-read-role", "cluster-artifacts-write-role", "infra-manager-core-read-role", "alrt-r"],
+          "clientRoles": {
+            "telemetry-client": ["viewer"],
+            "registry-client": ["registry-viewer-role"]
+          }
+        },
+        {
+          "name": "host-manager-group",
+          "path": "/host-manager-group",
+          "realmRoles": ["infra-manager-core-read-role", "infra-manager-core-write-role"],
+          "clientRoles": {
+            "telemetry-client": ["viewer"]
+          }
+        },
+        {
+          "name": "sre-group",
+          "path": "/sre-group",
+          "realmRoles": ["alrt-r", "clusters-read-role", "clusters-write-role", "cluster-templates-read-role", "infra-manager-core-read-role"],
+          "clientRoles": {
+            "telemetry-client": ["viewer"],
+            "cluster-management-client": ["base-role", "restricted-role"]
+          }
+        }
       ],
       "users": [
-        {"username": "service-account-alerts-m2m-client", "enabled": true, "totp": false, "serviceAccountClientId": "alerts-m2m-client", "realmRoles": ["default-roles-master"], "clientRoles": {"alerts-m2m-client": ["uma_protection"], "master-realm": ["view-users", "query-users"]}},
-        {"username": "service-account-host-manager-m2m-client", "enabled": true, "totp": false, "serviceAccountClientId": "host-manager-m2m-client", "realmRoles": ["default-roles-master", "rs-access-r"], "clientRoles": {"host-manager-m2m-client": ["uma_protection"], "master-realm": ["query-clients", "manage-authorization", "view-clients", "view-users", "create-client", "manage-users", "manage-clients", "view-realm"]}},
-        {"username": "service-account-ktc-m2m-client", "enabled": true, "totp": false, "serviceAccountClientId": "ktc-m2m-client", "realmRoles": ["admin", "create-realm", "default-roles-master", "rs-access-r"], "clientRoles": {"ktc-m2m-client": ["uma_protection"], "master-realm": ["query-clients", "manage-authorization", "view-clients", "view-users", "create-client", "manage-users", "manage-clients"]}},
-        {"username": "service-account-3rd-party-host-manager-m2m-client", "enabled": true, "totp": false, "serviceAccountClientId": "3rd-party-host-manager-m2m-client", "realmRoles": ["default-roles-master", "rs-access-r"], "clientRoles": {"3rd-party-host-manager-m2m-client": ["uma_protection"], "master-realm": ["query-clients", "manage-authorization", "view-clients", "view-users", "create-client", "manage-users", "manage-clients", "view-realm"]}},
-        {"username": "service-account-en-m2m-template-client", "enabled": true, "totp": false, "serviceAccountClientId": "en-m2m-template-client", "realmRoles": ["default-roles-master", "rs-access-r", "en-agent-rw"], "clientRoles": {"en-m2m-template-client": ["uma_protection"]}},
-        {"username": "service-account-edge-manager-m2m-client", "enabled": true, "totp": false, "serviceAccountClientId": "edge-manager-m2m-client", "realmRoles": ["default-roles-master"], "clientRoles": {"edge-manager-m2m-client": ["uma_protection"]}, "groups": ["/edge-manager-group", "/apps-m2m-service-account"]},
-        {"username": "service-account-co-manager-m2m-client", "enabled": true, "totp": false, "serviceAccountClientId": "co-manager-m2m-client", "realmRoles": ["default-roles-master"], "clientRoles": {"co-manager-m2m-client": ["uma_protection"], "master-realm": ["view-clients", "manage-clients"]}}
+        {
+          "username": "service-account-alerts-m2m-client",
+          "enabled": true,
+          "totp": false,
+          "serviceAccountClientId": "alerts-m2m-client",
+          "realmRoles": ["default-roles-master"],
+          "clientRoles": {
+            "alerts-m2m-client": ["uma_protection"],
+            "master-realm": ["view-users", "query-users"]
+          }
+        },
+        {
+          "username": "service-account-host-manager-m2m-client",
+          "enabled": true,
+          "totp": false,
+          "serviceAccountClientId": "host-manager-m2m-client",
+          "realmRoles": ["default-roles-master", "rs-access-r"],
+          "clientRoles": {
+            "host-manager-m2m-client": ["uma_protection"],
+            "master-realm": ["query-clients", "manage-authorization", "view-clients", "view-users", "create-client", "manage-users", "manage-clients", "view-realm"]
+          }
+        },
+        {
+          "username": "service-account-ktc-m2m-client",
+          "enabled": true,
+          "totp": false,
+          "serviceAccountClientId": "ktc-m2m-client",
+          "realmRoles": ["admin", "create-realm", "default-roles-master", "rs-access-r"],
+          "clientRoles": {
+            "ktc-m2m-client": ["uma_protection"],
+            "master-realm": ["query-clients", "manage-authorization", "view-clients", "view-users", "create-client", "manage-users", "manage-clients"]
+          }
+        },
+        {
+          "username": "service-account-3rd-party-host-manager-m2m-client",
+          "enabled": true,
+          "totp": false,
+          "serviceAccountClientId": "3rd-party-host-manager-m2m-client",
+          "realmRoles": ["default-roles-master", "rs-access-r"],
+          "clientRoles": {
+            "3rd-party-host-manager-m2m-client": ["uma_protection"],
+            "master-realm": ["query-clients", "manage-authorization", "view-clients", "view-users", "create-client", "manage-users", "manage-clients", "view-realm"]
+          }
+        },
+        {
+          "username": "service-account-en-m2m-template-client",
+          "enabled": true,
+          "totp": false,
+          "serviceAccountClientId": "en-m2m-template-client",
+          "realmRoles": ["default-roles-master", "rs-access-r", "en-agent-rw"],
+          "clientRoles": {
+            "en-m2m-template-client": ["uma_protection"]
+          }
+        },
+        {
+          "username": "service-account-edge-manager-m2m-client",
+          "enabled": true,
+          "totp": false,
+          "serviceAccountClientId": "edge-manager-m2m-client",
+          "realmRoles": ["default-roles-master"],
+          "clientRoles": {
+            "edge-manager-m2m-client": ["uma_protection"]
+          },
+          "groups": ["/edge-manager-group", "/apps-m2m-service-account"]
+        },
+        {
+          "username": "service-account-co-manager-m2m-client",
+          "enabled": true,
+          "totp": false,
+          "serviceAccountClientId": "co-manager-m2m-client",
+          "realmRoles": ["default-roles-master"],
+          "clientRoles": {
+            "co-manager-m2m-client": ["uma_protection"],
+            "master-realm": ["view-clients", "manage-clients"]
+          },
+          "groups": ["/edge-manager-group", "/apps-m2m-service-account"]
+        }
       ],
       "components": {
         "org.keycloak.keys.KeyProvider": [
