@@ -23,12 +23,17 @@ inputs:
     required: true
     description: "Docker Hub password for pulling images"
 
+  helm_timeout:
+    required: false
+    description: "Helm timeout for heavy installs inside the installer VM"
+    default: "20m"
+
 runs:
   using: "composite"
   steps:
 
     - name: Checkout Orchestrator repo
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      uses: actions/checkout@v4
       with:
         repository: open-edge-platform/edge-manageability-framework
         ref: ${{ inputs.orch_version }}
@@ -36,7 +41,7 @@ runs:
 
     - name: Setup asdf and install dependencies
       id: install-deps
-      uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
+      uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main
 
     - name: Check Oras
       run: oras version
@@ -47,14 +52,51 @@ runs:
       shell: bash
       working-directory: on-prem-installers
       run: |
+        set -euo pipefail
+        echo "Building deploy tag..."
         mage build:debVersion
         echo "DEPLOY_TAG=$(mage build:debVersion)" >> "$GITHUB_ENV"
+        echo "DEPLOY_TAG is $DEPLOY_TAG"
 
     #########################################################################
-    # IMPORTANT FIXES FOR GITEA TIMEOUT + KUBECONFIG + TERRAFORM VARIABLES #
+    # Quick pre-flight: verify onprem installer assets exist (fail early)
     #########################################################################
+    - name: Verify installer assets exist
+      shell: bash
+      run: |
+        set -euo pipefail
+        echo "Checking for on-prem installer assets (prevent missing-file dpkg errors)..."
 
+        # expected path(s) relative to repo root - adjust if your repo uses a different path
+        EXPECTED_1="on-prem-installers/assets/rke2/install.sh"
+        EXPECTED_DIR="on-prem-installers/assets"
+
+        if [ -f "$EXPECTED_1" ]; then
+          echo "Found expected installer file: $EXPECTED_1"
+        else
+          echo "WARNING: Expected installer file not found: $EXPECTED_1"
+          if [ -d "$EXPECTED_DIR" ]; then
+            echo "Found installer assets directory '$EXPECTED_DIR' — listing contents:"
+            ls -la "$EXPECTED_DIR" || true
+          else
+            echo "Installer assets directory not found: $EXPECTED_DIR"
+          fi
+
+          echo ""
+          echo "ERROR: Required installer assets are missing. When the installer package (onprem-ke-installer) runs on the target VM,"
+          echo "it expects 'assets/rke2/install.sh' to be present (postinst calls it)."
+          echo "Please ensure the build step that produces the installer package includes the assets directory."
+          echo "Failing the workflow early to avoid a confusing dpkg post-install error on the remote VM."
+          exit 1
+        fi
+
+        echo "Installer assets check passed."
+
+    #########################################################################
+    # Deploy orchestrator (exports Helm timeout and kubeconfig path)
+    #########################################################################
     - name: Deploy Orchestrator
+      id: deploy-orchestrator
       shell: bash
       env:
         TF_VAR_deploy_tag: ${{ env.DEPLOY_TAG }}
@@ -63,58 +105,129 @@ runs:
         TF_VAR_docker_username: ${{ inputs.docker_username }}
         TF_VAR_docker_password: ${{ inputs.docker_password }}
 
-        # 🔥 Ensures Terraform always passes Helm timeout into the installer VM
-        TF_VAR_helm_timeout: "20m"
+        # ensure terraform/installer can receive the helm timeout
+        TF_VAR_helm_timeout: ${{ inputs.helm_timeout }}
 
-        # 🔥 Write kubeconfig before any kubectl calls
-        KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig }
+        # tell mage/kubectl where to write/read the kubeconfig file
+        KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
       run: |
-        echo "Starting on-prem deployment (helm timeout = $TF_VAR_helm_timeout)"
-        mage deploy:onPrem
+        set -euo pipefail
+        set +x
+        export TF_VAR_helm_timeout="${TF_VAR_helm_timeout:-20m}"
+        export KUBECONFIG="${KUBECONFIG:-${GITHUB_WORKSPACE}/terraform/orchestrator/files/kubeconfig}"
+        echo "Starting on-prem deployment (helm timeout = ${TF_VAR_helm_timeout})"
+        echo "KUBECONFIG will be written to: ${KUBECONFIG}"
 
+        # retry wrapper for the deploy (useful to recover transient SSH/remote issues)
+        attempts=0
+        max_attempts=3
+        backoff_seconds=20
+
+        while [ $attempts -lt $max_attempts ]; do
+          attempts=$((attempts + 1))
+          echo "Deploy attempt #${attempts} of ${max_attempts}..."
+
+          if mage deploy:onPrem; then
+            echo "Deploy succeeded on attempt #${attempts}"
+            break
+          else
+            echo "Deploy attempt #${attempts} failed."
+            # collect quick diagnostics (best-effort)
+            echo "Collecting quick diagnostics..."
+            ls -l "$(dirname "${KUBECONFIG}")" || true
+            # sleep and retry
+            if [ $attempts -lt $max_attempts ]; then
+              echo "Sleeping ${backoff_seconds}s before retry..."
+              sleep ${backoff_seconds}
+            fi
+          fi
+        done
+
+        if [ $attempts -ge $max_attempts ]; then
+          echo "ERROR: Deploy failed after ${max_attempts} attempts. Dumping diagnostics..."
+          echo "Listing remote installer packages and generated files (repo):"
+          ls -la on-prem-installers || true
+          echo "Checking for kubeconfig file:"
+          ls -la "$(dirname "${KUBECONFIG}")" || true
+          echo "Printing last 200 lines of mage log if present:"
+          [ -f mage.log ] && tail -n 200 mage.log || true
+          exit 1
+        fi
+
+        echo "Deploy completed successfully."
+
+    #########################################################################
+    # Post-deploy verify (use the KUBECONFIG produced by the deploy)
+    #########################################################################
     - name: Verify deployment
       shell: bash
       env:
-        KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig }
-      run: mage -v deploy:waitUntilComplete
+        KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
+      run: |
+        set -euo pipefail
+        export KUBECONFIG="${KUBECONFIG:-${GITHUB_WORKSPACE}/terraform/orchestrator/files/kubeconfig}"
+        echo "Verifying deployment using kubeconfig: ${KUBECONFIG}"
+        if [ ! -f "${KUBECONFIG}" ]; then
+          echo "WARNING: kubeconfig not found at ${KUBECONFIG}. The deploy may not have written it yet."
+        fi
+        mage -v deploy:waitUntilComplete
 
     - name: Setup test environment
       shell: bash
       env:
-        KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig }
-      run: mage -v gen:orchCA deploy:orchCA deploy:edgeNetworkDNS
+        KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
+      run: |
+        set -euo pipefail
+        export KUBECONFIG="${KUBECONFIG:-${GITHUB_WORKSPACE}/terraform/orchestrator/files/kubeconfig}"
+        mage -v gen:orchCA deploy:orchCA deploy:edgeNetworkDNS
 
     #########################################################################
-    #                         DIAGNOSTICS SECTION                           #
+    # Diagnostics: collect cluster info and Argo diagnostics (uses KUBECONFIG)
     #########################################################################
-
     - name: Get diagnostic information
       id: get-diagnostic-info
       if: always() && steps.install-deps.conclusion == 'success'
       shell: bash
       env:
         SSH_HOST: 192.168.99.10
-        SSH_USER: ubuntu
-        SSH_PASSWORD: ubuntu
         ORCH_PROFILE: ${{ inputs.orch_profile }}
-        KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig }
+        KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
       run: |
-        mkdir -p "$ORCH_PROFILE-diagnostics"
+        set -euo pipefail
+        export KUBECONFIG="${KUBECONFIG:-${GITHUB_WORKSPACE}/terraform/orchestrator/files/kubeconfig}"
+        mkdir -p "${ORCH_PROFILE}-diagnostics"
 
-        kubectl config set-cluster default \
-          --server="https://${SSH_HOST}:6443" \
-          --insecure-skip-tls-verify || true
+        echo "Diagnostics: verify kubeconfig file exists..."
+        if [ ! -f "${KUBECONFIG}" ]; then
+          echo "WARNING: KUBECONFIG not found at ${KUBECONFIG}. Attempting to set temporary context to ${SSH_HOST}:6443"
+          kubectl config set-cluster onprem-temp --server="https://${SSH_HOST}:6443" --insecure-skip-tls-verify || true
+          kubectl config set-context onprem-temp --cluster=onprem-temp || true
+          kubectl config use-context onprem-temp || true
+        else
+          echo "Using kubeconfig at ${KUBECONFIG}"
+        fi
 
-        echo "Collecting diagnostics..."
-        kubectl get pods -A -o wide > "$ORCH_PROFILE-diagnostics/pods-list.txt" || true
-        kubectl describe pods -A > "$ORCH_PROFILE-diagnostics/pods-describe.txt" || true
-        mage logutils:collectArgoDiags > "$ORCH_PROFILE-diagnostics/argo-diag.txt" || true
-        kubectl get applications -A -o yaml > "$ORCH_PROFILE-diagnostics/argocd-applications.yaml" || true
-        kubectl get events -A -o yaml > "$ORCH_PROFILE-diagnostics/events.yaml" || true
+        echo "Collecting pod list..."
+        kubectl get pods -A -o wide > "${ORCH_PROFILE}-diagnostics/pods-list.txt" || true
+        echo "Collecting pod descriptions..."
+        kubectl describe pods -A > "${ORCH_PROFILE}-diagnostics/pods-describe.txt" || true
+
+        echo "Collecting ArgoCD diagnostics (best-effort)..."
+        mage logutils:collectArgoDiags > "${ORCH_PROFILE}-diagnostics/argo-diag.txt" || true
+
+        echo "Collecting Argo applications (if CRD present)..."
+        if kubectl api-resources | grep -qi '^applications.argoproj.io'; then
+          kubectl get applications -A -o yaml > "${ORCH_PROFILE}-diagnostics/argocd-applications.yaml" || true
+        else
+          echo "ArgoCD Applications CRD not present; skipping argocd application dump"
+        fi
+
+        echo "Collecting events..."
+        kubectl get events -A -o yaml > "${ORCH_PROFILE}-diagnostics/events.yaml" || true
 
     - name: Upload diagnostic information to CI artifact store
       if: always() && steps.get-diagnostic-info.conclusion == 'success'
-      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+      uses: actions/upload-artifact@v4
       with:
         name: ${{ inputs.orch_profile }}-diagnostics
         path: |

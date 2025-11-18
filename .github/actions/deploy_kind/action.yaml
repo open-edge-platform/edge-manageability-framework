@@ -3,6 +3,7 @@
 
 name: "Deploy Orchestrator on Kind"
 description: "Creates a single node Kind cluster and Deploys the Orchestrator on it"
+
 inputs:
   orch_version:
     required: false
@@ -28,12 +29,16 @@ inputs:
     options:
       - all
       - minimal
+  helm_timeout:
+    required: false
+    description: "Helm timeout to use for heavy installs (supports charts that take long)"
+    default: "20m"
 
 runs:
   using: "composite"
   steps:
   - name: Checkout code
-    uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+    uses: actions/checkout@v4
     with:
       repository: open-edge-platform/edge-manageability-framework
       ref: ${{ inputs.orch_version }}
@@ -44,12 +49,12 @@ runs:
     env:
       TOKEN: ${{ inputs.token }}
     run: |
-      echo "GOPRIVATE=github.com/open-edge-platform" >> $GITHUB_ENV
+      echo "GOPRIVATE=github.com/open-edge-platform" >> "$GITHUB_ENV"
       git config --global url."https://$TOKEN:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
   - name: Setup asdf and install dependencies
     id: install-deps
-    uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
+    uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main
 
   - name: Print current git hash
     shell: bash
@@ -57,10 +62,9 @@ runs:
       EDGE_MANAGEABILITY_FRAMEWORK_REV: ${{ inputs.orch_version }}
     run: echo "Current git hash is \"$EDGE_MANAGEABILITY_FRAMEWORK_REV\""
 
-  #########################################################################
-  # PREPULL: ensure images are available inside the kind node to avoid   #
-  # ImagePullBackOff and Docker Hub rate-limit/auth issues              #
-  #########################################################################
+  #############################################################################
+  # PREPULL: ensure images are available inside the kind node (reduces flake)
+  #############################################################################
   - name: Pre-pull and load container images into kind
     shell: bash
     env:
@@ -69,25 +73,28 @@ runs:
     run: |
       set -euxo pipefail
 
-      # 1) Docker login (best-effort) - helps avoid rate-limits and auth failures
+      # Optional: authenticate to DockerHub (best-effort)
       if [ -n "${DOCKERHUB_USERNAME:-}" ] && [ -n "${DOCKERHUB_PASSWORD:-}" ]; then
         echo "${DOCKERHUB_PASSWORD}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin || true
       fi
 
-      # 2) Images to pre-pull - update this list to match the images your charts actually reference
+      # Images to pre-pull & load into kind. EDIT THIS LIST to match your charts/images.
+      # Add any images referenced by traefik, nexus, root-app, and any other charts.
       IMAGES=(
         "registry-1.docker.io/giteacharts/gitea:10.6.0"
-        "docker.io/bitnami/postgresql:15.3.0"    # update to actual postgres image/tag your chart uses
-        "docker.io/redis:6.2.12"                 # update to actual redis image/tag
-        "axllent/mailpit:latest"                 # replace if different; used as example
+        "docker.io/bitnami/postgresql:15.3.0"
+        "docker.io/redis:6.2.12"
+        "axllent/mailpit:latest"
+        "docker.io/library/nginx:1.25.2"          # example - replace with real images your charts use
+        "ghcr.io/traefik/traefik:v2.10.12"       # example traefik image - replace with actual
+        # Add nexus, api-gw, root-app images below if known
       )
 
-      echo "Pre-pulling and loading images into kind (cluster name: kind)..."
+      echo "Pre-pulling images and loading them into kind (cluster name: kind)..."
       for img in "${IMAGES[@]}"; do
         echo ">>> Handling image: ${img}"
-        # try a few pulls to reduce transient network flakiness
         retry=0
-        max_retry=3
+        max_retry=4
         until [ $retry -ge $max_retry ]; do
           if docker pull "${img}"; then
             echo "Pulled ${img}"
@@ -95,83 +102,123 @@ runs:
           fi
           retry=$((retry+1))
           echo "docker pull failed for ${img}, retry ${retry}/${max_retry}..."
-          sleep $((retry * 2))
+          sleep $((retry * 3))
         done
 
-        # best-effort: load into kind so the node doesn't need to pull
         if command -v kind >/dev/null 2>&1; then
+          # load into kind so node doesn't need to pull
           kind load docker-image "${img}" --name kind || kind load docker-image "${img}" || true
         else
           echo "kind CLI not found; skipping kind load for ${img}"
         fi
       done
 
-      # sanity checks: ensure kind control-plane container is running and DNS can resolve registries
+      # quick sanity check for the kind control-plane container
       if docker ps --format '{{.Names}}' | grep -q '^kind-control-plane$'; then
-        echo "kind-control-plane container found; testing DNS resolution inside node..."
+        echo "kind-control-plane present; checking DNS inside container..."
         docker exec kind-control-plane sh -c "command -v nslookup >/dev/null 2>&1 && nslookup registry-1.docker.io || true" || true
       else
-        echo "Warning: kind-control-plane container not found. If cluster name is nonstandard, adjust the kind load step."
+        echo "kind-control-plane not present; adjust kind cluster name if nonstandard."
       fi
 
-      echo "Pre-pull and load step finished."
+      echo "Pre-pull done."
 
-  #########################################################################
-  # Cluster readiness gate (unchanged, ensures core infra is healthy)    #
-  #########################################################################
+  #############################################################################
+  # (OPTIONAL) Install MetalLB if not present - necessary for LoadBalancer
+  # If you already install MetalLB elsewhere, this step will be a no-op.
+  #############################################################################
+  - name: Ensure MetalLB is installed (optional; adjust IP range for your env)
+    shell: bash
+    run: |
+      set -euo pipefail
+      # skip if metallb-system exists
+      if kubectl get ns metallb-system >/dev/null 2>&1; then
+        echo "MetalLB appears installed; skipping install"
+        exit 0
+      fi
+
+      echo "Installing MetalLB (native manifests) and creating a small IPPool for kind..."
+      kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.14.10/config/manifests/metallb-native.yaml
+      # Wait for MetalLB system to appear
+      kubectl wait -n metallb-system --for=condition=available deployment/controller --timeout=120s || true
+      kubectl wait -n metallb-system --for=condition=ready daemonset/speaker --timeout=120s || true
+
+      # Create an example IPAddressPool + L2Advertisement. ADJUST THE RANGE for your Docker network.
+      cat <<EOF | kubectl apply -f -
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: kind-pool
+  namespace: metallb-system
+spec:
+  addresses:
+  - 172.18.100.1-172.18.100.250
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: l2
+  namespace: metallb-system
+spec: {}
+EOF
+      echo "MetalLB configured with pool 172.18.100.1-172.18.100.250 (adjust if needed)."
+
+  #############################################################################
+  # Wait for core infra to be healthy (nodes, DNS, local-path, CRDs, MetalLB)
+  #############################################################################
   - name: Wait for Kind cluster to be fully ready
     id: wait-kind-ready
     shell: bash
     run: |
       set -euo pipefail
+      HELM_TIMEOUT="${{ inputs.helm_timeout }}"
       echo "==> Waiting for Kind cluster core components to be ready..."
 
-      # Wait for node(s) to be Ready
-      echo "Waiting for node(s) to be Ready..."
+      echo "1) Wait for node(s) Ready..."
       kubectl wait --for=condition=Ready node --all --timeout=180s || true
 
-      # Wait for CoreDNS to be Available (DNS must be up for many charts)
-      echo "Waiting for CoreDNS deployment to be Available..."
-      kubectl -n kube-system wait --for=condition=Available deployment/coredns --timeout=180s || true
-
-      # Wait for system pods in kube-system to be Ready (best-effort)
-      echo "Waiting for kube-system pods to be ready (best-effort)..."
+      echo "2) Wait for kube-system pods to be Ready (CoreDNS, etcd, kube-apiserver)..."
       kubectl -n kube-system wait --for=condition=Ready pod --all --timeout=180s || true
 
-      # local-path provisioner may be in either 'local-path-storage' or 'local-path' namespace - try both
+      echo "3) Wait for CoreDNS deployment to be Available..."
+      kubectl -n kube-system wait --for=condition=Available deployment/coredns --timeout=180s || true
+
+      echo "4) Wait for local-path provisioner (namespaces local-path-storage or local-path)"
       if kubectl get ns local-path-storage >/dev/null 2>&1; then
-        echo "Found local-path-storage namespace, waiting for provisioner..."
-        kubectl -n local-path-storage wait --for=condition=Available deploy --all --timeout=180s || true
         kubectl -n local-path-storage wait --for=condition=Ready pod --all --timeout=180s || true
       elif kubectl get ns local-path >/dev/null 2>&1; then
-        echo "Found local-path namespace, waiting for provisioner..."
-        kubectl -n local-path wait --for=condition=Available deploy --all --timeout=180s || true
         kubectl -n local-path wait --for=condition=Ready pod --all --timeout=180s || true
       else
-        echo "No local-path provisioner namespace detected; skipping local-path wait"
+        echo "No local-path provisioner found; ensure your cluster has a storage provisioner"
       fi
 
-      # If MetalLB installed, wait for its controller & speaker
+      echo "5) Wait for MetalLB if present"
       if kubectl get ns metallb-system >/dev/null 2>&1; then
-        echo "MetalLB namespace found — waiting for controller and speaker..."
         kubectl -n metallb-system wait --for=condition=Available deployment/controller --timeout=180s || true
         kubectl -n metallb-system wait --for=condition=Ready daemonset/speaker --timeout=180s || true
-        kubectl -n metallb-system wait --for=condition=Ready pod --all --timeout=180s || true
-      else
-        echo "No metallb-system namespace detected; skipping MetalLB wait"
       fi
 
-      # Show current pod status for diagnostics
-      echo "Current cluster pods (all namespaces):"
-      kubectl get pods -A --no-headers || true
+      echo "6) Wait briefly for CRDs to register (reduces Argo sync races)"
+      for i in {1..12}; do
+        # check that some expected CRDs exist (apiextensions may take a moment)
+        CRD_COUNT=$(kubectl get crd --no-headers 2>/dev/null | wc -l || true)
+        echo "CRD count: ${CRD_COUNT}"
+        if [ "${CRD_COUNT}" -gt 5 ]; then
+          echo "CRDs registered"
+          break
+        fi
+        sleep 5
+      done
 
-      echo "Kind cluster readiness gate completed."
+      echo "Cluster readiness gate completed; showing pods snapshot:"
+      kubectl get pods -A -o wide || true
 
-  #########################################################################
-  # Deploy with retry wrapper (unchanged)                                #
-  #########################################################################
+  #############################################################################
+  # Deploy with retries + export helm timeout so mage/helm uses it
+  #############################################################################
   - name: Deploy External Orchestrator
     id: deploy-external-orchestrator
+    shell: bash
     env:
       GIT_USER: "git"
       GIT_TOKEN: ${{ inputs.token }}
@@ -180,14 +227,17 @@ runs:
       DOCKERHUB_TOKEN: ${{ inputs.docker_password }}
       DOCKERHUB_USERNAME: ${{ inputs.docker_username }}
       DEPLOYMENT_TYPE: ${{ inputs.deployment_type }}
-    shell: bash
+      # Make Helm wait longer for heavy installs
+      HELM_TIMEOUT: ${{ inputs.helm_timeout }}
+      TF_VAR_helm_timeout: ${{ inputs.helm_timeout }}
     run: |
       set -euo pipefail
       set +x
-      echo "Starting to deploy Orchestrator..."
+      export HELM_TIMEOUT="${HELM_TIMEOUT:-20m}"
+      export TF_VAR_helm_timeout="${TF_VAR_helm_timeout:-20m}"
+      echo "Starting to deploy Orchestrator (helm timeout = ${HELM_TIMEOUT})"
 
-      # Final quick check before deploy
-      echo "Quick cluster health check before running mage deploy:"
+      # Quick cluster snapshot before deploy
       kubectl get nodes -o wide || true
       kubectl get pods -n kube-system || true
       kubectl get sc || true
@@ -195,7 +245,7 @@ runs:
       # Retry wrapper for transient failures (3 attempts)
       attempts=0
       max_attempts=3
-      backoff_seconds=15
+      backoff_seconds=20
 
       while [ $attempts -lt $max_attempts ]; do
         attempts=$((attempts + 1))
@@ -215,7 +265,10 @@ runs:
           fi
         fi
 
-        echo "Deploy attempt #${attempts} failed."
+        echo "Deploy attempt #${attempts} failed. Dumping brief diagnostics..."
+        kubectl get pods -A -o wide || true
+        kubectl get events -A --sort-by='.metadata.creationTimestamp' || true
+
         if [ $attempts -lt $max_attempts ]; then
           echo "Sleeping ${backoff_seconds}s before retry..."
           sleep ${backoff_seconds}
@@ -224,29 +277,43 @@ runs:
 
       if [ $attempts -ge $max_attempts ]; then
         echo "ERROR: Deployment failed after ${max_attempts} attempts."
-        # Dump diagnostics to help debugging
-        echo "=== Diagnostics ==="
+        echo "=== Full diagnostics ==="
         kubectl get pods -A -o wide || true
         kubectl get pvc -A || true
         kubectl describe nodes || true
+        kubectl get events -A --sort-by='.metadata.creationTimestamp' || true
         exit 1
       fi
 
       echo "Orchestrator deployment done!"
 
+  #############################################################################
+  # If the deploy failed, collect root-app status. Avoid failing kubectl due to missing context
+  #############################################################################
   - name: Get Root App Status
     shell: bash
     if: ${{ always() && steps.deploy-external-orchestrator.conclusion != 'success' }}
     run: |
-      echo "Root App Status:"
-      kubectl get pods -o wide -A
-      kubectl -n dev get applications root-app -o yaml || true
+      set -euo pipefail || true
+      echo "Root App Status (best-effort):"
+      kubectl get pods -o wide -A || true
 
+      # If Argo app CRD isn't present, avoid failing
+      if kubectl api-resources | grep -qi '^applications.argoproj.io'; then
+        kubectl -n dev get applications root-app -o yaml || true
+      else
+        echo "ArgoCD Applications CRD not present yet; skipping Argo app dump"
+      fi
+
+  #############################################################################
+  # Verify (long-running check) and test env setup (unchanged)
+  #############################################################################
   - name: Verify Kind Deployment
     id: verify-kind-deployment
     shell: bash
     run: |
-      echo "Starting to verify Orchestrator deployment..."
+      echo "Starting verification (mage deploy:waitUntilComplete) - this step may take several minutes..."
+      # increase any internal timeouts if your mage target supports env vars (HELM_TIMEOUT exported above)
       mage deploy:waitUntilComplete
       echo "Orchestrator deployment verified!"
       mage router:stop router:start
