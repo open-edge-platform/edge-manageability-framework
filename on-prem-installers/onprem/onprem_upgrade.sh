@@ -573,6 +573,8 @@ echo "ArgoCD upgraded to $(dpkg-query -W -f='${Version}' onprem-argocd-installer
 # Run Orchestrator upgrade
 echo "Upgrading Edge Orchestrator Packages..."
 
+VAULT_PASSWORD=""
+
 # Skip saving passwords if postgres-secrets-password.txt exists and is not empty
 if [[ ! -s postgres-secrets-password.txt ]]; then
     ALERTING=$(kubectl get secret alerting-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}')
@@ -584,6 +586,8 @@ if [[ ! -s postgres-secrets-password.txt ]]; then
     POSTGRESQL=$(kubectl get secret postgresql -n orch-database -o jsonpath='{.data.postgres-password}')
     MPS=$(kubectl get secret mps-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}')
     RPS=$(kubectl get secret rps-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}')
+    # Decode the base64 password for use in ALTER USER command
+    VAULT_PASSWORD=$(echo "$VAULT" | base64 -d)
     {
         echo "Alerting: $ALERTING"
         echo "CatalogService: $CATALOG_SERVICE"
@@ -597,6 +601,8 @@ if [[ ! -s postgres-secrets-password.txt ]]; then
     } > postgres-secrets-password.txt
 else
     echo "postgres-secrets-password.txt exists and is not empty, skipping password save."
+    # Read passwords from existing file and decode them
+    VAULT_PASSWORD=$(grep "^Vault:" postgres-secrets-password.txt | cut -d' ' -f2 | base64 -d)
 fi
 
 
@@ -764,7 +770,6 @@ operation:
 #kubectl patch -n "$apps_ns" application postgresql-secrets --patch-file /tmp/sync-postgresql-patch.yaml --type merge
 kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/sync-postgresql-patch.yaml --type merge
 
-
 #kubectl patch -n "$apps_ns" application postgresql --patch-file /tmp/sync-postgresql-patch.yaml --type merge
 
 start_time=$(date +%s)
@@ -828,8 +833,15 @@ while true; do
     sleep 5
 done
 set -e
+
+# Update Vault user password in the database
+kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-platform-vault_user\" WITH PASSWORD '$VAULT_PASSWORD';"
+
 # Now that PostgreSQL is running, we can restore the secret
 restore_postgres
+
+# Update Vault user password in the database
+kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-platform-vault_user\" WITH PASSWORD '$VAULT_PASSWORD';"
 
 vault_unseal
 
@@ -860,5 +872,31 @@ done
 
 # Run after upgrade script
 ./after_upgrade_restart.sh
+
+# Fix MPS and RPS connection strings for CNPG migration
+echo "Updating MPS and RPS connection strings for CloudNativePG..."
+
+# Get the current passwords from the secrets
+MPS_PASSWORD=$(kubectl get secret mps-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}' | base64 -d)
+RPS_PASSWORD=$(kubectl get secret rps-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}' | base64 -d)
+
+# Update MPS connection string to use CNPG service name
+MPS_CONN_STRING="postgresql://orch-infra-mps_user:${MPS_PASSWORD}@postgresql-cluster-rw.orch-database/orch-infra-mps?search_path=public&sslmode=disable"
+MPS_CONN_BASE64=$(echo -n "$MPS_CONN_STRING" | base64 -w 0)
+kubectl patch secret mps -n orch-infra -p "{\"data\":{\"connectionString\":\"$MPS_CONN_BASE64\"}}" --type=merge
+
+# Update RPS connection string to use CNPG service name
+RPS_CONN_STRING="postgresql://orch-infra-rps_user:${RPS_PASSWORD}@postgresql-cluster-rw.orch-database/orch-infra-rps?search_path=public&sslmode=disable"
+RPS_CONN_BASE64=$(echo -n "$RPS_CONN_STRING" | base64 -w 0)
+kubectl patch secret rps -n orch-infra -p "{\"data\":{\"connectionString\":\"$RPS_CONN_BASE64\"}}" --type=merge
+
+echo "✅ Updated MPS and RPS connection strings to use postgresql-cluster-rw.orch-database"
+
+# Restart MPS and RPS pods to pick up new connection strings
+echo "Restarting MPS and RPS pods..."
+kubectl delete pod -n orch-infra -l app.kubernetes.io/name=mps --ignore-not-found=true
+kubectl delete pod -n orch-infra -l app.kubernetes.io/name=rps --ignore-not-found=true
+
+echo "✅ MPS and RPS pods restarted with updated configuration"
 
 echo "Upgrade completed! Wait for ArgoCD applications to be in 'Synced' and 'Healthy' state"

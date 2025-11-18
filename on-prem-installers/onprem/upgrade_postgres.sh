@@ -7,7 +7,7 @@
 podname="postgresql-0"
 postgres_namespace=orch-database
 POSTGRES_LOCAL_BACKUP_PATH="./" 
-local_backup_file="${postgres_namespace}_${podname}_backup.sql"
+local_backup_file="${postgres_namespace}_backup.sql"
 local_backup_path="${POSTGRES_LOCAL_BACKUP_PATH}${local_backup_file}"
 POSTGRES_USERNAME="postgres"  
 application_namespace=onprem
@@ -49,7 +49,7 @@ backup_postgres() {
   fi
   echo "Backing up databases from pod $podname in namespace $postgres_namespace..."
 
-  remote_backup_path="/tmp/${postgres_namespace}_${podname}_backup.sql"
+  remote_backup_path="/tmp/${postgres_namespace}_backup.sql"
   kubectl exec -n $postgres_namespace $podname -- /bin/bash -c "$(typeset -f disable_security); disable_security"
 
   if kubectl exec -n $postgres_namespace $podname -- /bin/bash -c "pg_dumpall -U $POSTGRES_USERNAME -f '$remote_backup_path'"; then
@@ -82,7 +82,7 @@ get_postgres_pod() {
 restore_postgres() {
   podname=$(get_postgres_pod)
  # kubectl exec -n $postgres_namespace $podname -- /bin/bash -c "$(typeset -f disable_security); disable_security"
-  remote_backup_path="/var/lib/postgresql/data/${postgres_namespace}_${podname}_backup.sql"
+  remote_backup_path="/var/lib/postgresql/data/${postgres_namespace}_backup.sql"
 
   kubectl cp "$local_backup_path" "$postgres_namespace/$podname:$remote_backup_path" -c postgres
 
