@@ -60,6 +60,18 @@ opentelemetry-collector:
       # Used for Tempo to sample 50% of traces, based on TraceID
       probabilistic_sampler:
         sampling_percentage: 50
+    service:
+      telemetry:
+        metrics:
+          level: detailed
+          readers:
+            - pull:
+                exporter:
+                  prometheus:
+                    host: ${env:MY_POD_IP}
+                    port: 8888
+                    without_type_suffix: true
+                    without_units: true
 
 opentelemetry-collector-daemonset:
   alternateConfig:
@@ -79,3 +91,15 @@ opentelemetry-collector-daemonset:
               static_configs:
                 - targets:
                     - ${env:MY_POD_IP}:8888
+    service:
+      telemetry:
+        metrics:
+          level: detailed
+          readers:
+            - pull:
+                exporter:
+                  prometheus:
+                    host: ${env:MY_POD_IP}
+                    port: 8888
+                    without_type_suffix: true
+                    without_units: true

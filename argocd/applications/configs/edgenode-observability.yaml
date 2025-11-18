@@ -56,3 +56,15 @@ opentelemetry-collector:
           http:
             endpoint: ${env:MY_POD_IP}:4318
             include_metadata: true
+    service:
+      telemetry:
+        metrics:
+          level: detailed
+          readers:
+            - pull:
+                exporter:
+                  prometheus:
+                    host: ${env:MY_POD_IP}
+                    port: 8888
+                    without_type_suffix: true
+                    without_units: true
