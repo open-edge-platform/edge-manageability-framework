@@ -57,6 +57,68 @@ runs:
       EDGE_MANAGEABILITY_FRAMEWORK_REV: ${{ inputs.orch_version }}
     run: echo "Current git hash is \"$EDGE_MANAGEABILITY_FRAMEWORK_REV\""
 
+  #########################################################################
+  # PREPULL: ensure images are available inside the kind node to avoid   #
+  # ImagePullBackOff and Docker Hub rate-limit/auth issues              #
+  #########################################################################
+  - name: Pre-pull and load container images into kind
+    shell: bash
+    env:
+      DOCKERHUB_USERNAME: ${{ inputs.docker_username }}
+      DOCKERHUB_PASSWORD: ${{ inputs.docker_password }}
+    run: |
+      set -euxo pipefail
+
+      # 1) Docker login (best-effort) - helps avoid rate-limits and auth failures
+      if [ -n "${DOCKERHUB_USERNAME:-}" ] && [ -n "${DOCKERHUB_PASSWORD:-}" ]; then
+        echo "${DOCKERHUB_PASSWORD}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin || true
+      fi
+
+      # 2) Images to pre-pull - update this list to match the images your charts actually reference
+      IMAGES=(
+        "registry-1.docker.io/giteacharts/gitea:10.6.0"
+        "docker.io/bitnami/postgresql:15.3.0"    # update to actual postgres image/tag your chart uses
+        "docker.io/redis:6.2.12"                 # update to actual redis image/tag
+        "axllent/mailpit:latest"                 # replace if different; used as example
+      )
+
+      echo "Pre-pulling and loading images into kind (cluster name: kind)..."
+      for img in "${IMAGES[@]}"; do
+        echo ">>> Handling image: ${img}"
+        # try a few pulls to reduce transient network flakiness
+        retry=0
+        max_retry=3
+        until [ $retry -ge $max_retry ]; do
+          if docker pull "${img}"; then
+            echo "Pulled ${img}"
+            break
+          fi
+          retry=$((retry+1))
+          echo "docker pull failed for ${img}, retry ${retry}/${max_retry}..."
+          sleep $((retry * 2))
+        done
+
+        # best-effort: load into kind so the node doesn't need to pull
+        if command -v kind >/dev/null 2>&1; then
+          kind load docker-image "${img}" --name kind || kind load docker-image "${img}" || true
+        else
+          echo "kind CLI not found; skipping kind load for ${img}"
+        fi
+      done
+
+      # sanity checks: ensure kind control-plane container is running and DNS can resolve registries
+      if docker ps --format '{{.Names}}' | grep -q '^kind-control-plane$'; then
+        echo "kind-control-plane container found; testing DNS resolution inside node..."
+        docker exec kind-control-plane sh -c "command -v nslookup >/dev/null 2>&1 && nslookup registry-1.docker.io || true" || true
+      else
+        echo "Warning: kind-control-plane container not found. If cluster name is nonstandard, adjust the kind load step."
+      fi
+
+      echo "Pre-pull and load step finished."
+
+  #########################################################################
+  # Cluster readiness gate (unchanged, ensures core infra is healthy)    #
+  #########################################################################
   - name: Wait for Kind cluster to be fully ready
     id: wait-kind-ready
     shell: bash
@@ -105,6 +167,9 @@ runs:
 
       echo "Kind cluster readiness gate completed."
 
+  #########################################################################
+  # Deploy with retry wrapper (unchanged)                                #
+  #########################################################################
   - name: Deploy External Orchestrator
     id: deploy-external-orchestrator
     env:
@@ -190,7 +255,7 @@ runs:
   - name: Setup Test environment
     shell: bash
     run: |
-      sudo awk -i inplace '/BEGIN ORCH DEVELOPMENT HOSTS/,/END ORCH DEVELOPMENT HOSTS/ { next } 1' /etc/hosts
+      sudo awk -i inplace '/BEGIN ORCH DEVELOPMENT HOSTS/,/END ORCH DEVELOPMENT HOST/ { next } 1' /etc/hosts
       sudo awk -i inplace '/BEGIN ORCH SRE DEVELOPMENT HOST/,/END ORCH SRE DEVELOPMENT HOST/ { next } 1' /etc/hosts
       mage gen:hostfileTraefik | sudo tee -a /etc/hosts > /dev/null
       echo "Updated Hostfile entries!"
