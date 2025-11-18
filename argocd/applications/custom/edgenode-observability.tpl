@@ -417,10 +417,6 @@ mimir-distributed:
       query_scheduler:
         max_outstanding_requests_per_tenant: {{ .Values.argo.o11y.edgeNode.mimir.structuredConfig.querySchedulerMaxOutstandingRequestsPerTenant }}
       {{- end }}
-      {{- if .Values.argo.o11y.edgeNode.mimir.structuredConfig.frontendMaxOutstandingRequestsPerTenant }}
-      frontend:
-        max_outstanding_per_tenant: {{ .Values.argo.o11y.edgeNode.mimir.structuredConfig.frontendMaxOutstandingRequestsPerTenant }}
-      {{- end }}
       {{- if .Values.argo.o11y.edgeNode.mimir.structuredConfig.querierTime }}
       querier:
         query_store_after: {{ .Values.argo.o11y.edgeNode.mimir.structuredConfig.querierTime }}

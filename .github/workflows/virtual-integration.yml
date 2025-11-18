@@ -24,9 +24,10 @@ on:
   # Trigger workflow when enqueued to a merge group
   merge_group:
 
-# Only run at most 1 workflow concurrently per PR, unlimited for branches
+# For PRs → use the PR number as the group (forces only 1 run active)
+# For branches → use the full ref (unique per branch) so runs don't cancel each other
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.sha }}
+  group: ${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions: {}
@@ -54,7 +55,7 @@ jobs:
       ci: ${{ contains(steps.check-files.outputs.changed_files, '.github/workflows') || contains(steps.check-files.outputs.changed_files, '.github/actions') }}
       go: ${{ contains(steps.check-files.outputs.changed_files, '.go') || contains(steps.check-files.outputs.changed_files, '.mod') || contains(steps.check-files.outputs.changed_files, '.sum') }}
       markdown: ${{ contains(steps.check-files.outputs.changed_files, '.md') || contains(steps.check-files.outputs.changed_files, '.markdown') || contains(steps.check-files.outputs.changed_files, '.mdx') }}
-      orch: ${{ contains(steps.check-files.outputs.changed_files, 'argocd') || contains(steps.check-files.outputs.changed_files, 'bootstrap') || contains(steps.check-files.outputs.changed_files, 'installer') || contains(steps.check-files.outputs.changed_files, 'internal') || contains(steps.check-files.outputs.changed_files, 'mage') || contains(steps.check-files.outputs.changed_files, 'node') || contains(steps.check-files.outputs.changed_files, 'router') || contains(steps.check-files.outputs.changed_files, 'tools') || contains(steps.check-files.outputs.changed_files, 'e2e-tests') || contains(steps.check-files.outputs.changed_files, 'VERSION') }}
+      orch: ${{ contains(steps.check-files.outputs.changed_files, 'argocd') || contains(steps.check-files.outputs.changed_files, 'bootstrap') || contains(steps.check-files.outputs.changed_files, 'installer') || contains(steps.check-files.outputs.changed_files, 'internal') || contains(steps.check-files.outputs.changed_files, 'mage') || contains(steps.check-files.outputs.changed_files, 'node') || contains(steps.check-files.outputs.changed_files, 'router') || contains(steps.check-files.outputs.changed_files, 'tools') || contains(steps.check-files.outputs.changed_files, 'e2e-tests') || contains(steps.check-files.outputs.changed_files, 'VERSION') || contains(steps.check-files.outputs.changed_files, 'orch-configs') }}
       on-prem: ${{ contains(steps.check-files.outputs.changed_files, 'on-prem-installers') || contains(steps.check-files.outputs.changed_files, 'terraform') }}
       onboarding: ${{ contains(steps.check-files.outputs.changed_files, 'argocd/applications/templates/infra-') || contains(steps.check-files.outputs.changed_files, 'argocd/applications/values.yaml') }}
       shell: ${{ contains(steps.check-files.outputs.changed_files, '.sh') || contains(steps.check-files.outputs.changed_files, '.bash') }}
