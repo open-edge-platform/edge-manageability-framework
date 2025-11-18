@@ -1,0 +1,554 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 2340" width="1400" height="2340">
+  <defs>
+    <style>
+      .layer-box { stroke: #333; stroke-width: 2; rx: 8; }
+      .component { stroke: #666; stroke-width: 1.5; rx: 4; }
+      .arrow { stroke: #666; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .text-title { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; fill: #333; }
+      .text-component { font-family: Arial, sans-serif; font-size: 12px; fill: #333; text-anchor: middle; }
+      .text-small { font-family: Arial, sans-serif; font-size: 10px; fill: #666; text-anchor: middle; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#666" />
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="700" y="30" class="text-title" style="font-size: 24px; text-anchor: middle;">EMF Deployment Architecture</text>
+
+  <!-- Layer 1: User Interfaces -->
+  <rect x="50" y="60" width="1300" height="140" fill="#e1f5ff" class="layer-box"/>
+  <text x="70" y="85" class="text-title">User Interfaces (orch-ui)</text>
+
+  <rect x="80" y="100" width="180" height="80" fill="#b3e5fc" class="component"/>
+  <text x="170" y="130" class="text-component">web-ui-admin</text>
+  <text x="170" y="147" class="text-small">Administrative web</text>
+  <text x="170" y="162" class="text-small">interface for system</text>
+  <text x="170" y="177" class="text-small">configuration</text>
+
+  <rect x="280" y="100" width="180" height="80" fill="#b3e5fc" class="component"/>
+  <text x="370" y="130" class="text-component">web-ui-app-orch</text>
+  <text x="370" y="147" class="text-small">Application</text>
+  <text x="370" y="162" class="text-small">orchestration mgmt</text>
+  <text x="370" y="177" class="text-small">interface</text>
+
+  <rect x="480" y="100" width="180" height="80" fill="#b3e5fc" class="component"/>
+  <text x="570" y="130" class="text-component">web-ui-cluster-orch</text>
+  <text x="570" y="147" class="text-small">Cluster management</text>
+  <text x="570" y="162" class="text-small">and orchestration</text>
+  <text x="570" y="177" class="text-small">interface</text>
+
+  <rect x="680" y="100" width="180" height="80" fill="#b3e5fc" class="component"/>
+  <text x="770" y="130" class="text-component">web-ui-infra</text>
+  <text x="770" y="147" class="text-small">Infrastructure</text>
+  <text x="770" y="162" class="text-small">management web</text>
+  <text x="770" y="177" class="text-small">interface</text>
+
+  <rect x="880" y="100" width="180" height="80" fill="#b3e5fc" class="component"/>
+  <text x="970" y="130" class="text-component">web-ui-root</text>
+  <text x="970" y="147" class="text-small">Root landing page</text>
+  <text x="970" y="162" class="text-small">and navigation</text>
+  <text x="970" y="177" class="text-small">portal</text>
+
+  <rect x="1080" y="100" width="180" height="80" fill="#b3e5fc" class="component"/>
+  <text x="1170" y="130" class="text-component">metadata-broker</text>
+  <text x="1170" y="147" class="text-small">UI metadata broker</text>
+  <text x="1170" y="162" class="text-small">for backend</text>
+  <text x="1170" y="177" class="text-small">services</text>
+
+  <!-- Layer 2: Gateway & Authentication -->
+  <rect x="50" y="220" width="640" height="150" fill="#fff3e0" class="layer-box"/>
+  <text x="70" y="245" class="text-title">API Gateway &amp; Authentication</text>
+
+  <rect x="80" y="260" width="140" height="90" fill="#ffe0b2" class="component"/>
+  <text x="150" y="290" class="text-component">traefik</text>
+  <text x="150" y="307" class="text-small">Reverse proxy and</text>
+  <text x="150" y="322" class="text-small">load balancer for</text>
+  <text x="150" y="337" class="text-small">HTTP routing</text>
+
+  <rect x="240" y="260" width="140" height="90" fill="#ffe0b2" class="component"/>
+  <text x="310" y="290" class="text-component">auth-service</text>
+  <text x="310" y="307" class="text-small">Authentication and</text>
+  <text x="310" y="322" class="text-small">authorization</text>
+  <text x="310" y="337" class="text-small">service</text>
+
+  <rect x="400" y="260" width="140" height="90" fill="#ffe0b2" class="component"/>
+  <text x="470" y="290" class="text-component">cert-file-server</text>
+  <text x="470" y="307" class="text-small">Certificate file</text>
+  <text x="470" y="322" class="text-small">server for secure</text>
+  <text x="470" y="337" class="text-small">communications</text>
+
+  <rect x="560" y="260" width="110" height="90" fill="#ffe0b2" class="component"/>
+  <text x="615" y="295" class="text-component">nexus-</text>
+  <text x="615" y="310" class="text-component">api-gw</text>
+  <text x="615" y="327" class="text-small">IAM API</text>
+  <text x="615" y="342" class="text-small">Gateway</text>
+
+  <!-- Layer 3: Identity & Access Management -->
+  <rect x="710" y="220" width="640" height="150" fill="#f3e5f5" class="layer-box"/>
+  <text x="730" y="245" class="text-title">Identity &amp; Access Management (orch-iam)</text>
+
+  <rect x="740" y="260" width="140" height="90" fill="#e1bee7" class="component"/>
+  <text x="810" y="290" class="text-component">keycloak</text>
+  <text x="810" y="307" class="text-small">Keycloak identity</text>
+  <text x="810" y="322" class="text-small">and access</text>
+  <text x="810" y="337" class="text-small">management</text>
+
+  <rect x="900" y="260" width="140" height="90" fill="#e1bee7" class="component"/>
+  <text x="970" y="290" class="text-component">tenancy-manager</text>
+  <text x="970" y="307" class="text-small">Multi-tenancy</text>
+  <text x="970" y="322" class="text-small">tenant lifecycle</text>
+  <text x="970" y="337" class="text-small">management</text>
+
+  <rect x="1060" y="260" width="140" height="90" fill="#e1bee7" class="component"/>
+  <text x="1130" y="290" class="text-component">vault</text>
+  <text x="1130" y="307" class="text-small">HashiCorp Vault</text>
+  <text x="1130" y="322" class="text-small">secrets</text>
+  <text x="1130" y="337" class="text-small">management</text>
+
+  <rect x="1220" y="260" width="110" height="90" fill="#e1bee7" class="component"/>
+  <text x="1275" y="285" class="text-component">vault-</text>
+  <text x="1275" y="300" class="text-component">agent-</text>
+  <text x="1275" y="315" class="text-component">injector</text>
+  <text x="1275" y="332" class="text-small">Secret</text>
+  <text x="1275" y="347" class="text-small">injection</text>
+
+  <!-- Layer 4: Application Orchestration -->
+  <rect x="50" y="390" width="640" height="200" fill="#e8f5e9" class="layer-box"/>
+  <text x="70" y="415" class="text-title">Application Orchestration (orch-app)</text>
+
+  <rect x="80" y="435" width="180" height="70" fill="#c8e6c9" class="component"/>
+  <text x="170" y="460" class="text-component">app-deployment-api</text>
+  <text x="170" y="477" class="text-small">API for application</text>
+  <text x="170" y="492" class="text-small">deployment operations</text>
+
+  <rect x="280" y="435" width="180" height="70" fill="#c8e6c9" class="component"/>
+  <text x="370" y="460" class="text-component">app-deployment-mgr</text>
+  <text x="370" y="477" class="text-small">Application deployment</text>
+  <text x="370" y="492" class="text-small">lifecycle manager</text>
+
+  <rect x="480" y="435" width="180" height="70" fill="#c8e6c9" class="component"/>
+  <text x="570" y="460" class="text-component">app-orch-catalog</text>
+  <text x="570" y="477" class="text-small">Application catalog</text>
+  <text x="570" y="492" class="text-small">service</text>
+
+  <rect x="80" y="510" width="180" height="70" fill="#c8e6c9" class="component"/>
+  <text x="170" y="535" class="text-component">app-resource-mgr</text>
+  <text x="170" y="552" class="text-small">Manages compute/storage</text>
+  <text x="170" y="567" class="text-small">resources for apps</text>
+
+  <rect x="280" y="510" width="180" height="70" fill="#c8e6c9" class="component"/>
+  <text x="370" y="535" class="text-component">app-service-proxy</text>
+  <text x="370" y="552" class="text-small">Proxies application</text>
+  <text x="370" y="567" class="text-small">service requests</text>
+
+  <rect x="480" y="510" width="180" height="70" fill="#c8e6c9" class="component"/>
+  <text x="570" y="535" class="text-component">vnc-proxy</text>
+  <text x="570" y="552" class="text-small">VNC proxy for remote</text>
+  <text x="570" y="567" class="text-small">desktop access</text>
+
+  <!-- Layer 5: Cluster Management -->
+  <rect x="710" y="390" width="640" height="200" fill="#e8f5e9" class="layer-box"/>
+  <text x="730" y="415" class="text-title">Cluster Management (orch-cluster)</text>
+
+  <rect x="740" y="435" width="180" height="70" fill="#c8e6c9" class="component"/>
+  <text x="830" y="460" class="text-component">cluster-manager</text>
+  <text x="830" y="477" class="text-small">Kubernetes cluster</text>
+  <text x="830" y="492" class="text-small">lifecycle management</text>
+
+  <rect x="940" y="435" width="180" height="70" fill="#c8e6c9" class="component"/>
+  <text x="1030" y="460" class="text-component">cluster-gateway</text>
+  <text x="1030" y="477" class="text-small">Gateway for secure</text>
+  <text x="1030" y="492" class="text-small">connectivity to clusters</text>
+
+  <rect x="1140" y="435" width="180" height="70" fill="#c8e6c9" class="component"/>
+  <text x="1230" y="460" class="text-component">intel-infra-provider</text>
+  <text x="1230" y="477" class="text-small">Intel infrastructure</text>
+  <text x="1230" y="492" class="text-small">provider integration</text>
+
+  <rect x="740" y="510" width="180" height="70" fill="#c8e6c9" class="component"/>
+  <text x="830" y="535" class="text-component">capi-controller</text>
+  <text x="830" y="552" class="text-small">Cluster API for</text>
+  <text x="830" y="567" class="text-small">declarative mgmt</text>
+
+  <rect x="940" y="510" width="180" height="70" fill="#c8e6c9" class="component"/>
+  <text x="1030" y="535" class="text-component">fleet-controller</text>
+  <text x="1030" y="552" class="text-small">Multi-cluster GitOps</text>
+  <text x="1030" y="567" class="text-small">deployment</text>
+
+  <rect x="1140" y="510" width="180" height="70" fill="#c8e6c9" class="component"/>
+  <text x="1230" y="535" class="text-component">cluster-templates</text>
+  <text x="1230" y="552" class="text-small">Template controller</text>
+  <text x="1230" y="567" class="text-small">for cluster provisioning</text>
+
+  <!-- Layer 6: Infrastructure Management -->
+  <rect x="50" y="610" width="1300" height="230" fill="#fff9c4" class="layer-box"/>
+  <text x="70" y="635" class="text-title">Infrastructure Management (orch-infra)</text>
+
+  <rect x="80" y="655" width="150" height="75" fill="#fff59d" class="component"/>
+  <text x="155" y="680" class="text-component">onboarding-mgr</text>
+  <text x="155" y="697" class="text-small">Device onboarding</text>
+  <text x="155" y="712" class="text-small">and provisioning</text>
+  <text x="155" y="727" class="text-small">workflow</text>
+
+  <rect x="245" y="655" width="150" height="75" fill="#fff59d" class="component"/>
+  <text x="320" y="680" class="text-component">host-manager</text>
+  <text x="320" y="697" class="text-small">Physical host</text>
+  <text x="320" y="712" class="text-small">lifecycle and</text>
+  <text x="320" y="727" class="text-small">configuration</text>
+
+  <rect x="410" y="655" width="150" height="75" fill="#fff59d" class="component"/>
+  <text x="485" y="680" class="text-component">inventory</text>
+  <text x="485" y="697" class="text-small">Resource inventory</text>
+  <text x="485" y="712" class="text-small">and infrastructure</text>
+  <text x="485" y="727" class="text-small">database</text>
+
+  <rect x="575" y="655" width="150" height="75" fill="#fff59d" class="component"/>
+  <text x="650" y="680" class="text-component">tinkerbell</text>
+  <text x="650" y="697" class="text-small">Bare metal</text>
+  <text x="650" y="712" class="text-small">provisioning</text>
+  <text x="650" y="727" class="text-small">workflow engine</text>
+
+  <rect x="740" y="655" width="150" height="75" fill="#fff59d" class="component"/>
+  <text x="815" y="680" class="text-component">mps</text>
+  <text x="815" y="697" class="text-small">Intel Management</text>
+  <text x="815" y="712" class="text-small">Presence Server</text>
+  <text x="815" y="727" class="text-small">(AMT activation)</text>
+
+  <rect x="905" y="655" width="150" height="75" fill="#fff59d" class="component"/>
+  <text x="980" y="680" class="text-component">rps</text>
+  <text x="980" y="697" class="text-small">Intel Remote</text>
+  <text x="980" y="712" class="text-small">Provisioning Server</text>
+  <text x="980" y="727" class="text-small">(AMT config)</text>
+
+  <rect x="1070" y="655" width="150" height="75" fill="#fff59d" class="component"/>
+  <text x="1145" y="680" class="text-component">network-manager</text>
+  <text x="1145" y="697" class="text-small">Network</text>
+  <text x="1145" y="712" class="text-small">configuration</text>
+  <text x="1145" y="727" class="text-small">management</text>
+
+  <rect x="80" y="740" width="150" height="75" fill="#fff59d" class="component"/>
+  <text x="155" y="765" class="text-component">os-resource-mgr</text>
+  <text x="155" y="782" class="text-small">Operating system</text>
+  <text x="155" y="797" class="text-small">resources and</text>
+  <text x="155" y="812" class="text-small">updates</text>
+
+  <rect x="245" y="740" width="150" height="75" fill="#fff59d" class="component"/>
+  <text x="320" y="765" class="text-component">maintenance-mgr</text>
+  <text x="320" y="782" class="text-small">Maintenance</text>
+  <text x="320" y="797" class="text-small">windows and</text>
+  <text x="320" y="812" class="text-small">scheduling</text>
+
+  <rect x="410" y="740" width="150" height="75" fill="#fff59d" class="component"/>
+  <text x="485" y="765" class="text-component">telemetry-mgr</text>
+  <text x="485" y="782" class="text-small">Device telemetry</text>
+  <text x="485" y="797" class="text-small">collection and</text>
+  <text x="485" y="812" class="text-small">processing</text>
+
+  <rect x="575" y="740" width="150" height="75" fill="#fff59d" class="component"/>
+  <text x="650" y="765" class="text-component">attestation-mgr</text>
+  <text x="650" y="782" class="text-small">Device attestation</text>
+  <text x="650" y="797" class="text-small">status and</text>
+  <text x="650" y="812" class="text-small">validation</text>
+
+  <rect x="740" y="740" width="150" height="75" fill="#fff59d" class="component"/>
+  <text x="815" y="765" class="text-component">dm-manager</text>
+  <text x="815" y="782" class="text-small">Device management</text>
+  <text x="815" y="797" class="text-small">lifecycle</text>
+  <text x="815" y="812" class="text-small">manager</text>
+
+  <rect x="905" y="740" width="150" height="75" fill="#fff59d" class="component"/>
+  <text x="980" y="765" class="text-component">dkam</text>
+  <text x="980" y="782" class="text-small">Device key and</text>
+  <text x="980" y="797" class="text-small">attestation</text>
+  <text x="980" y="812" class="text-small">manager</text>
+
+  <rect x="1070" y="740" width="150" height="75" fill="#fff59d" class="component"/>
+  <text x="1145" y="765" class="text-component">exporter</text>
+  <text x="1145" y="782" class="text-small">Infrastructure</text>
+  <text x="1145" y="797" class="text-small">metrics to</text>
+  <text x="1145" y="812" class="text-small">monitoring</text>
+
+  <!-- Layer 7: Observability -->
+  <rect x="50" y="860" width="1300" height="200" fill="#ffecb3" class="layer-box"/>
+  <text x="70" y="885" class="text-title">Observability &amp; Monitoring (orch-infra, orch-platform)</text>
+
+  <rect x="80" y="905" width="140" height="135" fill="#ffe082" class="component"/>
+  <text x="150" y="930" class="text-component">grafana</text>
+  <text x="150" y="947" class="text-small">Edge &amp; Orchestrator</text>
+  <text x="150" y="962" class="text-small">dashboards for</text>
+  <text x="150" y="977" class="text-small">metrics visualization</text>
+  <text x="150" y="992" class="text-small">(edgenode-observability</text>
+  <text x="150" y="1007" class="text-small">&amp; orchestrator)</text>
+  <text x="150" y="1022" class="text-small">observability</text>
+
+  <rect x="240" y="905" width="140" height="135" fill="#ffe082" class="component"/>
+  <text x="310" y="930" class="text-component">prometheus</text>
+  <text x="310" y="947" class="text-small">Metrics collection</text>
+  <text x="310" y="962" class="text-small">and alerting</text>
+  <text x="310" y="977" class="text-small">(alerting-monitor,</text>
+  <text x="310" y="992" class="text-small">alertmanager,</text>
+  <text x="310" y="1007" class="text-small">orchestrator-</text>
+  <text x="310" y="1022" class="text-small">prometheus-agent)</text>
+
+  <rect x="400" y="905" width="140" height="135" fill="#ffe082" class="component"/>
+  <text x="470" y="930" class="text-component">loki</text>
+  <text x="470" y="947" class="text-small">Log aggregation</text>
+  <text x="470" y="962" class="text-small">system (loki-backend,</text>
+  <text x="470" y="977" class="text-small">loki-read, loki-write,</text>
+  <text x="470" y="992" class="text-small">loki-gateway,</text>
+  <text x="470" y="1007" class="text-small">loki-chunks-cache,</text>
+  <text x="470" y="1022" class="text-small">loki-results-cache)</text>
+
+  <rect x="560" y="905" width="140" height="135" fill="#ffe082" class="component"/>
+  <text x="630" y="930" class="text-component">mimir</text>
+  <text x="630" y="947" class="text-small">Time-series metrics</text>
+  <text x="630" y="962" class="text-small">(mimir-distributor,</text>
+  <text x="630" y="977" class="text-small">mimir-ingester,</text>
+  <text x="630" y="992" class="text-small">mimir-querier,</text>
+  <text x="630" y="1007" class="text-small">mimir-compactor,</text>
+  <text x="630" y="1022" class="text-small">mimir-store-gateway)</text>
+
+  <rect x="720" y="905" width="140" height="135" fill="#ffe082" class="component"/>
+  <text x="790" y="930" class="text-component">opentelemetry</text>
+  <text x="790" y="947" class="text-small">Telemetry data</text>
+  <text x="790" y="962" class="text-small">collection from</text>
+  <text x="790" y="977" class="text-small">edge nodes and</text>
+  <text x="790" y="992" class="text-small">orchestrator</text>
+  <text x="790" y="1007" class="text-small">(opentelemetry-</text>
+  <text x="790" y="1022" class="text-small">collector)</text>
+
+  <rect x="880" y="905" width="140" height="135" fill="#ffe082" class="component"/>
+  <text x="950" y="930" class="text-component">minio</text>
+  <text x="950" y="947" class="text-small">Object storage for</text>
+  <text x="950" y="962" class="text-small">observability data,</text>
+  <text x="950" y="977" class="text-small">logs, metrics,</text>
+  <text x="950" y="992" class="text-small">and backups</text>
+  <text x="950" y="1007" class="text-small">(edgenode &amp;</text>
+  <text x="950" y="1022" class="text-small">orchestrator minio)</text>
+
+  <rect x="1040" y="905" width="140" height="135" fill="#ffe082" class="component"/>
+  <text x="1110" y="930" class="text-component">sre-exporter</text>
+  <text x="1110" y="947" class="text-small">Site reliability</text>
+  <text x="1110" y="962" class="text-small">engineering</text>
+  <text x="1110" y="977" class="text-small">metrics exporter</text>
+  <text x="1110" y="992" class="text-small">for system health</text>
+  <text x="1110" y="1007" class="text-small">monitoring</text>
+
+  <rect x="1200" y="905" width="130" height="135" fill="#ffe082" class="component"/>
+  <text x="1265" y="930" class="text-component">kube-state-</text>
+  <text x="1265" y="945" class="text-component">metrics</text>
+  <text x="1265" y="962" class="text-small">Kubernetes</text>
+  <text x="1265" y="977" class="text-small">object state</text>
+  <text x="1265" y="992" class="text-small">metrics</text>
+  <text x="1265" y="1007" class="text-small">exporter</text>
+
+  <!-- Layer 8: GitOps & CD -->
+  <rect x="50" y="1080" width="430" height="140" fill="#e3f2fd" class="layer-box"/>
+  <text x="70" y="1105" class="text-title">GitOps &amp; Continuous Delivery (argocd, gitea)</text>
+
+  <rect x="80" y="1125" width="110" height="80" fill="#bbdefb" class="component"/>
+  <text x="135" y="1155" class="text-component">argocd</text>
+  <text x="135" y="172" class="text-small">GitOps</text>
+  <text x="135" y="1187" class="text-small">continuous</text>
+  <text x="135" y="1202" class="text-small">delivery</text>
+
+  <rect x="210" y="1125" width="110" height="80" fill="#bbdefb" class="component"/>
+  <text x="265" y="1155" class="text-component">gitea</text>
+  <text x="265" y="1172" class="text-small">Self-hosted</text>
+  <text x="265" y="1187" class="text-small">Git service</text>
+  <text x="265" y="1202" class="text-small">for repos</text>
+
+  <rect x="340" y="1125" width="120" height="80" fill="#bbdefb" class="component"/>
+  <text x="400" y="1150" class="text-component">argocd-repo-</text>
+  <text x="400" y="1165" class="text-component">server</text>
+  <text x="400" y="1182" class="text-small">Git repository</text>
+  <text x="400" y="1197" class="text-small">manager</text>
+
+  <!-- Layer 9: Container Registry -->
+  <rect x="500" y="1080" width="430" height="140" fill="#f1f8e9" class="layer-box"/>
+  <text x="520" y="1105" class="text-title">Container Registry (orch-harbor)</text>
+
+  <rect x="530" y="1125" width="110" height="80" fill="#dcedc8" class="component"/>
+  <text x="585" y="1155" class="text-component">harbor-core</text>
+  <text x="585" y="1172" class="text-small">Container</text>
+  <text x="585" y="1187" class="text-small">registry</text>
+  <text x="585" y="1202" class="text-small">core</text>
+
+  <rect x="660" y="1125" width="110" height="80" fill="#dcedc8" class="component"/>
+  <text x="715" y="1155" class="text-component">harbor-portal</text>
+  <text x="715" y="1172" class="text-small">Web UI</text>
+  <text x="715" y="1187" class="text-small">portal for</text>
+  <text x="715" y="1202" class="text-small">Harbor</text>
+
+  <rect x="790" y="1125" width="120" height="80" fill="#dcedc8" class="component"/>
+  <text x="850" y="1155" class="text-component">trivy</text>
+  <text x="850" y="1172" class="text-small">Container</text>
+  <text x="850" y="1187" class="text-small">vulnerability</text>
+  <text x="850" y="1202" class="text-small">scanner</text>
+
+  <!-- Layer 10: Service Mesh -->
+  <rect x="950" y="1080" width="400" height="140" fill="#fce4ec" class="layer-box"/>
+  <text x="970" y="1105" class="text-title">Service Mesh &amp; Networking</text>
+
+  <rect x="980" y="1125" width="100" height="80" fill="#f8bbd0" class="component"/>
+  <text x="1030" y="1155" class="text-component">istio</text>
+  <text x="1030" y="1172" class="text-small">Service mesh</text>
+  <text x="1030" y="1187" class="text-small">control plane</text>
+
+  <rect x="1100" y="1125" width="100" height="80" fill="#f8bbd0" class="component"/>
+  <text x="1150" y="1155" class="text-component">calico</text>
+  <text x="1150" y="1172" class="text-small">CNI and</text>
+  <text x="1150" y="1187" class="text-small">network</text>
+  <text x="1150" y="1202" class="text-small">policy</text>
+
+  <rect x="1220" y="1125" width="110" height="80" fill="#f8bbd0" class="component"/>
+  <text x="1275" y="1155" class="text-component">metallb</text>
+  <text x="1275" y="1172" class="text-small">Load</text>
+  <text x="1275" y="1187" class="text-small">balancer for</text>
+  <text x="1275" y="1202" class="text-small">bare-metal</text>
+
+  <!-- Layer 11: Policy & Security -->
+  <rect x="50" y="1240" width="650" height="140" fill="#ede7f6" class="layer-box"/>
+  <text x="70" y="1265" class="text-title">Policy &amp; Security (kyverno, cert-manager, external-secrets)</text>
+
+  <rect x="80" y="1285" width="140" height="80" fill="#d1c4e9" class="component"/>
+  <text x="150" y="1315" class="text-component">kyverno</text>
+  <text x="150" y="1332" class="text-small">Policy engine for</text>
+  <text x="150" y="1347" class="text-small">admission control</text>
+
+  <rect x="240" y="1285" width="140" height="80" fill="#d1c4e9" class="component"/>
+  <text x="310" y="1315" class="text-component">cert-manager</text>
+  <text x="310" y="1332" class="text-small">Automated TLS</text>
+  <text x="310" y="1347" class="text-small">certificate mgmt</text>
+
+  <rect x="400" y="1285" width="140" height="80" fill="#d1c4e9" class="component"/>
+  <text x="470" y="1315" class="text-component">external-secrets</text>
+  <text x="470" y="1332" class="text-small">Secrets sync from</text>
+  <text x="470" y="1347" class="text-small">external stores</text>
+
+  <rect x="560" y="1285" width="120" height="80" fill="#d1c4e9" class="component"/>
+  <text x="620" y="1310" class="text-component">attestation-</text>
+  <text x="620" y="1325" class="text-component">statusmgr</text>
+  <text x="620" y="1342" class="text-small">Device</text>
+  <text x="620" y="1357" class="text-small">attestation</text>
+
+  <!-- Layer 12: Storage & Databases -->
+  <rect x="720" y="1240" width="630" height="140" fill="#e0f2f1" class="layer-box"/>
+  <text x="740" y="1265" class="text-title">Storage &amp; Databases (orch-database, openebs)</text>
+
+  <rect x="750" y="1285" width="140" height="80" fill="#b2dfdb" class="component"/>
+  <text x="820" y="1315" class="text-component">postgresql</text>
+  <text x="820" y="1332" class="text-small">Main PostgreSQL</text>
+  <text x="820" y="1347" class="text-small">database cluster</text>
+
+  <rect x="910" y="1285" width="140" height="80" fill="#b2dfdb" class="component"/>
+  <text x="980" y="1315" class="text-component">openebs</text>
+  <text x="980" y="1332" class="text-small">Container-attached</text>
+  <text x="980" y="1347" class="text-small">storage mgmt</text>
+
+  <rect x="1070" y="1285" width="120" height="80" fill="#b2dfdb" class="component"/>
+  <text x="1130" y="1310" class="text-component">harbor-</text>
+  <text x="1130" y="1325" class="text-component">database</text>
+  <text x="1130" y="1342" class="text-small">Harbor DB</text>
+
+  <rect x="1210" y="1285" width="120" height="80" fill="#b2dfdb" class="component"/>
+  <text x="1270" y="1310" class="text-component">gitea-</text>
+  <text x="1270" y="1325" class="text-component">postgresql</text>
+  <text x="1270" y="1342" class="text-small">Gitea DB</text>
+
+  <!-- Layer 13: Kubernetes Core -->
+  <rect x="50" y="1400" width="1300" height="140" fill="#ffebee" class="layer-box"/>
+  <text x="70" y="1425" class="text-title">Kubernetes Core (kube-system)</text>
+
+  <rect x="80" y="1445" width="140" height="80" fill="#ffcdd2" class="component"/>
+  <text x="150" y="1475" class="text-component">kube-apiserver</text>
+  <text x="150" y="1492" class="text-small">Kubernetes</text>
+  <text x="150" y="1507" class="text-small">API server</text>
+
+  <rect x="240" y="1445" width="140" height="80" fill="#ffcdd2" class="component"/>
+  <text x="310" y="1475" class="text-component">etcd</text>
+  <text x="310" y="1492" class="text-small">Distributed KV store</text>
+  <text x="310" y="1507" class="text-small">for cluster state</text>
+
+  <rect x="400" y="1445" width="140" height="80" fill="#ffcdd2" class="component"/>
+  <text x="470" y="1475" class="text-component">kube-scheduler</text>
+  <text x="470" y="1492" class="text-small">Pod scheduling</text>
+  <text x="470" y="1507" class="text-small">to nodes</text>
+
+  <rect x="560" y="1445" width="180" height="80" fill="#ffcdd2" class="component"/>
+  <text x="650" y="1470" class="text-component">kube-controller-</text>
+  <text x="650" y="1485" class="text-component">manager</text>
+  <text x="650" y="1502" class="text-small">Core Kubernetes</text>
+  <text x="650" y="1517" class="text-small">controllers</text>
+
+  <rect x="760" y="1445" width="140" height="80" fill="#ffcdd2" class="component"/>
+  <text x="830" y="1475" class="text-component">coredns</text>
+  <text x="830" y="1492" class="text-small">DNS server for</text>
+  <text x="830" y="1507" class="text-small">service discovery</text>
+
+  <rect x="920" y="1445" width="140" height="80" fill="#ffcdd2" class="component"/>
+  <text x="990" y="1475" class="text-component">kube-proxy</text>
+  <text x="990" y="1492" class="text-small">Network proxy</text>
+  <text x="990" y="1507" class="text-small">for services</text>
+
+  <rect x="1080" y="1445" width="120" height="80" fill="#ffcdd2" class="component"/>
+  <text x="1140" y="1470" class="text-component">metrics-</text>
+  <text x="1140" y="1485" class="text-component">server</text>
+  <text x="1140" y="1502" class="text-small">Resource</text>
+  <text x="1140" y="1517" class="text-small">metrics</text>
+
+  <rect x="1220" y="1445" width="110" height="80" fill="#ffcdd2" class="component"/>
+  <text x="1275" y="1470" class="text-component">snapshot-</text>
+  <text x="1275" y="1485" class="text-component">controller</text>
+  <text x="1275" y="1502" class="text-small">Volume</text>
+  <text x="1275" y="1517" class="text-small">snapshots</text>
+
+  <!-- Legend -->
+  <text x="50" y="1580" class="text-title" style="font-size: 18px;">Legend:</text>
+
+  <rect x="50" y="1600" width="100" height="40" fill="#e1f5ff" class="component"/>
+  <text x="160" y="1625" class="text-small" style="text-anchor: start;">User Interface</text>
+
+  <rect x="50" y="1650" width="100" height="40" fill="#fff3e0" class="component"/>
+  <text x="160" y="1675" class="text-small" style="text-anchor: start;">Gateway &amp; Auth</text>
+
+  <rect x="50" y="1700" width="100" height="40" fill="#f3e5f5" class="component"/>
+  <text x="160" y="1725" class="text-small" style="text-anchor: start;">Identity &amp; Access</text>
+
+  <rect x="300" y="1600" width="100" height="40" fill="#e8f5e9" class="component"/>
+  <text x="410" y="1625" class="text-small" style="text-anchor: start;">Orchestration</text>
+
+  <rect x="300" y="1650" width="100" height="40" fill="#fff9c4" class="component"/>
+  <text x="410" y="1675" class="text-small" style="text-anchor: start;">Infrastructure</text>
+
+  <rect x="300" y="1700" width="100" height="40" fill="#ffecb3" class="component"/>
+  <text x="410" y="1725" class="text-small" style="text-anchor: start;">Observability</text>
+
+  <rect x="550" y="1600" width="100" height="40" fill="#e3f2fd" class="component"/>
+  <text x="660" y="1625" class="text-small" style="text-anchor: start;">GitOps &amp; CD</text>
+
+  <rect x="550" y="1650" width="100" height="40" fill="#f1f8e9" class="component"/>
+  <text x="660" y="1675" class="text-small" style="text-anchor: start;">Container Registry</text>
+
+  <rect x="550" y="1700" width="100" height="40" fill="#fce4ec" class="component"/>
+  <text x="660" y="1725" class="text-small" style="text-anchor: start;">Service Mesh</text>
+
+  <rect x="800" y="1600" width="100" height="40" fill="#ede7f6" class="component"/>
+  <text x="910" y="1625" class="text-small" style="text-anchor: start;">Policy &amp; Security</text>
+
+  <rect x="800" y="1650" width="100" height="40" fill="#e0f2f1" class="component"/>
+  <text x="910" y="1675" class="text-small" style="text-anchor: start;">Storage &amp; Database</text>
+
+  <rect x="800" y="1700" width="100" height="40" fill="#ffebee" class="component"/>
+  <text x="910" y="1725" class="text-small" style="text-anchor: start;">Kubernetes Core</text>
+
+  <!-- Footer -->
+  <text x="700" y="2290" class="text-small" style="text-anchor: middle; font-size: 11px;">
+    EMF System Deployment - 212 Pods across 29 Namespaces
+  </text>
+  <text x="700" y="2310" class="text-small" style="text-anchor: middle; font-size: 10px;">
+    Generated from pod analysis - November 18, 2025
+  </text>
+</svg>
