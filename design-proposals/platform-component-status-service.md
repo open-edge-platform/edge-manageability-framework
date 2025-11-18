@@ -15,8 +15,9 @@ components are installed and available, to inform the CLI and GUI.
 Now that EMF is available in a modular configuration, it is possible to leave certain components or features
 disabled. This may include:
 
-* Disabling an entire subsystem, such as application-orchestration.
-* Disabling a feature that is part of a subsystem, such as the Device Onboarding feature of EIM.
+- Disabling an entire subsystem, such as application-orchestration.
+
+- Disabling a feature that is part of a subsystem, such as the Device Onboarding feature of EIM.
 
 The CLI and GUI need to be able to intelligently react to these configurations, disabling functionality that is
 not relevant to the user and providing appropriate error messages when necessary.
@@ -31,7 +32,10 @@ an orchestrator has app-orch installed, then use app-orch to install an applicat
 a kubeconfig file and use helm to install an application. Similarly, if observability is installed, then
 query loki for logs, otherwise retrieve the logs directly.
 
-> **Note:** Features are not the same as endpoints, nor are features the same as components. For example, an inventory service (such as the one exposed by EIM) may be common to many configurations, but certain fields within objects in the inventory could be nonsensical if the appropriate feature does not exist.
+> **Note:** Features are not the same as endpoints, nor are features the same as components.
+  For example, an inventory service (such as the one exposed by EIM) may be common to many
+  configurations, but certain fields within objects in the inventory could be nonsensical
+  if the appropriate feature does not exist.
 
 ## Proposal:
 
@@ -40,7 +44,7 @@ query loki for logs, otherwise retrieve the logs directly.
 The proposal is to implement an endpoint in the orchestrator that returns information about the deployed configuration
 of the orchestrator. The endpoint shall be made available at the following URL:
 
-```
+```text
 https://api.<hostname>/v1/orchestrator
 ```
 
@@ -75,25 +79,29 @@ orchestrator:
       installed: false
 ```
 
-This example indicates that application-orchestration is not installed, but cluster-orch and EIM are installed. Furthermore, within
-the EIM service, the inventory and out-of-band management services are installed, but the device-onboarding feature is not
-installed. Observability is installed, but multitenancy is not.
+This example indicates that application-orchestration is not installed, but cluster-orch and EIM are installed.
+Furthermore, within the EIM service, the inventory and out-of-band management services are installed, but the
+device-onboarding feature is not installed. Observability is installed, but multitenancy is not.
 
-The yaml is intended to be hierarchical in nature. If the caller (i.e. the CLI) wishes to clarify the existence of the
-out-of-band management feature, then it would use a simple bottom-up algorithm:
+The yaml is intended to be hierarchical in nature. If the caller (i.e. the CLI) wishes to clarify the existence
+of the out-of-band management feature, then it would use a simple bottom-up algorithm:
 
-1. Look for the key `orchestrator.edge-infrastructure-manager.out-of-band-management.installed` and return the value if found.
-2. If that key was not found, look for `orchestrator.edge-infrastructure-manager.installed` and return the value if found.
+1. Look for the key `orchestrator.edge-infrastructure-manager.out-of-band-management.installed` and return the
+   value if found.
+2. If that key was not found, look for `orchestrator.edge-infrastructure-manager.installed` and return the
+   value if found.
 3. If that key was not found, then return `false`.
 
-This `installed` field indicates choices that are made at installation time. It does not indicate the runtime availability of
-a feature. i.e. if a component is down, then it is still considered installed as being down is a temporary condition.
+This `installed` field indicates choices that are made at installation time. It does not indicate the runtime
+availability of a feature. i.e. if a component is down, then it is still considered installed as being down
+is a temporary condition.
 
 In addition to component installation, the following additional fields are present in the
 yaml file:
 
-* `schema-version`. Indicates the version of the schema that is being used.
-* `orchestrator.version`. Indicates the version number of the EMF release that is being used.
+- `schema-version`. Indicates the version of the schema that is being used.
+
+- `orchestrator.version`. Indicates the version number of the EMF release that is being used.
 
 The format is intended to be extensible. If additional fields were desired, such as component runtime status
 `running` / `down`, they could easily be added in a backward compatible fashion.
@@ -147,15 +155,15 @@ a helm chart, can be installed using whatever future mechanism is used.
 
 The CLI shall be updated as follows:
 
-* The CLI shall call the component status service to determine available features before executing a command.
+- The CLI shall call the component status service to determine available features before executing a command.
   If a feature cannot be performed due to a feature that is not installed, then the CLI shall emit the
   appropriate error.
 
-* The CLI `version` command shall be augmented to display both the CLI's version and the remote orchestrator's
+- The CLI `version` command shall be augmented to display both the CLI's version and the remote orchestrator's
   version, assuming the remote orchestrator endpoint has been configured.
   This is similar to how `kubectl version` reports both client and server version.
 
-* The CLI command `list features` shall return a list of known features and their installation status.
+- The CLI command `list features` shall return a list of known features and their installation status.
 
 ## Rationale
 
