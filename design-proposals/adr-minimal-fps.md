@@ -20,14 +20,30 @@ We will define the minimal required Foundation Platform Services (FPS) stack for
 
 3.  **Ingress Gateway (Traefik):** Acts as the reverse proxy and API gateway for the platform. It manages all external network traffic, provides TLS termination, and routes requests to the appropriate EIM microservices.
 
-4. **Auth-service:** Acts as a service-to-service authentication and authorization gateway that integrates with Keycloak. It is an authentication middleware that validates JWT tokens issued by Keycloak for incoming API requests. It enforces authorization policies for EMF micro services and acts as centralized authentication layer betwee  traefik ingress gateway and back EMF services.
+4. **Auth-service:** Acts as a service-to-service authentication and authorization gateway that integrates with Keycloak. It is an authentication middleware that validates JWT tokens issued by Keycloak for incoming API requests. It enforces authorization policies for EMF micro services and acts as centralized authentication layer betwee  traefik ingress gateway and back EMF services. Here is the source code for [auth service](https://github.com/open-edge-platform/orch-utils/tree/main/auth-service)
+
 
 Here is the sqeuence of network traffic flow.
-External Request → Traefik (Ingress) → Auth-Service → EIM Microservice
-                                ↓
-                          Keycloak (validates JWT)
-                                ↓
-                          Vault (retrieves secrets for Keycloak connection)
+```mermaid
+sequenceDiagram
+      participant BMA as External Request
+      participant Traefik as Traefik (Ingress)
+      participant Auth as Auth-Service
+      participant Keycloak as Keycloak
+      participant Vault as Vault
+      participant EIM as EIM RMs
+
+      BMA->>Traefik: gRPC Request
+      Traefik->>Auth: Forward Request
+      Auth->>Keycloak: Validate JWT Token
+      Keycloak->>Vault: Retrieve Secrets
+      Vault-->>Keycloak: Return Secrets
+      Keycloak-->>Auth: Token Validation Result
+      Auth->>EIM: Forward Authenticated Request
+      EIM-->>Auth: Response
+      Auth-->>Traefik: Response
+      Traefik-->>BMA: gRPC Response
+```
 
 Typical Use Cases platform services in EIM
 
