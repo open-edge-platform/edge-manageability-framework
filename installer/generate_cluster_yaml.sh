@@ -258,7 +258,11 @@ elif [ "$DEPLOY_TYPE" = "aws" ]; then
     if [ -z "${SMTP_URL:-}" ]; then
         export EMAIL_PROFILE="#- orch-configs/profiles/alerting-emails.yaml"
     else
-        export EMAIL_PROFILE="- orch-configs/profiles/alerting-emails.yaml"
+        if [ "${SMTP_DEV:-false}" = "true" ]; then
+            export EMAIL_PROFILE="- orch-configs/profiles/alerting-emails-dev.yaml"
+        else
+            export EMAIL_PROFILE="- orch-configs/profiles/alerting-emails.yaml"
+        fi
     fi
 
     # AutoCert Profile
