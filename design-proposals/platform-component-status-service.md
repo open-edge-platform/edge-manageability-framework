@@ -1,0 +1,173 @@
+# Design Proposal: Orchestrator Component Status Service
+
+Author(s): Scott Baker
+
+Last updated: 2025-11-18
+
+## Abstract
+
+This proposal describes a service that will publish the list of installed components in an orchestrator
+as well as other associated metadata. The purpose is to be able to inspect an orchestrator to see what
+components are installed and available, to inform the CLI and GUI.
+
+## Problem Statement
+
+Now that EMF is available in a modular configuration, it is possible to leave certain components or features
+disabled. This may include:
+
+* Disabling an entire subsystem, such as application-orchestration.
+* Disabling a feature that is part of a subsystem, such as the Device Onboarding feature of EIM.
+
+The CLI and GUI need to be able to intelligently react to these configurations, disabling functionality that is
+not relevant to the user and providing appropriate error messages when necessary.
+
+The GUI has the advantage that it *could* be statically configured at installation time to exclude certain
+components, but the CLI does not have that capability. The same CLI binary must function with the orchestrator
+regardless of how the orchestrator was configured.
+
+Furthermore, the ability to inspect an orchestrator to determine its features programmatically may be useful
+to higher level automation (bash scripts, terraform, ansible) to adapt to the orchestrator. For example, if
+an orchestrator has app-orch installed, then use app-orch to install an application, otherwise download
+a kubeconfig file and use helm to install an application. Similarly, if observability is installed, then
+query loki for logs, otherwise retrieve the logs directly.
+
+> **Note:** Features are not the same as endpoints, nor are features the same as components. For example, an inventory service (such as the one exposed by EIM) may be common to many configurations, but certain fields within objects in the inventory could be nonsensical if the appropriate feature does not exist.
+
+## Proposal:
+
+The proposal is to implement an endpoint in the orchestrator that returns information about the deployed configuration
+of the orchestrator. The endpoint shall be made available at the following URL:
+
+```
+https://api.<hostname>/v1/orchestrator
+```
+
+Note that this API is not project scoped. The status of the installation is gobal to an entire orchestrator,
+across all organizations and projects.
+
+This service shall be configured using a yaml file.
+This file is intended to be simple and straightforward, yet also easily extensible.
+
+The following is a hypothetical example:
+
+```yaml
+schema-version: 1.0
+orchestrator:
+  version: 2026.0
+  features:
+    application-orchestration:
+      installed: false
+    cluster-orchestration:
+      installed: true
+    edge-infrastructure-manager:
+      installed: true
+      inventory:
+        installed: true
+      out-of-band-managerment:
+        installed: true
+      device-onboarding:
+        installed: false
+    observability:
+      installed: true
+    multitenancy:
+      installed: false
+```
+
+This example indicates that application-orchestration is not installed, but cluster-orch and EIM are installed. Furthermore, within
+the EIM service, the inventory and out-of-band management services are installed, but the device-onboarding feature is not
+installed. Observability is installed, but multitenancy is not.
+
+The yaml is intended to be hierarchical in nature. If the caller (i.e. the CLI) wishes to clarify the existence of the
+out-of-band management feature, then it would use a simple bottom-up algorithm:
+
+1. Look for the key `orchestrator.edge-infrastructure-manager.out-of-band-management.installed` and return the value if found.
+2. If that key was not found, look for `orchestrator.edge-infrastructure-manager.installed` and return the value if found.
+3. If that key was not found, then return `false`.
+
+This `installed` field indicates choices that are made at installation time. It does not indicate the runtime availability of
+a feature. i.e. if a component is down, then it is still considered installed as being down is a temporary condition.
+
+In addition to component installation, the following additional fields are present in the
+yaml file:
+
+* `schema-version`. Indicates the version of the schema that is being used.
+* `orchestrator.version`. Indicates the version number of the EMF release that is being used.
+
+The format is intended to be extensible. If additional fields were desired, such as component runtime status
+`running` / `down`, they could easily be added in a backward compatible fashion.
+
+The component status service shall render this yaml as json. For example,
+
+```json
+{
+  "schema-version": 1.0,
+  "orchestrator": {
+    "version": 2026,
+    "features": {
+      "application-orchestration": {
+        "installed": false
+      },
+      "cluster-orchestration": {
+        "installed": true
+      },
+      "edge-infrastructure-manager": {
+        "installed": true,
+        "inventory": {
+          "installed": true
+        },
+        "out-of-band-managerment": {
+          "installed": true
+        },
+        "device-onboarding": {
+          "installed": false
+        }
+      },
+      "observability": {
+        "installed": true
+      },
+      "multitenancy": {
+        "installed": false
+      }
+    }
+  }
+}
+```
+
+The component status service will be instantiated by a helm chart and installed by argocd as all orchestrator
+service are.
+The helm chart shall take the yaml file as part of its `values.yaml`.
+The helm chart's `values.yaml` shall be populated by the installer, similar to how other components are configured.
+
+If/when we move to support installation mechanisms that do not use argocd, then the component status service, being
+a helm chart, can be installed using whatever future mechanism is used.
+
+## Rationale
+
+The proposal was designed for its simplicity. The service may be implemented as a simple web server in go,
+serving up a single static response. The response does not change for the lifetime of an orchestrator,
+other than potentially when upgrades occur and add additional features.
+
+Likewise, it is extensible. For example, if it is later determined that dynamic component status
+would be useful, then the service can be extended to provide that information.
+
+## Affected components and Teams
+
+- Orchestrator Component Status Service (new component)
+
+- CLI
+
+## Implementation plan
+
+The component status service shall be implemented in golang, published as a docker container
+with a helm chart. It shall be added to argocd and deployed as part of the orchestrator.
+
+Once the component status service is available, the CLI shall be modified to query the
+component status service.
+
+## Decision
+
+Pending.
+
+## Open issues (if applicable)
+
+None.
