@@ -35,6 +35,8 @@ query loki for logs, otherwise retrieve the logs directly.
 
 ## Proposal:
 
+### Component Status Service
+
 The proposal is to implement an endpoint in the orchestrator that returns information about the deployed configuration
 of the orchestrator. The endpoint shall be made available at the following URL:
 
@@ -140,6 +142,20 @@ The helm chart's `values.yaml` shall be populated by the installer, similar to h
 
 If/when we move to support installation mechanisms that do not use argocd, then the component status service, being
 a helm chart, can be installed using whatever future mechanism is used.
+
+### CLI Changes
+
+The CLI shall be updated as follows:
+
+* The CLI shall call the component status service to determine available features before executing a command.
+  If a feature cannot be performed due to a feature that is not installed, then the CLI shall emit the
+  appropriate error.
+
+* The CLI `version` command shall be augmented to display both the CLI's version and the remote orchestrator's
+  version, assuming the remote orchestrator endpoint has been configured.
+  This is similar to how `kubectl version` reports both client and server version.
+
+* The CLI command `list features` shall return a list of known features and their installation status.
 
 ## Rationale
 
