@@ -478,42 +478,21 @@ func GetKeycloakSecret() (string, error) {
 }
 
 func KeycloakLogin(ctx context.Context) (*gocloak.GoCloak, *gocloak.JWT, error) {
-	// Try internal Keycloak service URL first (works when running in-cluster)
-	// If that fails, fallback to external HTTPS URL
-	keycloakURL := "http://platform-keycloak.keycloak-system.svc.cluster.local"
-	externalKeycloakURL := "https://keycloak." + serviceDomainWithPort
+	keycloakURL := "https://keycloak." + serviceDomainWithPort
 
-	fmt.Printf("[KEYCLOAK] Attempting to login to: %s\n", keycloakURL)
-
+	// retrieve admin user and password from keycloak secret
 	adminPass, err := GetKeycloakSecret()
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get keycloak admin password: %w", err)
+		return nil, nil, fmt.Errorf("failed to get keycloak admin password")
 	}
 
 	client := gocloak.NewClient(keycloakURL)
 
-	restyClient := client.RestyClient()
-	restyClient.SetTimeout(60 * time.Second)
-	restyClient.RemoveProxy()
-	client.SetRestyClient(restyClient)
-
 	jwtToken, err := client.LoginAdmin(ctx, adminUser, adminPass, KeycloakRealm)
 	if err != nil {
-		// Fallback to external HTTPS URL if internal fails
-		fmt.Printf("[KEYCLOAK] Internal URL failed, falling back to: %s\n", externalKeycloakURL)
-		client = gocloak.NewClient(externalKeycloakURL)
-		restyClient = client.RestyClient()
-		restyClient.SetTimeout(60 * time.Second)
-		restyClient.RemoveProxy()
-		client.SetRestyClient(restyClient)
-
-		jwtToken, err = client.LoginAdmin(ctx, adminUser, adminPass, KeycloakRealm)
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to login to keycloak (tried %s and %s): %w", keycloakURL, externalKeycloakURL, err)
-		}
+		fmt.Printf("%v", err)
+		return nil, nil, fmt.Errorf("failed to login to keycloak %s", keycloakURL)
 	}
-	fmt.Printf("[KEYCLOAK] Login successful\n")
-
 	return client, jwtToken, nil
 }
 
@@ -1010,14 +989,12 @@ func createKeycloakUser(ctx context.Context, client *gocloak.GoCloak, token *goc
 
 	users, err := client.GetUsers(ctx, token.AccessToken, KeycloakRealm, params)
 	if err != nil {
-		fmt.Printf("[KEYCLOAK] Error getting user %s: %v\n", edgeInfraUser, err)
+		fmt.Printf("error getting user %s: %v", edgeInfraUser, err)
 		return "", "", err
 	}
 	for _, user = range users {
 		if *user.Username == edgeInfraUser {
-			orgId, _ := getOrgId(ctx, orgName)
-			fmt.Printf("[KEYCLOAK] User %s already exists (ID: %s), skipping creation\n", edgeInfraUser, *user.ID)
-			return *user.ID, orgId, nil
+			return "", "", status.Errorf(codes.AlreadyExists, "user %s already found in realm %s", edgeInfraUser, KeycloakRealm)
 		}
 	}
 
@@ -1037,10 +1014,9 @@ func createKeycloakUser(ctx context.Context, client *gocloak.GoCloak, token *goc
 
 	userId, err := client.CreateUser(ctx, token.AccessToken, KeycloakRealm, *user)
 	if err != nil {
-		fmt.Printf("[KEYCLOAK] Error creating user %s: %v\n", edgeInfraUser, err)
+		fmt.Printf("error creating user %s", edgeInfraUser)
 		return "", "", err
 	}
-	fmt.Printf("[KEYCLOAK] User %s created successfully (ID: %s)\n", edgeInfraUser, userId)
 
 	defaultOrchPass, err := GetDefaultOrchPassword()
 	if err != nil {
