@@ -37,7 +37,7 @@ query loki for logs, otherwise retrieve the logs directly.
   configurations, but certain fields within objects in the inventory could be nonsensical
   if the appropriate feature does not exist.
 
-## Proposal:
+## Proposal
 
 ### Component Status Service
 
