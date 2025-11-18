@@ -24,9 +24,10 @@ on:
   # Trigger workflow when enqueued to a merge group
   merge_group:
 
-# Only run at most 1 workflow concurrently per PR, unlimited for branches
+# For PRs → use the PR number as the group (forces only 1 run active)
+# For branches → use the full ref (unique per branch) so runs don't cancel each other
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.sha }}
+  group: ${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions: {}
