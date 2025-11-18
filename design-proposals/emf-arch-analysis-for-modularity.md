@@ -1,6 +1,8 @@
-# EMF System Architecture - Kubernetes Pods Overview
+# EMF System Architecture using Kubernetes Pods and applications
 
 This document provides an overview of the Kubernetes pods running in the EMF system, grouped by namespace.
+In order to progress on modular decomposition it is important to understand the current set of services both developed
+by Intel and 3rd party. This exercise was done on the On premises deployment of EMF Version 2025.2.0-n20251030.
 
 ## Pod Distribution by Namespace
 
