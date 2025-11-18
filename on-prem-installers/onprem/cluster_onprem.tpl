@@ -5,7 +5,7 @@
 
 # Cluster specific values applied to root-app only
 root:
-  useLocalValues: false
+  useLocalValues: true
   clusterValues:
     - orch-configs/profiles/enable-platform.yaml
     ${O11Y_ENABLE_PROFILE}
