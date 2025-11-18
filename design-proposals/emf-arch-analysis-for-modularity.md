@@ -550,7 +550,7 @@ The EMF system follows a **layered architecture** with clear separation of conce
 ### Visual Architecture Diagram
 
 A detailed SVG architecture diagram
-![EMF Architecture](./images/EMF-architecture.svg)
+![EMF Architecture](./images/emf-system-architecture-detailed.drawio.svg)
 
 ## Data Source
 

@@ -1,0 +1,284 @@
+<mxfile host="app.diagrams.net" modified="2025-11-18T00:00:00.000Z" agent="GitHub Copilot" version="24.7.17" etag="EMF-System-Architecture-Detailed" type="device">
+  <diagram name="EMF System Architecture" id="emf-architecture">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="2400" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <!-- Title -->
+        <mxCell id="title" value="EMF System Architecture" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=28;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="600" y="20" width="400" height="40" as="geometry" />
+        </mxCell>
+        
+        <!-- Layer 1: User Interfaces -->
+        <mxCell id="layer1" value="User Interfaces" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1f5ff;strokeColor=#0277BD;fontSize=16;fontStyle=1;align=center;verticalAlign=top;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="100" y="100" width="1400" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="ui1" value="web-ui-admin&#xa;Administrative web interface&#xa;for system configuration" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4fc3f7;strokeColor=#01579B;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="150" y="145" width="180" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="ui2" value="web-ui-app-orch&#xa;Application orchestration&#xa;management interface" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4fc3f7;strokeColor=#01579B;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="360" y="145" width="180" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="ui3" value="web-ui-cluster-orch&#xa;Cluster lifecycle and&#xa;management interface" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4fc3f7;strokeColor=#01579B;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="570" y="145" width="180" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="ui4" value="web-ui-infra&#xa;Infrastructure and device&#xa;management interface" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4fc3f7;strokeColor=#01579B;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="780" y="145" width="180" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="ui5" value="web-ui-root&#xa;Main landing page and&#xa;navigation hub" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4fc3f7;strokeColor=#01579B;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="990" y="145" width="180" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="ui6" value="metadata-broker&#xa;API gateway for&#xa;metadata services" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4fc3f7;strokeColor=#01579B;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1200" y="145" width="180" height="75" as="geometry" />
+        </mxCell>
+        
+        <!-- Layer 2: Gateway & Auth -->
+        <mxCell id="layer2" value="Gateway &amp; Authentication" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff3e0;strokeColor=#E65100;fontSize=16;fontStyle=1;align=center;verticalAlign=top;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="100" y="280" width="1400" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="gw1" value="traefik&#xa;Reverse proxy and load balancer&#xa;for ingress traffic routing" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffb74d;strokeColor=#E65100;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="150" y="325" width="240" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="gw2" value="auth-service&#xa;Authentication and authorization&#xa;middleware for API requests" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffb74d;strokeColor=#E65100;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="420" y="325" width="240" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="gw3" value="certificate-file-server&#xa;Serves TLS certificates&#xa;for secure communications" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffb74d;strokeColor=#E65100;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="690" y="325" width="240" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="gw4" value="nexus-api-gw&#xa;API gateway for IAM&#xa;tenant management" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffb74d;strokeColor=#E65100;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="960" y="325" width="240" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="gw5" value="ingress-nginx-controller&#xa;NGINX ingress for PXE&#xa;boot services" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffb74d;strokeColor=#E65100;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1230" y="325" width="240" height="75" as="geometry" />
+        </mxCell>
+        
+        <!-- Layer 3: IAM -->
+        <mxCell id="layer3" value="Identity &amp; Access Management" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3e5f5;strokeColor=#4A148C;fontSize=16;fontStyle=1;align=center;verticalAlign=top;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="100" y="460" width="1400" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="iam1" value="platform-keycloak&#xa;Identity provider with SSO,&#xa;OAuth2, and SAML support" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ba68c8;strokeColor=#4A148C;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="150" y="505" width="240" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="iam2" value="vault&#xa;HashiCorp Vault for secrets&#xa;management and encryption" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ba68c8;strokeColor=#4A148C;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="420" y="505" width="240" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="iam3" value="tenancy-manager&#xa;Multi-tenant isolation and&#xa;namespace management" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ba68c8;strokeColor=#4A148C;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="690" y="505" width="240" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="iam4" value="keycloak-tenant-controller&#xa;Automates tenant provisioning&#xa;in Keycloak" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ba68c8;strokeColor=#4A148C;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="960" y="505" width="240" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="iam5" value="token-fs&#xa;File-based token storage&#xa;for service authentication" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ba68c8;strokeColor=#4A148C;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1230" y="505" width="240" height="75" as="geometry" />
+        </mxCell>
+        
+        <!-- Layer 4: App Orchestration -->
+        <mxCell id="layer4" value="Application Orchestration" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#1B5E20;fontSize=16;fontStyle=1;align=center;verticalAlign=top;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="100" y="640" width="1400" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="app1" value="app-deployment-manager&#xa;Manages application deployment&#xa;lifecycle on edge clusters" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#66bb6a;strokeColor=#1B5E20;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="150" y="685" width="240" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="app2" value="app-resource-manager&#xa;Allocates and manages compute&#xa;resources for applications" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#66bb6a;strokeColor=#1B5E20;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="420" y="685" width="240" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="app3" value="app-interconnect-manager&#xa;Manages service mesh connectivity&#xa;between applications" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#66bb6a;strokeColor=#1B5E20;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="690" y="685" width="240" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="app4" value="app-orch-catalog&#xa;Application template repository&#xa;and marketplace" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#66bb6a;strokeColor=#1B5E20;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="960" y="685" width="240" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="app5" value="app-service-proxy&#xa;Proxy service for routing&#xa;application traffic" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#66bb6a;strokeColor=#1B5E20;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1230" y="685" width="240" height="75" as="geometry" />
+        </mxCell>
+        
+        <!-- Layer 5: Cluster Management -->
+        <mxCell id="layer5" value="Cluster Management" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fce4ec;strokeColor=#880E4F;fontSize=16;fontStyle=1;align=center;verticalAlign=top;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="100" y="820" width="1400" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="cluster1" value="cluster-manager&#xa;Kubernetes cluster lifecycle&#xa;management and provisioning" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f06292;strokeColor=#880E4F;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="200" y="865" width="280" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="cluster2" value="cluster-connect-gateway&#xa;Secure remote access gateway&#xa;to edge clusters" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f06292;strokeColor=#880E4F;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="520" y="865" width="280" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="cluster3" value="intel-infra-provider&#xa;CAPI provider for Intel&#xa;bare metal infrastructure" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f06292;strokeColor=#880E4F;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="840" y="865" width="280" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="cluster4" value="fleet-controller&#xa;Rancher Fleet for multi-cluster&#xa;GitOps deployments" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f06292;strokeColor=#880E4F;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="865" width="280" height="75" as="geometry" />
+        </mxCell>
+        
+        <!-- Layer 6: Infrastructure (Compact Grid) -->
+        <mxCell id="layer6" value="Infrastructure Management (63 Pods)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#F57F17;fontSize=16;fontStyle=1;align=center;verticalAlign=top;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="100" y="1000" width="1400" height="240" as="geometry" />
+        </mxCell>
+        <mxCell id="infra1" value="host-manager&#xa;Physical host lifecycle" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff176;strokeColor=#F57F17;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="130" y="1045" width="170" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="infra2" value="dm-manager&#xa;Edge device management" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff176;strokeColor=#F57F17;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="320" y="1045" width="170" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="infra3" value="onboarding-manager&#xa;Device discovery" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff176;strokeColor=#F57F17;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="510" y="1045" width="170" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="infra4" value="telemetry-manager&#xa;Telemetry aggregation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff176;strokeColor=#F57F17;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="700" y="1045" width="170" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="infra5" value="os-resource-manager&#xa;OS image distribution" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff176;strokeColor=#F57F17;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="890" y="1045" width="170" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="infra6" value="networking-manager&#xa;Network configuration" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff176;strokeColor=#F57F17;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="1045" width="170" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="infra7" value="maintenance-manager&#xa;Scheduled maintenance" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff176;strokeColor=#F57F17;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1270" y="1045" width="170" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="infra8" value="tinkerbell&#xa;Bare metal provisioning" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff176;strokeColor=#F57F17;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="130" y="1115" width="170" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="infra9" value="mps&#xa;Intel AMT MPS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff176;strokeColor=#F57F17;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="320" y="1115" width="170" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="infra10" value="rps&#xa;Intel AMT RPS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff176;strokeColor=#F57F17;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="510" y="1115" width="170" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="infra11" value="inventory&#xa;Hardware asset tracking" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff176;strokeColor=#F57F17;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="700" y="1115" width="170" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="infra12" value="alerting-monitor&#xa;Prometheus alerting" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff176;strokeColor=#F57F17;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="890" y="1115" width="170" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="infra13" value="edgenode-observability&#xa;Edge monitoring stack" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff176;strokeColor=#F57F17;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="130" y="1185" width="380" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="infra14" value="loki (read/write/backend)&#xa;Log aggregation pipeline" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff176;strokeColor=#F57F17;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="530" y="1185" width="380" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="infra15" value="+ 48 more observability pods&#xa;(Grafana, Mimir, OpenTelemetry)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#F57F17;fontSize=10;align=center;fontStyle=2" vertex="1" parent="1">
+          <mxGeometry x="930" y="1185" width="510" height="40" as="geometry" />
+        </mxCell>
+        
+        <!-- Layer 7: Observability -->
+        <mxCell id="layer7" value="Observability &amp; Monitoring" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e0f2f1;strokeColor=#004D40;fontSize=16;fontStyle=1;align=center;verticalAlign=top;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="100" y="1280" width="1400" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="obs1" value="edgenode-observability-grafana&#xa;Edge node metrics dashboards" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4db6ac;strokeColor=#004D40;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="150" y="1325" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="obs2" value="orchestrator-observability-grafana&#xa;Orchestrator metrics dashboards" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4db6ac;strokeColor=#004D40;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="400" y="1325" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="obs3" value="loki&#xa;Log aggregation engine" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4db6ac;strokeColor=#004D40;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="650" y="1325" width="180" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="obs4" value="mimir&#xa;Long-term metrics storage" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4db6ac;strokeColor=#004D40;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="860" y="1325" width="180" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="obs5" value="prometheus-agent&#xa;Metrics scraping" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4db6ac;strokeColor=#004D40;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1070" y="1325" width="160" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="obs6" value="opentelemetry&#xa;Distributed tracing" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4db6ac;strokeColor=#004D40;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1260" y="1325" width="180" height="70" as="geometry" />
+        </mxCell>
+        
+        <!-- Layer 8: GitOps -->
+        <mxCell id="layer8" value="GitOps &amp; CI/CD" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ede7f6;strokeColor=#311B92;fontSize=16;fontStyle=1;align=center;verticalAlign=top;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="100" y="1460" width="680" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="git1" value="argocd&#xa;Continuous deployment via GitOps&#xa;Managing 89 applications" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#9575cd;strokeColor=#311B92;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="150" y="1505" width="280" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="git2" value="gitea&#xa;Self-hosted Git service&#xa;for source code management" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#9575cd;strokeColor=#311B92;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="460" y="1505" width="280" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Layer 9: Container Registry -->
+        <mxCell id="layer9" value="Container Registry" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#efebe9;strokeColor=#3E2723;fontSize=16;fontStyle=1;align=center;verticalAlign=top;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="820" y="1460" width="680" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="reg1" value="harbor-oci&#xa;Enterprise container registry&#xa;with RBAC and replication" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#a1887f;strokeColor=#3E2723;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="870" y="1505" width="280" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="reg2" value="harbor-oci-trivy&#xa;Vulnerability scanner&#xa;for container images" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#a1887f;strokeColor=#3E2723;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1180" y="1505" width="280" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Layer 10: Service Mesh -->
+        <mxCell id="layer10" value="Service Mesh &amp; Networking" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8eaf6;strokeColor=#1A237E;fontSize=16;fontStyle=1;align=center;verticalAlign=top;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="100" y="1620" width="1400" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="mesh1" value="istiod&#xa;Istio control plane for traffic&#xa;management and mTLS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7986cb;strokeColor=#1A237E;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="150" y="1665" width="280" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="mesh2" value="kiali&#xa;Service mesh observability&#xa;and topology visualization" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7986cb;strokeColor=#1A237E;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="460" y="1665" width="280" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="mesh3" value="calico-node&#xa;CNI plugin for pod networking&#xa;and network policies" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7986cb;strokeColor=#1A237E;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="770" y="1665" width="280" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="mesh4" value="metallb-controller&#xa;Bare metal load balancer&#xa;for services" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7986cb;strokeColor=#1A237E;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="1665" width="280" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Layer 11: Policy & Security -->
+        <mxCell id="layer11" value="Policy &amp; Security" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffebee;strokeColor=#B71C1C;fontSize=16;fontStyle=1;align=center;verticalAlign=top;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="100" y="1780" width="1400" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="sec1" value="kyverno&#xa;Kubernetes policy engine for&#xa;admission control and validation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ef5350;strokeColor=#B71C1C;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="150" y="1825" width="380" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="sec2" value="cert-manager&#xa;Automated certificate management&#xa;and renewal" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ef5350;strokeColor=#B71C1C;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="560" y="1825" width="380" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="sec3" value="external-secrets&#xa;Syncs secrets from external&#xa;stores to Kubernetes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ef5350;strokeColor=#B71C1C;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="970" y="1825" width="380" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Layer 12: Storage -->
+        <mxCell id="layer12" value="Storage &amp; Databases" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f1f8e9;strokeColor=#33691E;fontSize=16;fontStyle=1;align=center;verticalAlign=top;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="100" y="1940" width="1400" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="store1" value="postgresql-cluster&#xa;CloudNativePG managed&#xa;PostgreSQL databases" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#9ccc65;strokeColor=#33691E;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="150" y="1985" width="380" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="store2" value="openebs-localpv-provisioner&#xa;Dynamic local volume&#xa;provisioner for pods" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#9ccc65;strokeColor=#33691E;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="560" y="1985" width="380" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="store3" value="minio&#xa;S3-compatible object storage&#xa;for artifacts and backups" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#9ccc65;strokeColor=#33691E;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="970" y="1985" width="380" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Layer 13: Kubernetes Core -->
+        <mxCell id="layer13" value="Kubernetes Core (RKE2)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#212121;fontSize=16;fontStyle=1;align=center;verticalAlign=top;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="100" y="2100" width="1400" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="k8s1" value="kube-apiserver&#xa;Kubernetes API server" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#bdbdbd;strokeColor=#212121;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="150" y="2145" width="220" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="k8s2" value="etcd&#xa;Distributed key-value store" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#bdbdbd;strokeColor=#212121;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="400" y="2145" width="220" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="k8s3" value="kube-scheduler&#xa;Assigns pods to nodes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#bdbdbd;strokeColor=#212121;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="650" y="2145" width="220" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="k8s4" value="kube-controller-manager&#xa;Runs control loops" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#bdbdbd;strokeColor=#212121;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="900" y="2145" width="220" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="k8s5" value="rke2-coredns&#xa;Cluster DNS service" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#bdbdbd;strokeColor=#212121;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="2145" width="220" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Legend -->
+        <mxCell id="legend" value="Legend" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#666666;fontSize=14;fontStyle=1;align=left;verticalAlign=top;spacingTop=5;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="100" y="2260" width="1400" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_text" value="🔵 User Interfaces  🟠 Gateway &amp; Auth  🟣 IAM  🟢 App Orchestration  🔴 Cluster Mgmt  🟡 Infrastructure  🟦 Observability&#xa;🟪 GitOps  🟤 Container Registry  🔷 Service Mesh  🔴 Security  🟩 Storage  ⚫ Kubernetes Core&#xa;&#xa;Total: 212 Pods across 29 Namespaces | ArgoCD: 89 Applications (All Synced &amp; Healthy)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=11;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="110" y="2285" width="1380" height="65" as="geometry" />
+        </mxCell>
+        
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
