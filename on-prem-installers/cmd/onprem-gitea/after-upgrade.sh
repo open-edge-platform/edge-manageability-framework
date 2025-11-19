@@ -124,7 +124,7 @@ createGiteaSecret "app-gitea-credential" "apporch" "$appGiteaPassword" "orch-pla
 createGiteaSecret "cluster-gitea-credential" "clusterorch" "$clusterGiteaPassword" "orch-platform"
 
 # More helm values are set in ../assets/gitea/values.yaml
-helm upgrade --install gitea /tmp/gitea/gitea --values /tmp/gitea/values.yaml --set gitea.admin.existingSecret=gitea-cred --set image.registry="${IMAGE_REGISTRY}" -n gitea --timeout 15m0s --wait
+helm upgrade --install gitea /tmp/gitea/gitea --values /tmp/gitea/values.yaml --set deployment.strategy.type=Recreate --set gitea.admin.existingSecret=gitea-cred --set image.registry="${IMAGE_REGISTRY}" -n gitea --timeout 15m0s --wait
 
 # Create Gitea accounts for ArgoCD, AppOrch and ClusterOrch
 createGiteaAccount "argocd-gitea-credential" "argocd" "$argocdGiteaPassword" "argocd@orch-installer.com"
