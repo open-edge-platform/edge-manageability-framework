@@ -37,7 +37,7 @@ query loki for logs, otherwise retrieve the logs directly.
   configurations, but certain fields within objects in the inventory could be nonsensical
   if the appropriate feature does not exist.
 
-## Proposal
+## Proposal 1: Implement a microservice that returns a list of installed services
 
 ### Component Status Service
 
@@ -165,28 +165,68 @@ The CLI shall be updated as follows:
 
 - The CLI command `list features` shall return a list of known features and their installation status.
 
+- The CLI help commands such as `list -h` should only return nouns that exist. For example, if the app-orch
+  feature is not installed, then `list applications` does not exist, and `applications` should not be in the
+  help for `list`.
+
+## Proposal 2: Rely on response codes
+
+In the proposal, each backend service shall be modified to return a `501 not implemented` error if it receives
+an API request for a feature that does not exist. If the gateway itself receives a request for an endpoint that
+does not exist, then the gateway shall return the `501` error. The CLI in turn shall print an appropriate error
+message when a `501` error is encountered.
+
+Contrary to Proposal 1, there shall be no addition to the `version` command, no `list features` command, and no
+limitation of `help` commands to the the feature set. Proposal 2 is solely intended to return intelligent error
+responses when unavailable features are exercised.
+
 ## Rationale
 
-The proposal was designed for its simplicity. The service may be implemented as a simple web server in go,
+Both proposals were designed for its simplicity. Proposal 1's service may be implemented as a simple web server in go,
 serving up a single static response. The response does not change for the lifetime of an orchestrator,
-other than potentially when upgrades occur and add additional features.
+other than potentially when upgrades occur and add additional features. Likewise, it is extensible. For example, if
+it is later determined that dynamic component status would be useful, then the service can be extended to provide
+that information.
 
-Likewise, it is extensible. For example, if it is later determined that dynamic component status
-would be useful, then the service can be extended to provide that information.
+Proposal 2 is simpler than proposal 1, but with the following limitations:
+
+- Customers using automation/scripts cannot determine whether a feature exists unless they try it and observe a
+  failure.
+
+- The CLI enhancements for listing available features, limiting help to available features, and obtaining the
+  orchestrator version are not available.
+
+- The CLI and the GUI will not have the capability to degrade commands that are common across features. For example,
+  the ability for the `host` command to omit some information if certain features are disabled, or to fail early
+  if the customer sets values that are not available. At this time, these situations might be hypothetical -- i.e.
+  we don't know the cases where a shared component (like inventory) needs to be treated differently based on the
+  features.
 
 ## Affected components and Teams
 
-- Orchestrator Component Status Service (new component)
+- Proposal 1: Orchestrator Component Status Service (new component)
+
+- Proposal 2: All backend services
 
 - CLI
 
 ## Implementation plan
+
+### Proposal 1
 
 The component status service shall be implemented in golang, published as a docker container
 with a helm chart. It shall be added to argocd and deployed as part of the orchestrator.
 
 Once the component status service is available, the CLI shall be modified to query the
 component status service.
+
+### Proposal 2
+
+Modify each backend service to return a 501 error as appropriate.
+
+Modify the gateway to return a 501 error as appropriate.
+
+Modify the CLI to issue the appropriate error emssages.
 
 ## Decision
 
