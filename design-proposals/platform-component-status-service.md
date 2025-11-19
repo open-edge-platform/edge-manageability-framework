@@ -182,7 +182,7 @@ responses when unavailable features are exercised.
 
 ## Rationale
 
-Both proposals were designed for its simplicity. Proposal 1's service may be implemented as a simple web server in go,
+Both proposals were designed for their simplicity. Proposal 1's service may be implemented as a simple web server in go,
 serving up a single static response. The response does not change for the lifetime of an orchestrator,
 other than potentially when upgrades occur and add additional features. Likewise, it is extensible. For example, if
 it is later determined that dynamic component status would be useful, then the service can be extended to provide
