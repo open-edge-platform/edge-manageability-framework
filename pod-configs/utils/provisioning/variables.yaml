@@ -7,11 +7,11 @@
   variable: "eks_min_size"
   type: integer
 - name: "EKS Nodegroup Maximum Size"
-  default: 3
+  default: 4
   variable: "eks_max_size"
   type: integer
 - name: "EKS Nodegroup Desired Size"
-  default: 3
+  default: 4
   variable: "eks_desired_size"
   type: integer
 - name: "EKS Instance Type"
