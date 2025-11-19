@@ -6,25 +6,20 @@
 ## 1. Realm import configuration (clients, redirect URIs, etc.)
 ## 2. Keycloak instance deployment parameters
 
-clusterSpecific:
-  # WebUI Client configuration
-  webuiClientRootUrl: "https://web-ui.{{ .Values.argo.clusterDomain }}"
-  webuiRedirectUrls: ["https://web-ui.{{ .Values.argo.clusterDomain }}", "https://app-service-proxy.{{ .Values.argo.clusterDomain }}/app-service-proxy-index.html*", "https://vnc.{{ .Values.argo.clusterDomain }}/*", "https://{{ .Values.argo.clusterDomain }}"{{- if index .Values.argo "platform-keycloak" "extraUiRedirects" -}}, {{- index .Values.argo "platform-keycloak" "extraUiRedirects" -}}{{- end -}}]
-  
-  # DocsUI Client configuration
-  docsuiClientRootUrl: "https://docs-ui.{{ .Values.argo.clusterDomain }}"
-  docsuiRedirectUrls: ["https://docs-ui.{{ .Values.argo.clusterDomain }}", "https://docs-ui.{{ .Values.argo.clusterDomain }}/"]
-  
-  # Registry Client configuration (Harbor)
-  registryClientRootUrl: "https://registry-oci.{{ .Values.argo.clusterDomain }}"
-  
-  # Telemetry Client configuration (Grafana, Observability)
-  telemetryClientRootUrl: "https://observability-ui.{{ .Values.argo.clusterDomain }}"
-  telemetryRedirectUrls: ["https://observability-admin.{{ .Values.argo.clusterDomain }}/login/generic_oauth", "https://observability-ui.{{ .Values.argo.clusterDomain }}/login/generic_oauth"]
-  
-  # Cluster Management Client configuration
-  clusterManagementClientRootUrl: "https://cluster-management.{{ .Values.argo.clusterDomain }}"
-  clusterManagementRedirectUrls: ["https://cluster-management.{{ .Values.argo.clusterDomain }}", "https://cluster-management.{{ .Values.argo.clusterDomain }}/"]
+{{- $clusterDomain := .Values.argo.clusterDomain -}}
+{{- $extraUiRedirects := index .Values.argo "platform-keycloak" "extraUiRedirects" -}}
+{{- $webuiRootUrl := printf "https://web-ui.%s" $clusterDomain -}}
+{{- $docsuiRootUrl := printf "https://docs-ui.%s" $clusterDomain -}}
+{{- $registryRootUrl := printf "https://registry-oci.%s" $clusterDomain -}}
+{{- $telemetryRootUrl := printf "https://observability-ui.%s" $clusterDomain -}}
+{{- $clusterMgmtRootUrl := printf "https://cluster-management.%s" $clusterDomain -}}
+{{- $webuiRedirects := list (printf "https://web-ui.%s" $clusterDomain) (printf "https://app-service-proxy.%s/app-service-proxy-index.html*" $clusterDomain) (printf "https://vnc.%s/*" $clusterDomain) (printf "https://%s" $clusterDomain) -}}
+{{- if $extraUiRedirects -}}
+  {{- $webuiRedirects = append $webuiRedirects $extraUiRedirects -}}
+{{- end -}}
+{{- $docsuiRedirects := list (printf "https://docs-ui.%s" $clusterDomain) (printf "https://docs-ui.%s/" $clusterDomain) -}}
+{{- $telemetryRedirects := list (printf "https://observability-admin.%s/login/generic_oauth" $clusterDomain) (printf "https://observability-ui.%s/login/generic_oauth" $clusterDomain) -}}
+{{- $clusterMgmtRedirects := list (printf "https://cluster-management.%s" $clusterDomain) (printf "https://cluster-management.%s/" $clusterDomain) -}}
 
 # Keycloak Operator configuration
 {{- if and .Values.argo .Values.argo.resources .Values.argo.resources.platformKeycloak }}
@@ -118,15 +113,459 @@ realmMaster: |
       "quickLoginCheckMilliSeconds": 200,
       "maxDeltaTimeSeconds": 43200,
       "failureFactor": 5,
+      "roles": {
+        "realm": [
+          {
+            "name": "en-agent-rw"
+          },
+          {
+            "name": "secrets-root-role"
+          },
+          {
+            "name": "rs-access-r"
+          },
+          {
+            "name": "rs-proxy-r"
+          },
+          {
+            "name": "app-service-proxy-read-role"
+          },
+          {
+            "name": "app-service-proxy-write-role"
+          },
+          {
+            "name": "app-deployment-manager-read-role"
+          },
+          {
+            "name": "app-deployment-manager-write-role"
+          },
+          {
+            "name": "app-resource-manager-read-role"
+          },
+          {
+            "name": "app-resource-manager-write-role"
+          },
+          {
+            "name": "app-vm-console-write-role"
+          },
+          {
+            "name": "catalog-publisher-read-role"
+          },
+          {
+            "name": "catalog-publisher-write-role"
+          },
+          {
+            "name": "catalog-other-read-role"
+          },
+          {
+            "name": "catalog-other-write-role"
+          },
+          {
+            "name": "catalog-restricted-read-role"
+          },
+          {
+            "name": "catalog-restricted-write-role"
+          },
+          {
+            "name": "clusters-read-role"
+          },
+          {
+            "name": "clusters-write-role"
+          },
+          {
+            "name": "cluster-templates-read-role"
+          },
+          {
+            "name": "cluster-templates-write-role"
+          },
+          {
+            "name": "cluster-artifacts-read-role"
+          },
+          {
+            "name": "cluster-artifacts-write-role"
+          },
+          {
+            "name": "infra-manager-core-read-role"
+          },
+          {
+            "name": "infra-manager-core-write-role"
+          },
+          {
+            "name": "alrt-r"
+          },
+          {
+            "name": "alrt-rw"
+          },
+          {
+            "name": "alrt-rx-rw"
+          },
+          {
+            "name": "ao-m2m-rw"
+          },
+          {
+            "name": "co-m2m-rw"
+          },
+          {
+            "name": "org-read-role"
+          },
+          {
+            "name": "org-write-role"
+          },
+          {
+            "name": "org-update-role"
+          },
+          {
+            "name": "org-delete-role"
+          }
+        ],
+        "client": {
+          "alerts-m2m-client": [],
+          "host-manager-m2m-client": [],
+          "co-manager-m2m-client": [],
+          "ktc-m2m-client": [],
+          "3rd-party-host-manager-m2m-client": [],
+          "edge-manager-m2m-client": [],
+          "en-m2m-template-client": [],
+          "webui-client": [],
+          "docsui-client": [],
+          "account": [
+            {
+              "name": "view-profile",
+              "clientRole": true
+            },
+            {
+              "name": "manage-account",
+              "clientRole": true
+            }
+          ],
+          "telemetry-client": [
+            {
+              "name": "admin",
+              "clientRole": true
+            },
+            {
+              "name": "viewer",
+              "clientRole": true
+            }
+          ],
+          "cluster-management-client": [
+            {
+              "name": "restricted-role",
+              "clientRole": true
+            },
+            {
+              "name": "standard-role",
+              "clientRole": true
+            },
+            {
+              "name": "base-role",
+              "clientRole": true
+            }
+          ],
+          "registry-client": [
+            {
+              "name": "registry-admin-role",
+              "clientRole": true
+            },
+            {
+              "name": "registry-editor-role",
+              "clientRole": true
+            },
+            {
+              "name": "registry-viewer-role",
+              "clientRole": true
+            }
+          ]
+        }
+      },
       "clients": [
+        {
+          "clientId": "alerts-m2m-client",
+          "name": "Alerts M2M Client",
+          "description": "Client for Alerts",
+          "surrogateAuthRequired": false,
+          "enabled": true,
+          "alwaysDisplayInConsole": false,
+          "clientAuthenticatorType": "client-secret",
+          "notBefore": 0,
+          "bearerOnly": false,
+          "consentRequired": false,
+          "standardFlowEnabled": false,
+          "implicitFlowEnabled": false,
+          "directAccessGrantsEnabled": false,
+          "serviceAccountsEnabled": true,
+          "authorizationServicesEnabled": true,
+          "publicClient": false,
+          "protocol": "openid-connect",
+          "attributes": {
+            "oidc.ciba.grant.enabled": "false",
+            "oauth2.device.authorization.grant.enabled": "false",
+            "backchannel.logout.revoke.offline.tokens": "false"
+          },
+          "fullScopeAllowed": true,
+          "defaultClientScopes": [
+            "web-origins",
+            "acr",
+            "profile",
+            "roles",
+            "email",
+            "basic"
+          ],
+          "optionalClientScopes": [
+            "address",
+            "phone",
+            "offline_access",
+            "microprofile-jwt"
+          ]
+        },
+        {
+          "clientId": "host-manager-m2m-client",
+          "name": "Host Manager Client",
+          "description": "Client for the EN Host Manager to use in creating edgenode m2m clients",
+          "surrogateAuthRequired": false,
+          "enabled": true,
+          "alwaysDisplayInConsole": false,
+          "clientAuthenticatorType": "client-secret",
+          "notBefore": 0,
+          "bearerOnly": false,
+          "consentRequired": false,
+          "standardFlowEnabled": false,
+          "implicitFlowEnabled": false,
+          "directAccessGrantsEnabled": false,
+          "serviceAccountsEnabled": true,
+          "authorizationServicesEnabled": true,
+          "publicClient": false,
+          "frontchannelLogout": true,
+          "protocol": "openid-connect",
+          "attributes": {
+            "oidc.ciba.grant.enabled": "false",
+            "oauth2.device.authorization.grant.enabled": "false",
+            "backchannel.logout.session.required": "true",
+            "backchannel.logout.revoke.offline.tokens": "false"
+          },
+          "fullScopeAllowed": true,
+          "defaultClientScopes": [
+            "web-origins",
+            "acr",
+            "profile",
+            "roles",
+            "email",
+            "basic"
+          ],
+          "optionalClientScopes": [
+            "address",
+            "phone",
+            "offline_access",
+            "microprofile-jwt"
+          ]
+        },
+        {
+          "clientId": "co-manager-m2m-client",
+          "name": "Cluster Orchestrator Manager M2M Client",
+          "description": "Client for cluster-manager to access Keycloak for JWT TTL management",
+          "surrogateAuthRequired": false,
+          "enabled": true,
+          "alwaysDisplayInConsole": false,
+          "clientAuthenticatorType": "client-secret",
+          "notBefore": 0,
+          "bearerOnly": false,
+          "consentRequired": false,
+          "standardFlowEnabled": false,
+          "implicitFlowEnabled": false,
+          "directAccessGrantsEnabled": false,
+          "serviceAccountsEnabled": true,
+          "authorizationServicesEnabled": true,
+          "publicClient": false,
+          "frontchannelLogout": true,
+          "protocol": "openid-connect",
+          "attributes": {
+            "oidc.ciba.grant.enabled": "false",
+            "oauth2.device.authorization.grant.enabled": "false",
+            "backchannel.logout.session.required": "true",
+            "backchannel.logout.revoke.offline.tokens": "false"
+          },
+          "fullScopeAllowed": true,
+          "defaultClientScopes": [
+            "web-origins",
+            "acr",
+            "profile",
+            "roles",
+            "email",
+            "basic",
+            "groups"
+          ],
+          "optionalClientScopes": [
+            "offline_access"
+          ]
+        },
+        {
+          "clientId": "ktc-m2m-client",
+          "name": "Keycloak Tenant Controller client",
+          "description": "Client for the Keycloak Tenant Controller to use in creating Tenant specific roles and groups in Keycloak",
+          "surrogateAuthRequired": false,
+          "enabled": true,
+          "alwaysDisplayInConsole": false,
+          "clientAuthenticatorType": "client-secret",
+          "notBefore": 0,
+          "bearerOnly": false,
+          "consentRequired": false,
+          "standardFlowEnabled": false,
+          "implicitFlowEnabled": false,
+          "directAccessGrantsEnabled": false,
+          "serviceAccountsEnabled": true,
+          "authorizationServicesEnabled": true,
+          "publicClient": false,
+          "frontchannelLogout": true,
+          "protocol": "openid-connect",
+          "attributes": {
+            "oidc.ciba.grant.enabled": "false",
+            "oauth2.device.authorization.grant.enabled": "false",
+            "backchannel.logout.session.required": "true",
+            "backchannel.logout.revoke.offline.tokens": "false"
+          },
+          "fullScopeAllowed": true,
+          "defaultClientScopes": [
+            "web-origins",
+            "acr",
+            "profile",
+            "roles",
+            "groups",
+            "email",
+            "basic"
+          ],
+          "optionalClientScopes": [
+            "address",
+            "phone",
+            "offline_access",
+            "microprofile-jwt"
+          ]
+        },
+        {
+          "clientId": "3rd-party-host-manager-m2m-client",
+          "name": "3rd Party Host Manager Client",
+          "description": "Client for the 3rd party Host Manager to use in creating edgenode m2m clients",
+          "surrogateAuthRequired": false,
+          "enabled": true,
+          "alwaysDisplayInConsole": false,
+          "clientAuthenticatorType": "client-secret",
+          "notBefore": 0,
+          "bearerOnly": false,
+          "consentRequired": false,
+          "standardFlowEnabled": false,
+          "implicitFlowEnabled": false,
+          "directAccessGrantsEnabled": false,
+          "serviceAccountsEnabled": true,
+          "authorizationServicesEnabled": true,
+          "publicClient": false,
+          "frontchannelLogout": true,
+          "protocol": "openid-connect",
+          "attributes": {
+            "oidc.ciba.grant.enabled": "false",
+            "oauth2.device.authorization.grant.enabled": "false",
+            "backchannel.logout.session.required": "true",
+            "backchannel.logout.revoke.offline.tokens": "false"
+          },
+          "fullScopeAllowed": true,
+          "defaultClientScopes": [
+            "web-origins",
+            "acr",
+            "profile",
+            "roles",
+            "email",
+            "basic"
+          ],
+          "optionalClientScopes": [
+            "address",
+            "phone",
+            "offline_access",
+            "microprofile-jwt"
+          ]
+        },
+        {
+          "clientId": "edge-manager-m2m-client",
+          "name": "Edge Manager M2M Client",
+          "description": "Client for the accessing Orchestrator with Edge-Manager persona",
+          "surrogateAuthRequired": false,
+          "enabled": true,
+          "alwaysDisplayInConsole": false,
+          "clientAuthenticatorType": "client-secret",
+          "notBefore": 0,
+          "bearerOnly": false,
+          "consentRequired": false,
+          "standardFlowEnabled": false,
+          "implicitFlowEnabled": false,
+          "directAccessGrantsEnabled": false,
+          "serviceAccountsEnabled": true,
+          "authorizationServicesEnabled": true,
+          "publicClient": false,
+          "frontchannelLogout": true,
+          "protocol": "openid-connect",
+          "attributes": {
+            "oidc.ciba.grant.enabled": "false",
+            "oauth2.device.authorization.grant.enabled": "false",
+            "backchannel.logout.session.required": "true",
+            "backchannel.logout.revoke.offline.tokens": "false"
+          },
+          "fullScopeAllowed": true,
+          "defaultClientScopes": [
+            "roles",
+            "email",
+            "groups",
+            "basic"
+          ],
+          "optionalClientScopes": [
+            "offline_access",
+          ]
+        },
+        {
+          "clientId": "en-m2m-template-client",
+          "name": "Edge Node M2M Template Client",
+          "description": "Client to use as basis for Roles to assign to new Edge Node M2M clients",
+          "surrogateAuthRequired": false,
+          "enabled": false,
+          "alwaysDisplayInConsole": false,
+          "clientAuthenticatorType": "client-secret",
+          "notBefore": 0,
+          "bearerOnly": false,
+          "consentRequired": false,
+          "standardFlowEnabled": false,
+          "implicitFlowEnabled": false,
+          "directAccessGrantsEnabled": false,
+          "serviceAccountsEnabled": true,
+          "authorizationServicesEnabled": true,
+          "publicClient": false,
+          "protocol": "openid-connect",
+          "attributes": {
+            "oidc.ciba.grant.enabled": "false",
+            "oauth2.device.authorization.grant.enabled": "false",
+            "backchannel.logout.revoke.offline.tokens": "false"
+          },
+          "fullScopeAllowed": true,
+          "defaultClientScopes": [
+            "web-origins",
+            "acr",
+            "profile",
+            "roles",
+            "email",
+            "basic"
+          ],
+          "optionalClientScopes": [
+            "address",
+            "phone",
+            "offline_access",
+            "microprofile-jwt"
+          ]
+        },
         {
           "clientId": "telemetry-client",
           "name": "Telemetry Client",
-          "rootUrl": "https://observability-ui.{{ .Values.argo.clusterDomain }}",
+          "rootUrl": "{{ $telemetryRootUrl }}",
           "enabled": true,
           "clientAuthenticatorType": "client-secret",
-          "redirectUris": ["https://observability-admin.{{ .Values.argo.clusterDomain }}/login/generic_oauth", "https://observability-ui.{{ .Values.argo.clusterDomain }}/login/generic_oauth"],
-          "webOrigins": ["+"],
+          "redirectUris": {{ $telemetryRedirects | toJson }},
+          "webOrigins": [
+            "+"
+          ],
           "protocol": "openid-connect",
           "directAccessGrantsEnabled": true,
           "attributes": {
@@ -140,19 +579,29 @@ realmMaster: |
             "backchannel.logout.revoke.offline.tokens": "false"
           },
           "fullScopeAllowed": true,
-          "defaultClientScopes": ["roles", "profile", "email", "basic"],
-          "optionalClientScopes": ["groups", "offline_access"]
+          "defaultClientScopes": [
+            "roles",
+            "profile",
+            "email",
+            "basic"
+          ],
+          "optionalClientScopes": [
+            "groups",
+            "offline_access"
+          ]
         },
         {
           "clientId": "cluster-management-client",
           "name": "Cluster Management Client",
-          "rootUrl": "https://cluster-management.{{ .Values.argo.clusterDomain }}",
-          "adminUrl": "https://cluster-management.{{ .Values.argo.clusterDomain }}",
+          "rootUrl": "{{ $clusterMgmtRootUrl }}",
+          "adminUrl": "{{ $clusterMgmtRootUrl }}",
           "surrogateAuthRequired": false,
           "enabled": true,
           "clientAuthenticatorType": "client-secret",
-          "redirectUris": ["https://cluster-management.{{ .Values.argo.clusterDomain }}", "https://cluster-management.{{ .Values.argo.clusterDomain }}/"],
-          "webOrigins": ["+"],
+          "redirectUris": {{ $clusterMgmtRedirects | toJson }},
+          "webOrigins": [
+            "+"
+          ],
           "directAccessGrantsEnabled": true,
           "serviceAccountsEnabled": false,
           "publicClient": true,
@@ -168,7 +617,7 @@ realmMaster: |
             "require.pushed.authorization.requests": "false",
             "tls.client.certificate.bound.access.tokens": "false",
             "display.on.consent.screen": "false",
-            "token.response.type.bearer.lower-case": "false"
+            "token.response.type.bearer.lower-case": "false",
           },
           "fullScopeAllowed": true,
           "protocolMappers": [
@@ -210,18 +659,28 @@ realmMaster: |
               }
             }
           ],
-          "defaultClientScopes": ["profile", "roles", "email", "basic"],
-          "optionalClientScopes": ["groups", "offline_access"],
+          "defaultClientScopes": [
+            "profile",
+            "roles",
+            "email",
+            "basic"
+          ],
+          "optionalClientScopes": [
+            "groups",
+            "offline_access",
+          ],
           "authorizationServicesEnabled": false
         },
         {
           "clientId": "webui-client",
           "name": "WebUI Client",
-          "rootUrl": "https://web-ui.{{ .Values.argo.clusterDomain }}",
+          "rootUrl": "{{ $webuiRootUrl }}",
           "enabled": true,
           "clientAuthenticatorType": "client-secret",
-          "redirectUris": ["https://web-ui.{{ .Values.argo.clusterDomain }}", "https://app-service-proxy.{{ .Values.argo.clusterDomain }}/app-service-proxy-index.html*", "https://vnc.{{ .Values.argo.clusterDomain }}/*", "https://{{ .Values.argo.clusterDomain }}"{{- if index .Values.argo "platform-keycloak" "extraUiRedirects" -}}, {{- index .Values.argo "platform-keycloak" "extraUiRedirects" -}}{{- end -}}],
-          "webOrigins": ["+"],
+          "redirectUris": {{ $webuiRedirects | toJson }},
+          "webOrigins": [
+            "+"
+          ],
           "protocol": "openid-connect",
           "directAccessGrantsEnabled": false,
           "attributes": {
@@ -234,17 +693,27 @@ realmMaster: |
             "backchannel.logout.revoke.offline.tokens": "false"
           },
           "fullScopeAllowed": true,
-          "defaultClientScopes": ["roles", "profile", "email", "basic"],
-          "optionalClientScopes": ["groups", "offline_access"]
+          "defaultClientScopes": [
+            "roles",
+            "profile",
+            "email",
+            "basic"
+          ],
+          "optionalClientScopes": [
+            "groups",
+            "offline_access"
+          ]
         },
         {
           "clientId": "docsui-client",
           "name": "DocsUI Client",
-          "rootUrl": "https://docs-ui.{{ .Values.argo.clusterDomain }}",
+          "rootUrl": "{{ $docsuiRootUrl }}",
           "enabled": true,
           "clientAuthenticatorType": "client-secret",
-          "redirectUris": ["https://docs-ui.{{ .Values.argo.clusterDomain }}", "https://docs-ui.{{ .Values.argo.clusterDomain }}/"],
-          "webOrigins": ["+"],
+          "redirectUris": {{ $docsuiRedirects | toJson }},
+          "webOrigins": [
+            "+"
+          ],
           "protocol": "openid-connect",
           "directAccessGrantsEnabled": false,
           "attributes": {
@@ -257,34 +726,16 @@ realmMaster: |
             "backchannel.logout.revoke.offline.tokens": "false"
           },
           "fullScopeAllowed": true,
-          "defaultClientScopes": ["roles", "profile", "email", "basic"],
-          "optionalClientScopes": ["groups", "offline_access"]
-        },
-        {
-          "frontchannelLogout": true,
-          "standardFlowEnabled": true,
-          "clientId": "registry-client",
-          "name": "Registry Client",
-          "rootUrl": "https://registry-oci.{{ .Values.argo.clusterDomain }}",
-          "enabled": true,
-          "clientAuthenticatorType": "client-secret",
-          "redirectUris": ["/c/oidc/callback"],
-          "webOrigins": ["+"],
-          "protocol": "openid-connect",
-          "directAccessGrantsEnabled": true,
-          "attributes": {
-            "oidc.ciba.grant.enabled": "false",
-            "client.secret.creation.time": "1683218404",
-            "backchannel.logout.session.required": "true",
-            "post.logout.redirect.uris": "+",
-            "display.on.consent.screen": "false",
-            "use.jwks.url": "false",
-            "oauth2.device.authorization.grant.enabled": "false",
-            "backchannel.logout.revoke.offline.tokens": "false"
-          },
-          "fullScopeAllowed": true,
-          "defaultClientScopes": ["roles", "profile", "email", "groups", "basic"],
-          "optionalClientScopes": ["offline_access"]
+          "defaultClientScopes": [
+            "roles",
+            "profile",
+            "email",
+            "basic"
+          ],
+          "optionalClientScopes": [
+            "groups",
+            "offline_access"
+          ]
         },
         {
           "clientId": "system-client",
@@ -309,15 +760,545 @@ realmMaster: |
           },
           "fullScopeAllowed": true,
           "defaultClientScopes": [
-            "roles",
+            "openid",
             "profile",
             "email",
+            "groups",
+            "roles",
             "basic"
           ],
           "optionalClientScopes": [
+            "offline_access"
+          ]
+        },
+        {
+          "frontchannelLogout": true,
+          "standardFlowEnabled": true,
+          "clientId": "registry-client",
+          "name": "Registry Client",
+          "rootUrl": "{{ $registryRootUrl }}",
+          "enabled": true,
+          "clientAuthenticatorType": "client-secret",
+          "redirectUris": [
+            "/c/oidc/callback"
+          ],
+          "webOrigins": [
+            "+"
+          ],
+          "protocol": "openid-connect",
+          "directAccessGrantsEnabled": true,
+          "attributes": {
+            "oidc.ciba.grant.enabled": "false",
+            "client.secret.creation.time": "1683218404",
+            "backchannel.logout.session.required": "true",
+            "post.logout.redirect.uris": "+",
+            "display.on.consent.screen": "false",
+            "use.jwks.url": "false",
+            "oauth2.device.authorization.grant.enabled": "false",
+            "backchannel.logout.revoke.offline.tokens": "false"
+          },
+          "fullScopeAllowed": true,
+          "defaultClientScopes": [
+            "roles",
+            "profile",
+            "email",
             "groups",
+            "basic"
+          ],
+          "optionalClientScopes": [
             "offline_access"
           ]
         }
-      ]
+      ],
+      "clientScopes": [
+        {
+          "name": "openid",
+          "protocol": "openid-connect",
+          "attributes": {
+            "include.in.token.scope": "true"
+          }
+        },
+        {
+          "name": "profile",
+          "protocol": "openid-connect",
+          "attributes": {
+            "include.in.token.scope": "true"
+          }
+        },
+        {
+          "name": "email",
+          "protocol": "openid-connect",
+          "attributes": {
+            "include.in.token.scope": "true"
+          }
+        },
+        {
+          "name": "basic",
+          "protocol": "openid-connect",
+          "attributes": {
+            "include.in.token.scope": "true"
+          }
+        },
+        {
+          "name": "offline_access",
+          "protocol": "openid-connect",
+          "attributes": {
+            "include.in.token.scope": "true"
+          }
+        },
+        {
+          "name": "groups",
+          "description": "Groups scope",
+          "type": "Optional",
+          "protocol": "openid-connect",
+          "attributes": {
+            "include.in.token.scope": "true",
+            "display.on.consent.screen": "true"
+          },
+          "protocolMappers": [
+            {
+              "name": "groups",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-group-membership-mapper",
+              "consentRequired": false,
+              "config": {
+                "multivalued": "true",
+                "full.path": "false",
+                "id.token.claim": "true",
+                "access.token.claim": "true",
+                "claim.name": "groups",
+                "userinfo.token.claim": "true",
+                "jsonType.label": "String"
+              }
+            }
+          ]
+        },
+        {
+          "name": "roles",
+          "description": "OpenID Connect scope for add user roles to the access token",
+          "protocol": "openid-connect",
+          "attributes": {
+            "include.in.token.scope": "true",
+            "display.on.consent.screen": "true",
+            "gui.order": "",
+            "consent.screen.text": '{{"$"}}{{"{"}}roleScopeConsentText{{"}"}}'
+          },
+          "protocolMappers": [
+            {
+              "name": "realm roles",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-usermodel-realm-role-mapper",
+              "consentRequired": false,
+              "config": {
+                "multivalued": "true",
+                "userinfo.token.claim": "true",
+                "id.token.claim": "true",
+                "access.token.claim": "true",
+                "claim.name": "realm_access.roles",
+                "jsonType.label": "String"
+              }
+            },
+            {
+              "name": "client roles",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-usermodel-client-role-mapper",
+              "consentRequired": false,
+              "config": {
+                "multivalued": "true",
+                "userinfo.token.claim": "true",
+                "id.token.claim": "true",
+                "access.token.claim": "true",
+                "claim.name": "resource_access.{{"$"}}{{"{"}}client_id{{"}"}}.roles",
+                "jsonType.label": "String"
+              }
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "registry-app-admin-group",
+          "path": "/registry-app-admin-group",
+        },
+        {
+          "name": "registry-app-editor-group",
+          "path": "/registry-app-editor-group",
+        },
+        {
+          "name": "registry-app-viewer-group",
+          "path": "/registry-app-viewer-group",
+        },
+        {
+          "name": "apps-m2m-service-account",
+          "path": "/apps-m2m-service-account",
+          "realmRoles": [
+            "ao-m2m-rw",
+            "co-m2m-rw"
+          ]
+        },
+        {
+          "name": "org-admin-group",
+          "path": "/org-admin-group",
+          "realmRoles": [
+            "org-read-role",
+            "org-update-role",
+            "org-delete-role",
+            "org-write-role"
+          ]
+        },
+        {
+          "name": "sre-admin-group",
+          "path": "/sre-admin-group",
+          "realmRoles": [
+            "alrt-r"
+          ],
+          "clientRoles": {
+            "account": [
+              "view-profile",
+              "manage-account"
+            ],
+            "telemetry-client": [
+              "viewer"
+            ]
+          }
+        },
+        {
+          "name": "iam-admin-group",
+          "path": "/iam-admin-group",
+          "realmRoles": [
+            "admin",
+            "secrets-root-role"
+          ],
+          "clientRoles": {
+            "account": [
+              "view-profile",
+              "manage-account"
+            ],
+            "master-realm": [
+              "view-users",
+              "query-users",
+              "manage-clients"
+            ]
+          }
+        },
+        {
+          "name": "service-admin-group",
+          "path": "/service-admin-group",
+          "realmRoles": [
+            "alrt-rx-rw",
+            "rs-access-r",
+            "infra-manager-core-read-role",
+            "infra-manager-core-write-role",
+            "alrt-rw"
+          ],
+          "clientRoles": {
+            "account": [
+              "view-profile",
+              "manage-account"
+            ],
+            "master-realm": [
+              "view-users",
+              "query-users",
+              "manage-clients"
+            ],
+            "telemetry-client": [
+              "admin"
+            ],
+            "cluster-management-client": [
+              "restricted-role",
+              "standard-role",
+              "base-role"
+            ],
+            "registry-client": [
+              "registry-admin-role"
+            ]
+          }
+        },
+        {
+          "name": "edge-manager-group",
+          "path": "/edge-manager-group",
+          "realmRoles": [
+            "app-service-proxy-read-role",
+            "app-service-proxy-write-role",
+            "app-deployment-manager-read-role",
+            "app-deployment-manager-write-role",
+            "app-resource-manager-read-role",
+            "app-resource-manager-write-role",
+            "app-vm-console-write-role",
+            "catalog-publisher-read-role",
+            "catalog-publisher-write-role",
+            "catalog-other-read-role",
+            "catalog-other-write-role",
+            "catalog-restricted-read-role",
+            "catalog-restricted-write-role",
+            "clusters-read-role",
+            "clusters-write-role",
+            "cluster-templates-read-role",
+            "cluster-templates-write-role",
+            "cluster-artifacts-read-role",
+            "cluster-artifacts-write-role",
+            "infra-manager-core-read-role",
+            "alrt-rw"
+          ],
+          "clientRoles": {
+            "telemetry-client": [
+              "viewer"
+            ],
+            "cluster-management-client": [
+              "standard-role",
+              "base-role"
+            ],
+            "registry-client": [
+              "registry-editor-role"
+            ]
+          }
+        },
+        {
+          "name": "edge-operator-group",
+          "path": "/edge-operator-group",
+          "realmRoles": [
+            "app-service-proxy-read-role",
+            "app-service-proxy-write-role",
+            "app-deployment-manager-read-role",
+            "app-deployment-manager-write-role",
+            "app-resource-manager-read-role",
+            "app-resource-manager-write-role",
+            "app-vm-console-write-role",
+            "catalog-publisher-read-role",
+            "catalog-other-read-role",
+            "clusters-read-role",
+            "clusters-write-role",
+            "cluster-templates-read-role",
+            "cluster-artifacts-read-role",
+            "cluster-artifacts-write-role",
+            "infra-manager-core-read-role",
+            "alrt-r"
+          ],
+          "clientRoles": {
+            "telemetry-client": [
+              "viewer"
+            ],
+            "registry-client": [
+              "registry-viewer-role"
+            ]
+          }
+        },
+        {
+          "name": "host-manager-group",
+          "path": "/host-manager-group",
+          "realmRoles": [
+            "infra-manager-core-read-role",
+            "infra-manager-core-write-role"
+          ],
+          "clientRoles": {
+            "telemetry-client": [
+              "viewer"
+            ]
+          }
+        },
+        {
+          "name": "sre-group",
+          "path": "/sre-group",
+          "realmRoles": [
+            "alrt-r",
+            "clusters-read-role",
+            "clusters-write-role",
+            "cluster-templates-read-role",
+            "infra-manager-core-read-role"
+          ],
+          "clientRoles": {
+            "telemetry-client": [
+              "viewer"
+            ],
+            "cluster-management-client": [
+              "base-role",
+              "restricted-role"
+            ]
+          }
+        }
+      ],
+      "users": [
+        {
+          "username": "service-account-alerts-m2m-client",
+          "enabled": true,
+          "totp": false,
+          "serviceAccountClientId": "alerts-m2m-client",
+          "realmRoles": [
+            "default-roles-master"
+          ],
+          "clientRoles": {
+            "alerts-m2m-client": [
+              "uma_protection"
+            ],
+            "master-realm": [
+              "view-users"
+            ]
+          },
+          "notBefore": 0
+        },
+        {
+          "username": "service-account-host-manager-m2m-client",
+          "enabled": true,
+          "totp": false,
+          "serviceAccountClientId": "host-manager-m2m-client",
+          "realmRoles": [
+            "default-roles-master",
+            "rs-access-r"
+          ],
+          "clientRoles": {
+            "host-manager-m2m-client": [
+              "uma_protection"
+            ],
+            "master-realm": [
+              "query-clients",
+              "manage-authorization",
+              "view-clients",
+              "view-users",
+              "create-client",
+              "manage-users",
+              "manage-clients",
+              "view-realm"
+            ]
+          },
+          "notBefore": 0
+        },
+        {
+          "username": "service-account-co-manager-m2m-client",
+          "enabled": true,
+          "totp": false,
+          "serviceAccountClientId": "co-manager-m2m-client",
+          "realmRoles": [
+            "default-roles-master"
+          ],
+          "clientRoles": {
+            "co-manager-m2m-client": [
+              "uma_protection"
+            ],
+            "master-realm": [
+              "view-clients",
+              "manage-clients"
+            ]
+          },
+          "notBefore": 0,
+          "groups": [
+            "/edge-manager-group",
+            "/apps-m2m-service-account"
+          ]
+        },
+        {
+          "username": "service-account-ktc-m2m-client",
+          "enabled": true,
+          "totp": false,
+          "serviceAccountClientId": "ktc-m2m-client",
+          "realmRoles": [
+            "admin",
+            "create-realm",
+            "default-roles-master",
+            "rs-access-r"
+          ],
+          "clientRoles": {
+            "ktc-m2m-client": [
+              "uma_protection"
+            ],
+            "master-realm": [
+              "query-clients",
+              "manage-authorization",
+              "view-clients",
+              "view-users",
+              "create-client",
+              "manage-users",
+              "manage-clients"
+            ]
+          },
+          "notBefore": 0
+        },
+        {
+          "username": "service-account-3rd-party-host-manager-m2m-client",
+          "enabled": true,
+          "totp": false,
+          "serviceAccountClientId": "3rd-party-host-manager-m2m-client",
+          "realmRoles": [
+            "default-roles-master",
+            "rs-access-r"
+          ],
+          "clientRoles": {
+            "3rd-party-host-manager-m2m-client": [
+              "uma_protection"
+            ],
+            "master-realm": [
+              "query-clients",
+              "manage-authorization",
+              "view-clients",
+              "view-users",
+              "create-client",
+              "manage-users",
+              "manage-clients",
+              "view-realm",
+            ]
+          },
+          "notBefore": 0
+        },
+        {
+          "username": "service-account-en-m2m-template-client",
+          "enabled": true,
+          "totp": false,
+          "serviceAccountClientId": "en-m2m-template-client",
+          "realmRoles": [
+            "default-roles-master",
+            "rs-access-r",
+            "en-agent-rw"
+          ],
+          "clientRoles": {
+            "en-m2m-template-client": [
+              "uma_protection"
+            ]
+          },
+          "notBefore": 0
+        },
+        {
+          "username": "service-account-edge-manager-m2m-client",
+          "enabled": true,
+          "totp": false,
+          "serviceAccountClientId": "edge-manager-m2m-client",
+          "realmRoles": [
+            "default-roles-master"
+          ],
+          "clientRoles": {
+            "edge-manager-m2m-client": [
+              "uma_protection"
+            ]
+          },
+          "notBefore": 0,
+          "groups": [
+            "/edge-manager-group",
+            "/apps-m2m-service-account"
+          ]
+        },
+      ],
+      "components": {
+        "org.keycloak.keys.KeyProvider": [
+          {
+            "name": "fallback-PS512",
+            "providerId": "rsa-generated",
+            "subComponents": {},
+            "config": {
+              "keySize": [
+                "4096"
+              ],
+              "active": [
+                "true"
+              ],
+              "priority": [
+                "-100"
+              ],
+              "enabled": [
+                "true"
+              ],
+              "algorithm": [
+                "PS512"
+              ]
+            }
+          }
+        ]
+      }
     }
