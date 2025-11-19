@@ -556,23 +556,10 @@ class AutoInstall:
         config_path = os.path.join(current_directory, "state", config_file)
         state_dir = os.path.join(current_directory, "state")
 
-        print(f"dir contents of state ({state_dir}):")
-        print(os.listdir(state_dir))
-
-        count = 1
-
-        print(f"here {count}")
-        count += 1 
         os.system(f"sudo chown -R {current_user}:{current_user} {state_dir}")
 
-        print(f"here {count}")
-        count += 1 
-        print(f"opening config path ${config_path}")
         with open(config_path, "r") as f:
             lines = f.readlines()
-
-        print(f"here {count}")
-        count += 1 
 
         # Check if pattern exists
         found = False
@@ -582,15 +569,9 @@ class AutoInstall:
                 found = True
                 break
 
-        print(f"here {count}")
-        count += 1 
-
         # If not found, append at the end
         if not found:
             lines.append(f'{to_replace} = "{to_replace_value}"\n')
-
-        print(f"here {count}")
-        count += 1 
 
         with open(config_path, "w") as f:
             f.writelines(lines)
@@ -622,10 +603,6 @@ class AutoInstall:
         time.sleep(120)
         # in provision config editor
 
-        # self.installer_session.sendline(f'\x1bG$osmtp_url="{self.SMTP_URL}"\x1b')
-        # self.installer_session.sendline(f'\x1bG$osmtp_port={self.SMTP_PORT}\x1b')
-        # self.installer_session.sendline(f'\x1bG$osmtp_from="{self.SMTP_FROM}"\x1b')
-
         self.installer_session.sendline(":wq")
 
         # Confirm config save if prompted
@@ -641,6 +618,7 @@ class AutoInstall:
 
         self.installer_session.expect("orchestrator-admin:pod-configs", timeout=60)
 
+        print("Inserting SMTP details into tfvar file to enable alerting emails.")
         self.insert_smtp_details_helper("smtp_url", self.SMTP_URL)
         self.insert_smtp_details_helper("smtp_port", self.SMTP_PORT)
         self.insert_smtp_details_helper("smtp_from", self.SMTP_FROM)
