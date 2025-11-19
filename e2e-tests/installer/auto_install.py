@@ -305,7 +305,7 @@ class AutoInstall:
         self.SMTP_FROM = os.getenv("SMTP_FROM")
         self.SMTP_USER = os.getenv("SMTP_USER")
         self.SMTP_PASS = os.getenv("SMTP_PASS")
-        self.SMTP_DEV = os.getenv("SMTP_DEV")
+        self.dev_alerting_emails = os.getenv("SMTP_DEV ", "false")
 
         self.jumphost_sshkey_copied = False
         if self.jumphost_sshkey_path and len(self.jumphost_sshkey_path) > 0:
@@ -773,7 +773,7 @@ class AutoInstall:
             self.installer_session.expect("orchestrator-admin:~")
 
         # configure cluster
-        self.installer_session.sendline(f"DISABLE_AWS_PROD_PROFILE={self.disable_aws_prod_profile} ./configure-cluster.sh {self.vpc_jumphost_params}")
+        self.installer_session.sendline(f"DISABLE_AWS_PROD_PROFILE={self.disable_aws_prod_profile} SMTP_DEV={self.dev_alerting_emails} ./configure-cluster.sh {self.vpc_jumphost_params}")
 
         editor_prompt = False
         while not editor_prompt:
