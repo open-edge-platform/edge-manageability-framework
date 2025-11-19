@@ -883,6 +883,45 @@ while IFS=' ' read -r ns secret; do
     kubectl delete secret "$secret" -n "$ns"
 done
 
+# Fix MPS and RPS connection strings for CNPG migration
+echo "Updating MPS and RPS connection strings for CloudNativePG..."
+
+# Get the current passwords from the secrets
+MPS_PASSWORD=$(kubectl get secret mps-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}' | base64 -d)
+RPS_PASSWORD=$(kubectl get secret rps-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}' | base64 -d)
+
+# Update MPS connection string to use CNPG service name
+MPS_CONN_STRING="postgresql://orch-infra-mps_user:${MPS_PASSWORD}@postgresql-cluster-rw.orch-database/orch-infra-mps?search_path=public&sslmode=disable"
+MPS_CONN_BASE64=$(echo -n "$MPS_CONN_STRING" | base64 -w 0)
+kubectl patch secret mps -n orch-infra -p "{\"data\":{\"connectionString\":\"$MPS_CONN_BASE64\"}}" --type=merge
+
+# Update RPS connection string to use CNPG service name
+RPS_CONN_STRING="postgresql://orch-infra-rps_user:${RPS_PASSWORD}@postgresql-cluster-rw.orch-database/orch-infra-rps?search_path=public&sslmode=disable"
+RPS_CONN_BASE64=$(echo -n "$RPS_CONN_STRING" | base64 -w 0)
+kubectl patch secret rps -n orch-infra -p "{\"data\":{\"connectionString\":\"$RPS_CONN_BASE64\"}}" --type=merge
+
+echo "✅ Updated MPS and RPS connection strings to use postgresql-cluster-rw.orch-database"
+
+# Restart MPS and RPS pods to pick up new connection strings
+echo "Restarting MPS and RPS pods..."
+kubectl delete pod -n orch-infra -l app.kubernetes.io/name=mps --ignore-not-found=true
+kubectl delete pod -n orch-infra -l app.kubernetes.io/name=rps --ignore-not-found=true
+
+echo "✅ MPS and RPS pods restarted with updated configuration"
+
+# Restart inventory pod to refresh database connection to CNPG service
+echo "Restarting inventory pod to refresh database connection..."
+kubectl delete pod -n orch-infra -l app.kubernetes.io/name=inventory --ignore-not-found=true
+
+# Restart onboarding-manager pod to connect to refreshed inventory service
+echo "Restarting onboarding-manager pod..."
+kubectl delete pod -n orch-infra -l app.kubernetes.io/name=onboarding-manager --ignore-not-found=true
+
+# Restart keycloak-tenant-controller pod to resolve Vault authentication issues
+echo "Restarting keycloak-tenant-controller pod..."
+kubectl delete pod -n orch-platform keycloak-tenant-controller-set-0 --ignore-not-found=true
+     
+
 # Run after upgrade script
 ./after_upgrade_restart.sh
 
