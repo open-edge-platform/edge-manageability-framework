@@ -109,7 +109,7 @@ http:
 tcp:
   routers:
     TCProuter0:
-      rule: "HostSNI(`argo.{{ .InternalDomain}}`)"
+      rule: "HostSNI(`argo.{{ .InternalDomain}}`, `argo.kind.internal`)"
       priority: 20
       service: "argo-kind"
       entryPoints:
