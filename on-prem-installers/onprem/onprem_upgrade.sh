@@ -920,7 +920,22 @@ kubectl delete pod -n orch-infra -l app.kubernetes.io/name=onboarding-manager --
 # Restart keycloak-tenant-controller pod to resolve Vault authentication issues
 echo "Restarting keycloak-tenant-controller pod..."
 kubectl delete pod -n orch-platform keycloak-tenant-controller-set-0 --ignore-not-found=true
-     
+
+# Restart harbor-oci-database pod to refresh database connection
+echo "Restarting harbor-oci-database pod..."
+kubectl delete pod -n orch-harbor harbor-oci-database-0 --ignore-not-found=true
+
+# Reinstall External Secrets CRDs to fix any potential issues
+kubectl apply -f https://raw.githubusercontent.com/external-secrets/external-secrets/main/deploy/crds/bundle.yaml
+
+# Force sync External Secrets application with 'Replace' and 'Force' options
+kubectl patch application external-secrets -n onprem --type merge -p='{"operation":{"sync":{"syncStrategy":{"force":true},"syncOptions":["Replace=true","Force=true"]}}}'
+
+# Force sync OutOfSync applications
+kubectl get apps -A --no-headers | grep "OutOfSync" | awk '{print $2}' | while read app; do
+  echo "Force syncing $app..."
+  kubectl patch application $app -n onprem --type json -p='[{"op": "replace", "path": "/operation", "value": {"initiatedBy": {"username": "admin"}, "sync": {"syncStrategy": {"hook": {}, "apply": {"force": true}}}}}]'
+done
 
 # Run after upgrade script
 ./after_upgrade_restart.sh
