@@ -1,0 +1,339 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Base configuration for keycloak-instance deployment
+# This file provides default infrastructure and operational configuration
+# Domain-specific URL configurations (clusterSpecific and realmMaster) are defined in custom/platform-keycloak.tpl
+# and merged via mergeOverwrite in the ArgoCD Application template
+
+# Keycloak instance configuration (Keycloak CRD)
+keycloak:
+  # Container image (uses upstream version from Chart.yaml)
+  image: "quay.io/keycloak/keycloak:26.4.5"
+  imagePullPolicy: IfNotPresent
+
+  # Bootstrap admin credentials
+  bootstrapAdmin:
+    secret: platform-keycloak
+
+  # Database configuration
+  database:
+    vendor: postgres
+    host: postgresql-cluster-rw.orch-database.svc.cluster.local
+    port: 5432
+    database: keycloak-system-platform-keycloak
+    usernameSecret:
+      name: keycloak-platform-db
+      key: username
+    passwordSecret:
+      name: keycloak-platform-db
+      key: password
+    # Connection pool settings
+    poolInitialSize: 5
+    poolMinSize: 5
+    poolMaxSize: 50
+
+  # HTTP configuration
+  http:
+    httpEnabled: true
+    httpPort: 8080
+    relativeUrl: "/"
+
+  # Proxy headers for reverse proxy
+  proxy:
+    headers: xforwarded
+
+  # Ingress configuration
+  ingress:
+    enabled: false
+
+  # Pod resource allocation
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+
+  # Runtime configuration options
+  additionalOptions:
+    - name: hostname-strict
+      value: "false"
+    - name: http-relative-path
+      value: "/"
+    - name: http-enabled
+      value: "true"
+    - name: db-url-properties
+      value: "?tcpKeepAlives=true&socketTimeout=120&connectTimeout=120"
+    - name: http-management-port
+      value: "9000"
+    - name: spi-login-protocol-openid-connect-legacy-logout-redirect-uri
+      value: "true"
+    - name: spi-brute-force-protector-default-brute-force-detector-allow-concurrent-requests
+      value: "true"
+    - name: log-level
+      value: "INFO"
+    - name: log-console-output
+      value: "json"
+
+  # Pod optimization
+  startOptimized: true
+  instances: 1
+
+  # Pod template security and initialization
+  podTemplate:
+    # Pod security context
+    securityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+      seccompProfile:
+        type: RuntimeDefault
+
+    # Init container for building optimized Keycloak image
+    initContainers:
+      - name: keycloak-builder
+        image: "quay.io/keycloak/keycloak:26.4.5"
+        imagePullPolicy: IfNotPresent
+        command:
+          - /bin/bash
+        args:
+          - -c
+          - |
+            set -e
+            /opt/keycloak/bin/kc.sh build \
+              --db=postgres \
+              --health-enabled=true \
+              --metrics-enabled=true \
+              --http-relative-path=/
+
+            mkdir -p /shared/keycloak
+            cp -r /opt/keycloak/* /shared/keycloak/
+
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+          limits:
+            cpu: 1500m
+            memory: 1Gi
+
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
+          capabilities:
+            drop:
+              - ALL
+          seccompProfile:
+            type: RuntimeDefault
+
+        volumeMounts:
+          - name: shared-keycloak
+            mountPath: /shared/keycloak
+          - name: tmp
+            mountPath: /tmp
+
+    # Main container security context
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      capabilities:
+        drop:
+          - ALL
+      seccompProfile:
+        type: RuntimeDefault
+
+    # Container volume mounts
+    containerVolumeMounts:
+      - name: shared-keycloak
+        mountPath: /opt/keycloak
+        readOnly: true
+      - name: tmp
+        mountPath: /tmp
+      - name: keycloak-data
+        mountPath: /opt/keycloak/data
+
+    # Pod volumes
+    volumes:
+      - name: shared-keycloak
+        emptyDir:
+          sizeLimit: 1Gi
+      - name: tmp
+        emptyDir:
+          sizeLimit: 100Mi
+      - name: keycloak-data
+        emptyDir:
+          sizeLimit: 500Mi
+
+# NOTE: realmMaster realm configuration is defined in custom/platform-keycloak.tpl
+# where it can access clusterSpecific values with templated domain names
+
+# Keycloak Config CLI job configuration
+keycloakConfigCli:
+  enabled: true
+
+  serviceAccount:
+    name: keycloak-config-cli
+    namespace: keycloak-system
+    labels:
+      app.kubernetes.io/name: keycloak-config-cli
+      app.kubernetes.io/instance: keycloak-config-cli
+      app.kubernetes.io/version: "6.4.0"
+
+  configMap:
+    name: keycloak-config-cli-realm-master
+    namespace: keycloak-system
+    labels:
+      app.kubernetes.io/name: keycloak-config-cli
+      app.kubernetes.io/instance: keycloak-config-cli
+
+  job:
+    name: keycloak-config-cli
+    namespace: keycloak-system
+    labels:
+      app.kubernetes.io/name: keycloak-config-cli
+      app.kubernetes.io/instance: keycloak-config-cli
+      app.kubernetes.io/version: "6.4.0"
+
+    ttlSecondsAfterFinished: 3600
+    backoffLimit: 5
+    restartPolicy: Never
+
+    podLabels:
+      sidecar.istio.io/inject: "false"
+
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 65534
+      runAsGroup: 65534
+      seccompProfile:
+        type: RuntimeDefault
+      fsGroup: 65534
+
+    initContainers:
+      - name: wait-for-keycloak
+        image: busybox:1.36
+        imagePullPolicy: IfNotPresent
+        command:
+          - sh
+          - -c
+          - |
+            set -e
+            echo "Waiting for Keycloak to be ready..."
+            MAX_ATTEMPTS=60
+            ATTEMPT=0
+            while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+              if timeout 2 sh -c "echo '' | nc -w1 platform-keycloak.keycloak-system.svc 8080" >/dev/null 2>&1; then
+                echo "Keycloak port 8080 is open!"
+                exit 0
+              fi
+              ATTEMPT=$((ATTEMPT + 1))
+              echo "Attempt $ATTEMPT/$MAX_ATTEMPTS - Waiting for Keycloak..."
+              sleep 5
+            done
+            echo "WARNING: Keycloak did not respond, but proceeding anyway..."
+            exit 0
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 65534
+          runAsGroup: 65534
+          seccompProfile:
+            type: RuntimeDefault
+          capabilities:
+            drop:
+              - ALL
+          readOnlyRootFilesystem: true
+
+    container:
+      name: keycloak-config-cli
+      image: docker.io/adorsys/keycloak-config-cli:6.4.0-26
+      imagePullPolicy: IfNotPresent
+
+      env:
+        - name: KEYCLOAK_URL
+          value: "http://platform-keycloak.keycloak-system.svc.cluster.local/"
+        - name: KEYCLOAK_USER
+          value: "admin"
+        - name: KEYCLOAK_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: platform-keycloak
+              key: password
+        - name: KEYCLOAK_AVAILABILITYCHECK_ENABLED
+          value: "true"
+        - name: KEYCLOAK_AVAILABILITYCHECK_TIMEOUT
+          value: "120s"
+        - name: IMPORT_VARSUBSTITUTION_ENABLED
+          value: "true"
+        - name: IMPORT_FILES_LOCATIONS
+          value: "/config/*"
+        - name: IMPORT_MANAGED_GROUP
+          value: "no-delete"
+        - name: IMPORT_MANAGED_REQUIRED_ACTION
+          value: "no-delete"
+        - name: IMPORT_MANAGED_ROLE
+          value: "no-delete"
+        - name: IMPORT_MANAGED_CLIENT
+          value: "no-delete"
+        - name: IMPORT_REMOTE_STATE_ENABLED
+          value: "true"
+        - name: LOGGING_LEVEL_ROOT
+          value: "INFO"
+        - name: LOGGING_LEVEL_KEYCLOAKCONFIGCLI
+          value: "DEBUG"
+
+      resources:
+        requests:
+          cpu: 200m
+          memory: 512Mi
+        limits:
+          cpu: 1000m
+          memory: 1Gi
+
+      volumeMounts:
+        - name: config
+          mountPath: /config
+          readOnly: true
+        - name: tmp
+          mountPath: /tmp
+
+      securityContext:
+        allowPrivilegeEscalation: false
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+        capabilities:
+          drop:
+            - ALL
+        readOnlyRootFilesystem: true
+
+    volumes:
+      - name: config
+        configMap:
+          name: keycloak-config-cli-realm-master
+          defaultMode: 0444
+      - name: tmp
+        emptyDir: {}
+
+# ArgoCD configuration for cluster-specific overrides
+argo:
+  # Cluster domain suffix for dynamic URL generation
+  clusterDomain: "kind.internal"

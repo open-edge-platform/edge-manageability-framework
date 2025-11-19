@@ -1,0 +1,144 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Base configuration for keycloak-operator deployment
+# This file provides default values for the Keycloak Operator that can be overridden
+
+# Keycloak Operator namespace
+namespace: keycloak-system
+
+# Operator deployment configuration
+operator:
+  # Deployment replicas
+  replicas: 1
+
+  # Container image (uses upstream version from Chart.yaml)
+  image: "quay.io/keycloak/keycloak-operator:26.4.5"
+  imagePullPolicy: IfNotPresent
+
+  # Related Keycloak image for operator to deploy
+  relatedImage:
+    keycloak: "quay.io/keycloak/keycloak:26.4.5"
+
+  # Service account name
+  serviceAccountName: keycloak-operator
+
+  # Deployment annotations (from upstream)
+  annotations:
+    app.quarkus.io/quarkus-version: "3.27.0"
+    app.quarkus.io/vcs-uri: "https://github.com/keycloak/keycloak.git"
+    app.quarkus.io/build-timestamp: "2025-10-23 - 07:06:46 +0000"
+
+  # Pod labels (from upstream)
+  podLabels:
+    app.kubernetes.io/managed-by: quarkus
+
+  # Pod security context
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 1000
+
+  # Container configuration
+  container:
+    name: keycloak-operator
+
+    # Container security context
+    securityContext:
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities:
+        drop:
+          - ALL
+
+    # Resource allocation
+    resources:
+      requests:
+        cpu: 300m
+        memory: 450Mi
+      limits:
+        cpu: 700m
+        memory: 450Mi
+
+    # Container port configuration
+    ports:
+      - name: http
+        containerPort: 8080
+        protocol: TCP
+
+    # Environment variables
+    env:
+      - name: KUBERNETES_NAMESPACE
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.namespace
+      - name: RELATED_IMAGE_KEYCLOAK
+        value: "quay.io/keycloak/keycloak:26.4.5"
+
+    # Liveness probe
+    livenessProbe:
+      httpGet:
+        scheme: HTTP
+        path: /q/health/live
+        port: 8080
+      initialDelaySeconds: 5
+      periodSeconds: 10
+      timeoutSeconds: 10
+      failureThreshold: 3
+      successThreshold: 1
+
+    # Readiness probe
+    readinessProbe:
+      httpGet:
+        scheme: HTTP
+        path: /q/health/ready
+        port: 8080
+      initialDelaySeconds: 5
+      periodSeconds: 10
+      timeoutSeconds: 10
+      failureThreshold: 3
+      successThreshold: 1
+
+    # Startup probe
+    startupProbe:
+      httpGet:
+        scheme: HTTP
+        path: /q/health/started
+        port: 8080
+      initialDelaySeconds: 5
+      periodSeconds: 10
+      timeoutSeconds: 10
+      failureThreshold: 3
+      successThreshold: 1
+
+# Security context for operator pods (pod-level)
+securityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+# Container security context (backward compatibility)
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+  capabilities:
+    drop:
+      - ALL
+
+# Temporary volume mounts for operator
+volumeMounts:
+  - name: tmp
+    mountPath: /tmp
+  - name: var-cache
+    mountPath: /var/cache
+
+# Empty directory volumes for temporary storage
+volumes:
+  - name: tmp
+    emptyDir: {}
+  - name: var-cache
+    emptyDir: {}
