@@ -80,7 +80,7 @@ loca-credentials:
   params:
     keycloakUrl: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
     vaultUrl: "http://vault.orch-platform.svc.cluster.local:8200"
-  curlImage: 
+  curlImage:
     name: badouralix/curl-jq@sha256
     tag: 8ee002ae4452b23a3c70750c5c081e95334cfe9f7968fb4d67a90d4001c29d0b
     pullPolicy: IfNotPresent
@@ -97,7 +97,7 @@ amt:
       gatewayNamespace: orch-gateway
     # https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
     traefikApiGroup: "traefik.io/v1alpha1"
-    curlImage: 
+    curlImage:
       name: badouralix/curl-jq@sha256
       tag: 8ee002ae4452b23a3c70750c5c081e95334cfe9f7968fb4d67a90d4001c29d0b
       pullPolicy: IfNotPresent
@@ -133,7 +133,7 @@ amt:
       oidc:
         oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
         oidc_tls_insecure_skip_verify_value: "true"
-    curlImage: 
+    curlImage:
       name: badouralix/curl-jq@sha256
       tag: 8ee002ae4452b23a3c70750c5c081e95334cfe9f7968fb4d67a90d4001c29d0b
       pullPolicy: IfNotPresent
