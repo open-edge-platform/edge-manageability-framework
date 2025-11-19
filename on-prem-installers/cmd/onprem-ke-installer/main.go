@@ -24,7 +24,7 @@ const header = `
 
 const (
 	deploymentTimeoutEnv     = "DEPLOYMENT_TIMEOUT"
-	deploymentDefaultTimeout = "3600s" // must be a valid duration string
+	deploymentDefaultTimeout = "4800s" // must be a valid duration string
 )
 
 var upgrade = flag.Bool("upgrade", false, "determine if KE should be upgraded or installed")

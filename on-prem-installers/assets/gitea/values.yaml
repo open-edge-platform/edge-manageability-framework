@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-
 redis-cluster:
   enabled: false
 postgresql:
@@ -162,9 +161,3 @@ containerSecurityContext:
   seccompProfile:
     type: RuntimeDefault
   runAsNonRoot: true
-
-# Use Recreate strategy to avoid queue lock issues when upgrading
-# Gitea uses LevelDB for internal queues (/data/queues/) which can only be accessed by one pod at a time
-deployment:
-  strategy:
-    type: Recreate
