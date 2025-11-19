@@ -742,31 +742,16 @@ create_cluster() {
     if [ $# -lt 2 ]; then
         echo "❌ Error: Cluster serial number required" >&2
         echo "Usage: create-cluster [cluster_serial] OR create-cluster [start-end]" >&2
-        echo "Examples:" >&2
-        echo "  create-cluster suniltest01" >&2
-        echo "  create-cluster 1-3" >&2
         return 1
     fi
     
-    local CLUSTER_SERIAL="$2"
     local failed_creations=()
     local created_clusters=()
     
-    # Debug: Show current VEN_PREFIX_SN value
-    echo "Debug: VEN_PREFIX_SN is set to: '$VEN_PREFIX_SN'"
-    
-    # List available hosts for debugging
-    echo "Debug: Available hosts:"
-    if ! orch-cli list host; then
-        echo "❌ Failed to list hosts for debugging" >&2
-        exit 1
-    fi
-    echo ""
-    
     # Check if this is a range operation (contains -)
-    if [[ "$2" == *-* ]]; then
+    if [[ "${2}" == *-* ]]; then
         # Range format: start-end (uses VEN_PREFIX_SN)
-        local RANGE="$2"
+        local RANGE="${2}"
         local START END
         START=$(echo "$RANGE" | cut -d'-' -f1)
         END=$(echo "$RANGE" | cut -d'-' -f2)
@@ -782,266 +767,99 @@ create_cluster() {
             exit 1
         fi
         
-        echo "Creating clusters from range: ${START} to ${END} (using VEN_PREFIX_SN)"
+        echo "Creating clusters from range: ${START} to ${END} (using VEN_PREFIX_SN: $VEN_PREFIX_SN)"
         for ((i=START; i<=END; i++)); do
-            local CURRENT_CLUSTER="${i}"
             local VEN_SERIAL="$VEN_PREFIX_SN$i"  # Use prefix for range operations
-            
-            echo "Creating cluster: $CURRENT_CLUSTER for VEN: $VEN_SERIAL"
+            local CLUSTER_NAME="$VEN_SERIAL"
+            echo "Creating cluster: $CLUSTER_NAME for VEN: $VEN_SERIAL"
             
             # Get VEN Host ID and UUID
             local VEN_HOST_ID
-            echo "Debug: Looking for host with serial: $VEN_SERIAL"
-            if ! VEN_HOST_ID=$(orch-cli list host | grep "$VEN_SERIAL" | awk '{print $1}' | head -1); then
-                echo "❌ Failed to find host ID for VEN: $VEN_SERIAL" >&2
-                echo "Available hosts containing '$VEN_SERIAL':"
-                orch-cli list host | grep "$VEN_SERIAL" || echo "  No hosts found with serial containing '$VEN_SERIAL'"
-                failed_creations+=("$CURRENT_CLUSTER")
-                continue
-            fi
-            
-            if [ -z "$VEN_HOST_ID" ]; then
+            if ! VEN_HOST_ID=$(orch-cli list host | grep "$VEN_SERIAL" | awk '{print $1}' | head -1) || [ -z "$VEN_HOST_ID" ]; then
                 echo "❌ No host found for VEN serial: $VEN_SERIAL" >&2
-                echo "Available hosts containing '$VEN_SERIAL':"
-                orch-cli list host | grep "$VEN_SERIAL" || echo "  No hosts found with serial containing '$VEN_SERIAL'"
-                failed_creations+=("$CURRENT_CLUSTER")
+                failed_creations+=("$CLUSTER_NAME")
                 continue
             fi
             
             local VEN_UUID
-            echo "Debug: Getting UUID for host ID: $VEN_HOST_ID"
-            if ! VEN_UUID=$(orch-cli get host "$VEN_HOST_ID" | grep -E "^\s*-\s*UUID:" | awk '{print $3}'); then
-                echo "❌ Failed to get UUID for host: $VEN_HOST_ID" >&2
-                echo "Host details:"
-                orch-cli get host "$VEN_HOST_ID" || echo "  Failed to get host details"
-                exit 1
-            fi
-            
-            if [ -z "$VEN_UUID" ]; then
+            if ! VEN_UUID=$(orch-cli get host "$VEN_HOST_ID" | grep -E "^\s*-\s*UUID:" | awk '{print $3}') || [ -z "$VEN_UUID" ]; then
                 echo "❌ No UUID found for host: $VEN_HOST_ID" >&2
-                echo "Host details:"
-                orch-cli get host "$VEN_HOST_ID" || echo "  Failed to get host details"
                 exit 1
             fi
             
             echo "Found VEN Host ID: $VEN_HOST_ID, UUID: $VEN_UUID"
             
             # Check if cluster already exists
-            local EXISTING_CLUSTER
-            if ! EXISTING_CLUSTER=$(orch-cli list cluster 2>/dev/null | grep "$CURRENT_CLUSTER" || true); then
-                echo "❌ Failed to list clusters" >&2
-                exit 1
-            fi
-            
-            if [ -n "$EXISTING_CLUSTER" ]; then
-                echo "Cluster $CURRENT_CLUSTER already exists, skipping creation..."
-                local CLUSTER_ID=$(echo "$EXISTING_CLUSTER" | awk '{print $1}')
-                created_clusters+=("$CURRENT_CLUSTER:$CLUSTER_ID")
-            else
-                # Create cluster using UUID
-                if orch-cli create cluster "$CURRENT_CLUSTER" --nodes "${VEN_UUID}:all"; then
-                    echo "✅ Successfully created cluster: $CURRENT_CLUSTER"
-                    
-                    # Get the cluster ID after creation
-                    local CLUSTER_ID
-                    if CLUSTER_ID=$(orch-cli list cluster | grep "$CURRENT_CLUSTER" | awk '{print $1}' | head -1); then
-                        if [ -n "$CLUSTER_ID" ]; then
-                            created_clusters+=("$CURRENT_CLUSTER:$CLUSTER_ID")
-                            echo "Cluster ID: $CLUSTER_ID"
-                        else
-                            echo "⚠️ Could not get cluster ID for $CURRENT_CLUSTER" >&2
-                        fi
-                    else
-                        echo "⚠️ Failed to get cluster ID for $CURRENT_CLUSTER" >&2
-                    fi
-                else
-                    echo "❌ Failed to create cluster: $CURRENT_CLUSTER" >&2
-                    failed_creations+=("$CURRENT_CLUSTER")
-                fi
-            fi
-        done
-    else
-        # Single or multiple individual serial numbers (use as-is, no prefix)
-        if [ $# -eq 2 ]; then
-            # Single cluster creation
-            local CLUSTER_NAME="${CLUSTER_SERIAL}"
-            local VEN_SERIAL="${CLUSTER_SERIAL}"  # Use serial as-is, no prefix
-            
-            echo "Creating single cluster: $CLUSTER_NAME for VEN: $VEN_SERIAL"
-            
-            # Get VEN Host ID and UUID
-            local VEN_HOST_ID
-            echo "Debug: Looking for host with serial: $VEN_SERIAL"
-            if ! VEN_HOST_ID=$(orch-cli list host | grep "$VEN_SERIAL" | awk '{print $1}' | head -1); then
-                echo "❌ Failed to find host ID for VEN: $VEN_SERIAL" >&2
-                echo "Available hosts containing '$VEN_SERIAL':"
-                orch-cli list host | grep "$VEN_SERIAL" || echo "  No hosts found with serial containing '$VEN_SERIAL'"
-                echo ""
-                echo "All available hosts:"
-                orch-cli list host | tail -n +2 | awk '{print "  " $2}' || echo "  Failed to list host serials"
-                echo ""
-                echo "💡 Suggestion: Make sure the host exists with serial: '$VEN_SERIAL'"
-                exit 1
-            fi
-            
-            if [ -z "$VEN_HOST_ID" ]; then
-                echo "❌ No host found for VEN serial: $VEN_SERIAL" >&2
-                echo "Available hosts containing '$VEN_SERIAL':"
-                orch-cli list host | grep "$VEN_SERIAL" || echo "  No hosts found with serial containing '$VEN_SERIAL'"
-                echo ""
-                echo "All available hosts:"
-                orch-cli list host | tail -n +2 | awk '{print "  " $2}' || echo "  Failed to list host serials"
-                exit 1
-            fi
-            
-            # Common UUID retrieval and cluster creation logic for non-range operations
-            local VEN_UUID
-            echo "Debug: Getting UUID for host ID: $VEN_HOST_ID"
-            if ! VEN_UUID=$(orch-cli get host "$VEN_HOST_ID" | grep -E "^\s*-\s*UUID:" | awk '{print $3}'); then
-                echo "❌ Failed to get UUID for host: $VEN_HOST_ID" >&2
-                echo "Host details:"
-                orch-cli get host "$VEN_HOST_ID" || echo "  Failed to get host details"
-                exit 1
-            fi
-            
-            if [ -z "$VEN_UUID" ]; then
-                echo "❌ No UUID found for host: $VEN_HOST_ID" >&2
-                echo "Host details:"
-                orch-cli get host "$VEN_HOST_ID" || echo "  Failed to get host details"
-                exit 1
-            fi
-            
-            echo "Found VEN Host ID: $VEN_HOST_ID, UUID: $VEN_UUID"
-            
-            # Check if cluster already exists
-            local EXISTING_CLUSTER
-            if ! EXISTING_CLUSTER=$(orch-cli list cluster 2>/dev/null | grep "$CLUSTER_NAME" || true); then
-                echo "❌ Failed to list clusters" >&2
-                exit 1
-            fi
-            
-            if [ -n "$EXISTING_CLUSTER" ]; then
+            if orch-cli list cluster 2>/dev/null | grep -q "$CLUSTER_NAME"; then
                 echo "Cluster $CLUSTER_NAME already exists, skipping creation..."
-                local CLUSTER_ID=$(echo "$EXISTING_CLUSTER" | awk '{print $1}')
+                local CLUSTER_ID=$(orch-cli list cluster | grep "$CLUSTER_NAME" | awk '{print $1}')
                 created_clusters+=("$CLUSTER_NAME:$CLUSTER_ID")
             else
                 # Create cluster using UUID
                 if orch-cli create cluster "$CLUSTER_NAME" --nodes "${VEN_UUID}:all"; then
                     echo "✅ Successfully created cluster: $CLUSTER_NAME"
+                    local CLUSTER_ID=$(orch-cli list cluster | grep "$CLUSTER_NAME" | awk '{print $1}' | head -1)
+                    created_clusters+=("$CLUSTER_NAME:$CLUSTER_ID")
+                else
+                    echo "❌ Failed to create cluster: $CLUSTER_NAME" >&2
+                    failed_creations+=("$CLUSTER_NAME")
+                fi
+            fi
+        done
+    else
+        # Single or multiple individual serial numbers (use as-is, no prefix)
+        echo "Creating clusters for individual serial numbers (no prefix):"
+        for i in $(seq 2 $#); do
+            local SERIAL_ARG=${!i}
+            local VEN_SERIAL="$SERIAL_ARG"  # Use serial as-is, no prefix
+            local CLUSTER_NAME="$SERIAL_ARG"
+            
+            echo "Creating cluster: $CLUSTER_NAME for VEN: $VEN_SERIAL"
+            
+            # Get VEN Host ID and UUID
+            local VEN_HOST_ID
+            if ! VEN_HOST_ID=$(orch-cli list host | grep "$VEN_SERIAL" | awk '{print $1}' | head -1) || [ -z "$VEN_HOST_ID" ]; then
+                echo "❌ No host found for VEN serial: $VEN_SERIAL" >&2
+                failed_creations+=("$CLUSTER_NAME")
+                continue
+            fi
+            
+            local VEN_UUID
+            if ! VEN_UUID=$(orch-cli get host "$VEN_HOST_ID" | grep -E "^\s*-\s*UUID:" | awk '{print $3}') || [ -z "$VEN_UUID" ]; then
+                echo "❌ No UUID found for host: $VEN_HOST_ID" >&2
+                exit 1
+            fi
+            
+            echo "Found VEN Host ID: $VEN_HOST_ID, UUID: $VEN_UUID"
+            
+            # Check if cluster already exists
+            if orch-cli list cluster 2>/dev/null | grep -q "$CLUSTER_NAME"; then
+                echo "Cluster $CLUSTER_NAME already exists, skipping creation..."
+                local CLUSTER_ID=$(orch-cli list cluster | grep "$CLUSTER_NAME" | awk '{print $1}')
+                created_clusters+=("$CLUSTER_NAME:$CLUSTER_ID")
+            else
+                # Create cluster using UUID
+                if orch-cli create cluster "$CLUSTER_NAME" --nodes "${VEN_UUID}:all"; then
+                    echo "✅ Successfully created cluster: $CLUSTER_NAME"
+                    local CLUSTER_ID=$(orch-cli list cluster | grep "$CLUSTER_NAME" | awk '{print $1}' | head -1)
+                    created_clusters+=("$CLUSTER_NAME:$CLUSTER_ID")
                     
-                    # Get the cluster ID after creation
-                    local CLUSTER_ID
-                    if CLUSTER_ID=$(orch-cli list cluster | grep "$CLUSTER_NAME" | awk '{print $1}' | head -1); then
-                        if [ -n "$CLUSTER_ID" ]; then
-                            created_clusters+=("$CLUSTER_NAME:$CLUSTER_ID")
-                            echo "Cluster ID: $CLUSTER_ID"
-                            
-                            # Save the cluster ID to env file for single cluster
-                            if [ $# -eq 2 ] && ! save_to_env "CLUSTER_ID" "$CLUSTER_ID"; then
-                                echo "⚠️ Failed to save cluster ID to environment file" >&2
-                            fi
-                        else
-                            echo "⚠️ Could not get cluster ID for $CLUSTER_NAME" >&2
-                        fi
-                    else
-                        echo "⚠️ Failed to get cluster ID for $CLUSTER_NAME" >&2
+                    # Save the first cluster ID to env file
+                    if [ $i -eq 2 ] && ! save_to_env "CLUSTER_ID" "$CLUSTER_ID"; then
+                        echo "⚠️ Failed to save cluster ID to environment file" >&2
                     fi
                 else
                     echo "❌ Failed to create cluster: $CLUSTER_NAME" >&2
                     failed_creations+=("$CLUSTER_NAME")
                 fi
             fi
-        else
-            # Multiple individual serial numbers (use as-is, no prefix)
-            echo "Creating clusters for multiple individual serial numbers (no prefix):"
-            for i in $(seq 2 $#); do
-                local CURRENT_SERIAL=${!i}
-                local CURRENT_CLUSTER="${CURRENT_SERIAL}"
-                local VEN_SERIAL="${CURRENT_SERIAL}"  # Use serial as-is, no prefix
-                
-                echo "Creating cluster: $CURRENT_CLUSTER for VEN: $VEN_SERIAL"
-                
-                # Get VEN Host ID and UUID
-                local VEN_HOST_ID
-                echo "Debug: Looking for host with serial: $VEN_SERIAL"
-                if ! VEN_HOST_ID=$(orch-cli list host | grep "$VEN_SERIAL" | awk '{print $1}' | head -1); then
-                    echo "❌ Failed to find host ID for VEN: $VEN_SERIAL" >&2
-                    echo "Available hosts containing '$VEN_SERIAL':"
-                    orch-cli list host | grep "$VEN_SERIAL" || echo "  No hosts found with serial containing '$VEN_SERIAL'"
-                    failed_creations+=("$CURRENT_CLUSTER")
-                    continue
-                fi
-                
-                if [ -z "$VEN_HOST_ID" ]; then
-                    echo "❌ No host found for VEN serial: $VEN_SERIAL" >&2
-                    echo "Available hosts containing '$VEN_SERIAL':"
-                    orch-cli list host | grep "$VEN_SERIAL" || echo "  No hosts found with serial containing '$VEN_SERIAL'"
-                    failed_creations+=("$CURRENT_CLUSTER")
-                    continue
-                fi
-                
-                # Common UUID retrieval and cluster creation logic for non-range operations
-                local VEN_UUID
-                echo "Debug: Getting UUID for host ID: $VEN_HOST_ID"
-                if ! VEN_UUID=$(orch-cli get host "$VEN_HOST_ID" | grep -E "^\s*-\s*UUID:" | awk '{print $3}'); then
-                    echo "❌ Failed to get UUID for host: $VEN_HOST_ID" >&2
-                    echo "Host details:"
-                    orch-cli get host "$VEN_HOST_ID" || echo "  Failed to get host details"
-                    exit 1
-                fi
-                
-                if [ -z "$VEN_UUID" ]; then
-                    echo "❌ No UUID found for host: $VEN_HOST_ID" >&2
-                    echo "Host details:"
-                    orch-cli get host "$VEN_HOST_ID" || echo "  Failed to get host details"
-                    exit 1
-                fi
-                
-                echo "Found VEN Host ID: $VEN_HOST_ID, UUID: $VEN_UUID"
-                
-                # Check if cluster already exists
-                local EXISTING_CLUSTER
-                if ! EXISTING_CLUSTER=$(orch-cli list cluster 2>/dev/null | grep "$CURRENT_CLUSTER" || true); then
-                    echo "❌ Failed to list clusters" >&2
-                    exit 1
-                fi
-                
-                if [ -n "$EXISTING_CLUSTER" ]; then
-                    echo "Cluster $CURRENT_CLUSTER already exists, skipping creation..."
-                    local CLUSTER_ID=$(echo "$EXISTING_CLUSTER" | awk '{print $1}')
-                    created_clusters+=("$CURRENT_CLUSTER:$CLUSTER_ID")
-                else
-                    # Create cluster using UUID
-                    if orch-cli create cluster "$CURRENT_CLUSTER" --nodes "${VEN_UUID}:all"; then
-                        echo "✅ Successfully created cluster: $CURRENT_CLUSTER"
-                        
-                        # Get the cluster ID after creation
-                        local CLUSTER_ID
-                        if CLUSTER_ID=$(orch-cli list cluster | grep "$CURRENT_CLUSTER" | awk '{print $1}' | head -1); then
-                            if [ -n "$CLUSTER_ID" ]; then
-                                created_clusters+=("$CURRENT_CLUSTER:$CLUSTER_ID")
-                                echo "Cluster ID: $CLUSTER_ID"
-                            else
-                                echo "⚠️ Could not get cluster ID for $CURRENT_CLUSTER" >&2
-                            fi
-                        else
-                            echo "⚠️ Failed to get cluster ID for $CURRENT_CLUSTER" >&2
-                        fi
-                    else
-                        echo "❌ Failed to create cluster: $CURRENT_CLUSTER" >&2
-                        failed_creations+=("$CURRENT_CLUSTER")
-                    fi
-                fi
-            done
-        fi
+        done
     fi
     
     # List all clusters after creation
     echo ""
     echo "Listing all clusters:"
-    if ! orch-cli list cluster; then
-        echo "⚠️ Failed to list clusters after creation" >&2
-    fi
+    orch-cli list cluster || echo "⚠️ Failed to list clusters after creation"
     
     # Summary
     echo ""
@@ -1072,30 +890,22 @@ delete_cluster() {
     
     if [ $# -lt 2 ]; then
         echo "❌ Error: No cluster names provided for deletion" >&2
-        echo "Usage: delete-cluster [cluster_names] OR delete-cluster [cluster_prefix] [start-end]" >&2
-        echo "Examples:" >&2
-        echo "  delete-cluster 001" >&2
-        echo "  delete-cluster 1 2 3" >&2
-        echo "  delete-cluster cluster 1-3" >&2
+        echo "Usage: delete-cluster [cluster_names] OR delete-cluster [start-end]" >&2
         return 1
     fi
     
     # List current clusters first
     echo "Current clusters:"
-    if ! orch-cli list cluster; then
-        echo "❌ Failed to list current clusters" >&2
-        exit 1
-    fi
+    orch-cli list cluster || echo "❌ Failed to list current clusters"
     echo ""
     
     local failed_deletions=()
     local successful_deletions=()
     
-    # Check if this is a range operation (second argument contains -)
-    if [ $# -eq 3 ] && [[ "$3" == *-* ]]; then
-        # Range format: cluster_prefix start-end
-        local CLUSTER_PREFIX="$2"
-        local RANGE="$3"
+    # Check if this is a range operation (contains -)
+    if [[ "${2}" == *-* ]]; then
+        # Range format: start-end (uses VEN_PREFIX_SN)
+        local RANGE="${2}"
         local START END
         START=$(echo "$RANGE" | cut -d'-' -f1)
         END=$(echo "$RANGE" | cut -d'-' -f2)
@@ -1111,50 +921,42 @@ delete_cluster() {
             exit 1
         fi
         
-        echo "Deleting clusters from range: ${CLUSTER_PREFIX}${START} to ${CLUSTER_PREFIX}${END}"
+        echo "Deleting clusters from range: ${START} to ${END} (using VEN_PREFIX_SN: $VEN_PREFIX_SN)"
         for ((i=START; i<=END; i++)); do
-            local CLUSTER_NAME="${CLUSTER_PREFIX}${i}"
+            local CLUSTER_NAME="$VEN_PREFIX_SN$i"  # Use prefix for range operations
             local CLUSTER_ID
-            if CLUSTER_ID=$(orch-cli list cluster | grep "$CLUSTER_NAME" | awk '{print $1}' | head -1); then
-                if [ -n "$CLUSTER_ID" ]; then
-                    echo "Deleting cluster $CLUSTER_NAME with ID: $CLUSTER_ID"
-                    if orch-cli delete cluster "$CLUSTER_NAME"; then
-                        echo "✅ Successfully deleted cluster: $CLUSTER_NAME"
-                        successful_deletions+=("$CLUSTER_NAME")
-                    else
-                        echo "❌ Failed to delete cluster $CLUSTER_NAME" >&2
-                        failed_deletions+=("$CLUSTER_NAME")
-                    fi
+            if CLUSTER_ID=$(orch-cli list cluster | grep "$CLUSTER_NAME" | awk '{print $1}' | head -1) && [ -n "$CLUSTER_ID" ]; then
+                echo "Deleting cluster $CLUSTER_NAME with ID: $CLUSTER_ID"
+                if orch-cli delete cluster "$CLUSTER_NAME"; then
+                    echo "✅ Successfully deleted cluster: $CLUSTER_NAME"
+                    successful_deletions+=("$CLUSTER_NAME")
                 else
-                    echo "⚠️ Could not find cluster ID for $CLUSTER_NAME" >&2
+                    echo "❌ Failed to delete cluster $CLUSTER_NAME" >&2
+                    failed_deletions+=("$CLUSTER_NAME")
                 fi
             else
                 echo "⚠️ Could not find cluster $CLUSTER_NAME" >&2
             fi
         done
     else
-        # Single or multiple individual cluster names
-        echo "Deleting clusters with provided names..."
+        # Single or multiple individual cluster names (use as-is, no prefix)
+        echo "Deleting clusters with provided names (no prefix):"
         for i in $(seq 2 $#); do
-            local CLUSTER_NAME=${!i}
+            local CLUSTER_NAME=${!i}  # Use name as-is, no prefix
             if [ -z "$CLUSTER_NAME" ]; then
                 echo "❌ Cluster name cannot be empty" >&2
                 exit 1
             fi
             
             local CLUSTER_ID
-            if CLUSTER_ID=$(orch-cli list cluster | grep "$CLUSTER_NAME" | awk '{print $1}' | head -1); then
-                if [ -n "$CLUSTER_ID" ]; then
-                    echo "Deleting cluster $CLUSTER_NAME with ID: $CLUSTER_ID"
-                    if orch-cli delete cluster "$CLUSTER_NAME"; then
-                        echo "✅ Successfully deleted cluster: $CLUSTER_NAME"
-                        successful_deletions+=("$CLUSTER_NAME")
-                    else
-                        echo "❌ Failed to delete cluster $CLUSTER_NAME" >&2
-                        failed_deletions+=("$CLUSTER_NAME")
-                    fi
+            if CLUSTER_ID=$(orch-cli list cluster | grep "$CLUSTER_NAME" | awk '{print $1}' | head -1) && [ -n "$CLUSTER_ID" ]; then
+                echo "Deleting cluster $CLUSTER_NAME with ID: $CLUSTER_ID"
+                if orch-cli delete cluster "$CLUSTER_NAME"; then
+                    echo "✅ Successfully deleted cluster: $CLUSTER_NAME"
+                    successful_deletions+=("$CLUSTER_NAME")
                 else
-                    echo "⚠️ Could not find cluster ID for $CLUSTER_NAME" >&2
+                    echo "❌ Failed to delete cluster $CLUSTER_NAME" >&2
+                    failed_deletions+=("$CLUSTER_NAME")
                 fi
             else
                 echo "⚠️ Could not find cluster $CLUSTER_NAME" >&2
@@ -1165,9 +967,7 @@ delete_cluster() {
     # List clusters after deletion to confirm
     echo ""
     echo "Clusters after deletion:"
-    if ! orch-cli list cluster; then
-        echo "⚠️ Failed to list clusters after deletion" >&2
-    fi
+    orch-cli list cluster || echo "⚠️ Failed to list clusters after deletion"
     
     # Summary
     echo ""
@@ -1194,57 +994,14 @@ cluster_status() {
         exit 1
     fi
     
-    # If no arguments provided, wait for all clusters to be active
+    # If no arguments provided, just list all clusters
     if [ $# -lt 2 ]; then
-        echo "Monitoring all clusters until they reach active state..."
-        local max_wait=1200  # 20 minutes
-        local wait_interval=10
-        local elapsed=0
-        
-        while [ $elapsed -lt $max_wait ]; do
-            echo "=== Checking cluster status (elapsed: ${elapsed}s) ==="
-            
-            # Get all clusters and their status
-            local all_clusters_output
-            if ! all_clusters_output=$(orch-cli list cluster 2>/dev/null); then
-                echo "❌ Failed to list clusters" >&2
-                exit 1
-            fi
-            
-            echo "Debug: orch-cli list cluster output:"
-            echo "$all_clusters_output"
-            
-            # Simple count using basic grep
-            local cluster_count
-            cluster_count=$(echo "$all_clusters_output" | grep -c "^- " 2>/dev/null || echo "0")
-            
-            local active_count
-            active_count=$(echo "$all_clusters_output" | grep "^- " | grep -c "(active)" 2>/dev/null || echo "0")
-            
-            if [ "$cluster_count" -eq 0 ]; then
-                echo "⚠️ No clusters found. Waiting for clusters to be created..."
-                echo "Waiting ${wait_interval} seconds before next check..."
-                sleep $wait_interval
-                elapsed=$((elapsed + wait_interval))
-                continue
-            fi
-            
-            echo "Debug: Found $cluster_count clusters, $active_count are active"
-            
-            if [ "$active_count" -eq "$cluster_count" ]; then
-                echo "✅ All clusters are in active state!"
-                return 0
-            fi
-            
-            local non_active_count=$((cluster_count - active_count))
-            echo "⏳ Waiting for clusters to reach active state. ${non_active_count} clusters are not yet active."
-            echo "Waiting ${wait_interval} seconds before next check..."
-            sleep $wait_interval
-            elapsed=$((elapsed + wait_interval))
-        done
-        
-        echo "⚠️ Timeout reached (${max_wait}s). Some clusters may still not be active."
-        return 1
+        echo "Listing all clusters:"
+        if ! orch-cli list cluster; then
+            echo "❌ Failed to list clusters" >&2
+            exit 1
+        fi
+        return 0
     fi
     
     # Arguments provided - show specific cluster(s) status and wait for them to be active
@@ -1273,11 +1030,11 @@ cluster_status() {
             target_clusters+=("$VEN_PREFIX_SN$i")
         done
         
-        echo "Monitoring clusters from range ${VEN_PREFIX_SN}${START} to ${VEN_PREFIX_SN}${END} until they reach active state: ${target_clusters[*]}"
+        echo "Monitoring clusters from range ${VEN_PREFIX_SN}${START} to ${VEN_PREFIX_SN}${END} until they reach active state"
     else
-        # Multiple individual cluster names provided as arguments
+        # Multiple individual cluster names provided as arguments (use as-is, no prefix)
         for i in $(seq 2 $#); do
-            local CLUSTER_NAME=${!i}
+            local CLUSTER_NAME=${!i}  # Use name as-is, no prefix
             if [ -z "$CLUSTER_NAME" ]; then
                 echo "❌ Cluster name cannot be empty" >&2
                 exit 1
@@ -1285,8 +1042,10 @@ cluster_status() {
             target_clusters+=("$CLUSTER_NAME")
         done
         
-        echo "Monitoring individual clusters until they reach active state: ${target_clusters[*]}"
+        echo "Monitoring individual clusters until they reach active state"
     fi
+    
+    echo "Target clusters: ${target_clusters[*]}"
     
     local max_wait=1200  # 20 minutes
     local wait_interval=10
@@ -1295,43 +1054,10 @@ cluster_status() {
     while [ $elapsed -lt $max_wait ]; do
         echo "=== Checking cluster status for specified clusters (elapsed: ${elapsed}s) ==="
         
-        # Show full orch-cli list cluster output for debugging
-        echo "Debug: orch-cli list cluster output:"
-        orch-cli list cluster 2>/dev/null || echo "Failed to list clusters"
-        echo ""
-        
         local all_active=true
         local clusters_status=()
         
         for cluster_name in "${target_clusters[@]}"; do
-            echo "Debug: Checking cluster: $cluster_name"
-            
-            # Show the grep commands for debugging
-            echo "Debug: orch-cli list cluster | grep \"$cluster_name\":"
-            local cluster_grep_output
-            if cluster_grep_output=$(orch-cli list cluster | grep "$cluster_name"); then
-                echo "$cluster_grep_output"
-            else
-                echo "  No output from grep"
-            fi
-            
-            echo "Debug: orch-cli list cluster | grep \"$cluster_name\" | grep active:"
-            local active_grep_output
-            if active_grep_output=$(orch-cli list cluster | grep "$cluster_name" | grep "active"); then
-                echo "$active_grep_output"
-            else
-                echo "  No active status found"
-            fi
-            
-            # Try to get individual cluster details for more debugging info
-            echo "Debug: orch-cli get cluster \"$cluster_name\":"
-            if orch-cli get cluster "$cluster_name" 2>/dev/null; then
-                echo "  Cluster details retrieved successfully"
-            else
-                echo "  Failed to get cluster details or cluster not found"
-            fi
-            echo ""
-            
             # Simple check: orch-cli list cluster | grep clustername | grep active
             if orch-cli list cluster | grep "$cluster_name" | grep -q "active"; then
                 echo "Cluster $cluster_name: Status=active"
