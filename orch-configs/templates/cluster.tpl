@@ -98,14 +98,14 @@ argo:
   targetServer: "https://kubernetes.default.svc"
   autosync: true
 
-{{- if and .Values.enableObservability .Values.enableClusterOrch }}
+{{- if and (not .Values.enableObservability) (not .Values.enableClusterOrch) }}
   infra-onboarding:
     disableO11yProfile: true
     disableCoProfile: true
-{{- else if .Values.enableObservability }}
+{{- else if not .Values.enableObservability }}
   infra-onboarding:
     disableO11yProfile: true
-{{- else if .Values.enableClusterOrch }}
+{{- else if not .Values.enableClusterOrch }}
   infra-onboarding:
     disableCoProfile: true
 {{- end }}
