@@ -83,32 +83,30 @@ argo:
     production: false
 {{- end }}
 
-{{- if .Values.nameServers }}
+{{- if or .Values.nameServers (not .Values.enableObservability) (not .Values.enableClusterOrch) }}
   infra-onboarding:
+  {{- if .Values.nameServers }}
     nameservers:
-{{- range .Values.nameServers }}
+    {{- range .Values.nameServers }}
       - {{ . }}
-{{- end }}
-{{- end }}
+    {{- end }}
+  {{- end }}
 
+  {{- if and (not .Values.enableObservability) (not .Values.enableClusterOrch) }}
+    disableO11yProfile: true
+    disableCoProfile: true
+  {{- else if not .Values.enableObservability }}
+    disableO11yProfile: true
+  {{- else if not .Values.enableClusterOrch }}
+    disableCoProfile: true
+  {{- end }}
+{{- end }}
   ## Argo CD configs
   deployRepoURL: "{{ .Values.deployRepoURL }}"
   deployRepoRevision: main
 
   targetServer: "https://kubernetes.default.svc"
   autosync: true
-
-{{- if and (not .Values.enableObservability) (not .Values.enableClusterOrch) }}
-  infra-onboarding:
-    disableO11yProfile: true
-    disableCoProfile: true
-{{- else if not .Values.enableObservability }}
-  infra-onboarding:
-    disableO11yProfile: true
-{{- else if not .Values.enableClusterOrch }}
-  infra-onboarding:
-    disableCoProfile: true
-{{- end }}
 
 {{ if .Values.enableObservability }}
   o11y:
@@ -148,7 +146,7 @@ orchestratorDeployment:
   targetCluster: {{ .Values.targetCluster }}
   enableMailpit: {{ .Values.enableMailpit }}
   argoServiceType: {{ .Values.argoServiceType }}
-{{- if .Values.dockerCache }}  
+{{- if .Values.dockerCache }}
   dockerCache: "{{ .Values.dockerCache }}"
 {{- end }}
 {{- if and .Values.dockerCacheCert }}
