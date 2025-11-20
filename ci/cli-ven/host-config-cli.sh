@@ -597,10 +597,10 @@ EOF
                 HOST_ID=$(orch-cli list host | grep "$VEN_SERIAL" | awk '{print $1}' | head -1)
                 if [ -n "$HOST_ID" ]; then
                     echo "Getting details for host $VEN_SERIAL: $HOST_ID"
-                    orch-cli get host "$HOST_ID"
-                    if [ $i -eq $START ]; then
-                        save_to_env "HOST_ID" "$HOST_ID"
-                    fi
+                    #orch-cli get host "$HOST_ID"
+                    #if [ $i -eq $START ]; then
+                    #    save_to_env "HOST_ID" "$HOST_ID"
+                    #fi
                 else
                     echo "Warning: Could not find host ID for serial $VEN_SERIAL"
                 fi

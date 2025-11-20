@@ -216,17 +216,99 @@ delete_host() {
     echo "Complete logs saved to: $log_file" | tee -a "$log_file"
 }
 
+# New function for cluster operations
+cluster_operations() {
+    local vm_args="$1"
+    local log_file="./ven-logs.log"
+    local total_start
+    total_start=$(start_timer)
+    
+    echo "Starting cluster operations for: $vm_args" | tee -a "$log_file"
+    echo "========================================" | tee -a "$log_file"
+    
+    echo "Step 1: Creating cluster for $vm_args..." | tee -a "$log_file"
+    ./host-config-cli.sh create-cluster "$vm_args" 2>&1 | tee -a "$log_file"
+    echo "Cluster creation completed" | tee -a "$log_file"
+    echo "" | tee -a "$log_file"
+    
+    echo "Step 2: Checking cluster status for $vm_args..." | tee -a "$log_file"
+    ./host-config-cli.sh cluster-status "$vm_args" 2>&1 | tee -a "$log_file"
+    echo "Cluster status check completed" | tee -a "$log_file"
+    echo "" | tee -a "$log_file"
+    
+    local total_time
+    total_time=$(end_timer "$total_start")
+    
+    # Print summary
+    echo "========================================" | tee -a "$log_file"
+    echo "CLUSTER OPERATIONS SUMMARY" | tee -a "$log_file"
+    echo "========================================" | tee -a "$log_file"
+    printf "%-25s: %s\n" "Total Time" "$total_time" | tee -a "$log_file"
+    echo "========================================" | tee -a "$log_file"
+    echo "Cluster operations completed for: $vm_args" | tee -a "$log_file"
+    echo "All cluster stages finished successfully!" | tee -a "$log_file"
+    
+    # Save to file
+    local timestamp
+    timestamp=$(date '+%Y%m%d_%H%M%S')
+    local timing_log_file="./cluster_operations_times_${vm_args}_${timestamp}.log"
+    {
+        echo "Cluster Operations Stage Times - VM: $vm_args"
+        echo "Date: $(date)"
+        echo "========================================"
+        printf "%-25s: %s\n" "Total Time" "$total_time"
+    } > "$timing_log_file"
+    echo "Stage times saved to: $timing_log_file" | tee -a "$log_file"
+    echo "Complete logs saved to: $log_file" | tee -a "$log_file"
+}
+
+# New function for cluster deletion
+delete_cluster() {
+    local vm_args="$1"
+    local log_file="./ven-logs.log"
+    
+    echo "Starting cluster deletion for: $vm_args" | tee -a "$log_file"
+    echo "========================================" | tee -a "$log_file"
+    
+    echo "Step 1: Deleting cluster for $vm_args..." | tee -a "$log_file"
+    ./host-config-cli.sh delete-cluster "$vm_args" 2>&1 | tee -a "$log_file"
+    echo "Cluster deletion completed" | tee -a "$log_file"
+    echo "" | tee -a "$log_file"
+    
+    echo "========================================" | tee -a "$log_file"
+    echo "Cluster deletion completed for: $vm_args" | tee -a "$log_file"
+    echo "All cluster deletion finished successfully!" | tee -a "$log_file"
+}
+
 case "$1" in
     host-onboarding)
         init_logging "$@"
         host_onboarding "$2"
         ;;
+    create-cluster)
+        init_logging "$@"
+        cluster_operations "$2"
+        ;;
+    delete-cluster)
+        init_logging "$@"
+        delete_cluster "$2"
+        ;;
     delete-host)
         init_logging "$@"
         delete_host "$2"
         ;;
+    create-all)
+        init_logging "$@"
+        host_onboarding "$2"
+        cluster_operations "$2"        
+        ;;
+    delete-all)
+        init_logging "$@"
+        delete_cluster "$2"
+        delete_host "$2"
+        ;;
     *)
-        echo "Usage: $0 {host-onboarding|delete-host} <vm-spec>"
+        echo "Usage: $0 {host-onboarding|create-cluster|delete-cluster|delete-host} <vm-spec>"
         echo ""
         echo "VM specification formats:"
         echo "  Single VM:    $0 host-onboarding 100"
@@ -235,6 +317,8 @@ case "$1" in
         echo ""
         echo "Examples:"
         echo "  $0 host-onboarding 100-120"
+        echo "  $0 create-cluster 100-120"
+        echo "  $0 delete-cluster 100-120"
         echo "  $0 delete-host 100-120"
         exit 1
         ;;
