@@ -307,6 +307,16 @@ if [ "$ORCH_INSTALLER_PROFILE" = "onprem-oxm" ]; then
 " "$OUTPUT_FILE"
 fi
 
+# overwrite infra-onboarding configuration
+if [ "${DISABLE_CO_PROFILE:-false}" = "true" ]; then
+    yq -i '.argo.infra-onboarding.disableCoProfile = true' "$OUTPUT_FILE"
+fi
+
+if [ "${DISABLE_O11Y_PROFILE:-false}" = "true" ]; then
+    yq -i '.argo.infra-onboarding.disableO11yProfile = true' "$OUTPUT_FILE"
+fi
+
+
 # -----------------------------------------------------------------------------
 # Proxy variable updates
 # -----------------------------------------------------------------------------
