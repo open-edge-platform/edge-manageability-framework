@@ -586,6 +586,7 @@ jobs:
 
       - name: Install orch-cli
         run: |
+          cp -rf $HOME/orch-cli .
           cd orch-cli
           make build
           make install
