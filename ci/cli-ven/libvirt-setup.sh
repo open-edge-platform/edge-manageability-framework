@@ -21,7 +21,7 @@ sudo apt-get install -y ca-certificates curl
 # TODO: Detect Ubuntu 22.04 or 24.04 and install packages accordingly
 
 # Install virtualization packages
-sudo apt-get install -y qemu qemu-kvm libvirt-dev libvirt-daemon-system libvirt-clients pesign virt-manager ovmf expect minicom socat xterm efitools
+sudo apt-get install -y qemu qemu-kvm libvirt-dev libvirt-daemon-system libvirt-clients pesign virt-manager ovmf expect minicom socat xterm efitools xsltproc
 
 # Start and enable libvirtd service
 sudo systemctl start libvirtd
