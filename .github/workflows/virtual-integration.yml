@@ -491,6 +491,14 @@ jobs:
           path: virtual-edge-node
           persist-credentials: false
 
+      - name: Checkout orch-cli repo
+        uses: actions/checkout@v4
+        with:
+          repository: open-edge-platform/orch-cli
+          ref: v0.12.26
+          path: orch-cli
+          persist-credentials: false
+
       - name: Checkout edge-manage-test-automation repository with submodules
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
