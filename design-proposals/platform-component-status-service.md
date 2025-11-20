@@ -191,7 +191,7 @@ that information.
 Proposal 2 is simpler than proposal 1, but with the following limitations:
 
 - Customers using automation/scripts cannot determine whether a feature exists unless they try it and observe a
-  failure.
+  failure. They may be able to use a nondestructive probe like `get applications` to facilitate checking.
 
 - The CLI enhancements for listing available features, limiting help to available features, and obtaining the
   orchestrator version are not available.
