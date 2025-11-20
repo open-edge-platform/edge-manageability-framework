@@ -160,7 +160,7 @@ variable "aurora_postgres_ver_major" {
 }
 variable "aurora_postgres_ver_minor" {
   type    = string
-  default = "9"
+  default = "17"
 }
 variable "aurora_min_acus" {
   # 1 ACU ~= 2GB memory
@@ -417,4 +417,5 @@ variable "eks_cluster_dns_ip" {
   default = ""
   description = "IP address of the DNS server for the cluster, leave empty to use the default DNS server"
 }
+
 

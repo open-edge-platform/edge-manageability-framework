@@ -9,7 +9,7 @@ helm 3.11.1
 helm-diff 3.6.0
 helmfile 0.150.0
 jq 1.6
-kind 0.17.0
+kind 0.30.0
 kubectl 1.30.10
 mage 1.15.0
 oras 1.2.0
@@ -21,3 +21,4 @@ yamllint 1.37.1
 yq 4.34.2
 nodejs 23.6.1
 markdownlint-cli2 0.17.2
+python 3.11.9

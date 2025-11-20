@@ -25,6 +25,7 @@ restrictedPolicyOrch:
       - "orchestrator-observability-minio*"
       - "orchestrator-observability-mimir-make-minio-buckets*"
       - "adm-secret*"
+      - "keycloak-tenant-controller-set-*"
   - namespace: "orch-infra"
     names:
       - "alerting-monitor-alertmanager*"
@@ -37,8 +38,16 @@ restrictedPolicyOrch:
       - "edgenode-observability-opentelemetry-collector*"
       - "edgenode-observability-minio*"
       - "dkam*"
-      - "rps*" # Added to allow OpenDMT RPC-RPS traffic, which fails due to missing JWT token.
-      - "pxe-server*" # Needs host networking and special capabilities, on-prem only.
+      - "rps*"  # Added to allow OpenDMT RPC-RPS traffic, which fails due to missing JWT token.
+      - "pxe-server*"  # Needs host networking and special capabilities, on-prem only.
+  - namespace: "orch-ui"
+    names:
+      - "web-ui-app-orch-*"
+      - "web-ui-infra-*"
+      - "web-ui-admin-*"
+      - "web-ui-root-*"
+      - "web-ui-cluster-orch-*"
+      - "metadata-broker-orch-metadata-broker-*"
   - namespace: "capi-operator-system"
     names:
-      - "capi-operator-cluster-api-operator*"
+      - "capi-operator-cluster-api-operator-*"

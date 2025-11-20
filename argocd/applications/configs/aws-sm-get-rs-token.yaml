@@ -7,3 +7,5 @@ proxy:
   port: 8080
   name: aws-sm-proxy
 smSecret: release-service-token
+
+externalSecretsApiGroup: external-secrets.io/v1

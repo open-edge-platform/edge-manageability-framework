@@ -16,11 +16,34 @@ resource "aws_iam_policy" "s3_policy" {
     Version = "2012-10-17"
     Statement = [
       {
-        Action   = "s3:*",
-        Sid      = "VisualEditor0"
-        Effect   = "Allow"
-        Resource = "arn:aws:s3:::${var.cluster_name}-*"
+        Sid      = "S3ReadOperations"
+        Effect   = "Allow" 
+        Action   = [
+          "s3:GetObject",
+          "s3:GetObjectVersion",
+          "s3:GetObjectVersionTagging",
+          "s3:GetObjectTagging",
+          "s3:ListBucket",
+          "s3:ListBucketVersions",
+          "s3:ListBucketMultipartUploads"
+        ]
+        Resource = [
+          "arn:aws:s3:::${var.cluster_name}-*",
+          "arn:aws:s3:::${var.cluster_name}-*/*"
+        ]
       },
+      {
+        Sid    = "S3WriteOperations"
+        Effect = "Allow"
+        Action = [
+          "s3:PutObject",
+          "s3:PutObjectTagging",
+          "s3:DeleteObject",
+          "s3:AbortMultipartUpload",
+          "s3:ListMultipartUploadParts"
+        ]
+        Resource = "arn:aws:s3:::${var.cluster_name}-*/*"
+      }
     ]
   })
 }
@@ -32,8 +55,16 @@ data "aws_eks_cluster" "eks" {
 }
 
 locals {
-  service_accounts = [
-    // namespace:account-name
+  # Read-only service accounts
+  readonly_service_accounts = [
+    "system:serviceaccount:orch-platform:aws-s3-sa-mimir-read",
+    "system:serviceaccount:orch-platform:aws-s3-sa-loki-read",
+    "system:serviceaccount:orch-infra:aws-s3-sa-mimir-read",
+    "system:serviceaccount:orch-infra:aws-s3-sa-loki-read"
+  ]
+  
+  # Read-write service accounts
+  readwrite_service_accounts = [
     "system:serviceaccount:orch-platform:aws-s3-sa-mimir",
     "system:serviceaccount:orch-platform:aws-s3-sa-loki",
     "system:serviceaccount:orch-infra:aws-s3-sa-mimir",
@@ -50,7 +81,12 @@ data "aws_iam_policy_document" "s3_policy" {
       variable = "${replace(data.aws_eks_cluster.eks.identity[0].oidc[0].issuer, "https://", "")}:sub"
       // https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-logic-multiple-context-keys-or-values.html
       // If a single condition operator includes multiple values for a context key, those values are evaluated using a logical OR.
-      values   = local.service_accounts
+      values   = concat(local.readonly_service_accounts, local.readwrite_service_accounts)
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "${replace(data.aws_eks_cluster.eks.identity[0].oidc[0].issuer, "https://", "")}:aud"
+      values   = ["sts.amazonaws.com"]
     }
     principals {
       identifiers = ["arn:aws:iam::${var.aws_accountid}:oidc-provider/${replace(data.aws_eks_cluster.eks.identity[0].oidc[0].issuer, "https://", "")}"]
@@ -59,8 +95,9 @@ data "aws_iam_policy_document" "s3_policy" {
   }
 }
 
+# Read-write IAM role
 resource "aws_iam_role" "s3_role" {
-  description         = "Role that can access S3 buckets in ${var.cluster_name} cluster"
+  description         = "Role that can read/write S3 buckets in ${var.cluster_name} cluster"
   name                = "${var.cluster_name}-s3-role"
   assume_role_policy  = data.aws_iam_policy_document.s3_policy.json
   managed_policy_arns = [aws_iam_policy.s3_policy.arn]

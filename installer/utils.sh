@@ -97,6 +97,9 @@ load_provision_values() {
             smtp_url)
                 export SMTP_URL="$value"
                 ;;
+            single_tenancy)
+                export SINGLE_TENANCY="$value"
+                ;;
         esac
     done < ${PROVISION_CONFIG_VALUES}
 }

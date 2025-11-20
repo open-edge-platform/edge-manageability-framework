@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+global:
+  security:
+    allowInsecureImages: true
+image:
+  registry: docker.io
+  repository: bitnamilegacy/keycloak
+  tag: 26.1.3-debian-12-r0
+  pullPolicy: IfNotPresent
+
 containerSecurityContext:
   allowPrivilegeEscalation: false
   capabilities:
@@ -53,6 +62,12 @@ extraStartupArgs: >-
 ## ref: https://github.com/adorsys/keycloak-config-cli
 ##
 keycloakConfigCli:
+  image:
+    pullPolicy: IfNotPresent
+    registry: docker.io
+    repository: bitnamilegacy/keycloak-config-cli
+    tag: 6.4.0-debian-12-r0
+
   ## @param keycloakConfigCli.enabled Whether to enable keycloak-config-cli job
   ##
   enabled: true
@@ -217,6 +232,7 @@ keycloakConfigCli:
           "client": {
             "alerts-m2m-client": [],
             "host-manager-m2m-client": [],
+            "co-manager-m2m-client": [],
             "ktc-m2m-client": [],
             "3rd-party-host-manager-m2m-client": [],
             "edge-manager-m2m-client": [],
@@ -352,6 +368,45 @@ keycloakConfigCli:
               "phone",
               "offline_access",
               "microprofile-jwt"
+            ]
+          },
+          {
+            "clientId": "co-manager-m2m-client",
+            "name": "Cluster Orchestrator Manager M2M Client",
+            "description": "Client for cluster-manager to access Keycloak for JWT TTL management",
+            "surrogateAuthRequired": false,
+            "enabled": true,
+            "alwaysDisplayInConsole": false,
+            "clientAuthenticatorType": "client-secret",
+            "notBefore": 0,
+            "bearerOnly": false,
+            "consentRequired": false,
+            "standardFlowEnabled": false,
+            "implicitFlowEnabled": false,
+            "directAccessGrantsEnabled": false,
+            "serviceAccountsEnabled": true,
+            "authorizationServicesEnabled": true,
+            "publicClient": false,
+            "frontchannelLogout": true,
+            "protocol": "openid-connect",
+            "attributes": {
+              "oidc.ciba.grant.enabled": "false",
+              "oauth2.device.authorization.grant.enabled": "false",
+              "backchannel.logout.session.required": "true",
+              "backchannel.logout.revoke.offline.tokens": "false"
+            },
+            "fullScopeAllowed": true,
+            "defaultClientScopes": [
+              "web-origins",
+              "acr",
+              "profile",
+              "roles",
+              "email",
+              "basic",
+              "groups"
+            ],
+            "optionalClientScopes": [
+              "offline_access"
             ]
           },
           {
@@ -1081,6 +1136,29 @@ keycloakConfigCli:
               ]
             },
             "notBefore": 0
+          },
+          {
+            "username": "service-account-co-manager-m2m-client",
+            "enabled": true,
+            "totp": false,
+            "serviceAccountClientId": "co-manager-m2m-client",
+            "realmRoles": [
+              "default-roles-master"
+            ],
+            "clientRoles": {
+              "co-manager-m2m-client": [
+                "uma_protection"
+              ],
+              "master-realm": [
+                "view-clients",
+                "manage-clients"
+              ]
+            },
+            "notBefore": 0,
+            "groups": [
+              "/edge-manager-group",
+              "/apps-m2m-service-account"
+            ]
           },
           {
             "username": "service-account-ktc-m2m-client",

@@ -24,9 +24,10 @@ on:
   # Trigger workflow when enqueued to a merge group
   merge_group:
 
-# Only run at most 1 workflow concurrently per PR, unlimited for branches
+# For PRs → use the PR number as the group (forces only 1 run active)
+# For branches → use the full ref (unique per branch) so runs don't cancel each other
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.sha }}
+  group: ${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions: {}
@@ -36,7 +37,7 @@ jobs:
     if: github.event_name == 'pull_request'
     permissions:
       contents: read
-    uses: open-edge-platform/orch-ci/.github/workflows/pre-merge.yml@7221fef1cf3ce70185cbe8c3f53a85be4e7e7cbd  # 0.1.48
+    uses: open-edge-platform/orch-ci/.github/workflows/pre-merge.yml@c4b86434962d13f65fd7b16a33e9eecfd5849a64  # 0.1.56
     with:
       run_version_check: false
       run_build: false
@@ -54,7 +55,7 @@ jobs:
       ci: ${{ contains(steps.check-files.outputs.changed_files, '.github/workflows') || contains(steps.check-files.outputs.changed_files, '.github/actions') }}
       go: ${{ contains(steps.check-files.outputs.changed_files, '.go') || contains(steps.check-files.outputs.changed_files, '.mod') || contains(steps.check-files.outputs.changed_files, '.sum') }}
       markdown: ${{ contains(steps.check-files.outputs.changed_files, '.md') || contains(steps.check-files.outputs.changed_files, '.markdown') || contains(steps.check-files.outputs.changed_files, '.mdx') }}
-      orch: ${{ contains(steps.check-files.outputs.changed_files, 'argocd') || contains(steps.check-files.outputs.changed_files, 'bootstrap') || contains(steps.check-files.outputs.changed_files, 'installer') || contains(steps.check-files.outputs.changed_files, 'internal') || contains(steps.check-files.outputs.changed_files, 'mage') || contains(steps.check-files.outputs.changed_files, 'node') || contains(steps.check-files.outputs.changed_files, 'router') || contains(steps.check-files.outputs.changed_files, 'tools') || contains(steps.check-files.outputs.changed_files, 'e2e-tests') || contains(steps.check-files.outputs.changed_files, 'VERSION') }}
+      orch: ${{ contains(steps.check-files.outputs.changed_files, 'argocd') || contains(steps.check-files.outputs.changed_files, 'bootstrap') || contains(steps.check-files.outputs.changed_files, 'installer') || contains(steps.check-files.outputs.changed_files, 'internal') || contains(steps.check-files.outputs.changed_files, 'mage') || contains(steps.check-files.outputs.changed_files, 'node') || contains(steps.check-files.outputs.changed_files, 'router') || contains(steps.check-files.outputs.changed_files, 'tools') || contains(steps.check-files.outputs.changed_files, 'e2e-tests') || contains(steps.check-files.outputs.changed_files, 'VERSION') || contains(steps.check-files.outputs.changed_files, 'orch-configs') }}
       on-prem: ${{ contains(steps.check-files.outputs.changed_files, 'on-prem-installers') || contains(steps.check-files.outputs.changed_files, 'terraform') }}
       onboarding: ${{ contains(steps.check-files.outputs.changed_files, 'argocd/applications/templates/infra-') || contains(steps.check-files.outputs.changed_files, 'argocd/applications/values.yaml') }}
       shell: ${{ contains(steps.check-files.outputs.changed_files, '.sh') || contains(steps.check-files.outputs.changed_files, '.bash') }}
@@ -221,9 +222,11 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Setup asdf and install dependencies
-        uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
+      - name: Configure yamllint pip packages
+        run: echo "ASDF_YAMLLINT_PIP_PACKAGES=pyyaml" >> $GITHUB_ENV
 
+      - name: Setup asdf and install dependencies
+        uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]  
       - name: Run lint
         run: mage lint:yaml
 
@@ -687,7 +690,7 @@ jobs:
       github.ref == 'refs/heads/main' ||
       github.ref == 'refs/heads/main-pass-validation'
       )
-    runs-on: ubuntu-22.04-16core-64GB
+    runs-on: ubuntu-24.04-16core-64GB
     timeout-minutes: 90
     env:
       KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
@@ -816,7 +819,10 @@ jobs:
           TF_VAR_no_proxy: "localhost,127.0.0.0/8,10.0.0.0/8,192.168.0.0/16,.svc,.cluster.local,.default,.internal,.orch-platform,.orch-app,.orch-cluster,.orch-infra,.orch-database,.cattle-system,.orch-secret,.onprem"
           TF_VAR_en_http_proxy: "http://192.168.99.30:8080"
           TF_VAR_en_https_proxy: "http://192.168.99.30:8080"
-          TF_VAR_overwrite_profiles: '[["profile-oxm", "argo:\n  infra-onboarding:\n    pxe-server:\n      interface: \"orchnet\"\n      bootServerIP: \"192.168.99.20\"\n      subnetAddress: \"192.168.99.0\""]]'
+          TF_VAR_oxm_pxe_server_int: "orchnet"
+          TF_VAR_oxm_pxe_server_ip: "192.168.99.20"
+          TF_VAR_oxm_pxe_server_subnet: "192.168.99.0"
+          TF_VAR_enable_explicit_proxy: "true"
         with:
           orch_version: ${{ github.event.pull_request.head.sha }}
           orch_profile: onprem-oxm
@@ -884,7 +890,7 @@ jobs:
       security-events: write
       id-token: write
     if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
-    uses: open-edge-platform/orch-ci/.github/workflows/post-merge.yml@7221fef1cf3ce70185cbe8c3f53a85be4e7e7cbd  # 0.1.48
+    uses: open-edge-platform/orch-ci/.github/workflows/post-merge.yml@c4b86434962d13f65fd7b16a33e9eecfd5849a64  # 0.1.56
     with:
       run_build: false
       run_version_tag: false

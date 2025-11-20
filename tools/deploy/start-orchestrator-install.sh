@@ -173,5 +173,8 @@ docker run -ti --rm --name orchestrator-admin \
     -e CLUSTER_NAME=${cluster} -e TARGET_ENV=${cluster} -e AWS_REGION=${region} -e CUSTOMER_STATE_PREFIX=${state_prefix} \
     -e BUCKET_REGION=${bucket_region} -e AWS_PROFILE -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN \
     -e USER="root" -e ORCH_DEFAULT_PASSWORD -e DEPLOY_OP=${deploy_op} \
+    -e DISABLE_AO_PROFILE="${DISABLE_AO_PROFILE:-false}" \
+    -e DISABLE_CO_PROFILE="${DISABLE_CO_PROFILE:-false}" \
+    -e DISABLE_O11Y_PROFILE="${DISABLE_O11Y_PROFILE:-false}" \
     ${image_name}:${image_tag} \
     bash
