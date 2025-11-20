@@ -97,11 +97,25 @@ argo:
 
   targetServer: "https://kubernetes.default.svc"
   autosync: true
+
+{{- if and .Values.enableObservability .Values.enableClusterOrch }}
+  infra-onboarding:
+    disableO11yProfile: true
+    disableCoProfile: true
+{{- else if .Values.enableObservability }}
+  infra-onboarding:
+    disableO11yProfile: true
+{{- else if .Values.enableClusterOrch }}
+  infra-onboarding:
+    disableCoProfile: true
+{{- end }}
+
 {{ if .Values.enableObservability }}
   o11y:
     sre:
       customerLabel: local
 {{- end }}
+
 {{ if .Values.enableCoder }}
   aws: {}
     # Account ID and region will be set by deploy.go
