@@ -41,7 +41,10 @@ parse_vm_args() {
 
 # Function to initialize logging
 init_logging() {
-    local log_file="./ven-logs.log"
+    # Create logs directory if it doesn't exist
+    mkdir -p ./logs
+    
+    local log_file="./logs/ven-logs.log"
     local timestamp
     timestamp=$(date '+%Y-%m-%d %H:%M:%S')
     echo "========================================" | tee -a "$log_file"
@@ -52,7 +55,7 @@ init_logging() {
 
 host_onboarding() {
     local vm_args="$1"
-    local log_file="./ven-logs.log"
+    local log_file="./logs/ven-logs.log"
     local total_start
     total_start=$(start_timer)
     
@@ -126,7 +129,7 @@ host_onboarding() {
     # Save to file
     local timestamp
     timestamp=$(date '+%Y%m%d_%H%M%S')
-    local timing_log_file="./host_onboarding_times_${vm_args}_${timestamp}.log"
+    local timing_log_file="./logs/host_onboarding_times_${vm_args}_${timestamp}.log"
     {
         echo "Host Onboarding Stage Times - VM: $vm_args"
         echo "Date: $(date)"
@@ -143,7 +146,7 @@ host_onboarding() {
 
 delete_host() {
     local vm_args="$1"
-    local log_file="./ven-logs.log"
+    local log_file="./logs/ven-logs.log"
     local total_start
     total_start=$(start_timer)
     
@@ -201,7 +204,7 @@ delete_host() {
     # Save to file
     local timestamp
     timestamp=$(date '+%Y%m%d_%H%M%S')
-    local timing_log_file="./host_deletion_times_${vm_args}_${timestamp}.log"
+    local timing_log_file="./logs/host_deletion_times_${vm_args}_${timestamp}.log"
     {
         echo "Host Deletion Stage Times - VM: $vm_args"
         echo "Date: $(date)"
@@ -219,7 +222,7 @@ delete_host() {
 # New function for cluster operations
 cluster_operations() {
     local vm_args="$1"
-    local log_file="./ven-logs.log"
+    local log_file="./logs/ven-logs.log"
     local total_start
     total_start=$(start_timer)
     
@@ -251,7 +254,7 @@ cluster_operations() {
     # Save to file
     local timestamp
     timestamp=$(date '+%Y%m%d_%H%M%S')
-    local timing_log_file="./cluster_operations_times_${vm_args}_${timestamp}.log"
+    local timing_log_file="./logs/cluster_operations_times_${vm_args}_${timestamp}.log"
     {
         echo "Cluster Operations Stage Times - VM: $vm_args"
         echo "Date: $(date)"
@@ -265,7 +268,7 @@ cluster_operations() {
 # New function for cluster deletion
 delete_cluster() {
     local vm_args="$1"
-    local log_file="./ven-logs.log"
+    local log_file="./logs/ven-logs.log"
     
     echo "Starting cluster deletion for: $vm_args" | tee -a "$log_file"
     echo "========================================" | tee -a "$log_file"
