@@ -249,6 +249,16 @@ fi
     kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 }
 
+# Force sync all OutOfSync applications
+force_sync_outofsync_apps() {
+    echo "Checking for OutOfSync applications..."
+    kubectl get apps -A --no-headers | grep "OutOfSync" | awk '{print $2}' | while read -r app; do
+        echo "Force syncing $app..."
+        kubectl patch application "$app" -n onprem --type json -p='[{"op": "replace", "path": "/operation", "value": {"initiatedBy": {"username": "admin"}, "sync": {"syncStrategy": {"hook": {}, "apply": {"force": true}}}}}]'
+    done
+    echo "Completed force sync of OutOfSync applications"
+}
+
 # Checks if orchestrator is currently installed on the node
 # check_orch_install <array[@] of package names>
 check_orch_install() {
@@ -926,18 +936,18 @@ echo "Restarting harbor-oci-database pod..."
 kubectl delete pod -n orch-harbor harbor-oci-database-0 --ignore-not-found=true
 
 # Reinstall External Secrets CRDs to fix any potential issues
-kubectl apply -f https://raw.githubusercontent.com/external-secrets/external-secrets/main/deploy/crds/bundle.yaml
+kubectl apply -f https://raw.githubusercontent.com/external-secrets/external-secrets/main/deploy/crds/bundle.yaml || true
 
 # Force sync External Secrets application with 'Replace' and 'Force' options
 kubectl patch application external-secrets -n onprem --type merge -p='{"operation":{"sync":{"syncStrategy":{"force":true},"syncOptions":["Replace=true","Force=true"]}}}'
 
-# Force sync OutOfSync applications
-kubectl get apps -A --no-headers | grep "OutOfSync" | awk '{print $2}' | while read -r app; do
-  echo "Force syncing $app..."
-  kubectl patch application "$app" -n onprem --type json -p='[{"op": "replace", "path": "/operation", "value": {"initiatedBy": {"username": "admin"}, "sync": {"syncStrategy": {"hook": {}, "apply": {"force": true}}}}}]'
-done
+# Force sync all OutOfSync applications
+force_sync_outofsync_apps
 
 # Run after upgrade script
 ./after_upgrade_restart.sh
+
+# Force sync all OutOfSync applications
+force_sync_outofsync_apps
 
 echo "Upgrade completed! Wait for ArgoCD applications to be in 'Synced' and 'Healthy' state"
