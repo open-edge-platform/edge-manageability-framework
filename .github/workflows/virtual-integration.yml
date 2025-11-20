@@ -225,7 +225,8 @@ jobs:
         run: echo "ASDF_YAMLLINT_PIP_PACKAGES=pyyaml" >> $GITHUB_ENV
 
       - name: Setup asdf and install dependencies
-        uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]  
+        uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
+        
       - name: Run lint
         run: mage lint:yaml
 
@@ -575,12 +576,23 @@ jobs:
         run: |
           mage test:e2eSreObservabilityNoEnic
 
+      - name: Install orch-cli
+        run: |
+          cd orch-cli
+          make build
+          make install
+
+      - name: Set serial numbers dynamically
+        id: set-serials
+        run: |
+          echo "VEN1_SERIAL_NUMBER=PICOVENSN001" >> $GITHUB_ENV
+          echo "VEN2_SERIAL_NUMBER=PICOVENSN002" >> $GITHUB_ENV
+
       - name: Create HOST NIO Registration
         if: ${{ always() && steps.deploy-kind-orchestrator.conclusion == 'success' && steps.default-mt-setup.conclusion == 'success' }}
         shell: bash
         timeout-minutes: 5
         env:
-          EDGE_MANAGEABILITY_FRAMEWORK_REV: ${{ env.GIT_HASH }}
           ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
         run: |
           cd ci/cli-ven
@@ -588,16 +600,16 @@ jobs:
           ./host-config-cli.sh create-region-site
           ./host-config-cli.sh list-region-site
           ./host-config-cli.sh get-profile
-          ./host-config-cli.sh host-nio-registration "PICOVENSN001" "PICOVENSN001"
+          ./host-config-cli.sh host-nio-registration "${VEN1_SERIAL_NUMBER}" "${VEN2_SERIAL_NUMBER}"
+          orch-cli list hosts
 
-      - name: PICO VEN Onboard Two EdgeNodes
+      - name: VEN Onboard EdgeNode
         env:
-          LIBVIRT_DEFAULT_URI: 'qemu:///system'
           ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
         run: |
           cd ci/cli-ven
-          ./pico-ven.sh create "PICOVENSN001" "PICOVENSN002"
-          ./host-config-cli.sh host-status "PICOVENSN001" "PICOVENSN002"
+          ./pico-ven.sh create "${VEN1_SERIAL_NUMBER}" "${VEN2_SERIAL_NUMBER}"
+          ./host-config-cli.sh host-status "${VEN1_SERIAL_NUMBER}" "${VEN2_SERIAL_NUMBER}"
 
       - name: Get VEN UUID from script
         id: get-uuid
@@ -613,13 +625,24 @@ jobs:
           echo "ven1_uuid=$VEN1_UUID" >> $GITHUB_OUTPUT
           echo "ven2_uuid=$VEN2_UUID" >> $GITHUB_OUTPUT
 
+      - name: Run AO / CO smoke test
+        if: ${{ always() && steps.deploy-kind-orchestrator.conclusion == 'success' && steps.default-mt-setup.conclusion == 'success' }}
+        env:
+          PROJECT: sample-project
+          NODE_UUID: ${{ env.VEN1_UUID }}
+          EDGE_MGR_USER: sample-project-edge-mgr
+          EDGE_INFRA_USER: sample-project-api-user
+        run: |
+          echo "Running AO / CO smoke test..."
+          mage test:clusterOrchSmokeTest
+
       - name: UI E2E Tests
         if: ${{ always() && steps.deploy-kind-orchestrator.conclusion == 'success' && steps.default-mt-setup.conclusion == 'success' }}
         uses: ./.github/actions/cypress
         with:
           token: ${{ secrets.SYS_ORCH_GITHUB }}
-          en_serial_number: ${{ env.VEN1_SERIAL_NUMBER }}
-          en_uuid: ${{ env.VEN1_UUID }}
+          en_serial_number: ${{ env.VEN2_SERIAL_NUMBER }}
+          en_uuid: ${{ env.VEN2_UUID }}
           infra: "cypress/e2e/infra/locations.cy.ts,cypress/e2e/infra/new-host-provision.cy.ts,cypress/e2e/infra/verify-host.cy.ts"
 
       - name: "Test Observability Public Endpoints"
@@ -633,17 +656,6 @@ jobs:
           ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
         run: |
           mage test:e2eOrchObservability
-
-      - name: Run AO / CO smoke test
-        if: ${{ always() && steps.deploy-kind-orchestrator.conclusion == 'success' && steps.default-mt-setup.conclusion == 'success' }}
-        env:
-          PROJECT: sample-project
-          NODE_UUID: ${{ env.VEN1_UUID }}
-          EDGE_MGR_USER: sample-project-edge-mgr
-          EDGE_INFRA_USER: sample-project-api-user
-        run: |
-          echo "Running AO / CO smoke test..."
-          mage test:clusterOrchSmokeTest
 
       - name: Collect smoke test logs
         if: always()
@@ -700,4 +712,3 @@ jobs:
           name: on-prem-${{ github.event_name }}-${{ github.event.number }}-robot-report
           path: |
             edge-manage-test-automation/robot_output/**/*
-
