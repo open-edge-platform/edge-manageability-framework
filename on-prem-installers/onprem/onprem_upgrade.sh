@@ -941,12 +941,14 @@ kubectl apply -f https://raw.githubusercontent.com/external-secrets/external-sec
 # Force sync External Secrets application with 'Replace' and 'Force' options
 kubectl patch application external-secrets -n onprem --type merge -p='{"operation":{"sync":{"syncStrategy":{"force":true},"syncOptions":["Replace=true","Force=true"]}}}'
 
+sleep 15
 # Force sync all OutOfSync applications
 force_sync_outofsync_apps
 
 # Run after upgrade script
 ./after_upgrade_restart.sh
 
+sleep 15
 # Force sync all OutOfSync applications
 force_sync_outofsync_apps
 
