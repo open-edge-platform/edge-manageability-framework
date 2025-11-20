@@ -61,4 +61,4 @@ dkam:
 infra-config:
   config:
     enAgentManifestTag: "1.3.14"
-    embImageUrl: files-edge-orch/repository/microvisor/uos/emb_uos_x86_64_20250717.tar.gz
+    embImageUrl: files-edge-orch/repository/microvisor/uos/emb_uos_x86_64_20251113.tar.gz
