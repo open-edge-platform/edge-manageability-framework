@@ -227,8 +227,8 @@ Proposal 2 is simpler than proposal 1, but with the following limitations:
   we don't know the cases where a shared component (like inventory) needs to be treated differently based on the
   features.
 
-Proposal 3 is also simpler than Proposal 1, but presents security concerns around the exposure of `/health` and
-`/status` endpoints that may make it infeasiable. It also may not be possible in all circumstances to distinguish
+Proposal 3 is also simpler than Proposal 1, but presents security concerns around the exposure of `/healthz` and
+`/readyz` endpoints that may make it infeasiable. It also may not be possible in all circumstances to distinguish
 between a service that is down and a service that is not installed.
 
 ## Affected components and Teams
