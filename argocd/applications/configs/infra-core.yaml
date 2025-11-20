@@ -17,6 +17,10 @@ credentials:
   params:
     keycloakUrl: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
     vaultUrl: "http://vault.orch-platform.svc.cluster.local:8200"
+  curlImage:
+    name: badouralix/curl-jq@sha256
+    tag: 8ee002ae4452b23a3c70750c5c081e95334cfe9f7968fb4d67a90d4001c29d0b
+    pullPolicy: IfNotPresent
 
 api:
   image:
@@ -93,6 +97,12 @@ tenant-controller:
   vault:
     url: "http://vault.orch-platform.svc.cluster.local:8200"
     role: "orch-svc"
+
+tenant-config:
+  curlImage:
+    name: badouralix/curl-jq@sha256
+    tag: 8ee002ae4452b23a3c70750c5c081e95334cfe9f7968fb4d67a90d4001c29d0b
+    pullPolicy: IfNotPresent
 
 exporter:
   resources: null
