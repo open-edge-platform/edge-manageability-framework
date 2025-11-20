@@ -299,6 +299,14 @@ class AutoInstall:
         self.jumphost_sshkey_path = os.getenv("AUTOINSTALL_JUMPHOST_SSHKEY")
         self.internal_proxy_profile_path = os.getenv("AUTOINSTALL_INTERNAL_PROXY_PROFILE")
 
+        # Support for enabling alerting emails
+        self.SMTP_URL = os.getenv("SMTP_URL")
+        self.SMTP_PORT = os.getenv("SMTP_PORT")
+        self.SMTP_FROM = os.getenv("SMTP_FROM")
+        self.SMTP_USER = os.getenv("SMTP_USER")
+        self.SMTP_PASS = os.getenv("SMTP_PASS")
+        self.SMTP_DEV_MODE = os.getenv("SMTP_DEV_MODE", "false")
+
         self.jumphost_sshkey_copied = False
         if self.jumphost_sshkey_path and len(self.jumphost_sshkey_path) > 0:
             if not os.path.isfile(self.jumphost_sshkey_path):
@@ -539,6 +547,35 @@ class AutoInstall:
             if not long_task.succeeded():
                 raise AccountInitFailed()
 
+    def insert_smtp_details_helper(self, to_replace, to_replace_value):
+
+        current_user = os.getlogin()
+        current_directory = os.getcwd()
+
+        config_file = f"{self.aws_account}-{self.cluster_name}-values.tfvar"
+        config_path = os.path.join(current_directory, "state", config_file)
+        state_dir = os.path.join(current_directory, "state")
+
+        os.system(f"sudo chown -R {current_user}:{current_user} {state_dir}")
+
+        with open(config_path, "r") as f:
+            lines = f.readlines()
+
+        # Check if pattern exists
+        found = False
+        for i, line in enumerate(lines):
+            if line.strip().startswith(f"{to_replace} ="):
+                lines[i] = f'{to_replace} = "{to_replace_value}"\n'
+                found = True
+                break
+
+        # If not found, append at the end
+        if not found:
+            lines.append(f'{to_replace} = "{to_replace_value}"\n')
+
+        with open(config_path, "w") as f:
+            f.writelines(lines)
+
     def configure_provision(self):
         """
         Configures the provision settings for the installation process.
@@ -565,6 +602,7 @@ class AutoInstall:
         # download may take a minute or so before the editor starts up.
         time.sleep(120)
         # in provision config editor
+
         self.installer_session.sendline(":wq")
 
         # Confirm config save if prompted
@@ -579,6 +617,13 @@ class AutoInstall:
             self.installer_session.sendline("yes")
 
         self.installer_session.expect("orchestrator-admin:pod-configs", timeout=60)
+
+        print("Inserting SMTP details into tfvar file to enable alerting emails.")
+        self.insert_smtp_details_helper("smtp_url", self.SMTP_URL)
+        self.insert_smtp_details_helper("smtp_port", self.SMTP_PORT)
+        self.insert_smtp_details_helper("smtp_from", self.SMTP_FROM)
+        self.insert_smtp_details_helper("smtp_user", self.SMTP_USER)
+        self.insert_smtp_details_helper("smtp_pass", self.SMTP_PASS)
 
     def provision_upgrade(self):
         """
@@ -728,7 +773,7 @@ class AutoInstall:
             self.installer_session.expect("orchestrator-admin:~")
 
         # configure cluster
-        self.installer_session.sendline(f"DISABLE_AWS_PROD_PROFILE={self.disable_aws_prod_profile} ./configure-cluster.sh {self.vpc_jumphost_params}")
+        self.installer_session.sendline(f"DISABLE_AWS_PROD_PROFILE={self.disable_aws_prod_profile} SMTP_DEV_MODE={self.SMTP_DEV_MODE} ./configure-cluster.sh {self.vpc_jumphost_params}")
 
         editor_prompt = False
         while not editor_prompt:
