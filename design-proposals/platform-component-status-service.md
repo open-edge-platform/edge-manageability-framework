@@ -188,7 +188,7 @@ Contrary to Proposal 1, there shall be no addition to the `version` command, no 
 limitation of `help` commands to the the feature set. Proposal 2 is solely intended to return intelligent error
 responses when unavailable features are exercised.
 
-## Proposal 3: Expose the auth and/or health endpoints externally to the CLI
+## Proposal 3: Expose the status and/or health endpoints externally to the CLI
 
 All well-written Kubernetes pods include `/status` and `/health` endpoints to determine the status of the pod. This
 could be used to infer whether or not a feature is installed. If the `/status` or `/health` does not exist, then
