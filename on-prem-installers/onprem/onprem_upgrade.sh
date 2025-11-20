@@ -932,9 +932,9 @@ kubectl apply -f https://raw.githubusercontent.com/external-secrets/external-sec
 kubectl patch application external-secrets -n onprem --type merge -p='{"operation":{"sync":{"syncStrategy":{"force":true},"syncOptions":["Replace=true","Force=true"]}}}'
 
 # Force sync OutOfSync applications
-kubectl get apps -A --no-headers | grep "OutOfSync" | awk '{print $2}' | while read app; do
+kubectl get apps -A --no-headers | grep "OutOfSync" | awk '{print $2}' | while read -r app; do
   echo "Force syncing $app..."
-  kubectl patch application $app -n onprem --type json -p='[{"op": "replace", "path": "/operation", "value": {"initiatedBy": {"username": "admin"}, "sync": {"syncStrategy": {"hook": {}, "apply": {"force": true}}}}}]'
+  kubectl patch application "$app" -n onprem --type json -p='[{"op": "replace", "path": "/operation", "value": {"initiatedBy": {"username": "admin"}, "sync": {"syncStrategy": {"hook": {}, "apply": {"force": true}}}}}]'
 done
 
 # Run after upgrade script
