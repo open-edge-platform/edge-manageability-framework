@@ -59,16 +59,8 @@ sudo cp /etc/libvirt/libvirtd.conf /etc/libvirt/libvirtd.conf.bak
 
 # Update the configuration file
 sudo sed -i 's/^#unix_sock_group = "libvirt"/unix_sock_group = "libvirt"/' /etc/libvirt/libvirtd.conf
-  # Reload the systemd daemon to apply the changes
-  sudo systemctl daemon-reload
-
-  # Restart the Docker service to use the proxy settings
-  sudo systemctl restart docker
-  sleep 2
-#    newgrp docker
-fi
-
-#docker pull hello-world
+# Reload the systemd daemon to apply the changes
+sudo systemctl daemon-reload
 
 #TODO detect ubuntu 22.04 or 24.04
 # based on that install softwares
