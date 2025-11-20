@@ -511,7 +511,6 @@ jobs:
           LIBVIRT_DEFAULT_URI: 'qemu:///system'
         run: |
           cd ci/cli-ven
-          chmod +x install_packages.sh
           ./libvirt-setup.sh
           sudo usermod -aG libvirt $(whoami)
           # Grant access to libvirt sockets (works immediately, no logout needed)
