@@ -211,6 +211,14 @@ action_cluster() {
 
 
 apply_modules() {
+current_desired_nodes=$(jq '.resources[] | select(.type == "aws_eks_node_group") | .instances[0] | select(.attributes.node_group_name | ascii_downcase | contains("nodegroup")) | .attributes.scaling_config[0].desired_size' ./cluster_state.json | head -1)
+
+if [[ $current_desired_nodes -ne $EKS_DESIRED_SIZE ]]; then
+     echo "Updating EKS node group to desired size: $EKS_DESIRED_SIZE"
+     # TODO: Update the EKS node group here
+else
+     echo "EKS node group already at desired size: $EKS_DESIRED_SIZE"
+fi
 
 dir="${ROOT_DIR}/${ORCH_DIR}/cluster"
 sed -i '/module "kms"/,/^}/ s/^\([[:space:]]*\)depends_on/\1# depends_on/' $dir/main.tf
