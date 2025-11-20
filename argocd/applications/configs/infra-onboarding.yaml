@@ -62,4 +62,3 @@ infra-config:
   config:
     enAgentManifestTag: "1.4.1"
     embImageUrl: files-edge-orch/repository/microvisor/uos/emb_uos_x86_64_20251113.tar.gz
-    
