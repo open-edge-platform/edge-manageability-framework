@@ -188,12 +188,12 @@ Contrary to Proposal 1, there shall be no addition to the `version` command, no 
 limitation of `help` commands to the the feature set. Proposal 2 is solely intended to return intelligent error
 responses when unavailable features are exercised.
 
-## Proposal 3: Expose the status and/or health endpoints externally to the CLI
+## Proposal 3: Expose the health endpoints externally to the CLI
 
-All well-written Kubernetes pods include `/status` and `/health` endpoints to determine the status of the pod. This
-could be used to infer whether or not a feature is installed. If the `/status` or `/health` does not exist, then
-the feature is likely unavailable. If the endpoints do exist, then the caller can further inspect them to determine
-health.
+All well-written Kubernetes pods include `/livez`, `/readyz` and/or `/healthz` endpoints to determine the status
+of the pod. This could be used to infer whether or not a feature is installed. If the `/readyz` or `/healthz` does
+not exist, then the feature is likely unavailable. If the endpoints do exist, then the caller can further inspect
+them to determine health.
 
 These endpoints are not exposed through the API GW at this time and would need to be exposed, so the CLI can check
 them.
