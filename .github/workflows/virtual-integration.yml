@@ -585,9 +585,8 @@ jobs:
           mage test:e2eSreObservabilityNoEnic
 
       - name: Install orch-cli
+        working-directory: orch-cli
         run: |
-          cp -rf $HOME/orch-cli .
-          cd orch-cli
           make build
           make install
 
