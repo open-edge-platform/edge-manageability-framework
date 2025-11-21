@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-{{- $appName        := "cluster-manager" }}
-{{- $namespace      := "orch-cluster" }}
-{{- $syncWave       := "2000" }}
+{{- $appName        := "keycloak-operator" }}
+{{- $namespace      := "keycloak-system" }}
+{{- $syncWave       := "1" }}
 ---
 {{- if (index .Values.argo.enabled $appName) }}
 apiVersion: argoproj.io/v1alpha1
@@ -12,6 +12,7 @@ kind: Application
 metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "{{ $syncWave }}"
+    description: "Keycloak Operator for managing Keycloak instances via CRDs"
   name: {{$appName}}
   namespace: {{ required "A valid namespace entry required!" .Values.argo.namespace }}
   finalizers:
@@ -20,8 +21,8 @@ spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
     - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
-      chart: cluster/charts/{{$appName}}
-      targetRevision: 2.2.5
+      chart: common/charts/keycloak-operator
+      targetRevision: 25.2.0
       helm:
         releaseName: {{$appName}}
         valuesObject:
@@ -31,9 +32,6 @@ spec:
           {{- $baseConfig := .Files.Get $baseFile|fromYaml}}
           {{- $overwrite := (get .Values.postCustomTemplateOverwrite $appName ) | default dict }}
           {{- mergeOverwrite $baseConfig $customConfig $overwrite | toYaml | nindent 10 }}
-    - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
-      chart: cluster/charts/cluster-template-crd
-      targetRevision: 2.2.5
   destination:
     namespace: {{$namespace}}
     server: {{ required "A valid targetServer entry required!" .Values.argo.targetServer }}
@@ -51,5 +49,5 @@ spec:
     {{- end }}
     syncOptions:
       - CreateNamespace=true
-      - ApplyOutOfSyncOnly=true
+      - RespectIgnoreDifferences=true
 {{- end }}
