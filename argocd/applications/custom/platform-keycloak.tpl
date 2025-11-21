@@ -2,6 +2,187 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+
+# Keycloak instance configuration (Keycloak CRD)
+keycloak:
+  # Container image (uses upstream version from Chart.yaml)
+  image: "quay.io/keycloak/keycloak:26.4.5"
+  imagePullPolicy: IfNotPresent
+
+  # Bootstrap admin credentials
+  bootstrapAdmin:
+    secret: platform-keycloak
+
+  # Database configuration
+  database:
+    vendor: postgres
+    usernameSecret:
+      name: platform-keycloak-{{.Values.argo.database.type}}-postgresql
+      key: PGUSER
+    passwordSecret:
+      name: platform-keycloak-{{.Values.argo.database.type}}-postgresql
+      key: PGPASSWORD
+    # Connection pool settings
+    poolInitialSize: 5
+    poolMinSize: 5
+    poolMaxSize: 50
+
+  # HTTP configuration
+  http:
+    httpEnabled: true
+    httpPort: 8080
+    relativeUrl: "/"
+
+  # Proxy headers for reverse proxy
+  proxy:
+    headers: xforwarded
+
+  # Ingress configuration
+  ingress:
+    enabled: false
+
+  # Pod resource allocation
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+
+  # Runtime configuration options
+  additionalOptions:
+    # Read database connection details from secret
+    - name: db-url-host
+      secret:
+        name: platform-keycloak-{{.Values.argo.database.type}}-postgresql
+        key: PGHOST
+    - name: db-url-port
+      secret:
+        name: platform-keycloak-{{.Values.argo.database.type}}-postgresql
+        key: PGPORT
+    - name: db-url-database
+      secret:
+        name: platform-keycloak-{{.Values.argo.database.type}}-postgresql
+        key: PGDATABASE
+    - name: hostname-strict
+      value: "false"
+    - name: http-relative-path
+      value: "/"
+    - name: http-enabled
+      value: "true"
+    - name: db-url-properties
+      value: "?tcpKeepAlives=true&socketTimeout=120&connectTimeout=120"
+    - name: http-management-port
+      value: "9000"
+    - name: spi-login-protocol-openid-connect-legacy-logout-redirect-uri
+      value: "true"
+    - name: spi-brute-force-protector-default-brute-force-detector-allow-concurrent-requests
+      value: "true"
+    - name: log-level
+      value: "INFO"
+    - name: log-console-output
+      value: "json"
+
+  # Pod optimization
+  startOptimized: true
+  instances: 1
+
+  # Pod template security and initialization
+  podTemplate:
+    # Pod security context
+    securityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+      seccompProfile:
+        type: RuntimeDefault
+
+    # Init container for building optimized Keycloak image
+    initContainers:
+      - name: keycloak-builder
+        image: "quay.io/keycloak/keycloak:26.4.5"
+        imagePullPolicy: IfNotPresent
+        command:
+          - /bin/bash
+        args:
+          - -c
+          - |
+            set -e
+            /opt/keycloak/bin/kc.sh build \
+              --db=postgres \
+              --health-enabled=true \
+              --metrics-enabled=true \
+              --http-relative-path=/
+
+            mkdir -p /shared/keycloak
+            cp -r /opt/keycloak/* /shared/keycloak/
+
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+          limits:
+            cpu: 1500m
+            memory: 1Gi
+
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
+          capabilities:
+            drop:
+              - ALL
+          seccompProfile:
+            type: RuntimeDefault
+
+        volumeMounts:
+          - name: shared-keycloak
+            mountPath: /shared/keycloak
+          - name: tmp
+            mountPath: /tmp
+
+    # Main container security context
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      capabilities:
+        drop:
+          - ALL
+      seccompProfile:
+        type: RuntimeDefault
+
+    # Container volume mounts
+    containerVolumeMounts:
+      - name: shared-keycloak
+        mountPath: /opt/keycloak
+        readOnly: true
+      - name: tmp
+        mountPath: /tmp
+      - name: keycloak-data
+        mountPath: /opt/keycloak/data
+
+    # Pod volumes
+    volumes:
+      - name: shared-keycloak
+        emptyDir:
+          sizeLimit: 1Gi
+      - name: tmp
+        emptyDir:
+          sizeLimit: 100Mi
+      - name: keycloak-data
+        emptyDir:
+          sizeLimit: 500Mi
+{{- if and .Values.argo .Values.argo.resources .Values.argo.resources.platformKeycloak }}
+  resources:
+    {{- toYaml .Values.argo.resources.platformKeycloak | nindent 4 }}
+{{- end }}
+
 ## These values are used to configure:
 ## 1. Realm import configuration (clients, redirect URIs, etc.)
 ## 2. Keycloak instance deployment parameters
@@ -20,13 +201,6 @@
 {{- $docsuiRedirects := list (printf "https://docs-ui.%s" $clusterDomain) (printf "https://docs-ui.%s/" $clusterDomain) -}}
 {{- $telemetryRedirects := list (printf "https://observability-admin.%s/login/generic_oauth" $clusterDomain) (printf "https://observability-ui.%s/login/generic_oauth" $clusterDomain) -}}
 {{- $clusterMgmtRedirects := list (printf "https://cluster-management.%s" $clusterDomain) (printf "https://cluster-management.%s/" $clusterDomain) -}}
-
-# Keycloak Operator configuration
-{{- if and .Values.argo .Values.argo.resources .Values.argo.resources.platformKeycloak }}
-keycloak:
-  resources:
-    {{- toYaml .Values.argo.resources.platformKeycloak | nindent 4 }}
-{{- end }}
 
 # Override Keycloak Config CLI resources if specified
 {{- if and .Values.argo .Values.argo.resources .Values.argo.resources.keycloakConfigCli }}

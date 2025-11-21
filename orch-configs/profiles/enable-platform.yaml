@@ -19,7 +19,6 @@ argo:
     copy-ca-cert-gitea-to-app: true
     copy-ca-cert-gitea-to-cluster: true
     copy-cluster-gitea-cred-to-fleet: true
-    copy-database-to-keycloak: true
     copy-keycloak-admin-to-platform: true
     external-secrets: true
     istio-base: true
