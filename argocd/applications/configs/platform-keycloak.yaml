@@ -2,14 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Base configuration for keycloak-instance deployment
-# This file provides default infrastructure and operational configuration
-# Domain-specific URL configurations (clusterSpecific and realmMaster) are defined in custom/platform-keycloak.tpl
-# and merged via mergeOverwrite in the ArgoCD Application template
-
-
-
-
 # NOTE: realmMaster realm configuration is defined in custom/platform-keycloak.tpl
 # where it can access clusterSpecific values with templated domain names
 
