@@ -113,8 +113,8 @@ sequenceDiagram
     participant MPS as Management Presence Server (MPS)
     participant CLI as Orchestrator CLI
   end
+  US ->> CD: Install ArgoCD application
   alt Install Foundational Platform Services
-    US ->> CD: Install ArgoCD application
     US ->> CD: Provide profile for Foundation Platform Services
     activate CD
     CD ->> API: Install API Gateway
