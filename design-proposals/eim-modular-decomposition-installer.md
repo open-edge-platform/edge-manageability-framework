@@ -63,8 +63,7 @@ application lifecycle management—will be integrated into the Orchestrator inst
 the installation process while maintaining the necessary tooling to support GitOps-based deployment workflows for
 modular EIM services.
 
-The Edge Node agent installation scripts (or Ansible playbooks, to be determined) will be included as part of the EMF
-deployment package scripts.
+The Edge Node agent installation scripts will be included as part of the EMF deployment package scripts.
 
 #### EIM Modular Service Packaging and Installation
 
@@ -78,21 +77,106 @@ include a dependency list of the Helm charts for all EIM services that are requi
 a top level configuration file. This top level configuration file will be the primary location to provide the
 configuration settings needed to deploy each service in the use case to the customer Orchestrator environment.
 
+```mermaid
+flowchart LR
+  I1[Management Presence Server Helm Chart] --> I6[Out-Of-Band Device Management Helm Chart]
+  I2[Remote Provisioning Server Helm Chart] --> I6[Out-of-Band Device Management Helm Chart]
+  I3[Device Management Manager Helm Chart] --> I6[Out-of-Band Device Management Helm Chart]
+  I4[Inventory Service Helm Chart] --> I6[Out-of-Band Device Management Helm Chart]
+  I5[Orchestrator CLI Helm Chart] --> I6[Out-of-Band Device Management Helm Chart]
+  I6[Out-of-Band Device Management Helm Chart] --> | Only for Track 1 | I7[ArgoCD Installation Profile]
+```
+
 To install the Helm chart for a specific use case, there are two options depending on the Track being used:
 
 - For Track 1, the customer will have already deployed the EMF foundational services, which includes ArgoCD for
-  application management on the Orchestrator cluster. To deploy the require Helm chart for the use case, an ArgoCD
+  application management on the Orchestrator cluster. To deploy the required Helm chart for the use case, an ArgoCD
   profile will be created for each use case. When deploying the Orchestrator, the customer can specify the use case, or
   use cases if more than one, during the install stage. This will trigger ArgoCD to retrieve the profile for the use
   case and use it to install the Helm chart and configure the services as required.
 
 ![Modular install flow for EIM services in Track 1](images/modular-orch-install-track1.png)
 
+```mermaid
+sequenceDiagram
+  autonumber
+  participant US as User
+  box rgba(40, 179, 179, 1) Foundational Platform Services
+    participant CD as ArgoCD
+    participant API as API Gateway
+    participant DB as Inventory Database
+  end
+  box rgba(37, 182, 21, 1) Modular Services
+    participant IN as Inventory
+    participant DM as Device Management Manager
+    participant RPS as Remote Provisioning Server (RPS)
+    participant MPS as Management Presence Server (MPS)
+    participant CLI as Orchestrator CLI
+  end
+  alt Install Foundational Platform Services
+    US ->> CD: Install ArgoCD application
+    US ->> CD: Provide profile for Foundation Platform Services
+    activate CD
+    CD ->> API: Install API Gateway
+    API ->> CD: API Gateway status
+    CD ->> DB: Install Inventory Database
+    DB ->> CD: Inventory Database status
+    CD ->> US: Foundation Platform Services status
+    deactivate CD
+  end
+  alt Install Modular Services
+    US ->> CD: Provide profile for Modular Use Case
+    activate CD
+    CD ->> IN: Install Inventory Service
+    IN ->> CD: Inventory Service status
+    CD ->> DM: Install Device Management Manager Service
+    DM ->> CD: Device Management Manager Service status
+    CD ->> RPS: Install Remote Provisioning Server (RPS)
+    RPS ->> CD: Remote Provisioning Server status
+    CD ->> MPS: Install Management Presence Server (MPS)
+    MPS ->> CD: Management Presence Server status
+    CD ->> CLI: Install Orchestrator CLI service
+    CLI ->> CD: Orchestrator CLI status
+    CD ->> US: Modular services status
+    deactivate CD
+  end
+```
+
 - For Track 2, since the infrastructure being used will not be the current EMF foundational services but the customer's
   own infrastructure, the Helm chart for the required use case can be downloaded by the customer and manually installed
   using Helm commands.
 
 ![Modular install flow for EIM services in Track 2](images/modular-orch-install-track2.png)
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant US as User
+  participant HE as Helm
+  box rgba(37, 182, 21, 1) Modular Services
+    participant IN as Inventory
+    participant DM as Device Management Manager
+    participant RPS as Remote Provisioning Server (RPS)
+    participant MPS as Management Presence Server (MPS)
+    participant CLI as Orchestrator CLI
+  end
+  alt Install Modular Services
+    US ->> HE: Install Modular service Helm chart
+    activate HE
+    HE ->> IN: Install Inventory Service Helm chart
+    IN ->> HE: Inventory Service status
+    HE ->> DM: Install Device Management Manager Service Helm chart
+    DM ->> HE: Device Management Manager Service status
+    HE ->> RPS: Install Remote Provisioning Server Helm chart
+    RPS ->> HE: Remote Provisioning Server status
+    HE ->> MPS: Install Management Presence Server Helm chart
+    MPS ->> HE: Management Presence Server status
+    HE ->> CLI: Install Orchestrator CLI Service Helm chart
+    CLI ->> HE: Orchestrator CLI Service status
+    HE ->> US: Modular Helm chart install status
+    deactivate HE
+  end
+```
 
 #### Edge Node Agent Packaging and Installation
 
@@ -155,9 +239,8 @@ sequenceDiagram
 
 ## Opens
 
-- Update installation flow for edge node agents to use a central environment file to list required FQDN and other
-  configuration settings and have wrapper scripts update the edge node configuration files on service start up to enable
-  immediate communication.
+- Edge node agents to use a central environment file to list required FQDN and other configuration settings and have
+  wrapper scripts update the edge node configuration files on service start up to enable immediate communication.
   - Can also be extended to full EMF stack installation method.
   - Installer script creates environment file as part of installation flow using FQDN from Orchestrator environment.
 - Single installer script for Orchestrator, including installer script for edge node, which installs all services needed
