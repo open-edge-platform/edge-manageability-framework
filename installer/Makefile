@@ -25,7 +25,7 @@ INTEL_HARBOR_CACERT := ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/mage/intel-harbor-ca.
 
 SAVE_DIR := ${HOME}/pod-configs/SAVEME
 
-ORCH_ISTIO_NAMESPACES := orch-infra orch-iam orch-app orch-cluster orch-ui orch-platform orch-harbor orch-gateway orch-sre orch-database
+ORCH_ISTIO_NAMESPACES := orch-infra orch-iam orch-app orch-cluster orch-ui orch-platform orch-harbor orch-gateway orch-sre orch-database keycloak-system
 
 ORCH_NAMESPACES  := cattle-system
 ARGO_NAMESPACES  := dev
