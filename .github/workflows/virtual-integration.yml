@@ -488,6 +488,7 @@ jobs:
         with:
           repository: open-edge-platform/virtual-edge-node
           ref: pico/1.5.6
+          path: virtual-edge-node  # Add this line
           persist-credentials: false
 
       - name: Checkout orch-cli repo
@@ -495,6 +496,7 @@ jobs:
         with:
           repository: open-edge-platform/orch-cli
           ref: v0.12.26
+          path: orch-cli  # Add this line
           persist-credentials: false
 
       - name: Checkout edge-manage-test-automation repository with submodules
@@ -502,6 +504,7 @@ jobs:
         with:
           repository: open-edge-platform/edge-manage-test-automation
           ref: ${{ steps.read-test-automation-version.outputs.version }}
+          path: edge-manage-test-automation
           submodules: 'recursive'
           token: ${{ secrets.SYS_ORCH_GITHUB }}
           persist-credentials: false
@@ -509,10 +512,10 @@ jobs:
       - name: Install DNSmasq
         run: |
           pwd
-          ls -lrt
-          cd ci/cli-ven
+          ls -lrt 
+          cd orch-cli
           ./dnsmasq-setup.sh "kind.internal" setup
-
+          
       - name: Install Libvirt
         env:
           LIBVIRT_DEFAULT_URI: 'qemu:///system'
