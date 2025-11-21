@@ -39,7 +39,7 @@ module "eks" {
   addons                      = var.eks_addons
   eks_version                 = var.eks_version
   max_pods                    = var.eks_max_pods
-  additional_node_groups      = var.eks_additional_node_groups
+  additional_node_groups      = var.enable_observability_node ? var.eks_additional_node_groups : {}
   public_cloud                = var.public_cloud
   enable_cache_registry       = var.enable_cache_registry
   cache_registry              = var.cache_registry
@@ -195,7 +195,7 @@ module "eks_auth" {
 }
 
 module "ec2log" {
-  count             = var.enable_ec2log ? 1 : 0
+  count             = var.enable_ec2log && var.enable_observability_node ? 1 : 0
   depends_on        = [time_sleep.wait_eks]
   source            = "../../module/ec2log"
   cluster_name      = var.eks_cluster_name
