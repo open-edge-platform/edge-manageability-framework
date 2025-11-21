@@ -488,7 +488,6 @@ jobs:
         with:
           repository: open-edge-platform/virtual-edge-node
           ref: pico/1.5.6
-          path:  $/HOME/virtual-edge-node
           persist-credentials: false
 
       - name: Checkout orch-cli repo
@@ -496,14 +495,12 @@ jobs:
         with:
           repository: open-edge-platform/orch-cli
           ref: v0.12.26
-          path:  $/HOME/orch-cli
           persist-credentials: false
 
       - name: Checkout edge-manage-test-automation repository with submodules
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
           repository: open-edge-platform/edge-manage-test-automation
-          path: $/HOME/edge-manage-test-automation
           ref: ${{ steps.read-test-automation-version.outputs.version }}
           submodules: 'recursive'
           token: ${{ secrets.SYS_ORCH_GITHUB }}
@@ -512,6 +509,7 @@ jobs:
       - name: Install DNSmasq
         run: |
           pwd
+          ls -lrt
           cd ci/cli-ven
           ./dnsmasq-setup.sh "kind.internal" setup
 
