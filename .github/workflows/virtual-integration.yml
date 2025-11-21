@@ -488,7 +488,7 @@ jobs:
         with:
           repository: open-edge-platform/virtual-edge-node
           ref: pico/1.5.6
-          path: $HOME/virtual-edge-node
+          path:  $/HOME/virtual-edge-node
           persist-credentials: false
 
       - name: Checkout orch-cli repo
@@ -496,14 +496,14 @@ jobs:
         with:
           repository: open-edge-platform/orch-cli
           ref: v0.12.26
-          path: edge-manageability-framework/orch-cli
+          path:  $/HOME/orch-cli
           persist-credentials: false
 
       - name: Checkout edge-manage-test-automation repository with submodules
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
           repository: open-edge-platform/edge-manage-test-automation
-          path: edge-manageability-framework/edge-manage-test-automation
+          path: $/HOME/edge-manage-test-automation
           ref: ${{ steps.read-test-automation-version.outputs.version }}
           submodules: 'recursive'
           token: ${{ secrets.SYS_ORCH_GITHUB }}
@@ -586,18 +586,17 @@ jobs:
 
       - name: Install orch-cli
         run: |
-          cp -rf ${GITHUB_WORKSPACE}/orch-cli .
+          cp -rf $/HOME/orch-cli .
+          cp -rf $/HOME/virtual-edge-node ci/cli-ven/
+          cp -rf $/HOME/edge-manage-test-automation ci/cli-ven/
           cd orch-cli
           make build
           make install
 
       - name: Setup a virtual environment
         run: |
-          cp -rf ${GITHUB_WORKSPACE}/edge-manage-test-automation .
-          cd edge-manage-test-automation
+          cd ci/cli-ven/edge-manage-test-automation
           make asdf-install
-          make venv_edge-manage-test-automation
-
           # install required versions for Pico
           pushd repos/ven/pico
           asdf install
@@ -688,11 +687,9 @@ jobs:
           kubectl logs -n orch-app -l app.kubernetes.io/name=app-orch-catalog --tail=-1 > smoke-test/logs/application-catalog.log
 
       - name: Setup VEN virtual environment
-        working-directory: edge-manage-test-automation
         run: |
-          make asdf-install
+          cd ci/cli-ven/edge-manage-test-automation
           make venv_edge-manage-test-automation
-
           # install required versions for Pico
           pushd repos/ven/pico
           asdf install
@@ -701,7 +698,6 @@ jobs:
       - name: Run Golden Suite Robot Framework Tests
         id: robot-tests
         timeout-minutes: 45
-        working-directory: edge-manage-test-automation
         env:
           REQUESTS_CA_BUNDLE: /usr/local/share/ca-certificates/orch-ca.crt
           LIBVIRT_DEFAULT_URI: 'qemu:///system'
