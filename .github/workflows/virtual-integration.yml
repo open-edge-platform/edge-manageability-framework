@@ -513,7 +513,7 @@ jobs:
         run: |
           pwd
           ls -lrt 
-          cd orch-cli
+          cd ci/cli-ven
           ./dnsmasq-setup.sh "kind.internal" setup
           
       - name: Install Libvirt
@@ -587,16 +587,13 @@ jobs:
 
       - name: Install orch-cli
         run: |
-          cp -rf $/HOME/orch-cli .
-          cp -rf $/HOME/virtual-edge-node ci/cli-ven/
-          cp -rf $/HOME/edge-manage-test-automation ci/cli-ven/
           cd orch-cli
           make build
           make install
 
       - name: Setup a virtual environment
         run: |
-          cd ci/cli-ven/edge-manage-test-automation
+          cd edge-manage-test-automation
           make asdf-install
           # install required versions for Pico
           pushd repos/ven/pico
