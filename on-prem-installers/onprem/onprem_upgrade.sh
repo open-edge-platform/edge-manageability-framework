@@ -935,11 +935,21 @@ kubectl delete pod -n orch-platform keycloak-tenant-controller-set-0 --ignore-no
 echo "Restarting harbor-oci-database pod..."
 kubectl delete pod -n orch-harbor harbor-oci-database-0 --ignore-not-found=true
 
-# Reinstall External Secrets CRDs to fix any potential issues
-kubectl apply -f https://raw.githubusercontent.com/external-secrets/external-secrets/main/deploy/crds/bundle.yaml || true
+# Apply External Secrets CRDs with server-side apply to avoid annotation size limits (>262KB)
+echo "Applying external-secrets CRDs with server-side apply..."
+kubectl apply --server-side=true --force-conflicts -f https://raw.githubusercontent.com/external-secrets/external-secrets/main/deploy/crds/bundle.yaml || true
 
-# Force sync External Secrets application with 'Replace' and 'Force' options
-kubectl patch application external-secrets -n onprem --type merge -p='{"operation":{"sync":{"syncStrategy":{"force":true},"syncOptions":["Replace=true","Force=true"]}}}'
+VERSION=$(curl -L -s https://raw.githubusercontent.com/argoproj/argo-cd/stable/VERSION)
+curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/download/v$VERSION/argocd-linux-amd64
+sudo install -m 555 argocd-linux-amd64 /usr/local/bin/argocd
+rm argocd-linux-amd64
+
+ADMIN_PASSWD=$(kubectl get secret -n argocd argocd-initial-admin-secret -o yaml | yq .data.password | base64 -d)
+ARGO_IP=$(kubectl get svc argocd-server -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+argocd login "${ARGO_IP}" --username admin --password "${ADMIN_PASSWD}" --insecure
+
+# Replace force sync external-secrets application
+argocd app sync onprem/external-secrets --force --replace --async
 
 sleep 15
 # Force sync all OutOfSync applications
