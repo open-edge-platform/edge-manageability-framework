@@ -19,7 +19,6 @@ providers:
       - "orch-ui"
       - "orch-secret"
       - "orch-iam"
-      - "keycloak-system"
 ingressRoute:
   dashboard:
     enabled: false
