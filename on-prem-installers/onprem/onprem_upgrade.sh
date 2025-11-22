@@ -249,6 +249,16 @@ fi
     kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 }
 
+# Force sync all OutOfSync applications
+force_sync_outofsync_apps() {
+    echo "Checking for OutOfSync applications..."
+    kubectl get apps -A --no-headers | grep "OutOfSync" | awk '{print $2}' | while read -r app; do
+        echo "Force syncing $app..."
+        kubectl patch application "$app" -n onprem --type json -p='[{"op": "replace", "path": "/operation", "value": {"initiatedBy": {"username": "admin"}, "sync": {"syncStrategy": {"hook": {}, "apply": {"force": true}}}}}]'
+    done
+    echo "Completed force sync of OutOfSync applications"
+}
+
 # Checks if orchestrator is currently installed on the node
 # check_orch_install <array[@] of package names>
 check_orch_install() {
@@ -764,7 +774,6 @@ operation:
 #kubectl patch -n "$apps_ns" application postgresql-secrets --patch-file /tmp/sync-postgresql-patch.yaml --type merge
 kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/sync-postgresql-patch.yaml --type merge
 
-
 #kubectl patch -n "$apps_ns" application postgresql --patch-file /tmp/sync-postgresql-patch.yaml --type merge
 
 start_time=$(date +%s)
@@ -803,13 +812,15 @@ sleep 10
 # Restore secret after app delete but before postgress restored
 yq e 'del(.metadata.labels, .metadata.annotations, .metadata.uid, .metadata.creationTimestamp)' postgres_secret.yaml | kubectl apply -f -
 
+sleep 30
 # Wait until PostgreSQL pod is running (Re-sync)
 start_time=$(date +%s)
 timeout=300  # 5 minutes in seconds
 set +e
 while true; do
     echo "Checking PostgreSQL pod status..."
-    podname=$(kubectl get pods -n orch-database -l app.kubernetes.io/name=postgresql -o jsonpath='{.items[0].metadata.name}')
+    # CloudNativePG uses cnpg.io/cluster label instead of app.kubernetes.io/name
+    podname=$(kubectl get pods -n orch-database -l cnpg.io/cluster=postgresql-cluster,cnpg.io/instanceRole=primary -o jsonpath='{.items[0].metadata.name}')
     pod_status=$(kubectl get pods -n orch-database "$podname" -o jsonpath='{.status.phase}')
     if [[ "$pod_status" == "Running" ]]; then
         echo "PostgreSQL pod is Running."
@@ -826,6 +837,32 @@ while true; do
     sleep 5
 done
 set -e
+
+# Update ALL database user passwords in PostgreSQL after restore
+echo "Updating all database user passwords in PostgreSQL..."
+
+# Get all passwords from postgres-secrets-password.txt file (they are base64 encoded)
+ALERTING_PASSWORD=$(grep "^Alerting:" postgres-secrets-password.txt | cut -d' ' -f2 | base64 -d)
+CATALOG_PASSWORD=$(grep "^CatalogService:" postgres-secrets-password.txt | cut -d' ' -f2 | base64 -d)
+INVENTORY_PASSWORD=$(grep "^Inventory:" postgres-secrets-password.txt | cut -d' ' -f2 | base64 -d)
+IAM_TENANCY_PASSWORD=$(grep "^IAMTenancy:" postgres-secrets-password.txt | cut -d' ' -f2 | base64 -d)
+KEYCLOAK_PASSWORD=$(grep "^PlatformKeycloak:" postgres-secrets-password.txt | cut -d' ' -f2 | base64 -d)
+MPS_PASSWORD=$(grep "^Mps:" postgres-secrets-password.txt | cut -d' ' -f2 | base64 -d)
+RPS_PASSWORD=$(grep "^Rps:" postgres-secrets-password.txt | cut -d' ' -f2 | base64 -d)
+VAULT_PASSWORD=$(grep "^Vault:" postgres-secrets-password.txt | cut -d' ' -f2 | base64 -d)
+
+# Update passwords for all database users
+kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-platform-vault_user\" WITH PASSWORD '$VAULT_PASSWORD';"
+kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-infra-alerting_user\" WITH PASSWORD '$ALERTING_PASSWORD';"
+kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-app-app-orch-catalog_user\" WITH PASSWORD '$CATALOG_PASSWORD';"
+kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-infra-inventory_user\" WITH PASSWORD '$INVENTORY_PASSWORD';"
+kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-iam-iam-tenancy_user\" WITH PASSWORD '$IAM_TENANCY_PASSWORD';"
+kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-platform-platform-keycloak_user\" WITH PASSWORD '$KEYCLOAK_PASSWORD';"
+kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-infra-mps_user\" WITH PASSWORD '$MPS_PASSWORD';"
+kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-infra-rps_user\" WITH PASSWORD '$RPS_PASSWORD';"
+
+echo "✅ All database user passwords updated successfully"
+
 # Now that PostgreSQL is running, we can restore the secret
 restore_postgres
 
@@ -856,7 +893,73 @@ while IFS=' ' read -r ns secret; do
     kubectl delete secret "$secret" -n "$ns"
 done
 
+# Fix MPS and RPS connection strings for CNPG migration
+echo "Updating MPS and RPS connection strings for CloudNativePG..."
+
+# Get the current passwords from the secrets
+MPS_PASSWORD=$(kubectl get secret mps-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}' | base64 -d)
+RPS_PASSWORD=$(kubectl get secret rps-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}' | base64 -d)
+
+# Update MPS connection string to use CNPG service name
+MPS_CONN_STRING="postgresql://orch-infra-mps_user:${MPS_PASSWORD}@postgresql-cluster-rw.orch-database/orch-infra-mps?search_path=public&sslmode=disable"
+MPS_CONN_BASE64=$(echo -n "$MPS_CONN_STRING" | base64 -w 0)
+kubectl patch secret mps -n orch-infra -p "{\"data\":{\"connectionString\":\"$MPS_CONN_BASE64\"}}" --type=merge
+
+# Update RPS connection string to use CNPG service name
+RPS_CONN_STRING="postgresql://orch-infra-rps_user:${RPS_PASSWORD}@postgresql-cluster-rw.orch-database/orch-infra-rps?search_path=public&sslmode=disable"
+RPS_CONN_BASE64=$(echo -n "$RPS_CONN_STRING" | base64 -w 0)
+kubectl patch secret rps -n orch-infra -p "{\"data\":{\"connectionString\":\"$RPS_CONN_BASE64\"}}" --type=merge
+
+echo "✅ Updated MPS and RPS connection strings to use postgresql-cluster-rw.orch-database"
+
+# Restart MPS and RPS pods to pick up new connection strings
+echo "Restarting MPS and RPS pods..."
+kubectl delete pod -n orch-infra -l app.kubernetes.io/name=mps --ignore-not-found=true
+kubectl delete pod -n orch-infra -l app.kubernetes.io/name=rps --ignore-not-found=true
+
+echo "✅ MPS and RPS pods restarted with updated configuration"
+
+# Restart inventory pod to refresh database connection to CNPG service
+echo "Restarting inventory pod to refresh database connection..."
+kubectl delete pod -n orch-infra -l app.kubernetes.io/name=inventory --ignore-not-found=true
+
+# Restart onboarding-manager pod to connect to refreshed inventory service
+echo "Restarting onboarding-manager pod..."
+kubectl delete pod -n orch-infra -l app.kubernetes.io/name=onboarding-manager --ignore-not-found=true
+
+# Restart keycloak-tenant-controller pod to resolve Vault authentication issues
+echo "Restarting keycloak-tenant-controller pod..."
+kubectl delete pod -n orch-platform keycloak-tenant-controller-set-0 --ignore-not-found=true
+
+# Restart harbor-oci-database pod to refresh database connection
+echo "Restarting harbor-oci-database pod..."
+kubectl delete pod -n orch-harbor harbor-oci-database-0 --ignore-not-found=true
+
+# Apply External Secrets CRDs with server-side apply to avoid annotation size limits (>262KB)
+echo "Applying external-secrets CRDs with server-side apply..."
+kubectl apply --server-side=true --force-conflicts -f https://raw.githubusercontent.com/external-secrets/external-secrets/main/deploy/crds/bundle.yaml || true
+
+VERSION=$(curl -L -s https://raw.githubusercontent.com/argoproj/argo-cd/stable/VERSION)
+curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/download/v$VERSION/argocd-linux-amd64
+sudo install -m 555 argocd-linux-amd64 /usr/local/bin/argocd
+rm argocd-linux-amd64
+
+ADMIN_PASSWD=$(kubectl get secret -n argocd argocd-initial-admin-secret -o yaml | yq .data.password | base64 -d)
+ARGO_IP=$(kubectl get svc argocd-server -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+argocd login "${ARGO_IP}" --username admin --password "${ADMIN_PASSWD}" --insecure
+
+# Replace force sync external-secrets application
+argocd app sync onprem/external-secrets --force --replace --async
+
+sleep 15
+# Force sync all OutOfSync applications
+force_sync_outofsync_apps
+
 # Run after upgrade script
 ./after_upgrade_restart.sh
+
+sleep 15
+# Force sync all OutOfSync applications
+force_sync_outofsync_apps
 
 echo "Upgrade completed! Wait for ArgoCD applications to be in 'Synced' and 'Healthy' state"
