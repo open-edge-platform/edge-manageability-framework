@@ -2,13 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Keycloak internal service URL
-{{- $keycloakUrl := "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master" }}
-{{- $keycloakHost := "platform-keycloak.keycloak-system.svc.cluster.local" }}
-
-openidc:
-  issuer: {{ $keycloakUrl }}
-
 clusterManager:
   args:
     clusterdomain: {{ .Values.argo.clusterDomain }}
@@ -16,30 +9,6 @@ clusterManager:
     # If kubeconfig-ttl-hours=0 token expires at creation
     # keycloak realm settings and upbounded by the SSO sessions max: 12h
     kubeconfig-ttl-hours: 3
-  # Add init container to wait for Keycloak to be ready
-  # This prevents cluster-manager from crashing when Keycloak is not ready
-  initContainers:
-    - name: wait-for-keycloak
-      image: curlimages/curl:8.5.0
-      command:
-        - sh
-        - -c
-        - |
-          echo "Waiting for Keycloak at {{ $keycloakHost }} to be ready..."
-          until curl --fail --connect-timeout 5 --max-time 10 -s {{ $keycloakUrl }} > /dev/null 2>&1; do
-            echo "Keycloak not ready yet, retrying in 5 seconds..."
-            sleep 5
-          done
-          echo "Keycloak is ready!"
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 65534
-        allowPrivilegeEscalation: false
-        seccompProfile:
-          type: RuntimeDefault
-        capabilities:
-          drop:
-            - ALL
   image:
     repository: cluster/cluster-manager
     registry:
@@ -94,7 +63,7 @@ credentialsM2M:
     authPath: "auth/kubernetes"
 
   keycloak:
-    service: "platform-keycloak.keycloak-system.svc.cluster.local" # internal k8s DNS always uses cluster.local
+    service: "platform-keycloak.orch-platform.svc.cluster.local" # internal k8s DNS always uses cluster.local
     port: 8080
     realm: "master"
     adminSecretName: "platform-keycloak"

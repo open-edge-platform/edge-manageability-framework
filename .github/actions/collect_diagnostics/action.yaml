@@ -11,7 +11,6 @@ runs:
     run: |
       mkdir -p kind-diagnostics
       kubectl get pods -o wide -A > kind-diagnostics/pods-list.txt
-      kubectl get all -A > kind-diagnostics/kubectl-get-all.txt
       kubectl describe pods -A > kind-diagnostics/pods-describe.txt
       mage logutils:collectArgoDiags > kind-diagnostics/argo-diag.txt
       kubectl get applications -o yaml -A > kind-diagnostics/argocd-applications.yaml
@@ -24,7 +23,6 @@ runs:
       name: kind-diagnostics
       path: |
         kind-diagnostics/pods-list.txt
-        kind-diagnostics/kubectl-get-all.txt
         kind-diagnostics/pods-describe.txt
         kind-diagnostics/argo-diag.txt
         kind-diagnostics/argocd-applications.yaml
