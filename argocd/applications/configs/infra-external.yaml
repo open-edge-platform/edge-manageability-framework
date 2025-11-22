@@ -19,7 +19,7 @@ loca-manager:
   env:
     vaultUrl: "http://vault.orch-platform.svc.cluster.local:8200"
     vaultRole: "orch-svc"
-    keycloakUrl: "http://platform-keycloak.keycloak-system.svc.cluster.local"
+    keycloakUrl: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
 
 loca-metadata-manager:
   serviceAccount:
@@ -78,7 +78,7 @@ loca-credentials:
   serviceAccount:
     name: "orch-svc"
   params:
-    keycloakUrl: "http://platform-keycloak.keycloak-system.svc.cluster.local"
+    keycloakUrl: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
     vaultUrl: "http://vault.orch-platform.svc.cluster.local:8200"
 
 amt:
@@ -123,6 +123,6 @@ amt:
       password: ""
     env:
       oidc:
-        oidc_server_url: "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master"
+        oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
         oidc_tls_insecure_skip_verify_value: "true"
 
