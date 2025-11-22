@@ -49,11 +49,10 @@ var argoNamespaces = []string{
 	"dev",
 	"argocd",
 	"gitea",
-	"orch-platform",   // used when creating a secret for gitea
-	"orch-sre",        // used when creating a secret for kindAll
-	"orch-harbor",     // used when creating a secret for integration
-	"orch-infra",      // used when creating a secret for mailpit
-	"keycloak-system", // where Keycloak Operator and instances are deployed
+	"orch-platform", // used when creating a secret for gitea
+	"orch-sre",      // used when creating a secret for kindAll
+	"orch-harbor",   // used when creating a secret for integration
+	"orch-infra",    // used when creating a secret for mailpit
 }
 
 // FIXME: Ideally this could be extracted from the cluster configuration and aligned with auth secrets - out of scope for now

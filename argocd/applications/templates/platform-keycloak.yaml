@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 {{- $appName        := "platform-keycloak" }}
-{{- $namespace      := "keycloak-system" }}
+{{- $namespace      := "orch-platform" }}
 {{- $syncWave       := "150" }}
 ---
 {{- if (index .Values.argo.enabled $appName) }}
@@ -12,7 +12,6 @@ kind: Application
 metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "{{ $syncWave }}"
-    description: "Keycloak instance deployed via Operator"
   name: {{$appName}}
   namespace: {{ required "A valid namespace entry required!" .Values.argo.namespace }}
   finalizers:
@@ -20,9 +19,9 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
-    - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
-      chart: common/charts/keycloak-instance
-      targetRevision: 25.2.0
+    - repoURL: "registry-1.docker.io/bitnamicharts"
+      chart: keycloak
+      targetRevision: 24.4.12
       helm:
         releaseName: {{$appName}}
         valuesObject:
