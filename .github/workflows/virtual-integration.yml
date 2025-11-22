@@ -560,14 +560,13 @@ jobs:
         run: |
           make asdf-install
           make venv_edge-manage-test-automation
-
           # install required versions for Pico
           pushd repos/ven/pico
           asdf install
-          popd
-	  
+          popd	  
       - name: Run Golden Suite Robot Framework Tests
         id: robot-tests
+        working-directory: edge-manage-test-automation
         timeout-minutes: 45
         env:
           REQUESTS_CA_BUNDLE: /usr/local/share/ca-certificates/orch-ca.crt
