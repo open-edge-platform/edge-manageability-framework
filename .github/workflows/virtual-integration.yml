@@ -555,7 +555,6 @@ jobs:
           submodules: 'recursive'
           token: ${{ secrets.SYS_ORCH_GITHUB }}
           persist-credentials: false
-	  
       - name: Setup virtual environment
         working-directory: edge-manage-test-automation
         run: |
