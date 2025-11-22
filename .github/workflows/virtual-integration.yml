@@ -626,6 +626,7 @@ jobs:
       - name: VEN Onboard EdgeNode
         env:
           ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+          LIBVIRT_DEFAULT_URI: 'qemu:///system'
         run: |
           cd ci/cli-ven
           ./pico-ven.sh create "${VEN1_SERIAL_NUMBER}" "${VEN2_SERIAL_NUMBER}"
