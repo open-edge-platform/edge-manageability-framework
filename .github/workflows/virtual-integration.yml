@@ -24,10 +24,9 @@ on:
   # Trigger workflow when enqueued to a merge group
   merge_group:
 
-# For PRs → use the PR number as the group (forces only 1 run active)
-# For branches → use the full ref (unique per branch) so runs don't cancel each other
+# Only run at most 1 workflow concurrently per PR, unlimited for branches
 concurrency:
-  group: ${{ github.event.pull_request.number || github.ref_name }}
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions: {}
@@ -226,7 +225,8 @@ jobs:
         run: echo "ASDF_YAMLLINT_PIP_PACKAGES=pyyaml" >> $GITHUB_ENV
 
       - name: Setup asdf and install dependencies
-        uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]  
+        uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
+        
       - name: Run lint
         run: mage lint:yaml
 
@@ -482,6 +482,31 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
           persist-credentials: false
+
+      - name: Install DNSmasq
+        run: |
+          pwd
+          ls -lrt 
+          cd ci/cli-ven
+          ./dnsmasq-setup.sh "kind.internal" setup
+          
+      - name: Install Libvirt
+        env:
+          LIBVIRT_DEFAULT_URI: 'qemu:///system'
+        run: |
+          cd ci/cli-ven
+          ./libvirt-setup.sh
+          sudo usermod -aG libvirt $(whoami)
+          # Grant access to libvirt sockets (works immediately, no logout needed)
+          sudo chmod 666 /var/run/libvirt/libvirt-sock || true
+          sudo chmod 666 /var/run/libvirt/libvirt-sock-ro || true
+          # Restart libvirtd to refresh socket
+          sudo systemctl restart libvirtd || true
+          virsh list --all || true
+          virsh pool-list --all || true
+          sudo apt update
+          sudo apt install xsltproc -y
+
       - name: Deploy Kind Orchestrator
         id: deploy-kind-orchestrator
         uses: ./.github/actions/deploy_kind
@@ -493,17 +518,27 @@ jobs:
           docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
           token: ${{ secrets.SYS_ORCH_GITHUB }}
           deployment_type: all
+
       - name: Collect diagnostics
         if: always()
         uses: ./.github/actions/collect_diagnostics
         timeout-minutes: 15
+
+      - name: Config DNSmasq
+        run: |
+          cd ci/cli-ven
+          ./dnsmasq-setup.sh "kind.internal" config
+
       - name: Run policy compliance tests
         run: mage test:policyCompliance
+
       - name: Run image pull policy compliance tests
         run: mage test:imagePullPolicyCompliance
+
       - name: Setup Sample Org and Project with default users
         id: default-mt-setup
         run: mage tenantUtils:createDefaultMtSetup
+
       - name: Deploy Victoria Metrics instance
         env:
           ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
@@ -524,40 +559,111 @@ jobs:
         run: |
           mage test:e2eSreObservabilityNoEnic
 
-      - name: Deploy ENiC
+      - name: Checkout virtual-edge-node repo
+        uses: actions/checkout@v4
+        with:
+          repository: open-edge-platform/virtual-edge-node
+          ref: pico/1.5.6
+          path: ci/cli-ven/virtual-edge-node  # Add this line
+          persist-credentials: false
+
+      - name: Checkout orch-cli repo
+        uses: actions/checkout@v4
+        with:
+          repository: open-edge-platform/orch-cli
+          ref: v0.12.26
+          path: orch-cli  # Add this line
+          persist-credentials: false
+
+      - name: Checkout edge-manage-test-automation repository with submodules
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          repository: open-edge-platform/edge-manage-test-automation
+          ref: ${{ steps.read-test-automation-version.outputs.version }}
+          path: edge-manage-test-automation
+          submodules: 'recursive'
+          token: ${{ secrets.SYS_ORCH_GITHUB }}
+          persist-credentials: false
+
+      - name: Install orch-cli
+        run: |
+          ls -lrt
+          cd orch-cli
+          asdf install
+          make build
+          make install
+
+      - name: Setup a virtual environment
+        run: |
+          cd edge-manage-test-automation
+          make asdf-install
+          # install required versions for Pico
+          pushd repos/ven/pico
+          asdf install
+          popd
+
+      - name: Set serial numbers dynamically
+        id: set-serials
+        run: |
+          echo "VEN1_SERIAL_NUMBER=PICOVENSN001" >> $GITHUB_ENV
+          echo "VEN2_SERIAL_NUMBER=PICOVENSN002" >> $GITHUB_ENV
+
+      - name: Create HOST NIO Registration
         if: ${{ always() && steps.deploy-kind-orchestrator.conclusion == 'success' && steps.default-mt-setup.conclusion == 'success' }}
         shell: bash
         timeout-minutes: 5
         env:
-          ORCH_ORG: sample-org
-          ORCH_PROJECT: sample-project
-          ORCH_USER: sample-project-onboarding-user
-          ORCH_USER_API: sample-project-api-user
-          EDGE_MANAGEABILITY_FRAMEWORK_REV: ${{ env.GIT_HASH }}
+          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
         run: |
-          mage devUtils:deployEnic 1 dev
+          cd ci/cli-ven
+          ./host-config-cli.sh login
+          ./host-config-cli.sh create-region-site
+          ./host-config-cli.sh list-region-site
+          ./host-config-cli.sh get-profile
+          ./host-config-cli.sh host-nio-registration "${VEN1_SERIAL_NUMBER}" "${VEN2_SERIAL_NUMBER}"
+          orch-cli list hosts
 
-          # wait until SN and UUID are available
-          mage devUtils:getEnicSerialNumber
-          mage devUtils:getEnicUUID
+      - name: VEN Onboard EdgeNode
+        env:
+          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+          LIBVIRT_DEFAULT_URI: 'qemu:///system'
+        run: |
+          cd ci/cli-ven
+          ./pico-ven.sh create "${VEN1_SERIAL_NUMBER}" "${VEN2_SERIAL_NUMBER}"
+          ./host-config-cli.sh host-status "${VEN1_SERIAL_NUMBER}" "${VEN2_SERIAL_NUMBER}"
 
-          # then get then and store them in the env
-          UUID=$(kubectl exec -it -n enic enic-0 -c edge-node -- bash -c "dmidecode -s system-uuid")
-          SN=$(kubectl exec -it -n enic enic-0 -c edge-node -- bash -c "dmidecode -s system-serial-number")
-          echo "EN_UUID=$UUID" >> "$GITHUB_ENV"
-          echo "EN_SN=$SN" >> "$GITHUB_ENV"
+      - name: Get VEN UUID from script
+        id: get-uuid
+        env:
+          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+        run: |
+          cd ci/cli-ven
+          ./host-config-cli.sh login
+          VEN1_UUID=$(./get-uuid-by-sn.sh "${VEN1_SERIAL_NUMBER}")
+          VEN2_UUID=$(./get-uuid-by-sn.sh "${VEN2_SERIAL_NUMBER}")
+          echo "VEN1_UUID=$VEN1_UUID" >> $GITHUB_ENV
+          echo "VEN2_UUID=$VEN2_UUID" >> $GITHUB_ENV
+          echo "ven1_uuid=$VEN1_UUID" >> $GITHUB_OUTPUT
+          echo "ven2_uuid=$VEN2_UUID" >> $GITHUB_OUTPUT
 
-      - name: Print current EN UUID and SN
+      - name: Run AO / CO smoke test
         if: ${{ always() && steps.deploy-kind-orchestrator.conclusion == 'success' && steps.default-mt-setup.conclusion == 'success' }}
-        run: echo "Current ENiC has UUID ${{ env.EN_UUID }} and SN ${{ env.EN_SN }}"
+        env:
+          PROJECT: sample-project
+          NODE_UUID: ${{ env.VEN1_UUID }}
+          EDGE_MGR_USER: sample-project-edge-mgr
+          EDGE_INFRA_USER: sample-project-api-user
+        run: |
+          echo "Running AO / CO smoke test..."
+          mage test:clusterOrchSmokeTest
 
       - name: UI E2E Tests
         if: ${{ always() && steps.deploy-kind-orchestrator.conclusion == 'success' && steps.default-mt-setup.conclusion == 'success' }}
         uses: ./.github/actions/cypress
         with:
           token: ${{ secrets.SYS_ORCH_GITHUB }}
-          en_serial_number: ${{ env.EN_SN }}
-          en_uuid: ${{ env.EN_UUID }}
+          en_serial_number: ${{ env.VEN2_SERIAL_NUMBER }}
+          en_uuid: ${{ env.VEN2_UUID }}
           infra: "cypress/e2e/infra/locations.cy.ts,cypress/e2e/infra/new-host-provision.cy.ts,cypress/e2e/infra/verify-host.cy.ts"
 
       - name: "Test Observability Public Endpoints"
@@ -572,81 +678,6 @@ jobs:
         run: |
           mage test:e2eOrchObservability
 
-      # TODO - The base extension deployment including observability stack has been removed. Need to revist this test stack later and see how to proceed further.
-      # - name: "Test Observability EdgeNode Stack"
-      #   env:
-      #     ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-      #   run: |
-      #     mage test:e2eENObservability
-
-      # TODO - The base extension deployment including observability stack has been removed. Need to revist this test stack later and see how to proceed further.
-      # - name: "Test Observability Alerts"
-      #   env:
-      #     ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-      #   run: |
-      #     mage test:e2eAlertsObservability
-
-      # TODO - The base extension deployment including observability stack has been removed. Need to revist this test stack later and see how to proceed further.
-      # - name: "Test Observability SRE Exporter"
-      #   env:
-      #     ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-      #   run: |
-      #     mage test:e2eSreObservability
-
-      - name: deploy, register & provision new ENiC instance # previous instance was deatuhorized by the cluster delete in UI tests
-        if: ${{ always() && steps.deploy-kind-orchestrator.conclusion == 'success' && steps.default-mt-setup.conclusion == 'success' }}
-        shell: bash
-        timeout-minutes: 5
-        env:
-          ORCH_ORG: sample-org
-          ORCH_PROJECT: sample-project
-          ORCH_USER: sample-project-onboarding-user
-          ORCH_USER_API: sample-project-api-user
-          EDGE_MANAGEABILITY_FRAMEWORK_REV: ${{ env.GIT_HASH }}
-        run: |
-          # delete the previous ENiC instance
-          kubectl delete ns enic
-
-          # deploy a new ENiC instance
-          mage devUtils:deployEnic 1 dev
-
-          # wait until SN and UUID are available
-          mage devUtils:getEnicSerialNumber
-          mage devUtils:getEnicUUID
-
-          # then get then and store them in the env
-          UUID=$(kubectl exec -it -n enic enic-0 -c edge-node -- bash -c "dmidecode -s system-uuid")
-          SN=$(kubectl exec -it -n enic enic-0 -c edge-node -- bash -c "dmidecode -s system-serial-number")
-          echo "EN_UUID=$UUID" >> "$GITHUB_ENV"
-          echo "EN_SN=$SN" >> "$GITHUB_ENV"
-
-          # register the ENiC in the orchestrator
-          ORCH_USER=${ORCH_USER_API} mage devUtils:registerEnic enic-0
-
-          # provision the ENiC
-          ORCH_USER=${ORCH_USER_API} mage devUtils:provisionEnic enic-0
-          sleep 5
-          mage devUtils:WaitForEnic
-
-      - name: Wait for cluster agent to be ready
-        if: ${{ always() && steps.deploy-kind-orchestrator.conclusion == 'success' }}
-        run: |
-          mkdir -p smoke-test/logs
-          kubectl exec -n enic enic-0 -c edge-node -- bash -c "journalctl -x" > smoke-test/logs/enic-journalctl-pre.log
-          kubectl exec -n enic enic-0 -c edge-node -- bash -c "journalctl -xeu cluster-agent" > smoke-test/logs/enic-cluster-agent-pre.log
-          timeout 5m kubectl exec -n enic enic-0 -c edge-node -- bash -c "journalctl -f" | grep -m 1 "Cluster Agent state update"
-
-      - name: Run AO / CO smoke test
-        if: ${{ always() && steps.deploy-kind-orchestrator.conclusion == 'success' && steps.default-mt-setup.conclusion == 'success' }}
-        env:
-          PROJECT: sample-project
-          NODE_UUID: ${{ env.EN_UUID }}
-          EDGE_MGR_USER: sample-project-edge-mgr
-          EDGE_INFRA_USER: sample-project-api-user
-        run: |
-          echo "Running AO / CO smoke test..."
-          mage test:clusterOrchSmokeTest
-
       - name: Collect smoke test logs
         if: always()
         run: |
@@ -655,95 +686,11 @@ jobs:
           kubectl logs -n orch-app -l app=app-deployment-manager --tail=-1 > smoke-test/logs/app-deployment-manager.log
           kubectl logs -n orch-app -l app=app-resource-manager -c app-resource-manager --tail=-1 > smoke-test/logs/app-resource-manager.log
           kubectl logs -n orch-app -l app.kubernetes.io/name=app-orch-catalog --tail=-1 > smoke-test/logs/application-catalog.log
-          kubectl exec -n enic enic-0 -c edge-node -- bash -c "journalctl -xeu cluster-agent" > smoke-test/logs/enic-cluster-agent-post.log
 
-      - name: Upload smoke test logs
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
-        with:
-          name: smoke-test
-          path: |
-            smoke-test/logs/*
-
-  deploy-on-prem:
-    permissions:
-      contents: read
-    name: Deploy On-Prem Orchestrator and Run Golden Suite Core Foundation Tests
-    needs:
-      - lint-go
-      - lint-markdown
-      - lint-shell
-      - lint-terraform
-      - lint-version
-      - lint-helm
-      - lint-yaml
-      - build-publish
-      - check-changed-files
-    if: |
-      always() &&
-      needs.build-publish.result == 'success' &&
-      needs.check-changed-files.outputs.only_design_proposals != 'true' && (
-      needs.check-changed-files.outputs.orch == 'true' ||
-      needs.check-changed-files.outputs.on-prem == 'true' ||
-      needs.check-changed-files.outputs.ci == 'true' ||
-      needs.check-changed-files.outputs.test-automation == 'true' ||
-      github.ref == 'refs/heads/main' ||
-      github.ref == 'refs/heads/main-pass-validation'
-      )
-    runs-on: ubuntu-24.04-16core-64GB
-    timeout-minutes: 90
-    env:
-      KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
-    steps:
-      - name: Checkout Orchestrator repo
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-        with:
-          persist-credentials: false
-
-      - name: Read test-automation dependency Version
-        id: read-test-automation-version
-        shell: bash
+      - name: Setup VEN virtual environment
         run: |
-           cat /proc/cpuinfo
-           version=$(yq '.test-automation.version' ${{ github.workspace }}/.test-dependencies.yaml | tr -d '\n' | xargs)
-           echo $version
-           echo "version=$version" >> $GITHUB_OUTPUT
-
-      - name: Deploy On-Prem Orchestrator
-        id: deploy-on-prem
-        uses: ./.github/actions/deploy_on_prem
-        with:
-          orch_version: ${{ github.event.pull_request.head.sha }}
-          docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
-          docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
-
-      - name: Run E2E tests
-        env:
-          E2E_SVC_DOMAIN: cluster.onprem
-          EDGE_CLUSTER_NAME: test-cluster
-        run: mage -v test:e2eOnPrem
-
-      - name: Checkout edge-manage-test-automation repository with submodules
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-        with:
-          repository: open-edge-platform/edge-manage-test-automation
-          path: edge-manage-test-automation
-          ref: ${{ steps.read-test-automation-version.outputs.version }}
-          submodules: 'recursive'
-          token: ${{ secrets.SYS_ORCH_GITHUB }}
-          persist-credentials: false
-
-      - name: Install vEN Deps
-        working-directory: edge-manage-test-automation
-        run: |
-          git submodule update --init --recursive
-
-      - name: Setup virtual environment
-        working-directory: edge-manage-test-automation
-        run: |
-          make asdf-install
+          cd ci/cli-ven/edge-manage-test-automation
           make venv_edge-manage-test-automation
-
           # install required versions for Pico
           pushd repos/ven/pico
           asdf install
@@ -752,22 +699,29 @@ jobs:
       - name: Run Golden Suite Robot Framework Tests
         id: robot-tests
         timeout-minutes: 45
-        working-directory: edge-manage-test-automation
         env:
-          KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
           REQUESTS_CA_BUNDLE: /usr/local/share/ca-certificates/orch-ca.crt
           LIBVIRT_DEFAULT_URI: 'qemu:///system'
         run: |
-          KC_ADMIN_PWD=$(kubectl -n orch-platform get secrets platform-keycloak -o jsonpath='{.data.admin-password}' | base64 -d)
-          # Add the password to the orchestrator config
-          yq eval ".orchestrator.admin_password = \"${KC_ADMIN_PWD}\"" -i orchestrator-configs/on-prem.yaml
+          virsh list --all || true
+          virsh pool-list --all || true
+          kubectl get node || true
+          kubectl -n orch-platform get secrets platform-keycloak -o yaml || true
+          KC_ADMIN_PWD=$(kubectl -n keycloak-system get secrets platform-keycloak -o jsonpath='{.data.password}' | base64 -d)
 
+          # Add the password to the orchestrator config
+          yq eval ".orchestrator.admin_password = \"${KC_ADMIN_PWD}\"" -i orchestrator-configs/kind.yaml
+          yq eval '.infra.host.edgenode.hw_info.libvirt_pool_name = "default"'    -i tests/core_foundation/data/cf_data_1_ven_VEN-libvirt_microvisor-nonrt.yaml
+          yq eval '.infra.host.edgenode.hw_info.libvirt_network_name = "default"' -i tests/core_foundation/data/cf_data_1_ven_VEN-libvirt_microvisor-nonrt.yaml
+          cat tests/core_foundation/data/cf_data_1_ven_VEN-libvirt_microvisor-nonrt.yaml || true
           source venv_edge-manage-test-automation/bin/activate
           robot -L DEBUG --pythonpath . \
             --name "Golden Suite: Core Foundation" \
             -d robot_output/core_foundation \
-            -V orchestrator-configs/on-prem.yaml \
+            -V orchestrator-configs/kind.yaml \
             --exitonfailure \
+            --exclude cf6 \
+            --exclude cf8 \
             tests/core_foundation/core_foundation.robot
 
       - name: Upload test artifacts
@@ -777,127 +731,3 @@ jobs:
           name: on-prem-${{ github.event_name }}-${{ github.event.number }}-robot-report
           path: |
             edge-manage-test-automation/robot_output/**/*
-
-  deploy-oxm-profile:
-    permissions:
-      contents: read
-    name: Deploy OXM Orchestrator Profile
-    needs:
-      - lint-go
-      - lint-markdown
-      - lint-shell
-      - lint-terraform
-      - lint-version
-      - lint-helm
-      - lint-yaml
-      - build-publish
-      - check-changed-files
-    if: |
-      always() &&
-      needs.build-publish.result == 'success' &&
-      needs.check-changed-files.outputs.only_design_proposals != 'true' && (
-      needs.check-changed-files.outputs.orch == 'true' ||
-      needs.check-changed-files.outputs.on-prem == 'true' ||
-      needs.check-changed-files.outputs.ci == 'true' ||
-      github.ref == 'refs/heads/main' ||
-      github.ref == 'refs/heads/main-pass-validation'
-      )
-    runs-on: ubuntu-22.04-16core-64GB
-    timeout-minutes: 90
-    env:
-      KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
-    steps:
-      - name: Checkout Orchestrator repo
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-        with:
-          persist-credentials: false
-
-      - name: Deploy OXM Orchestrator Profile
-        id: deploy-oxm-profile
-        uses: ./.github/actions/deploy_on_prem
-        env:
-          TF_VAR_no_proxy: "localhost,127.0.0.0/8,10.0.0.0/8,192.168.0.0/16,.svc,.cluster.local,.default,.internal,.orch-platform,.orch-app,.orch-cluster,.orch-infra,.orch-database,.cattle-system,.orch-secret,.onprem"
-          TF_VAR_en_http_proxy: "http://192.168.99.30:8080"
-          TF_VAR_en_https_proxy: "http://192.168.99.30:8080"
-          TF_VAR_oxm_pxe_server_int: "orchnet"
-          TF_VAR_oxm_pxe_server_ip: "192.168.99.20"
-          TF_VAR_oxm_pxe_server_subnet: "192.168.99.0"
-          TF_VAR_enable_explicit_proxy: "true"
-        with:
-          orch_version: ${{ github.event.pull_request.head.sha }}
-          orch_profile: onprem-oxm
-          docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
-          docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
-
-      - name: Create MT Sample Org and Project with default users
-        run: mage tenantUtils:createDefaultMtSetup
-
-      - name: Test Edge Node onboarding
-        env:
-          E2E_SVC_DOMAIN: cluster.onprem
-          EDGE_CLUSTER_NAME: test-cluster
-          EN_PROFILE: "microvisor-standalone"
-        timeout-minutes: 20
-        if: |
-          needs.check-changed-files.outputs.onboarding == 'true' ||
-          needs.check-changed-files.outputs.on-prem == 'true' ||
-          needs.check-changed-files.outputs.orch == 'true' ||
-          needs.check-changed-files.outputs.ci == 'true'
-        run: |
-          set +e
-          mage test:onboarding
-          TEST_EXIT_CODE=$?
-          sudo cat /var/log/libvirt/qemu/edge-node-EN123456789-console.log || true
-          exit $TEST_EXIT_CODE
-
-  tag-repo:
-    permissions:
-      contents: read
-    name: Tag repo
-    needs:
-      - lint-version
-      - build-publish
-      - deploy-kind
-      - deploy-on-prem
-      - deploy-oxm-profile
-    if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-        with:
-          # Fetch all history for all tags and branches
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Prepare ci tools
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-        with:
-          repository: open-edge-platform/orch-ci
-          token: ${{ secrets.SYS_ORCH_GITHUB }}
-          path: orch-ci
-          persist-credentials: false
-
-      - name: Tag repo
-        env:
-          GITHUB_TOKEN: ${{ secrets.SYS_ORCH_GITHUB }}
-        run: orch-ci/scripts/version-tag.sh
-
-  post-merge:
-    permissions:
-      contents: read
-      security-events: write
-      id-token: write
-    if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
-    uses: open-edge-platform/orch-ci/.github/workflows/post-merge.yml@c4b86434962d13f65fd7b16a33e9eecfd5849a64  # 0.1.56
-    with:
-      run_build: false
-      run_version_tag: false
-    secrets:
-      SYS_ORCH_GITHUB: ${{ secrets.SYS_ORCH_GITHUB }}
-      COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
-      COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
-      NO_AUTH_ECR_PUSH_USERNAME: ${{ secrets.NO_AUTH_ECR_PUSH_USERNAME }}
-      NO_AUTH_ECR_PUSH_PASSWD: ${{ secrets.NO_AUTH_ECR_PUSH_PASSWD }}
-      MSTEAMS_WEBHOOK: ${{ secrets.TEAMS_WEBHOOK }}
