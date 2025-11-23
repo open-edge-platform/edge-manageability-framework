@@ -535,11 +535,13 @@ jobs:
       - name: Setup virtual environment
         working-directory: edge-manage-test-automation
         run: |
+          git submodule update --init --recursive
           make asdf-install
           make venv_edge-manage-test-automation
-          # install required versions for Pico
+          # install required versions for Pico          
           pushd repos/ven/pico
           asdf install
+          sudo apt-get install xsltproc
           popd	  
       - name: Run Golden Suite Robot Framework Tests
         id: robot-tests
