@@ -42,13 +42,11 @@ create_keycloak_password() {
     kubectl apply -f - <<EOF
 apiVersion: v1
 kind: Secret
-type: Opaque
 metadata:
   name: platform-keycloak
   namespace: $1
 stringData:
-  username: "admin"
-  password: "$2"
+  admin-password: "$2"
 EOF
 }
 
