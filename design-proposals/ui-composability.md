@@ -31,9 +31,9 @@ mfe:
 ### Effects
 
 When an MFE is disabled via this configuration:
-* **Navigation**: It will not appear in the main navigation menu.
-* **Routing**: Its routes will be disabled. Accessing the URL directly (e.g., `/applications/deployments`) will show a "disabled" message instead of the application.
-* **Performance**: The application code for that MFE will not be loaded (lazy loading), reducing the initial bundle size and load time.
+- **Navigation**: It will not appear in the main navigation menu.
+- **Routing**: Its routes will be disabled. Accessing the URL directly (e.g., `/applications/deployments`) will show a "disabled" message instead of the application.
+- **Performance**: The application code for that MFE will not be loaded (lazy loading), reducing the initial bundle size and load time.
 
 ### Flow Diagram
 
@@ -74,4 +74,4 @@ sequenceDiagram
 
 ## Limitations
 
-* **Deployment Required**: Changing the enabled/disabled state of an MFE is a deployment-time configuration. It requires a re-deployment to update the ConfigMap and restart the UI pod. It is not a user-facing toggle that can be changed at runtime without a restart.
+- **Deployment Required**: Changing the enabled/disabled state of an MFE is a deployment-time configuration. It requires a re-deployment to update the ConfigMap and restart the UI pod. It is not a user-facing toggle that can be changed at runtime without a restart.
