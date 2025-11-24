@@ -53,7 +53,7 @@ sequenceDiagram
     helm ->> k8s: Deploy with values
     k8s ->> app: Serve runtime-config.js
     
-    app ->> app: Load App & Read<br/>window.__RUNTIME_CONFIG__
+    Note over app: Load App & Read<br/>window.__RUNTIME_CONFIG__
     
     par Configure Routing
         app ->> router: Define Routes
