@@ -533,7 +533,7 @@ jobs:
       - name: Create default user and run e2e tests
         run: mage devUtils:createDefaultUser test:e2e
 
-      - name: "Test Observability SRE Exporter w/o ENiC"
+      - name: "Test Observability SRE Exporter w/o VEN"
         env:
           ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
         run: |
