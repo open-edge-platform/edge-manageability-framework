@@ -189,10 +189,31 @@ mimir-distributed:
       {{- if .Values.argo.o11y.orchestrator.mimir.structuredConfig.querySchedulerMaxOutstandingRequestsPerTenant }}
       query_scheduler:
         max_outstanding_requests_per_tenant: {{ .Values.argo.o11y.orchestrator.mimir.structuredConfig.querySchedulerMaxOutstandingRequestsPerTenant }}
+        {{- if .Values.argo.o11y.orchestrator.mimir.structuredConfig.querySchedulerGrpcClientConfig }}
+        grpc_client_config:
+          max_recv_msg_size: {{ .Values.argo.o11y.orchestrator.mimir.structuredConfig.querySchedulerGrpcClientConfig.maxRecvMsgSize | default 104857600 }}
+          max_send_msg_size: {{ .Values.argo.o11y.orchestrator.mimir.structuredConfig.querySchedulerGrpcClientConfig.maxSendMsgSize | default 16777216 }}
+        {{- end }}
       {{- end }}
-      {{- if .Values.argo.o11y.orchestrator.mimir.structuredConfig.querierTime }}
+      {{- if .Values.argo.o11y.orchestrator.mimir.structuredConfig.frontendMaxOutstandingRequestsPerTenant }}
+      frontend:
+        max_outstanding_per_tenant: {{ .Values.argo.o11y.orchestrator.mimir.structuredConfig.frontendMaxOutstandingRequestsPerTenant }}
+        {{- if .Values.argo.o11y.orchestrator.mimir.structuredConfig.frontendGrpcClientConfig }}
+        grpc_client_config:
+          max_recv_msg_size: {{ .Values.argo.o11y.orchestrator.mimir.structuredConfig.frontendGrpcClientConfig.maxRecvMsgSize | default 104857600 }}
+        {{- end }}
+      {{- end }}
+      {{- if or .Values.argo.o11y.orchestrator.mimir.structuredConfig.querierTime .Values.argo.o11y.orchestrator.mimir.structuredConfig.querierMaxConcurrent .Values.argo.o11y.orchestrator.mimir.structuredConfig.querierTimeout }}
       querier:
+        {{- if .Values.argo.o11y.orchestrator.mimir.structuredConfig.querierTime }}
         query_store_after: {{ .Values.argo.o11y.orchestrator.mimir.structuredConfig.querierTime }}
+        {{- end }}
+        {{- if .Values.argo.o11y.orchestrator.mimir.structuredConfig.querierMaxConcurrent }}
+        max_concurrent: {{ .Values.argo.o11y.orchestrator.mimir.structuredConfig.querierMaxConcurrent }}
+        {{- end }}
+        {{- if .Values.argo.o11y.orchestrator.mimir.structuredConfig.querierTimeout }}
+        timeout: {{ .Values.argo.o11y.orchestrator.mimir.structuredConfig.querierTimeout }}
+        {{- end }}
       {{- end }}
       limits:
       {{- if .Values.argo.o11y.orchestrator.mimir.structuredConfig.metricsRetentionPeriod }}
@@ -345,16 +366,26 @@ mimir-distributed:
   {{- /* end of with .Values.argo.o11y.orchestrator */}}
   {{- end }}
 
-  {{- with .Values.argo.o11y.orchestrator.mimir.querier.resources }}
+  {{- with .Values.argo.o11y.orchestrator.mimir.querier }}
   querier:
+    {{- if .replicas }}
+    replicas: {{ .replicas }}
+    {{- end }}
+    {{- if .resources }}
     resources:
-      {{- toYaml . | nindent 6 }}
+      {{- toYaml .resources | nindent 6 }}
+    {{- end }}
   {{- end }}
 
-  {{- with .Values.argo.o11y.orchestrator.mimir.query_frontend.resources }}
+  {{- with .Values.argo.o11y.orchestrator.mimir.query_frontend }}
   query_frontend:
+    {{- if .replicas }}
+    replicas: {{ .replicas }}
+    {{- end }}
+    {{- if .resources }}
     resources:
-      {{- toYaml . | nindent 6 }}
+      {{- toYaml .resources | nindent 6 }}
+    {{- end }}
   {{- end }}
   {{- with .Values.argo.o11y.orchestrator.mimir.ruler.resources }}
   ruler:

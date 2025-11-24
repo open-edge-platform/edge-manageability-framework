@@ -416,10 +416,31 @@ mimir-distributed:
       {{- if .Values.argo.o11y.edgeNode.mimir.structuredConfig.querySchedulerMaxOutstandingRequestsPerTenant }}
       query_scheduler:
         max_outstanding_requests_per_tenant: {{ .Values.argo.o11y.edgeNode.mimir.structuredConfig.querySchedulerMaxOutstandingRequestsPerTenant }}
+        {{- if .Values.argo.o11y.edgeNode.mimir.structuredConfig.querySchedulerGrpcClientConfig }}
+        grpc_client_config:
+          max_recv_msg_size: {{ .Values.argo.o11y.edgeNode.mimir.structuredConfig.querySchedulerGrpcClientConfig.maxRecvMsgSize | default 104857600 }}
+          max_send_msg_size: {{ .Values.argo.o11y.edgeNode.mimir.structuredConfig.querySchedulerGrpcClientConfig.maxSendMsgSize | default 16777216 }}
+        {{- end }}
       {{- end }}
-      {{- if .Values.argo.o11y.edgeNode.mimir.structuredConfig.querierTime }}
+      {{- if .Values.argo.o11y.edgeNode.mimir.structuredConfig.frontendMaxOutstandingRequestsPerTenant }}
+      frontend:
+        max_outstanding_per_tenant: {{ .Values.argo.o11y.edgeNode.mimir.structuredConfig.frontendMaxOutstandingRequestsPerTenant }}
+        {{- if .Values.argo.o11y.edgeNode.mimir.structuredConfig.frontendGrpcClientConfig }}
+        grpc_client_config:
+          max_recv_msg_size: {{ .Values.argo.o11y.edgeNode.mimir.structuredConfig.frontendGrpcClientConfig.maxRecvMsgSize | default 104857600 }}
+        {{- end }}
+      {{- end }}
+      {{- if or .Values.argo.o11y.edgeNode.mimir.structuredConfig.querierTime .Values.argo.o11y.edgeNode.mimir.structuredConfig.querierMaxConcurrent .Values.argo.o11y.edgeNode.mimir.structuredConfig.querierTimeout }}
       querier:
+        {{- if .Values.argo.o11y.edgeNode.mimir.structuredConfig.querierTime }}
         query_store_after: {{ .Values.argo.o11y.edgeNode.mimir.structuredConfig.querierTime }}
+        {{- end }}
+        {{- if .Values.argo.o11y.edgeNode.mimir.structuredConfig.querierMaxConcurrent }}
+        max_concurrent: {{ .Values.argo.o11y.edgeNode.mimir.structuredConfig.querierMaxConcurrent }}
+        {{- end }}
+        {{- if .Values.argo.o11y.edgeNode.mimir.structuredConfig.querierTimeout }}
+        timeout: {{ .Values.argo.o11y.edgeNode.mimir.structuredConfig.querierTimeout }}
+        {{- end }}
       {{- end }}
     {{- end }}
       blocks_storage:
@@ -619,6 +640,7 @@ mimir-distributed:
     {{- end }}
     {{- end }}
   {{- end }}
+  {{- if or .dedicatedEdgenodeEnabled (and .edgeNode .edgeNode.mimir .edgeNode.mimir.query_frontend) }}
   query_frontend:
     {{- if .dedicatedEdgenodeEnabled }}
     nodeSelector:
@@ -629,12 +651,18 @@ mimir-distributed:
       value: "observability"
       effect: "NoSchedule"
     {{- end }}
+    {{- if and .edgeNode .edgeNode.mimir .edgeNode.mimir.query_frontend }}
+    {{- if .edgeNode.mimir.query_frontend.replicas }}
+    replicas: {{ .edgeNode.mimir.query_frontend.replicas }}
+    {{- end }}
     {{- if .edgeNode.mimir.query_frontend.resources }}
     resources:
       {{- toYaml .edgeNode.mimir.query_frontend.resources | nindent 6 }}
     {{- else }}
     resources: null
     {{- end }}
+    {{- end }}
+  {{- end }}
 
   {{- if or .dedicatedEdgenodeEnabled (and .edgeNode .edgeNode.mimir .edgeNode.mimir.querier) }}
   querier:

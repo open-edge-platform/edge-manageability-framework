@@ -729,18 +729,20 @@ argo:
               cpu: "64"
               memory: "64Gi"
         querier:
+          replicas: 2
           resources:
             requests:
-              cpu: "1m"
-              memory: "1Mi"
+              cpu: "100m"
+              memory: "512Mi"
             limits:
               cpu: "64"
               memory: "64Gi"
         query_frontend:
+          replicas: 2
           resources:
             requests:
-              cpu: "1m"
-              memory: "1Mi"
+              cpu: "100m"
+              memory: "256Mi"
             limits:
               cpu: "64"
               memory: "64Gi"
@@ -915,18 +917,20 @@ argo:
               cpu: "64"
               memory: "64Gi"
         querier:
+          replicas: 2
           resources:
             requests:
-              cpu: "1m"
-              memory: "1Mi"
+              cpu: "100m"
+              memory: "512Mi"
             limits:
               cpu: "64"
               memory: "64Gi"
         query_frontend:
+          replicas: 2
           resources:
             requests:
-              cpu: "1m"
-              memory: "1Mi"
+              cpu: "100m"
+              memory: "256Mi"
             limits:
               cpu: "64"
               memory: "64Gi"
