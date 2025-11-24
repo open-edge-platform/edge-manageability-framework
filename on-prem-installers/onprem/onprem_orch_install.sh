@@ -205,7 +205,6 @@ create_namespaces() {
     "orch-boots"
     "orch-database"
     "orch-platform"
-    "keycloak-system"
     "orch-app"
     "orch-cluster"
     "orch-infra"
@@ -470,9 +469,7 @@ keycloak_password=$(generate_password)
 postgres_password=$(generate_password)
 create_harbor_secret orch-harbor "$harbor_password"
 create_harbor_password orch-harbor "$harbor_password"
-# Create Keycloak secret in keycloak-system namespace for Keycloak Operator bootstrap
-# ExternalSecret copy-keycloak-admin-to-platform will copy it to orch-platform for keycloak-tenant-controller
-create_keycloak_password keycloak-system "$keycloak_password"
+create_keycloak_password orch-platform "$keycloak_password"
 create_postgres_password orch-database "$postgres_password"
 
 if find "$cwd/$deb_dir_name" -name "onprem-orch-installer_*_amd64.deb" -type f | grep -q .; then

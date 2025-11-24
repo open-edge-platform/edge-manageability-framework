@@ -43,4 +43,3 @@ excludedNamespaces:
   - capr-system
   - capk-system
   - postgresql-operator
-  - keycloak-system
