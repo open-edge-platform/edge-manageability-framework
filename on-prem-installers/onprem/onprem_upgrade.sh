@@ -138,8 +138,8 @@ retrieve_and_apply_config() {
     else
         update_config_variable "$config_file" "SRE_TLS_ENABLED" "false"
     fi
-    
-    VALUE_FILES=$(kubectl get application root-app -n onprem -o jsonpath='{.spec.sources[0].helm.valueFiles[*]}')
+
+    VALUE_FILES=$(kubectl get application root-app -n "$apps_ns" -o jsonpath='{.spec.sources[0].helm.valueFiles[*]}')
 
     if [[ -z "$VALUE_FILES" ]]; then
         echo "⚠️  Warning: No value files found in root-app spec"
@@ -198,7 +198,7 @@ retrieve_and_apply_config() {
     fi
 
     #cleanup old file
-    rm -rf "$ORCH_INSTALLER_PROFILE".yaml   
+    rm -rf "$ORCH_INSTALLER_PROFILE".yaml
 
     # Generate Cluster Config
     ./generate_cluster_yaml.sh onprem
@@ -252,9 +252,9 @@ fi
 # Force sync all OutOfSync applications
 force_sync_outofsync_apps() {
     echo "Checking for OutOfSync applications..."
-    kubectl get apps -A --no-headers | grep "OutOfSync" | awk '{print $2}' | while read -r app; do
+    kubectl get applications -A -o jsonpath='{range .items[?(@.status.sync.status=="OutOfSync")]}{.metadata.name}{"\n"}{end}' | while read -r app; do
         echo "Force syncing $app..."
-        kubectl patch application "$app" -n onprem --type json -p='[{"op": "replace", "path": "/operation", "value": {"initiatedBy": {"username": "admin"}, "sync": {"syncStrategy": {"hook": {}, "apply": {"force": true}}}}}]'
+        kubectl patch -n "$apps_ns" application "$app" --type json -p='[{"op": "replace", "path": "/operation", "value": {"initiatedBy": {"username": "admin"}, "sync": {"syncStrategy": {"hook": {}, "apply": {"force": true}}, "syncOptions": ["Replace=true", "Force=true", "ServerSideApply=true"]}}}]'
     done
     echo "Completed force sync of OutOfSync applications"
 }
@@ -838,6 +838,9 @@ while true; do
 done
 set -e
 
+# Now that PostgreSQL is running, we can restore the secret
+restore_postgres
+
 # Update ALL database user passwords in PostgreSQL after restore
 echo "Updating all database user passwords in PostgreSQL..."
 
@@ -862,9 +865,6 @@ kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgr
 kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-infra-rps_user\" WITH PASSWORD '$RPS_PASSWORD';"
 
 echo "✅ All database user passwords updated successfully"
-
-# Now that PostgreSQL is running, we can restore the secret
-restore_postgres
 
 vault_unseal
 
@@ -912,46 +912,77 @@ kubectl patch secret rps -n orch-infra -p "{\"data\":{\"connectionString\":\"$RP
 
 echo "✅ Updated MPS and RPS connection strings to use postgresql-cluster-rw.orch-database"
 
-# Restart MPS and RPS pods to pick up new connection strings
-echo "Restarting MPS and RPS pods..."
-kubectl delete pod -n orch-infra -l app.kubernetes.io/name=mps --ignore-not-found=true
-kubectl delete pod -n orch-infra -l app.kubernetes.io/name=rps --ignore-not-found=true
+echo "Restart MPS and RPS to pick up new connection strings"
+kubectl rollout restart deployment rps -n orch-infra
+kubectl rollout restart deployment mps -n orch-infra
 
-echo "✅ MPS and RPS pods restarted with updated configuration"
+echo "✅ MPS and RPS deployments restarted"
 
-# Restart inventory pod to refresh database connection to CNPG service
-echo "Restarting inventory pod to refresh database connection..."
-kubectl delete pod -n orch-infra -l app.kubernetes.io/name=inventory --ignore-not-found=true
+echo "Restart inventory to refresh database connection to CNPG service"
+kubectl rollout restart deployment inventory -n orch-infra
 
-# Restart onboarding-manager pod to connect to refreshed inventory service
-echo "Restarting onboarding-manager pod..."
-kubectl delete pod -n orch-infra -l app.kubernetes.io/name=onboarding-manager --ignore-not-found=true
+echo "✅ inventory deployment restarted"
 
-# Restart keycloak-tenant-controller pod to resolve Vault authentication issues
-echo "Restarting keycloak-tenant-controller pod..."
-kubectl delete pod -n orch-platform keycloak-tenant-controller-set-0 --ignore-not-found=true
+echo "Restart onboarding-manager to connect to refreshed inventory service"
+kubectl rollout restart deployment onboarding-manager -n orch-infra
 
-# Restart harbor-oci-database pod to refresh database connection
-echo "Restarting harbor-oci-database pod..."
-kubectl delete pod -n orch-harbor harbor-oci-database-0 --ignore-not-found=true
+echo "✅ onboarding-manager deployment restarted"
 
-# Apply External Secrets CRDs with server-side apply to avoid annotation size limits (>262KB)
+echo "Restart keycloak-tenant-controller to resolve vault authentication issues"
+kubectl rollout restart statefulset/keycloak-tenant-controller-set -n orch-platform 
+
+echo "✅ keycloak-tenant-controller restarted"
+
+echo "Restart harbor-oci-database to refresh database connection"
+kubectl rollout restart statefulset/harbor-oci-database -n orch-harbor
+
+echo "✅ harbor-oci-database restarted"
+
+# Apply External Secrets CRDs with server-side apply
 echo "Applying external-secrets CRDs with server-side apply..."
 kubectl apply --server-side=true --force-conflicts -f https://raw.githubusercontent.com/external-secrets/external-secrets/main/deploy/crds/bundle.yaml || true
 
-VERSION=$(curl -L -s https://raw.githubusercontent.com/argoproj/argo-cd/stable/VERSION)
-curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/download/v$VERSION/argocd-linux-amd64
-sudo install -m 555 argocd-linux-amd64 /usr/local/bin/argocd
-rm argocd-linux-amd64
+# Force replace sync external-secrets application using JSON patch
+echo "Force syncing external-secrets application with JSON patch..."
+kubectl patch application external-secrets -n "$apps_ns" \
+  --type='json' \
+  --patch='[{
+    "op": "replace",
+    "path": "/operation",
+    "value": {
+      "initiatedBy": {"username": "admin"},
+      "sync": {
+        "syncStrategy": {
+          "hook": {},
+          "apply": {"force": true}
+        },
+        "syncOptions": [
+          "Replace=true",
+          "Force=true", 
+          "ServerSideApply=true",
+          "CreateNamespace=true"
+        ]
+      }
+    }
+  }]'
 
-ADMIN_PASSWD=$(kubectl get secret -n argocd argocd-initial-admin-secret -o yaml | yq .data.password | base64 -d)
-ARGO_IP=$(kubectl get svc argocd-server -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-argocd login "${ARGO_IP}" --username admin --password "${ADMIN_PASSWD}" --insecure
+# Monitor the sync operation
+echo "Monitoring sync progress..."
+kubectl get application external-secrets -n "$apps_ns" -w --no-headers -o custom-columns="SYNC:.status.sync.status,OPERATION:.status.operationState.phase" &
+WATCH_PID=$!
 
-# Replace force sync external-secrets application
-argocd app sync onprem/external-secrets --force --replace --async
+# Wait for completion with timeout - pass the variable to the subshell
+timeout 300 bash -c "while [[ \"\$(kubectl get application external-secrets -n "$apps_ns" -o jsonpath='{.status.operationState.phase}')\" == \"Running\" ]]; do sleep 5; done" || {
+    echo "Sync operation timed out"
+    kill $WATCH_PID 2>/dev/null
+}
 
-sleep 15
+kill $WATCH_PID 2>/dev/null
+
+# Final status check
+echo "Final status:"
+kubectl describe application external-secrets -n "$apps_ns" | grep -A 10 "Status:"
+
 # Force sync all OutOfSync applications
 force_sync_outofsync_apps
 

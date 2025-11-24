@@ -66,11 +66,21 @@ delete_postgres() {
   kubectl patch application -n $application_namespace postgresql-secrets  -p '{"metadata": {"finalizers": ["resources-finalizer.argocd.argoproj.io"]}}' --type merge
   kubectl delete application -n $application_namespace postgresql-secrets --cascade=background
   # background as pvc will not be deleted until app deletion
-  kubectl delete pvc -n $postgres_namespace data-postgresql-0 &
-  # patch ensures cascade delete
-  kubectl patch application -n $application_namespace postgresql  -p '{"metadata": {"finalizers": ["resources-finalizer.argocd.argoproj.io"]}}' --type merge
-  kubectl delete application -n $application_namespace postgresql --cascade=background
+  kubectl delete pvc -n $postgres_namespace data-postgresql-0 --ignore-not-found=true &
 
+  # patch ensures cascade delete
+  if kubectl get application postgresql -n "$application_namespace" --no-headers >/dev/null 2>&1; then
+    echo "Found postgresql application, applying finalizer patch..."
+    if kubectl patch application postgresql -n "$application_namespace" \
+        -p '{"metadata": {"finalizers": ["resources-finalizer.argocd.argoproj.io"]}}' --type merge; then
+        echo "✅ Finalizer patch applied successfully"
+        kubectl delete application -n $application_namespace postgresql --cascade=background
+    else
+        echo "❌ Failed to apply finalizer patch"
+    fi
+  else
+      echo "postgresql application not found in namespace $application_namespace, skipping patch"
+  fi
 
   kubectl delete secret --ignore-not-found=true -n $postgres_namespace postgresql
 }
