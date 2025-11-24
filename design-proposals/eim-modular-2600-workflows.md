@@ -72,11 +72,12 @@ manageability toolkit edge node components like rpc-go, rpc etc.
 up the channel for the agents to talk to the control plane. The configuration includes provisioning credentials and
 password to setup the required CIRA (Client initiated remote access) channel.
 10. Customer using CLI is able to list the connected edge node from the control plane as part of listing hosts.
-11. Customer using CLI initiate the vPRO/AMT device activation workflow on the connected edge node. This step should support for ACM (Admin Control Mode) and CCM (Client Control Mode) activation modes. It should also support.
-12. Customer using CLI is able to monitor the progress of the vPRO/AMT device activation workflow.
-13. Upon successful completion of the workflow, the edge node is now activated and ready for out-of-band
+11. Customer using CLI initiate the vPRO/AMT device activation workflow on the connected edge node. This step should
+support for ACM (Admin Control Mode) and CCM (Client Control Mode) activation modes. It should also support.
+13. Customer using CLI is able to monitor the progress of the vPRO/AMT device activation workflow.
+14. Upon successful completion of the workflow, the edge node is now activated and ready for out-of-band
  management using Intel DMT. Customer can verify this using the CLI command.
-14. Customer should also be able to see the status of AMT activation not performed on ISM and non-vPRO devices.
+15. Customer should also be able to see the status of AMT activation not performed on ISM and non-vPRO devices.
 
 ```mermaid
 sequenceDiagram
@@ -343,7 +344,7 @@ sequenceDiagram
   - Orch-CLI with commands supporting pre-registration of edge nodes, configuring ssh and cloud-init profiles,
     cluster templates and deployment packages
 - **Service bundles**
-  - EIM control plane services charts and image reference for inventory, tenant-controller, Host resource manger, 
+  - EIM control plane services charts and image reference for inventory, tenant-controller, Host resource manger,
     Onboarding manager, OS profile manager, DKAM and Tinker bell services.
   - Configuration manifest for EIM control plane.
   
