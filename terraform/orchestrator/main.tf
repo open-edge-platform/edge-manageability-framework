@@ -300,6 +300,7 @@ resource "null_resource" "copy_files" {
       "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env EN_FTP_PROXY ${var.ftp_proxy}'",
       "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env EN_SOCKS_PROXY ${var.socks_proxy}'",
       "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env EN_NO_PROXY ${var.no_proxy}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env GIT_PROXY ${var.git_proxy}'",
       "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env OXM_PXE_SERVER_INT ${var.oxm_pxe_server_int}'",
       "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env OXM_PXE_SERVER_IP ${var.oxm_pxe_server_ip}'",
       "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env OXM_PXE_SERVER_SUBNET ${var.oxm_pxe_server_subnet}'",

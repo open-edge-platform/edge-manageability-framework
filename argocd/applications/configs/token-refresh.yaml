@@ -5,3 +5,5 @@
 refreshInterval: "5m"
 authEndpoint: "https://login.microsoftonline.com"
 authPath: "/organizations/oauth2/v2.0/token"
+
+externalSecretsApiGroup: external-secrets.io/v1
