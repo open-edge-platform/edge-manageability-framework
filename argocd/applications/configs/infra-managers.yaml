@@ -17,7 +17,7 @@ host-manager:
     secretName: "tls-orch"
     tlsOption: "gateway-tls"
   oidc:
-    oidc_server_url: "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master"
+    oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
   multiTenancy:
     enforceMultiTenancy: "true"
   resources: null
@@ -36,7 +36,7 @@ maintenance-manager:
     secretName: "tls-orch"
     tlsOption: "gateway-tls"
   oidc:
-    oidc_server_url: "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master"
+    oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
   telemetryMgrArgs:
     enableVal: false  # disable telemetry profile validation
   multiTenancy:
@@ -66,7 +66,7 @@ telemetry-manager:
     secretName: "tls-orch"
     tlsOption: "gateway-tls"
   oidc:
-    oidc_server_url: "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master"
+    oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
   multiTenancy:
     enforceMultiTenancy: "true"
   resources: null
@@ -75,7 +75,7 @@ telemetry-manager:
 
 os-resource-manager:
   managerArgs:
-    osProfileRevision: 0.8.12
+    osProfileRevision: 0.9.0
     osSecurityFeatureEnable: false
     inventoryAddress: "inventory.orch-infra.svc.cluster.local:50051"
     traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
@@ -85,7 +85,7 @@ os-resource-manager:
   image:
     pullPolicy: IfNotPresent
   oidc:
-    oidc_server_url: "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master"
+    oidc_server_url: "http://platform-keycloak.orch-platform.svc.cluster.local/realms/master"
   autoProvision:
     enabled: false  # autoprovisioning disabled by default, can be enabled by enable-autoprovision profile
   multiTenancy:
@@ -104,7 +104,7 @@ attestationstatus-manager:
     secretName: "tls-orch"
     tlsOption: "gateway-tls"
   oidc:
-    oidc_server_url: "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master"
+    oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
   multiTenancy:
     enforceMultiTenancy: "true"
   resources: null
