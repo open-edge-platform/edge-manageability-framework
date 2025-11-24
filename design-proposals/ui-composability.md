@@ -6,7 +6,7 @@ Last updated: 11/23/2025
 
 ## Abstract
 
-Currently, the Edge Orchestrator UI loads all Micro-Frontends (MFEs) regardless of whether they are needed or enabled in a specific deployment. This proposal describes a mechanism to explicitly enable or disable specific MFEs (Infrastructure, Deployments, Cluster Orchestration, Admin) via configuration, making the UI dynamic and adaptable to different deployment scenarios.
+Currently, the Edge Orchestrator UI loads all Micro-Frontends (MFEs) regardless of whether they are needed by a specific user. This proposal describes a mechanism to explicitly enable or disable specific MFEs (Infra, Cluster Orch, App Orch, Admin) via configuration, making the UI dynamic and adaptable to different deployment scenarios.
 
 ## Proposal
 
@@ -20,10 +20,10 @@ To change which components are active, the `mfe` section in `apps/root/deploy/va
 
 ```yaml
 mfe:
-  app_orch: true      # Controls "Deployments" tab
-  infra: true         # Controls "Infrastructure" tab
+  app_orch: true      # Controls Deployments tab/features
+  infra: true         # Controls Infrastructure tab/features
   cluster_orch: true  # Controls Cluster Orchestration features
-  admin: true         # Controls "Admin" features
+  admin: true         # Controls Admin features
 ```
 
 > **Note**: Currently, this configuration is managed directly within the `orch-ui` repository. In the future, we plan to expose these controls through the Edge Manageability Framework (EMF) configuration, allowing for centralized management of UI capabilities alongside other platform settings.
