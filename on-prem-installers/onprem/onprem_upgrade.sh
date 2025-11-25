@@ -249,10 +249,29 @@ fi
     kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 }
 
+terminate_existing_sync() {
+    local app_name=$1
+    local namespace=$2
+
+    local current_phase=$(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.operationState.phase}' 2>/dev/null)
+
+    if [[ "$current_phase" == "Running" ]]; then
+        echo "🛑 Terminating existing sync operation..."
+        kubectl patch application "$app_name" -n "$namespace" --type='merge' -p='{"operation": null}'
+        
+        # Wait for termination
+        timeout 30 bash -c "while [[ \"\$(kubectl get application $app_name -n $namespace -o jsonpath='{.status.operationState.phase}' 2>/dev/null)\" == \"Running\" ]]; do sleep 2; done"
+        echo "✅ Existing operation terminated"
+    else
+        echo "ℹ️  No running operation to terminate"
+    fi
+}
+
 # Force sync all OutOfSync applications
 force_sync_outofsync_apps() {
     echo "Checking for OutOfSync applications..."
     kubectl get applications -A -o jsonpath='{range .items[?(@.status.sync.status=="OutOfSync")]}{.metadata.name}{"\n"}{end}' | while read -r app; do
+        terminate_existing_sync "$app" "$apps_ns"
         echo "Force syncing $app..."
         kubectl patch -n "$apps_ns" application "$app" --type json -p='[{"op": "replace", "path": "/operation", "value": {"initiatedBy": {"username": "admin"}, "sync": {"syncStrategy": {"hook": {}, "apply": {"force": true}}, "syncOptions": ["Replace=true", "Force=true", "ServerSideApply=true"]}}}]'
     done
@@ -940,7 +959,7 @@ echo "✅ harbor-oci-database restarted"
 
 # Apply External Secrets CRDs with server-side apply
 echo "Applying external-secrets CRDs with server-side apply..."
-kubectl apply --server-side=true --force-conflicts -f https://raw.githubusercontent.com/external-secrets/external-secrets/main/deploy/crds/bundle.yaml || true
+kubectl apply --server-side=true --force-conflicts -f https://raw.githubusercontent.com/external-secrets/external-secrets/refs/tags/v0.20.4/deploy/crds/bundle.yaml || true
 
 # Force replace sync external-secrets application using JSON patch
 echo "Force syncing external-secrets application with JSON patch..."
@@ -958,9 +977,8 @@ kubectl patch application external-secrets -n "$apps_ns" \
         },
         "syncOptions": [
           "Replace=true",
-          "Force=true", 
-          "ServerSideApply=true",
-          "CreateNamespace=true"
+          "Force=true",
+          "ServerSideApply=true"
         ]
       }
     }
