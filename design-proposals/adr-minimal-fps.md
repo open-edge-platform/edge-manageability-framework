@@ -10,6 +10,48 @@ The `eim-modular-decomposition.md` design proposal outlines a strategy to decomp
 
 To enable the modular evolution tracks, particularly "Track #1 (Status Quo + Use Case Enablement)" and "Track #2 (Bring-Your-Own Infrastructure)", we must first define a clear, minimal set of foundational services required for any functional EIM deployment. This ADR specifies that minimal core.
 
+### Platform components used by EIM
+
+#### Summary Table
+| Pod in orch-infra       | Connects to External Service | Target Namespace | Service/Purpose            |
+|--------------------------|-----------------------------|------------------|----------------------------|
+| attestationstatusmgr     | platform-keycloak          | orch-platform    | OIDC Authentication        |
+| dkam                     | platform-keycloak          | orch-platform    | OIDC Authentication        |
+| dkam                     | rs-proxy                   | orch-platform    | Resource Proxy             |
+| dm-manager               | platform-keycloak          | orch-platform    | OIDC Authentication        |
+| host-manager             | platform-keycloak          | orch-platform    | OIDC Authentication        |
+| maintenance-manager      | platform-keycloak          | orch-platform    | OIDC Authentication        |
+| mps                      | vault                      | orch-platform    | Secrets Management         |
+| onboarding-manager       | vault                      | orch-platform    | Secrets Management         |
+| onboarding-manager       | platform-keycloak          | orch-platform    | OIDC Authentication        |
+| onboarding-manager       | rs-proxy                   | orch-platform    | Resource Proxy             |
+| os-resource-manager      | platform-keycloak          | orch-platform    | OIDC Authentication        |
+| os-resource-manager      | rs-proxy                   | orch-platform    | Resource Proxy             |
+| os-resource-manager      | rs-proxy-files             | orch-platform    | File Resource Proxy        |
+| rps                      | vault                      | orch-platform    | Secrets Management         |
+| telemetry-manager        | platform-keycloak          | orch-platform    | OIDC Authentication        |
+| tenant-controller        | vault                      | orch-platform    | Secrets Management         |
+
+---
+
+#### Key External Services in orch-platform Namespace
+
+##### platform-keycloak
+- **Used by:** attestationstatusmgr, dkam, dm-manager, host-manager, maintenance-manager, onboarding-manager, os-resource-manager, telemetry-manager  
+- **Purpose:** OIDC/OAuth2 authentication and authorization  
+
+##### vault
+- **Used by:** mps, rps, onboarding-manager, tenant-controller  
+- **Purpose:** Secrets management and secure credential storage  
+
+##### rs-proxy
+- **Used by:** dkam, onboarding-manager, os-resource-manager  
+- **Purpose:** Resource proxy service  
+
+##### rs-proxy-files 
+- **Used by:** os-resource-manager  
+- **Purpose:** File resource proxy service  
+
 ## Decision
 
 We will define the minimal required Foundation Platform Services (FPS) stack for the Edge Management Framework (EMF) to consist of the following four components:
