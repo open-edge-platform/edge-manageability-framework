@@ -874,15 +874,15 @@ VAULT_PASSWORD=$(grep "^Vault:" postgres-secrets-password.txt | cut -d' ' -f2 | 
 POSTGRESQL_PASSWORD=$(grep "^PostgreSQL:" postgres-secrets-password.txt | cut -d' ' -f2 | base64 -d)
 
 # Update passwords for all database users
-kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER orch-platform-vault_user WITH PASSWORD '$VAULT_PASSWORD';"
-kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER orch-infra-alerting_user WITH PASSWORD '$ALERTING_PASSWORD';"
-kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER orch-app-app-orch-catalog_user WITH PASSWORD '$CATALOG_PASSWORD';"
-kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER orch-infra-inventory_user WITH PASSWORD '$INVENTORY_PASSWORD';"
-kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER orch-iam-iam-tenancy_user WITH PASSWORD '$IAM_TENANCY_PASSWORD';"
-kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER orch-platform-platform-keycloak_user WITH PASSWORD '$KEYCLOAK_PASSWORD';"
-kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER orch-infra-mps_user WITH PASSWORD '$MPS_PASSWORD';"
-kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER orch-infra-rps_user WITH PASSWORD '$RPS_PASSWORD';"
-kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER orch-database-postgresql_user WITH PASSWORD '$POSTGRESQL_PASSWORD';"
+kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-platform-vault_user\" WITH PASSWORD '$VAULT_PASSWORD';"
+kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-infra-alerting_user\" WITH PASSWORD '$ALERTING_PASSWORD';"
+kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-app-app-orch-catalog_user\" WITH PASSWORD '$CATALOG_PASSWORD';"
+kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-infra-inventory_user\" WITH PASSWORD '$INVENTORY_PASSWORD';"
+kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-iam-iam-tenancy_user\" WITH PASSWORD '$IAM_TENANCY_PASSWORD';"
+kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-platform-platform-keycloak_user\" WITH PASSWORD '$KEYCLOAK_PASSWORD';"
+kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-infra-mps_user\" WITH PASSWORD '$MPS_PASSWORD';"
+kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-infra-rps_user\" WITH PASSWORD '$RPS_PASSWORD';"
+kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-database-postgresql_user\" WITH PASSWORD '$POSTGRESQL_PASSWORD';"
 
 echo "✅ All database user passwords updated successfully"
 
@@ -947,6 +947,11 @@ echo "Restart onboarding-manager to connect to refreshed inventory service"
 kubectl rollout restart deployment onboarding-manager -n orch-infra
 
 echo "✅ onboarding-manager deployment restarted"
+
+echo "Restart dkam to refresh connection"
+kubectl rollout restart deployment dkam -n orch-infra
+
+echo "✅ dkam deployment restarted"
 
 echo "Restart keycloak-tenant-controller to resolve vault authentication issues"
 kubectl rollout restart statefulset/keycloak-tenant-controller-set -n orch-platform 
