@@ -91,7 +91,7 @@ get_postgres_pod() {
 
 restore_postgres() {
   podname=$(get_postgres_pod)
- # kubectl exec -n $postgres_namespace $podname -- /bin/bash -c "$(typeset -f disable_security); disable_security"
+
   remote_backup_path="/var/lib/postgresql/data/${postgres_namespace}_backup.sql"
 
   kubectl cp "$local_backup_path" "$postgres_namespace/$podname:$remote_backup_path" -c postgres
