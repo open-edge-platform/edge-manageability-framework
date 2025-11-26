@@ -1073,32 +1073,100 @@ kill $WATCH_PID 2>/dev/null
 echo "Final status:"
 kubectl describe application external-secrets -n "$apps_ns" | grep -A 10 "Status:"
 
+# Function to check and force sync application if not healthy
+check_and_sync_app() {
+    local app_name=$1
+    local namespace=$2
+    local max_retries=${3:-2}  # Default to 2 retries if not specified
+    
+    for ((i=1; i<=max_retries; i++)); do
+        app_status=$(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
+        
+        if [[ "$app_status" == "Synced Healthy" ]]; then
+            echo "✅ $app_name is Synced and Healthy"
+            return 0
+        fi
+        
+        echo "⚠️  $app_name is not Synced and Healthy (status: $app_status). Force-syncing... (attempt $i/$max_retries)"
+        force_sync_outofsync_app "$app_name" "$namespace"
+        echo "✅ $app_name sync triggered"
+        sleep 30
+    done
+    
+    echo "⚠️  $app_name may still require attention after $max_retries attempts"
+}
+
+check_and_sync_app external-secrets "$apps_ns"
+
+check_and_sync_app copy-app-gitea-cred-to-fleet "$apps_ns"
+check_and_sync_app copy-ca-cert-boots-to-gateway "$apps_ns"
+check_and_sync_app copy-ca-cert-boots-to-infra "$apps_ns"
+check_and_sync_app copy-ca-cert-gateway-to-cattle "$apps_ns"
+check_and_sync_app copy-ca-cert-gateway-to-infra "$apps_ns"
+check_and_sync_app copy-ca-cert-gitea-to-app "$apps_ns"
+check_and_sync_app copy-ca-cert-gitea-to-cluster "$apps_ns"
+check_and_sync_app copy-cluster-gitea-cred-to-fleet "$apps_ns"
+check_and_sync_app copy-keycloak-admin-to-infra "$apps_ns"
+
+check_and_sync_app orchestrator-observability "$apps_ns"
+check_and_sync_app edgenode-observability "$apps_ns"
+
+check_and_sync_app fleet-rs-secret "$apps_ns"
+
+
 vault_unseal
 
-force_sync_outofsync_app platform-keycloak $apps_ns
-force_sync_outofsync_app external-secrets $apps_ns
+# Force delete the keycloak-config-cli job if it's stuck in a hook
+if kubectl get job platform-keycloak-keycloak-config-cli -n orch-platform >/dev/null 2>&1; then
+    echo "Removing stuck keycloak-config-cli job hook..."
+    kubectl patch job platform-keycloak-keycloak-config-cli -n orch-platform \
+        --type='merge' \
+        -p='{"metadata":{"finalizers":[]}}'
+    kubectl delete job platform-keycloak-keycloak-config-cli -n orch-platform --force --grace-period=0 || true
+    echo "✅ Removed keycloak-config-cli job"
+fi
 
-force_sync_outofsync_app copy-app-gitea-cred-to-fleet $apps_ns
-force_sync_outofsync_app copy-ca-cert-boots-to-gateway $apps_ns
-force_sync_outofsync_app copy-ca-cert-boots-to-infra $apps_ns
-force_sync_outofsync_app copy-ca-cert-gateway-to-cattle $apps_ns
-force_sync_outofsync_app copy-ca-cert-gateway-to-infra $apps_ns
-force_sync_outofsync_app copy-ca-cert-gitea-to-app $apps_ns
-force_sync_outofsync_app copy-ca-cert-gitea-to-cluster $apps_ns
-force_sync_outofsync_app copy-cluster-gitea-cred-to-fleet $apps_ns
-force_sync_outofsync_app copy-keycloak-admin-to-infra $apps_ns
+check_and_sync_app platform-keycloak "$apps_ns"
 
-force_sync_outofsync_app edgenode-observability $apps_ns
+# Force delete the keycloak-config-cli job if it's stuck in a hook
+if kubectl get job platform-keycloak-keycloak-config-cli -n orch-platform >/dev/null 2>&1; then
+    echo "Removing stuck keycloak-config-cli job hook..."
+    kubectl patch job platform-keycloak-keycloak-config-cli -n orch-platform \
+        --type='merge' \
+        -p='{"metadata":{"finalizers":[]}}'
+    kubectl delete job platform-keycloak-keycloak-config-cli -n orch-platform --force --grace-period=0 || true
+    echo "✅ Removed keycloak-config-cli job"
+fi
+
+check_and_sync_app platform-keycloak "$apps_ns"
+
+# Delete cluster-manager-credentials-script job if it exists
+if kubectl get job cluster-manager-credentials-script -n orch-cluster >/dev/null 2>&1; then
+    echo "Deleting cluster-manager-credentials-script job..."
+    kubectl delete job cluster-manager-credentials-script -n orch-cluster --force --grace-period=0 || true
+    echo "✅ cluster-manager-credentials-script job deleted"
+fi
 
 # This needs to be added back
 #force_sync_outofsync_apps
+
+# Check if nginx-ingress-pxe-boots is Synced and Healthy
+echo "Checking nginx-ingress-pxe-boots application status..."
+app_status=$(kubectl get application nginx-ingress-pxe-boots -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
+
+if [[ "$app_status" != "Synced Healthy" ]]; then
+    echo "nginx-ingress-pxe-boots is not Synced and Healthy (status: $app_status). Deleting tls-boots secret..."
+    kubectl delete secret tls-boots -n orch-boots --ignore-not-found=true
+    echo "✅ tls-boots secret deleted"
+else
+    echo "✅ nginx-ingress-pxe-boots is Synced and Healthy, no action needed"
+fi
 
 
 # Run after upgrade script
 ./after_upgrade_restart.sh
 
 sleep 15
-
 
 # Force sync all OutOfSync applications
 #force_sync_outofsync_apps
