@@ -178,7 +178,7 @@ retrieve_and_apply_config() {
         DISABLE_O11Y_PROFILE="true"
         echo "⛔ Observability (O11y) profile is DISABLED"
     fi
-    
+
     if echo "$VALUE_FILES" | grep -q "enable-singleTenancy.yaml"; then
         SINGLE_TENANCY_PROFILE="true"
         echo "✅ Single Tenancy is ENABLED"
@@ -276,6 +276,15 @@ force_sync_outofsync_apps() {
         kubectl patch -n "$apps_ns" application "$app" --type json -p='[{"op": "replace", "path": "/operation", "value": {"initiatedBy": {"username": "admin"}, "sync": {"syncStrategy": {"hook": {}, "apply": {"force": true}}, "syncOptions": ["Replace=true", "Force=true", "ServerSideApply=true"]}}}]'
     done
     echo "Completed force sync of OutOfSync applications"
+}
+
+force_sync_outofsync_app() {
+    local app_name=$1
+    local namespace=$2
+
+    terminate_existing_sync "$app_name" "$namespace"
+    echo "Force syncing $app_name..."
+    kubectl patch -n "$namespace" application "$app_name" --type json -p='[{"op": "replace", "path": "/operation", "value": {"initiatedBy": {"username": "admin"}, "sync": {"syncStrategy": {"hook": {}, "apply": {"force": true}}, "syncOptions": ["Replace=true", "Force=true", "ServerSideApply=true"]}}}]'
 }
 
 # Checks if orchestrator is currently installed on the node
@@ -775,8 +784,6 @@ EOF
     # Patch postgresql secret
     #kubectl patch secret -n orch-database postgresql -p "{\"data\": {\"postgres-password\": \"$POSTGRESQL\"}}" --type=merge
 }
-# delete_postgres
-
 
 # Stop sync operation for root-app, so it won't be synced with the old version of the application.
 kubectl patch application root-app -n "$apps_ns" --type merge -p '{"operation":null}'
@@ -954,14 +961,73 @@ kubectl rollout restart deployment dkam -n orch-infra
 echo "✅ dkam deployment restarted"
 
 echo "Restart keycloak-tenant-controller to resolve vault authentication issues"
-kubectl rollout restart statefulset/keycloak-tenant-controller-set -n orch-platform 
 
-echo "✅ keycloak-tenant-controller restarted"
+# Function to restart a StatefulSet by scaling to 0 and back
+restart_statefulset() {
+    local name=$1
+    local namespace=$2
+    
+    echo "Restarting StatefulSet $name in namespace $namespace..."
+    
+    # Get current replica count
+    REPLICAS=$(kubectl get statefulset "$name" -n "$namespace" -o jsonpath='{.spec.replicas}')
+    echo "Current replicas: $REPLICAS"
+    
+    # Scale to 0
+    kubectl scale statefulset "$name" -n "$namespace" --replicas=0
+    
+    # Wait for pods to terminate
+    kubectl wait --for=delete pod -l app="$name" -n "$namespace" --timeout=300s
+    
+    # Scale back to original replica count
+    kubectl scale statefulset "$name" -n "$namespace" --replicas="$REPLICAS"
+    
+    echo "✅ $name restarted"
+}
 
-echo "Restart harbor-oci-database to refresh database connection"
-kubectl rollout restart statefulset/harbor-oci-database -n orch-harbor
+# Function to find and restart all StatefulSets in an application
+restart_app_statefulsets() {
+    local app_name=$1
+    local namespace=$2
+    
+    echo "Finding StatefulSets for application $app_name in namespace $namespace..."
+    
+    # Get all StatefulSets with the app label
+    STATEFULSETS=$(kubectl get statefulset -n "$namespace" -l app="$app_name" -o jsonpath='{.items[*].metadata.name}')
+    
+    if [[ -z "$STATEFULSETS" ]]; then
+        echo "No StatefulSets found for application $app_name"
+        return
+    fi
+    
+    # Restart each StatefulSet
+    for sts in $STATEFULSETS; do
+        restart_statefulset "$sts" "$namespace"
+    done
+    
+    echo "✅ All StatefulSets for $app_name restarted"
+}
 
-echo "✅ harbor-oci-database restarted"
+echo "Restart keycloak-tenant-controller to refresh connection"
+restart_statefulset keycloak-tenant-controller-set orch-platform
+
+echo "Restart harbor-oci-database to refresh connection"
+restart_statefulset harbor-oci-database orch-harbor
+
+# Restart harbor-oci-core to refresh connection
+echo "Restart harbor-oci-core to refresh connection"
+kubectl rollout restart deployment harbor-oci-core -n orch-harbor
+
+echo "✅ harbor-oci-core restarted"
+
+# Clean up Keycloak config CLI job
+if kubectl get job platform-keycloak-keycloak-config-cli -n orch-platform >/dev/null 2>&1; then
+kubectl patch job platform-keycloak-keycloak-config-cli -n orch-platform \
+        --type='merge' \
+        -p='{"metadata":{"finalizers":[]}}'
+    kubectl delete job platform-keycloak-keycloak-config-cli -n orch-platform --force --grace-period=0
+    echo "✅ platform-keycloak-keycloak-config-cli removed"
+fi
 
 # Apply External Secrets CRDs with server-side apply
 echo "Applying external-secrets CRDs with server-side apply..."
@@ -1007,14 +1073,37 @@ kill $WATCH_PID 2>/dev/null
 echo "Final status:"
 kubectl describe application external-secrets -n "$apps_ns" | grep -A 10 "Status:"
 
-# Force sync all OutOfSync applications
-force_sync_outofsync_apps
+vault_unseal
+
+force_sync_outofsync_app platform-keycloak $apps_ns
+force_sync_outofsync_app external-secrets $apps_ns
+
+force_sync_outofsync_app copy-app-gitea-cred-to-fleet $apps_ns
+force_sync_outofsync_app copy-ca-cert-boots-to-gateway $apps_ns
+force_sync_outofsync_app copy-ca-cert-boots-to-infra $apps_ns
+force_sync_outofsync_app copy-ca-cert-gateway-to-cattle $apps_ns
+force_sync_outofsync_app copy-ca-cert-gateway-to-infra $apps_ns
+force_sync_outofsync_app copy-ca-cert-gitea-to-app $apps_ns
+force_sync_outofsync_app copy-ca-cert-gitea-to-cluster $apps_ns
+force_sync_outofsync_app copy-cluster-gitea-cred-to-fleet $apps_ns
+force_sync_outofsync_app copy-keycloak-admin-to-infra $apps_ns
+
+force_sync_outofsync_app edgenode-observability $apps_ns
+
+# This needs to be added back
+#force_sync_outofsync_apps
+
 
 # Run after upgrade script
 ./after_upgrade_restart.sh
 
 sleep 15
+
+
 # Force sync all OutOfSync applications
-force_sync_outofsync_apps
+#force_sync_outofsync_apps
+
+terminate_existing_sync "root-app" "$apps_ns"
+kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
 echo "Upgrade completed! Wait for ArgoCD applications to be in 'Synced' and 'Healthy' state"
