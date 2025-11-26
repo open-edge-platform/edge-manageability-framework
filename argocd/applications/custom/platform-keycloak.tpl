@@ -223,7 +223,7 @@ keycloakConfigCli:
     container:
       env:
         - name: KEYCLOAK_URL
-          value: "http://platform-keycloak.keycloak-system.svc.cluster.local/"
+          value: "http://platform-keycloak.orch-platform.svc.cluster.local/"
         - name: KEYCLOAK_USER
           value: "admin"
         - name: KEYCLOAK_PASSWORD

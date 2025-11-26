@@ -4,4 +4,4 @@
 
 resources: null
 
-jwksURL: "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master/protocol/openid-connect/certs"
+jwksURL: "http://platform-keycloak.orch-platform.svc.cluster.local/realms/master/protocol/openid-connect/certs"

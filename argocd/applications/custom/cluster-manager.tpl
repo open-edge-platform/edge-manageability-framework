@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Keycloak internal service URL
-{{- $keycloakUrl := "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master" }}
+{{- $keycloakUrl := "http://platform-keycloak.orch-platform.svc.cluster.local/realms/master" }}
 {{- $keycloakHost := "platform-keycloak.keycloak-system.svc.cluster.local" }}
 
 openidc:

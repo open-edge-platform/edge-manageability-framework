@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 {{- $appName        := "platform-keycloak" }}
-{{- $namespace      := "keycloak-system" }}
+{{- $namespace      := "orch-platform" }}
 {{- $syncWave       := "150" }}
 ---
 {{- if (index .Values.argo.enabled $appName) }}

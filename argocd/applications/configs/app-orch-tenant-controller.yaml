@@ -8,7 +8,7 @@ configProvisioner:
   admServer: app-deployment-api-grpc-server.orch-app.svc.cluster.local:8080
   namespace: orch-app
   vaultServer: "http://vault.orch-platform.svc.cluster.local:8200"
-  keycloakServiceBase: "http://platform-keycloak.keycloak-system.svc.cluster.local"
+  keycloakServiceBase: "http://platform-keycloak.orch-platform.svc.cluster.local"
   releaseServiceBase: "rs-proxy.orch-platform.svc.cluster.local:8081"
   releaseServiceProxyRootUrl: "oci://rs-proxy.orch-platform.svc.cluster.local:8443"
   manifestPath: "/edge-orch/en/file/cluster-extension-manifest"

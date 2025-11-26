@@ -15,7 +15,7 @@ credentials:
   serviceAccount:
     name: "orch-svc"
   params:
-    keycloakUrl: "http://platform-keycloak.keycloak-system.svc.cluster.local"
+    keycloakUrl: "http://platform-keycloak.orch-platform.svc.cluster.local"
     vaultUrl: "http://vault.orch-platform.svc.cluster.local:8200"
   curlImage:
     name: badouralix/curl-jq@sha256
@@ -37,7 +37,7 @@ api:
   oidc:
     name: "keycloak-api"
     oidc_env_name: "OIDC_SERVER_URL"
-    oidc_server_url: "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master"
+    oidc_server_url: "http://platform-keycloak.orch-platform.svc.cluster.local/realms/master"
     oidc_tls_insecure_skip_verify_env_name: "OIDC_TLS_INSECURE_SKIP_VERIFY"
     oidc_tls_insecure_skip_verify_value: "true"
   multiTenancy:
@@ -64,7 +64,7 @@ apiv2:
   oidc:
     name: "keycloak-api"
     oidc_env_name: "OIDC_SERVER_URL"
-    oidc_server_url: "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master"
+    oidc_server_url: "http://platform-keycloak.orch-platform.svc.cluster.local/realms/master"
     oidc_tls_insecure_skip_verify_env_name: "OIDC_TLS_INSECURE_SKIP_VERIFY"
     oidc_tls_insecure_skip_verify_value: "true"
   resources: null
@@ -82,7 +82,7 @@ inventory:
     ssl: false
     secrets: inventory-local-postgresql
   oidc:
-    oidc_server_url: "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master"
+    oidc_server_url: "http://platform-keycloak.orch-platform.svc.cluster.local/realms/master"
     name: "keycloak-inventory"
     oidc_tls_insecure_skip_verify_env_name: "OIDC_TLS_INSECURE_SKIP_VERIFY"
     oidc_tls_insecure_skip_verify_value: "true"
@@ -95,7 +95,7 @@ tenant-controller:
     inventoryAddress: "inventory.orch-infra.svc.cluster.local:50051"
     traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
   oidc:
-    oidc_server_url: "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master"
+    oidc_server_url: "http://platform-keycloak.orch-platform.svc.cluster.local/realms/master"
   resources: null
   serviceAccount:
     name: "orch-svc"
