@@ -287,6 +287,15 @@ force_sync_outofsync_app() {
     kubectl patch -n "$namespace" application "$app_name" --type json -p='[{"op": "replace", "path": "/operation", "value": {"initiatedBy": {"username": "admin"}, "sync": {"syncStrategy": {"hook": {}, "apply": {"force": true}}, "syncOptions": ["Replace=true", "Force=true", "ServerSideApply=true"]}}}]'
 }
 
+force_sync_outofsync_app2() {
+    local app_name=$1
+    local namespace=$2
+
+    terminate_existing_sync "$app_name" "$namespace"
+    echo "Force syncing $app_name..."
+    kubectl patch -n "$namespace" application "$app_name" --type json -p='[{"op": "replace", "path": "/operation", "value": {"initiatedBy": {"username": "admin"}, "sync": {"syncStrategy": {"hook": {"force": true}, "apply": {"force": true}}, "syncOptions": ["Replace=true", "Force=true"]}}}]'
+}
+
 # Checks if orchestrator is currently installed on the node
 # check_orch_install <array[@] of package names>
 check_orch_install() {
@@ -1126,52 +1135,40 @@ if kubectl get job platform-keycloak-keycloak-config-cli -n orch-platform >/dev/
     echo "✅ Removed keycloak-config-cli job"
 fi
 
-check_and_sync_app platform-keycloak "$apps_ns"
-
-# Force delete the keycloak-config-cli job if it's stuck in a hook
-if kubectl get job platform-keycloak-keycloak-config-cli -n orch-platform >/dev/null 2>&1; then
-    echo "Removing stuck keycloak-config-cli job hook..."
-    kubectl patch job platform-keycloak-keycloak-config-cli -n orch-platform \
-        --type='merge' \
-        -p='{"metadata":{"finalizers":[]}}'
-    kubectl delete job platform-keycloak-keycloak-config-cli -n orch-platform --force --grace-period=0 || true
-    echo "✅ Removed keycloak-config-cli job"
-fi
-
-check_and_sync_app platform-keycloak "$apps_ns"
-
-# Delete cluster-manager-credentials-script job if it exists
-if kubectl get job cluster-manager-credentials-script -n orch-cluster >/dev/null 2>&1; then
-    echo "Deleting cluster-manager-credentials-script job..."
-    kubectl delete job cluster-manager-credentials-script -n orch-cluster --force --grace-period=0 || true
-    echo "✅ cluster-manager-credentials-script job deleted"
-fi
+check_and_sync_app cluster-manager "$apps_ns"
 
 # This needs to be added back
 #force_sync_outofsync_apps
 
-# Check if nginx-ingress-pxe-boots is Synced and Healthy
-echo "Checking nginx-ingress-pxe-boots application status..."
-app_status=$(kubectl get application nginx-ingress-pxe-boots -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
-
-if [[ "$app_status" != "Synced Healthy" ]]; then
-    echo "nginx-ingress-pxe-boots is not Synced and Healthy (status: $app_status). Deleting tls-boots secret..."
-    kubectl delete secret tls-boots -n orch-boots --ignore-not-found=true
-    echo "✅ tls-boots secret deleted"
-else
-    echo "✅ nginx-ingress-pxe-boots is Synced and Healthy, no action needed"
-fi
+kubectl delete job cluster-manager-credentials-script -n orch-cluster --force --grace-period=0 --ignore-not-found=true || true
+kubectl delete secret tls-boots -n orch-boots --ignore-not-found=true
 
 
 # Run after upgrade script
 ./after_upgrade_restart.sh
 
-sleep 15
+# Collect and display syncwave information for OutOfSync applications
+echo "OutOfSync applications by syncwave:"
+outofsync_apps=$(kubectl get applications -n "$apps_ns" -o json | \
+    jq -r '.items[] | select(.status.sync.status=="OutOfSync") | 
+    "\(.metadata.annotations["argocd.argoproj.io/sync-wave"] // "0") \(.metadata.name)"' | \
+    sort -n)
+
+echo "$outofsync_apps" | awk '{print "  Wave " $1 ": " $2}'
+
+# Sync applications in wave order
+echo "Syncing OutOfSync applications in wave order..."
+echo "$outofsync_apps" | while read -r wave app_name; do
+    if [[ -n "$app_name" ]]; then
+        echo "Processing wave $wave: $app_name"
+        check_and_sync_app "$app_name" "$apps_ns"
+    fi
+done
 
 # Force sync all OutOfSync applications
 #force_sync_outofsync_apps
 
-terminate_existing_sync "root-app" "$apps_ns"
-kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+#terminate_existing_sync "root-app" "$apps_ns"
+#kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
 echo "Upgrade completed! Wait for ArgoCD applications to be in 'Synced' and 'Healthy' state"
