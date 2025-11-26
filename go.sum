@@ -191,8 +191,8 @@ github.com/open-edge-platform/infra-onboarding/onboarding-manager v1.34.4 h1:r7R
 github.com/open-edge-platform/infra-onboarding/onboarding-manager v1.34.4/go.mod h1:sLZXeFth0nDI8HEH4FpWkF3nJNOR6e7ocDBq0VKCg9w=
 github.com/open-edge-platform/orch-library/go v0.6.1 h1:IGR2ic73f3obnhlxTRfHcyYMbPbYu7BSqa9UYyEZ78Q=
 github.com/open-edge-platform/orch-library/go v0.6.1/go.mod h1:3Tes/GJfwYbnQa/1scbKiLbjZrL4fJEouFk28oo5/c8=
-github.com/open-edge-platform/orch-utils/tenancy-datamodel v1.2.3-0.20251125030942-574ab66519d0 h1:IJwDvR6PlCat0/4EWWq8tC1FPA39amHXEYis5nZEUlc=
-github.com/open-edge-platform/orch-utils/tenancy-datamodel v1.2.3-0.20251125030942-574ab66519d0/go.mod h1:WjOCYcpiOnHDe7OgUH4zJuhI6j/jmKWYFHnKwy25iBw=
+github.com/open-edge-platform/orch-utils/tenancy-datamodel v1.2.3-0.20251126155507-e0d9404fa1d7 h1:Z7X7TgT8dSw0ykPaWxFf5pCx7o4Rs43oxvpTjutv+Zw=
+github.com/open-edge-platform/orch-utils/tenancy-datamodel v1.2.3-0.20251126155507-e0d9404fa1d7/go.mod h1:WjOCYcpiOnHDe7OgUH4zJuhI6j/jmKWYFHnKwy25iBw=
 github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8Oi/yOhh5U=
 github.com/opencontainers/go-digest v1.0.0/go.mod h1:0JzlMkj0TRzQZfJkVvzbP0HBR3IKzErnv2BNG4W4MAM=
 github.com/opencontainers/image-spec v1.1.1 h1:y0fUlFfIZhPF1W537XOLg0/fcx6zcHCJwooC2xJA040=

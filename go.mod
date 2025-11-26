@@ -6,8 +6,6 @@ module github.com/open-edge-platform/edge-manageability-framework
 
 go 1.24.9
 
-toolchain go1.24.10
-
 require (
 	github.com/Nerzal/gocloak/v13 v13.9.0
 	github.com/aws/aws-sdk-go v1.55.8
@@ -27,7 +25,7 @@ require (
 	github.com/open-edge-platform/infra-managers/telemetry v1.21.1
 	github.com/open-edge-platform/infra-onboarding/onboarding-manager v1.34.4
 	github.com/open-edge-platform/orch-library/go v0.6.1
-	github.com/open-edge-platform/orch-utils/tenancy-datamodel v1.2.3-0.20251125030942-574ab66519d0
+	github.com/open-edge-platform/orch-utils/tenancy-datamodel v1.2.3-0.20251126155507-e0d9404fa1d7
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/rs/zerolog v1.34.0
 	github.com/stretchr/testify v1.10.0
