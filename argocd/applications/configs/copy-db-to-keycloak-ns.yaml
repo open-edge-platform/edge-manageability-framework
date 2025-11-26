@@ -1,0 +1,28 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Sync the Keycloak PostgreSQL database credentials from keycloak-system namespace to orch-platform
+# Source: platform-keycloak-local-postgresql secret (created during bootstrap, in deploy.go)
+# Target: platform-keycloak-local-postgresql secret (required by keycloak-tenant-controller init container)
+# Also this source and target gets updated in customs/platform-keycloak.tpl
+# Note: Syncs all PostgreSQL connection environment variables (PGDATABASE, PGHOST, PGPASSWORD, PGPORT, PGUSER)
+remoteNamespace: orch-platform
+refreshInterval: "0m"
+targetSecretName: platform-keycloak-aurora-postgresql
+sourceSecretName: platform-keycloak-aurora-postgresql
+keyName:
+  - source: PGDATABASE
+    target: PGDATABASE
+  - source: PGHOST
+    target: PGHOST
+  - source: PGPASSWORD
+    target: PGPASSWORD
+  - source: PGPORT
+    target: PGPORT
+  - source: PGUSER
+    target: PGUSER
+  - source: password
+    target: password
+
+externalSecretsApiGroup: external-secrets.io/v1
