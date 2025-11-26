@@ -99,6 +99,14 @@ ${M}/release-secrets: | ${M}/create-namespaces
 	touch $@
 
 ${M}/keycloak-secret: | ${M}/create-namespaces
+	# if statement for upgrade from 3.1
+	@if kubectl get secret platform-keycloak -n orch-platform > /dev/null 2>&1; then \
+		keycloak_password=$$(kubectl get secret -n orch-platform platform-keycloak -o jsonpath='{.data.admin-password}' | base64 --decode); \
+		kubectl create secret generic -n keycloak-system platform-keycloak \
+			--from-literal=username="admin" \
+			--from-literal=password="$$keycloak_password" \
+			--dry-run=client -o yaml | kubectl apply -f - ;\
+	fi
 	@if ! kubectl get secret platform-keycloak -n keycloak-system > /dev/null 2>&1; then \
 		kubectl create secret generic -n keycloak-system platform-keycloak \
 			--from-literal=username="admin" \
