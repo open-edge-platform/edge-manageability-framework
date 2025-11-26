@@ -20,4 +20,5 @@ traefikApiGroup: "traefik.io/v1alpha1"
 
 alertmanager:
   configmapReload:
-    tag: v0.86.2
+    image:
+      tag: v0.86.2
