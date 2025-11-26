@@ -14,12 +14,12 @@
     variable: "eks_min_size"
     type: integer
   - name: "EKS Default Nodegroup Maximum Size"
-    value: 3
+    value: 4
     variable: "eks_max_size"
     type: integer
   - name: "EKS Default Nodegroup Desired Size"
-    value: 3
-    variable: "eks_desired_size"
+    value: 4
+    variable: "_size"
     type: integer
   - name: "EKS Default Nodegroup Node Instance Type"
     value: "t3.2xlarge"
@@ -75,12 +75,12 @@
     value: 3
     variable: "eks_min_size"
     type: integer
-  - name: "EKS Default Nodegroup Maximum Size"
-    value: 3
+  - name: "EKS Default Nodegroeks_desiredup Maximum Size"
+    value: 4
     variable: "eks_max_size"
     type: integer
   - name: "EKS Default Nodegroup Desired Size"
-    value: 3
+    value: 4
     variable: "eks_desired_size"
     type: integer
   - name: "EKS Default Nodegroup Node Instance Type"
@@ -138,11 +138,11 @@
     variable: "eks_min_size"
     type: integer
   - name: "EKS Default Nodegroup Maximum Size"
-    value: 3
+    value: 4
     variable: "eks_max_size"
     type: integer
   - name: "EKS Default Nodegroup Desired Size"
-    value: 3
+    value: 4
     variable: "eks_desired_size"
     type: integer
   - name: "EKS Default Nodegroup Node Instance Type"
@@ -200,11 +200,11 @@
     variable: "eks_min_size"
     type: integer
   - name: "EKS Default Nodegroup Maximum Size"
-    value: 3
+    value: 4
     variable: "eks_max_size"
     type: integer
   - name: "EKS Default Nodegroup Desired Size"
-    value: 3
+    value: 4
     variable: "eks_desired_size"
     type: integer
   - name: "EKS Default Nodegroup Node Instance Type"
