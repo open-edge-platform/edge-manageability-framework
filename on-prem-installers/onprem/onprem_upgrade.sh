@@ -1224,21 +1224,84 @@ kubectl apply --server-side=true --force-conflicts -f https://raw.githubusercont
 
 check_and_force_sync_app external-secrets "$apps_ns"
 
-#wait_for_app_healthy external-secrets "$apps_ns"
+# Wait for external-secrets to be synced and healthy with timeout
+start_time=$(date +%s)
+timeout=120
+set +e
+while true; do
+    echo "Checking external-secrets application status..."
+    app_status=$(kubectl get application external-secrets -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
+    if [[ "$app_status" == "Synced Healthy" ]]; then
+        echo "✅ external-secrets application is Synced and Healthy."
+        set -e
+        break
+    fi
+    current_time=$(date +%s)
+    elapsed=$((current_time - start_time))
+    if (( elapsed > timeout )); then
+        echo "⏳ Timeout waiting for external-secrets to be Synced and Healthy after ${timeout}s (status: $app_status)"
+        set -e
+        break
+    fi
+    echo "Waiting for external-secrets to be Synced and Healthy... (status: $app_status, ${elapsed}s elapsed)"
+    sleep 5
+done
 
 app_status=$(kubectl get application external-secrets -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
 if [[ "$app_status" != "Synced Healthy" ]]; then
     check_and_patch_sync_app external-secrets "$apps_ns"
 fi
 
-#wait_for_app_healthy external-secrets "$apps_ns"
+# Wait for external-secrets to be synced and healthy with timeout
+start_time=$(date +%s)
+timeout=120
+set +e
+while true; do
+    echo "Checking external-secrets application status..."
+    app_status=$(kubectl get application external-secrets -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
+    if [[ "$app_status" == "Synced Healthy" ]]; then
+        echo "✅ external-secrets application is Synced and Healthy."
+        set -e
+        break
+    fi
+    current_time=$(date +%s)
+    elapsed=$((current_time - start_time))
+    if (( elapsed > timeout )); then
+        echo "⏳ Timeout waiting for external-secrets to be Synced and Healthy after ${timeout}s (status: $app_status)"
+        set -e
+        break
+    fi
+    echo "Waiting for external-secrets to be Synced and Healthy... (status: $app_status, ${elapsed}s elapsed)"
+    sleep 5
+done
 
 app_status=$(kubectl get application external-secrets -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
 if [[ "$app_status" != "Synced Healthy" ]]; then
     restart_app_resources external-secrets "$apps_ns"
 fi
 
-#wait_for_app_healthy external-secrets "$apps_ns"
+# Wait for external-secrets to be synced and healthy with timeout
+start_time=$(date +%s)
+timeout=120
+set +e
+while true; do
+    echo "Checking external-secrets application status..."
+    app_status=$(kubectl get application external-secrets -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
+    if [[ "$app_status" == "Synced Healthy" ]]; then
+        echo "✅ external-secrets application is Synced and Healthy."
+        set -e
+        break
+    fi
+    current_time=$(date +%s)
+    elapsed=$((current_time - start_time))
+    if (( elapsed > timeout )); then
+        echo "⏳ Timeout waiting for external-secrets to be Synced and Healthy after ${timeout}s (status: $app_status)"
+        set -e
+        break
+    fi
+    echo "Waiting for external-secrets to be Synced and Healthy... (status: $app_status, ${elapsed}s elapsed)"
+    sleep 5
+done
 
 check_and_force_sync_app copy-app-gitea-cred-to-fleet "$apps_ns"
 check_and_force_sync_app copy-ca-cert-boots-to-gateway "$apps_ns"
