@@ -258,7 +258,7 @@ terminate_existing_sync() {
     if [[ "$current_phase" == "Running" ]]; then
         echo "🛑 Terminating existing sync operation..."
         kubectl patch application "$app_name" -n "$namespace" --type='merge' -p='{"operation": null}'
-        
+
         # Wait for termination
         timeout 30 bash -c "while [[ \"\$(kubectl get application $app_name -n $namespace -o jsonpath='{.status.operationState.phase}' 2>/dev/null)\" == \"Running\" ]]; do sleep 2; done"
         echo "✅ Existing operation terminated"
@@ -274,22 +274,28 @@ force_sync_outofsync_app() {
     set +e
     terminate_existing_sync "$app_name" "$namespace"
     echo "Force syncing $app_name..."
-    
-    kubectl patch -n "$namespace" application "$app_name" --type json --patch "$(cat <<EOF
-[{
-    "op": "replace",
-    "path": "/operation",
-    "value": {
-        "initiatedBy": {"username": "admin"},
+
+    kubectl patch -n "$namespace" application "$app_name" --type merge --patch "$(cat <<EOF
+{
+    "operation": {
+        "initiatedBy": {
+            "username": "admin"
+        },
         "sync": {
             "syncStrategy": {
-                "hook": {"force": true},
-                "apply": {"force": true}
+                "hook": {},
+                "apply": {
+                    "force": true
+                }
             },
-            "syncOptions": ["Replace=true", "Force=true"]
+            "syncOptions": [
+                "Replace=true",
+                "Force=true",
+                "ServerSideApply=false"
+            ]
         }
     }
-}]
+}
 EOF
 )"
     set -e
@@ -299,8 +305,8 @@ EOF
 check_and_force_sync_app() {
     local app_name=$1
     local namespace=$2
-    local max_retries=${4:-3}  # Default to 3 retries if not specified
-    
+    local max_retries=3
+
     for ((i=1; i<=max_retries; i++)); do
         app_status=$(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
         
@@ -308,21 +314,21 @@ check_and_force_sync_app() {
             echo "✅ $app_name is Synced and Healthy"
             return 0
         fi
-        
+
         echo "⚠️  $app_name is not Synced and Healthy (status: $app_status). Force-syncing... (attempt $i/$max_retries)"
         force_sync_outofsync_app "$app_name" "$namespace"
         echo "✅ $app_name sync triggered"
-        sleep 60
+        sleep 90
     done
-    
+
     echo "⚠️  $app_name may still require attention after $max_retries attempts"
 }
 
 check_and_patch_sync_app() {
     local app_name=$1
     local namespace=$2
-    local max_retries=${4:-3}  # Default to 3 retries if not specified
-    
+    local max_retries=3
+
     for ((i=1; i<=max_retries; i++)); do
         app_status=$(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
         
@@ -330,14 +336,14 @@ check_and_patch_sync_app() {
             echo "✅ $app_name is Synced and Healthy"
             return 0
         fi
-        
+
         echo "⚠️  $app_name is not Synced and Healthy (status: $app_status). Force-syncing... (attempt $i/$max_retries)"
         terminate_existing_sync "$app_name" "$namespace"
         kubectl patch -n "$namespace" application "$app_name" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
         echo "✅ $app_name sync triggered"
-        sleep 120
+        sleep 90
     done
-    
+
     echo "⚠️  $app_name may still require attention after $max_retries attempts"
 }
 
@@ -374,22 +380,22 @@ wait_for_app_healthy() {
 restart_statefulset() {
     local name=$1
     local namespace=$2
-    
+
     echo "Restarting StatefulSet $name in namespace $namespace..."
-    
+
     # Get current replica count
     REPLICAS=$(kubectl get statefulset "$name" -n "$namespace" -o jsonpath='{.spec.replicas}')
     echo "Current replicas: $REPLICAS"
-    
+
     # Scale to 0
     kubectl scale statefulset "$name" -n "$namespace" --replicas=0
-    
+
     # Wait for pods to terminate
     kubectl wait --for=delete pod -l app="$name" -n "$namespace" --timeout=300s
-    
+
     # Scale back to original replica count
     kubectl scale statefulset "$name" -n "$namespace" --replicas="$REPLICAS"
-    
+
     echo "✅ $name restarted"
 }
 
@@ -1162,7 +1168,7 @@ kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/argo-cd/sync-
 
 wait_for_app_healthy root-app "$apps_ns"
 
-# Unsycned leftovers
+# Unsynced leftovers
 # Collect and display syncwave information for OutOfSync applications
 echo "OutOfSync applications by syncwave:"
 outofsync_apps=$(kubectl get applications -n "$apps_ns" -o json | \
@@ -1178,6 +1184,25 @@ echo "$outofsync_apps" | while read -r wave app_name; do
     if [[ -n "$app_name" ]]; then
         echo "Processing wave $wave: $app_name"
         check_and_patch_sync_app "$app_name" "$apps_ns"
+    fi
+done
+
+# Unsynced leftovers
+# Collect and display syncwave information for OutOfSync applications
+echo "OutOfSync applications by syncwave:"
+outofsync_apps=$(kubectl get applications -n "$apps_ns" -o json | \
+    jq -r '.items[] | select((.status.sync.status!="Synced" or .status.health.status!="Healthy") and .metadata.name!="root-app") | 
+    "\(.metadata.annotations["argocd.argoproj.io/sync-wave"] // "0") \(.metadata.name)"' | \
+    sort -n)
+
+echo "$outofsync_apps" | awk '{print "  Wave " $1 ": " $2}'
+
+# Sync applications in wave order
+echo "Syncing OutOfSync applications in wave order..."
+echo "$outofsync_apps" | while read -r wave app_name; do
+    if [[ -n "$app_name" ]]; then
+        echo "Processing wave $wave: $app_name"
+        check_and_force_sync_app "$app_name" "$apps_ns"
     fi
 done
 
