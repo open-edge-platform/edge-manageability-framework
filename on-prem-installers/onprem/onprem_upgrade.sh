@@ -1343,7 +1343,7 @@ fi
 # Collect and display syncwave information for OutOfSync applications
 echo "OutOfSync applications by syncwave:"
 outofsync_apps=$(kubectl get applications -n "$apps_ns" -o json | \
-    jq -r '.items[] | select((.status.sync.status!="Synced" or .status.health.status!="Healthy") and .metadata.name!="root-app" and .metadata.name!="orchestrator-observability" and .metadata.name!="edgenode-observability") | 
+    jq -r '.items[] | select((.status.sync.status!="Synced" or .status.health.status!="Healthy") and .metadata.name!="root-app") | 
     "\(.metadata.annotations["argocd.argoproj.io/sync-wave"] // "0") \(.metadata.name)"' | \
     sort -n)
 
@@ -1355,7 +1355,6 @@ echo "$outofsync_apps" | while read -r wave app_name; do
     if [[ -n "$app_name" ]]; then
         echo "Processing wave $wave: $app_name"
         check_and_force_sync_app "$app_name" "$apps_ns"
-        check_and_patch_sync_app "$app_name" "$apps_ns"
     fi
 done
 
