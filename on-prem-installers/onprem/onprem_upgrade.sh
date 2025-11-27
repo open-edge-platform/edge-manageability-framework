@@ -393,7 +393,7 @@ check_and_patch_sync_app() {
 wait_for_app_healthy() {
     local app_name=$1
     local namespace=$2
-    local timeout=${3:-240}  # Default 10 minutes if not specified
+    local timeout=${3:-240}  # Default 4 minutes if not specified
     
     local start_time=$(date +%s)
     set +e
@@ -409,11 +409,11 @@ wait_for_app_healthy() {
         local elapsed=$((current_time - start_time))
         if (( elapsed > timeout )); then
             local remaining=$((timeout - elapsed))
-            echo "⚠️ Timeout waiting for $app_name to be Synced and Healthy. (${elapsed}s elapsed, ${remaining}s remaining)"
+            echo "⚠️ Timeout waiting for $app_name to be Synced and Healthy. (${elapsed}s elapsed)"
             set -e
-            #return 1
+            return 1
         fi
-        echo "Waiting for $app_name to be Synced and Healthy... (status: $app_status)"
+        echo "Waiting for $app_name to be Synced and Healthy... (status: $app_status, ${elapsed}s elapsed)"
         sleep 10
     done
     set -e
@@ -1137,7 +1137,7 @@ kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgr
 
 echo "✅ All database user passwords updated successfully"
 
-vault_unseal
+#vault_unseal
 
 # Re-create the secrets for mps and rps if they were deleted
 if [[ -s mps_secret.yaml ]]; then
@@ -1224,21 +1224,21 @@ kubectl apply --server-side=true --force-conflicts -f https://raw.githubusercont
 
 check_and_force_sync_app external-secrets "$apps_ns"
 
-wait_for_app_healthy external-secrets "$apps_ns"
+#wait_for_app_healthy external-secrets "$apps_ns"
 
 app_status=$(kubectl get application external-secrets -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
 if [[ "$app_status" != "Synced Healthy" ]]; then
     check_and_patch_sync_app external-secrets "$apps_ns"
 fi
 
-wait_for_app_healthy external-secrets "$apps_ns"
+#wait_for_app_healthy external-secrets "$apps_ns"
 
 app_status=$(kubectl get application external-secrets -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
 if [[ "$app_status" != "Synced Healthy" ]]; then
     restart_app_resources external-secrets "$apps_ns"
 fi
 
-wait_for_app_healthy external-secrets "$apps_ns"
+#wait_for_app_healthy external-secrets "$apps_ns"
 
 check_and_force_sync_app copy-app-gitea-cred-to-fleet "$apps_ns"
 check_and_force_sync_app copy-ca-cert-boots-to-gateway "$apps_ns"
@@ -1257,12 +1257,12 @@ echo "✅ Vault unsealed successfully"
 
 kubectl patch -n "$apps_ns" application platform-keycloak --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
-wait_for_app_healthy platform-keycloak "$apps_ns"
+#wait_for_app_healthy platform-keycloak "$apps_ns"
 
 kubectl patch -n "$apps_ns" application cluster-manager --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
 
-./after_upgrade_restart.sh
+#./after_upgrade_restart.sh
 
 
 app_status=$(kubectl get application edgenode-observability -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")   
