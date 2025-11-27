@@ -305,7 +305,7 @@ EOF
 check_and_force_sync_app() {
     local app_name=$1
     local namespace=$2
-    local max_retries=3
+    local max_retries=2
 
     for ((i=1; i<=max_retries; i++)); do
         app_status=$(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
@@ -327,7 +327,7 @@ check_and_force_sync_app() {
 check_and_patch_sync_app() {
     local app_name=$1
     local namespace=$2
-    local max_retries=3
+    local max_retries=2
 
     for ((i=1; i<=max_retries; i++)); do
         app_status=$(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
@@ -338,8 +338,12 @@ check_and_patch_sync_app() {
         fi
 
         echo "⚠️  $app_name is not Synced and Healthy (status: $app_status). Force-syncing... (attempt $i/$max_retries)"
+
+        set +e
         terminate_existing_sync "$app_name" "$namespace"
         kubectl patch -n "$namespace" application "$app_name" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+        set -e
+
         echo "✅ $app_name sync triggered"
         sleep 90
     done
@@ -419,6 +423,50 @@ check_orch_install() {
         #     exit 1
         # fi
     done
+}
+
+# Function to restart resources managed by an ArgoCD application
+restart_app_resources() {
+    local app_name=$1
+    local namespace=$2
+    
+    echo "Restarting resources for application: $app_name"
+    
+    # Get all resources managed by the application
+    local resources=$(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.resources[*].kind}/{.status.resources[*].name}/{.status.resources[*].namespace}' 2>/dev/null)
+    
+    if [[ -z "$resources" ]]; then
+        echo "⚠️  No resources found for application $app_name"
+        return 0
+    fi
+    
+    # Parse and process each resource
+    local kinds=($(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.resources[*].kind}'))
+    local names=($(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.resources[*].name}'))
+    local namespaces=($(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.resources[*].namespace}'))
+    
+    for i in "${!kinds[@]}"; do
+        local kind="${kinds[$i]}"
+        local name="${names[$i]}"
+        local res_namespace="${namespaces[$i]}"
+        
+        case "$kind" in
+            StatefulSet)
+                echo "Restarting StatefulSet: $name in namespace $res_namespace"
+                restart_statefulset "$name" "$res_namespace"
+                ;;
+            Deployment)
+                echo "Restarting Deployment: $name in namespace $res_namespace"
+                kubectl rollout restart deployment "$name" -n "$res_namespace"
+                echo "✅ Deployment $name restarted"
+                ;;
+            *)
+                # Skip other resource types
+                ;;
+        esac
+    done
+    
+    echo "✅ Completed restarting resources for $app_name"
 }
 
 # Get LV size and format it to be ready for lvcreate command
@@ -1139,6 +1187,11 @@ check_and_force_sync_app external-secrets "$apps_ns"
 
 wait_for_app_healthy external-secrets "$apps_ns"
 
+app_status=$(kubectl get application external-secrets -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
+if [[ "$app_status" != "Synced Healthy" ]]; then
+    restart_app_resources external-secrets "$apps_ns"
+fi
+
 check_and_force_sync_app copy-app-gitea-cred-to-fleet "$apps_ns"
 check_and_force_sync_app copy-ca-cert-boots-to-gateway "$apps_ns"
 check_and_force_sync_app copy-ca-cert-boots-to-infra "$apps_ns"
@@ -1168,11 +1221,21 @@ kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/argo-cd/sync-
 
 wait_for_app_healthy root-app "$apps_ns"
 
+app_status=$(kubectl get application edgenode-observability -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")   
+if [[ "$app_status" != "Synced Healthy" ]]; then
+    restart_app_resources edgenode-observability "$apps_ns"
+fi
+
+app_status=$(kubectl get application orchestrator-observability -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound") 
+if [[ "$app_status" != "Synced Healthy" ]]; then
+    restart_app_resources orchestrator-observability "$apps_ns"
+fi
+
 # Unsynced leftovers
 # Collect and display syncwave information for OutOfSync applications
 echo "OutOfSync applications by syncwave:"
 outofsync_apps=$(kubectl get applications -n "$apps_ns" -o json | \
-    jq -r '.items[] | select((.status.sync.status!="Synced" or .status.health.status!="Healthy") and .metadata.name!="root-app") | 
+    jq -r '.items[] | select((.status.sync.status!="Synced" or .status.health.status!="Healthy") and .metadata.name!="root-app" and .metadata.name!="orchestrator-observability" and .metadata.name!="edgenode-observability") | 
     "\(.metadata.annotations["argocd.argoproj.io/sync-wave"] // "0") \(.metadata.name)"' | \
     sort -n)
 
@@ -1184,24 +1247,6 @@ echo "$outofsync_apps" | while read -r wave app_name; do
     if [[ -n "$app_name" ]]; then
         echo "Processing wave $wave: $app_name"
         check_and_force_sync_app "$app_name" "$apps_ns"
-    fi
-done
-
-# Unsynced leftovers
-# Collect and display syncwave information for OutOfSync applications
-echo "OutOfSync applications by syncwave:"
-outofsync_apps=$(kubectl get applications -n "$apps_ns" -o json | \
-    jq -r '.items[] | select((.status.sync.status!="Synced" or .status.health.status!="Healthy") and .metadata.name!="root-app") | 
-    "\(.metadata.annotations["argocd.argoproj.io/sync-wave"] // "0") \(.metadata.name)"' | \
-    sort -n)
-
-echo "$outofsync_apps" | awk '{print "  Wave " $1 ": " $2}'
-
-# Sync applications in wave order
-echo "Syncing OutOfSync applications in wave order..."
-echo "$outofsync_apps" | while read -r wave app_name; do
-    if [[ -n "$app_name" ]]; then
-        echo "Processing wave $wave: $app_name"
         check_and_patch_sync_app "$app_name" "$apps_ns"
     fi
 done
