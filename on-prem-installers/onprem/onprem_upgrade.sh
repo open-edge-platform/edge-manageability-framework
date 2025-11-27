@@ -273,7 +273,16 @@ force_sync_outofsync_app() {
 
     terminate_existing_sync "$app_name" "$namespace"
     echo "Force syncing $app_name..."
-    kubectl patch -n "$namespace" application "$app_name" --type json -p='[{"op": "replace", "path": "/operation", "value": {"initiatedBy": {"username": "admin"}, "sync": {"syncStrategy": {"hook": {}, "apply": {"force": true}}, "syncOptions": ["Replace=true", "Force=true", "ServerSideApply=false"]}}}]'
+    kubectl patch -n "$namespace" application "$app_name" --type json -p='[{"op": "replace", "path": "/operation", "value": {"initiatedBy": {"username": "admin"}, "sync": {"syncStrategy": {"hook": {"force": true}, "apply": {"force": true}}, "syncOptions": ["Replace=true", "Force=true", "ServerSideApply=false"]}}}]'
+}
+
+simple_sync_outofsync_app() {
+    local app_name=$1
+    local namespace=$2
+
+    terminate_existing_sync "$app_name" "$namespace"
+    echo "Force syncing $app_name..."
+    kubectl patch -n "$namespace" application "$app_name" --type json -p='[{"op": "replace", "path": "/operation", "value": {"initiatedBy": {"username": "admin"}, "sync": {"syncStrategy": {"hook": {}}}}}]'
 }
 
 # Function to check and force sync application if not healthy
@@ -292,6 +301,28 @@ check_and_sync_app() {
         
         echo "⚠️  $app_name is not Synced and Healthy (status: $app_status). Force-syncing... (attempt $i/$max_retries)"
         force_sync_outofsync_app "$app_name" "$namespace"
+        echo "✅ $app_name sync triggered"
+        sleep 60
+    done
+    
+    echo "⚠️  $app_name may still require attention after $max_retries attempts"
+}
+
+check_and_simple_sync_app() {
+    local app_name=$1
+    local namespace=$2
+    local max_retries=${4:-3}  # Default to 3 retries if not specified
+    
+    for ((i=1; i<=max_retries; i++)); do
+        app_status=$(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
+        
+        if [[ "$app_status" == "Synced Healthy" ]]; then
+            echo "✅ $app_name is Synced and Healthy"
+            return 0
+        fi
+        
+        echo "⚠️  $app_name is not Synced and Healthy (status: $app_status). Force-syncing... (attempt $i/$max_retries)"
+        simple_sync_outofsync_app "$app_name" "$namespace"
         echo "✅ $app_name sync triggered"
         sleep 60
     done
@@ -745,6 +776,51 @@ patch_secret() {
         fi
     done
 
+    # Wait for all required secrets to exist before patching
+    local secrets_to_check=(
+        "orch-app:app-orch-catalog-local-postgresql"
+        "orch-app:app-orch-catalog-reader-local-postgresql"
+        "orch-iam:iam-tenancy-local-postgresql"
+        "orch-iam:iam-tenancy-reader-local-postgresql"
+        "orch-infra:alerting-local-postgresql"
+        "orch-infra:alerting-reader-local-postgresql"
+        "orch-infra:inventory-local-postgresql"
+        "orch-infra:inventory-reader-local-postgresql"
+        "orch-platform:platform-keycloak-local-postgresql"
+        "orch-platform:platform-keycloak-reader-local-postgresql"
+        "orch-platform:vault-local-postgresql"
+        "orch-platform:vault-reader-local-postgresql"
+        "orch-infra:mps-local-postgresql"
+        "orch-infra:mps-reader-local-postgresql"
+        "orch-infra:rps-local-postgresql"
+        "orch-infra:rps-reader-local-postgresql"
+    )
+
+    local max_wait=600  # 10 minutes timeout
+    local check_interval=5
+    local elapsed=0
+
+    echo "Waiting for all required secrets to exist..."
+    for secret_entry in "${secrets_to_check[@]}"; do
+        local namespace="${secret_entry%%:*}"
+        local secret_name="${secret_entry##*:}"
+        elapsed=0
+
+        while ! kubectl get secret "$secret_name" -n "$namespace" >/dev/null 2>&1; do
+            if [ $elapsed -ge $max_wait ]; then
+                echo "❌ Timeout waiting for secret $secret_name in namespace $namespace after ${max_wait}s"
+                exit 1
+            fi
+            echo "⏳ Waiting for secret $secret_name in namespace $namespace... (${elapsed}s/${max_wait}s)"
+            sleep $check_interval
+            elapsed=$((elapsed + check_interval))
+        done
+        echo "✅ Secret $secret_name found in namespace $namespace"
+    done
+
+    echo "✅ All required secrets exist, proceeding with patching..."
+
+
     kubectl patch secret -n orch-app app-orch-catalog-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$CATALOG_SERVICE\"}}" --type=merge
     kubectl patch secret -n orch-app app-orch-catalog-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$CATALOG_SERVICE\"}}" --type=merge
     kubectl patch secret -n orch-iam iam-tenancy-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$IAM_TENANCY\"}}" --type=merge
@@ -1013,47 +1089,29 @@ echo "✅ harbor-oci-core restarted"
 echo "Applying external-secrets CRDs with server-side apply..."
 kubectl apply --server-side=true --force-conflicts -f https://raw.githubusercontent.com/external-secrets/external-secrets/refs/tags/v0.20.4/deploy/crds/bundle.yaml || true
 
-# Force replace sync external-secrets application using JSON patch
-echo "Force syncing external-secrets application with JSON patch..."
-kubectl patch application external-secrets -n "$apps_ns" \
-  --type='json' \
-  --patch='[{
-    "op": "replace",
-    "path": "/operation",
-    "value": {
-      "initiatedBy": {"username": "admin"},
-      "sync": {
-        "syncStrategy": {
-          "hook": {},
-          "apply": {"force": true}
-        },
-        "syncOptions": [
-          "Replace=true",
-          "Force=true",
-          "ServerSideApply=true"
-        ]
-      }
-    }
-  }]'
-
-# Monitor the sync operation
-echo "Monitoring sync progress..."
-kubectl get application external-secrets -n "$apps_ns" -w --no-headers -o custom-columns="SYNC:.status.sync.status,OPERATION:.status.operationState.phase" &
-WATCH_PID=$!
-
-# Wait for completion with timeout - pass the variable to the subshell
-timeout 300 bash -c "while [[ \"\$(kubectl get application external-secrets -n "$apps_ns" -o jsonpath='{.status.operationState.phase}')\" == \"Running\" ]]; do sleep 5; done" || {
-    echo "Sync operation timed out"
-    kill $WATCH_PID 2>/dev/null
-}
-
-kill $WATCH_PID 2>/dev/null
-
-# Final status check
-echo "Final status:"
-kubectl describe application external-secrets -n "$apps_ns" | grep -A 10 "Status:"
-
 check_and_sync_app external-secrets "$apps_ns"
+
+# Wait for external-secrets to be Synced and Healthy
+start_time=$(date +%s)
+timeout=600 # 10 minutes in seconds
+set +e
+while true; do
+    echo "Checking external-secrets application status..."
+    app_status=$(kubectl get application external-secrets -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}')
+    if [[ "$app_status" == "Synced Healthy" ]]; then
+        echo "✅ external-secrets application is Synced and Healthy."
+        break
+    fi
+    current_time=$(date +%s)
+    elapsed=$((current_time - start_time))
+    if (( elapsed > timeout )); then
+        echo "⚠️ Timeout waiting for external-secrets to be Synced and Healthy."
+        break
+    fi
+    echo "Waiting for external-secrets to be Synced and Healthy... (status: $app_status)"
+    sleep 10
+done
+set -e
 
 check_and_sync_app copy-app-gitea-cred-to-fleet "$apps_ns"
 check_and_sync_app copy-ca-cert-boots-to-gateway "$apps_ns"
@@ -1065,16 +1123,30 @@ check_and_sync_app copy-ca-cert-gitea-to-cluster "$apps_ns"
 check_and_sync_app copy-cluster-gitea-cred-to-fleet "$apps_ns"
 check_and_sync_app copy-keycloak-admin-to-infra "$apps_ns"
 
+# Unseal vault after external-secrets is ready
+echo "Unsealing vault..."
+vault_unseal
+echo "✅ Vault unsealed successfully"
 
 # Remove stuck keycloak-config-cli job hook
 echo "Removing stuck keycloak-config-cli job hook..."
-kubectl patch job platform-keycloak-keycloak-config-cli -n orch-platform \
-    --type='merge' \
-    -p='{"metadata":{"finalizers":[]}}'
-kubectl delete job platform-keycloak-keycloak-config-cli -n orch-platform --force --grace-period=0
+if kubectl get job platform-keycloak-keycloak-config-cli -n orch-platform >/dev/null 2>&1; then
+    kubectl patch job platform-keycloak-keycloak-config-cli -n orch-platform \
+        --type='merge' \
+        -p='{"metadata":{"finalizers":[]}}'
+    kubectl delete job platform-keycloak-keycloak-config-cli -n orch-platform --force --grace-period=0
+    kubectl patch job platform-keycloak-keycloak-config-cli -n orch-platform \
+        --type='merge' \
+        -p='{"metadata":{"finalizers":[]}}'
+fi
+
 echo "✅ Removed keycloak-config-cli job"
 
-kubectl delete job cluster-manager-credentials-script -n orch-cluster --force --grace-period=0 --ignore-not-found=true
+
+simple_sync_outofsync_app platform-keycloak "$apps_ns"
+
+
+kubectl delete job cluster-manager-credentials-script -n orch-cluster --force --grace-period=0
 kubectl delete secret tls-boots -n orch-boots --ignore-not-found=true
 
 
@@ -1083,7 +1155,7 @@ kubectl delete secret tls-boots -n orch-boots --ignore-not-found=true
 # Collect and display syncwave information for OutOfSync applications
 echo "OutOfSync applications by syncwave:"
 outofsync_apps=$(kubectl get applications -n "$apps_ns" -o json | \
-    jq -r '.items[] | select(.status.sync.status=="OutOfSync" and .metadata.name!="root-app") | 
+    jq -r '.items[] | select((.status.sync.status!="Synced" or .status.health.status!="Healthy") and .metadata.name!="root-app") | 
     "\(.metadata.annotations["argocd.argoproj.io/sync-wave"] // "0") \(.metadata.name)"' | \
     sort -n)
 
@@ -1094,7 +1166,7 @@ echo "Syncing OutOfSync applications in wave order..."
 echo "$outofsync_apps" | while read -r wave app_name; do
     if [[ -n "$app_name" ]]; then
         echo "Processing wave $wave: $app_name"
-        check_and_sync_app "$app_name" "$apps_ns"
+        check_and_simple_sync_app "$app_name" "$apps_ns"
     fi
 done
 
