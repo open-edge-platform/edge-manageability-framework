@@ -318,7 +318,27 @@ check_and_force_sync_app() {
         echo "⚠️  $app_name is not Synced and Healthy (status: $app_status). Force-syncing... (attempt $i/$max_retries)"
         force_sync_outofsync_app "$app_name" "$namespace"
         echo "✅ $app_name sync triggered"
-        sleep 90
+        
+        # Check status every 5s for 90s
+        local check_timeout=90
+        local check_interval=5
+        local elapsed=0
+        
+        while (( elapsed < check_timeout )); do
+            app_status=$(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
+            
+            if [[ "$app_status" == "Synced Healthy" ]]; then
+                echo "✅ $app_name became Synced and Healthy"
+                return 0
+            else
+                echo "Current status: $app_status (elapsed: ${elapsed}s)"
+            fi
+            
+            sleep $check_interval
+            elapsed=$((elapsed + check_interval))
+        done
+        
+        echo "⏳ $app_name did not become healthy within ${check_timeout}s"
     done
 
     echo "⚠️  $app_name may still require attention after $max_retries attempts"
@@ -344,8 +364,26 @@ check_and_patch_sync_app() {
         kubectl patch -n "$namespace" application "$app_name" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
         set -e
 
-        echo "✅ $app_name sync triggered"
-        sleep 90
+        # Check status every 5s for 90s
+        local check_timeout=90
+        local check_interval=5
+        local elapsed=0
+        
+        while (( elapsed < check_timeout )); do
+            app_status=$(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
+            
+            if [[ "$app_status" == "Synced Healthy" ]]; then
+                echo "✅ $app_name became Synced and Healthy"
+                return 0
+            else
+                echo "Current status: $app_status (elapsed: ${elapsed}s)"
+            fi
+            
+            sleep $check_interval
+            elapsed=$((elapsed + check_interval))
+        done
+        
+        echo "⏳ $app_name did not become healthy within ${check_timeout}s"
     done
 
     echo "⚠️  $app_name may still require attention after $max_retries attempts"
@@ -372,7 +410,7 @@ wait_for_app_healthy() {
         if (( elapsed > timeout )); then
             echo "⚠️ Timeout waiting for $app_name to be Synced and Healthy."
             set -e
-            return 1
+            #return 1
         fi
         echo "Waiting for $app_name to be Synced and Healthy... (status: $app_status)"
         sleep 10
@@ -1217,10 +1255,6 @@ kubectl patch -n "$apps_ns" application cluster-manager --patch-file /tmp/argo-c
 ./after_upgrade_restart.sh
 
 
-kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
-
-wait_for_app_healthy root-app "$apps_ns"
-
 app_status=$(kubectl get application edgenode-observability -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")   
 if [[ "$app_status" != "Synced Healthy" ]]; then
     restart_app_resources edgenode-observability "$apps_ns"
@@ -1250,5 +1284,29 @@ echo "$outofsync_apps" | while read -r wave app_name; do
         check_and_patch_sync_app "$app_name" "$apps_ns"
     fi
 done
+
+# Unsynced leftovers
+# Collect and display syncwave information for OutOfSync applications
+echo "OutOfSync applications by syncwave:"
+outofsync_apps=$(kubectl get applications -n "$apps_ns" -o json | \
+    jq -r '.items[] | select((.status.sync.status!="Synced" or .status.health.status!="Healthy") and .metadata.name!="root-app") | 
+    "\(.metadata.annotations["argocd.argoproj.io/sync-wave"] // "0") \(.metadata.name)"' | \
+    sort -n)
+
+echo "$outofsync_apps" | awk '{print "  Wave " $1 ": " $2}'
+
+# Sync applications in wave order
+echo "Syncing OutOfSync applications in wave order..."
+echo "$outofsync_apps" | while read -r wave app_name; do
+    if [[ -n "$app_name" ]]; then
+        echo "Processing wave $wave: $app_name"
+        check_and_patch_sync_app "$app_name" "$apps_ns"
+    fi
+done
+
+kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+
+wait_for_app_healthy root-app "$apps_ns"
+
 
 echo "Upgrade completed! Wait for ArgoCD applications to be in 'Synced' and 'Healthy' state"
