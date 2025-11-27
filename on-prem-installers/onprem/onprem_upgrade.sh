@@ -408,7 +408,8 @@ wait_for_app_healthy() {
         local current_time=$(date +%s)
         local elapsed=$((current_time - start_time))
         if (( elapsed > timeout )); then
-            echo "⚠️ Timeout waiting for $app_name to be Synced and Healthy."
+            local remaining=$((timeout - elapsed))
+            echo "⚠️ Timeout waiting for $app_name to be Synced and Healthy. (${elapsed}s elapsed, ${remaining}s remaining)"
             set -e
             #return 1
         fi
@@ -1227,8 +1228,17 @@ wait_for_app_healthy external-secrets "$apps_ns"
 
 app_status=$(kubectl get application external-secrets -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
 if [[ "$app_status" != "Synced Healthy" ]]; then
+    check_and_patch_sync_app external-secrets "$apps_ns"
+fi
+
+wait_for_app_healthy external-secrets "$apps_ns"
+
+app_status=$(kubectl get application external-secrets -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
+if [[ "$app_status" != "Synced Healthy" ]]; then
     restart_app_resources external-secrets "$apps_ns"
 fi
+
+wait_for_app_healthy external-secrets "$apps_ns"
 
 check_and_force_sync_app copy-app-gitea-cred-to-fleet "$apps_ns"
 check_and_force_sync_app copy-ca-cert-boots-to-gateway "$apps_ns"
