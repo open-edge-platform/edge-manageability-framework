@@ -1256,6 +1256,25 @@ check_and_patch_sync_app orchestrator-observability "$apps_ns"
 # Cleanup infra-external jobs
 kubectl delete jobs setup-databases-mps setup-databases-rps amt-dbpassword-secret-job init-amt-vault-job -n orch-infra --force --grace-period=0 --ignore-not-found
 
+# Unsynced leftovers using patch sync
+# Collect and display syncwave information for OutOfSync applications
+echo "OutOfSync applications by syncwave:"
+outofsync_apps=$(kubectl get applications -n "$apps_ns" -o json | \
+    jq -r '.items[] | select((.status.sync.status!="Synced" or .status.health.status!="Healthy") and .metadata.name!="root-app") | 
+    "\(.metadata.annotations["argocd.argoproj.io/sync-wave"] // "0") \(.metadata.name)"' | \
+    sort -n)
+
+echo "$outofsync_apps" | awk '{print "  Wave " $1 ": " $2}'
+
+# Sync applications in wave order
+echo "Syncing OutOfSync applications in wave order..."
+echo "$outofsync_apps" | while read -r wave app_name; do
+    if [[ -n "$app_name" ]]; then
+        echo "Processing wave $wave: $app_name"
+        check_and_patch_sync_app "$app_name" "$apps_ns"
+    fi
+done
+
 
 # Unsynced leftovers using force sync
 # Collect and display syncwave information for OutOfSync applications
@@ -1295,24 +1314,6 @@ echo "$outofsync_apps" | while read -r wave app_name; do
     fi
 done
 
-# Unsynced leftovers using patch sync
-# Collect and display syncwave information for OutOfSync applications
-echo "OutOfSync applications by syncwave:"
-outofsync_apps=$(kubectl get applications -n "$apps_ns" -o json | \
-    jq -r '.items[] | select((.status.sync.status!="Synced" or .status.health.status!="Healthy") and .metadata.name!="root-app") | 
-    "\(.metadata.annotations["argocd.argoproj.io/sync-wave"] // "0") \(.metadata.name)"' | \
-    sort -n)
-
-echo "$outofsync_apps" | awk '{print "  Wave " $1 ": " $2}'
-
-# Sync applications in wave order
-echo "Syncing OutOfSync applications in wave order..."
-echo "$outofsync_apps" | while read -r wave app_name; do
-    if [[ -n "$app_name" ]]; then
-        echo "Processing wave $wave: $app_name"
-        check_and_patch_sync_app "$app_name" "$apps_ns"
-    fi
-done
 
 kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
