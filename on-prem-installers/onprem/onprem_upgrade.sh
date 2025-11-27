@@ -1176,6 +1176,17 @@ kubectl rollout restart deployment harbor-oci-core -n orch-harbor
 
 echo "✅ harbor-oci-core restarted"
 
+# Cleanup external-secrets installation
+echo "Cleaning up external-secrets installation..."
+kubectl patch application -n "$apps_ns" external-secrets  -p '{"metadata": {"finalizers": ["resources-finalizer.argocd.argoproj.io"]}}' --type merge
+kubectl delete application -n "$apps_ns" external-secrets --cascade=background &
+kubectl patch crd/clustersecretstores.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
+kubectl patch crd/secretstores.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
+kubectl patch crd/externalsecrets.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
+kubectl delete crd clustersecretstores.external-secrets.io
+kubectl delete crd externalsecrets.external-secrets.io
+kubectl delete crd secretstores.external-secrets.io
+
 # Apply External Secrets CRDs with server-side apply
 echo "Applying external-secrets CRDs with server-side apply..."
 kubectl apply --server-side=true --force-conflicts -f https://raw.githubusercontent.com/external-secrets/external-secrets/refs/tags/v0.20.4/deploy/crds/bundle.yaml || true
@@ -1208,8 +1219,43 @@ kubectl patch -n "$apps_ns" application cluster-manager --patch-file /tmp/argo-c
 
 kubectl delete secret tls-boots -n orch-boots
 
+# Observability Minio PVC ignoreDifferences patching and job cleanup
+kubectl patch job orchestrator-observability-mimir-make-minio-buckets-5.4.0 -n orch-platform --type=merge -p='{"metadata":{"finalizers":[]}}'
+kubectl delete job orchestrator-observability-mimir-make-minio-buckets-5.4.0 -n orch-platform --force --grace-period=0
+kubectl delete pods -l job-name="orchestrator-observability-mimir-make-minio-buckets-5.4.0" -n orch-platform --force --grace-period=0 2>/dev/null || true
+
+kubectl patch application orchestrator-observability -n "$apps_ns" --type='json' -p='[{
+    "op": "add",
+    "path": "/spec/ignoreDifferences",
+    "value": [{
+        "group": "",
+        "kind": "PersistentVolumeClaim",
+        "name": "orchestrator-observability-minio",
+        "jsonPointers": ["/spec/storageClassName", "/spec/volumeName"]
+    }]
+}]'
+
+kubectl patch job edgenode-observability-mimir-make-minio-buckets-5.4.0  -n orch-infra --type=merge -p='{"metadata":{"finalizers":[]}}'
+kubectl delete job edgenode-observability-mimir-make-minio-buckets-5.4.0 -n orch-infra --force --grace-period=0
+kubectl delete pods -l job-name="edgenode-observability-mimir-make-minio-buckets-5.4.0" -n orch-infra --force --grace-period=0 2>/dev/null || true
+
+kubectl patch application edgenode-observability -n "$apps_ns" --type='json' -p='[{
+    "op": "add",
+    "path": "/spec/ignoreDifferences",
+    "value": [{
+        "group": "",
+        "kind": "PersistentVolumeClaim",
+        "name": "edgenode-observability-minio",
+        "jsonPointers": ["/spec/storageClassName", "/spec/volumeName"]
+    }]
+}]'
+
 check_and_patch_sync_app edgenode-observability "$apps_ns"
 check_and_patch_sync_app orchestrator-observability "$apps_ns"
+
+# Cleanup infra-external jobs
+kubectl delete jobs setup-databases-mps setup-databases-rps amt-dbpassword-secret-job init-amt-vault-job -n orch-infra --force --grace-period=0 --ignore-not-found
+
 
 # Unsynced leftovers using force sync
 # Collect and display syncwave information for OutOfSync applications
