@@ -271,6 +271,7 @@ force_sync_outofsync_app() {
     local app_name=$1
     local namespace=$2
 
+    set +e
     terminate_existing_sync "$app_name" "$namespace"
     echo "Force syncing $app_name..."
     
@@ -291,6 +292,7 @@ force_sync_outofsync_app() {
 }]
 EOF
 )"
+    set -e
 }
 
 # Function to check and force sync application if not healthy
