@@ -1178,11 +1178,11 @@ echo "✅ harbor-oci-core restarted"
 
 # Cleanup external-secrets installation
 echo "Cleaning up external-secrets installation..."
-kubectl delete crd clustersecretstores.external-secrets.io &
+kubectl delete crd clustersecretstores.external-secrets.io --force --grace-period=0 2>/dev/null || true
 kubectl patch crd/clustersecretstores.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
-kubectl delete crd secretstores.external-secrets.io &
+kubectl delete crd secretstores.external-secrets.io --force --grace-period=0 2>/dev/null || true
 kubectl patch crd/secretstores.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
-kubectl delete crd externalsecrets.external-secrets.io &
+kubectl delete crd externalsecrets.external-secrets.io --force --grace-period=0 2>/dev/null || true
 kubectl patch crd/externalsecrets.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
 
 # Apply External Secrets CRDs with server-side apply
@@ -1219,7 +1219,7 @@ kubectl delete secret tls-boots -n orch-boots
 
 # Observability Minio PVC ignoreDifferences patching and job cleanup
 kubectl patch job orchestrator-observability-mimir-make-minio-buckets-5.4.0 -n orch-platform --type=merge -p='{"metadata":{"finalizers":[]}}'
-kubectl delete job orchestrator-observability-mimir-make-minio-buckets-5.4.0 -n orch-platform --force --grace-period=0
+kubectl delete job orchestrator-observability-mimir-make-minio-buckets-5.4.0 -n orch-platform --force --grace-period=0 2>/dev/null || true
 kubectl delete pods -l job-name="orchestrator-observability-mimir-make-minio-buckets-5.4.0" -n orch-platform --force --grace-period=0 2>/dev/null || true
 
 kubectl patch application orchestrator-observability -n "$apps_ns" --type='json' -p='[{
@@ -1234,7 +1234,7 @@ kubectl patch application orchestrator-observability -n "$apps_ns" --type='json'
 }]'
 
 kubectl patch job edgenode-observability-mimir-make-minio-buckets-5.4.0  -n orch-infra --type=merge -p='{"metadata":{"finalizers":[]}}'
-kubectl delete job edgenode-observability-mimir-make-minio-buckets-5.4.0 -n orch-infra --force --grace-period=0
+kubectl delete job edgenode-observability-mimir-make-minio-buckets-5.4.0 -n orch-infra --force --grace-period=0 2>/dev/null || true
 kubectl delete pods -l job-name="edgenode-observability-mimir-make-minio-buckets-5.4.0" -n orch-infra --force --grace-period=0 2>/dev/null || true
 
 kubectl patch application edgenode-observability -n "$apps_ns" --type='json' -p='[{
