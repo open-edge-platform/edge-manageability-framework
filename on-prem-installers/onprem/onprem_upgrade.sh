@@ -1178,14 +1178,12 @@ echo "✅ harbor-oci-core restarted"
 
 # Cleanup external-secrets installation
 echo "Cleaning up external-secrets installation..."
-kubectl patch application -n "$apps_ns" external-secrets  -p '{"metadata": {"finalizers": ["resources-finalizer.argocd.argoproj.io"]}}' --type merge
-kubectl delete application -n "$apps_ns" external-secrets --cascade=background &
+kubectl delete crd clustersecretstores.external-secrets.io &
 kubectl patch crd/clustersecretstores.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
+kubectl delete crd secretstores.external-secrets.io &
 kubectl patch crd/secretstores.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
+kubectl delete crd externalsecrets.external-secrets.io &
 kubectl patch crd/externalsecrets.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
-kubectl delete crd clustersecretstores.external-secrets.io
-kubectl delete crd externalsecrets.external-secrets.io
-kubectl delete crd secretstores.external-secrets.io
 
 # Apply External Secrets CRDs with server-side apply
 echo "Applying external-secrets CRDs with server-side apply..."
