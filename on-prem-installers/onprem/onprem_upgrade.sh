@@ -273,16 +273,7 @@ force_sync_outofsync_app() {
 
     terminate_existing_sync "$app_name" "$namespace"
     echo "Force syncing $app_name..."
-    kubectl patch -n "$namespace" application "$app_name" --type json -p='[{"op": "replace", "path": "/operation", "value": {"initiatedBy": {"username": "admin"}, "sync": {"syncStrategy": {"hook": {"force": true}, "apply": {"force": true}}, "syncOptions": ["Replace=true", "Force=true", "ServerSideApply=false"]}}}]'
-}
-
-simple_sync_outofsync_app() {
-    local app_name=$1
-    local namespace=$2
-
-    terminate_existing_sync "$app_name" "$namespace"
-    echo "Force syncing $app_name..."
-    kubectl patch -n "$namespace" application "$app_name" --type json -p='[{"op": "replace", "path": "/operation", "value": {"initiatedBy": {"username": "admin"}, "sync": {"syncStrategy": {"hook": {}}}}}]'
+    kubectl patch -n "$namespace" application "$app_name" --type json -p='[{"op": "replace", "path": "/operation", "value": {"initiatedBy": {"username": "admin"}, "sync": {"syncStrategy": {"hook": {}, "apply": {"force": true}}, "syncOptions": ["Replace=true", "Force=true", "ServerSideApply=false"]}}}]'
 }
 
 # Function to check and force sync application if not healthy
@@ -308,26 +299,56 @@ check_and_sync_app() {
     echo "⚠️  $app_name may still require attention after $max_retries attempts"
 }
 
-check_and_simple_sync_app() {
+# Function to wait for application to be Synced and Healthy
+wait_for_app_healthy() {
     local app_name=$1
     local namespace=$2
-    local max_retries=${4:-3}  # Default to 3 retries if not specified
+    local timeout=${3:-600}  # Default 10 minutes if not specified
     
-    for ((i=1; i<=max_retries; i++)); do
-        app_status=$(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
-        
+    local start_time=$(date +%s)
+    set +e
+    while true; do
+        echo "Checking $app_name application status..."
+        local app_status=$(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.sync.status} {.status.health.status}')
         if [[ "$app_status" == "Synced Healthy" ]]; then
-            echo "✅ $app_name is Synced and Healthy"
+            echo "✅ $app_name application is Synced and Healthy."
+            set -e
             return 0
         fi
-        
-        echo "⚠️  $app_name is not Synced and Healthy (status: $app_status). Force-syncing... (attempt $i/$max_retries)"
-        simple_sync_outofsync_app "$app_name" "$namespace"
-        echo "✅ $app_name sync triggered"
-        sleep 60
+        local current_time=$(date +%s)
+        local elapsed=$((current_time - start_time))
+        if (( elapsed > timeout )); then
+            echo "⚠️ Timeout waiting for $app_name to be Synced and Healthy."
+            set -e
+            return 1
+        fi
+        echo "Waiting for $app_name to be Synced and Healthy... (status: $app_status)"
+        sleep 10
     done
+    set -e
+}
+
+# Function to restart a StatefulSet by scaling to 0 and back
+restart_statefulset() {
+    local name=$1
+    local namespace=$2
     
-    echo "⚠️  $app_name may still require attention after $max_retries attempts"
+    echo "Restarting StatefulSet $name in namespace $namespace..."
+    
+    # Get current replica count
+    REPLICAS=$(kubectl get statefulset "$name" -n "$namespace" -o jsonpath='{.spec.replicas}')
+    echo "Current replicas: $REPLICAS"
+    
+    # Scale to 0
+    kubectl scale statefulset "$name" -n "$namespace" --replicas=0
+    
+    # Wait for pods to terminate
+    kubectl wait --for=delete pod -l app="$name" -n "$namespace" --timeout=300s
+    
+    # Scale back to original replica count
+    kubectl scale statefulset "$name" -n "$namespace" --replicas="$REPLICAS"
+    
+    echo "✅ $name restarted"
 }
 
 # Checks if orchestrator is currently installed on the node
@@ -1050,29 +1071,6 @@ echo "✅ dkam deployment restarted"
 
 echo "Restart keycloak-tenant-controller to resolve vault authentication issues"
 
-# Function to restart a StatefulSet by scaling to 0 and back
-restart_statefulset() {
-    local name=$1
-    local namespace=$2
-    
-    echo "Restarting StatefulSet $name in namespace $namespace..."
-    
-    # Get current replica count
-    REPLICAS=$(kubectl get statefulset "$name" -n "$namespace" -o jsonpath='{.spec.replicas}')
-    echo "Current replicas: $REPLICAS"
-    
-    # Scale to 0
-    kubectl scale statefulset "$name" -n "$namespace" --replicas=0
-    
-    # Wait for pods to terminate
-    kubectl wait --for=delete pod -l app="$name" -n "$namespace" --timeout=300s
-    
-    # Scale back to original replica count
-    kubectl scale statefulset "$name" -n "$namespace" --replicas="$REPLICAS"
-    
-    echo "✅ $name restarted"
-}
-
 echo "Restart keycloak-tenant-controller to refresh connection"
 restart_statefulset keycloak-tenant-controller-set orch-platform
 
@@ -1091,27 +1089,7 @@ kubectl apply --server-side=true --force-conflicts -f https://raw.githubusercont
 
 check_and_sync_app external-secrets "$apps_ns"
 
-# Wait for external-secrets to be Synced and Healthy
-start_time=$(date +%s)
-timeout=600 # 10 minutes in seconds
-set +e
-while true; do
-    echo "Checking external-secrets application status..."
-    app_status=$(kubectl get application external-secrets -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}')
-    if [[ "$app_status" == "Synced Healthy" ]]; then
-        echo "✅ external-secrets application is Synced and Healthy."
-        break
-    fi
-    current_time=$(date +%s)
-    elapsed=$((current_time - start_time))
-    if (( elapsed > timeout )); then
-        echo "⚠️ Timeout waiting for external-secrets to be Synced and Healthy."
-        break
-    fi
-    echo "Waiting for external-secrets to be Synced and Healthy... (status: $app_status)"
-    sleep 10
-done
-set -e
+wait_for_app_healthy external-secrets "$apps_ns"
 
 check_and_sync_app copy-app-gitea-cred-to-fleet "$apps_ns"
 check_and_sync_app copy-ca-cert-boots-to-gateway "$apps_ns"
@@ -1128,30 +1106,44 @@ echo "Unsealing vault..."
 vault_unseal
 echo "✅ Vault unsealed successfully"
 
-# Remove stuck keycloak-config-cli job hook
-echo "Removing stuck keycloak-config-cli job hook..."
-if kubectl get job platform-keycloak-keycloak-config-cli -n orch-platform >/dev/null 2>&1; then
-    kubectl patch job platform-keycloak-keycloak-config-cli -n orch-platform \
-        --type='merge' \
-        -p='{"metadata":{"finalizers":[]}}'
-    kubectl delete job platform-keycloak-keycloak-config-cli -n orch-platform --force --grace-period=0
-    kubectl patch job platform-keycloak-keycloak-config-cli -n orch-platform \
-        --type='merge' \
-        -p='{"metadata":{"finalizers":[]}}'
-fi
+kubectl patch -n "$apps_ns" application platform-keycloak --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
-echo "✅ Removed keycloak-config-cli job"
+wait_for_app_healthy platform-keycloak "$apps_ns"
 
-
-simple_sync_outofsync_app platform-keycloak "$apps_ns"
-
-
-kubectl delete job cluster-manager-credentials-script -n orch-cluster --force --grace-period=0
-kubectl delete secret tls-boots -n orch-boots --ignore-not-found=true
+kubectl patch -n "$apps_ns" application cluster-manager --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
 
 ./after_upgrade_restart.sh
 
+
+kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+
+wait_for_app_healthy root-app "$apps_ns"
+
+
+app_status=$(kubectl get application edgenode-observability -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
+if [[ "$app_status" != "Synced Healthy" ]]; then
+    echo "⚠️  edgenode-observability is not Synced and Healthy (status: $app_status). Force-syncing..."
+    terminate_existing_sync edgenode-observability "$apps_ns"
+    kubectl patch -n "$apps_ns" application edgenode-observability --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+else
+    echo "✅ edgenode-observability is already Synced and Healthy, skipping sync"
+fi
+
+wait_for_app_healthy edgenode-observability "$apps_ns"
+
+app_status=$(kubectl get application orchestrator-observability -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
+if [[ "$app_status" != "Synced Healthy" ]]; then
+    echo "⚠️  orchestrator-observability is not Synced and Healthy (status: $app_status). Force-syncing..."
+    terminate_existing_sync orchestrator-observability "$apps_ns"
+    kubectl patch -n "$apps_ns" application orchestrator-observability --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+else
+    echo "✅ orchestrator-observability is already Synced and Healthy, skipping sync"
+fi
+
+wait_for_app_healthy orchestrator-observability "$apps_ns"
+
+# Unsycned leftovers
 # Collect and display syncwave information for OutOfSync applications
 echo "OutOfSync applications by syncwave:"
 outofsync_apps=$(kubectl get applications -n "$apps_ns" -o json | \
@@ -1166,7 +1158,7 @@ echo "Syncing OutOfSync applications in wave order..."
 echo "$outofsync_apps" | while read -r wave app_name; do
     if [[ -n "$app_name" ]]; then
         echo "Processing wave $wave: $app_name"
-        check_and_simple_sync_app "$app_name" "$apps_ns"
+        check_and_sync_app "$app_name" "$apps_ns"
     fi
 done
 
