@@ -870,7 +870,7 @@ patch_secret() {
 
     wait_for_app_synced_healthy postgresql-secrets "$apps_ns"
 
-    check_and_force_sync_app external-secrets "$apps_ns" "true"
+    check_and_force_sync_app postgresql-secrets "$apps_ns" "true"
 
     wait_for_app_synced_healthy postgresql-secrets "$apps_ns"
 
@@ -1176,14 +1176,21 @@ kubectl rollout restart deployment harbor-oci-core -n orch-harbor
 
 echo "✅ harbor-oci-core restarted"
 
-# Cleanup external-secrets installation
+
 echo "Cleaning up external-secrets installation..."
-kubectl delete crd clustersecretstores.external-secrets.io --force --grace-period=0 2>/dev/null || true
-kubectl patch crd/clustersecretstores.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
-kubectl delete crd secretstores.external-secrets.io --force --grace-period=0 2>/dev/null || true
-kubectl patch crd/secretstores.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
-kubectl delete crd externalsecrets.external-secrets.io --force --grace-period=0 2>/dev/null || true
-kubectl patch crd/externalsecrets.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
+
+if kubectl get crd clustersecretstores.external-secrets.io >/dev/null 2>&1; then
+    kubectl delete crd clustersecretstores.external-secrets.io &
+    kubectl patch crd/clustersecretstores.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
+fi
+if kubectl get crd secretstores.external-secrets.io >/dev/null 2>&1; then
+    kubectl delete crd secretstores.external-secrets.io &
+    kubectl patch crd/secretstores.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
+fi
+if kubectl get crd externalsecrets.external-secrets.io >/dev/null 2>&1; then
+    kubectl delete crd externalsecrets.external-secrets.io &
+    kubectl patch crd/externalsecrets.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
+fi
 
 # Apply External Secrets CRDs with server-side apply
 echo "Applying external-secrets CRDs with server-side apply..."
