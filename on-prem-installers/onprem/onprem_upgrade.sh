@@ -393,7 +393,7 @@ check_and_patch_sync_app() {
 wait_for_app_healthy() {
     local app_name=$1
     local namespace=$2
-    local timeout=${3:-600}  # Default 10 minutes if not specified
+    local timeout=${3:-240}  # Default 10 minutes if not specified
     
     local start_time=$(date +%s)
     set +e
