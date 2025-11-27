@@ -1183,7 +1183,7 @@ echo "Syncing OutOfSync applications in wave order..."
 echo "$outofsync_apps" | while read -r wave app_name; do
     if [[ -n "$app_name" ]]; then
         echo "Processing wave $wave: $app_name"
-        check_and_patch_sync_app "$app_name" "$apps_ns"
+        check_and_force_sync_app "$app_name" "$apps_ns"
     fi
 done
 
@@ -1202,7 +1202,7 @@ echo "Syncing OutOfSync applications in wave order..."
 echo "$outofsync_apps" | while read -r wave app_name; do
     if [[ -n "$app_name" ]]; then
         echo "Processing wave $wave: $app_name"
-        check_and_force_sync_app "$app_name" "$apps_ns"
+        check_and_patch_sync_app "$app_name" "$apps_ns"
     fi
 done
 
