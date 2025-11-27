@@ -267,33 +267,36 @@ terminate_existing_sync() {
     fi
 }
 
-# Force sync all OutOfSync applications
-force_sync_outofsync_apps() {
-    echo "Checking for OutOfSync applications..."
-    kubectl get applications -A -o jsonpath='{range .items[?(@.status.sync.status=="OutOfSync")]}{.metadata.name}{"\n"}{end}' | while read -r app; do
-        terminate_existing_sync "$app" "$apps_ns"
-        echo "Force syncing $app..."
-        kubectl patch -n "$apps_ns" application "$app" --type json -p='[{"op": "replace", "path": "/operation", "value": {"initiatedBy": {"username": "admin"}, "sync": {"syncStrategy": {"hook": {}, "apply": {"force": true}}, "syncOptions": ["Replace=true", "Force=true", "ServerSideApply=true"]}}}]'
-    done
-    echo "Completed force sync of OutOfSync applications"
-}
-
 force_sync_outofsync_app() {
     local app_name=$1
     local namespace=$2
 
     terminate_existing_sync "$app_name" "$namespace"
     echo "Force syncing $app_name..."
-    kubectl patch -n "$namespace" application "$app_name" --type json -p='[{"op": "replace", "path": "/operation", "value": {"initiatedBy": {"username": "admin"}, "sync": {"syncStrategy": {"hook": {}, "apply": {"force": true}}, "syncOptions": ["Replace=true", "Force=true", "ServerSideApply=true"]}}}]'
+    kubectl patch -n "$namespace" application "$app_name" --type json -p='[{"op": "replace", "path": "/operation", "value": {"initiatedBy": {"username": "admin"}, "sync": {"syncStrategy": {"hook": {}, "apply": {"force": true}}, "syncOptions": ["Replace=true", "Force=true", "ServerSideApply=false"]}}}]'
 }
 
-force_sync_outofsync_app2() {
+# Function to check and force sync application if not healthy
+check_and_sync_app() {
     local app_name=$1
     local namespace=$2
-
-    terminate_existing_sync "$app_name" "$namespace"
-    echo "Force syncing $app_name..."
-    kubectl patch -n "$namespace" application "$app_name" --type json -p='[{"op": "replace", "path": "/operation", "value": {"initiatedBy": {"username": "admin"}, "sync": {"syncStrategy": {"hook": {"force": true}, "apply": {"force": true}}, "syncOptions": ["Replace=true", "Force=true"]}}}]'
+    local max_retries=${4:-3}  # Default to 3 retries if not specified
+    
+    for ((i=1; i<=max_retries; i++)); do
+        app_status=$(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
+        
+        if [[ "$app_status" == "Synced Healthy" ]]; then
+            echo "✅ $app_name is Synced and Healthy"
+            return 0
+        fi
+        
+        echo "⚠️  $app_name is not Synced and Healthy (status: $app_status). Force-syncing... (attempt $i/$max_retries)"
+        force_sync_outofsync_app "$app_name" "$namespace"
+        echo "✅ $app_name sync triggered"
+        sleep 60
+    done
+    
+    echo "⚠️  $app_name may still require attention after $max_retries attempts"
 }
 
 # Checks if orchestrator is currently installed on the node
@@ -994,29 +997,6 @@ restart_statefulset() {
     echo "✅ $name restarted"
 }
 
-# Function to find and restart all StatefulSets in an application
-restart_app_statefulsets() {
-    local app_name=$1
-    local namespace=$2
-    
-    echo "Finding StatefulSets for application $app_name in namespace $namespace..."
-    
-    # Get all StatefulSets with the app label
-    STATEFULSETS=$(kubectl get statefulset -n "$namespace" -l app="$app_name" -o jsonpath='{.items[*].metadata.name}')
-    
-    if [[ -z "$STATEFULSETS" ]]; then
-        echo "No StatefulSets found for application $app_name"
-        return
-    fi
-    
-    # Restart each StatefulSet
-    for sts in $STATEFULSETS; do
-        restart_statefulset "$sts" "$namespace"
-    done
-    
-    echo "✅ All StatefulSets for $app_name restarted"
-}
-
 echo "Restart keycloak-tenant-controller to refresh connection"
 restart_statefulset keycloak-tenant-controller-set orch-platform
 
@@ -1028,15 +1008,6 @@ echo "Restart harbor-oci-core to refresh connection"
 kubectl rollout restart deployment harbor-oci-core -n orch-harbor
 
 echo "✅ harbor-oci-core restarted"
-
-# Clean up Keycloak config CLI job
-if kubectl get job platform-keycloak-keycloak-config-cli -n orch-platform >/dev/null 2>&1; then
-kubectl patch job platform-keycloak-keycloak-config-cli -n orch-platform \
-        --type='merge' \
-        -p='{"metadata":{"finalizers":[]}}'
-    kubectl delete job platform-keycloak-keycloak-config-cli -n orch-platform --force --grace-period=0
-    echo "✅ platform-keycloak-keycloak-config-cli removed"
-fi
 
 # Apply External Secrets CRDs with server-side apply
 echo "Applying external-secrets CRDs with server-side apply..."
@@ -1082,29 +1053,6 @@ kill $WATCH_PID 2>/dev/null
 echo "Final status:"
 kubectl describe application external-secrets -n "$apps_ns" | grep -A 10 "Status:"
 
-# Function to check and force sync application if not healthy
-check_and_sync_app() {
-    local app_name=$1
-    local namespace=$2
-    local max_retries=${3:-2}  # Default to 2 retries if not specified
-    
-    for ((i=1; i<=max_retries; i++)); do
-        app_status=$(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
-        
-        if [[ "$app_status" == "Synced Healthy" ]]; then
-            echo "✅ $app_name is Synced and Healthy"
-            return 0
-        fi
-        
-        echo "⚠️  $app_name is not Synced and Healthy (status: $app_status). Force-syncing... (attempt $i/$max_retries)"
-        force_sync_outofsync_app "$app_name" "$namespace"
-        echo "✅ $app_name sync triggered"
-        sleep 30
-    done
-    
-    echo "⚠️  $app_name may still require attention after $max_retries attempts"
-}
-
 check_and_sync_app external-secrets "$apps_ns"
 
 check_and_sync_app copy-app-gitea-cred-to-fleet "$apps_ns"
@@ -1117,40 +1065,25 @@ check_and_sync_app copy-ca-cert-gitea-to-cluster "$apps_ns"
 check_and_sync_app copy-cluster-gitea-cred-to-fleet "$apps_ns"
 check_and_sync_app copy-keycloak-admin-to-infra "$apps_ns"
 
-check_and_sync_app orchestrator-observability "$apps_ns"
-check_and_sync_app edgenode-observability "$apps_ns"
 
-check_and_sync_app fleet-rs-secret "$apps_ns"
+# Remove stuck keycloak-config-cli job hook
+echo "Removing stuck keycloak-config-cli job hook..."
+kubectl patch job platform-keycloak-keycloak-config-cli -n orch-platform \
+    --type='merge' \
+    -p='{"metadata":{"finalizers":[]}}'
+kubectl delete job platform-keycloak-keycloak-config-cli -n orch-platform --force --grace-period=0
+echo "✅ Removed keycloak-config-cli job"
 
-
-vault_unseal
-
-# Force delete the keycloak-config-cli job if it's stuck in a hook
-if kubectl get job platform-keycloak-keycloak-config-cli -n orch-platform >/dev/null 2>&1; then
-    echo "Removing stuck keycloak-config-cli job hook..."
-    kubectl patch job platform-keycloak-keycloak-config-cli -n orch-platform \
-        --type='merge' \
-        -p='{"metadata":{"finalizers":[]}}'
-    kubectl delete job platform-keycloak-keycloak-config-cli -n orch-platform --force --grace-period=0 || true
-    echo "✅ Removed keycloak-config-cli job"
-fi
-
-check_and_sync_app cluster-manager "$apps_ns"
-
-# This needs to be added back
-#force_sync_outofsync_apps
-
-kubectl delete job cluster-manager-credentials-script -n orch-cluster --force --grace-period=0 --ignore-not-found=true || true
+kubectl delete job cluster-manager-credentials-script -n orch-cluster --force --grace-period=0 --ignore-not-found=true
 kubectl delete secret tls-boots -n orch-boots --ignore-not-found=true
 
 
-# Run after upgrade script
 ./after_upgrade_restart.sh
 
 # Collect and display syncwave information for OutOfSync applications
 echo "OutOfSync applications by syncwave:"
 outofsync_apps=$(kubectl get applications -n "$apps_ns" -o json | \
-    jq -r '.items[] | select(.status.sync.status=="OutOfSync") | 
+    jq -r '.items[] | select(.status.sync.status=="OutOfSync" and .metadata.name!="root-app") | 
     "\(.metadata.annotations["argocd.argoproj.io/sync-wave"] // "0") \(.metadata.name)"' | \
     sort -n)
 
@@ -1164,11 +1097,5 @@ echo "$outofsync_apps" | while read -r wave app_name; do
         check_and_sync_app "$app_name" "$apps_ns"
     fi
 done
-
-# Force sync all OutOfSync applications
-#force_sync_outofsync_apps
-
-#terminate_existing_sync "root-app" "$apps_ns"
-#kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
 echo "Upgrade completed! Wait for ArgoCD applications to be in 'Synced' and 'Healthy' state"
