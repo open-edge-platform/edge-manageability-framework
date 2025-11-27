@@ -3,3 +3,5 @@
 # SPDX-License-Identifier: Apache-2.0
 
 resources: null
+
+jwksURL: "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master/protocol/openid-connect/certs"

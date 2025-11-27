@@ -35,14 +35,14 @@ onboarding-manager:
   env:
     tinkerActionsVersion: "1.19.8"
     oidc:
-      oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
+      oidc_server_url: "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master"
       # Skip AuthZ for CDN-boots
       clients:
         bypass:
           - cdn-boots
     vaultUrl: "http://vault.orch-platform.svc.cluster.local:8200"
     vaultRole: "orch-svc"
-    keycloakUrl: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
+    keycloakUrl: "http://platform-keycloak.keycloak-system.svc.cluster.local"
   multiTenancy:
     enforceMultiTenancy: true
   resources: null
@@ -55,7 +55,7 @@ dkam:
   env:
     rs_proxy_address: "rs-proxy.orch-platform.svc.cluster.local:8081/"
     oidc:
-      oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
+      oidc_server_url: "http://platform-keycloak.keycloak-system.svc.cluster.local/realms/master"
   resources: null
 
 infra-config:
