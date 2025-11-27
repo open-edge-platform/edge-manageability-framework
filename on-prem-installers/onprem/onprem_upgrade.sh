@@ -273,11 +273,28 @@ force_sync_outofsync_app() {
 
     terminate_existing_sync "$app_name" "$namespace"
     echo "Force syncing $app_name..."
-    kubectl patch -n "$namespace" application "$app_name" --type json -p='[{"op": "replace", "path": "/operation", "value": {"initiatedBy": {"username": "admin"}, "sync": {"syncStrategy": {"hook": {}, "apply": {"force": true}}, "syncOptions": ["Replace=true", "Force=true", "ServerSideApply=false"]}}}]'
+    
+    kubectl patch -n "$namespace" application "$app_name" --type json --patch "$(cat <<EOF
+[{
+    "op": "replace",
+    "path": "/operation",
+    "value": {
+        "initiatedBy": {"username": "admin"},
+        "sync": {
+            "syncStrategy": {
+                "hook": {"force": true},
+                "apply": {"force": true}
+            },
+            "syncOptions": ["Replace=true", "Force=true"]
+        }
+    }
+}]
+EOF
+)"
 }
 
 # Function to check and force sync application if not healthy
-check_and_sync_app() {
+check_and_force_sync_app() {
     local app_name=$1
     local namespace=$2
     local max_retries=${4:-3}  # Default to 3 retries if not specified
@@ -294,6 +311,29 @@ check_and_sync_app() {
         force_sync_outofsync_app "$app_name" "$namespace"
         echo "✅ $app_name sync triggered"
         sleep 60
+    done
+    
+    echo "⚠️  $app_name may still require attention after $max_retries attempts"
+}
+
+check_and_patch_sync_app() {
+    local app_name=$1
+    local namespace=$2
+    local max_retries=${4:-3}  # Default to 3 retries if not specified
+    
+    for ((i=1; i<=max_retries; i++)); do
+        app_status=$(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
+        
+        if [[ "$app_status" == "Synced Healthy" ]]; then
+            echo "✅ $app_name is Synced and Healthy"
+            return 0
+        fi
+        
+        echo "⚠️  $app_name is not Synced and Healthy (status: $app_status). Force-syncing... (attempt $i/$max_retries)"
+        terminate_existing_sync "$app_name" "$namespace"
+        kubectl patch -n "$namespace" application "$app_name" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+        echo "✅ $app_name sync triggered"
+        sleep 120
     done
     
     echo "⚠️  $app_name may still require attention after $max_retries attempts"
@@ -1087,19 +1127,19 @@ echo "✅ harbor-oci-core restarted"
 echo "Applying external-secrets CRDs with server-side apply..."
 kubectl apply --server-side=true --force-conflicts -f https://raw.githubusercontent.com/external-secrets/external-secrets/refs/tags/v0.20.4/deploy/crds/bundle.yaml || true
 
-check_and_sync_app external-secrets "$apps_ns"
+check_and_force_sync_app external-secrets "$apps_ns"
 
 wait_for_app_healthy external-secrets "$apps_ns"
 
-check_and_sync_app copy-app-gitea-cred-to-fleet "$apps_ns"
-check_and_sync_app copy-ca-cert-boots-to-gateway "$apps_ns"
-check_and_sync_app copy-ca-cert-boots-to-infra "$apps_ns"
-check_and_sync_app copy-ca-cert-gateway-to-cattle "$apps_ns"
-check_and_sync_app copy-ca-cert-gateway-to-infra "$apps_ns"
-check_and_sync_app copy-ca-cert-gitea-to-app "$apps_ns"
-check_and_sync_app copy-ca-cert-gitea-to-cluster "$apps_ns"
-check_and_sync_app copy-cluster-gitea-cred-to-fleet "$apps_ns"
-check_and_sync_app copy-keycloak-admin-to-infra "$apps_ns"
+check_and_force_sync_app copy-app-gitea-cred-to-fleet "$apps_ns"
+check_and_force_sync_app copy-ca-cert-boots-to-gateway "$apps_ns"
+check_and_force_sync_app copy-ca-cert-boots-to-infra "$apps_ns"
+check_and_force_sync_app copy-ca-cert-gateway-to-cattle "$apps_ns"
+check_and_force_sync_app copy-ca-cert-gateway-to-infra "$apps_ns"
+check_and_force_sync_app copy-ca-cert-gitea-to-app "$apps_ns"
+check_and_force_sync_app copy-ca-cert-gitea-to-cluster "$apps_ns"
+check_and_force_sync_app copy-cluster-gitea-cred-to-fleet "$apps_ns"
+check_and_force_sync_app copy-keycloak-admin-to-infra "$apps_ns"
 
 # Unseal vault after external-secrets is ready
 echo "Unsealing vault..."
@@ -1120,29 +1160,6 @@ kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/argo-cd/sync-
 
 wait_for_app_healthy root-app "$apps_ns"
 
-
-app_status=$(kubectl get application edgenode-observability -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
-if [[ "$app_status" != "Synced Healthy" ]]; then
-    echo "⚠️  edgenode-observability is not Synced and Healthy (status: $app_status). Force-syncing..."
-    terminate_existing_sync edgenode-observability "$apps_ns"
-    kubectl patch -n "$apps_ns" application edgenode-observability --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
-else
-    echo "✅ edgenode-observability is already Synced and Healthy, skipping sync"
-fi
-
-wait_for_app_healthy edgenode-observability "$apps_ns"
-
-app_status=$(kubectl get application orchestrator-observability -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
-if [[ "$app_status" != "Synced Healthy" ]]; then
-    echo "⚠️  orchestrator-observability is not Synced and Healthy (status: $app_status). Force-syncing..."
-    terminate_existing_sync orchestrator-observability "$apps_ns"
-    kubectl patch -n "$apps_ns" application orchestrator-observability --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
-else
-    echo "✅ orchestrator-observability is already Synced and Healthy, skipping sync"
-fi
-
-wait_for_app_healthy orchestrator-observability "$apps_ns"
-
 # Unsycned leftovers
 # Collect and display syncwave information for OutOfSync applications
 echo "OutOfSync applications by syncwave:"
@@ -1158,7 +1175,7 @@ echo "Syncing OutOfSync applications in wave order..."
 echo "$outofsync_apps" | while read -r wave app_name; do
     if [[ -n "$app_name" ]]; then
         echo "Processing wave $wave: $app_name"
-        check_and_sync_app "$app_name" "$apps_ns"
+        check_and_patch_sync_app "$app_name" "$apps_ns"
     fi
 done
 
