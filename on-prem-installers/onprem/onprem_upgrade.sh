@@ -1324,6 +1324,7 @@ kubectl patch -n "$apps_ns" application platform-keycloak --patch-file /tmp/argo
 
 kubectl patch -n "$apps_ns" application cluster-manager --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
+kubectl delete secret tls-boots -n orch-boots
 
 #./after_upgrade_restart.sh
 
