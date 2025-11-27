@@ -41,3 +41,6 @@ kubectl patch -n "$TARGET_ENV" application root-app --patch-file /tmp/argo-cd/sy
 
 # argo has trouble replacing this seceret so manually remove it
 kubectl delete secret tls-boots -n orch-boots
+
+# force vault to reload
+kubectl delete statefulset -n orch-platform vault
