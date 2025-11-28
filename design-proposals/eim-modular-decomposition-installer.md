@@ -2,7 +2,7 @@
 
 Author(s): Edge Infrastructure Manager Team
 
-Last Updated: 2025-11-27
+Last Updated: 2025-11-28
 
 ## Abstract
 
@@ -58,10 +58,14 @@ installer, configuration installer, orchestrator installer will be excluded from
 components are part of the foundational infrastructure layer that may already be provided by the customer's environment
 in Track 2 scenarios.
 
+![EMF stack install to EIM Modular install for Track 2](./images/emf-stack-eim-modular-install-track2.png)
+
 For Track 1 deployments, the essential platform components—including Gitea for repository management and ArgoCD for
 application lifecycle management—will be integrated into the Orchestrator installation script. This approach streamlines
 the installation process while maintaining the necessary tooling to support GitOps-based deployment workflows for
 modular EIM services.
+
+![EMF stack install to EIM Modular install for Track 1](./images/emf-stack-eim-modular-install-track1.png)
 
 The Edge Node agent installation scripts will be included as part of the EMF deployment package scripts.
 
@@ -191,6 +195,8 @@ new installation scripts can be pulled down onto the edge node and run directly.
 configuration of the OS to enable communication with the Orchestrator as well as pulling down the required agent Debian
 packages from the release apt repository using standard apt commands. It will also perform any configuration of the
 agents that is needed to support the use case deployment.
+
+![Modular install flow for edge node agents](./images/modular-edge-node-install.png)
 
 Below is an outline of the installation flow for the edge node agents:
 
