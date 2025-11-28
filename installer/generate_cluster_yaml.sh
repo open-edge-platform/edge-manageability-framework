@@ -255,6 +255,7 @@ elif [ "$DEPLOY_TYPE" = "aws" ]; then
     fi
 
     # Email Profile
+    echo "ℹ️ SMTP_URL value is: ${SMTP_URL}"
     if [ -z "${SMTP_URL:-}" ]; then
         export EMAIL_PROFILE="#- orch-configs/profiles/alerting-emails.yaml"
     else
