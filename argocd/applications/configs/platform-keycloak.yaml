@@ -82,7 +82,7 @@ keycloakConfigCli:
   ##
   annotations:
     helm.sh/hook: "post-install"
-    helm.sh/hook-delete-policy: "hook-succeeded"
+    helm.sh/hook-delete-policy: "before-hook-creation"
 
   ## do not inject sidecar to pods for job
   podLabels:
