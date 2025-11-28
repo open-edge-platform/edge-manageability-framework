@@ -1,3 +1,8 @@
+
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
 kubectl patch application -n $TARGET_ENV external-secrets  -p '{"metadata": {"finalizers": ["resources-finalizer.argocd.argoproj.io"]}}' --type merge
 kubectl delete application -n $TARGET_ENV external-secrets --cascade=background &
 
@@ -22,8 +27,8 @@ kubectl delete service -n orch-secret  external-secrets-webhook &
 kubectl delete -f https://raw.githubusercontent.com/external-secrets/external-secrets/main/deploy/crds/bundle.yaml
 
 echo "Deleted extern-secrets"
-echo "sleep for 60s"
-sleep 60
+echo "sleep for 100s"
+sleep 100
 kubectl apply --server-side=true --force-conflicts -f https://raw.githubusercontent.com/external-secrets/external-secrets/refs/tags/v0.20.4/deploy/crds/bundle.yaml || true
 # Stop old sync as it will be stuck.
 kubectl patch application root-app -n "$TARGET_ENV" --type merge -p '{"operation":null}'
