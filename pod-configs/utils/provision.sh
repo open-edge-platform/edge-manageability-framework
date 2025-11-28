@@ -1142,7 +1142,6 @@ EOF
 
         popd
 
-
         jq  -n ". += {\"gitea_argo_user\":${gitea_argo_user}}" | \
         jq  ". += {\"gitea_argo_token\":${gitea_argo_token}}" | \
         jq  ". += {\"gitea_co_user\":${gitea_co_user}}" | \
@@ -1358,6 +1357,8 @@ action_orch_loadbalancer() {
             echo "ARGOCD_TG_ARN=${argocd_tg_arn}" >> ~/.env
         fi
         popd
+
+        backup_env_to_s3
     fi
 
     rm -rf $dir
@@ -1665,6 +1666,7 @@ install() {
     if ! check_s3_savedir_empty && ! [[ -f ${values_changed} ]]; then
         download_savedir
         echo "Info: Pulled S3 ${SAVE_DIR}."
+        restore_env_from_s3
     fi
 
     if [[ ! -f ${SAVE_DIR}/${VARIABLE_TFVAR} ]]; then
@@ -1736,6 +1738,7 @@ uninstall() {
     if ! check_s3_savedir_empty && ! [[ -f ${values_changed} ]]; then
         download_savedir
         echo "Info: Pulled S3 ${SAVE_DIR}."
+        restore_env_from_s3
     else
         echo "Warning: Failed to download data files from S3. Make sure the value specified for the --customer-state-prefix parameter is correct. Type \"yes\" to continue, others to quit: "; read s
 
@@ -1809,6 +1812,7 @@ pull-savedir() {
     if check_local_savedir_empty && ! check_s3_savedir_empty; then
         download_savedir
         echo "Info: files have been pulled in the ${SAVE_DIR} directory."
+        restore_env_from_s3
     else
         echo "Error: Some files have existed. No file is pulled. If you really want to pull, remove the files related to ${ENV_NAME} from the ${SAVE_DIR} directory and try again."
         exit 1
@@ -1939,6 +1943,7 @@ config() {
     if ! check_s3_savedir_empty && ! [[ -f ${values_changed} ]]; then
         download_savedir
         echo "Info: Pulled S3 ${SAVE_DIR}."
+        restore_env_from_s3
     fi
 
     set_values "config"
@@ -2010,6 +2015,7 @@ upgrade() {
     echo "Info: Checking deployed version..."
 
     download_savedir
+    restore_env_from_s3
     load_values
     check_running_sshuttle
     refresh_sshuttle
@@ -2069,6 +2075,7 @@ update-cluster-setting() {
     if ! check_s3_savedir_empty; then
         download_savedir
         echo "Info: Pulled S3 ${SAVE_DIR}."
+        restore_env_from_s3
     fi
 
     local profile_file="$SAVE_DIR/$PROFILE_TFVAR"
