@@ -1300,9 +1300,9 @@ check_and_force_sync_app copy-keycloak-admin-to-infra "$apps_ns"
 
 cleanup_job namespace-label
 cleanup_job wait-istio-job
-kubectl patch application wait-istio-job -n $apps_ns" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
-kubectl patch application namespace-label -n $apps_ns" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
-kubectl patch application infra-external -n  $apps_ns" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+kubectl patch application wait-istio-job -n "$apps_ns" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+kubectl patch application namespace-label -n "$apps_ns" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+kubectl patch application infra-external -n  "$apps_ns" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
 
 # Unseal vault after external-secrets is ready
@@ -1420,10 +1420,10 @@ done
 
 
 # Stop root-app old sync as it will be stuck.
-kubectl patch application root-app -n  $apps_ns"  --type merge -p '{"operation":null}'
-kubectl patch application root-app -n  $apps_ns"  --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
+kubectl patch application root-app -n  "$apps_ns"  --type merge -p '{"operation":null}'
+kubectl patch application root-app -n  "$apps_ns"  --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
 #Apply root-app Patch
-kubectl patch application root-app -n  $apps_ns"  --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+kubectl patch application root-app -n  "apps_ns"  --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
 wait_for_app_synced_healthy root-app "$apps_ns"
 
