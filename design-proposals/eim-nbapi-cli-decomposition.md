@@ -268,13 +268,13 @@ CLI Command Flow:
 
 **Status**: Investigation in progress
 
-## Building REST API Spec per Scenario
+### Building REST API Spec per Scenario
 
 The following is the proposed solution (draft) to the requirement for decomposition of EMF, where the exposed REST API is limited to support a specific scenario and maintains compatibility with other scenarios.
 
-### Implementation Steps
+#### Implementation Steps
 
-#### Step 1: Restructure Proto Definitions
+##### Step 1: Restructure Proto Definitions
 
 Split the monolithic `services.proto` file into multiple folders/files per service:
 
@@ -294,7 +294,7 @@ api/proto/services/
         └── telemetry_service.proto
 ```
 
-#### Step 2: Define Scenario Manifests
+##### Step 2: Define Scenario Manifests
 
 Maintain scenario manifests that list the REST API services supported by each scenario.
 
@@ -325,19 +325,19 @@ services:
 - Each scenario gets its own container image
 - Clear, declarative configuration
 
-#### Step 3: Expose API Capabilities Endpoint
+##### Step 3: Expose API Capabilities Endpoint
 
 Add a new service that lists supported services in the current scenario as part of other ADR.
 
-#### Step 4: Modify Build Process
+##### Step 4: Modify Build Process
 
 Modify "buf-gen" make target to build the openapi spec for suported services as per scenario manifest. (Later Tag the image with scenario name and version).
 
-#### Step 5: Generate Scenario-Specific OpenAPI Specs
+##### Step 5: Generate Scenario-Specific OpenAPI Specs
 
 Step 4 generates the `openapi.yaml` file containing only the services supported by the particular scenario. The output file can be named per scenario. An image is build per scenario and pushed seperately.
 
-#### Step 6: CLI Integration
+##### Step 6: CLI Integration
 
 The CLI handles scenario variations through dynamic capability discovery:
 
