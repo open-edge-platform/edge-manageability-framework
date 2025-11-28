@@ -457,98 +457,6 @@ check_and_cleanup_job() {
     fi
 }
 
-# Function to wait for a Kubernetes job to complete
-wait_for_job_completion() {
-    local job_name=$1
-    local job_namespace=$2
-    local app=$3
-    local max_wait=${4:-90}  # Default 5 minutes if not specified
-    local check_interval=3
-
-    echo "Checking if job $job_name exists in namespace $job_namespace..."
-    if kubectl get job "$job_name" -n "$job_namespace" >/dev/null 2>&1; then
-        echo "✅ Job $job_name exists"
-        
-        job_status=$(kubectl get job "$job_name" -n "$job_namespace" -o jsonpath='{.status.conditions[?(@.type=="Complete")].status}' 2>/dev/null || echo "")
-        
-        if [[ "$job_status" != "True" ]]; then
-            echo "⚠️  Job $job_name has not succeeded, deleting and waiting for completion..."
-            kubectl delete job "$job_name" -n "$job_namespace" --force --grace-period=0 &
-            kubectl patch job "$job_name" -n "$job_namespace" --type=merge -p='{"metadata":{"finalizers":[]}}'
-              
-            elapsed=0
-            while [ $elapsed -lt $max_wait ]; do
-                if kubectl get job "$job_name" -n "$job_namespace" >/dev/null 2>&1; then
-                    job_status=$(kubectl get job "$job_name" -n "$job_namespace" -o jsonpath='{.status.conditions[?(@.type=="Complete")].status}' 2>/dev/null || echo "")
-                    
-                    if [[ "$job_status" == "True" ]]; then
-                        echo "✅ Job $job_name completed successfully"
-                        return 0
-                    fi
-                    
-                    succeeded=$(kubectl get job "$job_name" -n "$job_namespace" -o jsonpath='{.status.succeeded}' 2>/dev/null || echo "0")
-                    active=$(kubectl get job "$job_name" -n "$job_namespace" -o jsonpath='{.status.active}' 2>/dev/null || echo "0")
-                    failed=$(kubectl get job "$job_name" -n "$job_namespace" -o jsonpath='{.status.failed}' 2>/dev/null || echo "0")
-                    
-                    echo "⏳ Waiting for job $job_name to complete... (${elapsed}s/${max_wait}s) - Active: $active, Succeeded: $succeeded, Failed: $failed"
-                else
-                    echo "⏳ Waiting for job $job_name to be created... (${elapsed}s/${max_wait}s)"
-                fi
-                
-                sleep $check_interval
-                elapsed=$((elapsed + check_interval))
-            done
-            
-            if [ $elapsed -ge $max_wait ]; then
-                echo "⚠️  Timeout waiting for job $job_name to complete after ${max_wait}s"
-                return 1
-            fi
-        else
-            echo "✅ Job $job_name has already succeeded"
-            return 0
-        fi
-    else
-        echo "ℹ️  Job $job_name does not exist yet, waiting for it to be created and complete..."
-
-        for ((try=1; try<=2; try++)); do
-            echo "Attempt $try/2 to sync and wait for job $job_name..."
-            check_and_patch_sync_app "$app" "$apps_ns"
-
-            elapsed=0
-            while [ $elapsed -lt $max_wait ]; do
-            if kubectl get job "$job_name" -n "$job_namespace" >/dev/null 2>&1; then
-                job_status=$(kubectl get job "$job_name" -n "$job_namespace" -o jsonpath='{.status.conditions[?(@.type=="Complete")].status}' 2>/dev/null || echo "")
-                
-                if [[ "$job_status" == "True" ]]; then
-                echo "✅ Job $job_name completed successfully"
-                return 0
-                fi
-                
-                succeeded=$(kubectl get job "$job_name" -n "$job_namespace" -o jsonpath='{.status.succeeded}' 2>/dev/null || echo "0")
-                active=$(kubectl get job "$job_name" -n "$job_namespace" -o jsonpath='{.status.active}' 2>/dev/null || echo "0")
-                failed=$(kubectl get job "$job_name" -n "$job_namespace" -o jsonpath='{.status.failed}' 2>/dev/null || echo "0")
-                
-                echo "⏳ Waiting for job $job_name to complete... (${elapsed}s/${max_wait}s) - Active: $active, Succeeded: $succeeded, Failed: $failed"
-            else
-                echo "⏳ Waiting for job $job_name to be created... (${elapsed}s/${max_wait}s)"
-            fi
-            
-            sleep $check_interval
-            elapsed=$((elapsed + check_interval))
-            done
-            
-            if [ $try -lt 2 ]; then
-            echo "⚠️  Attempt $try failed, retrying..."
-            fi
-        done
-        
-        if [ $elapsed -ge $max_wait ]; then
-            echo "⚠️  Timeout waiting for job $job_name to complete after ${max_wait}s"
-            return 1
-        fi
-    fi
-}
-
 # Checks if orchestrator is currently installed on the node
 # check_orch_install <array[@] of package names>
 check_orch_install() {
@@ -1336,8 +1244,6 @@ echo "✅ Vault unsealed successfully"
 
 kubectl patch -n "$apps_ns" application platform-keycloak --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
-wait_for_job_completion "platform-keycloak-keycloak-config-cli" "orch-platform" "platform-keycloak"
-
 wait_for_app_synced_healthy platform-keycloak "$apps_ns"
 
 kubectl patch -n "$apps_ns" application cluster-manager --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
@@ -1447,10 +1353,7 @@ done
 # Stop root-app old sync as it will be stuck.
 kubectl patch application root-app -n  "$apps_ns"  --type merge -p '{"operation":null}'
 kubectl patch application root-app -n  "$apps_ns"  --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
-#Apply root-app Patch
+# Apply root-app Patch
 kubectl patch application root-app -n  "$apps_ns"  --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
-
-#wait_for_app_synced_healthy root-app "$apps_ns"
-
 
 echo "Upgrade completed! Wait for ArgoCD applications to be in 'Synced' and 'Healthy' state"
