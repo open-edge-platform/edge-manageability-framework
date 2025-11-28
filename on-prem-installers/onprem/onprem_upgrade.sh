@@ -1265,7 +1265,7 @@ function cleanup_job() {
 }
 
 
-function fix_external_secret "$apps_ns"
+fix_external_secret "$apps_ns"
 check_and_force_sync_app external-secrets "$apps_ns" "true"
 wait_for_app_synced_healthy external-secrets "$apps_ns"
 
