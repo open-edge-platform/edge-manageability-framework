@@ -1185,6 +1185,19 @@ echo "✅ harbor-oci-core restarted"
 
 echo "Cleaning up external-secrets installation..."
 
+if kubectl get crd clustersecretstores.external-secrets.io >/dev/null 2>&1; then
+    kubectl delete crd clustersecretstores.external-secrets.io &
+    kubectl patch crd/clustersecretstores.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
+fi
+if kubectl get crd secretstores.external-secrets.io >/dev/null 2>&1; then
+    kubectl delete crd secretstores.external-secrets.io &
+    kubectl patch crd/secretstores.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
+fi
+if kubectl get crd externalsecrets.external-secrets.io >/dev/null 2>&1; then
+    kubectl delete crd externalsecrets.external-secrets.io &
+    kubectl patch crd/externalsecrets.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
+fi
+
 fix_external_secret() {
   TARGET_ENV=$1
     echo "===== Starting Function-1: External Secrets Fix ====="
@@ -1265,7 +1278,12 @@ cleanup_job() {
 }
 
 
-fix_external_secret "$apps_ns"
+#fix_external_secret "$apps_ns"
+
+# Apply External Secrets CRDs with server-side apply
+echo "Applying external-secrets CRDs with server-side apply..."
+kubectl apply --server-side=true --force-conflicts -f https://raw.githubusercontent.com/external-secrets/external-secrets/refs/tags/v0.20.4/deploy/crds/bundle.yaml || true
+
 check_and_force_sync_app external-secrets "$apps_ns" "true"
 wait_for_app_synced_healthy external-secrets "$apps_ns"
 
@@ -1286,11 +1304,6 @@ kubectl patch application wait-istio-job -n $apps_ns" --patch-file /tmp/argo-cd/
 kubectl patch application namespace-label -n $apps_ns" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 kubectl patch application infra-external -n  $apps_ns" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
-# Stop root-app old sync as it will be stuck.
-kubectl patch application root-app -n "$TARGET_ENV" --type merge -p '{"operation":null}'
-kubectl patch application root-app -n "$TARGET_ENV" --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
-#Apply root-app Patch
-kubectl patch application root-app -n "${TARGET_ENV}" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
 # Unseal vault after external-secrets is ready
 echo "Unsealing vault..."
@@ -1303,7 +1316,11 @@ wait_for_app_synced_healthy platform-keycloak "$apps_ns"
 
 kubectl patch -n "$apps_ns" application cluster-manager --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
-
+# Stop root-app old sync as it will be stuck.
+kubectl patch application root-app -n  $apps_ns"  --type merge -p '{"operation":null}'
+kubectl patch application root-app -n  $apps_ns"  --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
+#Apply root-app Patch
+kubectl patch application root-app -n  $apps_ns"  --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 kubectl delete secret tls-boots -n orch-boots
 
 # Observability Minio PVC ignoreDifferences patching and job cleanup
@@ -1402,7 +1419,11 @@ echo "$outofsync_apps" | while read -r wave app_name; do
 done
 
 
-kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+# Stop root-app old sync as it will be stuck.
+kubectl patch application root-app -n  $apps_ns"  --type merge -p '{"operation":null}'
+kubectl patch application root-app -n  $apps_ns"  --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
+#Apply root-app Patch
+kubectl patch application root-app -n  $apps_ns"  --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
 wait_for_app_synced_healthy root-app "$apps_ns"
 
