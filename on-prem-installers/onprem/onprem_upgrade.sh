@@ -1234,7 +1234,7 @@ EOF
     kubectl patch -n "$TARGET_ENV" application root-app --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 }
 
-function cleanup_job() {
+cleanup_job() {
 
     local job_name=$1
 
