@@ -870,9 +870,15 @@ patch_secret() {
 
     wait_for_app_synced_healthy postgresql-secrets "$apps_ns"
 
-    check_and_force_sync_app postgresql-secrets "$apps_ns" "true"
+    check_and_patch_sync_app postgresql-secrets "$apps_ns"
 
     wait_for_app_synced_healthy postgresql-secrets "$apps_ns"
+
+    # Check if postgresql-secrets is Synced and Healthy
+    app_status=$(kubectl get application postgresql-secrets -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
+    if [[ "$app_status" != "Synced Healthy" ]]; then
+        check_and_patch_sync_app root-app "$apps_ns"
+    fi
 
     # Check for secret every 5 sec for 10 times
     for i in $(seq 1 40); do
