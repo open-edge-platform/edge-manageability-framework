@@ -253,7 +253,8 @@ terminate_existing_sync() {
     local app_name=$1
     local namespace=$2
 
-    local current_phase=$(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.operationState.phase}' 2>/dev/null)
+    local current_phase
+    current_phase=$(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.operationState.phase}' 2>/dev/null)
 
     if [[ "$current_phase" == "Running" ]]; then
         echo "🛑 Terminating existing sync operation..."
@@ -391,17 +392,20 @@ wait_for_app_synced_healthy() {
     local namespace=$2
     local timeout=${3:-120}  # Default 120 seconds if not specified
     
-    local start_time=$(date +%s)
+    local start_time
+    start_time=$(date +%s)
     set +e
     while true; do
         echo "Checking $app_name application status..."
-        local app_status=$(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
+        local app_status
+        app_status=$(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
         if [[ "$app_status" == "Synced Healthy" ]]; then
             echo "✅ $app_name application is Synced and Healthy."
             set -e
             return 0
         fi
-        local current_time=$(date +%s)
+        local current_time
+        current_time=$(date +%s)
         local elapsed=$((current_time - start_time))
         if (( elapsed > timeout )); then
             echo "⚠️ Timeout waiting for $app_name to be Synced and Healthy after ${timeout}s (status: $app_status)"
