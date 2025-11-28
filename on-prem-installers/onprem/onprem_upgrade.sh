@@ -1360,4 +1360,9 @@ kubectl patch application root-app -n  "$apps_ns"  --type json -p '[{"op": "remo
 # Apply root-app Patch
 kubectl patch application root-app -n  "$apps_ns"  --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
+kubectl delete secret tls-boots -n orch-boots
+kubectl delete secret boots-ca-cert -n orch-gateway
+kubectl delete secret boots-ca-cert -n orch-infra
+kubectl delete pod -n orch-infra -l app.kubernetes.io/name=dkam 2>/dev/null
+ 
 echo "Upgrade completed! Wait for ArgoCD applications to be in 'Synced' and 'Healthy' state"
