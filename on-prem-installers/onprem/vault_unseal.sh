@@ -90,5 +90,6 @@ vault_unseal() {
   echo "Logging in to Vault with root token..."
   kubectl exec -it vault-0 -n orch-platform -c vault -- vault login token="$token"
 
-  kubectl delete pod --ignore-not-found=true -n orch-platform platform-keycloak-0
+  # This causes issues with Keycloak config cli
+  #kubectl delete pod --ignore-not-found=true -n orch-platform platform-keycloak-0
 }

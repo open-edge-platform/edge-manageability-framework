@@ -436,6 +436,27 @@ restart_statefulset() {
     echo "✅ $name restarted"
 }
 
+
+# Function to check app status and clean up job if needed
+check_and_cleanup_job() {
+    local app_name=$1
+    local namespace=$2
+    local job_label=${3:-job-name}
+    
+    app_status=$(kubectl get application "$app_name" -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
+    if [[ "$app_status" != "Synced Healthy" ]]; then
+        if kubectl get job -n "$namespace" -l "$job_label" 2>/dev/null | grep "$app_name"; then
+            echo "Deleting $app_name job..."
+            job_name=$(kubectl get job -n "$namespace" -l "$job_label" | grep "$app_name" | awk '{print $1}')
+            kubectl delete job "$job_name" -n "$namespace" --force --grace-period=0 --ignore-not-found
+            echo "✅ $app_name job deleted"
+            kubectl patch -n "$apps_ns" application "$app_name" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+        else
+            echo "ℹ️  No $app_name job found to delete"
+        fi
+    fi
+}
+
 # Checks if orchestrator is currently installed on the node
 # check_orch_install <array[@] of package names>
 check_orch_install() {
@@ -1267,6 +1288,10 @@ check_and_patch_sync_app orchestrator-observability "$apps_ns"
 # Cleanup infra-external jobs
 kubectl delete jobs setup-databases-mps setup-databases-rps amt-dbpassword-secret-job init-amt-vault-job -n orch-infra --force --grace-period=0 --ignore-not-found
 
+
+check_and_cleanup_job "namespace-label" "ns-label"
+check_and_cleanup_job "wait-istio-job" "ns-label"
+
 # Unsynced leftovers using patch sync
 # Collect and display syncwave information for OutOfSync applications
 echo "OutOfSync applications by syncwave:"
@@ -1324,7 +1349,6 @@ echo "$outofsync_apps" | while read -r wave app_name; do
         check_and_force_sync_app "$app_name" "$apps_ns"
     fi
 done
-
 
 kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
