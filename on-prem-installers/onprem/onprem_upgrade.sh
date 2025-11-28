@@ -1185,8 +1185,8 @@ echo "✅ harbor-oci-core restarted"
 
 echo "Cleaning up external-secrets installation..."
 
-function fix_external_secret() {
-  TARGET_ENV=${1}
+fix_external_secret() {
+  TARGET_ENV=$1
     echo "===== Starting Function-1: External Secrets Fix ====="
 
     kubectl patch application -n $TARGET_ENV external-secrets  -p '{"metadata": {"finalizers": ["resources-finalizer.argocd.argoproj.io"]}}' --type merge
@@ -1246,7 +1246,7 @@ function cleanup_job() {
     echo "===== Starting Job Cleanup for: $job_name ====="
 
     # Get the namespaces where this job exists
-    namespaces=$(kubectl get job -A | grep "^$job_name" | awk '{print $1}')
+    namespaces=$(kubectl get job -A | grep "$job_name" | awk '{print $1}')
 
     if [[ -z "$namespaces" ]]; then
         echo "✅ Job '$job_name' not found in any namespace"
