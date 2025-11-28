@@ -626,26 +626,24 @@ class AutoInstall:
 
         self.installer_session.expect("orchestrator-admin:pod-configs", timeout=60)
 
-        print("Inserting SMTP details into tfvar file to enable alerting emails.")
-
         if self.SMTP_URL != None and self.SMTP_URL != 'null':
-            print("here1")
+            print("Inserting smtp_url into values tfvar file")
             self.insert_smtp_details_helper("smtp_url", self.SMTP_URL)
 
         if self.SMTP_PORT != None and self.SMTP_PORT != 'null':
-            print("here2")
+            print("Inserting smtp_port into values tfvar file")
             self.insert_smtp_details_helper("smtp_port", self.SMTP_PORT)
 
         if self.SMTP_FROM != None and self.SMTP_FROM != 'null':
-            print("here3")
+            print("Inserting smtp_from into values tfvar file")
             self.insert_smtp_details_helper("smtp_from", self.SMTP_FROM)
 
         if self.SMTP_USER != None and self.SMTP_USER != 'null':
-            print("here4")
+            print("Inserting smtp_user into values tfvar file")
             self.insert_smtp_details_helper("smtp_user", self.SMTP_USER)
 
         if self.SMTP_PASS != None and self.SMTP_PASS != 'null':
-            print("here5")
+            print("Inserting smtp_pass into values tfvar file")
             self.insert_smtp_details_helper("smtp_pass", self.SMTP_PASS)
 
     def provision_upgrade(self):
