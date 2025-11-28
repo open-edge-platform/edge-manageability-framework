@@ -141,6 +141,7 @@ sync_until_green() {
 
         # Sync apps that are not green
         sync_not_green_apps_once
+        kubectl get application -A
 
         echo "Waiting 10 seconds before next check..."
         sleep 10
