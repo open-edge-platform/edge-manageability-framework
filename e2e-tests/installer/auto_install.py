@@ -628,23 +628,23 @@ class AutoInstall:
 
         print("Inserting SMTP details into tfvar file to enable alerting emails.")
 
-        if self.SMTP_URL != None:
+        if self.SMTP_URL != None and self.SMTP_URL != 'null':
             print("here1")
             self.insert_smtp_details_helper("smtp_url", self.SMTP_URL)
 
-        if self.SMTP_PORT != None:
+        if self.SMTP_PORT != None and self.SMTP_PORT != 'null':
             print("here2")
             self.insert_smtp_details_helper("smtp_port", self.SMTP_PORT)
 
-        if self.SMTP_FROM != None:
+        if self.SMTP_FROM != None and self.SMTP_FROM != 'null':
             print("here3")
             self.insert_smtp_details_helper("smtp_from", self.SMTP_FROM)
 
-        if self.SMTP_USER != None:
+        if self.SMTP_USER != None and self.SMTP_USER != 'null':
             print("here4")
             self.insert_smtp_details_helper("smtp_user", self.SMTP_USER)
 
-        if self.SMTP_PASS != None:
+        if self.SMTP_PASS != None and self.SMTP_PASS != 'null':
             print("here5")
             self.insert_smtp_details_helper("smtp_pass", self.SMTP_PASS)
 
