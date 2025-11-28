@@ -1259,7 +1259,7 @@ cleanup_job() {
     echo "===== Starting Job Cleanup for: $job_name ====="
 
     # Get the namespaces where this job exists
-    namespaces=$(kubectl get job -A | grep "$job_name" | awk '{print $1}')
+    namespaces=$(kubectl get pod -A | grep "$job_name" | awk '{print $1}')
 
     if [[ -z "$namespaces" ]]; then
         echo "✅ Job '$job_name' not found in any namespace"
@@ -1269,7 +1269,7 @@ cleanup_job() {
     # Delete job in each namespace
     for ns in $namespaces; do
         echo "Deleting job: $job_name in namespace: $ns"
-        kubectl delete job "$job_name" -n "$ns" --ignore-not-found=true --cascade=foreground
+        kubectl delete pod "$job_name" -n "$ns" --ignore-not-found=true --cascade=foreground
         echo "------------------------------------------------------"
     done
 
@@ -1300,10 +1300,6 @@ check_and_force_sync_app copy-keycloak-admin-to-infra "$apps_ns"
 
 cleanup_job namespace-label
 cleanup_job wait-istio-job
-kubectl patch application wait-istio-job -n "$apps_ns" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
-kubectl patch application namespace-label -n "$apps_ns" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
-kubectl patch application infra-external -n  "$apps_ns" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
-
 
 # Unseal vault after external-secrets is ready
 echo "Unsealing vault..."
@@ -1361,6 +1357,9 @@ check_and_patch_sync_app orchestrator-observability "$apps_ns"
 kubectl delete jobs setup-databases-mps setup-databases-rps amt-dbpassword-secret-job init-amt-vault-job -n orch-infra --force --grace-period=0 --ignore-not-found
 
 # Unsynced leftovers using patch sync
+
+process_unsynced_leftovers() {
+apps_ns=$1
 # Collect and display syncwave information for OutOfSync applications
 echo "OutOfSync applications by syncwave:"
 outofsync_apps=$(kubectl get applications -n "$apps_ns" -o json | \
@@ -1418,14 +1417,20 @@ echo "$outofsync_apps" | while read -r wave app_name; do
     fi
 done
 
+}
 
+#process_unsynced_leftovers "$apps_ns"
+kubectl patch application wait-istio-job -n "$apps_ns" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+kubectl patch application namespace-label -n "$apps_ns" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+kubectl patch application infra-external -n  "$apps_ns" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+kubectl delete application namespace-label -n "$apps_ns"
+kubectl delete application wait-istio-job  -n "$apps_ns"
 # Stop root-app old sync as it will be stuck.
 kubectl patch application root-app -n  "$apps_ns"  --type merge -p '{"operation":null}'
 kubectl patch application root-app -n  "$apps_ns"  --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
 #Apply root-app Patch
 kubectl patch application root-app -n  "$apps_ns"  --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
-wait_for_app_synced_healthy root-app "$apps_ns"
-
+#wait_for_app_synced_healthy root-app "$apps_ns"
 
 echo "Upgrade completed! Wait for ArgoCD applications to be in 'Synced' and 'Healthy' state"
