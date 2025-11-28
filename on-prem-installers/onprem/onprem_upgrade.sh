@@ -1357,12 +1357,21 @@ done
 # Stop root-app old sync as it will be stuck.
 kubectl patch application root-app -n  "$apps_ns"  --type merge -p '{"operation":null}'
 kubectl patch application root-app -n  "$apps_ns"  --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
+
+# OS profiles Fix
+kubectl patch application tenancy-api-mapping -n onprem --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+kubectl patch application tenancy-datamodel -n onprem --patch-file /tmp/argo-cd/sync-patch.yaml --type merge 
+kubectl delete application tenancy-api-mapping -n onprem
+kubectl delete application tenancy-datamodel -n onprem
+kubectl delete deployment -n orch-infra os-resource-manager 
+
 # Apply root-app Patch
 kubectl patch application root-app -n  "$apps_ns"  --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
+# Onboarding Fix
 kubectl delete secret tls-boots -n orch-boots
 kubectl delete secret boots-ca-cert -n orch-gateway
 kubectl delete secret boots-ca-cert -n orch-infra
 kubectl delete pod -n orch-infra -l app.kubernetes.io/name=dkam 2>/dev/null
- 
+
 echo "Upgrade completed! Wait for ArgoCD applications to be in 'Synced' and 'Healthy' state"
