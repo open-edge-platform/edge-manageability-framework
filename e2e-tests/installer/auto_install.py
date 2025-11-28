@@ -300,13 +300,21 @@ class AutoInstall:
         self.internal_proxy_profile_path = os.getenv("AUTOINSTALL_INTERNAL_PROXY_PROFILE")
 
         # Support for enabling alerting emails
-        self.SMTP_URL = os.getenv("SMTP_URL")
-        self.SMTP_PORT = os.getenv("SMTP_PORT")
-        self.SMTP_FROM = os.getenv("SMTP_FROM")
-        self.SMTP_USER = os.getenv("SMTP_USER")
-        self.SMTP_PASS = os.getenv("SMTP_PASS")
+        self.SMTP_URL = os.getenv("SMTP_URL", "")
+        self.SMTP_PORT = os.getenv("SMTP_PORT", "")
+        self.SMTP_FROM = os.getenv("SMTP_FROM", "")
+        self.SMTP_USER = os.getenv("SMTP_USER", "")
+        self.SMTP_PASS = os.getenv("SMTP_PASS", "")
         self.SMTP_DEV_MODE = os.getenv("SMTP_DEV_MODE", "false")
 
+        print(f"SMTP values for alerting emails are as specified")
+        print(f"SMTP_URL: {self.SMTP_URL}")
+        print(f"SMTP_PORT: {self.SMTP_PORT}")
+        print(f"SMTP_FROM: {self.SMTP_FROM}")
+        print(f"SMTP_USER: {self.SMTP_USER}")
+        print(f"SMTP_PASS: {self.SMTP_PASS}")
+        print(f"SMTP_DEV_MODE: {self.SMTP_DEV_MODE}")
+        
         self.jumphost_sshkey_copied = False
         if self.jumphost_sshkey_path and len(self.jumphost_sshkey_path) > 0:
             if not os.path.isfile(self.jumphost_sshkey_path):
@@ -620,23 +628,23 @@ class AutoInstall:
 
         print("Inserting SMTP details into tfvar file to enable alerting emails.")
 
-        if self.SMTP_URL != None:
+        if self.SMTP_URL != "":
             print("here1")
             self.insert_smtp_details_helper("smtp_url", self.SMTP_URL)
 
-        if self.SMTP_PORT != None:
+        if self.SMTP_PORT != "":
             print("here2")
             self.insert_smtp_details_helper("smtp_port", self.SMTP_PORT)
 
-        if self.SMTP_FROM != None:
+        if self.SMTP_FROM != "":
             print("here3")
             self.insert_smtp_details_helper("smtp_from", self.SMTP_FROM)
 
-        if self.SMTP_USER != None:
+        if self.SMTP_USER != "":
             print("here4")
             self.insert_smtp_details_helper("smtp_user", self.SMTP_USER)
 
-        if self.SMTP_PASS != None:
+        if self.SMTP_PASS != "":
             print("here5")
             self.insert_smtp_details_helper("smtp_pass", self.SMTP_PASS)
 
