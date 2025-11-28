@@ -1357,11 +1357,12 @@ check_and_patch_sync_app orchestrator-observability "$apps_ns"
 kubectl delete jobs setup-databases-mps setup-databases-rps amt-dbpassword-secret-job init-amt-vault-job -n orch-infra --force --grace-period=0 --ignore-not-found
 
 #process_unsynced_leftovers "$apps_ns"
-kubectl patch application wait-istio-job -n "$apps_ns" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
-kubectl patch application namespace-label -n "$apps_ns" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
-kubectl patch application infra-external -n  "$apps_ns" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
-kubectl delete application namespace-label -n "$apps_ns"
-kubectl delete application wait-istio-job  -n "$apps_ns"
+kubectl patch application wait-istio-job -n "$apps_ns" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge  || true
+kubectl patch application namespace-label -n "$apps_ns" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge || true
+kubectl patch application infra-external -n  "$apps_ns" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge || true
+sleep 20 
+kubectl delete application namespace-label -n "$apps_ns" || true
+kubectl delete application wait-istio-job  -n "$apps_ns" || true
 # Stop root-app old sync as it will be stuck.
 kubectl patch application root-app -n  "$apps_ns"  --type merge -p '{"operation":null}'
 kubectl patch application root-app -n  "$apps_ns"  --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
