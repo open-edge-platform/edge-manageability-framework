@@ -270,10 +270,11 @@ terminate_existing_sync() {
 force_sync_outofsync_app() {
     local app_name=$1
     local namespace=$2
+    local server_side_apply=${3:-false}  # Default to false if not specified
 
     set +e
     terminate_existing_sync "$app_name" "$namespace"
-    echo "Force syncing $app_name..."
+    echo "Force syncing $app_name (ServerSideApply=$server_side_apply)..."
 
     kubectl patch -n "$namespace" application "$app_name" --type merge --patch "$(cat <<EOF
 {
@@ -282,16 +283,10 @@ force_sync_outofsync_app() {
             "username": "admin"
         },
         "sync": {
-            "syncStrategy": {
-                "hook": {},
-                "apply": {
-                    "force": true
-                }
-            },
             "syncOptions": [
                 "Replace=true",
                 "Force=true",
-                "ServerSideApply=false"
+                "ServerSideApply=$server_side_apply"
             ]
         }
     }
@@ -305,6 +300,7 @@ EOF
 check_and_force_sync_app() {
     local app_name=$1
     local namespace=$2
+    local server_side_apply=${3:-false}  # Default to false if not specified
     local max_retries=2
 
     for ((i=1; i<=max_retries; i++)); do
@@ -316,12 +312,12 @@ check_and_force_sync_app() {
         fi
 
         echo "⚠️  $app_name is not Synced and Healthy (status: $app_status). Force-syncing... (attempt $i/$max_retries)"
-        force_sync_outofsync_app "$app_name" "$namespace"
+        force_sync_outofsync_app "$app_name" "$namespace" "$server_side_apply"
         echo "✅ $app_name sync triggered"
         
         # Check status every 5s for 90s
         local check_timeout=90
-        local check_interval=5
+        local check_interval=3
         local elapsed=0
         
         while (( elapsed < check_timeout )); do
@@ -366,7 +362,7 @@ check_and_patch_sync_app() {
 
         # Check status every 5s for 90s
         local check_timeout=90
-        local check_interval=5
+        local check_interval=3
         local elapsed=0
         
         while (( elapsed < check_timeout )); do
@@ -389,17 +385,17 @@ check_and_patch_sync_app() {
     echo "⚠️  $app_name may still require attention after $max_retries attempts"
 }
 
-# Function to wait for application to be Synced and Healthy
-wait_for_app_healthy() {
+# Function to wait for application to be Synced and Healthy with timeout
+wait_for_app_synced_healthy() {
     local app_name=$1
     local namespace=$2
-    local timeout=${3:-240}  # Default 4 minutes if not specified
+    local timeout=${3:-120}  # Default 120 seconds if not specified
     
     local start_time=$(date +%s)
     set +e
     while true; do
         echo "Checking $app_name application status..."
-        local app_status=$(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.sync.status} {.status.health.status}')
+        local app_status=$(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
         if [[ "$app_status" == "Synced Healthy" ]]; then
             echo "✅ $app_name application is Synced and Healthy."
             set -e
@@ -408,15 +404,13 @@ wait_for_app_healthy() {
         local current_time=$(date +%s)
         local elapsed=$((current_time - start_time))
         if (( elapsed > timeout )); then
-            local remaining=$((timeout - elapsed))
-            echo "⚠️ Timeout waiting for $app_name to be Synced and Healthy. (${elapsed}s elapsed)"
+            echo "⚠️ Timeout waiting for $app_name to be Synced and Healthy after ${timeout}s (status: $app_status)"
             set -e
-            return 1
+            return 0
         fi
-        echo "Waiting for $app_name to be Synced and Healthy... (status: $app_status, ${elapsed}s elapsed)"
-        sleep 10
+        echo "Waiting for $app_name to be Synced and Healthy... (status: $app_status, ${elapsed}s/${timeout}s elapsed)"
+        sleep 3
     done
-    set -e
 }
 
 # Function to restart a StatefulSet by scaling to 0 and back
@@ -442,6 +436,119 @@ restart_statefulset() {
     echo "✅ $name restarted"
 }
 
+
+# Function to check app status and clean up job if needed
+check_and_cleanup_job() {
+    local app_name=$1
+    local namespace=$2
+    local job_label=${3:-job-name}
+    
+    app_status=$(kubectl get application "$app_name" -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
+    if [[ "$app_status" != "Synced Healthy" ]]; then
+        if kubectl get job -n "$namespace" -l "$job_label" 2>/dev/null | grep "$app_name"; then
+            echo "Deleting $app_name job..."
+            job_name=$(kubectl get job -n "$namespace" -l "$job_label" | grep "$app_name" | awk '{print $1}')
+            kubectl delete job "$job_name" -n "$namespace" --force --grace-period=0 --ignore-not-found
+            echo "✅ $app_name job deleted"
+            kubectl patch -n "$apps_ns" application "$app_name" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+        else
+            echo "ℹ️  No $app_name job found to delete"
+        fi
+    fi
+}
+
+# Function to wait for a Kubernetes job to complete
+wait_for_job_completion() {
+    local job_name=$1
+    local job_namespace=$2
+    local app=$3
+    local max_wait=${4:-90}  # Default 5 minutes if not specified
+    local check_interval=3
+
+    echo "Checking if job $job_name exists in namespace $job_namespace..."
+    if kubectl get job "$job_name" -n "$job_namespace" >/dev/null 2>&1; then
+        echo "✅ Job $job_name exists"
+        
+        job_status=$(kubectl get job "$job_name" -n "$job_namespace" -o jsonpath='{.status.conditions[?(@.type=="Complete")].status}' 2>/dev/null || echo "")
+        
+        if [[ "$job_status" != "True" ]]; then
+            echo "⚠️  Job $job_name has not succeeded, deleting and waiting for completion..."
+            kubectl delete job "$job_name" -n "$job_namespace" --force --grace-period=0 &
+            kubectl patch job "$job_name" -n "$job_namespace" --type=merge -p='{"metadata":{"finalizers":[]}}'
+              
+            elapsed=0
+            while [ $elapsed -lt $max_wait ]; do
+                if kubectl get job "$job_name" -n "$job_namespace" >/dev/null 2>&1; then
+                    job_status=$(kubectl get job "$job_name" -n "$job_namespace" -o jsonpath='{.status.conditions[?(@.type=="Complete")].status}' 2>/dev/null || echo "")
+                    
+                    if [[ "$job_status" == "True" ]]; then
+                        echo "✅ Job $job_name completed successfully"
+                        return 0
+                    fi
+                    
+                    succeeded=$(kubectl get job "$job_name" -n "$job_namespace" -o jsonpath='{.status.succeeded}' 2>/dev/null || echo "0")
+                    active=$(kubectl get job "$job_name" -n "$job_namespace" -o jsonpath='{.status.active}' 2>/dev/null || echo "0")
+                    failed=$(kubectl get job "$job_name" -n "$job_namespace" -o jsonpath='{.status.failed}' 2>/dev/null || echo "0")
+                    
+                    echo "⏳ Waiting for job $job_name to complete... (${elapsed}s/${max_wait}s) - Active: $active, Succeeded: $succeeded, Failed: $failed"
+                else
+                    echo "⏳ Waiting for job $job_name to be created... (${elapsed}s/${max_wait}s)"
+                fi
+                
+                sleep $check_interval
+                elapsed=$((elapsed + check_interval))
+            done
+            
+            if [ $elapsed -ge $max_wait ]; then
+                echo "⚠️  Timeout waiting for job $job_name to complete after ${max_wait}s"
+                return 1
+            fi
+        else
+            echo "✅ Job $job_name has already succeeded"
+            return 0
+        fi
+    else
+        echo "ℹ️  Job $job_name does not exist yet, waiting for it to be created and complete..."
+
+        for ((try=1; try<=2; try++)); do
+            echo "Attempt $try/2 to sync and wait for job $job_name..."
+            check_and_patch_sync_app "$app" "$apps_ns"
+
+            elapsed=0
+            while [ $elapsed -lt $max_wait ]; do
+            if kubectl get job "$job_name" -n "$job_namespace" >/dev/null 2>&1; then
+                job_status=$(kubectl get job "$job_name" -n "$job_namespace" -o jsonpath='{.status.conditions[?(@.type=="Complete")].status}' 2>/dev/null || echo "")
+                
+                if [[ "$job_status" == "True" ]]; then
+                echo "✅ Job $job_name completed successfully"
+                return 0
+                fi
+                
+                succeeded=$(kubectl get job "$job_name" -n "$job_namespace" -o jsonpath='{.status.succeeded}' 2>/dev/null || echo "0")
+                active=$(kubectl get job "$job_name" -n "$job_namespace" -o jsonpath='{.status.active}' 2>/dev/null || echo "0")
+                failed=$(kubectl get job "$job_name" -n "$job_namespace" -o jsonpath='{.status.failed}' 2>/dev/null || echo "0")
+                
+                echo "⏳ Waiting for job $job_name to complete... (${elapsed}s/${max_wait}s) - Active: $active, Succeeded: $succeeded, Failed: $failed"
+            else
+                echo "⏳ Waiting for job $job_name to be created... (${elapsed}s/${max_wait}s)"
+            fi
+            
+            sleep $check_interval
+            elapsed=$((elapsed + check_interval))
+            done
+            
+            if [ $try -lt 2 ]; then
+            echo "⚠️  Attempt $try failed, retrying..."
+            fi
+        done
+        
+        if [ $elapsed -ge $max_wait ]; then
+            echo "⚠️  Timeout waiting for job $job_name to complete after ${max_wait}s"
+            return 1
+        fi
+    fi
+}
+
 # Checks if orchestrator is currently installed on the node
 # check_orch_install <array[@] of package names>
 check_orch_install() {
@@ -462,50 +569,6 @@ check_orch_install() {
         #     exit 1
         # fi
     done
-}
-
-# Function to restart resources managed by an ArgoCD application
-restart_app_resources() {
-    local app_name=$1
-    local namespace=$2
-    
-    echo "Restarting resources for application: $app_name"
-    
-    # Get all resources managed by the application
-    local resources=$(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.resources[*].kind}/{.status.resources[*].name}/{.status.resources[*].namespace}' 2>/dev/null)
-    
-    if [[ -z "$resources" ]]; then
-        echo "⚠️  No resources found for application $app_name"
-        return 0
-    fi
-    
-    # Parse and process each resource
-    local kinds=($(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.resources[*].kind}'))
-    local names=($(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.resources[*].name}'))
-    local namespaces=($(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.resources[*].namespace}'))
-    
-    for i in "${!kinds[@]}"; do
-        local kind="${kinds[$i]}"
-        local name="${names[$i]}"
-        local res_namespace="${namespaces[$i]}"
-        
-        case "$kind" in
-            StatefulSet)
-                echo "Restarting StatefulSet: $name in namespace $res_namespace"
-                restart_statefulset "$name" "$res_namespace"
-                ;;
-            Deployment)
-                echo "Restarting Deployment: $name in namespace $res_namespace"
-                kubectl rollout restart deployment "$name" -n "$res_namespace"
-                echo "✅ Deployment $name restarted"
-                ;;
-            *)
-                # Skip other resource types
-                ;;
-        esac
-    done
-    
-    echo "✅ Completed restarting resources for $app_name"
 }
 
 # Get LV size and format it to be ready for lvcreate command
@@ -918,6 +981,18 @@ patch_secret() {
         done < postgres-secrets-password.txt
     fi
 
+    wait_for_app_synced_healthy postgresql-secrets "$apps_ns"
+
+    check_and_patch_sync_app postgresql-secrets "$apps_ns"
+
+    wait_for_app_synced_healthy postgresql-secrets "$apps_ns"
+
+    # Check if postgresql-secrets is Synced and Healthy
+    app_status=$(kubectl get application postgresql-secrets -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
+    if [[ "$app_status" != "Synced Healthy" ]]; then
+        check_and_patch_sync_app root-app "$apps_ns"
+    fi
+
     # Check for secret every 5 sec for 10 times
     for i in $(seq 1 40); do
 
@@ -1137,7 +1212,7 @@ kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgr
 
 echo "✅ All database user passwords updated successfully"
 
-#vault_unseal
+vault_unseal
 
 # Re-create the secrets for mps and rps if they were deleted
 if [[ -s mps_secret.yaml ]]; then
@@ -1148,6 +1223,8 @@ if [[ -s rps_secret.yaml ]]; then
     kubectl apply -f rps_secret.yaml
 fi
 
+
+# TODO may need to move the vault unseal before this step
 kubectl patch application root-app -n "$apps_ns" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
 # Restore Gitea credentials to Vault
@@ -1218,91 +1295,30 @@ kubectl rollout restart deployment harbor-oci-core -n orch-harbor
 
 echo "✅ harbor-oci-core restarted"
 
+
+echo "Cleaning up external-secrets installation..."
+
+if kubectl get crd clustersecretstores.external-secrets.io >/dev/null 2>&1; then
+    kubectl delete crd clustersecretstores.external-secrets.io &
+    kubectl patch crd/clustersecretstores.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
+fi
+if kubectl get crd secretstores.external-secrets.io >/dev/null 2>&1; then
+    kubectl delete crd secretstores.external-secrets.io &
+    kubectl patch crd/secretstores.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
+fi
+if kubectl get crd externalsecrets.external-secrets.io >/dev/null 2>&1; then
+    kubectl delete crd externalsecrets.external-secrets.io &
+    kubectl patch crd/externalsecrets.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
+fi
+
 # Apply External Secrets CRDs with server-side apply
 echo "Applying external-secrets CRDs with server-side apply..."
 kubectl apply --server-side=true --force-conflicts -f https://raw.githubusercontent.com/external-secrets/external-secrets/refs/tags/v0.20.4/deploy/crds/bundle.yaml || true
 
-check_and_force_sync_app external-secrets "$apps_ns"
+check_and_force_sync_app external-secrets "$apps_ns" "true"
+wait_for_app_synced_healthy external-secrets "$apps_ns"
 
-# Wait for external-secrets to be synced and healthy with timeout
-start_time=$(date +%s)
-timeout=120
-set +e
-while true; do
-    echo "Checking external-secrets application status..."
-    app_status=$(kubectl get application external-secrets -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
-    if [[ "$app_status" == "Synced Healthy" ]]; then
-        echo "✅ external-secrets application is Synced and Healthy."
-        set -e
-        break
-    fi
-    current_time=$(date +%s)
-    elapsed=$((current_time - start_time))
-    if (( elapsed > timeout )); then
-        echo "⏳ Timeout waiting for external-secrets to be Synced and Healthy after ${timeout}s (status: $app_status)"
-        set -e
-        break
-    fi
-    echo "Waiting for external-secrets to be Synced and Healthy... (status: $app_status, ${elapsed}s elapsed)"
-    sleep 5
-done
-
-app_status=$(kubectl get application external-secrets -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
-if [[ "$app_status" != "Synced Healthy" ]]; then
-    check_and_patch_sync_app external-secrets "$apps_ns"
-fi
-
-# Wait for external-secrets to be synced and healthy with timeout
-start_time=$(date +%s)
-timeout=120
-set +e
-while true; do
-    echo "Checking external-secrets application status..."
-    app_status=$(kubectl get application external-secrets -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
-    if [[ "$app_status" == "Synced Healthy" ]]; then
-        echo "✅ external-secrets application is Synced and Healthy."
-        set -e
-        break
-    fi
-    current_time=$(date +%s)
-    elapsed=$((current_time - start_time))
-    if (( elapsed > timeout )); then
-        echo "⏳ Timeout waiting for external-secrets to be Synced and Healthy after ${timeout}s (status: $app_status)"
-        set -e
-        break
-    fi
-    echo "Waiting for external-secrets to be Synced and Healthy... (status: $app_status, ${elapsed}s elapsed)"
-    sleep 5
-done
-
-app_status=$(kubectl get application external-secrets -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
-if [[ "$app_status" != "Synced Healthy" ]]; then
-    restart_app_resources external-secrets "$apps_ns"
-fi
-
-# Wait for external-secrets to be synced and healthy with timeout
-start_time=$(date +%s)
-timeout=120
-set +e
-while true; do
-    echo "Checking external-secrets application status..."
-    app_status=$(kubectl get application external-secrets -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
-    if [[ "$app_status" == "Synced Healthy" ]]; then
-        echo "✅ external-secrets application is Synced and Healthy."
-        set -e
-        break
-    fi
-    current_time=$(date +%s)
-    elapsed=$((current_time - start_time))
-    if (( elapsed > timeout )); then
-        echo "⏳ Timeout waiting for external-secrets to be Synced and Healthy after ${timeout}s (status: $app_status)"
-        set -e
-        break
-    fi
-    echo "Waiting for external-secrets to be Synced and Healthy... (status: $app_status, ${elapsed}s elapsed)"
-    sleep 5
-done
-
+# Force sync apps that copy secrets to their destinations
 check_and_force_sync_app copy-app-gitea-cred-to-fleet "$apps_ns"
 check_and_force_sync_app copy-ca-cert-boots-to-gateway "$apps_ns"
 check_and_force_sync_app copy-ca-cert-boots-to-infra "$apps_ns"
@@ -1320,45 +1336,57 @@ echo "✅ Vault unsealed successfully"
 
 kubectl patch -n "$apps_ns" application platform-keycloak --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
-#wait_for_app_healthy platform-keycloak "$apps_ns"
+wait_for_job_completion "platform-keycloak-keycloak-config-cli" "orch-platform" "platform-keycloak"
+
+wait_for_app_synced_healthy platform-keycloak "$apps_ns"
 
 kubectl patch -n "$apps_ns" application cluster-manager --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
 
-#./after_upgrade_restart.sh
+kubectl delete secret tls-boots -n orch-boots
+
+# Observability Minio PVC ignoreDifferences patching and job cleanup
+kubectl patch job orchestrator-observability-mimir-make-minio-buckets-5.4.0 -n orch-platform --type=merge -p='{"metadata":{"finalizers":[]}}'
+kubectl delete job orchestrator-observability-mimir-make-minio-buckets-5.4.0 -n orch-platform --force --grace-period=0 2>/dev/null || true
+kubectl delete pods -l job-name="orchestrator-observability-mimir-make-minio-buckets-5.4.0" -n orch-platform --force --grace-period=0 2>/dev/null || true
+
+kubectl patch application orchestrator-observability -n "$apps_ns" --type='json' -p='[{
+    "op": "add",
+    "path": "/spec/ignoreDifferences",
+    "value": [{
+        "group": "",
+        "kind": "PersistentVolumeClaim",
+        "name": "orchestrator-observability-minio",
+        "jsonPointers": ["/spec/storageClassName", "/spec/volumeName"]
+    }]
+}]'
+
+kubectl patch job edgenode-observability-mimir-make-minio-buckets-5.4.0  -n orch-infra --type=merge -p='{"metadata":{"finalizers":[]}}'
+kubectl delete job edgenode-observability-mimir-make-minio-buckets-5.4.0 -n orch-infra --force --grace-period=0 2>/dev/null || true
+kubectl delete pods -l job-name="edgenode-observability-mimir-make-minio-buckets-5.4.0" -n orch-infra --force --grace-period=0 2>/dev/null || true
+
+kubectl patch application edgenode-observability -n "$apps_ns" --type='json' -p='[{
+    "op": "add",
+    "path": "/spec/ignoreDifferences",
+    "value": [{
+        "group": "",
+        "kind": "PersistentVolumeClaim",
+        "name": "edgenode-observability-minio",
+        "jsonPointers": ["/spec/storageClassName", "/spec/volumeName"]
+    }]
+}]'
+
+check_and_patch_sync_app edgenode-observability "$apps_ns"
+check_and_patch_sync_app orchestrator-observability "$apps_ns"
+
+# Cleanup infra-external jobs
+kubectl delete jobs setup-databases-mps setup-databases-rps amt-dbpassword-secret-job init-amt-vault-job -n orch-infra --force --grace-period=0 --ignore-not-found
 
 
-app_status=$(kubectl get application edgenode-observability -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")   
-if [[ "$app_status" != "Synced Healthy" ]]; then
-    restart_app_resources edgenode-observability "$apps_ns"
-fi
+check_and_cleanup_job "namespace-label" "ns-label"
+check_and_cleanup_job "wait-istio-job" "ns-label"
 
-app_status=$(kubectl get application orchestrator-observability -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound") 
-if [[ "$app_status" != "Synced Healthy" ]]; then
-    restart_app_resources orchestrator-observability "$apps_ns"
-fi
-
-# Unsynced leftovers
-# Collect and display syncwave information for OutOfSync applications
-echo "OutOfSync applications by syncwave:"
-outofsync_apps=$(kubectl get applications -n "$apps_ns" -o json | \
-    jq -r '.items[] | select((.status.sync.status!="Synced" or .status.health.status!="Healthy") and .metadata.name!="root-app" and .metadata.name!="orchestrator-observability" and .metadata.name!="edgenode-observability") | 
-    "\(.metadata.annotations["argocd.argoproj.io/sync-wave"] // "0") \(.metadata.name)"' | \
-    sort -n)
-
-echo "$outofsync_apps" | awk '{print "  Wave " $1 ": " $2}'
-
-# Sync applications in wave order
-echo "Syncing OutOfSync applications in wave order..."
-echo "$outofsync_apps" | while read -r wave app_name; do
-    if [[ -n "$app_name" ]]; then
-        echo "Processing wave $wave: $app_name"
-        check_and_force_sync_app "$app_name" "$apps_ns"
-        check_and_patch_sync_app "$app_name" "$apps_ns"
-    fi
-done
-
-# Unsynced leftovers
+# Unsynced leftovers using patch sync
 # Collect and display syncwave information for OutOfSync applications
 echo "OutOfSync applications by syncwave:"
 outofsync_apps=$(kubectl get applications -n "$apps_ns" -o json | \
@@ -1377,9 +1405,48 @@ echo "$outofsync_apps" | while read -r wave app_name; do
     fi
 done
 
+
+# Unsynced leftovers using force sync
+# Collect and display syncwave information for OutOfSync applications
+echo "OutOfSync applications by syncwave:"
+outofsync_apps=$(kubectl get applications -n "$apps_ns" -o json | \
+    jq -r '.items[] | select((.status.sync.status!="Synced" or .status.health.status!="Healthy") and .metadata.name!="root-app") | 
+    "\(.metadata.annotations["argocd.argoproj.io/sync-wave"] // "0") \(.metadata.name)"' | \
+    sort -n)
+
+echo "$outofsync_apps" | awk '{print "  Wave " $1 ": " $2}'
+
+# Sync applications in wave order
+echo "Syncing OutOfSync applications in wave order..."
+echo "$outofsync_apps" | while read -r wave app_name; do
+    if [[ -n "$app_name" ]]; then
+        echo "Processing wave $wave: $app_name"
+        check_and_force_sync_app "$app_name" "$apps_ns" "true"
+    fi
+done
+
+# Unsynced leftovers using force sync
+# Collect and display syncwave information for OutOfSync applications
+echo "OutOfSync applications by syncwave:"
+outofsync_apps=$(kubectl get applications -n "$apps_ns" -o json | \
+    jq -r '.items[] | select((.status.sync.status!="Synced" or .status.health.status!="Healthy") and .metadata.name!="root-app") | 
+    "\(.metadata.annotations["argocd.argoproj.io/sync-wave"] // "0") \(.metadata.name)"' | \
+    sort -n)
+
+echo "$outofsync_apps" | awk '{print "  Wave " $1 ": " $2}'
+
+# Sync applications in wave order
+echo "Syncing OutOfSync applications in wave order..."
+echo "$outofsync_apps" | while read -r wave app_name; do
+    if [[ -n "$app_name" ]]; then
+        echo "Processing wave $wave: $app_name"
+        check_and_force_sync_app "$app_name" "$apps_ns"
+    fi
+done
+
 kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
-wait_for_app_healthy root-app "$apps_ns"
+wait_for_app_synced_healthy root-app "$apps_ns"
 
 
 echo "Upgrade completed! Wait for ArgoCD applications to be in 'Synced' and 'Healthy' state"
