@@ -20,7 +20,7 @@ spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
     - repoURL: https://github.com/open-edge-platform/infra-charts
-      path: infra/charts/infra-external
+      path: infra-external
       targetRevision: amt-fix-cves
       helm:
         releaseName: {{$appName}}
