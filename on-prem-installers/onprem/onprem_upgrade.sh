@@ -1423,7 +1423,7 @@ done
 kubectl patch application root-app -n  "$apps_ns"  --type merge -p '{"operation":null}'
 kubectl patch application root-app -n  "$apps_ns"  --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
 #Apply root-app Patch
-kubectl patch application root-app -n  "apps_ns"  --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+kubectl patch application root-app -n  "$apps_ns"  --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
 wait_for_app_synced_healthy root-app "$apps_ns"
 
