@@ -1432,7 +1432,7 @@ done
 
 }
 
-process_unsynced_leftovers "$apps_ns"
+#process_unsynced_leftovers "$apps_ns"
 # Stop root-app old sync as it will be stuck.
 kubectl patch application root-app -n  "$apps_ns"  --type merge -p '{"operation":null}'
 kubectl patch application root-app -n  "$apps_ns"  --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
