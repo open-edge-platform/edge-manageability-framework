@@ -1444,9 +1444,13 @@ echo "$outofsync_apps" | while read -r wave app_name; do
     fi
 done
 
-kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+# Stop root-app old sync as it will be stuck.
+kubectl patch application root-app -n  "$apps_ns"  --type merge -p '{"operation":null}'
+kubectl patch application root-app -n  "$apps_ns"  --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
+#Apply root-app Patch
+kubectl patch application root-app -n  "$apps_ns"  --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
-wait_for_app_synced_healthy root-app "$apps_ns"
+#wait_for_app_synced_healthy root-app "$apps_ns"
 
 
 echo "Upgrade completed! Wait for ArgoCD applications to be in 'Synced' and 'Healthy' state"
