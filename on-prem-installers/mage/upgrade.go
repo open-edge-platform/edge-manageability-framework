@@ -30,6 +30,30 @@ func (Upgrade) rke2Cluster() error {
 	}
 	nodeName := sanitizeString(stdout.String())
 
+	// Get current RKE2 version
+	currentVersion, err := getCurrentRKE2Version(nodeName)
+	if err != nil {
+		return fmt.Errorf("failed to get current RKE2 version: %w", err)
+	}
+	fmt.Printf("Current RKE2 version: %s\n", currentVersion)
+
+	// Target version
+	targetVersion := "v1.34.1+rke2r1"
+
+	// Check if already at target version
+	if currentVersion == targetVersion {
+		fmt.Println("RKE2 is already at the target version. No upgrade needed.")
+		return nil
+	}
+
+	// Determine upgrade path from current version to target
+	upgradePath := determineUpgradePath(currentVersion, targetVersion)
+	if len(upgradePath) == 0 {
+		return fmt.Errorf("unable to determine upgrade path from %s to %s", currentVersion, targetVersion)
+	}
+
+	fmt.Printf("Upgrade path: %v\n", upgradePath)
+
 	// Install the system-upgrade-controller to perform automated upgrade
 	if err := sh.RunV("kubectl", "apply", "-f",
 		"https://github.com/rancher/system-upgrade-controller/releases/download/v0.13.2/system-upgrade-controller.yaml",
@@ -59,12 +83,8 @@ func (Upgrade) rke2Cluster() error {
 		return err
 	}
 
-	/* NOTE: MINOR version cannot be skipped when upgrading Kubernetes e.g. if you're planning to go from 1.26 to 1.28,
-	   1.27 needs to be installed first.
-	   TODO: Add logic to determine version hops dynamically instead of hardcoding them.
-	   NOTE: EMF v3.0.0 uses "v1.30.10+rke2r1"
-	*/
-	for i, rke2UpgradeVersion := range []string{"v1.30.10+rke2r1", "v1.30.14+rke2r2"} {
+	// Perform upgrades along the determined path
+	for i, rke2UpgradeVersion := range upgradePath {
 		// Set version in upgrade Plan and render template.
 		tmpl, err := template.ParseFiles(filepath.Join("rke2", "upgrade-plan.tmpl"))
 		if err != nil {
@@ -99,8 +119,8 @@ func (Upgrade) rke2Cluster() error {
 			return err
 		}
 
-		if i == 0 {
-			fmt.Printf("RKE2 upgraded to intermediate version %s, starting another upgrade...\n", rke2UpgradeVersion)
+		if i < len(upgradePath)-1 {
+			fmt.Printf("RKE2 upgraded to intermediate version %s, starting next upgrade...\n", rke2UpgradeVersion)
 		}
 	}
 
@@ -247,4 +267,80 @@ func waitForNewVersion(nodeName, version string) error {
 // remove newline and double quote characters from the input string.
 func sanitizeString(str string) string {
 	return strings.Trim(str, "\"\n\r\t ")
+}
+
+// getCurrentRKE2Version retrieves the current RKE2 version from the node.
+// nodeName should be in format 'node/<node-name>'
+func getCurrentRKE2Version(nodeName string) (string, error) {
+	version, err := script.NewPipe().
+		Exec(fmt.Sprintf("kubectl get %s -o json", nodeName)).
+		JQ(`.status.nodeInfo.kubeletVersion`).
+		String()
+	if err != nil {
+		return "", err
+	}
+	return sanitizeString(version), nil
+}
+
+// determineUpgradePath determines the upgrade path from current to target version.
+// It skips versions already installed and only includes necessary intermediate versions.
+func determineUpgradePath(currentVersion, targetVersion string) []string {
+	// All available versions in order
+	allVersions := []string{
+		"v1.30.14+rke2r2", // Patch update within 1.30
+		"v1.31.13+rke2r1", // Upgrade to 1.31
+		"v1.32.9+rke2r1",  // Upgrade to 1.32
+		"v1.33.5+rke2r1",  // Upgrade to 1.33
+		"v1.34.1+rke2r1",  // Final target version
+	}
+
+	// Extract minor version from full version string (e.g., "v1.30.14+rke2r2" -> "1.30")
+	extractMinorVersion := func(version string) string {
+		parts := strings.Split(version, ".")
+		if len(parts) >= 2 {
+			return parts[0] + "." + parts[1]
+		}
+		return version
+	}
+
+	currentMinor := extractMinorVersion(currentVersion)
+	targetMinor := extractMinorVersion(targetVersion)
+
+	// Find starting index
+	startIdx := -1
+	for i, v := range allVersions {
+		if strings.Contains(v, currentMinor) {
+			startIdx = i
+			break
+		}
+	}
+
+	// If current version not found in list, start from beginning
+	if startIdx == -1 {
+		startIdx = 0
+	} else {
+		startIdx++ // Start from next version after current
+	}
+
+	// Find ending index
+	endIdx := -1
+	for i, v := range allVersions {
+		if strings.Contains(v, targetMinor) {
+			endIdx = i
+			break
+		}
+	}
+
+	// If target version not found, include everything to the end
+	if endIdx == -1 {
+		endIdx = len(allVersions) - 1
+	}
+
+	// Build upgrade path
+	var upgradePath []string
+	if startIdx <= endIdx {
+		upgradePath = allVersions[startIdx : endIdx+1]
+	}
+
+	return upgradePath
 }
