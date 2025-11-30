@@ -3,6 +3,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # This script is used to upgrade the version of an EKS cluster. Refer to the 'usage_upgrade()' function for more details.
 set -ue
 set -o pipefail
