@@ -379,7 +379,7 @@ init_terraform() {
     cat <<EOF > $backend
 bucket = "$state_bucket"
 key    = "${key}"
-region = "${BUCKET_REGION:-"us-west-2"}"
+region = "${BUCKET_REGION:-$AWS_REGION}"
 EOF
 
     rm -rf .terraform || true
