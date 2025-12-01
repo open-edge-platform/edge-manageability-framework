@@ -2,7 +2,7 @@
 
 Author(s): Edge Infrastructure Manager Team
 
-Last updated: 05/12/2025
+Last updated: 06/20/2025
 
 ## Abstract
 
@@ -19,27 +19,34 @@ the EN sw and propose a solution on how to manage the device activation during t
 
 ## Proposal
 
-Remote Provisioning Client (RPC) is launched during the provisioning flow (uOS stage).
+Remote Provisioning Client (RPC) is integrated as part of the Platform Manageability Agent, which operates within the
+final operating system environment.
 
-vPRO (AMT & ISM) capable devices need to have the `rpc-go` utility embedded in the uOS image (the so called
-Tink-EMT image - replacement of HookOS), as this is required to activate AMT. This also requires the `heci` driver to
-be included in the kernel as the `rpc-go` utility communicates with CSME over PCIe/HECI to activate the device.
+The Platform Manageability Agent template will follow similar design patterns and conventions established by other
+agent templates in the EMF, ensuring consistency in configuration, deployment, and management approaches across all
+platform agents.
 
-`Local Manageability Service` (LMS) must to be included as it is still required to enable the communication between RPC
-and AMT device. Additionally, it offers the support for in-band commands too.
+Upon installation, the Platform Manageability Agent performs AMT eligibility and capability detection on the Edge
+Node and reports the findings to the Device Management Resource Manager. The agent comes bundled with the `rpc-go`
+utility and necessary drivers (including heci) to enable communication with CSME over PCIe/HECI. Based on the
+capability detection results, the agent either enables DMT activation features for vPRO/AMT/ISM capable devices or
+reports an error status for non-capable devices.
 
-Adding the `rpc-go` to the Tink-EMT image allows for the AMT/ISM device to be activated independently of the target
-operating system being deployed on the edge node. Not every device will support AMT & ISM. Introspection of the device
-capabilites will be added to the `Device Discovery` to determine:
+`Local Manageability Service` (LMS) must be included as it is still required to enable the communication between
+RPC and AMT device. Additionally, it offers the support for in-band commands too.
 
-1. vPRO Supported Device
-2. ISM Supported Device
-3. No OOB Supported
+By default, all AMT dependencies including LMS are disabled to prevent service activation timeouts on devices that
+do not support vPRO/AMT/ISM. The Platform Manageability Agent will be installed and activated on all devices, but
+will only enable AMT-related services after successful capability detection via RPC Info command.
 
-This will also allow for a custom workflows in Tinkerbell to be used based on whether the device support AMT or ISM.
+For devices that do not support vPRO/AMT/ISM capabilities, the agent will continue running but will report errors
+through the RPC Info command, ensuring proper error handling and status reporting to the Device Management Resource Manager.
 
-If an attempt is made to activate an unsupported or faulty device, the `rpc-go` client will yield an error. The
-tinkerbell workflow should appropriately be handling the common error scenarios, please refer to the official
+**Note**: Caddy integration should be reevaluated to support token-based authentication for RPS WebSocket connections,
+particularly for the initial WebSocket establishment during vPRO activation.
+
+In cases where activation is attempted on unsupported or faulty devices, the agent will report errors to Device Management.
+
 [DMT/rpc-go documentation](https://device-management-toolkit.github.io/docs/2.27/Reference/RPC/libraryRPC/#rpc-error-code-charts)
 
 Let us now analyze the device activation, the user must do the following steps before starting AMT activation
@@ -51,80 +58,170 @@ Let us now analyze the device activation, the user must do the following steps b
 
 ```mermaid
 sequenceDiagram
-    title AMT provisioning through Tinker action
+    autonumber
+    title DMT Provisioning Through Agent
+
     actor us as User
-    participant inv as Inventory
-    participant ps as Provisioning
-    participant dm as Device Management
-    participant en as Edge Node
-    participant mps as Management Presence Server
-    participant rps as Remote Provisioning Server
+
+    box rgba(11, 164, 230, 1) Orchestrator Components
+        participant inv as Inventory
+        participant ps as Provisioning
+        participant dm as Device Management
+        participant mps as Management Presence Server
+        participant rps as Remote Provisioning Server
+    end
+
+    box rgba(230, 100, 215, 1) Edge Node Components
+        participant en as Edge Node
+        participant nagent as Node Agent
+        participant agent as Platform Manageability Agent
+    end
+
     us ->> en: Boot device
     activate en
-    Note right of en: AMT eligibiliy as part of the discovery
-    en ->> ps: Device discovery
+    en ->> ps:  Device discovery
     activate ps
-    ps ->> inv: Onboard the device
-    ps ->> en: Done
+    ps ->> inv:  Onboard the device
+    ps ->> en:  Done
     deactivate ps
     deactivate en
+
+    en ->> en:  OS installation (includes Agent RPMs)
+    en ->> en: Determining hardware is AMT/ISM or None in installer
+    Note right of en: Installer/cloudInit performs AMT eligibility & capability introspection    
+    
+
     alt Device supports vPRO/ISM
-        inv ->> ps: Notify
-        activate ps
-        inv ->> dm: Notify
-        activate dm
-        ps ->> ps: Reconcile the device
-        alt AMT CurrentState provisioned
-            ps ->> en: Provision the device
-            activate en
-            ps ->> en: Activate vPRO
-            Note right of en: Provisioning will log the error and update AMT status
-            en ->> rps: vPRO remote configuration
-            activate rps
-            rps ->> en: Done
-            deactivate rps
-            en ->> mps: CIRA connection
-            en ->> ps: Done
-            deactivate en
-        else
-            ps ->> ps: Retry
-        end
-        deactivate ps
-        dm ->> dm: Reconcile the device
-        dm ->> mps: Authorize the device through MPS
-        activate mps
-        mps ->> dm: Done
-        deactivate mps
-        dm ->> inv: Update AMT Status IN_PROGRESS (Connecting)
-        dm ->> inv: Update AMT CurrentState Provisioned
-        deactivate dm
-    else [Device is not eligible]
-        inv ->> ps: Notify
-        activate ps
-        inv ->> dm: Notify
-        activate dm
-        ps ->> ps: Reconcile the device
-        ps ->> en: Provision the device
-        activate en
-        en ->> ps: Done
-        deactivate en
-        deactivate ps
-        dm ->> dm: Reconcile the device
-        dm ->> inv: Update AMT Status IDLE (Unsupported)
-        deactivate dm
+        en ->> agent:  Installer/CloudInit Enable Agent as part of OS
+        agent ->> dm:  Report DMT status as Supported/Enabled
+        dm ->> inv:  Update DMT Status as SUPPORTED and AMTSku to disable/AMT/ISM
+
+        us ->> dm:  Request activation via API
+        dm ->> agent:  Provide activation profile name
+
+        Note right of agent: Activation is async (periodic ticker)
+         loop Every HeartbeatInterval (e.g., 30 seconds)
+            agent ->> dm: RetrieveActivationDetails(hostID)
+            dm ->> agent: Activation profile & credentials
+            
+            agent ->> amt: Execute "rpc amtinfo" command
+            amt ->> agent: RAS Remote Status response
+            
+            alt RAS Remote Status: "not connected"
+                agent ->> agent: resetAllRecoveryState()
+                Note right of agent: Fresh start - clear all recovery tracking
+                
+                agent ->> agent: Activate/Enable LMS (periodic)
+                agent ->> rps: Initiate RPC activate command
+                activate rps
+                rps ->> agent: Activation response Success / Configured
+                deactivate rps
+                Note right of agent: RPS processes activation request and responds
+                
+                agent ->> dm: Report status as ACTIVATING
+                dm ->> inv: Update AMT Status as IN_PROGRESS (Connecting)
+                Note right of agent: AMT will transition to "connecting"
+                
+            else RAS Remote Status: "connecting"
+                agent ->> agent: handleConnectingStateWithTimeout()
+                
+                alt First time "connecting" detected
+                    agent ->> agent: Start connecting timer
+                    agent ->> dm: Report status as ACTIVATING
+                    dm ->> inv: Update AMT Status as IN_PROGRESS (Connecting)
+                    Note right of agent: Begin 3-minute timeout monitoring
+                    
+                else Connecting < 3 minutes
+                    agent ->> agent: Continue monitoring
+                    agent ->> dm: Report status as ACTIVATING
+                    dm ->> inv: Update AMT Status as IN_PROGRESS (Connecting)
+                    Note right of agent: Normal connecting progress
+                    
+                else Connecting >= 3 minutes AND recovery attempts < 3
+                    Note right of agent: Timeout reached - trigger recovery
+                    
+                    alt No recovery in progress
+                        agent ->> agent: Start recovery (background goroutine)
+                        Note right of agent: Recovery Attempt N/3
+                        
+                        rect rgb(255, 245, 235)
+                            Note right of agent: Recovery Process (Sequential)
+                            agent ->> amt: Execute "rpc deactivate -u wss://server/activate"
+                            Note right of agent: Deactivate stuck AMT connection
+                            agent ->> agent: AMT settlement period (30 * attempt_number seconds)
+                            Note right of agent: Allow AMT hardware to stabilize
+                            agent ->> agent: Reset connecting timer & mark recovery complete
+                        end
+                        
+                        agent ->> dm: Report status as ACTIVATING
+                        dm ->> inv: Update AMT Status as IN_PROGRESS (Recovering)
+                        Note right of agent: Recovery in progress, continue monitoring
+                        
+                    else Recovery already in progress
+                        agent ->> dm: Report status as ACTIVATING
+                        dm ->> inv: Update AMT Status as IN_PROGRESS (Recovering)
+                        Note right of agent: Wait for current recovery to complete
+                        
+                    else In backoff period (< 2 minutes since last attempt)
+                        agent ->> dm: Report status as ACTIVATING
+                        dm ->> inv: Update AMT Status as IN_PROGRESS (Backoff)
+                        Note right of agent: Waiting for backoff period before retry
+                    end
+                    
+                else Connecting >= 3 minutes AND recovery attempts >= 3
+                    Note right of agent: Maximum recovery attempts exhausted
+                    agent ->> dm: Report status as ACTIVATION_FAILED
+                    dm ->> inv: Update DMT Status as FAILURE (Max Retries Exceeded)
+                    Note right of agent: Mark as permanently failed
+                end
+                
+            else RAS Remote Status: "connected"
+                agent ->> agent: resetAllRecoveryState()
+                Note right of agent: Success! Clear all recovery state
+                agent ->> dm: Report status as ACTIVATED
+                dm ->> inv: Update AMT Status as ACTIVATED
+                dm ->> inv: Update AMT CurrentState as Provisioned
+                Note right of agent: Activation completed successfully
+            end
+        end        
+    else Device not eligible
+        en ->> en: Installer/cloudInit skips PMA installtion
+        en ->> nagent:  Exclude PMA from status reporting if AMT/ISM not available
     end
-    Note right of dm: Check periodically the connection status<br>and use internal timers to track disconnection
+
+    alt Failure during activation
+        agent ->> dm:  Report DMT status as FAILURE
+        dm ->> inv:  Update DMT Status as FAILURE
+    end
 ```
 
-**Note1** - MPS requires the creation of a device before accepting CIRA connections which is part of the 2-way auth
+**Note 1** - The user interacts with the Device Management API, and the Device Management Resource
+Manager instructs the agent to perform activation/deactivation based on desired states.
+
+**Note 2** - MPS requires the creation of a device before accepting CIRA connections which is part of the 2-way auth
 implemented between MPS and AMT;
 
-**Note 2** - Device Management Resource Manager will provide a `staticPassword` profile where the AMT and MEBx
-passwords are set to a well know value. Disabling this option the RM will randomly generate a password for each device
-(using RPS auto-generation) or it will generate a random password and store as secret.
+**Note 3** - Device Management Resource Manager will provide a `staticPassword` profile where the AMT and MEBx
+passwords are set to a well know value. Disabling this option the RM will randomly generate a password for each
+device (using RPS auto-generation) or it will generate a random password and store as secret.
 
-**Note 3** - Passwords are stored in `Vault` and can be always retrieved either using the Vault APIs or through the
+**Note 4** - Passwords are stored in `Vault` and can be always retrieved either using the Vault APIs or through the
 web-ui.
+
+**Note 5** - When a device does not support vPRO/ISM capabilities, this is treated as an error condition that needs
+to be surfaced to the user. The UX team will determine the best way to present this information to users.
+
+**Note 6** - The deactivation flow is not captured in the current sequence diagram but will be addressed in future
+design iterations. Deactivation will be triggered by device deauth/deletion events and processed through the Platform
+Manageability Agent.
+
+**Deactivation Flow**: Deactivation will not be explicit by design. However, if a user performs device deauth or
+deletion, that event will be captured by the Device Management Resource Manager, and deactivation will be performed
+through the agent. After deactivation, if the user wants to activate AMT again, they will need to onboard the device
+again.
+
+**Note**: Users should be clearly informed that in the current release, once activated, deactivation is tied to device
+deregistration, and reactivation requires a complete re-onboarding process.
 
 ### MVP Requirements
 
@@ -140,43 +237,56 @@ activation of Device Management feature.
 However, such flow is considered not mandatory and this penalty might be accepted by the user to have in exchange extra
 manageability features.
 
-## Rationale
+### UI Features
 
-Alternative solutions have been carefully considered and will be taken into account in future releases, in particular:
+These are the UI features that will be supported, along with the APIs that will be used:
 
-- **Late Binding** where RPC is integrated in the image of the final OS. If this on one side, addresses the need to
-support remote deactivation and day2 reconfiguration, it does not provide a solution to recover the device if something
-goes wrong during the provisioning flow and require the integration with a **Platform Manageability Agent**.
-- **Cloud-Init** provisioning where AMT is activated at the end of the provisioning flow. This solution does not offer
-better integrations compared to the others and has the inherent disadvantage of not supporting feedback to the
-provisioning system that becomes completely blind on the result of the activation
+User will be able to activate vPro on a vPro-capable device by going to the Host Actions menu,
+and then clicking the “Activate vPro” button.
 
-Both solutions provide a seamless integration of the EMT-Standalone devices. However, the first solution is considered
-more flexible and provide better control compared to the second solution.
+- PATCH /compute/hosts/{resourceId}
+  - desiredAmtState: "AMT_STATE_PROVISIONED"
+
+The “Activate vPro” button will only be shown if the device is vPro capable.
+
+- GET /compute/hosts/{resourceId}
+  - Use host.amtSku to know whether the device is vPro capable.
+
+---
+
+Power buttons will be shown in the host details page to change the power status of the vPro device.
+
+- PATCH /compute/hosts/{resourceId}
+  - desiredPowerState: "POWER_STATE_ON" | "POWER_STATE_OFF" | "POWER_STATE_RESET"
+
+---
+
+Additional vPro-related info will be shown in a dedicated vPro details tab in the host details page.
+
+- GET /dm/devices/{guid}
+- GET /dm/amt/generalSettings/{guid}
+
+---
+
+The power status, power buttons, and vPro Details tab will only be shown if the AMT state is provisioned:
+
+- GET /compute/hosts/{resourceId}
+  - if host.currentAmtState == AMT_STATE_PROVISIONED, then the vPro UI will be shown.
 
 ## Affected components and Teams
 
 We report hereafter the affected components and Teams:
 
 - Onboarding Manager and Tinker Actions (Edge Infrastructure Manager team)
-- EMT and EMT-Tinker (Edge Microvisor Toolkit team)
 
 ## Implementation plan
 
 Hereafter we present as steps the proposed plan to manage the device activation in the release 3.1. Edge Infrastructure
 manager will implement the following functionality to support this design proposal:
 
-- Device discovery reports device eligibility
-- Activation will be always performed without user consent
-- EMF EN will be activated during the provisionig flow through a custom Tinker action
-- Ignition of the Platform Manageability Agent and definition of the SB gRPC APIs of the DM Resource Manager
-
-As dependency we expect the EMT team to deliver:
-
-- EMT-Tinker image supporting RPC-go, LMS, kernel drivers and all the dependencies;
-
-**Not mandatory but nice to have** is to support the installation of the RPC and its dependencies in all the Ubuntu
-flavors support by the Edge Orchestrator and have EMT image supporting RPC and its dependencies;
+After provisioning is complete and the final OS is deployed, the Platform Manageability Agent will be installed and
+initialized as part of the OS. This includes RPC, LMS and exposing the SB gRPC APIs of the Device Management
+Resource Manager.
 
 ### Test Plan
 
@@ -193,7 +303,14 @@ operations.
 
 We expect EMT team to conduct integration tests before releasing EMT images supporting RPC and its deps.
 
-## Open issues (if applicable)
+## Limitations
 
-Platform Manageability Agent and SB APIs will not be integrated which implies that the device reconfiguration will not
-be supported in 3.1.
+The decision to move away from activating DMT at the micro OS level results in the following limitation that should be
+captured as a record:
+In the previous design where DMT was activated at the micro OS level, if
+something went wrong during the final OS provisioning, users still
+had access to DMT capabilities. This provided critical recovery mechanisms
+including the ability to remotely reboot the device if provisioning
+got stuck, access the device out-of-band for troubleshooting, and
+recover from provisioning failures without requiring physical access to the device.
+By moving activation to post-OS deployment, we lose all these recovery capabilities during the critical OS provisioning phase.

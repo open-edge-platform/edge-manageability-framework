@@ -40,6 +40,9 @@ resource "aws_security_group" "common" {
 # Create EIP(if not internal), NLB, Listener, TargetGroup
 resource "aws_eip" "main" {
   for_each = local.subnets_with_eip
+  tags = {
+    Name = "${var.cluster_name}-nlb"
+  }
 }
 resource "aws_lb" "main" {
   name               = substr(sha256("${var.cluster_name}-${var.name}"), 0, 32)

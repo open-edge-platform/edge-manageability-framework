@@ -30,6 +30,30 @@ func (Upgrade) rke2Cluster() error {
 	}
 	nodeName := sanitizeString(stdout.String())
 
+	// Get current RKE2 version
+	currentVersion, err := getCurrentRKE2Version(nodeName)
+	if err != nil {
+		return fmt.Errorf("failed to get current RKE2 version: %w", err)
+	}
+	fmt.Printf("Current RKE2 version: %s\n", currentVersion)
+
+	// Target version
+	targetVersion := "v1.34.1+rke2r1"
+
+	// Check if already at target version
+	if currentVersion == targetVersion {
+		fmt.Println("RKE2 is already at the target version. No upgrade needed.")
+		return nil
+	}
+
+	// Determine upgrade path from current version to target
+	upgradePath := determineUpgradePath(currentVersion, targetVersion)
+	if len(upgradePath) == 0 {
+		return fmt.Errorf("unable to determine upgrade path from %s to %s", currentVersion, targetVersion)
+	}
+
+	fmt.Printf("Upgrade path: %v\n", upgradePath)
+
 	// Install the system-upgrade-controller to perform automated upgrade
 	if err := sh.RunV("kubectl", "apply", "-f",
 		"https://github.com/rancher/system-upgrade-controller/releases/download/v0.13.2/system-upgrade-controller.yaml",
@@ -49,18 +73,18 @@ func (Upgrade) rke2Cluster() error {
 
 	// Delete all existing upgrade Plans
 	// Ignore error as CRD might not yet have been created and it's fine for us
-	_ = sh.RunV("kubectl", "delete", "-n", "system-upgrade", "plans.upgrade.cattle.io", "--all")
+	if err := sh.RunV("kubectl", "delete", "-n", "system-upgrade", "plans.upgrade.cattle.io", "--all"); err != nil {
+		fmt.Printf("failed to delete existing upgrade plans: %s\n", err)
+		fmt.Printf("ignoring this error as it might be caused by the CRD not being created yet\n")
+	}
 
 	// Label Orchestrator node to mark it as ready for the upgrade
 	if err := sh.RunV("kubectl", "label", nodeName, "rke2-upgrade=true", "--overwrite"); err != nil {
 		return err
 	}
 
-	/* NOTE: MINOR version cannot be skipped when upgrading Kubernetes e.g. if you're planning to go from 1.26 to 1.28,
-	   1.27 needs to be installed first.
-	   TODO: Add logic to determine version hops dynamically instead of hardcoding them.
-	*/
-	for i, rke2UpgradeVersion := range []string{"v1.30.6+rke2r1", "v1.30.7+rke2r1", "v1.30.8+rke2r1", "v1.30.9+rke2r1", "v1.30.10+rke2r1"} {
+	// Perform upgrades along the determined path
+	for i, rke2UpgradeVersion := range upgradePath {
 		// Set version in upgrade Plan and render template.
 		tmpl, err := template.ParseFiles(filepath.Join("rke2", "upgrade-plan.tmpl"))
 		if err != nil {
@@ -71,11 +95,11 @@ func (Upgrade) rke2Cluster() error {
 		if err != nil {
 			return err
 		}
+		defer upgradePlan.Close()
 
 		if err := tmpl.Execute(upgradePlan, struct{ Version string }{Version: rke2UpgradeVersion}); err != nil {
 			return err
 		}
-		upgradePlan.Close()
 
 		// Apply the upgrade Plan CRD
 		if err := sh.RunV("kubectl", "apply", "-f", filepath.Join("rke2", "upgrade-plan.yaml")); err != nil {
@@ -85,6 +109,7 @@ func (Upgrade) rke2Cluster() error {
 		fmt.Printf("RKE2 upgrade Plan applied, waiting for upgrade to version %s to complete...\n", rke2UpgradeVersion)
 
 		// Wait for node to upgrade to new rke2 version
+		// The kubeletVersion field uses "+" instead of "-" in its version string, so we replace "-" with "+" here.
 		if err := waitForNewVersion(nodeName, strings.ReplaceAll(rke2UpgradeVersion, "-", "+")); err != nil {
 			return err
 		}
@@ -94,34 +119,9 @@ func (Upgrade) rke2Cluster() error {
 			return err
 		}
 
-		if i == 0 {
-			fmt.Printf("RKE2 upgraded to intermediate version %s, starting another upgrade...\n", rke2UpgradeVersion)
+		if i < len(upgradePath)-1 {
+			fmt.Printf("RKE2 upgraded to intermediate version %s, starting next upgrade...\n", rke2UpgradeVersion)
 		}
-	}
-
-	// Add new pvc
-	// create openebs-lvm shared storage class
-	if err := sh.RunV("kubectl", "apply", "-f",
-		filepath.Join("rke2", "openebs-lvm-sc-shared.yaml")); err != nil {
-		return err
-	}
-
-	// Enable kernel modules required for LV snapshots
-	mods, err := os.OpenFile("/etc/modules-load.d/lv-snapshots.conf", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644) //nolint:gofumpt
-	if err != nil {
-		return err
-	}
-	defer mods.Close()
-
-	if _, err = mods.WriteString("dm-snapshot\ndm-mirror\n"); err != nil {
-		return err
-	}
-
-	if err = sh.RunV("modprobe", "dm-snapshot"); err != nil {
-		return err
-	}
-	if err = sh.RunV("modprobe", "dm-mirror"); err != nil {
-		return err
 	}
 
 	// Clean up after upgrade
@@ -200,14 +200,16 @@ func waitForNodeStatus(nodeName, status string) error {
 		}
 
 		return nil
-	},
-		5*time.Second,
-	); err != nil {
+	}, 5*time.Second); err != nil {
 		return fmt.Errorf("orchestrator not in %s state and timeout elapsed ❌", status)
 	}
 
-	// Include time spent on waiting in deploymentTimeout
-	timeRemaining := fmt.Sprintf("%ds", int(time.Until(expireTime).Seconds()))
+	secondsRemaining := int(time.Until(expireTime).Seconds())
+	if secondsRemaining < 0 {
+		secondsRemaining = 0
+	}
+
+	timeRemaining := fmt.Sprintf("%ds", secondsRemaining)
 	if err := setDeploymentTimeout(timeRemaining); err != nil {
 		return err
 	}
@@ -248,8 +250,7 @@ func waitForNewVersion(nodeName, version string) error {
 		}
 
 		return nil
-	}, 5*time.Second,
-	); err != nil {
+	}, 5*time.Second); err != nil {
 		return fmt.Errorf("RKE2 version is not %s and timeout elapsed ❌", version)
 	}
 
@@ -260,13 +261,86 @@ func waitForNewVersion(nodeName, version string) error {
 	}
 
 	fmt.Printf("RKE2 has version %s, proceed ✅\n", version)
-
 	return nil
 }
 
+// remove newline and double quote characters from the input string.
 func sanitizeString(str string) string {
-	sanitized := strings.ReplaceAll(str, "\n", "")
-	sanitized = strings.ReplaceAll(sanitized, `"`, "")
+	return strings.Trim(str, "\"\n\r\t ")
+}
 
-	return sanitized
+// getCurrentRKE2Version retrieves the current RKE2 version from the node.
+// nodeName should be in format 'node/<node-name>'
+func getCurrentRKE2Version(nodeName string) (string, error) {
+	version, err := script.NewPipe().
+		Exec(fmt.Sprintf("kubectl get %s -o json", nodeName)).
+		JQ(`.status.nodeInfo.kubeletVersion`).
+		String()
+	if err != nil {
+		return "", err
+	}
+	return sanitizeString(version), nil
+}
+
+// determineUpgradePath determines the upgrade path from current to target version.
+// It skips versions already installed and only includes necessary intermediate versions.
+func determineUpgradePath(currentVersion, targetVersion string) []string {
+	// All available versions in order
+	allVersions := []string{
+		"v1.30.14+rke2r2", // Patch update within 1.30
+		"v1.31.13+rke2r1", // Upgrade to 1.31
+		"v1.32.9+rke2r1",  // Upgrade to 1.32
+		"v1.33.5+rke2r1",  // Upgrade to 1.33
+		"v1.34.1+rke2r1",  // Final target version
+	}
+
+	// Extract minor version from full version string (e.g., "v1.30.14+rke2r2" -> "1.30")
+	extractMinorVersion := func(version string) string {
+		parts := strings.Split(version, ".")
+		if len(parts) >= 2 {
+			return parts[0] + "." + parts[1]
+		}
+		return version
+	}
+
+	currentMinor := extractMinorVersion(currentVersion)
+	targetMinor := extractMinorVersion(targetVersion)
+
+	// Find starting index
+	startIdx := -1
+	for i, v := range allVersions {
+		if strings.Contains(v, currentMinor) {
+			startIdx = i
+			break
+		}
+	}
+
+	// If current version not found in list, start from beginning
+	if startIdx == -1 {
+		startIdx = 0
+	} else {
+		startIdx++ // Start from next version after current
+	}
+
+	// Find ending index
+	endIdx := -1
+	for i, v := range allVersions {
+		if strings.Contains(v, targetMinor) {
+			endIdx = i
+			break
+		}
+	}
+
+	// If target version not found, include everything to the end
+	if endIdx == -1 {
+		endIdx = len(allVersions) - 1
+	}
+
+	// Build upgrade path
+	var upgradePath []string
+	if startIdx <= endIdx {
+		upgradePath = allVersions[startIdx : endIdx+1]
+	}
+
+	return upgradePath
 }

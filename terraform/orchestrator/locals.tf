@@ -14,6 +14,8 @@ locals {
     var.https_proxy != "" ||
     var.ftp_proxy != "" ||
     var.socks_proxy != "" ||
-    var.no_proxy != ""
+    var.no_proxy != "" ||
+    var.en_http_proxy != "" ||
+    var.en_https_proxy != ""
   )
 }

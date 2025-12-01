@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/bitfield/script"
 	catalogloader "github.com/open-edge-platform/orch-library/go/pkg/loader"
 )
 
@@ -71,33 +70,5 @@ func UploadFiles(paths []string, domain string, projectName string, edgeInfraUse
 		return fmt.Errorf("%w", err)
 	}
 
-	return nil
-}
-
-func (App) wordpress() error {
-	if _, err := script.Exec("kind/wordpress-example.sh 0.1.0").Stdout(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (App) wordpressFromPrivateRegistry() error {
-	if _, err := script.Exec("kind/wordpress-example.sh 0.1.1").Stdout(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (App) iperfWebVM() error {
-	if _, err := script.Exec(fmt.Sprintf("kind/iperf-web-vm-example.sh 1.0.0 %s", serviceDomain)).Stdout(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (App) nginx() error {
-	if _, err := script.Exec(fmt.Sprintf("kind/nginx-scale-test.sh 0.1.0 1 0 %s", serviceDomain)).Stdout(); err != nil {
-		return err
-	}
 	return nil
 }

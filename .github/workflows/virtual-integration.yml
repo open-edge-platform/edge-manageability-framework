@@ -24,9 +24,10 @@ on:
   # Trigger workflow when enqueued to a merge group
   merge_group:
 
-# Only run at most 1 workflow concurrently per PR, unlimited for branches
+# For PRs → use the PR number as the group (forces only 1 run active)
+# For branches → use the full ref (unique per branch) so runs don't cancel each other
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.sha }}
+  group: ${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions: {}
@@ -36,7 +37,7 @@ jobs:
     if: github.event_name == 'pull_request'
     permissions:
       contents: read
-    uses: open-edge-platform/orch-ci/.github/workflows/pre-merge.yml@3bdd409ccf738472c6e1547d14628b51c70dbe99  # 0.1.21
+    uses: open-edge-platform/orch-ci/.github/workflows/pre-merge.yml@79c4381f9be567527d8782094317b0282493e45a  # 0.1.66
     with:
       run_version_check: false
       run_build: false
@@ -54,13 +55,15 @@ jobs:
       ci: ${{ contains(steps.check-files.outputs.changed_files, '.github/workflows') || contains(steps.check-files.outputs.changed_files, '.github/actions') }}
       go: ${{ contains(steps.check-files.outputs.changed_files, '.go') || contains(steps.check-files.outputs.changed_files, '.mod') || contains(steps.check-files.outputs.changed_files, '.sum') }}
       markdown: ${{ contains(steps.check-files.outputs.changed_files, '.md') || contains(steps.check-files.outputs.changed_files, '.markdown') || contains(steps.check-files.outputs.changed_files, '.mdx') }}
-      orch: ${{ contains(steps.check-files.outputs.changed_files, 'argocd') || contains(steps.check-files.outputs.changed_files, 'bootstrap') || contains(steps.check-files.outputs.changed_files, 'installer') || contains(steps.check-files.outputs.changed_files, 'internal') || contains(steps.check-files.outputs.changed_files, 'mage') || contains(steps.check-files.outputs.changed_files, 'node') || contains(steps.check-files.outputs.changed_files, 'router') || contains(steps.check-files.outputs.changed_files, 'tools') || contains(steps.check-files.outputs.changed_files, 'e2e-tests') || contains(steps.check-files.outputs.changed_files, 'VERSION') }}
+      orch: ${{ contains(steps.check-files.outputs.changed_files, 'argocd') || contains(steps.check-files.outputs.changed_files, 'bootstrap') || contains(steps.check-files.outputs.changed_files, 'installer') || contains(steps.check-files.outputs.changed_files, 'internal') || contains(steps.check-files.outputs.changed_files, 'mage') || contains(steps.check-files.outputs.changed_files, 'node') || contains(steps.check-files.outputs.changed_files, 'router') || contains(steps.check-files.outputs.changed_files, 'tools') || contains(steps.check-files.outputs.changed_files, 'e2e-tests') || contains(steps.check-files.outputs.changed_files, 'VERSION') || contains(steps.check-files.outputs.changed_files, 'orch-configs') }}
       on-prem: ${{ contains(steps.check-files.outputs.changed_files, 'on-prem-installers') || contains(steps.check-files.outputs.changed_files, 'terraform') }}
       onboarding: ${{ contains(steps.check-files.outputs.changed_files, 'argocd/applications/templates/infra-') || contains(steps.check-files.outputs.changed_files, 'argocd/applications/values.yaml') }}
       shell: ${{ contains(steps.check-files.outputs.changed_files, '.sh') || contains(steps.check-files.outputs.changed_files, '.bash') }}
       terraform: ${{ contains(steps.check-files.outputs.changed_files, '.hcl') || contains(steps.check-files.outputs.changed_files, '.tf') || contains(steps.check-files.outputs.changed_files, '.tfvars') }}
       yaml: ${{ contains(steps.check-files.outputs.changed_files, '.yaml') || contains(steps.check-files.outputs.changed_files, '.yml') }}
       helm: ${{ contains(steps.check-files.outputs.changed_files, 'argocd/') || contains(steps.check-files.outputs.changed_files, 'argocd-internal/') }}
+      test-automation: ${{ contains(steps.check-files.outputs.changed_files, '.test-dependencies.yaml') }}
+      only_design_proposals: ${{ steps.only-design-proposals.outputs.only_design_proposals }}
     steps:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
@@ -72,6 +75,23 @@ jobs:
         uses: open-edge-platform/orch-ci/discover-changed-files@main  # zizmor: ignore[unpinned-uses]
         with:
           project_folder: "."
+
+      - name: Calculate only_design_proposals
+        id: only-design-proposals
+        run: |
+          files="${{ steps.check-files.outputs.changed_files }}"
+          only_design=true
+          # Remove brackets and quotes, then split on comma
+          clean_files=$(echo "$files" | sed 's/\[//;s/\]//;s/"//g')
+          for file in $(echo "$clean_files" | tr ',' '\n'); do
+            file=$(echo $file | xargs) # trim whitespace
+            if [[ $file != design-proposals/* ]]; then
+              only_design=false
+              break
+            fi
+          done
+          echo "only_design=$only_design"
+          echo "only_design_proposals=$only_design" >> $GITHUB_OUTPUT
 
   scan-viruses:
     permissions:
@@ -202,9 +222,11 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Setup asdf and install dependencies
-        uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
+      - name: Configure yamllint pip packages
+        run: echo "ASDF_YAMLLINT_PIP_PACKAGES=pyyaml" >> $GITHUB_ENV
 
+      - name: Setup asdf and install dependencies
+        uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]  
       - name: Run lint
         run: mage lint:yaml
 
@@ -311,6 +333,7 @@ jobs:
       needs.check-changed-files.outputs.orch == 'true' ||
       needs.check-changed-files.outputs.on-prem == 'true' ||
       needs.check-changed-files.outputs.ci == 'true' ||
+      needs.check-changed-files.outputs.test-automation == 'true' ||
       github.ref == 'refs/heads/main' ||
       github.ref == 'refs/heads/main-pass-validation'
       )
@@ -443,7 +466,8 @@ jobs:
       - check-changed-files
     if: |
       always() &&
-      needs.lint-version.result == 'success' && (
+      needs.lint-version.result == 'success' &&
+      needs.check-changed-files.outputs.only_design_proposals != 'true' && (
       needs.check-changed-files.outputs.orch == 'true' ||
       needs.check-changed-files.outputs.ci == 'true' ||
       github.ref == 'refs/heads/main' ||
@@ -461,7 +485,7 @@ jobs:
       - name: Deploy Kind Orchestrator
         id: deploy-kind-orchestrator
         uses: ./.github/actions/deploy_kind
-        timeout-minutes: 30
+        timeout-minutes: 45
         with:
           orch_version: ${{ github.event.pull_request.head.sha || github.sha }}
           orch_password: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
@@ -469,6 +493,10 @@ jobs:
           docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
           token: ${{ secrets.SYS_ORCH_GITHUB }}
           deployment_type: all
+      - name: Collect diagnostics
+        if: always()
+        uses: ./.github/actions/collect_diagnostics
+        timeout-minutes: 15
       - name: Run policy compliance tests
         run: mage test:policyCompliance
       - name: Run image pull policy compliance tests
@@ -530,7 +558,7 @@ jobs:
           token: ${{ secrets.SYS_ORCH_GITHUB }}
           en_serial_number: ${{ env.EN_SN }}
           en_uuid: ${{ env.EN_UUID }}
-          infra: "cypress/e2e/infra/locations.cy.ts,cypress/e2e/infra/provision-hosts.cy.ts,cypress/e2e/infra/verify-host.cy.ts"
+          infra: "cypress/e2e/infra/locations.cy.ts,cypress/e2e/infra/new-host-provision.cy.ts,cypress/e2e/infra/verify-host.cy.ts"
 
       - name: "Test Observability Public Endpoints"
         env:
@@ -544,23 +572,61 @@ jobs:
         run: |
           mage test:e2eOrchObservability
 
-      - name: "Test Observability EdgeNode Stack"
-        env:
-          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-        run: |
-          mage test:e2eENObservability
+      # TODO - The base extension deployment including observability stack has been removed. Need to revist this test stack later and see how to proceed further.
+      # - name: "Test Observability EdgeNode Stack"
+      #   env:
+      #     ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+      #   run: |
+      #     mage test:e2eENObservability
 
-      - name: "Test Observability Alerts"
-        env:
-          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-        run: |
-          mage test:e2eAlertsObservability
+      # TODO - The base extension deployment including observability stack has been removed. Need to revist this test stack later and see how to proceed further.
+      # - name: "Test Observability Alerts"
+      #   env:
+      #     ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+      #   run: |
+      #     mage test:e2eAlertsObservability
 
-      - name: "Test Observability SRE Exporter"
+      # TODO - The base extension deployment including observability stack has been removed. Need to revist this test stack later and see how to proceed further.
+      # - name: "Test Observability SRE Exporter"
+      #   env:
+      #     ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+      #   run: |
+      #     mage test:e2eSreObservability
+
+      - name: deploy, register & provision new ENiC instance # previous instance was deatuhorized by the cluster delete in UI tests
+        if: ${{ always() && steps.deploy-kind-orchestrator.conclusion == 'success' && steps.default-mt-setup.conclusion == 'success' }}
+        shell: bash
+        timeout-minutes: 5
         env:
-          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+          ORCH_ORG: sample-org
+          ORCH_PROJECT: sample-project
+          ORCH_USER: sample-project-onboarding-user
+          ORCH_USER_API: sample-project-api-user
+          EDGE_MANAGEABILITY_FRAMEWORK_REV: ${{ env.GIT_HASH }}
         run: |
-          mage test:e2eSreObservability
+          # delete the previous ENiC instance
+          kubectl delete ns enic
+
+          # deploy a new ENiC instance
+          mage devUtils:deployEnic 1 dev
+
+          # wait until SN and UUID are available
+          mage devUtils:getEnicSerialNumber
+          mage devUtils:getEnicUUID
+
+          # then get then and store them in the env
+          UUID=$(kubectl exec -it -n enic enic-0 -c edge-node -- bash -c "dmidecode -s system-uuid")
+          SN=$(kubectl exec -it -n enic enic-0 -c edge-node -- bash -c "dmidecode -s system-serial-number")
+          echo "EN_UUID=$UUID" >> "$GITHUB_ENV"
+          echo "EN_SN=$SN" >> "$GITHUB_ENV"
+
+          # register the ENiC in the orchestrator
+          ORCH_USER=${ORCH_USER_API} mage devUtils:registerEnic enic-0
+
+          # provision the ENiC
+          ORCH_USER=${ORCH_USER_API} mage devUtils:provisionEnic enic-0
+          sleep 5
+          mage devUtils:WaitForEnic
 
       - name: Wait for cluster agent to be ready
         if: ${{ always() && steps.deploy-kind-orchestrator.conclusion == 'success' }}
@@ -602,7 +668,7 @@ jobs:
   deploy-on-prem:
     permissions:
       contents: read
-    name: Deploy On-Prem Orchestrator
+    name: Deploy On-Prem Orchestrator and Run Golden Suite Core Foundation Tests
     needs:
       - lint-go
       - lint-markdown
@@ -615,15 +681,17 @@ jobs:
       - check-changed-files
     if: |
       always() &&
-      needs.build-publish.result == 'success' && (
+      needs.build-publish.result == 'success' &&
+      needs.check-changed-files.outputs.only_design_proposals != 'true' && (
       needs.check-changed-files.outputs.orch == 'true' ||
       needs.check-changed-files.outputs.on-prem == 'true' ||
       needs.check-changed-files.outputs.ci == 'true' ||
+      needs.check-changed-files.outputs.test-automation == 'true' ||
       github.ref == 'refs/heads/main' ||
       github.ref == 'refs/heads/main-pass-validation'
       )
-    runs-on: ubuntu-22.04-16core-64GB
-    timeout-minutes: 120
+    runs-on: ubuntu-24.04-16core-64GB
+    timeout-minutes: 90
     env:
       KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
     steps:
@@ -631,6 +699,15 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
           persist-credentials: false
+
+      - name: Read test-automation dependency Version
+        id: read-test-automation-version
+        shell: bash
+        run: |
+           cat /proc/cpuinfo
+           version=$(yq '.test-automation.version' ${{ github.workspace }}/.test-dependencies.yaml | tr -d '\n' | xargs)
+           echo $version
+           echo "version=$version" >> $GITHUB_OUTPUT
 
       - name: Deploy On-Prem Orchestrator
         id: deploy-on-prem
@@ -646,17 +723,132 @@ jobs:
           EDGE_CLUSTER_NAME: test-cluster
         run: mage -v test:e2eOnPrem
 
+      - name: Checkout edge-manage-test-automation repository with submodules
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          repository: open-edge-platform/edge-manage-test-automation
+          path: edge-manage-test-automation
+          ref: ${{ steps.read-test-automation-version.outputs.version }}
+          submodules: 'recursive'
+          token: ${{ secrets.SYS_ORCH_GITHUB }}
+          persist-credentials: false
+
+      - name: Install vEN Deps
+        working-directory: edge-manage-test-automation
+        run: |
+          git submodule update --init --recursive
+
+      - name: Setup virtual environment
+        working-directory: edge-manage-test-automation
+        run: |
+          make asdf-install
+          make venv_edge-manage-test-automation
+
+          # install required versions for Pico
+          pushd repos/ven/pico
+          asdf install
+          popd
+
+      - name: Run Golden Suite Robot Framework Tests
+        id: robot-tests
+        timeout-minutes: 45
+        working-directory: edge-manage-test-automation
+        env:
+          KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
+          REQUESTS_CA_BUNDLE: /usr/local/share/ca-certificates/orch-ca.crt
+          LIBVIRT_DEFAULT_URI: 'qemu:///system'
+        run: |
+          KC_ADMIN_PWD=$(kubectl -n orch-platform get secrets platform-keycloak -o jsonpath='{.data.admin-password}' | base64 -d)
+          # Add the password to the orchestrator config
+          yq eval ".orchestrator.admin_password = \"${KC_ADMIN_PWD}\"" -i orchestrator-configs/on-prem.yaml
+
+          source venv_edge-manage-test-automation/bin/activate
+          robot -L DEBUG --pythonpath . \
+            --name "Golden Suite: Core Foundation" \
+            -d robot_output/core_foundation \
+            -V orchestrator-configs/on-prem.yaml \
+            --exitonfailure \
+            tests/core_foundation/core_foundation.robot
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: on-prem-${{ github.event_name }}-${{ github.event.number }}-robot-report
+          path: |
+            edge-manage-test-automation/robot_output/**/*
+
+  deploy-oxm-profile:
+    permissions:
+      contents: read
+    name: Deploy OXM Orchestrator Profile
+    needs:
+      - lint-go
+      - lint-markdown
+      - lint-shell
+      - lint-terraform
+      - lint-version
+      - lint-helm
+      - lint-yaml
+      - build-publish
+      - check-changed-files
+    if: |
+      always() &&
+      needs.build-publish.result == 'success' &&
+      needs.check-changed-files.outputs.only_design_proposals != 'true' && (
+      needs.check-changed-files.outputs.orch == 'true' ||
+      needs.check-changed-files.outputs.on-prem == 'true' ||
+      needs.check-changed-files.outputs.ci == 'true' ||
+      github.ref == 'refs/heads/main' ||
+      github.ref == 'refs/heads/main-pass-validation'
+      )
+    runs-on: ubuntu-22.04-16core-64GB
+    timeout-minutes: 90
+    env:
+      KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
+    steps:
+      - name: Checkout Orchestrator repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Deploy OXM Orchestrator Profile
+        id: deploy-oxm-profile
+        uses: ./.github/actions/deploy_on_prem
+        env:
+          TF_VAR_no_proxy: "localhost,127.0.0.0/8,10.0.0.0/8,192.168.0.0/16,.svc,.cluster.local,.default,.internal,.orch-platform,.orch-app,.orch-cluster,.orch-infra,.orch-database,.cattle-system,.orch-secret,.onprem"
+          TF_VAR_en_http_proxy: "http://192.168.99.30:8080"
+          TF_VAR_en_https_proxy: "http://192.168.99.30:8080"
+          TF_VAR_oxm_pxe_server_int: "orchnet"
+          TF_VAR_oxm_pxe_server_ip: "192.168.99.20"
+          TF_VAR_oxm_pxe_server_subnet: "192.168.99.0"
+          TF_VAR_enable_explicit_proxy: "true"
+        with:
+          orch_version: ${{ github.event.pull_request.head.sha }}
+          orch_profile: onprem-oxm
+          docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
+          docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
+
       - name: Create MT Sample Org and Project with default users
         run: mage tenantUtils:createDefaultMtSetup
 
       - name: Test Edge Node onboarding
+        env:
+          E2E_SVC_DOMAIN: cluster.onprem
+          EDGE_CLUSTER_NAME: test-cluster
+          EN_PROFILE: "microvisor-standalone"
         timeout-minutes: 20
         if: |
           needs.check-changed-files.outputs.onboarding == 'true' ||
           needs.check-changed-files.outputs.on-prem == 'true' ||
           needs.check-changed-files.outputs.orch == 'true' ||
           needs.check-changed-files.outputs.ci == 'true'
-        run: mage test:onboarding
+        run: |
+          set +e
+          mage test:onboarding
+          TEST_EXIT_CODE=$?
+          sudo cat /var/log/libvirt/qemu/edge-node-EN123456789-console.log || true
+          exit $TEST_EXIT_CODE
 
   tag-repo:
     permissions:
@@ -667,6 +859,7 @@ jobs:
       - build-publish
       - deploy-kind
       - deploy-on-prem
+      - deploy-oxm-profile
     if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -697,14 +890,12 @@ jobs:
       security-events: write
       id-token: write
     if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
-    uses: open-edge-platform/orch-ci/.github/workflows/post-merge.yml@3bdd409ccf738472c6e1547d14628b51c70dbe99  # 0.1.21
+    uses: open-edge-platform/orch-ci/.github/workflows/post-merge.yml@79c4381f9be567527d8782094317b0282493e45a  # 0.1.66
     with:
       run_build: false
       run_version_tag: false
     secrets:
       SYS_ORCH_GITHUB: ${{ secrets.SYS_ORCH_GITHUB }}
-      COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
-      COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
       NO_AUTH_ECR_PUSH_USERNAME: ${{ secrets.NO_AUTH_ECR_PUSH_USERNAME }}
       NO_AUTH_ECR_PUSH_PASSWD: ${{ secrets.NO_AUTH_ECR_PUSH_PASSWD }}
       MSTEAMS_WEBHOOK: ${{ secrets.TEAMS_WEBHOOK }}

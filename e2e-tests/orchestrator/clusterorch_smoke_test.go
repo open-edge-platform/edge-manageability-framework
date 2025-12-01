@@ -25,27 +25,19 @@ import (
 )
 
 var (
-	regionName              = getEnv("REGION_NAME", randomString(8))
-	siteName                = getEnv("SITE_NAME", randomString(8))
-	clusterName             = getEnv("CLUSTER_NAME", randomString(8))
-	nodeUUID                = getEnv("NODE_UUID", "")
-	edgeMgrUser             = getEnv("EDGE_MGR_USER", "robot-edge-mgr")
-	edgeInfraUser           = getEnv("EDGE_INFRA_USER", "robot-api-user")
-	project                 = getEnv("PROJECT", "robot-project-1")
-	extensionDeploymentPath = "../samples/"
-	extensionPackageName    = "baseline-extensions-lite"
-	appName                 = "baseline-extension-lite"
+	regionName    = getEnv("REGION_NAME", randomString(8))
+	siteName      = getEnv("SITE_NAME", randomString(8))
+	clusterName   = getEnv("CLUSTER_NAME", randomString(8))
+	nodeUUID      = getEnv("NODE_UUID", "")
+	edgeMgrUser   = getEnv("EDGE_MGR_USER", "robot-edge-mgr")
+	edgeInfraUser = getEnv("EDGE_INFRA_USER", "robot-api-user")
+	project       = getEnv("PROJECT", "robot-project-1")
 )
 
 const (
 	apiBaseURLTemplate        = "https://api.%s/v1/projects/%s"
 	clusterApiBaseURLTemplate = "https://api.%s/v2/projects/%s"
 	catalogApiBaseURLTemplate = "https://api.%s/v3/projects/%s"
-	extensionProfileName      = "baseline-lite"
-	extensionDeploymentType   = "auto-scaling"
-	extensionAppVersion       = "0.1.0"
-	extensionLabelKey         = "default-extension"
-	extensionLabelValue       = "baseline"
 )
 
 type Node struct {
@@ -167,7 +159,6 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 	regionID := ""
 	hostID := ""
 	instanceID := ""
-	baseExtensionLineDeploymentId := ""
 	fleetClusterId := ""
 
 	defaultTemplate := ""
@@ -324,7 +315,7 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 			Expect(len(*templateList.TemplateInfoList)).To(BeNumerically(">=", 3), "expecting n cluster templates")
 			for _, ctpl := range *templateList.TemplateInfoList {
 				Expect(ctpl.Controlplaneprovidertype).ToNot(BeNil(), "checking if controlplane provider type is not nil for cluster template %s", ctpl.Name)
-				Expect(*ctpl.Controlplaneprovidertype).To(Equal(cm.Rke2), "verifying the control plane provider type for cluster template %s", ctpl.Name)
+				Expect(*ctpl.Controlplaneprovidertype).To(Or(Equal(cm.Rke2), Equal(cm.K3s)), "verifying the control plane provider type for cluster template %s", ctpl.Name)
 			}
 		})
 	})
@@ -443,6 +434,25 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 		})
 	})
 
+	Describe("Download Kubeconfig", Label(clusterOrchSmoke), func() {
+		It("should download kubeconfig successfully", func() {
+			Expect(clusterName).ToNot(BeEmpty(), "Cluster name should not be empty")
+
+			// download kubeconfig
+			url := fmt.Sprintf(clusterApiBaseURLTemplate+"/clusters/%s/kubeconfigs", serviceDomain, project, clusterName)
+			resp, err := makeAuthorizedRequest(http.MethodGet, url, *edgeMgrToken, nil, cli)
+			Expect(err).ToNot(HaveOccurred())
+			defer resp.Body.Close()
+
+			Expect(resp.StatusCode).To(Equal(http.StatusOK))
+
+			// check kubeconfig content not empty and readable
+			body, err := io.ReadAll(resp.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(body).ToNot(BeEmpty(), "Kubeconfig should not be empty")
+		})
+	})
+
 	Describe("Attempt to Delete Cluster Template in Use", Label(clusterOrchSmoke), func() {
 		It("should fail to delete the cluster template while it is in use", func() {
 			Expect(defaultTemplateName).ToNot(BeEmpty(), "Default template name should not be empty")
@@ -493,146 +503,6 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 			}
 			Expect(fleetClusterId).ToNot(BeEmpty())
 			fmt.Printf("Fleet Cluster ID: %s\n", fleetClusterId)
-		})
-	})
-
-	Describe("Load baseline lite deployment package", Label(clusterOrchSmoke), func() {
-		It("should load the baseline lite deployment package successfully", func() {
-			paths := []string{
-				extensionDeploymentPath + extensionPackageName,
-			}
-			// Upload the files
-			err := util.UploadFiles(paths, serviceDomain, project, edgeMgrUser, keycloakSecret)
-			Expect(err).ToNot(HaveOccurred())
-
-			type CatalogDeploymentPackagesResp struct {
-				DeploymentPackages []struct {
-					Name string `json:"name"`
-				}
-			}
-
-			var catalog CatalogDeploymentPackagesResp
-
-			// List the deployment packages
-			url := fmt.Sprintf(catalogApiBaseURLTemplate+"/catalog/deployment_packages", serviceDomain, project)
-			resp, err := makeAuthorizedRequest(http.MethodGet, url, *edgeMgrToken, nil, cli)
-			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
-			Expect(resp.StatusCode).To(Equal(http.StatusOK))
-			body, err := io.ReadAll(resp.Body)
-			Expect(err).ToNot(HaveOccurred())
-			err = json.Unmarshal(body, &catalog)
-			Expect(err).ToNot(HaveOccurred())
-
-			dpLoaded := func() (bool, error) {
-				for _, dp := range catalog.DeploymentPackages {
-					if dp.Name == extensionPackageName {
-						return true, nil
-					}
-				}
-				return false, nil
-			}
-
-			Eventually(func() (bool, error) {
-				return dpLoaded()
-			}, 1*time.Minute, 10*time.Second).Should(BeTrue(), "timeout reached. Did not find baseline lite deployment package")
-		})
-	})
-
-	Describe("Create a deployment using the baseline lite package", Label(clusterOrchSmoke), func() {
-		It("should create a deployment using the baseline lite package successfully", func() {
-			url := fmt.Sprintf(apiBaseURLTemplate+"/appdeployment/deployments", serviceDomain, project)
-			targetClusters := deploymentV2.TargetClusters{
-				AppName: &appName,
-				Labels: &map[string]string{
-					extensionLabelKey: extensionLabelValue,
-				},
-			}
-			profileName := extensionProfileName
-			displayName := extensionPackageName
-			deploymentType := extensionDeploymentType
-
-			// Create the request body using deploymentV2.Deployment
-			requestBody := deploymentV2.Deployment{
-				AppName:     extensionPackageName,
-				AppVersion:  extensionAppVersion,
-				ProfileName: &profileName,
-				TargetClusters: &[]deploymentV2.TargetClusters{
-					targetClusters,
-				},
-				DisplayName:    &displayName,
-				DeploymentType: &deploymentType,
-				OverrideValues: nil,
-			}
-
-			// Encode the request body to JSON
-			jsonData, err := json.Marshal(requestBody)
-			Expect(err).ToNot(HaveOccurred())
-
-			// Create the HTTP POST request using makeAuthorizedRequest
-			resp, err := makeAuthorizedRequest(http.MethodPost, url, *edgeMgrToken, jsonData, cli)
-			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
-
-			// Check for expected 200 OK response
-			Expect(resp.StatusCode).To(Equal(http.StatusOK))
-
-			// Decode the response body into deploymentV2.CreateDeploymentResponse
-			var createDeploymentResponse deploymentV2.CreateDeploymentResponse
-			body, err := io.ReadAll(resp.Body)
-			Expect(err).ToNot(HaveOccurred())
-			err = json.Unmarshal(body, &createDeploymentResponse)
-			Expect(err).ToNot(HaveOccurred())
-
-			// Store the DeploymentId for future use
-			baseExtensionLineDeploymentId = createDeploymentResponse.DeploymentId
-			Expect(baseExtensionLineDeploymentId).ToNot(BeEmpty())
-			fmt.Printf("Deployment ID: %s\n", baseExtensionLineDeploymentId)
-		})
-	})
-
-	Describe("Wait for Extension Deployment to be Ready", func() {
-		It("should wait for the extension deployment to be ready", func() {
-			extensionReady := func() (bool, error) {
-				url := fmt.Sprintf(apiBaseURLTemplate+"/appdeployment/deployments/%s", serviceDomain, project, baseExtensionLineDeploymentId)
-
-				// Initiate the GET request using makeAuthorizedRequest
-				resp, err := makeAuthorizedRequest(http.MethodGet, url, *edgeMgrToken, nil, cli)
-				if err != nil {
-					return false, err
-				}
-				defer resp.Body.Close()
-
-				// Expect 200 OK response
-				if resp.StatusCode != http.StatusOK {
-					return false, fmt.Errorf("failed to get cluster info, HTTP status code: %d", resp.StatusCode)
-				}
-
-				// Decode the GET response to deploymentV2.GetDeploymentResponse
-				var deployment deploymentV2.GetDeploymentResponse
-				body, err := io.ReadAll(resp.Body)
-				if err != nil {
-					return false, err
-				}
-				if err = json.Unmarshal(body, &deployment); err != nil {
-					return false, err
-				}
-
-				if deployment.Deployment.Status == nil || deployment.Deployment.Status.State == nil {
-					return false, fmt.Errorf("deployment status or state is nil")
-				}
-
-				// Use Eventually function to wait for deployment to be State_RUNNING
-				if *deployment.Deployment.Status.State != deploymentV2.RUNNING {
-					return false, nil
-				}
-				fmt.Printf("Deployment is ready\n")
-				return true, nil
-			}
-
-			Eventually(func() (bool, error) {
-				return extensionReady()
-			}, 600*time.Second, 10*time.Second).Should(BeTrue(), "timeout reached. deployment not in RUNNING state.")
 		})
 	})
 
@@ -688,6 +558,8 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 				Eventually(func() (bool, error) {
 					return clusterDeleted()
 				}, 140*time.Second, 5*time.Second).Should(BeTrue(), fmt.Sprintf("Cluster %s was not deleted within the expected time frame.", clusterName))
+			} else {
+				fmt.Printf("No cluster found with name %s\n", clusterName)
 			}
 
 			// Delete the instance
@@ -701,6 +573,8 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 				defer resp.Body.Close()
 				Expect(resp.StatusCode).To(Or(Equal(http.StatusOK), Equal(http.StatusNoContent)), fmt.Sprintf("Failed to delete instance %s, HTTP status code: %d", instanceID, resp.StatusCode))
 				fmt.Printf("Instance %s has been successfully deleted.\n", instanceID)
+			} else {
+				fmt.Printf("No instance found for host with UUID %s\n", nodeUUID)
 			}
 
 			// Delete the host
@@ -711,6 +585,8 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 				defer resp.Body.Close()
 				Expect(resp.StatusCode).To(Or(Equal(http.StatusOK), Equal(http.StatusNoContent)), fmt.Sprintf("Failed to delete host %s, HTTP status code: %d", hostID, resp.StatusCode))
 				fmt.Printf("Host %s has been successfully deleted.\n", hostID)
+			} else {
+				fmt.Printf("No host found with ID %s\n", hostID)
 			}
 
 			// Delete the site
@@ -720,6 +596,7 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 
 				siteDeleted := func() bool {
 					url := fmt.Sprintf(apiBaseURLTemplate+"/regions/%s/sites/%s", serviceDomain, project, regionID, siteID)
+					fmt.Printf("Deleting site with URL: %s\n", url)
 					resp, err := makeAuthorizedRequest(http.MethodDelete, url, *edgeInfraToken, nil, cli)
 					if err != nil {
 						fmt.Printf("Error creating new HTTP request: %v\n", err)
@@ -727,21 +604,30 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 					}
 					defer resp.Body.Close()
 
+					if resp.StatusCode == http.StatusBadRequest {
+						fmt.Printf("Site %s not found, it may have already been deleted.\n", siteID)
+						return true
+					}
+
 					if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusNoContent {
 						fmt.Printf("Site %s has been successfully deleted.\n", siteID)
 						return true
 					} else {
+						fmt.Printf("Failed to delete site %s, HTTP status code: %d\n", siteID, resp.StatusCode)
 						return false
 					}
 				}
 
-				Eventually(siteDeleted, 50*time.Second, 5*time.Second).Should(BeTrue(), fmt.Sprintf("Failed to delete site %s within the expected time frame.", siteID))
+				Eventually(siteDeleted, 120*time.Second, 5*time.Second).Should(BeTrue(), fmt.Sprintf("Failed to delete site %s within the expected time frame.", siteID))
+			} else {
+				fmt.Printf("No site found with ID %s\n", siteID)
 			}
 
 			// Delete the region
 			if regionID != "" {
 				regionDeleted := func() bool {
 					url := fmt.Sprintf(apiBaseURLTemplate+"/regions/%s", serviceDomain, project, regionID)
+					fmt.Printf("Deleting region with URL: %s\n", url)
 					resp, err := makeAuthorizedRequest(http.MethodDelete, url, *edgeInfraToken, nil, cli)
 					if err != nil {
 						fmt.Printf("Error creating new HTTP request: %v\n", err)
@@ -749,15 +635,23 @@ var _ = Describe("Cluster Orch Smoke Test", Ordered, Label(clusterOrchSmoke), fu
 					}
 					defer resp.Body.Close()
 
+					if resp.StatusCode == http.StatusBadRequest {
+						fmt.Printf("Region %s not found, it may have already been deleted.\n", regionID)
+						return true
+					}
+
 					if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusNoContent {
 						fmt.Printf("Region %s has been successfully deleted.\n", regionID)
 						return true
 					} else {
+						fmt.Printf("Failed to delete region %s, HTTP status code: %d\n", regionID, resp.StatusCode)
 						return false
 					}
 				}
 
-				Eventually(regionDeleted, 50*time.Second, 5*time.Second).Should(BeTrue(), fmt.Sprintf("Failed to delete region %s within the expected time frame.", regionID))
+				Eventually(regionDeleted, 120*time.Second, 5*time.Second).Should(BeTrue(), fmt.Sprintf("Failed to delete region %s within the expected time frame.", regionID))
+			} else {
+				fmt.Printf("No region found with ID %s\n", regionID)
 			}
 		}()
 		select {

@@ -7,6 +7,9 @@ root:
   useLocalValues: false
   clusterValues:
     - orch-configs/profiles/enable-platform.yaml
+{{- if .Values.enableDefaultTenancy }}
+    - orch-configs/profiles/enable-singleTenancy.yaml
+{{- end }}
 {{- if .Values.enableObservability }}
     - orch-configs/profiles/enable-o11y.yaml
 {{- end }}
@@ -16,8 +19,12 @@ root:
 {{- if .Values.enableKyverno }}
     - orch-configs/profiles/enable-kyverno.yaml
 {{- end }}
+{{- if .Values.enableAppOrch }}
     - orch-configs/profiles/enable-app-orch.yaml
+{{- end }}
+{{- if .Values.enableClusterOrch }}
     - orch-configs/profiles/enable-cluster-orch.yaml
+{{- end }}
 {{- if .Values.enableEdgeInfra }}
     - orch-configs/profiles/enable-edgeinfra.yaml
 {{- end }}
@@ -76,25 +83,37 @@ argo:
     production: false
 {{- end }}
 
-{{- if .Values.nameServers }}
+{{- if or .Values.nameServers (not .Values.enableObservability) (not .Values.enableClusterOrch) }}
   infra-onboarding:
+  {{- if .Values.nameServers }}
     nameservers:
-{{- range .Values.nameServers }}
+    {{- range .Values.nameServers }}
       - {{ . }}
-{{- end }}
-{{- end }}
+    {{- end }}
+  {{- end }}
 
+  {{- if and (not .Values.enableObservability) (not .Values.enableClusterOrch) }}
+    disableO11yProfile: true
+    disableCoProfile: true
+  {{- else if not .Values.enableObservability }}
+    disableO11yProfile: true
+  {{- else if not .Values.enableClusterOrch }}
+    disableCoProfile: true
+  {{- end }}
+{{- end }}
   ## Argo CD configs
   deployRepoURL: "{{ .Values.deployRepoURL }}"
   deployRepoRevision: main
 
   targetServer: "https://kubernetes.default.svc"
   autosync: true
+
 {{ if .Values.enableObservability }}
   o11y:
     sre:
       customerLabel: local
 {{- end }}
+
 {{ if .Values.enableCoder }}
   aws: {}
     # Account ID and region will be set by deploy.go
@@ -127,7 +146,9 @@ orchestratorDeployment:
   targetCluster: {{ .Values.targetCluster }}
   enableMailpit: {{ .Values.enableMailpit }}
   argoServiceType: {{ .Values.argoServiceType }}
+{{- if .Values.dockerCache }}
   dockerCache: "{{ .Values.dockerCache }}"
+{{- end }}
 {{- if and .Values.dockerCacheCert }}
   dockerCacheCert: |
 {{ .Values.dockerCacheCert | indent 4 }}

@@ -417,10 +417,6 @@ mimir-distributed:
       query_scheduler:
         max_outstanding_requests_per_tenant: {{ .Values.argo.o11y.edgeNode.mimir.structuredConfig.querySchedulerMaxOutstandingRequestsPerTenant }}
       {{- end }}
-      {{- if .Values.argo.o11y.edgeNode.mimir.structuredConfig.frontendMaxOutstandingRequestsPerTenant }}
-      frontend:
-        max_outstanding_per_tenant: {{ .Values.argo.o11y.edgeNode.mimir.structuredConfig.frontendMaxOutstandingRequestsPerTenant }}
-      {{- end }}
       {{- if .Values.argo.o11y.edgeNode.mimir.structuredConfig.querierTime }}
       querier:
         query_store_after: {{ .Values.argo.o11y.edgeNode.mimir.structuredConfig.querierTime }}
@@ -555,6 +551,12 @@ mimir-distributed:
     {{- end }}
     ingress:
       enabled: false
+    # Buffer settings to handle large headers/cookies
+    nginx:
+      config:
+        serverSnippet: |
+          client_header_buffer_size 64k;
+          large_client_header_buffers 64 128k;
     {{- if and .edgeNode .edgeNode.mimir .edgeNode.mimir.gateway }}
     {{- if .edgeNode.mimir.gateway.replicas }}
     replicas: {{ .edgeNode.mimir.gateway.replicas }}

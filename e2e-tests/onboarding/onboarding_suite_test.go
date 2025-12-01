@@ -111,7 +111,8 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 
 var _ = SynchronizedAfterSuite(func() {}, func(ctx SpecContext) {
 	By("Cleaning up the deployed Edge Nodes")
-	if err := (mage.Undeploy{}).VEN(ctx); err != nil {
+	serialNumber := "EN123456789"
+	if err := (mage.Undeploy{}).VEN(ctx, serialNumber); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to undeploy Edge Nodes: %v\n", err)
 	}
 })

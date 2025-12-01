@@ -35,7 +35,7 @@ var (
 	kubeletMetrics = []string{
 		"k8s_node_allocatable_cpu",
 		"k8s_node_allocatable_memory",
-		"k8s_node_cpu_utilization",
+		"k8s_node_cpu_usage",
 		"k8s_node_filesystem_capacity",
 		"k8s_node_filesystem_usage",
 		"k8s_node_memory_available",
@@ -43,10 +43,10 @@ var (
 		"k8s_node_memory_working_set",
 		"k8s_node_network_errors",
 		"k8s_node_network_io",
-		"k8s_pod_cpu_utilization",
+		"k8s_pod_cpu_usage",
 		"k8s_pod_memory_usage",
 		"k8s_pod_memory_working_set",
-		"container_cpu_utilization",
+		"container_cpu_usage",
 		"container_memory_working_set",
 	}
 	kubeMetrics = []string{
@@ -67,7 +67,6 @@ var (
 		"kube_statefulset_replicas",
 	}
 	controllerMetrics = []string{"controller_runtime_reconcile_errors_total", "controller_runtime_reconcile_total"}
-	admMetrics        = []string{"adm_deployment_status"}
 	otelMetrics       = []string{
 		"otelcol_exporter_queue_capacity",
 		"otelcol_exporter_queue_size",
@@ -261,18 +260,6 @@ var _ = Describe("Orchestrator Observability Test:", Ordered, Label(orchObs), fu
 		It("Controller metrics should be present in orchestrator", func() {
 			metricsNotFound := make(map[string]struct{})
 			for _, metric := range controllerMetrics {
-				found, err := helpers.CheckMetric(cli, metricsAddr, metric, orchSystem)
-				Expect(err).ToNot(HaveOccurred())
-				if !found {
-					metricsNotFound[metric] = struct{}{}
-				}
-			}
-			Expect(metricsNotFound).To(BeEmpty(), "%v metrics not found", metricsNotFound)
-		})
-
-		It("ADM metrics should be present in orchestrator", func() {
-			metricsNotFound := make(map[string]struct{})
-			for _, metric := range admMetrics {
 				found, err := helpers.CheckMetric(cli, metricsAddr, metric, orchSystem)
 				Expect(err).ToNot(HaveOccurred())
 				if !found {

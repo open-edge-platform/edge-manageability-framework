@@ -9,6 +9,14 @@ global:
   {{- end }}
 
 server:
+  {{- if and .Values.argo.vault.autoUnseal (ne .Values.argo.namespace "onprem")}}
+  # Configure service account for IRSA
+  serviceAccount:
+    create: false
+    name: "vault-service-account"
+    annotations:
+      eks.amazonaws.com/role-arn: "arn:aws:iam::{{.Values.argo.aws.accountId}}:role/{{.Values.argo.clusterName}}-vault-kms-role"
+  {{- end}}
   {{- if .Values.argo.vault.ha}}
   # Run Vault in "HA" mode. There are no storage requirements unless the audit log
   # persistence is required.  In HA mode Vault will configure itself to use Consul
@@ -39,7 +47,10 @@ server:
         cluster_address = "[::]:8201"
       }
   {{- if and .Values.argo.vault.autoUnseal (ne .Values.argo.namespace "onprem")}}
-      seal "awskms" {}
+      seal "awskms" {
+         region     = "{{.Values.argo.aws.region}}"
+         kms_key_id = "alias/vault-kms-unseal-{{.Values.argo.clusterName}}"
+      }
 
   # extraEnvironmentVars is a list of extra environment variables to set with the stateful set. These could be
   # used to include variables required for auto-unseal.
@@ -51,16 +62,6 @@ server:
     AWS_REGION: {{.Values.argo.aws.region}}
     VAULT_AWSKMS_SEAL_KEY_ID: alias/vault-kms-unseal-{{.Values.argo.clusterName}}
 
-  # extraSecretEnvironmentVars is a list of extra environment variables to set with the stateful set.
-  # These variables take value from existing Secret objects.
-  extraSecretEnvironmentVars:
-    - envName: AWS_ACCESS_KEY_ID
-      secretName: vault-kms-unseal
-      secretKey: AWS_ACCESS_KEY_ID
-    - envName: AWS_SECRET_ACCESS_KEY
-      secretName: vault-kms-unseal
-      secretKey: AWS_SECRET_ACCESS_KEY
-
   # https://jira.devtools.intel.com/browse/NEXENPL-1126
   # enable liveness probe such that pod is restarted when auto-unseal failed
   livenessProbe:
@@ -70,7 +71,7 @@ server:
   extraInitContainers:
     # This initContainer consumes Postgres credential via secret and converts it into a config file that can be consumed by vault
     - name: storage-config
-      image: alpine:3.18.2
+      image: alpine:3.22.2
       securityContext:
         allowPrivilegeEscalation: false
         capabilities:
@@ -115,7 +116,7 @@ server:
           value: {{ .Values.argo.vault.ha | default false | quote }}
     # This initContainer creates database tables for vault
     - name: init-table
-      image: bitnami/postgresql:14.5.0-debian-11-r2
+      image: library/postgres:14.19-alpine3.22
       securityContext:
         allowPrivilegeEscalation: false
         capabilities:

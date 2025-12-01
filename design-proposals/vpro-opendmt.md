@@ -2,7 +2,7 @@
 
 Author(s): Edge Infrastructure Manager Team
 
-Last updated: 05/15/2025
+Last updated: 06/12/2025
 
 ## Abstract
 
@@ -47,9 +47,10 @@ graph TD
     end
     %% Connections
     RPC -->|443/RPS-WS| Traefik
-    AMT -->|4433/CIRA| MPS
+    AMT -->|4433/CIRA| Traefik
     User -->|443| Traefik
     Traefik -->|443| MTGW
+    Traefik -->|4433/CIRA| MPS
     MTGW -->|3000/AMT-Device|MPS
     MTGW -->|8081/Domain|RPS
     MTGW -->|8080/WS|RPS
@@ -227,6 +228,31 @@ Hereafter we present as steps the proposed plan in the release 3.1.
   - Requests from the north will have ActiveProjectID and the JWT token
   - Requests from the south will have only the JWT token
 - UI to integrate with the necessary APIs exposed by RPS and MPS
+
+### Implementation plan for Admin Control Mode
+
+To enable Admin Control Mode, the implementation will be extended to allow the DMT stack to activate devices using Admin
+Control Mode (ACM). The proposed plan for the release is:
+
+- UI:
+  - Extend vPRO UI to allow User to specify whether ACM or Client Control Mode (CCM) is used.
+  - Add option to UI to allow User to specify DNS Suffix for domain profiles.
+  - Add option to UI to allow User to upload required provisioning cert (in PFX format) and password for domain profiles.
+- CLI
+  - Add option for CLI to be used to provide the device activation mode is ACM or CCM for an instance.
+  - Extend CLI to add method to provide DNS Suffix for domain profiles.
+  - Add option for CLI to be used for uploading provisioning cert and password for domain profiles.
+- Vault
+  - Add storage option for provisioning cert and password for domain profiles.
+  - API for adding cert and password to Vault for use by CLI and UI. This API and storage should be tenant aware
+  as different tenants may use different certs and passwords for ACM.
+  - Add option for Device Management Manager to extract required cert and password for each instance.
+- Onboarding
+  - Update BIOS with DNS Suffix value when running in admin mode
+
+Device Management Manager updates are documented in the [Device Management documentation](./vpro-rm.md).
+
+> Note: this will be included in the next release after the 2025.2 release.
 
 ## Test plan
 

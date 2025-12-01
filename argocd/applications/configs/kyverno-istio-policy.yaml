@@ -42,3 +42,4 @@ excludedNamespaces:
   - capi-operator-system
   - capr-system
   - capk-system
+  - postgresql-operator

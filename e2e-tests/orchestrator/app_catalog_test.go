@@ -157,11 +157,11 @@ var (
 					Expect(err).ToNot(HaveOccurred())
 				})
 				It("should determine that the new registry was created", func() {
-					r := GetRegistry(ctx, c, accessToken, testProject, "bitnami", http.StatusOK, checkRESTResponse)
-					Expect(r.Name).To(Equal("bitnami"))
-					Expect(r.Description).To(Equal("Bitnami registry"))
+					r := GetRegistry(ctx, c, accessToken, testProject, "bitnami-helm-oci", http.StatusOK, checkRESTResponse)
+					Expect(r.Name).To(Equal("bitnami-helm-oci"))
+					Expect(r.Description).To(Equal("Bitnami helm registry"))
 					Expect(r.Type).To(Equal("HELM"))
-					Expect(r.RootURL).To(Equal("https://charts.bitnami.com/bitnami"))
+					Expect(r.RootURL).To(Equal("oci://registry-1.docker.io/bitnamicharts"))
 				})
 				It("should determine that the new application was created", func() {
 					wordpressApp := GetApplication(ctx, c, accessToken, testProject, "wordpress", "0.1.0", http.StatusOK, checkRESTResponse)

@@ -34,7 +34,7 @@ def get_metrics(namespace):
     start_time = end_time - timedelta(days=QUERY_PERIOD)
 
     # CPU
-    query=f"max(container_cpu_utilization{{ {query_parameter_str} }}*1000) by (k8s_pod_name, k8s_container_name)"
+    query=f"max(container_cpu_usage{{ {query_parameter_str} }}*1000) by (k8s_pod_name, k8s_container_name)"
     resp = prometheus_query_range(query, start_time, end_time, STEP)
     if "status" in resp and resp["status"] == "success":
         metrics_result = resp.get("data", {}).get("result", [])

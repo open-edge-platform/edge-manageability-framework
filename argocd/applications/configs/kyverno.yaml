@@ -2,28 +2,117 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+webhooksCleanup:
+  image:
+    registry: docker.io
+    repository: eclipsefdn/kubectl
+    tag: okd-c1
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1001
+policyReportCleanup:
+  image:
+    registry: docker.io
+    repository: eclipsefdn/kubectl
+    tag: okd-c1
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1001
+
+cleanupJobs:
+  admissionReports:
+    image:
+      registry: docker.io
+      repository: eclipsefdn/kubectl
+      tag: okd-c1
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1001
+  clusterAdmissionReports:
+    image:
+      registry: docker.io
+      repository: eclipsefdn/kubectl
+      tag: okd-c1
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1001
+  clusterEphemeralReports:
+    image:
+      registry: docker.io
+      repository: eclipsefdn/kubectl
+      tag: okd-c1
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1001
+  ephemeralReports:
+    image:
+      registry: docker.io
+      repository: eclipsefdn/kubectl
+      tag: okd-c1
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1001
+  updateRequests:
+    image:
+      registry: docker.io
+      repository: eclipsefdn/kubectl
+      tag: okd-c1
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1001
+
 # Deploy minimally viable HA config. See https://kyverno.io/docs/installation/methods/#high-availability
+# Migrate to v1.13 https://kyverno.io/docs/installation/upgrading/#upgrading-to-kyverno-v113
 admissionController:
   replicas: 3
+  rbac:
+    clusterRole:
+      extraResources:
+        - apiGroups:
+            - '*'
+          resources:
+            - '*'
+          verbs:
+            - get
+            - list
+            - watch
 backgroundController:
   replicas: 2
+  rbac:
+    clusterRole:
+      extraResources:
+        - apiGroups:
+            - '*'
+          resources:
+            - '*'
+          verbs:
+            - get
+            - list
+            - watch
 cleanupController:
   replicas: 2
 reportsController:
   replicas: 2
+  rbac:
+    clusterRole:
+      extraResources:
+        - apiGroups:
+            - '*'
+          resources:
+            - '*'
+          verbs:
+            - get
+            - list
+            - watch
 
-# FIXME This will become default value in the future Kyverno 1.12.0 release per https://github.com/kyverno/kyverno/pull/9948
-# Revert this once we upgrade to Kyverno >= 1.12.0
-config:
-  webhooks:
-    - namespaceSelector:
-        matchExpressions:
-          - key: kubernetes.io/metadata.name
-            operator: NotIn
-            values:
-              - kube-system
 crds:
   migration:
     # -- Enable CRDs migration using helm post upgrade hook
     # disabling CRD migration as a workaround to https://github.com/kyverno/kyverno/issues/10283
     enabled: false
+
+# Migrate to v1.13 https://kyverno.io/docs/installation/upgrading/#upgrading-to-kyverno-v113
+features:
+  policyExceptions:
+    enabled: true
+    namespace: 'kyverno'
