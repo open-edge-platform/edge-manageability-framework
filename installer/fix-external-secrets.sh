@@ -25,6 +25,8 @@ restart_and_wait_pod() {
 
 }
 
+# Wait for helm upgrade to take effect
+sleep 120
 
 kubectl patch application -n $TARGET_ENV external-secrets  -p '{"metadata": {"finalizers": ["resources-finalizer.argocd.argoproj.io"]}}' --type merge
 kubectl delete application -n $TARGET_ENV external-secrets --cascade=background &
