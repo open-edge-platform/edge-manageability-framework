@@ -48,17 +48,71 @@ Onboarding steps those should be done on the edge node includes
 
 5. If the host resource is associated with custom config(cloud-init) then it there should be a way to run run cloud-init stpes on the edge node as a post onboarding step.
 
-### Scope
+## Scope and Implementation plan
 
 EMF side steps to skip the provisioning workflow.
 
-1. DKAM should curate and host the installer script in the tinker-nginx service. It should also read the configuration with enabled capabilities of EMF (App orchestration, cluster orchestration, observability). Based on that it shall include the respective agent installations.
+1. Device disocery agent - Build debian for the device discovery agent and include it in the agent installer script which does onboarding(non-interactive) and gets required keycloak credentials to the edge node. Until device discovery completes the onboarding other agents installation shouldn't be started.
 
-2. Onboarding manager should skip the provisioning flow to creation of the tinkerbell workflow if edge node is registered with skip provisioning flow option. It should update the inventory with required instance resource fields like provisioning status and status indicator fields.
+2. DKAM - should curate and host the installer script in the tinker-nginx service. It should also read the configuration with enabled capabilities of EMF (App orchestration, cluster orchestration, observability). Based on that configuration it shall include the respective agent installations. It should include device discovery agent.
 
-3. Build debian for the device discovery agent and include it in the agent installer script which does onboarding(non-interactive) and required keycloak credentials for the edge node.
+3. Onboarding manager - Should skip the provisioning flow to creation of the tinkerbell workflow if edge node is registered with skip provisioning flow option. It should update the inventory with required instance resource fields like provisioning status and status indicator fields. Creation of instance resource with mapping OS resource of Edge node.
 
-### Workflow
+4. API-v2 and inventory changes to include new field, skip provisioning flow in host resource.
+
+5. Orch-cli/Infra web-ui changes for device registration to include the new field skip provisiong flow. By default skip provisioning flow will be set to false.
 
 
+
+## Workflow
+
+```mermaid
+sequenceDiagram
+autonumber
+    participant User
+     box rgba(32, 194, 142, 1) Edge Node 
+        participant DeviceDiscovery as Device Discovery Agent
+        participant EdgeNode as Edge Node
+    end
+
+    box rgba(10, 184, 242, 1) Orchestrator Components
+        participant API as API-v2
+        participant TinkerNginx as Tinker-Nginx
+        participant OnboardingMgr as Onboarding Manager
+        participant DKAM
+        participant Inventory
+    end
+
+    DKAM->>DKAM: Read EMF capabilities from infra-config
+    DKAM->>TinkerNginx: Curate & host installer script
+
+    User->>API: Register edge node using orch-cli/UI(skip provisioning = true)
+    API->>Inventory: Create host resource with provisioning skipped
+    API-->>User: Registration confirmed
+    
+    
+    Note over User,EdgeNode: User shall trigger the onboarding flow
+    User->>EdgeNode: Login to edge node which has Ubuntu 22.04 or 24.04 pre-installed 
+    EdgeNode->>TinkerNginx: Download installer script to edge node
+    EdgeNode->>EdgeNode: Run the installer script Install system packages
+    EdgeNode->>EdgeNode: Upgrade kernel (if needed)
+    EdgeNode->>EdgeNode: Install Device Discovery Agent (debian)
+    DeviceDiscovery->>DeviceDiscovery: Start Device Discovery Agent
+    DeviceDiscovery->>OnboardingMgr: Non-interactive onboarding request(TLS)
+    alt If device not found
+        OnboardingMgr->>DeviceDiscovery: Error Device not found
+    else
+        OnboardingMgr->>Inventory: Update Onboarding and Provisioning status as completed
+        OnboardingMgr->>DeviceDiscovery: Return onboarding credentials
+        EdgeNode->>EdgeNode: Install node agent and other EN agents
+        EdgeNode->>EdgeNode: Configure agents with onboading credentials
+        EdgeNode->>EdgeNode: Edge agent communicate with respective Infra managers using JWT token
+        EdgeNode->>EdgeNode: Enable and Start all agents as systemd services
+    end
+    EdgeNode->>EdgeNode: Ready for Day2 operations(Update & remote power management)
+```
+
+## Opens
+
+In the interactive onboarding mapping the instance resource to OS resource is done by taking OS version from the Edge node during device discovery stage.
 
