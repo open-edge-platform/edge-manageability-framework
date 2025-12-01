@@ -81,15 +81,17 @@ The rest of the document will has details tools, codebase used and the profiling
 
 ## Tools used
 
-- `kubectl top node` : Shows current real-time usage of CPU and memory.Data is fetched from the Metrics Server,
-   which collects usage stats from kubelet.
+- `kubectl top node` : Shows current real-time usage of CPU and memory. Data is fetched from the Metrics Server,
+  which collects usage stats from kubelet.
 - `kubectl describe node` : Shows the requested and allocatable resources, and also total capacity. This includes
   the sum of CPU and memory requests and limits from all pods on the node.
 - Linux commands (instantaneous resource usage):
+  <!-- markdownlint-disable-line MD013 -->
   - CPU: `top -bn1 | grep "Cpu(s)" | awk '{print "CPU Used: " $2 + $4 "%, CPU Free: " $8 "%"}'`
   - Memory: `free | awk '/Mem:/ {used=$3; total=$2; printf "Memory Used: %.2f%%, Memory Free: %.2f%%\n", used/total*100, $4/total*100}'`
   - Storage: `df --total -k | awk '/^total/ {used=$3; total=$2; free=$4; printf "Disk Used: %.2f%%, Disk Free: %.2f%%\n", used/total*100, free/total*100}'`
   - Process level CPU usage: `ps -eo pid,comm,%cpu --sort=-%cpu | head -n 7`
+  <!-- markdownlint-disable-line MD013 -->
   - Process level Memory usage: `ps -eo comm,rss --sort=-rss | awk 'NR==1 {print $1, "MEM(MiB)"} NR>1 {printf "%-20s %6.1f\n", $1, $2/1024}' | head -n 7`
 - instrumentation in the EMF code base
 
@@ -238,7 +240,7 @@ Disk Used: 15.26%, Disk Free: 84.73%
 
 #### Resource Consumption Comparison
 
-**CPU Usage (%)**
+##### CPU Usage (%)
 
 ```mermaid
 xychart-beta
@@ -248,7 +250,7 @@ xychart-beta
   bar "CPU Used" [22.6, 6, 15, 23.8]
 ```
 
-**Memory Usage (%)**
+##### Memory Usage (%)
 
 ```mermaid
 xychart-beta
@@ -340,7 +342,9 @@ mimir                 779.7
 
 ### Timing analysis
 
-The timing analysis was done using the kubernetes events captured during the deployment of the EMF. It is recommended to run the following commands within an hour of deploying the EMF as the retention policy might overwrite the events captured during the deployment.
+The timing analysis was done using the kubernetes events captured during the deployment of the EMF. It is recommended
+to run the following commands within an hour of deploying the EMF as the retention policy might overwrite the events
+captured during the deployment.
 
 ```bash
 mkdir -p kind-diagnostics
@@ -351,12 +355,14 @@ kubectl get applications -o yaml -A | tee kind-diagnostics/argocd-applications.y
 kubectl get events -o yaml -A | tee kind-diagnostics/events.yaml
 ```
 
-Following data was generated for the Coder deployment with `dev-internal-coder-autocert.yaml`, [OnPrem deployment on Azure VM](https://github.com/open-edge-platform/edge-manage-docs/blob/main/docs/developer_guide/set_up_dev_env/index.rst), and [Proxmox VM](https://docs.openedgeplatform.intel.com/edge-manage-docs/dev/deployment_guide/on_prem_deployment/on_prem_get_started/on_prem_install.html)
+Following data was generated for the Coder deployment with `dev-internal-coder-autocert.yaml`,
+[OnPrem deployment on Azure VM](https://github.com/open-edge-platform/edge-manage-docs/blob/main/docs/developer_guide/set_up_dev_env/index.rst),
+and [Proxmox VM](https://docs.openedgeplatform.intel.com/edge-manage-docs/dev/deployment_guide/on_prem_deployment/on_prem_get_started/on_prem_install.html)
 
 #### Argo applications Durations `dev-internal-coder-autocert.yaml`
 
 | Section | Start | End | Duration (sec) [min] |
-|---------|---------------------|---------------------|:----------------------:|
+| --------- | --------------------- | --------------------- | :----------------------: |
 | root-app | 2025-06-09 11:15:43 | 2025-06-09 11:39:31 | **1428 [23.8 min]** 🔴 |
 | postgresql-secrets | 2025-06-09 11:17:23 | 2025-06-09 11:38:47 | **1284 [21.4 min]** 🔴 |
 | secrets-config | 2025-06-09 11:21:42 | 2025-06-09 11:38:48 | **1026 [17.1 min]** 🔴 |
@@ -546,13 +552,14 @@ gantt
 **Note:**
 
 - Any section consuming above 1.5 min is marked as (warning), above 2.5 min as (critical).
-- The table lists each section and the total time taken (in seconds and minutes) from the first to last event, sorted by duration.
+- The table lists each section and the total time taken (in seconds and minutes) from the first to last event,
+  sorted by duration.
 - The Gantt chart visualizes the timing of each section and labels each bar with its duration.
 
 #### Argo applications Durations OnPrem (Azure VM)
 
 | Section | Start | End | Duration (sec) [min] |
-|---------|---------------------|---------------------|:----------------------:|
+| --------- | --------------------- | --------------------- | :----------------------: |
 | root-app | 2025-06-09 21:56:24 | 2025-06-09 22:34:25 | **2281 [38.02 min]** 🔴 |
 | postgresql-secrets | 2025-06-09 21:58:49 | 2025-06-09 22:34:09 | **2120 [35.33 min]** 🔴 |
 | secrets-config | 2025-06-09 22:00:43 | 2025-06-09 22:34:24 | **2021 [33.68 min]** 🔴 |
@@ -740,13 +747,14 @@ gantt
 **Note:**
 
 - Any section consuming above 1.5 min is highlighted in orange, above 2.5 min in red.
-- The table lists each section and the total time taken (in seconds and minutes) from the first to last event, sorted by duration.
+- The table lists each section and the total time taken (in seconds and minutes) from the first to last event,
+  sorted by duration.
 - The Gantt chart visualizes the timing of each section and labels each bar with its duration.
 
 #### Argo applications Durations OnPrem (Proxmox VM)
 
 | Section | Start | End | Duration (sec) [min] |
-|---------|---------------------|---------------------|:----------------------:|
+| --------- | --------------------- | --------------------- | :----------------------: |
 | root-app | 2025-06-11 09:01:49 | 2025-06-11 09:19:09 | **1040 [17.33 min]** 🔴 |
 | postgresql | 2025-06-11 09:05:35 | 2025-06-11 09:19:00 | **805 [13.42 min]** 🔴 |
 | secrets-config | 2025-06-11 09:06:59 | 2025-06-11 09:19:08 | **729 [12.15 min]** 🔴 |
@@ -932,7 +940,8 @@ gantt
 **Note:**
 
 - Any section consuming above 1.5 min is highlighted in orange, above 2.5 min in red.
-- The table lists each section and the total time taken (in seconds and minutes) from the first to last event, sorted by duration.
+- The table lists each section and the total time taken (in seconds and minutes) from the first to last event,
+  sorted by duration.
 - The Gantt chart visualizes the timing of each section and labels each bar with its duration.
 
 ![CPU and RAM resource usage during OnPrem deployment on Proxmox VM with 32C/128G](image.png)
