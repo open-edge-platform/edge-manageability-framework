@@ -99,6 +99,79 @@ d. Token Introspection: Validates token expiration, scopes, and permissions befo
 
 These four services constitute the baseline infrastructure upon which all EIM modules, whether deployed individually or as a complete stack, will operate by default. The "Bring-Your-Own Infrastructure" track will focus on creating abstraction layers to make these specific components pluggable and replaceable with third-party equivalents.
 
+
+### EIM Components level analysis
+
+This analysis identifies the minimum set of components required to run EIM (orch-infra namespace) components successfully. The current deployment has 100 pods (AO/CO/Observability disabled ) across 19 namespaces. By keeping only essential dependencies, we can reduce this to 38-40 pods or even further while maintaining full EIM functionality.
+
+#### Dependency Graph of EIM
+
+```
+orch-infra (26 pods - EIM Core)
+    ├── orch-platform
+    │   ├── platform-keycloak (OIDC Authentication)
+    │   ├── vault (Secret Storage)
+    │   ├── vault-agent-injector (Secret Injection)
+    │   └── keycloak-tenant-controller (Multi-tenancy)
+    │
+    ├── orch-database
+    │   └── postgresql-cluster (Database)
+    │
+    ├── istio-system
+    │   └── istiod (Service Mesh)
+    │
+    ├── orch-iam
+    │   ├── tenancy-manager (Tenant Management)
+    │   └── nexus-api-gw (IAM Gateway)
+    │
+    └── kube-system (Kubernetes Core)
+        ├── CoreDNS (DNS)
+        ├── kube-proxy (Networking)
+        └── Other K8s controllers
+```
+#### Minimal Configuration Summary
+
+##### Key Findings:
+- **orch-infra** requires 26 pods (all EIM components)
+- **Critical dependencies:** Keycloak (auth), Vault (secrets), PostgreSQL (database), Istio (service mesh), Tenancy Manager (multi-tenancy)
+- **Can be disabled:** ArgoCD, Kyverno, Web UI, Gateway, Boots, Cert-manager, Gitea, MetalLB, and others
+- **Not needed:** Observability components (tracing disabled), external ingress, policy engines
+
+---
+
+##### Required Pods 
+
+| Category | Namespace | Pods | Purpose |
+|----------|-----------|------|---------|
+| **EIM Core** | orch-infra | 26 | All Edge Infrastructure components |
+| **Authentication** | orch-platform | 2 | Keycloak, Keycloak Tenant Controller |
+| **Secrets** | orch-platform | 2 | Vault, Vault Agent Injector |
+| **Database** | orch-database | 1 | PostgreSQL |
+| **Service Mesh** | istio-system | 1-2 | Istiod control plane (TBD Should we disable it)|
+| **Multi-tenancy** | orch-iam | 2 | Tenancy Manager, Nexus API Gateway |
+| **Storage** | local-path-storage | 1 | PVC provisioner |
+| **TOTAL** | | **35-40** | **Fully functional EIM** |
+
+#### Optional Pods (62 total) - Can Disable
+
+| Category | Namespaces | Pods | Impact of Disabling |
+|----------|------------|------|---------------------|
+| **GitOps** | argocd | 6 | Cannot deploy/update via ArgoCD |
+| **Policy** | kyverno | 9 | No policy enforcement |
+| **UI** | orch-ui | 6 | No web interface |
+| **Ingress** | orch-gateway | 6 | Cannot expose externally |
+| **Boot Services** | orch-boots | 2 | Alternative boot methods needed |
+| **Secrets Mgmt** | orch-secret | 4 | Vault handles secrets |
+| **Certificates** | cert-manager | 3 | Manual cert management |
+| **Git Server** | gitea | 3 | No git repository |
+| **Load Balancer** | metallb-system | 2 | No external LB |
+| **Utilities** | ns-label, mailpit, postgresql-operator (optional) | 4 | Various utilities |
+| **Istio Extras** | istio-system | 1 | Kiali visualization |
+| **Platform Extras** | orch-platform | 3 | Proxy, reloader |
+| **IAM Jobs** | orch-iam | 2 | init jobs |
+| **TOTAL** | | **62** | **Safe to disable** |
+
+
 ### Optional Observability Services
 
 While not strictly required for basic EIM functionality, the following services are strongly recommended for production deployments:
