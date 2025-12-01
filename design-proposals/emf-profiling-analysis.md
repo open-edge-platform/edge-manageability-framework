@@ -6,7 +6,8 @@ Last updated: 05.06.2025
 
 ## Abstract
 
-The objective of this exercise is to capture the timing and resource consumption of EMF under various deployment types and profiles. This will help in understanding the timing and resource consumption and guide future optimizations.
+The objective of this exercise is to capture the timing and resource consumption of EMF under various deployment types
+and profiles. This will help in understanding the timing and resource consumption and guide future optimizations.
 
 Environment used for analysis
 
@@ -19,7 +20,8 @@ Environment used for analysis
 
 ### 1. Resource Requirements for Default EMF Deployment
 
-- **Learning:** EMF deployments with default capabilities require significant CPU, memory, and storage resources (minimum: 16 cores, 64 GB RAM, 140 GB storage).
+- **Learning:** EMF deployments with default capabilities require significant CPU, memory, and storage resources
+- (minimum: 16 cores, 64 GB RAM, 140 GB storage).
 - **Proposals:**
   - Provide a standalone edge node like experience for EMF to reduce resource footprint.
   - Enable deployment of EMF via Helm charts for customers not using GitOps.
@@ -27,7 +29,9 @@ Environment used for analysis
 
 ### 2. Deployment Time
 
-- **Learning:** Best deployment time is 25 minutes (with images cached); worst case exceeds 1 hour. A portion time is spent on system configuration, RKE2, Gitea, ArgoCD, and orchestrator installer, with significant delays during syncwave/sync until root-app readiness.
+- **Learning:** Best deployment time is 25 minutes (with images cached); worst case exceeds 1 hour. A portion time is
+spent on system configuration, RKE2, Gitea, ArgoCD, and orchestrator installer, with significant delays during
+syncwave/sync until root-app readiness.
 - **Proposals:**
   - Set a target deployment time KPI of 5–8 minutes for OnPrem deployments.
   - Instrument timing to distinguish between artifact download and service startup times.
@@ -35,13 +39,16 @@ Environment used for analysis
 
 ### 3. Kubernetes distro in Single-Node OnPrem Deployments
 
-- **Learning:** Most OnPrem deployments use single-node clusters on VMs, not bare metal. RKE2 consumes more resources and time than necessary.
+- **Learning:** Most OnPrem deployments use single-node clusters on VMs, not bare metal. RKE2 consumes more resources
+and time than necessary.
 - **Proposals:**
-  - Evaluate and support alternative Kubernetes distributions (e.g., k3s) for smaller footprints in reference architectures.
+  - Evaluate and support alternative Kubernetes distributions (e.g., k3s) for smaller footprints in reference
+architectures.
 
 ### 4. Platform Services in Default Profile
 
-- **Learning:** The default profile deploys 85 ArgoCD apps, 199 pods, and 362 containers, including services like ISTIO and Kiali.
+- **Learning:** The default profile deploys 85 ArgoCD apps, 199 pods, and 362 containers, including services like
+ISTIO and Kiali.
 - **Proposals:**
   - Review and minimize the set of platform services in the default OnPrem configuration.
   - Assess the necessity and scope of each deployed service.
@@ -61,9 +68,12 @@ Environment used for analysis
 
 ### 7. Resource Requests and Limits configuration
 
-- **Learning:** Actual CPU and memory usage is often much lower than the minimum configuration. For example, max CPU request is 3.2 cores, but usage can reach 6.7 cores; max memory request is ~7.5 GB, but usage can reach 37 GB (with observability enabled).
+- **Learning:** Actual CPU and memory usage is often much lower than the minimum configuration. For example, max CPU
+request is 3.2 cores, but usage can reach 6.7 cores; max memory request is ~7.5 GB, but usage can reach 37 GB
+(with observability enabled).
 - **Proposals:**
-  - Audit and adjust resource requests and limits for all components, including Kubernetes control plane and OSS/upstream dependencies.
+  - Audit and adjust resource requests and limits for all components, including Kubernetes control plane and
+  OSS/upstream dependencies.
   - Ensure supported deployment types can configure resource requests and limits appropriately.
   - Tune resource allocations based on deployment type and observed usage.
 
@@ -71,8 +81,10 @@ The rest of the document will has details tools, codebase used and the profiling
 
 ## Tools used
 
-- `kubectl top node` : Shows current real-time usage of CPU and memory.Data is fetched from the Metrics Server, which collects usage stats from kubelet.
-- `kubectl describe node` : Shows the requested and allocatable resources, and also total capacity. This includes the sum of CPU and memory requests and limits from all pods on the node.
+- `kubectl top node` : Shows current real-time usage of CPU and memory.Data is fetched from the Metrics Server,
+   which collects usage stats from kubelet.
+- `kubectl describe node` : Shows the requested and allocatable resources, and also total capacity. This includes
+  the sum of CPU and memory requests and limits from all pods on the node.
 - Linux commands (instantaneous resource usage):
   - CPU: `top -bn1 | grep "Cpu(s)" | awk '{print "CPU Used: " $2 + $4 "%, CPU Free: " $8 "%"}'`
   - Memory: `free | awk '/Mem:/ {used=$3; total=$2; printf "Memory Used: %.2f%%, Memory Free: %.2f%%\n", used/total*100, $4/total*100}'`
@@ -230,23 +242,21 @@ Disk Used: 15.26%, Disk Free: 84.73%
 
 ```mermaid
 xychart-beta
-    title "CPU Usage (%)"
-    x-axis "Profile" ["Baseline-ObsON", "Baseline-ObsOFF", "OnPrem-Azure", "OnPrem-Proxmox"]
-    y-axis "CPU Used (%)"
-    bar "CPU Used" [22.6, 6, 15, 23.8]
+  title "CPU Usage (%)"
+  x-axis "Profile" ["Baseline-ObsON", "Baseline-ObsOFF", "OnPrem-Azure", "OnPrem-Proxmox"]
+  y-axis "CPU Used (%)"
+  bar "CPU Used" [22.6, 6, 15, 23.8]
 ```
 
 **Memory Usage (%)**
 
 ```mermaid
 xychart-beta
-    title "Memory Usage (%)"
-    x-axis "Profile" ["Baseline-ObsON", "Baseline-ObsOFF", "OnPrem-Azure", "OnPrem-Proxmox"]
-    y-axis "Memory Used (%)"
-    bar "Memory Used" [54.66, 24.48, 81.05, 27.55]
+  title "Memory Usage (%)"
+  x-axis "Profile" ["Baseline-ObsON", "Baseline-ObsOFF", "OnPrem-Azure", "OnPrem-Proxmox"]
+  y-axis "Memory Used (%)"
+  bar "Memory Used" [54.66, 24.48, 81.05, 27.55]
 ```
-
-**Disk Usage (%)**
 
 ```mermaid
 xychart-beta
