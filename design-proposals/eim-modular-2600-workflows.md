@@ -26,6 +26,11 @@ Following are the key requirements for the EIM modular decomposition in 2026.00:
   a. As an OEM, I want to manage device OS provisioning, Kubernetes and application deployment across warehouse fleets
   with optional QA validation, so that production readiness stays consistent at scale.
 
+  Delivery mode for 2026.02
+
+- Requirement 1a and 1b will be delivered as a single modular workflow with two distinct features.
+- Requirement 2a will be delivered as a standalone modular workflow.
+
 ## Requirement 1.a
 
 One of the key value propositions of Intel EIM in the context of vPRO/AMT device activation is its ability to provide
@@ -256,15 +261,14 @@ KPIs
 - Customer able to deploy control plane and activate vPRO/AMT devices using the modular workflow in less than 20min
 - Modular workflow can support at minimum 50 devices in parallel with clear resource requirement documentation
 
-## Requirement 2
+## Requirement 2a
 
-A key capability that is required from an Edge device OEM vendor is the ability at scale to provision OS, kubernetes,
-applications,  configure and test before shipping to the installation location. This requirements is does not include
-day 2 manageability but focuses on the day 0 commissioning of the edge devices. This workflow is already supported as
-part of the "OXM profile" based full EMF Day-0 workflow. The requirement here is to modularize and deliver this workflow
-as a standalone modular workflow that can be consumed by OEMs and system integrators.
+A key capability that is required from an Edge device ISV and OEM vendor is the ability at scale to provision OS,
+kubernetes, applications, configure and test before shipping to the installation location. This workflow is already
+supported as part of the "OXM profile" based full EMF Day-0 workflow. The requirement here is to modularize and deliver
+this workflow as a standalone modular workflow that can be consumed by OEMs and system integrators.
 
-### Scope 2
+### Scope 2a
 
 This modular workflow assumes that customer would like to perform automated OS provisioning, Kubernetes and application
 and customize it using cloud-init based approach. Automation of running QA like test is not in the scope of
@@ -283,7 +287,7 @@ of ansible.
 - Upgrades are only supported within the same modular workflow. E.g. modular workflow 2 can be upgraded to a future
   release of modular workflow 2 but not to full EMF workflow.
 
-### Workflow 2
+### Workflow 2a
 
 1. Customer prepared the Edge node and configures the BIOS for for device provisioning as per the user documentation.
   For scale deployment customer can use PXE boot or HTTPs boot methods.
@@ -335,7 +339,7 @@ sequenceDiagram
   Customer->>OrchCLI: 11. List connected edge nodes
 ```
 
-### Deliverables 2
+### Deliverables 2a
 
 - **Foundational services**
   - ArgoCD that uses EMF repos for git ops based deployment
