@@ -139,8 +139,8 @@ retrieve_and_apply_config() {
     else
         update_config_variable "$config_file" "SRE_TLS_ENABLED" "false"
     fi
-    
-    VALUE_FILES=$(kubectl get application root-app -n onprem -o jsonpath='{.spec.sources[0].helm.valueFiles[*]}')
+
+    VALUE_FILES=$(kubectl get application root-app -n "$apps_ns" -o jsonpath='{.spec.sources[0].helm.valueFiles[*]}')
 
     if [[ -z "$VALUE_FILES" ]]; then
         echo "⚠️  Warning: No value files found in root-app spec"
@@ -179,7 +179,7 @@ retrieve_and_apply_config() {
         DISABLE_O11Y_PROFILE="true"
         echo "⛔ Observability (O11y) profile is DISABLED"
     fi
-    
+
     if echo "$VALUE_FILES" | grep -q "enable-singleTenancy.yaml"; then
         SINGLE_TENANCY_PROFILE="true"
         echo "✅ Single Tenancy is ENABLED"
@@ -201,7 +201,7 @@ retrieve_and_apply_config() {
     fi
 
     #cleanup old file
-    rm -rf "$ORCH_INSTALLER_PROFILE".yaml   
+    rm -rf "$ORCH_INSTALLER_PROFILE".yaml
 
     # Generate Cluster Config
     ./generate_cluster_yaml.sh onprem
@@ -250,6 +250,218 @@ EOF
 fi
     kubectl patch -n "$apps_ns" application postgresql-secrets --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
     kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+}
+
+terminate_existing_sync() {
+    local app_name=$1
+    local namespace=$2
+
+    local current_phase
+    current_phase=$(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.operationState.phase}' 2>/dev/null)
+
+    if [[ "$current_phase" == "Running" ]]; then
+        echo "🛑 Terminating existing sync operation..."
+        kubectl patch application "$app_name" -n "$namespace" --type='merge' -p='{"operation": null}'
+
+        # Wait for termination
+        timeout 30 bash -c "while [[ \"\$(kubectl get application $app_name -n $namespace -o jsonpath='{.status.operationState.phase}' 2>/dev/null)\" == \"Running\" ]]; do sleep 2; done"
+        echo "✅ Existing operation terminated"
+    else
+        echo "ℹ️  No running operation to terminate"
+    fi
+}
+
+force_sync_outofsync_app() {
+    local app_name=$1
+    local namespace=$2
+    local server_side_apply=${3:-false}  # Default to false if not specified
+
+    set +e
+    terminate_existing_sync "$app_name" "$namespace"
+    echo "Force syncing $app_name (ServerSideApply=$server_side_apply)..."
+
+    kubectl patch -n "$namespace" application "$app_name" --type merge --patch "$(cat <<EOF
+{
+    "operation": {
+        "initiatedBy": {
+            "username": "admin"
+        },
+        "sync": {
+            "syncOptions": [
+                "Replace=true",
+                "Force=true",
+                "ServerSideApply=$server_side_apply"
+            ]
+        }
+    }
+}
+EOF
+)"
+    set -e
+}
+
+# Function to check and force sync application if not healthy
+check_and_force_sync_app() {
+    local app_name=$1
+    local namespace=$2
+    local server_side_apply=${3:-false}  # Default to false if not specified
+    local max_retries=2
+
+    for ((i=1; i<=max_retries; i++)); do
+        app_status=$(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
+        
+        if [[ "$app_status" == "Synced Healthy" ]]; then
+            echo "✅ $app_name is Synced and Healthy"
+            return 0
+        fi
+
+        echo "⚠️  $app_name is not Synced and Healthy (status: $app_status). Force-syncing... (attempt $i/$max_retries)"
+        force_sync_outofsync_app "$app_name" "$namespace" "$server_side_apply"
+        echo "✅ $app_name sync triggered"
+        
+        # Check status every 5s for 90s
+        local check_timeout=90
+        local check_interval=3
+        local elapsed=0
+        
+        while (( elapsed < check_timeout )); do
+            app_status=$(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
+            
+            if [[ "$app_status" == "Synced Healthy" ]]; then
+                echo "✅ $app_name became Synced and Healthy"
+                return 0
+            else
+                echo "Current status: $app_status (elapsed: ${elapsed}s)"
+            fi
+            
+            sleep $check_interval
+            elapsed=$((elapsed + check_interval))
+        done
+        
+        echo "⏳ $app_name did not become healthy within ${check_timeout}s"
+    done
+
+    echo "⚠️  $app_name may still require attention after $max_retries attempts"
+}
+
+check_and_patch_sync_app() {
+    local app_name=$1
+    local namespace=$2
+    local max_retries=2
+
+    for ((i=1; i<=max_retries; i++)); do
+        app_status=$(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
+        
+        if [[ "$app_status" == "Synced Healthy" ]]; then
+            echo "✅ $app_name is Synced and Healthy"
+            return 0
+        fi
+
+        echo "⚠️  $app_name is not Synced and Healthy (status: $app_status). Force-syncing... (attempt $i/$max_retries)"
+
+        set +e
+        terminate_existing_sync "$app_name" "$namespace"
+        kubectl patch -n "$namespace" application "$app_name" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+        set -e
+
+        # Check status every 5s for 90s
+        local check_timeout=90
+        local check_interval=3
+        local elapsed=0
+        
+        while (( elapsed < check_timeout )); do
+            app_status=$(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
+            
+            if [[ "$app_status" == "Synced Healthy" ]]; then
+                echo "✅ $app_name became Synced and Healthy"
+                return 0
+            else
+                echo "Current status: $app_status (elapsed: ${elapsed}s)"
+            fi
+            
+            sleep $check_interval
+            elapsed=$((elapsed + check_interval))
+        done
+        
+        echo "⏳ $app_name did not become healthy within ${check_timeout}s"
+    done
+
+    echo "⚠️  $app_name may still require attention after $max_retries attempts"
+}
+
+# Function to wait for application to be Synced and Healthy with timeout
+wait_for_app_synced_healthy() {
+    local app_name=$1
+    local namespace=$2
+    local timeout=${3:-120}  # Default 120 seconds if not specified
+    
+    local start_time
+    start_time=$(date +%s)
+    set +e
+    while true; do
+        echo "Checking $app_name application status..."
+        local app_status
+        app_status=$(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
+        if [[ "$app_status" == "Synced Healthy" ]]; then
+            echo "✅ $app_name application is Synced and Healthy."
+            set -e
+            return 0
+        fi
+        local current_time
+        current_time=$(date +%s)
+        local elapsed=$((current_time - start_time))
+        if (( elapsed > timeout )); then
+            echo "⚠️ Timeout waiting for $app_name to be Synced and Healthy after ${timeout}s (status: $app_status)"
+            set -e
+            return 0
+        fi
+        echo "Waiting for $app_name to be Synced and Healthy... (status: $app_status, ${elapsed}s/${timeout}s elapsed)"
+        sleep 3
+    done
+}
+
+# Function to restart a StatefulSet by scaling to 0 and back
+restart_statefulset() {
+    local name=$1
+    local namespace=$2
+
+    echo "Restarting StatefulSet $name in namespace $namespace..."
+
+    # Get current replica count
+    REPLICAS=$(kubectl get statefulset "$name" -n "$namespace" -o jsonpath='{.spec.replicas}')
+    echo "Current replicas: $REPLICAS"
+
+    # Scale to 0
+    kubectl scale statefulset "$name" -n "$namespace" --replicas=0
+
+    # Wait for pods to terminate
+    kubectl wait --for=delete pod -l app="$name" -n "$namespace" --timeout=300s
+
+    # Scale back to original replica count
+    kubectl scale statefulset "$name" -n "$namespace" --replicas="$REPLICAS"
+
+    echo "✅ $name restarted"
+}
+
+
+# Function to check app status and clean up job if needed
+check_and_cleanup_job() {
+    local app_name=$1
+    local namespace=$2
+    local job_label=${3:-job-name}
+    
+    app_status=$(kubectl get application "$app_name" -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
+    if [[ "$app_status" != "Synced Healthy" ]]; then
+        if kubectl get job -n "$namespace" -l "$job_label" 2>/dev/null | grep "$app_name"; then
+            echo "Deleting $app_name job..."
+            job_name=$(kubectl get job -n "$namespace" -l "$job_label" | grep "$app_name" | awk '{print $1}')
+            kubectl delete job "$job_name" -n "$namespace" --force --grace-period=0 --ignore-not-found
+            echo "✅ $app_name job deleted"
+            kubectl patch -n "$apps_ns" application "$app_name" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+        else
+            echo "ℹ️  No $app_name job found to delete"
+        fi
+    fi
 }
 
 # Checks if orchestrator is currently installed on the node
@@ -684,6 +896,18 @@ patch_secret() {
         done < postgres-secrets-password.txt
     fi
 
+    wait_for_app_synced_healthy postgresql-secrets "$apps_ns"
+
+    check_and_patch_sync_app postgresql-secrets "$apps_ns"
+
+    wait_for_app_synced_healthy postgresql-secrets "$apps_ns"
+
+    # Check if postgresql-secrets is Synced and Healthy
+    app_status=$(kubectl get application postgresql-secrets -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
+    if [[ "$app_status" != "Synced Healthy" ]]; then
+        check_and_patch_sync_app root-app "$apps_ns"
+    fi
+
     # Check for secret every 5 sec for 10 times
     for i in $(seq 1 40); do
 
@@ -697,6 +921,51 @@ patch_secret() {
             sleep 5
         fi
     done
+
+    # Wait for all required secrets to exist before patching
+    local secrets_to_check=(
+        "orch-app:app-orch-catalog-local-postgresql"
+        "orch-app:app-orch-catalog-reader-local-postgresql"
+        "orch-iam:iam-tenancy-local-postgresql"
+        "orch-iam:iam-tenancy-reader-local-postgresql"
+        "orch-infra:alerting-local-postgresql"
+        "orch-infra:alerting-reader-local-postgresql"
+        "orch-infra:inventory-local-postgresql"
+        "orch-infra:inventory-reader-local-postgresql"
+        "orch-platform:platform-keycloak-local-postgresql"
+        "orch-platform:platform-keycloak-reader-local-postgresql"
+        "orch-platform:vault-local-postgresql"
+        "orch-platform:vault-reader-local-postgresql"
+        "orch-infra:mps-local-postgresql"
+        "orch-infra:mps-reader-local-postgresql"
+        "orch-infra:rps-local-postgresql"
+        "orch-infra:rps-reader-local-postgresql"
+    )
+
+    local max_wait=600  # 10 minutes timeout
+    local check_interval=5
+    local elapsed=0
+
+    echo "Waiting for all required secrets to exist..."
+    for secret_entry in "${secrets_to_check[@]}"; do
+        local namespace="${secret_entry%%:*}"
+        local secret_name="${secret_entry##*:}"
+        elapsed=0
+
+        while ! kubectl get secret "$secret_name" -n "$namespace" >/dev/null 2>&1; do
+            if [ $elapsed -ge $max_wait ]; then
+                echo "❌ Timeout waiting for secret $secret_name in namespace $namespace after ${max_wait}s"
+                exit 1
+            fi
+            echo "⏳ Waiting for secret $secret_name in namespace $namespace... (${elapsed}s/${max_wait}s)"
+            sleep $check_interval
+            elapsed=$((elapsed + check_interval))
+        done
+        echo "✅ Secret $secret_name found in namespace $namespace"
+    done
+
+    echo "✅ All required secrets exist, proceeding with patching..."
+
 
     kubectl patch secret -n orch-app app-orch-catalog-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$CATALOG_SERVICE\"}}" --type=merge
     kubectl patch secret -n orch-app app-orch-catalog-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$CATALOG_SERVICE\"}}" --type=merge
@@ -749,8 +1018,6 @@ EOF
     # Patch postgresql secret
     #kubectl patch secret -n orch-database postgresql -p "{\"data\": {\"postgres-password\": \"$POSTGRESQL\"}}" --type=merge
 }
-# delete_postgres
-
 
 # Stop sync operation for root-app, so it won't be synced with the old version of the application.
 kubectl patch application root-app -n "$apps_ns" --type merge -p '{"operation":null}'
@@ -766,7 +1033,6 @@ operation:
 
 #kubectl patch -n "$apps_ns" application postgresql-secrets --patch-file /tmp/sync-postgresql-patch.yaml --type merge
 kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/sync-postgresql-patch.yaml --type merge
-
 
 #kubectl patch -n "$apps_ns" application postgresql --patch-file /tmp/sync-postgresql-patch.yaml --type merge
 
@@ -806,14 +1072,15 @@ sleep 10
 # Restore secret after app delete but before postgress restored
 yq e 'del(.metadata.labels, .metadata.annotations, .metadata.uid, .metadata.creationTimestamp)' postgres_secret.yaml | kubectl apply -f -
 
+sleep 30
 # Wait until PostgreSQL pod is running (Re-sync)
 start_time=$(date +%s)
 timeout=300  # 5 minutes in seconds
 set +e
 while true; do
     echo "Checking PostgreSQL pod status..."
-    podname=$(kubectl get pods -n orch-database -l app.kubernetes.io/name=postgresql -o jsonpath='{.items[0].metadata.name}')
-    pod_status=$(kubectl get pods -n orch-database "$podname" -o jsonpath='{.status.phase}')
+    # CloudNativePG uses cnpg.io/cluster label instead of app.kubernetes.io/name
+    pod_status=$(kubectl get pods -n orch-database -l cnpg.io/cluster=postgresql-cluster,cnpg.io/instanceRole=primary -o jsonpath='{.items[0].status.phase}')
     if [[ "$pod_status" == "Running" ]]; then
         echo "PostgreSQL pod is Running."
         sleep 30
@@ -829,8 +1096,36 @@ while true; do
     sleep 5
 done
 set -e
+
 # Now that PostgreSQL is running, we can restore the secret
 restore_postgres
+
+# Update ALL database user passwords in PostgreSQL after restore
+echo "Updating all database user passwords in PostgreSQL..."
+
+# Get all passwords from postgres-secrets-password.txt file (they are base64 encoded)
+ALERTING_PASSWORD=$(grep "^Alerting:" postgres-secrets-password.txt | cut -d' ' -f2 | base64 -d)
+CATALOG_PASSWORD=$(grep "^CatalogService:" postgres-secrets-password.txt | cut -d' ' -f2 | base64 -d)
+INVENTORY_PASSWORD=$(grep "^Inventory:" postgres-secrets-password.txt | cut -d' ' -f2 | base64 -d)
+IAM_TENANCY_PASSWORD=$(grep "^IAMTenancy:" postgres-secrets-password.txt | cut -d' ' -f2 | base64 -d)
+KEYCLOAK_PASSWORD=$(grep "^PlatformKeycloak:" postgres-secrets-password.txt | cut -d' ' -f2 | base64 -d)
+MPS_PASSWORD=$(grep "^Mps:" postgres-secrets-password.txt | cut -d' ' -f2 | base64 -d)
+RPS_PASSWORD=$(grep "^Rps:" postgres-secrets-password.txt | cut -d' ' -f2 | base64 -d)
+VAULT_PASSWORD=$(grep "^Vault:" postgres-secrets-password.txt | cut -d' ' -f2 | base64 -d)
+POSTGRESQL_PASSWORD=$(grep "^PostgreSQL:" postgres-secrets-password.txt | cut -d' ' -f2 | base64 -d)
+
+# Update passwords for all database users
+kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-platform-vault_user\" WITH PASSWORD '$VAULT_PASSWORD';"
+kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-infra-alerting_user\" WITH PASSWORD '$ALERTING_PASSWORD';"
+kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-app-app-orch-catalog_user\" WITH PASSWORD '$CATALOG_PASSWORD';"
+kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-infra-inventory_user\" WITH PASSWORD '$INVENTORY_PASSWORD';"
+kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-iam-iam-tenancy_user\" WITH PASSWORD '$IAM_TENANCY_PASSWORD';"
+kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-platform-platform-keycloak_user\" WITH PASSWORD '$KEYCLOAK_PASSWORD';"
+kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-infra-mps_user\" WITH PASSWORD '$MPS_PASSWORD';"
+kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-infra-rps_user\" WITH PASSWORD '$RPS_PASSWORD';"
+kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-database-postgresql_user\" WITH PASSWORD '$POSTGRESQL_PASSWORD';"
+
+echo "✅ All database user passwords updated successfully"
 
 vault_unseal
 
@@ -843,6 +1138,8 @@ if [[ -s rps_secret.yaml ]]; then
     kubectl apply -f rps_secret.yaml
 fi
 
+
+# TODO may need to move the vault unseal before this step
 kubectl patch application root-app -n "$apps_ns" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
 # Restore Gitea credentials to Vault
@@ -859,7 +1156,225 @@ while IFS=' ' read -r ns secret; do
     kubectl delete secret "$secret" -n "$ns"
 done
 
-# Run after upgrade script
-./after_upgrade_restart.sh
+# Fix MPS and RPS connection strings for CNPG migration
+echo "Updating MPS and RPS connection strings for CloudNativePG..."
+
+# Get the current passwords from the secrets
+MPS_PASSWORD=$(kubectl get secret mps-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}' | base64 -d)
+RPS_PASSWORD=$(kubectl get secret rps-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}' | base64 -d)
+
+# Update MPS connection string to use CNPG service name
+MPS_CONN_STRING="postgresql://orch-infra-mps_user:${MPS_PASSWORD}@postgresql-cluster-rw.orch-database/orch-infra-mps?search_path=public&sslmode=disable"
+MPS_CONN_BASE64=$(echo -n "$MPS_CONN_STRING" | base64 -w 0)
+kubectl patch secret mps -n orch-infra -p "{\"data\":{\"connectionString\":\"$MPS_CONN_BASE64\"}}" --type=merge
+
+# Update RPS connection string to use CNPG service name
+RPS_CONN_STRING="postgresql://orch-infra-rps_user:${RPS_PASSWORD}@postgresql-cluster-rw.orch-database/orch-infra-rps?search_path=public&sslmode=disable"
+RPS_CONN_BASE64=$(echo -n "$RPS_CONN_STRING" | base64 -w 0)
+kubectl patch secret rps -n orch-infra -p "{\"data\":{\"connectionString\":\"$RPS_CONN_BASE64\"}}" --type=merge
+
+echo "✅ Updated MPS and RPS connection strings to use postgresql-cluster-rw.orch-database"
+
+echo "Restart MPS and RPS to pick up new connection strings"
+kubectl rollout restart deployment rps -n orch-infra
+kubectl rollout restart deployment mps -n orch-infra
+
+echo "✅ MPS and RPS deployments restarted"
+
+echo "Restart inventory to refresh database connection to CNPG service"
+kubectl rollout restart deployment inventory -n orch-infra
+
+echo "✅ inventory deployment restarted"
+
+echo "Restart onboarding-manager to connect to refreshed inventory service"
+kubectl rollout restart deployment onboarding-manager -n orch-infra
+
+echo "✅ onboarding-manager deployment restarted"
+
+echo "Restart dkam to refresh connection"
+kubectl rollout restart deployment dkam -n orch-infra
+
+echo "✅ dkam deployment restarted"
+
+echo "Restart keycloak-tenant-controller to resolve vault authentication issues"
+
+echo "Restart keycloak-tenant-controller to refresh connection"
+restart_statefulset keycloak-tenant-controller-set orch-platform
+
+echo "Restart harbor-oci-database to refresh connection"
+restart_statefulset harbor-oci-database orch-harbor
+
+# Restart harbor-oci-core to refresh connection
+echo "Restart harbor-oci-core to refresh connection"
+kubectl rollout restart deployment harbor-oci-core -n orch-harbor
+
+echo "✅ harbor-oci-core restarted"
+
+
+echo "Cleaning up external-secrets installation..."
+
+if kubectl get crd clustersecretstores.external-secrets.io >/dev/null 2>&1; then
+    kubectl delete crd clustersecretstores.external-secrets.io &
+    kubectl patch crd/clustersecretstores.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
+fi
+if kubectl get crd secretstores.external-secrets.io >/dev/null 2>&1; then
+    kubectl delete crd secretstores.external-secrets.io &
+    kubectl patch crd/secretstores.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
+fi
+if kubectl get crd externalsecrets.external-secrets.io >/dev/null 2>&1; then
+    kubectl delete crd externalsecrets.external-secrets.io &
+    kubectl patch crd/externalsecrets.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
+fi
+
+# Apply External Secrets CRDs with server-side apply
+echo "Applying external-secrets CRDs with server-side apply..."
+kubectl apply --server-side=true --force-conflicts -f https://raw.githubusercontent.com/external-secrets/external-secrets/refs/tags/v0.20.4/deploy/crds/bundle.yaml || true
+
+check_and_force_sync_app external-secrets "$apps_ns" "true"
+wait_for_app_synced_healthy external-secrets "$apps_ns"
+
+# Force sync apps that copy secrets to their destinations
+check_and_force_sync_app copy-app-gitea-cred-to-fleet "$apps_ns"
+check_and_force_sync_app copy-ca-cert-boots-to-gateway "$apps_ns"
+check_and_force_sync_app copy-ca-cert-boots-to-infra "$apps_ns"
+check_and_force_sync_app copy-ca-cert-gateway-to-cattle "$apps_ns"
+check_and_force_sync_app copy-ca-cert-gateway-to-infra "$apps_ns"
+check_and_force_sync_app copy-ca-cert-gitea-to-app "$apps_ns"
+check_and_force_sync_app copy-ca-cert-gitea-to-cluster "$apps_ns"
+check_and_force_sync_app copy-cluster-gitea-cred-to-fleet "$apps_ns"
+check_and_force_sync_app copy-keycloak-admin-to-infra "$apps_ns"
+
+# Unseal vault after external-secrets is ready
+echo "Unsealing vault..."
+vault_unseal
+echo "✅ Vault unsealed successfully"
+
+kubectl patch -n "$apps_ns" application platform-keycloak --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+
+wait_for_app_synced_healthy platform-keycloak "$apps_ns"
+
+kubectl patch -n "$apps_ns" application cluster-manager --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+
+
+kubectl delete secret tls-boots -n orch-boots
+
+# Observability Minio PVC ignoreDifferences patching and job cleanup
+kubectl patch job orchestrator-observability-mimir-make-minio-buckets-5.4.0 -n orch-platform --type=merge -p='{"metadata":{"finalizers":[]}}'
+kubectl delete job orchestrator-observability-mimir-make-minio-buckets-5.4.0 -n orch-platform --force --grace-period=0 2>/dev/null || true
+kubectl delete pods -l job-name="orchestrator-observability-mimir-make-minio-buckets-5.4.0" -n orch-platform --force --grace-period=0 2>/dev/null || true
+
+kubectl patch application orchestrator-observability -n "$apps_ns" --type='json' -p='[{
+    "op": "add",
+    "path": "/spec/ignoreDifferences",
+    "value": [{
+        "group": "",
+        "kind": "PersistentVolumeClaim",
+        "name": "orchestrator-observability-minio",
+        "jsonPointers": ["/spec/storageClassName", "/spec/volumeName"]
+    }]
+}]'
+
+kubectl patch job edgenode-observability-mimir-make-minio-buckets-5.4.0  -n orch-infra --type=merge -p='{"metadata":{"finalizers":[]}}'
+kubectl delete job edgenode-observability-mimir-make-minio-buckets-5.4.0 -n orch-infra --force --grace-period=0 2>/dev/null || true
+kubectl delete pods -l job-name="edgenode-observability-mimir-make-minio-buckets-5.4.0" -n orch-infra --force --grace-period=0 2>/dev/null || true
+
+kubectl patch application edgenode-observability -n "$apps_ns" --type='json' -p='[{
+    "op": "add",
+    "path": "/spec/ignoreDifferences",
+    "value": [{
+        "group": "",
+        "kind": "PersistentVolumeClaim",
+        "name": "edgenode-observability-minio",
+        "jsonPointers": ["/spec/storageClassName", "/spec/volumeName"]
+    }]
+}]'
+
+check_and_patch_sync_app edgenode-observability "$apps_ns"
+check_and_patch_sync_app orchestrator-observability "$apps_ns"
+
+# Cleanup infra-external jobs
+kubectl delete jobs setup-databases-mps setup-databases-rps amt-dbpassword-secret-job init-amt-vault-job -n orch-infra --force --grace-period=0 --ignore-not-found
+
+
+check_and_cleanup_job "namespace-label" "ns-label"
+check_and_cleanup_job "wait-istio-job" "ns-label"
+
+# Unsynced leftovers using patch sync
+# Collect and display syncwave information for OutOfSync applications
+echo "OutOfSync applications by syncwave:"
+outofsync_apps=$(kubectl get applications -n "$apps_ns" -o json | \
+    jq -r '.items[] | select((.status.sync.status!="Synced" or .status.health.status!="Healthy") and .metadata.name!="root-app") | 
+    "\(.metadata.annotations["argocd.argoproj.io/sync-wave"] // "0") \(.metadata.name)"' | \
+    sort -n)
+
+echo "$outofsync_apps" | awk '{print "  Wave " $1 ": " $2}'
+
+# Sync applications in wave order
+echo "Syncing OutOfSync applications in wave order..."
+echo "$outofsync_apps" | while read -r wave app_name; do
+    if [[ -n "$app_name" ]]; then
+        echo "Processing wave $wave: $app_name"
+        check_and_patch_sync_app "$app_name" "$apps_ns"
+    fi
+done
+
+
+# Unsynced leftovers using force sync
+# Collect and display syncwave information for OutOfSync applications
+echo "OutOfSync applications by syncwave:"
+outofsync_apps=$(kubectl get applications -n "$apps_ns" -o json | \
+    jq -r '.items[] | select((.status.sync.status!="Synced" or .status.health.status!="Healthy") and .metadata.name!="root-app") | 
+    "\(.metadata.annotations["argocd.argoproj.io/sync-wave"] // "0") \(.metadata.name)"' | \
+    sort -n)
+
+echo "$outofsync_apps" | awk '{print "  Wave " $1 ": " $2}'
+
+# Sync applications in wave order
+echo "Syncing OutOfSync applications in wave order..."
+echo "$outofsync_apps" | while read -r wave app_name; do
+    if [[ -n "$app_name" ]]; then
+        echo "Processing wave $wave: $app_name"
+        check_and_force_sync_app "$app_name" "$apps_ns" "true"
+    fi
+done
+
+# Unsynced leftovers using force sync
+# Collect and display syncwave information for OutOfSync applications
+echo "OutOfSync applications by syncwave:"
+outofsync_apps=$(kubectl get applications -n "$apps_ns" -o json | \
+    jq -r '.items[] | select((.status.sync.status!="Synced" or .status.health.status!="Healthy") and .metadata.name!="root-app") | 
+    "\(.metadata.annotations["argocd.argoproj.io/sync-wave"] // "0") \(.metadata.name)"' | \
+    sort -n)
+
+echo "$outofsync_apps" | awk '{print "  Wave " $1 ": " $2}'
+
+# Sync applications in wave order
+echo "Syncing OutOfSync applications in wave order..."
+echo "$outofsync_apps" | while read -r wave app_name; do
+    if [[ -n "$app_name" ]]; then
+        echo "Processing wave $wave: $app_name"
+        check_and_force_sync_app "$app_name" "$apps_ns"
+    fi
+done
+
+# Stop root-app old sync as it will be stuck.
+kubectl patch application root-app -n  "$apps_ns"  --type merge -p '{"operation":null}'
+kubectl patch application root-app -n  "$apps_ns"  --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
+
+# OS profiles Fix
+kubectl patch application tenancy-api-mapping -n onprem --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+kubectl patch application tenancy-datamodel -n onprem --patch-file /tmp/argo-cd/sync-patch.yaml --type merge 
+kubectl delete application tenancy-api-mapping -n onprem
+kubectl delete application tenancy-datamodel -n onprem
+kubectl delete deployment -n orch-infra os-resource-manager 
+
+# Apply root-app Patch
+kubectl patch application root-app -n  "$apps_ns"  --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+
+# Onboarding Fix
+kubectl delete secret tls-boots -n orch-boots
+kubectl delete secret boots-ca-cert -n orch-gateway
+kubectl delete secret boots-ca-cert -n orch-infra
+kubectl delete pod -n orch-infra -l app.kubernetes.io/name=dkam 2>/dev/null
 
 echo "Upgrade completed! Wait for ArgoCD applications to be in 'Synced' and 'Healthy' state"
