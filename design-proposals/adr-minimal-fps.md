@@ -156,21 +156,33 @@ orch-infra (26 pods - EIM Core)
 
 | Category | Namespaces | Pods | Impact of Disabling |
 |----------|------------|------|---------------------|
-| **GitOps** | argocd | 6 | Cannot deploy/update via ArgoCD |
+| **GitOps** | argocd | 6 | Cannot deploy/update via ArgoCD (Shall be needed for 1st iteration)|
 | **Policy** | kyverno | 9 | No policy enforcement |
-| **UI** | orch-ui | 6 | No web interface |
-| **Ingress** | orch-gateway | 6 | Cannot expose externally |
+| **UI** | orch-ui | 6 | No web interface (Orch-cli can be used for interaction)|
+| **Ingress** | orch-gateway | 6 | Cannot expose externally (TBD: Nodeport?)|
 | **Boot Services** | orch-boots | 2 | Alternative boot methods needed |
-| **Secrets Mgmt** | orch-secret | 4 | Vault handles secrets |
-| **Certificates** | cert-manager | 3 | Manual cert management |
+| **Certificates** | cert-manager | 3 | Manual cert management (TBD)|
 | **Git Server** | gitea | 3 | No git repository |
-| **Load Balancer** | metallb-system | 2 | No external LB |
+| **Load Balancer** | metallb-system | 2 | No external LB (NodePort)|
 | **Utilities** | ns-label, mailpit, postgresql-operator (optional) | 4 | Various utilities |
 | **Istio Extras** | istio-system | 1 | Kiali visualization |
 | **Platform Extras** | orch-platform | 3 | Proxy, reloader |
-| **IAM Jobs** | orch-iam | 2 | init jobs |
-| **TOTAL** | | **62** | **Safe to disable** |
+| **Trafik** | orch-platform |  | TBD: Shall be needed for 1st iteration (In case EIM handle the API this can be disabled) |
 
+### Work items
+- POC enable only the components needed for EIM deployment.
+    - Identify the any dependency on any other components other than listed.
+    - List out the any changes required to be done EIM.
+    
+- Split the deployment of Platform components and EIM components.
+    - Script/Installer of OnPrem to setup only Platform components. This will for internal testing and development.
+    - Script to deploy EIM and its dependent platform components. Assumes the Kubernetes cluster is provided by customer.
+
+- Coder setup update to support only EIM profile.
+
+- OnPrem setup update to support only EIM profile.
+
+- Cloud TBD
 
 ### Optional Observability Services
 
