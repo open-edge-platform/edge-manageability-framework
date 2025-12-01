@@ -86,18 +86,44 @@ The rest of the document will has details tools, codebase used and the profiling
 - `kubectl describe node` : Shows the requested and allocatable resources, and also total capacity. This includes
   the sum of CPU and memory requests and limits from all pods on the node.
 - Linux commands (instantaneous resource usage):
-  <!-- markdownlint-disable-line MD013 -->
-  - CPU: `top -bn1 | grep "Cpu(s)" | awk '{print "CPU Used: " $2 + $4 "%, CPU Free: " $8 "%"}'`
-  - Memory: `free | awk '/Mem:/ {used=$3; total=$2; printf "Memory Used: %.2f%%, Memory Free: %.2f%%\n", used/total*100, $4/total*100}'`
-  - Storage: `df --total -k | awk '/^total/ {used=$3; total=$2; free=$4; printf "Disk Used: %.2f%%, Disk Free: %.2f%%\n", used/total*100, free/total*100}'`
-  - Process level CPU usage: `ps -eo pid,comm,%cpu --sort=-%cpu | head -n 7`
-  <!-- markdownlint-disable-line MD013 -->
-  - Process level Memory usage: `ps -eo comm,rss --sort=-rss | awk 'NR==1 {print $1, "MEM(MiB)"} NR>1 {printf "%-20s %6.1f\n", $1, $2/1024}' | head -n 7`
+  - CPU:
+
+  ```bash
+  top -bn1 | grep "Cpu(s)" | awk '{print "CPU Used: " $2 + $4 "%, CPU Free: " $8 "%"}'
+  ```
+
+  - Memory:
+
+  ```bash
+  free | awk '/Mem:/ {used=$3; total=$2; printf "Memory Used: %.2f%%, Memory Free: %.2f%%\n", used/total*100, $4/total*100}'
+  ```
+
+  - Storage:
+
+  ```bash
+  df --total -k | awk '/^total/ {used=$3; total=$2; free=$4; printf "Disk Used: %.2f%%, Disk Free: %.2f%%\n", used/total*100, free/total*100}'
+  ```
+
+  - Process level CPU usage:
+
+  ```bash
+  ps -eo pid,comm,%cpu --sort=-%cpu | head -n 7
+  ```
+  
+  - Process level Memory usage:
+
+```bash
+ ps -eo comm,rss --sort=-rss | awk 'NR==1 {print $1, "MEM(MiB)"} NR>1 {printf "%-20s %6.1f\n", $1, $2/1024}' | head -n 
+ ```
+
 - instrumentation in the EMF code base
 
 ## Codebase and configuration
 
-3.0 tag of EMF codebase is used for this exercise. EMF supports pre-defined deployment presets, which can be used to deploy the EMF instance with different profiles. The following profiles are used for this exercise: `dev-internal-coder-autocert.yaml` as baseline. Changes made to the presets will be captured as part of the profiling data.
+3.0 tag of EMF codebase is used for this exercise. EMF supports pre-defined deployment presets, which can be used to
+deploy the EMF instance with different profiles. The following profiles are used for this exercise:
+`dev-internal-coder-autocert.yaml` as baseline. Changes made to the presets will be captured as part of the profiling
+data.
 
 ## Profiling data
 
