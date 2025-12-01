@@ -100,9 +100,9 @@ d. Token Introspection: Validates token expiration, scopes, and permissions befo
 These four services constitute the baseline infrastructure upon which all EIM modules, whether deployed individually or as a complete stack, will operate by default. The "Bring-Your-Own Infrastructure" track will focus on creating abstraction layers to make these specific components pluggable and replaceable with third-party equivalents.
 
 
-### EIM Components level analysis
+### EIM Components level analysis for #Track1
 
-This analysis identifies the minimum set of components required to run EIM (orch-infra namespace) components successfully. The current deployment has 100 pods (AO/CO/Observability disabled ) across 19 namespaces. By keeping only essential dependencies, we can reduce this to 38-40 pods or even further while maintaining full EIM functionality.
+This analysis identifies the minimum set of components required to run EIM (#Track1 only components) successfully. The current deployment has 100 pods (AO/CO/Observability disabled ) across 19 namespaces. 
 
 #### Dependency Graph of EIM
 
