@@ -82,9 +82,10 @@ while true; do
 done
 
 # Prompt for the AWS region for installer state bucket. Default to BUCKET_REGION environment variable.
+# If the BUCKET_REGION is not set, default to AWS_REGION.
 while true; do
     read -p "Specify the AWS region for the bucket to store the installer state (default [$BUCKET_REGION]): " bucket_region
-    if [[ -z ${region} ]]; then
+    if [[ -z ${bucket_region} ]]; then
         bucket_region=$BUCKET_REGION
     fi
 
