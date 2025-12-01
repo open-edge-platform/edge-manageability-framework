@@ -26,15 +26,23 @@ restart_and_wait_pod() {
 }
 
 # Wait for helm upgrade to take effect
+echo "Waiting for 2 minutes for the helm upgrade to take effect..."
 sleep 120
 
 # Stop sync on root app
+echo "Stopping sync on root app..."
 kubectl patch application root-app -n "$TARGET_ENV" --type merge -p '{"operation":null}'
 kubectl patch application root-app -n "$TARGET_ENV" --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
 
+# Stop sync on external secrets
+echo "Stopping sync on external secrets..."
+kubectl patch application external-secrets -n "$TARGET_ENV" --type merge -p '{"operation":null}'
+kubectl patch application external-secrets -n "$TARGET_ENV" --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
+
+# Fix external secrets and apply
+echo "Deleting and patching external secrets..."
 kubectl patch application -n $TARGET_ENV external-secrets  -p '{"metadata": {"finalizers": ["resources-finalizer.argocd.argoproj.io"]}}' --type merge
 kubectl delete application -n $TARGET_ENV external-secrets --cascade=background &
-
 
 kubectl patch crd clustersecretstores.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
 kubectl delete crd clustersecretstores.external-secrets.io --force &
@@ -55,7 +63,7 @@ kubectl delete service -n orch-secret  external-secrets-webhook &
 # Delete all the crd by running: 
 kubectl delete -f https://raw.githubusercontent.com/external-secrets/external-secrets/main/deploy/crds/bundle.yaml
 
-echo "Deleted extern-secrets"
+echo "Deleted external-secrets"
 echo "sleep for 100s"
 sleep 100
 kubectl apply --server-side=true --force-conflicts -f https://raw.githubusercontent.com/external-secrets/external-secrets/refs/tags/v0.20.4/deploy/crds/bundle.yaml || true
@@ -71,22 +79,28 @@ operation:
     syncStrategy:
       hook: {}
 EOF
+echo "Syncing root app"
 kubectl patch -n "$TARGET_ENV" application root-app --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
 # argo has trouble replacing this seceret so manually remove it
+echo "Deleting TLS Boots..."
 kubectl delete secret tls-boots -n orch-boots
 
 # force vault to reload
+echo "Deleting Vault..."
 kubectl delete statefulset -n orch-platform vault
 
 # OS profiles fix
-kubectl patch application tenancy-api-mapping -n "$TARGET_ENV" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
-kubectl patch application tenancy-datamodel -n "$TARGET_ENV" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge 
+echo "Deleting and Syncing for OS Profiles"
 kubectl delete application tenancy-api-mapping -n "$TARGET_ENV"
 kubectl delete application tenancy-datamodel -n "$TARGET_ENV"
 kubectl delete deployment -n orch-infra os-resource-manager
+kubectl patch application tenancy-api-mapping -n "$TARGET_ENV" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+kubectl patch application tenancy-datamodel -n "$TARGET_ENV" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge 
 
 kubectl patch -n "$TARGET_ENV" application root-app --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
+# Cluster Template fix
+echo "Deleting and Syncing for Cluster Templates"
 restart_and_wait_pod "orch-cluster" "cluster-manager"
 restart_and_wait_pod "orch-cluster" "cluster-manager-template-controller"
