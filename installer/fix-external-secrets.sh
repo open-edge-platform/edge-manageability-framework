@@ -1,7 +1,30 @@
-
+#!/bin/bash
 # SPDX-FileCopyrightText: 2025 Intel Corporation
 #
 # SPDX-License-Identifier: Apache-2.0
+
+
+restart_and_wait_pod() {
+  local namespace="$1"
+  local pattern="$2"
+
+  echo "🔍 Looking for pod matching '$pattern' in namespace '$namespace'..."
+
+  # Find the pod name
+  local pod_name
+  pod_name=$(kubectl get pods -n "$namespace" | grep "$pattern" | awk '{print $1}')
+
+  if [ -z "$pod_name" ]; then
+    echo "❌ No pod found matching pattern '$pattern' in namespace '$namespace'"
+    return 1
+  fi
+
+  echo "📌 Found pod: $pod_name. Deleting..."
+  kubectl delete pod "$pod_name" -n "$namespace"
+  kubectl wait deployment/"$pattern" -n "$namespace" --for=condition=Available --timeout=120s
+
+}
+
 
 kubectl patch application -n $TARGET_ENV external-secrets  -p '{"metadata": {"finalizers": ["resources-finalizer.argocd.argoproj.io"]}}' --type merge
 kubectl delete application -n $TARGET_ENV external-secrets --cascade=background &
@@ -49,3 +72,15 @@ kubectl delete secret tls-boots -n orch-boots
 
 # force vault to reload
 kubectl delete statefulset -n orch-platform vault
+
+# OS profiles fix
+kubectl patch application tenancy-api-mapping -n "$TARGET_ENV" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+kubectl patch application tenancy-datamodel -n "$TARGET_ENV" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge 
+kubectl delete application tenancy-api-mapping -n "$TARGET_ENV"
+kubectl delete application tenancy-datamodel -n "$TARGET_ENV"
+kubectl delete deployment -n orch-infra os-resource-manager
+
+kubectl patch -n "$TARGET_ENV" application root-app --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+
+restart_and_wait_pod "orch-cluster" "cluster-manager"
+restart_and_wait_pod "orch-cluster" "cluster-manager-template-controller"
