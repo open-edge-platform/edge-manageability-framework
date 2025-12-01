@@ -483,6 +483,27 @@ check_orch_install() {
     done
 }
 
+# Function to sync OutOfSync applications in wave order using patch
+sync_outofsync_apps_by_wave_patch() {
+    # Collect and display syncwave information for OutOfSync applications
+    echo "OutOfSync applications by syncwave:"
+    outofsync_apps=$(kubectl get applications -n "$apps_ns" -o json | \
+        jq -r '.items[] | select((.status.sync.status!="Synced" or .status.health.status!="Healthy") and .metadata.name!="root-app") | 
+        "\(.metadata.annotations["argocd.argoproj.io/sync-wave"] // "0") \(.metadata.name)"' | \
+        sort -n)
+
+    echo "$outofsync_apps" | awk '{print "  Wave " $1 ": " $2}'
+
+    # Sync applications in wave order
+    echo "Syncing OutOfSync applications in wave order..."
+    echo "$outofsync_apps" | while read -r wave app_name; do
+        if [[ -n "$app_name" ]]; then
+            echo "Processing wave $wave: $app_name"
+            check_and_patch_sync_app "$app_name" "$apps_ns"
+        fi
+    done
+}
+
 # Get LV size and format it to be ready for lvcreate command
 # get_lv_size <lv_path> returns <formatted size>
 get_lv_size() {
@@ -622,7 +643,7 @@ cleanup_gitea_secrets() {
 usage() {
     cat >&2 <<EOF
 Purpose:
-Upgrade OnPrem Edge Orchestrator to v3.1.0.
+Upgrade OnPrem Edge Orchestrator to 2025.02.
 
 Usage:
 $(basename "$0") [option...] [argument]
@@ -635,6 +656,7 @@ Options:
     -b:             enable backup of Orchestrator PVs before upgrade (optional)
     -l:             use local packages instead of downloading (optional)
     -o:             override production values with dev values (optional)
+    -s:             sync OutOfSync applications by wave and exit (optional)
     -h:             help (optional)
 
 EOF
@@ -645,18 +667,24 @@ EOF
 ################################
 
 # shellcheck disable=SC2034
-while getopts 'v:hbol' flag; do
+while getopts 'v:hbols' flag; do
     case "${flag}" in
     h) HELP='true' ;;
     b) BACKUP='true' ;;
     o) OVERRIDE='true' ;;
     l) USE_LOCAL_PACKAGES='true' ;;  # New local packages flag
+    s) SYNC='true' ;;
     *) HELP='true' ;;
     esac
 done
 
 if [[ $HELP ]]; then
     usage
+    exit 1
+fi
+
+if [[ $SYNC ]]; then
+    sync_outofsync_apps_by_wave_patch
     exit 1
 fi
 
@@ -1297,24 +1325,7 @@ check_and_cleanup_job "namespace-label" "ns-label"
 check_and_cleanup_job "wait-istio-job" "ns-label"
 
 # Unsynced leftovers using patch sync
-# Collect and display syncwave information for OutOfSync applications
-echo "OutOfSync applications by syncwave:"
-outofsync_apps=$(kubectl get applications -n "$apps_ns" -o json | \
-    jq -r '.items[] | select((.status.sync.status!="Synced" or .status.health.status!="Healthy") and .metadata.name!="root-app") | 
-    "\(.metadata.annotations["argocd.argoproj.io/sync-wave"] // "0") \(.metadata.name)"' | \
-    sort -n)
-
-echo "$outofsync_apps" | awk '{print "  Wave " $1 ": " $2}'
-
-# Sync applications in wave order
-echo "Syncing OutOfSync applications in wave order..."
-echo "$outofsync_apps" | while read -r wave app_name; do
-    if [[ -n "$app_name" ]]; then
-        echo "Processing wave $wave: $app_name"
-        check_and_patch_sync_app "$app_name" "$apps_ns"
-    fi
-done
-
+sync_outofsync_apps_by_wave_patch
 
 # Unsynced leftovers using force sync
 # Collect and display syncwave information for OutOfSync applications
