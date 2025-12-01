@@ -162,43 +162,6 @@ print_env_variables() {
   echo "========================================"; echo
 }
 
-reset_runtime_variables() {
-  local config_file="$cwd/onprem.env"
-  
-  echo "Cleaning up runtime variables from previous runs..."
-  
-  local temp_file="${config_file}.tmp"
-  local in_multiline=0
-  
-  while IFS= read -r line || [[ -n "$line" ]]; do
-    # Skip lines while inside a multi-line variable
-    if [[ $in_multiline -eq 1 ]]; then
-      [[ "$line" =~ [\'\"][[:space:]]*$ ]] && in_multiline=0
-      continue
-    fi
-    
-    # Check if line is a runtime variable
-    if [[ "$line" =~ ^export\ (SRE_TLS_ENABLED|SRE_DEST_CA_CERT|SMTP_SKIP_VERIFY|DISABLE_CO_PROFILE|DISABLE_AO_PROFILE|DISABLE_O11Y_PROFILE|SINGLE_TENANCY_PROFILE)= ]]; then
-      # Check if it's multi-line (opening quote without closing quote on same line)
-      if [[ "$line" =~ =[\'\"].\ ]] && ! [[ "$line" =~ =[\'\"].*[\'\"][[:space:]]*$ ]]; then
-        in_multiline=1
-      fi
-      continue
-    fi
-    
-    # Keep non-runtime variable lines
-    echo "$line" >> "$temp_file"
-  done < "$config_file"
-  
-  mv "$temp_file" "$config_file"
-  
-  # Unset variables in current shell
-  unset SRE_TLS_ENABLED SRE_DEST_CA_CERT SMTP_SKIP_VERIFY
-  unset DISABLE_CO_PROFILE DISABLE_AO_PROFILE DISABLE_O11Y_PROFILE SINGLE_TENANCY_PROFILE
-  
-  echo "Runtime variables cleaned successfully."
-}
-
 create_namespaces() {
   orch_namespace_list=(
     "onprem"
@@ -328,9 +291,6 @@ if [ "$(dpkg -l | grep -ci onprem-ke-installer)"  -eq 0 ]; then
     echo "Please run pre-install script first"
     exit 1
 fi
-
-# Remove runtime variables from previous runs
-reset_runtime_variables
 
 # Re-source the config file after cleanup to get fresh values
 if [[ -f "$MAIN_ENV_CONFIG" ]]; then
