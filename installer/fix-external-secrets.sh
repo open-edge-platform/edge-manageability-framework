@@ -28,6 +28,10 @@ restart_and_wait_pod() {
 # Wait for helm upgrade to take effect
 sleep 120
 
+# Stop sync on root app
+kubectl patch application root-app -n "$TARGET_ENV" --type merge -p '{"operation":null}'
+kubectl patch application root-app -n "$TARGET_ENV" --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
+
 kubectl patch application -n $TARGET_ENV external-secrets  -p '{"metadata": {"finalizers": ["resources-finalizer.argocd.argoproj.io"]}}' --type merge
 kubectl delete application -n $TARGET_ENV external-secrets --cascade=background &
 
