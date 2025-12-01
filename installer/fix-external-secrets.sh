@@ -60,6 +60,16 @@ kubectl delete deployment -n orch-secret external-secrets-webhook &
 
 kubectl delete service -n orch-secret  external-secrets-webhook &
 
+# Delete the crds again first delete failes sometimes.
+kubectl patch crd clustersecretstores.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
+kubectl delete crd clustersecretstores.external-secrets.io --force &
+
+kubectl patch crd secretstores.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
+kubectl delete crd secretstores.external-secrets.io --force &
+
+kubectl patch crd externalsecrets.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
+kubectl delete crd externalsecrets.external-secrets.io --force &
+
 # Delete all the crd by running: 
 kubectl delete -f https://raw.githubusercontent.com/external-secrets/external-secrets/main/deploy/crds/bundle.yaml
 
