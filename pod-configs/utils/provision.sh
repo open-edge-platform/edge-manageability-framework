@@ -114,6 +114,7 @@ OPTIONS_LIST=(
     "azuread-refresh-token:"
     "azuread-token-endpoint:"
     "azuread-user:"
+    "bucket-region:"
     "cidr-block:"
     "customer-state-prefix:"
     "customer-tag:"
@@ -178,6 +179,7 @@ usage() {
         echo "    [ --azuread-refresh-token {AZUREAD_REFRESH_TOKEN} ] \\"
         echo "    [ --azuread-token-endpoint {AZUREAD_TOKEN_ENDPOINT} ] \\"
         echo "    [ --cidr-block {CIDR BLOCK} ] \\"
+        echo "    --bucket-region {S3 BUCKET REGION} \\"
         echo "    --customer-state-prefix {CUSTOMER STATE PREFIX}  \\"
         echo "    --customer-tag {CUSTOMER TAG} \\"
         echo "    [ --desired-nodes {NUMBER OF NODES} ] \\"
@@ -265,6 +267,7 @@ parse_params() {
             --azuread-refresh-token) AZUREAD_REFRESH_TOKEN=$(eval echo $2); shift;;
             --azuread-token-endpoint) AZUREAD_TOKEN_ENDPOINT=$(eval echo $2); shift;;
             --azuread-user) AZUREAD_USER=$(eval echo $2); shift;;
+            --bucket-region) BUCKET_REGION=$(eval echo $2); shift;;
             --cidr-block) VPC_CIDR=$(eval echo $2); shift;;
             -c|--customer-state-prefix) CUSTOMER_STATE_PREFIX=$(eval echo $2); shift;;
             --customer-tag) CUSTOMER_TAG=$(eval echo $2); shift;;
@@ -382,6 +385,10 @@ parse_params() {
     fi
     export BUCKET_NAME=$BUCKET_NAME
     echo BUCKET_NAME=${BUCKET_NAME} >> ~/.env
+
+    BUCKET_REGION=${BUCKET_REGION:-$AWS_REGION}
+    export BUCKET_REGION=$BUCKET_REGION
+    echo BUCKET_REGION=${BUCKET_REGION} >> ~/.env
 
     FULLCHAIN="fullchain-${AWS_ACCOUNT}-${ENV_NAME}.pem"
     CHAIN="chain-${AWS_ACCOUNT}-${ENV_NAME}.pem"
