@@ -5,5 +5,5 @@
 apiVersion: v2
 name: argocd-applications
 type: application
-version: 3.1.0-dev
-appVersion: "3.1.0-dev"
+version: 2025.2.0-dev
+appVersion: "2025.2.0-dev"

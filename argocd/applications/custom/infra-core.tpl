@@ -15,6 +15,10 @@ global:
     {{- end }}
     {{- end }}
 
+import:
+  tenant-config:
+    enabled: {{ index .Values.argo "infra-core" "tenant-config" "enabled" }}
+
 api:
   serviceArgs:
     enableTracing: {{ index .Values.argo "infra-core" "enableTracing" | default false }}
@@ -110,3 +114,11 @@ exporter:
   {{- end}}
   {{- end}}
   {{- end}}
+
+{{- if index .Values.argo "infra-core" "tenant-config" "enabled" }}
+tenant-config:
+  config:
+    defaultUser: {{ index .Values.argo "infra-core" "tenant-config" "defaultUser" | default "local-admin" }}
+    defaultOrganization: {{ index .Values.argo "infra-core" "tenant-config" "defaultOrganization" | default "local-admin" }}
+    defaultTenant: {{ index .Values.argo "infra-core" "tenant-config" "defaultTenant" | default "local-admin" }}
+{{- end }}

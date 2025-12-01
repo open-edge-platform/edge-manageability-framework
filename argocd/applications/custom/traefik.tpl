@@ -23,13 +23,15 @@ service:
 ports:
 {{- if index .Values.argo.enabled "squid-proxy" }}
   squidproxy:
-    port: 8080
+    port: 9000
     exposedPort: 8080
-    expose: true
+    expose:
+      default: true
     protocol: TCP
 {{- end }}
   web:
-    expose: false
+    expose:
+      default: false
   websecure:
     nodePort: 30443
     # NOTE the middlewared name is <namespace>-<name>
@@ -41,7 +43,10 @@ ports:
       {{- end }}
       {{- end }}
   tcpamt:
+    middlewares:
+      - orch-gateway-tcp-rate-limit@kubernetescrd
     port: 4433
     exposedPort: 4433
-    expose: true
+    expose:
+      default: true
     protocol: TCP

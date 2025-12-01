@@ -15,7 +15,7 @@
 set +xe
 
 HELP=""
-RKE2VERSION="v1.30.10+rke2r1"
+RKE2VERSION="v1.34.1+rke2r1"
 HOSTIP=""
 ROOT_DIR=$(pwd)
 
@@ -115,6 +115,7 @@ disable:
   - rke2-ingress-nginx
   - rke2-snapshot-controller
   - rke2-snapshot-validation-webhook
+disable-cloud-controller: true  
 kubelet-arg:
   - "max-pods=200"
 etcd-arg:

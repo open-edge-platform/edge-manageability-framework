@@ -1,5 +1,8 @@
 # Edge Manageability Framework
 
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/open-edge-platform/edge-manageability-framework/badge)](https://scorecard.dev/viewer/?uri=github.com/open-edge-platform/edge-manageability-framework)
+
 ## Overview
 
 Welcome to the Edge Manageability Framework, a comprehensive solution designed
@@ -29,7 +32,7 @@ hosts) and clusters.
 ### Key Components
 
 Edge Orchestrator is used to centrally manage all Edge Nodes at sites and perform all lifecycle management of OS,
-clusters, and applications in the managed nodes. Edge Orchestrator consists of six main components, and it is
+clusters, and applications in the managed nodes. Edge Orchestrator consists of seven main components, and it is
 deployable on-premises or in the cloud:
 
 - [Edge Infrastructure Manager](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/developer_guide/infra_manager/index.html):
@@ -44,6 +47,9 @@ Offers customers the ability to easily package, deploy and monitor cloud-native 
 distributed edges
 - [UI](https://github.com/open-edge-platform/orch-ui): The web user interface for the Edge Orchestrator, allowing the
 user to manage most of the features of the product in an intuitive, visual, manner without having to trigger a series
+of APIs individually.
+- [CLI](https://github.com/open-edge-platform/orch-cli): The command line interface for the Edge Orchestrator, allowing the
+user to manage most of the features of the product in an intuitive, text-based manner without having to trigger a series
 of APIs individually.
 - [Observability](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/developer_guide/observability/index.html):
 A modular observability stack that provides visibility into the health and performance of the system, including logging,
@@ -128,6 +134,11 @@ Here is brief description of all the repos.
 - [orch-metadata-broker](https://github.com/open-edge-platform/orch-metadata-broker):
   Service responsible for storing and retrieving metadata, enabling the UI to populate dropdowns with previously
   entered metadata keys and values.
+
+#### Command Line Interface
+
+- [orch-cli](https://github.com/open-edge-platform/orch-cli): The command line interface for the Edge Orchestrator, allowing
+  the user to manage most of the features of the product in a single intuitive CLI.
 
 #### Observability
 

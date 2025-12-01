@@ -8,6 +8,10 @@ inputs:
     required: false
     description: "Orchestrator version to deploy"
     default: "main"
+  orch_profile:
+    required: false
+    description: "Orchestrator profile to deploy"
+    default: "onprem"
   docker_username:
     required: true
     description: "Docker Hub username for pulling images"
@@ -46,6 +50,7 @@ runs:
     - name: Deploy Orchestrator
       env:
         TF_VAR_deploy_tag: ${{ env.DEPLOY_TAG }}
+        TF_VAR_orch_profile: ${{ inputs.orch_profile }}
         TF_VAR_FILE: ${{ github.workspace }}/terraform/orchestrator/terraform.tfvars
         TF_VAR_docker_username: ${{ inputs.docker_username }}
         TF_VAR_docker_password: ${{ inputs.docker_password }}
@@ -72,25 +77,26 @@ runs:
         SSH_HOST: 192.168.99.10
         SSH_USER: ubuntu
         SSH_PASSWORD: ubuntu
-        KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
+        KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig        
+        ORCH_PROFILE: ${{ inputs.orch_profile }}
       shell: bash
       run: |
-        mkdir -p onprem-diagnostics
+        mkdir -p "$ORCH_PROFILE-diagnostics"
         kubectl config set-cluster default --server="https://${SSH_HOST}:6443" --insecure-skip-tls-verify
-        kubectl get pods -o wide -A > onprem-diagnostics/pods-list.txt
-        kubectl describe pods -A > onprem-diagnostics/pods-describe.txt
-        mage logutils:collectArgoDiags > onprem-diagnostics/argo-diag.txt
-        kubectl get applications -o yaml -A > onprem-diagnostics/argocd-applications.yaml
-        kubectl get events -o yaml -A > onprem-diagnostics/events.yaml
+        kubectl get pods -o wide -A > "$ORCH_PROFILE-diagnostics/pods-list.txt"
+        kubectl describe pods -A > "$ORCH_PROFILE-diagnostics/pods-describe.txt"
+        mage logutils:collectArgoDiags > "$ORCH_PROFILE-diagnostics/argo-diag.txt"
+        kubectl get applications -o yaml -A > "$ORCH_PROFILE-diagnostics/argocd-applications.yaml"
+        kubectl get events -o yaml -A > "$ORCH_PROFILE-diagnostics/events.yaml"
 
     - name: Upload diagnostic information to CI artifact store
       if: always() && steps.get-diagnostic-info.conclusion == 'success'
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
       with:
-        name: onprem-diagnostics
+        name: ${{ inputs.orch_profile }}-diagnostics
         path: |
-          onprem-diagnostics/pods-list.txt
-          onprem-diagnostics/pods-describe.txt
-          onprem-diagnostics/argo-diag.txt
-          onprem-diagnostics/argocd-applications.yaml
-          onprem-diagnostics/events.yaml
+          ${{ inputs.orch_profile }}-diagnostics/pods-list.txt
+          ${{ inputs.orch_profile }}-diagnostics/pods-describe.txt
+          ${{ inputs.orch_profile }}-diagnostics/argo-diag.txt
+          ${{ inputs.orch_profile }}-diagnostics/argocd-applications.yaml
+          ${{ inputs.orch_profile }}-diagnostics/events.yaml

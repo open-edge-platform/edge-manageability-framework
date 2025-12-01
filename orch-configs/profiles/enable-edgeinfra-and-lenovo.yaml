@@ -3,6 +3,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 argo:
+  infra-core:
+    tenant-config:
+      enabled: false
   infra-onboarding:
     onboarding-manager:
       enabled: true

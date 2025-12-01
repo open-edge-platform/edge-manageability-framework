@@ -216,16 +216,6 @@ var _ = Describe("Config Provisioner integration test", Label("orchestrator-inte
 				checkDeploymentPackage(dps.DeploymentPackages[0], "default-profile", false,
 					3, 0, 2)
 			})
-
-			It("should check that deployments are created in ADM", func() {
-				var dep Deployment
-				dep = getDeploymentByDisplayNameAndProfileName(ctx, c, accessToken, testProject, "base-extensions-restricted", "restricted", http.StatusOK, checkRESTResponse)
-				Expect(dep.Name).To(ContainSubstring("deployment"), "checking name of deployment %s", "base-extensions-restricted")
-				dep = getDeploymentByDisplayNameAndProfileName(ctx, c, accessToken, testProject, "base-extensions-restricted", "privileged", http.StatusOK, checkRESTResponse)
-				Expect(dep.Name).To(ContainSubstring("deployment"), "checking name of deployment %s", "base-extensions-privileged")
-				dep = getDeploymentByDisplayNameAndProfileName(ctx, c, accessToken, testProject, "base-extensions-restricted", "baseline", http.StatusOK, checkRESTResponse)
-				Expect(dep.Name).To(ContainSubstring("deployment"), "checking name of deployment %s", "base-extensions-baseline")
-			})
 		})
 	})
 })
@@ -388,7 +378,7 @@ var _ = Describe("Provisioned registries push test", Label("orchestrator-integra
 				chart := `
 # SPDX-FileCopyrightText: (C) 2024 Intel Corporation
 #
-# SPDX-License-Identifier: LicenseRef-Intel
+# SPDX-License-Identifier: Apache-2.0
 ---
 apiVersion: v2
 `

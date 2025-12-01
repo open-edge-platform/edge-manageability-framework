@@ -122,6 +122,18 @@ variable "socks_proxy" {
   default     = ""
 }
 
+variable "en_http_proxy" {
+  type        = string
+  description = "Generally this is the same as the http_proxy variable, but it can be different if the EN needs a different proxy."
+  default     = ""
+}
+
+variable "en_https_proxy" {
+  type        = string
+  description = "Generally this is the same as the https_proxy variable, but it can be different if the EN needs a different proxy."
+  default     = ""
+}
+
 variable "ca_certificates" {
   type        = list(string)
   description = "List of CA certificates file paths for the VM to trust."
@@ -149,6 +161,12 @@ variable "ssh_public_key" {
 variable "runcmd" {
   type        = list(string)
   description = "List of commands to run on the VM after the first boot."
+  default     = []
+}
+
+variable "overwrite_profiles" {
+  type        = list(tuple([string, string]))
+  description = "List of profiles to overwrite with their respective values."
   default     = []
 }
 
@@ -276,4 +294,34 @@ variable "vmnet_ips" {
   type        = list(string)
   description = "List of IP addresses with CIDR."
   default     = ["192.168.99.10/24", "192.168.99.20/24", "192.168.99.30/24", "192.168.99.40/24"]
+}
+
+variable "oxm_pxe_server_int" {
+  type        = string
+  description = "The interface to be used for OXM traffic."
+  default     = ""
+}
+
+variable "oxm_pxe_server_ip" {
+  type        = string
+  description = "The boot server IP address for OXM."
+  default     = ""
+}
+
+variable "oxm_pxe_server_subnet" {
+  type        = string
+  description = "The subnet address for OXM."
+  default     = ""
+}
+
+variable "enable_explicit_proxy" {
+  type        = bool
+  description = "Whether to enable explicit proxy settings for the VM."
+  default     = false
+}
+
+variable "git_proxy" {
+  type        = string
+  description = "Sets the GIT_PROXY environment variable in the VM."
+  default     = ""
 }

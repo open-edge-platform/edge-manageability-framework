@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"text/template"
 
@@ -22,6 +23,8 @@ var (
 		"targetCluster":       "kind",
 		"clusterDomain":       serviceDomain,
 		"argoServiceType":     "LoadBalancer",
+		"enableAppOrch":       true,
+		"enableClusterOrch":   true,
 		"enableObservability": true,
 		"enableAuditLogging":  false,
 		"enableKyverno":       true,
@@ -36,23 +39,6 @@ var (
 		"deployRepoURL":       "https://gitea-http.gitea.svc.cluster.local/argocd/edge-manageability-framework",
 	}
 )
-
-func (c Config) createCluster() (string, error) {
-	fmt.Println("Interactive cluster configuration is not currently supported.")
-	fmt.Println("Use config:usePreset with a manually generated preset file until this functionality is supported.")
-
-	// TBD: Implement interactive queryClusterPresetSettings interface
-	// clusterSettings, err := queryClusterPresetSettings()
-	// if err != nil {
-	// 	return "", fmt.Errorf("invalid cluster settings: %w", err)
-	// }
-
-	// Render the cluster deployment configuration template.
-	// clusterName, err := renderClusterTemplate(clusterSettings)
-	// return clusterName, nil
-
-	return "", nil
-}
 
 // writeMapAsYAML writes a map[string]interface{} as a YAML string.
 func writeMapAsYAML(data map[string]interface{}) (string, error) {
@@ -139,8 +125,58 @@ func parseClusterValues(clusterConfigPath string) (map[string]interface{}, error
 	return clusterValues, nil
 }
 
-// Create a cluster deployment configuration from a cluster values file.
-func (Config) usePreset(clusterPresetFile string) (string, error) {
+func (Config) overrideFromEnvironment(presetData map[string]interface{}) error {
+	// DISABLE_AO_PROFILE, DISABLE_CO_PROFILE, DISABLE_O11Y_PROFILE environment
+	// variables may be used to disable specific subsystems. These environment variable
+	// names are chosen to maintain parity with the AWS and OnPrem installer environment
+	// variable names.
+	//
+	// Note that these are only use when using presents, i.e. "mage deploy:kindPreset".
+	// The "mage deploy:Kind" and "deploy: KindMinimal" targets do not use presets and
+	// are not affected by these environment variables.
+
+	var err error
+	var disableAO bool
+	disableAOStr := os.Getenv("DISABLE_AO_PROFILE")
+	if disableAOStr != "" {
+		disableAO, err = strconv.ParseBool(disableAOStr)
+		if err != nil {
+			return fmt.Errorf("failed to parse DISABLE_AO_PROFILE environment variable: %w", err)
+		}
+	}
+	if disableAO {
+		presetData["enableAppOrch"] = false
+	}
+
+	var disableCO bool
+	disableCOStr := os.Getenv("DISABLE_CO_PROFILE")
+	if disableCOStr != "" {
+		disableCO, err = strconv.ParseBool(disableCOStr)
+		if err != nil {
+			return fmt.Errorf("failed to parse DISABLE_CO_PROFILE environment variable: %w", err)
+		}
+	}
+	if disableCO {
+		presetData["enableClusterOrch"] = false
+		presetData["enableAppOrch"] = false
+	}
+
+	var disableO11y bool
+	disableO11yStr := os.Getenv("DISABLE_O11Y_PROFILE")
+	if disableO11yStr != "" {
+		disableO11y, err = strconv.ParseBool(disableO11yStr)
+		if err != nil {
+			return fmt.Errorf("failed to parse DISABLE_O11Y_PROFILE environment variable: %w", err)
+		}
+	}
+	if disableO11y {
+		presetData["enableObservability"] = false
+	}
+	return nil
+}
+
+// Create a cluster deployment configuration from a cluster template and a preset file.
+func (c Config) usePreset(clusterPresetFile string) (string, error) {
 	clusterValues, err := os.ReadFile(clusterPresetFile)
 	if err != nil {
 		return "", fmt.Errorf("failed to read cluster preset file: %w", err)
@@ -162,6 +198,11 @@ func (Config) usePreset(clusterPresetFile string) (string, error) {
 	if proxyProfile, ok := presetData["proxyProfile"].(string); ok && proxyProfile != "" {
 		proxyProfilePath := fmt.Sprintf("%s/%s", filepath.Dir(clusterPresetFile), proxyProfile)
 		presetData["proxyProfile"] = proxyProfilePath
+	}
+
+	err = c.overrideFromEnvironment(presetData)
+	if err != nil {
+		return "", fmt.Errorf("failed to override preset data from environment: %w", err)
 	}
 
 	var clusterName string
