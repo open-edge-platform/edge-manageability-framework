@@ -5,11 +5,11 @@
 package secrets_test
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/secretsmanager"
-	"github.com/aws/aws-sdk-go/service/secretsmanager/secretsmanageriface"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/open-edge-platform/edge-manageability-framework/internal/secrets"
@@ -17,19 +17,22 @@ import (
 )
 
 type mockSMClient struct {
-	secretsmanageriface.SecretsManagerAPI
 	mock.Mock
 }
 
-func (m *mockSMClient) GetSecretValue(_ *secretsmanager.GetSecretValueInput,
-) (*secretsmanager.GetSecretValueOutput, error) {
-	args := m.Called()
+func (m *mockSMClient) GetSecretValue(ctx context.Context, params *secretsmanager.GetSecretValueInput, optFns ...func(*secretsmanager.Options)) (*secretsmanager.GetSecretValueOutput, error) {
+	args := m.Called(ctx, params, optFns)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
 	return args.Get(0).(*secretsmanager.GetSecretValueOutput), args.Error(1)
 }
 
-func (m *mockSMClient) PutSecretValue(_ *secretsmanager.PutSecretValueInput,
-) (*secretsmanager.PutSecretValueOutput, error) {
-	args := m.Called()
+func (m *mockSMClient) PutSecretValue(ctx context.Context, params *secretsmanager.PutSecretValueInput, optFns ...func(*secretsmanager.Options)) (*secretsmanager.PutSecretValueOutput, error) {
+	args := m.Called(ctx, params, optFns)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
 	return args.Get(0).(*secretsmanager.PutSecretValueOutput), args.Error(1)
 }
 
@@ -42,7 +45,7 @@ var _ = Describe("AWS Secrets Manager", func() {
 
 	Context("Secrets manager", func() {
 		It("should return the secret", func() {
-			client.On("GetSecretValue").Return(
+			client.On("GetSecretValue", mock.Anything, mock.Anything, mock.Anything).Return(
 				&secretsmanager.GetSecretValueOutput{
 					SecretString: aws.String("mockSecret"),
 				}, nil)
@@ -57,7 +60,7 @@ var _ = Describe("AWS Secrets Manager", func() {
 		})
 
 		It("should save the secret", func() {
-			client.On("PutSecretValue").Return(
+			client.On("PutSecretValue", mock.Anything, mock.Anything, mock.Anything).Return(
 				&secretsmanager.PutSecretValueOutput{}, nil)
 
 			awssm := &secrets.AWSSM{
@@ -69,7 +72,7 @@ var _ = Describe("AWS Secrets Manager", func() {
 		})
 
 		It("should return an error if update fails", func() {
-			client.On("PutSecretValue").Return(
+			client.On("PutSecretValue", mock.Anything, mock.Anything, mock.Anything).Return(
 				&secretsmanager.PutSecretValueOutput{}, fmt.Errorf("some error"))
 
 			awssm := &secrets.AWSSM{
