@@ -25,9 +25,11 @@ The following modular use cases will be supported in EMF starting 2025.02 releas
 In all the above modular usecases only CLI and API based interfaces will be supported. GUI based interfaces will not
 be supported in modular usecases.
 
+Following EMF domains will not be supported in any of the modular usecases: AO only, CO only, OB only and AO+CO+OB.
+
 ## User Stories for the EMF Modular Use Cases
 
 In this section we will outline the user stories for each of the modular use cases supported in EMF. These user stories
 will help define the requirements and validation tests for each modular use case.
 
-### EIM+CO+AO Use Case
+### EIM+CO+AO User Stories
