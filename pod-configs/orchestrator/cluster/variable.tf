@@ -319,7 +319,7 @@ variable "smtp_pass" {
 variable "smtp_url" {
   description = "SMTP server address"
   type        = string
-  default     = "r01s32-r01.igk.intel.com"
+  default     = ""
 }
 
 variable "smtp_port" {
