@@ -26,7 +26,7 @@ require (
 	github.com/open-edge-platform/infra-managers/maintenance v1.21.1
 	github.com/open-edge-platform/infra-managers/telemetry v1.21.1
 	github.com/open-edge-platform/infra-onboarding/onboarding-manager v1.34.4
-	github.com/open-edge-platform/orch-library/go v0.6.1
+	github.com/open-edge-platform/orch-library/go v0.6.3
 	github.com/open-edge-platform/orch-utils/tenancy-datamodel v1.2.3-0.20251126155507-e0d9404fa1d7
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/rs/zerolog v1.34.0
@@ -37,7 +37,7 @@ require (
 	golang.org/x/sync v0.18.0
 	google.golang.org/grpc v1.72.3
 	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/apimachinery v0.32.9
+	k8s.io/apimachinery v0.32.10
 	k8s.io/client-go v0.32.9
 	oras.land/oras-go/v2 v2.5.0
 	sigs.k8s.io/controller-runtime v0.20.4
