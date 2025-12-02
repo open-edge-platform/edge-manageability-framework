@@ -48,6 +48,8 @@ infra-config:
     orchDeviceManager: device-manager-node.{{ .Values.argo.clusterDomain }}:443
 
     rsType: "{{ index .Values.argo "infra-onboarding" "rsType" | default "no-auth" }}"
+    disableCoProfile: {{ index .Values.argo "infra-onboarding" "disableCoProfile" | default false }}
+    disableO11yProfile: {{ index .Values.argo "infra-onboarding" "disableO11yProfile" | default false }}
     netIp: "{{ index .Values.argo "infra-onboarding" "netIp" | default "dynamic" }}"
     ntpServer: "{{ index .Values.argo "infra-onboarding" "ntpServer" | default "ntp1.server.org,ntp2.server.org" }}"
     {{- $nameServers := index .Values.argo "infra-onboarding" "nameServers" | default list }}

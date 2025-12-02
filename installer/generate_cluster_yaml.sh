@@ -255,10 +255,15 @@ elif [ "$DEPLOY_TYPE" = "aws" ]; then
     fi
 
     # Email Profile
+    echo "ℹ️ SMTP_URL value is: ${SMTP_URL}"
     if [ -z "${SMTP_URL:-}" ]; then
         export EMAIL_PROFILE="#- orch-configs/profiles/alerting-emails.yaml"
     else
+        if [ "${SMTP_DEV_MODE:-false}" = "true" ]; then
+            export EMAIL_PROFILE="- orch-configs/profiles/alerting-emails-dev.yaml"
+        else
         export EMAIL_PROFILE="- orch-configs/profiles/alerting-emails.yaml"
+    fi
     fi
 
     # AutoCert Profile
@@ -306,6 +311,16 @@ if [ "$ORCH_INSTALLER_PROFILE" = "onprem-oxm" ]; then
   .postCustomTemplateOverwrite.traefik.deployment.podAnnotations.\"traffic.sidecar.istio.io/excludeInboundPorts\" = \"8000,8443,8080,4433,9000\"
 " "$OUTPUT_FILE"
 fi
+
+# overwrite infra-onboarding configuration
+if [ "${DISABLE_CO_PROFILE:-false}" = "true" ]; then
+    yq -i '.argo.infra-onboarding.disableCoProfile = true' "$OUTPUT_FILE"
+fi
+
+if [ "${DISABLE_O11Y_PROFILE:-false}" = "true" ]; then
+    yq -i '.argo.infra-onboarding.disableO11yProfile = true' "$OUTPUT_FILE"
+fi
+
 
 # -----------------------------------------------------------------------------
 # Proxy variable updates

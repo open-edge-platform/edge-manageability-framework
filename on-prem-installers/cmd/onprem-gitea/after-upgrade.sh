@@ -123,6 +123,9 @@ createGiteaSecret "argocd-gitea-credential" "argocd" "$argocdGiteaPassword" "git
 createGiteaSecret "app-gitea-credential" "apporch" "$appGiteaPassword" "orch-platform"
 createGiteaSecret "cluster-gitea-credential" "clusterorch" "$clusterGiteaPassword" "orch-platform"
 
+# Need to scale down the pod
+kubectl scale deployment gitea -n gitea --replicas=0
+
 # More helm values are set in ../assets/gitea/values.yaml
 helm upgrade --install gitea /tmp/gitea/gitea --values /tmp/gitea/values.yaml --set gitea.admin.existingSecret=gitea-cred --set image.registry="${IMAGE_REGISTRY}" -n gitea --timeout 15m0s --wait
 
