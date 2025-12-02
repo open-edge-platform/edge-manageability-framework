@@ -2,7 +2,7 @@
 
 Author(s): Edge Infrastructure Manager Team
 
-Last Updated: 2025-11-10
+Last Updated: 2025-12-02
 
 ## Abstract
 
@@ -223,16 +223,57 @@ sequenceDiagram
 
 ## Implementation Plan
 
-- EIM services:
-  - Create new Helm chart for EIM services for use case.
-  - Update Orchestrator CLI to add any APIs needed for setting the CIRA configuration or domain profile for a device.
-  - Update Orchestrator CLI to add APIs for device activation and power cycling.
-  - Test use case Helm chart installation.
-    - Confirm that Out-of-band Device Management flow remains the same with new Helm chart.
-- Edge Node Agents:
-  - Update Node Agent to only manage agent tokens and statuses.
-  - Update Platform Management Agent to perform device vPRO/AMT/ISM support on installation.
-  - Modify Platform Management Agent flow when edge node device does not support vPRO/AMT/ISM.
+- Modular Edge Infrastructure Manager (EIM) services for Out-of-Band Device Management.
+  - Identify the current EIM services needed to support Out-of-Band Device Management.
+  - Create a new Helm chart for deploying all required EIM services for the workflow.
+    - This new Helm chart should be a top level chart that lists all of the current EIM service charts
+    as subcharts.
+  - Test the deployment of the new Out-of-Band Device Management Helm chart.
+  - Create a new ArgoCD profile to support deploying the new Helm chart.
+    - Only needed for the Track 1 deployment method outlined in the
+    [EIM Modularization document](./eim-modular-decomposition.md).
+    - Can be a modified version of the current EMF stack deployment profile with additional configuration options
+    to enable only deployment of only the services needed for the Out-of-Band Device Management workflow.
+  - Extend the CI workflows to upload the new Helm chart to the release service.
+    - If a new ArgoCD profile is also created, the CI should be extended to provide that to the release
+    service as well.
+  - Extend the Orchestrator CLI to work with the modular Out-of-Band Device Management workflow.
+    - Add additional CLI commands for providing the CIRA configuration and domain profile for an edge device
+    to the Remote Provisioning Server (RPS) service.
+    - Add any additional CLi commands needed to allow a user to trigger device activation or device power cycling
+    for an edge node device.
+  - Test installation of the full Out-of-Band Device Management modular workflow.
+    - Confirm that the Helm chart, when run using the ArgoCD profile for the workflow, installs all required services.
+    - Confirm that all services are also installed correctly when the chart is installed using standard Helm commands
+    as part of the Track 2 installation flow outlined in the
+    [EIM Modularization document](./eim-modular-decomposition.md).
+  - Provide documentation on how to install the services Helm chart.
+- Modular Edge Node Agents for Out-of-Band Device Management.
+  - Identify the required agents needed for to support Out-of-Band Device Management.
+  - Update the Node Agent workflow to only manage token refresh and status reporting for all agents deployed in the
+  workflow.
+  - Modify the Platform Manageability Agent to perform a check on the edge node for vPRO/AMT/ISM support when
+  installed.
+    - The Platform Manageability Agent should report the result of this check to the Device Mangement Manager service.
+  - Update the Platform Manageability Agent workflow for cases whe it does not detect vPRO/AMT/ISM support on the
+  edge node.
+    - The agent should perform periodic checks on the edge node to see if the support status has changed.
+  - Create new installation script to deploy the required agents for the workflow onto the edge node.
+    - The installation script should also create a new environment file containing any required configuration
+    settings needed for the agents.
+    - This includes the FQDNs for any endpoints on the orchestrator that the agents must communicated with, e.g. the
+    Platform Manageability Agent will require a FQDN for the Device Management Manager endpoint it needs to connect to.
+    - The installation script should use the same flow as the current, full edge node installation script included as
+    part of the current edge node onboarding and provisioning flow.
+      - Can also modify the current installation script to allow for configuration of the agent installation based on
+      the required workflow.
+    - The installation script should work as a standalone script that can be manually run by a user as well as run by
+    the current onboarding and provisioning workflow in EMF.
+  - Modify the installation scripts for all agents to retrieve any required configuration settings from the new
+  environment file installed onto the edge node.
+  - Test installation of the edge node agents using the modular workflow installer script.
+    - Should be tested as both a manual run of the script and using the current EMF onboarding and provisioning flow.
+  - Provide documentation on how to install the edge node agents for Out-of-Band Device Management workflows.
 
 ## Open Issues
 
