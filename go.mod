@@ -26,7 +26,7 @@ require (
 	github.com/open-edge-platform/infra-managers/maintenance v1.21.1
 	github.com/open-edge-platform/infra-managers/telemetry v1.21.1
 	github.com/open-edge-platform/infra-onboarding/onboarding-manager v1.34.4
-	github.com/open-edge-platform/orch-library/go v0.6.1
+	github.com/open-edge-platform/orch-library/go v0.6.3
 	github.com/open-edge-platform/orch-utils/tenancy-datamodel v1.2.3-0.20251126155507-e0d9404fa1d7
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/rs/zerolog v1.34.0
