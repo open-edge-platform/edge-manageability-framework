@@ -8,7 +8,7 @@ argo:
     databases:
       - namespace: orch-app
         name: app-orch-catalog
-      - namespace: orch-platform
+      - namespace: keycloak-system
         name: platform-keycloak
       - namespace: orch-platform
         name: vault
