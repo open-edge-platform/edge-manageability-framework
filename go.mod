@@ -4,7 +4,7 @@
 
 module github.com/open-edge-platform/edge-manageability-framework
 
-go 1.24.1
+go 1.24.9
 
 require (
 	github.com/Nerzal/gocloak/v13 v13.9.0
@@ -27,7 +27,7 @@ require (
 	github.com/open-edge-platform/infra-managers/telemetry v1.21.1
 	github.com/open-edge-platform/infra-onboarding/onboarding-manager v1.34.4
 	github.com/open-edge-platform/orch-library/go v0.6.1
-	github.com/open-edge-platform/orch-utils/tenancy-datamodel v0.0.0-20250401180309-9c2571c45857
+	github.com/open-edge-platform/orch-utils/tenancy-datamodel v1.2.3-0.20251126155507-e0d9404fa1d7
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/rs/zerolog v1.34.0
 	github.com/stretchr/testify v1.10.0
@@ -37,8 +37,8 @@ require (
 	golang.org/x/sync v0.18.0
 	google.golang.org/grpc v1.72.3
 	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/apimachinery v0.32.7
-	k8s.io/client-go v0.32.5
+	k8s.io/apimachinery v0.32.9
+	k8s.io/client-go v0.32.9
 	oras.land/oras-go/v2 v2.5.0
 	sigs.k8s.io/controller-runtime v0.20.4
 )
@@ -145,7 +145,7 @@ require (
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	k8s.io/api v0.32.5 // indirect
+	k8s.io/api v0.32.9 // indirect
 	k8s.io/apiextensions-apiserver v0.32.1 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20250318190949-c8a335a9a2ff // indirect
