@@ -90,7 +90,7 @@ services logs directly logging into the system.
 ### EIM and EIM+OB User Stories
 
 EIM modular deployment is targeted for customers who want to use EMF for edge infrastructure management only. The
-customer will be responsible for managing cluster and applciation life cycle management. It might be ideal for customer
+customer will be responsible for managing cluster and application life cycle management. It might be ideal for customer
 deployed application and cluster management stack might need to leverage EIM APIs to link the managed edge node
 instances with their own stack. It is also possible to use EIM as a standalone edge node management solution.
 
@@ -142,3 +142,56 @@ on how to use EIM APIs for integrating with my own stack.
 only for device lifecycle management at fleet level. I can manage my own Application, Cluster management stack without
 integrating with the EIM state using the EIM APIs. I need detailed instructions on how to configure the edge node
 agents, collectors and orchestrator services to send logs and metrics to my own observability stack.  
+
+### EIM+CO and EIM+CO+OB User Stories
+
+EIM+CO modular deployment is targeted for customers who want to use EMF for edge infrastructure and cluster management
+only. The customer will be responsible for managing application life cycle management. It might be ideal for customer
+deployed application management stack might need to leverage EIM and CO APIs to link the managed edge node
+instances with their own stack.
+
+#### Limitation and comparing with EIM OxM profile
+
+EIM OXM provide mechanism for customer to deploy application on the edge node and install kubernetes cluster on the
+edge node using `cloud-init` scripts. However EIM OXM profile does not provide any cluster lifecycle management.
+With EIM+CO modular workflow customer get the capability to delete and create the cluster. CO is currently dependent
+on CAPI for in-place upgrade which is still not available. Give this adding to EIM+CO modular workflow will not give
+considerable benefit to customer until in-place upgrade is supported.
+
+```mermaid
+flowchart TD
+    %% Classes for styling
+    classDef emf fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#0d47a1;
+    classDef customer fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#1b5e20;
+    classDef edge fill:#fff3e0,stroke:#ef6c00,stroke-width:2px,color:#e65100;
+
+    subgraph EMF_Scope ["EMF Orchestrator Services"]
+        direction TB
+        EIM[Edge Infrastructure Manager]:::emf
+        CO[Cluster Orchestration]:::emf
+    end
+
+    subgraph Edge_Scope ["Edge Infrastructure"]
+        Edge_Node[Edge Node Agents]:::edge
+    end
+
+    subgraph Customer_Scope ["Customer Managed Scope"]
+        direction TB
+        Cust_App["Customer App Management Stack"]:::customer
+        Obs_Stack["Customer Observability Stack"]:::customer
+    end
+
+    %% Management Relationships
+    EIM -->|Manages Infrastructure| Edge_Node
+    CO -->|Orchestrates Clusters| Edge_Node
+    Cust_App -->|Integrates via API| EIM
+    Cust_App -->|Integrates via API| CO
+    Cust_App -->|Deploys Apps| Edge_Node
+
+    %% Data Flow
+    EIM & CO -.->|Logs & Metrics| Obs_Stack
+    Edge_Node -.->|Logs & Metrics| Obs_Stack
+
+    %% Styling links for data flow
+    linkStyle 5,6,7 stroke:#d32f2f,stroke-width:2px,stroke-dasharray: 5 5;
+```
