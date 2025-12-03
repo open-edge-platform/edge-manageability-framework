@@ -40,7 +40,43 @@ store, dashboard and observability control plane services. The Edge node and orc
 logs and metrics to the customer provided observability stack. The current implementation of the edge node observability
 agents and collectors on the orchestrator should be flexible enough to support this use case.
 
+```mermaid
+flowchart TD
+    %% Classes for styling
+    classDef emf fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#0d47a1;
+    classDef customer fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#1b5e20;
+    classDef edge fill:#fff3e0,stroke:#ef6c00,stroke-width:2px,color:#e65100;
 
+    subgraph EMF_Scope ["EMF Orchestrator Services"]
+        direction TB
+        EIM[Edge Infrastructure Manager]:::emf
+        CO[Cluster Orchestration]:::emf
+        AO[Application Orchestration]:::emf
+    end
+
+    subgraph Edge_Scope ["Edge Infrastructure"]
+        Edge_Node[Edge Node Agents]:::edge
+        Obs_Agent[Observability Agent & Collector]:::edge
+    end
+
+    subgraph Customer_Scope ["Customer Managed Scope"]
+        direction TB
+        Obs_Stack["Customer Observability Stack<br/>(Data Store, Dashboards, Alerts)"]:::customer
+    end
+
+    %% Management Relationships
+    EIM -->|Manages| Edge_Node
+    CO -->|Orchestrates| Edge_Node
+    AO -->|Deploys Apps| Edge_Node
+
+    %% Data Flow
+    EIM & CO & AO -.->|Logs & Metrics| Obs_Stack
+    Edge_Node -.->|Logs & Metrics| Obs_Agent
+    Obs_Agent -.->|Forward| Obs_Stack
+
+    %% Styling links for data flow
+    linkStyle 3,4,5,6,7 stroke:#d32f2f,stroke-width:2px,stroke-dasharray: 5 5;
+```
 
 **User story 1:** As a customer, I want to deploy EMF with EIM, CO and AO domains only so that I can manage my own
 observability stack and configure the edge node agents, collectors, orchestrator services and collectors to use the
