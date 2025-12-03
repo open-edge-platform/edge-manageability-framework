@@ -42,7 +42,7 @@ upgrades, so that my workflows continue without disruption.
 This proposal introduces a phased migration from the current monolithic multi-tenant architecture to a modular system
 that supports both single-tenant and multi-tenant deployment modes. By decoupling multi-tenancy components and making
 them optional, the architecture enables flexible service deployment and direct API exposure while reducing operational complexity. The approach preserves all
-existing multi-tenancy features where required, while allowing lightweight, simplified deployments when multi-tenancy is
+existing multi-tenancy features and maintains backward compatibility where required, while allowing lightweight, simplified deployments when multi-tenancy is
 not needed.
 
 ### Current Architecture Problems
