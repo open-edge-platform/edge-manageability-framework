@@ -23,6 +23,9 @@
 set -e
 set -o pipefail
 
+# Trap to show the line number & command that failed
+trap 'echo "❌ ERROR at line $LINENO: Command \"${BASH_COMMAND}\" failed."; exit 1' ERR
+
 # Setup logging - capture all output to log file while still displaying on console
 LOG_FILE="onprem_upgrade_$(date +'%Y%m%d_%H%M%S').log"
 LOG_DIR="/var/log/orch-upgrade"
@@ -306,7 +309,7 @@ check_and_force_sync_app() {
 
     for ((i=1; i<=max_retries; i++)); do
         app_status=$(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
-        
+
         if [[ "$app_status" == "Synced Healthy" ]]; then
             echo "✅ $app_name is Synced and Healthy"
             return 0
@@ -315,26 +318,26 @@ check_and_force_sync_app() {
         echo "⚠️  $app_name is not Synced and Healthy (status: $app_status). Force-syncing... (attempt $i/$max_retries)"
         force_sync_outofsync_app "$app_name" "$namespace" "$server_side_apply"
         echo "✅ $app_name sync triggered"
-        
+
         # Check status every 5s for 90s
         local check_timeout=90
         local check_interval=3
         local elapsed=0
-        
+
         while (( elapsed < check_timeout )); do
             app_status=$(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
-            
+
             if [[ "$app_status" == "Synced Healthy" ]]; then
                 echo "✅ $app_name became Synced and Healthy"
                 return 0
             else
                 echo "Current status: $app_status (elapsed: ${elapsed}s)"
             fi
-            
+
             sleep $check_interval
             elapsed=$((elapsed + check_interval))
         done
-        
+
         echo "⏳ $app_name did not become healthy within ${check_timeout}s"
     done
 
@@ -348,7 +351,7 @@ check_and_patch_sync_app() {
 
     for ((i=1; i<=max_retries; i++)); do
         app_status=$(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
-        
+
         if [[ "$app_status" == "Synced Healthy" ]]; then
             echo "✅ $app_name is Synced and Healthy"
             return 0
@@ -365,21 +368,21 @@ check_and_patch_sync_app() {
         local check_timeout=90
         local check_interval=3
         local elapsed=0
-        
+
         while (( elapsed < check_timeout )); do
             app_status=$(kubectl get application "$app_name" -n "$namespace" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
-            
+
             if [[ "$app_status" == "Synced Healthy" ]]; then
                 echo "✅ $app_name became Synced and Healthy"
                 return 0
             else
                 echo "Current status: $app_status (elapsed: ${elapsed}s)"
             fi
-            
+
             sleep $check_interval
             elapsed=$((elapsed + check_interval))
         done
-        
+
         echo "⏳ $app_name did not become healthy within ${check_timeout}s"
     done
 
@@ -391,7 +394,7 @@ wait_for_app_synced_healthy() {
     local app_name=$1
     local namespace=$2
     local timeout=${3:-120}  # Default 120 seconds if not specified
-    
+
     local start_time
     start_time=$(date +%s)
     set +e
@@ -446,7 +449,7 @@ check_and_cleanup_job() {
     local app_name=$1
     local namespace=$2
     local job_label=${3:-job-name}
-    
+
     app_status=$(kubectl get application "$app_name" -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
     if [[ "$app_status" != "Synced Healthy" ]]; then
         if kubectl get job -n "$namespace" -l "$job_label" 2>/dev/null | grep "$app_name"; then
@@ -668,10 +671,15 @@ if ! check_postgres; then
     exit 1
 fi
 
-# Perform postgreSQL secret backup if not done already
+# Perform PostgreSQL secret backup if not done already
 if [[ ! -f postgres_secret.yaml ]]; then
-    kubectl get secret -n orch-database postgresql -o yaml > postgres_secret.yaml
+    if [[ "$UPGRADE_3_1_X" == "true" ]]; then
+        kubectl get secret -n orch-database postgresql -o yaml > postgres_secret.yaml
+    else
+        kubectl get secret -n orch-database passwords -o yaml > postgres_secret.yaml
+    fi
 fi
+
 
 # Delete gitea secrets before backup
 cleanup_gitea_secrets
@@ -793,7 +801,11 @@ if [[ ! -s postgres-secrets-password.txt ]]; then
     IAM_TENANCY=$(kubectl get secret iam-tenancy-local-postgresql -n orch-iam -o jsonpath='{.data.PGPASSWORD}')
     PLATFORM_KEYCLOAK=$(kubectl get secret platform-keycloak-local-postgresql -n orch-platform -o jsonpath='{.data.PGPASSWORD}')
     VAULT=$(kubectl get secret vault-local-postgresql -n orch-platform -o jsonpath='{.data.PGPASSWORD}')
-    POSTGRESQL=$(kubectl get secret postgresql -n orch-database -o jsonpath='{.data.postgres-password}')
+    if [[ "$UPGRADE_3_1_X" == "true" ]]; then
+        POSTGRESQL=$(kubectl get secret postgresql -n orch-database -o jsonpath='{.data.postgres-password}')
+    else
+        POSTGRESQL=$(kubectl get secret orch-database-postgresql -n orch-database -o jsonpath='{.data.password}')
+    fi
     MPS=$(kubectl get secret mps-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}')
     RPS=$(kubectl get secret rps-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}')
     {
@@ -1045,8 +1057,20 @@ patch_secrets
 sleep 10
 
 # Restore secret after app delete but before postgress restored
-yq e 'del(.metadata.labels, .metadata.annotations, .metadata.uid, .metadata.creationTimestamp)' postgres_secret.yaml | kubectl apply -f -
-
+if [[ "$UPGRADE_3_1_X" == "true" ]]; then
+	yq e 'del(.metadata.labels, .metadata.annotations, .metadata.uid, .metadata.creationTimestamp)' postgres_secret.yaml | kubectl apply -f -
+else
+	yq e '
+	  del(.metadata.labels) |
+	  del(.metadata.annotations) |
+	  del(.metadata.ownerReferences) |
+	  del(.metadata.finalizers) |
+	  del(.metadata.managedFields) |
+	  del(.metadata.resourceVersion) |
+	  del(.metadata.uid) |
+	  del(.metadata.creationTimestamp)
+	' postgres_secret.yaml | kubectl apply -f -
+fi
 sleep 30
 # Wait until PostgreSQL pod is running (Re-sync)
 start_time=$(date +%s)
@@ -1256,7 +1280,7 @@ check_and_cleanup_job "wait-istio-job" "ns-label"
 # Collect and display syncwave information for OutOfSync applications
 echo "OutOfSync applications by syncwave:"
 outofsync_apps=$(kubectl get applications -n "$apps_ns" -o json | \
-    jq -r '.items[] | select((.status.sync.status!="Synced" or .status.health.status!="Healthy") and .metadata.name!="root-app") | 
+    jq -r '.items[] | select((.status.sync.status!="Synced" or .status.health.status!="Healthy") and .metadata.name!="root-app") |
     "\(.metadata.annotations["argocd.argoproj.io/sync-wave"] // "0") \(.metadata.name)"' | \
     sort -n)
 
@@ -1276,7 +1300,7 @@ done
 # Collect and display syncwave information for OutOfSync applications
 echo "OutOfSync applications by syncwave:"
 outofsync_apps=$(kubectl get applications -n "$apps_ns" -o json | \
-    jq -r '.items[] | select((.status.sync.status!="Synced" or .status.health.status!="Healthy") and .metadata.name!="root-app") | 
+    jq -r '.items[] | select((.status.sync.status!="Synced" or .status.health.status!="Healthy") and .metadata.name!="root-app") |
     "\(.metadata.annotations["argocd.argoproj.io/sync-wave"] // "0") \(.metadata.name)"' | \
     sort -n)
 
@@ -1295,7 +1319,7 @@ done
 # Collect and display syncwave information for OutOfSync applications
 echo "OutOfSync applications by syncwave:"
 outofsync_apps=$(kubectl get applications -n "$apps_ns" -o json | \
-    jq -r '.items[] | select((.status.sync.status!="Synced" or .status.health.status!="Healthy") and .metadata.name!="root-app") | 
+    jq -r '.items[] | select((.status.sync.status!="Synced" or .status.health.status!="Healthy") and .metadata.name!="root-app") |
     "\(.metadata.annotations["argocd.argoproj.io/sync-wave"] // "0") \(.metadata.name)"' | \
     sort -n)
 
@@ -1316,10 +1340,10 @@ kubectl patch application root-app -n  "$apps_ns"  --type json -p '[{"op": "remo
 
 # OS profiles Fix
 kubectl patch application tenancy-api-mapping -n onprem --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
-kubectl patch application tenancy-datamodel -n onprem --patch-file /tmp/argo-cd/sync-patch.yaml --type merge 
+kubectl patch application tenancy-datamodel -n onprem --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 kubectl delete application tenancy-api-mapping -n onprem
 kubectl delete application tenancy-datamodel -n onprem
-kubectl delete deployment -n orch-infra os-resource-manager 
+kubectl delete deployment -n orch-infra os-resource-manager
 
 # Apply root-app Patch
 kubectl patch application root-app -n  "$apps_ns"  --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
