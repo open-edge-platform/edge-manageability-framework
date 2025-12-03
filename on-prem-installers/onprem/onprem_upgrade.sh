@@ -1229,5 +1229,10 @@ kubectl apply --server-side=true --force-conflicts -f https://raw.githubusercont
 
 #restart tls-boot secrets
 kubectl delete secret tls-boots -n orch-boots
+
+# Unseal vault after external-secrets is ready
+echo "Unsealing vault..."
+vault_unseal
+echo "✅ Vault unsealed successfully"
 ./after_upgrade_restart.sh
 echo "Upgrade completed! Wait for ArgoCD applications to be in 'Synced' and 'Healthy' state"
