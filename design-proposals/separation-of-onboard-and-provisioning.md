@@ -115,5 +115,7 @@ autonumber
 
 - In the interactive onboarding mapping the instance resource to OS resource is done by taking OS version from the Edge node during device discovery stage.
 
-- Cluster creation might need the required partitions to be created which is done during the provisioning flow
+- Cluster creation might need the required partitions to be created which is done during the provisioning flow.
+
+- Kernel might need to be upgraded based on platform in order to use the platform features.
 
