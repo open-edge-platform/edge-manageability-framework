@@ -194,6 +194,63 @@ get_timestamp() {
 }
 
 # ============================================================
+# Check and fix CRD version mismatches
+# ============================================================
+check_and_fix_crd_version_mismatch() {
+    local app_name="$1"
+    
+    # Get application status
+    local status=$(kubectl get applications.argoproj.io "$app_name" -n "$NS" -o json 2>/dev/null)
+    if [[ -z "$status" ]]; then
+        return 1
+    fi
+    
+    # Check for CRD version mismatch errors in sync messages
+    local version_mismatch=$(echo "$status" | jq -r '
+        .status.conditions[]? | 
+        select(.type == "ComparisonError" or .type == "SyncError") |
+        select(.message | contains("could not find version") or contains("Version") and contains("is installed")) |
+        .message
+    ' 2>/dev/null)
+    
+    if [[ -n "$version_mismatch" ]]; then
+        echo "$(red)[CRD-VERSION-MISMATCH] Detected CRD version mismatch in $app_name:$(reset)"
+        echo "$version_mismatch"
+        
+        # Extract CRD details from error message
+        local crd_group=$(echo "$version_mismatch" | grep -oP '[a-z0-9.-]+\.[a-z]+(?=/[A-Z])' | head -1)
+        local crd_kind=$(echo "$version_mismatch" | grep -oP '/[A-Z][a-zA-Z]+' | sed 's|/||' | head -1)
+        
+        if [[ -n "$crd_group" && -n "$crd_kind" ]]; then
+            # Try to find and list the CRD
+            local crd_name="${crd_kind,,}s.${crd_group}"
+            echo "$(yellow)[INFO] Looking for CRD: $crd_name$(reset)"
+            
+            # Check if CRD exists
+            if kubectl get crd "$crd_name" &>/dev/null; then
+                echo "$(yellow)[INFO] CRD $crd_name exists, checking versions...$(reset)"
+                kubectl get crd "$crd_name" -o jsonpath='{.spec.versions[*].name}' 2>/dev/null
+                echo
+                
+                # For external-secrets.io, we need to update to v1beta1
+                if [[ "$crd_group" == "external-secrets.io" ]]; then
+                    echo "$(yellow)[FIX] Attempting to refresh application to use correct CRD version...$(reset)"
+                    argocd app get "${NS}/${app_name}" --hard-refresh --grpc-web >/dev/null 2>&1 || true
+                    sleep 3
+                    return 0
+                fi
+            else
+                echo "$(red)[ERROR] CRD $crd_name not found on cluster$(reset)"
+            fi
+        fi
+        
+        return 0
+    fi
+    
+    return 1
+}
+
+# ============================================================
 # Check if application has failed sync and needs cleanup
 # ============================================================
 check_and_handle_failed_sync() {
@@ -524,6 +581,13 @@ sync_not_green_apps_once() {
 
         echo "$(bold)[SYNC] $full_app (wave=$wave) at [$(get_timestamp)]$(reset)"
         echo "$(yellow)[INFO] Attempt ${attempt}/${APP_MAX_RETRIES}, elapsed: 0s$(reset)"
+        
+        # Stop any ongoing operations and refresh before sync
+        echo "[INFO] Stopping ongoing operations and refreshing before sync..."
+        argocd app terminate-op "$full_app" --grpc-web 2>/dev/null || true
+        sleep 2
+        argocd app get "$full_app" --refresh --grpc-web >/dev/null 2>&1 || true
+        sleep 3
 
         start_ts=$(date +%s)
         LOG=$(argocd app sync "$full_app" --grpc-web 2>&1)
@@ -613,6 +677,10 @@ sync_all_apps_exclude_root() {
         # First check and handle any failed syncs
         echo "[$(get_timestamp)] Checking for failed syncs in $name..."
         check_and_handle_failed_sync "$name"
+        
+        # Check for CRD version mismatches
+        echo "[$(get_timestamp)] Checking for CRD version mismatches in $name..."
+        check_and_fix_crd_version_mismatch "$name"
 
         attempt=1
         synced=false
@@ -767,6 +835,10 @@ sync_root_app_only() {
     # First check and handle any failed syncs
     echo "[$(get_timestamp)] Checking for failed syncs in root-app..."
     check_and_handle_failed_sync "root-app"
+    
+    # Check for CRD version mismatches
+    echo "[$(get_timestamp)] Checking for CRD version mismatches in root-app..."
+    check_and_fix_crd_version_mismatch "root-app"
 
     last_sync_status=$(echo "$status" | jq -r '.status.operationState.phase // "Unknown"')
     last_sync_time=$(echo "$status" | jq -r '.status.operationState.finishedAt // "N/A"')
@@ -803,6 +875,14 @@ sync_root_app_only() {
         fi
         
         echo "$(yellow)[INFO] Attempt ${attempt}/${APP_MAX_RETRIES}, elapsed: 0s$(reset)"
+        
+        # Stop any ongoing operations and refresh before sync
+        echo "[INFO] Stopping ongoing operations and refreshing before sync..."
+        argocd app terminate-op "$full_app" --grpc-web 2>/dev/null || true
+        sleep 2
+        argocd app get "$full_app" --refresh --grpc-web >/dev/null 2>&1 || true
+        sleep 3
+        
         start_ts=$(date +%s)
         LOG=$(argocd app sync "$full_app" --grpc-web 2>&1)
         rc=$?
