@@ -95,7 +95,7 @@ Below are examples of external service integration scenarios enabled by the new 
 
 - Develop a shared middleware library (`orch-lib`) to centralize common multi-tenancy logic.
 - Create Helm configuration templates to support both single-tenant and multi-tenant deployment modes.
-- Implement standardized service initialization patterns for consistent startup across services.
+- Implement standardized service initialization patterns using `orch-lib` shared functions for consistent startup across services, such as apiv2, CO, and AO.
 - Build a comprehensive testing framework to validate modularity and backward compatibility.
 
 #### Phase 1: EIM Modernization
