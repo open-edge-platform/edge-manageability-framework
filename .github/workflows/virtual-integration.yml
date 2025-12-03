@@ -35,7 +35,7 @@ jobs:
     if: github.event_name == 'pull_request'
     permissions:
       contents: read
-    uses: open-edge-platform/orch-ci/.github/workflows/pre-merge.yml@e6058fe60cbb803e7d7935571ccd50753bc31ec8  # 0.1.28
+    uses: open-edge-platform/orch-ci/.github/workflows/pre-merge.yml@79c4381f9be567527d8782094317b0282493e45a  # 0.1.66
     with:
       run_version_check: false
       run_build: false
@@ -862,7 +862,7 @@ jobs:
       security-events: write
       id-token: write
     if: github.event_name == 'push' && ( github.ref == 'refs/heads/release-3.1' )
-    uses: open-edge-platform/orch-ci/.github/workflows/post-merge.yml@e6058fe60cbb803e7d7935571ccd50753bc31ec8  # 0.1.28
+    uses: open-edge-platform/orch-ci/.github/workflows/post-merge.yml@79c4381f9be567527d8782094317b0282493e45a  # 0.1.66
     with:
       run_build: false
       run_version_tag: false
