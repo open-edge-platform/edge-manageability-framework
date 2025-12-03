@@ -80,13 +80,14 @@ flowchart TD
 
 **User story 1:** As a admin-user, I want to deploy EMF with EIM, CO and AO domains only so that I can manage my own
 observability stack and configure the edge node agents, collectors, orchestrator services and collectors to use the
-observability stack deployed by me.
+observability stack deployed by me. I need detailed instructions on how to configure the edge node agents, collectors
+and orchestrator services to send logs and metrics to my own observability stack.
 
 **User story 2:** As a developer-user, I want to deploy EMF with EIM, CO and AO domains only as i am only
 interested in logs i would like detailed instructions on how to get the edge node agents logs and orchestrator
 services logs directly logging into the system.
 
-### EIM User Stories
+### EIM and EIM+OB User Stories
 
 EIM modular deployment is targeted for customers who want to use EMF for edge infrastructure management only. The
 customer will be responsible for managing cluster and applciation life cycle management. It might be ideal for customer
@@ -136,3 +137,8 @@ integrating with the EIM state using the EIM APIs.
 at fleet. I can manage my own Application, Cluster and observability management stack. I will integrate my application,
 cluster and observability stack with the Infrastructure state maintained by EIM. For this I need detailed instructions
 on how to use EIM APIs for integrating with my own stack.
+
+**User story 3:** As a admin-user, I want to deploy EMF with standalone EIM and edge node and EIM observability domains
+only for device lifecycle management at fleet level. I can manage my own Application, Cluster management stack without
+integrating with the EIM state using the EIM APIs. I need detailed instructions on how to configure the edge node
+agents, collectors and orchestrator services to send logs and metrics to my own observability stack.  
