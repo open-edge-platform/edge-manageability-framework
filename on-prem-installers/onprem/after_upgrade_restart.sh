@@ -70,6 +70,7 @@ APP_MAX_WAIT=90               # 5 minutes to wait for any app (Healthy+Synced)
 APP_MAX_RETRIES=3                 # retry X times for each app
 GLOBAL_SYNC_RETRIES=4             # Global retry for entire sync process
 
+# shellcheck disable=SC1091
 # ============================================================
 # REQUIRE COMMANDS
 # ============================================================
