@@ -70,15 +70,6 @@ APP_MAX_WAIT=90               # 5 minutes to wait for any app (Healthy+Synced)
 APP_MAX_RETRIES=3                 # retry X times for each app
 GLOBAL_SYNC_RETRIES=4             # Global retry for entire sync process
 
-# Root app final wait
-ROOT_APP_MAX_WAIT=300             # 5 minutes
-
-# Global script timeout
-SCRIPT_MAX_TIMEOUT=1800           # 20 minutes
-
-# Installer behaviour
-CURL_TIMEOUT=20
-
 # ============================================================
 # REQUIRE COMMANDS
 # ============================================================
@@ -100,7 +91,7 @@ install_argocd_cli() {
     VERSION=$(curl -L -s https://raw.githubusercontent.com/argoproj/argo-cd/stable/VERSION)
     echo "[INFO] Latest version: $VERSION"
     curl -sSL -o argocd-linux-amd64 \
-        https://github.com/argoproj/argo-cd/releases/download/v${VERSION}/argocd-linux-amd64
+        https://github.com/argoproj/argo-cd/releases/download/v"${VERSION}"/argocd-linux-amd64
     sudo install -m 555 argocd-linux-amd64 /usr/local/bin/argocd
     rm -f argocd-linux-amd64
     echo "[INFO] argocd CLI installed successfully."
