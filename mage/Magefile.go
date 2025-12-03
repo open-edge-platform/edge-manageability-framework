@@ -1056,10 +1056,8 @@ STANDALONE=0
 		client := &http.Client{
 			Timeout: 10 * time.Second,
 			Transport: &http.Transport{
-				Proxy: http.ProxyFromEnvironment,
-				TLSClientConfig: &tls.Config{
-					InsecureSkipVerify: true,
-				},
+				Proxy:           http.ProxyFromEnvironment,
+				TLSClientConfig: &tls.Config{},
 			},
 		}
 
