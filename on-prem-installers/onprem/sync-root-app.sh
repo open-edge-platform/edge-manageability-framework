@@ -19,7 +19,6 @@
 #   - Automatic restart of failed applications
 #   - Global retry mechanism (4 attempts)
 #   - Per-application retry logic (3 attempts)
-#   - Timestamp tracking for all operations
 #   - Unhealthy job and CRD cleanup
 #   - OutOfSync application handling
 #   - Root-app special handling
