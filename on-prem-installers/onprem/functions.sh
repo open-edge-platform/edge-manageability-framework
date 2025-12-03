@@ -47,7 +47,7 @@ metadata:
   namespace: $1
 stringData:
   username: "admin"
-  admin-password: "$2"
+  password: "$2"
 EOF
 }
 

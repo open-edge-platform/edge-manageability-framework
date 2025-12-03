@@ -108,7 +108,7 @@ keycloakConfigCli:
           valueFrom:
             secretKeyRef:
               name: platform-keycloak
-              key: admin-password
+              key: password
         - name: KEYCLOAK_AVAILABILITYCHECK_ENABLED
           value: "true"
         - name: KEYCLOAK_AVAILABILITYCHECK_TIMEOUT
