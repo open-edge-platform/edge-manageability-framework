@@ -23,9 +23,6 @@
 set -e
 set -o pipefail
 
-# Trap to show the line number & command that failed
-trap 'echo "❌ ERROR at line $LINENO: Command \"${BASH_COMMAND}\" failed."; exit 1' ERR
-
 # Setup logging - capture all output to log file while still displaying on console
 LOG_FILE="onprem_upgrade_$(date +'%Y%m%d_%H%M%S').log"
 LOG_DIR="/var/log/orch-upgrade"
