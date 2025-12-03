@@ -872,7 +872,7 @@ while true; do
 done
 set -e
 
-patch_secret() {
+patch_secrets() {
 
     # Patch secrets with passwords from postgres-secrets-password.txt
     # If the file is not empty, read the passwords and patch the secrets accordingly
@@ -980,40 +980,18 @@ patch_secret() {
     kubectl patch secret -n orch-infra mps-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$MPS\"}}" --type=merge
     kubectl patch secret -n orch-infra rps-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$RPS\"}}" --type=merge
     kubectl patch secret -n orch-infra rps-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$RPS\"}}" --type=merge
-    # Use a temporary file for the patch payload
-    patch_file=$(mktemp)
-    cat > "$patch_file" <<EOF
-{
-  "data": {
-    "alerting": "$ALERTING",
-    "app-orch-catalog": "$CATALOG_SERVICE",
-    "iam-tenancy": "$IAM_TENANCY",
-    "inventory": "$INVENTORY",
-    "platform-keycloak": "$PLATFORM_KEYCLOAK",
-    "vault": "$VAULT",
-    "mps": "$MPS",
-    "rps": "$RPS"
-  }
-}
-EOF
 
     # New secrets needed for postgresql chart migration to cloudnative-pg
-    if kubectl get secret orch-app-app-orch-catalog -n orch-app >/dev/null 2>&1; then
-      kubectl patch secret -n orch-app orch-app-app-orch-catalog-local-postgresql -p "{\"data\": {\"password\": \"$CATALOG_SERVICE\"}}" --type=merge
-      kubectl patch secret -n orch-iam orch-iam-iam-tenancy -p "{\"data\": {\"password\": \"$IAM_TENANCY\"}}" --type=merge
-      kubectl patch secret -n orch-infra orch-infra-alerting -p "{\"data\": {\"password\": \"$ALERTING\"}}" --type=merge
-      kubectl patch secret -n orch-infra orch-infra-inventory -p "{\"data\": {\"password\": \"$INVENTORY\"}}" --type=merge
-      kubectl patch secret -n orch-platform orch-platform-platform-keycloak -p "{\"data\": {\"password\": \"$PLATFORM_KEYCLOAK\"}}" --type=merge
-      kubectl patch secret -n orch-platform orch-platform-vault -p "{\"data\": {\"password\": \"$VAULT\"}}" --type=merge
-      kubectl patch secret -n orch-infra orch-infra-mps -p "{\"data\": {\"password\": \"$MPS\"}}" --type=merge
-      kubectl patch secret -n orch-infra orch-infra-rps -p "{\"data\": {\"password\": \"$RPS\"}}" --type=merge
+    if kubectl get secret orch-app-app-orch-catalog -n orch-database >/dev/null 2>&1; then
+      kubectl patch secret -n orch-database orch-app-app-orch-catalog -p "{\"data\": {\"password\": \"$CATALOG_SERVICE\"}}" --type=merge
+      kubectl patch secret -n orch-database orch-iam-iam-tenancy -p "{\"data\": {\"password\": \"$IAM_TENANCY\"}}" --type=merge
+      kubectl patch secret -n orch-database orch-infra-alerting -p "{\"data\": {\"password\": \"$ALERTING\"}}" --type=merge
+      kubectl patch secret -n orch-database orch-infra-inventory -p "{\"data\": {\"password\": \"$INVENTORY\"}}" --type=merge
+      kubectl patch secret -n orch-database orch-platform-platform-keycloak -p "{\"data\": {\"password\": \"$PLATFORM_KEYCLOAK\"}}" --type=merge
+      kubectl patch secret -n orch-database orch-platform-vault -p "{\"data\": {\"password\": \"$VAULT\"}}" --type=merge
+      kubectl patch secret -n orch-database orch-infra-mps -p "{\"data\": {\"password\": \"$MPS\"}}" --type=merge
+      kubectl patch secret -n orch-database orch-infra-rps -p "{\"data\": {\"password\": \"$RPS\"}}" --type=merge
     fi
-
-    kubectl patch secret -n orch-database passwords --type=merge --patch-file "$patch_file"
-    rm -f "$patch_file"
-
-    # Patch postgresql secret
-    #kubectl patch secret -n orch-database postgresql -p "{\"data\": {\"postgres-password\": \"$POSTGRESQL\"}}" --type=merge
 }
 
 # Stop sync operation for root-app, so it won't be synced with the old version of the application.
@@ -1063,7 +1041,7 @@ kubectl patch application root-app -n "$apps_ns" --type json -p '[{"op": "remove
 sleep 30
 kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/sync-postgresql-patch.yaml --type merge
 sleep 30
-patch_secret
+patch_secrets
 sleep 10
 
 # Restore secret after app delete but before postgress restored
@@ -1099,28 +1077,6 @@ restore_postgres
 
 # Update ALL database user passwords in PostgreSQL after restore
 echo "Updating all database user passwords in PostgreSQL..."
-
-# Get all passwords from postgres-secrets-password.txt file (they are base64 encoded)
-ALERTING_PASSWORD=$(grep "^Alerting:" postgres-secrets-password.txt | cut -d' ' -f2 | base64 -d)
-CATALOG_PASSWORD=$(grep "^CatalogService:" postgres-secrets-password.txt | cut -d' ' -f2 | base64 -d)
-INVENTORY_PASSWORD=$(grep "^Inventory:" postgres-secrets-password.txt | cut -d' ' -f2 | base64 -d)
-IAM_TENANCY_PASSWORD=$(grep "^IAMTenancy:" postgres-secrets-password.txt | cut -d' ' -f2 | base64 -d)
-KEYCLOAK_PASSWORD=$(grep "^PlatformKeycloak:" postgres-secrets-password.txt | cut -d' ' -f2 | base64 -d)
-MPS_PASSWORD=$(grep "^Mps:" postgres-secrets-password.txt | cut -d' ' -f2 | base64 -d)
-RPS_PASSWORD=$(grep "^Rps:" postgres-secrets-password.txt | cut -d' ' -f2 | base64 -d)
-VAULT_PASSWORD=$(grep "^Vault:" postgres-secrets-password.txt | cut -d' ' -f2 | base64 -d)
-POSTGRESQL_PASSWORD=$(grep "^PostgreSQL:" postgres-secrets-password.txt | cut -d' ' -f2 | base64 -d)
-
-# Update passwords for all database users
-kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-platform-vault_user\" WITH PASSWORD '$VAULT_PASSWORD';"
-kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-infra-alerting_user\" WITH PASSWORD '$ALERTING_PASSWORD';"
-kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-app-app-orch-catalog_user\" WITH PASSWORD '$CATALOG_PASSWORD';"
-kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-infra-inventory_user\" WITH PASSWORD '$INVENTORY_PASSWORD';"
-kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-iam-iam-tenancy_user\" WITH PASSWORD '$IAM_TENANCY_PASSWORD';"
-kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-platform-platform-keycloak_user\" WITH PASSWORD '$KEYCLOAK_PASSWORD';"
-kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-infra-mps_user\" WITH PASSWORD '$MPS_PASSWORD';"
-kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-infra-rps_user\" WITH PASSWORD '$RPS_PASSWORD';"
-kubectl exec postgresql-cluster-1 -n orch-database -c postgres -- psql -U postgres -c "ALTER USER \"orch-database-postgresql_user\" WITH PASSWORD '$POSTGRESQL_PASSWORD';"
 
 echo "✅ All database user passwords updated successfully"
 
