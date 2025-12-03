@@ -14,10 +14,10 @@ When an user choose to onboard an edge node to EMF orchestrator, there should be
 
 1. Ubuntu installation by downloading the canonical base server image
 
-2. Upgrade the required base kernel as part provisioning flow to support intel platforms features. Required base kernel for Intel platforms like ADL, RPC are
- - Ubuntu 22.04 -> Kernel 6.8.x
+2. Upgrade the required base kernel as part provisioning flow to support intel platforms features. Required base kernel for Intel platforms like ADL, RPL are
+    - Ubuntu 22.04 -> Kernel 6.8.x
 
- - Ubuntu 24.05 -> Kernel 6.11.x 
+    - Ubuntu 24.05 -> Kernel 6.11.x
  
 3. Install edge node agents as post installation of OS. DKAM curates the installer script with required EMF compatible versions of EN agents(by making use of EN manifest file) along with their configurations. It configures apt package manager with EMF release service where edge node agents debians are hosted.
 
@@ -50,7 +50,7 @@ Onboarding steps those should be done on the edge node includes
 
 ## Scope and Implementation plan
 
-EMF side steps to skip the provisioning workflow.
+High level tasks in EMF to make the provisioning workflow as optional
 
 1. Device disocery agent - Build debian for the device discovery agent and include it in the agent installer script which does onboarding(non-interactive) and gets required keycloak credentials to the edge node. Until device discovery completes the onboarding other agents installation shouldn't be started.
 
@@ -61,7 +61,6 @@ EMF side steps to skip the provisioning workflow.
 4. API-v2 and inventory changes to include new field, skip provisioning flow in host resource.
 
 5. Orch-cli/Infra web-ui changes for device registration to include the new field skip provisiong flow. By default skip provisioning flow will be set to false.
-
 
 
 ## Workflow
@@ -114,5 +113,7 @@ autonumber
 
 ## Opens
 
-In the interactive onboarding mapping the instance resource to OS resource is done by taking OS version from the Edge node during device discovery stage.
+- In the interactive onboarding mapping the instance resource to OS resource is done by taking OS version from the Edge node during device discovery stage.
+
+- Cluster creation might need the required partitions to be created which is done during the provisioning flow
 
