@@ -2,7 +2,7 @@
 
 Author(s): Hyunsun Moon, Denisio Togashi
 
-Last updated: 12/2/25
+Last updated: 12/3/25
 
 ## Abstract
 
@@ -15,25 +15,19 @@ achieving architectural modularity and deployment flexibility, rather than optim
 
 ## User Stories
 
-### User Story 1: Configurable Multi-tenancy
+**User Story 1: Configurable Multi-tenancy** As a platform administrator, I need the ability to enable or disable
+multi-tenancy features based on deployment requirements, so that the system can be tailored to specific organizational
+needs.
 
-As a platform administrator, I need the ability to enable or disable multi-tenancy features based on deployment
-requirements, so that the system can be tailored to specific organizational needs.
+**User Story 2: Lightweight EIM Integration** As a third-party service developer, I want to integrate only the EIM
+sub-components without deploying the entire EMF stack, so that I can add infrastructure management capabilities with
+minimal overhead.
 
-### User Story 2: Lightweight EIM Integration
+**User Story 3: Flexible External Service Integration** As a solution architect, I want to connect external services to
+EMF regardless of the tenancy mode, so that I can extend EMF’s capabilities across diverse environments.
 
-As a third-party service developer, I want to integrate only the EIM sub-components without deploying the entire EMF
-stack, so that I can add infrastructure management capabilities with minimal overhead.
-
-### User Story 3: Flexible External Service Integration
-
-As a solution architect, I want to connect external services to EMF regardless of the tenancy mode, so that I can extend
-EMF’s capabilities across diverse environments.
-
-### User Story 4: Seamless Backward Compatibility
-
-As an existing EMF customer, I want to ensure that my current multi-tenant deployments remain fully compatible after
-upgrades, so that my workflows continue without disruption.
+**User Story 4: Seamless Backward Compatibility** As an existing EMF customer, I want to ensure that my current
+multi-tenant deployments remain fully compatible after upgrades, so that my workflows continue without disruption.
 
 ## Proposal
 
@@ -119,30 +113,36 @@ unnecessary, offering a lightweight and efficient integration path.
 
 ### Core Changes
 
-#### Track 1: Remove Nexus-API-Gateway
+#### Track 1: Reduce the scope of nexus-api-gateway
+
+- Limit the nexus-api-gateway’s responsibility to routing only Tenant Manager APIs (`/v1/orgs`, `/v1/projects`).
+- Remove all API remapping and project ID resolution logic from the gateway; delegate these to the shared middleware
+  (`orch-lib`) within each service.
+- Update gateway configuration to eliminate routing for EIM, AO, and CO APIs, allowing these services to expose their
+  APIs directly.
+- Ensure that authentication and authorization are handled by the middleware in each service, not by the gateway.
+- Gradually deprecate legacy gateway features as services transition to direct API exposure.
+- Validate that existing multi-tenant workflows continue to function as expected through integration and regression
+  testing.
 
 ##### Step 1: Foundation
 
 Develop a shared middleware library (`orch-lib`) to centralize multi-tenancy logic and standardize API handling. Key
 features:
 
-- Extract the project name from the request URI and resolve it to the corresponding ActiveProjectID by querying the Tenant Manager.
+- Extract the project name from the request URI and resolve it to the corresponding ActiveProjectID by querying the
+  Tenant Manager.
 - Perform tenant-aware authentication by verifying that the resolved project ID exists in the JWT claims.
 - Inject ActiveProjectID into the request context for downstream service logic.
-
-##### Step 2: EIM Modernization
-
-- Incrementally introduce changes to support EIM decomposition and minimize migration risk.
-- Enable direct external API access to EIM by decoupling it from the legacy API gateway ([PoC completed](https://github.com/open-edge-platform/infra-core/tree/poc-api-gateway)). Actions
+- Enable direct external API access to EIM by decoupling it from the legacy API gateway ([PoC Completed][1]). Actions
   include:
-  - Update [services.proto](https://github.com/open-edge-platform/infra-core/blob/main/apiv2/api/proto/services/v1/services.proto) to expose the external API path.
+  - Update [services.proto][2] to expose the external API path.
   - Regenerate gRPC stubs and OpenAPI specs with the new path.
-  - Change [base URL config](https://github.com/open-edge-platform/infra-core/blob/main/apiv2/internal/common/config.go#L100) from `/edge-infra.orchestrator.apis/v2` to `/v1/projects`.
-  - Update [proxy/server.go](https://github.com/open-edge-platform/infra-core/blob/main/apiv2/internal/proxy/server.go#L110) to use `orch-lib` middlewares.
+  - Change [base URL config][3] from `/edge-infra.orchestrator.apis/v2` to `/v1/projects`.
+  - Update [proxy/server.go][4] to use `orch-lib` middlewares.
   - Create Traefik IngressRoute to route “PathRegexp(`^/projects/[^/]+/compute`)” to the EIM API.
 - Remove EIM-specific API mapping from the `nexus-api-gateway` configuration.
 - Update CO to use EIM’s external APIs for inventory operations.
-- Validate backward compatibility using existing test suites.
 
 ##### Step 3: CO and AO Modernization
 
@@ -169,3 +169,7 @@ features:
 - Add a global multi-tenant mode configuraion in the EMF installer, which propagates the selected mode to all enabled
   services for consistent configuration.
 
+[1]: https://github.com/open-edge-platform/infra-core/tree/poc-api-gateway
+[2]: https://github.com/open-edge-platform/infra-core/blob/main/apiv2/api/proto/services/v1/services.proto
+[3]: https://github.com/open-edge-platform/infra-core/blob/main/apiv2/internal/common/config.go#L100
+[4]: https://github.com/open-edge-platform/infra-core/blob/main/apiv2/internal/proxy/server.go#L110
