@@ -15,7 +15,6 @@ import shutil
 import time
 import argparse
 import pexpect
-import shlex
 
 
 def last_non_whitespace_line(lines):
@@ -568,10 +567,10 @@ class AutoInstall:
         config_path = os.path.join(current_directory, "state", config_file)
         state_dir = os.path.join(current_directory, "state")
 
-        escaped_user = shlex.quote(current_user)
-        escaped_dir = shlex.quote(state_dir)
-        command = f"sudo chown -R {escaped_user}:{escaped_user} {escaped_dir}"
-        os.system(command)
+        try:
+            subprocess.run(["sudo", "chown", "-R", f"{current_user}:{current_user}", state_dir], check=True, capture_output=True, text=True)
+        except subprocess.CalledProcessError as e:
+            print(f"Failed to change ownership: {e}")
 
         with open(config_path, "r") as f:
             lines = f.readlines()
