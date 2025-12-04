@@ -56,25 +56,18 @@ The current EMF architecture exhibits several key issues:
 
 ![new architecture](images/multi-tenancy-new-architecture.png)
 
-The proposed architecture delivers a modular, flexible system with these key features:
+The proposed architecture is modular and flexible, focusing on these key changes:
 
-- The Multi-tenant API Gateway is simplified to an HTTP router for the Tenant Manager, exposing only `/v1/projects` and
-  `/v1/orgs` endpoints.
-- Core services (AO, CO, EIM) expose their (external) APIs directly, eliminating API remapping and project ID
-  resolution.
-- A shared middleware library (`orch-lib`) standardizes API handling, authentication, and project ID resolution across
-  all services.
-- Multi-tenancy is configurable; Tenant Manager and related controllers are optional and can be enabled or disabled per
-  deployment.
-- When multi-tenancy is disabled, services initialize a default tenant and restrict API requests to the default project,
-  maintaining consistent service logic.
-- Backward compatibility is preserved, allowing seamless upgrades for existing multi-tenant deployments.
+- The Multi-tenant API Gateway is reduced to a simple HTTP router for Tenant Manager APIs.
+- Core services (AO, CO, EIM) expose their APIs directly, removing the need for centralized API gateway coordination.
+- Multi-tenancy is configurable; Tenant Manager and controllers can be enabled or disabled per deployment.
+- When multi-tenancy is off, services initialize a default tenant and restrict API requests to the default project for
+  consistent logic.
+- Backward compatibility is maintained for seamless upgrades from existing multi-tenant deployments.
 
 This modular approach enables organizations to deploy EMF in single-tenant or multi-tenant modes, reducing complexity
-and adapting to varied infrastructure needs.
-
-Below are examples of how the new modular architecture enables flexible integration of external services in both
-multi-tenant and single-tenant environments.
+and adapting to varied infrastructure needs. Below are examples of how the new modular architecture enables flexible
+integration of external services in both multi-tenant and single-tenant environments.
 
 #### Multi-Tenant Integration
 
@@ -116,11 +109,10 @@ unnecessary, offering a lightweight and efficient integration path.
 #### Track 1: Reduce the scope of nexus-api-gateway
 
 - Limit the nexus-api-gateway’s responsibility to routing only Tenant Manager APIs (`/v1/orgs`, `/v1/projects`).
-- Remove all API remapping and project ID resolution logic from the gateway; delegate these to the shared middleware
-  (`orch-lib`) within each service.
-- Update gateway configuration to eliminate routing for EIM, AO, and CO APIs, allowing these services to expose their
-  APIs directly.
-- Ensure that authentication and authorization are handled by the middleware in each service, not by the gateway.
+- Remove all API remapping configuration from nexus-api-gateway.
+- Add Traefik IngressRoute for EIM, AO, and CO APIs, allowing these services to expose their APIs directly.
+- Ensure that tenant-aware authentication and authorization are handled by the shared middleware (`orch-lib`) in each
+  service, not by the gateway.
 - Gradually deprecate legacy gateway features as services transition to direct API exposure.
 - Validate that existing multi-tenant workflows continue to function as expected through integration and regression
   testing.
@@ -134,6 +126,9 @@ features:
   Tenant Manager.
 - Perform tenant-aware authentication by verifying that the resolved project ID exists in the JWT claims.
 - Inject ActiveProjectID into the request context for downstream service logic.
+
+##### Step 2: EIM Modernization
+
 - Enable direct external API access to EIM by decoupling it from the legacy API gateway ([PoC Completed][1]). Actions
   include:
   - Update [services.proto][2] to expose the external API path.
