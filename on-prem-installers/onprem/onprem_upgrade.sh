@@ -1200,27 +1200,15 @@ echo "✅ harbor-oci-core restarted"
 
 echo "Cleaning up external-secrets installation..."
 
-
 echo "Deleting and patching external secrets..."
 kubectl patch application -n "$apps_ns" external-secrets  -p '{"metadata": {"finalizers": ["resources-finalizer.argocd.argoproj.io"]}}' --type merge
 kubectl delete application -n "$apps_ns" external-secrets --cascade=background &
 kubectl patch application -n "$apps_ns" external-secrets  -p '{"metadata": {"finalizers": []}}' --type merge
 
-# Delete all the crd by running: 
-kubectl delete -f https://raw.githubusercontent.com/external-secrets/external-secrets/main/deploy/crds/bundle.yaml
-
-if kubectl get crd clustersecretstores.external-secrets.io >/dev/null 2>&1; then
-    kubectl delete crd clustersecretstores.external-secrets.io &
-    kubectl patch crd/clustersecretstores.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
-fi
-if kubectl get crd secretstores.external-secrets.io >/dev/null 2>&1; then
-    kubectl delete crd secretstores.external-secrets.io &
-    kubectl patch crd/secretstores.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
-fi
-if kubectl get crd externalsecrets.external-secrets.io >/dev/null 2>&1; then
-    kubectl delete crd externalsecrets.external-secrets.io &
-    kubectl patch crd/externalsecrets.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
-fi
+kubectl get crd | grep external-secrets.io | awk '{print $1}' | while read -r crd; do
+    kubectl delete crd "$crd" &
+    kubectl patch "crd/$crd" -p '{"metadata":{"finalizers":[]}}' --type=merge
+done
 
 # Apply External Secrets CRDs with server-side apply
 echo "Applying external-secrets CRDs with server-side apply..."

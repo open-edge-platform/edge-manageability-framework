@@ -821,7 +821,7 @@ sync_all_apps_exclude_root() {
             echo "$(yellow)[INFO] Attempt ${attempt}/${APP_MAX_RETRIES}, elapsed: 0s$(reset)"
 
             # Check if app requires server-side apply and special cleanup
-            if [[ " $SERVER_SIDE_APPS " =~ " $name " ]]; then
+            if [[ " $SERVER_SIDE_APPS " =~ $name ]]; then
                 echo "$(yellow)[INFO] Stopping any ongoing operations for $name before force sync...$(reset)"
                 argocd app terminate-op "$full_app" --grpc-web 2>/dev/null || true
                 sleep 2
