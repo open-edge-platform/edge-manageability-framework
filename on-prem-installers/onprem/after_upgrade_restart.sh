@@ -71,8 +71,11 @@ APP_MAX_WAIT=60               # 5 minutes to wait for any app (Healthy+Synced)
 APP_MAX_RETRIES=3                 # retry X times for each app
 GLOBAL_SYNC_RETRIES=2            # Global retry for entire sync process
 
+# Apps requiring server-side apply (space-separated list - ALL apps for safe upgrades)
 # Apps requiring server-side apply (space-separated list)
 SERVER_SIDE_APPS="external-secrets copy-app-gitea-cred-to-fleet copy-ca-cert-boots-to-gateway copy-ca-cert-boots-to-infra copy-ca-cert-gateway-to-cattle copy-ca-cert-gateway-to-infra copy-ca-cert-gitea-to-app copy-ca-cert-gitea-to-cluster copy-cluster-gitea-cred-to-fleet copy-keycloak-admin-to-infra infra-external platform-keycloak namespace-label wait-istio-job"
+
+#SERVER_SIDE_APPS="ALL"
 
 # shellcheck disable=SC1091
 # ============================================================
@@ -466,26 +469,46 @@ sync_not_green_apps_once() {
             echo "$(bold)[SYNC] $full_app (wave=$wave) at [$(get_timestamp)]$(reset)"
             echo "$(yellow)[INFO] Attempt ${attempt}/${APP_MAX_RETRIES}, elapsed: 0s$(reset)"
 
-            # Check if app requires server-side apply
-            if [[ " $SERVER_SIDE_APPS " =~ $name ]]; then
-                echo "$(yellow)[INFO] Stopping any ongoing operations for $name before force sync...$(reset)"
-                argocd app terminate-op "$full_app" --grpc-web 2>/dev/null || true
-                sleep 2
-                echo "$(yellow)[INFO] Syncing $name with --force --replace --server-side (safer for CRD upgrades)...$(reset)"
-                start_ts=$(date +%s)
-                LOG=$(argocd app sync "$full_app" --force --replace --server-side --grpc-web 2>&1)
-                rc=$?
-            # Special handling for nginx-ingress-pxe-boots
-            elif [[ "$name" == "nginx-ingress-pxe-boots" ]]; then
-                echo "$(yellow)[INFO] Syncing nginx-ingress-pxe-boots with --force (safer for upgrades)...$(reset)"
-                start_ts=$(date +%s)
-                LOG=$(argocd app sync "$full_app" --force --grpc-web 2>&1)
-                rc=$?
-            else
-                start_ts=$(date +%s)
-                LOG=$(argocd app sync "$full_app" --grpc-web 2>&1)
-                rc=$?
+            # All apps now use server-side apply for safety
+            echo "$(yellow)[INFO] Stopping any ongoing operations for $name before force sync...$(reset)"
+            argocd app terminate-op "$full_app" --grpc-web 2>/dev/null || true
+            sleep 2
+            
+            # Check for OutOfSync or error state resources (Jobs, CRDs, ExternalSecrets, etc.)
+            echo "$(yellow)[CLEANUP] Checking for OutOfSync/error resources in $name...$(reset)"
+            problem_resources=$(kubectl get applications.argoproj.io "$name" -n "$NS" -o json 2>/dev/null | jq -r '
+                .status.resources[]? |
+                select(.status == "OutOfSync" or .health.status == "Degraded" or .health.status == "Missing") |
+                select(.kind == "Job" or .kind == "CustomResourceDefinition" or .kind == "ExternalSecret" or .kind == "SecretStore" or .kind == "ClusterSecretStore") |
+                "\(.kind) \(.namespace) \(.name)"
+            ')
+            
+            if [[ -n "$problem_resources" ]]; then
+                echo "$(yellow)[DELETE] Removing problem resources before sync...$(reset)"
+                while IFS= read -r res_line; do
+                    [[ -z "$res_line" ]] && continue
+                    read -r kind res_ns res_name <<< "$res_line"
+                    echo "$(yellow)  - Deleting $kind $res_name in $res_ns$(reset)"
+                    
+                    if [[ "$kind" == "Job" ]]; then
+                        kubectl patch job "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}' 2>/dev/null || true
+                        kubectl delete pods -n "$res_ns" -l job-name="$res_name" --ignore-not-found=true --timeout=10s 2>/dev/null || true
+                        kubectl delete job "$res_name" -n "$res_ns" --ignore-not-found=true --timeout=10s 2>/dev/null || true
+                    elif [[ "$kind" == "CustomResourceDefinition" ]]; then
+                        kubectl patch crd "$res_name" --type=merge -p='{"metadata":{"finalizers":[]}}' 2>/dev/null || true
+                        kubectl delete crd "$res_name" --ignore-not-found=true --timeout=10s 2>/dev/null || true
+                    else
+                        kubectl delete "$kind" "$res_name" -n "$res_ns" --ignore-not-found=true --timeout=10s 2>/dev/null || true
+                    fi
+                done <<< "$problem_resources"
+                echo "$(yellow)[INFO] Waiting for cleanup to complete...$(reset)"
+                sleep 3
             fi
+            
+            echo "$(yellow)[INFO] Syncing $name with --force --replace --server-side (safer for CRD upgrades)...$(reset)"
+            start_ts=$(date +%s)
+            LOG=$(argocd app sync "$full_app" --force --replace --server-side --grpc-web 2>&1)
+            rc=$?
 
             if [[ $rc -ne 0 ]]; then
                 if [[ "$LOG" =~ "deleting" ]]; then
@@ -768,26 +791,46 @@ sync_all_apps_exclude_root() {
             echo "$(bold)[SYNC] $full_app (wave=$wave) at [$(get_timestamp)]$(reset)"
             echo "$(yellow)[INFO] Attempt ${attempt}/${APP_MAX_RETRIES}, elapsed: 0s$(reset)"
 
-            # Check if app requires server-side apply
-            if [[ " $SERVER_SIDE_APPS " =~ $name ]]; then
-                echo "$(yellow)[INFO] Stopping any ongoing operations for $name before force sync...$(reset)"
-                argocd app terminate-op "$full_app" --grpc-web 2>/dev/null || true
-                sleep 2
-                echo "$(yellow)[INFO] Syncing $name with --force --replace --server-side (safer for CRD upgrades)...$(reset)"
-                start_ts=$(date +%s)
-                LOG=$(argocd app sync "$full_app" --force --replace --server-side --grpc-web 2>&1)
-                rc=$?
-            # Special handling for nginx-ingress-pxe-boots
-            elif [[ "$name" == "nginx-ingress-pxe-boots" ]]; then
-                echo "$(yellow)[INFO] Syncing nginx-ingress-pxe-boots with --force (safer for upgrades)...$(reset)"
-                start_ts=$(date +%s)
-                LOG=$(argocd app sync "$full_app" --force --grpc-web 2>&1)
-                rc=$?
-            else
-                start_ts=$(date +%s)
-                LOG=$(argocd app sync "$full_app" --grpc-web 2>&1)
-                rc=$?
+            # All apps now use server-side apply for safety
+            echo "$(yellow)[INFO] Stopping any ongoing operations for $name before force sync...$(reset)"
+            argocd app terminate-op "$full_app" --grpc-web 2>/dev/null || true
+            sleep 2
+            
+            # Check for OutOfSync or error state resources (Jobs, CRDs, ExternalSecrets, etc.)
+            echo "$(yellow)[CLEANUP] Checking for OutOfSync/error resources in $name...$(reset)"
+            problem_resources=$(kubectl get applications.argoproj.io "$name" -n "$NS" -o json 2>/dev/null | jq -r '
+                .status.resources[]? |
+                select(.status == "OutOfSync" or .health.status == "Degraded" or .health.status == "Missing") |
+                select(.kind == "Job" or .kind == "CustomResourceDefinition" or .kind == "ExternalSecret" or .kind == "SecretStore" or .kind == "ClusterSecretStore") |
+                "\(.kind) \(.namespace) \(.name)"
+            ')
+            
+            if [[ -n "$problem_resources" ]]; then
+                echo "$(yellow)[DELETE] Removing problem resources before sync...$(reset)"
+                while IFS= read -r res_line; do
+                    [[ -z "$res_line" ]] && continue
+                    read -r kind res_ns res_name <<< "$res_line"
+                    echo "$(yellow)  - Deleting $kind $res_name in $res_ns$(reset)"
+                    
+                    if [[ "$kind" == "Job" ]]; then
+                        kubectl patch job "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}' 2>/dev/null || true
+                        kubectl delete pods -n "$res_ns" -l job-name="$res_name" --ignore-not-found=true --timeout=10s 2>/dev/null || true
+                        kubectl delete job "$res_name" -n "$res_ns" --ignore-not-found=true --timeout=10s 2>/dev/null || true
+                    elif [[ "$kind" == "CustomResourceDefinition" ]]; then
+                        kubectl patch crd "$res_name" --type=merge -p='{"metadata":{"finalizers":[]}}' 2>/dev/null || true
+                        kubectl delete crd "$res_name" --ignore-not-found=true --timeout=10s 2>/dev/null || true
+                    else
+                        kubectl delete "$kind" "$res_name" -n "$res_ns" --ignore-not-found=true --timeout=10s 2>/dev/null || true
+                    fi
+                done <<< "$problem_resources"
+                echo "$(yellow)[INFO] Waiting for cleanup to complete...$(reset)"
+                sleep 3
             fi
+            
+            echo "$(yellow)[INFO] Syncing $name with --force --replace --server-side (safer for CRD upgrades)...$(reset)"
+            start_ts=$(date +%s)
+            LOG=$(argocd app sync "$full_app" --force --replace --server-side --grpc-web 2>&1)
+            rc=$?
 
             if [[ $rc -ne 0 ]]; then
                 if [[ "$LOG" =~ "deleting" ]]; then
