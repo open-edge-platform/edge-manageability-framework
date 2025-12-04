@@ -567,10 +567,7 @@ class AutoInstall:
         config_path = os.path.join(current_directory, "state", config_file)
         state_dir = os.path.join(current_directory, "state")
 
-        try:
-            subprocess.run(["sudo", "chown", "-R", f"{current_user}:{current_user}", state_dir], check=True, capture_output=True, text=True)
-        except subprocess.CalledProcessError as e:
-            print(f"Failed to change ownership: {e}")
+        os.system(f"sudo chown -R {current_user}:{current_user} {state_dir}")
 
         with open(config_path, "r") as f:
             lines = f.readlines()
