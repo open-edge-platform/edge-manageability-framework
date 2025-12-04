@@ -77,6 +77,7 @@ ORCH_INSTALLER_PROFILE="${ORCH_INSTALLER_PROFILE:-onprem}"
 DEPLOY_VERSION="${DEPLOY_VERSION:-v3.1.0}"  # Updated to v3.1.0
 GITEA_IMAGE_REGISTRY="${GITEA_IMAGE_REGISTRY:-docker.io}"
 USE_LOCAL_PACKAGES="${USE_LOCAL_PACKAGES:-false}"  # New flag for local packages
+UPGRADE_3_1_X="${UPGRADE_3_1_X:-true}"
 
 ### Variables
 cwd=$(pwd)
@@ -92,7 +93,7 @@ gitea_ns=gitea
 # shellcheck disable=SC2034
 root_app=root-app
 
-export UPGRADE_3_1_X=true
+
 # Variables that depend on the above and might require updating later, are placed in here
 set_artifacts_version() {
   installer_list=(
@@ -764,6 +765,16 @@ fi
 # Modify orch-configs settings for upgrade procedure
 retrieve_and_apply_config
 
+# Check if kyverno-clean-reports job exists before attempting cleanup
+if kubectl get job kyverno-clean-reports -n kyverno >/dev/null 2>&1; then
+    echo "Cleaning up kyverno-clean-reports job..."
+    kubectl delete job kyverno-clean-reports -n kyverno &
+    kubectl delete pods -l job-name="kyverno-clean-reports" -n kyverno &
+    kubectl patch job kyverno-clean-reports -n kyverno --type=merge -p='{"metadata":{"finalizers":[]}}'
+else
+    echo "kyverno-clean-reports job not found in kyverno namespace, skipping cleanup"
+fi
+
 ### Upgrade
 
 # Run OS Configuration upgrade
@@ -1056,18 +1067,18 @@ sleep 10
 
 # Restore secret after app delete but before postgress restored
 if [[ "$UPGRADE_3_1_X" == "true" ]]; then
-	yq e 'del(.metadata.labels, .metadata.annotations, .metadata.uid, .metadata.creationTimestamp)' postgres_secret.yaml | kubectl apply -f -
+        yq e 'del(.metadata.labels, .metadata.annotations, .metadata.uid, .metadata.creationTimestamp)' postgres_secret.yaml | kubectl apply -f -
 else
-	yq e '
-	  del(.metadata.labels) |
-	  del(.metadata.annotations) |
-	  del(.metadata.ownerReferences) |
-	  del(.metadata.finalizers) |
-	  del(.metadata.managedFields) |
-	  del(.metadata.resourceVersion) |
-	  del(.metadata.uid) |
-	  del(.metadata.creationTimestamp)
-	' postgres_secret.yaml | kubectl apply -f -
+        yq e '
+          del(.metadata.labels) |
+          del(.metadata.annotations) |
+          del(.metadata.ownerReferences) |
+          del(.metadata.finalizers) |
+          del(.metadata.managedFields) |
+          del(.metadata.resourceVersion) |
+          del(.metadata.uid) |
+          del(.metadata.creationTimestamp)
+        ' postgres_secret.yaml | kubectl apply -f -
 fi
 sleep 30
 # Wait until PostgreSQL pod is running (Re-sync)
@@ -1205,151 +1216,18 @@ fi
 echo "Applying external-secrets CRDs with server-side apply..."
 kubectl apply --server-side=true --force-conflicts -f https://raw.githubusercontent.com/external-secrets/external-secrets/refs/tags/v0.20.4/deploy/crds/bundle.yaml || true
 
-check_and_force_sync_app external-secrets "$apps_ns" "true"
-wait_for_app_synced_healthy external-secrets "$apps_ns"
-
-# Force sync apps that copy secrets to their destinations
-check_and_force_sync_app copy-app-gitea-cred-to-fleet "$apps_ns"
-check_and_force_sync_app copy-ca-cert-boots-to-gateway "$apps_ns"
-check_and_force_sync_app copy-ca-cert-boots-to-infra "$apps_ns"
-check_and_force_sync_app copy-ca-cert-gateway-to-cattle "$apps_ns"
-check_and_force_sync_app copy-ca-cert-gateway-to-infra "$apps_ns"
-check_and_force_sync_app copy-ca-cert-gitea-to-app "$apps_ns"
-check_and_force_sync_app copy-ca-cert-gitea-to-cluster "$apps_ns"
-check_and_force_sync_app copy-cluster-gitea-cred-to-fleet "$apps_ns"
-check_and_force_sync_app copy-keycloak-admin-to-infra "$apps_ns"
-
 # Unseal vault after external-secrets is ready
 echo "Unsealing vault..."
 vault_unseal
 echo "✅ Vault unsealed successfully"
-
-kubectl patch -n "$apps_ns" application platform-keycloak --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
-
-wait_for_app_synced_healthy platform-keycloak "$apps_ns"
-
-kubectl patch -n "$apps_ns" application cluster-manager --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
-
-
-kubectl delete secret tls-boots -n orch-boots
-
-# Observability Minio PVC ignoreDifferences patching and job cleanup
-kubectl patch job orchestrator-observability-mimir-make-minio-buckets-5.4.0 -n orch-platform --type=merge -p='{"metadata":{"finalizers":[]}}'
-kubectl delete job orchestrator-observability-mimir-make-minio-buckets-5.4.0 -n orch-platform --force --grace-period=0 2>/dev/null || true
-kubectl delete pods -l job-name="orchestrator-observability-mimir-make-minio-buckets-5.4.0" -n orch-platform --force --grace-period=0 2>/dev/null || true
-
-kubectl patch application orchestrator-observability -n "$apps_ns" --type='json' -p='[{
-    "op": "add",
-    "path": "/spec/ignoreDifferences",
-    "value": [{
-        "group": "",
-        "kind": "PersistentVolumeClaim",
-        "name": "orchestrator-observability-minio",
-        "jsonPointers": ["/spec/storageClassName", "/spec/volumeName"]
-    }]
-}]'
-
-kubectl patch job edgenode-observability-mimir-make-minio-buckets-5.4.0  -n orch-infra --type=merge -p='{"metadata":{"finalizers":[]}}'
-kubectl delete job edgenode-observability-mimir-make-minio-buckets-5.4.0 -n orch-infra --force --grace-period=0 2>/dev/null || true
-kubectl delete pods -l job-name="edgenode-observability-mimir-make-minio-buckets-5.4.0" -n orch-infra --force --grace-period=0 2>/dev/null || true
-
-kubectl patch application edgenode-observability -n "$apps_ns" --type='json' -p='[{
-    "op": "add",
-    "path": "/spec/ignoreDifferences",
-    "value": [{
-        "group": "",
-        "kind": "PersistentVolumeClaim",
-        "name": "edgenode-observability-minio",
-        "jsonPointers": ["/spec/storageClassName", "/spec/volumeName"]
-    }]
-}]'
-
-check_and_patch_sync_app edgenode-observability "$apps_ns"
-check_and_patch_sync_app orchestrator-observability "$apps_ns"
-
-# Cleanup infra-external jobs
-kubectl delete jobs setup-databases-mps setup-databases-rps amt-dbpassword-secret-job init-amt-vault-job -n orch-infra --force --grace-period=0 --ignore-not-found
-
-
-check_and_cleanup_job "namespace-label" "ns-label"
-check_and_cleanup_job "wait-istio-job" "ns-label"
-
-# Unsynced leftovers using patch sync
-# Collect and display syncwave information for OutOfSync applications
-echo "OutOfSync applications by syncwave:"
-outofsync_apps=$(kubectl get applications -n "$apps_ns" -o json | \
-    jq -r '.items[] | select((.status.sync.status!="Synced" or .status.health.status!="Healthy") and .metadata.name!="root-app") |
-    "\(.metadata.annotations["argocd.argoproj.io/sync-wave"] // "0") \(.metadata.name)"' | \
-    sort -n)
-
-echo "$outofsync_apps" | awk '{print "  Wave " $1 ": " $2}'
-
-# Sync applications in wave order
-echo "Syncing OutOfSync applications in wave order..."
-echo "$outofsync_apps" | while read -r wave app_name; do
-    if [[ -n "$app_name" ]]; then
-        echo "Processing wave $wave: $app_name"
-        check_and_patch_sync_app "$app_name" "$apps_ns"
-    fi
-done
-
-
-# Unsynced leftovers using force sync
-# Collect and display syncwave information for OutOfSync applications
-echo "OutOfSync applications by syncwave:"
-outofsync_apps=$(kubectl get applications -n "$apps_ns" -o json | \
-    jq -r '.items[] | select((.status.sync.status!="Synced" or .status.health.status!="Healthy") and .metadata.name!="root-app") |
-    "\(.metadata.annotations["argocd.argoproj.io/sync-wave"] // "0") \(.metadata.name)"' | \
-    sort -n)
-
-echo "$outofsync_apps" | awk '{print "  Wave " $1 ": " $2}'
-
-# Sync applications in wave order
-echo "Syncing OutOfSync applications in wave order..."
-echo "$outofsync_apps" | while read -r wave app_name; do
-    if [[ -n "$app_name" ]]; then
-        echo "Processing wave $wave: $app_name"
-        check_and_force_sync_app "$app_name" "$apps_ns" "true"
-    fi
-done
-
-# Unsynced leftovers using force sync
-# Collect and display syncwave information for OutOfSync applications
-echo "OutOfSync applications by syncwave:"
-outofsync_apps=$(kubectl get applications -n "$apps_ns" -o json | \
-    jq -r '.items[] | select((.status.sync.status!="Synced" or .status.health.status!="Healthy") and .metadata.name!="root-app") |
-    "\(.metadata.annotations["argocd.argoproj.io/sync-wave"] // "0") \(.metadata.name)"' | \
-    sort -n)
-
-echo "$outofsync_apps" | awk '{print "  Wave " $1 ": " $2}'
-
-# Sync applications in wave order
-echo "Syncing OutOfSync applications in wave order..."
-echo "$outofsync_apps" | while read -r wave app_name; do
-    if [[ -n "$app_name" ]]; then
-        echo "Processing wave $wave: $app_name"
-        check_and_force_sync_app "$app_name" "$apps_ns"
-    fi
-done
-
 # Stop root-app old sync as it will be stuck.
 kubectl patch application root-app -n  "$apps_ns"  --type merge -p '{"operation":null}'
 kubectl patch application root-app -n  "$apps_ns"  --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
-
-# OS profiles Fix
-kubectl patch application tenancy-api-mapping -n onprem --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
-kubectl patch application tenancy-datamodel -n onprem --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
-kubectl delete application tenancy-api-mapping -n onprem
-kubectl delete application tenancy-datamodel -n onprem
-kubectl delete deployment -n orch-infra os-resource-manager
-
 # Apply root-app Patch
 kubectl patch application root-app -n  "$apps_ns"  --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
-
-# Onboarding Fix
+sleep 10
+#restart tls-boot secrets
 kubectl delete secret tls-boots -n orch-boots
-kubectl delete secret boots-ca-cert -n orch-gateway
-kubectl delete secret boots-ca-cert -n orch-infra
-kubectl delete pod -n orch-infra -l app.kubernetes.io/name=dkam 2>/dev/null
 
+./after_upgrade_restart.sh
 echo "Upgrade completed! Wait for ArgoCD applications to be in 'Synced' and 'Healthy' state"
