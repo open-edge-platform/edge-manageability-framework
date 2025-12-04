@@ -72,10 +72,7 @@ APP_MAX_RETRIES=3                 # retry X times for each app
 GLOBAL_SYNC_RETRIES=2            # Global retry for entire sync process
 
 # Apps requiring server-side apply (space-separated list - ALL apps for safe upgrades)
-# Apps requiring server-side apply (space-separated list)
-SERVER_SIDE_APPS="external-secrets copy-app-gitea-cred-to-fleet copy-ca-cert-boots-to-gateway copy-ca-cert-boots-to-infra copy-ca-cert-gateway-to-cattle copy-ca-cert-gateway-to-infra copy-ca-cert-gitea-to-app copy-ca-cert-gitea-to-cluster copy-cluster-gitea-cred-to-fleet copy-keycloak-admin-to-infra infra-external platform-keycloak namespace-label wait-istio-job"
-
-#SERVER_SIDE_APPS="ALL"
+SERVER_SIDE_APPS="ALL"
 
 # shellcheck disable=SC1091
 # ============================================================
