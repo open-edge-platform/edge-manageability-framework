@@ -291,7 +291,18 @@ check_and_handle_failed_sync() {
 
                 if [[ "$kind" == "Job" ]]; then
                     kubectl delete pods -n "$res_ns" -l job-name="$res_name" --ignore-not-found=true 2>/dev/null &
+                    
+                    # Remove finalizers from pods to ensure deletion
+                    pod_names=$(kubectl get pods -n "$res_ns" -l job-name="$res_name" -o jsonpath='{.items[*].metadata.name}')
+                    for pod in ${pod_names}; do
+                        kubectl patch pod "$pod" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}'
+                    done
+
                     kubectl delete job "$res_name" -n "$res_ns" --ignore-not-found=true 2>/dev/null &
+
+                    # Remove finalizers to ensure complete deletion
+                    kubectl patch job "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}'
+
                 elif [[ "$kind" == "CustomResourceDefinition" ]]; then
                     kubectl delete crd "$res_name" --ignore-not-found=true 2>/dev/null &
                 fi
@@ -336,7 +347,17 @@ clean_unhealthy_jobs_for_app() {
             read -r job_ns job_name <<< "$job_line"
             echo "$(yellow)  - Deleting job $job_name in $job_ns (background)$(reset)"
             kubectl delete pods -n "$job_ns" -l job-name="$job_name" --ignore-not-found=true 2>/dev/null &
+
+            # Remove finalizers from pods to ensure deletion
+            pod_names=$(kubectl get pods -n "$job_ns" -l job-name="$job_name" -o jsonpath='{.items[*].metadata.name}')
+            for pod in ${pod_names}; do
+                kubectl patch pod "$pod" -n "$job_ns" --type=merge -p='{"metadata":{"finalizers":[]}}'
+            done
+
             kubectl delete job "$job_name" -n "$job_ns" --ignore-not-found=true 2>/dev/null &
+
+            # Remove finalizers to ensure complete deletion
+            kubectl patch job "$job_name" -n "$job_ns" --type=merge -p='{"metadata":{"finalizers":[]}}'
         done <<< "$app_resources"
         echo "[INFO] Job cleanup initiated in background, proceeding..."
         return 0
@@ -1166,8 +1187,17 @@ check_and_delete_stuck_crd_jobs() {
             # Delete associated pods first
             kubectl delete pods -n "$job_ns" -l job-name="$job_name" --ignore-not-found=true 2>/dev/null &
 
+            # Remove finalizers from pods to ensure deletion
+            pod_names=$(kubectl get pods -n "$job_ns" -l job-name="$job_name" -o jsonpath='{.items[*].metadata.name}')
+            for pod in ${pod_names}; do
+                kubectl patch pod "$pod" -n "$job_ns" --type=merge -p='{"metadata":{"finalizers":[]}}'
+            done
+
             # Delete the job
             kubectl delete job "$job_name" -n "$job_ns" --ignore-not-found=true &
+
+            # Remove finalizers to ensure complete deletion
+            kubectl patch job "$job_name" -n "$job_ns" --type=merge -p='{"metadata":{"finalizers":[]}}'
         done <<< "$stuck_jobs"
 
         echo "[INFO] Job cleanup initiated in background, proceeding..."
@@ -1254,6 +1284,14 @@ post_upgrade_cleanup() {
 
     echo "[INFO] Deleting dkam pods in namespace orch-infra..."
     kubectl delete pod -n orch-infra -l app.kubernetes.io/name=dkam 2>/dev/null || true
+
+    # Delete finalizer from pods stuck in Terminating state in orch-infra
+    echo "[INFO] Cleaning up pods stuck in Terminating state in namespace orch-infra..."
+    terminating_pods=$(kubectl get pods -n orch-infra --field-selector=status.phase=Terminating -o jsonpath='{.items[*].metadata.name}')
+    for pod in ${terminating_pods}; do
+        echo "[INFO] Removing finalizers from pod $pod..."
+        kubectl patch pod "$pod" -n orch-infra --type=merge -p='{"metadata":{"finalizers":[]}}'
+    done
 
     echo "[INFO] Post-upgrade cleanup completed."
 }
