@@ -96,7 +96,7 @@ install_argocd_cli() {
     VERSION=$(curl -L -s https://raw.githubusercontent.com/argoproj/argo-cd/stable/VERSION)
     echo "[INFO] Latest version: $VERSION"
     curl -sSL -o argocd-linux-amd64 \
-        https://github.com/argoproj/argo-cd/releases/download/v${VERSION}/argocd-linux-amd64
+        https://github.com/argoproj/argo-cd/releases/download/v"${VERSION}"/argocd-linux-amd64
     sudo install -m 555 argocd-linux-amd64 /usr/local/bin/argocd
     rm -f argocd-linux-amd64
     echo "[INFO] argocd CLI installed successfully."
@@ -196,13 +196,15 @@ check_and_fix_crd_version_mismatch() {
     local app_name="$1"
 
     # Get application status
-    local status=$(kubectl get applications.argoproj.io "$app_name" -n "$NS" -o json 2>/dev/null)
+    local status
+    status=$(kubectl get applications.argoproj.io "$app_name" -n "$NS" -o json 2>/dev/null)
     if [[ -z "$status" ]]; then
         return 1
     fi
 
     # Check for CRD version mismatch errors in sync messages
-    local version_mismatch=$(echo "$status" | jq -r '
+    local version_mismatch
+    version_mismatch=$(echo "$status" | jq -r '
         .status.conditions[]? |
         select(.type == "ComparisonError" or .type == "SyncError") |
         select(.message | contains("could not find version") or contains("Version") and contains("is installed")) |
@@ -214,8 +216,10 @@ check_and_fix_crd_version_mismatch() {
         echo "$version_mismatch"
 
         # Extract CRD details from error message
-        local crd_group=$(echo "$version_mismatch" | grep -oP '[a-z0-9.-]+\.[a-z]+(?=/[A-Z])' | head -1)
-        local crd_kind=$(echo "$version_mismatch" | grep -oP '/[A-Z][a-zA-Z]+' | sed 's|/||' | head -1)
+        local crd_group
+        crd_group=$(echo "$version_mismatch" | grep -oP '[a-z0-9.-]+\.[a-z]+(?=/[A-Z])' | head -1)
+        local crd_kind
+        crd_kind=$(echo "$version_mismatch" | grep -oP '/[A-Z][a-zA-Z]+' | sed 's|/||' | head -1)
 
         if [[ -n "$crd_group" && -n "$crd_kind" ]]; then
             # Try to find and list the CRD
@@ -254,20 +258,24 @@ check_and_handle_failed_sync() {
     local full_app="${NS}/${app_name}"
 
     # Get application status
-    local status=$(kubectl get applications.argoproj.io "$app_name" -n "$NS" -o json 2>/dev/null)
+    local status
+    status=$(kubectl get applications.argoproj.io "$app_name" -n "$NS" -o json 2>/dev/null)
     if [[ -z "$status" ]]; then
         return 1
     fi
 
-    local sync_phase=$(echo "$status" | jq -r '.status.operationState.phase // "Unknown"')
-    local sync_status=$(echo "$status" | jq -r '.status.sync.status // "Unknown"')
+    local sync_phase
+    sync_phase=$(echo "$status" | jq -r '.status.operationState.phase // "Unknown"')
+    #local sync_status
+    #sync_status=$(echo "$status" | jq -r '.status.sync.status // "Unknown"')
 
     # Check if sync failed
     if [[ "$sync_phase" == "Failed" || "$sync_phase" == "Error" ]]; then
         echo "$(red)[FAILED-SYNC] Application $app_name has failed sync (phase=$sync_phase)$(reset)"
 
         # Check for failed jobs/CRDs
-        local failed_resources=$(echo "$status" | jq -r '
+        local failed_resources
+        failed_resources=$(echo "$status" | jq -r '
             .status.resources[]? |
             select(.kind == "Job" or .kind == "CustomResourceDefinition") |
             select(.health.status == "Degraded" or .health.status == "Missing" or .health.status == null) |
@@ -459,7 +467,7 @@ sync_not_green_apps_once() {
             echo "$(yellow)[INFO] Attempt ${attempt}/${APP_MAX_RETRIES}, elapsed: 0s$(reset)"
 
             # Check if app requires server-side apply
-            if [[ " $SERVER_SIDE_APPS " =~ " $name " ]]; then
+            if [[ " $SERVER_SIDE_APPS " =~ $name ]]; then
                 echo "$(yellow)[INFO] Stopping any ongoing operations for $name before force sync...$(reset)"
                 argocd app terminate-op "$full_app" --grpc-web 2>/dev/null || true
                 sleep 2
@@ -489,13 +497,13 @@ sync_not_green_apps_once() {
                 continue
             fi
 
-            timed_out=false
+            #timed_out=false
             while true; do
                 now_ts=$(date +%s)
                 elapsed=$(( now_ts - start_ts ))
                 if (( elapsed >= APP_MAX_WAIT )); then
                     echo "$(red)[TIMEOUT] $full_app did not become Healthy+Synced within ${APP_MAX_WAIT}s.$(reset)"
-                    timed_out=true
+                    #timed_out=true
                     break
                 fi
                 status=$(kubectl get applications.argoproj.io "$name" -n "$NS" -o json 2>/dev/null)
@@ -527,7 +535,7 @@ sync_not_green_apps_once() {
                 # Check if sync operation failed
                 if [[ "$operation_phase" == "Failed" || "$operation_phase" == "Error" ]]; then
                     echo "$(red)[ERROR] $full_app sync operation failed with phase=$operation_phase at [$(get_timestamp)]$(reset)"
-                    timed_out=true
+                    #timed_out=true
                     break
                 fi
 
@@ -627,13 +635,13 @@ sync_not_green_apps_once() {
             continue
         fi
 
-        timed_out=false
+        #timed_out=false
         while true; do
             now_ts=$(date +%s)
             elapsed=$(( now_ts - start_ts ))
             if (( elapsed >= APP_MAX_WAIT )); then
                 echo "$(red)[TIMEOUT] $full_app did not become Healthy+Synced within ${APP_MAX_WAIT}s.$(reset)"
-                timed_out=true
+                #timed_out=true
                 break
             fi
             status=$(kubectl get applications.argoproj.io "root-app" -n "$NS" -o json 2>/dev/null)
@@ -761,7 +769,7 @@ sync_all_apps_exclude_root() {
             echo "$(yellow)[INFO] Attempt ${attempt}/${APP_MAX_RETRIES}, elapsed: 0s$(reset)"
 
             # Check if app requires server-side apply
-            if [[ " $SERVER_SIDE_APPS " =~ " $name " ]]; then
+            if [[ " $SERVER_SIDE_APPS " =~ $name ]]; then
                 echo "$(yellow)[INFO] Stopping any ongoing operations for $name before force sync...$(reset)"
                 argocd app terminate-op "$full_app" --grpc-web 2>/dev/null || true
                 sleep 2
@@ -791,13 +799,13 @@ sync_all_apps_exclude_root() {
                 continue
             fi
 
-            timed_out=false
+            #timed_out=false
             while true; do
                 now_ts=$(date +%s)
                 elapsed=$(( now_ts - start_ts ))
                 if (( elapsed >= APP_MAX_WAIT )); then
                     echo "$(red)[TIMEOUT] $full_app did not become Healthy+Synced within ${APP_MAX_WAIT}s.$(reset)"
-                    timed_out=true
+                    #timed_out=true
                     break
                 fi
                 status=$(kubectl get applications.argoproj.io "$name" -n "$NS" -o json 2>/dev/null)
@@ -829,7 +837,7 @@ sync_all_apps_exclude_root() {
                 # Check if sync operation failed
                 if [[ "$operation_phase" == "Failed" || "$operation_phase" == "Error" ]]; then
                     echo "$(red)[ERROR] $full_app sync operation failed with phase=$operation_phase$(reset)"
-                    timed_out=true
+                    #timed_out=true
                     break
                 fi
 
@@ -945,13 +953,13 @@ sync_root_app_only() {
             continue
         fi
 
-        timed_out=false
+        #timed_out=false
         while true; do
             now_ts=$(date +%s)
             elapsed=$(( now_ts - start_ts ))
             if (( elapsed >= APP_MAX_WAIT )); then
                 echo "$(red)[TIMEOUT] $full_app did not become Healthy+Synced within ${APP_MAX_WAIT}s.$(reset)"
-                timed_out=true
+                #timed_out=true
                 break
             fi
             status=$(kubectl get applications.argoproj.io "root-app" -n "$NS" -o json 2>/dev/null)
@@ -963,7 +971,7 @@ sync_root_app_only() {
             # Check if sync operation failed
             if [[ "$operation_phase" == "Failed" || "$operation_phase" == "Error" ]]; then
                 echo "$(red)[ERROR] $full_app sync operation failed with phase=$operation_phase$(reset)"
-                timed_out=true
+                #timed_out=true
                 break
             fi
 
@@ -1228,11 +1236,11 @@ check_sync_success() {
 # ============================================================
 # GLOBAL TIMEOUT WATCHDOG
 # ============================================================
-SCRIPT_START_TS=$(date +%s)
+#SCRIPT_START_TS=$(date +%s)
 
 # Global retry loop
 global_retry=1
-sync_success=false
+#sync_success=false
 
 while (( global_retry <= GLOBAL_SYNC_RETRIES )); do
     print_header "GLOBAL SYNC ATTEMPT ${global_retry}/${GLOBAL_SYNC_RETRIES}"
@@ -1240,7 +1248,7 @@ while (( global_retry <= GLOBAL_SYNC_RETRIES )); do
     execute_full_sync
 
     if check_sync_success; then
-        sync_success=true
+        #sync_success=true
         print_header "Sync Script Completed Successfully"
         exit 0
     fi
