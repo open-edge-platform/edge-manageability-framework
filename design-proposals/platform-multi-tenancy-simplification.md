@@ -41,9 +41,9 @@ upgrades, so that my workflows continue without disruption.
 
 This proposal introduces a phased migration from the current monolithic multi-tenant architecture to a modular system
 that supports both single-tenant and multi-tenant deployment modes. By decoupling multi-tenancy components and making
-them optional, the architecture enables flexible service deployment and direct API exposure while reducing operational complexity. The approach preserves all
-existing multi-tenancy features and maintains backward compatibility where required, while allowing lightweight, simplified deployments when multi-tenancy is
-not needed.
+them optional, the architecture enables flexible service deployment and direct API exposure while reducing operational
+complexity. The approach preserves all existing multi-tenancy features and maintains backward compatibility where
+required, while allowing lightweight, simplified deployments when multi-tenancy is not needed.
 
 ### Current Architecture Problems
 
@@ -58,68 +58,114 @@ The current EMF architecture exhibits several key issues:
 - **Lack of Flexibility:** The architecture does not support selective component deployment or straightforward
   integration with external services, restricting adaptability to diverse environments.
 
-### Proposed Solution (WIP)
+### Proposed Solution
 
 ![new architecture](images/multi-tenancy-new-architecture.png)
 
-The target architecture achieves a fully modular system with the following characteristics:
+The proposed architecture delivers a modular, flexible system with these key features:
 
-- The complex Multi-tenant API Gateway is repurposed as HTTP router for tenant-manager, serving only `/v1/projects` and `/v1/orgs` endpoints.
-- All multi-tenancy components are optional (indicated by dashed borders).
-- Services (AO, CO, EIM) expose external APIs directly, eliminating central coordination.
-- External integrations are streamlined via direct service access.
+- The Multi-tenant API Gateway is simplified to an HTTP router for the Tenant Manager, exposing only `/v1/projects` and
+  `/v1/orgs` endpoints.
+- Core services (AO, CO, EIM) expose their (external) APIs directly, eliminating API remapping and project ID
+  resolution.
+- A shared middleware library (`orch-lib`) standardizes API handling, authentication, and project ID resolution across
+  all services.
+- Multi-tenancy is configurable; Tenant Manager and related controllers are optional and can be enabled or disabled per
+  deployment.
+- When multi-tenancy is disabled, services initialize a default tenant and restrict API requests to the default project,
+  maintaining consistent service logic.
+- Backward compatibility is preserved, allowing seamless upgrades for existing multi-tenant deployments.
 
-Below are examples of external service integration scenarios enabled by the new architecture:
+This modular approach enables organizations to deploy EMF in single-tenant or multi-tenant modes, reducing complexity
+and adapting to varied infrastructure needs.
+
+Below are examples of how the new modular architecture enables flexible integration of external services in both
+multi-tenant and single-tenant environments.
+
+#### Multi-Tenant Integration
 
 ![external service integration](images/multi-tenancy-external-service-integration.png)
+
+External services with multi-tenant capabilities can interact with EMF components as follows:
+
+- **Tenant Provisioning:** External services create or delete tenants via the Tenant Manager’s `/v1/orgs` and
+  `/v1/projects` endpoints.
+- **Authentication:** External OIDC providers issue JWT tokens for secure API access, serving as alternatives to EMF’s
+  Keycloak.
+- **API Access:** External services use EIM APIs (e.g., `/v1/project/{project}/hosts`) for infrastructure management
+  within tenant contexts.
+- **Core Components:** The Tenant Manager oversees organization and project structures, handling tenant provisioning for
+  services. EIM delivers infrastructure management APIs that are aware of tenant context, ensuring operations are scoped
+  to the appropriate organization or project.
+
+This scenario enables multiple organizations and projects to be managed by external services. Tenant operations—such as
+creation, deletion, and updates—are propagated to EIM through integration with the Tenant Manager. Core EMF services
+process requests according to the active project context, ensuring data isolation and secure access for each tenant.
+
+#### Single-Tenant Integration
+
 ![external service integration single tenant](images/multi-tenancy-external-service-integration-st.png)
 
-### Core Architecture Changes
+External services can also integrate with EMF in a simplified single-tenant mode:
 
-1. **Distributed API Handling**
-    - Enable direct external API exposure, removing the need for complex central routing and API remapping.
-    - Each service (AO, CO, EIM) manages Multi-tenant API Gateway responsibilities including:
-      - Resolve active project ID
-      - Tenant-aware AuthX
-      - Provide `/openapi` and `/swagger` endpoints
-    - Consolidate common functionality into a shared `orch-lib` middleware library to minimize duplicate work and ensure consistent API behaviors across services.
+- **Default Tenant Logic:** EIM provisions a default tenant and project automatically.
+- **Direct API Access:** External services connect directly to EIM APIs using pre-defined default project name, with no
+  tenant management required.
+- **Authentication:** JWTs are issued by external OIDC providers, without tenant-specific claims.
 
-2. **Optional Multi-tenancy Components**
-    - Make the Tenancy Manager optional, allowing it to be disabled in single-tenant deployments.
-    - Service-specific Tenant Controllers and Keycloak Tenant Controller are also optional.
-    - Provide default tenant bootstrap for single-tenant scenarios to simplify setup.
+In this scenario, only the EIM service is required. All API requests operate within a default tenant/project context,
+eliminating the need for complex tenant handling. This approach is ideal for environments where multi-tenancy is
+unnecessary, offering a lightweight and efficient integration path.
 
-### Migration Strategy
+### Core Changes
 
-#### Phase 0: Foundation
+#### Track 1: Remove Nexus-API-Gateway
 
-- Develop a shared middleware library (`orch-lib`) to centralize common multi-tenancy logic.
-- Create Helm configuration templates to support both single-tenant and multi-tenant deployment modes.
-- Implement standardized service initialization patterns using `orch-lib` shared functions for consistent startup across services, such as apiv2, CO, and AO.
-- Build a comprehensive testing framework to validate modularity and backward compatibility.
+##### Step 1: Foundation
 
-#### Phase 1: EIM Modernization
+Develop a shared middleware library (`orch-lib`) to centralize multi-tenancy logic and standardize API handling. Key
+features:
 
-![intermediate architecture](images/multi-tenancy-intermediate.png)
+- Extract the project name from the request URI and resolve it to the corresponding ActiveProjectID by querying the Tenant Manager.
+- Perform tenant-aware authentication by verifying that the resolved project ID exists in the JWT claims.
+- Inject ActiveProjectID into the request context for downstream service logic.
 
-- Decouple EIM from the legacy API gateway, enabling direct external API exposure.
-- Remove EIM-specific API mapping from `nexus-api-gateway` configuration.
-- Update CO to interact with EIM via its external APIs for inventory operations.
-- Pilot the modular architecture with EIM to validate design and integration patterns.
-- Support external service integrations with EIM in both single-tenant and multi-tenant modes.
+##### Step 2: EIM Modernization
 
-**Benefits:**
-- Minimizes migration risk by introducing changes incrementally.
-- Provides early access to EIM integration for external services.
-- Confirms the effectiveness of the modular approach before expanding to other components.
-- Ensures AO and CO remain stable throughout the transition.
+- Incrementally introduce changes to support EIM decomposition and minimize migration risk.
+- Enable direct external API access to EIM by decoupling it from the legacy API gateway ([PoC completed](https://github.com/open-edge-platform/infra-core/tree/poc-api-gateway)). Actions
+  include:
+  - Update [services.proto](https://github.com/open-edge-platform/infra-core/blob/main/apiv2/api/proto/services/v1/services.proto) to expose the external API path.
+  - Regenerate gRPC stubs and OpenAPI specs with the new path.
+  - Change [base URL config](https://github.com/open-edge-platform/infra-core/blob/main/apiv2/internal/common/config.go#L100) from `/edge-infra.orchestrator.apis/v2` to `/v1/projects`.
+  - Update [proxy/server.go](https://github.com/open-edge-platform/infra-core/blob/main/apiv2/internal/proxy/server.go#L110) to use `orch-lib` middlewares.
+  - Create Traefik IngressRoute to route “PathRegexp(`^/projects/[^/]+/compute`)” to the EIM API.
+- Remove EIM-specific API mapping from the `nexus-api-gateway` configuration.
+- Update CO to use EIM’s external APIs for inventory operations.
+- Validate backward compatibility using existing test suites.
 
-#### Phase 2: CO and AO Modernization
+##### Step 3: CO and AO Modernization
 
-- Transform App Orchestration and Cluster Orchestration to the modular architecture.
-- Achieve the full target architecture with all services decoupled.
+- Refactor App Orchestration (AO) and Cluster Orchestration (CO) to adopt the modular architecture, following the EIM
+  approach.
+- Complete the transition to the target architecture with all services decoupled from the legacy gateway.
 
-#### Phase 3: Cleanup
+##### Step 4: Cleanup
 
 - Remove legacy code paths and deprecated components.
-- Finalize documentation for deployment and migration processes.
+- Finalize documentation for deployment and migration.
+
+#### Track 2: Make Multi-Tenancy Configurable
+
+- Refactor tenant provisioning logic in each service into a reusable function, callable by both the service main process
+  and the tenant controller.
+- When multi-tenancy is enabled, the tenant controller triggers provisioning upon new project creation events from the
+  Tenant Manager.
+- When multi-tenancy is disabled, the service main process initializes the default project during startup.
+- Add single-tenant API handling logic to `orch-lib` to ensure consistent request processing when multi-tenancy is
+  inactive.
+- Provide Helm chart configuration options to select either single-tenant or multi-tenant deployment modes during
+  installation.
+- Add a global multi-tenant mode configuraion in the EMF installer, which propagates the selected mode to all enabled
+  services for consistent configuration.
+
