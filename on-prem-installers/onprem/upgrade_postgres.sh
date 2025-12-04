@@ -54,7 +54,12 @@ backup_postgres() {
   fi
   echo "Backing up databases from pod $podname in namespace $postgres_namespace..."
 
-  remote_backup_path="/var/lib/postgresql/data/${postgres_namespace}_backup.sql"
+  if [[ "$UPGRADE_3_1_X" == "true" ]]; then
+        remote_backup_path="/tmp/${postgres_namespace}_backup.sql"
+  else
+        remote_backup_path="/var/lib/postgresql/data/${postgres_namespace}_backup.sql"
+  fi
+
   kubectl exec -n $postgres_namespace $podname -- /bin/bash -c "$(typeset -f disable_security); disable_security"
 
   if kubectl exec -n $postgres_namespace $podname -- /bin/bash -c "pg_dumpall -U $POSTGRES_USERNAME -f '$remote_backup_path'"; then
