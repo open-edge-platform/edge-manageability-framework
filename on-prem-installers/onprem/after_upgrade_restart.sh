@@ -287,13 +287,13 @@ check_and_handle_failed_sync() {
             while IFS= read -r res_line; do
                 [[ -z "$res_line" ]] && continue
                 read -r kind res_ns res_name <<< "$res_line"
-                echo "$(red)  - Deleting $kind $res_name in $res_ns$(reset)"
+                echo "$(red)  - Deleting $kind $res_name in $res_ns (background)$(reset)"
 
                 if [[ "$kind" == "Job" ]]; then
                     kubectl delete pods -n "$res_ns" -l job-name="$res_name" --ignore-not-found=true 2>/dev/null &
                     kubectl delete job "$res_name" -n "$res_ns" --ignore-not-found=true 2>/dev/null &
                 elif [[ "$kind" == "CustomResourceDefinition" ]]; then
-                    kubectl delete crd "$res_name" --ignore-not-found=true 2>/dev/null || true
+                    kubectl delete crd "$res_name" --ignore-not-found=true 2>/dev/null &
                 fi
             done <<< "$failed_resources"
         fi
@@ -815,21 +815,77 @@ sync_all_apps_exclude_root() {
                     while IFS= read -r res_line; do
                         [[ -z "$res_line" ]] && continue
                         read -r kind res_ns res_name <<< "$res_line"
-                        echo "$(yellow)  - Deleting $kind $res_name in $res_ns$(reset)"
+                        echo "$(yellow)  - Deleting $kind $res_name in $res_ns (background)$(reset)"
                         
                         if [[ "$kind" == "Job" ]]; then
                             kubectl patch job "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}' 2>/dev/null || true
-                            kubectl delete pods -n "$res_ns" -l job-name="$res_name" --ignore-not-found=true --timeout=10s 2>/dev/null || true
-                            kubectl delete job "$res_name" -n "$res_ns" --ignore-not-found=true --timeout=10s 2>/dev/null || true
+                            kubectl delete pods -n "$res_ns" -l job-name="$res_name" --ignore-not-found=true --timeout=10s 2>/dev/null &
+                            kubectl delete job "$res_name" -n "$res_ns" --ignore-not-found=true --timeout=10s 2>/dev/null &
                         elif [[ "$kind" == "CustomResourceDefinition" ]]; then
                             kubectl patch crd "$res_name" --type=merge -p='{"metadata":{"finalizers":[]}}' 2>/dev/null || true
-                            kubectl delete crd "$res_name" --ignore-not-found=true --timeout=10s 2>/dev/null || true
+                            kubectl delete crd "$res_name" --ignore-not-found=true --timeout=10s 2>/dev/null &
                         else
-                            kubectl delete "$kind" "$res_name" -n "$res_ns" --ignore-not-found=true --timeout=10s 2>/dev/null || true
+                            kubectl delete "$kind" "$res_name" -n "$res_ns" --ignore-not-found=true --timeout=10s 2>/dev/null &
                         fi
                     done <<< "$problem_resources"
                     echo "$(yellow)[INFO] Waiting for cleanup to complete...$(reset)"
                     sleep 3
+                    
+                    # Verify resources are deleted, if still present, force finalizer removal
+                    echo "$(yellow)[VERIFY] Checking if resources were successfully deleted...$(reset)"
+                    while IFS= read -r res_line; do
+                        [[ -z "$res_line" ]] && continue
+                        read -r kind res_ns res_name <<< "$res_line"
+                        
+                        if [[ "$kind" == "Job" ]]; then
+                            if kubectl get job "$res_name" -n "$res_ns" &>/dev/null; then
+                                echo "$(red)[STUCK] Job $res_name still exists, forcing finalizer removal...$(reset)"
+                                kubectl patch job "$res_name" -n "$res_ns" --type=json -p='[{"op":"remove","path":"/metadata/finalizers"}]' 2>/dev/null || true
+                                kubectl delete job "$res_name" -n "$res_ns" --force --grace-period=0 2>/dev/null &
+                            fi
+                        elif [[ "$kind" == "CustomResourceDefinition" ]]; then
+                            if kubectl get crd "$res_name" &>/dev/null; then
+                                echo "$(red)[STUCK] CRD $res_name still exists, forcing finalizer removal...$(reset)"
+                                kubectl patch crd "$res_name" --type=json -p='[{"op":"remove","path":"/metadata/finalizers"}]' 2>/dev/null || true
+                                kubectl delete crd "$res_name" --force --grace-period=0 2>/dev/null &
+                            fi
+                        elif [[ "$kind" == "ExternalSecret" || "$kind" == "SecretStore" || "$kind" == "ClusterSecretStore" ]]; then
+                            if kubectl get "$kind" "$res_name" -n "$res_ns" &>/dev/null; then
+                                echo "$(red)[STUCK] $kind $res_name still exists, forcing finalizer removal...$(reset)"
+                                kubectl patch "$kind" "$res_name" -n "$res_ns" --type=json -p='[{"op":"remove","path":"/metadata/finalizers"}]' 2>/dev/null || true
+                                kubectl delete "$kind" "$res_name" -n "$res_ns" --force --grace-period=0 2>/dev/null &
+                            fi
+                        fi
+                    done <<< "$problem_resources"
+                    sleep 2
+                fi  
+                    # Verify resources are deleted, if still present, force finalizer removal
+                    echo "$(yellow)[VERIFY] Checking if resources were successfully deleted...$(reset)"
+                    while IFS= read -r res_line; do
+                        [[ -z "$res_line" ]] && continue
+                        read -r kind res_ns res_name <<< "$res_line"
+                        
+                        if [[ "$kind" == "Job" ]]; then
+                            if kubectl get job "$res_name" -n "$res_ns" &>/dev/null; then
+                                echo "$(red)[STUCK] Job $res_name still exists, forcing finalizer removal...$(reset)"
+                                kubectl patch job "$res_name" -n "$res_ns" --type=json -p='[{"op":"remove","path":"/metadata/finalizers"}]' 2>/dev/null || true
+                                kubectl delete job "$res_name" -n "$res_ns" --force --grace-period=0 2>/dev/null &
+                            fi
+                        elif [[ "$kind" == "CustomResourceDefinition" ]]; then
+                            if kubectl get crd "$res_name" &>/dev/null; then
+                                echo "$(red)[STUCK] CRD $res_name still exists, forcing finalizer removal...$(reset)"
+                                kubectl patch crd "$res_name" --type=json -p='[{"op":"remove","path":"/metadata/finalizers"}]' 2>/dev/null || true
+                                kubectl delete crd "$res_name" --force --grace-period=0 2>/dev/null &
+                            fi
+                        elif [[ "$kind" == "ExternalSecret" || "$kind" == "SecretStore" || "$kind" == "ClusterSecretStore" ]]; then
+                            if kubectl get "$kind" "$res_name" -n "$res_ns" &>/dev/null; then
+                                echo "$(red)[STUCK] $kind $res_name still exists, forcing finalizer removal...$(reset)"
+                                kubectl patch "$kind" "$res_name" -n "$res_ns" --type=json -p='[{"op":"remove","path":"/metadata/finalizers"}]' 2>/dev/null || true
+                                kubectl delete "$kind" "$res_name" -n "$res_ns" --force --grace-period=0 2>/dev/null &
+                            fi
+                        fi
+                    done <<< "$problem_resources"
+                    sleep 2
                 fi
                 
                 echo "$(yellow)[INFO] Syncing $name with --force --replace --server-side (safer for CRD upgrades)...$(reset)"
