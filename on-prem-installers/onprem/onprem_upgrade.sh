@@ -61,6 +61,14 @@ exec 2> >(tee -a "$FULL_LOG_PATH" >&2)
 log_info "Starting OnPrem Edge Orchestrator upgrade script"
 log_info "Log file: $FULL_LOG_PATH"
 
+### Constants
+RELEASE_SERVICE_URL="${RELEASE_SERVICE_URL:-registry-rs.edgeorchestration.intel.com}"
+ORCH_INSTALLER_PROFILE="${ORCH_INSTALLER_PROFILE:-onprem}"
+DEPLOY_VERSION="${DEPLOY_VERSION:-v3.1.0}"  # Updated to v3.1.0
+GITEA_IMAGE_REGISTRY="${GITEA_IMAGE_REGISTRY:-docker.io}"
+USE_LOCAL_PACKAGES="${USE_LOCAL_PACKAGES:-false}"  # New flag for local packages
+UPGRADE_3_1_X=true
+
 # Import shared functions
 # shellcheck disable=SC1091
 source "$(dirname "${0}")/functions.sh"
@@ -70,13 +78,6 @@ source "$(dirname "${0}")/upgrade_postgres.sh"
 source "$(dirname "${0}")/vault_unseal.sh"
 # shellcheck disable=SC1091
 source "$(dirname "$0")/onprem.env"
-
-### Constants
-RELEASE_SERVICE_URL="${RELEASE_SERVICE_URL:-registry-rs.edgeorchestration.intel.com}"
-ORCH_INSTALLER_PROFILE="${ORCH_INSTALLER_PROFILE:-onprem}"
-DEPLOY_VERSION="${DEPLOY_VERSION:-v3.1.0}"  # Updated to v3.1.0
-GITEA_IMAGE_REGISTRY="${GITEA_IMAGE_REGISTRY:-docker.io}"
-USE_LOCAL_PACKAGES="${USE_LOCAL_PACKAGES:-false}"  # New flag for local packages
 
 ### Variables
 cwd=$(pwd)
@@ -92,7 +93,6 @@ gitea_ns=gitea
 # shellcheck disable=SC2034
 root_app=root-app
 
-export UPGRADE_3_1_X=true
 
 # Variables that depend on the above and might require updating later, are placed in here
 set_artifacts_version() {
@@ -767,11 +767,10 @@ retrieve_and_apply_config
 
 # Check if kyverno-clean-reports job exists before attempting cleanup
 if kubectl get job kyverno-clean-reports -n kyverno >/dev/null 2>&1; then
-    terminate_existing_sync "kyverno" "$apps_ns"
     echo "Cleaning up kyverno-clean-reports job..."
-    kubectl patch job kyverno-clean-reports -n kyverno --type=merge -p='{"metadata":{"finalizers":[]}}' || true
-    kubectl delete job kyverno-clean-reports -n kyverno --force --grace-period=0 2>/dev/null || true
-    kubectl delete pods -l job-name="kyverno-clean-reports" -n kyverno --force --grace-period=0 2>/dev/null || true
+    kubectl delete job kyverno-clean-reports -n kyverno &
+    kubectl delete pods -l job-name="kyverno-clean-reports" -n kyverno &
+    kubectl patch job kyverno-clean-reports -n kyverno --type=merge -p='{"metadata":{"finalizers":[]}}'
 else
     echo "kyverno-clean-reports job not found in kyverno namespace, skipping cleanup"
 fi
