@@ -6,7 +6,7 @@
 
 # Description:
 #   ArgoCD Application Sync Script with Advanced Retry and Recovery Logic
-#   
+#
 #   This script manages the synchronization of ArgoCD applications in wave order,
 #   with comprehensive error handling, failed sync detection, and automatic recovery.
 #   It handles stuck jobs, degraded applications, and failed CRDs, ensuring all
@@ -23,8 +23,8 @@
 #   - Unhealthy job and CRD cleanup
 #   - OutOfSync application handling
 #   - Root-app special handling
-#   - Post-upgrade cleanup: Removes obsolete applications (tenancy-api-mapping, 
-#     tenancy-datamodel), legacy deployments (os-resource-manager), and stale 
+#   - Post-upgrade cleanup: Removes obsolete applications (tenancy-api-mapping,
+#     tenancy-datamodel), legacy deployments (os-resource-manager), and stale
 #     secrets (tls-boots, boots-ca-cert) to ensure clean upgrade state
 #
 # Usage:
@@ -41,9 +41,10 @@
 #   5. Re-sync all applications
 #   6. Validate final state
 #
+
 # Examples:
-#   ./sync.sh              # Uses default namespace 'onprem'
-#  
+#   ./after_upgrade_restart.sh              # Uses default namespace 'onprem'
+#
 # Environment Variables:
 #   ARGO_NS         - ArgoCD namespace (default: argocd)
 #
@@ -66,9 +67,18 @@ echo "[INFO] Using ArgoCD namespace: $ARGO_NS"
 
 # Sync behaviour
 GLOBAL_POLL_INTERVAL=10           # seconds
-APP_MAX_WAIT=90               # 5 minutes to wait for any app (Healthy+Synced)
+APP_MAX_WAIT=60               # 5 minutes to wait for any app (Healthy+Synced)
 APP_MAX_RETRIES=3                 # retry X times for each app
-GLOBAL_SYNC_RETRIES=4             # Global retry for entire sync process
+GLOBAL_SYNC_RETRIES=2            # Global retry for entire sync process
+
+# Root app final wait
+ROOT_APP_MAX_WAIT=300             # 5 minutes
+
+# Global script timeout
+SCRIPT_MAX_TIMEOUT=1800           # 20 minutes
+
+# Installer behaviour
+CURL_TIMEOUT=20
 
 # shellcheck disable=SC1091
 # ============================================================
@@ -87,12 +97,12 @@ require_cmd jq
 # ArgoCD CLI Install
 # ============================================================
 install_argocd_cli() {
-	if ! command -v argocd >/dev/null 2>&1; then
+        if ! command -v argocd >/dev/null 2>&1; then
     echo "[INFO] argocd CLI not found. Installing..."
     VERSION=$(curl -L -s https://raw.githubusercontent.com/argoproj/argo-cd/stable/VERSION)
     echo "[INFO] Latest version: $VERSION"
     curl -sSL -o argocd-linux-amd64 \
-        https://github.com/argoproj/argo-cd/releases/download/v"${VERSION}"/argocd-linux-amd64
+        https://github.com/argoproj/argo-cd/releases/download/v${VERSION}/argocd-linux-amd64
     sudo install -m 555 argocd-linux-amd64 /usr/local/bin/argocd
     rm -f argocd-linux-amd64
     echo "[INFO] argocd CLI installed successfully."
@@ -190,40 +200,40 @@ get_timestamp() {
 # ============================================================
 check_and_fix_crd_version_mismatch() {
     local app_name="$1"
-    
+
     # Get application status
     local status=$(kubectl get applications.argoproj.io "$app_name" -n "$NS" -o json 2>/dev/null)
     if [[ -z "$status" ]]; then
         return 1
     fi
-    
+
     # Check for CRD version mismatch errors in sync messages
     local version_mismatch=$(echo "$status" | jq -r '
-        .status.conditions[]? | 
+        .status.conditions[]? |
         select(.type == "ComparisonError" or .type == "SyncError") |
         select(.message | contains("could not find version") or contains("Version") and contains("is installed")) |
         .message
     ' 2>/dev/null)
-    
+
     if [[ -n "$version_mismatch" ]]; then
         echo "$(red)[CRD-VERSION-MISMATCH] Detected CRD version mismatch in $app_name:$(reset)"
         echo "$version_mismatch"
-        
+
         # Extract CRD details from error message
         local crd_group=$(echo "$version_mismatch" | grep -oP '[a-z0-9.-]+\.[a-z]+(?=/[A-Z])' | head -1)
         local crd_kind=$(echo "$version_mismatch" | grep -oP '/[A-Z][a-zA-Z]+' | sed 's|/||' | head -1)
-        
+
         if [[ -n "$crd_group" && -n "$crd_kind" ]]; then
             # Try to find and list the CRD
             local crd_name="${crd_kind,,}s.${crd_group}"
             echo "$(yellow)[INFO] Looking for CRD: $crd_name$(reset)"
-            
+
             # Check if CRD exists
             if kubectl get crd "$crd_name" &>/dev/null; then
                 echo "$(yellow)[INFO] CRD $crd_name exists, checking versions...$(reset)"
                 kubectl get crd "$crd_name" -o jsonpath='{.spec.versions[*].name}' 2>/dev/null
                 echo
-                
+
                 # For external-secrets.io, we need to update to v1beta1
                 if [[ "$crd_group" == "external-secrets.io" ]]; then
                     echo "$(yellow)[FIX] Attempting to refresh application to use correct CRD version...$(reset)"
@@ -235,10 +245,10 @@ check_and_fix_crd_version_mismatch() {
                 echo "$(red)[ERROR] CRD $crd_name not found on cluster$(reset)"
             fi
         fi
-        
+
         return 0
     fi
-    
+
     return 1
 }
 
@@ -248,20 +258,20 @@ check_and_fix_crd_version_mismatch() {
 check_and_handle_failed_sync() {
     local app_name="$1"
     local full_app="${NS}/${app_name}"
-    
+
     # Get application status
     local status=$(kubectl get applications.argoproj.io "$app_name" -n "$NS" -o json 2>/dev/null)
     if [[ -z "$status" ]]; then
         return 1
     fi
-    
+
     local sync_phase=$(echo "$status" | jq -r '.status.operationState.phase // "Unknown"')
     local sync_status=$(echo "$status" | jq -r '.status.sync.status // "Unknown"')
-    
+
     # Check if sync failed
     if [[ "$sync_phase" == "Failed" || "$sync_phase" == "Error" ]]; then
         echo "$(red)[FAILED-SYNC] Application $app_name has failed sync (phase=$sync_phase)$(reset)"
-        
+
         # Check for failed jobs/CRDs
         local failed_resources=$(echo "$status" | jq -r '
             .status.resources[]? |
@@ -269,14 +279,14 @@ check_and_handle_failed_sync() {
             select(.health.status == "Degraded" or .health.status == "Missing" or .health.status == null) |
             "\(.kind) \(.namespace) \(.name)"
         ')
-        
+
         if [[ -n "$failed_resources" ]]; then
             echo "$(red)[CLEANUP] Found failed jobs/CRDs in $app_name:$(reset)"
             while IFS= read -r res_line; do
                 [[ -z "$res_line" ]] && continue
                 read -r kind res_ns res_name <<< "$res_line"
                 echo "$(red)  - Deleting $kind $res_name in $res_ns$(reset)"
-                
+
                 if [[ "$kind" == "Job" ]]; then
                     kubectl delete pods -n "$res_ns" -l job-name="$res_name" --ignore-not-found=true 2>/dev/null &
                     kubectl delete job "$res_name" -n "$res_ns" --ignore-not-found=true 2>/dev/null &
@@ -285,22 +295,22 @@ check_and_handle_failed_sync() {
                 fi
             done <<< "$failed_resources"
         fi
-        
+
         # Terminate stuck operations and refresh
         echo "$(yellow)[RESTART] Restarting sync for $app_name...$(reset)"
         argocd app terminate-op "$full_app" --grpc-web 2>/dev/null || true
         sleep 2
         argocd app get "$full_app" --hard-refresh --grpc-web >/dev/null 2>&1 || true
         sleep 5
-        
+
         # Trigger a new sync
         echo "$(yellow)[RESYNC] Triggering fresh sync for $app_name...$(reset)"
         argocd app sync "$full_app" --grpc-web 2>&1 || true
         sleep 5
-        
+
         return 0
     fi
-    
+
     return 1
 }
 
@@ -309,14 +319,14 @@ check_and_handle_failed_sync() {
 # ============================================================
 clean_unhealthy_jobs_for_app() {
     local app_name="$1"
-    
+
     # Check for unhealthy jobs in this app and clean them up
     app_resources=$(kubectl get applications.argoproj.io "$app_name" -n "$NS" -o json 2>/dev/null | jq -r '
         .status.resources[]? |
         select(.kind == "Job" and (.health.status != "Healthy" or .health.status == null)) |
         "\(.namespace) \(.name)"
     ')
-    
+
     if [[ -n "$app_resources" ]]; then
         echo "$(yellow)[CLEANUP] Found unhealthy/failed jobs in $app_name:$(reset)"
         while IFS= read -r job_line; do
@@ -391,29 +401,38 @@ sync_not_green_apps_once() {
         if [[ "$name" == "root-app" ]]; then
             continue
         fi
-        
+
         # First check and handle any failed syncs
         echo "[$(get_timestamp)] Checking for failed syncs in $name..."
         check_and_handle_failed_sync "$name"
+
+        # Special pre-sync handling for nginx-ingress-pxe-boots on 1st attempt
+        if [[ "$name" == "nginx-ingress-pxe-boots" ]]; then
+            echo "$(yellow)[INFO] Pre-sync: nginx-ingress-pxe-boots detected$(reset)"
+        fi
 
         attempt=1
         synced=false
         while (( attempt <= APP_MAX_RETRIES )); do
             status=$(kubectl get applications.argoproj.io "$name" -n "$NS" -o json 2>/dev/null)
-            if [[ -n "$status" ]]; then
-                health=$(echo "$status" | jq -r '.status.health.status')
-                sync=$(echo "$status" | jq -r '.status.sync.status')
-                last_sync_status=$(echo "$status" | jq -r '.status.operationState.phase // "Unknown"')
-                last_sync_time=$(echo "$status" | jq -r '.status.operationState.finishedAt // "N/A"')
-                
-                echo "[$(get_timestamp)] $full_app Status: Health=$health Sync=$sync LastSync=$last_sync_status Time=$last_sync_time"
-                
+            if [[ -z "$status" ]]; then
+                echo "$(red)[FAIL] $full_app not found$(reset)"
+                break
+            fi
+            health=$(echo "$status" | jq -r '.status.health.status')
+            sync=$(echo "$status" | jq -r '.status.sync.status')
+            last_sync_status=$(echo "$status" | jq -r '.status.operationState.phase // "Unknown"')
+            last_sync_time=$(echo "$status" | jq -r '.status.operationState.finishedAt // "N/A"')
+
+            echo "[$(get_timestamp)] $full_app Status: Health=$health Sync=$sync LastSync=$last_sync_status Time=$last_sync_time"
+
+            if (( attempt == 1 )); then
                 if [[ "$health" == "Healthy" && "$sync" == "Synced" ]]; then
                     echo "$(green)[OK] $full_app (wave=$wave) already Healthy+Synced$(reset)"
                     synced=true
                     break
                 fi
-                
+
                 # Check if last sync failed and clean up
                 if [[ "$last_sync_status" == "Failed" || "$last_sync_status" == "Error" ]]; then
                     echo "$(red)[CLEANUP] Last sync failed for $full_app, cleaning up stuck resources...$(reset)"
@@ -422,14 +441,14 @@ sync_not_green_apps_once() {
                     argocd app get "$full_app" --hard-refresh --grpc-web >/dev/null 2>&1 || true
                     sleep 5
                 fi
-                
+
                 # Refresh app if it's degraded or not healthy
                 if [[ "$health" == "Degraded" || "$health" == "Progressing" || "$health" != "Healthy" ]]; then
                     echo "$(yellow)[REFRESH] App is $health, checking for unhealthy jobs...$(reset)"
-                    
+
                     # Clean up any unhealthy jobs first
                     clean_unhealthy_jobs_for_app "$name"
-                    
+
                     if (( attempt > 1 )); then
                         # Hard refresh on retry attempts
                         argocd app get "$full_app" --hard-refresh --grpc-web >/dev/null 2>&1 || true
@@ -443,9 +462,23 @@ sync_not_green_apps_once() {
             echo "$(bold)[SYNC] $full_app (wave=$wave) at [$(get_timestamp)]$(reset)"
             echo "$(yellow)[INFO] Attempt ${attempt}/${APP_MAX_RETRIES}, elapsed: 0s$(reset)"
 
-            start_ts=$(date +%s)
-            LOG=$(argocd app sync "$full_app" --grpc-web 2>&1)
-            rc=$?
+            # Special handling for nginx-ingress-pxe-boots
+            if [[ "$name" == "nginx-ingress-pxe-boots" ]]; then
+                if (( attempt >= 2 )); then
+                    echo "$(yellow)[INFO] nginx-ingress-pxe-boots 2nd+ iteration - deleting tls-boots secret...$(reset)"
+                    kubectl delete secret tls-boots -n orch-boots 2>/dev/null || true
+                    sleep 3
+                fi
+
+                echo "$(yellow)[INFO] Syncing nginx-ingress-pxe-boots with --force (safer for upgrades)...$(reset)"
+                start_ts=$(date +%s)
+                LOG=$(argocd app sync "$full_app" --force --grpc-web 2>&1)
+                rc=$?
+            else
+                start_ts=$(date +%s)
+                LOG=$(argocd app sync "$full_app" --grpc-web 2>&1)
+                rc=$?
+            fi
 
             if [[ $rc -ne 0 ]]; then
                 if [[ "$LOG" =~ "deleting" ]]; then
@@ -471,14 +504,14 @@ sync_not_green_apps_once() {
                 health=$(echo "$status" | jq -r '.status.health.status')
                 sync=$(echo "$status" | jq -r '.status.sync.status')
                 operation_phase=$(echo "$status" | jq -r '.status.operationState.phase // "Unknown"')
-                
+
                 # Check for failed jobs/CRDs during sync
                 failed_jobs=$(echo "$status" | jq -r '
                     .status.resources[]? |
                     select(.kind == "Job" and .health.status == "Degraded") |
                     .name
                 ' | wc -l)
-                
+
                 if [[ $failed_jobs -gt 0 ]]; then
                     echo "$(red)[ERROR] $full_app has $failed_jobs failed job(s), triggering cleanup and restart...$(reset)"
                     # Clean up failed jobs and restart sync
@@ -491,14 +524,14 @@ sync_not_green_apps_once() {
                     sleep "$GLOBAL_POLL_INTERVAL"
                     continue
                 fi
-                
+
                 # Check if sync operation failed
                 if [[ "$operation_phase" == "Failed" || "$operation_phase" == "Error" ]]; then
                     echo "$(red)[ERROR] $full_app sync operation failed with phase=$operation_phase at [$(get_timestamp)]$(reset)"
                     timed_out=true
                     break
                 fi
-                
+
                 print_table_row "$wave" "$name" "$health" "$sync"
                 echo "    [$(get_timestamp)] Elapsed: ${elapsed}s"
                 if [[ "$health" == "Healthy" && "$sync" == "Synced" ]]; then
@@ -542,15 +575,15 @@ sync_not_green_apps_once() {
     while (( attempt <= APP_MAX_RETRIES )); do
         last_sync_status=$(echo "$status" | jq -r '.status.operationState.phase // "Unknown"')
         last_sync_time=$(echo "$status" | jq -r '.status.operationState.finishedAt // "N/A"')
-        
+
         echo "[$(get_timestamp)] root-app Status: Health=$health Sync=$sync LastSync=$last_sync_status Time=$last_sync_time"
-        
+
         if [[ "$health" == "Healthy" && "$sync" == "Synced" ]]; then
             echo "$(green)[OK] $full_app (wave=$wave) already Healthy+Synced$(reset)"
             synced=true
             break
         fi
-        
+
         # Check if last sync failed and clean up
         if [[ "$last_sync_status" == "Failed" || "$last_sync_status" == "Error" ]]; then
             echo "$(red)[CLEANUP] Last sync failed for root-app, cleaning up stuck resources...$(reset)"
@@ -559,7 +592,7 @@ sync_not_green_apps_once() {
             argocd app get "$full_app" --hard-refresh --grpc-web >/dev/null 2>&1 || true
             sleep 5
         fi
-        
+
         # Refresh root-app if it's degraded or not healthy
         if [[ "$health" == "Degraded" || "$health" == "Progressing" || "$health" != "Healthy" ]]; then
             echo "$(yellow)[REFRESH] root-app is $health, refreshing before sync...$(reset)"
@@ -573,7 +606,7 @@ sync_not_green_apps_once() {
 
         echo "$(bold)[SYNC] $full_app (wave=$wave) at [$(get_timestamp)]$(reset)"
         echo "$(yellow)[INFO] Attempt ${attempt}/${APP_MAX_RETRIES}, elapsed: 0s$(reset)"
-        
+
         # Stop any ongoing operations and refresh before sync
         echo "[INFO] Stopping ongoing operations and refreshing before sync..."
         argocd app terminate-op "$full_app" --grpc-web 2>/dev/null || true
@@ -665,11 +698,11 @@ sync_all_apps_exclude_root() {
         if [[ "$name" == "root-app" ]]; then
             continue
         fi
-        
+
         # First check and handle any failed syncs
         echo "[$(get_timestamp)] Checking for failed syncs in $name..."
         check_and_handle_failed_sync "$name"
-        
+
         # Check for CRD version mismatches
         echo "[$(get_timestamp)] Checking for CRD version mismatches in $name..."
         check_and_fix_crd_version_mismatch "$name"
@@ -683,15 +716,15 @@ sync_all_apps_exclude_root() {
                 sync=$(echo "$status" | jq -r '.status.sync.status')
                 last_sync_status=$(echo "$status" | jq -r '.status.operationState.phase // "Unknown"')
                 last_sync_time=$(echo "$status" | jq -r '.status.operationState.finishedAt // "N/A"')
-                
+
                 echo "[$(get_timestamp)] $full_app Status: Health=$health Sync=$sync LastSync=$last_sync_status Time=$last_sync_time"
-                
+
                 if [[ "$health" == "Healthy" && "$sync" == "Synced" ]]; then
                     echo "$(green)[OK] $full_app (wave=$wave) already Healthy+Synced$(reset)"
                     synced=true
                     break
                 fi
-                
+
                 # Check if last sync failed and clean up
                 if [[ "$last_sync_status" == "Failed" || "$last_sync_status" == "Error" ]]; then
                     echo "$(red)[CLEANUP] Last sync failed for $full_app, cleaning up stuck resources...$(reset)"
@@ -700,14 +733,14 @@ sync_all_apps_exclude_root() {
                     argocd app get "$full_app" --hard-refresh --grpc-web >/dev/null 2>&1 || true
                     sleep 5
                 fi
-                
+
                 # Refresh app if it's degraded or not healthy
                 if [[ "$health" == "Degraded" || "$health" == "Progressing" || "$health" != "Healthy" ]]; then
                     echo "$(yellow)[REFRESH] App is $health, checking for unhealthy jobs...$(reset)"
-                    
+
                     # Clean up any unhealthy jobs first
                     clean_unhealthy_jobs_for_app "$name"
-                    
+
                     if (( attempt > 1 )); then
                         # Hard refresh on retry attempts
                         argocd app get "$full_app" --hard-refresh --grpc-web >/dev/null 2>&1 || true
@@ -721,9 +754,23 @@ sync_all_apps_exclude_root() {
             echo "$(bold)[SYNC] $full_app (wave=$wave) at [$(get_timestamp)]$(reset)"
             echo "$(yellow)[INFO] Attempt ${attempt}/${APP_MAX_RETRIES}, elapsed: 0s$(reset)"
 
-            start_ts=$(date +%s)
-            LOG=$(argocd app sync "$full_app" --grpc-web 2>&1)
-            rc=$?
+            # Special handling for nginx-ingress-pxe-boots
+            if [[ "$name" == "nginx-ingress-pxe-boots" ]]; then
+                if (( attempt >= 2 )); then
+                    echo "$(yellow)[INFO] nginx-ingress-pxe-boots 2nd+ iteration - deleting tls-boots secret...$(reset)"
+                    kubectl delete secret tls-boots -n orch-boots 2>/dev/null || true
+                    sleep 3
+                fi
+
+                echo "$(yellow)[INFO] Syncing nginx-ingress-pxe-boots with --force (safer for upgrades)...$(reset)"
+                start_ts=$(date +%s)
+                LOG=$(argocd app sync "$full_app" --force --grpc-web 2>&1)
+                rc=$?
+            else
+                start_ts=$(date +%s)
+                LOG=$(argocd app sync "$full_app" --grpc-web 2>&1)
+                rc=$?
+            fi
 
             if [[ $rc -ne 0 ]]; then
                 if [[ "$LOG" =~ "deleting" ]]; then
@@ -749,14 +796,14 @@ sync_all_apps_exclude_root() {
                 health=$(echo "$status" | jq -r '.status.health.status')
                 sync=$(echo "$status" | jq -r '.status.sync.status')
                 operation_phase=$(echo "$status" | jq -r '.status.operationState.phase // "Unknown"')
-                
+
                 # Check for failed jobs/CRDs during sync
                 failed_jobs=$(echo "$status" | jq -r '
                     .status.resources[]? |
                     select(.kind == "Job" and .health.status == "Degraded") |
                     .name
                 ' | wc -l)
-                
+
                 if [[ $failed_jobs -gt 0 ]]; then
                     echo "$(red)[ERROR] $full_app has $failed_jobs failed job(s), triggering cleanup and restart...$(reset)"
                     # Clean up failed jobs and restart sync
@@ -769,14 +816,14 @@ sync_all_apps_exclude_root() {
                     sleep "$GLOBAL_POLL_INTERVAL"
                     continue
                 fi
-                
+
                 # Check if sync operation failed
                 if [[ "$operation_phase" == "Failed" || "$operation_phase" == "Error" ]]; then
                     echo "$(red)[ERROR] $full_app sync operation failed with phase=$operation_phase$(reset)"
                     timed_out=true
                     break
                 fi
-                
+
                 print_table_row "$wave" "$name" "$health" "$sync"
                 echo "    Elapsed: ${elapsed}s"
                 if [[ "$health" == "Healthy" && "$sync" == "Synced" ]]; then
@@ -823,25 +870,25 @@ sync_root_app_only() {
     print_table_header
     print_table_row "$wave" "root-app" "$health" "$sync"
     echo
-    
+
     # First check and handle any failed syncs
     echo "[$(get_timestamp)] Checking for failed syncs in root-app..."
     check_and_handle_failed_sync "root-app"
-    
+
     # Check for CRD version mismatches
     echo "[$(get_timestamp)] Checking for CRD version mismatches in root-app..."
     check_and_fix_crd_version_mismatch "root-app"
 
     last_sync_status=$(echo "$status" | jq -r '.status.operationState.phase // "Unknown"')
     last_sync_time=$(echo "$status" | jq -r '.status.operationState.finishedAt // "N/A"')
-    
+
     echo "[$(get_timestamp)] root-app Status: Health=$health Sync=$sync LastSync=$last_sync_status Time=$last_sync_time"
-    
+
     if [[ "$health" == "Healthy" && "$sync" == "Synced" ]]; then
         echo "$(green)[OK] $full_app (wave=$wave) already Healthy+Synced$(reset)"
         return 0
     fi
-    
+
     # Check if last sync failed and clean up
     if [[ "$last_sync_status" == "Failed" || "$last_sync_status" == "Error" ]]; then
         echo "$(red)[CLEANUP] Last sync failed for root-app, cleaning up stuck resources...$(reset)"
@@ -865,16 +912,16 @@ sync_root_app_only() {
             fi
             sleep 5
         fi
-        
+
         echo "$(yellow)[INFO] Attempt ${attempt}/${APP_MAX_RETRIES}, elapsed: 0s$(reset)"
-        
+
         # Stop any ongoing operations and refresh before sync
         echo "[INFO] Stopping ongoing operations and refreshing before sync..."
         argocd app terminate-op "$full_app" --grpc-web 2>/dev/null || true
         sleep 2
         argocd app get "$full_app" --refresh --grpc-web >/dev/null 2>&1 || true
         sleep 3
-        
+
         start_ts=$(date +%s)
         LOG=$(argocd app sync "$full_app" --grpc-web 2>&1)
         rc=$?
@@ -903,14 +950,14 @@ sync_root_app_only() {
             health=$(echo "$status" | jq -r '.status.health.status')
             sync=$(echo "$status" | jq -r '.status.sync.status')
             operation_phase=$(echo "$status" | jq -r '.status.operationState.phase // "Unknown"')
-            
+
             # Check if sync operation failed
             if [[ "$operation_phase" == "Failed" || "$operation_phase" == "Error" ]]; then
                 echo "$(red)[ERROR] $full_app sync operation failed with phase=$operation_phase$(reset)"
                 timed_out=true
                 break
             fi
-            
+
             print_table_row "$wave" "root-app" "$health" "$sync"
             echo "    Elapsed: ${elapsed}s"
             if [[ "$health" == "Healthy" && "$sync" == "Synced" ]]; then
@@ -934,7 +981,7 @@ sync_root_app_only() {
         else
             echo "$(red)[FAIL] Max retries reached for $full_app.$(reset)"
         fi
-        
+
         # Re-fetch status for next iteration
         status=$(kubectl get applications.argoproj.io "root-app" -n "$NS" -o json 2>/dev/null)
         if [[ -n "$status" ]]; then
@@ -996,39 +1043,39 @@ sync_until_green_ns_exclude_root() {
 # ============================================================
 check_and_delete_stuck_crd_jobs() {
     print_header "Checking for stuck/out-of-sync dependent CRD jobs"
-    
+
     # Check for stuck jobs in all namespaces
     echo "[INFO] Looking for stuck or failed jobs..."
-    
+
     # Get jobs that are not completed or have failed
     stuck_jobs=$(kubectl get jobs --all-namespaces -o json | jq -r '
-        .items[] | 
+        .items[] |
         select(.status.succeeded != 1 and (.status.failed > 0 or .status.active > 0)) |
         "\(.metadata.namespace) \(.metadata.name)"
     ')
-    
+
     if [[ -n "$stuck_jobs" ]]; then
         echo "$(yellow)[WARN] Found stuck/failed jobs:$(reset)"
         echo "$stuck_jobs"
-        
+
         # Delete stuck jobs and their pods
         while IFS= read -r line; do
             [[ -z "$line" ]] && continue
             read -r job_ns job_name <<< "$line"
             echo "$(yellow)[CLEANUP] Deleting stuck job $job_name in namespace $job_ns (background)$(reset)"
-            
+
             # Delete associated pods first
             kubectl delete pods -n "$job_ns" -l job-name="$job_name" --ignore-not-found=true 2>/dev/null &
-            
+
             # Delete the job
             kubectl delete job "$job_name" -n "$job_ns" --ignore-not-found=true &
         done <<< "$stuck_jobs"
-        
+
         echo "[INFO] Job cleanup initiated in background, proceeding..."
     else
         echo "$(green)[OK] No stuck jobs found$(reset)"
     fi
-    
+
     # Check for applications that are OutOfSync
     echo "[INFO] Looking for OutOfSync applications..."
     out_of_sync_apps=$(kubectl get applications.argoproj.io -n "$NS" -o json | jq -r '
@@ -1036,11 +1083,11 @@ check_and_delete_stuck_crd_jobs() {
         select(.status.sync.status == "OutOfSync") |
         .metadata.name
     ')
-    
+
     if [[ -n "$out_of_sync_apps" ]]; then
         echo "$(yellow)[WARN] Found OutOfSync applications:$(reset)"
         echo "$out_of_sync_apps"
-        
+
         # Stop and restart sync for OutOfSync apps
         while IFS= read -r app_name; do
             [[ -z "$app_name" ]] && continue
@@ -1051,7 +1098,7 @@ check_and_delete_stuck_crd_jobs() {
     else
         echo "$(green)[OK] No OutOfSync applications found$(reset)"
     fi
-    
+
     # Check for applications with sync failures
     echo "[INFO] Looking for applications with sync failures..."
     sync_failed_apps=$(kubectl get applications.argoproj.io -n "$NS" -o json | jq -r '
@@ -1059,32 +1106,32 @@ check_and_delete_stuck_crd_jobs() {
         select(.status.operationState.phase == "Failed" or .status.operationState.phase == "Error") |
         "\(.metadata.name) \(.status.operationState.phase)"
     ')
-    
+
     if [[ -n "$sync_failed_apps" ]]; then
         echo "$(red)[WARN] Found applications with sync failures:$(reset)"
         echo "$sync_failed_apps"
-        
+
         # Clean up failed apps
         while IFS= read -r line; do
             [[ -z "$line" ]] && continue
             read -r app_name phase <<< "$line"
             echo "$(red)[CLEANUP] App $app_name has phase=$phase, cleaning up...$(reset)"
-            
+
             # Clean up unhealthy jobs for this app
             clean_unhealthy_jobs_for_app "$app_name"
-            
+
             # Terminate any stuck operations
             argocd app terminate-op "${NS}/${app_name}" --grpc-web 2>/dev/null || true
-            
+
             # Hard refresh to clear the error state
             argocd app get "${NS}/${app_name}" --hard-refresh --grpc-web >/dev/null 2>&1 || true
-            
+
             sleep 2
         done <<< "$sync_failed_apps"
     else
         echo "$(green)[OK] No sync failed applications found$(reset)"
     fi
-    
+
     echo "[INFO] Stuck CRD jobs check and cleanup completed."
 }
 
@@ -1141,24 +1188,24 @@ check_sync_success() {
     fi
     health=$(echo "$status" | jq -r '.status.health.status')
     sync=$(echo "$status" | jq -r '.status.sync.status')
-    
+
     if [[ "$health" != "Healthy" || "$sync" != "Synced" ]]; then
         echo "$(red)[FAIL] root-app is NOT Healthy+Synced (Health: $health, Sync: $sync)$(reset)"
         return 1
     fi
-    
+
     # Check for any non-healthy apps
     not_healthy=$(kubectl get applications.argoproj.io -n "$NS" -o json | jq -r '
         .items[] |
         select(.status.health.status != "Healthy" or .status.sync.status != "Synced") |
         .metadata.name
     ' | wc -l)
-    
+
     if [[ $not_healthy -gt 0 ]]; then
         echo "$(red)[FAIL] $not_healthy applications are not Healthy+Synced$(reset)"
         return 1
     fi
-    
+
     echo "$(green)[OK] All applications are Healthy+Synced$(reset)"
     return 0
 }
@@ -1174,21 +1221,21 @@ sync_success=false
 
 while (( global_retry <= GLOBAL_SYNC_RETRIES )); do
     print_header "GLOBAL SYNC ATTEMPT ${global_retry}/${GLOBAL_SYNC_RETRIES}"
-    
+
     execute_full_sync
-    
+
     if check_sync_success; then
         sync_success=true
         print_header "Sync Script Completed Successfully"
         exit 0
     fi
-    
+
     if (( global_retry < GLOBAL_SYNC_RETRIES )); then
         echo "$(yellow)[RETRY] Sync attempt ${global_retry} failed. Checking for stuck resources...$(reset)"
-        
+
         # Check and cleanup stuck resources before next retry
         check_and_delete_stuck_crd_jobs
-        
+
         # Stop all ongoing sync operations
         echo "[INFO] Stopping all ongoing sync operations..."
         mapfile -t all_apps < <(kubectl get applications.argoproj.io -n "$NS" -o jsonpath='{.items[*].metadata.name}')
@@ -1196,10 +1243,10 @@ while (( global_retry <= GLOBAL_SYNC_RETRIES )); do
             [[ -z "$app" ]] && continue
             argocd app terminate-op "${NS}/${app}" --grpc-web 2>/dev/null || true
         done
-        
+
         echo "$(yellow)[INFO] Waiting 30 seconds before retry ${global_retry}...$(reset)"
         sleep 30
-        
+
         ((global_retry++))
     else
         echo "$(red)[FAIL] Maximum global retries (${GLOBAL_SYNC_RETRIES}) reached. Sync failed.$(reset)"
@@ -1210,4 +1257,3 @@ done
 # This should not be reached, but just in case
 echo "$(red)[FAIL] Sync did not complete successfully after ${GLOBAL_SYNC_RETRIES} attempts.$(reset)"
 exit 1
-
