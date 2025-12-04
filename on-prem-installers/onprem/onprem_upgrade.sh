@@ -92,30 +92,7 @@ gitea_ns=gitea
 # shellcheck disable=SC2034
 root_app=root-app
 
-postgres_namespace=orch-database
-echo "Checking PostgreSQL pod in namespace: $postgres_namespace"
-# Get all pods once (optimized)
-pods=$(kubectl get pod -n "$postgres_namespace" --no-headers 2>/dev/null)
-# Check for new version pod
-echo "Checking for: postgresql-cluster-1"
-if echo "$pods" | grep -q "^postgresql-cluster-1"; then
-    export UPGRADE_3_1_X=false
-    podname=postgresql-cluster-1
-    echo "Onprem Upgrade from latest release where postgresql-cluster-1"
-elif echo "$pods" | grep -q "^postgresql-0"; then
-    export UPGRADE_3_1_X=true
-    echo "Onprem Upgrade from Rel3.1.x"
-    echo "Onprem Upgrade from latest release where postgresql-cluster-1"
-    podname=postgresql-0
-# No valid pod found
-else
-    echo "❌ ERROR: No valid PostgreSQL pod found!"
-    echo "Expected:"
-    echo "  - postgresql-cluster-1 (new version, 2025.02+)"
-    echo "  - postgresql-0 (old version, 3.1.3 and below)"
-    exit 1
-fi
-echo "Selected PostgreSQL pod → $podname"
+export UPGRADE_3_1_X=true
 
 # Variables that depend on the above and might require updating later, are placed in here
 set_artifacts_version() {
