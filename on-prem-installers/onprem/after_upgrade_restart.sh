@@ -28,7 +28,7 @@
 #     secrets (tls-boots, boots-ca-cert) to ensure clean upgrade state
 #
 # Usage:
-#   ./sync.sh [NAMESPACE]
+#   ./after_upgrade_restart.sh [NAMESPACE]
 #
 #   Arguments:
 #     NAMESPACE    - Target namespace for applications (optional, default: onprem)
@@ -71,14 +71,8 @@ APP_MAX_WAIT=60               # 5 minutes to wait for any app (Healthy+Synced)
 APP_MAX_RETRIES=3                 # retry X times for each app
 GLOBAL_SYNC_RETRIES=2            # Global retry for entire sync process
 
-# Root app final wait
-ROOT_APP_MAX_WAIT=300             # 5 minutes
-
-# Global script timeout
-SCRIPT_MAX_TIMEOUT=1800           # 20 minutes
-
-# Installer behaviour
-CURL_TIMEOUT=20
+# Apps requiring server-side apply (space-separated list)
+SERVER_SIDE_APPS="external-secrets copy-app-gitea-cred-to-fleet copy-ca-cert-boots-to-gateway copy-ca-cert-boots-to-infra copy-ca-cert-gateway-to-cattle copy-ca-cert-gateway-to-infra copy-ca-cert-gitea-to-app copy-ca-cert-gitea-to-cluster copy-cluster-gitea-cred-to-fleet copy-keycloak-admin-to-infra infra-external platform-keycloak namespace-label wait-istio-job"
 
 # shellcheck disable=SC1091
 # ============================================================
@@ -406,9 +400,11 @@ sync_not_green_apps_once() {
         echo "[$(get_timestamp)] Checking for failed syncs in $name..."
         check_and_handle_failed_sync "$name"
 
-        # Special pre-sync handling for nginx-ingress-pxe-boots on 1st attempt
+        # Special pre-sync handling for nginx-ingress-pxe-boots
         if [[ "$name" == "nginx-ingress-pxe-boots" ]]; then
-            echo "$(yellow)[INFO] Pre-sync: nginx-ingress-pxe-boots detected$(reset)"
+            echo "$(yellow)[INFO] Pre-sync: nginx-ingress-pxe-boots detected - deleting tls-boots secret first...$(reset)"
+            kubectl delete secret tls-boots -n orch-boots 2>/dev/null || true
+            sleep 3
         fi
 
         attempt=1
@@ -462,14 +458,17 @@ sync_not_green_apps_once() {
             echo "$(bold)[SYNC] $full_app (wave=$wave) at [$(get_timestamp)]$(reset)"
             echo "$(yellow)[INFO] Attempt ${attempt}/${APP_MAX_RETRIES}, elapsed: 0s$(reset)"
 
+            # Check if app requires server-side apply
+            if [[ " $SERVER_SIDE_APPS " =~ " $name " ]]; then
+                echo "$(yellow)[INFO] Stopping any ongoing operations for $name before force sync...$(reset)"
+                argocd app terminate-op "$full_app" --grpc-web 2>/dev/null || true
+                sleep 2
+                echo "$(yellow)[INFO] Syncing $name with --force --replace --server-side (safer for CRD upgrades)...$(reset)"
+                start_ts=$(date +%s)
+                LOG=$(argocd app sync "$full_app" --force --replace --server-side --grpc-web 2>&1)
+                rc=$?
             # Special handling for nginx-ingress-pxe-boots
-            if [[ "$name" == "nginx-ingress-pxe-boots" ]]; then
-                if (( attempt >= 1 )); then
-                    echo "$(yellow)[INFO] nginx-ingress-pxe-boots 1st+ iteration - deleting tls-boots secret...$(reset)"
-                    kubectl delete secret tls-boots -n orch-boots 2>/dev/null || true
-                    sleep 3
-                fi
-
+            elif [[ "$name" == "nginx-ingress-pxe-boots" ]]; then
                 echo "$(yellow)[INFO] Syncing nginx-ingress-pxe-boots with --force (safer for upgrades)...$(reset)"
                 start_ts=$(date +%s)
                 LOG=$(argocd app sync "$full_app" --force --grpc-web 2>&1)
@@ -707,6 +706,13 @@ sync_all_apps_exclude_root() {
         echo "[$(get_timestamp)] Checking for CRD version mismatches in $name..."
         check_and_fix_crd_version_mismatch "$name"
 
+        # Special pre-sync handling for nginx-ingress-pxe-boots
+        if [[ "$name" == "nginx-ingress-pxe-boots" ]]; then
+            echo "$(yellow)[INFO] Pre-sync: nginx-ingress-pxe-boots detected - deleting tls-boots secret first...$(reset)"
+            kubectl delete secret tls-boots -n orch-boots 2>/dev/null || true
+            sleep 3
+        fi
+
         attempt=1
         synced=false
         while (( attempt <= APP_MAX_RETRIES )); do
@@ -754,14 +760,17 @@ sync_all_apps_exclude_root() {
             echo "$(bold)[SYNC] $full_app (wave=$wave) at [$(get_timestamp)]$(reset)"
             echo "$(yellow)[INFO] Attempt ${attempt}/${APP_MAX_RETRIES}, elapsed: 0s$(reset)"
 
+            # Check if app requires server-side apply
+            if [[ " $SERVER_SIDE_APPS " =~ " $name " ]]; then
+                echo "$(yellow)[INFO] Stopping any ongoing operations for $name before force sync...$(reset)"
+                argocd app terminate-op "$full_app" --grpc-web 2>/dev/null || true
+                sleep 2
+                echo "$(yellow)[INFO] Syncing $name with --force --replace --server-side (safer for CRD upgrades)...$(reset)"
+                start_ts=$(date +%s)
+                LOG=$(argocd app sync "$full_app" --force --replace --server-side --grpc-web 2>&1)
+                rc=$?
             # Special handling for nginx-ingress-pxe-boots
-            if [[ "$name" == "nginx-ingress-pxe-boots" ]]; then
-                if (( attempt >= 2 )); then
-                    echo "$(yellow)[INFO] nginx-ingress-pxe-boots 2nd+ iteration - deleting tls-boots secret...$(reset)"
-                    kubectl delete secret tls-boots -n orch-boots 2>/dev/null || true
-                    sleep 3
-                fi
-
+            elif [[ "$name" == "nginx-ingress-pxe-boots" ]]; then
                 echo "$(yellow)[INFO] Syncing nginx-ingress-pxe-boots with --force (safer for upgrades)...$(reset)"
                 start_ts=$(date +%s)
                 LOG=$(argocd app sync "$full_app" --force --grpc-web 2>&1)
@@ -1205,8 +1214,14 @@ check_sync_success() {
         echo "$(red)[FAIL] $not_healthy applications are not Healthy+Synced$(reset)"
         return 1
     fi
-
+    kubectl get applications -A
     echo "$(green)[OK] All applications are Healthy+Synced$(reset)"
+    
+    # Display all applications status
+    echo
+    echo "$(bold)$(green)Final Application Status:$(reset)"
+    
+    
     return 0
 }
 
