@@ -765,6 +765,17 @@ fi
 # Modify orch-configs settings for upgrade procedure
 retrieve_and_apply_config
 
+# Check if kyverno-clean-reports job exists before attempting cleanup
+if kubectl get job kyverno-clean-reports -n kyverno >/dev/null 2>&1; then
+    terminate_existing_sync "kyverno" "$apps_ns"
+    echo "Cleaning up kyverno-clean-reports job..."
+    kubectl patch job kyverno-clean-reports -n kyverno --type=merge -p='{"metadata":{"finalizers":[]}}' || true
+    kubectl delete job kyverno-clean-reports -n kyverno --force --grace-period=0 2>/dev/null || true
+    kubectl delete pods -l job-name="kyverno-clean-reports" -n kyverno --force --grace-period=0 2>/dev/null || true
+else
+    echo "kyverno-clean-reports job not found in kyverno namespace, skipping cleanup"
+fi
+
 ### Upgrade
 
 # Run OS Configuration upgrade
