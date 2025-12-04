@@ -58,7 +58,8 @@ The current EMF architecture exhibits several key issues:
 
 The proposed architecture is modular and flexible, focusing on these key changes:
 
-- The Multi-tenant API Gateway is reduced to a simple HTTP router for Tenant Manager APIs.
+- The Multi-tenant API Gateway is simplified to act only as an HTTP router for Tenant Manager APIs. In the short term,
+  it remains Nexus-based, with plans to re-implement it as a lightweight HTTP router in the future.
 - Core services (AO, CO, EIM) expose their APIs directly, removing the need for centralized API gateway coordination.
 - Multi-tenancy is configurable; Tenant Manager and controllers can be enabled or disabled per deployment.
 - When multi-tenancy is off, services initialize a default tenant and restrict API requests to the default project for
