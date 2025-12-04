@@ -99,12 +99,12 @@ pods=$(kubectl get pod -n "$postgres_namespace" --no-headers 2>/dev/null)
 # Check for new version pod
 echo "Checking for: postgresql-cluster-1"
 if echo "$pods" | grep -q "^postgresql-cluster-1"; then
-    export UPGRADE_3_1_X=false
+    export UPGRADE_3_1_X=false	
+	cho "Onprem Upgrade from latest release where postgresql-cluster-1" 
 	podname=postgresql-cluster-1
-    echo "Onprem Upgrade from Rel3.1.x"
 elif echo "$pods" | grep -q "^postgresql-0"; then
 	export UPGRADE_3_1_X=true
-    echo "Onprem Upgrade from latest release where postgresql-cluster-1"
+    echo "Onprem Upgrade from Rel3.1.x"
 	podname=postgresql-0
 # No valid pod found
 else
