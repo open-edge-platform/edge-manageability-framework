@@ -61,14 +61,6 @@ exec 2> >(tee -a "$FULL_LOG_PATH" >&2)
 log_info "Starting OnPrem Edge Orchestrator upgrade script"
 log_info "Log file: $FULL_LOG_PATH"
 
-### Constants
-RELEASE_SERVICE_URL="${RELEASE_SERVICE_URL:-registry-rs.edgeorchestration.intel.com}"
-ORCH_INSTALLER_PROFILE="${ORCH_INSTALLER_PROFILE:-onprem}"
-DEPLOY_VERSION="${DEPLOY_VERSION:-v3.1.0}"  # Updated to v3.1.0
-GITEA_IMAGE_REGISTRY="${GITEA_IMAGE_REGISTRY:-docker.io}"
-USE_LOCAL_PACKAGES="${USE_LOCAL_PACKAGES:-false}"  # New flag for local packages
-UPGRADE_3_1_X=true
-
 # Import shared functions
 # shellcheck disable=SC1091
 source "$(dirname "${0}")/functions.sh"
@@ -78,6 +70,14 @@ source "$(dirname "${0}")/upgrade_postgres.sh"
 source "$(dirname "${0}")/vault_unseal.sh"
 # shellcheck disable=SC1091
 source "$(dirname "$0")/onprem.env"
+
+### Constants
+RELEASE_SERVICE_URL="${RELEASE_SERVICE_URL:-registry-rs.edgeorchestration.intel.com}"
+ORCH_INSTALLER_PROFILE="${ORCH_INSTALLER_PROFILE:-onprem}"
+DEPLOY_VERSION="${DEPLOY_VERSION:-v3.1.0}"  # Updated to v3.1.0
+GITEA_IMAGE_REGISTRY="${GITEA_IMAGE_REGISTRY:-docker.io}"
+USE_LOCAL_PACKAGES="${USE_LOCAL_PACKAGES:-false}"  # New flag for local packages
+UPGRADE_3_1_X="${UPGRADE_3_1_X:-true}"
 
 ### Variables
 cwd=$(pwd)
