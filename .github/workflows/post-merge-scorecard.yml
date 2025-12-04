@@ -1,0 +1,27 @@
+---
+# SPDX-FileCopyrightText: (C) 2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+name: Post-Merge Scorecard CI
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  call-scorecard:
+    permissions:
+      security-events: write   # required for SARIF upload
+      id-token: write
+      contents: read
+
+    uses: open-edge-platform/orch-ci/.github/workflows/post-merge-scorecard.yml@d3fe218ea585fb390b73c87f9e482cbe1424829c  # v0.1.68
+    with:
+      project_folder: "."
+    secrets:
+      SYS_ORCH_GITHUB: ${{ secrets.SYS_ORCH_GITHUB }}
