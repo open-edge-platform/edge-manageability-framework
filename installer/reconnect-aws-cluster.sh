@@ -23,12 +23,15 @@ load_provision_env
 load_cluster_state_env
 update_kube_config
 
+# The region of the S3 bucket may be different from the AWS_REGION
+BUCKET_REGION=${BUCKET_REGION:-$AWS_REGION}
+
 # Get FILE_SYSTEM_ID from cluster terraform state
-export FILE_SYSTEM_ID=$(aws s3 cp s3://${BUCKET_NAME}/${AWS_REGION}/cluster/${CLUSTER_NAME} - 2>/dev/null | jq -r '.outputs.efs_file_system_id.value // empty')
-export TRAEFIK_TG_ARN=$(aws s3 cp s3://${BUCKET_NAME}/${AWS_REGION}/orch-load-balancer/${CLUSTER_NAME} - 2>/dev/null | jq -r '.outputs.traefik_target_groups.value.default.arn // empty')
-export TRAEFIKGRPC_TG_ARN=$(aws s3 cp s3://${BUCKET_NAME}/${AWS_REGION}/orch-load-balancer/${CLUSTER_NAME} - 2>/dev/null | jq -r '.outputs.traefik_target_groups.value.grpc.arn // empty')
-export NGINX_TG_ARN=$(aws s3 cp s3://${BUCKET_NAME}/${AWS_REGION}/orch-load-balancer/${CLUSTER_NAME} - 2>/dev/null | jq -r '.outputs.traefik2_target_groups.value.https.arn // empty')
-export ARGOCD_TG_ARN=$(aws s3 cp s3://${BUCKET_NAME}/${AWS_REGION}/orch-load-balancer/${CLUSTER_NAME} - 2>/dev/null | jq -r '.outputs.argocd_target_groups.value.argocd.arn // empty')
+export FILE_SYSTEM_ID=$(aws s3 cp --region $BUCKET_REGION s3://${BUCKET_NAME}/${AWS_REGION}/cluster/${CLUSTER_NAME} - 2>/dev/null | jq -r '.outputs.efs_file_system_id.value // empty')
+export TRAEFIK_TG_ARN=$(aws s3 cp --region $BUCKET_REGION s3://${BUCKET_NAME}/${AWS_REGION}/orch-load-balancer/${CLUSTER_NAME} - 2>/dev/null | jq -r '.outputs.traefik_target_groups.value.default.arn // empty')
+export TRAEFIKGRPC_TG_ARN=$(aws s3 cp --region $BUCKET_REGION s3://${BUCKET_NAME}/${AWS_REGION}/orch-load-balancer/${CLUSTER_NAME} - 2>/dev/null | jq -r '.outputs.traefik_target_groups.value.grpc.arn // empty')
+export NGINX_TG_ARN=$(aws s3 cp --region $BUCKET_REGION s3://${BUCKET_NAME}/${AWS_REGION}/orch-load-balancer/${CLUSTER_NAME} - 2>/dev/null | jq -r '.outputs.traefik2_target_groups.value.https.arn // empty')
+export ARGOCD_TG_ARN=$(aws s3 cp --region $BUCKET_REGION s3://${BUCKET_NAME}/${AWS_REGION}/orch-load-balancer/${CLUSTER_NAME} - 2>/dev/null | jq -r '.outputs.argocd_target_groups.value.argocd.arn // empty')
 export S3_PREFIX=$(get_s3_prefix)
 
 echo "Environment variables loaded. You can now run: ./configure-cluster.sh"

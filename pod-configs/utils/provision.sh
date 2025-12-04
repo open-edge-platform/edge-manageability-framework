@@ -10,7 +10,6 @@ set -o pipefail
 . utils/lib/common.sh
 
 # Consts
-BUCKET_REGION="us-west-2"
 VPC_DEFAULT_CIDR_PREFIX="192.168."
 VPC_FIRST_CIDR="192.168.248.0/21"
 ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd) # The repository root directory
@@ -26,6 +25,7 @@ AWS_REGION="${AWS_REGION:-}"
 AWS_ACCOUNT="${AWS_ACCOUNT:-}"
 CUSTOMER_STATE_PREFIX="${CUSTOMER_STATE_PREFIX:-}"
 BUCKET_NAME=""
+BUCKET_REGION="${BUCKET_REGION:-$AWS_REGION}"
 PARENT_DOMAIN=""
 ROOT_DOMAIN=""
 ROOT_DOMAIN_HOST=""
@@ -65,7 +65,7 @@ AZUREAD_CLIENTID=""
 AZUREAD_USER=""
 AZUREAD_PASS=""
 RS_TOKEN="release-service-token-prod"  # The default value could be replaced
-SM_PROXY_REGION="us-west-2"
+SM_PROXY_REGION="${SM_PROXY_REGION:-$AWS_REGION}"
 RESET_AWS_ACCOUNT=false
 AZUREAD_REFRESH_TOKEN=""
 AZUREAD_TOKEN_ENDPOINT="https://registry-rs.edgeorchestration.intel.com/oauth/token"
@@ -114,6 +114,7 @@ OPTIONS_LIST=(
     "azuread-refresh-token:"
     "azuread-token-endpoint:"
     "azuread-user:"
+    "bucket-region:"
     "cidr-block:"
     "customer-state-prefix:"
     "customer-tag:"
@@ -178,6 +179,7 @@ usage() {
         echo "    [ --azuread-refresh-token {AZUREAD_REFRESH_TOKEN} ] \\"
         echo "    [ --azuread-token-endpoint {AZUREAD_TOKEN_ENDPOINT} ] \\"
         echo "    [ --cidr-block {CIDR BLOCK} ] \\"
+        echo "    --bucket-region {S3 BUCKET REGION} \\"
         echo "    --customer-state-prefix {CUSTOMER STATE PREFIX}  \\"
         echo "    --customer-tag {CUSTOMER TAG} \\"
         echo "    [ --desired-nodes {NUMBER OF NODES} ] \\"
@@ -265,6 +267,7 @@ parse_params() {
             --azuread-refresh-token) AZUREAD_REFRESH_TOKEN=$(eval echo $2); shift;;
             --azuread-token-endpoint) AZUREAD_TOKEN_ENDPOINT=$(eval echo $2); shift;;
             --azuread-user) AZUREAD_USER=$(eval echo $2); shift;;
+            --bucket-region) BUCKET_REGION=$(eval echo $2); shift;;
             --cidr-block) VPC_CIDR=$(eval echo $2); shift;;
             -c|--customer-state-prefix) CUSTOMER_STATE_PREFIX=$(eval echo $2); shift;;
             --customer-tag) CUSTOMER_TAG=$(eval echo $2); shift;;
@@ -382,6 +385,10 @@ parse_params() {
     fi
     export BUCKET_NAME=$BUCKET_NAME
     echo BUCKET_NAME=${BUCKET_NAME} >> ~/.env
+
+    BUCKET_REGION=${BUCKET_REGION:-$AWS_REGION}
+    export BUCKET_REGION=$BUCKET_REGION
+    echo BUCKET_REGION=${BUCKET_REGION} >> ~/.env
 
     FULLCHAIN="fullchain-${AWS_ACCOUNT}-${ENV_NAME}.pem"
     CHAIN="chain-${AWS_ACCOUNT}-${ENV_NAME}.pem"

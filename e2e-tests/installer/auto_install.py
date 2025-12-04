@@ -463,6 +463,9 @@ class AutoInstall:
         print("  - Set AWS region to " + str(self.aws_region))
         self.installer_session.expect(r"Specify the AWS region for the cluster \(default \[.*\]\):")
         self.installer_session.sendline(str(self.aws_region))
+        print("  - Set AWS bucket region to " + str(self.aws_region))
+        self.installer_session.expect(r"Specify the AWS region for the bucket to store the installer state \(default \[.*\]\):")
+        self.installer_session.sendline(str(self.aws_region))
         # local state step
         print("  - Set state data prefix to " + str(self.state_bucket_prefix))
         self.installer_session.expect(r"Specify the state data identifier for the cluster \(default \[.*\]\):")
