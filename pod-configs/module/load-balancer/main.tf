@@ -21,7 +21,7 @@ resource "aws_security_group" "common" {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    security_groups = var.eks_security_groups
   }
   dynamic "ingress" {
     for_each = var.ports
