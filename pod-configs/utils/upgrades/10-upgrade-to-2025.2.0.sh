@@ -257,8 +257,8 @@ fi
 
 apply_load_balancer(){
 echo "Fetching Load Balancer ARNS for Traefik2 and Traefik3"
-LB_ARN_T2=$(aws elbv2 describe-tags   --resource-arns $(aws elbv2 describe-load-balancers --query 'LoadBalancers[*].LoadBalancerArn' --output text)   --que>
-LB_ARN_T3=$(aws elbv2 describe-tags   --resource-arns $(aws elbv2 describe-load-balancers --query 'LoadBalancers[*].LoadBalancerArn' --output text)   --que>
+LB_ARN_T2=$(aws elbv2 describe-tags   --resource-arns $(aws elbv2 describe-load-balancers --query 'LoadBalancers[*].LoadBalancerArn' --output text)   --query "TagDescriptions[?contains(to_string(Tags[?Key=='Name'].Value | [0]), '${ENV_NAME}-traefik2')].ResourceArn"   --output text)
+LB_ARN_T3=$(aws elbv2 describe-tags   --resource-arns $(aws elbv2 describe-load-balancers --query 'LoadBalancers[*].LoadBalancerArn' --output text)   --query "TagDescriptions[?contains(to_string(Tags[?Key=='Name'].Value | [0]), '${ENV_NAME}-traefik3')].ResourceArn"   --output text)
 EKS_SG_ID=$(aws ec2 describe-security-groups --filters "Name=group-name,Values=eks-${ENV_NAME}" --query "SecurityGroups[*].GroupId" --output text)
 
 echo "Fetching Load Balancer SG for Traefik2 and Traefik3"
