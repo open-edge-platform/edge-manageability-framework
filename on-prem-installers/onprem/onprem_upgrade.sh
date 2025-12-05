@@ -639,17 +639,17 @@ Usage:
 $(basename "$0") [option...] [argument]
 
 Examples:
-./onprem_upgrade.sh -b              # Upgrade from 3.1.3 with backup (default)
-./onprem_upgrade.sh -bl             # Upgrade from 3.1.3 with local packages and backup
-./onprem_upgrade.sh -u false     # Upgrade from 2025.02 with backup
-./onprem_upgrade.sh -u true         # Explicitly upgrade from 3.1.3
+./onprem_upgrade.sh -b              # Upgrade from 3.1.x with backup (default)
+./onprem_upgrade.sh -bl             # Upgrade from 3.1.x with local packages and backup
+./onprem_upgrade.sh -u false     # Upgrade from 2025.02
+./onprem_upgrade.sh -u true         # Explicitly upgrade from 3.1.x
 
 Options:
     -b:             enable backup of Orchestrator PVs before upgrade (optional)
     -l:             use local packages instead of downloading (optional)
     -o:             override production values with dev values (optional)
     -u [true|false]: specify SOURCE version to upgrade FROM:
-                       true  = upgrading FROM v3.1.3 (default)
+                       true  = upgrading FROM v3.1.x (default)
                        false = upgrading FROM v2025.02
     -h:             help (optional)
 
