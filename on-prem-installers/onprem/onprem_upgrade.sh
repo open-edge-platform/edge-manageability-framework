@@ -810,20 +810,11 @@ if [[ ! -s postgres-secrets-password.txt ]]; then
     IAM_TENANCY=$(kubectl get secret iam-tenancy-local-postgresql -n orch-iam -o jsonpath='{.data.PGPASSWORD}')
     PLATFORM_KEYCLOAK=$(kubectl get secret platform-keycloak-local-postgresql -n orch-platform -o jsonpath='{.data.PGPASSWORD}')
     VAULT=$(kubectl get secret vault-local-postgresql -n orch-platform -o jsonpath='{.data.PGPASSWORD}')
-    # Check if default secret 'postgresql' exists
-if kubectl get secret postgresql -n orch-database >/dev/null 2>&1; then
-    POSTGRESQL=$(kubectl get secret postgresql -n orch-database -o jsonpath='{.data.postgres-password}')
-    echo "Using secret: postgresql"
-# Else check if fallback secret exists
-elif kubectl get secret orch-database-postgresql -n orch-database >/dev/null 2>&1; then
-    POSTGRESQL=$(kubectl get secret orch-database-postgresql -n orch-database -o jsonpath='{.data.password}')
-    echo "Using secret: orch-database-postgresql"
-# If neither exists → error out
-else
-    echo "ERROR: No valid PostgreSQL secret found in namespace orch-database"
-    echo "Expected one of: 'postgresql' or 'orch-database-postgresql'"
-    exit 1
-fi
+    if [[ "$UPGRADE_3_1_X" == "true" ]]; then
+        POSTGRESQL=$(kubectl get secret postgresql -n orch-database -o jsonpath='{.data.postgres-password}')
+    else
+        POSTGRESQL=$(kubectl get secret orch-database-postgresql -n orch-database -o jsonpath='{.data.password}')
+    fi
     MPS=$(kubectl get secret mps-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}')
     RPS=$(kubectl get secret rps-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}')
     {
@@ -1210,15 +1201,15 @@ echo "Cleaning up external-secrets installation..."
 
 if kubectl get crd clustersecretstores.external-secrets.io >/dev/null 2>&1; then
     kubectl delete crd clustersecretstores.external-secrets.io &
-    kubectl patch crd/clustersecretstores.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge || ture
+    kubectl patch crd/clustersecretstores.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
 fi
 if kubectl get crd secretstores.external-secrets.io >/dev/null 2>&1; then
     kubectl delete crd secretstores.external-secrets.io &
-    kubectl patch crd/secretstores.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge || true
+    kubectl patch crd/secretstores.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
 fi
 if kubectl get crd externalsecrets.external-secrets.io >/dev/null 2>&1; then
     kubectl delete crd externalsecrets.external-secrets.io &
-    kubectl patch crd/externalsecrets.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge || true
+    kubectl patch crd/externalsecrets.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
 fi
 
 # Apply External Secrets CRDs with server-side apply
@@ -1238,5 +1229,5 @@ sleep 10
 #restart tls-boot secrets
 kubectl delete secret tls-boots -n orch-boots
 
-./after_upgrade_restart.sh
+#./after_upgrade_restart.sh
 echo "Upgrade completed! Wait for ArgoCD applications to be in 'Synced' and 'Healthy' state"
