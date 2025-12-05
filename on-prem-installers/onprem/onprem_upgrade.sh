@@ -1201,15 +1201,15 @@ echo "Cleaning up external-secrets installation..."
 
 if kubectl get crd clustersecretstores.external-secrets.io >/dev/null 2>&1; then
     kubectl delete crd clustersecretstores.external-secrets.io &
-    kubectl patch crd/clustersecretstores.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
+    kubectl patch crd/clustersecretstores.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge || ture
 fi
 if kubectl get crd secretstores.external-secrets.io >/dev/null 2>&1; then
     kubectl delete crd secretstores.external-secrets.io &
-    kubectl patch crd/secretstores.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
+    kubectl patch crd/secretstores.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge || true
 fi
 if kubectl get crd externalsecrets.external-secrets.io >/dev/null 2>&1; then
     kubectl delete crd externalsecrets.external-secrets.io &
-    kubectl patch crd/externalsecrets.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
+    kubectl patch crd/externalsecrets.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge || true
 fi
 
 # Apply External Secrets CRDs with server-side apply
