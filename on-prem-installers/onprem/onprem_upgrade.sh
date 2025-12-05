@@ -110,7 +110,7 @@ set_artifacts_version() {
 }
 
 export GIT_REPOS=$cwd/$git_arch_name
-export ONPREM_UPGRADE_SYNC=true
+export ONPREM_UPGRADE_SYNC="${ONPREM_UPGRADE_SYNC:-false}"
 retrieve_and_apply_config() {
     local config_file="$cwd/onprem.env"
     tmp_dir="$cwd/$git_arch_name/tmp"
