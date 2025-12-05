@@ -292,6 +292,7 @@ check_and_handle_failed_sync() {
                 if [[ "$kind" == "Job" ]]; then
                     kubectl delete pods -n "$res_ns" -l job-name="$res_name" --ignore-not-found=true 2>/dev/null &
                     kubectl delete job "$res_name" -n "$res_ns" --ignore-not-found=true 2>/dev/null &
+                    kubectl patch job "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}'
                 elif [[ "$kind" == "CustomResourceDefinition" ]]; then
                     kubectl delete crd "$res_name" --ignore-not-found=true 2>/dev/null &
                 fi
@@ -336,7 +337,9 @@ clean_unhealthy_jobs_for_app() {
             read -r job_ns job_name <<< "$job_line"
             echo "$(yellow)  - Deleting job $job_name in $job_ns (background)$(reset)"
             kubectl delete pods -n "$job_ns" -l job-name="$job_name" --ignore-not-found=true 2>/dev/null &
+            kubectl patch pods -n "$job_ns" -l job-name="$job_name" --type=merge -p='{"metadata":{"finalizers":[]}}'
             kubectl delete job "$job_name" -n "$job_ns" --ignore-not-found=true 2>/dev/null &
+            kubectl patch job "$job_name" -n "$job_ns" --type=merge -p='{"metadata":{"finalizers":[]}}'
         done <<< "$app_resources"
         echo "[INFO] Job cleanup initiated in background, proceeding..."
         return 0
@@ -491,12 +494,16 @@ sync_not_green_apps_once() {
                         if [[ "$kind" == "Job" ]]; then
                             kubectl patch job "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}' 2>/dev/null || true
                             kubectl delete pods -n "$res_ns" -l job-name="$res_name" --ignore-not-found=true --timeout=10s 2>/dev/null &
+                            kubectl patch pods -n "$res_ns" -l job-name="$res_name" --type=merge -p='{"metadata":{"finalizers":[]}}'
                             kubectl delete job "$res_name" -n "$res_ns" --ignore-not-found=true --timeout=10s 2>/dev/null &
+                            kubectl patch job "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}'
                         elif [[ "$kind" == "CustomResourceDefinition" ]]; then
                             kubectl patch crd "$res_name" --type=merge -p='{"metadata":{"finalizers":[]}}' 2>/dev/null || true
                             kubectl delete crd "$res_name" --ignore-not-found=true --timeout=10s 2>/dev/null &
+                            kubectl patch crd "$res_name" --type=merge -p='{"metadata":{"finalizers":[]}}'
                         else
                             kubectl delete "$kind" "$res_name" -n "$res_ns" --ignore-not-found=true --timeout=10s 2>/dev/null &
+                            kubectl patch "$kind" "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}'
                         fi
                     done <<< "$problem_resources"
                     echo "$(yellow)[INFO] Waiting for cleanup to complete...$(reset)"
@@ -820,12 +827,16 @@ sync_all_apps_exclude_root() {
                         if [[ "$kind" == "Job" ]]; then
                             kubectl patch job "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}' 2>/dev/null || true
                             kubectl delete pods -n "$res_ns" -l job-name="$res_name" --ignore-not-found=true --timeout=10s 2>/dev/null &
+                            kubectl patch pods -n "$res_ns" -l job-name="$res_name" --type=merge -p='{"metadata":{"finalizers":[]}}'
                             kubectl delete job "$res_name" -n "$res_ns" --ignore-not-found=true --timeout=10s 2>/dev/null &
+                            kubectl patch job "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}'
                         elif [[ "$kind" == "CustomResourceDefinition" ]]; then
                             kubectl patch crd "$res_name" --type=merge -p='{"metadata":{"finalizers":[]}}' 2>/dev/null || true
                             kubectl delete crd "$res_name" --ignore-not-found=true --timeout=10s 2>/dev/null &
+                            kubectl patch crd "$res_name" --type=merge -p='{"metadata":{"finalizers":[]}}'
                         else
                             kubectl delete "$kind" "$res_name" -n "$res_ns" --ignore-not-found=true --timeout=10s 2>/dev/null &
+                            kubectl patch "$kind" "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}'
                         fi
                     done <<< "$problem_resources"
                     echo "$(yellow)[INFO] Waiting for cleanup to complete...$(reset)"
@@ -1109,13 +1120,16 @@ namespace_all_green_exclude_root() {
 }
 
 sync_until_green_ns_exclude_root() {
-    while true; do
+    local retry_count=0
+    local max_retries=2
+    
+    while (( retry_count < max_retries )); do
         if ! namespace_all_green_exclude_root; then
             print_header "All non-root-app applications are Healthy+Synced in namespace '$NS'."
             break
         fi
 
-        print_header "NOT-GREEN apps (Wave-Ordered, excluding root-app)"
+        print_header "NOT-GREEN apps (Wave-Ordered, excluding root-app) - Attempt $((retry_count + 1))/${max_retries}"
         print_table_header
         mapfile -t not_green < <(kubectl get applications.argoproj.io -n "$NS" -o json \
             | jq -r '.items[] | select(.metadata.name != "root-app") | {
@@ -1132,8 +1146,12 @@ sync_until_green_ns_exclude_root() {
 
         sync_all_apps_exclude_root
 
-        sleep "10"
+        ((retry_count++))
     done
+    
+    if (( retry_count >= max_retries )) && namespace_all_green_exclude_root; then
+        echo "$(yellow)[WARN] Maximum retries (${max_retries}) reached but some apps are still not green$(reset)"
+    fi
 }
 
 
@@ -1166,8 +1184,12 @@ check_and_delete_stuck_crd_jobs() {
             # Delete associated pods first
             kubectl delete pods -n "$job_ns" -l job-name="$job_name" --ignore-not-found=true 2>/dev/null &
 
+            kubectl patch pod -n "$job_ns" -l job-name="$job_name" --type=merge -p='{"metadata":{"finalizers":[]}}'
+
             # Delete the job
             kubectl delete job "$job_name" -n "$job_ns" --ignore-not-found=true &
+
+            kubectl patch job "$job_name" -n "$job_ns" --type=merge -p='{"metadata":{"finalizers":[]}}'
         done <<< "$stuck_jobs"
 
         echo "[INFO] Job cleanup initiated in background, proceeding..."
