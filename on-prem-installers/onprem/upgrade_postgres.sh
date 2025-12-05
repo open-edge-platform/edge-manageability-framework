@@ -11,15 +11,49 @@ local_backup_path="${POSTGRES_LOCAL_BACKUP_PATH}${local_backup_file}"
 POSTGRES_USERNAME="postgres"
 application_namespace=onprem
 
-# UPGRADE_FROM_3_1_X is set and exported by onprem_upgrade.sh
-# Default to true if not set (upgrading FROM 3.1.3)
-UPGRADE_FROM_3_1_X="${UPGRADE_FROM_3_1_X:-true}"
+# Detect upgrade path by checking which PostgreSQL pod exists in orch-database namespace
+# If postgresql-cluster-* exists (CloudNativePG), this is upgrade FROM 2025.02 to latest
+# If postgresql-0 exists in orch-database, this is upgrade FROM 3.1.3 to latest
+# Note: gitea-postgresql-0 in gitea namespace is ignored
+get_postgres_pod() {
+  # Check for CloudNativePG pod (2025.02) in orch-database namespace only
+  local cnpg_pod=$(kubectl get pods -n orch-database -l cnpg.io/cluster=postgresql-cluster,cnpg.io/instanceRole=primary -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+  
+  if [[ -n "$cnpg_pod" ]]; then
+    echo "$cnpg_pod"
+    return
+  fi
+  
+  # Check for old postgresql-0 pod (3.1.3) in orch-database namespace only
+  if kubectl get pod postgresql-0 -n orch-database &>/dev/null; then
+    echo "postgresql-0"
+    return
+  fi
+  
+  # Default fallback
+  echo "postgresql-0"
+}
 
-if [[ "$UPGRADE_FROM_3_1_X" == "true" ]]; then
-    podname="postgresql-0"
+# Detect upgrade path based on pod name
+detect_upgrade_path() {
+  local pod=$(get_postgres_pod)
+  if [[ "$pod" == "postgresql-cluster-"* ]]; then
+    UPGRADE_FROM_3_1_X="false"
+    echo "Detected upgrade FROM v2025.02 (pod: $pod)"
+  else
+    UPGRADE_FROM_3_1_X="true"
+    echo "Detected upgrade FROM v3.1.3 (pod: $pod)"
+  fi
+}
+
+# Auto-detect if not already set by onprem_upgrade.sh
+if [[ -z "$UPGRADE_FROM_3_1_X" ]]; then
+  detect_upgrade_path
 else
-    podname="postgresql-cluster-1"
+  echo "Using upgrade path from parent script: UPGRADE_FROM_3_1_X=$UPGRADE_FROM_3_1_X"
 fi
+
+podname=$(get_postgres_pod)
 
 check_postgres() {
   if [[ -f "$local_backup_path" ]]; then
@@ -30,8 +64,11 @@ check_postgres() {
     return
   fi
 
+  # Dynamically get the correct PostgreSQL pod name
+  local current_podname=$(get_postgres_pod)
+
   # Check if the PostgreSQL pod is running
-  pod_status=$(kubectl get pods -n $postgres_namespace $podname -o jsonpath='{.status.phase}')
+  pod_status=$(kubectl get pods -n $postgres_namespace $current_podname -o jsonpath='{.status.phase}')
 
   if [ "$pod_status" != "Running" ]; then
     echo "PostgreSQL pod is not running. Current status: $pod_status"
@@ -97,10 +134,6 @@ delete_postgres() {
   fi
 
   kubectl delete secret --ignore-not-found=true -n $postgres_namespace postgresql
-}
-
-get_postgres_pod() {
-  kubectl get pods -n orch-database -l cnpg.io/cluster=postgresql-cluster,cnpg.io/instanceRole=primary -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "postgresql-0"
 }
 
 restore_postgres() {
