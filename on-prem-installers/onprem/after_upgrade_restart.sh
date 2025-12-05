@@ -467,7 +467,7 @@ sync_not_green_apps_once() {
             echo "$(yellow)[INFO] Attempt ${attempt}/${APP_MAX_RETRIES}, elapsed: 0s$(reset)"
 
             # Check if app requires server-side apply and special cleanup
-            if [[ " $SERVER_SIDE_APPS " =~ \ $name\  ]]; then
+            if [[ " $SERVER_SIDE_APPS " =~ " $name " ]]; then
                 echo "$(yellow)[INFO] Stopping any ongoing operations for $name before force sync...$(reset)"
                 argocd app terminate-op "$full_app" --grpc-web 2>/dev/null || true
                 sleep 2
@@ -796,7 +796,7 @@ sync_all_apps_exclude_root() {
             echo "$(yellow)[INFO] Attempt ${attempt}/${APP_MAX_RETRIES}, elapsed: 0s$(reset)"
 
             # Check if app requires server-side apply and special cleanup
-            if [[ " $SERVER_SIDE_APPS " =~ \ $name\  ]]; then
+            if [[ " $SERVER_SIDE_APPS " =~ " $name " ]]; then
                 echo "$(yellow)[INFO] Stopping any ongoing operations for $name before force sync...$(reset)"
                 argocd app terminate-op "$full_app" --grpc-web 2>/dev/null || true
                 sleep 2
@@ -1251,8 +1251,7 @@ post_upgrade_cleanup() {
     kubectl delete secret tls-boots -n orch-boots || true
     kubectl delete secret boots-ca-cert -n orch-gateway || true
     kubectl delete secret boots-ca-cert -n orch-infra || true
-    echo "[INFO] Waiting 30 seconds for secrets cleanup to complete before deleting dkam pods..."
-    sleep 30
+
     echo "[INFO] Deleting dkam pods in namespace orch-infra..."
     kubectl delete pod -n orch-infra -l app.kubernetes.io/name=dkam 2>/dev/null || true
 
@@ -1266,7 +1265,13 @@ execute_full_sync() {
     sync_until_green_ns_exclude_root
     print_header "Syncing root-app after all other apps are green"
     sync_root_app_only
+
     post_upgrade_cleanup
+
+    sleep 60
+    print_header "Post-upgrade: Syncing all apps (excluding root-app) again"
+    sync_all_apps_exclude_root
+    print_header "Post-upgrade: Syncing root-app again"
     sync_root_app_only
 }
 

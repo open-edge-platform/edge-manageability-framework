@@ -8,10 +8,7 @@
 # Description: This script:
 #               If requested - does a backup of PVs and cluster's ETCD
 #               Downloads debian packages and repo artifacts,
-#               Upgrades packages from either:
-#                 - v3.1.3 to latest (set -u true or omit, default)
-#                 - v2025.02 to latest (set -u false)
-#               Upgrades:
+#               Upgrades packages to v3.1.0:
 #                 - OS config,
 #                 - RKE2 and basic cluster components,
 #                 - ArgoCD,
@@ -21,7 +18,6 @@
 # Usage: ./onprem_upgrade
 #    -o:             Override production values with dev values
 #    -b:             enable backup of Orchestrator PVs before upgrade (optional)
-#    -u [true|false]: specify source version: true=from 3.1.3 (default), false=from 2025.02
 #    -h:             help (optional)
 
 set -e
@@ -81,8 +77,7 @@ ORCH_INSTALLER_PROFILE="${ORCH_INSTALLER_PROFILE:-onprem}"
 DEPLOY_VERSION="${DEPLOY_VERSION:-v3.1.0}"  # Updated to v3.1.0
 GITEA_IMAGE_REGISTRY="${GITEA_IMAGE_REGISTRY:-docker.io}"
 USE_LOCAL_PACKAGES="${USE_LOCAL_PACKAGES:-false}"  # New flag for local packages
-# UPGRADE_FROM_3_1_X indicates SOURCE version: true=upgrading FROM 3.1.3, false=upgrading FROM 2025.02
-UPGRADE_FROM_3_1_X="${UPGRADE_FROM_3_1_X:-true}"  # Default: upgrading from 3.1.3
+UPGRADE_3_1_X="${UPGRADE_3_1_X:-true}"
 
 ### Variables
 cwd=$(pwd)
@@ -629,31 +624,20 @@ cleanup_gitea_secrets() {
 usage() {
     cat >&2 <<EOF
 Purpose:
-Upgrade OnPrem Edge Orchestrator to latest version.
-
-Supports two upgrade paths:
-  1. From v3.1.3 to latest (use -u true or omit, this is default)
-  2. From v2025.02 to latest (use -u false)
+Upgrade OnPrem Edge Orchestrator to v3.1.0.
 
 Usage:
 $(basename "$0") [option...] [argument]
 
-Examples:
-./onprem_upgrade.sh -b              # Upgrade from 3.1.3 with backup (default)
-./onprem_upgrade.sh -bl             # Upgrade from 3.1.3 with local packages and backup
-./onprem_upgrade.sh -u false     # Upgrade from 2025.02 with backup
-./onprem_upgrade.sh -u true         # Explicitly upgrade from 3.1.3
+ex:
+./onprem_upgrade.sh -b
+./onprem_upgrade.sh -bl  # Use local packages with backup
 
 Options:
     -b:             enable backup of Orchestrator PVs before upgrade (optional)
     -l:             use local packages instead of downloading (optional)
     -o:             override production values with dev values (optional)
-    -u [true|false]: specify SOURCE version to upgrade FROM:
-                       true  = upgrading FROM v3.1.3 (default)
-                       false = upgrading FROM v2025.02
     -h:             help (optional)
-
-Note: The -u flag sets UPGRADE_FROM_3_1_X variable.
 
 EOF
 }
@@ -663,38 +647,21 @@ EOF
 ################################
 
 # shellcheck disable=SC2034
-while getopts 'v:hbolu:' flag; do
+while getopts 'v:hbol' flag; do
     case "${flag}" in
     h) HELP='true' ;;
     b) BACKUP='true' ;;
     o) OVERRIDE='true' ;;
     l) USE_LOCAL_PACKAGES='true' ;;  # New local packages flag
-    u) UPGRADE_FROM_3_1_X="${OPTARG}" ;;  # Set UPGRADE_FROM_3_1_X from command-line
     *) HELP='true' ;;
     esac
 done
-
-# Validate UPGRADE_FROM_3_1_X value
-if [[ "$UPGRADE_FROM_3_1_X" != "true" && "$UPGRADE_FROM_3_1_X" != "false" ]]; then
-    echo "Error: UPGRADE_FROM_3_1_X must be 'true' or 'false'. Got: $UPGRADE_FROM_3_1_X"
-    usage
-    exit 1
-fi
-
-# Export for use in upgrade_postgres.sh
-export UPGRADE_FROM_3_1_X
 
 if [[ $HELP ]]; then
     usage
     exit 1
 fi
 
-# Log which upgrade path is being used
-if [[ "$UPGRADE_FROM_3_1_X" == "true" ]]; then
-    log_info "Upgrade path: FROM v3.1.3 TO latest"
-else
-    log_info "Upgrade path: FROM v2025.02 TO latest"
-fi
 
 # Check if postgres is running and if it is safe to backup
 check_postgres
@@ -705,7 +672,7 @@ fi
 
 # Perform PostgreSQL secret backup if not done already
 if [[ ! -f postgres_secret.yaml ]]; then
-    if [[ "$UPGRADE_FROM_3_1_X" == "true" ]]; then
+    if [[ "$UPGRADE_3_1_X" == "true" ]]; then
         kubectl get secret -n orch-database postgresql -o yaml > postgres_secret.yaml
     else
         kubectl get secret -n orch-database passwords -o yaml > postgres_secret.yaml
@@ -843,7 +810,7 @@ if [[ ! -s postgres-secrets-password.txt ]]; then
     IAM_TENANCY=$(kubectl get secret iam-tenancy-local-postgresql -n orch-iam -o jsonpath='{.data.PGPASSWORD}')
     PLATFORM_KEYCLOAK=$(kubectl get secret platform-keycloak-local-postgresql -n orch-platform -o jsonpath='{.data.PGPASSWORD}')
     VAULT=$(kubectl get secret vault-local-postgresql -n orch-platform -o jsonpath='{.data.PGPASSWORD}')
-    if [[ "$UPGRADE_FROM_3_1_X" == "true" ]]; then
+    if [[ "$UPGRADE_3_1_X" == "true" ]]; then
         POSTGRESQL=$(kubectl get secret postgresql -n orch-database -o jsonpath='{.data.postgres-password}')
     else
         POSTGRESQL=$(kubectl get secret orch-database-postgresql -n orch-database -o jsonpath='{.data.password}')
@@ -1099,7 +1066,7 @@ patch_secrets
 sleep 10
 
 # Restore secret after app delete but before postgress restored
-if [[ "$UPGRADE_FROM_3_1_X" == "true" ]]; then
+if [[ "$UPGRADE_3_1_X" == "true" ]]; then
         yq e 'del(.metadata.labels, .metadata.annotations, .metadata.uid, .metadata.creationTimestamp)' postgres_secret.yaml | kubectl apply -f -
 else
         yq e '
