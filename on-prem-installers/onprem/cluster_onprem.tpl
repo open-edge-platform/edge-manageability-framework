@@ -37,6 +37,10 @@ argo:
   # name to produce the service's domain name. For example, given the domain name of `orchestrator.io`, the Web UI
   # service will be accessible via `web-ui.orchestrator.io`. Not to be confused with the K8s cluster domain.
   clusterDomain: ${CLUSTER_DOMAIN}
+  metadata:
+    annotations:
+      argocd.argoproj.io/hook: PostSync
+      argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 
   ## Argo CD configs
   utilsRepoURL: "https://gitea-http.gitea.svc.cluster.local/argocd/orch-utils"
