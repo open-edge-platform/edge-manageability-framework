@@ -12,20 +12,21 @@ POSTGRES_USERNAME="postgres"
 application_namespace=onprem
 
 # Detect upgrade path by checking which PostgreSQL pod exists in orch-database namespace
-# If postgresql-cluster-* exists (CloudNativePG), this is upgrade FROM 2025.02 to latest
+# If postgresql-cluster-1 exists, this is upgrade FROM 2025.02 to latest
 # If postgresql-0 exists in orch-database, this is upgrade FROM 3.1.3 to latest
 # Note: gitea-postgresql-0 in gitea namespace is ignored
 get_postgres_pod() {
-  # Check for CloudNativePG pod (2025.02) in orch-database namespace only
-  local cnpg_pod=$(kubectl get pods -n orch-database -l cnpg.io/cluster=postgresql-cluster,cnpg.io/instanceRole=primary -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+  # Get all pod names in orch-database namespace
+  local pod_names=$(kubectl get pods -n orch-database -o jsonpath='{.items[*].metadata.name}' 2>/dev/null)
   
-  if [[ -n "$cnpg_pod" ]]; then
-    echo "$cnpg_pod"
+  # Check for postgresql-cluster-1 (2025.02 CloudNativePG)
+  if echo "$pod_names" | grep -qw "postgresql-cluster-1"; then
+    echo "postgresql-cluster-1"
     return
   fi
   
-  # Check for old postgresql-0 pod (3.1.3) in orch-database namespace only
-  if kubectl get pod postgresql-0 -n orch-database &>/dev/null; then
+  # Check for postgresql-0 (3.1.3)
+  if echo "$pod_names" | grep -qw "postgresql-0"; then
     echo "postgresql-0"
     return
   fi
@@ -37,12 +38,15 @@ get_postgres_pod() {
 # Detect upgrade path based on pod name
 detect_upgrade_path() {
   local pod=$(get_postgres_pod)
-  if [[ "$pod" == "postgresql-cluster-"* ]]; then
+  if [[ "$pod" == "postgresql-cluster-1" ]]; then
     UPGRADE_FROM_3_1_X="false"
     echo "Detected upgrade FROM v2025.02 (pod: $pod)"
-  else
+  elif [[ "$pod" == "postgresql-0" ]]; then
     UPGRADE_FROM_3_1_X="true"
     echo "Detected upgrade FROM v3.1.3 (pod: $pod)"
+  else
+    echo "Unknown PostgreSQL pod: $pod, defaulting to v3.1.3 upgrade path"
+    UPGRADE_FROM_3_1_X="true"
   fi
 }
 

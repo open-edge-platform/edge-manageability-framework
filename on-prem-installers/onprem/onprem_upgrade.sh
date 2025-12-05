@@ -676,18 +676,26 @@ fi
 # Auto-detect upgrade path by checking PostgreSQL pod in orch-database namespace only
 log_info "Auto-detecting upgrade path..."
 
-# Check for CloudNativePG pod (2025.02 version) - has specific labels
-cnpg_pod=$(kubectl get pods -n orch-database -l cnpg.io/cluster=postgresql-cluster,cnpg.io/instanceRole=primary -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+# Get all pod names in orch-database namespace
+pod_names=$(kubectl get pods -n orch-database -o jsonpath='{.items[*].metadata.name}' 2>/dev/null)
 
-if [[ -n "$cnpg_pod" ]]; then
+if [[ -z "$pod_names" ]]; then
+    log_error "No PostgreSQL pod found in orch-database namespace. Cannot determine upgrade path."
+    log_error "Note: gitea-postgresql-0 in gitea namespace is ignored - only checking orch-database namespace"
+    exit 1
+fi
+
+# Check for postgresql-cluster-1 (2025.02 version with CloudNativePG)
+if echo "$pod_names" | grep -qw "postgresql-cluster-1"; then
     UPGRADE_FROM_3_1_X="false"
-    log_info "Detected CloudNativePG pod '$cnpg_pod' in orch-database - Upgrade path: FROM v2025.02 TO latest"
-elif kubectl get pod postgresql-0 -n orch-database &>/dev/null; then
+    log_info "Detected postgresql-cluster-1 pod in orch-database - Upgrade path: FROM v2025.02 TO latest"
+# Check for postgresql-0 (3.1.3 version)
+elif echo "$pod_names" | grep -qw "postgresql-0"; then
     UPGRADE_FROM_3_1_X="true"
     log_info "Detected postgresql-0 pod in orch-database - Upgrade path: FROM v3.1.3 TO latest"
 else
-    log_error "No PostgreSQL pod found in orch-database namespace. Cannot determine upgrade path."
-    log_error "Note: gitea-postgresql-0 in gitea namespace is ignored - only checking orch-database namespace"
+    log_error "Unknown PostgreSQL pod configuration in orch-database namespace: $pod_names"
+    log_error "Expected either 'postgresql-0' (v3.1.3) or 'postgresql-cluster-1' (v2025.02)"
     exit 1
 fi
 
