@@ -284,6 +284,8 @@ aws ec2 describe-security-groups --group-ids "$LB_SG_ID_T2" --query "SecurityGro
 echo "Updating and revoking the SG for Traefik3"
 aws ec2 describe-security-groups --group-ids "$LB_SG_ID_T3" --query "SecurityGroups[0].IpPermissionsEgress[?UserIdGroupPairs[?GroupId=='$EKS_SG_ID']]" --output text | grep -q . || aws ec2 authorize-security-group-egress --group-id "$LB_SG_ID_T3" --protocol -1 --port -1 --source-group "$EKS_SG_ID"
 aws ec2 describe-security-groups --group-ids "$LB_SG_ID_T3" --query "SecurityGroups[0].IpPermissionsEgress[?IpRanges[?CidrIp=='0.0.0.0/0']]" --output text | grep -q . && aws ec2 revoke-security-group-egress --group-id "$LB_SG_ID_T3" --protocol all --port all --cidr 0.0.0.0/0
+
+return 0
 }
 
 # Main
