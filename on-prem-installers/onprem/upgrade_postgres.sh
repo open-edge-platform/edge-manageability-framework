@@ -10,12 +10,9 @@ local_backup_file="${postgres_namespace}_backup.sql"
 local_backup_path="${POSTGRES_LOCAL_BACKUP_PATH}${local_backup_file}"
 POSTGRES_USERNAME="postgres"
 application_namespace=onprem
+UPGRADE_3_1_X="${UPGRADE_3_1_X:-true}"
 
-# UPGRADE_FROM_3_1_X is set and exported by onprem_upgrade.sh
-# Default to true if not set (upgrading FROM 3.1.3)
-UPGRADE_FROM_3_1_X="${UPGRADE_FROM_3_1_X:-true}"
-
-if [[ "$UPGRADE_FROM_3_1_X" == "true" ]]; then
+if [[ "$UPGRADE_3_1_X" == "true" ]]; then
     podname="postgresql-0"
 else
     podname="postgresql-cluster-1"
@@ -58,7 +55,7 @@ backup_postgres() {
   fi
   echo "Backing up databases from pod $podname in namespace $postgres_namespace..."
 
-  if [[ "$UPGRADE_FROM_3_1_X" == "true" ]]; then
+  if [[ "$UPGRADE_3_1_X" == "true" ]]; then
         remote_backup_path="/tmp/${postgres_namespace}_backup.sql"
   else
         remote_backup_path="/var/lib/postgresql/data/${postgres_namespace}_backup.sql"
@@ -113,7 +110,7 @@ restore_postgres() {
   echo "Restoring backup databases from pod $podname in namespace $postgres_namespace..."
 
   # Get postgres password from secret
-  if [[ "$UPGRADE_FROM_3_1_X" == "true" ]]; then
+  if [[ "$UPGRADE_3_1_X" == "true" ]]; then
         PGPASSWORD=$(kubectl get secret -n $postgres_namespace postgresql -o jsonpath='{.data.postgres-password}' | base64 -d)
 else
         PGPASSWORD=$(kubectl get secret -n $postgres_namespace orch-database-postgresql -o jsonpath='{.data.password}' | base64 -d)
