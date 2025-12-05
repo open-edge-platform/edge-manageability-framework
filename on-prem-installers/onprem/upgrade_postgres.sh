@@ -11,10 +11,16 @@ local_backup_path="${POSTGRES_LOCAL_BACKUP_PATH}${local_backup_file}"
 POSTGRES_USERNAME="postgres"
 application_namespace=onprem
 
-if [[ "$UPGRADE_3_1_X" == "true" ]]; then
+# Detect PostgreSQL pod type
+if kubectl get pod -n $postgres_namespace | grep -q "^postgresql-0"; then
+    UPGRADE_3_1_X=true
     podname="postgresql-0"
-else
+elif kubectl get pod -n $postgres_namespace | grep -q "^postgresql-cluster-1"; then
+    UPGRADE_3_1_X=false
     podname="postgresql-cluster-1"
+else
+    echo "ERROR: No expected PostgreSQL pod found in orch-database namespace"
+    exit 1
 fi
 
 check_postgres() {
@@ -109,12 +115,20 @@ restore_postgres() {
   echo "Restoring backup databases from pod $podname in namespace $postgres_namespace..."
 
   # Get postgres password from secret
-  if [[ "$UPGRADE_3_1_X" == "true" ]]; then
-        PGPASSWORD=$(kubectl get secret -n $postgres_namespace postgresql -o jsonpath='{.data.postgres-password}' | base64 -d)
+# Check if default secret 'postgresql' exists
+if kubectl get secret postgresql -n "$postgres_namespace" >/dev/null 2>&1; then
+    POSTGRESQL=$(kubectl get secret postgresql -n "$postgres_namespace" -o jsonpath='{.data.postgres-password}')
+    echo "Using secret: postgresql"
+# Else check if fallback secret exists
+elif kubectl get secret orch-database-postgresql -n "$postgres_namespace" >/dev/null 2>&1; then
+    POSTGRESQL=$(kubectl get secret orch-database-postgresql -n "$postgres_namespace" -o jsonpath='{.data.password}')
+    echo "Using secret: orch-database-postgresql"
+# If neither exists → error out
 else
-        PGPASSWORD=$(kubectl get secret -n $postgres_namespace orch-database-postgresql -o jsonpath='{.data.password}' | base64 -d)
+    echo "ERROR: No valid PostgreSQL secret found in namespace '$postgres_namespace'"
+    echo "Expected one of: 'postgresql' or 'orch-database-postgresql'"
+    exit 1
 fi
-
   # CloudNativePG doesn't need security disable/enable, just use credentials
   # Use the remote backup file that was copied to the pod
   kubectl exec -n $postgres_namespace "$podname" -c postgres -- env PGPASSWORD="$PGPASSWORD" psql -U $POSTGRES_USERNAME -f "$remote_backup_path"

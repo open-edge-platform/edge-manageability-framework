@@ -810,11 +810,20 @@ if [[ ! -s postgres-secrets-password.txt ]]; then
     IAM_TENANCY=$(kubectl get secret iam-tenancy-local-postgresql -n orch-iam -o jsonpath='{.data.PGPASSWORD}')
     PLATFORM_KEYCLOAK=$(kubectl get secret platform-keycloak-local-postgresql -n orch-platform -o jsonpath='{.data.PGPASSWORD}')
     VAULT=$(kubectl get secret vault-local-postgresql -n orch-platform -o jsonpath='{.data.PGPASSWORD}')
-    if [[ "$UPGRADE_3_1_X" == "true" ]]; then
-        POSTGRESQL=$(kubectl get secret postgresql -n orch-database -o jsonpath='{.data.postgres-password}')
-    else
-        POSTGRESQL=$(kubectl get secret orch-database-postgresql -n orch-database -o jsonpath='{.data.password}')
-    fi
+    # Check if default secret 'postgresql' exists
+if kubectl get secret postgresql -n orch-database >/dev/null 2>&1; then
+    POSTGRESQL=$(kubectl get secret postgresql -n orch-database -o jsonpath='{.data.postgres-password}')
+    echo "Using secret: postgresql"
+# Else check if fallback secret exists
+elif kubectl get secret orch-database-postgresql -n orch-database >/dev/null 2>&1; then
+    POSTGRESQL=$(kubectl get secret orch-database-postgresql -n orch-database -o jsonpath='{.data.password}')
+    echo "Using secret: orch-database-postgresql"
+# If neither exists → error out
+else
+    echo "ERROR: No valid PostgreSQL secret found in namespace orch-database"
+    echo "Expected one of: 'postgresql' or 'orch-database-postgresql'"
+    exit 1
+fi
     MPS=$(kubectl get secret mps-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}')
     RPS=$(kubectl get secret rps-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}')
     {
