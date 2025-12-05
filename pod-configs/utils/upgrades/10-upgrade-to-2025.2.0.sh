@@ -254,6 +254,27 @@ else
     exit 1
 fi
 }
+
+apply_load_balancer(){
+echo "Fetching Load Balancer ARNS for Traefik2 and Traefik3"
+LB_ARN_T2=$(aws elbv2 describe-tags   --resource-arns $(aws elbv2 describe-load-balancers --query 'LoadBalancers[*].LoadBalancerArn' --output text)   --que>
+LB_ARN_T3=$(aws elbv2 describe-tags   --resource-arns $(aws elbv2 describe-load-balancers --query 'LoadBalancers[*].LoadBalancerArn' --output text)   --que>
+EKS_SG_ID=$(aws ec2 describe-security-groups --filters "Name=group-name,Values=eks-${ENV_NAME}" --query "SecurityGroups[*].GroupId" --output text)
+
+echo "Fetching Load Balancer SG for Traefik2 and Traefik3"
+LB_SG_ID_T2=$(aws elbv2 describe-load-balancers   --load-balancer-arns "$LB_ARN_T2"   --query "LoadBalancers[0].SecurityGroups[0]"   --output text)
+LB_SG_ID_T3=$(aws elbv2 describe-load-balancers   --load-balancer-arns "$LB_ARN_T3"   --query "LoadBalancers[0].SecurityGroups[0]"   --output text)
+
+echo "Updating and revoking the SG for Traefik2"
+aws ec2 authorize-security-group-egress   --group-id "$LB_SG_ID_T2"   --protocol -1   --port -1   --source-group "$EKS_SG_ID"
+aws ec2 revoke-security-group-egress   --group-id "$LB_SG_ID_T2"   --protocol all   --port all   --cidr 0.0.0.0/0
+
+
+echo "Updating and revoking the SG for Traefik3"
+aws ec2 authorize-security-group-egress   --group-id "$LB_SG_ID_T3"   --protocol -1   --port -1   --source-group "$EKS_SG_ID"
+aws ec2 revoke-security-group-egress   --group-id "$LB_SG_ID_T3"   --protocol all   --port all   --cidr 0.0.0.0/0
+}
+
 # Main
 
 if [[ ${COMMAND:-""} != upgrade ]]; then
@@ -270,6 +291,7 @@ connect_cluster
 echo "Starting action cluster"
 action_cluster
 apply_modules
+apply_load_balancer
 
 # Terminate existing sshuttle
 terminate_sshuttle
