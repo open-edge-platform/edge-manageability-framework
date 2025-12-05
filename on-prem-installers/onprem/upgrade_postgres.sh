@@ -10,6 +10,7 @@ local_backup_file="${postgres_namespace}_backup.sql"
 local_backup_path="${POSTGRES_LOCAL_BACKUP_PATH}${local_backup_file}"
 POSTGRES_USERNAME="postgres"
 application_namespace=onprem
+UPGRADE_3_1_X="${UPGRADE_3_1_X:-true}"
 
 if [[ "$UPGRADE_3_1_X" == "true" ]]; then
     podname="postgresql-0"
