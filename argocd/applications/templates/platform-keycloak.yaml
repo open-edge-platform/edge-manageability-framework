@@ -21,7 +21,7 @@ spec:
   sources:
     - repoURL: "registry-1.docker.io/bitnamicharts"
       chart: keycloak
-      targetRevision: 24.4.12
+      targetRevision: 25.3.0
       helm:
         releaseName: {{$appName}}
         valuesObject:
