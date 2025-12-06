@@ -1587,7 +1587,7 @@ execute_full_sync() {
     post_upgrade_cleanup
     sync_root_app_only
     #check_and_download_dkam_certs
-    #list_unhealthy_pods
+    list_unhealthy_pods
     #delete_unhealthy_pods
 }
 
