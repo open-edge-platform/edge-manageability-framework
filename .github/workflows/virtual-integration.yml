@@ -333,7 +333,7 @@ jobs:
       needs.check-changed-files.outputs.on-prem == 'true' ||
       needs.check-changed-files.outputs.ci == 'true' ||
       needs.check-changed-files.outputs.test-automation == 'true' ||
-      github.ref == 'refs/heads/release-3.1'
+      github.ref == 'refs/heads/release-2025.2'
       )
     runs-on: ubuntu-latest
     timeout-minutes: 30
