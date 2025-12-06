@@ -1220,34 +1220,21 @@ kubectl apply --server-side=true --force-conflicts -f https://raw.githubusercont
 echo "Unsealing vault..."
 vault_unseal
 echo "✅ Vault unsealed successfully"
-# Stop root-app old sync as it will be stuck.
+
+# Stop root-app sync.
 kubectl patch application root-app -n  "$apps_ns"  --type merge -p '{"operation":null}'
 kubectl patch application root-app -n  "$apps_ns"  --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
-# Apply root-app Patch
+sleep  5
+# Delete external-secrets application
+kubectl patch application external-secrets -n $apps_ns --type=json -p='[{"op":"remove","path":"/metadata/finalizers"}]' 2>/dev/null || true
+kubectl delete application external-secrets -n $apps_ns --force --grace-period=0 --ignore-not-found=true 2>/dev/null || true
+sleep  5
+# Apply root-app sync
 kubectl patch application root-app -n  "$apps_ns"  --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 sleep 10
-#restart os-resource-manager
-kubectl delete application tenancy-api-mapping -n onprem || true
-kubectl delete application tenancy-datamodel -n onprem || true
-kubectl delete deployment -n orch-infra os-resource-manager || true
+
 #restart tls-boot secrets
 kubectl delete secret tls-boots -n orch-boots || true
-kubectl delete secret boots-ca-cert -n orch-gateway || true
-kubectl delete secret boots-ca-cert -n orch-infra || true
-sleep 10
-kubectl delete pod -n orch-infra -l app.kubernetes.io/name=dkam 2>/dev/null || true
-
-for app in external-secrets copy-app-gitea-cred-to-fleet copy-ca-cert-boots-to-gateway copy-ca-cert-boots-to-infra copy-ca-cert-gateway-to-cattle copy-ca-cert-gateway-to-infra copy-ca-cert-gitea-to-app copy-ca-cert-gitea-to-cluster copy-cluster-gitea-cred-to-fleet infra-managers fleet-rs-secret; do
-  echo "Force deleting application: $app"
-  kubectl patch application "$app" -n $apps_ns --type=json -p='[{"op":"remove","path":"/metadata/finalizers"}]' 2>/dev/null || true
-  kubectl delete application "$app" -n $apps_ns --force --grace-period=0 --ignore-not-found=true 2>/dev/null || true
-done
-
-# Stop root-app old sync as it will be stuck.
-kubectl patch application root-app -n  "$apps_ns"  --type merge -p '{"operation":null}'
-kubectl patch application root-app -n  "$apps_ns"  --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
-# Apply root-app Patch
-kubectl patch application root-app -n  "$apps_ns"  --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
 sleep 300
 ./after_upgrade_restart.sh
