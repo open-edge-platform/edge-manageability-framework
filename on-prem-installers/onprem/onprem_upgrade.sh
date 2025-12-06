@@ -1237,6 +1237,20 @@ kubectl delete secret boots-ca-cert -n orch-infra || true
 sleep 10
 kubectl delete pod -n orch-infra -l app.kubernetes.io/name=dkam 2>/dev/null || true
 
+for app in external-secrets copy-app-gitea-cred-to-fleet copy-ca-cert-boots-to-gateway copy-ca-cert-boots-to-infra copy-ca-cert-gateway-to-cattle copy-ca-cert-gateway-to-infra copy-ca-cert-gitea-to-app copy-ca-cert-gitea-to-cluster copy-cluster-gitea-cred-to-fleet infra-managers fleet-rs-secret; do
+  echo "Force deleting application: $app"
+  kubectl patch application "$app" -n $apps_ns --type=json -p='[{"op":"remove","path":"/metadata/finalizers"}]' 2>/dev/null || true
+  kubectl delete application "$app" -n $apps_ns --force --grace-period=0 --ignore-not-found=true 2>/dev/null || true
+done
+
+# Stop root-app old sync as it will be stuck.
+kubectl patch application root-app -n  "$apps_ns"  --type merge -p '{"operation":null}'
+kubectl patch application root-app -n  "$apps_ns"  --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
+# Apply root-app Patch
+kubectl patch application root-app -n  "$apps_ns"  --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+
+sleep 300
+./after_upgrade_restart.sh
 echo "Wait ~10–15 minutes for ArgoCD to sync and deploy all application"
 echo "   👉 Run the script to to futher sync and post run"
 echo "          ./after_upgrade_restart.sh"
