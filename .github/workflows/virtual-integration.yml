@@ -10,8 +10,7 @@ on:
   # Run on all commits that are pushed to all branches
   push:
     branches:
-      - main
-      - main-pass-validation
+      - release-2025.2
 
   # Trigger workflow on PRs to all branches
   pull_request:
@@ -134,7 +133,7 @@ jobs:
     name: Lint Markdown
     needs:
       - check-changed-files
-    if: needs.check-changed-files.outputs.markdown == 'true' ||  github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation'
+    if: needs.check-changed-files.outputs.markdown == 'true' ||  github.ref == 'refs/heads/release-2025.2'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -170,7 +169,7 @@ jobs:
     name: Lint shell scripts
     needs:
       - check-changed-files
-    if: needs.check-changed-files.outputs.shell == 'true' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation'
+    if: needs.check-changed-files.outputs.shell == 'true' || github.ref == 'refs/heads/release-2025.2'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -192,7 +191,7 @@ jobs:
     name: Lint Terraform
     needs:
       - check-changed-files
-    if: needs.check-changed-files.outputs.terraform == 'true' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation'
+    if: needs.check-changed-files.outputs.terraform == 'true' || github.ref == 'refs/heads/release-2025.2'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -213,7 +212,7 @@ jobs:
     name: Lint YAML
     needs:
       - check-changed-files
-    if: needs.check-changed-files.outputs.yaml == 'true' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation'
+    if: needs.check-changed-files.outputs.yaml == 'true' || github.ref == 'refs/heads/release-2025.2'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -236,7 +235,7 @@ jobs:
     name: Lint Helm
     needs:
       - check-changed-files
-    if: needs.check-changed-files.outputs.helm == 'true' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation'
+    if: needs.check-changed-files.outputs.helm == 'true' || github.ref == 'refs/heads/release-2025.2'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -257,7 +256,7 @@ jobs:
     name: Lint Go
     needs:
       - check-changed-files
-    if: needs.check-changed-files.outputs.go == 'true' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation'
+    if: needs.check-changed-files.outputs.go == 'true' || github.ref == 'refs/heads/release-2025.2'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -334,8 +333,7 @@ jobs:
       needs.check-changed-files.outputs.on-prem == 'true' ||
       needs.check-changed-files.outputs.ci == 'true' ||
       needs.check-changed-files.outputs.test-automation == 'true' ||
-      github.ref == 'refs/heads/main' ||
-      github.ref == 'refs/heads/main-pass-validation'
+      github.ref == 'refs/heads/release-3.1'
       )
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -436,18 +434,18 @@ jobs:
           path: trivy-orchestrator-installer-cloudfull.txt
 
       - name: Publish Cloud Installer artifact
-        if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
+        if: github.event_name == 'push' && ( github.ref == 'refs/heads/release-2025.2' )
         run: mage publish:cloudInstaller
 
       - name: Build release manifest artifact
-        if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
+        if: github.event_name == 'push' && ( github.ref == 'refs/heads/release-2025.2' )
         run: |
           mkdir -p release-manifest
           mage -v gen:releaseManifest release-manifest/chart-manifest.yaml
           mage -v gen:releaseImageManifest release-manifest/image-manifest.yaml
 
       - name: Publish release manifest artifact
-        if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
+        if: github.event_name == 'push' && ( github.ref == 'refs/heads/release-2025.2' )
         run: |
           mage publish:releaseManifest
 
@@ -470,8 +468,7 @@ jobs:
       needs.check-changed-files.outputs.only_design_proposals != 'true' && (
       needs.check-changed-files.outputs.orch == 'true' ||
       needs.check-changed-files.outputs.ci == 'true' ||
-      github.ref == 'refs/heads/main' ||
-      github.ref == 'refs/heads/main-pass-validation'
+      github.ref == 'refs/heads/release-2025.2'
       )
     runs-on: ubuntu-24.04-16core-64GB
     timeout-minutes: 90
@@ -687,8 +684,7 @@ jobs:
       needs.check-changed-files.outputs.on-prem == 'true' ||
       needs.check-changed-files.outputs.ci == 'true' ||
       needs.check-changed-files.outputs.test-automation == 'true' ||
-      github.ref == 'refs/heads/main' ||
-      github.ref == 'refs/heads/main-pass-validation'
+      github.ref == 'refs/heads/release-2025.2'
       )
     runs-on: ubuntu-24.04-16core-64GB
     timeout-minutes: 90
@@ -799,8 +795,7 @@ jobs:
       needs.check-changed-files.outputs.orch == 'true' ||
       needs.check-changed-files.outputs.on-prem == 'true' ||
       needs.check-changed-files.outputs.ci == 'true' ||
-      github.ref == 'refs/heads/main' ||
-      github.ref == 'refs/heads/main-pass-validation'
+      github.ref == 'refs/heads/release-2025.2'
       )
     runs-on: ubuntu-22.04-16core-64GB
     timeout-minutes: 90
@@ -860,7 +855,7 @@ jobs:
       - deploy-kind
       - deploy-on-prem
       - deploy-oxm-profile
-    if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
+    if: github.event_name == 'push' && ( github.ref == 'refs/heads/release-2025.2' )
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -889,7 +884,7 @@ jobs:
       contents: read
       security-events: write
       id-token: write
-    if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
+    if: github.event_name == 'push' && ( github.ref == 'refs/heads/release-2025.2')
     uses: open-edge-platform/orch-ci/.github/workflows/post-merge.yml@592eafb7c84669729eb1adc610515bad61c3550b  # 0.1.67
     with:
       run_build: false
