@@ -12,6 +12,7 @@ on:
     branches:
       - main
       - main-pass-validation
+      - release-2025.2
 
   # Trigger workflow on PRs to all branches
   pull_request:
