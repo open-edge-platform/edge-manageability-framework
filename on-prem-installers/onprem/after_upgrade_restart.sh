@@ -221,15 +221,15 @@ console_info() {
 }
 
 console_success() {
-    echo "$(green)$@$(reset)" >&3
+    echo "$(green)$*$(reset)" >&3
 }
 
 console_warn() {
-    echo "$(yellow)$@$(reset)" >&3
+    echo "$(yellow)$*$(reset)" >&3
 }
 
 console_error() {
-    echo "$(red)$@$(reset)" >&3
+    echo "$(red)$*$(reset)" >&3
 }
 
 # ============================================================
