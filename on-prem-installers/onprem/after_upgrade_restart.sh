@@ -1418,7 +1418,7 @@ post_upgrade_cleanup() {
     #sleep 30
     echo "[INFO] Deleting dkam pods in namespace orch-infra..."
     kubectl delete pod -n orch-infra -l app.kubernetes.io/name=dkam 2>/dev/null || true
-    check_and_download_dkam_certs
+    #check_and_download_dkam_certs
     echo "[INFO] Post-upgrade cleanup completed."
     console_success "[✓] Post-upgrade cleanup completed"
 }
@@ -1432,7 +1432,7 @@ execute_full_sync() {
     sync_root_app_only
     post_upgrade_cleanup
     sync_root_app_only
-    check_and_download_dkam_certs
+    #check_and_download_dkam_certs
 }
 
 # ============================================================
