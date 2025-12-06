@@ -321,6 +321,13 @@ if [ "${DISABLE_O11Y_PROFILE:-false}" = "true" ]; then
     yq -i '.argo.infra-onboarding.disableO11yProfile = true' "$OUTPUT_FILE"
 fi
 
+if [ "${ONPREM_UPGRADE_SYNC:-false}" = "true" ]; then
+    yq -i '
+  .argo.metadata.annotations."argocd.argoproj.io/hook" = "PostSync" |
+  .argo.metadata.annotations."argocd.argoproj.io/hook-delete-policy" = "BeforeHookCreation"
+' "$OUTPUT_FILE"
+fi
+
 
 # -----------------------------------------------------------------------------
 # Proxy variable updates
