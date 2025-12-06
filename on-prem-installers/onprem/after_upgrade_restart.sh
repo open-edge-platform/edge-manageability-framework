@@ -72,7 +72,7 @@ APP_MAX_RETRIES=3                 # retry X times for each app
 GLOBAL_SYNC_RETRIES=2            # Global retry for entire sync process
 
 # Apps requiring server-side apply (space-separated list)
-SERVER_SIDE_APPS="external-secrets copy-app-gitea-cred-to-fleet copy-ca-cert-boots-to-gateway copy-ca-cert-boots-to-infra copy-ca-cert-gateway-to-cattle copy-ca-cert-gateway-to-infra copy-ca-cert-gitea-to-app copy-ca-cert-gitea-to-cluster copy-cluster-gitea-cred-to-fleet copy-keycloak-admin-to-infra infra-external platform-keycloak namespace-label wait-istio-job"
+SERVER_SIDE_APPS="external-secrets copy-app-gitea-cred-to-fleet copy-ca-cert-boots-to-gateway copy-ca-cert-boots-to-infra copy-ca-cert-gateway-to-cattle copy-ca-cert-gateway-to-infra copy-ca-cert-gitea-to-app copy-ca-cert-gitea-to-cluster copy-cluster-gitea-cred-to-fleet copy-keycloak-admin-to-infra infra-external platform-keycloak namespace-label wait-istio-job infra-onboarding"
 
 # shellcheck disable=SC1091
 # ============================================================
@@ -318,6 +318,18 @@ check_and_handle_failed_sync() {
 }
 
 # ============================================================
+# Stop root-app sync operations
+# ============================================================
+root_app_stop_start() {
+    echo "$(yellow)[INFO] Stopping root-app sync operations...$(reset)"
+    kubectl patch application root-app -n "$NS" --type merge -p '{"operation":null}' 2>/dev/null || true
+    kubectl patch application root-app -n "$NS" --type json -p '[{"op": "remove", "path": "/status/operationState"}]' 2>/dev/null || true
+    sleep 2
+    kubectl patch application root-app -n "$NS" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge || true
+    sleep 5
+}
+
+# ============================================================
 # Clean unhealthy jobs for a specific application
 # ============================================================
 clean_unhealthy_jobs_for_app() {
@@ -470,6 +482,7 @@ sync_not_green_apps_once() {
             echo "$(yellow)[INFO] Attempt ${attempt}/${APP_MAX_RETRIES}, elapsed: 0s$(reset)"
 
             # Check if app requires server-side apply and special cleanup
+                root_app_stop_start
             if [[ " $SERVER_SIDE_APPS " =~ \ $name\  ]]; then
                 echo "$(yellow)[INFO] Stopping any ongoing operations for $name before force sync...$(reset)"
                 argocd app terminate-op "$full_app" --grpc-web 2>/dev/null || true
@@ -813,6 +826,7 @@ sync_all_apps_exclude_root() {
                 problem_resources=$(kubectl get applications.argoproj.io "$name" -n "$NS" -o json 2>/dev/null | jq -r '
                     .status.resources[]? |
                     select(.status == "OutOfSync" or .health.status == "Degraded" or .health.status == "Missing") |
+                root_app_stop_start
                     select(.kind == "Job" or .kind == "CustomResourceDefinition" or .kind == "ExternalSecret" or .kind == "SecretStore" or .kind == "ClusterSecretStore") |
                     "\(.kind) \(.namespace) \(.name)"
                 ')
