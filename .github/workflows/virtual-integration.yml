@@ -436,18 +436,18 @@ jobs:
           path: trivy-orchestrator-installer-cloudfull.txt
 
       - name: Publish Cloud Installer artifact
-        if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
+        if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' || github.ref == 'refs/heads/release-2025.2' )
         run: mage publish:cloudInstaller
 
       - name: Build release manifest artifact
-        if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
+        if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation'  || github.ref == 'refs/heads/release-2025.2' )
         run: |
           mkdir -p release-manifest
           mage -v gen:releaseManifest release-manifest/chart-manifest.yaml
           mage -v gen:releaseImageManifest release-manifest/image-manifest.yaml
 
       - name: Publish release manifest artifact
-        if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
+        if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation'  || github.ref == 'refs/heads/release-2025.2' )
         run: |
           mage publish:releaseManifest
 
