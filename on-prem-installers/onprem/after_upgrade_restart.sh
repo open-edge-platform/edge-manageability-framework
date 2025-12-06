@@ -335,7 +335,7 @@ check_and_handle_failed_sync() {
                 if [[ "$kind" == "Job" ]]; then
                     kubectl delete pods -n "$res_ns" -l job-name="$res_name" --ignore-not-found=true 2>/dev/null &
                     kubectl delete job "$res_name" -n "$res_ns" --ignore-not-found=true 2>/dev/null &
-                    kubectl patch job "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}'
+                    kubectl patch job "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}' || true
                 elif [[ "$kind" == "CustomResourceDefinition" ]]; then
                     kubectl delete crd "$res_name" --ignore-not-found=true 2>/dev/null &
                 fi
@@ -444,9 +444,9 @@ clean_unhealthy_jobs_for_app() {
             read -r job_ns job_name <<< "$job_line"
             echo "$(yellow)  - Deleting job $job_name in $job_ns (background)$(reset)"
             kubectl delete pods -n "$job_ns" -l job-name="$job_name" --ignore-not-found=true 2>/dev/null &
-            kubectl patch pods -n "$job_ns" -l job-name="$job_name" --type=merge -p='{"metadata":{"finalizers":[]}}'
+            kubectl patch pods -n "$job_ns" -l job-name="$job_name" --type=merge -p='{"metadata":{"finalizers":[]}}' || true
             kubectl delete job "$job_name" -n "$job_ns" --ignore-not-found=true 2>/dev/null &
-            kubectl patch job "$job_name" -n "$job_ns" --type=merge -p='{"metadata":{"finalizers":[]}}'
+            kubectl patch job "$job_name" -n "$job_ns" --type=merge -p='{"metadata":{"finalizers":[]}}' || true
         done <<< "$app_resources"
         echo "[INFO] Job cleanup initiated in background, proceeding..."
         return 0
@@ -614,16 +614,16 @@ sync_not_green_apps_once() {
                         if [[ "$kind" == "Job" ]]; then
                             kubectl patch job "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}' 2>/dev/null || true
                             kubectl delete pods -n "$res_ns" -l job-name="$res_name" --ignore-not-found=true --timeout=10s 2>/dev/null &
-                            kubectl patch pods -n "$res_ns" -l job-name="$res_name" --type=merge -p='{"metadata":{"finalizers":[]}}'
+                            kubectl patch pods -n "$res_ns" -l job-name="$res_name" --type=merge -p='{"metadata":{"finalizers":[]}}' || true
                             kubectl delete job "$res_name" -n "$res_ns" --ignore-not-found=true --timeout=10s 2>/dev/null &
-                            kubectl patch job "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}'
+                            kubectl patch job "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}' || true
                         elif [[ "$kind" == "CustomResourceDefinition" ]]; then
                             kubectl patch crd "$res_name" --type=merge -p='{"metadata":{"finalizers":[]}}' 2>/dev/null || true
                             kubectl delete crd "$res_name" --ignore-not-found=true --timeout=10s 2>/dev/null &
-                            kubectl patch crd "$res_name" --type=merge -p='{"metadata":{"finalizers":[]}}'
+                            kubectl patch crd "$res_name" --type=merge -p='{"metadata":{"finalizers":[]}}' || true
                         else
                             kubectl delete "$kind" "$res_name" -n "$res_ns" --ignore-not-found=true --timeout=10s 2>/dev/null &
-                            kubectl patch "$kind" "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}'
+                            kubectl patch "$kind" "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}' || true
                         fi
                     done <<< "$problem_resources"
                     echo "$(yellow)[INFO] Waiting for cleanup to complete...$(reset)"
@@ -956,16 +956,16 @@ sync_all_apps_exclude_root() {
                         if [[ "$kind" == "Job" ]]; then
                             kubectl patch job "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}' 2>/dev/null || true
                             kubectl delete pods -n "$res_ns" -l job-name="$res_name" --ignore-not-found=true --timeout=10s 2>/dev/null &
-                            kubectl patch pods -n "$res_ns" -l job-name="$res_name" --type=merge -p='{"metadata":{"finalizers":[]}}'
+                            kubectl patch pods -n "$res_ns" -l job-name="$res_name" --type=merge -p='{"metadata":{"finalizers":[]}}' || true
                             kubectl delete job "$res_name" -n "$res_ns" --ignore-not-found=true --timeout=10s 2>/dev/null &
-                            kubectl patch job "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}'
+                            kubectl patch job "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}' || true
                         elif [[ "$kind" == "CustomResourceDefinition" ]]; then
                             kubectl patch crd "$res_name" --type=merge -p='{"metadata":{"finalizers":[]}}' 2>/dev/null || true
                             kubectl delete crd "$res_name" --ignore-not-found=true --timeout=10s 2>/dev/null &
-                            kubectl patch crd "$res_name" --type=merge -p='{"metadata":{"finalizers":[]}}'
+                            kubectl patch crd "$res_name" --type=merge -p='{"metadata":{"finalizers":[]}}' || true
                         else
                             kubectl delete "$kind" "$res_name" -n "$res_ns" --ignore-not-found=true --timeout=10s 2>/dev/null &
-                            kubectl patch "$kind" "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}'
+                            kubectl patch "$kind" "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}' || true
                         fi
                     done <<< "$problem_resources"
                     echo "$(yellow)[INFO] Waiting for cleanup to complete...$(reset)"
@@ -981,19 +981,19 @@ sync_all_apps_exclude_root() {
                             if kubectl get job "$res_name" -n "$res_ns" &>/dev/null; then
                                 echo "$(red)[STUCK] Job $res_name still exists, forcing finalizer removal...$(reset)"
                                 kubectl patch job "$res_name" -n "$res_ns" --type=json -p='[{"op":"remove","path":"/metadata/finalizers"}]' 2>/dev/null || true
-                                kubectl delete job "$res_name" -n "$res_ns" --force --grace-period=0 2>/dev/null &
+                                kubectl delete job "$res_name" -n "$res_ns" --force --grace-period=0 2>/dev/null || true &
                             fi
                         elif [[ "$kind" == "CustomResourceDefinition" ]]; then
                             if kubectl get crd "$res_name" &>/dev/null; then
                                 echo "$(red)[STUCK] CRD $res_name still exists, forcing finalizer removal...$(reset)"
                                 kubectl patch crd "$res_name" --type=json -p='[{"op":"remove","path":"/metadata/finalizers"}]' 2>/dev/null || true
-                                kubectl delete crd "$res_name" --force --grace-period=0 2>/dev/null &
+                                kubectl delete crd "$res_name" --force --grace-period=0 2>/dev/null || true &
                             fi
                         elif [[ "$kind" == "ExternalSecret" || "$kind" == "SecretStore" || "$kind" == "ClusterSecretStore" ]]; then
                             if kubectl get "$kind" "$res_name" -n "$res_ns" &>/dev/null; then
                                 echo "$(red)[STUCK] $kind $res_name still exists, forcing finalizer removal...$(reset)"
                                 kubectl patch "$kind" "$res_name" -n "$res_ns" --type=json -p='[{"op":"remove","path":"/metadata/finalizers"}]' 2>/dev/null || true
-                                kubectl delete "$kind" "$res_name" -n "$res_ns" --force --grace-period=0 2>/dev/null &
+                                kubectl delete "$kind" "$res_name" -n "$res_ns" --force --grace-period=0 2>/dev/null || true &
                             fi
                         fi
                     done <<< "$problem_resources"
@@ -1324,12 +1324,12 @@ check_and_delete_stuck_crd_jobs() {
             # Delete associated pods first
             kubectl delete pods -n "$job_ns" -l job-name="$job_name" --ignore-not-found=true 2>/dev/null &
 
-            kubectl patch pod -n "$job_ns" -l job-name="$job_name" --type=merge -p='{"metadata":{"finalizers":[]}}'
+            kubectl patch pod -n "$job_ns" -l job-name="$job_name" --type=merge -p='{"metadata":{"finalizers":[]}}' || true
 
             # Delete the job
             kubectl delete job "$job_name" -n "$job_ns" --ignore-not-found=true &
 
-            kubectl patch job "$job_name" -n "$job_ns" --type=merge -p='{"metadata":{"finalizers":[]}}'
+            kubectl patch job "$job_name" -n "$job_ns" --type=merge -p='{"metadata":{"finalizers":[]}}' || true
         done <<< "$stuck_jobs"
 
         echo "[INFO] Job cleanup initiated in background, proceeding..."
@@ -1397,6 +1397,160 @@ check_and_delete_stuck_crd_jobs() {
 }
 
 # ============================================================
+# List all pods in unhealthy state
+# ============================================================
+list_unhealthy_pods() {
+    print_header "Listing Pods in Unhealthy State"
+    console_info "[→] Checking for unhealthy pods..."
+
+    echo "[INFO] Looking for pods in unhealthy states across all namespaces..."
+
+    # Get all pods in unhealthy states (CrashLoopBackOff, Error, ImagePullBackOff, etc.)
+    unhealthy_pods=$(kubectl get pods --all-namespaces -o json | jq -r '
+        .items[] |
+        select(
+            .status.phase != "Running" and .status.phase != "Succeeded" or
+            (.status.containerStatuses[]? | 
+                select(
+                    .state.waiting?.reason == "CrashLoopBackOff" or
+                    .state.waiting?.reason == "ImagePullBackOff" or
+                    .state.waiting?.reason == "ErrImagePull" or
+                    .state.waiting?.reason == "Error" or
+                    .state.terminated?.reason == "Error" or
+                    .ready == false
+                )
+            )
+        ) |
+        "\(.metadata.namespace)|\(.metadata.name)|\(.status.phase)|\(
+            if .status.containerStatuses then
+                (.status.containerStatuses[] | 
+                    if .state.waiting then .state.waiting.reason
+                    elif .state.terminated then .state.terminated.reason
+                    elif .ready == false then "NotReady"
+                    else "Unknown"
+                    end
+                )
+            else "Unknown"
+            end
+        )"
+    ')
+
+    if [[ -n "$unhealthy_pods" ]]; then
+        echo ""
+        echo "$(bold)$(red)List of Unhealthy Pods:$(reset)"
+        echo "--------------------------------------------------------------------------------"
+        printf "%-30s %-35s %-15s %-20s\n" "Namespace" "Pod Name" "Phase" "Status/Reason"
+        echo "--------------------------------------------------------------------------------"
+        
+        local pod_count=0
+        
+        while IFS='|' read -r pod_ns pod_name pod_phase pod_status; do
+            [[ -z "$pod_ns" ]] && continue
+            ((pod_count++))
+            printf "%-30s %-35s %-15s %-20s\n" "$pod_ns" "$pod_name" "$pod_phase" "$pod_status"
+        done <<< "$unhealthy_pods"
+        
+        echo "--------------------------------------------------------------------------------"
+        echo ""
+        echo "$(red)[SUMMARY] Found $pod_count unhealthy pod(s)$(reset)"
+        console_warn "[!] Found $pod_count unhealthy pod(s)"
+        
+        return 0
+    else
+        echo "$(green)[OK] No unhealthy pods found$(reset)"
+        console_success "[✓] All pods are healthy"
+        return 1
+    fi
+}
+
+# ============================================================
+# Delete all pods in unhealthy state
+# ============================================================
+delete_unhealthy_pods() {
+    print_header "Deleting Pods in Unhealthy State"
+    console_info "[→] Checking and deleting unhealthy pods..."
+
+    echo "[INFO] Looking for pods in unhealthy states across all namespaces..."
+
+    # Get all pods in unhealthy states (CrashLoopBackOff, Error, ImagePullBackOff, etc.)
+    unhealthy_pods=$(kubectl get pods --all-namespaces -o json | jq -r '
+        .items[] |
+        select(
+            .status.phase != "Running" and .status.phase != "Succeeded" or
+            (.status.containerStatuses[]? | 
+                select(
+                    .state.waiting?.reason == "CrashLoopBackOff" or
+                    .state.waiting?.reason == "ImagePullBackOff" or
+                    .state.waiting?.reason == "ErrImagePull" or
+                    .state.waiting?.reason == "Error" or
+                    .state.terminated?.reason == "Error" or
+                    .ready == false
+                )
+            )
+        ) |
+        "\(.metadata.namespace)|\(.metadata.name)|\(.status.phase)|\(
+            if .status.containerStatuses then
+                (.status.containerStatuses[] | 
+                    if .state.waiting then .state.waiting.reason
+                    elif .state.terminated then .state.terminated.reason
+                    elif .ready == false then "NotReady"
+                    else "Unknown"
+                    end
+                )
+            else "Unknown"
+            end
+        )"
+    ')
+
+    if [[ -n "$unhealthy_pods" ]]; then
+        echo ""
+        echo "$(bold)$(red)List of Unhealthy Pods to be Deleted:$(reset)"
+        echo "--------------------------------------------------------------------------------"
+        printf "%-30s %-35s %-15s %-20s\n" "Namespace" "Pod Name" "Phase" "Status/Reason"
+        echo "--------------------------------------------------------------------------------"
+        
+        local pod_count=0
+        local deleted_pods=()
+        
+        while IFS='|' read -r pod_ns pod_name pod_phase pod_status; do
+            [[ -z "$pod_ns" ]] && continue
+            ((pod_count++))
+            printf "%-30s %-35s %-15s %-20s\n" "$pod_ns" "$pod_name" "$pod_phase" "$pod_status"
+            deleted_pods+=("$pod_ns|$pod_name")
+        done <<< "$unhealthy_pods"
+        
+        echo "--------------------------------------------------------------------------------"
+        echo ""
+        
+        # Now delete the pods
+        for pod_entry in "${deleted_pods[@]}"; do
+            IFS='|' read -r pod_ns pod_name <<< "$pod_entry"
+            echo "$(yellow)[CLEANUP] Deleting unhealthy pod $pod_name in namespace $pod_ns...$(reset)"
+            
+            # Remove finalizers first to prevent hanging
+            kubectl patch pod "$pod_name" -n "$pod_ns" --type=merge -p='{"metadata":{"finalizers":[]}}' 2>/dev/null || true
+            
+            # Delete the pod
+            kubectl delete pod "$pod_name" -n "$pod_ns" --ignore-not-found=true --grace-period=0 --force 2>/dev/null || true
+        done
+        
+        echo ""
+        echo "$(green)[OK] Deleted $pod_count unhealthy pod(s)$(reset)"
+        console_success "[✓] Deleted $pod_count unhealthy pod(s)"
+        
+        # Wait a moment for pods to be recreated
+        echo "[INFO] Waiting 10 seconds for pods to be recreated..."
+        sleep 10
+        
+        return 0
+    else
+        echo "$(green)[OK] No unhealthy pods found to delete$(reset)"
+        console_success "[✓] All pods are healthy"
+        return 1
+    fi
+}
+
+# ============================================================
 # Post-upgrade cleanup function
 # ============================================================
 post_upgrade_cleanup() {
@@ -1419,7 +1573,7 @@ post_upgrade_cleanup() {
     echo "[INFO] Deleting dkam pods in namespace orch-infra..."
     kubectl delete pod -n orch-infra -l app.kubernetes.io/name=dkam 2>/dev/null || true
     #check_and_download_dkam_certs
-    echo "[INFO] Post-upgrade cleanup completed."
+    #echo "[INFO] Post-upgrade cleanup completed."
     console_success "[✓] Post-upgrade cleanup completed"
 }
 
@@ -1433,6 +1587,8 @@ execute_full_sync() {
     post_upgrade_cleanup
     sync_root_app_only
     #check_and_download_dkam_certs
+    #list_unhealthy_pods
+    #delete_unhealthy_pods
 }
 
 # ============================================================
