@@ -91,7 +91,7 @@ echo "" >&3
 
 # Sync behaviour
 GLOBAL_POLL_INTERVAL=10           # seconds
-APP_MAX_WAIT=60               # 5 minutes to wait for any app (Healthy+Synced)
+APP_MAX_WAIT=30              #  to wait for any app (Healthy+Synced)
 APP_MAX_RETRIES=3                 # retry X times for each app
 GLOBAL_SYNC_RETRIES=2            # Global retry for entire sync process
 
@@ -165,6 +165,21 @@ fi
 echo "[INFO] Logging into ArgoCD..."
 argocd login "$ARGO_ENDPOINT" --username admin --password "$ADMIN_PASSWD" --insecure --grpc-web
 echo "[INFO] Login OK."
+
+# ============================================================
+# Pre-sync: Stop root-app sync and apply patch
+# ============================================================
+echo "[INFO] Stopping root-app sync..."
+apps_ns="$NS"
+# Stop root-app sync.
+kubectl patch application root-app -n "$apps_ns" --type merge -p '{"operation":null}'
+kubectl patch application root-app -n "$apps_ns" --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
+sleep 10
+# Apply root-app sync
+echo "[INFO] Applying root-app sync patch..."
+kubectl patch application root-app -n "$apps_ns" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+sleep 10
+echo "[INFO] Root-app sync configuration completed."
 
 # ============================================================
 # Fetch all apps by wave
@@ -1564,14 +1579,14 @@ post_upgrade_cleanup() {
     echo "[INFO] Deleting deployment os-resource-manager in namespace orch-infra..."
     kubectl delete deployment -n orch-infra os-resource-manager || true
 
-    #echo "[INFO] Deleting onboarding secrets..."
-    #kubectl delete secret tls-boots -n orch-boots || true
-    #kubectl delete secret boots-ca-cert -n orch-gateway || true
-    #kubectl delete secret boots-ca-cert -n orch-infra || true
-    #echo "[INFO] Waiting 30 seconds for secrets cleanup to complete before deleting dkam pods..."
-    #sleep 30
+    echo "[INFO] Deleting onboarding secrets..."
+    kubectl delete secret tls-boots -n orch-boots 2>/dev/null
+    kubectl delete secret boots-ca-cert -n orch-gateway 2>/dev/null
+    kubectl delete secret boots-ca-cert -n orch-infra 2>/dev/null
+    echo "[INFO] Waiting 30 seconds for secrets cleanup to complete before deleting dkam pods..."
+    sleep 30
     echo "[INFO] Deleting dkam pods in namespace orch-infra..."
-    kubectl delete pod -n orch-infra -l app.kubernetes.io/name=dkam 2>/dev/null || true
+    kubectl delete pod -n orch-infra -l app.kubernetes.io/name=dkam 2>/dev/null 
     #check_and_download_dkam_certs
     #echo "[INFO] Post-upgrade cleanup completed."
     console_success "[✓] Post-upgrade cleanup completed"
