@@ -5,27 +5,24 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Description:
-#   ArgoCD Application Sync Script with Advanced Retry and Recovery Logic
+#   This script synchronizes ArgoCD applications after an upgrade, ensuring all
+#   applications reach a healthy and synced state. It processes applications in
+#   wave order with automatic retry and error recovery mechanisms.
 #
-#   This script manages the synchronization of ArgoCD applications in wave order,
-#   with comprehensive error handling, failed sync detection, and automatic recovery.
-#   It handles stuck jobs, degraded applications, and failed CRDs, ensuring all
-#   applications reach a Healthy+Synced state.
+# Main Steps:
+#   1. Install ArgoCD CLI if not present
+#   2. Login to ArgoCD server (LoadBalancer or NodePort)
+#   3. Stop and reconfigure root-app sync
+#   4. Sync all applications (excluding root-app) in wave order
+#   5. Perform post-upgrade cleanup:
+#      - Delete obsolete applications (tenancy-api-mapping, tenancy-datamodel)
+#      - Remove legacy deployments (os-resource-manager)
+#      - Clean up stale secrets (tls-boots, boots-ca-cert)
+#   6. Re-sync all applications
+#   7. Sync root-app
+#   8. Validate final state of all applications
 #
-# Features:
-#   - Wave-ordered application synchronization
-#   - Automatic detection and cleanup of failed syncs
-#   - Real-time job/CRD failure detection during sync
-#   - Automatic restart of failed applications
-#   - Global retry mechanism (4 attempts)
-#   - Per-application retry logic (3 attempts)
-#   - Timestamp tracking for all operations
-#   - Unhealthy job and CRD cleanup
-#   - OutOfSync application handling
-#   - Root-app special handling
-#   - Post-upgrade cleanup: Removes obsolete applications (tenancy-api-mapping,
-#     tenancy-datamodel), legacy deployments (os-resource-manager), and stale
-#     secrets (tls-boots, boots-ca-cert) to ensure clean upgrade state
+#   All logs are written to /var/log/orch-upgrade/ directory.
 #
 # Usage:
 #   ./after_upgrade_restart.sh [NAMESPACE]
@@ -33,15 +30,6 @@
 #   Arguments:
 #     NAMESPACE    - Target namespace for applications (optional, default: onprem)
 #
-#   The script will:
-#   1. Install ArgoCD CLI if not present
-#   2. Login to ArgoCD server
-#   3. Sync all applications excluding root-app
-#   4. Perform post-upgrade cleanup
-#   5. Re-sync all applications
-#   6. Validate final state
-#
-
 # Examples:
 #   ./after_upgrade_restart.sh              # Uses default namespace 'onprem'
 #
@@ -71,10 +59,12 @@ NS="${1:-onprem}"  # Use first argument or default to "onprem"
 ARGO_NS="argocd"
 
 # Log file configuration
-LOG_FILE="argo_sync_$(date +%Y%m%d_%H%M%S).log"
+LOG_DIR="/var/log/orch-upgrade"
+mkdir -p "$LOG_DIR"
+LOG_FILE="$LOG_DIR/argo_sync_$(date +%Y%m%d_%H%M%S).log"
 
-# Set up file descriptor 3 for console output before redirecting stdout
-exec 3>&1
+# Set up file descriptor 3 for console output (same as main log)
+exec 3> >(tee -a "$LOG_FILE")
 
 # Redirect stdout to tee (log file + stdout)
 exec > >(tee -a "$LOG_FILE")
@@ -82,11 +72,11 @@ exec 2>&1
 
 echo "[INFO] Using namespace: $NS"
 echo "[INFO] Using ArgoCD namespace: $ARGO_NS"
-echo "[INFO] Detailed logs: $LOG_FILE"
+echo "[INFO] Log file: $LOG_FILE"
 
 # Also output initial info to console
 echo "[INFO] ArgoCD sync script started" >&3
-echo "[INFO] Logs: $LOG_FILE" >&3
+echo "[INFO] Log file: $LOG_FILE" >&3
 echo "" >&3
 
 # Sync behaviour
