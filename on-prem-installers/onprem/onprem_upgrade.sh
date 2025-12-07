@@ -1013,6 +1013,13 @@ patch_secrets() {
       kubectl patch secret -n orch-database orch-infra-mps -p "{\"data\": {\"password\": \"$MPS\"}}" --type=merge
       kubectl patch secret -n orch-database orch-infra-rps -p "{\"data\": {\"password\": \"$RPS\"}}" --type=merge
     fi
+
+    # This secret does not exist in 3.1.x so we need to create it
+    if [[ "$UPGRADE_3_1_X" == "true" ]]; then
+        create_postgres_password "orch-database" "$POSTGRESQL"
+    else
+        kubectl patch secret -n orch-database orch-database-postgresql -p "{\"data\": {\"password\": \"$POSTGRESQL\"}}" --type=merge
+    fi
 }
 
 # Stop sync operation for root-app, so it won't be synced with the old version of the application.
