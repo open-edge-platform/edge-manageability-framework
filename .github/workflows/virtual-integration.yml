@@ -445,7 +445,7 @@ jobs:
           mage -v gen:releaseImageManifest release-manifest/image-manifest.yaml
 
       - name: Publish release manifest artifact
-        #if: github.event_name == 'push' && ( github.ref == 'refs/heads/release-2025.2' )
+        if: github.event_name == 'push' && ( github.ref == 'refs/heads/release-2025.2' )
         run: |
           mage publish:releaseManifest
 
