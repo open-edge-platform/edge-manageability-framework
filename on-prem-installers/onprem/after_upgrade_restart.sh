@@ -81,9 +81,9 @@ echo "" >&3
 
 # Sync behaviour
 GLOBAL_POLL_INTERVAL=10           # seconds
-APP_MAX_WAIT=30              #  to wait for any app (Healthy+Synced)
-APP_MAX_RETRIES=3                 # retry X times for each app
-GLOBAL_SYNC_RETRIES=2            # Global retry for entire sync process
+APP_MAX_WAIT=30             #  to wait for any app (Healthy+Synced)
+APP_MAX_RETRIES=5                 # retry 5 times for each app (after 3 fails, restart root-app)
+GLOBAL_SYNC_RETRIES=1            # Global retry for entire sync process
 
 # Apps requiring server-side apply (space-separated list)
 SERVER_SIDE_APPS="external-secrets copy-app-gitea-cred-to-fleet copy-ca-cert-boots-to-gateway copy-ca-cert-boots-to-infra copy-ca-cert-gateway-to-cattle copy-ca-cert-gateway-to-infra copy-ca-cert-gitea-to-app copy-ca-cert-gitea-to-cluster copy-cluster-gitea-cred-to-fleet copy-keycloak-admin-to-infra infra-external platform-keycloak namespace-label wait-istio-job"
@@ -378,6 +378,32 @@ root_app_stop_start() {
 }
 
 # ============================================================
+# Delete an ArgoCD application
+# ============================================================
+delete_app() {
+    local app_name="$1"
+    local app_namespace="${2:-$NS}"
+    
+    echo "$(yellow)[DELETE] Deleting application $app_name in namespace $app_namespace...$(reset)"
+    
+    # Stop root-app sync
+    kubectl patch application root-app -n "$app_namespace" --type merge -p '{"operation":null}' 2>/dev/null || true
+    kubectl patch application root-app -n "$app_namespace" --type json -p '[{"op": "remove", "path": "/status/operationState"}]' 2>/dev/null || true
+    sleep 5
+    
+    # Delete application with finalizer removal
+    kubectl patch application "$app_name" -n "$app_namespace" --type=json -p='[{"op":"remove","path":"/metadata/finalizers"}]' 2>/dev/null || true
+    kubectl delete application "$app_name" -n "$app_namespace" --force --grace-period=0 --ignore-not-found=true 2>/dev/null || true
+    sleep 5
+    
+    # Apply root-app sync
+    kubectl patch application root-app -n "$app_namespace" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge 2>/dev/null || true
+    sleep 10
+    
+    echo "$(blue)[INFO] Application $app_name deleted.$(reset)"
+}
+
+# ============================================================
 # Check and download DKAM certificates
 # ============================================================
 check_and_download_dkam_certs() {
@@ -594,8 +620,9 @@ sync_not_green_apps_once() {
             echo "$(yellow)[INFO] Attempt ${attempt}/${APP_MAX_RETRIES}, elapsed: 0s$(reset)"
 
             # Check if app requires server-side apply and special cleanup
-                root_app_stop_start
             if [[ " $SERVER_SIDE_APPS " =~ \ $name\  ]]; then
+                root_app_stop_start
+                sleep 3
                 echo "$(yellow)[INFO] Stopping any ongoing operations for $name before force sync...$(reset)"
                 argocd app terminate-op "$full_app" --grpc-web 2>/dev/null || true
                 sleep 2
@@ -712,6 +739,17 @@ sync_not_green_apps_once() {
                 break
             fi
             ((attempt++))
+            
+            # After 3 failed attempts, delete app and restart root-app before continuing
+            if (( attempt == 4 )); then
+                echo "$(yellow)[ACTION] After 3 failed attempts, deleting app and restarting root-app...$(reset)"
+                
+                # Delete the failed application (already handles root-app sync internally)
+                delete_app "$name" "$NS"
+                
+                echo "$(blue)[INFO] Application $name deleted and root-app restarted. Continuing with retries...$(reset)"
+            fi
+            
             if (( attempt <= APP_MAX_RETRIES )); then
                 echo "$(yellow)[RETRY] Retrying $full_app (${attempt}/${APP_MAX_RETRIES})...$(reset)"
                 # On retry, clean up unhealthy jobs and clear stuck operations
@@ -720,7 +758,7 @@ sync_not_green_apps_once() {
                 argocd app get "$full_app" --hard-refresh --grpc-web >/dev/null 2>&1 || true
                 sleep 5
             else
-                echo "$(red)[FAIL] Max retries reached for $full_app. Proceeding to next app.$(reset)"
+                echo "$(red)[FAIL] Max retries (${APP_MAX_RETRIES}) reached for $full_app. Proceeding to next app.$(reset)"
                 console_error "[✗] $name - Failed"
             fi
         done
@@ -937,6 +975,8 @@ sync_all_apps_exclude_root() {
 
             # Check if app requires server-side apply and special cleanup
             if [[ " $SERVER_SIDE_APPS " =~ \ $name\  ]]; then
+                root_app_stop_start
+                sleep 3
                 echo "$(yellow)[INFO] Stopping any ongoing operations for $name before force sync...$(reset)"
                 argocd app terminate-op "$full_app" --grpc-web 2>/dev/null || true
                 sleep 2
@@ -946,7 +986,6 @@ sync_all_apps_exclude_root() {
                 problem_resources=$(kubectl get applications.argoproj.io "$name" -n "$NS" -o json 2>/dev/null | jq -r '
                     .status.resources[]? |
                     select(.status == "OutOfSync" or .health.status == "Degraded" or .health.status == "Missing") |
-                root_app_stop_start
                     select(.kind == "Job" or .kind == "CustomResourceDefinition" or .kind == "ExternalSecret" or .kind == "SecretStore" or .kind == "ClusterSecretStore") |
                     "\(.kind) \(.namespace) \(.name)"
                 ')
@@ -1326,15 +1365,15 @@ check_and_delete_stuck_crd_jobs() {
             read -r job_ns job_name <<< "$line"
             echo "$(yellow)[CLEANUP] Deleting stuck job $job_name in namespace $job_ns (background)$(reset)"
 
+            # Remove finalizers first to allow deletion
+            kubectl patch pods -n "$job_ns" -l job-name="$job_name" --type=merge -p='{"metadata":{"finalizers":[]}}' 2>/dev/null || true
+            kubectl patch job "$job_name" -n "$job_ns" --type=merge -p='{"metadata":{"finalizers":[]}}' 2>/dev/null || true
+
             # Delete associated pods first
             kubectl delete pods -n "$job_ns" -l job-name="$job_name" --ignore-not-found=true 2>/dev/null &
 
-            kubectl patch pod -n "$job_ns" -l job-name="$job_name" --type=merge -p='{"metadata":{"finalizers":[]}}' || true
-
             # Delete the job
             kubectl delete job "$job_name" -n "$job_ns" --ignore-not-found=true &
-
-            kubectl patch job "$job_name" -n "$job_ns" --type=merge -p='{"metadata":{"finalizers":[]}}' || true
         done <<< "$stuck_jobs"
 
         echo "[INFO] Job cleanup initiated in background, proceeding..."
@@ -1563,8 +1602,8 @@ post_upgrade_cleanup() {
     console_info "[→] Running post-upgrade cleanup..."
 
     echo "[INFO] Deleting applications tenancy-api-mapping and tenancy-datamodel in namespace onprem..."
-    kubectl delete application tenancy-api-mapping -n onprem || true
-    kubectl delete application tenancy-datamodel -n onprem || true
+    delete_app "tenancy-api-mapping" "onprem"
+    delete_app "tenancy-datamodel" "onprem"
 
     echo "[INFO] Deleting deployment os-resource-manager in namespace orch-infra..."
     kubectl delete deployment -n orch-infra os-resource-manager || true
