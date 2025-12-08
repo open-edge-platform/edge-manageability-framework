@@ -1243,9 +1243,7 @@ sleep 10
 #restart tls-boot secrets
 kubectl delete secret tls-boots -n orch-boots || true
 
-sleep 300
-./after_upgrade_restart.sh
-echo "Wait ~10–15 minutes for ArgoCD to sync and deploy all application"
+echo "Wait ~5–10 minutes for ArgoCD to sync and deploy all application"
 echo "   👉 Run the script to to futher sync and post run"
 echo "          ./after_upgrade_restart.sh"
 echo ""
