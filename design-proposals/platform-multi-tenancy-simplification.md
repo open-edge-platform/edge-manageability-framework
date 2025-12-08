@@ -56,15 +56,12 @@ The current EMF architecture exhibits several key issues:
 
 ![new architecture](images/multi-tenancy-new-architecture.png)
 
-The proposed architecture is modular and flexible, focusing on these key changes:
+The proposed architecture introduces modularity and deployment flexibility through the following changes:
 
-- The Multi-tenant API Gateway is simplified to act only as an HTTP router for Tenant Manager APIs. In the short term,
-  it remains Nexus-based, with plans to re-implement it as a lightweight HTTP router in the future.
-- Core services (AO, CO, EIM) expose their APIs directly, removing the need for centralized API gateway coordination.
-- Multi-tenancy is configurable; Tenant Manager and controllers can be enabled or disabled per deployment.
-- When multi-tenancy is off, services initialize a default tenant and restrict API requests to the default project for
-  consistent logic.
-- Backward compatibility is maintained for seamless upgrades from existing multi-tenant deployments.
+- Elimination of the Multi-tenant API Gateway, allowing direct API exposure for all core services (App Orchestration, Cluster Orchestration, Infra Manager, Tenant Manager).
+- Multi-tenancy features are now optional and configurable; Tenant Manager and related controllers can be enabled or disabled based on deployment needs.
+- In single-tenant mode, services automatically provision a default tenant and project, ensuring consistent request handling without tenant management overhead.
+- Backward compatibility is preserved, enabling seamless upgrades for existing multi-tenant environments.
 
 This modular approach enables organizations to deploy EMF in single-tenant or multi-tenant modes, reducing complexity
 and adapting to varied infrastructure needs. Below are examples of how the new modular architecture enables flexible
@@ -107,16 +104,13 @@ unnecessary, offering a lightweight and efficient integration path.
 
 ### Core Changes
 
-#### Track 1: Reduce the scope of nexus-api-gateway
+#### Track 1: Remove nexus-api-gateway
 
-- Limit the nexus-api-gateway’s responsibility to routing only Tenant Manager APIs (`/v1/orgs`, `/v1/projects`).
-- Remove all API remapping configuration from nexus-api-gateway.
-- Add Traefik IngressRoute for EIM, AO, and CO APIs, allowing these services to expose their APIs directly.
-- Ensure that tenant-aware authentication and authorization are handled by the shared middleware (`orch-lib`) in each
-  service, not by the gateway.
-- Gradually deprecate legacy gateway features as services transition to direct API exposure.
-- Validate that existing multi-tenant workflows continue to function as expected through integration and regression
-  testing.
+- Develop RESTful API endpoints for Tenant Manager (`/v1/orgs`, `/v1/projects`).
+- Configure Traefik IngressRoutes for direct API exposure of Tenant Manager, Infra Manager, App Orchestration, and Cluster Orchestration services.
+- Shift tenant-aware authentication and authorization to the shared middleware (`orch-lib`) within each service.
+- Phase out legacy gateway features as services migrate to direct API access.
+- Perform integration and regression testing to ensure multi-tenant workflows remain functional.
 
 ##### Step 1: Foundation
 
@@ -140,13 +134,20 @@ features:
 - Remove EIM-specific API mapping from the `nexus-api-gateway` configuration.
 - Update CO to use EIM’s external APIs for inventory operations.
 
-##### Step 3: CO and AO Modernization
+##### Step 3: Tenant Manager Modernization
+
+- Implement a standalone HTTP server/router for the Tenant Manager, exposing RESTful endpoints at `/v1/orgs` and `/v1/projects`.
+- Create Traefik IngressRoute to route “PathRegexp(`/v1/orgs`, `/v1/projects`)” to the new Tenant Manager API.
+- Ensure authentication and authorization.
+- Perform integration testing to validate multi-tenant workflows and backward compatibility.
+
+##### Step 4: CO and AO Modernization
 
 - Refactor App Orchestration (AO) and Cluster Orchestration (CO) to adopt the modular architecture, following the EIM
   approach.
 - Complete the transition to the target architecture with all services decoupled from the legacy gateway.
 
-##### Step 4: Cleanup
+##### Step 5: Cleanup
 
 - Remove legacy code paths and deprecated components.
 - Finalize documentation for deployment and migration.
