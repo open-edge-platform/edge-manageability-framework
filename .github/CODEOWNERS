@@ -33,7 +33,6 @@
 **/Dockerfile
 
 # Except the following folders, which can be merged with passing CI and one approval
-/argocd/applications/templates
 /ci/
 /e2e-tests/
 /node/
