@@ -1,6 +1,6 @@
 # Eliminate Gitea as a pre-installer dependency
 
-As part of the [platform installer simplification](platform-installer-simplications.md), one of the goals is to decouple the platform from a mandatory internal Gitea instance, making it an optional component required only for specific features (like App Orchestration). This document outlines the below architectural and code changes introduced.
+As part of the [platform installer simplification](platform-installer-simplification.md), one of the goals is to decouple the platform from a mandatory internal Gitea instance, making it an optional component required only for specific features (like App Orchestration). This document outlines the below architectural and code changes introduced.
 
 ## 1. Optional Gitea Installation
 
