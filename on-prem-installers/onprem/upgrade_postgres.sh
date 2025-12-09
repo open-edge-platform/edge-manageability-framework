@@ -10,12 +10,21 @@ local_backup_file="${postgres_namespace}_backup.sql"
 local_backup_path="${POSTGRES_LOCAL_BACKUP_PATH}${local_backup_file}"
 POSTGRES_USERNAME="postgres"
 application_namespace=onprem
-UPGRADE_3_1_X="${UPGRADE_3_1_X:-true}"
 
-if [[ "$UPGRADE_3_1_X" == "true" ]]; then
+# Determine UPGRADE_3_1_X based on existing PostgreSQL pod
+echo "Checking PostgreSQL pod in orch-database namespace..."
+if kubectl get pod -n orch-database postgresql-cluster-1 >/dev/null 2>&1; then
+    echo "Found postgresql-cluster-1 pod - Setting UPGRADE_3_1_X=false (upgrading from 3.1.x)"
+    UPGRADE_3_1_X="false"
+    podname="postgresql-cluster-1"
+elif kubectl get pod -n orch-database postgresql-0 >/dev/null 2>&1; then
+    echo "Found postgresql-0 pod - Setting UPGRADE_3_1_X=true (upgrading from pre-3.1.x)"
+    UPGRADE_3_1_X="true"
     podname="postgresql-0"
 else
-    podname="postgresql-cluster-1"
+    echo "ERROR: No PostgreSQL pod found in orch-database namespace."
+    echo "Expected either 'postgresql-cluster-1' or 'postgresql-0'"
+    exit 1
 fi
 
 check_postgres() {

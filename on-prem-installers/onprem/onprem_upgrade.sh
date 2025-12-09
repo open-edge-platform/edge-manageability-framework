@@ -77,7 +77,20 @@ ORCH_INSTALLER_PROFILE="${ORCH_INSTALLER_PROFILE:-onprem}"
 DEPLOY_VERSION="${DEPLOY_VERSION:-v3.1.0}"  # Updated to v3.1.0
 GITEA_IMAGE_REGISTRY="${GITEA_IMAGE_REGISTRY:-docker.io}"
 USE_LOCAL_PACKAGES="${USE_LOCAL_PACKAGES:-false}"  # New flag for local packages
-UPGRADE_3_1_X="${UPGRADE_3_1_X:-true}"
+
+# Determine UPGRADE_3_1_X based on existing PostgreSQL pod
+echo "Checking PostgreSQL pod in orch-database namespace..."
+if kubectl get pod -n orch-database postgresql-cluster-1 >/dev/null 2>&1; then
+    echo "Found postgresql-cluster-1 pod - Setting UPGRADE_3_1_X=false (upgrading from 3.1.x)"
+    UPGRADE_3_1_X="false"
+elif kubectl get pod -n orch-database postgresql-0 >/dev/null 2>&1; then
+    echo "Found postgresql-0 pod - Setting UPGRADE_3_1_X=true (upgrading from pre-3.1.x)"
+    UPGRADE_3_1_X="true"
+else
+    echo "ERROR: No PostgreSQL pod found in orch-database namespace."
+    echo "Expected either 'postgresql-cluster-1' or 'postgresql-0'"
+    exit 1
+fi
 
 ### Variables
 cwd=$(pwd)
@@ -110,7 +123,7 @@ set_artifacts_version() {
 }
 
 export GIT_REPOS=$cwd/$git_arch_name
-export ONPREM_UPGRADE_SYNC=true
+export ONPREM_UPGRADE_SYNC="${ONPREM_UPGRADE_SYNC:-true}"
 retrieve_and_apply_config() {
     local config_file="$cwd/onprem.env"
     tmp_dir="$cwd/$git_arch_name/tmp"
