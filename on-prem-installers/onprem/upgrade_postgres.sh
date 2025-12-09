@@ -14,7 +14,7 @@ application_namespace=onprem
 # Determine UPGRADE_3_1_X based on existing PostgreSQL pod
 echo "Checking PostgreSQL pod in orch-database namespace..."
 if kubectl get pod -n orch-database postgresql-cluster-1 >/dev/null 2>&1; then
-    echo "Found postgresql-cluster-1 pod - Setting UPGRADE_3_1_X=false (upgrading from 3.1.x)"
+    echo "Found postgresql-cluster-1 pod - Setting UPGRADE_3_1_X=false"
     UPGRADE_3_1_X="false"
     podname="postgresql-cluster-1"
 elif kubectl get pod -n orch-database postgresql-0 >/dev/null 2>&1; then
