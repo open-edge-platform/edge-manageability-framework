@@ -13,6 +13,15 @@ on:
       - main
       - main-pass-validation
 
+  # Trigger workflow on PRs from forked repos for all branches
+  pull_request_target:
+    branches:
+      - "*"
+    types:
+      - opened
+      - synchronize
+      - reopened
+
   # Trigger workflow on PRs to all branches
   pull_request:
     branches:
