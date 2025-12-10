@@ -7,7 +7,7 @@ caSecretKey: ca.crt
 
 openPolicyAgent:
   image:
-    tag: 1.10.0-static
+    tag: 1.10.1-static
   config:
     profile: "compressed"
 
@@ -17,3 +17,8 @@ istio-proxy:
 
 # https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
 traefikApiGroup: "traefik.io/v1alpha1"
+
+alertmanager:
+  configmapReload:
+    image:
+      tag: v0.86.2

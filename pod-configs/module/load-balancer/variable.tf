@@ -49,3 +49,8 @@ variable "ip_allow_list" {
 variable "enable_deletion_protection" {
   default = true
 }
+
+variable "eks_security_groups" {
+  description = "List of EKS security group IDs (from module/eks/output.tf security_groups)"
+  type        = list(string)
+}

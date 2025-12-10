@@ -1,0 +1,377 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 2000" width="1600" height="2000">
+  <defs>
+    <style>
+      .layer-box { stroke: #333; stroke-width: 2; rx: 8; }
+      .component { stroke: #666; stroke-width: 1.5; rx: 4; }
+      .arrow { stroke: #666; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .text-title { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; fill: #333; }
+      .text-component { font-family: Arial, sans-serif; font-size: 12px; fill: #333; text-anchor: middle; }
+      .text-small { font-family: Arial, sans-serif; font-size: 10px; fill: #666; text-anchor: middle; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#666" />
+    </marker>
+  </defs>
+  
+  <!-- Title -->
+  <text x="800" y="30" class="text-title" style="font-size: 24px; text-anchor: middle;">EMF System Architecture</text>
+  
+  <!-- Layer 1: User Interfaces -->
+  <rect x="50" y="60" width="1500" height="120" fill="#e1f5ff" class="layer-box"/>
+  <text x="70" y="85" class="text-title">User Interfaces (orch-ui)</text>
+  
+  <rect x="80" y="100" width="140" height="60" fill="#b3e5fc" class="component"/>
+  <text x="150" y="125" class="text-component">web-ui-root</text>
+  <text x="150" y="142" class="text-small">Landing Portal</text>
+  
+  <rect x="240" y="100" width="140" height="60" fill="#b3e5fc" class="component"/>
+  <text x="310" y="125" class="text-component">web-ui-admin</text>
+  <text x="310" y="142" class="text-small">Admin Portal</text>
+  
+  <rect x="400" y="100" width="140" height="60" fill="#b3e5fc" class="component"/>
+  <text x="470" y="125" class="text-component">web-ui-app</text>
+  <text x="470" y="142" class="text-small">App Management</text>
+  
+  <rect x="560" y="100" width="140" height="60" fill="#b3e5fc" class="component"/>
+  <text x="630" y="125" class="text-component">web-ui-cluster</text>
+  <text x="630" y="142" class="text-small">Cluster Mgmt</text>
+  
+  <rect x="720" y="100" width="140" height="60" fill="#b3e5fc" class="component"/>
+  <text x="790" y="125" class="text-component">web-ui-infra</text>
+  <text x="790" y="142" class="text-small">Infra Mgmt</text>
+  
+  <rect x="880" y="100" width="140" height="60" fill="#b3e5fc" class="component"/>
+  <text x="950" y="125" class="text-component">metadata-broker</text>
+  <text x="950" y="142" class="text-small">UI Backend</text>
+  
+  <!-- Layer 2: Gateway & Auth -->
+  <rect x="50" y="200" width="740" height="140" fill="#fff3e0" class="layer-box"/>
+  <text x="70" y="225" class="text-title">API Gateway &amp; Authentication</text>
+  
+  <rect x="80" y="240" width="160" height="60" fill="#ffe0b2" class="component"/>
+  <text x="160" y="265" class="text-component">traefik</text>
+  <text x="160" y="282" class="text-small">Reverse Proxy</text>
+  
+  <rect x="260" y="240" width="160" height="60" fill="#ffe0b2" class="component"/>
+  <text x="340" y="265" class="text-component">auth-service</text>
+  <text x="340" y="282" class="text-small">Authentication</text>
+  
+  <rect x="440" y="240" width="160" height="60" fill="#ffe0b2" class="component"/>
+  <text x="520" y="265" class="text-component">cert-file-server</text>
+  <text x="520" y="282" class="text-small">Certificates</text>
+  
+  <rect x="620" y="240" width="150" height="60" fill="#ffe0b2" class="component"/>
+  <text x="695" y="265" class="text-component">nexus-api-gw</text>
+  <text x="695" y="282" class="text-small">IAM Gateway</text>
+  
+  <!-- Layer 3: IAM -->
+  <rect x="810" y="200" width="740" height="140" fill="#f3e5f5" class="layer-box"/>
+  <text x="830" y="225" class="text-title">Identity &amp; Access Management</text>
+  
+  <rect x="840" y="240" width="160" height="60" fill="#e1bee7" class="component"/>
+  <text x="920" y="265" class="text-component">keycloak</text>
+  <text x="920" y="282" class="text-small">Identity Provider</text>
+  
+  <rect x="1020" y="240" width="160" height="60" fill="#e1bee7" class="component"/>
+  <text x="1100" y="265" class="text-component">tenancy-manager</text>
+  <text x="1100" y="282" class="text-small">Multi-tenancy</text>
+  
+  <rect x="1200" y="240" width="160" height="60" fill="#e1bee7" class="component"/>
+  <text x="1280" y="265" class="text-component">vault</text>
+  <text x="1280" y="282" class="text-small">Secrets Mgmt</text>
+  
+  <rect x="1380" y="240" width="150" height="60" fill="#e1bee7" class="component"/>
+  <text x="1455" y="265" class="text-component">vault-injector</text>
+  <text x="1455" y="282" class="text-small">Secret Injection</text>
+  
+  <!-- Layer 4: Application Orchestration -->
+  <rect x="50" y="360" width="740" height="180" fill="#e8f5e9" class="layer-box"/>
+  <text x="70" y="385" class="text-title">Application Orchestration (orch-app)</text>
+  
+  <rect x="80" y="400" width="140" height="60" fill="#c8e6c9" class="component"/>
+  <text x="150" y="425" class="text-component">app-deploy-api</text>
+  <text x="150" y="442" class="text-small">Deployment API</text>
+  
+  <rect x="240" y="400" width="140" height="60" fill="#c8e6c9" class="component"/>
+  <text x="310" y="425" class="text-component">app-deploy-mgr</text>
+  <text x="310" y="442" class="text-small">Lifecycle Mgr</text>
+  
+  <rect x="400" y="400" width="140" height="60" fill="#c8e6c9" class="component"/>
+  <text x="470" y="425" class="text-component">app-catalog</text>
+  <text x="470" y="442" class="text-small">App Catalog</text>
+  
+  <rect x="80" y="470" width="140" height="60" fill="#c8e6c9" class="component"/>
+  <text x="150" y="495" class="text-component">app-resource-mgr</text>
+  <text x="150" y="512" class="text-small">Resource Mgr</text>
+  
+  <rect x="240" y="470" width="140" height="60" fill="#c8e6c9" class="component"/>
+  <text x="310" y="495" class="text-component">app-svc-proxy</text>
+  <text x="310" y="512" class="text-small">Service Proxy</text>
+  
+  <rect x="400" y="470" width="140" height="60" fill="#c8e6c9" class="component"/>
+  <text x="470" y="495" class="text-component">vnc-proxy</text>
+  <text x="470" y="512" class="text-small">Remote Access</text>
+  
+  <!-- Layer 5: Cluster Management -->
+  <rect x="810" y="360" width="740" height="180" fill="#e8f5e9" class="layer-box"/>
+  <text x="830" y="385" class="text-title">Cluster Management (orch-cluster)</text>
+  
+  <rect x="840" y="400" width="160" height="60" fill="#c8e6c9" class="component"/>
+  <text x="920" y="425" class="text-component">cluster-manager</text>
+  <text x="920" y="442" class="text-small">Lifecycle Mgr</text>
+  
+  <rect x="1020" y="400" width="160" height="60" fill="#c8e6c9" class="component"/>
+  <text x="1100" y="425" class="text-component">cluster-gateway</text>
+  <text x="1100" y="442" class="text-small">Secure Gateway</text>
+  
+  <rect x="840" y="470" width="160" height="60" fill="#c8e6c9" class="component"/>
+  <text x="920" y="495" class="text-component">capi-controller</text>
+  <text x="920" y="512" class="text-small">Cluster API</text>
+  
+  <rect x="1020" y="470" width="160" height="60" fill="#c8e6c9" class="component"/>
+  <text x="1100" y="495" class="text-component">fleet-controller</text>
+  <text x="1100" y="512" class="text-small">Multi-cluster GitOps</text>
+  
+  <!-- Layer 6: Infrastructure Management -->
+  <rect x="50" y="560" width="1500" height="200" fill="#fff9c4" class="layer-box"/>
+  <text x="70" y="585" class="text-title">Infrastructure Management (orch-infra)</text>
+  
+  <rect x="80" y="600" width="140" height="60" fill="#fff59d" class="component"/>
+  <text x="150" y="625" class="text-component">onboarding-mgr</text>
+  <text x="150" y="642" class="text-small">Device Onboard</text>
+  
+  <rect x="240" y="600" width="140" height="60" fill="#fff59d" class="component"/>
+  <text x="310" y="625" class="text-component">host-manager</text>
+  <text x="310" y="642" class="text-small">Host Lifecycle</text>
+  
+  <rect x="400" y="600" width="140" height="60" fill="#fff59d" class="component"/>
+  <text x="470" y="625" class="text-component">inventory</text>
+  <text x="470" y="642" class="text-small">Resource DB</text>
+  
+  <rect x="560" y="600" width="140" height="60" fill="#fff59d" class="component"/>
+  <text x="630" y="625" class="text-component">tinkerbell</text>
+  <text x="630" y="642" class="text-small">Bare Metal</text>
+  
+  <rect x="720" y="600" width="140" height="60" fill="#fff59d" class="component"/>
+  <text x="790" y="625" class="text-component">mps</text>
+  <text x="790" y="642" class="text-small">AMT Activation</text>
+  
+  <rect x="880" y="600" width="140" height="60" fill="#fff59d" class="component"/>
+  <text x="950" y="625" class="text-component">rps</text>
+  <text x="950" y="642" class="text-small">AMT Config</text>
+  
+  <rect x="80" y="670" width="140" height="60" fill="#fff59d" class="component"/>
+  <text x="150" y="695" class="text-component">network-mgr</text>
+  <text x="150" y="712" class="text-small">Network Config</text>
+  
+  <rect x="240" y="670" width="140" height="60" fill="#fff59d" class="component"/>
+  <text x="310" y="695" class="text-component">os-resource-mgr</text>
+  <text x="310" y="712" class="text-small">OS Management</text>
+  
+  <rect x="400" y="670" width="140" height="60" fill="#fff59d" class="component"/>
+  <text x="470" y="695" class="text-component">maintenance-mgr</text>
+  <text x="470" y="712" class="text-small">Maintenance</text>
+  
+  <rect x="560" y="670" width="140" height="60" fill="#fff59d" class="component"/>
+  <text x="630" y="695" class="text-component">telemetry-mgr</text>
+  <text x="630" y="712" class="text-small">Device Telemetry</text>
+  
+  <rect x="720" y="670" width="140" height="60" fill="#fff59d" class="component"/>
+  <text x="790" y="695" class="text-component">attestation-mgr</text>
+  <text x="790" y="712" class="text-small">Security</text>
+  
+  <!-- Layer 7: Observability -->
+  <rect x="50" y="780" width="1500" height="180" fill="#ffecb3" class="layer-box"/>
+  <text x="70" y="805" class="text-title">Observability &amp; Monitoring</text>
+  
+  <rect x="80" y="820" width="140" height="60" fill="#ffe082" class="component"/>
+  <text x="150" y="845" class="text-component">grafana-edge</text>
+  <text x="150" y="862" class="text-small">Edge Dashboards</text>
+  
+  <rect x="240" y="820" width="140" height="60" fill="#ffe082" class="component"/>
+  <text x="310" y="845" class="text-component">grafana-orch</text>
+  <text x="310" y="862" class="text-small">Orch Dashboards</text>
+  
+  <rect x="400" y="820" width="140" height="60" fill="#ffe082" class="component"/>
+  <text x="470" y="845" class="text-component">prometheus</text>
+  <text x="470" y="862" class="text-small">Metrics</text>
+  
+  <rect x="560" y="820" width="140" height="60" fill="#ffe082" class="component"/>
+  <text x="630" y="845" class="text-component">alertmanager</text>
+  <text x="630" y="862" class="text-small">Alerts</text>
+  
+  <rect x="720" y="820" width="140" height="60" fill="#ffe082" class="component"/>
+  <text x="790" y="845" class="text-component">loki</text>
+  <text x="790" y="862" class="text-small">Logs</text>
+  
+  <rect x="880" y="820" width="140" height="60" fill="#ffe082" class="component"/>
+  <text x="950" y="845" class="text-component">mimir</text>
+  <text x="950" y="862" class="text-small">Time-Series DB</text>
+  
+  <rect x="1040" y="820" width="140" height="60" fill="#ffe082" class="component"/>
+  <text x="1110" y="845" class="text-component">opentelemetry</text>
+  <text x="1110" y="862" class="text-small">Telemetry</text>
+  
+  <rect x="1200" y="820" width="140" height="60" fill="#ffe082" class="component"/>
+  <text x="1270" y="845" class="text-component">minio</text>
+  <text x="1270" y="862" class="text-small">Object Storage</text>
+  
+  <!-- Layer 8: GitOps & CD -->
+  <rect x="50" y="980" width="500" height="120" fill="#e3f2fd" class="layer-box"/>
+  <text x="70" y="1005" class="text-title">GitOps &amp; Continuous Delivery</text>
+  
+  <rect x="80" y="1020" width="140" height="60" fill="#bbdefb" class="component"/>
+  <text x="150" y="1045" class="text-component">argocd</text>
+  <text x="150" y="1062" class="text-small">GitOps Platform</text>
+  
+  <rect x="240" y="1020" width="140" height="60" fill="#bbdefb" class="component"/>
+  <text x="310" y="1045" class="text-component">gitea</text>
+  <text x="310" y="1062" class="text-small">Git Service</text>
+  
+  <rect x="400" y="1020" width="130" height="60" fill="#bbdefb" class="component"/>
+  <text x="465" y="1045" class="text-component">argocd-repo</text>
+  <text x="465" y="1062" class="text-small">Repo Manager</text>
+  
+  <!-- Layer 9: Container Registry -->
+  <rect x="570" y="980" width="500" height="120" fill="#f1f8e9" class="layer-box"/>
+  <text x="590" y="1005" class="text-title">Container Registry (Harbor)</text>
+  
+  <rect x="600" y="1020" width="140" height="60" fill="#dcedc8" class="component"/>
+  <text x="670" y="1045" class="text-component">harbor-core</text>
+  <text x="670" y="1062" class="text-small">Registry Core</text>
+  
+  <rect x="760" y="1020" width="140" height="60" fill="#dcedc8" class="component"/>
+  <text x="830" y="1045" class="text-component">harbor-portal</text>
+  <text x="830" y="1062" class="text-small">Registry UI</text>
+  
+  <rect x="920" y="1020" width="130" height="60" fill="#dcedc8" class="component"/>
+  <text x="985" y="1045" class="text-component">trivy</text>
+  <text x="985" y="1062" class="text-small">Security Scan</text>
+  
+  <!-- Layer 10: Service Mesh -->
+  <rect x="1090" y="980" width="460" height="120" fill="#fce4ec" class="layer-box"/>
+  <text x="1110" y="1005" class="text-title">Service Mesh &amp; Networking</text>
+  
+  <rect x="1120" y="1020" width="120" height="60" fill="#f8bbd0" class="component"/>
+  <text x="1180" y="1045" class="text-component">istio</text>
+  <text x="1180" y="1062" class="text-small">Service Mesh</text>
+  
+  <rect x="1260" y="1020" width="120" height="60" fill="#f8bbd0" class="component"/>
+  <text x="1320" y="1045" class="text-component">calico</text>
+  <text x="1320" y="1062" class="text-small">CNI &amp; Policy</text>
+  
+  <rect x="1400" y="1020" width="120" height="60" fill="#f8bbd0" class="component"/>
+  <text x="1460" y="1045" class="text-component">metallb</text>
+  <text x="1460" y="1062" class="text-small">Load Balancer</text>
+  
+  <!-- Layer 11: Policy & Security -->
+  <rect x="50" y="1120" width="740" height="120" fill="#ede7f6" class="layer-box"/>
+  <text x="70" y="1145" class="text-title">Policy &amp; Security</text>
+  
+  <rect x="80" y="1160" width="150" height="60" fill="#d1c4e9" class="component"/>
+  <text x="155" y="1185" class="text-component">kyverno</text>
+  <text x="155" y="1202" class="text-small">Policy Engine</text>
+  
+  <rect x="250" y="1160" width="150" height="60" fill="#d1c4e9" class="component"/>
+  <text x="325" y="1185" class="text-component">cert-manager</text>
+  <text x="325" y="1202" class="text-small">Certificates</text>
+  
+  <rect x="420" y="1160" width="150" height="60" fill="#d1c4e9" class="component"/>
+  <text x="495" y="1185" class="text-component">external-secrets</text>
+  <text x="495" y="1202" class="text-small">Secret Sync</text>
+  
+  <rect x="590" y="1160" width="180" height="60" fill="#d1c4e9" class="component"/>
+  <text x="680" y="1185" class="text-component">attestation-status</text>
+  <text x="680" y="1202" class="text-small">Device Attestation</text>
+  
+  <!-- Layer 12: Storage & Databases -->
+  <rect x="810" y="1120" width="740" height="120" fill="#e0f2f1" class="layer-box"/>
+  <text x="830" y="1145" class="text-title">Storage &amp; Databases</text>
+  
+  <rect x="840" y="1160" width="140" height="60" fill="#b2dfdb" class="component"/>
+  <text x="910" y="1185" class="text-component">postgresql</text>
+  <text x="910" y="1202" class="text-small">Main Database</text>
+  
+  <rect x="1000" y="1160" width="140" height="60" fill="#b2dfdb" class="component"/>
+  <text x="1070" y="1185" class="text-component">openebs</text>
+  <text x="1070" y="1202" class="text-small">Storage Mgmt</text>
+  
+  <rect x="1160" y="1160" width="140" height="60" fill="#b2dfdb" class="component"/>
+  <text x="1230" y="1185" class="text-component">harbor-db</text>
+  <text x="1230" y="1202" class="text-small">Harbor DB</text>
+  
+  <rect x="1320" y="1160" width="140" height="60" fill="#b2dfdb" class="component"/>
+  <text x="1390" y="1185" class="text-component">gitea-db</text>
+  <text x="1390" y="1202" class="text-small">Gitea DB</text>
+  
+  <!-- Layer 13: Kubernetes Core -->
+  <rect x="50" y="1260" width="1500" height="120" fill="#ffebee" class="layer-box"/>
+  <text x="70" y="1285" class="text-title">Kubernetes Core (kube-system)</text>
+  
+  <rect x="80" y="1300" width="140" height="60" fill="#ffcdd2" class="component"/>
+  <text x="150" y="1325" class="text-component">kube-apiserver</text>
+  <text x="150" y="1342" class="text-small">API Server</text>
+  
+  <rect x="240" y="1300" width="140" height="60" fill="#ffcdd2" class="component"/>
+  <text x="310" y="1325" class="text-component">etcd</text>
+  <text x="310" y="1342" class="text-small">Cluster State</text>
+  
+  <rect x="400" y="1300" width="140" height="60" fill="#ffcdd2" class="component"/>
+  <text x="470" y="1325" class="text-component">kube-scheduler</text>
+  <text x="470" y="1342" class="text-small">Scheduler</text>
+  
+  <rect x="560" y="1300" width="180" height="60" fill="#ffcdd2" class="component"/>
+  <text x="650" y="1325" class="text-component">controller-manager</text>
+  <text x="650" y="1342" class="text-small">Controllers</text>
+  
+  <rect x="760" y="1300" width="140" height="60" fill="#ffcdd2" class="component"/>
+  <text x="830" y="1325" class="text-component">coredns</text>
+  <text x="830" y="1342" class="text-small">DNS</text>
+  
+  <!-- Legend -->
+  <text x="50" y="1420" class="text-title" style="font-size: 18px;">Legend:</text>
+  <rect x="50" y="1440" width="100" height="40" fill="#e1f5ff" class="component"/>
+  <text x="160" y="1465" class="text-small" style="text-anchor: start;">User Interface</text>
+  
+  <rect x="50" y="1490" width="100" height="40" fill="#fff3e0" class="component"/>
+  <text x="160" y="1515" class="text-small" style="text-anchor: start;">Gateway &amp; Auth</text>
+  
+  <rect x="50" y="1540" width="100" height="40" fill="#f3e5f5" class="component"/>
+  <text x="160" y="1565" class="text-small" style="text-anchor: start;">Identity &amp; Access</text>
+  
+  <rect x="300" y="1440" width="100" height="40" fill="#e8f5e9" class="component"/>
+  <text x="410" y="1465" class="text-small" style="text-anchor: start;">Orchestration</text>
+  
+  <rect x="300" y="1490" width="100" height="40" fill="#fff9c4" class="component"/>
+  <text x="410" y="1515" class="text-small" style="text-anchor: start;">Infrastructure</text>
+  
+  <rect x="300" y="1540" width="100" height="40" fill="#ffecb3" class="component"/>
+  <text x="410" y="1565" class="text-small" style="text-anchor: start;">Observability</text>
+  
+  <rect x="550" y="1440" width="100" height="40" fill="#e3f2fd" class="component"/>
+  <text x="660" y="1465" class="text-small" style="text-anchor: start;">GitOps &amp; CD</text>
+  
+  <rect x="550" y="1490" width="100" height="40" fill="#f1f8e9" class="component"/>
+  <text x="660" y="1515" class="text-small" style="text-anchor: start;">Container Registry</text>
+  
+  <rect x="550" y="1540" width="100" height="40" fill="#fce4ec" class="component"/>
+  <text x="660" y="1565" class="text-small" style="text-anchor: start;">Service Mesh</text>
+  
+  <rect x="800" y="1440" width="100" height="40" fill="#ede7f6" class="component"/>
+  <text x="910" y="1465" class="text-small" style="text-anchor: start;">Policy &amp; Security</text>
+  
+  <rect x="800" y="1490" width="100" height="40" fill="#e0f2f1" class="component"/>
+  <text x="910" y="1515" class="text-small" style="text-anchor: start;">Storage &amp; Database</text>
+  
+  <rect x="800" y="1540" width="100" height="40" fill="#ffebee" class="component"/>
+  <text x="910" y="1565" class="text-small" style="text-anchor: start;">Kubernetes Core</text>
+  
+  <!-- Footer -->
+  <text x="800" y="1950" class="text-small" style="text-anchor: middle; font-size: 11px;">
+    EMF System - 212 Pods across 29 Namespaces
+  </text>
+  <text x="800" y="1970" class="text-small" style="text-anchor: middle; font-size: 10px;">
+    Generated from pods.lg - November 17, 2025
+  </text>
+</svg>
