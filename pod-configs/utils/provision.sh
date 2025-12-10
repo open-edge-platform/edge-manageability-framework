@@ -1157,7 +1157,7 @@ EOF
         connect_cluster
         kubectl --kubeconfig "${KUBECONFIG}" patch storageclass gp2 -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
     fi
-    if action == "destroy" ; then
+    if $action == "destroy" ; then
       # Check if variable is not empty
       if [[ -n "$ENV_NAME" ]]; then
         volumes=$(aws ec2 describe-volumes \
