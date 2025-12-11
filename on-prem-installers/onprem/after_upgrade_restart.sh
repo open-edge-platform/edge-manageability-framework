@@ -5,27 +5,24 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Description:
-#   ArgoCD Application Sync Script with Advanced Retry and Recovery Logic
+#   This script synchronizes ArgoCD applications after an upgrade, ensuring all
+#   applications reach a healthy and synced state. It processes applications in
+#   wave order with automatic retry and error recovery mechanisms.
 #
-#   This script manages the synchronization of ArgoCD applications in wave order,
-#   with comprehensive error handling, failed sync detection, and automatic recovery.
-#   It handles stuck jobs, degraded applications, and failed CRDs, ensuring all
-#   applications reach a Healthy+Synced state.
+# Main Steps:
+#   1. Install ArgoCD CLI if not present
+#   2. Login to ArgoCD server (LoadBalancer or NodePort)
+#   3. Stop and reconfigure root-app sync
+#   4. Sync all applications (excluding root-app) in wave order
+#   5. Perform post-upgrade cleanup:
+#      - Delete obsolete applications (tenancy-api-mapping, tenancy-datamodel)
+#      - Remove legacy deployments (os-resource-manager)
+#      - Clean up stale secrets (tls-boots, boots-ca-cert)
+#   6. Re-sync all applications
+#   7. Sync root-app
+#   8. Validate final state of all applications
 #
-# Features:
-#   - Wave-ordered application synchronization
-#   - Automatic detection and cleanup of failed syncs
-#   - Real-time job/CRD failure detection during sync
-#   - Automatic restart of failed applications
-#   - Global retry mechanism (4 attempts)
-#   - Per-application retry logic (3 attempts)
-#   - Timestamp tracking for all operations
-#   - Unhealthy job and CRD cleanup
-#   - OutOfSync application handling
-#   - Root-app special handling
-#   - Post-upgrade cleanup: Removes obsolete applications (tenancy-api-mapping,
-#     tenancy-datamodel), legacy deployments (os-resource-manager), and stale
-#     secrets (tls-boots, boots-ca-cert) to ensure clean upgrade state
+#   All logs are written to /var/log/orch-upgrade/ directory.
 #
 # Usage:
 #   ./after_upgrade_restart.sh [NAMESPACE]
@@ -33,15 +30,6 @@
 #   Arguments:
 #     NAMESPACE    - Target namespace for applications (optional, default: onprem)
 #
-#   The script will:
-#   1. Install ArgoCD CLI if not present
-#   2. Login to ArgoCD server
-#   3. Sync all applications excluding root-app
-#   4. Perform post-upgrade cleanup
-#   5. Re-sync all applications
-#   6. Validate final state
-#
-
 # Examples:
 #   ./after_upgrade_restart.sh              # Uses default namespace 'onprem'
 #
@@ -55,6 +43,14 @@
 set -o pipefail
 
 # ============================================================
+# Source environment variables
+# ============================================================
+if [[ -f "onprem.env" ]]; then
+    # shellcheck disable=SC1091
+    source onprem.env
+fi
+
+# ============================================================
 # ============= GLOBAL CONFIGURATION VARIABLES ===============
 # ============================================================
 
@@ -62,14 +58,32 @@ set -o pipefail
 NS="${1:-onprem}"  # Use first argument or default to "onprem"
 ARGO_NS="argocd"
 
+# Log file configuration
+LOG_DIR="/var/log/orch-upgrade"
+mkdir -p "$LOG_DIR"
+LOG_FILE="$LOG_DIR/argo_sync_$(date +%Y%m%d_%H%M%S).log"
+
+# Set up file descriptor 3 for console output (same as main log)
+exec 3> >(tee -a "$LOG_FILE")
+
+# Redirect stdout to tee (log file + stdout)
+exec > >(tee -a "$LOG_FILE")
+exec 2>&1
+
 echo "[INFO] Using namespace: $NS"
 echo "[INFO] Using ArgoCD namespace: $ARGO_NS"
+echo "[INFO] Log file: $LOG_FILE"
+
+# Also output initial info to console
+echo "[INFO] ArgoCD sync script started" >&3
+echo "[INFO] Log file: $LOG_FILE" >&3
+echo "" >&3
 
 # Sync behaviour
 GLOBAL_POLL_INTERVAL=10           # seconds
-APP_MAX_WAIT=60               # 5 minutes to wait for any app (Healthy+Synced)
-APP_MAX_RETRIES=3                 # retry X times for each app
-GLOBAL_SYNC_RETRIES=2            # Global retry for entire sync process
+APP_MAX_WAIT=30             #  to wait for any app (Healthy+Synced)
+APP_MAX_RETRIES=5                 # retry 5 times for each app (after 3 fails, restart root-app)
+GLOBAL_SYNC_RETRIES=1            # Global retry for entire sync process
 
 # Apps requiring server-side apply (space-separated list)
 SERVER_SIDE_APPS="external-secrets copy-app-gitea-cred-to-fleet copy-ca-cert-boots-to-gateway copy-ca-cert-boots-to-infra copy-ca-cert-gateway-to-cattle copy-ca-cert-gateway-to-infra copy-ca-cert-gitea-to-app copy-ca-cert-gitea-to-cluster copy-cluster-gitea-cred-to-fleet copy-keycloak-admin-to-infra infra-external platform-keycloak namespace-label wait-istio-job"
@@ -143,6 +157,21 @@ argocd login "$ARGO_ENDPOINT" --username admin --password "$ADMIN_PASSWD" --inse
 echo "[INFO] Login OK."
 
 # ============================================================
+# Pre-sync: Stop root-app sync and apply patch
+# ============================================================
+echo "[INFO] Stopping root-app sync..."
+apps_ns="$NS"
+# Stop root-app sync.
+kubectl patch application root-app -n "$apps_ns" --type merge -p '{"operation":null}'
+kubectl patch application root-app -n "$apps_ns" --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
+sleep 10
+# Apply root-app sync
+echo "[INFO] Applying root-app sync patch..."
+kubectl patch application root-app -n "$apps_ns" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+sleep 10
+echo "[INFO] Root-app sync configuration completed."
+
+# ============================================================
 # Fetch all apps by wave
 # ============================================================
 get_all_apps_by_wave() {
@@ -187,6 +216,25 @@ reset() { tput sgr0 2>/dev/null; }
 # Get timestamp
 get_timestamp() {
     date '+%Y-%m-%d %H:%M:%S'
+}
+
+# ============================================================
+# Console output helpers (summary only)
+# ============================================================
+console_info() {
+    echo "$@" >&3
+}
+
+console_success() {
+    echo "$(green)$*$(reset)" >&3
+}
+
+console_warn() {
+    echo "$(yellow)$*$(reset)" >&3
+}
+
+console_error() {
+    echo "$(red)$*$(reset)" >&3
 }
 
 # ============================================================
@@ -292,7 +340,7 @@ check_and_handle_failed_sync() {
                 if [[ "$kind" == "Job" ]]; then
                     kubectl delete pods -n "$res_ns" -l job-name="$res_name" --ignore-not-found=true 2>/dev/null &
                     kubectl delete job "$res_name" -n "$res_ns" --ignore-not-found=true 2>/dev/null &
-                    kubectl patch job "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}'
+                    kubectl patch job "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}' || true
                 elif [[ "$kind" == "CustomResourceDefinition" ]]; then
                     kubectl delete crd "$res_name" --ignore-not-found=true 2>/dev/null &
                 fi
@@ -318,6 +366,96 @@ check_and_handle_failed_sync() {
 }
 
 # ============================================================
+# Stop root-app sync operations
+# ============================================================
+root_app_stop_start() {
+    echo "$(yellow)[INFO] Stopping root-app sync operations...$(reset)"
+    kubectl patch application root-app -n "$NS" --type merge -p '{"operation":null}' 2>/dev/null || true
+    kubectl patch application root-app -n "$NS" --type json -p '[{"op": "remove", "path": "/status/operationState"}]' 2>/dev/null || true
+    sleep 2
+    kubectl patch application root-app -n "$NS" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge || true
+    sleep 5
+}
+
+# ============================================================
+# Delete an ArgoCD application
+# ============================================================
+delete_app() {
+    local app_name="$1"
+    local app_namespace="${2:-$NS}"
+    
+    echo "$(yellow)[DELETE] Deleting application $app_name in namespace $app_namespace...$(reset)"
+    
+    # Stop root-app sync
+    kubectl patch application root-app -n "$app_namespace" --type merge -p '{"operation":null}' 2>/dev/null || true
+    kubectl patch application root-app -n "$app_namespace" --type json -p '[{"op": "remove", "path": "/status/operationState"}]' 2>/dev/null || true
+    sleep 5
+    
+    # Delete application with finalizer removal
+    kubectl patch application "$app_name" -n "$app_namespace" --type=json -p='[{"op":"remove","path":"/metadata/finalizers"}]' 2>/dev/null || true
+    kubectl delete application "$app_name" -n "$app_namespace" --force --grace-period=0 --ignore-not-found=true 2>/dev/null || true
+    sleep 5
+    
+    # Apply root-app sync
+    kubectl patch application root-app -n "$app_namespace" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge 2>/dev/null || true
+    sleep 10
+    
+    echo "$(blue)[INFO] Application $app_name deleted.$(reset)"
+}
+
+# ============================================================
+# Check and download DKAM certificates
+# ============================================================
+check_and_download_dkam_certs() {
+    echo "$(yellow)[INFO] Checking DKAM certificates readiness...$(reset)"
+    console_info "[→] Downloading DKAM certificates..."
+    
+    # Remove old certificates if they exist
+    rm -rf Full_server.crt signed_ipxe.efi 2>/dev/null || true
+    
+    local max_attempts=20  # 20 attempts * 30 seconds = 10 minutes
+    local attempt=1
+    local success=false
+    
+    while (( attempt <= max_attempts )); do
+        echo "[$(get_timestamp)] [Attempt ${attempt}/${max_attempts}] Checking DKAM certificate availability..."
+        
+        # Try to download Full_server.crt
+        if wget https://tinkerbell-nginx."$CLUSTER_DOMAIN"/tink-stack/keys/Full_server.crt --no-check-certificate --no-proxy -q -O Full_server.crt 2>/dev/null; then
+            echo "$(green)[OK] Full_server.crt downloaded successfully$(reset)"
+            
+            # Try to download signed_ipxe.efi using the certificate
+            if wget --ca-certificate=Full_server.crt https://tinkerbell-nginx."$CLUSTER_DOMAIN"/tink-stack/signed_ipxe.efi -q -O signed_ipxe.efi 2>/dev/null; then
+                echo "$(green)[OK] signed_ipxe.efi downloaded successfully$(reset)"
+                success=true
+                break
+            else
+                echo "$(yellow)[WARN] Failed to download signed_ipxe.efi, retrying...$(reset)"
+                rm -f Full_server.crt signed_ipxe.efi 2>/dev/null || true
+            fi
+        else
+            echo "$(yellow)[WARN] Full_server.crt not available yet, waiting...$(reset)"
+        fi
+        
+        if (( attempt < max_attempts )); then
+            echo "[INFO] Waiting 30 seconds before next attempt..."
+            sleep 30
+        fi
+        ((attempt++))
+    done
+    
+    if [[ "$success" == "true" ]]; then
+        echo "$(green)[SUCCESS] DKAM certificates are ready and downloaded$(reset)"
+        console_success "[✓] DKAM certificates downloaded successfully"
+        return 0
+    else
+        echo "$(red)[FAIL] DKAM certificates not available after 10 minutes$(reset)"
+        console_error "[✗] DKAM certificates download failed after 10 minutes"
+        return 1
+    fi
+}
+
+# ============================================================
 # Clean unhealthy jobs for a specific application
 # ============================================================
 clean_unhealthy_jobs_for_app() {
@@ -337,9 +475,9 @@ clean_unhealthy_jobs_for_app() {
             read -r job_ns job_name <<< "$job_line"
             echo "$(yellow)  - Deleting job $job_name in $job_ns (background)$(reset)"
             kubectl delete pods -n "$job_ns" -l job-name="$job_name" --ignore-not-found=true 2>/dev/null &
-            kubectl patch pods -n "$job_ns" -l job-name="$job_name" --type=merge -p='{"metadata":{"finalizers":[]}}'
+            kubectl patch pods -n "$job_ns" -l job-name="$job_name" --type=merge -p='{"metadata":{"finalizers":[]}}' || true
             kubectl delete job "$job_name" -n "$job_ns" --ignore-not-found=true 2>/dev/null &
-            kubectl patch job "$job_name" -n "$job_ns" --type=merge -p='{"metadata":{"finalizers":[]}}'
+            kubectl patch job "$job_name" -n "$job_ns" --type=merge -p='{"metadata":{"finalizers":[]}}' || true
         done <<< "$app_resources"
         echo "[INFO] Job cleanup initiated in background, proceeding..."
         return 0
@@ -352,6 +490,9 @@ print_header() {
     echo "$(bold)$(blue)============================================================$(reset)"
     echo "$(bold)$(blue)== $1$(reset)"
     echo "$(bold)$(blue)============================================================$(reset)"
+    # Also output to console
+    console_info ""
+    console_info "$(bold)$(blue)== $1$(reset)"
 }
 
 print_table_header() {
@@ -389,12 +530,17 @@ sync_not_green_apps_once() {
 
     # Print summary of NOT-GREEN apps before syncing
     echo "$(bold)[INFO] Apps NOT Healthy or NOT Synced:$(reset)"
+    local not_green_count=0
     for line in "${all_apps[@]}"; do
         read -r wave name health sync <<< "$line"
         if [[ "$health" != "Healthy" || "$sync" != "Synced" ]]; then
             echo "$(red)  - $name (wave=$wave) Health=$health Sync=$sync$(reset)"
+            ((not_green_count++))
         fi
     done
+    if (( not_green_count > 0 )); then
+        console_info "[→] Starting sync for $not_green_count applications"
+    fi
     echo
 
     # Sync NOT-GREEN apps in wave order, skipping root-app until last
@@ -406,6 +552,9 @@ sync_not_green_apps_once() {
         if [[ "$name" == "root-app" ]]; then
             continue
         fi
+
+        # Console: Show which app is being processed
+        console_info "[→] Syncing: $name (wave=$wave)"
 
         # First check and handle any failed syncs
         echo "[$(get_timestamp)] Checking for failed syncs in $name..."
@@ -436,6 +585,7 @@ sync_not_green_apps_once() {
             if (( attempt == 1 )); then
                 if [[ "$health" == "Healthy" && "$sync" == "Synced" ]]; then
                     echo "$(green)[OK] $full_app (wave=$wave) already Healthy+Synced$(reset)"
+                    console_success "[✓] $name - Already synced"
                     synced=true
                     break
                 fi
@@ -471,6 +621,8 @@ sync_not_green_apps_once() {
 
             # Check if app requires server-side apply and special cleanup
             if [[ " $SERVER_SIDE_APPS " =~ \ $name\  ]]; then
+                root_app_stop_start
+                sleep 3
                 echo "$(yellow)[INFO] Stopping any ongoing operations for $name before force sync...$(reset)"
                 argocd app terminate-op "$full_app" --grpc-web 2>/dev/null || true
                 sleep 2
@@ -494,16 +646,16 @@ sync_not_green_apps_once() {
                         if [[ "$kind" == "Job" ]]; then
                             kubectl patch job "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}' 2>/dev/null || true
                             kubectl delete pods -n "$res_ns" -l job-name="$res_name" --ignore-not-found=true --timeout=10s 2>/dev/null &
-                            kubectl patch pods -n "$res_ns" -l job-name="$res_name" --type=merge -p='{"metadata":{"finalizers":[]}}'
+                            kubectl patch pods -n "$res_ns" -l job-name="$res_name" --type=merge -p='{"metadata":{"finalizers":[]}}' || true
                             kubectl delete job "$res_name" -n "$res_ns" --ignore-not-found=true --timeout=10s 2>/dev/null &
-                            kubectl patch job "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}'
+                            kubectl patch job "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}' || true
                         elif [[ "$kind" == "CustomResourceDefinition" ]]; then
                             kubectl patch crd "$res_name" --type=merge -p='{"metadata":{"finalizers":[]}}' 2>/dev/null || true
                             kubectl delete crd "$res_name" --ignore-not-found=true --timeout=10s 2>/dev/null &
-                            kubectl patch crd "$res_name" --type=merge -p='{"metadata":{"finalizers":[]}}'
+                            kubectl patch crd "$res_name" --type=merge -p='{"metadata":{"finalizers":[]}}' || true
                         else
                             kubectl delete "$kind" "$res_name" -n "$res_ns" --ignore-not-found=true --timeout=10s 2>/dev/null &
-                            kubectl patch "$kind" "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}'
+                            kubectl patch "$kind" "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}' || true
                         fi
                     done <<< "$problem_resources"
                     echo "$(yellow)[INFO] Waiting for cleanup to complete...$(reset)"
@@ -577,6 +729,7 @@ sync_not_green_apps_once() {
                 echo "    [$(get_timestamp)] Elapsed: ${elapsed}s"
                 if [[ "$health" == "Healthy" && "$sync" == "Synced" ]]; then
                     echo "$(green)[DONE] $full_app Healthy+Synced in ${elapsed}s at [$(get_timestamp)] (attempt ${attempt})$(reset)"
+                    console_success "[✓] $name - Completed (${elapsed}s)"
                     synced=true
                     break
                 fi
@@ -586,6 +739,17 @@ sync_not_green_apps_once() {
                 break
             fi
             ((attempt++))
+            
+            # After 3 failed attempts, delete app and restart root-app before continuing
+            if (( attempt == 4 )); then
+                echo "$(yellow)[ACTION] After 3 failed attempts, deleting app and restarting root-app...$(reset)"
+                
+                # Delete the failed application (already handles root-app sync internally)
+                delete_app "$name" "$NS"
+                
+                echo "$(blue)[INFO] Application $name deleted and root-app restarted. Continuing with retries...$(reset)"
+            fi
+            
             if (( attempt <= APP_MAX_RETRIES )); then
                 echo "$(yellow)[RETRY] Retrying $full_app (${attempt}/${APP_MAX_RETRIES})...$(reset)"
                 # On retry, clean up unhealthy jobs and clear stuck operations
@@ -594,13 +758,15 @@ sync_not_green_apps_once() {
                 argocd app get "$full_app" --hard-refresh --grpc-web >/dev/null 2>&1 || true
                 sleep 5
             else
-                echo "$(red)[FAIL] Max retries reached for $full_app. Proceeding to next app.$(reset)"
+                echo "$(red)[FAIL] Max retries (${APP_MAX_RETRIES}) reached for $full_app. Proceeding to next app.$(reset)"
+                console_error "[✗] $name - Failed"
             fi
         done
         echo "$(blue)[INFO] Proceeding to next app...$(reset)"
     done
 
     # Now handle root-app sync after all other apps
+    console_info "[→] Syncing: root-app"
     status=$(kubectl get applications.argoproj.io "root-app" -n "$NS" -o json 2>/dev/null)
     if [[ -z "$status" ]]; then
         echo "$(red)[FAIL] root-app not found in namespace '$NS'.$(reset)"
@@ -686,6 +852,7 @@ sync_not_green_apps_once() {
             echo "    Elapsed: ${elapsed}s"
             if [[ "$health" == "Healthy" && "$sync" == "Synced" ]]; then
                 echo "$(green)[DONE] $full_app Healthy+Synced in ${elapsed}s (attempt ${attempt})$(reset)"
+                console_success "[✓] root-app - Completed (${elapsed}s)"
                 synced=true
                 break
             fi
@@ -699,6 +866,7 @@ sync_not_green_apps_once() {
             echo "$(yellow)[RETRY] Retrying $full_app (${attempt}/${APP_MAX_RETRIES})...$(reset)"
         else
             echo "$(red)[FAIL] Max retries reached for $full_app.$(reset)"
+            console_error "[✗] root-app - Failed"
         fi
     done
     echo "$(blue)[INFO] Finished root-app sync attempt(s).$(reset)"
@@ -739,6 +907,9 @@ sync_all_apps_exclude_root() {
         if [[ "$name" == "root-app" ]]; then
             continue
         fi
+
+        # Console: Show which app is being processed
+        console_info "[→] Syncing: $name (wave=$wave)"
 
         # First check and handle any failed syncs
         echo "[$(get_timestamp)] Checking for failed syncs in $name..."
@@ -804,6 +975,8 @@ sync_all_apps_exclude_root() {
 
             # Check if app requires server-side apply and special cleanup
             if [[ " $SERVER_SIDE_APPS " =~ \ $name\  ]]; then
+                root_app_stop_start
+                sleep 3
                 echo "$(yellow)[INFO] Stopping any ongoing operations for $name before force sync...$(reset)"
                 argocd app terminate-op "$full_app" --grpc-web 2>/dev/null || true
                 sleep 2
@@ -827,16 +1000,16 @@ sync_all_apps_exclude_root() {
                         if [[ "$kind" == "Job" ]]; then
                             kubectl patch job "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}' 2>/dev/null || true
                             kubectl delete pods -n "$res_ns" -l job-name="$res_name" --ignore-not-found=true --timeout=10s 2>/dev/null &
-                            kubectl patch pods -n "$res_ns" -l job-name="$res_name" --type=merge -p='{"metadata":{"finalizers":[]}}'
+                            kubectl patch pods -n "$res_ns" -l job-name="$res_name" --type=merge -p='{"metadata":{"finalizers":[]}}' || true
                             kubectl delete job "$res_name" -n "$res_ns" --ignore-not-found=true --timeout=10s 2>/dev/null &
-                            kubectl patch job "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}'
+                            kubectl patch job "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}' || true
                         elif [[ "$kind" == "CustomResourceDefinition" ]]; then
                             kubectl patch crd "$res_name" --type=merge -p='{"metadata":{"finalizers":[]}}' 2>/dev/null || true
                             kubectl delete crd "$res_name" --ignore-not-found=true --timeout=10s 2>/dev/null &
-                            kubectl patch crd "$res_name" --type=merge -p='{"metadata":{"finalizers":[]}}'
+                            kubectl patch crd "$res_name" --type=merge -p='{"metadata":{"finalizers":[]}}' || true
                         else
                             kubectl delete "$kind" "$res_name" -n "$res_ns" --ignore-not-found=true --timeout=10s 2>/dev/null &
-                            kubectl patch "$kind" "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}'
+                            kubectl patch "$kind" "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}' || true
                         fi
                     done <<< "$problem_resources"
                     echo "$(yellow)[INFO] Waiting for cleanup to complete...$(reset)"
@@ -852,19 +1025,19 @@ sync_all_apps_exclude_root() {
                             if kubectl get job "$res_name" -n "$res_ns" &>/dev/null; then
                                 echo "$(red)[STUCK] Job $res_name still exists, forcing finalizer removal...$(reset)"
                                 kubectl patch job "$res_name" -n "$res_ns" --type=json -p='[{"op":"remove","path":"/metadata/finalizers"}]' 2>/dev/null || true
-                                kubectl delete job "$res_name" -n "$res_ns" --force --grace-period=0 2>/dev/null &
+                                kubectl delete job "$res_name" -n "$res_ns" --force --grace-period=0 2>/dev/null || true &
                             fi
                         elif [[ "$kind" == "CustomResourceDefinition" ]]; then
                             if kubectl get crd "$res_name" &>/dev/null; then
                                 echo "$(red)[STUCK] CRD $res_name still exists, forcing finalizer removal...$(reset)"
                                 kubectl patch crd "$res_name" --type=json -p='[{"op":"remove","path":"/metadata/finalizers"}]' 2>/dev/null || true
-                                kubectl delete crd "$res_name" --force --grace-period=0 2>/dev/null &
+                                kubectl delete crd "$res_name" --force --grace-period=0 2>/dev/null || true &
                             fi
                         elif [[ "$kind" == "ExternalSecret" || "$kind" == "SecretStore" || "$kind" == "ClusterSecretStore" ]]; then
                             if kubectl get "$kind" "$res_name" -n "$res_ns" &>/dev/null; then
                                 echo "$(red)[STUCK] $kind $res_name still exists, forcing finalizer removal...$(reset)"
                                 kubectl patch "$kind" "$res_name" -n "$res_ns" --type=json -p='[{"op":"remove","path":"/metadata/finalizers"}]' 2>/dev/null || true
-                                kubectl delete "$kind" "$res_name" -n "$res_ns" --force --grace-period=0 2>/dev/null &
+                                kubectl delete "$kind" "$res_name" -n "$res_ns" --force --grace-period=0 2>/dev/null || true &
                             fi
                         fi
                     done <<< "$problem_resources"
@@ -938,6 +1111,7 @@ sync_all_apps_exclude_root() {
                 echo "    Elapsed: ${elapsed}s"
                 if [[ "$health" == "Healthy" && "$sync" == "Synced" ]]; then
                     echo "$(green)[DONE] $full_app Healthy+Synced in ${elapsed}s (attempt ${attempt})$(reset)"
+                    console_success "[✓] $name - Completed (${elapsed}s)"
                     synced=true
                     break
                 fi
@@ -956,6 +1130,7 @@ sync_all_apps_exclude_root() {
                 sleep 5
             else
                 echo "$(red)[FAIL] Max retries reached for $full_app. Proceeding to next app.$(reset)"
+                console_error "[✗] $name - Failed"
             fi
         done
         echo "$(blue)[INFO] Proceeding to next app...$(reset)"
@@ -966,6 +1141,7 @@ sync_all_apps_exclude_root() {
 # Sync root-app only (with nice reporting)
 # ============================================================
 sync_root_app_only() {
+    console_info "[→] Syncing: root-app"
     status=$(kubectl get applications.argoproj.io "root-app" -n "$NS" -o json 2>/dev/null)
     if [[ -z "$status" ]]; then
         echo "$(red)[FAIL] root-app not found in namespace '$NS'.$(reset)"
@@ -996,6 +1172,7 @@ sync_root_app_only() {
 
     if [[ "$health" == "Healthy" && "$sync" == "Synced" ]]; then
         echo "$(green)[OK] $full_app (wave=$wave) already Healthy+Synced$(reset)"
+        console_success "[✓] root-app - Already synced"
         return 0
     fi
 
@@ -1072,6 +1249,7 @@ sync_root_app_only() {
             echo "    Elapsed: ${elapsed}s"
             if [[ "$health" == "Healthy" && "$sync" == "Synced" ]]; then
                 echo "$(green)[DONE] $full_app Healthy+Synced in ${elapsed}s (attempt ${attempt})$(reset)"
+                console_success "[✓] root-app - Completed (${elapsed}s)"
                 synced=true
                 break
             fi
@@ -1090,6 +1268,7 @@ sync_root_app_only() {
             sleep 5
         else
             echo "$(red)[FAIL] Max retries reached for $full_app.$(reset)"
+            console_error "[✗] root-app - Failed"
         fi
 
         # Re-fetch status for next iteration
@@ -1123,13 +1302,17 @@ sync_until_green_ns_exclude_root() {
     local retry_count=0
     local max_retries=2
     
+    console_info "[→] Starting sync for all applications (excluding root-app)..."
+    
     while (( retry_count < max_retries )); do
         if ! namespace_all_green_exclude_root; then
             print_header "All non-root-app applications are Healthy+Synced in namespace '$NS'."
+            console_success "[✓] All non-root applications are synced"
             break
         fi
 
         print_header "NOT-GREEN apps (Wave-Ordered, excluding root-app) - Attempt $((retry_count + 1))/${max_retries}"
+        console_info "[→] Global retry attempt $((retry_count + 1))/${max_retries}"
         print_table_header
         mapfile -t not_green < <(kubectl get applications.argoproj.io -n "$NS" -o json \
             | jq -r '.items[] | select(.metadata.name != "root-app") | {
@@ -1151,6 +1334,7 @@ sync_until_green_ns_exclude_root() {
     
     if (( retry_count >= max_retries )) && namespace_all_green_exclude_root; then
         echo "$(yellow)[WARN] Maximum retries (${max_retries}) reached but some apps are still not green$(reset)"
+        console_warn "[!] Maximum retries reached - some apps still not synced"
     fi
 }
 
@@ -1181,15 +1365,15 @@ check_and_delete_stuck_crd_jobs() {
             read -r job_ns job_name <<< "$line"
             echo "$(yellow)[CLEANUP] Deleting stuck job $job_name in namespace $job_ns (background)$(reset)"
 
+            # Remove finalizers first to allow deletion
+            kubectl patch pods -n "$job_ns" -l job-name="$job_name" --type=merge -p='{"metadata":{"finalizers":[]}}' 2>/dev/null || true
+            kubectl patch job "$job_name" -n "$job_ns" --type=merge -p='{"metadata":{"finalizers":[]}}' 2>/dev/null || true
+
             # Delete associated pods first
             kubectl delete pods -n "$job_ns" -l job-name="$job_name" --ignore-not-found=true 2>/dev/null &
 
-            kubectl patch pod -n "$job_ns" -l job-name="$job_name" --type=merge -p='{"metadata":{"finalizers":[]}}'
-
             # Delete the job
             kubectl delete job "$job_name" -n "$job_ns" --ignore-not-found=true &
-
-            kubectl patch job "$job_name" -n "$job_ns" --type=merge -p='{"metadata":{"finalizers":[]}}'
         done <<< "$stuck_jobs"
 
         echo "[INFO] Job cleanup initiated in background, proceeding..."
@@ -1257,28 +1441,184 @@ check_and_delete_stuck_crd_jobs() {
 }
 
 # ============================================================
+# List all pods in unhealthy state
+# ============================================================
+list_unhealthy_pods() {
+    print_header "Listing Pods in Unhealthy State"
+    console_info "[→] Checking for unhealthy pods..."
+
+    echo "[INFO] Looking for pods in unhealthy states across all namespaces..."
+
+    # Get all pods in unhealthy states (CrashLoopBackOff, Error, ImagePullBackOff, etc.)
+    unhealthy_pods=$(kubectl get pods --all-namespaces -o json | jq -r '
+        .items[] |
+        select(
+            .status.phase != "Running" and .status.phase != "Succeeded" or
+            (.status.containerStatuses[]? | 
+                select(
+                    .state.waiting?.reason == "CrashLoopBackOff" or
+                    .state.waiting?.reason == "ImagePullBackOff" or
+                    .state.waiting?.reason == "ErrImagePull" or
+                    .state.waiting?.reason == "Error" or
+                    .state.terminated?.reason == "Error" or
+                    .ready == false
+                )
+            )
+        ) |
+        "\(.metadata.namespace)|\(.metadata.name)|\(.status.phase)|\(
+            if .status.containerStatuses then
+                (.status.containerStatuses[] | 
+                    if .state.waiting then .state.waiting.reason
+                    elif .state.terminated then .state.terminated.reason
+                    elif .ready == false then "NotReady"
+                    else "Unknown"
+                    end
+                )
+            else "Unknown"
+            end
+        )"
+    ')
+
+    if [[ -n "$unhealthy_pods" ]]; then
+        echo ""
+        echo "$(bold)$(red)List of Unhealthy Pods:$(reset)"
+        echo "--------------------------------------------------------------------------------"
+        printf "%-30s %-35s %-15s %-20s\n" "Namespace" "Pod Name" "Phase" "Status/Reason"
+        echo "--------------------------------------------------------------------------------"
+        
+        local pod_count=0
+        
+        while IFS='|' read -r pod_ns pod_name pod_phase pod_status; do
+            [[ -z "$pod_ns" ]] && continue
+            ((pod_count++))
+            printf "%-30s %-35s %-15s %-20s\n" "$pod_ns" "$pod_name" "$pod_phase" "$pod_status"
+        done <<< "$unhealthy_pods"
+        
+        echo "--------------------------------------------------------------------------------"
+        echo ""
+        echo "$(red)[SUMMARY] Found $pod_count unhealthy pod(s)$(reset)"
+        console_warn "[!] Found $pod_count unhealthy pod(s)"
+        
+        return 0
+    else
+        echo "$(green)[OK] No unhealthy pods found$(reset)"
+        console_success "[✓] All pods are healthy"
+        return 1
+    fi
+}
+
+# ============================================================
+# Delete all pods in unhealthy state
+# ============================================================
+delete_unhealthy_pods() {
+    print_header "Deleting Pods in Unhealthy State"
+    console_info "[→] Checking and deleting unhealthy pods..."
+
+    echo "[INFO] Looking for pods in unhealthy states across all namespaces..."
+
+    # Get all pods in unhealthy states (CrashLoopBackOff, Error, ImagePullBackOff, etc.)
+    unhealthy_pods=$(kubectl get pods --all-namespaces -o json | jq -r '
+        .items[] |
+        select(
+            .status.phase != "Running" and .status.phase != "Succeeded" or
+            (.status.containerStatuses[]? | 
+                select(
+                    .state.waiting?.reason == "CrashLoopBackOff" or
+                    .state.waiting?.reason == "ImagePullBackOff" or
+                    .state.waiting?.reason == "ErrImagePull" or
+                    .state.waiting?.reason == "Error" or
+                    .state.terminated?.reason == "Error" or
+                    .ready == false
+                )
+            )
+        ) |
+        "\(.metadata.namespace)|\(.metadata.name)|\(.status.phase)|\(
+            if .status.containerStatuses then
+                (.status.containerStatuses[] | 
+                    if .state.waiting then .state.waiting.reason
+                    elif .state.terminated then .state.terminated.reason
+                    elif .ready == false then "NotReady"
+                    else "Unknown"
+                    end
+                )
+            else "Unknown"
+            end
+        )"
+    ')
+
+    if [[ -n "$unhealthy_pods" ]]; then
+        echo ""
+        echo "$(bold)$(red)List of Unhealthy Pods to be Deleted:$(reset)"
+        echo "--------------------------------------------------------------------------------"
+        printf "%-30s %-35s %-15s %-20s\n" "Namespace" "Pod Name" "Phase" "Status/Reason"
+        echo "--------------------------------------------------------------------------------"
+        
+        local pod_count=0
+        local deleted_pods=()
+        
+        while IFS='|' read -r pod_ns pod_name pod_phase pod_status; do
+            [[ -z "$pod_ns" ]] && continue
+            ((pod_count++))
+            printf "%-30s %-35s %-15s %-20s\n" "$pod_ns" "$pod_name" "$pod_phase" "$pod_status"
+            deleted_pods+=("$pod_ns|$pod_name")
+        done <<< "$unhealthy_pods"
+        
+        echo "--------------------------------------------------------------------------------"
+        echo ""
+        
+        # Now delete the pods
+        for pod_entry in "${deleted_pods[@]}"; do
+            IFS='|' read -r pod_ns pod_name <<< "$pod_entry"
+            echo "$(yellow)[CLEANUP] Deleting unhealthy pod $pod_name in namespace $pod_ns...$(reset)"
+            
+            # Remove finalizers first to prevent hanging
+            kubectl patch pod "$pod_name" -n "$pod_ns" --type=merge -p='{"metadata":{"finalizers":[]}}' 2>/dev/null || true
+            
+            # Delete the pod
+            kubectl delete pod "$pod_name" -n "$pod_ns" --ignore-not-found=true --grace-period=0 --force 2>/dev/null || true
+        done
+        
+        echo ""
+        echo "$(green)[OK] Deleted $pod_count unhealthy pod(s)$(reset)"
+        console_success "[✓] Deleted $pod_count unhealthy pod(s)"
+        
+        # Wait a moment for pods to be recreated
+        echo "[INFO] Waiting 10 seconds for pods to be recreated..."
+        sleep 10
+        
+        return 0
+    else
+        echo "$(green)[OK] No unhealthy pods found to delete$(reset)"
+        console_success "[✓] All pods are healthy"
+        return 1
+    fi
+}
+
+# ============================================================
 # Post-upgrade cleanup function
 # ============================================================
 post_upgrade_cleanup() {
     print_header "Post-upgrade Cleanup (Manual Fixes)"
+    console_info "[→] Running post-upgrade cleanup..."
 
     echo "[INFO] Deleting applications tenancy-api-mapping and tenancy-datamodel in namespace onprem..."
-    kubectl delete application tenancy-api-mapping -n onprem || true
-    kubectl delete application tenancy-datamodel -n onprem || true
+    delete_app "tenancy-api-mapping" "onprem"
+    delete_app "tenancy-datamodel" "onprem"
 
     echo "[INFO] Deleting deployment os-resource-manager in namespace orch-infra..."
     kubectl delete deployment -n orch-infra os-resource-manager || true
 
     echo "[INFO] Deleting onboarding secrets..."
-    kubectl delete secret tls-boots -n orch-boots || true
-    kubectl delete secret boots-ca-cert -n orch-gateway || true
-    kubectl delete secret boots-ca-cert -n orch-infra || true
+    kubectl delete secret tls-boots -n orch-boots 2>/dev/null
+    kubectl delete secret boots-ca-cert -n orch-gateway 2>/dev/null
+    kubectl delete secret boots-ca-cert -n orch-infra 2>/dev/null
     echo "[INFO] Waiting 30 seconds for secrets cleanup to complete before deleting dkam pods..."
     sleep 30
     echo "[INFO] Deleting dkam pods in namespace orch-infra..."
-    kubectl delete pod -n orch-infra -l app.kubernetes.io/name=dkam 2>/dev/null || true
-
-    echo "[INFO] Post-upgrade cleanup completed."
+    kubectl delete pod -n orch-infra -l app.kubernetes.io/name=dkam 2>/dev/null 
+    check_and_download_dkam_certs
+    #echo "[INFO] Post-upgrade cleanup completed."
+    console_success "[✓] Post-upgrade cleanup completed"
 }
 
 # ============================================================
@@ -1290,6 +1630,9 @@ execute_full_sync() {
     sync_root_app_only
     post_upgrade_cleanup
     sync_root_app_only
+    check_and_download_dkam_certs
+    #list_unhealthy_pods
+    #delete_unhealthy_pods
 }
 
 # ============================================================
@@ -1319,10 +1662,12 @@ check_sync_success() {
 
     if [[ $not_healthy -gt 0 ]]; then
         echo "$(red)[FAIL] $not_healthy applications are not Healthy+Synced$(reset)"
+        console_error "[✗] Sync Failed: $not_healthy applications are not Healthy+Synced"
         return 1
     fi
     kubectl get applications -A
     echo "$(green)[OK] All applications are Healthy+Synced$(reset)"
+    console_success "[✓] All applications are Healthy+Synced"
     
     # Display all applications status
     echo
@@ -1343,17 +1688,20 @@ global_retry=1
 
 while (( global_retry <= GLOBAL_SYNC_RETRIES )); do
     print_header "GLOBAL SYNC ATTEMPT ${global_retry}/${GLOBAL_SYNC_RETRIES}"
+    console_info "[→] Global sync attempt ${global_retry}/${GLOBAL_SYNC_RETRIES}"
 
     execute_full_sync
 
     if check_sync_success; then
         #sync_success=true
         print_header "Sync Script Completed Successfully"
+        console_success "[✓] ===== SYNC COMPLETED SUCCESSFULLY ====="
         exit 0
     fi
 
     if (( global_retry < GLOBAL_SYNC_RETRIES )); then
         echo "$(yellow)[RETRY] Sync attempt ${global_retry} failed. Checking for stuck resources...$(reset)"
+        console_warn "[!] Sync attempt ${global_retry} failed - checking for stuck resources"
 
         # Check and cleanup stuck resources before next retry
         check_and_delete_stuck_crd_jobs
@@ -1372,10 +1720,12 @@ while (( global_retry <= GLOBAL_SYNC_RETRIES )); do
         ((global_retry++))
     else
         echo "$(red)[FAIL] Maximum global retries (${GLOBAL_SYNC_RETRIES}) reached. Sync failed.$(reset)"
+        console_error "[✗] ===== SYNC FAILED ===== Maximum retries (${GLOBAL_SYNC_RETRIES}) reached"
         exit 1
     fi
 done
 
 # This should not be reached, but just in case
 echo "$(red)[FAIL] Sync did not complete successfully after ${GLOBAL_SYNC_RETRIES} attempts.$(reset)"
+console_error "[✗] ===== SYNC FAILED ===== Did not complete after ${GLOBAL_SYNC_RETRIES} attempts"
 exit 1
