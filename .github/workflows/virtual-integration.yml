@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-name: Virtual Integration
+name: Virtual Integration test pr
 
 on:
   # Allow manually triggering the workflow
