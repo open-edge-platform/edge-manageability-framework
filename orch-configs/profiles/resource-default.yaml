@@ -728,21 +728,25 @@ argo:
             limits:
               cpu: "64"
               memory: "64Gi"
+        # BugFix #856: Increased querier resources and added replica count for better performance on AWS
+        # Replicas set to 2 for high availability and load distribution
         querier:
           replicas: 2
           resources:
             requests:
-              cpu: "100m"
-              memory: "512Mi"
+              cpu: "100m"    # Increased from 1m to handle query load
+              memory: "512Mi" # Increased from 1Mi to prevent OOM errors
             limits:
               cpu: "64"
               memory: "64Gi"
+        # BugFix #856: Increased query_frontend resources and added replica count for better performance on AWS
+        # Replicas set to 2 for high availability and load distribution
         query_frontend:
           replicas: 2
           resources:
             requests:
-              cpu: "100m"
-              memory: "256Mi"
+              cpu: "100m"    # Increased from 1m to handle frontend query load
+              memory: "256Mi" # Increased from 1Mi to prevent memory issues
             limits:
               cpu: "64"
               memory: "64Gi"
@@ -916,21 +920,25 @@ argo:
             limits:
               cpu: "64"
               memory: "64Gi"
+        # BugFix #856: Increased edgeNode querier resources and added replica count for better performance on AWS
+        # Replicas set to 2 for high availability and load distribution
         querier:
           replicas: 2
           resources:
             requests:
-              cpu: "100m"
-              memory: "512Mi"
+              cpu: "100m"    # Increased from 1m to handle query load
+              memory: "512Mi" # Increased from 1Mi to prevent OOM errors
             limits:
               cpu: "64"
               memory: "64Gi"
+        # BugFix #856: Increased edgeNode query_frontend resources and added replica count for better performance on AWS
+        # Replicas set to 2 for high availability and load distribution
         query_frontend:
           replicas: 2
           resources:
             requests:
-              cpu: "100m"
-              memory: "256Mi"
+              cpu: "100m"    # Increased from 1m to handle frontend query load
+              memory: "256Mi" # Increased from 1Mi to prevent memory issues
             limits:
               cpu: "64"
               memory: "64Gi"

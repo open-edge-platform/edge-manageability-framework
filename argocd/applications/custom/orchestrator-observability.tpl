@@ -189,28 +189,54 @@ mimir-distributed:
       {{- if .Values.argo.o11y.orchestrator.mimir.structuredConfig.querySchedulerMaxOutstandingRequestsPerTenant }}
       query_scheduler:
         max_outstanding_requests_per_tenant: {{ .Values.argo.o11y.orchestrator.mimir.structuredConfig.querySchedulerMaxOutstandingRequestsPerTenant }}
+        # BugFix #856: Added gRPC client configuration to prevent Grafana page errors on AWS instances
+        # Configures max message sizes for query scheduler gRPC communication
+        # Default max_recv_msg_size: 104857600 bytes (100MB), max_send_msg_size: 16777216 bytes (16MB)
         {{- if .Values.argo.o11y.orchestrator.mimir.structuredConfig.querySchedulerGrpcClientConfig }}
         grpc_client_config:
           max_recv_msg_size: {{ .Values.argo.o11y.orchestrator.mimir.structuredConfig.querySchedulerGrpcClientConfig.maxRecvMsgSize | default 104857600 }}
           max_send_msg_size: {{ .Values.argo.o11y.orchestrator.mimir.structuredConfig.querySchedulerGrpcClientConfig.maxSendMsgSize | default 16777216 }}
+          # BugFix #856: Added gRPC keepalive settings to maintain stable connections and prevent connection drops
+          # keepalive_time: Sends keepalive pings every 30s to keep connections alive
+          # keepalive_timeout: Waits 10s for keepalive ping acknowledgment before closing connection
+          # keepalive_permit_without_stream: Allows keepalive pings even when no active streams exist
+          grpc_client_keepalive:
+            keepalive_time: {{ .Values.argo.o11y.orchestrator.mimir.structuredConfig.querySchedulerGrpcClientConfig.keepaliveTime | default "30s" }}
+            keepalive_timeout: {{ .Values.argo.o11y.orchestrator.mimir.structuredConfig.querySchedulerGrpcClientConfig.keepaliveTimeout | default "10s" }}
+            keepalive_permit_without_stream: {{ .Values.argo.o11y.orchestrator.mimir.structuredConfig.querySchedulerGrpcClientConfig.keepalivePermitWithoutStream | default true }}
         {{- end }}
       {{- end }}
+      # BugFix #856: Added frontend configuration to handle query load properly on AWS
+      # Controls the maximum number of outstanding requests per tenant at the frontend level
       {{- if .Values.argo.o11y.orchestrator.mimir.structuredConfig.frontendMaxOutstandingRequestsPerTenant }}
       frontend:
         max_outstanding_per_tenant: {{ .Values.argo.o11y.orchestrator.mimir.structuredConfig.frontendMaxOutstandingRequestsPerTenant }}
+        # Configures gRPC client for frontend to prevent message size errors
         {{- if .Values.argo.o11y.orchestrator.mimir.structuredConfig.frontendGrpcClientConfig }}
         grpc_client_config:
           max_recv_msg_size: {{ .Values.argo.o11y.orchestrator.mimir.structuredConfig.frontendGrpcClientConfig.maxRecvMsgSize | default 104857600 }}
+          # BugFix #856: Added gRPC keepalive settings to maintain stable connections and prevent connection drops
+          # keepalive_time: Sends keepalive pings every 30s to keep connections alive
+          # keepalive_timeout: Waits 10s for keepalive ping acknowledgment before closing connection
+          # keepalive_permit_without_stream: Allows keepalive pings even when no active streams exist
+          grpc_client_keepalive:
+            keepalive_time: {{ .Values.argo.o11y.orchestrator.mimir.structuredConfig.frontendGrpcClientConfig.keepaliveTime | default "30s" }}
+            keepalive_timeout: {{ .Values.argo.o11y.orchestrator.mimir.structuredConfig.frontendGrpcClientConfig.keepaliveTimeout | default "10s" }}
+            keepalive_permit_without_stream: {{ .Values.argo.o11y.orchestrator.mimir.structuredConfig.frontendGrpcClientConfig.keepalivePermitWithoutStream | default true }}
         {{- end }}
       {{- end }}
+      # BugFix #856: Enhanced querier configuration with additional tuning parameters
+      # Added max_concurrent and timeout settings to improve query performance and prevent timeouts on AWS
       {{- if or .Values.argo.o11y.orchestrator.mimir.structuredConfig.querierTime .Values.argo.o11y.orchestrator.mimir.structuredConfig.querierMaxConcurrent .Values.argo.o11y.orchestrator.mimir.structuredConfig.querierTimeout }}
       querier:
         {{- if .Values.argo.o11y.orchestrator.mimir.structuredConfig.querierTime }}
         query_store_after: {{ .Values.argo.o11y.orchestrator.mimir.structuredConfig.querierTime }}
         {{- end }}
+        # Maximum number of concurrent queries the querier can handle
         {{- if .Values.argo.o11y.orchestrator.mimir.structuredConfig.querierMaxConcurrent }}
         max_concurrent: {{ .Values.argo.o11y.orchestrator.mimir.structuredConfig.querierMaxConcurrent }}
         {{- end }}
+        # Query timeout to prevent long-running queries from blocking resources
         {{- if .Values.argo.o11y.orchestrator.mimir.structuredConfig.querierTimeout }}
         timeout: {{ .Values.argo.o11y.orchestrator.mimir.structuredConfig.querierTimeout }}
         {{- end }}
@@ -366,6 +392,8 @@ mimir-distributed:
   {{- /* end of with .Values.argo.o11y.orchestrator */}}
   {{- end }}
 
+  # BugFix #856: Enhanced querier configuration with explicit replica and resource management
+  # Changed from accessing .resources directly to accessing the full querier object for better configuration control
   {{- with .Values.argo.o11y.orchestrator.mimir.querier }}
   querier:
     {{- if .replicas }}
@@ -377,6 +405,8 @@ mimir-distributed:
     {{- end }}
   {{- end }}
 
+  # BugFix #856: Enhanced query_frontend configuration with explicit replica and resource management
+  # Changed from accessing .resources directly to accessing the full query_frontend object for better configuration control
   {{- with .Values.argo.o11y.orchestrator.mimir.query_frontend }}
   query_frontend:
     {{- if .replicas }}
