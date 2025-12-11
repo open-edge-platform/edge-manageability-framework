@@ -30,7 +30,9 @@ concurrency:
   group: ${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-permissions: {}
+permissions:
+  contents: read
+  checks: read
 
 jobs:
   pre-merge:
