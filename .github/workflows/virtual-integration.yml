@@ -78,8 +78,10 @@ jobs:
 
       - name: Calculate only_design_proposals
         id: only-design-proposals
+        env:
+          CHANGED_FILES: ${{ steps.check-files.outputs.changed_files }}
         run: |
-          files="${{ steps.check-files.outputs.changed_files }}"
+          files="$CHANGED_FILES"
           only_design=true
           # Remove brackets and quotes, then split on comma
           clean_files=$(echo "$files" | sed 's/\[//;s/\]//;s/"//g')
