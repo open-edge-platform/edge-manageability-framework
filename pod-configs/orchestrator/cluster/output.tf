@@ -76,3 +76,7 @@ output "smtp_url" {
   value = var.smtp_url
 }
 
+output "eks_security_group_id" {
+  description = "The major security group ID for the EKS cluster"
+  value       = module.eks.eks_security_group_id
+}

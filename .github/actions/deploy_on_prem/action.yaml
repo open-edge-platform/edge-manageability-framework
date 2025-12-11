@@ -45,11 +45,13 @@ runs:
       # NOTE: The terraform deploy tag is different than the git ref, it's calucated using this mage target
       run: |
         mage build:debVersion
-        echo "DEPLOY_TAG=$(mage build:debVersion)" >> "$GITHUB_ENV"
+        DEPLOY_TAG=$(mage build:debVersion)
+        DEPLOY_TAG="${DEPLOY_TAG//[$'\r\n']}"
+        echo "deploy_tag=${DEPLOY_TAG}" >> "$GITHUB_OUTPUT"
 
     - name: Deploy Orchestrator
       env:
-        TF_VAR_deploy_tag: ${{ env.DEPLOY_TAG }}
+        TF_VAR_deploy_tag: ${{ steps.deploy-tag.outputs.deploy_tag }}
         TF_VAR_orch_profile: ${{ inputs.orch_profile }}
         TF_VAR_FILE: ${{ github.workspace }}/terraform/orchestrator/terraform.tfvars
         TF_VAR_docker_username: ${{ inputs.docker_username }}

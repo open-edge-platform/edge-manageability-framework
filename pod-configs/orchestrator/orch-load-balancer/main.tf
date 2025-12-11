@@ -40,6 +40,10 @@ data "aws_nat_gateway" "vpc_nat_gateway" {
 }
 
 locals {
+  eks_security_groups = [
+    data.terraform_remote_state.eks.outputs.eks_security_group_id,
+  ]
+
   public_subnet_ids = [for name, subnet in data.terraform_remote_state.vpc.outputs.public_subnets : subnet.id]
   vpc_id            = data.terraform_remote_state.vpc.outputs.vpc_id
   region            = data.terraform_remote_state.vpc.outputs.region
@@ -133,6 +137,7 @@ module "traefik2_load_balancer" {
   ip_allow_list              = local.ip_allow_list
   ports                      = local.nlb_ports
   enable_deletion_protection = var.enable_deletion_protection
+  eks_security_groups        = local.eks_security_groups
 }
 
 module "traefik3_load_balancer" {
@@ -148,6 +153,7 @@ module "traefik3_load_balancer" {
   ip_allow_list              = local.ip_allow_list
   ports                      = local.vpro_ports
   enable_deletion_protection = var.enable_deletion_protection
+  eks_security_groups        = local.eks_security_groups
 }
 
 # This block executes only when `create_argocd_load_balancer` is set to true

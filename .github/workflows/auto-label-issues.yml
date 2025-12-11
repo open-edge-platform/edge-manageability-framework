@@ -11,13 +11,14 @@ on:
   issues:
     types: [assigned, closed]
 
-permissions:
-  issues: write
+permissions: {}
 
 jobs:
   label-on-close:
     if: github.event.action == 'closed'
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
     steps:
       - name: Add 'Closed' label when issue is closed
         uses: actions/github-script@v8
@@ -54,6 +55,8 @@ jobs:
   label-on-assigned:
     if: github.event.action == 'assigned'
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
     steps:
       - name: Add 'investigating' label when issue is assigned
         uses: actions/github-script@v8
