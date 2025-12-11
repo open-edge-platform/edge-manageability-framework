@@ -762,7 +762,7 @@ jobs:
           REQUESTS_CA_BUNDLE: /usr/local/share/ca-certificates/orch-ca.crt
           LIBVIRT_DEFAULT_URI: 'qemu:///system'
         run: |
-          KC_ADMIN_PWD=$(kubectl -n orch-platform get secrets platform-keycloak -o jsonpath='{.data.admin-password}' | base64 -d)
+          KC_ADMIN_PWD=$(kubectl -n orch-platform get secrets platform-keycloak -o jsonpath='{.data.password}' | base64 -d)
           # Add the password to the orchestrator config
           yq eval ".orchestrator.admin_password = \"${KC_ADMIN_PWD}\"" -i orchestrator-configs/on-prem.yaml
 
