@@ -17,17 +17,11 @@ Executive Summary
 -----------------
 We need to build a profile-based deployment framework to support EIM decomposition. Currently, our platform deploys EIM as a monolithic stack with no mechanism for selective component activation. 
 
-This design outlines the framework we'll build to enable two deployment profiles: **EIM-vPRO-Only** and **EIM-OXM-Only**. 
+This design outlines the framework we'll build to enable two deployment profiles: **EIM-vPRO-Only** and **EIM-OXM-Only**.
 
-**Our Deliverables:**
-- Profile configuration framework
-- Cluster template generation system
-- Deployment validation using `orch-cli`
+**Our Deliverables:** Profile configuration framework, cluster template generation system, and deployment validation using orch-cli.
 
-**EIM Team Input Required:**
-- Component decomposition specifications
-- Dependency mappings
-- Profile definitions
+**EIM Team Input Required:** Component decomposition specifications, dependency mappings, and profile definitions.
 
 -----------------
 1. Background
@@ -61,9 +55,9 @@ The EIM team has identified two deployment profiles they need:
 - Disable: AO, CO, O11y, Kyverno, UI
 - *Note: AO, CO, O11y must be explicitly disabled for this profile*
 
-**Profile 2: OXM-Only**  
+**Profile 2: OXM-Only**
 - Deploy only bare metal/OS management components
-- Disable: vPRO, AO, CO, O11y, Kyverno, UI 
+- Disable: vPRO, AO, CO, O11y, Kyverno, UI
 - *Note: AO, CO, O11y must be explicitly disabled for this profile*
 
 **Platform Engineering Requirements**
@@ -93,14 +87,14 @@ The EIM team has identified two deployment profiles they need:
 **3.2 OXM-Only Profile KPIs**
 
 *Deployment Metrics:*
-- Deployment time 
+
+- Deployment time
 - Number of pods deployed
 - ArgoCD application count
 
 *Resource Metrics:*
+
 - CPU allocation (cores)
 - Memory allocation (GB)
-
-
-
-
+- CPU allocation (cores)
+- Memory allocation (GB)
