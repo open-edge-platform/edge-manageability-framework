@@ -1,89 +1,106 @@
 ==============================================
-Design Proposal: EMF Install/Upgrade of Decomposed EIM with Custom Configuration
+Platform Design: EIM Profile-Based Deployment Framework
 ==============================================
 
-**Authors:** EMF Platform Team  
-**Date:** 2025-11-12  
+**Team:** EMF Platform Team  
+**Date:** 2025-12-12  
+**Status:** Draft  
+**Version:** 1.0  
 
 -----------------
-Context
+Abstract
 -----------------
-EIM currently deploys as a monolithic stack regardless of customer requirements, resulting in unnecessary infrastructure overhead.  
-The **EIM Modular Decomposition Strategy** introduces a **customer configuration profile** to enhance flexibility and efficiency.
-
-This approach enables deployment of customized profiles based on operational needs, reducing resource usage and simplifying management.
+This document describes the platform engineering work required to enable EIM modular deployment through profile-based configurations. The platform team will develop infrastructure to support two EIM deployment profiles (vPRO-Only and OXM-Only) that selectively activate components based on operational requirements.
 
 -----------------
-Decision
+Executive Summary
 -----------------
-Implement an **EIM Custom Configuration Profile Framework** for decomposed EIM with the following capabilities:
+We need to build a profile-based deployment framework to support EIM decomposition. Currently, our platform deploys EIM as a monolithic stack with no mechanism for selective component activation. 
 
-- **Deployment**: Custom profile–based EIM deployment  
-- **EIM Agent Enable/Disable**: Onboarding-specific agents can be enabled or disabled as per customer requirements  
-- **vPRO Enable/Disable**: vPRO component enable/disable control  
-- **Upgrade Support**: EIM custom profile upgrade capability  
-- **Day-2 Profile OS Update**: Preserve previously enabled/disabled agent states during OS updates  
-- **Orch-CLI Support**: Support onboarding and configuration via `orch-cli`  
+This design outlines the framework we'll build to enable two deployment profiles: **EIM-vPRO-Only** and **EIM-OXM-Only**. 
 
------------------
-EIM Component Selection
------------------
-- EIM (vPRO Enabled)  
-- EIM (vPRO Disabled) 
+**Our Deliverables:**
+- Profile configuration framework
+- Cluster template generation system
+- Deployment validation using `orch-cli`
 
------------------
-EIM EN Agent Selection (Enable/Disable)
------------------
-- CO  
-- O11Y  
-- PMA  
-- xxx
-- xxx
+**EIM Team Input Required:**
+- Component decomposition specifications
+- Dependency mappings
+- Profile definitions
 
 -----------------
-Upgrade Support Framework
+1. Background
 -----------------
-**EMF V1 → V2 Smooth Upgrade for Custom Configuration Workflow**
 
-The upgrade process ensures that all agent and vPRO states are preserved across EMF versions.  
-Compatibility checks and rollback mechanisms are integrated to ensure reliable transitions.
+**Current Platform Limitation**
 
------------------
-Day-2 Operations with State Preservation
------------------
-- OS updates retain prior agent/vPRO enablement configuration  
-- Profile integrity maintained during and after OS updates  
+Our deployment platform currently lacks the capability to deploy EIM components selectively as profiles. All EIM subcomponents deploy together:
 
------------------
-Implementation Framework
------------------
-**Agent Enable/Disable Implementation**  
-- Individual agent control during installation and upgrades  
-- Onboarding-specific agent activation based on customer requirements  
-- Agent state persistence across EMF version upgrades  
-- Validation of agent dependencies and conflicts  
+- vPRO components
+- Policy management (Kyverno)
+- Management UI
 
-**vPRO Component Control Implementation**  
-- Dynamic vPRO enable/disable during EMF deployment  
-- vPRO state preservation across upgrades  
+**Note:** While AO, CO, and O11y can be individually toggled in current deployments, there's no profile-based framework to deploy predefined component combinations.
 
-**Upgrade Support Implementation**  
-- EMF V1 → V2 migration with preserved configuration  
-- Smooth transition mechanisms for all components  
-- Rollback capabilities for failed upgrades  
-- Compatibility validation between versions  
-
-**Day-2 Operations Implementation**  
-- OS update workflows with preserved profile states  
-- Agent configuration integrity during system updates  
-- vPRO configuration persistence through updates  
-- Health monitoring and validation post-updates  
 
 -----------------
-Success Criteria
+2. Problem Statement
 -----------------
-- **Agent Management**: 100% customer control over individual agent enable/disable  
-- **vPRO Control**: Complete vPRO enable/disable capability  
-- **Upgrade Success**: EMF V1→V2 upgrades with zero configuration loss  
-- **Day-2 Integrity**: OS updates maintain configured agent and vPRO states  
-- **Performance**: Optimized resource utilization through modular deployment  
+
+**What We Need to Build**
+
+We need to develop platform infrastructure that supports selective EIM component deployment based on profiles.
+
+**EIM Team Requirements (Input)**
+
+The EIM team has identified two deployment profiles they need:
+
+**Profile 1: vPRO-Only**
+- Deploy only vPRO-related components
+- Disable: AO, CO, O11y, Kyverno, UI
+- *Note: AO, CO, O11y must be explicitly disabled for this profile*
+
+**Profile 2: OXM-Only**  
+- Deploy only bare metal/OS management components
+- Disable: vPRO, AO, CO, O11y, Kyverno, UI 
+- *Note: AO, CO, O11y must be explicitly disabled for this profile*
+
+**Platform Engineering Requirements**
+
+- Implement ArgoCD application selection logic
+- Create cluster template generator
+- Integrate profile selection into `orch-cli`
+- Develop validation and dependency checking mechanisms
+- Ensure upgrade compatibility
+- Support installation on existing clusters without disruption
+
+-----------------
+3. Measurement KPIs (EMF Platform)
+-----------------
+
+**3.1 vPRO-Only Profile KPIs**
+
+*Deployment Metrics:*
+- Deployment time
+- Number of pods deployed
+- ArgoCD application count
+
+*Resource Metrics:*
+- CPU allocation (cores)
+- Memory allocation (GB)
+
+**3.2 OXM-Only Profile KPIs**
+
+*Deployment Metrics:*
+- Deployment time 
+- Number of pods deployed
+- ArgoCD application count
+
+*Resource Metrics:*
+- CPU allocation (cores)
+- Memory allocation (GB)
+
+
+
+
