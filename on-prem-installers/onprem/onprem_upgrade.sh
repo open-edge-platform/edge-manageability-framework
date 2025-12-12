@@ -78,7 +78,20 @@ DEPLOY_VERSION="${DEPLOY_VERSION:-v3.1.0}"  # Updated to v3.1.0
 GITEA_IMAGE_REGISTRY="${GITEA_IMAGE_REGISTRY:-docker.io}"
 USE_LOCAL_PACKAGES="${USE_LOCAL_PACKAGES:-false}"  # New flag for local packages
 INSTALL_GITEA=true
-UPGRADE_3_1_X="${UPGRADE_3_1_X:-true}"
+
+# Determine UPGRADE_3_1_X based on existing PostgreSQL pod
+echo "Checking PostgreSQL pod in orch-database namespace..."
+if kubectl get pod -n orch-database postgresql-cluster-1 >/dev/null 2>&1; then
+    echo "Found postgresql-cluster-1 pod - Setting UPGRADE_3_1_X=false"
+    UPGRADE_3_1_X="false"
+elif kubectl get pod -n orch-database postgresql-0 >/dev/null 2>&1; then
+    echo "Found postgresql-0 pod - Setting UPGRADE_3_1_X=true (upgrading from pre-3.1.x)"
+    UPGRADE_3_1_X="true"
+else
+    echo "ERROR: No PostgreSQL pod found in orch-database namespace."
+    echo "Expected either 'postgresql-cluster-1' or 'postgresql-0'"
+    exit 1
+fi
 
 ### Variables
 cwd=$(pwd)
@@ -111,7 +124,7 @@ set_artifacts_version() {
 }
 
 export GIT_REPOS=$cwd/$git_arch_name
-export ONPREM_UPGRADE_SYNC=true
+export ONPREM_UPGRADE_SYNC="${ONPREM_UPGRADE_SYNC:-true}"
 retrieve_and_apply_config() {
     local config_file="$cwd/onprem.env"
     tmp_dir="$cwd/$git_arch_name/tmp"
@@ -1016,6 +1029,13 @@ patch_secrets() {
       kubectl patch secret -n orch-database orch-infra-mps -p "{\"data\": {\"password\": \"$MPS\"}}" --type=merge
       kubectl patch secret -n orch-database orch-infra-rps -p "{\"data\": {\"password\": \"$RPS\"}}" --type=merge
     fi
+
+    # This secret does not exist in 3.1.x so we need to create it
+    if [[ "$UPGRADE_3_1_X" == "true" ]]; then
+        create_postgres_password "orch-database" "$POSTGRESQL"
+    else
+        kubectl patch secret -n orch-database orch-database-postgresql -p "{\"data\": {\"password\": \"$POSTGRESQL\"}}" --type=merge
+    fi
 }
 
 # Stop sync operation for root-app, so it won't be synced with the old version of the application.
@@ -1223,24 +1243,23 @@ kubectl apply --server-side=true --force-conflicts -f https://raw.githubusercont
 echo "Unsealing vault..."
 vault_unseal
 echo "✅ Vault unsealed successfully"
-# Stop root-app old sync as it will be stuck.
+
+# Stop root-app sync.
 kubectl patch application root-app -n  "$apps_ns"  --type merge -p '{"operation":null}'
 kubectl patch application root-app -n  "$apps_ns"  --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
-# Apply root-app Patch
+sleep  5
+# Delete external-secrets application
+kubectl patch application external-secrets -n $apps_ns --type=json -p='[{"op":"remove","path":"/metadata/finalizers"}]' 2>/dev/null || true
+kubectl delete application external-secrets -n $apps_ns --force --grace-period=0 --ignore-not-found=true 2>/dev/null || true
+sleep  5
+# Apply root-app sync
 kubectl patch application root-app -n  "$apps_ns"  --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 sleep 10
-#restart os-resource-manager
-kubectl delete application tenancy-api-mapping -n onprem || true
-kubectl delete application tenancy-datamodel -n onprem || true
-kubectl delete deployment -n orch-infra os-resource-manager || true
+
 #restart tls-boot secrets
 kubectl delete secret tls-boots -n orch-boots || true
-kubectl delete secret boots-ca-cert -n orch-gateway || true
-kubectl delete secret boots-ca-cert -n orch-infra || true
-sleep 10
-kubectl delete pod -n orch-infra -l app.kubernetes.io/name=dkam 2>/dev/null || true
 
-echo "Wait ~10–15 minutes for ArgoCD to sync and deploy all application"
+echo "Wait ~5–10 minutes for ArgoCD to sync and deploy all application"
 echo "   👉 Run the script to to futher sync and post run"
 echo "          ./after_upgrade_restart.sh"
 echo ""
