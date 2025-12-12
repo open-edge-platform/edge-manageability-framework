@@ -1,11 +1,8 @@
-======================================================
-Platform Design: EIM Profile-Based Deployment Framework
-======================================================
+# Design Proposal: EIM Profile-Based Deployment Framework
 
-**Team:** EMF Platform Team  
-**Date:** 2025-12-12  
-**Status:** Draft  
-**Version:** 1.0  
+Author(s): Sunil Parida
+
+Last updated: 2025-12-12  
 
 -----------------
 Abstract
