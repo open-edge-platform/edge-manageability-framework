@@ -4,17 +4,32 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-podname="postgresql-0"
 postgres_namespace=orch-database
-POSTGRES_LOCAL_BACKUP_PATH="./" 
+POSTGRES_LOCAL_BACKUP_PATH="./"
 local_backup_file="${postgres_namespace}_backup.sql"
 local_backup_path="${POSTGRES_LOCAL_BACKUP_PATH}${local_backup_file}"
-POSTGRES_USERNAME="postgres"  
+POSTGRES_USERNAME="postgres"
 application_namespace=onprem
+
+# Determine UPGRADE_3_1_X based on existing PostgreSQL pod
+echo "Checking PostgreSQL pod in orch-database namespace..."
+if kubectl get pod -n orch-database postgresql-cluster-1 >/dev/null 2>&1; then
+    echo "Found postgresql-cluster-1 pod - Setting UPGRADE_3_1_X=false"
+    UPGRADE_3_1_X="false"
+    podname="postgresql-cluster-1"
+elif kubectl get pod -n orch-database postgresql-0 >/dev/null 2>&1; then
+    echo "Found postgresql-0 pod - Setting UPGRADE_3_1_X=true (upgrading from pre-3.1.x)"
+    UPGRADE_3_1_X="true"
+    podname="postgresql-0"
+else
+    echo "ERROR: No PostgreSQL pod found in orch-database namespace."
+    echo "Expected either 'postgresql-cluster-1' or 'postgresql-0'"
+    exit 1
+fi
 
 check_postgres() {
   if [[ -f "$local_backup_path" ]]; then
-    read -rp "A backfile file already exists. 
+    read -rp "A backfile file already exists.
     If you would like to continue using this backup file type Continue :
     " confirm && [[ $confirm == [cC][oO][nN][tT][iI][nN][uU][eE] ]] || exit 1
     # avoid the rest of the check function as this could be a recovery from a failed update
@@ -49,7 +64,12 @@ backup_postgres() {
   fi
   echo "Backing up databases from pod $podname in namespace $postgres_namespace..."
 
-  remote_backup_path="/tmp/${postgres_namespace}_backup.sql"
+  if [[ "$UPGRADE_3_1_X" == "true" ]]; then
+        remote_backup_path="/tmp/${postgres_namespace}_backup.sql"
+  else
+        remote_backup_path="/var/lib/postgresql/data/${postgres_namespace}_backup.sql"
+  fi
+
   kubectl exec -n $postgres_namespace $podname -- /bin/bash -c "$(typeset -f disable_security); disable_security"
 
   if kubectl exec -n $postgres_namespace $podname -- /bin/bash -c "pg_dumpall -U $POSTGRES_USERNAME -f '$remote_backup_path'"; then
@@ -99,7 +119,11 @@ restore_postgres() {
   echo "Restoring backup databases from pod $podname in namespace $postgres_namespace..."
 
   # Get postgres password from secret
-  PGPASSWORD=$(kubectl get secret -n $postgres_namespace postgresql -o jsonpath='{.data.postgres-password}' | base64 -d)
+  if [[ "$UPGRADE_3_1_X" == "true" ]]; then
+        PGPASSWORD=$(kubectl get secret -n $postgres_namespace postgresql -o jsonpath='{.data.postgres-password}' | base64 -d)
+else
+        PGPASSWORD=$(kubectl get secret -n $postgres_namespace orch-database-postgresql -o jsonpath='{.data.password}' | base64 -d)
+fi
 
   # CloudNativePG doesn't need security disable/enable, just use credentials
   # Use the remote backup file that was copied to the pod
