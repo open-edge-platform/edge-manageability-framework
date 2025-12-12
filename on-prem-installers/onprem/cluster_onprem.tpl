@@ -5,7 +5,7 @@
 
 # Cluster specific values applied to root-app only
 root:
-  useLocalValues: false
+  useLocalValues: true
   clusterValues:
     - orch-configs/profiles/enable-platform.yaml
     ${O11Y_ENABLE_PROFILE}
@@ -39,9 +39,9 @@ argo:
   clusterDomain: ${CLUSTER_DOMAIN}
 
   ## Argo CD configs
-  utilsRepoURL: "https://gitea-http.gitea.svc.cluster.local/argocd/orch-utils"
+  utilsRepoURL: "https://github.com/open-edge-platform/orch-utils"
   utilsRepoRevision: main
-  deployRepoURL: "https://gitea-http.gitea.svc.cluster.local/argocd/edge-manageability-framework"
+  deployRepoURL: "https://github.com/open-edge-platform/edge-manageability-framework"
   deployRepoRevision: main
 
   targetServer: "https://kubernetes.default.svc"

@@ -45,6 +45,8 @@ spec:
         valuesObject:
           argo:
             {{- .Values.argo | toYaml | nindent 12 }}
+          orchestratorDeployment:
+            {{- .Values.orchestratorDeployment | toYaml | nindent 12 }}            
           postCustomTemplateOverwrite:
             {{- .Values.postCustomTemplateOverwrite | toYaml | nindent 12 }}
         {{- end }}
