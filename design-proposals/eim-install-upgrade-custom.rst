@@ -1,6 +1,6 @@
-==============================================
+======================================================
 Platform Design: EIM Profile-Based Deployment Framework
-==============================================
+======================================================
 
 **Team:** EMF Platform Team  
 **Date:** 2025-12-12  
@@ -37,9 +37,9 @@ Our deployment platform currently lacks the capability to deploy EIM components 
 **Note:** While AO, CO, and O11y can be individually toggled in current deployments, there's no profile-based framework to deploy predefined component combinations.
 
 
------------------
+--------------------
 2. Problem Statement
------------------
+--------------------
 
 **What We Need to Build**
 
@@ -68,9 +68,9 @@ The EIM team has identified two deployment profiles they need:
 - Ensure upgrade compatibility
 - Support installation on existing clusters without disruption
 
------------------
+-----------------------------------
 3. Measurement KPIs (EMF Platform)
------------------
+-----------------------------------
 
 **3.1 vPRO-Only Profile KPIs**
 
