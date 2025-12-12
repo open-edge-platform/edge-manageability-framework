@@ -30,7 +30,9 @@ concurrency:
   group: ${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-permissions: {}
+permissions:
+  contents: read
+  checks: read
 
 jobs:
   pre-merge:
@@ -144,6 +146,7 @@ jobs:
           persist-credentials: false
 
       - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684  # v4.2.3
+        if: github.event_name != 'merge_group'
         with:
           path: |
             ~/.cache/go-build
@@ -349,6 +352,7 @@ jobs:
           ref:  ${{ github.event.pull_request.head.sha }}
 
       - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684  # v4.2.3
+        if: github.event_name != 'merge_group'
         with:
           path: |
             ~/.cache/go-build
