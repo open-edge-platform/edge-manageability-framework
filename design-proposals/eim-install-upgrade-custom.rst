@@ -34,7 +34,6 @@ Our deployment platform currently lacks the capability to deploy EIM components 
 - vPRO components
 - Policy management (Kyverno)
 - Management UI
-
 **Note:** While AO, CO, and O11y can be individually toggled in current deployments, there's no profile-based framework to deploy predefined component combinations.
 
 
@@ -53,7 +52,7 @@ The EIM team has identified two deployment profiles they need:
 **Profile 1: vPRO-Only**
 - Deploy only vPRO-related components
 - Disable: AO, CO, O11y, Kyverno, UI
-- *Note: AO, CO, O11y must be explicitly disabled for this profile*
+- *Note: AO, CO, O11y,UI,Kyverno must be explicitly disabled for this profile*
 
 **Profile 2: OXM-Only**
 - Deploy only bare metal/OS management components
@@ -64,7 +63,7 @@ The EIM team has identified two deployment profiles they need:
 
 - Implement ArgoCD application selection logic
 - Create cluster template generator
-- Integrate profile selection into `orch-cli`
+- validate profile E2E use `orch-cli`
 - Develop validation and dependency checking mechanisms
 - Ensure upgrade compatibility
 - Support installation on existing clusters without disruption
