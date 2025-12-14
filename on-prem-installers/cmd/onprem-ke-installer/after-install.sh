@@ -6,14 +6,11 @@
 
 set -o errexit
 
-# Change directories to the path where artifacts are installed
-cd /tmp/onprem-ke-installer
-
 # Add /usr/local/bin to the PATH as some utilities, like kubectl, could be installed there
 export PATH=$PATH:/usr/local/bin
 
-# Execute the installer with the current directory as context
-/usr/bin/onprem-ke-installer
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Clean up artifacts directory
-rm -rf /tmp/onprem-ke-installer
+# Execute the installer script (pure shell, no Go required)
+bash "$SCRIPT_DIR/install.sh"

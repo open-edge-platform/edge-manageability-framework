@@ -8,28 +8,31 @@ set -x
 set -e
 set -o pipefail
 
-# Packages in order of removal - reverse order to installation
-packages=(
-    onprem-orch-installer
-    onprem-gitea-installer
-    onprem-argocd-installer
-    onprem-ke-installer
-    onprem-config-installer
-)
+# Script to uninstall on-premise Edge Orchestrator
+# This script removes all installed components in reverse order
 
-remove_package() {
-    package_name=$1
+echo "Starting Edge Orchestrator uninstallation..."
 
-    echo "Uninstalling package $package_name..."
-    sudo dpkg --purge --force-remove-reinstreq "$package_name"
-}
+# Stop and remove RKE2 cluster if running
+if systemctl is-active --quiet rke2-server; then
+    echo "Stopping RKE2 server..."
+    sudo systemctl stop rke2-server
+    sudo systemctl disable rke2-server
+fi
 
-for package in "${packages[@]}"; do
-    echo "Removing $package"
-    remove_package "$package"
-done
+# Clean up RKE2 installation
+if [ -f "/usr/local/bin/rke2-uninstall.sh" ]; then
+    echo "Removing RKE2..."
+    sudo /usr/local/bin/rke2-uninstall.sh
+fi
 
-sudo rm -rf repo_archives/ installers/
+# Remove kubectl configuration
+echo "Removing kubectl configuration..."
+rm -rf "$HOME/.kube"
+
+# Remove installation artifacts and downloaded archives
+echo "Removing installation artifacts..."
+sudo rm -rf repo_archives/
 
 # Remove all PVCs created by Orchestrator
 sudo rm -rf "/var/openebs"

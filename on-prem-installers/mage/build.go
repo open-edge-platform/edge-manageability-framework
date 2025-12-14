@@ -2,6 +2,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+// Package mage provides build automation for on-premise installers
+//
+// NOTE: This project now uses DIRECT SOURCE CODE INSTALLATION.
+// No binaries need to be built - installation scripts in cmd/*/after-install.sh
+// are executed directly from source. The build functions below are maintained
+// for backward compatibility only and are NOT required for normal installation.
+//
+// To install: Simply clone the repository and run the shell scripts from
+// the on-prem-installers/onprem/ directory. No compilation needed!
+
 package mage
 
 import (

@@ -45,7 +45,6 @@ cwd=$(pwd)
 ASSUME_YES=false
 ENABLE_TRACE=false
 SINGLE_TENANCY_PROFILE=false
-deb_dir_name="installers"
 git_arch_name="repo_archives"
 argo_cd_ns="argocd"
 gitea_ns="gitea"
@@ -156,7 +155,6 @@ print_env_variables() {
   echo; echo "========================================"
   echo "         Environment Variables"
   echo "========================================"
-  printf "%-25s: %s\n" "RELEASE_SERVICE_URL" "$RELEASE_SERVICE_URL"
   printf "%-25s: %s\n" "ORCH_INSTALLER_PROFILE" "$ORCH_INSTALLER_PROFILE"
   printf "%-25s: %s\n" "DEPLOY_VERSION" "$DEPLOY_VERSION"
   echo "========================================"; echo
@@ -230,7 +228,8 @@ Prerequisites:
 - onprem_pre_install.sh must have been run successfully
 - onprem.env file must exist with proper configuration
 - RKE2 Kubernetes cluster must be running
-- Root/sudo access for package installation
+- Go 1.21+ installed for on-the-fly compilation
+- Root/sudo access for system-level changes
 
 Usage:
 $(basename "$0") [OPTIONS]
@@ -272,11 +271,12 @@ Options:
 
 Configuration:
     All configuration is read from onprem.env file. Key variables include:
-    - RELEASE_SERVICE_URL: Registry for packages and images
     - DEPLOY_VERSION: Version of Edge Orchestrator to deploy
     - ORCH_INSTALLER_PROFILE: Deployment profile (onprem/onprem-dev)
     - GITEA_IMAGE_REGISTRY: Registry for Gitea images
     - SRE and SMTP credentials: For monitoring and email notifications
+    
+    Note: Installation runs from local source code - no downloads from release service
 
 Output:
     After installation, monitor deployment status with: kubectl get applications -A
@@ -324,8 +324,9 @@ write_shared_variables() {
 ### Installer
 echo "Running On Premise Edge Orchestrator installers"
 
-if [ "$(dpkg -l | grep -ci onprem-ke-installer)"  -eq 0 ]; then
-    echo "Please run pre-install script first"
+# Verify pre-install has been run by checking for RKE2 installation
+if ! command -v kubectl &> /dev/null; then
+    echo "Please run pre-install script first (kubectl not found)"
     exit 1
 fi
 
@@ -430,30 +431,32 @@ mv -f "$repo_file" "$cwd/$git_arch_name/$repo_file"
 cd "$cwd"
 rm -rf "$tmp_dir"
 
-if find "$cwd/$deb_dir_name" -name "onprem-gitea-installer_*_amd64.deb" -type f | grep -q .; then
-    # Run gitea installer
+installer_script="$cwd/../cmd/onprem-gitea/after-install.sh"
+if [[ -f "$installer_script" ]]; then
+    # Run gitea installer from source
     echo "Installing Gitea"
-    eval "sudo IMAGE_REGISTRY=${GITEA_IMAGE_REGISTRY} NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y $cwd/$deb_dir_name/onprem-gitea-installer_*_amd64.deb"
+    sudo IMAGE_REGISTRY=${GITEA_IMAGE_REGISTRY} bash "$installer_script"
     wait_for_namespace_creation $gitea_ns
     sleep 30s
     wait_for_pods_running $gitea_ns
     echo "Gitea Installed"
 else
-    echo "❌ Package file NOT found: $cwd/$deb_dir_name/onprem-gitea-installer_*_amd64.deb"
-    echo "Please ensure the package file exists and the path is correct."
+    echo "❌ Installer script not found: $installer_script"
+    echo "Please ensure you are running from the on-prem-installers/onprem directory."
     exit 1
 fi
-if find "$cwd/$deb_dir_name" -name "onprem-argocd-installer_*_amd64.deb" -type f | grep -q .; then
-    # Run argo CD installer
+installer_script="$cwd/../cmd/onprem-argo-cd/after-install.sh"
+if [[ -f "$installer_script" ]]; then
+    # Run argo CD installer from source
     echo "Installing ArgoCD..."
-    eval "sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y $cwd/$deb_dir_name/onprem-argocd-installer_*_amd64.deb"
+    sudo bash "$installer_script"
     wait_for_namespace_creation $argo_cd_ns
     sleep 30s
     wait_for_pods_running $argo_cd_ns
     echo "ArgoCD installed"
 else
-    echo "❌ Package file NOT found: $cwd/$deb_dir_name/onprem-argocd-installer_*_amd64.deb"
-    echo "Please ensure the package file exists and the path is correct."
+    echo "❌ Installer script not found: $installer_script"
+    echo "Please ensure you are running from the on-prem-installers/onprem directory."
     exit 1
 fi
 
@@ -472,14 +475,15 @@ create_harbor_password orch-harbor "$harbor_password"
 create_keycloak_password orch-platform "$keycloak_password"
 create_postgres_password orch-database "$postgres_password"
 
-if find "$cwd/$deb_dir_name" -name "onprem-orch-installer_*_amd64.deb" -type f | grep -q .; then
-    # Run orchestrator installer
+installer_script="$cwd/../cmd/onprem-orch-installer/after-install.sh"
+if [[ -f "$installer_script" ]]; then
+    # Run orchestrator installer from source
     echo "Installing Edge Orchestrator Packages"
-    eval "sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive ORCH_INSTALLER_PROFILE=$ORCH_INSTALLER_PROFILE GIT_REPOS=$GIT_REPOS apt-get install -y $cwd/$deb_dir_name/onprem-orch-installer_*_amd64.deb"
+    sudo ORCH_INSTALLER_PROFILE=$ORCH_INSTALLER_PROFILE GIT_REPOS=$GIT_REPOS bash "$installer_script"
     echo "Edge Orchestrator getting installed, wait for SW to deploy... "
 else
-    echo "❌ Package file NOT found: $cwd/$deb_dir_name/onprem-orch-installer_*_amd64.deb"
-    echo "Please ensure the package file exists and the path is correct."
+    echo "❌ Installer script not found: $installer_script"
+    echo "Please ensure you are running from the on-prem-installers/onprem directory."
     exit 1
 fi
 

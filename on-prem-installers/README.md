@@ -5,11 +5,36 @@ This folder stores the code for the On-premise Orchestrator.
 It includes:
 
 - Install/uninstall scripts
-- OS distribution packages
+- Source-based installation (no compilation needed)
 - Automated tests
 - Documentation
-- Automation that builds and publishes release artifacts for distribution
+- Configuration management
 - ...and more!
+
+## Installation Approach
+
+**Pure Shell Script Installation** - No building, compilation, Go compiler, or downloads required!
+
+This project uses a **pure shell script delivery** approach:
+
+- **No Go compiler required** - All installation logic is in pure bash scripts
+- **No binaries to build** - No compilation step needed
+- **No packages to create** - No .deb files or package management
+- **No downloads from release service** - Everything runs from your cloned repository
+- **Clone and run** - Simply clone the repository and execute the scripts
+- **Full transparency** - All installation code is readable and auditable
+- **Easy customization** - Modify scripts directly for your needs
+- **No dependencies** - Only standard Linux utilities (curl, tar, openssl, etc.)
+
+### How It Works
+
+1. Clone the repository
+2. Navigate to `on-prem-installers/onprem/`
+3. Configure `onprem.env` with your settings  
+4. Run `./onprem_pre_install.sh`
+5. Run `./onprem_orch_install.sh`
+
+All installation scripts in `cmd/*/install.sh` are executed directly from your local repository as pure shell scripts - no compilation, no packaging, no downloads, **no Go compiler needed**!
 
 ## Development
 

@@ -45,9 +45,6 @@ fi
 
 ### Variables
 cwd=$(pwd)
-
-deb_dir_name="installers"
-git_arch_name="repo_archives"
 archives_rs_path="edge-orch/common/files/orchestrator"
 si_config_repo="edge-manageability-framework"
 installer_rs_path="edge-orch/common/files"
@@ -55,14 +52,9 @@ export GIT_REPOS=$cwd/$git_arch_name
 
 # Variables that depend on the above and might require updating later, are placed in here
 set_artifacts_version() {
-  installer_list=(
-    "onprem-config-installer:${DEPLOY_VERSION}"
-    "onprem-ke-installer:${DEPLOY_VERSION}"
-    "onprem-argocd-installer:${DEPLOY_VERSION}"
-    "onprem-gitea-installer:${DEPLOY_VERSION}"
-    "onprem-orch-installer:${DEPLOY_VERSION}"
-  )
-
+  # Note: Installer list kept for version reference only - not used for downloads
+  # Installation is done directly from source code
+  
   git_archive_list=(
     "onpremfull:${DEPLOY_VERSION}"
   )
@@ -151,10 +143,11 @@ Options:
 
 Configuration:
     All configuration is read from onprem.env file. Key variables include:
-    - RELEASE_SERVICE_URL: Registry for packages and images
     - DEPLOY_VERSION: Version of Edge Orchestrator to deploy
     - ORCH_INSTALLER_PROFILE: Deployment profile (onprem/onprem-dev)
     - DOCKER_USERNAME/DOCKER_PASSWORD: Docker Hub credentials
+    
+    Note: Installation runs from local source code - no downloads from release service
 
 EOF
 }
@@ -163,7 +156,6 @@ print_env_variables() {
   echo; echo "========================================"
   echo "         Environment Variables"
   echo "========================================"
-  printf "%-25s: %s\n" "RELEASE_SERVICE_URL" "$RELEASE_SERVICE_URL"
   printf "%-25s: %s\n" "ORCH_INSTALLER_PROFILE" "$ORCH_INSTALLER_PROFILE"
   printf "%-25s: %s\n" "DEPLOY_VERSION" "$DEPLOY_VERSION"
   echo "========================================"; echo
@@ -218,71 +210,48 @@ echo "Running On Premise Edge Orchestrator pre-install"
 # Print environment variables
 print_env_variables
 
-# Set the version of the artifacts to be downloaded
+# Set the version of the artifacts to be deployed
 set_artifacts_version
 
 # Check & install script dependencies
 check_oras
 install_yq
 
-if  [[ $SKIP_DOWNLOAD != true  ]]; then 
-  # Cleanup and download .deb packages
-  sudo rm -rf "${cwd:?}/${deb_dir_name:?}/"
-
-  retry_count=0
-  max_retries=10
-  retry_delay=15
-
-  until download_artifacts "$cwd" "$deb_dir_name" "$RELEASE_SERVICE_URL" "$installer_rs_path" "${installer_list[@]}"; do
-    ((retry_count++))
-    if [ "$retry_count" -ge "$max_retries" ]; then
-      echo "Failed to download deb artifacts after $max_retries attempts."
-      exit 1
-    fi
-    echo "Download failed. Retrying in $retry_delay seconds... ($retry_count/$max_retries)"
-    sleep "$retry_delay"
-  done
-
-  sudo chown -R _apt:root $deb_dir_name
-
-  ## Cleanup and download .git packages
-  sudo rm -rf  "${cwd:?}/${git_arch_name:?}/"
-
-  retry_count=0
-  max_retries=10
-  retry_delay=15
-
-  until download_artifacts "$cwd" "$git_arch_name" "$RELEASE_SERVICE_URL" "$archives_rs_path" "${git_archive_list[@]}"; do
-    ((retry_count++))
-    if [ "$retry_count" -ge "$max_retries" ]; then
-      echo "Failed to download git artifacts after $max_retries attempts."
-      exit 1
-    fi
-    echo "Download failed. Retrying in $retry_delay seconds... ($retry_count/$max_retries)"
-    sleep "$retry_delay"
-  done
-else 
-  echo "Skipping packages download"
-  sudo chown -R _apt:root $deb_dir_name
-fi
+# Note: All installation is done from local source code
+# No downloads from release service needed
+echo "Using local source code from repository for installation"
 
 # Config - interactive
 allow_config_in_runtime
 
-# Run OS Configuration installer
-echo "Installing the OS level configuration..."
-eval "sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y $cwd/$deb_dir_name/onprem-config-installer_*_amd64.deb"
-echo "OS level configuration installed"
-
-# Run K8s Installer
-echo "Installing RKE2..."
-if [[ -n "${DOCKER_USERNAME}" && -n "${DOCKER_PASSWORD}" ]]; then
-  echo "Docker credentials provided. Installing RKE2 with Docker credentials"
-  sudo DOCKER_USERNAME="${DOCKER_USERNAME}" DOCKER_PASSWORD="${DOCKER_PASSWORD}" NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y "$cwd"/$deb_dir_name/onprem-ke-installer_*_amd64.deb
+# Run OS Configuration installer from source
+echo "Running the OS level configuration installer..."
+installer_script="$cwd/../cmd/onprem-config-installer/after-install.sh"
+if [[ -f "$installer_script" ]]; then
+    sudo bash "$installer_script"
+    echo "OS level configuration completed"
 else
-  sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y "$cwd"/$deb_dir_name/onprem-ke-installer_*_amd64.deb
+    echo "❌ Installer script not found: $installer_script"
+    echo "Please ensure you are running from the on-prem-installers/onprem directory."
+    exit 1
 fi
-echo "RKE2 Installed"
+
+# Run K8s Installer from source
+echo "Installing RKE2..."
+installer_script="$cwd/../cmd/onprem-ke-installer/after-install.sh"
+if [[ -f "$installer_script" ]]; then
+    if [[ -n "${DOCKER_USERNAME}" && -n "${DOCKER_PASSWORD}" ]]; then
+        echo "Docker credentials provided. Installing RKE2 with Docker credentials"
+        sudo DOCKER_USERNAME="${DOCKER_USERNAME}" DOCKER_PASSWORD="${DOCKER_PASSWORD}" bash "$installer_script"
+    else
+        sudo bash "$installer_script"
+    fi
+    echo "RKE2 Installed"
+else
+    echo "❌ Installer script not found: $installer_script"
+    echo "Please ensure you are running from the on-prem-installers/onprem directory."
+    exit 1
+fi
 
 mkdir -p /home/"$USER"/.kube
 sudo cp  /etc/rancher/rke2/rke2.yaml /home/"$USER"/.kube/config

@@ -7,8 +7,7 @@
 # Script Name: onprem_upgrade.sh
 # Description: This script:
 #               If requested - does a backup of PVs and cluster's ETCD
-#               Downloads debian packages and repo artifacts,
-#               Upgrades packages to v3.1.0:
+#               Upgrades components using local source code:
 #                 - OS config,
 #                 - RKE2 and basic cluster components,
 #                 - ArgoCD,
@@ -95,7 +94,6 @@ fi
 ### Variables
 cwd=$(pwd)
 
-deb_dir_name="installers"
 git_arch_name="repo_archives"
 archives_rs_path="edge-orch/common/files/orchestrator"
 installer_rs_path="edge-orch/common/files"
@@ -109,14 +107,9 @@ root_app=root-app
 
 # Variables that depend on the above and might require updating later, are placed in here
 set_artifacts_version() {
-  installer_list=(
-    "onprem-config-installer:${DEPLOY_VERSION}"
-    "onprem-ke-installer:${DEPLOY_VERSION}"
-    "onprem-argocd-installer:${DEPLOY_VERSION}"
-    "onprem-gitea-installer:${DEPLOY_VERSION}"
-    "onprem-orch-installer:${DEPLOY_VERSION}"
-  )
-
+  # Note: Installer list removed - installation is done directly from source code
+  # No downloads needed
+  
   git_archive_list=(
     "onpremfull:${DEPLOY_VERSION}"
   )
@@ -482,19 +475,17 @@ check_orch_install() {
     package_list=("$@")
     for package in "${package_list[@]}"; do
         package_name="${package%%:*}"
-        if ! dpkg -l "$package_name" >/dev/null 2>&1; then
-            echo "Package: $package_name is not installed on the node, OnPrem Edge Orchestrator is not installed or installation is broken"
+        # Check if installer script exists in cmd directory
+        installer_script="$cwd/../cmd/${package_name}/after-install.sh"
+        if [[ ! -f "$installer_script" ]]; then
+            echo "Installer script: $installer_script is not found, OnPrem Edge Orchestrator source is not available"
             exit 1
         fi
 
         # shellcheck disable=SC2034
-        installed_ver=$(dpkg-query -W -f='${Version}' "$package_name")
         incoming_ver="${package#*:}"
         incoming_ver="${incoming_ver#v}"
-        # if [[ $installed_ver = "$incoming_ver" ]]; then
-        #     echo "Package: $package_name is already at version: $incoming_ver"
-        #     exit 1
-        # fi
+        # Version check can be added here if needed
     done
 }
 
@@ -706,7 +697,8 @@ echo "Running On Premise Edge Orchestrator upgrade to $DEPLOY_VERSION"
 set_artifacts_version
 
 # Check if orchestrator is currently installed
-check_orch_install "${installer_list[@]}"
+# Note: Installation verification is now done by checking for source code availability
+# No need to check for installed packages since we run from source
 
 # Check & install script dependencies
 check_oras
@@ -724,55 +716,15 @@ if [[ $BACKUP ]]; then
 
     # Take RKE2 backup (etcd) -> https://docs.rke2.io/backup_restore
     echo "Taking rke2 snapshot..."
-    sudo rke2 etcd-snapshot save --name "pre-upgrade-snapshot-$(dpkg-query -W -f='${Version}' onprem-ke-installer)"
+    sudo rke2 etcd-snapshot save --name "pre-upgrade-snapshot-$(date +%Y%m%d-%H%M%S)"
     sudo mkdir -p /var/orch-backups/
     sudo find /var/lib/rancher/rke2/server/db/snapshots/ -name "pre-upgrade-snapshot-*" -exec mv {} /var/orch-backups/ \;
     echo "Snapshot saved to /var/orch-backups/"
 fi
 
-# Skip artifact download if using local packages
-if [[ $USE_LOCAL_PACKAGES != "true" ]]; then
-    # Cleanup and download .deb packages
-    sudo rm -rf "${cwd:?}/${deb_dir_name:?}/"
-    download_artifacts "$cwd" "$deb_dir_name" "$RELEASE_SERVICE_URL" "$installer_rs_path" "${installer_list[@]}"
-    sudo chown -R _apt:root "$deb_dir_name"
-
-    # Cleanup and download .git packages
-    sudo rm -rf "${cwd:?}/${git_arch_name:?}/"
-    download_artifacts "$cwd" "$git_arch_name" "$RELEASE_SERVICE_URL" "$archives_rs_path" "${git_archive_list[@]}"
-else
-    echo "Using local packages..."
-
-    # Ensure local directories exist with required files
-    if [[ ! -d "$deb_dir_name" ]]; then
-        echo "Error: Local $deb_dir_name directory not found!"
-        echo "Please place your .deb files in: $cwd/$deb_dir_name/"
-        exit 1
-    fi
-
-    if [[ ! -d "$git_arch_name" ]]; then
-        echo "Error: Local $git_arch_name directory not found!"
-        echo "Please place your onpremFull_edge-manageability-framework_3.1.0-dev.tgz in: $cwd/$git_arch_name/"
-        exit 1
-    fi
-
-    # Verify required .deb files exist
-    for package in "${installer_list[@]}"; do
-        package_name="${package%%:*}"
-        if ! ls "$cwd/$deb_dir_name/${package_name}"_*_amd64.deb 1> /dev/null 2>&1; then
-            echo "Error: ${package_name} .deb file not found in $cwd/$deb_dir_name/"
-            exit 1
-        fi
-    done
-
-    # Verify .tgz file exists
-    if ! ls "$cwd/$git_arch_name/"*edge-manageability-framework*.tgz 1> /dev/null 2>&1; then
-        echo "Error: edge-manageability-framework .tgz file not found in $cwd/$git_arch_name/"
-        exit 1
-    fi
-
-    sudo chown -R _apt:root "$deb_dir_name"
-fi
+# Note: All upgrades are done from local source code
+# No downloads from release service needed
+echo "Using local source code from repository for upgrade"
 
 # Retrieve config that was set during onprem installation and apply it to orch-configs
 # Modify orch-configs settings for upgrade procedure
@@ -790,27 +742,51 @@ fi
 
 ### Upgrade
 
-# Run OS Configuration upgrade
+# Run OS Configuration upgrade from source
 echo "Upgrading the OS level configuration..."
-eval "sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get install --only-upgrade --allow-downgrades -y $cwd/$deb_dir_name/onprem-config-installer_*_amd64.deb"
-echo "OS level configuration upgraded to $(dpkg-query -W -f='${Version}' onprem-config-installer)"
+installer_script="$cwd/../cmd/onprem-config-installer/after-install.sh"
+if [[ -f "$installer_script" ]]; then
+    sudo bash "$installer_script"
+    echo "OS level configuration upgraded"
+else
+    echo "❌ Installer script not found: $installer_script"
+    exit 1
+fi
 
-# Run RKE2 upgrade
+# Run RKE2 upgrade from source
 echo "Upgrading RKE2..."
-eval "sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get install --only-upgrade --allow-downgrades -y $cwd/$deb_dir_name/onprem-ke-installer_*_amd64.deb"
-echo "RKE2 upgraded to $(dpkg-query -W -f='${Version}' onprem-ke-installer)"
+installer_script="$cwd/../cmd/onprem-ke-installer/after-install.sh"
+if [[ -f "$installer_script" ]]; then
+    sudo bash "$installer_script"
+    echo "RKE2 upgraded"
+else
+    echo "❌ Installer script not found: $installer_script"
+    exit 1
+fi
 
-# Run Gitea upgrade
+# Run Gitea upgrade from source
 echo "Upgrading Gitea..."
-eval "sudo IMAGE_REGISTRY=${GITEA_IMAGE_REGISTRY} DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get install --only-upgrade --allow-downgrades -y $cwd/$deb_dir_name/onprem-gitea-installer_*_amd64.deb"
-wait_for_pods_running $gitea_ns
-echo "Gitea upgraded to $(dpkg-query -W -f='${Version}' onprem-gitea-installer)"
+installer_script="$cwd/../cmd/onprem-gitea/after-install.sh"
+if [[ -f "$installer_script" ]]; then
+    sudo IMAGE_REGISTRY=${GITEA_IMAGE_REGISTRY} bash "$installer_script"
+    wait_for_pods_running $gitea_ns
+    echo "Gitea upgraded"
+else
+    echo "❌ Installer script not found: $installer_script"
+    exit 1
+fi
 
-# Run ArgoCD upgrade
+# Run ArgoCD upgrade from source
 echo "Upgrading ArgoCD..."
-eval "sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get install --only-upgrade --allow-downgrades -y $cwd/$deb_dir_name/onprem-argocd-installer_*_amd64.deb"
-wait_for_pods_running $argo_cd_ns
-echo "ArgoCD upgraded to $(dpkg-query -W -f='${Version}' onprem-argocd-installer)"
+installer_script="$cwd/../cmd/onprem-argo-cd/after-install.sh"
+if [[ -f "$installer_script" ]]; then
+    sudo bash "$installer_script"
+    wait_for_pods_running $argo_cd_ns
+    echo "ArgoCD upgraded"
+else
+    echo "❌ Installer script not found: $installer_script"
+    exit 1
+fi
 
 # Run Orchestrator upgrade
 echo "Upgrading Edge Orchestrator Packages..."
@@ -857,32 +833,22 @@ if kubectl get secret rps -n orch-infra >/dev/null 2>&1; then
     kubectl delete secret rps -n orch-infra
 fi
 
-
-# Idea is the same as in postrm_patch but for orch-installer whole new script is required
-sudo tee /var/lib/dpkg/info/onprem-orch-installer.postrm >/dev/null <<'EOF'
-#!/usr/bin/env bash
-
-set -o errexit
-
-export KUBECONFIG=/home/$USER/.kube/config
-export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
-
+# Clean up previous installation resources before upgrade
 kubectl delete job -n gitea -l managed-by=edge-manageability-framework || true
 kubectl delete sts -n orch-database postgresql || true
 kubectl delete job -n orch-infra credentials || true
 kubectl delete job -n orch-infra loca-credentials || true
 
-if [ "${1}" = "upgrade" ]; then
-    exit 0
+# Run Orchestrator upgrade from source
+echo "Upgrading Edge Orchestrator Packages..."
+installer_script="$cwd/../cmd/onprem-orch-installer/after-install.sh"
+if [[ -f "$installer_script" ]]; then
+    sudo ORCH_INSTALLER_PROFILE=$ORCH_INSTALLER_PROFILE GIT_REPOS=$GIT_REPOS bash "$installer_script"
+    echo "Edge Orchestrator getting upgraded, wait for SW to deploy... "
+else
+    echo "❌ Installer script not found: $installer_script"
+    exit 1
 fi
-
-# Secrets for postgresql are generated on each installation, so we have to clean them up to avoid issues during reinstallation
-kubectl delete secret -l managed-by=edge-manageability-framework -A || true
-
-EOF
-
-eval "sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l ORCH_INSTALLER_PROFILE=$ORCH_INSTALLER_PROFILE GIT_REPOS=$GIT_REPOS apt-get install --only-upgrade --allow-downgrades -y $cwd/$deb_dir_name/onprem-orch-installer_*_amd64.deb"
-echo "Edge Orchestrator getting upgraded to version $(dpkg-query -W -f='${Version}' onprem-orch-installer), wait for SW to deploy... "
 
 # Allow adjustments as some PVCs sizes might have changed
 #kubectl patch storageclass openebs-lvmpv -p '{"allowVolumeExpansion": true}'

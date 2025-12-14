@@ -2,6 +2,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+// NOTE: This binary is NO LONGER REQUIRED for installation!
+// The installation now uses the after-install.sh script directly.
+// This Go code is maintained for reference only.
+//
+// For installation, use: bash cmd/onprem-orch-installer/after-install.sh
+
 package main
 
 import (
