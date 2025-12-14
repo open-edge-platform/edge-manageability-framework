@@ -45,6 +45,7 @@ fi
 
 ### Variables
 cwd=$(pwd)
+git_arch_name="repo_archives"
 archives_rs_path="edge-orch/common/files/orchestrator"
 si_config_repo="edge-manageability-framework"
 installer_rs_path="edge-orch/common/files"
@@ -69,12 +70,24 @@ allow_config_in_runtime() {
 
   tmp_dir="$cwd/$git_arch_name/tmp"
 
-  ## Untar edge-manageability-framework repo
-  repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n")
+  ## Untar edge-manageability-framework repo (or copy from parent if running from source)
+  repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n" 2>/dev/null | head -1)
 
   rm -rf "$tmp_dir"
   mkdir -p "$tmp_dir"
-  tar -xf "$cwd/$git_arch_name/$repo_file" -C "$tmp_dir"
+  
+  if [ -n "$repo_file" ] && [ -f "$cwd/$git_arch_name/$repo_file" ]; then
+    # Extract from existing tarball
+    echo "Extracting edge-manageability-framework from: $repo_file"
+    tar -xf "$cwd/$git_arch_name/$repo_file" -C "$tmp_dir"
+  elif [ -d "$cwd/../../argocd" ]; then
+    # Copy from repository if running from source
+    echo "Copying edge-manageability-framework from repository..."
+    cp -r "$cwd/../.." "$tmp_dir/edge-manageability-framework"
+  else
+    echo "Error: Neither tarball nor source repository found for edge-manageability-framework"
+    exit 1
+  fi
 
   if [ "$ASSUME_YES" = true ]; then
     echo "Assuming yes to use existing configuration."

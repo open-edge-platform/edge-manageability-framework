@@ -424,7 +424,14 @@ if [ "$ASSUME_YES" = false ]; then
 fi
 
 ## Tar back the edge-manageability-framework repo. This will be later pushed to Gitea repo in the Orchestrator Installer
-repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n")
+repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n" 2>/dev/null | head -1)
+
+# If no existing tarball found, create a default filename
+if [ -z "$repo_file" ]; then
+    echo "No existing edge-manageability-framework tarball found, creating new one..."
+    repo_file="${si_config_repo}-$(date +%Y%m%d-%H%M%S).tgz"
+fi
+
 cd "$tmp_dir"
 tar -zcf "$repo_file" ./edge-manageability-framework
 mv -f "$repo_file" "$cwd/$git_arch_name/$repo_file"

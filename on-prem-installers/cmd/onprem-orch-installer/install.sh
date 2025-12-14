@@ -159,15 +159,29 @@ get_artifact_path() {
     local repo_name="$2"
     local tar_suffix=".tgz"
     
-    # Find the tar file matching the repo name
-    local artifact_file
-    artifact_file=$(find "$tar_files_location" -maxdepth 1 -type f -name "*${repo_name}*${tar_suffix}" | head -1)
+    echo "DEBUG: Searching for artifacts in: $tar_files_location" >&2
+    echo "DEBUG: Looking for pattern: *${repo_name}*${tar_suffix}" >&2
     
-    if [ -z "$artifact_file" ]; then
-        echo "Error: Failed to find *${repo_name}*.tgz artifact in $tar_files_location"
+    # Check if directory exists
+    if [ ! -d "$tar_files_location" ]; then
+        echo "Error: Directory does not exist: $tar_files_location" >&2
         exit 1
     fi
     
+    # List files for debugging
+    echo "DEBUG: Files in directory:" >&2
+    ls -la "$tar_files_location" >&2
+    
+    # Find the tar file matching the repo name
+    local artifact_file
+    artifact_file=$(find "$tar_files_location" -maxdepth 1 -type f -name "*${repo_name}*${tar_suffix}" 2>&1 | head -1)
+    
+    if [ -z "$artifact_file" ]; then
+        echo "Error: Failed to find *${repo_name}*.tgz artifact in $tar_files_location" >&2
+        exit 1
+    fi
+    
+    echo "DEBUG: Found artifact: $artifact_file" >&2
     echo "$artifact_file"
 }
 

@@ -123,9 +123,21 @@ retrieve_and_apply_config() {
     rm -rf "$tmp_dir"
     mkdir -p "$tmp_dir"
 
-    ## Untar edge-manageability-framework repo
-    repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n")
-    tar -xf "$cwd/$git_arch_name/$repo_file" -C "$tmp_dir"
+    ## Untar edge-manageability-framework repo (or copy from parent if running from source)
+    repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n" 2>/dev/null | head -1)
+    
+    if [ -n "$repo_file" ] && [ -f "$cwd/$git_arch_name/$repo_file" ]; then
+        # Extract from existing tarball
+        echo "Extracting edge-manageability-framework from: $repo_file"
+        tar -xf "$cwd/$git_arch_name/$repo_file" -C "$tmp_dir"
+    elif [ -d "$cwd/../../argocd" ]; then
+        # Copy from repository if running from source
+        echo "Copying edge-manageability-framework from repository..."
+        cp -r "$cwd/../.." "$tmp_dir/edge-manageability-framework"
+    else
+        echo "Error: Neither tarball nor source repository found for edge-manageability-framework"
+        exit 1
+    fi
 
     # Get the external IP address of the LoadBalancer services
     ARGO_IP=$(kubectl get svc argocd-server -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
@@ -235,6 +247,11 @@ retrieve_and_apply_config() {
     done
 
     ## Tar back the repo
+    # repo_file was already set in retrieve_and_apply_config, but if not, create a default name
+    if [ -z "$repo_file" ]; then
+        repo_file="${si_config_repo}-$(date +%Y%m%d-%H%M%S).tgz"
+    fi
+    
     cd "$tmp_dir"
     tar -zcvf "$repo_file" ./edge-manageability-framework
     mv -f "$repo_file" "$cwd/$git_arch_name/$repo_file"
