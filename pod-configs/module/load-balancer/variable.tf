@@ -50,27 +50,7 @@ variable "enable_deletion_protection" {
   default = true
 }
 
-variable "external_egress_rules" {
-  description = "Additional external egress rules"
-  type = list(object({
-    from_port   = number
-    to_port     = number
-    protocol    = string
-    cidr_blocks = list(string)
-    description = string
-  }))
-  default = []
-  
-  validation {
-    condition = alltrue([
-      for rule in var.external_egress_rules :
-      !contains(rule.cidr_blocks, "0.0.0.0/0")
-    ])
-    error_message = "External egress rules cannot contain 0.0.0.0/0 for security."
-  }
-}
-
-variable "auto_cert" {
-  type    = bool
-  default = false
+variable "eks_security_groups" {
+  description = "List of EKS security group IDs (from module/eks/output.tf security_groups)"
+  type        = list(string)
 }

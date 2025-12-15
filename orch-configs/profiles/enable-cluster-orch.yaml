@@ -7,12 +7,6 @@
 
 argo:
   enabled:
-    harbor-oci: true
-    harbor-oci-security-patch: true
-    app-deployment-manager-secret: true
-    app-orch-tenant-controller: true
-    fleet-crd: true
-    fleet-controller: true
     capi-operator-pre: true
     capi-operator: true
     cluster-manager: true

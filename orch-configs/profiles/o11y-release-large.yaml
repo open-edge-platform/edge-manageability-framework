@@ -104,7 +104,6 @@ argo:
           volumeSize: 40Gi
         structuredConfig: # TODO use direct structuredConfig
            querySchedulerMaxOutstandingRequestsPerTenant: null
-           frontendMaxOutstandingRequestsPerTenant: null
            querierTime: null
            metricsRetentionPeriod: 360h
            ingestionRate: 4000000
@@ -146,7 +145,6 @@ argo:
           volumeSize: 40Gi
         structuredConfig: # TODO use direct structuredConfig
           querySchedulerMaxOutstandingRequestsPerTenant: null
-          frontendMaxOutstandingRequestsPerTenant: null
           querierTime: null
           ingestionRate: null
           ingestionBurstSize: null
