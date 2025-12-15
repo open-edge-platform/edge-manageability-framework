@@ -81,7 +81,7 @@ send requests to the EIM services.
 sequenceDiagram
   autonumber
   participant US as User
-  box rgba(50, 219, 219, 1) Orchestrator Components
+  box rgba(191, 223, 255, 1) Orchestrator Components
     participant CLI as Orchestrator CLI
     participant DM as Device Management (DM) Manager
     participant INV as Inventory
@@ -165,7 +165,7 @@ support detection moved to the PMA.
 sequenceDiagram
   autonumber
   participant US as User
-  box rgba(50, 219, 219, 1) Orchestrator Components
+  box rgba(191, 223, 255, 1) Orchestrator Components
     participant CLI as Orchestrator CLI
     participant DM as Device Management (DM) Manager
     participant INV as Inventory
