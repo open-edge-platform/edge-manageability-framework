@@ -105,7 +105,7 @@ To install the Helm chart for a specific use case, there are two options dependi
 sequenceDiagram
   autonumber
   participant US as User
-  box rgba(40, 179, 179, 1) Foundational Platform Services
+  box rgba(191, 223, 255, 1) Foundational Platform Services
     participant CD as ArgoCD
     participant API as API Gateway
     participant DB as Inventory Database
