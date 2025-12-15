@@ -81,7 +81,7 @@ get_eks_node_ami() {
 
 get_eks_vol_size() {
 
-read LT_ID LT_VER <<< "$(aws eks describe-nodegroup   --cluster-name hema-scale   --nodegroup-name nodegroup-hema-scale   --query "nodegroup.launchTemplate.[id,version]"   --output text)"
+read LT_ID LT_VER <<< "$(aws eks describe-nodegroup   --cluster-name ${ENV_NAME}   --nodegroup-name nodegroup-${ENV_NAME} --query "nodegroup.launchTemplate.[id,version]"   --output text)"
 aws ec2 describe-launch-template-versions \
     --launch-template-id "$LT_ID" \
     --versions "$LT_VER" \
