@@ -79,6 +79,15 @@ get_eks_node_ami() {
     echo $ami
 }
 
+get_eks_vol_size() {
+
+read LT_ID LT_VER <<< "$(aws eks describe-nodegroup   --cluster-name ${ENV_NAME}  --nodegroup-name nodegroup-${ENV_NAME}   --query "nodegroup.launchTemplat>
+aws ec2 describe-launch-template-versions \
+    --launch-template-id "$LT_ID" \
+    --versions "$LT_VER" \
+    --query 'LaunchTemplateVersions[0].LaunchTemplateData.BlockDeviceMappings[0].Ebs.VolumeSize' \
+    --output text
+}
 
 get_aurora_ins_azs() {
     aurora_azs=($1)
@@ -124,7 +133,7 @@ vpc_terraform_backend_key          = "${VPC_TERRAFORM_BACKEND_KEY}"
 vpc_terraform_backend_region       = "${BUCKET_REGION}" # region of the S3 bucket to store the TF state
 eks_cluster_name                   = "$ENV_NAME"
 aws_account_number                 = "$AWS_ACCOUNT"
-eks_volume_size                    = 128
+eks_volume_size                    = $(get_eks_vol_size)
 eks_desired_size                   = $EKS_DESIRED_SIZE
 eks_min_size                       = $EKS_MIN_SIZE
 eks_max_size                       = $EKS_MAX_SIZE
@@ -238,6 +247,14 @@ else
     exit 1
 fi
 
+echo "Applying changes for EKS module..."
+if terraform apply -target=module.eks -var-file="environments/${ENV_NAME}/variable.tfvar" -auto-approve; then
+    echo " ^|^e Terraform apply for KMS module succeeded."
+else
+    echo " ^}^l Terraform apply for KMS module failed!"
+    exit 1
+fi
+
 echo "Applying changes for KMS module..."
 if terraform apply -target=module.kms -var-file="environments/${ENV_NAME}/variable.tfvar" -auto-approve; then
     echo "✅ Terraform apply for KMS module succeeded."
@@ -288,6 +305,32 @@ aws ec2 describe-security-groups --group-ids "$LB_SG_ID_T3" --query "SecurityGro
 return 0
 }
 
+wait_for_nodegroup_ready_nodes() {
+  TARGET=$EKS_MIN_SIZE
+  TIMEOUT=900      # 15 minutes = 900 seconds
+  INTERVAL=15      # check every 15 seconds
+  ELAPSED=0
+
+  while [ "$ELAPSED" -lt "$TIMEOUT" ]; do
+    READY=$(kubectl get nodes \
+      -A \
+      --no-headers 2>/dev/null | grep -c " Ready")
+
+    echo "[$ELAPSED sec] Ready nodes: $READY / Waiting for: $TARGET"
+
+    if [ "$READY" -ge "$TARGET" ]; then
+      echo " ^|^e Node group reached $TARGET Ready nodes"
+      return 0
+    fi
+
+    sleep "$INTERVAL"
+    ELAPSED=$((ELAPSED + INTERVAL))
+  done
+
+  echo " ^}^l Timeout after 15 minutes. Node group did not reach $TARGET Ready nodes."
+  return 1
+}
+
 # Main
 
 if [[ ${COMMAND:-""} != upgrade ]]; then
@@ -305,7 +348,7 @@ echo "Starting action cluster"
 action_cluster
 apply_modules
 apply_load_balancer
-
+wait_for_nodegroup_ready_nodes
 # Terminate existing sshuttle
 terminate_sshuttle
 
