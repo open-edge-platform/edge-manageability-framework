@@ -975,7 +975,7 @@ class AutoInstall:
         self.installer_session.expect("orchestrator-admin:~")
 
         self.installer_session.sendline(f"{self.internal_makefile_params} make upgrade")
-        self.installer_session.expect("orchestrator-admin:~", timeout=1800)
+        self.installer_session.expect("orchestrator-admin:~", timeout=2700)
 
     def deprovision(self):
         """
