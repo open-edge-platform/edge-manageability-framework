@@ -249,9 +249,9 @@ fi
 
 echo "Applying changes for EKS module..."
 if terraform apply -target=module.eks -var-file="environments/${ENV_NAME}/variable.tfvar" -auto-approve; then
-    echo " ^|^e Terraform apply for KMS module succeeded."
+    echo " ^|^e Terraform apply for EKS module succeeded."
 else
-    echo " ^}^l Terraform apply for KMS module failed!"
+    echo " ^}^l Terraform apply for EKS module failed!"
     exit 1
 fi
 
