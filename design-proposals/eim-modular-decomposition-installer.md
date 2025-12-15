@@ -54,7 +54,7 @@ The current EMF deployment utilizes installation scripts and Debian packages for
 With the introduction of modular EIM capabilities, the packaging strategy for platform components requires modification
 to align with the new architecture. As part of the modular decomposition, certain Debian packages that were previously
 required for full EMF deployments will no longer be necessary for all use cases. Specifically, packages such as the RKE2
-installer, configuration installer, orchestrator installer will be excluded from modular EIM installations, as these
+installer, configuration installer and orchestrator installer will be excluded from modular EIM installations, as these
 components are part of the foundational infrastructure layer that may already be provided by the customer's environment
 in Track 2 scenarios.
 
@@ -229,13 +229,10 @@ sequenceDiagram
 
 - Modular installer for Foundational Platform Services (FPS).
   - Identify required FPS components for Track 1 installations.
-  - Create new Helm chart for FPS components.
-    - New Helm chart should be top level chart with a list of subcharts for all components.
+  - Create new Helm chart for FPS components, chart will be a top level chart with a list of subcharts for all
+  FPS components.
   - Test deployment of FPS Helm chart.
   - Create new ArgoCD profile for installing only the FPS component Helm chart.
-    - Options for profile:
-      - New profile.
-      - Modify current EMF stack profile to make it configurable to install only required services.
     - Either a new profile can be created or the current ArgoCD profile for full EMF stack deployment can be
     modified to include configurable settings to support installing only the FPS component.
   - Extend the CI workflows to push the new FPS Helm chart and ArgoCD profile to the release service.
@@ -244,61 +241,38 @@ sequenceDiagram
 - Modular installer for Edge Infrastructure Manager (EIM).
   - **Requirement 1:** Out-of-band Device Management.
     - Identify required services for Out-of-band Device Management workflow.
-    - Create new Helm chart for Out-of-band Device Management services.
-      - Helm chart should be a top level chart.
-      - Helm chart will have a list of subcharts for all of the required services.
+    - Create new Helm chart for Out-of-band Device Management services, chart will be a top level chart with a
+    list of subcharts for all Out-of-band Device Management services.
     - Test deployment of the Helm chart to confirm all services deploy.
     - Create ArgoCD profile for installing Out-of-band Device Management Helm chart.
-      - Options for profile:
-        - New profile, will be extension onto FPS individual profile.
-        - Modify current EMF stack profile to make it configurable to install only required services.
     - Test workflow installation flow with new ArgoCD profile.
   - **Requirement 2:** Automated Edge Device Commissioning.
     - Identify required services for Automated Edge Device Commissioning workflow.
-    - Create new Helm chart for Automated Edge Device Commissioning services.
-      - Helm chart should be a top level chart.
-      - Helm chart will have a list of subcharts for all of the required services.
+    - Create new Helm chart for Automated Edge Device Commissioning services, cahrt will be a top level chart
+    with a list of subcharts for all Automated Edge Device Commissioning services.
     - Test deployment of the Helm chart to confirm all services deploy.
     - Create ArgoCD profile for installing Automated Edge Device Commissioning Helm chart.
-      - Options for profile:
-        - New profile, will be extension onto FPS individual profile.
-        - Modify current EMF stuck profile to make it configurable to install only required services.
     - Test workflow installation flow with new ArgoCD profile.
-  - Update Orchestrator CLI commands.
-    - Add new commands for generating an environment file containing the required FQDNs and other configuration
-    settings needed for the edge node agents for the workflows.
+  - Update Orchestrator CLI commands with new options to generate an environment file containing the required
+  FQDNs and other configuration settings needed for the edge node agents to enable communication with the
+  Orchestrator services.
   - Update CI to push and store the Helm charts and ArgoCD profiles to the Release Service.
-  - Test full deployment of the ArgoCD profiles for both requirements.
-    - Should include installation of the FPS services.
+  - Test full deployment of the ArgoCD profiles for both requirements, including installation of the FPS services.
   - Test the deployment of the individual EIM workflow charts with non-FPS deployed services.
-  - Add new documentation to deployment and user guides outlining deployment steps for the EIM modular workflows.
-    - Should cover deployments for both Track 1 and Track 2 use cases.
+  - Add new documentation to deployment and user guides outlining deployment steps for the EIM modular workflows
+  covering deployments under both the Track 1 and Track 2 use cases.
 - Modular installer for Edge Node
   - **Requirement 1:** Out-of-band Device Management.
     - Identify the required agents and edge node services needed for the modular workflow.
     - Create new installation script for modular workflow.
-      - Options:
-        - Create new script to install required agents.
-        - Modify current installation script to allow for modular installation based on provided settings.
     - Add option to install environment file with agent FQDN settings onto edge node.
     - Modify agent service configurations to retrieve service FQDNs from environment file.
     - Test installation of agents using installation script.
-    - Test E2E workflow with installed Orchestrator services.
-      - Test with services installed on Orchestrator using Track 1 and Track 2 installation methods.
+    - Test E2E workflow with installed Orchestrator services, using both Track 1 and Track 2 installation methods.
   - **Requirement 2:** Automated Edge Device Commissioning.
     - Identify the required agents and edge node services needed for the modular workflow.
     - Create new installation script for modular workflow.
-      - Options:
-        - Create new script to install required agents.
-        - Modify current installation script to allow for modular installation based on provided settings.
     - Add option to install environment file with agent FQDN settings onto edge node.
     - Modify agent service configurations to retrive service FQDNs from environment file.
     - Test installation of agents using installation script.
-    - Test E2E workflow with installed Orchestrator services.
-      - Test with services installed on Orchestrator using Track 1 and Track 2 installation methods.
-
-## Opens
-
-- Single installer script for Orchestrator, including installer script for edge node, which installs all services needed
-  for the required use case.
-  - Can also cover installation of the current full EMF stack.
+    - Test E2E workflow with installed Orchestrator services, using both Track 1 and Track 2 installation methods.
