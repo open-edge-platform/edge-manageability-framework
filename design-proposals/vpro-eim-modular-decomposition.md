@@ -31,10 +31,11 @@ communicates with the DM manager and triggers the
 the edge node to update the device settings based on the DM Manager response. For more details on the out-of-band device
 management workflow, see the [vPRO Devices Activation Documentation](./vpro-device.md).
 
-Since this workflow requires the inventory to track edge nodes and devices as well as some of the foundational platform
-services of the EMF stack, such as authentication, multitenancy and storage, in order to use the out-of-band device
-management the entire EIM, with all services, must be deployed. This means that, if only the out-of-band device
-management is needed, there are a number of services deployed that are not required for the use case.
+To use the out-of-band device management workflow, it requires the inventory services to track edge node and devices
+connected to the Orchestrator. It also requires some of the foundational platform services in the EMF stack, including
+authentication, multitenancy and storage. With the current EMF stack, all EIM services must be deployed in order to
+use the out-of-band device management. This means that a number of additional EIM services are deployed that are not
+required by the workflow.
 
 As outlined in the [EIM Modular Decomposition proposal](./eim-modular-decomposition.md), by decoupling individual use
 case workflows currently in the EIM so that they can be deployed into an Orchestrator environment without requiring the
@@ -73,8 +74,8 @@ In the modular use case, the creation of device profiles and communication betwe
 services on the Orchestrator and the agents on the Edge Node will remain the same before. Using the
 [Orchestrator CLI](orch-cli.md), a user will be able to create the domain profile for a device and add it to the
 database so it can be retrieved when the RPC binary on the Edge Node communicates with the RPS service to register and
-activate the device. They will also be able to trigger device activation and power off operations using the CLI to send
-requests to the EIM services.
+activate the device. They will also be able to trigger device activation and power cycle operations using the CLI to
+send requests to the EIM services.
 
 ```mermaid
 sequenceDiagram
@@ -93,9 +94,13 @@ sequenceDiagram
     US ->> CLI: Create CIRA Config
     CLI ->> RPS: Create CIRA Configuration
     RPS ->> DB: Store CIRA Configuration to database
+    DB ->> RPS: Report storage success
+    RPS ->> CLI: Report success
     US ->> CLI: Create Domain Profile for device
     CLI ->> RPS: Create Domain Profile for device
     RPS ->> DB: Store Domain Profile to database
+    DB ->> RPS: Report storage success
+    RPS ->> CLI: Report success
   end
   alt Device Activation
     US ->> CLI: Request Device Activation
@@ -215,9 +220,10 @@ sequenceDiagram
     deactivate RPS
     RPS ->> PMA: Report activation success
     PMA ->> DM: Report activation success
-    deactivate PMA
     DM ->> INV: Set device activation status
     deactivate DM
+    PMA ->> US: Report device activation status
+    deactivate PMA
   end
 ```
 
@@ -225,56 +231,35 @@ sequenceDiagram
 
 - Modular Edge Infrastructure Manager (EIM) services for Out-of-Band Device Management.
   - Identify the current EIM services needed to support Out-of-Band Device Management.
-  - Create a new Helm chart for deploying all required EIM services for the workflow.
-    - This new Helm chart should be a top level chart that lists all of the current EIM service charts
-    as subcharts.
+  - Create a new Helm chart for deploying all required EIM services for the workflow, this chart will be a top
+  level chart which will list all of the current EIM services used in out-of-band device management as subcharts.
   - Test the deployment of the new Out-of-Band Device Management Helm chart.
-  - Create a new ArgoCD profile to support deploying the new Helm chart.
-    - Only needed for the Track 1 deployment method outlined in the
-    [EIM Modularization document](./eim-modular-decomposition.md).
-    - Can be a modified version of the current EMF stack deployment profile with additional configuration options
-    to enable only deployment of only the services needed for the Out-of-Band Device Management workflow.
-  - Extend the CI workflows to upload the new Helm chart to the release service.
-    - If a new ArgoCD profile is also created, the CI should be extended to provide that to the release
-    service as well.
-  - Extend the Orchestrator CLI to work with the modular Out-of-Band Device Management workflow.
-    - Add additional CLI commands for providing the CIRA configuration and domain profile for an edge device
-    to the Remote Provisioning Server (RPS) service.
-    - Add any additional CLi commands needed to allow a user to trigger device activation or device power cycling
-    for an edge node device.
-  - Test installation of the full Out-of-Band Device Management modular workflow.
-    - Confirm that the Helm chart, when run using the ArgoCD profile for the workflow, installs all required services.
-    - Confirm that all services are also installed correctly when the chart is installed using standard Helm commands
-    as part of the Track 2 installation flow outlined in the
-    [EIM Modularization document](./eim-modular-decomposition.md).
+  - Create a new ArgoCD profile to support deploying the new Helm chart, only needed for the Track 1 deployment
+  method outlined in the [EIM Modularization document](./eim-modular-decomposition.md).
+  - Extend the CI workflows to upload the new Helm chart to the release service, as well as the ArgoCD profile.
+  - Extend the Orchestrator CLI to work with the modular Out-of-Band Device Management workflow, including commands
+  for providing the CIRA configuration and domain profile for an edge device to the RPS as well as commands for
+  triggering device activation and power cycling.
+  - Test installation of the full Out-of-Band Device Management modular workflow, using installation methods for
+  both Track 1 and Track 2 use cases.
   - Provide documentation on how to install the services Helm chart.
 - Modular Edge Node Agents for Out-of-Band Device Management.
   - Identify the required agents needed for to support Out-of-Band Device Management.
   - Update the Node Agent workflow to only manage token refresh and status reporting for all agents deployed in the
   workflow.
   - Modify the Platform Manageability Agent to perform a check on the edge node for vPRO/AMT/ISM support when
-  installed.
-    - The Platform Manageability Agent should report the result of this check to the Device Mangement Manager service.
+  installed and report the result to the Device Management Manager service in the Orchestrator.
   - Update the Platform Manageability Agent workflow for cases whe it does not detect vPRO/AMT/ISM support on the
-  edge node.
-    - The agent should perform periodic checks on the edge node to see if the support status has changed.
+  edge node, the agent should perform periodic checks on the edge node to see if the support status has changed.
   - Create new installation script to deploy the required agents for the workflow onto the edge node.
     - The installation script should also create a new environment file containing any required configuration
     settings needed for the agents.
     - This includes the FQDNs for any endpoints on the orchestrator that the agents must communicated with, e.g. the
     Platform Manageability Agent will require a FQDN for the Device Management Manager endpoint it needs to connect to.
-    - The installation script should use the same flow as the current, full edge node installation script included as
-    part of the current edge node onboarding and provisioning flow.
-      - Can also modify the current installation script to allow for configuration of the agent installation based on
-      the required workflow.
     - The installation script should work as a standalone script that can be manually run by a user as well as run by
     the current onboarding and provisioning workflow in EMF.
   - Modify the installation scripts for all agents to retrieve any required configuration settings from the new
   environment file installed onto the edge node.
-  - Test installation of the edge node agents using the modular workflow installer script.
-    - Should be tested as both a manual run of the script and using the current EMF onboarding and provisioning flow.
+  - Test installation of the edge node agents using the modular workflow installer script, using installation methods
+  for both Track 1 and Track 2 use cases.
   - Provide documentation on how to install the edge node agents for Out-of-Band Device Management workflows.
-
-## Open Issues
-
-- Will the Host Resource Manager service always be deployed with the EIM services regardless of the use case?
