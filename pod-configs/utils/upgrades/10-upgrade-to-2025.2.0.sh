@@ -306,7 +306,7 @@ return 0
 }
 
 wait_for_nodegroup_ready_nodes() {
-  TARGET=$EKS_MIN_SIZE
+  TARGET=$((EKS_DESIRED_SIZE + 1))
   TIMEOUT=900      # 15 minutes = 900 seconds
   INTERVAL=15      # check every 15 seconds
   ELAPSED=0
