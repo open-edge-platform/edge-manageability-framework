@@ -250,10 +250,12 @@ fi
 echo "Applying changes for EKS module..."
 if terraform apply -target=module.eks -var-file="environments/${ENV_NAME}/variable.tfvar" -auto-approve; then
     echo " ^|^e Terraform apply for EKS module succeeded."
+    wait_for_nodegroup_ready_nodes
 else
     echo " ^}^l Terraform apply for EKS module failed!"
     exit 1
 fi
+
 
 echo "Applying changes for KMS module..."
 if terraform apply -target=module.kms -var-file="environments/${ENV_NAME}/variable.tfvar" -auto-approve; then
@@ -348,7 +350,7 @@ echo "Starting action cluster"
 action_cluster
 apply_modules
 apply_load_balancer
-wait_for_nodegroup_ready_nodes
+
 # Terminate existing sshuttle
 terminate_sshuttle
 
