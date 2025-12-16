@@ -92,9 +92,6 @@ EOF
 echo "Syncing root app"
 kubectl patch -n "$TARGET_ENV" application root-app --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
-# argo has trouble replacing this seceret so manually remove it
-echo "Deleting TLS Boots..."
-kubectl delete secret tls-boots -n orch-boots
 
 # force vault to reload
 echo "Deleting Vault..."
@@ -114,3 +111,13 @@ kubectl patch -n "$TARGET_ENV" application root-app --patch-file /tmp/argo-cd/sy
 echo "Deleting and Syncing for Cluster Templates"
 restart_and_wait_pod "orch-cluster" "cluster-manager"
 restart_and_wait_pod "orch-cluster" "cluster-manager-template-controller"
+
+echo "Sleep for 10 minutes to allow all apps to sync and come up"
+sleep 600
+
+# Delete infra-external vault related jobs
+kubectl delete jobs -n orch-infra --field-selector status.successful=1
+
+# argo has trouble replacing this seceret so manually remove it
+echo "Deleting TLS Boots..."
+kubectl delete secret tls-boots -n orch-boots
