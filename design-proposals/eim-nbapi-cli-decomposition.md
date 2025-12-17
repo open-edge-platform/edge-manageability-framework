@@ -46,9 +46,9 @@ The following questions must be answered and investigated:
 
 Currently planned decomposition tasks is focused on the EIM layer. The following is the list of deployment scenarios:
 
-**Full EMF** - Full EMF including all existing levels of APIs.
-**EIM Only** - EIM installed on its own, includes only the existing EIM APIs.
-**EIM vPRO Only** - EIM installed on its own, including only the EIM APIs required to support vPRO use cases.
+- **Full EMF** - Full EMF including all existing levels of APIs.
+- **EIM Only** - EIM installed on its own, includes only the existing EIM APIs.
+- **EIM vPRO Only** - EIM installed on its own, including only the EIM APIs required to support vPRO use cases.
 
 ### About EIM API (apiv2)
 
