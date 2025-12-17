@@ -118,6 +118,7 @@ The following are the investigated options to decomposing or exposing subsets of
 - Other approach to manipulate how a flavour of OpenAPIs spec can be generated from main spec, or how the API service can be build conditionally using same spec.
 
 ### Proposal: Decomposing the release of API service as a module
+
 This section describes how the apiv2 (NB API) service will be built, packaged, and released, enabling scenario-specific variants:
 
 - The build of the API service itself will depend on the results of "top-to-bottom" and "bottom-to-top" decomposition investigations.
@@ -125,7 +126,7 @@ This section describes how the apiv2 (NB API) service will be built, packaged, a
 - `buf generate` will use only the proto files per services related to the scenario.
 - Separate container images will be built per scenario, each supporting only the required API subset and versioned accordingly:
   - `apiv2-full:x.x.x` (full EIM with all APIs)
-  - `apiv2-eim-vPRO:x.x.x` (EIM only for vPRO)
+  - `apiv2-eim-vpro:x.x.x` (EIM only for vPRO)
 - Single Helm chart for all scenarios will use a specific value to use scenario specific image
 - Argo profiles can specify different scenarios (e.g., `orch-configs/profiles/minimal.yaml` sets `eimScenario: eim-vPRO` set in deployment configuration)
 
@@ -142,14 +143,12 @@ This section describes how the apiv2 (NB API) service will be built, packaged, a
 - ✅ Only compiles and includes needed services per scenario (smaller images)
 - ✅ Explicit APIs subset per image
 - ✅ Clear separation between scenarios
-- ✅ Better security (reduced attack surface — unused code doesn't exist)
+- ✅ Better security (unused code doesn't exist)
 - ✅ Single Helm chart to maintain
 - ✅ Image selection in Helm chart controlled by value that includes scenario name
-- ✅ Easy to switch scenarios by changing one Helm chart value
 
 **Cons:**
 - Multiple images to build and maintain in CI/CD
-- More storage in container registry
 - Need to rebuild all images for common code changes
 
 ### Proposal: How to Build the EIM API Service per Scenario
@@ -164,16 +163,16 @@ Split the monolithic `services.proto` file into multiple folders/files per servi
 api/proto/services/
 ├── onboarding/
 │   └── v1/
-│       └── onboarding_service.proto
+│       └── service1.proto
 ├── provisioning/
 │   └── v1/
-│       └── provisioning_service.proto
+│       └── service2.proto
 ├── maintenance/
 │   └── v1/
-│       └── maintenance_service.proto
+│       └── service3.proto
 └── telemetry/
     └── v1/
-        └── telemetry_service.proto
+        └── service4.proto
 ```
 
 #### Define Scenario Manifests
@@ -203,9 +202,7 @@ services:
 **Why manifest files:**
 - Makefile-driven builds read the manifest to determine which services to compile
 - Version controlled in git repository
-- No runtime database dependencies
-- Each scenario gets its own container image
-- Clear, declarative configuration
+- No database dependencies
 
 #### Modify Build Process
 
@@ -231,7 +228,7 @@ The best approach would be for the EMF to provide a service that communicates wh
 4. **Command Validation**: Before executing commands, the CLI checks the cached configuration and executes only the commands supported by the currently deployed scenario.
 5. **Error Handling**: 
    - For CLI commands: Display user-friendly error message
-   - For direct curl calls: API returns HTTP 404 or 501 with descriptive message
+   - For direct curl calls: API returns HTTP 404 (endpoint not found) or 501 (HTTP method not implemented)
 
 ```
 CLI Login Command Flow:
@@ -269,27 +266,18 @@ CLI Login Command Flow:
 
 ### 1. Traefik Gateway Compatibility
 
-**Status**: Traefik gateway will be removed for all workflows. User API calls will access EIM internal enpoints directly.
+- Traefik gateway will be removed for all workflows. User API calls will access EIM internal enpoints directly.
+- Investigate the impact
 
-**Action Items**:
- - Investigate the impact
+### 2. Data Model Changes
 
-### 2. Data Model and API Compatibility
-
-**Action Items**:
-- Ensure APIs support specific use cases while maintaining compatibility with other workflows
-- Review and potentially modify data models to accommodate multiple scenarios
-- **Example**: Instance creation requires OS profile for general use case, but this may not be true for self-installed OSes/Edge Nodes
-- Collaborate with teams/ADR owners to establish:
-  - Required changes at Resource Manager level
+- Collaborate with teams/ADR owners to establish (per scenario):
+  - Required changes at Resource Managers level
   - Required changes at Inventory level  
   - Impact on APIs from these changes
 
-**Timeline**: Investigation required once the set of services is known per each scenario
-
 ### 3. Scenario Definition and API Mapping
 
-**Action Items**:
 - Define all supported scenarios (e.g., full EMF, EIM only, EIM only vPRO)
 - For each scenario, document:
   - Required services (which resource managers are needed)
@@ -297,29 +285,28 @@ CLI Login Command Flow:
   - Data model variations (if any)
   - Deployment configuration (Helm values, profiles)
 
-**Status**: Investigation in progress
-
 ## Summary of Current Requirements
-- Provide scenario-based API exposure for EIM (full and subsets).
+- Provide scenario-based EIM API sets (full and subsets).
+- Preserve APIs compatibility with Inventory.
 - Deliver per-scenario OpenAPI specs and container images.
-- Error handling for missing APIs per scenario.
 - Maintain single source of truth for API definitions with automated generation of scenario specific API specs.
 - Keep CLI operable against any scenario via discovery, caching, and command validation.
-- Preserve compatibility with Inventory.
-- Support Helm-driven configuration (image/tag, scenario selection). (to be confirmed)
-- Support API selection per scenario through Mage/ArgoCD. (to be confirmed)
+- Provide error handling for missing APIs per scenario.
+- Support Helm-driven configuration (image/tag, scenario selection).
+- Support API selection per scenario through Mage/ArgoCD.
 
 ## Rationale
+
 The approach aims to narrow the operational APIs surface to the specific scenarios being targeted, while ensuring the full EMF remains available for deployments. The proposed solution to APIs decomposition enables incremental decomposition that can be adopted progressively without breaking existing integrations or workflows.
 
 ## Investigation Needed
 
 The following investigation tasks will drive validation of the decomposition approach:
 
-- Validate feasibility of splitting services.proto and generating per-scenario specs via buf/protoc-gen-connect-openapi.
-- Evaluate Inventory data model variations and conditional field requirements per scenario.
-- Confirm deployment pipeline changes (mage targets) and ArgoCD app configs integration.
-- Measure impact on gRPC gateway generation and handler registration per scenario.
+1. Validate feasibility of splitting services.proto and generating per-scenario specs via buf/protoc-gen-connect-openapi.
+2. Evaluate Inventory data model variations per scenario.
+3. Verify impact of **1** and **2** on gRPC gateway generation and handler registration per scenario (buf code generation).
+4. Validate Argo CD application configs or Mage targets for scenario-specific deployments.
 
 ## Implementation Plan for Orch CLI
 
@@ -333,7 +320,7 @@ The following investigation tasks will drive validation of the decomposition app
 ## Implementation Plan for EIM API
 
 1. Restructure Proto Files
-   - Split monolithic `services.proto` into service-scoped folders (onboarding, provisioning, maintenance, telemetry)
+   - Split monolithic `services.proto` into service-scoped folders (e.g.: onboarding, provisioning, maintenance, telemetry)
    - Each service in its own directory: `api/proto/services/<service>/v1/<service>.proto`
 
 2. Create Scenario Manifests
@@ -350,12 +337,9 @@ The following investigation tasks will drive validation of the decomposition app
    - Use single, common Helm chart for all scenarios
    - Add  a new value to select which scenario image to deploy (e.g.: `image.tag`)
 
-5. ArgoCD Integration (to be confirmed)
-   - Update ArgoCD application templates to use scenario-based image tags
-   - Add `argo.eimScenario` value to cluster configs 
-   - Profiles specify which scenario to deploy (e.g., minimal profile uses `eim-minimal`)
+5. ArgoCD Integration
 
-6. CI/CD Pipeline (to be confirmed)
+6. CI/CD Pipeline
    - Build all scenario images in CI
    - Tag with both scenario name and version
    - Push all images to registry
@@ -364,20 +348,16 @@ The following investigation tasks will drive validation of the decomposition app
 
 Tests will verify that minimal and full deployments work as expected, that clients can discover supported features, and that errors are clear. 
 
-- CLI integration: can disover supported service services; absence returns 404/501 with descriptive messages.
+- CLI integration: CLI can discover supported services; absence returns 404/501 with descriptive messages.
 - CLI E2E: Login discovery, caching, command blocking, error messaging.
 - Deployment E2E: Deploy each scenario via mage and verify that expected endpoints exist and work.
 - Regression: Verify the full EMF scenario behaves identically to pre-decomposition.
 
 ## Open Issues
+
 - Post-Traefik gateway removal and impacts.
-- What happens when the service does not exist and CLI expects it to exist?).
+- What happens when the service does not exist and CLI expects it to exist?.
 - Detailed scenario definitions on the Inventory level - NB APIs should be alligned with the Inventory resource availability in each scenario.
 - Managing apiv2 image version used by infra-core argo application - deployment level.
-- Scenario deployment through argocd/mage - is it in the scope of this ADR?
+- Scenario deployment through argocd/mage
 - What will be the Image naming convention (per scenario)? (example: `apiv2-<scenario>:<version>` or `apiv2:<scenario>-<version>`)
-
-## Uncertainties
-
-- How does potential removal of the API gateway affect the exposure of APIs to the client? (In relation to ADR: https://jira.devtools.intel.com/browse/ITEP-79422)
-- Which approach to exposing the set of operational EMF services/features is accepted (In relation to ADR: https://github.com/open-edge-platform/edge-manageability-framework/pull/1106)
