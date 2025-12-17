@@ -348,7 +348,7 @@ The following investigation tasks will drive validation of the decomposition app
 
 Tests will verify that minimal and full deployments work as expected, that clients can discover supported features, and that errors are clear. 
 
-- CLI integration: CLI can discover supported services; absence returns 404/501 with descriptive messages.
+- CLI integration: CLI can discover supported services; absence returns descriptive messages.
 - CLI E2E: Login discovery, caching, command blocking, error messaging.
 - Deployment E2E: Deploy each scenario via mage and verify that expected endpoints exist and work.
 - Regression: Verify the full EMF scenario behaves identically to pre-decomposition.
