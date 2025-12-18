@@ -24,19 +24,22 @@ on:
   # Trigger workflow when enqueued to a merge group
   merge_group:
 
-# Only run at most 1 workflow concurrently per PR, unlimited for branches
+# For PRs → use the PR number as the group (forces only 1 run active)
+# For branches → use the full ref (unique per branch) so runs don't cancel each other
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.sha }}
+  group: ${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-permissions: {}
+permissions:
+  contents: read
+  checks: read
 
 jobs:
   pre-merge:
     if: github.event_name == 'pull_request'
     permissions:
       contents: read
-    uses: open-edge-platform/orch-ci/.github/workflows/pre-merge.yml@c4b86434962d13f65fd7b16a33e9eecfd5849a64  # 0.1.56
+    uses: open-edge-platform/orch-ci/.github/workflows/pre-merge.yml@79c4381f9be567527d8782094317b0282493e45a  # 0.1.66
     with:
       run_version_check: false
       run_build: false
@@ -143,6 +146,7 @@ jobs:
           persist-credentials: false
 
       - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684  # v4.2.3
+        if: github.event_name != 'merge_group'
         with:
           path: |
             ~/.cache/go-build
@@ -348,6 +352,7 @@ jobs:
           ref:  ${{ github.event.pull_request.head.sha }}
 
       - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684  # v4.2.3
+        if: github.event_name != 'merge_group'
         with:
           path: |
             ~/.cache/go-build
@@ -889,14 +894,12 @@ jobs:
       security-events: write
       id-token: write
     if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
-    uses: open-edge-platform/orch-ci/.github/workflows/post-merge.yml@c4b86434962d13f65fd7b16a33e9eecfd5849a64  # 0.1.56
+    uses: open-edge-platform/orch-ci/.github/workflows/post-merge.yml@592eafb7c84669729eb1adc610515bad61c3550b  # 0.1.67
     with:
       run_build: false
       run_version_tag: false
     secrets:
       SYS_ORCH_GITHUB: ${{ secrets.SYS_ORCH_GITHUB }}
-      COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
-      COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
       NO_AUTH_ECR_PUSH_USERNAME: ${{ secrets.NO_AUTH_ECR_PUSH_USERNAME }}
       NO_AUTH_ECR_PUSH_PASSWD: ${{ secrets.NO_AUTH_ECR_PUSH_PASSWD }}
       MSTEAMS_WEBHOOK: ${{ secrets.TEAMS_WEBHOOK }}
