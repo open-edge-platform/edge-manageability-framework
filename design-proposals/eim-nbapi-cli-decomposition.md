@@ -84,11 +84,14 @@ Currently, apiv2 (infra-core repository) holds the definition of REST API servic
 (.proto) and uses protoc-gen-connect-openapi to autogenerate the OpenAPI spec - openapi.yaml.
 
 The input to protoc-gen-connect-openapi comes from:
-- `api/proto/services` directory - one file (services.proto) containing API operations on all the available resources (Service Layer)
-- `api/proto/resources` directory - multiple files with data models - separate file with data model per single inventory resource
+
+- `api/proto/services` directory - one file (services.proto) containing API operations on
+all the available resources (Service Layer)
+- `api/proto/resources` directory - multiple files with data models - separate file with data
+model per single inventory resource
 
 Protoc-gen-connect-openapi is the tool that is indirectly used to build the openapi spec.
-It is configured as a plugin within buf (buf.gen.yaml). 
+It is configured as a plugin within buf (buf.gen.yaml).
 
 #### About Buf
 
@@ -144,7 +147,7 @@ that only a subset of available APIs may need to be released and/or exposed at t
 
 The following are the investigated options to decomposing or exposing subsets of APIs.
 
-- ~~API Gateway that would only expose certain endpoints to user~~ - this is a no go for us as we plan 
+- ~~API Gateway that would only expose certain endpoints to user~~ - this is a no go for us as we plan.
 to remove the existing API Gateway and it does not actually solve the problem of releasing only specific flavours of EMF.
 - Maintain multiple OpenAPI specification - while possible to create multiple OpenAPI specs,
 the maintenance of same APIs across specs will be a large burden - still let's keep this option in consideration in
@@ -282,11 +285,12 @@ gRPC gateway code, and handlers for those APIs. An image will be built per scena
 
 The best approach would be for the EMF to provide a service that communicates which endpoints/APIs are
 currently supported by the deployed API service.
-Proposed in ADR https://github.com/open-edge-platform/edge-manageability-framework/pull/1106 .
-Development of such service is outside of this ADR's scope. 
+Proposed in [Design Proposal: Orchestrator Component Status Service](https://github.com/open-edge-platform/edge-manageability-framework/blob/main/design-proposals/platform-component-status-service.md).
+Development of such service is outside of this ADR's scope.
 
-**CLI Workflow:**
-1. **Build**: CLI is built based on the full REST API spec (generated with `SCENARIO=eim-full`).
+#### CLI Workflow
+
+1. **Build**: CLI is built based on the full REST API spec.
 2. **Capability Discovery on Login**: The CLI queries the new capabilities service endpoint, upon user login,
 to request API capability information.
 3. **Configuration Caching**: The CLI saves the supported API configuration locally.
@@ -296,10 +300,9 @@ only the commands supported by the currently deployed scenario.
    - For CLI commands: Display user-friendly error message.
    - For direct curl calls: API returns HTTP 404 (endpoint not found) or 501 (HTTP method not implemented).
 
-**CLI Login Command Flow**
+#### CLI Login Command Flow
 
 ```bash
-
    ┌─────────────────┐
    │ User runs       │
    │ orch-cli login  │
@@ -336,21 +339,22 @@ only the commands supported by the currently deployed scenario.
 - Traefik gateway will be removed for all workflows. User API calls will access EIM internal enpoints directly.
 - Investigate the impact
 
-### 2. Data Model Changes
+### 2. Scenario Definition and API Mapping
+
+- Define all supported scenarios:
+   - Full EMF
+   - EIM-only
+   - EIM-only vPRO
+- For each scenario, document:
+   - Required services (which resource managers are needed)
+   - Required API endpoints (which operations are exposed)
+   - Deployment configuration (Helm values, profiles)
+
+### 3. Data Model Changes
 
 - Collaborate with teams/ADR owners to establish (per scenario):
-  - Required changes at Resource Managers level
-  - Required changes at Inventory level  
-  - Impact on APIs from these changes
-
-### 3. Scenario Definition and API Mapping
-
-- Define all supported scenarios (e.g., full EMF, EIM only, EIM only vPRO)
-- For each scenario, document:
-  - Required services (which resource managers are needed)
-  - Required API endpoints (which operations are exposed)
-  - Data model variations (if any)
-  - Deployment configuration (Helm values, profiles)
+   - Required changes at Inventory level  
+   - Impact on APIs from these changes (changes in data models)
 
 ## Summary of Current Requirements
 
@@ -419,7 +423,7 @@ The following investigation tasks will drive validation of the decomposition app
 ## Test plan
 
 Tests will verify that minimal and full deployments work as expected, that clients can discover
-supported features, and that errors are clear. 
+supported features, and that errors are clear.
 
 - CLI integration: CLI can discover supported services; absence returns descriptive messages.
 - CLI E2E: Login discovery, caching, command blocking, error messaging.
