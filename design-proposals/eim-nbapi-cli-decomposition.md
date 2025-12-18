@@ -2,7 +2,7 @@
 
 Author(s) Edge Infrastructure Manager Team
 
-Last updated: 17/12/25
+Last updated: 18/12/25
 
 ## Abstract
 
@@ -350,8 +350,8 @@ only the commands supported by the currently deployed scenario.
 ### 3. Data Model Changes
 
 - Collaborate with teams/ADR owners to establish (per scenario):
-   - Required changes at Inventory level  
-   - Impact on APIs from these changes (changes in data models)
+  - Required changes at Inventory level  
+  - Impact on APIs from these changes (changes in data models)
 
 ## Summary of Current Requirements
 
