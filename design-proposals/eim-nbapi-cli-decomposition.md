@@ -69,13 +69,14 @@ In Edge Infratructure Manager (EIM) the apiv2 service represents the North Bound
 the EIM operations to the end user, who uses Web UI, Orch-CLI or direct API calls. Currently,
 the end user is not allowed to call the EIM APIs directly. The API calls reach first the API gateway, external
 to EIM (Traefik gateway), thay are mapped to EIM internal API endpoints and passed to EIM.
+
 **Note**: The current mapping of external APIs to internal APIs is 1:1, with no direct mapping to SB APIs.
 The API service communicates with Inventory via gRPC, which then manages the SB API interactions.
 
 **Apiv2** is just one of EIM Resource Managers that talk to one EIM internal component - the Inventory - over gRPC.
 Similar to other RMs, it updates status of the Inventory resources and retrieves their status allowing user
 performing operations on the EIM resources for manipulating Edge Nodes.
-In EMF 2025.2 the apiv2 service is deployed via a helm chart deployed by Argo CD as one of its applications.
+In EMF 2025.2, the apiv2 service is deployed via a helm chart deployed by Argo CD as one of its applications.
 The apiv2 service is run and deployed in a container kick-started from the apiv2 service container image.
 
 #### How NB API is Currently Built
@@ -86,9 +87,9 @@ Currently, apiv2 (infra-core repository) holds the definition of REST API servic
 The input to protoc-gen-connect-openapi comes from:
 
 - `api/proto/services` directory - one file (services.proto) containing API operations on
-all the available resources (Service Layer)
+all the available resources (Service Layer).
 - `api/proto/resources` directory - multiple files with data models - separate file with data
-model per single inventory resource
+model per single inventory resource.
 
 Protoc-gen-connect-openapi is the tool that is indirectly used to build the openapi spec.
 It is configured as a plugin within buf (buf.gen.yaml).
@@ -99,7 +100,7 @@ Buf is a replacement for protoc (the standard Protocol Buffers compiler). It mak
 .proto files easier as it replaces messy protoc commands with clean config file.
 It is a all-in-one tool as it provides compiling, linting, breaking change detection, and dependency management.
 
-In infra-core/apiv2, "buf generate" command is executed within the **make generate** or
+In infra-core/apiv2, **buf generate** command is executed within the **make generate** or
 **make buf-gen** target to generate the OpenAPI 3.0 spec directly from .proto files in api/proto/ directory.
 
 Protoc-gen-connect-openapi plugin takes as an input one full openapi spec that includes all services
@@ -219,7 +220,7 @@ while preserving compatibility across scenarios.
 Split the monolithic `services.proto` file into multiple folders/files per service:
 
 ```bash
-   api/proto/services/
+   infra-core/apiv2/api/proto/services/
    ├── onboarding/
    │   └── v1/
    │       └── service1.proto
@@ -237,7 +238,7 @@ Split the monolithic `services.proto` file into multiple folders/files per servi
 #### Define Scenario Manifests
 
 Maintain scenario manifests that list the REST API services supported by each scenario.
-Scenario manifest files will be kept in repository. The following are the examples of the manifests:
+Scenario manifest files will be kept in `infra-core/apiv2`. The following are the examples of the manifests:
 
 ```yaml
    # scenarios/eim-only.yaml
@@ -259,14 +260,14 @@ Scenario manifest files will be kept in repository. The following are the exampl
 
 **Why manifest files:**
 
-- Makefile-driven builds read the manifest to determine which services to compile
-- Version controlled in git repository
-- No database dependencies
+- Makefile-driven builds read the manifest to determine which services to compile.
+- Version controlled in git repository.
+- No database dependencies.
 
 #### Modify Build Process
 
 Modify **buf-gen** make target to read the manifests and build the openapi spec as per scenario manifest.
-Example of "buf generate" command to generate code supporting onboarding and provisioning services:
+Example of **buf generate** command to generate code supporting onboarding and provisioning services:
 
 ```bash
    buf generate api/proto/services/onboarding/v1 api/proto/services/provisioning/v1
@@ -422,17 +423,17 @@ The following investigation tasks will drive validation of the decomposition app
 Tests will verify that minimal and full deployments work as expected, that clients can discover
 supported features, and that errors are clear.
 
-- CLI integration: CLI can discover supported services; absence returns descriptive messages.
+- CLI integration with new service: CLI can discover supported services; absence returns descriptive messages.
 - CLI E2E: Login discovery, caching, command blocking, error messaging.
 - Deployment E2E: Deploy each scenario via mage and verify that expected endpoints exist and work.
 - Regression: Verify the full EMF scenario behaves identically to pre-decomposition.
 
 ## Open Issues
 
-- Post-Traefik gateway removal and impacts.
+- Traefik gateway removal and impacts.
 - What happens when the service does not exist and CLI expects it to exist?.
 - Detailed scenario definitions on the Inventory level - NB APIs should be alligned
-with the Inventoryresource availability in each scenario.
+with the Inventory resource availability in each scenario.
 - Managing apiv2 image version used by infra-core argo application - deployment level.
 - Scenario deployment through argocd/mage
 - What will be the Image naming convention (per scenario)?
