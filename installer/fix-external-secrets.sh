@@ -118,6 +118,9 @@ sleep 600
 # Delete infra-external vault related jobs
 kubectl delete jobs -n orch-infra --field-selector status.successful=1
 
+# delete ns-label related jobs
+kubectl delete jobs -n ns-label --field-selector status.successful=1
+
 # argo has trouble replacing this seceret so manually remove it
 echo "Deleting TLS Boots..."
 kubectl delete secret tls-boots -n orch-boots
