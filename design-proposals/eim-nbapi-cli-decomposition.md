@@ -105,7 +105,7 @@ In infra-core/apiv2, "buf generate" command is executed within the **make genera
 Protoc-gen-connect-openapi plugin takes as an input one full openapi spec that includes all services
 (services.proto) and outputs the openapi spec in api/openapi.
 
-**Key Items:**
+Key Items:
 
 - Input: api/proto/**/*.proto
 - Config: buf.gen.yaml, buf.work.yaml, buf.yaml
@@ -182,9 +182,7 @@ the required API subset and versioned accordingly:
 - Argo profiles can specify different scenarios (e.g., `orch-configs/profiles/eim-only-vpro.yaml`
 sets `eimScenario: eim-only-vpro` set in deployment configuration)
 
-**Recommended Release Approach:**
-
-- Build and release multiple apiv2 container images - one per scenario.
+**Recommended Release Approach:** Build and release multiple apiv2 container images - one per scenario.
 Single Helm chart for all scenarios will use a specific value to use scenario specific image.
 
 **Justification:**
@@ -239,25 +237,24 @@ Split the monolithic `services.proto` file into multiple folders/files per servi
 #### Define Scenario Manifests
 
 Maintain scenario manifests that list the REST API services supported by each scenario.
-
-**Recommended Approach:** Scenario manifest files in repository
+Scenario manifest files will be kept in repository. The following are the examples of the manifests:
 
 ```yaml
-   # scenarios/eim-minimal.yaml
-   name: eim-minimal
-   description: Minimal EIM for onboarding and provisioning only
+   # scenarios/eim-only.yaml
+   name: eim-only
+   description: Only EIM
    services:
    - onboarding
    - provisioning
-
-   # scenarios/eim-full.yaml
-   name: eim-full
-   description: Full EIM with all capabilities
-   services:
-   - onboarding
    - provisioning
    - maintenance
    - telemetry
+
+   # scenarios/eim-vpro-only.yaml
+   name: eim-vpro
+   description: EIM vPRO Only
+   services:
+   - onboarding
 ```
 
 **Why manifest files:**
@@ -342,13 +339,13 @@ only the commands supported by the currently deployed scenario.
 ### 2. Scenario Definition and API Mapping
 
 - Define all supported scenarios:
-   - Full EMF
-   - EIM-only
-   - EIM-only vPRO
+  - Full EMF
+  - EIM-only
+  - EIM-only vPRO
 - For each scenario, document:
-   - Required services (which resource managers are needed)
-   - Required API endpoints (which operations are exposed)
-   - Deployment configuration (Helm values, profiles)
+  - Required services (which resource managers are needed)
+  - Required API endpoints (which operations are exposed)
+  - Deployment configuration (Helm values, profiles)
 
 ### 3. Data Model Changes
 
