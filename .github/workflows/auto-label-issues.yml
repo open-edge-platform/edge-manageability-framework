@@ -1,0 +1,96 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+
+name: Auto Label on Issue Events
+
+on:
+  workflow_dispatch:
+  issues:
+    types: [assigned, closed]
+
+permissions: {}
+
+jobs:
+  label-on-close:
+    if: github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Add 'Closed' label when issue is closed
+        uses: actions/github-script@v8
+        with:
+          script: |
+            await github.rest.issues.addLabels({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: ['Closed']
+            });
+
+      - name: Remove 'triage', 'investigating', and 'in progress' labels if present (on close)
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const labelsToRemove = ['triage', 'investigating', 'in progress'];
+            const { data: currentLabels } = await github.rest.issues.listLabelsOnIssue({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            for (const l of currentLabels) {
+              if (labelsToRemove.includes(l.name)) {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  name: l.name,
+                });
+              }
+            }
+
+  label-on-assigned:
+    if: github.event.action == 'assigned'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Add 'investigating' label when issue is assigned
+        uses: actions/github-script@v8
+        with:
+          script: |
+            // Add the 'investigating' label if not already present
+            const current = (await github.rest.issues.listLabelsOnIssue({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            })).data.map(l => l.name);
+            if (!current.includes('investigating')) {
+              await github.rest.issues.addLabels({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                labels: ['investigating']
+              });
+            }
+
+      - name: Remove 'triage' label if present (on assign)
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const labels = (await github.rest.issues.listLabelsOnIssue({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            })).data.map(label => label.name);
+            if (labels.includes('triage')) {
+              await github.rest.issues.removeLabel({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: 'triage'
+              });
+            }

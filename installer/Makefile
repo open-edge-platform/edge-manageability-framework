@@ -36,7 +36,7 @@ TARGET_ENV     ?= ${CLUSTER_NAME}
 
 ARGO_IP   ?= 127.0.0.1
 ARGO_PORT ?= 32443
-ARGO_VERSION ?= 8.0.0
+ARGO_VERSION ?= 8.2.7
 
 USE_TEST_ADMIN ?= false
 
@@ -141,6 +141,7 @@ upgrade: | ${M}/release-secrets ${M}/argocd-ready
 	fi
 	@[ -z "${TARGET_ENV}" ] && echo "*** TARGET_ENV not set" && exit 1 || true
 	helm upgrade --install root-app ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/argocd/root-app -n ${TARGET_ENV} -f ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/orch-configs/clusters/${TARGET_ENV}.yaml --create-namespace
+	./fix-external-secrets.sh
 
 clean: ## Remove the milestones directory
 	rm -rf ${M}

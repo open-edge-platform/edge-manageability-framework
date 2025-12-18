@@ -319,7 +319,7 @@ variable "smtp_pass" {
 variable "smtp_url" {
   description = "SMTP server address"
   type        = string
-  default     = "r01s32-r01.igk.intel.com"
+  default     = ""
 }
 
 variable "smtp_port" {
@@ -417,4 +417,5 @@ variable "eks_cluster_dns_ip" {
   default = ""
   description = "IP address of the DNS server for the cluster, leave empty to use the default DNS server"
 }
+
 
