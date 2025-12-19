@@ -8,7 +8,7 @@ go 1.24.9
 
 require (
 	github.com/Nerzal/gocloak/v13 v13.9.0
-	github.com/aws/aws-sdk-go-v2 v1.36.2
+	github.com/aws/aws-sdk-go-v2 v1.36.6
 	github.com/aws/aws-sdk-go-v2/config v1.28.11
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.34.19
 	github.com/bitfield/script v0.24.1
@@ -37,8 +37,8 @@ require (
 	golang.org/x/sync v0.18.0
 	google.golang.org/grpc v1.72.3
 	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/apimachinery v0.32.10
-	k8s.io/client-go v0.32.10
+	k8s.io/apimachinery v0.32.11
+	k8s.io/client-go v0.32.11
 	oras.land/oras-go/v2 v2.5.0
 	sigs.k8s.io/controller-runtime v0.20.4
 )
@@ -59,7 +59,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.24.9 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.28.8 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.33.7 // indirect
-	github.com/aws/smithy-go v1.22.2 // indirect
+	github.com/aws/smithy-go v1.22.4 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/containerd/log v0.1.0 // indirect
@@ -145,7 +145,7 @@ require (
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	k8s.io/api v0.32.10 // indirect
+	k8s.io/api v0.32.11 // indirect
 	k8s.io/apiextensions-apiserver v0.32.1 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20250318190949-c8a335a9a2ff // indirect
