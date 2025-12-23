@@ -64,6 +64,8 @@ API and Inventory interactions.
 
 ![vPRO decomp](./images/eim-api-decomp-vpro-only.png)
 
+_NOTE:_ Not all relationships between CLI/API/Inventory are shown in diagram above for the sake of keeping it readable. I.e assume that anything to do with listing/getting/deleting a host is in place and the relevant path/APIs/fields in inventory are used.
+
 ## EIM API modularity
 
 The EIM APIv2 modularity will be achieved by breaking up the current monolithic service.proto file into multiple services grouped thematically based on functionality. Once the modular services are in place the can be used together in combination to make up API sets tailored for a given workflow.
