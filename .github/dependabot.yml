@@ -15,11 +15,11 @@ updates:
           - "version-update:semver-major"
           - "version-update:semver-minor"
     schedule:
-      interval: "monthly"
+      interval: daily
+    open-pull-requests-limit: 5
     commit-message:
       prefix: "Go modules"
     reviewers:
-      - "se-chris-thach"
       - "dmytroye"
 
   # Enable version updates for Terraform
@@ -47,7 +47,6 @@ updates:
     commit-message:
       prefix: "terraform"
     reviewers:
-      - "se-chris-thach"
       - "dmytroye"
 
   # Enable version updates for Helm
@@ -64,11 +63,11 @@ updates:
           - "version-update:semver-major"
           - "version-update:semver-minor"
     schedule:
-      interval: "monthly"
+      interval: daily
+    open-pull-requests-limit: 5
     commit-message:
       prefix: "Helm"
     reviewers:
-      - "se-chris-thach"
       - "dmytroye"
 
   # Enable version updates for Docker
@@ -82,11 +81,11 @@ updates:
           - "version-update:semver-major"
           - "version-update:semver-minor"
     schedule:
-      interval: "monthly"
+      interval: daily
+    open-pull-requests-limit: 5
     commit-message:
       prefix: "Dockerfile"
     reviewers:
-      - "se-chris-thach"
       - "dmytroye"
 
   # Enable version updates for GitHub Actions
@@ -99,9 +98,9 @@ updates:
           - "version-update:semver-major"
           - "version-update:semver-minor"
     schedule:
-      interval: "monthly"
+      interval: daily
+    open-pull-requests-limit: 5
     commit-message:
       prefix: "Github Actions"
     reviewers:
-      - "se-chris-thach"
       - "dmytroye"
