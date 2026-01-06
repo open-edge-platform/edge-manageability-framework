@@ -42,6 +42,11 @@ argo:
 
   targetServer: "https://kubernetes.default.svc"
   autosync: true
+  enabled:
+    copy-app-gitea-cred-to-fleet: ${GITEA_ENABLED}
+    copy-ca-cert-gitea-to-app: ${GITEA_ENABLED}
+    copy-ca-cert-gitea-to-cluster: ${GITEA_ENABLED}
+    copy-cluster-gitea-cred-to-fleet: ${GITEA_ENABLED}
 
   o11y:
     # If the cluster has a node dedicated to edgenode observability services
