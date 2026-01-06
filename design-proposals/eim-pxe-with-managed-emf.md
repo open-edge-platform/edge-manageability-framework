@@ -20,8 +20,9 @@ scale OS provisioning process for low-budget devices that do not support HTTPS-b
 
 Unlike the [EMT-S scale provisioning for OXMs](./emts-scale-provisioning.md), this proposal elaborates on
 scenario where the entire EMF orchestrator is NOT deployed locally, on-prem. Instead, the remote, cloud-based
-EMF orchestrator is used. In the scenario, only a small piece of EIM (called PXE server) is deployed locally to drive
-PXE boot. Given its small footprint it is possible to deploy PXE server on site using several solutions:
+EMF orchestrator is used.
+In the scenario, only a small piece of EIM (called PXE server) is deployed locally to drive PXE boot.
+Given its small footprint it is possible to deploy PXE server on site using several solutions:
 
 - directly on bare metal server, as Docker container or on a VM, via installation script
 - on an edge K8s cluster deployed as EMF's Deployment Package
