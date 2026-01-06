@@ -1157,7 +1157,29 @@ EOF
         connect_cluster
         kubectl --kubeconfig "${KUBECONFIG}" patch storageclass gp2 -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
     fi
-
+    if [[ "$action" == "destroy" ]] ; then
+      # Check if variable is not empty
+      if [[ -n "$ENV_NAME" ]]; then
+        volumes=$(aws ec2 describe-volumes \
+          --region "$AWS_REGION" \
+          --filters "Name=tag:kubernetes.io/cluster/${ENV_NAME},Values=owned" \
+          --query 'Volumes[*].VolumeId' \
+          --output text)
+        echo "Found orphaned volumes: $volumes"
+        if [[ -n "$volumes" ]]; then
+          for vol in $volumes; do
+              echo "Deleting volume: $vol"
+              aws ec2 delete-volume --region "$AWS_REGION" --volume-id "$vol"
+          done
+        else
+          echo "No orphaned volumes found"
+        fi
+      else
+          echo "ENV_NAME is empty, skip checking orphaned volumes"
+      fi
+    else
+      echo "action is $action, skip checking orphaned volumes"
+    fi
     rm -rf $dir
 }
 
