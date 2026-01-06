@@ -185,6 +185,20 @@ mimir-distributed:
   mimir:
     # Need to set a few values to null when using IRSA
     structuredConfig:
+      # Added gRPC server keepalive and connection settings for improved reliability
+      server:
+        grpc_server_keepalive_time: 30s
+        grpc_server_keepalive_timeout: 10s
+        grpc_server_min_time_between_pings: 10s
+        grpc_server_max_connection_age: 2m
+        grpc_server_max_connection_age_grace: 10s
+        grpc_server_ping_without_stream_allowed: true
+      # Added gRPC frontend client config for message size and timeout
+      frontend:
+        grpc_client_config:
+          connect_timeout: 20s
+          max_recv_msg_size: 104857600
+          max_send_msg_size: 104857600
     {{- if and .Values.argo.o11y .Values.argo.o11y.orchestrator .Values.argo.o11y.orchestrator.mimir .Values.argo.o11y.orchestrator.mimir.structuredConfig }}
       {{- if .Values.argo.o11y.orchestrator.mimir.structuredConfig.querySchedulerMaxOutstandingRequestsPerTenant }}
       query_scheduler:
