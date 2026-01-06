@@ -35,3 +35,48 @@ output "gitea_master_password" {
   value = module.gitea.gitea_master_password
   sensitive = true
 }
+
+output "efs_file_system_id" {
+  value = module.efs.efs.id
+}
+
+output "s3_prefix" {
+  description = "The configured S3 prefix input variable (may be empty if not explicitly set)"
+  value = var.s3_prefix
+}
+
+output "s3_prefix_used" {
+  description = "The actual S3 prefix used in bucket names (either provided or randomly generated)"
+  value = module.s3.s3_prefix_used
+}
+
+output "sre_basic_auth_username" {
+  value = var.sre_basic_auth_username
+  sensitive = true
+}
+
+output "sre_basic_auth_password" {
+  value = var.sre_basic_auth_password
+  sensitive = true
+}
+
+output "sre_destination_secret_url" {
+  value = var.sre_destination_secret_url
+}
+
+output "sre_destination_ca_secret" {
+  value = var.sre_destination_ca_secret
+}
+
+output "auto_cert" {
+  value = var.auto_cert
+}
+
+output "smtp_url" {
+  value = var.smtp_url
+}
+
+output "eks_security_group_id" {
+  description = "The major security group ID for the EKS cluster"
+  value       = module.eks.eks_security_group_id
+}

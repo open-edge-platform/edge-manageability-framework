@@ -34,7 +34,7 @@ const (
 	kindOrchClusterName      = "kind" // TODO: Keep for backwards compatibility until all Mage is moved to root
 	deploymentTimeoutEnv     = "DEPLOYMENT_TIMEOUT"
 	defaultDeploymentTimeout = "1200s" // timeout must be a valid string
-	argoVersion              = "8.0.0"
+	argoVersion              = "8.2.7"
 	argoRetryCount           = 30
 	argoRetryInterval        = 30
 	giteaVersion             = "10.6.0"
@@ -916,7 +916,7 @@ func (d Deploy) VENWithFlow(ctx context.Context, flow string, serialNumber strin
 		return fmt.Errorf("failed to change directory to 'ven': %w", err)
 	}
 
-	if err := sh.RunV("git", "checkout", "pico/1.5.5"); err != nil {
+	if err := sh.RunV("git", "checkout", "pico/1.5.6"); err != nil {
 		return fmt.Errorf("failed to checkout specific commit: %w", err)
 	}
 
@@ -1022,7 +1022,7 @@ STANDALONE=0
 		ProjectApiPassword: password,
 		RamSize:            "8192",
 		NoOfCpus:           "4",
-		SdaDiskSize:        "110",
+		SdaDiskSize:        "100",
 		LibvirtDriver:      "kvm",
 		UsernameLinux:      "user",
 		PasswordLinux:      "user",

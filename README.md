@@ -1,5 +1,8 @@
 # Edge Manageability Framework
 
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/open-edge-platform/edge-manageability-framework/badge)](https://scorecard.dev/viewer/?uri=github.com/open-edge-platform/edge-manageability-framework)
+
 ## Overview
 
 Welcome to the Edge Manageability Framework, a comprehensive solution designed
@@ -45,9 +48,9 @@ distributed edges
 - [UI](https://github.com/open-edge-platform/orch-ui): The web user interface for the Edge Orchestrator, allowing the
 user to manage most of the features of the product in an intuitive, visual, manner without having to trigger a series
 of APIs individually.
-- [CLI](https://github.com/open-edge-platform/orch-cli): The command line interface for the Edge Orchestrator, allowing the
-user to manage most of the features of the product in an intuitive, text-based manner without having to trigger a series
-of APIs individually.
+- [CLI](https://github.com/open-edge-platform/orch-cli): The command line interface for the Edge Orchestrator,
+allowing the user to manage most of the features of the product in an intuitive,
+text-based manner without having to trigger a series of APIs individually.
 - [Observability](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/developer_guide/observability/index.html):
 A modular observability stack that provides visibility into the health and performance of the system, including logging,
 reporting, alerts, and SRE data from Edge Orchestrator components and Edge Nodes.

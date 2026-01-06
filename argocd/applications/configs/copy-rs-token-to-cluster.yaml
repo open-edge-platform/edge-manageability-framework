@@ -9,3 +9,5 @@ sourceSecretName: release-service-token
 keyName:
   - source: token
     target: token
+
+externalSecretsApiGroup: external-secrets.io/v1

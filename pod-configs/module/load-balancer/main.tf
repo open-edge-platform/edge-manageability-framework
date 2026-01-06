@@ -2,10 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-data "aws_vpc" "main" {
-  id = var.vpc_id
-}
-
 locals {
   subnets_with_eip = var.internal ? [] : var.subnets
   protocol_mapping = {
@@ -15,86 +11,18 @@ locals {
     "HTTP": "TCP",
     "HTTPS": "TCP"
   }
-
-  # VPC DNS resolver is always at .2 address
-  vpc_dns_resolver = format("%s/32", cidrhost(data.aws_vpc.main.cidr_block, 2))
-
-  # AWS NTP service (same across all regions)
-  aws_ntp_server = "169.254.169.123/32"
-}
-
-data "dns_a_record_set" "letsencrypt" {
-  host = "acme-v02.api.letsencrypt.org"
 }
 
 resource "aws_security_group" "common" {
   name   = "${var.cluster_name}-${var.name}-load-balancer-sg"
   vpc_id = var.vpc_id
 
-  # All TCP traffic within VPC only
-  # This covers:
-  # - EKS pods (health checks, forwarding traffic)
-  # - RDS databases (connections)
-  # - VPC endpoints (AWS API calls via existing VPC endpoints)
   egress {
     from_port   = 0
-    to_port     = 65535
-    protocol    = "tcp"
-    cidr_blocks = [data.aws_vpc.main.cidr_block]
-    description = "All TCP within VPC (EKS pods, RDS, existing VPC endpoints)"
+    to_port     = 0
+    protocol    = "-1"
+    security_groups = var.eks_security_groups
   }
-
-  # UDP traffic within VPC (DNS resolution)
-  egress {
-    from_port   = 0
-    to_port     = 65535
-    protocol    = "udp"
-    cidr_blocks = [data.aws_vpc.main.cidr_block]
-    description = "All UDP within VPC (DNS resolution)"
-  }
-
-  # DNS to VPC resolver only
-  egress {
-    from_port   = 53
-    to_port     = 53
-    protocol    = "udp"
-    cidr_blocks = [local.vpc_dns_resolver]
-    description = "DNS to VPC resolver"
-  }
-
-  # NTP to AWS time service only
-  egress {
-    from_port   = 123
-    to_port     = 123
-    protocol    = "udp"
-    cidr_blocks = [local.aws_ntp_server]
-    description = "NTP to AWS time service"
-  }
-
-  # External HTTPS for Let's Encrypt (only if auto-cert enabled)
-  dynamic "egress" {
-    for_each = var.auto_cert ? [1] : []
-    content {
-      from_port   = 443
-      to_port     = 443
-      protocol    = "tcp"
-      cidr_blocks = [for ip in data.dns_a_record_set.letsencrypt.addrs : "${ip}/32"]
-      description = "HTTPS to Let's Encrypt for ACME certificate validation"
-    }
-  }
-
-  # Custom external egress (if explicitly needed)
-  dynamic "egress" {
-    for_each = length(var.external_egress_rules) > 0 ? var.external_egress_rules : []
-    content {
-      from_port   = egress.value.from_port
-      to_port     = egress.value.to_port
-      protocol    = egress.value.protocol
-      cidr_blocks = egress.value.cidr_blocks
-      description = egress.value.description
-    }
-  }
-
   dynamic "ingress" {
     for_each = var.ports
     content {
