@@ -29,9 +29,9 @@ PXE boot. Given its small footprint it is possible to deploy PXE server on site 
 
 In this solution, the PXE server only stores the `ipxe.efi` binary (that is downloaded from the remote orchestrator),
 and serves it to local Edge Nodes attempting the PXE boot. During the PXE boot, ENs download `ipxe.efi` and boot into it.
-The iPXE script includes a logic to fetch IP address from a local DHCP server and download Micro-OS from the remote EMF
-orchestrator. Once booted into Micro-OS, the provisioning process is taken over by the cloud-based orchestrator. From
-now on, ENs
+The iPXE script includes a logic to fetch IP address from a local DHCP server and download Micro-OS
+from the remote EMF orchestrator.
+Once booted into Micro-OS, the provisioning process is taken over by the cloud-based orchestrator. From now on, ENs
 communicate with the remote EMF orchestrator to complete OS provisioning.
 The secure channel is ensured by using HTTPS communication with JWT authorization.
 
