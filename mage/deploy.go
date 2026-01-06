@@ -1574,57 +1574,61 @@ func getAWSAvailabilityZone() (string, error) {
 }
 
 func (d Deploy) orchLocal(targetEnv string) error {
-	targetConfig := getTargetConfig(targetEnv)
+	// targetConfig := getTargetConfig(targetEnv)
 
 	// Clone and update the Gitea deployment repo
 	if err := (Deploy{}).updateDeployRepo(targetEnv, deployRepoPath, deployRepoName, deployGiteaRepoDir); err != nil {
 		return fmt.Errorf("error updating deployment repo content: %w", err)
 	}
 
-	var subDomain string
-	deployRevision := giteaDeployRevisionParam()
-	orchVersion, err := getOrchestratorVersionParam()
-	if err != nil {
-		return fmt.Errorf("failed to get orchestrator version: %w", err)
-	}
+	// COMMENTED OUT TO AVOID DEPLOYING ROOT-APP
 
-	cmd := fmt.Sprintf("helm upgrade --install root-app argocd/root-app -f %s  -n %s --create-namespace %s %s"+
-		"--set root.useLocalValues=true", targetConfig, targetEnv, deployRevision, orchVersion)
+	// var subDomain string
+	// deployRevision := giteaDeployRevisionParam()
+	// orchVersion, err := getOrchestratorVersionParam()
+	// if err != nil {
+	// 	return fmt.Errorf("failed to get orchestrator version: %w", err)
+	// }
 
-	// only for coder deployments
-	targetAutoCertEnabled, _ := (Config{}).isAutoCertEnabled(targetEnv)
-	if autoCert && targetAutoCertEnabled {
-		// retrieve the subdomain name
-		subDomain = os.Getenv("ORCH_DOMAIN")
-		if subDomain == "" {
-			return fmt.Errorf("error retrieving the orchestrator domain from autocert aws lookup")
-		}
+	// cmd := fmt.Sprintf("helm upgrade --install root-app argocd/root-app -f %s  -n %s --create-namespace %s %s"+
+	// 	"--set root.useLocalValues=true", targetConfig, targetEnv, deployRevision, orchVersion)
 
-		// override the clusterDomain and self-signed-cert values
-		// setting the clusterDomain to the domain name generated with the cluster creation in the format orch-<ip>.espdqa.infra-host.com
-		// setting self-signed-cert generation to false as the cert will be issued with lets encrypt
-		cmd = cmd + " " + fmt.Sprintf("--set argo.autoCert.enabled=true --set argo.self-signed-cert.generateOrchCert=false --set argo.clusterDomain=%s", subDomain)
+	// // only for coder deployments
+	// targetAutoCertEnabled, _ := (Config{}).isAutoCertEnabled(targetEnv)
+	// if autoCert && targetAutoCertEnabled {
+	// 	// retrieve the subdomain name
+	// 	subDomain = os.Getenv("ORCH_DOMAIN")
+	// 	if subDomain == "" {
+	// 		return fmt.Errorf("error retrieving the orchestrator domain from autocert aws lookup")
+	// 	}
 
-		// Get AWS account ID
-		awsAccountID, err := script.Exec("aws sts get-caller-identity --query Account --output text").String()
-		if err != nil {
-			return fmt.Errorf("error retrieving the AWS account ID: %w", err)
-		}
-		cmd = cmd + " " + fmt.Sprintf("--set-string argo.aws.account=%s", strings.Trim(awsAccountID, "\n"))
+	// 	// override the clusterDomain and self-signed-cert values
+	// 	// setting the clusterDomain to the domain name generated with the cluster creation in the format orch-<ip>.espdqa.infra-host.com
+	// 	// setting self-signed-cert generation to false as the cert will be issued with lets encrypt
+	// 	cmd = cmd + " " + fmt.Sprintf("--set argo.autoCert.enabled=true --set argo.self-signed-cert.generateOrchCert=false --set argo.clusterDomain=%s", subDomain)
 
-		// Get AWS region of this VM
-		az, err := getAWSAvailabilityZone()
-		if err != nil || az == "" {
-			return fmt.Errorf("error retrieving the AWS AZ: %w", err)
-		}
-		region := az[:len(az)-1]
-		cmd = cmd + " " + fmt.Sprintf("--set argo.aws.region=%s", region)
-	}
-	fmt.Printf("exec: %s\n", cmd)
-	_, err = script.Exec(cmd).Stdout()
+	// 	// Get AWS account ID
+	// 	awsAccountID, err := script.Exec("aws sts get-caller-identity --query Account --output text").String()
+	// 	if err != nil {
+	// 		return fmt.Errorf("error retrieving the AWS account ID: %w", err)
+	// 	}
+	// 	cmd = cmd + " " + fmt.Sprintf("--set-string argo.aws.account=%s", strings.Trim(awsAccountID, "\n"))
 
-	if autoCert && targetAutoCertEnabled {
-		fmt.Printf("Orchestrator will be available at domain : %s\n", subDomain)
-	}
-	return err
+	// 	// Get AWS region of this VM
+	// 	az, err := getAWSAvailabilityZone()
+	// 	if err != nil || az == "" {
+	// 		return fmt.Errorf("error retrieving the AWS AZ: %w", err)
+	// 	}
+	// 	region := az[:len(az)-1]
+	// 	cmd = cmd + " " + fmt.Sprintf("--set argo.aws.region=%s", region)
+	// }
+	// fmt.Printf("exec: %s\n", cmd)
+	// _, err = script.Exec(cmd).Stdout()
+
+	// if autoCert && targetAutoCertEnabled {
+	// 	fmt.Printf("Orchestrator will be available at domain : %s\n", subDomain)
+	// }
+	// return err
+
+	return nil
 }

@@ -117,22 +117,22 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# Verify scripts exist
-if [[ ! -f "$PRE_INSTALL" ]]; then
-  echo "❌ Error: Pre-install script not found at: $PRE_INSTALL"
-  exit 1
-fi
+# # Verify scripts exist
+# if [[ ! -f "$PRE_INSTALL" ]]; then
+#   echo "❌ Error: Pre-install script not found at: $PRE_INSTALL"
+#   exit 1
+# fi
 
 if [[ ! -f "$MAIN_INSTALL" ]]; then
   echo "❌ Error: Main install script not found at: $MAIN_INSTALL"
   exit 1
 fi
 
-# Verify scripts are executable
-if [[ ! -x "$PRE_INSTALL" ]]; then
-  echo "Making pre-install executable..."
-  chmod +x "$PRE_INSTALL"
-fi
+# # Verify scripts are executable
+# if [[ ! -x "$PRE_INSTALL" ]]; then
+#   echo "Making pre-install executable..."
+#   chmod +x "$PRE_INSTALL"
+# fi
 
 if [[ ! -x "$MAIN_INSTALL" ]]; then
   echo "Making main install executable..."
@@ -145,16 +145,27 @@ echo "=========================================="
 echo
 
 # Run pre-install
-echo "📦 Step 1/2: Running Pre-Install"
-echo "Command: $PRE_INSTALL ${PRE_OPTIONS[*]}"
-echo "------------------------------------------"
-"$PRE_INSTALL" "${PRE_OPTIONS[@]}"
+# echo "📦 Step 1/2: Running Pre-Install"
+# echo "Command: $PRE_INSTALL ${PRE_OPTIONS[*]}"
+# echo "------------------------------------------"
+# "$PRE_INSTALL" "${PRE_OPTIONS[@]}"
 
-echo
-echo "✅ Pre-install completed successfully!"
-echo
-echo "=========================================="
-echo
+# echo
+# echo "✅ Pre-install completed successfully!"
+# echo
+# echo "=========================================="
+# echo
+
+echo "HOME variable is set to: $HOME"
+
+export ASDF_DIR="$HOME/.asdf"
+
+if [[ "$HOME" == "/root" ]]; then
+  echo "⚠️  Warning: HOME is set to root. It's recommended to run this installer as a non-root user with sudo privileges."
+  export ASDF_DIR="/home/ubuntu/.asdf"
+fi
+
+export PATH="$ASDF_DIR/bin:$ASDF_DIR/shims:$PATH"
 
 # Run main install
 echo "📦 Step 2/2: Running Main Install"

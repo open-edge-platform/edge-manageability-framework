@@ -51,6 +51,21 @@ func main() {
 	}
 	defer os.RemoveAll(edgeManageabilityFrameworkFolder)
 
+	// Check if kubectl is available, if not set KUBECONFIG
+	_, err = sh.Output("kubectl", "version", "--client")
+	if err != nil {
+		log.Printf("kubectl not available, setting KUBECONFIG to /home/ubuntu/.kube/config")
+		os.Setenv("KUBECONFIG", "/home/ubuntu/.kube/config")
+
+		// Check again after setting KUBECONFIG
+		_, err = sh.Output("kubectl", "version", "--client")
+		if err != nil {
+			log.Fatalf("kubectl still not available after setting KUBECONFIG - %v", err)
+		}
+	}
+	os.Setenv("KUBECONFIG", "/home/ubuntu/.kube/config")
+	log.Printf("kubectl is available")
+
 	giteaServiceURL, err := getGiteaServiceURL()
 	if err != nil {
 		log.Fatalf("failed to get Gitea service URL - %v", err)

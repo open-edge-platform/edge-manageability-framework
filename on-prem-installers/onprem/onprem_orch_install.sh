@@ -322,12 +322,14 @@ write_shared_variables() {
 ################################
 
 ### Installer
-echo "Running On Premise Edge Orchestrator installers"
+# echo "Running On Premise Edge Orchestrator installers"
 
-if [ "$(dpkg -l | grep -ci onprem-ke-installer)"  -eq 0 ]; then
-    echo "Please run pre-install script first"
-    exit 1
-fi
+# if [ "$(dpkg -l | grep -ci onprem-ke-installer)"  -eq 0 ]; then
+#     echo "Please run pre-install script first"
+#     exit 1
+# fi
+
+echo "Assume orchestrator is already installed, proceeding with configuration and deployment..."
 
 # Remove runtime variables from previous runs
 reset_runtime_variables
@@ -430,32 +432,34 @@ mv -f "$repo_file" "$cwd/$git_arch_name/$repo_file"
 cd "$cwd"
 rm -rf "$tmp_dir"
 
-if find "$cwd/$deb_dir_name" -name "onprem-gitea-installer_*_amd64.deb" -type f | grep -q .; then
-    # Run gitea installer
-    echo "Installing Gitea"
-    eval "sudo IMAGE_REGISTRY=${GITEA_IMAGE_REGISTRY} NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y $cwd/$deb_dir_name/onprem-gitea-installer_*_amd64.deb"
-    wait_for_namespace_creation $gitea_ns
-    sleep 30s
-    wait_for_pods_running $gitea_ns
-    echo "Gitea Installed"
-else
-    echo "❌ Package file NOT found: $cwd/$deb_dir_name/onprem-gitea-installer_*_amd64.deb"
-    echo "Please ensure the package file exists and the path is correct."
-    exit 1
-fi
-if find "$cwd/$deb_dir_name" -name "onprem-argocd-installer_*_amd64.deb" -type f | grep -q .; then
-    # Run argo CD installer
-    echo "Installing ArgoCD..."
-    eval "sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y $cwd/$deb_dir_name/onprem-argocd-installer_*_amd64.deb"
-    wait_for_namespace_creation $argo_cd_ns
-    sleep 30s
-    wait_for_pods_running $argo_cd_ns
-    echo "ArgoCD installed"
-else
-    echo "❌ Package file NOT found: $cwd/$deb_dir_name/onprem-argocd-installer_*_amd64.deb"
-    echo "Please ensure the package file exists and the path is correct."
-    exit 1
-fi
+echo "Assume that Gitea and ArgoCD are already installed, proceeding with Orchestrator installation..."
+
+# if find "$cwd/$deb_dir_name" -name "onprem-gitea-installer_*_amd64.deb" -type f | grep -q .; then
+#     # Run gitea installer
+#     echo "Installing Gitea"
+#     eval "sudo IMAGE_REGISTRY=${GITEA_IMAGE_REGISTRY} NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y $cwd/$deb_dir_name/onprem-gitea-installer_*_amd64.deb"
+#     wait_for_namespace_creation $gitea_ns
+#     sleep 30s
+#     wait_for_pods_running $gitea_ns
+#     echo "Gitea Installed"
+# else
+#     echo "❌ Package file NOT found: $cwd/$deb_dir_name/onprem-gitea-installer_*_amd64.deb"
+#     echo "Please ensure the package file exists and the path is correct."
+#     exit 1
+# fi
+# if find "$cwd/$deb_dir_name" -name "onprem-argocd-installer_*_amd64.deb" -type f | grep -q .; then
+#     # Run argo CD installer
+#     echo "Installing ArgoCD..."
+#     eval "sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y $cwd/$deb_dir_name/onprem-argocd-installer_*_amd64.deb"
+#     wait_for_namespace_creation $argo_cd_ns
+#     sleep 30s
+#     wait_for_pods_running $argo_cd_ns
+#     echo "ArgoCD installed"
+# else
+#     echo "❌ Package file NOT found: $cwd/$deb_dir_name/onprem-argocd-installer_*_amd64.deb"
+#     echo "Please ensure the package file exists and the path is correct."
+#     exit 1
+# fi
 
 # Create required namespaces
 create_namespaces
@@ -475,7 +479,8 @@ create_postgres_password orch-database "$postgres_password"
 if find "$cwd/$deb_dir_name" -name "onprem-orch-installer_*_amd64.deb" -type f | grep -q .; then
     # Run orchestrator installer
     echo "Installing Edge Orchestrator Packages"
-    eval "sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive ORCH_INSTALLER_PROFILE=$ORCH_INSTALLER_PROFILE GIT_REPOS=$GIT_REPOS apt-get install -y $cwd/$deb_dir_name/onprem-orch-installer_*_amd64.deb"
+    export KUBECONFIG=/home/ubuntu/.kube/config
+    eval "sudo KUBECONFIG=/home/ubuntu/.kube/config -E NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive ORCH_INSTALLER_PROFILE=$ORCH_INSTALLER_PROFILE GIT_REPOS=$GIT_REPOS apt-get install -y $cwd/$deb_dir_name/onprem-orch-installer_*_amd64.deb"
     echo "Edge Orchestrator getting installed, wait for SW to deploy... "
 else
     echo "❌ Package file NOT found: $cwd/$deb_dir_name/onprem-orch-installer_*_amd64.deb"
