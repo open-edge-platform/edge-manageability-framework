@@ -9,7 +9,6 @@ root:
   clusterValues:
     - orch-configs/profiles/enable-platform.yaml
     ${O11Y_ENABLE_PROFILE}
-    - orch-configs/profiles/enable-kyverno.yaml
     ${AO_PROFILE}
     ${CO_PROFILE}
     ${EDGEINFRA_PROFILE}
