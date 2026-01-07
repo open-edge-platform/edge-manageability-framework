@@ -49,6 +49,11 @@ spec:
         maxDuration: 3m0s
         factor: 2
     {{- end }}
+    {{- if index .Values.argo.namespaceLabels $namespace }}
+    managedNamespaceMetadata:
+      labels:
+      {{- index .Values.argo.namespaceLabels $namespace | toYaml | nindent 8 }}
+    {{- end }}
     syncOptions:
       - CreateNamespace=true
       - ApplyOutOfSyncOnly=true

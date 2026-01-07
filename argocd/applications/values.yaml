@@ -24,3 +24,30 @@ argo:
         name: rps
   traefik:
     tlsOption: "gateway-tls"
+  namespaceLabels:
+    orch-infra:
+      istio-injection: enabled
+    orch-iam:
+      istio-injection: enabled
+    orch-app:
+      istio-injection: enabled
+    orch-cluster:
+      istio-injection: enabled
+    orch-ui:
+      istio-injection: enabled
+    orch-platform:
+      istio-injection: enabled
+    orch-harbor:
+      istio-injection: enabled
+    orch-gateway:
+      istio-injection: enabled
+    orch-sre:
+      istio-injection: enabled
+    orch-database:
+      istio-injection: enabled
+    orch-boots:
+      istio-injection: enabled
+    orch-secret:
+      istio-injection: enabled
+    fleet-default:
+      app.edge-orchestrator.intel.com/fleet-rs-secret: true
