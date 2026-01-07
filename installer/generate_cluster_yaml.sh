@@ -150,11 +150,18 @@ else
     export CO_PROFILE="- orch-configs/profiles/enable-cluster-orch.yaml"
 fi
 
+if [ "${DISABLE_KYVERNO_PROFILE:-false}" = "true" ]; then
+    export KYVERNO_PROFILE="#- orch-configs/profiles/enable-kyverno.yaml"
+else
+    export KYVERNO_PROFILE="- orch-configs/profiles/enable-kyverno.yaml"
+fi
+
 if [ "${SINGLE_TENANCY_PROFILE:-false}" = "true" ]; then
     export SINGLE_TENANCY_PROFILE="- orch-configs/profiles/enable-singleTenancy.yaml"
 else
     export SINGLE_TENANCY_PROFILE="#- orch-configs/profiles/enable-singleTenancy.yaml"
 fi
+
 
 # -----------------------------------------------------------------------------
 # Explicit proxy configuration
