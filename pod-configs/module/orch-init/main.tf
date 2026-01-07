@@ -210,6 +210,7 @@ resource "kubernetes_secret" "smtp_auth" {
 }
 
 resource "kubernetes_secret" "release_service_refresh_token" {
+  count = contains(var.needed_namespaces, "orch-secret") && var.release_service_refresh_token != "" ? 1 : 0
   depends_on = [time_sleep.wait_ns]
   metadata {
     name      = "azure-ad-creds"

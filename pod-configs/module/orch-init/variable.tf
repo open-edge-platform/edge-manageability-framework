@@ -4,7 +4,7 @@
 
 variable "needed_namespaces" {
   type    = list(string)
-  default = ["orch-sre", "cattle-system", "orch-boots", "argocd", "orch-secret"]
+  default = ["orch-sre", "cattle-system", "orch-boots", "argocd"]
 }
 variable "istio_namespaces" {
   type    = list(string)
@@ -82,6 +82,7 @@ variable "auto_cert" {
 variable "release_service_refresh_token" {
   type = string
   description = "Refresh token to renew release service token"
+  default = ""
 }
 
 variable "efs_id" {

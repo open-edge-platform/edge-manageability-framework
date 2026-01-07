@@ -19,7 +19,7 @@ argo:
     copy-ca-cert-gitea-to-app: true
     copy-ca-cert-gitea-to-cluster: true
     copy-cluster-gitea-cred-to-fleet: true
-    external-secrets: true
+    external-secrets: false
     istio-base: true
     istio-policy: true
     istiod: true
@@ -44,4 +44,4 @@ argo:
     vault: true
     namespace-resource-quota: true
     k8s-metrics-server: true
-    token-fs: true
+    token-fs: false
