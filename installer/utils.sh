@@ -36,6 +36,10 @@ save_cluster_env() {
         echo BUCKET_NAME=${BUCKET_NAME} >> ${HOME}/.env
     fi
 
+    if [[ -z $BUCKET_REGION ]]; then
+        echo BUCKET_REGION=${BUCKET_REGION} >> ${HOME}/.env
+    fi
+
     if [[ -z $CLUSTER_FQDN ]]; then
         echo CLUSTER_FQDN=${CLUSTER_FQDN} >> ${HOME}/.env
     fi
@@ -278,11 +282,12 @@ load_cluster_state_env() {
     PROFILE_TFVAR="${AWS_ACCOUNT}-${ENV_NAME}-profile.tfvar"
     VALUES_CHANGED=".${AWS_ACCOUNT}-${ENV_NAME}-valueschanged"
     SAVE_DIR_S3="${ENV_NAME}-SAVEME"
+    BUCKET_REGION=${BUCKET_REGION:-$AWS_REGION}
 
     # CLUSTER_FQDN - based on S3 state or user input
     if [[ -z "$CLUSTER_FQDN" ]]; then
         # Look up FQDN from S3 if not defined.
-        export CLUSTER_FQDN=$(aws s3 cp s3://$BUCKET_NAME/$AWS_REGION/orch-route53/$CLUSTER_NAME - | jq '.resources[] | select(.name == "traetik_public") | .instances[0].attributes.fqdn' | tr -d '"' | sed 's/^traefik\.//')
+        export CLUSTER_FQDN=$(aws s3 cp --region $BUCKET_REGION s3://$BUCKET_NAME/$AWS_REGION/orch-route53/$CLUSTER_NAME - | jq '.resources[] | select(.name == "traetik_public") | .instances[0].attributes.fqdn' | tr -d '"' | sed 's/^traefik\.//')
     fi
 
     # fullchain.pem doesn't have the admin email on it and it is stored nowhere else that I can see.
@@ -375,7 +380,7 @@ init_terraform() {
     cat <<EOF > $backend
 bucket = "$state_bucket"
 key    = "${key}"
-region = "${BUCKET_REGION:-"us-west-2"}"
+region = "${BUCKET_REGION:-$AWS_REGION}"
 EOF
 
     rm -rf .terraform || true
