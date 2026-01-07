@@ -17,7 +17,7 @@ argo:
     infra-onboarding: true
     web-ui-infra: true
     web-ui: false
-    copy-keycloak-admin-to-infra: true
+    copy-keycloak-admin-to-infra: false
   infra-core:
     tenant-config:
       enabled: false

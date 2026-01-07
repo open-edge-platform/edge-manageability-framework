@@ -1,0 +1,53 @@
+{{- range $index, $rule := .Values.reflectorRules }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: reflector-setup-{{ $index }}
+  namespace: {{ $rule.sourceNamespace }}
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      serviceAccountName: reflector-setup
+      restartPolicy: OnFailure
+      containers:
+      - name: kubectl
+        image: bitnami/kubectl:latest
+        command:
+        - /bin/sh
+        - -c
+        - |
+          set -e
+          echo "Waiting for secret {{ $rule.sourceSecret }} in namespace {{ $rule.sourceNamespace }}..."
+          
+          # Wait up to 5 minutes for the secret
+          timeout=300
+          elapsed=0
+          while [ $elapsed -lt $timeout ]; do
+            if kubectl get secret {{ $rule.sourceSecret }} -n {{ $rule.sourceNamespace }} 2>/dev/null; then
+              echo "Secret found!"
+              break
+            fi
+            echo "Secret not found, waiting... ($elapsed/$timeout seconds)"
+            sleep 5
+            elapsed=$((elapsed + 5))
+          done
+          
+          if [ $elapsed -ge $timeout ]; then
+            echo "Timeout waiting for secret {{ $rule.sourceSecret }}"
+            exit 1
+          fi
+          
+          echo "Adding Reflector annotations to secret..."
+          kubectl annotate secret {{ $rule.sourceSecret }} \
+            -n {{ $rule.sourceNamespace }} \
+            reflector.v1.k8s.emberstack.com/reflection-allowed=true \
+            reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces="{{ join "," $rule.targetNamespaces }}" \
+            reflector.v1.k8s.emberstack.com/reflection-auto-enabled=true \
+            --overwrite
+          echo "Annotations added successfully to {{ $rule.sourceSecret }} in {{ $rule.sourceNamespace }}!"
+{{- end }}
