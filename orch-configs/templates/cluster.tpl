@@ -28,7 +28,9 @@ root:
 {{- if .Values.enableEdgeInfra }}
     - orch-configs/profiles/enable-edgeinfra.yaml
 {{- end }}
+{{- if .Values.enableUi }}
     - orch-configs/profiles/enable-full-ui.yaml
+{{- end }}
 {{- if .Values.enableUiDev }}
     - orch-configs/profiles/ui-dev.yaml
 {{- end }}
