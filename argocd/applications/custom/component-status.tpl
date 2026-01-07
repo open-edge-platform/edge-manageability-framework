@@ -54,4 +54,4 @@ componentStatus:
       observability:
         installed: {{ index .Values.argo.enabled "orchestrator-observability" | default false }}
       multitenancy:
-        installed: {{ index .Values.argo.enabled "tenancy-manager" | default false }}
+        installed: {{ index .Values.argo.enabled "defaultTenancy" | default false }}
