@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-{{- $appName        := "secret-reflector-setup" }}
+{{- $appName        := "reflector-setup" }}
 {{- $namespace      := "orch-secret" }}
 {{- $syncWave       := "1400" }}
 ---
@@ -26,26 +26,22 @@ spec:
       releaseName: {{$appName}}
       valuesObject:
         clusterDomain: {{ .Values.argo.clusterDomain }}
-        generateOrchCert: {{ if index .Values.argo "self-signed-cert" }}{{ index .Values.argo "self-signed-cert" "generateOrchCert" | default false }}{{ else }}false{{ end }}
+        generateOrchCert: {{ index .Values.argo "self-signed-cert" "generateOrchCert" | default false }}
         reflectorRules:
-          # Copy tls-boots to target namespaces
           - sourceNamespace: orch-boots
             sourceSecret: tls-boots
             targetNamespaces: 
               - orch-gateway
               - orch-infra
-          # Copy tls-orch from gateway to other namespaces
           - sourceNamespace: orch-gateway
             sourceSecret: tls-orch
             targetNamespaces:
               - orch-infra
               - cattle-system
-          # Copy platform-keycloak admin password
           - sourceNamespace: orch-platform
             sourceSecret: platform-keycloak
             targetNamespaces:
               - orch-infra
-          # Copy gitea credentials to fleet
           - sourceNamespace: orch-platform
             sourceSecret: gitea-app-credential
             targetNamespaces:
@@ -54,7 +50,6 @@ spec:
             sourceSecret: gitea-cluster-credential
             targetNamespaces:
               - fleet-system
-          # Copy gitea TLS certs
           - sourceNamespace: gitea
             sourceSecret: tls-gitea
             targetNamespaces:
