@@ -19,7 +19,7 @@ argo:
     copy-ca-cert-gitea-to-app: true
     copy-ca-cert-gitea-to-cluster: true
     copy-cluster-gitea-cred-to-fleet: true
-    external-secrets: false
+    external-secrets: true
     istio-base: true
     istio-policy: true
     istiod: true
