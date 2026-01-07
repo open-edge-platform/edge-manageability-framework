@@ -4,7 +4,7 @@
 
 variable "needed_namespaces" {
   type    = list(string)
-  default = ["orch-sre", "cattle-system", "orch-boots", "argocd"]
+  default = ["orch-sre", "cattle-system", "orch-boots", "argocd", "orch-secret"]
 }
 variable "istio_namespaces" {
   type    = list(string)
