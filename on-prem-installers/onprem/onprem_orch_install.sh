@@ -25,6 +25,7 @@
 #     -y, --yes             Assume 'yes' to all prompts and run non-interactively
 #     --disable-co          Disable Cluster Orchestrator profile
 #     --disable-ao          Disable Application Orchestrator profile
+#     --modular-vpro        Enable Modular VPro profile
 #     --disable-o11y        Disable Observability profile
 #     -st, --single_tenancy Enable single tenancy mode
 #     -t, --trace           Enable debug tracing
@@ -199,7 +200,7 @@ reset_runtime_variables() {
     fi
     
     # Check if line is a runtime variable
-    if [[ "$line" =~ ^export\ (SRE_TLS_ENABLED|SRE_DEST_CA_CERT|SMTP_SKIP_VERIFY|DISABLE_CO_PROFILE|DISABLE_AO_PROFILE|DISABLE_O11Y_PROFILE)= ]]; then
+    if [[ "$line" =~ ^export\ (SRE_TLS_ENABLED|SRE_DEST_CA_CERT|SMTP_SKIP_VERIFY|DISABLE_CO_PROFILE|DISABLE_AO_PROFILE|DISABLE_O11Y_PROFILE|MODULAR_PROFILE)= ]]; then
       # Check if it's multi-line (opening quote without closing quote on same line)
       if [[ "$line" =~ =[\'\"]. ]] && ! [[ "$line" =~ =[\'\"].*[\'\"][[:space:]]*$ ]]; then
         in_multiline=1
@@ -215,7 +216,7 @@ reset_runtime_variables() {
   
   # Unset variables in current shell
   unset SRE_TLS_ENABLED SRE_DEST_CA_CERT SMTP_SKIP_VERIFY
-  unset DISABLE_CO_PROFILE DISABLE_AO_PROFILE DISABLE_O11Y_PROFILE
+  unset DISABLE_CO_PROFILE DISABLE_AO_PROFILE DISABLE_O11Y_PROFILE MODULAR_PROFILE
   
   echo "Runtime variables cleaned successfully."
 }
@@ -295,6 +296,9 @@ Options:
     
     --disable-o11y             Disable Observability (O11y) profile
                                Skips monitoring and observability component installation
+
+    --modular-vpro             Enable Modular VPro profile
+                               Skip AO, CO, Observability components; installs Modular VPro related components
     
     -st, --single_tenancy      Enable single tenancy mode
                                Configures the system for single tenant deployment
@@ -341,6 +345,10 @@ write_shared_variables() {
   
   if [[ -n "${DISABLE_O11Y_PROFILE:-}" && "${DISABLE_O11Y_PROFILE}" == "true" ]]; then
     update_config_variable "$config_file" "DISABLE_O11Y_PROFILE" "${DISABLE_O11Y_PROFILE}"
+  fi
+
+  if [[ -n "${MODULAR_PROFILE:-}" ]]; then
+    update_config_variable "$config_file" "MODULAR_PROFILE" "${MODULAR_PROFILE}"
   fi
 
   if [[ -n "${SINGLE_TENANCY_PROFILE:-}" && "${SINGLE_TENANCY_PROFILE}" == "true" ]]; then
@@ -402,6 +410,12 @@ if [ -n "${1-}" ]; then
       --disable-o11y)
         DISABLE_O11Y_PROFILE="true"
       ;;
+      --modular-vpro)
+        DISABLE_CO_PROFILE="true"
+        DISABLE_AO_PROFILE="true"
+        DISABLE_O11Y_PROFILE="true"
+        MODULAR_PROFILE="vpro"
+      ;;  
       -t|--trace)
         set -x
         ENABLE_TRACE=true

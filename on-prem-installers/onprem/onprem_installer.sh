@@ -79,6 +79,7 @@ Main Install Options (after --):
     --disable-co               Disable Cluster Orchestrator profile
     --disable-ao               Disable Application Orchestrator profile
     --disable-o11y             Disable Observability profile
+    --modular-vpro             Enable Modular VPro profile
     -st, --single_tenancy      Enable single tenancy mode
     -t, --trace                Enable bash debug tracing
 
