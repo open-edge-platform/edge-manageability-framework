@@ -64,7 +64,7 @@ save_scm_auth
 update_kube_config
 
 # Clone and init main branch for Code Commit Repos
-ORCH_DEPLOY="https://gitea.${CLUSTER_FQDN}/argocd/edge-manageability-framework"
+ORCH_DEPLOY="https://github.com/open-edge-platform/edge-manageability-framework"
 
 mkdir -p ${HOME}/src
 

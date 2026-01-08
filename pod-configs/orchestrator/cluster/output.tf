@@ -27,12 +27,12 @@ output "eks_auth_map"{
 }
 
 output "gitea_user_passwords" {
-  value = module.gitea.gitea_user_passwords
+  value = var.enable_gitea ? module.gitea[0].gitea_user_passwords : {}
   sensitive = true
 }
 
 output "gitea_master_password" {
-  value = module.gitea.gitea_master_password
+  value = var.enable_gitea ? module.gitea[0].gitea_master_password : ""
   sensitive = true
 }
 

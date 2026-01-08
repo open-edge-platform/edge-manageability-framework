@@ -214,6 +214,7 @@ module "aws_lb_controller" {
 }
 
 module "gitea" {
+  count         = var.enable_gitea ? 1 : 0
   depends_on    = [module.eks, module.orch_init, module.aws_lb_controller]
   source        = "../../module/gitea"
   name          = "gitea"

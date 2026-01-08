@@ -64,7 +64,7 @@ save_scm_auth
 update_kube_config
 
 # Clone and init main branch for Code Commit Repos
-EDGE_MANAGEABILITY_FRAMEWORK="https://gitea.${CLUSTER_FQDN}/argocd/edge-manageability-framework.git"
+EDGE_MANAGEABILITY_FRAMEWORK="https://github.com/open-edge-platform/edge-manageability-framework.git"
 
 mkdir -p ${HOME}/src
 

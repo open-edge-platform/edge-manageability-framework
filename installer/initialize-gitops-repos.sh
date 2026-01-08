@@ -18,7 +18,7 @@ fi
 save_scm_auth
 
 # Clone and init main branch for Code Commit Repos
-ORCH_DEPLOY="https://gitea.${CLUSTER_FQDN}/argocd/edge-manageability-framework.git"
+ORCH_DEPLOY="https://github.com/open-edge-platform/edge-manageability-framework.git"
 
 mkdir -p ~/src
 

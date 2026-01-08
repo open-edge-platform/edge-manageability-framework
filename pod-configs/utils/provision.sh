@@ -411,6 +411,11 @@ parse_params() {
     echo ADMIN_EMAIL=${EMAIL} >> ~/.env
     echo DISABLE_CO_PROFILE=${DISABLE_CO_PROFILE:-false} >> ~/.env
     echo DISABLE_AO_PROFILE=${DISABLE_AO_PROFILE:-false} >> ~/.env
+    if [ "${DISABLE_CO_PROFILE:-false}" = "true" ] || [ "${DISABLE_AO_PROFILE:-false}" = "true" ]; then
+        echo ENABLE_GITEA=false >> ~/.env
+    else
+        echo ENABLE_GITEA=true >> ~/.env
+    fi
     echo DISABLE_O11Y_PROFILE=${DISABLE_O11Y_PROFILE:-false} >> ~/.env
     export AWS_DEFAULT_REGION=$AWS_REGION
 
@@ -955,6 +960,9 @@ eks_http_proxy                         = "$EKS_HTTP_PROXY"
 eks_https_proxy                        = "$EKS_HTTPS_PROXY"
 eks_no_proxy                           = "$EKS_NO_PROXY"
 eks_cluster_dns_ip                 = "$EKS_CLUSTER_DNS_IP"
+
+# Enable Gitea based on AO/CO profile settings
+enable_gitea = ${ENABLE_GITEA:-true}
 EOF
 
     if [[ -n "$CUSTOMER_TAG" ]]; then
@@ -1092,10 +1100,19 @@ EOF
 
     if [[ "$action" = "apply" ]]; then
         pushd $module
-        gitea_argo_user="\"argocd\""
-        gitea_argo_token=$(terraform show -json | jq '.values.outputs.gitea_user_passwords.value.argocd')
-        gitea_co_user="\"clusterorch\""
-        gitea_co_token=$(terraform show -json | jq '.values.outputs.gitea_user_passwords.value.clusterorch')
+        
+        # Extract Gitea credentials only if enabled
+        if [ "${ENABLE_GITEA:-true}" = "true" ]; then
+            gitea_argo_user="\"argocd\""
+            gitea_argo_token=$(terraform show -json | jq '.values.outputs.gitea_user_passwords.value.argocd')
+            gitea_co_user="\"clusterorch\""
+            gitea_co_token=$(terraform show -json | jq '.values.outputs.gitea_user_passwords.value.clusterorch')
+        else
+            gitea_argo_user="\"\""
+            gitea_argo_token="\"\""
+            gitea_co_user="\"\""
+            gitea_co_token="\"\""
+        fi
         
         # export EFS file system ID to .env
         efs_file_system_id=$(terraform show -json | jq -r '.values.outputs.efs_file_system_id.value')
@@ -1740,7 +1757,7 @@ install() {
     upload_savedir
     rm -f ${values_changed} || true
 
-    if ! $SKIP_APPLY_CLUSTER; then
+    if ! $SKIP_APPLY_CLUSTER && [ "${ENABLE_GITEA:-true}" = "true" ]; then
         wait_for_gitea
     fi
 
