@@ -80,6 +80,20 @@ argo:
   # service will be accessible via `web-ui.orchestrator.io`. Not to be confused with the K8s cluster domain.
   clusterDomain: {{ .Values.clusterDomain }}
 
+{{- if not .Values.enableUi }}
+  enabled:
+    web-ui-root: false
+    web-ui-app-orch: false
+    web-ui-cluster-orch: false
+    web-ui-infra: false
+    web-ui-admin: false
+  cors:
+    enabled: false
+  # This enables the ingress route for Infra UI standalone
+  ui:
+    ingressInfraUi: false
+{{- end }}
+
 {{- if and .Values.enableAutocert .Values.staging }}
   autoCert:
     production: false
