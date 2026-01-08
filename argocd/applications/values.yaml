@@ -50,4 +50,4 @@ argo:
     orch-secret:
       istio-injection: enabled
     fleet-default:
-      app.edge-orchestrator.intel.com/fleet-rs-secret: true
+      app.edge-orchestrator.intel.com/fleet-rs-secret: "true"
