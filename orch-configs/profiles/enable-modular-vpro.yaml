@@ -1,0 +1,100 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Includes Edge Infrastructure Manager and UI
+# Use either this or enable-full
+
+# This enables Modular Vpro Edge Infrastructure Manager to support 100 edge nodes.
+
+argo:
+  enabled:
+    web-ui-infra: false
+    copy-keycloak-admin-to-infra: true
+    infra-managers:
+      maintenance-manager:
+        enabled: false
+      telemetry-manager:
+        enabled: false
+      os-resource-manager:
+        enabled: false
+      networking-manager:
+        enabled: false
+      attestationstatus-manager:
+        enabled: false
+    infra-external:
+      mps:
+        enabled: true
+      rps:
+        enabled: true
+      dm-manager:
+        enabled: true
+      loca-metadata-manager:
+        enabled: false
+      loca-manager:
+        enabled: false
+      loca-credentials:
+        enabled: false
+      loca-templates-manager:
+        enabled: false
+    infra-onboarding:
+      infra-config:
+        enabled: true
+        skipOSProvisioning: true
+      pxe-server:
+        enabled: false
+      tinkerbell:
+        enabled: false
+  infra-core:
+    tenant-config:
+      enabled: false
+    exporter:
+      enabled: false
+    api:
+      enabled: false
+    apiv2:
+      enabled: true
+      resources:
+        requests:
+          memory: "16Mi"
+          cpu: "10m"
+        limits:
+          memory: "64Gi"
+          cpu: "64"
+    inventory:
+      enabled: true
+      resources:
+        requests:
+          memory: "16Mi"
+          cpu: "10m"
+        limits:
+          memory: "64Gi"
+          cpu: "64"
+    tenant-controller:
+      enabled: true
+      resources:
+        requests:
+          memory: "16Mi"
+          cpu: "10m"
+        limits:
+          memory: "64Gi"
+          cpu: "64"
+  infra-onboarding:
+    onboarding-manager:
+      enabled: true
+      resources:
+        requests:
+          memory: "16Mi"
+          cpu: "10m"
+        limits:
+          memory: "64Gi"
+          cpu: "64"
+    dkam:
+      resources:
+        requests:
+          memory: "16Mi"
+          cpu: "10m"
+        limits:
+          memory: "64Gi"
+          cpu: "64"
+  infra-external: {}
