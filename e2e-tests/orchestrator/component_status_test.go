@@ -19,17 +19,17 @@ const (
 )
 
 type ComponentStatus struct {
-	SchemaVersion string                 `json:"schema-version"`
-	Orchestrator  OrchestratorStatus     `json:"orchestrator"`
+	SchemaVersion string             `json:"schema-version"`
+	Orchestrator  OrchestratorStatus `json:"orchestrator"`
 }
 
 type OrchestratorStatus struct {
-	Version  string            `json:"version"`
+	Version  string             `json:"version"`
 	Features map[string]Feature `json:"features"`
 }
 
 type Feature struct {
-	Installed bool               `json:"installed"`
+	Installed   bool               `json:"installed"`
 	SubFeatures map[string]Feature `json:",inline"`
 }
 
