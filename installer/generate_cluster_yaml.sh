@@ -58,7 +58,6 @@ fi
 # -----------------------------------------------------------------------------
 export PLATFORM_PROFILE='- orch-configs/profiles/enable-platform.yaml'
 export KYVERNO_PROFILE='- orch-configs/profiles/enable-kyverno.yaml'
-export EDGEINFRA_PROFILE='- orch-configs/profiles/enable-edgeinfra.yaml'
 export UI_PROFILE='- orch-configs/profiles/enable-full-ui.yaml'
 export SRE_PROFILE='- orch-configs/profiles/enable-sre.yaml'
 export PROXY_NONE_PROFILE='- orch-configs/profiles/proxy-none.yaml'
@@ -180,6 +179,20 @@ if [ "${DISABLE_UI_PROFILE:-false}" = "true" ]; then
     export UI_PROFILE='#- orch-configs/profiles/enable-full-ui.yaml'
 else
     export UI_PROFILE='- orch-configs/profiles/enable-full-ui.yaml'
+fi
+
+# -----------------------------------------------------------------------------
+# Modular Vpro profile logic
+# -----------------------------------------------------------------------------
+if [ "${MODULAR_PROFILE:-}" = "vpro" ]; then
+    export EDGEINFRA_PROFILE='- orch-configs/profiles/enable-modular-vpro.yaml'
+    # Disable CO, AO, O11Y profiles for Modular VPro
+    export CO_PROFILE="#- orch-configs/profiles/enable-cluster-orch.yaml"
+    export AO_PROFILE="#- orch-configs/profiles/enable-app-orch.yaml"
+    export O11Y_ENABLE_PROFILE="#- orch-configs/profiles/enable-o11y.yaml"
+    export O11Y_PROFILE="#- orch-configs/profiles/o11y-onprem.yaml"
+else
+    export EDGEINFRA_PROFILE='- orch-configs/profiles/enable-edgeinfra.yaml'
 fi
 
 # -----------------------------------------------------------------------------
@@ -308,55 +321,6 @@ elif [ "$DEPLOY_TYPE" = "aws" ]; then
 fi
 
 # -----------------------------------------------------------------------------
-# Modular Vpro service configuration flags
-# -----------------------------------------------------------------------------
-# Valid modular profiles:
-# - vpro: Enable only vPro-related services (MPS, RPS, AMT and minimal EIM)
-# - full: Enable all services (default behavior)
-
-configure_eim_modular_services() {
-    local modular_profile="${MODULAR_PROFILE:-full}"
-    echo "🔧 Configuring modular services for profile: ${modular_profile}"
-
-    case "${modular_profile}" in
-        vpro)
-            echo "📦 Enabling vPro-specific services only"
-            yq -i '
-                .argo.enabled.infra-core = true |
-                .argo.enabled.infra-core.exporter.enabled = false |
-                .argo.enabled.infra-managers.maintenance-manager.enabled = false |
-                .argo.enabled.infra-managers.telemetry-manager.enabled = false |
-                .argo.enabled.infra-managers.os-resource-manager.enabled = false |
-                .argo.enabled.infra-managers.networking-manager.enabled = false |
-                .argo.enabled.infra-external = true |
-                .argo.enabled.web-ui-infra = false |
-                .argo.enabled.infra-external.mps.enabled = true |
-                .argo.enabled.infra-external.rps.enabled = true |
-                .argo.enabled.infra-external.dm-manager.enabled = true |
-                .argo.enabled.infra-external.loca-metadata-manager.enabled = false |
-                .argo.enabled.infra-external.loca-manager.enabled = false |
-                .argo.enabled.infra-external.loca-credentials.enabled = false |
-                .argo.enabled.infra-external.loca-templates-manager.enabled = false |
-                .argo.enabled.infra-onboarding.onboarding-manager.enabled = true |
-                .argo.enabled.infra-onboarding.dkam.enabled = true |
-                .argo.enabled.infra-onboarding.infra-config.enabled = true |
-                .argo.enabled.infra-onboarding.pxe-server.enabled = false |
-                .argo.enabled.infra-onboarding.tinkerbell.enabled = false |
-                .argo.infra-onboarding.infra-config.skipOSProvisioning = true |
-                .argo.infra-onboarding.disableCoProfile = true |
-                .argo.infra-onboarding.disableO11yProfile = true
-            ' "$OUTPUT_FILE"
-            ;;
-
-        full|*)
-            echo "📦 Enabling all services (full deployment)"
-            # Default behavior - no modifications needed
-            ;;
-    esac
-}
-
-
-# -----------------------------------------------------------------------------
 # Generate Cluster YAML
 # -----------------------------------------------------------------------------
 echo "🔧 Generating cluster config..."
@@ -402,11 +366,6 @@ if [ "${ONPREM_UPGRADE_SYNC:-false}" = "true" ]; then
   .argo.metadata.annotations."argocd.argoproj.io/hook-delete-policy" = "BeforeHookCreation"
 ' "$OUTPUT_FILE"
 fi
-
-# -----------------------------------------------------------------------------
-# Apply EIM modular service configuration
-# -----------------------------------------------------------------------------
-configure_eim_modular_services
 
 # -----------------------------------------------------------------------------
 # Proxy variable updates
