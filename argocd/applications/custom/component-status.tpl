@@ -33,25 +33,42 @@ traefikRoute:
 {{- end }}
 
 # Component status configuration
-# This defines which features are installed in this orchestrator deployment
+# This configuration reflects which features are ACTUALLY installed in the orchestrator
+# Detection method: Checks which profile files are loaded in root-app (source of truth)
 componentStatus:
   schema-version: "1.0"
   orchestrator:
     version: {{ .Values.argo.orchestratorVersion | default "2026.0" | quote }}
     features:
+      # Application Orchestration: Enabled when app-orch profile is loaded
+      # Detection: enable-app-orch.yaml in root-app valueFiles
       application-orchestration:
         installed: {{ index .Values.argo.enabled "app-orch-catalog" | default false }}
+      
+      # Cluster Orchestration: Enabled when cluster-orch profile is loaded
+      # Detection: enable-cluster-orch.yaml in root-app valueFiles
       cluster-orchestration:
         installed: {{ index .Values.argo.enabled "cluster-manager" | default false }}
+      
+      # Edge Infrastructure Manager: Enabled when edgeinfra profile is loaded
+      # Detection: enable-edgeinfra.yaml in root-app valueFiles
+      # Profile enables 4 core apps: infra-core, infra-managers, infra-onboarding, infra-external
+      # We report the overall feature as installed if ANY infra app is enabled
       edge-infrastructure-manager:
-        installed: {{ or (index .Values.argo.enabled "infra-core") (index .Values.argo.enabled "infra-managers") (index .Values.argo.enabled "infra-onboarding") | default false }}
+        installed: {{ or (index .Values.argo.enabled "infra-core") (index .Values.argo.enabled "infra-managers") (index .Values.argo.enabled "infra-onboarding") (index .Values.argo.enabled "infra-external") | default false }}
         inventory:
           installed: {{ index .Values.argo.enabled "infra-core" | default false }}
         out-of-band-management:
           installed: {{ index .Values.argo.enabled "infra-managers" | default false }}
         device-onboarding:
           installed: {{ index .Values.argo.enabled "infra-onboarding" | default false }}
+      
+      # Observability: Enabled when o11y profile is loaded
+      # Detection: enable-o11y.yaml in root-app valueFiles
       observability:
         installed: {{ index .Values.argo.enabled "orchestrator-observability" | default false }}
+      
+      # Multitenancy: Enabled when singleTenancy profile is loaded
+      # Detection: enable-singleTenancy.yaml in root-app valueFiles
       multitenancy:
         installed: {{ index .Values.argo.enabled "defaultTenancy" | default false }}
