@@ -101,6 +101,14 @@ argo:
   targetServer: "https://kubernetes.default.svc"
   autosync: true
 
+{{- if not .Values.enableAppOrch }}
+  enabled:
+    copy-app-gitea-cred-to-fleet: false
+    copy-ca-cert-gitea-to-app: false
+    copy-ca-cert-gitea-to-cluster: false
+    copy-cluster-gitea-cred-to-fleet: false
+{{- end }}
+
 {{ if .Values.enableObservability }}
   o11y:
     sre:
