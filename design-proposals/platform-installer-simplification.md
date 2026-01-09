@@ -449,9 +449,9 @@ deployment is delayed.
 
 #### Eliminate ArgoCD
 
-Once the syncwaves have been reduced or eliminated, then it is feasible to eliminate ArgoCD in favor of a simpler tool. We
-will explore alternatives such as umbrella charts, the helmfile tool, or other opensource solutions. We may explore repo
-and/or chart consolidation to make the helm chart structure simpler.
+Once the syncwaves have been reduced or eliminated, then it is feasible to eliminate ArgoCD in favor of a
+simpler tool. We will explore alternatives such as umbrella charts, the helmfile tool, or other opensource
+solutions. We may explore repo and/or chart consolidation to make the helm chart structure simpler.
 
 Eliminating argocd will allow the following pods to be eliminated from the platform:
 
