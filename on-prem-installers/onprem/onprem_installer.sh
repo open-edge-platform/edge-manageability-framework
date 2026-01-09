@@ -11,7 +11,7 @@
 #
 # Usage: ./onprem_installer.sh [PRE_OPTIONS] [-- MAIN_OPTIONS]
 #   PRE_OPTIONS: Options for onprem_pre_install.sh (--skip-download, -y/--yes, -t/--trace)
-#   MAIN_OPTIONS: Options for onprem_orch_install.sh (after --) (-s/--sre, -d/--notls, -y/--yes, --disable-*, -t/--trace)
+#   MAIN_OPTIONS: Options for onprem_orch_install.sh (after --) (-s/--sre, -d/--notls, -y/--yes, --disable-*, --modular-vpro, -t/--trace)
 #
 # Prerequisites: onprem.env file must exist with proper configuration
 
@@ -65,6 +65,10 @@ Examples:
 ./$(basename "$0") -- -st --disable-o11y
     # Enable single tenancy mode and disable observability in main install
 
+./$(basename "$0") -- --modular-vpro
+    # Deploy only vPro services (MPS, RPS, AMT)
+    # Disable CO, AO, and O11y profiles in the installation
+
 Pre-Install Options (before --):
     -h, --help                 Show this help message and exit
     --skip-download            Skip downloading install packages from registry
@@ -79,7 +83,7 @@ Main Install Options (after --):
     --disable-co               Disable Cluster Orchestrator profile
     --disable-ao               Disable Application Orchestrator profile
     --disable-o11y             Disable Observability profile
-    --modular-vpro             Enable Modular VPro profile
+    --modular-vpro             Set modular vpro services deployment profile
     -st, --single_tenancy      Enable single tenancy mode
     -t, --trace                Enable bash debug tracing
 
@@ -94,10 +98,11 @@ Configuration:
 EOF
 }
 
-# Parse command line arguments
+# Parse command line arguments - simple passthrough without validation
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -h|--help)
+      # Only handle help at the orchestrator level
       usage
       exit 0
       ;;
@@ -108,6 +113,7 @@ while [[ $# -gt 0 ]]; do
       continue
       ;;
     *)
+      # Pass all other options directly to the appropriate script
       if [[ "$COLLECTING_MAIN" == true ]]; then
         MAIN_OPTIONS+=("$1")
       else
