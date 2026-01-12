@@ -118,6 +118,8 @@ var _ = Describe("Component Status Service", Label(componentStatusLabel), func()
 				"edge-infrastructure-manager",
 				"observability",
 				"multitenancy",
+				"web-ui",
+				"kyverno",
 			}
 
 			for _, feature := range expectedFeatures {

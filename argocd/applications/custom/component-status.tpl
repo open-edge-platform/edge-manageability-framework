@@ -38,7 +38,7 @@ traefikRoute:
 componentStatus:
   schema-version: "1.0"
   orchestrator:
-    version: {{ .Values.argo.orchestratorVersion | default "2026.0" | quote }}
+    version: {{ .Values.argo.orchestratorVersion | default .Chart.Version | quote }}
     features:
       # Application Orchestration: Enabled when app-orch profile is loaded
       # Detection: enable-app-orch.yaml in root-app valueFiles
@@ -56,11 +56,11 @@ componentStatus:
       # We report the overall feature as installed if ANY infra app is enabled
       edge-infrastructure-manager:
         installed: {{ or (index .Values.argo.enabled "infra-core") (index .Values.argo.enabled "infra-managers") (index .Values.argo.enabled "infra-onboarding") (index .Values.argo.enabled "infra-external") | default false }}
-        inventory:
+        infra-core:
           installed: {{ index .Values.argo.enabled "infra-core" | default false }}
-        out-of-band-management:
+        infra-manager:
           installed: {{ index .Values.argo.enabled "infra-managers" | default false }}
-        device-onboarding:
+        device-provisioning:
           installed: {{ index .Values.argo.enabled "infra-onboarding" | default false }}
       
       # Observability: Enabled when o11y profile is loaded
@@ -68,7 +68,25 @@ componentStatus:
       observability:
         installed: {{ index .Values.argo.enabled "orchestrator-observability" | default false }}
       
-      # Multitenancy: Enabled when singleTenancy profile is loaded
-      # Detection: enable-singleTenancy.yaml in root-app valueFiles
+      # Web UI: Enabled when full-ui profile is loaded
+      # Detection: enable-full-ui.yaml in root-app valueFiles
+      web-ui:
+        installed: {{ or (index .Values.argo.enabled "web-ui-root") (index .Values.argo.enabled "web-ui-app-orch") (index .Values.argo.enabled "web-ui-cluster-orch") (index .Values.argo.enabled "web-ui-infra") | default false }}
+        orchestrator-ui:
+          installed: {{ index .Values.argo.enabled "web-ui-root" | default false }}
+        application-orchestration-ui:
+          installed: {{ index .Values.argo.enabled "web-ui-app-orch" | default false }}
+        cluster-orchestration-ui:
+          installed: {{ index .Values.argo.enabled "web-ui-cluster-orch" | default false }}
+        infrastructure-ui:
+          installed: {{ index .Values.argo.enabled "web-ui-infra" | default false }}
+      
+      # Multitenancy: Tenancy services are part of the platform
       multitenancy:
-        installed: {{ index .Values.argo.enabled "defaultTenancy" | default false }}
+        installed: {{ index .Values.argo.enabled "tenancy-manager" | default false }}
+        default-tenant-only:
+          installed: {{ index .Values.argo.enabled "defaultTenancy" | default false }}
+      
+      # Detection: enable-kyverno.yaml in root-app valueFiles
+      kyverno:
+        installed: {{ index .Values.argo.enabled "kyverno" | default false }}
