@@ -18,6 +18,17 @@ containerSecurityContext:
   seccompProfile:
     type: "RuntimeDefault"
 
+# Mount custom maintenance theme
+extraVolumes:
+  - name: maintenance-theme
+    configMap:
+      name: keycloak-maintenance-theme
+
+extraVolumeMounts:
+  - name: maintenance-theme
+    mountPath: /opt/bitnami/keycloak/themes/maintenance
+    readOnly: true
+
 # disable network policy to avoid intermittent dns issues
 networkPolicy:
   enabled: false
@@ -109,6 +120,9 @@ keycloakConfigCli:
       {
         "realm": "master",
         "accountTheme": "keycloak",
+        "loginTheme": "maintenance",
+        "adminTheme": "keycloak",
+        "emailTheme": "keycloak",
         "displayName": "Keycloak",
         "displayNameHtml": "<div><img src='https://raw.githubusercontent.com/open-edge-platform/orch-utils/73df5d1e99a81ae333d94b1c47dd9bef7fa03ae9/keycloak/one-edge-platform-login-title.png'></img>System is being updated. Please try after sometime</div>",
         "defaultSignatureAlgorithm": "PS512",

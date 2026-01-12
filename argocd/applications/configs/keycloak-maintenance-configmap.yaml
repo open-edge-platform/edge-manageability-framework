@@ -1,0 +1,65 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-maintenance-theme
+  namespace: orch-platform
+data:
+  # Theme configuration - inherits from keycloak base theme
+  login/theme.properties: |
+    parent=keycloak
+    import=common/keycloak
+  
+  # Error page for system maintenance
+  login/error.ftl: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>System Under Maintenance</title>
+        <style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                margin: 0;
+                padding: 20px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                min-height: 100vh;
+            }
+            .container {
+                background: white;
+                border-radius: 8px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                padding: 40px;
+                max-width: 500px;
+                text-align: center;
+            }
+            .icon { font-size: 64px; margin-bottom: 20px; }
+            h1 { color: #333; margin: 0 0 10px 0; font-size: 24px; }
+            p { color: #666; line-height: 1.6; margin: 15px 0; }
+            .status { 
+                background: #ff9800; 
+                color: white; 
+                padding: 10px 20px; 
+                border-radius: 4px; 
+                margin-top: 20px;
+                font-weight: bold;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="icon">🔧</div>
+            <h1>System Under Maintenance</h1>
+            <p>The Edge Manageability Framework is currently being upgraded.</p>
+            <p>Services will be restored shortly. Thank you for your patience.</p>
+            <div class="status">⚠ System Upgrade in Progress</div>
+        </div>
+    </body>
+    </html>
