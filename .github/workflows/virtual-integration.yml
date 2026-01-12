@@ -558,7 +558,7 @@ jobs:
           ref: ${{ steps.read-test-automation-version.outputs.version }}
           path: edge-manage-test-automation
           submodules: 'recursive'
-          token: ${{ secrets.SYS_ORCH_GITHUB }}
+          token: ${{ secrets.SYS_EMF_GH_TOKEN }}
           persist-credentials: false
       - name: Setup virtual environment
         working-directory: edge-manage-test-automation
