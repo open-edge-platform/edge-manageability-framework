@@ -53,7 +53,7 @@ dkam:
   managerArgs:
     traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
   env:
-    rs_proxy_address: "rs-proxy.orch-platform.svc.cluster.local:8081/"
+    rs_proxy_address: "files-rs.edgeorchestration.intel.com/"
     oidc:
       oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
   resources: null

@@ -31,7 +31,7 @@ argo:
     platform-keycloak: true
     prometheus-crd: true
     reloader: true
-    rs-proxy: true
+    rs-proxy: false
     secrets-config: true
     secret-wait-tls-orch: true
     secret-wait-tls-boots: true
