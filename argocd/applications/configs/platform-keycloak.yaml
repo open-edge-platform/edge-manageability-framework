@@ -110,7 +110,7 @@ keycloakConfigCli:
         "realm": "master",
         "accountTheme": "keycloak",
         "displayName": "Keycloak",
-        "displayNameHtml": "<img src='https://raw.githubusercontent.com/open-edge-platform/orch-utils/73df5d1e99a81ae333d94b1c47dd9bef7fa03ae9/keycloak/one-edge-platform-login-title.png'></img>",
+        "displayNameHtml": "<div><img src='https://raw.githubusercontent.com/open-edge-platform/orch-utils/73df5d1e99a81ae333d94b1c47dd9bef7fa03ae9/keycloak/one-edge-platform-login-title.png'></img>System is being updated. Please try after sometime</div>",
         "defaultSignatureAlgorithm": "PS512",
         "accessTokenLifespan": 3600,
         "ssoSessionIdleTimeout": 5400,
