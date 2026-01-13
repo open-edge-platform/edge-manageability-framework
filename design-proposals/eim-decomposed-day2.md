@@ -54,7 +54,19 @@ For every started day 2 update a new OS Update Run resource is created. It is li
 
 - No provisioning through EIM, assign custom OS resource ID to instance, custom region and site ID to host.
 - User should be able to create an OS Update Policy?
-- Update EN to custom OS profile and push OS image and the manifest to the Release Service (custom?) 
+- Update EN to custom OS profile and push OS image and the manifest to the Release Service (custom?)
+- choose profile_name used to be used by the generic and custom OS 
+
+## Proposal
+
+### Workflow
+
+- Orchestrator deployed with Maintenance Manager
+- EN provisioned with custom OS outsiede of EIM
+- PUA and INBM installed on EN
+- EN onboarded in EIM - using generic OS resource
+- user creates custom OS profile with CLI according to instructions (new OS resource must have the same profile_name as the generic OS resource) (now OS resorce available in inventory - update should be possible)
+- schedule host update with CLI
 
 ## Questions
 
