@@ -348,8 +348,8 @@ connect_cluster
 
 echo "Starting action cluster"
 action_cluster
-#apply_modules
-#apply_load_balancer
+apply_modules
+apply_load_balancer
 
 # Terminate existing sshuttle
 terminate_sshuttle
