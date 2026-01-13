@@ -26,7 +26,7 @@ type Keycloak mg.Namespace
 
 // GetPassword retrieves the admin keycloak password
 func (k Keycloak) GetPassword() {
-	command := "kubectl get secret -n " + keycloakNamespace + " platform-keycloak -o jsonpath='{.data.admin-password}' | base64 --decode"
+	command := "kubectl get secret -n " + keycloakNamespace + " platform-keycloak -o jsonpath='{.data.password}' | base64 --decode"
 	out, err := exec.Command("bash", "-c", command).CombinedOutput()
 	if err != nil {
 		fmt.Println("Error executing command:", err)
@@ -101,7 +101,7 @@ func clean_up_psql_pod() {
 }
 
 func set_keycloak_password(encoded_password string) {
-	command := "kubectl -n " + keycloakNamespace + " get secret platform-keycloak -o yaml | yq e '.data.admin-password = \"" + encoded_password + "\"' | kubectl apply --force -f -"
+	command := "kubectl -n " + keycloakNamespace + " get secret platform-keycloak -o yaml | yq e '.data.password = \"" + encoded_password + "\"' | kubectl apply --force -f -"
 	_, err := exec.Command("bash", "-c", command).CombinedOutput()
 	if err != nil {
 		fmt.Println("Error executing command:", err.Error())

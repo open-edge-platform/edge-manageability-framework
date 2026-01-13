@@ -28,11 +28,12 @@ securityContext:
       - ALL
   allowPrivilegeEscalation: false
 keycloakAdmin:
+  url: "http://platform-keycloak.orch-platform.svc:8080"
   user: admin
-  client: system-client
+  client: admin-cli
   passwordSecret:
     name: platform-keycloak # name of the secret
-    key: admin-password # key of the secret
+    key: password # key of the secret
 keycloak_realm: "master"
 argo:
   clusterDomain: {{.Values.argo.clusterDomain}}

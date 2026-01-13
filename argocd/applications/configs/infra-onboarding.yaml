@@ -43,6 +43,12 @@ onboarding-manager:
     vaultUrl: "http://vault.orch-platform.svc.cluster.local:8200"
     vaultRole: "orch-svc"
     keycloakUrl: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
+  keycloakAdmin:
+    user: admin
+    client: admin-cli
+    passwordSecret:
+      name: platform-keycloak  # name of the secret
+      key: admin-password  # key of the secret
   multiTenancy:
     enforceMultiTenancy: true
   resources: null

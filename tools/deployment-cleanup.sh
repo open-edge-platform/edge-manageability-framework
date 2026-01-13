@@ -22,5 +22,5 @@ DEPLOYMENT_ENDPOINT="https://app-orch.${ORCHESTRATOR_DOMAIN}"
 [ ! -z "$1" ] && CATALOG_ARGS="--deployment-endpoint ${DEPLOYMENT_ENDPOINT} --catalog-endpoint ${CATALOG_ENDPOINT}" || CATALOG_ARGS=""
 
 ${CLI} ${CATALOG_ARGS} logout
-${CLI} ${CATALOG_ARGS} login --client-id=system-client --trust-cert=true --keycloak https://keycloak.${ORCHESTRATOR_DOMAIN}/realms/master ${USER} ${PASSWORD}
+${CLI} ${CATALOG_ARGS} login --client-id=admin-cli --trust-cert=true --keycloak https://keycloak.${ORCHESTRATOR_DOMAIN}/realms/master ${USER} ${PASSWORD}
 ${CLI} ${CATALOG_ARGS} list deployments|tail -n +2|cut -f 1 -d ' '|xargs -n 1 ${CLI} delete deployment
