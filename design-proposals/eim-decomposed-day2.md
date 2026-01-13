@@ -53,14 +53,14 @@ For every started day 2 update a new OS Update Run resource is created. It is li
 ## Requirements
 
 - No provisioning through EIM, assign custom OS resource ID to instance, custom region and site ID to host.
+- User should be able to create an OS Update Policy?
 - Update EN to custom OS profile and push OS image and the manifest to the Release Service (custom?) 
 
 ## Questions
 
 - will user use their custom release service? do we need OS resource manager to fetch the OS manifests from there?
 - can custom OS profile be used for day 2 update?
+- is support for both mutable and immutable OS needed?
+- what type of day2 update should be supported: mutable, immutable? new packages installation? kernel cmdline update?
+- is OS Update Policy service needed? (not needed if only mutable OS update to be supported - without package installation and kernel cmdline update) 
 - what about site and region? with custom region ID and site ID user can schedule only single host updates or all host updates, because they all will be in one EIM region/site.
-- is region and site ID required by host at all? - how host will work without them? (adding them to host is not part of provisioning in the onboarding-manager)
-
-
-
