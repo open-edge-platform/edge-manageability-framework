@@ -155,3 +155,11 @@ tenant-controller:
     vaultUrl: "http://vault.orch-platform.svc.cluster.local:8200"
     vaultRole: "orch-svc"
   resources: null
+
+infra-config:
+  config:
+    orchMPSHost: "mps.{{ .Values.argo.clusterDomain }}:4433"
+    orchMPSWHost: "mps-wss.{{ .Values.argo.clusterDomain }}:443"
+    orchRPSHost: "rps.{{ .Values.argo.clusterDomain }}:443"
+    orchRPSWHost: "rps-wss.{{ .Values.argo.clusterDomain }}:443"
+    orchDeviceManager: "device-manager-node.{{ .Values.argo.clusterDomain }}:443"
