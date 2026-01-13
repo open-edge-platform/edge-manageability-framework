@@ -31,12 +31,8 @@
 **/values.yaml
 # Docker dependencies
 **/Dockerfile
-# GitHub Actions dependencies
-/.github/workflows/*.yml
-/.github/workflows/*.yaml
 
 # Except the following folders, which can be merged with passing CI and one approval
-/argocd/applications/templates
 /ci/
 /e2e-tests/
 /node/
