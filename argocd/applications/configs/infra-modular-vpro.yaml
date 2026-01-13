@@ -74,6 +74,10 @@ inventory:
 # MPS (Management Presence Server) Configuration
 mps:
   image:
+    registry:
+      name: docker.io/
+    repository: intel/oact-mps
+    tag: v2.14.2
     pullPolicy: IfNotPresent
   serviceAccount:
     name: "orch-svc"
@@ -103,6 +107,10 @@ mps:
 # RPS (Remote Provisioning Server) Configuration
 rps:
   image:
+    registry:
+      name: docker.io/
+    repository: intel/oact-rps
+    tag: v2.26.0
     pullPolicy: IfNotPresent
   serviceAccount:
     name: "orch-svc"
