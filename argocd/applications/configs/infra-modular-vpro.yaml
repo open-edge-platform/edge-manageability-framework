@@ -1,0 +1,159 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+import:
+  tenant-controller:
+    enabled: true
+  tenant-config:
+    enabled: false
+
+credentials:
+  serviceAccount:
+    name: "orch-svc"
+  params:
+    keycloakUrl: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
+    vaultUrl: "http://vault.orch-platform.svc.cluster.local:8200"
+  curlImage:
+    name: badouralix/curl-jq@sha256
+    tag: 8ee002ae4452b23a3c70750c5c081e95334cfe9f7968fb4d67a90d4001c29d0b
+    pullPolicy: IfNotPresent
+
+# APIv2 Configuration
+apiv2:
+  image:
+    pullPolicy: IfNotPresent
+  serviceArgsProxy:
+    enableAuth: true
+    traceURL: >-
+      orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318
+  serviceArgsGrpc:
+    enableAuth: true
+    inventoryAddress: inventory.orch-infra.svc.cluster.local:50051
+    traceURL: >-
+      orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318
+  traefikReverseProxy:
+    # We rely on the multi-tenant gateway.
+    enabled: false
+  # https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
+  traefikApiGroup: "traefik.io/v1alpha1"
+  oidc:
+    name: "keycloak-api"
+    oidc_env_name: "OIDC_SERVER_URL"
+    oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
+    oidc_tls_insecure_skip_verify_env_name: "OIDC_TLS_INSECURE_SKIP_VERIFY"
+    oidc_tls_insecure_skip_verify_value: "true"
+  resources: null
+
+# Inventory Configuration
+inventory:
+  image:
+    pullPolicy: IfNotPresent
+  inventory:
+    traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
+  postgresql:
+    pod:
+      enabled: false
+      image:
+        registry: "postgres"
+        repository: "postgres"
+        tag: "16-alpine"
+        pullPolicy: "IfNotPresent"
+    external:
+      enabled: true
+      host: "postgresql-cluster-rw.orch-infra.svc.cluster.local"
+      port: "5432"
+      database: "inventory"
+      username: "orch-infra-system-inventory_user"
+      secret:
+        name: "db-postgresql-cluster-inventory-app"
+        key: "password"
+  resources: null
+
+# MPS (Management Presence Server) Configuration
+mps:
+  image:
+    pullPolicy: IfNotPresent
+  serviceAccount:
+    name: "orch-svc"
+  serviceArgs:
+    inventoryAddress: "inventory.orch-infra.svc.cluster.local:50051"
+    traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
+  multiTenancy:
+    enforceMultiTenancy: true
+  postgresql:
+    pod:
+      enabled: false
+    external:
+      enabled: true
+      host: "postgresql-cluster-rw.orch-infra.svc.cluster.local"
+      port: "5432"
+      database: "mps"
+      username: "orch-infra-system-mps_user"
+      secret:
+        name: "db-postgresql-cluster-mps-app"
+        key: "password"
+  resources: null
+  env:
+    vaultUrl: "http://vault.orch-platform.svc.cluster.local:8200"
+    vaultRole: "orch-svc"
+    keycloakUrl: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
+
+# RPS (Remote Provisioning Server) Configuration
+rps:
+  image:
+    pullPolicy: IfNotPresent
+  serviceAccount:
+    name: "orch-svc"
+  serviceArgs:
+    inventoryAddress: "inventory.orch-infra.svc.cluster.local:50051"
+    traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
+  multiTenancy:
+    enforceMultiTenancy: true
+  postgresql:
+    pod:
+      enabled: false
+    external:
+      enabled: true
+      host: "postgresql-cluster-rw.orch-infra.svc.cluster.local"
+      port: "5432"
+      database: "rps"
+      username: "orch-infra-system-rps_user"
+      secret:
+        name: "db-postgresql-cluster-rps-app"
+        key: "password"
+  resources: null
+  env:
+    vaultUrl: "http://vault.orch-platform.svc.cluster.local:8200"
+    vaultRole: "orch-svc"
+    keycloakUrl: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
+
+# DM-Manager (Device Management Manager) Configuration
+dm-manager:
+  image:
+    pullPolicy: IfNotPresent
+  serviceAccount:
+    name: "orch-svc"
+  serviceArgs:
+    inventoryAddress: "inventory.orch-infra.svc.cluster.local:50051"
+    traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
+  multiTenancy:
+    enforceMultiTenancy: true
+  resources: null
+  env:
+    vaultUrl: "http://vault.orch-platform.svc.cluster.local:8200"
+    vaultRole: "orch-svc"
+    keycloakUrl: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
+
+# Tenant Controller Configuration
+tenant-controller:
+  image:
+    pullPolicy: IfNotPresent
+  serviceAccount:
+    name: "orch-svc"
+  env:
+    keycloakUrl: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
+    vaultUrl: "http://vault.orch-platform.svc.cluster.local:8200"
+    vaultRole: "orch-svc"
+  resources: null

@@ -28,6 +28,9 @@ root:
 {{- if .Values.enableEdgeInfra }}
     - orch-configs/profiles/enable-edgeinfra.yaml
 {{- end }}
+{{- if .Values.enableModularVpro }}
+    - orch-configs/profiles/enable-modular-vpro.yaml
+{{- end }}
     - orch-configs/profiles/enable-full-ui.yaml
 {{- if .Values.enableUiDev }}
     - orch-configs/profiles/ui-dev.yaml

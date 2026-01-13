@@ -29,6 +29,7 @@ var (
 		"enableAuditLogging":  false,
 		"enableKyverno":       true,
 		"enableEdgeInfra":     true,
+		"enableModularVpro":   false,
 		"enableAutoProvision": true,
 		"proxyProfile":        "",
 		"deployProfile":       "dev",

@@ -1,0 +1,73 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Enables Modular vPro components for Out-of-Band Device Management
+# This profile deploys: MPS, RPS, DM-Manager, APIv2, Inventory, and Tenant-Controller
+# For use with Device Management Tools (DMT) and vPro-only deployments
+
+argo:
+  enabled:
+    infra-modular-vpro: true
+    copy-keycloak-admin-to-infra: true
+  infra-modular-vpro:
+    tenant-config:
+      enabled: false
+    api:
+      resources:
+        requests:
+          memory: "16Mi"
+          cpu: "10m"
+        limits:
+          memory: "64Gi"
+          cpu: "64"
+    apiv2:
+      resources:
+        requests:
+          memory: "16Mi"
+          cpu: "10m"
+        limits:
+          memory: "64Gi"
+          cpu: "64"
+    inventory:
+      resources:
+        requests:
+          memory: "16Mi"
+          cpu: "10m"
+        limits:
+          memory: "64Gi"
+          cpu: "64"
+    tenant-controller:
+      resources:
+        requests:
+          memory: "16Mi"
+          cpu: "10m"
+        limits:
+          memory: "64Gi"
+          cpu: "64"
+    mps:
+      resources:
+        requests:
+          memory: "16Mi"
+          cpu: "10m"
+        limits:
+          memory: "64Gi"
+          cpu: "64"
+    rps:
+      resources:
+        requests:
+          memory: "16Mi"
+          cpu: "10m"
+        limits:
+          memory: "64Gi"
+          cpu: "64"
+    dm-manager:
+      resources:
+        requests:
+          memory: "16Mi"
+          cpu: "10m"
+        limits:
+          memory: "64Gi"
+          cpu: "64"
+    enableTracing: false
+    enableMetrics: false
