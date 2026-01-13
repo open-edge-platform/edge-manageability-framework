@@ -26,8 +26,227 @@ extraVolumes:
 
 extraVolumeMounts:
   - name: maintenance-theme
-    mountPath: /opt/bitnami/keycloak/themes/maintenance
-    readOnly: true
+    mountPath: /opt/bitnami/keycloak/themes/maintenance/login/theme.properties
+    subPath: login.theme.properties
+  - name: maintenance-theme
+    mountPath: /opt/bitnami/keycloak/themes/maintenance/login/resources/css/maintenance.css
+    subPath: login.resources.css.maintenance.css
+  - name: maintenance-theme
+    mountPath: /opt/bitnami/keycloak/themes/maintenance/login/messages/messages_en.properties
+    subPath: login.messages.messages_en.properties
+  - name: maintenance-theme
+    mountPath: /opt/bitnami/keycloak/themes/maintenance/login/login.ftl
+    subPath: login.login.ftl
+
+# Deploy ConfigMap with custom maintenance theme
+extraDeploy:
+  - apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: keycloak-maintenance-theme
+      namespace: orch-platform
+    data:
+      login.theme.properties: |
+        parent=keycloak
+        import=common/keycloak
+        
+        styles=css/login.css css/maintenance.css
+        
+        # Maintenance mode messages
+        maintenanceTitle=System Maintenance
+        maintenanceMessage=The system is currently undergoing an upgrade. Please check back shortly.
+        maintenanceEstimate=Estimated completion time: {0}
+
+      login.resources.css.maintenance.css: |
+        /* SPDX-FileCopyrightText: 2025 Intel Corporation
+         *
+         * SPDX-License-Identifier: Apache-2.0
+         */
+
+        .maintenance-banner {
+            background: linear-gradient(135deg, #ff9800 0%, #ff6f00 100%);
+            color: #000;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .maintenance-banner h1 {
+            margin: 0 0 10px 0;
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .maintenance-banner .icon {
+            font-size: 32px;
+        }
+
+        .maintenance-banner p {
+            margin: 10px 0;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .maintenance-banner .estimate {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 15px;
+            font-weight: 600;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.85;
+            }
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ff9800;
+            animation: blink 1.5s ease-in-out infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes blink {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+      login.messages.messages_en.properties: |
+        # SPDX-FileCopyrightText: 2025 Intel Corporation
+        #
+        # SPDX-License-Identifier: Apache-2.0
+
+        # Maintenance mode messages
+        maintenanceTitle=System Maintenance
+        maintenanceMessage=The Edge Manageability Framework is currently undergoing scheduled maintenance and upgrades.
+        maintenanceEstimate=Services will be restored shortly. Thank you for your patience.
+
+        # Override default login title to add maintenance context
+        loginAccountTitle=Sign in to your account
+
+      login.login.ftl: |
+        <#-- SPDX-FileCopyrightText: 2025 Intel Corporation -->
+        <#-- SPDX-License-Identifier: Apache-2.0 -->
+
+        <#import "template.ftl" as layout>
+        <@layout.registrationLayout displayMessage=!messagesPerField.existsError('username','password') displayInfo=realm.password && realm.registrationAllowed && !registrationDisabled??; section>
+            <#if section = "header">
+                $${msg("loginAccountTitle")}
+            <#elseif section = "form">
+            <div id="kc-form">
+              <div id="kc-form-wrapper">
+                <#-- Maintenance Mode Banner -->
+                <div class="maintenance-banner">
+                    <h1>
+                        <span class="status-indicator"></span>
+                        <span class="icon">⚠️</span>
+                        $${msg("maintenanceTitle")}
+                    </h1>
+                    <p>$${msg("maintenanceMessage")}</p>
+                    <div class="estimate">
+                        <strong>Status:</strong> System Upgrade in Progress
+                    </div>
+                    <p style="margin-top: 15px; font-size: 14px; opacity: 0.9;">
+                        Admin users can still access the system. Regular operations may be limited.
+                    </p>
+                </div>
+
+                <#if realm.password>
+                    <form id="kc-form-login" onsubmit="login.disabled = true; return true;" action="$${url.loginAction}" method="post">
+                        <#if !usernameHidden??>
+                            <div class="$${properties.kcFormGroupClass!}">
+                                <label for="username" class="$${properties.kcLabelClass!}"><#if !realm.loginWithEmailAllowed>$${msg("username")}<#elseif !realm.registrationEmailAsUsername>$${msg("usernameOrEmail")}<#else>$${msg("email")}</#if></label>
+
+                                <input tabindex="1" id="username" class="$${properties.kcInputClass!}" name="username" value="$${(login.username!'')}"  type="text" autofocus autocomplete="off"
+                                       aria-invalid="<#if messagesPerField.existsError('username','password')>true</#if>"
+                                />
+
+                                <#if messagesPerField.existsError('username','password')>
+                                    <span id="input-error" class="$${properties.kcInputErrorMessageClass!}" aria-live="polite">
+                                            $${kcSanitize(messagesPerField.getFirstError('username','password'))?no_esc}
+                                    </span>
+                                </#if>
+
+                            </div>
+                        </#if>
+
+                        <div class="$${properties.kcFormGroupClass!}">
+                            <label for="password" class="$${properties.kcLabelClass!}">$${msg("password")}</label>
+
+                            <input tabindex="2" id="password" class="$${properties.kcInputClass!}" name="password" type="password" autocomplete="off"
+                                   aria-invalid="<#if messagesPerField.existsError('username','password')>true</#if>"
+                            />
+
+                            <#if usernameHidden?? && messagesPerField.existsError('username','password')>
+                                <span id="input-error" class="$${properties.kcInputErrorMessageClass!}" aria-live="polite">
+                                        $${kcSanitize(messagesPerField.getFirstError('username','password'))?no_esc}
+                                </span>
+                            </#if>
+
+                        </div>
+
+                        <div class="$${properties.kcFormGroupClass!} $${properties.kcFormSettingClass!}">
+                            <div id="kc-form-options">
+                                <#if realm.rememberMe && !usernameHidden??>
+                                    <div class="checkbox">
+                                        <label>
+                                            <#if login.rememberMe??>
+                                                <input tabindex="3" id="rememberMe" name="rememberMe" type="checkbox" checked> $${msg("rememberMe")}
+                                            <#else>
+                                                <input tabindex="3" id="rememberMe" name="rememberMe" type="checkbox"> $${msg("rememberMe")}
+                                            </#if>
+                                        </label>
+                                    </div>
+                                </#if>
+                                </div>
+                                <div class="$${properties.kcFormOptionsWrapperClass!}">
+                                    <#if realm.resetPasswordAllowed>
+                                        <span><a tabindex="5" href="$${url.loginResetCredentialsUrl}">$${msg("doForgotPassword")}</a></span>
+                                    </#if>
+                                </div>
+
+                          </div>
+
+                          <div id="kc-form-buttons" class="$${properties.kcFormGroupClass!}">
+                              <input type="hidden" id="id-hidden-input" name="credentialId" <#if auth.selectedCredential?has_content>value="$${auth.selectedCredential}"</#if>/>
+                              <input tabindex="4" class="$${properties.kcButtonClass!} $${properties.kcButtonPrimaryClass!} $${properties.kcButtonBlockClass!} $${properties.kcButtonLargeClass!}" name="login" id="kc-login" type="submit" value="$${msg("doLogIn")}"/>
+                          </div>
+                    </form>
+                </#if>
+                </div>
+            </div>
+            <#elseif section = "info" >
+                <#if realm.password && realm.registrationAllowed && !registrationDisabled??>
+                    <div id="kc-registration-container">
+                        <div id="kc-registration">
+                            <span>$${msg("noAccount")} <a tabindex="6"
+                                                         href="$${url.registrationUrl}">$${msg("doRegister")}</a></span>
+                        </div>
+                    </div>
+                </#if>
+            </#if>
+
+        </@layout.registrationLayout>
+
 
 # disable network policy to avoid intermittent dns issues
 networkPolicy:
