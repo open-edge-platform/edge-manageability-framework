@@ -48,75 +48,59 @@ extraDeploy:
         <#-- SPDX-FileCopyrightText: 2025 Intel Corporation -->
         <#-- SPDX-License-Identifier: Apache-2.0 -->
 
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-            <title>System Maintenance</title>
-            <style>
-                body {
-                    font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-                    background: transparent;
-                    margin: 0;
-                    padding: 20px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    min-height: 100vh;
-                }
-                .container {
-                    background: transparent;
-                    border-radius: 12px;
-                    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-                    padding: 50px 40px;
-                    max-width: 500px;
-                    text-align: center;
-                }
-                .icon {
-                    font-size: 72px;
-                    margin-bottom: 20px;
-                    animation: pulse 2s ease-in-out infinite;
-                }
-                h1 {
-                    color: #333;
-                    margin: 0 0 20px 0;
-                    font-size: 28px;
-                    font-weight: 600;
-                }
-                p {
-                    color: #666;
-                    line-height: 1.6;
-                    margin: 15px 0;
-                    font-size: 16px;
-                }
-                .status {
-                    background: #0071c6;
-                    color: white;
-                    padding: 15px 25px;
-                    border-radius: 8px;
-                    margin-top: 30px;
-                    font-weight: 600;
-                    font-size: 16px;
-                }
-                @keyframes pulse {
-                    0%, 100% { opacity: 1; transform: scale(1); }
-                    50% { opacity: 0.8; transform: scale(1.05); }
-                }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="icon">⚠️</div>
-                <h1>System Maintenance</h1>
-                <p>The Edge Orchestrator is currently undergoing scheduled maintenance</p>
-                <div class="status">System Upgrade in Progress</div>
-                <p style="margin-top: 25px; font-size: 14px; color: #999;">
-                    Please try again after some time.
-                </p>
-            </div>
-        </body>
-        </html>
+        <#import "template.ftl" as layout>
+        <@layout.registrationLayout displayMessage=false; section>
+            <#if section = "header">
+                System Maintenance
+            <#elseif section = "form">
+                <style>
+                    .maintenance-container {
+                        text-align: center;
+                        padding: 30px 20px;
+                    }
+                    .maintenance-icon {
+                        font-size: 72px;
+                        margin-bottom: 20px;
+                        animation: pulse 2s ease-in-out infinite;
+                    }
+                    .maintenance-container h1 {
+                        color: #333;
+                        margin: 0 0 20px 0;
+                        font-size: 28px;
+                        font-weight: 600;
+                    }
+                    .maintenance-container p {
+                        color: #666;
+                        line-height: 1.6;
+                        margin: 15px 0;
+                        font-size: 16px;
+                    }
+                    .maintenance-status {
+                        background: #0071c6;
+                        color: white;
+                        padding: 15px 25px;
+                        border-radius: 8px;
+                        margin: 30px auto;
+                        font-weight: 600;
+                        font-size: 16px;
+                        display: inline-block;
+                    }
+                    @keyframes pulse {
+                        0%, 100% { opacity: 1; transform: scale(1); }
+                        50% { opacity: 0.8; transform: scale(1.05); }
+                    }
+                </style>
+                <div class="maintenance-container">
+                    <div class="maintenance-icon">⚠️</div>
+                    <h1>System Maintenance</h1>
+                    <p>The Edge Orchestrator is currently undergoing scheduled maintenance</p>
+                    <div class="maintenance-status">System Upgrade in Progress</div>
+                    <p style="margin-top: 25px; font-size: 14px; color: #999;">
+                        Please try again after some time.
+                    </p>
+                </div>
+            </#if>
+        </@layout.registrationLayout>
 
 
 # disable network policy to avoid intermittent dns issues
