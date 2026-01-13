@@ -56,19 +56,9 @@ inventory:
     pod:
       enabled: false
       image:
-        registry: "postgres"
-        repository: "postgres"
-        tag: "16-alpine"
-        pullPolicy: "IfNotPresent"
-    external:
-      enabled: true
-      host: "postgresql-cluster-rw.orch-infra.svc.cluster.local"
-      port: "5432"
-      database: "inventory"
-      username: "orch-infra-system-inventory_user"
-      secret:
-        name: "db-postgresql-cluster-inventory-app"
-        key: "password"
+        tag: 16.10-bookworm
+    ssl: false
+    secrets: inventory-local-postgresql
   resources: null
 
 # MPS (Management Presence Server) Configuration
