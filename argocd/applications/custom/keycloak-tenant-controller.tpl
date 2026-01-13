@@ -30,7 +30,7 @@ securityContext:
 keycloakAdmin:
   url: "http://platform-keycloak.orch-platform.svc:8080"
   user: admin
-  client: admin-cli
+  client: system-client
   passwordSecret:
     name: platform-keycloak # name of the secret
     key: password # key of the secret

@@ -7,6 +7,7 @@
 keycloak:
   # Bootstrap admin credentials
   # Note: The secret is created externally by deployment scripts (mage/installer)
+  # The secret MUST contain 'username' and 'password' keys - operator will read them automatically
   bootstrapAdmin:
     user:
       secret: platform-keycloak

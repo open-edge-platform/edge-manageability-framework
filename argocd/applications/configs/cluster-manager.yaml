@@ -18,8 +18,6 @@ curlImage:
   pullPolicy: IfNotPresent
 
 keycloakAdmin:
-  user: admin
-  client: admin-cli
   passwordSecret:
     name: platform-keycloak  # name of the secret
     key: password  # key of the secret
