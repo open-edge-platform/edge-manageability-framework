@@ -56,34 +56,17 @@ extraDeploy:
                 <style>
                     .maintenance-container {
                         text-align: center;
-                        padding: 30px 20px;
                     }
                     .maintenance-icon {
-                        font-size: 72px;
+                        font-size: 50px;
                         margin-bottom: 20px;
                         animation: pulse 2s ease-in-out infinite;
-                    }
-                    .maintenance-container h1 {
-                        color: #333;
-                        margin: 0 0 20px 0;
-                        font-size: 28px;
-                        font-weight: 600;
                     }
                     .maintenance-container p {
                         color: #666;
                         line-height: 1.6;
                         margin: 15px 0;
                         font-size: 16px;
-                    }
-                    .maintenance-status {
-                        background: #0071c6;
-                        color: white;
-                        padding: 15px 25px;
-                        border-radius: 8px;
-                        margin: 30px auto;
-                        font-weight: 600;
-                        font-size: 16px;
-                        display: inline-block;
                     }
                     @keyframes pulse {
                         0%, 100% { opacity: 1; transform: scale(1); }
@@ -92,10 +75,8 @@ extraDeploy:
                 </style>
                 <div class="maintenance-container">
                     <div class="maintenance-icon">⚠️</div>
-                    <h1>System Maintenance</h1>
                     <p>The Edge Orchestrator is currently undergoing scheduled maintenance</p>
-                    <div class="maintenance-status">System Upgrade in Progress</div>
-                    <p style="margin-top: 25px; font-size: 14px; color: #999;">
+                    <p style="margin-top: 20px; font-size: 14px; color: #999;">
                         Please try again after some time.
                     </p>
                 </div>
