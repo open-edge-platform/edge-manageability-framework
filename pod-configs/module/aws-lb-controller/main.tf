@@ -25,4 +25,5 @@ resource "helm_release" "aws-load-balancer-controller" {
   values = [local.helm_values]
   namespace = "kube-system"
   force_update = true
+  disable_openapi_validation = true
 }
