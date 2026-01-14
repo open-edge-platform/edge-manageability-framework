@@ -9,42 +9,25 @@
 
 argo:
   enabled:
+    infra-core: true
+    infra-managers: true
+    infra-external: true
+    infra-onboarding: true
     web-ui-infra: false
     copy-keycloak-admin-to-infra: true
-    infra-managers:
-      maintenance-manager:
-        enabled: false
-      telemetry-manager:
-        enabled: false
-      os-resource-manager:
-        enabled: false
-      networking-manager:
-        enabled: false
-      attestationstatus-manager:
-        enabled: false
-    infra-external:
-      mps:
-        enabled: true
-      rps:
-        enabled: true
-      dm-manager:
-        enabled: true
-      loca-metadata-manager:
-        enabled: false
-      loca-manager:
-        enabled: false
-      loca-credentials:
-        enabled: false
-      loca-templates-manager:
-        enabled: false
-    infra-onboarding:
-      infra-config:
-        enabled: true
-        skipOSProvisioning: true
-      pxe-server:
-        enabled: false
-      tinkerbell:
-        enabled: false
+  infra-managers:
+    host-manager:
+      enabled: false
+    maintenance-manager:
+      enabled: false
+    telemetry-manager:
+      enabled: false
+    os-resource-manager:
+      enabled: false
+    networking-manager:
+      enabled: false
+    attestationstatus-manager:
+      enabled: false
   infra-core:
     tenant-config:
       enabled: false
@@ -80,6 +63,13 @@ argo:
           memory: "64Gi"
           cpu: "64"
   infra-onboarding:
+    pxe-server:
+      enabled: false
+    tinkerbell:
+      enabled: false
+    infra-config:
+      enabled: true
+      skipOSProvisioning: true
     onboarding-manager:
       enabled: true
       resources:
@@ -90,6 +80,7 @@ argo:
           memory: "64Gi"
           cpu: "64"
     dkam:
+      enabled: true
       resources:
         requests:
           memory: "16Mi"
