@@ -48,6 +48,10 @@ infra-config:
     orchDeviceManager: device-manager-node.{{ .Values.argo.clusterDomain }}:443
 
     rsType: "{{ index .Values.argo "infra-onboarding" "rsType" | default "no-auth" }}"
+    enServiceClients: "{{ index .Values.argo "infra-onboarding" "enServiceClients" | default "hardware-discovery-agent,cluster-agent,platform-manageability-agent,platform-update-agent,platform-telemetry-agent" }}"
+    enOutboundClients: "{{ index .Values.argo "infra-onboarding" "enOutboundClients" | default "platform-observability-collector,platform-observability-health-check,platform-observability-logging,platform-observability-metrics" }}"
+    enMetricsEnabled: "{{ index .Values.argo "infra-onboarding" "enMetricsEnabled" | default "true" }}"
+    enTokenClients: "{{ index .Values.argo "infra-onboarding" "enTokenClients" | default "node-agent,hd-agent,cluster-agent,platform-update-agent,platform-observability-agent,platform-telemetry-agent,prometheus,connect-agent,attestation-manager,platform-manageability-agent" }}"
     disableCoProfile: {{ index .Values.argo "infra-onboarding" "disableCoProfile" | default false }}
     disableO11yProfile: {{ index .Values.argo "infra-onboarding" "disableO11yProfile" | default false }}
     netIp: "{{ index .Values.argo "infra-onboarding" "netIp" | default "dynamic" }}"

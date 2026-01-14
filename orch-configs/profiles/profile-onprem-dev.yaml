@@ -98,6 +98,11 @@ argo:
     nameServers: []
     # This parameter is used to specify the registry type, either "auth" for authenticated or "no-auth" for non-authenticated.
     rsType: "no-auth"
+    # These parameters are used to configure node-agent for modular installation.
+    enServiceClients: "hardware-discovery-agent,cluster-agent,platform-manageability-agent,platform-update-agent,platform-telemetry-agent"
+    enOutboundClients: "platform-observability-collector,platform-observability-health-check,platform-observability-logging,platform-observability-metrics"
+    enMetricsEnabled: "true"
+    enTokenClients: "node-agent,hd-agent,cluster-agent,platform-update-agent,platform-observability-agent,platform-telemetry-agent,prometheus,connect-agent,attestation-manager,platform-manageability-agent"
     # Support for adding Username and Password for login into  Ubuntu in dev mode
     # Please Provide userName and passWord for login into Ubuntu only for dev mode
     userName: ""
