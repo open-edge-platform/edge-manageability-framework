@@ -141,9 +141,11 @@ func start_local_psql_pod() {
 }
 
 func run_keycloak_admin_bootstrap() {
-	// some strange encoding issue with the keycloak shell requires the export.
+	// Use single quotes to prevent shell variable expansion of special characters in the password
+	// The password from the Kubernetes secret can contain special chars like $ which would be
+	// misinterpreted by bash if using double quotes or $(...)  syntax
 	command := "kubectl exec -itn " + keycloakNamespace + " platform-keycloak-0" +
-		"  -- sh -c 'export KC_BOOTSTRAP_ADMIN_PASSWORD=\"$(echo $KC_BOOTSTRAP_ADMIN_PASSWORD)\"; /opt/bitnami/keycloak/bin/kc.sh bootstrap-admin user --username:env KC_BOOTSTRAP_ADMIN_USERNAME --password:env KC_BOOTSTRAP_ADMIN_PASSWORD'"
+		"  -- sh -c 'export KC_BOOTSTRAP_ADMIN_PASSWORD=$KC_BOOTSTRAP_ADMIN_PASSWORD; /opt/bitnami/keycloak/bin/kc.sh bootstrap-admin user --username:env KC_BOOTSTRAP_ADMIN_USERNAME --password:env KC_BOOTSTRAP_ADMIN_PASSWORD'"
 	out, err := exec.Command("bash", "-c", command).CombinedOutput()
 	if err != nil {
 		fmt.Println(string(out), err)
