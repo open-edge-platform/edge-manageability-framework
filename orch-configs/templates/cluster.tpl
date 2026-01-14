@@ -16,9 +16,6 @@ root:
 {{- if .Values.enableAuditLogging }}
     - orch-configs/profiles/enable-audit.yaml
 {{- end }}
-{{- if .Values.enableKyverno }}
-    - orch-configs/profiles/enable-kyverno.yaml
-{{- end }}
 {{- if .Values.enableAppOrch }}
     - orch-configs/profiles/enable-app-orch.yaml
 {{- end }}
