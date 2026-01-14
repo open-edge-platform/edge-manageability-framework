@@ -307,7 +307,7 @@ realmMaster: |
       "ssoSessionIdleTimeout": 5400,
       "ssoSessionMaxLifespan": 43200,
       "passwordPolicy": "length(14) and digits(1) and specialChars(1) and upperCase(1) and lowerCase(1)",
-      "bruteForceProtected": false,
+      "bruteForceProtected": true,
       "permanentLockout": false,
       "maxFailureWaitSeconds": 900,
       "minimumQuickLoginWaitSeconds": 60,
