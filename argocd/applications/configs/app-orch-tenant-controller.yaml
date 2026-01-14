@@ -12,5 +12,4 @@ configProvisioner:
   releaseServiceBase: "rs-proxy.orch-platform.svc.cluster.local:8081"
   releaseServiceProxyRootUrl: "oci://rs-proxy.orch-platform.svc.cluster.local:8443"
   manifestPath: "/edge-orch/en/file/cluster-extension-manifest"
-  serviceAccount: "orch-svc"
 resources: null
