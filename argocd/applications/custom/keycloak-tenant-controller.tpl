@@ -33,6 +33,8 @@ keycloakAdmin:
   passwordSecret:
     name: platform-keycloak # name of the secret
     key: admin-password # key of the secret
+  # URL pointing to Keycloak in keycloak-system namespace (migration from orch-platform)
+  url: "http://platform-keycloak.keycloak-system.svc:8080"
 keycloak_realm: "master"
 argo:
   clusterDomain: {{.Values.argo.clusterDomain}}

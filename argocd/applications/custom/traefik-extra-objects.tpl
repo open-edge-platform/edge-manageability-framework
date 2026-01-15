@@ -6,10 +6,13 @@
 #        Revisit this once the porting is done.
 orchSecretName: tls-orch
 # internal keycloak JWKS URL should be static but providing a way to modify it here
-keycloakJwksUrl: http://platform-keycloak.orch-platform.svc
+keycloakJwksUrl: http://platform-keycloak.keycloak-system.svc
 # internal keycloak JWKS Path should be static but providing a way to modify it here
 keycloakJwksPath: /realms/master/protocol/openid-connect/certs
 keycloakServicePort: 8080
+# Keycloak service configuration for traefik-extra-objects IngressRoute
+keycloakServiceName: platform-keycloak
+keycloakServiceNamespace: keycloak-system
 fleetMatchHost: Host(`fleet.{{ .Values.argo.clusterDomain }}`)
 harborOciMatchHost: Host(`registry-oci.{{ .Values.argo.clusterDomain }}`)
 observabilityMatchHost: Host(`observability-ui.{{ .Values.argo.clusterDomain }}`)

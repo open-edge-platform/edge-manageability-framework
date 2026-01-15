@@ -6,4 +6,6 @@
 # Use either this or enable-local
 
 argo:
-  enabled: {}
+  enabled:
+    copy-db-to-keycloak-ns: true
+
