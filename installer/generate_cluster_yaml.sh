@@ -79,7 +79,8 @@ if [[ "$ORCH_INSTALLER_PROFILE" == "onprem-vpro" ]]; then
   export SRE_TLS_ENABLED=false
   export SINGLE_TENANCY_PROFILE=false
   export EMAIL_PROFILE='#- orch-configs/profiles/alerting-emails.yaml'
-  export PLATFORM_PROFILE='- orch-configs/profiles/enable-platform.yaml'
+  export PLATFORM_PROFILE='- orch-configs/profiles/enable-platform-vpro.yaml'
+  export EDGEINFRA_PROFILE='- orch-configs/profiles/enable-edgeinfra-vpro.yaml'
 fi
 
 # -----------------------------------------------------------------------------
