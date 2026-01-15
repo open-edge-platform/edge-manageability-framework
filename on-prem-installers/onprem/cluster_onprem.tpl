@@ -7,13 +7,13 @@
 root:
   useLocalValues: false
   clusterValues:
-    - orch-configs/profiles/enable-platform.yaml
+    ${PLATFORM_PROFILE}
     ${O11Y_ENABLE_PROFILE}
     ${KYVERNO_PROFILE}
     ${AO_PROFILE}
     ${CO_PROFILE}
     ${EDGEINFRA_PROFILE}
-    - orch-configs/profiles/enable-full-ui.yaml
+    ${UI_PROFILE}
     ${ONPREM_PROFILE}
     ${SRE_PROFILE}
     - orch-configs/profiles/proxy-none.yaml
