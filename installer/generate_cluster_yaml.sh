@@ -57,7 +57,6 @@ fi
 # -----------------------------------------------------------------------------
 export PLATFORM_PROFILE='- orch-configs/profiles/enable-platform.yaml'
 export KYVERNO_PROFILE='- orch-configs/profiles/enable-kyverno.yaml'
-export EDGEINFRA_PROFILE='- orch-configs/profiles/enable-edgeinfra.yaml'
 export FULL_UI_PROFILE='- orch-configs/profiles/enable-full-ui.yaml'
 export SRE_PROFILE='- orch-configs/profiles/enable-sre.yaml'
 export PROXY_NONE_PROFILE='- orch-configs/profiles/proxy-none.yaml'
@@ -154,6 +153,20 @@ if [ "${SINGLE_TENANCY_PROFILE:-false}" = "true" ]; then
     export SINGLE_TENANCY_PROFILE="- orch-configs/profiles/enable-singleTenancy.yaml"
 else
     export SINGLE_TENANCY_PROFILE="#- orch-configs/profiles/enable-singleTenancy.yaml"
+fi
+
+# -----------------------------------------------------------------------------
+# Modular Vpro profile logic
+# -----------------------------------------------------------------------------
+if [ "${MODULAR_PROFILE:-}" = "vpro" ]; then
+    export EDGEINFRA_PROFILE='- orch-configs/profiles/enable-modular-vpro.yaml'
+    # Disable CO, AO, O11Y profiles for Modular VPro
+    export CO_PROFILE="#- orch-configs/profiles/enable-cluster-orch.yaml"
+    export AO_PROFILE="#- orch-configs/profiles/enable-app-orch.yaml"
+    export O11Y_ENABLE_PROFILE="#- orch-configs/profiles/enable-o11y.yaml"
+    export O11Y_PROFILE="#- orch-configs/profiles/o11y-onprem.yaml"
+else
+    export EDGEINFRA_PROFILE='- orch-configs/profiles/enable-edgeinfra.yaml'
 fi
 
 # -----------------------------------------------------------------------------
@@ -327,7 +340,6 @@ if [ "${ONPREM_UPGRADE_SYNC:-false}" = "true" ]; then
   .argo.metadata.annotations."argocd.argoproj.io/hook-delete-policy" = "BeforeHookCreation"
 ' "$OUTPUT_FILE"
 fi
-
 
 # -----------------------------------------------------------------------------
 # Proxy variable updates
