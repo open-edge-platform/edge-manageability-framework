@@ -92,7 +92,13 @@ func (Argo) login() error {
 
 func (Argo) repoAdd(gitUser string, gitToken string, repos []string) error {
 	for _, repo := range repos {
-		cmd := fmt.Sprintf("argocd repo add %s --username %s --password '%s' --upsert --insecure-skip-server-verification --insecure", repo, gitUser, gitToken)
+		var cmd string
+		if gitUser != "" && gitToken != "" {
+			cmd = fmt.Sprintf("argocd repo add %s --username %s --password '%s' --upsert --insecure-skip-server-verification --insecure", repo, gitUser, gitToken)
+		} else {
+			cmd = fmt.Sprintf("argocd repo add %s --upsert --insecure-skip-server-verification --insecure", repo)
+		}
+
 		if _, err := script.Exec(cmd).Stdout(); err != nil {
 			return fmt.Errorf("adding repo %s: %w", repo, err)
 		}
