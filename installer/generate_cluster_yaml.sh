@@ -69,8 +69,7 @@ export ARTIFACT_RS_PROFILE='- orch-configs/profiles/artifact-rs-production-noaut
 export OSRM_MANUAL_PROFILE='- orch-configs/profiles/enable-osrm-manual-mode.yaml'
 export RESOURCE_DEFAULT_PROFILE='- orch-configs/profiles/resource-default.yaml'
 
-
-if [[ "$ORCH_INSTALLER_PROFILE" == "onprem-vpro" ]]; then
+if [[ "${ORCH_INSTALLER_PROFILE:-}" == "onprem-vpro" || "${ORCH_INSTALLER_PROFILE:-}" == "aws-vpro" ]]; then
   export DISABLE_AO_PROFILE=true
   export DISABLE_CO_PROFILE=true
   export DISABLE_O11Y_PROFILE=true
