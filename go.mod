@@ -4,7 +4,7 @@
 
 module github.com/open-edge-platform/edge-manageability-framework
 
-go 1.24.9
+go 1.25.5
 
 require (
 	github.com/Nerzal/gocloak/v13 v13.9.0
