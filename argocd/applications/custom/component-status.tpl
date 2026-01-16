@@ -77,22 +77,22 @@ componentStatus:
         # Day2: Day 2 operations - maintenance, updates, troubleshooting
         # Detection: maintenance-manager is deployed as part of infra-managers
         day2:
-          installed: {{ and (index .Values.argo.enabled "infra-managers") (index .Values.argo "infra-managers" "maintenance-manager") | default false }}
+          installed: {{ if and (index .Values.argo.enabled "infra-managers") (index .Values.argo "infra-managers" "maintenance-manager") }}true{{ else }}false{{ end }}
         
         # Onboarding: Device discovery, registration, and enrollment workflow
         # Detection: onboarding-manager is enabled in infra-onboarding
         onboarding:
-          installed: {{ and (index .Values.argo.enabled "infra-onboarding") (index .Values.argo "infra-onboarding" "onboarding-manager" "enabled") | default false }}
+          installed: {{ if and (index .Values.argo.enabled "infra-onboarding") (index .Values.argo "infra-onboarding" "onboarding-manager" "enabled") }}true{{ else }}false{{ end }}
         
         # OOB (Out-of-Band): vPRO/AMT/LOCA management capabilities
         # Detection: LOCA configuration exists in infra-external (indicates vPRO managers deployed)
         oob:
-          installed: {{ and (index .Values.argo.enabled "infra-external") (index .Values.argo "infra-external" "loca") | default false }}
+          installed: {{ if and (index .Values.argo.enabled "infra-external") (index .Values.argo "infra-external" "loca") }}true{{ else }}false{{ end }}
         
         # Provisioning: Zero-touch provisioning with PXE boot
         # Detection: pxe-server is enabled in infra-onboarding
         provisioning:
-          installed: {{ and (index .Values.argo.enabled "infra-onboarding") (index .Values.argo "infra-onboarding" "pxe-server" "enabled") | default false }}
+          installed: {{ if and (index .Values.argo.enabled "infra-onboarding") (index .Values.argo "infra-onboarding" "pxe-server" "enabled") }}true{{ else }}false{{ end }}
       
       # Observability: Enabled when o11y profile is loaded
       # Detection: enable-o11y.yaml in root-app valueFiles
