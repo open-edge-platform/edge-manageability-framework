@@ -8,23 +8,11 @@ keycloak:
   # Bootstrap admin credentials
   # Note: The secret is created externally by deployment scripts (mage/installer)
   # The secret MUST contain 'username' and 'password' keys - operator will read them automatically
+  # The Keycloak operator will automatically inject KC_BOOTSTRAP_ADMIN_USERNAME and KC_BOOTSTRAP_ADMIN_PASSWORD
+  # from the secret specified below into the Keycloak pod environment
   bootstrapAdmin:
     user:
       secret: platform-keycloak
-
-  # Environment variables injected into Keycloak pod
-  # Ensure bootstrap credentials are available at startup
-  env:
-    - name: KC_BOOTSTRAP_ADMIN_USERNAME
-      valueFrom:
-        secretKeyRef:
-          name: platform-keycloak
-          key: username
-    - name: KC_BOOTSTRAP_ADMIN_PASSWORD
-      valueFrom:
-        secretKeyRef:
-          name: platform-keycloak
-          key: password
 
   # Database configuration
   database:

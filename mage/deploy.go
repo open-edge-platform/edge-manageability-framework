@@ -238,6 +238,7 @@ func (d Deploy) kind(targetEnv string) error { //nolint:gocyclo
 	if err := (Argo{}).dockerHubChartOrgAdd(); err != nil {
 		return err
 	}
+
 	fmt.Println("kind cluster ready: 😊")
 	return nil
 }
@@ -1628,3 +1629,4 @@ func (d Deploy) orchLocal(targetEnv string) error {
 	}
 	return err
 }
+
