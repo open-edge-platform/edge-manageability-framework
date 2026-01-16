@@ -17,8 +17,11 @@ global:
 
 import:
   tenant-config:
-    enabled: {{ index .Values.argo "infra-core" "tenant-config" "enabled" }}
-
+    enabled: {{ dig "infra-core" "tenant-config" "enabled" false .Values.argo }}
+  api:
+    enabled: {{ dig "infra-core" "api" "enabled" true .Values.argo }}
+  exporter:
+    enabled: {{ dig "infra-core" "exporter" "enabled" true .Values.argo }}
 api:
   serviceArgs:
     enableTracing: {{ index .Values.argo "infra-core" "enableTracing" | default false }}
