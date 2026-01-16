@@ -126,6 +126,33 @@ var _ = Describe("Component Status Service", Label(componentStatusLabel), func()
 				_, exists := status.Orchestrator.Features[feature]
 				Expect(exists).To(BeTrue(), fmt.Sprintf("Feature %s should be present", feature))
 			}
+
+			// Verify sub-features for cluster-orchestration
+			clusterOrch := status.Orchestrator.Features["cluster-orchestration"]
+			Expect(clusterOrch.SubFeatures).ToNot(BeNil(), "cluster-orchestration should have sub-features")
+			expectedClusterSubFeatures := []string{"cluster-management", "capi", "intel-provider"}
+			for _, subFeature := range expectedClusterSubFeatures {
+				_, exists := clusterOrch.SubFeatures[subFeature]
+				Expect(exists).To(BeTrue(), fmt.Sprintf("cluster-orchestration sub-feature %s should be present", subFeature))
+			}
+
+			// Verify sub-features for observability
+			observability := status.Orchestrator.Features["observability"]
+			Expect(observability.SubFeatures).ToNot(BeNil(), "observability should have sub-features")
+			expectedObservabilitySubFeatures := []string{"orchestrator-monitoring", "edge-node-monitoring", "orchestrator-dashboards", "edge-node-dashboards", "alerting"}
+			for _, subFeature := range expectedObservabilitySubFeatures {
+				_, exists := observability.SubFeatures[subFeature]
+				Expect(exists).To(BeTrue(), fmt.Sprintf("observability sub-feature %s should be present", subFeature))
+			}
+
+			// Verify sub-features for kyverno
+			kyverno := status.Orchestrator.Features["kyverno"]
+			Expect(kyverno.SubFeatures).ToNot(BeNil(), "kyverno should have sub-features")
+			expectedKyvernoSubFeatures := []string{"policy-engine", "policies"}
+			for _, subFeature := range expectedKyvernoSubFeatures {
+				_, exists := kyverno.SubFeatures[subFeature]
+				Expect(exists).To(BeTrue(), fmt.Sprintf("kyverno sub-feature %s should be present", subFeature))
+			}
 		})
 
 		It("should have proper Content-Type header", func() {
