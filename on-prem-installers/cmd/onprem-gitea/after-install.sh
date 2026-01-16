@@ -72,8 +72,8 @@ createGiteaSecret() {
   local namespace=$4
 
   kubectl create secret generic "$secretName" -n "$namespace" \
-    --from-literal=username="$accountName" \
-    --from-literal=password="$password" \
+    --from-literal=username='$accountName' \
+    --from-literal=password='$password' \
     --dry-run=client -o yaml | kubectl apply -f -
 }
 
@@ -100,9 +100,9 @@ createGiteaAccount() {
     kubectl exec -n gitea "$giteaPod" -c "gitea" -- gitea admin user change-password --username "$accountName" --password "$password" --must-change-password=false
   fi
 
-  userToken=$(kubectl exec -n gitea "$giteaPod" -c gitea -- gitea admin user generate-access-token --scopes write:repository,write:user --username $accountName --token-name "${accountName}-$(date +%s)")
-  token=$(echo $userToken | awk '{print $NF}')
-  kubectl create secret generic gitea-$accountName-token -n gitea --from-literal=token=$token
+  userToken=$(kubectl exec -n gitea "$giteaPod" -c gitea -- gitea admin user generate-access-token --scopes write:repository,write:user --username "$accountName" --token-name "${accountName}-$(date +%s)")
+  token=$(echo "$userToken" | awk '{print $NF}')
+  kubectl create secret generic gitea-"$accountName"-token -n gitea --from-literal=token='$token'
 }
 
 kubectl create ns gitea >/dev/null 2>&1 || true
