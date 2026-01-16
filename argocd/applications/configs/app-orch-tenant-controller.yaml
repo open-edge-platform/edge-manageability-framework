@@ -9,8 +9,8 @@ configProvisioner:
   namespace: orch-app
   vaultServer: "http://vault.orch-platform.svc.cluster.local:8200"
   keycloakServiceBase: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
-  releaseServiceBase: "rs-proxy.orch-platform.svc.cluster.local:8081"
-  releaseServiceProxyRootUrl: "oci://rs-proxy.orch-platform.svc.cluster.local:8443"
+  releaseServiceBase: "files-rs.edgeorchestration.intel.com"
+  releaseServiceProxyRootUrl: "oci://registry-rs.edgeorchestration.intel.com"
   manifestPath: "/edge-orch/en/file/cluster-extension-manifest"
   serviceAccount: "orch-svc"
 resources: null
