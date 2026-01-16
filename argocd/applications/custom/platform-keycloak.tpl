@@ -187,10 +187,6 @@ keycloak:
       - name: keycloak-data
         emptyDir:
           sizeLimit: 500Mi
-{{- if and .Values.argo .Values.argo.resources .Values.argo.resources.platformKeycloak }}
-  resources:
-    {{- toYaml .Values.argo.resources.platformKeycloak | nindent 4 }}
-{{- end }}
 
 ## These values are used to configure:
 ## 1. Realm import configuration (clients, redirect URIs, etc.)
@@ -302,7 +298,7 @@ realmMaster: |
       "waitIncrementSeconds": 300,
       "quickLoginCheckMilliSeconds": 200,
       "maxDeltaTimeSeconds": 43200,
-      "failureFactor": 5,
+      "failureFactor": 1000,
       "roles": {
         "realm": [
           {
@@ -976,6 +972,7 @@ realmMaster: |
         {
           "clientId": "system-client",
           "name": "System Client",
+          "description": "Public client for Resource Owner Password Credentials grant flow (admin API access)",
           "surrogateAuthRequired": false,
           "enabled": true,
           "alwaysDisplayInConsole": false,
