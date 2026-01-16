@@ -88,7 +88,7 @@ tinkerbell:
   pvc:
     storageClassName: {{ index .Values.argo "infra-onboarding" "tinkerbellStorageClass" | default "standard" }}
   traefikReverseProxy:
-    enabled: &traefikReverseProxy_enabled true
+    enabled: false
     tinkServerDnsname: "tinkerbell-server.{{ .Values.argo.clusterDomain }}"
     nginxDnsname: &nginxDnsname "tinkerbell-nginx.{{ .Values.argo.clusterDomain }}"
   stack:
@@ -126,7 +126,7 @@ tinkerbell:
       - "TIMEOUT=120s"
       - "syslog_host=127.0.0.1"
     traefikReverseProxy:
-      enabled: *traefikReverseProxy_enabled
+      enabled: false
       nginxDnsname: *nginxDnsname
 
 dkam:
