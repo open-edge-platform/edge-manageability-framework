@@ -35,10 +35,9 @@ configProvisioner:
   {{- else}}
   releaseServiceRootUrl: "oci://registry-rs.edgeorchestration.intel.com"
   {{- end}}
-  releaseServiceProxyRootUrl: "oci://rs-proxy.orch-platform.svc.cluster.local:8443"
-  manifestPath: "/edge-orch/en/file/cluster-extension-manifest"
-  manifestTag: "v1.4.12"
-  serviceAccount: "orch-svc"
+
+  manifestTag: "v1.5.1"
+
   # http proxy settings
   {{- if .Values.argo.proxy.httpProxy}}
   httpProxy: "{{ .Values.argo.proxy.httpProxy }}"
