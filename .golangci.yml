@@ -9,15 +9,12 @@ linters:
   enable-all: true
   # TODO: Fix linting issues and enable all linters.
   disable:
-    - canonicalheader
     - cyclop
     - depguard
     - dupl
     - durationcheck
-    - err113
     - exhaustruct
     - exportloopref
-    - fatcontext
     - forbidigo
     - forcetypeassert
     - funlen
@@ -28,25 +25,22 @@ linters:
     - gocritic
     - godot
     - godox
+    - goerr113
     - gomoddirectives
+    - gomnd
     - goprintffuncname
     - gosec
-    - intrange
     - ireturn
     - lll
-    - mnd
-    - musttag
     - nestif
     - nilerr
     - nlreturn
     - noctx
     - nonamedreturns
     - paralleltest
-    - perfsprint
     - prealloc
     - revive
     - stylecheck
-    - tagalign
     - tagliatelle
     - unparam
     - usestdlibvars
