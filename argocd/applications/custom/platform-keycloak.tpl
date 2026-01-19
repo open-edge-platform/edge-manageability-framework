@@ -226,57 +226,8 @@ argo:
     httpsProxy: "http://proxy-dmz.intel.com:912"
     noProxy: "localhost,svc,cluster.local,default,internal,caas.intel.com,certificates.intel.com,localhost,127.0.0.0/8,10.0.0.0/8,192.168.0.0/16,172.16.0.0/12,169.254.169.254,orch-platform,orch-app,orch-cluster,orch-infra,orch-database,cattle-system,orch-secret,s3.amazonaws.com,s3.us-west-2.amazonaws.com,ec2.us-west-2.amazonaws.com,eks.amazonaws.com,elb.us-west-2.amazonaws.com,dkr.ecr.us-west-2.amazonaws.com,espd.infra-host.com,pid.infra-host.com,espdqa.infra-host.com,argocd-repo-server"
 
-# Override Keycloak Config CLI environment variables to include proxy settings
-keycloakConfigCli:
-  job:
-    container:
-      env:
-        - name: KEYCLOAK_URL
-          value: "http://platform-keycloak.orch-platform.svc.cluster.local/"
-        - name: KEYCLOAK_USER
-          valueFrom:
-            secretKeyRef:
-              name: platform-keycloak
-              key: username
-        - name: KEYCLOAK_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: platform-keycloak
-              key: password
-        - name: KEYCLOAK_AVAILABILITYCHECK_ENABLED
-          value: "true"
-        - name: KEYCLOAK_AVAILABILITYCHECK_TIMEOUT
-          value: "120s"
-        - name: IMPORT_VARSUBSTITUTION_ENABLED
-          value: "true"
-        - name: IMPORT_FILES_LOCATIONS
-          value: "/config/*"
-        - name: IMPORT_MANAGED_GROUP
-          value: "no-delete"
-        - name: IMPORT_MANAGED_REQUIRED_ACTION
-          value: "no-delete"
-        - name: IMPORT_MANAGED_ROLE
-          value: "no-delete"
-        - name: IMPORT_MANAGED_CLIENT
-          value: "no-delete"
-        - name: IMPORT_REMOTE_STATE_ENABLED
-          value: "true"
-        - name: LOGGING_LEVEL_ROOT
-          value: "INFO"
-        - name: LOGGING_LEVEL_KEYCLOAKCONFIGCLI
-          value: "DEBUG"
-        {{- if .Values.argo.proxy.httpsProxy }}
-        - name: HTTPS_PROXY
-          value: {{ .Values.argo.proxy.httpsProxy | quote }}
-        {{- end }}
-        {{- if .Values.argo.proxy.httpProxy }}
-        - name: HTTP_PROXY
-          value: {{ .Values.argo.proxy.httpProxy | quote }}
-        {{- end }}
-        {{- if .Values.argo.proxy.noProxy }}
-        - name: NO_PROXY
-          value: {{ .Values.argo.proxy.noProxy | quote }}
-        {{- end }}
+# Note: keycloakConfigCli configuration is fully defined in configs/platform-keycloak.yaml
+# Only adding proxy env variables here if needed. The rest comes from the base config.
 
 # Override realmMaster configuration with properly resolved clusterSpecific values
 # This overrides the base config's realmMaster so template variables get resolved
@@ -291,7 +242,7 @@ realmMaster: |
       "ssoSessionIdleTimeout": 5400,
       "ssoSessionMaxLifespan": 43200,
       "passwordPolicy": "length(14) and digits(1) and specialChars(1) and upperCase(1) and lowerCase(1)",
-      "bruteForceProtected": false,
+      "bruteForceProtected": true,
       "permanentLockout": false,
       "maxFailureWaitSeconds": 900,
       "minimumQuickLoginWaitSeconds": 60,
