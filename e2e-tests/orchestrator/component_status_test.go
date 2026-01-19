@@ -282,8 +282,8 @@ var _ = Describe("Component Status Service", Label(componentStatusLabel), func()
 
 			It("should allow onboarding and provisioning to be independent", func() {
 				eim := status.Orchestrator.Features["edge-infrastructure-manager"]
-				onboarding, _ := eim.SubFeatures["onboarding"]
-				provisioning, _ := eim.SubFeatures["provisioning"]
+				onboarding := eim.SubFeatures["onboarding"]
+				provisioning := eim.SubFeatures["provisioning"]
 
 				// Onboarding can be enabled without provisioning
 				// This validates they are truly independent workflows
@@ -356,8 +356,8 @@ var _ = Describe("Component Status Service", Label(componentStatusLabel), func()
 
 			It("should detect orchestrator monitoring independently from edge node monitoring", func() {
 				obs := status.Orchestrator.Features["observability"]
-				orchMon, _ := obs.SubFeatures["orchestrator-monitoring"]
-				edgeMon, _ := obs.SubFeatures["edge-node-monitoring"]
+				orchMon := obs.SubFeatures["orchestrator-monitoring"]
+				edgeMon := obs.SubFeatures["edge-node-monitoring"]
 
 				// These can be enabled independently
 				Expect(orchMon.Installed).To(Or(BeTrue(), BeFalse()))
@@ -366,8 +366,8 @@ var _ = Describe("Component Status Service", Label(componentStatusLabel), func()
 
 			It("should detect dashboard availability", func() {
 				obs := status.Orchestrator.Features["observability"]
-				orchDash, _ := obs.SubFeatures["orchestrator-dashboards"]
-				edgeDash, _ := obs.SubFeatures["edge-node-dashboards"]
+				orchDash := obs.SubFeatures["orchestrator-dashboards"]
+				edgeDash := obs.SubFeatures["edge-node-dashboards"]
 
 				Expect(orchDash.Installed).To(Or(BeTrue(), BeFalse()))
 				Expect(edgeDash.Installed).To(Or(BeTrue(), BeFalse()))
