@@ -20,8 +20,6 @@ import:
     enabled: {{ index .Values.argo "infra-onboarding" "onboarding-manager" "enabled" }}
   pxe-server:
     enabled: {{ index .Values.argo "infra-onboarding" "pxe-server" "enabled" }}
-  tinkerbell:
-    enabled: {{ index .Values.argo "infra-onboarding" "tinkerbell" "enabled" }}
 
 infra-config:
   config:
