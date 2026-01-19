@@ -19,8 +19,8 @@ resources:
 # Priority must be > 30 to override nexus-api-gw's generic /v route (priority 30)
 traefikRoute:
   enabled: true
-  matchHost: Host(`api.{{ .Values.argo.clusterDomain }}`)
-  matchPath: PathPrefix(`/v1/orchestrator`)
+  matchHost: "Host(`api.{{ .Values.argo.clusterDomain }}`)"
+  matchPath: "PathPrefix(`/v1/orchestrator`)"
   priority: 40
   namespace: orch-gateway
   secretName: tls-orch
@@ -63,31 +63,31 @@ componentStatus:
       
       # Edge Infrastructure Manager - Enabled when edge-infra profile is loaded
       # Detection - enable-edgeinfra.yaml in root-app valueFiles
-      # Profile enables 4 core apps - infra-core, infra-managers, infra-onboarding, infra-external
-      # We report the overall feature as installed if ANY infra app is enabled
-      # Sub-features represent workflow-level capabilities
+      # EIM is NOT broken down at app level (all workflows need core+managers+onboarding)
+      # Instead, different APIs/managers/configs enable different workflow-level capabilities
+      # Hierarchical fallback - CLI checks sub-feature first, falls back to parent if not found
       edge-infrastructure-manager:
         installed: {{ or (index .Values.argo.enabled "infra-core") (index .Values.argo.enabled "infra-managers") (index .Values.argo.enabled "infra-onboarding") (index .Values.argo.enabled "infra-external") | default false }}
         
         # Day2 - Day 2 operations (maintenance, updates, troubleshooting)
-        # Detection - maintenance-manager is deployed as part of infra-managers
+        # Detection - maintenance-manager is configured in infra-managers
         day2:
-          installed: {{ if and (index .Values.argo.enabled "infra-managers") (index .Values.argo "infra-managers" "maintenance-manager") }}true{{ else }}false{{ end }}
+          installed: {{ if hasKey .Values.argo "infra-managers" }}{{ $infraManagers := index .Values.argo "infra-managers" }}{{ if hasKey $infraManagers "maintenance-manager" }}true{{ else }}false{{ end }}{{ else }}false{{ end }}
         
         # Onboarding - Device discovery, registration, and enrollment workflow
-        # Detection - onboarding-manager is enabled in infra-onboarding
+        # Detection - onboarding-manager is configured and enabled in infra-onboarding
         onboarding:
-          installed: {{ if and (index .Values.argo.enabled "infra-onboarding") (index .Values.argo "infra-onboarding" "onboarding-manager" "enabled") }}true{{ else }}false{{ end }}
+          installed: {{ if hasKey .Values.argo "infra-onboarding" }}{{ $infraOnboarding := index .Values.argo "infra-onboarding" }}{{ if hasKey $infraOnboarding "onboarding-manager" }}{{ $onboardingMgr := index $infraOnboarding "onboarding-manager" }}{{ $onboardingMgr.enabled | default false }}{{ else }}false{{ end }}{{ else }}false{{ end }}
         
         # OOB (Out-of-Band) - vPRO/AMT management capabilities
-        # Detection - AMT configuration exists in infra-external (indicates vPRO/AMT managers deployed)
+        # Detection - AMT is configured in infra-external (vPRO/AMT managers deployed)
         oob:
-          installed: {{ if and (index .Values.argo.enabled "infra-external") (index .Values.argo "infra-external" "amt") }}true{{ else }}false{{ end }}
+          installed: {{ if and (index .Values.argo.enabled "infra-external" | default false) (hasKey .Values.argo "infra-external") }}{{ $infraExternal := index .Values.argo "infra-external" }}{{ if hasKey $infraExternal "import" }}{{ if hasKey $infraExternal.import "amt" }}{{ $infraExternal.import.amt.enabled | default false }}{{ else }}false{{ end }}{{ else }}false{{ end }}{{ else }}false{{ end }}
         
         # Provisioning - Automatic OS provisioning workflow
         # Detection - autoProvision is enabled in infra-managers (os-resource-manager handles automatic provisioning)
         provisioning:
-          installed: {{ if and (index .Values.argo.enabled "infra-managers") (index .Values.argo "infra-managers" "autoProvision" "enabled") }}true{{ else }}false{{ end }}
+          installed: {{ if and (index .Values.argo.enabled "infra-managers" | default false) (hasKey .Values.argo "infra-managers") }}{{ $infraManagers := index .Values.argo "infra-managers" }}{{ if hasKey $infraManagers "autoProvision" }}{{ $infraManagers.autoProvision.enabled | default false }}{{ else }}false{{ end }}{{ else }}false{{ end }}
       
       # Observability - Enabled when o11y profile is loaded
       # Detection - enable-o11y.yaml in root-app valueFiles

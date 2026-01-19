@@ -395,8 +395,8 @@ var _ = Describe("Component Status Service", Label(componentStatusLabel), func()
 
 			It("should detect policy engine and policies independently", func() {
 				kyverno := status.Orchestrator.Features["kyverno"]
-				engine, _ := kyverno.SubFeatures["policy-engine"]
-				policies, _ := kyverno.SubFeatures["policies"]
+				engine := kyverno.SubFeatures["policy-engine"]
+				policies := kyverno.SubFeatures["policies"]
 
 				// Policy engine is the core, policies are optional
 				if policies.Installed {
@@ -426,10 +426,10 @@ var _ = Describe("Component Status Service", Label(componentStatusLabel), func()
 			It("should allow independent UI component deployment", func() {
 				webUI := status.Orchestrator.Features["web-ui"]
 
-				orchUIRoot, _ := webUI.SubFeatures["orchestrator-ui-root"]
-				appUI, _ := webUI.SubFeatures["application-orchestration-ui"]
-				clusterUI, _ := webUI.SubFeatures["cluster-orchestration-ui"]
-				infraUI, _ := webUI.SubFeatures["infrastructure-ui"]
+				orchUIRoot := webUI.SubFeatures["orchestrator-ui-root"]
+				appUI := webUI.SubFeatures["application-orchestration-ui"]
+				clusterUI := webUI.SubFeatures["cluster-orchestration-ui"]
+				infraUI := webUI.SubFeatures["infrastructure-ui"]
 
 				// Each UI component can be enabled/disabled independently
 				Expect(orchUIRoot.Installed).To(Or(BeTrue(), BeFalse()))
