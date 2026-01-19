@@ -35,13 +35,25 @@ volumes:
     type: configMap
     # mount path for the pod is not important when using plugins but it needs to be specified
     mountPath: ./traefik-jwt-plugin/
+  - name: maintenance-page
+    type: configMap
+    mountPath: /maintenance
 
 additionalVolumeMounts:
   - mountPath: ./plugins-local/src/github.com/team-carepay/traefik-jwt-plugin/
     name: jwt-plugin
+  - mountPath: /var/run/maintenance
+    name: maintenance-trigger
+
+deployment:
+  additionalVolumes:
+    - name: maintenance-trigger
+      emptyDir: {}
 
 additionalArguments:
   - --experimental.localPlugins.jwt.moduleName=github.com/team-carepay/traefik-jwt-plugin
+  - --experimental.plugins.traefik-maintenance.moduleName=github.com/TRIMM/traefik-maintenance
+  - --experimental.plugins.traefik-maintenance.version=v1.0.1
 
 metrics:
   prometheus:

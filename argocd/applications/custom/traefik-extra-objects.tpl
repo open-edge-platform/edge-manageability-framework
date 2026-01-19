@@ -61,3 +61,13 @@ cors:
   {{- end }}
 {{- end}}
 {{- end}}
+
+{{- if .Values.argo.traefik }}
+{{- if .Values.argo.traefik.maintenanceMode }}
+maintenanceMode:
+  enabled: {{ .Values.argo.traefik.maintenanceMode.enabled | default false }}
+  triggerFilename: {{ .Values.argo.traefik.maintenanceMode.triggerFilename | default "/var/run/maintenance/maintenance.trigger" | quote }}
+  maintenanceFilename: {{ .Values.argo.traefik.maintenanceMode.maintenanceFilename | default "/maintenance/maintenance.html" | quote }}
+  httpStatusCode: {{ .Values.argo.traefik.maintenanceMode.httpStatusCode | default 503 }}
+{{- end}}
+{{- end}}
