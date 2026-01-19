@@ -1,4 +1,3 @@
-
 # SPDX-FileCopyrightText: 2025 Intel Corporation
 #
 # SPDX-License-Identifier: Apache-2.0
@@ -6,7 +5,7 @@
 # Includes Edge Infrastructure Manager and UI
 # Use either this or enable-full
 
-# This enables Modular Vpro Edge Infrastructure Manager to support 100 edge nodes.
+# This enables Edge Infrastructure Manager to support 100 edge nodes.
 
 argo:
   enabled:
@@ -16,28 +15,18 @@ argo:
     infra-onboarding: true
     web-ui-infra: false
     copy-keycloak-admin-to-infra: true
-  infra-managers:
-    host-manager:
-      enabled: false
-    maintenance-manager:
-      enabled: false
-    telemetry-manager:
-      enabled: false
-    os-resource-manager:
-      enabled: false
-    networking-manager:
-      enabled: false
-    attestationstatus-manager:
-      enabled: false
   infra-core:
     tenant-config:
       enabled: false
-    exporter:
-      enabled: false
     api:
-      enabled: false
-    apiv2:
-      enabled: true
+      resources:
+        requests:
+          memory: "16Mi"
+          cpu: "10m"
+        limits:
+          memory: "64Gi"
+          cpu: "64"
+    exporter:
       resources:
         requests:
           memory: "16Mi"
@@ -46,7 +35,6 @@ argo:
           memory: "64Gi"
           cpu: "64"
     inventory:
-      enabled: true
       resources:
         requests:
           memory: "16Mi"
@@ -55,7 +43,47 @@ argo:
           memory: "64Gi"
           cpu: "64"
     tenant-controller:
-      enabled: true
+      resources:
+        requests:
+          memory: "16Mi"
+          cpu: "10m"
+        limits:
+          memory: "64Gi"
+          cpu: "64"
+  infra-managers:
+    host-manager:
+      resources:
+        requests:
+          memory: "16Mi"
+          cpu: "10m"
+        limits:
+          memory: "64Gi"
+          cpu: "64"
+    maintenance-manager:
+      resources:
+        requests:
+          memory: "16Mi"
+          cpu: "10m"
+        limits:
+          memory: "64Gi"
+          cpu: "64"
+    telemetry-manager:
+      resources:
+        requests:
+          memory: "16Mi"
+          cpu: "10m"
+        limits:
+          memory: "64Gi"
+          cpu: "64"
+    os-resource-manager:
+      resources:
+        requests:
+          memory: "16Mi"
+          cpu: "10m"
+        limits:
+          memory: "64Gi"
+          cpu: "64"
+    networking-manager:
       resources:
         requests:
           memory: "16Mi"
@@ -64,13 +92,6 @@ argo:
           memory: "64Gi"
           cpu: "64"
   infra-onboarding:
-    pxe-server:
-      enabled: false
-    tinkerbell:
-      enabled: false
-    infra-config:
-      enabled: true
-      skipOSProvisioning: true
     onboarding-manager:
       enabled: true
       resources:
@@ -81,7 +102,15 @@ argo:
           memory: "64Gi"
           cpu: "64"
     dkam:
-      enabled: true
+      resources:
+        requests:
+          memory: "16Mi"
+          cpu: "10m"
+        limits:
+          memory: "64Gi"
+          cpu: "64"
+    pxe-server:
+      enabled: false
       resources:
         requests:
           memory: "16Mi"
@@ -90,4 +119,3 @@ argo:
           memory: "64Gi"
           cpu: "64"
   infra-external: {}
-
