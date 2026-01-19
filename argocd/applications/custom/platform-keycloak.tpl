@@ -207,15 +207,6 @@ keycloak:
 {{- $telemetryRedirects := list (printf "https://observability-admin.%s/login/generic_oauth" $clusterDomain) (printf "https://observability-ui.%s/login/generic_oauth" $clusterDomain) -}}
 {{- $clusterMgmtRedirects := list (printf "https://cluster-management.%s" $clusterDomain) (printf "https://cluster-management.%s/" $clusterDomain) -}}
 
-# Override Keycloak Config CLI resources if specified
-{{- if and .Values.argo .Values.argo.resources .Values.argo.resources.keycloakConfigCli }}
-keycloakConfigCli:
-  job:
-    container:
-      resources:
-        {{- toYaml .Values.argo.resources.keycloakConfigCli | nindent 8 }}
-{{- end }}
-
 # Override cluster domain and proxy configuration
 argo:
   {{- if and .Values.argo .Values.argo.clusterDomain }}
