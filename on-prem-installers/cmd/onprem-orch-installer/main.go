@@ -49,7 +49,11 @@ func main() {
 	if err != nil {
 		log.Panicf("failed to create temp directory - %v", err)
 	}
-	defer os.RemoveAll(edgeManageabilityFrameworkFolder)
+	defer func() {
+		if err := os.RemoveAll(edgeManageabilityFrameworkFolder); err != nil {
+			log.Printf("Warning: failed to remove temp directory %s: %v\n", edgeManageabilityFrameworkFolder, err)
+		}
+	}()
 
 	giteaServiceURL, err := getGiteaServiceURL()
 	if err != nil {

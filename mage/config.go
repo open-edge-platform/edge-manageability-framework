@@ -232,7 +232,11 @@ func renderClusterTemplate(presetData map[string]interface{}) (string, error) {
 	} else {
 		fmt.Printf("Cluster values file created: %s\n", outputPath)
 	}
-	defer outputFile.Close()
+	defer func() {
+		if err := outputFile.Close(); err != nil {
+			fmt.Printf("Warning: failed to close output file %s: %v\n", outputPath, err)
+		}
+	}()
 
 	clusterTemplatePath := "orch-configs/templates/cluster.tpl"
 	if err := renderTemplate(clusterTemplatePath, presetDataValues, outputFile); err != nil {
@@ -263,7 +267,11 @@ func renderClusterTemplate(presetData map[string]interface{}) (string, error) {
 		} else {
 			fmt.Printf("Proxy profile file created: %s\n", proxyOutputPath)
 		}
-		defer proxyOutputFile.Close()
+		defer func() {
+			if err := proxyOutputFile.Close(); err != nil {
+				fmt.Printf("Warning: failed to close proxy output file %s: %v\n", proxyOutputPath, err)
+			}
+		}()
 
 		proxyValues := map[string]interface{}{
 			"Values": proxyData,
@@ -534,7 +542,11 @@ func (c Config) renderTargetConfigTemplate(targetEnv string, templatePath string
 	if err != nil {
 		return fmt.Errorf("failed to create output file: %w", err)
 	}
-	defer outputFile.Close()
+	defer func() {
+		if err := outputFile.Close(); err != nil {
+			fmt.Printf("Warning: failed to close output file %s: %v\n", outputPath, err)
+		}
+	}()
 	if err := tmpl.Execute(outputFile, templateValues); err != nil {
 		return fmt.Errorf("failed to render template: %w", err)
 	}
