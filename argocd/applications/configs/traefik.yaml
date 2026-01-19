@@ -35,15 +35,14 @@ volumes:
     type: configMap
     # mount path for the pod is not important when using plugins but it needs to be specified
     mountPath: ./traefik-jwt-plugin/
-  - name: maintenance-page
-    type: configMap
-    mountPath: /maintenance
 
 additionalVolumeMounts:
   - mountPath: ./plugins-local/src/github.com/team-carepay/traefik-jwt-plugin/
     name: jwt-plugin
   - mountPath: /var/run/maintenance
     name: maintenance-trigger
+  - mountPath: /maintenance
+    name: maintenance-page
 
 additionalArguments:
   - --experimental.localPlugins.jwt.moduleName=github.com/team-carepay/traefik-jwt-plugin
@@ -60,6 +59,9 @@ deployment:
   additionalVolumes:
     - name: maintenance-trigger
       emptyDir: {}
+    - name: maintenance-page
+      configMap:
+        name: traefik-maintenance-page
   podAnnotations:
     traffic.sidecar.istio.io/excludeInboundPorts: "8000,8443,8080,4433"          # Traefik listened
     traffic.sidecar.istio.io/excludeOutboundPorts: "4433"                        # Traefik MPS passthrough
