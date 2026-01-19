@@ -19,9 +19,9 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
-    - repoURL: "https://charts.botkube.io/"
-      chart: botkube
-      targetRevision: 1.11.0
+    - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
+      chart: common/charts/botkube
+      targetRevision: v1.11.0
       helm:
         releaseName: {{$appName}}
         valuesObject:
