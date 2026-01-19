@@ -61,16 +61,11 @@ componentStatus:
         intel-provider:
           installed: {{ index .Values.argo.enabled "intel-infra-provider" | default false }}
       
-      # Edge Infrastructure Manager: Enabled when edgeinfra profile is loaded
+      # Edge Infrastructure Manager: Enabled when edge-infra profile is loaded
       # Detection: enable-edgeinfra.yaml in root-app valueFiles
       # Profile enables 4 core apps: infra-core, infra-managers, infra-onboarding, infra-external
       # We report the overall feature as installed if ANY infra app is enabled
-      # Sub-features represent workflow-level capabilities (not app-level deployment)
-      # 
-      # Note: Detection is based on manager deployment/configuration rather than APIv2 variant
-      # because no eimScenario or apiVariant configuration variable currently exists.
-      # When APIv2 scenarios are implemented, detection can be enhanced with OR logic:
-      #   {{ or (eq .Values.argo.eimScenario "scenario-name") (manager-check) }}
+      # Sub-features represent workflow-level capabilities
       edge-infrastructure-manager:
         installed: {{ or (index .Values.argo.enabled "infra-core") (index .Values.argo.enabled "infra-managers") (index .Values.argo.enabled "infra-onboarding") (index .Values.argo.enabled "infra-external") | default false }}
         
@@ -84,15 +79,15 @@ componentStatus:
         onboarding:
           installed: {{ if and (index .Values.argo.enabled "infra-onboarding") (index .Values.argo "infra-onboarding" "onboarding-manager" "enabled") }}true{{ else }}false{{ end }}
         
-        # OOB (Out-of-Band): vPRO/AMT/LOCA management capabilities
-        # Detection: LOCA configuration exists in infra-external (indicates vPRO managers deployed)
+        # OOB (Out-of-Band): vPRO/AMT management capabilities
+        # Detection: AMT configuration exists in infra-external (indicates vPRO/AMT managers deployed)
         oob:
-          installed: {{ if and (index .Values.argo.enabled "infra-external") (index .Values.argo "infra-external" "loca") }}true{{ else }}false{{ end }}
+          installed: {{ if and (index .Values.argo.enabled "infra-external") (index .Values.argo "infra-external" "amt") }}true{{ else }}false{{ end }}
         
-        # Provisioning: Zero-touch provisioning with PXE boot
-        # Detection: pxe-server is enabled in infra-onboarding
+        # Provisioning: Automatic OS provisioning workflow
+        # Detection: autoProvision is enabled in infra-managers (os-resource-manager handles automatic provisioning)
         provisioning:
-          installed: {{ if and (index .Values.argo.enabled "infra-onboarding") (index .Values.argo "infra-onboarding" "pxe-server" "enabled") }}true{{ else }}false{{ end }}
+          installed: {{ if and (index .Values.argo.enabled "infra-managers") (index .Values.argo "infra-managers" "autoProvision" "enabled") }}true{{ else }}false{{ end }}
       
       # Observability: Enabled when o11y profile is loaded
       # Detection: enable-o11y.yaml in root-app valueFiles
@@ -123,7 +118,7 @@ componentStatus:
       # Detection: enable-full-ui.yaml in root-app valueFiles
       web-ui:
         installed: {{ or (index .Values.argo.enabled "web-ui-root") (index .Values.argo.enabled "web-ui-app-orch") (index .Values.argo.enabled "web-ui-cluster-orch") (index .Values.argo.enabled "web-ui-infra") | default false }}
-        orchestrator-ui:
+        orchestrator-ui-root:
           installed: {{ index .Values.argo.enabled "web-ui-root" | default false }}
         application-orchestration-ui:
           installed: {{ index .Values.argo.enabled "web-ui-app-orch" | default false }}
