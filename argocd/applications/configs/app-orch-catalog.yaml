@@ -36,5 +36,4 @@ openpolicyagent:
     readOnlyRootFilesystem: true
 resources: null
 vaultServerAddress: http://vault.orch-platform.svc.cluster.local:8200
-serviceAccount: orch-svc
 
