@@ -87,6 +87,7 @@ argo:
     web-ui-cluster-orch: false
     web-ui-infra: false
     web-ui-admin: false
+    metadata-broker: false
   cors:
     enabled: false
   # This enables the ingress route for Infra UI standalone
