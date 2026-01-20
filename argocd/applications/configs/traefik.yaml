@@ -39,9 +39,13 @@ volumes:
 additionalVolumeMounts:
   - mountPath: ./plugins-local/src/github.com/team-carepay/traefik-jwt-plugin/
     name: jwt-plugin
+  - mountPath: /var/run/maintenance
+    name: maintenance-trigger
 
 additionalArguments:
   - --experimental.localPlugins.jwt.moduleName=github.com/team-carepay/traefik-jwt-plugin
+  - --experimental.plugins.traefik-maintenance.moduleName=github.com/TRIMM/traefik-maintenance
+  - --experimental.plugins.traefik-maintenance.version=v1.0.1
 
 metrics:
   prometheus:
@@ -50,6 +54,9 @@ metrics:
       enabled: true
 
 deployment:
+  additionalVolumes:
+    - name: maintenance-trigger
+      emptyDir: {}
   podAnnotations:
     traffic.sidecar.istio.io/excludeInboundPorts: "8000,8443,8080,4433"          # Traefik listened
     traffic.sidecar.istio.io/excludeOutboundPorts: "4433"                        # Traefik MPS passthrough
