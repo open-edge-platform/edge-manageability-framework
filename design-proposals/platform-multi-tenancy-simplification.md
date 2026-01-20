@@ -58,9 +58,12 @@ The current EMF architecture exhibits several key issues:
 
 The proposed architecture introduces modularity and deployment flexibility through the following changes:
 
-- Elimination of the Multi-tenant API Gateway, allowing direct API exposure for all core services (App Orchestration, Cluster Orchestration, Infra Manager, Tenant Manager).
-- Multi-tenancy features are now optional and configurable; Tenant Manager and related controllers can be enabled or disabled based on deployment needs.
-- In single-tenant mode, services automatically provision a default tenant and project, ensuring consistent request handling without tenant management overhead.
+- Elimination of the Multi-tenant API Gateway, allowing direct API exposure for all core services
+  (App Orchestration, Cluster Orchestration, Infra Manager, Tenant Manager).
+- Multi-tenancy features are now optional and configurable; Tenant Manager and related controllers can be
+  enabled or disabled based on deployment needs.
+- In single-tenant mode, services automatically provision a default tenant and project, ensuring consistent
+  request handling without tenant management overhead.
 - Backward compatibility is preserved, enabling seamless upgrades for existing multi-tenant environments.
 
 This modular approach enables organizations to deploy EMF in single-tenant or multi-tenant modes, reducing complexity
@@ -107,7 +110,8 @@ unnecessary, offering a lightweight and efficient integration path.
 #### Track 1: Remove nexus-api-gateway
 
 - Develop RESTful API endpoints for Tenant Manager (`/v1/orgs`, `/v1/projects`).
-- Configure Traefik IngressRoutes for direct API exposure of Tenant Manager, Infra Manager, App Orchestration, and Cluster Orchestration services.
+- Configure Traefik IngressRoutes for direct API exposure of Tenant Manager, Infra Manager, App Orchestration,
+  and Cluster Orchestration services.
 - Shift tenant-aware authentication and authorization to the shared middleware (`orch-lib`) within each service.
 - Phase out legacy gateway features as services migrate to direct API access.
 - Perform integration and regression testing to ensure multi-tenant workflows remain functional.
@@ -136,7 +140,8 @@ features:
 
 ##### Step 3: Tenant Manager Modernization
 
-- Implement a standalone HTTP server/router for the Tenant Manager, exposing RESTful endpoints at `/v1/orgs` and `/v1/projects`.
+- Implement a standalone HTTP server/router for the Tenant Manager, exposing RESTful endpoints at `/v1/orgs`
+  and `/v1/projects`.
 - Create Traefik IngressRoute to route “PathRegexp(`/v1/orgs`, `/v1/projects`)” to the new Tenant Manager API.
 - Ensure authentication and authorization.
 - Perform integration testing to validate multi-tenant workflows and backward compatibility.
