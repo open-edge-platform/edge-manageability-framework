@@ -7,35 +7,11 @@ tlsOption: "gateway-tls"
 # https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
 traefikApiGroup: "traefik.io/v1alpha1"
 
-# Maintenance middleware for the plugin
-maintenanceMiddleware:
+# Maintenance mode middleware configuration
+# This will be created as a Traefik Middleware CRD
+# The middleware is applied globally via traefik.tpl entrypoint configuration
+maintenanceMode:
   enabled: true
-  spec:
-    plugin:
-      traefik-maintenance:
-        enabled: true
-        triggerFilename: /var/run/maintenance/maintenance.trigger
-        httpStatusCode: 503
-
-# Maintenance page content
-maintenanceConfigMap:
-  enabled: true
-  data:
-    maintenance.html: |
-      <!DOCTYPE html>
-      <html>
-      <head>
-          <meta charset="UTF-8">
-          <title>System Maintenance</title>
-          <style>
-              body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
-              h1 { color: #333; }
-              p { color: #666; }
-          </style>
-      </head>
-      <body>
-          <h1>System Maintenance</h1>
-          <p>The system is currently undergoing scheduled maintenance.</p>
-          <p>We apologize for any inconvenience. Please check back shortly.</p>
-      </body>
-      </html>
+  triggerFilename: /var/run/maintenance/maintenance.trigger
+  httpResponseCode: 503
+  httpContentType: 'text/html; charset=utf-8'
