@@ -15,7 +15,6 @@ maintenanceMiddleware:
       traefik-maintenance:
         enabled: true
         triggerFilename: /var/run/maintenance/maintenance.trigger
-        maintenanceFilename: /maintenance/maintenance.html
         httpStatusCode: 503
 
 # Maintenance page content
