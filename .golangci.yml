@@ -28,9 +28,7 @@ linters:
     - gocritic
     - godot
     - godox
-    - goerr113
     - gomoddirectives
-    - gomnd
     - goprintffuncname
     - gosec
     - intrange
