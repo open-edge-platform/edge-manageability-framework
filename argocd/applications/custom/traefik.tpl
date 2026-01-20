@@ -36,7 +36,6 @@ ports:
     nodePort: 30443
     # NOTE the middlewared name is <namespace>-<name>
     middlewares:
-      - orch-gateway-maintenance-mode@kubernetescrd
       - orch-gateway-rate-limit@kubernetescrd
       {{- if index .Values "argo" "cors"}}
       {{- if index .Values "argo" "cors" "enabled" }}
