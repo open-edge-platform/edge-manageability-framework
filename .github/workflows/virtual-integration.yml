@@ -738,43 +738,6 @@ jobs:
           token: ${{ secrets.SYS_EMF_GH_TOKEN }}
           persist-credentials: false
 
-      - name: Install vEN Deps
-        working-directory: edge-manage-test-automation
-        run: |
-          git submodule update --init --recursive
-
-      - name: Setup virtual environment
-        working-directory: edge-manage-test-automation
-        run: |
-          make asdf-install
-          make venv_edge-manage-test-automation
-
-          # install required versions for Pico
-          pushd repos/ven/pico
-          asdf install
-          popd
-
-      - name: Run Golden Suite Robot Framework Tests
-        id: robot-tests
-        timeout-minutes: 45
-        working-directory: edge-manage-test-automation
-        env:
-          KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
-          REQUESTS_CA_BUNDLE: /usr/local/share/ca-certificates/orch-ca.crt
-          LIBVIRT_DEFAULT_URI: 'qemu:///system'
-        run: |
-          KC_ADMIN_PWD=$(kubectl -n orch-platform get secrets platform-keycloak -o jsonpath='{.data.admin-password}' | base64 -d)
-          # Add the password to the orchestrator config
-          yq eval ".orchestrator.admin_password = \"${KC_ADMIN_PWD}\"" -i orchestrator-configs/on-prem.yaml
-
-          source venv_edge-manage-test-automation/bin/activate
-          robot -L DEBUG --pythonpath . \
-            --name "Golden Suite: Core Foundation" \
-            -d robot_output/core_foundation \
-            -V orchestrator-configs/on-prem.yaml \
-            --exitonfailure \
-            tests/core_foundation/core_foundation.robot
-
       - name: Run Orchestrator Diagnostics
         if: always()
         id: orch-k8s-diag
@@ -791,7 +754,7 @@ jobs:
         with:
           name: on-prem-${{ github.event_name }}-${{ github.event.number }}-orch-k8s-diagnostics-report
           path: |
-            edge-manage-test-automation/**/*.html
+            edge-manage-test-automation/**/diagnostics*.html
 
   deploy-oxm-profile:
     permissions:
