@@ -100,9 +100,7 @@ ${M}/release-secrets: | ${M}/create-namespaces
 
 ${M}/keycloak-secret: | ${M}/create-namespaces
 	@if ! kubectl get secret platform-keycloak -n orch-platform > /dev/null 2>&1; then \
-		kubectl create secret generic -n orch-platform platform-keycloak --from-literal=username=admin --from-literal=password='$(KEYCLOAK_PASSWORD)' --from-literal=admin-password='$(KEYCLOAK_PASSWORD)' --dry-run=client -o yaml | kubectl apply -f - ;\
-	else \
-		kubectl patch secret -n orch-platform platform-keycloak --type merge -p '{"stringData": {"admin-password": "$(KEYCLOAK_PASSWORD)"}}' ;\
+		kubectl create secret generic -n orch-platform platform-keycloak --from-literal=admin-password="$(KEYCLOAK_PASSWORD)" --from-literal=password="$(KEYCLOAK_PASSWORD)" --dry-run=client -o yaml | kubectl apply -f - ;\
 	fi
 	touch $@
 
