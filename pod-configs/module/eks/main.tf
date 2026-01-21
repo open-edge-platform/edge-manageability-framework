@@ -486,19 +486,6 @@ resource "aws_iam_role_policy_attachment" "cas_controller" {
   policy_arn = aws_iam_policy.cas_controller.arn
 }
 
-# creating service account for cas controller
-
-resource "kubernetes_service_account" "cluster_autoscaler" {
-  metadata {
-    name      = var.cas_service_account
-    namespace = var.cas_namespace
-
-    annotations = {
-      "eks.amazonaws.com/role-arn" = aws_iam_role.cas_controller.arn
-    }
-  }
-}
-
 # Creating IAM role for cert-manager.
 resource "aws_iam_role" "certmgr" {
   name = "certmgr-${var.cluster_name}"

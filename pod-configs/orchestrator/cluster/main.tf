@@ -228,3 +228,11 @@ module "gitea" {
   # gitea_database_password    = module.aurora_database.user_password["gitea-gitea_user"].result
   # gitea_database             = "gitea-gitea"  # See aurora_database module
 }
+
+module "eks-cas" {
+  depends_on    = [module.eks]
+  source        = "../../module/eks-cas"
+  aws_region    = var.aws_region
+  cluster_name  = var.eks_cluster_name
+  cas_controller_arn = module.eks.cas_controller_role_arn
+}
