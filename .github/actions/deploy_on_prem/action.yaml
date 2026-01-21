@@ -127,6 +127,25 @@ runs:
         echo "=== OpenEBS Pods ===" >> "$ORCH_PROFILE-diagnostics/storage-diagnostics.txt"
         kubectl get pods -n openebs-system -o wide >> "$ORCH_PROFILE-diagnostics/storage-diagnostics.txt" 2>&1 || true
         
+        # Network and proxy diagnostics (especially important for OXM profiles)
+        echo "=== Network Policies ===" > "$ORCH_PROFILE-diagnostics/network-diagnostics.txt"
+        kubectl get networkpolicies -A -o yaml >> "$ORCH_PROFILE-diagnostics/network-diagnostics.txt" 2>&1 || true
+        echo "" >> "$ORCH_PROFILE-diagnostics/network-diagnostics.txt"
+        echo "=== Gitea Pod Network Status ===" >> "$ORCH_PROFILE-diagnostics/network-diagnostics.txt"
+        kubectl exec -n gitea -c gitea $(kubectl get pods -n gitea -l app=gitea -o jsonpath='{.items[0].metadata.name}' 2>/dev/null) -- bash -c "env | grep -i proxy; echo '---'; ip addr; echo '---'; netstat -tlnp 2>/dev/null || ss -tlnp" >> "$ORCH_PROFILE-diagnostics/network-diagnostics.txt" 2>&1 || echo "Could not get pod network info" >> "$ORCH_PROFILE-diagnostics/network-diagnostics.txt"
+        echo "" >> "$ORCH_PROFILE-diagnostics/network-diagnostics.txt"
+        echo "=== DNS Resolution in Gitea Pod ===" >> "$ORCH_PROFILE-diagnostics/network-diagnostics.txt"
+        kubectl exec -n gitea -c gitea $(kubectl get pods -n gitea -l app=gitea -o jsonpath='{.items[0].metadata.name}' 2>/dev/null) -- bash -c "cat /etc/resolv.conf; echo '---'; nslookup dl.gitea.com; echo '---'; curl -I https://dl.gitea.com/charts/ 2>&1 | head -20" >> "$ORCH_PROFILE-diagnostics/network-diagnostics.txt" 2>&1 || echo "Could not resolve DNS" >> "$ORCH_PROFILE-diagnostics/network-diagnostics.txt"
+        
+        # OXM-specific proxy configuration check
+        if [[ "$ORCH_PROFILE" == "onprem-oxm" ]]; then
+          echo "=== OXM Proxy Configuration ===" >> "$ORCH_PROFILE-diagnostics/network-diagnostics.txt"
+          echo "TF_VAR_en_http_proxy: ${TF_VAR_en_http_proxy:-not set}" >> "$ORCH_PROFILE-diagnostics/network-diagnostics.txt"
+          echo "TF_VAR_en_https_proxy: ${TF_VAR_en_https_proxy:-not set}" >> "$ORCH_PROFILE-diagnostics/network-diagnostics.txt"
+          echo "TF_VAR_no_proxy: ${TF_VAR_no_proxy:-not set}" >> "$ORCH_PROFILE-diagnostics/network-diagnostics.txt"
+          echo "" >> "$ORCH_PROFILE-diagnostics/network-diagnostics.txt"
+        fi
+        
         # OS/System level diagnostics
         echo "=== System Information ===" > "$ORCH_PROFILE-diagnostics/system-diagnostics.txt"
         uname -a >> "$ORCH_PROFILE-diagnostics/system-diagnostics.txt" 2>&1 || true
@@ -170,5 +189,6 @@ runs:
           ${{ inputs.orch_profile }}-diagnostics/argocd-applications.yaml
           ${{ inputs.orch_profile }}-diagnostics/events.yaml
           ${{ inputs.orch_profile }}-diagnostics/storage-diagnostics.txt
+          ${{ inputs.orch_profile }}-diagnostics/network-diagnostics.txt
           ${{ inputs.orch_profile }}-diagnostics/system-diagnostics.txt
           ${{ inputs.orch_profile }}-diagnostics/dpkg-diagnostics.txt
