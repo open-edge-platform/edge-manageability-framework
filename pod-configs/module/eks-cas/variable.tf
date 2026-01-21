@@ -1,4 +1,3 @@
-  GNU nano 7.2                                                                 module/eks-cas/variable.tf
 variable "cluster_name" {
   type = string
 }
