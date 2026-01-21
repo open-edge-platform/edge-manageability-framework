@@ -745,7 +745,6 @@ jobs:
         env:
           KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
         run: |
-          source venv_edge-manage-test-automation/bin/activate
           python tools/utils/OrchestratorK8sDiagnosticsUtility.py --restart-threshold 10 --errors-only --output-html --output-json --include-logs
 
       - name: Upload test artifacts
