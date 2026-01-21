@@ -100,12 +100,12 @@ kubectl delete secret -n "$k8sNamespace" "$k8sSecretName" || true
 echo
 echo "*** Creating new secret $k8sSecretName in namespace $k8sNamespace..."
 kubectl create secret generic "$k8sSecretName" \
-  --from-literal=PGHOST='$pgHost' \
-  --from-literal=PGPORT='$pgPort' \
-  --from-literal=PGUSER='$databaseUser' \
-  --from-literal=PGPASSWORD='$newUserPassword' \
-  --from-literal=password='$newUserPassword' \
-  --from-literal=PGDATABASE='$database' \
+  --from-literal=PGHOST="$pgHost" \
+  --from-literal=PGPORT="$pgPort" \
+  --from-literal=PGUSER="$databaseUser" \
+  --from-literal=PGPASSWORD="$newUserPassword" \
+  --from-literal=password="$newUserPassword" \
+  --from-literal=PGDATABASE="$database" \
   --namespace="$k8sNamespace"
 
 echo
