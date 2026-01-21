@@ -128,11 +128,55 @@ echo "Docker registry: ${IMAGE_REGISTRY}"
 echo "Checking storage class availability before installation..."
 kubectl get storageclass -o wide || true
 kubectl get pvc -n gitea || true
-echo "Starting helm install with --wait flag..."
 
-# Install Gitea
-# Using --wait to ensure pod is ready, with original 15m timeout
-helm install gitea /tmp/gitea/gitea --values /tmp/gitea/values.yaml --set gitea.admin.existingSecret=gitea-cred --set image.registry="${IMAGE_REGISTRY}" -n gitea --timeout 15m0s --wait
+# Wait for Kubernetes to be ready by checking for metrics API availability and basic apiserver readiness
+echo "Waiting for Kubernetes system to be ready..."
+max_retries=30
+retry_count=0
+while [ $retry_count -lt $max_retries ]; do
+  # Check if basic kubectl commands work and metrics are available
+  if kubectl get nodes >/dev/null 2>&1 && kubectl api-resources 2>/dev/null | grep -q "metrics"; then
+    echo "Kubernetes system is ready"
+    break
+  fi
+  retry_count=$((retry_count + 1))
+  if [ $retry_count -eq $max_retries ]; then
+    echo "Warning: Kubernetes system may not be fully ready, continuing anyway..."
+  else
+    echo "Kubernetes not ready yet, waiting... ($retry_count/$max_retries)"
+    sleep 10
+  fi
+done
+
+echo "Starting helm install (without --wait due to early infrastructure phase)..."
+
+# Install Gitea without --wait to avoid hanging on pod readiness checks during early infrastructure setup
+# Pod readiness will be verified with manual wait loop below
+helm install gitea /tmp/gitea/gitea --values /tmp/gitea/values.yaml --set gitea.admin.existingSecret=gitea-cred --set image.registry="${IMAGE_REGISTRY}" -n gitea --timeout 15m0s
+
+# Wait for Gitea pod to be ready with manual polling
+echo "Waiting for Gitea pod to be ready..."
+max_retries=180  # 30 minutes with 10s intervals
+retry_count=0
+while [ $retry_count -lt $max_retries ]; do
+  ready=$(kubectl get deployment -n gitea gitea -o jsonpath='{.status.conditions[?(@.type=="Available")].status}' 2>/dev/null)
+  if [ "$ready" = "True" ]; then
+    echo "Gitea pod is ready"
+    break
+  fi
+  retry_count=$((retry_count + 1))
+  if [ $retry_count -eq $max_retries ]; then
+    echo "Error: Gitea pod failed to become ready after 30 minutes"
+    kubectl describe deployment -n gitea gitea || true
+    kubectl logs -n gitea -l app=gitea --tail=50 || true
+    exit 1
+  fi
+  if [ $((retry_count % 6)) -eq 0 ]; then
+    echo "Still waiting for Gitea pod... ($((retry_count * 10))s elapsed)"
+    kubectl get pods -n gitea || true
+  fi
+  sleep 10
+done
 
 echo "Gitea Helm installation completed"
 
