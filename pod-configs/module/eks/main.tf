@@ -439,7 +439,8 @@ resource "aws_iam_policy" "cas_controller" {
         "ec2:DescribeInstanceTypes",
         "ec2:DescribeLaunchTemplateVersions",
         "ec2:GetInstanceTypesFromInstanceRequirements",
-        "eks:DescribeNodegroup"
+        "eks:DescribeNodegroup",
+        "eks:DescribeCluster"
       ],
       "Resource": ["*"]
     },
@@ -617,6 +618,11 @@ resource "helm_release" "cluster_autoscaler" {
   depends_on = [
     kubernetes_service_account.cluster_autoscaler
   ]
+
+  set {
+      name  = "priorityClassName"
+      value = "system-cluster-critical" 
+  }
 
   set {
     name  = "autoDiscovery.clusterName"
