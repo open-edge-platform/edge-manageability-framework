@@ -66,7 +66,7 @@ root:
     - orch-configs/profiles/default-traefik-rate-limit.yaml
 {{- end }}
 {{- if .Values.enableEIMScenario }}
-    - orch-configs/profiles/enable-vpro-only-eim.yaml
+    - orch-configs/profiles//enable-eim-scenario.yaml
 {{- end }}
 
 
