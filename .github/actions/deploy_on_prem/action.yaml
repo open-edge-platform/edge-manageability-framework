@@ -85,11 +85,76 @@ runs:
       run: |
         mkdir -p "$ORCH_PROFILE-diagnostics"
         kubectl config set-cluster default --server="https://${SSH_HOST}:6443" --insecure-skip-tls-verify
+        
+        # Pod information
         kubectl get pods -o wide -A > "$ORCH_PROFILE-diagnostics/pods-list.txt"
         kubectl describe pods -A > "$ORCH_PROFILE-diagnostics/pods-describe.txt"
-        mage logutils:collectArgoDiags > "$ORCH_PROFILE-diagnostics/argo-diag.txt"
+        
+        # Gitea-specific diagnostics
+        echo "=== Gitea Namespace Status ===" > "$ORCH_PROFILE-diagnostics/gitea-diagnostics.txt"
+        kubectl get pods -n gitea -o wide >> "$ORCH_PROFILE-diagnostics/gitea-diagnostics.txt" 2>&1 || true
+        echo "" >> "$ORCH_PROFILE-diagnostics/gitea-diagnostics.txt"
+        echo "=== Gitea Pod Describe ===" >> "$ORCH_PROFILE-diagnostics/gitea-diagnostics.txt"
+        kubectl describe pods -n gitea >> "$ORCH_PROFILE-diagnostics/gitea-diagnostics.txt" 2>&1 || true
+        echo "" >> "$ORCH_PROFILE-diagnostics/gitea-diagnostics.txt"
+        echo "=== Gitea Pod Logs ===" >> "$ORCH_PROFILE-diagnostics/gitea-diagnostics.txt"
+        kubectl logs -n gitea --all-containers=true --tail=500 >> "$ORCH_PROFILE-diagnostics/gitea-diagnostics.txt" 2>&1 || true
+        echo "" >> "$ORCH_PROFILE-diagnostics/gitea-diagnostics.txt"
+        echo "=== Gitea PVC Status ===" >> "$ORCH_PROFILE-diagnostics/gitea-diagnostics.txt"
+        kubectl get pvc -n gitea -o wide >> "$ORCH_PROFILE-diagnostics/gitea-diagnostics.txt" 2>&1 || true
+        echo "" >> "$ORCH_PROFILE-diagnostics/gitea-diagnostics.txt"
+        echo "=== Gitea PV Status ===" >> "$ORCH_PROFILE-diagnostics/gitea-diagnostics.txt"
+        kubectl get pv -o wide >> "$ORCH_PROFILE-diagnostics/gitea-diagnostics.txt" 2>&1 || true
+        
+        # ArgoCD diagnostics
+        mage logutils:collectArgoDiags > "$ORCH_PROFILE-diagnostics/argo-diag.txt" 2>&1 || true
         kubectl get applications -o yaml -A > "$ORCH_PROFILE-diagnostics/argocd-applications.yaml"
+        
+        # Gitea ArgoCD Application status
+        echo "=== Gitea ArgoCD Application Status ===" > "$ORCH_PROFILE-diagnostics/argocd-gitea-app.txt"
+        kubectl get application gitea -n argocd -o yaml >> "$ORCH_PROFILE-diagnostics/argocd-gitea-app.txt" 2>&1 || true
+        echo "" >> "$ORCH_PROFILE-diagnostics/argocd-gitea-app.txt"
+        echo "=== Gitea ArgoCD AppProject Status ===" >> "$ORCH_PROFILE-diagnostics/argocd-gitea-app.txt"
+        kubectl get appproject -n argocd -o yaml >> "$ORCH_PROFILE-diagnostics/argocd-gitea-app.txt" 2>&1 || true
+        
+        # Cluster events
         kubectl get events -o yaml -A > "$ORCH_PROFILE-diagnostics/events.yaml"
+        
+        # Storage class diagnostics
+        echo "=== Storage Classes ===" > "$ORCH_PROFILE-diagnostics/storage-diagnostics.txt"
+        kubectl get storageclass -o wide >> "$ORCH_PROFILE-diagnostics/storage-diagnostics.txt" 2>&1 || true
+        echo "" >> "$ORCH_PROFILE-diagnostics/storage-diagnostics.txt"
+        echo "=== OpenEBS Pods ===" >> "$ORCH_PROFILE-diagnostics/storage-diagnostics.txt"
+        kubectl get pods -n openebs-system -o wide >> "$ORCH_PROFILE-diagnostics/storage-diagnostics.txt" 2>&1 || true
+        
+        # OS/System level diagnostics
+        echo "=== System Information ===" > "$ORCH_PROFILE-diagnostics/system-diagnostics.txt"
+        uname -a >> "$ORCH_PROFILE-diagnostics/system-diagnostics.txt" 2>&1 || true
+        echo "" >> "$ORCH_PROFILE-diagnostics/system-diagnostics.txt"
+        echo "=== Disk Usage ===" >> "$ORCH_PROFILE-diagnostics/system-diagnostics.txt"
+        df -h >> "$ORCH_PROFILE-diagnostics/system-diagnostics.txt" 2>&1 || true
+        echo "" >> "$ORCH_PROFILE-diagnostics/system-diagnostics.txt"
+        echo "=== Memory Usage ===" >> "$ORCH_PROFILE-diagnostics/system-diagnostics.txt"
+        free -h >> "$ORCH_PROFILE-diagnostics/system-diagnostics.txt" 2>&1 || true
+        echo "" >> "$ORCH_PROFILE-diagnostics/system-diagnostics.txt"
+        echo "=== CPU Info ===" >> "$ORCH_PROFILE-diagnostics/system-diagnostics.txt"
+        nproc >> "$ORCH_PROFILE-diagnostics/system-diagnostics.txt" 2>&1 || true
+        
+        # DEB package and installation diagnostics
+        echo "=== DEB Package Status ===" > "$ORCH_PROFILE-diagnostics/dpkg-diagnostics.txt"
+        dpkg -l | grep -E "onprem|gitea|argo" >> "$ORCH_PROFILE-diagnostics/dpkg-diagnostics.txt" 2>&1 || true
+        echo "" >> "$ORCH_PROFILE-diagnostics/dpkg-diagnostics.txt"
+        echo "=== Failed DEB Packages ===" >> "$ORCH_PROFILE-diagnostics/dpkg-diagnostics.txt"
+        dpkg --get-selections | grep -i hold >> "$ORCH_PROFILE-diagnostics/dpkg-diagnostics.txt" 2>&1 || true
+        echo "" >> "$ORCH_PROFILE-diagnostics/dpkg-diagnostics.txt"
+        echo "=== APT Error Log ===" >> "$ORCH_PROFILE-diagnostics/dpkg-diagnostics.txt"
+        sudo cat /var/log/apt/term.log >> "$ORCH_PROFILE-diagnostics/dpkg-diagnostics.txt" 2>&1 || true
+        echo "" >> "$ORCH_PROFILE-diagnostics/dpkg-diagnostics.txt"
+        echo "=== Cloud-init Output ===" >> "$ORCH_PROFILE-diagnostics/dpkg-diagnostics.txt"
+        sudo cat /var/log/cloud-init-output.log >> "$ORCH_PROFILE-diagnostics/dpkg-diagnostics.txt" 2>&1 || tail -200 /var/log/cloud-init-output.log >> "$ORCH_PROFILE-diagnostics/dpkg-diagnostics.txt" 2>&1 || true
+        echo "" >> "$ORCH_PROFILE-diagnostics/dpkg-diagnostics.txt"
+        echo "=== Systemd Journal (Helm/Installer errors) ===" >> "$ORCH_PROFILE-diagnostics/dpkg-diagnostics.txt"
+        sudo journalctl -xe --no-pager | tail -300 >> "$ORCH_PROFILE-diagnostics/dpkg-diagnostics.txt" 2>&1 || true
 
     - name: Upload diagnostic information to CI artifact store
       if: always() && steps.get-diagnostic-info.conclusion == 'success'
@@ -99,6 +164,11 @@ runs:
         path: |
           ${{ inputs.orch_profile }}-diagnostics/pods-list.txt
           ${{ inputs.orch_profile }}-diagnostics/pods-describe.txt
+          ${{ inputs.orch_profile }}-diagnostics/gitea-diagnostics.txt
+          ${{ inputs.orch_profile }}-diagnostics/argocd-gitea-app.txt
           ${{ inputs.orch_profile }}-diagnostics/argo-diag.txt
           ${{ inputs.orch_profile }}-diagnostics/argocd-applications.yaml
           ${{ inputs.orch_profile }}-diagnostics/events.yaml
+          ${{ inputs.orch_profile }}-diagnostics/storage-diagnostics.txt
+          ${{ inputs.orch_profile }}-diagnostics/system-diagnostics.txt
+          ${{ inputs.orch_profile }}-diagnostics/dpkg-diagnostics.txt

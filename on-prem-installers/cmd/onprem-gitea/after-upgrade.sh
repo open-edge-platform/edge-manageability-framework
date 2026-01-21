@@ -127,7 +127,32 @@ createGiteaSecret "cluster-gitea-credential" "clusterorch" "$clusterGiteaPasswor
 kubectl scale deployment gitea -n gitea --replicas=0
 
 # More helm values are set in ../assets/gitea/values.yaml
-helm upgrade --install gitea /tmp/gitea/gitea --values /tmp/gitea/values.yaml --set gitea.admin.existingSecret=gitea-cred --set image.registry="${IMAGE_REGISTRY}" -n gitea --timeout 15m0s --wait
+echo "Starting Gitea Helm upgrade with increased timeout to 25 minutes..."
+echo "Docker registry: ${IMAGE_REGISTRY}"
+echo "Checking storage class availability before upgrade..."
+kubectl get storageclass -o wide || true
+kubectl get pvc -n gitea || true
+
+# Upgrade Gitea with increased timeout (25 minutes)
+# Increased from 15m to 25m to accommodate slower storage provisioning
+if ! helm upgrade --install gitea /tmp/gitea/gitea --values /tmp/gitea/values.yaml --set gitea.admin.existingSecret=gitea-cred --set image.registry="${IMAGE_REGISTRY}" -n gitea --timeout 25m0s --wait; then
+  echo "ERROR: Gitea Helm upgrade failed or timed out"
+  echo "=== Gitea Pod Status ==="
+  kubectl get pods -n gitea -o wide || true
+  echo "=== Gitea Pod Describe ==="
+  kubectl describe pods -n gitea || true
+  echo "=== Recent Gitea Pod Logs ==="
+  kubectl logs -n gitea --all-containers=true --tail=100 || true
+  echo "=== Gitea Events ==="
+  kubectl get events -n gitea || true
+  echo "=== Storage Class and PVC Status ==="
+  kubectl get storageclass -o wide || true
+  kubectl get pvc -n gitea -o wide || true
+  kubectl get pv -o wide || true
+  exit 1
+fi
+
+echo "Gitea Helm upgrade completed successfully"
 
 # Create Gitea accounts for ArgoCD, AppOrch and ClusterOrch
 createGiteaAccount "argocd-gitea-credential" "argocd" "$argocdGiteaPassword" "argocd@orch-installer.com"
