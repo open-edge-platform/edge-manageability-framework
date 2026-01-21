@@ -6,4 +6,4 @@
 
 argo:
   infra-core:
-    scenario: "fulleim"
+    scenario: "vpro"
