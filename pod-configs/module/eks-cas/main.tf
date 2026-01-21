@@ -6,7 +6,7 @@ resource "kubernetes_service_account" "cluster_autoscaler" {
     namespace = var.cas_namespace
 
     annotations = {
-      "eks.amazonaws.com/role-arn" = var.cas_controller.arn
+      "eks.amazonaws.com/role-arn" = var.cas_controller_arn
     }
   }
 }
