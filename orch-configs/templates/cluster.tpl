@@ -65,6 +65,9 @@ root:
 {{- if .Values.enableDefaultTraefikRateLimit }}
     - orch-configs/profiles/default-traefik-rate-limit.yaml
 {{- end }}
+{{- if .Values.enableEIMScenario }}
+    - orch-configs/profiles/enable-vpro-only-eim.yaml
+{{- end }}
 
 
 # Values applied to both root app and shared among all child apps
