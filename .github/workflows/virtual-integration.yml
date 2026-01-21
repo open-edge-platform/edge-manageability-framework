@@ -728,6 +728,7 @@ jobs:
         run: mage -v test:e2eOnPrem
 
       - name: Checkout edge-manage-test-automation repository with submodules
+        if: always()
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
           repository: open-edge-platform/edge-manage-test-automation
@@ -774,13 +775,23 @@ jobs:
             --exitonfailure \
             tests/core_foundation/core_foundation.robot
 
+      - name: Run Orchestrator Diagnostics
+        if: always()
+        id: orch-k8s-diag
+        working-directory: edge-manage-test-automation
+        env:
+          KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
+        run: |
+          source venv_edge-manage-test-automation/bin/activate
+          python tools/utils/OrchestratorK8sDiagnosticsUtility.py --restart-threshold 10 --errors-only --output-html --output-json --include-logs
+
       - name: Upload test artifacts
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         with:
-          name: on-prem-${{ github.event_name }}-${{ github.event.number }}-robot-report
+          name: on-prem-${{ github.event_name }}-${{ github.event.number }}-orch-k8s-diagnostics-report
           path: |
-            edge-manage-test-automation/robot_output/**/*
+            edge-manage-test-automation/**/*.html
 
   deploy-oxm-profile:
     permissions:
