@@ -72,8 +72,8 @@ createGiteaSecret() {
   local namespace=$4
 
   kubectl create secret generic "$secretName" -n "$namespace" \
-    --from-literal=username='$accountName' \
-    --from-literal=password='$password' \
+    --from-literal=username="$accountName" \
+    --from-literal=password="$password" \
     --dry-run=client -o yaml | kubectl apply -f -
 }
 
