@@ -310,6 +310,12 @@ resource "aws_eks_node_group" "nodegroup" {
     aws_iam_role_policy_attachment.AmazonEBSCSIDriverPolicy,
     aws_launch_template.eks_launch_template
   ]
+
+  tags = {
+    "k8s.io/cluster-autoscaler/enabled"               = "true"
+    "k8s.io/cluster-autoscaler/${var.cluster_name}"  = "owned"
+  }
+
 }
 
 resource "aws_eks_node_group" "additional_node_group" {
@@ -343,6 +349,14 @@ resource "aws_eks_node_group" "additional_node_group" {
       effect = taint.value.effect
     }
   }
+
+  tags = merge(
+    {
+      "k8s.io/cluster-autoscaler/enabled"              = "true"
+      "k8s.io/cluster-autoscaler/${var.cluster_name}" = "owned"
+    },
+    lookup(each.value, "tags", {})
+  )
 
   depends_on = [
     aws_iam_role_policy_attachment.AmazonEKSWorkerNodePolicy,
@@ -471,6 +485,19 @@ resource "aws_iam_role_policy_attachment" "cas_controller" {
   policy_arn = aws_iam_policy.cas_controller.arn
 }
 
+# creating service account for cas controller
+
+resource "kubernetes_service_account" "cluster_autoscaler" {
+  metadata {
+    name      = var.cas_service_account
+    namespace = var.cas_namespace
+
+    annotations = {
+      "eks.amazonaws.com/role-arn" = aws_iam_role.cas_controller.arn
+    }
+  }
+}
+
 # Creating IAM role for cert-manager.
 resource "aws_iam_role" "certmgr" {
   name = "certmgr-${var.cluster_name}"
@@ -578,4 +605,48 @@ resource "aws_iam_policy" "certmgr_write_route53" {
 resource "aws_iam_role_policy_attachment" "certmgr_write_route53" {
   policy_arn = aws_iam_policy.certmgr_write_route53.arn
   role       = aws_iam_role.certmgr.name
+}
+
+
+resource "helm_release" "cluster_autoscaler" {
+  name       = "cluster-autoscaler"
+  repository = "https://kubernetes.github.io/autoscaler"
+  chart      = "cluster-autoscaler"
+  namespace  = var.cas_namespace
+
+  depends_on = [
+    kubernetes_service_account.cluster_autoscaler
+  ]
+
+  set {
+    name  = "autoDiscovery.clusterName"
+    value = var.cluster_name
+  }
+
+  set {
+    name  = "awsRegion"
+    value = var.aws_region
+  }
+
+  # Use existing ServiceAccount (IRSA)
+  set {
+    name  = "rbac.serviceAccount.create"
+    value = "false"
+  }
+
+  set {
+    name  = "rbac.serviceAccount.name"
+    value = var.cas_service_account
+  }
+
+  # Recommended flags
+  set {
+    name  = "extraArgs.balance-similar-node-groups"
+    value = "true"
+  }
+
+  set {
+    name  = "extraArgs.expander"
+    value = "least-waste"
+  }
 }
