@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 reloader:
-  watchGlobally: false
+  watchGlobally: true
   deployment:
     securityContext:
       runAsNonRoot: true
