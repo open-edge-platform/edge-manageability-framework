@@ -390,9 +390,6 @@ resource "null_resource" "exec_installer" {
       "bash -c 'cd /home/ubuntu; source onprem.env; ./onprem_installer.sh --yes --trace ${var.use_local_build_artifact ? "--skip-download" : ""} -- --yes --trace | tee ./install_output.log; exit $${PIPESTATUS[0]}'",
     ]
     when = create
-    # Increased timeout to 45 minutes to accommodate full DEB installation
-    # including Gitea Helm installation (25 minutes) + buffer for other components
-    timeout = "45m"
   }
 }
 

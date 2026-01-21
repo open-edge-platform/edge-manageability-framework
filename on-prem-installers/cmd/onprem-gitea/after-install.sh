@@ -123,32 +123,18 @@ createGiteaSecret "app-gitea-credential" "apporch" "$appGiteaPassword" "orch-pla
 createGiteaSecret "cluster-gitea-credential" "clusterorch" "$clusterGiteaPassword" "orch-platform"
 
 # More helm values are set in ../assets/gitea/values.yaml
-echo "Starting Gitea Helm installation with increased timeout to 25 minutes..."
+echo "Starting Gitea Helm installation..."
 echo "Docker registry: ${IMAGE_REGISTRY}"
 echo "Checking storage class availability before installation..."
 kubectl get storageclass -o wide || true
 kubectl get pvc -n gitea || true
+echo "Starting helm install with --wait flag..."
 
-# Install Gitea with increased timeout (25 minutes)
-# Increased from 15m to 25m to accommodate slower storage provisioning
-if ! helm install gitea /tmp/gitea/gitea --values /tmp/gitea/values.yaml --set gitea.admin.existingSecret=gitea-cred --set image.registry="${IMAGE_REGISTRY}" -n gitea --timeout 25m0s --wait; then
-  echo "ERROR: Gitea Helm installation failed or timed out"
-  echo "=== Gitea Pod Status ==="
-  kubectl get pods -n gitea -o wide || true
-  echo "=== Gitea Pod Describe ==="
-  kubectl describe pods -n gitea || true
-  echo "=== Recent Gitea Pod Logs ==="
-  kubectl logs -n gitea --all-containers=true --tail=100 || true
-  echo "=== Gitea Events ==="
-  kubectl get events -n gitea || true
-  echo "=== Storage Class and PVC Status ==="
-  kubectl get storageclass -o wide || true
-  kubectl get pvc -n gitea -o wide || true
-  kubectl get pv -o wide || true
-  exit 1
-fi
+# Install Gitea
+# Using --wait to ensure pod is ready, with original 15m timeout
+helm install gitea /tmp/gitea/gitea --values /tmp/gitea/values.yaml --set gitea.admin.existingSecret=gitea-cred --set image.registry="${IMAGE_REGISTRY}" -n gitea --timeout 15m0s --wait
 
-echo "Gitea Helm installation completed successfully"
+echo "Gitea Helm installation completed"
 
 # Create Gitea accounts for ArgoCD, AppOrch and ClusterOrch
 createGiteaAccount "argocd-gitea-credential" "argocd" "$argocdGiteaPassword" "argocd@orch-installer.com"
