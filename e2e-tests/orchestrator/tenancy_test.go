@@ -71,7 +71,7 @@ var _ = Describe("Tenancy integration test", Label(tenancy), func() {
 
 			response, err := cli.Do(request)
 			Expect(err).ToNot(HaveOccurred())
-			defer response.Body.Close()
+			defer response.Body.Close() //nolint:errcheck
 
 			Expect(response.StatusCode).To(Equal(http.StatusForbidden))
 		})
@@ -82,7 +82,7 @@ var _ = Describe("Tenancy integration test", Label(tenancy), func() {
 			req.Header.Add("Authorization", "Bearer "+token)
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusUnauthorized))
 			_, err = io.ReadAll(resp.Body)
 			Expect(err).ToNot(HaveOccurred())
@@ -92,7 +92,7 @@ var _ = Describe("Tenancy integration test", Label(tenancy), func() {
 			Expect(err).ToNot(HaveOccurred())
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
 		})
 		It("should NOT be accessible over HTTPS when using invalid token", func() {
@@ -102,7 +102,7 @@ var _ = Describe("Tenancy integration test", Label(tenancy), func() {
 			req.Header.Add("Authorization", "Bearer "+invalid)
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
 		})
 		It("should be accessible over HTTPS when using valid token", func() {
@@ -113,7 +113,7 @@ var _ = Describe("Tenancy integration test", Label(tenancy), func() {
 			req.Header.Add("Content-Type", "application/json")
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
 			_, err = io.ReadAll(resp.Body)
 			Expect(err).ToNot(HaveOccurred())
@@ -145,7 +145,7 @@ var _ = Describe("Tenancy integration test", Label(tenancy), func() {
 
 			resp, err := makeAuthorizedRequest(http.MethodPut, "https://api."+serviceDomainWithPort+"/v1/orgs/"+orgName, *token, orgDesc, cli)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusUnauthorized))
 
 			logInfo("Create Org '%s' using valid roles", orgName)
@@ -157,7 +157,7 @@ var _ = Describe("Tenancy integration test", Label(tenancy), func() {
 
 			resp, err = makeAuthorizedRequest(http.MethodPut, "https://api."+serviceDomainWithPort+"/v1/orgs/"+orgName, *token, orgDesc, cli)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 
 			logInfo("Get All Orgs and check if Org '%s' exists", orgName)
@@ -166,7 +166,7 @@ var _ = Describe("Tenancy integration test", Label(tenancy), func() {
 				if err != nil {
 					return nil, fmt.Errorf("failed to get orgs list: %w", err)
 				}
-				defer resp.Body.Close()
+				defer resp.Body.Close() //nolint:errcheck
 				if resp.StatusCode != http.StatusOK {
 					return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 				}
@@ -200,7 +200,7 @@ var _ = Describe("Tenancy integration test", Label(tenancy), func() {
 					if err != nil {
 						return fmt.Errorf("Failed to get organization: %s with error: %w", orgName, err)
 					}
-					defer resp.Body.Close()
+					defer resp.Body.Close() //nolint:errcheck
 					if resp.StatusCode != http.StatusOK {
 						return fmt.Errorf("Failed to get organization: %s with StatusCode: %d", orgName, resp.StatusCode)
 					}
@@ -228,7 +228,7 @@ var _ = Describe("Tenancy integration test", Label(tenancy), func() {
 			projDesc := []byte(`{ "description": "Tenancy Test Project" }`)
 			resp, err = makeAuthorizedRequest(http.MethodPut, "https://api."+serviceDomainWithPort+"/v1/projects/"+projName, *token, projDesc, cli)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
 
 			logInfo("Create Project '%s' with Org Admin roles", projName)
@@ -240,7 +240,7 @@ var _ = Describe("Tenancy integration test", Label(tenancy), func() {
 
 			resp, err = makeAuthorizedRequest(http.MethodPut, "https://api."+serviceDomainWithPort+"/v1/projects/"+projName, *token, projDesc, cli)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 
 			logInfo("Get All Projects and check if Project '%s' exists", projName)
@@ -249,7 +249,7 @@ var _ = Describe("Tenancy integration test", Label(tenancy), func() {
 				if err != nil {
 					return nil, fmt.Errorf("failed to get projects list: %w", err)
 				}
-				defer resp.Body.Close()
+				defer resp.Body.Close() //nolint:errcheck
 				if resp.StatusCode != http.StatusOK {
 					return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 				}
@@ -279,7 +279,7 @@ var _ = Describe("Tenancy integration test", Label(tenancy), func() {
 			logInfo("Get Project '%s'", projName)
 			resp, err = makeAuthorizedRequest(http.MethodGet, "https://api."+serviceDomainWithPort+"/v1/projects/"+projName, *token, nil, cli)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 			Expect(err).ToNot(HaveOccurred())
 
@@ -290,7 +290,7 @@ var _ = Describe("Tenancy integration test", Label(tenancy), func() {
 					if err != nil {
 						return fmt.Errorf("failed to get Project: %s with error: %w", projName, err)
 					}
-					defer resp.Body.Close()
+					defer resp.Body.Close() //nolint:errcheck
 					if resp.StatusCode != http.StatusOK {
 						return fmt.Errorf("failed to get Project: %s with StatusCode: %d", projName, resp.StatusCode)
 					}
@@ -322,7 +322,7 @@ var _ = Describe("Tenancy integration test", Label(tenancy), func() {
 
 			resp, err = makeAuthorizedRequest(http.MethodPut, "https://api."+serviceDomainWithPort+"/v1/orgs/"+orgName, *token, orgDesc, cli)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 
 			logInfo("Validate Org '%s' update", orgName)
@@ -332,7 +332,7 @@ var _ = Describe("Tenancy integration test", Label(tenancy), func() {
 					if err != nil {
 						return fmt.Errorf("Failed to get organization: %s with error: %w", orgName, err)
 					}
-					defer resp.Body.Close()
+					defer resp.Body.Close() //nolint:errcheck
 					if resp.StatusCode != http.StatusOK {
 						return fmt.Errorf("Failed to get organization: %s with StatusCode: %d", orgName, resp.StatusCode)
 					}
@@ -365,13 +365,13 @@ var _ = Describe("Tenancy integration test", Label(tenancy), func() {
 			projDesc = []byte(`{ "description": "Tenancy Test Project - Updated" }`)
 			resp, err = makeAuthorizedRequest(http.MethodPut, "https://api."+serviceDomainWithPort+"/v1/projects/"+projName, *token, projDesc, cli)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 
 			logInfo("Validate Project '%s' update", projName)
 			resp, err = makeAuthorizedRequest(http.MethodGet, "https://api."+serviceDomainWithPort+"/v1/projects/"+projName, *token, nil, cli)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 			Expect(err).ToNot(HaveOccurred())
 
@@ -382,7 +382,7 @@ var _ = Describe("Tenancy integration test", Label(tenancy), func() {
 					if err != nil {
 						return fmt.Errorf("failed to get Project: %s with error: %w", projName, err)
 					}
-					defer resp.Body.Close()
+					defer resp.Body.Close() //nolint:errcheck
 					if resp.StatusCode != http.StatusOK {
 						return fmt.Errorf("failed to get Project: %s with StatusCode: %d", projName, resp.StatusCode)
 					}
@@ -422,7 +422,7 @@ var _ = Describe("Tenancy integration test", Label(tenancy), func() {
 				if err != nil {
 					return nil, fmt.Errorf("failed to get regions: %w", err)
 				}
-				defer resp.Body.Close()
+				defer resp.Body.Close() //nolint:errcheck
 				if resp.StatusCode != http.StatusOK {
 					return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 				}
@@ -439,7 +439,7 @@ var _ = Describe("Tenancy integration test", Label(tenancy), func() {
 				if err != nil {
 					return 0, fmt.Errorf("failed to get applications: %w", err)
 				}
-				defer resp.Body.Close()
+				defer resp.Body.Close() //nolint:errcheck
 				return resp.StatusCode, nil
 			}, 2*time.Minute, 10*time.Second).Should(Equal(http.StatusOK), "applications list should return 200 status code")
 
@@ -447,14 +447,14 @@ var _ = Describe("Tenancy integration test", Label(tenancy), func() {
 
 			resp, err = makeAuthorizedRequest(http.MethodDelete, "https://api."+serviceDomainWithPort+"/v1/orgs/"+orgName, *token, nil, cli)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusConflict))
 
 			logInfo("Delete Project '%s'", projName)
 
 			resp, err = makeAuthorizedRequest(http.MethodDelete, "https://api."+serviceDomainWithPort+"/v1/projects/"+projName, *token, nil, cli)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 
 			logInfo("Check if project is being processed for delete or deleted")
@@ -464,7 +464,7 @@ var _ = Describe("Tenancy integration test", Label(tenancy), func() {
 				if err != nil {
 					return fmt.Errorf("failed to get project: %s with error: %w", projName, err)
 				}
-				defer resp.Body.Close()
+				defer resp.Body.Close() //nolint:errcheck
 				if resp.StatusCode == http.StatusNotFound {
 					logInfo("project not found, deleted")
 					projDeleted = true
@@ -497,7 +497,7 @@ var _ = Describe("Tenancy integration test", Label(tenancy), func() {
 						if err != nil {
 							return fmt.Errorf("failed to delete organization: %s with error: %w", orgName, err)
 						}
-						defer resp.Body.Close()
+						defer resp.Body.Close() //nolint:errcheck
 						if resp.StatusCode != http.StatusOK {
 							return fmt.Errorf("failed to delete org: %s with StatusCode: %d",
 								orgName, resp.StatusCode)
@@ -508,7 +508,7 @@ var _ = Describe("Tenancy integration test", Label(tenancy), func() {
 					if err != nil {
 						return fmt.Errorf("failed to get organization: %s with error: %w", orgName, err)
 					}
-					defer resp.Body.Close()
+					defer resp.Body.Close() //nolint:errcheck
 					if resp.StatusCode == http.StatusNotFound {
 						logInfo("org not found, deleted")
 						return nil

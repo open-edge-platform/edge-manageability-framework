@@ -480,7 +480,11 @@ func copyPolicy(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer source.Close()
+	defer func() {
+		if err := source.Close(); err != nil {
+			fmt.Printf("Warning: failed to close source file: %v\n", err)
+		}
+	}()
 
 	_, err = os.Open(dst)
 	if os.IsNotExist(err) {
@@ -494,7 +498,11 @@ func copyPolicy(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			fmt.Printf("Warning: failed to close output file: %v\n", err)
+		}
+	}()
 
 	_, err = io.Copy(file, source)
 	if err != nil {
@@ -1109,7 +1117,11 @@ func (Deploy) startGiteaPortForward() (*exec.Cmd, error) {
 			} else {
 				fmt.Printf("Response body: %s\n", string(body))
 			}
-			defer resp.Body.Close()
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					fmt.Printf("Warning: failed to close response body: %v\n", err)
+				}
+			}()
 		}
 		if err == nil && resp.StatusCode == http.StatusOK {
 			break
@@ -1175,7 +1187,11 @@ func (d Deploy) createOrUpdateGiteaRepo(repo string) error {
 	if err != nil {
 		return fmt.Errorf("error sending HTTP request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusCreated {
 		body, _ := io.ReadAll(resp.Body)
@@ -1344,7 +1360,9 @@ func (d Deploy) updateDeployRepo(targetEnv, gitRepoPath, repoName, localClonePat
 	}
 
 	// Set GIT_SSL_NO_VERIFY=true for git commands that we are running through the port forward tunnel
-	os.Setenv("GIT_SSL_NO_VERIFY", "true")
+	if err := os.Setenv("GIT_SSL_NO_VERIFY", "true"); err != nil {
+		return fmt.Errorf("failed to set GIT_SSL_NO_VERIFY: %w", err)
+	}
 
 	// Init/Clean local clone path, change directory to it, and clone the repo
 	// Note: The cwd will be set to the localClonePath directory after this command

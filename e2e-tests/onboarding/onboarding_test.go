@@ -148,7 +148,7 @@ func checkNodeOnboarding(ctx SpecContext, httpCli *http.Client, token string, se
 	if err != nil {
 		return fmt.Errorf("failed to make request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -197,7 +197,7 @@ func checkNodeProvisioning(ctx SpecContext, httpCli *http.Client, token string, 
 	if err != nil {
 		return fmt.Errorf("failed to make request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -251,7 +251,7 @@ func checkHostStatus(ctx SpecContext, httpCli *http.Client, token string, serial
 	if err != nil {
 		return fmt.Errorf("failed to make request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
