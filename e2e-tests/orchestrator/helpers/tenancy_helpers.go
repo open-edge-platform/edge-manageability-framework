@@ -35,7 +35,11 @@ func PrepareOrgAndProject(ctx context.Context, cli *http.Client, orgName, projNa
 	if err != nil {
 		return "", "", err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
 	if resp.StatusCode != http.StatusOK {
 		return "", "", fmt.Errorf("creating org failed with status %v", resp.StatusCode)
 	}
@@ -62,7 +66,11 @@ func PrepareOrgAndProject(ctx context.Context, cli *http.Client, orgName, projNa
 		return "", "", err
 	}
 
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
 	if resp.StatusCode != http.StatusOK {
 		return "", "", fmt.Errorf("creating project failed with status %v", resp.StatusCode)
 	}
@@ -80,7 +88,11 @@ func DeleteOrgAndProject(ctx context.Context, cli *http.Client, orgName, projNam
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("project deletion request failed with status %v", resp.StatusCode)
 	}
@@ -94,7 +106,11 @@ func DeleteOrgAndProject(ctx context.Context, cli *http.Client, orgName, projNam
 	if err != nil {
 		return fmt.Errorf("failed to delete organization: %s with error: %w", orgName, err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("failed to delete org: %s with StatusCode: %d", orgName, resp.StatusCode)
 	}
@@ -140,13 +156,17 @@ func waitForOrgToBeActive(parentCtx context.Context, cli *http.Client, orgName, 
 			}
 
 			if resp.StatusCode != http.StatusOK {
-				resp.Body.Close()
+				if err := resp.Body.Close(); err != nil {
+					fmt.Printf("Warning: failed to close response body: %v\n", err)
+				}
 				return "", fmt.Errorf("failed to get organization: %s with StatusCode: %d", orgName, resp.StatusCode)
 			}
 
 			org := new(orgs)
 			err = ParseJSONBody(resp.Body, org)
-			resp.Body.Close()
+			if err := resp.Body.Close(); err != nil {
+				fmt.Printf("Warning: failed to close response body: %v\n", err)
+			}
 			if err != nil {
 				return "", fmt.Errorf("failed to parse organization: %s with error: %w", orgName, err)
 			}
@@ -179,13 +199,17 @@ func waitForProjectToBeActive(parentCtx context.Context, cli *http.Client, projN
 			}
 
 			if resp.StatusCode != http.StatusOK {
-				resp.Body.Close()
+				if err := resp.Body.Close(); err != nil {
+					fmt.Printf("Warning: failed to close response body: %v\n", err)
+				}
 				return "", fmt.Errorf("failed to get project: %s with StatusCode: %d", projName, resp.StatusCode)
 			}
 
 			project := new(projects)
 			err = ParseJSONBody(resp.Body, project)
-			resp.Body.Close()
+			if err := resp.Body.Close(); err != nil {
+				fmt.Printf("Warning: failed to close response body: %v\n", err)
+			}
 			if err != nil {
 				return "", fmt.Errorf("failed to parse project: %s with error: %w", projName, err)
 			}
@@ -217,10 +241,14 @@ func waitForProjectToBeDeleted(parentCtx context.Context, cli *http.Client, proj
 			}
 
 			if resp.StatusCode == http.StatusNotFound {
-				resp.Body.Close()
+				if err := resp.Body.Close(); err != nil {
+					fmt.Printf("Warning: failed to close response body: %v\n", err)
+				}
 				return nil
 			}
-			resp.Body.Close()
+			if err := resp.Body.Close(); err != nil {
+				fmt.Printf("Warning: failed to close response body: %v\n", err)
+			}
 			time.Sleep(20 * time.Second)
 		}
 	}
@@ -240,10 +268,14 @@ func waitForOrgToBeDeleted(parentCtx context.Context, cli *http.Client, orgName,
 			}
 
 			if resp.StatusCode == http.StatusNotFound {
-				resp.Body.Close()
+				if err := resp.Body.Close(); err != nil {
+					fmt.Printf("Warning: failed to close response body: %v\n", err)
+				}
 				return nil
 			}
-			resp.Body.Close()
+			if err := resp.Body.Close(); err != nil {
+				fmt.Printf("Warning: failed to close response body: %v\n", err)
+			}
 			time.Sleep(20 * time.Second)
 		}
 	}

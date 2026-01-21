@@ -171,7 +171,7 @@ var _ = Describe("Observability Alerts Test:", Ordered, Label(helpers.LabelAlert
 				resp, err := makeAuthorizedRequest(http.MethodGet,
 					"https://api."+serviceDomainWithPort+"/v1/projects/"+alertProjectName+"/alerts/receivers", *token, nil, cli)
 				Expect(err).ToNot(HaveOccurred())
-				defer resp.Body.Close()
+				defer resp.Body.Close() //nolint:errcheck
 				Expect(resp.StatusCode).To(Equal(http.StatusOK))
 
 				receivers := new(helpers.AlertReceiversArray)
@@ -192,7 +192,7 @@ var _ = Describe("Observability Alerts Test:", Ordered, Label(helpers.LabelAlert
 				resp, err = makeAuthorizedRequest(http.MethodPatch,
 					"https://api."+serviceDomainWithPort+"/v1/projects/"+alertProjectName+"/alerts/receivers/"+receiverID, *token, reqBody, cli)
 				Expect(err).ToNot(HaveOccurred())
-				defer resp.Body.Close()
+				defer resp.Body.Close() //nolint:errcheck
 				Expect(resp.StatusCode).To(Equal(http.StatusNoContent))
 
 				By("verifying that alertUser's email is in enabled list")
@@ -229,7 +229,7 @@ var _ = Describe("Observability Alerts Test:", Ordered, Label(helpers.LabelAlert
 				resp, err := makeAuthorizedRequest(http.MethodGet,
 					"https://api."+serviceDomainWithPort+"/v1/projects/"+alertProjectName+"/alerts/definitions", *token, nil, cli)
 				Expect(err).ToNot(HaveOccurred())
-				defer resp.Body.Close()
+				defer resp.Body.Close() //nolint:errcheck
 
 				err = helpers.ParseJSONBody(resp.Body, initialDefinitions)
 				Expect(err).ToNot(HaveOccurred())
@@ -253,7 +253,7 @@ var _ = Describe("Observability Alerts Test:", Ordered, Label(helpers.LabelAlert
 						if err != nil {
 							return nil, err
 						}
-						defer resp.Body.Close()
+						defer resp.Body.Close() //nolint:errcheck
 						if resp.StatusCode != http.StatusOK {
 							return nil, fmt.Errorf("endpoint returned non 200 status, returned code: %v", resp.StatusCode)
 						}
@@ -280,7 +280,7 @@ var _ = Describe("Observability Alerts Test:", Ordered, Label(helpers.LabelAlert
 						if err != nil {
 							return 0, err
 						}
-						defer resp.Body.Close()
+						defer resp.Body.Close() //nolint:errcheck
 						return resp.StatusCode, nil
 					}()
 					Expect(err).ToNot(HaveOccurred())
@@ -296,7 +296,7 @@ var _ = Describe("Observability Alerts Test:", Ordered, Label(helpers.LabelAlert
 						if err != nil {
 							return nil, err
 						}
-						defer resp.Body.Close()
+						defer resp.Body.Close() //nolint:errcheck
 
 						template := new(helpers.AlertDefinitionTemplate)
 						return template, helpers.ParseJSONBody(resp.Body, template)
@@ -310,7 +310,7 @@ var _ = Describe("Observability Alerts Test:", Ordered, Label(helpers.LabelAlert
 						if err != nil {
 							return nil, err
 						}
-						defer resp.Body.Close()
+						defer resp.Body.Close() //nolint:errcheck
 						if resp.StatusCode != http.StatusOK {
 							return nil, fmt.Errorf("endpoint returned non 200 status, returned code: %v", resp.StatusCode)
 						}
@@ -369,7 +369,7 @@ var _ = Describe("Observability Alerts Test:", Ordered, Label(helpers.LabelAlert
 
 				resp, err := makeAuthorizedRequest(http.MethodGet, endpoint, *token, nil, cli)
 				Expect(err).ToNot(HaveOccurred())
-				defer resp.Body.Close()
+				defer resp.Body.Close() //nolint:errcheck
 			})
 
 			It("verify that alert definitions cannot be patched", func() {
@@ -506,7 +506,7 @@ var _ = Describe("Observability Alerts Test:", Ordered, Label(helpers.LabelAlert
 				resp, err := makeAuthorizedRequest(http.MethodPatch,
 					"https://api."+serviceDomainWithPort+"/v1/projects/"+alertProjectName+"/alerts/receivers/"+receiverID, *token, reqBody, cli)
 				Expect(err).ToNot(HaveOccurred())
-				defer resp.Body.Close()
+				defer resp.Body.Close() //nolint:errcheck
 				Expect(resp.StatusCode).To(Equal(http.StatusNoContent))
 
 				By("verifying that alertUser's email is not in enabled list")
