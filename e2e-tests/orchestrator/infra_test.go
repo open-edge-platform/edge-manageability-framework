@@ -246,7 +246,7 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 
 			response, err := cli.Do(request)
 			Expect(err).ToNot(HaveOccurred())
-			defer response.Body.Close()
+			defer response.Body.Close() //nolint:errcheck
 
 			Expect(response.StatusCode).To(Equal(http.StatusForbidden))
 		})
@@ -258,7 +258,7 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 			req.Header.Add("Authorization", "Bearer "+*apiToken)
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 			_, err = io.ReadAll(resp.Body)
 			Expect(err).ToNot(HaveOccurred())
@@ -268,7 +268,7 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 			Expect(err).ToNot(HaveOccurred())
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
 		})
 		It("should NOT be accessible over HTTPS when using invalid token", func() {
@@ -278,7 +278,7 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 			req.Header.Add("Authorization", "Bearer "+invalid)
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
 		})
 	})
@@ -459,7 +459,7 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 					if err != nil {
 						return err
 					}
-					defer resp.Body.Close()
+					defer resp.Body.Close() //nolint:errcheck
 
 					caPEM, err := io.ReadAll(resp.Body)
 					if err != nil {
@@ -529,7 +529,7 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 
 			resp, err := bootsCli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 
 			// Checking equivalency to check that the certificate is synced across the namespaces
 			Expect(resp.TLS.PeerCertificates[0].Equal(caCert)).To(BeTrue())
@@ -546,7 +546,7 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 
 			resp, err := bootsCli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 			content, err := io.ReadAll(resp.Body)
 			Expect(err).ToNot(HaveOccurred())
@@ -578,7 +578,7 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 
 			resp, err := bootsCli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 			content, err := io.ReadAll(resp.Body)
 			Expect(err).ToNot(HaveOccurred())
@@ -609,13 +609,8 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 			enToken, err := getTestENToken(cli, testUserPassword)
 			Expect(err).ToNot(HaveOccurred())
 
-			reqCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
-			defer cancel()
-
-			conn, err := grpc.DialContext(
-				reqCtx,
+			conn, err := grpc.NewClient(
 				serverURL,
-				grpc.WithBlock(),
 				grpc.WithTransportCredentials(
 					credentials.NewClientTLSFromCert(nil, ""), // Use host's root CA set to establish trust
 				),
@@ -628,18 +623,13 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 				),
 			)
 			Expect(err).ToNot(HaveOccurred())
-			defer conn.Close()
+			defer conn.Close() //nolint:errcheck
 		})
 
 		It("should NOT be accessible over gRPC when uses no keycloak token", func(ctx SpecContext) {
-			reqCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
-			defer cancel()
-
 			// Invoke API without providing jwt token
-			conn, err := grpc.DialContext(
-				reqCtx,
+			conn, err := grpc.NewClient(
 				serverURL,
-				grpc.WithBlock(),
 				grpc.WithTransportCredentials(
 					credentials.NewClientTLSFromCert(nil, ""), // Use host's root CA set to establish trust
 				),
@@ -652,19 +642,14 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 				),
 			)
 			Expect(err).ToNot(HaveOccurred())
-			defer conn.Close()
+			defer conn.Close() //nolint:errcheck
 		})
 
 		It("should NOT be accessible over gRPC with an invalid keycloak token", func(ctx SpecContext) {
 			const invalidToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c" //nolint: lll
 
-			reqCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
-			defer cancel()
-
-			conn, err := grpc.DialContext(
-				reqCtx,
+			conn, err := grpc.NewClient(
 				serverURL,
-				grpc.WithBlock(),
 				grpc.WithTransportCredentials(
 					credentials.NewClientTLSFromCert(nil, ""), // Use host's root CA set to establish trust
 				),
@@ -677,7 +662,7 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 				),
 			)
 			Expect(err).ToNot(HaveOccurred())
-			defer conn.Close()
+			defer conn.Close() //nolint:errcheck
 		})
 
 		It("should NOT be accessible over gRPC when using valid but expired token", func(ctx SpecContext) {
@@ -692,13 +677,8 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 				Skip("Skipping this test because JWT Token is NOT expired")
 			}
 
-			reqCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
-			defer cancel()
-
-			conn, err := grpc.DialContext(
-				reqCtx,
+			conn, err := grpc.NewClient(
 				serverURL,
-				grpc.WithBlock(),
 				grpc.WithTransportCredentials(
 					credentials.NewClientTLSFromCert(nil, ""), // Use host's root CA set to establish trust
 				),
@@ -711,7 +691,7 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 				),
 			)
 			Expect(err).ToNot(HaveOccurred())
-			defer conn.Close()
+			defer conn.Close() //nolint:errcheck
 		})
 	})
 
@@ -776,10 +756,8 @@ func getTestENToken(client *http.Client, testUserPassword string) (*string, erro
 func grpcInfraTelemetryMgrJWT(ctx context.Context, address string, port int, token string, _ ...string) error {
 	target := fmt.Sprintf("%s:%d", address, port)
 
-	conn, err := grpc.DialContext(
-		ctx,
+	conn, err := grpc.NewClient(
 		target,
-		grpc.WithBlock(),
 		grpc.WithTransportCredentials(
 			credentials.NewClientTLSFromCert(nil, ""), // Use host's root CA set to establish trust
 		),
@@ -794,7 +772,7 @@ func grpcInfraTelemetryMgrJWT(ctx context.Context, address string, port int, tok
 	if err != nil {
 		return fmt.Errorf("could not dial server %s: %w", target, err)
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 
 	cli := pb_tm.NewTelemetryMgrClient(conn)
 
@@ -816,10 +794,8 @@ func grpcInfraOnboardNodeJWT(ctx context.Context, address string, port int, toke
 		hUuid = hostUuid[0]
 	}
 	target := fmt.Sprintf("%s:%d", address, port)
-	conn, err := grpc.DialContext(
-		ctx,
+	conn, err := grpc.NewClient(
 		target,
-		grpc.WithBlock(),
 		grpc.WithTransportCredentials(
 			credentials.NewClientTLSFromCert(nil, ""), // Use host's root CA set to establish trust
 		),
@@ -834,7 +810,7 @@ func grpcInfraOnboardNodeJWT(ctx context.Context, address string, port int, toke
 	if err != nil {
 		return fmt.Errorf("could not dial server %s: %w", target, err)
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 
 	cli := pb_om.NewInteractiveOnboardingServiceClient(conn)
 	// Create a NodeData object
@@ -867,10 +843,8 @@ func grpcInfraHostMgrJWT(ctx context.Context, address string, port int, token st
 
 	target := fmt.Sprintf("%s:%d", address, port)
 
-	conn, err := grpc.DialContext(
-		ctx,
+	conn, err := grpc.NewClient(
 		target,
-		grpc.WithBlock(),
 		grpc.WithTransportCredentials(
 			credentials.NewClientTLSFromCert(nil, ""), // Use host's root CA set to establish trust
 		),
@@ -885,7 +859,7 @@ func grpcInfraHostMgrJWT(ctx context.Context, address string, port int, token st
 	if err != nil {
 		return fmt.Errorf("could not dial server %s: %w", target, err)
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 
 	cli := pb_hm.NewHostmgrClient(conn)
 	if _, err := cli.UpdateHostStatusByHostGuid(
@@ -906,10 +880,8 @@ func grpcInfraHostMgrJWT(ctx context.Context, address string, port int, token st
 func grpcInfraMainMgrJWT(ctx context.Context, address string, port int, token string, _ ...string) error {
 	target := fmt.Sprintf("%s:%d", address, port)
 
-	conn, err := grpc.DialContext(
-		ctx,
+	conn, err := grpc.NewClient(
 		target,
-		grpc.WithBlock(),
 		grpc.WithTransportCredentials(
 			credentials.NewClientTLSFromCert(nil, ""), // Use host's root CA set to establish trust
 		),
@@ -924,7 +896,7 @@ func grpcInfraMainMgrJWT(ctx context.Context, address string, port int, token st
 	if err != nil {
 		return fmt.Errorf("could not dial server %s: %w", target, err)
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 
 	cli := pb_mm.NewMaintmgrServiceClient(conn)
 	if _, err := cli.PlatformUpdateStatus(
@@ -945,10 +917,8 @@ func grpcInfraMainMgrJWT(ctx context.Context, address string, port int, token st
 func grpcAttestStatusMgrJWT(ctx context.Context, address string, port int, token string, _ ...string) error {
 	target := fmt.Sprintf("%s:%d", address, port)
 
-	conn, err := grpc.DialContext(
-		ctx,
+	conn, err := grpc.NewClient(
 		target,
-		grpc.WithBlock(),
 		grpc.WithTransportCredentials(
 			credentials.NewClientTLSFromCert(nil, ""), // Use host's root CA set to establish trust
 		),
@@ -963,7 +933,7 @@ func grpcAttestStatusMgrJWT(ctx context.Context, address string, port int, token
 	if err != nil {
 		return fmt.Errorf("could not dial server %s: %w", target, err)
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 
 	cli := pb_am.NewAttestationStatusMgrServiceClient(conn)
 	if _, err := cli.UpdateInstanceAttestationStatusByHostGuid(
