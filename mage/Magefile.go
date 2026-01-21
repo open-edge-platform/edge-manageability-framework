@@ -393,7 +393,9 @@ func (u Undeploy) OnPrem(ctx context.Context) error {
 
 	// Check if TF_VAR_FILE is defined, if not, set it to a default value
 	if os.Getenv("TF_VAR_FILE") == "" {
-		os.Setenv("TF_VAR_FILE", "terraform.tfvars")
+		if err := os.Setenv("TF_VAR_FILE", "terraform.tfvars"); err != nil {
+			return fmt.Errorf("failed to set TF_VAR_FILE: %w", err)
+		}
 	}
 
 	tfvarsFile := os.Getenv("TF_VAR_FILE")
@@ -793,7 +795,9 @@ func (d Deploy) OnPrem(ctx context.Context) error {
 
 	// Check if TF_VAR_FILE is defined, if not, set it to a default value
 	if os.Getenv("TF_VAR_FILE") == "" {
-		os.Setenv("TF_VAR_FILE", "terraform.tfvars")
+		if err := os.Setenv("TF_VAR_FILE", "terraform.tfvars"); err != nil {
+			return fmt.Errorf("failed to set TF_VAR_FILE: %w", err)
+		}
 	}
 
 	tfvarsFile := os.Getenv("TF_VAR_FILE")
@@ -900,7 +904,11 @@ func (d Deploy) VENWithFlow(ctx context.Context, flow string, serialNumber strin
 	if err != nil {
 		return fmt.Errorf("failed to create temporary directory: %w", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			fmt.Printf("Warning: failed to remove temporary directory %s: %v\n", tempDir, err)
+		}
+	}()
 
 	fmt.Printf("Temporary directory created: %s\n", tempDir)
 
@@ -1069,7 +1077,11 @@ STANDALONE=0
 			time.Sleep(10 * time.Second)
 			continue
 		}
-		defer resp.Body.Close()
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				fmt.Printf("Warning: failed to close response body: %v\n", err)
+			}
+		}()
 
 		if resp.StatusCode == http.StatusOK {
 			out, err := os.Create(filepath.Join("certs", "Full_server.crt"))
@@ -1077,7 +1089,11 @@ STANDALONE=0
 				fmt.Printf("Failed to create file: %v\n", err)
 				return fmt.Errorf("failed to create file: %w", err)
 			}
-			defer out.Close()
+			defer func() {
+				if err := out.Close(); err != nil {
+					fmt.Printf("Warning: failed to close output file: %v\n", err)
+				}
+			}()
 
 			_, err = io.Copy(out, resp.Body)
 			if err != nil {
@@ -1223,9 +1239,15 @@ func (d Deploy) EdgeCluster(targetEnv string) error {
 		return fmt.Errorf("failed to get api user: %w", err)
 	}
 
-	os.Setenv("ORCH_PROJECT", projectName)
-	os.Setenv("ORCH_ORG", orgName)
-	os.Setenv("ORCH_USER", apiUser)
+	if err := os.Setenv("ORCH_PROJECT", projectName); err != nil {
+		return fmt.Errorf("failed to set ORCH_PROJECT: %w", err)
+	}
+	if err := os.Setenv("ORCH_ORG", orgName); err != nil {
+		return fmt.Errorf("failed to set ORCH_ORG: %w", err)
+	}
+	if err := os.Setenv("ORCH_USER", apiUser); err != nil {
+		return fmt.Errorf("failed to set ORCH_USER: %w", err)
+	}
 
 	projectId, err := projectId(projectName)
 	if err != nil {
@@ -1257,9 +1279,15 @@ func (d Deploy) EdgeClusterWithProject(targetEnv string, orgName string, project
 	edgeMgrUser = edgeInfraUser
 	project = projectName
 
-	os.Setenv("ORCH_PROJECT", projectName)
-	os.Setenv("ORCH_ORG", orgName)
-	os.Setenv("ORCH_USER", apiUser)
+	if err := os.Setenv("ORCH_PROJECT", projectName); err != nil {
+		return fmt.Errorf("failed to set ORCH_PROJECT: %w", err)
+	}
+	if err := os.Setenv("ORCH_ORG", orgName); err != nil {
+		return fmt.Errorf("failed to set ORCH_ORG: %w", err)
+	}
+	if err := os.Setenv("ORCH_USER", apiUser); err != nil {
+		return fmt.Errorf("failed to set ORCH_USER: %w", err)
+	}
 
 	projectId, err := projectId(projectName)
 	if err != nil {
@@ -1290,9 +1318,15 @@ func (d Deploy) EdgeClusterWithLabels(targetEnv string, labels string) error {
 		return fmt.Errorf("failed to get api user: %w", err)
 	}
 
-	os.Setenv("ORCH_PROJECT", projectName)
-	os.Setenv("ORCH_ORG", orgName)
-	os.Setenv("ORCH_USER", apiUser)
+	if err := os.Setenv("ORCH_PROJECT", projectName); err != nil {
+		return fmt.Errorf("failed to set ORCH_PROJECT: %w", err)
+	}
+	if err := os.Setenv("ORCH_ORG", orgName); err != nil {
+		return fmt.Errorf("failed to set ORCH_ORG: %w", err)
+	}
+	if err := os.Setenv("ORCH_USER", apiUser); err != nil {
+		return fmt.Errorf("failed to set ORCH_USER: %w", err)
+	}
 
 	projectId, err := projectId(projectName)
 	if err != nil {

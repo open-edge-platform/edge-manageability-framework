@@ -91,7 +91,11 @@ func downloadFile(filepath string, url string) error {
 	if err != nil {
 		return fmt.Errorf("error making HTTP GET request to %s: %w", url, err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("unexpected response status code %d from %s", resp.StatusCode, url)
@@ -102,7 +106,11 @@ func downloadFile(filepath string, url string) error {
 	if err != nil {
 		return fmt.Errorf("error creating file %s: %w", filepath, err)
 	}
-	defer out.Close()
+	defer func() {
+		if err := out.Close(); err != nil {
+			fmt.Printf("Warning: failed to close output file: %v\n", err)
+		}
+	}()
 
 	if _, err = io.Copy(out, resp.Body); err != nil {
 		return fmt.Errorf("error writing to file %s: %w", filepath, err)

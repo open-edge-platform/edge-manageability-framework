@@ -42,7 +42,11 @@ func (c *Client) RevocationList(ctx context.Context, crlAddr string) (*x509.Revo
 	if err != nil {
 		return nil, fmt.Errorf("do request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
 
 	bytes, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -80,7 +84,11 @@ func (c *Client) CertificateOCSPStatus(
 	if err != nil {
 		return nil, fmt.Errorf("do request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -97,7 +105,7 @@ func (c *Client) CertificateOCSPStatus(
 
 // ContainsCert returns true if a certificate is present in the CRL.
 func ContainsCert(crl *x509.RevocationList, cert *x509.Certificate) bool {
-	for _, revokedCert := range crl.RevokedCertificates {
+	for _, revokedCert := range crl.RevokedCertificateEntries {
 		if revokedCert.SerialNumber.Cmp(cert.SerialNumber) == 0 {
 			return true
 		}
