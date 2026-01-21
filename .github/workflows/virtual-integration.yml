@@ -695,7 +695,7 @@ jobs:
       github.ref == 'refs/heads/main-pass-validation'
       )
     runs-on: ubuntu-24.04-16core-64GB
-    timeout-minutes: 90
+    timeout-minutes: 60
     env:
       KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
     steps:
@@ -745,7 +745,7 @@ jobs:
         env:
           KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
         run: |
-          python tools/utils/OrchestratorK8sDiagnosticsUtility.py --restart-threshold 10 --errors-only --output-html --output-json --include-logs
+          python tools/utils/OrchestratorK8sDiagnosticsUtility.py --restart-threshold 10 --errors-only --output-html --include-logs
 
       - name: Upload test artifacts
         if: always()
