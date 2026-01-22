@@ -40,9 +40,9 @@ argo:
 
   ## Argo CD configs
   utilsRepoURL: "https://github.com/open-edge-platform/orch-utils"
-  utilsRepoRevision: main
+  utilsRepoRevision: ${UTILS_REPO_BRANCH}
   deployRepoURL: "https://github.com/open-edge-platform/edge-manageability-framework"
-  deployRepoRevision: main
+  deployRepoRevision: ${DEPLOY_REPO_BRANCH}
 
   targetServer: "https://kubernetes.default.svc"
   autosync: true
