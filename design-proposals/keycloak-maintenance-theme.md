@@ -207,45 +207,59 @@ Changing the theme through the Admin Console UI will lock you out immediately. I
 ### Activation Flow Diagram
 
 ```mermaid
-sequenceDiagram
-    autonumber
-    participant Ops as 👨‍💻 Operations
-    participant Script as maintenance-toggle.sh
-    participant K8s as Kubernetes Secret
-    participant KC as Keycloak API
-    participant User as 👤 User
+stateDiagram-v2
+    [*] --> Normal: System Running
     
-    Note over Ops,User: ENABLE MAINTENANCE MODE
+    state Normal {
+        [*] --> OperatorDecision
+        OperatorDecision: Operator runs<br/>./maintenance-toggle.sh
+        
+        state EnableFlow {
+            ReadSecret: Read K8s Secret<br/>(admin password)
+            GetToken: GET /token<br/>(password grant)
+            UpdateTheme: PUT /admin/realms/master<br/>{"loginTheme": "maintenance"}
+            
+            ReadSecret --> GetToken
+            GetToken --> UpdateTheme
+        }
+        
+        OperatorDecision --> EnableFlow: enable
+    }
     
-    Ops->>Script: ./maintenance-toggle.sh enable
-    Script->>K8s: Read admin-password
-    K8s-->>Script: password
+    Normal --> Maintenance: ✅ Enabled
     
-    Script->>KC: POST /token<br/>(admin credentials)
-    Note right of KC: Password grant<br/>(bypasses UI)
-    KC-->>Script: JWT token
+    state Maintenance {
+        UserLogin: User attempts login
+        ShowPage: Display 🔧<br/>Maintenance Page
+        
+        UserLogin --> ShowPage
+        ShowPage --> UserLogin: Retry
+        
+        state DisableFlow {
+            ReadSecret2: Read K8s Secret
+            GetToken2: GET /token
+            UpdateTheme2: PUT /admin/realms/master<br/>{"loginTheme": "keycloak"}
+            
+            ReadSecret2 --> GetToken2
+            GetToken2 --> UpdateTheme2
+        }
+        
+        [*] --> DisableFlow: operator runs<br/>./maintenance-toggle.sh disable
+    }
     
-    Script->>KC: PUT /admin/realms/master<br/>{"loginTheme": "maintenance"}
-    KC-->>Script: 204 Success
+    Maintenance --> Normal: ✅ Disabled
+    Normal --> [*]: User sees 🔐<br/>Normal Login
     
-    Script-->>Ops: ✅ ENABLED
+    note right of Normal
+        Normal Operations
+        All authentication flows work
+    end note
     
-    User->>KC: Login attempt
-    KC-->>User: 🔧 Maintenance Page
-    
-    Note over Ops,User: DISABLE MAINTENANCE MODE
-    
-    Ops->>Script: ./maintenance-toggle.sh disable
-    Script->>K8s: Read admin-password
-    K8s-->>Script: password
-    Script->>KC: POST /token
-    KC-->>Script: JWT token
-    Script->>KC: PUT /admin/realms/master<br/>{"loginTheme": "keycloak"}
-    KC-->>Script: 204 Success
-    Script-->>Ops: ✅ DISABLED
-    
-    User->>KC: Login attempt
-    KC-->>User: 🔐 Normal Login
+    note right of Maintenance
+        Maintenance Mode
+        Login UI shows maintenance page
+        API access still works
+    end note
 ```
 
 #### Recovery Procedure (If Locked Out)
