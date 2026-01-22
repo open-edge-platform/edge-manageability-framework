@@ -28,7 +28,9 @@ root:
 {{- if .Values.enableEdgeInfra }}
     - orch-configs/profiles/enable-edgeinfra.yaml
 {{- end }}
+{{- if .Values.enableUi }}
     - orch-configs/profiles/enable-full-ui.yaml
+{{- end }}
 {{- if .Values.enableUiDev }}
     - orch-configs/profiles/ui-dev.yaml
 {{- end }}
@@ -70,6 +72,21 @@ argo:
   # name to produce the service's domain name. For example, given the domain name of `orchestrator.io`, the Web UI
   # service will be accessible via `web-ui.orchestrator.io`. Not to be confused with the K8s cluster domain.
   clusterDomain: {{ .Values.clusterDomain }}
+
+{{- if not .Values.enableUi }}
+  enabled:
+    web-ui-root: false
+    web-ui-app-orch: false
+    web-ui-cluster-orch: false
+    web-ui-infra: false
+    web-ui-admin: false
+    metadata-broker: false
+  cors:
+    enabled: false
+  # This enables the ingress route for Infra UI standalone
+  ui:
+    ingressInfraUi: false
+{{- end }}
 
 {{- if and .Values.enableAutocert .Values.staging }}
   autoCert:
