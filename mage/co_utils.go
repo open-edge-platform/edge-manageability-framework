@@ -84,7 +84,11 @@ func (cu CoUtils) CreateDefaultClusterTemplate() error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
 
 	body, _ := io.ReadAll(resp.Body)
 	fmt.Println(string(body))
@@ -117,7 +121,11 @@ func (CoUtils) CreateCluster(clusterName, nodeGUID string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
 
 	body, _ := io.ReadAll(resp.Body)
 	fmt.Println(string(body))
@@ -138,7 +146,11 @@ func (CoUtils) DeleteCluster(clusterName string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
 
 	body, _ := io.ReadAll(resp.Body)
 	fmt.Println(string(body))
@@ -169,7 +181,11 @@ func (CoUtils) SetDefaultTemplate(templateName, templateVersion string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
 
 	body, _ := io.ReadAll(resp.Body)
 	fmt.Println(string(body))
