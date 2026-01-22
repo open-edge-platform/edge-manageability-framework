@@ -36,7 +36,7 @@ configProvisioner:
   releaseServiceRootUrl: "oci://registry-rs.edgeorchestration.intel.com"
   {{- end}}
 
-  manifestTag: "v1.5.1"
+  manifestTag: "v1.5.2"
 
   # http proxy settings
   {{- if .Values.argo.proxy.httpProxy}}
