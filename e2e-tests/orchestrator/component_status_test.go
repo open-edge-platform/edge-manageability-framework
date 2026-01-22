@@ -59,7 +59,7 @@ var _ = Describe("Component Status Service", Label(componentStatusLabel), func()
 
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		})
@@ -71,7 +71,7 @@ var _ = Describe("Component Status Service", Label(componentStatusLabel), func()
 
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 
@@ -100,7 +100,7 @@ var _ = Describe("Component Status Service", Label(componentStatusLabel), func()
 
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 
@@ -162,7 +162,7 @@ var _ = Describe("Component Status Service", Label(componentStatusLabel), func()
 
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 			Expect(resp.Header.Get("Content-Type")).To(ContainSubstring("application/json"))
@@ -175,7 +175,7 @@ var _ = Describe("Component Status Service", Label(componentStatusLabel), func()
 
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 
 			Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
 		})
@@ -188,7 +188,7 @@ var _ = Describe("Component Status Service", Label(componentStatusLabel), func()
 
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 
 			Expect(resp.StatusCode).To(Equal(http.StatusMethodNotAllowed))
 		})
@@ -205,7 +205,7 @@ var _ = Describe("Component Status Service", Label(componentStatusLabel), func()
 			if err != nil {
 				Skip("Health endpoint may not be exposed externally")
 			}
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 
 			// If accessible, should return 200
 			if resp.StatusCode == http.StatusOK {
@@ -227,7 +227,7 @@ var _ = Describe("Component Status Service", Label(componentStatusLabel), func()
 
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 
 			body, err := io.ReadAll(resp.Body)
 			Expect(err).ToNot(HaveOccurred())
@@ -510,7 +510,7 @@ var _ = Describe("Component Status Service", Label(componentStatusLabel), func()
 
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 
 			body, err := io.ReadAll(resp.Body)
 			Expect(err).ToNot(HaveOccurred())
