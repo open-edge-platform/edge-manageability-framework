@@ -21,7 +21,7 @@ spec:
   sources:
     - repoURL: https://github.com/open-edge-platform/orch-ui
       path: apps/root/deploy
-      targetRevision: ui-feasibility
+      targetRevision: ui-composabity-demo
       helm:
         releaseName: web-ui
         valuesObject:
