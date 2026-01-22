@@ -389,28 +389,34 @@ var _ = Describe("Component Status Service", Label(componentStatusLabel), func()
 				Expect(alerting.Installed).To(Or(BeTrue(), BeFalse()))
 			})
 
-		It("should enable orchestrator-observability parent if ANY sub-component is enabled", func() {
-			orchObs := status.Orchestrator.Features["orchestrator-observability"]
-			monitoring := orchObs.SubFeatures["monitoring"]
-			dashboards := orchObs.SubFeatures["dashboards"]
-			alerting := orchObs.SubFeatures["alerting"]
+			It("should enable orchestrator-observability parent if ANY sub-component is enabled", func() {
+				orchObs := status.Orchestrator.Features["orchestrator-observability"]
+				monitoring := orchObs.SubFeatures["monitoring"]
+				dashboards := orchObs.SubFeatures["dashboards"]
+				alerting := orchObs.SubFeatures["alerting"]
 
-			// Parent should be enabled if ANY child is enabled
-			if monitoring.Installed || dashboards.Installed || alerting.Installed {
-				Expect(orchObs.Installed).To(BeTrue(), "parent should be enabled if any child is enabled")
-			}
+				// Parent should be enabled if ANY child is enabled
+				if monitoring.Installed || dashboards.Installed || alerting.Installed {
+					Expect(orchObs.Installed).To(BeTrue(), "parent should be enabled if any child is enabled")
+				}
+			})
+
+			It("should enable edgenode-observability parent if ANY sub-component is enabled", func() {
+				edgeObs := status.Orchestrator.Features["edgenode-observability"]
+				monitoring := edgeObs.SubFeatures["monitoring"]
+				dashboards := edgeObs.SubFeatures["dashboards"]
+
+				// Parent should be enabled if ANY child is enabled
+				if monitoring.Installed || dashboards.Installed {
+					Expect(edgeObs.Installed).To(BeTrue(), "parent should be enabled if any child is enabled")
+				}
+			})
 		})
 
-		It("should enable edgenode-observability parent if ANY sub-component is enabled", func() {
-			edgeObs := status.Orchestrator.Features["edgenode-observability"]
-			monitoring := edgeObs.SubFeatures["monitoring"]
-			dashboards := edgeObs.SubFeatures["dashboards"]
-
-			// Parent should be enabled if ANY child is enabled
-			if monitoring.Installed || dashboards.Installed {
-				Expect(edgeObs.Installed).To(BeTrue(), "parent should be enabled if any child is enabled")
-			}
-		})
+		Context("Kyverno policy enforcement", func() {
+			It("should validate kyverno sub-features exist", func() {
+				kyverno, exists := status.Orchestrator.Features["kyverno"]
+				Expect(exists).To(BeTrue(), "kyverno feature should exist")
 
 				expectedSubFeatures := []string{"policy-engine", "policies"}
 				for _, subFeature := range expectedSubFeatures {
