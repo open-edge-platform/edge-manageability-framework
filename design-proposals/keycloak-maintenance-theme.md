@@ -94,25 +94,49 @@ The implementation requires modifications to `argocd/applications/configs/platfo
 ### Architecture Diagram
 
 ```mermaid
-graph TB
-    subgraph "Kubernetes"
-        CM[ConfigMap:<br/>keycloak-maintenance-theme<br/>theme.properties + login.ftl]
-        KC[Keycloak StatefulSet]
-        CM -->|Volume Mount| KC
+flowchart LR
+    subgraph k8s["Kubernetes Cluster"]
+        direction TB
+        CM["📄 ConfigMap
+        keycloak-maintenance-theme
+        ├─ theme.properties
+        └─ error.ftl"]
+        
+        KC["🔐 Keycloak
+        StatefulSet
+        
+        /themes/maintenance/"]
+        
+        Secret["🔑 Secret
+        platform-keycloak
+        (admin password)"]
+        
+        CM -.->|mounted as<br/>volume| KC
     end
     
-    subgraph "Toggle Maintenance Mode"
-        Script[maintenance-toggle.sh ✓]
-        Console[Admin Console ⚠️<br/>Causes Lockout]
-        Script -->|API Call| KC
+    subgraph control["Control Plane"]
+        direction TB
+        Script["✅ maintenance-toggle.sh
+        (Recommended)"]
+        API["⚠️ Admin Console
+        (Causes Lockout)"]
     end
     
-    User[End User] -->|Login Request| KC
-    KC -->|Show Page| Display[Standard Login<br/>or<br/>Maintenance Page]
+    User["👤 End User"]
     
-    style Console fill:#ffcccc,stroke:#ff0000
-    style Script fill:#ccffcc,stroke:#00ff00
-    style Display fill:#fff3cd,stroke:#ffc107
+    User -->|1. Login<br/>Request| KC
+    KC -->|2. Show<br/>Page| User
+    
+    Script -->|Theme Switch<br/>via API| KC
+    API -.->|❌ Avoid<br/>Locks Out| KC
+    Secret -.->|credentials| Script
+    
+    style CM fill:#e1f5ff
+    style KC fill:#fff3e0
+    style Secret fill:#f3e5f5
+    style Script fill:#c8e6c9
+    style API fill:#ffcdd2
+    style User fill:#fff9c4
 ```
 
 ### Activation Workflow
@@ -184,48 +208,44 @@ Changing the theme through the Admin Console UI will lock you out immediately. I
 
 ```mermaid
 sequenceDiagram
-    participant Ops as Operations Team
+    autonumber
+    participant Ops as 👨‍💻 Operations
     participant Script as maintenance-toggle.sh
     participant K8s as Kubernetes Secret
-    participant Token as Token Endpoint<br/>/realms/master/protocol/<br/>openid-connect/token
-    participant API as Admin API<br/>/admin/realms/master
-    participant KC as Keycloak
-    participant User as End Users
+    participant KC as Keycloak API
+    participant User as 👤 User
     
-    Note over Ops,User: Enable Maintenance Mode
+    Note over Ops,User: ENABLE MAINTENANCE MODE
     
     Ops->>Script: ./maintenance-toggle.sh enable
-    Script->>K8s: Get admin password
-    K8s-->>Script: admin-password
+    Script->>K8s: Read admin-password
+    K8s-->>Script: password
     
-    Script->>Token: POST (username/password)
-    Note right of Token: Password Grant Flow<br/>(Bypasses UI)
-    Token-->>Script: JWT Access Token
+    Script->>KC: POST /token<br/>(admin credentials)
+    Note right of KC: Password grant<br/>(bypasses UI)
+    KC-->>Script: JWT token
     
-    Script->>API: PUT {"loginTheme": "maintenance"}
-    Note right of API: Authorization: Bearer {token}
-    API->>KC: Update Realm Configuration
-    API-->>Script: 204 No Content
+    Script->>KC: PUT /admin/realms/master<br/>{"loginTheme": "maintenance"}
+    KC-->>Script: 204 Success
     
-    Script-->>Ops: ✅ Maintenance mode ENABLED
+    Script-->>Ops: ✅ ENABLED
     
-    User->>KC: Attempt Login
-    KC-->>User: 🛠️ Maintenance Page<br/>(login.ftl template)
+    User->>KC: Login attempt
+    KC-->>User: 🔧 Maintenance Page
     
-    Note over Ops,User: Disable Maintenance Mode
+    Note over Ops,User: DISABLE MAINTENANCE MODE
     
     Ops->>Script: ./maintenance-toggle.sh disable
-    Script->>K8s: Get admin password
-    K8s-->>Script: admin-password
-    Script->>Token: POST (username/password)
-    Token-->>Script: JWT Access Token
-    Script->>API: PUT {"loginTheme": "keycloak"}
-    API->>KC: Update Realm Configuration
-    API-->>Script: 204 No Content
-    Script-->>Ops: ✅ Maintenance mode DISABLED
+    Script->>K8s: Read admin-password
+    K8s-->>Script: password
+    Script->>KC: POST /token
+    KC-->>Script: JWT token
+    Script->>KC: PUT /admin/realms/master<br/>{"loginTheme": "keycloak"}
+    KC-->>Script: 204 Success
+    Script-->>Ops: ✅ DISABLED
     
-    User->>KC: Attempt Login
-    KC-->>User: Standard Login Page
+    User->>KC: Login attempt
+    KC-->>User: 🔐 Normal Login
 ```
 
 #### Recovery Procedure (If Locked Out)
