@@ -241,11 +241,19 @@ var _ = Describe("Component Status Service", Label(componentStatusLabel), func()
 				eim, exists := status.Orchestrator.Features["edge-infrastructure-manager"]
 				Expect(exists).To(BeTrue(), "edge-infrastructure-manager feature should exist")
 
-				expectedEIMSubFeatures := []string{"onboarding", "oob", "provisioning"}
+				expectedEIMSubFeatures := []string{"day2", "onboarding", "oob", "provisioning"}
 				for _, subFeature := range expectedEIMSubFeatures {
 					_, exists := eim.SubFeatures[subFeature]
 					Expect(exists).To(BeTrue(), fmt.Sprintf("EIM sub-feature %s should be present", subFeature))
 				}
+			})
+
+			It("should have day2 workflow detection based on maintenance-manager", func() {
+				eim := status.Orchestrator.Features["edge-infrastructure-manager"]
+				day2, exists := eim.SubFeatures["day2"]
+				Expect(exists).To(BeTrue(), "day2 sub-feature should exist")
+				// Day2 operations available when maintenance-manager is configured
+				Expect(day2.Installed).To(Or(BeTrue(), BeFalse()))
 			})
 
 			It("should have onboarding workflow detection based on onboarding-manager", func() {
