@@ -137,7 +137,7 @@ flowchart TB
     Script -->|2. Authenticate| API
     FutureUI -.->|2. Authenticate| API
     
-    Script -->|3. PUT theme config<br/>{"loginTheme": "maintenance"}| API
+    Script -->|"3. PUT theme config<br/>loginTheme: maintenance"| API
     FutureUI -.->|3. PUT theme config| API
     
     API -->|4. Update realm| KC
