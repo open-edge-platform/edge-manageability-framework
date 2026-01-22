@@ -7,7 +7,9 @@ refreshInterval: "0m"   # no need to refresh, default admin password is created 
 targetSecretName: platform-keycloak
 sourceSecretName: platform-keycloak
 keyName:
-  - source: password
+  - source: admin-password
     target: admin-password
+  - source: username
+    target: username
 
 externalSecretsApiGroup: external-secrets.io/v1
