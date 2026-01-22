@@ -35,7 +35,11 @@ func CheckMetric(cli *http.Client, endpoint, metric, tenant string) (found bool,
 	if err != nil {
 		return false, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
 	if resp.StatusCode != http.StatusOK {
 		return false, fmt.Errorf("endpoint returned non 200 status, returned code: %v", resp.StatusCode)
 	}
@@ -69,7 +73,11 @@ func GetLogs(cli *http.Client, endpoint, query, since, tenant string) (logs logs
 	if err != nil {
 		return logs, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
 	if resp.StatusCode != http.StatusOK {
 		return logs, fmt.Errorf("endpoint returned non 200 status, returned code: %v", resp.StatusCode)
 	}
@@ -118,7 +126,9 @@ func PatchAlertDefinitions(cli *http.Client, serviceDomainWithPort, token, proje
 		if resp.StatusCode != http.StatusNoContent {
 			return fmt.Errorf("endpoint returned non 204 status, returned code: %v", resp.StatusCode)
 		}
-		resp.Body.Close()
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
 	}
 	return nil
 }
@@ -186,7 +196,11 @@ func IsEmailEnabled(cli *http.Client, serviceDomainWithPort, token, projectName,
 	if err != nil {
 		return false, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
 	if resp.StatusCode != http.StatusOK {
 		return false, fmt.Errorf("endpoint returned non 200 status, returned code: %v", resp.StatusCode)
 	}
@@ -205,7 +219,11 @@ func VerifyReceiverState(cli *http.Client, serviceDomainWithPort, token, project
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("endpoint returned non 200 status, status returned: %v", resp.StatusCode)
 	}
@@ -238,7 +256,11 @@ func (c *APIClient) MakeAPICallParseResp(method, path string, body []byte, targe
 	if err != nil {
 		return 0, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return resp.StatusCode, fmt.Errorf("endpoint returned non 2xx status, returned code: %v", resp.StatusCode)
@@ -437,7 +459,11 @@ func GetAlertReceiverMessages(cli *http.Client, mailpitURL string) ([]string, er
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("endpoint returned non 200 status, status returned: %v", resp.StatusCode)
 	}
@@ -459,7 +485,11 @@ func GetAlertReceiverMessages(cli *http.Client, mailpitURL string) ([]string, er
 			if err != nil {
 				return "", err
 			}
-			defer resp.Body.Close()
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					fmt.Printf("Warning: failed to close response body: %v\n", err)
+				}
+			}()
 			if resp.StatusCode != http.StatusOK {
 				return "", fmt.Errorf("message endpoint returned non 200 status, status returned: %v", resp.StatusCode)
 			}
@@ -486,7 +516,11 @@ func DeleteAlertReceiverMessages(cli *http.Client, mailpitURL string) error {
 	if err != nil {
 		return fmt.Errorf("error when deleting messages: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("endpoint returned non 200 status, status returned: %v", resp.StatusCode)
 	}

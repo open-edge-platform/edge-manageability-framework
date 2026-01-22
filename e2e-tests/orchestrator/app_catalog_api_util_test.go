@@ -69,7 +69,7 @@ func CreateRegistry(ctx context.Context, c *http.Client, accessToken string, pro
 	Expect(err).ToNot(HaveOccurred())
 	resp := DoCatalogREST(ctx, c, http.MethodPost, "registries", projectName,
 		accessToken, bytes.NewReader(registryBody), http.StatusOK, checkRESTResponse)
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 }
 
 // GetRegistry uses the REST API to fetch a registry.
@@ -93,7 +93,7 @@ func GetRegistry(
 		expectedStatus,
 		ignoreResponse,
 	)
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	var registryResponse RegistryGetResponse
 	err := json.NewDecoder(resp.Body).Decode(&registryResponse)
@@ -121,7 +121,7 @@ func DeleteRegistry(
 		http.StatusOK,
 		ignoreResponse,
 	)
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 }
 
 // Catalog artifacts
@@ -165,7 +165,7 @@ func CreateArtifact(ctx context.Context, c *http.Client,
 	resp := DoCatalogREST(ctx, c, http.MethodPost, "artifacts", project, accessToken,
 		bytes.NewReader(artifactBody), expectedStatus, checkRESTResponse)
 
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	return resp
 }
@@ -191,7 +191,7 @@ func GetArtifact(
 		expectedStatus,
 		ignoreResponse,
 	)
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 	var artifactResponse ArtifactGetResponse
 	err := json.NewDecoder(resp.Body).Decode(&artifactResponse)
 	Expect(err).ToNot(HaveOccurred())
@@ -218,7 +218,7 @@ func DeleteArtifact(
 		http.StatusOK,
 		ignoreResponse,
 	)
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 }
 
 // Catalog applications
@@ -299,7 +299,7 @@ func GetApplication(
 		expectedStatus,
 		ignoreResponse,
 	)
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 	var applicationResponse ApplicationGetResponse
 	err := json.NewDecoder(resp.Body).Decode(&applicationResponse)
 	Expect(err).ToNot(HaveOccurred())
@@ -327,7 +327,7 @@ func DeleteApplication(
 		http.StatusOK,
 		ignoreResponse,
 	)
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 }
 
 // ListApplicationsByName uses the REST API to list the applications.
@@ -339,7 +339,7 @@ func ListApplicationsByName(ctx context.Context, c *http.Client, accessToken str
 		nil,
 		http.StatusOK,
 		checkRESTResponse)
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 	Expect(resp.StatusCode).To(Equal(http.StatusOK))
 	var applicationsResp Applications
 	err := json.NewDecoder(resp.Body).Decode(&applicationsResp)
@@ -381,7 +381,7 @@ type (
 // ListDeploymentPackagesByName - uses the REST API to list the deployment packages.
 func ListDeploymentPackagesByName(ctx context.Context, c *http.Client, accessToken string, project string, name string) DeploymentPackages {
 	resp := DoCatalogREST(ctx, c, http.MethodGet, "deployment_packages?pageSize=100&filter=name="+name, project, accessToken, nil, http.StatusOK, checkRESTResponse)
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 	Expect(resp.StatusCode).To(Equal(http.StatusOK))
 	var deploymentPackagesResp DeploymentPackages
 	err := json.NewDecoder(resp.Body).Decode(&deploymentPackagesResp)
@@ -412,7 +412,7 @@ func GetDeploymentPackage(
 		expectedStatus,
 		ignoreResponse,
 	)
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 	var deploymentPackageResponse DeploymentPackageGetResponse
 	err := json.NewDecoder(resp.Body).Decode(&deploymentPackageResponse)
 	Expect(err).ToNot(HaveOccurred())
@@ -440,5 +440,5 @@ func DeleteDeploymentPackage(
 		http.StatusOK,
 		ignoreResponse,
 	)
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 }
