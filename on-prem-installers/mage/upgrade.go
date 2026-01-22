@@ -95,7 +95,11 @@ func (Upgrade) rke2Cluster() error {
 		if err != nil {
 			return err
 		}
-		defer upgradePlan.Close()
+		defer func() {
+			if err := upgradePlan.Close(); err != nil {
+				fmt.Printf("Warning: failed to close upgrade plan file: %v\n", err)
+			}
+		}()
 
 		if err := tmpl.Execute(upgradePlan, struct{ Version string }{Version: rke2UpgradeVersion}); err != nil {
 			return err

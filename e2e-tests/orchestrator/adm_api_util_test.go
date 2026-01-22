@@ -104,7 +104,7 @@ func listDeploymentsByDisplayName( //nolint:unused
 		expectedStatus,
 		ignoreResponse,
 	)
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	var deploymentsResponse ListDeploymentsResponse
 	err := json.NewDecoder(resp.Body).Decode(&deploymentsResponse)
