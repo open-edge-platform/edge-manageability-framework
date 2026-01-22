@@ -30,7 +30,7 @@ elif [ "$DEPLOY_TYPE" = "onprem" ]; then
     source "$(dirname "$0")/${DEPLOY_TYPE}.env"
 
     # Validate ORCH_INSTALLER_PROFILE
-    if [[ "$ORCH_INSTALLER_PROFILE" =~ ^(onprem|onprem-oxm)$ ]]; then
+    if [[ "$ORCH_INSTALLER_PROFILE" =~ ^(onprem|onprem-oxm|onprem-vpro)$ ]]; then
         TEMPLATE_FILE="./cluster_onprem.tpl"
         OUTPUT_FILE="${ORCH_INSTALLER_PROFILE}.yaml"
 
@@ -52,13 +52,14 @@ else
     exit 1
 fi
 
+
 # -----------------------------------------------------------------------------
 # Default profiles
 # -----------------------------------------------------------------------------
 export PLATFORM_PROFILE='- orch-configs/profiles/enable-platform.yaml'
 export KYVERNO_PROFILE='- orch-configs/profiles/enable-kyverno.yaml'
 export EDGEINFRA_PROFILE='- orch-configs/profiles/enable-edgeinfra.yaml'
-export FULL_UI_PROFILE='- orch-configs/profiles/enable-full-ui.yaml'
+export UI_PROFILE='- orch-configs/profiles/enable-full-ui.yaml'
 export SRE_PROFILE='- orch-configs/profiles/enable-sre.yaml'
 export PROXY_NONE_PROFILE='- orch-configs/profiles/proxy-none.yaml'
 export PROFILE_FILE_NAME='- orch-configs/profiles/profile-onprem.yaml'
@@ -67,6 +68,19 @@ export EMAIL_PROFILE='- orch-configs/profiles/alerting-emails.yaml'
 export ARTIFACT_RS_PROFILE='- orch-configs/profiles/artifact-rs-production-noauth.yaml'
 export OSRM_MANUAL_PROFILE='- orch-configs/profiles/enable-osrm-manual-mode.yaml'
 export RESOURCE_DEFAULT_PROFILE='- orch-configs/profiles/resource-default.yaml'
+
+if [[ "${ORCH_INSTALLER_PROFILE:-}" == "onprem-vpro" || "${ORCH_INSTALLER_PROFILE:-}" == "aws-vpro" ]]; then
+  export DISABLE_AO_PROFILE=true
+  export DISABLE_CO_PROFILE=true
+  export DISABLE_O11Y_PROFILE=true
+  export DISABLE_KYVERNO_PROFILE=true
+  export DISABLE_UI_PROFILE=true
+  export SRE_TLS_ENABLED=false
+  export SINGLE_TENANCY_PROFILE=false
+  export EMAIL_PROFILE='#- orch-configs/profiles/alerting-emails.yaml'
+  export PLATFORM_PROFILE='- orch-configs/profiles/enable-platform-vpro.yaml'
+  export EDGEINFRA_PROFILE='- orch-configs/profiles/enable-edgeinfra-vpro.yaml'
+fi
 
 # -----------------------------------------------------------------------------
 # Default environment variables
@@ -152,10 +166,22 @@ else
     export CO_PROFILE="- orch-configs/profiles/enable-cluster-orch.yaml"
 fi
 
+if [ "${DISABLE_KYVERNO_PROFILE:-false}" = "true" ]; then
+    export KYVERNO_PROFILE="#- orch-configs/profiles/enable-kyverno.yaml"
+else
+    export KYVERNO_PROFILE="- orch-configs/profiles/enable-kyverno.yaml"
+fi
+
 if [ "${SINGLE_TENANCY_PROFILE:-false}" = "true" ]; then
     export SINGLE_TENANCY_PROFILE="- orch-configs/profiles/enable-singleTenancy.yaml"
 else
     export SINGLE_TENANCY_PROFILE="#- orch-configs/profiles/enable-singleTenancy.yaml"
+fi
+
+if [ "${DISABLE_UI_PROFILE:-false}" = "true" ]; then
+    export UI_PROFILE='#- orch-configs/profiles/enable-full-ui.yaml'
+else
+    export UI_PROFILE='- orch-configs/profiles/enable-full-ui.yaml'
 fi
 
 # -----------------------------------------------------------------------------
@@ -202,7 +228,7 @@ if [ "$DEPLOY_TYPE" = "onprem" ]; then
     fi
 
     case "${ORCH_INSTALLER_PROFILE}" in
-        onprem)
+        onprem|onprem-vpro)
             echo "📦 Profile: Standard On-Prem Deployment"
             export PROFILE_FILE_NAME='- orch-configs/profiles/profile-onprem.yaml'
             ;;
