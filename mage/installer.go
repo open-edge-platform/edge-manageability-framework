@@ -157,7 +157,9 @@ func (Installer) build() error {
 	podConfigsDir := "./pod-configs"
 
 	// Create tarballs for edge-manageability-framework, orch-configs for each deploy type
-	os.Setenv("TARBALL_DIR", "installer/")
+	if err := os.Setenv("TARBALL_DIR", "installer/"); err != nil {
+		return fmt.Errorf("failed to set TARBALL_DIR: %w", err)
+	}
 
 	if err := t.CloudFull(); err != nil {
 		return fmt.Errorf("failed to build cloudFull tarball: %w", err)
