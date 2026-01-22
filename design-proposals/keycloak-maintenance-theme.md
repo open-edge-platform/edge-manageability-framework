@@ -94,50 +94,75 @@ The implementation requires modifications to `argocd/applications/configs/platfo
 ### Architecture Diagram
 
 ```mermaid
-flowchart LR
+flowchart TB
+    subgraph ui["Control Interface"]
+        direction LR
+        Script["🖥️ CLI Script
+        maintenance-toggle.sh
+        (Current)"]
+        
+        FutureUI["🌐 Web UI
+        Admin Dashboard
+        (Future)"]
+    end
+    
     subgraph k8s["Kubernetes Cluster"]
         direction TB
+        
+        Secret["🔑 Secret
+        platform-keycloak
+        └─ admin-password"]
+        
         CM["📄 ConfigMap
         keycloak-maintenance-theme
         ├─ theme.properties
         └─ error.ftl"]
         
-        KC["🔐 Keycloak
+        KC["🔐 Keycloak Pod
         StatefulSet
         
-        /themes/maintenance/"]
+        Mounted: /themes/maintenance/"]
         
-        Secret["🔑 Secret
-        platform-keycloak
-        (admin password)"]
+        API["⚙️ Keycloak API
+        /admin/realms/master
         
-        CM -.->|mounted as<br/>volume| KC
+        Theme Configuration"]
     end
     
-    subgraph control["Control Plane"]
-        direction TB
-        Script["✅ maintenance-toggle.sh
-        (Recommended)"]
-        API["⚠️ Admin Console
-        (Causes Lockout)"]
-    end
+    User["👤 End User Browser"]
     
-    User["👤 End User"]
+    Script -->|1. Read credentials| Secret
+    FutureUI -.->|1. Read credentials| Secret
     
-    User -->|1. Login<br/>Request| KC
-    KC -->|2. Show<br/>Page| User
+    Script -->|2. Authenticate| API
+    FutureUI -.->|2. Authenticate| API
     
-    Script -->|Theme Switch<br/>via API| KC
-    API -.->|❌ Avoid<br/>Locks Out| KC
-    Secret -.->|credentials| Script
+    Script -->|3. PUT theme config<br/>{"loginTheme": "maintenance"}| API
+    FutureUI -.->|3. PUT theme config| API
     
-    style CM fill:#e1f5ff
-    style KC fill:#fff3e0
-    style Secret fill:#f3e5f5
-    style Script fill:#c8e6c9
-    style API fill:#ffcdd2
+    API -->|4. Update realm| KC
+    
+    CM -->|mounted as volume| KC
+    
+    User -->|5. Login request| KC
+    KC -->|6. Render page<br/>from theme| User
+    
+    style Script fill:#c8e6c9,stroke:#4caf50,stroke-width:3px
+    style FutureUI fill:#e3f2fd,stroke:#2196f3,stroke-width:2px,stroke-dasharray: 5 5
+    style CM fill:#fff3e0
+    style KC fill:#f3e5f5
+    style Secret fill:#ffebee
+    style API fill:#e8f5e9
     style User fill:#fff9c4
 ```
+
+**Flow Explanation:**
+1. **Control Interface** (Script/UI) reads admin credentials from K8s Secret
+2. Authenticates with Keycloak API using password grant
+3. Sends PUT request to update `loginTheme` configuration
+4. Keycloak API updates the realm configuration
+5. User attempts to login
+6. Keycloak renders the page using the configured theme (mounted from ConfigMap)
 
 ### Activation Workflow
 
@@ -163,7 +188,6 @@ A bash script (`maintenance-toggle.sh`) is provided at the repository root to sa
 The script:
 - Uses Keycloak Admin API (bypasses UI login)
 - Retrieves credentials from Kubernetes secrets automatically
-- Provides color-coded status output
 - Includes error handling and validation
 - Works even when maintenance theme is active
 
@@ -192,17 +216,6 @@ curl -sk -X PUT "${KEYCLOAK_URL}/admin/realms/master" \
   -H "Content-Type: application/json" \
   -d '{"loginTheme": "keycloak"}'
 ```
-
-**Method 3: Via GitOps (For Permanent Changes)**
-
-1. Update `argocd/applications/configs/platform-keycloak.yaml`
-2. Change `"loginTheme": "keycloak"` to `"loginTheme": "maintenance"`
-3. Commit and push changes
-4. ArgoCD will sync and apply the configuration
-
-**⚠️ WARNING: Do NOT change loginTheme via Keycloak Admin Console**
-
-Changing the theme through the Admin Console UI will lock you out immediately. If this happens, use Method 1 or 2 above to recover.
 
 ### Activation Flow Diagram
 
@@ -261,35 +274,17 @@ stateDiagram-v2
         API access still works
     end note
 ```
-
-#### Recovery Procedure (If Locked Out)
-
-If loginTheme was accidentally set via Admin Console:
-
-1. **Use the maintenance-toggle.sh script:** `./maintenance-toggle.sh disable`
-2. **Or use Keycloak CLI from inside pod:**
-   ```bash
-   kubectl exec -it -n orch-platform statefulset/platform-keycloak -- bash
-   /opt/bitnami/keycloak/bin/kcadm.sh config credentials --server http://localhost:8080 \
-     --realm master --user $KEYCLOAK_ADMIN --password $KEYCLOAK_ADMIN_PASSWORD
-   /opt/bitnami/keycloak/bin/kcadm.sh update realms/master -s loginTheme=keycloak
-   ```
-3. **Or restart keycloak-config-cli job to reapply ArgoCD configuration:**
-   ```bash
-   kubectl delete job -n orch-platform keycloak-keycloak-config-cli
-   ```
-
 ## Rationale
 
 ### Alternative Approaches Considered
 
 1. **External Maintenance Page**
    - **Considered:** Using a load balancer or ingress-level redirect to a static maintenance page
-   - **Rejected:** Requires infrastructure changes outside of the application layer, more complex to manage, and doesn't integrate well with Keycloak's authentication flow
+   - **Rejected:** Feasibility assessment is in progress
 
 2. **Keycloak Realm Disable**
    - **Considered:** Temporarily disabling the entire Keycloak realm during maintenance
-   - **Rejected:** Results in generic error pages, no ability to customize messaging, and may break health checks
+   - **Rejected:** Results in generic error pages, no ability to customize messaging
 
 3. **Custom HTML in Error Pages**
    - **Considered:** Modifying Keycloak's error page templates
@@ -306,7 +301,7 @@ If loginTheme was accidentally set via Admin Console:
 - **GitOps Compatible:** Theme is version-controlled and deployed via ArgoCD
 - **No Code Changes:** Purely configuration and template files
 - **Reusable:** Once deployed, can be activated for any future maintenance window
-- **Professional UX:** Provides clear, branded communication to users
+- **Professional UX:** Provides clear, communication to users
 - **Maintainable:** Theme files are standard FreeMarker templates, easy to update
 
 ### Trade-offs
@@ -314,119 +309,13 @@ If loginTheme was accidentally set via Admin Console:
 - **Manual Activation Required:** Administrators must manually switch themes using the provided script or API
 - **Generic Message:** Static message doesn't provide specific details about the maintenance
 - **Realm-Wide:** Applies to all projects in the realm when activated
-- **Admin Lockout Risk:** Once enabled, the theme blocks ALL logins including admin access to the Keycloak Console. Must use API/CLI for theme changes to avoid lockout
-- **Requires API Access:** Operations team must use the provided script or API to toggle maintenance mode, cannot use the Admin Console UI
+- **Admin Lockout Risk:** Once enabled, the theme blocks ALL logins including admin access to the Keycloak Console.
+- **Requires API Access:** Operations team must use the provided script or API to toggle maintenance mode
 
 ## Affected Components and Teams
 
 ### Affected Components
 - **Keycloak:** Core component being modified with new theme
 - **ArgoCD Applications:** Configuration changes in `platform-keycloak.yaml`
-- **orch-platform namespace:** Where ConfigMap is deployed
 - **maintenance-toggle.sh:** New script at repository root for safe theme switching
 - **Kubernetes Secrets:** Script reads `platform-keycloak` secret for admin credentials
-
-### Teams
-- **Platform Team:** Responsible for deploying and managing the Keycloak configuration, maintaining the toggle script
-- **Operations Team:** Primary users of the maintenance theme and toggle script during planned maintenance windows
-- **Support Team:** Should be aware of the maintenance theme for user communication and recovery procedures
-
-## Implementation Plan
-
-### Phase 1: Development and Testing (Week 1)
-- **Owner:** Platform Team
-- **Tasks:**
-  - Create and test maintenance theme templates locally
-  - Validate FreeMarker syntax and styling
-  - Test theme switching mechanism in development environment
-  - Review visual design with UX team (if applicable)
-
-### Phase 2: Staging Deployment (Week 2)
-- **Owner:** Platform Team
-- **Tasks:**
-  - Deploy theme to staging environment
-  - Test theme activation and deactivation using `maintenance-toggle.sh` script
-  - **Test lockout recovery procedures** - verify API access works when maintenance theme is active
-  - Verify no impact on normal authentication when using default theme
-  - Document activation procedures and recovery steps for operations team
-  - Test the script with actual Kubernetes secrets and API endpoints
-
-### Phase 3: Production Rollout (Week 3)
-- **Owner:** Platform Team, Operations Team
-- **Tasks:**
-  - Merge changes to main branch (including `maintenance-toggle.sh` script)
-  - Deploy via ArgoCD to production
-  - Create runbook for maintenance theme activation with recovery procedures
-  - Train operations team on:
-    - Using the `maintenance-toggle.sh` script
-    - Understanding the admin lockout risk
-    - Recovery procedures if locked out
-
-### Phase 4: Documentation and Handoff (Week 4)
-- **Owner:** Platform Team
-- **Tasks:**
-  - Update operational documentation
-  - Add maintenance theme section to admin guide
-  - Create troubleshooting guide
-  - Gather feedback from first production use
-
-### Release Cycle Integration
-- **Target Release:** 2026.1 (Q1 2026)
-- **Type:** Non-breaking enhancement
-- **Compatibility:** Fully backward compatible; existing deployments continue using default theme
-
-## Open Issues
-
-### 1. Automated Theme Switching
-**Question:** Should we implement automated theme switching?
-
-**Discussion:** While automated switching would be convenient, it requires:
-- Additional monitoring to ensure services are actually in maintenance mode
-- Risk of accidentally leaving maintenance mode enabled
-- Complex integration with deployment pipelines
-
-**Recommendation:** Start with manual activation via the script; revisit automation after gathering operational experience.
-
-### 2. Enhanced User Communication
-**Question:** Should the maintenance page provide more detailed information?
-
-**Discussion:** More detailed messaging could include:
-- Specific reason for maintenance
-- Contact information for support
-- Links to status pages
-- Dynamic content from external sources
-
-**Recommendation:** Keep message simple and generic; operations team can communicate additional details through other channels (email, status page, chat).
-
-### 3. Multi-Realm Support
-**Question:** How should this work in multi-tenant deployments with multiple realms?
-
-**Discussion:** Currently targets the master realm. For multi-tenant deployments:
-- Each realm could have its own maintenance theme
-- Or use a shared theme across all realms
-- Theme activation would need to be coordinated across realms
-
-**Recommendation:** Document current single-realm approach; extend to multi-realm if needed based on requirements.
-
-### 4. Internationalization
-**Question:** Should the maintenance message support multiple languages?
-
-**Discussion:** Keycloak themes support i18n, but:
-- Adds complexity to theme files
-- Requires translation resources
-- Current user base may not require it
-
-**Recommendation:** Implement in English first; add i18n support if demand emerges.
-
-### 5. Admin Access During Maintenance
-**Question:** Should administrators be able to log in during maintenance mode?
-
-**Discussion:** The current implementation blocks ALL users including admins. Alternative approaches:
-- Modify the maintenance theme to detect admin users and show normal login
-- Use a separate realm for platform administrators
-- Implement role-based conditional logic in the login template
-- Keep current approach and rely on API access
-
-**Current Solution:** The `maintenance-toggle.sh` script provides API-based access to toggle themes without requiring UI login. This is sufficient for current needs.
-
-**Recommendation:** Monitor operational usage; if admin access becomes a frequent requirement during maintenance, consider implementing conditional login based on user roles in a future iteration.
