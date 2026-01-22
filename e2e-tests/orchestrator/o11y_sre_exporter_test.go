@@ -106,7 +106,7 @@ var _ = Describe("Observability SRE Exporter Test:", Label("sre-observability"),
 
 		resp, err := client.Do(req)
 		Expect(err).ToNot(HaveOccurred())
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck
 
 		if resp.StatusCode != http.StatusOK {
 			return "", resp.StatusCode
