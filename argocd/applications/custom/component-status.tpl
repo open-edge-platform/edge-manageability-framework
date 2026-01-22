@@ -47,7 +47,7 @@ componentStatus:
       # Cluster Orchestration - Enabled when cluster-orch profile is loaded
       # Detection - enable-cluster-orch.yaml in root-app valueFiles
       cluster-orchestration:
-        installed: {{ index .Values.argo.enabled "cluster-manager" | default false }}
+        installed: {{ or (index .Values.argo.enabled "cluster-manager") (index .Values.argo.enabled "capi-operator") (index .Values.argo.enabled "intel-infra-provider") | default false }}
         
         # Cluster management core API and lifecycle operations
         cluster-management:
@@ -63,56 +63,58 @@ componentStatus:
       
       # Edge Infrastructure Manager - Enabled when edge-infra profile is loaded
       # Detection - enable-edgeinfra.yaml in root-app valueFiles
-      # EIM is NOT broken down at app level (all workflows need core+managers+onboarding)
-      # Instead, different APIs/managers/configs enable different workflow-level capabilities
-      # Hierarchical fallback - CLI checks sub-feature first, falls back to parent if not found
+      # Two deployment profiles: vPRO (with AMT/OOB) and OXM (microvisor-based)
+      # Sub-features represent actual user-facing workflows
       edge-infrastructure-manager:
         installed: {{ or (index .Values.argo.enabled "infra-core") (index .Values.argo.enabled "infra-managers") (index .Values.argo.enabled "infra-onboarding") (index .Values.argo.enabled "infra-external") | default false }}
         
-        # Day2 - Day 2 operations (maintenance, updates, troubleshooting)
-        # Detection - maintenance-manager is configured in infra-managers
-        day2:
-          installed: {{ if hasKey .Values.argo "infra-managers" }}{{ $infraManagers := index .Values.argo "infra-managers" }}{{ if hasKey $infraManagers "maintenance-manager" }}true{{ else }}false{{ end }}{{ else }}false{{ end }}
-        
         # Onboarding - Device discovery, registration, and enrollment workflow
         # Detection - onboarding-manager is configured and enabled in infra-onboarding
+        # Available in both vPRO and OXM profiles
         onboarding:
           installed: {{ if hasKey .Values.argo "infra-onboarding" }}{{ $infraOnboarding := index .Values.argo "infra-onboarding" }}{{ if hasKey $infraOnboarding "onboarding-manager" }}{{ $onboardingMgr := index $infraOnboarding "onboarding-manager" }}{{ $onboardingMgr.enabled | default false }}{{ else }}false{{ end }}{{ else }}false{{ end }}
         
         # OOB (Out-of-Band) - vPRO/AMT management capabilities
-        # Detection - AMT is configured in infra-external (vPRO/AMT managers deployed)
+        # Detection - infra-external enabled in argo.enabled (OXM profile sets this to false)
+        # Only available in vPRO profile, not in OXM (microvisor) profile
         oob:
-          installed: {{ if and (index .Values.argo.enabled "infra-external" | default false) (hasKey .Values.argo "infra-external") }}{{ $infraExternal := index .Values.argo "infra-external" }}{{ if hasKey $infraExternal "import" }}{{ if hasKey $infraExternal.import "amt" }}{{ $infraExternal.import.amt.enabled | default false }}{{ else }}false{{ end }}{{ else }}false{{ end }}{{ else }}false{{ end }}
+          installed: {{ if hasKey .Values.argo.enabled "infra-external" }}{{ index .Values.argo.enabled "infra-external" | default false }}{{ else }}false{{ end }}
         
-        # Provisioning - Automatic OS provisioning workflow
-        # Detection - autoProvision is enabled in infra-managers (os-resource-manager handles automatic provisioning)
+        # Provisioning - OS provisioning workflow capability
+        # Detection - provisioning available when infra-onboarding is deployed
+        # Available in both vPRO (standard OS) and OXM (microvisor) profiles
         provisioning:
-          installed: {{ if and (index .Values.argo.enabled "infra-managers" | default false) (hasKey .Values.argo "infra-managers") }}{{ $infraManagers := index .Values.argo "infra-managers" }}{{ if hasKey $infraManagers "autoProvision" }}{{ $infraManagers.autoProvision.enabled | default false }}{{ else }}false{{ end }}{{ else }}false{{ end }}
+          installed: {{ index .Values.argo.enabled "infra-onboarding" | default false }}
       
-      # Observability - Enabled when o11y profile is loaded
-      # Detection - enable-o11y.yaml in root-app valueFiles
-      observability:
-        installed: {{ index .Values.argo.enabled "orchestrator-observability" | default false }}
+      # Orchestrator Observability - Metrics and monitoring for orchestrator platform components
+      # Detection - orchestrator-observability application enabled
+      orchestrator-observability:
+        installed: {{ or (index .Values.argo.enabled "orchestrator-observability") (index .Values.argo.enabled "orchestrator-dashboards") (index .Values.argo.enabled "alerting-monitor") | default false }}
         
         # Metrics collection and monitoring for orchestrator components
-        orchestrator-monitoring:
+        monitoring:
           installed: {{ index .Values.argo.enabled "orchestrator-observability" | default false }}
         
-        # Metrics collection and monitoring for edge nodes
-        edge-node-monitoring:
-          installed: {{ index .Values.argo.enabled "edgenode-observability" | default false }}
-        
         # Pre-built dashboards for orchestrator metrics
-        orchestrator-dashboards:
+        dashboards:
           installed: {{ index .Values.argo.enabled "orchestrator-dashboards" | default false }}
         
-        # Pre-built dashboards for edge node metrics
-        edge-node-dashboards:
-          installed: {{ index .Values.argo.enabled "edgenode-dashboards" | default false }}
-        
-        # Alerting and monitoring rules
+        # Alerting and monitoring rules for orchestrator
         alerting:
           installed: {{ index .Values.argo.enabled "alerting-monitor" | default false }}
+      
+      # Edge Node Observability - Metrics and monitoring for edge nodes
+      # Detection - edgenode-observability application enabled
+      edgenode-observability:
+        installed: {{ or (index .Values.argo.enabled "edgenode-observability") (index .Values.argo.enabled "edgenode-dashboards") | default false }}
+        
+        # Metrics collection and monitoring for edge nodes
+        monitoring:
+          installed: {{ index .Values.argo.enabled "edgenode-observability" | default false }}
+        
+        # Pre-built dashboards for edge node metrics
+        dashboards:
+          installed: {{ index .Values.argo.enabled "edgenode-dashboards" | default false }}
       
       # Web UI - Enabled when full-ui profile is loaded
       # Detection - enable-full-ui.yaml in root-app valueFiles

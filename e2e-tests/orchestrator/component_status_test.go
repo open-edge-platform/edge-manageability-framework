@@ -241,42 +241,34 @@ var _ = Describe("Component Status Service", Label(componentStatusLabel), func()
 				eim, exists := status.Orchestrator.Features["edge-infrastructure-manager"]
 				Expect(exists).To(BeTrue(), "edge-infrastructure-manager feature should exist")
 
-				expectedEIMSubFeatures := []string{"day2", "onboarding", "oob", "provisioning"}
+				expectedEIMSubFeatures := []string{"onboarding", "oob", "provisioning"}
 				for _, subFeature := range expectedEIMSubFeatures {
 					_, exists := eim.SubFeatures[subFeature]
 					Expect(exists).To(BeTrue(), fmt.Sprintf("EIM sub-feature %s should be present", subFeature))
 				}
 			})
 
-			It("should have day2 workflow detection based on maintenance-manager", func() {
-				eim := status.Orchestrator.Features["edge-infrastructure-manager"]
-				day2, exists := eim.SubFeatures["day2"]
-				Expect(exists).To(BeTrue(), "day2 sub-feature should exist")
-				// Installed status depends on maintenance-manager deployment
-				Expect(day2.Installed).To(Or(BeTrue(), BeFalse()))
-			})
-
 			It("should have onboarding workflow detection based on onboarding-manager", func() {
 				eim := status.Orchestrator.Features["edge-infrastructure-manager"]
 				onboarding, exists := eim.SubFeatures["onboarding"]
 				Expect(exists).To(BeTrue(), "onboarding sub-feature should exist")
-				// Installed status depends on onboarding-manager.enabled
+				// Available in both vPRO and OXM profiles
 				Expect(onboarding.Installed).To(Or(BeTrue(), BeFalse()))
 			})
 
-			It("should have oob workflow detection based on AMT managers", func() {
+			It("should have oob workflow detection based on infra-external enabled flag", func() {
 				eim := status.Orchestrator.Features["edge-infrastructure-manager"]
 				oob, exists := eim.SubFeatures["oob"]
 				Expect(exists).To(BeTrue(), "oob sub-feature should exist")
-				// Installed status depends on infra-external.amt configuration
+				// Only available in vPRO profile (OXM sets infra-external: false)
 				Expect(oob.Installed).To(Or(BeTrue(), BeFalse()))
 			})
 
-			It("should have provisioning workflow detection based on autoProvision configuration", func() {
+			It("should have provisioning workflow detection based on infra-onboarding", func() {
 				eim := status.Orchestrator.Features["edge-infrastructure-manager"]
 				provisioning, exists := eim.SubFeatures["provisioning"]
 				Expect(exists).To(BeTrue(), "provisioning sub-feature should exist")
-				// Installed status depends on infra-managers.autoProvision.enabled
+				// Available in both vPRO (standard OS) and OXM (microvisor) profiles
 				Expect(provisioning.Installed).To(Or(BeTrue(), BeFalse()))
 			})
 
@@ -315,9 +307,11 @@ var _ = Describe("Component Status Service", Label(componentStatusLabel), func()
 				clusterMgmt, exists := clusterOrch.SubFeatures["cluster-management"]
 				Expect(exists).To(BeTrue(), "cluster-management sub-feature should exist")
 
-				// If cluster-orch is installed, cluster-management should match
-				if clusterOrch.Installed {
-					Expect(clusterMgmt.Installed).To(Equal(clusterOrch.Installed))
+				// Parent should be enabled if ANY child is enabled
+				capi := clusterOrch.SubFeatures["capi"]
+				intelProvider := clusterOrch.SubFeatures["intel-provider"]
+				if clusterMgmt.Installed || capi.Installed || intelProvider.Installed {
+					Expect(clusterOrch.Installed).To(BeTrue(), "parent should be enabled if any child is enabled")
 				}
 			})
 
@@ -337,54 +331,86 @@ var _ = Describe("Component Status Service", Label(componentStatusLabel), func()
 		})
 
 		Context("Observability monitoring capabilities", func() {
-			It("should validate observability sub-features exist", func() {
-				obs, exists := status.Orchestrator.Features["observability"]
-				Expect(exists).To(BeTrue(), "observability feature should exist")
+			It("should validate orchestrator-observability exists as separate top-level feature", func() {
+				orchObs, exists := status.Orchestrator.Features["orchestrator-observability"]
+				Expect(exists).To(BeTrue(), "orchestrator-observability feature should exist")
 
 				expectedSubFeatures := []string{
-					"orchestrator-monitoring",
-					"edge-node-monitoring",
-					"orchestrator-dashboards",
-					"edge-node-dashboards",
+					"monitoring",
+					"dashboards",
 					"alerting",
 				}
 				for _, subFeature := range expectedSubFeatures {
-					_, exists := obs.SubFeatures[subFeature]
-					Expect(exists).To(BeTrue(), fmt.Sprintf("observability sub-feature %s should be present", subFeature))
+					_, exists := orchObs.SubFeatures[subFeature]
+					Expect(exists).To(BeTrue(), fmt.Sprintf("orchestrator-observability sub-feature %s should be present", subFeature))
 				}
 			})
 
-			It("should detect orchestrator monitoring independently from edge node monitoring", func() {
-				obs := status.Orchestrator.Features["observability"]
-				orchMon := obs.SubFeatures["orchestrator-monitoring"]
-				edgeMon := obs.SubFeatures["edge-node-monitoring"]
+			It("should validate edgenode-observability exists as separate top-level feature", func() {
+				edgeObs, exists := status.Orchestrator.Features["edgenode-observability"]
+				Expect(exists).To(BeTrue(), "edgenode-observability feature should exist")
 
-				// These can be enabled independently
-				Expect(orchMon.Installed).To(Or(BeTrue(), BeFalse()))
-				Expect(edgeMon.Installed).To(Or(BeTrue(), BeFalse()))
+				expectedSubFeatures := []string{
+					"monitoring",
+					"dashboards",
+				}
+				for _, subFeature := range expectedSubFeatures {
+					_, exists := edgeObs.SubFeatures[subFeature]
+					Expect(exists).To(BeTrue(), fmt.Sprintf("edgenode-observability sub-feature %s should be present", subFeature))
+				}
+			})
+
+			It("should detect orchestrator and edge node observability independently", func() {
+				orchObs, orchExists := status.Orchestrator.Features["orchestrator-observability"]
+				edgeObs, edgeExists := status.Orchestrator.Features["edgenode-observability"]
+
+				Expect(orchExists).To(BeTrue(), "orchestrator-observability should exist")
+				Expect(edgeExists).To(BeTrue(), "edgenode-observability should exist")
+
+				// These are independent pipelines and can be enabled separately
+				Expect(orchObs.Installed).To(Or(BeTrue(), BeFalse()))
+				Expect(edgeObs.Installed).To(Or(BeTrue(), BeFalse()))
 			})
 
 			It("should detect dashboard availability", func() {
-				obs := status.Orchestrator.Features["observability"]
-				orchDash := obs.SubFeatures["orchestrator-dashboards"]
-				edgeDash := obs.SubFeatures["edge-node-dashboards"]
+				orchObs := status.Orchestrator.Features["orchestrator-observability"]
+				edgeObs := status.Orchestrator.Features["edgenode-observability"]
+				orchDash := orchObs.SubFeatures["dashboards"]
+				edgeDash := edgeObs.SubFeatures["dashboards"]
 
 				Expect(orchDash.Installed).To(Or(BeTrue(), BeFalse()))
 				Expect(edgeDash.Installed).To(Or(BeTrue(), BeFalse()))
 			})
 
 			It("should detect alerting capabilities", func() {
-				obs := status.Orchestrator.Features["observability"]
-				alerting, exists := obs.SubFeatures["alerting"]
+				orchObs := status.Orchestrator.Features["orchestrator-observability"]
+				alerting, exists := orchObs.SubFeatures["alerting"]
 				Expect(exists).To(BeTrue(), "alerting sub-feature should exist")
 				Expect(alerting.Installed).To(Or(BeTrue(), BeFalse()))
 			})
+
+		It("should enable orchestrator-observability parent if ANY sub-component is enabled", func() {
+			orchObs := status.Orchestrator.Features["orchestrator-observability"]
+			monitoring := orchObs.SubFeatures["monitoring"]
+			dashboards := orchObs.SubFeatures["dashboards"]
+			alerting := orchObs.SubFeatures["alerting"]
+
+			// Parent should be enabled if ANY child is enabled
+			if monitoring.Installed || dashboards.Installed || alerting.Installed {
+				Expect(orchObs.Installed).To(BeTrue(), "parent should be enabled if any child is enabled")
+			}
 		})
 
-		Context("Kyverno policy management", func() {
-			It("should validate kyverno sub-features exist", func() {
-				kyverno, exists := status.Orchestrator.Features["kyverno"]
-				Expect(exists).To(BeTrue(), "kyverno feature should exist")
+		It("should enable edgenode-observability parent if ANY sub-component is enabled", func() {
+			edgeObs := status.Orchestrator.Features["edgenode-observability"]
+			monitoring := edgeObs.SubFeatures["monitoring"]
+			dashboards := edgeObs.SubFeatures["dashboards"]
+
+			// Parent should be enabled if ANY child is enabled
+			if monitoring.Installed || dashboards.Installed {
+				Expect(edgeObs.Installed).To(BeTrue(), "parent should be enabled if any child is enabled")
+			}
+		})
 
 				expectedSubFeatures := []string{"policy-engine", "policies"}
 				for _, subFeature := range expectedSubFeatures {
