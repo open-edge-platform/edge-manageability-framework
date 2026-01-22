@@ -134,7 +134,7 @@ var _ = Describe("Edgenode Observability Test:", Ordered, Label(edgenodeObs), fu
 		It("Mimir gateway should be in running state", func() {
 			resp, err := helpers.MakeRequest(http.MethodGet, fmt.Sprintf("%v/ready", mimirURL), nil, cli, nil)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		})
 
@@ -164,14 +164,14 @@ var _ = Describe("Edgenode Observability Test:", Ordered, Label(edgenodeObs), fu
 		It("Loki write should be in running state", func() {
 			resp, err := helpers.MakeRequest(http.MethodGet, fmt.Sprintf("%v/ready", lokiWriteURL), nil, cli, nil)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		})
 
 		It("Loki read should be in running state", func() {
 			resp, err := helpers.MakeRequest(http.MethodGet, fmt.Sprintf("%v/ready", lokiReadURL), nil, cli, nil)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		})
 
@@ -196,7 +196,7 @@ var _ = Describe("Edgenode Observability Test:", Ordered, Label(edgenodeObs), fu
 
 			resp, err := helpers.MakeRequest(http.MethodPost, fmt.Sprintf("%v%v", lokiWriteURL, logWriteEndpoint), []byte(body), cli, headers)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusNoContent))
 		})
 

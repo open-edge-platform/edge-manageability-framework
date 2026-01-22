@@ -97,7 +97,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 		if err != nil {
 			return fmt.Errorf("failed to do request: %w", err)
 		}
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck
 
 		if resp.StatusCode != http.StatusOK {
 			return fmt.Errorf("expected status code 200, got %d, will retry", resp.StatusCode)

@@ -122,7 +122,7 @@ func (Test) deployment() error { //nolint: cyclop
 							panic(err)
 						}
 						if s.ReadyReplicas != s.Replicas {
-							if _, err := w.Write([]byte(fmt.Sprintf("%s\n", line))); err != nil {
+							if _, err := fmt.Fprintf(w, "%s\n", line); err != nil {
 								panic(err)
 							}
 						}
