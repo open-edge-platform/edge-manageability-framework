@@ -95,46 +95,24 @@ The implementation requires modifications to `argocd/applications/configs/platfo
 
 ```mermaid
 graph TB
-    subgraph "Kubernetes Cluster"
-        CM[ConfigMap: keycloak-maintenance-theme]
+    subgraph "Kubernetes"
+        CM[ConfigMap:<br/>keycloak-maintenance-theme<br/>theme.properties + login.ftl]
         KC[Keycloak StatefulSet]
-        Secret[Secret: platform-keycloak]
-        
         CM -->|Volume Mount| KC
-        Secret -->|admin-password| Script
     end
     
-    subgraph "Maintenance Theme Files"
-        CM --> TP[theme.properties]
-        CM --> FTL[login.ftl]
+    subgraph "Toggle Maintenance Mode"
+        Script[maintenance-toggle.sh ✓]
+        Console[Admin Console ⚠️<br/>Causes Lockout]
+        Script -->|API Call| KC
     end
     
-    subgraph "Theme Location in Pod"
-        KC --> Theme[/opt/bitnami/keycloak/themes/maintenance/]
-        Theme --> TP2[theme.properties]
-        Theme --> FTL2[login.ftl]
-    end
-    
-    subgraph "Management Tools"
-        Script[maintenance-toggle.sh]
-        API[Keycloak Admin API]
-        Console[Admin Console ⚠️]
-    end
-    
-    Script -->|HTTPS| API
-    Console -.->|Don't Use<br/>Causes Lockout| API
-    API -->|Update loginTheme| KC
-    
-    subgraph "User Access"
-        User[End User]
-        User -->|Login Request| KC
-        KC -->|Normal Mode| Login[Standard Login Page]
-        KC -->|Maintenance Mode| Maint[Maintenance Page]
-    end
+    User[End User] -->|Login Request| KC
+    KC -->|Show Page| Display[Standard Login<br/>or<br/>Maintenance Page]
     
     style Console fill:#ffcccc,stroke:#ff0000
     style Script fill:#ccffcc,stroke:#00ff00
-    style Maint fill:#fff3cd,stroke:#ffc107
+    style Display fill:#fff3cd,stroke:#ffc107
 ```
 
 ### Activation Workflow
