@@ -2,56 +2,29 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+# NOTE: This is an override template for the platform-keycloak Helm chart.
+# It only contains cluster-specific and dynamic values.
+# Base configuration (defaults) is inherited from the base chart values.
+# See charts/keycloak-instance/values.yaml for base configuration.
 
-# Keycloak instance configuration (Keycloak CRD)
 keycloak:
-  # Bootstrap admin credentials
+  # Bootstrap admin credentials - cluster specific secret
   # Note: The secret is created externally by deployment scripts (mage/installer)
   # The secret MUST contain 'username' and 'password' keys - operator will read them automatically
-  # The Keycloak operator will automatically inject KC_BOOTSTRAP_ADMIN_USERNAME and KC_BOOTSTRAP_ADMIN_PASSWORD
-  # from the secret specified below into the Keycloak pod environment
   bootstrapAdmin:
     user:
       secret: platform-keycloak
 
-  # Database configuration
+  # Database configuration - dynamic secret references
   database:
-    vendor: postgres
     usernameSecret:
       name: platform-keycloak-{{.Values.argo.database.type}}-postgresql
       key: PGUSER
     passwordSecret:
       name: platform-keycloak-{{.Values.argo.database.type}}-postgresql
       key: PGPASSWORD
-    # Connection pool settings
-    poolInitialSize: 5
-    poolMinSize: 5
-    poolMaxSize: 50
 
-  # HTTP configuration
-  http:
-    httpEnabled: true
-    httpPort: 8080
-    relativeUrl: "/"
-
-  # Proxy headers for reverse proxy
-  proxy:
-    headers: xforwarded
-
-  # Ingress configuration
-  ingress:
-    enabled: false
-
-  # Pod resource allocation
-  resources:
-    requests:
-      cpu: 500m
-      memory: 512Mi
-    limits:
-      cpu: 2000m
-      memory: 2Gi
-
-  # Runtime configuration options
+  # Runtime configuration options - dynamic values from secrets
   additionalOptions:
     # Read database connection details from secret
     - name: db-url-host
@@ -70,7 +43,9 @@ keycloak:
     # With proxy headers enabled, Keycloak will use X-Forwarded-* to detect external requests
     # and generate appropriate token issuer claims while maintaining internal service compatibility
     - name: hostname-url
-      value: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
+      secret:
+        name: platform-keycloak-{{.Values.argo.database.type}}-postgresql
+        key: PGDATABASE
     - name: hostname-strict
       value: "false"
     # Enable proxy headers so Keycloak respects X-Forwarded-* headers from Traefik
@@ -92,101 +67,6 @@ keycloak:
       value: "INFO"
     - name: log-console-output
       value: "json"
-
-  # Pod optimization
-  startOptimized: true
-  instances: 1
-
-  # Pod template security and initialization
-  podTemplate:
-    # Pod security context
-    securityContext:
-      runAsUser: 1000
-      runAsGroup: 1000
-      fsGroup: 1000
-      seccompProfile:
-        type: RuntimeDefault
-
-    # Init container for building optimized Keycloak image
-    initContainers:
-      - name: keycloak-builder
-        image: "quay.io/keycloak/keycloak:26.5.0"
-        imagePullPolicy: IfNotPresent
-        command:
-          - /bin/bash
-        args:
-          - -c
-          - |
-            set -e
-            /opt/keycloak/bin/kc.sh build \
-              --db=postgres \
-              --health-enabled=true \
-              --metrics-enabled=true \
-              --http-relative-path=/
-
-            mkdir -p /shared/keycloak
-            cp -r /opt/keycloak/* /shared/keycloak/
-
-        resources:
-          requests:
-            cpu: 500m
-            memory: 512Mi
-          limits:
-            cpu: 1500m
-            memory: 1Gi
-
-        securityContext:
-          allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: false
-          runAsNonRoot: true
-          runAsUser: 1000
-          runAsGroup: 1000
-          capabilities:
-            drop:
-              - ALL
-          seccompProfile:
-            type: RuntimeDefault
-
-        volumeMounts:
-          - name: shared-keycloak
-            mountPath: /shared/keycloak
-          - name: tmp
-            mountPath: /tmp
-
-    # Main container security context
-    containerSecurityContext:
-      allowPrivilegeEscalation: false
-      readOnlyRootFilesystem: true
-      runAsNonRoot: true
-      runAsUser: 1000
-      runAsGroup: 1000
-      capabilities:
-        drop:
-          - ALL
-      seccompProfile:
-        type: RuntimeDefault
-
-    # Container volume mounts
-    containerVolumeMounts:
-      - name: shared-keycloak
-        mountPath: /opt/keycloak
-        readOnly: true
-      - name: tmp
-        mountPath: /tmp
-      - name: keycloak-data
-        mountPath: /opt/keycloak/data
-
-    # Pod volumes
-    volumes:
-      - name: shared-keycloak
-        emptyDir:
-          sizeLimit: 1Gi
-      - name: tmp
-        emptyDir:
-          sizeLimit: 100Mi
-      - name: keycloak-data
-        emptyDir:
-          sizeLimit: 500Mi
 
 ## These values are used to configure:
 ## 1. Realm import configuration (clients, redirect URIs, etc.)
