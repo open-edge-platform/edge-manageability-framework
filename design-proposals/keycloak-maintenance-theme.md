@@ -217,13 +217,19 @@ curl -sk -X PUT "${KEYCLOAK_URL}/admin/realms/master" \
   -d '{"loginTheme": "keycloak"}'
 ```
 
+**Method 3: Via Web-UI**
+
+- Implement platform APIs to communicate with keycloak.
+- Invoke the implemented APIs from web-ui to control the maintenance mode from UI
+- Based on maintenence schedule invoke the APIs to enable/disable maintenance mode
+
 ## Rationale
 
 ### Alternative Approaches Considered
 
 1. **External Maintenance Page**
    - **Considered:** Using a load balancer or ingress-level redirect to a static maintenance page
-   - **Rejected:** Feasibility assessment is in progress
+   - **In progress:** Feasibility assessment is in progress
 
 2. **Keycloak Realm Disable**
    - **Considered:** Temporarily disabling the entire Keycloak realm during maintenance
@@ -254,8 +260,6 @@ curl -sk -X PUT "${KEYCLOAK_URL}/admin/realms/master" \
 - **Realm-Wide:** Applies to all projects in the realm when activated
 - **Admin Lockout Risk:** Once enabled, the theme blocks ALL logins including admin access to the Keycloak Console.
 - **Requires API Access:** Operations team must use the provided script or API to toggle maintenance mode
-
-## Affected Components and Teams
 
 ### Affected Components
 - **Keycloak:** Core component being modified with new theme
