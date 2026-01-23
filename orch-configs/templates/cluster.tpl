@@ -6,7 +6,11 @@
 root:
   useLocalValues: false
   clusterValues:
+{{- if .Values.enableVproProfie }}
+    - orch-configs/profiles/enable-platform-vpro.yaml
+{{- else }}
     - orch-configs/profiles/enable-platform.yaml
+{{- end }}
 {{- if .Values.enableDefaultTenancy }}
     - orch-configs/profiles/enable-singleTenancy.yaml
 {{- end }}
@@ -25,7 +29,9 @@ root:
 {{- if .Values.enableClusterOrch }}
     - orch-configs/profiles/enable-cluster-orch.yaml
 {{- end }}
-{{- if .Values.enableEdgeInfra }}
+{{- if .Values.enableVproProfie }}
+    - orch-configs/profiles/enable-edgeinfra-vpro.yaml
+{{- else }}
     - orch-configs/profiles/enable-edgeinfra.yaml
 {{- end }}
 {{- if .Values.enableUi }}
