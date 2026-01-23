@@ -166,13 +166,58 @@ flowchart TB
 
 ### Activation Workflow
 
+```mermaid
+sequenceDiagram
+    participant Operator as 👤 Operator
+    participant Control as 🖥️ Control Interface<br/>(Script/API)
+    participant K8s as ☸️ K8s Secret
+    participant API as 🔐 Keycloak API
+    participant Realm as 🏛️ Keycloak Realm
+    participant User as 👥 End Users
+
+    Note over Operator,User: Enable Maintenance Mode
+    Operator->>Control: Enable maintenance<br/>(./maintenance-toggle.sh enable<br/>OR kubectl + curl commands)
+    Control->>K8s: Read admin credentials
+    K8s-->>Control: Return credentials
+    Control->>API: POST /token (authenticate)
+    API-->>Control: Access token
+    Control->>API: PUT /realms/master<br/>{"loginTheme": "maintenance"}
+    API->>Realm: Update theme config
+    Realm-->>API: Success
+    API-->>Control: 200 OK
+    Control-->>Operator: ✅ Maintenance enabled
+    
+    Note over User,Realm: Users now see maintenance page
+    User->>Realm: Attempt login
+    Realm-->>User: 🚧 Maintenance page displayed
+
+    Note over Operator,User: Disable Maintenance Mode
+    Operator->>Control: Disable maintenance<br/>(./maintenance-toggle.sh disable<br/>OR kubectl + curl commands)
+    Control->>K8s: Read admin credentials
+    K8s-->>Control: Return credentials
+    Control->>API: POST /token (authenticate)
+    API-->>Control: Access token
+    Control->>API: PUT /realms/master<br/>{"loginTheme": "keycloak"}
+    API->>Realm: Restore default theme
+    Realm-->>API: Success
+    API-->>Control: 200 OK
+    Control-->>Operator: ✅ Maintenance disabled
+
+    Note over User,Realm: Users can now login normally
+    User->>Realm: Attempt login
+    Realm-->>User: ✓ Normal login page
+```
+
+
 **CRITICAL:** Changing the `loginTheme` to "maintenance" in keycloak dashboard blocks ALL login attempts, including administrator access to the Keycloak Admin Console. Once activated, the Admin Console UI becomes inaccessible.
 
-#### Recommended Activation Methods
+#### Activation Methods
 
-**Method 1: Using the maintenance-toggle.sh Script (Recommended)**
+Maintenance mode can be controlled via Keycloak's Admin API, either using the provided convenience script or direct API calls. Both approaches use the same underlying API and can be implemented in the backend.
 
-A bash script (`maintenance-toggle.sh`) is provided at the repository root to safely manage maintenance mode via Keycloak's Admin API:
+**Option A: Using the maintenance-toggle.sh Script (Recommended)**
+
+A bash script (`maintenance-toggle.sh`) is provided at the repository root:
 
 ```bash
 # Check current status
@@ -191,7 +236,9 @@ The script:
 - Includes error handling and validation
 - Works even when maintenance theme is active
 
-**Method 2: Via Keycloak Admin API (Manual)**
+**Option B: Direct API Calls (Manual or Backend Implementation)**
+
+For backend implementation or manual control:
 
 ```bash
 # Get credentials
@@ -217,11 +264,7 @@ curl -sk -X PUT "${KEYCLOAK_URL}/admin/realms/master" \
   -d '{"loginTheme": "keycloak"}'
 ```
 
-**Method 3: Via Web-UI**
-
-- Implement platform APIs to communicate with keycloak.
-- Invoke the implemented APIs from web-ui to control the maintenance mode from UI
-- Based on maintenence schedule invoke the APIs to enable/disable maintenance mode
+These API calls can be implemented directly in the platform backend service to enable programmatic control of maintenance mode.
 
 ## Rationale
 
