@@ -65,7 +65,7 @@ root:
 {{- if .Values.enableDefaultTraefikRateLimit }}
     - orch-configs/profiles/default-traefik-rate-limit.yaml
 {{- end }}
-{{- if .Values.enableEIMvPROOnly }}
+{{- if .Values.enableEIMvProOnly }}
     - orch-configs/profiles/enable-eim-vpro-only.yaml
 {{- end }}
 

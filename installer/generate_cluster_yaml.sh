@@ -65,8 +65,8 @@ export PROFILE_FILE_NAME='- orch-configs/profiles/profile-onprem.yaml'
 export PROFILE_FILE_NAME_EXT=''
 export EMAIL_PROFILE='- orch-configs/profiles/alerting-emails.yaml'
 export ARTIFACT_RS_PROFILE='- orch-configs/profiles/artifact-rs-production-noauth.yaml'
-export OSRM_MANUAL_PROFILE='- orch-configs/profiles/enable-osrm-manual-mode.yaml'
 export RESOURCE_DEFAULT_PROFILE='- orch-configs/profiles/resource-default.yaml'
+export EIM_VPRO_ONLY_PROFILE='- orch-configs/profiles/enable-eim-vpro-only.yaml'
 
 # -----------------------------------------------------------------------------
 # Default environment variables

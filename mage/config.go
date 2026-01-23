@@ -30,6 +30,7 @@ var (
 		"enableKyverno":       true,
 		"enableEdgeInfra":     true,
 		"enableAutoProvision": true,
+		"enableEIMvProOnly":   false,
 		"proxyProfile":        "",
 		"deployProfile":       "dev",
 		"enableTraefikLogs":   true,
