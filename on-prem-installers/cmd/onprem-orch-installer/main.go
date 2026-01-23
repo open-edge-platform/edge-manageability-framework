@@ -51,6 +51,10 @@ func main() {
 	}
 	defer os.RemoveAll(edgeManageabilityFrameworkFolder)
 
+	edgeManageabilityFrameworkFolder = "/home/ubuntu/edge-manageability-framework"
+
+	fmt.Println("Using temporary folder:", edgeManageabilityFrameworkFolder)
+
 	// Check if kubectl is available, if not set KUBECONFIG
 	_, err = sh.Output("kubectl", "version", "--client")
 	if err != nil {
@@ -71,11 +75,11 @@ func main() {
 		log.Fatalf("failed to get Gitea service URL - %v", err)
 	}
 
-	err = pushArtifactRepoToGitea(edgeManageabilityFrameworkFolder, getArtifactPath(tarFilesLocation, edgeManageabilityFrameworkRepo),
-		edgeManageabilityFrameworkRepo, giteaServiceURL)
-	if err != nil {
-		log.Panicf("%v", err)
-	}
+	// err = pushArtifactRepoToGitea(edgeManageabilityFrameworkFolder, getArtifactPath(tarFilesLocation, edgeManageabilityFrameworkRepo),
+	// 	edgeManageabilityFrameworkRepo, giteaServiceURL)
+	// if err != nil {
+	// 	log.Panicf("%v", err)
+	// }
 
 	err = installRootApp(edgeManageabilityFrameworkFolder, orchInstallerProfile, giteaServiceURL)
 	if err != nil {
@@ -192,6 +196,8 @@ func getArtifactPath(tarFilesLocation, repoName string) string {
 
 	for _, file := range files {
 		if strings.Contains(file.Name(), repoName) && strings.HasSuffix(file.Name(), tarSuffix) {
+			fmt.Println("Using artifact file:", file.Name())
+			fmt.Println("Full path to artifact file:", filepath.Join(tarFilesLocation, file.Name()))
 			return filepath.Join(tarFilesLocation, file.Name())
 		}
 	}

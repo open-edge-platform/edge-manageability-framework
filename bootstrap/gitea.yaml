@@ -79,10 +79,11 @@ gitea:
   config:
     server:
       APP_DATA_PATH: /data
-      DOMAIN: gitea-http.gitea.svc.cluster.local
-      #HTTP_PORT: 3000
+      #DOMAIN: gitea-http.gitea.svc.cluster.local
+      DOMAIN: gitea.kind.internal
+      HTTP_PORT: 3000
       PROTOCOL: https
-      #ROOT_URL: "https://gitea.kind.internal:3000"
+      ROOT_URL: "https://gitea.kind.internal:3000"
       CERT_FILE: /tmp/secret-volume/tls.crt
       KEY_FILE: /tmp/secret-volume/tls.key
     repository:

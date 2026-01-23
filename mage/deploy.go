@@ -102,12 +102,14 @@ func kubectlDebugNamespace(name string) error {
 }
 
 func (d Deploy) kind(targetEnv string) error { //nolint:gocyclo
-	targetEnvType, err := (Config{}).getTargetEnvType(targetEnv)
+	//targetEnvType, err := (Config{}).getTargetEnvType(targetEnv)
+	_, err := (Config{}).getTargetEnvType(targetEnv)
 	if err != nil {
 		return fmt.Errorf("error getting target environment type: %w", err)
-	} else if targetEnvType != "kind" {
-		return fmt.Errorf("wrong environment specified for kind deployment: %s is a %s orchestrator definition", targetEnv, targetEnvType)
 	}
+	// } else if targetEnvType != "kind" {
+	// 	return fmt.Errorf("wrong environment specified for kind deployment: %s is a %s orchestrator definition", targetEnv, targetEnvType)
+	// }
 
 	if err := checkEnv(targetEnv); err != nil {
 		return err
@@ -897,7 +899,7 @@ func joinNamedParams(valueName string, values []string) string {
 func (Deploy) generateInfraCerts() error {
 	// Process Subject Alrternative Names (SAN)
 	// The cert is signed for both *.kind.internal and *.serviceDomain.
-	commonName := "*.kind.internal"
+	commonName := "gitea-http.gitea.svc.cluster.local"
 	san := fmt.Sprintf("subjectAltName=DNS:%s,DNS:%s", commonName, fmt.Sprintf("*.%s", serviceDomain))
 
 	// Generate infra TLS cert

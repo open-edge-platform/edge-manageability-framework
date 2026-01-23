@@ -187,6 +187,8 @@ func (c Config) usePreset(clusterPresetFile string) (string, error) {
 		return "", fmt.Errorf("failed to unmarshal yaml: %w", err)
 	}
 
+	fmt.Println(presetData)
+
 	// Apply defaultPresetValues to the presetData map to fill in any missing defaults.
 	for key, defaultValue := range defaultPresetValues {
 		if _, exists := presetData[key]; !exists {
