@@ -58,6 +58,7 @@ fi
 # -----------------------------------------------------------------------------
 export PLATFORM_PROFILE='- orch-configs/profiles/enable-platform.yaml'
 export KYVERNO_PROFILE='- orch-configs/profiles/enable-kyverno.yaml'
+export EDGEINFRA_PROFILE='- orch-configs/profiles/enable-edgeinfra.yaml'
 export UI_PROFILE='- orch-configs/profiles/enable-full-ui.yaml'
 export SRE_PROFILE='- orch-configs/profiles/enable-sre.yaml'
 export PROXY_NONE_PROFILE='- orch-configs/profiles/proxy-none.yaml'
