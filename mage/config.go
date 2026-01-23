@@ -37,6 +37,7 @@ var (
 		"dockerCache":         "",
 		"dockerCacheCert":     "",
 		"deployRepoURL":       "https://github.com/open-edge-platform/edge-manageability-framework",
+		"deployRepoRevision":  "main",
 	}
 )
 
@@ -182,6 +183,13 @@ func (Config) overrideFromEnvironment(presetData map[string]interface{}) error {
 	if disableO11y {
 		presetData["enableObservability"] = false
 	}
+
+	// Override deployRepoRevision from environment variable if set
+	deployRepoRevision := os.Getenv("DEPLOY_REPO_BRANCH")
+	if deployRepoRevision != "" {
+		presetData["deployRepoRevision"] = deployRepoRevision
+	}
+
 	return nil
 }
 

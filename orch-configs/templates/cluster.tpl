@@ -113,7 +113,7 @@ argo:
 {{- end }}
   ## Argo CD configs
   deployRepoURL: "{{ .Values.deployRepoURL }}"
-  deployRepoRevision: main
+  deployRepoRevision: {{ .Values.deployRepoRevision | default "main" }}
 
   targetServer: "https://kubernetes.default.svc"
   autosync: true
