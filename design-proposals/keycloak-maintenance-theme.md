@@ -91,80 +91,9 @@ The implementation requires modifications to `argocd/applications/configs/platfo
    "loginTheme": "keycloak"
    ```
 
-### Architecture Diagram
-
-```mermaid
-flowchart TB
-    subgraph ui["Control Interface"]
-        direction LR
-        Script["🖥️ CLI Script
-        maintenance-toggle.sh
-        (Current)"]
-        
-        FutureUI["🌐 Web UI
-        Admin Dashboard
-        (Future)"]
-    end
-    
-    subgraph k8s["Kubernetes Cluster"]
-        direction TB
-        
-        Secret["🔑 Secret
-        platform-keycloak
-        └─ admin-password"]
-        
-        CM["📄 ConfigMap
-        keycloak-maintenance-theme
-        ├─ theme.properties
-        └─ error.ftl"]
-        
-        KC["🔐 Keycloak Pod
-        StatefulSet
-        
-        Mounted: /themes/maintenance/"]
-        
-        API["⚙️ Keycloak API
-        /admin/realms/master
-        
-        Theme Configuration"]
-    end
-    
-    User["👤 End User Browser"]
-    
-    Script -->|1. Read credentials| Secret
-    FutureUI -.->|1. Read credentials| Secret
-    
-    Script -->|2. Authenticate| API
-    FutureUI -.->|2. Authenticate| API
-    
-    Script -->|"3. PUT theme config<br/>loginTheme: maintenance"| API
-    FutureUI -.->|3. PUT theme config| API
-    
-    API -->|4. Update realm| KC
-    
-    CM -->|mounted as volume| KC
-    
-    User -->|5. Login request| KC
-    KC -->|6. Render page<br/>from theme| User
-    
-    style Script fill:#c8e6c9,stroke:#4caf50,stroke-width:3px
-    style FutureUI fill:#e3f2fd,stroke:#2196f3,stroke-width:2px,stroke-dasharray: 5 5
-    style CM fill:#fff3e0
-    style KC fill:#f3e5f5
-    style Secret fill:#ffebee
-    style API fill:#e8f5e9
-    style User fill:#fff9c4
-```
-
-**Flow Explanation:**
-1. **Control Interface** (Script/UI) reads admin credentials from K8s Secret
-2. Authenticates with Keycloak API using password grant
-3. Sends PUT request to update `loginTheme` configuration
-4. Keycloak API updates the realm configuration
-5. User attempts to login
-6. Keycloak renders the page using the configured theme (mounted from ConfigMap)
-
 ### Activation Workflow
+
+The maintenance theme activation flow demonstrates how operators enable and disable maintenance mode through Keycloak's Admin API. The control interface (either the maintenance-toggle.sh script or direct API calls) authenticates with Keycloak by retrieving admin credentials from Kubernetes secrets, then updates the realm's `loginTheme` configuration. When maintenance mode is enabled, all users attempting to authenticate see the custom maintenance page. The flow is completely reversible - disabling maintenance mode restores the default login theme, allowing normal authentication to resume.
 
 ```mermaid
 sequenceDiagram
