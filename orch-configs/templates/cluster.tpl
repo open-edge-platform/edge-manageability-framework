@@ -28,7 +28,7 @@ root:
 {{- if .Values.enableEdgeInfra }}
     - orch-configs/profiles/enable-edgeinfra.yaml
 {{- end }}
-{{- if .Values.enableUi }}
+{{- if or .Values.enableUi .Values.enableUiDev }}
     - orch-configs/profiles/enable-full-ui.yaml
 {{- end }}
 {{- if .Values.enableUiDev }}
@@ -80,7 +80,7 @@ argo:
   # service will be accessible via `web-ui.orchestrator.io`. Not to be confused with the K8s cluster domain.
   clusterDomain: {{ .Values.clusterDomain }}
 
-{{- if not .Values.enableUi }}
+{{- if not (or .Values.enableUi .Values.enableUiDev) }}
   enabled:
     web-ui-root: false
     web-ui-app-orch: false
