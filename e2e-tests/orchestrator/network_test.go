@@ -45,7 +45,7 @@ func listNetworks(ctx context.Context, c *http.Client, accessToken string,
 	url := fmt.Sprintf("%s/%s/projects/%s/networks", apiBaseURL, netApiVersion, project)
 	resp := doREST(ctx, c, http.MethodGet, url, accessToken, //nolint: bodyclose
 		nil, expectedStatus, checkRESTResponse)
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 	Expect(resp.StatusCode).To(Equal(expectedStatus), func() string {
 		b, err := io.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
@@ -80,7 +80,7 @@ func createNetwork(ctx context.Context, c *http.Client, projectName, accessToken
 	fmt.Printf("%s\n", url)
 	resp := doREST(ctx, c, http.MethodPut, url,
 		accessToken, bytes.NewReader(networkBody), http.StatusOK, checkRESTResponse)
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 }
 
 // deleteNetwork uses the REST API to delete a Network.
@@ -88,7 +88,7 @@ func deleteNetwork(ctx context.Context, c *http.Client, projectName, accessToken
 	url := fmt.Sprintf("%s/%s/projects/%s/networks/%s", apiBaseURL, netApiVersion, projectName, networkName)
 	resp := doREST(ctx, c, http.MethodDelete, url,
 		accessToken, nil, http.StatusOK, ignoreResponse)
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 }
 
 var _ = Describe("Network API Tests", Label("orchestrator-integration"), func() {

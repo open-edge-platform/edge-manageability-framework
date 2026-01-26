@@ -572,14 +572,17 @@ class AutoInstall:
         # Check if pattern exists
         found = False
         for i, line in enumerate(lines):
-            if line.strip().startswith(f"{to_replace} ="):
-                lines[i] = f'{to_replace} = "{to_replace_value}"\n'
+            if line.strip().startswith(f"{to_replace} =") or line.strip().startswith(f"{to_replace}="):
+                lines[i] = f'{to_replace}="{to_replace_value}"\n'
                 found = True
                 break
 
         # If not found, append at the end
         if not found:
-            lines.append(f'{to_replace} = "{to_replace_value}"\n')
+            lines.append(f'{to_replace}="{to_replace_value}"\n')
+            print("Appending!")
+        else:
+            print("Replacing!")
 
         with open(config_path, "w") as f:
             f.writelines(lines)
