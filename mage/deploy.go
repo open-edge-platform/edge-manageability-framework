@@ -1188,7 +1188,7 @@ func getDeployRevision() string {
 			fmt.Println("failed to locate deploy (.) repo, using cluster default deploy revision")
 			return ""
 		} else {
-			cmd := fmt.Sprintf("bash -c 'cd %s; git rev-parse --short HEAD'", deployDir)
+			cmd := fmt.Sprintf("bash -c 'cd %s; git rev-parse HEAD'", deployDir)
 			out, err := script.Exec(cmd).String()
 			if err != nil {
 				fmt.Println("failed to determine deployRevision: %w", err)
@@ -1208,7 +1208,7 @@ func getDeployRevision() string {
 		fmt.Println("failed to locate deploy (.) repo, using cluster default deploy revision")
 		return ""
 	} else {
-		cmd := fmt.Sprintf("bash -c 'cd %s; git rev-parse --short HEAD'", giteaDeployDir)
+		cmd := fmt.Sprintf("bash -c 'cd %s; git rev-parse HEAD'", giteaDeployDir)
 		out, err := script.Exec(cmd).String()
 		if err != nil {
 			fmt.Println("failed to determine deployRevision: %w", err)
