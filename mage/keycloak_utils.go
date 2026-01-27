@@ -26,7 +26,7 @@ type Keycloak mg.Namespace
 
 // GetPassword retrieves the admin keycloak password
 func (k Keycloak) GetPassword() {
-	command := "kubectl get secret -n " + keycloakNamespace + " platform-keycloak -o jsonpath='{.data.password}' | base64 --decode"
+	command := "kubectl get secret -n " + keycloakNamespace + " platform-keycloak -o jsonpath='{.data.admin-password}' | base64 --decode"
 	out, err := exec.Command("bash", "-c", command).CombinedOutput()
 	if err != nil {
 		fmt.Println("Error executing command:", err)
@@ -101,7 +101,7 @@ func clean_up_psql_pod() {
 }
 
 func set_keycloak_password(encoded_password string) {
-	command := "kubectl -n " + keycloakNamespace + " get secret platform-keycloak -o yaml | yq e '.data.password = \"" + encoded_password + "\"' | kubectl apply --force -f -"
+	command := "kubectl -n " + keycloakNamespace + " get secret platform-keycloak -o yaml | yq e '.data.admin-password = \"" + encoded_password + "\"' | kubectl apply --force -f -"
 	_, err := exec.Command("bash", "-c", command).CombinedOutput()
 	if err != nil {
 		fmt.Println("Error executing command:", err.Error())
@@ -141,11 +141,9 @@ func start_local_psql_pod() {
 }
 
 func run_keycloak_admin_bootstrap() {
-	// Use single quotes to prevent shell variable expansion of special characters in the password
-	// The password from the Kubernetes secret can contain special chars like $ which would be
-	// misinterpreted by bash if using double quotes or $(...)  syntax
+	// some strange encoding issue with the keycloak shell requires the export.
 	command := "kubectl exec -itn " + keycloakNamespace + " platform-keycloak-0" +
-		"  -- sh -c 'export KC_BOOTSTRAP_ADMIN_PASSWORD=$KC_BOOTSTRAP_ADMIN_PASSWORD; /opt/bitnami/keycloak/bin/kc.sh bootstrap-admin user --username:env KC_BOOTSTRAP_ADMIN_USERNAME --password:env KC_BOOTSTRAP_ADMIN_PASSWORD'"
+		"  -- sh -c 'export KC_BOOTSTRAP_ADMIN_PASSWORD=\"$(echo $KC_BOOTSTRAP_ADMIN_PASSWORD)\"; /opt/bitnami/keycloak/bin/kc.sh bootstrap-admin user --username:env KC_BOOTSTRAP_ADMIN_USERNAME --password:env KC_BOOTSTRAP_ADMIN_PASSWORD'"
 	out, err := exec.Command("bash", "-c", command).CombinedOutput()
 	if err != nil {
 		fmt.Println(string(out), err)
