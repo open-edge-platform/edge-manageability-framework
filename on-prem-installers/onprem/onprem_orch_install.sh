@@ -45,6 +45,7 @@ cwd=$(pwd)
 ASSUME_YES=false
 ENABLE_TRACE=false
 SINGLE_TENANCY_PROFILE=false
+INSTALL_GITEA="true"
 deb_dir_name="installers"
 git_arch_name="repo_archives"
 argo_cd_ns="argocd"
@@ -397,6 +398,13 @@ write_shared_variables
 # Generate Cluster Config
 ./generate_cluster_yaml.sh onprem
 
+# Check if enable-app-orch.yaml is present and uncommented in the cluster config file
+if grep -q "^[[:space:]]*[^#]*-[[:space:]]*.*enable-app-orch\.yaml" "$ORCH_INSTALLER_PROFILE".yaml; then
+  INSTALL_GITEA="true"
+else
+  INSTALL_GITEA="false"
+fi
+
 # cp changes to tmp repo
 tmp_dir="$cwd/$git_arch_name/tmp"
 cp "$ORCH_INSTALLER_PROFILE".yaml "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
@@ -433,10 +441,12 @@ rm -rf "$tmp_dir"
 if find "$cwd/$deb_dir_name" -name "onprem-gitea-installer_*_amd64.deb" -type f | grep -q .; then
     # Run gitea installer
     echo "Installing Gitea"
-    eval "sudo IMAGE_REGISTRY=${GITEA_IMAGE_REGISTRY} NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y $cwd/$deb_dir_name/onprem-gitea-installer_*_amd64.deb"
+    eval "sudo IMAGE_REGISTRY=${GITEA_IMAGE_REGISTRY} INSTALL_GITEA=${INSTALL_GITEA} NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y $cwd/$deb_dir_name/onprem-gitea-installer_*_amd64.deb"
     wait_for_namespace_creation $gitea_ns
     sleep 30s
-    wait_for_pods_running $gitea_ns
+    if [ "$INSTALL_GITEA" = "true" ]; then
+      wait_for_pods_running $gitea_ns
+    fi
     echo "Gitea Installed"
 else
     echo "❌ Package file NOT found: $cwd/$deb_dir_name/onprem-gitea-installer_*_amd64.deb"
@@ -475,7 +485,7 @@ create_postgres_password orch-database "$postgres_password"
 if find "$cwd/$deb_dir_name" -name "onprem-orch-installer_*_amd64.deb" -type f | grep -q .; then
     # Run orchestrator installer
     echo "Installing Edge Orchestrator Packages"
-    eval "sudo NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive ORCH_INSTALLER_PROFILE=$ORCH_INSTALLER_PROFILE GIT_REPOS=$GIT_REPOS apt-get install -y $cwd/$deb_dir_name/onprem-orch-installer_*_amd64.deb"
+    eval "sudo INSTALL_GITEA=${INSTALL_GITEA} NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive ORCH_INSTALLER_PROFILE=$ORCH_INSTALLER_PROFILE GIT_REPOS=$GIT_REPOS apt-get install -y $cwd/$deb_dir_name/onprem-orch-installer_*_amd64.deb"
     echo "Edge Orchestrator getting installed, wait for SW to deploy... "
 else
     echo "❌ Package file NOT found: $cwd/$deb_dir_name/onprem-orch-installer_*_amd64.deb"
