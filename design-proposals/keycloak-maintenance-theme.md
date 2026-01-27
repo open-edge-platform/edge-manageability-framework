@@ -6,19 +6,19 @@ Last updated: January 20, 2026
 
 ## Abstract
 
-This proposal introduces a custom maintenance theme for Keycloak to provide a user-friendly maintenance page during planned system downtime or upgrades. Currently, when maintenance is required, users encounter generic error pages. The proposed solution adds a dedicated "maintenance" theme that can be easily activated to display a clear, professional maintenance notice to users attempting to authenticate during maintenance windows.
+This proposal introduces a custom maintenance theme for Keycloak to provide a user-friendly maintenance page during planned system downtime or upgrades. Currently, when maintenance is required, users encounter generic error pages. The proposed solution adds a dedicated "maintenance" theme that can be easily activated to display a clear, maintenance notice to users attempting to authenticate during maintenance windows.
 
 ## Problem Statement
 
 During maintenance periods for the Edge Orchestrator, users attempting to log in through Keycloak receive either:
 - Generic connection errors that don't clearly communicate the maintenance status
 - Confusing technical error messages
-- No professional maintenance notification
+- No  maintenance notification
 
 This results in:
 - Poor user experience during maintenance periods
 - Increased support burden with users unsure if there's a real issue
-- Lack of professional communication about planned downtime
+- Lack of communication about planned downtime
 - No standardized way to communicate maintenance status across the platform
 
 ## Proposal
@@ -44,8 +44,7 @@ The custom login page includes:
 - Visual warning icon with pulse animation for attention
 - Informative message: "The Edge Orchestrator is currently undergoing maintenance"
 - User guidance: "Please try again later"
-- Professional styling consistent with the platform's design language
-- Responsive CSS that works across different screen sizes
+- Styling consistent with the platform's design language
 
 ### Configuration Changes
 
@@ -93,7 +92,7 @@ The implementation requires modifications to `argocd/applications/configs/platfo
 
 ### Activation Workflow
 
-The maintenance theme activation flow demonstrates how operators enable and disable maintenance mode through Keycloak's Admin API. The control interface (either the maintenance-toggle.sh script or direct API calls) authenticates with Keycloak by retrieving admin credentials from Kubernetes secrets, then updates the realm's `loginTheme` configuration. When maintenance mode is enabled, all users attempting to authenticate see the custom maintenance page. The flow is completely reversible - disabling maintenance mode restores the default login theme, allowing normal authentication to resume.
+The maintenance theme activation flow demonstrates how operators enable and disable maintenance mode through Keycloak's Admin API. The control interface (automation tool, script, or direct API calls) authenticates with Keycloak by retrieving admin credentials from Kubernetes secrets, then updates the realm's `loginTheme` configuration. When maintenance mode is enabled, all users attempting to authenticate see the custom maintenance page. The flow is completely reversible - disabling maintenance mode restores the default login theme, allowing normal authentication to resume.
 
 ```mermaid
 sequenceDiagram
@@ -105,7 +104,7 @@ sequenceDiagram
     participant User as 👥 End Users
 
     Note over Operator,User: Enable Maintenance Mode
-    Operator->>Control: Enable maintenance<br/>(./maintenance-toggle.sh enable<br/>OR kubectl + curl commands)
+    Operator->>Control: Enable maintenance<br/>(via API call)
     Control->>K8s: Read admin credentials
     K8s-->>Control: Return credentials
     Control->>API: POST /token (authenticate)
@@ -121,7 +120,7 @@ sequenceDiagram
     Realm-->>User: 🚧 Maintenance page displayed
 
     Note over Operator,User: Disable Maintenance Mode
-    Operator->>Control: Disable maintenance<br/>(./maintenance-toggle.sh disable<br/>OR kubectl + curl commands)
+    Operator->>Control: Disable maintenance<br/>(via API call)
     Control->>K8s: Read admin credentials
     K8s-->>Control: Return credentials
     Control->>API: POST /token (authenticate)
@@ -138,62 +137,140 @@ sequenceDiagram
 ```
 
 
-**CRITICAL:** Changing the `loginTheme` to "maintenance" in keycloak dashboard blocks ALL login attempts, including administrator access to the Keycloak Admin Console. Once activated, the Admin Console UI becomes inaccessible.
+**CRITICAL:** Changing the `loginTheme` to "maintenance" blocks ALL login attempts, including administrator access to the Keycloak Admin Console. Use the API method below to toggle maintenance mode.
 
-#### Activation Methods
+### API Implementation Guide
 
-Maintenance mode can be controlled via Keycloak's Admin API, either using the provided convenience script or direct API calls. Both approaches use the same underlying API and can be implemented in the backend.
+This section provides complete implementation details for toggling maintenance mode programmatically. Any automation tool, script, or backend service can implement this using the Keycloak Admin API.
 
-**Option A: Using the maintenance-toggle.sh Script (Recommended)**
+#### Required Keycloak API Endpoints
 
-A bash script (`maintenance-toggle.sh`) is provided at the repository root:
+**1. Authentication (Get Admin Token)**
 
-```bash
-# Check current status
-./maintenance-toggle.sh status
+```
+POST {KEYCLOAK_URL}/realms/master/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
 
-# Enable maintenance mode
-./maintenance-toggle.sh enable
+Body:
+username={ADMIN_USER}&password={ADMIN_PASS}&grant_type=password&client_id=admin-cli
 
-# Disable maintenance mode
-./maintenance-toggle.sh disable
+Response: {"access_token": "...", ...}
 ```
 
-The script:
-- Uses Keycloak Admin API (bypasses UI login)
-- Retrieves credentials from Kubernetes secrets automatically
-- Includes error handling and validation
-- Works even when maintenance theme is active
+**2. Update Realm Theme**
 
-**Option B: Direct API Calls (Manual or Backend Implementation)**
+```
+PUT {KEYCLOAK_URL}/admin/realms/master
+Authorization: Bearer {ACCESS_TOKEN}
+Content-Type: application/json
 
-For backend implementation or manual control:
+Body: {"loginTheme": "maintenance"}  // or "keycloak" to disable
+```
+
+**3. Check Current Theme (Optional)**
+
+```
+GET {KEYCLOAK_URL}/admin/realms/master
+Authorization: Bearer {ACCESS_TOKEN}
+
+Response: {..., "loginTheme": "keycloak", ...}
+```
+
+#### Implementation Steps
+
+1. **Get admin credentials** from Kubernetes secret `platform-keycloak` (namespace: `orch-platform`)
+   - Username: `admin` (hardcoded in platform-keycloak.yaml)
+   - Password: Base64 decode the `admin-password` field
+
+2. **Authenticate** via POST to `/realms/master/protocol/openid-connect/token`
+   - Extract `access_token` from JSON response
+   - Token lifetime: ~60 seconds (use immediately)
+
+3. **Update theme** via PUT to `/admin/realms/master`
+   - Set `loginTheme` to `"maintenance"` (enable) or `"keycloak"` (disable)
+   - Expect HTTP 200/204 on success
+
+4. **Handle errors**: 401 (bad credentials), 403 (insufficient permissions), 404 (invalid realm)
+
+#### Example Bash Implementation
 
 ```bash
-# Get credentials
+#!/bin/bash
+KEYCLOAK_URL="https://keycloak.your-domain.com"
+MODE="${1:-status}"  # enable, disable, or status
+
+# Get credentials from Kubernetes
 ADMIN_USER="admin"
-ADMIN_PASS=$(kubectl -n orch-platform get secret platform-keycloak -o jsonpath="{.data.admin-password}" | base64 -d)
-KEYCLOAK_URL="https://api.your-domain.com"
+ADMIN_PASS=$(kubectl -n orch-platform get secret platform-keycloak \
+  -o jsonpath="{.data.admin-password}" | base64 -d)
 
-# Get access token (bypasses UI)
+# Authenticate and get token
 TOKEN=$(curl -sk -X POST "${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token" \
-  -d "username=${ADMIN_USER}" -d "password=${ADMIN_PASS}" \
-  -d "grant_type=password" -d "client_id=admin-cli" | jq -r '.access_token')
+  -d "username=${ADMIN_USER}" \
+  -d "password=${ADMIN_PASS}" \
+  -d "grant_type=password" \
+  -d "client_id=admin-cli" | jq -r '.access_token')
 
-# Enable maintenance
-curl -sk -X PUT "${KEYCLOAK_URL}/admin/realms/master" \
-  -H "Authorization: Bearer ${TOKEN}" \
-  -H "Content-Type: application/json" \
-  -d '{"loginTheme": "maintenance"}'
-
-# Disable maintenance
-curl -sk -X PUT "${KEYCLOAK_URL}/admin/realms/master" \
-  -H "Authorization: Bearer ${TOKEN}" \
-  -H "Content-Type: application/json" \
-  -d '{"loginTheme": "keycloak"}'
+# Update theme based on mode
+case "$MODE" in
+  enable)
+    curl -sk -X PUT "${KEYCLOAK_URL}/admin/realms/master" \
+      -H "Authorization: Bearer ${TOKEN}" \
+      -H "Content-Type: application/json" \
+      -d '{"loginTheme": "maintenance"}'
+    echo "Maintenance mode enabled"
+    ;;
+  disable)
+    curl -sk -X PUT "${KEYCLOAK_URL}/admin/realms/master" \
+      -H "Authorization: Bearer ${TOKEN}" \
+      -H "Content-Type: application/json" \
+      -d '{"loginTheme": "keycloak"}'
+    echo "Maintenance mode disabled"
+    ;;
+  status)
+    THEME=$(curl -sk "${KEYCLOAK_URL}/admin/realms/master" \
+      -H "Authorization: Bearer ${TOKEN}" | jq -r '.loginTheme')
+    echo "Current theme: ${THEME}"
+    ;;
+esac
 ```
 
-These API calls can be implemented directly in the platform backend service to enable programmatic control of maintenance mode.
+#### Backend Integration
+
+For platform APIs, implement the same flow in your language of choice:
+
+```python
+# Python example
+import requests, base64, subprocess
+
+def toggle_maintenance(enable: bool):
+    # Get credentials
+    admin_pass = subprocess.check_output([
+        "kubectl", "-n", "orch-platform", "get", "secret", 
+        "platform-keycloak", "-o", "jsonpath={.data.admin-password}"
+    ]).decode()
+    admin_pass = base64.b64decode(admin_pass).decode()
+    
+    # Authenticate
+    token_resp = requests.post(
+        f"{KEYCLOAK_URL}/realms/master/protocol/openid-connect/token",
+        data={
+            "username": "admin",
+            "password": admin_pass,
+            "grant_type": "password",
+            "client_id": "admin-cli"
+        }
+    )
+    token = token_resp.json()["access_token"]
+    
+    # Update theme
+    theme = "maintenance" if enable else "keycloak"
+    requests.put(
+        f"{KEYCLOAK_URL}/admin/realms/master",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"loginTheme": theme}
+    )
+```
 
 ## Rationale
 
@@ -207,11 +284,7 @@ These API calls can be implemented directly in the platform backend service to e
    - **Considered:** Temporarily disabling the entire Keycloak realm during maintenance
    - **Rejected:** Results in generic error pages, no ability to customize messaging
 
-3. **Custom HTML in Error Pages**
-   - **Considered:** Modifying Keycloak's error page templates
-   - **Rejected:** Error pages are used for actual errors; maintenance is not an error state and should be communicated differently
-
-4. **Dynamic Banner/Message**
+3. **Dynamic Banner/Message**
    - **Considered:** Adding a banner to the normal login page with maintenance notices
    - **Rejected:** During actual maintenance, backend services may be unavailable, making partial authentication dangerous
 
@@ -222,19 +295,13 @@ These API calls can be implemented directly in the platform backend service to e
 - **GitOps Compatible:** Theme is version-controlled and deployed via ArgoCD
 - **No Code Changes:** Purely configuration and template files
 - **Reusable:** Once deployed, can be activated for any future maintenance window
-- **Professional UX:** Provides clear, communication to users
+- **Friendly UX:** Provides clear, communication to users
 - **Maintainable:** Theme files are standard FreeMarker templates, easy to update
 
 ### Trade-offs
 
-- **Manual Activation Required:** Administrators must manually switch themes using the provided script or API
+- **Manual Activation Required:** Administrators must manually switch themes using API calls or automation
 - **Generic Message:** Static message doesn't provide specific details about the maintenance
 - **Realm-Wide:** Applies to all projects in the realm when activated
-- **Admin Lockout Risk:** Once enabled, the theme blocks ALL logins including admin access to the Keycloak Console.
-- **Requires API Access:** Operations team must use the provided script or API to toggle maintenance mode
+- **Requires API Access:** Operations team must use Keycloak Admin API to toggle maintenance mode
 
-### Affected Components
-- **Keycloak:** Core component being modified with new theme
-- **ArgoCD Applications:** Configuration changes in `platform-keycloak.yaml`
-- **maintenance-toggle.sh:** New script at repository root for safe theme switching
-- **Kubernetes Secrets:** Script reads `platform-keycloak` secret for admin credentials
