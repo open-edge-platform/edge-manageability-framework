@@ -47,10 +47,8 @@ func GrpcInfraOnboardNewNode(host, token, mac, uuid string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	conn, err := grpc.DialContext(
-		ctx,
+	conn, err := grpc.NewClient(
 		host,
-		grpc.WithBlock(),
 		grpc.WithTransportCredentials(
 			credentials.NewClientTLSFromCert(nil, ""),
 		),
@@ -65,7 +63,11 @@ func GrpcInfraOnboardNewNode(host, token, mac, uuid string) error {
 	if err != nil {
 		return fmt.Errorf("could not dial server %s: %w", host, err)
 	}
-	defer conn.Close()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			fmt.Printf("Warning: failed to close connection: %v\n", err)
+		}
+	}()
 
 	client := pb_om.NewInteractiveOnboardingServiceClient(conn)
 	nodeData := &pb_om.NodeData{
@@ -112,15 +114,18 @@ func GrpcInfraOnboardStreamNode(host, mac, uuid, token string) (pb_om.OnboardNod
 		))
 	}
 
-	conn, err := grpc.DialContext(
-		ctx,
+	conn, err := grpc.NewClient(
 		host,
 		opts...,
 	)
 	if err != nil {
 		return pb_om.OnboardNodeStreamResponse_NODE_STATE_UNSPECIFIED, fmt.Errorf("could not dial server %s: %w", host, err)
 	}
-	defer conn.Close()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			fmt.Printf("Warning: failed to close connection: %v\n", err)
+		}
+	}()
 
 	client := pb_om.NewNonInteractiveOnboardingServiceClient(conn)
 
@@ -459,7 +464,11 @@ func httpGet(ctx context.Context, client *http.Client, url, token string, respon
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
 		err = fmt.Errorf("HTTP GET to %s failed, status: %s", url, resp.Status)
@@ -487,7 +496,11 @@ func httpPost(ctx context.Context, client *http.Client, url, token string, data 
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
 		err = fmt.Errorf("HTTP POST to %s failed, status: %s", url, resp.Status)
@@ -516,7 +529,11 @@ func httpDelete(ctx context.Context, client *http.Client, url, token string, res
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK {
 		err = fmt.Errorf("HTTP Delete to %s failed, status: %s", fmt.Sprintf("%s/%s", url, resourceID), resp.Status)

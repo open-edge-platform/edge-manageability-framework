@@ -91,7 +91,7 @@ func checkLoginCredentials(ctx context.Context, reg Registry, harborProjectName 
 		resp := doHarborREST(ctx, tlsConfiguration, "GET", baseRegistryURL+"projects?name="+harborProjectName, reg.Username, reg.AuthToken, http.StatusOK, checkRESTResponse)
 		b, err := io.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck
 		Expect(string(b)).To(ContainSubstring(harborProjectName), "expecting project name %s to be found in query", harborProjectName)
 	}
 }
@@ -270,11 +270,11 @@ var _ = Describe("Provisioned registries push test", Label("orchestrator-integra
 
 				dc, err := docker.NewClientWithOpts(docker.FromEnv, docker.WithAPIVersionNegotiation())
 				Expect(err).ToNot(HaveOccurred(), "new docker client")
-				defer dc.Close()
+				defer dc.Close() //nolint:errcheck
 
 				tempDir, err := os.MkdirTemp("/tmp", "example")
 				Expect(err).ToNot(HaveOccurred(), "creating temp dir")
-				defer os.Remove(tempDir)
+				defer os.Remove(tempDir) //nolint:errcheck
 
 				// Define the Dockerfile content
 				dockerfile := `FROM scratch
@@ -286,11 +286,11 @@ var _ = Describe("Provisioned registries push test", Label("orchestrator-integra
 				dockerfilePath := tempDir + "/Dockerfile"
 				err = os.WriteFile(dockerfilePath, []byte(dockerfile), 0o644)
 				Expect(err).ToNot(HaveOccurred(), "writing dockerfile")
-				defer os.Remove(dockerfilePath)
+				defer os.Remove(dockerfilePath) //nolint:errcheck
 
 				buildContext, err := archive.TarWithOptions(tempDir, &archive.TarOptions{})
 				Expect(err).ToNot(HaveOccurred(), "creating tar build context")
-				defer buildContext.Close()
+				defer buildContext.Close() //nolint:errcheck
 
 				imageBuildResponse, err := dc.ImageBuild(
 					ctx,
@@ -322,7 +322,7 @@ var _ = Describe("Provisioned registries push test", Label("orchestrator-integra
 					RegistryAuth: regAuth,
 				})
 				Expect(err).ToNot(HaveOccurred(), "docker push of %s", remoteImageName)
-				defer push.Close()
+				defer push.Close() //nolint:errcheck
 				buf := new(strings.Builder)
 
 				_, err = io.Copy(buf, push)
@@ -374,7 +374,7 @@ var _ = Describe("Provisioned registries push test", Label("orchestrator-integra
 				// Create a sample chart
 				tempDir, err := os.MkdirTemp("/tmp", "example")
 				Expect(err).ToNot(HaveOccurred(), "creating temp dir")
-				defer os.Remove(tempDir)
+				defer os.Remove(tempDir) //nolint:errcheck
 				chart := `
 # SPDX-FileCopyrightText: (C) 2024 Intel Corporation
 #
@@ -385,12 +385,12 @@ apiVersion: v2
 				chartPath := tempDir + "/Chart.yaml"
 				err = os.WriteFile(chartPath, []byte(chart), 0o644)
 				Expect(err).ToNot(HaveOccurred(), "writing chart")
-				defer os.Remove(chartPath)
+				defer os.Remove(chartPath) //nolint:errcheck
 
 				// 0. Create a file store
 				fs, err := file.New(tempDir)
 				Expect(err).ToNot(HaveOccurred(), "making file")
-				defer fs.Close()
+				defer fs.Close() //nolint:errcheck
 
 				// Add files to the file store
 				mediaType := "application/vnd.test.file"
