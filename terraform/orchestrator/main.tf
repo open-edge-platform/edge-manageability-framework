@@ -304,6 +304,8 @@ resource "null_resource" "copy_files" {
       "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env OXM_PXE_SERVER_INT ${var.oxm_pxe_server_int}'",
       "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env OXM_PXE_SERVER_IP ${var.oxm_pxe_server_ip}'",
       "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env OXM_PXE_SERVER_SUBNET ${var.oxm_pxe_server_subnet}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env UTILS_REPO_BRANCH ${var.utils_repo_branch}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env DEPLOY_REPO_BRANCH ${var.deploy_repo_branch}'",
       "cat /home/ubuntu/onprem.env",
       "echo 'onprem.env updated successfully'"
     ]

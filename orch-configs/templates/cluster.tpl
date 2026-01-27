@@ -41,12 +41,6 @@ root:
 {{- if .Values.enableAutoProvision }}
     - orch-configs/profiles/enable-autoprovision.yaml
 {{- end }}
-    # proxy group should be specified as the first post-"enable" profile
-{{- if (not (eq .Values.proxyProfile "" )) }}
-    - orch-configs/profiles/proxy-{{ .Values.name }}.yaml
-{{- else }}
-    - orch-configs/profiles/proxy-none.yaml
-{{- end }}
     - orch-configs/profiles/profile-{{ .Values.deployProfile }}.yaml
 {{- if .Values.enableAutoCert }}
     - orch-configs/profiles/profile-autocert.yaml
@@ -60,7 +54,6 @@ root:
     - orch-configs/profiles/enable-explicit-proxy.yaml
 {{- end }}
     - orch-configs/profiles/resource-default.yaml
-    - orch-configs/clusters/{{ .Values.name }}.yaml
     # # rate limit is applicable to each cluster.
     # # please see https://doc.traefik.io/traefik/middlewares/http/ratelimit/
     # # if you enable default traefik rate limit, do not specify custom rate limit
@@ -120,10 +113,18 @@ argo:
 {{- end }}
   ## Argo CD configs
   deployRepoURL: "{{ .Values.deployRepoURL }}"
-  deployRepoRevision: main
+  deployRepoRevision: {{ .Values.deployRepoRevision | default "main" }}
 
   targetServer: "https://kubernetes.default.svc"
   autosync: true
+
+{{- if not .Values.enableAppOrch }}
+  enabled:
+    copy-app-gitea-cred-to-fleet: false
+    copy-ca-cert-gitea-to-app: false
+    copy-ca-cert-gitea-to-cluster: false
+    copy-cluster-gitea-cred-to-fleet: false
+{{- end }}
 
 {{ if .Values.enableObservability }}
   o11y:
