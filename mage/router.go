@@ -47,7 +47,8 @@ func (r Router) start(externalDomain string, sandboxKeyFile string, sandboxCertF
 	}
 	giteaIP, err := awaitGenericIP("gitea", "gitea-http", 20*time.Second)
 	if err != nil {
-		return fmt.Errorf("performing argo IP lookup %w", err)
+		fmt.Printf("Note: could not find gitea IP: %s\n", err)
+		giteaIP = "0.0.0.0"
 	}
 	orchIP, err := awaitGenericIP("orch-gateway", "traefik", 20*time.Second)
 	if err != nil {
