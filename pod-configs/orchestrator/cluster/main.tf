@@ -230,7 +230,7 @@ module "gitea" {
 }
 
 module "eks-cas" {
-  depends_on    = [module.eks]
+  depends_on    = [module.eks, module.aws_lb_controller]
   source        = "../../module/eks-cas"
   aws_region    = var.aws_region
   cluster_name  = var.eks_cluster_name
