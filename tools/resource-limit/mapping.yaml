@@ -98,8 +98,6 @@ orch-app:
   catalog-service:
     application-catalog-server: "argo.resources.catalogService"
     application-catalog-rest-proxy: "argo.resources.catalogService"
-  interconnect-manager:
-    interconnect-manager: "argo.resources.interconnectManager"
   malware-scanner-clamav:
     clamav: "argo.resources.malwareScanner"
   app-orch-tenant-controller:
