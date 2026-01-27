@@ -1,0 +1,21 @@
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+kubectl top node
+kubectl top pod -A --sort-by=cpu
+
+kubectl top pod -A --no-headers | awk '
+{
+  cpu[$1]+=$3
+  mem[$1]+=$4
+  Tcpu+=$3
+  Tmem+=$4
+}
+END {
+  printf "%-20s %12s %12s\n", "NAMESPACE", "CPU_USED", "MEM_USED"
+
+  for (ns in cpu)
+    printf "%-20s %10dm %10dMi\n", ns, cpu[ns], mem[ns]
+
+  print "-----------------------------------------------"
+  printf "%-20s %10dm %10dMi\n", "TOTAL", Tcpu, Tmem
+}'
+
