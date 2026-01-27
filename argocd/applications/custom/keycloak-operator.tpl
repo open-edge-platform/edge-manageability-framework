@@ -30,11 +30,3 @@ operator:
 imagePullSecrets:
   {{- toYaml .Values.argo.keycloakOperator.imagePullSecrets | nindent 2 }}
 {{- end }}
-
-# Add seccompProfile to operator security context to comply with restricted pod security policy
-operator:
-  container:
-    securityContext:
-      seccompProfile:
-        type: RuntimeDefault
-

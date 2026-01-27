@@ -20,9 +20,9 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
-    - repoURL: https://github.com/open-edge-platform/orch-utils.git
-      path: charts/keycloak-instance
-      targetRevision: orch-util-changes-for-keycloak-update-v2
+    - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
+      chart: common/charts/keycloak-instance
+      targetRevision: 26.1.1
       helm:
         releaseName: {{$appName}}
         valuesObject:
