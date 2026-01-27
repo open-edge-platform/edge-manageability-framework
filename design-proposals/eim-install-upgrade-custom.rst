@@ -51,9 +51,12 @@ We need to develop platform infrastructure that supports selective EIM component
 The EIM team has identified two deployment profiles they need:
 
 **Profile 1: vPRO-Only**
+- Profile Names:
+  - On-Prem: ``onprem-vpro``
+  - AWS: ``aws-vpro``
 - Deploy only vPRO-related components
-- Disable: AO, CO, O11y, Kyverno, UI
-- *Note: AO, CO, O11y,UI,Kyverno must be explicitly disabled for this profile*
+- Disabled Components: AO, CO, Observability, Kyverno, UI, Gitea
+- *Note: When onprem-vpro or aws-vpro profile is selected, AO, CO, Observability, UI, Kyverno, and Gitea are disabled*
 
 **Profile 2: OXM-Only**
 - Deploy only bare metal/OS management components
