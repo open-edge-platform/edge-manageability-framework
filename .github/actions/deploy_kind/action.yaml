@@ -71,6 +71,7 @@ runs:
     run: |
       set +x
       echo "Starting to deploy Orchestrator..."
+      export DEPLOY_REPO_BRANCH="$(git rev-parse HEAD)"
       if [ "$DEPLOYMENT_TYPE" == "minimal" ]; then
         echo "Deploying minimal Orchestrator setup..."
         mage deploy:kindMinimal

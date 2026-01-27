@@ -57,6 +57,7 @@ runs:
         TF_VAR_docker_username: ${{ inputs.docker_username }}
         TF_VAR_docker_password: ${{ inputs.docker_password }}
         KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
+        TF_VAR_deploy_repo_branch: ${{ github.sha }}
       shell: bash
       run: mage deploy:onPrem
 
