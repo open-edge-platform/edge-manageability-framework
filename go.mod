@@ -83,6 +83,7 @@ require (
 	github.com/go-openapi/swag v0.23.1 // indirect
 	github.com/go-resty/resty/v2 v2.16.5 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
+	github.com/goforj/godump v1.6.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/btree v1.1.3 // indirect
