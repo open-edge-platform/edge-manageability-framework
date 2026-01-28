@@ -7,3 +7,4 @@ scan:
     - kind/5g/multus
   skip-files:
     - installer/Dockerfile
+    tewsat
