@@ -1,6 +1,6 @@
 # Design Proposal: Keycloak Maintenance Theme
 
-Author(s): [Your Name]
+Author(s): UI Team
 
 Last updated: January 20, 2026
 
