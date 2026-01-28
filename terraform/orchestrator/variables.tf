@@ -326,12 +326,6 @@ variable "git_proxy" {
   default     = ""
 }
 
-variable "utils_repo_branch" {
-  type        = string
-  description = "The branch of the utils repository to use."
-  default     = "main"
-}
-
 variable "deploy_repo_branch" {
   type        = string
   description = "The branch of the deploy repository to use."
