@@ -6,21 +6,16 @@ Last updated: January 20, 2026
 
 ## Abstract
 
-This proposal introduces a custom maintenance theme for Keycloak to provide a user-friendly maintenance page
-during planned system downtime or upgrades. Currently, when maintenance is required, users encounter generic
-error pages. The proposed solution adds a dedicated "maintenance" theme that can be easily activated to display
-a clear, maintenance notice to users attempting to authenticate during maintenance windows.
+This proposal introduces a custom maintenance theme for Keycloak to provide a user-friendly maintenance page during planned system downtime or upgrades. Currently, when maintenance is required, users encounter generic error pages. The proposed solution adds a dedicated "maintenance" theme that can be easily activated to display a clear, maintenance notice to users attempting to authenticate during maintenance windows.
 
 ## Problem Statement
 
 During maintenance periods for the Edge Orchestrator, users attempting to log in through Keycloak receive either:
-
 - Generic connection errors that don't clearly communicate the maintenance status
 - Confusing technical error messages
 - No  maintenance notification
 
 This results in:
-
 - Poor user experience during maintenance periods
 - Increased support burden with users unsure if there's a real issue
 - Lack of communication about planned downtime
@@ -32,7 +27,6 @@ This results in:
 
 Add a custom Keycloak login theme named "maintenance" that displays a clear, user-friendly maintenance message.
 The theme will be:
-
 - Packaged as a ConfigMap in Kubernetes for easy deployment and updates
 - Mounted into the Keycloak container at the standard theme location
 - Switchable by changing the `loginTheme` configuration in the Keycloak realm settings
@@ -41,14 +35,12 @@ The theme will be:
 ### Theme Structure
 
 The maintenance theme consists of two files:
-
 1. **theme.properties** - Declares the theme inheritance from the base Keycloak theme
 2. **login.ftl** - Custom FreeMarker template that renders the maintenance page
 
 ### Maintenance Page Features
 
 The custom login page includes:
-
 - Clear "System Maintenance" header
 - Visual warning icon with pulse animation for attention
 - Informative message: "The Edge Orchestrator is currently undergoing maintenance"
@@ -60,7 +52,6 @@ The custom login page includes:
 The implementation requires modifications to `argocd/applications/configs/platform-keycloak.yaml`:
 
 1. **Volume Configuration** - Add ConfigMap volume for theme files:
-
    ```yaml
    extraVolumes:
      - name: maintenance-theme
@@ -69,7 +60,6 @@ The implementation requires modifications to `argocd/applications/configs/platfo
    ```
 
 2. **Volume Mounts** - Mount theme files to Keycloak's theme directory:
-
    ```yaml
    extraVolumeMounts:
      - name: maintenance-theme
@@ -81,7 +71,6 @@ The implementation requires modifications to `argocd/applications/configs/platfo
    ```
 
 3. **ConfigMap Deployment** - Deploy the theme files as a ConfigMap:
-
    ```yaml
    extraDeploy:
      - apiVersion: v1
@@ -98,19 +87,13 @@ The implementation requires modifications to `argocd/applications/configs/platfo
    ```
 
 4. **Default Theme Setting** - Explicitly set default login theme:
-
    ```yaml
    "loginTheme": "keycloak"
    ```
 
 ### Activation Workflow
 
-The maintenance theme activation flow demonstrates how operators enable and disable maintenance mode through
-Keycloak's Admin API. The control interface (automation tool, script, or direct API calls) authenticates with
-Keycloak by retrieving admin credentials from Kubernetes secrets, then updates the realm's `loginTheme`
-configuration. When maintenance mode is enabled, all users attempting to authenticate see the custom
-maintenance page. The flow is completely reversible - disabling maintenance mode restores the default login
-theme, allowing normal authentication to resume.
+The maintenance theme activation flow demonstrates how operators enable and disable maintenance mode through Keycloak's Admin API. The control interface (automation tool, script, or direct API calls) authenticates with Keycloak by retrieving admin credentials from Kubernetes secrets, then updates the realm's `loginTheme` configuration. When maintenance mode is enabled, all users attempting to authenticate see the custom maintenance page. The flow is completely reversible - disabling maintenance mode restores the default login theme, allowing normal authentication to resume.
 
 ```mermaid
 sequenceDiagram
@@ -132,7 +115,7 @@ sequenceDiagram
     Realm-->>API: Success
     API-->>Control: 200 OK
     Control-->>Operator: ✅ Maintenance enabled
-    
+
     Note over User,Realm: Users now see maintenance page
     User->>Realm: Attempt login
     Realm-->>User: 🚧 Maintenance page displayed
@@ -154,19 +137,17 @@ sequenceDiagram
     Realm-->>User: ✓ Normal login page
 ```
 
-**CRITICAL:** Changing the `loginTheme` to "maintenance" blocks ALL login attempts, including administrator
-access to the Keycloak Admin Console. Use the API method below to toggle maintenance mode.
+**CRITICAL:** Changing the `loginTheme` to "maintenance" blocks ALL login attempts, including administrator access to the Keycloak Admin Console. Use the API method below to toggle maintenance mode.
 
 ### API Implementation Guide
 
-This section provides complete implementation details for toggling maintenance mode programmatically. Any
-automation tool, script, or backend service can implement this using the Keycloak Admin API.
+This section provides complete implementation details for toggling maintenance mode programmatically. Any automation tool, script, or backend service can implement this using the Keycloak Admin API.
 
 #### Required Keycloak API Endpoints
 
-##### 1. Authentication (Get Admin Token)
+**1. Authentication (Get Admin Token)**
 
-```http
+```
 POST {KEYCLOAK_URL}/realms/master/protocol/openid-connect/token
 Content-Type: application/x-www-form-urlencoded
 
@@ -176,9 +157,9 @@ username={ADMIN_USER}&password={ADMIN_PASS}&grant_type=password&client_id=admin-
 Response: {"access_token": "...", ...}
 ```
 
-##### 2. Update Realm Theme
+**2. Update Realm Theme**
 
-```http
+```
 PUT {KEYCLOAK_URL}/admin/realms/master
 Authorization: Bearer {ACCESS_TOKEN}
 Content-Type: application/json
@@ -186,9 +167,9 @@ Content-Type: application/json
 Body: {"loginTheme": "maintenance"}  // or "keycloak" to disable
 ```
 
-##### 3. Check Current Theme (Optional)
+**3. Check Current Theme (Optional)**
 
-```http
+```
 GET {KEYCLOAK_URL}/admin/realms/master
 Authorization: Bearer {ACCESS_TOKEN}
 
@@ -265,11 +246,11 @@ import requests, base64, subprocess
 def toggle_maintenance(enable: bool):
     # Get credentials
     admin_pass = subprocess.check_output([
-        "kubectl", "-n", "orch-platform", "get", "secret", 
+        "kubectl", "-n", "orch-platform", "get", "secret",
         "platform-keycloak", "-o", "jsonpath={.data.admin-password}"
     ]).decode()
     admin_pass = base64.b64decode(admin_pass).decode()
-    
+
     # Authenticate
     token_resp = requests.post(
         f"{KEYCLOAK_URL}/realms/master/protocol/openid-connect/token",
@@ -281,7 +262,7 @@ def toggle_maintenance(enable: bool):
         }
     )
     token = token_resp.json()["access_token"]
-    
+
     # Update theme
     theme = "maintenance" if enable else "keycloak"
     requests.put(
