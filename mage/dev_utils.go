@@ -18,7 +18,6 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -33,7 +32,7 @@ import (
 
 // Deploys the ENiC (indicates the number of instances, optionally set env variables: ORCH_FQDN, ORCH_IP, ORCH_USER, ORCH_PASS, ORCH_ORG, ORCH_PROJECT).
 func (DevUtils) DeployEnic(replicas int, targetEnv string) error {
-	deployRevision := giteaDeployRevisionParam()
+	deployRevision := "--set-string argo.deployRepoRevision=HEAD"
 	namespace := "utils"
 	orchestratorIp, err := getPrimaryIP()
 	if err != nil {
@@ -92,7 +91,7 @@ func (DevUtils) DeployEnic(replicas int, targetEnv string) error {
 	if err != nil {
 		return fmt.Errorf("failed to get current working directory: %w", err)
 	}
-	deploymentDir := filepath.Join(deployGiteaRepoDir, deployRepoName)
+	deploymentDir := "."
 	if err := os.Chdir(deploymentDir); err != nil {
 		return fmt.Errorf("failed to change directory to %s: %w", deploymentDir, err)
 	}
@@ -530,7 +529,11 @@ func GetApiToken(client *http.Client, username string, password string) (*string
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, err := io.ReadAll(resp.Body)
@@ -593,7 +596,11 @@ func GetUserID(cli *http.Client, username, token string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("do request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
 
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -795,7 +802,11 @@ func GetRoleFromKeycloak(ctx context.Context, cli *http.Client, token, roleName 
 	if err != nil {
 		return "", fmt.Errorf("error making request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
 
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -856,7 +867,11 @@ func manageRole(ctx context.Context, cli *http.Client, token, action, userID, ro
 	if err != nil {
 		return fmt.Errorf("error making request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusNoContent {
 		return fmt.Errorf("failed to update role %s: %+v", roleName, resp)

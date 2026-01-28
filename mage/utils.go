@@ -89,7 +89,11 @@ func getPrimaryIP() (net.IP, error) {
 	if err != nil {
 		return net.IP{}, err
 	}
-	defer conn.Close()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			fmt.Printf("Warning: failed to close connection: %v\n", err)
+		}
+	}()
 
 	localAddr := conn.LocalAddr().(*net.UDPAddr)
 
@@ -291,7 +295,11 @@ func saveGatewayTLSSecret(loc string) error {
 		if err != nil {
 			return err
 		}
-		defer file.Close()
+		defer func() {
+			if err := file.Close(); err != nil {
+				fmt.Printf("Warning: failed to close file: %v\n", err)
+			}
+		}()
 		if err := secrets.NewFileSaver().SaveSecret(file, secret); err != nil {
 			return err
 		}

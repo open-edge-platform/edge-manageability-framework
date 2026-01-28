@@ -313,4 +313,5 @@ had access to DMT capabilities. This provided critical recovery mechanisms
 including the ability to remotely reboot the device if provisioning
 got stuck, access the device out-of-band for troubleshooting, and
 recover from provisioning failures without requiring physical access to the device.
-By moving activation to post-OS deployment, we lose all these recovery capabilities during the critical OS provisioning phase.
+By moving activation to post-OS deployment, we lose all these recovery capabilities during the critical
+OS provisioning phase.

@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+version: "2"
+
 run:
   timeout: 5m
   tests: true
@@ -16,12 +18,10 @@ linters:
     - durationcheck
     - err113
     - exhaustruct
-    - exportloopref
     - fatcontext
     - forbidigo
     - forcetypeassert
     - funlen
-    - gci
     - gochecknoglobals
     - gocognit
     - goconst
@@ -45,7 +45,6 @@ linters:
     - perfsprint
     - prealloc
     - revive
-    - stylecheck
     - tagalign
     - tagliatelle
     - unparam

@@ -7,10 +7,10 @@
 # someone opens a pull request.
 
 # Everything requires Platform team review by default
-* @johnoloughlin @garyloug @palade @rranjan3 @krishnajs @hyunsun @scottmbaker @damiankopyto @cjnolan @SushilLakra @soniabha-intc @guptagunjan @sys-orch-approve @ram-srini @shankarsrinivas1
+* @johnoloughlin @garyloug @palade @rranjan3 @krishnajs @hyunsun @scottmbaker @damiankopyto @cjnolan @SushilLakra @soniabha-intc @guptagunjan @sys-orch-approve @ram-srini @shankarsrinivas1 @sunil-parida
 
 # CI files
-.github/ @adimoft @daveroge @shanedonohue @manilk1x @johnoloughlin @garyloug @palade @rranjan3 @krishnajs @hyunsun @scottmbaker @damiankopyto @cjnolan @SushilLakra @soniabha-intc @guptagunjan @sys-orch-approve @ram-srini @shankarsrinivas1
+.github/ @adimoft @daveroge @shanedonohue @manilk1x @johnoloughlin @garyloug @palade @rranjan3 @krishnajs @hyunsun @scottmbaker @damiankopyto @cjnolan @SushilLakra @soniabha-intc @guptagunjan @sys-orch-approve @ram-srini @shankarsrinivas1 @sunil-parida
 
 # Dependabot is used to manage dependencies in this repository. It is configured to automatically open pull requests to
 # update dependencies when new versions are available. The following files are managed by Dependabot and do not require
@@ -31,12 +31,8 @@
 **/values.yaml
 # Docker dependencies
 **/Dockerfile
-# GitHub Actions dependencies
-/.github/workflows/*.yml
-/.github/workflows/*.yaml
 
 # Except the following folders, which can be merged with passing CI and one approval
-/argocd/applications/templates
 /ci/
 /e2e-tests/
 /node/

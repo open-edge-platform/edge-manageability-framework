@@ -56,7 +56,7 @@ var (
 					Expect(err).ToNot(HaveOccurred())
 					resp, err := c.Do(req)
 					Expect(err).ToNot(HaveOccurred())
-					defer resp.Body.Close()
+					defer resp.Body.Close() //nolint:errcheck
 					Expect(resp.StatusCode).To(Equal(http.StatusForbidden), func() string {
 						b, err := io.ReadAll(resp.Body)
 						Expect(err).ToNot(HaveOccurred())
