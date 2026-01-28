@@ -38,8 +38,6 @@ argo:
   clusterDomain: ${CLUSTER_DOMAIN}
 
   ## Argo CD configs
-  utilsRepoURL: "https://github.com/open-edge-platform/orch-utils"
-  utilsRepoRevision: ${UTILS_REPO_BRANCH}
   deployRepoURL: "https://github.com/open-edge-platform/edge-manageability-framework"
   deployRepoRevision: ${DEPLOY_REPO_BRANCH}
 
