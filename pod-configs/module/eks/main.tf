@@ -293,9 +293,9 @@ resource "aws_eks_node_group" "nodegroup" {
   }
 
   scaling_config {
-    desired_size = var.desired_size
-    min_size     = var.min_size
-    max_size     = var.max_size
+    desired_size = 2 #var.desired_size
+    min_size     = 2 #var.min_size
+    max_size     = 5 #var.max_size
   }
 
   launch_template {
@@ -310,6 +310,12 @@ resource "aws_eks_node_group" "nodegroup" {
     aws_iam_role_policy_attachment.AmazonEBSCSIDriverPolicy,
     aws_launch_template.eks_launch_template
   ]
+
+  tags = {
+    "k8s.io/cluster-autoscaler/enabled"               = "true"
+    "k8s.io/cluster-autoscaler/${var.cluster_name}"  = "owned"
+  }
+
 }
 
 resource "aws_eks_node_group" "additional_node_group" {
@@ -324,9 +330,9 @@ resource "aws_eks_node_group" "additional_node_group" {
   }
 
   scaling_config {
-    desired_size = each.value.desired_size
-    min_size     = each.value.min_size
-    max_size     = each.value.max_size
+    desired_size = 1 #each.value.desired_size
+    min_size     = 1 #each.value.min_size
+    max_size     = 3 #each.value.max_size
   }
 
   launch_template {
@@ -343,6 +349,14 @@ resource "aws_eks_node_group" "additional_node_group" {
       effect = taint.value.effect
     }
   }
+
+  tags = merge(
+    {
+      "k8s.io/cluster-autoscaler/enabled"              = "true"
+      "k8s.io/cluster-autoscaler/${var.cluster_name}" = "owned"
+    },
+    lookup(each.value, "tags", {})
+  )
 
   depends_on = [
     aws_iam_role_policy_attachment.AmazonEKSWorkerNodePolicy,
@@ -425,7 +439,8 @@ resource "aws_iam_policy" "cas_controller" {
         "ec2:DescribeInstanceTypes",
         "ec2:DescribeLaunchTemplateVersions",
         "ec2:GetInstanceTypesFromInstanceRequirements",
-        "eks:DescribeNodegroup"
+        "eks:DescribeNodegroup",
+        "eks:DescribeCluster"
       ],
       "Resource": ["*"]
     },
@@ -579,3 +594,4 @@ resource "aws_iam_role_policy_attachment" "certmgr_write_route53" {
   policy_arn = aws_iam_policy.certmgr_write_route53.arn
   role       = aws_iam_role.certmgr.name
 }
+
