@@ -325,3 +325,15 @@ variable "git_proxy" {
   description = "Sets the GIT_PROXY environment variable in the VM."
   default     = ""
 }
+
+variable "utils_repo_branch" {
+  type        = string
+  description = "The branch of the utils repository to use."
+  default     = "main"
+}
+
+variable "deploy_repo_branch" {
+  type        = string
+  description = "The branch of the deploy repository to use."
+  default     = "main"
+}
