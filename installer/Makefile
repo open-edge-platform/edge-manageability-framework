@@ -153,7 +153,7 @@ upgrade: | ${M}/release-secrets ${M}/argocd-ready
 	helm upgrade --install root-app ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/argocd/root-app -n ${TARGET_ENV} -f ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/orch-configs/clusters/${TARGET_ENV}.yaml --create-namespace
 	
 	# Check deployed version and conditionally run fix-external-secrets.sh only for version 3.x.x and above
-	@source ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/pod-configs/utils/lib/common.sh; \
+	@source /root/pod-configs/utils/lib/common.sh; \
 	deployed_version=$$(get_deployed_version 2>/dev/null); \
 	if [ -z "$$deployed_version" ]; then \
 		echo "Error: Could not determine deployed version"; \
