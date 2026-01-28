@@ -28,7 +28,7 @@ root:
 {{- if .Values.enableEdgeInfra }}
     - orch-configs/profiles/enable-edgeinfra.yaml
 {{- end }}
-{{- if .Values.enableUi }}
+{{- if or .Values.enableUi .Values.enableUiDev }}
     - orch-configs/profiles/enable-full-ui.yaml
 {{- end }}
 {{- if .Values.enableUiDev }}
@@ -73,14 +73,25 @@ argo:
   # service will be accessible via `web-ui.orchestrator.io`. Not to be confused with the K8s cluster domain.
   clusterDomain: {{ .Values.clusterDomain }}
 
-{{- if not .Values.enableUi }}
+{{- if or (not .Values.enableAppOrch) (not (or .Values.enableUi .Values.enableUiDev)) }}
   enabled:
+{{- if not .Values.enableAppOrch }}
+    copy-app-gitea-cred-to-fleet: false
+    copy-ca-cert-gitea-to-app: false
+    copy-ca-cert-gitea-to-cluster: false
+    copy-cluster-gitea-cred-to-fleet: false
+{{- end }}
+{{- if not (or .Values.enableUi .Values.enableUiDev) }}
     web-ui-root: false
     web-ui-app-orch: false
     web-ui-cluster-orch: false
     web-ui-infra: false
     web-ui-admin: false
     metadata-broker: false
+{{- end }}
+{{- end }}
+
+{{- if not (or .Values.enableUi .Values.enableUiDev) }}
   cors:
     enabled: false
   # This enables the ingress route for Infra UI standalone
@@ -113,18 +124,10 @@ argo:
 {{- end }}
   ## Argo CD configs
   deployRepoURL: "{{ .Values.deployRepoURL }}"
-  deployRepoRevision: {{ .Values.deployRepoRevision | default "main" }}
+  deployRepoRevision: {{ .Values.deployRepoRevision }}
 
   targetServer: "https://kubernetes.default.svc"
   autosync: true
-
-{{- if not .Values.enableAppOrch }}
-  enabled:
-    copy-app-gitea-cred-to-fleet: false
-    copy-ca-cert-gitea-to-app: false
-    copy-ca-cert-gitea-to-cluster: false
-    copy-cluster-gitea-cred-to-fleet: false
-{{- end }}
 
 {{ if .Values.enableObservability }}
   o11y:
