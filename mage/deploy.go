@@ -1302,7 +1302,11 @@ func (d Deploy) orchLocal(targetEnv string) error {
 	targetConfig := getTargetConfig(targetEnv)
 
 	var subDomain string
-	deployRevision := "--set-string argo.deployRepoRevision=HEAD" // giteaDeployRevisionParam()
+	deployRepoRevision := os.Getenv("DEPLOY_REPO_BRANCH")
+	if deployRepoRevision == "" {
+		deployRepoRevision = "HEAD"
+	}
+	deployRevision := "--set-string argo.deployRepoRevision="+deployRepoRevision // giteaDeployRevisionParam()
 	orchVersion, err := getOrchestratorVersionParam()
 	if err != nil {
 		return fmt.Errorf("failed to get orchestrator version: %w", err)
