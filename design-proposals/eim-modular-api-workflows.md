@@ -11,7 +11,7 @@ This design follows up the [Scenario-Specific Northbound APIs and CLI Commands f
 
 ## Workflows
 
-### Full EMF/Standalone full EIM
+### Full EMF/Standalone full EIM (2026.0)
 
 This is the standard deployment of EIM, in both cases, that is if the full EMF is deployed (EIM/CO/AO) or if the full EIM is deployed without the CO/AO in standalone, the full set of EIM APIs is exposed.
 
@@ -25,7 +25,7 @@ The modular EIM will be deployed with the following services:
 
 In both cases there will be a microservice running on the Orchestrator exposing the list of available features. In the case of full EMF this microservice will report all features related to all APIs, in the case of full EIM in standalone the microservice will report only the EIM features and the full list of services exposed by the EIM API.
 
-### EIM - Observability
+### EIM - Observability (2026?)
 
 This is a scenario where observability stack is subtracted from standard EIM deployment. All other EIM APIs are exposed.
 
@@ -36,7 +36,7 @@ The modular EIM will be deployed with the following services:
 - Maintenance service APIs
 - Workload service APIs*
 
-### EIM - vPRO only
+### EIM - vPRO only (2026.0)
 
 In this deployment only the minimum viable EIM API stack will be deployed along with the vPRO related APIs and resource managers and agents. In this scenario the EIM API will only expose the host services used to manage the host resource - since only the host resource is needed to onboard the EN, activate vPRO and do power management of the EN via vPRO.
 
@@ -46,7 +46,7 @@ This version of modular EIM API will be deployed with the following service:
 
 It is assumed that provisioning/instance creation and creation of associated resources related to provisioning is not needed.
 
-API and Inventory interactions.
+API and Inventory interactions (Non CLI steps/flows subject to change /implementation - this flow is only to demonstrate the interactions between API/Inventory/CLI).
 
 1. User pre-registers host via the orch-cli using the *host service* EIM API (by providing the UUID and/or Serial No.) - there is no need to create an instance, or allocate EN to site since there is no EN management outside of vPRO related actions.
 2. User provisions own OS onto the EN manually and installs the Device Activation Agent (DAA), the agent communicates with the scaled back version of Onboarding Manager.
@@ -74,7 +74,7 @@ The services/APIs will be split into the following buckets:
 
 ![APIv2 modular buckets](./images/eim-api-decomp-buckets.png)
 
-The APIv2 will then be built based on a manifest files calling out the required services. Once built it will be composed into a docker image that can be used to deploy the APIv2 for a given workflow (each combination has own image version indicating the workflow).
+The APIv2 will then be built based on a manifest files calling out the required services. Once built it will be composed into a docker image that can be used to deploy the APIv2 for a given workflow.
 
 ```yaml
    # scenarios/full-eim.yaml
