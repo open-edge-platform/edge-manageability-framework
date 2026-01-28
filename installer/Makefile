@@ -131,6 +131,15 @@ update:
 	helm upgrade --install root-app ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/argocd/root-app -n ${TARGET_ENV} -f ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/orch-configs/clusters/${TARGET_ENV}.yaml --create-namespace
 
 upgrade: | ${M}/release-secrets ${M}/argocd-ready
+	@if kubectl get secret platform-keycloak -n orch-platform > /dev/null 2>&1; then \
+		ADMIN_PASSWORD=$$(kubectl get secret platform-keycloak -n orch-platform -o jsonpath='{.data.admin-password}' 2>/dev/null | base64 -d 2>/dev/null); \
+		if [ -z "$$ADMIN_PASSWORD" ]; then \
+			echo "Error: Could not retrieve admin-password from platform-keycloak secret"; \
+			exit 1; \
+		fi; \
+		echo "Updating platform-keycloak secret with username & password field..."; \
+		kubectl patch secret platform-keycloak -n orch-platform --type='merge' -p "{\"stringData\": {\"username\": \"admin\", \"password\": \"$$ADMIN_PASSWORD\"}}" || true; \
+	fi
 	helm repo add argo-helm https://argoproj.github.io/argo-helm --force-update
 	helm -n argocd upgrade --install argocd argo-helm/argo-cd --version ${ARGO_VERSION} \
 		--values ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/bootstrap/argocd.yaml \
@@ -139,9 +148,27 @@ upgrade: | ${M}/release-secrets ${M}/argocd-ready
 	@if [ "${USE_TEST_ADMIN}" = "true" ]; then\
 		kubectl -n argocd patch secret argocd-secret --type='merge' -p '{"stringData": {"admin.password": "${ARGO_AUTH_BCRYPT}"}}';\
 	fi
+
 	@[ -z "${TARGET_ENV}" ] && echo "*** TARGET_ENV not set" && exit 1 || true
 	helm upgrade --install root-app ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/argocd/root-app -n ${TARGET_ENV} -f ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/orch-configs/clusters/${TARGET_ENV}.yaml --create-namespace
-	./fix-external-secrets.sh
+	
+	# Check deployed version and conditionally run fix-external-secrets.sh only for version 3.x.x and above
+	@source ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/pod-configs/utils/lib/common.sh; \
+	deployed_version=$$(get_deployed_version 2>/dev/null); \
+	if [ -z "$$deployed_version" ]; then \
+		echo "Error: Could not determine deployed version"; \
+		exit 1; \
+	fi; \
+	deployed_version_clean="$${deployed_version#v}"; \
+	major_version="$${deployed_version_clean%%%%.*}"; \
+	if ! [[ "$$major_version" =~ ^[0-9]+$$ ]]; then \
+		echo "Warning: Could not extract major version from '$$deployed_version', skipping fix-external-secrets.sh"; \
+	elif (( $$major_version == 3 )); then \
+		echo "Running fix-external-secrets.sh for version $$deployed_version (applicable for 3.x.x only)..."; \
+		./fix-external-secrets.sh; \
+	else \
+		echo "Skipping fix-external-secrets.sh for version $$deployed_version (fix-external-secrets.sh is only applicable for version 3.x.x)"; \
+	fi
 
 clean: ## Remove the milestones directory
 	rm -rf ${M}
