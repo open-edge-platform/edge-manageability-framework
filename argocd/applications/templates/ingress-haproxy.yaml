@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-{{- $appName        := "nginx-ingress-pxe-boots" }}
+{{- $appName        := "ingress-haproxy" }}
 {{- $namespace      := "orch-boots" }}
-{{- $syncWave       := "1200" }}
+{{- $syncWave       := "1100" }}
 ---
 {{- if (index .Values.argo.enabled $appName) }}
 apiVersion: argoproj.io/v1alpha1
@@ -19,9 +19,9 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
-    - repoURL: https://github.com/open-edge-platform/orch-utils.git
-      path: charts/{{$appName}}
-      targetRevision: tmp-nginx2haproxy
+    - repoURL: https://haproxytech.github.io/helm-charts
+      chart: haproxy
+      targetRevision: 1.27.0
       helm:
         releaseName: {{$appName}}
         valuesObject:
@@ -49,12 +49,4 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ApplyOutOfSyncOnly=true
-      # FIXME Workaround for Secrets unable to be recreated
-      - Replace=true
-  # FIXME Workaround for https://github.com/argoproj/argo-cd/issues/5116
-  ignoreDifferences:
-    - group: cert-manager.io
-      kind: Certificate
-      jsonPointers:
-        - /spec/isCA
 {{- end }}

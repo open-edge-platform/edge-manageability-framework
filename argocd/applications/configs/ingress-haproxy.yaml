@@ -1,0 +1,125 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+kind: Deployment
+replicaCount: 1
+
+image:
+  repository: haproxytech/haproxy-alpine
+  pullPolicy: IfNotPresent
+
+# HAProxy daemon configuration
+# ref: https://www.haproxy.org/download/2.6/doc/configuration.txt
+# https://wiki.mozilla.org/Security/Server_Side_TLS
+# The first cipher suite below is approved to be used by BIOS in the EN; it is NOT available in the Golang crypto library.
+# The remaining three cipher suites are approved for all other clients.
+config: |
+  global
+    log stdout format raw local0
+    maxconn 2048
+    ssl-default-bind-ciphers DHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:TLS_AES_256_GCM_SHA384
+    ssl-default-bind-options ssl-min-ver TLSv1.2 no-tls-tickets
+    tune.ssl.default-dh-param 2048
+    tune.ssl.dh-param-file /usr/local/etc/haproxy/includes/dhparam.pem
+
+  defaults
+    log global
+    mode http
+    option httplog
+    option dontlognull
+    timeout connect 5000
+    timeout client 50000
+    timeout server 50000
+    option forwardfor except 127.0.0.0/8
+    option http-server-close
+    # Rate limiting configuration
+    # Return 429 Too Many Requests for rate-limited connections
+    errorfile 429 /usr/local/etc/haproxy/includes/429.http
+
+  frontend fe_main
+    bind :443 ssl crt /usr/local/etc/ssl/certs/tls.pem
+    mode http
+    option httpclose
+    option forwardfor
+    # Rate limiting: store client IP in stick-table (limits per IP address)
+    # Track IP for connection rate limiting (100 connections per 10 seconds)
+    stick-table type ip size 100k expire 10s store conn_cur,conn_rate(10s),http_req_rate(10s)
+    http-request track-sc0 src
+    # Reject if connection rate exceeds 100 connections per 10 seconds
+    http-request reject status 429 if { sc_conn_cur(0) gt 100 }
+    # Reject if request rate exceeds 1000 requests per 10 seconds
+    http-request reject status 429 if { sc_http_req_rate(0) gt 1000 }
+    default_backend be_main
+
+  backend be_main
+    mode http
+    balance roundrobin
+    option http-server-close
+    # URL rewriting: strip /tink-stack prefix from requests
+    # This matches nginx rewrite-target: /$2 behavior
+    # Example: /tink-stack/v1/api → /v1/api at backend
+    http-request set-path %[path,regsub(^/tink-stack/,/)] if { path_beg /tink-stack/ }
+    http-request set-path / if { path -i /tink-stack }
+
+# Hardcoded DH parameters file (mounted via includes)
+# Base64-decoded from ingress-nginx configuration
+includes:
+  dhparam.pem: |
+    -----BEGIN DH PARAMETERS-----
+    MIICCAKCAgEAtOOs/XUE+A0/TmQuUnVSuRSo8KK9qfias1H8TVdPfeD3Nl0o/4Km
+    OBFG62ODsvb9E1m3axcLvBlZJ9M/4baQzn9XxDmUrl0xcHwmFekvWLCOs2ldRqtA
+    jZ2hpSyMmKnwlVBAjmhxxjFRdvVl215P3PV2Gf8KenGz8PUFzFkQD4ts5h9783sE
+    2ZERrSjqqHArV9ML2l3fAqHA/TRLFWNZhgmPJrabpg5rRkJqhs6onxfpIQ+I56ND
+    g+bPm/0OW78wauuqLNo43kCtx1tU+tQfwYtxLS5cHbRGRAC3nu+C3wsgUt1FXsdq
+    PMM6abqObPVaM7+GnDRgFppgwEb/5mysum9sfq8ryeqn0MagiKEGoFZC4vgcZs8T
+    I9SO2YYLQVr+mdbpvftuQKYbY1Thqj9JTOqdPMvcEsHaw9L7hTFuE7K9w/tAZED
+    URQxIhULPmhr+tHXnkbS2FG4yXgUgkYIEcDLcE6MpkBR+Qy6KSQtjAFoNkAqAH2U
+    /5pq29H2+l8HkjHBhTKwqZGv0+oYFZ4PYHkqiyuHGdF/CR3IgI80Gu/akTEophqP
+    QroSxdSBSKZjTnfaFyA++UFXr0Xe7bikiq0eNYrjrA559ZPK6kLVrkbP04hUs5fa
+    ujYbCPE4rMUsEfw/AMukSysuVlhsoWa16P+VejmOA2fQvp2ENCNq/c6M68CAQE=
+    -----END DH PARAMETERS-----
+  429.http: |
+    HTTP/1.1 429 Too Many Requests
+    Cache-Control: no-cache
+    Connection: close
+    Content-Type: text/plain
+    Content-Length: 28
+
+    Too Many Requests (429)
+
+# Service configuration
+# ref: https://kubernetes.io/docs/concepts/services-networking/service/
+service:
+  type: ClusterIP
+  annotations: {}
+  nodePorts: {}
+    # http: 32080
+    # https: 32443
+
+resources: null
+
+livenessProbe:
+  failureThreshold: 3
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  successThreshold: 1
+  tcpSocket:
+    port: 443
+  timeoutSeconds: 1
+
+readinessProbe:
+  failureThreshold: 3
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  successThreshold: 1
+  tcpSocket:
+    port: 443
+  timeoutSeconds: 1
+
+# Additional secrets to mount as volumes
+# This is expected to be an array of dictionaries specifying the volume name, secret name and mount path
+mountedSecrets:
+  - volumeName: tls-boots
+    secretName: tls-boots
+    mountPath: /usr/local/etc/ssl/certs

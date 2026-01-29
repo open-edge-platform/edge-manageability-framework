@@ -8,7 +8,8 @@
 argo:
   enabled:
     auth-service: true
-    ingress-nginx: true
+    ingress-nginx: false
+    ingress-haproxy: true
     cert-manager: true
     certificate-file-server: true
     component-status: true

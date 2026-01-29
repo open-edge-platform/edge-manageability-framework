@@ -1,0 +1,45 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+# HAProxy Ingress for Tinkerbell (PXE Boots)
+# This replaces the previous nginx-ingress configuration
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tinkerbell-haproxy-ingress
+  namespace: orch-infra
+  annotations:
+    # HAProxy ingress annotations differ from NGINX
+    # Rate limiting is configured globally in the HAProxy helm chart
+    # (see: /argocd/applications/configs/ingress-haproxy.yaml)
+    description: "HAProxy Ingress for Tinkerbell PXE boots services"
+spec:
+  ingressClassName: haproxy
+  tls:
+    - hosts:
+        - "{{ required \"A valid commonName is required!\" .Values.commonName }}"
+      secretName: tls-boots
+  rules:
+    - host: "{{ required \"A valid commonName is required!\" .Values.commonName }}"
+      http:
+        paths:
+          # Tinkerbell Stack Routes
+          - path: /tink-stack
+            pathType: Prefix
+            backend:
+              service:
+                name: tinkerbell
+                port:
+                  number: 8080
+
+          # Additional backend routes can be added here
+          # Example:
+          # - path: /api
+          #   pathType: Prefix
+          #   backend:
+          #     service:
+          #       name: api-service
+          #       port:
+          #         number: 8080
