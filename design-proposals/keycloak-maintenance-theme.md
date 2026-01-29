@@ -13,7 +13,7 @@ This proposal introduces a custom maintenance theme for Keycloak to provide a us
 During maintenance periods for the Edge Orchestrator, users attempting to log in through Keycloak receive either:
 - Generic connection errors that don't clearly communicate the maintenance status
 - Confusing technical error messages
-- No  maintenance notification
+- No maintenance notification
 
 This results in:
 - Poor user experience during maintenance periods
@@ -93,7 +93,10 @@ The implementation requires modifications to `argocd/applications/configs/platfo
 
 ### Activation Workflow
 
-The maintenance theme activation flow demonstrates how operators enable and disable maintenance mode through Keycloak's Admin API. The control interface (automation tool, script, or direct API calls) authenticates with Keycloak by retrieving admin credentials from Kubernetes secrets, then updates the realm's `loginTheme` configuration. When maintenance mode is enabled, all users attempting to authenticate see the custom maintenance page. The flow is completely reversible - disabling maintenance mode restores the default login theme, allowing normal authentication to resume.
+The maintenance theme activation flow demonstrates how operators enable and disable maintenance mode through Keycloak's Admin API.
+The control interface (automation tool, script, or direct API calls) authenticates with Keycloak by retrieving admin credentials from Kubernetes secrets,
+then updates the realm's `loginTheme` configuration. When maintenance mode is enabled, all users attempting to authenticate see the custom maintenance page.
+The flow is completely reversible - disabling maintenance mode restores the default login theme, allowing normal authentication to resume.
 
 ```mermaid
 sequenceDiagram
@@ -137,11 +140,13 @@ sequenceDiagram
     Realm-->>User: ✓ Normal login page
 ```
 
-**CRITICAL:** Changing the `loginTheme` to "maintenance" blocks ALL login attempts, including administrator access to the Keycloak Admin Console. Use the API method below to toggle maintenance mode.
+**CRITICAL:** Changing the `loginTheme` to "maintenance" blocks ALL login attempts, including administrator access to the Keycloak Admin Console.
+Use the API method below to toggle maintenance mode.
 
 ### API Implementation Guide
 
-This section provides complete implementation details for toggling maintenance mode programmatically. Any automation tool, script, or backend service can implement this using the Keycloak Admin API.
+This section provides complete implementation details for toggling maintenance mode programmatically. Any automation tool, script,
+or backend service can implement this using the Keycloak Admin API.
 
 #### Required Keycloak API Endpoints
 
@@ -271,9 +276,6 @@ def toggle_maintenance(enable: bool):
         json={"loginTheme": theme}
     )
 ```
-
-> **Note:** This implementation can be used in automation scripts, CI/CD pipelines, or integrated into platform
-admin APIs for production use.
 
 ## Rationale
 
