@@ -19,24 +19,24 @@ functional EIM deployment. This ADR specifies that minimal core.
 
 #### Summary Table
 
-| Pod in orch-infra       | Connects to External Service | Target Namespace | Service/Purpose            |
-|--------------------------|-----------------------------|------------------|----------------------------|
-| attestationstatusmgr     | platform-keycloak          | orch-platform    | OIDC Authentication        |
-| dkam                     | platform-keycloak          | orch-platform    | OIDC Authentication        |
-| dkam                     | rs-proxy                   | orch-platform    | Resource Proxy             |
-| dm-manager               | platform-keycloak          | orch-platform    | OIDC Authentication        |
-| host-manager             | platform-keycloak          | orch-platform    | OIDC Authentication        |
-| maintenance-manager      | platform-keycloak          | orch-platform    | OIDC Authentication        |
-| mps                      | vault                      | orch-platform    | Secrets Management         |
-| onboarding-manager       | vault                      | orch-platform    | Secrets Management         |
-| onboarding-manager       | platform-keycloak          | orch-platform    | OIDC Authentication        |
-| onboarding-manager       | rs-proxy                   | orch-platform    | Resource Proxy             |
-| os-resource-manager      | platform-keycloak          | orch-platform    | OIDC Authentication        |
-| os-resource-manager      | rs-proxy                   | orch-platform    | Resource Proxy             |
-| os-resource-manager      | rs-proxy-files             | orch-platform    | File Resource Proxy        |
-| rps                      | vault                      | orch-platform    | Secrets Management         |
-| telemetry-manager        | platform-keycloak          | orch-platform    | OIDC Authentication        |
-| tenant-controller        | vault                      | orch-platform    | Secrets Management         |
+| Pod in orch-infra          | Connects to External Service  | Target Namespace   | Service/Purpose              |
+| -------------------------- | ----------------------------- | ------------------ | ---------------------------- |
+| attestationstatusmgr       | platform-keycloak             | orch-platform      | OIDC Authentication          |
+| dkam                       | platform-keycloak             | orch-platform      | OIDC Authentication          |
+| dkam                       | rs-proxy                      | orch-platform      | Resource Proxy               |
+| dm-manager                 | platform-keycloak             | orch-platform      | OIDC Authentication          |
+| host-manager               | platform-keycloak             | orch-platform      | OIDC Authentication          |
+| maintenance-manager        | platform-keycloak             | orch-platform      | OIDC Authentication          |
+| mps                        | vault                         | orch-platform      | Secrets Management           |
+| onboarding-manager         | vault                         | orch-platform      | Secrets Management           |
+| onboarding-manager         | platform-keycloak             | orch-platform      | OIDC Authentication          |
+| onboarding-manager         | rs-proxy                      | orch-platform      | Resource Proxy               |
+| os-resource-manager        | platform-keycloak             | orch-platform      | OIDC Authentication          |
+| os-resource-manager        | rs-proxy                      | orch-platform      | Resource Proxy               |
+| os-resource-manager        | rs-proxy-files                | orch-platform      | File Resource Proxy          |
+| rps                        | vault                         | orch-platform      | Secrets Management           |
+| telemetry-manager          | platform-keycloak             | orch-platform      | OIDC Authentication          |
+| tenant-controller          | vault                         | orch-platform      | Secrets Management           |
 
 ---
 
@@ -129,57 +129,57 @@ current deployment has 100 pods (AO/CO/Observability disabled) across 19 namespa
 
 #### Namespace Distribution
 
-| Namespace | Purpose | Category |
-|-----------|---------|----------|
-| **orch-infra** | Edge Infrastructure Management | Core EIM |
-| **orch-platform** | Platform services (Auth, Secrets) | Core Platform |
-| **orch-gateway** | Ingress and API gateway | Networking |
-| **orch-iam** | Identity & Access Management | Security |
-| **orch-database** | PostgreSQL database | Data |
-| **orch-ui** | Web User Interface | UI |
-| **orch-secret** | External secrets management | Security |
-| **orch-boots** | Boot/PXE services | Provisioning |
-| **istio-system** | Service mesh | Networking |
-| **kube-system** | Kubernetes core | Infrastructure |
-| **argocd** | GitOps deployment | CI/CD |
-| **kyverno** | Policy enforcement | Security |
-| **cert-manager** | Certificate management | Security |
-| **gitea** | Git repository | Development |
-| **metallb-system** | Load balancer | Networking |
-| **postgresql-operator** | PostgreSQL operator | Data |
-| **mailpit-dev** | Email testing | Development |
-| **local-path-storage** | Storage provisioner | Infrastructure |
-| **ns-label** | Namespace labeling | Utility |
+| Namespace               | Purpose                           | Category       |
+| ----------------------- | --------------------------------- | -------------- |
+| **orch-infra**          | Edge Infrastructure Management    | Core EIM       |
+| **orch-platform**       | Platform services (Auth, Secrets) | Core Platform  |
+| **orch-gateway**        | Ingress and API gateway           | Networking     |
+| **orch-iam**            | Identity & Access Management      | Security       |
+| **orch-database**       | PostgreSQL database               | Data           |
+| **orch-ui**             | Web User Interface                | UI             |
+| **orch-secret**         | External secrets management       | Security       |
+| **orch-boots**          | Boot/PXE services                 | Provisioning   |
+| **istio-system**        | Service mesh                      | Networking     |
+| **kube-system**         | Kubernetes core                   | Infrastructure |
+| **argocd**              | GitOps deployment                 | CI/CD          |
+| **kyverno**             | Policy enforcement                | Security       |
+| **cert-manager**        | Certificate management            | Security       |
+| **gitea**               | Git repository                    | Development    |
+| **metallb-system**      | Load balancer                     | Networking     |
+| **postgresql-operator** | PostgreSQL operator               | Data           |
+| **mailpit-dev**         | Email testing                     | Development    |
+| **local-path-storage**  | Storage provisioner               | Infrastructure |
+| **ns-label**            | Namespace labeling                | Utility        |
 
 #### Core Platform Components
 
 ##### Authentication & Authorization
 
-| Component | Namespace | Service | Port | Consumers | Purpose |
-|-----------|-----------|---------|------|-----------|---------|
-| **Keycloak** | orch-platform | platform-keycloak | 8080 | All orch-infra APIs, nexus-api-gw, web-ui, tenancy-manager | OIDC/OAuth2 authentication, user management, realm management |
-| **Keycloak Tenant Controller** | orch-platform | keycloak-tenant-controller-service | 80 | tenancy-manager | Automated tenant/realm creation in Keycloak |
-| **Auth Service** | orch-gateway | auth-service | 8080 | Traefik (via middleware) | Additional authentication layer |
-| **validate-jwt Middleware** | orch-gateway | (middleware) | N/A | All external API routes via Traefik | JWT token validation against Keycloak |
-| **Nexus API Gateway** | orch-iam | svc-iam-nexus-api-gw | 8082 | Traefik | Multi-tenant API gateway, tenant context injection |
-| **Tenancy Manager** | orch-iam | (internal) | N/A | nexus-api-gw, tenant-controller | Organization/project management, tenant lifecycle |
+| Component                      | Namespace     | Service                            | Port   | Consumers                                                  | Purpose                                                       |
+| ------------------------------ | ------------- | ---------------------------------- | ------ | ---------------------------------------------------------- | ------------------------------------------------------------- |
+| **Keycloak**                   | orch-platform | platform-keycloak                  | 8080   | All orch-infra APIs, nexus-api-gw, web-ui, tenancy-manager | OIDC/OAuth2 authentication, user management, realm management |
+| **Keycloak Tenant Controller** | orch-platform | keycloak-tenant-controller-service | 80     | tenancy-manager                                            | Automated tenant/realm creation in Keycloak                   |
+| **Auth Service**               | orch-gateway  | auth-service                       | 8080   | Traefik (via middleware)                                   | Additional authentication layer                               |
+| **validate-jwt Middleware**    | orch-gateway  | (middleware)                       | N/A    | All external API routes via Traefik                        | JWT token validation against Keycloak                         |
+| **Nexus API Gateway**          | orch-iam      | svc-iam-nexus-api-gw               | 8082   | Traefik                                                    | Multi-tenant API gateway, tenant context injection            |
+| **Tenancy Manager**            | orch-iam      | (internal)                         | N/A    | nexus-api-gw, tenant-controller                            | Organization/project management, tenant lifecycle             |
 
 ##### Secrets Management
 
-| Component | Namespace | Service | Port | Consumers | Purpose |
-|-----------|-----------|---------|------|-----------|---------|
-| **Vault** | orch-platform | vault | 8200 | tenant-controller, amt-vault-job, onboarding-manager, external-secrets | Secret storage, AMT credentials, certificates, tokens |
-| **Vault Agent Injector** | orch-platform | vault-agent-injector-svc | 443 | All pods requesting secret injection | Sidecar injection for vault secrets |
-| **External Secrets Operator** | orch-secret | external-secrets-webhook | 443 | ClusterSecretStore resources | Sync secrets from external sources |
-| **Token FS** | orch-secret | token-fs | 8080 | Pods needing token access | Token file system service |
+| Component                     | Namespace     | Service                  | Port   | Consumers                                                              | Purpose                                               |
+| ----------------------------- | ------------- | ------------------------ | ------ | ---------------------------------------------------------------------- | ----------------------------------------------------- |
+| **Vault**                     | orch-platform | vault                    | 8200   | tenant-controller, amt-vault-job, onboarding-manager, external-secrets | Secret storage, AMT credentials, certificates, tokens |
+| **Vault Agent Injector**      | orch-platform | vault-agent-injector-svc | 443    | All pods requesting secret injection                                   | Sidecar injection for vault secrets                   |
+| **External Secrets Operator** | orch-secret   | external-secrets-webhook | 443    | ClusterSecretStore resources                                           | Sync secrets from external sources                    |
+| **Token FS**                  | orch-secret   | token-fs                 | 8080   | Pods needing token access                                              | Token file system service                             |
 
 ##### Database
 
-| Component | Namespace | Service | Port | Consumers | Purpose |
-|-----------|-----------|---------|------|-----------|---------|
-| **PostgreSQL Cluster** | orch-database | postgresql-cluster-rw | 5432 | inventory, mps, rps, telemetry-manager, gitea | Primary database for all services |
-| **PostgreSQL Read-Only** | orch-database | postgresql-cluster-ro | 5432 | Read replicas (if enabled) | Read-only database access |
-| **PostgreSQL Operator** | postgresql-operator | cnpg-webhook-service | 443 | PostgreSQL CRD resources | CloudNativePG operator for PostgreSQL lifecycle |
+| Component                | Namespace           | Service               | Port   | Consumers                                     | Purpose                                         |
+| ------------------------ | ------------------- | --------------------- | ------ | --------------------------------------------- | ----------------------------------------------- |
+| **PostgreSQL Cluster**   | orch-database       | postgresql-cluster-rw | 5432   | inventory, mps, rps, telemetry-manager, gitea | Primary database for all services               |
+| **PostgreSQL Read-Only** | orch-database       | postgresql-cluster-ro | 5432   | Read replicas (if enabled)                    | Read-only database access                       |
+| **PostgreSQL Operator**  | postgresql-operator | cnpg-webhook-service  | 443    | PostgreSQL CRD resources                      | CloudNativePG operator for PostgreSQL lifecycle |
 
 **Databases:**
 
@@ -191,53 +191,53 @@ current deployment has 100 pods (AO/CO/Observability disabled) across 19 namespa
 
 ##### Service Mesh
 
-| Component | Namespace | Service | Port | Consumers | Purpose |
-|-----------|-----------|---------|------|-----------|---------|
-| **Istiod** | istio-system | istiod | 15012, 443 | All orch-infra pods (via sidecar) | Service mesh control plane, certificate authority, traffic management |
-| **Istio Proxy (Envoy)** | (sidecar) | N/A | 15001, 15006 | N/A | mTLS, traffic routing, observability per pod |
-| **Kiali** | istio-system | kiali | 20001, 9090 | Web UI (for visualization) | Service mesh observability dashboard |
+| Component               | Namespace    | Service   | Port         | Consumers                         | Purpose                                                               |
+| ----------------------- | ------------ | --------- | ------------ | --------------------------------- | --------------------------------------------------------------------- |
+| **Istiod**              | istio-system | istiod    | 15012, 443   | All orch-infra pods (via sidecar) | Service mesh control plane, certificate authority, traffic management |
+| **Istio Proxy (Envoy)** | (sidecar)    | N/A       | 15001, 15006 | N/A                               | mTLS, traffic routing, observability per pod                          |
+| **Kiali**               | istio-system | kiali     | 20001, 9090  | Web UI (for visualization)        | Service mesh observability dashboard                                  |
 
 #### EIM (orch-infra) Components
 
 ##### Core APIs
 
-| Component | Service | Port | Consumers | Dependencies | Purpose |
-|-----------|---------|------|-----------|--------------|---------|
-| **api** | api | 8080 | nexus-api-gw, web-ui | Keycloak (auth), inventory (device lookup) | REST API v1 for infrastructure management |
-| **apiv2-proxy** | apiv2-proxy | 8080 | nexus-api-gw, web-ui | Keycloak (auth), inventory | REST API v2 HTTP proxy |
-| **apiv2-grpc** | apiv2-grpc | 8090 | Internal gRPC clients | inventory | gRPC API v2 for infrastructure |
-| **inventory** | inventory | 50051 | api, apiv2, all managers, tenant-controller | PostgreSQL (orch-infra-inventory), Keycloak (auth) | Device inventory and asset management |
-| **exporter** | exporter | 9101 | Prometheus/metrics collectors | inventory | Metrics exporter for monitoring |
-| **tenant-controller** | (internal) | N/A | nexus-api-gw | inventory, Vault, Keycloak, tenancy-manager | Tenant isolation and resource management |
+| Component             | Service     | Port   | Consumers                                   | Dependencies                                       | Purpose                                   |
+| --------------------- | ----------- | ------ | ------------------------------------------- | -------------------------------------------------- | ----------------------------------------- |
+| **api**               | api         | 8080   | nexus-api-gw, web-ui                        | Keycloak (auth), inventory (device lookup)         | REST API v1 for infrastructure management |
+| **apiv2-proxy**       | apiv2-proxy | 8080   | nexus-api-gw, web-ui                        | Keycloak (auth), inventory                         | REST API v2 HTTP proxy                    |
+| **apiv2-grpc**        | apiv2-grpc  | 8090   | Internal gRPC clients                       | inventory                                          | gRPC API v2 for infrastructure            |
+| **inventory**         | inventory   | 50051  | api, apiv2, all managers, tenant-controller | PostgreSQL (orch-infra-inventory), Keycloak (auth) | Device inventory and asset management     |
+| **exporter**          | exporter    | 9101   | Prometheus/metrics collectors               | inventory                                          | Metrics exporter for monitoring           |
+| **tenant-controller** | (internal)  | N/A    | nexus-api-gw                                | inventory, Vault, Keycloak, tenancy-manager        | Tenant isolation and resource management  |
 
 ##### Management Services
 
-| Component | Service | Port | External Access | Dependencies | Purpose |
-|-----------|---------|------|-----------------|--------------|---------|
-| **host-manager** | host-manager | 50001 | ✅ Traefik IngressRoute | inventory, Keycloak | Host lifecycle management (power, status, updates) |
-| **maintenance-manager** | maintenance-manager | 50002 | ✅ Traefik IngressRoute | inventory, Keycloak | Maintenance window scheduling and management |
-| **networking-manager** | networking-manager | 50003 | ✅ Traefik IngressRoute | inventory, Keycloak | Network configuration management |
-| **telemetry-manager** | telemetry-manager | 50004 | ✅ Traefik IngressRoute | inventory, PostgreSQL (alerting), Keycloak | Telemetry collection and alerting |
-| **dm-manager** | dm-manager | 50058 | ✅ Traefik IngressRoute | inventory, Keycloak | Device model management |
-| **onboarding-manager** | onboarding-manager | 50054, 50055 | ✅ Traefik IngressRoute (2 routes) | inventory, Vault, Keycloak, tinkerbell | Device onboarding and enrollment |
-| **os-resource-manager** | (internal) | N/A | Internal only | inventory | OS profile and image management |
+| Component               | Service             | Port         | External Access                    | Dependencies                               | Purpose                                            |
+| ----------------------- | ------------------- | ------------ | ---------------------------------- | ------------------------------------------ | -------------------------------------------------- |
+| **host-manager**        | host-manager        | 50001        | ✅ Traefik IngressRoute            | inventory, Keycloak                        | Host lifecycle management (power, status, updates) |
+| **maintenance-manager** | maintenance-manager | 50002        | ✅ Traefik IngressRoute            | inventory, Keycloak                        | Maintenance window scheduling and management       |
+| **networking-manager**  | networking-manager  | 50003        | ✅ Traefik IngressRoute            | inventory, Keycloak                        | Network configuration management                   |
+| **telemetry-manager**   | telemetry-manager   | 50004        | ✅ Traefik IngressRoute            | inventory, PostgreSQL (alerting), Keycloak | Telemetry collection and alerting                  |
+| **dm-manager**          | dm-manager          | 50058        | ✅ Traefik IngressRoute            | inventory, Keycloak                        | Device model management                            |
+| **onboarding-manager**  | onboarding-manager  | 50054, 50055 | ✅ Traefik IngressRoute (2 routes) | inventory, Vault, Keycloak, tinkerbell     | Device onboarding and enrollment                   |
+| **os-resource-manager** | (internal)          | N/A          | Internal only                      | inventory                                  | OS profile and image management                    |
 
 ##### Security & Attestation
 
-| Component | Service | Port | External Access | Dependencies | Purpose |
-|-----------|---------|------|-----------------|--------------|---------|
-| **dkam** | dkam | 5581 | Internal only | inventory, Vault | Device Key and Attestation Manager |
-| **attestationstatusmgr** | attestationstatusmgr | 50007 | ✅ Traefik IngressRoute | inventory, dkam | Attestation status tracking and verification |
+| Component                | Service              | Port   | External Access         | Dependencies     | Purpose                                      |
+| ------------------------ | -------------------- | ------ | ----------------------- | ---------------- | -------------------------------------------- |
+| **dkam**                 | dkam                 | 5581   | Internal only           | inventory, Vault | Device Key and Attestation Manager           |
+| **attestationstatusmgr** | attestationstatusmgr | 50007  | ✅ Traefik IngressRoute | inventory, dkam  | Attestation status tracking and verification |
 
 ##### Provisioning Services
 
-| Component | Service | Port | External Access | Dependencies | Purpose |
-|-----------|---------|------|-----------------|--------------|---------|
-| **mps** | mps | 4433, 3000 | ✅ Traefik IngressRoute (TCP) | PostgreSQL (mps), Vault, RPS | Intel AMT Management Presence Server |
-| **rps** | rps | 8080, 8081 | ✅ Traefik IngressRoute | PostgreSQL (rps), Vault, MPS | Intel AMT Remote Provisioning Server |
-| **tinkerbell** | tinkerbell | 42113, 8080 | ✅ Traefik IngressRoute | tinkerbell-tink-server | PXE boot orchestrator and workflow execution |
-| **tinkerbell-tink-server** | tinkerbell-tink-server | 42113 | Internal | tinkerbell-tink-controller | Workflow server for provisioning |
-| **tinkerbell-tink-controller** | (internal) | N/A | Internal | tinkerbell-tink-server | Workflow controller |
+| Component                      | Service                | Port        | External Access               | Dependencies                 | Purpose                                      |
+| ------------------------------ | ---------------------- | ----------- | ----------------------------- | ---------------------------- | -------------------------------------------- |
+| **mps**                        | mps                    | 4433, 3000  | ✅ Traefik IngressRoute (TCP) | PostgreSQL (mps), Vault, RPS | Intel AMT Management Presence Server         |
+| **rps**                        | rps                    | 8080, 8081  | ✅ Traefik IngressRoute       | PostgreSQL (rps), Vault, MPS | Intel AMT Remote Provisioning Server         |
+| **tinkerbell**                 | tinkerbell             | 42113, 8080 | ✅ Traefik IngressRoute       | tinkerbell-tink-server       | PXE boot orchestrator and workflow execution |
+| **tinkerbell-tink-server**     | tinkerbell-tink-server | 42113       | Internal                      | tinkerbell-tink-controller   | Workflow server for provisioning             |
+| **tinkerbell-tink-controller** | (internal)             | N/A         | Internal                      | tinkerbell-tink-server       | Workflow controller                          |
 
 ---
 
@@ -281,33 +281,33 @@ orch-infra (26 pods - EIM Core)
 
 ##### Required Pods
 
-| Category | Namespace | Pods | Purpose |
-|----------|-----------|------|---------|
-| **EIM Core** | orch-infra | 26 | All Edge Infrastructure components |
-| **Authentication** | orch-platform | 2 | Keycloak, Keycloak Tenant Controller |
-| **Secrets** | orch-platform | 2 | Vault, Vault Agent Injector |
-| **Database** | orch-database | 1 | PostgreSQL |
-| **Service Mesh** | istio-system | 1-2 | Istiod control plane (TBD Should we disable it)|
-| **Multi-tenancy** | orch-iam | 2 | Tenancy Manager, Nexus API Gateway |
-| **Storage** | local-path-storage | 1 | PVC provisioner |
-| **TOTAL** | | **35-40** | **Fully functional EIM** |
+| Category           | Namespace          | Pods      | Purpose                                         |
+| ------------------ | ------------------ | --------- | ----------------------------------------------- |
+| **EIM Core**       | orch-infra         | 26        | All Edge Infrastructure components              |
+| **Authentication** | orch-platform      | 2         | Keycloak, Keycloak Tenant Controller            |
+| **Secrets**        | orch-platform      | 2         | Vault, Vault Agent Injector                     |
+| **Database**       | orch-database      | 1         | PostgreSQL                                      |
+| **Service Mesh**   | istio-system       | 1-2       | Istiod control plane (TBD Should we disable it) |
+| **Multi-tenancy**  | orch-iam           | 2         | Tenancy Manager, Nexus API Gateway              |
+| **Storage**        | local-path-storage | 1         | PVC provisioner                                 |
+| **TOTAL**          |                    | **35-40** | **Fully functional EIM**                        |
 
 #### Optional Pods (62 total) - Can Disable
 
-| Category | Namespaces | Pods | Impact of Disabling |
-|----------|------------|------|---------------------|
-| **GitOps** | argocd | 6 | Cannot deploy/update via ArgoCD (Shall be needed for 1st iteration)|
-| **Policy** | kyverno | 9 | No policy enforcement |
-| **UI** | orch-ui | 6 | No web interface (Orch-cli can be used for interaction)|
-| **Ingress** | orch-gateway | 6 | Cannot expose externally (TBD: Nodeport?)|
-| **Boot Services** | orch-boots | 2 | Alternative boot methods needed |
-| **Certificates** | cert-manager | 3 | Manual cert management (TBD)|
-| **Git Server** | gitea | 3 | No git repository |
-| **Load Balancer** | metallb-system | 2 | No external LB (NodePort)|
-| **Utilities** | ns-label, mailpit, postgresql-operator (optional) | 4 | Various utilities |
-| **Istio Extras** | istio-system | 1 | Kiali visualization |
-| **Platform Extras** | orch-platform | 3 | Proxy, reloader |
-| **Trafik** | orch-platform |  | TBD: Shall be needed for 1st iteration (In case EIM handle the API this can be disabled) |
+| Category            | Namespaces                                        | Pods   | Impact of Disabling                                                                      |
+| ------------------- | ------------------------------------------------- | ------ | ---------------------------------------------------------------------------------------- |
+| **GitOps**          | argocd                                            | 6      | Cannot deploy/update via ArgoCD (Shall be needed for 1st iteration)                      |
+| **Policy**          | kyverno                                           | 9      | No policy enforcement                                                                    |
+| **UI**              | orch-ui                                           | 6      | No web interface (Orch-cli can be used for interaction)                                  |
+| **Ingress**         | orch-gateway                                      | 6      | Cannot expose externally (TBD: Nodeport?)                                                |
+| **Boot Services**   | orch-boots                                        | 2      | Alternative boot methods needed                                                          |
+| **Certificates**    | cert-manager                                      | 3      | Manual cert management (TBD)                                                             |
+| **Git Server**      | gitea                                             | 3      | No git repository                                                                        |
+| **Load Balancer**   | metallb-system                                    | 2      | No external LB (NodePort)                                                                |
+| **Utilities**       | ns-label, mailpit, postgresql-operator (optional) | 4      | Various utilities                                                                        |
+| **Istio Extras**    | istio-system                                      | 1      | Kiali visualization                                                                      |
+| **Platform Extras** | orch-platform                                     | 3      | Proxy, reloader                                                                          |
+| **Trafik**          | orch-platform                                     |        | TBD: Shall be needed for 1st iteration (In case EIM handle the API this can be disabled) |
 
 ### Work items
 
