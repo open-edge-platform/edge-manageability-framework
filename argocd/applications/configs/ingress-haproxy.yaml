@@ -38,7 +38,7 @@ config: |
 
   frontend fe_main
     bind :80
-    bind :443 ssl crt /usr/local/etc/ssl/certs/tls.pem
+    bind :443 ssl crt /usr/local/etc/ssl/certs/tls.pem optional
     mode http
     option httpclose
     option forwardfor
@@ -84,7 +84,7 @@ includes:
     Cache-Control: no-cache
     Connection: close
     Content-Type: text/plain
-    Content-Length: 24
+    Content-Length: 18
 
     Too Many Requests
 
