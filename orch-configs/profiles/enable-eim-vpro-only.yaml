@@ -1,0 +1,9 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+# Includes apiv2 configuration to set current scenario
+# Available scenarios: fulleim (default), vpro
+
+argo:
+  infra-core:
+    scenario: "vpro"
