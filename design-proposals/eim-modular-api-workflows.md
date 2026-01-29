@@ -99,8 +99,9 @@ path/APIs/fields in inventory are used.
 
 ## EIM API modularity
 
-The EIM APIv2 modularity will be achieved by breaking up the current monolithic service.proto file into multiple
-services grouped thematically based on functionality. Once the modular services are in place the can be used
+The EIM APIv2 modularity will be achieved by enabling only necessary
+services based on required functionality by registering only necessary service handlers.
+Services are grouped
 together in combination to make up API sets tailored for a given workflow.
 
 The services/APIs will be categorized into the following buckets:
