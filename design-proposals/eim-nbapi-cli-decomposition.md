@@ -47,7 +47,7 @@ The following questions must be answered and investigated:
   See [How NB API is Currently Built](#how-nb-api-is-currently-built)
 - **Q**: What level of decomposition is needed for the required workflows? - **Ans**: See the [scenarios descriptions](#scenarios-to-be-supported-by-the-initial-decomposition)
 - **Q**: How to decompose APIs at the domain level?
-  - **Ans**: At the domain level, the APIs are deployed as separate services. Only selected API services will get their hendlers registered with apiv2 gRPC server.
+  - **Ans**: Domain-level decomposition is achieved through independent service deployment. Each domain (EIM, Cluster Orchestrator, App Orchestrator, etc.) exposes its own API service deployed as a separate microservice with its own Helm chart and ArgoCD application.
 - **Q**: How to decompose APIs within the domain level?
   - **Ans**: Only selected API services will get their hendlers registered.
 - **Q**: How to build various API service versions as per desired workflows using the modular APIs?
@@ -73,7 +73,8 @@ the EIM operations to the end user, who uses Web UI, Orch-CLI or direct API call
 the end user is not allowed to call the EIM APIs directly. The API calls reach first the API gateway, external
 to EIM (Traefik gateway), they are mapped to EIM internal API endpoints and passed to EIM.
 
-**Note**: The current mapping of external APIs to internal APIs is 1:1, with no direct mapping to SB APIs. The mapping is going to be removed so user can call internal APIs directly.
+**Note**: The current mapping of external APIs to internal APIs is 1:1, with no direct mapping to SB APIs.
+The mapping is going to be removed so user can call internal APIs directly.
 The API service communicates with Inventory via gRPC, which then manages the SB API interactions.
 
 **Apiv2** is just one of EIM Resource Managers that talk to one EIM internal component - the Inventory - over gRPC.
