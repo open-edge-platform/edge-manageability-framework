@@ -28,7 +28,9 @@ root:
 {{- if .Values.enableEdgeInfra }}
     - orch-configs/profiles/enable-edgeinfra.yaml
 {{- end }}
+{{- if or .Values.enableUi .Values.enableUiDev }}
     - orch-configs/profiles/enable-full-ui.yaml
+{{- end }}
 {{- if .Values.enableUiDev }}
     - orch-configs/profiles/ui-dev.yaml
 {{- end }}
@@ -38,12 +40,6 @@ root:
 {{- end }}
 {{- if .Values.enableAutoProvision }}
     - orch-configs/profiles/enable-autoprovision.yaml
-{{- end }}
-    # proxy group should be specified as the first post-"enable" profile
-{{- if (not (eq .Values.proxyProfile "" )) }}
-    - orch-configs/profiles/proxy-{{ .Values.name }}.yaml
-{{- else }}
-    - orch-configs/profiles/proxy-none.yaml
 {{- end }}
     - orch-configs/profiles/profile-{{ .Values.deployProfile }}.yaml
 {{- if .Values.enableAutoCert }}
@@ -58,7 +54,6 @@ root:
     - orch-configs/profiles/enable-explicit-proxy.yaml
 {{- end }}
     - orch-configs/profiles/resource-default.yaml
-    - orch-configs/clusters/{{ .Values.name }}.yaml
     # # rate limit is applicable to each cluster.
     # # please see https://doc.traefik.io/traefik/middlewares/http/ratelimit/
     # # if you enable default traefik rate limit, do not specify custom rate limit
@@ -77,6 +72,32 @@ argo:
   # name to produce the service's domain name. For example, given the domain name of `orchestrator.io`, the Web UI
   # service will be accessible via `web-ui.orchestrator.io`. Not to be confused with the K8s cluster domain.
   clusterDomain: {{ .Values.clusterDomain }}
+
+{{- if or (not .Values.enableAppOrch) (not (or .Values.enableUi .Values.enableUiDev)) }}
+  enabled:
+{{- if not .Values.enableAppOrch }}
+    copy-app-gitea-cred-to-fleet: false
+    copy-ca-cert-gitea-to-app: false
+    copy-ca-cert-gitea-to-cluster: false
+    copy-cluster-gitea-cred-to-fleet: false
+{{- end }}
+{{- if not (or .Values.enableUi .Values.enableUiDev) }}
+    web-ui-root: false
+    web-ui-app-orch: false
+    web-ui-cluster-orch: false
+    web-ui-infra: false
+    web-ui-admin: false
+    metadata-broker: false
+{{- end }}
+{{- end }}
+
+{{- if not (or .Values.enableUi .Values.enableUiDev) }}
+  cors:
+    enabled: false
+  # This enables the ingress route for Infra UI standalone
+  ui:
+    ingressInfraUi: false
+{{- end }}
 
 {{- if and .Values.enableAutocert .Values.staging }}
   autoCert:
@@ -103,7 +124,7 @@ argo:
 {{- end }}
   ## Argo CD configs
   deployRepoURL: "{{ .Values.deployRepoURL }}"
-  deployRepoRevision: main
+  deployRepoRevision: {{ .Values.deployRepoRevision }}
 
   targetServer: "https://kubernetes.default.svc"
   autosync: true

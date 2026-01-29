@@ -104,7 +104,11 @@ func parseAppConfig(filename string) ([]*ComponentDetails, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to open file: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			fmt.Printf("Warning: failed to close file: %v\n", err)
+		}
+	}()
 
 	scanner := bufio.NewScanner(file)
 	values := make(map[string]string)
@@ -323,7 +327,11 @@ func (Gen) releaseManifest(manifestFilename string) error {
 	if err != nil {
 		return fmt.Errorf("unable to create manifest file: %w", err)
 	}
-	defer manifestFile.Close()
+	defer func() {
+		if err := manifestFile.Close(); err != nil {
+			fmt.Printf("Warning: failed to close manifest file: %v\n", err)
+		}
+	}()
 
 	yamlManifest, err := yaml.Marshal(manifest)
 	if err != nil {
@@ -420,13 +428,19 @@ func saveValuesFile(filePath string, valueMap map[string]interface{}) error {
 	if err != nil {
 		return fmt.Errorf("error creating values file: %w", err)
 	}
-	defer valuesFile.Close()
+	defer func() {
+		if err := valuesFile.Close(); err != nil {
+			fmt.Printf("Warning: failed to close values file: %v\n", err)
+		}
+	}()
 
 	encoder := yaml.NewEncoder(valuesFile)
 	if err := encoder.Encode(valueMap); err != nil {
 		return fmt.Errorf("error writing values file: %w", err)
 	}
-	encoder.Close()
+	if err := encoder.Close(); err != nil {
+		return fmt.Errorf("error closing encoder: %w", err)
+	}
 
 	return nil
 }
@@ -592,7 +606,11 @@ func parseChartFileForImageValues(filePath string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			fmt.Printf("Warning: failed to close file: %v\n", err)
+		}
+	}()
 
 	scanner := bufio.NewScanner(file)
 	buf := make([]byte, 0, 16*1024)
@@ -682,12 +700,16 @@ func removeIntelFromNoProxy() {
 	noProxyEnv := os.Getenv("no_proxy")
 	if noProxyEnv != "" {
 		noProxyEnv = filterNoProxy(noProxyEnv, []string{"intel.com", ".intel.com"})
-		os.Setenv("no_proxy", noProxyEnv)
+		if err := os.Setenv("no_proxy", noProxyEnv); err != nil {
+			fmt.Printf("Warning: failed to set no_proxy: %v\n", err)
+		}
 	}
 	noProxyEnv = os.Getenv("NO_PROXY")
 	if noProxyEnv != "" {
 		noProxyEnv = filterNoProxy(noProxyEnv, []string{"intel.com", ".intel.com"})
-		os.Setenv("NO_PROXY", noProxyEnv)
+		if err := os.Setenv("NO_PROXY", noProxyEnv); err != nil {
+			fmt.Printf("Warning: failed to set NO_PROXY: %v\n", err)
+		}
 	}
 }
 
@@ -704,7 +726,11 @@ func getImageManifest() ([]string, []string, error) {
 		return nil, nil, fmt.Errorf("error creating temp folder: %w", err)
 	}
 	fmt.Println("Extracting helmfiles to: ", tempDir)
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			fmt.Printf("Warning: failed to remove temp directory %s: %v\n", tempDir, err)
+		}
+	}()
 
 	clusterValues, err := loadClusterConfig("bkc")
 	if err != nil {
@@ -798,7 +824,11 @@ func getLocalImageManifest() ([]string, []string, error) {
 		return nil, nil, fmt.Errorf("error creating temp folder: %w", err)
 	}
 	fmt.Println("Extracting helmfiles to: ", tempDir)
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			fmt.Printf("Warning: failed to remove temp directory %s: %v\n", tempDir, err)
+		}
+	}()
 
 	clusterValues, err := loadClusterConfig("bkc")
 	if err != nil {
@@ -1023,7 +1053,11 @@ func (Gen) releaseImageManifest(manifestFilename string) error {
 	if err != nil {
 		return fmt.Errorf("unable to create manifest file: %w", err)
 	}
-	defer manifestFile.Close()
+	defer func() {
+		if err := manifestFile.Close(); err != nil {
+			fmt.Printf("Warning: failed to close manifest file: %v\n", err)
+		}
+	}()
 
 	_, err = manifestFile.WriteString("\n")
 	if err != nil {
@@ -1142,7 +1176,11 @@ func (Gen) localReleaseImageManifest(manifestFilename string) error {
 	if err != nil {
 		return fmt.Errorf("unable to create manifest file: %w", err)
 	}
-	defer manifestFile.Close()
+	defer func() {
+		if err := manifestFile.Close(); err != nil {
+			fmt.Printf("Warning: failed to close manifest file: %v\n", err)
+		}
+	}()
 
 	_, err = manifestFile.WriteString("\n")
 	if err != nil {
@@ -1610,7 +1648,11 @@ func (Gen) orchCABundle(filePath string) error {
 	if err != nil {
 		panic(err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			fmt.Printf("Warning: failed to close file: %v\n", err)
+		}
+	}()
 	// Write the string to the file
 	_, err = file.WriteString(stagingRootCert)
 	if err != nil {

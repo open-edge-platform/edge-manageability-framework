@@ -67,6 +67,7 @@ runs:
       DOCKERHUB_TOKEN: ${{ inputs.docker_password }}
       DOCKERHUB_USERNAME: ${{ inputs.docker_username }}
       DEPLOYMENT_TYPE: ${{ inputs.deployment_type }}
+      DEPLOY_REPO_BRANCH: ${{ github.sha }}
     shell: bash
     run: |
       set +x

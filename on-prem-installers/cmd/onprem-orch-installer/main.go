@@ -27,6 +27,8 @@ const gitReposEnv = "GIT_REPOS"
 
 const orchInstallerProfileEnv = "ORCH_INSTALLER_PROFILE"
 
+var giteaInstalled = os.Getenv("INSTALL_GITEA")
+
 func main() {
 	tarFilesLocation := os.Getenv(gitReposEnv)
 	if tarFilesLocation == "" {
@@ -49,22 +51,50 @@ func main() {
 	if err != nil {
 		log.Panicf("failed to create temp directory - %v", err)
 	}
-	defer os.RemoveAll(edgeManageabilityFrameworkFolder)
+	defer func() {
+		if err := os.RemoveAll(edgeManageabilityFrameworkFolder); err != nil {
+			log.Printf("Warning: failed to remove temp directory %s: %v\n", edgeManageabilityFrameworkFolder, err)
+		}
+	}()
 
 	giteaServiceURL, err := getGiteaServiceURL()
 	if err != nil {
 		log.Fatalf("failed to get Gitea service URL - %v", err)
 	}
-
-	err = pushArtifactRepoToGitea(edgeManageabilityFrameworkFolder, getArtifactPath(tarFilesLocation, edgeManageabilityFrameworkRepo),
-		edgeManageabilityFrameworkRepo, giteaServiceURL)
-	if err != nil {
-		log.Panicf("%v", err)
+	if strings.EqualFold(giteaInstalled, "true") {
+		err = pushArtifactRepoToGitea(edgeManageabilityFrameworkFolder, getArtifactPath(tarFilesLocation, edgeManageabilityFrameworkRepo),
+			edgeManageabilityFrameworkRepo, giteaServiceURL)
+		if err != nil {
+			log.Panicf("%v", err)
+		}
+	} else {
+		_, err := sh.Output("tar", "-xf", getArtifactPath(tarFilesLocation, edgeManageabilityFrameworkRepo), "-C", edgeManageabilityFrameworkFolder)
+		if err != nil {
+			log.Fatalf("failed to untar artifact - %v", err)
+		}
 	}
 
 	err = installRootApp(edgeManageabilityFrameworkFolder, orchInstallerProfile, giteaServiceURL)
 	if err != nil {
 		log.Panicf("failed to install root-app - %v", err)
+	}
+	configFiles, err := filepath.Glob(filepath.Join(edgeManageabilityFrameworkFolder, edgeManageabilityFrameworkRepo, "orch-configs/clusters/onprem*.yaml"))
+	if err != nil {
+		log.Printf("failed to find onprem config files - %v", err)
+	} else {
+		for _, configFile := range configFiles {
+			fmt.Printf("Found config file: %s\n", configFile)
+			fileName := filepath.Base(configFile)
+			if fileName != "onprem.yaml" && fileName != "onprem-oxm.yaml" {
+				continue
+			}
+			content, err := os.ReadFile(configFile)
+			if err != nil {
+				log.Printf("failed to read config file %s - %v", configFile, err)
+				continue
+			}
+			fmt.Printf("Contents of %s:\n%s\n\n", configFile, string(content))
+		}
 	}
 
 	fmt.Printf("Installation of orch-installer is completed.")
@@ -270,12 +300,16 @@ EOF
 }
 
 func getGiteaServiceURL() (string, error) {
-	port, err := sh.Output("kubectl", "get", "svc", "gitea-http", "-n", "gitea", "-o", "jsonpath={.spec.ports[0].port}")
-	if err != nil {
-		return "", fmt.Errorf("failed to get Gitea service port - %w", err)
+	if strings.EqualFold(giteaInstalled, "true") {
+		port, err := sh.Output("kubectl", "get", "svc", "gitea-http", "-n", "gitea", "-o", "jsonpath={.spec.ports[0].port}")
+		if err != nil {
+			return "", fmt.Errorf("failed to get Gitea service port - %w", err)
+		}
+		if port == "443" {
+			return giteaSvcDomain, nil
+		}
+		return fmt.Sprintf("%s:%s", giteaSvcDomain, port), nil
 	}
-	if port == "443" {
-		return giteaSvcDomain, nil
-	}
-	return fmt.Sprintf("%s:%s", giteaSvcDomain, port), nil
+	fmt.Printf("gitea is not installed or service not found - creating secret with port 443")
+	return fmt.Sprintf("%s:%s", giteaSvcDomain, "443"), nil
 }

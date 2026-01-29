@@ -77,7 +77,11 @@ func configModules() error {
 	if err != nil {
 		return err
 	}
-	defer mods.Close()
+	defer func() {
+		if err := mods.Close(); err != nil {
+			fmt.Printf("Warning: failed to close mods file: %v\n", err)
+		}
+	}()
 
 	if _, err = mods.WriteString("dm-snapshot\ndm-mirror\n"); err != nil {
 		return err
@@ -222,7 +226,11 @@ func updateFanotifyFD(path string) error {
 	if err != nil {
 		return fmt.Errorf("opening file: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			fmt.Printf("Warning: failed to close file: %v\n", err)
+		}
+	}()
 
 	scanner := bufio.NewScanner(file)
 	found1 := false
