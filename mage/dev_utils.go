@@ -18,7 +18,6 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -33,7 +32,7 @@ import (
 
 // Deploys the ENiC (indicates the number of instances, optionally set env variables: ORCH_FQDN, ORCH_IP, ORCH_USER, ORCH_PASS, ORCH_ORG, ORCH_PROJECT).
 func (DevUtils) DeployEnic(replicas int, targetEnv string) error {
-	deployRevision := giteaDeployRevisionParam()
+	deployRevision := "--set-string argo.deployRepoRevision=HEAD"
 	namespace := "utils"
 	orchestratorIp, err := getPrimaryIP()
 	if err != nil {
@@ -92,7 +91,7 @@ func (DevUtils) DeployEnic(replicas int, targetEnv string) error {
 	if err != nil {
 		return fmt.Errorf("failed to get current working directory: %w", err)
 	}
-	deploymentDir := filepath.Join(deployGiteaRepoDir, deployRepoName)
+	deploymentDir := "."
 	if err := os.Chdir(deploymentDir); err != nil {
 		return fmt.Errorf("failed to change directory to %s: %w", deploymentDir, err)
 	}

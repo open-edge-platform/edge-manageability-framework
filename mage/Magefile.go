@@ -55,9 +55,8 @@ var argoNamespaces = []string{
 	"orch-infra",    // used when creating a secret for mailpit
 }
 
-// FIXME: Ideally this could be extracted from the cluster configuration and aligned with auth secrets - out of scope for now
-var giteaRepos = []string{
-	"https://gitea-http.gitea.svc.cluster.local/argocd/edge-manageability-framework",
+var EMFRepos = []string{
+	"https://github.com/open-edge-platform/edge-manageability-framework",
 }
 
 // Public GitHub repositories can be useful for specific development workflows.
@@ -493,7 +492,10 @@ func (d Deploy) KindPreset(clusterPreset string) error {
 
 // Deploy kind cluster and Argo CD.
 func (d Deploy) Kind(targetEnv string) error {
-	return d.kind(targetEnv)
+	if err := d.kind(targetEnv); err != nil {
+		return err
+	}
+	return d.preOrchDeploy(targetEnv)
 }
 
 func (d Deploy) Gitea(targetEnv string) error {
