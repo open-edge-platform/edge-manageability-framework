@@ -40,6 +40,14 @@ api:
   rps: "https://api.{{ .Values.argo.clusterDomain }}"
   mps: "https://api.{{ .Values.argo.clusterDomain }}"
 
+# MFE Configuration - Controls which UI components are loaded
+# Based on whether parent features (AO, CO, EIM) are enabled
+mfe:
+  enableAppOrch: {{ and (index .Values.argo.enabled "web-ui-app-orch" | default false) (index .Values.argo.enabled "app-orch-catalog" | default false) }}
+  enableClusterOrch: {{ and (index .Values.argo.enabled "web-ui-cluster-orch" | default false) (or (index .Values.argo.enabled "cluster-manager") (index .Values.argo.enabled "capi-operator") (index .Values.argo.enabled "intel-infra-provider") | default false) }}
+  enableInfra: {{ and (index .Values.argo.enabled "web-ui-infra" | default false) (or (index .Values.argo.enabled "infra-manager") (index .Values.argo.enabled "infra-operator") (index .Values.argo.enabled "tinkerbell") (index .Values.argo.enabled "infra-onboarding") (index .Values.argo.enabled "maintenance-manager") | default false) }}
+  enableAdmin: {{ index .Values.argo.enabled "web-ui-admin" | default false }}
+
 {{- with .Values.argo.resources.webUiRoot }}
 resources:
   {{- toYaml . | nindent 2 }}
