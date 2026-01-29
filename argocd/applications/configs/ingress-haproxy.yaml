@@ -21,7 +21,6 @@ config: |
     ssl-default-bind-ciphers DHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:TLS_AES_256_GCM_SHA384
     ssl-default-bind-options ssl-min-ver TLSv1.2 no-tls-tickets
     tune.ssl.default-dh-param 2048
-    tune.ssl.dh-param-file /usr/local/etc/haproxy/includes/dhparam.pem
 
   defaults
     log global
@@ -38,6 +37,7 @@ config: |
     errorfile 429 /usr/local/etc/haproxy/includes/429.http
 
   frontend fe_main
+    bind :80
     bind :443 ssl crt /usr/local/etc/ssl/certs/tls.pem
     mode http
     option httpclose
@@ -47,9 +47,9 @@ config: |
     stick-table type ip size 100k expire 10s store conn_cur,conn_rate(10s),http_req_rate(10s)
     http-request track-sc0 src
     # Reject if connection rate exceeds 100 connections per 10 seconds
-    http-request reject status 429 if { sc_conn_cur(0) gt 100 }
+    http-request deny status 429 if { sc_conn_cur(0) gt 100 }
     # Reject if request rate exceeds 1000 requests per 10 seconds
-    http-request reject status 429 if { sc_http_req_rate(0) gt 1000 }
+    http-request deny status 429 if { sc_http_req_rate(0) gt 1000 }
     default_backend be_main
 
   backend be_main
@@ -84,9 +84,9 @@ includes:
     Cache-Control: no-cache
     Connection: close
     Content-Type: text/plain
-    Content-Length: 28
+    Content-Length: 24
 
-    Too Many Requests (429)
+    Too Many Requests
 
 # Service configuration
 # ref: https://kubernetes.io/docs/concepts/services-networking/service/
@@ -99,7 +99,17 @@ service:
 
 resources: null
 
-livenessProbe:
+securityContext:
+  runAsNonRoot: false
+  runAsUser: 0
+  allowPrivilegeEscalation: true
+  capabilities:
+    drop:
+      - ALL
+    add:
+      - NET_BIND_SERVICE
+  seccompProfile:
+    type: RuntimeDefault
   failureThreshold: 3
   initialDelaySeconds: 10
   periodSeconds: 10
