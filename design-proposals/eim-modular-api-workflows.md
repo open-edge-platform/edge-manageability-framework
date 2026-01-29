@@ -70,38 +70,13 @@ _NOTE:_ Not all relationships between CLI/API/Inventory are shown in diagram abo
 
 The EIM APIv2 modularity will be achieved by breaking up the current monolithic service.proto file into multiple services grouped thematically based on functionality. Once the modular services are in place the can be used together in combination to make up API sets tailored for a given workflow.
 
-The services/APIs will be split into the following buckets:
+The services/APIs will be categorized into the following buckets:
 
 ![APIv2 modular buckets](./images/eim-api-decomp-buckets.png)
 
 The APIv2 will then be built based on a manifest files calling out the required services. Once built it will be composed into a docker image that can be used to deploy the APIv2 for a given workflow.
 
-```yaml
-   # scenarios/full-eim.yaml
-   name: full-eim
-   description: Full EIM stack used for both full EMF and standalone EIM
-   services:
-   - onboarding
-   - provisioning
-   - workload
-   - maintenance
-   - observability
-
-   # scenarios/eim-only
-   name: eim-only
-   description: EIM stack without the observability
-   services:
-   - onboarding
-   - provisioning
-   - workload
-   - maintenance
-
-   # scenarios/eim-vpro-only.yaml
-   name: eim-vpro
-   description: EIM vPRO Only
-   services:
-   - onboarding
-```
+![APIv2 modular manifests](./images/eim-api-decomp-manifests.png)
 
 ## Opens
 
