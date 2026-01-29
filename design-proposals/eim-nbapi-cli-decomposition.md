@@ -258,7 +258,7 @@ only the commands supported by the currently deployed scenario.
 ### 1. Traefik Gateway Compatibility
 
 - Traefik gateway will be removed for all workflows. NB API calls will access EIM enpoints directly.
-- CLI client will be bult based on the full REST API spec provided by apiv2 (previously provided by orch-utils).
+- Investigate the impact.
 
 ### 2. Scenario Definition and API Mapping
 
