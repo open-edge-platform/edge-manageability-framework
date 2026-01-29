@@ -68,9 +68,9 @@ Currently planned decomposition tasks is focused on the EIM layer. The following
 In Edge Infratructure Manager (EIM) the apiv2 service represents the North Bound API service that exposes
 the EIM operations to the end user, who uses Web UI, Orch-CLI or direct API calls. Currently,
 the end user is not allowed to call the EIM APIs directly. The API calls reach first the API gateway, external
-to EIM (Traefik gateway), thay are mapped to EIM internal API endpoints and passed to EIM.
+to EIM (Traefik gateway), they are mapped to EIM internal API endpoints and passed to EIM.
 
-**Note**: The current mapping of external APIs to internal APIs is 1:1, with no direct mapping to SB APIs.
+**Note**: The current mapping of external APIs to internal APIs is 1:1, with no direct mapping to SB APIs. The mapping is going to be removed so user can call internal APIs directly.
 The API service communicates with Inventory via gRPC, which then manages the SB API interactions.
 
 **Apiv2** is just one of EIM Resource Managers that talk to one EIM internal component - the Inventory - over gRPC.
@@ -148,141 +148,91 @@ that only a subset of available APIs may need to be released and/or exposed at t
 
 The following are the investigated options to decomposing or exposing subsets of APIs.
 
-- ~~API Gateway that would only expose certain endpoints to user~~ - this is a no go for us as we plan.
-to remove the existing API Gateway and it does not actually solve the problem of releasing only specific flavours of EMF.
-- Maintain multiple OpenAPI specification - while possible to create multiple OpenAPI specs,
-the maintenance of same APIs across specs will be a large burden - still let's keep this option in consideration in
-terms of auto generating multiple specs from top spec.
-- ~~Authentication & Authorization Based Filtering~~ - this is a no go for us as we do not control the
+- ~~API Gateway that would only expose certain endpoints to user~~ -
+it does not actually solve the problem of releasing only specific flavours of EMF.
+- ~~Maintain multiple OpenAPI specification~~ - while possible to create multiple OpenAPI specs,
+the maintenance of same APIs across specs will be a large burden.
+- ~~Authentication & Authorization Based Filtering~~ - we do not control the
 end users of the EMF, and we want to provide tailored modular product for each workflow.
-- ~~API Versioning strategy~~ - Creating different API versions for each use-case - too much overhead
-without benefits similar to maintaining multiple OpenAPI specs.
-- ~~Proxy/Middleware Layer~~ - Similar to API Gateway - does not fit our use cases.
-- OpenAPI Spec Manipulation - This approach uses OpenAPI's extension mechanism (properties starting with x-)
+- ~~API Versioning strategy~~ - creating different API versions for each use-case means too much overhead,
+ similar to maintaining multiple OpenAPI specs.
+- ~~Proxy/Middleware Layer~~ - similar to API Gateway, does not fit our use cases.
+- ~~OpenAPI Spec Manipulation~~ - This approach uses OpenAPI's extension mechanism (properties starting with x-)
 to add metadata that describes which audiences, use cases, or clients should have access to specific endpoints,
 operations, or schemas. This approach is worth investigating to see if it can give us the automated approach for
-creating individual OpenAPI specs for workflows based on labels.
-- Other approach to manipulate how a flavour of OpenAPIs spec can be generated from main spec, or how
-the API service can be build conditionally using same spec.
+creating individual OpenAPI specs for workflows based on labels. - not valid as it was decided that the openapi
+spec will be always generated for the full EI API set only.
+- ~~Break the protobu definition file `service.proto` into mupliple files~~ - one per service,
+and use buf to select services based on scenario manifest. It would generare scenario specific apispec - not valid as it was decided that the openapi
+spec will be always generated for the full EI API set only.
+- Keep the openapi as it is - supporting all the full EIM APIs. Enable only the gRPC API services expected to be supported per scenario. - selected approach.
 
-### Proposal: Decomposing the release of API service as a module
+### Proposal 
 
-This section describes how the apiv2 (NB API) service will be built, packaged, and released,
-enabling scenario-specific variants:
+#### Build and release of the decomposed API service a module
 
-- The build of the API service itself will depend on the results of "top-to-bottom"
-and "bottom-to-top" decomposition investigations.
-- API subsets supported per scenario will be stored in the respective scenario manifest.
-- `buf generate` will use only the proto files per services related to the scenario.
-- Separate container images will be built per scenario, each supporting only
-the required API subset and versioned accordingly:
-  - `apiv2:x.x.x` (full EMF)
-  - `apiv2:eim-x.x.x` (full EIM only)
-  - `apiv2:eim-vpro-x.x.x` (EIM only for vPRO)
-- Single Helm chart for all scenarios will use a specific value to use scenario specific image
-- Argo profiles can specify different scenarios (e.g., `orch-configs/profiles/eim-only-vpro.yaml`
-sets `eimScenario: eim-only-vpro` set in deployment configuration)
+Build the EIM API Service per Scenario
 
-**Recommended Release Approach:** Build and release multiple apiv2 container images - one per scenario.
-Single Helm chart for all scenarios will use a specific value to use scenario specific image.
+- There is no change to the protobuf definitions in `apiv2/proto`
+- There is no change to the code generated for the probuf definitions:
+  - openapi spec -`openapi.yaml` will still contain all the EIM API services.
+  - the generated go code will support all the EIM API services.
+- Scenario manifests will define the API service subsets supported per the scenario.
+- as part of make `generate` target, the manifests will be parsed to generate go code mappings between the scenarios names and required API services.
+- the apiv2 application will receive an argument `scenario` holding the name of the chosen EIM scenario. The argument will be provided by the Helm chart value `scenario`.
 
-**Justification:**
+Recommended Release Approach:
 
-`buf generate` doesn't just create OpenAPI specs — it generates the entire
-Go codebase (related to the APIs defined in the spec) including:
+- Build and release a single apiv2 container image that will support all scenarios.
+- Single Helm chart for all scenarios will use a specific value to set additional apiv2 flag to choose scenario.
+- Argo profiles can specify different scenarios - depending on the profiles enabled (e.g., `orch-configs/profiles/eim-only-vpro.yaml`
+it sets `eimScenario: vpro`)
 
-- Go structs based on proto definitions
-- gRPC client and server code
-- HTTP gateway handlers (REST to gRPC)
-- Type conversions and validators
-
-**Pros:**
-
-- ✅ Only compiles and includes needed services per scenario (smaller images)
-- ✅ Explicit APIs subset per image
-- ✅ Clear separation between scenarios
-- ✅ Better security (unused code doesn't exist)
-- ✅ Single Helm chart to maintain
-- ✅ Image selection in Helm chart controlled by value that includes scenario name
-
-**Cons:**
-
-- Multiple images to build and maintain in CI/CD
-- Need to rebuild all images for common code changes
-
-### Proposal: How to Build the EIM API Service per Scenario
-
-The Apiv2 service built per scenario will expose only the required APIs,
-while preserving compatibility across scenarios.
-
-#### Restructure Proto Definitions
-
-Split the monolithic `services.proto` file into multiple folders/files per service:
-
-```bash
-   infra-core/apiv2/api/proto/services/
-   ├── onboarding/
-   │   └── v1/
-   │       └── service1.proto
-   ├── provisioning/
-   │   └── v1/
-   │       └── service2.proto
-   ├── maintenance/
-   │   └── v1/
-   │       └── service3.proto
-   └── telemetry/
-      └── v1/
-         └── service4.proto
-```
 
 #### Define Scenario Manifests
 
-Maintain scenario manifests that list the REST API services supported by each scenario.
+Maintain scenario manifests that list the API services supported by each scenario.
 Scenario manifest files will be kept in `infra-core/apiv2`. The following are the examples of the manifests:
 
 ```yaml
-   # scenarios/eim-only.yaml
-   name: eim-only
-   description: Only EIM
+   # manifests/fulleim.yaml
+   name: fulleim
+   description: All EIM services
    services:
-   - onboarding
-   - provisioning
-   - provisioning
-   - maintenance
-   - telemetry
+   - HostService
+   - InstanceService
+   - OSUpdateRunService
+   (..)
 
-   # scenarios/eim-vpro-only.yaml
-   name: eim-vpro
-   description: EIM vPRO Only
+   # manifests/vpro.yaml
+   name: vpro
+   description: EIM vPRO only
    services:
-   - onboarding
+   - host
 ```
 
 **Why manifest files:**
 
-- Makefile-driven builds read the manifest to determine which services to compile.
+- The manifest files act as a configuration to be used by the apiv2 application.
+- The manifests are used to determine which gRPC services to enable in apiv2.
+- The manifests can be easily located and updated by a person not familiar with the code.
+- The list of services can be validated against service handlers generated by buf based on the proto definitions.
 - Version controlled in git repository.
-- No database dependencies.
 
-#### Modify Build Process
+#### Modify REST-gRPC gateway Implementation
 
-Modify **buf-gen** make target to read the manifests and build the openapi spec as per scenario manifest.
-Example of **buf generate** command to generate code supporting onboarding and provisioning services:
+The apiv2 proxy server (`internal/proxy\server.go`) for translating the REST calls to gRPC requests will register only the handlers related to the API services to be supported by configured scenario.
 
-```bash
-   buf generate api/proto/services/onboarding/v1 api/proto/services/provisioning/v1
-```
+#### Modify gRPC Server implementation.
 
-The generated `openapi.yaml` file will contain only the services supported by the particular scenario.
-The output file can be named per scenario. The build will also generate the corresponding Go types,
-gRPC gateway code, and handlers for those APIs. An image will be built per scenario and pushed seperately.
+The apiv2 gRPC server for will register only the gRPC service handlers related to the API services to be supported by configured scenario.
 
 ## Consuming the Scenario Specific APIs from the CLI
 
 ### Proposal
 
-The best approach would be for the EMF to provide a service that communicates which endpoints/APIs are
-currently supported by the deployed API service.
+EMF will provide a service that communicates which endpoints/APIs are
+currently supported by the deployed API service - Component Status Service.
 Proposed in [Design Proposal: Orchestrator Component Status Service](https://github.com/open-edge-platform/edge-manageability-framework/blob/main/design-proposals/platform-component-status-service.md).
 Development of such service is outside of this ADR's scope.
 
@@ -296,7 +246,7 @@ to request API capability information.
 only the commands supported by the currently deployed scenario.
 5. **Error Handling**:
    - For CLI commands: Display user-friendly error message.
-   - For direct curl calls: API returns HTTP 404 (endpoint not found) or 501 (HTTP method not implemented).
+   - For direct curl calls: API returns HTTP 404 (endpoint not found).
 
 #### CLI Login Command Flow
 
@@ -334,15 +284,15 @@ only the commands supported by the currently deployed scenario.
 
 ### 1. Traefik Gateway Compatibility
 
-- Traefik gateway will be removed for all workflows. User API calls will access EIM internal enpoints directly.
-- Investigate the impact
+- Traefik gateway will be removed for all workflows. NB API calls will access EIM enpoints directly.
+- CLI client will be bult based on the full REST API spec provided by apiv2 (previously provided by orch-utils).
 
 ### 2. Scenario Definition and API Mapping
 
 - Define all supported scenarios:
-  - Full EMF
-  - EIM-only
-  - EIM-only vPRO
+  - Full EIM
+  - EIM vPRO
+  - Full EIM without observability
 - For each scenario, document:
   - Required services (which resource managers are needed)
   - Required API endpoints (which operations are exposed)
@@ -350,19 +300,19 @@ only the commands supported by the currently deployed scenario.
 
 ### 3. Data Model Changes
 
-- Collaborate with teams/ADR owners to establish (per scenario):
+- Collaborate with teams/ADR owners to establish:
   - Required changes at Inventory level  
-  - Impact on APIs from these changes (changes in data models)
+  - Impact on APIs from these changes
 
 ## Summary of Current Requirements
 
 - Provide scenario-based EIM API sets (full and subsets).
 - Preserve APIs compatibility with Inventory.
-- Deliver per-scenario OpenAPI specs and container images.
-- Maintain single source of truth for API definitions with automated generation of scenario specific API specs.
+- Maintain a single source of truth for API definitions.
+- Deliver apiv2 that supports a particular EIM scenario based on the configuration provided at initialization time.
 - Keep CLI operable against any scenario via discovery, caching, and command validation.
 - Provide error handling for missing APIs per scenario.
-- Support Helm-driven configuration (image/tag, scenario selection).
+- Support Helm-driven configuration (scenario selection).
 - Support API selection per scenario through Mage/ArgoCD.
 
 ## Rationale
@@ -376,7 +326,7 @@ progressively without breaking existing integrations or workflows.
 
 The following investigation tasks will drive validation of the decomposition approach:
 
-1. Validate feasibility of splitting services.proto and generating per-scenario specs via buf/protoc-gen-connect-openapi.
+1. Validate feasibility of splitting services.proto and generating per-scenario specs via buf/protoc-gen-connect-openapi. (dropped)
 2. Evaluate Inventory data model variations per scenario.
 3. Verify impact of **1** and **2** on gRPC gateway generation and handler registration per scenario (buf code generation).
 4. Validate Argo CD application configs or Mage targets for scenario-specific deployments.
@@ -392,49 +342,29 @@ The following investigation tasks will drive validation of the decomposition app
 
 ## Implementation Plan for EIM API
 
-1. Restructure Proto Files
-   - Split monolithic `services.proto` into service-scoped folders
-   (e.g.: onboarding, provisioning, maintenance, telemetry)
-   - Each service in its own directory: `api/proto/services/<service>/v1/<service>.proto`
-
+1. Restructure Proto Files. Split monolithic `services.proto` into service-scoped folders (dropped)
 2. Create Scenario Manifests
-   - Add `scenarios/` directory with YAML files for each scenario
-   - Define service lists per scenario
-
-3. Update Makefile Build Process
-   - Modify `buf-gen` target to read scenario manifest and generate only specified services.
-   - Modify Makefile to allow building per-scenario images
-   - Add `docker-build-all` target to build images for all scenarios.
-   - Modify image naming convention.
-
-4. Update Helm Chart
-   - Use single, common Helm chart for all scenarios
-   - Add  a new value to select which scenario image to deploy (e.g.: `image.tag`)
-
-5. ArgoCD Integration
-
-6. CI/CD Pipeline
-   - Build all scenario images in CI
-   - Tag with both scenario name and version
-   - Push all images to registry
+3. Implement Manifests Parsing
+4. Update Makefile  - target 'generate' to include manifest parsing into go mapping
+5. Modify apiv2 proxy and server implementation to registere API service handlers per chosen scenario.
+5. Update apiv2 Helm chart to take additional value to select the EIM scenario
+5. ArgoCD Integration - update/provide profiles for known scenarios.
 
 ## Test plan
 
 Tests will verify that minimal and full deployments work as expected, that clients can discover
 supported features, and that errors are clear.
 
-- CLI integration with new service: CLI can discover supported services; absence returns descriptive messages.
+- CLI integration with new service: CLI can discover supported services, absence returns descriptive messages.
 - CLI E2E: Login discovery, caching, command blocking, error messaging.
 - Deployment E2E: Deploy each scenario via mage and verify that expected endpoints exist and work.
 - Regression: Verify the full EMF scenario behaves identically to pre-decomposition.
 
 ## Open Issues
 
-- Traefik gateway removal and impacts.
-- What happens when the service does not exist and CLI expects it to exist?.
-- Detailed scenario definitions on the Inventory level - NB APIs should be alligned
-with the Inventory resource availability in each scenario.
-- Managing apiv2 image version used by infra-core argo application - deployment level.
-- Scenario deployment through argocd/mage
-- What will be the Image naming convention (per scenario)?
-(example: `apiv2-<scenario>:<version>` or `apiv2:<scenario>-<version>`)
+- Q: Traefik gateway removal and impacts. A: No impact on the API decomposition tasks
+- Q: What happens when the service does not exist and CLI expects it to exist? A: CLI displays an error
+- Q: Are there any changes on the Inventory level in regards to scenario definitions? NB APIs should be aligned. A: No
+- Q: How will managing apiv2 image version used by infra-core argo application look on the deployment level? A: One docker image covers all scenarios
+- Q: Scenario deployment through ArgoCD
+- Q: What will be the image naming convention (per scenario)? A: No change - one docker image covers all scenarios
