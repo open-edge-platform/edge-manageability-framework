@@ -49,9 +49,9 @@ The following questions must be answered and investigated:
 - **Q**: How to decompose APIs at the domain level?
   - **Ans**: Domain-level decomposition is achieved through independent service deployment. Each domain (EIM, Cluster Orchestrator, App Orchestrator, etc.) exposes its own API service deployed as a separate microservice with its own Helm chart and ArgoCD application.
 - **Q**: How to decompose APIs within the domain level?
-  - **Ans**: Only selected API services will get their hendlers registered.
+  - **Ans**: Only selected API services will get their handlers registered.
 - **Q**: How to build various API service versions as per desired workflows using the modular APIs?
-  - **Ans**: apiv2 will be always built to support thev full set of EIM NB APIs.
+  - **Ans**: apiv2 will be always built to support the full set of EIM NB APIs.
 - **Q**: How to deliver the various API service versions as per desired workflows?
   - **Ans**: the workflow will be set through the config file at apiv2 initialization.
 - **Q**: How to expose the list of available APIs for client consumption (orch-cli)?
@@ -68,7 +68,7 @@ Currently planned decomposition tasks is focused on the EIM layer. The following
 
 ### About EIM API (apiv2)
 
-In Edge Infratructure Manager (EIM) the apiv2 service represents the North Bound API service that exposes
+In Edge Infrastructure Manager (EIM) the apiv2 service represents the North Bound API service that exposes
 the EIM operations to the end user, who uses Web UI, Orch-CLI or direct API calls. Currently,
 the end user is not allowed to call the EIM APIs directly. The API calls reach first the API gateway, external
 to EIM (Traefik gateway), they are mapped to EIM internal API endpoints and passed to EIM.
@@ -162,11 +162,11 @@ to add metadata that describes which audiences, use cases, or clients should hav
 operations, or schemas. This approach is worth investigating to see if it can give us the automated approach for
 creating individual OpenAPI specs for workflows based on labels. - not valid as it was decided that the openapi
 spec will be always generated for the full EI API set only.
-- ~~Break the protobuf definition file `service.proto` into mupliple files - one per service,~~
-~~and use buf to select services based on scenario manifest. It would generare scenario specific API spec.~~
+- ~~Break the protobuf definition file `service.proto` into multiple files - one per service,~~
+~~and use buf to select services based on scenario manifest. It would generate scenario specific API spec.~~
 - not valid as it was decided that the openapi spec will be always generated for the full EIM.
-- No change to how the REST spec as generated - it continues to support all the NB EIM APIs.
-However, withing apiv2 gRPC server, enable only the gRPC services expected
+- No change to how the REST spec is generated - it continues to support all the NB EIM APIs.
+However, within apiv2 gRPC server, enable only the gRPC services expected.
 to be supported per scenario. (**selected approach**)
 
 ### Proposal
@@ -176,7 +176,7 @@ to be supported per scenario. (**selected approach**)
 Build the EIM API Service per Scenario
 
 - There is no change to the protobuf definitions in `apiv2/proto`
-- There is no change to the code generated for the probuf definitions:
+- There is no change to the code generated for the protobuf definitions:
   - openapi spec -`openapi.yaml` will still contain all the EIM API services.
   - the generated go code will support all the EIM API services.
 - Scenario manifests will define the API service subsets supported per the scenario.
@@ -257,7 +257,7 @@ only the commands supported by the currently deployed scenario.
 
 ### 1. Traefik Gateway Compatibility
 
-- Traefik gateway will be removed for all workflows. NB API calls will access EIM enpoints directly.
+- Traefik gateway will be removed for all workflows. NB API calls will access EIM endpoints directly.
 - Investigate the impact.
 
 ### 2. Scenario Definition and API Mapping
@@ -307,7 +307,7 @@ via buf/protoc-gen-connect-openapi. (dropped)
 
 ## Implementation Plan for Orch CLI
 
-1. Add login-time scenario discovery: retrieve scenario supporetd APIs from the new service.
+1. Add login-time scenario discovery: retrieve scenario supported APIs from the new service.
 2. Cache discovered capabilities in orch-cli config.
 3. Validate user commands against supported APIs.
 4. Implement error handling for unsupported APIs.
@@ -343,9 +343,9 @@ supported features, and that errors are clear.
 - **Q**: Are there any changes on the Inventory level in regards to scenario definitions?
 NB APIs should be aligned.
   - **Ans**: No
-- **Q:**: How will managing apiv2 image version used by infra-core argo application look on
+- **Q**: How will managing apiv2 image version used by infra-core argo application look on
 the deployment level?
   - **Ans**: One docker image covers all scenarios.
 - **Q**: Scenario deployment through ArgoCD.
-- **Q** What will be the image naming convention (per scenario)?
+- **Q**: What will be the image naming convention (per scenario)?
   - **Ans**: No change - one docker image covers all scenarios.
