@@ -102,7 +102,7 @@ path/APIs/fields in inventory are used.
 The EIM APIv2 modularity will be achieved by enabling only necessary
 services based on required functionality by registering only necessary service handlers.
 Services are grouped
-together in combination to make up API sets tailored for a given workflow.
+together in manifests, forming API sets tailored for a given workflow.
 
 The services/APIs will be categorized into the following buckets:
 
