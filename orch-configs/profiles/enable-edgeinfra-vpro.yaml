@@ -118,4 +118,3 @@ argo:
         limits:
           memory: "64Gi"
           cpu: "64"
-  infra-external: {}
