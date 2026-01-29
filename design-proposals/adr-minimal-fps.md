@@ -6,13 +6,19 @@
 
 ## Context
 
-The `eim-modular-decomposition.md` design proposal outlines a strategy to decompose the Edge Infrastructure Manager (EIM) into modular, independently consumable components. Currently, EIM services are tightly coupled to a monolithic deployment of shared infrastructure, including PostgreSQL, Keycloak, and other Foundation Platform Services (FPS). This makes it difficult for users to deploy subsets of EIM functionality without inheriting the entire infrastructure footprint.
+The `eim-modular-decomposition.md` design proposal outlines a strategy to decompose the Edge Infrastructure Manager (EIM)
+into modular, independently consumable components. Currently, EIM services are tightly coupled to a monolithic deployment
+of shared infrastructure, including PostgreSQL, Keycloak, and other Foundation Platform Services (FPS). This makes it
+difficult for users to deploy subsets of EIM functionality without inheriting the entire infrastructure footprint.
 
-To enable the modular evolution tracks, particularly "Track #1 (Status Quo + Use Case Enablement)" and "Track #2 (Bring-Your-Own Infrastructure)", we must first define a clear, minimal set of foundational services required for any functional EIM deployment. This ADR specifies that minimal core.
+To enable the modular evolution tracks, particularly "Track #1 (Status Quo + Use Case Enablement)" and "Track #2
+(Bring-Your-Own Infrastructure)", we must first define a clear, minimal set of foundational services required for any
+functional EIM deployment. This ADR specifies that minimal core.
 
 ### Platform components used by EIM
 
 #### Summary Table
+
 | Pod in orch-infra       | Connects to External Service | Target Namespace | Service/Purpose            |
 |--------------------------|-----------------------------|------------------|----------------------------|
 | attestationstatusmgr     | platform-keycloak          | orch-platform    | OIDC Authentication        |
@@ -37,35 +43,50 @@ To enable the modular evolution tracks, particularly "Track #1 (Status Quo + Use
 #### Key External Services in orch-platform Namespace
 
 ##### platform-keycloak
-- **Used by:** attestationstatusmgr, dkam, dm-manager, host-manager, maintenance-manager, onboarding-manager, os-resource-manager, telemetry-manager  
-- **Purpose:** OIDC/OAuth2 authentication and authorization  
+
+- **Used by:** attestationstatusmgr, dkam, dm-manager, host-manager, maintenance-manager, onboarding-manager,
+  os-resource-manager, telemetry-manager
+- **Purpose:** OIDC/OAuth2 authentication and authorization
 
 ##### vault
-- **Used by:** mps, rps, onboarding-manager, tenant-controller  
-- **Purpose:** Secrets management and secure credential storage  
+
+- **Used by:** mps, rps, onboarding-manager, tenant-controller
+- **Purpose:** Secrets management and secure credential storage
 
 ##### rs-proxy
-- **Used by:** dkam, onboarding-manager, os-resource-manager  
-- **Purpose:** Resource proxy service  
 
-##### rs-proxy-files 
-- **Used by:** os-resource-manager  
-- **Purpose:** File resource proxy service  
+- **Used by:** dkam, onboarding-manager, os-resource-manager
+- **Purpose:** Resource proxy service
+
+##### rs-proxy-files
+
+- **Used by:** os-resource-manager
+- **Purpose:** File resource proxy service
 
 ## Decision
 
-We will define the minimal required Foundation Platform Services (FPS) stack for the Edge Management Framework (EMF) to consist of the following four components:
+We will define the minimal required Foundation Platform Services (FPS) stack for the Edge Management Framework (EMF) to
+consist of the following four components:
 
-1.  **Identity Service (Keycloak):** Provides centralized authentication and authorization (IAM) for all EIM services, APIs, and users. It is responsible for managing realms, clients, users, and issuing JWT tokens that are fundamental to securing inter-service communication and tenancy.
+1. **Identity Service (Keycloak):** Provides centralized authentication and authorization (IAM) for all EIM services,
+   APIs, and users. It is responsible for managing realms, clients, users, and issuing JWT tokens that are fundamental
+   to securing inter-service communication and tenancy.
 
-2.  **Secrets Management Service (Vault):** Provides secure storage, access, and lifecycle management for all secrets, including database credentials, service tokens, TLS certificates, and private keys. This decouples secret management from application configuration and enhances security.
+2. **Secrets Management Service (Vault):** Provides secure storage, access, and lifecycle management for all secrets,
+   including database credentials, service tokens, TLS certificates, and private keys. This decouples secret management
+   from application configuration and enhances security.
 
-3.  **Ingress Gateway (Traefik):** Acts as the reverse proxy and API gateway for the platform. It manages all external network traffic, provides TLS termination, and routes requests to the appropriate EIM microservices.
+3. **Ingress Gateway (Traefik):** Acts as the reverse proxy and API gateway for the platform. It manages all external
+   network traffic, provides TLS termination, and routes requests to the appropriate EIM microservices.
 
-4. **Auth-service:** Acts as a service-to-service authentication and authorization gateway that integrates with Keycloak. It is an authentication middleware that validates JWT tokens issued by Keycloak for incoming API requests. It enforces authorization policies for EMF micro services and acts as centralized authentication layer betwee  traefik ingress gateway and back EMF services. Here is the source code for [auth service](https://github.com/open-edge-platform/orch-utils/tree/main/auth-service)
-
+4. **Auth-service:** Acts as a service-to-service authentication and authorization gateway that integrates with Keycloak.
+   It is an authentication middleware that validates JWT tokens issued by Keycloak for incoming API requests. It
+   enforces authorization policies for EMF micro services and acts as centralized authentication layer betwee  traefik
+   ingress gateway and back EMF services. Here is the source code for
+   [auth service](https://github.com/open-edge-platform/orch-utils/tree/main/auth-service)
 
 Here is the sqeuence of network traffic flow.
+
 ```mermaid
 sequenceDiagram
       participant BMA as External Request
@@ -97,12 +118,14 @@ c. Multi-tenancy Enforcement: Routes requests based on tenant claims in JWT toke
 
 d. Token Introspection: Validates token expiration, scopes, and permissions before forwarding requests
 
-These four services constitute the baseline infrastructure upon which all EIM modules, whether deployed individually or as a complete stack, will operate by default. The "Bring-Your-Own Infrastructure" track will focus on creating abstraction layers to make these specific components pluggable and replaceable with third-party equivalents.
-
+These four services constitute the baseline infrastructure upon which all EIM modules, whether deployed individually or
+as a complete stack, will operate by default. The "Bring-Your-Own Infrastructure" track will focus on creating
+abstraction layers to make these specific components pluggable and replaceable with third-party equivalents.
 
 ### EIM Components level analysis for #Track1
 
-This analysis identifies the minimum set of components required to run EIM (#Track1 only components) successfully. The current deployment has 100 pods (AO/CO/Observability disabled ) across 19 namespaces. 
+This analysis identifies the minimum set of components required to run EIM (#Track1 only components) successfully. The
+current deployment has 100 pods (AO/CO/Observability disabled) across 19 namespaces.
 
 #### Namespace Distribution
 
@@ -127,7 +150,6 @@ This analysis identifies the minimum set of components required to run EIM (#Tra
 | **mailpit-dev** | Email testing | Development |
 | **local-path-storage** | Storage provisioner | Infrastructure |
 | **ns-label** | Namespace labeling | Utility |
-
 
 #### Core Platform Components
 
@@ -160,6 +182,7 @@ This analysis identifies the minimum set of components required to run EIM (#Tra
 | **PostgreSQL Operator** | postgresql-operator | cnpg-webhook-service | 443 | PostgreSQL CRD resources | CloudNativePG operator for PostgreSQL lifecycle |
 
 **Databases:**
+
 - `orch-infra-inventory` - Device inventory
 - `mps` - Management Presence Server data
 - `rps` - Remote Provisioning Server data
@@ -220,7 +243,7 @@ This analysis identifies the minimum set of components required to run EIM (#Tra
 
 #### Dependency Graph of EIM
 
-```
+```text
 orch-infra (26 pods - EIM Core)
     ├── orch-platform
     │   ├── platform-keycloak (OIDC Authentication)
@@ -243,17 +266,20 @@ orch-infra (26 pods - EIM Core)
         ├── kube-proxy (Networking)
         └── Other K8s controllers
 ```
+
 #### Minimal Configuration Summary
 
-##### Key Findings:
+##### Key Findings
+
 - **orch-infra** requires 26 pods (all EIM components)
-- **Critical dependencies:** Keycloak (auth), Vault (secrets), PostgreSQL (database), Istio (service mesh), Tenancy Manager (multi-tenancy)
+- **Critical dependencies:** Keycloak (auth), Vault (secrets), PostgreSQL (database), Istio (service mesh), Tenancy Manager
+  (multi-tenancy)
 - **Can be disabled:** ArgoCD, Kyverno, Web UI, Gateway, Boots, Cert-manager, Gitea, MetalLB, and others
 - **Not needed:** Observability components (tracing disabled), external ingress, policy engines
 
 ---
 
-##### Required Pods 
+##### Required Pods
 
 | Category | Namespace | Pods | Purpose |
 |----------|-----------|------|---------|
@@ -284,13 +310,14 @@ orch-infra (26 pods - EIM Core)
 | **Trafik** | orch-platform |  | TBD: Shall be needed for 1st iteration (In case EIM handle the API this can be disabled) |
 
 ### Work items
+
 - POC enable only the components needed for EIM deployment.
-    - Identify the any dependency on any other components other than listed.
-    - List out the any changes required to be done EIM.
-    
+  - Identify the any dependency on any other components other than listed.
+  - List out the any changes required to be done EIM.
+
 - Split the deployment of Platform components and EIM components.
-    - Script/Installer of OnPrem to setup only Platform components. This will for internal testing and development.
-    - Script to deploy EIM and its dependent platform components. Assumes the Kubernetes cluster is provided by customer.
+  - Script/Installer of OnPrem to setup only Platform components. This will for internal testing and development.
+  - Script to deploy EIM and its dependent platform components. Assumes the Kubernetes cluster is provided by customer.
 
 - Coder setup update to support only EIM profile.
 
@@ -300,22 +327,31 @@ orch-infra (26 pods - EIM Core)
 
 ### Optional Observability Services
 
-While not strictly required for basic EIM functionality, the following services are strongly recommended for production deployments:
+While not strictly required for basic EIM functionality, the following services are strongly recommended for production
+deployments:
 
-1. **Log Aggregation Service (Grafana Loki):** Provides centralized log collection, log aggregation, storage, and querying service that collects from all EIM components. Loki enables operators to troubleshoot issues, monitor system behavior, and maintain audit trails and operational insights across the distributed edge infrastructure. It includes 3 
-
+1. **Log Aggregation Service (Grafana Loki):** Provides centralized log collection, log aggregation, storage, and
+   querying service that collects from all EIM components. Loki enables operators to troubleshoot issues, monitor
+   system behavior, and maintain audit trails and operational insights across the distributed edge infrastructure. It
+   includes 3.
 
 ## Consequences
 
 ### Positive
 
--   **Clear Dependency Contract:** Establishes a well-defined, minimal infrastructure baseline for developers and operators, simplifying the development of new modules.
--   **Enables Modularity:** Provides a stable foundation required to proceed with Track #1 and Track #2 of the modular decomposition. Use-case-specific deployments can rely on this core being present.
--   **Consistent Security Model:** Centralizes identity, secrets, and access control, ensuring a consistent security posture across all EIM components, regardless of the deployment profile.
--   **Simplified Onboarding:** New deployments have a clear, documented list of prerequisite infrastructure services.
+- **Clear Dependency Contract:** Establishes a well-defined, minimal infrastructure baseline for developers and
+  operators, simplifying the development of new modules.
+- **Enables Modularity:** Provides a stable foundation required to proceed with Track #1 and Track #2 of the modular
+  decomposition. Use-case-specific deployments can rely on this core being present.
+- **Consistent Security Model:** Centralizes identity, secrets, and access control, ensuring a consistent security
+  posture across all EIM components, regardless of the deployment profile.
+- **Simplified Onboarding:** New deployments have a clear, documented list of prerequisite infrastructure services.
 
 ### Negative
 
--   **Initial Overhead:** Even the most minimal EIM module deployment will require this foundational stack, which carries a non-trivial resource footprint.
--   **Technology Lock-in (Default):** While Track #2 aims to make these services pluggable, the default implementation creates a dependency on Keycloak, Vault, PostgreSQL, and Traefik.
--   **Configuration Complexity:** Operators must correctly configure the integration between EIM modules and these four foundational services.
+- **Initial Overhead:** Even the most minimal EIM module deployment will require this foundational stack, which carries
+  a non-trivial resource footprint.
+- **Technology Lock-in (Default):** While Track #2 aims to make these services pluggable, the default implementation
+  creates a dependency on Keycloak, Vault, PostgreSQL, and Traefik.
+- **Configuration Complexity:** Operators must correctly configure the integration between EIM modules and these four
+  foundational services.
