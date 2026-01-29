@@ -129,7 +129,7 @@ var _ = Describe("Observability Test:", Ordered, Label(observability), func() {
 			It("northbound API with alerts should be accessible over HTTPS", func() {
 				resp, err := makeAuthorizedRequest(http.MethodGet, "https://api."+serviceDomainWithPort+"/v1/projects/"+projName+"/alerts", *token, nil, cli)
 				Expect(err).ToNot(HaveOccurred())
-				defer resp.Body.Close()
+				defer resp.Body.Close() //nolint:errcheck
 				Expect(resp.StatusCode).To(Equal(http.StatusOK))
 				content, err := io.ReadAll(resp.Body)
 				Expect(err).ToNot(HaveOccurred())
@@ -140,7 +140,7 @@ var _ = Describe("Observability Test:", Ordered, Label(observability), func() {
 				resp, err := makeAuthorizedRequest(http.MethodGet,
 					"https://api."+serviceDomainWithPort+"/v1/projects/"+projName+"/alerts/definitions", *token, nil, cli)
 				Expect(err).ToNot(HaveOccurred())
-				defer resp.Body.Close()
+				defer resp.Body.Close() //nolint:errcheck
 				Expect(resp.StatusCode).To(Equal(http.StatusOK))
 				content, err := io.ReadAll(resp.Body)
 				Expect(err).ToNot(HaveOccurred())
@@ -151,7 +151,7 @@ var _ = Describe("Observability Test:", Ordered, Label(observability), func() {
 				resp, err := makeAuthorizedRequest(http.MethodGet,
 					"https://api."+serviceDomainWithPort+"/v1/projects/"+projName+"/alerts/receivers", *token, nil, cli)
 				Expect(err).ToNot(HaveOccurred())
-				defer resp.Body.Close()
+				defer resp.Body.Close() //nolint:errcheck
 				Expect(resp.StatusCode).To(Equal(http.StatusUnauthorized))
 			})
 		})
@@ -165,7 +165,7 @@ var _ = Describe("Observability Test:", Ordered, Label(observability), func() {
 			It("northbound API with alerts should be accessible over HTTPS", func() {
 				resp, err := makeAuthorizedRequest(http.MethodGet, "https://api."+serviceDomainWithPort+"/v1/projects/"+projName+"/alerts", *token, nil, cli)
 				Expect(err).ToNot(HaveOccurred())
-				defer resp.Body.Close()
+				defer resp.Body.Close() //nolint:errcheck
 				Expect(resp.StatusCode).To(Equal(http.StatusOK))
 				content, err := io.ReadAll(resp.Body)
 				Expect(err).ToNot(HaveOccurred())
@@ -176,7 +176,7 @@ var _ = Describe("Observability Test:", Ordered, Label(observability), func() {
 				resp, err := makeAuthorizedRequest(http.MethodGet,
 					"https://api."+serviceDomainWithPort+"/v1/projects/"+projName+"/alerts/definitions", *token, nil, cli)
 				Expect(err).ToNot(HaveOccurred())
-				defer resp.Body.Close()
+				defer resp.Body.Close() //nolint:errcheck
 				Expect(resp.StatusCode).To(Equal(http.StatusOK))
 				content, err := io.ReadAll(resp.Body)
 				Expect(err).ToNot(HaveOccurred())
@@ -187,7 +187,7 @@ var _ = Describe("Observability Test:", Ordered, Label(observability), func() {
 				resp, err := makeAuthorizedRequest(http.MethodGet,
 					"https://api."+serviceDomainWithPort+"/v1/projects/"+projName+"/alerts/receivers", *token, nil, cli)
 				Expect(err).ToNot(HaveOccurred())
-				defer resp.Body.Close()
+				defer resp.Body.Close() //nolint:errcheck
 				Expect(resp.StatusCode).To(Equal(http.StatusUnauthorized))
 			})
 		})
@@ -201,7 +201,7 @@ var _ = Describe("Observability Test:", Ordered, Label(observability), func() {
 			It("northbound API with alerts should be accessible over HTTPS", func() {
 				resp, err := makeAuthorizedRequest(http.MethodGet, "https://api."+serviceDomainWithPort+"/v1/projects/"+projName+"/alerts", *token, nil, cli)
 				Expect(err).ToNot(HaveOccurred())
-				defer resp.Body.Close()
+				defer resp.Body.Close() //nolint:errcheck
 				Expect(resp.StatusCode).To(Equal(http.StatusOK))
 				content, err := io.ReadAll(resp.Body)
 				Expect(err).ToNot(HaveOccurred())
@@ -212,7 +212,7 @@ var _ = Describe("Observability Test:", Ordered, Label(observability), func() {
 				resp, err := makeAuthorizedRequest(http.MethodGet,
 					"https://api."+serviceDomainWithPort+"/v1/projects/"+projName+"/alerts/definitions", *token, nil, cli)
 				Expect(err).ToNot(HaveOccurred())
-				defer resp.Body.Close()
+				defer resp.Body.Close() //nolint:errcheck
 				Expect(resp.StatusCode).To(Equal(http.StatusOK))
 				content, err := io.ReadAll(resp.Body)
 				Expect(err).ToNot(HaveOccurred())
@@ -223,7 +223,7 @@ var _ = Describe("Observability Test:", Ordered, Label(observability), func() {
 				resp, err := makeAuthorizedRequest(http.MethodGet,
 					"https://api."+serviceDomainWithPort+"/v1/projects/"+projName+"/alerts/receivers", *token, nil, cli)
 				Expect(err).ToNot(HaveOccurred())
-				defer resp.Body.Close()
+				defer resp.Body.Close() //nolint:errcheck
 				Expect(resp.StatusCode).To(Equal(http.StatusOK))
 				content, err := io.ReadAll(resp.Body)
 				Expect(err).ToNot(HaveOccurred())
@@ -240,7 +240,7 @@ var _ = Describe("Observability Test:", Ordered, Label(observability), func() {
 			It("northbound API with alerts shouldn't be accessible over HTTPS without alrt-r role", func() {
 				resp, err := makeAuthorizedRequest(http.MethodGet, "https://api."+serviceDomainWithPort+"/v1/projects/"+projName+"/alerts", *token, nil, cli)
 				Expect(err).ToNot(HaveOccurred())
-				defer resp.Body.Close()
+				defer resp.Body.Close() //nolint:errcheck
 				Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
 			})
 
@@ -248,7 +248,7 @@ var _ = Describe("Observability Test:", Ordered, Label(observability), func() {
 				resp, err := makeAuthorizedRequest(http.MethodGet,
 					"https://api."+serviceDomainWithPort+"/v1/projects/"+projName+"/alerts/definitions", *token, nil, cli)
 				Expect(err).ToNot(HaveOccurred())
-				defer resp.Body.Close()
+				defer resp.Body.Close() //nolint:errcheck
 				Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
 			})
 
@@ -256,7 +256,7 @@ var _ = Describe("Observability Test:", Ordered, Label(observability), func() {
 				resp, err := makeAuthorizedRequest(http.MethodGet,
 					"https://api."+serviceDomainWithPort+"/v1/projects/"+projName+"/alerts/receivers", *token, nil, cli)
 				Expect(err).ToNot(HaveOccurred())
-				defer resp.Body.Close()
+				defer resp.Body.Close() //nolint:errcheck
 				Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
 			})
 		})
@@ -271,7 +271,7 @@ var _ = Describe("Observability Test:", Ordered, Label(observability), func() {
 		It("should be accessible over HTTPS", func() {
 			resp, err := makeAuthorizedRequest(http.MethodGet, "https://observability-ui."+serviceDomainWithPort, *token, nil, cli)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 			_, err = io.ReadAll(resp.Body)
@@ -290,7 +290,7 @@ var _ = Describe("Observability Test:", Ordered, Label(observability), func() {
 				resp, err := makeAuthorizedRequest(http.MethodGet,
 					"https://metrics-node."+serviceDomainWithPort+"/prometheus/api/v1/query?query=up", *token, nil, cli)
 				Expect(err).ToNot(HaveOccurred())
-				defer resp.Body.Close()
+				defer resp.Body.Close() //nolint:errcheck
 				Expect(resp.StatusCode).To(Equal(http.StatusOK))
 				content, err := io.ReadAll(resp.Body)
 				Expect(err).ToNot(HaveOccurred())
@@ -308,7 +308,7 @@ var _ = Describe("Observability Test:", Ordered, Label(observability), func() {
 				resp, err := makeAuthorizedRequest(http.MethodGet,
 					"https://metrics-node."+serviceDomainWithPort+"/prometheus/api/v1/query?query=up", *token, nil, cli)
 				Expect(err).ToNot(HaveOccurred())
-				defer resp.Body.Close()
+				defer resp.Body.Close() //nolint:errcheck
 				Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
 				content, err := io.ReadAll(resp.Body)
 				Expect(err).ToNot(HaveOccurred())
@@ -326,7 +326,7 @@ var _ = Describe("Observability Test:", Ordered, Label(observability), func() {
 				resp, err := makeAuthorizedRequest(http.MethodGet,
 					"https://metrics-node."+serviceDomainWithPort+"/prometheus/api/v1/query?query=up", *token, nil, cli)
 				Expect(err).ToNot(HaveOccurred())
-				defer resp.Body.Close()
+				defer resp.Body.Close() //nolint:errcheck
 				Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
 				content, err := io.ReadAll(resp.Body)
 				Expect(err).ToNot(HaveOccurred())
@@ -338,7 +338,7 @@ var _ = Describe("Observability Test:", Ordered, Label(observability), func() {
 				Expect(err).ToNot(HaveOccurred())
 				resp, err := cli.Do(req)
 				Expect(err).ToNot(HaveOccurred())
-				defer resp.Body.Close()
+				defer resp.Body.Close() //nolint:errcheck
 				Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
 			})
 
@@ -347,7 +347,7 @@ var _ = Describe("Observability Test:", Ordered, Label(observability), func() {
 				resp, err := makeAuthorizedRequest(http.MethodGet,
 					"https://metrics-node."+serviceDomainWithPort+"/prometheus/api/v1/query?query=up", invalid, nil, cli)
 				Expect(err).ToNot(HaveOccurred())
-				defer resp.Body.Close()
+				defer resp.Body.Close() //nolint:errcheck
 				Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
 			})
 		})
@@ -363,7 +363,7 @@ var _ = Describe("Observability Test:", Ordered, Label(observability), func() {
 			It("should be accessible over HTTPS", func() {
 				resp, err := makeAuthorizedRequest(http.MethodPost, "https://logs-node."+serviceDomainWithPort+"/v1/logs", *token, []byte(`{}`), cli)
 				Expect(err).ToNot(HaveOccurred())
-				defer resp.Body.Close()
+				defer resp.Body.Close() //nolint:errcheck
 				Expect(resp.StatusCode).To(Equal(http.StatusOK))
 				content, err := io.ReadAll(resp.Body)
 				Expect(err).ToNot(HaveOccurred())
@@ -380,7 +380,7 @@ var _ = Describe("Observability Test:", Ordered, Label(observability), func() {
 			It("should be accessible over HTTPS", func() {
 				resp, err := makeAuthorizedRequest(http.MethodPost, "https://logs-node."+serviceDomainWithPort+"/v1/logs", *token, []byte(`{}`), cli)
 				Expect(err).ToNot(HaveOccurred())
-				defer resp.Body.Close()
+				defer resp.Body.Close() //nolint:errcheck
 				Expect(resp.StatusCode).To(Equal(http.StatusOK))
 				content, err := io.ReadAll(resp.Body)
 				Expect(err).ToNot(HaveOccurred())
@@ -397,7 +397,7 @@ var _ = Describe("Observability Test:", Ordered, Label(observability), func() {
 			It("should NOT be accessible over HTTPS", func() {
 				resp, err := makeAuthorizedRequest(http.MethodPost, "https://logs-node."+serviceDomainWithPort+"/v1/logs", *token, []byte(`{}`), cli)
 				Expect(err).ToNot(HaveOccurred())
-				defer resp.Body.Close()
+				defer resp.Body.Close() //nolint:errcheck
 				Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
 				content, err := io.ReadAll(resp.Body)
 				Expect(err).ToNot(HaveOccurred())
@@ -414,7 +414,7 @@ var _ = Describe("Observability Test:", Ordered, Label(observability), func() {
 			It("should NOT be accessible over HTTPS", func() {
 				resp, err := makeAuthorizedRequest(http.MethodPost, "https://logs-node."+serviceDomainWithPort+"/v1/logs", *token, []byte(`{}`), cli)
 				Expect(err).ToNot(HaveOccurred())
-				defer resp.Body.Close()
+				defer resp.Body.Close() //nolint:errcheck
 				Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
 				content, err := io.ReadAll(resp.Body)
 				Expect(err).ToNot(HaveOccurred())
@@ -427,7 +427,7 @@ var _ = Describe("Observability Test:", Ordered, Label(observability), func() {
 				Expect(err).ToNot(HaveOccurred())
 				resp, err := cli.Do(req)
 				Expect(err).ToNot(HaveOccurred())
-				defer resp.Body.Close()
+				defer resp.Body.Close() //nolint:errcheck
 				Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
 			})
 
@@ -435,7 +435,7 @@ var _ = Describe("Observability Test:", Ordered, Label(observability), func() {
 				const invalid = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c" //nolint:lll // Token needed for testing - can't split
 				resp, err := makeAuthorizedRequest(http.MethodPost, "https://logs-node."+serviceDomainWithPort+"/v1/logs", invalid, []byte(`{}`), cli)
 				Expect(err).ToNot(HaveOccurred())
-				defer resp.Body.Close()
+				defer resp.Body.Close() //nolint:errcheck
 				Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
 			})
 		})

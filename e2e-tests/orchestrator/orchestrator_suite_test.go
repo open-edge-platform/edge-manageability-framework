@@ -55,7 +55,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 
 		conn, err := tls.Dial("tcp", "web-ui."+serviceDomainWithPort, conf)
 		Expect(err).ToNot(HaveOccurred())
-		defer conn.Close()
+		defer conn.Close() //nolint:errcheck
 
 		// Concatenate the PEM-encoded certificates presented by the peer in leaf to CA ascending order
 		for _, cert := range conn.ConnectionState().PeerCertificates {
