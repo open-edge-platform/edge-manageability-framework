@@ -125,9 +125,13 @@ func (tm *TarballManifest) writeManifest(name string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			fmt.Printf("Warning: failed to close file: %v\n", err)
+		}
+	}()
 	for _, item := range tm.manifest {
-		_, err = f.WriteString(fmt.Sprintf("%s\n", item))
+		_, err = fmt.Fprintf(f, "%s\n", item)
 		if err != nil {
 			return "", err
 		}
@@ -142,7 +146,11 @@ func (tm *TarballManifest) writeOutTarfile(variant, repo, version string, manife
 		verbose = "v"
 		fmt.Printf("Tar manifest file: %s\n", manifestFile)
 	} else {
-		defer os.Remove(manifestFile)
+		defer func() {
+			if err := os.Remove(manifestFile); err != nil {
+				fmt.Printf("Warning: failed to remove manifest file %s: %v\n", manifestFile, err)
+			}
+		}()
 	}
 
 	outdir := os.Getenv("TARBALL_DIR")

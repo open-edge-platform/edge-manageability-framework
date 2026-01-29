@@ -92,9 +92,10 @@ var _ = Describe("Orchestrator stress test", Label("stress-test"), func() {
 			res429 := 0
 			for i := 0; i < len(res_collection); i++ {
 				// count number of 200 and 503 response codes
-				if res_collection[i] == "200" {
+				switch res_collection[i] {
+				case "200":
 					res200 += 1
-				} else if res_collection[i] == "429" {
+				case "429":
 					res429 += 1
 				}
 			}
@@ -126,6 +127,6 @@ func stressFn(releaseTokenURL, token string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 	return resp.StatusCode, nil
 }

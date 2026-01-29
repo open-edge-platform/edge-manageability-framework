@@ -415,14 +415,26 @@ func (Gen) IntelSHA256PrivateRootCertChain() error {
 	if err != nil {
 		return fmt.Errorf("failed to create file: %w", err)
 	}
-	defer file.Close()
-	defer os.Remove(file.Name())
+	defer func() {
+		if err := file.Close(); err != nil {
+			fmt.Printf("Warning: failed to close file: %v\n", err)
+		}
+	}()
+	defer func() {
+		if err := os.Remove(file.Name()); err != nil {
+			fmt.Printf("Warning: failed to remove file %s: %v\n", file.Name(), err)
+		}
+	}()
 
 	resp, err := http.Get("https://certificates.intel.com/repository/certificates/IntelSHA2RootChain-Base64.zip")
 	if err != nil {
 		return fmt.Errorf("failed to get response: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
 
 	if _, err = io.Copy(file, resp.Body); err != nil {
 		return fmt.Errorf("failed to copy response body: %w", err)
