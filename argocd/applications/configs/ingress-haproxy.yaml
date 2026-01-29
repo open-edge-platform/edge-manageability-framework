@@ -23,6 +23,15 @@ config: |
     ssl-default-bind-options ssl-min-ver TLSv1.2 no-tls-tickets
     tune.ssl.default-dh-param 2048
 
+  resolvers kube_resolver
+    nameserver kube_dns 10.96.0.10:53
+    accepted_payload_size 8192
+    hold valid 10s
+    hold nx 5s
+    hold refused 5s
+    hold timeout 5s
+    hold other 30s
+
   defaults
     log global
     mode http
@@ -50,6 +59,8 @@ config: |
     http-request deny status 429 if { sc_conn_cur(0) gt 100 }
     # Reject if request rate exceeds 1000 requests per 10 seconds
     http-request deny status 429 if { sc_http_req_rate(0) gt 1000 }
+    # Route health checks to stats endpoint
+    use_backend be_health if { path -i /health }
     default_backend be_main
 
   backend be_main
@@ -62,7 +73,16 @@ config: |
     http-request set-path %[path,regsub(^/tink-stack/,/)] if { path_beg /tink-stack/ }
     http-request set-path / if { path -i /tink-stack }
     # Route to tinkerbell service (handles Kubernetes service discovery)
-    server tinkerbell tinkerbell.orch-infra.svc.cluster.local:8080 check
+    # Use dynamic DNS resolution to handle service startup timing issues
+    # check inter 5s fall 3 rise 2 enabled waits for service to be available
+    server tinkerbell tinkerbell.orch-infra.svc.cluster.local:8080 resolvers kube_resolver check inter 5s fall 3 rise 2
+
+  # Health check endpoint for Kubernetes probes
+  backend be_health
+    mode http
+    stats enable
+    stats uri /health
+    stats refresh 10s
 
 # Hardcoded DH parameters file (mounted via includes)
 # Base64-decoded from ingress-nginx configuration
@@ -117,7 +137,7 @@ livenessProbe:
   periodSeconds: 10
   successThreshold: 1
   httpGet:
-    path: /
+    path: /health
     port: 80
   timeoutSeconds: 1
 
@@ -127,7 +147,7 @@ readinessProbe:
   periodSeconds: 5
   successThreshold: 1
   httpGet:
-    path: /
+    path: /health
     port: 80
   timeoutSeconds: 1
 
