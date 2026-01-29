@@ -9,10 +9,10 @@
 
 argo:
   enabled:
-    infra-core: true
-    infra-managers: true
-    infra-external: true
-    infra-onboarding: true
+    infra-core: false
+    infra-managers: false
+    infra-external: false
+    infra-onboarding: false
     web-ui-infra: true
     copy-keycloak-admin-to-infra: true
   infra-core:
