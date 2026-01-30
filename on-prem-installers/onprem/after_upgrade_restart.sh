@@ -421,11 +421,11 @@ check_and_download_dkam_certs() {
         echo "[$(get_timestamp)] [Attempt ${attempt}/${max_attempts}] Checking DKAM certificate availability..."
         
         # Try to download Full_server.crt
-        if wget https://tinkerbell-nginx."$CLUSTER_DOMAIN"/tink-stack/keys/Full_server.crt --no-check-certificate --no-proxy -q -O Full_server.crt 2>/dev/null; then
+        if wget https://tinkerbell-haproxy."$CLUSTER_DOMAIN"/tink-stack/keys/Full_server.crt --no-check-certificate --no-proxy -q -O Full_server.crt 2>/dev/null; then
             echo "$(green)[OK] Full_server.crt downloaded successfully$(reset)"
             
             # Try to download signed_ipxe.efi using the certificate
-            if wget --ca-certificate=Full_server.crt https://tinkerbell-nginx."$CLUSTER_DOMAIN"/tink-stack/signed_ipxe.efi -q -O signed_ipxe.efi 2>/dev/null; then
+            if wget --ca-certificate=Full_server.crt https://tinkerbell-haproxy."$CLUSTER_DOMAIN"/tink-stack/signed_ipxe.efi -q -O signed_ipxe.efi 2>/dev/null; then
                 echo "$(green)[OK] signed_ipxe.efi downloaded successfully$(reset)"
                 success=true
                 break
