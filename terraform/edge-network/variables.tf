@@ -76,7 +76,7 @@ variable "dns_hosts" {
     { hostname = "registry.cluster.onprem", ip = "192.168.99.30" },
     { hostname = "release.cluster.onprem", ip = "192.168.99.30" },
     { hostname = "telemetry-node.cluster.onprem", ip = "192.168.99.30" },
-    { hostname = "tinkerbell-nginx.cluster.onprem", ip = "192.168.99.40" },
+    { hostname = "pa-server-nginx.cluster.onprem", ip = "192.168.99.40" },
     { hostname = "tinkerbell-server.cluster.onprem", ip = "192.168.99.30" },
     { hostname = "update-node.cluster.onprem", ip = "192.168.99.30" },
     { hostname = "vault.cluster.onprem", ip = "192.168.99.30" },
@@ -89,7 +89,7 @@ variable "dns_hosts" {
 variable "dhcp_boot" {
   type        = string
   description = "The DHCP boot option"
-  default     = "tag:efi-http,https://tinkerbell-nginx.cluster.onprem/tink-stack/signed_ipxe.efi"
+  default     = "tag:efi-http,https://pa-server-nginx.cluster.onprem/tink-stack/signed_ipxe.efi"
 }
 
 variable "dns_resolvers" {

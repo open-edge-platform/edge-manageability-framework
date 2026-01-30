@@ -1273,7 +1273,7 @@ func firewallDataLookup(dest string) (string, string, bool) {
 		"web-ui.":                 {northboundSource, "Web UI", false},
 		"api.":                    {northboundSource, "Multi-Tenancy APIs", false},
 		"ws-app-service-proxy.":   {northboundSource, "Application Orchestration", false},
-		"tinkerbell-nginx.":       {southboundSource, "BIOS Onboarding", false},
+		"pa-server-nginx.":        {southboundSource, "BIOS Onboarding", false},
 		"argo.":                   {"Orchestrator Admin", "ArgoCD UI", false},
 	}
 
@@ -1334,7 +1334,7 @@ func loopHosts(sb *strings.Builder, hosts []string) error {
 		"telemetry-node",
 		"logs-node",
 		"tinkerbell-server",
-		"tinkerbell-nginx",
+		"pa-server-nginx",
 		"update-node",
 		"argo",
 	}
@@ -1367,7 +1367,7 @@ func (Gen) firewallDoc() error {
 	sb.WriteString("\n")
 	sb.WriteString("Orchestrator has the following ingress points using a separate IP address for each: \n")
 	sb.WriteString("- ArgoCD Admin UI at argo.{domain}.  It is recommended that incoming traffic is restricted to a subset of known source IPs. \n")
-	sb.WriteString("- BIOS Onboarding at tinkerbell-nginx.{domain}. \n")
+	sb.WriteString("- BIOS Onboarding at pa-server-nginx.{domain}. \n")
 	sb.WriteString("- All other traffic from Edge Nodes as well as UI & API users of the Orchestrator. \n")
 	sb.WriteString("\n")
 	sb.WriteString("| Source              | Destination | Protocol:Port | Description |\n")
@@ -1537,7 +1537,7 @@ func (Gen) hostfile(ip string, addComment bool) error {
 	return nil
 }
 
-// BiosTraefikhostfile Generates the tinkerbell-nginx hostfile entry
+// BiosTraefikhostfile Generates the pa-server-nginx hostfile entry
 func (Gen) BiosTraefikhostfile(ip string, addComment bool) error {
 	hosts, err := (Gen{}).kubeBiosDnslookupDockerInternal()
 	if err != nil {

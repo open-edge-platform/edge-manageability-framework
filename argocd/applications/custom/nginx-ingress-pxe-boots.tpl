@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Common name and DNS SAN of the self-signed TLS certificate
-commonName: tinkerbell-nginx.{{ .Values.argo.clusterDomain }}
+commonName: pa-server-nginx.{{ .Values.argo.clusterDomain }}
 nginxIngressRateLimit:
 {{- if .Values.argo.nginxIngressRate }}
   rps: {{ .Values.argo.nginxIngressRate.rps | default 500 }}

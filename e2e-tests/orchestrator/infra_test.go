@@ -448,7 +448,7 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 			By("fetching the CA certificate")
 			Eventually(
 				func() error {
-					cdnURL = "https://tinkerbell-nginx." + serviceDomain + "/tink-stack/boot.ipxe"
+					cdnURL = "https://pa-server-nginx." + serviceDomain + "/tink-stack/boot.ipxe"
 
 					req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://"+serviceDomain+"/boots/ca.crt", nil) //nolint: lll
 					if err != nil {
@@ -493,7 +493,7 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 				time.Minute,
 				5*time.Second,
 			).Should(Succeed())
-			// cdnURL = "https://tinkerbell-nginx." + serviceDomain
+			// cdnURL = "https://pa-server-nginx." + serviceDomain
 			cafilepath = "/tmp/cluster_ca.crt"
 			cacert := "curl https://" + serviceDomain + "/boots/ca.crt -o " + cafilepath
 			_, err := script.NewPipe().Exec(cacert).String()
@@ -522,7 +522,7 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 			req, err := http.NewRequestWithContext(
 				ctx,
 				http.MethodGet,
-				"https://tinkerbell-nginx."+serviceDomain,
+				"https://pa-server-nginx."+serviceDomain,
 				nil,
 			)
 			Expect(err).ToNot(HaveOccurred())

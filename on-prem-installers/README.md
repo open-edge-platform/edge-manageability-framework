@@ -150,7 +150,7 @@ Execute the following instructions on your development machine.
     ${TRAEFIK_IP} "registry.cluster.onprem"
     ${TRAEFIK_IP} "release.cluster.onprem"
     ${TRAEFIK_IP} "telemetry-node.cluster.onprem"
-    ${NGINX_IP} "tinkerbell-nginx.cluster.onprem"
+    ${NGINX_IP} "pa-server-nginx.cluster.onprem"
     ${NGINX_IP} "tinkerbell-server.cluster.onprem"
     ${TRAEFIK_IP} "update-node.cluster.onprem"
     ${TRAEFIK_IP} "vault.cluster.onprem"
