@@ -216,7 +216,7 @@ Scenario manifest files will be kept in `infra-core/apiv2`. The following are th
    name: vpro
    description: EIM vPRO only
    services:
-   - host
+   - HostService
 ```
 
 Why manifest files:
