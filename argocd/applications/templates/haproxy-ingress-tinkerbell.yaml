@@ -21,7 +21,7 @@ spec:
   sources:
     - repoURL: https://github.com/open-edge-platform/orch-utils.git
       path: charts/{{$appName}}
-      targetRevision: tmp-ingress2haprxy
+      targetRevision: tmp-ingress2haproxy
       helm:
         releaseName: {{$appName}}
         valuesObject:
