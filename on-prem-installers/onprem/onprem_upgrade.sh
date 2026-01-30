@@ -804,10 +804,14 @@ eval "sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get install --o
 echo "RKE2 upgraded to $(dpkg-query -W -f='${Version}' onprem-ke-installer)"
 
 # Run Gitea upgrade
-echo "Upgrading Gitea..."
-eval "sudo IMAGE_REGISTRY=${GITEA_IMAGE_REGISTRY} INSTALL_GITEA=${INSTALL_GITEA} DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get install --only-upgrade --allow-downgrades -y $cwd/$deb_dir_name/onprem-gitea-installer_*_amd64.deb"
-wait_for_pods_running $gitea_ns
-echo "Gitea upgraded to $(dpkg-query -W -f='${Version}' onprem-gitea-installer)"
+if [[ "$INSTALL_GITEA" == "true" ]]; then
+    echo "Upgrading Gitea..."
+    eval "sudo IMAGE_REGISTRY=${GITEA_IMAGE_REGISTRY} INSTALL_GITEA=${INSTALL_GITEA} DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get install --only-upgrade --allow-downgrades -y $cwd/$deb_dir_name/onprem-gitea-installer_*_amd64.deb"
+    wait_for_pods_running $gitea_ns
+    echo "Gitea upgraded to $(dpkg-query -W -f='${Version}' onprem-gitea-installer)"
+else
+    echo "Skipping Gitea upgrade (INSTALL_GITEA is false)"
+fi
 
 # Run ArgoCD upgrade
 echo "Upgrading ArgoCD..."
@@ -884,7 +888,23 @@ kubectl delete secret -l managed-by=edge-manageability-framework -A || true
 
 EOF
 
-eval "sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l INSTALL_GITEA=${INSTALL_GITEA} ORCH_INSTALLER_PROFILE=$ORCH_INSTALLER_PROFILE GIT_REPOS=$GIT_REPOS apt-get install --only-upgrade --allow-downgrades -y $cwd/$deb_dir_name/onprem-orch-installer_*_amd64.deb"
+# Build environment variables for orchestrator upgrade
+GIT_ENV_VARS="INSTALL_GITEA=${INSTALL_GITEA} ORCH_INSTALLER_PROFILE=$ORCH_INSTALLER_PROFILE GIT_REPOS=$GIT_REPOS"
+
+if [[ "$INSTALL_GITEA" == "false" ]]; then
+    # When Gitea is disabled, pass GitHub credentials if available
+    if [[ -n "$GIT_TOKEN" ]]; then
+        GIT_ENV_VARS="$GIT_ENV_VARS GIT_TOKEN=$GIT_TOKEN"
+    fi
+    if [[ -n "$GIT_USER" ]]; then
+        GIT_ENV_VARS="$GIT_ENV_VARS GIT_USER=$GIT_USER"
+    fi
+    if [[ -n "$DEPLOY_REPO_URL" ]]; then
+        GIT_ENV_VARS="$GIT_ENV_VARS DEPLOY_REPO_URL=$DEPLOY_REPO_URL"
+    fi
+fi
+
+eval "sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l $GIT_ENV_VARS apt-get install --only-upgrade --allow-downgrades -y $cwd/$deb_dir_name/onprem-orch-installer_*_amd64.deb"
 echo "Edge Orchestrator getting upgraded to version $(dpkg-query -W -f='${Version}' onprem-orch-installer), wait for SW to deploy... "
 
 # Allow adjustments as some PVCs sizes might have changed
