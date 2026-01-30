@@ -2,7 +2,7 @@
 
 Author(s) Edge Infrastructure Manager Team
 
-Last updated: 29/01/26
+Last updated: 30/01/26
 
 ## Abstract
 
@@ -88,7 +88,7 @@ performing operations on the EIM resources for manipulating Edge Nodes.
 In EMF 2025.2, the apiv2 service is deployed via a helm chart deployed by Argo CD as one of its applications.
 The apiv2 service is deployed as a container using the apiv2 container image.
 
-#### How It IS Built
+#### How It Is Built
 
 Currently, apiv2 (infra-core repository) holds the definition of REST API services in protocol buffer files
 (`api/proto/`) and uses protoc-gen-connect-openapi to generate the OpenAPI spec - openapi.yaml.
@@ -102,8 +102,6 @@ model per single inventory resource.
 
 Protoc-gen-connect-openapi is the tool that is indirectly used to build the openapi spec.
 It is configured as a plugin within buf (buf.gen.yaml).
-
-#### Buf
 
 **Buf** is a replacement for protoc (the standard protocol buffers compiler). It makes working with
 .proto files easier as it replaces messy protoc commands with clean config file.
@@ -153,42 +151,41 @@ that only a subset of available APIs may need to be released and/or exposed at t
 
 The following are the investigated options to decomposing or exposing subsets of APIs.
 
-- ~~API Gateway that would only expose certain endpoints to user~~:
+- ~~API Gateway that would only expose certain endpoints to user~~ -
 It does not actually solve the problem of releasing only specific flavours of EMF.
-- ~~Maintain multiple OpenAPI specification~~: While possible to create multiple OpenAPI specs,
+- ~~Maintain multiple OpenAPI specification~~ - While possible to create multiple OpenAPI specs,
 the maintenance of same APIs across specs will be a large burden.
-- ~~Authentication & Authorization Based Filtering~~: We do not control the
+- ~~Authentication & Authorization Based Filtering~~ - We do not control the
 end users of the EMF, and we want to provide tailored modular product for each workflow.
-- ~~API Versioning strategy~~: Creating different API versions for each use-case means too much overhead,
+- ~~API Versioning strategy~~ - Creating different API versions for each use-case means too much overhead,
  similar to maintaining multiple OpenAPI specs.
-- ~~Proxy/Middleware Layer~~: similar to API Gateway, does not fit our use cases.
-- ~~OpenAPI Spec Manipulation~~: This approach uses OpenAPI's extension mechanism (properties starting with x-)
+- ~~Proxy/Middleware Layer~~ - Similar to API Gateway, does not fit our use cases.
+- ~~OpenAPI Spec Manipulation~~ - This approach uses OpenAPI's extension mechanism (properties starting with x-)
 to add metadata that describes which audiences, use cases, or clients should have access to specific endpoints,
 operations, or schemas. This approach is worth investigating to see if it can give us the automated approach for
-creating individual OpenAPI specs for workflows based on labels. - not valid as it was decided that the openapi
-spec will be always generated for the full EI API set only.
-- ~~Break the protobuf definition file `services.proto` into multiple files—one per service~~:
+creating individual OpenAPI specs for workflows based on labels. (Update: not valid as it was decided that the openapi
+spec will be always generated for the full EI API set only.)
+- ~~Break the protobuf definition file `services.proto` into multiple files—one per service~~ -
 Use buf to select services based on scenario manifests, which would generate scenario-specific API specs.
-- not valid as it was decided that the openapi spec will be always generated for the full EIM.
-- **Selective Handler Registration (Selected Approach)**: Generate the complete REST API specification
+(Update: not valid as it was decided that the openapi spec will be always generated for the full EIM.)
+- **Selective Handler Registration (Selected Approach)** - Generate the complete REST API specification
 supporting all EIM NB APIs, but register only the scenario-specific gRPC service handlers within the apiv2
 gRPC server at runtime.
 
 ### Proposal
-
-#### Build and release of the decomposed API service a module
+#### Build and Release Strategy for the Decomposed API Service Module
 
 Build the EIM API Service per Scenario
 
-- There is no change to the protobuf definitions in `apiv2/proto`
-- There is no change to the code generated for the protobuf definitions:
-  - openapi spec -`openapi.yaml` will still contain all the EIM API services.
-  - the generated go code will support all the EIM API services.
-- Scenario manifests will define the API service subsets supported per the scenario.
-- as part of make `generate` target, the manifests will be parsed to generate go code mappings between
-the scenarios names and required API services.
-- the apiv2 application will receive an argument `scenario` holding the name of the chosen EIM scenario.
-The argument will be provided by the Helm chart value `scenario`.
+- The protobuf definitions in `apiv2/proto` remain unchanged.
+- The code generation process for protobuf definitions remains unchanged:
+  - The `openapi.yaml` specification will continue to include all EIM API services.
+  - All generated Go code will support the complete set of EIM NB API services.
+- Scenario manifests will define the subset of API services supported for each scenario.
+- The `make generate` target will parse these manifests to generate Go code mappings
+between scenario names and their required API services.
+- The apiv2 application will accept a `scenario` argument specifying the chosen EIM scenario.
+This argument will be supplied via the Helm chart's `scenario` value.
 
 Recommended Release Approach:
 
@@ -221,11 +218,11 @@ Scenario manifest files will be kept in `infra-core/apiv2`. The following are th
 
 Why manifest files:
 
-- The manifest files act as a configuration to be used by the apiv2 application.
-- The manifests are used to determine which gRPC services to enable in apiv2.
-- The manifests can be easily located and updated by a person not familiar with the code.
-- The list of services can be validated against service handlers generated by buf based on the proto definitions.
-- Version controlled in git repository.
+- Manifest files content serves as configuration consumed by the apiv2 application at initialization.
+- Manifests define which gRPC service handlers should be registered within apiv2 for each scenario.
+- Non-developers can easily locate, read, and modify manifests without navigating complex codebases.
+- Service names in manifests can be validated against handlers auto-generated by buf from proto definitions.
+- Manifests are tracked in the git repository, providing full change history.
 
 #### Modify REST-gRPC gateway Implementation
 
@@ -234,8 +231,7 @@ requests will register only the handlers related to the API services to be suppo
 
 #### Modify gRPC Server implementation
 
-The apiv2 gRPC server for will register only the gRPC service handlers related to the API services
-to be supported by configured scenario.
+The apiv2 gRPC server (`internal/server/server.go`) will register only the gRPC service handlers related to the API services supported by the configured scenario.
 
 ### Consuming the Scenario Specific APIs from the CLI
 
