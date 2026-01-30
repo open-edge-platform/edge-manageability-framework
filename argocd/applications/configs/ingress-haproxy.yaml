@@ -16,7 +16,8 @@ controller:
     ssl-bind-options: "ssl-min-ver TLSv1.2 no-tls-tickets"
   defaultTLSSecret:
     enabled: true
-    secret: "orch-boots/tls-boots"
+    secretNamespace: orch-boots
+    secretName: tls-boots
   service:
     type: ClusterIP
     enablePorts:
