@@ -12,3 +12,7 @@ nginxIngressRateLimit:
   rps: 500
   connections: 70
 {{- end }}
+
+nginxIngress:
+  # Set to false to disable Ingress resource (use LoadBalancer instead)
+  enabled: false
