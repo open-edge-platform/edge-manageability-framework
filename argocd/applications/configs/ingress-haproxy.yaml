@@ -14,13 +14,21 @@ controller:
     # The remaining three cipher suites are approved for all other clients.
     ssl-bind-ciphers: "DHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:TLS_AES_256_GCM_SHA384"
     ssl-bind-options: "ssl-min-ver TLSv1.2 no-tls-tickets"
+    ssl-default-bind-options: "ssl-min-ver TLSv1.2 ssl-max-ver TLSv1.3 no-tls-tickets"
   defaultTLSSecret:
     enabled: true
     secretNamespace: orch-boots
     secretName: tls-boots
+  extraArgs:
+    - --default-ssl-certificate=orch-boots/tls-boots
   service:
-    type: ClusterIP
+    type: LoadBalancer
+    ipFamilies:
+      - IPv4
+    ipFamilyPolicy: SingleStack
     enablePorts:
       http: false
       https: true
+      stat: false
+      prometheus: false
   resources: null
