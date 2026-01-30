@@ -25,6 +25,7 @@ argo:
     istio-policy: true
     istiod: true
     kiali: true
+    keycloak-operator: true
     metadata-broker: true
     multitenant_gateway: true
     nginx-ingress-pxe-boots: true
