@@ -45,7 +45,7 @@ The following questions must be answered and investigated:
 - **Q**: How is the API service built currently?
   - **Ans**: The protobuf definition file is used to generate the REST API spec, and go code for the REST to gRPC gateway,
   gRPC client and server.
-  See [How NB API is Currently Built](#how-nb-api-is-currently-built)
+  See [how NB API is currently built](#how-it-is-built)
 - **Q**: What level of decomposition is needed for the required workflows?
   - **Ans**: See the [scenarios descriptions](#scenarios-to-be-supported-by-the-initial-decomposition)
 - **Q**: How to decompose APIs at the domain level?
@@ -173,6 +173,7 @@ supporting all EIM NB APIs, but register only the scenario-specific gRPC service
 gRPC server at runtime.
 
 ### Proposal
+
 #### Build and Release Strategy for the Decomposed API Service Module
 
 Build the EIM API Service per Scenario
@@ -231,7 +232,8 @@ requests will register only the handlers related to the API services to be suppo
 
 #### Modify gRPC Server implementation
 
-The apiv2 gRPC server (`internal/server/server.go`) will register only the gRPC service handlers related to the API services supported by the configured scenario.
+The apiv2 gRPC server (`internal/server/server.go`) will register only the gRPC service handlers related to
+the API services supported by the configured scenario.
 
 ### Consuming the Scenario Specific APIs from the CLI
 
