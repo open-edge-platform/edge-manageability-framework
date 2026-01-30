@@ -65,7 +65,7 @@ argo:
 
   metadata-broker: {}
 
- # Configure the following to scale the default ingress-nginx controller which is use for delivery of day0 images
+ # Configure the following to scale the default ingress-haproxy controller which is use for delivery of day0 images
  # Larger values may be needed on VM and on-prem clusters to support performance and prevent timeouts.
  # However better to set low and adjust if needed
 

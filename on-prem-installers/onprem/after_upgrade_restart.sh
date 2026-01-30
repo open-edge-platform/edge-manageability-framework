@@ -421,11 +421,11 @@ check_and_download_dkam_certs() {
         echo "[$(get_timestamp)] [Attempt ${attempt}/${max_attempts}] Checking DKAM certificate availability..."
         
         # Try to download Full_server.crt
-        if wget https://tinkerbell-nginx."$CLUSTER_DOMAIN"/tink-stack/keys/Full_server.crt --no-check-certificate --no-proxy -q -O Full_server.crt 2>/dev/null; then
+        if wget https://tinkerbell-haproxy."$CLUSTER_DOMAIN"/tink-stack/keys/Full_server.crt --no-check-certificate --no-proxy -q -O Full_server.crt 2>/dev/null; then
             echo "$(green)[OK] Full_server.crt downloaded successfully$(reset)"
             
             # Try to download signed_ipxe.efi using the certificate
-            if wget --ca-certificate=Full_server.crt https://tinkerbell-nginx."$CLUSTER_DOMAIN"/tink-stack/signed_ipxe.efi -q -O signed_ipxe.efi 2>/dev/null; then
+            if wget --ca-certificate=Full_server.crt https://tinkerbell-haproxy."$CLUSTER_DOMAIN"/tink-stack/signed_ipxe.efi -q -O signed_ipxe.efi 2>/dev/null; then
                 echo "$(green)[OK] signed_ipxe.efi downloaded successfully$(reset)"
                 success=true
                 break
@@ -560,9 +560,9 @@ sync_not_green_apps_once() {
         echo "[$(get_timestamp)] Checking for failed syncs in $name..."
         check_and_handle_failed_sync "$name"
 
-        # Special pre-sync handling for nginx-ingress-pxe-boots
-        if [[ "$name" == "nginx-ingress-pxe-boots" ]]; then
-            echo "$(yellow)[INFO] Pre-sync: nginx-ingress-pxe-boots detected - deleting tls-boots secret first...$(reset)"
+        # Special pre-sync handling for haproxy-ingress-pxe-boots
+        if [[ "$name" == "haproxy-ingress-pxe-boots" ]]; then
+            echo "$(yellow)[INFO] Pre-sync: haproxy-ingress-pxe-boots detected - deleting tls-boots secret first...$(reset)"
             kubectl delete secret tls-boots -n orch-boots 2>/dev/null || true
             sleep 3
         fi
@@ -919,9 +919,9 @@ sync_all_apps_exclude_root() {
         echo "[$(get_timestamp)] Checking for CRD version mismatches in $name..."
         check_and_fix_crd_version_mismatch "$name"
 
-        # Special pre-sync handling for nginx-ingress-pxe-boots
-        if [[ "$name" == "nginx-ingress-pxe-boots" ]]; then
-            echo "$(yellow)[INFO] Pre-sync: nginx-ingress-pxe-boots detected - deleting tls-boots secret first...$(reset)"
+        # Special pre-sync handling for haproxy-ingress-pxe-boots
+        if [[ "$name" == "haproxy-ingress-pxe-boots" ]]; then
+            echo "$(yellow)[INFO] Pre-sync: haproxy-ingress-pxe-boots detected - deleting tls-boots secret first...$(reset)"
             kubectl delete secret tls-boots -n orch-boots 2>/dev/null || true
             sleep 3
         fi
