@@ -241,10 +241,24 @@ var _ = Describe("Component Status Service", Label(componentStatusLabel), func()
 				eim, exists := status.Orchestrator.Features["edge-infrastructure-manager"]
 				Expect(exists).To(BeTrue(), "edge-infrastructure-manager feature should exist")
 
-				expectedEIMSubFeatures := []string{"day2", "onboarding", "oob", "provisioning"}
+				expectedEIMSubFeatures := []string{"oxm-profile", "day2", "onboarding", "oob", "provisioning"}
 				for _, subFeature := range expectedEIMSubFeatures {
 					_, exists := eim.SubFeatures[subFeature]
 					Expect(exists).To(BeTrue(), fmt.Sprintf("EIM sub-feature %s should be present", subFeature))
+				}
+			})
+
+
+			It("should have oxm-profile detection for microvisor-based deployments", func() {
+				eim := status.Orchestrator.Features["edge-infrastructure-manager"]
+				oxmProfile, exists := eim.SubFeatures["oxm-profile"]
+				Expect(exists).To(BeTrue(), "oxm-profile sub-feature should exist")
+				// OXM profile only on on-prem (metallb enabled) with pxe-server enabled
+				// When OXM is enabled, OOB should be disabled (mutually exclusive)
+				// For non-onprem deployments (AWS, Kind), OXM will always be false
+				if oxmProfile.Installed {
+					oob := eim.SubFeatures["oob"]
+					Expect(oob.Installed).To(BeFalse(), "OXM and OOB are mutually exclusive - OXM uses microvisor, not vPRO/AMT")
 				}
 			})
 

@@ -67,6 +67,12 @@ componentStatus:
       # Sub-features represent actual user-facing workflows
       edge-infrastructure-manager:
         installed: {{ or (index .Values.argo.enabled "infra-core") (index .Values.argo.enabled "infra-managers") (index .Values.argo.enabled "infra-onboarding") (index .Values.argo.enabled "infra-external") | default false }}
+
+        # OXM Profile - Microvisor-based edge infrastructure management (on-prem ONLY)
+        # Detection - infra-onboarding.pxe-server.enabled is true (set by profile-oxm.yaml)
+        # OXM profile is EXCLUSIVELY for on-prem deployments with ORCH_INSTALLER_PROFILE=onprem-oxm
+        oxm-profile:
+          installed: {{ if hasKey .Values.argo "infra-onboarding" }}{{ $infraOnboarding := index .Values.argo "infra-onboarding" }}{{ if hasKey $infraOnboarding "pxe-server" }}{{ $pxeServer := index $infraOnboarding "pxe-server" }}{{ if hasKey $pxeServer "enabled" }}{{ index $pxeServer "enabled" | default false }}{{ else }}false{{ end }}{{ else }}false{{ end }}{{ else }}false{{ end }}
         
         # Day2 - Day 2 operations - maintenance, updates, troubleshooting
         # Detection - maintenance-manager is configured as part of infra-managers
@@ -123,16 +129,17 @@ componentStatus:
       
       # Web UI - Enabled when full-ui profile is loaded
       # Detection - enable-full-ui.yaml in root-app valueFiles
+      # UI sub-features check both the UI component AND the parent feature enablement
       web-ui:
         installed: {{ or (index .Values.argo.enabled "web-ui-root") (index .Values.argo.enabled "web-ui-app-orch") (index .Values.argo.enabled "web-ui-cluster-orch") (index .Values.argo.enabled "web-ui-infra") | default false }}
         orchestrator-ui-root:
           installed: {{ index .Values.argo.enabled "web-ui-root" | default false }}
         application-orchestration-ui:
-          installed: {{ index .Values.argo.enabled "web-ui-app-orch" | default false }}
+          installed: {{ and (index .Values.argo.enabled "web-ui-app-orch" | default false) (index .Values.argo.enabled "app-orch-catalog" | default false) }}
         cluster-orchestration-ui:
-          installed: {{ index .Values.argo.enabled "web-ui-cluster-orch" | default false }}
+          installed: {{ and (index .Values.argo.enabled "web-ui-cluster-orch" | default false) (or (index .Values.argo.enabled "cluster-manager") (index .Values.argo.enabled "capi-operator") (index .Values.argo.enabled "intel-infra-provider") | default false) }}
         infrastructure-ui:
-          installed: {{ index .Values.argo.enabled "web-ui-infra" | default false }}
+          installed: {{ and (index .Values.argo.enabled "web-ui-infra" | default false) (or (index .Values.argo.enabled "infra-manager") (index .Values.argo.enabled "infra-operator") (index .Values.argo.enabled "tinkerbell") (index .Values.argo.enabled "infra-onboarding") (index .Values.argo.enabled "maintenance-manager") | default false) }}
       
       # Multitenancy - Tenancy services (tenancy-manager, tenancy-api-mapping, tenancy-datamodel)
       # are always deployed as part of root-app, so multitenancy is always enabled
