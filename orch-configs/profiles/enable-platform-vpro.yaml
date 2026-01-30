@@ -21,6 +21,7 @@ argo:
     copy-ca-cert-gitea-to-cluster: true
     copy-cluster-gitea-cred-to-fleet: true
     external-secrets: true
+    haproxy-ingress-tinkerbell: true
     istio-base: true
     istio-policy: true
     istiod: true
