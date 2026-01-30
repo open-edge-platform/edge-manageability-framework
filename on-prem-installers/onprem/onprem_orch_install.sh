@@ -260,7 +260,14 @@ Options:
                                Skips AO and CO related component installation
     
     --disable-ao               Disable Application Orchestrator profile
-                               Skips AO related component installation
+                               Skips AO related component installation and Gitea
+                               Uses GitHub repository for deployment (public repo by default)
+                               Optional: Set GIT_TOKEN and GIT_USER for private repos
+                               Optional: Set DEPLOY_REPO_URL for custom repo URL
+                               Example (public): ./script.sh --disable-ao
+                               Example (private): export GIT_TOKEN=ghp_xxxxx
+                                                  export GIT_USER=myusername
+                                                  ./script.sh --disable-ao
     
     --disable-o11y             Disable Observability (O11y) profile
                                Skips monitoring and observability component installation
@@ -438,20 +445,22 @@ mv -f "$repo_file" "$cwd/$git_arch_name/$repo_file"
 cd "$cwd"
 rm -rf "$tmp_dir"
 
-if find "$cwd/$deb_dir_name" -name "onprem-gitea-installer_*_amd64.deb" -type f | grep -q .; then
-    # Run gitea installer
-    echo "Installing Gitea"
-    eval "sudo IMAGE_REGISTRY=${GITEA_IMAGE_REGISTRY} INSTALL_GITEA=${INSTALL_GITEA} NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y $cwd/$deb_dir_name/onprem-gitea-installer_*_amd64.deb"
-    wait_for_namespace_creation $gitea_ns
-    sleep 30s
-    if [ "$INSTALL_GITEA" = "true" ]; then
+if [ "$INSTALL_GITEA" = "true" ]; then
+  if find "$cwd/$deb_dir_name" -name "onprem-gitea-installer_*_amd64.deb" -type f | grep -q .; then
+      # Run gitea installer
+      echo "Installing Gitea"
+      eval "sudo IMAGE_REGISTRY=${GITEA_IMAGE_REGISTRY} NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive apt-get install -y $cwd/$deb_dir_name/onprem-gitea-installer_*_amd64.deb"
+      wait_for_namespace_creation $gitea_ns
+      sleep 30s
       wait_for_pods_running $gitea_ns
-    fi
-    echo "Gitea Installed"
+      echo "Gitea Installed"
+  else
+      echo "❌ Package file NOT found: $cwd/$deb_dir_name/onprem-gitea-installer_*_amd64.deb"
+      echo "Please ensure the package file exists and the path is correct."
+      exit 1
+  fi
 else
-    echo "❌ Package file NOT found: $cwd/$deb_dir_name/onprem-gitea-installer_*_amd64.deb"
-    echo "Please ensure the package file exists and the path is correct."
-    exit 1
+  echo "Gitea installation skipped (Application Orchestrator is disabled)"
 fi
 if find "$cwd/$deb_dir_name" -name "onprem-argocd-installer_*_amd64.deb" -type f | grep -q .; then
     # Run argo CD installer
@@ -485,7 +494,22 @@ create_postgres_password orch-database "$postgres_password"
 if find "$cwd/$deb_dir_name" -name "onprem-orch-installer_*_amd64.deb" -type f | grep -q .; then
     # Run orchestrator installer
     echo "Installing Edge Orchestrator Packages"
-    eval "sudo INSTALL_GITEA=${INSTALL_GITEA} NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive ORCH_INSTALLER_PROFILE=$ORCH_INSTALLER_PROFILE GIT_REPOS=$GIT_REPOS apt-get install -y $cwd/$deb_dir_name/onprem-orch-installer_*_amd64.deb"
+    
+    # Build environment variables for installer
+    GIT_ENV_VARS="INSTALL_GITEA=${INSTALL_GITEA}"
+    
+    if [ "$INSTALL_GITEA" != "true" ]; then
+        # When Gitea is disabled, use GitHub repository
+        if [[ -n "${GIT_TOKEN:-}" && -n "${GIT_USER:-}" ]]; then
+            echo "Using authenticated GitHub access (private repository)"
+            GIT_ENV_VARS="${GIT_ENV_VARS} GIT_TOKEN=${GIT_TOKEN} GIT_USER=${GIT_USER}"
+        else
+            echo "Using anonymous GitHub access (public repository)"
+        fi
+        GIT_ENV_VARS="${GIT_ENV_VARS} DEPLOY_REPO_URL=${DEPLOY_REPO_URL:-}"
+    fi
+    
+    eval "sudo ${GIT_ENV_VARS} NEEDRESTART_MODE=a DEBIAN_FRONTEND=noninteractive ORCH_INSTALLER_PROFILE=$ORCH_INSTALLER_PROFILE GIT_REPOS=$GIT_REPOS apt-get install -y $cwd/$deb_dir_name/onprem-orch-installer_*_amd64.deb"
     echo "Edge Orchestrator getting installed, wait for SW to deploy... "
 else
     echo "❌ Package file NOT found: $cwd/$deb_dir_name/onprem-orch-installer_*_amd64.deb"

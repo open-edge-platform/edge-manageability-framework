@@ -27,6 +27,12 @@ const gitReposEnv = "GIT_REPOS"
 
 const orchInstallerProfileEnv = "ORCH_INSTALLER_PROFILE"
 
+const gitTokenEnv = "GIT_TOKEN"
+
+const gitUserEnv = "GIT_USER"
+
+const deployRepoURLEnv = "DEPLOY_REPO_URL"
+
 var giteaInstalled = os.Getenv("INSTALL_GITEA")
 
 func main() {
@@ -222,8 +228,27 @@ func getArtifactPath(tarFilesLocation, repoName string) string {
 // 3) Namespace in which chart will be deployed.
 func installRootApp(edgeManageabilityFrameworkFolder, orchInstallerProfile, giteaServiceURL string) error {
 	namespace := "onprem"
-	if err := createGiteaCredsSecret(edgeManageabilityFrameworkRepo, namespace, giteaServiceURL); err != nil {
-		return fmt.Errorf("failed to create gitea secret with creds - %w", err)
+	
+	// Create repository credentials based on installation type
+	if strings.EqualFold(giteaInstalled, "true") {
+		// Use local Gitea
+		if err := createGiteaCredsSecret(edgeManageabilityFrameworkRepo, namespace, giteaServiceURL); err != nil {
+			return fmt.Errorf("failed to create gitea secret with creds - %w", err)
+		}
+	} else {
+		// Use GitHub repository
+		log.Println("Gitea is not installed, configuring ArgoCD to use GitHub repository")
+		// Create repository secret for ArgoCD (with or without credentials)
+		gitToken := os.Getenv(gitTokenEnv)
+		gitUser := os.Getenv(gitUserEnv)
+		if gitToken != "" && gitUser != "" {
+			log.Println("GitHub credentials provided, creating authenticated repository secret")
+		} else {
+			log.Println("No GitHub credentials provided, creating repository configuration for public access")
+		}
+		if err := createGitHubCredsSecret(edgeManageabilityFrameworkRepo, namespace); err != nil {
+			return fmt.Errorf("failed to create GitHub repository secret - %w", err)
+		}
 	}
 
 	return sh.RunV("helm", "upgrade", "--install", "root-app",
@@ -299,6 +324,78 @@ EOF
 	return nil
 }
 
+func createGitHubCredsSecret(repoName string, namespace string) error {
+	gitToken := os.Getenv(gitTokenEnv)
+	gitUser := os.Getenv(gitUserEnv)
+	deployRepoURL := os.Getenv(deployRepoURLEnv)
+
+	if deployRepoURL == "" {
+		deployRepoURL = "https://github.com/open-edge-platform/edge-manageability-framework"
+		log.Printf("Using default GitHub repository URL: %s", deployRepoURL)
+	}
+
+	var commandTemplate *template.Template
+	
+	// Create secret with or without credentials based on what's provided
+	if gitToken != "" && gitUser != "" {
+		// Authenticated access for private repos
+		commandTemplate = template.Must(template.New("template").
+			Parse(`kubectl create -f - <<EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ .repoName }}
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+stringData:
+  type: git
+  url: {{ .repoURL }}
+  password: {{ .password }}
+  username: {{ .username }}
+EOF
+`))
+	} else {
+		// Public repo access without credentials
+		commandTemplate = template.Must(template.New("template").
+			Parse(`kubectl create -f - <<EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ .repoName }}
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+stringData:
+  type: git
+  url: {{ .repoURL }}
+EOF
+`))
+	}
+
+	_, _ = sh.Output("kubectl", "delete", "secret", repoName, "-n", "argocd")
+
+	buf := &bytes.Buffer{}
+
+	templateParams := map[string]string{
+		"repoName":  repoName,
+		"namespace": namespace,
+		"username":  gitUser,
+		"password":  gitToken,
+		"repoURL":   deployRepoURL,
+	}
+	if err := commandTemplate.Execute(buf, templateParams); err != nil {
+		return fmt.Errorf("failed to run command - %w", err)
+	}
+
+	if err := sh.RunV("sh", "-c", buf.String()); err != nil {
+		return fmt.Errorf("failed to create repository secret - %w", err)
+	}
+
+	log.Printf("Successfully created GitHub repository secret for ArgoCD")
+	return nil
+}
+
 func getGiteaServiceURL() (string, error) {
 	if strings.EqualFold(giteaInstalled, "true") {
 		port, err := sh.Output("kubectl", "get", "svc", "gitea-http", "-n", "gitea", "-o", "jsonpath={.spec.ports[0].port}")
@@ -310,6 +407,6 @@ func getGiteaServiceURL() (string, error) {
 		}
 		return fmt.Sprintf("%s:%s", giteaSvcDomain, port), nil
 	}
-	fmt.Printf("gitea is not installed or service not found - creating secret with port 443")
-	return fmt.Sprintf("%s:%s", giteaSvcDomain, "443"), nil
+	fmt.Printf("gitea is not installed or service not found - using GitHub repository\n")
+	return "", nil
 }
