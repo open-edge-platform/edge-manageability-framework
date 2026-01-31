@@ -45,10 +45,19 @@ func (r Router) start(externalDomain string, sandboxKeyFile string, sandboxCertF
 	if err != nil {
 		return fmt.Errorf("performing argo IP lookup %w", err)
 	}
-	giteaIP, err := awaitGenericIP("gitea", "gitea-http", 20*time.Second)
-	if err != nil {
-		fmt.Printf("Note: could not find gitea IP: %s\n", err)
-		giteaIP = "0.0.0.0"
+	// Check if gitea namespace exists before trying to get IP
+	giteaIP := "0.0.0.0"
+	cmd := "kubectl get namespace gitea"
+	_, nsErr := script.Exec(cmd).String()
+	if nsErr == nil {
+		// Gitea namespace exists, try to get IP
+		giteaIP, err = awaitGenericIP("gitea", "gitea-http", 20*time.Second)
+		if err != nil {
+			fmt.Printf("Note: could not find gitea IP: %s\n", err)
+			giteaIP = "0.0.0.0"
+		}
+	} else {
+		fmt.Println("Gitea namespace not found, skipping Gitea IP lookup (Application Orchestration may be disabled)")
 	}
 	orchIP, err := awaitGenericIP("orch-gateway", "traefik", 20*time.Second)
 	if err != nil {

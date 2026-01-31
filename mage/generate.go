@@ -1429,14 +1429,20 @@ func (Gen) hostfileTraefik() error {
 		return err
 	}
 
-	// Add Gitea hosts
-	giteaIP, err := awaitGenericIP("gitea", "gitea-http", 20*time.Second)
-	if err != nil {
-		return err
-	}
-	err = (Gen{}).GenericHostfile(giteaIP, "gitea", true)
-	if err != nil {
-		return err
+	// Add Gitea hosts only if gitea namespace exists
+	cmd := "kubectl get namespace gitea"
+	_, nsErr := script.Exec(cmd).String()
+	if nsErr == nil {
+		giteaIP, err := awaitGenericIP("gitea", "gitea-http", 20*time.Second)
+		if err != nil {
+			return err
+		}
+		err = (Gen{}).GenericHostfile(giteaIP, "gitea", true)
+		if err != nil {
+			return err
+		}
+	} else {
+		fmt.Println("Gitea namespace not found, skipping Gitea host entries (Application Orchestration may be disabled)")
 	}
 
 	// Add Argo CD hosts

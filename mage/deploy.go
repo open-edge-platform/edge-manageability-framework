@@ -181,12 +181,24 @@ func (d Deploy) preOrchDeploy(targetEnv string) error {
 		}
 	}
 
-	if err := (Deploy{}).generateInfraCerts(); err != nil {
+	// Check if AO is enabled before deploying Gitea
+	aoEnabled, err := (Config{}).isAOEnabled(targetEnv)
+	if err != nil {
+		fmt.Printf("Warning: Could not determine if AO is enabled: %v. Assuming AO is enabled.\n", err)
+		aoEnabled = true
+	}
+
+	if err := (Deploy{}).generateInfraCerts(aoEnabled); err != nil {
 		return err
 	}
 
-	if err := (Deploy{}).Gitea(targetEnv); err != nil {
-		return err
+	if aoEnabled {
+		if err := (Deploy{}).Gitea(targetEnv); err != nil {
+			return err
+		}
+	} else {
+		fmt.Println("Gitea deployment skipped (Application Orchestration is disabled)")
+		fmt.Println("Using GitHub repositories instead of Gitea")
 	}
 
 	if err := (Deploy{}).Argocd(targetEnv); err != nil {
@@ -217,6 +229,30 @@ func (d Deploy) preOrchDeploy(targetEnv string) error {
 		time.Sleep(argoRetryInterval * time.Second)
 	}
 
+	// Add repositories to ArgoCD based on AO status
+	if aoEnabled {
+		// When AO is enabled, get Gitea credentials and add Gitea repos
+		fmt.Println("Adding Gitea repositories to ArgoCD")
+		giteaUser, giteaToken, err := (Deploy{}).getArgoGiteaCredentials()
+		if err != nil {
+			return fmt.Errorf("error getting gitea credentials: %w", err)
+		}
+		// Get Gitea repos from the deployed Gitea instance
+		giteaRepos := []string{
+			"https://gitea-http.gitea.svc.cluster.local/argocd/edge-manageability-framework",
+		}
+		if err := (Argo{}).repoAdd(giteaUser, giteaToken, giteaRepos); err != nil {
+			return err
+		}
+	} else {
+		// When AO is disabled, use public GitHub repos (no credentials needed)
+		fmt.Println("Adding GitHub public repositories to ArgoCD")
+		if err := (Argo{}).repoAdd("", "", githubRepos); err != nil {
+			return err
+		}
+	}
+
+	// Always add EMF repos
 	if err := (Argo{}).repoAdd("", "", EMFRepos); err != nil {
 		return err
 	}
@@ -888,7 +924,7 @@ func joinNamedParams(valueName string, values []string) string {
 
 // Generate TLS cert for Gitea and ArgoCD. Must be executed before deploying Gitea and ArgoCD
 // since tls-orch will not be created until later stage.
-func (Deploy) generateInfraCerts() error {
+func (Deploy) generateInfraCerts(aoEnabled bool) error {
 	// Process Subject Alrternative Names (SAN)
 	// The cert is signed for both *.kind.internal and *.serviceDomain.
 	commonName := "*.kind.internal"
@@ -901,10 +937,21 @@ func (Deploy) generateInfraCerts() error {
 		return err
 	}
 
-	// Export TLS cert for Gitea as K8s secret
-	cmd = "kubectl -n gitea create secret tls gitea-tls-certs --cert=infra-tls.crt --key=infra-tls.key"
-	if _, err := script.Exec(cmd).Stdout(); err != nil {
-		return err
+	// Export TLS cert for Gitea as K8s secret only if AO is enabled
+	if aoEnabled {
+		// Create gitea namespace if it doesn't exist
+		cmd = "kubectl create namespace gitea"
+		if _, err := script.Exec(cmd).Stdout(); err != nil {
+			// Namespace might already exist, continue
+			fmt.Printf("Gitea namespace creation: %v\n", err)
+		}
+
+		cmd = "kubectl -n gitea create secret tls gitea-tls-certs --cert=infra-tls.crt --key=infra-tls.key"
+		if _, err := script.Exec(cmd).Stdout(); err != nil {
+			return err
+		}
+	} else {
+		fmt.Println("Skipping Gitea TLS cert creation (Application Orchestration is disabled)")
 	}
 
 	// Export TLS cert for ArgoCD as K8s secret
@@ -917,6 +964,7 @@ func (Deploy) generateInfraCerts() error {
 }
 
 func (d Deploy) gitea(bootstrapValues []string, targetEnv string) error {
+	// This function should only be called when AO is enabled
 	// Store admin credential in K8s Secret
 	// This is not consumed during normal situlations
 	fmt.Println("Creating admin-gitea-credential secret")
@@ -947,40 +995,37 @@ func (d Deploy) gitea(bootstrapValues []string, targetEnv string) error {
 		return err
 	}
 
-	// Deploy Gitea if AO is enabled
-	aoEnabled, _ := (Config{}).isAOEnabled(targetEnv)
-	if aoEnabled {
-		giteaRegistry := "oci://registry-1.docker.io/giteacharts/gitea"
+	// Deploy Gitea
+	giteaRegistry := "oci://registry-1.docker.io/giteacharts/gitea"
 
-		bootstrapParam := joinNamedParams("values", bootstrapValues)
-		cmd := fmt.Sprintf("helm -n gitea upgrade --install gitea %s --version %s "+
-			bootstrapParam+" --set gitea.admin.username='%s' --set gitea.admin.password='%s' --create-namespace --wait",
-			giteaRegistry, giteaVersion, adminGiteaUsername, adminGiteaPassword)
-		fmt.Printf("Deploying Gitea with cmd: %s\n", cmd)
-		if _, err := script.Exec(cmd).Stdout(); err != nil {
-			return err
-		}
+	bootstrapParam := joinNamedParams("values", bootstrapValues)
+	cmd := fmt.Sprintf("helm -n gitea upgrade --install gitea %s --version %s "+
+		bootstrapParam+" --set gitea.admin.username='%s' --set gitea.admin.password='%s' --create-namespace --wait",
+		giteaRegistry, giteaVersion, adminGiteaUsername, adminGiteaPassword)
+	fmt.Printf("Deploying Gitea with cmd: %s\n", cmd)
+	if _, err := script.Exec(cmd).Stdout(); err != nil {
+		return err
+	}
 
-		// Create argocd account in Gitea
-		fmt.Println("Creating argocd account in Gitea")
-		if err := createOrUpdateGiteaAccount(argoGiteaUsername, argoGiteaPassword); err != nil {
-			fmt.Println("Error creating argocd account in Gitea")
-			return err
-		}
+	// Create argocd account in Gitea
+	fmt.Println("Creating argocd account in Gitea")
+	if err := createOrUpdateGiteaAccount(argoGiteaUsername, argoGiteaPassword); err != nil {
+		fmt.Println("Error creating argocd account in Gitea")
+		return err
+	}
 
-		// Create apporch account in Gitea
-		fmt.Println("Creating apporch account in Gitea")
-		if err := createOrUpdateGiteaAccount(appGiteaUsername, appGiteaPassword); err != nil {
-			fmt.Println("Error creating apporch account in Gitea")
-			return err
-		}
+	// Create apporch account in Gitea
+	fmt.Println("Creating apporch account in Gitea")
+	if err := createOrUpdateGiteaAccount(appGiteaUsername, appGiteaPassword); err != nil {
+		fmt.Println("Error creating apporch account in Gitea")
+		return err
+	}
 
-		// Create clusterorch account in Gitea
-		fmt.Println("Creating clusterorch account in Gitea")
-		if err := createOrUpdateGiteaAccount(clusterGiteaUsername, clusterGiteaPassword); err != nil {
-			fmt.Println("Error creating clusterorch account in Gitea")
-			return err
-		}
+	// Create clusterorch account in Gitea
+	fmt.Println("Creating clusterorch account in Gitea")
+	if err := createOrUpdateGiteaAccount(clusterGiteaUsername, clusterGiteaPassword); err != nil {
+		fmt.Println("Error creating clusterorch account in Gitea")
+		return err
 	}
 
 	return nil
@@ -1031,6 +1076,37 @@ func createOrUpdateGiteaAccount(username string, password string) error {
 		return err
 	}
 	return nil
+}
+
+// Get the Gitea credentials from the Kubernetes secret argocd-gitea-credential in orch-platform namespace
+func (Deploy) getArgoGiteaCredentials() (string, string, error) {
+	// Load the username from the Kubernetes secret argocd-gitea-credential in orch-platform namespace
+	cmd := "kubectl get secret argocd-gitea-credential -n orch-platform -o jsonpath='{.data.username}'"
+	encodedUsername, err := script.Exec(cmd).String()
+	if err != nil {
+		return "", "", fmt.Errorf("error retrieving username from Kubernetes secret: %w", err)
+	}
+	argoGiteaUsername := strings.TrimSpace(encodedUsername)
+
+	// Load the password from the Kubernetes secret argocd-gitea-credential in orch-platform namespace
+	cmd = "kubectl get secret argocd-gitea-credential -n orch-platform -o jsonpath='{.data.password}'"
+	encodedPassword, err := script.Exec(cmd).String()
+	if err != nil {
+		return "", "", fmt.Errorf("error retrieving password from Kubernetes secret: %w", err)
+	}
+	argoGiteaPassword := strings.TrimSpace(encodedPassword)
+
+	// Decode the base64 encoded username and password
+	decodedUsername, err := base64.StdEncoding.DecodeString(argoGiteaUsername)
+	if err != nil {
+		return "", "", fmt.Errorf("error decoding username: %w", err)
+	}
+	decodedPassword, err := base64.StdEncoding.DecodeString(argoGiteaPassword)
+	if err != nil {
+		return "", "", fmt.Errorf("error decoding password: %w", err)
+	}
+
+	return string(decodedUsername), string(decodedPassword), nil
 }
 
 // startGiteaPortForward starts a port-forward to the Gitea service and returns the command.
