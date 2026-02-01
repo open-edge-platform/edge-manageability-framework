@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025 Intel Corporation
+# SPDX-FileCopyrightText: 2026 Intel Corporation
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -285,6 +285,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
           repository: open-edge-platform/orch-ci
+          token: ${{ secrets.SYS_EMF_GH_TOKEN }}
           path: orch-ci
           persist-credentials: false
 
@@ -483,10 +484,6 @@ jobs:
           docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
           token: ${{ secrets.SYS_EMF_GH_TOKEN }}
           deployment_type: all
-      - name: Collect diagnostics
-        if: always()
-        uses: ./.github/actions/collect_diagnostics
-        timeout-minutes: 15
       - name: Run policy compliance tests
         run: mage test:policyCompliance
       - name: Run image pull policy compliance tests
@@ -655,6 +652,13 @@ jobs:
           path: |
             smoke-test/logs/*
 
+      - name: Collect diagnostics
+        if: always()
+        uses: ./.github/actions/collect_diagnostics
+        timeout-minutes: 15
+        with:
+          k8s_diagnostics_args: "--errors-only --advanced --output-html --output-json"
+
   deploy-on-prem:
     permissions:
       contents: read
@@ -768,6 +772,13 @@ jobs:
           path: |
             edge-manage-test-automation/robot_output/**/*
 
+      - name: Collect diagnostics
+        if: always()
+        uses: ./.github/actions/collect_diagnostics
+        timeout-minutes: 15
+        with:
+          k8s_diagnostics_args: "--errors-only --output-html --output-json"
+
   deploy-oxm-profile:
     permissions:
       contents: read
@@ -839,6 +850,13 @@ jobs:
           TEST_EXIT_CODE=$?
           sudo cat /var/log/libvirt/qemu/edge-node-EN123456789-console.log || true
           exit $TEST_EXIT_CODE
+
+      - name: Collect diagnostics
+        if: always()
+        uses: ./.github/actions/collect_diagnostics
+        timeout-minutes: 15
+        with:
+          k8s_diagnostics_args: "--errors-only --output-html --output-json"
 
   tag-repo:
     permissions:
