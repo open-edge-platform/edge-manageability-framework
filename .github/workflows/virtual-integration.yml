@@ -39,7 +39,7 @@ jobs:
     if: github.event_name == 'pull_request'
     permissions:
       contents: read
-    uses: open-edge-platform/orch-ci/.github/workflows/pre-merge.yml@79c4381f9be567527d8782094317b0282493e45a  # 0.1.66
+    uses: open-edge-platform/orch-ci/.github/workflows/pre-merge.yml@467367d6f859a4654f2645ca78efd60035cf390c  # 2026.0.8
     with:
       run_version_check: false
       run_build: false
@@ -74,7 +74,7 @@ jobs:
 
       - name: Discover Changed Files
         id: check-files
-        uses: open-edge-platform/orch-ci/discover-changed-files@main  # zizmor: ignore[unpinned-uses]
+        uses: open-edge-platform/orch-ci/discover-changed-files@467367d6f859a4654f2645ca78efd60035cf390c  # 2026.0.8 # zizmor: ignore[unpinned-uses]
         with:
           project_folder: "."
 
@@ -108,20 +108,6 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
           persist-credentials: false
-
-      - name: ClamAV
-        run: |
-          docker run --rm \
-          --mount type=bind,source=./,target=/scandir \
-          clamav/clamav:stable \
-          clamscan --recursive --log=/scandir/${{ env.OUTPUT_FILE }} \
-          /scandir
-
-          if [ $? -ne 0 ]; then
-            sudo chown $USER:$USER ${{ env.OUTPUT_FILE }}
-            exit 1
-          fi
-          sudo chown $USER:$USER ${{ env.OUTPUT_FILE }}
 
       - name: Upload evidence
         if: always()
@@ -894,7 +880,7 @@ jobs:
       security-events: write
       id-token: write
     if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
-    uses: open-edge-platform/orch-ci/.github/workflows/post-merge.yml@20b640842e63420b06b3ff4247e608228e14c74a  # 2026.0.1
+    uses: open-edge-platform/orch-ci/.github/workflows/post-merge.yml@467367d6f859a4654f2645ca78efd60035cf390c  # 2026.0.8
     with:
       run_build: false
       run_version_tag: false

@@ -77,6 +77,7 @@ ORCH_INSTALLER_PROFILE="${ORCH_INSTALLER_PROFILE:-onprem}"
 DEPLOY_VERSION="${DEPLOY_VERSION:-v3.1.0}"  # Updated to v3.1.0
 GITEA_IMAGE_REGISTRY="${GITEA_IMAGE_REGISTRY:-docker.io}"
 USE_LOCAL_PACKAGES="${USE_LOCAL_PACKAGES:-false}"  # New flag for local packages
+INSTALL_GITEA=true
 
 # Determine UPGRADE_3_1_X based on existing PostgreSQL pod
 echo "Checking PostgreSQL pod in orch-database namespace..."
@@ -200,6 +201,8 @@ retrieve_and_apply_config() {
     else
         echo "⛔ Single Tenancy is DISABLED"
     fi
+
+    INSTALL_GITEA=$([[ "${DISABLE_CO_PROFILE:-}" == "true" || "${DISABLE_AO_PROFILE:-}" == "true" ]] && echo "false" || echo "true")
 
     update_config_variable "$config_file" "DISABLE_CO_PROFILE" "$DISABLE_CO_PROFILE"
     update_config_variable "$config_file" "DISABLE_AO_PROFILE" "$DISABLE_AO_PROFILE"
@@ -802,7 +805,7 @@ echo "RKE2 upgraded to $(dpkg-query -W -f='${Version}' onprem-ke-installer)"
 
 # Run Gitea upgrade
 echo "Upgrading Gitea..."
-eval "sudo IMAGE_REGISTRY=${GITEA_IMAGE_REGISTRY} DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get install --only-upgrade --allow-downgrades -y $cwd/$deb_dir_name/onprem-gitea-installer_*_amd64.deb"
+eval "sudo IMAGE_REGISTRY=${GITEA_IMAGE_REGISTRY} INSTALL_GITEA=${INSTALL_GITEA} DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get install --only-upgrade --allow-downgrades -y $cwd/$deb_dir_name/onprem-gitea-installer_*_amd64.deb"
 wait_for_pods_running $gitea_ns
 echo "Gitea upgraded to $(dpkg-query -W -f='${Version}' onprem-gitea-installer)"
 
@@ -881,7 +884,7 @@ kubectl delete secret -l managed-by=edge-manageability-framework -A || true
 
 EOF
 
-eval "sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l ORCH_INSTALLER_PROFILE=$ORCH_INSTALLER_PROFILE GIT_REPOS=$GIT_REPOS apt-get install --only-upgrade --allow-downgrades -y $cwd/$deb_dir_name/onprem-orch-installer_*_amd64.deb"
+eval "sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l INSTALL_GITEA=${INSTALL_GITEA} ORCH_INSTALLER_PROFILE=$ORCH_INSTALLER_PROFILE GIT_REPOS=$GIT_REPOS apt-get install --only-upgrade --allow-downgrades -y $cwd/$deb_dir_name/onprem-orch-installer_*_amd64.deb"
 echo "Edge Orchestrator getting upgraded to version $(dpkg-query -W -f='${Version}' onprem-orch-installer), wait for SW to deploy... "
 
 # Allow adjustments as some PVCs sizes might have changed
@@ -1025,6 +1028,17 @@ patch_secrets() {
       kubectl patch secret -n orch-database orch-platform-vault -p "{\"data\": {\"password\": \"$VAULT\"}}" --type=merge
       kubectl patch secret -n orch-database orch-infra-mps -p "{\"data\": {\"password\": \"$MPS\"}}" --type=merge
       kubectl patch secret -n orch-database orch-infra-rps -p "{\"data\": {\"password\": \"$RPS\"}}" --type=merge
+    fi
+
+    # patch keycloak secret for additional fields username & password
+    if kubectl get secret platform-keycloak -n orch-platform > /dev/null 2>&1; then
+        ADMIN_PASSWORD=$(kubectl get secret platform-keycloak -n orch-platform -o jsonpath='{.data.admin-password}' 2>/dev/null | base64 -d 2>/dev/null)
+        if [ -z "$ADMIN_PASSWORD" ]; then
+            echo "Error: Could not retrieve admin-password from platform-keycloak secret"
+            exit 1
+        fi
+        echo "Updating platform-keycloak secret with username & password field..."
+        kubectl patch secret platform-keycloak -n orch-platform --type='merge' -p "{\"stringData\": {\"username\": \"admin\", \"password\": \"$ADMIN_PASSWORD\"}}" || true
     fi
 
     # This secret does not exist in 3.1.x so we need to create it
