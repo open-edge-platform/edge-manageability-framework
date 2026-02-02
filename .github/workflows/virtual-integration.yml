@@ -59,6 +59,10 @@ jobs:
       markdown: ${{ contains(steps.check-files.outputs.changed_files, '.md') || contains(steps.check-files.outputs.changed_files, '.markdown') || contains(steps.check-files.outputs.changed_files, '.mdx') }}
       orch: ${{ contains(steps.check-files.outputs.changed_files, 'argocd') || contains(steps.check-files.outputs.changed_files, 'bootstrap') || contains(steps.check-files.outputs.changed_files, 'installer') || contains(steps.check-files.outputs.changed_files, 'internal') || contains(steps.check-files.outputs.changed_files, 'mage') || contains(steps.check-files.outputs.changed_files, 'node') || contains(steps.check-files.outputs.changed_files, 'router') || contains(steps.check-files.outputs.changed_files, 'tools') || contains(steps.check-files.outputs.changed_files, 'e2e-tests') || contains(steps.check-files.outputs.changed_files, 'VERSION') || contains(steps.check-files.outputs.changed_files, 'orch-configs') }}
       on-prem: ${{ contains(steps.check-files.outputs.changed_files, 'on-prem-installers') || contains(steps.check-files.outputs.changed_files, 'terraform') }}
+      on-prem-oxm: ${{ contains(steps.check-files.outputs.changed_files, 'argocd/applications/configs/infra-') ||
+        contains(steps.check-files.outputs.changed_files, 'argocd/applications/custom/infra-') ||
+        contains(steps.check-files.outputs.changed_files, 'argocd/applications/templates/infra-') ||
+        contains(steps.check-files.outputs.changed_files, 'argocd/applications/values.yaml') }}
       onboarding: ${{ contains(steps.check-files.outputs.changed_files, 'argocd/applications/templates/infra-') || contains(steps.check-files.outputs.changed_files, 'argocd/applications/values.yaml') }}
       shell: ${{ contains(steps.check-files.outputs.changed_files, '.sh') || contains(steps.check-files.outputs.changed_files, '.bash') }}
       terraform: ${{ contains(steps.check-files.outputs.changed_files, '.hcl') || contains(steps.check-files.outputs.changed_files, '.tf') || contains(steps.check-files.outputs.changed_files, '.tfvars') }}
@@ -797,13 +801,7 @@ jobs:
     if: |
       always() &&
       needs.build-publish.result == 'success' &&
-      needs.check-changed-files.outputs.only_design_proposals != 'true' && (
-      needs.check-changed-files.outputs.orch == 'true' ||
-      needs.check-changed-files.outputs.on-prem == 'true' ||
-      needs.check-changed-files.outputs.ci == 'true' ||
-      github.ref == 'refs/heads/main' ||
-      github.ref == 'refs/heads/main-pass-validation'
-      )
+      needs.check-changed-files.outputs.on-prem-oxm == 'true'
     runs-on: ubuntu-22.04-16core-64GB
     timeout-minutes: 90
     env:
