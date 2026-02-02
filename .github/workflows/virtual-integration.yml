@@ -706,6 +706,7 @@ jobs:
       - name: Deploy On-Prem Orchestrator
         id: deploy-on-prem
         uses: ./.github/actions/deploy_on_prem
+        timeout-minutes: 60
         with:
           orch_version: ${{ github.event.pull_request.head.sha }}
           docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
@@ -745,7 +746,7 @@ jobs:
 
       - name: Run Golden Suite Robot Framework Tests
         id: robot-tests
-        timeout-minutes: 45
+        timeout-minutes: 30
         working-directory: edge-manage-test-automation
         env:
           KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
@@ -816,6 +817,7 @@ jobs:
       - name: Deploy OXM Orchestrator Profile
         id: deploy-oxm-profile
         uses: ./.github/actions/deploy_on_prem
+        timeout-minutes: 60
         env:
           TF_VAR_no_proxy: "localhost,127.0.0.0/8,10.0.0.0/8,192.168.0.0/16,.svc,.cluster.local,.default,.internal,.orch-platform,.orch-app,.orch-cluster,.orch-infra,.orch-database,.cattle-system,.orch-secret,.onprem"
           TF_VAR_en_http_proxy: "http://192.168.99.30:8080"
