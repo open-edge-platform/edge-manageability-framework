@@ -8,7 +8,7 @@ root:
   clusterValues:
 {{- if .Values.enableVproProfile }}
     - orch-configs/profiles/enable-platform-vpro.yaml
-{{- else if .Values.enableEdgeInfra }}
+{{- else }}
     - orch-configs/profiles/enable-platform.yaml
 {{- end }}
 {{- if .Values.enableDefaultTenancy }}
@@ -31,7 +31,7 @@ root:
 {{- end }}
 {{- if .Values.enableVproProfile }}
     - orch-configs/profiles/enable-edgeinfra-vpro.yaml
-{{- else }}
+{{- else if .Values.enableEdgeInfra }}
     - orch-configs/profiles/enable-edgeinfra.yaml
 {{- end }}
 {{- if or .Values.enableUi .Values.enableUiDev }}
