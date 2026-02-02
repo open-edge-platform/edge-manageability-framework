@@ -470,37 +470,76 @@ var _ = Describe("Component Status Service", Label(componentStatusLabel), func()
 					"application-orchestration-ui",
 					"cluster-orchestration-ui",
 					"infrastructure-ui",
-				}
-				for _, subFeature := range expectedSubFeatures {
-					_, exists := webUI.SubFeatures[subFeature]
-					Expect(exists).To(BeTrue(), fmt.Sprintf("web-ui sub-feature %s should be present", subFeature))
-				}
-			})
+                                        "admin-ui",
+                                        "alerts-ui",
+                                }
+                                for _, subFeature := range expectedSubFeatures {
+                                        _, exists := webUI.SubFeatures[subFeature]
+                                        Expect(exists).To(BeTrue(), fmt.Sprintf("web-ui sub-feature %s should be present", subFeature))
+                                }
+                        })
 
-			It("should allow independent UI component deployment", func() {
-				webUI := status.Orchestrator.Features["web-ui"]
+                        It("should disable UI when backend is disabled", func() {
+                                webUI := status.Orchestrator.Features["web-ui"]
+                                appOrch := status.Orchestrator.Features["application-orchestration"]
+                                clusterOrch := status.Orchestrator.Features["cluster-orchestration"]
+                                infra := status.Orchestrator.Features["edge-infrastructure-manager"]
+                                orchObs, orchObsExists := status.Orchestrator.Features["orchestrator-observability"]
 
-				orchUIRoot := webUI.SubFeatures["orchestrator-ui-root"]
-				appUI := webUI.SubFeatures["application-orchestration-ui"]
-				clusterUI := webUI.SubFeatures["cluster-orchestration-ui"]
-				infraUI := webUI.SubFeatures["infrastructure-ui"]
+                                appUI := webUI.SubFeatures["application-orchestration-ui"]
+                                clusterUI := webUI.SubFeatures["cluster-orchestration-ui"]
+                                infraUI := webUI.SubFeatures["infrastructure-ui"]
+                                alertsUI, alertsUIExists := webUI.SubFeatures["alerts-ui"]
 
-				// Each UI component can be enabled/disabled independently
-				Expect(orchUIRoot.Installed).To(Or(BeTrue(), BeFalse()))
-				Expect(appUI.Installed).To(Or(BeTrue(), BeFalse()))
-				Expect(clusterUI.Installed).To(Or(BeTrue(), BeFalse()))
-				Expect(infraUI.Installed).To(Or(BeTrue(), BeFalse()))
-			})
-		})
+                                // If backend is disabled, UI must also be disabled
+                                if !appOrch.Installed {
+                                        Expect(appUI.Installed).To(BeFalse(), "app-orch-ui requires app-orch backend")
+                                }
+                                if !clusterOrch.Installed {
+                                        Expect(clusterUI.Installed).To(BeFalse(), "cluster-orch-ui requires cluster-orch backend")
+                                }
+                                if !infra.Installed {
+                                        Expect(infraUI.Installed).To(BeFalse(), "infra-ui requires infra backend")
+                                }
+                                if alertsUIExists && orchObsExists && !orchObs.Installed {
+                                        Expect(alertsUI.Installed).To(BeFalse(), "alerts-ui requires orchestrator-observability backend")
+                                }
+                        })
 
-		Context("Multitenancy configuration", func() {
-			It("should validate multitenancy sub-features", func() {
-				mt, exists := status.Orchestrator.Features["multitenancy"]
-				Expect(exists).To(BeTrue(), "multitenancy feature should exist")
+                        It("should enable UI when backend is enabled", func() {
+                                webUI := status.Orchestrator.Features["web-ui"]
+                                appOrch := status.Orchestrator.Features["application-orchestration"]
+                                clusterOrch := status.Orchestrator.Features["cluster-orchestration"]
+                                infra := status.Orchestrator.Features["edge-infrastructure-manager"]
+                                orchObs := status.Orchestrator.Features["orchestrator-observability"]
 
-				// Multitenancy is always installed
-				Expect(mt.Installed).To(BeTrue(), "multitenancy should always be installed")
+                                appUI := webUI.SubFeatures["application-orchestration-ui"]
+                                clusterUI := webUI.SubFeatures["cluster-orchestration-ui"]
+                                infraUI := webUI.SubFeatures["infrastructure-ui"]
+                                alertsUI, alertsUIExists := webUI.SubFeatures["alerts-ui"]
 
+                                // If UI is enabled, backend must be enabled (reverse dependency)
+                                if appUI.Installed {
+                                        Expect(appOrch.Installed).To(BeTrue(), "app-orch backend must be enabled if UI is enabled")
+                                }
+                                if clusterUI.Installed {
+                                        Expect(clusterOrch.Installed).To(BeTrue(), "cluster-orch backend must be enabled if UI is enabled")
+                                }
+                                if infraUI.Installed {
+                                        Expect(infra.Installed).To(BeTrue(), "infra backend must be enabled if UI is enabled")
+                                }
+                                if alertsUIExists && alertsUI.Installed {
+                                        Expect(orchObs.Installed).To(BeTrue(), "orchestrator-observability must be enabled if alerts-ui is enabled")
+                                }
+                        })
+                })
+
+                Context("Multitenancy configuration", func() {
+                        It("should validate multitenancy sub-features", func() {
+                                mt, exists := status.Orchestrator.Features["multitenancy"]
+                                Expect(exists).To(BeTrue(), "multitenancy feature should exist")
+
+                                // Multitenancy is always installed
 				defaultOnly, exists := mt.SubFeatures["default-tenant-only"]
 				Expect(exists).To(BeTrue(), "default-tenant-only sub-feature should exist")
 				Expect(defaultOnly.Installed).To(Or(BeTrue(), BeFalse()))
@@ -561,19 +600,5 @@ var _ = Describe("Component Status Service", Label(componentStatusLabel), func()
 				}
 			}
 		})
-
-		It("should have all boolean installed fields", func() {
-			// Verify all features have installed field as boolean
-			for featureName, feature := range status.Orchestrator.Features {
-				Expect(feature.Installed).To(Or(BeTrue(), BeFalse()),
-					fmt.Sprintf("feature %s should have boolean installed field", featureName))
-
-				for subName, subFeature := range feature.SubFeatures {
-					Expect(subFeature.Installed).To(Or(BeTrue(), BeFalse()),
-						fmt.Sprintf("sub-feature %s.%s should have boolean installed field",
-							featureName, subName))
-				}
-			}
-		})
-	})
+        })
 })

@@ -131,7 +131,7 @@ componentStatus:
       # Detection - enable-full-ui.yaml in root-app valueFiles
       # UI sub-features check both the UI component AND the parent feature enablement
       web-ui:
-        installed: {{ or (index .Values.argo.enabled "web-ui-root") (index .Values.argo.enabled "web-ui-app-orch") (index .Values.argo.enabled "web-ui-cluster-orch") (index .Values.argo.enabled "web-ui-infra") | default false }}
+        installed: {{ or (index .Values.argo.enabled "web-ui-root") (index .Values.argo.enabled "web-ui-app-orch") (index .Values.argo.enabled "web-ui-cluster-orch") (index .Values.argo.enabled "web-ui-infra") (index .Values.argo.enabled "web-ui-admin") | default false }}
         orchestrator-ui-root:
           installed: {{ index .Values.argo.enabled "web-ui-root" | default false }}
         application-orchestration-ui:
@@ -140,7 +140,12 @@ componentStatus:
           installed: {{ and (index .Values.argo.enabled "web-ui-cluster-orch" | default false) (or (index .Values.argo.enabled "cluster-manager") (index .Values.argo.enabled "capi-operator") (index .Values.argo.enabled "intel-infra-provider") | default false) }}
         infrastructure-ui:
           installed: {{ and (index .Values.argo.enabled "web-ui-infra" | default false) (or (index .Values.argo.enabled "infra-manager") (index .Values.argo.enabled "infra-operator") (index .Values.argo.enabled "tinkerbell") (index .Values.argo.enabled "infra-onboarding") (index .Values.argo.enabled "maintenance-manager") | default false) }}
-      
+        admin-ui:
+          installed: {{ index .Values.argo.enabled "web-ui-admin" | default false }}
+        # Alerts UI - Optional observability feature at orchestrator level (like app-orch, cluster-orch)
+        # Cluster-templates and os-profiles are always available when their parent orchestrators exist
+        alerts-ui:
+          installed: {{ or (index .Values.argo.enabled "orchestrator-observability") (index .Values.argo.enabled "alerting-monitor") | default false }}
       # Multitenancy - Tenancy services (tenancy-manager, tenancy-api-mapping, tenancy-datamodel)
       # are always deployed as part of root-app, so multitenancy is always enabled
       # The default-tenant-only sub-feature indicates single-tenant mode (when defaultTenancy profile is loaded)
