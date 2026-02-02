@@ -15,7 +15,7 @@ runs:
     if: always()
     shell: bash
     run: |
-      python3 ./ci/orch_k8s_diagnostics.py ${{ inputs.k8s_diagnostics_args }}
+      /usr/bin/python3 ./ci/orch_k8s_diagnostics.py ${{ inputs.k8s_diagnostics_args }}
       echo "K8s diagnostics completed with args: ${{ inputs.k8s_diagnostics_args }}"
   - name: Collect cluster diagnostic information
     id: collect-cluster-diagnostics
