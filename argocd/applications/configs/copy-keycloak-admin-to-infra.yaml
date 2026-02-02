@@ -9,5 +9,9 @@ sourceSecretName: platform-keycloak
 keyName:
   - source: admin-password
     target: admin-password
+  - source: password
+    target: password
+  - source: username
+    target: username
 
 externalSecretsApiGroup: external-secrets.io/v1
