@@ -19,6 +19,7 @@
 # Usage: ./onprem_orch_install.sh [OPTIONS]
 #   Options:
 #     -h, --help            Show help message
+#     --skip-download       Skip downloading packages (use existing ones)
 #     -s, --sre [PATH]      Enable SRE TLS with optional CA certificate path
 #     -d, --notls           Disable SMTP TLS verification
 #     -y, --yes             Assume 'yes' to all prompts and run non-interactively
@@ -42,6 +43,7 @@ source "$(dirname "$0")/functions.sh"
 ### Variables
 cwd=$(pwd)
 
+SKIP_DOWNLOAD=false
 ASSUME_YES=false
 ENABLE_TRACE=false
 SINGLE_TENANCY_PROFILE=false
@@ -51,7 +53,25 @@ git_arch_name="repo_archives"
 argo_cd_ns="argocd"
 gitea_ns="gitea"
 si_config_repo="edge-manageability-framework"
+installer_rs_path="edge-orch/common/files"
 export GIT_REPOS=$cwd/$git_arch_name
+
+# Variables that depend on the above and might require updating later, are placed in here
+set_artifacts_version() {
+  # Only download installers used by orch_install script
+  installer_list=()
+  
+  # Conditionally add gitea installer if needed
+  if [ "$INSTALL_GITEA" = "true" ]; then
+    installer_list+=("onprem-gitea-installer:${DEPLOY_VERSION}")
+  fi
+  
+  # Always include argocd and orch installers
+  installer_list+=(
+    "onprem-argocd-installer:${DEPLOY_VERSION}"
+    "onprem-orch-installer:${DEPLOY_VERSION}"
+  )
+}
 
 # Source main environment configuration if it exists
 MAIN_ENV_CONFIG="$(dirname "$0")/onprem.env"
@@ -238,6 +258,7 @@ $(basename "$0") [OPTIONS]
 
 Examples:
 ./$(basename "$0")                    # Basic installation with onprem.env config
+./$(basename "$0") --skip-download    # Skip package downloads (use existing packages)
 ./$(basename "$0") -s /path/to/ca.crt # Enable SRE TLS with custom CA certificate
 ./$(basename "$0") -d                 # Disable SMTP TLS verification
 ./$(basename "$0") -st                # Enable single tenancy mode
@@ -245,6 +266,9 @@ Examples:
 
 Options:
     -h, --help                 Show this help message and exit
+    
+    --skip-download            Skip downloading installer packages from registry
+                               Useful when packages were already downloaded
     
     -s, --sre [CA_CERT_PATH]   Enable TLS for SRE (Site Reliability Engineering) Exporter
                                Optionally provide path to SRE destination CA certificate
@@ -363,6 +387,9 @@ if [ -n "${1-}" ]; then
       -y|--yes)
         ASSUME_YES=true
       ;;
+      --skip-download)
+        SKIP_DOWNLOAD=true
+      ;;
       -d|--notls)
         SMTP_SKIP_VERIFY="true"
       ;;
@@ -410,6 +437,34 @@ if grep -q "^[[:space:]]*[^#]*-[[:space:]]*.*enable-app-orch\.yaml" "$ORCH_INSTA
   INSTALL_GITEA="true"
 else
   INSTALL_GITEA="false"
+fi
+
+# Set the version of the artifacts to be downloaded (depends on INSTALL_GITEA)
+set_artifacts_version
+
+# Check & install script dependencies
+check_oras
+
+if [[ $SKIP_DOWNLOAD != true ]]; then
+  # Download .deb packages needed by orch_install
+  retry_count=0
+  max_retries=10
+  retry_delay=15
+
+  until download_artifacts "$cwd" "$deb_dir_name" "$RELEASE_SERVICE_URL" "$installer_rs_path" "${installer_list[@]}"; do
+    ((retry_count++))
+    if [ "$retry_count" -ge "$max_retries" ]; then
+      echo "Failed to download deb artifacts after $max_retries attempts."
+      exit 1
+    fi
+    echo "Download failed. Retrying in $retry_delay seconds... ($retry_count/$max_retries)"
+    sleep "$retry_delay"
+  done
+
+  sudo chown -R _apt:root $deb_dir_name
+else
+  echo "Skipping packages download"
+  sudo chown -R _apt:root $deb_dir_name
 fi
 
 # cp changes to tmp repo
