@@ -438,7 +438,7 @@ var _ = Describe("Edge Infrastructure Manager integration test", Label("orchestr
 		})
 	})
 
-	Describe("Tinkerbell CDN-NGINX service", Ordered, Label(infraManagement), func() {
+	Describe("Tinkerbell CDN-HAProxy service", Ordered, Label(infraManagement), func() {
 		var cdnURL string
 		var bootsCli *http.Client
 		var bootsTLSConfig *tls.Config
