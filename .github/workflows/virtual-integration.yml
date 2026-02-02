@@ -657,7 +657,7 @@ jobs:
         uses: ./.github/actions/collect_diagnostics
         timeout-minutes: 15
         with:
-          k8s_diagnostics_args: "--errors-only --advanced --output-html --output-json"
+          k8s_diagnostics_args: "--errors-only --include-logs --output-html --output-json"
 
   deploy-on-prem:
     permissions:
@@ -858,7 +858,7 @@ jobs:
         uses: ./.github/actions/collect_diagnostics
         timeout-minutes: 15
         with:
-          k8s_diagnostics_args: "--errors-only --output-html --output-json"
+          k8s_diagnostics_args: "--errors-only --include-logs --output-html --output-json"
 
   tag-repo:
     permissions:
