@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Common name and DNS SAN of the self-signed TLS certificate
-commonName: tinkerbell-haproxy.{{ .Values.argo.clusterDomain }}
+commonName: tinkerbell-nginx.{{ .Values.argo.clusterDomain }}
 
 # Ingress configuration
 haproxyIngress:

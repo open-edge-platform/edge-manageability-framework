@@ -76,8 +76,8 @@ postCustomTemplateOverwrite:
     controller:
       service:
         annotations:
-          metallb.universe.tf/address-pool: haproxy-controller
+          metallb.universe.tf/address-pool: ingress-nginx-controller
   metallb-config:
     ArgoIP: ${ARGO_IP}
     TraefikIP: ${TRAEFIK_IP}
-    HaproxyIP: ${HAPROXY_IP}
+    NginxIP: ${NGINX_IP}

@@ -200,13 +200,13 @@ if [ "$DEPLOY_TYPE" = "onprem" ]; then
     # Prompt for required IPs
     prompt_for_ip "ARGO_IP" "Argo IP"
     prompt_for_ip "TRAEFIK_IP" "Traefik IP"
-    prompt_for_ip "HAPROXY_IP" "HAProxy IP"
+    prompt_for_ip "NGINX_IP" "Nginx IP"
 
     echo
     echo "✅ Using the following valid IPs:"
     echo "   ArgoIP:     $ARGO_IP"
     echo "   TraefikIP:  $TRAEFIK_IP"
-    echo "   HaproxyIP:  $HAPROXY_IP"
+    echo "   NginxIP:    $NGINX_IP"
     echo
 
     # O11Y disable check

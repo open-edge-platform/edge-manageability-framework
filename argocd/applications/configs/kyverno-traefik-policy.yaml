@@ -24,7 +24,7 @@ jwtMiddlewareException:
       - "amt-api-rps"  # Added to allow OpenDMT RPC-RPS traffic, which fails due to missing JWT token.
   - namespace: "orch-boots"
     names:
-      - "tinkerbell-haproxy-ingress"
+      - "tinkerbell-nginx-ingress"
 anyMiddlewareException:
   - namespace: "orch-gateway"
     names:
