@@ -5,7 +5,7 @@
 apiVersion: metallb.io/v1beta1
 kind: IPAddressPool
 metadata:
-  name: example
+  name: ingress-nginx-controller
   namespace: metallb-system
 spec:
   addresses:

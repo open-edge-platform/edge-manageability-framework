@@ -5,6 +5,11 @@
 # Common name and DNS SAN of the self-signed TLS certificate
 commonName: tinkerbell-nginx.{{ .Values.argo.clusterDomain }}
 
+{{- if ne (.Values.orchestratorDeployment.targetCluster | default "") "aws" }}
+# MetalLB address pool for the alias service (Kind/OnPrem only, not AWS)
+metallbPool: ingress-nginx-controller
+{{- end }}
+
 # Ingress configuration
 haproxyIngress:
   # Set to false to disable Ingress resource (use LoadBalancer instead)
