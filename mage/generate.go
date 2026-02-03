@@ -1420,7 +1420,7 @@ func (Gen) hostfileTraefik() error {
 	}
 
 	// Add BIOS nginx hosts
-	bootsIP, err := awaitGenericIP("orch-boots", "ingress-haproxy-kubernetes-ingress", 20*time.Second)
+	bootsIP, err := awaitGenericIP("orch-boots", "ingress-nginx-controller", 20*time.Second)
 	if err != nil {
 		return err
 	}

@@ -86,7 +86,7 @@ func (r Router) start(externalDomain string, sandboxKeyFile string, sandboxCertF
 		domainname = defaultClusterDomain
 	}
 
-	bootsIP, err := awaitGenericIP("orch-boots", "ingress-haproxy-kubernetes-ingress", 20*time.Second)
+	bootsIP, err := awaitGenericIP("orch-boots", "ingress-nginx-controller", 20*time.Second)
 	if err != nil {
 		fmt.Printf("WARNING: could not find boots IP %v\n", err)
 		fmt.Println("Looks like Orchestrators Nginx Boots isn't ready yet. Please run:")

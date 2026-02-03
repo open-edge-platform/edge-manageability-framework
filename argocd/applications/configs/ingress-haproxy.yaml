@@ -24,6 +24,7 @@ controller:
     - --default-ssl-certificate=orch-boots/tls-boots
   service:
     type: LoadBalancer
+    nameOverride: ingress-nginx-controller
     ipFamilies:
       - IPv4
     ipFamilyPolicy: SingleStack

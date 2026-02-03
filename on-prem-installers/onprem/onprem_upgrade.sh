@@ -138,7 +138,7 @@ retrieve_and_apply_config() {
     # Get the external IP address of the LoadBalancer services
     ARGO_IP=$(kubectl get svc argocd-server -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
     TRAEFIK_IP=$(kubectl get svc traefik -n orch-gateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-    NGINX_IP=$(kubectl get svc ingress-haproxy-kubernetes-ingress -n orch-boots -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+    NGINX_IP=$(kubectl get svc ingress-nginx-controller -n orch-boots -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 
     update_config_variable "$config_file" "ARGO_IP" "${ARGO_IP}"
     update_config_variable "$config_file" "TRAEFIK_IP" "${TRAEFIK_IP}"

@@ -191,9 +191,9 @@ module "traefik_lb_target_group_binding" {
       servicePort      = 443
       target_id        = module.traefik_load_balancer.target_groups["grpc"].arn
     }
-    "ingress-haproxy-kubernetes-ingress" : {
+    "ingress-nginx-controller" : {
       serviceNamespace = "orch-boots"
-      serviceName      = "ingress-haproxy-kubernetes-ingress"
+      serviceName      = "ingress-nginx-controller"
       servicePort      = 443
       target_id        = module.traefik2_load_balancer[0].target_groups["https"].arn
     },

@@ -23,7 +23,7 @@ spec:
       chart: kubernetes-ingress
       targetRevision: 1.41.0
       helm:
-        releaseName: {{$appName}}
+        releaseName: ingress-nginx-controller
         valuesObject:
           {{- $customFile := printf "custom/%s.tpl" $appName }}
           {{- $customConfig := tpl (.Files.Get $customFile) . | fromYaml }}
