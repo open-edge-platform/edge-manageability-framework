@@ -100,7 +100,7 @@ ${M}/release-secrets: | ${M}/create-namespaces
 
 ${M}/keycloak-secret: | ${M}/create-namespaces
 	@if ! kubectl get secret platform-keycloak -n orch-platform > /dev/null 2>&1; then \
-		kubectl create secret generic -n orch-platform platform-keycloak --from-literal=admin-password="$(KEYCLOAK_PASSWORD)" --dry-run=client -o yaml | kubectl apply -f - ;\
+		kubectl create secret generic -n orch-platform platform-keycloak --from-literal=username=admin --from-literal=admin-password="$(KEYCLOAK_PASSWORD)" --from-literal=password="$(KEYCLOAK_PASSWORD)" --dry-run=client -o yaml | kubectl apply -f - ;\
 	fi
 	touch $@
 
@@ -131,6 +131,30 @@ update:
 	helm upgrade --install root-app ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/argocd/root-app -n ${TARGET_ENV} -f ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/orch-configs/clusters/${TARGET_ENV}.yaml --create-namespace
 
 upgrade: | ${M}/release-secrets ${M}/argocd-ready
+	# Check deployed version at the beginning before any upgrades
+	@source /root/pod-configs/utils/lib/common.sh; \
+	deployed_version=$$(get_deployed_version 2>/dev/null); \
+	if [ -z "$$deployed_version" ]; then \
+		echo "Error: Could not determine deployed version"; \
+		exit 1; \
+	fi; \
+	major_version="$${deployed_version##*v}"; \
+	major_version="$${major_version%%%%.*}"; \
+	run_fix_external_secrets=false; \
+	if [[ "$$major_version" =~ ^[0-9]+$$ ]] && (( $$major_version == 3 )); then \
+		echo "Pre-upgrade version $$deployed_version is 3.x.x - will apply fix-external-secrets.sh"; \
+		run_fix_external_secrets=true; \
+	fi; \
+	echo "$$run_fix_external_secrets" > /tmp/run_fix_external_secrets
+	@if kubectl get secret platform-keycloak -n orch-platform > /dev/null 2>&1; then \
+		ADMIN_PASSWORD=$$(kubectl get secret platform-keycloak -n orch-platform -o jsonpath='{.data.admin-password}' 2>/dev/null | base64 -d 2>/dev/null); \
+		if [ -z "$$ADMIN_PASSWORD" ]; then \
+			echo "Error: Could not retrieve admin-password from platform-keycloak secret"; \
+			exit 1; \
+		fi; \
+		echo "Updating platform-keycloak secret with username & password field..."; \
+		kubectl patch secret platform-keycloak -n orch-platform --type='merge' -p "{\"stringData\": {\"username\": \"admin\", \"password\": \"$$ADMIN_PASSWORD\"}}" || true; \
+	fi
 	helm repo add argo-helm https://argoproj.github.io/argo-helm --force-update
 	helm -n argocd upgrade --install argocd argo-helm/argo-cd --version ${ARGO_VERSION} \
 		--values ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/bootstrap/argocd.yaml \
@@ -139,9 +163,15 @@ upgrade: | ${M}/release-secrets ${M}/argocd-ready
 	@if [ "${USE_TEST_ADMIN}" = "true" ]; then\
 		kubectl -n argocd patch secret argocd-secret --type='merge' -p '{"stringData": {"admin.password": "${ARGO_AUTH_BCRYPT}"}}';\
 	fi
+
 	@[ -z "${TARGET_ENV}" ] && echo "*** TARGET_ENV not set" && exit 1 || true
 	helm upgrade --install root-app ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/argocd/root-app -n ${TARGET_ENV} -f ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/orch-configs/clusters/${TARGET_ENV}.yaml --create-namespace
-	./fix-external-secrets.sh
+	
+	# Conditionally run fix-external-secrets.sh based on pre-upgrade version check
+	@if [ "$$(cat /tmp/run_fix_external_secrets)" = "true" ]; then \
+		echo "Running fix-external-secrets.sh for pre-upgrade version 3.x.x..."; \
+		./fix-external-secrets.sh; \
+	fi
 
 clean: ## Remove the milestones directory
 	rm -rf ${M}
