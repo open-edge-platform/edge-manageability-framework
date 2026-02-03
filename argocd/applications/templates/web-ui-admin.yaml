@@ -19,9 +19,9 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
-    - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
-      chart: orch-ui/charts/orch-ui-admin
-      targetRevision: 3.2.4
+    - repoURL: https://github.com/open-edge-platform/orch-ui
+      path: apps/admin/deploy
+      targetRevision: gg/admin-ui-configurable
       helm:
         releaseName: web-ui
         valuesObject:
