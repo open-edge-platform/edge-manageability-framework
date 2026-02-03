@@ -64,7 +64,6 @@ variable "hostname" {
 variable "traefik2_hostname" {
   type    = list(string)
   default = [
-    "tinkerbell-nginx",
     "tinkerbell-haproxy"]
 }
 
