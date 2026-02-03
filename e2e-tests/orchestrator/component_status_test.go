@@ -15,7 +15,8 @@ import (
 )
 
 const (
-	componentStatusLabel = "component-status"
+	componentStatusLabel        = "component-status"
+	orchestratorIntegrationLabel = "orchestrator-integration"
 )
 
 type ComponentStatus struct {
@@ -33,7 +34,7 @@ type Feature struct {
 	SubFeatures map[string]Feature `json:",inline"`
 }
 
-var _ = Describe("Component Status Service", Label(componentStatusLabel), func() {
+var _ = Describe("Component Status Service", Label(componentStatusLabel, orchestratorIntegrationLabel), func() {
 	var cli *http.Client
 	var token string
 

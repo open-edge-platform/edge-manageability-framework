@@ -142,8 +142,7 @@ componentStatus:
           installed: {{ and (index .Values.argo.enabled "web-ui-infra" | default false) (or (index .Values.argo.enabled "infra-manager") (index .Values.argo.enabled "infra-operator") (index .Values.argo.enabled "tinkerbell") (index .Values.argo.enabled "infra-onboarding") (index .Values.argo.enabled "maintenance-manager") | default false) }}
         admin-ui:
           installed: {{ index .Values.argo.enabled "web-ui-admin" | default false }}
-        # Alerts UI - Optional observability feature at orchestrator level (like app-orch, cluster-orch)
-        # Cluster-templates and os-profiles are always available when their parent orchestrators exist
+        # Alerts UI - Enable when observability feature available at orchestrator level
         alerts-ui:
           installed: {{ or (index .Values.argo.enabled "orchestrator-observability") (index .Values.argo.enabled "alerting-monitor") | default false }}
       # Multitenancy - Tenancy services (tenancy-manager, tenancy-api-mapping, tenancy-datamodel)

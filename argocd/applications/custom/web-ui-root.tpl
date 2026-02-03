@@ -42,8 +42,8 @@ api:
 
 # MFE Configuration - Controls which UI components are loaded
 # Must match the deployment conditions in web-ui-*.yaml templates  
-# These control both runtime config (MFE.APP_ORCH) and nginx proxy configuration
-# The nginx rewrites are now handled by the UI repo helm chart based on these values
+# This controls runtime config
+# The nginx rewrites are handled by the UI repo helm chart based on these values
 mfe:
   app_orch: {{ and (index .Values.argo.enabled "web-ui-app-orch" | default false) (index .Values.argo.enabled "app-orch-catalog" | default false) }}
   cluster_orch: {{ and (index .Values.argo.enabled "web-ui-cluster-orch" | default false) (or (index .Values.argo.enabled "cluster-manager") (index .Values.argo.enabled "capi-operator") (index .Values.argo.enabled "intel-infra-provider") | default false) }}
