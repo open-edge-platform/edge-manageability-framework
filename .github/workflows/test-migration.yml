@@ -55,18 +55,11 @@ jobs:
       - name: Setup asdf and install dependencies
         uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.NO_AUTH_ECR_PUSH_USERNAME }}
-          aws-secret-access-key: ${{ secrets.NO_AUTH_ECR_PUSH_PASSWD }}
-          aws-region: us-west-2
-
-      - name: Login to OCI registry
+      - name: Login to Release Service OCI registry
         run: |
-          aws ecr get-login-password --region us-west-2 | \
+          echo "${{ secrets.SYS_EMF_GH_TOKEN }}" | \
           helm registry login registry-rs.edgeorchestration.intel.com \
-            --username AWS \
+            --username oauth2 \
             --password-stdin
 
       - name: Run test
@@ -97,18 +90,11 @@ jobs:
       - name: Setup asdf and install dependencies
         uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.NO_AUTH_ECR_PUSH_USERNAME }}
-          aws-secret-access-key: ${{ secrets.NO_AUTH_ECR_PUSH_PASSWD }}
-          aws-region: us-west-2
-
-      - name: Login to OCI registry
+      - name: Login to Release Service OCI registry
         run: |
-          aws ecr get-login-password --region us-west-2 | \
+          echo "${{ secrets.SYS_EMF_GH_TOKEN }}" | \
           helm registry login registry-rs.edgeorchestration.intel.com \
-            --username AWS \
+            --username oauth2 \
             --password-stdin
 
       - name: Run test
