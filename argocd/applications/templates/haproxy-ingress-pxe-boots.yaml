@@ -21,7 +21,7 @@ spec:
   sources:
     - repoURL: https://github.com/open-edge-platform/orch-utils.git
       path: charts/{{$appName}}
-      targetRevision: haproxy_changes
+      targetRevision: haproxy_changes_nginx_naming
       helm:
         releaseName: {{$appName}}
         valuesObject:
