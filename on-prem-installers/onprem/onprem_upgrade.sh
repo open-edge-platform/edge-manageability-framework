@@ -1030,6 +1030,17 @@ patch_secrets() {
       kubectl patch secret -n orch-database orch-infra-rps -p "{\"data\": {\"password\": \"$RPS\"}}" --type=merge
     fi
 
+    # patch keycloak secret for additional fields username & password
+    if kubectl get secret platform-keycloak -n orch-platform > /dev/null 2>&1; then
+        ADMIN_PASSWORD=$(kubectl get secret platform-keycloak -n orch-platform -o jsonpath='{.data.admin-password}' 2>/dev/null | base64 -d 2>/dev/null)
+        if [ -z "$ADMIN_PASSWORD" ]; then
+            echo "Error: Could not retrieve admin-password from platform-keycloak secret"
+            exit 1
+        fi
+        echo "Updating platform-keycloak secret with username & password field..."
+        kubectl patch secret platform-keycloak -n orch-platform --type='merge' -p "{\"stringData\": {\"username\": \"admin\", \"password\": \"$ADMIN_PASSWORD\"}}" || true
+    fi
+
     # This secret does not exist in 3.1.x so we need to create it
     if [[ "$UPGRADE_3_1_X" == "true" ]]; then
         create_postgres_password "orch-database" "$POSTGRESQL"
