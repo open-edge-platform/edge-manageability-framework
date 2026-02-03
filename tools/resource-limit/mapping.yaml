@@ -103,8 +103,8 @@ orch-app:
   app-orch-tenant-controller:
     config-provisioner: "argo.resources.appOrchTenantController.configProvisioner"
 orch-boots:
-  ingress-haproxy-controller:
-    controller: "argo.resources.ingressHaproxy.controller.root"
+  ingress-haproxy-kubernetes-ingress:
+    kubernetes-ingress-controller: "argo.resources.ingressHaproxy.controller.root"
 capi-operator-system:
   capi-operator-cluster-api-operator:
     manager: "argo.resources.capiOperator"
