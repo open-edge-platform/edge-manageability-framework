@@ -7,3 +7,16 @@ scan:
     - kind/5g/multus
   skip-files:
     - installer/Dockerfile
+
+# Suppress false positives and expected security findings
+rego:
+  skip-policies:
+    # KSV056: Keycloak operator requires these permissions to manage Keycloak instances
+    # The operator legitimately needs to create/manage services, ingresses, and network policies
+    # These are upstream operator permissions required for functionality
+    - AVD-KSV-0056
+    
+    # KSV108: False positive - we use ExternalName services (not externalIPs)
+    # ExternalName is a standard Kubernetes DNS alias pattern and is NOT vulnerable to CVE-2020-8554
+    # CVE-2020-8554 applies to spec.externalIPs field, not spec.externalName
+    - AVD-KSV-0108

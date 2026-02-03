@@ -87,6 +87,7 @@ fi
 # -----------------------------------------------------------------------------
 export SRE_TLS_ENABLED="${SRE_TLS_ENABLED:-false}"
 export SRE_DEST_CA_CERT="${SRE_DEST_CA_CERT:-}"
+export GITEA_ENABLED="${GITEA_ENABLED:-true}"
 
 # -----------------------------------------------------------------------------
 # Function: Validate IPv4
@@ -153,6 +154,7 @@ fi
 # -----------------------------------------------------------------------------
 if [ "${DISABLE_CO_PROFILE:-false}" = "true" ] || [ "${DISABLE_AO_PROFILE:-false}" = "true" ]; then
     export AO_PROFILE="#- orch-configs/profiles/enable-app-orch.yaml"
+    export GITEA_ENABLED="false"
 else
     export AO_PROFILE="- orch-configs/profiles/enable-app-orch.yaml"
 fi
@@ -354,6 +356,9 @@ if [ "${ONPREM_UPGRADE_SYNC:-false}" = "true" ]; then
 ' "$OUTPUT_FILE"
 fi
 
+if [ "${DISABLE_UI_PROFILE:-false}" = "true" ]; then
+    yq -i '.argo.enabled.metadata-broker = false' "$OUTPUT_FILE"
+fi
 
 # -----------------------------------------------------------------------------
 # Proxy variable updates
