@@ -1,12 +1,13 @@
-# SPDX-FileCopyrightText: 2025 Intel Corporation
+# SPDX-FileCopyrightText: 2026 Intel Corporation
 #
 # SPDX-License-Identifier: Apache-2.0
+---
 
 name: Test Migration
 
 on:
   # Allow manually triggering the workflow
-  workflow_dispatch: {}
+  workflow_dispatch:
   # Run on all commits that are pushed to all branches
   push:
     branches:
@@ -24,7 +25,9 @@ on:
   # Trigger workflow when enqueued to a merge group
   merge_group:
 
-permissions: {}
+permissions:
+  contents: read
+  checks: read
 
 jobs:
   test-charts-available:
@@ -51,6 +54,20 @@ jobs:
 
       - name: Setup asdf and install dependencies
         uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.NO_AUTH_ECR_PUSH_USERNAME }}
+          aws-secret-access-key: ${{ secrets.NO_AUTH_ECR_PUSH_PASSWD }}
+          aws-region: us-west-2
+
+      - name: Login to OCI registry
+        run: |
+          aws ecr get-login-password --region us-west-2 | \
+          helm registry login registry-rs.edgeorchestration.intel.com \
+            --username AWS \
+            --password-stdin
 
       - name: Run test
         run: mage test:ChartsAvailableOnReleaseService
@@ -79,6 +96,20 @@ jobs:
 
       - name: Setup asdf and install dependencies
         uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.NO_AUTH_ECR_PUSH_USERNAME }}
+          aws-secret-access-key: ${{ secrets.NO_AUTH_ECR_PUSH_PASSWD }}
+          aws-region: us-west-2
+
+      - name: Login to OCI registry
+        run: |
+          aws ecr get-login-password --region us-west-2 | \
+          helm registry login registry-rs.edgeorchestration.intel.com \
+            --username AWS \
+            --password-stdin
 
       - name: Run test
         run: mage test:ContainersAvailableOnReleaseService true
