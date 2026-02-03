@@ -116,6 +116,7 @@ def check_argocd_apps():
     - Resource-level failures (which specific resources failed)
     - Sync operation errors
     - Manifest parsing errors
+    - kubectl describe output for unhealthy applications
     
     Returns:
         list: List of dicts containing unhealthy app details with comprehensive diagnostics
@@ -219,12 +220,16 @@ def check_argocd_apps():
                     else:
                         messages.append("No detailed error message available")
                 
+                # Capture kubectl describe for unhealthy application
+                describe_output = run(f"kubectl describe application {name} -n {namespace}")
+                
                 issues.append({
                     "name": name,
                     "namespace": namespace,
                     "health": health,
                     "sync": sync,
-                    "message": " | ".join(messages)
+                    "message": " | ".join(messages),
+                    "describe": describe_output
                 })
     except (json.JSONDecodeError, KeyError):
         pass
@@ -239,12 +244,13 @@ def check_deployment_readiness(ns):
     - Deployments/StatefulSets with fewer ready replicas than desired
     - Stuck rollouts or scaling issues
     - Provides rollout reason from Progressing condition when available
+    - Captures kubectl describe output for problematic deployments
     
     Args:
         ns (str): Namespace to check
         
     Returns:
-        list: List of dicts with readiness issues (type, name, expected, ready, reason)
+        list: List of dicts with readiness issues (type, name, expected, ready, reason, describe)
     """
     issues = []
 
@@ -260,14 +266,17 @@ def check_deployment_readiness(ns):
             if ready < spec_replicas:
                 conditions = status.get("conditions", [])
                 prog_cond = next((c for c in conditions if c["type"] == "Progressing"), None)
+                dep_name = dep["metadata"]["name"]
+                describe_output = run(f"kubectl describe deployment {dep_name} -n {ns}")
                 issues.append({
                     "type": "Deployment",
-                    "name": dep["metadata"]["name"],
+                    "name": dep_name,
                     "namespace": ns,
                     "expected": spec_replicas,
                     "ready": ready,
                     "available": status.get("availableReplicas", 0),
-                    "reason": prog_cond.get("reason", "Unknown") if prog_cond else "Unknown"
+                    "reason": prog_cond.get("reason", "Unknown") if prog_cond else "Unknown",
+                    "describe": describe_output
                 })
     except (json.JSONDecodeError, KeyError):
         pass
@@ -281,13 +290,16 @@ def check_deployment_readiness(ns):
                 continue
             ready = st.get("status", {}).get("readyReplicas", 0)
             if ready < spec_replicas:
+                sts_name = st["metadata"]["name"]
+                describe_output = run(f"kubectl describe statefulset {sts_name} -n {ns}")
                 issues.append({
                     "type": "StatefulSet",
-                    "name": st["metadata"]["name"],
+                    "name": sts_name,
                     "namespace": ns,
                     "expected": spec_replicas,
                     "ready": ready,
-                    "available": ready
+                    "available": ready,
+                    "describe": describe_output
                 })
     except (json.JSONDecodeError, KeyError):
         pass
@@ -420,7 +432,14 @@ def gather_namespace_diagnostics(ns, restart_threshold, errors_only, include_log
         except (ValueError, IndexError):
             restarts_count = 0
         if status in ["CrashLoopBackOff", "ImagePullBackOff", "Error"]:
-            issues.append({"pod": pod, "status": status, "namespace": ns})
+            # Capture kubectl describe for pods in error states
+            describe_output = run(f"kubectl describe pod {pod} -n {ns}")
+            issues.append({
+                "pod": pod,
+                "status": status,
+                "namespace": ns,
+                "describe": describe_output
+            })
             state_podnames.add(pod)
         if restarts_count >= restart_threshold:
             restarts.append({"pod": pod, "count": restarts_count, "namespace": ns})
@@ -473,6 +492,8 @@ def gather_namespace_diagnostics(ns, restart_threshold, errors_only, include_log
             md.append(
                 f"- {issue['type']}: `{issue['name']}` ({issue['ready']}/{issue['expected']} ready)"
             )
+            if issue.get("describe"):
+                md.append(f"\n**kubectl describe {issue['type'].lower()} {issue['name']}:**\n```\n{issue['describe']}\n```\n")
     if advanced and pvc_issues:
         md.append("**⚠️ PVC Issues:**")
         for issue in pvc_issues:
@@ -510,7 +531,16 @@ def gather_namespace_diagnostics(ns, restart_threshold, errors_only, include_log
     violations_html = "<b>Policy Violations:</b><pre>" + "<br>".join(policy_violations) + "</pre>" if advanced and policy_violations else ""
     restarts_html = "<b>Frequent Restarts:</b><pre>" + "<br>".join([f"{r['pod']}: {r['count']} restarts" for r in restarts]) + "</pre>" if restarts else ""
     probes_html = "<b>Probe Failures:</b><pre>" + "<br>".join(probe_failures) + "</pre>" if advanced and probe_failures else ""
-    deployments_html = "<b>⚠️ Deployments Not Ready:</b><pre>" + "<br>".join([f"{d['type']}: {d['name']} ({d['ready']}/{d['expected']} ready)" for d in deployment_issues]) + "</pre>" if deployment_issues else ""
+    
+    # Build deployments HTML with describe output
+    deployments_html = ""
+    if deployment_issues:
+        deployments_html = "<b>⚠️ Deployments Not Ready:</b>"
+        for d in deployment_issues:
+            deployments_html += f"<pre>{d['type']}: {d['name']} ({d['ready']}/{d['expected']} ready)</pre>"
+            if d.get("describe"):
+                deployments_html += f"<details><summary>kubectl describe {d['type'].lower()} {d['name']}</summary><pre>{d['describe']}</pre></details>"
+    
     pvc_html = "<b>⚠️ PVC Issues:</b><pre>" + "<br>".join([f"{p['pvc']}: {p['status']}" for p in pvc_issues]) + "</pre>" if advanced and pvc_issues else ""
     
     html_sections.append(
@@ -648,6 +678,17 @@ def main():
             summary_md.append(f"**{header}:** _None detected._")
 
     md_issues("Pods in error state", summary["pods_w_errors"])
+    
+    # Add kubectl describe output for pods in error states
+    if summary["pods_w_errors"]:
+        summary_md.append("\n### kubectl describe output for pods in error states:\n")
+        for pod_issue in summary["pods_w_errors"]:
+            if pod_issue.get("describe"):
+                summary_md.append(
+                    f"\n**Pod: `{pod_issue['pod']}` (status: {pod_issue['status']}, namespace: `{pod_issue['namespace']}`)**"
+                )
+                summary_md.append(f"```\n{pod_issue['describe']}\n```\n")
+    
     md_issues("Pods with frequent restarts", summary["pods_with_many_restarts"])
     summary_md.append(
         f"Policy violations in "
@@ -709,6 +750,13 @@ def main():
                 f"| `{app['name']}` | `{app['namespace']}` | "
                 f"{app['health']} | {app['sync']} | {msg} |"
             )
+        
+        # Add kubectl describe output for each unhealthy application
+        summary_md.append("\n### kubectl describe output for unhealthy applications:\n")
+        for app in summary["argocd_apps_unhealthy"]:
+            if app.get("describe"):
+                summary_md.append(f"\n**Application: `{app['name']}` (namespace: `{app['namespace']}`)**")
+                summary_md.append(f"```\n{app['describe']}\n```\n")
     
     summary_md.append("---\n")
 
@@ -791,6 +839,19 @@ def main():
             )
             f.write("</ul>\n</section>\n")
             
+            # Pods in Error States with kubectl describe
+            if summary["pods_w_errors"]:
+                f.write("<section>\n<h2>🚨 Pods in Error States</h2>\n")
+                f.write("<h3>kubectl describe output for pods in error states</h3>\n")
+                for pod_issue in summary["pods_w_errors"]:
+                    if pod_issue.get("describe"):
+                        f.write(
+                            f"<details><summary><b>Pod: <code>{pod_issue['pod']}</code> "
+                            f"(status: {pod_issue['status']}, namespace: <code>{pod_issue['namespace']}</code>)</b></summary>"
+                            f"<pre>{pod_issue['describe']}</pre></details>\n"
+                        )
+                f.write("</section>\n")
+            
             # ArgoCD Applications Details Section
             if summary["argocd_apps_unhealthy"]:
                 f.write("<section>\n<h2>🔄 ArgoCD Applications Details</h2>\n")
@@ -809,7 +870,18 @@ def main():
                         f"<td style='color:{sync_color};font-weight:bold;'>{app['sync']}</td>"
                         f"<td>{msg}</td></tr>\n"
                     )
-                f.write("</table>\n</section>\n")
+                f.write("</table>\n")
+                
+                # Add kubectl describe output for each unhealthy application
+                f.write("<h3>kubectl describe output for unhealthy applications</h3>\n")
+                for app in summary["argocd_apps_unhealthy"]:
+                    if app.get("describe"):
+                        f.write(
+                            f"<details><summary><b>Application: <code>{app['name']}</code> "
+                            f"(namespace: <code>{app['namespace']}</code>)</b></summary>"
+                            f"<pre>{app['describe']}</pre></details>\n"
+                        )
+                f.write("</section>\n")
             
             for html in html_sections:
                 f.write(html)
