@@ -356,6 +356,9 @@ if [ "${ONPREM_UPGRADE_SYNC:-false}" = "true" ]; then
 ' "$OUTPUT_FILE"
 fi
 
+if [ "${DISABLE_UI_PROFILE:-false}" = "true" ]; then
+    yq -i '.argo.enabled.metadata-broker = false' "$OUTPUT_FILE"
+fi
 
 # -----------------------------------------------------------------------------
 # Proxy variable updates
