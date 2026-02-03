@@ -454,13 +454,11 @@ jobs:
       - lint-markdown
       - lint-shell
       - lint-terraform
-      - lint-version
       - lint-helm
       - lint-yaml
       - check-changed-files
     if: |
       always() &&
-      needs.lint-version.result == 'success' &&
       needs.check-changed-files.outputs.only_design_proposals != 'true' && (
       needs.check-changed-files.outputs.orch == 'true' ||
       needs.check-changed-files.outputs.ci == 'true' ||
@@ -668,7 +666,6 @@ jobs:
       - lint-markdown
       - lint-shell
       - lint-terraform
-      - lint-version
       - lint-helm
       - lint-yaml
       - build-publish
@@ -781,7 +778,6 @@ jobs:
       - lint-markdown
       - lint-shell
       - lint-terraform
-      - lint-version
       - lint-helm
       - lint-yaml
       - build-publish
