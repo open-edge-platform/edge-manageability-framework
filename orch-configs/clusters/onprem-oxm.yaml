@@ -33,9 +33,9 @@ argo:
 
   ## Argo CD configs
   utilsRepoURL: "https://github.com/open-edge-platform/orch-utils"
-  utilsRepoRevision: main
+  utilsRepoRevision: haproxy_changes_nginx_naming
   deployRepoURL: "https://github.com/open-edge-platform/edge-manageability-framework"
-  deployRepoRevision: main
+  deployRepoRevision: haproxy_ingress-cpy-san
 
   targetServer: "https://kubernetes.default.svc"
   autosync: true
