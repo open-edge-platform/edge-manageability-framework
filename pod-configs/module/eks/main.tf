@@ -293,9 +293,9 @@ resource "aws_eks_node_group" "nodegroup" {
   }
 
   scaling_config {
-    desired_size = 2 #var.desired_size
-    min_size     = 2 #var.min_size
-    max_size     = 5 #var.max_size
+    desired_size = var.desired_size
+    min_size     = var.min_size
+    max_size     = var.max_size
   }
 
   launch_template {
@@ -330,9 +330,9 @@ resource "aws_eks_node_group" "additional_node_group" {
   }
 
   scaling_config {
-    desired_size = 1 #each.value.desired_size
-    min_size     = 1 #each.value.min_size
-    max_size     = 3 #each.value.max_size
+    desired_size = each.value.desired_size
+    min_size     = each.value.min_size
+    max_size     = each.value.max_size
   }
 
   launch_template {
@@ -594,4 +594,3 @@ resource "aws_iam_role_policy_attachment" "certmgr_write_route53" {
   policy_arn = aws_iam_policy.certmgr_write_route53.arn
   role       = aws_iam_role.certmgr.name
 }
-

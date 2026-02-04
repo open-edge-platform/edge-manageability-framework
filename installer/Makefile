@@ -140,7 +140,12 @@ upgrade: | ${M}/release-secrets ${M}/argocd-ready
 	fi; \
 	major_version="$${deployed_version##*v}"; \
 	major_version="$${major_version%%%%.*}"; \
-
+	run_fix_external_secrets=false; \
+	if [[ "$$major_version" =~ ^[0-9]+$$ ]] && (( $$major_version == 3 )); then \
+		echo "Pre-upgrade version $$deployed_version is 3.x.x - will apply fix-external-secrets.sh"; \
+		run_fix_external_secrets=true; \
+	fi; \
+	echo "$$run_fix_external_secrets" > /tmp/run_fix_external_secrets
 	@if kubectl get secret platform-keycloak -n orch-platform > /dev/null 2>&1; then \
 		ADMIN_PASSWORD=$$(kubectl get secret platform-keycloak -n orch-platform -o jsonpath='{.data.admin-password}' 2>/dev/null | base64 -d 2>/dev/null); \
 		if [ -z "$$ADMIN_PASSWORD" ]; then \
@@ -162,6 +167,11 @@ upgrade: | ${M}/release-secrets ${M}/argocd-ready
 	@[ -z "${TARGET_ENV}" ] && echo "*** TARGET_ENV not set" && exit 1 || true
 	helm upgrade --install root-app ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/argocd/root-app -n ${TARGET_ENV} -f ${EDGE_MANAGEABILITY_FRAMEWORK_DIR}/orch-configs/clusters/${TARGET_ENV}.yaml --create-namespace
 	
+	# Conditionally run fix-external-secrets.sh based on pre-upgrade version check
+	@if [ "$$(cat /tmp/run_fix_external_secrets)" = "true" ]; then \
+		echo "Running fix-external-secrets.sh for pre-upgrade version 3.x.x..."; \
+		./fix-external-secrets.sh; \
+	fi
 
 clean: ## Remove the milestones directory
 	rm -rf ${M}

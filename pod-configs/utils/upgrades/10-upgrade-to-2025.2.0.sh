@@ -214,7 +214,79 @@ action_cluster() {
 }
 
 
+apply_modules() {
+current_desired_nodes=$(jq '.resources[] | select(.type == "aws_eks_node_group") | .instances[0] | select(.attributes.node_group_name | ascii_downcase | contains("nodegroup")) | .attributes.scaling_config[0].desired_size' ./cluster_state.json | head -1)
 
+if [[ $current_desired_nodes -ne $EKS_DESIRED_SIZE ]]; then
+     echo "Updating EKS node group to desired size: $EKS_DESIRED_SIZE"
+     # TODO: Update the EKS node group here
+else
+     echo "EKS node group already at desired size: $EKS_DESIRED_SIZE"
+fi
+
+dir="${ROOT_DIR}/${ORCH_DIR}/cluster"
+sed -i '/module "kms"/,/^}/ s/^\([[:space:]]*\)depends_on/\1# depends_on/' $dir/main.tf
+sed -i '/module "gitea" {/,/}/ s/^\(\s*\)depends_on/\1# depends_on/' $dir/main.tf
+echo "Changing directory to $dir..."
+cd "$dir"
+
+echo "Initializing Terraform for environment: $ENV_NAME..."
+if terraform init -reconfigure -backend-config="environments/${ENV_NAME}/backend.tf"; then
+    echo "✅ Terraform initialization succeeded."
+else
+    echo "❌ Terraform initialization failed!"
+    exit 1
+fi
+
+echo "Applying changes for KMS module..."
+if terraform apply -target=module.kms -var-file="environments/${ENV_NAME}/variable.tfvar" -auto-approve; then
+    echo "✅ Terraform apply for KMS module succeeded."
+else
+    echo "❌ Terraform apply for KMS module failed!"
+    exit 1
+fi
+
+echo "Applying changes for Gitea module..."
+if terraform apply -target=module.gitea -var-file="environments/${ENV_NAME}/variable.tfvar" -auto-approve; then
+    echo " ^|^e Terraform apply for Gitea module succeeded."
+else
+    echo " ^}^l Terraform apply for Gitea module failed!"
+    exit 1
+fi
+}
+
+apply_load_balancer(){
+echo "Fetching Load Balancer ARNS for Traefik2 and Traefik3"
+
+LB_ARN_T2=$(aws resourcegroupstaggingapi get-resources \
+  --tag-filters Key=Name,Values="${ENV_NAME}-traefik2" \
+  --resource-type-filters elasticloadbalancing:loadbalancer \
+  --query "ResourceTagMappingList[].ResourceARN" \
+  --output text)
+
+LB_ARN_T3=$(aws resourcegroupstaggingapi get-resources \
+  --tag-filters Key=Name,Values="${ENV_NAME}-traefik3" \
+  --resource-type-filters elasticloadbalancing:loadbalancer \
+  --query "ResourceTagMappingList[].ResourceARN" \
+  --output text)
+
+EKS_SG_ID=$(aws ec2 describe-security-groups --filters "Name=group-name,Values=eks-${ENV_NAME}" --query "SecurityGroups[*].GroupId" --output text)
+
+echo "Fetching Load Balancer SG for Traefik2 and Traefik3"
+LB_SG_ID_T2=$(aws elbv2 describe-load-balancers   --load-balancer-arns "$LB_ARN_T2"   --query "LoadBalancers[0].SecurityGroups[0]"   --output text)
+LB_SG_ID_T3=$(aws elbv2 describe-load-balancers   --load-balancer-arns "$LB_ARN_T3"   --query "LoadBalancers[0].SecurityGroups[0]"   --output text)
+
+echo "Updating and revoking the SG for Traefik2"
+aws ec2 describe-security-groups --group-ids "$LB_SG_ID_T2" --query "SecurityGroups[0].IpPermissionsEgress[?UserIdGroupPairs[?GroupId=='$EKS_SG_ID']]" --output text | grep -q . || aws ec2 authorize-security-group-egress --group-id "$LB_SG_ID_T2" --protocol -1 --port -1 --source-group "$EKS_SG_ID"
+aws ec2 describe-security-groups --group-ids "$LB_SG_ID_T2" --query "SecurityGroups[0].IpPermissionsEgress[?IpRanges[?CidrIp=='0.0.0.0/0']]" --output text | grep -q . && aws ec2 revoke-security-group-egress --group-id "$LB_SG_ID_T2" --protocol all --port all --cidr 0.0.0.0/0
+
+
+echo "Updating and revoking the SG for Traefik3"
+aws ec2 describe-security-groups --group-ids "$LB_SG_ID_T3" --query "SecurityGroups[0].IpPermissionsEgress[?UserIdGroupPairs[?GroupId=='$EKS_SG_ID']]" --output text | grep -q . || aws ec2 authorize-security-group-egress --group-id "$LB_SG_ID_T3" --protocol -1 --port -1 --source-group "$EKS_SG_ID"
+aws ec2 describe-security-groups --group-ids "$LB_SG_ID_T3" --query "SecurityGroups[0].IpPermissionsEgress[?IpRanges[?CidrIp=='0.0.0.0/0']]" --output text | grep -q . && aws ec2 revoke-security-group-egress --group-id "$LB_SG_ID_T3" --protocol all --port all --cidr 0.0.0.0/0
+
+return 0
+}
 
 # Main
 
@@ -231,6 +303,8 @@ connect_cluster
 
 echo "Starting action cluster"
 action_cluster
+apply_modules
+apply_load_balancer
 
 # Terminate existing sshuttle
 terminate_sshuttle
