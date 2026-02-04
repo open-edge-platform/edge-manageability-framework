@@ -40,7 +40,7 @@ runs:
       with:
         repository: open-edge-platform/orch-ui
         path: orch-ui
-        ref: 1d2a8182411f24dad5bd317f42fe9f631fdcf01a
+        ref: 849a64df2cf793e948619efaf9d0030fdc109db7
         persist-credentials: false
     - run: git log -1
       shell: bash
