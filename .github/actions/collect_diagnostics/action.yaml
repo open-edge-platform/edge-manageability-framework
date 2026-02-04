@@ -37,7 +37,7 @@ runs:
     if: always()
     uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
     with:
-      name: diagnostics-${{ github.job }}-${{ github.event_name }}-${{ github.event.number }}
+      name: diagnostics-${{ github.job }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_number }}-${{ github.run_attempt }}
       path: |
         cluster-diagnostics/pods-list.txt
         cluster-diagnostics/kubectl-get-all.txt
