@@ -39,7 +39,7 @@ jobs:
     if: github.event_name == 'pull_request'
     permissions:
       contents: read
-    uses: open-edge-platform/orch-ci/.github/workflows/pre-merge.yml@467367d6f859a4654f2645ca78efd60035cf390c  # 2026.0.8
+    uses: open-edge-platform/orch-ci/.github/workflows/pre-merge.yml@b22d9a5ea62d5380cb03b631858ec4edc5014dba  # 2026.0.8
     with:
       run_version_check: false
       run_build: false
@@ -290,6 +290,7 @@ jobs:
         with:
           repository: open-edge-platform/orch-ci
           path: orch-ci
+          ref: b22d9a5ea62d5380cb03b631858ec4edc5014dba
           persist-credentials: false
 
       - name: Set up git credentials
