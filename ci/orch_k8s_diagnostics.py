@@ -36,14 +36,43 @@ Outputs Generated:
 
 Usage Examples:
 ---------------
-# For CI/CD automated diagnostics (recommended - clean, actionable issues only):
-python OrchestratorK8sDiagnosticsUtility.py --errors-only --output-html --output-json
+=== CI/CD Automated Diagnostics ===
+# Recommended for automated pipelines - clean, actionable issues only:
+python ci/orch_k8s_diagnostics.py --errors-only --output-html --output-json
 
-# For deep troubleshooting with all events, violations, and logs:
-python OrchestratorK8sDiagnosticsUtility.py --advanced --include-logs --output-html
+=== Daily Operations & Health Checks ===
+# Quick health check - identify issues at a glance (generates HTML report):
+python ci/orch_k8s_diagnostics.py --errors-only --output-html
 
-# Custom restart threshold (pods with 3+ restarts flagged):
-python OrchestratorK8sDiagnosticsUtility.py --restart-threshold 3 --errors-only
+# Scheduled daily health check with JSON output for monitoring tools:
+python ci/orch_k8s_diagnostics.py --errors-only --output-json
+# Tip: Parse summary.json for automated alerting (check "has_errors" field)
+
+# Comprehensive cluster status review (includes all namespaces, even healthy ones):
+python ci/orch_k8s_diagnostics.py --output-html
+
+=== Troubleshooting & Root Cause Analysis ===
+# Deep dive with all events, probe failures, and policy violations:
+python ci/orch_k8s_diagnostics.py --advanced --output-html
+
+# Maximum detail - includes pod logs for failed containers:
+python ci/orch_k8s_diagnostics.py --advanced --include-logs --output-html
+
+# Custom restart threshold (flag pods with 3+ restarts instead of default 5):
+python ci/orch_k8s_diagnostics.py --restart-threshold 3 --errors-only --output-html
+
+=== Operational Workflows ===
+# Before maintenance window - capture baseline cluster state:
+python ci/orch_k8s_diagnostics.py --output-html --output-json
+# Save the diagnostics_full_*.html for comparison after maintenance
+
+# After deployment - verify application health:
+python ci/orch_k8s_diagnostics.py --errors-only --output-html
+# Review HTML report to ensure no new issues were introduced
+
+# Customer support escalation - gather comprehensive diagnostics:
+python ci/orch_k8s_diagnostics.py --advanced --include-logs --output-html --output-json
+# Share diagnostics_full_*.html with support team, summary.json for ticket automation
 
 Command-Line Options:
 ---------------------
