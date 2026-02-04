@@ -302,6 +302,8 @@ jobs:
         uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
 
       - name: Run lint
+        env:
+          CALENDAR_VERSION: "true"
         run: |
           orch-ci/scripts/version-check.sh
           mage version:checkVersion
