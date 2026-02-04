@@ -69,6 +69,7 @@ jobs:
       yaml: ${{ contains(steps.check-files.outputs.changed_files, '.yaml') || contains(steps.check-files.outputs.changed_files, '.yml') }}
       helm: ${{ contains(steps.check-files.outputs.changed_files, 'argocd/') || contains(steps.check-files.outputs.changed_files, 'argocd-internal/') }}
       test-automation: ${{ contains(steps.check-files.outputs.changed_files, '.test-dependencies.yaml') }}
+      ui: ${{ contains(steps.check-files.outputs.changed_files, 'argocd/applications/configs/web-ui') || contains(steps.check-files.outputs.changed_files, 'argocd/applications/templates/web-ui') || contains(steps.check-files.outputs.changed_files, 'e2e-tests/cypress') }}
       only_design_proposals: ${{ steps.only-design-proposals.outputs.only_design_proposals }}
     steps:
       - name: Checkout code
@@ -471,6 +472,7 @@ jobs:
     timeout-minutes: 90
     env:
       ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+      UI_CHANGED: ${{ needs.check-changed-files.outputs.ui }}
     steps:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
@@ -546,7 +548,7 @@ jobs:
         run: echo "Current ENiC has UUID ${{ env.EN_UUID }} and SN ${{ env.EN_SN }}"
 
       - name: UI E2E Tests
-        if: ${{ always() && steps.deploy-kind-orchestrator.conclusion == 'success' && steps.default-mt-setup.conclusion == 'success' }}
+        if: ${{ always() && steps.deploy-kind-orchestrator.conclusion == 'success' && steps.default-mt-setup.conclusion == 'success' && (env.UI_CHANGED == 'true' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation') }}
         uses: ./.github/actions/cypress
         with:
           token: ${{ secrets.SYS_EMF_GH_TOKEN }}
