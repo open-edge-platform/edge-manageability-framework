@@ -290,7 +290,7 @@ jobs:
         with:
           repository: open-edge-platform/orch-ci
           path: orch-ci
-          ref: ed132828daf7dc52b29c8e35e7101bc73c9153ad
+          ref: 747f8729d571eae854674dfaabdaa1439c1aeb30
           persist-credentials: false
 
       - name: Set up git credentials
