@@ -1,4 +1,3 @@
-
 #!/bin/bash
 # SPDX-FileCopyrightText: 2025 Intel Corporation
 #
