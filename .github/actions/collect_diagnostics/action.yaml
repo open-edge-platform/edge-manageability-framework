@@ -33,20 +33,24 @@ runs:
     if: always()
     shell: bash
     run: ./ci/collect_pod_logs.sh
+  - name: Compress diagnostic artifacts
+    if: always()
+    shell: bash
+    run: |
+      # Create compressed archive of all diagnostics
+      tar -czf diagnostics-archive.tar.gz \
+        cluster-diagnostics/ \
+        pod_logs/ \
+        diagnostics_full_*.md \
+        diagnostics_full_*.html \
+        summary.json 2>/dev/null || true
+      echo "Compressed diagnostics archive created: $(du -h diagnostics-archive.tar.gz | cut -f1)"
   - name: Upload diagnostic artifacts
     if: always()
     uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
     with:
       name: diagnostics-${{ github.job }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_number }}-${{ github.run_attempt }}
-      path: |
-        cluster-diagnostics/pods-list.txt
-        cluster-diagnostics/kubectl-get-all.txt
-        cluster-diagnostics/pods-describe.txt
-        cluster-diagnostics/argo-diag.txt
-        cluster-diagnostics/argocd-applications.yaml
-        cluster-diagnostics/events.yaml
-        pod_logs/*
-        diagnostics_full_*.md
-        diagnostics_full_*.html
-        summary.json
+      path: diagnostics-archive.tar.gz
+      retention-days: 15
+      compression-level: 0
       if-no-files-found: warn

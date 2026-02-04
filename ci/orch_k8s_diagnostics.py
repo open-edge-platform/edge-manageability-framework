@@ -220,8 +220,9 @@ def check_argocd_apps():
                     else:
                         messages.append("No detailed error message available")
                 
-                # Capture kubectl describe for unhealthy application
+                # Capture kubectl describe for unhealthy application (last 100 lines for brevity)
                 describe_output = run(f"kubectl describe application {name} -n {namespace}")
+                describe_truncated = "\n".join(describe_output.splitlines()[-100:])
                 
                 issues.append({
                     "name": name,
@@ -229,7 +230,7 @@ def check_argocd_apps():
                     "health": health,
                     "sync": sync,
                     "message": " | ".join(messages),
-                    "describe": describe_output
+                    "describe": describe_truncated
                 })
     except (json.JSONDecodeError, KeyError):
         pass
@@ -268,6 +269,7 @@ def check_deployment_readiness(ns):
                 prog_cond = next((c for c in conditions if c["type"] == "Progressing"), None)
                 dep_name = dep["metadata"]["name"]
                 describe_output = run(f"kubectl describe deployment {dep_name} -n {ns}")
+                describe_truncated = "\n".join(describe_output.splitlines()[-100:])
                 issues.append({
                     "type": "Deployment",
                     "name": dep_name,
@@ -276,7 +278,7 @@ def check_deployment_readiness(ns):
                     "ready": ready,
                     "available": status.get("availableReplicas", 0),
                     "reason": prog_cond.get("reason", "Unknown") if prog_cond else "Unknown",
-                    "describe": describe_output
+                    "describe": describe_truncated
                 })
     except (json.JSONDecodeError, KeyError):
         pass
@@ -292,6 +294,7 @@ def check_deployment_readiness(ns):
             if ready < spec_replicas:
                 sts_name = st["metadata"]["name"]
                 describe_output = run(f"kubectl describe statefulset {sts_name} -n {ns}")
+                describe_truncated = "\n".join(describe_output.splitlines()[-100:])
                 issues.append({
                     "type": "StatefulSet",
                     "name": sts_name,
@@ -299,7 +302,7 @@ def check_deployment_readiness(ns):
                     "expected": spec_replicas,
                     "ready": ready,
                     "available": ready,
-                    "describe": describe_output
+                    "describe": describe_truncated
                 })
     except (json.JSONDecodeError, KeyError):
         pass
@@ -432,13 +435,14 @@ def gather_namespace_diagnostics(ns, restart_threshold, errors_only, include_log
         except (ValueError, IndexError):
             restarts_count = 0
         if status in ["CrashLoopBackOff", "ImagePullBackOff", "Error"]:
-            # Capture kubectl describe for pods in error states
+            # Capture kubectl describe for pods in error states (last 100 lines for brevity)
             describe_output = run(f"kubectl describe pod {pod} -n {ns}")
+            describe_truncated = "\n".join(describe_output.splitlines()[-100:])
             issues.append({
                 "pod": pod,
                 "status": status,
                 "namespace": ns,
-                "describe": describe_output
+                "describe": describe_truncated
             })
             state_podnames.add(pod)
         if restarts_count >= restart_threshold:
