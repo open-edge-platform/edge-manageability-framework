@@ -31,8 +31,19 @@ With --advanced Flag (Verbose Diagnostics):
 Outputs Generated:
 ------------------
 1. Markdown report (diagnostics_full_<timestamp>.md) - Always generated
+   • Full kubectl describe output for all failing resources
+   • Complete event details and diagnostics
+   
 2. HTML report (diagnostics_full_<timestamp>.html) - Optional with --output-html
-3. JSON summary (summary.json) - Optional with --output-json, machine-readable
+   • Same content as Markdown in browser-friendly format
+   • Collapsible sections for kubectl describe output
+   
+3. JSON summary (diagnostics_full_<timestamp>.json) - Optional with --output-json
+   • Structured, machine-readable format for automation
+   • Includes error details: reason, message, last_event, container_state, timestamps
+   • Deployment/StatefulSet conditions with status, reason, message
+   • Automated recommendations for common issues
+   • Note: kubectl describe output excluded to keep JSON lightweight
 
 Usage Examples:
 ---------------
@@ -299,6 +310,18 @@ def check_deployment_readiness(ns):
                 dep_name = dep["metadata"]["name"]
                 describe_output = run(f"kubectl describe deployment {dep_name} -n {ns}")
                 describe_truncated = "\n".join(describe_output.splitlines()[-100:])
+                
+                # Extract structured conditions for JSON
+                structured_conditions = []
+                for cond in conditions:
+                    structured_conditions.append({
+                        "type": cond.get("type", ""),
+                        "status": cond.get("status", ""),
+                        "reason": cond.get("reason", ""),
+                        "message": cond.get("message", ""),
+                        "lastUpdateTime": cond.get("lastUpdateTime", "")
+                    })
+                
                 issues.append({
                     "type": "Deployment",
                     "name": dep_name,
@@ -307,7 +330,10 @@ def check_deployment_readiness(ns):
                     "ready": ready,
                     "available": status.get("availableReplicas", 0),
                     "reason": prog_cond.get("reason", "Unknown") if prog_cond else "Unknown",
-                    "describe": describe_truncated
+                    "describe": describe_truncated,
+                    # Structured fields for JSON/automation
+                    "conditions": structured_conditions,
+                    "last_update_time": status.get("observedGeneration", "")
                 })
     except (json.JSONDecodeError, KeyError):
         pass
@@ -324,6 +350,20 @@ def check_deployment_readiness(ns):
                 sts_name = st["metadata"]["name"]
                 describe_output = run(f"kubectl describe statefulset {sts_name} -n {ns}")
                 describe_truncated = "\n".join(describe_output.splitlines()[-100:])
+                
+                # Extract structured conditions for JSON
+                st_status = st.get("status", {})
+                conditions = st_status.get("conditions", [])
+                structured_conditions = []
+                for cond in conditions:
+                    structured_conditions.append({
+                        "type": cond.get("type", ""),
+                        "status": cond.get("status", ""),
+                        "reason": cond.get("reason", ""),
+                        "message": cond.get("message", ""),
+                        "lastUpdateTime": cond.get("lastTransitionTime", "")
+                    })
+                
                 issues.append({
                     "type": "StatefulSet",
                     "name": sts_name,
@@ -331,7 +371,11 @@ def check_deployment_readiness(ns):
                     "expected": spec_replicas,
                     "ready": ready,
                     "available": ready,
-                    "describe": describe_truncated
+                    "describe": describe_truncated,
+                    # Structured fields for JSON/automation
+                    "conditions": structured_conditions,
+                    "current_revision": st_status.get("currentRevision", ""),
+                    "update_revision": st_status.get("updateRevision", "")
                 })
     except (json.JSONDecodeError, KeyError):
         pass
@@ -454,6 +498,16 @@ def gather_namespace_diagnostics(ns, restart_threshold, errors_only, include_log
         pvc_issues = check_pvc_status(ns)
 
     # --- Error states & Frequent Restarts ---
+    # Get detailed JSON output for structured error extraction
+    pods_json = run(f"kubectl get pods -n {ns} -o json 2>/dev/null || echo '{{}}'")
+    pods_data = {}
+    try:
+        for pod_obj in json.loads(pods_json).get("items", []):
+            pod_name = pod_obj["metadata"]["name"]
+            pods_data[pod_name] = pod_obj
+    except (json.JSONDecodeError, KeyError):
+        pass
+    
     for line in pods_lines:
         cols = line.split()
         if not cols or len(cols) < 4:
@@ -467,11 +521,60 @@ def gather_namespace_diagnostics(ns, restart_threshold, errors_only, include_log
             # Capture kubectl describe for pods in error states (last 100 lines for brevity)
             describe_output = run(f"kubectl describe pod {pod} -n {ns}")
             describe_truncated = "\n".join(describe_output.splitlines()[-100:])
+            
+            # Extract structured details from JSON for automation
+            pod_json = pods_data.get(pod, {})
+            pod_status = pod_json.get("status", {})
+            container_statuses = pod_status.get("containerStatuses", [])
+            
+            # Get container state and reason/message
+            reason, message, container_state = status, "", {}
+            last_transition_time = ""
+            if container_statuses:
+                for cs in container_statuses:
+                    state = cs.get("state", {})
+                    if "waiting" in state:
+                        reason = state["waiting"].get("reason", status)
+                        message = state["waiting"].get("message", "")
+                        container_state = {"waiting": state["waiting"]}
+                        break
+                    elif "terminated" in state:
+                        reason = state["terminated"].get("reason", status)
+                        message = state["terminated"].get("message", "")
+                        container_state = {"terminated": state["terminated"]}
+                        break
+            
+            # Get last event message from describe output
+            last_event = ""
+            for desc_line in describe_output.splitlines():
+                if "Events:" in desc_line:
+                    # Find the last Warning or Error event
+                    events_section = describe_output.split("Events:")[-1]
+                    for event_line in reversed(events_section.splitlines()):
+                        if "Warning" in event_line or "Failed" in event_line:
+                            last_event = event_line.strip()
+                            break
+                    break
+            
+            # Get conditions for timestamp
+            conditions = pod_status.get("conditions", [])
+            for cond in conditions:
+                if cond.get("type") == "Ready" and cond.get("status") == "False":
+                    last_transition_time = cond.get("lastTransitionTime", "")
+                    break
+            
             issues.append({
                 "pod": pod,
                 "status": status,
                 "namespace": ns,
-                "describe": describe_truncated
+                "describe": describe_truncated,
+                # Structured fields for JSON/automation
+                "reason": reason,
+                "message": message,
+                "last_event": last_event,
+                "restart_count": restarts_count,
+                "container_state": container_state,
+                "last_transition_time": last_transition_time
             })
             state_podnames.add(pod)
         if restarts_count >= restart_threshold:
@@ -799,27 +902,96 @@ def main():
         for report in namespace_reports:
             if report["markdown"]:
                 f.write("\n" + "\n".join(report["markdown"]))
-    print("\n".join(summary_md))
+    
+    # Print concise summary to console (full details in report files)
+    print(f"\n{'='*80}")
+    print(f"Kubernetes Diagnostics Report Generated: {ts}")
+    print(f"{'='*80}")
+    print(f"Namespaces scanned: {len(all_ns)}")
+    print(f"Nodes: {len(nodes.splitlines())-1}")
+    print(f"Pods with errors: {len(summary['pods_w_errors'])}")
+    print(f"Pods with frequent restarts: {len(summary['pods_w_restarts'])}")
+    print(f"Deployments not ready: {len(summary['deployments_not_ready'])}")
+    print(f"ArgoCD apps unhealthy: {len(summary['argocd_apps_unhealthy'])}")
+    print(f"Jobs incomplete: {len(summary['jobs_incomplete'])}")
+    print(f"\nReports saved:")
+    print(f"  - {fname_base}.md (detailed markdown)")
+    if args.output_html:
+        print(f"  - {fname_base}.html (shareable HTML)")
+    if args.output_json:
+        print(f"  - {fname_base}.json (machine-readable)")
+    print(f"{'='*80}\n")
 
     # --- Write JSON output if requested ---
     if args.output_json:
+        # Helper function to remove verbose describe field from items
+        def strip_describe(item):
+            """Remove describe field, keep structured data for automation."""
+            if isinstance(item, dict):
+                return {k: v for k, v in item.items() if k != "describe"}
+            return item
+        
+        # Generate recommendations based on error patterns
+        recommendations = []
+        for pod_err in summary["pods_w_errors"]:
+            issue_desc = f"{pod_err['status']} in {pod_err['namespace']}/{pod_err['pod']}"
+            if "ImagePullBackOff" in pod_err.get("status", ""):
+                recommendations.append({
+                    "issue": issue_desc,
+                    "severity": "high",
+                    "suggested_action": "Check image name, registry credentials, and network connectivity to registry"
+                })
+            elif "CrashLoopBackOff" in pod_err.get("status", ""):
+                recommendations.append({
+                    "issue": issue_desc,
+                    "severity": "high",
+                    "suggested_action": "Check pod logs for application errors, verify environment variables and config"
+                })
+            elif "Error" in pod_err.get("status", ""):
+                recommendations.append({
+                    "issue": issue_desc,
+                    "severity": "medium",
+                    "suggested_action": "Review pod events and logs for root cause"
+                })
+        
+        for deploy in summary["deployments_not_ready"]:
+            if deploy.get("reason") == "ProgressDeadlineExceeded":
+                recommendations.append({
+                    "issue": f"Deployment {deploy['namespace']}/{deploy['name']} rollout stuck",
+                    "severity": "high",
+                    "suggested_action": "Check pod events, resource quotas, and image availability"
+                })
+        
         json_obj = {
             "ts": ts,
-            "summary": summary,
+            "has_errors": len(summary["pods_w_errors"]) > 0 or len(summary["deployments_not_ready"]) > 0,
+            "summary": {
+                # Strip describe fields from summary items for cleaner JSON
+                "pods_w_errors": [strip_describe(p) for p in summary["pods_w_errors"]],
+                "pods_with_many_restarts": summary["pods_with_many_restarts"],
+                "namespaces_with_policy_violations": summary["namespaces_with_policy_violations"],
+                "namespaces_with_probe_failures": summary["namespaces_with_probe_failures"],
+                "failed_jobs": summary["failed_jobs"],
+                "unhealthy_nodes": summary["unhealthy_nodes"],
+                "deployments_not_ready": [strip_describe(d) for d in summary["deployments_not_ready"]],
+                "pvc_not_bound": summary["pvc_not_bound"],
+                "argocd_apps_unhealthy": [strip_describe(a) for a in summary["argocd_apps_unhealthy"]],
+            },
+            "recommendations": recommendations,
             "namespace_reports": [
                 {
                     "namespace": n["namespace"],
-                    "issues": n["issues"],
+                    "issues": [strip_describe(i) for i in n["issues"]],
                     "restarts": n["restarts"],
                     "policy_violations": n["policy_violations"],
                     "probe_failures": n["probe_failures"],
-                    "deployment_issues": n["deployment_issues"],
+                    "deployment_issues": [strip_describe(d) for d in n["deployment_issues"]],
                     "pvc_issues": n["pvc_issues"],
                 }
                 for n in namespace_reports
             ],
         }
-        with open("summary.json", "w", encoding="utf-8") as f:
+        with open(fname_base + ".json", "w", encoding="utf-8") as f:
             json.dump(json_obj, f, indent=2)
 
     # --- Write HTML report if requested ---
