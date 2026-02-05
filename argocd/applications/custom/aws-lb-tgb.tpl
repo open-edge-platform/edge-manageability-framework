@@ -8,7 +8,7 @@
 targetGroup:
   traefik: {{.Values.argo.aws.targetGroup.traefik}}
   traefikGrpc: {{.Values.argo.aws.targetGroup.traefikGrpc}}
-  haproxy: {{.Values.argo.aws.targetGroup.nginx}}
+  haproxy: {{.Values.argo.aws.targetGroup.haproxy}}
   argocd: {{.Values.argo.aws.targetGroup.argocd}}
 {{- end }}
 {{- end }}
