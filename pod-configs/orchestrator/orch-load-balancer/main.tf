@@ -92,15 +92,11 @@ locals {
   }
   nlb_ports = {
     "https" : {
-      listen                           = 443
-      target                           = 31443
-      type                             = "ip"
-      protocol                         = "TCP"
-      enable_health_check              = true
-      health_check_protocol            = "HTTPS"
-      health_check_path                = "/healthz"
-      health_check_healthy_threshold   = 3
-      health_check_unhealthy_threshold = 2
+      listen              = 443
+      target              = 31443
+      type                = "ip"
+      protocol            = "TCP"
+      enable_health_check = true
     }
   }
 
@@ -195,9 +191,9 @@ module "traefik_lb_target_group_binding" {
       servicePort      = 443
       target_id        = module.traefik_load_balancer.target_groups["grpc"].arn
     }
-    "ingress-haproxy-kubernetes-ingress" : {
+    "ingress-nginx-controller" : {
       serviceNamespace = "orch-boots"
-      serviceName      = "ingress-haproxy-kubernetes-ingress"
+      serviceName      = "ingress-nginx-controller"
       servicePort      = 443
       target_id        = module.traefik2_load_balancer[0].target_groups["https"].arn
     },
@@ -231,7 +227,7 @@ module "aws_lb_security_group_roles" {
       security_group_id = module.traefik_load_balancer.lb_sg_id
     },
     "traefik2": {
-      port = 8443,
+      port = 443,
       security_group_id = module.traefik2_load_balancer[0].lb_sg_id
     },
     "argocd": {

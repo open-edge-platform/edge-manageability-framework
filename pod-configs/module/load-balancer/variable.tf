@@ -30,7 +30,7 @@ variable "ports" {
     enable_health_check              = optional(bool, true)
     health_check_protocol            = optional(string, "TCP")
     health_check_path                = optional(string, null)
-    health_check_healthy_threshold   = optional(number, 3)
+    health_check_healthy_threshold   = optional(number, 5)
     health_check_unhealthy_threshold = optional(number, 2)
   }))
   default = {
