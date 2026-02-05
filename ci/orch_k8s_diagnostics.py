@@ -546,15 +546,13 @@ def gather_namespace_diagnostics(ns, restart_threshold, errors_only, include_log
             
             # Get last event message from describe output
             last_event = ""
-            for desc_line in describe_output.splitlines():
-                if "Events:" in desc_line:
-                    # Find the last Warning or Error event
-                    events_section = describe_output.split("Events:")[-1]
-                    for event_line in reversed(events_section.splitlines()):
-                        if "Warning" in event_line or "Failed" in event_line:
-                            last_event = event_line.strip()
-                            break
-                    break
+            if "Events:" in describe_output:
+                # Find the last Warning or Error event
+                events_section = describe_output.split("Events:")[-1]
+                for event_line in reversed(events_section.splitlines()):
+                    if "Warning" in event_line or "Failed" in event_line:
+                        last_event = event_line.strip()
+                        break
             
             # Get conditions for timestamp
             conditions = pod_status.get("conditions", [])
@@ -910,10 +908,10 @@ def main():
     print(f"Namespaces scanned: {len(all_ns)}")
     print(f"Nodes: {len(nodes.splitlines())-1}")
     print(f"Pods with errors: {len(summary['pods_w_errors'])}")
-    print(f"Pods with frequent restarts: {len(summary['pods_w_restarts'])}")
+    print(f"Pods with frequent restarts: {len(summary['pods_with_many_restarts'])}")
     print(f"Deployments not ready: {len(summary['deployments_not_ready'])}")
     print(f"ArgoCD apps unhealthy: {len(summary['argocd_apps_unhealthy'])}")
-    print(f"Jobs incomplete: {len(summary['jobs_incomplete'])}")
+    print(f"Jobs incomplete: {len(summary['failed_jobs'])}")
     print(f"\nReports saved:")
     print(f"  - {fname_base}.md (detailed markdown)")
     if args.output_html:
