@@ -35,7 +35,7 @@ variable "target_groups" {
     enable_health_check               = optional(bool, true)
     health_check_protocol             = optional(string, "HTTPS")
     health_check_path                 = optional(string, "/")
-    health_check_healthy_threshold    = optional(number, 5)
+    health_check_healthy_threshold    = optional(number, 3)
     health_check_unhealthy_threshold  = optional(number, 2)
     expected_health_check_status_code = optional(number, 200)
     match_headers                     = optional(map(string), {}) // header to match to apply this target group, leave null for default group

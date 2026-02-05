@@ -92,11 +92,15 @@ locals {
   }
   nlb_ports = {
     "https" : {
-      listen              = 443
-      target              = 31443
-      type                = "ip"
-      protocol            = "TCP"
-      enable_health_check = true
+      listen                           = 443
+      target                           = 31443
+      type                             = "ip"
+      protocol                         = "TCP"
+      enable_health_check              = true
+      health_check_protocol            = "HTTPS"
+      health_check_path                = "/healthz"
+      health_check_healthy_threshold   = 3
+      health_check_unhealthy_threshold = 2
     }
   }
 
