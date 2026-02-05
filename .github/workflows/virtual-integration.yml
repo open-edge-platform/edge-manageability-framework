@@ -69,7 +69,7 @@ jobs:
       yaml: ${{ contains(steps.check-files.outputs.changed_files, '.yaml') || contains(steps.check-files.outputs.changed_files, '.yml') }}
       helm: ${{ contains(steps.check-files.outputs.changed_files, 'argocd/') || contains(steps.check-files.outputs.changed_files, 'argocd-internal/') }}
       test-automation: ${{ contains(steps.check-files.outputs.changed_files, '.test-dependencies.yaml') }}
-      ui: ${{ contains(steps.check-files.outputs.changed_files, 'argocd/applications/configs/web-ui') || contains(steps.check-files.outputs.changed_files, 'argocd/applications/templates/web-ui') || contains(steps.check-files.outputs.changed_files, 'e2e-tests/cypress') }}
+      ui: ${{ contains(steps.check-files.outputs.changed_files, 'argocd/applications/configs/web-ui') || contains(steps.check-files.outputs.changed_files, 'argocd/applications/templates/web-ui') || contains(steps.check-files.outputs.changed_files, 'actions/cypress') }}
       only_design_proposals: ${{ steps.only-design-proposals.outputs.only_design_proposals }}
     steps:
       - name: Checkout code
