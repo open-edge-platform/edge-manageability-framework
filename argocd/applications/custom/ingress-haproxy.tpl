@@ -6,9 +6,6 @@ controller:
 {{- if eq .Values.argo.traefikSvcType "NodePort" }}
   service:
     type: NodePort
-    httpsPort: 443
-    targetPorts:
-      https: 8443
     nodePorts:
       https: 31443
 {{- end}}

@@ -227,7 +227,7 @@ module "aws_lb_security_group_roles" {
       security_group_id = module.traefik_load_balancer.lb_sg_id
     },
     "traefik2": {
-      port = 8443,
+      port = 443,
       security_group_id = module.traefik2_load_balancer[0].lb_sg_id
     },
     "argocd": {
