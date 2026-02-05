@@ -19,6 +19,6 @@ terraform-docs 0.17.0
 tflint 0.51.2
 yamllint 1.37.1
 yq 4.34.2
-nodejs 23.6.1
+nodejs 24.13.0
 markdownlint-cli2 0.17.2
 python 3.11.9
