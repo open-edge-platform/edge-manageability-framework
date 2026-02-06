@@ -35,9 +35,6 @@ logsNodeMatchHost: Host(`logs-node.{{ .Values.argo.clusterDomain }}`)
 metricsNodeMatchHost: Host(`metrics-node.{{ .Values.argo.clusterDomain }}`)
 giteaMatchHost: Host(`gitea.{{ .Values.argo.clusterDomain }}`)
 
-# Nexus API Gateway configuration
-apiHostname: "api.{{ .Values.argo.clusterDomain }}"
-
 {{- if .Values.argo.traefik }}
 {{- if .Values.argo.traefik.rateLimit }}
 
