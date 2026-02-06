@@ -662,6 +662,11 @@ EOF
 ##### UPGRADE SCRIPT START #####
 ################################
 
+# CLI flags (must be initialized for shells with nounset enabled)
+HELP=''
+BACKUP=''
+OVERRIDE=''
+
 # shellcheck disable=SC2034
 while getopts 'v:hbol' flag; do
     case "${flag}" in
@@ -673,7 +678,7 @@ while getopts 'v:hbol' flag; do
     esac
 done
 
-if [[ $HELP ]]; then
+if [[ "${HELP:-}" == "true" ]]; then
     usage
     exit 1
 fi
@@ -717,7 +722,7 @@ install_yq
 
 ### Backup
 
-if [[ $BACKUP ]]; then
+if [[ "${BACKUP:-}" == "true" ]]; then
     echo "Backing up PVs..."
     backup_pvs
     if [[ $? -eq 1 ]]; then
