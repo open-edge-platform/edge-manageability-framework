@@ -179,6 +179,53 @@ def check_argocd_apps():
                 # Collect detailed diagnostic messages
                 messages = []
                 
+                # Extract operation state and sync timing
+                operation_state = status.get("operationState", {})
+                operation_phase = operation_state.get("phase", "N/A")
+                operation_message = operation_state.get("message", "")
+                finished_at = operation_state.get("finishedAt", "")
+                started_at = operation_state.get("startedAt", "")
+                
+                # Check if auto-sync is enabled
+                sync_policy = app.get("spec", {}).get("syncPolicy", {})
+                auto_sync_enabled = bool(sync_policy.get("automated"))
+                prune_enabled = sync_policy.get("automated", {}).get("prune", False) if auto_sync_enabled else False
+                self_heal_enabled = sync_policy.get("automated", {}).get("selfHeal", False) if auto_sync_enabled else False
+                
+                # Get out-of-sync resources
+                resources = status.get("resources", [])
+                out_of_sync_resources = []
+                for res in resources:
+                    if res.get("status") != "Synced":
+                        res_kind = res.get("kind", "")
+                        res_name = res.get("name", "")
+                        res_status = res.get("status", "")
+                        out_of_sync_resources.append(f"{res_kind}/{res_name} ({res_status})")
+                
+                # Add sync timing info
+                if operation_phase == "Running":
+                    messages.append(f"⚙️ Sync operation in progress (started: {started_at})")
+                elif finished_at:
+                    messages.append(f"🕐 Last operation: {operation_phase} at {finished_at}")
+                
+                # Add auto-sync configuration
+                if auto_sync_enabled:
+                    auto_sync_details = f"Auto-sync: ON (prune={prune_enabled}, selfHeal={self_heal_enabled})"
+                    messages.append(f"🔄 {auto_sync_details}")
+                else:
+                    messages.append("🔄 Auto-sync: OFF")
+                
+                # Add out-of-sync resource details
+                if out_of_sync_resources:
+                    if len(out_of_sync_resources) <= 5:
+                        messages.append(f"📋 Out-of-sync resources: {', '.join(out_of_sync_resources)}")
+                    else:
+                        messages.append(f"📋 {len(out_of_sync_resources)} resources out of sync (showing first 5): {', '.join(out_of_sync_resources[:5])}")
+                
+                # Add operation message if present
+                if operation_message:
+                    messages.append(f"💬 Operation message: {operation_message}")
+                
                 # 1. Conditions (validation errors, comparison errors, etc.)
                 conditions = status.get("conditions", [])
                 for cond in conditions:
@@ -270,7 +317,16 @@ def check_argocd_apps():
                     "health": health,
                     "sync": sync,
                     "message": " | ".join(messages),
-                    "describe": describe_truncated
+                    "describe": describe_truncated,
+                    # Structured fields for JSON/automation
+                    "operation_phase": operation_phase,
+                    "operation_started_at": started_at,
+                    "operation_finished_at": finished_at,
+                    "auto_sync_enabled": auto_sync_enabled,
+                    "prune_enabled": prune_enabled,
+                    "self_heal_enabled": self_heal_enabled,
+                    "out_of_sync_resources": out_of_sync_resources,
+                    "out_of_sync_count": len(out_of_sync_resources)
                 })
     except (json.JSONDecodeError, KeyError):
         pass
