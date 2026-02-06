@@ -1266,6 +1266,10 @@ if kubectl get crd externalsecrets.external-secrets.io >/dev/null 2>&1; then
     kubectl patch crd/externalsecrets.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
 fi
 
+# Delete Kyverno policy that restarts MPS/RPS deployments when secrets change (ignore if it doesn't exist)
+kubectl delete clusterpolicy restart-mps-deployment-on-secret-change --ignore-not-found=true
+kubectl delete clusterpolicy restart-rps-deployment-on-secret-change --ignore-not-found=true 
+
 # Apply External Secrets CRDs with server-side apply
 echo "Applying external-secrets CRDs with server-side apply..."
 kubectl apply --server-side=true --force-conflicts -f https://raw.githubusercontent.com/external-secrets/external-secrets/refs/tags/v0.20.4/deploy/crds/bundle.yaml || true
