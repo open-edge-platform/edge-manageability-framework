@@ -79,8 +79,8 @@ os-resource-manager:
     osSecurityFeatureEnable: false
     inventoryAddress: "inventory.orch-infra.svc.cluster.local:50051"
     traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
-    rsProxyRegistryAddress: "rs-proxy.orch-platform.svc.cluster.local:8081/"
-    rsProxyFilesAddress: "rs-proxy-files.orch-platform.svc.cluster.local:8081/"
+    rsProxyRegistryAddress: "registry-rs.edgeorchestration.intel.com/"
+    rsProxyFilesAddress: "files-rs.edgeorchestration.intel.com/"
     rsEnProfileRepo: "edge-orch/en/files/os-profile/"
   image:
     pullPolicy: IfNotPresent
