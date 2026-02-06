@@ -34,6 +34,9 @@ api:
     enabled: {{ index .Values.argo "infra-core" "enableMetrics" | default false }}
 
 apiv2:
+  image:
+    repository: "infra/apiv2"
+    tag: {{ .Values.argo.apiv2ImageTag | default "2.9.3" }}
   serviceArgsProxy:
     globalLogLevel: "debug"
     enableTracing: {{ index .Values.argo "infra-core" "enableTracing" | default false }}
