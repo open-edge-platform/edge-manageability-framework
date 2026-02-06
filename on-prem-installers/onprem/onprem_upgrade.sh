@@ -79,19 +79,16 @@ GITEA_IMAGE_REGISTRY="${GITEA_IMAGE_REGISTRY:-docker.io}"
 USE_LOCAL_PACKAGES="${USE_LOCAL_PACKAGES:-false}"  # New flag for local packages
 INSTALL_GITEA=true
 
-# Determine UPGRADE_3_1_X based on existing PostgreSQL pod
+
 echo "Checking PostgreSQL pod in orch-database namespace..."
-if kubectl get pod -n orch-database postgresql-cluster-1 >/dev/null 2>&1; then
-    echo "Found postgresql-cluster-1 pod - Setting UPGRADE_3_1_X=false"
-    UPGRADE_3_1_X="false"
-elif kubectl get pod -n orch-database postgresql-0 >/dev/null 2>&1; then
-    echo "Found postgresql-0 pod - Setting UPGRADE_3_1_X=true (upgrading from pre-3.1.x)"
-    UPGRADE_3_1_X="true"
+
+if kubectl get pod postgresql-cluster-1 -n orch-database >/dev/null 2>&1; then
+  echo "Found postgresql-cluster-1 pod"
 else
-    echo "ERROR: No PostgreSQL pod found in orch-database namespace."
-    echo "Expected either 'postgresql-cluster-1' or 'postgresql-0'"
-    exit 1
+  echo "❌ ERROR: PostgreSQL pod postgresql-cluster-1 not found in orch-database namespace."
+  exit 1
 fi
+
 
 ### Variables
 cwd=$(pwd)
@@ -693,11 +690,9 @@ fi
 
 # Perform PostgreSQL secret backup if not done already
 if [[ ! -f postgres_secret.yaml ]]; then
-    if [[ "$UPGRADE_3_1_X" == "true" ]]; then
-        kubectl get secret -n orch-database postgresql -o yaml > postgres_secret.yaml
-    else
-        kubectl get secret -n orch-database passwords -o yaml > postgres_secret.yaml
-    fi
+
+	kubectl get secret -n orch-database postgresql-cluster-superuser -o yaml > postgres_secret.yaml
+
 fi
 
 
@@ -835,11 +830,7 @@ if [[ ! -s postgres-secrets-password.txt ]]; then
     IAM_TENANCY=$(kubectl get secret iam-tenancy-local-postgresql -n orch-iam -o jsonpath='{.data.PGPASSWORD}')
     PLATFORM_KEYCLOAK=$(kubectl get secret platform-keycloak-local-postgresql -n orch-platform -o jsonpath='{.data.PGPASSWORD}')
     VAULT=$(kubectl get secret vault-local-postgresql -n orch-platform -o jsonpath='{.data.PGPASSWORD}')
-    if [[ "$UPGRADE_3_1_X" == "true" ]]; then
-        POSTGRESQL=$(kubectl get secret postgresql -n orch-database -o jsonpath='{.data.postgres-password}')
-    else
-        POSTGRESQL=$(kubectl get secret orch-database-postgresql -n orch-database -o jsonpath='{.data.password}')
-    fi
+    POSTGRESQL=$(kubectl get secret orch-database-postgresql -n orch-database -o jsonpath='{.data.password}')
     MPS=$(kubectl get secret mps-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}')
     RPS=$(kubectl get secret rps-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}')
     {
@@ -1066,12 +1057,9 @@ patch_secrets() {
         kubectl patch secret platform-keycloak -n orch-platform --type='merge' -p "{\"stringData\": {\"username\": \"admin\", \"password\": \"$ADMIN_PASSWORD\"}}" || true
     fi
 
-    # This secret does not exist in 3.1.x so we need to create it
-    if [[ "$UPGRADE_3_1_X" == "true" ]]; then
-        create_postgres_password "orch-database" "$POSTGRESQL"
-    else
-        kubectl patch secret -n orch-database orch-database-postgresql -p "{\"data\": {\"password\": \"$POSTGRESQL\"}}" --type=merge
-    fi
+
+    kubectl patch secret -n orch-database orch-database-postgresql -p "{\"data\": {\"password\": \"$POSTGRESQL\"}}" --type=merge
+  
 }
 
 # Stop sync operation for root-app, so it won't be synced with the old version of the application.
@@ -1124,21 +1112,18 @@ sleep 30
 patch_secrets
 sleep 10
 
-# Restore secret after app delete but before postgress restored
-if [[ "$UPGRADE_3_1_X" == "true" ]]; then
-        yq e 'del(.metadata.labels, .metadata.annotations, .metadata.uid, .metadata.creationTimestamp)' postgres_secret.yaml | kubectl apply -f -
-else
-        yq e '
-          del(.metadata.labels) |
-          del(.metadata.annotations) |
-          del(.metadata.ownerReferences) |
-          del(.metadata.finalizers) |
-          del(.metadata.managedFields) |
-          del(.metadata.resourceVersion) |
-          del(.metadata.uid) |
-          del(.metadata.creationTimestamp)
-        ' postgres_secret.yaml | kubectl apply -f -
-fi
+
+yq e '
+  del(.metadata.labels) |
+  del(.metadata.annotations) |
+  del(.metadata.ownerReferences) |
+  del(.metadata.finalizers) |
+  del(.metadata.managedFields) |
+  del(.metadata.resourceVersion) |
+  del(.metadata.uid) |
+  del(.metadata.creationTimestamp)
+' postgres_secret.yaml | kubectl apply -f -
+
 sleep 30
 # Wait until PostgreSQL pod is running (Re-sync)
 start_time=$(date +%s)
@@ -1246,14 +1231,20 @@ echo "Restart keycloak-tenant-controller to resolve vault authentication issues"
 echo "Restart keycloak-tenant-controller to refresh connection"
 restart_statefulset keycloak-tenant-controller-set orch-platform
 
-echo "Restart harbor-oci-database to refresh connection"
-restart_statefulset harbor-oci-database orch-harbor
+# Skip restarts if ORCH_INSTALLER_PROFILE is onprem-vpro
+if [ "${ORCH_INSTALLER_PROFILE:-}" != "onprem-vpro" ]; then
+  echo "Restart harbor-oci-database to refresh connection"
+  restart_statefulset harbor-oci-database orch-harbor
 
-# Restart harbor-oci-core to refresh connection
-echo "Restart harbor-oci-core to refresh connection"
-kubectl rollout restart deployment harbor-oci-core -n orch-harbor
+  # Restart harbor-oci-core to refresh connection
+  echo "Restart harbor-oci-core to refresh connection"
+  kubectl rollout restart deployment harbor-oci-core -n orch-harbor
 
-echo "✅ harbor-oci-core restarted"
+  echo "✅ harbor-oci-core restarted"
+else
+  echo "ℹ️ ORCH_INSTALLER_PROFILE=onprem-vpro → Skipping Harbor restarts"
+fi
+
 
 
 echo "Cleaning up external-secrets installation..."
@@ -1271,9 +1262,21 @@ if kubectl get crd externalsecrets.external-secrets.io >/dev/null 2>&1; then
     kubectl patch crd/externalsecrets.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
 fi
 
-# Delete Kyverno policy that restarts MPS/RPS deployments when secrets change (ignore if it doesn't exist)
-kubectl delete clusterpolicy restart-mps-deployment-on-secret-change --ignore-not-found=true
-kubectl delete clusterpolicy restart-rps-deployment-on-secret-change --ignore-not-found=true 
+# Delete Kyverno policies that restart MPS/RPS deployments when secrets change (if present)
+
+if kubectl get clusterpolicy restart-mps-deployment-on-secret-change >/dev/null 2>&1; then
+  echo "Deleting ClusterPolicy: restart-mps-deployment-on-secret-change"
+  kubectl delete clusterpolicy restart-mps-deployment-on-secret-change
+else
+  echo "ClusterPolicy restart-mps-deployment-on-secret-change not found, skipping"
+fi
+
+if kubectl get clusterpolicy restart-rps-deployment-on-secret-change >/dev/null 2>&1; then
+  echo "Deleting ClusterPolicy: restart-rps-deployment-on-secret-change"
+  kubectl delete clusterpolicy restart-rps-deployment-on-secret-change
+else
+  echo "ClusterPolicy restart-rps-deployment-on-secret-change not found, skipping"
+fi
 
 # Apply External Secrets CRDs with server-side apply
 echo "Applying external-secrets CRDs with server-side apply..."
@@ -1300,7 +1303,7 @@ sleep 10
 kubectl delete secret tls-boots -n orch-boots || true
 
 echo "Wait ~5–10 minutes for ArgoCD to sync and deploy all application"
-echo "   👉 Run the script to to futher sync and post run"
+echo "   👉 Run the script to further sync and post run"
 echo "          ./after_upgrade_restart.sh"
 echo ""
 echo "Upgrade completed! Wait for ArgoCD applications to be in 'Synced' and 'Healthy' state"
