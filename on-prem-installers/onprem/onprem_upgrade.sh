@@ -443,8 +443,8 @@ restart_statefulset() {
     echo "Restarting StatefulSet $name in namespace $namespace..."
 
     # Get current replica count
-    REPLICAS=$(kubectl get statefulset "$name" -n "$namespace" -o jsonpath='{.spec.replicas}')
-    echo "Current replicas: $REPLICAS"
+    replicas=$(kubectl get statefulset "$name" -n "$namespace" -o jsonpath='{.spec.replicas}')
+    echo "Current replicas: $replicas"
 
     # Scale to 0
     kubectl scale statefulset "$name" -n "$namespace" --replicas=0
@@ -453,7 +453,7 @@ restart_statefulset() {
     kubectl wait --for=delete pod -l app="$name" -n "$namespace" --timeout=300s
 
     # Scale back to original replica count
-    kubectl scale statefulset "$name" -n "$namespace" --replicas="$REPLICAS"
+    kubectl scale statefulset "$name" -n "$namespace" --replicas="$replicas"
 
     echo "✅ $name restarted"
 }
@@ -475,6 +475,40 @@ check_and_cleanup_job() {
             kubectl patch -n "$apps_ns" application "$app_name" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
         else
             echo "ℹ️  No $app_name job found to delete"
+        fi
+    fi
+}
+
+delete_crd_safely() {
+    local crd_name="$1"
+    
+    if kubectl get crd "$crd_name" >/dev/null 2>&1; then
+        echo "Deleting CRD: $crd_name"
+        
+        # First, try graceful deletion with timeout
+        kubectl delete crd "$crd_name" --timeout=30s --wait=false
+        
+        # Wait a moment for the deletion to start
+        sleep 2
+        
+        # Check if it's stuck in terminating state
+        if kubectl get crd "$crd_name" -o jsonpath='{.metadata.deletionTimestamp}' 2>/dev/null | grep -q .; then
+            echo "CRD $crd_name is stuck terminating, removing finalizers..."
+            kubectl patch crd "$crd_name" -p '{"metadata":{"finalizers":[]}}' --type=merge
+        fi
+        
+        # Wait for actual deletion with timeout
+        local timeout=60
+        local count=0
+        while kubectl get crd "$crd_name" >/dev/null 2>&1 && [ $count -lt $timeout ]; do
+            sleep 1
+            ((count++))
+        done
+        
+        if kubectl get crd "$crd_name" >/dev/null 2>&1; then
+            echo "Warning: CRD $crd_name still exists after $timeout seconds"
+        else
+            echo "Successfully deleted CRD: $crd_name"
         fi
     fi
 }
@@ -941,21 +975,7 @@ patch_secrets() {
     app_status=$(kubectl get application postgresql-secrets -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
     if [[ "$app_status" != "Synced Healthy" ]]; then
         check_and_patch_sync_app root-app "$apps_ns"
-    # Check for secret every 5 sec for up to 40 times (~200s total)
-
-    # Check for secret every 5 sec for 10 times
-    for i in $(seq 1 40); do
-
-        if kubectl get secret app-orch-catalog-local-postgresql -n orch-app >/dev/null 2>&1; then
-            echo "✅ Secret found!"
-            break
-        fi
-
-        if [ "$i" -lt 40 ]; then
-            echo "❌ Secret not found. Waiting 5s..."
-            sleep 5
-        fi
-    done
+    fi
 
     # Wait for all required secrets to exist before patching
     local secrets_to_check=(
@@ -1001,7 +1021,6 @@ patch_secrets() {
 
     echo "✅ All required secrets exist, proceeding with patching..."
 
-
     kubectl patch secret -n orch-app app-orch-catalog-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$CATALOG_SERVICE\"}}" --type=merge
     kubectl patch secret -n orch-app app-orch-catalog-reader-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$CATALOG_SERVICE\"}}" --type=merge
     kubectl patch secret -n orch-iam iam-tenancy-local-postgresql -p "{\"data\": {\"PGPASSWORD\": \"$IAM_TENANCY\"}}" --type=merge
@@ -1031,7 +1050,7 @@ patch_secrets() {
       kubectl patch secret -n orch-database orch-infra-rps -p "{\"data\": {\"password\": \"$RPS\"}}" --type=merge
     fi
 
-    # patch keycloak secret for additional fields username & password
+    # Patch keycloak secret for additional fields username & password
     if kubectl get secret platform-keycloak -n orch-platform > /dev/null 2>&1; then
         ADMIN_PASSWORD=$(kubectl get secret platform-keycloak -n orch-platform -o jsonpath='{.data.admin-password}' 2>/dev/null | base64 -d 2>/dev/null)
         if [ -z "$ADMIN_PASSWORD" ]; then
@@ -1099,18 +1118,18 @@ sleep 10
 
 # Restore secret after app delete but before postgress restored
 if [[ "$UPGRADE_3_1_X" == "true" ]]; then
-        yq e 'del(.metadata.labels, .metadata.annotations, .metadata.uid, .metadata.creationTimestamp)' postgres_secret.yaml | kubectl apply -f -
+    yq e 'del(.metadata.labels, .metadata.annotations, .metadata.uid, .metadata.creationTimestamp)' postgres_secret.yaml | kubectl apply -f -
 else
-        yq e '
-          del(.metadata.labels) |
-          del(.metadata.annotations) |
-          del(.metadata.ownerReferences) |
-          del(.metadata.finalizers) |
-          del(.metadata.managedFields) |
-          del(.metadata.resourceVersion) |
-          del(.metadata.uid) |
-          del(.metadata.creationTimestamp)
-        ' postgres_secret.yaml | kubectl apply -f -
+    yq e '
+      del(.metadata.labels) |
+      del(.metadata.annotations) |
+      del(.metadata.ownerReferences) |
+      del(.metadata.finalizers) |
+      del(.metadata.managedFields) |
+      del(.metadata.resourceVersion) |
+      del(.metadata.uid) |
+      del(.metadata.creationTimestamp)
+    ' postgres_secret.yaml | kubectl apply -f -
 fi
 sleep 30
 # Wait until PostgreSQL pod is running (Re-sync)
@@ -1178,97 +1197,132 @@ done
 echo "Updating MPS and RPS connection strings for CloudNativePG..."
 
 # Get the current passwords from the secrets
-MPS_PASSWORD=$(kubectl get secret mps-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}' | base64 -d)
-RPS_PASSWORD=$(kubectl get secret rps-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}' | base64 -d)
+mps_password=$(kubectl get secret mps-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}' | base64 -d)
+rps_password=$(kubectl get secret rps-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}' | base64 -d)
 
 # Update MPS connection string to use CNPG service name
-MPS_CONN_STRING="postgresql://orch-infra-mps_user:${MPS_PASSWORD}@postgresql-cluster-rw.orch-database/orch-infra-mps?search_path=public&sslmode=disable"
-MPS_CONN_BASE64=$(echo -n "$MPS_CONN_STRING" | base64 -w 0)
-kubectl patch secret mps -n orch-infra -p "{\"data\":{\"connectionString\":\"$MPS_CONN_BASE64\"}}" --type=merge
+mps_conn_string="postgresql://orch-infra-mps_user:${mps_password}@postgresql-cluster-rw.orch-database/orch-infra-mps?search_path=public&sslmode=disable"
+mps_conn_base64=$(echo -n "$mps_conn_string" | base64 -w 0)
+kubectl patch secret mps -n orch-infra -p "{\"data\":{\"connectionString\":\"$mps_conn_base64\"}}" --type=merge
 
 # Update RPS connection string to use CNPG service name
-RPS_CONN_STRING="postgresql://orch-infra-rps_user:${RPS_PASSWORD}@postgresql-cluster-rw.orch-database/orch-infra-rps?search_path=public&sslmode=disable"
-RPS_CONN_BASE64=$(echo -n "$RPS_CONN_STRING" | base64 -w 0)
-kubectl patch secret rps -n orch-infra -p "{\"data\":{\"connectionString\":\"$RPS_CONN_BASE64\"}}" --type=merge
+rps_conn_string="postgresql://orch-infra-rps_user:${rps_password}@postgresql-cluster-rw.orch-database/orch-infra-rps?search_path=public&sslmode=disable"
+rps_conn_base64=$(echo -n "$rps_conn_string" | base64 -w 0)
+kubectl patch secret rps -n orch-infra -p "{\"data\":{\"connectionString\":\"$rps_conn_base64\"}}" --type=merge
 
 echo "✅ Updated MPS and RPS connection strings to use postgresql-cluster-rw.orch-database"
 
-echo "Restart MPS and RPS to pick up new connection strings"
+echo "Restart RPS to pick up new connection strings"
 kubectl rollout restart deployment rps -n orch-infra
+
+# Check if MPS rollout was successful
+if ! kubectl rollout status deployment/mps -n orch-infra --timeout=300s >/dev/null 2>&1; then
+    echo "⚠️  MPS rollout may not have completed successfully"
+else
+    echo "✅ MPS rollout completed successfully"
+fi
+
+echo "Restart MPS to pick up new connection strings"
 kubectl rollout restart deployment mps -n orch-infra
 
-echo "✅ MPS and RPS deployments restarted"
+# Check if RPS rollout was successful
+if ! kubectl rollout status deployment/rps -n orch-infra --timeout=300s >/dev/null 2>&1; then
+    echo "⚠️  RPS rollout may not have completed successfully"
+else
+    echo "✅ RPS rollout completed successfully"
+fi
 
 echo "Restart inventory to refresh database connection to CNPG service"
 kubectl rollout restart deployment inventory -n orch-infra
 
-echo "✅ inventory deployment restarted"
+# Check if inventory rollout was successful
+if ! kubectl rollout status deployment/inventory -n orch-infra --timeout=300s >/dev/null 2>&1; then
+    echo "⚠️  inventory rollout may not have completed successfully"
+else
+    echo "✅ inventory rollout completed successfully"
+fi
 
 echo "Restart onboarding-manager to connect to refreshed inventory service"
 kubectl rollout restart deployment onboarding-manager -n orch-infra
 
-echo "✅ onboarding-manager deployment restarted"
+# Check if onboarding-manager rollout was successful
+if ! kubectl rollout status deployment/onboarding-manager -n orch-infra --timeout=300s >/dev/null 2>&1; then
+    echo "⚠️  onboarding-manager rollout may not have completed successfully"
+else
+    echo "✅ onboarding-manager rollout completed successfully"
+fi
 
 echo "Restart dkam to refresh connection"
 kubectl rollout restart deployment dkam -n orch-infra
 
-echo "✅ dkam deployment restarted"
+# Check if dkam rollout was successful
+if ! kubectl rollout status deployment/dkam -n orch-infra --timeout=300s >/dev/null 2>&1; then
+    echo "⚠️  dkam rollout may not have completed successfully"
+else
+    echo "✅ dkam rollout completed successfully"
+fi
 
-echo "Restart keycloak-tenant-controller to resolve vault authentication issues"
-
+# Restart keycloak-tenant-controller to resolve vault authentication issues
 echo "Restart keycloak-tenant-controller to refresh connection"
 restart_statefulset keycloak-tenant-controller-set orch-platform
+
+# Check if keycloak-tenant-controller-set statefulset restart was successful
+if ! kubectl rollout status statefulset/keycloak-tenant-controller-set -n orch-platform --timeout=300s >/dev/null 2>&1; then
+    echo "⚠️  keycloak-tenant-controller-set restart may not have completed successfully"
+else
+    echo "✅ keycloak-tenant-controller-set restart completed successfully"
+fi
 
 echo "Restart harbor-oci-database to refresh connection"
 restart_statefulset harbor-oci-database orch-harbor
 
-# Restart harbor-oci-core to refresh connection
+# Check if harbor-oci-database statefulset restart was successful
+if ! kubectl rollout status statefulset/harbor-oci-database -n orch-harbor --timeout=300s >/dev/null 2>&1; then
+    echo "⚠️  harbor-oci-database restart may not have completed successfully"
+else
+    echo "✅ harbor-oci-database restart completed successfully"
+fi
+
 echo "Restart harbor-oci-core to refresh connection"
 kubectl rollout restart deployment harbor-oci-core -n orch-harbor
 
-echo "✅ harbor-oci-core restarted"
+# Check if harbor-oci-core rollout was successful
+if ! kubectl rollout status deployment/harbor-oci-core -n orch-harbor --timeout=300s >/dev/null 2>&1; then
+    echo "⚠️  harbor-oci-core rollout may not have completed successfully"
+else
+    echo "✅ harbor-oci-core rollout completed successfully"
+fi
 
 echo "Cleaning up external-secrets installation..."
 
-if kubectl get crd clustersecretstores.external-secrets.io >/dev/null 2>&1; then
-    kubectl delete crd clustersecretstores.external-secrets.io &
-    kubectl patch crd/clustersecretstores.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
-fi
-if kubectl get crd secretstores.external-secrets.io >/dev/null 2>&1; then
-    kubectl delete crd secretstores.external-secrets.io &
-    kubectl patch crd/secretstores.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
-fi
-if kubectl get crd externalsecrets.external-secrets.io >/dev/null 2>&1; then
-    kubectl delete crd externalsecrets.external-secrets.io &
-    kubectl patch crd/externalsecrets.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
-fi
+# Stop root-app sync.
+kubectl patch application root-app -n  "$apps_ns"  --type merge -p '{"operation":null}'
+kubectl patch application root-app -n  "$apps_ns"  --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
+sleep  5
+
+# Delete CRDs
+delete_crd_safely "clustersecretstores.external-secrets.io"
+delete_crd_safely "secretstores.external-secrets.io"
+delete_crd_safely "externalsecrets.external-secrets.io"
 
 # Apply External Secrets CRDs with server-side apply
 echo "Applying external-secrets CRDs with server-side apply..."
 kubectl apply --server-side=true --force-conflicts -f https://raw.githubusercontent.com/external-secrets/external-secrets/refs/tags/v0.20.4/deploy/crds/bundle.yaml || true
 
 # Unseal vault after external-secrets is ready
-echo "Unsealing vault..."
 vault_unseal
-echo "✅ Vault unsealed successfully"
 
-# Stop root-app sync.
-kubectl patch application root-app -n  "$apps_ns"  --type merge -p '{"operation":null}'
-kubectl patch application root-app -n  "$apps_ns"  --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
-sleep  5
 # Delete external-secrets application
-kubectl patch application external-secrets -n $apps_ns --type=json -p='[{"op":"remove","path":"/metadata/finalizers"}]' 2>/dev/null || true
-kubectl delete application external-secrets -n $apps_ns --force --grace-period=0 --ignore-not-found=true 2>/dev/null || true
-sleep  5
+kubectl delete application external-secrets -n "$apps_ns" --ignore-not-found=true 2>/dev/null || true
+sleep 5
+
 # Apply root-app sync
 kubectl patch application root-app -n  "$apps_ns"  --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 sleep 10
 
-#restart tls-boot secrets
+# Restart tls-boot secrets
 kubectl delete secret tls-boots -n orch-boots || true
 echo "   👉 Run the script to further sync and post run"
-echo "Wait ~5-10 minutes for ArgoCD to sync and deploy all application"
-echo "   👉 Run the script to to futher sync and post run"
 echo "          ./after_upgrade_restart.sh"
 echo ""
 echo "Upgrade completed! Wait for ArgoCD applications to be in 'Synced' and 'Healthy' state"
