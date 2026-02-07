@@ -37,7 +37,7 @@ const (
 )
 
 func (Test) golang() error {
-	return sh.RunV("ginkgo", "-v", "-r", "--skip-package", "assets", "--label-filter=!orchestrator-integration && !tenancy && !stress-test && !fleet-management && !autocert && !cluster-orch-smoke-test && !cluster-orch-smoke-test-cleanup && !observability && !orchestrator-observability && !edgenode-observability && !observability-alerts && !sre-observability")
+	return sh.RunV("ginkgo", "-v", "-r", "--skip-package", "assets", "--label-filter=!orchestrator-integration && !tenancy && !stress-test && !fleet-management && !autocert && !cluster-orch-smoke-test && !cluster-orch-smoke-test-cleanup && !observability && !orchestrator-observability && !edgenode-observability && !observability-alerts && !sre-observability && !component-status")
 }
 
 // prepare environment for e2e mage tests

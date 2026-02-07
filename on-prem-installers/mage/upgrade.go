@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Intel Corporation
+// SPDX-FileCopyrightText: 2026 Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -314,9 +314,12 @@ func determineUpgradePath(currentVersion, targetVersion string) []string {
 	// Find starting index
 	startIdx := -1
 	for i, v := range allVersions {
-		if strings.Contains(v, currentMinor) {
+		if v == currentVersion {
 			startIdx = i
 			break
+		}
+		if strings.Contains(v, currentMinor) && startIdx == -1 {
+			startIdx = i
 		}
 	}
 
@@ -330,9 +333,12 @@ func determineUpgradePath(currentVersion, targetVersion string) []string {
 	// Find ending index
 	endIdx := -1
 	for i, v := range allVersions {
-		if strings.Contains(v, targetMinor) {
+		if v == targetVersion {
 			endIdx = i
 			break
+		}
+		if strings.Contains(v, targetMinor) {
+			endIdx = i
 		}
 	}
 
