@@ -1606,16 +1606,8 @@ post_upgrade_cleanup() {
     delete_app "tenancy-datamodel" "onprem"
 
     echo "[INFO] Deleting deployment os-resource-manager in namespace orch-infra..."
-    kubectl delete deployment -n orch-infra os-resource-manager || true
-
-    echo "[INFO] Deleting onboarding secrets..."
-    kubectl delete secret tls-boots -n orch-boots 2>/dev/null
-    kubectl delete secret boots-ca-cert -n orch-gateway 2>/dev/null
-    kubectl delete secret boots-ca-cert -n orch-infra 2>/dev/null
-    echo "[INFO] Waiting 30 seconds for secrets cleanup to complete before deleting dkam pods..."
-    sleep 30
-    echo "[INFO] Deleting dkam pods in namespace orch-infra..."
-    kubectl delete pod -n orch-infra -l app.kubernetes.io/name=dkam 2>/dev/null 
+    #kubectl delete deployment -n orch-infra os-resource-manager || true
+    #kubectl delete pod -n orch-infra -l app.kubernetes.io/name=dkam 2>/dev/null 
     check_and_download_dkam_certs
     #echo "[INFO] Post-upgrade cleanup completed."
     console_success "[✓] Post-upgrade cleanup completed"
