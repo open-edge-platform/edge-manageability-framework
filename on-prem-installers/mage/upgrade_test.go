@@ -106,3 +106,31 @@ fmt.Printf("Got path: %v (length: %d)\n", path, len(path))
 
 // Since 1.34.5 is not in the list, this should return the versions in 1.34 range
 }
+
+func TestDetermineUpgradePathUnsupportedMinor(t *testing.T) {
+// Test upgrading to a minor version not in the list
+currentVersion := "v1.34.1+rke2r1"
+targetVersion := "v1.35.0+rke2r1"
+
+fmt.Printf("Testing upgrade from %s to %s\n", currentVersion, targetVersion)
+path := determineUpgradePath(currentVersion, targetVersion)
+fmt.Printf("Got path: %v (length: %d)\n", path, len(path))
+
+// Since 1.35 is not in the hardcoded list, this should return empty
+if len(path) != 0 {
+t.Errorf("Expected empty upgrade path for unsupported target version, got: %v", path)
+}
+}
+
+func TestDetermineUpgradePathTargetInList(t *testing.T) {
+// Test that we can upgrade to any version in the list from a patch version
+currentVersion := "v1.34.2+rke2r1" // Not in list
+targetVersion := "v1.34.3+rke2r1"   // In list
+
+path := determineUpgradePath(currentVersion, targetVersion)
+
+expected := []string{"v1.34.3+rke2r1"}
+if len(path) != len(expected) {
+t.Errorf("Expected path %v, got %v", expected, path)
+}
+}

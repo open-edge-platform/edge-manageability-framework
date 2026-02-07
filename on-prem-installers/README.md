@@ -217,3 +217,64 @@ mage undeployOnPrem
 ```
 
 It is a good practice to destroy your Orchestrator when you are not using it.
+
+## Upgrading
+
+The on-prem KE installer supports upgrading existing RKE2 clusters to newer versions.
+
+### Upgrade Configuration
+
+#### Target Version
+
+By default, the installer upgrades to a predefined target version. You can override this by setting the `RKE2_TARGET_VERSION` environment variable:
+
+```shell
+export RKE2_TARGET_VERSION="v1.34.5+rke2r1"
+onprem-ke-installer --upgrade
+```
+
+#### Upgrade Behavior
+
+The installer supports two modes for handling upgrade failures:
+
+##### Non-Strict Mode (Default)
+
+In non-strict mode, if the upgrade path cannot be determined or the upgrade fails, the installer will log a warning but exit successfully. This prevents package installation failures (e.g., with dpkg) while still alerting you to the issue.
+
+To use non-strict mode, either:
+- Use the `--no-fail-on-upgrade-error` flag:
+  ```shell
+  onprem-ke-installer --upgrade --no-fail-on-upgrade-error
+  ```
+- Or set the environment variable:
+  ```shell
+  export INSTALLER_UPGRADE_STRICT=false
+  onprem-ke-installer --upgrade
+  ```
+
+##### Strict Mode
+
+In strict mode, the installer will exit with an error if the upgrade fails. This is useful when you want to ensure the upgrade completes successfully before proceeding.
+
+To enable strict mode:
+```shell
+export INSTALLER_UPGRADE_STRICT=true
+onprem-ke-installer --upgrade
+```
+
+### Patch Version Upgrades
+
+The installer supports direct patch version upgrades within the same Kubernetes minor version (e.g., v1.34.1 → v1.34.3). For cross-minor upgrades, the installer automatically determines the necessary intermediate upgrade steps.
+
+### Troubleshooting Upgrades
+
+If you encounter an error like "unable to determine upgrade path", the error message will include:
+- Current RKE2 version detected
+- Target version being attempted
+- Suggestions for resolution
+
+Common solutions:
+1. Verify the target version exists in your RKE2 channel/repository
+2. Check if intermediate upgrades are required for major version jumps
+3. Set `RKE2_TARGET_VERSION` to specify a different target version
+4. Use `--no-fail-on-upgrade-error` to allow package installation to complete even if the upgrade path cannot be determined
