@@ -308,6 +308,15 @@ argo:
             limits:
               cpu: "64"
               memory: "64Gi"
+    ingressHaproxy:
+      controller:
+        root:
+          requests:
+            cpu: "1m"
+            memory: "1Mi"
+          limits:
+            cpu: "64"
+            memory: "64Gi"
     istiod:
       global:
         proxy:

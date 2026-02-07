@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-{{- $appName        := "metallb-config" }}
-{{- $namespace      := "metallb-system" }}
-{{- $syncWave       := "150" }}
+{{- $appName        := "ingress-haproxy" }}
+{{- $namespace      := "orch-boots" }}
+{{- $syncWave       := "1100" }}
 ---
 {{- if (index .Values.argo.enabled $appName) }}
 apiVersion: argoproj.io/v1alpha1
@@ -19,9 +19,9 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
-    - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
-      chart: common/charts/{{$appName}}
-      targetRevision: 26.0.1
+    - repoURL: https://haproxytech.github.io/helm-charts
+      chart: kubernetes-ingress
+      targetRevision: 1.41.0
       helm:
         releaseName: {{$appName}}
         valuesObject:
@@ -48,5 +48,4 @@ spec:
     {{- end }}
     syncOptions:
       - CreateNamespace=true
-      - ApplyOutOfSyncOnly=true
 {{- end }}

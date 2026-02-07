@@ -60,7 +60,7 @@ function generateArgocd() {
   echo "$svcIp argocd.$domainName"
 }
 
-generateNames orch-boots tls-boots ingress-nginx-controller
+generateNames orch-boots tls-boots ingress-haproxy-kubernetes-ingress
 generateNamesConfigMap orch-gateway kubernetes-docker-internal traefik
 generateArgocd
 
