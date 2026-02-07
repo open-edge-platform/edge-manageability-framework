@@ -6,7 +6,7 @@
 {{- $namespace      := "orch-ui" }}
 {{- $syncWave       := "3000" }}
 ---
-{{- if (index .Values.argo.enabled $appName) }}
+{{- if and (index .Values.argo.enabled $appName) (or (index .Values.argo.enabled "cluster-manager") (index .Values.argo.enabled "capi-operator") (index .Values.argo.enabled "intel-infra-provider")) }}
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
