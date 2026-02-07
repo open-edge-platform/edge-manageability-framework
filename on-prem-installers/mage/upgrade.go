@@ -37,8 +37,12 @@ func (Upgrade) rke2Cluster() error {
 	}
 	fmt.Printf("Current RKE2 version: %s\n", currentVersion)
 
-	// Target version
-	targetVersion := "v1.34.3+rke2r1"
+	// Target version - configurable via environment variable
+	targetVersion := os.Getenv("RKE2_TARGET_VERSION")
+	if targetVersion == "" {
+		targetVersion = "v1.34.3+rke2r1" // Default target version
+	}
+	fmt.Printf("Target RKE2 version: %s\n", targetVersion)
 
 	// Check if already at target version
 	if currentVersion == targetVersion {
@@ -49,7 +53,22 @@ func (Upgrade) rke2Cluster() error {
 	// Determine upgrade path from current version to target
 	upgradePath := determineUpgradePath(currentVersion, targetVersion)
 	if len(upgradePath) == 0 {
-		return fmt.Errorf("unable to determine upgrade path from %s to %s", currentVersion, targetVersion)
+		// Provide actionable error message with diagnostic information
+		errMsg := fmt.Sprintf(`Unable to determine upgrade path:
+  Current version: %s
+  Target version:  %s
+  
+This error can occur when:
+  1. The current or target version is not in the supported upgrade path
+  2. The versions are incompatible for direct upgrade
+  
+Suggestions:
+  - Verify the target version exists in your RKE2 channel/repository
+  - Check if intermediate upgrades are required (e.g., 1.30 -> 1.31 -> 1.32)
+  - Set RKE2_TARGET_VERSION environment variable to a different target version
+  - Review the available versions in the RKE2 release channel`, currentVersion, targetVersion)
+		
+		return fmt.Errorf("%s", errMsg)
 	}
 
 	fmt.Printf("Upgrade path: %v\n", upgradePath)
@@ -288,7 +307,14 @@ func getCurrentRKE2Version(nodeName string) (string, error) {
 
 // determineUpgradePath determines the upgrade path from current to target version.
 // It skips versions already installed and only includes necessary intermediate versions.
+// For patch upgrades within the same minor version (e.g., 1.34.1 -> 1.34.3), it allows
+// direct upgrade by including the target version in the path.
 func determineUpgradePath(currentVersion, targetVersion string) []string {
+	// If current version equals target version, no upgrade needed
+	if currentVersion == targetVersion {
+		return []string{}
+	}
+
 	// All available versions in order
 	allVersions := []string{
 		"v1.30.14+rke2r2", // Patch update within 1.30
@@ -296,10 +322,10 @@ func determineUpgradePath(currentVersion, targetVersion string) []string {
 		"v1.32.9+rke2r1",  // Upgrade to 1.32
 		"v1.33.5+rke2r1",  // Upgrade to 1.33
 		"v1.34.1+rke2r1",  // Upgrade to 1.34
-		"v1.34.3+rke2r1",  // Final target version
+		"v1.34.3+rke2r1",  // Patch update within 1.34
 	}
 
-	// Extract minor version from full version string (e.g., "v1.30.14+rke2r2" -> "1.30")
+	// Extract minor version from full version string (e.g., "v1.30.14+rke2r2" -> "v1.30")
 	extractMinorVersion := func(version string) string {
 		parts := strings.Split(version, ".")
 		if len(parts) >= 2 {
@@ -310,6 +336,13 @@ func determineUpgradePath(currentVersion, targetVersion string) []string {
 
 	currentMinor := extractMinorVersion(currentVersion)
 	targetMinor := extractMinorVersion(targetVersion)
+
+	// Special case: If both versions are in the same minor version, allow direct upgrade
+	if currentMinor == targetMinor {
+		// For patch upgrades within the same minor (e.g., 1.34.1 -> 1.34.3),
+		// we can directly upgrade to the target version
+		return []string{targetVersion}
+	}
 
 	// Find starting index
 	startIdx := -1
@@ -342,15 +375,28 @@ func determineUpgradePath(currentVersion, targetVersion string) []string {
 		}
 	}
 
-	// If target version not found, include everything to the end
+	// If target version not found in the list but we know the target minor,
+	// include the last version of the target minor in the path
 	if endIdx == -1 {
-		endIdx = len(allVersions) - 1
+		// If we couldn't find any version with the target minor, return empty
+		// This indicates an unsupported upgrade path
+		return []string{}
 	}
 
 	// Build upgrade path
 	var upgradePath []string
 	if startIdx <= endIdx {
 		upgradePath = allVersions[startIdx : endIdx+1]
+	}
+
+	// If the target version is not in the hardcoded list, append it to the path
+	// This allows upgrading to any patch version within a minor version
+	if len(upgradePath) > 0 && upgradePath[len(upgradePath)-1] != targetVersion {
+		// Only add if we're targeting the same minor as the last version in the path
+		lastVersionMinor := extractMinorVersion(upgradePath[len(upgradePath)-1])
+		if lastVersionMinor == targetMinor {
+			upgradePath = append(upgradePath, targetVersion)
+		}
 	}
 
 	return upgradePath

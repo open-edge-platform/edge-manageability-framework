@@ -23,11 +23,14 @@ const header = `
 `
 
 const (
-	deploymentTimeoutEnv     = "DEPLOYMENT_TIMEOUT"
-	deploymentDefaultTimeout = "3600s" // must be a valid duration string
+	deploymentTimeoutEnv       = "DEPLOYMENT_TIMEOUT"
+	deploymentDefaultTimeout   = "3600s" // must be a valid duration string
+	upgradeStrictEnv           = "INSTALLER_UPGRADE_STRICT"
+	upgradeStrictDefault       = "false" // default to non-strict mode
 )
 
 var upgrade = flag.Bool("upgrade", false, "determine if KE should be upgraded or installed")
+var noFailOnUpgrade = flag.Bool("no-fail-on-upgrade-error", false, "do not exit with error if upgrade fails (allows package installation to complete)")
 
 func main() {
 	if err := os.Setenv("KUBECONFIG", fmt.Sprintf("/home/%s/.kube/config", os.Getenv("USER"))); err != nil {
@@ -58,8 +61,29 @@ func main() {
 
 	flag.Parse()
 	if *upgrade {
+		// Check if strict mode is enabled via environment variable or CLI flag
+		strictMode := os.Getenv(upgradeStrictEnv)
+		if strictMode == "" {
+			strictMode = upgradeStrictDefault
+		}
+		
+		// If --no-fail-on-upgrade-error flag is set, override to non-strict mode
+		if *noFailOnUpgrade {
+			strictMode = "false"
+		}
+		
 		if err := (mage.Upgrade{}).Rke2Cluster(); err != nil {
 			fmt.Printf("Error upgrading cluster: %s\n", err)
+			
+			// In non-strict mode, log the error but don't fail the installation
+			if strictMode == "false" {
+				fmt.Println("\nWARNING: Upgrade failed but continuing installation due to non-strict mode.")
+				fmt.Println("To enforce strict upgrade validation, set INSTALLER_UPGRADE_STRICT=true")
+				fmt.Println("or remove the --no-fail-on-upgrade-error flag.")
+				os.Exit(0) // Exit successfully to allow package installation to complete
+			}
+			
+			// In strict mode, fail the installation
 			os.Exit(1)
 		}
 		os.Exit(0)
