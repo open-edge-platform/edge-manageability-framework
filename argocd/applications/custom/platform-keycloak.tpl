@@ -79,7 +79,7 @@ keycloak:
 {{- $registryRootUrl := printf "https://registry-oci.%s" $clusterDomain -}}
 {{- $telemetryRootUrl := printf "https://observability-ui.%s" $clusterDomain -}}
 {{- $clusterMgmtRootUrl := printf "https://cluster-management.%s" $clusterDomain -}}
-{{- $webuiRedirects := list (printf "https://web-ui.%s" $clusterDomain) (printf "https://app-service-proxy.%s/app-service-proxy-index.html*" $clusterDomain) (printf "https://vnc.%s/*" $clusterDomain) (printf "https://%s" $clusterDomain) -}}
+{{- $webuiRedirects := list (printf "https://web-ui.%s" $clusterDomain) (printf "https://app-service-proxy.%s/app-service-proxy-index.html*" $clusterDomain) (printf "https://vnc.%s/*" $clusterDomain) (printf "https://%s" $clusterDomain) "http://localhost:8080" -}}
 {{- if $extraUiRedirects -}}
   {{- $webuiRedirects = append $webuiRedirects $extraUiRedirects -}}
 {{- end -}}
