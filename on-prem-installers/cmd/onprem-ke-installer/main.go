@@ -62,21 +62,24 @@ func main() {
 	flag.Parse()
 	if *upgrade {
 		// Check if strict mode is enabled via environment variable or CLI flag
-		strictMode := os.Getenv(upgradeStrictEnv)
-		if strictMode == "" {
-			strictMode = upgradeStrictDefault
+		// Parse the environment variable as a boolean
+		strictModeStr := os.Getenv(upgradeStrictEnv)
+		if strictModeStr == "" {
+			strictModeStr = upgradeStrictDefault
 		}
+		
+		strictMode := strictModeStr == "true"
 		
 		// If --no-fail-on-upgrade-error flag is set, override to non-strict mode
 		if *noFailOnUpgrade {
-			strictMode = "false"
+			strictMode = false
 		}
 		
 		if err := (mage.Upgrade{}).Rke2Cluster(); err != nil {
 			fmt.Printf("Error upgrading cluster: %s\n", err)
 			
 			// In non-strict mode, log the error but don't fail the installation
-			if strictMode == "false" {
+			if !strictMode {
 				fmt.Println("\nWARNING: Upgrade failed but continuing installation due to non-strict mode.")
 				fmt.Println("To enforce strict upgrade validation, set INSTALLER_UPGRADE_STRICT=true")
 				fmt.Println("or remove the --no-fail-on-upgrade-error flag.")
