@@ -39,7 +39,7 @@ argo:
 
   ## Argo CD configs
   deployRepoURL: "https://github.com/open-edge-platform/edge-manageability-framework"
-  deployRepoRevision: ${DEPLOY_REPO_BRANCH}
+  deployRepoRevision: "${DEPLOY_REPO_BRANCH}"
 
   targetServer: "https://kubernetes.default.svc"
   autosync: true
