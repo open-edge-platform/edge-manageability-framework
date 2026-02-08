@@ -661,7 +661,7 @@ delete_nginx_if_any() {
   if [ -n "${HARBOR_PODS:-}" ]; then
     echo "🧹 Deleting harbor nginx pods:"
     echo "$HARBOR_PODS"
-    kubectl delete pod -n orch-harbor $HARBOR_PODS || true
+    kubectl delete pod -n orch-harbor "$HARBOR_PODS" || true
   else
     echo "ℹ️ No harbor-oci-nginx pods found in orch-harbor."
   fi
