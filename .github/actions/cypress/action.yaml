@@ -40,7 +40,7 @@ runs:
       with:
         repository: open-edge-platform/orch-ui
         path: orch-ui
-        ref: 1d2a8182411f24dad5bd317f42fe9f631fdcf01a
+        ref: 18cd8961c4171d3f6ae05cc8b4806016ec08d5d1
         persist-credentials: false
     - run: git log -1
       shell: bash
@@ -60,7 +60,8 @@ runs:
       shell: bash
       run: |
         npx cypress run --e2e \
-          -s "cypress/e2e/admin/non-org-admin-smoke.cy.ts,cypress/e2e/admin/org-admin-smoke.cy.ts"
+          -s "cypress/e2e/admin/non-org-admin-smoke.cy.ts,cypress/e2e/admin/org-admin-smoke.cy.ts" \
+          --env ORCH_DEFAULT_PASSWORD=${{ env.ORCH_DEFAULT_PASSWORD }}
     - name: Collect Admin related logs
       if: ${{ always() && inputs.admin == 'true' }}
       working-directory: orch-ui/tests
@@ -93,7 +94,7 @@ runs:
       run: |
         npx cypress run --e2e \
           -s ${INPUTS_INFRA} \
-          --env EN_SERIAL_NUMBER=${EN_SERIAL_NUMBER}
+          --env EN_SERIAL_NUMBER=${EN_SERIAL_NUMBER},ORCH_DEFAULT_PASSWORD=${{ env.ORCH_DEFAULT_PASSWORD }}
     - name: Collect Edge Infra Manager logs
       if: ${{ always() && inputs.infra != '' }}
       working-directory: orch-ui/tests
@@ -135,7 +136,7 @@ runs:
       run: |
         npx cypress run --e2e \
           -s "cypress/e2e/cluster-orch/cluster-orch-smoke.cy.ts" \
-          --env EN_UUID=${{ env.EN_UUID }}
+          --env EN_UUID=${{ env.EN_UUID }},ORCH_DEFAULT_PASSWORD=${{ env.ORCH_DEFAULT_PASSWORD }}
     - name: Collect ClusterOrch logs
       if: ${{ always() && inputs.cluster_orch == 'true' }}
       working-directory: orch-ui/tests
@@ -163,7 +164,8 @@ runs:
       shell: bash
       run: |
         npx cypress run --e2e \
-          -s "cypress/e2e/app-orch/deployment-package-smoke.cy.ts"
+          -s "cypress/e2e/app-orch/deployment-package-smoke.cy.ts" \
+          --env ORCH_DEFAULT_PASSWORD=${{ env.ORCH_DEFAULT_PASSWORD }}
         # These tests are not stable yet, will be enabled in a separate PR
         # npx cypress run --e2e \
         #   -s cypress/e2e/app-orch/deployment-smoke.cy.ts

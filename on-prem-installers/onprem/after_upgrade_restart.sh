@@ -560,13 +560,6 @@ sync_not_green_apps_once() {
         echo "[$(get_timestamp)] Checking for failed syncs in $name..."
         check_and_handle_failed_sync "$name"
 
-        # Special pre-sync handling for nginx-ingress-pxe-boots
-        if [[ "$name" == "nginx-ingress-pxe-boots" ]]; then
-            echo "$(yellow)[INFO] Pre-sync: nginx-ingress-pxe-boots detected - deleting tls-boots secret first...$(reset)"
-            kubectl delete secret tls-boots -n orch-boots 2>/dev/null || true
-            sleep 3
-        fi
-
         attempt=1
         synced=false
         while (( attempt <= APP_MAX_RETRIES )); do
@@ -918,13 +911,6 @@ sync_all_apps_exclude_root() {
         # Check for CRD version mismatches
         echo "[$(get_timestamp)] Checking for CRD version mismatches in $name..."
         check_and_fix_crd_version_mismatch "$name"
-
-        # Special pre-sync handling for nginx-ingress-pxe-boots
-        if [[ "$name" == "nginx-ingress-pxe-boots" ]]; then
-            echo "$(yellow)[INFO] Pre-sync: nginx-ingress-pxe-boots detected - deleting tls-boots secret first...$(reset)"
-            kubectl delete secret tls-boots -n orch-boots 2>/dev/null || true
-            sleep 3
-        fi
 
         attempt=1
         synced=false
@@ -1606,16 +1592,8 @@ post_upgrade_cleanup() {
     delete_app "tenancy-datamodel" "onprem"
 
     echo "[INFO] Deleting deployment os-resource-manager in namespace orch-infra..."
-    kubectl delete deployment -n orch-infra os-resource-manager || true
-
-    echo "[INFO] Deleting onboarding secrets..."
-    kubectl delete secret tls-boots -n orch-boots 2>/dev/null
-    kubectl delete secret boots-ca-cert -n orch-gateway 2>/dev/null
-    kubectl delete secret boots-ca-cert -n orch-infra 2>/dev/null
-    echo "[INFO] Waiting 30 seconds for secrets cleanup to complete before deleting dkam pods..."
-    sleep 30
-    echo "[INFO] Deleting dkam pods in namespace orch-infra..."
-    kubectl delete pod -n orch-infra -l app.kubernetes.io/name=dkam 2>/dev/null 
+    #kubectl delete deployment -n orch-infra os-resource-manager || true
+    #kubectl delete pod -n orch-infra -l app.kubernetes.io/name=dkam 2>/dev/null 
     check_and_download_dkam_certs
     #echo "[INFO] Post-upgrade cleanup completed."
     console_success "[✓] Post-upgrade cleanup completed"
