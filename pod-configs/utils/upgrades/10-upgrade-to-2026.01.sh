@@ -327,7 +327,6 @@ echo "✅ Policy successfully updated!"
 
 apply_cas() {
 
-
 dir="${ROOT_DIR}/${ORCH_DIR}/cluster"
 echo "Changing directory to $dir..."
 cd "$dir"
