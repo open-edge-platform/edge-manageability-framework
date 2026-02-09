@@ -140,6 +140,8 @@ cluster_fqdn                       = "${ROOT_DOMAIN}"
 enable_cache_registry              = ${ENABLE_CACHE_REGISTRY}
 enable_pull_through_cache_proxy    = ${ENABLE_CACHE_REGISTRY}
 cache_registry                     = "https://docker-cache.${ROOT_DOMAIN}"
+cas_namespace                      = "kube-system"
+cas_service_account                = "cluster-autoscaler"
 
 tls_cert = <<EOF_TLS
 ${tls_cert_content}
@@ -213,20 +215,120 @@ action_cluster() {
     sed -i '/^#!\/bin\/bash$/a source ~/pod-configs/.env' /root/configure-cluster.sh
 }
 
+setup_cas() {
 
-apply_modules() {
-current_desired_nodes=$(jq '.resources[] | select(.type == "aws_eks_node_group") | .instances[0] | select(.attributes.node_group_name | ascii_downcase | contains("nodegroup")) | .attributes.scaling_config[0].desired_size' ./cluster_state.json | head -1)
+CLUSTER_NAME=$ENV_NAME
 
-if [[ $current_desired_nodes -ne $EKS_DESIRED_SIZE ]]; then
-     echo "Updating EKS node group to desired size: $EKS_DESIRED_SIZE"
-     # TODO: Update the EKS node group here
-else
-     echo "EKS node group already at desired size: $EKS_DESIRED_SIZE"
+for NG in $(aws eks list-nodegroups \
+              --cluster-name $CLUSTER_NAME \
+              --query "nodegroups[]" \
+              --output text)
+do
+  ARN=$(aws eks describe-nodegroup \
+        --cluster-name $CLUSTER_NAME \
+        --nodegroup-name $NG \
+        --query "nodegroup.nodegroupArn" \
+        --output text)
+
+echo "Updating tags for ${NG}"
+
+  aws eks tag-resource \
+    --resource-arn "$ARN" \
+    --tags "k8s.io/cluster-autoscaler/enabled=true,k8s.io/cluster-autoscaler/${CLUSTER_NAME}=owned"
+
+done
+
+
+echo "Updating max size for node group"
+
+aws eks update-nodegroup-config \
+  --cluster-name $ENV_NAME \
+  --nodegroup-name "nodegroup-${ENV_NAME}" \
+  --scaling-config maxSize=5
+
+POLICY_NAME="CASControllerPolicy-${CLUSTER_NAME}"
+
+echo "Finding policy ARN..."
+
+POLICY_ARN=$(aws iam list-policies \
+  --scope Local \
+  --query "Policies[?PolicyName=='${POLICY_NAME}'].Arn" \
+  --output text)
+
+if [ -z "$POLICY_ARN" ]; then
+  echo "Policy not found!"
+  return
 fi
 
+echo "Policy ARN: $POLICY_ARN"
+
+echo "Fetching default policy version..."
+
+VERSION_ID=$(aws iam get-policy \
+  --policy-arn "$POLICY_ARN" \
+  --query "Policy.DefaultVersionId" \
+  --output text)
+
+echo "Downloading current policy..."
+
+aws iam get-policy-version \
+  --policy-arn "$POLICY_ARN" \
+  --version-id "$VERSION_ID" \
+  --query "PolicyVersion.Document" \
+  --output json > policy.json
+
+echo "Checking if eks:DescribeCluster already exists..."
+
+if grep -q "eks:DescribeCluster" policy.json; then
+  echo "Permission already exists. Exiting."
+  return
+fi
+
+echo "Updating policy..."
+
+jq '.Statement += [{
+  "Effect": "Allow",
+  "Action": "eks:DescribeCluster",
+  "Resource": "*"
+}]' policy.json > updated-policy.json
+
+echo "Checking policy version limit..."
+
+VERSIONS=$(aws iam list-policy-versions \
+  --policy-arn "$POLICY_ARN" \
+  --query "Versions[?IsDefaultVersion==\`false\`].VersionId" \
+  --output text)
+
+COUNT=$(echo "$VERSIONS" | wc -w)
+
+if [ "$COUNT" -ge 4 ]; then
+  OLDEST=$(aws iam list-policy-versions \
+    --policy-arn "$POLICY_ARN" \
+    --query "Versions[?IsDefaultVersion==\`false\`]|sort_by(@,&CreateDate)[0].VersionId" \
+    --output text)
+
+  echo "Deleting old version: $OLDEST"
+
+  aws iam delete-policy-version \
+    --policy-arn "$POLICY_ARN" \
+    --version-id "$OLDEST"
+fi
+
+echo "Creating new policy version..."
+
+aws iam create-policy-version \
+  --policy-arn "$POLICY_ARN" \
+  --policy-document file://updated-policy.json \
+  --set-as-default
+
+echo "✅ Policy successfully updated!"
+}
+
+
+apply_cas() {
+
+
 dir="${ROOT_DIR}/${ORCH_DIR}/cluster"
-sed -i '/module "kms"/,/^}/ s/^\([[:space:]]*\)depends_on/\1# depends_on/' $dir/main.tf
-sed -i '/module "gitea" {/,/}/ s/^\(\s*\)depends_on/\1# depends_on/' $dir/main.tf
 echo "Changing directory to $dir..."
 cd "$dir"
 
@@ -238,55 +340,16 @@ else
     exit 1
 fi
 
-echo "Applying changes for KMS module..."
-if terraform apply -target=module.kms -var-file="environments/${ENV_NAME}/variable.tfvar" -auto-approve; then
-    echo "✅ Terraform apply for KMS module succeeded."
+echo "Applying changes for EKS CAS module..."
+if terraform apply -target=module.eks-cas -var-file="environments/${ENV_NAME}/variable.tfvar" -auto-approve; then
+    echo "✅ Terraform apply for EKS CAS module succeeded."
 else
-    echo "❌ Terraform apply for KMS module failed!"
+    echo "❌ Terraform apply for EKS CAS module failed!"
     exit 1
 fi
 
-echo "Applying changes for Gitea module..."
-if terraform apply -target=module.gitea -var-file="environments/${ENV_NAME}/variable.tfvar" -auto-approve; then
-    echo " ^|^e Terraform apply for Gitea module succeeded."
-else
-    echo " ^}^l Terraform apply for Gitea module failed!"
-    exit 1
-fi
 }
 
-apply_load_balancer(){
-echo "Fetching Load Balancer ARNS for Traefik2 and Traefik3"
-
-LB_ARN_T2=$(aws resourcegroupstaggingapi get-resources \
-  --tag-filters Key=Name,Values="${ENV_NAME}-traefik2" \
-  --resource-type-filters elasticloadbalancing:loadbalancer \
-  --query "ResourceTagMappingList[].ResourceARN" \
-  --output text)
-
-LB_ARN_T3=$(aws resourcegroupstaggingapi get-resources \
-  --tag-filters Key=Name,Values="${ENV_NAME}-traefik3" \
-  --resource-type-filters elasticloadbalancing:loadbalancer \
-  --query "ResourceTagMappingList[].ResourceARN" \
-  --output text)
-
-EKS_SG_ID=$(aws ec2 describe-security-groups --filters "Name=group-name,Values=eks-${ENV_NAME}" --query "SecurityGroups[*].GroupId" --output text)
-
-echo "Fetching Load Balancer SG for Traefik2 and Traefik3"
-LB_SG_ID_T2=$(aws elbv2 describe-load-balancers   --load-balancer-arns "$LB_ARN_T2"   --query "LoadBalancers[0].SecurityGroups[0]"   --output text)
-LB_SG_ID_T3=$(aws elbv2 describe-load-balancers   --load-balancer-arns "$LB_ARN_T3"   --query "LoadBalancers[0].SecurityGroups[0]"   --output text)
-
-echo "Updating and revoking the SG for Traefik2"
-aws ec2 describe-security-groups --group-ids "$LB_SG_ID_T2" --query "SecurityGroups[0].IpPermissionsEgress[?UserIdGroupPairs[?GroupId=='$EKS_SG_ID']]" --output text | grep -q . || aws ec2 authorize-security-group-egress --group-id "$LB_SG_ID_T2" --protocol -1 --port -1 --source-group "$EKS_SG_ID"
-aws ec2 describe-security-groups --group-ids "$LB_SG_ID_T2" --query "SecurityGroups[0].IpPermissionsEgress[?IpRanges[?CidrIp=='0.0.0.0/0']]" --output text | grep -q . && aws ec2 revoke-security-group-egress --group-id "$LB_SG_ID_T2" --protocol all --port all --cidr 0.0.0.0/0
-
-
-echo "Updating and revoking the SG for Traefik3"
-aws ec2 describe-security-groups --group-ids "$LB_SG_ID_T3" --query "SecurityGroups[0].IpPermissionsEgress[?UserIdGroupPairs[?GroupId=='$EKS_SG_ID']]" --output text | grep -q . || aws ec2 authorize-security-group-egress --group-id "$LB_SG_ID_T3" --protocol -1 --port -1 --source-group "$EKS_SG_ID"
-aws ec2 describe-security-groups --group-ids "$LB_SG_ID_T3" --query "SecurityGroups[0].IpPermissionsEgress[?IpRanges[?CidrIp=='0.0.0.0/0']]" --output text | grep -q . && aws ec2 revoke-security-group-egress --group-id "$LB_SG_ID_T3" --protocol all --port all --cidr 0.0.0.0/0
-
-return 0
-}
 
 # Main
 
@@ -303,8 +366,8 @@ connect_cluster
 
 echo "Starting action cluster"
 action_cluster
-apply_modules
-apply_load_balancer
+setup_cas
+apply_cas
 
 # Terminate existing sshuttle
 terminate_sshuttle
