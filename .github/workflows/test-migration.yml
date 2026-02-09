@@ -1,12 +1,13 @@
 # SPDX-FileCopyrightText: 2025 Intel Corporation
 #
 # SPDX-License-Identifier: Apache-2.0
+---
 
 name: Test Migration
 
 on:
   # Allow manually triggering the workflow
-  workflow_dispatch: {}
+  workflow_dispatch:
   # Run on all commits that are pushed to all branches
   push:
     branches:
@@ -24,7 +25,9 @@ on:
   # Trigger workflow when enqueued to a merge group
   merge_group:
 
-permissions: {}
+permissions:
+  contents: read
+  checks: read
 
 jobs:
   test-charts-available:
@@ -79,6 +82,10 @@ jobs:
 
       - name: Setup asdf and install dependencies
         uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
+
+      - name: Inject default commonName for nginx-ingress-pxe-boots
+        run: |
+          echo "commonName: nginx-ingress.local" >> _appimg_4289486928.tmp/values.yaml
 
       - name: Run test
         run: mage test:ContainersAvailableOnReleaseService true
