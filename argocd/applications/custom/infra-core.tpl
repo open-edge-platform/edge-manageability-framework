@@ -22,6 +22,8 @@ import:
     enabled: {{ dig "infra-core" "api" "enabled" true .Values.argo }}
   apiv2:
     enabled: {{ dig "infra-core" "apiv2" "enabled" true .Values.argo }}
+  exporter:
+    enabled: {{ dig "infra-core" "exporter" "enabled" true .Values.argo }}
   inventory:
     enabled: {{ dig "infra-core" "inventory" "enabled" true .Values.argo }}
   tenant-controller:
