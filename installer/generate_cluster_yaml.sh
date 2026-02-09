@@ -188,7 +188,7 @@ fi
 # Modular Vpro profile logic
 # -----------------------------------------------------------------------------
 if [ "${MODULAR_PROFILE:-}" = "vpro" ]; then
-    export EDGEINFRA_PROFILE='- orch-configs/profiles/enable-modular-vpro.yaml'
+    export EDGEINFRA_PROFILE='- orch-configs/profiles/enable-edgeinfra-vpro.yaml'
     # Disable CO, AO, O11Y profiles for Modular VPro
     export CO_PROFILE="#- orch-configs/profiles/enable-cluster-orch.yaml"
     export AO_PROFILE="#- orch-configs/profiles/enable-app-orch.yaml"
