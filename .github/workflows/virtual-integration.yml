@@ -803,8 +803,9 @@ jobs:
       - check-changed-files
     if: |
       always() &&
-      needs.build-publish.result == 'success' &&
-      needs.check-changed-files.outputs.on-prem-oxm == 'true'
+      needs.build-publish.result == 'success' && (
+      needs.check-changed-files.outputs.on-prem-oxm == 'true' ||
+      needs.check-changed-files.outputs.ci == 'true' )
     runs-on: ubuntu-22.04-16core-64GB
     timeout-minutes: 90
     env:
