@@ -85,6 +85,7 @@ jobs:
 
       - name: Inject default commonName for nginx-ingress-pxe-boots
         run: |
+          mkdir -p _appimg_4289486928.tmp
           echo "commonName: nginx-ingress.local" >> _appimg_4289486928.tmp/values.yaml
 
       - name: Run test
