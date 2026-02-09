@@ -1299,9 +1299,6 @@ sleep  5
 kubectl patch application root-app -n  "$apps_ns"  --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 sleep 10
 
-#restart tls-boot secrets
-kubectl delete secret tls-boots -n orch-boots || true
-
 echo "Wait ~5–10 minutes for ArgoCD to sync and deploy all application"
 echo "   👉 Run the script to further sync and post run"
 echo "          ./after_upgrade_restart.sh"
