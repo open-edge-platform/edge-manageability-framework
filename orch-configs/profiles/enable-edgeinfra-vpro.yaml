@@ -32,6 +32,8 @@ argo:
         limits:
           memory: "64Gi"
           cpu: "64"
+    exporter:
+      enabled: false
     inventory:
       enabled: true
       resources:
