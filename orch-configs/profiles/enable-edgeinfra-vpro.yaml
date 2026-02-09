@@ -16,11 +16,6 @@ argo:
     web-ui-infra: false
     copy-keycloak-admin-to-infra: true
   infra-core:
-    import:
-      tenant-controller:
-        enabled: true
-      exporter:
-        enabled: false
     tenant-config:
       enabled: false
     credentials:
@@ -77,15 +72,6 @@ argo:
     attestationstatus-manager:
       enabled: false
   infra-onboarding:
-    import:
-      dkam:
-        enabled: true
-      tinkerbell:
-        enabled: false
-      onboarding-manager:
-        enabled: true
-      pxe-server:
-        enabled: false
     tinkerbell:
       enabled: false
     pxe-server:
@@ -112,9 +98,6 @@ argo:
           memory: "64Gi"
           cpu: "64"
   infra-external:
-    import:
-      amt:
-        enabled: true
     amt:
       mps:
         enabled: true
