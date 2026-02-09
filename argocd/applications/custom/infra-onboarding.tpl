@@ -16,10 +16,26 @@ global:
     {{- end }}
 
 import:
+  {{- if index .Values.argo "infra-onboarding" "dkam" }}
+  dkam:
+    enabled: {{ index .Values.argo "infra-onboarding" "dkam" "enabled" | default true }}
+  {{- end }}
+  {{- if index .Values.argo "infra-onboarding" "tinkerbell" }}
+  tinkerbell:
+    enabled: {{ index .Values.argo "infra-onboarding" "tinkerbell" "enabled" | default true }}
+  {{- end }}
+  {{- if index .Values.argo "infra-onboarding" "onboarding-manager" }}
   onboarding-manager:
     enabled: {{ index .Values.argo "infra-onboarding" "onboarding-manager" "enabled" }}
+  {{- end }}
+  {{- if index .Values.argo "infra-onboarding" "pxe-server" }}
   pxe-server:
     enabled: {{ index .Values.argo "infra-onboarding" "pxe-server" "enabled" }}
+  {{- end }}
+  {{- if index .Values.argo "infra-onboarding" "infra-config" }}
+  infra-config:
+    enabled: {{ index .Values.argo "infra-onboarding" "infra-config" "enabled" | default true }}
+  {{- end }}
 
 infra-config:
   config:

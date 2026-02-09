@@ -16,8 +16,30 @@ global:
     {{- end }}
 
 import:
+  {{- if index .Values.argo "infra-core" "credentials" }}
+  credentials:
+    enabled: {{ index .Values.argo "infra-core" "credentials" "enabled" | default true }}
+  {{- end }}
+  {{- if index .Values.argo "infra-core" "api" }}
+  api:
+    enabled: {{ index .Values.argo "infra-core" "api" "enabled" | default true }}
+  {{- end }}
+  {{- if index .Values.argo "infra-core" "apiv2" }}
+  apiv2:
+    enabled: {{ index .Values.argo "infra-core" "apiv2" "enabled" | default true }}
+  {{- end }}
+  {{- if index .Values.argo "infra-core" "inventory" }}
+  inventory:
+    enabled: {{ index .Values.argo "infra-core" "inventory" "enabled" | default true }}
+  {{- end }}
+  {{- if index .Values.argo "infra-core" "tenant-controller" }}
+  tenant-controller:
+    enabled: {{ index .Values.argo "infra-core" "tenant-controller" "enabled" | default true }}
+  {{- end }}
+  {{- if index .Values.argo "infra-core" "tenant-config" }}
   tenant-config:
-    enabled: {{ index .Values.argo "infra-core" "tenant-config" "enabled" }}
+    enabled: {{ index .Values.argo "infra-core" "tenant-config" "enabled" | default false }}
+  {{- end }}
 
 api:
   serviceArgs:

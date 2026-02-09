@@ -15,6 +15,32 @@ global:
     {{- end }}
     {{- end }}
 
+import:
+  {{- if index .Values.argo "infra-managers" "host-manager" }}
+  host-manager:
+    enabled: {{ index .Values.argo "infra-managers" "host-manager" "enabled" | default true }}
+  {{- end }}
+  {{- if index .Values.argo "infra-managers" "maintenance-manager" }}
+  maintenance-manager:
+    enabled: {{ index .Values.argo "infra-managers" "maintenance-manager" "enabled" | default true }}
+  {{- end }}
+  {{- if index .Values.argo "infra-managers" "telemetry-manager" }}
+  telemetry-manager:
+    enabled: {{ index .Values.argo "infra-managers" "telemetry-manager" "enabled" | default true }}
+  {{- end }}
+  {{- if index .Values.argo "infra-managers" "os-resource-manager" }}
+  os-resource-manager:
+    enabled: {{ index .Values.argo "infra-managers" "os-resource-manager" "enabled" | default true }}
+  {{- end }}
+  {{- if index .Values.argo "infra-managers" "networking-manager" }}
+  networking-manager:
+    enabled: {{ index .Values.argo "infra-managers" "networking-manager" "enabled" | default true }}
+  {{- end }}
+  {{- if index .Values.argo "infra-managers" "attestationstatus-manager" }}
+  attestationstatus-manager:
+    enabled: {{ index .Values.argo "infra-managers" "attestationstatus-manager" "enabled" | default true }}
+  {{- end }}
+
 host-manager:
   serviceArgs:
     enableTracing: {{ index .Values.argo "infra-managers" "enableTracing" | default false }}
