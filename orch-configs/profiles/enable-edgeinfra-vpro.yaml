@@ -21,8 +21,8 @@ argo:
         enabled: true
       exporter:
         enabled: false
-      tenant-config:
-        enabled: false
+    tenant-config:
+      enabled: false
     credentials:
       enabled: true
     api:
