@@ -258,9 +258,11 @@ operation:
   sync:
     syncStrategy:
       hook: {}
+
 EOF
 fi
-    kubectl patch -n "$apps_ns" application postgresql-secrets --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+    kubectl patch application root-app -n "$apps_ns" --type merge -p '{"operation":null}'
+kubectl patch application root-app -n "$apps_ns" --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
     kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 }
 
@@ -691,7 +693,7 @@ fi
 # Perform PostgreSQL secret backup if not done already
 if [[ ! -f postgres_secret.yaml ]]; then
 
-	kubectl get secret -n orch-database postgresql-cluster-superuser -o yaml > postgres_secret.yaml
+        kubectl get secret -n orch-database postgresql-cluster-superuser -o yaml > postgres_secret.yaml
 
 fi
 
@@ -1059,7 +1061,7 @@ patch_secrets() {
 
 
     kubectl patch secret -n orch-database orch-database-postgresql -p "{\"data\": {\"password\": \"$POSTGRESQL\"}}" --type=merge
-  
+
 }
 
 # Stop sync operation for root-app, so it won't be synced with the old version of the application.
@@ -1104,14 +1106,10 @@ set -e
 delete_postgres
 
 # Stop sync operation for root-app, so it won't be synced with the old version of the application.
-kubectl patch application root-app -n "$apps_ns" --type merge -p '{"operation":null}'
-kubectl patch application root-app -n "$apps_ns" --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
-sleep 30
-kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/sync-postgresql-patch.yaml --type merge
-sleep 30
+resync_all_apps
+sleep 120
 patch_secrets
 sleep 10
-
 
 yq e '
   del(.metadata.labels) |
