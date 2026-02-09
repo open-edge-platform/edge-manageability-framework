@@ -16,26 +16,16 @@ global:
     {{- end }}
 
 import:
-  {{- if index .Values.argo "infra-onboarding" "dkam" }}
   dkam:
-    enabled: {{ index .Values.argo "infra-onboarding" "dkam" "enabled" | default true }}
-  {{- end }}
-  {{- if index .Values.argo "infra-onboarding" "tinkerbell" }}
+    enabled: {{ dig "infra-onboarding" "dkam" "enabled" true .Values.argo }}
   tinkerbell:
-    enabled: {{ index .Values.argo "infra-onboarding" "tinkerbell" "enabled" | default true }}
-  {{- end }}
-  {{- if index .Values.argo "infra-onboarding" "onboarding-manager" }}
+    enabled: {{ dig "infra-onboarding" "tinkerbell" "enabled" true .Values.argo }}
   onboarding-manager:
-    enabled: {{ index .Values.argo "infra-onboarding" "onboarding-manager" "enabled" }}
-  {{- end }}
-  {{- if index .Values.argo "infra-onboarding" "pxe-server" }}
+    enabled: {{ dig "infra-onboarding" "onboarding-manager" "enabled" true .Values.argo }}
   pxe-server:
-    enabled: {{ index .Values.argo "infra-onboarding" "pxe-server" "enabled" }}
-  {{- end }}
-  {{- if index .Values.argo "infra-onboarding" "infra-config" }}
+    enabled: {{ dig "infra-onboarding" "pxe-server" "enabled" true .Values.argo }}
   infra-config:
-    enabled: {{ index .Values.argo "infra-onboarding" "infra-config" "enabled" | default true }}
-  {{- end }}
+    enabled: {{ dig "infra-onboarding" "infra-config" "enabled" true .Values.argo }}
 
 infra-config:
   config:

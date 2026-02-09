@@ -25,38 +25,22 @@ import:
     enabled: false
   loca-templates-manager:
     enabled: false
-  {{- if index .Values.argo "infra-external" "amt" }}
-  {{- if index .Values.argo "infra-external" "amt" "mps" }}
   mps:
-    enabled: {{ index .Values.argo "infra-external" "amt" "mps" "enabled" | default true }}
-  {{- end }}
-  {{- if index .Values.argo "infra-external" "amt" "rps" }}
+    enabled: {{ dig "infra-external" "amt" "mps" "enabled" true .Values.argo }}
   rps:
-    enabled: {{ index .Values.argo "infra-external" "amt" "rps" "enabled" | default true }}
-  {{- end }}
-  {{- if index .Values.argo "infra-external" "amt" "dm-manager" }}
+    enabled: {{ dig "infra-external" "amt" "rps" "enabled" true .Values.argo }}
   dm-manager:
-    enabled: {{ index .Values.argo "infra-external" "amt" "dm-manager" "enabled" | default true }}
-  {{- end }}
-  {{- end }}
+    enabled: {{ dig "infra-external" "amt" "dm-manager" "enabled" true .Values.argo }}
 
 {{- else }}
 
 import:
-  {{- if index .Values.argo "infra-external" "amt" }}
-  {{- if index .Values.argo "infra-external" "amt" "mps" }}
   mps:
-    enabled: {{ index .Values.argo "infra-external" "amt" "mps" "enabled" | default true }}
-  {{- end }}
-  {{- if index .Values.argo "infra-external" "amt" "rps" }}
+    enabled: {{ dig "infra-external" "amt" "mps" "enabled" true .Values.argo }}
   rps:
-    enabled: {{ index .Values.argo "infra-external" "amt" "rps" "enabled" | default true }}
-  {{- end }}
-  {{- if index .Values.argo "infra-external" "amt" "dm-manager" }}
+    enabled: {{ dig "infra-external" "amt" "rps" "enabled" true .Values.argo }}
   dm-manager:
-    enabled: {{ index .Values.argo "infra-external" "amt" "dm-manager" "enabled" | default true }}
-  {{- end }}
-  {{- end }}
+    enabled: {{ dig "infra-external" "amt" "dm-manager" "enabled" true .Values.argo }}
 
 loca-manager:
   providerConfig:

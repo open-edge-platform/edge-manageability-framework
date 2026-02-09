@@ -16,30 +16,18 @@ global:
     {{- end }}
 
 import:
-  {{- if index .Values.argo "infra-managers" "host-manager" }}
   host-manager:
-    enabled: {{ index .Values.argo "infra-managers" "host-manager" "enabled" | default true }}
-  {{- end }}
-  {{- if index .Values.argo "infra-managers" "maintenance-manager" }}
+    enabled: {{ dig "infra-managers" "host-manager" "enabled" true .Values.argo }}
   maintenance-manager:
-    enabled: {{ index .Values.argo "infra-managers" "maintenance-manager" "enabled" | default true }}
-  {{- end }}
-  {{- if index .Values.argo "infra-managers" "telemetry-manager" }}
+    enabled: {{ dig "infra-managers" "maintenance-manager" "enabled" true .Values.argo }}
   telemetry-manager:
-    enabled: {{ index .Values.argo "infra-managers" "telemetry-manager" "enabled" | default true }}
-  {{- end }}
-  {{- if index .Values.argo "infra-managers" "os-resource-manager" }}
+    enabled: {{ dig "infra-managers" "telemetry-manager" "enabled" true .Values.argo }}
   os-resource-manager:
-    enabled: {{ index .Values.argo "infra-managers" "os-resource-manager" "enabled" | default true }}
-  {{- end }}
-  {{- if index .Values.argo "infra-managers" "networking-manager" }}
+    enabled: {{ dig "infra-managers" "os-resource-manager" "enabled" true .Values.argo }}
   networking-manager:
-    enabled: {{ index .Values.argo "infra-managers" "networking-manager" "enabled" | default true }}
-  {{- end }}
-  {{- if index .Values.argo "infra-managers" "attestationstatus-manager" }}
+    enabled: {{ dig "infra-managers" "networking-manager" "enabled" true .Values.argo }}
   attestationstatus-manager:
-    enabled: {{ index .Values.argo "infra-managers" "attestationstatus-manager" "enabled" | default true }}
-  {{- end }}
+    enabled: {{ dig "infra-managers" "attestationstatus-manager" "enabled" true .Values.argo }}
 
 host-manager:
   serviceArgs:

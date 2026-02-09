@@ -16,30 +16,18 @@ global:
     {{- end }}
 
 import:
-  {{- if index .Values.argo "infra-core" "credentials" }}
   credentials:
-    enabled: {{ index .Values.argo "infra-core" "credentials" "enabled" | default true }}
-  {{- end }}
-  {{- if index .Values.argo "infra-core" "api" }}
+    enabled: {{ dig "infra-core" "credentials" "enabled" true .Values.argo }}
   api:
-    enabled: {{ index .Values.argo "infra-core" "api" "enabled" | default true }}
-  {{- end }}
-  {{- if index .Values.argo "infra-core" "apiv2" }}
+    enabled: {{ dig "infra-core" "api" "enabled" true .Values.argo }}
   apiv2:
-    enabled: {{ index .Values.argo "infra-core" "apiv2" "enabled" | default true }}
-  {{- end }}
-  {{- if index .Values.argo "infra-core" "inventory" }}
+    enabled: {{ dig "infra-core" "apiv2" "enabled" true .Values.argo }}
   inventory:
-    enabled: {{ index .Values.argo "infra-core" "inventory" "enabled" | default true }}
-  {{- end }}
-  {{- if index .Values.argo "infra-core" "tenant-controller" }}
+    enabled: {{ dig "infra-core" "inventory" "enabled" true .Values.argo }}
   tenant-controller:
-    enabled: {{ index .Values.argo "infra-core" "tenant-controller" "enabled" | default true }}
-  {{- end }}
-  {{- if index .Values.argo "infra-core" "tenant-config" }}
+    enabled: {{ dig "infra-core" "tenant-controller" "enabled" true .Values.argo }}
   tenant-config:
-    enabled: {{ index .Values.argo "infra-core" "tenant-config" "enabled" | default false }}
-  {{- end }}
+    enabled: {{ dig "infra-core" "tenant-config" "enabled" false .Values.argo }}
 
 api:
   serviceArgs:
