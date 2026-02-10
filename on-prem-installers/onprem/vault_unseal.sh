@@ -1,5 +1,5 @@
 #!/bin/bash
-# SPDX-FileCopyrightText: 2025 Intel Corporation
+# SPDX-FileCopyrightText: 2026 Intel Corporation
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -79,8 +79,8 @@ vault_unseal() {
     return 1
   fi
 
-  echo "Vault unsealed successfully."
-   
+  echo "✅ Vault unsealed successfully"
+
   token=$(echo "$secret_json" | jq -r '.root_token?' 2>/dev/null)
   if [[ -z "$token" ]]; then
     echo "Error: Failed to retrieve Vault root token. 'root_token' field may be missing or malformed in secret 'vault-keys'."
