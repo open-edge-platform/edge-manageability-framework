@@ -2,17 +2,18 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-{{- $appName        := "web-ui-app-orch" }}
-{{- $namespace      := "orch-ui" }}
-{{- $syncWave       := "3000" }}
+{{- $appName        := "keycloak-operator" }}
+{{- $namespace      := "orch-platform" }}
+{{- $syncWave       := "1" }}
 ---
-{{- if and (index .Values.argo.enabled $appName) (index .Values.argo.enabled "app-orch-catalog") }}
+{{- if (index .Values.argo.enabled $appName) }}
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "{{ $syncWave }}"
-  name: {{ $appName }}
+    description: "Keycloak Operator for managing Keycloak instances via CRDs"
+  name: {{$appName}}
   namespace: {{ required "A valid namespace entry required!" .Values.argo.namespace }}
   finalizers:
     - resources-finalizer.argocd.argoproj.io
@@ -20,10 +21,10 @@ spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
     - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
-      chart: orch-ui/charts/orch-ui-app-orch
-      targetRevision: 4.0.3
+      chart: common/charts/keycloak-operator
+      targetRevision: 26.1.1
       helm:
-        releaseName: web-ui
+        releaseName: {{$appName}}
         valuesObject:
           {{- $customFile := printf "custom/%s.tpl" $appName }}
           {{- $customConfig := tpl (.Files.Get $customFile) . | fromYaml }}
@@ -48,5 +49,5 @@ spec:
     {{- end }}
     syncOptions:
       - CreateNamespace=true
-      - ApplyOutOfSyncOnly=true
+      - RespectIgnoreDifferences=true
 {{- end }}

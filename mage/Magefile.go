@@ -48,7 +48,6 @@ var (
 var argoNamespaces = []string{
 	"dev",
 	"argocd",
-	"gitea",
 	"orch-platform", // used when creating a secret for gitea
 	"orch-sre",      // used when creating a secret for kindAll
 	"orch-harbor",   // used when creating a secret for integration
