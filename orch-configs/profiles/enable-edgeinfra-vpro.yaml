@@ -16,6 +16,7 @@ argo:
     web-ui-infra: false
     copy-keycloak-admin-to-infra: true
   infra-core:
+    emiScenario: vpro
     tenant-config:
       enabled: false
     credentials:
@@ -24,7 +25,6 @@ argo:
       enabled: false
     apiv2:
       enabled: true
-      emiScenario: vpro
       resources:
         requests:
           memory: "16Mi"
