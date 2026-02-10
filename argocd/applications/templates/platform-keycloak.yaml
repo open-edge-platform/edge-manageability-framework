@@ -12,6 +12,7 @@ kind: Application
 metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "{{ $syncWave }}"
+    description: "Keycloak instance deployed via Operator"
   name: {{$appName}}
   namespace: {{ required "A valid namespace entry required!" .Values.argo.namespace }}
   finalizers:
@@ -19,9 +20,9 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
-    - repoURL: "registry-1.docker.io/bitnamicharts"
-      chart: keycloak
-      targetRevision: 24.4.12
+    - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
+      chart: common/charts/keycloak-instance
+      targetRevision: 26.1.1
       helm:
         releaseName: {{$appName}}
         valuesObject:

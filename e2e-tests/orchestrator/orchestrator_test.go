@@ -113,13 +113,13 @@ var servicePort = func() int {
 var serviceDomainWithPort = fmt.Sprintf("%s:%d", serviceDomain, servicePort)
 
 func generateRandomDigits(length int) string {
-	rand.Seed(time.Now().UnixNano()) // Seed the random number generator for better randomness
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	digits := []byte{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
 	result := make([]byte, length)
 
 	for i := 0; i < length; i++ {
-		result[i] = digits[rand.Intn(10)]
+		result[i] = digits[r.Intn(10)]
 	}
 
 	return string(result)
@@ -142,7 +142,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 		It("should be accessible over HTTPS", func() {
 			resp, err := cli.Get("https://registry-oci." + serviceDomainWithPort)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 			content, err := io.ReadAll(resp.Body)
@@ -206,7 +206,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 						return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 					}
 
-					defer resp.Body.Close()
+					defer resp.Body.Close() //nolint:errcheck
 					return err
 				},
 				20*time.Second,
@@ -219,7 +219,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 		It("should be accessible over HTTPS", func() {
 			resp, err := cli.Get("https://keycloak." + serviceDomainWithPort + "/admin/master/console/")
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 			content, err := io.ReadAll(resp.Body)
@@ -235,7 +235,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			fmt.Println(url)
 			resp, err := cli.Get(url)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
 		})
 	})
@@ -244,7 +244,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 		It("should be accessible over HTTPS", func() {
 			resp, err := cli.Get("https://web-ui." + serviceDomainWithPort)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 			content, err := io.ReadAll(resp.Body)
@@ -255,7 +255,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 		It("should verify UI response headers", func() {
 			resp, err := cli.Get("https://web-ui." + serviceDomainWithPort)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			for k, v := range secureHeadersAdd() {
 				Expect(k).To(BeKeyOf(resp.Header))
 				Expect(resp.Header.Values(k)).To(ContainElements(v))
@@ -273,7 +273,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			req.Header.Add("Authorization", "Bearer "+token)
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			for k, v := range coopCoepHeaders() {
 				Expect(k).To(BeKeyOf(resp.Header))
 				Expect(resp.Header.Values(k)).To(ContainElements(v))
@@ -291,7 +291,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			req.Header.Set("Access-Control-Request-Headers", "Content-Type")
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			for k, v := range corsHeader() {
 				Expect(k).To(BeKeyOf(resp.Header))
 				Expect(resp.Header.Values(k)).To(ContainElements(v))
@@ -302,7 +302,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			It("should verify Harbor response headers", func() {
 				resp, err := cli.Get("https://registry-oci." + serviceDomainWithPort + "/api/v2.0/ping")
 				Expect(err).ToNot(HaveOccurred())
-				defer resp.Body.Close()
+				defer resp.Body.Close() //nolint:errcheck
 				for k, v := range secureHeadersAdd() {
 					Expect(k).To(BeKeyOf(resp.Header))
 					Expect(resp.Header.Values(k)).To(ContainElements(v))
@@ -317,7 +317,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			It("should verify ASP response headers", func() {
 				resp, err := cli.Get("https://app-service-proxy." + serviceDomainWithPort + "/app-service-proxy-test")
 				Expect(err).ToNot(HaveOccurred())
-				defer resp.Body.Close()
+				defer resp.Body.Close() //nolint:errcheck
 				for k, v := range secureHeadersAddAppOrch() {
 					Expect(k).To(BeKeyOf(resp.Header))
 					Expect(resp.Header.Values(k)).To(ContainElements(v))
@@ -332,7 +332,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			It("should verify VNC response headers", func() {
 				resp, err := cli.Get("https://vnc." + serviceDomainWithPort + "/?project=p1&app=a1&cluster=c1&vm=v1")
 				Expect(err).ToNot(HaveOccurred())
-				defer resp.Body.Close()
+				defer resp.Body.Close() //nolint:errcheck
 				for k, v := range secureHeadersAddAppOrch() {
 					Expect(k).To(BeKeyOf(resp.Header))
 					Expect(resp.Header.Values(k)).To(ContainElements(v))
@@ -347,7 +347,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 		PIt("should have the version set in the configuration", func() {
 			resp, err := cli.Get("https://web-ui." + serviceDomainWithPort + "/runtime-config.js")
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 
 			v, err := os.ReadFile("../../VERSION")
 			Expect(err).ToNot(HaveOccurred())
@@ -375,7 +375,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 
 			// Check status code (should be 403)
 			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
@@ -406,7 +406,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
 			content, err := io.ReadAll(resp.Body)
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusOK), "API Response code is not 200, body: %s", content)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(string(content)).To(ContainSubstring(`{"metadata":[`))
@@ -417,7 +417,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 		It("should be accessible over HTTPS", func() {
 			resp, err := cli.Get("https://" + serviceDomainWithPort)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 			content, err := io.ReadAll(resp.Body)
@@ -430,7 +430,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 		It("should be accessible over HTTPS", func() {
 			resp, err := cli.Get("https://vault." + serviceDomainWithPort)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 			content, err := io.ReadAll(resp.Body)
@@ -443,7 +443,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 		It("should be accessible over HTTPS", func() {
 			resp, err := cli.Get("https://observability-admin." + serviceDomainWithPort)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 			_, err = io.ReadAll(resp.Body)
@@ -475,7 +475,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 
 			response, err := cli.Do(request)
 			Expect(err).ToNot(HaveOccurred())
-			defer response.Body.Close()
+			defer response.Body.Close() //nolint:errcheck
 
 			Expect(response.StatusCode).To(Equal(http.StatusForbidden))
 		})
@@ -487,7 +487,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			req.Header.Add("Authorization", "Bearer "+token)
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 			content, err := io.ReadAll(resp.Body)
 			Expect(err).ToNot(HaveOccurred())
@@ -498,7 +498,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			Expect(err).ToNot(HaveOccurred())
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
 		})
 		It("should NOT be accessible over HTTPS when using invalid token", func() {
@@ -508,7 +508,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			req.Header.Add("Authorization", "Bearer "+invalid)
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
 		})
 	})
@@ -536,7 +536,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 
 			response, err := cli.Do(request)
 			Expect(err).ToNot(HaveOccurred())
-			defer response.Body.Close()
+			defer response.Body.Close() //nolint:errcheck
 
 			Expect(response.StatusCode).To(Equal(http.StatusForbidden))
 		})
@@ -547,7 +547,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			req.Header.Add("Authorization", "Bearer "+token)
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 			content, err := io.ReadAll(resp.Body)
 			Expect(err).ToNot(HaveOccurred())
@@ -560,14 +560,15 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			req.Header.Add("Authorization", "Bearer "+token)
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			content, err := io.ReadAll(resp.Body)
 			Expect(err).ToNot(HaveOccurred())
-			if resp.StatusCode == http.StatusForbidden {
+			switch resp.StatusCode {
+			case http.StatusForbidden:
 				Expect(string(content)).To(ContainSubstring("Invalid claims"))
-			} else if resp.StatusCode == http.StatusOK {
+			case http.StatusOK:
 				Expect(string(content)).To(Equal("anonymous"))
-			} else {
+			default:
 				Fail(fmt.Sprintf("Unexpected response code: %d", resp.StatusCode))
 			}
 		})
@@ -576,7 +577,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			Expect(err).ToNot(HaveOccurred())
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
 		})
 		It("should NOT be accessible over HTTPS when using invalid token", func() {
@@ -586,7 +587,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			req.Header.Add("Authorization", "Bearer "+invalid)
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
 		})
 	})
@@ -603,7 +604,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 				req.Header.Add("Authorization", "Bearer "+token)
 				resp, err := cli.Do(req)
 				Expect(err).ToNot(HaveOccurred())
-				defer resp.Body.Close()
+				defer resp.Body.Close() //nolint:errcheck
 				return resp.StatusCode == http.StatusOK
 			}, 20*time.Second, 5*time.Second).Should(BeTrue())
 		})
@@ -616,7 +617,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			req.Header.Add("Authorization", "Bearer "+token)
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusUnauthorized))
 		})
 
@@ -627,7 +628,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			req.Header.Add("Authorization", "Bearer "+invalid)
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
 		})
 
@@ -636,7 +637,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			Expect(err).ToNot(HaveOccurred())
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
 		})
 
@@ -659,7 +660,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			req.Header.Add("Authorization", "Bearer "+token)
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
 		})
 	})
@@ -673,7 +674,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			req.Header.Add("Authorization", "Bearer "+invalid)
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusUnauthorized))
 		})
 
@@ -682,7 +683,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			Expect(err).ToNot(HaveOccurred())
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusUnauthorized))
 		})
 
@@ -704,7 +705,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			req.Header.Add("Authorization", "Bearer "+token)
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusUnauthorized))
 		})
 	})
@@ -719,7 +720,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			req.Header.Add("Authorization", "Bearer "+token)
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 			content, err := io.ReadAll(resp.Body)
 			Expect(err).ToNot(HaveOccurred())
@@ -734,7 +735,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			req.Header.Add("Authorization", "Bearer "+token)
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusUnauthorized))
 		})
 
@@ -745,7 +746,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			req.Header.Add("Authorization", "Bearer "+invalid)
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
 		})
 
@@ -754,7 +755,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			Expect(err).ToNot(HaveOccurred())
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
 		})
 
@@ -776,7 +777,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			req.Header.Add("Authorization", "Bearer "+token)
 			resp, err := cli.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
+			defer resp.Body.Close() //nolint:errcheck
 			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
 		})
 	})

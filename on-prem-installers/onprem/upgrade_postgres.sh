@@ -10,22 +10,7 @@ local_backup_file="${postgres_namespace}_backup.sql"
 local_backup_path="${POSTGRES_LOCAL_BACKUP_PATH}${local_backup_file}"
 POSTGRES_USERNAME="postgres"
 application_namespace=onprem
-
-# Determine UPGRADE_3_1_X based on existing PostgreSQL pod
-echo "Checking PostgreSQL pod in orch-database namespace..."
-if kubectl get pod -n orch-database postgresql-cluster-1 >/dev/null 2>&1; then
-    echo "Found postgresql-cluster-1 pod - Setting UPGRADE_3_1_X=false"
-    UPGRADE_3_1_X="false"
-    podname="postgresql-cluster-1"
-elif kubectl get pod -n orch-database postgresql-0 >/dev/null 2>&1; then
-    echo "Found postgresql-0 pod - Setting UPGRADE_3_1_X=true (upgrading from pre-3.1.x)"
-    UPGRADE_3_1_X="true"
-    podname="postgresql-0"
-else
-    echo "ERROR: No PostgreSQL pod found in orch-database namespace."
-    echo "Expected either 'postgresql-cluster-1' or 'postgresql-0'"
-    exit 1
-fi
+podname="postgresql-cluster-1"
 
 check_postgres() {
   if [[ -f "$local_backup_path" ]]; then
@@ -64,11 +49,7 @@ backup_postgres() {
   fi
   echo "Backing up databases from pod $podname in namespace $postgres_namespace..."
 
-  if [[ "$UPGRADE_3_1_X" == "true" ]]; then
-        remote_backup_path="/tmp/${postgres_namespace}_backup.sql"
-  else
-        remote_backup_path="/var/lib/postgresql/data/${postgres_namespace}_backup.sql"
-  fi
+  remote_backup_path="/var/lib/postgresql/data/${postgres_namespace}_backup.sql"
 
   kubectl exec -n $postgres_namespace $podname -- /bin/bash -c "$(typeset -f disable_security); disable_security"
 
@@ -119,11 +100,8 @@ restore_postgres() {
   echo "Restoring backup databases from pod $podname in namespace $postgres_namespace..."
 
   # Get postgres password from secret
-  if [[ "$UPGRADE_3_1_X" == "true" ]]; then
-        PGPASSWORD=$(kubectl get secret -n $postgres_namespace postgresql -o jsonpath='{.data.postgres-password}' | base64 -d)
-else
-        PGPASSWORD=$(kubectl get secret -n $postgres_namespace orch-database-postgresql -o jsonpath='{.data.password}' | base64 -d)
-fi
+
+  PGPASSWORD=$(kubectl get secret -n $postgres_namespace orch-database-postgresql -o jsonpath='{.data.password}' | base64 -d)
 
   # CloudNativePG doesn't need security disable/enable, just use credentials
   # Use the remote backup file that was copied to the pod

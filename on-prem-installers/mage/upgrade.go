@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Intel Corporation
+// SPDX-FileCopyrightText: 2026 Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -38,7 +38,7 @@ func (Upgrade) rke2Cluster() error {
 	fmt.Printf("Current RKE2 version: %s\n", currentVersion)
 
 	// Target version
-	targetVersion := "v1.34.1+rke2r1"
+	targetVersion := "v1.34.3+rke2r1"
 
 	// Check if already at target version
 	if currentVersion == targetVersion {
@@ -95,7 +95,11 @@ func (Upgrade) rke2Cluster() error {
 		if err != nil {
 			return err
 		}
-		defer upgradePlan.Close()
+		defer func() {
+			if err := upgradePlan.Close(); err != nil {
+				fmt.Printf("Warning: failed to close upgrade plan file: %v\n", err)
+			}
+		}()
 
 		if err := tmpl.Execute(upgradePlan, struct{ Version string }{Version: rke2UpgradeVersion}); err != nil {
 			return err
@@ -291,7 +295,8 @@ func determineUpgradePath(currentVersion, targetVersion string) []string {
 		"v1.31.13+rke2r1", // Upgrade to 1.31
 		"v1.32.9+rke2r1",  // Upgrade to 1.32
 		"v1.33.5+rke2r1",  // Upgrade to 1.33
-		"v1.34.1+rke2r1",  // Final target version
+		"v1.34.1+rke2r1",  // Upgrade to 1.34.1
+		"v1.34.3+rke2r1",  // Final target version
 	}
 
 	// Extract minor version from full version string (e.g., "v1.30.14+rke2r2" -> "1.30")
@@ -309,9 +314,12 @@ func determineUpgradePath(currentVersion, targetVersion string) []string {
 	// Find starting index
 	startIdx := -1
 	for i, v := range allVersions {
-		if strings.Contains(v, currentMinor) {
+		if v == currentVersion {
 			startIdx = i
 			break
+		}
+		if strings.Contains(v, currentMinor) && startIdx == -1 {
+			startIdx = i
 		}
 	}
 
@@ -325,9 +333,12 @@ func determineUpgradePath(currentVersion, targetVersion string) []string {
 	// Find ending index
 	endIdx := -1
 	for i, v := range allVersions {
-		if strings.Contains(v, targetMinor) {
+		if v == targetVersion {
 			endIdx = i
 			break
+		}
+		if strings.Contains(v, targetMinor) {
+			endIdx = i
 		}
 	}
 

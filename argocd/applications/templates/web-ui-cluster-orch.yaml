@@ -6,7 +6,7 @@
 {{- $namespace      := "orch-ui" }}
 {{- $syncWave       := "3000" }}
 ---
-{{- if (index .Values.argo.enabled $appName) }}
+{{- if and (index .Values.argo.enabled $appName) (or (index .Values.argo.enabled "cluster-manager") (index .Values.argo.enabled "capi-operator") (index .Values.argo.enabled "intel-infra-provider")) }}
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -21,7 +21,7 @@ spec:
   sources:
     - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
       chart: orch-ui/charts/orch-ui-cluster-orch
-      targetRevision: 3.2.4
+      targetRevision: 4.0.0
       helm:
         releaseName: web-ui
         valuesObject:

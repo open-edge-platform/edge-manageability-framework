@@ -6,7 +6,7 @@
 {{- $namespace      := "orch-ui" }}
 {{- $syncWave       := "3000" }}
 ---
-{{- if (index .Values.argo.enabled $appName) }}
+{{- if and (index .Values.argo.enabled $appName) (index .Values.argo.enabled "app-orch-catalog") }}
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -21,7 +21,7 @@ spec:
   sources:
     - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
       chart: orch-ui/charts/orch-ui-app-orch
-      targetRevision: 4.0.0
+      targetRevision: 4.0.3
       helm:
         releaseName: web-ui
         valuesObject:

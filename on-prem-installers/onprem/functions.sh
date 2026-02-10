@@ -46,6 +46,8 @@ metadata:
   name: platform-keycloak
   namespace: $1
 stringData:
+  username: "admin"
+  password: "$2"
   admin-password: "$2"
 EOF
 }

@@ -74,6 +74,12 @@ echo "[INFO] Using namespace: $NS"
 echo "[INFO] Using ArgoCD namespace: $ARGO_NS"
 echo "[INFO] Log file: $LOG_FILE"
 
+# Print script identity to avoid running an old copy
+echo "[INFO] Script path: $0"
+if command -v sha256sum >/dev/null 2>&1 && [[ -r "$0" ]]; then
+    echo "[INFO] Script sha256: $(sha256sum "$0" | awk '{print $1}')"
+fi
+
 # Also output initial info to console
 echo "[INFO] ArgoCD sync script started" >&3
 echo "[INFO] Log file: $LOG_FILE" >&3
@@ -216,6 +222,25 @@ reset() { tput sgr0 2>/dev/null; }
 # Get timestamp
 get_timestamp() {
     date '+%Y-%m-%d %H:%M:%S'
+}
+
+# ============================================================
+# Patch pod finalizers for pods created by a Job
+# NOTE: `kubectl patch` does NOT support `-l/--selector`, so we
+# must enumerate pods first and patch them individually.
+# ============================================================
+patch_job_pods_remove_finalizers() {
+    local job_ns="$1"
+    local job_name="$2"
+    local pods
+
+    pods=$(kubectl get pods -n "$job_ns" -l "job-name=${job_name}" -o name 2>/dev/null || true)
+    [[ -z "$pods" ]] && return 0
+
+    while IFS= read -r pod; do
+        [[ -z "$pod" ]] && continue
+        kubectl patch "$pod" -n "$job_ns" --type=merge -p='{"metadata":{"finalizers":[]}}' 2>/dev/null || true
+    done <<< "$pods"
 }
 
 # ============================================================
@@ -475,7 +500,7 @@ clean_unhealthy_jobs_for_app() {
             read -r job_ns job_name <<< "$job_line"
             echo "$(yellow)  - Deleting job $job_name in $job_ns (background)$(reset)"
             kubectl delete pods -n "$job_ns" -l job-name="$job_name" --ignore-not-found=true 2>/dev/null &
-            kubectl patch pods -n "$job_ns" -l job-name="$job_name" --type=merge -p='{"metadata":{"finalizers":[]}}' || true
+            patch_job_pods_remove_finalizers "$job_ns" "$job_name"
             kubectl delete job "$job_name" -n "$job_ns" --ignore-not-found=true 2>/dev/null &
             kubectl patch job "$job_name" -n "$job_ns" --type=merge -p='{"metadata":{"finalizers":[]}}' || true
         done <<< "$app_resources"
@@ -560,13 +585,6 @@ sync_not_green_apps_once() {
         echo "[$(get_timestamp)] Checking for failed syncs in $name..."
         check_and_handle_failed_sync "$name"
 
-        # Special pre-sync handling for nginx-ingress-pxe-boots
-        if [[ "$name" == "nginx-ingress-pxe-boots" ]]; then
-            echo "$(yellow)[INFO] Pre-sync: nginx-ingress-pxe-boots detected - deleting tls-boots secret first...$(reset)"
-            kubectl delete secret tls-boots -n orch-boots 2>/dev/null || true
-            sleep 3
-        fi
-
         attempt=1
         synced=false
         while (( attempt <= APP_MAX_RETRIES )); do
@@ -646,7 +664,7 @@ sync_not_green_apps_once() {
                         if [[ "$kind" == "Job" ]]; then
                             kubectl patch job "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}' 2>/dev/null || true
                             kubectl delete pods -n "$res_ns" -l job-name="$res_name" --ignore-not-found=true --timeout=10s 2>/dev/null &
-                            kubectl patch pods -n "$res_ns" -l job-name="$res_name" --type=merge -p='{"metadata":{"finalizers":[]}}' || true
+                            patch_job_pods_remove_finalizers "$res_ns" "$res_name"
                             kubectl delete job "$res_name" -n "$res_ns" --ignore-not-found=true --timeout=10s 2>/dev/null &
                             kubectl patch job "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}' || true
                         elif [[ "$kind" == "CustomResourceDefinition" ]]; then
@@ -919,13 +937,6 @@ sync_all_apps_exclude_root() {
         echo "[$(get_timestamp)] Checking for CRD version mismatches in $name..."
         check_and_fix_crd_version_mismatch "$name"
 
-        # Special pre-sync handling for nginx-ingress-pxe-boots
-        if [[ "$name" == "nginx-ingress-pxe-boots" ]]; then
-            echo "$(yellow)[INFO] Pre-sync: nginx-ingress-pxe-boots detected - deleting tls-boots secret first...$(reset)"
-            kubectl delete secret tls-boots -n orch-boots 2>/dev/null || true
-            sleep 3
-        fi
-
         attempt=1
         synced=false
         while (( attempt <= APP_MAX_RETRIES )); do
@@ -1000,7 +1011,7 @@ sync_all_apps_exclude_root() {
                         if [[ "$kind" == "Job" ]]; then
                             kubectl patch job "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}' 2>/dev/null || true
                             kubectl delete pods -n "$res_ns" -l job-name="$res_name" --ignore-not-found=true --timeout=10s 2>/dev/null &
-                            kubectl patch pods -n "$res_ns" -l job-name="$res_name" --type=merge -p='{"metadata":{"finalizers":[]}}' || true
+                            patch_job_pods_remove_finalizers "$res_ns" "$res_name"
                             kubectl delete job "$res_name" -n "$res_ns" --ignore-not-found=true --timeout=10s 2>/dev/null &
                             kubectl patch job "$res_name" -n "$res_ns" --type=merge -p='{"metadata":{"finalizers":[]}}' || true
                         elif [[ "$kind" == "CustomResourceDefinition" ]]; then
@@ -1366,7 +1377,7 @@ check_and_delete_stuck_crd_jobs() {
             echo "$(yellow)[CLEANUP] Deleting stuck job $job_name in namespace $job_ns (background)$(reset)"
 
             # Remove finalizers first to allow deletion
-            kubectl patch pods -n "$job_ns" -l job-name="$job_name" --type=merge -p='{"metadata":{"finalizers":[]}}' 2>/dev/null || true
+            patch_job_pods_remove_finalizers "$job_ns" "$job_name"
             kubectl patch job "$job_name" -n "$job_ns" --type=merge -p='{"metadata":{"finalizers":[]}}' 2>/dev/null || true
 
             # Delete associated pods first
@@ -1606,16 +1617,8 @@ post_upgrade_cleanup() {
     delete_app "tenancy-datamodel" "onprem"
 
     echo "[INFO] Deleting deployment os-resource-manager in namespace orch-infra..."
-    kubectl delete deployment -n orch-infra os-resource-manager || true
-
-    echo "[INFO] Deleting onboarding secrets..."
-    kubectl delete secret tls-boots -n orch-boots 2>/dev/null
-    kubectl delete secret boots-ca-cert -n orch-gateway 2>/dev/null
-    kubectl delete secret boots-ca-cert -n orch-infra 2>/dev/null
-    echo "[INFO] Waiting 30 seconds for secrets cleanup to complete before deleting dkam pods..."
-    sleep 30
-    echo "[INFO] Deleting dkam pods in namespace orch-infra..."
-    kubectl delete pod -n orch-infra -l app.kubernetes.io/name=dkam 2>/dev/null 
+    #kubectl delete deployment -n orch-infra os-resource-manager || true
+    #kubectl delete pod -n orch-infra -l app.kubernetes.io/name=dkam 2>/dev/null 
     check_and_download_dkam_certs
     #echo "[INFO] Post-upgrade cleanup completed."
     console_success "[✓] Post-upgrade cleanup completed"

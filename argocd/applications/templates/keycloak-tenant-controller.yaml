@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025 Intel Corporation
+# SPDX-FileCopyrightText: 2026 Intel Corporation
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -21,7 +21,7 @@ spec:
   sources:
     - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
       chart: common/charts/keycloak-tenant-controller
-      targetRevision: 25.2.5
+      targetRevision: 26.0.3
       helm:
         releaseName: {{$appName}}
         valuesObject:

@@ -37,7 +37,7 @@ const (
 )
 
 func (Test) golang() error {
-	return sh.RunV("ginkgo", "-v", "-r", "--skip-package", "assets", "--label-filter=!orchestrator-integration && !tenancy && !stress-test && !fleet-management && !autocert && !cluster-orch-smoke-test && !cluster-orch-smoke-test-cleanup && !observability && !orchestrator-observability && !edgenode-observability && !observability-alerts && !sre-observability")
+	return sh.RunV("ginkgo", "-v", "-r", "--skip-package", "assets", "--label-filter=!orchestrator-integration && !tenancy && !stress-test && !fleet-management && !autocert && !cluster-orch-smoke-test && !cluster-orch-smoke-test-cleanup && !observability && !orchestrator-observability && !edgenode-observability && !observability-alerts && !sre-observability && !component-status")
 }
 
 // prepare environment for e2e mage tests
@@ -510,7 +510,7 @@ func (Test) deployment() error { //nolint: cyclop
 							panic(err)
 						}
 						if s.ReadyReplicas != s.Replicas {
-							if _, err := w.Write([]byte(fmt.Sprintf("%s\n", line))); err != nil {
+							if _, err := fmt.Fprintf(w, "%s\n", line); err != nil {
 								panic(err)
 							}
 						}
