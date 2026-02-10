@@ -1128,7 +1128,6 @@ sleep 120
 patch_secrets
 sleep 10
 
-<<<<<<< HEAD
 yq e '
   del(.metadata.labels) |
   del(.metadata.annotations) |
@@ -1140,23 +1139,6 @@ yq e '
   del(.metadata.creationTimestamp)
 ' postgres_secret.yaml | kubectl apply -f -
 
-=======
-# Restore secret after app delete but before postgress restored
-if [[ "$UPGRADE_3_1_X" == "true" ]]; then
-    yq e 'del(.metadata.labels, .metadata.annotations, .metadata.uid, .metadata.creationTimestamp)' postgres_secret.yaml | kubectl apply -f -
-else
-    yq e '
-      del(.metadata.labels) |
-      del(.metadata.annotations) |
-      del(.metadata.ownerReferences) |
-      del(.metadata.finalizers) |
-      del(.metadata.managedFields) |
-      del(.metadata.resourceVersion) |
-      del(.metadata.uid) |
-      del(.metadata.creationTimestamp)
-    ' postgres_secret.yaml | kubectl apply -f -
-fi
->>>>>>> fcd0341be (Fixed potential race condition)
 sleep 30
 # Wait until PostgreSQL pod is running (Re-sync)
 start_time=$(date +%s)
@@ -1332,11 +1314,6 @@ kubectl patch application root-app -n  "$apps_ns"  --type merge -p '{"operation"
 kubectl patch application root-app -n  "$apps_ns"  --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
 sleep  5
 
-# Delete CRDs
-delete_crd_safely "clustersecretstores.external-secrets.io"
-delete_crd_safely "secretstores.external-secrets.io"
-delete_crd_safely "externalsecrets.external-secrets.io"
-
 # Delete Kyverno policies that restart MPS/RPS deployments when secrets change (if present)
 
 if kubectl get clusterpolicy restart-mps-deployment-on-secret-change >/dev/null 2>&1; then
@@ -1353,6 +1330,11 @@ else
   echo "ClusterPolicy restart-rps-deployment-on-secret-change not found, skipping"
 fi
 
+# Delete CRDs
+delete_crd_safely "clustersecretstores.external-secrets.io"
+delete_crd_safely "secretstores.external-secrets.io"
+delete_crd_safely "externalsecrets.external-secrets.io"
+
 # Apply External Secrets CRDs with server-side apply
 echo "Applying external-secrets CRDs with server-side apply..."
 kubectl apply --server-side=true --force-conflicts -f https://raw.githubusercontent.com/external-secrets/external-secrets/refs/tags/v0.20.4/deploy/crds/bundle.yaml || true
@@ -1368,7 +1350,7 @@ sleep 5
 kubectl patch application root-app -n  "$apps_ns"  --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 sleep 10
 
-echo "Wait ~5–10 minutes for ArgoCD to sync and deploy all application"
+echo "Wait ~5-10 minutes for ArgoCD to sync and deploy all application"
 echo "   👉 Run the script to further sync and post run"
 echo "          ./after_upgrade_restart.sh"
 echo ""
