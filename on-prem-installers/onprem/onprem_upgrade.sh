@@ -577,7 +577,7 @@ EOF
         attempts=0
         max_attempts=40
         while [ "$(kubectl get volumesnapshot -n "$pvc_namespace" "$pvc_name-snap" -o jsonpath='{.status.readyToUse}')" != "true" ]; do
-            echo "Waiting for VolumeSnaphot $pvc_name-snap in $pvc_namespace to be readyToUse..."
+            echo "Waiting for VolumeSnapshot $pvc_name-snap in $pvc_namespace to be readyToUse..."
             sleep 5
             attempts=$((attempts + 1))
 
@@ -684,7 +684,7 @@ fi
 
 
 # Check if postgres is running and if it is safe to backup
-check_postgres
+
 if ! check_postgres; then
     echo "PostgreSQL is not running or backup file already exists. Exiting..."
     exit 1
@@ -721,8 +721,7 @@ install_yq
 
 if [[ "${BACKUP:-}" == "true" ]]; then
     echo "Backing up PVs..."
-    backup_pvs
-    if [[ $? -eq 1 ]]; then
+    if ! backup_pvs; then
         exit 1
     fi
     echo "PVs backed up successfully"
@@ -869,7 +868,9 @@ sudo tee /var/lib/dpkg/info/onprem-orch-installer.postrm >/dev/null <<'EOF'
 
 set -o errexit
 
-export KUBECONFIG=/home/$USER/.kube/config
+if [ -z "${KUBECONFIG:-}" ]; then
+    export KUBECONFIG="${HOME}/.kube/config"
+fi
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
 
 kubectl delete job -n gitea -l managed-by=edge-manageability-framework || true
@@ -958,7 +959,7 @@ patch_secrets() {
     app_status=$(kubectl get application postgresql-secrets -n "$apps_ns" -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "NotFound NotFound")
     if [[ "$app_status" != "Synced Healthy" ]]; then
         check_and_patch_sync_app root-app "$apps_ns"
-    fi
+    # Check for secret every 5 sec for up to 40 times (~200s total)
 
     # Check for secret every 5 sec for 10 times
     for i in $(seq 1 40); do
@@ -1076,10 +1077,7 @@ operation:
       hook: {}
 " | sudo tee /tmp/sync-postgresql-patch.yaml
 
-#kubectl patch -n "$apps_ns" application postgresql-secrets --patch-file /tmp/sync-postgresql-patch.yaml --type merge
 kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/sync-postgresql-patch.yaml --type merge
-
-#kubectl patch -n "$apps_ns" application postgresql --patch-file /tmp/sync-postgresql-patch.yaml --type merge
 
 start_time=$(date +%s)
 timeout=3600 # 1 hour in seconds
@@ -1242,7 +1240,6 @@ if [ "${ORCH_INSTALLER_PROFILE:-}" != "onprem-vpro" ]; then
 else
   echo "ℹ️ ORCH_INSTALLER_PROFILE=onprem-vpro → Skipping Harbor restarts"
 fi
-
 
 
 echo "Cleaning up external-secrets installation..."
