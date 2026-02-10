@@ -21,3 +21,10 @@ argo:
   autosync: true
 
   enabled: {}
+
+orchestratorDeployment:
+  argoServiceType: ""
+  dockerCache: ""
+  dockerCacheCert: ""
+  enableMailpit: ""
+  targetCluster: ""

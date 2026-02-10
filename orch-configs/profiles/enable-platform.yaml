@@ -11,6 +11,7 @@ argo:
     ingress-nginx: true
     cert-manager: true
     certificate-file-server: true
+    component-status: true
     copy-app-gitea-cred-to-fleet: true
     copy-ca-cert-boots-to-gateway: true
     copy-ca-cert-boots-to-infra: true
@@ -24,6 +25,7 @@ argo:
     istio-policy: true
     istiod: true
     kiali: true
+    keycloak-operator: true
     metadata-broker: true
     multitenant_gateway: true
     nginx-ingress-pxe-boots: true

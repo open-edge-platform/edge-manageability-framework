@@ -47,7 +47,7 @@ func getAccessToken(c *http.Client, username string, password string) string {
 
 	resp, err := c.Do(req) //nolint: bodyclose
 	Expect(err).ToNot(HaveOccurred())
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 	Expect(resp.StatusCode).To(Equal(http.StatusOK), func() string {
 		b, err := io.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
