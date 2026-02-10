@@ -78,7 +78,7 @@ argo:
     enServiceClients: "platform-manageability-agent"
     enOutboundClients: ""
     enMetricsEnabled: "false"
-    enTokenClients: "platform-manageability-agent"
+    enTokenClients: "node-agent,platform-manageability-agent"
     tinkerbell:
       enabled: false
     pxe-server:
