@@ -79,7 +79,7 @@ vault_unseal() {
     return 1
   fi
 
-  echo "Vault unsealed successfully."
+  echo "✅ Vault unsealed successfully"
    
   token=$(echo "$secret_json" | jq -r '.root_token?' 2>/dev/null)
   if [[ -z "$token" ]]; then
