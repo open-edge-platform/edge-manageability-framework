@@ -81,7 +81,7 @@ infra-config:
     omSvc: onboarding-node.{{ .Values.argo.clusterDomain }}
     omStreamSvc: onboarding-stream.{{ .Values.argo.clusterDomain }}
     extraHosts: "{{ index .Values.argo "infra-onboarding" "dkamExtraHost" | default "" }}"
-    skipOSProvisioning: {{ index .Values.argo "infra-onboarding" "infra-config" "skipOSProvisioning" | default false }}
+    skipOSProvisioning: {{ index .Values.argo "infra-onboarding" "skipOSProvisioning" | default false }}
 
     firewallReqAllow: |-
       [{

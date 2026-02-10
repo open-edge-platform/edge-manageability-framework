@@ -74,17 +74,17 @@ argo:
     attestationstatus-manager:
       enabled: false
   infra-onboarding:
+    skipOSProvisioning: true
+    enServiceClients: "platform-manageability-agent"
+    enOutboundClients: ""
+    enMetricsEnabled: "false"
+    enTokenClients: "platform-manageability-agent"
     tinkerbell:
       enabled: false
     pxe-server:
       enabled: false
     infra-config:
       enabled: true
-      skipOSProvisioning: true
-      enServiceClients: "platform-manageability-agent"
-      enOutboundClients: ""
-      enMetricsEnabled: "false"
-      enTokenClients: "platform-manageability-agent"
     onboarding-manager:
       enabled: true
       resources:
