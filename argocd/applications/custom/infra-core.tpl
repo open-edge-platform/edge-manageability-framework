@@ -46,12 +46,12 @@ api:
     enabled: {{ index .Values.argo "infra-core" "enableMetrics" | default false }}
 
 apiv2:
-  eimScenario: {{ index .Values.argo "infra-core" "apiv2" "eimScenario" | default "fulleim" }}
   serviceArgsProxy:
     globalLogLevel: "debug"
     enableTracing: {{ index .Values.argo "infra-core" "enableTracing" | default false }}
   serviceArgsGrpc:
     globalLogLevel: "debug"
+    eimScenario: {{ index .Values.argo "infra-core" "apiv2" "eimScenario" | default "fulleim" }}
     enableTracing: {{ index .Values.argo "infra-core" "enableTracing" | default false }}
   {{- if index .Values.argo "infra-core" "api" }}
   {{- if index .Values.argo "infra-core" "api" "resources" }}
