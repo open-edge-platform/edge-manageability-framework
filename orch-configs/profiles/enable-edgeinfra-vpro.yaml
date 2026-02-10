@@ -16,7 +16,7 @@ argo:
     web-ui-infra: false
     copy-keycloak-admin-to-infra: true
   infra-core:
-    emiScenario: vpro
+    eimScenario: vpro
     tenant-config:
       enabled: false
     credentials:
@@ -81,6 +81,10 @@ argo:
     infra-config:
       enabled: true
       skipOSProvisioning: true
+      enServiceClients: "platform-manageability-agent"
+      enOutboundClients: ""
+      enMetricsEnabled: "false"
+      enTokenClients: "platform-manageability-agent"
     onboarding-manager:
       enabled: true
       resources:
