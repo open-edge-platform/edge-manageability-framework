@@ -24,7 +24,7 @@ argo:
       enabled: false
     apiv2:
       enabled: true
-      scenario: vpro
+      emiScenario: vpro
       resources:
         requests:
           memory: "16Mi"

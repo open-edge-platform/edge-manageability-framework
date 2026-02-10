@@ -49,9 +49,11 @@ apiv2:
   serviceArgsProxy:
     globalLogLevel: "debug"
     enableTracing: {{ index .Values.argo "infra-core" "enableTracing" | default false }}
+    eimScenario: {{ index .Values.argo "infra-core" "scenario" | default "fulleim" }}
   serviceArgsGrpc:
     globalLogLevel: "debug"
     enableTracing: {{ index .Values.argo "infra-core" "enableTracing" | default false }}
+    eimScenario: {{ index .Values.argo "infra-core" "scenario" | default "fulleim" }}
   {{- if index .Values.argo "infra-core" "api" }}
   {{- if index .Values.argo "infra-core" "api" "resources" }}
   resources:
