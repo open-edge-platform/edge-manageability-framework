@@ -62,7 +62,10 @@ jobs:
       on-prem-oxm: ${{ contains(steps.check-files.outputs.changed_files, 'argocd/applications/configs/infra-') ||
         contains(steps.check-files.outputs.changed_files, 'argocd/applications/custom/infra-') ||
         contains(steps.check-files.outputs.changed_files, 'argocd/applications/templates/infra-') ||
-        contains(steps.check-files.outputs.changed_files, 'argocd/applications/values.yaml') }}
+        contains(steps.check-files.outputs.changed_files, 'argocd/applications/values.yaml') ||
+        contains(steps.check-files.outputs.changed_files, 'on-prem-installers') ||
+        contains(steps.check-files.outputs.changed_files, 'orch-configs') ||
+        contains(steps.check-files.outputs.changed_files, 'installer/generate_cluster_yaml.sh') }}
       onboarding: ${{ contains(steps.check-files.outputs.changed_files, 'argocd/applications/templates/infra-') || contains(steps.check-files.outputs.changed_files, 'argocd/applications/values.yaml') }}
       shell: ${{ contains(steps.check-files.outputs.changed_files, '.sh') || contains(steps.check-files.outputs.changed_files, '.bash') }}
       terraform: ${{ contains(steps.check-files.outputs.changed_files, '.hcl') || contains(steps.check-files.outputs.changed_files, '.tf') || contains(steps.check-files.outputs.changed_files, '.tfvars') }}
@@ -800,8 +803,9 @@ jobs:
       - check-changed-files
     if: |
       always() &&
-      needs.build-publish.result == 'success' &&
-      needs.check-changed-files.outputs.on-prem-oxm == 'true'
+      needs.build-publish.result == 'success' && (
+      needs.check-changed-files.outputs.on-prem-oxm == 'true' ||
+      needs.check-changed-files.outputs.ci == 'true' )
     runs-on: ubuntu-22.04-16core-64GB
     timeout-minutes: 90
     env:
