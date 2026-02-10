@@ -79,19 +79,16 @@ GITEA_IMAGE_REGISTRY="${GITEA_IMAGE_REGISTRY:-docker.io}"
 USE_LOCAL_PACKAGES="${USE_LOCAL_PACKAGES:-false}"  # New flag for local packages
 INSTALL_GITEA=true
 
-# Determine UPGRADE_3_1_X based on existing PostgreSQL pod
+
 echo "Checking PostgreSQL pod in orch-database namespace..."
-if kubectl get pod -n orch-database postgresql-cluster-1 >/dev/null 2>&1; then
-    echo "Found postgresql-cluster-1 pod - Setting UPGRADE_3_1_X=false"
-    UPGRADE_3_1_X="false"
-elif kubectl get pod -n orch-database postgresql-0 >/dev/null 2>&1; then
-    echo "Found postgresql-0 pod - Setting UPGRADE_3_1_X=true (upgrading from pre-3.1.x)"
-    UPGRADE_3_1_X="true"
+
+if kubectl get pod postgresql-cluster-1 -n orch-database >/dev/null 2>&1; then
+  echo "Found postgresql-cluster-1 pod"
 else
-    echo "ERROR: No PostgreSQL pod found in orch-database namespace."
-    echo "Expected either 'postgresql-cluster-1' or 'postgresql-0'"
-    exit 1
+  echo "❌ ERROR: PostgreSQL pod postgresql-cluster-1 not found in orch-database namespace."
+  exit 1
 fi
+
 
 ### Variables
 cwd=$(pwd)
@@ -261,9 +258,11 @@ operation:
   sync:
     syncStrategy:
       hook: {}
+
 EOF
 fi
-    kubectl patch -n "$apps_ns" application postgresql-secrets --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+    kubectl patch application root-app -n "$apps_ns" --type merge -p '{"operation":null}'
+kubectl patch application root-app -n "$apps_ns" --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
     kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 }
 
@@ -662,6 +661,11 @@ EOF
 ##### UPGRADE SCRIPT START #####
 ################################
 
+# CLI flags (must be initialized for shells with nounset enabled)
+HELP=''
+BACKUP=''
+OVERRIDE=''
+
 # shellcheck disable=SC2034
 while getopts 'v:hbol' flag; do
     case "${flag}" in
@@ -673,7 +677,7 @@ while getopts 'v:hbol' flag; do
     esac
 done
 
-if [[ $HELP ]]; then
+if [[ "${HELP:-}" == "true" ]]; then
     usage
     exit 1
 fi
@@ -688,11 +692,9 @@ fi
 
 # Perform PostgreSQL secret backup if not done already
 if [[ ! -f postgres_secret.yaml ]]; then
-    if [[ "$UPGRADE_3_1_X" == "true" ]]; then
-        kubectl get secret -n orch-database postgresql -o yaml > postgres_secret.yaml
-    else
-        kubectl get secret -n orch-database passwords -o yaml > postgres_secret.yaml
-    fi
+
+        kubectl get secret -n orch-database postgresql-cluster-superuser -o yaml > postgres_secret.yaml
+
 fi
 
 
@@ -717,7 +719,7 @@ install_yq
 
 ### Backup
 
-if [[ $BACKUP ]]; then
+if [[ "${BACKUP:-}" == "true" ]]; then
     echo "Backing up PVs..."
     backup_pvs
     if [[ $? -eq 1 ]]; then
@@ -804,10 +806,14 @@ eval "sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get install --o
 echo "RKE2 upgraded to $(dpkg-query -W -f='${Version}' onprem-ke-installer)"
 
 # Run Gitea upgrade
-echo "Upgrading Gitea..."
-eval "sudo IMAGE_REGISTRY=${GITEA_IMAGE_REGISTRY} INSTALL_GITEA=${INSTALL_GITEA} DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get install --only-upgrade --allow-downgrades -y $cwd/$deb_dir_name/onprem-gitea-installer_*_amd64.deb"
-wait_for_pods_running $gitea_ns
-echo "Gitea upgraded to $(dpkg-query -W -f='${Version}' onprem-gitea-installer)"
+if [[ "$INSTALL_GITEA" == "true" ]]; then
+    echo "Upgrading Gitea..."
+    eval "sudo IMAGE_REGISTRY=${GITEA_IMAGE_REGISTRY} INSTALL_GITEA=${INSTALL_GITEA} DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get install --only-upgrade --allow-downgrades -y $cwd/$deb_dir_name/onprem-gitea-installer_*_amd64.deb"
+    wait_for_pods_running $gitea_ns
+    echo "Gitea upgraded to $(dpkg-query -W -f='${Version}' onprem-gitea-installer)"
+else
+    echo "Skipping Gitea upgrade (INSTALL_GITEA is false)"
+fi
 
 # Run ArgoCD upgrade
 echo "Upgrading ArgoCD..."
@@ -826,11 +832,7 @@ if [[ ! -s postgres-secrets-password.txt ]]; then
     IAM_TENANCY=$(kubectl get secret iam-tenancy-local-postgresql -n orch-iam -o jsonpath='{.data.PGPASSWORD}')
     PLATFORM_KEYCLOAK=$(kubectl get secret platform-keycloak-local-postgresql -n orch-platform -o jsonpath='{.data.PGPASSWORD}')
     VAULT=$(kubectl get secret vault-local-postgresql -n orch-platform -o jsonpath='{.data.PGPASSWORD}')
-    if [[ "$UPGRADE_3_1_X" == "true" ]]; then
-        POSTGRESQL=$(kubectl get secret postgresql -n orch-database -o jsonpath='{.data.postgres-password}')
-    else
-        POSTGRESQL=$(kubectl get secret orch-database-postgresql -n orch-database -o jsonpath='{.data.password}')
-    fi
+    POSTGRESQL=$(kubectl get secret orch-database-postgresql -n orch-database -o jsonpath='{.data.password}')
     MPS=$(kubectl get secret mps-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}')
     RPS=$(kubectl get secret rps-local-postgresql -n orch-infra -o jsonpath='{.data.PGPASSWORD}')
     {
@@ -884,7 +886,23 @@ kubectl delete secret -l managed-by=edge-manageability-framework -A || true
 
 EOF
 
-eval "sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l INSTALL_GITEA=${INSTALL_GITEA} ORCH_INSTALLER_PROFILE=$ORCH_INSTALLER_PROFILE GIT_REPOS=$GIT_REPOS apt-get install --only-upgrade --allow-downgrades -y $cwd/$deb_dir_name/onprem-orch-installer_*_amd64.deb"
+# Build environment variables for orchestrator upgrade
+GIT_ENV_VARS="INSTALL_GITEA=${INSTALL_GITEA} ORCH_INSTALLER_PROFILE=$ORCH_INSTALLER_PROFILE GIT_REPOS=$GIT_REPOS"
+
+if [[ "$INSTALL_GITEA" == "false" ]]; then
+    # When Gitea is disabled, pass GitHub credentials if available
+    if [[ -n "$GIT_TOKEN" ]]; then
+        GIT_ENV_VARS="$GIT_ENV_VARS GIT_TOKEN=$GIT_TOKEN"
+    fi
+    if [[ -n "$GIT_USER" ]]; then
+        GIT_ENV_VARS="$GIT_ENV_VARS GIT_USER=$GIT_USER"
+    fi
+    if [[ -n "$DEPLOY_REPO_URL" ]]; then
+        GIT_ENV_VARS="$GIT_ENV_VARS DEPLOY_REPO_URL=$DEPLOY_REPO_URL"
+    fi
+fi
+
+eval "sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l $GIT_ENV_VARS apt-get install --only-upgrade --allow-downgrades -y $cwd/$deb_dir_name/onprem-orch-installer_*_amd64.deb"
 echo "Edge Orchestrator getting upgraded to version $(dpkg-query -W -f='${Version}' onprem-orch-installer), wait for SW to deploy... "
 
 # Allow adjustments as some PVCs sizes might have changed
@@ -1041,12 +1059,9 @@ patch_secrets() {
         kubectl patch secret platform-keycloak -n orch-platform --type='merge' -p "{\"stringData\": {\"username\": \"admin\", \"password\": \"$ADMIN_PASSWORD\"}}" || true
     fi
 
-    # This secret does not exist in 3.1.x so we need to create it
-    if [[ "$UPGRADE_3_1_X" == "true" ]]; then
-        create_postgres_password "orch-database" "$POSTGRESQL"
-    else
-        kubectl patch secret -n orch-database orch-database-postgresql -p "{\"data\": {\"password\": \"$POSTGRESQL\"}}" --type=merge
-    fi
+
+    kubectl patch secret -n orch-database orch-database-postgresql -p "{\"data\": {\"password\": \"$POSTGRESQL\"}}" --type=merge
+
 }
 
 # Stop sync operation for root-app, so it won't be synced with the old version of the application.
@@ -1091,29 +1106,22 @@ set -e
 delete_postgres
 
 # Stop sync operation for root-app, so it won't be synced with the old version of the application.
-kubectl patch application root-app -n "$apps_ns" --type merge -p '{"operation":null}'
-kubectl patch application root-app -n "$apps_ns" --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
-sleep 30
-kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/sync-postgresql-patch.yaml --type merge
-sleep 30
+resync_all_apps
+sleep 120
 patch_secrets
 sleep 10
 
-# Restore secret after app delete but before postgress restored
-if [[ "$UPGRADE_3_1_X" == "true" ]]; then
-        yq e 'del(.metadata.labels, .metadata.annotations, .metadata.uid, .metadata.creationTimestamp)' postgres_secret.yaml | kubectl apply -f -
-else
-        yq e '
-          del(.metadata.labels) |
-          del(.metadata.annotations) |
-          del(.metadata.ownerReferences) |
-          del(.metadata.finalizers) |
-          del(.metadata.managedFields) |
-          del(.metadata.resourceVersion) |
-          del(.metadata.uid) |
-          del(.metadata.creationTimestamp)
-        ' postgres_secret.yaml | kubectl apply -f -
-fi
+yq e '
+  del(.metadata.labels) |
+  del(.metadata.annotations) |
+  del(.metadata.ownerReferences) |
+  del(.metadata.finalizers) |
+  del(.metadata.managedFields) |
+  del(.metadata.resourceVersion) |
+  del(.metadata.uid) |
+  del(.metadata.creationTimestamp)
+' postgres_secret.yaml | kubectl apply -f -
+
 sleep 30
 # Wait until PostgreSQL pod is running (Re-sync)
 start_time=$(date +%s)
@@ -1221,14 +1229,20 @@ echo "Restart keycloak-tenant-controller to resolve vault authentication issues"
 echo "Restart keycloak-tenant-controller to refresh connection"
 restart_statefulset keycloak-tenant-controller-set orch-platform
 
-echo "Restart harbor-oci-database to refresh connection"
-restart_statefulset harbor-oci-database orch-harbor
+# Skip restarts if ORCH_INSTALLER_PROFILE is onprem-vpro
+if [ "${ORCH_INSTALLER_PROFILE:-}" != "onprem-vpro" ]; then
+  echo "Restart harbor-oci-database to refresh connection"
+  restart_statefulset harbor-oci-database orch-harbor
 
-# Restart harbor-oci-core to refresh connection
-echo "Restart harbor-oci-core to refresh connection"
-kubectl rollout restart deployment harbor-oci-core -n orch-harbor
+  # Restart harbor-oci-core to refresh connection
+  echo "Restart harbor-oci-core to refresh connection"
+  kubectl rollout restart deployment harbor-oci-core -n orch-harbor
 
-echo "✅ harbor-oci-core restarted"
+  echo "✅ harbor-oci-core restarted"
+else
+  echo "ℹ️ ORCH_INSTALLER_PROFILE=onprem-vpro → Skipping Harbor restarts"
+fi
+
 
 
 echo "Cleaning up external-secrets installation..."
@@ -1244,6 +1258,22 @@ fi
 if kubectl get crd externalsecrets.external-secrets.io >/dev/null 2>&1; then
     kubectl delete crd externalsecrets.external-secrets.io &
     kubectl patch crd/externalsecrets.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
+fi
+
+# Delete Kyverno policies that restart MPS/RPS deployments when secrets change (if present)
+
+if kubectl get clusterpolicy restart-mps-deployment-on-secret-change >/dev/null 2>&1; then
+  echo "Deleting ClusterPolicy: restart-mps-deployment-on-secret-change"
+  kubectl delete clusterpolicy restart-mps-deployment-on-secret-change
+else
+  echo "ClusterPolicy restart-mps-deployment-on-secret-change not found, skipping"
+fi
+
+if kubectl get clusterpolicy restart-rps-deployment-on-secret-change >/dev/null 2>&1; then
+  echo "Deleting ClusterPolicy: restart-rps-deployment-on-secret-change"
+  kubectl delete clusterpolicy restart-rps-deployment-on-secret-change
+else
+  echo "ClusterPolicy restart-rps-deployment-on-secret-change not found, skipping"
 fi
 
 # Apply External Secrets CRDs with server-side apply
@@ -1267,11 +1297,8 @@ sleep  5
 kubectl patch application root-app -n  "$apps_ns"  --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 sleep 10
 
-#restart tls-boot secrets
-kubectl delete secret tls-boots -n orch-boots || true
-
 echo "Wait ~5–10 minutes for ArgoCD to sync and deploy all application"
-echo "   👉 Run the script to to futher sync and post run"
+echo "   👉 Run the script to further sync and post run"
 echo "          ./after_upgrade_restart.sh"
 echo ""
 echo "Upgrade completed! Wait for ArgoCD applications to be in 'Synced' and 'Healthy' state"

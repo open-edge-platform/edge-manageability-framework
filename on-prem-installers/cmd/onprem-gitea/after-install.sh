@@ -18,7 +18,6 @@ cat << "EOF"
 EOF
 
 IMAGE_REGISTRY="${IMAGE_REGISTRY:-docker.io}"
-INSTALL_GITEA="${INSTALL_GITEA:-true}"
 
 export KUBECONFIG=/home/$USER/.kube/config
 
@@ -123,7 +122,6 @@ createGiteaSecret "argocd-gitea-credential" "argocd" "$argocdGiteaPassword" "git
 createGiteaSecret "app-gitea-credential" "apporch" "$appGiteaPassword" "orch-platform"
 createGiteaSecret "cluster-gitea-credential" "clusterorch" "$clusterGiteaPassword" "orch-platform"
 
-if [ "$INSTALL_GITEA" = "true" ]; then
   # More helm values are set in ../assets/gitea/values.yaml
   helm install gitea /tmp/gitea/gitea --values /tmp/gitea/values.yaml --set gitea.admin.existingSecret=gitea-cred --set image.registry="${IMAGE_REGISTRY}" -n gitea --timeout 15m0s --wait
 
@@ -131,4 +129,3 @@ if [ "$INSTALL_GITEA" = "true" ]; then
   createGiteaAccount "argocd-gitea-credential" "argocd" "$argocdGiteaPassword" "argocd@orch-installer.com"
   createGiteaAccount "app-gitea-credential" "apporch" "$appGiteaPassword" "apporch@orch-installer.com"
   createGiteaAccount "cluster-gitea-credential" "clusterorch" "$clusterGiteaPassword" "clusterorch@orch-installer.com"
-fi
