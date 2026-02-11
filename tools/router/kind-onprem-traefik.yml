@@ -1,0 +1,83 @@
+## STATIC CONFIGURATION
+log:
+  level: INFO
+
+api:
+  insecure: true
+  dashboard: true
+
+entryPoints:
+  websecure:
+    address: ":443"
+  tcpamt:
+    address: ":4433"
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+  file:
+    filename: "traefik.yml"
+
+## DYNAMIC CONFIGURATION
+tcp:
+  routers:
+    TCProuter0:
+      rule: "HostSNI(`argocd.cluster.onprem`)"
+      priority: 20
+      service: "argo-kind"
+      entryPoints:
+        - "websecure"
+      tls:
+       passthrough: true
+    TCProuter1:
+      rule: "HostSNI(`alerting-monitor.cluster.onprem`, `api.cluster.onprem`, `app-orch.cluster.onprem`, `app-service-proxy.cluster.onprem`, `attest-node.cluster.onprem`, `cluster-orch-edge-node.cluster.onprem`, `cluster-orch-node.cluster.onprem`, `cluster.onprem`, `connect-gateway.cluster.onprem`, `device-manager-node.cluster.onprem`, `fleet.cluster.onprem`, `infra-node.cluster.onprem`, `keycloak.cluster.onprem`, `log-query.cluster.onprem`, `logs-node.cluster.onprem`, `metadata.cluster.onprem`, `metrics-node.cluster.onprem`, `mps-wss.cluster.onprem`, `mps.cluster.onprem`, `observability-admin.cluster.onprem`, `observability-ui.cluster.onprem`, `onboarding-node.cluster.onprem`, `onboarding-stream.cluster.onprem`, `registry-oci.cluster.onprem`, `registry.cluster.onprem`, `release.cluster.onprem`, `rps-wss.cluster.onprem`, `rps.cluster.onprem`, `telemetry-node.cluster.onprem`, `tinkerbell-server.cluster.onprem`, `update-node.cluster.onprem`, `vault.cluster.onprem`, `vnc.cluster.onprem`, `web-ui.cluster.onprem`, `ws-app-service-proxy.cluster.onprem`, `fake.host`)"
+      priority: 9
+      service: "orch-kind"
+      entryPoints:
+        - "websecure"
+      tls:
+       passthrough: true
+    TCProuter2:
+      rule: HostSNI(`*`)
+      priority: 5
+      service: "boots-kind"
+      entryPoints:
+        - "websecure"
+      tls:
+        passthrough: true
+    TCProuter3:
+      rule: "HostSNI(`gitea.cluster.onprem`)"
+      priority: 20
+      service: "gitea-kind"
+      entryPoints:
+        - "websecure"
+      tls:
+        passthrough: true
+    TCProuter4:
+      rule: "HostSNI(`*`)"
+      priority: 10
+      service: "orch-kind-cira"
+      entryPoints:
+        - "tcpamt"
+      tls:
+        passthrough: true
+  services:
+    argo-kind:
+      loadBalancer:
+        servers:
+          - address: 172.18.255.20:443
+    orch-kind:
+      loadBalancer:
+        servers:
+          - address: 172.18.255.30:443
+    orch-kind-cira:
+      loadBalancer:
+        servers:
+          - address: 172.18.255.30:4433
+    boots-kind:
+      loadBalancer:
+        servers:
+          - address: 172.18.255.40:443
+    gitea-kind:
+      loadBalancer:
+        servers:
+          - address: 172.18.255.30:443
