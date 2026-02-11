@@ -501,10 +501,6 @@ jobs:
           docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
           token: ${{ secrets.SYS_EMF_GH_TOKEN }}
           deployment_type: all
-      - name: Collect diagnostics
-        if: always()
-        uses: ./.github/actions/collect_diagnostics
-        timeout-minutes: 15
       - name: Config DNSmasq
         run: |
           cd ci/ven
