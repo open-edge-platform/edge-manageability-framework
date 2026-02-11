@@ -19,9 +19,9 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
-    - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
-      chart: common/charts/tenancy-manager
-      targetRevision: 26.0.1
+    - repoURL: https://github.com/open-edge-platform/orch-utils.git
+      path: charts/tenancy-manager
+      targetRevision: tm-enhancement
       helm:
         releaseName: {{$appName}}
         valuesObject:
