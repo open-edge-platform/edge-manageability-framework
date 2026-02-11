@@ -925,7 +925,7 @@ func (d Deploy) VENWithFlow(ctx context.Context, flow string, serialNumber strin
 		return fmt.Errorf("failed to change directory to 'ven': %w", err)
 	}
 
-	if err := sh.RunV("git", "checkout", "replace_nginx_haproxy"); err != nil {
+	if err := sh.RunV("git", "checkout", "pico/1.5.7"); err != nil {
 		return fmt.Errorf("failed to checkout specific commit: %w", err)
 	}
 
@@ -1161,7 +1161,7 @@ STANDALONE=0
 	cmd = exec.CommandContext(
 		ctx,
 		"terraform",
-		fmt.Sprintf("-chdir=%s", filepath.Join("modules", "pico/1.5.7")),
+		fmt.Sprintf("-chdir=%s", filepath.Join("modules", "pico-vm-libvirt")),
 		"init",
 		"--upgrade",
 	)
