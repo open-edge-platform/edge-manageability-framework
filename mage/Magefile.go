@@ -1161,7 +1161,7 @@ STANDALONE=0
 	cmd = exec.CommandContext(
 		ctx,
 		"terraform",
-		fmt.Sprintf("-chdir=%s", filepath.Join("modules", "pico-vm-libvirt")),
+		fmt.Sprintf("-chdir=%s", filepath.Join("modules", "pico/1.5.7")),
 		"init",
 		"--upgrade",
 	)
