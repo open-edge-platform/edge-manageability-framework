@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025 Intel Corporation
+# SPDX-FileCopyrightText: 2026 Intel Corporation
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -62,7 +62,10 @@ jobs:
       on-prem-oxm: ${{ contains(steps.check-files.outputs.changed_files, 'argocd/applications/configs/infra-') ||
         contains(steps.check-files.outputs.changed_files, 'argocd/applications/custom/infra-') ||
         contains(steps.check-files.outputs.changed_files, 'argocd/applications/templates/infra-') ||
-        contains(steps.check-files.outputs.changed_files, 'argocd/applications/values.yaml') }}
+        contains(steps.check-files.outputs.changed_files, 'argocd/applications/values.yaml') ||
+        contains(steps.check-files.outputs.changed_files, 'on-prem-installers') ||
+        contains(steps.check-files.outputs.changed_files, 'orch-configs') ||
+        contains(steps.check-files.outputs.changed_files, 'installer/generate_cluster_yaml.sh') }}
       onboarding: ${{ contains(steps.check-files.outputs.changed_files, 'argocd/applications/templates/infra-') || contains(steps.check-files.outputs.changed_files, 'argocd/applications/values.yaml') }}
       shell: ${{ contains(steps.check-files.outputs.changed_files, '.sh') || contains(steps.check-files.outputs.changed_files, '.bash') }}
       terraform: ${{ contains(steps.check-files.outputs.changed_files, '.hcl') || contains(steps.check-files.outputs.changed_files, '.tf') || contains(steps.check-files.outputs.changed_files, '.tfvars') }}
@@ -289,6 +292,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
           repository: open-edge-platform/orch-ci
+          token: ${{ secrets.SYS_EMF_GH_TOKEN }}
           path: orch-ci
           persist-credentials: false
 
@@ -487,10 +491,6 @@ jobs:
           docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
           token: ${{ secrets.SYS_EMF_GH_TOKEN }}
           deployment_type: all
-      - name: Collect diagnostics
-        if: always()
-        uses: ./.github/actions/collect_diagnostics
-        timeout-minutes: 15
       - name: Run policy compliance tests
         run: mage test:policyCompliance
       - name: Run image pull policy compliance tests
@@ -659,6 +659,13 @@ jobs:
           path: |
             smoke-test/logs/*
 
+      - name: Collect diagnostics
+        if: always()
+        uses: ./.github/actions/collect_diagnostics
+        timeout-minutes: 15
+        with:
+          k8s_diagnostics_args: "--errors-only --include-logs --output-html --output-json"
+
   deploy-on-prem:
     permissions:
       contents: read
@@ -706,6 +713,7 @@ jobs:
       - name: Deploy On-Prem Orchestrator
         id: deploy-on-prem
         uses: ./.github/actions/deploy_on_prem
+        timeout-minutes: 60
         with:
           orch_version: ${{ github.event.pull_request.head.sha }}
           docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
@@ -745,7 +753,7 @@ jobs:
 
       - name: Run Golden Suite Robot Framework Tests
         id: robot-tests
-        timeout-minutes: 45
+        timeout-minutes: 30
         working-directory: edge-manage-test-automation
         env:
           KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
@@ -772,6 +780,13 @@ jobs:
           path: |
             edge-manage-test-automation/robot_output/**/*
 
+      - name: Collect diagnostics
+        if: always()
+        uses: ./.github/actions/collect_diagnostics
+        timeout-minutes: 15
+        with:
+          k8s_diagnostics_args: "--errors-only --include-logs --output-html --output-json"
+
   deploy-oxm-profile:
     permissions:
       contents: read
@@ -788,8 +803,9 @@ jobs:
       - check-changed-files
     if: |
       always() &&
-      needs.build-publish.result == 'success' &&
-      needs.check-changed-files.outputs.on-prem-oxm == 'true'
+      needs.build-publish.result == 'success' && (
+      needs.check-changed-files.outputs.on-prem-oxm == 'true' ||
+      needs.check-changed-files.outputs.ci == 'true' )
     runs-on: ubuntu-22.04-16core-64GB
     timeout-minutes: 90
     env:
@@ -803,6 +819,7 @@ jobs:
       - name: Deploy OXM Orchestrator Profile
         id: deploy-oxm-profile
         uses: ./.github/actions/deploy_on_prem
+        timeout-minutes: 60
         env:
           TF_VAR_no_proxy: "localhost,127.0.0.0/8,10.0.0.0/8,192.168.0.0/16,.svc,.cluster.local,.default,.internal,.orch-platform,.orch-app,.orch-cluster,.orch-infra,.orch-database,.cattle-system,.orch-secret,.onprem"
           TF_VAR_en_http_proxy: "http://192.168.99.30:8080"
@@ -837,6 +854,13 @@ jobs:
           TEST_EXIT_CODE=$?
           sudo cat /var/log/libvirt/qemu/edge-node-EN123456789-console.log || true
           exit $TEST_EXIT_CODE
+
+      - name: Collect diagnostics
+        if: always()
+        uses: ./.github/actions/collect_diagnostics
+        timeout-minutes: 15
+        with:
+          k8s_diagnostics_args: "--errors-only --include-logs --output-html --output-json"
 
   tag-repo:
     permissions:

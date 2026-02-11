@@ -1631,8 +1631,8 @@ post_upgrade_cleanup() {
     delete_app "tenancy-datamodel" "onprem"
 
     echo "[INFO] Deleting deployment os-resource-manager in namespace orch-infra..."
-    kubectl delete deployment -n orch-infra os-resource-manager || true
-    kubectl delete pod -n orch-infra -l app.kubernetes.io/name=dkam 2>/dev/null
+    #kubectl delete deployment -n orch-infra os-resource-manager || true
+    #kubectl delete pod -n orch-infra -l app.kubernetes.io/name=dkam 2>/dev/null 
     check_and_download_dkam_certs
     #echo "[INFO] Post-upgrade cleanup completed."
     console_success "[✓] Post-upgrade cleanup completed"
