@@ -61,6 +61,8 @@ apiv2:
   {{- end}}
   {{- end}}
   {{- end}}
+  apiv2IngressRoute:
+    apiHostname: api.{{ .Values.argo.clusterDomain }}
   metrics:
     enabled: {{ index .Values.argo "infra-core" "enableMetrics" | default false }}
 
