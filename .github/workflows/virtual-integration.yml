@@ -535,6 +535,8 @@ jobs:
           
       - name: Kind VEN Onboarding
         env:
+          TF_VAR_libvirt_network_name: default
+          TF_VAR_libvirt_pool_name: default
           E2E_SVC_DOMAIN: kind.internal
           EDGE_CLUSTER_NAME: test-cluster
           EN_PROFILE: "microvisor-standalone"
