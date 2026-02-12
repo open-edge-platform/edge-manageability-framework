@@ -200,13 +200,13 @@ if [ "$DEPLOY_TYPE" = "onprem" ]; then
     # Prompt for required IPs
     prompt_for_ip "ARGO_IP" "Argo IP"
     prompt_for_ip "TRAEFIK_IP" "Traefik IP"
-    prompt_for_ip "NGINX_IP" "Nginx IP"
+    prompt_for_ip "HAPROXY_IP" "HAProxy IP"
 
     echo
     echo "✅ Using the following valid IPs:"
     echo "   ArgoIP:     $ARGO_IP"
     echo "   TraefikIP:  $TRAEFIK_IP"
-    echo "   NginxIP:    $NGINX_IP"
+    echo "   HaproxyIP:  $HAPROXY_IP"
     echo
 
     # O11Y disable check
@@ -247,7 +247,8 @@ if [ "$DEPLOY_TYPE" = "onprem" ]; then
             export O11Y_ENABLE_PROFILE="#- orch-configs/profiles/enable-o11y.yaml"
             export O11Y_PROFILE="#- orch-configs/profiles/o11y-onprem.yaml"
             export CO_PROFILE="#- orch-configs/profiles/enable-cluster-orch.yaml"
-            export AO_PROFILE="#- orch-configs/profiles/enable-app-orch.yaml"            
+            export AO_PROFILE="#- orch-configs/profiles/enable-app-orch.yaml"
+            export GITEA_ENABLED="false"
             ;;
         *)
             echo "❌ Invalid ORCH_INSTALLER_PROFILE: ${ORCH_INSTALLER_PROFILE}"
