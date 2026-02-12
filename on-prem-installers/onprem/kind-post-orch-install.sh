@@ -797,7 +797,7 @@ generate_cluster_yaml_onprem_from_upstream
 # - Default: install Gitea
 # - Skip when Application Orchestrator is disabled (--disable-ao)
 # - Allow explicit override via env var GITEA_ENABLED=false
-if [[ "${DISABLE_AO_PROFILE:-false}" == "true" ]]; then
+if [[ "${DISABLE_AO_PROFILE:-false}" == "true" || "${ORCH_INSTALLER_PROFILE}" == "onprem-vpro" ]]; then
   INSTALL_GITEA="false"
 elif [[ "${GITEA_ENABLED:-true}" != "true" ]]; then
   INSTALL_GITEA="false"
