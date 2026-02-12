@@ -8,7 +8,7 @@
 argo:
   enabled:
     auth-service: true
-    ingress-nginx: true
+    ingress-haproxy: true
     cert-manager: true
     certificate-file-server: true
     component-status: true
@@ -28,7 +28,7 @@ argo:
     keycloak-operator: true
     metadata-broker: true
     multitenant_gateway: true
-    nginx-ingress-pxe-boots: true
+    haproxy-ingress-pxe-boots: true
     platform-autocert: true
     platform-keycloak: true
     prometheus-crd: true
