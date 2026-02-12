@@ -925,7 +925,7 @@ func (d Deploy) VENWithFlow(ctx context.Context, flow string, serialNumber strin
 		return fmt.Errorf("failed to change directory to 'ven': %w", err)
 	}
 
-	if err := sh.RunV("git", "checkout", "pico/1.5.6"); err != nil {
+	if err := sh.RunV("git", "checkout", "pico/1.5.7"); err != nil {
 		return fmt.Errorf("failed to checkout specific commit: %w", err)
 	}
 
@@ -1055,7 +1055,7 @@ STANDALONE=0
 		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
 
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("https://tinkerbell-nginx.%s/tink-stack/keys/Full_server.crt", serviceDomain), nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("https://tinkerbell-haproxy.%s/tink-stack/keys/Full_server.crt", serviceDomain), nil)
 		if err != nil {
 			fmt.Printf("Failed to create request: %v\n", err)
 			time.Sleep(10 * time.Second)
@@ -1182,7 +1182,7 @@ STANDALONE=0
 		"apply",
 		fmt.Sprintf("--parallelism=%d", runtime.NumCPU()), // Set parallelism to the number of CPUs on the machine
 		fmt.Sprintf("-var=vm_name=%s", data.VmName),
-		fmt.Sprintf("-var=tinkerbell_nginx_domain=%s", fmt.Sprintf("tinkerbell-nginx.%s", serviceDomain)),
+		fmt.Sprintf("-var=tinkerbell_haproxy_domain=%s", fmt.Sprintf("tinkerbell-haproxy.%s", serviceDomain)),
 		fmt.Sprintf("-var=smbios_serial=%s", serialNumber),
 		fmt.Sprintf("-var=smbios_uuid=%s", ""),
 		fmt.Sprintf("-var=disk_size=%s", data.SdaDiskSize),
