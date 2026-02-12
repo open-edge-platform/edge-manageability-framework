@@ -92,6 +92,7 @@ sequenceDiagram
     Operator->>Traefik: kubectl exec touch /data/maintenance.trigger
     Note over Traefik,Plugin: Maintenance mode ACTIVE
 ```
+
 ### Configuration
 
 #### 1. ConfigMap Creation
@@ -258,6 +259,7 @@ spec:
    - Access the application URL
    - Should see maintenance page with HTTP 503 status
    - Verify middleware is active:
+
      ```bash
      kubectl -n orch-gateway get middleware maintenance-plugin
      ```
@@ -310,8 +312,8 @@ spec:
 - [Keycloak Maintenance Theme ADR](./keycloak-maintenance-theme.md) -
   Authentication-layer maintenance approach
 - Traefik Middleware Documentation:
-  https://doc.traefik.io/traefik/middlewares/overview/
-- Traefik Plugins: https://plugins.traefik.io/
+  <https://doc.traefik.io/traefik/middlewares/overview/>
+- Traefik Plugins: <https://plugins.traefik.io/>
 
 ## Security Considerations
 
