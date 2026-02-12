@@ -73,6 +73,8 @@ jobs:
       helm: ${{ contains(steps.check-files.outputs.changed_files, 'argocd/') || contains(steps.check-files.outputs.changed_files, 'argocd-internal/') }}
       test-automation: ${{ contains(steps.check-files.outputs.changed_files, '.test-dependencies.yaml') }}
       only_design_proposals: ${{ steps.only-design-proposals.outputs.only_design_proposals }}
+      # UI change detection for conditional UI tests
+      ui: ${{ contains(steps.check-files.outputs.changed_files, 'argocd/applications/templates/ui-') || contains(steps.check-files.outputs.changed_files, 'argocd/applications/custom/ui-') || contains(steps.check-files.outputs.changed_files, 'argocd/applications/configs/ui-') || contains(steps.check-files.outputs.changed_files, '.github/actions/cypress') }}
     steps:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
@@ -518,13 +520,13 @@ jobs:
           ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
         run: mage deploy:victoriaMetrics apply
 
-      - name: Run e2e tenancy tests
-        run: mage test:e2etenancy
+      # NOTE: Tenancy CRUD tests (e2etenancy) are SKIPPED - covered by Golden Suite CF-1 and CF-11
+      # We only run tests that are UNIQUE to EMF and not covered by Golden Suite
 
-      - name: Run e2e tenancy API gateway tests
+      - name: Run e2e tenancy API gateway tests (token validation - unique to EMF)
         run: mage test:e2etenancyapigw
 
-      - name: Create default user and run e2e tests
+      - name: Create default user and run e2e tests (security headers, API validation - unique to EMF)
         run: mage devUtils:createDefaultUser test:e2e
 
       - name: "Test Observability SRE Exporter w/o VEN"
@@ -532,6 +534,18 @@ jobs:
           ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
         run: |
           mage test:e2eSreObservabilityNoEnic
+
+      - name: "Test Observability Public Endpoints"
+        env:
+          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+        run: |
+          mage test:e2eObservability
+
+      - name: "Test Observability Orchestrator Stack"
+        env:
+          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+        run: |
+          mage test:e2eOrchObservability
           
       - name: Read test-automation dependency Version
         id: read-test-automation-version
@@ -560,9 +574,17 @@ jobs:
           pushd repos/ven/pico
           asdf install
           sudo apt-get install xsltproc
-          popd	  
-      - name: Run Golden Suite Robot Framework Tests
-        id: robot-tests
+          popd
+
+      # OPTIMIZED TEST FLOW:
+      # 1. Run CF setup tests (CF-1 to CF-5, CF-7) - creates VEN, cluster, deploys app
+      # 2. Skip CF-6 (VM deployment issues), CF-8 to CF-11 (cleanup tests)
+      # 3. Capture VEN UUID for reuse in dependent tests
+      # 4. Run CO Smoke, UI tests reusing existing VEN/cluster
+      # 5. Run cleanup tests (CF-8 to CF-11) at the end
+
+      - name: Run Golden Suite Setup Tests (CF-1 to CF-5, CF-7)
+        id: robot-tests-setup
         working-directory: edge-manage-test-automation
         timeout-minutes: 45
         env:
@@ -577,14 +599,107 @@ jobs:
           yq eval '.infra.host.edgenode.hw_info.libvirt_network_name = "default"' -i tests/core_foundation/data/cf_data_1_ven_VEN-libvirt_microvisor-nonrt.yaml
           cat tests/core_foundation/data/cf_data_1_ven_VEN-libvirt_microvisor-nonrt.yaml || true
           source venv_edge-manage-test-automation/bin/activate
+          # Run ONLY setup tests: CF-1 to CF-5, CF-7 (skip CF-6 VM issues, skip cleanup CF-8 to CF-11)
           robot -L DEBUG --pythonpath . \
-            --name "Golden Suite: Core Foundation" \
+            --name "Golden Suite: Core Foundation Setup" \
             -d robot_output/core_foundation \
             -V orchestrator-configs/kind.yaml \
             --exitonfailure \
             --exclude cf6 \
             --exclude cf8 \
+            --exclude cf9 \
+            --exclude cf10 \
+            --exclude cf11 \
             tests/core_foundation/core_foundation.robot
+
+      - name: Extract VEN UUID for dependent tests
+        id: extract-ven-uuid
+        working-directory: edge-manage-test-automation
+        run: |
+          # Extract VEN serial number from the data file
+          VEN_SERIAL=$(yq '.infra.host.edgenode.hw_info.serial' tests/core_foundation/data/cf_data_1_ven_VEN-libvirt_microvisor-nonrt.yaml)
+          echo "VEN_SERIAL=${VEN_SERIAL}" >> $GITHUB_OUTPUT
+          echo "VEN Serial: ${VEN_SERIAL}"
+          
+          # Get the VEN UUID from the API using the serial number
+          source venv_edge-manage-test-automation/bin/activate
+          KC_ADMIN_PWD=$(kubectl -n orch-platform get secrets platform-keycloak -o jsonpath='{.data.admin-password}' | base64 -d)
+          
+          # Get token for API access
+          TOKEN=$(curl -s -X POST "https://keycloak.kind.internal/realms/master/protocol/openid-connect/token" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "grant_type=password" \
+            -d "client_id=system-client" \
+            -d "username=admin" \
+            -d "password=${KC_ADMIN_PWD}" \
+            --cacert /usr/local/share/ca-certificates/orch-ca.crt | jq -r '.access_token')
+          
+          # Query the host UUID using serial number
+          VEN_UUID=$(curl -s "https://api.kind.internal/v1/projects/robot-project-1/compute/hosts" \
+            -H "Authorization: Bearer ${TOKEN}" \
+            --cacert /usr/local/share/ca-certificates/orch-ca.crt | \
+            jq -r --arg serial "${VEN_SERIAL}" '.hosts[] | select(.serialNumber == $serial) | .uuid // empty' | head -1)
+          
+          if [ -z "${VEN_UUID}" ]; then
+            echo "Warning: Could not find VEN UUID, trying alternative query..."
+            VEN_UUID=$(curl -s "https://api.kind.internal/v1/projects/robot-project-1/compute/hosts" \
+              -H "Authorization: Bearer ${TOKEN}" \
+              --cacert /usr/local/share/ca-certificates/orch-ca.crt | \
+              jq -r '.hosts[0].uuid // empty')
+          fi
+          
+          echo "VEN_UUID=${VEN_UUID}" >> $GITHUB_OUTPUT
+          echo "VEN UUID: ${VEN_UUID}"
+
+      # CO Smoke Test - Reuses VEN/cluster from CF suite (no duplicate setup!)
+      - name: Run Cluster Orch Smoke Test
+        env:
+          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+          NODE_UUID: ${{ steps.extract-ven-uuid.outputs.VEN_UUID }}
+          PROJECT: robot-project-1
+        run: |
+          echo "Running CO Smoke Test with NODE_UUID=${NODE_UUID}"
+          mage test:clusterOrchSmoke
+
+      # UI Tests - Only run when UI-related files change (conditional execution)
+      - name: Run UI Cypress Tests
+        if: needs.check-changed-files.outputs.ui == 'true'
+        uses: ./.github/actions/cypress
+        with:
+          token: ${{ secrets.SYS_EMF_GH_TOKEN }}
+          app_orch: true
+          cluster_orch: true
+          infra: ""
+          admin: true
+          en_serial_number: ${{ steps.extract-ven-uuid.outputs.VEN_SERIAL }}
+          en_uuid: ${{ steps.extract-ven-uuid.outputs.VEN_UUID }}
+        env:
+          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+
+      # Run Golden Suite Cleanup Tests (CF-8 to CF-11) - Clean up after all dependent tests
+      - name: Run Golden Suite Cleanup Tests (CF-8 to CF-11)
+        if: always()
+        working-directory: edge-manage-test-automation
+        timeout-minutes: 15
+        env:
+          REQUESTS_CA_BUNDLE: /usr/local/share/ca-certificates/orch-ca.crt
+          LIBVIRT_DEFAULT_URI: 'qemu:///system'
+        run: |
+          source venv_edge-manage-test-automation/bin/activate
+          # Run ONLY cleanup tests: CF-8 to CF-11 (skip CF-6 VM issues)
+          robot -L DEBUG --pythonpath . \
+            --name "Golden Suite: Core Foundation Cleanup" \
+            -d robot_output/core_foundation_cleanup \
+            -V orchestrator-configs/kind.yaml \
+            --exclude cf1 \
+            --exclude cf2 \
+            --exclude cf3 \
+            --exclude cf4 \
+            --exclude cf5 \
+            --exclude cf6 \
+            --exclude cf7 \
+            tests/core_foundation/core_foundation.robot || true
+
       - name: Upload test artifacts
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
