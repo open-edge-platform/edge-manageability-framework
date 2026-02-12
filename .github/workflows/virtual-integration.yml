@@ -533,6 +533,19 @@ jobs:
         run: |
           mage test:e2eSreObservabilityNoEnic
           
+      - name: Kind VEN Onboarding
+        env:
+          E2E_SVC_DOMAIN: kind.internal
+          EDGE_CLUSTER_NAME: test-cluster
+          EN_PROFILE: "microvisor-standalone"
+        timeout-minutes: 20
+        run: |
+          set +e
+          mage test:onboarding
+          TEST_EXIT_CODE=$?
+          sudo cat /var/log/libvirt/qemu/edge-node-EN123456789-console.log || true
+          exit $TEST_EXIT_CODE
+          
       - name: Read test-automation dependency Version
         id: read-test-automation-version
         shell: bash
