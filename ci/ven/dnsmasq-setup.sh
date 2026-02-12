@@ -87,7 +87,7 @@ function update_host_lb_ip() {
     # cluster_lb=$ip_address
     
     cat <<EOL | sudo tee /etc/dnsmasq.d/cluster-hosts-dns.conf
-address=/tinkerbell-nginx.$CLUSTER_FQDN/$tinkerbell_lb
+address=/tinkerbell-haproxy.$CLUSTER_FQDN/$tinkerbell_lb
 address=/argo.$CLUSTER_FQDN/$argocd_lb
 address=/$CLUSTER_FQDN/$cluster_lb
 address=/alerting-monitor.$CLUSTER_FQDN/$cluster_lb
@@ -126,6 +126,10 @@ address=/vault.$CLUSTER_FQDN/$cluster_lb
 address=/vnc.$CLUSTER_FQDN/$cluster_lb
 address=/web-ui.$CLUSTER_FQDN/$cluster_lb
 address=/ws-app-service-proxy.$CLUSTER_FQDN/$cluster_lb
+address=/mps.$CLUSTER_FQDN/$cluster_lb
+address=/rps.$CLUSTER_FQDN/$cluster_lb
+address=/mps-wss.$CLUSTER_FQDN/$cluster_lb
+address=/rps-wss.$CLUSTER_FQDN/$cluster_lb
 EOL
 }
 
