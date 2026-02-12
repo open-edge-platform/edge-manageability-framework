@@ -86,16 +86,20 @@ componentStatus:
           installed: {{ if hasKey .Values.argo "infra-onboarding" }}{{ $infraOnboarding := index .Values.argo "infra-onboarding" }}{{ if hasKey $infraOnboarding "onboarding-manager" }}{{ $onboardingMgr := index $infraOnboarding "onboarding-manager" }}{{ $onboardingMgr.enabled | default false }}{{ else }}false{{ end }}{{ else }}false{{ end }}
         
         # OOB (Out-of-Band) - vPRO/AMT management capabilities
-        # Detection - infra-external enabled in argo.enabled (OXM profile sets this to false)
+        # Detection - AMT components (MPS, RPS, DM-Manager) enabled in modular vPRO architecture
+        # Checks for infra-external.amt.*.enabled flags (default: true unless explicitly disabled)
+        # If infra-external.amt section doesn't exist, falls back to legacy infra-external enabled check
         # Only available in vPRO profile, not in OXM (microvisor) profile
         oob:
-          installed: {{ if hasKey .Values.argo.enabled "infra-external" }}{{ index .Values.argo.enabled "infra-external" | default false }}{{ else }}false{{ end }}
+          installed: {{ if hasKey .Values.argo "infra-external" }}{{ $infraExt := index .Values.argo "infra-external" }}{{ if hasKey $infraExt "amt" }}{{ $amt := index $infraExt "amt" }}{{ or (dig "mps" "enabled" true $amt) (dig "rps" "enabled" true $amt) (dig "dm-manager" "enabled" true $amt) }}{{ else }}{{ if hasKey .Values.argo.enabled "infra-external" }}{{ index .Values.argo.enabled "infra-external" | default false }}{{ else }}false{{ end }}{{ end }}{{ else }}{{ if hasKey .Values.argo.enabled "infra-external" }}{{ index .Values.argo.enabled "infra-external" | default false }}{{ else }}false{{ end }}{{ end }}
         
         # Provisioning - OS provisioning workflow capability
-        # Detection - provisioning available when infra-onboarding is deployed
-        # Available in both vPRO (standard OS) and OXM (microvisor) profiles
+        # Detection - provisioning available when infra-onboarding is deployed AND skipOSProvisioning is not set to true
+        # skipOSProvisioning flag can be set at infra-onboarding level or tenant-controller level
+        # When skipOSProvisioning=true, provisioning is disabled (vPRO AMT-only workflow without OS provisioning)
+        # Available in both vPRO (standard OS) and OXM (microvisor) profiles, unless explicitly skipped
         provisioning:
-          installed: {{ index .Values.argo.enabled "infra-onboarding" | default false }}
+          installed: {{ if index .Values.argo.enabled "infra-onboarding" | default false }}{{ $skipProvisioningOnboarding := false }}{{ $skipProvisioningTenantCtl := false }}{{ if hasKey .Values.argo "infra-onboarding" }}{{ $infraOnboarding := index .Values.argo "infra-onboarding" }}{{ if hasKey $infraOnboarding "skipOSProvisioning" }}{{ $skipProvisioningOnboarding = index $infraOnboarding "skipOSProvisioning" }}{{ end }}{{ end }}{{ if hasKey .Values.argo "infra-core" }}{{ $infraCore := index .Values.argo "infra-core" }}{{ if hasKey $infraCore "tenant-controller" }}{{ $tenantCtl := index $infraCore "tenant-controller" }}{{ if hasKey $tenantCtl "skipOSProvisioning" }}{{ $skipProvisioningTenantCtl = index $tenantCtl "skipOSProvisioning" }}{{ end }}{{ end }}{{ end }}{{ not (or $skipProvisioningOnboarding $skipProvisioningTenantCtl) }}{{ else }}false{{ end }}
       
       # Orchestrator Observability - Metrics and monitoring for orchestrator platform components
       # Detection - orchestrator-observability application enabled
