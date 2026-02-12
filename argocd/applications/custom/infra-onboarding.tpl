@@ -67,7 +67,7 @@ infra-config:
     systemConfigKernelPanic: "{{ index .Values.argo "infra-onboarding" "systemConfigKernelPanic" | default "10" }}"
 
     cdnSvc: {{ .Values.argo.releaseService.fileServer }}
-    provisioningSvc: tinkerbell-nginx.{{ .Values.argo.clusterDomain }}
+    provisioningSvc: tinkerbell-haproxy.{{ .Values.argo.clusterDomain }}
     tinkerSvc: tinkerbell-server.{{ .Values.argo.clusterDomain }}
     omSvc: onboarding-node.{{ .Values.argo.clusterDomain }}
     omStreamSvc: onboarding-stream.{{ .Values.argo.clusterDomain }}
@@ -91,7 +91,7 @@ tinkerbell:
   traefikReverseProxy:
     enabled: &traefikReverseProxy_enabled true
     tinkServerDnsname: "tinkerbell-server.{{ .Values.argo.clusterDomain }}"
-    nginxDnsname: &nginxDnsname "tinkerbell-nginx.{{ .Values.argo.clusterDomain }}"
+    nginxDnsname: &nginxDnsname "tinkerbell-haproxy.{{ .Values.argo.clusterDomain }}"
   stack:
     resources:
       limits:

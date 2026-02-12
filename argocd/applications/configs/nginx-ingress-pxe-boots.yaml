@@ -1,0 +1,10 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Common name and DNS SAN of the self-signed TLS certificate
+# This will be overridden by custom template with actual cluster domain
+commonName: "tinkerbell-nginx.cluster.local"
+nginxIngressRateLimit:
+  rps: 500
+  connections: 70
