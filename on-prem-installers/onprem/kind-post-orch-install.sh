@@ -228,7 +228,7 @@ print_env_variables() {
   echo "         Environment Variables"
   echo "========================================"
   printf "%-25s: %s\n" "ORCH_INSTALLER_PROFILE" "${ORCH_INSTALLER_PROFILE:-}"
-  printf "%-25s: %s\n" "DEPLOY_VERSION" "${DEPLOY_VERSION:-}"
+  printf "%-25s: %s\n" "DEPLOY_REPO_BRANCH/tag/commit-id" "${DEPLOY_REPO_BRANCH:-}"
   echo "========================================"; echo
 }
 
