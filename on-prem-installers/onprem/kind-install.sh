@@ -30,6 +30,13 @@ apiVersion: kind.x-k8s.io/v1alpha4
 networking:
   apiServerAddress: "127.0.0.1"
   apiServerPort: 6443
+nodes:
+- role: control-plane
+  kubeadmConfigPatches:
+  - |
+    kind: KubeletConfiguration
+    maxPods: 250
+    serializeImagePulls: false
 EOF
 }
 
