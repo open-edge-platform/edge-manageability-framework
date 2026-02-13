@@ -21,6 +21,7 @@ root:
     ${PROFILE_FILE_NAME_EXT}
     ${EMAIL_PROFILE}
     ${O11Y_PROFILE}
+    ${EIM_SCENARIO_PROFILE}
     ${SINGLE_TENANCY_PROFILE}
     ${EXPLICIT_PROXY_PROFILE}
     - orch-configs/profiles/resource-default.yaml
