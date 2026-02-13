@@ -273,9 +273,8 @@ elif [ "$DEPLOY_TYPE" = "aws" ]; then
         export EIM_SCENARIO_PROFILE="- orch-configs/profiles/eim-scenario-noobb.yaml"
     else
         export O11Y_ENABLE_PROFILE="- orch-configs/profiles/enable-o11y.yaml"
-        export EIM_SCENARIO_PROFILE="#- orch-configs/profiles/eim-scenario-noobb.yaml"
-    fi
         export O11Y_PROFILE="- orch-configs/profiles/o11y-release.yaml"
+        export EIM_SCENARIO_PROFILE="#- orch-configs/profiles/eim-scenario-noobb.yaml"
         if [[ "$CLUSTER_SCALE_PROFILE" =~ ^(500en|1ken|10ken)$ ]]; then
             export O11Y_PROFILE="- orch-configs/profiles/o11y-release-large.yaml"
         fi
