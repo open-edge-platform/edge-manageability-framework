@@ -7,6 +7,29 @@
 
 namespace: orch-platform
 
+# Keycloak instance resources
+keycloak:
+  resources:
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+    limits:
+      cpu: 3000m
+      memory: 6Gi
+  # Increase builder init container resources to avoid OOM during kc.sh build
+  unsupported:
+    podTemplate:
+      spec:
+        initContainers:
+          - name: keycloak-builder
+            resources:
+              requests:
+                cpu: 1000m
+                memory: 2Gi
+              limits:
+                cpu: 2000m
+                memory: 4Gi
+
 # Keycloak Config CLI job configuration
 keycloakConfigCli:
   enabled: true
