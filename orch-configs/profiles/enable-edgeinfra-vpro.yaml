@@ -5,7 +5,7 @@
 # Includes Edge Infrastructure Manager and UI
 # Use either this or enable-full
 
-# This enables Edge Infrastructure Manager to support 100 edge nodes.
+# This enables Modular Vpro Edge Infrastructure Manager to support 100 edge nodes.
 
 argo:
   enabled:
@@ -15,10 +15,18 @@ argo:
     infra-onboarding: true
     web-ui-infra: false
     copy-keycloak-admin-to-infra: true
+    haproxy-ingress-pxe-boots: true
   infra-core:
+    eimScenario: vpro
+    skipOSProvisioning: true
     tenant-config:
       enabled: false
+    credentials:
+      enabled: true
     api:
+      enabled: false
+    apiv2:
+      enabled: true
       resources:
         requests:
           memory: "16Mi"
@@ -27,14 +35,9 @@ argo:
           memory: "64Gi"
           cpu: "64"
     exporter:
-      resources:
-        requests:
-          memory: "16Mi"
-          cpu: "10m"
-        limits:
-          memory: "64Gi"
-          cpu: "64"
+      enabled: false
     inventory:
+      enabled: true
       resources:
         requests:
           memory: "16Mi"
@@ -43,6 +46,7 @@ argo:
           memory: "64Gi"
           cpu: "64"
     tenant-controller:
+      enabled: true
       resources:
         requests:
           memory: "16Mi"
@@ -51,7 +55,9 @@ argo:
           memory: "64Gi"
           cpu: "64"
   infra-managers:
+    disabledProvisioning: true
     host-manager:
+      enabled: true
       resources:
         requests:
           memory: "16Mi"
@@ -60,38 +66,27 @@ argo:
           memory: "64Gi"
           cpu: "64"
     maintenance-manager:
-      resources:
-        requests:
-          memory: "16Mi"
-          cpu: "10m"
-        limits:
-          memory: "64Gi"
-          cpu: "64"
+      enabled: false
     telemetry-manager:
-      resources:
-        requests:
-          memory: "16Mi"
-          cpu: "10m"
-        limits:
-          memory: "64Gi"
-          cpu: "64"
+      enabled: false
     os-resource-manager:
-      resources:
-        requests:
-          memory: "16Mi"
-          cpu: "10m"
-        limits:
-          memory: "64Gi"
-          cpu: "64"
+      enabled: false
     networking-manager:
-      resources:
-        requests:
-          memory: "16Mi"
-          cpu: "10m"
-        limits:
-          memory: "64Gi"
-          cpu: "64"
+      enabled: false
+    attestationstatus-manager:
+      enabled: false
   infra-onboarding:
+    skipOSProvisioning: true
+    enServiceClients: "platform-manageability-agent"
+    enOutboundClients: " "
+    enMetricsEnabled: "false"
+    enTokenClients: "node-agent,platform-manageability-agent"
+    tinkerbell:
+      enabled: true
+    pxe-server:
+      enabled: false
+    infra-config:
+      enabled: true
     onboarding-manager:
       enabled: true
       resources:
@@ -102,6 +97,7 @@ argo:
           memory: "64Gi"
           cpu: "64"
     dkam:
+      enabled: true
       resources:
         requests:
           memory: "16Mi"
@@ -109,13 +105,32 @@ argo:
         limits:
           memory: "64Gi"
           cpu: "64"
-    pxe-server:
-      enabled: false
-      resources:
-        requests:
-          memory: "16Mi"
-          cpu: "10m"
-        limits:
-          memory: "64Gi"
-          cpu: "64"
-  infra-external: {}
+  infra-external:
+    amt:
+      mps:
+        enabled: true
+        resources:
+          requests:
+            memory: "16Mi"
+            cpu: "10m"
+          limits:
+            memory: "64Gi"
+            cpu: "64"
+      rps:
+        enabled: true
+        resources:
+          requests:
+            memory: "16Mi"
+            cpu: "10m"
+          limits:
+            memory: "64Gi"
+            cpu: "64"
+      dm-manager:
+        enabled: true
+        resources:
+          requests:
+            memory: "16Mi"
+            cpu: "10m"
+          limits:
+            memory: "64Gi"
+            cpu: "64"
