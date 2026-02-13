@@ -99,6 +99,8 @@ tinkerbell:
   pvc:
     enabled: true
     storageClassName: {{ index .Values.argo "infra-onboarding" "tinkerbellStorageClass" | default "standard" }}
+    accessModes:
+    - ReadWriteOnce
   traefikReverseProxy:
     enabled: &traefikReverseProxy_enabled true
     tinkServerDnsname: "tinkerbell-server.{{ .Values.argo.clusterDomain }}"
