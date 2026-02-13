@@ -20,6 +20,10 @@ import:
     enabled: {{ index .Values.argo "infra-onboarding" "onboarding-manager" "enabled" }}
   pxe-server:
     enabled: {{ index .Values.argo "infra-onboarding" "pxe-server" "enabled" }}
+  tinkerbell:
+    enabled: {{ index .Values.argo "infra-onboarding" "tinkerbell" "enabled" | default true }}
+    tinkerbell_tink:
+      enabled: {{ index .Values.argo "infra-onboarding" "tinkerbell" "tinkerbell_tink" "enabled" | default true }}
 
 infra-config:
   config:
@@ -50,6 +54,7 @@ infra-config:
     rsType: "{{ index .Values.argo "infra-onboarding" "rsType" | default "no-auth" }}"
     disableCoProfile: {{ index .Values.argo "infra-onboarding" "disableCoProfile" | default false }}
     disableO11yProfile: {{ index .Values.argo "infra-onboarding" "disableO11yProfile" | default false }}
+    skipOSProvisioning: {{ index .Values.argo "infra-onboarding" "infra-config" "skipOSProvisioning" | default false }}
     netIp: "{{ index .Values.argo "infra-onboarding" "netIp" | default "dynamic" }}"
     ntpServer: "{{ index .Values.argo "infra-onboarding" "ntpServer" | default "ntp1.server.org,ntp2.server.org" }}"
     {{- $nameServers := index .Values.argo "infra-onboarding" "nameServers" | default list }}
@@ -92,6 +97,7 @@ tinkerbell:
     tinkServerDnsname: "tinkerbell-server.{{ .Values.argo.clusterDomain }}"
     nginxDnsname: &nginxDnsname "tinkerbell-haproxy.{{ .Values.argo.clusterDomain }}"
   stack:
+    enabled: {{ index .Values.argo "infra-onboarding" "tinkerbell" "stack" "enabled" | default true }}
     resources:
       limits:
         {{- if .Values.argo.nginxCDN }}
@@ -110,6 +116,7 @@ tinkerbell:
         memory: 256Mi
         {{- end }}
   tinkerbell_tink:
+    enabled: {{ index .Values.argo "infra-onboarding" "tinkerbell" "tinkerbell_tink" "enabled" | default true }}
     server:
       metrics:
         enabled: {{ index .Values.argo "infra-onboarding" "enableMetrics" | default false }}
