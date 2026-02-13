@@ -581,6 +581,7 @@ jobs:
             --name "Golden Suite: Core Foundation" \
             -d robot_output/core_foundation \
             -V orchestrator-configs/kind.yaml \
+            -V tests/core_foundation/data/cf_data_2_ven_VEN-libvirt_ubuntu-24.04-lts.yaml \
             --exitonfailure \
             --exclude cf6 \
             --exclude cf8 \
