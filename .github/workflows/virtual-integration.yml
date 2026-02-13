@@ -73,6 +73,8 @@ jobs:
       helm: ${{ contains(steps.check-files.outputs.changed_files, 'argocd/') || contains(steps.check-files.outputs.changed_files, 'argocd-internal/') }}
       test-automation: ${{ contains(steps.check-files.outputs.changed_files, '.test-dependencies.yaml') }}
       only_design_proposals: ${{ steps.only-design-proposals.outputs.only_design_proposals }}
+      # UI change detection for conditional UI tests
+      ui: ${{ contains(steps.check-files.outputs.changed_files, 'argocd/applications/templates/ui-') || contains(steps.check-files.outputs.changed_files, 'argocd/applications/custom/ui-') || contains(steps.check-files.outputs.changed_files, 'argocd/applications/configs/ui-') || contains(steps.check-files.outputs.changed_files, '.github/actions/cypress') }}
     steps:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
@@ -518,13 +520,13 @@ jobs:
           ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
         run: mage deploy:victoriaMetrics apply
 
-      - name: Run e2e tenancy tests
-        run: mage test:e2etenancy
+      # NOTE: Tenancy CRUD tests (e2etenancy) are SKIPPED - covered by Golden Suite CF-1 and CF-11
+      # We only run tests that are UNIQUE to EMF and not covered by Golden Suite
 
-      - name: Run e2e tenancy API gateway tests
+      - name: Run e2e tenancy API gateway tests (token validation - unique to EMF)
         run: mage test:e2etenancyapigw
 
-      - name: Create default user and run e2e tests
+      - name: Create default user and run e2e tests (security headers, API validation - unique to EMF)
         run: mage devUtils:createDefaultUser test:e2e
 
       - name: "Test Observability SRE Exporter w/o VEN"
@@ -532,6 +534,18 @@ jobs:
           ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
         run: |
           mage test:e2eSreObservabilityNoEnic
+
+      - name: "Test Observability Public Endpoints"
+        env:
+          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+        run: |
+          mage test:e2eObservability
+
+      - name: "Test Observability Orchestrator Stack"
+        env:
+          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+        run: |
+          mage test:e2eOrchObservability
           
       - name: Read test-automation dependency Version
         id: read-test-automation-version
@@ -560,7 +574,20 @@ jobs:
           pushd repos/ven/pico
           asdf install
           sudo apt-get install xsltproc
-          popd	  
+          popd
+
+      # Golden Suite runs the following tests:
+      # CF-1: Tenancy Management (Create Org/Project)
+      # CF-2: Tenancy Isolation
+      # CF-3: Provision EN (VEN onboarding)
+      # CF-4: Single Node Cluster Creation
+      # CF-5: Deploy Container App (WordPress)
+      # CF-6: SKIPPED - VM deployment issues on Kind
+      # CF-7: Assert Metrics Collected
+      # CF-8: SKIPPED - Cleanup for CF-6 VM app (not deployed)
+      # CF-9: Cleanup Cluster
+      # CF-10: Cleanup Host
+      # CF-11: Cleanup Tenancy
       - name: Run Golden Suite Robot Framework Tests
         id: robot-tests
         working-directory: edge-manage-test-automation
@@ -585,6 +612,7 @@ jobs:
             --exclude cf6 \
             --exclude cf8 \
             tests/core_foundation/core_foundation.robot
+
       - name: Upload test artifacts
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
@@ -592,6 +620,28 @@ jobs:
           name: kind-${{ github.event_name }}-${{ github.event.number }}-robot-report
           path: |
             edge-manage-test-automation/robot_output/**/*
+
+      # UI Tests - Run tests that DON'T require VEN
+      # - Admin tests: Org admin, non-org admin smoke (NO VEN needed)
+      # - App Orch tests: Deployment package smoke (NO VEN needed)
+      # - Cluster Orch tests: SKIP - covered by Golden Suite CF-4
+      # - Infra tests: SKIP - need VEN serial/UUID, covered by Golden Suite CF-3
+      - name: Run UI Cypress Tests (Admin + App Orch)
+        if: needs.check-changed-files.outputs.ui == 'true'
+        uses: ./.github/actions/cypress
+        with:
+          token: ${{ secrets.SYS_EMF_GH_TOKEN }}
+          app_orch: true
+          cluster_orch: false
+          infra: ""
+          admin: true
+        env:
+          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+
+      # NOTE: The following tests are NOT run because they're covered by Golden Suite:
+      # - CO Smoke Test: Covered by CF-3 (Provision EN), CF-4 (Create Cluster), CF-5 (Deploy App)
+      # - UI Cluster Orch: Covered by Golden Suite CF-4
+      # - UI Infra tests: Covered by Golden Suite CF-3 (need VEN serial/UUID)
 
       - name: Collect diagnostics
         if: always()
