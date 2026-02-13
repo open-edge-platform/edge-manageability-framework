@@ -97,12 +97,14 @@ infra-config:
 
 tinkerbell:
   pvc:
+    enabled: true
     storageClassName: {{ index .Values.argo "infra-onboarding" "tinkerbellStorageClass" | default "standard" }}
   traefikReverseProxy:
     enabled: &traefikReverseProxy_enabled true
     tinkServerDnsname: "tinkerbell-server.{{ .Values.argo.clusterDomain }}"
     nginxDnsname: &nginxDnsname "tinkerbell-haproxy.{{ .Values.argo.clusterDomain }}"
   stack:
+    enabled: true
     resources:
       limits:
         {{- if .Values.argo.nginxCDN }}
@@ -120,11 +122,32 @@ tinkerbell:
         cpu: 200m
         memory: 256Mi
         {{- end }}
+    hook:
+      {{- if index .Values.argo "infra-onboarding" "skipOSProvisioning" }}
+      enabled: false
+      {{- end }}
   tinkerbell_tink:
+    {{- if index .Values.argo "infra-onboarding" "skipOSProvisioning" }}
+    enabled: false
+    controller:
+      enabled: false
     server:
+      enabled: false
       metrics:
         enabled: {{ index .Values.argo "infra-onboarding" "enableMetrics" | default false }}
+    {{- else }}
+    enabled: true
+    controller:
+      enabled: true
+    server:
+      enabled: true
+      metrics:
+        enabled: {{ index .Values.argo "infra-onboarding" "enableMetrics" | default false }}
+    {{- end }}
   tinkerbell_smee:
+    {{- if index .Values.argo "infra-onboarding" "skipOSProvisioning" }}
+    enabled: false
+    {{- end }}
     # these additional arguments serve as kernel arguments for Edge Node
     additionalKernelArgs:
       - "http_proxy={{ .Values.argo.proxy.enHttpProxy }}"
@@ -139,6 +162,10 @@ tinkerbell:
     traefikReverseProxy:
       enabled: *traefikReverseProxy_enabled
       nginxDnsname: *nginxDnsname
+  tinkerbell_hegel:
+    {{- if index .Values.argo "infra-onboarding" "skipOSProvisioning" }}
+    enabled: false
+    {{- end }}
 
 dkam:
   pvc:

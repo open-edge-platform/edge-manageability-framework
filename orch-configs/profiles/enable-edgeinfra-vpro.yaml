@@ -15,6 +15,7 @@ argo:
     infra-onboarding: true
     web-ui-infra: false
     copy-keycloak-admin-to-infra: true
+    haproxy-ingress-pxe-boots: true
   infra-core:
     eimScenario: vpro
     skipOSProvisioning: true
@@ -81,7 +82,7 @@ argo:
     enMetricsEnabled: "false"
     enTokenClients: "node-agent,platform-manageability-agent"
     tinkerbell:
-      enabled: false
+      enabled: true
     pxe-server:
       enabled: false
     infra-config:
