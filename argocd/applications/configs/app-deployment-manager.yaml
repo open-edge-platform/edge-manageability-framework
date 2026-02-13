@@ -18,7 +18,7 @@ adm:
   fleetGitClientSecretName: app-gitea-credential
   gitUseCaCert: true
   releaseServiceProxy:
-    repo: "oci://rs-proxy.orch-platform.svc.cluster.local:8443"
+    repo: "oci://registry-rs.edgeorchestration.intel.com"
     repoSecret: "fleet-rs-secret"
     remoteNamespace: "orch-platform"
   apiExtension:
