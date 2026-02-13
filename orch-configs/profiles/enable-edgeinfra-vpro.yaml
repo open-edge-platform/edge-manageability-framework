@@ -17,6 +17,7 @@ argo:
     copy-keycloak-admin-to-infra: true
   infra-core:
     eimScenario: vpro
+    skipOSProvisioning: true
     tenant-config:
       enabled: false
     credentials:
@@ -45,7 +46,6 @@ argo:
           cpu: "64"
     tenant-controller:
       enabled: true
-      skipOSProvisioning: true
       resources:
         requests:
           memory: "16Mi"
@@ -54,6 +54,7 @@ argo:
           memory: "64Gi"
           cpu: "64"
   infra-managers:
+    disabledProvisioning: true
     host-manager:
       enabled: true
       resources:

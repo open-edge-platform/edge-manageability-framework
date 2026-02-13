@@ -94,7 +94,7 @@ inventory:
 tenant-controller:
   managerArgs:
     enableTracing: {{ index .Values.argo "infra-core" "enableTracing" | default false }}
-    skipOSProvisioning: {{ index .Values.argo "infra-core" "tenant-controller" "skipOSProvisioning" | default false }}
+    skipOSProvisioning: {{ index .Values.argo "infra-core" "skipOSProvisioning" | default false }}
 {{- if and (index .Values.argo "infra-external") (index .Values.argo "infra-external" "loca") }}
   lenovoConfig:
   {{ $clusterDomain := .Values.argo.clusterDomain }}

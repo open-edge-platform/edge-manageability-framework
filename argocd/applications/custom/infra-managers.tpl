@@ -30,6 +30,7 @@ import:
     enabled: {{ dig "infra-managers" "attestationstatus-manager" "enabled" true .Values.argo }}
 
 host-manager:
+  disabledProvisioning: {{ index .Values.argo "infra-managers" "disabledProvisioning" | default false }}
   serviceArgs:
     enableTracing: {{ index .Values.argo "infra-managers" "enableTracing" | default false }}
   traefikReverseProxy:
