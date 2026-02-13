@@ -34,6 +34,9 @@ api:
     enabled: {{ index .Values.argo "infra-core" "enableMetrics" | default false }}
 
 apiv2:
+  {{- if index .Values.argo "infra-core" "eimScenario" }}
+  eimScenario: {{ index .Values.argo "infra-core" "eimScenario" }}
+  {{- end }}
   serviceArgsProxy:
     globalLogLevel: "debug"
     enableTracing: {{ index .Values.argo "infra-core" "enableTracing" | default false }}
