@@ -145,9 +145,9 @@ tinkerbell:
       enabled: true
       ingress:
         enabled: *traefikReverseProxy_enabled
-        apiGroup: {{ dig "tinkerbell" "tinkerbell_tink" "server" "ingress" "apiGroup" "traefik.io/v1alpha1" . | quote }}
+        apiGroup: {{ index .Values.argo "infra-onboarding" "tinkerbell" "traefikApiGroup" | default "traefik.io/v1alpha1" | quote }}
         hostname: *tinkServerDnsname
-        gatewayNamespace: {{ dig "tinkerbell" "tinkerbell_tink" "server" "ingress" "gatewayNamespace" "orch-gateway" . | quote }}
+        gatewayNamespace: {{ index .Values.argo "infra-onboarding" "tinkerbell" "traefikReverseProxy" "gatewayNamespace" | default "orch-gateway" | quote }}
       metrics:
         enabled: {{ index .Values.argo "infra-onboarding" "enableMetrics" | default false }}
     {{- end }}
