@@ -89,6 +89,8 @@ argo:
       enabled: true
     onboarding-manager:
       enabled: true
+      service:
+        enableIO: false
       resources:
         requests:
           memory: "16Mi"

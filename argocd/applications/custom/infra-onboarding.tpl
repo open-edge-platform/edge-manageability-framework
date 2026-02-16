@@ -195,6 +195,8 @@ dkam:
   {{- end}}
 
 onboarding-manager:
+  service:
+    enableIO: {{ dig "infra-onboarding" "onboarding-manager" "service" "enableIO" true .Values.argo }}
   managerArgs:
     enableTracing: {{ index .Values.argo "infra-onboarding" "enableTracing" | default false }}
   metrics:
