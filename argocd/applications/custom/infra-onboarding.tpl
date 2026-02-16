@@ -97,7 +97,7 @@ infra-config:
 
 tinkerbell:
   pvc:
-    enabled: true
+    enabled: false
     storageClassName: {{ index .Values.argo "infra-onboarding" "tinkerbellStorageClass" | default "standard" }}
     accessModes:
     - ReadWriteOnce

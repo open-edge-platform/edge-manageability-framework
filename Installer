@@ -1,0 +1,793 @@
+#!/bin/bash
+
+# SPDX-FileCopyrightText: (C) 2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+set -euo pipefail
+grep -qF "http_proxy" /etc/environment || echo http_proxy=http://proxy-dmz.intel.com:912 >> /etc/environment
+grep -qF "https_proxy" /etc/environment || echo https_proxy=http://proxy-dmz.intel.com:912 >> /etc/environment
+grep -qF "ftp_proxy" /etc/environment || echo ftp_proxy=http://proxy-dmz.intel.com:911 >> /etc/environment
+grep -qF "socks_server" /etc/environment || echo socks_proxy=http://proxy-dmz.intel.com:1080 >> /etc/environment
+grep -qF "no_proxy" /etc/environment || echo no_proxy=localhost,127.0.0.1,.caas.intel.com,.internal,10.0.0.0/8,192.168.0.0/16,cluster.local,.espd.infra-host.com,.pid.infra-host.com,.espdqa.infra-host.com,.devtools.intel.com >> /etc/environment
+. /etc/environment
+export http_proxy https_proxy ftp_proxy socks_server no_proxy
+
+# TODO: Investigate and find the root cause of the issue with the HOME environment variable not found.
+# Set the HOME environment variable if not already set
+export HOME=/root
+
+SETUP_STATUS_FILENAME="install_pkgs_status"
+STATUS_FILENAME=".success_install_status"
+SCRIPT_DIR=$(pwd)
+touch "$SCRIPT_DIR/$SETUP_STATUS_FILENAME"
+touch "$SCRIPT_DIR/$STATUS_FILENAME"
+
+# Write agent variables to /etc/edge-node/node/agent_variables
+mkdir -p /etc/edge-node/node
+cat <<EOF > /etc/edge-node/node/agent_variables
+CLUSTER_ORCH_URL=cluster-orch-node.orch-10-139-218-43.pid.infra-host.com:443
+HW_INVENTORY_URL=infra-node.orch-10-139-218-43.pid.infra-host.com:443
+NODE_ONBOARDING_ENABLED=true
+NODE_ONBOARDING_URL=infra-node.orch-10-139-218-43.pid.infra-host.com:443
+NODE_ONBOARDING_HEARTBEAT=10s
+NODE_ACCESS_URL=keycloak.orch-10-139-218-43.pid.infra-host.com:443
+NODE_RS_URL=release.orch-10-139-218-43.pid.infra-host.com
+NODE_SERVICE_CLIENTS=platform-manageability-agent
+NODE_OUTBOUND_CLIENTS= 
+NODE_METRICS_ENABLED=false
+NODE_TOKEN_CLIENTS=node-agent,platform-manageability-agent
+CADDY_APT_PROXY_URL=files-rs.edgeorchestration.intel.com
+CADDY_APT_PROXY_PORT=60444
+REGISTRY_URL=registry-rs.edgeorchestration.intel.com
+CADDY_REGISTRY_PROXY_URL=registry-rs.edgeorchestration.intel.com
+CADDY_REGISTRY_PROXY_PORT=9443
+PLATFORM_MANAGEABILITY_URL=device-manager-node.orch-10-139-218-43.pid.infra-host.com:443
+RPS_ADDRESS=rps.orch-10-139-218-43.pid.infra-host.com
+KEYCLOAK_FQDN=keycloak.orch-10-139-218-43.pid.infra-host.com
+RELEASE_FQDN=release.orch-10-139-218-43.pid.infra-host.com
+RS_TYPE=no-auth
+APT_DISTRO=3.1
+DEB_PACKAGES_REPO=edge-orch/en/deb
+FILE_RS_ROOT=files-edge-orch
+EOF
+source /etc/edge-node/node/agent_variables
+
+CA_CERT="-----BEGIN CERTIFICATE-----
+MIID/DCCA4KgAwIBAgISBjS5S7er7r6sbdPtKRxp1b58MAoGCCqGSM49BAMDMDIx
+CzAJBgNVBAYTAlVTMRYwFAYDVQQKEw1MZXQncyBFbmNyeXB0MQswCQYDVQQDEwJF
+NzAeFw0yNjAyMDkwOTM4MDdaFw0yNjA1MTAwOTM4MDZaMDAxLjAsBgNVBAMTJW9y
+Y2gtMTAtMTM5LTIxOC00My5waWQuaW5mcmEtaG9zdC5jb20wdjAQBgcqhkjOPQIB
+BgUrgQQAIgNiAARv9RIDotRiBBs9N5HOXMdvDwYNOYh/8j6JauO7zZ1D/iFcFRfZ
+epCbfYBUc++Y6udDju2VFqUXmzXdUB/l0qlUY9iczeUj9QM1iNfibiLnFzldCVII
+GACtewkDbzyKJQajggJbMIICVzAOBgNVHQ8BAf8EBAMCB4AwHQYDVR0lBBYwFAYI
+KwYBBQUHAwEGCCsGAQUFBwMCMAwGA1UdEwEB/wQCMAAwHQYDVR0OBBYEFMVhT3lr
+ESRHyDZCX1fQZtrLT9nTMB8GA1UdIwQYMBaAFK5IntyHHUSgb9qi5WB0BHjCnACA
+MDIGCCsGAQUFBwEBBCYwJDAiBggrBgEFBQcwAoYWaHR0cDovL2U3LmkubGVuY3Iu
+b3JnLzBZBgNVHREEUjBQgicqLm9yY2gtMTAtMTM5LTIxOC00My5waWQuaW5mcmEt
+aG9zdC5jb22CJW9yY2gtMTAtMTM5LTIxOC00My5waWQuaW5mcmEtaG9zdC5jb20w
+EwYDVR0gBAwwCjAIBgZngQwBAgEwLgYDVR0fBCcwJTAjoCGgH4YdaHR0cDovL2U3
+LmMubGVuY3Iub3JnLzEyNS5jcmwwggECBgorBgEEAdZ5AgQCBIHzBIHwAO4AdQBk
+EcRspBLsp4kcogIuALyrTygH1B41J6vq/tUDyX3N8AAAAZxB+YVyAAAEAwBGMEQC
+IHgNXthrt1miiHGLjAWbtBtGYs4FmEicBDZIdTX3lA7hAiA3tBWZuwdIFcrkmX7f
+mqctarQnDFoAZ3L6xyS4a3dsawB1AMs49xWJfIShRF9bwd37yW7ymlnNRwppBYWw
+yxTDFFjnAAABnEH5hYcAAAQDAEYwRAIgekil/w6pOSLnJThU5DVCKqmrnX5K6dVS
+OLSkhEZhGWsCIFYJI2xLqVsjOa796JorGKVjEfSkFxHNNvf9CqEVZ70gMAoGCCqG
+SM49BAMDA2gAMGUCMQDcW0XuPPSpNNPfy7pBNLfApmSyMmUnUxw3+7RonWrkPhVF
+owNq5JMg3do4ks+qqSoCMDhKjmDg409JLFiMLzQbkMb7IkOlpudmdBBei+wscQc/
+jvnlBWEy/lCsSPeI2Umo5Q==
+-----END CERTIFICATE-----
+-----BEGIN CERTIFICATE-----
+MIIEVzCCAj+gAwIBAgIRAKp18eYrjwoiCWbTi7/UuqEwDQYJKoZIhvcNAQELBQAw
+TzELMAkGA1UEBhMCVVMxKTAnBgNVBAoTIEludGVybmV0IFNlY3VyaXR5IFJlc2Vh
+cmNoIEdyb3VwMRUwEwYDVQQDEwxJU1JHIFJvb3QgWDEwHhcNMjQwMzEzMDAwMDAw
+WhcNMjcwMzEyMjM1OTU5WjAyMQswCQYDVQQGEwJVUzEWMBQGA1UEChMNTGV0J3Mg
+RW5jcnlwdDELMAkGA1UEAxMCRTcwdjAQBgcqhkjOPQIBBgUrgQQAIgNiAARB6AST
+CFh/vjcwDMCgQer+VtqEkz7JANurZxLP+U9TCeioL6sp5Z8VRvRbYk4P1INBmbef
+QHJFHCxcSjKmwtvGBWpl/9ra8HW0QDsUaJW2qOJqceJ0ZVFT3hbUHifBM/2jgfgw
+gfUwDgYDVR0PAQH/BAQDAgGGMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcD
+ATASBgNVHRMBAf8ECDAGAQH/AgEAMB0GA1UdDgQWBBSuSJ7chx1EoG/aouVgdAR4
+wpwAgDAfBgNVHSMEGDAWgBR5tFnme7bl5AFzgAiIyBpY9umbbjAyBggrBgEFBQcB
+AQQmMCQwIgYIKwYBBQUHMAKGFmh0dHA6Ly94MS5pLmxlbmNyLm9yZy8wEwYDVR0g
+BAwwCjAIBgZngQwBAgEwJwYDVR0fBCAwHjAcoBqgGIYWaHR0cDovL3gxLmMubGVu
+Y3Iub3JnLzANBgkqhkiG9w0BAQsFAAOCAgEAjx66fDdLk5ywFn3CzA1w1qfylHUD
+aEf0QZpXcJseddJGSfbUUOvbNR9N/QQ16K1lXl4VFyhmGXDT5Kdfcr0RvIIVrNxF
+h4lqHtRRCP6RBRstqbZ2zURgqakn/Xip0iaQL0IdfHBZr396FgknniRYFckKORPG
+yM3QKnd66gtMst8I5nkRQlAg/Jb+Gc3egIvuGKWboE1G89NTsN9LTDD3PLj0dUMr
+OIuqVjLB8pEC6yk9enrlrqjXQgkLEYhXzq7dLafv5Vkig6Gl0nuuqjqfp0Q1bi1o
+yVNAlXe6aUXw92CcghC9bNsKEO1+M52YY5+ofIXlS/SEQbvVYYBLZ5yeiglV6t3S
+M6H+vTG0aP9YHzLn/KVOHzGQfXDP7qM5tkf+7diZe7o2fw6O7IvN6fsQXEQQj8TJ
+UXJxv2/uJhcuy/tSDgXwHM8Uk34WNbRT7zGTGkQRX0gsbjAea/jYAoWv0ZvQRwpq
+Pe79D/i7Cep8qWnA+7AE/3B3S/3dEEYmc0lpe1366A/6GEgk3ktr9PEoQrLChs6I
+tu3wnNLB2euC8IKGLQFpGtOO/2/hiAKjyajaBP25w1jF0Wl8Bbqne3uZ2q1GyPFJ
+YRmT7/OXpmOH/FVLtwS+8ng1cAmpCujPwteJZNcDG0sF2n/sc0+SQf49fdyUK0ty
++VUwFj9tmWxyR/M=
+-----END CERTIFICATE-----
+-----BEGIN CERTIFICATE-----
+MIIFazCCA1OgAwIBAgIRAIIQz7DSQONZRGPgu2OCiwAwDQYJKoZIhvcNAQELBQAw
+TzELMAkGA1UEBhMCVVMxKTAnBgNVBAoTIEludGVybmV0IFNlY3VyaXR5IFJlc2Vh
+cmNoIEdyb3VwMRUwEwYDVQQDEwxJU1JHIFJvb3QgWDEwHhcNMTUwNjA0MTEwNDM4
+WhcNMzUwNjA0MTEwNDM4WjBPMQswCQYDVQQGEwJVUzEpMCcGA1UEChMgSW50ZXJu
+ZXQgU2VjdXJpdHkgUmVzZWFyY2ggR3JvdXAxFTATBgNVBAMTDElTUkcgUm9vdCBY
+MTCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAK3oJHP0FDfzm54rVygc
+h77ct984kIxuPOZXoHj3dcKi/vVqbvYATyjb3miGbESTtrFj/RQSa78f0uoxmyF+
+0TM8ukj13Xnfs7j/EvEhmkvBioZxaUpmZmyPfjxwv60pIgbz5MDmgK7iS4+3mX6U
+A5/TR5d8mUgjU+g4rk8Kb4Mu0UlXjIB0ttov0DiNewNwIRt18jA8+o+u3dpjq+sW
+T8KOEUt+zwvo/7V3LvSye0rgTBIlDHCNAymg4VMk7BPZ7hm/ELNKjD+Jo2FR3qyH
+B5T0Y3HsLuJvW5iB4YlcNHlsdu87kGJ55tukmi8mxdAQ4Q7e2RCOFvu396j3x+UC
+B5iPNgiV5+I3lg02dZ77DnKxHZu8A/lJBdiB3QW0KtZB6awBdpUKD9jf1b0SHzUv
+KBds0pjBqAlkd25HN7rOrFleaJ1/ctaJxQZBKT5ZPt0m9STJEadao0xAH0ahmbWn
+OlFuhjuefXKnEgV4We0+UXgVCwOPjdAvBbI+e0ocS3MFEvzG6uBQE3xDk3SzynTn
+jh8BCNAw1FtxNrQHusEwMFxIt4I7mKZ9YIqioymCzLq9gwQbooMDQaHWBfEbwrbw
+qHyGO0aoSCqI3Haadr8faqU9GY/rOPNk3sgrDQoo//fb4hVC1CLQJ13hef4Y53CI
+rU7m2Ys6xt0nUW7/vGT1M0NPAgMBAAGjQjBAMA4GA1UdDwEB/wQEAwIBBjAPBgNV
+HRMBAf8EBTADAQH/MB0GA1UdDgQWBBR5tFnme7bl5AFzgAiIyBpY9umbbjANBgkq
+hkiG9w0BAQsFAAOCAgEAVR9YqbyyqFDQDLHYGmkgJykIrGF1XIpu+ILlaS/V9lZL
+ubhzEFnTIZd+50xx+7LSYK05qAvqFyFWhfFQDlnrzuBZ6brJFe+GnY+EgPbk6ZGQ
+3BebYhtF8GaV0nxvwuo77x/Py9auJ/GpsMiu/X1+mvoiBOv/2X/qkSsisRcOj/KK
+NFtY2PwByVS5uCbMiogziUwthDyC3+6WVwW6LLv3xLfHTjuCvjHIInNzktHCgKQ5
+ORAzI4JMPJ+GslWYHb4phowim57iaztXOoJwTdwJx4nLCgdNbOhdjsnvzqvHu7Ur
+TkXWStAmzOVyyghqpZXjFaH3pO3JLF+l+/+sKAIuvtd7u+Nxe5AW0wdeRlN8NwdC
+jNPElpzVmbUq4JUagEiuTDkHzsxHpFKVK7q4+63SM1N95R1NbdWhscdCb+ZAJzVc
+oyi3B43njTOQ5yOf+1CceWxG1bQVs5ZufpsMljq4Ui0/1lvh+wjChP4kqKOJ2qxq
+4RgqsahDYVvTH9w7jXbyLeiNdd8XM2w9U/t7y0Ff/9yi0GE44Za4rF2LN9d11TPA
+mRGunUHBcnWEvgJBQl9nJEiU0Zsnvgc/ubhPgXRR4Xq37Z0j4r7g1SgEEzwxA57d
+emyPxgcYxn/eR44/KJ4EBs+lVDR3veyJm+kXQ99b21/+jh5Xos1AnX5iItreGCc=
+-----END CERTIFICATE-----
+"
+CA_PEM="-----BEGIN CERTIFICATE-----
+MIID/DCCA4KgAwIBAgISBjS5S7er7r6sbdPtKRxp1b58MAoGCCqGSM49BAMDMDIx
+CzAJBgNVBAYTAlVTMRYwFAYDVQQKEw1MZXQncyBFbmNyeXB0MQswCQYDVQQDEwJF
+NzAeFw0yNjAyMDkwOTM4MDdaFw0yNjA1MTAwOTM4MDZaMDAxLjAsBgNVBAMTJW9y
+Y2gtMTAtMTM5LTIxOC00My5waWQuaW5mcmEtaG9zdC5jb20wdjAQBgcqhkjOPQIB
+BgUrgQQAIgNiAARv9RIDotRiBBs9N5HOXMdvDwYNOYh/8j6JauO7zZ1D/iFcFRfZ
+epCbfYBUc++Y6udDju2VFqUXmzXdUB/l0qlUY9iczeUj9QM1iNfibiLnFzldCVII
+GACtewkDbzyKJQajggJbMIICVzAOBgNVHQ8BAf8EBAMCB4AwHQYDVR0lBBYwFAYI
+KwYBBQUHAwEGCCsGAQUFBwMCMAwGA1UdEwEB/wQCMAAwHQYDVR0OBBYEFMVhT3lr
+ESRHyDZCX1fQZtrLT9nTMB8GA1UdIwQYMBaAFK5IntyHHUSgb9qi5WB0BHjCnACA
+MDIGCCsGAQUFBwEBBCYwJDAiBggrBgEFBQcwAoYWaHR0cDovL2U3LmkubGVuY3Iu
+b3JnLzBZBgNVHREEUjBQgicqLm9yY2gtMTAtMTM5LTIxOC00My5waWQuaW5mcmEt
+aG9zdC5jb22CJW9yY2gtMTAtMTM5LTIxOC00My5waWQuaW5mcmEtaG9zdC5jb20w
+EwYDVR0gBAwwCjAIBgZngQwBAgEwLgYDVR0fBCcwJTAjoCGgH4YdaHR0cDovL2U3
+LmMubGVuY3Iub3JnLzEyNS5jcmwwggECBgorBgEEAdZ5AgQCBIHzBIHwAO4AdQBk
+EcRspBLsp4kcogIuALyrTygH1B41J6vq/tUDyX3N8AAAAZxB+YVyAAAEAwBGMEQC
+IHgNXthrt1miiHGLjAWbtBtGYs4FmEicBDZIdTX3lA7hAiA3tBWZuwdIFcrkmX7f
+mqctarQnDFoAZ3L6xyS4a3dsawB1AMs49xWJfIShRF9bwd37yW7ymlnNRwppBYWw
+yxTDFFjnAAABnEH5hYcAAAQDAEYwRAIgekil/w6pOSLnJThU5DVCKqmrnX5K6dVS
+OLSkhEZhGWsCIFYJI2xLqVsjOa796JorGKVjEfSkFxHNNvf9CqEVZ70gMAoGCCqG
+SM49BAMDA2gAMGUCMQDcW0XuPPSpNNPfy7pBNLfApmSyMmUnUxw3+7RonWrkPhVF
+owNq5JMg3do4ks+qqSoCMDhKjmDg409JLFiMLzQbkMb7IkOlpudmdBBei+wscQc/
+jvnlBWEy/lCsSPeI2Umo5Q==
+-----END CERTIFICATE-----
+-----BEGIN CERTIFICATE-----
+MIIEVzCCAj+gAwIBAgIRAKp18eYrjwoiCWbTi7/UuqEwDQYJKoZIhvcNAQELBQAw
+TzELMAkGA1UEBhMCVVMxKTAnBgNVBAoTIEludGVybmV0IFNlY3VyaXR5IFJlc2Vh
+cmNoIEdyb3VwMRUwEwYDVQQDEwxJU1JHIFJvb3QgWDEwHhcNMjQwMzEzMDAwMDAw
+WhcNMjcwMzEyMjM1OTU5WjAyMQswCQYDVQQGEwJVUzEWMBQGA1UEChMNTGV0J3Mg
+RW5jcnlwdDELMAkGA1UEAxMCRTcwdjAQBgcqhkjOPQIBBgUrgQQAIgNiAARB6AST
+CFh/vjcwDMCgQer+VtqEkz7JANurZxLP+U9TCeioL6sp5Z8VRvRbYk4P1INBmbef
+QHJFHCxcSjKmwtvGBWpl/9ra8HW0QDsUaJW2qOJqceJ0ZVFT3hbUHifBM/2jgfgw
+gfUwDgYDVR0PAQH/BAQDAgGGMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcD
+ATASBgNVHRMBAf8ECDAGAQH/AgEAMB0GA1UdDgQWBBSuSJ7chx1EoG/aouVgdAR4
+wpwAgDAfBgNVHSMEGDAWgBR5tFnme7bl5AFzgAiIyBpY9umbbjAyBggrBgEFBQcB
+AQQmMCQwIgYIKwYBBQUHMAKGFmh0dHA6Ly94MS5pLmxlbmNyLm9yZy8wEwYDVR0g
+BAwwCjAIBgZngQwBAgEwJwYDVR0fBCAwHjAcoBqgGIYWaHR0cDovL3gxLmMubGVu
+Y3Iub3JnLzANBgkqhkiG9w0BAQsFAAOCAgEAjx66fDdLk5ywFn3CzA1w1qfylHUD
+aEf0QZpXcJseddJGSfbUUOvbNR9N/QQ16K1lXl4VFyhmGXDT5Kdfcr0RvIIVrNxF
+h4lqHtRRCP6RBRstqbZ2zURgqakn/Xip0iaQL0IdfHBZr396FgknniRYFckKORPG
+yM3QKnd66gtMst8I5nkRQlAg/Jb+Gc3egIvuGKWboE1G89NTsN9LTDD3PLj0dUMr
+OIuqVjLB8pEC6yk9enrlrqjXQgkLEYhXzq7dLafv5Vkig6Gl0nuuqjqfp0Q1bi1o
+yVNAlXe6aUXw92CcghC9bNsKEO1+M52YY5+ofIXlS/SEQbvVYYBLZ5yeiglV6t3S
+M6H+vTG0aP9YHzLn/KVOHzGQfXDP7qM5tkf+7diZe7o2fw6O7IvN6fsQXEQQj8TJ
+UXJxv2/uJhcuy/tSDgXwHM8Uk34WNbRT7zGTGkQRX0gsbjAea/jYAoWv0ZvQRwpq
+Pe79D/i7Cep8qWnA+7AE/3B3S/3dEEYmc0lpe1366A/6GEgk3ktr9PEoQrLChs6I
+tu3wnNLB2euC8IKGLQFpGtOO/2/hiAKjyajaBP25w1jF0Wl8Bbqne3uZ2q1GyPFJ
+YRmT7/OXpmOH/FVLtwS+8ng1cAmpCujPwteJZNcDG0sF2n/sc0+SQf49fdyUK0ty
++VUwFj9tmWxyR/M=
+-----END CERTIFICATE-----
+-----BEGIN CERTIFICATE-----
+MIIFazCCA1OgAwIBAgIRAIIQz7DSQONZRGPgu2OCiwAwDQYJKoZIhvcNAQELBQAw
+TzELMAkGA1UEBhMCVVMxKTAnBgNVBAoTIEludGVybmV0IFNlY3VyaXR5IFJlc2Vh
+cmNoIEdyb3VwMRUwEwYDVQQDEwxJU1JHIFJvb3QgWDEwHhcNMTUwNjA0MTEwNDM4
+WhcNMzUwNjA0MTEwNDM4WjBPMQswCQYDVQQGEwJVUzEpMCcGA1UEChMgSW50ZXJu
+ZXQgU2VjdXJpdHkgUmVzZWFyY2ggR3JvdXAxFTATBgNVBAMTDElTUkcgUm9vdCBY
+MTCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAK3oJHP0FDfzm54rVygc
+h77ct984kIxuPOZXoHj3dcKi/vVqbvYATyjb3miGbESTtrFj/RQSa78f0uoxmyF+
+0TM8ukj13Xnfs7j/EvEhmkvBioZxaUpmZmyPfjxwv60pIgbz5MDmgK7iS4+3mX6U
+A5/TR5d8mUgjU+g4rk8Kb4Mu0UlXjIB0ttov0DiNewNwIRt18jA8+o+u3dpjq+sW
+T8KOEUt+zwvo/7V3LvSye0rgTBIlDHCNAymg4VMk7BPZ7hm/ELNKjD+Jo2FR3qyH
+B5T0Y3HsLuJvW5iB4YlcNHlsdu87kGJ55tukmi8mxdAQ4Q7e2RCOFvu396j3x+UC
+B5iPNgiV5+I3lg02dZ77DnKxHZu8A/lJBdiB3QW0KtZB6awBdpUKD9jf1b0SHzUv
+KBds0pjBqAlkd25HN7rOrFleaJ1/ctaJxQZBKT5ZPt0m9STJEadao0xAH0ahmbWn
+OlFuhjuefXKnEgV4We0+UXgVCwOPjdAvBbI+e0ocS3MFEvzG6uBQE3xDk3SzynTn
+jh8BCNAw1FtxNrQHusEwMFxIt4I7mKZ9YIqioymCzLq9gwQbooMDQaHWBfEbwrbw
+qHyGO0aoSCqI3Haadr8faqU9GY/rOPNk3sgrDQoo//fb4hVC1CLQJ13hef4Y53CI
+rU7m2Ys6xt0nUW7/vGT1M0NPAgMBAAGjQjBAMA4GA1UdDwEB/wQEAwIBBjAPBgNV
+HRMBAf8EBTADAQH/MB0GA1UdDgQWBBR5tFnme7bl5AFzgAiIyBpY9umbbjANBgkq
+hkiG9w0BAQsFAAOCAgEAVR9YqbyyqFDQDLHYGmkgJykIrGF1XIpu+ILlaS/V9lZL
+ubhzEFnTIZd+50xx+7LSYK05qAvqFyFWhfFQDlnrzuBZ6brJFe+GnY+EgPbk6ZGQ
+3BebYhtF8GaV0nxvwuo77x/Py9auJ/GpsMiu/X1+mvoiBOv/2X/qkSsisRcOj/KK
+NFtY2PwByVS5uCbMiogziUwthDyC3+6WVwW6LLv3xLfHTjuCvjHIInNzktHCgKQ5
+ORAzI4JMPJ+GslWYHb4phowim57iaztXOoJwTdwJx4nLCgdNbOhdjsnvzqvHu7Ur
+TkXWStAmzOVyyghqpZXjFaH3pO3JLF+l+/+sKAIuvtd7u+Nxe5AW0wdeRlN8NwdC
+jNPElpzVmbUq4JUagEiuTDkHzsxHpFKVK7q4+63SM1N95R1NbdWhscdCb+ZAJzVc
+oyi3B43njTOQ5yOf+1CceWxG1bQVs5ZufpsMljq4Ui0/1lvh+wjChP4kqKOJ2qxq
+4RgqsahDYVvTH9w7jXbyLeiNdd8XM2w9U/t7y0Ff/9yi0GE44Za4rF2LN9d11TPA
+mRGunUHBcnWEvgJBQl9nJEiU0Zsnvgc/ubhPgXRR4Xq37Z0j4r7g1SgEEzwxA57d
+emyPxgcYxn/eR44/KJ4EBs+lVDR3veyJm+kXQ99b21/+jh5Xos1AnX5iItreGCc=
+-----END CERTIFICATE-----
+
+-----BEGIN CERTIFICATE-----
+MIIFATCCA2mgAwIBAgIRAOtkvX7o2/Gk5ZFMgXeJ1XwwDQYJKoZIhvcNAQEMBQAw
+bDELMAkGA1UEBhMCVVMxGjAYBgNVBAoTEUludGVsIENvcnBvcmF0aW9uMUEwPwYD
+VQQDEzh0aW5rZXJiZWxsLWhhcHJveHkub3JjaC0xMC0xMzktMjE4LTQzLnBpZC5p
+bmZyYS1ob3N0LmNvbTAeFw0yNjAyMTMxNjIzMzFaFw0yNzAyMTMyMTIzMzFaMGwx
+CzAJBgNVBAYTAlVTMRowGAYDVQQKExFJbnRlbCBDb3Jwb3JhdGlvbjFBMD8GA1UE
+AxM4dGlua2VyYmVsbC1oYXByb3h5Lm9yY2gtMTAtMTM5LTIxOC00My5waWQuaW5m
+cmEtaG9zdC5jb20wggGiMA0GCSqGSIb3DQEBAQUAA4IBjwAwggGKAoIBgQDGnhA3
+kkRmQ2S8GL6opbFf1nxG1yJC9DPzgpgOM+lhj2xjIqky7mHs37qyn4cLAu6vTevg
+gadF9XIHth+BnDWmCVIa66PlXVtdP6rAOkU/+fYdngEenEoOiOdZ7h2EC1nFXBz4
+m4q306zG8EvIA/60UvB/WDXLwj1/uP5pQsyrEWzDD7veofDOxI4FH0jTHY0+2Vy7
+S7ZYmxL1+aMMgArDVh82bCHAWfGcgwriklh4ekK2VO8LQRknLh40v15VowEvlic9
+EpEwqmFLkFLIYEQ2DQC+PcArMnJda/iK1Rx4qPwvzYTBODDjZW2K0ti9DcyS+MWM
+x+jXoHx+40LhyDVX4XZ9eMDIaXfVWED3Zmv7fFfiOBisnhMhdIJHK1EE2RVl7EXv
+aoGsSDPttKYmJsr69hhiTE9Tj/ySHn+z6uhlGSNsdTZ2E8ItXYddbMclkijbIfbh
+c2xLccI0BxrppGq2Xg23p7UkO6WI2WYU/nqyyX10K2D8RfwBpxIAJ4NGyCkCAwEA
+AaOBnTCBmjAOBgNVHQ8BAf8EBAMCAoQwEwYDVR0lBAwwCgYIKwYBBQUHAwEwDwYD
+VR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUw1njOVoH3m7bqg+nntwm2c26S+swQwYD
+VR0RBDwwOoI4dGlua2VyYmVsbC1oYXByb3h5Lm9yY2gtMTAtMTM5LTIxOC00My5w
+aWQuaW5mcmEtaG9zdC5jb20wDQYJKoZIhvcNAQEMBQADggGBADIHYyzOIaDu82qM
+jzNmvUcLMuPXKJbXKifY0XfnEJK7Buscob6nodD/518Rn0tpIREwNZWoVVeb7KUj
+rikJ7JoJJIhggf8Aay6I5UwzT8TQDHCovUQFwaaz/ecyUqvdFxAg4pw20zi6epfu
+uIpbbIIjgsFL+DoiV7e+xCXgj7xwntwkh7I3SJEcOmUw/YUv61Q0APFBeuMpv5xK
+aokdb9645o73AmO4wPbcdBg9dHbBAgJlp3KtfY/j650mOrK/jpMIoMu1SvSNW+dg
+WZuvHPdBlZehdBcv84rBPkzhNjvZxHxJR6WcMMhrtJeQ3pRtY0JyvFt2HBpbrChX
+02OTdq3aPZ+4Q1pT3flb0PwOd5sgKmEIW4y6iS3o3PHkuPL90BKxKfvBO2FtJrL4
+ukA7I6hWGe1xcHt1vwSIogzw8n9SbGzcPvtixL/QRfXo4y39+HoqEuF1/xxWQhSP
+/oKMzXIR+EXJ6wPU7YtpMLhStEemQDV1rsmrKxX22wJFDboe4A==
+-----END CERTIFICATE-----
+"
+
+# Kernel configuration from template
+KERNEL_CONFIG_OVER_COMMIT_MEMORY=1
+KERNEL_CONFIG_KERNEL_PANIC=10
+KERNEL_CONFIG_PANIC_ON_OOPS=1
+KERNEL_CONFIG_MAX_USER_INSTANCE=8192
+
+
+install_dependencies() {
+    if grep -q "install_dependencies done" "$SCRIPT_DIR"/$STATUS_FILENAME; then
+		echo "Skipping install_dependencies"
+    else
+        echo "Install all dependencies."
+        rm -f /etc/apt/sources.list.d/edge-node.list
+        apt-get update
+        echo -e "\e[32m[install git python3-pip]\e[0m"
+        sudo apt-get install -y curl wget unzip apparmor iptables lvm2 cryptsetup lxc tpm2-abrmd tpm2-tools software-properties-common python3-venv git jq libpq5 python3-pip ca-certificates gnupg dmidecode libace-dev cmake python3 libglib2.0-dev libcurl4-openssl-dev libxerces-c-dev libnl-3-dev libnl-route-3-dev libxml2-dev libidn2-0-dev xsltproc docbook-xsl devscripts
+
+        groupadd -f bm-agents -g 500 --system       
+        id -u node-agent &>/dev/null || useradd node-agent --system -g bm-agents -s /sbin/nologin
+        echo "install_dependencies done" | tee -a "$SCRIPT_DIR"/$STATUS_FILENAME
+    fi
+}
+
+install_fws(){
+    if grep -q "install_fws done" "$SCRIPT_DIR"/$STATUS_FILENAME; then
+		echo "Skipping install_fws"
+    else
+        # Enable UFW
+        echo "Enable firewall"
+        systemctl enable ufw
+        echo "y" | ufw enable
+        ufw default allow outgoing
+        ufw allow from $(dig +short orch-10-139-218-43.pid.infra-host.com | tail -n1) to any port 6443,10250 proto tcp
+        ufw allow in to any port 2379,2380,6443,9345,10250,5473 proto tcp
+        ufw allow in to any port 7946
+        ufw allow in to any port 123 proto udp
+        ufw reload
+        echo "install_fws done" | tee -a "$SCRIPT_DIR"/$STATUS_FILENAME
+    fi
+}
+
+enable_kernel_config(){
+    if grep -q "enable_kernel_config done" "$SCRIPT_DIR"/$STATUS_FILENAME; then
+		echo "Skipping enable_kernel_config"
+    else
+        echo "Enable kernel config"
+        sysctl -w vm.overcommit_memory=${KERNEL_CONFIG_OVER_COMMIT_MEMORY}
+        sysctl -w kernel.panic=${KERNEL_CONFIG_KERNEL_PANIC}
+        sysctl -w kernel.panic_on_oops=${KERNEL_CONFIG_PANIC_ON_OOPS}
+        sysctl -w fs.inotify.max_user_instances=${KERNEL_CONFIG_MAX_USER_INSTANCE}
+        echo vm.overcommit_memory=${KERNEL_CONFIG_OVER_COMMIT_MEMORY} | tee -a /etc/sysctl.conf
+        echo kernel.panic=${KERNEL_CONFIG_KERNEL_PANIC} | tee -a /etc/sysctl.conf
+        echo kernel.panic_on_oops=${KERNEL_CONFIG_PANIC_ON_OOPS} | tee -a /etc/sysctl.conf
+        echo fs.inotify.max_user_instances=${KERNEL_CONFIG_MAX_USER_INSTANCE} | tee -a /etc/sysctl.conf
+        sysctl -p
+        echo "enable_kernel_config done" | tee -a "$SCRIPT_DIR"/$STATUS_FILENAME
+    fi
+}
+
+enable_NTP(){
+    if grep -q "enable_NTP done" "$SCRIPT_DIR"/$STATUS_FILENAME; then
+                echo "Skipping enable_NTP"
+    else
+	echo "Enable NTP"
+	ufw allow 123/udp
+	apt-get install systemd-timesyncd -y -q
+	cp /etc/systemd/timesyncd.conf /etc/systemd/timesyncd.conf.bak
+	ntpServers="corp.intel.com,ntp1.server.org,time.google.com"
+	timeServers="NTP="
+	IFS=',' read -ra servers <<< "$ntpServers"
+	for server in "${servers[@]}"; do
+        	timeServers="$timeServers $server"
+	done
+	sed  's/.*#NTP=*./'"$timeServers"'/g' /etc/systemd/timesyncd.conf | sudo tee /etc/systemd/timesyncd.conf >>/dev/null
+	timedatectl set-ntp true
+	systemctl restart systemd-timesyncd
+	systemctl status systemd-timesyncd.service
+        echo "enable_NTP done" | tee -a "$SCRIPT_DIR"/$STATUS_FILENAME
+    fi
+}
+
+install_syslogrotate_job(){
+if grep -q "install_syslogrotate_job done" "$SCRIPT_DIR"/$STATUS_FILENAME; then
+    echo "Skipping install_syslogrotate_job"
+else
+##### Managing log rotation
+echo "Install sys log"
+if ! sudo grep -q "cron.emf" "/etc/crontab"; then
+  sudo sed -i '$ d' /etc/crontab
+  echo "*/5 *   * * *   root    cd / && run-parts --report /etc/cron.emf" | sudo tee -a /etc/crontab
+  echo "#" | sudo tee -a /etc/crontab
+fi
+
+sudo rm -rf /etc/cron.emf
+sudo mkdir -p /etc/cron.emf
+sudo tee /etc/cron.emf/logrotate << 'END'
+#!/bin/sh
+/usr/sbin/logrotate /etc/logrotate.conf
+EXITVALUE=$?
+if [ $EXITVALUE != 0 ]; then
+    /usr/bin/logger -t logrotate "ALERT exited abnormally with [$EXITVALUE]"
+fi
+exit $EXITVALUE
+END
+
+sudo chmod +x /etc/cron.emf/logrotate
+
+sudo tee /etc/logrotate.d/rsyslog << 'END'
+/var/log/syslog
+/var/log/mail.info
+/var/log/mail.warn
+/var/log/mail.err
+/var/log/mail.log
+/var/log/daemon.log
+/var/log/kern.log
+/var/log/auth.log
+/var/log/user.log
+/var/log/lpr.log
+/var/log/cron.log
+/var/log/debug
+/var/log/messages
+{
+        rotate 4
+        weekly
+        missingok
+        size 1G
+        notifempty
+        compress
+        delaycompress
+        sharedscripts
+        postrotate
+                /usr/lib/rsyslog/rsyslog-rotate
+        endscript
+}
+END
+
+sudo systemctl restart rsyslog.service
+
+sudo systemctl restart cron.service
+sudo /usr/sbin/logrotate /etc/logrotate.conf
+##### Managing log rotation
+echo "install_syslogrotate_job done" | tee -a "$SCRIPT_DIR"/$STATUS_FILENAME
+fi
+}
+
+install_CA_cert(){
+    if grep -q "install_CA_cert done" "$SCRIPT_DIR"/$STATUS_FILENAME; then
+		echo "Skipping install_CA_cert"
+    else
+        echo "$CA_CERT" > /usr/local/share/ca-certificates/orch-ca.crt && update-ca-certificates -f
+        # Copy CA certificate to /etc/intel_edge_node to allow Observability pod to mount
+        mkdir -p /etc/intel_edge_node/orch-ca-cert
+        chmod 755 /etc/intel_edge_node/orch-ca-cert
+        chown root:root /etc/intel_edge_node/orch-ca-cert
+        echo "$CA_CERT" > /etc/intel_edge_node/orch-ca-cert/orch-ca.crt
+        echo "$CA_PEM" > /etc/intel_edge_node/orch-ca-cert/orch-ca.pem
+        chmod 644 /etc/intel_edge_node/orch-ca-cert/orch-ca.crt
+        chown root:root /etc/intel_edge_node/orch-ca-cert/orch-ca.crt
+        echo "install_CA_cert done" | tee -a "$SCRIPT_DIR"/$STATUS_FILENAME
+    fi
+}
+
+install_oras(){
+    if grep -q "install_oras done" "$SCRIPT_DIR"/$STATUS_FILENAME; then
+        echo "Skipping install_oras"
+    else
+        echo "Install oras CLI tool"
+        echo "setup oras"
+        ORAS_VERSION="1.1.0"
+        expected_checksum="e09e85323b24ccc8209a1506f142e3d481e6e809018537c6b3db979c891e6ad7"
+        curl -LO "https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/oras_${ORAS_VERSION}_linux_amd64.tar.gz"
+        if [ -f "oras_1.1.0_linux_amd64.tar.gz" ]; then
+            actual_checksum=$(sha256sum "oras_1.1.0_linux_amd64.tar.gz" | awk '{print $1}')
+            if [ "$actual_checksum" != "$expected_checksum" ]; then
+                echo "Checksum mismatch. File may be corrupted."
+                exit 1
+            fi
+            echo "Checksum verification successful."
+        else
+            echo "Downloaded file does not exist. Aborting installation."
+            exit 1
+        fi
+        mkdir -p oras-install/
+        tar -zxf oras_${ORAS_VERSION}_*.tar.gz -C oras-install/
+        sudo mv oras-install/oras /usr/local/bin/
+        rm -rf oras_${ORAS_VERSION}_*.tar.gz oras-install/
+        echo "install_oras done" | tee -a "$SCRIPT_DIR"/$STATUS_FILENAME
+    fi
+}
+
+install_device_discovery(){
+    if grep -q "install_device_discovery done" "$SCRIPT_DIR"/$STATUS_FILENAME; then
+        echo "Skipping install_device_discovery"
+    else
+        # Pre-seed debconf values for device-discovery-agent package
+        echo "device-discovery-agent device-discovery-agent/onboarding.serviceURL string onboarding-node.orch-10-139-218-43.pid.infra-host.com" | debconf-set-selections
+        echo "device-discovery-agent device-discovery-agent/onboarding.servicePort string 443" | debconf-set-selections
+        echo "device-discovery-agent device-discovery-agent/discovery.serviceURL string onboarding-stream.orch-10-139-218-43.pid.infra-host.com" | debconf-set-selections
+        echo "device-discovery-agent device-discovery-agent/auth.keycloakURL string keycloak.orch-10-139-218-43.pid.infra-host.com:443" | debconf-set-selections
+        echo "device-discovery-agent device-discovery-agent/onboarding.caCertPath string /etc/intel_edge_node/orch-ca-cert/orch-ca.pem" | debconf-set-selections
+        echo "device-discovery-agent device-discovery-agent/sysinfo.autoDetect boolean true" | debconf-set-selections
+        echo "device-discovery-agent device-discovery-agent/debug boolean false" | debconf-set-selections
+        echo "device-discovery-agent device-discovery-agent/disableInteractive boolean true" | debconf-set-selections
+        echo "device-discovery-agent device-discovery-agent/useKernelArgs boolean false" | debconf-set-selections
+        
+        echo "Download device-discovery-agent package 0.0.3"
+        DD_PKGFILE="./device-discovery-agent_0.0.3_amd64.deb"
+        
+        oras pull "registry-rs.edgeorchestration.intel.com/edge-orch/en/deb/device-discovery-agent:0.0.3"
+        
+        if [ ! -f "${DD_PKGFILE}" ]; then
+            echo "device-discovery debian package could not be downloaded. Aborting installation"
+            exit 1
+        fi
+        
+        echo "Install device-discovery package"
+        apt-get install -y -o Dpkg::Options::="--force-confnew" "${DD_PKGFILE}"
+        
+        echo "Remove device-discovery debian"
+        rm -f "${DD_PKGFILE}"
+        
+        echo "Wait for device-discovery service to complete onboarding..."
+        # Wait for client credentials to be provisioned
+        max_wait=300  # 5 minutes timeout
+        elapsed=0
+        while [[ ! -s "/etc/intel_edge_node/client-credentials/client_id" || ! -s "/etc/intel_edge_node/client-credentials/client_secret" ]]; do
+            if [ $elapsed -ge $max_wait ]; then
+                echo "Timeout waiting for client credentials"
+                exit 1
+            fi
+            echo "Waiting for device-discovery to provision credentials... (${elapsed}s)"
+            sleep 5
+            elapsed=$((elapsed + 5))
+        done
+        
+        echo "Client credentials provisioned successfully"
+        CLIENT_ID=$(cat /etc/intel_edge_node/client-credentials/client_id)
+        CLIENT_SECRET=$(cat /etc/intel_edge_node/client-credentials/client_secret)
+        
+        echo "install_device_discovery done" | tee -a "$SCRIPT_DIR"/$STATUS_FILENAME
+    fi
+}
+
+install_lms_rpc(){
+    if grep -q "install_lms_rpc done" "$SCRIPT_DIR"/$STATUS_FILENAME; then
+		echo "Skipping install_lms_rpc"
+    else
+        # Download, build and install LMS
+        LMS_VERSION="2506.0.0.0"
+        expected_checksum="bfdcbfb6b2a739321998a0772767c1532ede70f4bd38cdbe48488b59d118a086"
+
+        curl -fsSL --connect-timeout 30 --max-time 300 \
+        "https://github.com/intel/lms/archive/refs/tags/v${LMS_VERSION}.tar.gz" \
+        -o "v${LMS_VERSION}.tar.gz"
+
+        if [ -f "v${LMS_VERSION}.tar.gz" ]; then
+            actual_checksum=$(sha256sum "v${LMS_VERSION}.tar.gz" | awk '{print $1}')
+            if [ "$actual_checksum" != "$expected_checksum" ]; then
+                echo "ERROR: Checksum mismatch. Expected: $expected_checksum, Got: $actual_checksum"
+                rm -f "v${LMS_VERSION}.tar.gz"
+                exit 1
+            fi
+            echo "Checksum verification successful."
+            
+            tar -xzf "v${LMS_VERSION}.tar.gz"
+            rm -f "v${LMS_VERSION}.tar.gz"
+            cd "lms-${LMS_VERSION}" || exit 1
+            
+            export LMS_ROOT="$PWD"
+            mkdir -p build && cd build || exit 1
+            
+            cmake -Wno-dev -DBUILD_SHARED_LIBS=OFF -DNETWORK_NM=OFF \
+                -DNETWORK_CN=OFF -DCMAKE_INSTALL_PREFIX=/usr "$LMS_ROOT"
+            
+            if ! make -j"$(($(nproc) / 2))"; then
+                echo "ERROR: LMS build failed"
+                exit 1
+            fi
+            
+            # Create package without sudo, then install with sudo
+            if ! make package; then
+                echo "ERROR: LMS package creation failed"
+                exit 1
+            fi
+            
+            if [ -f "./lms-2506.0.0-Linux.deb" ]; then
+                echo "LMS package built successfully"
+                if sudo apt-get install -y -o Dpkg::Options::="--force-confnew" "./lms-2506.0.0-Linux.deb"; then
+                    echo "LMS package installed successfully"
+                    sudo systemctl stop lms.service
+                    sudo systemctl disable lms.service
+                    sudo systemctl mask lms.service
+                    rm -f "lms-2506.0.0-Linux.deb"
+                else
+                    echo "WARNING: Failed to install LMS package. Platform manageability features may not work properly."
+                    echo "Continuing with installation..."
+                fi
+            else
+                echo "ERROR: LMS package not found. Build failed."
+                exit 1
+            fi
+        else
+            echo "ERROR: Failed to download LMS source. Aborting installation."
+            exit 1
+        fi
+
+        #Download RPC binary
+        echo "Download RPC binary"
+        expected_checksum="609b3a69f6534005ca0bf62b12b04c1d18cbc28decc6cf2d5d03d0bc521d9de8"
+        curl -LO "https://github.com/device-management-toolkit/rpc-go/releases/download/v2.48.2/rpc_linux_x64.tar.gz"
+
+        if [ -f "rpc_linux_x64.tar.gz" ]; then
+            actual_checksum=$(sha256sum "rpc_linux_x64.tar.gz" | awk '{print $1}')
+            if [ "$actual_checksum" != "$expected_checksum" ]; then
+                echo "Checksum mismatch. File may be corrupted."
+            fi
+            echo "Checksum verification successful."
+            tar -xvf rpc_linux_x64.tar.gz -C /usr/bin
+            rm -rf rpc_linux_x64.tar.gz
+            mv /usr/bin/rpc_linux_x64 /usr/bin/rpc
+        else
+            echo "Downloaded file does not exist. Aborting installation."
+            exit 1
+        fi
+        echo "install_lms_rpc done" | tee -a "$SCRIPT_DIR"/$STATUS_FILENAME
+    fi
+}
+
+get_rs_token() {
+    if [ "no-auth" == "auth" ]; then
+        # Temp file to store response
+        tempfile=$(mktemp)
+
+        echo "get access token from orchestrator"
+        # Save the response to the temporary file
+        curl -X POST -u "$CLIENT_ID:$CLIENT_SECRET" -d "grant_type=client_credentials" https://keycloak.orch-10-139-218-43.pid.infra-host.com/realms/master/protocol/openid-connect/token -o "$tempfile"
+
+        # Check the exit status of curl
+        if [ ! -s "$tempfile" ]; then
+            echo "error in getting Keycloak token"
+            rm "$tempfile"
+            exit 1
+        fi
+
+        # Parse the response with jq
+        AT=$(jq -r '.access_token' "$tempfile")
+        rm "$tempfile"
+
+        # Get RS token now
+        tempfile=$(mktemp)
+        curl -XGET https://release.orch-10-139-218-43.pid.infra-host.com/token -H "Authorization: Bearer $AT" -o "$tempfile"
+
+        if [ ! -s "$tempfile" ]; then
+            echo "error in getting Release Service token"
+            rm "$tempfile"
+            exit 1
+        fi
+
+        RS_AT=$(cat "$tempfile")
+        rm "$tempfile"
+        echo "$RS_AT"  # Return the token
+    else
+        echo "RS_TYPE is not auth"
+        echo ""  # Return empty string for non-auth
+    fi
+}
+
+install_node_agent(){
+    if grep -q "install_node_agent done" "$SCRIPT_DIR"/$STATUS_FILENAME; then
+		echo "Skipping install_node_agent"
+    else
+        rm -f /etc/apt/sources.list.d/edge-node.list
+        RS_AT=$(get_rs_token)      
+
+        USERNAME="etcd"
+
+        # Check if the etcd already exists
+        if id "$USERNAME" &>/dev/null; then
+            echo "User '$USERNAME' already exists."
+        else
+            # Add the etcd if it doesn't exist
+            useradd -r -c "etcd user" -s /sbin/nologin -M "$USERNAME" -U
+            echo "User '$USERNAME' added successfully."
+        fi
+
+        echo "node-agent node-agent/onboarding.serviceURL string infra-node.orch-10-139-218-43.pid.infra-host.com:443" | debconf-set-selections
+        echo "node-agent node-agent/status.serviceClients string platform-manageability-agent" | debconf-set-selections
+        echo "node-agent node-agent/status.outboundClients string  " | debconf-set-selections
+        echo "node-agent node-agent/metrics.enabled string false" | debconf-set-selections
+        echo "node-agent node-agent/auth.accessTokenURL string keycloak.orch-10-139-218-43.pid.infra-host.com:443" | debconf-set-selections
+        echo "node-agent node-agent/auth.rsTokenURL string release.orch-10-139-218-43.pid.infra-host.com" | debconf-set-selections
+        echo "node-agent node-agent/auth.tokenClients string node-agent,platform-manageability-agent" | debconf-set-selections
+        echo "node-agent node-agent/proxy.aptSourceURL string files-rs.edgeorchestration.intel.com" | debconf-set-selections
+        echo "node-agent node-agent/proxy.aptSourceProxyPort string 60444" | debconf-set-selections
+        echo "node-agent node-agent/proxy.aptSourceFilesRSRoot string files-edge-orch" | debconf-set-selections
+        echo "node-agent node-agent/auth.RSType string no-auth" | debconf-set-selections
+
+        echo "Install caddy for node agent..."
+
+        echo "download caddy deb package..."
+        CADDY_PKGFILE="./caddy_2.7.6_linux_amd64.deb"
+        if [ "no-auth" == "auth" ]; then
+            echo "${RS_AT}" | oras pull "registry-rs.edgeorchestration.intel.com/edge-orch/en/deb/caddy:2.7.6" --password-stdin
+        else
+            oras pull "registry-rs.edgeorchestration.intel.com/edge-orch/en/deb/caddy:2.7.6"
+        fi
+
+        if [ ! -f "${CADDY_PKGFILE}" ]; then
+            echo "caddy debian package could not be downloaded. Aborting installation"
+            exit 1
+        fi
+
+        echo "install caddy"
+        apt-get install -y "${CADDY_PKGFILE}"
+
+        echo "remove caddy debian"
+        rm -f "${CADDY_PKGFILE}"
+
+        echo "Install node agent..."
+        echo "download node agent..."
+        PKGFILE="./node-agent_1.10.1_amd64.deb"
+
+        echo "download node agent"
+         if [ "no-auth" == "auth" ]; then
+            echo "${RS_AT}" | oras pull "registry-rs.edgeorchestration.intel.com/edge-orch/en/deb/node-agent:1.10.1" --password-stdin
+        else
+            oras pull "registry-rs.edgeorchestration.intel.com/edge-orch/en/deb/node-agent:1.10.1"
+        fi
+
+        if [ ! -f "${PKGFILE}" ]; then
+            echo "node agent debian could not be downloaded. Aborting installation"
+            exit 1
+        fi
+
+        echo "install node agent"
+        apt-get install -y -o Dpkg::Options::="--force-confnew" "${PKGFILE}"
+
+        echo "remove node agent debian"
+        rm -f "${PKGFILE}"
+
+        echo "wait for node agent and client proxy to start"
+        while true; do
+            http_status=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:60444/files-edge-orch/edge-node.asc")
+            if [ "$http_status" -eq 200 ]; then
+                echo "Client proxy is active"
+                break
+            else
+                echo "HTTP status code is $http_status. Retrying in 5 seconds..."
+                sleep 5
+            fi
+        done
+
+        echo "setup apt source"
+        if [ "no-auth" == "auth" ]; then
+            curl -kfsSL "https://files-rs.edgeorchestration.intel.com/files-edge-orch/edge-node.asc" -H "Authorization: Bearer $RS_AT" -o /etc/apt/trusted.gpg.d/edge-node.asc
+        else
+            curl -kfsSL "https://files-rs.edgeorchestration.intel.com/files-edge-orch/edge-node.asc" -o /etc/apt/trusted.gpg.d/edge-node.asc
+        fi
+        echo "deb http://localhost:60444/files-edge-orch/repository 3.1 main" | tee /etc/apt/sources.list.d/edge-node.list
+
+        apt-get update
+        echo "install_node_agent done" | tee -a "$SCRIPT_DIR"/$STATUS_FILENAME
+    fi
+}
+
+install_PMA() {
+    if grep -q "install_PMA done" "$SCRIPT_DIR"/$STATUS_FILENAME; then
+        echo "Skipping install_PMA"
+    else
+        echo "Install PMA..."
+        amt_output=$(rpc amtinfo)
+        if echo "$amt_output" | grep -iqE "AMT Pro Corporate|Intel Standard Manageability Corporate" > /dev/null; then
+            echo "platform-manageability-agent platform-manageability-agent/manageability.serviceURL string ${PLATFORM_MANAGEABILITY_URL}" | debconf-set-selections
+            echo "platform-manageability-agent platform-manageability-agent/rpsAddress string rps.orch-10-139-218-43.pid.infra-host.com" | debconf-set-selections
+            apt-get install -y -o Dpkg::Options::="--force-confnew" platform-manageability-agent=0.4.0
+        else
+            sed -i '/serviceClients:/ s/platform-manageability-agent, *//; /serviceClients:/ s/, *platform-manageability-agent//; /serviceClients:/ s/platform-manageability-agent//' /etc/edge-node/node/confs/node-agent.yaml
+        fi
+        echo "install_PMA done" | tee -a "$SCRIPT_DIR"/$STATUS_FILENAME
+  fi
+}
+
+install_syslogrotate_ufw(){
+if grep -q "install_syslogrotate_ufw done" "$SCRIPT_DIR"/$STATUS_FILENAME; then
+	echo "Skipping install_syslogrotate_ufw"
+else
+sudo tee /etc/logrotate.d/ufw << 'END'
+/var/log/ufw.log
+{
+        rotate 4
+        weekly
+        missingok
+        notifempty
+        size 1G
+        compress
+        delaycompress
+        sharedscripts
+        postrotate
+                [ -x /usr/lib/rsyslog/rsyslog-rotate ] && /usr/lib/rsyslog/rsyslog-rotate || true
+        endscript
+}
+END
+
+sudo systemctl restart ufw.service
+sudo ufw logging low
+echo "install_syslogrotate_ufw done" | tee -a "$SCRIPT_DIR"/$STATUS_FILENAME
+fi
+}
+
+disable_unattended_upgrade(){
+    if grep -q "disable_unattended_upgrade done" "$SCRIPT_DIR"/$STATUS_FILENAME; then
+		echo "Skipping disable_unattended_upgrade"
+    else
+    echo "Disable unattended upgrade"
+        config_file="/etc/apt/apt.conf.d/20auto-upgrades"
+        if [ -f "$config_file" ]; then
+            sed -i 's/APT::Periodic::Update-Package-Lists "1";/APT::Periodic::Update-Package-Lists "0";/' "$config_file"
+            sed -i 's/APT::Periodic::Unattended-Upgrade "1";/APT::Periodic::Unattended-Upgrade "0";/' "$config_file"
+            echo "APT::Periodic::Update-Package-Lists set to \"0\" in $config_file"
+        else
+            echo "Error: $config_file does not exist."
+            exit 1
+        fi
+        apt remove -y unattended-upgrades
+        echo "disable_unattended_upgrade done" | tee -a "$SCRIPT_DIR"/$STATUS_FILENAME
+    fi
+}
+
+install_dependencies 2>&1 | tee -a "$SCRIPT_DIR"/$SETUP_STATUS_FILENAME
+install_fws 2>&1 | tee -a "$SCRIPT_DIR"/$SETUP_STATUS_FILENAME
+enable_kernel_config 2>&1 | tee -a "$SCRIPT_DIR"/$SETUP_STATUS_FILENAME
+enable_NTP 2>&1 | tee -a "$SCRIPT_DIR"/$SETUP_STATUS_FILENAME
+install_syslogrotate_job 2>&1 | tee -a "$SCRIPT_DIR"/$SETUP_STATUS_FILENAME
+echo "Install agents..........................."
+install_CA_cert 2>&1 | tee -a "$SCRIPT_DIR"/$SETUP_STATUS_FILENAME
+install_oras 2>&1 | tee -a "$SCRIPT_DIR"/$SETUP_STATUS_FILENAME
+install_device_discovery 2>&1 | tee -a "$SCRIPT_DIR"/$SETUP_STATUS_FILENAME
+install_lms_rpc 2>&1 | tee -a "$SCRIPT_DIR"/$SETUP_STATUS_FILENAME
+install_node_agent 2>&1 | tee -a "$SCRIPT_DIR"/$SETUP_STATUS_FILENAME
+install_PMA 2>&1 | tee -a "$SCRIPT_DIR"/$SETUP_STATUS_FILENAME
+install_syslogrotate_ufw 2>&1 | tee -a "$SCRIPT_DIR"/$SETUP_STATUS_FILENAME
+disable_unattended_upgrade 2>&1 | tee -a "$SCRIPT_DIR"/$SETUP_STATUS_FILENAME
+echo "Installation completed Successfuly on EdgeNode!!!!"
+echo "Installation done" > "$SCRIPT_DIR"/.base_pkg_install_done
