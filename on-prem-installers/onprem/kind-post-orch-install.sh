@@ -689,31 +689,6 @@ install_root_app() {
     -n "$namespace" --create-namespace
 }
 
-install_openebs_localpv() {
-  # Hardcoded version (change it here when needed)
-  LOCALPV_VERSION="4.3.0"
-
-  echo "👉 Using OpenEBS LocalPV version: $LOCALPV_VERSION"
-
-  echo "👉 Adding OpenEBS LocalPV Helm repo..."
-  helm repo add openebs-localpv https://openebs.github.io/dynamic-localpv-provisioner
-
-  echo "🔄 Updating Helm repos..."
-  helm repo update
-
-  echo "🚀 Installing/Upgrading OpenEBS LocalPV..."
-  helm upgrade --install openebs-localpv openebs-localpv/localpv-provisioner \
-    --version "$LOCALPV_VERSION" \
-    --namespace openebs-system --create-namespace \
-    --set hostpathClass.enabled=true \
-    --set hostpathClass.name=openebs-hostpath \
-    --set hostpathClass.isDefaultClass=true \
-    --set deviceClass.enabled=false
-
-  echo "📦 OpenEBS Pods in openebs-system namespace:"
-  kubectl get pods -n openebs-system
-}
-
 
 ################################
 ##### INSTALL SCRIPT START #####
@@ -806,6 +781,19 @@ else
 fi
 
 if [ "$ASSUME_YES" = false ]; then
+  echo
+  echo "========================================"
+  echo " Generated Cluster Config (for review)"
+  echo " File: $cwd/$ORCH_INSTALLER_PROFILE.yaml"
+  echo "========================================"
+  if [[ -r "$cwd/$ORCH_INSTALLER_PROFILE.yaml" ]]; then
+    cat "$cwd/$ORCH_INSTALLER_PROFILE.yaml"
+  else
+    echo "⚠️  Cannot read cluster config file: $cwd/$ORCH_INSTALLER_PROFILE.yaml"
+  fi
+  echo "========================================"
+  echo
+
   while true; do
     read -rp "Edit config values.yaml files with custom configurations if necessary!!!
   The generated cluster config file is located at:
@@ -850,7 +838,6 @@ create_keycloak_password orch-platform "$keycloak_password"
 create_postgres_password orch-database "$postgres_password"
 
 install_root_app
-install_openebs_localpv
 
 printf "\nEdge Orchestrator SW is being deployed, please wait for all applications to deploy...\n\
 To check the status of the deployment run 'kubectl get applications -A'.\n\

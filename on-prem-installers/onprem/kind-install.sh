@@ -5,6 +5,70 @@ CLUSTER_NAME="kind-cluster"
 OS="$(uname | tr '[:upper:]' '[:lower:]')"
 ARCH="amd64"
 KIND_CONFIG="/tmp/kind-${CLUSTER_NAME}-6443.yaml"
+WAIT_TIMEOUT_SECONDS="${WAIT_TIMEOUT_SECONDS:-300}"
+WAIT_INTERVAL_SECONDS="${WAIT_INTERVAL_SECONDS:-5}"
+
+# Prefer binaries installed to /usr/local/bin (e.g., avoid asdf shims).
+export PATH="/usr/local/bin:${PATH}"
+
+wait_for_kind_ready() {
+  local context="kind-${CLUSTER_NAME}"
+
+  echo "👉 Waiting for Kubernetes API to be reachable (context: ${context})..."
+  local deadline=$((SECONDS + WAIT_TIMEOUT_SECONDS))
+  until kubectl --context "${context}" get --raw='/readyz' >/dev/null 2>&1; do
+    if (( SECONDS >= deadline )); then
+      echo "❌ Timed out waiting for API server to be ready after ${WAIT_TIMEOUT_SECONDS}s"
+      kubectl --context "${context}" cluster-info || true
+      exit 1
+    fi
+    sleep "${WAIT_INTERVAL_SECONDS}"
+  done
+  echo "✅ API server is ready"
+
+  echo "👉 Waiting for all nodes to be Ready (timeout: ${WAIT_TIMEOUT_SECONDS}s)..."
+  if ! kubectl --context "${context}" wait --for=condition=Ready node --all --timeout="${WAIT_TIMEOUT_SECONDS}s"; then
+    echo "❌ Timed out waiting for nodes to become Ready"
+    kubectl --context "${context}" get nodes -o wide || true
+    kubectl --context "${context}" get pods -A || true
+    exit 1
+  fi
+  echo "✅ All nodes are Ready"
+}
+
+install_openebs_localpv() {
+  local context="kind-${CLUSTER_NAME}"
+
+  if ! command -v helm >/dev/null 2>&1; then
+    echo "❌ helm not found. Install helm v3 and retry."
+    exit 1
+  fi
+
+  # Hardcoded version (change it here when needed)
+  local LOCALPV_VERSION="4.3.0"
+
+  echo "👉 Using OpenEBS LocalPV version: ${LOCALPV_VERSION}"
+
+  echo "👉 Adding OpenEBS LocalPV Helm repo..."
+  helm repo add openebs-localpv https://openebs.github.io/dynamic-localpv-provisioner >/dev/null
+
+  echo "🔄 Updating Helm repos..."
+  helm repo update >/dev/null
+
+  echo "🚀 Installing/Upgrading OpenEBS LocalPV..."
+  helm upgrade --install openebs-localpv openebs-localpv/localpv-provisioner \
+    --kube-context "${context}" \
+    --version "${LOCALPV_VERSION}" \
+    --namespace openebs-system --create-namespace \
+    --set hostpathClass.enabled=true \
+    --set hostpathClass.name=openebs-hostpath \
+    --set hostpathClass.isDefaultClass=true \
+    --set deviceClass.enabled=false \
+    --wait --timeout 10m0s
+
+  echo "📦 OpenEBS Pods in openebs-system namespace:"
+  kubectl --context "${context}" get pods -n openebs-system
+}
 
 get_latest_kind() {
   curl -s https://api.github.com/repos/kubernetes-sigs/kind/releases/latest \
@@ -43,6 +107,15 @@ EOF
 create_cluster() {
   echo "👉 Creating KIND cluster: ${CLUSTER_NAME} (API @ 127.0.0.1:6443)"
 
+  if kind get clusters 2>/dev/null | grep -qx "${CLUSTER_NAME}"; then
+    echo "⚠️  KIND cluster '${CLUSTER_NAME}' already exists; reusing it"
+    kind export kubeconfig --name "${CLUSTER_NAME}" >/dev/null 2>&1 || true
+    kubectl cluster-info --context kind-${CLUSTER_NAME} || true
+    wait_for_kind_ready
+    install_openebs_localpv
+    return 0
+  fi
+
   create_kind_config
 
   kind create cluster \
@@ -51,6 +124,10 @@ create_cluster() {
 
   echo "✅ Cluster created"
   kubectl cluster-info --context kind-${CLUSTER_NAME}
+
+  wait_for_kind_ready
+
+  install_openebs_localpv
 }
 
 delete_cluster() {
