@@ -247,8 +247,7 @@ if [ "$DEPLOY_TYPE" = "onprem" ]; then
             export O11Y_ENABLE_PROFILE="#- orch-configs/profiles/enable-o11y.yaml"
             export O11Y_PROFILE="#- orch-configs/profiles/o11y-onprem.yaml"
             export CO_PROFILE="#- orch-configs/profiles/enable-cluster-orch.yaml"
-            export AO_PROFILE="#- orch-configs/profiles/enable-app-orch.yaml"
-            export GITEA_ENABLED="false"
+            export AO_PROFILE="#- orch-configs/profiles/enable-app-orch.yaml"            
             ;;
         *)
             echo "❌ Invalid ORCH_INSTALLER_PROFILE: ${ORCH_INSTALLER_PROFILE}"
