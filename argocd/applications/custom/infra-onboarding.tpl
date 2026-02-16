@@ -103,7 +103,7 @@ tinkerbell:
     - ReadWriteOnce
   traefikReverseProxy:
     enabled: &traefikReverseProxy_enabled true
-    tinkServerDnsname: "tinkerbell-server.{{ .Values.argo.clusterDomain }}"
+    tinkServerDnsname: &tinkServerDnsname "tinkerbell-server.{{ .Values.argo.clusterDomain }}"
     nginxDnsname: &nginxDnsname "tinkerbell-haproxy.{{ .Values.argo.clusterDomain }}"
   stack:
     enabled: true
@@ -143,6 +143,9 @@ tinkerbell:
       enabled: true
     server:
       enabled: true
+      ingress:
+        enabled: *traefikReverseProxy_enabled
+        hostname: *tinkServerDnsname
       metrics:
         enabled: {{ index .Values.argo "infra-onboarding" "enableMetrics" | default false }}
     {{- end }}
