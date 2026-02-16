@@ -74,7 +74,7 @@ jobs:
       test-automation: ${{ contains(steps.check-files.outputs.changed_files, '.test-dependencies.yaml') }}
       only_design_proposals: ${{ steps.only-design-proposals.outputs.only_design_proposals }}
       # UI change detection for conditional UI tests
-      ui: ${{ contains(steps.check-files.outputs.changed_files, 'argocd/applications/templates/ui-') || contains(steps.check-files.outputs.changed_files, 'argocd/applications/custom/ui-') || contains(steps.check-files.outputs.changed_files, 'argocd/applications/configs/ui-') || contains(steps.check-files.outputs.changed_files, '.github/actions/cypress') }}
+      ui: ${{ contains(steps.check-files.outputs.changed_files, 'argocd/applications/templates/web-ui-') || contains(steps.check-files.outputs.changed_files, 'argocd/applications/custom/web-ui-') || contains(steps.check-files.outputs.changed_files, 'argocd/applications/configs/web-ui-') || contains(steps.check-files.outputs.changed_files, '.github/actions/cypress') }}
     steps:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
@@ -520,13 +520,12 @@ jobs:
           ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
         run: mage deploy:victoriaMetrics apply
 
-      # NOTE: Tenancy CRUD tests (e2etenancy) are SKIPPED - covered by Golden Suite CF-1 and CF-11
-      # We only run tests that are UNIQUE to EMF and not covered by Golden Suite
+      # NOTE: Tenancy tests (e2etenancy) are SKIPPED - covered by Golden Suite CF-1 and CF-11
 
-      - name: Run e2e tenancy API gateway tests (token validation - unique to EMF)
+      - name: Run e2e tenancy API gateway tests
         run: mage test:e2etenancyapigw
 
-      - name: Create default user and run e2e tests (security headers, API validation - unique to EMF)
+      - name: Create default user and run e2e tests
         run: mage devUtils:createDefaultUser test:e2e
 
       - name: "Test Observability SRE Exporter w/o VEN"
@@ -582,9 +581,9 @@ jobs:
       # CF-3: Provision EN (VEN onboarding)
       # CF-4: Single Node Cluster Creation
       # CF-5: Deploy Container App (WordPress)
-      # CF-6: SKIPPED - VM deployment issues on Kind
+      # CF-6: SKIPPED - VM deployment issues with VEN
       # CF-7: Assert Metrics Collected
-      # CF-8: SKIPPED - Cleanup for CF-6 VM app (not deployed)
+      # CF-8: SKIPPED - Cleanup for apps, CF-6 VM app (not deployed)
       # CF-9: Cleanup Cluster
       # CF-10: Cleanup Host
       # CF-11: Cleanup Tenancy
