@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-{{- $appName        := "metallb-config" }}
-{{- $namespace      := "metallb-system" }}
-{{- $syncWave       := "150" }}
+{{- $appName        := "haproxy-ingress-pxe-boots" }}
+{{- $namespace      := "orch-boots" }}
+{{- $syncWave       := "1200" }}
 ---
 {{- if (index .Values.argo.enabled $appName) }}
 apiVersion: argoproj.io/v1alpha1
@@ -21,7 +21,7 @@ spec:
   sources:
     - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
       chart: common/charts/{{$appName}}
-      targetRevision: 26.0.1
+      targetRevision: 1.0.1
       helm:
         releaseName: {{$appName}}
         valuesObject:
@@ -49,4 +49,12 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ApplyOutOfSyncOnly=true
+      # FIXME Workaround for Secrets unable to be recreated
+      - Replace=true
+  # FIXME Workaround for https://github.com/argoproj/argo-cd/issues/5116
+  ignoreDifferences:
+    - group: cert-manager.io
+      kind: Certificate
+      jsonPointers:
+        - /spec/isCA
 {{- end }}

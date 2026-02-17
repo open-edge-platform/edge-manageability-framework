@@ -39,7 +39,7 @@ argo:
 
   ## Argo CD configs
   deployRepoURL: "https://github.com/open-edge-platform/edge-manageability-framework"
-  deployRepoRevision: ${DEPLOY_REPO_BRANCH}
+  deployRepoRevision: "${DEPLOY_REPO_BRANCH}"
 
   targetServer: "https://kubernetes.default.svc"
   autosync: true
@@ -72,12 +72,12 @@ postCustomTemplateOverwrite:
     service:
       annotations:
         metallb.universe.tf/address-pool: traefik
-  ingress-nginx:
+  ingress-haproxy:
     controller:
       service:
         annotations:
-          metallb.universe.tf/address-pool: ingress-nginx-controller
+          metallb.universe.tf/address-pool: haproxy-controller
   metallb-config:
     ArgoIP: ${ARGO_IP}
     TraefikIP: ${TRAEFIK_IP}
-    NginxIP: ${NGINX_IP}
+    HaproxyIP: ${HAPROXY_IP}
