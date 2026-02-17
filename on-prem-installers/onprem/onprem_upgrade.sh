@@ -135,11 +135,24 @@ retrieve_and_apply_config() {
     # Get the external IP address of the LoadBalancer services
     ARGO_IP=$(kubectl get svc argocd-server -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
     TRAEFIK_IP=$(kubectl get svc traefik -n orch-gateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-    NGINX_IP=$(kubectl get svc ingress-nginx-controller -n orch-boots -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+
+    if kubectl get svc ingress-haproxy-kubernetes-ingress -n orch-boots >/dev/null 2>&1; then
+	HAPROXY_IP=$(kubectl get svc ingress-haproxy-kubernetes-ingress -n orch-boots -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+	echo "Using HAProxy ingress: $HAPROXY_IP"
+
+    elif kubectl get svc ingress-nginx-controller -n orch-boots >/dev/null 2>&1; then
+	HAPROXY_IP=$(kubectl get svc ingress-nginx-controller -n orch-boots -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+	echo "Using NGINX ingress: $HAPROXY_IP"
+
+    else
+	echo "ERROR: Neither HAProxy nor NGINX ingress service found in orch-boots namespace"
+	exit 1
+    fi
+
 
     update_config_variable "$config_file" "ARGO_IP" "${ARGO_IP}"
     update_config_variable "$config_file" "TRAEFIK_IP" "${TRAEFIK_IP}"
-    update_config_variable "$config_file" "NGINX_IP" "${NGINX_IP}"
+    update_config_variable "$config_file" "HAPROXY_IP" "${HAPROXY_IP}"
 
     sre_tls=$(kubectl get applications -n "$apps_ns" sre-exporter -o jsonpath='{.spec.sources[*].helm.valuesObject.otelCollector.tls.enabled}')
     if [[ $sre_tls = 'true' ]]; then
@@ -636,6 +649,28 @@ cleanup_gitea_secrets() {
   echo "Secret cleanup completed."
 }
 
+delete_nginx_if_any() {
+  echo "🔍 Checking and deleting nginx ingress (if any)..."
+
+  # Delete ArgoCD applications (ignore if not found)
+  kubectl delete application ingress-nginx -n onprem --ignore-not-found=true || true
+  kubectl delete application nginx-ingress-pxe-boots -n onprem --ignore-not-found=true || true
+
+  # Find and delete harbor nginx pods
+  local HARBOR_PODS
+  HARBOR_PODS=$(kubectl get pods -n orch-harbor --no-headers 2>/dev/null | awk '/harbor-oci-nginx/ {print $1}' || true)
+
+  if [ -n "${HARBOR_PODS:-}" ]; then
+    echo "🧹 Deleting harbor nginx pods:"
+    echo "$HARBOR_PODS"
+    kubectl delete pod -n orch-harbor "$HARBOR_PODS" || true
+  else
+    echo "ℹ️ No harbor-oci-nginx pods found in orch-harbor."
+  fi
+
+  echo "✅ nginx cleanup done."
+}
+
 usage() {
     cat >&2 <<EOF
 Purpose:
@@ -693,7 +728,7 @@ fi
 # Perform PostgreSQL secret backup if not done already
 if [[ ! -f postgres_secret.yaml ]]; then
 
-        kubectl get secret -n orch-database postgresql-cluster-superuser -o yaml > postgres_secret.yaml
+     kubectl get secret -n orch-database postgresql-cluster-superuser -o yaml > postgres_secret.yaml
 
 fi
 
@@ -1296,7 +1331,8 @@ sleep  5
 # Apply root-app sync
 kubectl patch application root-app -n  "$apps_ns"  --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 sleep 10
-
+delete_nginx_if_any
+sleep 10
 echo "Wait ~5–10 minutes for ArgoCD to sync and deploy all application"
 echo "   👉 Run the script to further sync and post run"
 echo "          ./after_upgrade_restart.sh"
