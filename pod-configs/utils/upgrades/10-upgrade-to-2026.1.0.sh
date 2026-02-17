@@ -238,14 +238,6 @@ echo "Updating tags for ${NG}"
 
 done
 
-
-echo "Updating max size for node group"
-
-aws eks update-nodegroup-config \
-  --cluster-name $ENV_NAME \
-  --nodegroup-name "nodegroup-${ENV_NAME}" \
-  --scaling-config maxSize=5
-
 POLICY_NAME="CASControllerPolicy-${CLUSTER_NAME}"
 
 echo "Finding policy ARN..."
