@@ -605,7 +605,10 @@ jobs:
             --name "Golden Suite: Core Foundation" \
             -d robot_output/core_foundation \
             -V orchestrator-configs/kind.yaml \
-            -V tests/core_foundation/data/cf_data_2_ven_VEN-libvirt_ubuntu-24.04-lts.yaml \
+            -V tests/core_foundation/data/cf_data_2_ven_VEN-libvirt_ubuntu-24.04-lts.yaml \            
+            -i cf1 \
+            -i cf2 \
+            -i cf3 \
             tests/core_foundation/core_foundation.robot
             virsh list --all || true
             sudo virsh --all || true
