@@ -207,6 +207,11 @@ class AutoInstall:
         self.aws_region = os.getenv("AWS_REGION")
         if self.aws_region is None or len(self.aws_region) == 0:
             raise ValueError("AWS_REGION environment variable is required.")
+        
+        # Set bucket_region variable if it is set, else set it to the AWS_REGION
+        self.bucket_region = os.getenv("BUCKET_REGION")
+        if self.aws_region is None or len(self.aws_region) == 0:
+            self.bucket_region = self.aws_region
 
         self.aws_account = os.getenv("AWS_ACCOUNT")
         if self.aws_account is None or len(self.aws_account) == 0:
@@ -481,6 +486,9 @@ class AutoInstall:
         # image from the release service. The image pull can take 10 minutes or more depending
         # on network performance. Add a specific pull timeout/progress watch phase to verify pull
         # progress when it is being done here.
+
+        # Set the bucket region during init
+        self.installer_session.sendline(f"export BUCKET_REGION={self.bucket_region}")
 
     def start_time_cryer(self):
         """
