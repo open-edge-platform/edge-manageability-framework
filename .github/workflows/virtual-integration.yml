@@ -606,12 +606,11 @@ jobs:
             -d robot_output/core_foundation \
             -V orchestrator-configs/kind.yaml \
             -V tests/core_foundation/data/cf_data_2_ven_VEN-libvirt_ubuntu-24.04-lts.yaml \
-            -i cf1 \
-            -i cf2 \
-            -i cf3 \
             tests/core_foundation/core_foundation.robot
+            virsh list --all || true
+            sudo virsh --all || true
             VM_NAME=pico-node-libvirt
-            NODE_UUID=$(virsh domuuid "$VM_NAME")
+            NODE_UUID=$(sudo virsh domuuid "$VM_NAME") || true
             echo $NODE_UUID
             echo "VM_NAME=$VM_NAME" >> $GITHUB_ENV
             echo "NODE_UUID=$NODE_UUID" >> $GITHUB_ENV
