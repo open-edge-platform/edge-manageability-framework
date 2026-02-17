@@ -518,8 +518,7 @@ jobs:
           ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
         run: mage deploy:victoriaMetrics apply
 
-      - name: Run e2e tenancy tests
-        run: mage test:e2etenancy
+      # NOTE: Tenancy tests (e2etenancy) are SKIPPED - covered by Golden Suite CF-1 and CF-11
 
       - name: Run e2e tenancy API gateway tests
         run: mage test:e2etenancyapigw
@@ -532,6 +531,18 @@ jobs:
           ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
         run: |
           mage test:e2eSreObservabilityNoEnic
+
+      - name: "Test Observability Public Endpoints"
+        env:
+          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+        run: |
+          mage test:e2eObservability
+
+      - name: "Test Observability Orchestrator Stack"
+        env:
+          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+        run: |
+          mage test:e2eOrchObservability
           
       - name: Read test-automation dependency Version
         id: read-test-automation-version
@@ -560,7 +571,20 @@ jobs:
           pushd repos/ven/pico
           asdf install
           sudo apt-get install xsltproc
-          popd	  
+          popd
+
+      # Golden Suite runs the following tests:
+      # CF-1: Tenancy Management (Create Org/Project)
+      # CF-2: Tenancy Isolation
+      # CF-3: Provision EN (VEN onboarding)
+      # CF-4: Single Node Cluster Creation
+      # CF-5: Deploy Container App (WordPress)
+      # CF-6: SKIPPED - VM deployment issues with VEN
+      # CF-7: Assert Metrics Collected
+      # CF-8: SKIPPED - Cleanup for apps, CF-6 VM app (not deployed)
+      # CF-9: Cleanup Cluster
+      # CF-10: Cleanup Host
+      # CF-11: Cleanup Tenancy
       - name: Run Golden Suite Robot Framework Tests
         id: robot-tests
         working-directory: edge-manage-test-automation
