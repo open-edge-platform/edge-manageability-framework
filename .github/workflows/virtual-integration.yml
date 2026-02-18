@@ -822,6 +822,245 @@ jobs:
         with:
           k8s_diagnostics_args: "--errors-only --include-logs --output-html --output-json"
 
+  # ============================================================================
+  # TEMPORARY VALIDATION JOB - Remove after validation is complete
+  # This job embeds diagnostics convergence validation for testing purposes
+  # ============================================================================
+  diagnostics-convergence-validation:
+    name: Diagnostics Convergence Validation (TEMPORARY)
+    permissions:
+      actions: read
+      contents: read
+    needs:
+      - deploy-kind
+      - deploy-on-prem
+      - deploy-oxm-profile
+    # Always run, but do early exit if all target jobs succeeded
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check if convergence analysis is needed
+        id: check-need-analysis
+        run: |
+          echo "deploy-kind result: ${{ needs.deploy-kind.result }}"
+          echo "deploy-on-prem result: ${{ needs.deploy-on-prem.result }}"
+          echo "deploy-oxm-profile result: ${{ needs.deploy-oxm-profile.result }}"
+          
+          # Check if at least one job is non-success (failure, cancelled, etc.)
+          need_analysis=false
+          if [[ "${{ needs.deploy-kind.result }}" != "success" && "${{ needs.deploy-kind.result }}" != "skipped" ]]; then
+            need_analysis=true
+          fi
+          if [[ "${{ needs.deploy-on-prem.result }}" != "success" && "${{ needs.deploy-on-prem.result }}" != "skipped" ]]; then
+            need_analysis=true
+          fi
+          if [[ "${{ needs.deploy-oxm-profile.result }}" != "success" && "${{ needs.deploy-oxm-profile.result }}" != "skipped" ]]; then
+            need_analysis=true
+          fi
+          
+          echo "need_analysis=$need_analysis" >> $GITHUB_OUTPUT
+          
+          if [[ "$need_analysis" == "false" ]]; then
+            echo "✅ All target jobs succeeded. Convergence analysis skipped."
+            echo "## Convergence Analysis Skipped" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "All target deploy jobs succeeded, so convergence analysis was not needed." >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+          
+          echo "🔍 At least one job had issues. Proceeding with convergence analysis."
+
+      - name: Checkout repository
+        if: steps.check-need-analysis.outputs.need_analysis == 'true'
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        if: steps.check-need-analysis.outputs.need_analysis == 'true'
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b  # v5.3.0
+        with:
+          python-version: '3.11'
+
+      - name: List recent workflow runs
+        if: steps.check-need-analysis.outputs.need_analysis == 'true'
+        id: list-runs
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
+        with:
+          script: |
+            const runs = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'virtual-integration.yml',
+              per_page: 20,
+              status: 'completed'
+            });
+            
+            core.info(`Found ${runs.data.workflow_runs.length} completed workflow runs`);
+            
+            // Extract run IDs and metadata
+            const runData = runs.data.workflow_runs.map(run => ({
+              id: run.id,
+              number: run.run_number,
+              event: run.event,
+              status: run.status,
+              conclusion: run.conclusion,
+              created_at: run.created_at
+            }));
+            
+            // Save to output file for next step
+            const fs = require('fs');
+            fs.writeFileSync('workflow_runs.json', JSON.stringify(runData, null, 2));
+            
+            return runData;
+
+      - name: Download diagnostics artifacts
+        if: steps.check-need-analysis.outputs.need_analysis == 'true'
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            // Read workflow runs from previous step
+            const runData = JSON.parse(fs.readFileSync('workflow_runs.json', 'utf8'));
+            
+            // Create artifacts directory
+            const artifactsDir = 'downloaded-artifacts';
+            fs.mkdirSync(artifactsDir, { recursive: true });
+            
+            const targetJobs = ['deploy-kind', 'deploy-on-prem', 'deploy-oxm-profile'];
+            let downloadedCount = 0;
+            let totalAttempted = 0;
+            
+            // Download artifacts from recent runs
+            for (const run of runData.slice(0, 20)) {
+              core.info(`\nChecking run #${run.number} (ID: ${run.id})`);
+              
+              try {
+                const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  run_id: run.id
+                });
+                
+                for (const artifact of artifacts.data.artifacts) {
+                  // Check if artifact matches our target pattern
+                  for (const job of targetJobs) {
+                    if (artifact.name.startsWith(`diagnostics-${job}-`)) {
+                      totalAttempted++;
+                      core.info(`  Found artifact: ${artifact.name}`);
+                      
+                      try {
+                        // Download artifact
+                        const download = await github.rest.actions.downloadArtifact({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          artifact_id: artifact.id,
+                          archive_format: 'zip'
+                        });
+                        
+                        // Save to file
+                        const artifactPath = path.join(artifactsDir, `${artifact.name}.zip`);
+                        fs.writeFileSync(artifactPath, Buffer.from(download.data));
+                        downloadedCount++;
+                        
+                        core.info(`  ✓ Downloaded ${artifact.name}`);
+                      } catch (downloadError) {
+                        core.warning(`  ✗ Failed to download ${artifact.name}: ${downloadError.message}`);
+                      }
+                      
+                      break;
+                    }
+                  }
+                }
+              } catch (error) {
+                core.warning(`Failed to list artifacts for run ${run.id}: ${error.message}`);
+              }
+            }
+            
+            core.info(`\n📊 Download summary: ${downloadedCount}/${totalAttempted} artifacts downloaded`);
+            
+            // Save summary for next step
+            fs.writeFileSync('download_summary.json', JSON.stringify({
+              downloaded: downloadedCount,
+              attempted: totalAttempted
+            }, null, 2));
+
+      - name: Extract and organize artifacts
+        if: steps.check-need-analysis.outputs.need_analysis == 'true'
+        run: |
+          mkdir -p extracted-artifacts
+          cd downloaded-artifacts
+          
+          # Extract all downloaded artifacts
+          for zipfile in *.zip; do
+            if [[ -f "$zipfile" ]]; then
+              echo "Extracting $zipfile..."
+              artifact_name="${zipfile%.zip}"
+              mkdir -p "../extracted-artifacts/$artifact_name"
+              unzip -q "$zipfile" -d "../extracted-artifacts/$artifact_name"
+            fi
+          done
+          
+          cd ..
+          echo "Extracted artifacts:"
+          find extracted-artifacts -name "diagnostics_full_*.json" -type f
+
+      - name: Run convergence analysis
+        if: steps.check-need-analysis.outputs.need_analysis == 'true'
+        run: |
+          echo "Running diagnostics convergence analysis..."
+          
+          # Check if we have any artifacts to analyze
+          json_count=$(find extracted-artifacts -name "diagnostics_full_*.json" -type f | wc -l)
+          echo "Found $json_count diagnostics JSON files"
+          
+          if [[ $json_count -eq 0 ]]; then
+            echo "⚠️  No diagnostics data found. Creating empty convergence report."
+            mkdir -p convergence-output
+            echo '{"status": "no_data", "message": "No diagnostics artifacts found", "total_runs": 0}' > convergence-output/convergence.json
+            echo "# No Diagnostics Data Available" > convergence-output/convergence.md
+            echo "No diagnostics artifacts were found for analysis." >> convergence-output/convergence.md
+            echo '{"total_artifacts": 0, "artifacts": []}' > convergence-output/manifest.json
+          else
+            # Run the convergence analyzer
+            python3 ci/diagnostics_convergence.py extracted-artifacts --output-dir convergence-output
+          fi
+          
+          echo "Convergence analysis complete!"
+          ls -lh convergence-output/
+
+      - name: Upload convergence outputs
+        if: steps.check-need-analysis.outputs.need_analysis == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: convergence-analysis-${{ github.run_number }}-${{ github.run_attempt }}
+          path: |
+            convergence-output/convergence.json
+            convergence-output/convergence.md
+            convergence-output/manifest.json
+          retention-days: 15
+          compression-level: 6
+
+      - name: Write summary to GITHUB_STEP_SUMMARY
+        if: steps.check-need-analysis.outputs.need_analysis == 'true'
+        run: |
+          echo "## 📊 Diagnostics Convergence Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Include the markdown report
+          if [[ -f convergence-output/convergence.md ]]; then
+            cat convergence-output/convergence.md >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Convergence report not generated" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "*This is a temporary validation job - will be removed after validation*" >> $GITHUB_STEP_SUMMARY
+
   tag-repo:
     permissions:
       contents: read
