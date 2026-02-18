@@ -107,11 +107,14 @@ root_app=root-app
 
 # Variables that depend on the above and might require updating later, are placed in here
 set_artifacts_version() {
-  installer_list=(
+  installer_list=()
+  if [ "$INSTALL_GITEA" = "true" ]; then
+    installer_list+=("onprem-gitea-installer:${DEPLOY_VERSION}")
+  fi
+  installer_list+=(
     "onprem-config-installer:${DEPLOY_VERSION}"
     "onprem-ke-installer:${DEPLOY_VERSION}"
     "onprem-argocd-installer:${DEPLOY_VERSION}"
-    "onprem-gitea-installer:${DEPLOY_VERSION}"
     "onprem-orch-installer:${DEPLOY_VERSION}"
   )
 
@@ -495,14 +498,8 @@ check_and_cleanup_job() {
 # check_orch_install <array[@] of package names>
 check_orch_install() {
     package_list=("$@")
-    echo "INSTALL_GITEA:$INSTALL_GITEA"
     for package in "${package_list[@]}"; do
         package_name="${package%%:*}"
-	    if [[ "${INSTALL_GITEA}" == "false" && "$package_name" == "onprem-gitea-installer" ]]; then
-          echo "Skipping dpkg check for gitea package"
-          continue
-        fi
-
         if ! dpkg -l "$package_name" >/dev/null 2>&1; then
             echo "Package: $package_name is not installed on the node, OnPrem Edge Orchestrator is not installed or installation is broken"
             exit 1
@@ -745,11 +742,17 @@ cleanup_gitea_secrets
 # Backup PostgreSQL databases
 backup_postgres
 
+# Retrieve config that was set during onprem installation and apply it to orch-configs
+# Modify orch-configs settings for upgrade procedure
+retrieve_and_apply_config
 
 echo "Running On Premise Edge Orchestrator upgrade to $DEPLOY_VERSION"
 
 # Refresh variables after checking user args
 set_artifacts_version
+
+# Check if orchestrator is currently installed
+check_orch_install "${installer_list[@]}"
 
 # Check & install script dependencies
 check_oras
@@ -816,13 +819,6 @@ else
 
     sudo chown -R _apt:root "$deb_dir_name"
 fi
-
-# Retrieve config that was set during onprem installation and apply it to orch-configs
-# Modify orch-configs settings for upgrade procedure
-retrieve_and_apply_config
-
-# Check if orchestrator is currently installed
-check_orch_install "${installer_list[@]}"
 
 # Check if kyverno-clean-reports job exists before attempting cleanup
 if kubectl get job kyverno-clean-reports -n kyverno >/dev/null 2>&1; then
