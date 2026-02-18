@@ -112,11 +112,35 @@ cluster_variable() {
     if [[ -n "$VPC_ID" ]] && $SKIP_APPLY_VPC; then
         VPC_TERRAFORM_BACKEND_KEY="${AWS_REGION}/vpc/${VPC_ID}"
     fi
+    LT_ID=$(aws eks describe-nodegroup \
+      --cluster-name $ENV_NAME \
+      --nodegroup-name nodegroup-$ENV_NAME \
+      --region $AWS_REGION \
+      --query 'nodegroup.launchTemplate.id' \
+      --output text)
+    
+    LT_VERSION=$(aws eks describe-nodegroup \
+      --cluster-name $ENV_NAME \
+      --nodegroup-name nodegroup-$ENV_NAME \
+      --region $AWS_REGION \
+      --query 'nodegroup.launchTemplate.version' \
+      --output text)
+    
+    OUT=$(aws ec2 describe-launch-template-versions \
+      --launch-template-id $LT_ID \
+      --versions $LT_VERSION \
+      --region $AWS_REGION \
+      --query 'LaunchTemplateVersions[0].LaunchTemplateData.BlockDeviceMappings[0].Ebs.[VolumeSize,VolumeType]' \
+      --output text)
+    
+    VOL_SIZE=$(echo $OUT | awk '{print $1}')
+    VOL_TYPE=$(echo $OUT | awk '{print $2}')
+
     FULLCHAIN="fullchain-${AWS_ACCOUNT}-${ENV_NAME}.pem"
     CHAIN="chain-${AWS_ACCOUNT}-${ENV_NAME}.pem"
     PRIVKEY="privkey-${AWS_ACCOUNT}-${ENV_NAME}.pem"
     tls_cert_content=$(cat ${SAVE_DIR}/${FULLCHAIN})
-     ca_cert_content=$(cat ${SAVE_DIR}/${CHAIN})
+    ca_cert_content=$(cat ${SAVE_DIR}/${CHAIN})
     tls_key_content=$(cat ${SAVE_DIR}/${PRIVKEY})
     cat <<EOF
 vpc_terraform_backend_bucket       = "$BUCKET_NAME"
@@ -124,12 +148,12 @@ vpc_terraform_backend_key          = "${VPC_TERRAFORM_BACKEND_KEY}"
 vpc_terraform_backend_region       = "${BUCKET_REGION}" # region of the S3 bucket to store the TF state
 eks_cluster_name                   = "$ENV_NAME"
 aws_account_number                 = "$AWS_ACCOUNT"
-eks_volume_size                    = 128
+eks_volume_size                    = $VOL_SIZE
 eks_desired_size                   = $EKS_DESIRED_SIZE
 eks_min_size                       = $EKS_MIN_SIZE
 eks_max_size                       = $EKS_MAX_SIZE
 eks_node_ami_id                    = "$(get_eks_node_ami)"
-eks_volume_type                    = "gp3"
+eks_volume_type                    = $VOL_TYPE
 aws_region                         = "${AWS_REGION}"
 aurora_availability_zones          = ["${azs[0]}", "${azs[1]}", "${azs[2]}"]
 aurora_instance_availability_zones = ${aurora_ins_azs}
