@@ -617,7 +617,7 @@ jobs:
         run: |
           virsh list --all || true
           sudo virsh list --all || true
-          VM_NAME=pico-node-libvirt
+          VM_NAME=libvirt-pico-node
           NODE_UUID=$(sudo virsh domuuid "$VM_NAME") || true
           echo $NODE_UUID
           echo "VM_NAME=$VM_NAME" >> $GITHUB_ENV
