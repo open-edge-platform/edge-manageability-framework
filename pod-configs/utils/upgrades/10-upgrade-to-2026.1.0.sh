@@ -338,6 +338,22 @@ aws iam create-policy-version \
   --set-as-default
 
 echo "✅ Policy successfully updated!"
+
+echo "Updating Observability Desired Size ..."
+
+OBS_DESIRED=$(aws eks describe-nodegroup \
+  --cluster-name $ENV_NAME \
+  --nodegroup-name observability \
+  --region $AWS_REGION \
+  --query 'nodegroup.scalingConfig.desiredSize' \
+  --output text)
+
+if [ "$OBS_DESIRED" = "1" ]; then
+  echo "Existing Observability desired size is 1 → updating Terraform file"
+  sed -i '0,/desired_size *= *0/s//desired_size = 1/' orchestrator/cluster/variable.tf
+else
+  echo "Existing Observability desired size is $OBS_DESIRED → no change"
+fi
 }
 
 
