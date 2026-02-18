@@ -495,8 +495,14 @@ check_and_cleanup_job() {
 # check_orch_install <array[@] of package names>
 check_orch_install() {
     package_list=("$@")
+    echo "INSTALL_GITEA:$INSTALL_GITEA"
     for package in "${package_list[@]}"; do
         package_name="${package%%:*}"
+	if [[ "${INSTALL_GITEA}" == "false" && "$package_name" == "onprem-gitea-installer" ]]; then
+          echo "Skipping dpkg check for gitea package"
+          continue
+        fi
+
         if ! dpkg -l "$package_name" >/dev/null 2>&1; then
             echo "Package: $package_name is not installed on the node, OnPrem Edge Orchestrator is not installed or installation is broken"
             exit 1
@@ -745,9 +751,6 @@ echo "Running On Premise Edge Orchestrator upgrade to $DEPLOY_VERSION"
 # Refresh variables after checking user args
 set_artifacts_version
 
-# Check if orchestrator is currently installed
-check_orch_install "${installer_list[@]}"
-
 # Check & install script dependencies
 check_oras
 install_yq
@@ -817,6 +820,9 @@ fi
 # Retrieve config that was set during onprem installation and apply it to orch-configs
 # Modify orch-configs settings for upgrade procedure
 retrieve_and_apply_config
+
+# Check if orchestrator is currently installed
+check_orch_install "${installer_list[@]}"
 
 # Check if kyverno-clean-reports job exists before attempting cleanup
 if kubectl get job kyverno-clean-reports -n kyverno >/dev/null 2>&1; then
@@ -1206,11 +1212,13 @@ fi
 kubectl patch application root-app -n "$apps_ns" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 
 # Restore Gitea credentials to Vault
-password=$(kubectl get secret app-gitea-credential -n orch-platform -o jsonpath="{.data.password}" | base64 -d)
-username=$(kubectl get secret app-gitea-credential -n orch-platform -o jsonpath="{.data.username}" | base64 -d)
-
-# Store Gitea credentials in Vault
-kubectl exec -it vault-0 -n orch-platform -c vault -- vault kv put secret/ma_git_service username="$username" password="$password"
+if [[ "$INSTALL_GITEA" == "true" ]]; then
+    echo "Restore Gitea credentials to Vault"
+    password=$(kubectl get secret app-gitea-credential -n orch-platform -o jsonpath="{.data.password}" | base64 -d)
+    username=$(kubectl get secret app-gitea-credential -n orch-platform -o jsonpath="{.data.username}" | base64 -d)
+    # Store Gitea credentials in Vault
+    kubectl exec -it vault-0 -n orch-platform -c vault -- vault kv put secret/ma_git_service username="$username" password="$password"
+fi
 
 # Delete all secrets with name containing 'fleet-gitrepo-cred'
 kubectl get secret --all-namespaces --no-headers | awk '/fleet-gitrepo-cred/ {print $1, $2}' | \
