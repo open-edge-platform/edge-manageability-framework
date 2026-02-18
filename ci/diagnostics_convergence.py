@@ -55,6 +55,27 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
+# Normalization regex patterns (module-level constants for maintainability)
+# ISO8601/RFC3339 timestamp: YYYY-MM-DD[T ]HH:MM:SS[.microseconds][Z|+HH:MM]
+TIMESTAMP_ISO_PATTERN = r'\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?'
+# Unix timestamp (10 digits, e.g., 1234567890)
+TIMESTAMP_UNIX_PATTERN = r'\b\d{10}\b'
+# IPv4 address (simple pattern, e.g., 192.168.1.1)
+IPV4_PATTERN = r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b'
+# IPv6 address (simplified pattern matching colon-separated hex groups)
+# Matches full and compressed forms like 2001:db8::1 or 2001:0db8:0000:0000:0000:ff00:0042:8329
+IPV6_PATTERN = r'\b(?:[0-9a-fA-F]{1,4}:){2,7}[0-9a-fA-F]{0,4}\b'
+# UUID (8-4-4-4-12 format, e.g., 550e8400-e29b-41d4-a716-446655440000)
+UUID_PATTERN = r'\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b'
+# Container image digest (sha256:...)
+IMAGE_DIGEST_PATTERN = r'sha256:[0-9a-fA-F]{64}'
+# Pod ReplicaSet suffix (Kubernetes template hash is exactly 10 chars, pod suffix is 5 chars)
+# Example: pod-name-abc1234567-xyz12 -> pod-name-RS
+POD_RS_SUFFIX_PATTERN = r'-[a-z0-9]{10}-[a-z0-9]{5}\b'
+# Hexadecimal IDs (8+ characters, often used for container IDs, etc.)
+HEXID_PATTERN = r'\b[0-9a-fA-F]{8,}\b'
+
+
 def normalize_text(text: str) -> str:
     """
     Normalize text by removing transient details:
@@ -62,7 +83,7 @@ def normalize_text(text: str) -> str:
     - IP addresses (IPv4, IPv6)
     - UUIDs
     - Container image digests (sha256:...)
-    - Pod ReplicaSet suffixes (-[a-z0-9]{5,10}-[a-z0-9]{5})
+    - Pod ReplicaSet suffixes (-[a-z0-9]{10}-[a-z0-9]{5})
     - Hexadecimal IDs
     
     Args:
@@ -75,28 +96,28 @@ def normalize_text(text: str) -> str:
         return ""
     
     # Remove timestamps (ISO8601/RFC3339)
-    text = re.sub(r'\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?', 'TIMESTAMP', text)
+    text = re.sub(TIMESTAMP_ISO_PATTERN, 'TIMESTAMP', text)
     
     # Remove Unix timestamps (10 digits)
-    text = re.sub(r'\b\d{10}\b', 'TIMESTAMP', text)
+    text = re.sub(TIMESTAMP_UNIX_PATTERN, 'TIMESTAMP', text)
     
     # Remove IPv4 addresses
-    text = re.sub(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', 'IP', text)
+    text = re.sub(IPV4_PATTERN, 'IP', text)
     
     # Remove IPv6 addresses
-    text = re.sub(r'\b[0-9a-fA-F:]{10,}\b', 'IP', text)
+    text = re.sub(IPV6_PATTERN, 'IP', text)
     
     # Remove UUIDs
-    text = re.sub(r'\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b', 'UUID', text)
+    text = re.sub(UUID_PATTERN, 'UUID', text)
     
     # Remove image digests
-    text = re.sub(r'sha256:[0-9a-fA-F]{64}', 'DIGEST', text)
+    text = re.sub(IMAGE_DIGEST_PATTERN, 'DIGEST', text)
     
-    # Remove pod ReplicaSet suffixes (e.g., pod-name-5f8b9c7d6-xkz9p -> pod-name-RS)
-    text = re.sub(r'-[a-z0-9]{5,10}-[a-z0-9]{5}\b', '-RS', text)
+    # Remove pod ReplicaSet suffixes (e.g., pod-name-abc1234567-xyz12 -> pod-name-RS)
+    text = re.sub(POD_RS_SUFFIX_PATTERN, '-RS', text)
     
     # Remove hexadecimal IDs (8+ chars)
-    text = re.sub(r'\b[0-9a-fA-F]{8,}\b', 'HEXID', text)
+    text = re.sub(HEXID_PATTERN, 'HEXID', text)
     
     return text
 
@@ -141,8 +162,8 @@ def generate_pod_error_signature(pod_error: Dict[str, Any]) -> str:
     # Use reason if available, otherwise status
     primary_indicator = reason if reason else status
     
-    # Normalize pod name to remove RS suffix
-    pod_normalized = re.sub(r'-[a-z0-9]{5,10}-[a-z0-9]{5}$', '', pod)
+    # Normalize pod name to remove RS suffix (exact Kubernetes pattern)
+    pod_normalized = re.sub(r'-[a-z0-9]{10}-[a-z0-9]{5}$', '', pod)
     
     # Compute hash of message/event for additional context
     text_for_hash = message if message else last_event
