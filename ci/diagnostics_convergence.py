@@ -31,6 +31,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Any
 
+# Convergence analysis constants
+PERSISTENT_ERROR_THRESHOLD = 0.5  # Errors occurring in >50% of runs are considered persistent
+IMPROVING_THRESHOLD = 0.8  # Trend is improving if errors decrease by >20%
+DEGRADING_THRESHOLD = 1.2  # Trend is degrading if errors increase by >20%
+
 
 def extract_error_signature(error: Dict[str, Any]) -> str:
     """
@@ -130,8 +135,8 @@ def analyze_convergence(artifacts_data: List[Dict[str, Any]]) -> Dict[str, Any]:
             "runs_affected": [occ["run"] for occ in occurrences]
         }
         
-        # Persistent = occurs in >50% of runs
-        if occurrence_rate > 0.5:
+        # Persistent = occurs in >50% of runs (configurable threshold)
+        if occurrence_rate > PERSISTENT_ERROR_THRESHOLD:
             persistent_errors.append(error_info)
         else:
             transient_errors.append(error_info)
@@ -144,9 +149,9 @@ def analyze_convergence(artifacts_data: List[Dict[str, Any]]) -> Dict[str, Any]:
         avg_errors_first = sum(r["total_errors"] for r in first_half) / len(first_half)
         avg_errors_second = sum(r["total_errors"] for r in second_half) / len(second_half)
         
-        if avg_errors_second < avg_errors_first * 0.8:
+        if avg_errors_second < avg_errors_first * IMPROVING_THRESHOLD:
             trend = "improving"
-        elif avg_errors_second > avg_errors_first * 1.2:
+        elif avg_errors_second > avg_errors_first * DEGRADING_THRESHOLD:
             trend = "degrading"
         else:
             trend = "stable"
@@ -190,8 +195,9 @@ def generate_markdown_report(convergence: Dict[str, Any]) -> str:
     
     # Persistent errors
     persistent = convergence["persistent_errors"]
+    threshold_pct = int(PERSISTENT_ERROR_THRESHOLD * 100)
     md.append(f"## Persistent Errors ({len(persistent)} patterns)\n")
-    md.append("These errors occur in >50% of runs and require attention:\n\n")
+    md.append(f"These errors occur in >{threshold_pct}% of runs and require attention:\n\n")
     
     if persistent:
         for err in persistent[:10]:  # Show top 10

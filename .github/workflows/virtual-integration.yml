@@ -889,11 +889,14 @@ jobs:
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
         with:
           script: |
+            // Number of recent runs to analyze for convergence
+            const MAX_RUNS = 20;
+            
             const runs = await github.rest.actions.listWorkflowRuns({
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: 'virtual-integration.yml',
-              per_page: 20,
+              per_page: MAX_RUNS,
               status: 'completed'
             });
             
@@ -934,8 +937,11 @@ jobs:
             let downloadedCount = 0;
             let totalAttempted = 0;
             
+            // Number of recent runs to analyze (should match MAX_RUNS above)
+            const MAX_RUNS = 20;
+            
             // Download artifacts from recent runs
-            for (const run of runData.slice(0, 20)) {
+            for (const run of runData.slice(0, MAX_RUNS)) {
               core.info(`\nChecking run #${run.number} (ID: ${run.id})`);
               
               try {
