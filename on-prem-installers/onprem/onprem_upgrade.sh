@@ -498,7 +498,7 @@ check_orch_install() {
     echo "INSTALL_GITEA:$INSTALL_GITEA"
     for package in "${package_list[@]}"; do
         package_name="${package%%:*}"
-	if [[ "${INSTALL_GITEA}" == "false" && "$package_name" == "onprem-gitea-installer" ]]; then
+	    if [[ "${INSTALL_GITEA}" == "false" && "$package_name" == "onprem-gitea-installer" ]]; then
           echo "Skipping dpkg check for gitea package"
           continue
         fi
