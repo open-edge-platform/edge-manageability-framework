@@ -626,8 +626,8 @@ jobs:
       - name: Run AO / CO smoke test
         env:
           PROJECT: project-2
-          EDGE_MGR_USER: p-host-manager-2
-          EDGE_INFRA_USER: p-host-manager-2
+          EDGE_MGR_USER: p-edge-manager-2
+          EDGE_INFRA_USER: p-edge-manager-2
           ORCH_DEFAULT_PASSWORD: 'Samp1ePassw@rd'
         run: |   
           echo "EngeNode UUID:$NODE_UUID"
