@@ -50,7 +50,7 @@ import os
 import re
 import sys
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -425,7 +425,7 @@ def generate_json_report(aggregated: Dict[str, Any], metadata: Dict[str, Any], o
         output_path: Path to write JSON file
     """
     report = {
-        "generated_at": datetime.utcnow().isoformat() + "Z",
+        "generated_at": datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
         "metadata": metadata,
         "signatures": aggregated
     }
@@ -450,7 +450,7 @@ def generate_markdown_report(aggregated: Dict[str, Any], metadata: Dict[str, Any
     # Header
     lines.append("# Diagnostics Convergence Report")
     lines.append("")
-    lines.append(f"**Generated:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC")
+    lines.append(f"**Generated:** {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} UTC")
     lines.append("")
     
     # Metadata
