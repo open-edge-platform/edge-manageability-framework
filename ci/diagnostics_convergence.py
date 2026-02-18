@@ -639,12 +639,29 @@ def main():
             
             # Determine job name from artifact name
             # Format: diagnostics-<job>-<event>-<number>-<attempt>
-            job_match = re.match(r'diagnostics-([^-]+)-', artifact_name)
-            if not job_match:
+            # Job names can contain hyphens (e.g., deploy-kind, deploy-on-prem)
+            # We need to match against known jobs from metadata to extract correctly
+            jobs_filter = metadata.get("jobs_filter", [])
+            job_name = None
+            
+            if artifact_name.startswith('diagnostics-'):
+                # Try to match against known jobs
+                for known_job in jobs_filter:
+                    if artifact_name.startswith(f'diagnostics-{known_job}-'):
+                        job_name = known_job
+                        break
+                
+                # Fallback: if no match found, try common event types to extract job
+                if not job_name:
+                    # Try matching with common event types
+                    event_pattern = r'^diagnostics-(.*?)-(push|pull_request|merge_group|workflow_dispatch|schedule)-'
+                    match = re.match(event_pattern, artifact_name)
+                    if match:
+                        job_name = match.group(1)
+            
+            if not job_name:
                 print(f"Warning: Could not extract job name from artifact '{artifact_name}'", file=sys.stderr)
                 continue
-            
-            job_name = job_match.group(1)
             
             # Find diagnostics_full_*.json in artifact directory
             artifact_dir = args.artifacts_dir / f"artifact-{artifact_id}"
