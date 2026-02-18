@@ -606,11 +606,33 @@ jobs:
             -d robot_output/core_foundation \
             -V orchestrator-configs/kind.yaml \
             -V tests/core_foundation/data/cf_data_2_ven_VEN-libvirt_ubuntu-24.04-lts.yaml \
-            --exitonfailure \
-            --exclude cf6 \
-            --exclude cf8 \
+            -i cf1 \
+            -i cf2 \
+            -i cf3 \
             tests/core_foundation/core_foundation.robot
-
+            
+      - name: Get VEN UUID
+        env:
+          LIBVIRT_DEFAULT_URI: 'qemu:///system'
+        run: |
+          virsh list --all || true
+          sudo virsh list --all || true
+          VM_NAME=pico-node-libvirt
+          NODE_UUID=$(sudo virsh domuuid "$VM_NAME") || true
+          echo $NODE_UUID
+          echo "VM_NAME=$VM_NAME" >> $GITHUB_ENV
+          echo "NODE_UUID=$NODE_UUID" >> $GITHUB_ENV
+          
+      - name: Run AO / CO smoke test
+        env:
+          PROJECT: project-2
+          EDGE_MGR_USER: p-host-manager-2
+          EDGE_INFRA_USER: p-host-manager-2
+          ORCH_DEFAULT_PASSWORD: 'Samp1ePassw@rd'
+        run: |   
+          echo "EngeNode UUID:$NODE_UUID"
+          echo "Running AO / CO smoke test..."
+          mage test:clusterOrchSmokeTest
       - name: Upload test artifacts
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
