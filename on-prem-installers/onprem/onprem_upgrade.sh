@@ -137,16 +137,16 @@ retrieve_and_apply_config() {
     TRAEFIK_IP=$(kubectl get svc traefik -n orch-gateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 
     if kubectl get svc ingress-haproxy-kubernetes-ingress -n orch-boots >/dev/null 2>&1; then
-	HAPROXY_IP=$(kubectl get svc ingress-haproxy-kubernetes-ingress -n orch-boots -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-	echo "Using HAProxy ingress: $HAPROXY_IP"
+        HAPROXY_IP=$(kubectl get svc ingress-haproxy-kubernetes-ingress -n orch-boots -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+        echo "Using HAProxy ingress: $HAPROXY_IP"
 
     elif kubectl get svc ingress-nginx-controller -n orch-boots >/dev/null 2>&1; then
-	HAPROXY_IP=$(kubectl get svc ingress-nginx-controller -n orch-boots -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-	echo "Using NGINX ingress: $HAPROXY_IP"
+        HAPROXY_IP=$(kubectl get svc ingress-nginx-controller -n orch-boots -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+        echo "Using NGINX ingress: $HAPROXY_IP"
 
     else
-	echo "ERROR: Neither HAProxy nor NGINX ingress service found in orch-boots namespace"
-	exit 1
+        echo "ERROR: Neither HAProxy nor NGINX ingress service found in orch-boots namespace"
+        exit 1
     fi
 
 
@@ -495,8 +495,14 @@ check_and_cleanup_job() {
 # check_orch_install <array[@] of package names>
 check_orch_install() {
     package_list=("$@")
+    echo "INSTALL_GITEA:$INSTALL_GITEA"
     for package in "${package_list[@]}"; do
         package_name="${package%%:*}"
+        if [[ "${INSTALL_GITEA}" == "false" && "$package_name" == "onprem-gitea-installer" ]]; then
+          echo "Skipping dpkg check for gitea package"
+          continue
+        fi
+
         if ! dpkg -l "$package_name" >/dev/null 2>&1; then
             echo "Package: $package_name is not installed on the node, OnPrem Edge Orchestrator is not installed or installation is broken"
             exit 1
@@ -746,7 +752,7 @@ echo "Running On Premise Edge Orchestrator upgrade to $DEPLOY_VERSION"
 set_artifacts_version
 
 # Check if orchestrator is currently installed
-check_orch_install "${installer_list[@]}"
+#check_orch_install "${installer_list[@]}"
 
 # Check & install script dependencies
 check_oras
@@ -817,7 +823,7 @@ fi
 # Retrieve config that was set during onprem installation and apply it to orch-configs
 # Modify orch-configs settings for upgrade procedure
 retrieve_and_apply_config
-
+check_orch_install "${installer_list[@]}"
 # Check if kyverno-clean-reports job exists before attempting cleanup
 if kubectl get job kyverno-clean-reports -n kyverno >/dev/null 2>&1; then
     echo "Cleaning up kyverno-clean-reports job..."
