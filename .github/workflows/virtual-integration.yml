@@ -490,16 +490,6 @@ jobs:
         run: |
           cd ci/ven
           ./libvirt-setup.sh
-      - name: Debug Docker + Kind
-        shell: bash
-        run: |
-          echo "DOCKER:"
-          which docker
-          docker --version
-          docker version
-          echo "KIND:"
-          which kind || true
-          kind version || true
 
       - name: Deploy Kind Orchestrator
         id: deploy-kind-orchestrator
