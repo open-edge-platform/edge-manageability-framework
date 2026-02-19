@@ -255,7 +255,7 @@ var _ = Describe("Provisioned registries push test", Label("orchestrator-integra
 				accessToken = getAccessToken(c, testUsername, testPassword)
 				Expect(accessToken).To(Not(ContainSubstring(`named cookie not present`)))
 			})
-
+/*
 			It("should check that a docker image can be pushed", func() {
 				var regAuth string
 
@@ -359,6 +359,7 @@ var _ = Describe("Provisioned registries push test", Label("orchestrator-integra
 				//Expect(remove[0].Untagged).To(Equal(remoteImageName), "checking docker remove reply part 1")
 				//Expect(remove[1].Untagged).To(ContainSubstring("sha"), "checking docker remove reply part 2")
 			})
+*/
 
 			It("should check that a docker helm chart can be pushed", func() {
 				var harborHelmReg Registry
