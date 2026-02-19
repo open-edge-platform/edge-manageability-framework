@@ -82,3 +82,8 @@ on-prem-installers/assets/tea
 
 # Build artifacts
 edge-manageability-framework/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
