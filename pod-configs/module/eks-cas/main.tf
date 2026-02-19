@@ -56,9 +56,9 @@ resource "helm_release" "cluster_autoscaler" {
   values = [<<EOF
 extraEnv:
   - name: HTTP_PROXY
-    value: http://proxy-dmz.intel.com:912
+    value: "http://proxy-dmz.intel.com:912"
   - name: HTTPS_PROXY
-    value: http://proxy-dmz.intel.com:912
+    value: "http://proxy-dmz.intel.com:912"
   - name: NO_PROXY
     value: ".cluster.local,.amazonaws.com,.eks.amazonaws.com,.intel.com,.local,.internal,.controller.intel.corp,.kind-control-plane,.docker.internal,localhost,169.254.169.254"
 EOF
