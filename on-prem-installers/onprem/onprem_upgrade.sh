@@ -1281,21 +1281,16 @@ if kubectl get crd externalsecrets.external-secrets.io >/dev/null 2>&1; then
     kubectl patch crd/externalsecrets.external-secrets.io -p '{"metadata":{"finalizers":[]}}' --type=merge
 fi
 
-# Delete Kyverno policies that restart MPS/RPS deployments when secrets change (if present)
+# Delete Kyverno ClusterPolicies that restart MPS/RPS deployments when secrets change (if present)
 
-if kubectl get clusterpolicy restart-mps-deployment-on-secret-change >/dev/null 2>&1; then
-  echo "Deleting ClusterPolicy: restart-mps-deployment-on-secret-change"
-  kubectl delete clusterpolicy restart-mps-deployment-on-secret-change
-else
-  echo "ClusterPolicy restart-mps-deployment-on-secret-change not found, skipping"
-fi
-
-if kubectl get clusterpolicy restart-rps-deployment-on-secret-change >/dev/null 2>&1; then
-  echo "Deleting ClusterPolicy: restart-rps-deployment-on-secret-change"
-  kubectl delete clusterpolicy restart-rps-deployment-on-secret-change
-else
-  echo "ClusterPolicy restart-rps-deployment-on-secret-change not found, skipping"
-fi
+for policy in restart-mps-deployment-on-secret-change restart-rps-deployment-on-secret-change; do
+  if kubectl get clusterpolicy "$policy" -o name >/dev/null 2>&1; then
+    echo "Deleting ClusterPolicy: $policy"
+    kubectl delete clusterpolicy "$policy"
+  else
+    echo "ClusterPolicy $policy not found, skipping"
+  fi
+done
 
 # Apply External Secrets CRDs with server-side apply
 echo "Applying external-secrets CRDs with server-side apply..."
