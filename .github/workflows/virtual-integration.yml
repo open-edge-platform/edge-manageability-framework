@@ -490,6 +490,7 @@ jobs:
         run: |
           cd ci/ven
           ./libvirt-setup.sh
+
       - name: Deploy Kind Orchestrator
         id: deploy-kind-orchestrator
         uses: ./.github/actions/deploy_kind
