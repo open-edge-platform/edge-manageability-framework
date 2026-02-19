@@ -51,6 +51,30 @@ resource "helm_release" "cluster_autoscaler" {
     name  = "extraArgs.expander"
     value = "least-waste"
   }
+{
+  name  = "extraEnv[0].name"
+  value = "HTTP_PROXY"
+},
+{
+  name  = "extraEnv[0].value"
+  value = "http://proxy-dmz.intel.com:912"
+},
+{
+  name  = "extraEnv[1].name"
+  value = "HTTPS_PROXY"
+},
+{
+  name  = "extraEnv[1].value"
+  value = "http://proxy-dmz.intel.com:912"
+},
+{
+  name  = "extraEnv[2].name"
+  value = "NO_PROXY"
+},
+{
+  name  = "extraEnv[2].value"
+  value = ".cluster.local,.amazonaws.com,.eks.amazonaws.com,.intel.com,.local,.internal,.controller.intel.corp,.kind-control-plane,.docker.internal,localhost"
+}
 ]
 
 }
