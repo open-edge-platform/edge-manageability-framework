@@ -66,6 +66,10 @@ values = [
       {
         name  = "NO_PROXY"
         value = ".cluster.local,.amazonaws.com,.eks.amazonaws.com,.intel.com,.local,.internal,.controller.intel.corp,.kind-control-plane,.docker.internal,localhost,169.254.169.254"
+      },
+      {
+        name = "SOCKS_PROXY"
+        value = "proxy.jf.intel.com:1080"
       }
     ]
   })
