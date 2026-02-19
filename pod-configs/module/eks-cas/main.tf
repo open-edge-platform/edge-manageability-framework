@@ -50,7 +50,7 @@ resource "helm_release" "cluster_autoscaler" {
   {
     name  = "extraArgs.expander"
     value = "least-waste"
-  }
+  },
 {
   name  = "extraEnv[0].name"
   value = "HTTP_PROXY"
