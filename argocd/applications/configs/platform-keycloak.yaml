@@ -7,24 +7,6 @@
 
 namespace: orch-platform
 
-keycloak:
-  image: "keycloak/keycloak:26.5.3"
-  env:
-    # JAVA_OPTS on CI is set with a max heap of 256m which causes OOM errors in Keycloak 26.5.3
-    # https://github.com/keycloak/keycloak/issues/45459
-    - name: JAVA_OPTS_APPEND
-      value: "-Xmx512m"
-
-  podTemplate:
-    initContainers:
-      - name: keycloak-builder
-        image: "keycloak/keycloak:26.5.3"
-        env:
-          # JAVA_OPTS on CI is set with a max heap of 256m which causes OOM errors in Keycloak 26.5.3
-          # https://github.com/keycloak/keycloak/issues/45459
-          - name: JAVA_OPTS_APPEND
-            value: "-Xmx512m"
-
 # Keycloak Config CLI job configuration
 keycloakConfigCli:
   enabled: true
