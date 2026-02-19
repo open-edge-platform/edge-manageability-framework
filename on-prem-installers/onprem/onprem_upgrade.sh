@@ -146,7 +146,7 @@ retrieve_and_update_config() {
 
     else
         echo "ERROR: No ingress service found in orch-boots namespace"
-        return 1
+        exit 1
     fi
 
     # Update IPs
@@ -180,7 +180,7 @@ retrieve_and_update_config() {
 
     if [[ -z "$VALUE_FILES" ]]; then
         echo "⚠️ No value files found in root-app"
-        return 1
+        exit 1
     fi
 
     DISABLE_CO_PROFILE="false"
@@ -238,10 +238,10 @@ apply_and_package_config() {
         esac
     done
 
-    cd "$tmp_dir" || return 1
+    cd "$tmp_dir"
     tar -zcvf "$repo_file" ./edge-manageability-framework
     mv -f "$repo_file" "$cwd/$git_arch_name/$repo_file"
-    cd "$cwd" || return 1
+    cd "$cwd"
     rm -rf "$tmp_dir"
 }
 
