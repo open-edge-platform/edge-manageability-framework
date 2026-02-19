@@ -258,8 +258,9 @@ operation:
 EOF
 fi
     kubectl patch application root-app -n "$apps_ns" --type merge -p '{"operation":null}'
-kubectl patch application root-app -n "$apps_ns" --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
-    kubectl patch -n "$apps_ns" application root-app --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+    kubectl patch application root-app -n "$apps_ns" --type json -p '[{"op": "remove", "path": "/status/operationState"}]'
+    sleep 10
+    kubectl patch application root-app -n "$apps_ns" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 }
 
 terminate_existing_sync() {
@@ -401,10 +402,10 @@ check_and_patch_sync_app() {
 
 # Function to wait for application to be Synced and Healthy with timeout
 wait_for_app_synced_healthy() {
+    resync_all_apps
     local app_name=$1
     local namespace=$2
     local timeout=${3:-120}  # Default 120 seconds if not specified
-
     local start_time
     start_time=$(date +%s)
     set +e
@@ -1247,15 +1248,16 @@ echo "Restart keycloak-tenant-controller to resolve vault authentication issues"
 
 echo "Restart keycloak-tenant-controller to refresh connection"
 restart_statefulset keycloak-tenant-controller-set orch-platform
-
+resync_all_apps
+sleep 10
 # Skip restarts if ORCH_INSTALLER_PROFILE is onprem-vpro
 if [ "${ORCH_INSTALLER_PROFILE:-}" != "onprem-vpro" ]; then
   echo "Restart harbor-oci-database to refresh connection"
-  restart_statefulset harbor-oci-database orch-harbor
+  restart_statefulset harbor-oci-database orch-harbor || true
 
   # Restart harbor-oci-core to refresh connection
   echo "Restart harbor-oci-core to refresh connection"
-  kubectl rollout restart deployment harbor-oci-core -n orch-harbor
+  kubectl rollout restart deployment harbor-oci-core -n orch-harbor || true
 
   echo "✅ harbor-oci-core restarted"
 else
