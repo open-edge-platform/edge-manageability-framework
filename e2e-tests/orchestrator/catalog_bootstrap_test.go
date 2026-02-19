@@ -233,7 +233,7 @@ var _ = Describe("Provisioned registries push test", Label("orchestrator-integra
 		return pass
 	}()
 
-	harborProjectDisplayName := "catalog-apps-" + testOrg + "-" + testProject
+	//harborProjectDisplayName := "catalog-apps-" + testOrg + "-" + testProject
 	//harborProjectName := strings.ToLower(harborProjectDisplayName)
 
 	BeforeEach(func() {
