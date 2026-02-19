@@ -20,13 +20,11 @@ sudo apt-get install -y ca-certificates curl
 
 # TODO: Detect Ubuntu 22.04 or 24.04 and install packages accordingly
 
-# Install virtualization packages
+# Install virtualization packages (minimal set)
 sudo apt-get install -y \
-  qemu qemu-kvm \
-  libvirt-dev libvirt-daemon-system libvirt-clients \
-  pesign virt-manager ovmf \
-  expect minicom socat xterm \
-  efitools xsltproc libxslt1-dev
+  qemu-kvm qemu-system-x86 \
+  libvirt-daemon-system libvirt-clients \
+  bridge-utils virtinst
 
 # Start and enable libvirtd service
 sudo systemctl start libvirtd
@@ -34,8 +32,7 @@ sudo systemctl enable libvirtd
 sleep 3
 
 # Add user to virtualization groups
-sudo usermod -aG libvirt "$USER"
-sudo usermod -aG kvm "$USER"
+sudo usermod -aG libvirt,kvm "$USER"
 
 # Backup and configure libvirtd
 sudo cp /etc/libvirt/libvirtd.conf /etc/libvirt/libvirtd.conf.bak
@@ -63,7 +60,7 @@ fi
 sleep 2
 # Verify installations and display versions
 echo "Installed applications and their versions:"
-dpkg -l | grep -E 'qemu|libvirt-daemon-system|ebtables|libguestfs-tools|libxslt-dev|libxml2-dev'
+dpkg -l | grep -E 'qemu|libvirt|virtinst|bridge-utils|cpu-checker' || true
 
 # Check KVM support
 echo "Checking KVM support..."
