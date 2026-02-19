@@ -58,7 +58,7 @@ values = [
       HTTP_PROXY  = "http://proxy-dmz.intel.com:912"
       HTTPS_PROXY = "http://proxy-dmz.intel.com:912"
       NO_PROXY    = ".cluster.local,.amazonaws.com,.eks.amazonaws.com,.intel.com,.local,.internal,.controller.intel.corp,.kind-control-plane,.docker.internal,localhost,169.254.169.254"
-      SOCKS_PROXY = "socks5://proxy.jf.intel.com:1080"
+      SOCKS_PROXY = "proxy.jf.intel.com:1080"
     }
   })
 ]
