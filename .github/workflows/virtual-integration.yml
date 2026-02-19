@@ -475,6 +475,7 @@ jobs:
     timeout-minutes: 90
     env:
       ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
+      JAVA_OPTS_APPEND: "-Xmx512m"
     steps:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
