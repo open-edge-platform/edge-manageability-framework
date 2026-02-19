@@ -482,6 +482,8 @@ jobs:
           persist-credentials: false
       - name: Install DNSmasq
         run: |
+          cat /proc/cpuinfo
+          cat /proc/meminfo
           cd ci/ven
           ./dnsmasq-setup.sh "kind.internal" setup
       - name: Install Libvirt
