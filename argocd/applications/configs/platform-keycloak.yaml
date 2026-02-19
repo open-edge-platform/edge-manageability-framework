@@ -10,6 +10,18 @@ namespace: orch-platform
 keycloak:
   image: "keycloak/keycloak:26.5.3"
 
+  podTemplate:
+    initContainers:
+      - name: keycloak-builder
+        image: "keycloak/keycloak:26.5.3"
+        resources:
+          limits:
+            cpu: 1500m
+            memory: 2Gi
+        env:
+          - name: JAVA_OPTS_APPEND
+            value: "-XX:+UseContainerSupport -Xmx2048m"
+
 # Keycloak Config CLI job configuration
 keycloakConfigCli:
   enabled: true
