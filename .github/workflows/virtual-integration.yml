@@ -41,7 +41,7 @@ jobs:
     if: github.event_name == 'pull_request'
     permissions:
       contents: read
-    uses: open-edge-platform/orch-ci/.github/workflows/pre-merge.yml@467367d6f859a4654f2645ca78efd60035cf390c  # 2026.0.8
+    uses: open-edge-platform/orch-ci/.github/workflows/pre-merge.yml@cd0b18b2ef0e2c52665525fa5503b8ec5edd232f  # 2026.0.10
     with:
       run_version_check: false
       run_build: false
@@ -83,7 +83,7 @@ jobs:
 
       - name: Discover Changed Files
         id: check-files
-        uses: open-edge-platform/orch-ci/discover-changed-files@467367d6f859a4654f2645ca78efd60035cf390c  # 2026.0.8 # zizmor: ignore[unpinned-uses]
+        uses: open-edge-platform/orch-ci/discover-changed-files@cd0b18b2ef0e2c52665525fa5503b8ec5edd232f  # 2026.0.8 # zizmor: ignore[unpinned-uses]
         with:
           project_folder: "."
 
@@ -492,6 +492,7 @@ jobs:
         run: |
           cd ci/ven
           ./libvirt-setup.sh
+
       - name: Deploy Kind Orchestrator
         id: deploy-kind-orchestrator
         uses: ./.github/actions/deploy_kind
@@ -864,7 +865,7 @@ jobs:
       security-events: write
       id-token: write
     if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
-    uses: open-edge-platform/orch-ci/.github/workflows/post-merge.yml@467367d6f859a4654f2645ca78efd60035cf390c  # 2026.0.8
+    uses: open-edge-platform/orch-ci/.github/workflows/post-merge.yml@cd0b18b2ef0e2c52665525fa5503b8ec5edd232f  # 2026.0.10
     with:
       run_build: false
       run_version_tag: false
