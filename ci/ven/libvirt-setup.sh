@@ -21,7 +21,12 @@ sudo apt-get install -y ca-certificates curl
 # TODO: Detect Ubuntu 22.04 or 24.04 and install packages accordingly
 
 # Install virtualization packages
-sudo apt-get install -y qemu qemu-kvm libvirt-dev libvirt-daemon-system libvirt-clients pesign virt-manager ovmf expect minicom socat xterm efitools xsltproc libxslt1-dev
+sudo apt-get install -y \
+  qemu qemu-kvm \
+  libvirt-dev libvirt-daemon-system libvirt-clients \
+  pesign virt-manager ovmf \
+  expect minicom socat xterm \
+  efitools xsltproc libxslt1-dev
 
 # Start and enable libvirtd service
 sudo systemctl start libvirtd
@@ -35,51 +40,6 @@ sudo usermod -aG kvm "$USER"
 # Backup and configure libvirtd
 sudo cp /etc/libvirt/libvirtd.conf /etc/libvirt/libvirtd.conf.bak
 
-# Update libvirtd configuration
-sudo sed -i 's/^#unix_sock_group = "libvirt"/unix_sock_group = "libvirt"/' /etc/libvirt/libvirtd.conf
-sudo sed -i 's/^#unix_sock_group = "libvirt"/unix_sock_group = "libvirt"/' /etc/libvirt/libvirtd.conf
-
-#TODO detect ubuntu 22.04 or 24.04
-# based on that install softwares
-
-# Install specific packages
-sudo apt-get install -y qemu qemu-kvm libvirt-dev
-
-# Install additional tools
-sudo apt-get install -y libvirt-daemon-system libvirt-clients pesign virt-manager ovmf expect minicom socat xterm efitools
-
-sudo systemctl start libvirtd
-sudo systemctl enable libvirtd
-sleep 3
-sudo usermod -aG libvirt "$USER"
-sudo usermod -aG kvm "$USER"
-
-# Backup the original configuration file
-sudo cp /etc/libvirt/libvirtd.conf /etc/libvirt/libvirtd.conf.bak
-
-# Update the configuration file
-sudo sed -i 's/^#unix_sock_group = "libvirt"/unix_sock_group = "libvirt"/' /etc/libvirt/libvirtd.conf
-# Reload the systemd daemon to apply the changes
-sudo systemctl daemon-reload
-
-#TODO detect ubuntu 22.04 or 24.04
-# based on that install softwares
-
-# Install specific packages
-sudo apt-get install -y qemu qemu-kvm libvirt-dev
-
-# Install additional tools
-sudo apt-get install -y libvirt-daemon-system libvirt-clients pesign virt-manager ovmf expect minicom socat xterm efitools
-
-sudo systemctl start libvirtd
-sudo systemctl enable libvirtd
-sleep 3
-sudo usermod -aG libvirt "$USER"
-sudo usermod -aG kvm "$USER"
-
-# Backup the original configuration file
-sudo cp /etc/libvirt/libvirtd.conf /etc/libvirt/libvirtd.conf.bak
-
 # Update the configuration file
 sudo sed -i 's/^#unix_sock_group = "libvirt"/unix_sock_group = "libvirt"/' /etc/libvirt/libvirtd.conf
 sudo sed -i 's/^#unix_sock_rw_perms = "0770"/unix_sock_rw_perms = "0770"/' /etc/libvirt/libvirtd.conf
@@ -89,15 +49,17 @@ grep -q '^unix_sock_group = "libvirt"' /etc/libvirt/libvirtd.conf || echo 'unix_
 grep -q '^unix_sock_rw_perms = "0770"' /etc/libvirt/libvirtd.conf || echo 'unix_sock_rw_perms = "0770"' | sudo tee -a /etc/libvirt/libvirtd.conf
 
 sudo systemctl restart libvirtd
-# Disable apparmor profiles for libvirt
-sudo ln -sf /etc/apparmor.d/usr.sbin.libvirtd /etc/apparmor.d/disable/
-sudo ln -sf /etc/apparmor.d/usr.lib.libvirt.virt-aa-helper /etc/apparmor.d/disable/
-sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.libvirtd
-sudo apparmor_parser -R /etc/apparmor.d/usr.lib.libvirt.virt-aa-helper
 
-sudo systemctl restart libvirtd
-sleep 2
-sudo systemctl reload apparmor
+# Disable apparmor profiles for libvirt (best-effort)
+if command -v apparmor_parser &>/dev/null; then
+  sudo mkdir -p /etc/apparmor.d/disable/
+  sudo ln -sf /etc/apparmor.d/usr.sbin.libvirtd /etc/apparmor.d/disable/ || true
+  sudo ln -sf /etc/apparmor.d/usr.lib.libvirt.virt-aa-helper /etc/apparmor.d/disable/ || true
+  sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.libvirtd || true
+  sudo apparmor_parser -R /etc/apparmor.d/usr.lib.libvirt.virt-aa-helper || true
+  sudo systemctl reload apparmor || true
+fi
+
 sleep 2
 # Verify installations and display versions
 echo "Installed applications and their versions:"
@@ -105,14 +67,17 @@ dpkg -l | grep -E 'qemu|libvirt-daemon-system|ebtables|libguestfs-tools|libxslt-
 
 # Check KVM support
 echo "Checking KVM support..."
-if kvm-ok; then
+if command -v kvm-ok &>/dev/null; then
+  if kvm-ok; then
     echo "KVM acceleration is supported on this system."
-else
+  else
     echo "KVM acceleration is not supported or not enabled. Please check your BIOS/UEFI settings."
+  fi
+else
+  echo "kvm-ok not found (package: cpu-checker). Skipping KVM check."
 fi
 sudo chmod 666 /var/run/libvirt/libvirt-sock || true
 sudo chmod 666 /var/run/libvirt/libvirt-sock-ro || true
-# Restart libvirtd to refresh socket
-sudo systemctl restart libvirtd || true
-virsh list --all
-virsh pool-list --all
+
+virsh list --all || true
+virsh pool-list --all || true
