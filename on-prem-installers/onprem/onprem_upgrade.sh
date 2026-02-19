@@ -125,131 +125,112 @@ set_artifacts_version() {
 
 export GIT_REPOS=$cwd/$git_arch_name
 export ONPREM_UPGRADE_SYNC="${ONPREM_UPGRADE_SYNC:-true}"
-retrieve_and_apply_config() {
+retrieve_and_update_config() {
     local config_file="$cwd/onprem.env"
-    tmp_dir="$cwd/$git_arch_name/tmp"
-    rm -rf "$tmp_dir"
-    mkdir -p "$tmp_dir"
 
-    ## Untar edge-manageability-framework repo
-    repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n")
-    tar -xf "$cwd/$git_arch_name/$repo_file" -C "$tmp_dir"
+    echo "Retrieving cluster configuration values..."
 
-    # Get the external IP address of the LoadBalancer services
+    # Get LoadBalancer IPs
     ARGO_IP=$(kubectl get svc argocd-server -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
     TRAEFIK_IP=$(kubectl get svc traefik -n orch-gateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 
     if kubectl get svc ingress-haproxy-kubernetes-ingress -n orch-boots >/dev/null 2>&1; then
-	HAPROXY_IP=$(kubectl get svc ingress-haproxy-kubernetes-ingress -n orch-boots -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-	echo "Using HAProxy ingress: $HAPROXY_IP"
+        HAPROXY_IP=$(kubectl get svc ingress-haproxy-kubernetes-ingress -n orch-boots \
+            -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+        echo "Using HAProxy ingress: $HAPROXY_IP"
 
     elif kubectl get svc ingress-nginx-controller -n orch-boots >/dev/null 2>&1; then
-	HAPROXY_IP=$(kubectl get svc ingress-nginx-controller -n orch-boots -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-	echo "Using NGINX ingress: $HAPROXY_IP"
+        HAPROXY_IP=$(kubectl get svc ingress-nginx-controller -n orch-boots \
+            -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+        echo "Using NGINX ingress: $HAPROXY_IP"
 
     else
-	echo "ERROR: Neither HAProxy nor NGINX ingress service found in orch-boots namespace"
-	exit 1
+        echo "ERROR: No ingress service found in orch-boots namespace"
+        return 1
     fi
 
+    # Update IPs
+    update_config_variable "$config_file" "ARGO_IP" "$ARGO_IP"
+    update_config_variable "$config_file" "TRAEFIK_IP" "$TRAEFIK_IP"
+    update_config_variable "$config_file" "HAPROXY_IP" "$HAPROXY_IP"
 
-    update_config_variable "$config_file" "ARGO_IP" "${ARGO_IP}"
-    update_config_variable "$config_file" "TRAEFIK_IP" "${TRAEFIK_IP}"
-    update_config_variable "$config_file" "HAPROXY_IP" "${HAPROXY_IP}"
+    # --------------------------
+    # SRE TLS Configuration
+    # --------------------------
+    SRE_TLS_ENABLED=$(kubectl get applications -n "$apps_ns" sre-exporter \
+        -o jsonpath='{.spec.sources[*].helm.valuesObject.otelCollector.tls.enabled}')
 
-    sre_tls=$(kubectl get applications -n "$apps_ns" sre-exporter -o jsonpath='{.spec.sources[*].helm.valuesObject.otelCollector.tls.enabled}')
-    if [[ $sre_tls = 'true' ]]; then
-        update_config_variable "$config_file" "SRE_TLS_ENABLED" "${sre_tls}"
-        sre_dest_ca_cert=$(kubectl get applications -n "$apps_ns" sre-exporter -o jsonpath='{.spec.sources[*].helm.valuesObject.otelCollector.tls.caSecret.enabled}')
-        if [[ "${sre_dest_ca_cert}" == "true" ]]; then
-            update_config_variable "$config_file" "SRE_DEST_CA_CERT" "${sre_dest_ca_cert}"
-        fi
+    if [[ "$SRE_TLS_ENABLED" == "true" ]]; then
+        update_config_variable "$config_file" "SRE_TLS_ENABLED" "true"
+
+        SRE_DEST_CA_CERT=$(kubectl get applications -n "$apps_ns" sre-exporter \
+            -o jsonpath='{.spec.sources[*].helm.valuesObject.otelCollector.tls.caSecret.enabled}')
+
+        [[ "$SRE_DEST_CA_CERT" == "true" ]] && \
+            update_config_variable "$config_file" "SRE_DEST_CA_CERT" "true"
     else
         update_config_variable "$config_file" "SRE_TLS_ENABLED" "false"
     fi
 
-    VALUE_FILES=$(kubectl get application root-app -n "$apps_ns" -o jsonpath='{.spec.sources[0].helm.valueFiles[*]}')
+    # --------------------------
+    # Profiles
+    # --------------------------
+    VALUE_FILES=$(kubectl get application root-app -n "$apps_ns" \
+        -o jsonpath='{.spec.sources[0].helm.valueFiles[*]}')
 
     if [[ -z "$VALUE_FILES" ]]; then
-        echo "⚠️  Warning: No value files found in root-app spec"
-        exit 1
+        echo "⚠️ No value files found in root-app"
+        return 1
     fi
 
-    echo "Found value files:"
-    echo "$VALUE_FILES" | tr ' ' '\n' | sed 's/^/  - /'
-    echo
-
-    # Initialize all profiles as disabled (true means profile is disabled)
     DISABLE_CO_PROFILE="false"
     DISABLE_AO_PROFILE="false"
     DISABLE_O11Y_PROFILE="false"
     SINGLE_TENANCY_PROFILE="false"
 
-    # Check for enabled profiles (inverse logic)
-    # If we find enable-cluster-orch.yaml, then CO is enabled, so DISABLE_CO=false
-    if echo "$VALUE_FILES" | grep -q "enable-cluster-orch.yaml"; then
-        echo "✅ Cluster Orchestrator (CO) profile is ENABLED"
-    else
-        DISABLE_CO_PROFILE="true"
-        echo "⛔ Cluster Orchestrator (CO) profile is DISABLED"
-    fi
+    echo "$VALUE_FILES" | grep -q "enable-cluster-orch.yaml" || DISABLE_CO_PROFILE="true"
+    echo "$VALUE_FILES" | grep -q "enable-app-orch.yaml" || DISABLE_AO_PROFILE="true"
+    echo "$VALUE_FILES" | grep -qE "(enable-o11y\.yaml|o11y-onprem-1k\.yaml)" || DISABLE_O11Y_PROFILE="true"
+    echo "$VALUE_FILES" | grep -q "enable-singleTenancy.yaml" && SINGLE_TENANCY_PROFILE="true"
 
-    if echo "$VALUE_FILES" | grep -q "enable-app-orch.yaml"; then
-        echo "✅ Application Orchestrator (AO) profile is ENABLED"
-    else
-        DISABLE_AO_PROFILE="true"
-        echo "⛔ Application Orchestrator (AO) profile is DISABLED"
-    fi
+    INSTALL_GITEA=$([[ "$DISABLE_CO_PROFILE" == "true" || "$DISABLE_AO_PROFILE" == "true" ]] && echo "false" || echo "true")
 
-    if echo "$VALUE_FILES" | grep -qE "(enable-o11y\.yaml|o11y-onprem-1k\.yaml)"; then
-        echo "✅ Observability (O11y) profile is ENABLED"
-    else
-        DISABLE_O11Y_PROFILE="true"
-        echo "⛔ Observability (O11y) profile is DISABLED"
-    fi
-
-    if echo "$VALUE_FILES" | grep -q "enable-singleTenancy.yaml"; then
-        SINGLE_TENANCY_PROFILE="true"
-        echo "✅ Single Tenancy is ENABLED"
-    else
-        echo "⛔ Single Tenancy is DISABLED"
-    fi
-
-    INSTALL_GITEA=$([[ "${DISABLE_CO_PROFILE:-}" == "true" || "${DISABLE_AO_PROFILE:-}" == "true" ]] && echo "false" || echo "true")
-
+    # Update profile values
     update_config_variable "$config_file" "DISABLE_CO_PROFILE" "$DISABLE_CO_PROFILE"
     update_config_variable "$config_file" "DISABLE_AO_PROFILE" "$DISABLE_AO_PROFILE"
     update_config_variable "$config_file" "DISABLE_O11Y_PROFILE" "$DISABLE_O11Y_PROFILE"
     update_config_variable "$config_file" "SINGLE_TENANCY_PROFILE" "$SINGLE_TENANCY_PROFILE"
+    update_config_variable "$config_file" "INSTALL_GITEA" "$INSTALL_GITEA"
 
-    # Get SMTP_SKIP_VERIFY from alerting-monitor application
-    SMTP_SKIP_VERIFY=$(kubectl get application alerting-monitor -n "$apps_ns" -o jsonpath='{.spec.sources[*].helm.valuesObject.alertingMonitor.smtp.insecureSkipVerify}' 2>/dev/null || echo "false")
-    if [[ -n "$SMTP_SKIP_VERIFY" ]]; then
-        update_config_variable "$config_file" "SMTP_SKIP_VERIFY" "$SMTP_SKIP_VERIFY"
-    fi
+    # --------------------------
+    # SMTP
+    # --------------------------
+    SMTP_SKIP_VERIFY=$(kubectl get application alerting-monitor -n "$apps_ns" \
+        -o jsonpath='{.spec.sources[*].helm.valuesObject.alertingMonitor.smtp.insecureSkipVerify}' \
+        2>/dev/null || echo "false")
 
-    #cleanup old file
+    update_config_variable "$config_file" "SMTP_SKIP_VERIFY" "$SMTP_SKIP_VERIFY"
+
+    echo "Configuration retrieval and update completed successfully."
+}
+
+apply_and_package_config() {
+    tmp_dir="$cwd/$git_arch_name/tmp"
+
+    rm -rf "$tmp_dir"
+    mkdir -p "$tmp_dir"
+
+    repo_file=$(find "$cwd/$git_arch_name" -name "*$si_config_repo*.tgz" -type f -printf "%f\n")
+    tar -xf "$cwd/$git_arch_name/$repo_file" -C "$tmp_dir"
+
     rm -rf "$ORCH_INSTALLER_PROFILE".yaml
-
-    # Generate Cluster Config
     ./generate_cluster_yaml.sh onprem
 
-    # cp changes to tmp repo
-    tmp_dir="$cwd/$git_arch_name/tmp"
-    cp "$ORCH_INSTALLER_PROFILE".yaml "$tmp_dir"/$si_config_repo/orch-configs/clusters/"$ORCH_INSTALLER_PROFILE".yaml
+    cp "$ORCH_INSTALLER_PROFILE".yaml \
+        "$tmp_dir/$si_config_repo/orch-configs/clusters/$ORCH_INSTALLER_PROFILE.yaml"
 
     while true; do
-        if [[ -n ${PROCEED} ]]; then
-            break
-        fi
-        read -rp "Edit config values.yaml files with custom configurations if necessary!!!
-    The files are located at:
-    $tmp_dir/$si_config_repo/orch-configs/profiles/<profile>.yaml
-    $tmp_dir/$si_config_repo/orch-configs/clusters/$ORCH_INSTALLER_PROFILE.yaml
-    Enter 'yes' to confirm that configuration is done in order to progress with installation
-    ('no' will exit the script) !!!
-
-    Ready to proceed with installation? " yn
+        read -rp "Edit values.yaml if required. Ready to proceed? (yes/no): " yn
         case $yn in
             [Yy]* ) break;;
             [Nn]* ) exit 1;;
@@ -257,11 +238,10 @@ retrieve_and_apply_config() {
         esac
     done
 
-    ## Tar back the repo
-    cd "$tmp_dir"
+    cd "$tmp_dir" || return 1
     tar -zcvf "$repo_file" ./edge-manageability-framework
     mv -f "$repo_file" "$cwd/$git_arch_name/$repo_file"
-    cd "$cwd"
+    cd "$cwd" || return 1
     rm -rf "$tmp_dir"
 }
 
@@ -735,16 +715,16 @@ if [[ ! -f postgres_secret.yaml ]]; then
 
 fi
 
-
+# Retrieve/Apply config that was set during onprem installation and apply it to orch-configs
+#retrieve_and_apply_config
+retrieve_and_update_config
 # Delete gitea secrets before backup
-cleanup_gitea_secrets
+if [[ "$INSTALL_GITEA" == "true" ]]; then
+   cleanup_gitea_secrets
+fi
 
 # Backup PostgreSQL databases
 backup_postgres
-
-# Retrieve config that was set during onprem installation and apply it to orch-configs
-# Modify orch-configs settings for upgrade procedure
-retrieve_and_apply_config
 
 echo "Running On Premise Edge Orchestrator upgrade to $DEPLOY_VERSION"
 
@@ -831,7 +811,7 @@ else
 fi
 
 ### Upgrade
-
+apply_and_package_config
 # Run OS Configuration upgrade
 echo "Upgrading the OS level configuration..."
 eval "sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get install --only-upgrade --allow-downgrades -y $cwd/$deb_dir_name/onprem-config-installer_*_amd64.deb"
@@ -1336,6 +1316,15 @@ sleep  5
 kubectl patch application root-app -n  "$apps_ns"  --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 sleep 10
 delete_nginx_if_any
+# Remove gitea if disabled
+if [[ "${INSTALL_GITEA}" == "false" ]]; then
+    if helm list -n gitea | awk '{print $1}' | grep -q "^gitea$"; then
+        echo "Gitea release found. Uninstalling..."
+        helm uninstall gitea -n gitea
+    else
+        echo "Gitea release not found. Skipping uninstall."
+    fi
+fi
 sleep 10
 echo "Wait ~5–10 minutes for ArgoCD to sync and deploy all application"
 echo "   👉 Run the script to further sync and post run"
