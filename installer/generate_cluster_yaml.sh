@@ -68,6 +68,7 @@ export EMAIL_PROFILE='- orch-configs/profiles/alerting-emails.yaml'
 export ARTIFACT_RS_PROFILE='- orch-configs/profiles/artifact-rs-production-noauth.yaml'
 export OSRM_MANUAL_PROFILE='- orch-configs/profiles/enable-osrm-manual-mode.yaml'
 export RESOURCE_DEFAULT_PROFILE='- orch-configs/profiles/resource-default.yaml'
+export EIM_NOOBB_PROFILE='#- orch-configs/profiles/eim-noobb.yaml'
 
 if [[ "${ORCH_INSTALLER_PROFILE:-}" == "onprem-vpro" || "${ORCH_INSTALLER_PROFILE:-}" == "aws-vpro" ]]; then
   export DISABLE_AO_PROFILE=true
@@ -213,9 +214,16 @@ if [ "$DEPLOY_TYPE" = "onprem" ]; then
     if [ "${DISABLE_O11Y_PROFILE:-false}" = "true" ]; then
         export O11Y_ENABLE_PROFILE="#- orch-configs/profiles/enable-o11y.yaml"
         export O11Y_PROFILE="#- orch-configs/profiles/o11y-onprem.yaml"
+        # EIM_NOOBB_PROFILE can only be enabled if not using vpro profile
+        if [[ "${ORCH_INSTALLER_PROFILE:-}" != "onprem-vpro" ]]; then
+            export EIM_NOOBB_PROFILE="- orch-configs/profiles/eim-noobb.yaml"
+        else
+            export EIM_NOOBB_PROFILE="#- orch-configs/profiles/eim-noobb.yaml"
+        fi
     else
         export O11Y_ENABLE_PROFILE="- orch-configs/profiles/enable-o11y.yaml"
         export O11Y_PROFILE="- orch-configs/profiles/o11y-onprem.yaml"
+        export EIM_NOOBB_PROFILE="#- orch-configs/profiles/eim-noobb.yaml"
     fi
 
     if [ "${CLUSTER_SCALE_PROFILE}" = "1ken" ]; then
@@ -267,9 +275,16 @@ elif [ "$DEPLOY_TYPE" = "aws" ]; then
     if [ "${DISABLE_O11Y_PROFILE:-false}" = "true" ]; then
         export O11Y_ENABLE_PROFILE="#- orch-configs/profiles/enable-o11y.yaml"
         export O11Y_PROFILE="#- orch-configs/profiles/o11y-release.yaml"
+        # EIM_NOOBB_PROFILE can only be enabled if not using vpro profile
+        if [[ "${ORCH_INSTALLER_PROFILE:-}" != "aws-vpro" ]]; then
+            export EIM_NOOBB_PROFILE="- orch-configs/profiles/eim-noobb.yaml"
+        else
+            export EIM_NOOBB_PROFILE="#- orch-configs/profiles/eim-noobb.yaml"
+        fi
     else
         export O11Y_ENABLE_PROFILE="- orch-configs/profiles/enable-o11y.yaml"
         export O11Y_PROFILE="- orch-configs/profiles/o11y-release.yaml"
+        export EIM_NOOBB_PROFILE="#- orch-configs/profiles/eim-noobb.yaml"
         if [[ "$CLUSTER_SCALE_PROFILE" =~ ^(500en|1ken|10ken)$ ]]; then
             export O11Y_PROFILE="- orch-configs/profiles/o11y-release-large.yaml"
         fi
