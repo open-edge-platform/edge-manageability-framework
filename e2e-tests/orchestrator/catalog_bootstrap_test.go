@@ -350,7 +350,7 @@ var _ = Describe("Provisioned registries push test", Label("orchestrator-integra
 					"/repositories/"+imageName,
 					reg.Username, reg.AuthToken, http.StatusOK, true)
 
-				_, err := dc.ImageRemove(ctx, remoteImageName, image.RemoveOptions{
+				_, err = dc.ImageRemove(ctx, remoteImageName, image.RemoveOptions{
 					Force: true,
 				})
 				Expect(err).ToNot(HaveOccurred(), "removing image %s from docker", remoteImageName)
