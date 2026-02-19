@@ -16,9 +16,7 @@ keycloak:
         image: "keycloak/keycloak:26.5.3"
         env:
           - name: JAVA_OPTS_APPEND
-            value: "-XX:+UseContainerSupport -Xmx2048m"
-          - name: JAVA_OPTS_KC_HEAP
-            value: "-Xms64m -Xmx512m -XX:MaxRAMPercentage=70 -XX:MinRAMPercentage=70 -XX:InitialRAMPercentage=50"
+            value: "-Xmx512m"
 
 # Keycloak Config CLI job configuration
 keycloakConfigCli:
