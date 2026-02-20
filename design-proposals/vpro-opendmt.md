@@ -229,13 +229,15 @@ sequenceDiagram
   PMA ->> DM: Report the AMT activation status to DM
   deactivate DM
   deactivate PMA
-  Note over US: Once activation completed then user can invoke AMT power operations
+  Note over US: Once activation completed then user can invoke AMT out of band operations
 ```
 
-The configuration is per-tenant and we expect each tenant to have its own provisioning certificate. User has to procure the provisioning certificate from [CA providers/vendors](https://device-management-toolkit.github.io/docs/2.29/Reference/Certificates/remoteProvisioning/#purchase).
-The user is capable to change the `Domain` configuration by removing the existing and uploading a new one. There will be multiple domain
-configurations depending on how the edge infrastructure is deployed (ideally in each site there will be multiple network
-segments).
+The configuration is per-tenant and we expect each tenant to have its own provisioning certificate.
+User has to procure the provisioning certificate from
+[CA providers/vendors](https://device-management-toolkit.github.io/docs/2.29/Reference/Certificates/remoteProvisioning/#purchase).
+The user is capable to change the `Domain` configuration by removing the existing
+and uploading a new one. There will be multiple domain configurations depending on
+how the edge infrastructure is deployed (ideally in each site there will be multiple network segments).
 
 **Note:** it is important to control e2e the environment and it is not possible to transfer devices from a domain to another
 without disruptions.
