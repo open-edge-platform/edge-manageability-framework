@@ -46,6 +46,65 @@ require_cmd() {
   fi
 }
 
+cmd_exists() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+install_helm() {
+  if cmd_exists helm; then
+    return 0
+  fi
+
+  if ! cmd_exists curl && ! cmd_exists wget; then
+    echo "❌ helm is required but is not installed. Need curl or wget to install it automatically."
+    echo "   Install curl (or wget) and retry, or install helm manually (https://helm.sh/docs/intro/install/)."
+    exit 1
+  fi
+
+  echo "👉 helm not found; installing helm v3..."
+
+  local tmp
+  tmp="$(mktemp -d)"
+  trap 'rm -rf "$tmp"' RETURN
+
+  local installer_url="https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3"
+  local installer_path="$tmp/get-helm-3.sh"
+
+  if cmd_exists curl; then
+    curl -fsSL "$installer_url" -o "$installer_path"
+  else
+    wget -qO "$installer_path" "$installer_url"
+  fi
+  chmod +x "$installer_path"
+
+  # Prefer system install if possible, otherwise fall back to a user install.
+  if [[ -w /usr/local/bin ]]; then
+    if [[ -n "${HELM_VERSION:-}" ]]; then
+      HELM_INSTALL_DIR="/usr/local/bin" DESIRED_VERSION="${HELM_VERSION}" "$installer_path"
+    else
+      HELM_INSTALL_DIR="/usr/local/bin" "$installer_path"
+    fi
+  elif cmd_exists sudo; then
+    if [[ -n "${HELM_VERSION:-}" ]]; then
+      sudo -E env DESIRED_VERSION="${HELM_VERSION}" "$installer_path"
+    else
+      sudo -E "$installer_path"
+    fi
+  else
+    mkdir -p "${HOME}/.local/bin"
+    if [[ -n "${HELM_VERSION:-}" ]]; then
+      HELM_INSTALL_DIR="${HOME}/.local/bin" DESIRED_VERSION="${HELM_VERSION}" "$installer_path"
+    else
+      HELM_INSTALL_DIR="${HOME}/.local/bin" "$installer_path"
+    fi
+  fi
+
+  if ! cmd_exists helm; then
+    echo "❌ helm installation did not succeed; please install helm manually and retry."
+    exit 1
+  fi
+}
+
 usage() {
   cat >&2 <<EOF
 Usage:
@@ -111,7 +170,7 @@ wait_for_k8s_ready() {
 install_openebs_localpv() {
   local kube_context="${1:-}"
 
-  require_cmd helm
+  install_helm
   require_cmd kubectl
 
   local helm_ctx_args=()

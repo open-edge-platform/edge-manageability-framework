@@ -47,67 +47,15 @@ require_cmd() {
   return 0
 }
 
-install_helm() {
-  if require_cmd helm; then
-    return 0
-  fi
-
-  if ! require_cmd sudo; then
-    echo "❌ helm is required but is not installed, and sudo is not available to install it automatically"
-    echo "   Install helm (https://helm.sh/docs/intro/install/) and retry."
-    exit 1
-  fi
-
-  if ! require_cmd curl && ! require_cmd wget; then
-    echo "❌ helm is required but is not installed. Need curl or wget to install it automatically."
-    echo "   Install curl (or wget) and retry, or install helm manually (https://helm.sh/docs/intro/install/)."
-    exit 1
-  fi
-
-  if [[ "${ASSUME_YES:-false}" != "true" ]]; then
-    while true; do
-      read -rp "helm not found. Install helm v3 now (requires sudo + internet)? [yes/no] " yn
-      case $yn in
-        [Yy]* ) break;;
-        [Nn]* )
-          echo "❌ helm is required. Install helm and retry."
-          exit 1
-        ;;
-        * ) echo "Please answer yes or no.";;
-      esac
-    done
-  fi
-
-  echo "Installing helm..."
-  local tmp
-  tmp="$(mktemp -d)"
-  trap 'rm -rf "$tmp"' EXIT
-
-  local installer_url="https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3"
-  local installer_path="$tmp/get-helm-3.sh"
-
-  if require_cmd curl; then
-    curl -fsSL "$installer_url" -o "$installer_path"
-  else
-    wget -qO "$installer_path" "$installer_url"
-  fi
-  chmod +x "$installer_path"
-
-  if [[ -n "${HELM_VERSION:-}" ]]; then
-    sudo -E env DESIRED_VERSION="${HELM_VERSION}" "$installer_path"
-  else
-    sudo -E "$installer_path"
-  fi
-
-  if ! require_cmd helm; then
-    echo "❌ helm installation did not succeed; please install helm manually and retry."
-    exit 1
-  fi
-}
-
 ensure_prereqs() {
   if ! require_cmd kubectl; then
     echo "❌ kubectl not found. Install kubectl (or ensure RKE2 provides it) and retry."
+    exit 1
+  fi
+
+  if ! require_cmd helm; then
+    echo "❌ helm not found. Run pre-orch-install.sh first (it installs helm), or install helm manually:"
+    echo "   https://helm.sh/docs/intro/install/"
     exit 1
   fi
 
@@ -122,7 +70,6 @@ ensure_prereqs() {
     exit 1
   fi
 
-  install_helm
 }
 
 bootstrap_repo_root() {
