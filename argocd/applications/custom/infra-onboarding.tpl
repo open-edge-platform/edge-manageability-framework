@@ -16,10 +16,16 @@ global:
     {{- end }}
 
 import:
+  dkam:
+    enabled: {{ dig "infra-onboarding" "dkam" "enabled" true .Values.argo }}
+  tinkerbell:
+    enabled: {{ dig "infra-onboarding" "tinkerbell" "enabled" true .Values.argo }}
   onboarding-manager:
-    enabled: {{ index .Values.argo "infra-onboarding" "onboarding-manager" "enabled" }}
+    enabled: {{ dig "infra-onboarding" "onboarding-manager" "enabled" true .Values.argo }}
   pxe-server:
-    enabled: {{ index .Values.argo "infra-onboarding" "pxe-server" "enabled" }}
+    enabled: {{ dig "infra-onboarding" "pxe-server" "enabled" true .Values.argo }}
+  infra-config:
+    enabled: {{ dig "infra-onboarding" "infra-config" "enabled" true .Values.argo }}
 
 infra-config:
   config:
@@ -48,6 +54,10 @@ infra-config:
     orchDeviceManager: device-manager-node.{{ .Values.argo.clusterDomain }}:443
 
     rsType: "{{ index .Values.argo "infra-onboarding" "rsType" | default "no-auth" }}"
+    enServiceClients: "{{ index .Values.argo "infra-onboarding" "enServiceClients" | default "hardware-discovery-agent,cluster-agent,platform-manageability-agent,platform-update-agent,platform-telemetry-agent" }}"
+    enOutboundClients: "{{ index .Values.argo "infra-onboarding" "enOutboundClients" | default "platform-observability-collector,platform-observability-health-check,platform-observability-logging,platform-observability-metrics" }}"
+    enMetricsEnabled: "{{ index .Values.argo "infra-onboarding" "enMetricsEnabled" | default "true" }}"
+    enTokenClients: "{{ index .Values.argo "infra-onboarding" "enTokenClients" | default "node-agent,hd-agent,cluster-agent,platform-update-agent,platform-observability-agent,platform-telemetry-agent,prometheus,connect-agent,attestation-manager,platform-manageability-agent" }}"
     disableCoProfile: {{ index .Values.argo "infra-onboarding" "disableCoProfile" | default false }}
     disableO11yProfile: {{ index .Values.argo "infra-onboarding" "disableO11yProfile" | default false }}
     netIp: "{{ index .Values.argo "infra-onboarding" "netIp" | default "dynamic" }}"
@@ -71,6 +81,7 @@ infra-config:
     omSvc: onboarding-node.{{ .Values.argo.clusterDomain }}
     omStreamSvc: onboarding-stream.{{ .Values.argo.clusterDomain }}
     extraHosts: "{{ index .Values.argo "infra-onboarding" "dkamExtraHost" | default "" }}"
+    skipOSProvisioning: {{ index .Values.argo "infra-onboarding" "skipOSProvisioning" | default false }}
 
     firewallReqAllow: |-
       [{
@@ -86,12 +97,16 @@ infra-config:
 
 tinkerbell:
   pvc:
+    enabled: false
     storageClassName: {{ index .Values.argo "infra-onboarding" "tinkerbellStorageClass" | default "standard" }}
+    accessModes:
+    - ReadWriteOnce
   traefikReverseProxy:
     enabled: &traefikReverseProxy_enabled true
     tinkServerDnsname: "tinkerbell-server.{{ .Values.argo.clusterDomain }}"
     nginxDnsname: &nginxDnsname "tinkerbell-haproxy.{{ .Values.argo.clusterDomain }}"
   stack:
+    enabled: true
     resources:
       limits:
         {{- if .Values.argo.nginxCDN }}
@@ -109,11 +124,32 @@ tinkerbell:
         cpu: 200m
         memory: 256Mi
         {{- end }}
+    hook:
+      {{- if index .Values.argo "infra-onboarding" "skipOSProvisioning" }}
+      enabled: false
+      {{- end }}
   tinkerbell_tink:
+    {{- if index .Values.argo "infra-onboarding" "skipOSProvisioning" }}
+    enabled: false
+    controller:
+      enabled: false
     server:
+      enabled: false
       metrics:
         enabled: {{ index .Values.argo "infra-onboarding" "enableMetrics" | default false }}
+    {{- else }}
+    enabled: true
+    controller:
+      enabled: true
+    server:
+      enabled: true
+      metrics:
+        enabled: {{ index .Values.argo "infra-onboarding" "enableMetrics" | default false }}
+    {{- end }}
   tinkerbell_smee:
+    {{- if index .Values.argo "infra-onboarding" "skipOSProvisioning" }}
+    enabled: false
+    {{- end }}
     # these additional arguments serve as kernel arguments for Edge Node
     additionalKernelArgs:
       - "http_proxy={{ .Values.argo.proxy.enHttpProxy }}"
@@ -128,6 +164,10 @@ tinkerbell:
     traefikReverseProxy:
       enabled: *traefikReverseProxy_enabled
       nginxDnsname: *nginxDnsname
+  tinkerbell_hegel:
+    {{- if index .Values.argo "infra-onboarding" "skipOSProvisioning" }}
+    enabled: false
+    {{- end }}
 
 dkam:
   pvc:
@@ -155,6 +195,8 @@ dkam:
   {{- end}}
 
 onboarding-manager:
+  service:
+    enableIO: {{ dig "infra-onboarding" "onboarding-manager" "service" "enableIO" true .Values.argo }}
   managerArgs:
     enableTracing: {{ index .Values.argo "infra-onboarding" "enableTracing" | default false }}
   metrics:
