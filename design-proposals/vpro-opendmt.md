@@ -139,7 +139,7 @@ sequenceDiagram
     participant PS as psqlDB
   end
   US ->> CLI: Create Domain Profile (profileName,domainSuffix,ProvsioningCert,ProvisioningPasswd) 
-  US ->> TR: Create Domain Profile
+  CLI ->> TR: Create Domain Profile
   activate TR
   TR ->> TR: Verify JWT token
   TR ->> MT: Create Domain Profile
