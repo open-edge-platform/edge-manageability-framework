@@ -29,7 +29,7 @@ variable "storage_pool" {
 variable "vm_boot_disk_size" {
   type        = string
   description = "The size of the VM's boot disk. Accepts K for kibibytes, M for mebibytes, G for gibibytes, T for tibibytes."
-  default     = "512G"
+  default     = "300G"
 }
 
 variable "os_disk_image_url" {
@@ -53,7 +53,7 @@ variable "vm_user" {
 variable "vm_vcpu" {
   type        = number
   description = "The number of virtual CPUs to use for the VM."
-  default     = 16
+  default     = 12
 }
 
 variable "vm_memory" {
