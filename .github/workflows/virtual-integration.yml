@@ -471,7 +471,7 @@ jobs:
       github.ref == 'refs/heads/main' ||
       github.ref == 'refs/heads/main-pass-validation'
       )
-    runs-on: ubuntu-24.04-16core-64GB
+    runs-on: ubuntu-24.04-32core-128GB
     timeout-minutes: 90
     env:
       ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
@@ -592,6 +592,9 @@ jobs:
         env:
           REQUESTS_CA_BUNDLE: /usr/local/share/ca-certificates/orch-ca.crt
           LIBVIRT_DEFAULT_URI: 'qemu:///system'
+          TF_VAR_disk_size: 110
+          TF_VAR_memory: 16384
+          TF_VAR_cpu_cores: 8
         run: |
           kubectl -n orch-platform get secrets platform-keycloak -o yaml || true
           KC_ADMIN_PWD=$(kubectl -n orch-platform get secrets platform-keycloak -o jsonpath='{.data.admin-password}' | base64 -d)
@@ -607,8 +610,6 @@ jobs:
             -V orchestrator-configs/kind.yaml \
             -V tests/core_foundation/data/cf_data_2_ven_VEN-libvirt_ubuntu-24.04-lts.yaml \
             --exitonfailure \
-            --exclude cf6 \
-            --exclude cf8 \
             tests/core_foundation/core_foundation.robot
 
       - name: Upload test artifacts
