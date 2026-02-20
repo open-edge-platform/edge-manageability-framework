@@ -619,4 +619,6 @@ case "${PROVIDER}" in
     echo "❌ Unknown provider: ${PROVIDER}"
     usage
     exit 1
-    ;
+    ;;
+
+esac
