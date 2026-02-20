@@ -131,31 +131,109 @@ sequenceDiagram
   %%{wrap}%%
   autonumber
   participant US as User
-  participant TR as Traefik
-  participant MT as MT-GW
-  participant MPS as MPS
-  participant PS as psqlDB
+  participant CLI as UI/CLI
+  box rgba(10, 184, 242, 1) EMF Orchestrator
+    participant TR as Traefik
+    participant MT as MT-GW
+    participant RPS as RPS
+    participant PS as psqlDB
+  end
+  US ->> CLI: Create Domain Profile (profileName,domainSuffix,ProvsioningCert,ProvisioningPasswd) 
   US ->> TR: Create Domain Profile
   activate TR
   TR ->> TR: Verify JWT token
   TR ->> MT: Create Domain Profile
   activate MT
   MT ->> MT: Extract ProjectID
-  MT ->> MPS: Create Domain Profile
-  activate MPS
-  MPS ->> MPS: Verify JWT token
-  MPS ->> MPS: Extract ProjectID
-  MPS ->> PS: Store Domain Profile
-  MPS ->> MT: OK
-  deactivate MPS
+  MT ->> RPS: Create Domain Profile
+  activate RPS
+  RPS ->> RPS: Verify JWT token
+  RPS ->> RPS: Extract ProjectID
+  RPS ->> PS: Store Domain Profile
+  RPS ->> MT: OK
+  deactivate RPS
   MT ->> TR: OK
   deactivate MT
-  TR ->> US: OK
+  TR ->> CLI: OK
   deactivate TR
+  CLI ->> US: OK
 ```
 
-The configuration is per-tenant and we expect each tenant to have its own provisioning certificate. The user is capable
-to change the `Domain` configuration by removing the existing and uploading a new one. There will be multiple domain
+Activating EN in ACM mode.
+
+```mermaid
+sequenceDiagram
+  title: AMT activation in ACM mode
+  %%{wrap}%%
+  autonumber
+  participant US as User
+  participant CLI as Orch-Cli
+  box rgba(10, 184, 242, 1) EMF Orchestrator
+    participant TR as Traefik
+    participant MT as MT-GW
+    participant API as API
+    participant INV as Inventory
+    participant DM as DeviceMgr
+    participant RPS as RPS
+  end
+  box rgba(32, 194, 142, 1) Edge Node
+    participant PMA as PMA
+  end
+  activate DM
+  Note over DM: Subscribe and listen for tenant creation events.
+  DM ->> DM: TenantCreation event received
+  DM ->> RPS: Create CIRA configuration
+  DM ->> RPS: Create the CCM profile
+  DM ->> RPS: Create the ACM profile
+  deactivate DM
+  Note over PMA: User has update the EN BIOS with DNS suffix(ACM mode only) and MEBx Password
+
+  US ->> CLI: Register the EN(serialNo or hardwareUUID, activationMode)
+  Note over CLI: Default CCM mode will chosen if user doesn't specify the action mode
+  CLI ->> TR: Register the EN
+  activate TR
+  TR ->> TR: Verify JWT token
+  TR ->> MT: Register the device
+  MT ->> MT: Extract ProjectID
+  MT ->> API: RegisterHost with serialNo or hardwareUUID , activationMode
+  API ->> INV: CreateHost and persist the host details in the DB
+  INV ->> API: CreateHost Response
+  API ->> MT: RegisterHost Response
+  MT ->> TR: RegisterHost Response
+  TR ->> CLI: RegisterHost Response
+  deactivate TR
+  CLI ->> US: RegisterHost Response
+  
+  Note over PMA: Periodically calls gRPC API to get activation requests.
+  activate PMA
+  US ->> CLI: ActivateAMT for the EN
+  CLI ->> TR: ActivateAMT for the EN
+  activate TR
+  TR ->> TR: Verify JWT token
+  TR ->> MT: ActivateAMT for the EN
+  MT ->> MT: Extract ProjectID
+  MT ->> API: ActivateAMT for the EN
+  API ->> INV: Set the AMTDesiredState to PROVISIONED
+  INV ->> API: ActivateAMT Response
+  API ->> MT: ActivateAMT Response
+  MT ->> TR: ActivateAMT Response
+  TR ->> CLI: ActivateAMT Response
+  deactivate TR
+  CLI ->> US: ActivateAMT Response
+  activate DM
+  PMA ->> DM: Get ActivationRequest
+  DM ->> INV: QueryHost to get the user intent to do activation
+  INV ->> DM: AMT activattion intent response 
+  DM ->> PMA: Response with profileName, AMTPassed
+  PMA ->> PMA: Trigger the action command using rpc-go(profileName, amtPasswd)
+  PMA ->> DM: Report the AMT activation status to DM
+  deactivate DM
+  deactivate PMA
+  Note over US: Once activation completed then user can invoke AMT power operations
+```
+
+The configuration is per-tenant and we expect each tenant to have its own provisioning certificate. User has to procure the provisioning certificate from [CA providers/vendors](https://device-management-toolkit.github.io/docs/2.29/Reference/Certificates/remoteProvisioning/#purchase).
+The user is capable to change the `Domain` configuration by removing the existing and uploading a new one. There will be multiple domain
 configurations depending on how the edge infrastructure is deployed (ideally in each site there will be multiple network
 segments).
 
