@@ -5,6 +5,8 @@
 name: Virtual Integration
 
 on:
+  schedule:
+    - cron: '0 */2 * * *'  # Every 2 hours
   # Allow manually triggering the workflow
   workflow_dispatch: {}
   # Run on all commits that are pushed to all branches
