@@ -41,7 +41,7 @@ jobs:
     if: github.event_name == 'pull_request'
     permissions:
       contents: read
-    uses: open-edge-platform/orch-ci/.github/workflows/pre-merge.yml@cd0b18b2ef0e2c52665525fa5503b8ec5edd232f  # 2026.0.10
+    uses: open-edge-platform/orch-ci/.github/workflows/pre-merge.yml@c8c1792b4f2e2934ffc459bb1b981bc26ddaa39a  # 2026.0.12
     with:
       run_version_check: false
       run_build: false
@@ -83,7 +83,7 @@ jobs:
 
       - name: Discover Changed Files
         id: check-files
-        uses: open-edge-platform/orch-ci/discover-changed-files@cd0b18b2ef0e2c52665525fa5503b8ec5edd232f  # 2026.0.8 # zizmor: ignore[unpinned-uses]
+        uses: open-edge-platform/orch-ci/discover-changed-files@c8c1792b4f2e2934ffc459bb1b981bc26ddaa39a  # 2026.0.8 # zizmor: ignore[unpinned-uses]
         with:
           project_folder: "."
 
