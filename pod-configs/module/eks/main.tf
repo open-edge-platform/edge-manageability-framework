@@ -293,9 +293,9 @@ resource "aws_eks_node_group" "nodegroup" {
   }
 
   scaling_config {
-    desired_size = 6
+    desired_size = 3
     min_size     = var.min_size
-    max_size     = var.max_size
+    max_size     = 6
   }
 
   launch_template {
