@@ -293,7 +293,7 @@ resource "aws_eks_node_group" "nodegroup" {
   }
 
   scaling_config {
-    desired_size = var.desired_size
+    desired_size = 6
     min_size     = var.min_size
     max_size     = var.max_size
   }
