@@ -299,7 +299,6 @@ Hereafter we present as steps the proposed plan in the release 3.1.
 - Move user creation to the installer script
 - Introduce new roles and possibly groups to have fine-grain tokens
 - Substitute Kong and Kuma respectively with Traefik and Istio
-- Vault root creation and refresh logic move to a job, side care container or in the DM RM
 - Integrate MT-GW with RPS/MPS and expose their services
 - Extend MPS to properly handle JWT tokens and ActiveProjectID
   - Requests from the north will have ActiveProjectID and the JWT token
@@ -318,16 +317,14 @@ Control Mode (ACM). The proposed plan for the release is:
   - Extend vPRO UI to allow User to specify whether ACM or Client Control Mode (CCM) is used.
   - Add option to UI to allow User to specify DNS Suffix for domain profiles.
   - Add option to UI to allow User to upload required provisioning cert (in PFX format) and password for domain profiles.
+- Device manager:
+  - Create AMT admin profile whenever a new tenant is created.
+  - GRPC service should read the activation from host resource and based on that return the right profile name to PMA.
 - CLI
   - Add option for CLI to be used to provide the device activation mode is ACM or CCM for an instance.
   - Extend CLI to add method to provide DNS Suffix for domain profiles.
   - Add option for CLI to be used for uploading provisioning cert and password for domain profiles.
-- Vault
-  - Add storage option for provisioning cert and password for domain profiles.
-  - API for adding cert and password to Vault for use by CLI and UI. This API and storage should be tenant aware
-  as different tenants may use different certs and passwords for ACM.
-  - Add option for Device Management Manager to extract required cert and password for each instance.
-- Onboarding
+- Edge Node
   - Update BIOS with DNS Suffix value when running in admin mode
 
 Device Management Manager updates are documented in the [Device Management documentation](./vpro-rm.md).
