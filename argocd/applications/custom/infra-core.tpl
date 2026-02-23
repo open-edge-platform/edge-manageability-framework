@@ -40,6 +40,8 @@ apiv2:
   serviceArgsGrpc:
     globalLogLevel: "debug"
     enableTracing: {{ index .Values.argo "infra-core" "enableTracing" | default false }}
+  traefikReverseProxy:
+    secretName: {{ index .Values.argo "infra-core" "apiv2" "traefikReverseProxy" "secretName" | default "tls-orch" | quote }}
   {{- if index .Values.argo "infra-core" "api" }}
   {{- if index .Values.argo "infra-core" "api" "resources" }}
   resources:
