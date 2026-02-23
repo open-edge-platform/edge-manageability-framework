@@ -6,4 +6,4 @@
 
 argo:
   infra-core:
-    eimScenario: "noobb"
+    eimScenario: noobb
