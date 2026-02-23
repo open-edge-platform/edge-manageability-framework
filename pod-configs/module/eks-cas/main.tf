@@ -57,8 +57,7 @@ values = [
     extraEnv = {
       HTTP_PROXY  = "http://proxy-dmz.intel.com:912"
       HTTPS_PROXY = "http://proxy-dmz.intel.com:912"
-      NO_PROXY    = ".cluster.local,.amazonaws.com,.eks.amazonaws.com,.intel.com,.local,.internal,.controller.intel.corp,.kind-control-plane,.docker.internal,localhost,169.254.169.254"
-      SOCKS_PROXY = "proxy.jf.intel.com:1080"
+      NO_PROXY    = "169.254.169.254,127.0.0.1,localhost,.cluster.local,kubernetes.default.svc,kubernetes.default.svc.cluster.local,10.0.0.0/8,172.20.0.0/16,172.20.0.1,192.168.0.0/16"
     }
   })
 ]
