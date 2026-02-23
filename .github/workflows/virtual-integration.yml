@@ -581,7 +581,7 @@ jobs:
       # CF-5: Deploy Container App (WordPress)
       # CF-6: VM app deployment with VEN
       # CF-7: Assert Metrics Collected
-      # CF-8: SKIPPED - Cleanup for apps, CF-6 VM app (not deployed)
+      # CF-8: Cleanup for apps
       # CF-9: Cleanup Cluster
       # CF-10: Cleanup Host
       # CF-11: Cleanup Tenancy
