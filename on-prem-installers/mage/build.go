@@ -56,7 +56,7 @@ const (
 	giteaPath             = "assets/gitea"
 	giteaChartVersion     = "10.4.0"
 	argocdPath            = "assets/argo-cd"
-	argocdHelmVersion     = "8.2.7"
+	argocdHelmVersion     = "9.4.3"
 	deployOnlineDirectory = "onprem-ke-installer"
 )
 
