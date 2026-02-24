@@ -38,7 +38,7 @@ func (Upgrade) rke2Cluster() error {
 	fmt.Printf("Current RKE2 version: %s\n", currentVersion)
 
 	// Target version
-	targetVersion := "v1.34.3+rke2r1"
+	targetVersion := "v1.35.1+rke2r1"
 
 	// Check if already at target version
 	if currentVersion == targetVersion {
@@ -296,7 +296,8 @@ func determineUpgradePath(currentVersion, targetVersion string) []string {
 		"v1.32.9+rke2r1",  // Upgrade to 1.32
 		"v1.33.5+rke2r1",  // Upgrade to 1.33
 		"v1.34.1+rke2r1",  // Upgrade to 1.34.1
-		"v1.34.3+rke2r1",  // Final target version
+		"v1.34.3+rke2r1",  // Upgrade to 1.34.3
+		"v1.35.1+rke2r1",  // Final target version
 	}
 
 	// Extract minor version from full version string (e.g., "v1.30.14+rke2r2" -> "1.30")
