@@ -99,10 +99,6 @@ argo:
 {{- end }}
 {{- end }}
 
-{{- if and (not .Values.enableObservability) (not .Values.enableVproProfile) }}
-  infra-core:
-    eimScenario: noobb
-{{- end }}
 {{- if not (or .Values.enableUi .Values.enableUiDev) }}
   cors:
     enabled: false
