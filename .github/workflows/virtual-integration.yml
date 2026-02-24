@@ -677,40 +677,6 @@ jobs:
           echo "---" >> $GITHUB_STEP_SUMMARY
           echo "*This is a temporary validation job - will be removed after validation*" >> $GITHUB_STEP_SUMMARY
 
-  tag-repo:
-    permissions:
-      contents: read
-    name: Tag repo
-    needs:
-      - lint-version
-      - build-publish
-      - deploy-kind
-      - deploy-on-prem
-      - deploy-oxm-profile
-    if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-        with:
-          # Fetch all history for all tags and branches
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Prepare ci tools
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-        with:
-          repository: open-edge-platform/orch-ci
-          token: ${{ secrets.SYS_EMF_GH_TOKEN }}
-          path: orch-ci
-          persist-credentials: false
-
-      - name: Tag repo
-        env:
-          GITHUB_TOKEN: ${{ secrets.SYS_EMF_GH_TOKEN }}
-        run: orch-ci/scripts/version-tag.sh
-
   post-merge:
     permissions:
       contents: read
