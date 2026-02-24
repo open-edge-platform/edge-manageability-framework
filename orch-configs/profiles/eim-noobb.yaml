@@ -5,5 +5,8 @@
 # which excludes observability-related North Bound APIs
 
 argo:
+  infra-managers:
+    telemetry-manager:
+      enabled: false
   infra-core:
-    eimScenario: "noobb"
+    eimScenario: noobb
