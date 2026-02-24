@@ -66,7 +66,7 @@ root:
 {{- if .Values.enableDefaultTraefikRateLimit }}
     - orch-configs/profiles/default-traefik-rate-limit.yaml
 {{- end }}
-{{- if not .Values.enableObservability }}
+{{- if and (not .Values.enableObservability) (not .Values.enableVproProfile) }}
     - orch-configs/profiles/eim-noobb.yaml
 {{- end }}
 
@@ -99,6 +99,10 @@ argo:
 {{- end }}
 {{- end }}
 
+{{- if and (not .Values.enableObservability) (not .Values.enableVproProfile) }}
+  infra-core:
+    eimScenario: noobb
+{{- end }}
 {{- if not (or .Values.enableUi .Values.enableUiDev) }}
   cors:
     enabled: false
