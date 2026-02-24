@@ -458,10 +458,6 @@ jobs:
     permissions:
       actions: read
       contents: read
-    needs:
-      - deploy-kind
-      - deploy-on-prem
-      - deploy-oxm-profile
     # Always run, but do early exit if all target jobs succeeded
     if: always()
     runs-on: ubuntu-latest
@@ -469,22 +465,9 @@ jobs:
     steps:
       - name: Check if convergence analysis is needed
         id: check-need-analysis
-        run: |
-          echo "deploy-kind result: ${{ needs.deploy-kind.result }}"
-          echo "deploy-on-prem result: ${{ needs.deploy-on-prem.result }}"
-          echo "deploy-oxm-profile result: ${{ needs.deploy-oxm-profile.result }}"
-          
+        run: |          
           # Check if at least one job is non-success (failure, cancelled, etc.)
-          need_analysis=false
-          if [[ "${{ needs.deploy-kind.result }}" != "success" && "${{ needs.deploy-kind.result }}" != "skipped" ]]; then
-            need_analysis=true
-          fi
-          if [[ "${{ needs.deploy-on-prem.result }}" != "success" && "${{ needs.deploy-on-prem.result }}" != "skipped" ]]; then
-            need_analysis=true
-          fi
-          if [[ "${{ needs.deploy-oxm-profile.result }}" != "success" && "${{ needs.deploy-oxm-profile.result }}" != "skipped" ]]; then
-            need_analysis=true
-          fi
+          need_analysis=true
           
           echo "need_analysis=$need_analysis" >> $GITHUB_OUTPUT
           
