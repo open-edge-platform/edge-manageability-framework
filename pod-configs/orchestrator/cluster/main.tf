@@ -227,6 +227,7 @@ module "gitea" {
   # gitea_database_username    = "gitea-gitea_user" # See aurora_database module
   # gitea_database_password    = module.aurora_database.user_password["gitea-gitea_user"].result
   # gitea_database             = "gitea-gitea"  # See aurora_database module
+  install_from_local_gitea = var.install_from_local_gitea
 }
 
 resource "kubernetes_secret" "argocd_github_repo" {
@@ -241,7 +242,7 @@ resource "kubernetes_secret" "argocd_github_repo" {
   data = {
     "type"     = "git"
     "url"      = var.deploy_repo_url
-    "username" = var.git_username
-    "password" = var.git_token
+    #"username" = var.git_username
+    #"password" = var.git_token
   }
 }

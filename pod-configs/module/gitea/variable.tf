@@ -27,6 +27,12 @@ variable "gitea_fqdn" {
   description = "The domain of the Gitea service"
 }
 
+# If install_from_local_gitea is true, argo will install from the local gitea
+variable "install_from_local_gitea" {
+  type    = bool
+  default = true
+}
+
 # Uncomment following variables when switching to RDS
 # variable "gitea_database_endpoint" {
 #   description = "The endpoint of the Gitea database"
