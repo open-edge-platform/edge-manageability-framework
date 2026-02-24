@@ -579,7 +579,7 @@ jobs:
       # CF-3: Provision EN (VEN onboarding)
       # CF-4: Single Node Cluster Creation
       # CF-5: Deploy Container App (WordPress)
-      # CF-6: VM app deployment with VEN
+      # CF-6: VM app deployment on VEN
       # CF-7: Assert Metrics Collected
       # CF-8: Cleanup for apps
       # CF-9: Cleanup Cluster
