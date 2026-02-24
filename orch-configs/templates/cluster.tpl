@@ -66,7 +66,9 @@ root:
 {{- if .Values.enableDefaultTraefikRateLimit }}
     - orch-configs/profiles/default-traefik-rate-limit.yaml
 {{- end }}
-
+{{- if not .Values.enableObservability }}
+    - orch-configs/profiles/eim-noobb.yaml
+{{- end }}
 
 # Values applied to both root app and shared among all child apps
 argo:
