@@ -592,6 +592,8 @@ jobs:
         env:
           REQUESTS_CA_BUNDLE: /usr/local/share/ca-certificates/orch-ca.crt
           LIBVIRT_DEFAULT_URI: 'qemu:///system'
+          TF_VAR_vm_console: "file"
+          TF_VAR_vm_name: "pico-node-libvirt"
         run: |
           kubectl -n orch-platform get secrets platform-keycloak -o yaml || true
           KC_ADMIN_PWD=$(kubectl -n orch-platform get secrets platform-keycloak -o jsonpath='{.data.admin-password}' | base64 -d)
@@ -625,7 +627,12 @@ jobs:
         timeout-minutes: 15
         with:
           k8s_diagnostics_args: "--errors-only --include-logs --output-html --output-json"
-
+      
+      - name: Print kind ven console log
+        if: always()
+        run: |
+           sudo cat /var/log/libvirt/qemu/pico-node-libvirt-console.log || true
+           
   deploy-on-prem:
     permissions:
       contents: read
@@ -719,6 +726,8 @@ jobs:
           KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
           REQUESTS_CA_BUNDLE: /usr/local/share/ca-certificates/orch-ca.crt
           LIBVIRT_DEFAULT_URI: 'qemu:///system'
+          TF_VAR_vm_console: "file"
+          TF_VAR_vm_name: "pico-node-libvirt"
         run: |
           KC_ADMIN_PWD=$(kubectl -n orch-platform get secrets platform-keycloak -o jsonpath='{.data.admin-password}' | base64 -d)
           # Add the password to the orchestrator config
@@ -748,7 +757,12 @@ jobs:
         timeout-minutes: 15
         with:
           k8s_diagnostics_args: "--errors-only --include-logs --output-html --output-json"
-
+      
+      - name: Print onprem ven console log
+        if: always()
+        run: |
+           sudo cat /var/log/libvirt/qemu/pico-node-libvirt-console.log || true
+           
   deploy-oxm-profile:
     permissions:
       contents: read
