@@ -15,7 +15,22 @@ global:
     {{- end }}
     {{- end }}
 
+import:
+  host-manager:
+    enabled: {{ dig "infra-managers" "host-manager" "enabled" true .Values.argo }}
+  maintenance-manager:
+    enabled: {{ dig "infra-managers" "maintenance-manager" "enabled" true .Values.argo }}
+  telemetry-manager:
+    enabled: {{ dig "infra-managers" "telemetry-manager" "enabled" true .Values.argo }}
+  os-resource-manager:
+    enabled: {{ dig "infra-managers" "os-resource-manager" "enabled" true .Values.argo }}
+  networking-manager:
+    enabled: {{ dig "infra-managers" "networking-manager" "enabled" true .Values.argo }}
+  attestationstatus-manager:
+    enabled: {{ dig "infra-managers" "attestationstatus-manager" "enabled" true .Values.argo }}
+
 host-manager:
+  disabledProvisioning: {{ index .Values.argo "infra-managers" "disabledProvisioning" | default false }}
   serviceArgs:
     enableTracing: {{ index .Values.argo "infra-managers" "enableTracing" | default false }}
   traefikReverseProxy:

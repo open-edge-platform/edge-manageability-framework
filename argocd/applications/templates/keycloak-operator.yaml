@@ -22,7 +22,7 @@ spec:
   sources:
     - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
       chart: common/charts/keycloak-operator
-      targetRevision: 26.1.1
+      targetRevision: 26.1.2
       helm:
         releaseName: {{$appName}}
         valuesObject:
