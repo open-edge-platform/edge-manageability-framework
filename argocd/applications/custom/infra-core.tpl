@@ -16,8 +16,20 @@ global:
     {{- end }}
 
 import:
+  credentials:
+    enabled: {{ dig "infra-core" "credentials" "enabled" true .Values.argo }}
+  api:
+    enabled: {{ dig "infra-core" "api" "enabled" true .Values.argo }}
+  apiv2:
+    enabled: {{ dig "infra-core" "apiv2" "enabled" true .Values.argo }}
+  exporter:
+    enabled: {{ dig "infra-core" "exporter" "enabled" true .Values.argo }}
+  inventory:
+    enabled: {{ dig "infra-core" "inventory" "enabled" true .Values.argo }}
+  tenant-controller:
+    enabled: {{ dig "infra-core" "tenant-controller" "enabled" true .Values.argo }}
   tenant-config:
-    enabled: {{ index .Values.argo "infra-core" "tenant-config" "enabled" }}
+    enabled: {{ dig "infra-core" "tenant-config" "enabled" false .Values.argo }}
 
 api:
   serviceArgs:
@@ -34,6 +46,7 @@ api:
     enabled: {{ index .Values.argo "infra-core" "enableMetrics" | default false }}
 
 apiv2:
+  eimScenario: {{ index .Values.argo "infra-core" "eimScenario" | default "fulleim" }}
   serviceArgsProxy:
     globalLogLevel: "debug"
     enableTracing: {{ index .Values.argo "infra-core" "enableTracing" | default false }}
@@ -81,6 +94,7 @@ inventory:
 tenant-controller:
   managerArgs:
     enableTracing: {{ index .Values.argo "infra-core" "enableTracing" | default false }}
+    skipOSProvisioning: {{ index .Values.argo "infra-core" "skipOSProvisioning" | default false }}
 {{- if and (index .Values.argo "infra-external") (index .Values.argo "infra-external" "loca") }}
   lenovoConfig:
   {{ $clusterDomain := .Values.argo.clusterDomain }}
