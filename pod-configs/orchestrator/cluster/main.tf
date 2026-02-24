@@ -228,3 +228,20 @@ module "gitea" {
   # gitea_database_password    = module.aurora_database.user_password["gitea-gitea_user"].result
   # gitea_database             = "gitea-gitea"  # See aurora_database module
 }
+
+resource "kubernetes_secret" "argocd_github_repo" {
+  count = var.install_from_local_gitea ? 0 : 1
+  metadata {
+    name      = "github-credential-edge-manageability-framework"
+    namespace = "argocd"
+    labels = {
+      "argocd.argoproj.io/secret-type" : "repository"
+    }
+  }
+  data = {
+    "type"     = "git"
+    "url"      = var.deploy_repo_url
+    "username" = var.git_username
+    "password" = var.git_token
+  }
+}
