@@ -155,6 +155,17 @@ else
     echo "[INFO] Using NodePort: $ARGO_ENDPOINT"
 fi
 
+# Delete Kyverno ClusterPolicies that restart MPS/RPS deployments when secrets change (if present)
+
+for policy in restart-mps-deployment-on-secret-change restart-rps-deployment-on-secret-change; do
+  if kubectl get clusterpolicy "$policy" -o name >/dev/null 2>&1; then
+    echo "Deleting ClusterPolicy: $policy"
+    kubectl delete clusterpolicy "$policy"
+  else
+    echo "ClusterPolicy $policy not found, skipping"
+  fi
+done
+
 # ============================================================
 # Argo Login
 # ============================================================
@@ -1631,8 +1642,8 @@ post_upgrade_cleanup() {
     delete_app "tenancy-datamodel" "onprem"
 
     echo "[INFO] Deleting deployment os-resource-manager in namespace orch-infra..."
-    #kubectl delete deployment -n orch-infra os-resource-manager || true
-    #kubectl delete pod -n orch-infra -l app.kubernetes.io/name=dkam 2>/dev/null 
+    kubectl delete deployment -n orch-infra os-resource-manager || true
+    kubectl delete pod -n orch-infra -l app.kubernetes.io/name=dkam 2>/dev/null 
     check_and_download_dkam_certs
     #echo "[INFO] Post-upgrade cleanup completed."
     console_success "[✓] Post-upgrade cleanup completed"
