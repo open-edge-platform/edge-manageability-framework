@@ -75,9 +75,9 @@ componentStatus:
           installed: {{ if hasKey .Values.argo "infra-onboarding" }}{{ $infraOnboarding := index .Values.argo "infra-onboarding" }}{{ if hasKey $infraOnboarding "pxe-server" }}{{ $pxeServer := index $infraOnboarding "pxe-server" }}{{ if hasKey $pxeServer "enabled" }}{{ index $pxeServer "enabled" | default false }}{{ else }}false{{ end }}{{ else }}false{{ end }}{{ else }}false{{ end }}
         
         # Day2 - Day 2 operations - maintenance, updates, troubleshooting
-        # Detection - maintenance-manager is configured as part of infra-managers
+        # Detection - maintenance-manager.enabled is true in infra-managers
         day2:
-          installed: {{ if hasKey .Values.argo "infra-managers" }}{{ $infraManagers := index .Values.argo "infra-managers" }}{{ if hasKey $infraManagers "maintenance-manager" }}true{{ else }}false{{ end }}{{ else }}false{{ end }}
+          installed: {{ if hasKey .Values.argo "infra-managers" }}{{ $infraManagers := index .Values.argo "infra-managers" }}{{ if hasKey $infraManagers "maintenance-manager" }}{{ $maintMgr := index $infraManagers "maintenance-manager" }}{{ if hasKey $maintMgr "enabled" }}{{ index $maintMgr "enabled" }}{{ else }}false{{ end }}{{ else }}false{{ end }}{{ else }}false{{ end }}
         
         # Onboarding - Device discovery, registration, and enrollment workflow
         # Detection - onboarding-manager is configured and enabled in infra-onboarding
@@ -95,11 +95,12 @@ componentStatus:
         
         # Provisioning - OS provisioning workflow capability
         # Detection - provisioning available when infra-onboarding is deployed AND skipOSProvisioning is not set to true
-        # skipOSProvisioning flag can be set at infra-onboarding level or tenant-controller level
+        # skipOSProvisioning flag is set at infra-onboarding level (argo.infra-onboarding.skipOSProvisioning)
+        # Note: infra-core.tenant-controller is enabled for vPRO and full EMF profiles but skipOSProvisioning is not related to tenant-controller
         # When skipOSProvisioning=true, provisioning is disabled (vPRO AMT-only workflow without OS provisioning)
         # Available in both vPRO (standard OS) and OXM (microvisor) profiles, unless explicitly skipped
         provisioning:
-          installed: {{ if index .Values.argo.enabled "infra-onboarding" | default false }}{{ $skipProvisioningOnboarding := false }}{{ $skipProvisioningTenantCtl := false }}{{ if hasKey .Values.argo "infra-onboarding" }}{{ $infraOnboarding := index .Values.argo "infra-onboarding" }}{{ if hasKey $infraOnboarding "skipOSProvisioning" }}{{ $skipProvisioningOnboarding = index $infraOnboarding "skipOSProvisioning" }}{{ end }}{{ end }}{{ if hasKey .Values.argo "infra-core" }}{{ $infraCore := index .Values.argo "infra-core" }}{{ if hasKey $infraCore "tenant-controller" }}{{ $tenantCtl := index $infraCore "tenant-controller" }}{{ if hasKey $tenantCtl "skipOSProvisioning" }}{{ $skipProvisioningTenantCtl = index $tenantCtl "skipOSProvisioning" }}{{ end }}{{ end }}{{ end }}{{ not (or $skipProvisioningOnboarding $skipProvisioningTenantCtl) }}{{ else }}false{{ end }}
+          installed: {{ if index .Values.argo.enabled "infra-onboarding" | default false }}{{ $skipProvisioning := false }}{{ if hasKey .Values.argo "infra-onboarding" }}{{ $infraOnboarding := index .Values.argo "infra-onboarding" }}{{ if hasKey $infraOnboarding "skipOSProvisioning" }}{{ $skipProvisioning = index $infraOnboarding "skipOSProvisioning" }}{{ end }}{{ end }}{{ not $skipProvisioning }}{{ else }}false{{ end }}
       
       # Orchestrator Observability - Metrics and monitoring for orchestrator platform components
       # Detection - orchestrator-observability application enabled
