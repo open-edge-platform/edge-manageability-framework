@@ -66,7 +66,9 @@ apiv2:
   metrics:
     enabled: {{ index .Values.argo "infra-core" "enableMetrics" | default false }}
   traefikReverseProxy:
+{{- if .Values.argo.traefik }}
     tlsOption: {{ .Values.argo.traefik.tlsOption | default "" | quote }}
+{{- end }}
 
 inventory:
   miinv:
