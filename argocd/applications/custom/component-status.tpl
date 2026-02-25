@@ -75,9 +75,9 @@ componentStatus:
           installed: {{ if hasKey .Values.argo "infra-onboarding" }}{{ $infraOnboarding := index .Values.argo "infra-onboarding" }}{{ if hasKey $infraOnboarding "pxe-server" }}{{ $pxeServer := index $infraOnboarding "pxe-server" }}{{ if hasKey $pxeServer "enabled" }}{{ index $pxeServer "enabled" | default false }}{{ else }}false{{ end }}{{ else }}false{{ end }}{{ else }}false{{ end }}
         
         # Day2 - Day 2 operations - maintenance, updates, troubleshooting
-        # Detection - maintenance-manager.enabled is true in infra-managers
+        # Detection - maintenance-manager.enabled is true in infra-managers (defaults to true if maintenance-manager exists but enabled is not explicitly set to false)
         day2:
-          installed: {{ if hasKey .Values.argo "infra-managers" }}{{ $infraManagers := index .Values.argo "infra-managers" }}{{ if hasKey $infraManagers "maintenance-manager" }}{{ $maintMgr := index $infraManagers "maintenance-manager" }}{{ if hasKey $maintMgr "enabled" }}{{ index $maintMgr "enabled" }}{{ else }}false{{ end }}{{ else }}false{{ end }}{{ else }}false{{ end }}
+          installed: {{ if hasKey .Values.argo "infra-managers" }}{{ $infraManagers := index .Values.argo "infra-managers" }}{{ if hasKey $infraManagers "maintenance-manager" }}{{ $maintMgr := index $infraManagers "maintenance-manager" }}{{ if hasKey $maintMgr "enabled" }}{{ index $maintMgr "enabled" }}{{ else }}true{{ end }}{{ else }}false{{ end }}{{ else }}false{{ end }}
         
         # Onboarding - Device discovery, registration, and enrollment workflow
         # Detection - onboarding-manager is configured and enabled in infra-onboarding
