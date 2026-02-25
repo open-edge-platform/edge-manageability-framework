@@ -83,6 +83,19 @@ if [[ "${ORCH_INSTALLER_PROFILE:-}" == "onprem-vpro" || "${ORCH_INSTALLER_PROFIL
 fi
 
 # -----------------------------------------------------------------------------
+# ArgoCD Repo Configuration
+# -----------------------------------------------------------------------------
+if [ "${INSTALL_FROM_LOCAL_GITEA}" = "false" ]; then
+    export DEPLOY_REPO_URL="https://github.com/open-edge-platform/edge-manageability-framework.git"
+    export DEPLOY_REPO_REVISION="main"
+    export DEPLOY_GIT_SERVER="https://github.com"
+else
+    export DEPLOY_REPO_URL="https://gitea.${CLUSTER_FQDN}/argocd/edge-manageability-framework"
+    export DEPLOY_REPO_REVISION="main"
+    export DEPLOY_GIT_SERVER="https://gitea.${CLUSTER_FQDN}"
+fi
+
+# -----------------------------------------------------------------------------
 # Default environment variables
 # -----------------------------------------------------------------------------
 export SRE_TLS_ENABLED="${SRE_TLS_ENABLED:-false}"

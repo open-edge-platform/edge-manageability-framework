@@ -87,7 +87,7 @@ export TRAEFIKGRPC_TG_ARN
 export NGINX_TG_ARN
 export ARGOCD_TG_ARN
 export S3_PREFIX
-
+export INSTALL_FROM_LOCAL_GITEA
 
 # For ORCH upgrade, check the existing deployment 'root-app'
 

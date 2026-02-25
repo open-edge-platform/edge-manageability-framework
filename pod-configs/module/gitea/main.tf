@@ -121,7 +121,7 @@ resource "kubernetes_secret" "clusterorch_gitea_secrets" {
 }
 
 resource "kubernetes_secret" "argocd_gitea_secrets" {
-  for_each = local.argocd_repos
+  for_each = var.install_from_local_gitea ? local.argocd_repos : []
   metadata {
     name      = "gitea-credential-${each.key}"
     namespace = "argocd"
@@ -140,7 +140,6 @@ resource "kubernetes_secret" "argocd_gitea_secrets" {
 # Need to create this config map to allow ArgoCD to access the Gitea server with specific certificate.
 # This ConfigMap contains required label and annotations to be managed by Helm.
 resource "kubernetes_config_map" "argocd_tls_certs_cm" {
-  count = var.install_from_local_gitea ? 1 : 0
   metadata {
     name      = "argocd-tls-certs-cm"
     namespace = "argocd"

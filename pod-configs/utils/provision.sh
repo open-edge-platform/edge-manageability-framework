@@ -103,6 +103,7 @@ EKS_HTTPS_PROXY=""
 EKS_NO_PROXY=""
 EKS_USER_SCRIPT_PRE_CLOUD_INIT=""
 EKS_USER_SCRIPT_POST_CLOUD_INIT=""
+INSTALL_FROM_LOCAL_GITEA=true
 
 OPTIONS_LIST=(
     "auto"
@@ -129,6 +130,7 @@ OPTIONS_LIST=(
     "enable-cache-registry"
     "environment:"
     "help"
+    "external-repo"
     "internal"
     "jumphost-ip:"
     "jumphost-ip-allow-list:"
@@ -280,6 +282,7 @@ parse_params() {
             -e|--environment) ENV_NAME=$(eval echo $2); shift;;
             -h|--help) usage; exit;;
             -m|--email) EMAIL=$(eval echo $2); shift;;
+            --external-repo) INSTALL_FROM_LOCAL_GITEA=false;;
             --internal) INTERNAL=true;;
             --jumphost-ip) JUMPHOST_IP=$(eval echo $2); shift;;
             --jumphost-ip-allow-list) JUMPHOST_IP_ALLOW_LIST=$(eval echo $2); shift;;
@@ -326,6 +329,7 @@ parse_params() {
     echo AWS_ACCOUNT=${AWS_ACCOUNT} > ~/.env
     echo AWS_REGION=${AWS_REGION} >> ~/.env
     echo CUSTOMER_STATE_PREFIX=${CUSTOMER_STATE_PREFIX} >> ~/.env
+    echo INSTALL_FROM_LOCAL_GITEA=${INSTALL_FROM_LOCAL_GITEA} >> ~/.env
 
     if [[ -n "$JUMPHOST_IP" ]]; then
         echo JUMPHOST_IP=${JUMPHOST_IP} >> ~/.env
@@ -1026,6 +1030,8 @@ action_cluster() {
     fi
     echo "auto_cert=${AUTO_CERT}" >> $tfvar_override
     echo "webhook_github_netrc=\"\"" >> $tfvar_override
+
+    echo "install_from_local_gitea = ${INSTALL_FROM_LOCAL_GITEA}" >> $tfvar_override
 
     if [[ "$OVERRIDE_EKS_SIZE" == "true" ]]; then
         echo "eks_min_size=${EKS_MIN_SIZE}" >> $tfvar_override
