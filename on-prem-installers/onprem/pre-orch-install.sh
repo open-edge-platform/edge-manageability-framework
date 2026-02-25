@@ -8,6 +8,7 @@ set -euo pipefail
 
 # Prefer binaries installed to /usr/local/bin (e.g., avoid asdf shims).
 export PATH="/usr/local/bin:${PATH}"
+# shellcheck disable=SC1091
 source onprem.env
 
 ################################
