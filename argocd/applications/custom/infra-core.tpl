@@ -65,6 +65,8 @@ apiv2:
     apiHostname: api.{{ .Values.argo.clusterDomain }}
   metrics:
     enabled: {{ index .Values.argo "infra-core" "enableMetrics" | default false }}
+  traefikReverseProxy:
+    tlsOption: {{ .Values.argo.traefik.tlsOption | default "" | quote }}
 
 inventory:
   miinv:
