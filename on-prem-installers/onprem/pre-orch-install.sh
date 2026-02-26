@@ -123,6 +123,8 @@ KIND options:
 
 K3s options:
   --k3s-version <version>      Default: ${K3S_VERSION_DEFAULT}
+  --docker-username <user>     Optional (for Docker Hub auth)
+  --docker-password <pass>     Optional (for Docker Hub auth)
 
 RKE2 options:
   --rke2-version <version>     Default: ${RKE2_VERSION_DEFAULT}
@@ -330,6 +332,23 @@ k3s_setup_kubeconfig() {
   export KUBECONFIG="${HOME}/.kube/config"
 }
 
+k3s_configure_registries() {
+  if [[ -z "${DOCKER_USERNAME}" || -z "${DOCKER_PASSWORD}" ]]; then
+    return 1
+  fi
+
+  sudo mkdir -p /etc/rancher/k3s
+  sudo tee /etc/rancher/k3s/registries.yaml >/dev/null <<EOF
+configs:
+  "registry-1.docker.io":
+    auth:
+      username: "${DOCKER_USERNAME}"
+      password: "${DOCKER_PASSWORD}"
+EOF
+
+  return 0
+}
+
 k3s_install() {
   require_cmd sudo
   require_cmd curl
@@ -337,6 +356,11 @@ k3s_install() {
   if [[ "$(uname -s)" != "Linux" ]]; then
     echo "❌ K3s install currently supports Linux only"
     exit 1
+  fi
+
+  local registries_written="false"
+  if k3s_configure_registries; then
+    registries_written="true"
   fi
 
   if systemctl is-active --quiet k3s.service 2>/dev/null; then
@@ -348,6 +372,11 @@ k3s_install() {
       --disable traefik \
       --disable local-storage \
       --kubelet-arg=max-pods=200
+  fi
+
+  if [[ "${registries_written}" == "true" ]]; then
+    echo "👉 Restarting k3s.service to apply /etc/rancher/k3s/registries.yaml..."
+    sudo systemctl restart k3s.service
   fi
 
   echo "👉 Setting up kubeconfig (~/.kube/config)..."
