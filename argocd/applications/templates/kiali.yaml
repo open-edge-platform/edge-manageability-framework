@@ -21,7 +21,7 @@ spec:
   sources:
     - repoURL: https://kiali.org/helm-charts
       chart: kiali-server
-      targetRevision: 2.18.0
+      targetRevision: 2.22.0
       helm:
         releaseName: {{$appName}}
         valuesObject:
