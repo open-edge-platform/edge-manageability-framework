@@ -245,4 +245,5 @@ resource "kubernetes_secret" "argocd_github_repo" {
     #"username" = var.git_username
     #"password" = var.git_token
   }
+  depends_on = [module.orch_init]
 }
