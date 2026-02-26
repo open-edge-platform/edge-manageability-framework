@@ -13,8 +13,7 @@ variable "enable_eks_auth" {
 # If install_from_local_gitea is true, argo will install from the local gitea
 variable "install_from_local_gitea" {
   type    = bool
-  default = false # XXX smbaker
-}
+  default = true
 
 # If install_from_local_gitea is false, this is where we will get the remote repo
 variable "deploy_repo_url" {
