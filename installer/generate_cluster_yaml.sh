@@ -331,6 +331,11 @@ envsubst < "$TEMPLATE_FILE" \
     | sed -E '/^[[:space:]]*#/d; /^[[:space:]]*#!/d; /^[[:space:]]*$/d' \
     > "$OUTPUT_FILE"
 
+# when using remote repo, we need to remove the local file reference from the generated YAML
+if [ "${INSTALL_FROM_LOCAL_GITEA}" = "false" ]; then
+    sed -i "s|- orch-configs/clusters/${CLUSTER_NAME}.yaml||g" "$OUTPUT_FILE"
+fi
+
 # Onprem 1k post-processing
 if [ "${CLUSTER_SCALE_PROFILE}" = "1ken" ]; then
     echo "ℹ️ Using ONPREM-1K deployment profile (EdgeInfra + O11Y optional)"
