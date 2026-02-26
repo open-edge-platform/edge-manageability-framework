@@ -14,6 +14,7 @@ variable "enable_eks_auth" {
 variable "install_from_local_gitea" {
   type    = bool
   default = true
+}
 
 # If install_from_local_gitea is false, this is where we will get the remote repo
 variable "deploy_repo_url" {
