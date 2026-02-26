@@ -11,6 +11,7 @@ argo:
     ingress-haproxy: true
     cert-manager: true
     certificate-file-server: true
+    component-status: true
     copy-app-gitea-cred-to-fleet: true
     copy-ca-cert-boots-to-gateway: true
     copy-ca-cert-boots-to-infra: true
