@@ -34,11 +34,11 @@ argo:
   clusterDomain: ${CLUSTER_FQDN}
   adminEmail: ${ADMIN_EMAIL}
 
-  deployRepoURL: https://gitea.${CLUSTER_FQDN}/argocd/edge-manageability-framework
-  deployRepoRevision: main
+  deployRepoURL: ${DEPLOY_REPO_URL}
+  deployRepoRevision: ${DEPLOY_REPO_BRANCH}
 
   git:
-    server: https://gitea.${CLUSTER_FQDN}
+    server: ${DEPLOY_GIT_SERVER}
 
   targetServer: "https://kubernetes.default.svc"
   autosync: true

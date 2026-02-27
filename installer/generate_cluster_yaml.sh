@@ -83,6 +83,22 @@ if [[ "${ORCH_INSTALLER_PROFILE:-}" == "onprem-vpro" || "${ORCH_INSTALLER_PROFIL
 fi
 
 # -----------------------------------------------------------------------------
+# ArgoCD Repo Configuration
+# -----------------------------------------------------------------------------
+if [ "${INSTALL_FROM_LOCAL_GITEA}" = "false" ]; then
+    # nothing to do here, DEPLOY_REPO_URL and DEPLOY_REPO_BRANCH should already be set to the remote repo values in provision.sh
+    echo "will perform deployment from remote Gitea repo: ${DEPLOY_REPO_URL} (branch: ${DEPLOY_REPO_BRANCH})"
+else
+    echo "will perform deployment from local Gitea repo"
+    export DEPLOY_REPO_URL="https://gitea.${CLUSTER_FQDN}/argocd/edge-manageability-framework"
+    export DEPLOY_REPO_BRANCH="main"
+fi
+
+# extract "https://fqdn" from DEPLOY_REPO_URL and use it for DEPLOY_GIT_SERVER
+DEPLOY_GIT_SERVER=$(echo "$DEPLOY_REPO_URL" | sed -E 's|([a-z]+)://([^/]+)/.*|\1://\2|')
+export DEPLOY_GIT_SERVER="$DEPLOY_GIT_SERVER"
+
+# -----------------------------------------------------------------------------
 # Default environment variables
 # -----------------------------------------------------------------------------
 export SRE_TLS_ENABLED="${SRE_TLS_ENABLED:-false}"
@@ -317,6 +333,11 @@ echo "🔧 Generating cluster config..."
 envsubst < "$TEMPLATE_FILE" \
     | sed -E '/^[[:space:]]*#/d; /^[[:space:]]*#!/d; /^[[:space:]]*$/d' \
     > "$OUTPUT_FILE"
+
+# when using remote repo, we need to remove the local file reference from the generated YAML
+if [ "${INSTALL_FROM_LOCAL_GITEA}" = "false" ]; then
+    sed -i "s|- orch-configs/clusters/${CLUSTER_NAME}.yaml||g" "$OUTPUT_FILE"
+fi
 
 # Onprem 1k post-processing
 if [ "${CLUSTER_SCALE_PROFILE}" = "1ken" ]; then

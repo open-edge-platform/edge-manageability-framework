@@ -10,6 +10,18 @@ variable "enable_eks_auth" {
   default = false
 }
 
+# If install_from_local_gitea is true, argo will install from the local gitea
+variable "install_from_local_gitea" {
+  type    = bool
+  default = true
+}
+
+# If install_from_local_gitea is false, this is where we will get the remote repo
+variable "deploy_repo_url" {
+  type    = string
+  default = "https://github.com/open-edge-platform/edge-manageability-framework"
+}
+
 # Required variables
 variable "vpc_terraform_backend_bucket" {
   description = "The Terraform S3 bucket to import VPC state"
