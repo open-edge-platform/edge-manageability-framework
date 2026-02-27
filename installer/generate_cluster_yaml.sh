@@ -86,14 +86,15 @@ fi
 # ArgoCD Repo Configuration
 # -----------------------------------------------------------------------------
 if [ "${INSTALL_FROM_LOCAL_GITEA}" = "false" ]; then
-    export DEPLOY_REPO_URL="https://github.com/open-edge-platform/edge-manageability-framework.git"
-    export DEPLOY_REPO_REVISION="main"
-    export DEPLOY_GIT_SERVER="https://github.com"
+    # nothing to do here, DEPLOY_REPO_URL and DEPLOY_REPO_BRANCH should already be set to the remote repo values in provision.sh
 else
     export DEPLOY_REPO_URL="https://gitea.${CLUSTER_FQDN}/argocd/edge-manageability-framework"
-    export DEPLOY_REPO_REVISION="main"
-    export DEPLOY_GIT_SERVER="https://gitea.${CLUSTER_FQDN}"
+    export DEPLOY_REPO_BRANCH="main"
 fi
+
+# extract "https://fqdn" from DEPLOY_REPO_URL and use it for DEPLOY_GIT_SERVER
+DEPLOY_GIT_SERVER=$(echo "$DEPLOY_REPO_URL" | sed -E 's|([a-z]+)://([^/]+)/.*|\1://\2|')
+export DEPLOY_GIT_SERVER="$DEPLOY_GIT_SERVER"
 
 # -----------------------------------------------------------------------------
 # Default environment variables
