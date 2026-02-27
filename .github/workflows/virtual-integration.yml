@@ -632,7 +632,7 @@ jobs:
         if: always()
         run: |
            sudo ls -lrt  /var/log/libvirt/qemu/ || true
-           sudo cat /var/log/libvirt/qemu/pico-node-libvirt-console.log || true
+           sudo cat /var/log/libvirt/qemu/libvirt-pico-node-console.log || true
            
   deploy-on-prem:
     permissions:
@@ -763,7 +763,7 @@ jobs:
         if: always()
         run: |
            sudo ls -lrt  /var/log/libvirt/qemu/ || true
-           sudo cat /var/log/libvirt/qemu/pico-node-libvirt-console.log || true
+           sudo cat /var/log/libvirt/qemu/libvirt-pico-node-console.log || true
            
   deploy-oxm-profile:
     permissions:
