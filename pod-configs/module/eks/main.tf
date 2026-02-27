@@ -293,9 +293,9 @@ resource "aws_eks_node_group" "nodegroup" {
   }
 
   scaling_config {
-    desired_size = var.desired_size
+    desired_size = 3
     min_size     = var.min_size
-    max_size     = var.max_size
+    max_size     = 6
   }
 
   launch_template {
@@ -330,9 +330,9 @@ resource "aws_eks_node_group" "additional_node_group" {
   }
 
   scaling_config {
-    desired_size = each.value.desired_size
-    min_size     = each.value.min_size
-    max_size     = each.value.max_size
+    desired_size = 0
+    min_size     = 0
+    max_size     = 1
   }
 
   launch_template {
