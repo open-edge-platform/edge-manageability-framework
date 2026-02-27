@@ -87,7 +87,9 @@ fi
 # -----------------------------------------------------------------------------
 if [ "${INSTALL_FROM_LOCAL_GITEA}" = "false" ]; then
     # nothing to do here, DEPLOY_REPO_URL and DEPLOY_REPO_BRANCH should already be set to the remote repo values in provision.sh
+    echo "will perform deployment from remote Gitea repo: ${DEPLOY_REPO_URL} (branch: ${DEPLOY_REPO_BRANCH})"
 else
+    echo "will perform deployment from local Gitea repo"
     export DEPLOY_REPO_URL="https://gitea.${CLUSTER_FQDN}/argocd/edge-manageability-framework"
     export DEPLOY_REPO_BRANCH="main"
 fi

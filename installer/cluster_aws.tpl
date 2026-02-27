@@ -35,7 +35,7 @@ argo:
   adminEmail: ${ADMIN_EMAIL}
 
   deployRepoURL: ${DEPLOY_REPO_URL}
-  deployRepoRevision: ${DEPLOY_REPO_REVISION}
+  deployRepoRevision: ${DEPLOY_REPO_BRANCH}
 
   git:
     server: ${DEPLOY_GIT_SERVER}
