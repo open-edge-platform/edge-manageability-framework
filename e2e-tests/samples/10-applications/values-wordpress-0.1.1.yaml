@@ -3,7 +3,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ---
+image:
+  repository: bitnamilegacy/wordpress
 mariadb:
+  image:
+    repository: bitnamilegacy/mariadb
   primary:
     persistence:
       enabled: false
