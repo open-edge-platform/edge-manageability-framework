@@ -137,7 +137,7 @@ gitea:
       CERT_FILE: /tmp/secret-volume/tls.crt
       KEY_FILE: /tmp/secret-volume/tls.key
 image:
-  tag: 1.25.1
+  tag: 1.25.4
 
 service:
   http:
