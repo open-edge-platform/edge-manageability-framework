@@ -3,11 +3,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 - name: "EKS Nodegroup Minimum Size"
-  default: 3
+  default: 1
   variable: "eks_min_size"
   type: integer
 - name: "EKS Nodegroup Maximum Size"
-  default: 3
+  default: 5
   variable: "eks_max_size"
   type: integer
 - name: "EKS Nodegroup Desired Size"
@@ -76,13 +76,13 @@
   variable: "smtp_from"
   type: string
 - name: "Observability EKS Nodegroup Desired Size"
-  default: 1
+  default: 0
   type: integer
   variableField:
     variable: "eks_additional_node_groups"
     field: "[\"observability\"].desired_size"
 - name: "Observability EKS Nodegroup Minimum Size"
-  default: 1
+  default: 0
   type: integer
   variableField:
     variable: "eks_additional_node_groups"
