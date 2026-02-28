@@ -265,8 +265,8 @@ variable "eks_additional_node_groups" {
   }))
   default = {
     "observability" : {
-      desired_size = 0
-      min_size     = 0
+      desired_size = 1
+      min_size     = 1
       max_size     = 1
       labels = {
         "node.kubernetes.io/custom-rule" : "observability"
