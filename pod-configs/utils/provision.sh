@@ -1084,7 +1084,7 @@ EOF
         # In case the variable file is not created, create an empty one
         touch "$SAVE_DIR/$VARIABLE_TFVAR"
     fi
-
+    echo "CAS No proxy: ${TF_VAR_CAS_NP}"
     backend="$(cluster_backend)" && echo "$backend" > $dir/backend.tf
     variable="$(cluster_variable)" && echo "$variable" > $dir/variable.tfvar
     module="${ROOT_DIR}/${ORCH_DIR}/cluster"
