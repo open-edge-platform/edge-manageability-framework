@@ -20,4 +20,9 @@ argo:
     harbor-oci-security-patch: true
     app-orch-tenant-controller: true
     fleet-crd: true
-    fleet-controller: true    
+    fleet-controller: true
+  o11y:
+    alertingMonitor:
+      initialRules:
+        appDeploymentRules: true
+        clusterRules: true
