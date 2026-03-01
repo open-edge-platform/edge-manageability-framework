@@ -125,6 +125,44 @@ set_artifacts_version() {
 
 export GIT_REPOS=$cwd/$git_arch_name
 export ONPREM_UPGRADE_SYNC="${ONPREM_UPGRADE_SYNC:-true}"
+
+reset_runtime_variables() {
+  local config_file="$cwd/onprem.env"
+
+  echo "Cleaning up runtime variables from previous runs..."
+
+  local temp_file="${config_file}.tmp"
+  local in_multiline=0
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    # Skip lines while inside a multi-line variable
+    if [[ $in_multiline -eq 1 ]]; then
+      [[ "$line" =~ [\'\"][[:space:]]*$ ]] && in_multiline=0
+      continue
+    fi
+
+    # Check if line is a runtime variable
+    if [[ "$line" =~ ^export\ (SRE_TLS_ENABLED|SRE_DEST_CA_CERT|SMTP_SKIP_VERIFY|DISABLE_CO_PROFILE|DISABLE_AO_PROFILE|DISABLE_O11Y_PROFILE|SINGLE_TENANCY_PROFILE)= ]]; then
+      # Check if it's multi-line (opening quote without closing quote on same line)
+      if [[ "$line" =~ =[\'\"]. ]] && ! [[ "$line" =~ =[\'\"].*[\'\"]\ *$ ]]; then
+        in_multiline=1
+      fi
+      continue
+    fi
+
+    # Keep non-runtime variable lines
+    echo "$line" >> "$temp_file"
+  done < "$config_file"
+
+  mv "$temp_file" "$config_file"
+
+  # Unset variables in current shell
+  unset SRE_TLS_ENABLED SRE_DEST_CA_CERT SMTP_SKIP_VERIFY
+  unset DISABLE_CO_PROFILE DISABLE_AO_PROFILE DISABLE_O11Y_PROFILE SINGLE_TENANCY_PROFILE
+
+  echo "Runtime variables cleaned successfully."
+}
+
 retrieve_and_update_config() {
     local config_file="$cwd/onprem.env"
 
@@ -715,6 +753,12 @@ if [[ ! -f postgres_secret.yaml ]]; then
      kubectl get secret -n orch-database postgresql-cluster-superuser -o yaml > postgres_secret.yaml
 
 fi
+
+# Remove runtime variables from previous runs, then retrieve fresh config
+reset_runtime_variables
+# Re-source the config file after cleanup to get fresh values
+# shellcheck disable=SC1091
+source "$(dirname "${0}")/onprem.env"
 
 # Retrieve/Apply config that was set during onprem installation and apply it to orch-configs
 #retrieve_and_apply_config
