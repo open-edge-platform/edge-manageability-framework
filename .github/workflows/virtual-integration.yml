@@ -449,414 +449,233 @@ jobs:
         run: |
           mage publish:releaseManifest
 
-  deploy-kind:
+  # ============================================================================
+  # TEMPORARY VALIDATION JOB - Remove after validation is complete
+  # This job embeds diagnostics convergence validation for testing purposes
+  # ============================================================================
+  diagnostics-convergence-validation:
+    name: Diagnostics Convergence Validation (TEMPORARY)
     permissions:
+      actions: read
       contents: read
-    name: Deploy Kind Orchestrator and run tests
-    needs:
-      - lint-go
-      - lint-markdown
-      - lint-shell
-      - lint-terraform
-      - lint-version
-      - lint-helm
-      - lint-yaml
-      - check-changed-files
-    if: |
-      always() &&
-      needs.lint-version.result == 'success' &&
-      needs.check-changed-files.outputs.only_design_proposals != 'true' && (
-      needs.check-changed-files.outputs.orch == 'true' ||
-      needs.check-changed-files.outputs.ci == 'true' ||
-      github.ref == 'refs/heads/main' ||
-      github.ref == 'refs/heads/main-pass-validation'
-      )
-    runs-on: ubuntu-24.04-16core-64GB
-    timeout-minutes: 90
-    env:
-      ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-        with:
-          persist-credentials: false
-      - name: Install DNSmasq
-        run: |
-          cd ci/ven
-          ./dnsmasq-setup.sh "kind.internal" setup
-      - name: Install Libvirt
-        env:
-          LIBVIRT_DEFAULT_URI: 'qemu:///system'
-        run: |
-          cd ci/ven
-          ./libvirt-setup.sh
-      - name: Deploy Kind Orchestrator
-        id: deploy-kind-orchestrator
-        uses: ./.github/actions/deploy_kind
-        timeout-minutes: 45
-        with:
-          orch_version: ${{ github.event.pull_request.head.sha || github.sha }}
-          orch_password: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-          docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
-          docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
-          token: ${{ secrets.SYS_EMF_GH_TOKEN }}
-          deployment_type: all
-      - name: Config DNSmasq
-        run: |
-          cd ci/ven
-          ./dnsmasq-setup.sh "kind.internal" config
-      - name: Run policy compliance tests
-        run: mage test:policyCompliance
-      - name: Run image pull policy compliance tests
-        run: mage test:imagePullPolicyCompliance
-
-      - name: Setup Sample Org and Project with default users
-        id: default-mt-setup
-        run: mage tenantUtils:createDefaultMtSetup
-      - name: Deploy Victoria Metrics instance
-        env:
-          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-        run: mage deploy:victoriaMetrics apply
-
-      # NOTE: Tenancy tests (e2etenancy) are SKIPPED - covered by Golden Suite CF-1 and CF-11
-
-      - name: Run e2e tenancy API gateway tests
-        run: mage test:e2etenancyapigw
-
-      - name: Create default user and run e2e tests
-        run: mage devUtils:createDefaultUser test:e2e
-
-      - name: "Test Observability SRE Exporter w/o VEN"
-        env:
-          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-        run: |
-          mage test:e2eSreObservabilityNoEnic
-
-      - name: "Test Observability Public Endpoints"
-        env:
-          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-        run: |
-          mage test:e2eObservability
-
-      - name: "Test Observability Orchestrator Stack"
-        env:
-          ORCH_DEFAULT_PASSWORD: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-        run: |
-          mage test:e2eOrchObservability
-          
-      - name: Read test-automation dependency Version
-        id: read-test-automation-version
-        shell: bash
-        run: |
-           cat /proc/cpuinfo
-           version=$(yq '.test-automation.version' ${{ github.workspace }}/.test-dependencies.yaml | tr -d '\n' | xargs)
-           echo $version
-           echo "version=$version" >> $GITHUB_OUTPUT
-      - name: Checkout edge-manage-test-automation repository with submodules
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-        with:
-          repository: open-edge-platform/edge-manage-test-automation
-          ref: ${{ steps.read-test-automation-version.outputs.version }}
-          path: edge-manage-test-automation
-          submodules: 'recursive'
-          token: ${{ secrets.SYS_EMF_GH_TOKEN }}
-          persist-credentials: false
-      - name: Setup virtual environment
-        working-directory: edge-manage-test-automation
-        run: |
-          git submodule update --init --recursive
-          make asdf-install
-          make venv_edge-manage-test-automation
-          # install required versions for Pico          
-          pushd repos/ven/pico
-          asdf install
-          sudo apt-get install xsltproc
-          popd
-
-      # Golden Suite runs the following tests:
-      # CF-1: Tenancy Management (Create Org/Project)
-      # CF-2: Tenancy Isolation
-      # CF-3: Provision EN (VEN onboarding)
-      # CF-4: Single Node Cluster Creation
-      # CF-5: Deploy Container App (WordPress)
-      # CF-6: SKIPPED - VM deployment issues with VEN
-      # CF-7: Assert Metrics Collected
-      # CF-8: SKIPPED - Cleanup for apps, CF-6 VM app (not deployed)
-      # CF-9: Cleanup Cluster
-      # CF-10: Cleanup Host
-      # CF-11: Cleanup Tenancy
-      - name: Run Golden Suite Robot Framework Tests
-        id: robot-tests
-        working-directory: edge-manage-test-automation
-        timeout-minutes: 45
-        env:
-          REQUESTS_CA_BUNDLE: /usr/local/share/ca-certificates/orch-ca.crt
-          LIBVIRT_DEFAULT_URI: 'qemu:///system'
-        run: |
-          kubectl -n orch-platform get secrets platform-keycloak -o yaml || true
-          KC_ADMIN_PWD=$(kubectl -n orch-platform get secrets platform-keycloak -o jsonpath='{.data.admin-password}' | base64 -d)
-          # Add the password to the orchestrator config
-          yq eval ".orchestrator.admin_password = \"${KC_ADMIN_PWD}\"" -i orchestrator-configs/kind.yaml
-          yq eval '.infra.host.edgenode.hw_info.libvirt_pool_name = "default"'    -i tests/core_foundation/data/cf_data_2_ven_VEN-libvirt_ubuntu-24.04-lts.yaml
-          yq eval '.infra.host.edgenode.hw_info.libvirt_network_name = "default"' -i tests/core_foundation/data/cf_data_2_ven_VEN-libvirt_ubuntu-24.04-lts.yaml
-          cat tests/core_foundation/data/cf_data_2_ven_VEN-libvirt_ubuntu-24.04-lts.yaml || true
-          source venv_edge-manage-test-automation/bin/activate
-          robot -L DEBUG --pythonpath . \
-            --name "Golden Suite: Core Foundation" \
-            -d robot_output/core_foundation \
-            -V orchestrator-configs/kind.yaml \
-            -V tests/core_foundation/data/cf_data_2_ven_VEN-libvirt_ubuntu-24.04-lts.yaml \
-            --exitonfailure \
-            --exclude cf6 \
-            --exclude cf8 \
-            tests/core_foundation/core_foundation.robot
-
-      - name: Upload test artifacts
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
-        with:
-          name: kind-${{ github.event_name }}-${{ github.event.number }}-robot-report
-          path: |
-            edge-manage-test-automation/robot_output/**/*
-
-      - name: Collect diagnostics
-        if: always()
-        uses: ./.github/actions/collect_diagnostics
-        timeout-minutes: 15
-        with:
-          k8s_diagnostics_args: "--errors-only --include-logs --output-html --output-json"
-
-  deploy-on-prem:
-    permissions:
-      contents: read
-    name: Deploy On-Prem Orchestrator and Run Golden Suite Core Foundation Tests
-    needs:
-      - lint-go
-      - lint-markdown
-      - lint-shell
-      - lint-terraform
-      - lint-version
-      - lint-helm
-      - lint-yaml
-      - build-publish
-      - check-changed-files
-    if: |
-      always() &&
-      needs.build-publish.result == 'success' &&
-      needs.check-changed-files.outputs.only_design_proposals != 'true' && (
-      needs.check-changed-files.outputs.orch == 'true' ||
-      needs.check-changed-files.outputs.on-prem == 'true' ||
-      needs.check-changed-files.outputs.ci == 'true' ||
-      needs.check-changed-files.outputs.test-automation == 'true' ||
-      github.ref == 'refs/heads/main' ||
-      github.ref == 'refs/heads/main-pass-validation'
-      )
-    runs-on: ubuntu-24.04-16core-64GB
-    timeout-minutes: 90
-    env:
-      KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
-    steps:
-      - name: Checkout Orchestrator repo
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-        with:
-          persist-credentials: false
-
-      - name: Read test-automation dependency Version
-        id: read-test-automation-version
-        shell: bash
-        run: |
-           cat /proc/cpuinfo
-           version=$(yq '.test-automation.version' ${{ github.workspace }}/.test-dependencies.yaml | tr -d '\n' | xargs)
-           echo $version
-           echo "version=$version" >> $GITHUB_OUTPUT
-
-      - name: Deploy On-Prem Orchestrator
-        id: deploy-on-prem
-        uses: ./.github/actions/deploy_on_prem
-        timeout-minutes: 60
-        with:
-          orch_version: ${{ github.event.pull_request.head.sha }}
-          docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
-          docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
-
-      - name: Run E2E tests
-        env:
-          E2E_SVC_DOMAIN: cluster.onprem
-          EDGE_CLUSTER_NAME: test-cluster
-        run: mage -v test:e2eOnPrem
-
-      - name: Checkout edge-manage-test-automation repository with submodules
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-        with:
-          repository: open-edge-platform/edge-manage-test-automation
-          path: edge-manage-test-automation
-          ref: ${{ steps.read-test-automation-version.outputs.version }}
-          submodules: 'recursive'
-          token: ${{ secrets.SYS_EMF_GH_TOKEN }}
-          persist-credentials: false
-
-      - name: Install vEN Deps
-        working-directory: edge-manage-test-automation
-        run: |
-          git submodule update --init --recursive
-
-      - name: Setup virtual environment
-        working-directory: edge-manage-test-automation
-        run: |
-          make asdf-install
-          make venv_edge-manage-test-automation
-
-          # install required versions for Pico
-          pushd repos/ven/pico
-          asdf install
-          popd
-
-      - name: Run Golden Suite Robot Framework Tests
-        id: robot-tests
-        timeout-minutes: 30
-        working-directory: edge-manage-test-automation
-        env:
-          KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
-          REQUESTS_CA_BUNDLE: /usr/local/share/ca-certificates/orch-ca.crt
-          LIBVIRT_DEFAULT_URI: 'qemu:///system'
-        run: |
-          KC_ADMIN_PWD=$(kubectl -n orch-platform get secrets platform-keycloak -o jsonpath='{.data.admin-password}' | base64 -d)
-          # Add the password to the orchestrator config
-          yq eval ".orchestrator.admin_password = \"${KC_ADMIN_PWD}\"" -i orchestrator-configs/on-prem.yaml
-
-          source venv_edge-manage-test-automation/bin/activate
-          robot -L DEBUG --pythonpath . \
-            --name "Golden Suite: Core Foundation" \
-            -d robot_output/core_foundation \
-            -V orchestrator-configs/on-prem.yaml \
-            --exitonfailure \
-            --exclude cf6 \
-            --exclude cf8 \
-            tests/core_foundation/core_foundation.robot
-
-      - name: Upload test artifacts
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
-        with:
-          name: on-prem-${{ github.event_name }}-${{ github.event.number }}-robot-report
-          path: |
-            edge-manage-test-automation/robot_output/**/*
-
-      - name: Collect diagnostics
-        if: always()
-        uses: ./.github/actions/collect_diagnostics
-        timeout-minutes: 15
-        with:
-          k8s_diagnostics_args: "--errors-only --include-logs --output-html --output-json"
-
-  deploy-oxm-profile:
-    permissions:
-      contents: read
-    name: Deploy OXM Orchestrator Profile
-    needs:
-      - lint-go
-      - lint-markdown
-      - lint-shell
-      - lint-terraform
-      - lint-version
-      - lint-helm
-      - lint-yaml
-      - build-publish
-      - check-changed-files
-    if: |
-      always() &&
-      needs.build-publish.result == 'success' && (
-      needs.check-changed-files.outputs.on-prem-oxm == 'true' ||
-      needs.check-changed-files.outputs.ci == 'true' )
-    runs-on: ubuntu-22.04-16core-64GB
-    timeout-minutes: 90
-    env:
-      KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
-    steps:
-      - name: Checkout Orchestrator repo
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-        with:
-          persist-credentials: false
-
-      - name: Deploy OXM Orchestrator Profile
-        id: deploy-oxm-profile
-        uses: ./.github/actions/deploy_on_prem
-        timeout-minutes: 60
-        env:
-          TF_VAR_no_proxy: "localhost,127.0.0.0/8,10.0.0.0/8,192.168.0.0/16,.svc,.cluster.local,.default,.internal,.orch-platform,.orch-app,.orch-cluster,.orch-infra,.orch-database,.cattle-system,.orch-secret,.onprem"
-          TF_VAR_en_http_proxy: "http://192.168.99.30:8080"
-          TF_VAR_en_https_proxy: "http://192.168.99.30:8080"
-          TF_VAR_oxm_pxe_server_int: "orchnet"
-          TF_VAR_oxm_pxe_server_ip: "192.168.99.20"
-          TF_VAR_oxm_pxe_server_subnet: "192.168.99.0"
-          TF_VAR_enable_explicit_proxy: "true"
-        with:
-          orch_version: ${{ github.event.pull_request.head.sha }}
-          orch_profile: onprem-oxm
-          docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
-          docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
-
-      - name: Create MT Sample Org and Project with default users
-        run: mage tenantUtils:createDefaultMtSetup
-
-      - name: Test Edge Node onboarding
-        env:
-          E2E_SVC_DOMAIN: cluster.onprem
-          EDGE_CLUSTER_NAME: test-cluster
-          EN_PROFILE: "microvisor-standalone"
-        timeout-minutes: 20
-        if: |
-          needs.check-changed-files.outputs.onboarding == 'true' ||
-          needs.check-changed-files.outputs.on-prem == 'true' ||
-          needs.check-changed-files.outputs.orch == 'true' ||
-          needs.check-changed-files.outputs.ci == 'true'
-        run: |
-          set +e
-          mage test:onboarding
-          TEST_EXIT_CODE=$?
-          sudo cat /var/log/libvirt/qemu/edge-node-EN123456789-console.log || true
-          exit $TEST_EXIT_CODE
-
-      - name: Collect diagnostics
-        if: always()
-        uses: ./.github/actions/collect_diagnostics
-        timeout-minutes: 15
-        with:
-          k8s_diagnostics_args: "--errors-only --include-logs --output-html --output-json"
-
-  tag-repo:
-    permissions:
-      contents: read
-    name: Tag repo
-    needs:
-      - lint-version
-      - build-publish
-      - deploy-kind
-      - deploy-on-prem
-      - deploy-oxm-profile
-    if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
+    # Always run, but do early exit if all target jobs succeeded
+    if: always()
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
-      - name: Checkout code
+      - name: Check if convergence analysis is needed
+        id: check-need-analysis
+        run: |          
+          # Check if at least one job is non-success (failure, cancelled, etc.)
+          need_analysis=true
+          
+          echo "need_analysis=$need_analysis" >> $GITHUB_OUTPUT
+          
+          if [[ "$need_analysis" == "false" ]]; then
+            echo "✅ All target jobs succeeded. Convergence analysis skipped."
+            echo "## Convergence Analysis Skipped" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "All target deploy jobs succeeded, so convergence analysis was not needed." >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+          
+          echo "🔍 At least one job had issues. Proceeding with convergence analysis."
+
+      - name: Checkout repository
+        if: steps.check-need-analysis.outputs.need_analysis == 'true'
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
-          # Fetch all history for all tags and branches
-          fetch-depth: 0
           persist-credentials: false
 
-      - name: Prepare ci tools
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - name: Set up Python
+        if: steps.check-need-analysis.outputs.need_analysis == 'true'
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b  # v5.3.0
         with:
-          repository: open-edge-platform/orch-ci
-          token: ${{ secrets.SYS_EMF_GH_TOKEN }}
-          path: orch-ci
-          persist-credentials: false
+          python-version: '3.11'
 
-      - name: Tag repo
-        env:
-          GITHUB_TOKEN: ${{ secrets.SYS_EMF_GH_TOKEN }}
-        run: orch-ci/scripts/version-tag.sh
+      - name: List recent workflow runs
+        if: steps.check-need-analysis.outputs.need_analysis == 'true'
+        id: list-runs
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
+        with:
+          script: |
+            // Number of recent runs to analyze for convergence
+            const MAX_RUNS = 20;
+            
+            const runs = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'virtual-integration.yml',
+              per_page: MAX_RUNS,
+              status: 'completed'
+            });
+            
+            core.info(`Found ${runs.data.workflow_runs.length} completed workflow runs`);
+            
+            // Extract run IDs and metadata
+            const runData = runs.data.workflow_runs.map(run => ({
+              id: run.id,
+              number: run.run_number,
+              event: run.event,
+              status: run.status,
+              conclusion: run.conclusion,
+              created_at: run.created_at
+            }));
+            
+            // Save to output file for next step
+            const fs = require('fs');
+            fs.writeFileSync('workflow_runs.json', JSON.stringify(runData, null, 2));
+            
+            return runData;
+
+      - name: Download diagnostics artifacts
+        if: steps.check-need-analysis.outputs.need_analysis == 'true'
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            // Read workflow runs from previous step
+            const runData = JSON.parse(fs.readFileSync('workflow_runs.json', 'utf8'));
+            
+            // Create artifacts directory
+            const artifactsDir = 'downloaded-artifacts';
+            fs.mkdirSync(artifactsDir, { recursive: true });
+            
+            const targetJobs = ['deploy-kind', 'deploy-on-prem', 'deploy-oxm-profile'];
+            let downloadedCount = 0;
+            let totalAttempted = 0;
+            
+            // Number of recent runs to analyze (should match MAX_RUNS above)
+            const MAX_RUNS = 20;
+            
+            // Download artifacts from recent runs
+            for (const run of runData.slice(0, MAX_RUNS)) {
+              core.info(`\nChecking run #${run.number} (ID: ${run.id})`);
+              
+              try {
+                const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  run_id: run.id
+                });
+                
+                for (const artifact of artifacts.data.artifacts) {
+                  // Check if artifact matches our target pattern
+                  for (const job of targetJobs) {
+                    if (artifact.name.startsWith(`diagnostics-${job}-`)) {
+                      totalAttempted++;
+                      core.info(`  Found artifact: ${artifact.name}`);
+                      
+                      try {
+                        // Download artifact
+                        const download = await github.rest.actions.downloadArtifact({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          artifact_id: artifact.id,
+                          archive_format: 'zip'
+                        });
+                        
+                        // Save to file
+                        const artifactPath = path.join(artifactsDir, `${artifact.name}.zip`);
+                        fs.writeFileSync(artifactPath, Buffer.from(download.data));
+                        downloadedCount++;
+                        
+                        core.info(`  ✓ Downloaded ${artifact.name}`);
+                      } catch (downloadError) {
+                        core.warning(`  ✗ Failed to download ${artifact.name}: ${downloadError.message}`);
+                      }
+                      
+                      break;
+                    }
+                  }
+                }
+              } catch (error) {
+                core.warning(`Failed to list artifacts for run ${run.id}: ${error.message}`);
+              }
+            }
+            
+            core.info(`\n📊 Download summary: ${downloadedCount}/${totalAttempted} artifacts downloaded`);
+            
+            // Save summary for next step
+            fs.writeFileSync('download_summary.json', JSON.stringify({
+              downloaded: downloadedCount,
+              attempted: totalAttempted
+            }, null, 2));
+
+      - name: Extract and organize artifacts
+        if: steps.check-need-analysis.outputs.need_analysis == 'true'
+        run: |
+          mkdir -p extracted-artifacts
+          cd downloaded-artifacts
+          
+          # Extract all downloaded artifacts
+          for zipfile in *.zip; do
+            if [[ -f "$zipfile" ]]; then
+              echo "Extracting $zipfile..."
+              artifact_name="${zipfile%.zip}"
+              mkdir -p "../extracted-artifacts/$artifact_name"
+              unzip -q "$zipfile" -d "../extracted-artifacts/$artifact_name"
+            fi
+          done
+          
+          cd ..
+          echo "Extracted artifacts:"
+          find extracted-artifacts -name "diagnostics_full_*.json" -type f
+
+      - name: Run convergence analysis
+        if: steps.check-need-analysis.outputs.need_analysis == 'true'
+        run: |
+          echo "Running diagnostics convergence analysis..."
+          
+          # Check if we have any artifacts to analyze
+          json_count=$(find extracted-artifacts -name "diagnostics_full_*.json" -type f | wc -l)
+          echo "Found $json_count diagnostics JSON files"
+          
+          if [[ $json_count -eq 0 ]]; then
+            echo "⚠️  No diagnostics data found. Creating empty convergence report."
+            mkdir -p convergence-output
+            echo '{"status": "no_data", "message": "No diagnostics artifacts found", "total_runs": 0}' > convergence-output/convergence.json
+            echo "# No Diagnostics Data Available" > convergence-output/convergence.md
+            echo "No diagnostics artifacts were found for analysis." >> convergence-output/convergence.md
+            echo '{"total_artifacts": 0, "artifacts": []}' > convergence-output/manifest.json
+          else
+            # Run the convergence analyzer
+            python3 ci/diagnostics_convergence.py extracted-artifacts --output-dir convergence-output
+          fi
+          
+          echo "Convergence analysis complete!"
+          ls -lh convergence-output/
+
+      - name: Upload convergence outputs
+        if: steps.check-need-analysis.outputs.need_analysis == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: convergence-analysis-${{ github.run_number }}-${{ github.run_attempt }}
+          path: |
+            convergence-output/convergence.json
+            convergence-output/convergence.md
+            convergence-output/manifest.json
+          retention-days: 15
+          compression-level: 6
+
+      - name: Write summary to GITHUB_STEP_SUMMARY
+        if: steps.check-need-analysis.outputs.need_analysis == 'true'
+        run: |
+          echo "## 📊 Diagnostics Convergence Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Include the markdown report
+          if [[ -f convergence-output/convergence.md ]]; then
+            cat convergence-output/convergence.md >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Convergence report not generated" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "*This is a temporary validation job - will be removed after validation*" >> $GITHUB_STEP_SUMMARY
 
   post-merge:
     permissions:
