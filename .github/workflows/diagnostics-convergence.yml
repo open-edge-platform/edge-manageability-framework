@@ -1,0 +1,290 @@
+# SPDX-FileCopyrightText: (C) 2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+name: Diagnostics Convergence
+
+on:
+  # Trigger automatically when Virtual Integration workflow completes with non-success
+  workflow_run:
+    workflows: ["Virtual Integration"]
+    types: [completed]
+  
+  # Allow manual triggering with optional filters
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Filter by branch (leave empty for all branches)'
+        required: false
+        type: string
+        default: ''
+      event:
+        description: 'Filter by event type (leave empty for all events)'
+        required: false
+        type: string
+        default: ''
+      runs:
+        description: 'Number of recent runs to analyze'
+        required: false
+        type: number
+        default: 20
+      jobs:
+        description: 'Comma-separated list of jobs to include'
+        required: false
+        type: string
+        default: 'deploy-kind,deploy-on-prem,deploy-oxm-profile'
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  convergence:
+    # Only run on workflow_run trigger if the upstream workflow failed
+    # Always run on manual workflow_dispatch trigger
+    if: >-
+      (github.event_name == 'workflow_dispatch') ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion != 'success')
+    
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          persist-credentials: false
+      
+      - name: Set up Python
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b  # v5.3.0
+        with:
+          python-version: '3.11'
+      
+      - name: Build manifest and download artifacts
+        id: build-manifest
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
+        with:
+          script: |
+            // Note: core, github, context are provided as injected globals by actions/github-script
+            const fs = require('fs');
+            const path = require('path');
+            
+            // Determine input parameters
+            // For workflow_run: use defaults, no branch/event filter unless we want to use the failing run's branch
+            // For workflow_dispatch: use provided inputs
+            let branchFilter = '';
+            let eventFilter = '';
+            let runsCount = 20;
+            let jobsList = ['deploy-kind', 'deploy-on-prem', 'deploy-oxm-profile'];
+            
+            if (context.eventName === 'workflow_dispatch') {
+              branchFilter = context.payload.inputs?.branch || '';
+              eventFilter = context.payload.inputs?.event || '';
+              runsCount = parseInt(context.payload.inputs?.runs || '20', 10);
+              const jobsInput = context.payload.inputs?.jobs || 'deploy-kind,deploy-on-prem,deploy-oxm-profile';
+              jobsList = jobsInput.split(',').map(j => j.trim()).filter(j => j);
+            }
+            
+            console.log(`Configuration:`);
+            console.log(`  Branch filter: ${branchFilter || '(none - all branches)'}`);
+            console.log(`  Event filter: ${eventFilter || '(none - all events)'}`);
+            console.log(`  Runs to analyze: ${runsCount}`);
+            console.log(`  Jobs to include: ${jobsList.join(', ')}`);
+            
+            // Find Virtual Integration workflow ID
+            const workflows = await github.rest.actions.listRepoWorkflows({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+            
+            const viWorkflow = workflows.data.workflows.find(w => w.name === 'Virtual Integration');
+            if (!viWorkflow) {
+              core.setFailed('Virtual Integration workflow not found');
+              return;
+            }
+            
+            console.log(`Found Virtual Integration workflow (ID: ${viWorkflow.id})`);
+            
+            // List recent workflow runs
+            const listParams = {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: viWorkflow.id,
+              per_page: runsCount
+            };
+            
+            // Apply optional filters
+            if (branchFilter) {
+              listParams.branch = branchFilter;
+            }
+            if (eventFilter) {
+              listParams.event = eventFilter;
+            }
+            
+            const runs = await github.rest.actions.listWorkflowRuns(listParams);
+            
+            console.log(`Found ${runs.data.workflow_runs.length} workflow runs`);
+            
+            // Build manifest
+            const manifest = {
+              metadata: {
+                workflow_name: 'Virtual Integration',
+                workflow_id: viWorkflow.id,
+                branch_filter: branchFilter || null,
+                event_filter: eventFilter || null,
+                jobs_filter: jobsList,
+                runs_requested: runsCount,
+                generated_at: new Date().toISOString()
+              },
+              runs: []
+            };
+            
+            // Create artifacts directory
+            const artifactsDir = path.join(process.env.GITHUB_WORKSPACE, 'artifacts');
+            fs.mkdirSync(artifactsDir, { recursive: true });
+            
+            // Process each run
+            for (const run of runs.data.workflow_runs) {
+              console.log(`\nProcessing run ${run.id} (${run.head_branch}, ${run.event}, ${run.conclusion})...`);
+              
+              // List artifacts for this run
+              const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: run.id
+              });
+              
+              // Filter artifacts: name starts with "diagnostics-" and matches one of the selected jobs
+              const relevantArtifacts = artifacts.data.artifacts.filter(artifact => {
+                if (!artifact.name.startsWith('diagnostics-')) {
+                  return false;
+                }
+                
+                // Check if artifact name contains any of the job names
+                // Artifact format: diagnostics-<job>-<event>-<number>-<attempt>
+                for (const job of jobsList) {
+                  if (artifact.name.includes(`diagnostics-${job}-`)) {
+                    return true;
+                  }
+                }
+                return false;
+              });
+              
+              if (relevantArtifacts.length === 0) {
+                console.log(`  No matching diagnostics artifacts found, skipping run ${run.id}`);
+                continue;
+              }
+              
+              console.log(`  Found ${relevantArtifacts.length} relevant artifacts`);
+              
+              const runEntry = {
+                run: {
+                  run_id: run.id,
+                  run_number: run.run_number,
+                  run_attempt: run.run_attempt,
+                  html_url: run.html_url,
+                  head_sha: run.head_sha,
+                  head_branch: run.head_branch,
+                  event: run.event,
+                  conclusion: run.conclusion,
+                  created_at: run.created_at
+                },
+                artifacts: []
+              };
+              
+              // Download each artifact
+              for (const artifact of relevantArtifacts) {
+                console.log(`  Downloading artifact: ${artifact.name} (ID: ${artifact.id})`);
+                
+                try {
+                  const download = await github.rest.actions.downloadArtifact({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    artifact_id: artifact.id,
+                    archive_format: 'zip'
+                  });
+                  
+                  // Save artifact zip
+                  const artifactDir = path.join(artifactsDir, `artifact-${artifact.id}`);
+                  const zipPath = path.join(artifactsDir, `artifact-${artifact.id}.zip`);
+                  
+                  fs.writeFileSync(zipPath, Buffer.from(download.data));
+                  console.log(`    Saved to ${zipPath}`);
+                  
+                  // Extract zip using unzip command
+                  const { execSync } = require('child_process');
+                  fs.mkdirSync(artifactDir, { recursive: true });
+                  
+                  try {
+                    execSync(`unzip -q "${zipPath}" -d "${artifactDir}"`, { stdio: 'inherit' });
+                    console.log(`    Extracted to ${artifactDir}`);
+                  } catch (unzipError) {
+                    console.log(`    Warning: Failed to extract ${zipPath}: ${unzipError.message}`);
+                  }
+                  
+                  // Add to manifest
+                  runEntry.artifacts.push({
+                    id: artifact.id,
+                    name: artifact.name,
+                    size_in_bytes: artifact.size_in_bytes,
+                    created_at: artifact.created_at
+                  });
+                } catch (downloadError) {
+                  console.log(`    Warning: Failed to download artifact ${artifact.id}: ${downloadError.message}`);
+                }
+              }
+              
+              if (runEntry.artifacts.length > 0) {
+                manifest.runs.push(runEntry);
+              }
+            }
+            
+            console.log(`\nManifest built with ${manifest.runs.length} runs`);
+            
+            // Save manifest
+            const manifestPath = path.join(process.env.GITHUB_WORKSPACE, 'manifest.json');
+            fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+            console.log(`Manifest saved to ${manifestPath}`);
+            
+            // Set outputs
+            core.setOutput('runs_count', manifest.runs.length);
+      
+      - name: Run convergence analysis
+        if: steps.build-manifest.outputs.runs_count > 0
+        run: |
+          python ci/diagnostics_convergence.py \
+            --manifest manifest.json \
+            --artifacts-dir artifacts \
+            --output convergence.json \
+            --output-md convergence.md
+      
+      - name: Display convergence summary
+        if: steps.build-manifest.outputs.runs_count > 0
+        run: |
+          echo "## Diagnostics Convergence Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f convergence.md ]; then
+            cat convergence.md >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No convergence report generated." >> $GITHUB_STEP_SUMMARY
+          fi
+      
+      - name: Upload convergence reports
+        if: steps.build-manifest.outputs.runs_count > 0
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: convergence-reports-${{ github.run_number }}-${{ github.run_attempt }}
+          path: |
+            convergence.json
+            convergence.md
+            manifest.json
+          retention-days: 30
+          compression-level: 6
+          if-no-files-found: warn
+      
+      - name: No runs to analyze
+        if: steps.build-manifest.outputs.runs_count == 0
+        run: |
+          echo "::warning::No workflow runs with diagnostics artifacts found for analysis"
+          echo "## No Diagnostics Found" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "No workflow runs with matching diagnostics artifacts were found for the specified filters." >> $GITHUB_STEP_SUMMARY
