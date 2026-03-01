@@ -15,7 +15,7 @@
 set +xe
 
 HELP=""
-RKE2VERSION="v1.34.3+rke2r1"
+RKE2VERSION="v1.35.1+rke2r1"
 HOSTIP=""
 ROOT_DIR=$(pwd)
 
