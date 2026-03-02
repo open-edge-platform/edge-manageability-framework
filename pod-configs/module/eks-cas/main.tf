@@ -20,6 +20,7 @@ resource "kubernetes_service_account" "cluster_autoscaler" {
   metadata {
     name      = var.cas_service_account
     namespace = var.cas_namespace
+    version    = "9.46.6"
 
     annotations = {
       "eks.amazonaws.com/role-arn" = var.cas_controller_arn
