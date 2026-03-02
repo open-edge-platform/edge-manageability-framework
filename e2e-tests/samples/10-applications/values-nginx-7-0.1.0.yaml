@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 ---
+image:
+  repository: bitnamilegacy/nginx
 service:
   type: ClusterIP
 replicaCount: 7
