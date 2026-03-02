@@ -532,7 +532,7 @@ install_argocd_from_repo() {
 
     helm fetch argo-helm/argo-cd --version "$ARGOCD_CHART_VERSION" --untar --untardir "$tmp"
 
-  # Render proxy-aware values.yaml (mirrors deb after-install logic)
+  # Update proxy if any on values.yaml
   cp "$values_tmpl" "$tmp/argo-cd/templates/values.tmpl"
   cat <<EOF >"$tmp/proxy-values.yaml"
 http_proxy: ${http_proxy:-}
