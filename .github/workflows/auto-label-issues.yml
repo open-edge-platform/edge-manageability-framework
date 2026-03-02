@@ -21,7 +21,7 @@ jobs:
       issues: write
     steps:
       - name: Add 'Closed' label when issue is closed
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
           script: |
             await github.rest.issues.addLabels({
@@ -32,7 +32,7 @@ jobs:
             });
 
       - name: Remove 'triage', 'investigating', and 'in progress' labels if present (on close)
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
           script: |
             const labelsToRemove = ['triage', 'investigating', 'in progress'];
@@ -59,7 +59,7 @@ jobs:
       issues: write
     steps:
       - name: Add 'investigating' label when issue is assigned
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
           script: |
             // Add the 'investigating' label if not already present
@@ -78,7 +78,7 @@ jobs:
             }
 
       - name: Remove 'triage' label if present (on assign)
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
           script: |
             const labels = (await github.rest.issues.listLabelsOnIssue({
