@@ -27,7 +27,7 @@ if [ "$DEPLOY_TYPE" = "aws" ]; then
 
 elif [ "$DEPLOY_TYPE" = "onprem" ]; then
     # shellcheck disable=SC1091
-    source "$(dirname "$0")/${DEPLOY_TYPE}.env"
+    source "${PWD}/${DEPLOY_TYPE}.env"
 
     # Validate ORCH_INSTALLER_PROFILE
     if [[ "$ORCH_INSTALLER_PROFILE" =~ ^(onprem|onprem-oxm|onprem-vpro)$ ]]; then
