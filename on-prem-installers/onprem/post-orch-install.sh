@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# SPDX-FileCopyrightText: 2025 Intel Corporation
+# SPDX-FileCopyrightText: 2026 Intel Corporation
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Script Name: onprem_orch_install_from_repo.sh
-# Description: Installs Edge Orchestrator components directly from this git checkout
-#              (no .deb packages). It installs (optionally) Gitea + ArgoCD via Helm,
+# Script Name: post-orch-install.sh
+# Description: Installs Edge Orchestrator components use git commit/tag/branch.
+#              It installs (optionally) Gitea + ArgoCD via Helm,
 #              creates required namespaces/secrets, then bootstraps the deployment
 #              by installing the root-app Helm chart from this repository.
 #              ArgoCD is always configured to use the GitHub deployment repository
@@ -30,10 +30,20 @@ set -o pipefail
 # Import shared functions
 # shellcheck disable=SC1091
 source "$(dirname "$0")/functions.sh"
+ASSUME_YES=false
+ENABLE_TRACE=false
+SINGLE_TENANCY_PROFILE=false
+INSTALL_GITEA="true"
+argo_cd_ns="argocd"
+gitea_ns="gitea"
+si_config_repo="edge-manageability-framework"
+GITEA_CHART_VERSION="10.4.0"
+ARGOCD_CHART_VERSION="8.2.7"
 
 cwd=$(pwd)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_URL="https://github.com/open-edge-platform/edge-manageability-framework"
+MAIN_ENV_CONFIG="$SCRIPT_DIR/onprem.env"
 
 repo_root=""
 onprem_installers_dir=""
@@ -124,28 +134,13 @@ generate_cluster_yaml_onprem_from_upstream() {
   echo "Generated cluster config: $out_file"
 }
 
-ASSUME_YES=false
-ENABLE_TRACE=false
-SINGLE_TENANCY_PROFILE=false
-INSTALL_GITEA="true"
-
-argo_cd_ns="argocd"
-gitea_ns="gitea"
-si_config_repo="edge-manageability-framework"
-
-GITEA_CHART_VERSION="10.4.0"
-ARGOCD_CHART_VERSION="8.2.7"
-
-MAIN_ENV_CONFIG="$SCRIPT_DIR/onprem.env"
-
 usage() {
   cat >&2 <<EOF
 Purpose:
 Install OnPrem Edge Orchestrator main components directly from this repository checkout.
-No .deb packages are used.
 
 Prerequisites:
-- onprem_pre_install.sh or equivalent must have completed successfully (RKE2 running)
+- onprem_pre_install.sh or equivalent must have completed successfully (e.g., RKE2 is running)
 - onprem.env file must exist with proper configuration
 - helm, kubectl must be available
 - sudo access (for installing CA certs for local Gitea TLS)
@@ -625,10 +620,7 @@ install_root_app() {
     exit 1
   fi
 
-  local repo_url
-  repo_url="https://github.com/open-edge-platform/edge-manageability-framework"
-
-  create_argocd_repo_secret "$repo_url"
+  create_argocd_repo_secret "$REPO_URL"
 
   echo "Installing root-app Helm chart..."
   helm upgrade --install root-app "$repo_root/argocd/root-app" \
