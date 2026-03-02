@@ -107,8 +107,8 @@
     value: >
         {
           "observability": {
-            desired_size = 1
-            min_size = 1
+            desired_size = 0
+            min_size = 0
             max_size = 1
             labels = {
               "node.kubernetes.io/custom-rule": "observability"
@@ -169,8 +169,8 @@
     value: >
         {
           "observability": {
-            desired_size = 2
-            min_size = 2
+            desired_size = 0
+            min_size = 0
             max_size = 2
             labels = {
               "node.kubernetes.io/custom-rule": "observability"
@@ -230,8 +230,8 @@
     value: >
         {
           "observability": {
-            desired_size = 3
-            min_size = 3
+            desired_size = 0
+            min_size = 0
             max_size = 3
             labels = {
               "node.kubernetes.io/custom-rule": "observability"
@@ -291,8 +291,8 @@
     value: >
         {
           "observability": {
-            desired_size = 3
-            min_size = 3
+            desired_size = 0
+            min_size = 0
             max_size = 3
             labels = {
               "node.kubernetes.io/custom-rule": "observability"
