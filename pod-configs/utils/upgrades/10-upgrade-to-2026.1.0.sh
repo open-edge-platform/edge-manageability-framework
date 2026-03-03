@@ -136,6 +136,31 @@ cluster_variable() {
     VOL_SIZE=$(echo $OUT | awk '{print $1}')
     VOL_TYPE=$(echo $OUT | awk '{print $2}')
 
+    LT_ID_OBS=$(aws eks describe-nodegroup \
+      --cluster-name $ENV_NAME \
+      --nodegroup-name observability \
+      --region $AWS_REGION \
+      --query 'nodegroup.launchTemplate.id' \
+      --output text)
+    
+    LT_VERSION_OBS=$(aws eks describe-nodegroup \
+      --cluster-name $ENV_NAME \
+      --nodegroup-name observability \
+      --region $AWS_REGION \
+      --query 'nodegroup.launchTemplate.version' \
+      --output text)
+    
+    OUT_OBS=$(aws ec2 describe-launch-template-versions \
+      --launch-template-id $LT_ID_OBS \
+      --versions $LT_VERSION_OBS \
+      --region $AWS_REGION \
+      --query 'LaunchTemplateVersions[0].LaunchTemplateData.[InstanceType,BlockDeviceMappings[0].Ebs.VolumeSize,BlockDeviceMappings[0].Ebs.VolumeType]' \
+      --output text)
+    
+    INSTANCE_TYPE_OBS=$(echo $OUT_OBS | awk '{print $1}')
+    VOL_SIZE_OBS=$(echo $OUT_OBS | awk '{print $2}')
+    VOL_TYPE_OBS=$(echo $OUT_OBS | awk '{print $3}')
+
     FULLCHAIN="fullchain-${AWS_ACCOUNT}-${ENV_NAME}.pem"
     CHAIN="chain-${AWS_ACCOUNT}-${ENV_NAME}.pem"
     PRIVKEY="privkey-${AWS_ACCOUNT}-${ENV_NAME}.pem"
@@ -149,9 +174,9 @@ vpc_terraform_backend_region       = "${BUCKET_REGION}" # region of the S3 bucke
 eks_cluster_name                   = "$ENV_NAME"
 aws_account_number                 = "$AWS_ACCOUNT"
 eks_volume_size                    = $VOL_SIZE
-eks_desired_size                   = $EKS_DESIRED_SIZE
-eks_min_size                       = $EKS_MIN_SIZE
-eks_max_size                       = $EKS_MAX_SIZE
+eks_desired_size                   = 3
+eks_min_size                       = 1
+eks_max_size                       = 5
 eks_node_ami_id                    = "$(get_eks_node_ami)"
 eks_volume_type                    = "$VOL_TYPE"
 aws_region                         = "${AWS_REGION}"
@@ -197,6 +222,26 @@ eks_http_proxy                         = "$EKS_HTTP_PROXY"
 eks_https_proxy                        = "$EKS_HTTPS_PROXY"
 eks_no_proxy                           = "$EKS_NO_PROXY"
 eks_cluster_dns_ip                 = "$EKS_CLUSTER_DNS_IP"
+eks_additional_node_groups         ={
+    "observability": {
+        desired_size = $OBS_DES
+        min_size = 0
+        max_size = 1
+        labels = {
+            "node.kubernetes.io/custom-rule": "observability"
+        }
+        taints = {
+        "node.kubernetes.io/custom-rule": {
+            value = "observability"
+            effect = "NO_SCHEDULE"
+        }
+        }
+        instance_type = "$INSTANCE_TYPE_OBS"
+        volume_size = "$VOL_SIZE_OBS"
+        volume_type = "$VOL_TYPE_OBS"
+    }
+}
+
 EOF
 
     if [[ -n "$CUSTOMER_TAG" ]]; then
@@ -262,47 +307,15 @@ echo "Updating tags for ${NG}"
 
 done
 
-echo "Fetching current scaling config for nodegroup-${ENV_NAME}..."
-
-MAIN_MIN=$(aws eks describe-nodegroup \
-  --cluster-name $ENV_NAME \
-  --nodegroup-name nodegroup-${ENV_NAME} \
-  --region $AWS_REGION \
-  --query 'nodegroup.scalingConfig.minSize' \
-  --output text)
-
-MAIN_MAX=$(aws eks describe-nodegroup \
-  --cluster-name $ENV_NAME \
-  --nodegroup-name nodegroup-${ENV_NAME} \
-  --region $AWS_REGION \
-  --query 'nodegroup.scalingConfig.maxSize' \
-  --output text)
-
-MAIN_DESIRED=$(aws eks describe-nodegroup \
-  --cluster-name $ENV_NAME \
-  --nodegroup-name nodegroup-${ENV_NAME} \
-  --region $AWS_REGION \
-  --query 'nodegroup.scalingConfig.desiredSize' \
-  --output text)
-
-NEW_MAX=$((MAIN_MAX + 2))
-
-echo "Updating nodegroup-${ENV_NAME}: min=1, max=$NEW_MAX, desired=$MAIN_DESIRED"
+echo "Updating nodegroup-${ENV_NAME}: min=1, max=5, desired=3"
 
 aws eks update-nodegroup-config \
   --cluster-name $ENV_NAME \
   --nodegroup-name nodegroup-${ENV_NAME} \
   --region $AWS_REGION \
-  --scaling-config minSize=1,maxSize=$NEW_MAX,desiredSize=$MAIN_DESIRED
+  --scaling-config minSize=1,maxSize=5,desiredSize=3
 
-echo "Fetching current max and desired size for observability..."
-
-OBS_MAX=$(aws eks describe-nodegroup \
-  --cluster-name $ENV_NAME \
-  --nodegroup-name observability \
-  --region $AWS_REGION \
-  --query 'nodegroup.scalingConfig.maxSize' \
-  --output text)
+echo "Fetching current  desired size for observability..."
 
 OBS_DES=$(aws eks describe-nodegroup \
   --cluster-name $ENV_NAME \
@@ -311,13 +324,13 @@ OBS_DES=$(aws eks describe-nodegroup \
   --query 'nodegroup.scalingConfig.desiredSize' \
   --output text)
 
-echo "Updating observability: min=0, max=$OBS_MAX, desired=$OBS_DES"
+echo "Updating observability: min=0, max=1, desired=$OBS_DES"
 
 aws eks update-nodegroup-config \
   --cluster-name $ENV_NAME \
   --nodegroup-name observability \
   --region $AWS_REGION \
-  --scaling-config minSize=0,maxSize=$OBS_MAX,desiredSize=$OBS_DES
+  --scaling-config minSize=0,maxSize=1,desiredSize=$OBS_DES
 
 POLICY_NAME="CASControllerPolicy-${CLUSTER_NAME}"
 
@@ -437,8 +450,8 @@ refresh_sshuttle
 connect_cluster
 
 echo "Starting action cluster"
-action_cluster
 setup_cas
+action_cluster
 apply_cas
 
 # Terminate existing sshuttle
