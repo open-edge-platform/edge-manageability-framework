@@ -497,8 +497,8 @@ jobs:
         with:
           orch_version: ${{ github.event.pull_request.head.sha || github.sha }}
           orch_password: ${{ secrets.ORCH_DEFAULT_PASSWORD }}
-          docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
-          docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
+          docker_username: 'suparida123'
+          docker_password: 'root@12345'
           token: ${{ secrets.SYS_EMF_GH_TOKEN }}
           deployment_type: all
       - name: Config DNSmasq
@@ -631,6 +631,7 @@ jobs:
         run: |
            sudo ls -lrt  /var/log/libvirt/qemu/ || true
            sudo cat /var/log/libvirt/qemu/libvirt-pico-node-console.log || true
+           kubectl get workflow -n orch-infra || true
            
   deploy-on-prem:
     permissions:
@@ -682,8 +683,8 @@ jobs:
         timeout-minutes: 60
         with:
           orch_version: ${{ github.event.pull_request.head.sha }}
-          docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
-          docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
+          docker_username: 'suparida123'
+          docker_password: 'root@12345'
 
       - name: Run E2E tests
         env:
@@ -760,6 +761,7 @@ jobs:
         run: |
            sudo ls -lrt  /var/log/libvirt/qemu/ || true
            sudo cat /var/log/libvirt/qemu/libvirt-pico-node-console.log || true
+           kubectl get workflow -n orch-infra || true
            
   deploy-oxm-profile:
     permissions:
@@ -805,8 +807,8 @@ jobs:
         with:
           orch_version: ${{ github.event.pull_request.head.sha }}
           orch_profile: onprem-oxm
-          docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
-          docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
+          docker_username: 'suparida123'
+          docker_password: 'root@12345'
 
       - name: Create MT Sample Org and Project with default users
         run: mage tenantUtils:createDefaultMtSetup
