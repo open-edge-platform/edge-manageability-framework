@@ -262,6 +262,63 @@ echo "Updating tags for ${NG}"
 
 done
 
+echo "Fetching current scaling config for nodegroup-${ENV_NAME}..."
+
+MAIN_MIN=$(aws eks describe-nodegroup \
+  --cluster-name $ENV_NAME \
+  --nodegroup-name nodegroup-${ENV_NAME} \
+  --region $AWS_REGION \
+  --query 'nodegroup.scalingConfig.minSize' \
+  --output text)
+
+MAIN_MAX=$(aws eks describe-nodegroup \
+  --cluster-name $ENV_NAME \
+  --nodegroup-name nodegroup-${ENV_NAME} \
+  --region $AWS_REGION \
+  --query 'nodegroup.scalingConfig.maxSize' \
+  --output text)
+
+MAIN_DESIRED=$(aws eks describe-nodegroup \
+  --cluster-name $ENV_NAME \
+  --nodegroup-name nodegroup-${ENV_NAME} \
+  --region $AWS_REGION \
+  --query 'nodegroup.scalingConfig.desiredSize' \
+  --output text)
+
+NEW_MAX=$((MAIN_MAX + 2))
+
+echo "Updating nodegroup-${ENV_NAME}: min=1, max=$NEW_MAX, desired=$MAIN_DESIRED"
+
+aws eks update-nodegroup-config \
+  --cluster-name $ENV_NAME \
+  --nodegroup-name nodegroup-${ENV_NAME} \
+  --region $AWS_REGION \
+  --scaling-config minSize=1,maxSize=$NEW_MAX,desiredSize=$MAIN_DESIRED
+
+echo "Fetching current max and desired size for observability..."
+
+OBS_MAX=$(aws eks describe-nodegroup \
+  --cluster-name $ENV_NAME \
+  --nodegroup-name observability \
+  --region $AWS_REGION \
+  --query 'nodegroup.scalingConfig.maxSize' \
+  --output text)
+
+OBS_DES=$(aws eks describe-nodegroup \
+  --cluster-name $ENV_NAME \
+  --nodegroup-name observability \
+  --region $AWS_REGION \
+  --query 'nodegroup.scalingConfig.desiredSize' \
+  --output text)
+
+echo "Updating observability: min=0, max=$OBS_MAX, desired=$OBS_DES"
+
+aws eks update-nodegroup-config \
+  --cluster-name $ENV_NAME \
+  --nodegroup-name observability \
+  --region $AWS_REGION \
+  --scaling-config minSize=0,maxSize=$OBS_MAX,desiredSize=$OBS_DES
+
 POLICY_NAME="CASControllerPolicy-${CLUSTER_NAME}"
 
 echo "Finding policy ARN..."
@@ -338,22 +395,6 @@ aws iam create-policy-version \
   --set-as-default
 
 echo "✅ Policy successfully updated!"
-
-echo "Updating Observability Desired Size ..."
-
-OBS_DESIRED=$(aws eks describe-nodegroup \
-  --cluster-name $ENV_NAME \
-  --nodegroup-name observability \
-  --region $AWS_REGION \
-  --query 'nodegroup.scalingConfig.desiredSize' \
-  --output text)
-
-if [ "$OBS_DESIRED" = "1" ]; then
-  echo "Existing Observability desired size is 1 → updating Terraform file"
-  sed -i '0,/desired_size *= *0/s//desired_size = 1/' orchestrator/cluster/variable.tf
-else
-  echo "Existing Observability desired size is $OBS_DESIRED → no change"
-fi
 }
 
 
