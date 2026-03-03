@@ -592,7 +592,6 @@ jobs:
         env:
           REQUESTS_CA_BUNDLE: /usr/local/share/ca-certificates/orch-ca.crt
           LIBVIRT_DEFAULT_URI: 'qemu:///system'
-          TF_VAR_vm_console: "file"
         run: |
           kubectl -n orch-platform get secrets platform-keycloak -o yaml || true
           KC_ADMIN_PWD=$(kubectl -n orch-platform get secrets platform-keycloak -o jsonpath='{.data.admin-password}' | base64 -d)
@@ -726,7 +725,6 @@ jobs:
           KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
           REQUESTS_CA_BUNDLE: /usr/local/share/ca-certificates/orch-ca.crt
           LIBVIRT_DEFAULT_URI: 'qemu:///system'
-          TF_VAR_vm_console: "file"
         run: |
           KC_ADMIN_PWD=$(kubectl -n orch-platform get secrets platform-keycloak -o jsonpath='{.data.admin-password}' | base64 -d)
           # Add the password to the orchestrator config
