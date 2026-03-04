@@ -419,6 +419,9 @@ jobs:
           format: table
           output: "trivy-orchestrator-installer-cloudfull.txt"
           ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'HIGH,CRITICAL'
+          exit-code: '1'
 
       - name: Calculate MD5 Checksum
         id: checksum
