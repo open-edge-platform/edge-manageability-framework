@@ -1261,8 +1261,8 @@ action_orch_loadbalancer() {
         export TF_VAR_auto_cert=${AUTO_CERT}
     else
         load_values
-        export TF_VAR_tls_cert_chain="$TF_VAR_tls_cert"
-        export TF_VAR_tls_cert_body=$(get_end_cert "$TF_VAR_tls_cert")
+        export TF_VAR_tls_cert_chain="${TF_VAR_tls_cert:-}"
+        export TF_VAR_tls_cert_body=$(get_end_cert "${TF_VAR_tls_cert:-}")
     fi
 
     # Skip destroying the aws-lb-target-group-binding Kubernetes resources to avoid errors for old clusters which don't have the Kubernetes CRD installed
@@ -1294,14 +1294,14 @@ action_orch_loadbalancer() {
         load_values
 
         echo "tls_key = <<-EOF" > $variable_override
-        cat "${TF_VAR_tls_key}" >> $variable_override
+        echo "${TF_VAR_tls_key:-}" >> $variable_override
         echo "EOF" >> $variable_override
 
         echo "tls_cert_chain = <<-EOF" >> $variable_override
-        cat "${TF_VAR_tls_cert}" >> $variable_override
+        echo "${TF_VAR_tls_cert:-}" >> $variable_override
         echo "EOF" >> $variable_override
 
-        tls_cert_body="$(get_end_cert "${TF_VAR_tls_cert}")"
+        tls_cert_body="$(get_end_cert "${TF_VAR_tls_cert:-}")"
         echo "tls_cert_body = <<-EOF" >> $variable_override
         echo "$tls_cert_body" >> $variable_override
         echo "EOF" >> $variable_override

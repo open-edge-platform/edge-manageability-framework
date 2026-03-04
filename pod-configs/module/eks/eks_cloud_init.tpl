@@ -1,6 +1,7 @@
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="//"
---//
+Content-Type: multipart/mixed; boundary="EKSBOUNDARY"
+
+--EKSBOUNDARY
 Content-Type: text/cloud-boothook; charset="us-ascii"
 
 # SPDX-FileCopyrightText: 2025 Intel Corporation
@@ -10,8 +11,8 @@ Content-Type: text/cloud-boothook; charset="us-ascii"
 ${user_script_pre_cloud_init}
 
 # Install cronjob to update system
-echo "50 19 * * 7 root /usr/bin/yum update -q -y >> /var/log/automaticupdates.log" | sudo tee -a /etc/crontab
-echo "0 20 * * 7 root /usr/bin/yum upgrade -q -y >> /var/log/automaticupdates.log" | sudo tee -a /etc/crontab
+echo "50 19 * * 7 root /usr/bin/dnf update -q -y >> /var/log/automaticupdates.log" | sudo tee -a /etc/crontab
+echo "0 20 * * 7 root /usr/bin/dnf upgrade -q -y >> /var/log/automaticupdates.log" | sudo tee -a /etc/crontab
 
 # 169.254.169.254 is the AWS metadata server, see https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instancedata-data-retrieval.html
 MAC=$(curl -s http://169.254.169.254/latest/meta-data/mac/)
@@ -20,8 +21,8 @@ VPC_CIDR=$(curl -s http://169.254.169.254/latest/meta-data/network/interfaces/ma
 mkdir -p /etc/systemd/system/containerd.service.d
 mkdir -p /etc/systemd/system/sandbox-image.service.d
 
-#Configure yum to use the proxy
-cloud-init-per instance yum_proxy_config cat << EOF >> /etc/yum.conf
+#Configure dnf to use the proxy
+cloud-init-per instance dnf_proxy_config cat << EOF >> /etc/dnf/dnf.conf
 proxy=${http_proxy}
 EOF
 
@@ -77,10 +78,9 @@ sudo systemctl restart containerd.service
 
 ${user_script_post_cloud_init}
 
---//
+--EKSBOUNDARY
 Content-Type: application/node.eks.aws
 
----
 apiVersion: node.eks.aws/v1alpha1
 kind: NodeConfig
 spec:
@@ -96,4 +96,4 @@ spec:
       - "--cluster-dns=${eks_cluster_dns_ip}"
 %{ endif ~}
 
---//--
+--EKSBOUNDARY--
