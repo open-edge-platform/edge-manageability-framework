@@ -631,6 +631,7 @@ jobs:
         run: |
            sudo ls -lrt  /var/log/libvirt/qemu/ || true
            sudo cat /var/log/libvirt/qemu/libvirt-pico-node-console.log || true
+           kubectl get workflow -n orch-infra || true
            
   deploy-on-prem:
     permissions:
@@ -760,6 +761,7 @@ jobs:
         run: |
            sudo ls -lrt  /var/log/libvirt/qemu/ || true
            sudo cat /var/log/libvirt/qemu/libvirt-pico-node-console.log || true
+           kubectl get workflow -n orch-infra || true
            
   deploy-oxm-profile:
     permissions:
