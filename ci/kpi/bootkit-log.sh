@@ -10,7 +10,7 @@ user_name="p-edge-onboarding-2"
 password="Samp1ePassw@rd"
 duration=600
 echo "Fetching API token..."
-API_TOKEN=$(curl -s -k -X POST \
+API_TOKEN=$(curl -v -s -k -X POST \
   "https://keycloak.${cluster_fqdn}/realms/master/protocol/openid-connect/token" \
   -d "username=${user_name}" \
   -d "password=${password}" \
@@ -25,7 +25,7 @@ if [[ -z "${API_TOKEN}" || "${API_TOKEN}" == "null" ]]; then
 fi
 
 echo "Fetching Project ID..."
-projectID=$(curl -s -X GET \
+projectID=$(curl -v -k -s -X GET \
   "https://api.${cluster_fqdn}/v1/projects?member-role=true" \
   -H "Accept: application/json" \
   -H "Authorization: Bearer ${API_TOKEN}" | jq -r '.[].status.projectStatus.uID')
