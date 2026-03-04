@@ -73,7 +73,7 @@ variable "addons" {
 variable "eks_version" {
   type = string
   // Use latest if not set
-  default = "1.32"
+  default = "1.34"
 }
 
 variable "max_pods" {
