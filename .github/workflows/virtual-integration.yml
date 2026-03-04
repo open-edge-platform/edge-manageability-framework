@@ -632,7 +632,14 @@ jobs:
            sudo ls -lrt  /var/log/libvirt/qemu/ || true
            sudo cat /var/log/libvirt/qemu/libvirt-pico-node-console.log || true
            kubectl get workflow -n orch-infra || true
-           
+
+      - name: Collect Bootkit Logs
+        if: always()
+        continue-on-error: true
+        run: |
+          chmod +x ./ci/kpi/bootkit-log.sh
+          ./ci/kpi/bootkit-log.sh           
+
   deploy-on-prem:
     permissions:
       contents: read
@@ -762,6 +769,13 @@ jobs:
            sudo ls -lrt  /var/log/libvirt/qemu/ || true
            sudo cat /var/log/libvirt/qemu/libvirt-pico-node-console.log || true
            kubectl get workflow -n orch-infra || true
+
+      - name: Collect Bootkit Logs
+        if: always()
+        continue-on-error: true
+        run: |
+          chmod +x ./ci/kpi/bootkit-log.sh
+          ./ci/kpi/bootkit-log.sh
            
   deploy-oxm-profile:
     permissions:
