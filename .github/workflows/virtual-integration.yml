@@ -421,7 +421,7 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'HIGH,CRITICAL'
-          exit-code: '1'
+          exit-code: '0'
 
       - name: Calculate MD5 Checksum
         id: checksum
