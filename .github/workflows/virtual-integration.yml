@@ -413,7 +413,7 @@ jobs:
           mage installer:bundle
 
       - name: Scan Cloud Installer Image
-        uses: aquasecurity/trivy-action@6c175e9c4083a92bbca2f9724c8a5e33bc2d97a5  # v0.30.0
+        uses: aquasecurity/trivy-action@v0.20.0
         with:
           image-ref: 080137407410.dkr.ecr.us-west-2.amazonaws.com/edge-orch/common/orchestrator-installer-cloudfull:${{ env.versionTag }}
           format: table
