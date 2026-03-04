@@ -32,7 +32,7 @@ output "gitea_user_passwords" {
 }
 
 output "gitea_master_password" {
-  value = length(module.gitea) > 0 ?  module.gitea.gitea_master_password : {}
+  value = length(module.gitea) > 0 ?  module.gitea[0].gitea_master_password : ""
   sensitive = true
 }
 
