@@ -81,7 +81,7 @@ jobs:
 
       - name: Discover Changed Files
         id: check-files
-        uses: open-edge-platform/orch-ci/discover-changed-files@c8c1792b4f2e2934ffc459bb1b981bc26ddaa39a  # 2026.0.8 # zizmor: ignore[unpinned-uses]
+        uses: open-edge-platform/orch-ci/discover-changed-files@24a3a495be45af021486e265cf09a17ac3798405  # 2026.0.8 # zizmor: ignore[unpinned-uses]
         with:
           project_folder: "."
 
@@ -625,7 +625,13 @@ jobs:
         timeout-minutes: 15
         with:
           k8s_diagnostics_args: "--errors-only --include-logs --output-html --output-json"
-
+      
+      - name: Print kind ven console log
+        if: always()
+        run: |
+           sudo ls -lrt  /var/log/libvirt/qemu/ || true
+           sudo cat /var/log/libvirt/qemu/libvirt-pico-node-console.log || true
+           
   deploy-on-prem:
     permissions:
       contents: read
@@ -748,7 +754,13 @@ jobs:
         timeout-minutes: 15
         with:
           k8s_diagnostics_args: "--errors-only --include-logs --output-html --output-json"
-
+      
+      - name: Print onprem ven console log
+        if: always()
+        run: |
+           sudo ls -lrt  /var/log/libvirt/qemu/ || true
+           sudo cat /var/log/libvirt/qemu/libvirt-pico-node-console.log || true
+           
   deploy-oxm-profile:
     permissions:
       contents: read
@@ -864,7 +876,7 @@ jobs:
       security-events: write
       id-token: write
     if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
-    uses: open-edge-platform/orch-ci/.github/workflows/post-merge.yml@c8c1792b4f2e2934ffc459bb1b981bc26ddaa39a  # 2026.0.12
+    uses: open-edge-platform/orch-ci/.github/workflows/post-merge.yml@24a3a495be45af021486e265cf09a17ac3798405  # 2026.0.13
     with:
       run_build: false
       run_version_tag: false
