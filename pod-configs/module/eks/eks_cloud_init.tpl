@@ -78,12 +78,22 @@ sudo systemctl restart containerd.service
 ${user_script_post_cloud_init}
 
 --//
-Content-Type: text/x-shellscript; charset="us-ascii"
-#!/bin/bash
-API_SERVER_URL=${eks_endpoint}
-B64_CLUSTER_CA=${eks_cluster_ca}
-eks_CLUSTER_DNS_IP=172.20.0.10
+Content-Type: application/node.eks.aws
 
-/etc/eks/bootstrap.sh ${cluster_name} --kubelet-extra-args '--node-labels=eks.amazonaws.com/nodegroup-image=${eks_node_ami_id},eks.amazonaws.com/capacityType=ON_DEMAND,eks.amazonaws.com/nodegroup=nodegroup-${cluster_name}-1 --max-pods=${max_pods}' --b64-cluster-ca $B64_CLUSTER_CA --apiserver-endpoint $API_SERVER_URL %{ if eks_cluster_dns_ip != "" } --dns-cluster-ip ${eks_cluster_dns_ip} %{ endif }
+---
+apiVersion: node.eks.aws/v1alpha1
+kind: NodeConfig
+spec:
+  cluster:
+    name: ${cluster_name}
+    apiServerEndpoint: ${eks_endpoint}
+    certificateAuthority: ${eks_cluster_ca}
+  kubelet:
+    flags:
+      - "--node-labels=eks.amazonaws.com/nodegroup-image=${eks_node_ami_id},eks.amazonaws.com/capacityType=ON_DEMAND,eks.amazonaws.com/nodegroup=nodegroup-${cluster_name}-1"
+      - "--max-pods=${max_pods}"
+%{ if eks_cluster_dns_ip != "" ~}
+      - "--cluster-dns=${eks_cluster_dns_ip}"
+%{ endif ~}
 
 --//--

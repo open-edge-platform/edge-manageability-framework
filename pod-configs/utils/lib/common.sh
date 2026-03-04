@@ -381,7 +381,7 @@ aws_admin_role() {
 # 24.08.0
 get_eksnode_ami() {
     version=$1
-    aws ssm get-parameter --name /aws/service/eks/optimized-ami/$version/amazon-linux-2/recommended/image_id --region $AWS_REGION --query "Parameter.Value" --output text
+    aws ssm get-parameter --name /aws/service/eks/optimized-ami/$version/amazon-linux-2023/x86_64/standard/recommended/image_id --region $AWS_REGION --query "Parameter.Value" --output text
 }
 
 get_eks_version() {
