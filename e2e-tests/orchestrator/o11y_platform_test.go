@@ -70,8 +70,6 @@ var (
 	otelMetrics       = []string{
 		"otelcol_exporter_queue_capacity",
 		"otelcol_exporter_queue_size",
-		"otelcol_exporter_send_failed_log_records",
-		"otelcol_exporter_send_failed_metric_points",
 		"otelcol_exporter_sent_log_records",
 		"otelcol_exporter_sent_metric_points",
 		"otelcol_otelsvc_k8s_pod_added",
