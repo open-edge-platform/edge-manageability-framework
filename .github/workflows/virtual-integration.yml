@@ -638,7 +638,7 @@ jobs:
         continue-on-error: true
         run: |
           chmod +x ./ci/kpi/bootkit-log.sh
-          ./ci/kpi/bootkit-log.sh           
+          ./ci/kpi/bootkit-log.sh "kind.internal"          
 
   deploy-on-prem:
     permissions:
@@ -775,7 +775,7 @@ jobs:
         continue-on-error: true
         run: |
           chmod +x ./ci/kpi/bootkit-log.sh
-          ./ci/kpi/bootkit-log.sh
+          ./ci/kpi/bootkit-log.sh "cluster.onprem"
            
   deploy-oxm-profile:
     permissions:
