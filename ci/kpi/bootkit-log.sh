@@ -2,17 +2,11 @@
 
 set -euo pipefail
 
-cluster_fqdn="orch-10-114-181-224.espdqa.infra-host.com"
-project_name="itep"
-user_name="intel-itep-user"
-password="ChangeMeOn1stLogin!"
-
-# Alternative values (commented)
-# cluster_fqdn="kind.internal"
-# project_name="project-2"
-# user_name="p-edge-onboarding-2"
-# password="Samp1ePassw@rd"
-
+cluster_fqdn=$1
+project_name="project-2"
+user_name="p-edge-onboarding-2"
+password="Samp1ePassw@rd"
+duration=600
 echo "Fetching API token..."
 API_TOKEN=$(curl -s -k -X POST \
   "https://keycloak.${cluster_fqdn}/realms/master/protocol/openid-connect/token" \
@@ -36,7 +30,6 @@ projectID=$(curl -s -X GET \
 
 echo "ProjectID=${projectID}"
 
-duration=600
 start_time=$(date -u -d "${duration} minutes ago" +%s%N)
 end_time=$(date -u +%s%N)
 
