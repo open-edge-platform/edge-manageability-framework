@@ -585,6 +585,7 @@ jobs:
       # CF-9: Cleanup Cluster
       # CF-10: Cleanup Host
       # CF-11: Cleanup Tenancy
+      # [debug] increased timeout for CF3
       - name: Run Golden Suite Robot Framework Tests
         id: robot-tests
         working-directory: edge-manage-test-automation
