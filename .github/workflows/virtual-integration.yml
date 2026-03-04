@@ -625,7 +625,13 @@ jobs:
         timeout-minutes: 15
         with:
           k8s_diagnostics_args: "--errors-only --include-logs --output-html --output-json"
-
+      
+      - name: Print kind ven console log
+        if: always()
+        run: |
+           sudo ls -lrt  /var/log/libvirt/qemu/ || true
+           sudo cat /var/log/libvirt/qemu/libvirt-pico-node-console.log || true
+           
   deploy-on-prem:
     permissions:
       contents: read
@@ -748,7 +754,13 @@ jobs:
         timeout-minutes: 15
         with:
           k8s_diagnostics_args: "--errors-only --include-logs --output-html --output-json"
-
+      
+      - name: Print onprem ven console log
+        if: always()
+        run: |
+           sudo ls -lrt  /var/log/libvirt/qemu/ || true
+           sudo cat /var/log/libvirt/qemu/libvirt-pico-node-console.log || true
+           
   deploy-oxm-profile:
     permissions:
       contents: read
