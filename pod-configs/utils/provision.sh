@@ -1043,6 +1043,7 @@ action_cluster() {
     echo "webhook_github_netrc=\"\"" >> $tfvar_override
 
     echo "install_from_local_gitea = ${INSTALL_FROM_LOCAL_GITEA}" >> $tfvar_override
+    echo "disable_ao_profile = ${DISABLE_AO_PROFILE:-false}" >> $tfvar_override
 
     if [[ "$OVERRIDE_EKS_SIZE" == "true" ]]; then
         echo "eks_min_size=${EKS_MIN_SIZE}" >> $tfvar_override
@@ -1323,6 +1324,8 @@ action_orch_loadbalancer() {
         echo "$tls_cert_body" >> $variable_override
         echo "EOF" >> $variable_override
     fi
+    echo "disable_ao_profile = ${DISABLE_AO_PROFILE:-false}" >> $variable_override
+    echo "install_from_local_gitea = ${INSTALL_FROM_LOCAL_GITEA}" >> $variable_override
 
     # Skip destroying the aws-lb-target-group-binding Kubernetes resources to avoid errors for old clusters which don't have the Kubernetes CRD installed
     if [[ $action == "destroy" ]]; then
@@ -1758,7 +1761,9 @@ install() {
     rm -f ${values_changed} || true
 
     if ! $SKIP_APPLY_CLUSTER; then
-        wait_for_gitea
+        if [[ "${DISABLE_AO_PROFILE:-false}" == "false" ]] || [[ "${INSTALL_FROM_LOCAL_GITEA}" == "true" ]]; then
+            wait_for_gitea
+        fi
     fi
 
     terminate_sshuttle

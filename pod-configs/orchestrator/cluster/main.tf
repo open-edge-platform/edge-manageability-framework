@@ -215,6 +215,7 @@ module "aws_lb_controller" {
 
 module "gitea" {
   depends_on    = [module.eks, module.orch_init, module.aws_lb_controller]
+  count         = (var.disable_ao_profile && !var.install_from_local_gitea) ? 0 : 1
   source        = "../../module/gitea"
   name          = "gitea"
   tls_cert_body = var.tls_cert

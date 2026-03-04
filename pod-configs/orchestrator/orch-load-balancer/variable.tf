@@ -84,3 +84,13 @@ variable "customer_tag" {
   type = string
   default = ""
 }
+
+variable "disable_ao_profile" {
+  type    = bool
+  default = false
+}
+
+variable "install_from_local_gitea" {
+  type    = bool
+  default = true
+}

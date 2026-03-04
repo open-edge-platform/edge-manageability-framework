@@ -16,6 +16,12 @@ variable "install_from_local_gitea" {
   default = true
 }
 
+# if disable_ao_profile is set and install_from_local_gites is unset, then gitea will not be installed
+variable "disable_ao_profile" {
+  type    = bool
+  default = false
+}
+
 # If install_from_local_gitea is false, this is where we will get the remote repo
 variable "deploy_repo_url" {
   type    = string
