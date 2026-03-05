@@ -39,7 +39,7 @@ jobs:
     if: github.event_name == 'pull_request'
     permissions:
       contents: read
-    uses: open-edge-platform/orch-ci/.github/workflows/pre-merge.yml@24a3a495be45af021486e265cf09a17ac3798405  # 2026.0.13
+    uses: open-edge-platform/orch-ci/.github/workflows/pre-merge.yml@582cb262491c89e19904164eb24887b01f6925b2  # 2026.0.15
     with:
       run_version_check: false
       run_build: false
@@ -81,7 +81,7 @@ jobs:
 
       - name: Discover Changed Files
         id: check-files
-        uses: open-edge-platform/orch-ci/discover-changed-files@24a3a495be45af021486e265cf09a17ac3798405  # 2026.0.8 # zizmor: ignore[unpinned-uses]
+        uses: open-edge-platform/orch-ci/discover-changed-files@582cb262491c89e19904164eb24887b01f6925b2  # 2026.0.8 # zizmor: ignore[unpinned-uses]
         with:
           project_folder: "."
 
@@ -412,12 +412,15 @@ jobs:
           mage installer:bundle
 
       - name: Scan Cloud Installer Image
-        uses: aquasecurity/trivy-action@6c175e9c4083a92bbca2f9724c8a5e33bc2d97a5  # v0.30.0
+        uses: aquasecurity/trivy-action@0.34.2
         with:
           image-ref: 080137407410.dkr.ecr.us-west-2.amazonaws.com/edge-orch/common/orchestrator-installer-cloudfull:${{ env.versionTag }}
           format: table
           output: "trivy-orchestrator-installer-cloudfull.txt"
           ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'HIGH,CRITICAL'
+          exit-code: '0'
 
       - name: Calculate MD5 Checksum
         id: checksum
@@ -624,6 +627,20 @@ jobs:
         timeout-minutes: 15
         with:
           k8s_diagnostics_args: "--errors-only --include-logs --output-html --output-json"
+      
+      - name: Print kind ven console log
+        if: always()
+        run: |
+           sudo ls -lrt  /var/log/libvirt/qemu/ || true
+           sudo cat /var/log/libvirt/qemu/libvirt-pico-node-console.log || true
+           kubectl get workflow -n orch-infra || true
+
+      - name: Collect Bootkit Logs
+        if: always()
+        continue-on-error: true
+        run: |
+          chmod +x ./ci/kpi/bootkit-log.sh
+          ./ci/kpi/bootkit-log.sh "kind.internal"          
 
   deploy-on-prem:
     permissions:
@@ -747,7 +764,21 @@ jobs:
         timeout-minutes: 15
         with:
           k8s_diagnostics_args: "--errors-only --include-logs --output-html --output-json"
+      
+      - name: Print onprem ven console log
+        if: always()
+        run: |
+           sudo ls -lrt  /var/log/libvirt/qemu/ || true
+           sudo cat /var/log/libvirt/qemu/libvirt-pico-node-console.log || true
+           kubectl get workflow -n orch-infra || true
 
+      - name: Collect Bootkit Logs
+        if: always()
+        continue-on-error: true
+        run: |
+          chmod +x ./ci/kpi/bootkit-log.sh
+          ./ci/kpi/bootkit-log.sh "cluster.onprem"
+           
   deploy-oxm-profile:
     permissions:
       contents: read
@@ -863,7 +894,7 @@ jobs:
       security-events: write
       id-token: write
     if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
-    uses: open-edge-platform/orch-ci/.github/workflows/post-merge.yml@24a3a495be45af021486e265cf09a17ac3798405  # 2026.0.13
+    uses: open-edge-platform/orch-ci/.github/workflows/post-merge.yml@582cb262491c89e19904164eb24887b01f6925b2  # 2026.0.15
     with:
       run_build: false
       run_version_tag: false
