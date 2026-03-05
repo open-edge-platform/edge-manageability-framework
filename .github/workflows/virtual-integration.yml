@@ -641,7 +641,8 @@ jobs:
         continue-on-error: true
         run: |
           chmod +x ./ci/kpi/bootkit-log.sh
-          ./ci/kpi/bootkit-log.sh "kind.internal" "project-2" "p-edge-operator-2" "Samp1ePassw@rd"          
+          ./ci/kpi/bootkit-log.sh "kind.internal" "project-2" "p-edge-operator-2" "Samp1ePassw@rd"
+          kubectl -n orch-infra describe deployment onboarding-manager | grep TINKER_ARTIFACT_NAME
 
   deploy-on-prem:
     permissions:
@@ -778,7 +779,8 @@ jobs:
         continue-on-error: true
         run: |
           chmod +x ./ci/kpi/bootkit-log.sh
-          ./ci/kpi/bootkit-log.sh "cluster.onprem" "project-1" "p-edge-operator-1" "Samp1ePassw@rd" 
+          ./ci/kpi/bootkit-log.sh "cluster.onprem" "project-1" "p-edge-operator-1" "Samp1ePassw@rd"
+          kubectl -n orch-infra describe deployment onboarding-manager | grep TINKER_ARTIFACT_NAME
            
   deploy-oxm-profile:
     permissions:
