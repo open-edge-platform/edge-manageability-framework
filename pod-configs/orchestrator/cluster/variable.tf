@@ -93,7 +93,7 @@ variable "eks_addons" {
     },
     {
       name    = "aws-efs-csi-driver"
-      version = "v2.1.4-eksbuild.1"
+      version = "v2.3.0-eksbuild.2"
     }
   ]
 }
