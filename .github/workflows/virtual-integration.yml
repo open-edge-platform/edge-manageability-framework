@@ -633,16 +633,16 @@ jobs:
         if: always()
         run: |
            sudo ls -lrt  /var/log/libvirt/qemu/ || true
-           sudo cat /var/log/libvirt/qemu/libvirt-pico-node-console.log || true
-           kubectl get workflow -n orch-infra || true
+           sudo cat /var/log/libvirt/qemu/libvirt-pico-node-console.log || true           
 
-      - name: Collect Bootkit Logs
+      - name: Collect Bootkit and caddy Logs
         if: always()
         continue-on-error: true
         run: |
+          kubectl get workflow -n orch-infra || true
+          kubectl -n orch-infra describe deployment onboarding-manager | grep TINKER_ARTIFACT_NAME || true
           chmod +x ./ci/kpi/bootkit-log.sh
           ./ci/kpi/bootkit-log.sh "kind.internal" "project-2" "p-edge-operator-2" "Samp1ePassw@rd"
-          kubectl -n orch-infra describe deployment onboarding-manager | grep TINKER_ARTIFACT_NAME
 
   deploy-on-prem:
     permissions:
@@ -771,16 +771,16 @@ jobs:
         if: always()
         run: |
            sudo ls -lrt  /var/log/libvirt/qemu/ || true
-           sudo cat /var/log/libvirt/qemu/libvirt-pico-node-console.log || true
-           kubectl get workflow -n orch-infra || true
+           sudo cat /var/log/libvirt/qemu/libvirt-pico-node-console.log || true           
 
-      - name: Collect Bootkit Logs
+      - name: Collect Bootkit and caddy Log
         if: always()
         continue-on-error: true
         run: |
+          kubectl get workflow -n orch-infra || true
+          kubectl -n orch-infra describe deployment onboarding-manager | grep TINKER_ARTIFACT_NAME || true
           chmod +x ./ci/kpi/bootkit-log.sh
           ./ci/kpi/bootkit-log.sh "cluster.onprem" "project-1" "p-edge-operator-1" "Samp1ePassw@rd"
-          kubectl -n orch-infra describe deployment onboarding-manager | grep TINKER_ARTIFACT_NAME
            
   deploy-oxm-profile:
     permissions:
