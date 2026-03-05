@@ -66,7 +66,10 @@ rke2_files=(
 )
 for file in "${rke2_files[@]}"; do
     echo "Downloading ${file}..."
-    if ! curl --retry 5 --retry-delay 10 --retry-max-time 300 --connect-timeout 30 --max-time 1200 \
+
+    # Two of the files being downloaded are large, so the curl command is configured with retry options to handle 
+    # potential network issues during the download process.
+    if ! curl --retry 5 --retry-delay 0 --retry-connrefused --connect-timeout 30 --retry-max-time 300 --max-time 1200 \
         -fSL --create-dirs -C - --output "${ROOT_DIR}/assets/rke2/${file}" \
         "https://github.com/rancher/rke2/releases/download/${RKE2VERSION}/${file}"; then
 
