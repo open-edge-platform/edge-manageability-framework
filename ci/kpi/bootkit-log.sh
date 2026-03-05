@@ -55,7 +55,7 @@ echo "Port forwarding enabled"
 sleep 3
 
 EN_LOKI_URL="localhost:8087"
-
+echo "Start uOS_bootkitLogs"
 curl -s -G "http://${EN_LOKI_URL}/loki/api/v1/query_range" \
   -H 'Accept: application/json' \
   -H "X-Scope-OrgID: ${projectID}" \
@@ -63,9 +63,19 @@ curl -s -G "http://${EN_LOKI_URL}/loki/api/v1/query_range" \
   --data-urlencode "end=${end_time}" \
   --data-urlencode "direction=forward" \
   --data-urlencode 'query={file_type="uOS_bootkitLogs"}' \
-  | jq -r '.data.result[]?.values[]? | .[]'
+  | jq -r '.data.result[]?.values[]? | .[]' > uOS_bootkit.log
 
-echo "end of uOS_bootkitLogs"
+cat uOS_bootkit.log || true
+echo "Start uOS_caddyLogs"
+curl -s -G "http://${EN_LOKI_URL}/loki/api/v1/query_range" \
+  -H 'Accept: application/json' \
+  -H "X-Scope-OrgID: ${projectID}" \
+  --data-urlencode "start=${start_time}" \
+  --data-urlencode "end=${end_time}" \
+  --data-urlencode "direction=forward" \
+  --data-urlencode 'query={file_type="uOS_caddyLogs"}' \
+  | jq -r '.data.result[]?.values[]? | .[]' > uOS_caddy.log
+cat uOS_caddy.log || true
 
 kill $(lsof -t -i :8087) 2>/dev/null || true
 echo "Port forwarding stopped"
