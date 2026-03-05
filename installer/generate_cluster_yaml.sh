@@ -382,6 +382,16 @@ if [ "${DISABLE_UI_PROFILE:-false}" = "true" ]; then
     yq -i '.argo.enabled.metadata-broker = false' "$OUTPUT_FILE"
 fi
 
+# Disable Gitea-related jobs if Gitea is disabled
+if [ "${GITEA_ENABLED}" = "false" ]; then
+    yq -i '
+      .argo.enabled."copy-app-gitea-cred-to-fleet" = false |
+      .argo.enabled."copy-ca-cert-gitea-to-app" = false |
+      .argo.enabled."copy-ca-cert-gitea-to-cluster" = false |
+      .argo.enabled."copy-cluster-gitea-cred-to-fleet" = false
+    ' "$OUTPUT_FILE"
+fi
+
 # -----------------------------------------------------------------------------
 # Proxy variable updates
 # -----------------------------------------------------------------------------

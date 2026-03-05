@@ -158,9 +158,21 @@ read -n 1
 # Clone / Initialize the GitOps repositories
 # Push Release Contents to the GitOps Repos
 # Commit the Release Contents GitOps Repos
-echo
-echo Initializing GitOps Repos
-./initialize-gitops-repos.sh
+if [ "$INSTALL_FROM_LOCAL_GITEA" != "false" ]; then
+    echo
+    echo Initializing GitOps Repos
+    # TODO: If this fails, configure-cluster.sh still completes successfully.
+    ./initialize-gitops-repos.sh
+else 
+    # The deploy-orch Makefile target expects the argocd files and the cluster yaml file
+    # to be in the src directory. initialize-gitops-repos.sh does this:
+    #    cp -R edge-manageability-framework/* src/edge-manageability-framework
+    # Since we're skipping initialize-gitops-repos.sh, we need to copy the cluster yaml
+    # to the expected location in the src directory ourselves.
+    echo "copying the cluster configuration to where it's expected to be"
+    mkdir -p ~/src
+    cp -rf ${CLUSTER_NAME}.yaml ~/src/edge-manageability-framework/orch-configs/clusters/
+fi
 
 echo Starting VPC tunnel
 ./start-tunnel.sh
