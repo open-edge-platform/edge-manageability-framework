@@ -88,6 +88,7 @@ spec:
     name: ${cluster_name}
     apiServerEndpoint: ${eks_endpoint}
     certificateAuthority: ${eks_cluster_ca}
+    cidr: "172.20.0.0/16"
   kubelet:
     flags:
       - "--node-labels=eks.amazonaws.com/nodegroup-image=${eks_node_ami_id},eks.amazonaws.com/capacityType=ON_DEMAND,eks.amazonaws.com/nodegroup=nodegroup-${cluster_name}-1"
