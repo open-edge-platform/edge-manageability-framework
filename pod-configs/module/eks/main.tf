@@ -216,6 +216,7 @@ resource "aws_launch_template" "eks_launch_template" {
     eks_node_ami_id = var.eks_node_ami_id
     max_pods = var.max_pods
     eks_cluster_dns_ip = var.eks_cluster_dns_ip
+    eks_service_cidr = data.aws_eks_cluster.eks_cluster_data.kubernetes_network_config[0].service_ipv4_cidr
   }))
   metadata_options {
     http_tokens = "required"
@@ -267,6 +268,7 @@ resource "aws_launch_template" "additional_node_group_launch_template" {
     eks_node_ami_id = var.eks_node_ami_id
     max_pods = var.max_pods
     eks_cluster_dns_ip = var.eks_cluster_dns_ip
+    eks_service_cidr = data.aws_eks_cluster.eks_cluster_data.kubernetes_network_config[0].service_ipv4_cidr
   }))
   metadata_options {
     http_tokens = "required"

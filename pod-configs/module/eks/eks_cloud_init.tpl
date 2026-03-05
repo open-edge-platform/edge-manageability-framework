@@ -32,7 +32,7 @@ http_proxy=${http_proxy}
 https_proxy=${https_proxy}
 HTTP_PROXY=${http_proxy}
 HTTPS_PROXY=${https_proxy}
-no_proxy=$VPC_CIDR,localhost,172.20.0.0/16,127.0.0.1,169.254.169.254,.internal,s3.amazonaws.com,.s3.${aws_region}.amazonaws.com,dkr.ecr.${aws_region}.amazonaws.com,ec2.${aws_region}.amazonaws.com,.eks.amazonaws.com,.elb.${aws_region}.amazonaws.com,.dkr.ecr.${aws_region}.amazonaws.com,${no_proxy}
+no_proxy=$VPC_CIDR,localhost,${eks_service_cidr},127.0.0.1,169.254.169.254,.internal,s3.amazonaws.com,.s3.${aws_region}.amazonaws.com,dkr.ecr.${aws_region}.amazonaws.com,ec2.${aws_region}.amazonaws.com,.eks.amazonaws.com,.elb.${aws_region}.amazonaws.com,.dkr.ecr.${aws_region}.amazonaws.com,${no_proxy}
 NO_PROXY=$no_proxy
 EOF
 
@@ -73,7 +73,7 @@ cloud-init-per instance reload_daemon systemctl daemon-reload
 
 sudo systemctl set-environment HTTP_PROXY=${http_proxy}
 sudo systemctl set-environment HTTPS_PROXY=${https_proxy}
-sudo systemctl set-environment NO_PROXY=$VPC_CIDR,localhost,172.20.0.0/16,127.0.0.1,169.254.169.254,.internal,s3.amazonaws.com,.s3.${aws_region}.amazonaws.com,dkr.ecr.${aws_region}.amazonaws.com,ec2.${aws_region}.amazonaws.com,.eks.amazonaws.com,.elb.${aws_region}.amazonaws.com,.dkr.ecr.${aws_region}.amazonaws.com,${no_proxy}
+sudo systemctl set-environment NO_PROXY=$VPC_CIDR,localhost,${eks_service_cidr},127.0.0.1,169.254.169.254,.internal,s3.amazonaws.com,.s3.${aws_region}.amazonaws.com,dkr.ecr.${aws_region}.amazonaws.com,ec2.${aws_region}.amazonaws.com,.eks.amazonaws.com,.elb.${aws_region}.amazonaws.com,.dkr.ecr.${aws_region}.amazonaws.com,${no_proxy}
 sudo systemctl restart containerd.service
 
 ${user_script_post_cloud_init}
@@ -88,7 +88,7 @@ spec:
     name: ${cluster_name}
     apiServerEndpoint: ${eks_endpoint}
     certificateAuthority: ${eks_cluster_ca}
-    cidr: "172.20.0.0/16"
+    cidr: "${eks_service_cidr}"
   kubelet:
     flags:
       - "--node-labels=eks.amazonaws.com/nodegroup-image=${eks_node_ami_id},eks.amazonaws.com/capacityType=ON_DEMAND,eks.amazonaws.com/nodegroup=nodegroup-${cluster_name}-1"
