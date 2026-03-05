@@ -55,10 +55,10 @@ fi
 # Escape '+' character if found in the URL request
 # shellcheck disable=SC2001
 RKE2VERSION=$(echo "$RKE2VERSION" | sed 's/+/%2b/g')
-curl -sfL --create-dirs "https://github.com/rancher/rke2/releases/download/${RKE2VERSION}/rke2-images.linux-amd64.tar.zst" --output "${ROOT_DIR}/assets/rke2/rke2-images.linux-amd64.tar.zst"
-curl -sfL --create-dirs "https://github.com/rancher/rke2/releases/download/${RKE2VERSION}/rke2-images-calico.linux-amd64.tar.zst" --output "${ROOT_DIR}/assets/rke2/rke2-images-calico.linux-amd64.tar.zst"
-curl -sfL --create-dirs "https://github.com/rancher/rke2/releases/download/${RKE2VERSION}/rke2.linux-amd64.tar.gz" --output "${ROOT_DIR}/assets/rke2/rke2.linux-amd64.tar.gz"
-curl -sfL --create-dirs "https://github.com/rancher/rke2/releases/download/${RKE2VERSION}/sha256sum-amd64.txt" --output "${ROOT_DIR}/assets/rke2/sha256sum-amd64.txt"
+curl --retry 10 --progress-bar -fL --create-dirs "https://github.com/rancher/rke2/releases/download/${RKE2VERSION}/rke2-images.linux-amd64.tar.zst" --output "${ROOT_DIR}/assets/rke2/rke2-images.linux-amd64.tar.zst"
+curl --retry 10 --progress-bar -fL --create-dirs "https://github.com/rancher/rke2/releases/download/${RKE2VERSION}/rke2-images-calico.linux-amd64.tar.zst" --output "${ROOT_DIR}/assets/rke2/rke2-images-calico.linux-amd64.tar.zst"
+curl --retry 10 --progress-bar -fL --create-dirs "https://github.com/rancher/rke2/releases/download/${RKE2VERSION}/rke2.linux-amd64.tar.gz" --output "${ROOT_DIR}/assets/rke2/rke2.linux-amd64.tar.gz"
+curl --retry 10 --progress-bar -fL --create-dirs "https://github.com/rancher/rke2/releases/download/${RKE2VERSION}/sha256sum-amd64.txt" --output "${ROOT_DIR}/assets/rke2/sha256sum-amd64.txt"
 if [[ ${INSTALL_RKE2_MIRROR} && ${INSTALL_RKE2_MIRROR} == "cn" ]]; then
 curl -sfL --create-dirs https://rancher-mirror.rancher.cn/rke2/install.sh --output "${ROOT_DIR}/assets/rke2/install.sh"
 else
