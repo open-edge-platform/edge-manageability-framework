@@ -778,7 +778,7 @@ jobs:
         continue-on-error: true
         run: |
           chmod +x ./ci/kpi/bootkit-log.sh
-          ./ci/kpi/bootkit-log.sh "cluster.onprem" "project-2" "p-edge-operator-2" "Samp1ePassw@rd" 
+          ./ci/kpi/bootkit-log.sh "cluster.onprem" "project-1" "p-edge-operator-1" "Samp1ePassw@rd" 
            
   deploy-oxm-profile:
     permissions:
