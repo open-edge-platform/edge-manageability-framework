@@ -39,7 +39,7 @@ jobs:
     if: github.event_name == 'pull_request'
     permissions:
       contents: read
-    uses: open-edge-platform/orch-ci/.github/workflows/pre-merge.yml@24a3a495be45af021486e265cf09a17ac3798405  # 2026.0.13
+    uses: open-edge-platform/orch-ci/.github/workflows/pre-merge.yml@582cb262491c89e19904164eb24887b01f6925b2  # 2026.0.15
     with:
       run_version_check: false
       run_build: false
@@ -81,7 +81,7 @@ jobs:
 
       - name: Discover Changed Files
         id: check-files
-        uses: open-edge-platform/orch-ci/discover-changed-files@24a3a495be45af021486e265cf09a17ac3798405  # 2026.0.8 # zizmor: ignore[unpinned-uses]
+        uses: open-edge-platform/orch-ci/discover-changed-files@582cb262491c89e19904164eb24887b01f6925b2  # 2026.0.8 # zizmor: ignore[unpinned-uses]
         with:
           project_folder: "."
 
@@ -292,7 +292,6 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
           repository: open-edge-platform/orch-ci
-          token: ${{ secrets.SYS_EMF_GH_TOKEN }}
           path: orch-ci
           persist-credentials: false
 
@@ -896,8 +895,9 @@ jobs:
       contents: read
       security-events: write
       id-token: write
+      actions: read
     if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
-    uses: open-edge-platform/orch-ci/.github/workflows/post-merge.yml@24a3a495be45af021486e265cf09a17ac3798405  # 2026.0.13
+    uses: open-edge-platform/orch-ci/.github/workflows/post-merge.yml@582cb262491c89e19904164eb24887b01f6925b2  # 2026.0.15
     with:
       run_build: false
       run_version_tag: false
