@@ -171,7 +171,7 @@ else
     # to the expected location in the src directory ourselves.
     echo "copying the cluster configuration to where it's expected to be"
     mkdir -p ~/src
-    cp -rf ${CLUSTER_NAME}.yaml ~/src/edge-manageability-framework/orch-configs/clusters/
+    cp -R edge-manageability-framework/* src/edge-manageability-framework
 fi
 
 echo Starting VPC tunnel
