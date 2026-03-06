@@ -159,7 +159,7 @@ var _ = Describe("Orchestrator integration test", Label("orchestrator-integratio
 			if err := tearDownNewService(serviceName, namespace); err != nil {
 				fmt.Println(fmt.Errorf("unable to teardown service before test: %w", err))
 			}
-            if err := setupNewService("8280", serviceName, namespace, "ClusterIP"); err != nil {
+			if err := setupNewService("8280", serviceName, namespace, "ClusterIP"); err != nil {
 				fmt.Println(fmt.Errorf("unable to setup service: %w", err))
 			}
 			fmt.Println("finished setting up new service")
