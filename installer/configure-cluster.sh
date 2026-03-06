@@ -170,7 +170,7 @@ else
     # Since we're skipping initialize-gitops-repos.sh, we need to copy the cluster yaml
     # to the expected location in the src directory ourselves.
     echo "copying the cluster configuration to where it's expected to be"
-    mkdir -p ~/src
+    mkdir -p ~/src/edge-manageability-framework
     cp -R edge-manageability-framework/* src/edge-manageability-framework
 fi
 
