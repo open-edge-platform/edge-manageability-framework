@@ -638,11 +638,8 @@ jobs:
         if: always()
         continue-on-error: true
         run: |
+          cat /var/log/dnsmasq.log || true
           kubectl get workflow -n orch-infra || true
           kubectl -n orch-infra describe deployment onboarding-manager | grep TINKER_ARTIFACT_NAME || true
           chmod +x ./ci/kpi/bootkit-log.sh
           ./ci/kpi/bootkit-log.sh "kind.internal" "project-2" "p-edge-operator-2" "Samp1ePassw@rd"
-          cat /var/log/dnsmasq.log
-
- 
-
