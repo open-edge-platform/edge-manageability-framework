@@ -98,7 +98,7 @@ variable "eks_addons" {
   ]
 }
 variable "eks_version" {
-  default = "1.32"
+  default = "1.34"
 }
 variable "eks_max_pods" {
   default = 58
