@@ -38,7 +38,7 @@ func (Upgrade) rke2Cluster() error {
 	fmt.Printf("Current RKE2 version: %s\n", currentVersion)
 
 	// Target version
-	targetVersion := "v1.34.3+rke2r1"
+	targetVersion := "v1.34.4+rke2r1"
 
 	// Check if already at target version
 	if currentVersion == targetVersion {
