@@ -67,6 +67,22 @@ bootstrap:
                   containers:
                   - name: kube-rbac-proxy
                     image: quay.io/brancz/kube-rbac-proxy:v0.21.0
+                    args:
+                      - --secure-listen-address=0.0.0.0:8443
+                      - --upstream=http://127.0.0.1:8080/
+                      - --v=10
+                    ports:
+                      - containerPort: 8443
+                        name: https
+                        protocol: TCP
+                    securityContext:
+                      allowPrivilegeEscalation: false
+                      capabilities:
+                        drop:
+                          - ALL
+                      runAsNonRoot: true
+                      seccompProfile:
+                        type: RuntimeDefault
 
 controlplane:
   providers:
@@ -95,3 +111,20 @@ controlplane:
                   containers:
                   - name: kube-rbac-proxy
                     image: quay.io/brancz/kube-rbac-proxy:v0.21.0
+                    args:
+                      - --secure-listen-address=0.0.0.0:8443
+                      - --upstream=http://127.0.0.1:8080/
+                      - --v=10
+                    ports:
+                      - containerPort: 8443
+                        name: https
+                        protocol: TCP
+                    securityContext:
+                      allowPrivilegeEscalation: false
+                      capabilities:
+                        drop:
+                          - ALL
+                      runAsNonRoot: true
+                      seccompProfile:
+                        type: RuntimeDefault
+
