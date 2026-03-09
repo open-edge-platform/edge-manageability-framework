@@ -81,7 +81,7 @@ jobs:
 
       - name: Discover Changed Files
         id: check-files
-        uses: open-edge-platform/orch-ci/discover-changed-files@582cb262491c89e19904164eb24887b01f6925b2  # 2026.0.8 # zizmor: ignore[unpinned-uses]
+        uses: open-edge-platform/orch-ci/discover-changed-files@b5930c48c1fcdb6b34ffbcd465cff96dabfbde70  # 2026.0.8 # zizmor: ignore[unpinned-uses]
         with:
           project_folder: "."
 
