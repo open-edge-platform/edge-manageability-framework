@@ -54,8 +54,9 @@ bootstrap:
         additionalManifests:
           name: bootstrap-k3s-additional-manifest
           namespace: capk-system
-          manifests:
-            - apiVersion: apps/v1
+        patches:
+          - patch: |
+              apiVersion: apps/v1
               kind: Deployment
               metadata:
                 name: capi-k3s-bootstrap-controller-manager
@@ -66,6 +67,12 @@ bootstrap:
                     containers:
                     - name: kube-rbac-proxy
                       image: quay.io/brancz/kube-rbac-proxy:v0.21.0
+            target:
+              group: apps
+              version: v1
+              kind: Deployment
+              name: capi-k3s-bootstrap-controller-manager
+              namespace: capk-system
 
 controlplane:
   providers:
@@ -81,8 +88,9 @@ controlplane:
         additionalManifests:
           name: controlplane-k3s-additional-manifest
           namespace: capk-system
-          manifests:
-            - apiVersion: apps/v1
+        patches:
+          - patch: |
+              apiVersion: apps/v1
               kind: Deployment
               metadata:
                 name: capi-k3s-control-plane-controller-manager
@@ -93,3 +101,9 @@ controlplane:
                     containers:
                     - name: kube-rbac-proxy
                       image: quay.io/brancz/kube-rbac-proxy:v0.21.0
+            target:
+              group: apps
+              version: v1
+              kind: Deployment
+              name: capi-k3s-control-plane-controller-manager
+              namespace: capk-system
