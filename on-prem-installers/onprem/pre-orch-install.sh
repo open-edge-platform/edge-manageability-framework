@@ -30,7 +30,7 @@ K3S_VERSION_DEFAULT="v1.34.3+k3s1"
 K3S_VERSION="${K3S_VERSION:-$K3S_VERSION_DEFAULT}"
 
 # RKE2
-RKE2_VERSION_DEFAULT="v1.34.3+rke2r1"
+RKE2_VERSION_DEFAULT="v1.34.4+rke2r1"
 RKE2_VERSION="${RKE2_VERSION:-$RKE2_VERSION_DEFAULT}"
 DOCKER_USERNAME="${DOCKER_USERNAME:-}"
 DOCKER_PASSWORD="${DOCKER_PASSWORD:-}"
@@ -135,7 +135,7 @@ Examples:
   $(basename "$0") kind install
   $(basename "$0") kind uninstall
   $(basename "$0") k3s install --k3s-version v1.34.3+k3s1
-  $(basename "$0") rke2 install --rke2-version v1.34.3+rke2r1
+  $(basename "$0") rke2 install --rke2-version v1.34.4+rke2r1
   $(basename "$0") rke2 install --docker-username user --docker-password pass
 EOF
 }
