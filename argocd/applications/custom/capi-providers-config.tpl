@@ -65,6 +65,28 @@ bootstrap:
               template:
                 spec:
                   containers:
+                  - name: manager
+                    image: ghcr.io/k3s-io/cluster-api-k3s/bootstrap-controller:v0.3.0
+                    command: ["/manager"]
+                    args:
+                      - --metrics-addr=127.0.0.1:8080
+                      - --enable-leader-election
+                    ports:
+                      - containerPort: 9443
+                        name: webhook-server
+                        protocol: TCP
+                    securityContext:
+                      allowPrivilegeEscalation: false
+                      capabilities:
+                        drop:
+                          - ALL
+                      runAsNonRoot: true
+                      seccompProfile:
+                        type: RuntimeDefault
+                    volumeMounts:
+                      - mountPath: /tmp/k8s-webhook-server/serving-certs
+                        name: cert
+                        readOnly: true
                   - name: kube-rbac-proxy
                     image: quay.io/brancz/kube-rbac-proxy:v0.21.0
                     args:
@@ -109,6 +131,28 @@ controlplane:
               template:
                 spec:
                   containers:
+                  - name: manager
+                    image: ghcr.io/k3s-io/cluster-api-k3s/controlplane-controller:v0.3.0
+                    command: ["/manager"]
+                    args:
+                      - --metrics-addr=127.0.0.1:8080
+                      - --enable-leader-election
+                    ports:
+                      - containerPort: 9443
+                        name: webhook-server
+                        protocol: TCP
+                    securityContext:
+                      allowPrivilegeEscalation: false
+                      capabilities:
+                        drop:
+                          - ALL
+                      runAsNonRoot: true
+                      seccompProfile:
+                        type: RuntimeDefault
+                    volumeMounts:
+                      - mountPath: /tmp/k8s-webhook-server/serving-certs
+                        name: cert
+                        readOnly: true
                   - name: kube-rbac-proxy
                     image: quay.io/brancz/kube-rbac-proxy:v0.21.0
                     args:
