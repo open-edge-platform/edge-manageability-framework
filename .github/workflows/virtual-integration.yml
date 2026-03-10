@@ -87,8 +87,10 @@ jobs:
 
       - name: Calculate only_design_proposals
         id: only-design-proposals
+        env:
+          CHANGED_FILES: ${{ steps.check-files.outputs.changed_files }}
         run: |
-          files="${{ steps.check-files.outputs.changed_files }}"
+          files="$CHANGED_FILES"
           only_design=true
           # Remove brackets and quotes, then split on comma
           clean_files=$(echo "$files" | sed 's/\[//;s/\]//;s/"//g')
@@ -638,6 +640,7 @@ jobs:
         if: always()
         continue-on-error: true
         run: |
+          sudo cat /var/log/dnsmasq.log || true
           kubectl get workflow -n orch-infra || true
           kubectl -n orch-infra describe deployment onboarding-manager | grep TINKER_ARTIFACT_NAME || true
           chmod +x ./ci/kpi/bootkit-log.sh
