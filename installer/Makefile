@@ -145,7 +145,10 @@ upgrade: | ${M}/release-secrets ${M}/argocd-ready
 		echo "Pre-upgrade version $$deployed_version is 3.x.x - will apply fix-external-secrets.sh"; \
 		run_fix_external_secrets=true; \
 	fi; \
+	# Todo: Need to add condition check
+	run_fix_ha_proxy=true;
 	echo "$$run_fix_external_secrets" > /tmp/run_fix_external_secrets
+	echo "$$run_fix_ha_proxy" > /tmp/run_fix_ha_proxy
 	@if kubectl get secret platform-keycloak -n orch-platform > /dev/null 2>&1; then \
 		ADMIN_PASSWORD=$$(kubectl get secret platform-keycloak -n orch-platform -o jsonpath='{.data.admin-password}' 2>/dev/null | base64 -d 2>/dev/null); \
 		if [ -z "$$ADMIN_PASSWORD" ]; then \
@@ -173,5 +176,10 @@ upgrade: | ${M}/release-secrets ${M}/argocd-ready
 		./fix-external-secrets.sh; \
 	fi
 
+	# Conditionally run fix-ha-proxy.sh based on -pre-upgrade version check
+	@if [ "$$(cat /tmp/run_fix_ha_proxy)" = "true" ]; then \
+		echo "Running fix-ha-proxy.sh"; \
+		./fix-ha-proxy.sh; \
+	fi
 clean: ## Remove the milestones directory
 	rm -rf ${M}
