@@ -62,6 +62,8 @@ EOL
     cat <<EOL | sudo tee /etc/dnsmasq.conf
 interface=$interface_name
 bind-interfaces
+log-queries
+log-facility=/var/log/dnsmasq.log
 dhcp-option=interface:$interface_name,option:dns-server,$ip_address
 server=$ip_address
 server=$dns_server_ip
