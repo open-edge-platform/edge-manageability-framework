@@ -22,7 +22,7 @@ check_and_download_dkam_certs() {
         echo "[INFO] Checking DKAM certificate availability..."
         
         # Try to download Full_server.crt
-        if wget https://tinkerbell-haproxy."$CLUSTER_FQDN"/tink-stack/keys/Full_server.crt --no-check-certificate --no-proxy -q -O Full_server.crt 2>/dev/null; then
+        if wget https://tinkerbell-haproxy."$CLUSTER_FQDN"/tink-stack/keys/Full_server.crt --no-check-certificate -q -O Full_server.crt 2>/dev/null; then
             echo "[OK] Full_server.crt downloaded successfully"
             
             # Try to download signed_ipxe.efi using the certificate

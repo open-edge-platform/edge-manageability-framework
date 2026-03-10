@@ -179,6 +179,7 @@ upgrade: | ${M}/release-secrets ${M}/argocd-ready
 	# Conditionally run fix-ha-proxy.sh based on -pre-upgrade version check
 	@if [ "$$(cat /tmp/run_fix_ha_proxy)" = "true" ]; then \
 		echo "Running fix-ha-proxy.sh"; \
+		chmod +x fix-ha-proxy.sh; \
 		./fix-ha-proxy.sh; \
 	fi
 clean: ## Remove the milestones directory
