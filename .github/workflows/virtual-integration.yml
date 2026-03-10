@@ -39,7 +39,7 @@ jobs:
     if: github.event_name == 'pull_request'
     permissions:
       contents: read
-    uses: open-edge-platform/orch-ci/.github/workflows/pre-merge.yml@24a3a495be45af021486e265cf09a17ac3798405  # 2026.0.13
+    uses: open-edge-platform/orch-ci/.github/workflows/pre-merge.yml@b5930c48c1fcdb6b34ffbcd465cff96dabfbde70  # 2026.0.17
     with:
       run_version_check: false
       run_build: false
@@ -81,7 +81,7 @@ jobs:
 
       - name: Discover Changed Files
         id: check-files
-        uses: open-edge-platform/orch-ci/discover-changed-files@24a3a495be45af021486e265cf09a17ac3798405  # 2026.0.8 # zizmor: ignore[unpinned-uses]
+        uses: open-edge-platform/orch-ci/discover-changed-files@b5930c48c1fcdb6b34ffbcd465cff96dabfbde70  # 2026.0.8 # zizmor: ignore[unpinned-uses]
         with:
           project_folder: "."
 
@@ -292,7 +292,6 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
           repository: open-edge-platform/orch-ci
-          token: ${{ secrets.SYS_EMF_GH_TOKEN }}
           path: orch-ci
           persist-credentials: false
 
@@ -413,12 +412,15 @@ jobs:
           mage installer:bundle
 
       - name: Scan Cloud Installer Image
-        uses: aquasecurity/trivy-action@6c175e9c4083a92bbca2f9724c8a5e33bc2d97a5  # v0.30.0
+        uses: aquasecurity/trivy-action@0.34.2
         with:
           image-ref: 080137407410.dkr.ecr.us-west-2.amazonaws.com/edge-orch/common/orchestrator-installer-cloudfull:${{ env.versionTag }}
           format: table
           output: "trivy-orchestrator-installer-cloudfull.txt"
           ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'HIGH,CRITICAL'
+          exit-code: '0'
 
       - name: Calculate MD5 Checksum
         id: checksum
@@ -630,8 +632,18 @@ jobs:
         if: always()
         run: |
            sudo ls -lrt  /var/log/libvirt/qemu/ || true
-           sudo cat /var/log/libvirt/qemu/libvirt-pico-node-console.log || true
-           
+           sudo cat /var/log/libvirt/qemu/libvirt-pico-node-console.log || true           
+
+      - name: Collect Bootkit and caddy Logs
+        if: always()
+        continue-on-error: true
+        run: |
+          sudo cat /var/log/dnsmasq.log || true
+          kubectl get workflow -n orch-infra || true
+          kubectl -n orch-infra describe deployment onboarding-manager | grep TINKER_ARTIFACT_NAME || true
+          chmod +x ./ci/kpi/bootkit-log.sh
+          ./ci/kpi/bootkit-log.sh "kind.internal" "project-2" "p-edge-operator-2" "Samp1ePassw@rd"
+
   deploy-on-prem:
     permissions:
       contents: read
@@ -759,7 +771,16 @@ jobs:
         if: always()
         run: |
            sudo ls -lrt  /var/log/libvirt/qemu/ || true
-           sudo cat /var/log/libvirt/qemu/libvirt-pico-node-console.log || true
+           sudo cat /var/log/libvirt/qemu/libvirt-pico-node-console.log || true           
+
+      - name: Collect Bootkit and caddy Log
+        if: always()
+        continue-on-error: true
+        run: |
+          kubectl get workflow -n orch-infra || true
+          kubectl -n orch-infra describe deployment onboarding-manager | grep TINKER_ARTIFACT_NAME || true
+          chmod +x ./ci/kpi/bootkit-log.sh
+          ./ci/kpi/bootkit-log.sh "cluster.onprem" "project-1" "p-edge-operator-1" "Samp1ePassw@rd"
            
   deploy-oxm-profile:
     permissions:
@@ -875,8 +896,9 @@ jobs:
       contents: read
       security-events: write
       id-token: write
+      actions: read
     if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
-    uses: open-edge-platform/orch-ci/.github/workflows/post-merge.yml@24a3a495be45af021486e265cf09a17ac3798405  # 2026.0.13
+    uses: open-edge-platform/orch-ci/.github/workflows/post-merge.yml@b5930c48c1fcdb6b34ffbcd465cff96dabfbde70  # 2026.0.17
     with:
       run_build: false
       run_version_tag: false

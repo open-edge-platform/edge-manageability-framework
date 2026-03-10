@@ -13,3 +13,9 @@ argo:
     orchestrator-dashboards: true
     orchestrator-observability: true
     orchestrator-prometheus-agent: true
+  o11y:
+    alertingMonitor:
+      initialRules:
+        hostRules: true
+        appDeploymentRules: false
+        clusterRules: false
