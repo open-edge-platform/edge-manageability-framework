@@ -638,6 +638,7 @@ jobs:
         if: always()
         continue-on-error: true
         run: |
+          sudo cat /var/log/dnsmasq.log || true
           kubectl get workflow -n orch-infra || true
           kubectl -n orch-infra describe deployment onboarding-manager | grep TINKER_ARTIFACT_NAME || true
           chmod +x ./ci/kpi/bootkit-log.sh
