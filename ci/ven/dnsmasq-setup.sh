@@ -64,8 +64,6 @@ interface=$interface_name
 bind-interfaces
 log-queries
 log-facility=/var/log/dnsmasq.log
-min-cache-ttl=1200
-cache-size=10000
 dhcp-option=interface:$interface_name,option:dns-server,$ip_address
 server=$ip_address
 server=$dns_server_ip
