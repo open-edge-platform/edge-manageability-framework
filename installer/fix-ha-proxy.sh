@@ -47,7 +47,6 @@ check_and_download_dkam_certs() {
     
     if [[ "$success" == "true" ]]; then
         echo "[SUCCESS] DKAM certificates are ready and downloaded"
-        console_success "[✓] DKAM certificates downloaded successfully"
         return 0
     else
         echo "[FAIL] DKAM certificates not available after 10 minutes"
