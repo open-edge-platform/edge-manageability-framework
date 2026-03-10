@@ -51,7 +51,7 @@ var _ = Describe("Orchestrator stress test", Label("stress-test"), func() {
 
 	Describe("Curl stress test", Label("stress-test"), func() {
 		It("Should Limit requests using cipher TLS_DHE_RSA_WITH_AES_256_GCM_SHA384", func() {
-			cdnURL := "https://tinkerbell-nginx." + serviceDomain + "/tink-stack/boot.ipxe"
+			cdnURL := "https://tinkerbell-haproxy." + serviceDomain + "/tink-stack/boot.ipxe"
 			cafilepath := "/tmp/cluster_ca.crt"
 			cacert := "curl https://" + serviceDomain + "/boots/ca.crt -o " + cafilepath
 			// get the ca cert so testing can be done

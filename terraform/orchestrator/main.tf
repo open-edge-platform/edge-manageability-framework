@@ -290,7 +290,7 @@ resource "null_resource" "copy_files" {
       "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env GITEA_IMAGE_REGISTRY ${var.gitea_image_registry}'",
       "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env ARGO_IP ${local.vmnet_ip1}'",
       "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env TRAEFIK_IP ${local.vmnet_ip2}'",
-      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env NGINX_IP ${local.vmnet_ip3}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env HAPROXY_IP ${local.vmnet_ip3}'",
       "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env ENABLE_EXPLICIT_PROXY ${var.enable_explicit_proxy}'",
       "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env ORCH_HTTP_PROXY ${var.http_proxy}'",
       "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env ORCH_HTTPS_PROXY ${var.https_proxy}'",
@@ -304,6 +304,7 @@ resource "null_resource" "copy_files" {
       "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env OXM_PXE_SERVER_INT ${var.oxm_pxe_server_int}'",
       "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env OXM_PXE_SERVER_IP ${var.oxm_pxe_server_ip}'",
       "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env OXM_PXE_SERVER_SUBNET ${var.oxm_pxe_server_subnet}'",
+      "bash -c 'source /home/ubuntu/functions.sh; update_config_variable /home/ubuntu/onprem.env DEPLOY_REPO_BRANCH ${var.deploy_repo_branch}'",
       "cat /home/ubuntu/onprem.env",
       "echo 'onprem.env updated successfully'"
     ]

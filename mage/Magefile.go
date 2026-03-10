@@ -48,16 +48,14 @@ var (
 var argoNamespaces = []string{
 	"dev",
 	"argocd",
-	"gitea",
 	"orch-platform", // used when creating a secret for gitea
 	"orch-sre",      // used when creating a secret for kindAll
 	"orch-harbor",   // used when creating a secret for integration
 	"orch-infra",    // used when creating a secret for mailpit
 }
 
-// FIXME: Ideally this could be extracted from the cluster configuration and aligned with auth secrets - out of scope for now
-var giteaRepos = []string{
-	"https://gitea-http.gitea.svc.cluster.local/argocd/edge-manageability-framework",
+var EMFRepos = []string{
+	"https://github.com/open-edge-platform/edge-manageability-framework",
 }
 
 // Public GitHub repositories can be useful for specific development workflows.
@@ -493,7 +491,10 @@ func (d Deploy) KindPreset(clusterPreset string) error {
 
 // Deploy kind cluster and Argo CD.
 func (d Deploy) Kind(targetEnv string) error {
-	return d.kind(targetEnv)
+	if err := d.kind(targetEnv); err != nil {
+		return err
+	}
+	return d.preOrchDeploy(targetEnv)
 }
 
 func (d Deploy) Gitea(targetEnv string) error {
@@ -924,7 +925,7 @@ func (d Deploy) VENWithFlow(ctx context.Context, flow string, serialNumber strin
 		return fmt.Errorf("failed to change directory to 'ven': %w", err)
 	}
 
-	if err := sh.RunV("git", "checkout", "pico/1.5.6"); err != nil {
+	if err := sh.RunV("git", "checkout", "pico/1.5.7"); err != nil {
 		return fmt.Errorf("failed to checkout specific commit: %w", err)
 	}
 
@@ -1054,7 +1055,7 @@ STANDALONE=0
 		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
 
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("https://tinkerbell-nginx.%s/tink-stack/keys/Full_server.crt", serviceDomain), nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("https://tinkerbell-haproxy.%s/tink-stack/keys/Full_server.crt", serviceDomain), nil)
 		if err != nil {
 			fmt.Printf("Failed to create request: %v\n", err)
 			time.Sleep(10 * time.Second)
@@ -1181,7 +1182,7 @@ STANDALONE=0
 		"apply",
 		fmt.Sprintf("--parallelism=%d", runtime.NumCPU()), // Set parallelism to the number of CPUs on the machine
 		fmt.Sprintf("-var=vm_name=%s", data.VmName),
-		fmt.Sprintf("-var=tinkerbell_nginx_domain=%s", fmt.Sprintf("tinkerbell-nginx.%s", serviceDomain)),
+		fmt.Sprintf("-var=tinkerbell_haproxy_domain=%s", fmt.Sprintf("tinkerbell-haproxy.%s", serviceDomain)),
 		fmt.Sprintf("-var=smbios_serial=%s", serialNumber),
 		fmt.Sprintf("-var=smbios_uuid=%s", ""),
 		fmt.Sprintf("-var=disk_size=%s", data.SdaDiskSize),

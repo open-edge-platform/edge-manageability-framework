@@ -35,6 +35,6 @@ Created when `create_target_group_binding = true` for the following services:
 
 - traefik-https
 - traefik-grpc
-- ingress-nginx-controller
+- ingress-haproxy-kubernetes-ingress
 - argocd-server
 - gitea-http

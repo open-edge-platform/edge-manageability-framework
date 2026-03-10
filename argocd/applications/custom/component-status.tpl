@@ -67,11 +67,17 @@ componentStatus:
       # Sub-features represent actual user-facing workflows
       edge-infrastructure-manager:
         installed: {{ or (index .Values.argo.enabled "infra-core") (index .Values.argo.enabled "infra-managers") (index .Values.argo.enabled "infra-onboarding") (index .Values.argo.enabled "infra-external") | default false }}
+
+        # OXM Profile - Microvisor-based edge infrastructure management (on-prem ONLY)
+        # Detection - infra-onboarding.pxe-server.enabled is true (set by profile-oxm.yaml)
+        # OXM profile is EXCLUSIVELY for on-prem deployments with ORCH_INSTALLER_PROFILE=onprem-oxm
+        oxm-profile:
+          installed: {{ if hasKey .Values.argo "infra-onboarding" }}{{ $infraOnboarding := index .Values.argo "infra-onboarding" }}{{ if hasKey $infraOnboarding "pxe-server" }}{{ $pxeServer := index $infraOnboarding "pxe-server" }}{{ if hasKey $pxeServer "enabled" }}{{ index $pxeServer "enabled" | default false }}{{ else }}false{{ end }}{{ else }}false{{ end }}{{ else }}false{{ end }}
         
         # Day2 - Day 2 operations - maintenance, updates, troubleshooting
-        # Detection - maintenance-manager is configured as part of infra-managers
+        # Detection - maintenance-manager.enabled is true in infra-managers (defaults to true if maintenance-manager exists but enabled is not explicitly set to false)
         day2:
-          installed: {{ if hasKey .Values.argo "infra-managers" }}{{ $infraManagers := index .Values.argo "infra-managers" }}{{ if hasKey $infraManagers "maintenance-manager" }}true{{ else }}false{{ end }}{{ else }}false{{ end }}
+          installed: {{ if hasKey .Values.argo "infra-managers" }}{{ $infraManagers := index .Values.argo "infra-managers" }}{{ if hasKey $infraManagers "maintenance-manager" }}{{ $maintMgr := index $infraManagers "maintenance-manager" }}{{ if hasKey $maintMgr "enabled" }}{{ index $maintMgr "enabled" }}{{ else }}true{{ end }}{{ else }}false{{ end }}{{ else }}false{{ end }}
         
         # Onboarding - Device discovery, registration, and enrollment workflow
         # Detection - onboarding-manager is configured and enabled in infra-onboarding
@@ -80,16 +86,21 @@ componentStatus:
           installed: {{ if hasKey .Values.argo "infra-onboarding" }}{{ $infraOnboarding := index .Values.argo "infra-onboarding" }}{{ if hasKey $infraOnboarding "onboarding-manager" }}{{ $onboardingMgr := index $infraOnboarding "onboarding-manager" }}{{ $onboardingMgr.enabled | default false }}{{ else }}false{{ end }}{{ else }}false{{ end }}
         
         # OOB (Out-of-Band) - vPRO/AMT management capabilities
-        # Detection - infra-external enabled in argo.enabled (OXM profile sets this to false)
+        # Detection - AMT components (MPS, RPS, DM-Manager) enabled in modular vPRO architecture
+        # Checks for infra-external.amt.*.enabled flags (default: true unless explicitly disabled)
+        # If infra-external.amt section doesn't exist, falls back to legacy infra-external enabled check
         # Only available in vPRO profile, not in OXM (microvisor) profile
         oob:
-          installed: {{ if hasKey .Values.argo.enabled "infra-external" }}{{ index .Values.argo.enabled "infra-external" | default false }}{{ else }}false{{ end }}
+          installed: {{ if hasKey .Values.argo "infra-external" }}{{ $infraExt := index .Values.argo "infra-external" }}{{ if hasKey $infraExt "amt" }}{{ $amt := index $infraExt "amt" }}{{ or (dig "mps" "enabled" true $amt) (dig "rps" "enabled" true $amt) (dig "dm-manager" "enabled" true $amt) }}{{ else }}{{ if hasKey .Values.argo.enabled "infra-external" }}{{ index .Values.argo.enabled "infra-external" | default false }}{{ else }}false{{ end }}{{ end }}{{ else }}{{ if hasKey .Values.argo.enabled "infra-external" }}{{ index .Values.argo.enabled "infra-external" | default false }}{{ else }}false{{ end }}{{ end }}
         
         # Provisioning - OS provisioning workflow capability
-        # Detection - provisioning available when infra-onboarding is deployed
-        # Available in both vPRO (standard OS) and OXM (microvisor) profiles
+        # Detection - provisioning available when infra-onboarding is deployed AND skipOSProvisioning is not set to true
+        # skipOSProvisioning flag is set at infra-onboarding level (argo.infra-onboarding.skipOSProvisioning)
+        # Note: infra-core.tenant-controller is enabled for vPRO and full EMF profiles but skipOSProvisioning is not related to tenant-controller
+        # When skipOSProvisioning=true, provisioning is disabled (vPRO AMT-only workflow without OS provisioning)
+        # Available in both vPRO (standard OS) and OXM (microvisor) profiles, unless explicitly skipped
         provisioning:
-          installed: {{ index .Values.argo.enabled "infra-onboarding" | default false }}
+          installed: {{ if index .Values.argo.enabled "infra-onboarding" | default false }}{{ $skipProvisioning := false }}{{ if hasKey .Values.argo "infra-onboarding" }}{{ $infraOnboarding := index .Values.argo "infra-onboarding" }}{{ if hasKey $infraOnboarding "skipOSProvisioning" }}{{ $skipProvisioning = index $infraOnboarding "skipOSProvisioning" }}{{ end }}{{ end }}{{ not $skipProvisioning }}{{ else }}false{{ end }}
       
       # Orchestrator Observability - Metrics and monitoring for orchestrator platform components
       # Detection - orchestrator-observability application enabled
@@ -123,17 +134,22 @@ componentStatus:
       
       # Web UI - Enabled when full-ui profile is loaded
       # Detection - enable-full-ui.yaml in root-app valueFiles
+      # UI sub-features check both the UI component AND the parent feature enablement
       web-ui:
-        installed: {{ or (index .Values.argo.enabled "web-ui-root") (index .Values.argo.enabled "web-ui-app-orch") (index .Values.argo.enabled "web-ui-cluster-orch") (index .Values.argo.enabled "web-ui-infra") | default false }}
+        installed: {{ or (index .Values.argo.enabled "web-ui-root") (index .Values.argo.enabled "web-ui-app-orch") (index .Values.argo.enabled "web-ui-cluster-orch") (index .Values.argo.enabled "web-ui-infra") (index .Values.argo.enabled "web-ui-admin") | default false }}
         orchestrator-ui-root:
           installed: {{ index .Values.argo.enabled "web-ui-root" | default false }}
         application-orchestration-ui:
-          installed: {{ index .Values.argo.enabled "web-ui-app-orch" | default false }}
+          installed: {{ and (index .Values.argo.enabled "web-ui-app-orch" | default false) (index .Values.argo.enabled "app-orch-catalog" | default false) }}
         cluster-orchestration-ui:
-          installed: {{ index .Values.argo.enabled "web-ui-cluster-orch" | default false }}
+          installed: {{ and (index .Values.argo.enabled "web-ui-cluster-orch" | default false) (or (index .Values.argo.enabled "cluster-manager") (index .Values.argo.enabled "capi-operator") (index .Values.argo.enabled "intel-infra-provider") | default false) }}
         infrastructure-ui:
-          installed: {{ index .Values.argo.enabled "web-ui-infra" | default false }}
-      
+          installed: {{ and (index .Values.argo.enabled "web-ui-infra" | default false) (or (index .Values.argo.enabled "infra-manager") (index .Values.argo.enabled "infra-operator") (index .Values.argo.enabled "tinkerbell") (index .Values.argo.enabled "infra-onboarding") (index .Values.argo.enabled "maintenance-manager") | default false) }}
+        admin-ui:
+          installed: {{ index .Values.argo.enabled "web-ui-admin" | default false }}
+        # Alerts UI - Enable when observability feature available at orchestrator level
+        alerts-ui:
+          installed: {{ or (index .Values.argo.enabled "orchestrator-observability") (index .Values.argo.enabled "alerting-monitor") | default false }}
       # Multitenancy - Tenancy services (tenancy-manager, tenancy-api-mapping, tenancy-datamodel)
       # are always deployed as part of root-app, so multitenancy is always enabled
       # The default-tenant-only sub-feature indicates single-tenant mode (when defaultTenancy profile is loaded)

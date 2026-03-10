@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025 Intel Corporation
+# SPDX-FileCopyrightText: 2026 Intel Corporation
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -37,7 +37,7 @@ argo:
   clusterDomain: kind.internal
 
   ## Argo CD configs
-  deployRepoURL: "https://gitea-http.gitea.svc.cluster.local/argocd/edge-manageability-framework"
+  deployRepoURL: "https://github.com/open-edge-platform/edge-manageability-framework"
   deployRepoRevision: main
 
   targetServer: "https://kubernetes.default.svc"

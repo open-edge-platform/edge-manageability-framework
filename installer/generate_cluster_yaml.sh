@@ -27,7 +27,7 @@ if [ "$DEPLOY_TYPE" = "aws" ]; then
 
 elif [ "$DEPLOY_TYPE" = "onprem" ]; then
     # shellcheck disable=SC1091
-    source "$(dirname "$0")/${DEPLOY_TYPE}.env"
+    source "${PWD}/${DEPLOY_TYPE}.env"
 
     # Validate ORCH_INSTALLER_PROFILE
     if [[ "$ORCH_INSTALLER_PROFILE" =~ ^(onprem|onprem-oxm|onprem-vpro)$ ]]; then
@@ -87,6 +87,7 @@ fi
 # -----------------------------------------------------------------------------
 export SRE_TLS_ENABLED="${SRE_TLS_ENABLED:-false}"
 export SRE_DEST_CA_CERT="${SRE_DEST_CA_CERT:-}"
+export GITEA_ENABLED="${GITEA_ENABLED:-true}"
 
 # -----------------------------------------------------------------------------
 # Function: Validate IPv4
@@ -153,6 +154,7 @@ fi
 # -----------------------------------------------------------------------------
 if [ "${DISABLE_CO_PROFILE:-false}" = "true" ] || [ "${DISABLE_AO_PROFILE:-false}" = "true" ]; then
     export AO_PROFILE="#- orch-configs/profiles/enable-app-orch.yaml"
+    export GITEA_ENABLED="false"
 else
     export AO_PROFILE="- orch-configs/profiles/enable-app-orch.yaml"
 fi
@@ -198,13 +200,13 @@ if [ "$DEPLOY_TYPE" = "onprem" ]; then
     # Prompt for required IPs
     prompt_for_ip "ARGO_IP" "Argo IP"
     prompt_for_ip "TRAEFIK_IP" "Traefik IP"
-    prompt_for_ip "NGINX_IP" "Nginx IP"
+    prompt_for_ip "HAPROXY_IP" "HAProxy IP"
 
     echo
     echo "✅ Using the following valid IPs:"
     echo "   ArgoIP:     $ARGO_IP"
     echo "   TraefikIP:  $TRAEFIK_IP"
-    echo "   NginxIP:    $NGINX_IP"
+    echo "   HaproxyIP:  $HAPROXY_IP"
     echo
 
     # O11Y disable check
@@ -245,7 +247,8 @@ if [ "$DEPLOY_TYPE" = "onprem" ]; then
             export O11Y_ENABLE_PROFILE="#- orch-configs/profiles/enable-o11y.yaml"
             export O11Y_PROFILE="#- orch-configs/profiles/o11y-onprem.yaml"
             export CO_PROFILE="#- orch-configs/profiles/enable-cluster-orch.yaml"
-            export AO_PROFILE="#- orch-configs/profiles/enable-app-orch.yaml"            
+            export AO_PROFILE="#- orch-configs/profiles/enable-app-orch.yaml"
+            export GITEA_ENABLED="false"
             ;;
         *)
             echo "❌ Invalid ORCH_INSTALLER_PROFILE: ${ORCH_INSTALLER_PROFILE}"
@@ -354,6 +357,9 @@ if [ "${ONPREM_UPGRADE_SYNC:-false}" = "true" ]; then
 ' "$OUTPUT_FILE"
 fi
 
+if [ "${DISABLE_UI_PROFILE:-false}" = "true" ]; then
+    yq -i '.argo.enabled.metadata-broker = false' "$OUTPUT_FILE"
+fi
 
 # -----------------------------------------------------------------------------
 # Proxy variable updates

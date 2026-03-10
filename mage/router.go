@@ -47,7 +47,8 @@ func (r Router) start(externalDomain string, sandboxKeyFile string, sandboxCertF
 	}
 	giteaIP, err := awaitGenericIP("gitea", "gitea-http", 20*time.Second)
 	if err != nil {
-		return fmt.Errorf("performing argo IP lookup %w", err)
+		fmt.Printf("Note: could not find gitea IP: %s\n", err)
+		giteaIP = "0.0.0.0"
 	}
 	orchIP, err := awaitGenericIP("orch-gateway", "traefik", 20*time.Second)
 	if err != nil {
@@ -85,10 +86,10 @@ func (r Router) start(externalDomain string, sandboxKeyFile string, sandboxCertF
 		domainname = defaultClusterDomain
 	}
 
-	bootsIP, err := awaitGenericIP("orch-boots", "ingress-nginx-controller", 20*time.Second)
+	bootsIP, err := awaitGenericIP("orch-boots", "ingress-haproxy-kubernetes-ingress", 20*time.Second)
 	if err != nil {
 		fmt.Printf("WARNING: could not find boots IP %v\n", err)
-		fmt.Println("Looks like Orchestrators nginx Boots isn't ready yet. Please run:")
+		fmt.Println("Looks like Orchestrators HAProxy Boots isn't ready yet. Please run:")
 		fmt.Println("`mage router:stop router:start` after Orchestrator is up and running")
 		bootsIP = "0.0.0.0"
 	}

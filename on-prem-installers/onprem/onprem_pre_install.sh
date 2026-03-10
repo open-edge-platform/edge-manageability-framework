@@ -55,12 +55,10 @@ export GIT_REPOS=$cwd/$git_arch_name
 
 # Variables that depend on the above and might require updating later, are placed in here
 set_artifacts_version() {
+  # Only download installers used by pre_install script
   installer_list=(
     "onprem-config-installer:${DEPLOY_VERSION}"
     "onprem-ke-installer:${DEPLOY_VERSION}"
-    "onprem-argocd-installer:${DEPLOY_VERSION}"
-    "onprem-gitea-installer:${DEPLOY_VERSION}"
-    "onprem-orch-installer:${DEPLOY_VERSION}"
   )
 
   git_archive_list=(
