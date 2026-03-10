@@ -39,7 +39,7 @@ jobs:
     if: github.event_name == 'pull_request'
     permissions:
       contents: read
-    uses: open-edge-platform/orch-ci/.github/workflows/pre-merge.yml@582cb262491c89e19904164eb24887b01f6925b2  # 2026.0.15
+    uses: open-edge-platform/orch-ci/.github/workflows/pre-merge.yml@b5930c48c1fcdb6b34ffbcd465cff96dabfbde70  # 2026.0.17
     with:
       run_version_check: false
       run_build: false
@@ -81,14 +81,16 @@ jobs:
 
       - name: Discover Changed Files
         id: check-files
-        uses: open-edge-platform/orch-ci/discover-changed-files@582cb262491c89e19904164eb24887b01f6925b2  # 2026.0.8 # zizmor: ignore[unpinned-uses]
+        uses: open-edge-platform/orch-ci/discover-changed-files@b5930c48c1fcdb6b34ffbcd465cff96dabfbde70  # 2026.0.8 # zizmor: ignore[unpinned-uses]
         with:
           project_folder: "."
 
       - name: Calculate only_design_proposals
         id: only-design-proposals
+        env:
+          CHANGED_FILES: ${{ steps.check-files.outputs.changed_files }}
         run: |
-          files="${{ steps.check-files.outputs.changed_files }}"
+          files="$CHANGED_FILES"
           only_design=true
           # Remove brackets and quotes, then split on comma
           clean_files=$(echo "$files" | sed 's/\[//;s/\]//;s/"//g')
@@ -638,6 +640,7 @@ jobs:
         if: always()
         continue-on-error: true
         run: |
+          sudo cat /var/log/dnsmasq.log || true
           kubectl get workflow -n orch-infra || true
           kubectl -n orch-infra describe deployment onboarding-manager | grep TINKER_ARTIFACT_NAME || true
           chmod +x ./ci/kpi/bootkit-log.sh
@@ -897,7 +900,7 @@ jobs:
       id-token: write
       actions: read
     if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main-pass-validation' )
-    uses: open-edge-platform/orch-ci/.github/workflows/post-merge.yml@582cb262491c89e19904164eb24887b01f6925b2  # 2026.0.15
+    uses: open-edge-platform/orch-ci/.github/workflows/post-merge.yml@b5930c48c1fcdb6b34ffbcd465cff96dabfbde70  # 2026.0.17
     with:
       run_build: false
       run_version_tag: false
