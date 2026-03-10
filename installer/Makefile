@@ -145,8 +145,11 @@ upgrade: | ${M}/release-secrets ${M}/argocd-ready
 		echo "Pre-upgrade version $$deployed_version is 3.x.x - will apply fix-external-secrets.sh"; \
 		run_fix_external_secrets=true; \
 	fi; \
-	# Todo: Need to add condition check
-	run_fix_ha_proxy=true;
+	run_fix_ha_proxy=false; \
+	if [[ "$$deployed_version" == "2025.2.0" ]]; then \
+	    echo "Pre-upgrade version $$deployed_version detected - will apply fix-ha-proxy.sh"; \
+	    run_fix_ha_proxy=true; \
+	fi; \
 	echo "$$run_fix_external_secrets" > /tmp/run_fix_external_secrets
 	echo "$$run_fix_ha_proxy" > /tmp/run_fix_ha_proxy
 	@if kubectl get secret platform-keycloak -n orch-platform > /dev/null 2>&1; then \
