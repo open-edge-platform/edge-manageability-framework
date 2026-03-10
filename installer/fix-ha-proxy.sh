@@ -103,15 +103,21 @@ kubectl patch application "$APP_NAME" -n "$ARGOCD_NS" \
     --type json \
     -p '[{"op": "remove", "path": "/status/operationState"}]' || true
 
+sleep 2
+
 # Delete tls-boot secret
 echo "[INFO] Deleting tls-boot secret..."
 
 kubectl delete secret tls-boot --ignore-not-found
 
+sleep 3
+
 # Remove os-resource-manager deployment
 echo "[INFO] Removing os-resource-manager deployment..."
 
 kubectl delete deployment os-resource-manager -n orch-infra --ignore-not-found
+
+sleep 3
 
 # Remove DKAM pods
 echo "[INFO] Removing DKAM pods..."
