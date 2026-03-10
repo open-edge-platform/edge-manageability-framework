@@ -150,15 +150,19 @@ sleep 2
 # Remove cluster policies
 echo "[INFO] Removing cluster policies..."
 
-kubectl delete job init-amt-vault-job -n orch-infra --ignore-not-found
-
 kubectl delete clusterpolicy restart-mps-deployment-on-secret-change --ignore-not-found
 kubectl delete clusterpolicy restart-rps-deployment-on-secret-change --ignore-not-found
+
+kubectl delete job tenancy-api-mapping -n orch-iam --ignore-not-found
+kubectl delete job tenancy-datamodel -n orch-iam --ignore-not-found
 
 kubectl patch application tenancy-api-mapping -n "$TARGET_ENV" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
 kubectl patch application tenancy-datamodel -n "$TARGET_ENV" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge 
 
+sleep 4
 
+kubectl delete job init-amt-vault-job -n orch-infra --ignore-not-found
+kubectl patch application infra-external -n "$TARGET_ENV" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge 
 # add sync
 # Sync root-app
 sudo mkdir -p /tmp/argo-cd
