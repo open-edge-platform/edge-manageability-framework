@@ -138,19 +138,16 @@ upgrade: | ${M}/release-secrets ${M}/argocd-ready
 		echo "Error: Could not determine deployed version"; \
 		exit 1; \
 	fi; \
+	run_fix_ha_proxy=false; \
 	major_version="$${deployed_version##*v}"; \
 	major_version="$${major_version%%%%.*}"; \
 	run_fix_external_secrets=false; \
+	run_fix_ha_proxy=true; \
 	if [[ "$$major_version" =~ ^[0-9]+$$ ]] && (( $$major_version == 3 )); then \
 		echo "Pre-upgrade version $$deployed_version is 3.x.x - will apply fix-external-secrets.sh"; \
 		run_fix_external_secrets=true; \
 	fi; \
-	run_fix_ha_proxy=false; \
-	if [[ "$$deployed_version" == "2025.2.0" ]]; then \
-	    echo "Pre-upgrade version $$deployed_version detected - will apply fix-ha-proxy.sh"; \
-	    run_fix_ha_proxy=true; \
-	fi; \
-	echo "$$run_fix_external_secrets" > /tmp/run_fix_external_secrets
+	echo "$$run_fix_external_secrets" > /tmp/run_fix_external_secrets; \
 	echo "$$run_fix_ha_proxy" > /tmp/run_fix_ha_proxy
 	@if kubectl get secret platform-keycloak -n orch-platform > /dev/null 2>&1; then \
 		ADMIN_PASSWORD=$$(kubectl get secret platform-keycloak -n orch-platform -o jsonpath='{.data.admin-password}' 2>/dev/null | base64 -d 2>/dev/null); \
