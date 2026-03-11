@@ -310,6 +310,12 @@ resource "aws_eks_node_group" "nodegroup" {
     aws_iam_role_policy_attachment.AmazonEBSCSIDriverPolicy,
     aws_launch_template.eks_launch_template
   ]
+
+  tags = {
+    "k8s.io/cluster-autoscaler/enabled"               = "true"
+    "k8s.io/cluster-autoscaler/${var.cluster_name}"  = "owned"
+  }
+
 }
 
 resource "aws_eks_node_group" "additional_node_group" {
@@ -343,6 +349,14 @@ resource "aws_eks_node_group" "additional_node_group" {
       effect = taint.value.effect
     }
   }
+
+  tags = merge(
+    {
+      "k8s.io/cluster-autoscaler/enabled"              = "true"
+      "k8s.io/cluster-autoscaler/${var.cluster_name}" = "owned"
+    },
+    lookup(each.value, "tags", {})
+  )
 
   depends_on = [
     aws_iam_role_policy_attachment.AmazonEKSWorkerNodePolicy,
@@ -425,7 +439,8 @@ resource "aws_iam_policy" "cas_controller" {
         "ec2:DescribeInstanceTypes",
         "ec2:DescribeLaunchTemplateVersions",
         "ec2:GetInstanceTypesFromInstanceRequirements",
-        "eks:DescribeNodegroup"
+        "eks:DescribeNodegroup",
+        "eks:DescribeCluster"
       ],
       "Resource": ["*"]
     },
