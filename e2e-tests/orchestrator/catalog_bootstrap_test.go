@@ -197,6 +197,11 @@ var _ = Describe("Config Provisioner integration test", Label("orchestrator-inte
 				checkApp(apps.Applications[0],
 					"intel-github-io", "intel-device-plugins-gpu", "exclusive-gpu-alloc")
 
+				apps = ListApplicationsByName(ctx, c, accessToken, testProject, "intel-npu-plugin")
+				Expect(apps.Applications).ToNot(BeEmpty())
+				checkApp(apps.Applications[0],
+					"intel-github-io", "intel-device-plugins-npu", "exclusive-npu-alloc")
+
 				apps = ListApplicationsByName(ctx, c, accessToken, testProject, "kubevirt-helper")
 				Expect(apps.Applications).ToNot(BeEmpty())
 				checkApp(apps.Applications[0],
@@ -206,10 +211,10 @@ var _ = Describe("Config Provisioner integration test", Label("orchestrator-inte
 			It("should determine that the deployment packages were created", func() {
 				var dps DeploymentPackages
 
-				dps = ListDeploymentPackagesByName(ctx, c, accessToken, testProject, "intel-gpu")
+				dps = ListDeploymentPackagesByName(ctx, c, accessToken, testProject, "intel-accelerators")
 				Expect(dps.DeploymentPackages).ToNot(BeEmpty())
-				checkDeploymentPackage(dps.DeploymentPackages[0], "exclusive-gpu-alloc",
-					false, 2, 1, 1)
+				checkDeploymentPackage(dps.DeploymentPackages[0], "exclusive-accelerator-alloc",
+					false, 3, 2, 1)
 
 				dps = ListDeploymentPackagesByName(ctx, c, accessToken, testProject, "virtualization")
 				Expect(dps.DeploymentPackages).ToNot(BeEmpty())
