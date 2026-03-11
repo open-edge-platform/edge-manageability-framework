@@ -4,6 +4,8 @@
 
 The Diagnostics Convergence workflow is an automated analysis tool that identifies recurring failure patterns across multiple workflow runs. It helps developers and operators quickly understand the most common failure modes by aggregating and analyzing diagnostics data from CI/CD pipeline failures.
 
+> **Note**: This workflow requires the Virtual Integration workflow to have run and generated diagnostics artifacts.
+
 ## Purpose
 
 When the Virtual Integration workflow fails, it generates detailed diagnostics artifacts containing information about:
