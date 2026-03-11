@@ -81,6 +81,7 @@ if [[ "${ORCH_INSTALLER_PROFILE:-}" == "onprem-vpro" || "${ORCH_INSTALLER_PROFIL
   export EMAIL_PROFILE='#- orch-configs/profiles/alerting-emails.yaml'
   export PLATFORM_PROFILE='- orch-configs/profiles/enable-platform-vpro.yaml'
   export EDGEINFRA_PROFILE='- orch-configs/profiles/enable-edgeinfra-vpro.yaml'
+  export EIM_NOOBB_PROFILE='#- orch-configs/profiles/eim-noobb.yaml'
 fi
 
 # -----------------------------------------------------------------------------
@@ -215,11 +216,12 @@ if [ "$DEPLOY_TYPE" = "onprem" ]; then
         export O11Y_ENABLE_PROFILE="#- orch-configs/profiles/enable-o11y.yaml"
         export O11Y_PROFILE="#- orch-configs/profiles/o11y-onprem.yaml"
         # EIM_NOOBB_PROFILE can only be enabled if not using vpro profile
-        # if [[ "${ORCH_INSTALLER_PROFILE:-}" != "onprem-vpro" ]]; then
         export EIM_NOOBB_PROFILE="- orch-configs/profiles/eim-noobb.yaml"
+        if [[ "${ORCH_INSTALLER_PROFILE:-}" == "onprem-vpro" ]]; then
+            export EIM_NOOBB_PROFILE="#- orch-configs/profiles/eim-noobb.yaml"
         # else
         #    export EIM_NOOBB_PROFILE="#- orch-configs/profiles/eim-noobb.yaml"
-        # fi
+        fi
     else
         export O11Y_ENABLE_PROFILE="- orch-configs/profiles/enable-o11y.yaml"
         export O11Y_PROFILE="- orch-configs/profiles/o11y-onprem.yaml"
