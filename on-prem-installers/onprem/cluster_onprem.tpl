@@ -29,6 +29,7 @@ root:
 # Values applied to both root app and shared among all child apps
 argo:
   ## Basic cluster information
+  orchestratorVersion: ${DEPLOY_VERSION}
   project: ${CLUSTER_NAME}
   namespace: ${CLUSTER_NAME}
   clusterName: ${CLUSTER_NAME}

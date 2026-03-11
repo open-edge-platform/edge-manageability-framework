@@ -117,8 +117,8 @@ generate_cluster_yaml_onprem_from_upstream() {
   local out_file="$cwd/${ORCH_INSTALLER_PROFILE}.yaml"
 
   if [[ "$ASSUME_YES" == "true" ]]; then
-    if [[ -z "${ARGO_IP:-}" || -z "${TRAEFIK_IP:-}" || -z "${NGINX_IP:-}" ]]; then
-      echo "❌ ARGO_IP, TRAEFIK_IP, and NGINX_IP must be set when running non-interactively (-y)"
+    if [[ -z "${ARGO_IP:-}" || -z "${TRAEFIK_IP:-}" || -z "${HAPROXY_IP:-}" ]]; then
+      echo "❌ ARGO_IP, TRAEFIK_IP, and HAPROXY_IP must be set when running non-interactively (-y)"
       exit 1
     fi
   fi
