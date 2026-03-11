@@ -36,7 +36,7 @@ runs:
   using: "composite"
   steps:
     - name: Checkout UI repo
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      uses: actions/checkout@779e5ff0253b6b2c95f4dba642644dadaea3ae9f # v4.2.2
       with:
         repository: open-edge-platform/orch-ui
         path: orch-ui
