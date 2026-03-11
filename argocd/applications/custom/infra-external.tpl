@@ -25,8 +25,22 @@ import:
     enabled: false
   loca-templates-manager:
     enabled: false
+  mps:
+    enabled: {{ dig "infra-external" "amt" "mps" "enabled" true .Values.argo }}
+  rps:
+    enabled: {{ dig "infra-external" "amt" "rps" "enabled" true .Values.argo }}
+  dm-manager:
+    enabled: {{ dig "infra-external" "amt" "dm-manager" "enabled" true .Values.argo }}
 
 {{- else }}
+
+import:
+  mps:
+    enabled: {{ dig "infra-external" "amt" "mps" "enabled" true .Values.argo }}
+  rps:
+    enabled: {{ dig "infra-external" "amt" "rps" "enabled" true .Values.argo }}
+  dm-manager:
+    enabled: {{ dig "infra-external" "amt" "dm-manager" "enabled" true .Values.argo }}
 
 loca-manager:
   providerConfig:

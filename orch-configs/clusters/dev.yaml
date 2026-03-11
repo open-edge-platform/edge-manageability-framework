@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025 Intel Corporation
+# SPDX-FileCopyrightText: 2026 Intel Corporation
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -38,7 +38,7 @@ argo:
 
   ## Argo CD configs
   deployRepoURL: "https://github.com/open-edge-platform/edge-manageability-framework"
-  deployRepoRevision: haproxy_ingress
+  deployRepoRevision: main
 
   targetServer: "https://kubernetes.default.svc"
   autosync: true

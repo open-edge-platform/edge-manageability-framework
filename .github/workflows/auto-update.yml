@@ -34,7 +34,7 @@ jobs:
           persist-credentials: false
 
       - name: Update pull requests
-        uses: open-edge-platform/orch-ci/.github/actions/pr_updater@467367d6f859a4654f2645ca78efd60035cf390c  # 2026.0.8
+        uses: open-edge-platform/orch-ci/.github/actions/pr_updater@b5930c48c1fcdb6b34ffbcd465cff96dabfbde70  # 2026.0.17
         with:
           github_token: ${{ secrets.SYS_EMF_GH_TOKEN }}
 
