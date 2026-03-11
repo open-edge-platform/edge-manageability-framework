@@ -212,7 +212,7 @@ if [ "$DEPLOY_TYPE" = "onprem" ]; then
     echo
 
     # O11Y disable check
-    if [ "${DISABLE_O11Y_PROFILE:-false}" = "true" ]; then
+    if [ "${DISABLE_O11Y_PROFILE:-false}" = "false" ]; then
         export O11Y_ENABLE_PROFILE="#- orch-configs/profiles/enable-o11y.yaml"
         export O11Y_PROFILE="#- orch-configs/profiles/o11y-onprem.yaml"
         # EIM_NOOBB_PROFILE can only be enabled if not using vpro profile
