@@ -24,3 +24,4 @@ argo:
         name: rps
   traefik:
     tlsOption: "gateway-tls"
+  orchestratorVersion: ""

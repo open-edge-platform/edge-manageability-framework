@@ -15,7 +15,7 @@
 set +xe
 
 HELP=""
-RKE2VERSION="v1.34.3+rke2r1"
+RKE2VERSION="v1.34.4+rke2r1"
 HOSTIP=""
 ROOT_DIR=$(pwd)
 
@@ -55,10 +55,30 @@ fi
 # Escape '+' character if found in the URL request
 # shellcheck disable=SC2001
 RKE2VERSION=$(echo "$RKE2VERSION" | sed 's/+/%2b/g')
-curl -sfL --create-dirs "https://github.com/rancher/rke2/releases/download/${RKE2VERSION}/rke2-images.linux-amd64.tar.zst" --output "${ROOT_DIR}/assets/rke2/rke2-images.linux-amd64.tar.zst"
-curl -sfL --create-dirs "https://github.com/rancher/rke2/releases/download/${RKE2VERSION}/rke2-images-calico.linux-amd64.tar.zst" --output "${ROOT_DIR}/assets/rke2/rke2-images-calico.linux-amd64.tar.zst"
-curl -sfL --create-dirs "https://github.com/rancher/rke2/releases/download/${RKE2VERSION}/rke2.linux-amd64.tar.gz" --output "${ROOT_DIR}/assets/rke2/rke2.linux-amd64.tar.gz"
-curl -sfL --create-dirs "https://github.com/rancher/rke2/releases/download/${RKE2VERSION}/sha256sum-amd64.txt" --output "${ROOT_DIR}/assets/rke2/sha256sum-amd64.txt"
+
+# Download RKE2 installation script and images from GitHub releases. 
+# The files are downloaded to the assets/rke2 directory.
+rke2_files=(
+    "rke2-images.linux-amd64.tar.zst"
+    "rke2-images-calico.linux-amd64.tar.zst"
+    "rke2.linux-amd64.tar.gz"
+    "sha256sum-amd64.txt"
+)
+for file in "${rke2_files[@]}"; do
+    echo "Downloading ${file}..."
+
+    # Two of the files being downloaded are large, so the curl command is configured with retry options to handle 
+    # potential network issues during the download process.
+    if ! curl --retry 5 --retry-delay 0 --retry-connrefused --connect-timeout 30 --retry-max-time 300 --max-time 1200 \
+        -fSL --create-dirs -C - --output "${ROOT_DIR}/assets/rke2/${file}" \
+        "https://github.com/rancher/rke2/releases/download/${RKE2VERSION}/${file}"; then
+
+        echo "Failed to download ${file} after multiple attempts. Exiting."
+        exit 1
+    fi
+    echo "Successfully downloaded ${file}."
+done
+
 if [[ ${INSTALL_RKE2_MIRROR} && ${INSTALL_RKE2_MIRROR} == "cn" ]]; then
 curl -sfL --create-dirs https://rancher-mirror.rancher.cn/rke2/install.sh --output "${ROOT_DIR}/assets/rke2/install.sh"
 else
