@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
 locals {
   proxy_enabled = (
     var.CAS_HP  != "" &&
