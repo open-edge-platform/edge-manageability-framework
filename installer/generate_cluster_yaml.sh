@@ -83,6 +83,22 @@ if [[ "${ORCH_INSTALLER_PROFILE:-}" == "onprem-vpro" || "${ORCH_INSTALLER_PROFIL
 fi
 
 # -----------------------------------------------------------------------------
+# ArgoCD Repo Configuration
+# -----------------------------------------------------------------------------
+if [ "${INSTALL_FROM_LOCAL_GITEA}" = "false" ]; then
+    # nothing to do here, DEPLOY_REPO_URL and DEPLOY_REPO_BRANCH should already be set to the remote repo values in provision.sh
+    echo "will perform deployment from remote Gitea repo: ${DEPLOY_REPO_URL} (branch: ${DEPLOY_REPO_BRANCH})"
+else
+    echo "will perform deployment from local Gitea repo"
+    export DEPLOY_REPO_URL="https://gitea.${CLUSTER_FQDN}/argocd/edge-manageability-framework"
+    export DEPLOY_REPO_BRANCH="main"
+fi
+
+# extract "https://fqdn" from DEPLOY_REPO_URL and use it for DEPLOY_GIT_SERVER
+DEPLOY_GIT_SERVER=$(echo "$DEPLOY_REPO_URL" | sed -E 's|([a-z]+)://([^/]+)/.*|\1://\2|')
+export DEPLOY_GIT_SERVER="$DEPLOY_GIT_SERVER"
+
+# -----------------------------------------------------------------------------
 # Default environment variables
 # -----------------------------------------------------------------------------
 export SRE_TLS_ENABLED="${SRE_TLS_ENABLED:-false}"
@@ -318,6 +334,11 @@ envsubst < "$TEMPLATE_FILE" \
     | sed -E '/^[[:space:]]*#/d; /^[[:space:]]*#!/d; /^[[:space:]]*$/d' \
     > "$OUTPUT_FILE"
 
+# when using remote repo, we need to remove the local file reference from the generated YAML
+if [ "${INSTALL_FROM_LOCAL_GITEA}" = "false" ]; then
+    sed -i "s|- orch-configs/clusters/${CLUSTER_NAME}.yaml||g" "$OUTPUT_FILE"
+fi
+
 # Onprem 1k post-processing
 if [ "${CLUSTER_SCALE_PROFILE}" = "1ken" ]; then
     echo "ℹ️ Using ONPREM-1K deployment profile (EdgeInfra + O11Y optional)"
@@ -359,6 +380,16 @@ fi
 
 if [ "${DISABLE_UI_PROFILE:-false}" = "true" ]; then
     yq -i '.argo.enabled.metadata-broker = false' "$OUTPUT_FILE"
+fi
+
+# Disable Gitea-related jobs if Gitea is disabled
+if [ "${GITEA_ENABLED}" = "false" ]; then
+    yq -i '
+      .argo.enabled."copy-app-gitea-cred-to-fleet" = false |
+      .argo.enabled."copy-ca-cert-gitea-to-app" = false |
+      .argo.enabled."copy-ca-cert-gitea-to-cluster" = false |
+      .argo.enabled."copy-cluster-gitea-cred-to-fleet" = false
+    ' "$OUTPUT_FILE"
 fi
 
 # -----------------------------------------------------------------------------

@@ -40,6 +40,9 @@ data "aws_nat_gateway" "vpc_nat_gateway" {
 }
 
 locals {
+  // calculate whether Gitea should exist
+  create_gitea_target_group = !(var.disable_ao_profile && !var.install_from_local_gitea)
+
   eks_security_groups = [
     data.terraform_remote_state.eks.outputs.eks_security_group_id,
   ]
@@ -62,18 +65,22 @@ locals {
       type     = "ip"
     }
   }
-  infra_service_target_groups = {
-    "argocd" : {
-      listener = "https"
-      type     = "ip"
-      match_hosts = ["argocd.*"]
+  infra_service_target_groups = merge(
+    {
+      "argocd" : {
+        listener = "https"
+        type     = "ip"
+        match_hosts = ["argocd.*"]
+      }
     },
-    "gitea" : {
-      listener = "https"
-      type     = "ip"
-      match_hosts = ["gitea.*"]
-    }
-  }
+    local.create_gitea_target_group ? {
+      "gitea" : {
+        listener = "https"
+        type     = "ip"
+        match_hosts = ["gitea.*"]
+      }
+    } : {}
+  )
   traefik_target_groups = {
     "default" : {
       listener                          = "https"
@@ -173,76 +180,84 @@ module "argocd_load_balancer" {
   enable_deletion_protection = var.enable_deletion_protection
 }
 
-# This block executes only when `create_target_group_binding` is set to true
 module "traefik_lb_target_group_binding" {
   count = var.create_target_group_binding ? 1 : 0
-
   source = "../../module/aws-lb-target-group-binding"
-  bindings = {
-    "traefik-https" : {
-      serviceNamespace = "orch-gateway"
-      serviceName      = "traefik"
-      servicePort      = 443
-      target_id        = module.traefik_load_balancer.target_groups["default"].arn
+  
+  bindings = merge(
+    {
+      "traefik-https" : {
+        serviceNamespace = "orch-gateway"
+        serviceName      = "traefik"
+        servicePort      = 443
+        target_id        = module.traefik_load_balancer.target_groups["default"].arn
+      },
+      "traefik-grpc" : {
+        serviceNamespace = "orch-gateway"
+        serviceName      = "traefik"
+        servicePort      = 443
+        target_id        = module.traefik_load_balancer.target_groups["grpc"].arn
+      },
+      "ingress-haproxy-kubernetes-ingress" : {
+        serviceNamespace = "orch-boots"
+        serviceName      = "ingress-haproxy-kubernetes-ingress"
+        servicePort      = 443
+        target_id        = module.traefik2_load_balancer[0].target_groups["https"].arn
+      },
+      "traefik-vpro" : {
+        serviceNamespace = "orch-gateway"
+        serviceName      = "traefik"
+        servicePort      = 4433
+        target_id        = module.traefik3_load_balancer[0].target_groups["vpro"].arn
+      },
+      "argocd" : {
+        serviceNamespace = "argocd"
+        serviceName      = "argocd-server"
+        servicePort      = 443
+        target_id        = module.argocd_load_balancer[0].target_groups["argocd"].arn
+      }
     },
-    "traefik-grpc" : {
-      serviceNamespace = "orch-gateway"
-      serviceName      = "traefik"
-      servicePort      = 443
-      target_id        = module.traefik_load_balancer.target_groups["grpc"].arn
-    }
-    "ingress-haproxy-kubernetes-ingress" : {
-      serviceNamespace = "orch-boots"
-      serviceName      = "ingress-haproxy-kubernetes-ingress"
-      servicePort      = 443
-      target_id        = module.traefik2_load_balancer[0].target_groups["https"].arn
-    },
-    "traefik-vpro" : {
-      serviceNamespace = "orch-gateway"
-      serviceName      = "traefik"
-      servicePort      = 4433
-      target_id        = module.traefik3_load_balancer[0].target_groups["vpro"].arn
-    },
-    "argocd" : {
-      serviceNamespace = "argocd"
-      serviceName      = "argocd-server"
-      servicePort      = 443
-      target_id        = module.argocd_load_balancer[0].target_groups["argocd"].arn
-    },
-    "gitea" : {
-      serviceNamespace = "gitea"
-      serviceName      = "gitea-http"
-      servicePort      = 443
-      target_id        = module.argocd_load_balancer[0].target_groups["gitea"].arn
-    }
-  }
+    local.create_gitea_target_group ? {
+      "gitea" : {
+        serviceNamespace = "gitea"
+        serviceName      = "gitea-http"
+        servicePort      = 443
+        target_id        = module.argocd_load_balancer[0].target_groups["gitea"].arn
+      }
+    } : {}
+  )
 }
 
 module "aws_lb_security_group_roles" {
   source = "../../module/aws-lb-security-group-roles"
   eks_node_sg_id = data.terraform_remote_state.eks.outputs.eks_nodegroup_instance_sg_ids[0]
-  lb_sg_ids = {
-    "traefik": {
-      port = 8443,
-      security_group_id = module.traefik_load_balancer.lb_sg_id
+  
+  lb_sg_ids = merge(
+    {
+      "traefik": {
+        port = 8443,
+        security_group_id = module.traefik_load_balancer.lb_sg_id
+      },
+      "traefik2": {
+        port = 8443,
+        security_group_id = module.traefik2_load_balancer[0].lb_sg_id
+      },
+      "argocd": {
+        port = 8080,
+        security_group_id = module.argocd_load_balancer[0].lb_sg_id
+      },
+      "vpro": {
+        port = 4433,
+        security_group_id = module.traefik3_load_balancer[0].lb_sg_id
+      }
     },
-    "traefik2": {
-      port = 8443,
-      security_group_id = module.traefik2_load_balancer[0].lb_sg_id
-    },
-    "argocd": {
-      port = 8080,
-      security_group_id = module.argocd_load_balancer[0].lb_sg_id
-    },
-    "gitea": {
-      port = 3000,
-      security_group_id = module.argocd_load_balancer[0].lb_sg_id
-    },
-    "vpro": {
-      port = 4433,
-      security_group_id = module.traefik3_load_balancer[0].lb_sg_id
-    }
-  }
+    local.create_gitea_target_group ? {
+      "gitea": {
+        port = 3000,
+        security_group_id = module.argocd_load_balancer[0].lb_sg_id
+      }
+    } : {}
+  )
 }
 
 module "wait_until_alb_ready" {

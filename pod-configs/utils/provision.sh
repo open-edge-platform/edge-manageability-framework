@@ -103,6 +103,9 @@ EKS_HTTPS_PROXY=""
 EKS_NO_PROXY=""
 EKS_USER_SCRIPT_PRE_CLOUD_INIT=""
 EKS_USER_SCRIPT_POST_CLOUD_INIT=""
+INSTALL_FROM_LOCAL_GITEA=true
+DEPLOY_REPO_BRANCH="main"
+DEPLOY_REPO_URL="https://github.com/open-edge-platform/edge-manageability-framework.git"
 
 OPTIONS_LIST=(
     "auto"
@@ -117,6 +120,8 @@ OPTIONS_LIST=(
     "cidr-block:"
     "customer-state-prefix:"
     "customer-tag:"
+    "deploy-repo-branch:"
+    "deploy-repo-url:"
     "desired-nodes:"
     "desired-o11y-nodes:"
     "eks-cluster-dns-ip:"
@@ -128,6 +133,7 @@ OPTIONS_LIST=(
     "email:"
     "enable-cache-registry"
     "environment:"
+    "external-repo"
     "help"
     "internal"
     "jumphost-ip:"
@@ -180,6 +186,8 @@ usage() {
         echo "    [ --cidr-block {CIDR BLOCK} ] \\"
         echo "    --customer-state-prefix {CUSTOMER STATE PREFIX}  \\"
         echo "    --customer-tag {CUSTOMER TAG} \\"
+        echo "    [ --deploy-repo-branch {DEPLOY REPO BRANCH} ] \\"
+        echo "    [ --deploy-repo-url {DEPLOY REPO URL} ] \\"
         echo "    [ --desired-nodes {NUMBER OF NODES} ] \\"
         echo "    [ --desired-o11y-nodes {NUMBER OF NODES} ] \\"
         echo "    [--eks-cluster-dns-ip {DNS IP}] \\"
@@ -191,6 +199,7 @@ usage() {
         echo "    --email {ADMIN EMAIL} \\"
         echo "    [ --enable-cache-registry ] \\"
         echo "    [ --environment {ENVIRONMENT NAME} ] \\"
+        echo "    [ --external-repo ] \\"
         echo "    [ --internal ] \\"
         echo "    [ --jumphost-ip {EXISTING JUMPHOST IP ADDRESS} ] \\"
         echo "    [ --jumphost-ip-allow-list {COMMA SEPARATE IP SUBNET LIST} ] \\"
@@ -268,6 +277,8 @@ parse_params() {
             --cidr-block) VPC_CIDR=$(eval echo $2); shift;;
             -c|--customer-state-prefix) CUSTOMER_STATE_PREFIX=$(eval echo $2); shift;;
             --customer-tag) CUSTOMER_TAG=$(eval echo $2); shift;;
+            --deploy-repo-branch) DEPLOY_REPO_BRANCH=$(eval echo $2); shift;;
+            --deploy-repo-url) DEPLOY_REPO_URL=$(eval echo $2); shift;;            
             --desired-nodes) EKS_DESIRED_SIZE=$(eval echo $2); OVERRIDE_EKS_SIZE=true; shift;;
             --desired-o11y-nodes) EKS_O11Y_DESIRED_SIZE=$(eval echo $2); OVERRIDE_EKS_O11Y_SIZE=true; shift;;
             --eks-cluster-dns-ip) EKS_CLUSTER_DNS_IP=$(eval echo $2); shift;;
@@ -280,6 +291,7 @@ parse_params() {
             -e|--environment) ENV_NAME=$(eval echo $2); shift;;
             -h|--help) usage; exit;;
             -m|--email) EMAIL=$(eval echo $2); shift;;
+            --external-repo) INSTALL_FROM_LOCAL_GITEA=false;;
             --internal) INTERNAL=true;;
             --jumphost-ip) JUMPHOST_IP=$(eval echo $2); shift;;
             --jumphost-ip-allow-list) JUMPHOST_IP_ALLOW_LIST=$(eval echo $2); shift;;
@@ -326,6 +338,9 @@ parse_params() {
     echo AWS_ACCOUNT=${AWS_ACCOUNT} > ~/.env
     echo AWS_REGION=${AWS_REGION} >> ~/.env
     echo CUSTOMER_STATE_PREFIX=${CUSTOMER_STATE_PREFIX} >> ~/.env
+    echo INSTALL_FROM_LOCAL_GITEA=${INSTALL_FROM_LOCAL_GITEA} >> ~/.env
+    echo DEPLOY_REPO_BRANCH=${DEPLOY_REPO_BRANCH} >> ~/.env
+    echo DEPLOY_REPO_URL=${DEPLOY_REPO_URL} >> ~/.env
 
     if [[ -n "$JUMPHOST_IP" ]]; then
         echo JUMPHOST_IP=${JUMPHOST_IP} >> ~/.env
@@ -1027,6 +1042,9 @@ action_cluster() {
     echo "auto_cert=${AUTO_CERT}" >> $tfvar_override
     echo "webhook_github_netrc=\"\"" >> $tfvar_override
 
+    echo "install_from_local_gitea = ${INSTALL_FROM_LOCAL_GITEA}" >> $tfvar_override
+    echo "disable_ao_profile = ${DISABLE_AO_PROFILE:-false}" >> $tfvar_override
+
     if [[ "$OVERRIDE_EKS_SIZE" == "true" ]]; then
         echo "eks_min_size=${EKS_MIN_SIZE}" >> $tfvar_override
         echo "eks_max_size=${EKS_MAX_SIZE}" >> $tfvar_override
@@ -1306,6 +1324,8 @@ action_orch_loadbalancer() {
         echo "$tls_cert_body" >> $variable_override
         echo "EOF" >> $variable_override
     fi
+    echo "disable_ao_profile = ${DISABLE_AO_PROFILE:-false}" >> $variable_override
+    echo "install_from_local_gitea = ${INSTALL_FROM_LOCAL_GITEA}" >> $variable_override
 
     # Skip destroying the aws-lb-target-group-binding Kubernetes resources to avoid errors for old clusters which don't have the Kubernetes CRD installed
     if [[ $action == "destroy" ]]; then
@@ -1741,7 +1761,9 @@ install() {
     rm -f ${values_changed} || true
 
     if ! $SKIP_APPLY_CLUSTER; then
-        wait_for_gitea
+        if [[ "${DISABLE_AO_PROFILE:-false}" == "false" ]] || [[ "${INSTALL_FROM_LOCAL_GITEA}" == "true" ]]; then
+            wait_for_gitea
+        fi
     fi
 
     terminate_sshuttle

@@ -215,6 +215,7 @@ module "aws_lb_controller" {
 
 module "gitea" {
   depends_on    = [module.eks, module.orch_init, module.aws_lb_controller]
+  count         = (var.disable_ao_profile && !var.install_from_local_gitea) ? 0 : 1
   source        = "../../module/gitea"
   name          = "gitea"
   tls_cert_body = var.tls_cert
@@ -227,4 +228,23 @@ module "gitea" {
   # gitea_database_username    = "gitea-gitea_user" # See aurora_database module
   # gitea_database_password    = module.aurora_database.user_password["gitea-gitea_user"].result
   # gitea_database             = "gitea-gitea"  # See aurora_database module
+  install_from_local_gitea = var.install_from_local_gitea
+}
+
+resource "kubernetes_secret" "argocd_github_repo" {
+  count = var.install_from_local_gitea ? 0 : 1
+  metadata {
+    name      = "github-credential-edge-manageability-framework"
+    namespace = "argocd"
+    labels = {
+      "argocd.argoproj.io/secret-type" : "repository"
+    }
+  }
+  data = {
+    "type"     = "git"
+    "url"      = var.deploy_repo_url
+    #"username" = var.git_username
+    #"password" = var.git_token
+  }
+  depends_on = [module.orch_init]
 }
