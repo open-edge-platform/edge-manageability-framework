@@ -68,7 +68,7 @@ export EMAIL_PROFILE='- orch-configs/profiles/alerting-emails.yaml'
 export ARTIFACT_RS_PROFILE='- orch-configs/profiles/artifact-rs-production-noauth.yaml'
 export OSRM_MANUAL_PROFILE='- orch-configs/profiles/enable-osrm-manual-mode.yaml'
 export RESOURCE_DEFAULT_PROFILE='- orch-configs/profiles/resource-default.yaml'
-export EIM_NOOBB_PROFILE='#- orch-configs/profiles/eim-noobb.yaml'
+export EIM_NOOBB_PROFILE='- orch-configs/profiles/eim-noobb.yaml'
 
 if [[ "${ORCH_INSTALLER_PROFILE:-}" == "onprem-vpro" || "${ORCH_INSTALLER_PROFILE:-}" == "aws-vpro" ]]; then
   export DISABLE_AO_PROFILE=true
