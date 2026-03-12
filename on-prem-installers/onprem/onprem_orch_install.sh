@@ -199,7 +199,7 @@ reset_runtime_variables() {
     fi
     
     # Check if line is a runtime variable
-    if [[ "$line" =~ ^export\ (SRE_TLS_ENABLED|SRE_DEST_CA_CERT|SMTP_SKIP_VERIFY|DISABLE_CO_PROFILE|DISABLE_AO_PROFILE|DISABLE_O11Y_PROFILE)= ]]; then
+    if [[ "$line" =~ ^export\ (SRE_TLS_ENABLED|SRE_DEST_CA_CERT|SMTP_SKIP_VERIFY|DISABLE_CO_PROFILE|DISABLE_AO_PROFILE|DISABLE_O11Y_PROFILE|SINGLE_TENANCY_PROFILE)= ]]; then
       # Check if it's multi-line (opening quote without closing quote on same line)
       if [[ "$line" =~ =[\'\"]. ]] && ! [[ "$line" =~ =[\'\"].*[\'\"][[:space:]]*$ ]]; then
         in_multiline=1
@@ -215,7 +215,7 @@ reset_runtime_variables() {
   
   # Unset variables in current shell
   unset SRE_TLS_ENABLED SRE_DEST_CA_CERT SMTP_SKIP_VERIFY
-  unset DISABLE_CO_PROFILE DISABLE_AO_PROFILE DISABLE_O11Y_PROFILE
+  unset DISABLE_CO_PROFILE DISABLE_AO_PROFILE DISABLE_O11Y_PROFILE SINGLE_TENANCY_PROFILE
   
   echo "Runtime variables cleaned successfully."
 }
