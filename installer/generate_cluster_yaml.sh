@@ -27,7 +27,7 @@ if [ "$DEPLOY_TYPE" = "aws" ]; then
 
 elif [ "$DEPLOY_TYPE" = "onprem" ]; then
     # shellcheck disable=SC1091
-    source "$(dirname "$0")/${DEPLOY_TYPE}.env"
+    source "${PWD}/${DEPLOY_TYPE}.env"
 
     # Validate ORCH_INSTALLER_PROFILE
     if [[ "$ORCH_INSTALLER_PROFILE" =~ ^(onprem|onprem-oxm|onprem-vpro)$ ]]; then
@@ -68,6 +68,7 @@ export EMAIL_PROFILE='- orch-configs/profiles/alerting-emails.yaml'
 export ARTIFACT_RS_PROFILE='- orch-configs/profiles/artifact-rs-production-noauth.yaml'
 export OSRM_MANUAL_PROFILE='- orch-configs/profiles/enable-osrm-manual-mode.yaml'
 export RESOURCE_DEFAULT_PROFILE='- orch-configs/profiles/resource-default.yaml'
+export EIM_NOOBB_PROFILE='#- orch-configs/profiles/eim-noobb.yaml'
 
 if [[ "${ORCH_INSTALLER_PROFILE:-}" == "onprem-vpro" || "${ORCH_INSTALLER_PROFILE:-}" == "aws-vpro" ]]; then
   export DISABLE_AO_PROFILE=true
@@ -200,22 +201,28 @@ if [ "$DEPLOY_TYPE" = "onprem" ]; then
     # Prompt for required IPs
     prompt_for_ip "ARGO_IP" "Argo IP"
     prompt_for_ip "TRAEFIK_IP" "Traefik IP"
-    prompt_for_ip "NGINX_IP" "Nginx IP"
+    prompt_for_ip "HAPROXY_IP" "HAProxy IP"
 
     echo
     echo "✅ Using the following valid IPs:"
     echo "   ArgoIP:     $ARGO_IP"
     echo "   TraefikIP:  $TRAEFIK_IP"
-    echo "   NginxIP:    $NGINX_IP"
+    echo "   HaproxyIP:  $HAPROXY_IP"
     echo
 
     # O11Y disable check
     if [ "${DISABLE_O11Y_PROFILE:-false}" = "true" ]; then
         export O11Y_ENABLE_PROFILE="#- orch-configs/profiles/enable-o11y.yaml"
         export O11Y_PROFILE="#- orch-configs/profiles/o11y-onprem.yaml"
+        if [[ "${ORCH_INSTALLER_PROFILE:-}" = "onprem-vpro" ]]; then
+            export EIM_NOOBB_PROFILE="#- orch-configs/profiles/eim-noobb.yaml"
+        else
+            export EIM_NOOBB_PROFILE="- orch-configs/profiles/eim-noobb.yaml"
+        fi
     else
         export O11Y_ENABLE_PROFILE="- orch-configs/profiles/enable-o11y.yaml"
         export O11Y_PROFILE="- orch-configs/profiles/o11y-onprem.yaml"
+        export EIM_NOOBB_PROFILE="#- orch-configs/profiles/eim-noobb.yaml"
     fi
 
     if [ "${CLUSTER_SCALE_PROFILE}" = "1ken" ]; then
@@ -247,7 +254,8 @@ if [ "$DEPLOY_TYPE" = "onprem" ]; then
             export O11Y_ENABLE_PROFILE="#- orch-configs/profiles/enable-o11y.yaml"
             export O11Y_PROFILE="#- orch-configs/profiles/o11y-onprem.yaml"
             export CO_PROFILE="#- orch-configs/profiles/enable-cluster-orch.yaml"
-            export AO_PROFILE="#- orch-configs/profiles/enable-app-orch.yaml"            
+            export AO_PROFILE="#- orch-configs/profiles/enable-app-orch.yaml"
+            export GITEA_ENABLED="false"
             ;;
         *)
             echo "❌ Invalid ORCH_INSTALLER_PROFILE: ${ORCH_INSTALLER_PROFILE}"
@@ -266,9 +274,15 @@ elif [ "$DEPLOY_TYPE" = "aws" ]; then
     if [ "${DISABLE_O11Y_PROFILE:-false}" = "true" ]; then
         export O11Y_ENABLE_PROFILE="#- orch-configs/profiles/enable-o11y.yaml"
         export O11Y_PROFILE="#- orch-configs/profiles/o11y-release.yaml"
+        if [[ "${ORCH_INSTALLER_PROFILE:-}" = "aws-vpro" ]]; then
+            export EIM_NOOBB_PROFILE="#- orch-configs/profiles/eim-noobb.yaml"
+        else
+            export EIM_NOOBB_PROFILE="- orch-configs/profiles/eim-noobb.yaml"
+        fi
     else
         export O11Y_ENABLE_PROFILE="- orch-configs/profiles/enable-o11y.yaml"
         export O11Y_PROFILE="- orch-configs/profiles/o11y-release.yaml"
+        export EIM_NOOBB_PROFILE="#- orch-configs/profiles/eim-noobb.yaml"
         if [[ "$CLUSTER_SCALE_PROFILE" =~ ^(500en|1ken|10ken)$ ]]; then
             export O11Y_PROFILE="- orch-configs/profiles/o11y-release-large.yaml"
         fi
@@ -356,6 +370,9 @@ if [ "${ONPREM_UPGRADE_SYNC:-false}" = "true" ]; then
 ' "$OUTPUT_FILE"
 fi
 
+if [ "${DISABLE_UI_PROFILE:-false}" = "true" ]; then
+    yq -i '.argo.enabled.metadata-broker = false' "$OUTPUT_FILE"
+fi
 
 # -----------------------------------------------------------------------------
 # Proxy variable updates

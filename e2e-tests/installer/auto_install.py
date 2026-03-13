@@ -207,6 +207,11 @@ class AutoInstall:
         self.aws_region = os.getenv("AWS_REGION")
         if self.aws_region is None or len(self.aws_region) == 0:
             raise ValueError("AWS_REGION environment variable is required.")
+        
+        # Set bucket_region variable if it is set, else set it to the AWS_REGION
+        self.bucket_region = os.getenv("BUCKET_REGION")
+        if self.aws_region is None or len(self.aws_region) == 0:
+            self.bucket_region = self.aws_region
 
         self.aws_account = os.getenv("AWS_ACCOUNT")
         if self.aws_account is None or len(self.aws_account) == 0:
@@ -482,6 +487,9 @@ class AutoInstall:
         # on network performance. Add a specific pull timeout/progress watch phase to verify pull
         # progress when it is being done here.
 
+        # Set the bucket region during init
+        self.installer_session.sendline(f"export BUCKET_REGION={self.bucket_region}")
+
     def start_time_cryer(self):
         """
         Run shellcryer.sh to capture timing data for progress estimate development.
@@ -653,14 +661,24 @@ class AutoInstall:
         """
         Performs the provisioning upgrade step of the installation process.
         """
-
+        cas_http_proxy = os.getenv('http_proxy')
+        cas_https_proxy = os.getenv('https_proxy')
+        cas_no_proxy = "169.254.169.254,127.0.0.1,localhost,.cluster.local,kubernetes.default,kubernetes.default.svc,kubernetes.default.svc.cluster.local,10.0.0.0/8,172.20.0.0/16,172.20.0.1,192.168.0.0/16"
+     
         self.current_step = "Provision Upgrade"
         print(f"Step: {self.current_step}")
+
+        proxy_prefix = (
+                f"TF_VAR_CAS_HP='{cas_http_proxy}' "
+                f"TF_VAR_CAS_HPS='{cas_https_proxy}' "
+                f"TF_VAR_CAS_NP='{cas_no_proxy}' "
+            )
 
         self.installer_session.sendline("cd ~/pod-configs")
 
         self.installer_session.expect("orchestrator-admin:pod-configs")
         self.installer_session.sendline(
+            proxy_prefix +
             f"utils/provision.sh upgrade --aws-account {self.aws_account} "
             f"--customer-state-prefix {self.state_bucket_prefix} "
             f"--environment $CLUSTER_NAME --parent-domain {self.cluster_domain} "
@@ -716,14 +734,22 @@ class AutoInstall:
         """
         Performs the provisioning step of the installation process.
         """
-
+        cas_http_proxy = os.getenv('http_proxy')
+        cas_https_proxy = os.getenv('https_proxy')
+        cas_no_proxy = "169.254.169.254,127.0.0.1,localhost,.cluster.local,kubernetes.default,kubernetes.default.svc,kubernetes.default.svc.cluster.local,10.0.0.0/8,172.20.0.0/16,172.20.0.1,192.168.0.0/16"
+     
         self.current_step = "Provision"
         print(f"Step: {self.current_step}")
-
+        proxy_prefix = (
+                f"TF_VAR_CAS_HP='{cas_http_proxy}' "
+                f"TF_VAR_CAS_HPS='{cas_https_proxy}' "
+                f"TF_VAR_CAS_NP='{cas_no_proxy}' "
+            )
         self.installer_session.sendline("cd ~/pod-configs")
 
         self.installer_session.expect("orchestrator-admin:pod-configs")
         self.installer_session.sendline(
+            proxy_prefix +
             f"utils/provision.sh install --aws-account {self.aws_account} "
             f"--customer-state-prefix {self.state_bucket_prefix} "
             f"--environment $CLUSTER_NAME --parent-domain {self.cluster_domain} "

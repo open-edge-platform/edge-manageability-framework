@@ -21,6 +21,7 @@ root:
     ${PROFILE_FILE_NAME_EXT}
     ${EMAIL_PROFILE}
     ${O11Y_PROFILE}
+    ${EIM_NOOBB_PROFILE}
     ${SINGLE_TENANCY_PROFILE}
     ${EXPLICIT_PROXY_PROFILE}
     - orch-configs/profiles/resource-default.yaml
@@ -29,6 +30,7 @@ root:
 # Values applied to both root app and shared among all child apps
 argo:
   ## Basic cluster information
+  orchestratorVersion: ${DEPLOY_VERSION}
   project: ${CLUSTER_NAME}
   namespace: ${CLUSTER_NAME}
   clusterName: ${CLUSTER_NAME}
@@ -39,7 +41,7 @@ argo:
 
   ## Argo CD configs
   deployRepoURL: "https://github.com/open-edge-platform/edge-manageability-framework"
-  deployRepoRevision: ${DEPLOY_REPO_BRANCH}
+  deployRepoRevision: "${DEPLOY_REPO_BRANCH}"
 
   targetServer: "https://kubernetes.default.svc"
   autosync: true
@@ -72,12 +74,12 @@ postCustomTemplateOverwrite:
     service:
       annotations:
         metallb.universe.tf/address-pool: traefik
-  ingress-nginx:
+  ingress-haproxy:
     controller:
       service:
         annotations:
-          metallb.universe.tf/address-pool: ingress-nginx-controller
+          metallb.universe.tf/address-pool: haproxy-controller
   metallb-config:
     ArgoIP: ${ARGO_IP}
     TraefikIP: ${TRAEFIK_IP}
-    NginxIP: ${NGINX_IP}
+    HaproxyIP: ${HAPROXY_IP}

@@ -10,11 +10,11 @@
     variable: "eks_volume_size"
     type: integer
   - name: "EKS Default Nodegroup Minimum Size"
-    value: 3
+    value: 1
     variable: "eks_min_size"
     type: integer
   - name: "EKS Default Nodegroup Maximum Size"
-    value: 3
+    value: 5
     variable: "eks_max_size"
     type: integer
   - name: "EKS Default Nodegroup Desired Size"
@@ -45,8 +45,8 @@
     value: >
         {
           "observability": {
-            desired_size = 1
-            min_size = 1
+            desired_size = 0
+            min_size = 0
             max_size = 1
             labels = {
               "node.kubernetes.io/custom-rule": "observability"

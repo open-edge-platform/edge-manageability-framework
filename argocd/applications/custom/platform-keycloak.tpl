@@ -79,7 +79,7 @@ keycloak:
 {{- $registryRootUrl := printf "https://registry-oci.%s" $clusterDomain -}}
 {{- $telemetryRootUrl := printf "https://observability-ui.%s" $clusterDomain -}}
 {{- $clusterMgmtRootUrl := printf "https://cluster-management.%s" $clusterDomain -}}
-{{- $webuiRedirects := list (printf "https://web-ui.%s" $clusterDomain) (printf "https://app-service-proxy.%s/app-service-proxy-index.html*" $clusterDomain) (printf "https://vnc.%s/*" $clusterDomain) (printf "https://%s" $clusterDomain) -}}
+{{- $webuiRedirects := list (printf "https://web-ui.%s" $clusterDomain) (printf "https://app-service-proxy.%s/app-service-proxy-index.html*" $clusterDomain) (printf "https://vnc.%s/*" $clusterDomain) (printf "https://%s" $clusterDomain) "http://localhost:8080" -}}
 {{- if $extraUiRedirects -}}
   {{- $webuiRedirects = append $webuiRedirects $extraUiRedirects -}}
 {{- end -}}
@@ -93,9 +93,15 @@ argo:
   clusterDomain: {{ .Values.argo.clusterDomain | quote }}
   {{- end }}
   proxy:
-    httpProxy: "http://proxy-dmz.intel.com:912"
-    httpsProxy: "http://proxy-dmz.intel.com:912"
-    noProxy: "localhost,svc,cluster.local,default,internal,caas.intel.com,certificates.intel.com,localhost,127.0.0.0/8,10.0.0.0/8,192.168.0.0/16,172.16.0.0/12,169.254.169.254,orch-platform,orch-app,orch-cluster,orch-infra,orch-database,cattle-system,orch-secret,s3.amazonaws.com,s3.us-west-2.amazonaws.com,ec2.us-west-2.amazonaws.com,eks.amazonaws.com,elb.us-west-2.amazonaws.com,dkr.ecr.us-west-2.amazonaws.com,espd.infra-host.com,pid.infra-host.com,espdqa.infra-host.com,argocd-repo-server"
+  {{- if and .Values.argo .Values.argo.httpProxy }}
+    httpProxy: {{ .Values.argo.httpProxy | quote }}
+  {{- end }}
+  {{- if and .Values.argo .Values.argo.httpsProxy }}
+    httpsProxy: {{ .Values.argo.httpsProxy | quote }}
+  {{- end }}
+  {{- if and .Values.argo .Values.argo.noProxy }}
+    noProxy: {{ .Values.argo.noProxy | quote }}
+  {{- end }}
 
 # Note: keycloakConfigCli configuration is fully defined in configs/platform-keycloak.yaml
 # Only adding proxy env variables here if needed. The rest comes from the base config.

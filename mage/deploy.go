@@ -151,7 +151,7 @@ func (d Deploy) kind(targetEnv string) error {
 }
 
 func (d Deploy) preOrchDeploy(targetEnv string) error {
-	if err := createNamespaces(); err != nil {
+	if err := createNamespaces(targetEnv); err != nil {
 		return fmt.Errorf("error creating namespaces: %w", err)
 	}
 
@@ -181,7 +181,7 @@ func (d Deploy) preOrchDeploy(targetEnv string) error {
 		}
 	}
 
-	if err := (Deploy{}).generateInfraCerts(); err != nil {
+	if err := (Deploy{}).generateInfraCerts(targetEnv); err != nil {
 		return err
 	}
 
@@ -652,11 +652,16 @@ const (
 )
 
 // Create namespaces without erroring out if they already exist
-func createNamespaces() error {
+func createNamespaces(targetEnv string) error {
 	if autoCert && coderEnv {
 		// Add orch-gateway namespace
 		// Used for reusing certificates in coder environments
 		argoNamespaces = append(argoNamespaces, "orch-gateway")
+	}
+
+	aoEnabled, _ := (Config{}).isAOEnabled(targetEnv)	
+	if aoEnabled {
+		argoNamespaces = append(argoNamespaces, "gitea")
 	}
 
 	// Create Namespaces without Istio injection label
@@ -888,7 +893,7 @@ func joinNamedParams(valueName string, values []string) string {
 
 // Generate TLS cert for Gitea and ArgoCD. Must be executed before deploying Gitea and ArgoCD
 // since tls-orch will not be created until later stage.
-func (Deploy) generateInfraCerts() error {
+func (Deploy) generateInfraCerts(targetEnv string) error {
 	// Process Subject Alrternative Names (SAN)
 	// The cert is signed for both *.kind.internal and *.serviceDomain.
 	commonName := "*.kind.internal"
@@ -901,11 +906,15 @@ func (Deploy) generateInfraCerts() error {
 		return err
 	}
 
-	// Export TLS cert for Gitea as K8s secret
-	cmd = "kubectl -n gitea create secret tls gitea-tls-certs --cert=infra-tls.crt --key=infra-tls.key"
-	if _, err := script.Exec(cmd).Stdout(); err != nil {
-		return err
-	}
+    // AO is diabled dont deploy gitea tls secret
+	aoEnabled, _ := (Config{}).isAOEnabled(targetEnv)
+	if aoEnabled {
+		// Export TLS cert for Gitea as K8s secret
+		cmd = "kubectl -n gitea create secret tls gitea-tls-certs --cert=infra-tls.crt --key=infra-tls.key"
+		if _, err := script.Exec(cmd).Stdout(); err != nil {
+			return err
+		}
+	} 
 
 	// Export TLS cert for ArgoCD as K8s secret
 	cmd = "kubectl -n argocd create secret tls argocd-server-tls --cert=infra-tls.crt --key=infra-tls.key"
@@ -917,41 +926,42 @@ func (Deploy) generateInfraCerts() error {
 }
 
 func (d Deploy) gitea(bootstrapValues []string, targetEnv string) error {
-	// Store admin credential in K8s Secret
-	// This is not consumed during normal situlations
-	fmt.Println("Creating admin-gitea-credential secret")
-	if err := createOrUpdateGiteaSecret("admin-gitea-credential", adminGiteaUsername, adminGiteaPassword); err != nil {
-		return err
-	}
-
-	// Store argocd gitea credential in K8s Secret
-	fmt.Println("Creating argocd-gitea-credential secret")
-	if err := createOrUpdateGiteaSecret("argocd-gitea-credential", argoGiteaUsername, argoGiteaPassword); err != nil {
-		fmt.Println("Error creating argocd-gitea-credential secret")
-		return err
-	}
-
-	// Store app orch gitea credential in K8s Secret
-	// This will later be connsumed by adm-secret to create Vault secret ma_git_service
-	fmt.Println("Creating app-gitea-credential secret")
-	if err := createOrUpdateGiteaSecret("app-gitea-credential", appGiteaUsername, appGiteaPassword); err != nil {
-		fmt.Println("Error creating app-gitea-credential secret")
-		return err
-	}
-
-	// Store cluster orch gitea credential in K8s Secret
-	// This will later be connsumed by adm-secret to create Vault secret mc_git_service
-	fmt.Println("Creating cluster-gitea-credential secret")
-	if err := createOrUpdateGiteaSecret("cluster-gitea-credential", clusterGiteaUsername, clusterGiteaPassword); err != nil {
-		fmt.Println("Error creating cluster-gitea-credential secret")
-		return err
-	}
 
 	// Deploy Gitea if AO is enabled
 	aoEnabled, _ := (Config{}).isAOEnabled(targetEnv)
 	if aoEnabled {
-		giteaRegistry := "oci://registry-1.docker.io/giteacharts/gitea"
 
+		// Store admin credential in K8s Secret
+		// This is not consumed during normal situlations
+		fmt.Println("Creating admin-gitea-credential secret")
+		if err := createOrUpdateGiteaSecret("admin-gitea-credential", adminGiteaUsername, adminGiteaPassword); err != nil {
+			return err
+		}
+
+		// Store argocd gitea credential in K8s Secret
+		fmt.Println("Creating argocd-gitea-credential secret")
+		if err := createOrUpdateGiteaSecret("argocd-gitea-credential", argoGiteaUsername, argoGiteaPassword); err != nil {
+			fmt.Println("Error creating argocd-gitea-credential secret")
+			return err
+		}
+
+		// Store app orch gitea credential in K8s Secret
+		// This will later be connsumed by adm-secret to create Vault secret ma_git_service
+		fmt.Println("Creating app-gitea-credential secret")
+		if err := createOrUpdateGiteaSecret("app-gitea-credential", appGiteaUsername, appGiteaPassword); err != nil {
+			fmt.Println("Error creating app-gitea-credential secret")
+			return err
+		}
+
+		// Store cluster orch gitea credential in K8s Secret
+		// This will later be connsumed by adm-secret to create Vault secret mc_git_service
+		fmt.Println("Creating cluster-gitea-credential secret")
+		if err := createOrUpdateGiteaSecret("cluster-gitea-credential", clusterGiteaUsername, clusterGiteaPassword); err != nil {
+			fmt.Println("Error creating cluster-gitea-credential secret")
+			return err
+		}
+
+		giteaRegistry := "oci://registry-1.docker.io/giteacharts/gitea"
 		bootstrapParam := joinNamedParams("values", bootstrapValues)
 		cmd := fmt.Sprintf("helm -n gitea upgrade --install gitea %s --version %s "+
 			bootstrapParam+" --set gitea.admin.username='%s' --set gitea.admin.password='%s' --create-namespace --wait",
