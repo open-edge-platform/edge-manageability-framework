@@ -45,7 +45,7 @@
     value: >
         {
           "observability": {
-            desired_size = 0
+            desired_size = 1
             min_size = 0
             max_size = 1
             labels = {
