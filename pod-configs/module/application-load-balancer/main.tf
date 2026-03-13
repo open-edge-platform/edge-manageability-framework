@@ -36,6 +36,7 @@ resource "aws_lb" "main" {
   name                       = substr(sha256("${var.cluster_name}-${var.name}"), 0, 32)
   internal                   = var.internal
   load_balancer_type         = "application"
+  drop_invalid_header_fields = true
   subnets                    = var.subnets
   enable_deletion_protection = var.enable_deletion_protection
   security_groups            = [aws_security_group.common.id]

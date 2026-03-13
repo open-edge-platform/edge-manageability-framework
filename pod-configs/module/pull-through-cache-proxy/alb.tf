@@ -26,11 +26,12 @@ resource "aws_security_group_rule" "alb_to_ecs_egress" {
 }
 
 resource "aws_lb" "pull_through_cache_proxy" {
-  name               = "${var.name}-ptcp"
-  internal           = true
-  load_balancer_type = "application"
-  security_groups    = [aws_security_group.alb.id]
-  subnets            = var.subnet_ids
+  name                       = "${var.name}-ptcp"
+  internal                   = true
+  load_balancer_type         = "application"
+  drop_invalid_header_fields = true
+  security_groups            = [aws_security_group.alb.id]
+  subnets                    = var.subnet_ids
 
   enable_deletion_protection = false
   idle_timeout               = 60
