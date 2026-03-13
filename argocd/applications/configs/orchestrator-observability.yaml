@@ -9,14 +9,14 @@ loki:
         endpoint: orchestrator-observability-minio:9000
   minio:
     image:
-      tag: RELEASE.2025-09-07T16-13-09Z
+      tag: RELEASE.2025-10-15T17-29-55Z
     mcImage:
       tag: RELEASE.2025-08-13T08-35-41Z
 
 mimir-distributed:
   minio:
     image:
-      tag: RELEASE.2025-09-07T16-13-09Z
+      tag: RELEASE.2025-10-15T17-29-55Z
     mcImage:
       tag: RELEASE.2025-08-13T08-35-41Z
     deploymentUpdate:
