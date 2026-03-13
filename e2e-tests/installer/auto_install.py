@@ -663,7 +663,6 @@ class AutoInstall:
         """
         proxy_prefix = ""
         account = str(self.aws_account).strip()
-        print(f"AWS_ACCOUNT raw: {repr(account)}")
         if account != "000720649236":
             cas_http_proxy = os.getenv('http_proxy')
             cas_https_proxy = os.getenv('https_proxy')
@@ -739,7 +738,6 @@ class AutoInstall:
         """
         proxy_prefix = ""
         account = str(self.aws_account).strip()
-        print(f"AWS_ACCOUNT raw: {repr(account)}")
         if account != "000720649236":
             cas_http_proxy = os.getenv('http_proxy')
             cas_https_proxy = os.getenv('https_proxy')
