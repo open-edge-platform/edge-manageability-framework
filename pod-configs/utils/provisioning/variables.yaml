@@ -76,7 +76,7 @@
   variable: "smtp_from"
   type: string
 - name: "Observability EKS Nodegroup Desired Size"
-  default: 1
+  default: 0
   type: integer
   variableField:
     variable: "eks_additional_node_groups"
