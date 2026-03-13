@@ -662,7 +662,8 @@ class AutoInstall:
         Performs the provisioning upgrade step of the installation process.
         """
         proxy_prefix = ""
-        if self.aws_account not in ["000720649236"]:
+        account = str(self.aws_account).strip()
+        if account != "000720649236":
             cas_http_proxy = os.getenv('http_proxy')
             cas_https_proxy = os.getenv('https_proxy')
             cas_no_proxy = "169.254.169.254,127.0.0.1,localhost,.cluster.local,kubernetes.default,kubernetes.default.svc,kubernetes.default.svc.cluster.local,10.0.0.0/8,172.20.0.0/16,172.20.0.1,192.168.0.0/16"
@@ -736,7 +737,8 @@ class AutoInstall:
         Performs the provisioning step of the installation process.
         """
         proxy_prefix = ""
-        if self.aws_account not in ["000720649236"]:
+        account = str(self.aws_account).strip()
+        if account != "000720649236":
             cas_http_proxy = os.getenv('http_proxy')
             cas_https_proxy = os.getenv('https_proxy')
             cas_no_proxy = "169.254.169.254,127.0.0.1,localhost,.cluster.local,kubernetes.default,kubernetes.default.svc,kubernetes.default.svc.cluster.local,10.0.0.0/8,172.20.0.0/16,172.20.0.1,192.168.0.0/16"
