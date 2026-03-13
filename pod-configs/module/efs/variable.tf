@@ -60,7 +60,7 @@ variable "generate_eks_policy" {
   default = true
 }
 variable "encrypted" {
-  default = false
+  default = true
 }
 
 variable "access_points" {
