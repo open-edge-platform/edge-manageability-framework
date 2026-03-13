@@ -113,6 +113,15 @@ resource "aws_s3_bucket" "logs" {
   }
 }
 
+# Block all public access (AWS-0086, AWS-0087, AWS-0091, AWS-0093)
+resource "aws_s3_bucket_public_access_block" "logs" {
+  bucket                  = aws_s3_bucket.logs.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
 resource "aws_iam_policy" "cloudwatch" {
   name        = "orch-ec2log-${var.cluster_name}-asg-lifecycle"
   path        = "/"

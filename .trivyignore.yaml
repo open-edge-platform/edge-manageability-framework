@@ -1,0 +1,27 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+misconfigurations:
+  - id: AVD-AWS-0053
+    paths:
+      - "pod-configs/module/load-balancer/main.tf"
+      - "pod-configs/module/application-load-balancer/main.tf"
+    statement: Load balancers use var.internal which is intentionally configurable. Public exposure is expected for external-facing orchestrator endpoints.
+
+  - id: AVD-AWS-0079
+    paths:
+      - "pod-configs/module/aurora/main.tf"
+    statement: Aurora RDS cluster already has storage_encrypted = true. Trivy flags missing KMS CMK, but AWS default encryption is sufficient.
+
+  - id: AVD-AWS-0132
+    paths:
+      - "pod-configs/buckets/main.tf"
+      - "pod-configs/module/ec2log/save-log.tf"
+      - "pod-configs/module/s3/main.tf"
+    statement: S3 CMK encryption - AWS default SSE-S3 encryption is enabled. Customer managed keys require additional KMS infrastructure.
+
+  - id: AVD-AWS-0039
+    paths:
+      - "pod-configs/module/eks/main.tf"
+    statement: "EKS secrets encryption requires a KMS key ARN. Cluster uses private endpoint with no public access. Secrets at rest are protected by EBS encryption at the node level."

@@ -235,3 +235,22 @@ resource "aws_s3_bucket_policy" "tracing_policy" {
   bucket = aws_s3_bucket.tracing[0].id
   policy = data.aws_iam_policy_document.tracing_policy_doc[0].json
 }
+
+# Block all public access (AWS-0086, AWS-0087, AWS-0091, AWS-0093)
+resource "aws_s3_bucket_public_access_block" "bucket" {
+  for_each                = local.buckets
+  bucket                  = aws_s3_bucket.bucket[each.key].id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_public_access_block" "tracing" {
+  count                   = var.create_tracing ? 1 : 0
+  bucket                  = aws_s3_bucket.tracing[0].id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}

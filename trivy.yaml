@@ -8,6 +8,8 @@ scan:
   skip-files:
     - installer/Dockerfile
 
+ignorefile: ./.trivyignore.yaml
+
 # Suppress false positives and expected security findings
 rego:
   skip-policies:
