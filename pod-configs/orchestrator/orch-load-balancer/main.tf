@@ -49,6 +49,7 @@ locals {
   region            = data.terraform_remote_state.vpc.outputs.region
   nat_public_ips    = toset([for id, nat in data.aws_nat_gateway.vpc_nat_gateway : "${nat.public_ip}/32" if nat.connectivity_type == "public"])
   ip_allow_list     = setunion(var.ip_allow_list, local.nat_public_ips)
+  vpc_cidr_blocks   = data.terraform_remote_state.vpc.outputs.cidr_blocks
   listeners = {
     "https" : {
       listen          = 443
@@ -122,6 +123,7 @@ module "traefik_load_balancer" {
   listeners                  = local.listeners
   target_groups              = local.traefik_target_groups
   enable_deletion_protection = var.enable_deletion_protection
+  egress_cidr_blocks         = local.vpc_cidr_blocks
 }
 
 # This block executes only when `create_traefik2_load_balancer` is set to true
@@ -171,6 +173,7 @@ module "argocd_load_balancer" {
   listeners                  = local.listeners
   target_groups              = local.infra_service_target_groups
   enable_deletion_protection = var.enable_deletion_protection
+  egress_cidr_blocks         = local.vpc_cidr_blocks
 }
 
 # This block executes only when `create_target_group_binding` is set to true
