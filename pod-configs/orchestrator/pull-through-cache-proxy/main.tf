@@ -31,4 +31,5 @@ module "pull_through_cache_proxy" {
   no_proxy              = var.no_proxy
   route53_zone_name     = var.route53_zone_name
   with_public_ip        = var.with_public_ip
+  egress_cidr_blocks    = local.vpc_cidr_blocks
 }

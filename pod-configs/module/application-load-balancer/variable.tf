@@ -56,6 +56,6 @@ variable "default_ssl_policy" {
   default = "ELBSecurityPolicy-TLS13-1-2-Res-FIPS-2023-04"
 }
 variable "egress_cidr_blocks" {
+  description = "CIDR blocks for ALB egress. Must be explicit for AWS-0104. Do not use 0.0.0.0/0."
   type        = set(string)
-  default     = ["0.0.0.0/0"]
 }
