@@ -21,4 +21,4 @@ yamllint 1.37.1
 yq 4.34.2
 nodejs 24.13.0
 markdownlint-cli2 0.17.2
-python 3.11.9
+python 3.14.3
