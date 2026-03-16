@@ -123,6 +123,7 @@ EOF
     sleep 30
 }
 
+# to make sure that upgrade process started 
 sync_root_app_if_needed() {
 
     echo "[INFO] Checking sync status for $APP_NAME..."
