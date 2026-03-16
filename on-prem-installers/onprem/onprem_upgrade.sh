@@ -1309,9 +1309,25 @@ sleep  5
 kubectl patch application external-secrets -n $apps_ns --type=json -p='[{"op":"remove","path":"/metadata/finalizers"}]' 2>/dev/null || true
 kubectl delete application external-secrets -n $apps_ns --force --grace-period=0 --ignore-not-found=true 2>/dev/null || true
 sleep  5
-# Apply root-app sync
-kubectl patch application root-app -n  "$apps_ns"  --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
-sleep 10
+# Force sync root-app with Prune enabled to remove stale apps (e.g. app-interconnect-manager)
+echo "Syncing root-app with Prune enabled to clean up removed applications..."
+kubectl patch -n "$apps_ns" application root-app --type merge --patch "$(cat <<EOF
+{
+    "operation": {
+        "initiatedBy": {
+            "username": "admin"
+        },
+        "sync": {
+            "prune": true,
+            "syncStrategy": {
+                "hook": {}
+            }
+        }
+    }
+}
+EOF
+)"
+sleep 30
 delete_nginx_if_any
 # Remove gitea if disabled
 if [[ "${INSTALL_GITEA}" == "false" ]]; then
