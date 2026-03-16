@@ -79,7 +79,6 @@ variable "with_public_ip" {
 }
 
 variable "egress_cidr_blocks" {
-  description = "CIDR blocks for ECS service egress"
+  description = "CIDR blocks for ECS service egress. Must be explicit for AWS-0104. Do not use 0.0.0.0/0."
   type        = list(string)
-  default     = ["0.0.0.0/0"]
 }

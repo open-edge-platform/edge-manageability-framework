@@ -98,6 +98,55 @@ wait_for_root_app_healthy() {
     done
 }
 
+sync_root_app_with_prune() {
+
+    echo "[INFO] Syncing root-app with Prune enabled to clean up removed applications..."
+
+    kubectl patch -n "$TARGET_ENV" application "$APP_NAME" --type merge --patch "$(cat <<EOF
+{
+    "operation": {
+        "initiatedBy": {
+            "username": "admin"
+        },
+        "sync": {
+            "prune": true,
+            "syncStrategy": {
+                "hook": {}
+            }
+        }
+    }
+}
+EOF
+)"
+
+    echo "[INFO] Sync triggered. Waiting 30 seconds..."
+    sleep 30
+}
+
+# to make sure that upgrade process started 
+sync_root_app_if_needed() {
+
+    echo "[INFO] Checking sync status for $APP_NAME..."
+
+    SYNC_STATUS=$(kubectl get application "$APP_NAME" -n "$TARGET_ENV" \
+        -o jsonpath='{.status.sync.status}' 2>/dev/null || echo "Missing")
+
+    echo "[INFO] Current sync status: $SYNC_STATUS"
+
+    if [[ "$SYNC_STATUS" != "Synced" ]]; then
+        echo "[INFO] Application is not Synced. Triggering sync..."
+
+        kubectl patch application "$APP_NAME" -n "$TARGET_ENV" \
+            --type merge \
+            -p '{"operation":{"sync":{}}}'
+
+        echo "[OK] Sync triggered for $APP_NAME"
+    else
+        echo "[OK] Application is already Synced"
+    fi
+}
+
+sync_root_app_if_needed
 
 # Wait for helm upgrade to take effect
 echo "[INFO] Waiting 2 minutes for helm upgrade to take effect..."
@@ -167,6 +216,9 @@ sleep 4
 kubectl delete job init-amt-vault-job -n orch-infra --ignore-not-found
 kubectl patch application infra-external -n "$TARGET_ENV" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge 
 # add sync
+
+sync_root_app_with_prune
+
 # Sync root-app
 sudo mkdir -p /tmp/argo-cd
 
