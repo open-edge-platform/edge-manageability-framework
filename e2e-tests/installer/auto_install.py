@@ -12,6 +12,7 @@ within Jenkins E2E validation pipelines.
 import sys
 import os
 import shutil
+import subprocess
 import time
 import argparse
 import pexpect
@@ -572,7 +573,7 @@ class AutoInstall:
         config_path = os.path.join(current_directory, "state", config_file)
         state_dir = os.path.join(current_directory, "state")
 
-        os.system(f"sudo chown -R {current_user}:{current_user} {state_dir}")
+        subprocess.run(["sudo", "chown", "-R", f"{current_user}:{current_user}", state_dir], check=True)  # nosec B603 B607
 
         with open(config_path, "r") as f:
             lines = f.readlines()
