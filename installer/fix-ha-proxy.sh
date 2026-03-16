@@ -98,6 +98,31 @@ wait_for_root_app_healthy() {
     done
 }
 
+sync_root_app_with_prune() {
+
+    echo "[INFO] Syncing root-app with Prune enabled to clean up removed applications..."
+
+    kubectl patch -n "$TARGET_ENV" application "$APP_NAME" --type merge --patch "$(cat <<EOF
+{
+    "operation": {
+        "initiatedBy": {
+            "username": "admin"
+        },
+        "sync": {
+            "prune": true,
+            "syncStrategy": {
+                "hook": {}
+            }
+        }
+    }
+}
+EOF
+)"
+
+    echo "[INFO] Sync triggered. Waiting 30 seconds..."
+    sleep 30
+}
+
 sync_root_app_if_needed() {
 
     echo "[INFO] Checking sync status for $APP_NAME..."
@@ -190,6 +215,9 @@ sleep 4
 kubectl delete job init-amt-vault-job -n orch-infra --ignore-not-found
 kubectl patch application infra-external -n "$TARGET_ENV" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge 
 # add sync
+
+sync_root_app_with_prune
+
 # Sync root-app
 sudo mkdir -p /tmp/argo-cd
 
