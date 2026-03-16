@@ -14,9 +14,11 @@ runs:
     id: run-k8s-diagnostics
     if: always()
     shell: bash
+    env:
+      K8S_DIAGNOSTICS_ARGS: ${{ inputs.k8s_diagnostics_args }}
     run: |
-      /usr/bin/python3 ./ci/orch_k8s_diagnostics.py ${{ inputs.k8s_diagnostics_args }}
-      echo "K8s diagnostics completed with args: ${{ inputs.k8s_diagnostics_args }}"
+      /usr/bin/python3 ./ci/orch_k8s_diagnostics.py $K8S_DIAGNOSTICS_ARGS
+      echo "K8s diagnostics completed with args: $K8S_DIAGNOSTICS_ARGS"
   - name: Collect cluster diagnostic information
     id: collect-cluster-diagnostics
     if: always()
