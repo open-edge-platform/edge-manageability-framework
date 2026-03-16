@@ -77,3 +77,9 @@ variable "with_public_ip" {
   type        = bool
   default     = false
 }
+
+variable "egress_cidr_blocks" {
+  description = "CIDR blocks for ECS service egress"
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+}

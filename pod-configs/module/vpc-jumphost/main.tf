@@ -133,11 +133,12 @@ resource "aws_security_group_rule" "jumphost_egress_private" {
 }
 
 resource "aws_security_group_rule" "jumphost_egress_https" {
+  for_each    = var.egress_ip_allow_list
   type        = "egress"
   from_port   = 443
   to_port     = 443
   protocol    = "tcp"
-  cidr_blocks = ["0.0.0.0/0"]
+  cidr_blocks = [each.key]
   description = "Allow traffic to the endpoints and repos"
   security_group_id = aws_security_group.jumphost.id
 }

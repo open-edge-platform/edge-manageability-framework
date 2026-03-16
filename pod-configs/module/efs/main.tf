@@ -72,7 +72,7 @@ resource "aws_security_group" "allow_nfs" {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = var.efs_sg_cidr_blocks
   }
 
   tags = {

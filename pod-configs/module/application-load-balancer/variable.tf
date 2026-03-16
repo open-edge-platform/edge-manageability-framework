@@ -55,3 +55,7 @@ variable "default_ssl_policy" {
   type    = string
   default = "ELBSecurityPolicy-TLS13-1-2-Res-FIPS-2023-04"
 }
+variable "egress_cidr_blocks" {
+  type        = set(string)
+  default     = ["0.0.0.0/0"]
+}

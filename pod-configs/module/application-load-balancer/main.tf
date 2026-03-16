@@ -15,7 +15,7 @@ resource "aws_security_group" "common" {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = var.egress_cidr_blocks
   }
   dynamic "ingress" {
     for_each = var.listeners
@@ -36,6 +36,7 @@ resource "aws_lb" "main" {
   name                       = substr(sha256("${var.cluster_name}-${var.name}"), 0, 32)
   internal                   = var.internal
   load_balancer_type         = "application"
+  drop_invalid_header_fields = true
   subnets                    = var.subnets
   enable_deletion_protection = var.enable_deletion_protection
   security_groups            = [aws_security_group.common.id]
