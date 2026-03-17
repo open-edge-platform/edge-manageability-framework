@@ -9,7 +9,7 @@ Revision: 1.0
 ## Abstract
 
 This ADR describes installer simplification steps to be taken for 2026.1.
-This ADR supercedes [platform-installer-simplification.md](platform-installer-simplification.md)
+This ADR supersedes [platform-installer-simplification.md](platform-installer-simplification.md)
 
 ## Changelog
 
@@ -40,20 +40,20 @@ The current state is that EMF has the following:
 
 #### Remove AWS Installer
 
-The AWS installer is to be immediately removed. Customers wishing to perform AWS
-install shall maintain a fork of the AWS installer themselves. This eliminates once source
-of divergent installer immediately.
+The AWS installer will be immediately removed. Customers wishing to perform AWS
+installations shall maintain a fork of the AWS installer themselves. This eliminates one source
+of divergent installers.
 
-### Eliminate sources of redundancy and confusion
+#### Eliminate Sources of Redundancy and Confusion
 
-For example, the on-prem-installers/onprem directory contains a scripts `pre-orch-install.sh`
-and `onprem_pre_install.sh`. This is confusing as it sounds like both scripts serve the same
+For example, the on-prem-installers/onprem directory contains scripts `pre-orch-install.sh`
+and `onprem_pre_install.sh`. This is confusing as both scripts appear to serve the same
 purpose.
 
-Each file that is in the on-prem-installers/ and installer/ directory shall be justified as
-to why it is there. If it does not serve a purpose, the file shall be removed.
+Each file in the on-prem-installers/ and installer/ directories must be justified.
+If a file does not serve a purpose, it shall be removed.
 
-### Workstream 1: Deliver a simplified, repeatable installation process
+### Workstream 1: Deliver a Simplified, Repeatable Installation Process
 
 The following scripts shall become the one and only installer.
 
@@ -71,10 +71,9 @@ An example dnsmasq configuration shall be provided in the deployment guide.
 
 [/on-prem-installers/onprem/pre-orch-install.sh](/on-prem-installers/onprem/pre-orch-install.sh)
 
-This script takes three different options that allow it to be configured to install
-reference implementations of K3s, Kind, or RKE2. This script is provided as a convenience
-for customers and for validation, to establish a repeatable process for creating
-kubernetes environments.
+This script accepts three options to configure installation of reference implementations
+for K3s, Kind, or RKE2. It is provided as a convenience for customers and for validation,
+to establish a repeatable process for creating Kubernetes environments.
 
 It is not intended to serve as a production-quality Kubernetes deployment. Customers
 wishing to perform a production installation of EMF should leverage their internal IT
@@ -84,21 +83,20 @@ support to create a hardened Kubernetes environment per their requirements.
 
 [/on-prem-installers/onprem/post-orch-install.sh](/on-prem-installers/onprem/post-orch-install.sh)
 
-This script creates the cluster.yaml file necessary to configure argocd, sets up any
-namespaces and secrets necessary for argoc, installs argocd, and bootstraps the installation
-by installing the argocd root-app.
+This script creates the cluster.yaml file necessary to configure ArgoCD, sets up any
+namespaces and secrets required for ArgoCD, installs ArgoCD, and bootstraps the installation
+by installing the ArgoCD root application.
 
 ### Migrate Coder Deployments to use the OnPrem Installer
 
 Coder deployments should use the same pre-installer and post-installer as described above. The
 goal is to eliminate unnecessary divergence.
 
-Open question -- should Coder deployments use kind, k3s, or RKE2?
+**Open question:** Should Coder deployments use Kind, K3s, or RKE2?
 
-Some additional steps may be necessary for Coder deployments. For example, the autocert
-functionality is useful for Coder deployments to allow Coder-based orchestrators to be
-compatible with physical edge nodes. These integrations will have to be re-established with
-the new on-prem-based install.
+Additional steps may be required for Coder deployments. For example, the auto-cert
+functionality enables Coder-based orchestrators to be compatible with physical edge nodes.
+These integrations will need to be re-established with the new on-prem-based installer.
 
 ### Migrate VIP to use pre-installer / post-installer
 
@@ -110,15 +108,14 @@ HIP will have to be migrated to use the new pre-installer and post-installer.
 
 AWS-based HIP will be dropped when the AWS installer is dropped.
 
-## Workstream 2: Deliver an ArgoCD-less installation experience
+## Workstream 2: Deliver an ArgoCD-less Installation Experience
 
-This worksteam modifies the post-installer so that installation can be performed without
+This workstream modifies the post-installer so that installation can be performed without
 ArgoCD.
 
-A complicating factor is that there are many helm charts that comprise even a simple
-EMF deployment with the vPro-profile. These charts may need to be sequenced in a specific
-order and there may be a need to propagate configuration values across many different
-charts to many different services.
+A complicating factor is that many Helm charts comprise even a simple EMF deployment
+with the vPro profile. These charts must be sequenced in a specific order, and
+configuration values must be propagated across multiple charts and services.
 
 There are a few possible options:
 
@@ -161,9 +158,9 @@ domain, credentials, etc.), and then invoke `helmfile sync` to deploy them. This
 simplifies the installer architecture while maintaining the ability to control chart
 ordering and configuration propagation without a runtime reconciliation component.
 
-### Plain ordinary helm charts
+### Plain Helm Charts
 
-These may need to be synchronized with --wait, and a solution would need to be found
+These may need synchronization with `--wait`, and a solution would need to be found
 for configuring them.
 
 ## Open Issues
