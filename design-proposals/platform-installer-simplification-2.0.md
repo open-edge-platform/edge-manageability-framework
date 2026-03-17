@@ -18,21 +18,55 @@ This ADR supersedes [platform-installer-simplification.md](platform-installer-si
 
 ## Problem Statement
 
-EMF installers remain a source of unintended complexity due to these installers being crafted
-for different purposes at different times. The primary goal remains to converge on a single
-post-installer. A secondary goal has been added that is to remove ArgoCD from the installer.
+EMF installers remain a source of unintended complexity due to being crafted for different purposes
+at different times. The primary goal is to converge on a single unified installer pattern. A secondary
+goal is to remove ArgoCD from the mandatory installer architecture, simplifying the deployment path
+for customers who bring their own Kubernetes clusters.
+
+## Goals
+
+### Goal #1: Eliminate Installer Sprawl
+
+Reduce the number of distinct installer implementations from four (AWS, OnPrem old, OnPrem new, Coder)
+to one canonical pattern that works across all deployment scenarios.
+
+### Goal #2: Remove ArgoCD as a Mandatory Orchestration Layer
+
+Enable EMF deployment without requiring ArgoCD as a continuous reconciliation component, while
+preserving the ability for customers to add ArgoCD for GitOps workflows if desired.
+
+### Goal #3: Support "Bring Your Own Kubernetes"
+
+Simplify installation for customers who have already provisioned hardened Kubernetes clusters
+and wish to deploy only EMF software components, without infrastructure provisioning or cluster creation.
+
+### Goal #4: Maintain Configurability and Composability
+
+Preserve the ability to selectively enable/disable services (e.g., PostgreSQL, MetalLB, Observability)
+to support varied deployment footprints from minimal edge nodes to full platform deployments.
+
+## Scope for 2026.1
+
+This proposal encompasses **Workstream 1 and Workstream 2** in full.
 
 ## Current State
 
-The current state is that EMF has the following:
+The current EMF installation landscape includes:
 
-* AWS Installer
+- **AWS Installer**: Provisions EKS cluster and deploys EMF (to be removed)
+- **OnPrem Installer (legacy)**: Shell-script based, tightly coupled to specific configurations
+- **OnPrem Installer (current)**: Supports K3s, Kind, and RKE2 with improved flexibility
+- **Coder Installer**: Deployment-specific variant for Coder environments
 
-* OnPrem Installer (old)
+Each installer has divergent logic, configuration mechanisms, and maintenance burdens.
 
-* OnPrem Installer (new, supporting K3s/Kind/RKE2)
+## Success Criteria
 
-* Coder Installer
+- Single installer pattern documented and functional across all deployment scenarios
+- AWS, legacy OnPrem, and Coder installers deprecated (can be maintained externally if needed)
+- Post-installer successfully deploys EMF without ArgoCD as a required component
+- Configuration values are centralized and reusable across all deployment paths
+- Customers can deploy EMF to pre-existing Kubernetes clusters with minimal friction
 
 ## Implementation Plan
 
@@ -83,9 +117,14 @@ support to create a hardened Kubernetes environment per their requirements.
 
 [/on-prem-installers/onprem/post-orch-install.sh](/on-prem-installers/onprem/post-orch-install.sh)
 
-This script creates the cluster.yaml file necessary to configure ArgoCD, sets up any
-namespaces and secrets required for ArgoCD, installs ArgoCD, and bootstraps the installation
-by installing the ArgoCD root application.
+**Note:** This phase transitions the post-installer to use Helmfile instead of ArgoCD for orchestration.
+The script will:
+
+1. Create the cluster.yaml configuration file with environment-specific values
+2. Set up necessary namespaces and secrets
+3. Generate or consume a helmfile.yaml configuration
+4. Invoke `helmfile sync` to deploy all EMF Helm charts in correct dependency order
+5. Validate successful deployment of critical components
 
 ### Migrate Coder Deployments to use the OnPrem Installer
 
@@ -116,6 +155,9 @@ ArgoCD.
 A complicating factor is that many Helm charts comprise even a simple EMF deployment
 with the vPro profile. These charts must be sequenced in a specific order, and
 configuration values must be propagated across multiple charts and services.
+
+The ability to disable services such as MetalLB and Postgres must be preserved, as
+the customer may bring their own replacements for those services.
 
 There are a few possible options:
 
@@ -160,13 +202,74 @@ ordering and configuration propagation without a runtime reconciliation componen
 
 ### Plain Helm Charts
 
-These may need synchronization with `--wait`, and a solution would need to be found
-for configuring them.
+**Tradeoffs:**
 
-## Open Issues
+- **Advantages:** Minimal dependencies, familiar to Kubernetes-native operators
+- **Disadvantages:** Requires manual sequencing logic in shell scripts,
+  error-prone configuration propagation, and difficult-to-maintain
+  ordering constraints
 
-TBD
+**Recommendation:** This approach is **not recommended** as the primary path. It introduces
+manual orchestration complexity that Helmfile handles automatically. Reserve this for specific
+components that do not fit the Helmfile model.
+
+However, if the vPro-profile could be simplified significantly (see the separate ADR on
+simplifying this profile) then the plain helm chart approach may become viable.
+
+## Migration Strategy
+
+### Transition from ArgoCD-based Deployments
+
+- The old installers will be deprecated and the new installers made available in 2026.1
+- There is no upgrade path
+
+## Affected Components and Teams
+
+Platform Team.
+
+## Open Issues and Questions
+
+- **Helmfile vs. Kustomize:** Should we consider Kustomize as an
+  alternative for configuration management?
+- **Coder deployment selection:** Which Kubernetes distribution (Kind, K3s, RKE2) should be the default for Coder?
+
+## Rationale and Alternatives
+
+### Why Helmfile?
+
+Helmfile was selected over alternative approaches because it:
+
+1. **Reduces operational complexity** compared to scripted shell-based helm invocations
+2. **Manages sequencing and dependencies** declaratively, eliminating custom ordering logic
+3. **Is already established** in the EMF build ecosystem (buildall)
+4. **Maintains transparency** - all chart invocations remain visible and debuggable
+5. **Supports configuration propagation** through templating without introducing a reconciliation control plane
+
+### Why not Plain Helm + Scripts?
+
+Plain Helm with shell scripts would require:
+
+- Custom dependency management and sequencing logic
+- Error-prone configuration variable propagation
+- Significantly higher testing and maintenance burden
+- Reduced auditability of deployment state
+
+The verbosity and orchestration overhead outweigh any simplicity gains.
+
+### Why not Kustomize?
+
+Kustomize is better suited for template composition than for orchestrating multiple related deployments.
+It does not natively handle installation ordering or complex inter-chart configuration propagation.
 
 ## Decision
 
-TBD
+We adopt the following strategy for Installer Simplification 2.0, effective 2026.1:
+
+1. **Helmfile is the primary post-installer orchestration mechanism** for
+  "bring your own Kubernetes" and reference implementations
+2. **Pre-installers remain independent,** supporting K3s, Kind, and RKE2 for reference environments
+3. **AWS and legacy OnPrem installers are deprecated** - customers may fork and maintain externally
+4. **Coder deployments will consolidate** onto the OnPrem installer pattern with Coder-specific configuration overlays
+5. **All configuration** will be centralized in helmfile.yaml and
+  cluster.yaml with clear documentation of all environment variables and
+  overrides
