@@ -70,7 +70,10 @@ Each installer has divergent logic, configuration mechanisms, and maintenance bu
 
 ## Implementation Plan
 
-### Workstream 1 - Eliminate Multiple Installers
+### Workstream 1: Deliver a Simplified, Repeatable Installation Process
+
+This workstream converges on a single post-installer without removing the dependency
+on ArgoCD.
 
 #### Remove AWS Installer
 
@@ -87,11 +90,7 @@ purpose.
 Each file in the on-prem-installers/ and installer/ directories must be justified.
 If a file does not serve a purpose, it shall be removed.
 
-### Workstream 1: Deliver a Simplified, Repeatable Installation Process
-
-The following scripts shall become the one and only installer.
-
-#### DNS configuration
+#### Document and provide example DNS configuration
 
 DNS configuration is a prerequisite for installation, as there are several domain names
 that must point to the orchestrator.
@@ -101,7 +100,7 @@ use their existing infrastructure.
 
 An example dnsmasq configuration shall be provided in the deployment guide.
 
-#### Pre-installer
+#### Standardize Pre-installer
 
 [/on-prem-installers/onprem/pre-orch-install.sh](/on-prem-installers/onprem/pre-orch-install.sh)
 
@@ -113,20 +112,21 @@ It is not intended to serve as a production-quality Kubernetes deployment. Custo
 wishing to perform a production installation of EMF should leverage their internal IT
 support to create a hardened Kubernetes environment per their requirements.
 
-#### Post-installer
+#### Standardize Post-installer
 
 [/on-prem-installers/onprem/post-orch-install.sh](/on-prem-installers/onprem/post-orch-install.sh)
 
-**Note:** This phase transitions the post-installer to use Helmfile instead of ArgoCD for orchestration.
-The script will:
+**Note:** Workstream 2 transitions the post-installer to use Helmfile instead
+of ArgoCD for orchestration. Workstream 1 keeps this script as-is until it is
+ready to be replaced. This script does the following:
 
-1. Create the cluster.yaml configuration file with environment-specific values
-2. Set up necessary namespaces and secrets
-3. Generate or consume a helmfile.yaml configuration
-4. Invoke `helmfile sync` to deploy all EMF Helm charts in correct dependency order
-5. Validate successful deployment of critical components
+- Create the cluster.yaml configuration file with environment-specific values
+- Set up necessary namespaces and secrets
+- Installs ArgoCD
+- Installs Gitea (if required for app-orch)
+- Invoke ArgoCD to deploy all EMF Helm charts in correct dependency order
 
-### Migrate Coder Deployments to use the OnPrem Installer
+#### Migrate Coder Deployments to use the pre-installer / post-installer described above
 
 Coder deployments should use the same pre-installer and post-installer as described above. The
 goal is to eliminate unnecessary divergence.
@@ -137,17 +137,17 @@ Additional steps may be required for Coder deployments. For example, the auto-ce
 functionality enables Coder-based orchestrators to be compatible with physical edge nodes.
 These integrations will need to be re-established with the new on-prem-based installer.
 
-### Migrate VIP to use pre-installer / post-installer
+#### Migrate VIP to use pre-installer / post-installer
 
 VIP will have to be migrated to use the new pre-installer and post-installer.
 
-### Migrate HIP to use pre-installer / post-installer
+#### Migrate HIP to use pre-installer / post-installer
 
 HIP will have to be migrated to use the new pre-installer and post-installer.
 
 AWS-based HIP will be dropped when the AWS installer is dropped.
 
-## Workstream 2: Deliver an ArgoCD-less Installation Experience
+### Workstream 2: Deliver an ArgoCD-less Installation Experience
 
 This workstream modifies the post-installer so that installation can be performed without
 ArgoCD.
@@ -161,7 +161,7 @@ the customer may bring their own replacements for those services.
 
 There are a few possible options:
 
-### Helmfile
+#### Helmfile
 
 Helmfile is a declarative YAML-based tool that manages multiple Helm chart deployments
 and their dependencies. It allows defining charts, values overrides, repository sources,
@@ -200,7 +200,7 @@ domain, credentials, etc.), and then invoke `helmfile sync` to deploy them. This
 simplifies the installer architecture while maintaining the ability to control chart
 ordering and configuration propagation without a runtime reconciliation component.
 
-### Plain Helm Charts
+#### Plain Helm Charts
 
 **Tradeoffs:**
 
