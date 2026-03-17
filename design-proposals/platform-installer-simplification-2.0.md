@@ -1,10 +1,10 @@
 # Design Proposal: Installer Simplification 2.0
 
-Author(s): TBD
+Author(s): Scott Baker
 
-Last updated: TBD
+Last updated: 2026-3-17
 
-Revision: 1.0
+Revision: 2.0
 
 ## Abstract
 
@@ -13,7 +13,7 @@ This ADR supersedes [platform-installer-simplification.md](platform-installer-si
 
 ## Changelog
 
-- Revision 1.0
+- Revision 2.0
   - TBD
 
 ## Problem Statement
