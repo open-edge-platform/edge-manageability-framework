@@ -11,8 +11,7 @@ on:
   # Run on all commits that are pushed to all branches
   push:
     branches:
-      - main
-      - main-pass-validation
+      - release-2026.0
 
   # Trigger workflow on PRs to all branches
   pull_request:
