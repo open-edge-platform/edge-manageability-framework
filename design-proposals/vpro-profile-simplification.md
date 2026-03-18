@@ -67,11 +67,14 @@ Platform components include:
 
 - Web-Ui, allows device management using a GUI interface
 
+**Note:** The list of components above is not necessarily complete. In particular, there may
+be additional components classified as infra-internal.
+
 ## Proposal
 
 This proposal is divided into several sub-proposals, which may be executed independently.
 
-### Remove MetalLB
+### Remove MetalLB from post-installer
 
 Effort: Low/Medium
 
@@ -79,6 +82,25 @@ Most modern helm charts allow the type of service to be specified – LoadBalanc
 ClusterIP, etc. We should expose the same capability, and allow the customer to bring their own
 LoadBalancer, which may or may not be MetalLB. Similarly, if the customer wants to use a
 NodePort, that should not be prohibited.
+
+We assume that argocd doesn't need to be exposed on the management interface on port 443,
+we could still expose it on port 80.
+
+We assume that ingress nginx path is not used by the vPro profile. This includes all
+of the tinkerbell components (infra-onboarding). As such, the ingress and load-balancer
+requirement for these boot-related components is not a dependency of the vPro profile.
+
+Validation and development environments may still need a load-balancer, and as such we should
+provide some assistance for these environments. There are two options:
+
+- **move MetalLB to the pre-installer.** The pre-installer contains dependencies that are
+  not part of the EMF software, but are usually required for it to run.
+
+- **provide a separate script that installs MetalLB.** The advantage over adding it to the
+  pre-installer is that a separate script keeps the pre-installer clean. The disadvantage is
+  that it adds an additional script, which leads to more complexity during installation.
+
+Recommendation is to move it to the pre-installer.
 
 ### Remove Traefik
 
@@ -148,7 +170,7 @@ We should be able to do the same.
 
 ## Recommendations
 
-Remove MetalLB -> **proceed**
+Remove MetalLB from post-installer -> **proceed**
 
 Remove Traefik -> perform **PoC** on removing Traefik as a hard requirement, allowing user to
 choose ingress technology themselves.
