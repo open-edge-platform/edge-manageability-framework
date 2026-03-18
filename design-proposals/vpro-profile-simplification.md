@@ -79,6 +79,8 @@ Most modern helm charts allow the type of service to be specified – LoadBalanc
 ClusterIP, etc. We should expose the same capability, and allow the customer to bring their own
 LoadBalancer, which may or may not be MetalLB. Similarly, if the customer wants to use a
 NodePort, that should not be prohibited.
+We assume that argocd doesn't be exposed on the management interface on port 443, we could still expose it on port 80
+We assume that ingress nginx path is depecrated, ie all of the tinkerbell components.
 
 ### Remove Traefik
 
