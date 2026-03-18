@@ -1,4 +1,4 @@
-# ADR: Cluster Orchestration Without CAPI
+# ADR: Cluster Management Without CAPI
 
 **Status:** Designing
 
@@ -10,7 +10,8 @@
 
 ## Context
 
-The current Cluster Orchestration (CO) architecture relies on Cluster API (CAPI) as a core
+The current Cluster Management (formerly called Cluster Orchestration / CO) architecture
+relies on Cluster API (CAPI) as a core
 dependency for cluster lifecycle management. While CAPI provides a standardized framework,
 it also introduces additional control-plane components, reconciliation layers, and
 operational complexity and maintenance burden that are not always required for EMF target
@@ -35,14 +36,20 @@ files may be retrieved from the platform, making those clusters usable.
 ## Stretch Goals
 
 - Optionally extend kubeconfig retrieval to the GUI
-- Optionally enable the Application Orchestration layer to deploy applications on the cluster
+- Optionally enable application management on the cluster. This may involve our existing
+  Application Orchestration "AO" layer, or it may involve finding a third-party application
+  management solution, such as **Portainer**.
 
 ## Non-Goals
 
 - Lifecycle management (Create, Delete, Upgrade) of clusters at runtime. Node should either
   be onboarded with a cluster or without one, and it remains that way for the life of the node.
+- GUI support. Any operations described in this guide must be achievable through the CLI.
 
 ## Proposal
+
+**Note: Investigate the OXM profile and understand how it provisions K3s. Use that understanding
+to inform the ideas below**
 
 ### Rough Idea #1
 
