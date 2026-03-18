@@ -232,6 +232,11 @@ The following scenarios are explicitly not supported:
   These would be distruptive to the software installed on Kubernetes, and would require a full
   reinstallation.
 
+- **Software that is installed by the pre-installer.** In general, software this is installed by
+  the pre-installer is *not* "part of EMF". The pre-installer is provided as
+  a convenience only and is expected to be hardened by the customer. Upgrade of components
+  in the pre-installer is a customer responsibility. Exceptions may be made as necessary.
+
 Upgrade from 2026.1 to subsequent versions must be supported, and must be addressed in both
 workstreams described above. This includes:
 
