@@ -118,7 +118,9 @@ support to create a hardened Kubernetes environment per their requirements.
 
 **Note:** Workstream 2 transitions the post-installer to use Helmfile instead
 of ArgoCD for orchestration. Workstream 1 keeps this script as-is until it is
-ready to be replaced. This script does the following:
+ready to be replaced.
+
+The post-installer does the following:
 
 - Create the cluster.yaml configuration file with environment-specific values
 - Set up necessary namespaces and secrets
@@ -216,12 +218,29 @@ components that do not fit the Helmfile model.
 However, if the vPro-profile could be simplified significantly (see the separate ADR on
 simplifying this profile) then the plain helm chart approach may become viable.
 
-## Migration Strategy
+## Upgrades
 
-### Transition from ArgoCD-based Deployments
+The following scenarios are explicitly not supported:
 
-- The old installers will be deprecated and the new installers made available in 2026.1
-- There is no upgrade path
+- **Upgrade from a version prior to 2026.1.** The installation process has diverged too much for this
+  to be considered a supported feature.
+
+- **Update of Kubernetes.** For example, upgrading from one K3s to another. Kubernetes is considered
+  customer infrastructure an outside the scope of this ADR.
+
+- **Switching Kubernetes distributions.** For example, switching from Kind to K3s, or K3s to RKE2.
+  These would be distruptive to the software installed on Kubernetes, and would require a full
+  reinstallation.
+
+Upgrade from 2026.1 to subsequent versions must be supported, and must be addressed in both
+workstreams described above. This includes:
+
+- **Upgrade of all software installed by the post-installer.** In general, all software installed
+  by the post-installer is considered "part of EMF", even if this software is a third party
+  dependency.
+
+- **Backup/Restore of databases.** For resilience in case of upgrade failure, as well as a potential
+  mechanism to deal with major upgrades to postgres.
 
 ## Affected Components and Teams
 
