@@ -1,4 +1,4 @@
-# Design Proposal: Onboarding Deployment Packages from Github Repositories
+# Design Proposal: Onboarding Deployment Packages from GitHub Repositories
 
 Author(s): Scott Baker
 
@@ -6,7 +6,7 @@ Last updated: 2026-03-16
 
 ## Abstract
 
-This proposal describes a set of steps that may be taken to reduce the platform dependencies of the vpro profile.
+This proposal describes a set of steps that may be taken to reduce the platform dependencies of the vPro profile.
 
 ## Problem Statement
 
@@ -22,7 +22,7 @@ loadbalancer -->|SNI, jwt validation, security| traefik{traefik}
 traefik -->|jwt creation| keycloak[keycloak]
 traefik -->|MPS RPS AMT VPRO| infra-external[infra-external]
 traefik -->|TODO| infra-internal[infra-internal]
-traefik -->|Gui| web-ui[web-ui]
+traefik -->|GUI| web-ui[web-ui]
 traefik -->|certs| traefik-extra-objects[traefik-extra-objects]
 traefik -->|certs-management| cert-manager[cert-manager]
 cert-manager --> |copy ca secret| copy-ca-cert-gateway-to-infra[copy-ca-cert-gateway-to-infra]
@@ -37,7 +37,7 @@ reloader --> vault[vault]
 vault -->|storage| postgres[postgres]
 vault -->|vault accounts, enable k8 auth| secrets-config[secrets-config]
 postgres -->|postgres secrets, database details copied into app containers| postgres-secrets[postgres-secrets]
-postgres -->|deploy postgress| postgres-operator[postgres-operator]
+postgres -->|deploy postgres| postgres-operator[postgres-operator]
 ```
 
 Platform components include:
@@ -47,7 +47,7 @@ Platform components include:
   - Traefik, used as an API gateway and an API remapper (for multitenant-compliant API).
     Also serves as an early check for JWT validity.
   - Traefik-extra-objects, holds certificates for configuring Traefik.
-  - Cert-Manager, used to manage certificates for Traefik
+  - cert-manager, used to manage certificates for Traefik
 
 - Multitenancy
   - Keycloak, used to generate JWT tokens that may be validated by Traefik and by the
@@ -65,7 +65,7 @@ Platform components include:
   - Reloader, used to periodically restart DMT when vault tokens change
   - Secrets-config, used to setup vault accounts
 
-- Web-Ui, allows device management using a GUI interface
+- Web UI, allows device management using a GUI interface
 
 **Note:** The list of components above is not necessarily complete. In particular, there may
 be additional components classified as infra-internal.
@@ -83,7 +83,7 @@ ClusterIP, etc. We should expose the same capability, and allow the customer to 
 LoadBalancer, which may or may not be MetalLB. Similarly, if the customer wants to use a
 NodePort, that should not be prohibited.
 
-We assume that argocd doesn't need to be exposed on the management interface on port 443,
+We assume that Argo CD does not need to be exposed on the management interface on port 443,
 we could still expose it on port 80.
 
 We assume that ingress nginx path is not used by the vPro profile. This includes all
@@ -99,6 +99,16 @@ provide some assistance for these environments. There are two options:
 - **provide a separate script that installs MetalLB.** The advantage over adding it to the
   pre-installer is that a separate script keeps the pre-installer clean. The disadvantage is
   that it adds an additional script, which leads to more complexity during installation.
+
+Complications
+
+- Load-Balancer is used to allow services to expose arbitrary port numbers. Without a
+  Load-Balancer, the fallback is to use NodePorts, which exist in the range
+  30000-32767. Allocating ports outside this range requires special Kubernetes flags
+  to be used when installing Kubernetes. Several services require ports outside
+  this range. For this reason, having a load-balancer is a functional requirement for
+  any deployment outside of development environments.
+
 
 Recommendation is to move it to the pre-installer.
 
@@ -122,6 +132,36 @@ the Ingress itself. The customer could choose Traefik or a different tool. This 
 to the customer being responsible for the certificate management that was needed as part of the
 Traefik service.
 
+Complications
+
+- Traefik may be the sole point of JWT validation for some services. In particular, it appears
+  that the infra_external services may not have been updated with recent multitenancy
+  refactoring that the other services went through.
+
+- Some services such as infra-external have not yet been refactored to eliminate multitenancy
+  (i.e. tenancy-api-mapping) requirements. EIM was, but infra-external was not. Until that is
+  done, it is impractical to remove Traefik, given the importance of infra-external to the
+  vPro profile.
+
+- Traefik is being used for SNI termination in addition to API aggregation. Without using
+  Traefik, the customer would have to replicate our rules for SNI termination.
+
+- There are several middlewares in Traefik. Some of these middlewares are productization concerns
+  that we could assign to the customer, but some may be necessary for functionality and/or
+  may cover gaps in backend service security (i.e. it's unknown if all backend services implement
+  their own JWT validation).
+
+  - orch-gateway-rate-limit - rate limits incoming https traffic
+  - orch-gateway-cors - allows cross-origin requests from some domains
+  - orch-gateway-tcp-rate-limit - rate limits traffic on AMT
+  - validate-jwt - validates JWT bearer tokens against Keycloak's JWKS endpoint
+  - secure-headers - adds/removes HTTP headers
+  - limit-request-size - limits HTTP request body size
+  - replace-domain - rewrites internal domain references to external. (Development-only?)
+  - rewrite-webui-csp-resp-header - rewrites Content-Security-Policy (Development-only?)
+
+
+
 ### Remove Reloader Job
 
 Effort: Medium
@@ -138,14 +178,14 @@ This requires more understanding regarding recent multitenancy refactoring in EI
 determine whether there is sufficient support for a default-tenant in the API that does not
 require a lookup of Nexus
 
-- What JWT would be used w/o Keycloak? How would it be validated.
+- What JWT would be used without Keycloak? How would it be validated?
 
-- Are there tenant controllers in infra-internal that need to be run to setup objects? How would
-  they run with no tenancy-datamodel to trigger them?
+- Are there tenant controllers in infra-internal that need to be run to set up objects? How would
+  they run with no tenancy data model to trigger them?
 
 ### Remove Postgres-Operator and Postgres-Secrets
 
-We do not need an operator to manage postgres. We could instantiate the Postgres service directly.
+We do not need an operator to manage Postgres. We could instantiate the Postgres service directly.
 Secrets (username, password, etc) could be configured by simple text file, as is the case with
 DMT.
 
@@ -179,7 +219,7 @@ Remove Reloader -> **proceed**
 
 Remove Keycloak -> **defer**
 
-Remove Postgres Operator and Postgres-Secret -> **proceed**
+Remove Postgres Operator and Postgres-Secrets -> **proceed**
 
 Simplify Configuration -> **proceed**
 
@@ -191,6 +231,6 @@ TBD
 
 TBD
 
-## Open issues (if applicable)
+## Open Issues (if applicable)
 
 TBD
