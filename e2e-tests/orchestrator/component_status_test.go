@@ -692,7 +692,7 @@ var _ = Describe("Component Status Service", Label(componentStatusLabel, orchest
 			version := status.Orchestrator.Version
 			Expect(version).ToNot(BeEmpty(), "version should not be empty")
 			// Version can be: 2026.0, 2026.0-dev, 2026.0.0, 2026.0.0-dev-hash, v2026.0.0
-			Expect(version).To(MatchRegexp(`^v?\d{4}\.\d+(\.\d+)?(-[a-z]+(-[a-f0-9]+)?)?$`),
+			Expect(strings.TrimSpace(version)).To(MatchRegexp(`^v?\d{4}\.\d+(\.\d+)?(-[a-z]+(-[a-f0-9]+)?)?$`),
 				fmt.Sprintf("version format should be valid: %s", version))
 		})
 
