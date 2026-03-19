@@ -1,0 +1,40 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# -----------------------------
+# Core settings
+# -----------------------------
+installCRDs: true
+
+# -----------------------------
+# DNS settings (optional)
+# -----------------------------
+dns01RecursiveNameserversOnly: false
+dns01RecursiveNameservers: ""
+
+# -----------------------------
+# Proxy (optional)
+# -----------------------------
+# http_proxy: ""
+# https_proxy: ""
+# no_proxy: ""
+
+# -----------------------------
+# Resources
+# -----------------------------
+resources: {}
+# Example:
+# resources:
+#   requests:
+#     cpu: 100m
+#     memory: 128Mi
+#   limits:
+#     cpu: 500m
+#     memory: 512Mi
+
+cainjector:
+  resources: {}
+
+webhook:
+  resources: {}

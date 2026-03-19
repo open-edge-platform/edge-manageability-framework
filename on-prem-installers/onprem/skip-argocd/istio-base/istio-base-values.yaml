@@ -1,0 +1,25 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# -----------------------------
+# Mesh configuration
+# -----------------------------
+meshConfig:
+  meshMTLS:
+    minProtocolVersion: TLSV1_3
+
+# -----------------------------
+# Global proxy settings (optional)
+# -----------------------------
+global:
+  proxy:
+    resources: {}
+    # Example:
+    # resources:
+    #   requests:
+    #     cpu: "100m"
+    #     memory: "128Mi"
+    #   limits:
+    #     cpu: "500m"
+    #     memory: "512Mi"
