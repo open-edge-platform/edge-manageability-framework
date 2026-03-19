@@ -1,0 +1,18 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+replicaCount: 1
+resources:
+  requests:
+    cpu: "250m"
+    memory: "256Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+
+imagePullSecrets: []
+
+# Optional: monitoring / metrics
+monitoring:
+  enabled: false
