@@ -51,9 +51,10 @@ files may be retrieved from the platform, making those clusters usable.
 **Note: Investigate the OXM profile and understand how it provisions K3s. Use that understanding
 to inform the ideas below**
 
-### Rough Idea #1
+### Rough Idea #1: add a new
 
-Implement a new agent, installed by `node_agent`. The agent will be responsible for:
+Implement a replacement cluster agent, which itself will be installed by `node_agent`.
+The agent will be responsible for:
 
 - Installing K3s if it is not already installed
 - Reporting cluster status and kubeconfig back to a central CO database
@@ -61,13 +62,15 @@ Implement a new agent, installed by `node_agent`. The agent will be responsible 
 Implement a simple centralized database based on PostgreSQL that stores information about
 clusters (`cluster_hostname`, `cluster_status`, `cluster_kubeconfig`).
 
-### Rough Idea #2
+### Rough Idea #2: extend the existing node_agent (or other EIM agent)
 
-Same as rough idea #1, but do not implement a new database. Store the values directly
-in one of the existing EIM databases. It is only a handful of fields, and there is a 1:1
-mapping between clusters and edge nodes.
+Same as rough idea #1, but do not implement a new database or a new agent.
 
-### Rough Idea #3
+Extend the existing node_agent and the device manager database so the values may be stored
+directly in one of the existing EIM databases. It is only a handful of fields, and there
+is a 1:1 mapping between clusters and edge nodes.
+
+### Rough Idea #3: use cloud-init directly.
 
 Rather than using `node_agent` to drive K3s, use `cloud-init` to do it directly.
 
