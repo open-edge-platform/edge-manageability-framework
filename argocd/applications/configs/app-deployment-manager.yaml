@@ -42,6 +42,7 @@ traefikReverseProxy:
   secretName: tls-orch
   tlsOption: gateway-tls
 ingressRoute:
+  enabled: true
   tlsOptionName: gateway-tls
   orchSecretName: tls-orch
 mockCompositeApps: []

@@ -17,7 +17,7 @@ traefikReverseProxy:
 traefikApiGroup: "traefik.io/v1alpha1"
 
 ingressRoute:
-  enabled: false
+  enabled: true
   tlsOptionName: gateway-tls
   orchSecretName: tls-orch
 

@@ -14,6 +14,7 @@ traefikReverseProxy:
   enabled: true
   secretName: tls-orch          ## must be created in orch-gateway namespace
 ingressRoute:
+  enabled: true
   tlsOptionName: gateway-tls
   orchSecretName: tls-orch
 openidc:
