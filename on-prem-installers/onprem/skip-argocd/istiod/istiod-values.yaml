@@ -1,0 +1,63 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Enable Istiod deployment
+enabled: true
+
+# Helm target release version
+istiod:
+  version: "1.29.0"
+
+# Target namespace
+namespace: istio-system
+
+# Helm release name
+releaseName: istiod
+
+# Target server (cluster)
+targetServer: https://kubernetes.default.svc
+
+# Autosync-like behavior
+autosync: true
+
+# Resource overrides (custom/istiod.tpl)
+resources:
+  istiod:
+    pilot:
+      limits:
+        cpu: "500m"
+        memory: "512Mi"
+      requests:
+        cpu: "250m"
+        memory: "256Mi"
+    global:
+      proxy:
+        limits:
+          cpu: "200m"
+          memory: "256Mi"
+        requests:
+          cpu: "100m"
+          memory: "128Mi"
+
+# Additional Istiod configs
+securityContext:
+  seccompProfile:
+    type: RuntimeDefault
+podSecurityContext:
+  seccompProfile:
+    type: RuntimeDefault
+meshConfig:
+  meshMTLS:
+    minProtocolVersion: TLSV1_3
+  defaultConfig:
+    holdApplicationUntilProxyStarts: true
+
+sidecarInjectorWebhook:
+  neverInjectSelector:
+    - matchExpressions:
+        - key: job-name
+          operator: Exists
+        - key: app.kubernetes.io/name
+          operator: NotIn
+          values: [secrets-config, credentials, loca-credentials, cluster-manager]

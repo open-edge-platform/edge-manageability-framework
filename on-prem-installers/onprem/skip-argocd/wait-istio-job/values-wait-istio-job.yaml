@@ -1,0 +1,34 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Enable the job deployment
+enabled: true
+
+# Helm chart version
+job:
+  version: "26.0.1"
+
+# Target namespace
+namespace: ns-label
+
+# Helm release name
+releaseName: wait-istio-job
+
+# OCI chart URL (fixed)
+chartURL: "oci://registry-rs.edgeorchestration.intel.com/edge-orch/common/charts/job-wait"
+
+# Autosync-like behavior
+autosync: true
+
+# Job prefix from configs/wait-istio-job.yaml
+jobPrefix: "namespace-label"
+
+# Optional: resource overrides for the job
+resources:
+  limits:
+    cpu: "100m"
+    memory: "128Mi"
+  requests:
+    cpu: "50m"
+    memory: "64Mi"

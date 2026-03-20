@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Enable reloader deployment
+enabled: true
+
+# Helm chart version
+reloader:
+  version: "2.2.3"
+
+# Target namespace
+namespace: orch-platform
+
+# Helm release name
+releaseName: reloader
+
+# Autosync-like behavior
+autosync: true
+
+# Resource overrides from custom/reloader.tpl
+resources:
+  reloader:
+    deployment:
+      limits:
+        cpu: "200m"
+        memory: "256Mi"
+      requests:
+        cpu: "100m"
+        memory: "128Mi"
+
+# Security context from configs/reloader.yaml
+deployment:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+  containerSecurityContext:
+    seccompProfile:
+      type: RuntimeDefault
+    capabilities:
+      drop:
+        - ALL
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+
+# Optional annotations for ConfigMap or Secret to watch
+# Example:
+# annotations:
+#   configmap.reloader.stakater.com/reload: "my-configmap"
+#   secret.reloader.stakater.com/reload: "my-secret"
+annotations: {}
