@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025 Intel Corporation
+# SPDX-FileCopyrightText: 2026 Intel Corporation
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -21,7 +21,7 @@ spec:
   sources:
     - repoURL: {{ required "A valid rsChartRepoURL entry required!" .Values.argo.rsChartRepoURL }}
       chart: common/charts/{{$appName}}
-      targetRevision: 26.0.6
+      targetRevision: 26.0.8
       helm:
         releaseName: {{$appName}}
         valuesObject:
