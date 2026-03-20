@@ -5,6 +5,12 @@
 server:
   service:
     type: LoadBalancer
+    ports:
+      - name: https
+        port: 80
+        targetPort: 8080
+  extraArgs:
+    - --insecure=false
 configs:
   params:
     application.namespaces: "*"
