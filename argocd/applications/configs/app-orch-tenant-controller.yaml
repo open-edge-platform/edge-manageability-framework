@@ -4,7 +4,6 @@
 
 configProvisioner:
   useM2MToken: true
-  multiTenancyEnabled: true
   catalogServer: app-orch-catalog-grpc-server.orch-app.svc.cluster.local:8080
   admServer: app-deployment-api-grpc-server.orch-app.svc.cluster.local:8080
   namespace: orch-app
