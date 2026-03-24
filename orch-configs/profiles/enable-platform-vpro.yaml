@@ -29,7 +29,7 @@ argo:
     metadata-broker: true
     multitenant_gateway: true
     haproxy-ingress-pxe-boots: true
-    platform-autocert: true
+    platform-autocert: false
     platform-keycloak: true
     prometheus-crd: true
     reloader: true
@@ -39,11 +39,11 @@ argo:
     secret-wait-tls-boots: true
     self-signed-cert: true
     traefik-extra-objects: true
-    traefik-pre: true
+    traefik-pre: false
     traefik: true
     traefik-boots: false
     traefik-boots-extra-objects: true
     vault: true
     namespace-resource-quota: true
-    k8s-metrics-server: true
+    k8s-metrics-server: false
     token-fs: true
