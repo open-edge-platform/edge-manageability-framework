@@ -39,9 +39,9 @@ argo:
     secret-wait-tls-boots: true
     self-signed-cert: true
     traefik-extra-objects: true
-    traefik-pre: false
+    traefik-pre: true
     traefik: true
-    traefik-boots: false
+    traefik-boots: true
     traefik-boots-extra-objects: true
     vault: true
     namespace-resource-quota: true
