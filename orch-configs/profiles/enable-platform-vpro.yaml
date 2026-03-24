@@ -31,7 +31,7 @@ argo:
     haproxy-ingress-pxe-boots: true
     platform-autocert: false
     platform-keycloak: true
-    prometheus-crd: true
+    prometheus-crd: false
     reloader: true
     rs-proxy: true
     secrets-config: true
