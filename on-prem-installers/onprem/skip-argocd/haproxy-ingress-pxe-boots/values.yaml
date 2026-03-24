@@ -1,0 +1,28 @@
+# values.yaml for haproxy-ingress-pxe-boots Helm deployment
+
+# Common name / DNS for TLS certificate
+# This will be substituted from onprem.env using envsubst
+commonName: tinkerbell-haproxy.${CLUSTER_DOMAIN}
+
+# Namespace where TLS and Ingress resources will be created
+namespace: orch-boots
+
+# HAProxy Ingress configuration
+haproxyIngress:
+  enabled: true
+
+# Rate limiting for HAProxy Ingress
+haproxyIngressRateLimit:
+  rps: 500          # requests per second
+  connections: 70   # concurrent connections
+
+# TLS certificate duration/renewal
+tls:
+  duration: 8765h0m0s      # 1 year
+  renewBefore: 2160h0m0s   # 90 days
+
+# Private key configuration
+privateKey:
+  algorithm: RSA
+  size: 3072
+  encoding: PKCS1

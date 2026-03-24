@@ -1,0 +1,42 @@
+operator:
+  replicas: 1
+
+  container:
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
+      limits:
+        cpu: "1"
+        memory: "1Gi"
+
+    # ✅ Balanced startup probe (portable)
+    startupProbe:
+      httpGet:
+        path: /q/health/started
+        port: 8080
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      failureThreshold: 24   # ~4 minutes
+      timeoutSeconds: 5
+
+    # ✅ Readiness probe (standard)
+    readinessProbe:
+      httpGet:
+        path: /q/health/ready
+        port: 8080
+      initialDelaySeconds: 20
+      periodSeconds: 10
+      timeoutSeconds: 5
+
+    # ✅ Liveness probe (important for prod clusters)
+    livenessProbe:
+      httpGet:
+        path: /q/health/live
+        port: 8080
+      initialDelaySeconds: 60
+      periodSeconds: 20
+      timeoutSeconds: 5
+      failureThreshold: 3
+
+imagePullSecrets: []

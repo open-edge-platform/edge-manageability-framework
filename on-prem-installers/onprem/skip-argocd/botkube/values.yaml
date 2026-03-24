@@ -1,0 +1,81 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+communications:
+  default-group:
+    webhook:
+      enabled: true
+      url: "http://cert-synchronizer-service.orch-gateway.svc.cluster.local/updatecert"
+      bindings:
+        sources:
+          - k8s-certificate-events
+
+# Proxy injected dynamically by script
+extraEnv: []
+
+settings:
+  clusterName:
+    name: "certman-test-cluster"
+  log:
+    level: info
+
+# --------------------------
+# Security Context
+# --------------------------
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 101
+  runAsGroup: 101
+
+containerSecurityContext:
+  privileged: false
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  capabilities:
+    drop:
+      - ALL
+  seccompProfile:
+    type: RuntimeDefault
+
+# --------------------------
+# Sources
+# --------------------------
+sources:
+  k8s-certificate-events:
+    displayName: "Cert-Manager Created Events"
+
+    botkube/kubernetes:
+      enabled: true
+      context:
+        rbac:
+          group:
+            type: Static
+            prefix: ""
+            static:
+              values:
+                - botkube-plugins-default
+
+      config:
+        namespaces:
+          include:
+            - orch-gateway
+
+        event:
+          types:
+            - create
+            - update
+            - delete
+            - error
+
+        resources:
+          - type: cert-manager.io/v1/certificates
+            updateSetting:
+              includeDiff: true
+              fields:
+                - status.renewalTime
+
+# --------------------------
+# Resources (important fix)
+# --------------------------
+resources: {}

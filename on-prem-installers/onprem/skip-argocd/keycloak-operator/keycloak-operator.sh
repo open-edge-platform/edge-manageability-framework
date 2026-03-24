@@ -11,7 +11,7 @@ NAMESPACE="orch-platform"
 CHART="oci://registry-rs.edgeorchestration.intel.com/edge-orch/common/charts/keycloak-operator"
 VERSION="26.1.2"
 
-VALUES_FILE="${VALUES_FILE:-keycloak-operator-values.yaml}"
+VALUES_FILE="${VALUES_FILE:-values.yaml}"
 TIMEOUT="300s"   # 5 minutes
 
 # -----------------------------

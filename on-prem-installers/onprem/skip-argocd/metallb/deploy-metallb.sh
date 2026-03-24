@@ -3,6 +3,20 @@
 set -euo pipefail
 
 #############################################
+# LOAD ENV VARIABLES
+#############################################
+
+ENV_FILE="../onprem.env"
+
+if [ -f "$ENV_FILE" ]; then
+  echo "🔹 Loading environment variables from $ENV_FILE"
+  # shellcheck disable=SC1091
+  source "$ENV_FILE"
+else
+  echo "⚠️ Warning: $ENV_FILE not found, defaulting to values in YAML"
+fi
+
+#############################################
 # GLOBAL CONFIG
 #############################################
 
@@ -14,13 +28,10 @@ METALLB_VERSION="0.15.2"
 VALUES_METALLB="./values-metallb.yaml"
 METALLB_REPO="${METALLB_REPO:-registry-rs.edgeorchestration.intel.com/edge-orch}"
 
-# Correct chart path (use local charts directory by default)
+# MetalLB Config chart
 METALLB_CONFIG_PATH="metallb-config"
-
 VALUES_CONFIG="./values-metallb-config.yaml"
 METALLB_CONFIG_VERSION="${METALLB_CONFIG_VERSION:-26.0.1}"
-
-#############################################
 
 #############################################
 # COMMON FUNCTIONS
@@ -45,15 +56,12 @@ validate_file() {
   fi
 }
 
-
 #############################################
 # INSTALL FUNCTIONS
 #############################################
 
 deploy_metallb() {
-
   log "🚀 Deploying MetalLB (Wave 100)"
-
   validate_file "${VALUES_METALLB}"
 
   helm repo add metallb "${METALLB_REPO}" >/dev/null 2>&1 || true
@@ -72,20 +80,24 @@ deploy_metallb() {
 }
 
 deploy_metallb_config() {
-
   log "🚀 Deploying MetalLB Config (Wave 150)"
-
   validate_file "${VALUES_CONFIG}"
-
   create_namespace
-  # Install from local chart path (preferred)
+
+  # Prepare --set overrides for TraefikIP and HaproxyIP
+  HELM_SET_ARGS=()
+  [ -n "${TRAEFIK_IP:-}" ] && HELM_SET_ARGS+=("--set" "metallb-config.TraefikIP=${TRAEFIK_IP}")
+  [ -n "${HAPROXY_IP:-}" ] && HELM_SET_ARGS+=("--set" "metallb-config.HaproxyIP=${HAPROXY_IP}")
+
+  # Install from local chart path
   if [ -d "${METALLB_CONFIG_PATH}" ] && [ -f "${METALLB_CONFIG_PATH}/Chart.yaml" ]; then
     echo "🔎 Installing local chart: ${METALLB_CONFIG_PATH}"
     if helm upgrade --install metallb-config "${METALLB_CONFIG_PATH}" \
       --namespace "${NAMESPACE}" \
       -f "${VALUES_CONFIG}" \
+      "${HELM_SET_ARGS[@]}" \
       --wait --timeout 10m; then
-      echo "✅ MetalLB Config deployed from local chart"
+      echo "✅ MetalLB Config deployed from local chart with dynamic IPs"
     else
       echo "❌ ERROR: Local chart install failed. Check helm output for details."
       exit 1
@@ -93,8 +105,6 @@ deploy_metallb_config() {
   else
     echo "❌ ERROR: Local chart not found at ${METALLB_CONFIG_PATH} or missing Chart.yaml."
     echo "Place the metallb-config chart at ${METALLB_CONFIG_PATH} or set METALLB_CONFIG_PATH to the chart directory."
-    echo "Alternatively, pull the OCI chart locally:"
-    echo "  helm pull oci://${METALLB_REPO}/common/charts/metallb-config --version ${METALLB_CONFIG_VERSION} --untar --untardir ."
     exit 1
   fi
 }
@@ -104,9 +114,7 @@ deploy_metallb_config() {
 #############################################
 
 uninstall_metallb_config() {
-
   log "🗑️ Uninstalling MetalLB Config (reverse order)"
-
   if helm status metallb-config -n "${NAMESPACE}" >/dev/null 2>&1; then
     helm uninstall metallb-config -n "${NAMESPACE}"
     echo "✅ metallb-config removed"
@@ -116,9 +124,7 @@ uninstall_metallb_config() {
 }
 
 uninstall_metallb() {
-
   log "🗑️ Uninstalling MetalLB"
-
   if helm status metallb -n "${NAMESPACE}" >/dev/null 2>&1; then
     helm uninstall metallb -n "${NAMESPACE}"
     echo "✅ metallb removed"
@@ -164,8 +170,7 @@ case "${1:-}" in
     ;;
   *)
     echo "Usage:"
-    echo "  $0 install-all | uninstall-all | install-metallb | install-config"
+    echo "  $0 install | uninstall | install-metallb | install-config | uninstall-config | uninstall-metallb"
     exit 1
     ;;
 esac
-
