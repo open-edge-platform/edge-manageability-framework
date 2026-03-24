@@ -21,7 +21,7 @@ A[client] -->|over internet| loadbalancer(loadbalancer)
 loadbalancer -->|SNI, jwt validation, security| traefik{traefik}
 traefik -->|jwt creation| keycloak[keycloak]
 traefik -->|MPS RPS AMT VPRO| infra-external[infra-external]
-traefik -->|TODO| infra-internal[infra-internal]
+traefik -->|Infrastructure Manager, e.g., inventory.| infra-core[infra-core]
 traefik -->|GUI| web-ui[web-ui]
 traefik -->|certs| traefik-extra-objects[traefik-extra-objects]
 traefik -->|certs-management| cert-manager[cert-manager]
