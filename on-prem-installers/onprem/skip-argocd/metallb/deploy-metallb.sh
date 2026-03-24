@@ -142,11 +142,11 @@ uninstall_metallb() {
 #############################################
 
 case "${1:-}" in
-  install-all)
+  install)
     deploy_metallb
     deploy_metallb_config
     ;;
-  uninstall-all)
+  uninstall)
     uninstall_metallb_config
     uninstall_metallb
     ;;

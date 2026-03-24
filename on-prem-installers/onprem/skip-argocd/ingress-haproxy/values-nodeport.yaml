@@ -1,0 +1,42 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+controller:
+  ingressClass: haproxy
+
+  ingressClassResource:
+    name: haproxy
+    enabled: true
+    default: false
+
+  config:
+    global-config-snippet: |
+      ssl-default-bind-ciphers DHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384
+      ssl-default-bind-ciphersuites TLS_AES_256_GCM_SHA384
+      ssl-default-bind-options ssl-min-ver TLSv1.2 ssl-max-ver TLSv1.3 no-tls-tickets
+
+  defaultTLSSecret:
+    enabled: true
+    secretNamespace: orch-boots
+    secretName: tls-boots
+
+  extraArgs:
+    - --default-ssl-certificate=orch-boots/tls-boots
+
+  service:
+    type: NodePort
+    ipFamilies:
+      - IPv4
+    ipFamilyPolicy: SingleStack
+    enablePorts:
+      http: false
+      https: true
+      stat: false
+      prometheus: false
+
+    # ✅ NodePort specific config
+    nodePorts:
+      https: 31443
+
+  # ✅ FIXED
+  resources: {}
