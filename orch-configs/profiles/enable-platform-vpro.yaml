@@ -12,19 +12,19 @@ argo:
     cert-manager: true
     certificate-file-server: true
     component-status: true
-    copy-app-gitea-cred-to-fleet: true
+    copy-app-gitea-cred-to-fleet: false
     copy-ca-cert-boots-to-gateway: true
     copy-ca-cert-boots-to-infra: true
     copy-ca-cert-gateway-to-cattle: true
     copy-ca-cert-gateway-to-infra: true
-    copy-ca-cert-gitea-to-app: true
-    copy-ca-cert-gitea-to-cluster: true
-    copy-cluster-gitea-cred-to-fleet: true
+    copy-ca-cert-gitea-to-app: false
+    copy-ca-cert-gitea-to-cluster: false
+    copy-cluster-gitea-cred-to-fleet: false
     external-secrets: true
-    istio-base: true
-    istio-policy: true
-    istiod: true
-    kiali: true
+    istio-base: false
+    istio-policy: false
+    istiod: false
+    kiali: false
     keycloak-operator: true
     metadata-broker: true
     multitenant_gateway: true
