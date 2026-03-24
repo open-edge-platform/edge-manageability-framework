@@ -41,7 +41,7 @@ argo:
     traefik-extra-objects: true
     traefik-pre: true
     traefik: true
-    traefik-boots: true
+    traefik-boots: false
     traefik-boots-extra-objects: true
     vault: true
     namespace-resource-quota: true
