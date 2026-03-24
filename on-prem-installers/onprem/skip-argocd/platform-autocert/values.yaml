@@ -1,0 +1,42 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# ============================================================
+# CLUSTER CONFIGURATION
+# ============================================================
+
+cluster:
+  onprem:
+    certDomain: "cluster.onprem"   # <-- REQUIRED for on-prem
+
+  aws:
+    certDomain: "example.aws.com"        # <-- Used only if AWS enabled
+
+# ============================================================
+# ON-PREM CONFIGURATION (DEFAULT)
+# ============================================================
+
+onprem:
+  enabled: true
+
+  # Use self-signed certs or internal CA
+  generateOrchCert: true
+
+# ============================================================
+# AWS CONFIGURATION (OPTIONAL)
+# ============================================================
+
+aws:
+  enabled: false
+
+  autoCert:
+    enabled: true
+    production: true
+    issuer: "letsencrypt"
+
+  region: "us-east-1"
+  account: "123456789012"
+
+  cert:
+    adminEmail: "admin@example.com"

@@ -1,0 +1,33 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+type: postgresql
+mode: standalone
+
+version:
+  postgresql: "17"
+
+cluster:
+  instances: 1
+
+  storage:
+    size: "8Gi"
+
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+    limits:
+      memory: "768Mi"
+      cpu: "750m"
+
+  postgresql:
+    parameters:
+      huge_pages: "off"
+      max_connections: "200"
+      shared_buffers: "24MB"
+
+# Disable backups explicitly (removes warning)
+backups:
+  enabled: false

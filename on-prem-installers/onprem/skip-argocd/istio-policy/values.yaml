@@ -1,0 +1,16 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# ------------------------------------------------------------
+# AWS-specific configuration
+# ------------------------------------------------------------
+# If deploying on AWS:
+#   Set enableDatabaseNamespace to false
+#   (matches original tpl logic: if .Values.argo.aws == true)
+#
+# If NOT on AWS:
+#   Remove or comment out this field
+# ------------------------------------------------------------
+
+#enableDatabaseNamespace: false

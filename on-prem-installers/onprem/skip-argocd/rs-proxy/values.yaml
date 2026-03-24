@@ -1,0 +1,14 @@
+refreshInterval: "10m"
+
+externalSecretsApiGroup: external-secrets.io/v1
+
+withReleaseServiceToken: false
+
+# Optional (can be overridden by script/env)
+proxyTargetRegistry: ""
+proxyTargetFiles: ""
+proxyTargetCA: ""
+
+env: []
+
+resources: {}

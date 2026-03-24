@@ -1,0 +1,50 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# ------------------------------------------------------------
+# Security Contexts
+# ------------------------------------------------------------
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  seccompProfile:
+    type: RuntimeDefault
+
+podSecurityContext:
+  seccompProfile:
+    type: RuntimeDefault
+
+# ------------------------------------------------------------
+# Authentication
+# ------------------------------------------------------------
+auth:
+  strategy: "anonymous"
+
+# ------------------------------------------------------------
+# External Services
+# ------------------------------------------------------------
+external_services:
+  prometheus:
+    url: "http://prometheus-operated.orch-platform.svc:9090/"
+
+# ------------------------------------------------------------
+# Deployment Configuration
+# ------------------------------------------------------------
+deployment:
+  image_pull_policy: IfNotPresent
+
+  # ----------------------------------------------------------
+  # Resource configuration (from tpl logic)
+  # Uncomment and modify ONLY if you want custom resources
+  # ----------------------------------------------------------
+  # resources:
+  #   requests:
+  #     memory: "256Mi"
+  #     cpu: "250m"
+  #   limits:
+  #     memory: "512Mi"
+  #     cpu: "500m"

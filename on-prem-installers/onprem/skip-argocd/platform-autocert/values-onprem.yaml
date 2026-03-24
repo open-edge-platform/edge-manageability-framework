@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# ============================================================
+# ON-PREM (SELF-SIGNED CERTS)
+# ============================================================
+
+certDomain: "cluster.onprem"   # <-- your internal domain
+
+# Equivalent to: .Values.argo.self-signed-cert.generateOrchCert
+generateOrchCert: true

@@ -1,0 +1,16 @@
+auth:
+  orchSvcs:
+    roleMaxTTL: 1h
+  oidc:
+    idPAddr: "http://platform-keycloak.orch-platform.svc"
+    idPDiscoveryURL: "http://platform-keycloak.orch-platform.svc/realms/master"
+    roleMaxTTL: 1h
+
+vault:
+  autoInit: false
+  autoUnseal: false
+
+image:
+  repository: edge-orch/common/secrets-config
+
+imagePullSecrets: []

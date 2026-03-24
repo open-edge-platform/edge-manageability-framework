@@ -1,0 +1,62 @@
+containersecuritycontext:
+  allowprivilegeescalation: false
+
+global:
+  imagePullSecrets: []
+
+server:
+  image:
+    tag: "1.21.3"
+    pullPolicy: IfNotPresent
+
+  logLevel: "info"
+
+  dataStorage:
+    enabled: false
+
+  volumes:
+    - name: vault-storage-config
+      emptyDir: {}
+
+  volumeMounts:
+    - mountPath: /vault/userconfig/vault-storage-config
+      name: vault-storage-config
+      readOnly: true
+
+  extraArgs: "-config=/vault/userconfig/vault-storage-config/storage.hcl"
+
+  statefulSet:
+    securityContext:
+      container:
+        capabilities:
+          drop:
+            - ALL
+        allowPrivilegeEscalation: false
+        seccompProfile:
+          type: RuntimeDefault
+
+  # Default: standalone (on-prem)
+  standalone:
+    enabled: true
+
+  config: |
+    ui = true
+    listener "tcp" {
+      tls_disable = 1
+      address = "[::]:8200"
+      cluster_address = "[::]:8201"
+    }
+
+  extraInitContainers:
+    - name: storage-config
+      image: alpine:3.22.2
+      command: [sh, -c]
+      args:
+        - echo "storage \"postgresql\" { connection_url = \"postgres://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE\" ha_enabled=\"$HA_ENABLED\" }" > /vault/userconfig/vault-storage-config/storage.hcl
+      volumeMounts:
+        - mountPath: /vault/userconfig/vault-storage-config
+          name: vault-storage-config
+
+injector:
+  strategy:
+    type: Recreate

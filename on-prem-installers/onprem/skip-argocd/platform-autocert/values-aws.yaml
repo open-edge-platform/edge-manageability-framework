@@ -1,0 +1,22 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# ============================================================
+# AWS (LET'S ENCRYPT / ACM)
+# ============================================================
+
+certDomain: "example.aws.com"
+
+autoCert:
+  enabled: true
+  certDomain: "example.aws.com"
+  production: true
+  issuer: "letsencrypt"
+
+  aws:
+    region: "us-east-1"
+    role: "arn:aws:iam::123456789012:role/certmgr-cluster"
+
+  cert:
+    adminEmail: "admin@example.com"
