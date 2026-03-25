@@ -10,13 +10,13 @@ service:
     port: 8081
 ingress:
   enabled: false
+# traefikReverseProxy: TLS settings used by the IngressRoute template (secretName, gatewayNamespace).
+# Note: traefikReverseProxy has no enabled flag in the catalog IngressRoute template; use ingressRoute.enabled instead.
 traefikReverseProxy:
-  enabled: true
   secretName: tls-orch          ## must be created in orch-gateway namespace
+  gatewayNamespace: orch-gateway
 ingressRoute:
   enabled: true
-  tlsOptionName: gateway-tls
-  orchSecretName: tls-orch
 openidc:
   issuer: http://platform-keycloak.orch-platform.svc/realms/master
 storage:

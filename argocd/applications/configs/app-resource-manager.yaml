@@ -6,8 +6,10 @@ fullnameOverride: app-resource-manager
 serviceAccount:
   create: false
   name: orch-svc
+# traefikReverseProxy: TLS settings used by IngressRoute and VNC websocket templates.
+# traefikReverseProxy.websocketServer.enabled controls the VNC IngressRoute in service.yaml.
 traefikReverseProxy:
-  restProxy:
+  websocketServer:
     enabled: true
   gatewayNamespace: orch-gateway
   secretName: tls-orch
@@ -18,8 +20,6 @@ traefikApiGroup: "traefik.io/v1alpha1"
 
 ingressRoute:
   enabled: true
-  tlsOptionName: gateway-tls
-  orchSecretName: tls-orch
 
 resources: null
 vncProxyResources: null
