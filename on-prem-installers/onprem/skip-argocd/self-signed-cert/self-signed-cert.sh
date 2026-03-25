@@ -53,10 +53,26 @@ cleanup() {
   [[ -f "$TMP_VALUES" ]] && rm -f "$TMP_VALUES"
 }
 
+# ✅ FIX: Ensure required namespaces exist
+ensure_namespaces() {
+  echo "🔧 Ensuring required namespaces exist..."
+
+  for ns in orch-app orch-cluster orch-harbor orch-gateway; do
+    if ! kubectl get ns "$ns" >/dev/null 2>&1; then
+      echo "➡️ Creating namespace: $ns"
+      kubectl create namespace "$ns"
+    else
+      echo "✔️ Namespace exists: $ns"
+    fi
+  done
+}
+
 # ---------------- INSTALL ----------------
 
 install_app() {
   echo "🚀 Installing ${RELEASE_NAME}..."
+
+  ensure_namespaces   # 👈 FIX APPLIED HERE
 
   build_values_args
   create_temp_values
