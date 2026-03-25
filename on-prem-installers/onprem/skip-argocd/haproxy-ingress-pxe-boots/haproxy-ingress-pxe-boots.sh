@@ -1,71 +1,95 @@
 #!/bin/bash
 # haproxy-ingress-pxe-boots.sh
 # Install/Upgrade or Uninstall HAProxy Ingress via Helm using OCI chart directly
-# Default registry: registry-rs.edgeorchestration.intel.com
-# Removes TLS Certificate and Secret on uninstall
-# Assumes cluster already has permission to pull OCI chart
 
-set -e
+set -euo pipefail
 
 usage() {
     echo "Usage: $0 [install|uninstall]"
     exit 1
 }
 
+# ----------------------------
 # Load environment variables
-source ../onprem.env
+# ----------------------------
+ENV_FILE="../onprem.env"
+if [[ -f "$ENV_FILE" ]]; then
+    echo "Sourcing environment variables from $ENV_FILE"
+    source "$ENV_FILE"
+else
+    echo "❌ Environment file $ENV_FILE not found!"
+    exit 1
+fi
 
+# ----------------------------
 # Variables
+# ----------------------------
 RELEASE_NAME="haproxy-ingress-pxe-boots"
 NAMESPACE="orch-boots"
 VALUES_TEMPLATE="./values.yaml"
 VALUES_FILE="./values-rendered.yaml"
 
-# Default OCI registry if RELEASE_SERVICE_URL not set
 RELEASE_SERVICE_URL="${RELEASE_SERVICE_URL:-registry-rs.edgeorchestration.intel.com}"
-
 CHART_NAME="edge-orch/common/charts/haproxy-ingress-pxe-boots"
-CHART_VERSION="${CHART_VERSION:-1.0.1}"   # Chart version variable
+CHART_VERSION="1.0.1"
 
-# Full OCI chart path
 CHART="oci://${RELEASE_SERVICE_URL}/${CHART_NAME}:${CHART_VERSION}"
 
-# Substitute environment variables in values.yaml
-envsubst < $VALUES_TEMPLATE > $VALUES_FILE
+# ----------------------------
+# Prepare values file
+# ----------------------------
+envsubst < "$VALUES_TEMPLATE" > "$VALUES_FILE"
 
 # Ensure namespace exists
-kubectl get ns $NAMESPACE &>/dev/null || kubectl create ns $NAMESPACE
+kubectl get ns "$NAMESPACE" &>/dev/null || kubectl create ns "$NAMESPACE"
 
-# Function: Install or upgrade Helm release
+# ----------------------------
+# Install
+# ----------------------------
 install_ha_proxy() {
-    echo "🔹 Installing/upgrading HAProxy Ingress..."
-    helm upgrade --install $RELEASE_NAME $CHART \
-        --namespace $NAMESPACE \
-        -f $VALUES_FILE \
+    echo "🚀 Installing/upgrading HAProxy Ingress..."
+
+    helm upgrade --install "$RELEASE_NAME" "$CHART" \
+        --namespace "$NAMESPACE" \
+        -f "$VALUES_FILE" \
         --atomic \
         --wait
+
     echo "✅ HAProxy Ingress installed/upgraded successfully in namespace $NAMESPACE"
     echo "Chart: $CHART"
 }
 
-# Function: Uninstall Helm release and cleanup TLS resources
+# ----------------------------
+# Uninstall (SAFE)
+# ----------------------------
 uninstall_ha_proxy() {
-    echo "🔹 Uninstalling HAProxy Ingress..."
-    helm uninstall $RELEASE_NAME --namespace $NAMESPACE || echo "Release not found, skipping..."
-    
-    echo "🔹 Cleaning up TLS Certificate and Secret..."
-    kubectl delete certificate tls-boots -n $NAMESPACE --ignore-not-found
-    kubectl delete secret tls-boots -n $NAMESPACE --ignore-not-found
-    
-    echo "✅ HAProxy Ingress and associated TLS resources removed from namespace $NAMESPACE"
+    echo "🧹 Uninstalling HAProxy Ingress..."
+
+    # Safe helm uninstall (never fail)
+    helm uninstall "$RELEASE_NAME" -n "$NAMESPACE" 2>/dev/null || \
+        echo "⚠️ Release $RELEASE_NAME not found or already removed, skipping"
+
+    echo "🧹 Cleaning up TLS resources..."
+
+    # Safe cleanup (never fail)
+    kubectl delete certificate tls-boots -n "$NAMESPACE" --ignore-not-found || true
+    kubectl delete secret tls-boots -n "$NAMESPACE" --ignore-not-found || true
+
+    echo "✅ HAProxy Ingress and TLS resources cleaned up"
+
+    # Ensure success for run-all.sh
+    true
 }
 
-# Main logic
+# ----------------------------
+# Main
+# ----------------------------
 if [[ $# -ne 1 ]]; then
     usage
 fi
 
 ACTION="$1"
+
 case "$ACTION" in
     install)
         install_ha_proxy

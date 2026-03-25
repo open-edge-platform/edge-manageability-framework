@@ -44,6 +44,10 @@ COMPONENTS=(
   "traefik-pre:traefik-pre traefik-pre.sh"
   "ingress-haproxy:ingress-haproxy ingress-haproxy.sh"
   "traefik:traefik traefik.sh"
+  "haproxy-ingress-pxe-boots:haproxy-ingress-pxe-boots haproxy-ingress-pxe-boots.sh"
+  "tenancy-datamodel:tenancy-datamodel tenancy-datamodel.sh"
+  "nexus-api-gw:nexus-api-gw nexus-api-gw.sh"
+  "tenancy-api-mapping:tenancy-api-mapping tenancy-api-mapping.sh"
 #NA  "botkube:botkube botkube.sh"
 )
 

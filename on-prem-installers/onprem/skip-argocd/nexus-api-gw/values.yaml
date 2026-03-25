@@ -1,0 +1,33 @@
+# values.yaml
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Traefik reverse proxy
+traefikReverseProxy:
+  enabled: true
+  middlewares:
+    enabled: true
+  secretName: "tls-orch"
+  host:
+    grpc:
+      name: "api.${CLUSTER_DOMAIN}"           # Use env variable CLUSTER_DOMAIN
+  tlsOption: ""                                # Optional, override if needed
+
+# OIDC configuration
+oidc:
+  name: "keycloak-api"
+  oidc_env_name: "OIDC_SERVER_URL"
+  oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
+  oidc_tls_insecure_skip_verify_env_name: "OIDC_TLS_INSECURE_SKIP_VERIFY"
+  oidc_tls_insecure_skip_verify_value: true
+
+# Logging configuration
+logging:
+  level: info
+
+# Feature flags
+enabled:
+  multitenant_gateway: true
+  audit: true
+traefikApiGroup: "traefik.io/v1alpha1"

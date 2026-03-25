@@ -1,0 +1,6 @@
+# values.yaml
+# tenancy-api-mapping
+
+# Enable feature (important)
+enabled:
+  multitenant_gateway: true
