@@ -7,7 +7,7 @@ inputs:
   orch_version:
     required: false
     description: "Orchestrator version to deploy"
-    default: "main"
+    default: '${{ github.sha }}'
   orch_password:
     required: true
     description: "Password to use to deploy Orchestrator"
@@ -67,7 +67,7 @@ runs:
       DOCKERHUB_TOKEN: ${{ inputs.docker_password }}
       DOCKERHUB_USERNAME: ${{ inputs.docker_username }}
       DEPLOYMENT_TYPE: ${{ inputs.deployment_type }}
-      DEPLOY_REPO_BRANCH: ${{ github.sha }}
+      DEPLOY_REPO_BRANCH: ${{ inputs.orch_version }}
     shell: bash
     run: |
       set +x
