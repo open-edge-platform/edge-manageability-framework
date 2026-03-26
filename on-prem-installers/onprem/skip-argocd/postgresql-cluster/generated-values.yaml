@@ -1,0 +1,156 @@
+namespace: orch-database
+
+type: postgresql
+mode: standalone
+
+version:
+  postgresql: "17"
+
+cluster:
+  instances: 1
+
+  storage:
+    size: "8Gi"
+
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "384Mi"
+      cpu: "375m"
+
+  postgresql:
+    parameters:
+      huge_pages: "off"
+      max_connections: "200"
+      shared_buffers: "24MB"
+
+  initdb:
+    database: postgres
+    owner: orch-database-postgresql_user
+    localeCType: "en_US.UTF-8"
+    localeCollate: "en_US.UTF-8"
+    secret:
+      name: "orch-database-postgresql"
+  roles:
+    - name: orch-app-app-orch-catalog_user
+      ensure: present
+      login: true
+      passwordSecret:
+        name: orch-app-app-orch-catalog
+    - name: orch-platform-platform-keycloak_user
+      ensure: present
+      login: true
+      passwordSecret:
+        name: orch-platform-platform-keycloak
+    - name: orch-platform-vault_user
+      ensure: present
+      login: true
+      passwordSecret:
+        name: orch-platform-vault
+    - name: orch-infra-inventory_user
+      ensure: present
+      login: true
+      passwordSecret:
+        name: orch-infra-inventory
+    - name: orch-infra-alerting_user
+      ensure: present
+      login: true
+      passwordSecret:
+        name: orch-infra-alerting
+    - name: orch-iam-iam-tenancy_user
+      ensure: present
+      login: true
+      passwordSecret:
+        name: orch-iam-iam-tenancy
+    - name: orch-infra-mps_user
+      ensure: present
+      login: true
+      passwordSecret:
+        name: orch-infra-mps
+    - name: orch-infra-rps_user
+      ensure: present
+      login: true
+      passwordSecret:
+        name: orch-infra-rps
+  initdb:
+    database: postgres
+    owner: orch-database-postgresql_user
+    localeCType: "en_US.UTF-8"
+    localeCollate: "en_US.UTF-8"
+    secret:
+      name: "orch-database-postgresql"
+    postInitSQL:
+      - CREATE DATABASE "orch-app-app-orch-catalog";
+      - BEGIN;
+      - REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+      - REVOKE ALL ON DATABASE "orch-app-app-orch-catalog" FROM PUBLIC;
+      - CREATE ROLE "orch-app-app-orch-catalog_user";
+      - GRANT CONNECT ON DATABASE "orch-app-app-orch-catalog" TO "orch-app-app-orch-catalog_user";
+      - GRANT ALL PRIVILEGES ON DATABASE "orch-app-app-orch-catalog" TO "orch-app-app-orch-catalog_user";
+      - ALTER DATABASE "orch-app-app-orch-catalog" OWNER TO "orch-app-app-orch-catalog_user";
+      - COMMIT;
+      - CREATE DATABASE "orch-platform-platform-keycloak";
+      - BEGIN;
+      - REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+      - REVOKE ALL ON DATABASE "orch-platform-platform-keycloak" FROM PUBLIC;
+      - CREATE ROLE "orch-platform-platform-keycloak_user";
+      - GRANT CONNECT ON DATABASE "orch-platform-platform-keycloak" TO "orch-platform-platform-keycloak_user";
+      - GRANT ALL PRIVILEGES ON DATABASE "orch-platform-platform-keycloak" TO "orch-platform-platform-keycloak_user";
+      - ALTER DATABASE "orch-platform-platform-keycloak" OWNER TO "orch-platform-platform-keycloak_user";
+      - COMMIT;
+      - CREATE DATABASE "orch-platform-vault";
+      - BEGIN;
+      - REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+      - REVOKE ALL ON DATABASE "orch-platform-vault" FROM PUBLIC;
+      - CREATE ROLE "orch-platform-vault_user";
+      - GRANT CONNECT ON DATABASE "orch-platform-vault" TO "orch-platform-vault_user";
+      - GRANT ALL PRIVILEGES ON DATABASE "orch-platform-vault" TO "orch-platform-vault_user";
+      - ALTER DATABASE "orch-platform-vault" OWNER TO "orch-platform-vault_user";
+      - COMMIT;
+      - CREATE DATABASE "orch-infra-inventory";
+      - BEGIN;
+      - REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+      - REVOKE ALL ON DATABASE "orch-infra-inventory" FROM PUBLIC;
+      - CREATE ROLE "orch-infra-inventory_user";
+      - GRANT CONNECT ON DATABASE "orch-infra-inventory" TO "orch-infra-inventory_user";
+      - GRANT ALL PRIVILEGES ON DATABASE "orch-infra-inventory" TO "orch-infra-inventory_user";
+      - ALTER DATABASE "orch-infra-inventory" OWNER TO "orch-infra-inventory_user";
+      - COMMIT;
+      - CREATE DATABASE "orch-infra-alerting";
+      - BEGIN;
+      - REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+      - REVOKE ALL ON DATABASE "orch-infra-alerting" FROM PUBLIC;
+      - CREATE ROLE "orch-infra-alerting_user";
+      - GRANT CONNECT ON DATABASE "orch-infra-alerting" TO "orch-infra-alerting_user";
+      - GRANT ALL PRIVILEGES ON DATABASE "orch-infra-alerting" TO "orch-infra-alerting_user";
+      - ALTER DATABASE "orch-infra-alerting" OWNER TO "orch-infra-alerting_user";
+      - COMMIT;
+      - CREATE DATABASE "orch-iam-iam-tenancy";
+      - BEGIN;
+      - REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+      - REVOKE ALL ON DATABASE "orch-iam-iam-tenancy" FROM PUBLIC;
+      - CREATE ROLE "orch-iam-iam-tenancy_user";
+      - GRANT CONNECT ON DATABASE "orch-iam-iam-tenancy" TO "orch-iam-iam-tenancy_user";
+      - GRANT ALL PRIVILEGES ON DATABASE "orch-iam-iam-tenancy" TO "orch-iam-iam-tenancy_user";
+      - ALTER DATABASE "orch-iam-iam-tenancy" OWNER TO "orch-iam-iam-tenancy_user";
+      - COMMIT;
+      - CREATE DATABASE "orch-infra-mps";
+      - BEGIN;
+      - REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+      - REVOKE ALL ON DATABASE "orch-infra-mps" FROM PUBLIC;
+      - CREATE ROLE "orch-infra-mps_user";
+      - GRANT CONNECT ON DATABASE "orch-infra-mps" TO "orch-infra-mps_user";
+      - GRANT ALL PRIVILEGES ON DATABASE "orch-infra-mps" TO "orch-infra-mps_user";
+      - ALTER DATABASE "orch-infra-mps" OWNER TO "orch-infra-mps_user";
+      - COMMIT;
+      - CREATE DATABASE "orch-infra-rps";
+      - BEGIN;
+      - REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+      - REVOKE ALL ON DATABASE "orch-infra-rps" FROM PUBLIC;
+      - CREATE ROLE "orch-infra-rps_user";
+      - GRANT CONNECT ON DATABASE "orch-infra-rps" TO "orch-infra-rps_user";
+      - GRANT ALL PRIVILEGES ON DATABASE "orch-infra-rps" TO "orch-infra-rps_user";
+      - ALTER DATABASE "orch-infra-rps" OWNER TO "orch-infra-rps_user";
+      - COMMIT;

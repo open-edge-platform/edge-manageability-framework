@@ -81,20 +81,26 @@ install() {
 }
 
 # -----------------------------
-# Uninstall
+# Uninstall (safe)
 # -----------------------------
 uninstall() {
   echo "🗑️ Uninstalling ${APP_NAME}..."
 
   check_deps
 
-  helm uninstall "${APP_NAME}" -n "${NAMESPACE}" || true
+  # Safe uninstall (no error if release not found)
+  if helm status "${APP_NAME}" -n "${NAMESPACE}" >/dev/null 2>&1; then
+    helm uninstall "${APP_NAME}" -n "${NAMESPACE}"
+    echo "✅ ${APP_NAME} Helm release removed"
+  else
+    echo "ℹ️ Release not found, skipping uninstall"
+  fi
 
   echo "⚠️ CRDs are NOT removed automatically"
-  echo "👉 If needed:"
-  echo "kubectl delete crd $(kubectl get crd | grep cert-manager | awk '{print \$1}')"
+  echo "👉 To remove CRDs manually, run:"
+  echo "kubectl get crd | grep cert-manager | awk '{print \$1}' | xargs -r kubectl delete crd"
 
-  echo "✅ ${APP_NAME} uninstalled!"
+  echo "✅ ${APP_NAME} uninstall completed!"
 }
 
 # -----------------------------

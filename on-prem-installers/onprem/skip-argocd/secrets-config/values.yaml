@@ -6,9 +6,11 @@ auth:
     idPDiscoveryURL: "http://platform-keycloak.orch-platform.svc/realms/master"
     roleMaxTTL: 1h
 
-vault:
-  autoInit: false
-  autoUnseal: false
+ha: false
+replicas: 1
+autoInit: true
+autoUnseal: false # .Values.argo.aws must be defined to use autoUnseal
+authorizedAddrs: 0.0.0.0/0 # Comma-separated CIDR for allowed X-Forwarded-For
 
 image:
   repository: edge-orch/common/secrets-config

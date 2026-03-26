@@ -1,6 +1,4 @@
-# SPDX-FileCopyrightText: 2025 Intel Corporation
-#
-# SPDX-License-Identifier: Apache-2.0
+namespace: orch-database
 
 type: postgresql
 mode: standalone
@@ -16,11 +14,11 @@ cluster:
 
   resources:
     requests:
-      memory: "512Mi"
-      cpu: "500m"
+      memory: "256Mi"
+      cpu: "250m"
     limits:
-      memory: "768Mi"
-      cpu: "750m"
+      memory: "384Mi"
+      cpu: "375m"
 
   postgresql:
     parameters:
@@ -28,6 +26,10 @@ cluster:
       max_connections: "200"
       shared_buffers: "24MB"
 
-# Disable backups explicitly (removes warning)
-backups:
-  enabled: false
+  initdb:
+    database: postgres
+    owner: orch-database-postgresql_user
+    localeCType: "en_US.UTF-8"
+    localeCollate: "en_US.UTF-8"
+    secret:
+      name: "orch-database-postgresql"

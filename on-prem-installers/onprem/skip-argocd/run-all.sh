@@ -33,11 +33,11 @@ COMPONENTS=(
 #NA  "istio-policy:istio-policy istio-policy.sh"
 #NA  "kiali:kiali kiali.sh"
 #NA  "platform-autocert:platform-autocert platform-autocert.sh"
-#DebugError  "platform-keycloak:platform-keycloak platform-keycloak.sh"
+      "platform-keycloak:platform-keycloak platform-keycloak.sh"
 #AWS/Coder  "cert-synchronizer:cert-synchronizer cert-synchronizer.sh"
   "secrets-config:secrets-config secrets-config.sh"
   "self-signed-cert:self-signed-cert self-signed-cert.sh"
-#DebugError  "vault:vault vault.sh"
+  "vault:vault vault.sh"
 #DebugError  "rs-proxy:rs-proxy rs-proxy.sh"
   "secret-wait-tls-orch:secret-wait-tls-orch secret-wait-tls-orch.sh"
   "copy-ca-cert-gateway-to-cattle:copy-ca-cert-gateway-to-cattle copy-ca-cert-gateway-to-cattle.sh"
@@ -50,6 +50,7 @@ COMPONENTS=(
   "tenancy-datamodel:tenancy-datamodel tenancy-datamodel.sh"
   "tenancy-api-mapping:tenancy-api-mapping tenancy-api-mapping.sh"
   "nexus-api-gw:nexus-api-gw nexus-api-gw.sh"
+  "tenancy-manager:tenancy-manager tenancy-manager.sh"
 #NA  "botkube:botkube botkube.sh"
 )
 

@@ -178,28 +178,28 @@ keycloak:
 
   database:
     usernameSecret:
-      name: platform-keycloak-postgresql-postgresql
+      name: platform-keycloak-local-postgresql
       key: PGUSER
     passwordSecret:
-      name: platform-keycloak-postgresql-postgresql
+      name: platform-keycloak-local-postgresql
       key: PGPASSWORD
 
   additionalOptions:
     - name: db-url-host
       secret:
-        name: platform-keycloak-postgresql-postgresql
+        name: platform-keycloak-local-postgresql
         key: PGHOST
     - name: db-url-port
       secret:
-        name: platform-keycloak-postgresql-postgresql
+        name: platform-keycloak-local-postgresql
         key: PGPORT
     - name: db-url-database
       secret:
-        name: platform-keycloak-postgresql-postgresql
+        name: platform-keycloak-local-postgresql
         key: PGDATABASE
     - name: hostname-url
       secret:
-        name: platform-keycloak-postgresql-postgresql
+        name: platform-keycloak-local-postgresql
         key: PGDATABASE
     - name: hostname-strict
       value: "false"

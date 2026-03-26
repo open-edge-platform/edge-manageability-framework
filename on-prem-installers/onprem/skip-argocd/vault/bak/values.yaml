@@ -148,8 +148,9 @@ server:
             secretKeyRef:
               name: vault-local-postgresql
               key: PGDATABASE
-ha: false
-replicas: 1
-autoInit: true
-autoUnseal: false # .Values.argo.aws must be defined to use autoUnseal
-authorizedAddrs: 0.0.0.0/0 # Comma-separated CIDR for allowed X-Forwarded-For
+  vault:
+    ha: false
+    replicas: 1
+    autoInit: true
+    autoUnseal: false # .Values.argo.aws must be defined to use autoUnseal
+    authorizedAddrs: 0.0.0.0/0 # Comma-separated CIDR for allowed X-Forwarded-For

@@ -52,7 +52,11 @@ case "$ACTION" in
 
         helm upgrade --install "$HELM_RELEASE" hashicorp/vault \
             --namespace "$NAMESPACE" \
-            --values "$VALUES_FILE" \
+	     --values /home/ubuntu/skip-argocd/edge-manageability-framework/argocd/applications/configs/vault.yaml \
+ --values /home/ubuntu/skip-argocd/edge-manageability-framework/argocd/applications/custom/vault.tpl \
+ --values /home/ubuntu/skip-argocd/edge-manageability-framework/orch-configs/profiles/enable-platform-vpro.yaml \
+ --values /home/ubuntu/skip-argocd/edge-manageability-framework/orch-configs/profiles/profile-onprem.yaml \
+  --values /home/ubuntu/skip-argocd/edge-manageability-framework/on-prem-installers/onprem/onprem-vpro.yaml \
             --values "$PROXY_VALUES_FILE" \
             --version "$CHART_VERSION"
 
