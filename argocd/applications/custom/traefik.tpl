@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025 Intel Corporation
+# SPDX-FileCopyrightText: 2026 Intel Corporation
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -34,17 +34,23 @@ ports:
       default: false
   websecure:
     nodePort: 30443
-    # NOTE the middlewared name is <namespace>-<name>
-    middlewares:
-      - orch-gateway-rate-limit@kubernetescrd
-      {{- if index .Values "argo" "cors"}}
-      {{- if index .Values "argo" "cors" "enabled" }}
-      - orch-gateway-cors@kubernetescrd
-      {{- end }}
-      {{- end }}
+    # Breaking change when migrating to v39.0.0. See:
+    # https://github.com/traefik/traefik-helm-chart/releases/tag/v39.0.0
+    http:
+        # NOTE the middlewared name is <namespace>-<name>    
+        middlewares:
+        - orch-gateway-rate-limit@kubernetescrd
+        {{- if index .Values "argo" "cors"}}
+        {{- if index .Values "argo" "cors" "enabled" }}
+        - orch-gateway-cors@kubernetescrd
+        {{- end }}
+        {{- end }}
   tcpamt:
-    middlewares:
-      - orch-gateway-tcp-rate-limit@kubernetescrd
+    # Breaking change when migrating to v39.0.0. See:
+    # https://github.com/traefik/traefik-helm-chart/releases/tag/v39.0.0
+    http:
+        middlewares:
+        - orch-gateway-tcp-rate-limit@kubernetescrd
     port: 4433
     exposedPort: 4433
     expose:

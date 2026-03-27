@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025 Intel Corporation
+# SPDX-FileCopyrightText: 2026 Intel Corporation
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -21,7 +21,7 @@ spec:
   sources:
     - repoURL: https://helm.traefik.io/traefik
       chart: traefik
-      targetRevision: 37.2.0
+      targetRevision: 39.0.6
       helm:
         releaseName: {{$appName}}
         valuesObject:
