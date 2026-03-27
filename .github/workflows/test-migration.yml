@@ -52,7 +52,7 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: Setup asdf and install dependencies
-        uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
+        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
 
       - name: Run test
         run: mage test:ChartsAvailableOnReleaseService
@@ -80,7 +80,7 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: Setup asdf and install dependencies
-        uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
+        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
 
       - name: Inject default commonName for nginx-ingress-pxe-boots
         run: |
