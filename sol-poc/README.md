@@ -91,32 +91,41 @@ curl -s -X POST http://localhost:9090/api/disconnect
 ## Install wssh3
 
 ```bash
-# Install system dependencies
+# 1. Install system dependencies
 sudo apt install -y libevent-dev python3 python3-pip
 
-# Upgrade pip
+# 2. Upgrade pip
 sudo /usr/bin/pip3 install --upgrade pip
 
-# Install gevent
+# 3. Install gevent (pulls in zope.event)
 sudo /usr/bin/pip3 install gevent
 
-# Clone wssh3
+# 4. Clone wssh3
 cd ~
 git clone https://github.com/Tectract/wssh3.git
 
-# Install ws4py_modified
+# 5. Install ws4py_modified (must be installed before wssh3)
 cd ~/wssh3/ws4py_modified
 sudo /usr/bin/pip3 install .
 
-# Install wssh3
+# 6. Install wssh3
 cd ~/wssh3
 sudo /usr/bin/pip3 install .
 
-# Fix zope namespace issue (Ubuntu 22.04)
-sudo cp -r /usr/local/lib/python3.10/dist-packages/zope/event /usr/lib/python3/dist-packages/zope/event
+# 7. Fix zope namespace issue (required on Ubuntu 22.04)
+#    The system zope package at /usr/lib/python3/dist-packages/zope shadows
+#    the pip-installed zope.event. Copy it into the system namespace:
+PY_VER=$(/usr/bin/python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+sudo cp -r /usr/local/lib/python${PY_VER}/dist-packages/zope/event \
+           /usr/lib/python3/dist-packages/zope/event
 
-# Verify installation
+# 8. Verify installation
 wssh3 -h
+```
+
+Expected output from `wssh3 -h`:
+```
+usage: wssh3 [-h] [-l] [-m {text,binary,auto}] [-n] [-q secs] [-v] URL
 ```
 
 ## Install websocat (alternative)
