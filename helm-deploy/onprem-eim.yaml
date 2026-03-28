@@ -1,12 +1,14 @@
 root:
   useLocalValues: true
   clusterValues:
-    - orch-configs/profiles/enable-platform-vpro.yaml
-    - orch-configs/profiles/enable-edgeinfra-vpro.yaml
+    - orch-configs/profiles/enable-platform.yaml
+    - orch-configs/profiles/enable-edgeinfra.yaml
+    - orch-configs/profiles/enable-full-ui.yaml
     - orch-configs/profiles/enable-onprem.yaml
-    - orch-configs/profiles/enable-sre.yaml
     - orch-configs/profiles/proxy-none.yaml
     - orch-configs/profiles/profile-onprem.yaml
+    - orch-configs/profiles/alerting-emails.yaml
+    - orch-configs/profiles/eim-noobb.yaml
     - orch-configs/profiles/resource-default.yaml
     - orch-configs/profiles/artifact-rs-production-noauth.yaml
 argo:
@@ -24,7 +26,6 @@ argo:
     copy-ca-cert-gitea-to-app: false
     copy-ca-cert-gitea-to-cluster: false
     copy-cluster-gitea-cred-to-fleet: false
-    metadata-broker: false
   o11y:
     dedicatedEdgenodeEnabled: false
     sre:

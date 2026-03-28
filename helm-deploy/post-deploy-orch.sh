@@ -17,12 +17,8 @@ GITEA_CHART_VERSION="10.4.0"
 
 cwd=$(pwd)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_URL="https://github.com/open-edge-platform/edge-manageability-framework"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 MAIN_ENV_CONFIG="$SCRIPT_DIR/onprem.env"
-
-repo_root=""
-onprem_installers_dir=""
-BOOTSTRAP_TMP_REPO_DIR=""
 
 ################################
 # PREREQUISITES
@@ -40,29 +36,6 @@ ensure_prereqs() {
 }
 
 ################################
-# REPO BOOTSTRAP
-################################
-bootstrap_repo_root() {
-  local candidate
-  candidate="$(cd "$SCRIPT_DIR/../.." && pwd)"
-
-  if [[ -d "$candidate/orch-configs" && -d "$candidate/charts" ]]; then
-    repo_root="$candidate"
-    onprem_installers_dir="$repo_root/on-prem-installers"
-    return
-  fi
-
-  echo "Cloning repo..."
-  BOOTSTRAP_TMP_REPO_DIR="$(mktemp -d)"
-  git clone --depth 1 "$REPO_URL" "$BOOTSTRAP_TMP_REPO_DIR" >/dev/null
-
-  repo_root="$BOOTSTRAP_TMP_REPO_DIR"
-  onprem_installers_dir="$repo_root/on-prem-installers"
-
-  trap 'rm -rf "$BOOTSTRAP_TMP_REPO_DIR"' EXIT
-}
-
-################################
 # YAML GENERATION
 ################################
 generate_cluster_yaml_onprem_from_upstream() {
@@ -70,7 +43,7 @@ generate_cluster_yaml_onprem_from_upstream() {
 
   echo "Generating cluster config..."
   ONPREM_ENV_PATH="$MAIN_ENV_CONFIG" \
-    bash "$repo_root/installer/generate_cluster_yaml.sh" onprem
+    bash "$REPO_ROOT/installer/generate_cluster_yaml.sh" onprem
 
   [[ -r "$out_file" ]] || { echo "❌ YAML not generated"; exit 1; }
 
@@ -154,30 +127,6 @@ install_gitea_from_repo() {
 }
 
 ################################
-# HELM DEPLOYMENTS (CORE)
-################################
-install_platform_apps() {
-  local values="$cwd/${ORCH_INSTALLER_PROFILE}.yaml"
-
-  echo "🚀 Deploying platform apps via Helm..."
-
-  # Order matters
-  helm upgrade --install postgres "$repo_root/charts/postgres" \
-    -f "$values" -n orch-database --create-namespace
-
-  helm upgrade --install vault "$repo_root/charts/vault" \
-    -f "$values" -n orch-platform --create-namespace
-
-  helm upgrade --install keycloak "$repo_root/charts/keycloak" \
-    -f "$values" -n orch-platform
-
-  helm upgrade --install harbor "$repo_root/charts/harbor" \
-    -f "$values" -n orch-harbor --create-namespace
-
-  echo "✅ Platform apps deployed"
-}
-
-################################
 # MAIN
 ################################
 if [[ -f "$MAIN_ENV_CONFIG" ]]; then
@@ -187,7 +136,6 @@ else
   exit 1
 fi
 
-bootstrap_repo_root
 ensure_prereqs
 
 generate_cluster_yaml_onprem_from_upstream
@@ -217,9 +165,6 @@ create_harbor_secret orch-harbor "$harbor_password"
 create_harbor_password orch-harbor "$harbor_password"
 create_keycloak_password orch-platform "$keycloak_password"
 create_postgres_password orch-database "$postgres_password"
-
-# Deploy apps (Helm replaces ArgoCD)
-#install_platform_apps
 
 echo
 echo "✅ Edge Orchestrator deployed using Helm (No ArgoCD)"

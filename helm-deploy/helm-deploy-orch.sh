@@ -21,9 +21,27 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "$SCRIPT_DIR"
 
+# Source environment config
+ENV_FILE="${SCRIPT_DIR}/onprem.env"
+if [[ -f "$ENV_FILE" ]]; then
+  # shellcheck disable=SC1090
+  source "$ENV_FILE"
+fi
+
 TEMPLATES_DIR="${REPO_ROOT}/argocd/applications/templates"
 VALUES_DIR="values_overwrite"
-APP_LIST_FILE="application-list-vpro"
+
+# Select app list based on profile
+ORCH_INSTALLER_PROFILE="${ORCH_INSTALLER_PROFILE:-onprem-vpro}"
+case "$ORCH_INSTALLER_PROFILE" in
+  onprem-eim)  APP_LIST_FILE="application-list-eim" ;;
+  onprem-vpro) APP_LIST_FILE="application-list-vpro" ;;
+  *)
+    echo "❌ Unknown ORCH_INSTALLER_PROFILE: $ORCH_INSTALLER_PROFILE"
+    echo "   Supported: onprem-eim, onprem-vpro"
+    exit 1
+    ;;
+esac
 
 # Default OCI registry (replaces {{ .Values.argo.chartRepoURL }})
 RELEASE_SERVICE_URL="${RELEASE_SERVICE_URL:-registry-rs.edgeorchestration.intel.com/edge-orch}"
@@ -84,6 +102,25 @@ parse_template() {
   # Extract version
   T_VERSION=$(grep -m1 'targetRevision:' "$tpl" | sed 's/.*targetRevision:\s*//' | tr -d '"' | xargs)
 
+  # Extract releaseName from ArgoCD template (defaults to app name if not specified)
+  T_ARGO_RELEASE_NAME=$(grep -m1 'releaseName:' "$tpl" | sed 's/.*releaseName:\s*//' | tr -d '"' | xargs)
+  T_ARGO_RELEASE_NAME=$(echo "$T_ARGO_RELEASE_NAME" | sed 's/{{\s*\$appName\s*}}/'"$app"'/g')
+  if [[ -z "$T_ARGO_RELEASE_NAME" ]]; then
+    T_ARGO_RELEASE_NAME="$app"
+  fi
+
+  # Helm release name is always the app name (unique per chart), except for
+  # "host" charts (e.g. web-ui-root) that build cross-service URLs using
+  # {{ .Release.Name }} in templates (not values). Those must use the shared
+  # releaseName from ArgoCD so template helpers resolve correctly.
+  # For other charts with shared releaseName, we fix values-based refs at install
+  # time via a temporary override file.
+  if [[ "$T_ARGO_RELEASE_NAME" != "$app" && "$app" == *-root ]]; then
+    T_RELEASE_NAME="$T_ARGO_RELEASE_NAME"
+  else
+    T_RELEASE_NAME="$app"
+  fi
+
   # Determine chart type and resolve repoURL
   if [[ "$raw_repo" == *"chartRepoURL"* || "$raw_repo" == *"rsChartRepoURL"* ]]; then
     # OCI chart via argo registry → oci://<RELEASE_SERVICE_URL>/<chart>
@@ -129,21 +166,38 @@ load_apps() {
 }
 
 # ═══════════════════════════════════════════════════════════════
+# Reorder apps: move *-root apps to end (they depend on sub-charts)
+# ═══════════════════════════════════════════════════════════════
+reorder_apps() {
+  local non_root=() root_apps=()
+  for app in "$@"; do
+    if [[ "$app" == *-root ]]; then
+      root_apps+=("$app")
+    else
+      non_root+=("$app")
+    fi
+  done
+  echo "${non_root[@]}" "${root_apps[@]}"
+}
+
+# ═══════════════════════════════════════════════════════════════
 # PRE-INSTALL HOOKS — app-specific cleanup before helm install
 # ═══════════════════════════════════════════════════════════════
+remove_stale_vault_keys() {
+  local ns="$1"
+  if kubectl get secret vault-keys -n "$ns" >/dev/null 2>&1; then
+    echo "   🔑 Removing stale vault-keys secret (will be recreated by secrets-config)"
+    kubectl delete secret vault-keys -n "$ns" 2>/dev/null || true
+  fi
+}
+
 pre_install_hook() {
   local app="$1"
   local ns="$2"
 
   case "$app" in
     vault)
-      # When reinstalling vault, the old vault-keys secret blocks secrets-config
-      # from storing new init keys (it uses Create, not Update). Delete it so
-      # secrets-config can create a fresh one after Vault reinitializes.
-      if kubectl get secret vault-keys -n "$ns" >/dev/null 2>&1; then
-        echo "   🔑 Removing stale vault-keys secret (will be recreated by secrets-config)"
-        kubectl delete secret vault-keys -n "$ns" 2>/dev/null || true
-      fi
+      remove_stale_vault_keys "$ns"
 
       # If vault is already running and initialized, truncate PG tables to force
       # a clean reinit. Skip if vault pod doesn't exist or DB isn't reachable.
@@ -157,12 +211,7 @@ pre_install_hook() {
       fi
       ;;
     orch-utils)
-      # secrets-config (part of orch-utils) creates the vault-keys secret.
-      # Remove stale secret so the new secrets-config pod can store fresh keys.
-      if kubectl get secret vault-keys -n "$ns" >/dev/null 2>&1; then
-        echo "   🔑 Removing stale vault-keys secret (will be recreated by secrets-config)"
-        kubectl delete secret vault-keys -n "$ns" 2>/dev/null || true
-      fi
+      remove_stale_vault_keys "$ns"
       ;;
   esac
 }
@@ -197,27 +246,57 @@ do_install() {
     kubectl create ns "$T_NAMESPACE" --dry-run=client -o yaml 2>/dev/null | kubectl apply -f - 2>/dev/null || true
   fi
 
+  # Clean up stuck releases (pending-install, pending-upgrade, pending-rollback, failed)
+  local release_status
+  release_status=$(helm status "$T_RELEASE_NAME" -n "$T_NAMESPACE" -o json 2>/dev/null | grep -oP '"status":\s*"\K[^"]+' || echo "")
+  if [[ "$release_status" == pending-* || "$release_status" == "failed" ]]; then
+    echo "   ⚠️  Detected stuck release (${release_status}), cleaning up before reinstall"
+    helm uninstall "$T_RELEASE_NAME" -n "$T_NAMESPACE" --no-hooks 2>/dev/null || true
+    sleep 2
+  fi
+
   # Run app-specific pre-install cleanup
   pre_install_hook "$app" "$T_NAMESPACE"
 
+  # When the ArgoCD releaseName differs from app name, charts may reference
+  # {{ .Release.Name }} in their default values (e.g. proxy_pass URLs).
+  # Generate a temp values file from chart defaults with the correct name substituted.
+  local extra_values_file=""
+  if [[ "$T_ARGO_RELEASE_NAME" != "$app" ]]; then
+    local default_vals
+    default_vals=$(helm show values "$T_CHART_FOR_HELM" --version "$T_VERSION" 2>/dev/null || echo "")
+    if echo "$default_vals" | grep -q '\.Release\.Name'; then
+      extra_values_file=$(mktemp /tmp/helm-override-XXXXXX.yaml)
+      echo "$default_vals" \
+        | sed 's/{{[[:space:]]*\.Release\.Name[[:space:]]*}}/'"$T_ARGO_RELEASE_NAME"'/g' \
+        > "$extra_values_file"
+      # Prepend extra values so the user values file takes priority
+      values_args="-f $extra_values_file $values_args"
+    fi
+  fi
+
   echo "🚀 Installing ${app}"
+  echo "   Release  : ${T_RELEASE_NAME}"
   echo "   Chart    : ${T_CHART_FOR_HELM}"
   echo "   Version  : ${T_VERSION}"
   echo "   Namespace: ${T_NAMESPACE}"
   echo "   Values   : ${values_file}"
 
   # shellcheck disable=SC2086
-  if helm upgrade --install "$app" "$T_CHART_FOR_HELM" \
+  if helm upgrade --install "$T_RELEASE_NAME" "$T_CHART_FOR_HELM" \
     --version "$T_VERSION" \
     --namespace "$T_NAMESPACE" \
     --create-namespace \
     $values_args \
-    --wait --timeout 10m; then
+    --wait --timeout 5m; then
     echo "✅ ${app} installed"
   else
     echo "❌ ${app} FAILED"
+    [[ -n "$extra_values_file" ]] && rm -f "$extra_values_file"
     return 1
   fi
+  [[ -n "$extra_values_file" ]] && rm -f "$extra_values_file"
+  return 0
 }
 
 # ═══════════════════════════════════════════════════════════════
@@ -232,11 +311,11 @@ do_uninstall() {
   fi
 
   echo "🗑️  Uninstalling ${app} from ${T_NAMESPACE}..."
-  if helm status "$app" -n "$T_NAMESPACE" >/dev/null 2>&1; then
-    helm uninstall "$app" -n "$T_NAMESPACE"
+  if helm status "$T_RELEASE_NAME" -n "$T_NAMESPACE" >/dev/null 2>&1; then
+    helm uninstall "$T_RELEASE_NAME" -n "$T_NAMESPACE"
     echo "✅ ${app} uninstalled"
   else
-    echo "ℹ️  ${app} not found in ${T_NAMESPACE}"
+    echo "ℹ️  ${app} (release: ${T_RELEASE_NAME}) not found in ${T_NAMESPACE}"
   fi
 }
 
@@ -259,9 +338,9 @@ do_dry_run() {
     repo_add="helm repo add ${T_REPO_ALIAS} ${T_REPO_URL}"
   fi
 
-  echo "--- ${app} ---"
+  echo "--- ${app} (release: ${T_RELEASE_NAME}) ---"
   [[ -n "$repo_add" ]] && echo "  $repo_add"
-  echo "  helm upgrade --install ${app} ${T_CHART_FOR_HELM} \\"
+  echo "  helm upgrade --install ${T_RELEASE_NAME} ${T_CHART_FOR_HELM} \\"
   echo "    --version ${T_VERSION} \\"
   echo "    --namespace ${T_NAMESPACE} \\"
   echo "    --create-namespace \\"
@@ -323,6 +402,7 @@ usage() {
 case "$ACTION" in
   install)
     APPS=($(load_apps "$@"))
+    APPS=($(reorder_apps "${APPS[@]}"))
     TOTAL=${#APPS[@]}
     START_ALL=$(date +%s)
     success=0; fail=0; skipped=0
@@ -341,18 +421,17 @@ case "$ACTION" in
       echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
       START=$(date +%s)
-      if do_install "$app"; then
+      rc=0
+      do_install "$app" || rc=$?
+      if [[ $rc -eq 0 ]]; then
         success=$((success + 1))
         SUCCEEDED_LIST+=("$app")
+      elif [[ $rc -eq 2 ]]; then
+        skipped=$((skipped + 1))
+        SKIPPED_LIST+=("$app")
       else
-        rc=$?
-        if [[ $rc -eq 2 ]]; then
-          skipped=$((skipped + 1))
-          SKIPPED_LIST+=("$app")
-        else
-          fail=$((fail + 1))
-          FAILED_LIST+=("$app")
-        fi
+        fail=$((fail + 1))
+        FAILED_LIST+=("$app")
       fi
       END=$(date +%s)
       dur=$((END - START))
@@ -428,6 +507,7 @@ case "$ACTION" in
     ;;
   dry-run)
     APPS=($(load_apps "$@"))
+    APPS=($(reorder_apps "${APPS[@]}"))
     for app in "${APPS[@]}"; do
       do_dry_run "$app"
     done

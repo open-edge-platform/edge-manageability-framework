@@ -16,10 +16,56 @@ else
 fi
 
 # =========================
+# Profile selection
+# =========================
+ORCH_INSTALLER_PROFILE="${ORCH_INSTALLER_PROFILE:-onprem-vpro}"
+
+case "$ORCH_INSTALLER_PROFILE" in
+  onprem-eim)
+    APP_LIST_FILE="${SCRIPT_DIR}/application-list-eim"
+    FILES=(
+      "onprem-eim.yaml"
+      "${REPO_ROOT}/orch-configs/profiles/enable-platform.yaml"
+      "${REPO_ROOT}/orch-configs/profiles/enable-edgeinfra.yaml"
+      "${REPO_ROOT}/orch-configs/profiles/enable-full-ui.yaml"
+      "${REPO_ROOT}/orch-configs/profiles/enable-onprem.yaml"
+      "${REPO_ROOT}/orch-configs/profiles/enable-sre.yaml"
+      "${REPO_ROOT}/orch-configs/profiles/proxy-none.yaml"
+      "${REPO_ROOT}/orch-configs/profiles/profile-onprem.yaml"
+      "${REPO_ROOT}/orch-configs/profiles/alerting-emails.yaml"
+      "${REPO_ROOT}/orch-configs/profiles/eim-noobb.yaml"
+      "${REPO_ROOT}/orch-configs/profiles/resource-default.yaml"
+      "${REPO_ROOT}/orch-configs/profiles/artifact-rs-production-noauth.yaml"
+      "${REPO_ROOT}/argocd/applications/values.yaml"
+    )
+    ;;
+  onprem-vpro)
+    APP_LIST_FILE="${SCRIPT_DIR}/application-list-vpro"
+    FILES=(
+      "onprem-vpro.yaml"
+      "${REPO_ROOT}/orch-configs/profiles/enable-platform-vpro.yaml"
+      "${REPO_ROOT}/orch-configs/profiles/enable-edgeinfra-vpro.yaml"
+      "${REPO_ROOT}/orch-configs/profiles/enable-onprem.yaml"
+      "${REPO_ROOT}/orch-configs/profiles/enable-sre.yaml"
+      "${REPO_ROOT}/orch-configs/profiles/proxy-none.yaml"
+      "${REPO_ROOT}/orch-configs/profiles/profile-onprem.yaml"
+      "${REPO_ROOT}/orch-configs/profiles/resource-default.yaml"
+      "${REPO_ROOT}/orch-configs/profiles/artifact-rs-production-noauth.yaml"
+      "${REPO_ROOT}/argocd/applications/values.yaml"
+    )
+    ;;
+  *)
+    echo "❌ Unknown ORCH_INSTALLER_PROFILE: $ORCH_INSTALLER_PROFILE"
+    echo "   Supported: onprem-eim, onprem-vpro"
+    exit 1
+    ;;
+esac
+
+echo "🔹 Profile: $ORCH_INSTALLER_PROFILE"
+
+# =========================
 # Applications to process
 # =========================
-APP_LIST_FILE="${SCRIPT_DIR}/application-list-vpro"
-
 if [ $# -gt 0 ]; then
   APPLICATIONS=("$@")
 elif [[ -f "$APP_LIST_FILE" ]]; then
@@ -35,23 +81,6 @@ fi
 MERGED_FILE="merge.yaml"
 OUTPUT_DIR="values_overwrite"
 mkdir -p "$OUTPUT_DIR"
-
-# =========================
-# Input files (BOTTOM → TOP precedence)
-# =========================
-FILES=(
-  "onprem-vpro.yaml"
-  "${REPO_ROOT}/orch-configs/profiles/enable-platform-vpro.yaml"
-  "${REPO_ROOT}/orch-configs/profiles/enable-edgeinfra-vpro.yaml"
-  "${REPO_ROOT}/orch-configs/profiles/enable-onprem.yaml"
-  "${REPO_ROOT}/orch-configs/profiles/enable-sre.yaml"
-  "${REPO_ROOT}/orch-configs/profiles/proxy-none.yaml"
-  "${REPO_ROOT}/orch-configs/profiles/profile-onprem.yaml"
-  "${REPO_ROOT}/orch-configs/profiles/resource-default.yaml"
-  "${REPO_ROOT}/orch-configs/profiles/artifact-rs-production-noauth.yaml"
-  "${REPO_ROOT}/argocd/applications/values.yaml"
-
-)
 
 # =========================
 # Validate tools

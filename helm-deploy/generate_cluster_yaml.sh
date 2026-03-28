@@ -30,7 +30,7 @@ elif [ "$DEPLOY_TYPE" = "onprem" ]; then
     source "${PWD}/${DEPLOY_TYPE}.env"
 
     # Validate ORCH_INSTALLER_PROFILE
-    if [[ "$ORCH_INSTALLER_PROFILE" =~ ^(onprem|onprem-oxm|onprem-vpro)$ ]]; then
+    if [[ "$ORCH_INSTALLER_PROFILE" =~ ^(onprem|onprem-oxm|onprem-vpro|onprem-eim)$ ]]; then
         TEMPLATE_FILE="./cluster_onprem.tpl"
         OUTPUT_FILE="${ORCH_INSTALLER_PROFILE}.yaml"
 
@@ -70,19 +70,37 @@ export OSRM_MANUAL_PROFILE='- orch-configs/profiles/enable-osrm-manual-mode.yaml
 export RESOURCE_DEFAULT_PROFILE='- orch-configs/profiles/resource-default.yaml'
 export EIM_NOOBB_PROFILE='#- orch-configs/profiles/eim-noobb.yaml'
 
-if [[ "${ORCH_INSTALLER_PROFILE:-}" == "onprem-vpro" || "${ORCH_INSTALLER_PROFILE:-}" == "aws-vpro" ]]; then
-  export DISABLE_AO_PROFILE=true
-  export DISABLE_CO_PROFILE=true
-  export DISABLE_O11Y_PROFILE=true
-  export DISABLE_KYVERNO_PROFILE=true
-  export DISABLE_UI_PROFILE=true
-  export SRE_TLS_ENABLED=false
-  export SINGLE_TENANCY_PROFILE=false
-  export EMAIL_PROFILE='#- orch-configs/profiles/alerting-emails.yaml'
-  export PLATFORM_PROFILE='- orch-configs/profiles/enable-platform-vpro.yaml'
-  export EDGEINFRA_PROFILE='- orch-configs/profiles/enable-edgeinfra-vpro.yaml'
-fi
+case "${ORCH_INSTALLER_PROFILE:-}" in
 
+  onprem-vpro|aws-vpro)
+    export DISABLE_AO_PROFILE=true
+    export DISABLE_CO_PROFILE=true
+    export DISABLE_O11Y_PROFILE=true
+    export DISABLE_KYVERNO_PROFILE=true
+    export DISABLE_UI_PROFILE=true
+    export SRE_TLS_ENABLED=false
+    export SINGLE_TENANCY_PROFILE=false
+    export EMAIL_PROFILE='#- orch-configs/profiles/alerting-emails.yaml'
+    export PLATFORM_PROFILE='- orch-configs/profiles/enable-platform-vpro.yaml'
+    export EDGEINFRA_PROFILE='- orch-configs/profiles/enable-edgeinfra-vpro.yaml'
+    ;;
+
+  onprem-eim)
+    export DISABLE_AO_PROFILE=true
+    export DISABLE_CO_PROFILE=true
+    export DISABLE_O11Y_PROFILE=true
+    export DISABLE_KYVERNO_PROFILE=true
+    #export DISABLE_UI_PROFILE=true
+    export SRE_TLS_ENABLED=false
+    export SINGLE_TENANCY_PROFILE=false
+    export SRE_PROFILE='#- orch-configs/profiles/enable-sre.yaml'
+    ;;
+
+  *)
+    echo "No matching profile for: ${ORCH_INSTALLER_PROFILE}"
+    ;;
+
+esac
 # -----------------------------------------------------------------------------
 # Default environment variables
 # -----------------------------------------------------------------------------
@@ -235,7 +253,7 @@ if [ "$DEPLOY_TYPE" = "onprem" ]; then
     fi
 
     case "${ORCH_INSTALLER_PROFILE}" in
-        onprem|onprem-vpro)
+        onprem|onprem-vpro|onprem-eim)
             echo "📦 Profile: Standard On-Prem Deployment"
             export PROFILE_FILE_NAME='- orch-configs/profiles/profile-onprem.yaml'
             ;;
