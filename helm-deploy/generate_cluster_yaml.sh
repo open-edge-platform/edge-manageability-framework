@@ -42,7 +42,7 @@ elif [ "$DEPLOY_TYPE" = "onprem" ]; then
         export CLUSTER_DOMAIN="${CLUSTER_DOMAIN:-cluster.onprem}"
     else
         echo "❌ Invalid ORCH_INSTALLER_PROFILE: ${ORCH_INSTALLER_PROFILE}"
-        echo "Valid options: onprem | onprem-oxm"
+        echo "Valid options: onprem | onprem-oxm | onprem-vpro | onprem-eim"
         exit 1
     fi
 

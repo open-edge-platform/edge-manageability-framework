@@ -43,7 +43,7 @@ generate_cluster_yaml_onprem_from_upstream() {
 
   echo "Generating cluster config..."
   ONPREM_ENV_PATH="$MAIN_ENV_CONFIG" \
-    bash "$REPO_ROOT/installer/generate_cluster_yaml.sh" onprem
+    bash "$SCRIPT_DIR/generate_cluster_yaml.sh" onprem
 
   [[ -r "$out_file" ]] || { echo "❌ YAML not generated"; exit 1; }
 
