@@ -22,11 +22,11 @@ fi
 
 NAMESPACE="metallb-system"
 
-# MetalLB (Helm repo)
+# MetalLB (upstream Helm repo)
+METALLB_REPO_URL="https://metallb.github.io/metallb"
 METALLB_CHART="metallb/metallb"
 METALLB_VERSION="0.15.2"
 VALUES_METALLB="./values-metallb.yaml"
-METALLB_REPO="${METALLB_REPO:-registry-rs.edgeorchestration.intel.com/edge-orch}"
 
 # MetalLB Config chart
 METALLB_CONFIG_PATH="metallb-config"
@@ -66,8 +66,8 @@ deploy_metallb() {
   log "🚀 Deploying MetalLB (Wave 100)"
   validate_file "${VALUES_METALLB}"
 
-  helm repo add metallb "${METALLB_REPO}" >/dev/null 2>&1 || true
-  helm repo update >/dev/null 2>&1
+  helm repo add metallb "${METALLB_REPO_URL}" >/dev/null 2>&1 || true
+  helm repo update metallb >/dev/null 2>&1
 
   create_namespace
 
