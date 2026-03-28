@@ -43,8 +43,8 @@ case "$ORCH_INSTALLER_PROFILE" in
     ;;
 esac
 
-# Default OCI registry (replaces {{ .Values.argo.chartRepoURL }})
-RELEASE_SERVICE_URL="${RELEASE_SERVICE_URL:-registry-rs.edgeorchestration.intel.com/edge-orch}"
+# Default OCI registry base (onprem.env provides RELEASE_SERVICE_URL without path suffix)
+RELEASE_SERVICE_URL="${RELEASE_SERVICE_URL}/edge-orch"
 
 # Known public helm repos: repoURL → repo_alias
 declare -A KNOWN_REPOS
@@ -125,8 +125,7 @@ parse_template() {
   if [[ "$raw_repo" == *"chartRepoURL"* || "$raw_repo" == *"rsChartRepoURL"* ]]; then
     # OCI chart via argo registry → oci://<RELEASE_SERVICE_URL>/<chart>
     T_TYPE="oci"
-    T_RESOLVED="oci://${RELEASE_SERVICE_URL}/${T_CHART}"
-    T_CHART_FOR_HELM="$T_RESOLVED"
+    T_CHART_FOR_HELM="oci://${RELEASE_SERVICE_URL}/${T_CHART}"
   elif [[ "$raw_repo" == *"ghcr.io"* || "$raw_repo" == *"gcr.io"* ]]; then
     # External OCI
     T_TYPE="oci-ext"
