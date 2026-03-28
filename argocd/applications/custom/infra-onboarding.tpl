@@ -60,6 +60,7 @@ infra-config:
     enTokenClients: "{{ index .Values.argo "infra-onboarding" "enTokenClients" | default "node-agent,hd-agent,cluster-agent,platform-update-agent,platform-observability-agent,platform-telemetry-agent,prometheus,connect-agent,attestation-manager,platform-manageability-agent" }}"
     disableCoProfile: {{ index .Values.argo "infra-onboarding" "disableCoProfile" | default false }}
     disableO11yProfile: {{ index .Values.argo "infra-onboarding" "disableO11yProfile" | default false }}
+    skipOSProvisioning: {{ index .Values.argo "infra-onboarding" "skipOSProvisioning" | default false }}
     netIp: "{{ index .Values.argo "infra-onboarding" "netIp" | default "dynamic" }}"
     ntpServer: "{{ index .Values.argo "infra-onboarding" "ntpServer" | default "ntp1.server.org,ntp2.server.org" }}"
     {{- $nameServers := index .Values.argo "infra-onboarding" "nameServers" | default list }}
