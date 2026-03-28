@@ -18,6 +18,10 @@ imagePullSecrets:
 
 configProvisioner:
   useM2MToken: true
+  # multiTenancyEnabled is the inverse of the singleTenancy profile:
+  # - enable-singleTenancy.yaml sets argo.enabled.defaultTenancy=true → multiTenancyEnabled=false
+  # - Without that profile (multi-tenant deployment) → multiTenancyEnabled=true
+  multiTenancyEnabled: {{ not (index .Values.argo.enabled "defaultTenancy" | default false) }}
   # harborServerExternal: The URL to be used in the Catalog's harbor-helm and harbor-docker Registry objects
   harborServerExternal: "https://registry-oci.{{ .Values.argo.clusterDomain }}"
   keycloakServer: "https://keycloak.{{ .Values.argo.clusterDomain }}"

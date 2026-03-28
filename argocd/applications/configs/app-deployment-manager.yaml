@@ -36,11 +36,14 @@ openidc:
 
 gitea:
   install: false
+# traefikReverseProxy: TLS settings used by the IngressRoute template (secretName, tlsOption, gatewayNamespace).
+# Note: there is no traefikReverseProxy.enabled gate in the IngressRoute template; use ingressRoute.enabled instead.
 traefikReverseProxy:
-  enabled: true
   gatewayNamespace: orch-gateway
   secretName: tls-orch
   tlsOption: gateway-tls
+ingressRoute:
+  enabled: true
 mockCompositeApps: []
 
 istio-proxy:
