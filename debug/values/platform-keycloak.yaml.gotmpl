@@ -7,6 +7,50 @@ clusterDomain: {{ .Values.clusterDomain | default "" | quote }}
 
 namespace: orch-platform
 
+# Keycloak database secret name (derived from database.type in environment values)
+{{- $dbSecretName := printf "platform-keycloak-%s-postgresql" (.Values.database.type | default "local") }}
+
+# Database connection via additionalOptions (read from the postgresql-secrets secret)
+keycloak:
+  database:
+    usernameSecret:
+      name: {{ $dbSecretName }}
+      key: PGUSER
+    passwordSecret:
+      name: {{ $dbSecretName }}
+      key: PGPASSWORD
+  additionalOptions:
+    - name: db-url-host
+      secret:
+        name: {{ $dbSecretName }}
+        key: PGHOST
+    - name: db-url-port
+      secret:
+        name: {{ $dbSecretName }}
+        key: PGPORT
+    - name: db-url-database
+      secret:
+        name: {{ $dbSecretName }}
+        key: PGDATABASE
+    - name: hostname-strict
+      value: "false"
+    - name: http-relative-path
+      value: "/"
+    - name: http-enabled
+      value: "true"
+    - name: db-url-properties
+      value: "?tcpKeepAlives=true&socketTimeout=120&connectTimeout=120"
+    - name: http-management-port
+      value: "9000"
+    - name: spi-login-protocol-openid-connect-legacy-logout-redirect-uri
+      value: "true"
+    - name: spi-brute-force-protector-default-brute-force-detector-allow-concurrent-requests
+      value: "true"
+    - name: log-level
+      value: INFO
+    - name: log-console-output
+      value: json
+
 # Keycloak Config CLI job configuration
 keycloakConfigCli:
   enabled: true

@@ -12,11 +12,6 @@ adminEmail: {{ env "EMF_ADMIN_EMAIL" | default "" | quote }}
 tlsSecret: {{ env "EMF_TLS_SECRET" | default "tls-orch" | quote }}
 imagePullSecrets: []
 
-# ─── Database ────────────────────────────────────────────────────────────────
-database:
-  type: {{ env "EMF_DB_TYPE" | default "aurora" | quote }}
-  ssl: {{ env "EMF_DB_SSL" | default "true" }}
-
 # ─── Storage ─────────────────────────────────────────────────────────────────
 catalog:
   storageClass: {{ env "EMF_STORAGE_CLASS" | default "efs-999" | quote }}
@@ -121,13 +116,7 @@ proxy:
   noProxy: {{ env "EMF_NO_PROXY" | default "" | quote }}
 {{- end }}
 
-# ─── Feature Toggles ────────────────────────────────────────────────────────
-enabled:
-  aws-lb: {{ env "EMF_ENABLE_AWS_LB" | default "true" }}
-  aws-lb-tgb: {{ env "EMF_ENABLE_AWS_LB" | default "true" }}
-  aws-sm-proxy: {{ env "EMF_ENABLE_AWS_SM" | default "true" }}
-  aws-sm-get-rs-token: {{ env "EMF_ENABLE_AWS_SM" | default "true" }}
-  cluster-autoscaler: {{ env "EMF_ENABLE_AUTOSCALER" | default "true" }}
-  squid-proxy: {{ env "EMF_ENABLE_SQUID" | default "true" }}
-  vertical-pod-autoscaler: {{ env "EMF_ENABLE_VPA" | default "true" }}
-  nginx-ingress-pxe-boots: {{ env "EMF_ENABLE_PXE" | default "false" }}
+# ─── Feature Toggles (AWS-specific overrides) ───────────────────────────────
+# Most AWS toggles are in defaults-aws.yaml.gotmpl
+nginx-ingress-pxe-boots:
+  enabled: {{ env "EMF_ENABLE_PXE" | default "false" }}

@@ -25,53 +25,55 @@
 environments:
   dev:
     values:
-      - environments/defaults-onprem.yaml.gotmpl
+      - environments/defaults.yaml.gotmpl
       - environments/dev.yaml.gotmpl
   dev-minimal:
     values:
-      - environments/defaults-onprem.yaml.gotmpl
+      - environments/defaults.yaml.gotmpl
       - environments/dev-minimal.yaml.gotmpl
   onprem:
     values:
-      - environments/defaults-onprem.yaml.gotmpl
+      - environments/defaults.yaml.gotmpl
       - environments/onprem.yaml.gotmpl
   onprem-1k:
     values:
-      - environments/defaults-onprem.yaml.gotmpl
+      - environments/defaults.yaml.gotmpl
       - environments/onprem-1k.yaml.gotmpl
   onprem-oxm:
     values:
-      - environments/defaults-onprem.yaml.gotmpl
+      - environments/defaults.yaml.gotmpl
       - environments/onprem-oxm.yaml.gotmpl
   onprem-explicit-proxy:
     values:
-      - environments/defaults-onprem.yaml.gotmpl
+      - environments/defaults.yaml.gotmpl
       - environments/onprem-explicit-proxy.yaml.gotmpl
   bkc:
     values:
-      - environments/defaults-onprem.yaml.gotmpl
+      - environments/defaults.yaml.gotmpl
       - environments/bkc.yaml.gotmpl
   aws:
     values:
-      - environments/defaults-aws.yaml.gotmpl
+      - environments/defaults.yaml.gotmpl
       - environments/aws.yaml.gotmpl
   onprem-vpro:
     values:
+      - environments/defaults.yaml.gotmpl
       - environments/onprem-vpro.yaml.gotmpl
   onprem-eim:
     values:
+      - environments/defaults.yaml.gotmpl
       - environments/onprem-eim.yaml.gotmpl
   onprem-eim-co:
     values:
-      - environments/defaults-onprem.yaml.gotmpl
+      - environments/defaults.yaml.gotmpl
       - environments/onprem-eim-co.yaml.gotmpl
   onprem-eim-co-ao:
     values:
-      - environments/defaults-onprem.yaml.gotmpl
+      - environments/defaults.yaml.gotmpl
       - environments/onprem-eim-co-ao.yaml.gotmpl
   onprem-eim-co-ao-o11y:
     values:
-      - environments/defaults-onprem.yaml.gotmpl
+      - environments/defaults.yaml.gotmpl
       - environments/onprem-eim-co-ao-o11y.yaml.gotmpl
 
 ---
@@ -533,7 +535,7 @@ releases:
     chart: edge-orch/common/charts/platform-autocert
     version: 1.0.2
     values:
-      - values/platform-autocert.yaml.gotmpl
+      - values/platform-autocert.yaml
     needs:
       - orch-database/postgresql-cluster
       - cert-manager/cert-manager
@@ -548,7 +550,6 @@ releases:
     version: 26.1.2
     values:
       - values/platform-keycloak.yaml.gotmpl
-      - values/platform-keycloak-realm.yaml.gotmpl
     needs:
       - orch-database/postgresql-cluster
       - orch-platform/keycloak-operator
@@ -583,10 +584,6 @@ releases:
     condition: cert-synchronizer.enabled
     needs:
       - orch-platform/rs-image-pull-secrets
-    hooks:
-      - events: ["presync"]
-        showlogs: true
-        command: "./hooks/create-tls-autocert.sh"
 
 
   - name: secrets-config

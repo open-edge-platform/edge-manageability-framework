@@ -2,11 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 #
-# Full stack: EIM + Cluster Orch + App Orch + Observability
-# All components enabled - equivalent to full on-prem deployment
+# EIM + Cluster Orchestration environment
+# Platform + Edge Infra + Cluster Orch, No App Orch, No Observability
 
-clusterName: {{ env "EMF_CLUSTER_NAME" | default "eim-co-ao-o11y" | quote }}
-clusterDomain: {{ env "EMF_CLUSTER_DOMAIN" | default "cluster.eim-co-ao-o11y" | quote }}
+clusterName: {{ env "EMF_CLUSTER_NAME" | default "eim-co" | quote }}
+clusterDomain: {{ env "EMF_CLUSTER_DOMAIN" | default "cluster.eim-co" | quote }}
 
 tlsSecret: {{ env "EMF_TLS_SECRET" | default "tls-orch" | quote }}
 imagePullSecrets: []
@@ -43,17 +43,62 @@ vault:
   autoUnseal: {{ env "EMF_VAULT_AUTO_UNSEAL" | default "false" }}
   authorizedAddrs: {{ env "EMF_VAULT_ALLOWED_CIDRS" | default "0.0.0.0/0" | quote }}
 
-o11y:
-  dedicatedEdgenodeEnabled: {{ env "EMF_O11Y_DEDICATED_EN" | default "false" }}
-  sre:
-    customerLabel: {{ env "EMF_O11Y_SRE_LABEL" | default "eim-full" | quote }}
-
 self-signed-cert:
   generateOrchCert: {{ env "EMF_GENERATE_CERT" | default "true" }}
 
-enabled:
-  # All components enabled (inherited from defaults):
-  #   Platform, Edge Infra, Cluster Orch, App Orch, Observability, UI
+# App Orch - disabled
+app-deployment-crd:
+  enabled: false
+app-deployment-manager:
+  enabled: false
+app-resource-manager:
+  enabled: false
+app-service-proxy:
+  enabled: false
+fleet-rs-secret:
+  enabled: false
+app-orch-catalog:
+  enabled: false
+app-deployment-manager-secret:
+  enabled: false
+harbor-oci:
+  enabled: false
+app-orch-tenant-controller:
+  enabled: false
+fleet-crd:
+  enabled: false
+fleet-controller:
+  enabled: false
+copy-app-gitea-cred-to-fleet:
+  enabled: false
+copy-ca-cert-gitea-to-app:
+  enabled: false
+copy-ca-cert-gitea-to-cluster:
+  enabled: false
+copy-cluster-gitea-cred-to-fleet:
+  enabled: false
+
+  # Cluster Orch - enabled (inherited from defaults)
+
+  # Observability - disabled
+alerting-monitor:
+  enabled: false
+edgenode-dashboards:
+  enabled: false
+edgenode-observability:
+  enabled: false
+orchestrator-dashboards:
+  enabled: false
+orchestrator-observability:
+  enabled: false
+orchestrator-prometheus-agent:
+  enabled: false
+sre-exporter:
+  enabled: false
+
+  # UI - no app-orch UI
+web-ui-app-orch:
+  enabled: false
 
   # On-prem features
   nginx-ingress-pxe-boots: {{ env "EMF_ENABLE_PXE" | default "true" }}

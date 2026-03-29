@@ -38,17 +38,27 @@ tlsSecret: {{ env "EMF_TLS_SECRET" | default "tls-orch" | quote }}
 imagePullSecrets: []
 
 # Minimal feature set: no o11y, no audit, no kyverno, no sre
-enabled:
-  # Disable observability
-  alerting-monitor: false
-  edgenode-dashboards: false
-  edgenode-observability: false
-  orchestrator-dashboards: false
-  orchestrator-observability: false
-  orchestrator-prometheus-agent: false
-  sre-exporter: false
-  # Disable kyverno
-  kyverno: false
-  kyverno-extra-policies: false
-  kyverno-istio-policy: false
-  kyverno-traefik-policy: false
+# Disable observability
+alerting-monitor:
+  enabled: false
+edgenode-dashboards:
+  enabled: false
+edgenode-observability:
+  enabled: false
+orchestrator-dashboards:
+  enabled: false
+orchestrator-observability:
+  enabled: false
+orchestrator-prometheus-agent:
+  enabled: false
+sre-exporter:
+  enabled: false
+# Disable kyverno
+kyverno:
+  enabled: false
+kyverno-extra-policies:
+  enabled: false
+kyverno-istio-policy:
+  enabled: false
+kyverno-traefik-policy:
+  enabled: false

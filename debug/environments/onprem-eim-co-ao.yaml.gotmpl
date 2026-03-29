@@ -2,11 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 #
-# EIM + Cluster Orchestration environment
-# Platform + Edge Infra + Cluster Orch, No App Orch, No Observability
+# EIM + Cluster Orch + App Orch environment
+# Platform + Edge Infra + Cluster Orch + App Orch, No Observability
 
-clusterName: {{ env "EMF_CLUSTER_NAME" | default "eim-co" | quote }}
-clusterDomain: {{ env "EMF_CLUSTER_DOMAIN" | default "cluster.eim-co" | quote }}
+clusterName: {{ env "EMF_CLUSTER_NAME" | default "eim-co-ao" | quote }}
+clusterDomain: {{ env "EMF_CLUSTER_DOMAIN" | default "cluster.eim-co-ao" | quote }}
 
 tlsSecret: {{ env "EMF_TLS_SECRET" | default "tls-orch" | quote }}
 imagePullSecrets: []
@@ -46,37 +46,24 @@ vault:
 self-signed-cert:
   generateOrchCert: {{ env "EMF_GENERATE_CERT" | default "true" }}
 
-enabled:
-  # App Orch - disabled
-  app-deployment-crd: false
-  app-deployment-manager: false
-  app-resource-manager: false
-  app-service-proxy: false
-  fleet-rs-secret: false
-  app-orch-catalog: false
-  app-deployment-manager-secret: false
-  harbor-oci: false
-  app-orch-tenant-controller: false
-  fleet-crd: false
-  fleet-controller: false
-  copy-app-gitea-cred-to-fleet: false
-  copy-ca-cert-gitea-to-app: false
-  copy-ca-cert-gitea-to-cluster: false
-  copy-cluster-gitea-cred-to-fleet: false
-
-  # Cluster Orch - enabled (inherited from defaults)
+# App Orch - enabled (inherited from defaults)
+# Cluster Orch - enabled (inherited from defaults)
 
   # Observability - disabled
-  alerting-monitor: false
-  edgenode-dashboards: false
-  edgenode-observability: false
-  orchestrator-dashboards: false
-  orchestrator-observability: false
-  orchestrator-prometheus-agent: false
-  sre-exporter: false
-
-  # UI - no app-orch UI
-  web-ui-app-orch: false
+alerting-monitor:
+  enabled: false
+edgenode-dashboards:
+  enabled: false
+edgenode-observability:
+  enabled: false
+orchestrator-dashboards:
+  enabled: false
+orchestrator-observability:
+  enabled: false
+orchestrator-prometheus-agent:
+  enabled: false
+sre-exporter:
+  enabled: false
 
   # On-prem features
   nginx-ingress-pxe-boots: {{ env "EMF_ENABLE_PXE" | default "true" }}

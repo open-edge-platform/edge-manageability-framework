@@ -25,53 +25,55 @@
 environments:
   dev:
     values:
-      - environments/defaults-onprem.yaml.gotmpl
+      - environments/defaults.yaml.gotmpl
       - environments/dev.yaml.gotmpl
   dev-minimal:
     values:
-      - environments/defaults-onprem.yaml.gotmpl
+      - environments/defaults.yaml.gotmpl
       - environments/dev-minimal.yaml.gotmpl
   onprem:
     values:
-      - environments/defaults-onprem.yaml.gotmpl
+      - environments/defaults.yaml.gotmpl
       - environments/onprem.yaml.gotmpl
   onprem-1k:
     values:
-      - environments/defaults-onprem.yaml.gotmpl
+      - environments/defaults.yaml.gotmpl
       - environments/onprem-1k.yaml.gotmpl
   onprem-oxm:
     values:
-      - environments/defaults-onprem.yaml.gotmpl
+      - environments/defaults.yaml.gotmpl
       - environments/onprem-oxm.yaml.gotmpl
   onprem-explicit-proxy:
     values:
-      - environments/defaults-onprem.yaml.gotmpl
+      - environments/defaults.yaml.gotmpl
       - environments/onprem-explicit-proxy.yaml.gotmpl
   bkc:
     values:
-      - environments/defaults-onprem.yaml.gotmpl
+      - environments/defaults.yaml.gotmpl
       - environments/bkc.yaml.gotmpl
   aws:
     values:
-      - environments/defaults-aws.yaml.gotmpl
+      - environments/defaults.yaml.gotmpl
       - environments/aws.yaml.gotmpl
   onprem-vpro:
     values:
+      - environments/defaults.yaml.gotmpl
       - environments/onprem-vpro.yaml.gotmpl
   onprem-eim:
     values:
+      - environments/defaults.yaml.gotmpl
       - environments/onprem-eim.yaml.gotmpl
   onprem-eim-co:
     values:
-      - environments/defaults-onprem.yaml.gotmpl
+      - environments/defaults.yaml.gotmpl
       - environments/onprem-eim-co.yaml.gotmpl
   onprem-eim-co-ao:
     values:
-      - environments/defaults-onprem.yaml.gotmpl
+      - environments/defaults.yaml.gotmpl
       - environments/onprem-eim-co-ao.yaml.gotmpl
   onprem-eim-co-ao-o11y:
     values:
-      - environments/defaults-onprem.yaml.gotmpl
+      - environments/defaults.yaml.gotmpl
       - environments/onprem-eim-co-ao-o11y.yaml.gotmpl
 
 ---
@@ -166,8 +168,6 @@ releases:
     values:
       - values/cluster-autoscaler.yaml
     condition: cluster-autoscaler.enabled
-    needs:
-      - postgresql-operator/postgresql-operator
 
 
   - name: namespace-label
@@ -179,8 +179,6 @@ releases:
     values:
       - values/namespace-label.yaml.gotmpl
     installed: true  # always deploy
-    needs:
-      - postgresql-operator/postgresql-operator
 
 
   #############################################################################
@@ -196,8 +194,6 @@ releases:
     values:
       - values/cert-manager.yaml.gotmpl
     condition: cert-manager.enabled
-    needs:
-      - ns-label/namespace-label
 
 
   - name: external-secrets
@@ -209,8 +205,6 @@ releases:
     values:
       - values/external-secrets.yaml
     condition: external-secrets.enabled
-    needs:
-      - ns-label/namespace-label
 
 
   - name: istio-base
@@ -222,8 +216,6 @@ releases:
     values:
       - values/istio-base.yaml
     condition: istio-base.enabled
-    needs:
-      - ns-label/namespace-label
 
 
   - name: k8s-metrics-server
@@ -235,12 +227,6 @@ releases:
     values:
       - values/k8s-metrics-server.yaml
     condition: k8s-metrics-server.enabled
-    needs:
-      - ns-label/namespace-label
-    hooks:
-      - events: ["presync"]
-        showlogs: true
-        command: "./hooks/adopt-metrics-server.sh"
 
 
 
@@ -253,8 +239,6 @@ releases:
     values:
       - values/kyverno.yaml
     condition: kyverno.enabled
-    needs:
-      - ns-label/namespace-label
 
 
   - name: prometheus-crd
@@ -266,8 +250,6 @@ releases:
     values:
       - values/prometheus-crd.yaml
     condition: prometheus-crd.enabled
-    needs:
-      - ns-label/namespace-label
 
 
   #############################################################################
@@ -283,8 +265,6 @@ releases:
     values:
       - values/aws-sm-proxy.yaml
     condition: aws-sm-proxy.enabled
-    needs:
-      - orch-platform/prometheus-crd
 
 
   - name: kyverno-extra-policies
@@ -296,7 +276,6 @@ releases:
     values:
       - values/kyverno-extra-policies.yaml
     needs:
-      - orch-platform/prometheus-crd
       - kyverno/kyverno
     condition: kyverno-extra-policies.enabled
 
@@ -310,8 +289,6 @@ releases:
     values:
       - values/secret-wait-azure-ad-creds.yaml
     condition: secret-wait-azure-ad-creds.enabled
-    needs:
-      - orch-platform/prometheus-crd
 
 
   #############################################################################
@@ -327,8 +304,6 @@ releases:
     values:
       - values/aws-lb.yaml
     condition: aws-lb.enabled
-    needs:
-      - orch-secret/secret-wait-azure-ad-creds
 
 
   - name: aws-sm-get-rs-token
@@ -340,8 +315,6 @@ releases:
     values:
       - values/aws-sm-get-rs-token.yaml
     condition: aws-sm-get-rs-token.enabled
-    needs:
-      - orch-secret/secret-wait-azure-ad-creds
 
 
   - name: istiod
@@ -353,7 +326,6 @@ releases:
     values:
       - values/istiod.yaml.gotmpl
     needs:
-      - orch-secret/secret-wait-azure-ad-creds
       - istio-system/istio-base
     condition: istiod.enabled
 
@@ -367,8 +339,6 @@ releases:
     values:
       - values/reloader.yaml
     condition: reloader.enabled
-    needs:
-      - orch-secret/secret-wait-azure-ad-creds
 
 
   - name: token-refresh
@@ -380,8 +350,6 @@ releases:
     values:
       - values/token-refresh.yaml
     condition: token-refresh.enabled
-    needs:
-      - orch-secret/secret-wait-azure-ad-creds
 
 
   - name: vertical-pod-autoscaler
@@ -393,8 +361,6 @@ releases:
     values:
       - values/vertical-pod-autoscaler.yaml
     condition: vertical-pod-autoscaler.enabled
-    needs:
-      - orch-secret/secret-wait-azure-ad-creds
 
 
   - name: wait-istio-job
@@ -406,7 +372,6 @@ releases:
     values:
       - values/wait-istio-job.yaml
     needs:
-      - orch-secret/secret-wait-azure-ad-creds
       - istio-system/istiod
     condition: wait-istio-job.enabled
 
@@ -424,8 +389,6 @@ releases:
     values:
       - values/secret-wait-rs-token.yaml
     condition: secret-wait-rs-token.enabled
-    needs:
-      - ns-label/wait-istio-job
 
 
   #############################################################################
@@ -441,8 +404,6 @@ releases:
     values:
       - values/aws-lb-tgb.yaml
     condition: aws-lb-tgb.enabled
-    needs:
-      - orch-secret/secret-wait-rs-token
 
 
   - name: oci-secret
@@ -454,8 +415,6 @@ releases:
     values:
       - values/oci-secret.yaml
     condition: oci-secret.enabled
-    needs:
-      - orch-secret/secret-wait-rs-token
 
 
 
@@ -472,7 +431,6 @@ releases:
     values:
       - values/postgresql-secrets.yaml.gotmpl
     needs:
-      - orch-platform/oci-secret
       - postgresql-operator/postgresql-operator
     condition: postgresql-secrets.enabled
 
@@ -507,7 +465,6 @@ releases:
     values:
       - values/istio-policy.yaml
     needs:
-      - orch-database/postgresql-cluster
       - istio-system/istiod
     condition: istio-policy.enabled
 
@@ -521,7 +478,6 @@ releases:
     values:
       - values/kiali.yaml
     needs:
-      - orch-database/postgresql-cluster
       - istio-system/istiod
     condition: kiali.enabled
 
@@ -533,9 +489,8 @@ releases:
     chart: edge-orch/common/charts/platform-autocert
     version: 1.0.2
     values:
-      - values/platform-autocert.yaml.gotmpl
+      - values/platform-autocert.yaml
     needs:
-      - orch-database/postgresql-cluster
       - cert-manager/cert-manager
     condition: platform-autocert.enabled
 
@@ -548,9 +503,7 @@ releases:
     version: 26.1.2
     values:
       - values/platform-keycloak.yaml.gotmpl
-      - values/platform-keycloak-realm.yaml.gotmpl
     needs:
-      - orch-database/postgresql-cluster
       - orch-platform/keycloak-operator
     condition: platform-keycloak.enabled
 
@@ -564,8 +517,6 @@ releases:
     values:
       - values/rs-image-pull-secrets.yaml
     condition: rs-image-pull-secrets.enabled
-    needs:
-      - orch-database/postgresql-cluster
 
 
   #############################################################################
@@ -581,12 +532,6 @@ releases:
     values:
       - values/cert-synchronizer.yaml.gotmpl
     condition: cert-synchronizer.enabled
-    needs:
-      - orch-platform/rs-image-pull-secrets
-    hooks:
-      - events: ["presync"]
-        showlogs: true
-        command: "./hooks/create-tls-autocert.sh"
 
 
   - name: secrets-config
@@ -598,8 +543,6 @@ releases:
     values:
       - values/secrets-config.yaml.gotmpl
     condition: secrets-config.enabled
-    needs:
-      - orch-platform/rs-image-pull-secrets
 
 
   - name: self-signed-cert
@@ -611,7 +554,6 @@ releases:
     values:
       - values/self-signed-cert.yaml.gotmpl
     needs:
-      - orch-platform/rs-image-pull-secrets
       - cert-manager/cert-manager
     condition: self-signed-cert.enabled
 
@@ -625,8 +567,6 @@ releases:
     values:
       - values/vault.yaml.gotmpl
     condition: vault.enabled
-    needs:
-      - orch-platform/rs-image-pull-secrets
 
 
   #############################################################################
@@ -642,8 +582,6 @@ releases:
     values:
       - values/rs-proxy.yaml.gotmpl
     condition: rs-proxy.enabled
-    needs:
-      - orch-platform/vault
 
 
   - name: secret-wait-tls-orch
@@ -655,8 +593,6 @@ releases:
     values:
       - values/secret-wait-tls-orch.yaml
     condition: secret-wait-tls-orch.enabled
-    needs:
-      - orch-platform/vault
 
 
 
@@ -673,8 +609,6 @@ releases:
     values:
       - values/copy-ca-cert-gateway-to-cattle.yaml
     condition: copy-ca-cert-gateway-to-cattle.enabled
-    needs:
-      - orch-gateway/secret-wait-tls-orch
 
 
   - name: copy-ca-cert-gateway-to-infra
@@ -686,8 +620,6 @@ releases:
     values:
       - values/copy-ca-cert-gateway-to-infra.yaml
     condition: copy-ca-cert-gateway-to-infra.enabled
-    needs:
-      - orch-gateway/secret-wait-tls-orch
 
 
   - name: copy-ca-cert-gitea-to-app
@@ -699,8 +631,6 @@ releases:
     values:
       - values/copy-ca-cert-gitea-to-app.yaml
     condition: copy-ca-cert-gitea-to-app.enabled
-    needs:
-      - orch-gateway/secret-wait-tls-orch
 
 
   - name: copy-ca-cert-gitea-to-cluster
@@ -712,8 +642,6 @@ releases:
     values:
       - values/copy-ca-cert-gitea-to-cluster.yaml
     condition: copy-ca-cert-gitea-to-cluster.enabled
-    needs:
-      - orch-gateway/secret-wait-tls-orch
 
 
   - name: copy-keycloak-admin-to-infra
@@ -725,8 +653,6 @@ releases:
     values:
       - values/copy-keycloak-admin-to-infra.yaml
     condition: copy-keycloak-admin-to-infra.enabled
-    needs:
-      - orch-gateway/secret-wait-tls-orch
 
 
 
@@ -743,8 +669,6 @@ releases:
     values:
       - values/capi-operator-pre.yaml
     condition: capi-operator-pre.enabled
-    needs:
-      - orch-infra/copy-keycloak-admin-to-infra
 
 
   #############################################################################
@@ -773,8 +697,6 @@ releases:
     values:
       - values/edgenode-dashboards.yaml
     condition: edgenode-dashboards.enabled
-    needs:
-      - capi-variables/capi-operator-pre
 
 
   - name: edgenode-observability
@@ -786,8 +708,6 @@ releases:
     values:
       - values/edgenode-observability.yaml.gotmpl
     condition: edgenode-observability.enabled
-    needs:
-      - capi-variables/capi-operator-pre
 
 
   - name: harbor-oci
@@ -799,8 +719,6 @@ releases:
     values:
       - values/harbor-oci.yaml.gotmpl
     condition: harbor-oci.enabled
-    needs:
-      - capi-variables/capi-operator-pre
 
 
   - name: orchestrator-dashboards
@@ -812,8 +730,6 @@ releases:
     values:
       - values/orchestrator-dashboards.yaml
     condition: orchestrator-dashboards.enabled
-    needs:
-      - capi-variables/capi-operator-pre
 
 
   - name: orchestrator-observability
@@ -825,8 +741,6 @@ releases:
     values:
       - values/orchestrator-observability.yaml.gotmpl
     condition: orchestrator-observability.enabled
-    needs:
-      - capi-variables/capi-operator-pre
 
 
   - name: orchestrator-prometheus-agent
@@ -838,8 +752,6 @@ releases:
     values:
       - values/orchestrator-prometheus-agent.yaml
     condition: orchestrator-prometheus-agent.enabled
-    needs:
-      - capi-variables/capi-operator-pre
 
 
   - name: traefik-pre
@@ -851,8 +763,6 @@ releases:
     values:
       - values/traefik-pre.yaml
     condition: traefik-pre.enabled
-    needs:
-      - capi-variables/capi-operator-pre
 
 
   #############################################################################
@@ -868,8 +778,6 @@ releases:
     values:
       - values/fleet-crd.yaml
     condition: fleet-crd.enabled
-    needs:
-      - orch-gateway/traefik-pre
 
 
   #############################################################################
@@ -903,8 +811,6 @@ releases:
     values:
       - values/app-orch-tenant-controller.yaml
     condition: app-orch-tenant-controller.enabled
-    needs:
-      - cattle-fleet-system/fleet-controller
 
 
   - name: capi-providers-config
@@ -916,7 +822,6 @@ releases:
     values:
       - values/capi-providers-config.yaml
     needs:
-      - cattle-fleet-system/fleet-controller
       - capi-operator-system/capi-operator
     condition: capi-providers-config.enabled
 
@@ -930,8 +835,6 @@ releases:
     values:
       - values/ingress-haproxy.yaml
     condition: ingress-haproxy.enabled
-    needs:
-      - cattle-fleet-system/fleet-controller
 
 
   - name: ingress-nginx
@@ -943,8 +846,6 @@ releases:
     values:
       - values/ingress-nginx.yaml
     condition: ingress-nginx.enabled
-    needs:
-      - cattle-fleet-system/fleet-controller
 
 
   - name: kyverno-istio-policy
@@ -956,7 +857,6 @@ releases:
     values:
       - values/kyverno-istio-policy.yaml
     needs:
-      - cattle-fleet-system/fleet-controller
       - kyverno/kyverno
     condition: kyverno-istio-policy.enabled
 
@@ -970,7 +870,6 @@ releases:
     values:
       - values/kyverno-traefik-policy.yaml
     needs:
-      - cattle-fleet-system/fleet-controller
       - kyverno/kyverno
     condition: kyverno-traefik-policy.enabled
 
@@ -984,7 +883,6 @@ releases:
     values:
       - values/traefik.yaml.gotmpl
     needs:
-      - cattle-fleet-system/fleet-controller
       - orch-gateway/traefik-pre
     condition: traefik.enabled
 
@@ -998,8 +896,6 @@ releases:
     values:
       - values/traefik-boots.yaml.gotmpl
     condition: traefik-boots.enabled
-    needs:
-      - cattle-fleet-system/fleet-controller
 
 
   #############################################################################
@@ -1015,8 +911,6 @@ releases:
     values:
       - values/app-orch-catalog.yaml.gotmpl
     condition: app-orch-catalog.enabled
-    needs:
-      - orch-boots/traefik-boots
 
 
 
@@ -1033,8 +927,6 @@ releases:
     values:
       - values/botkube.yaml
     condition: botkube.enabled
-    needs:
-      - orch-app/app-orch-catalog
 
 
   - name: copy-app-gitea-cred-to-fleet
@@ -1046,8 +938,6 @@ releases:
     values:
       - values/copy-app-gitea-cred-to-fleet.yaml
     condition: copy-app-gitea-cred-to-fleet.enabled
-    needs:
-      - orch-app/app-orch-catalog
 
 
   - name: copy-cluster-gitea-cred-to-fleet
@@ -1059,8 +949,6 @@ releases:
     values:
       - values/copy-cluster-gitea-cred-to-fleet.yaml
     condition: copy-cluster-gitea-cred-to-fleet.enabled
-    needs:
-      - orch-app/app-orch-catalog
 
 
   - name: fleet-rs-secret
@@ -1072,8 +960,6 @@ releases:
     values:
       - values/fleet-rs-secret.yaml
     condition: fleet-rs-secret.enabled
-    needs:
-      - orch-app/app-orch-catalog
 
 
   - name: haproxy-ingress-pxe-boots
@@ -1085,8 +971,6 @@ releases:
     values:
       - values/haproxy-ingress-pxe-boots.yaml
     condition: haproxy-ingress-pxe-boots.enabled
-    needs:
-      - orch-app/app-orch-catalog
 
 
   - name: nexus-api-gw
@@ -1098,8 +982,6 @@ releases:
     values:
       - values/nexus-api-gw.yaml.gotmpl
     condition: nexus-api-gw.enabled
-    needs:
-      - orch-app/app-orch-catalog
 
 
   - name: nginx-ingress-pxe-boots
@@ -1111,8 +993,6 @@ releases:
     values:
       - values/nginx-ingress-pxe-boots.yaml
     condition: nginx-ingress-pxe-boots.enabled
-    needs:
-      - orch-app/app-orch-catalog
 
 
   - name: squid-proxy
@@ -1124,8 +1004,6 @@ releases:
     values:
       - values/squid-proxy.yaml.gotmpl
     condition: squid-proxy.enabled
-    needs:
-      - orch-app/app-orch-catalog
 
 
 
@@ -1138,8 +1016,6 @@ releases:
     values:
       - values/tenancy-api-mapping.yaml
     condition: tenancy-api-mapping.enabled
-    needs:
-      - orch-app/app-orch-catalog
 
 
   - name: tenancy-datamodel
@@ -1151,8 +1027,6 @@ releases:
     values:
       - values/tenancy-datamodel.yaml
     condition: tenancy-datamodel.enabled
-    needs:
-      - orch-app/app-orch-catalog
 
 
   - name: tenancy-manager
@@ -1164,8 +1038,6 @@ releases:
     values:
       - values/tenancy-manager.yaml.gotmpl
     condition: tenancy-manager.enabled
-    needs:
-      - orch-app/app-orch-catalog
 
 
   - name: traefik-extra-objects
@@ -1177,7 +1049,6 @@ releases:
     values:
       - values/traefik-extra-objects.yaml.gotmpl
     needs:
-      - orch-app/app-orch-catalog
       - orch-gateway/traefik
     condition: traefik-extra-objects.enabled
 
@@ -1195,8 +1066,6 @@ releases:
     values:
       - values/keycloak-tenant-controller.yaml.gotmpl
     condition: keycloak-tenant-controller.enabled
-    needs:
-      - orch-gateway/traefik-extra-objects
 
 
 
@@ -1213,8 +1082,6 @@ releases:
     values:
       - values/secret-wait-tls-boots.yaml
     condition: secret-wait-tls-boots.enabled
-    needs:
-      - orch-gateway/keycloak-tenant-controller
 
 
   - name: token-fs
@@ -1226,8 +1093,6 @@ releases:
     values:
       - values/token-fs.yaml
     condition: token-fs.enabled
-    needs:
-      - orch-gateway/keycloak-tenant-controller
 
 
   #############################################################################
@@ -1243,8 +1108,6 @@ releases:
     values:
       - values/copy-ca-cert-boots-to-gateway.yaml
     condition: copy-ca-cert-boots-to-gateway.enabled
-    needs:
-      - orch-secret/token-fs
 
 
   - name: copy-ca-cert-boots-to-infra
@@ -1256,8 +1119,6 @@ releases:
     values:
       - values/copy-ca-cert-boots-to-infra.yaml
     condition: copy-ca-cert-boots-to-infra.enabled
-    needs:
-      - orch-secret/token-fs
 
 
   - name: copy-rs-token-to-cluster
@@ -1269,8 +1130,6 @@ releases:
     values:
       - values/copy-rs-token-to-cluster.yaml
     condition: copy-rs-token-to-cluster.enabled
-    needs:
-      - orch-secret/token-fs
 
 
 
@@ -1287,8 +1146,6 @@ releases:
     values:
       - values/alerting-monitor.yaml.gotmpl
     condition: alerting-monitor.enabled
-    needs:
-      - orch-cluster/copy-rs-token-to-cluster
 
 
 
@@ -1305,8 +1162,6 @@ releases:
     values:
       - values/app-deployment-crd.yaml
     condition: app-deployment-crd.enabled
-    needs:
-      - orch-infra/alerting-monitor
 
 
   - name: app-deployment-manager-secret
@@ -1318,8 +1173,6 @@ releases:
     values:
       - values/app-deployment-manager-secret.yaml
     condition: app-deployment-manager-secret.enabled
-    needs:
-      - orch-infra/alerting-monitor
 
 
   - name: cluster-connect-gateway
@@ -1331,8 +1184,6 @@ releases:
     values:
       - values/cluster-connect-gateway.yaml.gotmpl
     condition: cluster-connect-gateway.enabled
-    needs:
-      - orch-infra/alerting-monitor
 
 
   - name: cluster-manager
@@ -1344,8 +1195,6 @@ releases:
     values:
       - values/cluster-manager.yaml.gotmpl
     condition: cluster-manager.enabled
-    needs:
-      - orch-infra/alerting-monitor
 
 
   - name: component-status
@@ -1357,8 +1206,6 @@ releases:
     values:
       - values/component-status.yaml.gotmpl
     condition: component-status.enabled
-    needs:
-      - orch-infra/alerting-monitor
 
 
   - name: infra-core
@@ -1370,8 +1217,6 @@ releases:
     values:
       - values/infra-core.yaml.gotmpl
     condition: infra-core.enabled
-    needs:
-      - orch-infra/alerting-monitor
 
 
   - name: metadata-broker
@@ -1383,8 +1228,6 @@ releases:
     values:
       - values/metadata-broker.yaml.gotmpl
     condition: metadata-broker.enabled
-    needs:
-      - orch-infra/alerting-monitor
 
 
   - name: sre-exporter
@@ -1396,8 +1239,6 @@ releases:
     values:
       - values/sre-exporter.yaml.gotmpl
     condition: sre-exporter.enabled
-    needs:
-      - orch-infra/alerting-monitor
 
 
   #############################################################################
@@ -1413,8 +1254,6 @@ releases:
     values:
       - values/auth-service.yaml.gotmpl
     condition: auth-service.enabled
-    needs:
-      - orch-sre/sre-exporter
 
 
   - name: observability-tenant-controller
@@ -1426,8 +1265,6 @@ releases:
     values:
       - values/observability-tenant-controller.yaml
     condition: observability-tenant-controller.enabled
-    needs:
-      - orch-sre/sre-exporter
 
 
 
@@ -1444,7 +1281,6 @@ releases:
     values:
       - values/app-deployment-manager.yaml.gotmpl
     needs:
-      - orch-platform/observability-tenant-controller
       - orch-app/app-deployment-crd
     condition: app-deployment-manager.enabled
 
@@ -1458,7 +1294,6 @@ releases:
     values:
       - values/app-resource-manager.yaml
     needs:
-      - orch-platform/observability-tenant-controller
       - orch-app/app-deployment-crd
     condition: app-resource-manager.enabled
 
@@ -1472,8 +1307,6 @@ releases:
     values:
       - values/app-service-proxy.yaml.gotmpl
     condition: app-service-proxy.enabled
-    needs:
-      - orch-platform/observability-tenant-controller
 
 
   - name: infra-external
@@ -1485,7 +1318,6 @@ releases:
     values:
       - values/infra-external.yaml.gotmpl
     needs:
-      - orch-platform/observability-tenant-controller
       - orch-infra/infra-core
     condition: infra-external.enabled
 
@@ -1499,7 +1331,6 @@ releases:
     values:
       - values/infra-managers.yaml.gotmpl
     needs:
-      - orch-platform/observability-tenant-controller
       - orch-infra/infra-core
     condition: infra-managers.enabled
 
@@ -1513,7 +1344,6 @@ releases:
     values:
       - values/infra-onboarding.yaml.gotmpl
     needs:
-      - orch-platform/observability-tenant-controller
       - orch-infra/infra-core
     condition: infra-onboarding.enabled
 
@@ -1527,8 +1357,6 @@ releases:
     values:
       - values/intel-infra-provider.yaml
     condition: intel-infra-provider.enabled
-    needs:
-      - orch-platform/observability-tenant-controller
 
 
 
@@ -1545,8 +1373,6 @@ releases:
     values:
       - values/certificate-file-server.yaml
     condition: certificate-file-server.enabled
-    needs:
-      - orch-cluster/intel-infra-provider
 
 
   - name: tenancy-init
@@ -1558,8 +1384,6 @@ releases:
     values:
       - values/tenancy-init.yaml
     condition: tenancy-init.enabled
-    needs:
-      - orch-cluster/intel-infra-provider
 
 
   - name: web-ui-admin
@@ -1571,8 +1395,6 @@ releases:
     values:
       - values/web-ui-admin.yaml.gotmpl
     condition: web-ui-admin.enabled
-    needs:
-      - orch-cluster/intel-infra-provider
 
 
   - name: web-ui-app-orch
@@ -1584,8 +1406,6 @@ releases:
     values:
       - values/web-ui-app-orch.yaml.gotmpl
     condition: web-ui-app-orch.enabled
-    needs:
-      - orch-cluster/intel-infra-provider
 
 
   - name: web-ui-cluster-orch
@@ -1597,8 +1417,6 @@ releases:
     values:
       - values/web-ui-cluster-orch.yaml.gotmpl
     condition: web-ui-cluster-orch.enabled
-    needs:
-      - orch-cluster/intel-infra-provider
 
 
   - name: web-ui-infra
@@ -1610,8 +1428,6 @@ releases:
     values:
       - values/web-ui-infra.yaml.gotmpl
     condition: web-ui-infra.enabled
-    needs:
-      - orch-cluster/intel-infra-provider
 
 
   - name: web-ui-root
@@ -1623,6 +1439,4 @@ releases:
     values:
       - values/web-ui-root.yaml.gotmpl
     condition: web-ui-root.enabled
-    needs:
-      - orch-cluster/intel-infra-provider
 

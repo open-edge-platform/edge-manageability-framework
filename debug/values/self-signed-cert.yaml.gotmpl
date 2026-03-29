@@ -5,3 +5,4 @@ generateOrchCert: {{ .Values | getOrNil "self-signed-cert.generateOrchCert" | de
 {{- end }}
 
 clusterDomain: {{ .Values.clusterDomain | default "" | quote }}
+certDomain: {{ .Values.clusterDomain | default "" | quote }}

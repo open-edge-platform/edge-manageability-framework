@@ -197,7 +197,7 @@ case "$ACTION" in
     cleanup_all
     ;;
   *)
-    echo "Usage: $0 [setup|cleanup]"
+    echo "Usage: $0 [install|uninstall]"
     exit 1
     ;;
 esac

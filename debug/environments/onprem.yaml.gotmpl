@@ -10,10 +10,6 @@ clusterDomain: {{ env "EMF_CLUSTER_DOMAIN" | default "cluster.onprem" | quote }}
 tlsSecret: {{ env "EMF_TLS_SECRET" | default "tls-orch" | quote }}
 imagePullSecrets: []
 
-database:
-  type: {{ env "EMF_DB_TYPE" | default "local" | quote }}
-  ssl: {{ env "EMF_DB_SSL" | default "false" }}
-
 postgresql:
   maxConnections: {{ env "EMF_PG_MAX_CONNECTIONS" | default "200" }}
   sharedBuffers: {{ env "EMF_PG_SHARED_BUFFERS" | default "256MB" | quote }}
@@ -45,6 +41,7 @@ vault:
 self-signed-cert:
   generateOrchCert: {{ env "EMF_GENERATE_CERT" | default "true" }}
 
-enabled:
-  nginx-ingress-pxe-boots: {{ env "EMF_ENABLE_PXE" | default "true" }}
-  squid-proxy: {{ env "EMF_ENABLE_SQUID" | default "false" }}
+nginx-ingress-pxe-boots:
+  enabled: {{ env "EMF_ENABLE_PXE" | default "true" }}
+squid-proxy:
+  enabled: {{ env "EMF_ENABLE_SQUID" | default "false" }}

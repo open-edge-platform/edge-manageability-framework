@@ -2,11 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 #
-# EIM + Cluster Orch + App Orch environment
-# Platform + Edge Infra + Cluster Orch + App Orch, No Observability
+# Full stack: EIM + Cluster Orch + App Orch + Observability
+# All components enabled - equivalent to full on-prem deployment
 
-clusterName: {{ env "EMF_CLUSTER_NAME" | default "eim-co-ao" | quote }}
-clusterDomain: {{ env "EMF_CLUSTER_DOMAIN" | default "cluster.eim-co-ao" | quote }}
+clusterName: {{ env "EMF_CLUSTER_NAME" | default "eim-co-ao-o11y" | quote }}
+clusterDomain: {{ env "EMF_CLUSTER_DOMAIN" | default "cluster.eim-co-ao-o11y" | quote }}
 
 tlsSecret: {{ env "EMF_TLS_SECRET" | default "tls-orch" | quote }}
 imagePullSecrets: []
@@ -43,21 +43,16 @@ vault:
   autoUnseal: {{ env "EMF_VAULT_AUTO_UNSEAL" | default "false" }}
   authorizedAddrs: {{ env "EMF_VAULT_ALLOWED_CIDRS" | default "0.0.0.0/0" | quote }}
 
+o11y:
+  dedicatedEdgenodeEnabled: {{ env "EMF_O11Y_DEDICATED_EN" | default "false" }}
+  sre:
+    customerLabel: {{ env "EMF_O11Y_SRE_LABEL" | default "eim-full" | quote }}
+
 self-signed-cert:
   generateOrchCert: {{ env "EMF_GENERATE_CERT" | default "true" }}
 
-enabled:
-  # App Orch - enabled (inherited from defaults)
-  # Cluster Orch - enabled (inherited from defaults)
-
-  # Observability - disabled
-  alerting-monitor: false
-  edgenode-dashboards: false
-  edgenode-observability: false
-  orchestrator-dashboards: false
-  orchestrator-observability: false
-  orchestrator-prometheus-agent: false
-  sre-exporter: false
+# All components enabled (inherited from defaults):
+#   Platform, Edge Infra, Cluster Orch, App Orch, Observability, UI
 
   # On-prem features
   nginx-ingress-pxe-boots: {{ env "EMF_ENABLE_PXE" | default "true" }}

@@ -14,7 +14,6 @@
 #   ./helmfile-deploy.sh diff                      # Preview changes
 #   ./helmfile-deploy.sh diff traefik              # Preview single chart changes
 
-set -e
 set -o pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -23,7 +22,7 @@ MAIN_ENV_CONFIG="$SCRIPT_DIR/onprem.env"
 ################################
 # VALIDATION
 ################################
-VALID_PROFILES="onprem onprem-1k onprem-oxm onprem-explicit-proxy aws vpro eim eim-co eim-co-ao eim-co-ao-o11y dev dev-minimal bkc"
+VALID_PROFILES="onprem onprem-1k onprem-oxm onprem-explicit-proxy aws onprem-vpro onprem-eim onprem-eim-co onprem-eim-co-ao onprem-eim-co-ao-o11y dev dev-minimal bkc"
 
 is_valid_ip() {
   local ip=$1
@@ -150,38 +149,99 @@ helmfile_destroy_chart() {
 
 helmfile_sync_all() {
   echo "📦 Installing all charts (env: $HELMFILE_ENV)"
+  echo "   Deploying each release individually — continues on failure"
+  echo ""
 
-  # Try a full sync first (normal case)
-  if helmfile_cmd sync; then
-    echo "✅ All charts installed (full sync)"
-    return 0
+  local passed=()
+  local failed=()
+  local start_time=$SECONDS
+
+  # Get enabled releases, then order them by helmfile.yaml wave order
+  local enabled_list
+  enabled_list=$(cd "$SCRIPT_DIR" && helmfile -e "$HELMFILE_ENV" list 2>/dev/null \
+    | awk 'NR>1 && $3=="true" {print $1}')
+
+  if [[ -z "$enabled_list" ]]; then
+    echo "❌ No enabled releases found for environment: $HELMFILE_ENV"
+    exit 1
   fi
 
-  # Fallback: sync each labeled release individually to ensure every chart is attempted.
-  echo "⚠️  Full sync failed or only partially applied — falling back to per-release sync"
-  local labels
-  labels=$(awk '/^\s*labels:/ {getline; if ($0 ~ /app:/) {gsub(/.*app:[[:space:]]*/, "", $0); print $0}}' "$SCRIPT_DIR/helmfile.yaml" | sed 's/\r//g' | tr -d '"')
-  if [[ -z "$labels" ]]; then
-    echo "❌ No labeled releases found in helmfile.yaml — aborting"
-    return 1
-  fi
+  # Extract release names from helmfile.yaml in wave order, filter to enabled only
+  local releases
+  releases=$(awk '/^releases:/{found=1} found && /^  - name: /{print $NF}' "$SCRIPT_DIR/helmfile.yaml" \
+    | while read -r name; do echo "$enabled_list" | grep -qx "$name" && echo "$name"; done)
 
-  local failed=0
-  for lbl in $labels; do
-    echo "📦 Installing release with label app=$lbl"
-    if ! helmfile_cmd sync -l "app=$lbl"; then
-      echo "❌ Failed to sync release: $lbl"
-      failed=$((failed+1))
+  local total
+  total=$(echo "$releases" | wc -l)
+  local current=0
+
+  for release in $releases; do
+    ((current++))
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "[$current/$total] 📦 Deploying: $release"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+    local release_start=$SECONDS
+    if (cd "$SCRIPT_DIR" && helmfile -e "$HELMFILE_ENV" -l "app=$release" sync 2>&1); then
+      local duration=$(( SECONDS - release_start ))
+      echo "✅ $release (${duration}s)"
+      passed+=("$release|${duration}")
+    else
+      local duration=$(( SECONDS - release_start ))
+      echo "❌ $release FAILED (${duration}s)"
+      failed+=("$release|${duration}")
     fi
+    echo ""
   done
 
-  if (( failed == 0 )); then
-    echo "✅ All labeled charts attempted"
-    return 0
-  else
-    echo "❌ Some releases failed: $failed"
+  local total_duration=$(( SECONDS - start_time ))
+
+  # ─── Summary ─────────────────────────────────────────────────────────────────
+  echo ""
+  echo "═══════════════════════════════════════════════════════════════"
+  echo "  DEPLOYMENT SUMMARY  (env: $HELMFILE_ENV)"
+  echo "  Total time: $(( total_duration / 60 ))m $(( total_duration % 60 ))s"
+  echo "═══════════════════════════════════════════════════════════════"
+  echo ""
+
+  if (( ${#passed[@]} > 0 )); then
+    echo "✅ PASSED (${#passed[@]}):"
+    printf "   %-40s %s\n" "RELEASE" "DURATION"
+    for r in "${passed[@]}"; do
+      local name="${r%%|*}"
+      local dur="${r##*|}"
+      printf "   ✓ %-38s %ss\n" "$name" "$dur"
+    done
+    echo ""
+  fi
+
+  if (( ${#failed[@]} > 0 )); then
+    echo "❌ FAILED (${#failed[@]}):"
+    printf "   %-40s %s\n" "RELEASE" "DURATION"
+    for r in "${failed[@]}"; do
+      local name="${r%%|*}"
+      local dur="${r##*|}"
+      printf "   ✗ %-38s %ss\n" "$name" "$dur"
+    done
+    echo ""
+  fi
+
+  echo "───────────────────────────────────────────────────────────────"
+  echo "  Passed: ${#passed[@]}  |  Failed: ${#failed[@]}  |  Total: $total"
+  echo "───────────────────────────────────────────────────────────────"
+
+  if (( ${#failed[@]} > 0 )); then
+    echo ""
+    echo "⚠️  To retry failed releases:"
+    for r in "${failed[@]}"; do
+      local name="${r%%|*}"
+      echo "   helmfile -e $HELMFILE_ENV -l app=$name sync"
+    done
     return 1
   fi
+
+  echo ""
+  echo "✅ All $total charts installed successfully"
 }
 
 helmfile_destroy_all() {
@@ -242,7 +302,7 @@ Examples:
   $0 install traefik                     # Install only traefik
   $0 uninstall traefik                   # Uninstall only traefik
   $0 diff vault                          # Preview vault changes
-  EMF_HELMFILE_ENV=eim $0 install        # Install with eim profile
+  EMF_HELMFILE_ENV=onprem-eim $0 install        # Install with eim profile
   $0 list                                # List all charts
 EOF
 }

@@ -46,11 +46,17 @@ aws:
   region: {{ env "EMF_AWS_REGION" | default "us-west-2" | quote }}
   account: {{ env "EMF_AWS_ACCOUNT" | default "123456789012" | quote }}
 
-enabled:
-  aws-lb: {{ env "EMF_ENABLE_AWS_LB" | default "true" }}
-  aws-lb-tgb: {{ env "EMF_ENABLE_AWS_LB" | default "true" }}
-  aws-sm-proxy: {{ env "EMF_ENABLE_AWS_SM" | default "true" }}
-  aws-sm-get-rs-token: {{ env "EMF_ENABLE_AWS_SM" | default "true" }}
-  cluster-autoscaler: {{ env "EMF_ENABLE_AUTOSCALER" | default "true" }}
-  squid-proxy: {{ env "EMF_ENABLE_SQUID" | default "true" }}
-  vertical-pod-autoscaler: {{ env "EMF_ENABLE_VPA" | default "true" }}
+aws-lb:
+  enabled: {{ env "EMF_ENABLE_AWS_LB" | default "true" }}
+aws-lb-tgb:
+  enabled: {{ env "EMF_ENABLE_AWS_LB" | default "true" }}
+aws-sm-proxy:
+  enabled: {{ env "EMF_ENABLE_AWS_SM" | default "true" }}
+aws-sm-get-rs-token:
+  enabled: {{ env "EMF_ENABLE_AWS_SM" | default "true" }}
+cluster-autoscaler:
+  enabled: {{ env "EMF_ENABLE_AUTOSCALER" | default "true" }}
+squid-proxy:
+  enabled: {{ env "EMF_ENABLE_SQUID" | default "true" }}
+vertical-pod-autoscaler:
+  enabled: {{ env "EMF_ENABLE_VPA" | default "true" }}

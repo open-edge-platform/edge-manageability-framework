@@ -49,6 +49,7 @@ self-signed-cert:
 o11y:
   dedicatedEdgenodeEnabled: {{ env "EMF_O11Y_DEDICATED_EN" | default "false" }}
 
-enabled:
-  nginx-ingress-pxe-boots: {{ env "EMF_ENABLE_PXE" | default "true" }}
-  squid-proxy: {{ env "EMF_ENABLE_SQUID" | default "false" }}
+nginx-ingress-pxe-boots:
+  enabled: {{ env "EMF_ENABLE_PXE" | default "true" }}
+squid-proxy:
+  enabled: {{ env "EMF_ENABLE_SQUID" | default "false" }}

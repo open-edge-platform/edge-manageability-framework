@@ -25,11 +25,11 @@ debug/
 │   ├── onprem-oxm.yaml.gotmpl            # On-premises OXM
 │   ├── onprem-explicit-proxy.yaml.gotmpl  # On-premises with squid proxy
 │   ├── aws.yaml.gotmpl                   # AWS (Aurora, EFS, Vault HA)
-│   ├── vpro.yaml.gotmpl                  # vPro (platform only)
-│   ├── eim.yaml.gotmpl                   # EIM (platform + edge infra)
-│   ├── eim-co.yaml.gotmpl                # EIM + Cluster Orchestration
-│   ├── eim-co-ao.yaml.gotmpl             # EIM + CO + App Orchestration
-│   ├── eim-co-ao-o11y.yaml.gotmpl        # EIM + CO + AO + Observability
+│   ├── onprem-vpro.yaml.gotmpl            # vPro (platform only)
+│   ├── onprem-eim.yaml.gotmpl             # EIM (platform + edge infra)
+│   ├── onprem-eim-co.yaml.gotmpl          # EIM + Cluster Orchestration
+│   ├── onprem-eim-co-ao.yaml.gotmpl       # EIM + CO + App Orchestration
+│   ├── onprem-eim-co-ao-o11y.yaml.gotmpl  # EIM + CO + AO + Observability
 │   ├── dev.yaml.gotmpl                   # KIND local development
 │   ├── dev-minimal.yaml.gotmpl           # KIND minimal
 │   └── bkc.yaml.gotmpl                   # BKC AWS
@@ -54,7 +54,7 @@ debug/
 
 Change the profile with `EMF_HELMFILE_ENV`:
 ```bash
-EMF_HELMFILE_ENV=eim ./post-deploy-orch.sh install
+EMF_HELMFILE_ENV=onprem-eim ./post-deploy-orch.sh install
 ```
 
 ### Using helmfile directly
@@ -90,11 +90,11 @@ helmfile -e onprem destroy
 | `onprem-oxm` | On-premises OXM (reduced features) |
 | `onprem-explicit-proxy` | On-premises with squid proxy |
 | `aws` | AWS (Aurora DB, EFS, Vault HA, target groups) |
-| `vpro` | vPro - platform only (no AO/CO/O11y/email) |
-| `eim` | EIM - platform + edge infra (no AO/CO/O11y/email) |
-| `eim-co` | EIM + Cluster Orchestration |
-| `eim-co-ao` | EIM + CO + App Orchestration |
-| `eim-co-ao-o11y` | Full stack (EIM + CO + AO + Observability) |
+| `onprem-vpro` | vPro - platform only (no AO/CO/O11y/email) |
+| `onprem-eim` | EIM - platform + edge infra (no AO/CO/O11y/email) |
+| `onprem-eim-co` | EIM + Cluster Orchestration |
+| `onprem-eim-co-ao` | EIM + CO + App Orchestration |
+| `onprem-eim-co-ao-o11y` | Full stack (EIM + CO + AO + Observability) |
 | `dev` | Local KIND cluster with all features |
 | `dev-minimal` | Local KIND, no observability/kyverno |
 | `bkc` | AWS BKC with all features |

@@ -47,38 +47,67 @@ self-signed-cert:
   generateOrchCert: {{ env "EMF_GENERATE_CERT" | default "true" }}
 
 # OXM: no app-orch, no cluster-orch, no o11y
-enabled:
-  squid-proxy: true
-  # Disable observability
-  alerting-monitor: false
-  edgenode-dashboards: false
-  edgenode-observability: false
-  orchestrator-dashboards: false
-  orchestrator-observability: false
-  orchestrator-prometheus-agent: false
-  sre-exporter: false
-  # Disable app orch
-  app-deployment-crd: false
-  app-deployment-manager: false
-  app-resource-manager: false
-  app-service-proxy: false
-  fleet-rs-secret: false
-  app-orch-catalog: false
-  app-deployment-manager-secret: false
-  harbor-oci: false
-  app-orch-tenant-controller: false
-  fleet-crd: false
-  fleet-controller: false
-  copy-app-gitea-cred-to-fleet: false
-  copy-ca-cert-gitea-to-app: false
-  copy-ca-cert-gitea-to-cluster: false
-  copy-cluster-gitea-cred-to-fleet: false
-  # Disable cluster orch
-  capi-operator-pre: false
-  capi-operator: false
-  cluster-manager: false
-  cluster-connect-gateway: false
-  intel-infra-provider: false
-  capi-providers-config: false
-  # OXM: enable PXE and explicit proxy
-  pxe-boots: true
+squid-proxy:
+  enabled: true
+# Disable observability
+alerting-monitor:
+  enabled: false
+edgenode-dashboards:
+  enabled: false
+edgenode-observability:
+  enabled: false
+orchestrator-dashboards:
+  enabled: false
+orchestrator-observability:
+  enabled: false
+orchestrator-prometheus-agent:
+  enabled: false
+sre-exporter:
+  enabled: false
+# Disable app orch
+app-deployment-crd:
+  enabled: false
+app-deployment-manager:
+  enabled: false
+app-resource-manager:
+  enabled: false
+app-service-proxy:
+  enabled: false
+fleet-rs-secret:
+  enabled: false
+app-orch-catalog:
+  enabled: false
+app-deployment-manager-secret:
+  enabled: false
+harbor-oci:
+  enabled: false
+app-orch-tenant-controller:
+  enabled: false
+fleet-crd:
+  enabled: false
+fleet-controller:
+  enabled: false
+copy-app-gitea-cred-to-fleet:
+  enabled: false
+copy-ca-cert-gitea-to-app:
+  enabled: false
+copy-ca-cert-gitea-to-cluster:
+  enabled: false
+copy-cluster-gitea-cred-to-fleet:
+  enabled: false
+# Disable cluster orch
+capi-operator-pre:
+  enabled: false
+capi-operator:
+  enabled: false
+cluster-manager:
+  enabled: false
+cluster-connect-gateway:
+  enabled: false
+intel-infra-provider:
+  enabled: false
+capi-providers-config:
+  enabled: false
+# OXM: enable PXE and explicit proxy
+pxe-boots:
+  enabled: true

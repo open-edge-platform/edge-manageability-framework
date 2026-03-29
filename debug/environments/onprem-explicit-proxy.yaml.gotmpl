@@ -52,6 +52,7 @@ proxy:
   noProxy: {{ env "EMF_NO_PROXY" | default "" | quote }}
 {{- end }}
 
-enabled:
-  nginx-ingress-pxe-boots: {{ env "EMF_ENABLE_PXE" | default "true" }}
-  squid-proxy: {{ env "EMF_ENABLE_SQUID" | default "true" }}
+nginx-ingress-pxe-boots:
+  enabled: {{ env "EMF_ENABLE_PXE" | default "true" }}
+squid-proxy:
+  enabled: {{ env "EMF_ENABLE_SQUID" | default "true" }}
