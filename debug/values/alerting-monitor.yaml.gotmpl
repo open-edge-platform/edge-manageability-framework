@@ -25,3 +25,25 @@ alertmanager:
   configmapReload:
     image:
       tag: v0.89.0
+{{- if eq (env "EMF_SMTP_DEV_MODE" | default "true") "true" }}
+  config:
+    groupInterval: 1m
+{{- end }}
+
+smtp:
+  initialize: true
+  configSecret: smtp
+{{- if eq (env "EMF_SMTP_DEV_MODE" | default "true") "true" }}
+  userPasswordAuth: false
+  passwordSecret:
+    name: smtp-auth
+    key: password
+  requireTls: false
+  insecureSkipVerify: true
+{{- else }}
+  userPasswordAuth: true
+  passwordSecret:
+    name: smtp-auth
+    key: password
+  requireTls: true
+{{- end }}

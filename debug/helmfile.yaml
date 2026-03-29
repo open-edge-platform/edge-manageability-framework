@@ -22,12 +22,6 @@
 #   List available releases:
 #     helmfile -e onprem list
 
-helmDefaults:
-  createNamespace: true
-  wait: true
-  waitForJobs: true
-  timeout: 600
-
 environments:
   dev:
     values:
@@ -84,50 +78,88 @@ environments:
 
 ---
 
+helmDefaults:
+  createNamespace: true
+  wait: true
+  waitForJobs: true
+  timeout: 180
+
 repositories:
+{{- if .Values | get "enabled.cert-manager" true }}
   - name: jetstack
     url: https://charts.jetstack.io
+{{- end }}
+{{- if or (.Values | get "enabled.istio-base" true) (.Values | get "enabled.istiod" true) }}
   - name: istio
     url: https://istio-release.storage.googleapis.com/charts
+{{- end }}
+{{- if .Values | get "enabled.vault" true }}
   - name: hashicorp
     url: https://helm.releases.hashicorp.com
+{{- end }}
+{{- if or (.Values | get "enabled.traefik" true) (.Values | get "enabled.traefik-boots" false) }}
   - name: traefik
     url: https://helm.traefik.io/traefik
+{{- end }}
+{{- if .Values | get "enabled.kyverno" true }}
   - name: kyverno
     url: https://kyverno.github.io/kyverno
+{{- end }}
+{{- if or (.Values | get "enabled.fleet-crd" true) (.Values | get "enabled.fleet-controller" true) }}
   - name: fleet
     url: https://rancher.github.io/fleet-helm-charts/
+{{- end }}
+{{- if .Values | get "enabled.external-secrets" true }}
   - name: external-secrets
     url: https://charts.external-secrets.io
+{{- end }}
+{{- if .Values | get "enabled.ingress-haproxy" true }}
   - name: haproxy
     url: https://haproxytech.github.io/helm-charts
+{{- end }}
+{{- if .Values | get "enabled.ingress-nginx" false }}
   - name: ingress-nginx
     url: https://kubernetes.github.io/ingress-nginx
+{{- end }}
+{{- if or (.Values | get "enabled.prometheus-crd" true) (.Values | get "enabled.orchestrator-prometheus-agent" true) }}
   - name: prometheus
     url: https://prometheus-community.github.io/helm-charts
+{{- end }}
+{{- if .Values | get "enabled.reloader" true }}
   - name: stakater
     url: https://stakater.github.io/stakater-charts
+{{- end }}
+{{- if .Values | get "enabled.kiali" true }}
   - name: kiali
     url: https://kiali.org/helm-charts
+{{- end }}
+{{- if .Values | get "enabled.harbor-oci" true }}
   - name: harbor
     url: https://helm.goharbor.io
+{{- end }}
+{{- if .Values | get "enabled.cluster-autoscaler" false }}
   - name: autoscaler
     url: https://kubernetes.github.io/autoscaler
+{{- end }}
+{{- if .Values | get "enabled.capi-operator" true }}
   - name: capi-operator
     url: https://kubernetes-sigs.github.io/cluster-api-operator
+{{- end }}
+{{- if .Values | get "enabled.aws-lb" false }}
   - name: eks
     url: https://aws.github.io/eks-charts
+{{- end }}
+{{- if or (.Values | get "enabled.postgresql-operator" true) (.Values | get "enabled.postgresql-cluster" true) }}
   - name: cnpg
     oci: true
     url: ghcr.io/cloudnative-pg/charts
+{{- end }}
   - name: edge-orch
     oci: true
     url: {{ .Values | get "chartRepoURL" "registry-rs.edgeorchestration.intel.com/edge-orch" }}
   - name: edge-orch-rs
     oci: true
     url: {{ .Values | get "rsChartRepoURL" "registry-rs.edgeorchestration.intel.com/edge-orch" }}
-
----
 
 releases:
   #############################################################################
@@ -142,7 +174,7 @@ releases:
     version: 0.27.1
     values:
       - values/postgresql-operator.yaml
-    condition: enabled.postgresql-operator
+    installed: {{ .Values | get "enabled.postgresql-operator" true }}
 
   - name: keycloak-operator
     labels:
@@ -152,7 +184,7 @@ releases:
     version: 26.1.2
     values:
       - values/keycloak-operator.yaml
-    condition: enabled.keycloak-operator
+    installed: {{ .Values | get "enabled.keycloak-operator" true }}
 
   #############################################################################
   # Wave 90-100: Base infrastructure
@@ -165,7 +197,7 @@ releases:
     chart: edge-orch/common/charts/namespace-label
     version: 26.0.2
     values:
-      - values/namespace-label.yaml
+      - values/namespace-label.yaml.gotmpl
     installed: true  # always deploy
 
   - name: cluster-autoscaler
@@ -176,7 +208,7 @@ releases:
     version: "9.37.0"
     values:
       - values/cluster-autoscaler.yaml
-    condition: enabled.cluster-autoscaler
+    installed: {{ .Values | get "enabled.cluster-autoscaler" true }}
 
   - name: cert-manager
     labels:
@@ -186,7 +218,7 @@ releases:
     version: 1.19.3
     values:
       - values/cert-manager.yaml.gotmpl
-    condition: enabled.cert-manager
+    installed: {{ .Values | get "enabled.cert-manager" true }}
 
   - name: istio-base
     labels:
@@ -196,7 +228,7 @@ releases:
     version: 1.29.1
     values:
       - values/istio-base.yaml
-    condition: enabled.istio-base
+    installed: {{ .Values | get "enabled.istio-base" true }}
 
   - name: external-secrets
     labels:
@@ -206,7 +238,7 @@ releases:
     version: 2.0.1
     values:
       - values/external-secrets.yaml
-    condition: enabled.external-secrets
+    installed: {{ .Values | get "enabled.external-secrets" true }}
 
   - name: prometheus-crd
     labels:
@@ -216,7 +248,7 @@ releases:
     version: 24.0.1
     values:
       - values/prometheus-crd.yaml
-    condition: enabled.prometheus-crd
+    installed: {{ .Values | get "enabled.prometheus-crd" true }}
 
   - name: kyverno
     labels:
@@ -226,7 +258,7 @@ releases:
     version: 3.7.1
     values:
       - values/kyverno.yaml
-    condition: enabled.kyverno
+    installed: {{ .Values | get "enabled.kyverno" true }}
 
   - name: k8s-metrics-server
     labels:
@@ -236,7 +268,7 @@ releases:
     version: 25.2.1
     values:
       - values/k8s-metrics-server.yaml
-    condition: enabled.k8s-metrics-server
+    installed: {{ .Values | get "enabled.k8s-metrics-server" true }}
 
   #############################################################################
   # Wave 105-120: Secrets, service mesh, autoscaling, tokens
@@ -250,7 +282,7 @@ releases:
     version: 26.1.0
     values:
       - values/aws-sm-proxy.yaml
-    condition: enabled.aws-sm-proxy
+    installed: {{ .Values | get "enabled.aws-sm-proxy" true }}
 
   - name: secret-wait-azure-ad-creds
     labels:
@@ -260,7 +292,7 @@ releases:
     version: 26.0.2
     values:
       - values/secret-wait-azure-ad-creds.yaml
-    condition: enabled.secret-wait-azure-ad-creds
+    installed: {{ .Values | get "enabled.secret-wait-azure-ad-creds" true }}
 
   - name: kyverno-extra-policies
     labels:
@@ -272,7 +304,7 @@ releases:
       - values/kyverno-extra-policies.yaml
     needs:
       - kyverno/kyverno
-    condition: enabled.kyverno-extra-policies
+    installed: {{ .Values | get "enabled.kyverno-extra-policies" true }}
 
   - name: reloader
     labels:
@@ -282,7 +314,7 @@ releases:
     version: 2.2.3
     values:
       - values/reloader.yaml
-    condition: enabled.reloader
+    installed: {{ .Values | get "enabled.reloader" true }}
 
   - name: istiod
     labels:
@@ -294,7 +326,7 @@ releases:
       - values/istiod.yaml.gotmpl
     needs:
       - istio-system/istio-base
-    condition: enabled.istiod
+    installed: {{ .Values | get "enabled.istiod" true }}
 
   - name: aws-lb
     labels:
@@ -304,7 +336,7 @@ releases:
     version: 1.7.1
     values:
       - values/aws-lb.yaml
-    condition: enabled.aws-lb
+    installed: {{ .Values | get "enabled.aws-lb" true }}
 
   - name: aws-sm-get-rs-token
     labels:
@@ -314,7 +346,7 @@ releases:
     version: 25.2.1
     values:
       - values/aws-sm-get-rs-token.yaml
-    condition: enabled.aws-sm-get-rs-token
+    installed: {{ .Values | get "enabled.aws-sm-get-rs-token" true }}
 
   - name: token-refresh
     labels:
@@ -324,7 +356,7 @@ releases:
     version: 25.2.3
     values:
       - values/token-refresh.yaml
-    condition: enabled.token-refresh
+    installed: {{ .Values | get "enabled.token-refresh" true }}
 
   - name: wait-istio-job
     labels:
@@ -336,7 +368,7 @@ releases:
       - values/wait-istio-job.yaml
     needs:
       - istio-system/istiod
-    condition: enabled.wait-istio-job
+    installed: {{ .Values | get "enabled.wait-istio-job" true }}
 
   - name: vertical-pod-autoscaler
     labels:
@@ -346,7 +378,7 @@ releases:
     version: 0.0.4
     values:
       - values/vertical-pod-autoscaler.yaml
-    condition: enabled.vertical-pod-autoscaler
+    installed: {{ .Values | get "enabled.vertical-pod-autoscaler" true }}
 
   - name: secret-wait-rs-token
     labels:
@@ -356,7 +388,7 @@ releases:
     version: 26.0.2
     values:
       - values/secret-wait-rs-token.yaml
-    condition: enabled.secret-wait-rs-token
+    installed: {{ .Values | get "enabled.secret-wait-rs-token" true }}
 
   - name: aws-lb-tgb
     labels:
@@ -366,7 +398,7 @@ releases:
     version: 26.0.1
     values:
       - values/aws-lb-tgb.yaml
-    condition: enabled.aws-lb-tgb
+    installed: {{ .Values | get "enabled.aws-lb-tgb" true }}
 
   - name: oci-secret
     labels:
@@ -376,7 +408,7 @@ releases:
     version: 25.2.1
     values:
       - values/oci-secret.yaml
-    condition: enabled.oci-secret
+    installed: {{ .Values | get "enabled.oci-secret" true }}
 
   #############################################################################
   # Wave 130-170: Database, certs, keycloak, vault, secrets
@@ -392,7 +424,7 @@ releases:
       - values/postgresql-secrets.yaml.gotmpl
     needs:
       - postgresql-operator/postgresql-operator
-    condition: enabled.postgresql-secrets
+    installed: {{ .Values | get "enabled.postgresql-secrets" true }}
 
   - name: postgresql-cluster
     labels:
@@ -404,7 +436,7 @@ releases:
       - values/postgresql-cluster.yaml.gotmpl
     needs:
       - orch-database/postgresql-secrets
-    condition: enabled.postgresql-cluster
+    installed: {{ .Values | get "enabled.postgresql-cluster" true }}
 
   - name: istio-policy
     labels:
@@ -416,7 +448,7 @@ releases:
       - values/istio-policy.yaml
     needs:
       - istio-system/istiod
-    condition: enabled.istio-policy
+    installed: {{ .Values | get "enabled.istio-policy" true }}
 
   - name: platform-autocert
     labels:
@@ -428,7 +460,7 @@ releases:
       - values/platform-autocert.yaml
     needs:
       - cert-manager/cert-manager
-    condition: enabled.platform-autocert
+    installed: {{ .Values | get "enabled.platform-autocert" true }}
 
   - name: platform-keycloak
     labels:
@@ -440,7 +472,7 @@ releases:
       - values/platform-keycloak.yaml.gotmpl
     needs:
       - orch-platform/keycloak-operator
-    condition: enabled.platform-keycloak
+    installed: {{ .Values | get "enabled.platform-keycloak" true }}
 
   - name: rs-image-pull-secrets
     labels:
@@ -450,7 +482,7 @@ releases:
     version: 25.2.2
     values:
       - values/rs-image-pull-secrets.yaml
-    condition: enabled.rs-image-pull-secrets
+    installed: {{ .Values | get "enabled.rs-image-pull-secrets" true }}
 
   - name: kiali
     labels:
@@ -462,7 +494,7 @@ releases:
       - values/kiali.yaml
     needs:
       - istio-system/istiod
-    condition: enabled.kiali
+    installed: {{ .Values | get "enabled.kiali" true }}
 
   - name: self-signed-cert
     labels:
@@ -474,7 +506,7 @@ releases:
       - values/self-signed-cert.yaml.gotmpl
     needs:
       - cert-manager/cert-manager
-    condition: enabled.self-signed-cert
+    installed: {{ .Values | get "enabled.self-signed-cert" true }}
 
   - name: secrets-config
     labels:
@@ -484,7 +516,7 @@ releases:
     version: 26.0.2
     values:
       - values/secrets-config.yaml.gotmpl
-    condition: enabled.secrets-config
+    installed: {{ .Values | get "enabled.secrets-config" true }}
 
   - name: vault
     labels:
@@ -494,7 +526,7 @@ releases:
     version: 0.32.0
     values:
       - values/vault.yaml.gotmpl
-    condition: enabled.vault
+    installed: {{ .Values | get "enabled.vault" true }}
 
   - name: cert-synchronizer
     labels:
@@ -504,7 +536,7 @@ releases:
     version: 26.1.0
     values:
       - values/cert-synchronizer.yaml.gotmpl
-    condition: enabled.cert-synchronizer
+    installed: {{ .Values | get "enabled.cert-synchronizer" true }}
 
   - name: rs-proxy
     labels:
@@ -514,7 +546,7 @@ releases:
     version: 25.2.3
     values:
       - values/rs-proxy.yaml.gotmpl
-    condition: enabled.rs-proxy
+    installed: {{ .Values | get "enabled.rs-proxy" true }}
 
   - name: secret-wait-tls-orch
     labels:
@@ -524,7 +556,7 @@ releases:
     version: 26.0.2
     values:
       - values/secret-wait-tls-orch.yaml
-    condition: enabled.secret-wait-tls-orch
+    installed: {{ .Values | get "enabled.secret-wait-tls-orch" true }}
 
   #############################################################################
   # Wave 180: Copy secrets
@@ -538,7 +570,7 @@ releases:
     version: 26.0.0
     values:
       - values/copy-ca-cert-gateway-to-cattle.yaml
-    condition: enabled.copy-ca-cert-gateway-to-cattle
+    installed: {{ .Values | get "enabled.copy-ca-cert-gateway-to-cattle" true }}
 
   - name: copy-ca-cert-gateway-to-infra
     labels:
@@ -548,7 +580,7 @@ releases:
     version: 26.0.0
     values:
       - values/copy-ca-cert-gateway-to-infra.yaml
-    condition: enabled.copy-ca-cert-gateway-to-infra
+    installed: {{ .Values | get "enabled.copy-ca-cert-gateway-to-infra" true }}
 
   - name: copy-ca-cert-gitea-to-app
     labels:
@@ -558,7 +590,7 @@ releases:
     version: 26.0.0
     values:
       - values/copy-ca-cert-gitea-to-app.yaml
-    condition: enabled.copy-ca-cert-gitea-to-app
+    installed: {{ .Values | get "enabled.copy-ca-cert-gitea-to-app" true }}
 
   - name: copy-ca-cert-gitea-to-cluster
     labels:
@@ -568,7 +600,7 @@ releases:
     version: 26.0.0
     values:
       - values/copy-ca-cert-gitea-to-cluster.yaml
-    condition: enabled.copy-ca-cert-gitea-to-cluster
+    installed: {{ .Values | get "enabled.copy-ca-cert-gitea-to-cluster" true }}
 
   - name: copy-keycloak-admin-to-infra
     labels:
@@ -578,7 +610,7 @@ releases:
     version: 26.0.0
     values:
       - values/copy-keycloak-admin-to-infra.yaml
-    condition: enabled.copy-keycloak-admin-to-infra
+    installed: {{ .Values | get "enabled.copy-keycloak-admin-to-infra" true }}
 
   #############################################################################
   # Wave 990-1020: CAPI, observability, traefik-pre, fleet
@@ -592,7 +624,7 @@ releases:
     version: 1.0.1
     values:
       - values/capi-operator-pre.yaml
-    condition: enabled.capi-operator-pre
+    installed: {{ .Values | get "enabled.capi-operator-pre" true }}
 
   - name: capi-operator
     labels:
@@ -604,7 +636,7 @@ releases:
       - values/capi-operator.yaml
     needs:
       - capi-variables/capi-operator-pre
-    condition: enabled.capi-operator
+    installed: {{ .Values | get "enabled.capi-operator" true }}
 
   - name: orchestrator-observability
     labels:
@@ -614,7 +646,7 @@ releases:
     version: 0.5.18
     values:
       - values/orchestrator-observability.yaml.gotmpl
-    condition: enabled.orchestrator-observability
+    installed: {{ .Values | get "enabled.orchestrator-observability" true }}
 
   - name: orchestrator-prometheus-agent
     labels:
@@ -624,7 +656,7 @@ releases:
     version: 79.7.1
     values:
       - values/orchestrator-prometheus-agent.yaml
-    condition: enabled.orchestrator-prometheus-agent
+    installed: {{ .Values | get "enabled.orchestrator-prometheus-agent" true }}
 
   - name: orchestrator-dashboards
     labels:
@@ -634,7 +666,7 @@ releases:
     version: 0.3.2
     values:
       - values/orchestrator-dashboards.yaml
-    condition: enabled.orchestrator-dashboards
+    installed: {{ .Values | get "enabled.orchestrator-dashboards" true }}
 
   - name: edgenode-observability
     labels:
@@ -644,7 +676,7 @@ releases:
     version: 0.10.21
     values:
       - values/edgenode-observability.yaml.gotmpl
-    condition: enabled.edgenode-observability
+    installed: {{ .Values | get "enabled.edgenode-observability" true }}
 
   - name: edgenode-dashboards
     labels:
@@ -654,7 +686,7 @@ releases:
     version: 0.3.10
     values:
       - values/edgenode-dashboards.yaml
-    condition: enabled.edgenode-dashboards
+    installed: {{ .Values | get "enabled.edgenode-dashboards" true }}
 
   - name: traefik-pre
     labels:
@@ -664,7 +696,7 @@ releases:
     version: 3.0.1
     values:
       - values/traefik-pre.yaml
-    condition: enabled.traefik-pre
+    installed: {{ .Values | get "enabled.traefik-pre" true }}
 
   - name: harbor-oci
     labels:
@@ -674,7 +706,7 @@ releases:
     version: 1.17.2
     values:
       - values/harbor-oci.yaml.gotmpl
-    condition: enabled.harbor-oci
+    installed: {{ .Values | get "enabled.harbor-oci" true }}
 
   - name: fleet-crd
     labels:
@@ -684,7 +716,7 @@ releases:
     version: 0.12.8
     values:
       - values/fleet-crd.yaml
-    condition: enabled.fleet-crd
+    installed: {{ .Values | get "enabled.fleet-crd" true }}
 
   - name: fleet-controller
     labels:
@@ -696,7 +728,7 @@ releases:
       - values/fleet-controller.yaml
     needs:
       - cattle-fleet-system/fleet-crd
-    condition: enabled.fleet-controller
+    installed: {{ .Values | get "enabled.fleet-controller" true }}
 
   #############################################################################
   # Wave 1100-1101: Traefik, ingress, CAPI config, kyverno policies, app-orch
@@ -712,7 +744,7 @@ releases:
       - values/traefik.yaml.gotmpl
     needs:
       - orch-gateway/traefik-pre
-    condition: enabled.traefik
+    installed: {{ .Values | get "enabled.traefik" true }}
 
   - name: traefik-boots
     labels:
@@ -722,7 +754,7 @@ releases:
     version: 37.2.0
     values:
       - values/traefik-boots.yaml.gotmpl
-    condition: enabled.traefik-boots
+    installed: {{ .Values | get "enabled.traefik-boots" true }}
 
   - name: capi-providers-config
     labels:
@@ -734,7 +766,7 @@ releases:
       - values/capi-providers-config.yaml
     needs:
       - capi-operator-system/capi-operator
-    condition: enabled.capi-providers-config
+    installed: {{ .Values | get "enabled.capi-providers-config" true }}
 
   - name: ingress-haproxy
     labels:
@@ -744,7 +776,7 @@ releases:
     version: 1.41.0
     values:
       - values/ingress-haproxy.yaml
-    condition: enabled.ingress-haproxy
+    installed: {{ .Values | get "enabled.ingress-haproxy" true }}
 
   - name: ingress-nginx
     labels:
@@ -754,7 +786,7 @@ releases:
     version: 4.13.3
     values:
       - values/ingress-nginx.yaml
-    condition: enabled.ingress-nginx
+    installed: {{ .Values | get "enabled.ingress-nginx" true }}
 
   - name: kyverno-istio-policy
     labels:
@@ -766,7 +798,7 @@ releases:
       - values/kyverno-istio-policy.yaml
     needs:
       - kyverno/kyverno
-    condition: enabled.kyverno-istio-policy
+    installed: {{ .Values | get "enabled.kyverno-istio-policy" true }}
 
   - name: kyverno-traefik-policy
     labels:
@@ -778,7 +810,7 @@ releases:
       - values/kyverno-traefik-policy.yaml
     needs:
       - kyverno/kyverno
-    condition: enabled.kyverno-traefik-policy
+    installed: {{ .Values | get "enabled.kyverno-traefik-policy" true }}
 
   - name: app-orch-tenant-controller
     labels:
@@ -788,7 +820,7 @@ releases:
     version: 0.5.2
     values:
       - values/app-orch-tenant-controller.yaml
-    condition: enabled.app-orch-tenant-controller
+    installed: {{ .Values | get "enabled.app-orch-tenant-controller" true }}
 
   - name: app-orch-catalog
     labels:
@@ -798,7 +830,7 @@ releases:
     version: 0.16.2
     values:
       - values/app-orch-catalog.yaml.gotmpl
-    condition: enabled.app-orch-catalog
+    installed: {{ .Values | get "enabled.app-orch-catalog" true }}
 
   #############################################################################
   # Wave 1200: Copy secrets, fleet secrets, tenancy, traefik extras, squid
@@ -812,7 +844,7 @@ releases:
     version: 26.0.0
     values:
       - values/copy-app-gitea-cred-to-fleet.yaml
-    condition: enabled.copy-app-gitea-cred-to-fleet
+    installed: {{ .Values | get "enabled.copy-app-gitea-cred-to-fleet" true }}
 
   - name: copy-cluster-gitea-cred-to-fleet
     labels:
@@ -822,7 +854,7 @@ releases:
     version: 26.0.0
     values:
       - values/copy-cluster-gitea-cred-to-fleet.yaml
-    condition: enabled.copy-cluster-gitea-cred-to-fleet
+    installed: {{ .Values | get "enabled.copy-cluster-gitea-cred-to-fleet" true }}
 
   - name: fleet-rs-secret
     labels:
@@ -832,7 +864,7 @@ releases:
     version: 25.2.1
     values:
       - values/fleet-rs-secret.yaml
-    condition: enabled.fleet-rs-secret
+    installed: {{ .Values | get "enabled.fleet-rs-secret" true }}
 
   - name: haproxy-ingress-pxe-boots
     labels:
@@ -842,7 +874,7 @@ releases:
     version: 1.0.1
     values:
       - values/haproxy-ingress-pxe-boots.yaml
-    condition: enabled.haproxy-ingress-pxe-boots
+    installed: {{ .Values | get "enabled.haproxy-ingress-pxe-boots" true }}
 
   - name: nginx-ingress-pxe-boots
     labels:
@@ -852,7 +884,7 @@ releases:
     version: 26.1.0
     values:
       - values/nginx-ingress-pxe-boots.yaml
-    condition: enabled.nginx-ingress-pxe-boots
+    installed: {{ .Values | get "enabled.nginx-ingress-pxe-boots" true }}
 
   - name: traefik-extra-objects
     labels:
@@ -864,7 +896,7 @@ releases:
       - values/traefik-extra-objects.yaml.gotmpl
     needs:
       - orch-gateway/traefik
-    condition: enabled.traefik-extra-objects
+    installed: {{ .Values | get "enabled.traefik-extra-objects" true }}
 
   - name: botkube
     labels:
@@ -874,7 +906,7 @@ releases:
     version: v1.11.0
     values:
       - values/botkube.yaml
-    condition: enabled.botkube
+    installed: {{ .Values | get "enabled.botkube" true }}
 
   - name: tenancy-datamodel
     labels:
@@ -884,7 +916,7 @@ releases:
     version: 26.1.0
     values:
       - values/tenancy-datamodel.yaml
-    condition: enabled.tenancy-datamodel
+    installed: {{ .Values | get "enabled.tenancy-datamodel" true }}
 
   - name: tenancy-manager
     labels:
@@ -894,7 +926,7 @@ releases:
     version: 26.1.0
     values:
       - values/tenancy-manager.yaml.gotmpl
-    condition: enabled.tenancy-manager
+    installed: {{ .Values | get "enabled.tenancy-manager" true }}
 
   - name: tenancy-api-mapping
     labels:
@@ -904,7 +936,7 @@ releases:
     version: 26.0.15
     values:
       - values/tenancy-api-mapping.yaml
-    condition: enabled.tenancy-api-mapping
+    installed: {{ .Values | get "enabled.tenancy-api-mapping" true }}
 
   - name: nexus-api-gw
     labels:
@@ -914,7 +946,7 @@ releases:
     version: 26.1.0
     values:
       - values/nexus-api-gw.yaml.gotmpl
-    condition: enabled.nexus-api-gw
+    installed: {{ .Values | get "enabled.nexus-api-gw" true }}
 
   - name: squid-proxy
     labels:
@@ -924,7 +956,7 @@ releases:
     version: 26.0.2
     values:
       - values/squid-proxy.yaml.gotmpl
-    condition: enabled.squid-proxy
+    installed: {{ .Values | get "enabled.squid-proxy" true }}
 
   #############################################################################
   # Wave 1250: Keycloak tenant controller
@@ -938,7 +970,7 @@ releases:
     version: 26.1.0
     values:
       - values/keycloak-tenant-controller.yaml.gotmpl
-    condition: enabled.keycloak-tenant-controller
+    installed: {{ .Values | get "enabled.keycloak-tenant-controller" true }}
 
   #############################################################################
   # Wave 1300: Token, TLS boots
@@ -952,7 +984,7 @@ releases:
     version: 26.1.0
     values:
       - values/token-fs.yaml
-    condition: enabled.token-fs
+    installed: {{ .Values | get "enabled.token-fs" true }}
 
   - name: secret-wait-tls-boots
     labels:
@@ -962,7 +994,7 @@ releases:
     version: 26.0.2
     values:
       - values/secret-wait-tls-boots.yaml
-    condition: enabled.secret-wait-tls-boots
+    installed: {{ .Values | get "enabled.secret-wait-tls-boots" true }}
 
   - name: copy-ca-cert-boots-to-gateway
     labels:
@@ -972,7 +1004,7 @@ releases:
     version: 26.0.0
     values:
       - values/copy-ca-cert-boots-to-gateway.yaml
-    condition: enabled.copy-ca-cert-boots-to-gateway
+    installed: {{ .Values | get "enabled.copy-ca-cert-boots-to-gateway" true }}
 
   - name: copy-ca-cert-boots-to-infra
     labels:
@@ -982,7 +1014,7 @@ releases:
     version: 26.0.0
     values:
       - values/copy-ca-cert-boots-to-infra.yaml
-    condition: enabled.copy-ca-cert-boots-to-infra
+    installed: {{ .Values | get "enabled.copy-ca-cert-boots-to-infra" true }}
 
   - name: copy-rs-token-to-cluster
     labels:
@@ -992,7 +1024,7 @@ releases:
     version: 26.0.0
     values:
       - values/copy-rs-token-to-cluster.yaml
-    condition: enabled.copy-rs-token-to-cluster
+    installed: {{ .Values | get "enabled.copy-rs-token-to-cluster" true }}
 
   #############################################################################
   # Wave 1900: Alerting
@@ -1006,7 +1038,7 @@ releases:
     version: 1.7.7
     values:
       - values/alerting-monitor.yaml.gotmpl
-    condition: enabled.alerting-monitor
+    installed: {{ .Values | get "enabled.alerting-monitor" true }}
 
   #############################################################################
   # Wave 2000-2005: Core applications, SRE, auth
@@ -1020,7 +1052,7 @@ releases:
     version: 2.6.2
     values:
       - values/app-deployment-crd.yaml
-    condition: enabled.app-deployment-crd
+    installed: {{ .Values | get "enabled.app-deployment-crd" true }}
 
   - name: app-deployment-manager-secret
     labels:
@@ -1030,7 +1062,7 @@ releases:
     version: 26.0.2
     values:
       - values/app-deployment-manager-secret.yaml
-    condition: enabled.app-deployment-manager-secret
+    installed: {{ .Values | get "enabled.app-deployment-manager-secret" true }}
 
   - name: infra-core
     labels:
@@ -1040,7 +1072,7 @@ releases:
     version: 2.19.8
     values:
       - values/infra-core.yaml.gotmpl
-    condition: enabled.infra-core
+    installed: {{ .Values | get "enabled.infra-core" true }}
 
   - name: cluster-manager
     labels:
@@ -1050,7 +1082,7 @@ releases:
     version: 2.2.8
     values:
       - values/cluster-manager.yaml.gotmpl
-    condition: enabled.cluster-manager
+    installed: {{ .Values | get "enabled.cluster-manager" true }}
 
   - name: cluster-connect-gateway
     labels:
@@ -1060,7 +1092,7 @@ releases:
     version: 1.2.7
     values:
       - values/cluster-connect-gateway.yaml.gotmpl
-    condition: enabled.cluster-connect-gateway
+    installed: {{ .Values | get "enabled.cluster-connect-gateway" true }}
 
   - name: component-status
     labels:
@@ -1070,7 +1102,7 @@ releases:
     version: 26.1.0
     values:
       - values/component-status.yaml.gotmpl
-    condition: enabled.component-status
+    installed: {{ .Values | get "enabled.component-status" true }}
 
   - name: metadata-broker
     labels:
@@ -1080,7 +1112,7 @@ releases:
     version: 1.0.1
     values:
       - values/metadata-broker.yaml.gotmpl
-    condition: enabled.metadata-broker
+    installed: {{ .Values | get "enabled.metadata-broker" true }}
 
   - name: sre-exporter
     labels:
@@ -1090,7 +1122,7 @@ releases:
     version: 0.9.3
     values:
       - values/sre-exporter.yaml.gotmpl
-    condition: enabled.sre-exporter
+    installed: {{ .Values | get "enabled.sre-exporter" true }}
 
   - name: auth-service
     labels:
@@ -1100,7 +1132,7 @@ releases:
     version: 26.1.0
     values:
       - values/auth-service.yaml.gotmpl
-    condition: enabled.auth-service
+    installed: {{ .Values | get "enabled.auth-service" true }}
 
   - name: observability-tenant-controller
     labels:
@@ -1110,7 +1142,7 @@ releases:
     version: 0.7.1
     values:
       - values/observability-tenant-controller.yaml
-    condition: enabled.observability-tenant-controller
+    installed: {{ .Values | get "enabled.observability-tenant-controller" true }}
 
   #############################################################################
   # Wave 2100: Managers and external services
@@ -1126,7 +1158,7 @@ releases:
       - values/app-deployment-manager.yaml.gotmpl
     needs:
       - orch-app/app-deployment-crd
-    condition: enabled.app-deployment-manager
+    installed: {{ .Values | get "enabled.app-deployment-manager" true }}
 
   - name: app-resource-manager
     labels:
@@ -1138,7 +1170,7 @@ releases:
       - values/app-resource-manager.yaml
     needs:
       - orch-app/app-deployment-crd
-    condition: enabled.app-resource-manager
+    installed: {{ .Values | get "enabled.app-resource-manager" true }}
 
   - name: app-service-proxy
     labels:
@@ -1148,7 +1180,7 @@ releases:
     version: 1.6.2
     values:
       - values/app-service-proxy.yaml.gotmpl
-    condition: enabled.app-service-proxy
+    installed: {{ .Values | get "enabled.app-service-proxy" true }}
 
   - name: infra-external
     labels:
@@ -1160,7 +1192,7 @@ releases:
       - values/infra-external.yaml.gotmpl
     needs:
       - orch-infra/infra-core
-    condition: enabled.infra-external
+    installed: {{ .Values | get "enabled.infra-external" true }}
 
   - name: infra-managers
     labels:
@@ -1172,7 +1204,7 @@ releases:
       - values/infra-managers.yaml.gotmpl
     needs:
       - orch-infra/infra-core
-    condition: enabled.infra-managers
+    installed: {{ .Values | get "enabled.infra-managers" true }}
 
   - name: infra-onboarding
     labels:
@@ -1184,7 +1216,7 @@ releases:
       - values/infra-onboarding.yaml.gotmpl
     needs:
       - orch-infra/infra-core
-    condition: enabled.infra-onboarding
+    installed: {{ .Values | get "enabled.infra-onboarding" true }}
 
   - name: intel-infra-provider
     labels:
@@ -1194,7 +1226,7 @@ releases:
     version: 1.3.6
     values:
       - values/intel-infra-provider.yaml
-    condition: enabled.intel-infra-provider
+    installed: {{ .Values | get "enabled.intel-infra-provider" true }}
 
   #############################################################################
   # Wave 3000: UI and final components
@@ -1208,7 +1240,7 @@ releases:
     version: 25.2.3
     values:
       - values/certificate-file-server.yaml
-    condition: enabled.certificate-file-server
+    installed: {{ .Values | get "enabled.certificate-file-server" true }}
 
   - name: tenancy-init
     labels:
@@ -1218,7 +1250,7 @@ releases:
     version: 26.1.0
     values:
       - values/tenancy-init.yaml
-    condition: enabled.tenancy-init
+    installed: {{ .Values | get "enabled.tenancy-init" true }}
 
   - name: web-ui-root
     labels:
@@ -1228,7 +1260,7 @@ releases:
     version: 4.0.8
     values:
       - values/web-ui-root.yaml.gotmpl
-    condition: enabled.web-ui-root
+    installed: {{ .Values | get "enabled.web-ui-root" true }}
 
   - name: web-ui-admin
     labels:
@@ -1238,7 +1270,7 @@ releases:
     version: 4.0.7
     values:
       - values/web-ui-admin.yaml.gotmpl
-    condition: enabled.web-ui-admin
+    installed: {{ .Values | get "enabled.web-ui-admin" true }}
 
   - name: web-ui-app-orch
     labels:
@@ -1248,7 +1280,7 @@ releases:
     version: 4.0.5
     values:
       - values/web-ui-app-orch.yaml.gotmpl
-    condition: enabled.web-ui-app-orch
+    installed: {{ .Values | get "enabled.web-ui-app-orch" true }}
 
   - name: web-ui-cluster-orch
     labels:
@@ -1258,7 +1290,7 @@ releases:
     version: 4.0.0
     values:
       - values/web-ui-cluster-orch.yaml.gotmpl
-    condition: enabled.web-ui-cluster-orch
+    installed: {{ .Values | get "enabled.web-ui-cluster-orch" true }}
 
   - name: web-ui-infra
     labels:
@@ -1268,4 +1300,4 @@ releases:
     version: 4.0.4
     values:
       - values/web-ui-infra.yaml.gotmpl
-    condition: enabled.web-ui-infra
+    installed: {{ .Values | get "enabled.web-ui-infra" true }}
