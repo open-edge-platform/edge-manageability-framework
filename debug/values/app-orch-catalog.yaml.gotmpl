@@ -1,0 +1,40 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+image:
+  pullPolicy: IfNotPresent
+fullnameOverride: app-orch-catalog
+service:
+  restProxy:
+    port: 8081
+ingress:
+  enabled: false
+traefikReverseProxy:
+  enabled: true
+  secretName: tls-orch          ## must be created in orch-gateway namespace
+openidc:
+  issuer: http://platform-keycloak.orch-platform.svc/realms/master
+storage:
+  size: 1Gi
+postgres:
+  enabled: false
+  ssl: false
+  secrets: app-orch-catalog-local-postgresql
+useSecretsService: true
+istio-proxy:
+  securityContext:
+    readOnlyRootFilesystem: true
+application-catalog-rest-proxy:
+  securityContext:
+    readOnlyRootFilesystem: true
+application-catalog-server:
+  securityContext:
+    readOnlyRootFilesystem: true
+openpolicyagent:
+  securityContext:
+    readOnlyRootFilesystem: true
+resources: null
+vaultServerAddress: http://vault.orch-platform.svc.cluster.local:8200
+serviceAccount: orch-svc
+

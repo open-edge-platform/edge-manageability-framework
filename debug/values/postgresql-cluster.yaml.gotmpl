@@ -1,0 +1,24 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+namespace: orch-database
+
+type: postgresql
+mode: standalone
+
+version:
+  postgresql: "17"
+
+cluster:
+  instances: {{ env "EMF_PG_INSTANCES" | default "1" }}
+  storage:
+    size: {{ env "EMF_PG_STORAGE_SIZE" | default "8Gi" | quote }}
+{{- if .Values.postgresql }}
+{{- if .Values.postgresql.maxConnections }}
+  postgresql:
+    parameters:
+      max_connections: {{ .Values.postgresql.maxConnections | quote }}
+      shared_buffers: {{ .Values.postgresql.sharedBuffers | default "256MB" | quote }}
+{{- end }}
+{{- end }}

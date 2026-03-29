@@ -1,0 +1,16 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+configProvisioner:
+  useM2MToken: true
+  catalogServer: app-orch-catalog-grpc-server.orch-app.svc.cluster.local:8080
+  admServer: app-deployment-api-grpc-server.orch-app.svc.cluster.local:8080
+  namespace: orch-app
+  vaultServer: "http://vault.orch-platform.svc.cluster.local:8200"
+  keycloakServiceBase: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
+  releaseServiceBase: "rs-proxy.orch-platform.svc.cluster.local:8081"
+  releaseServiceProxyRootUrl: "oci://rs-proxy.orch-platform.svc.cluster.local:8443"
+  manifestPath: "/edge-orch/en/file/cluster-extension-manifest"
+  serviceAccount: "orch-svc"
+resources: null

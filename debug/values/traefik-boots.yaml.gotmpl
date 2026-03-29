@@ -1,0 +1,33 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+globalArguments:
+providers:
+  kubernetesCRD:
+    allowCrossNamespace: true
+    allowExternalNameServices: true
+    namespaces:
+      - "orch-boots"
+ingressRoute:
+  dashboard:
+    enabled: false
+logs:
+  level: DEBUG
+  general:
+    format: json
+  access:
+    enabled: true
+    format: json
+
+metrics:
+  prometheus:
+    buckets: "0.1,0.3,0.6,0.9,1.2,1.5,2.0,2.5,5.0,10.0"
+    service:
+      enabled: true
+
+deployment:
+  podAnnotations:
+    traffic.sidecar.istio.io/excludeInboundPorts: "8000,8443"               # Traefik listened
+    # TODO: Make configurable because every k8s cluster is different
+    traffic.sidecar.istio.io/excludeOutboundIPRanges: "10.96.0.1/32"        # k8s API server

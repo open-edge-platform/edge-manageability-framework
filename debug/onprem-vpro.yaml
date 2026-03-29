@@ -1,0 +1,67 @@
+root:
+  useLocalValues: true
+  clusterValues:
+    - orch-configs/profiles/enable-platform-vpro.yaml
+    - orch-configs/profiles/enable-edgeinfra-vpro.yaml
+    - orch-configs/profiles/enable-onprem.yaml
+    - orch-configs/profiles/enable-sre.yaml
+    - orch-configs/profiles/proxy-none.yaml
+    - orch-configs/profiles/profile-onprem.yaml
+    - orch-configs/profiles/resource-default.yaml
+    - orch-configs/profiles/artifact-rs-production-noauth.yaml
+argo:
+  orchestratorVersion:
+  project: onprem
+  namespace: onprem
+  clusterName: onprem
+  clusterDomain: cluster.onprem
+  deployRepoURL: "https://github.com/open-edge-platform/edge-manageability-framework"
+  deployRepoRevision: ""
+  targetServer: "https://kubernetes.default.svc"
+  autosync: true
+  enabled:
+    copy-app-gitea-cred-to-fleet: false
+    copy-ca-cert-gitea-to-app: false
+    copy-ca-cert-gitea-to-cluster: false
+    copy-cluster-gitea-cred-to-fleet: false
+    metadata-broker: false
+  o11y:
+    dedicatedEdgenodeEnabled: false
+    sre:
+      customerLabel: local
+      tls:
+        enabled: false
+        caSecretEnabled: false
+  infra-onboarding:
+    disableCoProfile: true
+    disableO11yProfile: true
+  proxy:
+    httpProxy: http://proxy-dmz.intel.com:912
+    httpsProxy: http://proxy-dmz.intel.com:912
+    noProxy: .caas.intel.com,certificates.intel.com,localhost,127.0.0.0/8,10.0.0.0/8,192.168.0.0/16,172.16.0.0/12,169.254.169.254,.svc,.cluster.local,.default,.internal,.orch-platform,.orch-app,.orch-cluster,.orch-infra,.orch-database,.cattle-system,.orch-secret,.onprem,.espd.infra-host.com,.pid.infra-host.com,.espdqa.infra-host.com
+    enHttpProxy: http://proxy-dmz.intel.com:912
+    enHttpsProxy: http://proxy-dmz.intel.com:912
+    enFtpProxy: http://proxy-dmz.intel.com:911
+    enSocksProxy: http://proxy-dmz.intel.com:1080
+    enNoProxy: .caas.intel.com,certificates.intel.com,localhost,127.0.0.0/8,10.0.0.0/8,192.168.0.0/16,172.16.0.0/12,169.254.169.254,.svc,.cluster.local,.default,.internal,.orch-platform,.orch-app,.orch-cluster,.orch-infra,.orch-database,.cattle-system,.orch-secret,.onprem,.espd.infra-host.com,.pid.infra-host.com,.espdqa.infra-host.com
+orchestratorDeployment:
+  targetCluster: onprem
+postCustomTemplateOverwrite:
+  argocd:
+    server:
+      service:
+        annotations:
+          metallb.universe.tf/address-pool: argocd-server
+  traefik:
+    service:
+      annotations:
+        metallb.universe.tf/address-pool: traefik
+  ingress-haproxy:
+    controller:
+      service:
+        annotations:
+          metallb.universe.tf/address-pool: haproxy-controller
+  metallb-config:
+    ArgoIP: 192.168.99.20
+    TraefikIP: 192.168.99.30
+    HaproxyIP: 192.168.99.40

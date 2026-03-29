@@ -1,0 +1,84 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# On-premises OXM environment (reduced features)
+# Requires: EMF_OXM_PXE_SERVER_INT, EMF_OXM_PXE_SERVER_IP, EMF_OXM_PXE_SERVER_SUBNET
+
+clusterName: {{ env "EMF_CLUSTER_NAME" | default "onprem" | quote }}
+clusterDomain: {{ env "EMF_CLUSTER_DOMAIN" | default "cluster.onprem" | quote }}
+
+tlsSecret: {{ env "EMF_TLS_SECRET" | default "tls-orch" | quote }}
+imagePullSecrets: []
+
+database:
+  type: {{ env "EMF_DB_TYPE" | default "local" | quote }}
+  ssl: {{ env "EMF_DB_SSL" | default "false" }}
+
+postgresql:
+  maxConnections: {{ env "EMF_PG_MAX_CONNECTIONS" | default "200" }}
+  sharedBuffers: {{ env "EMF_PG_SHARED_BUFFERS" | default "256MB" | quote }}
+
+catalog:
+  storageClass: {{ env "EMF_STORAGE_CLASS" | default "openebs-hostpath" | quote }}
+  storageSize: {{ env "EMF_CATALOG_STORAGE_SIZE" | default "5Gi" | quote }}
+
+adm:
+  deploymentNamespace: {{ env "EMF_ADM_NAMESPACE" | default "fleet-default" | quote }}
+  helmSecretName: {{ env "EMF_HELM_SECRET" | default "intel-reg-secret" | quote }}
+
+git:
+  gitServer: {{ env "EMF_GIT_SERVER" | default "https://gitea-http.gitea.svc.cluster.local" | quote }}
+  provider: {{ env "EMF_GIT_PROVIDER" | default "gitea" | quote }}
+
+harbor:
+  storageClass: {{ env "EMF_STORAGE_CLASS" | default "openebs-hostpath" | quote }}
+  registrySize: {{ env "EMF_HARBOR_REGISTRY_SIZE" | default "100Gi" | quote }}
+  jobLogSize: {{ env "EMF_HARBOR_JOB_LOG_SIZE" | default "1Gi" | quote }}
+
+vault:
+  ha: {{ env "EMF_VAULT_HA" | default "false" }}
+  replicas: {{ env "EMF_VAULT_REPLICAS" | default "1" }}
+  autoInit: {{ env "EMF_VAULT_AUTO_INIT" | default "true" }}
+  autoUnseal: {{ env "EMF_VAULT_AUTO_UNSEAL" | default "false" }}
+  authorizedAddrs: {{ env "EMF_VAULT_ALLOWED_CIDRS" | default "0.0.0.0/0" | quote }}
+
+self-signed-cert:
+  generateOrchCert: {{ env "EMF_GENERATE_CERT" | default "true" }}
+
+# OXM: no app-orch, no cluster-orch, no o11y
+enabled:
+  squid-proxy: true
+  # Disable observability
+  alerting-monitor: false
+  edgenode-dashboards: false
+  edgenode-observability: false
+  orchestrator-dashboards: false
+  orchestrator-observability: false
+  orchestrator-prometheus-agent: false
+  sre-exporter: false
+  # Disable app orch
+  app-deployment-crd: false
+  app-deployment-manager: false
+  app-resource-manager: false
+  app-service-proxy: false
+  fleet-rs-secret: false
+  app-orch-catalog: false
+  app-deployment-manager-secret: false
+  harbor-oci: false
+  app-orch-tenant-controller: false
+  fleet-crd: false
+  fleet-controller: false
+  copy-app-gitea-cred-to-fleet: false
+  copy-ca-cert-gitea-to-app: false
+  copy-ca-cert-gitea-to-cluster: false
+  copy-cluster-gitea-cred-to-fleet: false
+  # Disable cluster orch
+  capi-operator-pre: false
+  capi-operator: false
+  cluster-manager: false
+  cluster-connect-gateway: false
+  intel-infra-provider: false
+  capi-providers-config: false
+  # OXM: enable PXE and explicit proxy
+  pxe-boots: true

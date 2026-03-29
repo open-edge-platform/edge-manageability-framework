@@ -1,0 +1,46 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+namespaces:
+  - name: "orch-infra"
+    labels:
+      istio-injection: enabled
+  - name: "orch-iam"
+    labels:
+      istio-injection: enabled
+  - name: "orch-app"
+    labels:
+      istio-injection: enabled
+  - name: "orch-cluster"
+    labels:
+      istio-injection: enabled
+  - name: "orch-ui"
+    labels:
+      istio-injection: enabled
+  - name: "orch-platform"
+    labels:
+      istio-injection: enabled
+  - name: "orch-harbor"
+    labels:
+      istio-injection: enabled
+  - name: "orch-gateway"
+    labels:
+      istio-injection: enabled
+  - name: "orch-sre"
+    labels:
+      istio-injection: enabled
+  - name: "orch-database"
+    labels:
+      istio-injection: enabled
+  - name: orch-boots
+    labels:
+      istio-injection: enabled
+  - name: orch-secret
+    labels:
+      istio-injection: enabled
+  - name: "fleet-default"
+    labels:
+      app.edge-orchestrator.intel.com/fleet-rs-secret: "true"
+  - name: "capi-variables"
+resources: null
