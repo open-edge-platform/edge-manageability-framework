@@ -35,9 +35,9 @@ component-status
 infra-core
 metadata-broker
 auth-service
+infra-onboarding
 infra-external
 infra-managers
-infra-onboarding
 certificate-file-server
 web-ui-root
 web-ui-admin

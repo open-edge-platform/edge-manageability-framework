@@ -287,7 +287,7 @@ do_install() {
     --namespace "$T_NAMESPACE" \
     --create-namespace \
     $values_args \
-    --wait --timeout 5m; then
+    --wait --timeout 2m; then
     echo "✅ ${app} installed"
   else
     echo "❌ ${app} FAILED"
@@ -442,6 +442,41 @@ case "$ACTION" in
       echo ""
       echo "  Progress: ${pct}% (${done_count}/${TOTAL}) ✅${success} ❌${fail} ⏭️${skipped}  ⏱️${dur}s"
     done
+
+    # ════════════════════════════════════════
+    # Retry failed charts once
+    # ════════════════════════════════════════
+    if [[ ${#FAILED_LIST[@]} -gt 0 ]]; then
+      echo ""
+      echo "╔══════════════════════════════════════════════════════════════╗"
+      echo "║           🔄 RETRYING ${#FAILED_LIST[@]} FAILED CHART(S) (1 retry)              ║"
+      echo "╚══════════════════════════════════════════════════════════════╝"
+      RETRY_LIST=("${FAILED_LIST[@]}")
+      FAILED_LIST=()
+      fail=0
+      for app in "${RETRY_LIST[@]}"; do
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "🔄 [RETRY] ${app}"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        START=$(date +%s)
+        rc=0
+        do_install "$app" || rc=$?
+        END=$(date +%s)
+        dur=$((END - START))
+        if [[ $rc -eq 0 ]]; then
+          success=$((success + 1))
+          SUCCEEDED_LIST+=("$app")
+          TIMINGS+=("${app}(retry):${dur}s")
+          echo "  ✅ ${app} succeeded on retry"
+        else
+          fail=$((fail + 1))
+          FAILED_LIST+=("$app")
+          TIMINGS+=("${app}(retry):${dur}s")
+          echo "  ❌ ${app} failed again on retry"
+        fi
+      done
+    fi
 
     END_ALL=$(date +%s)
     TOTAL_DURATION=$((END_ALL - START_ALL))

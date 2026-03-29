@@ -127,6 +127,35 @@ install_gitea_from_repo() {
 }
 
 ################################
+# UNINSTALL
+################################
+uninstall_all() {
+  echo "🗑️  Removing resources created by post-deploy..."
+
+  # Remove secrets created by this script
+  kubectl -n orch-infra delete secret smtp --ignore-not-found
+  kubectl -n orch-sre delete secret basic-auth-username --ignore-not-found
+  kubectl -n orch-harbor delete secret harbor-admin-credential --ignore-not-found
+  kubectl -n orch-harbor delete secret harbor-admin-password --ignore-not-found
+  kubectl -n orch-platform delete secret platform-keycloak --ignore-not-found
+  kubectl -n orch-database delete secret orch-database-postgresql --ignore-not-found
+
+  # Remove namespaces created by this script
+  local ns_list=(
+    onprem orch-boots orch-database orch-platform
+    orch-app orch-cluster orch-infra orch-sre
+    orch-ui orch-secret orch-gateway orch-harbor
+    cattle-system
+  )
+  echo "🗑️  Deleting namespaces..."
+  for ns in "${ns_list[@]}"; do
+    kubectl delete ns "$ns" --ignore-not-found --wait=false 2>/dev/null || true
+  done
+
+  echo "✅ Uninstall complete"
+}
+
+################################
 # MAIN
 ################################
 if [[ -f "$MAIN_ENV_CONFIG" ]]; then
@@ -137,6 +166,21 @@ else
 fi
 
 ensure_prereqs
+
+ACTION="${1:-install}"
+
+case "$ACTION" in
+  uninstall)
+    uninstall_all
+    exit 0
+    ;;
+  install)
+    ;;
+  *)
+    echo "Usage: $0 [install|uninstall]"
+    exit 1
+    ;;
+esac
 
 generate_cluster_yaml_onprem_from_upstream
 

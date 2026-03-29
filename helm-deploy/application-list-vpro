@@ -34,7 +34,7 @@ copy-ca-cert-boots-to-infra
 component-status
 infra-core
 auth-service
+infra-onboarding
 infra-external
 infra-managers
-infra-onboarding
 certificate-file-server

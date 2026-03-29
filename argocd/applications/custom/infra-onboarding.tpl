@@ -124,10 +124,10 @@ tinkerbell:
         cpu: 200m
         memory: 256Mi
         {{- end }}
+    {{- if index .Values.argo "infra-onboarding" "skipOSProvisioning" }}
     hook:
-      {{- if index .Values.argo "infra-onboarding" "skipOSProvisioning" }}
       enabled: false
-      {{- end }}
+    {{- end }}
   tinkerbell_tink:
     {{- if index .Values.argo "infra-onboarding" "skipOSProvisioning" }}
     enabled: false

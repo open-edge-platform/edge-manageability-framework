@@ -14,7 +14,7 @@ if [[ -f "$ENV_FILE" ]]; then
 else
   echo "⚠️  $ENV_FILE not found — using existing environment"
 fi
-
+rm -rf merge.yaml
 # =========================
 # Profile selection
 # =========================
@@ -193,30 +193,59 @@ done
 rm -rf "$CHART_DIR"
 
 # =========================
-# Post-processing: fix nil top-level keys (yq merge artifact)
+# Post-processing: fix nil keys at ALL depths (yq merge / tpl artifact)
 # =========================
-# When yq merges a key like "exporter: {resources: null}", the null child
-# gets dropped, leaving "exporter:" as a bare nil. Helm charts that test
-# these keys as booleans (e.g. {{ if .Values.exporter }}) crash with
-# "type mismatch on <key>: %!t(<nil>)". Convert nil top-level keys → {}.
-echo "🔧 Cleaning nil top-level keys in generated values files..."
+# When yq merges or helm tpl renders a key with no children (e.g. "hook:"),
+# it becomes null. Helm charts that traverse these keys (e.g.
+# .Values.stack.hook.port) crash with nil pointer errors.
+# Recursively convert all null values → {} at every depth.
+echo "🔧 Cleaning nil keys (all depths) in generated values files..."
 nil_fix_count=0
 for VF in "${OUTPUT_DIR}"/values_*.yaml; do
   [[ -f "$VF" ]] || continue
-  # Find top-level keys whose value is null and replace with empty map
-  nils=$(yq 'to_entries | map(select(.value == null)) | .[].key' "$VF" 2>/dev/null || echo "")
-  if [[ -n "$nils" ]]; then
-    while IFS= read -r key; do
-      [[ -z "$key" ]] && continue
-      yq -i ".\"${key}\" = {}" "$VF"
-      nil_fix_count=$((nil_fix_count + 1))
-    done <<< "$nils"
+  before=$(yq '[.. | select(tag == "!!null")] | length' "$VF" 2>/dev/null || echo "0")
+  if [[ "$before" -gt 0 ]]; then
+    yq -i '(.. | select(tag == "!!null")) = {}' "$VF"
+    echo "   🔧 Fixed ${before} nil key(s) in $(basename "$VF")"
+    nil_fix_count=$((nil_fix_count + before))
   fi
 done
 if [[ $nil_fix_count -gt 0 ]]; then
-  echo "   ✅ Fixed ${nil_fix_count} nil key(s) → {}"
+  echo "   ✅ Fixed ${nil_fix_count} total nil key(s) → {}"
 else
   echo "   ✅ No nil keys found"
+fi
+
+# =========================
+# Post-processing: fix known array fields that were incorrectly set to {}
+# =========================
+# The nil→{} fix above converts ALL nulls to empty maps, but some Helm chart
+# schema fields require arrays ([]). For example, global.imagePullSecrets
+# must be an array or Helm will reject it with:
+#   "got object, want array"
+# Add any known array-typed keys to this list.
+KNOWN_ARRAY_KEYS=(
+  "imagePullSecrets"
+  "tolerations"
+)
+echo "🔧 Fixing known array fields that were set to {} instead of []..."
+array_fix_count=0
+for VF in "${OUTPUT_DIR}"/values_*.yaml; do
+  [[ -f "$VF" ]] || continue
+  for key in "${KNOWN_ARRAY_KEYS[@]}"; do
+    # Find all paths where this key is an empty map and convert to empty array
+    matches=$(yq ".. | select(has(\"${key}\")) | .${key} | select(tag == \"!!map\" and length == 0) | path | join(\".\")" "$VF" 2>/dev/null | wc -l)
+    if [[ "$matches" -gt 0 ]]; then
+      yq -i "(.. | select(has(\"${key}\")).${key}) |= (select(tag == \"!!map\" and length == 0) | [] // .)" "$VF"
+      echo "   🔧 Fixed ${key} → [] in $(basename "$VF")"
+      array_fix_count=$((array_fix_count + matches))
+    fi
+  done
+done
+if [[ $array_fix_count -gt 0 ]]; then
+  echo "   ✅ Fixed ${array_fix_count} array field(s) from {} → []"
+else
+  echo "   ✅ No array field fixes needed"
 fi
 
 # =========================
