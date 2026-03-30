@@ -1,8 +1,0 @@
-# Values for self-signed-cert
-
-{{- if .Values | getOrNil "self-signed-cert" }}
-generateOrchCert: {{ .Values | getOrNil "self-signed-cert.generateOrchCert" | default false }}
-{{- end }}
-
-clusterDomain: {{ .Values.clusterDomain | default "" | quote }}
-certDomain: {{ .Values.clusterDomain | default "" | quote }}
