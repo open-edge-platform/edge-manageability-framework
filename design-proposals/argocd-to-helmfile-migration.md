@@ -29,7 +29,24 @@ Replace ArgoCD with [**Helmfile**](https://github.com/helmfile/helmfile) as the 
 for all EMF environments. Helmfile is a declarative wrapper around Helm that lets you define all your releases
 in one YAML file, manage per-environment overrides, and run install/diff/destroy across many charts in one command.
 
-The Helmfile-based deployment is implemented under `helmfile-deploy/` with the following design:
+The Helmfile-based deployment will be implemented under `helmfile-deploy/` with the following design:
+
+### Directory structure
+
+```
+helmfile-deploy/
+├── helmfile.yaml                  # Main helmfile with all releases
+├── helmfile-deploy.sh             # Wrapper script (install/uninstall/list/diff)
+├── onprem.env                     # Environment variables for on-prem
+├── pre-deploy-config.sh           # Pre-deployment configuration
+├── functions.sh                   # Shared helper functions
+├── environments/                  # Profile-specific configs
+│   ├── defaults-onprem.yaml.gotmpl       # Shared on-prem defaults
+│   └── onprem-eim.yaml.gotmpl            # EIM profile
+├── values/                        # Helm values per release
+│   ├── traefik.yaml.gotmpl        # .gotmpl = uses env vars
+│   └── ...
+```
 
 ### Single declarative file
 
@@ -52,7 +69,14 @@ Supported deploy types:
 | `eim-co-ao` | EIM + Cluster Orch + App Orchestration |
 | `eim-co-ao-o11y` | EIM + Cluster Orch + App Orch + Observability |
 
+### Label-based targeting
 
+Every release carries an `app:` label enabling operators to install, uninstall, diff, or sync individual charts:
+
+```bash
+helmfile -e onprem -l app=traefik sync       # install one chart
+helmfile -e onprem -l app=traefik destroy     # remove one chart
+helmfile -e onprem -l app=traefik diff        # preview changes
 ```
 
 ### Dependency ordering via `needs:`
@@ -69,8 +93,8 @@ Waves are preserved as comments for readability, but ordering is enforced struct
 ./helmfile-deploy.sh install traefik          # Install a single chart
 ./helmfile-deploy.sh uninstall traefik        # Uninstall a single chart
 ./helmfile-deploy.sh uninstall                # Uninstall all charts
-EMF_HELMFILE_ENV=onprem-eim ./helmfile-deploy.sh install         # Install with eim profile
-EMF_HELMFILE_ENV=onprem-vpro ./helmfile-deploy.sh install        # Install with eim profile
+./helmfile-deploy.sh list                     # List all charts
+./helmfile-deploy.sh diff                     # Preview changes
 ```
 
 ## Consequences
@@ -78,6 +102,8 @@ EMF_HELMFILE_ENV=onprem-vpro ./helmfile-deploy.sh install        # Install with 
 ### Benefits
 
 - **No extra infrastructure needed.** ArgoCD requires its own server, controller, and Redis running in the cluster. Helmfile is just a CLI tool — nothing to install or maintain inside the cluster.
+- **Install, update, or remove individual charts easily.** With labels, you can target a single chart (`helmfile -l app=traefik sync`) instead of dealing with the full ArgoCD sync process.
+- **Preview changes before applying.** `helmfile diff` shows exactly what will change before you run anything — something ArgoCD doesn't offer out of the box.
 
 ### Risks and Mitigations
 
@@ -94,8 +120,8 @@ EMF_HELMFILE_ENV=onprem-vpro ./helmfile-deploy.sh install        # Install with 
 
 ## Implementation Plan
 
-1. **Helmfile setup** (complete): Created `helmfile-deploy/` with `helmfile.yaml`, environment configs,
-   value files, and wrapper scripts. Focused on `eim` and `vpro` profiles.
+1. **Helmfile setup**: Create `helmfile-deploy/` with `helmfile.yaml`, environment configs,
+   value files, and wrapper scripts. Focus on `eim` and `vpro` profiles.
 2. **On-prem validation**: Deploy `eim` and `vpro` profiles using Helmfile on on-prem clusters. Verify all
    charts install correctly and services come up healthy.
 3. **VIP/HIP handoff**: Migrate updated deployment scripts to the validation team. Update VIP/HIP automation
