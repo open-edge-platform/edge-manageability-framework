@@ -138,7 +138,7 @@ The post-installer does the following:
 Coder deployments should use the same pre-installer and post-installer as described above. The
 goal is to eliminate unnecessary divergence.
 
-Should Coder deployments use Kind, K3s, or RKE2? 
+Should Coder deployments use Kind, K3s, or RKE2?
 
 - Kind - Kind offers easy cluster setup and teardown, and supports running multiple
   clusters simultaneously, making it attractive for development. However, Kind diverges
