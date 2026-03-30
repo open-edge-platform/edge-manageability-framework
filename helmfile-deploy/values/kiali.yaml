@@ -1,0 +1,22 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  seccompProfile:
+    type: RuntimeDefault
+securityContext:
+  seccompProfile:
+    type: RuntimeDefault
+podSecurityContext:
+  seccompProfile:
+    type: RuntimeDefault
+auth:
+  strategy: "anonymous"
+external_services:
+  prometheus:
+    url: "http://prometheus-operated.orch-platform.svc:9090/"
+deployment:
+  image_pull_policy: IfNotPresent
+  resources: null

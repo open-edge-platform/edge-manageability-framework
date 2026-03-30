@@ -1,0 +1,372 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# vPro environment - minimal platform + edge infra for vPro devices
+# No App Orch, No Cluster Orch, No Observability, No Kyverno, No UI
+# Self-contained — all settings in this single file
+
+# ─── Registry ────────────────────────────────────────────────────────────────
+{{- $registry := env "EMF_REGISTRY" | default "registry-rs.edgeorchestration.intel.com/edge-orch" }}
+{{- $registryHost := $registry | splitList "/" | first }}
+chartRepoURL: {{ $registry | quote }}
+rsChartRepoURL: {{ $registry | quote }}
+containerRegistryURL: {{ $registry | quote }}
+
+releaseService:
+  ociRegistry: {{ $registryHost | quote }}
+  fileServer: {{ $registryHost | replace "registry-rs" "files-rs" | quote }}
+
+# ─── Cluster ─────────────────────────────────────────────────────────────────
+clusterName: {{ env "EMF_CLUSTER_NAME" | default "onprem" | quote }}
+clusterDomain: {{ env "EMF_CLUSTER_DOMAIN" | default "cluster.onprem" | quote }}
+
+# ─── TLS ─────────────────────────────────────────────────────────────────────
+tlsSecret: {{ env "EMF_TLS_SECRET" | default "tls-orch" | quote }}
+imagePullSecrets: []
+
+# ─── PostgreSQL tuning ───────────────────────────────────────────────────────
+postgresql:
+  maxConnections: {{ env "EMF_PG_MAX_CONNECTIONS" | default "200" }}
+  sharedBuffers: {{ env "EMF_PG_SHARED_BUFFERS" | default "256MB" | quote }}
+
+# ─── Storage / Catalog ───────────────────────────────────────────────────────
+catalog:
+  storageClass: {{ env "EMF_STORAGE_CLASS" | default "openebs-hostpath" | quote }}
+  storageSize: {{ env "EMF_CATALOG_STORAGE_SIZE" | default "5Gi" | quote }}
+
+# ─── Application Deployment ──────────────────────────────────────────────────
+adm:
+  deploymentNamespace: {{ env "EMF_ADM_NAMESPACE" | default "fleet-default" | quote }}
+  helmSecretName: {{ env "EMF_HELM_SECRET" | default "intel-reg-secret" | quote }}
+
+# ─── Git ─────────────────────────────────────────────────────────────────────
+git:
+  gitServer: {{ env "EMF_GIT_SERVER" | default "https://gitea-http.gitea.svc.cluster.local" | quote }}
+  provider: {{ env "EMF_GIT_PROVIDER" | default "gitea" | quote }}
+
+# ─── Harbor ──────────────────────────────────────────────────────────────────
+harbor:
+  storageClass: {{ env "EMF_STORAGE_CLASS" | default "openebs-hostpath" | quote }}
+  registrySize: {{ env "EMF_HARBOR_REGISTRY_SIZE" | default "100Gi" | quote }}
+  jobLogSize: {{ env "EMF_HARBOR_JOB_LOG_SIZE" | default "1Gi" | quote }}
+
+# ─── Database (local PostgreSQL on K3s) ──────────────────────────────────────
+database:
+  type: {{ env "EMF_DB_TYPE" | default "local" | quote }}
+  ssl: {{ env "EMF_DB_SSL" | default "false" }}
+  databases:
+    - namespace: orch-app
+      name: app-orch-catalog
+    - namespace: orch-platform
+      name: platform-keycloak
+    - namespace: orch-platform
+      name: vault
+    - namespace: orch-infra
+      name: inventory
+    - namespace: orch-infra
+      name: alerting
+    - namespace: orch-iam
+      name: iam-tenancy
+    - namespace: orch-infra
+      name: mps
+    - namespace: orch-infra
+      name: rps
+
+# ─── Traefik ─────────────────────────────────────────────────────────────────
+traefik:
+  enabled: true
+  tlsOption: {{ env "EMF_TRAEFIK_TLS_OPTION" | default "gateway-tls" | quote }}
+
+orchestratorVersion: {{ env "EMF_VERSION" | default "" | quote }}
+
+# ─── Vault config ────────────────────────────────────────────────────────────
+vault:
+  enabled: true
+  ha: {{ env "EMF_VAULT_HA" | default "false" }}
+  replicas: {{ env "EMF_VAULT_REPLICAS" | default "1" }}
+  autoInit: {{ env "EMF_VAULT_AUTO_INIT" | default "true" }}
+  autoUnseal: {{ env "EMF_VAULT_AUTO_UNSEAL" | default "false" }}
+  authorizedAddrs: {{ env "EMF_VAULT_ALLOWED_CIDRS" | default "0.0.0.0/0" | quote }}
+
+# ─── Certificates ────────────────────────────────────────────────────────────
+self-signed-cert:
+  enabled: true
+  generateOrchCert: {{ env "EMF_GENERATE_CERT" | default "true" }}
+
+# ─── Deployment target ───────────────────────────────────────────────────────
+orchestratorDeployment:
+  targetCluster: onprem
+
+# ─── Proxy ───────────────────────────────────────────────────────────────────
+{{- if env "EMF_HTTP_PROXY" }}
+proxy:
+  httpProxy: {{ env "EMF_HTTP_PROXY" | quote }}
+  httpsProxy: {{ env "EMF_HTTPS_PROXY" | default "" | quote }}
+  noProxy: {{ env "EMF_NO_PROXY" | default "" | quote }}
+  enHttpProxy: {{ env "EMF_EN_HTTP_PROXY" | default (env "EMF_HTTP_PROXY") | quote }}
+  enHttpsProxy: {{ env "EMF_EN_HTTPS_PROXY" | default (env "EMF_HTTPS_PROXY") | quote }}
+  enFtpProxy: {{ env "EMF_EN_FTP_PROXY" | default "" | quote }}
+  enSocksProxy: {{ env "EMF_EN_SOCKS_PROXY" | default "" | quote }}
+  enNoProxy: {{ env "EMF_EN_NO_PROXY" | default (env "EMF_NO_PROXY") | quote }}
+{{- end }}
+
+# ─── Infra onboarding overrides ─────────────────────────────────────────────
+infra-onboarding:
+  enabled: true
+  disableCoProfile: true
+  disableO11yProfile: true
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Feature flags — controls which releases are installed
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ─── Platform (enabled) ─────────────────────────────────────────────────────
+auth-service:
+  enabled: true
+cert-manager:
+  enabled: true
+cert-synchronizer:
+  enabled: true
+certificate-file-server:
+  enabled: true
+component-status:
+  enabled: true
+copy-ca-cert-boots-to-gateway:
+  enabled: true
+copy-ca-cert-boots-to-infra:
+  enabled: true
+copy-ca-cert-gateway-to-cattle:
+  enabled: true
+copy-ca-cert-gateway-to-infra:
+  enabled: true
+external-secrets:
+  enabled: true
+ingress-haproxy:
+  enabled: true
+istio-base:
+  enabled: {{ env "EMF_ENABLE_ISTIO" | default "true" }}
+istio-policy:
+  enabled: {{ env "EMF_ENABLE_ISTIO" | default "true" }}
+istiod:
+  enabled: {{ env "EMF_ENABLE_ISTIO" | default "true" }}
+kiali:
+  enabled: {{ env "EMF_ENABLE_ISTIO" | default "true" }}
+keycloak-operator:
+  enabled: true
+haproxy-ingress-pxe-boots:
+  enabled: true
+platform-autocert:
+  enabled: true
+platform-keycloak:
+  enabled: true
+prometheus-crd:
+  enabled: true
+reloader:
+  enabled: true
+rs-proxy:
+  enabled: true
+secrets-config:
+  enabled: true
+secret-wait-tls-orch:
+  enabled: true
+secret-wait-tls-boots:
+  enabled: true
+traefik-extra-objects:
+  enabled: true
+traefik-pre:
+  enabled: true
+traefik-boots:
+  enabled: false
+token-fs:
+  enabled: true
+
+# ─── Database operators ──────────────────────────────────────────────────────
+postgresql-operator:
+  enabled: true
+postgresql-cluster:
+  enabled: true
+postgresql-secrets:
+  enabled: true
+
+# ─── App Orch (disabled for vPro) ───────────────────────────────────────────
+app-deployment-crd:
+  enabled: false
+app-deployment-manager:
+  enabled: false
+app-resource-manager:
+  enabled: false
+app-service-proxy:
+  enabled: false
+fleet-rs-secret:
+  enabled: false
+app-orch-catalog:
+  enabled: false
+app-deployment-manager-secret:
+  enabled: false
+harbor-oci:
+  enabled: false
+app-orch-tenant-controller:
+  enabled: false
+fleet-crd:
+  enabled: false
+fleet-controller:
+  enabled: false
+copy-app-gitea-cred-to-fleet:
+  enabled: false
+copy-ca-cert-gitea-to-app:
+  enabled: false
+copy-ca-cert-gitea-to-cluster:
+  enabled: false
+copy-cluster-gitea-cred-to-fleet:
+  enabled: false
+
+# ─── Cluster Orch (disabled for vPro) ───────────────────────────────────────
+capi-operator-pre:
+  enabled: false
+capi-operator:
+  enabled: false
+cluster-manager:
+  enabled: false
+cluster-connect-gateway:
+  enabled: false
+intel-infra-provider:
+  enabled: false
+capi-providers-config:
+  enabled: false
+
+# ─── Edge Infra (enabled) ───────────────────────────────────────────────────
+infra-core:
+  enabled: true
+infra-managers:
+  enabled: true
+infra-external:
+  enabled: true
+copy-keycloak-admin-to-infra:
+  enabled: true
+
+# ─── Observability (disabled for vPro) ──────────────────────────────────────
+alerting-monitor:
+  enabled: false
+edgenode-dashboards:
+  enabled: false
+edgenode-observability:
+  enabled: false
+orchestrator-dashboards:
+  enabled: false
+orchestrator-observability:
+  enabled: false
+orchestrator-prometheus-agent:
+  enabled: false
+sre-exporter:
+  enabled: false
+
+# ─── UI (all disabled for vPro) ─────────────────────────────────────────────
+web-ui-root:
+  enabled: false
+web-ui-app-orch:
+  enabled: false
+web-ui-cluster-orch:
+  enabled: false
+web-ui-infra:
+  enabled: false
+web-ui-admin:
+  enabled: false
+metadata-broker:
+  enabled: false
+
+# ─── Kyverno (disabled for vPro) ────────────────────────────────────────────
+kyverno:
+  enabled: false
+kyverno-extra-policies:
+  enabled: false
+kyverno-istio-policy:
+  enabled: false
+kyverno-traefik-policy:
+  enabled: false
+
+# ─── Audit ───────────────────────────────────────────────────────────────────
+audit:
+  enabled: true
+
+# ─── Tenancy ─────────────────────────────────────────────────────────────────
+tenancy-datamodel:
+  enabled: true
+tenancy-manager:
+  enabled: true
+tenancy-api-mapping:
+  enabled: true
+tenancy-init:
+  enabled: false
+nexus-api-gw:
+  enabled: true
+keycloak-tenant-controller:
+  enabled: true
+observability-tenant-controller:
+  enabled: false
+
+# ─── Misc ────────────────────────────────────────────────────────────────────
+namespace-label:
+  enabled: true
+
+# ─── K3s bundled ─────────────────────────────────────────────────────────────
+k8s-metrics-server:
+  enabled: false
+
+# ─── AWS-only (disabled) ────────────────────────────────────────────────────
+aws-lb:
+  enabled: false
+aws-lb-tgb:
+  enabled: false
+aws-sm-proxy:
+  enabled: false
+aws-sm-get-rs-token:
+  enabled: false
+cluster-autoscaler:
+  enabled: false
+vertical-pod-autoscaler:
+  enabled: false
+secret-wait-azure-ad-creds:
+  enabled: false
+secret-wait-rs-token:
+  enabled: false
+wait-istio-job:
+  enabled: false
+
+# ─── On-prem specific ───────────────────────────────────────────────────────
+oci-secret:
+  enabled: false
+rs-image-pull-secrets:
+  enabled: false
+copy-rs-token-to-cluster:
+  enabled: false
+token-refresh:
+  enabled: false
+botkube:
+  enabled: false
+ingress-nginx:
+  enabled: false
+squid-proxy:
+  enabled: {{ env "EMF_ENABLE_SQUID" | default "false" }}
+
+# ─── CORS ────────────────────────────────────────────────────────────────────
+cors:
+  enabled: {{ env "EMF_CORS_ENABLED" | default "true" }}
+
+# ─── UI settings ─────────────────────────────────────────────────────────────
+ui:
+  ingressInfraUi: {{ env "EMF_UI_INGRESS_INFRA" | default "false" }}
+
+# ─── O11y settings ───────────────────────────────────────────────────────────
+o11y:
+  dedicatedEdgenodeEnabled: false
+  sre:
+    customerLabel: {{ env "EMF_O11Y_SRE_LABEL" | default "local" | quote }}
+    tls:
+      enabled: false
+      caSecretEnabled: false
+  alertingMonitor:
+    initialRules:
+      hostRules: true
+      appDeploymentRules: true
+      clusterRules: true

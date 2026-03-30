@@ -1,0 +1,65 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+expose:
+  type: clusterIP
+  tls:
+    enabled: false
+    certSource: none
+
+tlsCoreSecretForIngress: harbor-ingress
+
+updateStrategy:
+  type: Recreate
+
+existingSecretAdminPassword: harbor-admin-password
+existingSecretAdminPasswordKey: HARBOR_ADMIN_PASSWORD
+
+notary:
+  enabled: false
+
+{{- if .Values.harbor }}
+persistence:
+  persistentVolumeClaim:
+    registry:
+      {{- if .Values.harbor.storageClass }}
+      storageClass: {{ .Values.harbor.storageClass | quote }}
+      {{- end }}
+      size: {{ .Values.harbor.registrySize | default "1Gi" | quote }}
+    jobservice:
+      jobLog:
+        {{- if .Values.harbor.storageClass }}
+        storageClass: {{ .Values.harbor.storageClass | quote }}
+        {{- end }}
+        size: {{ .Values.harbor.jobLogSize | default "100Mi" | quote }}
+{{- end }}
+
+core:
+  resources: null
+database:
+  internal:
+    initContainer:
+      migrator:
+        resources: null
+      permissions:
+        resources: null
+    resources: null
+exporter:
+  resources: null
+jobservice:
+  resources: null
+nginx:
+  resources: null
+portal:
+  resources: null
+redis:
+  internal:
+    resources: null
+registry:
+  registry:
+    resources: null
+  controller:
+    resources: null
+trivy:
+  resources: null

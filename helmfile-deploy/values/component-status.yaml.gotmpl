@@ -1,0 +1,13 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Component status service configuration
+# This will be populated by the installer based on which features are enabled
+
+image:
+  registry: {{ .Values.containerRegistryURL }}
+  repository: common/component-status
+imagePullSecrets: []
+
+resources: null
