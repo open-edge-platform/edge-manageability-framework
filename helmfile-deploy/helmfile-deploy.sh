@@ -196,6 +196,15 @@ helmfile_sync_all() {
       echo "❌ $release FAILED (${duration}s)"
       failed+=("$release|${duration}")
     fi
+
+    # ─── Live Progress ───
+    local elapsed=$(( SECONDS - start_time ))
+    echo ""
+    echo "  ┌─ Progress: $current/$total  |  ✅ ${#passed[@]}  ❌ ${#failed[@]}  |  Elapsed: $(( elapsed / 60 ))m $(( elapsed % 60 ))s"
+    if (( ${#failed[@]} > 0 )); then
+      echo "  │  Failed so far: $(printf '%s ' "${failed[@]}" | sed 's/|[0-9]*s*//g; s/|[0-9]*//g')"
+    fi
+    echo "  └──────────────────────────────────────────────────────────"
     echo ""
   done
 

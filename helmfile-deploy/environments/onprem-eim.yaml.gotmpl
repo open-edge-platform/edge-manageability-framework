@@ -25,6 +25,9 @@ clusterDomain: {{ env "EMF_CLUSTER_DOMAIN" | default "cluster.onprem" | quote }}
 tlsSecret: {{ env "EMF_TLS_SECRET" | default "tls-orch" | quote }}
 imagePullSecrets: []
 
+# ─── Storage ─────────────────────────────────────────────────────────────────
+storageClass: {{ env "EMF_STORAGE_CLASS" | default "openebs-hostpath" | quote }}
+
 # ─── PostgreSQL tuning ───────────────────────────────────────────────────────
 postgresql:
   maxConnections: {{ env "EMF_PG_MAX_CONNECTIONS" | default "200" }}
@@ -111,9 +114,19 @@ proxy:
   enNoProxy: {{ env "EMF_EN_NO_PROXY" | default (env "EMF_NO_PROXY") | quote }}
 {{- end }}
 
+# ─── PXE / OXM ──────────────────────────────────────────────────────────────
+pxe:
+  enabled: {{ env "EMF_ENABLE_PXE" | default "false" }}
+{{- if env "EMF_OXM_PXE_SERVER_INT" }}
+  interface: {{ env "EMF_OXM_PXE_SERVER_INT" | quote }}
+  bootServerIP: {{ env "EMF_OXM_PXE_SERVER_IP" | quote }}
+  subnetAddress: {{ env "EMF_OXM_PXE_SERVER_SUBNET" | quote }}
+{{- end }}
+
 # ─── Infra onboarding overrides ─────────────────────────────────────────────
 infra-onboarding:
   enabled: true
+  skipOSProvisioning: {{ env "EMF_SKIP_OS_PROVISIONING" | default "false" }}
   disableCoProfile: true
   disableO11yProfile: true
 

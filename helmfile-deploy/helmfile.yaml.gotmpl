@@ -1558,6 +1558,17 @@ releases:
     needs:
       - orch-cluster/intel-infra-provider
 
+  - name: web-ui-root
+    labels:
+      app: web-ui-root
+    namespace: orch-ui
+    chart: edge-orch/orch-ui/charts/orch-ui-root
+    version: 4.0.8
+    values:
+      - values/web-ui-root.yaml.gotmpl
+    condition: web-ui-root.enabled
+    needs:
+      - orch-cluster/intel-infra-provider
 
   - name: web-ui-admin
     labels:
@@ -1571,6 +1582,17 @@ releases:
     needs:
       - orch-cluster/intel-infra-provider
 
+  - name: web-ui-infra
+    labels:
+      app: web-ui-infra
+    namespace: orch-ui
+    chart: edge-orch/orch-ui/charts/orch-ui-infra
+    version: 4.0.4
+    values:
+      - values/web-ui-infra.yaml.gotmpl
+    condition: web-ui-infra.enabled
+    needs:
+      - orch-cluster/intel-infra-provider
 
   - name: web-ui-app-orch
     labels:
@@ -1584,7 +1606,6 @@ releases:
     needs:
       - orch-cluster/intel-infra-provider
 
-
   - name: web-ui-cluster-orch
     labels:
       app: web-ui-cluster-orch
@@ -1596,30 +1617,3 @@ releases:
     condition: web-ui-cluster-orch.enabled
     needs:
       - orch-cluster/intel-infra-provider
-
-
-  - name: web-ui-infra
-    labels:
-      app: web-ui-infra
-    namespace: orch-ui
-    chart: edge-orch/orch-ui/charts/orch-ui-infra
-    version: 4.0.4
-    values:
-      - values/web-ui-infra.yaml.gotmpl
-    condition: web-ui-infra.enabled
-    needs:
-      - orch-cluster/intel-infra-provider
-
-
-  - name: web-ui-root
-    labels:
-      app: web-ui-root
-    namespace: orch-ui
-    chart: edge-orch/orch-ui/charts/orch-ui-root
-    version: 4.0.8
-    values:
-      - values/web-ui-root.yaml.gotmpl
-    condition: web-ui-root.enabled
-    needs:
-      - orch-cluster/intel-infra-provider
-

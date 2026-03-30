@@ -46,6 +46,9 @@ clusterDomain: {{ env "EMF_CLUSTER_DOMAIN" | default "cluster.onprem" | quote }}
 tlsSecret: {{ env "EMF_TLS_SECRET" | default "tls-orch" | quote }}
 imagePullSecrets: []
 
+# ─── Storage ─────────────────────────────────────────────────────────────────
+storageClass: {{ env "EMF_STORAGE_CLASS" | default "openebs-hostpath" | quote }}
+
 # ─── PostgreSQL tuning ───────────────────────────────────────────────────────
 postgresql:
   maxConnections: {{ env "EMF_PG_MAX_CONNECTIONS" | default "200" }}
