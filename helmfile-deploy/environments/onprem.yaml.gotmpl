@@ -1,0 +1,47 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# On-premises environment
+
+clusterName: {{ env "EMF_CLUSTER_NAME" | default "onprem" | quote }}
+clusterDomain: {{ env "EMF_CLUSTER_DOMAIN" | default "cluster.onprem" | quote }}
+
+tlsSecret: {{ env "EMF_TLS_SECRET" | default "tls-orch" | quote }}
+imagePullSecrets: []
+
+postgresql:
+  maxConnections: {{ env "EMF_PG_MAX_CONNECTIONS" | default "200" }}
+  sharedBuffers: {{ env "EMF_PG_SHARED_BUFFERS" | default "256MB" | quote }}
+
+catalog:
+  storageClass: {{ env "EMF_STORAGE_CLASS" | default "openebs-hostpath" | quote }}
+  storageSize: {{ env "EMF_CATALOG_STORAGE_SIZE" | default "5Gi" | quote }}
+
+adm:
+  deploymentNamespace: {{ env "EMF_ADM_NAMESPACE" | default "fleet-default" | quote }}
+  helmSecretName: {{ env "EMF_HELM_SECRET" | default "intel-reg-secret" | quote }}
+
+git:
+  gitServer: {{ env "EMF_GIT_SERVER" | default "https://gitea-http.gitea.svc.cluster.local" | quote }}
+  provider: {{ env "EMF_GIT_PROVIDER" | default "gitea" | quote }}
+
+harbor:
+  storageClass: {{ env "EMF_STORAGE_CLASS" | default "openebs-hostpath" | quote }}
+  registrySize: {{ env "EMF_HARBOR_REGISTRY_SIZE" | default "100Gi" | quote }}
+  jobLogSize: {{ env "EMF_HARBOR_JOB_LOG_SIZE" | default "1Gi" | quote }}
+
+vault:
+  ha: {{ env "EMF_VAULT_HA" | default "false" }}
+  replicas: {{ env "EMF_VAULT_REPLICAS" | default "1" }}
+  autoInit: {{ env "EMF_VAULT_AUTO_INIT" | default "true" }}
+  autoUnseal: {{ env "EMF_VAULT_AUTO_UNSEAL" | default "false" }}
+  authorizedAddrs: {{ env "EMF_VAULT_ALLOWED_CIDRS" | default "0.0.0.0/0" | quote }}
+
+self-signed-cert:
+  generateOrchCert: {{ env "EMF_GENERATE_CERT" | default "true" }}
+
+nginx-ingress-pxe-boots:
+  enabled: {{ env "EMF_ENABLE_PXE" | default "true" }}
+squid-proxy:
+  enabled: {{ env "EMF_ENABLE_SQUID" | default "false" }}

@@ -1,0 +1,9 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# meshConfig defines runtime configuration of components, including Istiod and istio-agent behavior
+# See https://istio.io/docs/reference/config/istio.mesh.v1alpha1/ for all available options
+meshConfig:
+  meshMTLS:
+    minProtocolVersion: TLSV1_3

@@ -1,0 +1,105 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# EIM + Cluster Orchestration environment
+# Platform + Edge Infra + Cluster Orch, No App Orch, No Observability
+
+clusterName: {{ env "EMF_CLUSTER_NAME" | default "eim-co" | quote }}
+clusterDomain: {{ env "EMF_CLUSTER_DOMAIN" | default "cluster.eim-co" | quote }}
+
+tlsSecret: {{ env "EMF_TLS_SECRET" | default "tls-orch" | quote }}
+imagePullSecrets: []
+
+database:
+  type: {{ env "EMF_DB_TYPE" | default "local" | quote }}
+  ssl: {{ env "EMF_DB_SSL" | default "false" }}
+
+postgresql:
+  maxConnections: {{ env "EMF_PG_MAX_CONNECTIONS" | default "200" }}
+  sharedBuffers: {{ env "EMF_PG_SHARED_BUFFERS" | default "256MB" | quote }}
+
+catalog:
+  storageClass: {{ env "EMF_STORAGE_CLASS" | default "openebs-hostpath" | quote }}
+  storageSize: {{ env "EMF_CATALOG_STORAGE_SIZE" | default "5Gi" | quote }}
+
+adm:
+  deploymentNamespace: {{ env "EMF_ADM_NAMESPACE" | default "fleet-default" | quote }}
+  helmSecretName: {{ env "EMF_HELM_SECRET" | default "intel-reg-secret" | quote }}
+
+git:
+  gitServer: {{ env "EMF_GIT_SERVER" | default "https://gitea-http.gitea.svc.cluster.local" | quote }}
+  provider: {{ env "EMF_GIT_PROVIDER" | default "gitea" | quote }}
+
+harbor:
+  storageClass: {{ env "EMF_STORAGE_CLASS" | default "openebs-hostpath" | quote }}
+  registrySize: {{ env "EMF_HARBOR_REGISTRY_SIZE" | default "100Gi" | quote }}
+  jobLogSize: {{ env "EMF_HARBOR_JOB_LOG_SIZE" | default "1Gi" | quote }}
+
+vault:
+  ha: {{ env "EMF_VAULT_HA" | default "false" }}
+  replicas: {{ env "EMF_VAULT_REPLICAS" | default "1" }}
+  autoInit: {{ env "EMF_VAULT_AUTO_INIT" | default "true" }}
+  autoUnseal: {{ env "EMF_VAULT_AUTO_UNSEAL" | default "false" }}
+  authorizedAddrs: {{ env "EMF_VAULT_ALLOWED_CIDRS" | default "0.0.0.0/0" | quote }}
+
+self-signed-cert:
+  generateOrchCert: {{ env "EMF_GENERATE_CERT" | default "true" }}
+
+# App Orch - disabled
+app-deployment-crd:
+  enabled: false
+app-deployment-manager:
+  enabled: false
+app-resource-manager:
+  enabled: false
+app-service-proxy:
+  enabled: false
+fleet-rs-secret:
+  enabled: false
+app-orch-catalog:
+  enabled: false
+app-deployment-manager-secret:
+  enabled: false
+harbor-oci:
+  enabled: false
+app-orch-tenant-controller:
+  enabled: false
+fleet-crd:
+  enabled: false
+fleet-controller:
+  enabled: false
+copy-app-gitea-cred-to-fleet:
+  enabled: false
+copy-ca-cert-gitea-to-app:
+  enabled: false
+copy-ca-cert-gitea-to-cluster:
+  enabled: false
+copy-cluster-gitea-cred-to-fleet:
+  enabled: false
+
+  # Cluster Orch - enabled (inherited from defaults)
+
+  # Observability - disabled
+alerting-monitor:
+  enabled: false
+edgenode-dashboards:
+  enabled: false
+edgenode-observability:
+  enabled: false
+orchestrator-dashboards:
+  enabled: false
+orchestrator-observability:
+  enabled: false
+orchestrator-prometheus-agent:
+  enabled: false
+sre-exporter:
+  enabled: false
+
+  # UI - no app-orch UI
+web-ui-app-orch:
+  enabled: false
+
+  # On-prem features
+  nginx-ingress-pxe-boots: {{ env "EMF_ENABLE_PXE" | default "true" }}
+  squid-proxy: {{ env "EMF_ENABLE_SQUID" | default "false" }}

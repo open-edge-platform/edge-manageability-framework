@@ -1,0 +1,31 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Cluster domain from environment
+clusterDomain: {{ .Values.clusterDomain | default "" | quote }}
+
+# Auth
+global:
+  auth:
+    enabled: true
+    keycloak:
+      client_id: "webui-client"
+      realm: "master"
+  session_timeout: {{ env "EMF_UI_SESSION_TIMEOUT" | default "3600" }}
+
+# Used to configure the Header title
+header:
+  title: "Edge Orchestrator"
+
+# Ingress
+service:
+  type: ClusterIP
+  traefik:
+    enabled: true
+    options:
+      name: gateway-tls
+    namespace: orch-gateway
+
+# https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
+traefikApiGroup: "traefik.io/v1alpha1"
