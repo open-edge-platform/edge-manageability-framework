@@ -429,3 +429,8 @@ We adopt the following strategy for Installer Simplification 2.0, effective 2026
 5. **All configuration** will be centralized in helmfile.yaml and
   cluster.yaml with clear documentation of all environment variables and
   overrides
+
+## Implementation Details
+
+A separate ADR will be written to contain implementation details for the Helmfile transition.
+See [PR #1656](https://github.com/open-edge-platform/edge-manageability-framework/pull/1656) for details.
