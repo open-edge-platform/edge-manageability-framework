@@ -1,0 +1,65 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Auth
+global:
+  registry:
+    name: "{{ .Values.containerRegistryURL }}"
+    imagePullSecrets: []
+  auth:
+    enabled: true
+    keycloak:
+      url: "https://keycloak.{{ .Values.clusterDomain }}"
+      client_id: "webui-client"
+      realm: "master"
+  session_timeout: 3600
+  observability:
+    url: "https://observability-ui.{{ .Values.clusterDomain }}"
+
+# Used to configure the Header title
+header:
+  title: "Edge Orchestrator"
+
+versions:
+  orchestrator: {{ .Values.orchestratorVersion | default "" | quote }}
+
+# Ingress
+service:
+  type: ClusterIP
+  traefik:
+    enabled: true
+    namespace: orch-gateway
+    hostname: "Host(`web-ui.{{ .Values.clusterDomain }}`)"
+    baseHostname: "Host(`{{ .Values.clusterDomain }}`)"
+    secretName: {{ .Values.tlsSecret }}
+    options:
+      name: "gateway-tls"
+
+api:
+  catalog: "https://api.{{ .Values.clusterDomain }}"
+  appDeploymentManger: "https://api.{{ .Values.clusterDomain }}"
+  appResourceManger: "https://api.{{ .Values.clusterDomain }}"
+  clusterOrch: "https://api.{{ .Values.clusterDomain }}"
+  infraManager: "https://api.{{ .Values.clusterDomain }}"
+  metadataBroker: "https://api.{{ .Values.clusterDomain }}"
+  alertManager: "https://api.{{ .Values.clusterDomain }}"
+  tenantManager: "https://api.{{ .Values.clusterDomain }}"
+  rps: "https://api.{{ .Values.clusterDomain }}"
+  mps: "https://api.{{ .Values.clusterDomain }}"
+
+# MFE Configuration for EIM mode.
+# All set to false because the root chart's _helpers.tpl hardcodes proxy_pass as
+# {{ .Release.Name }}-infra etc. With helmfile release name "web-ui-root", this
+# produces "web-ui-root-infra" which doesn't exist (actual service is "web-ui-infra").
+# ArgoCD avoids this by using releaseName: web-ui for all UI charts.
+# The web-ui-infra chart has its own IngressRoute and serves the UI directly.
+mfe:
+  app_orch: false
+  cluster_orch: false
+  infra: false
+  admin: false
+  alerts: false
+
+# https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
+traefikApiGroup: "traefik.io/v1alpha1"

@@ -1,0 +1,213 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+global:
+  registry:
+    name: "{{ .Values.containerRegistryURL }}/"
+    imagePullSecrets: []
+import:
+  dkam:
+    enabled: true
+  tinkerbell:
+    enabled: true
+  onboarding-manager:
+    enabled: true
+  pxe-server:
+    enabled: {{ .Values.pxe.enabled }}
+  infra-config:
+    enabled: true
+
+{{- if eq (.Values.pxe.enabled | toString) "true" }}
+pxe-server:
+  config:
+    interface: {{ .Values.pxe.interface | default "" | quote }}
+    bootServerIP: {{ .Values.pxe.bootServerIP | default "" | quote }}
+    subnetAddress: {{ .Values.pxe.subnetAddress | default "" | quote }}
+{{- end }}
+
+tinkerbell:
+  pvc:
+    enabled: false
+    storageClassName: {{ .Values.storageClass }}
+    accessModes:
+      - ReadWriteOnce
+  traefikReverseProxy:
+    gatewayNamespace: orch-gateway
+    enabled: &traefikReverseProxy_enabled true
+    tinkServerDnsname: "tinkerbell-server.{{ .Values.clusterDomain }}"
+    nginxDnsname: &nginxDnsname "tinkerbell-haproxy.{{ .Values.clusterDomain }}"
+  # https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
+  traefikApiGroup: "traefik.io/v1alpha1"
+  stack:
+    enabled: true
+    resources:
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+      requests:
+        cpu: 200m
+        memory: 256Mi
+  tinkerbell_tink:
+    enabled: true
+    controller:
+      enabled: true
+    server:
+      enabled: true
+      metrics:
+        enabled: false
+  tinkerbell_smee:
+    # these additional arguments serve as kernel arguments for Edge Node
+    additionalKernelArgs:
+      - "http_proxy={{ .Values.proxy.enHttpProxy }}"
+      - "https_proxy={{ .Values.proxy.enHttpsProxy }}"
+      - "no_proxy={{ .Values.proxy.enNoProxy }}"
+      - "HTTP_PROXY={{ .Values.proxy.enHttpProxy }}"
+      - "HTTPS_PROXY={{ .Values.proxy.enHttpsProxy }}"
+      - "NO_PROXY={{ .Values.proxy.enNoProxy }}"
+      - "DEBUG=false"
+      - "TIMEOUT=120s"
+      - "syslog_host=127.0.0.1"
+    traefikReverseProxy:
+      enabled: *traefikReverseProxy_enabled
+      nginxDnsname: *nginxDnsname
+  tinkerbell_hegel:
+    {{- if (index .Values "infra-onboarding" "skipOSProvisioning" | default false) }}
+    enabled: false
+    {{- end }}
+
+onboarding-manager:
+  service:
+    enableIO: true
+  managerArgs:
+    inventoryAddress: "inventory.orch-infra.svc.cluster.local:50051"
+    traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
+    enableTracing: false
+  metrics:
+    enabled: false
+  pvc:
+    storageClassName: {{ .Values.storageClass }}
+  traefikReverseProxy:
+    enabled: true
+    secretName: "tls-orch"
+    tlsOption: "gateway-tls"
+    gatewayNamespace: orch-gateway
+    host:
+      grpc:
+        name: "onboarding-node.{{ .Values.clusterDomain }}"
+      stream:
+        name: "onboarding-stream.{{ .Values.clusterDomain }}"
+  # https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
+  traefikApiGroup: "traefik.io/v1alpha1"
+  env:
+    tinkerActionsVersion: "1.20.2"
+    oidc:
+      oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
+      # Skip AuthZ for CDN-boots
+      clients:
+        bypass:
+          - cdn-boots
+    vaultUrl: "http://vault.orch-platform.svc.cluster.local:8200"
+    vaultRole: "orch-svc"
+    keycloakUrl: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
+    mode: "prod"
+    userName: "user"
+    passWord: "user"
+    enableTinkActionTimestamp: false
+  multiTenancy:
+    enforceMultiTenancy: true
+  serviceAccount:
+    name: "orch-svc"
+
+dkam:
+  pvc:
+    storageClassName: {{ .Values.storageClass }}
+  managerArgs:
+    traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
+    enableTracing: false
+  metrics:
+    enabled: false
+  env:
+    rs_proxy_address: "rs-proxy.orch-platform.svc.cluster.local:8081/"
+    oidc:
+      oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
+    mode: "prod"
+  proxies:
+    http_proxy: {{ .Values.proxy.httpProxy }}
+    https_proxy: {{ .Values.proxy.httpsProxy }}
+    no_proxy: {{ .Values.proxy.noProxy }}
+
+infra-config:
+  config:
+    enAgentManifestTag: "1.5.8"
+    embImageUrl: files-edge-orch/repository/microvisor/uos/emb_uos_x86_64_20251113.tar.gz
+    enProxyHTTP: {{ .Values.proxy.enHttpProxy }}
+    enProxyHTTPS: {{ .Values.proxy.enHttpsProxy }}
+    enProxyFTP: {{ .Values.proxy.enFtpProxy }}
+    enProxySocks: {{ .Values.proxy.enSocksProxy }}
+    enProxyNoProxy: {{ .Values.proxy.enNoProxy }}
+    orchInfra: infra-node.{{ .Values.clusterDomain }}:443
+    orchCluster: cluster-orch-node.{{ .Values.clusterDomain }}:443
+    orchUpdate: update-node.{{ .Values.clusterDomain }}:443
+    orchRelease: release.{{ .Values.clusterDomain }}
+    orchPlatformObsLogs: logs-node.{{ .Values.clusterDomain }}:443
+    orchPlatformObsMetrics: metrics-node.{{ .Values.clusterDomain }}:443
+    orchKeycloak: keycloak.{{ .Values.clusterDomain }}:443
+    orchTelemetry: telemetry-node.{{ .Values.clusterDomain }}:443
+    orchAttestationStatus: attest-node.{{ .Values.clusterDomain }}:443
+    orchRegistry: {{ .Values.releaseService.ociRegistry }}:9443
+    orchFileServer: {{ .Values.releaseService.fileServer }}:60444
+    # TODO: Revisit the below routes - limit exposure and switch to MT GW endpoints.
+    orchMPSHost: mps.{{ .Values.clusterDomain }}:4433
+    orchMPSWHost: mps-wss.{{ .Values.clusterDomain }}:443
+    orchRPSHost: rps.{{ .Values.clusterDomain }}:443
+    orchRPSWHost: rps-wss.{{ .Values.clusterDomain }}:443
+    orchDeviceManager: device-manager-node.{{ .Values.clusterDomain }}:443
+    rsType: "no-auth"
+    enServiceClients: "hardware-discovery-agent,cluster-agent,platform-manageability-agent,platform-update-agent,platform-telemetry-agent"
+    enOutboundClients: "platform-observability-collector,platform-observability-health-check,platform-observability-logging,platform-observability-metrics"
+    enMetricsEnabled: "true"
+    enTokenClients: "node-agent,hd-agent,cluster-agent,platform-update-agent,platform-observability-agent,platform-telemetry-agent,prometheus,connect-agent,attestation-manager,platform-manageability-agent"
+    disableCoProfile: true
+    disableO11yProfile: true
+    netIp: "dynamic"
+    ntpServer: "pool.ntp.org"
+    nameServers: []
+    systemConfigFsInotifyMaxUserInstances: "8192"
+    systemConfigVmOverCommitMemory: "1"
+    systemConfigKernelPanicOnOops: "1"
+    systemConfigKernelPanic: "10"
+    cdnSvc: {{ .Values.releaseService.fileServer }}
+    provisioningSvc: tinkerbell-haproxy.{{ .Values.clusterDomain }}
+    tinkerSvc: tinkerbell-server.{{ .Values.clusterDomain }}
+    omSvc: onboarding-node.{{ .Values.clusterDomain }}
+    omStreamSvc: onboarding-stream.{{ .Values.clusterDomain }}
+    extraHosts: ""
+    skipOSProvisioning: false
+    firewallReqAllow: |-
+      [{
+        "sourceIp": "{{ .Values.clusterDomain }}",
+        "ports": "6443,10250",
+        "ipVer": "ipv4",
+        "protocol": "tcp"
+      }]
+    firewallCfgAllow: |-
+      [{
+        "sourceIp": "",
+        "ports": "2379,2380,6443,9345,10250,5473",
+        "ipVer": "",
+        "protocol": "tcp"
+      },
+      {
+        "sourceIp": "",
+        "ports": "7946",
+        "ipVer": "",
+        "protocol": ""
+      },
+      {
+        "sourceIp": "",
+        "ports": "123",
+        "ipVer": "",
+        "protocol": "udp"
+      }]

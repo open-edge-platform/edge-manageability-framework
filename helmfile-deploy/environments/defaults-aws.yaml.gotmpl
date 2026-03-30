@@ -1,0 +1,345 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# AWS (EKS) defaults for Edge Manageability Framework
+# Self-contained defaults for the aws profile.
+# EKS does NOT bundle metrics-server — install via helm.
+#
+# Supported environment variables:
+#   EMF_REGISTRY              - Container/chart registry
+#   EMF_CLUSTER_NAME          - Cluster name
+#   EMF_CLUSTER_DOMAIN        - Cluster base domain
+#   EMF_DB_TYPE               - Database type (aurora/external)
+#   EMF_DB_SSL                - Database SSL enabled (true/false)
+#   EMF_TLS_SECRET            - TLS secret name
+#   EMF_VAULT_HA              - Vault HA mode (true/false)
+#   EMF_VAULT_REPLICAS        - Vault replica count
+#   EMF_VAULT_AUTO_INIT       - Vault auto-init (true/false)
+#   EMF_VAULT_AUTO_UNSEAL     - Vault auto-unseal (true/false)
+#   EMF_GIT_PROVIDER          - Git provider (gitea/github)
+#   EMF_GIT_SERVER            - Git server URL
+#   EMF_STORAGE_CLASS         - Storage class for PVCs
+#   EMF_HARBOR_REGISTRY_SIZE  - Harbor registry PVC size
+#   EMF_CATALOG_STORAGE_SIZE  - Catalog PVC size
+#   EMF_HTTP_PROXY            - HTTP proxy URL
+#   EMF_HTTPS_PROXY           - HTTPS proxy URL
+#   EMF_NO_PROXY              - No-proxy list
+#   EMF_O11Y_SRE_LABEL        - SRE customer label
+#   EMF_AWS_REGION             - AWS region
+#   EMF_AWS_ACCOUNT            - AWS account ID
+
+# ─── Registry ────────────────────────────────────────────────────────────────
+{{- $registry := env "EMF_REGISTRY" | default "registry-rs.edgeorchestration.intel.com/edge-orch" }}
+{{- $registryHost := $registry | splitList "/" | first }}
+chartRepoURL: {{ $registry | quote }}
+rsChartRepoURL: {{ $registry | quote }}
+containerRegistryURL: {{ $registry | quote }}
+
+releaseService:
+  ociRegistry: {{ $registryHost | quote }}
+  fileServer: {{ $registryHost | replace "registry-rs" "files-rs" | quote }}
+
+# ─── Cluster ─────────────────────────────────────────────────────────────────
+clusterName: {{ env "EMF_CLUSTER_NAME" | default "" | quote }}
+clusterDomain: {{ env "EMF_CLUSTER_DOMAIN" | default "" | quote }}
+
+# ─── TLS ─────────────────────────────────────────────────────────────────────
+tlsSecret: {{ env "EMF_TLS_SECRET" | default "tls-orch" | quote }}
+imagePullSecrets: []
+
+# ─── Database (Aurora on EKS) ────────────────────────────────────────────────
+database:
+  type: {{ env "EMF_DB_TYPE" | default "aurora" | quote }}
+  ssl: {{ env "EMF_DB_SSL" | default "true" }}
+  databases:
+    - namespace: orch-app
+      name: app-orch-catalog
+    - namespace: orch-platform
+      name: platform-keycloak
+    - namespace: orch-platform
+      name: vault
+    - namespace: orch-infra
+      name: inventory
+    - namespace: orch-infra
+      name: alerting
+    - namespace: orch-iam
+      name: iam-tenancy
+    - namespace: orch-infra
+      name: mps
+    - namespace: orch-infra
+      name: rps
+
+# ─── Traefik ─────────────────────────────────────────────────────────────────
+traefik:
+  enabled: true
+  tlsOption: {{ env "EMF_TRAEFIK_TLS_OPTION" | default "gateway-tls" | quote }}
+
+orchestratorVersion: {{ env "EMF_VERSION" | default "" | quote }}
+
+# ─── Proxy ───────────────────────────────────────────────────────────────────
+{{- if env "EMF_HTTP_PROXY" }}
+proxy:
+  httpProxy: {{ env "EMF_HTTP_PROXY" | quote }}
+  httpsProxy: {{ env "EMF_HTTPS_PROXY" | default "" | quote }}
+  noProxy: {{ env "EMF_NO_PROXY" | default "" | quote }}
+{{- end }}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Feature flags — controls which releases are installed
+# Each key matches a release name; helmfile uses condition: X.enabled
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ─── Platform (always enabled) ───────────────────────────────────────────────
+auth-service:
+  enabled: true
+cert-manager:
+  enabled: true
+cert-synchronizer:
+  enabled: true
+certificate-file-server:
+  enabled: true
+component-status:
+  enabled: true
+copy-ca-cert-boots-to-gateway:
+  enabled: true
+copy-ca-cert-boots-to-infra:
+  enabled: true
+copy-ca-cert-gateway-to-cattle:
+  enabled: true
+copy-ca-cert-gateway-to-infra:
+  enabled: true
+external-secrets:
+  enabled: true
+ingress-haproxy:
+  enabled: true
+istio-base:
+  enabled: {{ env "EMF_ENABLE_ISTIO" | default "true" }}
+istio-policy:
+  enabled: {{ env "EMF_ENABLE_ISTIO" | default "true" }}
+istiod:
+  enabled: {{ env "EMF_ENABLE_ISTIO" | default "true" }}
+kiali:
+  enabled: {{ env "EMF_ENABLE_ISTIO" | default "true" }}
+keycloak-operator:
+  enabled: true
+metadata-broker:
+  enabled: true
+haproxy-ingress-pxe-boots:
+  enabled: true
+platform-autocert:
+  enabled: true
+platform-keycloak:
+  enabled: true
+prometheus-crd:
+  enabled: true
+reloader:
+  enabled: true
+rs-proxy:
+  enabled: true
+secrets-config:
+  enabled: true
+secret-wait-tls-orch:
+  enabled: true
+secret-wait-tls-boots:
+  enabled: true
+self-signed-cert:
+  enabled: true
+traefik-extra-objects:
+  enabled: true
+traefik-pre:
+  enabled: true
+traefik-boots:
+  enabled: false
+vault:
+  enabled: true
+token-fs:
+  enabled: true
+
+# ─── Database operators ──────────────────────────────────────────────────────
+postgresql-operator:
+  enabled: true
+postgresql-cluster:
+  enabled: true
+postgresql-secrets:
+  enabled: true
+
+# ─── App Orch ────────────────────────────────────────────────────────────────
+app-deployment-crd:
+  enabled: true
+app-deployment-manager:
+  enabled: true
+app-resource-manager:
+  enabled: true
+app-service-proxy:
+  enabled: true
+fleet-rs-secret:
+  enabled: true
+app-orch-catalog:
+  enabled: true
+app-deployment-manager-secret:
+  enabled: true
+harbor-oci:
+  enabled: true
+app-orch-tenant-controller:
+  enabled: true
+fleet-crd:
+  enabled: true
+fleet-controller:
+  enabled: true
+copy-app-gitea-cred-to-fleet:
+  enabled: true
+copy-ca-cert-gitea-to-app:
+  enabled: true
+copy-ca-cert-gitea-to-cluster:
+  enabled: true
+copy-cluster-gitea-cred-to-fleet:
+  enabled: true
+
+# ─── Cluster Orch ────────────────────────────────────────────────────────────
+capi-operator-pre:
+  enabled: true
+capi-operator:
+  enabled: true
+cluster-manager:
+  enabled: true
+cluster-connect-gateway:
+  enabled: true
+intel-infra-provider:
+  enabled: true
+capi-providers-config:
+  enabled: true
+
+# ─── Edge Infra ──────────────────────────────────────────────────────────────
+infra-core:
+  enabled: true
+infra-managers:
+  enabled: true
+infra-external:
+  enabled: true
+infra-onboarding:
+  enabled: true
+copy-keycloak-admin-to-infra:
+  enabled: true
+
+# ─── Observability ───────────────────────────────────────────────────────────
+alerting-monitor:
+  enabled: {{ env "EMF_ENABLE_EMAIL" | default "true" }}
+edgenode-dashboards:
+  enabled: true
+edgenode-observability:
+  enabled: true
+orchestrator-dashboards:
+  enabled: true
+orchestrator-observability:
+  enabled: true
+orchestrator-prometheus-agent:
+  enabled: true
+
+# ─── SRE ─────────────────────────────────────────────────────────────────────
+sre-exporter:
+  enabled: true
+
+# ─── UI ──────────────────────────────────────────────────────────────────────
+web-ui-root:
+  enabled: true
+web-ui-app-orch:
+  enabled: true
+web-ui-cluster-orch:
+  enabled: true
+web-ui-infra:
+  enabled: true
+web-ui-admin:
+  enabled: true
+
+# ─── Kyverno ─────────────────────────────────────────────────────────────────
+kyverno:
+  enabled: true
+kyverno-extra-policies:
+  enabled: false
+kyverno-istio-policy:
+  enabled: false
+kyverno-traefik-policy:
+  enabled: false
+
+# ─── Audit ───────────────────────────────────────────────────────────────────
+audit:
+  enabled: true
+
+# ─── Tenancy (disabled by default) ──────────────────────────────────────────
+tenancy-datamodel:
+  enabled: false
+tenancy-manager:
+  enabled: false
+tenancy-api-mapping:
+  enabled: false
+tenancy-init:
+  enabled: false
+nexus-api-gw:
+  enabled: false
+keycloak-tenant-controller:
+  enabled: false
+observability-tenant-controller:
+  enabled: false
+
+# ─── Misc ────────────────────────────────────────────────────────────────────
+namespace-label:
+  enabled: true
+
+# ─── EKS needs metrics-server installed via helm ─────────────────────────────
+k8s-metrics-server:
+  enabled: true
+
+# ─── AWS services — enabled on EKS ──────────────────────────────────────────
+aws-lb:
+  enabled: {{ env "EMF_ENABLE_AWS_LB" | default "true" }}
+aws-lb-tgb:
+  enabled: {{ env "EMF_ENABLE_AWS_LB" | default "true" }}
+aws-sm-proxy:
+  enabled: {{ env "EMF_ENABLE_AWS_SM" | default "true" }}
+aws-sm-get-rs-token:
+  enabled: {{ env "EMF_ENABLE_AWS_SM" | default "true" }}
+cluster-autoscaler:
+  enabled: {{ env "EMF_ENABLE_AUTOSCALER" | default "true" }}
+vertical-pod-autoscaler:
+  enabled: {{ env "EMF_ENABLE_VPA" | default "true" }}
+secret-wait-azure-ad-creds:
+  enabled: true
+secret-wait-rs-token:
+  enabled: true
+wait-istio-job:
+  enabled: true
+
+# ─── Additional services — enabled on AWS ────────────────────────────────────
+oci-secret:
+  enabled: true
+rs-image-pull-secrets:
+  enabled: true
+copy-rs-token-to-cluster:
+  enabled: true
+token-refresh:
+  enabled: true
+botkube:
+  enabled: true
+ingress-nginx:
+  enabled: true
+squid-proxy:
+  enabled: {{ env "EMF_ENABLE_SQUID" | default "true" }}
+
+# ─── CORS ────────────────────────────────────────────────────────────────────
+cors:
+  enabled: {{ env "EMF_CORS_ENABLED" | default "true" }}
+
+# ─── UI settings ─────────────────────────────────────────────────────────────
+ui:
+  ingressInfraUi: {{ env "EMF_UI_INGRESS_INFRA" | default "false" }}
+
+# ─── O11y settings ───────────────────────────────────────────────────────────
+o11y:
+  sre:
+    customerLabel: {{ env "EMF_O11Y_SRE_LABEL" | default "local" | quote }}
+  alertingMonitor:
+    initialRules:
+      hostRules: true
+      appDeploymentRules: true
+      clusterRules: true

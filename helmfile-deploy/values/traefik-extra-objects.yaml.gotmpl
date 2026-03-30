@@ -1,0 +1,70 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+orchSecretName: {{ .Values.tlsSecret }}
+# internal keycloak JWKS URL should be static but providing a way to modify it here
+keycloakJwksUrl: http://platform-keycloak.orch-platform.svc
+# internal keycloak JWKS Path should be static but providing a way to modify it here
+keycloakJwksPath: /realms/master/protocol/openid-connect/certs
+keycloakServicePort: 8080
+
+# Traefik Host match rules
+fleetMatchHost: Host(`fleet.{{ .Values.clusterDomain }}`)
+harborOciMatchHost: Host(`registry-oci.{{ .Values.clusterDomain }}`)
+observabilityMatchHost: Host(`observability-ui.{{ .Values.clusterDomain }}`)
+observabilityAdminMatchHost: Host(`observability-admin.{{ .Values.clusterDomain }}`)
+vaultMatchHost: Host(`vault.{{ .Values.clusterDomain }}`)
+rootMatchHost: Host(`{{ .Values.clusterDomain }}`)
+keycloakMatchHost: Host(`keycloak.{{ .Values.clusterDomain }}`)
+clusterOrchNodeMatchHost: Host(`cluster-orch-node.{{ .Values.clusterDomain }}`)
+logsNodeMatchHost: Host(`logs-node.{{ .Values.clusterDomain }}`)
+metricsNodeMatchHost: Host(`metrics-node.{{ .Values.clusterDomain }}`)
+giteaMatchHost: Host(`gitea.{{ .Values.clusterDomain }}`)
+
+# CSP connect-src for UI
+connectCSPs:
+- "https://keycloak.{{ .Values.clusterDomain }}"
+- "wss://vnc.{{ .Values.clusterDomain }}"
+- "https://app-service-proxy.{{ .Values.clusterDomain }}"
+- "https://app-orch.{{ .Values.clusterDomain }}"
+- "https://api.{{ .Values.clusterDomain }}"
+- "https://cluster-orch.{{ .Values.clusterDomain }}"
+- "https://metadata.{{ .Values.clusterDomain }}"
+- "https://alerting-monitor.{{ .Values.clusterDomain }}"
+scriptSources:
+- "https://app-service-proxy.{{ .Values.clusterDomain }}"
+connectCSPsAppOrch:
+- "https://keycloak.{{ .Values.clusterDomain }}"
+
+{{- if .Values.traefik }}
+{{- if hasKey .Values.traefik "rateLimit" }}
+
+rateLimit:
+  average: {{ .Values.traefik.rateLimit.average | default 0 }}
+  period: {{ .Values.traefik.rateLimit.period | default "1s" }}
+  burst: {{ .Values.traefik.rateLimit.burst | default 1 }}
+  ipStrategyDepth: {{ .Values.traefik.rateLimit.ipStrategyDepth | default 0 }}
+  excludedIps: {{ .Values.traefik.rateLimit.excludedIps | default list }}
+
+{{- end }}
+tlsOption: {{ .Values.traefik.tlsOption | default "" | quote }}
+{{- end }}
+
+{{- if .Values.cors }}
+{{- if .Values.cors.enabled }}
+cors:
+  enabled: {{ .Values.cors.enabled }}
+  allowedOrigins:
+    - https://{{ .Values.clusterDomain }}
+    - https://web-ui.{{ .Values.clusterDomain }}
+  {{- if hasKey .Values.cors "allowedOrigins" }}
+  {{- range $origin := .Values.cors.allowedOrigins }}
+    - {{ $origin }}
+  {{- end }}
+  {{- end }}
+{{- end }}
+{{- end }}
+
+# https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
+traefikApiGroup: "traefik.io/v1alpha1"
