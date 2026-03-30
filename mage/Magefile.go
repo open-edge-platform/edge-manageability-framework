@@ -1967,28 +1967,6 @@ func (t Tarball) CloudFull() error {
 	return t.setupCollectors("cloudFull", []string{"example", "example-staging"})
 }
 
-type Installer mg.Namespace
-
-// Builds the Installer images. DOCKER_REGISTRY and DOCKER_REPOSITORY environment variables can override default image repo path.
-func (i Installer) Build() error {
-	return i.build()
-}
-
-// Creates the Installer release artifact. DOCKER_REGISTRY and DOCKER_REPOSITORY environment variables can override default installer image repo path.
-func (i Installer) Bundle() error {
-	return i.bundle()
-}
-
-// Cleans the Installer images. DOCKER_REGISTRY and DOCKER_REPOSITORY environment variables can override default image repo path.
-func (i Installer) Clean() error {
-	return i.clean()
-}
-
-// Publishes the Installer Docker images, using DOCKER_REGISTRY and DOCKER_REPOSITORY in environment
-func (i Installer) Publish() error {
-	return i.publish()
-}
-
 type CoUtils mg.Namespace
 
 type DevUtils mg.Namespace

@@ -659,7 +659,7 @@ func createNamespaces(targetEnv string) error {
 		argoNamespaces = append(argoNamespaces, "orch-gateway")
 	}
 
-	aoEnabled, _ := (Config{}).isAOEnabled(targetEnv)	
+	aoEnabled, _ := (Config{}).isAOEnabled(targetEnv)
 	if aoEnabled {
 		argoNamespaces = append(argoNamespaces, "gitea")
 	}
@@ -906,7 +906,7 @@ func (Deploy) generateInfraCerts(targetEnv string) error {
 		return err
 	}
 
-    // AO is diabled dont deploy gitea tls secret
+	// AO is diabled dont deploy gitea tls secret
 	aoEnabled, _ := (Config{}).isAOEnabled(targetEnv)
 	if aoEnabled {
 		// Export TLS cert for Gitea as K8s secret
@@ -914,7 +914,7 @@ func (Deploy) generateInfraCerts(targetEnv string) error {
 		if _, err := script.Exec(cmd).Stdout(); err != nil {
 			return err
 		}
-	} 
+	}
 
 	// Export TLS cert for ArgoCD as K8s secret
 	cmd = "kubectl -n argocd create secret tls argocd-server-tls --cert=infra-tls.crt --key=infra-tls.key"
@@ -1253,6 +1253,31 @@ func getDeployTag() (string, error) {
 	return deployTag, nil
 }
 
+func getVersionRevision(version string) (string, error) {
+	if strings.Contains(version, "-dev") {
+		c, err := exec.Command("git", "rev-parse", "--short", "HEAD").Output()
+		if err != nil {
+			return "", err
+		}
+		commit := strings.TrimSpace(string(c))
+		return fmt.Sprintf("%s-%s", version, commit), nil
+	}
+	return version, nil
+}
+
+func getVersionTags(version string) ([]string, error) {
+	var tags []string
+
+	versionRevision, err := getVersionRevision(version)
+	if err != nil {
+		return []string{}, err
+	}
+	tags = append(tags, fmt.Sprintf("v%s", versionRevision))
+	tags = append(tags, fmt.Sprintf("v%s-latest", version))
+
+	return tags, nil
+}
+
 func getOrchestratorVersion() (string, error) {
 	version, err := getVersionFromFile()
 	if err != nil {
@@ -1316,7 +1341,7 @@ func (d Deploy) orchLocal(targetEnv string) error {
 	if deployRepoRevision == "" {
 		deployRepoRevision = "HEAD"
 	}
-	deployRevision := "--set-string argo.deployRepoRevision="+deployRepoRevision // giteaDeployRevisionParam()
+	deployRevision := "--set-string argo.deployRepoRevision=" + deployRepoRevision // giteaDeployRevisionParam()
 	orchVersion, err := getOrchestratorVersionParam()
 	if err != nil {
 		return fmt.Errorf("failed to get orchestrator version: %w", err)
