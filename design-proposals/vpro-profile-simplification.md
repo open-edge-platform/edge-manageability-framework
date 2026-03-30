@@ -1,4 +1,4 @@
-# Design Proposal: Onboarding Deployment Packages from GitHub Repositories
+# Design Proposal: Simplification of vPro Profile
 
 Author(s): Scott Baker
 
