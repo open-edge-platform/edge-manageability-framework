@@ -226,13 +226,13 @@ The following scenarios are explicitly not supported:
   to be considered a supported feature.
 
 - **Update of Kubernetes.** For example, upgrading from one K3s to another. Kubernetes is considered
-  customer infrastructure an outside the scope of this ADR.
+  customer infrastructure and outside the scope of this ADR.
 
 - **Switching Kubernetes distributions.** For example, switching from Kind to K3s, or K3s to RKE2.
-  These would be distruptive to the software installed on Kubernetes, and would require a full
+  These would be disruptive to the software installed on Kubernetes, and would require a full
   reinstallation.
 
-- **Software that is installed by the pre-installer.** In general, software this is installed by
+- **Software that is installed by the pre-installer.** In general, software that is installed by
   the pre-installer is *not* "part of EMF". The pre-installer is provided as
   a convenience only and is expected to be hardened by the customer. Upgrade of components
   in the pre-installer is a customer responsibility. Exceptions may be made as necessary.
