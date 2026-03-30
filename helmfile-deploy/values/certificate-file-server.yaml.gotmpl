@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+rootMatchHost: "Host(`{{ .Values.clusterDomain }}`)"
+orchSecretName: {{ .Values.tlsSecret }}
 tlsOption: "gateway-tls"
 resources: null
 

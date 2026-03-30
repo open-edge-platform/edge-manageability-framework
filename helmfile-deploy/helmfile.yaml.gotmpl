@@ -1540,7 +1540,7 @@ releases:
     chart: edge-orch/common/charts/certificate-file-server
     version: 25.2.3
     values:
-      - values/certificate-file-server.yaml
+      - values/certificate-file-server.yaml.gotmpl
     condition: certificate-file-server.enabled
     needs:
       - orch-cluster/intel-infra-provider
