@@ -2,9 +2,9 @@
 
 Author(s): Scott Baker
 
-Last updated: 2026-3-17
+Last updated: 2026-3-30
 
-Revision: 2.0
+Revision: 2.1
 
 ## Abstract
 
@@ -14,7 +14,12 @@ This ADR supersedes [platform-installer-simplification.md](platform-installer-si
 ## Changelog
 
 - Revision 2.0
-  - TBD
+  - Draft of 2026 ADR
+- Revision 2.1
+  - Added section on autocert and DNS
+  - Added section on Helmfile rollback
+  - Added discussion of umbrella versus separate helm charts
+  - Removed open questions
 
 ## Problem Statement
 
@@ -133,11 +138,68 @@ The post-installer does the following:
 Coder deployments should use the same pre-installer and post-installer as described above. The
 goal is to eliminate unnecessary divergence.
 
-**Open question:** Should Coder deployments use Kind, K3s, or RKE2?
+Should Coder deployments use Kind, K3s, or RKE2? 
 
-Additional steps may be required for Coder deployments. For example, the auto-cert
-functionality enables Coder-based orchestrators to be compatible with physical edge nodes.
-These integrations will need to be re-established with the new on-prem-based installer.
+- Kind - Kind offers easy cluster setup and teardown, and supports running multiple
+  clusters simultaneously, making it attractive for development. However, Kind diverges
+  from production deployments, which are more likely to use K3s or RKE2. This divergence
+  means bugs found in Kind may not reproduce in production, and vice versa. There are
+  also operational complications, such as the need to push images from the host into the
+  Kind environment.
+
+- K3s - K3s is lightweight and closely mirrors the expected production deployment path,
+  reducing the risk of environment-specific issues surfacing late. It is smaller and
+  easier to install than full Kubernetes, while still providing a representative runtime
+  environment.
+
+- RKE2 - RKE2 is a larger Kubernetes distribution with additional security hardening
+  (SELinux defaults, CIS benchmarks) and longer startup times. These features are
+  unnecessary for a development environment and actively slow down developer iteration
+  cycles.
+
+This ADR suggests that the best Kubernetes for Coder development would be K3s due to the
+closer alignment with actual deployment scenarios.
+
+**DNS and autocert considerations for K3s migration:**
+
+Coder deployments require two features beyond basic EMF installation: DNS record
+creation for service subdomains and automatic TLS certificate provisioning (autocert).
+
+EMF exposes 40+ subdomains (api, mps, web-ui, keycloak, vault, etc.) that must
+resolve to the orchestrator. The current Kind-based approach handles this in three
+layers:
+
+1. **Route53** creates a top-level record mapping `orch-<ip>.espdqa.infra-host.com`
+   to the host IP during Coder workspace provisioning.
+2. **A host-side Traefik router** (running in Docker alongside Kind) reads the
+   subdomain list from a `kubernetes-docker-internal` ConfigMap and generates
+   per-subdomain routing rules.
+3. **CoreDNS inside Kind** is configured with a static zone file template
+   (`node/kind/coredns-config-map.template`) mapping each subdomain to the
+   orchestrator IP.
+
+Moving to K3s changes the DNS and routing approach. K3s exposes services directly
+on the host network rather than through Docker networking, so the host-side Traefik
+router used by Kind is no longer necessary. The in-cluster ingress controller
+(Traefik or HAProxy) handles subdomain routing natively based on hostname. CoreDNS
+configuration also differs — K3s manages its own CoreDNS instance, so the Kind zone
+file injection must be adapted to K3s's configuration model.
+
+A simplification opportunity exists: a **wildcard DNS record** in Route53
+(`*.orch-<ip>.espdqa.infra-host.com`) would eliminate the need to maintain individual
+subdomain records at the DNS layer, since the in-cluster ingress already routes by
+hostname. This would replace both the CoreDNS zone template and the per-subdomain
+Route53 records with a single wildcard entry.
+
+Autocert uses cert-manager with ACME DNS01 validation against Route53 to obtain TLS
+certificates from Let's Encrypt. The autocert components — cert-manager,
+platform-autocert, cert-synchronizer, and botkube — are Kubernetes-native and require
+no changes for K3s. The one area where K3s simplifies the current approach is
+certificate persistence. Kind clusters are ephemeral, so the current implementation
+saves certificates to AWS Secrets Manager before cluster teardown and restores them
+after recreation. K3s clusters persist across reboots, making this save/restore cycle
+unnecessary for routine operations. The mechanism should be retained for cases where
+a cluster is fully destroyed, but this becomes exceptional rather than routine.
 
 #### Migrate VIP to use pre-installer / post-installer
 
@@ -202,21 +264,95 @@ domain, credentials, etc.), and then invoke `helmfile sync` to deploy them. This
 simplifies the installer architecture while maintaining the ability to control chart
 ordering and configuration propagation without a runtime reconciliation component.
 
-#### Plain Helm Charts
+**Failure recovery and rollback:**
 
-**Tradeoffs:**
+Unlike ArgoCD, Helmfile does not provide continuous reconciliation. If `helmfile sync`
+fails partway through a deployment or upgrade, recovery depends on the nature of the
+failure:
 
-- **Advantages:** Minimal dependencies, familiar to Kubernetes-native operators
-- **Disadvantages:** Requires manual sequencing logic in shell scripts,
-  error-prone configuration propagation, and difficult-to-maintain
-  ordering constraints
+- **Re-run `helmfile sync`.** Helmfile and Helm are idempotent — re-running `helmfile sync`
+  will skip releases that are already at the desired state and retry those that failed.
+  This is the expected recovery path for transient failures (e.g., image pull errors,
+  resource quota limits, temporary network issues).
 
-**Recommendation:** This approach is **not recommended** as the primary path. It introduces
-manual orchestration complexity that Helmfile handles automatically. Reserve this for specific
-components that do not fit the Helmfile model.
+- **Rollback individual releases.** If a specific chart upgrade introduces a breaking change,
+  `helm rollback <release> <revision>` can revert that release to a previous revision
+  while leaving other releases untouched. Helm retains release history by default,
+  making per-release rollback straightforward.
 
-However, if the vPro-profile could be simplified significantly (see the separate ADR on
-simplifying this profile) then the plain helm chart approach may become viable.
+- **Full rollback.** For a failed upgrade where multiple releases need to be reverted,
+  `helmfile sync` can be re-run against the previous version's helmfile configuration.
+  Because each release tracks its own revision history, this converges the cluster back
+  to the prior known-good state.
+
+- **Database backup/restore.** For upgrades that include schema migrations or data changes,
+  the database backup taken before the upgrade (see Upgrades section) provides the
+  recovery path if rollback alone is insufficient.
+
+The key operational difference from ArgoCD is that recovery requires explicit operator
+action. ArgoCD would automatically reconcile drift; with Helmfile, the operator must
+re-run `helmfile sync` or `helm rollback` to recover. This is an acceptable tradeoff
+for the simplicity gained by removing the reconciliation control plane, but it must be
+documented in the deployment guide with clear runbook procedures.
+
+#### Umbrella Helm Charts and/or Separate Helm Charts with Script
+
+An alternative to Helmfile is to use Helm directly, either by consolidating charts
+into umbrella charts, by scripting individual `helm install` commands, or a combination
+of both.
+
+**Umbrella Helm Charts:**
+
+An umbrella chart is a parent Helm chart that declares other charts as dependencies.
+Instead of installing 40+ charts individually, related charts are grouped into a small
+number of umbrella charts (e.g., `emf-platform`, `emf-services`, `emf-ui`) that are
+installed as units.
+
+- **Advantages:** Reduces the number of install commands to a handful of umbrella
+  releases. Helm manages sub-chart ordering within each umbrella. Configuration values
+  can be shared across sub-charts through the parent chart's values file. The customer
+  installs a small number of well-defined packages rather than dozens of individual
+  charts.
+
+- **Disadvantages:** EMF currently deploys 106 applications across 28 sync wave levels,
+  drawing from both internal charts and 18 external chart repositories. Packaging these
+  into umbrella charts requires wrapper charts around external dependencies and careful
+  management of sub-chart versioning. Upgrading a single component requires releasing a
+  new version of the entire umbrella. The conditional enable/disable of services (e.g.,
+  PostgreSQL, MetalLB) must be handled through sub-chart conditionals, adding complexity
+  to the umbrella chart's values schema. Debugging failures is harder because Helm
+  treats the umbrella as a single release — a failure in one sub-chart fails the entire
+  umbrella install.
+
+**Separate Helm Charts with Script:**
+
+Each chart is installed individually via scripted `helm install` / `helm upgrade`
+commands, with a shell script managing the sequencing and configuration propagation.
+
+- **Advantages:** Minimal dependencies beyond Helm itself. Familiar to Kubernetes-native
+  operators. Each chart is an independent release, making targeted upgrades and rollbacks
+  straightforward.
+
+- **Disadvantages:** Requires custom dependency management and sequencing logic in shell
+  scripts — currently 28 ordering levels that must be encoded manually. Configuration
+  values must be propagated across charts through script variables or generated values
+  files, which is error-prone. The script becomes the single point of complexity and
+  must be maintained alongside the charts themselves.
+
+**Hybrid approach:**
+
+A combination is possible: group tightly coupled charts into a small number of umbrella
+charts to reduce the total chart count, then use a script to install the umbrellas in
+the correct order. This reduces scripting complexity while keeping umbrella charts
+manageable in size.
+
+**Recommendation:** These approaches are **not recommended** as the primary path. Helmfile
+provides the benefits of both — declarative sequencing like an umbrella chart, with
+per-chart independence like a scripted approach — without the downsides of either.
+
+However, if the vPro profile could be simplified significantly (see the separate ADR on
+simplifying this profile), reducing the chart count and dependency complexity, then a
+plain Helm approach (umbrella or scripted) may become viable as an alternative.
 
 ## Upgrades
 
@@ -252,10 +388,6 @@ workstreams described above. This includes:
 Platform Team.
 
 ## Open Issues and Questions
-
-- **Helmfile vs. Kustomize:** Should we consider Kustomize as an
-  alternative for configuration management?
-- **Coder deployment selection:** Which Kubernetes distribution (Kind, K3s, RKE2) should be the default for Coder?
 
 ## Rationale and Alternatives
 
