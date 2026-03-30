@@ -1,0 +1,61 @@
+
+---
+import:
+  dkam:
+    enabled: true
+  tinkerbell:
+    enabled: true
+  onboarding-manager:
+    enabled: true
+  pxe-server:
+    enabled: false
+
+tinkerbell:
+  pvc:
+    enabled: false
+  traefikReverseProxy:
+    gatewayNamespace: orch-gateway
+  # https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
+  traefikApiGroup: "traefik.io/v1alpha1"
+
+onboarding-manager:
+  managerArgs:
+    inventoryAddress: "inventory.orch-infra.svc.cluster.local:50051"
+    traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
+  traefikReverseProxy:
+    enabled: true
+    secretName: "tls-orch"
+    tlsOption: "gateway-tls"
+    gatewayNamespace: orch-gateway
+  # https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
+  traefikApiGroup: "traefik.io/v1alpha1"
+  env:
+    tinkerActionsVersion: "1.20.2"
+    oidc:
+      oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
+      # Skip AuthZ for CDN-boots
+      clients:
+        bypass:
+          - cdn-boots
+    vaultUrl: "http://vault.orch-platform.svc.cluster.local:8200"
+    vaultRole: "orch-svc"
+    keycloakUrl: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
+  multiTenancy:
+    enforceMultiTenancy: true
+  resources: null
+  serviceAccount:
+    name: "orch-svc"
+
+dkam:
+  managerArgs:
+    traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
+  env:
+    rs_proxy_address: "rs-proxy.orch-platform.svc.cluster.local:8081/"
+    oidc:
+      oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
+  resources: null
+
+infra-config:
+  config:
+    enAgentManifestTag: "1.5.8"
+    embImageUrl: files-edge-orch/repository/microvisor/uos/emb_uos_x86_64_20251113.tar.gz

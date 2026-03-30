@@ -1,0 +1,15 @@
+
+reloader:
+  watchGlobally: true
+  deployment:
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 65534
+    containerSecurityContext:
+      seccompProfile:
+        type: RuntimeDefault
+      capabilities:
+        drop:
+          - ALL
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true

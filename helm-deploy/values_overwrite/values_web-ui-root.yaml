@@ -1,0 +1,21 @@
+
+global:
+  auth:
+    enabled: true
+    keycloak:
+      client_id: "webui-client"
+      realm: "master"
+  session_timeout: 3600
+
+header:
+  title: "Edge Orchestrator"
+
+service:
+  type: ClusterIP
+  traefik:
+    enabled: true
+    options:
+      name: gateway-tls
+    namespace: orch-gateway
+
+traefikApiGroup: "traefik.io/v1alpha1"

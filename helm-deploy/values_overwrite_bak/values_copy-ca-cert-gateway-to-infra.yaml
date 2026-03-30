@@ -1,0 +1,10 @@
+
+
+externalSecretsApiGroup: external-secrets.io/v1
+remoteNamespace: orch-gateway
+refreshInterval: "10m"
+targetSecretName: gateway-ca-cert
+sourceSecretName: tls-orch
+keyName:
+  - source: ca.crt
+    target: ca.crt

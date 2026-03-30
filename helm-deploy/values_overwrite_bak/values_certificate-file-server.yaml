@@ -1,0 +1,12 @@
+
+tlsOption: "gateway-tls"
+resources:
+  limits:
+    cpu: "64"
+    memory: 64Gi
+  requests:
+    cpu: 1m
+    memory: 1Mi
+traefikApiGroup: "traefik.io/v1alpha1"
+rootMatchHost: Host(`cluster.onprem`)
+orchSecretName: tls-orch

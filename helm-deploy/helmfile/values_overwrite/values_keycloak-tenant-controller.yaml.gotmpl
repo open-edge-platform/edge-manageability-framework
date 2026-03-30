@@ -1,0 +1,102 @@
+
+resources:
+  limits:
+    cpu: "64"
+    memory: 64Gi
+  requests:
+    cpu: 1m
+    memory: 1Mi
+curlImage:
+  name: badouralix/curl-jq@sha256
+  tag: 8ee002ae4452b23a3c70750c5c081e95334cfe9f7968fb4d67a90d4001c29d0b
+  pullPolicy: IfNotPresent
+namespace: orch-platform
+image:
+  registry: {{ env "RELEASE_SERVICE_URL" | default "registry-rs.edgeorchestration.intel.com" }}/edge-orch
+  repository: common/keycloak-tenant-controller
+proxy:
+  httpProxy: {{ env "HTTP_PROXY" | default "" }}
+  httpsProxy: {{ env "HTTPS_PROXY" | default "" }}
+  noProxy: {{ env "NO_PROXY" | default "" }}
+imagePullSecrets: {}
+serviceAccount:
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  name: orch-svc
+podSecurityContext:
+  seccompProfile:
+    type: RuntimeDefault
+securityContext:
+  capabilities:
+    drop:
+      - ALL
+  allowPrivilegeEscalation: false
+keycloakAdmin:
+  user: admin
+  client: system-client
+  passwordSecret:
+    name: platform-keycloak # name of the secret
+    key: admin-password # key of the secret
+keycloak_realm: "master"
+argo:
+  clusterDomain: {{ env "CLUSTER_DOMAIN" | default "cluster.onprem" }}
+keycloak_si_groups: ""
+keycloak_org_groups: |-
+  {
+    "<org-id>_Project-Manager-Group": [
+      "<org-id>_project-read-role",
+      "<org-id>_project-write-role",
+      "<org-id>_project-update-role",
+      "<org-id>_project-delete-role"
+    ]
+  }
+keycloak_proj_groups: |-
+  {
+    "<project-id>_Edge-Node-M2M-Service-Account": [
+      "rs-access-r",
+      "rs-proxy-r",
+      "<project-id>_cat-r",
+      "<project-id>_reg-r",
+      "<project-id>_en-agent-rw"
+    ],
+    "<project-id>_Edge-Manager-Group": [
+      "account/manage-account",
+      "account/view-profile",
+      "<project-id>_tc-r",
+      "<project-id>_ao-rw",
+      "<project-id>_cat-rw",
+      "<project-id>_cl-rw",
+      "<project-id>_cl-tpl-rw",
+      "<project-id>_reg-a",
+      "<project-id>_reg-r",
+      "<project-id>_im-r",
+      "<project-id>_alrt-rw",
+      "<org-id>_<project-id>_m"
+    ],
+    "<project-id>_Edge-Onboarding-Group": [
+      "rs-access-r",
+      "<project-id>_en-ob"
+    ],
+    "<project-id>_Edge-Operator-Group": [
+      "account/manage-account",
+      "account/view-profile",
+      "<project-id>_tc-r",
+      "<project-id>_ao-rw",
+      "<project-id>_cat-r",
+      "<project-id>_cl-r",
+      "<project-id>_cl-tpl-r",
+      "<project-id>_reg-r",
+      "<project-id>_im-r",
+      "<project-id>_alrt-r",
+      "<org-id>_<project-id>_m"
+    ],
+    "<project-id>_Host-Manager-Group": [
+      "account/manage-account",
+      "account/view-profile",
+      "<project-id>_tc-r",
+      "<project-id>_im-rw",
+      "<project-id>_en-ob",
+      "<org-id>_<project-id>_m"
+    ]
+  }

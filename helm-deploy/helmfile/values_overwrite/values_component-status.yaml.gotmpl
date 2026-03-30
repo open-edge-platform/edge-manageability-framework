@@ -1,0 +1,133 @@
+
+
+resources: {}
+image:
+  registry: {{ env "RELEASE_SERVICE_URL" | default "registry-rs.edgeorchestration.intel.com" }}/edge-orch
+  repository: common/component-status
+imagePullSecrets: {}
+traefikRoute:
+  enabled: true
+  matchHost: "Host(`api.{{ env "CLUSTER_DOMAIN" | default "cluster.onprem" }}`)"
+  matchPath: "PathPrefix(`/v1/orchestrator`)"
+  priority: 40
+  namespace: orch-gateway
+  secretName: tls-orch
+  middlewares:
+    - validate-jwt
+    - secure-headers
+  tlsOption: "gateway-tls"
+componentStatus:
+  schema-version: "1.0"
+  orchestrator:
+    version: "0.1.0"
+    features:
+      # Application Orchestration - Enabled when app-orch profile is loaded
+      # Detection - enable-app-orch.yaml in root-app valueFiles
+      application-orchestration:
+        installed: false
+      # Cluster Orchestration - Enabled when cluster-orch profile is loaded
+      # Detection - enable-cluster-orch.yaml in root-app valueFiles
+      cluster-orchestration:
+        installed: false
+        # Cluster management core API and lifecycle operations
+        cluster-management:
+          installed: false
+        # CAPI (Cluster API) integration for declarative cluster management
+        capi:
+          installed: false
+        # Infrastructure provider for Intel platforms
+        intel-provider:
+          installed: false
+      # Edge Infrastructure Manager - Enabled when edge-infra profile is loaded
+      # Detection - enable-edgeinfra.yaml in root-app valueFiles
+      # Two deployment profiles: vPRO (with AMT/OOB) and OXM (microvisor-based)
+      # Sub-features represent actual user-facing workflows
+      edge-infrastructure-manager:
+        installed: true
+        # OXM Profile - Microvisor-based edge infrastructure management (on-prem ONLY)
+        # Detection - infra-onboarding.pxe-server.enabled is true (set by profile-oxm.yaml)
+        # OXM profile is EXCLUSIVELY for on-prem deployments with ORCH_INSTALLER_PROFILE=onprem-oxm
+        oxm-profile:
+          installed: false
+        # Day2 - Day 2 operations - maintenance, updates, troubleshooting
+        # Detection - maintenance-manager.enabled is true in infra-managers (defaults to true if maintenance-manager exists but enabled is not explicitly set to false)
+        day2:
+          installed: true
+        # Onboarding - Device discovery, registration, and enrollment workflow
+        # Detection - onboarding-manager is configured and enabled in infra-onboarding
+        # Available in both vPRO and OXM profiles
+        onboarding:
+          installed: true
+        # OOB (Out-of-Band) - vPRO/AMT management capabilities
+        # Detection - AMT components (MPS, RPS, DM-Manager) enabled in modular vPRO architecture
+        # Checks for infra-external.amt.*.enabled flags (default: true unless explicitly disabled)
+        # If infra-external.amt section doesn't exist, falls back to legacy infra-external enabled check
+        # Only available in vPRO profile, not in OXM (microvisor) profile
+        oob:
+          installed: true
+        # Provisioning - OS provisioning workflow capability
+        # Detection - provisioning available when infra-onboarding is deployed AND skipOSProvisioning is not set to true
+        # skipOSProvisioning flag is set at infra-onboarding level (argo.infra-onboarding.skipOSProvisioning)
+        # Note: infra-core.tenant-controller is enabled for vPRO and full EMF profiles but skipOSProvisioning is not related to tenant-controller
+        # When skipOSProvisioning=true, provisioning is disabled (vPRO AMT-only workflow without OS provisioning)
+        # Available in both vPRO (standard OS) and OXM (microvisor) profiles, unless explicitly skipped
+        provisioning:
+          installed: true
+      # Orchestrator Observability - Metrics and monitoring for orchestrator platform components
+      # Detection - orchestrator-observability application enabled
+      orchestrator-observability:
+        installed: false
+        # Metrics collection and monitoring for orchestrator components
+        monitoring:
+          installed: false
+        # Pre-built dashboards for orchestrator metrics
+        dashboards:
+          installed: false
+        # Alerting and monitoring rules for orchestrator
+        alerting:
+          installed: false
+      # Edge Node Observability - Metrics and monitoring for edge nodes
+      # Detection - edgenode-observability application enabled
+      edgenode-observability:
+        installed: false
+        # Metrics collection and monitoring for edge nodes
+        monitoring:
+          installed: false
+        # Pre-built dashboards for edge node metrics
+        dashboards:
+          installed: false
+      # Web UI - Enabled when full-ui profile is loaded
+      # Detection - enable-full-ui.yaml in root-app valueFiles
+      # UI sub-features check both the UI component AND the parent feature enablement
+      web-ui:
+        installed: true
+        orchestrator-ui-root:
+          installed: true
+        application-orchestration-ui:
+          installed: false
+        cluster-orchestration-ui:
+          installed: false
+        infrastructure-ui:
+          installed: true
+        admin-ui:
+          installed: true
+        # Alerts UI - Enable when observability feature available at orchestrator level
+        alerts-ui:
+          installed: false
+      # Multitenancy - Tenancy services (tenancy-manager, tenancy-api-mapping, tenancy-datamodel)
+      # are always deployed as part of root-app, so multitenancy is always enabled
+      # The default-tenant-only sub-feature indicates single-tenant mode (when defaultTenancy profile is loaded)
+      multitenancy:
+        installed: true
+        default-tenant-only:
+          installed: false
+      # Kyverno - Policy engine for Kubernetes admission control and governance
+      # Detection - enable-kyverno.yaml in root-app valueFiles
+      kyverno:
+        installed: false
+        # Kyverno policy engine core
+        policy-engine:
+          installed: false
+        # Pre-defined security and governance policies
+        policies:
+          installed: false

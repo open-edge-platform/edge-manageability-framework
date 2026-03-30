@@ -1,3 +1,8 @@
 # Values for haproxy-ingress-pxe-boots
 
 commonName: tinkerbell-haproxy.{{ .Values.clusterDomain }}
+haproxyIngress:
+  enabled: true
+haproxyIngressRateLimit:
+  rps: 500
+  connections: 70

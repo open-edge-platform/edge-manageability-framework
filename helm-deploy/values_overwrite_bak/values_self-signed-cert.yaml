@@ -1,0 +1,2 @@
+certDomain: cluster.onprem
+generateOrchCert: true

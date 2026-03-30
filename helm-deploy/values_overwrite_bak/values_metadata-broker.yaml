@@ -1,0 +1,26 @@
+
+
+openidc:
+  issuer: http://platform-keycloak.orch-platform.svc/realms/master
+service:
+  traefik:
+    namespace: "orch-gateway"
+    hostname: "Host(`metadata.cluster.onprem`)"
+global:
+  registry:
+    name: registry-rs.edgeorchestration.intel.com/edge-orch
+    imagePullSecrets:
+resources:
+  limits:
+    cpu: "64"
+    memory: 64Gi
+  requests:
+    cpu: 1m
+    memory: 1Mi
+opaResources:
+  limits:
+    cpu: "64"
+    memory: 64Gi
+  requests:
+    cpu: 1m
+    memory: 1Mi

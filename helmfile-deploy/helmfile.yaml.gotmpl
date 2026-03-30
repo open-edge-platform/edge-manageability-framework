@@ -1472,6 +1472,18 @@ releases:
     needs:
       - orch-platform/observability-tenant-controller
 
+  - name: infra-onboarding
+    labels:
+      app: infra-onboarding
+    namespace: orch-infra
+    chart: edge-orch/infra/charts/infra-onboarding
+    version: 1.35.12
+    values:
+      - values/infra-onboarding.yaml.gotmpl
+    needs:
+      - orch-platform/observability-tenant-controller
+      - orch-infra/infra-core
+    condition: infra-onboarding.enabled
 
   - name: infra-external
     labels:
@@ -1499,20 +1511,6 @@ releases:
       - orch-platform/observability-tenant-controller
       - orch-infra/infra-core
     condition: infra-managers.enabled
-
-
-  - name: infra-onboarding
-    labels:
-      app: infra-onboarding
-    namespace: orch-infra
-    chart: edge-orch/infra/charts/infra-onboarding
-    version: 1.35.12
-    values:
-      - values/infra-onboarding.yaml.gotmpl
-    needs:
-      - orch-platform/observability-tenant-controller
-      - orch-infra/infra-core
-    condition: infra-onboarding.enabled
 
 
   - name: intel-infra-provider
@@ -1558,9 +1556,9 @@ releases:
     needs:
       - orch-cluster/intel-infra-provider
 
-  - name: web-ui-root
+  - name: web-ui
     labels:
-      app: web-ui-root
+      app: web-ui
     namespace: orch-ui
     chart: edge-orch/orch-ui/charts/orch-ui-root
     version: 4.0.8

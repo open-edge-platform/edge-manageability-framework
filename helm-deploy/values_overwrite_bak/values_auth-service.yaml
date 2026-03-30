@@ -1,0 +1,12 @@
+
+resources:
+  limits:
+    cpu: "64"
+    memory: 64Gi
+  requests:
+    cpu: 1m
+    memory: 1Mi
+image:
+  registry: registry-rs.edgeorchestration.intel.com/edge-orch
+  repository: common/auth-service
+imagePullSecrets: {}

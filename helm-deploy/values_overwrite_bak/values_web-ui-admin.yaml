@@ -1,0 +1,16 @@
+global:
+  registry:
+    name: registry-rs.edgeorchestration.intel.com/edge-orch
+    imagePullSecrets:
+mfe:
+  app_orch: false
+  cluster_orch: false
+  infra: true
+  admin: true
+resources:
+  limits:
+    cpu: "64"
+    memory: 64Gi
+  requests:
+    cpu: 1m
+    memory: 1Mi

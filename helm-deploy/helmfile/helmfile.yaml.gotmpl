@@ -1,0 +1,604 @@
+# ═══════════════════════════════════════════════════════════════
+# helmfile.yaml.gotmpl — Declarative Helm deploy for Edge Orchestrator
+#
+# Replaces helm-deploy-orch.sh with helmfile (https://github.com/helmfile/helmfile)
+#
+# Usage:
+#   helmfile -e onprem-vpro apply           # deploy all vpro apps
+#   helmfile -e onprem-eim apply            # deploy all eim apps
+#   helmfile -e onprem-vpro -l name=vault apply  # deploy single app
+#   helmfile -e onprem-vpro destroy         # uninstall all
+#   helmfile -e onprem-vpro diff            # preview changes
+#   helmfile -e onprem-vpro list            # list releases
+# ═══════════════════════════════════════════════════════════════
+
+environments:
+  onprem-vpro:
+    values:
+      - environments/onprem-vpro.yaml
+  onprem-eim:
+    values:
+      - environments/onprem-eim.yaml
+
+---
+
+helmDefaults:
+  wait: true
+  timeout: 600
+  createNamespace: true
+  skipDeps: true
+
+repositories:
+  - name: jetstack
+    url: https://charts.jetstack.io
+  - name: external-secrets
+    url: https://charts.external-secrets.io
+  - name: prometheus-community
+    url: https://prometheus-community.github.io/helm-charts
+  - name: stakater
+    url: https://stakater.github.io/stakater-charts
+  - name: hashicorp
+    url: https://helm.releases.hashicorp.com
+  - name: haproxytech
+    url: https://haproxytech.github.io/helm-charts
+  - name: traefik
+    url: https://helm.traefik.io/traefik
+  - name: edge-orch
+    url: {{ env "RELEASE_SERVICE_URL" | default "registry-rs.edgeorchestration.intel.com" }}/edge-orch
+    oci: true
+  - name: ghcr-cnpg
+    url: ghcr.io/cloudnative-pg/charts
+    oci: true
+
+releases:
+  # ════════════════════════════════════════
+  # Group 1: Operators & CRDs
+  # ════════════════════════════════════════
+  - name: keycloak-operator
+    namespace: orch-platform
+    chart: edge-orch/common/charts/keycloak-operator
+    version: "26.1.2"
+    installed: {{ .Values | get "apps.keycloak-operator" false }}
+    values:
+      - values_overwrite/values_keycloak-operator.yaml
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+
+  - name: postgresql-operator
+    namespace: postgresql-operator
+    chart: ghcr-cnpg/cloudnative-pg
+    version: "0.27.1"
+    installed: {{ .Values | get "apps.postgresql-operator" false }}
+    values:
+      - values_overwrite/values_postgresql-operator.yaml
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+
+  - name: namespace-label
+    namespace: ns-label
+    chart: edge-orch/common/charts/namespace-label
+    version: "26.0.2"
+    installed: {{ .Values | get "apps.namespace-label" false }}
+    values:
+      - values_overwrite/values_namespace-label.yaml.gotmpl
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+    needs:
+      - orch-platform/keycloak-operator
+
+  - name: cert-manager
+    namespace: cert-manager
+    chart: jetstack/cert-manager
+    version: "1.19.3"
+    installed: {{ .Values | get "apps.cert-manager" false }}
+    values:
+      - values_overwrite/values_cert-manager.yaml.gotmpl
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+
+  - name: external-secrets
+    namespace: orch-secret
+    chart: external-secrets/external-secrets
+    version: "2.0.1"
+    installed: {{ .Values | get "apps.external-secrets" false }}
+    values:
+      - values_overwrite/values_external-secrets.yaml.gotmpl
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+
+  - name: prometheus-crd
+    namespace: orch-platform
+    chart: prometheus-community/prometheus-operator-crds
+    version: "24.0.1"
+    installed: {{ .Values | get "apps.prometheus-crd" false }}
+    values:
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+
+  - name: reloader
+    namespace: orch-platform
+    chart: stakater/reloader
+    version: "2.2.3"
+    installed: {{ .Values | get "apps.reloader" false }}
+    values:
+      - values_overwrite/values_reloader.yaml
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+
+  # ════════════════════════════════════════
+  # Group 2: Database
+  # ════════════════════════════════════════
+  - name: postgresql-secrets
+    namespace: orch-database
+    chart: edge-orch/common/charts/postgresql-secrets
+    version: "26.0.1"
+    installed: {{ .Values | get "apps.postgresql-secrets" false }}
+    values:
+      - values_overwrite/values_postgresql-secrets.yaml
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+    needs:
+      - postgresql-operator/postgresql-operator
+
+  - name: postgresql-cluster
+    namespace: orch-database
+    chart: ghcr-cnpg/cluster
+    version: "0.3.1"
+    installed: {{ .Values | get "apps.postgresql-cluster" false }}
+    values:
+      - values_overwrite/values_postgresql-cluster.yaml
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+    needs:
+      - orch-database/postgresql-secrets
+
+  # ════════════════════════════════════════
+  # Group 3: Platform core
+  # ════════════════════════════════════════
+  - name: platform-autocert
+    namespace: cert-manager
+    chart: edge-orch/common/charts/platform-autocert
+    version: "1.0.2"
+    installed: {{ .Values | get "apps.platform-autocert" false }}
+    values:
+      - values_overwrite/values_platform-autocert.yaml.gotmpl
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+    needs:
+      - cert-manager/cert-manager
+
+  - name: platform-keycloak
+    namespace: orch-platform
+    chart: edge-orch/common/charts/keycloak-instance
+    version: "26.1.2"
+    installed: {{ .Values | get "apps.platform-keycloak" false }}
+    values:
+      - values_overwrite/values_platform-keycloak.yaml.gotmpl
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+    needs:
+      - orch-platform/keycloak-operator
+      - orch-database/postgresql-cluster
+
+  - name: secrets-config
+    namespace: orch-platform
+    chart: edge-orch/common/charts/secrets-config
+    version: "26.0.2"
+    installed: {{ .Values | get "apps.secrets-config" false }}
+    values:
+      - values_overwrite/values_secrets-config.yaml.gotmpl
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+    needs:
+      - orch-platform/platform-keycloak
+    hooks:
+      - events: ["presync"]
+        showlogs: true
+        command: ./hooks/pre-install.sh
+        args: ["secrets-config", "orch-platform"]
+
+  - name: self-signed-cert
+    namespace: cert-manager
+    chart: edge-orch/common/charts/self-signed-cert
+    version: "4.0.11"
+    installed: {{ .Values | get "apps.self-signed-cert" false }}
+    values:
+      - values_overwrite/values_self-signed-cert.yaml.gotmpl
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+    needs:
+      - cert-manager/cert-manager
+
+  - name: vault
+    namespace: orch-platform
+    chart: hashicorp/vault
+    version: "0.32.0"
+    installed: {{ .Values | get "apps.vault" false }}
+    values:
+      - values_overwrite/values_vault.yaml
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+    needs:
+      - orch-database/postgresql-cluster
+      - orch-platform/secrets-config
+    hooks:
+      - events: ["presync"]
+        showlogs: true
+        command: ./hooks/pre-install.sh
+        args: ["vault", "orch-platform"]
+
+  - name: rs-proxy
+    namespace: orch-platform
+    chart: edge-orch/common/charts/rs-proxy
+    version: "25.2.3"
+    installed: {{ .Values | get "apps.rs-proxy" false }}
+    values:
+      - values_overwrite/values_rs-proxy.yaml.gotmpl
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+
+  # ════════════════════════════════════════
+  # Group 4: TLS & cert copy
+  # ════════════════════════════════════════
+  - name: secret-wait-tls-orch
+    namespace: orch-gateway
+    chart: edge-orch/common/charts/secret-wait
+    version: "26.0.2"
+    installed: {{ .Values | get "apps.secret-wait-tls-orch" false }}
+    values:
+      - values_overwrite/values_secret-wait-tls-orch.yaml.gotmpl
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+    needs:
+      - cert-manager/self-signed-cert
+
+  - name: copy-ca-cert-gateway-to-cattle
+    namespace: cattle-system
+    chart: edge-orch/common/charts/copy-secret
+    version: "26.0.0"
+    installed: {{ .Values | get "apps.copy-ca-cert-gateway-to-cattle" false }}
+    values:
+      - values_overwrite/values_copy-ca-cert-gateway-to-cattle.yaml
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+    needs:
+      - orch-gateway/secret-wait-tls-orch
+
+  - name: copy-ca-cert-gateway-to-infra
+    namespace: orch-infra
+    chart: edge-orch/common/charts/copy-secret
+    version: "26.0.0"
+    installed: {{ .Values | get "apps.copy-ca-cert-gateway-to-infra" false }}
+    values:
+      - values_overwrite/values_copy-ca-cert-gateway-to-infra.yaml
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+    needs:
+      - orch-gateway/secret-wait-tls-orch
+
+  - name: copy-keycloak-admin-to-infra
+    namespace: orch-infra
+    chart: edge-orch/common/charts/copy-secret
+    version: "26.0.0"
+    installed: {{ .Values | get "apps.copy-keycloak-admin-to-infra" false }}
+    values:
+      - values_overwrite/values_copy-keycloak-admin-to-infra.yaml.gotmpl
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+    needs:
+      - orch-platform/platform-keycloak
+
+  # ════════════════════════════════════════
+  # Group 5: Ingress
+  # ════════════════════════════════════════
+  - name: traefik-pre
+    namespace: orch-gateway
+    chart: edge-orch/common/charts/traefik-pre
+    version: "3.0.1"
+    installed: {{ .Values | get "apps.traefik-pre" false }}
+    values:
+      - values_overwrite/values_traefik-pre.yaml
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+    needs:
+      - orch-gateway/secret-wait-tls-orch
+
+  - name: ingress-haproxy
+    namespace: orch-boots
+    chart: haproxytech/kubernetes-ingress
+    version: "1.41.0"
+    installed: {{ .Values | get "apps.ingress-haproxy" false }}
+    values:
+      - values_overwrite/values_ingress-haproxy.yaml
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+
+  - name: traefik
+    namespace: orch-gateway
+    chart: traefik/traefik
+    version: "37.2.0"
+    installed: {{ .Values | get "apps.traefik" false }}
+    values:
+      - values_overwrite/values_traefik.yaml
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+    needs:
+      - orch-gateway/traefik-pre
+
+  - name: haproxy-ingress-pxe-boots
+    namespace: orch-boots
+    chart: edge-orch/common/charts/haproxy-ingress-pxe-boots
+    version: "1.0.1"
+    installed: {{ .Values | get "apps.haproxy-ingress-pxe-boots" false }}
+    values:
+      - values_overwrite/values_haproxy-ingress-pxe-boots.yaml.gotmpl
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+    needs:
+      - orch-boots/ingress-haproxy
+
+  # ════════════════════════════════════════
+  # Group 6: IAM & Tenancy
+  # ════════════════════════════════════════
+  - name: nexus-api-gw
+    namespace: orch-iam
+    chart: edge-orch/common/charts/nexus-api-gw
+    version: "26.0.9"
+    installed: {{ .Values | get "apps.nexus-api-gw" false }}
+    values:
+      - values_overwrite/values_nexus-api-gw.yaml.gotmpl
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+    needs:
+      - orch-gateway/traefik
+      - orch-platform/platform-keycloak
+
+  - name: tenancy-api-mapping
+    namespace: orch-iam
+    chart: edge-orch/common/charts/tenancy-api-mapping
+    version: "26.0.14"
+    installed: {{ .Values | get "apps.tenancy-api-mapping" false }}
+    values:
+      - values_overwrite/values_tenancy-api-mapping.yaml.gotmpl
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+    needs:
+      - orch-iam/nexus-api-gw
+
+  - name: tenancy-datamodel
+    namespace: orch-iam
+    chart: edge-orch/common/charts/tenancy-datamodel
+    version: "26.0.4"
+    installed: {{ .Values | get "apps.tenancy-datamodel" false }}
+    values:
+      - values_overwrite/values_tenancy-datamodel.yaml.gotmpl
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+    needs:
+      - orch-iam/nexus-api-gw
+
+  - name: tenancy-manager
+    namespace: orch-iam
+    chart: edge-orch/common/charts/tenancy-manager
+    version: "26.0.4"
+    installed: {{ .Values | get "apps.tenancy-manager" false }}
+    values:
+      - values_overwrite/values_tenancy-manager.yaml.gotmpl
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+    needs:
+      - orch-iam/tenancy-datamodel
+
+  - name: traefik-extra-objects
+    namespace: orch-gateway
+    chart: edge-orch/common/charts/traefik-extra-objects
+    version: "26.0.1"
+    installed: {{ .Values | get "apps.traefik-extra-objects" false }}
+    values:
+      - values_overwrite/values_traefik-extra-objects.yaml.gotmpl
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+    needs:
+      - orch-gateway/traefik
+
+  - name: keycloak-tenant-controller
+    namespace: orch-gateway
+    chart: edge-orch/common/charts/keycloak-tenant-controller
+    version: "26.0.21"
+    installed: {{ .Values | get "apps.keycloak-tenant-controller" false }}
+    values:
+      - values_overwrite/values_keycloak-tenant-controller.yaml.gotmpl
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+    needs:
+      - orch-platform/platform-keycloak
+      - orch-gateway/traefik
+
+  # ════════════════════════════════════════
+  # Group 7: Boots TLS & token
+  # ════════════════════════════════════════
+  - name: secret-wait-tls-boots
+    namespace: orch-boots
+    chart: edge-orch/common/charts/secret-wait
+    version: "26.0.2"
+    installed: {{ .Values | get "apps.secret-wait-tls-boots" false }}
+    values:
+      - values_overwrite/values_secret-wait-tls-boots.yaml.gotmpl
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+    needs:
+      - cert-manager/self-signed-cert
+
+  - name: token-fs
+    namespace: orch-secret
+    chart: edge-orch/common/charts/token-fs
+    version: "26.0.2"
+    installed: {{ .Values | get "apps.token-fs" false }}
+    values:
+      - values_overwrite/values_token-fs.yaml.gotmpl
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+    needs:
+      - orch-platform/vault
+
+  - name: copy-ca-cert-boots-to-gateway
+    namespace: orch-gateway
+    chart: edge-orch/common/charts/copy-secret
+    version: "26.0.0"
+    installed: {{ .Values | get "apps.copy-ca-cert-boots-to-gateway" false }}
+    values:
+      - values_overwrite/values_copy-ca-cert-boots-to-gateway.yaml.gotmpl
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+    needs:
+      - orch-boots/secret-wait-tls-boots
+
+  - name: copy-ca-cert-boots-to-infra
+    namespace: orch-infra
+    chart: edge-orch/common/charts/copy-secret
+    version: "26.0.0"
+    installed: {{ .Values | get "apps.copy-ca-cert-boots-to-infra" false }}
+    values:
+      - values_overwrite/values_copy-ca-cert-boots-to-infra.yaml.gotmpl
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+    needs:
+      - orch-boots/secret-wait-tls-boots
+
+  # ════════════════════════════════════════
+  # Group 8: Application services
+  # ════════════════════════════════════════
+  - name: component-status
+    namespace: orch-platform
+    chart: edge-orch/common/charts/component-status
+    version: "26.0.4"
+    installed: {{ .Values | get "apps.component-status" false }}
+    values:
+      - values_overwrite/values_component-status.yaml.gotmpl
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+
+  - name: infra-core
+    namespace: orch-infra
+    chart: edge-orch/infra/charts/infra-core
+    version: "2.19.8"
+    installed: {{ .Values | get "apps.infra-core" false }}
+    values:
+      - values_overwrite/values_infra-core.yaml.gotmpl
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+    needs:
+      - orch-database/postgresql-cluster
+      - orch-gateway/traefik
+
+  - name: auth-service
+    namespace: orch-gateway
+    chart: edge-orch/common/charts/auth-service
+    version: "26.0.9"
+    installed: {{ .Values | get "apps.auth-service" false }}
+    values:
+      - values_overwrite/values_auth-service.yaml.gotmpl
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+    needs:
+      - orch-platform/platform-keycloak
+      - orch-gateway/traefik
+
+  - name: infra-external
+    namespace: orch-infra
+    chart: edge-orch/infra/charts/infra-external
+    version: "2.12.12"
+    installed: {{ .Values | get "apps.infra-external" false }}
+    values:
+      - values_overwrite/values_infra-external.yaml.gotmpl
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+    needs:
+      - orch-infra/infra-core
+
+  - name: infra-managers
+    namespace: orch-infra
+    chart: edge-orch/infra/charts/infra-managers
+    version: "2.17.3"
+    installed: {{ .Values | get "apps.infra-managers" false }}
+    values:
+      - values_overwrite/values_infra-managers.yaml.gotmpl
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+    needs:
+      - orch-infra/infra-core
+
+  - name: infra-onboarding
+    namespace: orch-infra
+    chart: edge-orch/infra/charts/infra-onboarding
+    version: "1.35.12"
+    installed: {{ .Values | get "apps.infra-onboarding" false }}
+    values:
+      - values_overwrite/values_infra-onboarding.yaml.gotmpl
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+    needs:
+      - orch-infra/infra-core
+
+  - name: certificate-file-server
+    namespace: orch-gateway
+    chart: edge-orch/common/charts/certificate-file-server
+    version: "25.2.3"
+    installed: {{ .Values | get "apps.certificate-file-server" false }}
+    values:
+      - values_overwrite/values_certificate-file-server.yaml.gotmpl
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+    needs:
+      - orch-gateway/traefik
+
+  # ════════════════════════════════════════
+  # Group 9: EIM-only apps
+  # ════════════════════════════════════════
+  - name: metadata-broker
+    namespace: orch-ui
+    chart: edge-orch/orch-ui/charts/orch-metadata-broker
+    version: "1.0.1"
+    installed: {{ .Values | get "apps.metadata-broker" false }}
+    values:
+      - values_overwrite/values_metadata-broker.yaml.gotmpl
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+    needs:
+      - orch-gateway/traefik
+
+  - name: web-ui-admin
+    namespace: orch-ui
+    chart: edge-orch/orch-ui/charts/orch-ui-admin
+    version: "4.0.7"
+    installed: {{ .Values | get "apps.web-ui-admin" false }}
+    values:
+      - values_overwrite/values_web-ui-admin.yaml.gotmpl
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+    needs:
+      - orch-ui/metadata-broker
+
+  - name: web-ui-infra
+    namespace: orch-ui
+    chart: edge-orch/orch-ui/charts/orch-ui-infra
+    version: "4.0.4"
+    installed: {{ .Values | get "apps.web-ui-infra" false }}
+    values:
+      - values_overwrite/values_web-ui-infra.yaml.gotmpl
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+    needs:
+      - orch-ui/metadata-broker
+
+  - name: web-ui-root
+    namespace: orch-ui
+    chart: edge-orch/orch-ui/charts/orch-ui-root
+    version: "4.0.8"
+    installed: {{ .Values | get "apps.web-ui-root" false }}
+    values:
+      - values_overwrite/values_web-ui-root.yaml.gotmpl
+      - values/global-overrides.yaml.gotmpl
+    missingFileHandler: Warn
+    needs:
+      - orch-ui/metadata-broker

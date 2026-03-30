@@ -48,17 +48,13 @@ api:
   rps: "https://api.{{ .Values.clusterDomain }}"
   mps: "https://api.{{ .Values.clusterDomain }}"
 
-# MFE Configuration for EIM mode.
-# All set to false because the root chart's _helpers.tpl hardcodes proxy_pass as
-# {{ .Release.Name }}-infra etc. With helmfile release name "web-ui-root", this
-# produces "web-ui-root-infra" which doesn't exist (actual service is "web-ui-infra").
-# ArgoCD avoids this by using releaseName: web-ui for all UI charts.
-# The web-ui-infra chart has its own IngressRoute and serves the UI directly.
+# MFE Configuration
+# We use release name "web-ui" for the root chart so proxy_pass works
 mfe:
-  app_orch: false
-  cluster_orch: false
-  infra: false
-  admin: false
+  app_orch: {{ .Values | get "web-ui-app-orch.enabled" false }}
+  cluster_orch: {{ .Values | get "web-ui-cluster-orch.enabled" false }}
+  infra: {{ .Values | get "web-ui-infra.enabled" false }}
+  admin: {{ .Values | get "web-ui-admin.enabled" false }}
   alerts: false
 
 # https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous

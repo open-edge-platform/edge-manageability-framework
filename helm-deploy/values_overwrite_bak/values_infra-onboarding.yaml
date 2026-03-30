@@ -1,0 +1,210 @@
+
+---
+import:
+  dkam:
+    enabled: true
+  tinkerbell:
+    enabled: true
+  onboarding-manager:
+    enabled: true
+  pxe-server:
+    enabled: false
+  infra-config:
+    enabled: true
+tinkerbell:
+  pvc:
+    enabled: false
+    storageClassName: openebs-hostpath
+    accessModes:
+      - ReadWriteOnce
+  traefikReverseProxy:
+    gatewayNamespace: orch-gateway
+    enabled: &traefikReverseProxy_enabled true
+    tinkServerDnsname: "tinkerbell-server.cluster.onprem"
+    nginxDnsname: &nginxDnsname "tinkerbell-haproxy.cluster.onprem"
+  # https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
+  traefikApiGroup: "traefik.io/v1alpha1"
+  stack:
+    enabled: true
+    resources:
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+      requests:
+        cpu: 200m
+        memory: 256Mi
+    hook:
+  tinkerbell_tink:
+    enabled: true
+    controller:
+      enabled: true
+    server:
+      enabled: true
+      metrics:
+        enabled: false
+  tinkerbell_smee:
+    # these additional arguments serve as kernel arguments for Edge Node
+    additionalKernelArgs:
+      - "http_proxy=http://proxy-dmz.intel.com:912"
+      - "https_proxy=http://proxy-dmz.intel.com:912"
+      - "no_proxy=.caas.intel.com,certificates.intel.com,localhost,127.0.0.0/8,10.0.0.0/8,192.168.0.0/16,172.16.0.0/12,169.254.169.254,.svc,.cluster.local,.default,.internal,.orch-platform,.orch-app,.orch-cluster,.orch-infra,.orch-database,.cattle-system,.orch-secret,.onprem,.espd.infra-host.com,.pid.infra-host.com,.espdqa.infra-host.com"
+      - "HTTP_PROXY=http://proxy-dmz.intel.com:912"
+      - "HTTPS_PROXY=http://proxy-dmz.intel.com:912"
+      - "NO_PROXY=.caas.intel.com,certificates.intel.com,localhost,127.0.0.0/8,10.0.0.0/8,192.168.0.0/16,172.16.0.0/12,169.254.169.254,.svc,.cluster.local,.default,.internal,.orch-platform,.orch-app,.orch-cluster,.orch-infra,.orch-database,.cattle-system,.orch-secret,.onprem,.espd.infra-host.com,.pid.infra-host.com,.espdqa.infra-host.com"
+      - "DEBUG=false"
+      - "TIMEOUT=120s"
+      - "syslog_host=127.0.0.1"
+    traefikReverseProxy:
+      enabled: *traefikReverseProxy_enabled
+      nginxDnsname: *nginxDnsname
+  tinkerbell_hegel:
+onboarding-manager:
+  managerArgs:
+    inventoryAddress: "inventory.orch-infra.svc.cluster.local:50051"
+    traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
+    enableTracing: false
+  traefikReverseProxy:
+    enabled: true
+    secretName: "tls-orch"
+    tlsOption: "gateway-tls"
+    gatewayNamespace: orch-gateway
+    host:
+      grpc:
+        name: "onboarding-node.cluster.onprem"
+      stream:
+        name: "onboarding-stream.cluster.onprem"
+  # https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
+  traefikApiGroup: "traefik.io/v1alpha1"
+  env:
+    tinkerActionsVersion: "1.20.2"
+    oidc:
+      oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
+      # Skip AuthZ for CDN-boots
+      clients:
+        bypass:
+          - cdn-boots
+    vaultUrl: "http://vault.orch-platform.svc.cluster.local:8200"
+    vaultRole: "orch-svc"
+    keycloakUrl: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
+    mode: "prod"
+    userName: "user"
+    passWord: "user"
+    enableTinkActionTimestamp: false
+  multiTenancy:
+    enforceMultiTenancy: true
+  resources:
+    limits:
+      cpu: "64"
+      memory: 64Gi
+    requests:
+      cpu: 10m
+      memory: 16Mi
+  serviceAccount:
+    name: "orch-svc"
+  service:
+    enableIO: true
+  metrics:
+    enabled: false
+  pvc:
+    storageClassName: openebs-hostpath
+dkam:
+  managerArgs:
+    traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
+    enableTracing: false
+  env:
+    rs_proxy_address: "rs-proxy.orch-platform.svc.cluster.local:8081/"
+    oidc:
+      oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
+    mode: "prod"
+  resources:
+    limits:
+      cpu: "64"
+      memory: 64Gi
+    requests:
+      cpu: 10m
+      memory: 16Mi
+  pvc:
+    storageClassName: openebs-hostpath
+  metrics:
+    enabled: false
+  proxies:
+    http_proxy: http://proxy-dmz.intel.com:912
+    https_proxy: http://proxy-dmz.intel.com:912
+    no_proxy: .caas.intel.com,certificates.intel.com,localhost,127.0.0.0/8,10.0.0.0/8,192.168.0.0/16,172.16.0.0/12,169.254.169.254,.svc,.cluster.local,.default,.internal,.orch-platform,.orch-app,.orch-cluster,.orch-infra,.orch-database,.cattle-system,.orch-secret,.onprem,.espd.infra-host.com,.pid.infra-host.com,.espdqa.infra-host.com
+infra-config:
+  config:
+    enAgentManifestTag: "1.5.8"
+    embImageUrl: files-edge-orch/repository/microvisor/uos/emb_uos_x86_64_20251113.tar.gz
+    enProxyHTTP: http://proxy-dmz.intel.com:912
+    enProxyHTTPS: http://proxy-dmz.intel.com:912
+    enProxyFTP: http://proxy-dmz.intel.com:911
+    enProxySocks: http://proxy-dmz.intel.com:1080
+    enProxyNoProxy: .caas.intel.com,certificates.intel.com,localhost,127.0.0.0/8,10.0.0.0/8,192.168.0.0/16,172.16.0.0/12,169.254.169.254,.svc,.cluster.local,.default,.internal,.orch-platform,.orch-app,.orch-cluster,.orch-infra,.orch-database,.cattle-system,.orch-secret,.onprem,.espd.infra-host.com,.pid.infra-host.com,.espdqa.infra-host.com
+    orchInfra: infra-node.cluster.onprem:443
+    orchCluster: cluster-orch-node.cluster.onprem:443
+    orchUpdate: update-node.cluster.onprem:443
+    orchRelease: release.cluster.onprem
+    orchPlatformObsLogs: logs-node.cluster.onprem:443
+    orchPlatformObsMetrics: metrics-node.cluster.onprem:443
+    orchKeycloak: keycloak.cluster.onprem:443
+    orchTelemetry: telemetry-node.cluster.onprem:443
+    orchAttestationStatus: attest-node.cluster.onprem:443
+    orchRegistry: registry-rs.edgeorchestration.intel.com:9443
+    orchFileServer: files-rs.edgeorchestration.intel.com:60444
+    # TODO: Revisit the below routes - limit exposure and switch to MT GW endpoints.
+    orchMPSHost: mps.cluster.onprem:4433
+    orchMPSWHost: mps-wss.cluster.onprem:443
+    orchRPSHost: rps.cluster.onprem:443
+    orchRPSWHost: rps-wss.cluster.onprem:443
+    orchDeviceManager: device-manager-node.cluster.onprem:443
+    rsType: "no-auth"
+    enServiceClients: "hardware-discovery-agent,cluster-agent,platform-manageability-agent,platform-update-agent,platform-telemetry-agent"
+    enOutboundClients: "platform-observability-collector,platform-observability-health-check,platform-observability-logging,platform-observability-metrics"
+    enMetricsEnabled: "true"
+    enTokenClients: "node-agent,hd-agent,cluster-agent,platform-update-agent,platform-observability-agent,platform-telemetry-agent,prometheus,connect-agent,attestation-manager,platform-manageability-agent"
+    disableCoProfile: true
+    disableO11yProfile: true
+    netIp: "dynamic"
+    ntpServer: "pool.ntp.org"
+    nameServers: []
+    systemConfigFsInotifyMaxUserInstances: "8192"
+    systemConfigVmOverCommitMemory: "1"
+    systemConfigKernelPanicOnOops: "1"
+    systemConfigKernelPanic: "10"
+    cdnSvc: files-rs.edgeorchestration.intel.com
+    provisioningSvc: tinkerbell-haproxy.cluster.onprem
+    tinkerSvc: tinkerbell-server.cluster.onprem
+    omSvc: onboarding-node.cluster.onprem
+    omStreamSvc: onboarding-stream.cluster.onprem
+    extraHosts: ""
+    skipOSProvisioning: false
+    firewallReqAllow: |-
+      [{
+        "sourceIp": "cluster.onprem",
+        "ports": "6443,10250",
+        "ipVer": "ipv4",
+        "protocol": "tcp"
+      }]
+    firewallCfgAllow: |-
+      [{
+        "sourceIp": "",
+        "ports": "2379,2380,6443,9345,10250,5473",
+        "ipVer": "",
+        "protocol": "tcp"
+      },
+      {
+        "sourceIp": "",
+        "ports": "7946",
+        "ipVer": "",
+        "protocol": ""
+      },
+      {
+        "sourceIp": "",
+        "ports": "123",
+        "ipVer": "",
+        "protocol": "udp"
+      }]
+global:
+  registry:
+    name: "registry-rs.edgeorchestration.intel.com/edge-orch/"
+    imagePullSecrets: []

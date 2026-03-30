@@ -1,0 +1,52 @@
+
+global:
+  auth:
+    enabled: true
+    keycloak:
+      client_id: "webui-client"
+      realm: "master"
+      url: "https://keycloak.cluster.onprem"
+  session_timeout: 3600
+  registry:
+    name: registry-rs.edgeorchestration.intel.com/edge-orch
+    imagePullSecrets:
+  observability:
+    url: "https://observability-ui.cluster.onprem"
+header:
+  title: "Edge Orchestrator"
+service:
+  type: ClusterIP
+  traefik:
+    enabled: true
+    options:
+      name: "gateway-tls"
+    namespace: orch-gateway
+    hostname: "Host(`web-ui.cluster.onprem`)"
+    baseHostname: "Host(`cluster.onprem`)"
+traefikApiGroup: "traefik.io/v1alpha1"
+versions:
+  orchestrator: 0.1.0
+api:
+  catalog: "https://api.cluster.onprem"
+  appDeploymentManger: "https://api.cluster.onprem"
+  appResourceManger: "https://api.cluster.onprem"
+  clusterOrch: "https://api.cluster.onprem"
+  infraManager: "https://api.cluster.onprem"
+  metadataBroker: "https://api.cluster.onprem"
+  alertManager: "https://api.cluster.onprem"
+  tenantManager: "https://api.cluster.onprem"
+  rps: "https://api.cluster.onprem"
+  mps: "https://api.cluster.onprem"
+mfe:
+  app_orch: false
+  cluster_orch: false
+  infra: true
+  admin: true
+  alerts: false
+resources:
+  limits:
+    cpu: "64"
+    memory: 64Gi
+  requests:
+    cpu: 1m
+    memory: 1Mi

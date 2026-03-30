@@ -1,0 +1,73 @@
+# onprem-vpro environment — apps enabled for the vPro profile
+#
+# Override these at deploy time via env vars or --state-values-set:
+#   RELEASE_SERVICE_URL=my-registry.example.com helmfile -e onprem-vpro apply
+#   helmfile -e onprem-vpro --state-values-set cluster.domain=my.domain apply
+
+# ── Overridable infrastructure variables ──
+registry:
+  url: "registry-rs.edgeorchestration.intel.com"
+  path: "edge-orch"
+
+cluster:
+  name: "onprem"
+  domain: "cluster.onprem"
+
+lb:
+  argoIP: "192.168.99.20"
+  traefikIP: "192.168.99.30"
+  haproxyIP: "192.168.99.40"
+
+proxy:
+  httpProxy: ""
+  httpsProxy: ""
+  noProxy: ""
+
+# ── App enable/disable flags ──
+# Each key under 'apps' corresponds to a release name in helmfile.yaml.gotmpl
+apps:
+  keycloak-operator: true
+  postgresql-operator: true
+  namespace-label: true
+  cert-manager: true
+  external-secrets: true
+  prometheus-crd: true
+  reloader: true
+  postgresql-secrets: true
+  postgresql-cluster: true
+  platform-autocert: true
+  platform-keycloak: true
+  secrets-config: true
+  self-signed-cert: true
+  vault: true
+  rs-proxy: true
+  secret-wait-tls-orch: true
+  copy-ca-cert-gateway-to-cattle: true
+  copy-ca-cert-gateway-to-infra: true
+  copy-keycloak-admin-to-infra: true
+  traefik-pre: true
+  ingress-haproxy: true
+  traefik: true
+  haproxy-ingress-pxe-boots: true
+  nexus-api-gw: true
+  tenancy-api-mapping: true
+  tenancy-datamodel: true
+  tenancy-manager: true
+  traefik-extra-objects: true
+  keycloak-tenant-controller: true
+  secret-wait-tls-boots: true
+  token-fs: true
+  copy-ca-cert-boots-to-gateway: true
+  copy-ca-cert-boots-to-infra: true
+  component-status: true
+  infra-core: true
+  auth-service: true
+  infra-external: true
+  infra-managers: true
+  infra-onboarding: true
+  certificate-file-server: true
+  # EIM-only apps — disabled for vpro
+  metadata-broker: false
+  web-ui-admin: false
+  web-ui-infra: false
+  web-ui-root: false

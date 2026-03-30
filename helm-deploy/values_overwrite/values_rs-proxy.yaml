@@ -1,0 +1,4 @@
+
+refreshInterval: "10m"
+
+externalSecretsApiGroup: external-secrets.io/v1

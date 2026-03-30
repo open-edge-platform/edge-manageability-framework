@@ -1,0 +1,45 @@
+
+global:
+  auth:
+    enabled: true
+    keycloak:
+      client_id: "webui-client"
+      realm: "master"
+      url: "https://keycloak.{{ env "CLUSTER_DOMAIN" | default "cluster.onprem" }}"
+  session_timeout: 3600
+  registry:
+    name: {{ env "RELEASE_SERVICE_URL" | default "registry-rs.edgeorchestration.intel.com" }}/edge-orch
+    imagePullSecrets:
+  observability:
+    url: "https://observability-ui.{{ env "CLUSTER_DOMAIN" | default "cluster.onprem" }}"
+header:
+  title: "Edge Infrastructure Manager"
+service:
+  type: ClusterIP
+  traefik:
+    enabled: false
+    hostname: "Host(`web-ui.{{ env "CLUSTER_DOMAIN" | default "cluster.onprem" }}`)"
+    baseHostname: "Host(`{{ env "CLUSTER_DOMAIN" | default "cluster.onprem" }}`)"
+    options:
+      name: "gateway-tls"
+traefikApiGroup: "traefik.io/v1alpha1"
+versions:
+  orchestrator: 0.1.0
+api:
+  catalog: "https://api.{{ env "CLUSTER_DOMAIN" | default "cluster.onprem" }}"
+  appDeploymentManger: "https://api.{{ env "CLUSTER_DOMAIN" | default "cluster.onprem" }}"
+  appResourceManger: "https://api.{{ env "CLUSTER_DOMAIN" | default "cluster.onprem" }}"
+  clusterOrch: "https://api.{{ env "CLUSTER_DOMAIN" | default "cluster.onprem" }}"
+  infraManager: "https://api.{{ env "CLUSTER_DOMAIN" | default "cluster.onprem" }}"
+  metadataBroker: "https://api.{{ env "CLUSTER_DOMAIN" | default "cluster.onprem" }}"
+  alertManager: "https://alerting-monitor.{{ env "CLUSTER_DOMAIN" | default "cluster.onprem" }}"
+  tenantManager: "https://api.{{ env "CLUSTER_DOMAIN" | default "cluster.onprem" }}"
+  rps: "https://api.{{ env "CLUSTER_DOMAIN" | default "cluster.onprem" }}"
+  mps: "https://api.{{ env "CLUSTER_DOMAIN" | default "cluster.onprem" }}"
+resources:
+  limits:
+    cpu: "64"
+    memory: 64Gi
+  requests:
+    cpu: 1m
+    memory: 1Mi

@@ -1,0 +1,81 @@
+
+globalArguments: {}
+providers:
+  kubernetesCRD:
+    allowCrossNamespace: true
+    namespaces:
+      - "default"
+      - "orch-gateway"
+      - "orch-platform"
+      - "orch-app"
+      - "orch-infra"
+      - "orch-cluster"
+      - "orch-harbor"
+      - "cattle-system"
+      - "connect-gateway"
+      - "orch-ui"
+      - "orch-secret"
+      - "orch-iam"
+ingressRoute:
+  dashboard:
+    enabled: false
+logs:
+  general:
+    format: json
+  access:
+    enabled: true
+    format: json
+volumes:
+  - name: jwt-plugin
+    type: configMap
+    # mount path for the pod is not important when using plugins but it needs to be specified
+    mountPath: ./traefik-jwt-plugin/
+additionalVolumeMounts:
+  - mountPath: ./plugins-local/src/github.com/team-carepay/traefik-jwt-plugin/
+    name: jwt-plugin
+additionalArguments:
+  - --experimental.localPlugins.jwt.moduleName=github.com/team-carepay/traefik-jwt-plugin
+metrics:
+  prometheus:
+    buckets: "0.1,0.3,0.6,0.9,1.2,1.5,2.0,2.5,5.0,10.0"
+    service:
+      enabled: true
+deployment:
+  podAnnotations:
+    sidecar.istio.io/inject: "false"
+resources:
+  limits:
+    cpu: "64"
+    memory: 64Gi
+  requests:
+    cpu: 1m
+    memory: 1Mi
+nodeSelector: {}
+tolerations: []
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: [ALL]
+  readOnlyRootFilesystem: true
+  seccompProfile:
+    type: RuntimeDefault
+service:
+  type: LoadBalancer
+ports:
+  web:
+    expose:
+      default: false
+  websecure:
+    nodePort: 30443
+    # NOTE the middlewared name is <namespace>-<name>
+    middlewares:
+      - orch-gateway-rate-limit@kubernetescrd
+      - orch-gateway-cors@kubernetescrd
+  tcpamt:
+    middlewares:
+      - orch-gateway-tcp-rate-limit@kubernetescrd
+    port: 4433
+    exposedPort: 4433
+    expose:
+      default: true
+    protocol: TCP

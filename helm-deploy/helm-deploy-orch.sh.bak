@@ -1,0 +1,586 @@
+#!/bin/bash
+set -euo pipefail
+
+# ═══════════════════════════════════════════════════════════════
+# helm-deploy.sh — Deploy helm charts using values_overwrite files
+#
+# Extracts chart info (repoURL, chart, version, namespace) from
+# argocd/applications/templates/<app>.yaml and deploys using
+# values_overwrite/values_<app>.yaml as the values override.
+#
+# Usage:
+#   ./helm-deploy.sh install [app1 app2 ...]    # install specific apps
+#   ./helm-deploy.sh uninstall [app1 app2 ...]  # uninstall specific apps
+#   ./helm-deploy.sh install                     # install all from app list
+#   ./helm-deploy.sh uninstall                   # uninstall all (reverse order)
+#   ./helm-deploy.sh list                        # show parsed chart info
+#   ./helm-deploy.sh dry-run [app1 ...]          # show helm commands only
+# ═══════════════════════════════════════════════════════════════
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+cd "$SCRIPT_DIR"
+
+TEMPLATES_DIR="${REPO_ROOT}/argocd/applications/templates"
+VALUES_DIR="values_overwrite"
+
+# Temp file tracking for cleanup on exit/signal
+TMPFILES=()
+cleanup_tmpfiles() { rm -f "${TMPFILES[@]+"${TMPFILES[@]}"}"; }
+trap cleanup_tmpfiles EXIT
+
+# Source onprem.env for ORCH_INSTALLER_PROFILE and other settings
+if [[ -f "${SCRIPT_DIR}/onprem.env" ]]; then
+  # shellcheck disable=SC1091
+  source "${SCRIPT_DIR}/onprem.env"
+else
+  echo "❌ onprem.env not found in ${SCRIPT_DIR}"
+  exit 1
+fi
+
+ORCH_INSTALLER_PROFILE="${ORCH_INSTALLER_PROFILE:-onprem-vpro}"
+case "$ORCH_INSTALLER_PROFILE" in
+  onprem-eim)
+    APP_LIST_FILE="application-list-eim"
+    ;;
+  onprem-vpro)
+    APP_LIST_FILE="application-list-vpro"
+    ;;
+  *)
+    echo "❌ Unknown ORCH_INSTALLER_PROFILE: $ORCH_INSTALLER_PROFILE"
+    echo "   Supported: onprem-eim, onprem-vpro"
+    exit 1
+    ;;
+esac
+
+echo "ℹ️  Profile: ${ORCH_INSTALLER_PROFILE}, app list: ${APP_LIST_FILE}"
+
+# Default OCI registry (replaces {{ .Values.argo.chartRepoURL }})
+# Ensure RELEASE_SERVICE_URL includes the /edge-orch path component
+RELEASE_SERVICE_URL="${RELEASE_SERVICE_URL:-registry-rs.edgeorchestration.intel.com/edge-orch}"
+if [[ "$RELEASE_SERVICE_URL" != *"/edge-orch"* ]]; then
+  RELEASE_SERVICE_URL="${RELEASE_SERVICE_URL%/}/edge-orch"
+fi
+
+# Known public helm repos: repoURL → repo_alias
+declare -A KNOWN_REPOS
+KNOWN_REPOS=(
+  ["https://charts.jetstack.io"]="jetstack"
+  ["https://charts.external-secrets.io"]="external-secrets"
+  ["https://istio-release.storage.googleapis.com/charts"]="istio"
+  ["https://stakater.github.io/stakater-charts"]="stakater"
+  ["https://metallb.github.io/metallb"]="metallb"
+  ["https://kiali.org/helm-charts"]="kiali"
+  ["https://prometheus-community.github.io/helm-charts"]="prometheus-community"
+  ["https://helm.traefik.io/traefik"]="traefik"
+  ["https://helm.releases.hashicorp.com"]="hashicorp"
+  ["https://haproxytech.github.io/helm-charts"]="haproxytech"
+  ["https://aws.github.io/eks-charts"]="eks"
+  ["https://kubernetes.github.io/ingress-nginx"]="ingress-nginx"
+  ["https://kubernetes-sigs.github.io/cluster-api-operator"]="capi-operator"
+  ["https://kyverno.github.io/kyverno"]="kyverno"
+  ["https://rancher.github.io/fleet-helm-charts/"]="fleet"
+  ["https://helm.goharbor.io"]="harbor"
+  ["https://kubernetes.github.io/autoscaler"]="autoscaler"
+)
+
+# Track which helm repos have been added this run (avoid redundant repo update)
+declare -A REPOS_ADDED
+
+# ═══════════════════════════════════════════════════════════════
+# Parse argocd template to extract: repoURL, chart, version, namespace
+# Reads the file once into memory, then extracts all fields via
+# bash string matching — avoids 5-6 separate grep/sed per app.
+# ═══════════════════════════════════════════════════════════════
+parse_template() {
+  local app="$1"
+  local tpl="${TEMPLATES_DIR}/${app}.yaml"
+
+  if [[ ! -f "$tpl" ]]; then
+    echo "❌ Template not found: $tpl" >&2
+    return 1
+  fi
+
+  # Read file once
+  local content
+  content=$(<"$tpl")
+
+  # Extract namespace
+  if [[ "$content" =~ \$namespace[[:space:]]*:=[[:space:]]*\"([^\"]+)\" ]]; then
+    T_NAMESPACE="${BASH_REMATCH[1]}"
+  else
+    # Fallback: destination.namespace directly
+    T_NAMESPACE=$(echo "$content" | grep -A1 'destination:' | grep -oP 'namespace:\s*\K\S+' | sed 's/{{[^}]*}}//g; s/["{} ]//g' | head -1)
+  fi
+  if [[ -z "${T_NAMESPACE:-}" ]]; then
+    echo "❌ Cannot determine namespace for ${app} — refusing to deploy to default" >&2
+    return 1
+  fi
+
+  # Release name handling
+  T_RELEASE_NAME="$app"
+  if [[ "$content" =~ releaseName:[[:space:]]*([^[:space:]]+) ]]; then
+    T_ARGOCD_RELEASE="${BASH_REMATCH[1]}"
+    T_ARGOCD_RELEASE="${T_ARGOCD_RELEASE//\{\{[[:space:]]*\$appName[[:space:]]*\}\}/$app}"
+  else
+    T_ARGOCD_RELEASE="$app"
+  fi
+  T_USE_TEMPLATE_APPLY=false
+  [[ "$T_ARGOCD_RELEASE" != "$app" ]] && T_USE_TEMPLATE_APPLY=true
+
+  # Extract repoURL (first match, strip Helm template wrappers and quotes)
+  local raw_repo=""
+  if [[ "$content" =~ repoURL:[[:space:]]*(.+) ]]; then
+    raw_repo="${BASH_REMATCH[1]}"
+    raw_repo="${raw_repo#\"}" ; raw_repo="${raw_repo%\"}"
+    raw_repo="${raw_repo## }" ; raw_repo="${raw_repo%% }"
+  fi
+
+  # Extract chart name (first "chart:" line)
+  T_CHART=""
+  local line
+  while IFS= read -r line; do
+    if [[ "$line" =~ ^[[:space:]]*chart:[[:space:]]*(.+) ]]; then
+      T_CHART="${BASH_REMATCH[1]}"
+      T_CHART="${T_CHART#\"}" ; T_CHART="${T_CHART%\"}"
+      T_CHART="${T_CHART## }" ; T_CHART="${T_CHART%% }"
+      break
+    fi
+  done <<< "$content"
+
+  # Resolve {{$appName}}
+  T_CHART="${T_CHART//\{\{[[:space:]]*\$appName[[:space:]]*\}\}/$app}"
+
+  # Resolve {{$chartName}} if defined in template
+  if [[ "$content" =~ \$chartName[[:space:]]*:=[[:space:]]*\"([^\"]+)\" ]]; then
+    local chart_name="${BASH_REMATCH[1]}"
+    T_CHART="${T_CHART//\{\{[[:space:]]*\$chartName[[:space:]]*\}\}/$chart_name}"
+  fi
+
+  # Extract version
+  T_VERSION=""
+  if [[ "$content" =~ targetRevision:[[:space:]]*([^[:space:]\"]+) ]]; then
+    T_VERSION="${BASH_REMATCH[1]}"
+  fi
+
+  # Determine chart type and resolve repoURL
+  if [[ "$raw_repo" == *"chartRepoURL"* || "$raw_repo" == *"rsChartRepoURL"* ]]; then
+    T_TYPE="oci"
+    T_CHART_FOR_HELM="oci://${RELEASE_SERVICE_URL}/${T_CHART}"
+  elif [[ "$raw_repo" == *"ghcr.io"* || "$raw_repo" == *"gcr.io"* ]]; then
+    T_TYPE="oci-ext"
+    T_CHART_FOR_HELM="oci://${raw_repo}/${T_CHART}"
+  elif [[ "$raw_repo" == https://* ]]; then
+    T_TYPE="repo"
+    local alias="${KNOWN_REPOS[$raw_repo]:-}"
+    if [[ -z "$alias" ]]; then
+      alias="${raw_repo#https://}" ; alias="${alias%%/*}" ; alias="${alias%%.*}"
+    fi
+    T_REPO_ALIAS="$alias"
+    T_REPO_URL="$raw_repo"
+    T_CHART_FOR_HELM="${alias}/${T_CHART}"
+  else
+    echo "⚠️  Unknown repoURL pattern for ${app}: $raw_repo" >&2
+    T_TYPE="unknown"
+    T_CHART_FOR_HELM="$raw_repo/$T_CHART"
+  fi
+}
+
+# ═══════════════════════════════════════════════════════════════
+# Load application list
+# Uses an associative array for O(1) validation lookups.
+# Returns results via the global LOADED_APPS array.
+# ═══════════════════════════════════════════════════════════════
+load_apps() {
+  local -a input_apps=("$@")
+  LOADED_APPS=()
+
+  if [[ ${#input_apps[@]} -eq 0 ]]; then
+    if [[ -f "$APP_LIST_FILE" ]]; then
+      mapfile -t LOADED_APPS < "$APP_LIST_FILE"
+    else
+      echo "❌ No apps specified and $APP_LIST_FILE not found" >&2
+      exit 1
+    fi
+  else
+    if [[ ! -f "$APP_LIST_FILE" ]]; then
+      echo "❌ $APP_LIST_FILE not found, cannot validate apps" >&2
+      exit 1
+    fi
+    # Build lookup set from app list file
+    local -A app_set=()
+    local line
+    while IFS= read -r line; do
+      [[ -n "$line" ]] && app_set["$line"]=1
+    done < "$APP_LIST_FILE"
+
+    for app in "${input_apps[@]}"; do
+      if [[ -n "${app_set[$app]:-}" ]]; then
+        LOADED_APPS+=("$app")
+      else
+        echo "⚠️  Skipping '${app}': not in ${APP_LIST_FILE} (profile: ${ORCH_INSTALLER_PROFILE})" >&2
+      fi
+    done
+    if [[ ${#LOADED_APPS[@]} -eq 0 ]]; then
+      echo "❌ None of the specified apps are in ${APP_LIST_FILE}" >&2
+      exit 1
+    fi
+  fi
+}
+
+# ═══════════════════════════════════════════════════════════════
+# PRE-INSTALL HOOKS — app-specific cleanup before helm install
+# ═══════════════════════════════════════════════════════════════
+remove_stale_vault_keys() {
+  local ns="$1"
+  if kubectl get secret vault-keys -n "$ns" >/dev/null 2>&1; then
+    echo "   🔑 Removing stale vault-keys secret (will be recreated by secrets-config)"
+    kubectl delete secret vault-keys -n "$ns" 2>/dev/null || true
+  fi
+}
+
+pre_install_hook() {
+  local app="$1"
+  local ns="$2"
+
+  case "$app" in
+    vault)
+      remove_stale_vault_keys "$ns"
+
+      # If vault is already running and initialized, truncate PG tables to force
+      # a clean reinit. Skip if vault pod doesn't exist or DB isn't reachable.
+      local pg_ns="orch-database"
+      local pg_pod
+      pg_pod=$(kubectl get pods -n "$pg_ns" -l app.kubernetes.io/name=postgres -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+      if [[ -n "$pg_pod" ]]; then
+        echo "   🗄️  Truncating vault tables in PostgreSQL for clean reinit"
+        kubectl exec "$pg_pod" -n "$pg_ns" -c postgres -- \
+          psql -U postgres -d vault -c "TRUNCATE vault_kv_store, vault_ha_locks;" 2>/dev/null || true
+      fi
+      ;;
+    orch-utils)
+      remove_stale_vault_keys "$ns"
+      ;;
+  esac
+}
+
+# ═══════════════════════════════════════════════════════════════
+# INSTALL
+# ═══════════════════════════════════════════════════════════════
+do_install() {
+  local app="$1"
+
+  if ! parse_template "$app"; then
+    echo "⏭️  Skipping ${app}: no template"
+    return 2
+  fi
+
+  local values_file="${VALUES_DIR}/values_${app}.yaml"
+  local -a values_args=()
+  if [[ -f "$values_file" ]]; then
+    values_args=(-f "$values_file")
+  else
+    echo "⚠️  No values override: $values_file"
+  fi
+
+  # Add helm repo if needed (only once per alias per run)
+  if [[ "$T_TYPE" == "repo" && -z "${REPOS_ADDED[${T_REPO_ALIAS}]:-}" ]]; then
+    helm repo add "$T_REPO_ALIAS" "$T_REPO_URL" >/dev/null 2>&1 || true
+    helm repo update "$T_REPO_ALIAS" >/dev/null 2>&1 || true
+    REPOS_ADDED["$T_REPO_ALIAS"]=1
+  fi
+
+  # Ensure namespace
+  if [[ -n "$T_NAMESPACE" ]]; then
+    kubectl create ns "$T_NAMESPACE" --dry-run=client -o yaml 2>/dev/null | kubectl apply -f - 2>/dev/null || true
+  fi
+
+  pre_install_hook "$app" "$T_NAMESPACE"
+
+  echo "🚀 Installing ${app} (release: ${T_RELEASE_NAME})"
+  echo "   Chart    : ${T_CHART_FOR_HELM}"
+  echo "   Version  : ${T_VERSION}"
+  echo "   Namespace: ${T_NAMESPACE}"
+  echo "   Values   : ${values_file}"
+
+  if [[ "$T_USE_TEMPLATE_APPLY" == "true" ]]; then
+    echo "   Mode     : template+apply (ArgoCD releaseName: ${T_ARGOCD_RELEASE})"
+    local rendered
+    rendered=$(mktemp)
+    TMPFILES+=("$rendered")
+    if helm template "$T_ARGOCD_RELEASE" "$T_CHART_FOR_HELM" \
+      --version "$T_VERSION" \
+      --namespace "$T_NAMESPACE" \
+      "${values_args[@]+"${values_args[@]}"}" > "$rendered"; then
+      if kubectl apply -f "$rendered" -n "$T_NAMESPACE"; then
+        echo "✅ ${app} installed (template+apply)"
+      else
+        echo "❌ ${app} kubectl apply FAILED"
+        return 1
+      fi
+    else
+      echo "❌ ${app} helm template FAILED"
+      cat "$rendered"
+      return 1
+    fi
+    rm -f "$rendered"
+  else
+    if helm upgrade --install "$T_RELEASE_NAME" "$T_CHART_FOR_HELM" \
+      --version "$T_VERSION" \
+      --namespace "$T_NAMESPACE" \
+      --create-namespace \
+      "${values_args[@]+"${values_args[@]}"}" \
+      --wait --timeout 4m; then
+      echo "✅ ${app} installed"
+    else
+      echo "❌ ${app} FAILED"
+      return 1
+    fi
+  fi
+}
+
+# ═══════════════════════════════════════════════════════════════
+# UNINSTALL
+# ═══════════════════════════════════════════════════════════════
+do_uninstall() {
+  local app="$1"
+
+  if ! parse_template "$app"; then
+    echo "⏭️  Skipping ${app}: no template"
+    return 1
+  fi
+
+  echo "🗑️  Uninstalling ${app} (release: ${T_RELEASE_NAME}) from ${T_NAMESPACE}..."
+
+  if [[ "$T_USE_TEMPLATE_APPLY" == "true" ]]; then
+    local values_file="${VALUES_DIR}/values_${app}.yaml"
+    local -a values_args=()
+    [[ -f "$values_file" ]] && values_args=(-f "$values_file")
+    local rendered
+    rendered=$(mktemp)
+    TMPFILES+=("$rendered")
+    if helm template "$T_ARGOCD_RELEASE" "$T_CHART_FOR_HELM" \
+      --version "$T_VERSION" \
+      --namespace "$T_NAMESPACE" \
+      "${values_args[@]+"${values_args[@]}"}" > "$rendered"; then
+      kubectl delete -f "$rendered" -n "$T_NAMESPACE" --ignore-not-found
+      echo "✅ ${app} uninstalled (template+apply)"
+    else
+      echo "⚠️  Could not render template for ${app}, trying kubectl delete by name"
+      kubectl delete all -l "app.kubernetes.io/instance=${T_ARGOCD_RELEASE},app.kubernetes.io/name=${T_CHART}" -n "$T_NAMESPACE" --ignore-not-found
+    fi
+    rm -f "$rendered"
+  elif helm status "$T_RELEASE_NAME" -n "$T_NAMESPACE" >/dev/null 2>&1; then
+    helm uninstall "$T_RELEASE_NAME" -n "$T_NAMESPACE"
+    echo "✅ ${app} uninstalled (release: ${T_RELEASE_NAME})"
+  elif [[ "$T_RELEASE_NAME" != "$app" ]] && helm status "$app" -n "$T_NAMESPACE" >/dev/null 2>&1; then
+    echo "   ℹ️  Release '${T_RELEASE_NAME}' not found, found legacy release '${app}'"
+    helm uninstall "$app" -n "$T_NAMESPACE"
+    echo "✅ ${app} uninstalled (legacy release: ${app})"
+  else
+    echo "ℹ️  ${app} not found in ${T_NAMESPACE}"
+  fi
+}
+
+# ═══════════════════════════════════════════════════════════════
+# DRY-RUN (show commands without executing)
+# ═══════════════════════════════════════════════════════════════
+do_dry_run() {
+  local app="$1"
+
+  if ! parse_template "$app"; then
+    return 1
+  fi
+
+  local values_file="${VALUES_DIR}/values_${app}.yaml"
+  local values_args=""
+  [[ -f "$values_file" ]] && values_args="-f $values_file"
+
+  local repo_add=""
+  if [[ "$T_TYPE" == "repo" ]]; then
+    repo_add="helm repo add ${T_REPO_ALIAS} ${T_REPO_URL}"
+  fi
+
+  echo "--- ${app} (release: ${T_RELEASE_NAME}) ---"
+  [[ -n "$repo_add" ]] && echo "  $repo_add"
+  echo "  helm upgrade --install ${T_RELEASE_NAME} ${T_CHART_FOR_HELM} \\"
+  echo "    --version ${T_VERSION} \\"
+  echo "    --namespace ${T_NAMESPACE} \\"
+  echo "    --create-namespace \\"
+  [[ -n "$values_args" ]] && echo "    ${values_args} \\"
+  echo "    --wait --timeout 10m"
+  echo ""
+}
+
+# ═══════════════════════════════════════════════════════════════
+# LIST (show parsed info for all apps)
+# ═══════════════════════════════════════════════════════════════
+do_list() {
+  printf "%-35s %-18s %-15s %-8s %-55s %s\n" "APPLICATION" "RELEASE" "NAMESPACE" "VERSION" "CHART" "VALUES"
+  printf "%-35s %-18s %-15s %-8s %-55s %s\n" "───────────" "───────" "─────────" "───────" "─────" "──────"
+
+  local apps
+  if [[ -f "$APP_LIST_FILE" ]]; then
+    mapfile -t apps < "$APP_LIST_FILE"
+  else
+    # Fall back to all templates
+    for f in "${TEMPLATES_DIR}"/*.yaml; do
+      apps+=("$(basename "$f" .yaml)")
+    done
+  fi
+
+  for app in "${apps[@]}"; do
+    if parse_template "$app" 2>/dev/null; then
+      local vf="${VALUES_DIR}/values_${app}.yaml"
+      local has_vals="✅"
+      [[ ! -f "$vf" ]] && has_vals="❌"
+      printf "%-35s %-18s %-15s %-8s %-55s %s\n" "$app" "$T_RELEASE_NAME" "$T_NAMESPACE" "$T_VERSION" "$T_CHART_FOR_HELM" "$has_vals"
+    else
+      printf "%-35s %-18s %-15s %-8s %-55s %s\n" "$app" "?" "?" "?" "NO TEMPLATE" "❌"
+    fi
+  done
+}
+
+# ═══════════════════════════════════════════════════════════════
+# MAIN
+# ═══════════════════════════════════════════════════════════════
+
+ACTION="${1:-}"
+shift || true
+
+usage() {
+  echo "Usage: $0 <action> [app1 app2 ...]"
+  echo ""
+  echo "Actions:"
+  echo "  install [app...]     Install apps (all from app list if none specified)"
+  echo "  uninstall [app...]   Uninstall apps (reverse order if none specified)"
+  echo "  dry-run [app...]     Show helm commands without executing"
+  echo "  list                 Show parsed chart info for all apps"
+  echo ""
+  echo "Chart info is extracted from: ${TEMPLATES_DIR}/<app>.yaml"
+  echo "Values overrides from:        ${VALUES_DIR}/values_<app>.yaml"
+  exit 1
+}
+
+case "$ACTION" in
+  install)
+    load_apps "$@"
+    APPS=("${LOADED_APPS[@]}")
+    TOTAL=${#APPS[@]}
+    START_ALL=$(date +%s)
+    success=0; fail=0; skipped=0
+    SUCCEEDED_LIST=()
+    FAILED_LIST=()
+    SKIPPED_LIST=()
+    TIMINGS=()
+
+    for i in "${!APPS[@]}"; do
+      app="${APPS[$i]}"
+      idx=$((i + 1))
+
+      echo ""
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      echo "📦 [${idx}/${TOTAL}] ${app}"
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+      START=$(date +%s)
+      rc=0
+      do_install "$app" || rc=$?
+      if [[ $rc -eq 0 ]]; then
+        success=$((success + 1))
+        SUCCEEDED_LIST+=("$app")
+      elif [[ $rc -eq 2 ]]; then
+        skipped=$((skipped + 1))
+        SKIPPED_LIST+=("$app")
+      else
+        fail=$((fail + 1))
+        FAILED_LIST+=("$app")
+      fi
+      END=$(date +%s)
+      dur=$((END - START))
+      TIMINGS+=("${app}:${dur}s")
+
+      done_count=$((success + fail + skipped))
+      pct=$((done_count * 100 / TOTAL))
+      echo ""
+      echo "  Progress: ${pct}% (${done_count}/${TOTAL}) ✅${success} ❌${fail} ⏭️${skipped}  ⏱️${dur}s"
+    done
+
+    END_ALL=$(date +%s)
+    TOTAL_DURATION=$((END_ALL - START_ALL))
+
+    # ════════════════════════════════════════
+    # Summary Report
+    # ════════════════════════════════════════
+    echo ""
+    echo "╔══════════════════════════════════════════════════════════════╗"
+    echo "║                    DEPLOYMENT SUMMARY                       ║"
+    echo "╠══════════════════════════════════════════════════════════════╣"
+    echo "║  Total Apps     : ${TOTAL}"
+    echo "║  ✅ Succeeded   : ${success}"
+    echo "║  ❌ Failed      : ${fail}"
+    echo "║  ⏭️  Skipped     : ${skipped}"
+    echo "║  ⏱️  Total Time  : ${TOTAL_DURATION}s"
+    echo "╠══════════════════════════════════════════════════════════════╣"
+
+    if [[ ${#SUCCEEDED_LIST[@]} -gt 0 ]]; then
+      echo "║  ✅ Succeeded:"
+      for a in "${SUCCEEDED_LIST[@]}"; do
+        echo "║     • $a"
+      done
+    fi
+
+    if [[ ${#FAILED_LIST[@]} -gt 0 ]]; then
+      echo "║  ❌ Failed:"
+      for a in "${FAILED_LIST[@]}"; do
+        echo "║     • $a"
+      done
+    fi
+
+    if [[ ${#SKIPPED_LIST[@]} -gt 0 ]]; then
+      echo "║  ⏭️  Skipped:"
+      for a in "${SKIPPED_LIST[@]}"; do
+        echo "║     • $a"
+      done
+    fi
+
+    echo "╠══════════════════════════════════════════════════════════════╣"
+    echo "║  Timing breakdown:"
+    for t in "${TIMINGS[@]}"; do
+      echo "║     ${t}"
+    done
+    echo "╚══════════════════════════════════════════════════════════════╝"
+    ;;
+  uninstall)
+    load_apps "$@"
+    APPS=("${LOADED_APPS[@]}")
+    # Reverse order for uninstall when no specific apps given
+    if [[ $# -eq 0 ]]; then
+      REVERSED=()
+      for (( i=${#APPS[@]}-1 ; i>=0 ; i-- )); do
+        REVERSED+=("${APPS[$i]}")
+      done
+      APPS=("${REVERSED[@]}")
+    fi
+    for app in "${APPS[@]}"; do
+      do_uninstall "$app" || true
+      echo "────────────────────────────────────────"
+    done
+    echo "✅ Uninstall complete"
+    ;;
+  dry-run)
+    load_apps "$@"
+    APPS=("${LOADED_APPS[@]}")
+    for app in "${APPS[@]}"; do
+      do_dry_run "$app"
+    done
+    ;;
+  list)
+    do_list
+    ;;
+  *)
+    usage
+    ;;
+esac
+
+

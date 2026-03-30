@@ -8,6 +8,18 @@ global:
     name: "{{ .Values.containerRegistryURL }}/"
     imagePullSecrets: []
 import:
+  host-manager:
+    enabled: true
+  maintenance-manager:
+    enabled: true
+  telemetry-manager:
+    enabled: false
+  os-resource-manager:
+    enabled: true
+  networking-manager:
+    enabled: true
+  attestationstatus-manager:
+    enabled: true
 
 host-manager:
   inventory:
@@ -20,6 +32,9 @@ host-manager:
     enabled: true
     secretName: "tls-orch"
     tlsOption: "gateway-tls"
+    host:
+      grpc:
+        name: Host(`infra-node.{{ .Values.clusterDomain }}`)
   oidc:
     oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
   multiTenancy:
@@ -27,6 +42,7 @@ host-manager:
   resources: null
   # https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
   traefikApiGroup: "traefik.io/v1alpha1"
+  disabledProvisioning: false
 
 maintenance-manager:
   inventory:
@@ -39,6 +55,9 @@ maintenance-manager:
     enabled: true
     secretName: "tls-orch"
     tlsOption: "gateway-tls"
+    host:
+      grpc:
+        name: Host(`update-node.{{ .Values.clusterDomain }}`)
   oidc:
     oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
   telemetryMgrArgs:
@@ -69,6 +88,9 @@ telemetry-manager:
     enabled: true
     secretName: "tls-orch"
     tlsOption: "gateway-tls"
+    host:
+      grpc:
+        name: Host(`telemetry-node.{{ .Values.clusterDomain }}`)
   oidc:
     oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
   multiTenancy:
@@ -86,6 +108,7 @@ os-resource-manager:
     rsProxyRegistryAddress: "rs-proxy.orch-platform.svc.cluster.local:8081/"
     rsProxyFilesAddress: "rs-proxy-files.orch-platform.svc.cluster.local:8081/"
     rsEnProfileRepo: "edge-orch/en/files/os-profile/"
+    manualMode: false
   image:
     pullPolicy: IfNotPresent
   oidc:
@@ -107,6 +130,9 @@ attestationstatus-manager:
     enabled: true
     secretName: "tls-orch"
     tlsOption: "gateway-tls"
+    host:
+      grpc:
+        name: Host(`attest-node.{{ .Values.clusterDomain }}`)
   oidc:
     oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
   multiTenancy:
