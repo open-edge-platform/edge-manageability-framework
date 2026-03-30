@@ -201,6 +201,42 @@ after recreation. K3s clusters persist across reboots, making this save/restore 
 unnecessary for routine operations. The mechanism should be retained for cases where
 a cluster is fully destroyed, but this becomes exceptional rather than routine.
 
+**IP address considerations when using K3s on Coder VMs:**
+
+The on-prem installer requires three distinct IP addresses (`ARGO_IP`,
+`TRAEFIK_IP`, `HAPROXY_IP`) for MetalLB to assign to the ArgoCD, Traefik, and
+HAProxy LoadBalancer services respectively. Each service listens on port 443, so
+they cannot share an IP. The current Kind-based Coder deployment avoids this
+problem because MetalLB allocates virtual IPs from the Docker network range. A
+Coder VM running K3s has only a single host IP. Possible approaches:
+
+1. **Consolidate to a single ingress controller.** Route all traffic — including
+   ArgoCD and Tinkerbell/HAProxy — through Traefik based on hostname/SNI. This
+   eliminates the need for three separate LoadBalancer services and three IPs.
+   The on-prem installer currently separates them for production fault isolation,
+   but this is unnecessary for a Coder dev environment. This is the recommended
+   approach as it aligns with the ADR's simplification goals.
+
+2. **Virtual IPs on a dummy interface.** Add secondary IPs to the loopback or a
+   dummy interface (e.g., `ip addr add 10.0.0.51/32 dev lo`). MetalLB advertises
+   these in L2 mode. They are routable on the local machine but not externally,
+   which is acceptable for Coder VMs where external access comes through the
+   Coder proxy.
+
+3. **MetalLB L2 mode with the host IP on different ports.** Assign the host IP
+   to all three pools. Traefik keeps port 443 since it handles the majority of
+   traffic. ArgoCD and HAProxy/Tinkerbell would be exposed on non-standard ports,
+   requiring configuration changes for anything that connects to those services.
+   Moving ArgoCD would not be difficult. Moving HAProxy/Tinkerbell would require
+   documentation updates.
+
+4. **K3s built-in ServiceLB.** K3s ships with a simple LoadBalancer implementation
+   (formerly Klipper) that binds services directly to the host's network
+   interfaces using different ports. However, `pre-orch-install.sh` currently
+   disables built-in K3s components and installs MetalLB, so this would require
+   changing that approach. Has the same complications with port sharting that
+   approach #3 does.
+
 #### Migrate VIP to use pre-installer / post-installer
 
 VIP will have to be migrated to use the new pre-installer and post-installer.
