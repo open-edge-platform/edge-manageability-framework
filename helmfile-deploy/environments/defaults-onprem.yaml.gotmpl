@@ -28,8 +28,8 @@
 #   EMF_O11Y_SRE_LABEL        - SRE customer label
 
 # ─── Registry ────────────────────────────────────────────────────────────────
-{{- $registry := env "EMF_REGISTRY" | default "registry-rs.edgeorchestration.intel.com/edge-orch" }}
-{{- $registryHost := $registry | splitList "/" | first }}
+{{- $registryHost := env "EMF_REGISTRY" | default "registry-rs.edgeorchestration.intel.com" }}
+{{- $registry := printf "%s/edge-orch" $registryHost }}
 chartRepoURL: {{ $registry | quote }}
 rsChartRepoURL: {{ $registry | quote }}
 containerRegistryURL: {{ $registry | quote }}
@@ -328,8 +328,6 @@ observability-tenant-controller:
 # ─── Misc ────────────────────────────────────────────────────────────────────
 namespace-label:
   enabled: true
-nginx-ingress-pxe-boots:
-  enabled: false
 
 # ─── K3s bundled — disable helm-managed duplicates ──────────────────────────
 k8s-metrics-server:

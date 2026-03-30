@@ -2,6 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+global:
+  registry:
+    name: "{{ .Values.containerRegistryURL }}"
+    imagePullSecrets: []
+
 configProvisioner:
   useM2MToken: true
   catalogServer: app-orch-catalog-grpc-server.orch-app.svc.cluster.local:8080

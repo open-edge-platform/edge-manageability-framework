@@ -7,6 +7,9 @@ clusterDomain: {{ .Values.clusterDomain | default "" | quote }}
 
 # Auth
 global:
+  registry:
+    name: "{{ .Values.containerRegistryURL }}"
+    imagePullSecrets: []
   auth:
     enabled: true
     keycloak:

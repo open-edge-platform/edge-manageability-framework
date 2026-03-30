@@ -166,14 +166,19 @@ helmfile_sync_all() {
     exit 1
   fi
 
-  # Extract release names from helmfile.yaml in wave order, filter to enabled only
+  # Extract release names from helmfile.yaml.gotmpl in wave order, filter to enabled only
   local releases
-  releases=$(awk '/^releases:/{found=1} found && /^  - name: /{print $NF}' "$SCRIPT_DIR/helmfile.yaml" \
+  releases=$(awk '/^releases:/{found=1} found && /^  - name: /{print $NF}' "$SCRIPT_DIR/helmfile.yaml.gotmpl" \
     | while read -r name; do echo "$enabled_list" | grep -qx "$name" && echo "$name"; done)
 
   local total
   total=$(echo "$releases" | wc -l)
   local current=0
+
+  # Add repos once before the loop to avoid re-adding on every release
+  echo "📡 Adding helm repositories..."
+  (cd "$SCRIPT_DIR" && helmfile -e "$HELMFILE_ENV" repos 2>&1) || true
+  echo ""
 
   for release in $releases; do
     ((current++))
@@ -182,7 +187,7 @@ helmfile_sync_all() {
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
     local release_start=$SECONDS
-    if (cd "$SCRIPT_DIR" && helmfile -e "$HELMFILE_ENV" -l "app=$release" sync 2>&1); then
+    if (cd "$SCRIPT_DIR" && helmfile -e "$HELMFILE_ENV" -l "app=$release" --skip-deps sync 2>&1); then
       local duration=$(( SECONDS - release_start ))
       echo "✅ $release (${duration}s)"
       passed+=("$release|${duration}")

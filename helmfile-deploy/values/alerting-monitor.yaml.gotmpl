@@ -2,6 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+image:
+  registry: {{ .Values.containerRegistryURL }}
+management:
+  registry: {{ .Values.containerRegistryURL }}
+imagePullSecrets: []
+
 caSecretName: gateway-ca-cert
 caSecretKey: ca.crt
 

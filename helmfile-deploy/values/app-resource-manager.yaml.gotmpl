@@ -2,6 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+global:
+  registry:
+    name: "{{ .Values.containerRegistryURL }}"
+    imagePullSecrets: []
+
 fullnameOverride: app-resource-manager
 serviceAccount:
   create: false

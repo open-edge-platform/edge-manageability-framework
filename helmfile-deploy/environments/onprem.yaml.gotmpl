@@ -41,7 +41,5 @@ vault:
 self-signed-cert:
   generateOrchCert: {{ env "EMF_GENERATE_CERT" | default "true" }}
 
-nginx-ingress-pxe-boots:
-  enabled: {{ env "EMF_ENABLE_PXE" | default "true" }}
 squid-proxy:
   enabled: {{ env "EMF_ENABLE_SQUID" | default "false" }}

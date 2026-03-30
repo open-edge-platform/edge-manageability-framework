@@ -2,4 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+image:
+  registry: {{ .Values.containerRegistryURL }}
+  repository: common/auth-service
+imagePullSecrets: []
+
 resources: null

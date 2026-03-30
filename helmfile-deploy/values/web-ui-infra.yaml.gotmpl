@@ -4,6 +4,9 @@
 
 # Auth
 global:
+  registry:
+    name: "{{ .Values.containerRegistryURL }}"
+    imagePullSecrets: []
   auth:
     enabled: true
     keycloak:

@@ -2,6 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+image:
+  registry: {{ .Values.containerRegistryURL }}
+  repository: common/nexus-api-gw
+imagePullSecrets: []
+
 traefikReverseProxy:
   # -- enabled is a switch to turn on/off the Traefik reverse proxy resource; Traefik MUST be deployed to orch-gateway ns before enabling it here.
   enabled: true

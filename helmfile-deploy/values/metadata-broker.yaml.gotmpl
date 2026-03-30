@@ -2,7 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Intentionally blank. There are no base settings overrides.
+global:
+  registry:
+    name: "{{ .Values.containerRegistryURL }}"
+    imagePullSecrets: []
 
 openidc:
   issuer: http://platform-keycloak.orch-platform.svc/realms/master

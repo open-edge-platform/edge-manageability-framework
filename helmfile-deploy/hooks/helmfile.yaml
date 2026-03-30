@@ -107,25 +107,31 @@ repositories:
     url: https://prometheus-community.github.io/helm-charts
   - name: stakater
     url: https://stakater.github.io/stakater-charts
-  - name: kiali
-    url: https://kiali.org/helm-charts
   - name: harbor
     url: https://helm.goharbor.io
-  - name: autoscaler
-    url: https://kubernetes.github.io/autoscaler
-  - name: capi-operator
-    url: https://kubernetes-sigs.github.io/cluster-api-operator
-  - name: eks
-    url: https://aws.github.io/eks-charts
   - name: cnpg
     oci: true
     url: ghcr.io/cloudnative-pg/charts
+{{- if eq (env "EMF_ENABLE_ISTIO" | default "true") "true" }}
+  - name: kiali
+    url: https://kiali.org/helm-charts
+{{- end }}
+{{- if eq (env "EMF_ENABLE_CO" | default "false") "true" }}
+  - name: capi-operator
+    url: https://kubernetes-sigs.github.io/cluster-api-operator
+{{- end }}
+{{- if eq (env "EMF_ENABLE_AWS" | default "false") "true" }}
+  - name: autoscaler
+    url: https://kubernetes.github.io/autoscaler
+  - name: eks
+    url: https://aws.github.io/eks-charts
+{{- end }}
   - name: edge-orch
     oci: true
-    url: registry-rs.edgeorchestration.intel.com/edge-orch
+    url: {{ env "EMF_REGISTRY" | default "registry-rs.edgeorchestration.intel.com" }}/edge-orch
   - name: edge-orch-rs
     oci: true
-    url: registry-rs.edgeorchestration.intel.com/edge-orch
+    url: {{ env "EMF_REGISTRY" | default "registry-rs.edgeorchestration.intel.com" }}/edge-orch
 
 releases:
   #############################################################################
@@ -1080,7 +1086,7 @@ releases:
     chart: edge-orch/common/charts/haproxy-ingress-pxe-boots
     version: 1.0.1
     values:
-      - values/haproxy-ingress-pxe-boots.yaml
+      - values/haproxy-ingress-pxe-boots.yaml.gotmpl
     condition: haproxy-ingress-pxe-boots.enabled
     needs:
       - orch-app/app-orch-catalog
@@ -1097,19 +1103,7 @@ releases:
     condition: nexus-api-gw.enabled
     needs:
       - orch-app/app-orch-catalog
-
-
-  - name: nginx-ingress-pxe-boots
-    labels:
-      app: nginx-ingress-pxe-boots
-    namespace: orch-boots
-    chart: edge-orch/common/charts/nginx-ingress-pxe-boots
-    version: 26.1.0
-    values:
-      - values/nginx-ingress-pxe-boots.yaml
-    condition: nginx-ingress-pxe-boots.enabled
-    needs:
-      - orch-app/app-orch-catalog
+      - orch-iam/tenancy-api-mapping
 
 
   - name: squid-proxy

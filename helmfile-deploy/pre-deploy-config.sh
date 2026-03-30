@@ -137,6 +137,40 @@ install_gitea() {
 }
 
 ################################
+# VAULT CLEANUP
+################################
+remove_stale_vault_keys() {
+  # If vault-keys secret exists but the root token is invalid, remove it
+  # so secrets-config can re-initialize vault with a fresh token.
+  local ns="orch-platform"
+  local token
+
+  if ! kubectl get secret vault-keys -n "$ns" >/dev/null 2>&1; then
+    return
+  fi
+
+  # Check if vault pod is running
+  if ! kubectl get pod vault-0 -n "$ns" >/dev/null 2>&1; then
+    echo "🔑 Removing vault-keys secret (vault not running)"
+    kubectl delete secret vault-keys -n "$ns" 2>/dev/null || true
+    return
+  fi
+
+  # Extract root token and validate it
+  token=$(kubectl get secret vault-keys -n "$ns" -o jsonpath='{.data.vault-keys}' 2>/dev/null \
+    | base64 -d 2>/dev/null | grep -o '"root_token":"[^"]*"' | cut -d'"' -f4)
+
+  if [[ -n "$token" ]]; then
+    if ! kubectl exec vault-0 -n "$ns" -c vault -- vault token lookup "$token" >/dev/null 2>&1; then
+      echo "🔑 Removing stale vault-keys secret (invalid root token)"
+      kubectl delete secret vault-keys -n "$ns" 2>/dev/null || true
+    else
+      echo "✅ vault-keys secret is valid"
+    fi
+  fi
+}
+
+################################
 # CLEANUP
 ################################
 cleanup_all() {
@@ -152,7 +186,7 @@ cleanup_all() {
 
   # Remove namespaces
   local ns_list=(
-    onprem orch-boots orch-database orch-platform
+    onprem orch-boots orch-platform
     orch-app orch-cluster orch-infra orch-sre
     orch-ui orch-secret orch-gateway orch-harbor
     cattle-system
@@ -190,6 +224,7 @@ case "$ACTION" in
     create_sre_secrets
     create_smtp_secrets
     create_passwords
+    remove_stale_vault_keys
     echo
     echo "✅ Pre-deploy configuration complete"
     ;;

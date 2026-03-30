@@ -289,27 +289,25 @@ kyverno-traefik-policy:
 audit:
   enabled: true
 
-# ─── Tenancy (disabled) ─────────────────────────────────────────────────────
+# ─── Tenancy ─────────────────────────────────────────────────────────────────
 tenancy-datamodel:
-  enabled: false
+  enabled: true
 tenancy-manager:
-  enabled: false
+  enabled: true
 tenancy-api-mapping:
-  enabled: false
+  enabled: true
 tenancy-init:
   enabled: false
 nexus-api-gw:
-  enabled: false
+  enabled: true
 keycloak-tenant-controller:
-  enabled: false
+  enabled: true
 observability-tenant-controller:
   enabled: false
 
 # ─── Misc ────────────────────────────────────────────────────────────────────
 namespace-label:
   enabled: true
-nginx-ingress-pxe-boots:
-  enabled: {{ env "EMF_ENABLE_PXE" | default "true" }}
 
 # ─── K3s bundled ─────────────────────────────────────────────────────────────
 k8s-metrics-server:

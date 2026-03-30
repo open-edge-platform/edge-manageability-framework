@@ -5,4 +5,9 @@
 # Component status service configuration
 # This will be populated by the installer based on which features are enabled
 
+image:
+  registry: {{ .Values.containerRegistryURL }}
+  repository: common/component-status
+imagePullSecrets: []
+
 resources: null

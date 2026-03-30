@@ -5,7 +5,6 @@
 # Traefik values - configurable via environment
 # TLS option from env: {{ .Values.traefik.tlsOption | default "gateway-tls" }}
 
-globalArguments:
 providers:
   kubernetesCRD:
     allowCrossNamespace: true
@@ -59,7 +58,7 @@ deployment:
     # TODO: Make configurable because every k8s cluster is different
     traffic.sidecar.istio.io/excludeOutboundIPRanges: "10.96.0.1/32"        # k8s API server
 
-resources: null
+resources: {}
 nodeSelector: {}
 tolerations: []
 
