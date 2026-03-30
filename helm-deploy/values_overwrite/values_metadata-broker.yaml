@@ -1,8 +1,0 @@
-
-
-openidc:
-  issuer: http://platform-keycloak.orch-platform.svc/realms/master
-
-service:
-  traefik:
-    namespace: "orch-gateway"

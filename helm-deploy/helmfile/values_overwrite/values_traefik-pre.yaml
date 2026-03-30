@@ -1,3 +1,0 @@
-deployment:
-  podAnnotations:
-    sidecar.istio.io/inject: "false"

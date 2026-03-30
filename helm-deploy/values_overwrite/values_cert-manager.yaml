@@ -1,7 +1,0 @@
-
-installCRDs: true
-resources: {}
-cainjector:
-  resources: null
-webhook:
-  resources: null

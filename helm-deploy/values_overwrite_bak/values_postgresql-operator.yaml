@@ -1,4 +1,0 @@
-
-namespace: postgresql-operator
-
-replicaCount: 1

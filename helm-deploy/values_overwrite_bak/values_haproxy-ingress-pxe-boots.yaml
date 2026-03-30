@@ -1,7 +1,0 @@
-commonName: tinkerbell-haproxy.cluster.onprem
-haproxyIngress:
-  # Set to false to disable Ingress resource (use LoadBalancer instead)
-  enabled: true
-haproxyIngressRateLimit:
-  rps: 500
-  connections: 70

@@ -1,4 +1,0 @@
-
-tlsOption: "gateway-tls"
-
-traefikApiGroup: "traefik.io/v1alpha1"
