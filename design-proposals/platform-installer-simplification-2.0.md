@@ -32,23 +32,23 @@ for customers who bring their own Kubernetes clusters.
 
 ### Goal #1: Eliminate Installer Sprawl
 
-Reduce the number of distinct installer implementations from four (AWS, OnPrem old, OnPrem new, Coder)
+Reduce the number of distinct installer implementations from four (AWS, OnPrem legacy, OnPrem any-kubernetes, Coder)
 to one canonical pattern that works across all deployment scenarios.
 
-### Goal #2: Remove ArgoCD as a Mandatory Orchestration Layer
-
-Enable EMF deployment without requiring ArgoCD as a continuous reconciliation component, while
-preserving the ability for customers to add ArgoCD for GitOps workflows if desired.
-
-### Goal #3: Support "Bring Your Own Kubernetes"
+### Goal #2: Support "Bring Your Own Kubernetes"
 
 Simplify installation for customers who have already provisioned hardened Kubernetes clusters
 and wish to deploy only EMF software components, without infrastructure provisioning or cluster creation.
 
-### Goal #4: Maintain Configurability and Composability
+### Goal #3: Maintain Configurability and Composability
 
 Preserve the ability to selectively enable/disable services (e.g., PostgreSQL, MetalLB, Observability)
 to support varied deployment footprints from minimal edge nodes to full platform deployments.
+
+### Goal #4: Remove ArgoCD as a Mandatory Orchestration Layer
+
+Enable EMF deployment without requiring ArgoCD as a continuous reconciliation component, while
+preserving the ability for customers to add ArgoCD for GitOps workflows if desired.
 
 ## Scope for 2026.1
 
@@ -68,7 +68,8 @@ Each installer has divergent logic, configuration mechanisms, and maintenance bu
 ## Success Criteria
 
 - Single installer pattern documented and functional across all deployment scenarios
-- AWS, legacy OnPrem, and Coder installers deprecated (can be maintained externally if needed)
+- AWS, legacy OnPrem, and Coder installers deprecated.
+  Users or community can elect to maintain these in a fork or branch as needed.
 - Post-installer successfully deploys EMF without ArgoCD as a required component
 - Configuration values are centralized and reusable across all deployment paths
 - Customers can deploy EMF to pre-existing Kubernetes clusters with minimal friction
