@@ -211,7 +211,7 @@ resource "null_resource" "copy_files" {
   }
 
   provisioner "file" {
-    source      = "../../${var.working_directory}/installer/generate_cluster_yaml.sh"
+    source      = "../../${var.working_directory}/on-prem-installers/onprem/generate_cluster_yaml.sh"
     destination = "/home/ubuntu/generate_cluster_yaml.sh"
     when        = create
   } 
