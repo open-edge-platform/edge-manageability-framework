@@ -189,7 +189,7 @@ cleanup_all() {
     onprem orch-boots orch-platform
     orch-app orch-cluster orch-infra orch-sre
     orch-ui orch-secret orch-gateway orch-harbor
-    cattle-system
+    cattle-system orch-iam
   )
   echo "🗑️  Deleting namespaces..."
   for ns in "${ns_list[@]}"; do

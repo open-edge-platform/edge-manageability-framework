@@ -70,6 +70,10 @@ database:
     - namespace: orch-infra
       name: rps
 
+# ─── Istio ───────────────────────────────────────────────────────────────────
+istio:
+  enabled: {{ env "EMF_ENABLE_ISTIO" | default "true" }}
+
 traefik:
   enabled: true
   tlsOption: {{ env "EMF_TRAEFIK_TLS_OPTION" | default "gateway-tls" | quote }}

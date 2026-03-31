@@ -28,6 +28,10 @@ metrics:
 
 deployment:
   podAnnotations:
+{{- if eq (.Values.istio.enabled | toString) "true" }}
     traffic.sidecar.istio.io/excludeInboundPorts: "8000,8443"               # Traefik listened
     # TODO: Make configurable because every k8s cluster is different
     traffic.sidecar.istio.io/excludeOutboundIPRanges: "10.96.0.1/32"        # k8s API server
+{{- else }}
+    sidecar.istio.io/inject: "false"
+{{- end }}

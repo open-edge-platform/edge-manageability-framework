@@ -649,6 +649,7 @@ releases:
     version: 25.2.3
     values:
       - values/rs-proxy.yaml.gotmpl
+      - values/resource-overrides.yaml
     condition: rs-proxy.enabled
     needs:
       - orch-platform/vault
@@ -857,7 +858,7 @@ releases:
     chart: edge-orch/common/charts/traefik-pre
     version: 3.0.1
     values:
-      - values/traefik-pre.yaml
+      - values/traefik-pre.yaml.gotmpl
     condition: traefik-pre.enabled
     needs:
       - capi-variables/capi-operator-pre
@@ -1105,6 +1106,7 @@ releases:
     version: 26.1.0
     values:
       - values/nexus-api-gw.yaml.gotmpl
+      - values/resource-overrides.yaml
     condition: nexus-api-gw.enabled
     needs:
       - orch-app/app-orch-catalog
@@ -1160,6 +1162,7 @@ releases:
     version: 26.1.0
     values:
       - values/tenancy-manager.yaml.gotmpl
+      - values/resource-overrides.yaml
     condition: tenancy-manager.enabled
     needs:
       - orch-app/app-orch-catalog
@@ -1191,6 +1194,7 @@ releases:
     version: 26.1.0
     values:
       - values/keycloak-tenant-controller.yaml.gotmpl
+      - values/resource-overrides.yaml
     condition: keycloak-tenant-controller.enabled
     needs:
       - orch-gateway/traefik-extra-objects
@@ -1340,6 +1344,7 @@ releases:
     version: 2.2.8
     values:
       - values/cluster-manager.yaml.gotmpl
+      - values/resource-overrides.yaml
     condition: cluster-manager.enabled
     needs:
       - orch-infra/alerting-monitor
@@ -1353,6 +1358,7 @@ releases:
     version: 26.1.0
     values:
       - values/component-status.yaml.gotmpl
+      - values/resource-overrides.yaml
     condition: component-status.enabled
     needs:
       - orch-infra/alerting-monitor
@@ -1366,6 +1372,7 @@ releases:
     version: 2.19.8
     values:
       - values/infra-core.yaml.gotmpl
+      - values/resource-overrides.yaml
     condition: infra-core.enabled
     needs:
       - orch-infra/alerting-monitor
@@ -1392,6 +1399,7 @@ releases:
     version: 0.9.3
     values:
       - values/sre-exporter.yaml.gotmpl
+      - values/resource-overrides.yaml
     condition: sre-exporter.enabled
     needs:
       - orch-infra/alerting-monitor
@@ -1409,6 +1417,7 @@ releases:
     version: 26.1.0
     values:
       - values/auth-service.yaml.gotmpl
+      - values/resource-overrides.yaml
     condition: auth-service.enabled
     needs:
       - orch-sre/sre-exporter
@@ -1440,6 +1449,7 @@ releases:
     version: 2.6.2
     values:
       - values/app-deployment-manager.yaml.gotmpl
+      - values/resource-overrides.yaml
     needs:
       - orch-platform/observability-tenant-controller
       - orch-app/app-deployment-crd
@@ -1454,6 +1464,7 @@ releases:
     version: 2.6.2
     values:
       - values/app-resource-manager.yaml.gotmpl
+      - values/resource-overrides.yaml
     needs:
       - orch-platform/observability-tenant-controller
       - orch-app/app-deployment-crd
@@ -1468,6 +1479,7 @@ releases:
     version: 1.6.2
     values:
       - values/app-service-proxy.yaml.gotmpl
+      - values/resource-overrides.yaml
     condition: app-service-proxy.enabled
     needs:
       - orch-platform/observability-tenant-controller
@@ -1480,6 +1492,7 @@ releases:
     version: 1.35.12
     values:
       - values/infra-onboarding.yaml.gotmpl
+      - values/resource-overrides.yaml
     needs:
       - orch-platform/observability-tenant-controller
       - orch-infra/infra-core
@@ -1507,6 +1520,7 @@ releases:
     version: 2.17.3
     values:
       - values/infra-managers.yaml.gotmpl
+      - values/resource-overrides.yaml
     needs:
       - orch-platform/observability-tenant-controller
       - orch-infra/infra-core
@@ -1539,6 +1553,7 @@ releases:
     version: 25.2.3
     values:
       - values/certificate-file-server.yaml.gotmpl
+      - values/resource-overrides.yaml
     condition: certificate-file-server.enabled
     needs:
       - orch-cluster/intel-infra-provider

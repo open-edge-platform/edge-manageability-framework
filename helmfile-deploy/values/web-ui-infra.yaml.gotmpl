@@ -24,17 +24,14 @@ header:
 versions:
   orchestrator: {{ .Values.orchestratorVersion | default "" | quote }}
 
-# Ingress
+# Ingress — disabled. The root chart (web-ui-root) handles all Traefik routing
+# and internally proxies /mfe/infrastructure/* to web-ui-infra via cluster DNS.
+# Enabling traefik here creates a conflicting IngressRoute at the same priority,
+# causing Traefik to serve web-ui-infra's HTML fallback instead of the root's nginx proxy.
 service:
   type: ClusterIP
   traefik:
-    enabled: true
-    namespace: orch-gateway
-    hostname: "Host(`web-ui.{{ .Values.clusterDomain }}`)"
-    baseHostname: "Host(`{{ .Values.clusterDomain }}`)"
-    secretName: {{ .Values.tlsSecret }}
-    options:
-      name: "gateway-tls"
+    enabled: false
 
 api:
   catalog: "https://api.{{ .Values.clusterDomain }}"

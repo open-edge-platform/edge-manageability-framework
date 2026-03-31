@@ -53,10 +53,52 @@ metrics:
 
 deployment:
   podAnnotations:
+{{- if eq (.Values.istio.enabled | toString) "true" }}
     traffic.sidecar.istio.io/excludeInboundPorts: "8000,8443,8080,4433"          # Traefik listened
     traffic.sidecar.istio.io/excludeOutboundPorts: "4433"                        # Traefik MPS passthrough
     # TODO: Make configurable because every k8s cluster is different
     traffic.sidecar.istio.io/excludeOutboundIPRanges: "10.96.0.1/32"        # k8s API server
+{{- else }}
+    sidecar.istio.io/inject: "false"
+{{- end }}
+
+service:
+  type: LoadBalancer
+
+ports:
+{{- if .Values | getOrNil "squid-proxy.enabled" }}
+  squidproxy:
+    port: 9000
+    exposedPort: 8080
+    expose:
+      default: true
+    protocol: TCP
+{{- end }}
+  web:
+    expose:
+      default: false
+  websecure:
+    nodePort: 30443
+    # Breaking change when migrating to v39.0.0. See:
+    # https://github.com/traefik/traefik-helm-chart/releases/tag/v39.0.0
+    http:
+      # NOTE the middleware name is <namespace>-<name>
+      middlewares:
+        - orch-gateway-rate-limit@kubernetescrd
+        {{- if eq (.Values.cors.enabled | toString) "true" }}
+        - orch-gateway-cors@kubernetescrd
+        {{- end }}
+  tcpamt:
+    # Breaking change when migrating to v39.0.0. See:
+    # https://github.com/traefik/traefik-helm-chart/releases/tag/v39.0.0
+    http:
+      middlewares:
+        - orch-gateway-tcp-rate-limit@kubernetescrd
+    port: 4433
+    exposedPort: 4433
+    expose:
+      default: true
+    protocol: TCP
 
 resources: {}
 nodeSelector: {}

@@ -123,6 +123,7 @@ onboarding-manager:
 dkam:
   pvc:
     storageClassName: {{ .Values.storageClass }}
+  resources: null
   managerArgs:
     traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
     enableTracing: false
