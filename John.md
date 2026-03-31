@@ -1,0 +1,81 @@
+```mermaid
+A@{ shape: cloud }
+```
+```mermaid
+info
+```
+
+```mermaid
+flowchart LR
+
+    %% LEFT: Cloud
+    subgraph Cloud[" "]
+        Apps[Apps]
+        Infra[Infra]
+    end
+    CloudLabel["Cloud-based<br>Orchestration"]
+    Cloud --- CloudLabel
+
+    %% EDGE SITES
+    SF["Edge Nodes at Customer Site<br>(San Francisco)"]
+    ATL["Edge Nodes at Customer Site<br>(Atlanta)"]
+    NYC["Edge Nodes at Customer Site<br>(New York City)"]
+
+    Cloud -.-> SF
+    Cloud -.-> ATL
+    Cloud -.-> NYC
+
+    %% RIGHT SIDE
+    subgraph EO["Edge Orchestrator"]
+        direction TB
+
+        WebUI[Web-UI]
+
+        subgraph OrchestrationLayer[" "]
+            direction LR
+            AppOrch["Application<br>Orchestration"]
+            ClusterOrch["Multi Edge Cluster<br>Orchestration"]
+            InfraMgmt["Edge Infrastructure<br>Management"]
+        end
+
+        Platform["Foundational Platform Services<br/>(Identity and Access Mgmt, Secrets Mgmt,<br/>API Gateway, Observability, etc.)"]
+
+        AWS[AWS* Infrastructure / On-Prem Datacenter]
+
+        %% EDGE NODE
+        
+        subgraph EdgeNode["Edge Node"]
+            direction TB
+            subgraph AppsRow[" "]
+                direction LR
+                CA1[Customer Apps]
+                CA2[Customer Apps]
+                CA3[Customer Apps]
+            end
+
+            K8s[Kubernetes* Cluster]
+            OS[Edge Node OS, Packages, Agents]
+            HW["Edge Node Hardware<br/>(Intel® Xeon® processor, Intel® Core™ processor)"]
+
+            %% Invisible ordering inside Edge Node
+            AppsRow ~~~ K8s
+            K8s ~~~ OS
+            direction TB
+            OS ~~~ HW
+        end
+        %% Invisible ordering inside EO
+        WebUI ~~~ AppOrch
+        AppOrch ~~~ Platform
+        Platform ~~~ AWS
+        AWS ~~~ EdgeNode
+    end
+
+    Cloud -.-> EO
+
+    %% Styling
+    classDef blue fill:#1f4fbf,color:#fff,stroke:#1f4fbf;
+    classDef lightblue fill:#1fb6d9,color:#000,stroke:#1fb6d9;
+
+    class WebUI,AppOrch,ClusterOrch,InfraMgmt,Platform,AWS blue;
+    class CA1,CA2,CA3,K8s,OS,HW lightblue;
+    ```
