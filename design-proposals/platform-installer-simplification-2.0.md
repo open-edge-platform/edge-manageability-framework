@@ -216,7 +216,10 @@ Coder VM running K3s has only a single host IP. Possible approaches:
    eliminates the need for three separate LoadBalancer services and three IPs.
    The on-prem installer currently separates them for production fault isolation,
    but this is unnecessary for a Coder dev environment. This is the recommended
-   approach as it aligns with the ADR's simplification goals.
+   approach as it aligns with the ADR's simplification goals. Note: The reason
+   for having a separate HAProxy is due to reduced TLS algorithms being available
+   when remote booting due to BIOS limitations. **This approach is not viable
+   for that reason**.
 
 2. **Virtual IPs on a dummy interface.** Add secondary IPs to the loopback or a
    dummy interface (e.g., `ip addr add 10.0.0.51/32 dev lo`). MetalLB advertises
