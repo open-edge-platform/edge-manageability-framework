@@ -96,7 +96,8 @@ The KVM operation involves the following EMF components:
   requests with SOL and KVM state changes
 - **infra-core/inventory**: PostgreSQL database storing host resources
   including SOL and KVM state fields
-- **infra-external/sol_kvm-manager**:
+- **infra-external/kvm-manager**:
+- **infra-external/sol-manager**:
 - **mps**: Management Presence Server that generates KVM authorization
   tokens and provides WebSocket endpoints
 - **rps**: Remote Provisioning Server that enables KVM during device
@@ -160,11 +161,11 @@ integrates with the EMF stack.
 
 #### MPS REST APIs
 
-##### 1. Get / Set KVM Features on Device
+##### 1. Get / Set SOL and KVM Features on Device
 
 **Endpoint:** `GET /api/v1/amt/features/{guid}`
 
-**Purpose:** Verify KVM is enabled and read the `userConsent` policy before
+**Purpose:** Verify KVM and SOL is enabled and read the `userConsent` policy before
 initiating a session.
 
 **Response (`GetAMTFeaturesResponse`):**
@@ -183,7 +184,7 @@ initiating a session.
 
 **Endpoint:** `POST /api/v1/amt/features/{guid}`
 
-**Purpose:** Enable KVM (and optionally SOL/IDER) redirection on the device.
+**Purpose:** Enable KVM and SOL redirection on the device.
 
 **Request Body (`SetAMTFeaturesRequest`):**
 
@@ -361,6 +362,8 @@ sequenceDiagram
 ```
 
 ---
+
+### SOL Operational Flow
 
 ### Proto Schema Changes
 
