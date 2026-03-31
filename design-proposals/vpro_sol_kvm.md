@@ -1,4 +1,4 @@
-# Design Proposal: Remote KVM Operations via orch-cli
+# Design Proposal: SOL and Remote KVM Operations via orch-cli
 
 Author(s): Edge Infrastructure Manager Team
 
