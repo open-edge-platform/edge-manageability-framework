@@ -4,13 +4,16 @@ A@{ shape: manual-file }
 ```
 ```mermaid
   flowchart LR
-    A@{ shape: cloud }
-  info
-  )i am a cloud(
-  subgraph Cloud[" "]
+    A@{ shape: cloud, label: "Comment"  }
+    info
+    subgraph Cloud[" "]
         Apps[Apps]
+
         Infra[Infra]
-  end
+    end
+
+     %% Use 'style' followed by the subgraph ID
+    style Cloud fill:#e1f5fe,stroke:#01579b,stroke-width:2px,stroke-dasharray: 5 5
 ```
 
 ```mermaid
@@ -18,8 +21,8 @@ flowchart TD
 
     %% LEFT: Cloud
     subgraph Cloud[" "]
-        Apps[Apps]
-        Infra[Infra]
+    APPS@{ shape: cloud, label: "Apps"  }
+    Infra@{ shape: cloud, label: "Infra"  }
     end
 
     %% EDGE SITES
