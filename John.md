@@ -7,7 +7,7 @@ info
 ```
 
 ```mermaid
-flowchart LR
+flowchart TD
 
     %% LEFT: Cloud
     subgraph Cloud[" "]
@@ -45,7 +45,7 @@ flowchart LR
         AWS[AWS* Infrastructure / On-Prem Datacenter]
 end
         %% EDGE NODE
-        
+
         subgraph EdgeNode["Edge Node"]
             direction TB
             subgraph AppsRow[" "]
