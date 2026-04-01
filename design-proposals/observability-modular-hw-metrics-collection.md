@@ -115,8 +115,8 @@ installed by the agent:
 - **Cache Utilization and Performance Metrics**: The primary collector for this will be the [intel_rdt collector](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/intel_rdt)
   in Telegraf, which uses [Intel Resource Director Technology](https://github.com/intel/intel-cmt-cat) to report the
   utilization of the L3 cache. As well as this collector, the intel_pmu collector above also provides some cache performance
-  metrics as does the [intel_pmt collector](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/intel_pmt) in
-  Telegraf when used with newer Intel processors.
+  metrics as does the [intel_pmt collector](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/intel_pmt)
+  in Telegraf when used with newer Intel processors.
 - **BIOS Metrics**: This would require a new collector to provide such metrics from the BIOS environment.
 - **Network Interface Utilization and Performance Metrics**: Telegraf provides the [net collector](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/net)
   which provides a per interface view of the network traffic sent and received on the edge node. In the current POA
