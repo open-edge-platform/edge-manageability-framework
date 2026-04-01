@@ -20,7 +20,7 @@ flowchart TD
     %% LEFT: Cloud
     subgraph Cloud[" "]
     direction LR
-    APPS@{ shape: cloud, label: "Apps"  }
+    APPS@{ shape: cloud, label: "Apps"  } ~~~
     Infra@{ shape: cloud, label: "Infra"  }
     end
 
