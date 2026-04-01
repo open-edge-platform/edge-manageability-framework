@@ -1,3 +1,4 @@
+https://mermaid.ai/open-source/syntax/flowchart.html
 ```mermaid
 A@{ shape: cloud }
 ```
@@ -28,28 +29,29 @@ flowchart LR
     %% RIGHT SIDE
     subgraph EO["Edge Orchestrator"]
         direction TB
-
+        subgraph Orch[" "]
+        direction TB
         WebUI[Web-UI]
 
         subgraph OrchestrationLayer[" "]
             direction LR
-            AppOrch["Application<br>Orchestration"]
-            ClusterOrch["Multi Edge Cluster<br>Orchestration"]
-            InfraMgmt["Edge Infrastructure<br>Management"]
+            AppOrch["Application<br>Orchestration"] ~~~
+            ClusterOrch["Multi Edge Cluster<br>Orchestration"] ~~~
+            InfraMgmt["Edge Infrastructure<br>Management"] 
         end
 
         Platform["Foundational Platform Services<br/>(Identity and Access Mgmt, Secrets Mgmt,<br/>API Gateway, Observability, etc.)"]
 
         AWS[AWS* Infrastructure / On-Prem Datacenter]
-
+end
         %% EDGE NODE
         
         subgraph EdgeNode["Edge Node"]
             direction TB
             subgraph AppsRow[" "]
                 direction LR
-                CA1[Customer Apps]
-                CA2[Customer Apps]
+                CA1[Customer Apps] ~~~
+                CA2[Customer Apps] ~~~
                 CA3[Customer Apps]
             end
 
@@ -60,15 +62,15 @@ flowchart LR
             %% Invisible ordering inside Edge Node
             AppsRow ~~~ K8s
             K8s ~~~ OS
-            direction TB
             OS ~~~ HW
         end
         %% Invisible ordering inside EO
-        WebUI ~~~ AppOrch
-        AppOrch ~~~ Platform
+        WebUI ~~~ Orch
+        Orch ~~~ Platform
         Platform ~~~ AWS
         AWS ~~~ EdgeNode
     end
+
 
     Cloud -.-> EO
 
