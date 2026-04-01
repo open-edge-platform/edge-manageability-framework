@@ -52,6 +52,8 @@ traefikReverseProxy:
 {{- if .Values.argo.traefik }}
   tlsOption: {{ .Values.argo.traefik.tlsOption | default "" | quote }}
 {{- end }}
+ingressRoute:
+  apiHostname: api.{{ .Values.argo.clusterDomain }}
 
 {{- with .Values.argo.resources.appDeploymentManager.openpolicyagent }}
 openpolicyagent:
