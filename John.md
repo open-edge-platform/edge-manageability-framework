@@ -9,12 +9,9 @@ A@{ shape: manual-file }
     subgraph Cloud[" "]
         shape: cloud
         Apps[Apps]
-
         Infra[Infra]
     end
 
-     %% Use 'style' followed by the subgraph ID
-    style Cloud fill:#e1f5fe,stroke:#01579b,stroke-width:2px,stroke-dasharray: 5 5
 ```
 
 ```mermaid
