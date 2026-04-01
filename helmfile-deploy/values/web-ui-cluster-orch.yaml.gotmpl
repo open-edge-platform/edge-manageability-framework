@@ -2,7 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+# From argocd/applications/configs/web-ui-cluster-orch.yaml
+# + argocd/applications/custom/web-ui-cluster-orch.tpl
+
 global:
   registry:
     name: "{{ .Values.containerRegistryURL }}"
-    imagePullSecrets: []
+    imagePullSecrets: {{ .Values.imagePullSecrets | toYaml | nindent 6 }}

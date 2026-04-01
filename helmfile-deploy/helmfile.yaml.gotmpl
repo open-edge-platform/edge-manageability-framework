@@ -1368,6 +1368,10 @@ releases:
     needs:
       - orch-cluster/cluster-template-crd
       - capi-operator-system/capi-providers-config
+    hooks:
+      - events: ["postsync"]
+        showlogs: true
+        command: "./hooks/fix-credentials-istio-wait.sh"
 
 
   - name: component-status
@@ -1659,6 +1663,7 @@ releases:
     version: 4.0.0
     values:
       - values/web-ui-cluster-orch.yaml.gotmpl
+      - values/resource-overrides.yaml
     condition: web-ui-cluster-orch.enabled
     needs:
       - orch-cluster/intel-infra-provider
