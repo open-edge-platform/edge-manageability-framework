@@ -2,172 +2,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 #
-# vPro profile — layered on top of onprem-eim-settings.yaml.gotmpl
-# Contains vPro-specific setting overrides and feature flags
-# No App Orch, No Cluster Orch, No Observability, No Kyverno, No UI
-
-# ─── Setting overrides (vPro-specific defaults) ─────────────────────────────
-# Istio defaults to enabled for vPro (EIM settings default to false)
-istio:
-  enabled: {{ env "EMF_ENABLE_ISTIO" | default "true" }}
-
-# vPro disables CO and O11y profiles at infra-onboarding level
-infra-onboarding:
-  enabled: true
-  skipOSProvisioning: {{ env "EMF_SKIP_OS_PROVISIONING" | default "false" }}
-  disableCoProfile: true
-  disableO11yProfile: true
+# vPro profile overrides — layered on top of:
+#   defaults-disabled → onprem-eim-settings → onprem-eim-features
+#
+# Reference: orch-configs/profiles/enable-edgeinfra-vpro.yaml
+# This file ONLY contains values that DIFFER from the EIM features.
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Feature flags — controls which releases are installed
+# Releases to DISABLE (enabled in EIM features, not needed for vPro)
 # ═══════════════════════════════════════════════════════════════════════════════
-
-# ─── Platform (enabled) ─────────────────────────────────────────────────────
-auth-service:
-  enabled: true
-cert-manager:
-  enabled: true
-cert-synchronizer:
-  enabled: true
-certificate-file-server:
-  enabled: true
-component-status:
-  enabled: true
-copy-ca-cert-boots-to-gateway:
-  enabled: true
-copy-ca-cert-boots-to-infra:
-  enabled: true
-copy-ca-cert-gateway-to-cattle:
-  enabled: true
-copy-ca-cert-gateway-to-infra:
-  enabled: true
-external-secrets:
-  enabled: true
-ingress-haproxy:
-  enabled: true
-istio-base:
-  enabled: {{ env "EMF_ENABLE_ISTIO" | default "true" }}
-istio-policy:
-  enabled: {{ env "EMF_ENABLE_ISTIO" | default "true" }}
-istiod:
-  enabled: {{ env "EMF_ENABLE_ISTIO" | default "true" }}
-kiali:
-  enabled: {{ env "EMF_ENABLE_ISTIO" | default "true" }}
-keycloak-operator:
-  enabled: true
-haproxy-ingress-pxe-boots:
-  enabled: true
-platform-autocert:
-  enabled: true
-platform-keycloak:
-  enabled: true
-prometheus-crd:
-  enabled: true
-reloader:
-  enabled: true
-rs-proxy:
-  enabled: true
-secrets-config:
-  enabled: true
-secret-wait-tls-orch:
-  enabled: true
-secret-wait-tls-boots:
-  enabled: true
-traefik-extra-objects:
-  enabled: true
-traefik-pre:
-  enabled: true
-traefik-boots:
-  enabled: false
-token-fs:
-  enabled: true
-
-# ─── Database operators ──────────────────────────────────────────────────────
-postgresql-operator:
-  enabled: true
-postgresql-cluster:
-  enabled: true
-postgresql-secrets:
-  enabled: true
-
-# ─── App Orch (disabled for vPro) ───────────────────────────────────────────
-app-deployment-crd:
-  enabled: false
-app-deployment-manager:
-  enabled: false
-app-resource-manager:
-  enabled: false
-app-service-proxy:
-  enabled: false
-fleet-rs-secret:
-  enabled: false
-app-orch-catalog:
-  enabled: false
-app-deployment-manager-secret:
-  enabled: false
-harbor-oci:
-  enabled: false
-app-orch-tenant-controller:
-  enabled: false
-fleet-crd:
-  enabled: false
-fleet-controller:
-  enabled: false
-copy-app-gitea-cred-to-fleet:
-  enabled: false
-copy-ca-cert-gitea-to-app:
-  enabled: false
-copy-ca-cert-gitea-to-cluster:
-  enabled: false
-copy-cluster-gitea-cred-to-fleet:
-  enabled: false
-
-# ─── Cluster Orch (disabled for vPro) ───────────────────────────────────────
-capi-operator-pre:
-  enabled: false
-capi-operator:
-  enabled: false
-cluster-manager:
-  enabled: false
-cluster-connect-gateway:
-  enabled: false
-intel-infra-provider:
-  enabled: false
-capi-providers-config:
-  enabled: false
-
-# ─── Edge Infra (enabled) ───────────────────────────────────────────────────
-infra-core:
-  enabled: true
-infra-managers:
-  enabled: true
-infra-external:
-  enabled: true
-copy-keycloak-admin-to-infra:
-  enabled: true
-
-# ─── Observability (disabled for vPro) ──────────────────────────────────────
-alerting-monitor:
-  enabled: false
-edgenode-dashboards:
-  enabled: false
-edgenode-observability:
-  enabled: false
-orchestrator-dashboards:
-  enabled: false
-orchestrator-observability:
-  enabled: false
-orchestrator-prometheus-agent:
-  enabled: false
-sre-exporter:
-  enabled: false
-
-# ─── UI (all disabled for vPro) ─────────────────────────────────────────────
 web-ui-root:
-  enabled: false
-web-ui-app-orch:
-  enabled: false
-web-ui-cluster-orch:
   enabled: false
 web-ui-infra:
   enabled: false
@@ -176,58 +20,37 @@ web-ui-admin:
 metadata-broker:
   enabled: false
 
-# ─── Kyverno (disabled for vPro) ────────────────────────────────────────────
-kyverno:
-  enabled: false
-kyverno-extra-policies:
-  enabled: false
-kyverno-istio-policy:
-  enabled: false
-kyverno-traefik-policy:
-  enabled: false
+# ═══════════════════════════════════════════════════════════════════════════════
+# infra-core overrides (from enable-edgeinfra-vpro.yaml)
+# ═══════════════════════════════════════════════════════════════════════════════
+infra-core:
+  enabled: true
+  eimScenario: vpro
+  api:
+    enabled: false
+  exporter:
+    enabled: false
 
-# ─── Audit ───────────────────────────────────────────────────────────────────
-audit:
+# ═══════════════════════════════════════════════════════════════════════════════
+# infra-managers overrides (from enable-edgeinfra-vpro.yaml)
+# Disable managers not needed for vPro, enable provisioning skip
+# ═══════════════════════════════════════════════════════════════════════════════
+infra-managers:
   enabled: true
+  disabledProvisioning: true
+  maintenance-manager:
+    enabled: false
+  os-resource-manager:
+    enabled: false
+  networking-manager:
+    enabled: false
+  attestationstatus-manager:
+    enabled: false
 
-# ─── Tenancy ─────────────────────────────────────────────────────────────────
-tenancy-datamodel:
+# ═══════════════════════════════════════════════════════════════════════════════
+# infra-onboarding overrides (from enable-edgeinfra-vpro.yaml)
+# ═══════════════════════════════════════════════════════════════════════════════
+infra-onboarding:
   enabled: true
-tenancy-manager:
-  enabled: true
-tenancy-api-mapping:
-  enabled: true
-tenancy-init:
-  enabled: false
-nexus-api-gw:
-  enabled: true
-keycloak-tenant-controller:
-  enabled: true
-observability-tenant-controller:
-  enabled: false
-
-# ─── Misc ────────────────────────────────────────────────────────────────────
-namespace-label:
-  enabled: true
-
-# ─── K3s bundled ─────────────────────────────────────────────────────────────
-k8s-metrics-server:
-  enabled: false
-
-# ─── AWS-only (disabled) ────────────────────────────────────────────────────
-aws-lb:
-  enabled: false
-aws-lb-tgb:
-  enabled: false
-aws-sm-proxy:
-  enabled: false
-aws-sm-get-rs-token:
-  enabled: false
-cluster-autoscaler:
-  enabled: false
-vertical-pod-autoscaler:
-  enabled: false
-secret-wait-azure-ad-creds:
-  enabled: false
-secret-wait-rs-token:
-  enabled: false
+  skipOSProvisioning: true
+  enServiceClients: "platform-manageability-agent"

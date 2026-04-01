@@ -41,6 +41,15 @@ pxe-server:
     limits:
       cpu: "64"
       memory: "64Gi"
+tinkerbell:
+  stack:
+    resources:
+      requests:
+        cpu: "200m"
+        memory: "256Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
 
 # ── infra-core subcharts ─────────────────────────────────────────────────────
 api:

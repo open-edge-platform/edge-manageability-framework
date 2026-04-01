@@ -125,6 +125,25 @@ validate_config() {
 }
 
 ################################
+# VALUES DUMP
+################################
+VALUES_OUTPUT_DIR="$SCRIPT_DIR/.computed-values/$HELMFILE_ENV"
+
+dump_computed_values() {
+  echo "📄 Dumping computed values to $VALUES_OUTPUT_DIR"
+  rm -rf "$VALUES_OUTPUT_DIR"
+  mkdir -p "$VALUES_OUTPUT_DIR"
+  (cd "$SCRIPT_DIR" && helmfile -e "$HELMFILE_ENV" write-values \
+    --output-file-template "$VALUES_OUTPUT_DIR/{{ .Release.Name }}.yaml" 2>&1) || {
+    echo "⚠️  Failed to dump computed values (non-fatal, continuing)"
+  }
+  local count
+  count=$(find "$VALUES_OUTPUT_DIR" -name '*.yaml' 2>/dev/null | wc -l)
+  echo "✅ Dumped values for $count releases → $VALUES_OUTPUT_DIR"
+  echo ""
+}
+
+################################
 # HELMFILE WRAPPER
 ################################
 helmfile_cmd() {
@@ -151,6 +170,9 @@ helmfile_sync_all() {
   echo "📦 Installing all charts (env: $HELMFILE_ENV)"
   echo "   Deploying each release individually — continues on failure"
   echo ""
+
+  # Dump computed values before deploying
+  dump_computed_values
 
   local passed=()
   local failed=()
@@ -260,7 +282,74 @@ helmfile_sync_all() {
 
 helmfile_destroy_all() {
   echo "🗑️  Uninstalling all charts (env: $HELMFILE_ENV)"
-  helmfile_cmd destroy
+  echo "   Destroying each release individually in reverse order — continues on failure"
+  echo ""
+
+  local passed=()
+  local failed=()
+  local skipped=()
+
+  # Build lookup of installed releases: "name namespace"
+  local installed_map
+  installed_map=$(helm list -A --no-headers 2>/dev/null | awk '{print $1, $2}')
+
+  if [[ -z "$installed_map" ]]; then
+    echo "ℹ️  No helm releases found — nothing to uninstall"
+    return 0
+  fi
+
+  # Get release names from helmfile.yaml.gotmpl in definition order, then reverse
+  local all_helmfile_releases
+  all_helmfile_releases=$(awk '/^releases:/{found=1} found && /^  - name: /{print $NF}' "$SCRIPT_DIR/helmfile.yaml.gotmpl")
+
+  # Filter to only releases that are actually installed, in reverse wave order
+  local releases
+  releases=$(echo "$all_helmfile_releases" \
+    | while read -r name; do echo "$installed_map" | awk -v r="$name" '$1==r{print r; exit}'; done \
+    | tac)
+
+  if [[ -z "$releases" ]]; then
+    echo "ℹ️  No helmfile-managed releases are currently installed"
+    return 0
+  fi
+
+  local total
+  total=$(echo "$releases" | wc -l)
+  local current=0
+
+  for release in $releases; do
+    ((current++))
+
+    # Find the namespace for this release from the installed map
+    local ns
+    ns=$(echo "$installed_map" | awk -v r="$release" '$1==r{print $2; exit}')
+
+    if [[ -z "$ns" ]]; then
+      echo "[$current/$total] ⏭️  $release — not found, skipping"
+      skipped+=("$release")
+      continue
+    fi
+
+    echo "[$current/$total] 🗑️  Destroying: $release (ns: $ns)"
+    if helm uninstall "$release" -n "$ns" 2>&1; then
+      echo "✅ $release uninstalled"
+      passed+=("$release")
+    else
+      echo "❌ $release uninstall FAILED"
+      failed+=("$release")
+    fi
+  done
+
+  echo ""
+  echo "═══════════════════════════════════════════════════════════════"
+  echo "  UNINSTALL SUMMARY  (env: $HELMFILE_ENV)"
+  echo "═══════════════════════════════════════════════════════════════"
+  echo "  Removed: ${#passed[@]}  |  Failed: ${#failed[@]}  |  Skipped: ${#skipped[@]}  |  Total: $total"
+  if (( ${#failed[@]} > 0 )); then
+    echo "  Failed: $(printf '%s ' "${failed[@]}")"
+  fi
+  echo "═══════════════════════════════════════════════════════════════"
+  echo ""
   echo "✅ All charts uninstalled"
 }
 
@@ -291,6 +380,17 @@ else
   exit 1
 fi
 
+# Support inline KEY=VALUE arguments (e.g., ./helmfile-deploy.sh EMF_HELMFILE_ENV=onprem-eim values)
+args=()
+for arg in "$@"; do
+  if [[ "$arg" =~ ^[A-Z_]+=.+$ ]]; then
+    export "$arg"
+  else
+    args+=("$arg")
+  fi
+done
+set -- "${args[@]}"
+
 HELMFILE_ENV="${EMF_HELMFILE_ENV:-onprem}"
 
 validate_config
@@ -306,6 +406,8 @@ Actions:
   uninstall <chart>    Uninstall a single chart
   diff                 Preview changes for all charts
   diff <chart>         Preview changes for a single chart
+  values               Dump computed values for all releases
+  values <chart>       Dump computed values for a single release
   list                 List all available charts and their status
 
 Environment:
@@ -344,6 +446,17 @@ case "$ACTION" in
       helmfile_diff_chart "$CHART_NAME"
     else
       helmfile_diff_all
+    fi
+    ;;
+  values)
+    if [[ -n "$CHART_NAME" ]]; then
+      echo "📄 Dumping computed values for: $CHART_NAME"
+      mkdir -p "$VALUES_OUTPUT_DIR"
+      (cd "$SCRIPT_DIR" && helmfile -e "$HELMFILE_ENV" -l "app=$CHART_NAME" write-values \
+        --output-file-template "$VALUES_OUTPUT_DIR/{{ .Release.Name }}.yaml" 2>&1)
+      echo "✅ Values written to $VALUES_OUTPUT_DIR/$CHART_NAME.yaml"
+    else
+      dump_computed_values
     fi
     ;;
   list)

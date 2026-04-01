@@ -7,9 +7,13 @@ global:
   registry:
     name: "{{ .Values.containerRegistryURL }}/"
     imagePullSecrets: []
+{{- $ic := index .Values "infra-core" }}
+{{- if and $ic (hasKey $ic "eimScenario") }}
+eimScenario: {{ index $ic "eimScenario" }}
+{{- end }}
 import:
   exporter:
-    enabled: true
+    enabled: {{ if and $ic (hasKey $ic "exporter") }}{{ index $ic "exporter" "enabled" }}{{ else }}true{{ end }}
   tenant-controller:
     enabled: true
   tenant-config:
@@ -17,7 +21,7 @@ import:
   credentials:
     enabled: true
   api:
-    enabled: true
+    enabled: {{ if and $ic (hasKey $ic "api") }}{{ index $ic "api" "enabled" }}{{ else }}true{{ end }}
   apiv2:
     enabled: true
   inventory:
@@ -54,7 +58,7 @@ api:
     oidc_tls_insecure_skip_verify_value: "true"
   multiTenancy:
     enforceMultiTenancy: "true"
-  resources: null
+  # Resources: managed by resource-overrides.yaml
 
 apiv2:
   image:
@@ -79,7 +83,7 @@ apiv2:
     oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
     oidc_tls_insecure_skip_verify_env_name: "OIDC_TLS_INSECURE_SKIP_VERIFY"
     oidc_tls_insecure_skip_verify_value: "true"
-  resources: null
+  # Resources: managed by resource-overrides.yaml
   apiv2IngressRoute:
     apiHostname: api.{{ .Values.clusterDomain }}
 
@@ -95,7 +99,7 @@ inventory:
         tag: 16.10-bookworm
     ssl: false
     secrets: inventory-local-postgresql
-  resources: null
+  # Resources: managed by resource-overrides.yaml
   serviceAccount:
     name: "orch-svc"
 
@@ -103,10 +107,10 @@ tenant-controller:
   managerArgs:
     inventoryAddress: "inventory.orch-infra.svc.cluster.local:50051"
     traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
-    skipOSProvisioning: false
+    skipOSProvisioning: {{ if hasKey (index .Values "infra-onboarding") "skipOSProvisioning" }}{{ index .Values "infra-onboarding" "skipOSProvisioning" }}{{ else }}false{{ end }}
   oidc:
     oidc_server_url: "http://platform-keycloak.orch-platform.svc.cluster.local/realms/master"
-  resources: null
+  # Resources: managed by resource-overrides.yaml
   serviceAccount:
     name: "orch-svc"
   vault:
@@ -120,4 +124,4 @@ tenant-config:
     pullPolicy: IfNotPresent
 
 exporter:
-  resources: null
+  # Resources: managed by resource-overrides.yaml

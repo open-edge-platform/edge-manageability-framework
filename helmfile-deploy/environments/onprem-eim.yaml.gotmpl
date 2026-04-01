@@ -294,13 +294,13 @@ web-ui-admin:
 
 # ─── Kyverno (disabled for EIM) ─────────────────────────────────────────────
 kyverno:
-  enabled: false
+  enabled: {{ env "EMF_ENABLE_KYVERNO" | default "false" }}
 kyverno-extra-policies:
-  enabled: false
+  enabled: {{ env "EMF_ENABLE_KYVERNO" | default "false" }}
 kyverno-istio-policy:
-  enabled: false
+  enabled: {{ env "EMF_ENABLE_KYVERNO" | default "false" }}
 kyverno-traefik-policy:
-  enabled: false
+  enabled: {{ env "EMF_ENABLE_KYVERNO" | default "false" }}
 
 # ─── Audit ───────────────────────────────────────────────────────────────────
 audit:

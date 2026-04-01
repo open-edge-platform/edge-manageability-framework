@@ -4,18 +4,20 @@
 #
 # EIM-only environment — Part 2: Feature flags (component on/off)
 # Settings are in onprem-eim-settings.yaml.gotmpl
+# Disabled defaults are in defaults-disabled.yaml.gotmpl
+#
+# This file only lists releases that are ENABLED for EIM profile,
+# plus controlled variables (env-var driven settings).
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Feature flags — controls which releases are installed
+# Enabled releases
 # ═══════════════════════════════════════════════════════════════════════════════
 
-# ─── Platform (enabled) ─────────────────────────────────────────────────────
+# ─── Platform ────────────────────────────────────────────────────────────────
 auth-service:
   enabled: true
 cert-manager:
   enabled: true
-cert-synchronizer:
-  enabled: false
 certificate-file-server:
   enabled: true
 component-status:
@@ -32,14 +34,6 @@ external-secrets:
   enabled: true
 ingress-haproxy:
   enabled: true
-istio-base:
-  enabled: {{ env "EMF_ENABLE_ISTIO" | default "true" }}
-istio-policy:
-  enabled: {{ env "EMF_ENABLE_ISTIO" | default "true" }}
-istiod:
-  enabled: {{ env "EMF_ENABLE_ISTIO" | default "true" }}
-kiali:
-  enabled: {{ env "EMF_ENABLE_ISTIO" | default "true" }}
 keycloak-operator:
   enabled: true
 metadata-broker:
@@ -66,8 +60,6 @@ traefik-extra-objects:
   enabled: true
 traefik-pre:
   enabled: true
-traefik-boots:
-  enabled: false
 token-fs:
   enabled: true
 
@@ -79,53 +71,7 @@ postgresql-cluster:
 postgresql-secrets:
   enabled: true
 
-# ─── App Orch (disabled for EIM) ────────────────────────────────────────────
-app-deployment-crd:
-  enabled: false
-app-deployment-manager:
-  enabled: false
-app-resource-manager:
-  enabled: false
-app-service-proxy:
-  enabled: false
-fleet-rs-secret:
-  enabled: false
-app-orch-catalog:
-  enabled: false
-app-deployment-manager-secret:
-  enabled: false
-harbor-oci:
-  enabled: false
-app-orch-tenant-controller:
-  enabled: false
-fleet-crd:
-  enabled: false
-fleet-controller:
-  enabled: false
-copy-app-gitea-cred-to-fleet:
-  enabled: false
-copy-ca-cert-gitea-to-app:
-  enabled: false
-copy-ca-cert-gitea-to-cluster:
-  enabled: false
-copy-cluster-gitea-cred-to-fleet:
-  enabled: false
-
-# ─── Cluster Orch (disabled for EIM) ────────────────────────────────────────
-capi-operator-pre:
-  enabled: false
-capi-operator:
-  enabled: false
-cluster-manager:
-  enabled: false
-cluster-connect-gateway:
-  enabled: false
-intel-infra-provider:
-  enabled: false
-capi-providers-config:
-  enabled: false
-
-# ─── Edge Infra (enabled) ───────────────────────────────────────────────────
+# ─── Edge Infra ──────────────────────────────────────────────────────────────
 infra-core:
   enabled: true
 infra-managers:
@@ -135,43 +81,13 @@ infra-external:
 copy-keycloak-admin-to-infra:
   enabled: true
 
-# ─── Observability (disabled for EIM) ───────────────────────────────────────
-alerting-monitor:
-  enabled: false
-edgenode-dashboards:
-  enabled: false
-edgenode-observability:
-  enabled: false
-orchestrator-dashboards:
-  enabled: false
-orchestrator-observability:
-  enabled: false
-orchestrator-prometheus-agent:
-  enabled: false
-sre-exporter:
-  enabled: false
-
-# ─── UI (app-orch + cluster-orch disabled) ──────────────────────────────────
+# ─── UI (EIM subset) ────────────────────────────────────────────────────────
 web-ui-root:
   enabled: true
-web-ui-app-orch:
-  enabled: false
-web-ui-cluster-orch:
-  enabled: false
 web-ui-infra:
   enabled: true
 web-ui-admin:
   enabled: true
-
-# ─── Kyverno (disabled for EIM) ─────────────────────────────────────────────
-kyverno:
-  enabled: false
-kyverno-extra-policies:
-  enabled: false
-kyverno-istio-policy:
-  enabled: false
-kyverno-traefik-policy:
-  enabled: false
 
 # ─── Audit ───────────────────────────────────────────────────────────────────
 audit:
@@ -184,55 +100,49 @@ tenancy-manager:
   enabled: true
 tenancy-api-mapping:
   enabled: true
-tenancy-init:
-  enabled: false
 nexus-api-gw:
   enabled: true
 keycloak-tenant-controller:
   enabled: true
-observability-tenant-controller:
-  enabled: false
 
 # ─── Misc ────────────────────────────────────────────────────────────────────
 namespace-label:
   enabled: true
-
-# ─── K3s bundled ─────────────────────────────────────────────────────────────
-k8s-metrics-server:
-  enabled: false
-
-# ─── AWS-only (disabled) ────────────────────────────────────────────────────
-aws-lb:
-  enabled: false
-aws-lb-tgb:
-  enabled: false
-aws-sm-proxy:
-  enabled: false
-aws-sm-get-rs-token:
-  enabled: false
-cluster-autoscaler:
-  enabled: false
-vertical-pod-autoscaler:
-  enabled: false
-secret-wait-azure-ad-creds:
-  enabled: false
-secret-wait-rs-token:
-  enabled: false
-wait-istio-job:
-  enabled: false
-
-# ─── On-prem specific ───────────────────────────────────────────────────────
-oci-secret:
-  enabled: false
-rs-image-pull-secrets:
-  enabled: false
-copy-rs-token-to-cluster:
-  enabled: false
-token-refresh:
-  enabled: false
-botkube:
-  enabled: false
-ingress-nginx:
-  enabled: false
 squid-proxy:
   enabled: {{ env "EMF_ENABLE_SQUID" | default "false" }}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Controlled variables (env-var driven)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ─── Infra onboarding overrides ─────────────────────────────────────────────
+infra-onboarding:
+  enabled: true
+  skipOSProvisioning: {{ env "EMF_SKIP_OS_PROVISIONING" | default "false" }}
+  disableCoProfile: true
+  disableO11yProfile: true
+
+# ─── Tenancy mode ────────────────────────────────────────────────────────────
+defaultTenancy: {{ env "EMF_DEFAULT_TENANCY" | default "false" }}
+
+# ─── CORS ────────────────────────────────────────────────────────────────────
+cors:
+  enabled: {{ env "EMF_CORS_ENABLED" | default "true" }}
+
+# ─── UI settings ─────────────────────────────────────────────────────────────
+ui:
+  ingressInfraUi: {{ env "EMF_UI_INGRESS_INFRA" | default "false" }}
+
+# ─── O11y settings ───────────────────────────────────────────────────────────
+o11y:
+  dedicatedEdgenodeEnabled: false
+  sre:
+    customerLabel: {{ env "EMF_O11Y_SRE_LABEL" | default "local" | quote }}
+    tls:
+      enabled: false
+      caSecretEnabled: false
+  alertingMonitor:
+    initialRules:
+      hostRules: true
+      appDeploymentRules: true
+      clusterRules: true

@@ -1,25 +1,52 @@
 # SPDX-FileCopyrightText: 2025 Intel Corporation
 #
 # SPDX-License-Identifier: Apache-2.0
+#
+# Infra-onboarding values — all overridable via environment layers
+# Reference: argocd/applications/infra-onboarding/custom/infra-onboarding.tpl
 
 ---
+# ─── Shorthand variables ────────────────────────────────────────────────────
+{{- $io       := index .Values "infra-onboarding" | default dict }}
+{{- $skipOS   := dig "skipOSProvisioning" false $io }}
+{{- $metrics  := dig "enableMetrics" false $io }}
+{{- $tracing  := dig "enableTracing" false $io }}
+{{- $mode     := dig "dkamMode" "prod" $io }}
+{{- $sc       := .Values.storageClass }}
+{{- $domain   := .Values.clusterDomain }}
+
+# ═════════════════════════════════════════════════════════════════════════════
+# Global
+# ═════════════════════════════════════════════════════════════════════════════
 global:
   registry:
     name: "{{ .Values.containerRegistryURL }}/"
+    {{- if .Values.imagePullSecrets }}
+    imagePullSecrets:
+      {{- toYaml .Values.imagePullSecrets | nindent 6 }}
+    {{- else }}
     imagePullSecrets: []
+    {{- end }}
+
+# ═════════════════════════════════════════════════════════════════════════════
+# Sub-chart toggles
+# ═════════════════════════════════════════════════════════════════════════════
 import:
   dkam:
-    enabled: true
+    enabled: {{ dig "dkam" "enabled" true $io }}
   tinkerbell:
-    enabled: true
+    enabled: {{ dig "tinkerbell" "enabled" true $io }}
   onboarding-manager:
-    enabled: true
+    enabled: {{ dig "onboarding-manager" "enabled" true $io }}
   pxe-server:
-    enabled: {{ .Values.pxe.enabled }}
+    enabled: {{ if .Values.pxe }}{{ .Values.pxe.enabled }}{{ else }}false{{ end }}
   infra-config:
-    enabled: true
+    enabled: {{ dig "infra-config" "enabled" true $io }}
 
-{{- if eq (.Values.pxe.enabled | toString) "true" }}
+# ═════════════════════════════════════════════════════════════════════════════
+# PXE Server  (only rendered when pxe is enabled)
+# ═════════════════════════════════════════════════════════════════════════════
+{{- if and .Values.pxe (eq (.Values.pxe.enabled | toString) "true") }}
 pxe-server:
   config:
     interface: {{ .Values.pxe.interface | default "" | quote }}
@@ -27,38 +54,45 @@ pxe-server:
     subnetAddress: {{ .Values.pxe.subnetAddress | default "" | quote }}
 {{- end }}
 
+# ═════════════════════════════════════════════════════════════════════════════
+# Tinkerbell  (disabled entirely when skipOSProvisioning=true)
+# ═════════════════════════════════════════════════════════════════════════════
 tinkerbell:
   pvc:
     enabled: false
-    storageClassName: {{ .Values.storageClass }}
-    accessModes:
-      - ReadWriteOnce
+    storageClassName: {{ dig "tinkerbellStorageClass" $sc $io }}
+    accessModes: [ReadWriteOnce]
+
   traefikReverseProxy:
     gatewayNamespace: orch-gateway
-    enabled: &traefikReverseProxy_enabled true
-    tinkServerDnsname: "tinkerbell-server.{{ .Values.clusterDomain }}"
-    nginxDnsname: &nginxDnsname "tinkerbell-haproxy.{{ .Values.clusterDomain }}"
-  # https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
+    enabled: &traefikRP true
+    tinkServerDnsname: "tinkerbell-server.{{ $domain }}"
+    nginxDnsname: &nginxDns "tinkerbell-haproxy.{{ $domain }}"
   traefikApiGroup: "traefik.io/v1alpha1"
+
+  # ── Nginx CDN stack (resources via resource-overrides.yaml) ──────────────
   stack:
     enabled: true
-    resources:
-      limits:
-        cpu: "64"
-        memory: "64Gi"
-      requests:
-        cpu: 200m
-        memory: 256Mi
+    {{- if $skipOS }}
+    hook:
+      enabled: false
+    {{- end }}
+
+  # ── Tink controller / server ─────────────────────────────────────────────
   tinkerbell_tink:
-    enabled: true
+    enabled: {{ not $skipOS }}
     controller:
-      enabled: true
+      enabled: {{ not $skipOS }}
     server:
-      enabled: true
+      enabled: {{ not $skipOS }}
       metrics:
-        enabled: false
+        enabled: {{ $metrics }}
+
+  # ── DHCP / iPXE (smee) ──────────────────────────────────────────────────
   tinkerbell_smee:
-    # these additional arguments serve as kernel arguments for Edge Node
+    {{- if $skipOS }}
+    enabled: false
+    {{- end }}
     additionalKernelArgs:
       - "http_proxy={{ .Values.proxy.enHttpProxy }}"
       - "https_proxy={{ .Values.proxy.enHttpsProxy }}"
@@ -70,129 +104,176 @@ tinkerbell:
       - "TIMEOUT=120s"
       - "syslog_host=127.0.0.1"
     traefikReverseProxy:
-      enabled: *traefikReverseProxy_enabled
-      nginxDnsname: *nginxDnsname
+      enabled: *traefikRP
+      nginxDnsname: *nginxDns
+
+  # ── Metadata service (hegel) ─────────────────────────────────────────────
   tinkerbell_hegel:
-    {{- if (index .Values "infra-onboarding" "skipOSProvisioning" | default false) }}
+    {{- if $skipOS }}
     enabled: false
     {{- end }}
 
+# ═════════════════════════════════════════════════════════════════════════════
+# Onboarding Manager
+# ═════════════════════════════════════════════════════════════════════════════
 onboarding-manager:
   service:
-    enableIO: true
+    enableIO: {{ dig "onboarding-manager" "service" "enableIO" true $io }}
   managerArgs:
     inventoryAddress: "inventory.orch-infra.svc.cluster.local:50051"
     traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
-    enableTracing: false
+    enableTracing: {{ $tracing }}
   metrics:
-    enabled: false
+    enabled: {{ $metrics }}
   pvc:
-    storageClassName: {{ .Values.storageClass }}
+    storageClassName: {{ dig "onboardingManagerStorageClass" $sc $io }}
+
+  # ── Ingress ──────────────────────────────────────────────────────────────
   traefikReverseProxy:
     enabled: true
     secretName: "tls-orch"
-    tlsOption: "gateway-tls"
     gatewayNamespace: orch-gateway
     host:
       grpc:
-        name: "onboarding-node.{{ .Values.clusterDomain }}"
+        name: "onboarding-node.{{ $domain }}"
       stream:
-        name: "onboarding-stream.{{ .Values.clusterDomain }}"
-  # https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
+        name: "onboarding-stream.{{ $domain }}"
+    tlsOption: {{ dig "tlsOption" "gateway-tls" (.Values.traefik | default dict) | quote }}
   traefikApiGroup: "traefik.io/v1alpha1"
+
+  # ── Runtime config ───────────────────────────────────────────────────────
   env:
     tinkerActionsVersion: "1.20.2"
     oidc:
       oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
-      # Skip AuthZ for CDN-boots
       clients:
-        bypass:
-          - cdn-boots
+        bypass: [cdn-boots]
     vaultUrl: "http://vault.orch-platform.svc.cluster.local:8200"
     vaultRole: "orch-svc"
     keycloakUrl: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
-    mode: "prod"
-    userName: "user"
-    passWord: "user"
-    enableTinkActionTimestamp: false
+    mode: {{ $mode | quote }}
+    userName: {{ dig "userName" "user" $io | quote }}
+    passWord: {{ dig "passWord" "user" $io | quote }}
+    enableTinkActionTimestamp: {{ dig "enableTinkActionTimestamp" false $io }}
   multiTenancy:
     enforceMultiTenancy: true
+  {{- if (hasKey $io "enServiceClients") }}
+  enServiceClients: {{ $io.enServiceClients | quote }}
+  {{- end }}
   serviceAccount:
     name: "orch-svc"
+  # Resources: managed by resource-overrides.yaml
 
+# ═════════════════════════════════════════════════════════════════════════════
+# DKAM
+# ═════════════════════════════════════════════════════════════════════════════
 dkam:
   pvc:
-    storageClassName: {{ .Values.storageClass }}
-  resources: null
+    storageClassName: {{ dig "dkamStorageClass" $sc $io }}
   managerArgs:
     traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
-    enableTracing: false
+    enableTracing: {{ $tracing }}
+  {{- if and (index .Values "infra-external") (dig "loca" false (index .Values "infra-external")) }}
+    legacyMode: true
+  {{- end }}
   metrics:
-    enabled: false
+    enabled: {{ $metrics }}
   env:
     rs_proxy_address: "rs-proxy.orch-platform.svc.cluster.local:8081/"
     oidc:
       oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
-    mode: "prod"
+    mode: {{ $mode | quote }}
   proxies:
     http_proxy: {{ .Values.proxy.httpProxy }}
     https_proxy: {{ .Values.proxy.httpsProxy }}
     no_proxy: {{ .Values.proxy.noProxy }}
+  # Resources: managed by resource-overrides.yaml
 
+# ═════════════════════════════════════════════════════════════════════════════
+# Infra Config  (edge-node agent configuration pushed during onboarding)
+# ═════════════════════════════════════════════════════════════════════════════
 infra-config:
   config:
+    # ── Agent versions ───────────────────────────────────────────────────────
     enAgentManifestTag: "1.5.8"
     embImageUrl: files-edge-orch/repository/microvisor/uos/emb_uos_x86_64_20251113.tar.gz
+
+    # ── Edge-node proxy settings ─────────────────────────────────────────────
     enProxyHTTP: {{ .Values.proxy.enHttpProxy }}
     enProxyHTTPS: {{ .Values.proxy.enHttpsProxy }}
     enProxyFTP: {{ .Values.proxy.enFtpProxy }}
     enProxySocks: {{ .Values.proxy.enSocksProxy }}
     enProxyNoProxy: {{ .Values.proxy.enNoProxy }}
-    orchInfra: infra-node.{{ .Values.clusterDomain }}:443
-    orchCluster: cluster-orch-node.{{ .Values.clusterDomain }}:443
-    orchUpdate: update-node.{{ .Values.clusterDomain }}:443
-    orchRelease: release.{{ .Values.clusterDomain }}
-    orchPlatformObsLogs: logs-node.{{ .Values.clusterDomain }}:443
-    orchPlatformObsMetrics: metrics-node.{{ .Values.clusterDomain }}:443
-    orchKeycloak: keycloak.{{ .Values.clusterDomain }}:443
-    orchTelemetry: telemetry-node.{{ .Values.clusterDomain }}:443
-    orchAttestationStatus: attest-node.{{ .Values.clusterDomain }}:443
+
+    # ── Orchestrator service endpoints ───────────────────────────────────────
+    orchInfra: infra-node.{{ $domain }}:443
+    orchCluster: cluster-orch-node.{{ $domain }}:443
+    orchUpdate: update-node.{{ $domain }}:443
+    orchRelease: release.{{ $domain }}
+    orchPlatformObsLogs: logs-node.{{ $domain }}:443
+    orchPlatformObsMetrics: metrics-node.{{ $domain }}:443
+    orchKeycloak: keycloak.{{ $domain }}:443
+    orchTelemetry: telemetry-node.{{ $domain }}:443
+    orchAttestationStatus: attest-node.{{ $domain }}:443
     orchRegistry: {{ .Values.releaseService.ociRegistry }}:9443
     orchFileServer: {{ .Values.releaseService.fileServer }}:60444
-    # TODO: Revisit the below routes - limit exposure and switch to MT GW endpoints.
-    orchMPSHost: mps.{{ .Values.clusterDomain }}:4433
-    orchMPSWHost: mps-wss.{{ .Values.clusterDomain }}:443
-    orchRPSHost: rps.{{ .Values.clusterDomain }}:443
-    orchRPSWHost: rps-wss.{{ .Values.clusterDomain }}:443
-    orchDeviceManager: device-manager-node.{{ .Values.clusterDomain }}:443
-    rsType: "no-auth"
-    enServiceClients: "hardware-discovery-agent,cluster-agent,platform-manageability-agent,platform-update-agent,platform-telemetry-agent"
-    enOutboundClients: "platform-observability-collector,platform-observability-health-check,platform-observability-logging,platform-observability-metrics"
-    enMetricsEnabled: "true"
-    enTokenClients: "node-agent,hd-agent,cluster-agent,platform-update-agent,platform-observability-agent,platform-telemetry-agent,prometheus,connect-agent,attestation-manager,platform-manageability-agent"
-    disableCoProfile: true
-    disableO11yProfile: true
-    netIp: "dynamic"
-    ntpServer: "pool.ntp.org"
-    nameServers: []
-    systemConfigFsInotifyMaxUserInstances: "8192"
-    systemConfigVmOverCommitMemory: "1"
-    systemConfigKernelPanicOnOops: "1"
-    systemConfigKernelPanic: "10"
+    # TODO: Revisit the below routes — limit exposure and switch to MT GW endpoints
+    orchMPSHost: mps.{{ $domain }}:4433
+    orchMPSWHost: mps-wss.{{ $domain }}:443
+    orchRPSHost: rps.{{ $domain }}:443
+    orchRPSWHost: rps-wss.{{ $domain }}:443
+    orchDeviceManager: device-manager-node.{{ $domain }}:443
+
+    # ── Internal service endpoints ───────────────────────────────────────────
     cdnSvc: {{ .Values.releaseService.fileServer }}
-    provisioningSvc: tinkerbell-haproxy.{{ .Values.clusterDomain }}
-    tinkerSvc: tinkerbell-server.{{ .Values.clusterDomain }}
-    omSvc: onboarding-node.{{ .Values.clusterDomain }}
-    omStreamSvc: onboarding-stream.{{ .Values.clusterDomain }}
-    extraHosts: ""
-    skipOSProvisioning: false
+    provisioningSvc: tinkerbell-haproxy.{{ $domain }}
+    tinkerSvc: tinkerbell-server.{{ $domain }}
+    omSvc: onboarding-node.{{ $domain }}
+    omStreamSvc: onboarding-stream.{{ $domain }}
+
+    # ── Agent client lists (overridable per profile) ─────────────────────────
+    rsType: {{ dig "rsType" "no-auth" $io | quote }}
+    enServiceClients: {{ dig "enServiceClients" "hardware-discovery-agent,cluster-agent,platform-manageability-agent,platform-update-agent,platform-telemetry-agent" $io | quote }}
+    enOutboundClients: {{ dig "enOutboundClients" "platform-observability-collector,platform-observability-health-check,platform-observability-logging,platform-observability-metrics" $io | quote }}
+    enMetricsEnabled: {{ dig "enMetricsEnabled" "true" $io | quote }}
+    enTokenClients: {{ dig "enTokenClients" "node-agent,hd-agent,cluster-agent,platform-update-agent,platform-observability-agent,platform-telemetry-agent,prometheus,connect-agent,attestation-manager,platform-manageability-agent" $io | quote }}
+
+    # ── Profile toggles ─────────────────────────────────────────────────────
+    disableCoProfile: {{ dig "disableCoProfile" false $io }}
+    disableO11yProfile: {{ dig "disableO11yProfile" false $io }}
+    skipOSProvisioning: {{ $skipOS }}
+    extraHosts: {{ dig "dkamExtraHost" "" $io | quote }}
+
+    # ── Network settings ─────────────────────────────────────────────────────
+    netIp: {{ dig "netIp" "dynamic" $io | quote }}
+    ntpServer: {{ dig "ntpServer" "ntp1.server.org,ntp2.server.org" $io | quote }}
+    {{- $nameServers := dig "nameServers" list $io }}
+    {{- if $nameServers }}
+    nameServers:
+      {{- toYaml $nameServers | nindent 6 }}
+    {{- else }}
+    nameServers: []
+    {{- end }}
+
+    # ── Kernel / system tuning ───────────────────────────────────────────────
+    systemConfigFsInotifyMaxUserInstances: {{ dig "systemConfigFsInotifyMaxUserInstances" "8192" $io | quote }}
+    systemConfigVmOverCommitMemory: {{ dig "systemConfigVmOverCommitMemory" "1" $io | quote }}
+    systemConfigKernelPanicOnOops: {{ dig "systemConfigKernelPanicOnOops" "1" $io | quote }}
+    systemConfigKernelPanic: {{ dig "systemConfigKernelPanic" "10" $io | quote }}
+
+    # ── Firewall rules ───────────────────────────────────────────────────────
     firewallReqAllow: |-
       [{
-        "sourceIp": "{{ .Values.clusterDomain }}",
+        "sourceIp": "{{ $domain }}",
         "ports": "6443,10250",
         "ipVer": "ipv4",
         "protocol": "tcp"
       }]
+    {{- $fwAllow := dig "firewallCfgAllow" list $io }}
+    {{- if $fwAllow }}
+    firewallCfgAllow:
+      {{- toYaml $fwAllow | nindent 6 }}
+    {{- else }}
     firewallCfgAllow: |-
       [{
         "sourceIp": "",
@@ -212,3 +293,4 @@ infra-config:
         "ipVer": "",
         "protocol": "udp"
       }]
+    {{- end }}

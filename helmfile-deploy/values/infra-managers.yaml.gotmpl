@@ -7,19 +7,20 @@ global:
   registry:
     name: "{{ .Values.containerRegistryURL }}/"
     imagePullSecrets: []
+{{- $im := index .Values "infra-managers" }}
 import:
   host-manager:
     enabled: true
   maintenance-manager:
-    enabled: true
+    enabled: {{ if and $im (hasKey $im "maintenance-manager") }}{{ index $im "maintenance-manager" "enabled" }}{{ else }}true{{ end }}
   telemetry-manager:
     enabled: false
   os-resource-manager:
-    enabled: true
+    enabled: {{ if and $im (hasKey $im "os-resource-manager") }}{{ index $im "os-resource-manager" "enabled" }}{{ else }}true{{ end }}
   networking-manager:
-    enabled: true
+    enabled: {{ if and $im (hasKey $im "networking-manager") }}{{ index $im "networking-manager" "enabled" }}{{ else }}true{{ end }}
   attestationstatus-manager:
-    enabled: true
+    enabled: {{ if and $im (hasKey $im "attestationstatus-manager") }}{{ index $im "attestationstatus-manager" "enabled" }}{{ else }}true{{ end }}
 
 host-manager:
   inventory:
@@ -39,10 +40,10 @@ host-manager:
     oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
   multiTenancy:
     enforceMultiTenancy: "true"
-  resources: null
+  # Resources: managed by resource-overrides.yaml
   # https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
   traefikApiGroup: "traefik.io/v1alpha1"
-  disabledProvisioning: false
+  disabledProvisioning: {{ if and $im (hasKey $im "disabledProvisioning") }}{{ $im.disabledProvisioning }}{{ else }}false{{ end }}
 
 maintenance-manager:
   inventory:
@@ -64,7 +65,7 @@ maintenance-manager:
     enableVal: false  # disable telemetry profile validation
   multiTenancy:
     enforceMultiTenancy: "true"
-  resources: null
+  # Resources: managed by resource-overrides.yaml
   mimaintmgr:
     traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
   # https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
@@ -76,7 +77,7 @@ networking-manager:
   serviceArgs:
     inventoryAddress: "inventory.orch-infra.svc.cluster.local:50051"
     traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
-  resources: null
+  # Resources: managed by resource-overrides.yaml
 
 telemetry-manager:
   image:
@@ -95,7 +96,7 @@ telemetry-manager:
     oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
   multiTenancy:
     enforceMultiTenancy: "true"
-  resources: null
+  # Resources: managed by resource-overrides.yaml
   # https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
   traefikApiGroup: "traefik.io/v1alpha1"
 
@@ -117,7 +118,7 @@ os-resource-manager:
     enabled: false  # autoprovisioning disabled by default, can be enabled by enable-autoprovision profile
   multiTenancy:
     enforceMultiTenancy: "true"
-  resources: null
+  # Resources: managed by resource-overrides.yaml
 
 attestationstatus-manager:
   inventory:
@@ -137,6 +138,6 @@ attestationstatus-manager:
     oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
   multiTenancy:
     enforceMultiTenancy: "true"
-  resources: null
+  # Resources: managed by resource-overrides.yaml
   # https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
   traefikApiGroup: "traefik.io/v1alpha1"
