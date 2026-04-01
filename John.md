@@ -7,7 +7,7 @@ A@{ shape: manual-file }
     A@{ shape: cloud, label: "Comment"  }
     info
     subgraph Cloud[" "]
-        shape: cloud
+        shape cloud
         Apps[Apps]
         Infra[Infra]
     end
@@ -19,6 +19,7 @@ flowchart TD
 
     %% LEFT: Cloud
     subgraph Cloud[" "]
+    direction LR
     APPS@{ shape: cloud, label: "Apps"  }
     Infra@{ shape: cloud, label: "Infra"  }
     end
