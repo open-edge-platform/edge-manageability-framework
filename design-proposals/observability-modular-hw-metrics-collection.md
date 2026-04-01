@@ -83,49 +83,56 @@ pipeline without requiring other components from the EMF stack.
 
 #### Metric Collectors
 
-On the edge node, the POA will gather the following HW metrics using collectors enabled in the metrics service
-installed by the agent:
+On the edge node, the POA metrics service currently provides a number of metrics by default as well as some that are
+configured but disabled by default. For this workflow, there are also additional metrics to be added.
 
-- **CPU Utilization and Performance Metrics**: CPU usage metrics will be retrieved using the [Telegraf cpu collector](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/cpu)
-  while frequency and throttling CPU metrics will be collected using the [Telegraf linux_cpu collector](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/linux_cpu).
-  The cpu plugin is currently enabled by default in the POA metrics service.
+##### Configured and Enabled Metrics
+
+- **CPU Utilization and Performance Metrics**: CPU usage metrics can be retrieved using the [Telegraf cpu collector](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/cpu).
 - **Memory Utilization and Performance Metrics**: The [Telegraf mem collector](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/mem)
-  will provide memory utilization metrics for an edge node and is currently enabled by default in the POA metrics service.
-- **Logical Volume Manager (LVM) Utilization and Performance Metrics**: For these metrics, the [Telegraf lvm collector](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/lvm)
-  will provide the required metrics. This plugin is configured in the POA metrics service but is disabled by default.
-- **Storage Utilization and Performance Metrics**: For storage performance metrics, there are four collectors that
+  will provide memory utilization metrics for an edge node.
+- **Storage Utilization and Performance Metrics**: For storage performance metrics, there are two collectors that
   provide a variety of metrics. The [Telegraf disk collector](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/disk)
   gathers utilization metrics while the [diskio collector](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/diskio)
-  reports the read and write counts to the edge node storage devices. There is also the
-  [smart collector](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/smart) which, when run on an
-  edge node that has storage devices that support it, will provide additional utilization metrics. Finally, the POA also
+  reports the read and write counts to the edge node storage devices. The POA also
   provides a [script](https://github.com/open-edge-platform/edge-node-agents/blob/main/platform-observability-agent/scripts/collect_disk_info.sh)
   that can be run by the [exec plugin](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/exec)
-  in Telegraf. Of the four collectors, the POA metrics service has configuration settings for all four, but only enables
-  the disk and diskio plugins by default.
-- **iGPU Utilization and Performance Metrics**: There is currently no plugin in Telegraf that gathers such metrics, so to
-  enable such metrics to be gathered on the edge node, a new script for collecting such metrics will need to be created
-  and will be run using the [exec plugin](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/exec) from Telegraf.
+  in Telegraf.
+- **Network Interface Utilization and Performance Metrics**: Telegraf provides the [net collector](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/net)
+  which provides a per interface view of the network traffic sent and received on the edge node.
+- **SRIOV VF Utilization and Performance Metrics**: In Linux, SRIOV VFs created on the system are seen as network
+  interfaces alongside any physical interfaces. In this case, they would also appear in the output from Telegraf's
+  net collector.
+
+##### Configured and Disabled Metrics
+
+- **Logical Volume Manager (LVM) Utilization and Performance Metrics**: For these metrics, the [Telegraf lvm collector](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/lvm)
+  will provide the required metrics.
+- **Storage Utilization and Performance Metrics**: Telegraf also provides the [smart collector](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/smart)
+  which, when run on an edge node that has storage devices that support it, will provide additional utilization metrics.
 - **dGPU Utilization and Performance Metrics**: Currently, the POA metrics service provides a [script](https://github.com/open-edge-platform/edge-node-agents/blob/main/platform-observability-agent/scripts/collect_gpu_metrics.sh)
-  that can collect metrics from dGPU devices on an edge node. This is disabled by default as it requires the
-  [XPU System Mnagement Interface](https://github.com/intel/xpumanager) package to be installed on the edge node.
+  that can collect metrics from dGPU devices on an edge node. It requires the
+  [XPU System Management Interface](https://github.com/intel/xpumanager) package to be installed on the edge node.
 - **Performance Monitoring Unit (PMU) Metrics**: These are metrics specific to Intel CPUs and can be read using the
-  [intel_pmu collector](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/intel_pmu) in Telegraf. Currently,
-  the POA metrics service configures this plugin but does not enabled it by default.
+  [intel_pmu collector](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/intel_pmu) in Telegraf.
+- **BIOS Metrics**: One option for these metrics is to use the [Telegraf redfish collector](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/redfish)
+  to retrieve thermal and power settings.
+
+##### New Metrics to Configure and Enable
+
+- **CPU Utilization and Performance Metrics**: To retrieve frequency and throttling CPU metrics, the [Telegraf linux_cpu collector](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/linux_cpu).
+  can be used.
+- **iGPU Utilization and Performance Metrics**: To retrieve iGPU metrics on the edge node, the XPU System Management
+  Interface package needs to be installed on the edge node along with the intel-level-zero-gpu package. Using these packages
+  with the script currently used for dGPU metrics in the POA metrics service will allow it to also retrieve iGPU metrics.
 - **Cache Utilization and Performance Metrics**: The primary collector for this will be the [intel_rdt collector](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/intel_rdt)
   in Telegraf, which uses [Intel Resource Director Technology](https://github.com/intel/intel-cmt-cat) to report the
   utilization of the L3 cache. As well as this collector, the intel_pmu collector above also provides some cache performance
   metrics as does the [intel_pmt collector](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/intel_pmt)
   in Telegraf when used with newer Intel processors.
-- **BIOS Metrics**: This would require a new collector to provide such metrics from the BIOS environment.
-- **Network Interface Utilization and Performance Metrics**: Telegraf provides the [net collector](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/net)
-  which provides a per interface view of the network traffic sent and received on the edge node. In the current POA
-  metrics service, this is enabled by default.
-- **SRIOV VF Utilization and Performance Metrics**: In Linux, SRIOV VFs created on the system are seen as network
-  interfaces alongside any physical interfaces. In this case, they would also appear in the output from Telegraf's
-  net collector.
-- **NPU Utilization and Performance Metrics**: This will require a new collector to retrieve metrics from any
-  NPUs on an edge node.
+- **BIOS Metrics**: For other BIOS settings, dmidecode can be run using the Telegraf exec collector to gather these.
+- **VPU Utilization and Performance Metrics**: This will require a new collector to retrieve metrics from any
+  VPUs on an edge node.
 
 To view the current POA metrics service configuration, please see the [configuration file](https://github.com/open-edge-platform/edge-node-agents/blob/main/platform-observability-agent/configs/poa-telegraf.conf)
 for the service.
@@ -207,7 +214,7 @@ sequenceDiagram
     activate MIM
     MIM ->> MIM: Process PromQL query
     MIM ->> STO: Retrieve requested metrics from storage
-    STP ->> MIM: Return requested metrics from storage
+    STO ->> MIM: Return requested metrics from storage
     MIM ->> CLI: Return requested metrics
     deactivate MIM
     CLI ->> CLI: Convert metrics response from Mimir into user readable format
@@ -220,9 +227,8 @@ sequenceDiagram
 
 - Hardware Metrics Collection.
   - Identify the new hardware metrics collectors to be added to the current edge node metrics service.
-  - Create a new script to collect iGPU based metrics that can be run using the Telegraf exec plugin.
-  - Create a new collector to retrieve BIOS based metrics from the edge node.
-  - Develop a new collector to retrieve NPU metrics.
+  - Extend the current GPU metrics script to also collect iGPU metrics using the Telegraf exec plugin.
+  - Develop a new collector to retrieve VPU metrics.
   - Add additional Telegraf plugins to metrics service configuration.
   - Test deployment of updated metrics sevice on edge node and check the metrics being retrieved.
   - Update documentation for the edge node observability agent.
