@@ -150,7 +150,23 @@ Architecture diagram TBD
 
 ## Implementation Plan
 
-TBD
+- Hardware Metrics Collection.
+  - Identify the new hardware metrics collectors to be added to the current edge node metrics service.
+  - Create a new script to collect iGPU based metrics that can be run using the Telegraf exec plugin.
+  - Create a new collector to retrieve BIOS based metrics from the edge node.
+  - Develop a new collector to retrieve NPU metrics.
+  - Add additional Telegraf plugins to metrics service configuration.
+  - Test deployment of updated metrics sevice on edge node and check the metrics being retrieved.
+  - Update documentation for the edge node observability agent.
+- Modular observability workflow.
+  - Identify the services needed for a modular observability workflow.
+  - Modify the deployment profiles to include an observability only modular workflow.
+  - Test the deployment of the new modular workflow.
+  - Test deployment with the updated edge node observability agent.
+  - Extend Orchestrator CLI to retrieve metrics from the observability pipeline.
+  - Test the updated CLI with the modular observability pipeline and confirm that new metrics can be retrieved.
+  - Provide documentation on how to install the modular observability workflow.
+  - Extend Orchestrator CLI documentation with new commands for metrics querying.
 
 ## Opens
 
