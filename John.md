@@ -75,9 +75,11 @@ end
     Cloud -.-> EO
 
     %% Styling
+    classDef grey fill:#eeeeee,stroke:#666,stroke-width:1.5px
     classDef blue fill:#1f4fbf,color:#fff,stroke:#1f4fbf;
     classDef lightblue fill:#1fb6d9,color:#000,stroke:#1fb6d9;
 
+    class EO,EdgeNode,AppsRow,Orch,OrchestrationLayer grey;
     class WebUI,AppOrch,ClusterOrch,InfraMgmt,Platform,AWS blue;
     class CA1,CA2,CA3,K8s,OS,HW lightblue;
     ```
