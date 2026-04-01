@@ -120,7 +120,8 @@ configured but disabled by default. For this workflow, there are also additional
 
 ##### New Metrics to Configure and Enable
 
-- **CPU Utilization and Performance Metrics**: To retrieve frequency and throttling CPU metrics, the [Telegraf linux_cpu collector](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/linux_cpu).
+- **CPU Utilization and Performance Metrics**: To retrieve frequency and throttling CPU metrics, the 
+  [Telegraf linux_cpu collector](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/linux_cpu)
   can be used.
 - **iGPU Utilization and Performance Metrics**: To retrieve iGPU metrics on the edge node, the XPU System Management
   Interface package needs to be installed on the edge node along with the intel-level-zero-gpu package. Using these packages
