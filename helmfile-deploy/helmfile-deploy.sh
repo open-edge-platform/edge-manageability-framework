@@ -393,6 +393,17 @@ set -- "${args[@]}"
 
 HELMFILE_ENV="${EMF_HELMFILE_ENV:-onprem}"
 
+# ─── Logging: tee all output to timestamped log file ────────────────────────
+LOG_DIR="$SCRIPT_DIR/logs"
+mkdir -p "$LOG_DIR"
+LOG_TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
+LOG_FILE="$LOG_DIR/${HELMFILE_ENV}_${1:-unknown}_${LOG_TIMESTAMP}.log"
+exec > >(tee -a "$LOG_FILE") 2>&1
+echo "═══ Log started: $(date -Iseconds) ═══"
+echo "═══ Command: $0 $* ═══"
+echo "═══ Environment: $HELMFILE_ENV ═══"
+echo ""
+
 validate_config
 
 usage() {

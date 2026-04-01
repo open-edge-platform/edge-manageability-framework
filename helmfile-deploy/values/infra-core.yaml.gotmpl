@@ -7,25 +7,25 @@ global:
   registry:
     name: "{{ .Values.containerRegistryURL }}/"
     imagePullSecrets: []
-{{- $ic := index .Values "infra-core" }}
-{{- if and $ic (hasKey $ic "eimScenario") }}
-eimScenario: {{ index $ic "eimScenario" }}
+{{- $ic := index .Values "infra-core" | default dict }}
+{{- if hasKey $ic "eimScenario" }}
+eimScenario: {{ $ic.eimScenario }}
 {{- end }}
 import:
   exporter:
-    enabled: {{ if and $ic (hasKey $ic "exporter") }}{{ index $ic "exporter" "enabled" }}{{ else }}true{{ end }}
+    enabled: {{ dig "exporter" "enabled" true $ic }}
   tenant-controller:
-    enabled: true
+    enabled: {{ dig "tenant-controller" "enabled" true $ic }}
   tenant-config:
-    enabled: false
+    enabled: {{ dig "tenant-config" "enabled" false $ic }}
   credentials:
-    enabled: true
+    enabled: {{ dig "credentials" "enabled" true $ic }}
   api:
-    enabled: {{ if and $ic (hasKey $ic "api") }}{{ index $ic "api" "enabled" }}{{ else }}true{{ end }}
+    enabled: {{ dig "api" "enabled" true $ic }}
   apiv2:
-    enabled: true
+    enabled: {{ dig "apiv2" "enabled" true $ic }}
   inventory:
-    enabled: true
+    enabled: {{ dig "inventory" "enabled" true $ic }}
 
 credentials:
   serviceAccount:
@@ -107,7 +107,7 @@ tenant-controller:
   managerArgs:
     inventoryAddress: "inventory.orch-infra.svc.cluster.local:50051"
     traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
-    skipOSProvisioning: {{ if hasKey (index .Values "infra-onboarding") "skipOSProvisioning" }}{{ index .Values "infra-onboarding" "skipOSProvisioning" }}{{ else }}false{{ end }}
+    skipOSProvisioning: {{ dig "skipOSProvisioning" false $ic }}
   oidc:
     oidc_server_url: "http://platform-keycloak.orch-platform.svc.cluster.local/realms/master"
   # Resources: managed by resource-overrides.yaml

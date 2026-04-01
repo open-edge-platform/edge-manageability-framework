@@ -1,2 +1,5 @@
 # Computed values dumped at deploy time
 .computed-values/
+
+# Console logs with timestamps
+logs/

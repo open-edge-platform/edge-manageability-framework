@@ -7,20 +7,20 @@ global:
   registry:
     name: "{{ .Values.containerRegistryURL }}/"
     imagePullSecrets: []
-{{- $im := index .Values "infra-managers" }}
+{{- $im := index .Values "infra-managers" | default dict }}
 import:
   host-manager:
-    enabled: true
+    enabled: {{ dig "host-manager" "enabled" true $im }}
   maintenance-manager:
-    enabled: {{ if and $im (hasKey $im "maintenance-manager") }}{{ index $im "maintenance-manager" "enabled" }}{{ else }}true{{ end }}
+    enabled: {{ dig "maintenance-manager" "enabled" true $im }}
   telemetry-manager:
-    enabled: false
+    enabled: {{ dig "telemetry-manager" "enabled" false $im }}
   os-resource-manager:
-    enabled: {{ if and $im (hasKey $im "os-resource-manager") }}{{ index $im "os-resource-manager" "enabled" }}{{ else }}true{{ end }}
+    enabled: {{ dig "os-resource-manager" "enabled" true $im }}
   networking-manager:
-    enabled: {{ if and $im (hasKey $im "networking-manager") }}{{ index $im "networking-manager" "enabled" }}{{ else }}true{{ end }}
+    enabled: {{ dig "networking-manager" "enabled" true $im }}
   attestationstatus-manager:
-    enabled: {{ if and $im (hasKey $im "attestationstatus-manager") }}{{ index $im "attestationstatus-manager" "enabled" }}{{ else }}true{{ end }}
+    enabled: {{ dig "attestationstatus-manager" "enabled" true $im }}
 
 host-manager:
   inventory:
@@ -43,7 +43,7 @@ host-manager:
   # Resources: managed by resource-overrides.yaml
   # https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
   traefikApiGroup: "traefik.io/v1alpha1"
-  disabledProvisioning: {{ if and $im (hasKey $im "disabledProvisioning") }}{{ $im.disabledProvisioning }}{{ else }}false{{ end }}
+  disabledProvisioning: {{ dig "disabledProvisioning" false $im }}
 
 maintenance-manager:
   inventory:
