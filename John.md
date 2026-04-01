@@ -1,8 +1,10 @@
 https://mermaid.ai/open-source/syntax/flowchart.html
 ```mermaid
-A@{ shape: cloud }
+A@{ shape: manual-file }
 ```
 ```mermaid
+  flowchart LR
+    A@{ shape: cloud }
 info
 ```
 
@@ -71,6 +73,7 @@ end
 
 
     Cloud -.-> |"Cloud-based<br>Orchestration"|EO
+
 
     %% Styling
     classDef grey fill:#eeeeee,stroke:#666,stroke-width:1.5px
