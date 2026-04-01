@@ -6,7 +6,8 @@ A@{ shape: manual-file }
   flowchart LR
     A@{ shape: cloud, label: "Comment"  }
     info
-    subgraph B@{ shape: cloud, label: "Comment"  }
+    subgraph Cloud[" "]
+        shape: cloud
         Apps[Apps]
 
         Infra[Infra]
