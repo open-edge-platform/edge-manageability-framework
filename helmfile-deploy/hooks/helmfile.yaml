@@ -57,8 +57,8 @@ environments:
       - environments/aws.yaml.gotmpl
   onprem-vpro:
     values:
-      - environments/defaults.yaml.gotmpl
-      - environments/onprem-vpro.yaml.gotmpl
+      - environments/onprem-eim-settings.yaml.gotmpl
+      - environments/profile-vpro.yaml.gotmpl
   onprem-eim:
     values:
       - environments/defaults.yaml.gotmpl

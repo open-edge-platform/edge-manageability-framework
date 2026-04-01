@@ -23,22 +23,11 @@
 #     helmfile -e onprem list
 
 environments:
-  dev:
-    values:
-      - environments/defaults-onprem.yaml.gotmpl
-      - environments/dev.yaml.gotmpl
-  dev-minimal:
-    values:
-      - environments/defaults-onprem.yaml.gotmpl
-      - environments/dev-minimal.yaml.gotmpl
   onprem:
     values:
-      - environments/defaults-onprem.yaml.gotmpl
-      - environments/onprem.yaml.gotmpl
-  onprem-1k:
-    values:
-      - environments/defaults-onprem.yaml.gotmpl
-      - environments/onprem-1k.yaml.gotmpl
+      - environments/onprem-eim-settings.yaml.gotmpl
+      - environments/onprem-eim-features.yaml.gotmpl
+      - environments/onprem-eim-co-ao-o11y.yaml.gotmpl
   onprem-oxm:
     values:
       - environments/defaults-onprem.yaml.gotmpl
@@ -47,31 +36,28 @@ environments:
     values:
       - environments/defaults-onprem.yaml.gotmpl
       - environments/onprem-explicit-proxy.yaml.gotmpl
-  bkc:
-    values:
-      - environments/defaults-onprem.yaml.gotmpl
-      - environments/bkc.yaml.gotmpl
-  aws:
-    values:
-      - environments/defaults-aws.yaml.gotmpl
-      - environments/aws.yaml.gotmpl
   onprem-vpro:
     values:
-      - environments/onprem-vpro.yaml.gotmpl
+      - environments/onprem-eim-settings.yaml.gotmpl
+      - environments/profile-vpro.yaml.gotmpl
   onprem-eim:
     values:
-      - environments/onprem-eim.yaml.gotmpl
+      - environments/onprem-eim-settings.yaml.gotmpl
+      - environments/onprem-eim-features.yaml.gotmpl
   onprem-eim-co:
     values:
-      - environments/defaults-onprem.yaml.gotmpl
-      - environments/onprem-eim-co.yaml.gotmpl
+      - environments/onprem-eim-settings.yaml.gotmpl
+      - environments/onprem-eim-features.yaml.gotmpl
+      - environments/profile-co.yaml.gotmpl
   onprem-eim-co-ao:
     values:
-      - environments/defaults-onprem.yaml.gotmpl
+      - environments/onprem-eim-settings.yaml.gotmpl
+      - environments/onprem-eim-features.yaml.gotmpl
       - environments/onprem-eim-co-ao.yaml.gotmpl
   onprem-eim-co-ao-o11y:
     values:
-      - environments/defaults-onprem.yaml.gotmpl
+      - environments/onprem-eim-settings.yaml.gotmpl
+      - environments/onprem-eim-features.yaml.gotmpl
       - environments/onprem-eim-co-ao-o11y.yaml.gotmpl
 
 ---
@@ -80,7 +66,7 @@ helmDefaults:
   createNamespace: true
   wait: true
   waitForJobs: true
-  timeout: 180
+  timeout: 180 
 
 repositories:
   - name: jetstack
@@ -552,6 +538,7 @@ releases:
     namespace: orch-platform
     chart: edge-orch/common/charts/keycloak-instance
     version: 26.1.2
+    timeout: 300
     values:
       - values/platform-keycloak.yaml.gotmpl
       - values/platform-keycloak-realm.yaml.gotmpl
@@ -614,7 +601,6 @@ releases:
     namespace: orch-platform
     chart: edge-orch/common/charts/secrets-config
     version: 26.0.2
-    timeout: 120
     values:
       - values/secrets-config.yaml.gotmpl
     condition: secrets-config.enabled
@@ -750,7 +736,7 @@ releases:
     chart: edge-orch/common/charts/capi-operator-pre
     version: 1.0.1
     values:
-      - values/capi-operator-pre.yaml
+      - values/capi-operator-pre.yaml.gotmpl
     condition: capi-operator-pre.enabled
     needs:
       - orch-infra/copy-keycloak-admin-to-infra
@@ -767,7 +753,7 @@ releases:
     chart: capi-operator/cluster-api-operator
     version: 0.23.0
     values:
-      - values/capi-operator.yaml
+      - values/capi-operator.yaml.gotmpl
     needs:
       - capi-variables/capi-operator-pre
     condition: capi-operator.enabled
@@ -922,8 +908,9 @@ releases:
     namespace: capi-operator-system
     chart: edge-orch/common/charts/capi-providers-config
     version: 26.0.1
+    timeout: 600
     values:
-      - values/capi-providers-config.yaml
+      - values/capi-providers-config.yaml.gotmpl
     needs:
       - cattle-fleet-system/fleet-controller
       - capi-operator-system/capi-operator
@@ -1098,6 +1085,48 @@ releases:
       - orch-app/app-orch-catalog
 
 
+  - name: tenancy-datamodel
+    labels:
+      app: tenancy-datamodel
+    namespace: orch-iam
+    chart: edge-orch/common/charts/tenancy-datamodel
+    version: 26.1.0
+    values:
+      - values/tenancy-datamodel.yaml.gotmpl
+    condition: tenancy-datamodel.enabled
+    needs:
+      - orch-app/app-orch-catalog
+
+
+  - name: tenancy-api-mapping
+    labels:
+      app: tenancy-api-mapping
+    namespace: orch-iam
+    chart: edge-orch/common/charts/tenancy-api-mapping
+    version: 26.0.15
+    values:
+      - values/tenancy-api-mapping.yaml.gotmpl
+    condition: tenancy-api-mapping.enabled
+    needs:
+      - orch-app/app-orch-catalog
+      - orch-iam/tenancy-datamodel
+
+
+  - name: tenancy-manager
+    labels:
+      app: tenancy-manager
+    namespace: orch-iam
+    chart: edge-orch/common/charts/tenancy-manager
+    version: 26.1.0
+    values:
+      - values/tenancy-manager.yaml.gotmpl
+      - values/resource-overrides.yaml
+    condition: tenancy-manager.enabled
+    needs:
+      - orch-app/app-orch-catalog
+      - orch-iam/tenancy-datamodel
+
+
   - name: nexus-api-gw
     labels:
       app: nexus-api-gw
@@ -1122,48 +1151,6 @@ releases:
     values:
       - values/squid-proxy.yaml.gotmpl
     condition: squid-proxy.enabled
-    needs:
-      - orch-app/app-orch-catalog
-
-
-
-  - name: tenancy-api-mapping
-    labels:
-      app: tenancy-api-mapping
-    namespace: orch-iam
-    chart: edge-orch/common/charts/tenancy-api-mapping
-    version: 26.0.15
-    values:
-      - values/tenancy-api-mapping.yaml.gotmpl
-    condition: tenancy-api-mapping.enabled
-    needs:
-      - orch-app/app-orch-catalog
-      - orch-iam/tenancy-datamodel
-
-
-  - name: tenancy-datamodel
-    labels:
-      app: tenancy-datamodel
-    namespace: orch-iam
-    chart: edge-orch/common/charts/tenancy-datamodel
-    version: 26.1.0
-    values:
-      - values/tenancy-datamodel.yaml.gotmpl
-    condition: tenancy-datamodel.enabled
-    needs:
-      - orch-app/app-orch-catalog
-
-
-  - name: tenancy-manager
-    labels:
-      app: tenancy-manager
-    namespace: orch-iam
-    chart: edge-orch/common/charts/tenancy-manager
-    version: 26.1.0
-    values:
-      - values/tenancy-manager.yaml.gotmpl
-      - values/resource-overrides.yaml
-    condition: tenancy-manager.enabled
     needs:
       - orch-app/app-orch-catalog
 
@@ -1323,18 +1310,40 @@ releases:
       - orch-infra/alerting-monitor
 
 
+  - name: cluster-connect-gateway-crd
+    labels:
+      app: cluster-connect-gateway-crd
+    namespace: orch-cluster
+    chart: edge-orch/cluster/charts/cluster-connect-gateway-crd
+    version: 1.2.7
+    condition: cluster-connect-gateway.enabled
+    needs:
+      - orch-infra/alerting-monitor
+
   - name: cluster-connect-gateway
     labels:
       app: cluster-connect-gateway
     namespace: orch-cluster
     chart: edge-orch/cluster/charts/cluster-connect-gateway
     version: 1.2.7
+    timeout: 600
     values:
       - values/cluster-connect-gateway.yaml.gotmpl
     condition: cluster-connect-gateway.enabled
     needs:
-      - orch-infra/alerting-monitor
+      - orch-cluster/cluster-connect-gateway-crd
+      - capi-operator-system/capi-providers-config
 
+
+  - name: cluster-template-crd
+    labels:
+      app: cluster-template-crd
+    namespace: orch-cluster
+    chart: edge-orch/cluster/charts/cluster-template-crd
+    version: 2.2.8
+    condition: cluster-manager.enabled
+    needs:
+      - orch-infra/alerting-monitor
 
   - name: cluster-manager
     labels:
@@ -1342,12 +1351,14 @@ releases:
     namespace: orch-cluster
     chart: edge-orch/cluster/charts/cluster-manager
     version: 2.2.8
+    timeout: 600
     values:
       - values/cluster-manager.yaml.gotmpl
       - values/resource-overrides.yaml
     condition: cluster-manager.enabled
     needs:
-      - orch-infra/alerting-monitor
+      - orch-cluster/cluster-template-crd
+      - capi-operator-system/capi-providers-config
 
 
   - name: component-status
@@ -1527,17 +1538,29 @@ releases:
     condition: infra-managers.enabled
 
 
+  - name: intel-infra-provider-crds
+    labels:
+      app: intel-infra-provider-crds
+    namespace: orch-cluster
+    chart: edge-orch/cluster/charts/intel-infra-provider-crds
+    version: 1.3.6
+    condition: intel-infra-provider.enabled
+    needs:
+      - orch-platform/observability-tenant-controller
+
   - name: intel-infra-provider
     labels:
       app: intel-infra-provider
     namespace: orch-cluster
     chart: edge-orch/cluster/charts/intel-infra-provider
     version: 1.3.6
+    timeout: 600
     values:
       - values/intel-infra-provider.yaml.gotmpl
     condition: intel-infra-provider.enabled
     needs:
-      - orch-platform/observability-tenant-controller
+      - orch-cluster/intel-infra-provider-crds
+      - capi-operator-system/capi-providers-config
 
 
 

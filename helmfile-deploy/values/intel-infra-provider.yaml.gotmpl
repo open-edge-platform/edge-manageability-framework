@@ -2,14 +2,36 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+# From argocd/applications/configs/intel-infra-provider.yaml
+# + argocd/applications/custom/intel-infra-provider.tpl
+
 global:
   registry:
     name: "{{ .Values.containerRegistryURL }}"
     imagePullSecrets: []
 
+traefikReverseProxy:
+  enabled: true
+  host:
+    grpc:
+      name: "cluster-orch-node.{{ .Values.clusterDomain }}"
+      secretName: tls-orch
+      tlsOption: {{ .Values.traefik.tlsOption | default "gateway-tls" | quote }}
+
 manager:
+  image:
+    registry:
+      name: "{{ .Values.containerRegistryURL }}"
+    repository: cluster/capi-provider-intel-manager
   inventory:
     endpoint: "inventory.orch-infra.svc.cluster.local:50051"
+
+southboundApi:
+  image:
+    registry:
+      name: "{{ .Values.containerRegistryURL }}"
+    repository: cluster/capi-provider-intel-southbound
+
 oidc:
   oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
 

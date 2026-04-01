@@ -1,0 +1,238 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# EIM-only environment — Part 2: Feature flags (component on/off)
+# Settings are in onprem-eim-settings.yaml.gotmpl
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Feature flags — controls which releases are installed
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ─── Platform (enabled) ─────────────────────────────────────────────────────
+auth-service:
+  enabled: true
+cert-manager:
+  enabled: true
+cert-synchronizer:
+  enabled: false
+certificate-file-server:
+  enabled: true
+component-status:
+  enabled: true
+copy-ca-cert-boots-to-gateway:
+  enabled: true
+copy-ca-cert-boots-to-infra:
+  enabled: true
+copy-ca-cert-gateway-to-cattle:
+  enabled: true
+copy-ca-cert-gateway-to-infra:
+  enabled: true
+external-secrets:
+  enabled: true
+ingress-haproxy:
+  enabled: true
+istio-base:
+  enabled: {{ env "EMF_ENABLE_ISTIO" | default "true" }}
+istio-policy:
+  enabled: {{ env "EMF_ENABLE_ISTIO" | default "true" }}
+istiod:
+  enabled: {{ env "EMF_ENABLE_ISTIO" | default "true" }}
+kiali:
+  enabled: {{ env "EMF_ENABLE_ISTIO" | default "true" }}
+keycloak-operator:
+  enabled: true
+metadata-broker:
+  enabled: true
+haproxy-ingress-pxe-boots:
+  enabled: true
+platform-autocert:
+  enabled: true
+platform-keycloak:
+  enabled: true
+prometheus-crd:
+  enabled: true
+reloader:
+  enabled: true
+rs-proxy:
+  enabled: true
+secrets-config:
+  enabled: true
+secret-wait-tls-orch:
+  enabled: true
+secret-wait-tls-boots:
+  enabled: true
+traefik-extra-objects:
+  enabled: true
+traefik-pre:
+  enabled: true
+traefik-boots:
+  enabled: false
+token-fs:
+  enabled: true
+
+# ─── Database operators ──────────────────────────────────────────────────────
+postgresql-operator:
+  enabled: true
+postgresql-cluster:
+  enabled: true
+postgresql-secrets:
+  enabled: true
+
+# ─── App Orch (disabled for EIM) ────────────────────────────────────────────
+app-deployment-crd:
+  enabled: false
+app-deployment-manager:
+  enabled: false
+app-resource-manager:
+  enabled: false
+app-service-proxy:
+  enabled: false
+fleet-rs-secret:
+  enabled: false
+app-orch-catalog:
+  enabled: false
+app-deployment-manager-secret:
+  enabled: false
+harbor-oci:
+  enabled: false
+app-orch-tenant-controller:
+  enabled: false
+fleet-crd:
+  enabled: false
+fleet-controller:
+  enabled: false
+copy-app-gitea-cred-to-fleet:
+  enabled: false
+copy-ca-cert-gitea-to-app:
+  enabled: false
+copy-ca-cert-gitea-to-cluster:
+  enabled: false
+copy-cluster-gitea-cred-to-fleet:
+  enabled: false
+
+# ─── Cluster Orch (disabled for EIM) ────────────────────────────────────────
+capi-operator-pre:
+  enabled: false
+capi-operator:
+  enabled: false
+cluster-manager:
+  enabled: false
+cluster-connect-gateway:
+  enabled: false
+intel-infra-provider:
+  enabled: false
+capi-providers-config:
+  enabled: false
+
+# ─── Edge Infra (enabled) ───────────────────────────────────────────────────
+infra-core:
+  enabled: true
+infra-managers:
+  enabled: true
+infra-external:
+  enabled: true
+copy-keycloak-admin-to-infra:
+  enabled: true
+
+# ─── Observability (disabled for EIM) ───────────────────────────────────────
+alerting-monitor:
+  enabled: false
+edgenode-dashboards:
+  enabled: false
+edgenode-observability:
+  enabled: false
+orchestrator-dashboards:
+  enabled: false
+orchestrator-observability:
+  enabled: false
+orchestrator-prometheus-agent:
+  enabled: false
+sre-exporter:
+  enabled: false
+
+# ─── UI (app-orch + cluster-orch disabled) ──────────────────────────────────
+web-ui-root:
+  enabled: true
+web-ui-app-orch:
+  enabled: false
+web-ui-cluster-orch:
+  enabled: false
+web-ui-infra:
+  enabled: true
+web-ui-admin:
+  enabled: true
+
+# ─── Kyverno (disabled for EIM) ─────────────────────────────────────────────
+kyverno:
+  enabled: false
+kyverno-extra-policies:
+  enabled: false
+kyverno-istio-policy:
+  enabled: false
+kyverno-traefik-policy:
+  enabled: false
+
+# ─── Audit ───────────────────────────────────────────────────────────────────
+audit:
+  enabled: true
+
+# ─── Tenancy ─────────────────────────────────────────────────────────────────
+tenancy-datamodel:
+  enabled: true
+tenancy-manager:
+  enabled: true
+tenancy-api-mapping:
+  enabled: true
+tenancy-init:
+  enabled: false
+nexus-api-gw:
+  enabled: true
+keycloak-tenant-controller:
+  enabled: true
+observability-tenant-controller:
+  enabled: false
+
+# ─── Misc ────────────────────────────────────────────────────────────────────
+namespace-label:
+  enabled: true
+
+# ─── K3s bundled ─────────────────────────────────────────────────────────────
+k8s-metrics-server:
+  enabled: false
+
+# ─── AWS-only (disabled) ────────────────────────────────────────────────────
+aws-lb:
+  enabled: false
+aws-lb-tgb:
+  enabled: false
+aws-sm-proxy:
+  enabled: false
+aws-sm-get-rs-token:
+  enabled: false
+cluster-autoscaler:
+  enabled: false
+vertical-pod-autoscaler:
+  enabled: false
+secret-wait-azure-ad-creds:
+  enabled: false
+secret-wait-rs-token:
+  enabled: false
+wait-istio-job:
+  enabled: false
+
+# ─── On-prem specific ───────────────────────────────────────────────────────
+oci-secret:
+  enabled: false
+rs-image-pull-secrets:
+  enabled: false
+copy-rs-token-to-cluster:
+  enabled: false
+token-refresh:
+  enabled: false
+botkube:
+  enabled: false
+ingress-nginx:
+  enabled: false
+squid-proxy:
+  enabled: {{ env "EMF_ENABLE_SQUID" | default "false" }}

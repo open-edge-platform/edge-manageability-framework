@@ -8,7 +8,23 @@ resources:
   manager: {}
 
 env:
-  manager: []
+  manager:
+{{- if .Values.proxy }}
+{{- if .Values.proxy.httpProxy }}
+  - name: http_proxy
+    value: {{ .Values.proxy.httpProxy | quote }}
+{{- end }}
+{{- if .Values.proxy.httpsProxy }}
+  - name: https_proxy
+    value: {{ .Values.proxy.httpsProxy | quote }}
+{{- end }}
+{{- if .Values.proxy.noProxy }}
+  - name: no_proxy
+    value: {{ .Values.proxy.noProxy | quote }}
+{{- end }}
+{{- else }}
+  []
+{{- end }}
 
 diagnosticsAddress: ":8080"
 insecureDiagnostics: true
