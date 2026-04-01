@@ -637,6 +637,62 @@ KVM Info:
 
 ### SOL Operational Flow
 
+```mermaid
+sequenceDiagram
+    participant CLI as "orch-cli"
+    participant APIV2 as APIv2
+    participant INV as Inventory
+    participant SM as "sol-manager"
+    participant MPS as MPS
+    participant AMT as "AMT Device"
+
+    Note over CLI,INV: 1. Request SOL session
+    CLI->>APIV2: PATCH /compute/hosts/:id desiredSolState=SOL_STATE_START
+    APIV2->>INV: UPDATE desired_sol_state=SOL_STATE_START
+    APIV2-->>CLI: 200 OK
+
+    Note over SM,INV: 2. sol-manager reconciler wakes
+    SM->>INV: Watch for desired state change
+    SM->>MPS: GET /api/v1/amt/features/:guid
+    MPS-->>SM: solEnabled=true userConsent=sol
+
+    Note over SM,CLI: 3. Consent flow — CCM only, skipped in ACM
+    SM->>MPS: GET /api/v1/amt/userConsentCode/:guid
+    MPS-->>AMT: Display 6-digit code on screen
+    MPS-->>SM: 200 OK
+    SM->>INV: UPDATE current_sol_state=SOL_STATE_AWAITING_CONSENT
+
+    CLI->>APIV2: GET /compute/hosts/:id poll every 2s
+    APIV2-->>CLI: currentSolState=SOL_STATE_AWAITING_CONSENT
+
+    Note over CLI: Operator reads 6-digit code from device screen
+    CLI->>APIV2: PATCH /compute/hosts/:id desiredConsentCode=NNNNNN
+    APIV2->>INV: UPDATE desired_consent_code=NNNNNN
+
+    SM->>INV: READ desired_consent_code
+    INV-->>SM: NNNNNN
+    SM->>MPS: POST /api/v1/amt/userConsentCode/:guid consentCode=NNNNNN
+    MPS-->>AMT: Validate code
+    AMT-->>MPS: Consent granted
+    MPS-->>SM: 200 OK
+
+    Note over SM,INV: 4. Obtain redirect token, open MPS relay, start SOL protocol
+    SM->>MPS: GET /api/v1/authorize/redirection/:guid
+    MPS-->>SM: token=short-lived-token
+    SM->>MPS: Open WebSocket to MPS relay endpoint
+    Note over SM,MPS: AMT Redirect handshake + Digest Auth + SOL settings
+    MPS-->>AMT: SOL channel established
+    AMT-->>MPS: SOL session active
+    SM->>INV: UPDATE current_sol_state=SOL_STATE_START
+    SM->>INV: UPDATE sol_session_url=ws://sol-manager:8080/ws/terminal/{session-id}
+
+    Note over CLI: 5. orch-cli detects SOL_STATE_START and connects terminal
+    CLI->>APIV2: GET /compute/hosts/:id poll
+    APIV2-->>CLI: currentSolState=SOL_STATE_START solSessionUrl=ws-url
+    CLI->>CLI: Connect wssh3 / websocat to sol_session_url
+    Note over CLI,AMT: Interactive text terminal — keystrokes and display data relayed via sol-manager
+```
+
 ---
 
 ### Security Considerations
