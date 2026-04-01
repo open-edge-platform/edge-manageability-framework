@@ -14,8 +14,6 @@ flowchart TD
         Apps[Apps]
         Infra[Infra]
     end
-    CloudLabel["Cloud-based<br>Orchestration"]
-    Cloud --- CloudLabel
 
     %% EDGE SITES
     SF["Edge Nodes at Customer Site<br>(San Francisco)"]
@@ -72,7 +70,7 @@ end
     end
 
 
-    Cloud -.-> EO
+    Cloud -.-> |"Cloud-based<br>Orchestration"|EO
 
     %% Styling
     classDef grey fill:#eeeeee,stroke:#666,stroke-width:1.5px
@@ -82,4 +80,4 @@ end
     class EO,EdgeNode,AppsRow,Orch,OrchestrationLayer grey;
     class WebUI,AppOrch,ClusterOrch,InfraMgmt,Platform,AWS blue;
     class CA1,CA2,CA3,K8s,OS,HW lightblue;
-    ```
+```
