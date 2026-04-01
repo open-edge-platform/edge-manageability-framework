@@ -109,10 +109,8 @@ repositories:
   - name: kiali
     url: https://kiali.org/helm-charts
 {{- end }}
-{{- if eq (env "EMF_ENABLE_CO" | default "false") "true" }}
   - name: capi-operator
     url: https://kubernetes-sigs.github.io/cluster-api-operator
-{{- end }}
 {{- if eq (env "EMF_ENABLE_AWS" | default "false") "true" }}
   - name: autoscaler
     url: https://kubernetes.github.io/autoscaler
