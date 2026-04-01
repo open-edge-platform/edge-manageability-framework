@@ -5,7 +5,12 @@ A@{ shape: manual-file }
 ```mermaid
   flowchart LR
     A@{ shape: cloud }
-info
+  info
+  )i am a cloud(
+  subgraph Cloud[" "]
+        Apps[Apps]
+        Infra[Infra]
+  end
 ```
 
 ```mermaid
