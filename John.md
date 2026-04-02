@@ -19,7 +19,7 @@ flowchart TD
 
     %% LEFT: Cloud
  
-    Cloud@{ shape: cloud, label: "Apps infra"  }
+    Cloud@{ shape: cloud, label: "Apps \n infra"  }
  
  
 
