@@ -11,6 +11,7 @@ clusterManager:
     kubeconfig-ttl-hours: 3
   image:
     repository: cluster/cluster-manager
+    tag: 2.2.8
     registry:
       name: {{ .Values.argo.containerRegistryURL }}
       imagePullSecrets:
@@ -24,6 +25,7 @@ clusterManager:
 templateController:
   image:
     repository: cluster/template-controller
+    tag: 2.2.8
     registry:
       name: {{ .Values.argo.containerRegistryURL }}
       imagePullSecrets:
@@ -38,6 +40,9 @@ templateController:
 # co-manager M2M client configuration
 credentialsM2M:
   enabled: true
+
+  istio:
+    enabled: true
 
   job:
     # job execution settings
