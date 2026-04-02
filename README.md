@@ -62,7 +62,7 @@ flowchart TD
 
         Platform["Foundational Platform Services<br/>(Identity and Access Mgmt, Secrets Mgmt,<br/>API Gateway, Observability, etc.)"]
 
-        AWS[AWS* Infrastructure / On-Prem Datacenter]
+        INFRA[On-Prem Datacenter]
 end
         %% EDGE NODE
 
@@ -87,8 +87,8 @@ end
         %% Invisible ordering inside EO
         WebUI ~~~ Orch
         Orch ~~~ Platform
-        Platform ~~~ AWS
-        AWS ~~~ EdgeNode
+        Platform ~~~ INFRA
+        INFRA ~~~ EdgeNode
     end
 
 
@@ -99,12 +99,11 @@ end
     classDef grey fill:#eeeeee,stroke:#666,stroke-width:1.5px
     classDef blue fill:#1f4fbf,color:#fff,stroke:#1f4fbf;
     classDef lightblue fill:#1fb6d9,color:#000,stroke:#1fb6d9;
+    classDef transparent fill:#00000000,stroke-width:0px;
 
     class EO,EdgeNode,AppsRow,Orch,OrchestrationLayer, grey;
-    class WebUI,AppOrch,ClusterOrch,InfraMgmt,Platform,AWS blue;
+    class WebUI,AppOrch,ClusterOrch,InfraMgmt,Platform,INFRA blue;
     class CA1,CA2,CA3,K8s,OS,HW lightblue;
-    %% Apply transparent style
-    classDef transparent fill:#00000000,stroke-width:0px;
     class Cloud transparent;
 ```
 
