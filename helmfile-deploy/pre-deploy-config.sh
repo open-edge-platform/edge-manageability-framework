@@ -173,6 +173,69 @@ remove_stale_vault_keys() {
 ################################
 # CLEANUP
 ################################
+
+# Remove orphaned CAPI finalizers and stale webhooks that prevent namespace deletion.
+# When capi-providers-config or cluster-manager is uninstalled before its CRDs/webhooks
+# are removed, namespaces like capi-system, capk-system and tenant cluster namespaces
+# get stuck in Terminating.
+cleanup_capi_finalizers() {
+  echo "🔧 Cleaning up CAPI finalizers and stale webhooks..."
+
+  # Remove stale validating webhooks that reference deleted CAPI services
+  kubectl get validatingwebhookconfiguration -o name 2>/dev/null | grep -E 'cluster\.x-k8s\.io|capi' | while read -r wh; do
+    echo "  Removing stale webhook: $wh"
+    kubectl delete "$wh" --ignore-not-found 2>/dev/null || true
+  done || true
+  kubectl get mutatingwebhookconfiguration -o name 2>/dev/null | grep -E 'cluster\.x-k8s\.io|capi' | while read -r wh; do
+    echo "  Removing stale webhook: $wh"
+    kubectl delete "$wh" --ignore-not-found 2>/dev/null || true
+  done || true
+
+  # Patch CAPI provider resources to remove finalizers in known namespaces
+  local capi_ns_list=(capi-system capk-system capi-operator-system)
+  local capi_kinds=(
+    coreproviders.operator.cluster.x-k8s.io
+    controlplaneproviders.operator.cluster.x-k8s.io
+    infrastructureproviders.operator.cluster.x-k8s.io
+    bootstrapproviders.operator.cluster.x-k8s.io
+  )
+  for ns in "${capi_ns_list[@]}"; do
+    if kubectl get ns "$ns" >/dev/null 2>&1; then
+      for kind in "${capi_kinds[@]}"; do
+        kubectl get "$kind" -n "$ns" -o name 2>/dev/null | while read -r res; do
+          echo "  Removing finalizers from $res in $ns"
+          kubectl patch "$res" -n "$ns" --type merge -p '{"metadata":{"finalizers":null}}' 2>/dev/null || true
+        done || true
+      done
+    fi
+  done
+
+  # Patch CAPI resources in GUID (tenant cluster) namespaces
+  local tenant_kinds=(
+    clusters.cluster.x-k8s.io
+    clusterclasses.cluster.x-k8s.io
+    machines.cluster.x-k8s.io
+    machinesets.cluster.x-k8s.io
+    machinedeployments.cluster.x-k8s.io
+    kthreescontrolplanes.controlplane.cluster.x-k8s.io
+    intelclusters.infrastructure.cluster.x-k8s.io
+    intelmachines.infrastructure.cluster.x-k8s.io
+    clustertemplates.edge-orchestrator.intel.com
+  )
+  local GUID_REGEX='^[a-f0-9\-]{36}$'
+  kubectl get ns -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n' | \
+  grep -E "$GUID_REGEX" | while read -r ns; do
+    for kind in "${tenant_kinds[@]}"; do
+      kubectl get "$kind" -n "$ns" -o name 2>/dev/null | while read -r res; do
+        echo "  Removing finalizers from $res in $ns"
+        kubectl patch "$res" -n "$ns" --type merge -p '{"metadata":{"finalizers":null}}' 2>/dev/null || true
+      done || true
+    done
+  done || true
+
+  echo "✅ CAPI finalizer cleanup complete"
+}
+
 cleanup_all() {
   echo "🗑️  Removing pre-deploy resources..."
 
@@ -184,17 +247,42 @@ cleanup_all() {
   kubectl -n orch-platform delete secret platform-keycloak --ignore-not-found
   kubectl -n orch-database delete secret orch-database-postgresql --ignore-not-found
 
+  # Delete cluster manager / template controller stale resources in default namespace
+  kubectl -n default get svc -o name 2>/dev/null | grep -E 'cluster-manager|cluster-template' | while read -r svc; do
+    echo "Deleting $svc"
+    kubectl -n default delete "$svc" --ignore-not-found
+  done || true
+  kubectl -n default get deploy -o name 2>/dev/null | grep -E 'cluster-manager|cluster-template' | while read -r dep; do
+    echo "Deleting $dep"
+    kubectl -n default delete "$dep" --ignore-not-found
+  done || true
+
+   sleep 5
+
+  # Clean up CAPI finalizers and stale webhooks before deleting namespaces
+  cleanup_capi_finalizers
+
   # Remove namespaces
   local ns_list=(
     onprem orch-boots orch-platform
     orch-app orch-cluster orch-infra orch-sre
     orch-ui orch-secret orch-gateway orch-harbor
-    cattle-system orch-iam capi-variables
+    cattle-system orch-iam capi-variables capi-operator-system
+    capi-system capk-system cert-manager ns-label
   )
   echo "🗑️  Deleting namespaces..."
   for ns in "${ns_list[@]}"; do
     kubectl delete ns "$ns" --ignore-not-found --wait=false 2>/dev/null || true
   done
+
+ 
+  REGEX='^[a-f0-9\-]{36}$'
+
+  kubectl get ns -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n' | \
+  grep -E "$REGEX" | while read -r ns; do
+    echo "Deleting $ns"
+    kubectl delete ns "$ns" --wait=false 2>/dev/null || true
+  done || true
 
   echo "✅ Cleanup complete"
 }

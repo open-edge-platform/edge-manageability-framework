@@ -43,6 +43,9 @@ curlImage:
 # co-manager M2M client configuration
 credentialsM2M:
   enabled: true
+  istio:
+    enabled: {{ .Values.istio.enabled | default false }}
+    sidecarWaitTimeout: 60
   job:
     terminationGracePeriodSeconds: 90
     backoffLimit: 15
@@ -50,13 +53,6 @@ credentialsM2M:
     ttlSecondsAfterFinished: 14400
     retryAttempts: 10
     retryDelay: 30
-    resources:
-      limits:
-        cpu: "2"
-        memory: 2Gi
-      requests:
-        cpu: 10m
-        memory: 16Mi
   vault:
     service: "vault.orch-platform.svc.cluster.local"
     port: 8200

@@ -1357,8 +1357,10 @@ releases:
       app: cluster-manager
     namespace: orch-cluster
     chart: edge-orch/cluster/charts/cluster-manager
-    version: 2.2.8
-    timeout: 600
+    version: 2.2.9
+    timeout: 180
+    wait: false
+    waitForJobs: false
     values:
       - values/cluster-manager.yaml.gotmpl
       - values/resource-overrides.yaml
@@ -1366,10 +1368,9 @@ releases:
     needs:
       - orch-cluster/cluster-template-crd
       - capi-operator-system/capi-providers-config
-    hooks:
-      - events: ["postsync"]
-        showlogs: true
-        command: "./hooks/fix-credentials-istio-wait.sh"
+      - orch-platform/platform-keycloak
+      - orch-platform/secrets-config
+      - orch-infra/infra-core
 
 
   - name: component-status
