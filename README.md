@@ -107,7 +107,7 @@ end
     class Cloud transparent;
 
     %% Define the style for big nodes
-    classDef bigNode font-size:40px,stroke-width:2px,padding:10px;
+    classDef bigNode font-size:30px,stroke-width:2px,padding:10px;
     
     %% Apply the style
     class APPS,Infra bigNode;
