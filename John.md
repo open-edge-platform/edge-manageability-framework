@@ -18,11 +18,10 @@ A@{ shape: manual-file }
 flowchart TD
 
     %% LEFT: Cloud
-    subgraph Cloud[" "]
-    direction LR
-    APPS@{ shape: cloud, label: "Apps"  } ~~~
-    Infra@{ shape: cloud, label: "Infra"  }
-    end
+ 
+    Cloud@{ shape: cloud, label: "Apps infra"  }
+ 
+ 
 
     %% EDGE SITES
     SF["Edge Nodes at Customer Site<br>(San Francisco)"]
