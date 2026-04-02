@@ -159,6 +159,44 @@ integrates with the EMF stack.
 
 ---
 
+#### APIv2 — Host Resource SOL Endpoint
+
+**API Endpoint**: `PATCH /compute/hosts/{resourceId}`
+
+**Request Body** (to start SOL session):
+
+```json
+{
+  "desiredSolState": "SOL_STATE_START"
+}
+```
+
+**Request Body** (to stop SOL session):
+
+```json
+{
+  "desiredSolState": "SOL_STATE_STOP"
+}
+```
+
+**Response** — `GET /compute/hosts/{resourceId}` (SOL fields):
+
+```json
+{
+  "solStatus": "SOL_STATUS_ACTIVATED",
+  "desiredSolState": "SOL_STATE_START",
+  "currentSolState": "SOL_STATE_START",
+  "solSessionUrl": "ws://sol-manager:8081/ws/terminal/<session-id>",
+  "solSessionStatus": "SOL session active",
+  "solSessionStatusIndicator": "STATUS_INDICATION_IDLE",
+}
+```
+
+> `solSessionUrl` is populated only when `currentSolState = SOL_STATE_START`. It points to
+> the sol-manager WebSocket endpoint that orch-cli connects to for the interactive terminal.
+
+---
+
 #### MPS REST APIs
 
 ##### 1. Get / Set SOL and KVM Features on Device
