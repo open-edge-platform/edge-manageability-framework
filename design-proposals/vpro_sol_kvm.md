@@ -186,7 +186,7 @@ integrates with the EMF stack.
   "solStatus": "SOL_STATUS_ACTIVATED",
   "desiredSolState": "SOL_STATE_START",
   "currentSolState": "SOL_STATE_START",
-  "solSessionUrl": "ws://sol-manager:8081/ws/terminal/<session-id>",
+  "solSessionUrl": "wss://mps-wss.<domain>/relay/webrelay.ashx?token=<token>&host=<guid>&port=16994&tls=0&mode=sol",
   "solSessionStatus": "SOL session active",
   "solSessionStatusIndicator": "STATUS_INDICATION_IDLE",
 }
