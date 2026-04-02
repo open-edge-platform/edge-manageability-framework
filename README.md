@@ -105,6 +105,12 @@ end
     class WebUI,AppOrch,ClusterOrch,InfraMgmt,Platform,INFRA blue;
     class CA1,CA2,CA3,K8s,OS,HW lightblue;
     class Cloud transparent;
+
+    %% Define the style for big nodes
+    classDef bigNode font-size:40px,stroke-width:2px,padding:10px;
+    
+    %% Apply the style
+    class APPS,Infra bigNode;
 ```
 
 ### Key Components
