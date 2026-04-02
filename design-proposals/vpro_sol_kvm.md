@@ -686,9 +686,11 @@ sequenceDiagram
     SM->>INV: UPDATE current_sol_state=SOL_STATE_START
     SM->>INV: UPDATE sol_session_url=ws://sol-manager:8080/ws/terminal/{session-id}
 
-    Note over CLI: 5. orch-cli detects SOL_STATE_START and connects terminal
+    Note over CLI: 5. orch-cli detects SOL_STATE_START 
     CLI->>APIV2: GET /compute/hosts/:id poll
     APIV2-->>CLI: currentSolState=SOL_STATE_START solSessionUrl=ws-url
+
+    Note over CLI: 6. Connect terminal websocket utility
     CLI->>CLI: Connect wssh3 / websocat to sol_session_url
     Note over CLI,AMT: Interactive text terminal — keystrokes and display data relayed via sol-manager
 ```
