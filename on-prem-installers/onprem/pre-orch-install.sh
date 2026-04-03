@@ -160,6 +160,16 @@ wait_for_k8s_ready() {
   done
   echo "✅ API server is ready"
 
+  echo "👉 Waiting for at least one node to register..."
+  local deadline=$((SECONDS + WAIT_TIMEOUT_SECONDS))
+  until kubectl "${kubectl_ctx_args[@]}" get nodes -o name 2>/dev/null | grep -q .; do
+    if (( SECONDS >= deadline )); then
+      echo "❌ Timed out waiting for a node to register after ${WAIT_TIMEOUT_SECONDS}s"
+      exit 1
+    fi
+    sleep "${WAIT_INTERVAL_SECONDS}"
+  done
+
   echo "👉 Waiting for all nodes to be Ready (timeout: ${WAIT_TIMEOUT_SECONDS}s)..."
   if ! kubectl "${kubectl_ctx_args[@]}" wait --for=condition=Ready node --all --timeout="${WAIT_TIMEOUT_SECONDS}s"; then
     echo "❌ Timed out waiting for nodes to become Ready"
@@ -371,7 +381,7 @@ k3s_install() {
       --write-kubeconfig-mode=0644 \
       --disable traefik \
       --disable local-storage \
-      --kubelet-arg=max-pods=200
+      --kubelet-arg=max-pods=500
   fi
 
   if [[ "${registries_written}" == "true" ]]; then

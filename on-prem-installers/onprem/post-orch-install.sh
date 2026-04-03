@@ -117,8 +117,8 @@ generate_cluster_yaml_onprem_from_upstream() {
   local out_file="$cwd/${ORCH_INSTALLER_PROFILE}.yaml"
 
   if [[ "$ASSUME_YES" == "true" ]]; then
-    if [[ -z "${ARGO_IP:-}" || -z "${TRAEFIK_IP:-}" || -z "${HAPROXY_IP:-}" ]]; then
-      echo "❌ ARGO_IP, TRAEFIK_IP, and HAPROXY_IP must be set when running non-interactively (-y)"
+    if [[ -z "${ORCH_IP:-}" ]] && [[ -z "${ARGO_IP:-}" || -z "${TRAEFIK_IP:-}" || -z "${HAPROXY_IP:-}" ]]; then
+      echo "❌ ORCH_IP (or ARGO_IP, TRAEFIK_IP, and HAPROXY_IP) must be set when running non-interactively (-y)"
       exit 1
     fi
   fi
@@ -582,9 +582,20 @@ EOF
   # NOTE: values.tmpl sets server.service.type=LoadBalancer. On kind (and other
   # clusters without a LB provider ready), helm --wait will block waiting for an
   # external IP. We rely on pod readiness instead.
+  local -a argocd_extra_args=()
+  if [[ "${ORCH_IP:-}" != "" ]]; then
+    # Single-IP mode: ArgoCD shares the IP with Traefik and HAProxy on port 8443
+    argocd_extra_args+=(
+      --set 'server.service.annotations.metallb\.universe\.tf/address-pool=orch-pool'
+      --set 'server.service.annotations.metallb\.universe\.tf/allow-shared-ip=orch-services'
+      --set 'server.service.servicePortHttps=8443'
+    )
+  fi
+
   helm upgrade --install argocd "$tmp/argo-cd" \
     --values "$tmp/values.yaml" \
     -f "$tmp/mounts.yaml" \
+    "${argocd_extra_args[@]}" \
     -n "$argo_cd_ns" --create-namespace --timeout 15m0s
 
   wait_for_pods_running "$argo_cd_ns"
