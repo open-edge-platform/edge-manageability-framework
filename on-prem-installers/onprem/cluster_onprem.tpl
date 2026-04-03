@@ -40,6 +40,7 @@ argo:
   clusterDomain: ${CLUSTER_DOMAIN}
   singleIpMode: ${SINGLE_IP_MODE}
   haproxyPort: ${HAPROXY_PORT}
+  argocdPort: ${ARGOCD_PORT}
 
   ## Argo CD configs
   deployRepoURL: "https://github.com/open-edge-platform/edge-manageability-framework"
@@ -70,17 +71,23 @@ postCustomTemplateOverwrite:
   argocd:
     server:
       service:
+        servicePortHttps: ${ARGOCD_PORT}
         annotations:
-          metallb.universe.tf/address-pool: argocd-server
+          metallb.universe.tf/address-pool: ${METALLB_ARGOCD_POOL}
+          ${METALLB_SHARED_IP_ANNOTATION}
   traefik:
     service:
       annotations:
-        metallb.universe.tf/address-pool: traefik
+        metallb.universe.tf/address-pool: ${METALLB_TRAEFIK_POOL}
+        ${METALLB_SHARED_IP_ANNOTATION}
   ingress-haproxy:
     controller:
       service:
+        ports:
+          https: ${HAPROXY_PORT}
         annotations:
-          metallb.universe.tf/address-pool: haproxy-controller
+          metallb.universe.tf/address-pool: ${METALLB_HAPROXY_POOL}
+          ${METALLB_SHARED_IP_ANNOTATION}
   metallb-config:
     ArgoIP: ${ARGO_IP}
     TraefikIP: ${TRAEFIK_IP}
