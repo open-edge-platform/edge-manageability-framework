@@ -198,17 +198,37 @@ fi
 # On-prem specific logic
 # -----------------------------------------------------------------------------
 if [ "$DEPLOY_TYPE" = "onprem" ]; then
-    # Prompt for required IPs
-    prompt_for_ip "ARGO_IP" "Argo IP"
-    prompt_for_ip "TRAEFIK_IP" "Traefik IP"
-    prompt_for_ip "HAPROXY_IP" "HAProxy IP"
+    # Defaults for multi-IP mode (overridden below if ORCH_IP is set)
+    export SINGLE_IP_MODE="false"
+    export HAPROXY_PORT="443"
 
-    echo
-    echo "✅ Using the following valid IPs:"
-    echo "   ArgoIP:     $ARGO_IP"
-    echo "   TraefikIP:  $TRAEFIK_IP"
-    echo "   HaproxyIP:  $HAPROXY_IP"
-    echo
+    # Single-IP mode: if ORCH_IP is set, use it for all three services
+    if [ -n "${ORCH_IP:-}" ]; then
+        export ARGO_IP="$ORCH_IP"
+        export TRAEFIK_IP="$ORCH_IP"
+        export HAPROXY_IP="$ORCH_IP"
+        export SINGLE_IP_MODE="true"
+        export HAPROXY_PORT="9443"
+        echo
+        echo "✅ Single-IP mode: all services will share $ORCH_IP"
+        echo "   ArgoCD port:     8443"
+        echo "   Traefik port:    443"
+        echo "   HAProxy port:    ${HAPROXY_PORT}"
+        echo
+    else
+        # Multi-IP mode: prompt for three separate IPs
+        prompt_for_ip "ARGO_IP" "Argo IP"
+        prompt_for_ip "TRAEFIK_IP" "Traefik IP"
+        prompt_for_ip "HAPROXY_IP" "HAProxy IP"
+        export SINGLE_IP_MODE="false"
+
+        echo
+        echo "✅ Using the following valid IPs:"
+        echo "   ArgoIP:     $ARGO_IP"
+        echo "   TraefikIP:  $TRAEFIK_IP"
+        echo "   HaproxyIP:  $HAPROXY_IP"
+        echo
+    fi
 
     # O11Y disable check
     if [ "${DISABLE_O11Y_PROFILE:-false}" = "true" ]; then
@@ -372,6 +392,31 @@ fi
 
 if [ "${DISABLE_UI_PROFILE:-false}" = "true" ]; then
     yq -i '.argo.enabled.metadata-broker = false' "$OUTPUT_FILE"
+fi
+
+# -----------------------------------------------------------------------------
+# Single-IP mode: reconfigure MetalLB and service ports
+# -----------------------------------------------------------------------------
+# When ORCH_IP is set, all services share one IP on different ports:
+#   - Traefik:    443 (unchanged)
+#   - ArgoCD:     8443
+#   - HAProxy:    9443
+# The local metallb-config chart (charts/metallb-config) detects when all three
+# IPs are identical and creates a single shared pool named "orch-pool" instead of
+# three separate pools. Services must use allow-shared-ip annotations and
+# different ports to coexist on the same IP.
+if [ "${SINGLE_IP_MODE:-false}" = "true" ]; then
+    echo "🔧 Applying single-IP mode overrides..."
+    yq -i '
+      .postCustomTemplateOverwrite.argocd.server.service.annotations."metallb.universe.tf/address-pool" = "orch-pool" |
+      .postCustomTemplateOverwrite.argocd.server.service.annotations."metallb.universe.tf/allow-shared-ip" = "orch-services" |
+      .postCustomTemplateOverwrite.argocd.server.service.servicePortHttps = 8443 |
+      .postCustomTemplateOverwrite.traefik.service.annotations."metallb.universe.tf/address-pool" = "orch-pool" |
+      .postCustomTemplateOverwrite.traefik.service.annotations."metallb.universe.tf/allow-shared-ip" = "orch-services" |
+      .postCustomTemplateOverwrite.ingress-haproxy.controller.service.annotations."metallb.universe.tf/address-pool" = "orch-pool" |
+      .postCustomTemplateOverwrite.ingress-haproxy.controller.service.annotations."metallb.universe.tf/allow-shared-ip" = "orch-services" |
+      .postCustomTemplateOverwrite.ingress-haproxy.controller.service.ports.https = 9443
+    ' "$OUTPUT_FILE"
 fi
 
 # -----------------------------------------------------------------------------

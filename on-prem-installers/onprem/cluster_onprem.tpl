@@ -38,6 +38,8 @@ argo:
   # name to produce the service's domain name. For example, given the domain name of `orchestrator.io`, the Web UI
   # service will be accessible via `web-ui.orchestrator.io`. Not to be confused with the K8s cluster domain.
   clusterDomain: ${CLUSTER_DOMAIN}
+  singleIpMode: ${SINGLE_IP_MODE}
+  haproxyPort: ${HAPROXY_PORT}
 
   ## Argo CD configs
   deployRepoURL: "https://github.com/open-edge-platform/edge-manageability-framework"
