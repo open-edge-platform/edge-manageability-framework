@@ -75,16 +75,10 @@ get_azs() {
 }
 
 get_eks_node_ami() {
-    ami=""
-    if check_eks_exist; then
-        ami=$(aws eks describe-nodegroup --region ${AWS_REGION} --cluster-name ${ENV_NAME} --nodegroup-name nodegroup-${ENV_NAME} | jq -r '.nodegroup.releaseVersion')
-    fi
-
-    if [[ -z "$ami" ]] || [[ "$ami" == "null" ]]; then
-        ami="$(get_eksnode_ami $EKS_VERSION)"
-    fi
-
-    echo $ami
+    # Always look up the AL2023 AMI for the target EKS version via SSM.
+    # Do not reuse the existing node group's AMI, as it may be an AL2 image
+    # which is not published for EKS 1.33+.
+    get_eksnode_ami $EKS_VERSION
 }
 
 
@@ -186,6 +180,7 @@ eks_desired_size                   = 3
 eks_min_size                       = 1
 eks_max_size                       = 5
 eks_node_ami_id                    = "$(get_eks_node_ami)"
+eks_version                        = "$EKS_VERSION"
 eks_volume_type                    = "$VOL_TYPE"
 aws_region                         = "${AWS_REGION}"
 aurora_availability_zones          = ["${azs[0]}", "${azs[1]}", "${azs[2]}"]
@@ -874,6 +869,57 @@ action_orch_route53_wi_lb() {
 
 # Main
 
+# AWS enforces sequential minor version upgrades (cannot skip versions).
+# This function steps the EKS control plane through each intermediate version
+# before the final target, e.g. 1.32 -> 1.33 -> 1.34.
+upgrade_eks_control_plane_stepwise() {
+    local current_version
+    current_version=$(aws eks describe-cluster --region "$AWS_REGION" --name "$ENV_NAME" \
+        --query "cluster.version" --output text)
+
+    local target_minor current_minor
+    target_minor=$(echo "$EKS_VERSION" | cut -d. -f2)
+    current_minor=$(echo "$current_version" | cut -d. -f2)
+
+    if (( target_minor - current_minor <= 1 )); then
+        echo "[INFO] EKS control plane is at $current_version, target is $EKS_VERSION — no intermediate steps needed."
+        return 0
+    fi
+
+    local dir="${ROOT_DIR}/${ORCH_DIR}/cluster"
+    local varfile="${dir}/environments/${ENV_NAME}/variable.tfvar"
+
+    local v=$current_minor
+    while (( v < target_minor - 1 )); do
+        (( v++ ))
+        local intermediate="1.$v"
+        echo "[INFO] Stepping EKS control plane to $intermediate (target: $EKS_VERSION)..."
+
+        sed -i "s|eks_version\s*=\s*\"[^\"]*\"|eks_version = \"$intermediate\"|" "$varfile"
+
+        cd "$dir"
+        terraform init -reconfigure -backend-config="environments/${ENV_NAME}/backend.tf" || exit 1
+        terraform apply \
+            -target=module.eks.aws_eks_cluster.eks_cluster \
+            -var-file="environments/${ENV_NAME}/variable.tfvar" \
+            -auto-approve || exit 1
+
+        echo "[INFO] Waiting for EKS cluster to reach ACTIVE state at $intermediate..."
+        aws eks wait cluster-active --name "$ENV_NAME" --region "$AWS_REGION"
+
+        for ng in $(aws eks list-nodegroups --cluster-name "$ENV_NAME" --region "$AWS_REGION" \
+                     --query 'nodegroups[]' --output text); do
+            echo "[INFO] Waiting for nodegroup $ng to be ACTIVE..."
+            aws eks wait nodegroup-active --cluster-name "$ENV_NAME" --nodegroup-name "$ng" \
+                --region "$AWS_REGION"
+        done
+    done
+
+    # Restore the final target version in the varfile before apply_cas runs
+    sed -i "s|eks_version\s*=\s*\"[^\"]*\"|eks_version = \"$EKS_VERSION\"|" "$varfile"
+    echo "[INFO] Intermediate EKS upgrades complete. Proceeding to $EKS_VERSION."
+}
+
 if [[ ${COMMAND:-""} != upgrade ]]; then
     # Not called by the provision script, need to parse command line parameters.
     # shellcheck disable=SC2068
@@ -888,6 +934,7 @@ connect_cluster
 echo "Starting action cluster"
 setup_cas
 action_cluster
+upgrade_eks_control_plane_stepwise
 apply_cas
 action_orch_loadbalancer
 action_orch_route53_wi_lb

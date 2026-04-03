@@ -79,6 +79,9 @@ wait_for_root_app_healthy() {
     echo "[INFO] Waiting for $APP_NAME to become Synced and Healthy..."
 
     while true; do
+        fix_stuck_kyverno_policies
+        fix_immutable_jobs
+
         STATUS=$(kubectl get application "$APP_NAME" -n "$TARGET_ENV" \
             -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || echo "Missing")
 
@@ -152,8 +155,21 @@ sync_root_app_if_needed
 echo "[INFO] Waiting 2 minutes for helm upgrade to take effect..."
 sleep 120
 
+# Disable root-app self-heal so it doesn't re-create nginx apps while we're deleting them
+echo "[INFO] Disabling root-app self-heal during nginx cleanup..."
+kubectl patch application "$APP_NAME" -n "$TARGET_ENV" --type merge \
+    -p '{"spec":{"syncPolicy":{"automated":{"prune":true,"selfHeal":false}}}}' || true
+
 # Remove nginx applications
 echo "[INFO] Removing nginx applications..."
+
+# Remove finalizers first so ArgoCD doesn't block on garbage-collecting nginx resources
+if kubectl get application ingress-nginx -n "$TARGET_ENV" >/dev/null 2>&1; then
+    kubectl patch application ingress-nginx \
+        -n "$TARGET_ENV" \
+        --type=json \
+        -p='[{"op":"remove","path":"/metadata/finalizers"}]'
+fi
 
 kubectl delete application ingress-nginx -n "$TARGET_ENV" --ignore-not-found
 
@@ -170,6 +186,11 @@ kubectl delete application nginx-ingress-pxe-boots -n "$TARGET_ENV" --ignore-not
 wait_for_app_deletion ingress-nginx "$TARGET_ENV"
 wait_for_app_deletion nginx-ingress-pxe-boots "$TARGET_ENV"
 
+# Re-enable root-app self-heal now that nginx apps are gone
+echo "[INFO] Re-enabling root-app self-heal..."
+kubectl patch application "$APP_NAME" -n "$TARGET_ENV" --type merge \
+    -p '{"spec":{"syncPolicy":{"automated":{"prune":true,"selfHeal":true}}}}' || true
+
 # Sync ha-proxy-app
 sudo mkdir -p /tmp/argo-cd
 
@@ -179,6 +200,14 @@ operation:
     syncStrategy:
       hook: {}
 EOF
+
+# ingress-haproxy is created by the root-app helm upgrade and may not exist yet
+echo "[INFO] Waiting for ingress-haproxy application to be created..."
+until kubectl get application ingress-haproxy -n "$TARGET_ENV" >/dev/null 2>&1; do
+    echo "[INFO] ingress-haproxy not found yet, waiting..."
+    sleep 5
+done
+echo "[OK] ingress-haproxy found"
 
 kubectl patch -n "$TARGET_ENV" application ingress-haproxy \
     --patch-file /tmp/argo-cd/sync-patch.yaml \
@@ -199,11 +228,69 @@ kubectl patch application "$APP_NAME" -n "$TARGET_ENV" \
     -p '[{"op": "remove", "path": "/status/operationState"}]' || true
 
 sleep 2
+# Clear foregroundDeletion finalizers and delete the cluster policies.
+# The Kyverno admission webhook blocks finalizer removal, so scale it down first,
+# do all patching and deletion while it is offline, then restore it.
+# NOTE: scale-up must come AFTER deletion — not before — to avoid a race where the
+# admission controller restarts and re-adds the finalizer before kubectl delete fires.
+_kyverno_scale_down() {
+    kubectl scale deployment kyverno-admission-controller -n kyverno --replicas=0 2>/dev/null || true
+    kubectl wait --for=delete pod -l app.kubernetes.io/component=admission-controller \
+        -n kyverno --timeout=60s 2>/dev/null || true
+}
+_kyverno_scale_up() {
+    kubectl scale deployment kyverno-admission-controller -n kyverno --replicas=3 2>/dev/null || true
+}
+# Clears foregroundDeletion finalizers from any ClusterPolicy that is stuck terminating.
+# Safe to call repeatedly — does nothing if no policies are stuck.
+fix_stuck_kyverno_policies() {
+    local stuck
+    stuck=$(kubectl get clusterpolicy -o jsonpath='{range .items[?(@.metadata.deletionTimestamp)]}{.metadata.name}{"\n"}{end}' 2>/dev/null || true)
+    [[ -z "$stuck" ]] && return 0
+    echo "[INFO] Stuck ClusterPolicies detected: $(echo "$stuck" | tr '\n' ' ') — clearing finalizers..."
+    _kyverno_scale_down
+    while IFS= read -r policy; do
+        [[ -z "$policy" ]] && continue
+        kubectl patch clusterpolicy "$policy" -p '{"metadata":{"finalizers":[]}}' --type=merge 2>/dev/null || true
+    done <<< "$stuck"
+    _kyverno_scale_up
+}
+
+# Deletes completed Jobs that ArgoCD cannot patch due to immutable spec.template.
+# Reads SyncError conditions across all apps and removes each named Job so ArgoCD
+# can recreate it fresh. Safe to call repeatedly — does nothing if no errors exist.
+fix_immutable_jobs() {
+    local job_names
+    job_names=$(kubectl get applications -n "$TARGET_ENV" -o json 2>/dev/null \
+        | jq -r '.items[].status.conditions[]? | select(.type == "SyncError") | .message' \
+        | grep -oP 'Job\.batch "\K[^"]+' \
+        | sort -u || true)
+    [[ -z "$job_names" ]] && return 0
+    while IFS= read -r job_name; do
+        [[ -z "$job_name" ]] && continue
+        local ns
+        ns=$(kubectl get job -A -o json 2>/dev/null \
+            | jq -r --arg n "$job_name" \
+                '.items[] | select(.metadata.name == $n) | .metadata.namespace' \
+            | head -1)
+        if [[ -n "$ns" ]]; then
+            echo "[INFO] Deleting immutable completed Job '$job_name' in namespace '$ns'"
+            kubectl delete job "$job_name" -n "$ns" --ignore-not-found 2>/dev/null || true
+        fi
+    done <<< "$job_names"
+}
+
 # Remove cluster policies
 echo "[INFO] Removing cluster policies..."
 
+_kyverno_scale_down
+kubectl patch clusterpolicy restart-mps-deployment-on-secret-change \
+    -p '{"metadata":{"finalizers":[]}}' --type=merge 2>/dev/null || true
+kubectl patch clusterpolicy restart-rps-deployment-on-secret-change \
+    -p '{"metadata":{"finalizers":[]}}' --type=merge 2>/dev/null || true
 kubectl delete clusterpolicy restart-mps-deployment-on-secret-change --ignore-not-found
 kubectl delete clusterpolicy restart-rps-deployment-on-secret-change --ignore-not-found
+_kyverno_scale_up
 
 kubectl delete job tenancy-api-mapping -n orch-iam --ignore-not-found
 kubectl delete job tenancy-datamodel -n orch-iam --ignore-not-found
@@ -214,8 +301,16 @@ kubectl patch application tenancy-datamodel -n "$TARGET_ENV" --patch-file /tmp/a
 sleep 4
 
 kubectl delete job init-amt-vault-job -n orch-infra --ignore-not-found
-kubectl patch application infra-external -n "$TARGET_ENV" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge 
-# add sync
+kubectl patch application infra-external -n "$TARGET_ENV" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge
+
+# Delete completed Jobs in ns-label that ArgoCD cannot patch due to immutable spec.template.
+# These are recreated with generate names on each install, so the old ones must be removed.
+for job in $(kubectl get jobs -n ns-label -o jsonpath='{.items[*].metadata.name}' 2>/dev/null || true); do
+    echo "[INFO] Deleting completed Job '$job' in ns-label (immutable spec.template)"
+    kubectl delete job "$job" -n ns-label --ignore-not-found
+done
+kubectl patch application namespace-label -n "$TARGET_ENV" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge || true
+kubectl patch application wait-istio-job -n "$TARGET_ENV" --patch-file /tmp/argo-cd/sync-patch.yaml --type merge || true
 
 sync_root_app_with_prune
 
