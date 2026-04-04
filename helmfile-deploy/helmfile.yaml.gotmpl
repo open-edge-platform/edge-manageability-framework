@@ -1,0 +1,1667 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# Helmfile-based deployment for Edge Manageability Framework
+# Replaces ArgoCD-based deployment with direct helm chart releases
+#
+# Usage:
+#   Full deployment:
+#     helmfile -e onprem sync
+#     helmfile -e onprem-eim sync
+#     helmfile -e aws sync
+#
+#   Individual chart install/uninstall:
+#     helmfile -e onprem -l app=traefik sync        # install single chart
+#     helmfile -e onprem -l app=traefik destroy      # uninstall single chart
+#     helmfile -e onprem -l app=traefik diff         # preview changes
+#
+#   Multiple charts:
+#     helmfile -e onprem -l "app=traefik" -l "app=haproxy" sync
+#
+#   List available releases:
+#     helmfile -e onprem list
+
+environments:
+  onprem:
+    values:
+      - environments/defaults-disabled.yaml.gotmpl
+      - environments/onprem-eim-settings.yaml.gotmpl
+      - environments/onprem-eim-features.yaml.gotmpl
+      - environments/onprem-eim-co-ao-o11y.yaml.gotmpl
+  onprem-oxm:
+    values:
+      - environments/defaults-disabled.yaml.gotmpl
+      - environments/defaults-onprem.yaml.gotmpl
+      - environments/onprem-oxm.yaml.gotmpl
+  onprem-explicit-proxy:
+    values:
+      - environments/defaults-disabled.yaml.gotmpl
+      - environments/defaults-onprem.yaml.gotmpl
+      - environments/onprem-explicit-proxy.yaml.gotmpl
+  onprem-vpro:
+    values:
+      - environments/defaults-disabled.yaml.gotmpl
+      - environments/onprem-eim-settings.yaml.gotmpl
+      - environments/onprem-eim-features.yaml.gotmpl
+      - environments/profile-vpro.yaml.gotmpl
+  onprem-eim:
+    values:
+      - environments/defaults-disabled.yaml.gotmpl
+      - environments/onprem-eim-settings.yaml.gotmpl
+      - environments/onprem-eim-features.yaml.gotmpl
+  onprem-eim-co:
+    values:
+      - environments/defaults-disabled.yaml.gotmpl
+      - environments/onprem-eim-settings.yaml.gotmpl
+      - environments/onprem-eim-features.yaml.gotmpl
+      - environments/profile-co.yaml.gotmpl
+  onprem-eim-co-ao:
+    values:
+      - environments/defaults-disabled.yaml.gotmpl
+      - environments/onprem-eim-settings.yaml.gotmpl
+      - environments/onprem-eim-features.yaml.gotmpl
+      - environments/onprem-eim-co-ao.yaml.gotmpl
+  onprem-eim-co-ao-o11y:
+    values:
+      - environments/defaults-disabled.yaml.gotmpl
+      - environments/onprem-eim-settings.yaml.gotmpl
+      - environments/onprem-eim-features.yaml.gotmpl
+      - environments/onprem-eim-co-ao-o11y.yaml.gotmpl
+
+---
+
+helmDefaults:
+  createNamespace: true
+  wait: true
+  waitForJobs: true
+  timeout: 180 
+
+repositories:
+  - name: jetstack
+    url: https://charts.jetstack.io
+  - name: istio
+    url: https://istio-release.storage.googleapis.com/charts
+  - name: hashicorp
+    url: https://helm.releases.hashicorp.com
+  - name: traefik
+    url: https://helm.traefik.io/traefik
+  - name: kyverno
+    url: https://kyverno.github.io/kyverno
+  - name: fleet
+    url: https://rancher.github.io/fleet-helm-charts/
+  - name: external-secrets
+    url: https://charts.external-secrets.io
+  - name: haproxy
+    url: https://haproxytech.github.io/helm-charts
+  - name: ingress-nginx
+    url: https://kubernetes.github.io/ingress-nginx
+  - name: prometheus
+    url: https://prometheus-community.github.io/helm-charts
+  - name: stakater
+    url: https://stakater.github.io/stakater-charts
+  - name: harbor
+    url: https://helm.goharbor.io
+  - name: cnpg
+    oci: true
+    url: ghcr.io/cloudnative-pg/charts
+{{- if eq (env "EMF_ENABLE_ISTIO" | default "true") "true" }}
+  - name: kiali
+    url: https://kiali.org/helm-charts
+{{- end }}
+  - name: capi-operator
+    url: https://kubernetes-sigs.github.io/cluster-api-operator
+{{- if eq (env "EMF_ENABLE_AWS" | default "false") "true" }}
+  - name: autoscaler
+    url: https://kubernetes.github.io/autoscaler
+  - name: eks
+    url: https://aws.github.io/eks-charts
+{{- end }}
+  - name: edge-orch
+    oci: true
+    url: {{ env "EMF_REGISTRY" | default "registry-rs.edgeorchestration.intel.com" }}/edge-orch
+  - name: edge-orch-rs
+    oci: true
+    url: {{ env "EMF_REGISTRY" | default "registry-rs.edgeorchestration.intel.com" }}/edge-orch
+
+releases:
+  #############################################################################
+  # Wave 1
+  #############################################################################
+
+  - name: keycloak-operator
+    labels:
+      app: keycloak-operator
+    namespace: orch-platform
+    chart: edge-orch/common/charts/keycloak-operator
+    version: 26.1.2
+    values:
+      - values/keycloak-operator.yaml
+    condition: keycloak-operator.enabled
+
+
+
+  - name: postgresql-operator
+    labels:
+      app: postgresql-operator
+    namespace: postgresql-operator
+    chart: cnpg/cloudnative-pg
+    version: 0.27.1
+    values:
+      - values/postgresql-operator.yaml
+    condition: postgresql-operator.enabled
+
+
+  #############################################################################
+  # Wave 90
+  #############################################################################
+
+  - name: cluster-autoscaler
+    labels:
+      app: cluster-autoscaler
+    namespace: kube-system
+    chart: autoscaler/cluster-autoscaler
+    version: "9.37.0"
+    values:
+      - values/cluster-autoscaler.yaml
+    condition: cluster-autoscaler.enabled
+    needs:
+      - postgresql-operator/postgresql-operator
+
+
+  - name: namespace-label
+    labels:
+      app: namespace-label
+    namespace: ns-label
+    chart: edge-orch/common/charts/namespace-label
+    version: 26.0.2
+    values:
+      - values/namespace-label.yaml.gotmpl
+    installed: true  # always deploy
+    needs:
+      - postgresql-operator/postgresql-operator
+
+
+  #############################################################################
+  # Wave 100
+  #############################################################################
+
+  - name: cert-manager
+    labels:
+      app: cert-manager
+    namespace: cert-manager
+    chart: jetstack/cert-manager
+    version: 1.19.3
+    values:
+      - values/cert-manager.yaml.gotmpl
+    condition: cert-manager.enabled
+    needs:
+      - ns-label/namespace-label
+
+
+  - name: external-secrets
+    labels:
+      app: external-secrets
+    namespace: orch-secret
+    chart: external-secrets/external-secrets
+    version: 2.0.1
+    values:
+      - values/external-secrets.yaml
+    condition: external-secrets.enabled
+    needs:
+      - ns-label/namespace-label
+
+
+  - name: istio-base
+    labels:
+      app: istio-base
+    namespace: istio-system
+    chart: istio/base
+    version: 1.29.1
+    values:
+      - values/istio-base.yaml
+    condition: istio-base.enabled
+    needs:
+      - ns-label/namespace-label
+
+
+  - name: k8s-metrics-server
+    labels:
+      app: k8s-metrics-server
+    namespace: kube-system
+    chart: edge-orch/common/charts/k8s-metrics-server
+    version: 25.2.1
+    values:
+      - values/k8s-metrics-server.yaml
+    condition: k8s-metrics-server.enabled
+    needs:
+      - ns-label/namespace-label
+    hooks:
+      - events: ["presync"]
+        showlogs: true
+        command: "./hooks/adopt-metrics-server.sh"
+
+
+
+  - name: kyverno
+    labels:
+      app: kyverno
+    namespace: kyverno
+    chart: kyverno/kyverno
+    version: 3.7.1
+    values:
+      - values/kyverno.yaml
+    condition: kyverno.enabled
+    needs:
+      - ns-label/namespace-label
+
+
+  - name: prometheus-crd
+    labels:
+      app: prometheus-crd
+    namespace: orch-platform
+    chart: prometheus/prometheus-operator-crds
+    version: 24.0.1
+    values:
+      - values/prometheus-crd.yaml
+    condition: prometheus-crd.enabled
+    needs:
+      - ns-label/namespace-label
+
+
+  #############################################################################
+  # Wave 105
+  #############################################################################
+
+  - name: aws-sm-proxy
+    labels:
+      app: aws-sm-proxy
+    namespace: orch-secret
+    chart: edge-orch-rs/common/charts/aws-sm-proxy
+    version: 26.1.0
+    values:
+      - values/aws-sm-proxy.yaml
+    condition: aws-sm-proxy.enabled
+    needs:
+      - orch-platform/prometheus-crd
+
+
+  - name: kyverno-extra-policies
+    labels:
+      app: kyverno-extra-policies
+    namespace: kyverno
+    chart: edge-orch/common/charts/kyverno-extra-policies
+    version: 26.0.0
+    values:
+      - values/kyverno-extra-policies.yaml
+    needs:
+      - orch-platform/prometheus-crd
+      - kyverno/kyverno
+    condition: kyverno-extra-policies.enabled
+
+
+  - name: secret-wait-azure-ad-creds
+    labels:
+      app: secret-wait-azure-ad-creds
+    namespace: orch-secret
+    chart: edge-orch-rs/common/charts/secret-wait
+    version: 26.0.2
+    values:
+      - values/secret-wait-azure-ad-creds.yaml
+    condition: secret-wait-azure-ad-creds.enabled
+    needs:
+      - orch-platform/prometheus-crd
+
+
+  #############################################################################
+  # Wave 110
+  #############################################################################
+
+  - name: aws-lb
+    labels:
+      app: aws-lb
+    namespace: kube-system
+    chart: eks/aws-load-balancer-controller
+    version: 1.7.1
+    values:
+      - values/aws-lb.yaml
+    condition: aws-lb.enabled
+    needs:
+      - orch-secret/secret-wait-azure-ad-creds
+
+
+  - name: aws-sm-get-rs-token
+    labels:
+      app: aws-sm-get-rs-token
+    namespace: orch-secret
+    chart: edge-orch-rs/common/charts/aws-sm-get-rs-token
+    version: 25.2.1
+    values:
+      - values/aws-sm-get-rs-token.yaml
+    condition: aws-sm-get-rs-token.enabled
+    needs:
+      - orch-secret/secret-wait-azure-ad-creds
+
+
+  - name: istiod
+    labels:
+      app: istiod
+    namespace: istio-system
+    chart: istio/istiod
+    version: 1.29.1
+    values:
+      - values/istiod.yaml.gotmpl
+    needs:
+      - orch-secret/secret-wait-azure-ad-creds
+      - istio-system/istio-base
+    condition: istiod.enabled
+
+
+  - name: reloader
+    labels:
+      app: reloader
+    namespace: orch-platform
+    chart: stakater/reloader
+    version: 2.2.3
+    values:
+      - values/reloader.yaml
+    condition: reloader.enabled
+    needs:
+      - orch-secret/secret-wait-azure-ad-creds
+
+
+  - name: token-refresh
+    labels:
+      app: token-refresh
+    namespace: orch-secret
+    chart: edge-orch-rs/common/charts/token-refresh
+    version: 25.2.3
+    values:
+      - values/token-refresh.yaml
+    condition: token-refresh.enabled
+    needs:
+      - orch-secret/secret-wait-azure-ad-creds
+
+
+  - name: vertical-pod-autoscaler
+    labels:
+      app: vertical-pod-autoscaler
+    namespace: kube-system
+    chart: edge-orch/common/charts/vertical-pod-autoscaler
+    version: 0.0.4
+    values:
+      - values/vertical-pod-autoscaler.yaml
+    condition: vertical-pod-autoscaler.enabled
+    needs:
+      - orch-secret/secret-wait-azure-ad-creds
+
+
+  - name: wait-istio-job
+    labels:
+      app: wait-istio-job
+    namespace: ns-label
+    chart: edge-orch/common/charts/job-wait
+    version: 26.0.2
+    values:
+      - values/wait-istio-job.yaml
+    needs:
+      - orch-secret/secret-wait-azure-ad-creds
+      - istio-system/istiod
+    condition: wait-istio-job.enabled
+
+
+  #############################################################################
+  # Wave 115
+  #############################################################################
+
+  - name: secret-wait-rs-token
+    labels:
+      app: secret-wait-rs-token
+    namespace: orch-secret
+    chart: edge-orch-rs/common/charts/secret-wait
+    version: 26.0.2
+    values:
+      - values/secret-wait-rs-token.yaml
+    condition: secret-wait-rs-token.enabled
+    needs:
+      - ns-label/wait-istio-job
+
+
+  #############################################################################
+  # Wave 120
+  #############################################################################
+
+  - name: aws-lb-tgb
+    labels:
+      app: aws-lb-tgb
+    namespace: kube-system
+    chart: edge-orch/common/charts/aws-lb-tgb
+    version: 26.0.1
+    values:
+      - values/aws-lb-tgb.yaml
+    condition: aws-lb-tgb.enabled
+    needs:
+      - orch-secret/secret-wait-rs-token
+
+
+  - name: oci-secret
+    labels:
+      app: oci-secret
+    namespace: orch-platform  # no longer argocd namespace
+    chart: edge-orch-rs/common/charts/oci-secret
+    version: 25.2.1
+    values:
+      - values/oci-secret.yaml
+    condition: oci-secret.enabled
+    needs:
+      - orch-secret/secret-wait-rs-token
+
+
+
+  #############################################################################
+  # Wave 130
+  #############################################################################
+
+  - name: postgresql-secrets
+    labels:
+      app: postgresql-secrets
+    namespace: orch-database
+    chart: edge-orch/common/charts/postgresql-secrets
+    version: 26.0.1
+    values:
+      - values/postgresql-secrets.yaml.gotmpl
+    needs:
+      - orch-platform/oci-secret
+      - postgresql-operator/postgresql-operator
+    condition: postgresql-secrets.enabled
+
+
+  #############################################################################
+  # Wave 140
+  #############################################################################
+
+  - name: postgresql-cluster
+    labels:
+      app: postgresql-cluster
+    namespace: orch-database
+    chart: cnpg/cluster
+    version: 0.6.0
+    values:
+      - values/postgresql-cluster.yaml.gotmpl
+    needs:
+      - orch-database/postgresql-secrets
+    condition: postgresql-cluster.enabled
+
+
+  #############################################################################
+  # Wave 150
+  #############################################################################
+
+  - name: istio-policy
+    labels:
+      app: istio-policy
+    namespace: istio-system
+    chart: edge-orch/common/charts/istio-policy
+    version: 26.0.0
+    values:
+      - values/istio-policy.yaml
+    needs:
+      - orch-database/postgresql-cluster
+      - istio-system/istiod
+    condition: istio-policy.enabled
+
+
+  - name: kiali
+    labels:
+      app: kiali
+    namespace: istio-system
+    chart: kiali/kiali-server
+    version: 2.22.0
+    values:
+      - values/kiali.yaml
+    needs:
+      - orch-database/postgresql-cluster
+      - istio-system/istiod
+    condition: kiali.enabled
+
+
+  - name: platform-autocert
+    labels:
+      app: platform-autocert
+    namespace: cert-manager
+    chart: edge-orch/common/charts/platform-autocert
+    version: 1.0.2
+    values:
+      - values/platform-autocert.yaml.gotmpl
+    needs:
+      - orch-database/postgresql-cluster
+      - cert-manager/cert-manager
+    condition: platform-autocert.enabled
+
+
+  - name: platform-keycloak
+    labels:
+      app: platform-keycloak
+    namespace: orch-platform
+    chart: edge-orch/common/charts/keycloak-instance
+    version: 26.1.2
+    timeout: 300
+    values:
+      - values/platform-keycloak.yaml.gotmpl
+      - values/platform-keycloak-realm.yaml.gotmpl
+    needs:
+      - orch-database/postgresql-cluster
+      - orch-platform/keycloak-operator
+    condition: platform-keycloak.enabled
+
+
+  - name: rs-image-pull-secrets
+    labels:
+      app: rs-image-pull-secrets
+    namespace: orch-platform
+    chart: edge-orch/common/charts/rs-image-pull-secrets
+    version: 25.2.2
+    values:
+      - values/rs-image-pull-secrets.yaml
+    condition: rs-image-pull-secrets.enabled
+    needs:
+      - orch-database/postgresql-cluster
+
+
+  #############################################################################
+  # Wave 160
+  #############################################################################
+
+  - name: cert-synchronizer
+    labels:
+      app: cert-synchronizer
+    namespace: orch-gateway
+    chart: edge-orch/common/charts/cert-synchronizer
+    version: 26.1.0
+    values:
+      - values/cert-synchronizer.yaml.gotmpl
+    condition: cert-synchronizer.enabled
+    needs:
+      - orch-platform/rs-image-pull-secrets
+    hooks:
+      - events: ["presync"]
+        showlogs: true
+        command: "./hooks/create-tls-autocert.sh"
+
+
+  - name: vault
+    labels:
+      app: vault
+    namespace: orch-platform
+    chart: hashicorp/vault
+    version: 0.32.0
+    values:
+      - values/vault.yaml.gotmpl
+    condition: vault.enabled
+    needs:
+      - orch-platform/rs-image-pull-secrets
+
+
+  - name: secrets-config
+    labels:
+      app: secrets-config
+    namespace: orch-platform
+    chart: edge-orch/common/charts/secrets-config
+    version: 26.0.2
+    values:
+      - values/secrets-config.yaml.gotmpl
+    condition: secrets-config.enabled
+    needs:
+      - orch-platform/rs-image-pull-secrets
+      - orch-platform/vault
+
+
+  - name: self-signed-cert
+    labels:
+      app: self-signed-cert
+    namespace: cert-manager
+    chart: edge-orch/common/charts/self-signed-cert
+    version: 4.0.11
+    values:
+      - values/self-signed-cert.yaml.gotmpl
+    needs:
+      - orch-platform/rs-image-pull-secrets
+      - cert-manager/cert-manager
+    condition: self-signed-cert.enabled
+
+
+  #############################################################################
+  # Wave 170
+  #############################################################################
+
+  - name: rs-proxy
+    labels:
+      app: rs-proxy
+    namespace: orch-platform
+    chart: edge-orch/common/charts/rs-proxy
+    version: 25.2.3
+    values:
+      - values/rs-proxy.yaml.gotmpl
+      - values/resource-overrides.yaml
+    condition: rs-proxy.enabled
+    needs:
+      - orch-platform/vault
+
+
+  - name: secret-wait-tls-orch
+    labels:
+      app: secret-wait-tls-orch
+    namespace: orch-gateway
+    chart: edge-orch-rs/common/charts/secret-wait
+    version: 26.0.2
+    values:
+      - values/secret-wait-tls-orch.yaml
+    condition: secret-wait-tls-orch.enabled
+    needs:
+      - orch-platform/vault
+
+
+
+  #############################################################################
+  # Wave 180
+  #############################################################################
+
+  - name: copy-ca-cert-gateway-to-cattle
+    labels:
+      app: copy-ca-cert-gateway-to-cattle
+    namespace: cattle-system
+    chart: edge-orch/common/charts/copy-secret
+    version: 26.0.0
+    values:
+      - values/copy-ca-cert-gateway-to-cattle.yaml
+    condition: copy-ca-cert-gateway-to-cattle.enabled
+    needs:
+      - orch-gateway/secret-wait-tls-orch
+
+
+  - name: copy-ca-cert-gateway-to-infra
+    labels:
+      app: copy-ca-cert-gateway-to-infra
+    namespace: orch-infra
+    chart: edge-orch/common/charts/copy-secret
+    version: 26.0.0
+    values:
+      - values/copy-ca-cert-gateway-to-infra.yaml
+    condition: copy-ca-cert-gateway-to-infra.enabled
+    needs:
+      - orch-gateway/secret-wait-tls-orch
+
+
+  - name: copy-ca-cert-gitea-to-app
+    labels:
+      app: copy-ca-cert-gitea-to-app
+    namespace: orch-app
+    chart: edge-orch/common/charts/copy-secret
+    version: 26.0.0
+    values:
+      - values/copy-ca-cert-gitea-to-app.yaml
+    condition: copy-ca-cert-gitea-to-app.enabled
+    needs:
+      - orch-gateway/secret-wait-tls-orch
+
+
+  - name: copy-ca-cert-gitea-to-cluster
+    labels:
+      app: copy-ca-cert-gitea-to-cluster
+    namespace: orch-cluster
+    chart: edge-orch/common/charts/copy-secret
+    version: 26.0.0
+    values:
+      - values/copy-ca-cert-gitea-to-cluster.yaml
+    condition: copy-ca-cert-gitea-to-cluster.enabled
+    needs:
+      - orch-gateway/secret-wait-tls-orch
+
+
+  - name: copy-keycloak-admin-to-infra
+    labels:
+      app: copy-keycloak-admin-to-infra
+    namespace: orch-infra
+    chart: edge-orch/common/charts/copy-secret
+    version: 26.0.0
+    values:
+      - values/copy-keycloak-admin-to-infra.yaml
+    condition: copy-keycloak-admin-to-infra.enabled
+    needs:
+      - orch-gateway/secret-wait-tls-orch
+
+
+
+  #############################################################################
+  # Wave 990
+  #############################################################################
+
+  - name: capi-operator-pre
+    labels:
+      app: capi-operator-pre
+    namespace: capi-variables
+    chart: edge-orch/common/charts/capi-operator-pre
+    version: 1.0.1
+    values:
+      - values/capi-operator-pre.yaml.gotmpl
+    condition: capi-operator-pre.enabled
+    needs:
+      - orch-infra/copy-keycloak-admin-to-infra
+
+
+  #############################################################################
+  # Wave 1000
+  #############################################################################
+
+  - name: capi-operator
+    labels:
+      app: capi-operator
+    namespace: capi-operator-system
+    chart: capi-operator/cluster-api-operator
+    version: 0.23.0
+    values:
+      - values/capi-operator.yaml.gotmpl
+    needs:
+      - capi-variables/capi-operator-pre
+    condition: capi-operator.enabled
+
+
+  - name: edgenode-dashboards
+    labels:
+      app: edgenode-dashboards
+    namespace: orch-infra
+    chart: edge-orch/o11y/charts/edgenode-dashboards
+    version: 0.3.10
+    values:
+      - values/edgenode-dashboards.yaml
+    condition: edgenode-dashboards.enabled
+    needs:
+      - capi-variables/capi-operator-pre
+
+
+  - name: edgenode-observability
+    labels:
+      app: edgenode-observability
+    namespace: orch-infra
+    chart: edge-orch/o11y/charts/edgenode-observability
+    version: 0.10.21
+    values:
+      - values/edgenode-observability.yaml.gotmpl
+    condition: edgenode-observability.enabled
+    needs:
+      - capi-variables/capi-operator-pre
+
+
+  - name: harbor-oci
+    labels:
+      app: harbor-oci
+    namespace: orch-harbor
+    chart: harbor/harbor
+    version: 1.17.2
+    values:
+      - values/harbor-oci.yaml.gotmpl
+    condition: harbor-oci.enabled
+    needs:
+      - capi-variables/capi-operator-pre
+
+
+  - name: orchestrator-dashboards
+    labels:
+      app: orchestrator-dashboards
+    namespace: orch-platform
+    chart: edge-orch/o11y/charts/orchestrator-dashboards
+    version: 0.3.2
+    values:
+      - values/orchestrator-dashboards.yaml
+    condition: orchestrator-dashboards.enabled
+    needs:
+      - capi-variables/capi-operator-pre
+
+
+  - name: orchestrator-observability
+    labels:
+      app: orchestrator-observability
+    namespace: orch-platform
+    chart: edge-orch/o11y/charts/orchestrator-observability
+    version: 0.5.18
+    values:
+      - values/orchestrator-observability.yaml.gotmpl
+    condition: orchestrator-observability.enabled
+    needs:
+      - capi-variables/capi-operator-pre
+
+
+  - name: orchestrator-prometheus-agent
+    labels:
+      app: orchestrator-prometheus-agent
+    namespace: orch-platform
+    chart: prometheus/kube-prometheus-stack
+    version: 79.7.1
+    values:
+      - values/orchestrator-prometheus-agent.yaml
+    condition: orchestrator-prometheus-agent.enabled
+    needs:
+      - capi-variables/capi-operator-pre
+
+
+  - name: traefik-pre
+    labels:
+      app: traefik-pre
+    namespace: orch-gateway
+    chart: edge-orch/common/charts/traefik-pre
+    version: 3.0.1
+    values:
+      - values/traefik-pre.yaml.gotmpl
+    condition: traefik-pre.enabled
+    needs:
+      - capi-variables/capi-operator-pre
+
+
+  #############################################################################
+  # Wave 1010
+  #############################################################################
+
+  - name: fleet-crd
+    labels:
+      app: fleet-crd
+    namespace: cattle-fleet-system
+    chart: fleet/fleet-crd
+    version: 0.12.8
+    values:
+      - values/fleet-crd.yaml
+    condition: fleet-crd.enabled
+    needs:
+      - orch-gateway/traefik-pre
+
+
+  #############################################################################
+  # Wave 1020
+  #############################################################################
+
+  - name: fleet-controller
+    labels:
+      app: fleet-controller
+    namespace: cattle-fleet-system
+    chart: fleet/fleet
+    version: 0.12.8
+    values:
+      - values/fleet-controller.yaml
+    needs:
+      - cattle-fleet-system/fleet-crd
+    condition: fleet-controller.enabled
+
+
+
+  #############################################################################
+  # Wave 1100
+  #############################################################################
+
+  - name: app-orch-tenant-controller
+    labels:
+      app: app-orch-tenant-controller
+    namespace: orch-app
+    chart: edge-orch/app/charts/app-orch-tenant-controller
+    version: 0.5.2
+    values:
+      - values/app-orch-tenant-controller.yaml.gotmpl
+    condition: app-orch-tenant-controller.enabled
+    needs:
+      - cattle-fleet-system/fleet-controller
+
+
+  - name: capi-providers-config
+    labels:
+      app: capi-providers-config
+    namespace: capi-operator-system
+    chart: edge-orch/common/charts/capi-providers-config
+    version: 26.0.1
+    timeout: 600
+    values:
+      - values/capi-providers-config.yaml.gotmpl
+    needs:
+      - cattle-fleet-system/fleet-controller
+      - capi-operator-system/capi-operator
+    condition: capi-providers-config.enabled
+
+
+  - name: ingress-haproxy
+    labels:
+      app: ingress-haproxy
+    namespace: orch-boots
+    chart: haproxy/kubernetes-ingress
+    version: 1.41.0
+    values:
+      - values/ingress-haproxy.yaml
+    condition: ingress-haproxy.enabled
+    needs:
+      - cattle-fleet-system/fleet-controller
+
+
+  - name: ingress-nginx
+    labels:
+      app: ingress-nginx
+    namespace: orch-boots
+    chart: ingress-nginx/ingress-nginx
+    version: 4.13.3
+    values:
+      - values/ingress-nginx.yaml
+    condition: ingress-nginx.enabled
+    needs:
+      - cattle-fleet-system/fleet-controller
+
+
+  - name: kyverno-istio-policy
+    labels:
+      app: kyverno-istio-policy
+    namespace: kyverno
+    chart: edge-orch/common/charts/kyverno-istio-policy
+    version: 26.0.0
+    values:
+      - values/kyverno-istio-policy.yaml
+    needs:
+      - cattle-fleet-system/fleet-controller
+      - kyverno/kyverno
+    condition: kyverno-istio-policy.enabled
+
+
+  - name: kyverno-traefik-policy
+    labels:
+      app: kyverno-traefik-policy
+    namespace: kyverno
+    chart: edge-orch/common/charts/kyverno-traefik-policy
+    version: 26.0.0
+    values:
+      - values/kyverno-traefik-policy.yaml
+    needs:
+      - cattle-fleet-system/fleet-controller
+      - kyverno/kyverno
+    condition: kyverno-traefik-policy.enabled
+
+
+  - name: traefik
+    labels:
+      app: traefik
+    namespace: orch-gateway
+    chart: traefik/traefik
+    version: 39.0.6
+    values:
+      - values/traefik.yaml.gotmpl
+    needs:
+      - cattle-fleet-system/fleet-controller
+      - orch-gateway/traefik-pre
+    condition: traefik.enabled
+
+
+  - name: traefik-boots
+    labels:
+      app: traefik-boots
+    namespace: orch-boots
+    chart: traefik/traefik
+    version: 37.2.0
+    values:
+      - values/traefik-boots.yaml.gotmpl
+    condition: traefik-boots.enabled
+    needs:
+      - cattle-fleet-system/fleet-controller
+
+
+  #############################################################################
+  # Wave 1101
+  #############################################################################
+
+  - name: app-orch-catalog
+    labels:
+      app: app-orch-catalog
+    namespace: orch-app
+    chart: edge-orch/app/charts/app-orch-catalog
+    version: 0.16.2
+    values:
+      - values/app-orch-catalog.yaml.gotmpl
+    condition: app-orch-catalog.enabled
+    needs:
+      - orch-boots/traefik-boots
+
+
+
+  #############################################################################
+  # Wave 1200
+  #############################################################################
+
+  - name: botkube
+    labels:
+      app: botkube
+    namespace: orch-gateway
+    chart: edge-orch/common/charts/botkube
+    version: v1.11.0
+    values:
+      - values/botkube.yaml
+    condition: botkube.enabled
+    needs:
+      - orch-app/app-orch-catalog
+
+
+  - name: copy-app-gitea-cred-to-fleet
+    labels:
+      app: copy-app-gitea-cred-to-fleet
+    namespace: fleet-default
+    chart: edge-orch/common/charts/copy-secret
+    version: 26.0.0
+    values:
+      - values/copy-app-gitea-cred-to-fleet.yaml
+    condition: copy-app-gitea-cred-to-fleet.enabled
+    needs:
+      - orch-app/app-orch-catalog
+
+
+  - name: copy-cluster-gitea-cred-to-fleet
+    labels:
+      app: copy-cluster-gitea-cred-to-fleet
+    namespace: fleet-default
+    chart: edge-orch/common/charts/copy-secret
+    version: 26.0.0
+    values:
+      - values/copy-cluster-gitea-cred-to-fleet.yaml
+    condition: copy-cluster-gitea-cred-to-fleet.enabled
+    needs:
+      - orch-app/app-orch-catalog
+
+
+  - name: fleet-rs-secret
+    labels:
+      app: fleet-rs-secret
+    namespace: fleet-default
+    chart: edge-orch/common/charts/fleet-rs-secret
+    version: 25.2.1
+    values:
+      - values/fleet-rs-secret.yaml
+    condition: fleet-rs-secret.enabled
+    needs:
+      - orch-app/app-orch-catalog
+
+
+  - name: haproxy-ingress-pxe-boots
+    labels:
+      app: haproxy-ingress-pxe-boots
+    namespace: orch-boots
+    chart: edge-orch/common/charts/haproxy-ingress-pxe-boots
+    version: 1.0.1
+    values:
+      - values/haproxy-ingress-pxe-boots.yaml.gotmpl
+    condition: haproxy-ingress-pxe-boots.enabled
+    needs:
+      - orch-app/app-orch-catalog
+
+
+  - name: tenancy-datamodel
+    labels:
+      app: tenancy-datamodel
+    namespace: orch-iam
+    chart: edge-orch/common/charts/tenancy-datamodel
+    version: 26.1.0
+    values:
+      - values/tenancy-datamodel.yaml.gotmpl
+    condition: tenancy-datamodel.enabled
+    needs:
+      - orch-app/app-orch-catalog
+
+
+  - name: tenancy-api-mapping
+    labels:
+      app: tenancy-api-mapping
+    namespace: orch-iam
+    chart: edge-orch/common/charts/tenancy-api-mapping
+    version: 26.0.15
+    values:
+      - values/tenancy-api-mapping.yaml.gotmpl
+    condition: tenancy-api-mapping.enabled
+    needs:
+      - orch-app/app-orch-catalog
+      - orch-iam/tenancy-datamodel
+
+
+  - name: tenancy-manager
+    labels:
+      app: tenancy-manager
+    namespace: orch-iam
+    chart: edge-orch/common/charts/tenancy-manager
+    version: 26.1.0
+    values:
+      - values/tenancy-manager.yaml.gotmpl
+      - values/resource-overrides.yaml
+    condition: tenancy-manager.enabled
+    needs:
+      - orch-app/app-orch-catalog
+      - orch-iam/tenancy-datamodel
+
+
+  - name: nexus-api-gw
+    labels:
+      app: nexus-api-gw
+    namespace: orch-iam
+    chart: edge-orch/common/charts/nexus-api-gw
+    version: 26.1.0
+    values:
+      - values/nexus-api-gw.yaml.gotmpl
+      - values/resource-overrides.yaml
+    condition: nexus-api-gw.enabled
+    needs:
+      - orch-app/app-orch-catalog
+      - orch-iam/tenancy-api-mapping
+
+
+  - name: squid-proxy
+    labels:
+      app: squid-proxy
+    namespace: orch-platform
+    chart: edge-orch/common/charts/squid-proxy
+    version: 26.0.2
+    values:
+      - values/squid-proxy.yaml.gotmpl
+    condition: squid-proxy.enabled
+    needs:
+      - orch-app/app-orch-catalog
+
+
+  - name: traefik-extra-objects
+    labels:
+      app: traefik-extra-objects
+    namespace: orch-gateway
+    chart: edge-orch/common/charts/traefik-extra-objects
+    version: 26.0.1
+    values:
+      - values/traefik-extra-objects.yaml.gotmpl
+    needs:
+      - orch-app/app-orch-catalog
+      - orch-gateway/traefik
+    condition: traefik-extra-objects.enabled
+
+
+  #############################################################################
+  # Wave 1250
+  #############################################################################
+
+  - name: keycloak-tenant-controller
+    labels:
+      app: keycloak-tenant-controller
+    namespace: orch-gateway
+    chart: edge-orch/common/charts/keycloak-tenant-controller
+    version: 26.1.0
+    values:
+      - values/keycloak-tenant-controller.yaml.gotmpl
+      - values/resource-overrides.yaml
+    condition: keycloak-tenant-controller.enabled
+    needs:
+      - orch-gateway/traefik-extra-objects
+
+
+
+  #############################################################################
+  # Wave 1300
+  #############################################################################
+
+  - name: secret-wait-tls-boots
+    labels:
+      app: secret-wait-tls-boots
+    namespace: orch-boots
+    chart: edge-orch-rs/common/charts/secret-wait
+    version: 26.0.2
+    values:
+      - values/secret-wait-tls-boots.yaml
+    condition: secret-wait-tls-boots.enabled
+    needs:
+      - orch-gateway/keycloak-tenant-controller
+
+
+  - name: token-fs
+    labels:
+      app: token-fs
+    namespace: orch-secret
+    chart: edge-orch/common/charts/token-fs
+    version: 26.1.0
+    values:
+      - values/token-fs.yaml.gotmpl
+    condition: token-fs.enabled
+    needs:
+      - orch-gateway/keycloak-tenant-controller
+
+
+  #############################################################################
+  # Wave 1400
+  #############################################################################
+
+  - name: copy-ca-cert-boots-to-gateway
+    labels:
+      app: copy-ca-cert-boots-to-gateway
+    namespace: orch-gateway
+    chart: edge-orch/common/charts/copy-secret
+    version: 26.0.0
+    values:
+      - values/copy-ca-cert-boots-to-gateway.yaml
+    condition: copy-ca-cert-boots-to-gateway.enabled
+    needs:
+      - orch-secret/token-fs
+
+
+  - name: copy-ca-cert-boots-to-infra
+    labels:
+      app: copy-ca-cert-boots-to-infra
+    namespace: orch-infra
+    chart: edge-orch/common/charts/copy-secret
+    version: 26.0.0
+    values:
+      - values/copy-ca-cert-boots-to-infra.yaml
+    condition: copy-ca-cert-boots-to-infra.enabled
+    needs:
+      - orch-secret/token-fs
+
+
+  - name: copy-rs-token-to-cluster
+    labels:
+      app: copy-rs-token-to-cluster
+    namespace: orch-cluster
+    chart: edge-orch/common/charts/copy-secret
+    version: 26.0.0
+    values:
+      - values/copy-rs-token-to-cluster.yaml
+    condition: copy-rs-token-to-cluster.enabled
+    needs:
+      - orch-secret/token-fs
+
+
+
+  #############################################################################
+  # Wave 1900
+  #############################################################################
+
+  - name: alerting-monitor
+    labels:
+      app: alerting-monitor
+    namespace: orch-infra
+    chart: edge-orch/o11y/charts/alerting-monitor
+    version: 1.7.7
+    values:
+      - values/alerting-monitor.yaml.gotmpl
+    condition: alerting-monitor.enabled
+    needs:
+      - orch-cluster/copy-rs-token-to-cluster
+
+
+
+  #############################################################################
+  # Wave 2000
+  #############################################################################
+
+  - name: app-deployment-crd
+    labels:
+      app: app-deployment-crd
+    namespace: orch-app
+    chart: edge-orch/app/charts/app-deployment-crd
+    version: 2.6.2
+    values:
+      - values/app-deployment-crd.yaml
+    condition: app-deployment-crd.enabled
+    needs:
+      - orch-infra/alerting-monitor
+
+
+  - name: app-deployment-manager-secret
+    labels:
+      app: app-deployment-manager-secret
+    namespace: orch-platform
+    chart: edge-orch/common/charts/adm-secret
+    version: 26.0.2
+    values:
+      - values/app-deployment-manager-secret.yaml
+    condition: app-deployment-manager-secret.enabled
+    needs:
+      - orch-infra/alerting-monitor
+
+
+  - name: cluster-connect-gateway-crd
+    labels:
+      app: cluster-connect-gateway-crd
+    namespace: orch-cluster
+    chart: edge-orch/cluster/charts/cluster-connect-gateway-crd
+    version: 1.2.7
+    condition: cluster-connect-gateway.enabled
+    needs:
+      - orch-infra/alerting-monitor
+
+  - name: cluster-connect-gateway
+    labels:
+      app: cluster-connect-gateway
+    namespace: orch-cluster
+    chart: edge-orch/cluster/charts/cluster-connect-gateway
+    version: 1.2.7
+    timeout: 600
+    values:
+      - values/cluster-connect-gateway.yaml.gotmpl
+    condition: cluster-connect-gateway.enabled
+    needs:
+      - orch-cluster/cluster-connect-gateway-crd
+      - capi-operator-system/capi-providers-config
+
+
+  - name: cluster-template-crd
+    labels:
+      app: cluster-template-crd
+    namespace: orch-cluster
+    chart: edge-orch/cluster/charts/cluster-template-crd
+    version: 2.2.8
+    condition: cluster-manager.enabled
+    needs:
+      - orch-infra/alerting-monitor
+
+  - name: cluster-manager
+    labels:
+      app: cluster-manager
+    namespace: orch-cluster
+    chart: edge-orch/cluster/charts/cluster-manager
+    version: 2.2.8
+    timeout: 600
+    values:
+      - values/cluster-manager.yaml.gotmpl
+      - values/resource-overrides.yaml
+    condition: cluster-manager.enabled
+    needs:
+      - orch-cluster/cluster-template-crd
+      - capi-operator-system/capi-providers-config
+    hooks:
+      - events: ["postsync"]
+        showlogs: true
+        command: "./hooks/fix-credentials-istio-wait.sh"
+
+
+  - name: component-status
+    labels:
+      app: component-status
+    namespace: orch-platform
+    chart: edge-orch/common/charts/component-status
+    version: 26.1.0
+    values:
+      - values/component-status.yaml.gotmpl
+      - values/resource-overrides.yaml
+    condition: component-status.enabled
+    needs:
+      - orch-infra/alerting-monitor
+
+
+  - name: infra-core
+    labels:
+      app: infra-core
+    namespace: orch-infra
+    chart: edge-orch/infra/charts/infra-core
+    version: 2.19.8
+    values:
+      - values/infra-core.yaml.gotmpl
+      - values/resource-overrides.yaml
+    condition: infra-core.enabled
+    needs:
+      - orch-infra/alerting-monitor
+
+
+  - name: metadata-broker
+    labels:
+      app: metadata-broker
+    namespace: orch-ui
+    chart: edge-orch/orch-ui/charts/orch-metadata-broker
+    version: 1.0.1
+    values:
+      - values/metadata-broker.yaml.gotmpl
+    condition: metadata-broker.enabled
+    needs:
+      - orch-infra/alerting-monitor
+
+
+  - name: sre-exporter
+    labels:
+      app: sre-exporter
+    namespace: orch-sre
+    chart: edge-orch/o11y/charts/sre-exporter
+    version: 0.9.3
+    values:
+      - values/sre-exporter.yaml.gotmpl
+      - values/resource-overrides.yaml
+    condition: sre-exporter.enabled
+    needs:
+      - orch-infra/alerting-monitor
+
+
+  #############################################################################
+  # Wave 2005
+  #############################################################################
+
+  - name: auth-service
+    labels:
+      app: auth-service
+    namespace: orch-gateway
+    chart: edge-orch/common/charts/auth-service
+    version: 26.1.0
+    values:
+      - values/auth-service.yaml.gotmpl
+      - values/resource-overrides.yaml
+    condition: auth-service.enabled
+    needs:
+      - orch-sre/sre-exporter
+
+
+  - name: observability-tenant-controller
+    labels:
+      app: observability-tenant-controller
+    namespace: orch-platform
+    chart: edge-orch/o11y/charts/observability-tenant-controller
+    version: 0.7.1
+    values:
+      - values/observability-tenant-controller.yaml.gotmpl
+    condition: observability-tenant-controller.enabled
+    needs:
+      - orch-sre/sre-exporter
+
+
+
+  #############################################################################
+  # Wave 2100
+  #############################################################################
+
+  - name: app-deployment-manager
+    labels:
+      app: app-deployment-manager
+    namespace: orch-app
+    chart: edge-orch/app/charts/app-deployment-manager
+    version: 2.6.2
+    values:
+      - values/app-deployment-manager.yaml.gotmpl
+      - values/resource-overrides.yaml
+    needs:
+      - orch-platform/observability-tenant-controller
+      - orch-app/app-deployment-crd
+    condition: app-deployment-manager.enabled
+
+
+  - name: app-resource-manager
+    labels:
+      app: app-resource-manager
+    namespace: orch-app
+    chart: edge-orch/app/charts/app-resource-manager
+    version: 2.6.2
+    values:
+      - values/app-resource-manager.yaml.gotmpl
+      - values/resource-overrides.yaml
+    needs:
+      - orch-platform/observability-tenant-controller
+      - orch-app/app-deployment-crd
+    condition: app-resource-manager.enabled
+
+
+  - name: app-service-proxy
+    labels:
+      app: app-service-proxy
+    namespace: orch-app
+    chart: edge-orch/app/charts/app-service-proxy
+    version: 1.6.2
+    values:
+      - values/app-service-proxy.yaml.gotmpl
+      - values/resource-overrides.yaml
+    condition: app-service-proxy.enabled
+    needs:
+      - orch-platform/observability-tenant-controller
+
+  - name: infra-onboarding
+    labels:
+      app: infra-onboarding
+    namespace: orch-infra
+    chart: edge-orch/infra/charts/infra-onboarding
+    version: 1.35.12
+    values:
+      - values/infra-onboarding.yaml.gotmpl
+      - values/resource-overrides.yaml
+    needs:
+      - orch-platform/observability-tenant-controller
+      - orch-infra/infra-core
+    condition: infra-onboarding.enabled
+
+  - name: infra-external
+    labels:
+      app: infra-external
+    namespace: orch-infra
+    chart: edge-orch/infra/charts/infra-external
+    version: 2.12.12
+    values:
+      - values/infra-external.yaml.gotmpl
+    needs:
+      - orch-platform/observability-tenant-controller
+      - orch-infra/infra-core
+    condition: infra-external.enabled
+
+
+  - name: infra-managers
+    labels:
+      app: infra-managers
+    namespace: orch-infra
+    chart: edge-orch/infra/charts/infra-managers
+    version: 2.17.3
+    values:
+      - values/infra-managers.yaml.gotmpl
+      - values/resource-overrides.yaml
+    needs:
+      - orch-platform/observability-tenant-controller
+      - orch-infra/infra-core
+    condition: infra-managers.enabled
+
+
+  - name: intel-infra-provider-crds
+    labels:
+      app: intel-infra-provider-crds
+    namespace: orch-cluster
+    chart: edge-orch/cluster/charts/intel-infra-provider-crds
+    version: 1.3.6
+    condition: intel-infra-provider.enabled
+    needs:
+      - orch-platform/observability-tenant-controller
+
+  - name: intel-infra-provider
+    labels:
+      app: intel-infra-provider
+    namespace: orch-cluster
+    chart: edge-orch/cluster/charts/intel-infra-provider
+    version: 1.3.6
+    timeout: 600
+    values:
+      - values/intel-infra-provider.yaml.gotmpl
+    condition: intel-infra-provider.enabled
+    needs:
+      - orch-cluster/intel-infra-provider-crds
+      - capi-operator-system/capi-providers-config
+
+
+
+  #############################################################################
+  # Wave 3000
+  #############################################################################
+
+  - name: certificate-file-server
+    labels:
+      app: certificate-file-server
+    namespace: orch-gateway
+    chart: edge-orch/common/charts/certificate-file-server
+    version: 25.2.3
+    values:
+      - values/certificate-file-server.yaml.gotmpl
+      - values/resource-overrides.yaml
+    condition: certificate-file-server.enabled
+    needs:
+      - orch-cluster/intel-infra-provider
+
+
+  - name: tenancy-init
+    labels:
+      app: tenancy-init
+    namespace: orch-iam
+    chart: edge-orch/common/charts/tenancy-init
+    version: 26.1.0
+    values:
+      - values/tenancy-init.yaml.gotmpl
+    condition: tenancy-init.enabled
+    needs:
+      - orch-cluster/intel-infra-provider
+
+  - name: web-ui
+    labels:
+      app: web-ui
+    namespace: orch-ui
+    chart: edge-orch/orch-ui/charts/orch-ui-root
+    version: 4.0.8
+    values:
+      - values/web-ui-root.yaml.gotmpl
+    condition: web-ui-root.enabled
+    needs:
+      - orch-cluster/intel-infra-provider
+
+  - name: web-ui-admin
+    labels:
+      app: web-ui-admin
+    namespace: orch-ui
+    chart: edge-orch/orch-ui/charts/orch-ui-admin
+    version: 4.0.7
+    values:
+      - values/web-ui-admin.yaml.gotmpl
+    condition: web-ui-admin.enabled
+    needs:
+      - orch-cluster/intel-infra-provider
+
+  - name: web-ui-infra
+    labels:
+      app: web-ui-infra
+    namespace: orch-ui
+    chart: edge-orch/orch-ui/charts/orch-ui-infra
+    version: 4.0.4
+    values:
+      - values/web-ui-infra.yaml.gotmpl
+    condition: web-ui-infra.enabled
+    needs:
+      - orch-cluster/intel-infra-provider
+
+  - name: web-ui-app-orch
+    labels:
+      app: web-ui-app-orch
+    namespace: orch-ui
+    chart: edge-orch/orch-ui/charts/orch-ui-app-orch
+    version: 4.0.5
+    values:
+      - values/web-ui-app-orch.yaml.gotmpl
+    condition: web-ui-app-orch.enabled
+    needs:
+      - orch-cluster/intel-infra-provider
+
+  - name: web-ui-cluster-orch
+    labels:
+      app: web-ui-cluster-orch
+    namespace: orch-ui
+    chart: edge-orch/orch-ui/charts/orch-ui-cluster-orch
+    version: 4.0.0
+    values:
+      - values/web-ui-cluster-orch.yaml.gotmpl
+      - values/resource-overrides.yaml
+    condition: web-ui-cluster-orch.enabled
+    needs:
+      - orch-cluster/intel-infra-provider

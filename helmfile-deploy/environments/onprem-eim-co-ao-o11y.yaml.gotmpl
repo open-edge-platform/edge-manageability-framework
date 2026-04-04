@@ -1,0 +1,112 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# Profile: Full stack — EIM + Cluster Orch + App Orch + Observability
+# Base: onprem-eim-settings + onprem-eim-features (EIM-only)
+# This file only overrides what differs from EIM base
+
+# ─── Profile identity ───────────────────────────────────────────────────────
+clusterName: {{ env "EMF_CLUSTER_NAME" | default "eim-co-ao-o11y" | quote }}
+clusterDomain: {{ env "EMF_CLUSTER_DOMAIN" | default "cluster.eim-co-ao-o11y" | quote }}
+
+# ─── Infra onboarding — enable CO + O11y profiles ───────────────────────────
+infra-onboarding:
+  enabled: true
+  skipOSProvisioning: {{ env "EMF_SKIP_OS_PROVISIONING" | default "false" }}
+  disableCoProfile: false
+  disableO11yProfile: false
+
+# ─── Enable Cluster Orch ────────────────────────────────────────────────────
+capi-operator-pre:
+  enabled: true
+capi-operator:
+  enabled: true
+cluster-manager:
+  enabled: true
+cluster-connect-gateway:
+  enabled: true
+intel-infra-provider:
+  enabled: true
+capi-providers-config:
+  enabled: true
+
+# ─── Enable App Orch ────────────────────────────────────────────────────────
+app-deployment-crd:
+  enabled: true
+app-deployment-manager:
+  enabled: true
+app-resource-manager:
+  enabled: true
+app-service-proxy:
+  enabled: true
+fleet-rs-secret:
+  enabled: true
+app-orch-catalog:
+  enabled: true
+app-deployment-manager-secret:
+  enabled: true
+harbor-oci:
+  enabled: true
+app-orch-tenant-controller:
+  enabled: true
+fleet-crd:
+  enabled: true
+fleet-controller:
+  enabled: true
+copy-app-gitea-cred-to-fleet:
+  enabled: true
+copy-ca-cert-gitea-to-app:
+  enabled: true
+copy-ca-cert-gitea-to-cluster:
+  enabled: true
+copy-cluster-gitea-cred-to-fleet:
+  enabled: true
+
+# ─── Enable Observability ───────────────────────────────────────────────────
+alerting-monitor:
+  enabled: true
+edgenode-dashboards:
+  enabled: true
+edgenode-observability:
+  enabled: true
+orchestrator-dashboards:
+  enabled: true
+orchestrator-observability:
+  enabled: true
+orchestrator-prometheus-agent:
+  enabled: true
+sre-exporter:
+  enabled: true
+observability-tenant-controller:
+  enabled: true
+
+# ─── Enable all UI ──────────────────────────────────────────────────────────
+web-ui-app-orch:
+  enabled: true
+web-ui-cluster-orch:
+  enabled: true
+
+# ─── O11y settings override ─────────────────────────────────────────────────
+#o11y:
+#  dedicatedEdgenodeEnabled: {{ env "EMF_O11Y_DEDICATED_EN" | default "false" }}
+#  sre:
+#    customerLabel: {{ env "EMF_O11Y_SRE_LABEL" | default "eim-full" | quote }}
+# ─── O11y settings ───────────────────────────────────────────────────────────
+o11y:
+  dedicatedEdgenodeEnabled: {{ env "EMF_O11Y_DEDICATED_EN" | default "false" }}
+  sre:
+    customerLabel: {{ env "EMF_O11Y_SRE_LABEL" | default "eim-full" | quote }}
+    tls:
+      enabled: false
+      caSecretEnabled: false
+  alertingMonitor:
+    initialRules:
+      hostRules: true
+      appDeploymentRules: true
+      clusterRules: true
+
+
+# ─── On-prem extras ─────────────────────────────────────────────────────────
+squid-proxy:
+  enabled: {{ env "EMF_ENABLE_SQUID" | default "false" }}

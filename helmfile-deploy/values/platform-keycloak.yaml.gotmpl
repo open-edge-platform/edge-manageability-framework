@@ -1,0 +1,219 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Cluster domain injected from environment
+clusterDomain: {{ .Values.clusterDomain | default "" | quote }}
+
+namespace: orch-platform
+
+# Keycloak database secret name (derived from database.type in environment values)
+{{- $dbSecretName := printf "platform-keycloak-%s-postgresql" (.Values.database.type | default "local") }}
+
+# Database connection via additionalOptions (read from the postgresql-secrets secret)
+keycloak:
+  database:
+    usernameSecret:
+      name: {{ $dbSecretName }}
+      key: PGUSER
+    passwordSecret:
+      name: {{ $dbSecretName }}
+      key: PGPASSWORD
+  additionalOptions:
+    - name: db-url-host
+      secret:
+        name: {{ $dbSecretName }}
+        key: PGHOST
+    - name: db-url-port
+      secret:
+        name: {{ $dbSecretName }}
+        key: PGPORT
+    - name: db-url-database
+      secret:
+        name: {{ $dbSecretName }}
+        key: PGDATABASE
+    - name: hostname-strict
+      value: "false"
+    - name: http-relative-path
+      value: "/"
+    - name: http-enabled
+      value: "true"
+    - name: db-url-properties
+      value: "?tcpKeepAlives=true&socketTimeout=120&connectTimeout=120"
+    - name: http-management-port
+      value: "9000"
+    - name: spi-login-protocol-openid-connect-legacy-logout-redirect-uri
+      value: "true"
+    - name: spi-brute-force-protector-default-brute-force-detector-allow-concurrent-requests
+      value: "true"
+    - name: log-level
+      value: INFO
+    - name: log-console-output
+      value: json
+
+# Keycloak Config CLI job configuration
+keycloakConfigCli:
+  enabled: true
+
+  serviceAccount:
+    name: keycloak-config-cli
+    namespace: orch-platform
+    labels:
+      app.kubernetes.io/name: keycloak-config-cli
+      app.kubernetes.io/instance: keycloak-config-cli
+      app.kubernetes.io/version: "6.4.0"
+
+  configMap:
+    name: keycloak-config-cli-realm-master
+    namespace: orch-platform
+    labels:
+      app.kubernetes.io/name: keycloak-config-cli
+      app.kubernetes.io/instance: keycloak-config-cli
+
+  job:
+    name: keycloak-config-cli
+    namespace: orch-platform
+    labels:
+      app.kubernetes.io/name: keycloak-config-cli
+      app.kubernetes.io/instance: keycloak-config-cli
+      app.kubernetes.io/version: "6.4.0"
+
+    ttlSecondsAfterFinished: 3600
+    backoffLimit: 5
+    restartPolicy: Never
+
+    podLabels:
+      sidecar.istio.io/inject: "false"
+
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 65534
+      runAsGroup: 65534
+      seccompProfile:
+        type: RuntimeDefault
+      fsGroup: 65534
+
+    initContainers:
+      - name: wait-for-keycloak
+        image: busybox:1.36
+        imagePullPolicy: IfNotPresent
+        command:
+          - sh
+          - -c
+          - |
+            set -e
+            echo "Waiting for Keycloak to be ready..."
+            MAX_ATTEMPTS=60
+            ATTEMPT=0
+            while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+              if timeout 2 sh -c "echo '' | nc -w1 platform-keycloak.orch-platform.svc 8080" >/dev/null 2>&1; then
+                echo "Keycloak port 8080 is open!"
+                exit 0
+              fi
+              ATTEMPT=$((ATTEMPT + 1))
+              echo "Attempt $ATTEMPT/$MAX_ATTEMPTS - Waiting for Keycloak..."
+              sleep 5
+            done
+            echo "WARNING: Keycloak did not respond, but proceeding anyway..."
+            exit 0
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 65534
+          runAsGroup: 65534
+          seccompProfile:
+            type: RuntimeDefault
+          capabilities:
+            drop:
+              - ALL
+          readOnlyRootFilesystem: true
+
+    container:
+      name: keycloak-config-cli
+      image: docker.io/adorsys/keycloak-config-cli:6.4.0-26
+      imagePullPolicy: IfNotPresent
+
+      env:
+        - name: KEYCLOAK_URL
+          value: "http://platform-keycloak.orch-platform.svc.cluster.local/"
+        - name: KEYCLOAK_USER
+          valueFrom:
+            secretKeyRef:
+              name: platform-keycloak
+              key: username
+        - name: KEYCLOAK_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: platform-keycloak
+              key: password
+        - name: KEYCLOAK_AVAILABILITYCHECK_ENABLED
+          value: "true"
+        - name: KEYCLOAK_AVAILABILITYCHECK_TIMEOUT
+          value: "120s"
+        - name: IMPORT_VARSUBSTITUTION_ENABLED
+          value: "true"
+        - name: IMPORT_FILES_LOCATIONS
+          value: "/config/*"
+        - name: IMPORT_MANAGED_GROUP
+          value: "no-delete"
+        - name: IMPORT_MANAGED_REQUIRED_ACTION
+          value: "no-delete"
+        - name: IMPORT_MANAGED_ROLE
+          value: "no-delete"
+        - name: IMPORT_MANAGED_CLIENT
+          value: "no-delete"
+        - name: IMPORT_MANAGED_USER
+          value: "no-delete"
+        - name: IMPORT_REMOTE_STATE_ENABLED
+          value: "true"
+        - name: LOGGING_LEVEL_ROOT
+          value: "INFO"
+        - name: LOGGING_LEVEL_KEYCLOAKCONFIGCLI
+          value: "DEBUG"
+
+      resources:
+        requests:
+          cpu: 200m
+          memory: 512Mi
+        limits:
+          cpu: 1000m
+          memory: 1Gi
+
+      volumeMounts:
+        - name: config
+          mountPath: /config
+          readOnly: true
+        - name: tmp
+          mountPath: /tmp
+
+      securityContext:
+        allowPrivilegeEscalation: false
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+        capabilities:
+          drop:
+            - ALL
+        readOnlyRootFilesystem: true
+
+    volumes:
+      - name: config
+        configMap:
+          name: keycloak-config-cli-realm-master
+          defaultMode: 0444
+      - name: tmp
+        emptyDir: {}
+
+# ArgoCD configuration for cluster-specific overrides
+argo:
+  # Cluster domain suffix for dynamic URL generation
+  clusterDomain: "kind.internal"

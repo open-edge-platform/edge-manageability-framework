@@ -1,0 +1,47 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+---
+
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: traefik
+  {{- $ns := default .Release.Namespace .Values.namespace }}
+  namespace: {{ $ns }}
+spec:
+  addresses:
+  {{- $ip := required "metallb-config.TraefikIP (or TraefikIP) must be set" (default .Values.TraefikIP (index .Values "metallb-config" "TraefikIP")) }}
+  {{- if contains "/" $ip }}
+  - "{{ $ip }}"
+  {{- else }}
+  - "{{ $ip }}/32"
+  {{- end }}
+  autoAssign: true
+  avoidBuggyIPs: true
+  serviceAllocation:
+    priority: 1
+    namespaces:
+      - {{ default "orch-gateway" .Values.serviceNamespaces.traefik }}
+
+---
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: haproxy-controller
+  {{- $ns := default .Release.Namespace .Values.namespace }}
+  namespace: {{ $ns }}
+spec:
+  addresses:
+  {{- $ip := required "metallb-config.HaproxyIP (or HaproxyIP) must be set" (default .Values.HaproxyIP (index .Values "metallb-config" "HaproxyIP")) }}
+  {{- if contains "/" $ip }}
+  - "{{ $ip }}"
+  {{- else }}
+  - "{{ $ip }}/32"
+  {{- end }}
+  autoAssign: true
+  avoidBuggyIPs: true
+  serviceAllocation:
+    priority: 1
+    namespaces:
+      - {{ default "orch-boots" .Values.serviceNamespaces.haproxy }}

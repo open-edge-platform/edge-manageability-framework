@@ -1,0 +1,23 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# From argocd/applications/custom/capi-operator.tpl
+
+resources:
+  manager: {}
+
+env:
+  manager: []
+
+diagnosticsAddress: ":8080"
+insecureDiagnostics: true
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+securityContext:
+  seccompProfile:
+    type: RuntimeDefault
+  runAsNonRoot: true

@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# Standalone helmfile for MetalLB deployment
+#
+# Usage:
+#   Install:   helmfile apply
+#   Uninstall: helmfile destroy
+#   Template:  helmfile template
+#   Diff:      helmfile diff
+#
+#   Single chart:
+#     helmfile -l app=metallb apply
+#     helmfile -l app=metallb-config apply
+
+repositories:
+  - name: metallb
+    url: https://metallb.github.io/metallb
+
+releases:
+  #############################################################################
+  # Wave 100 — MetalLB controller + speaker
+  #############################################################################
+  - name: metallb
+    labels:
+      app: metallb
+    namespace: metallb-system
+    chart: metallb/metallb
+    version: "0.15.2"
+    values:
+      - values-metallb.yaml
+    createNamespace: true
+    wait: true
+    timeout: 600
+
+  #############################################################################
+  # Wave 150 — MetalLB IP address pool + L2 advertisement config
+  #############################################################################
+  - name: metallb-config
+    labels:
+      app: metallb-config
+    namespace: metallb-system
+    chart: ./metallb-config
+    values:
+      - values-metallb-config.yaml.gotmpl
+    needs:
+      - metallb-system/metallb
+    wait: true
+    timeout: 600
+    disableValidation: true

@@ -1,0 +1,71 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# From argocd/applications/configs/cluster-manager.yaml
+# + argocd/applications/custom/cluster-manager.tpl
+
+global:
+  registry:
+    name: "{{ .Values.containerRegistryURL }}"
+    imagePullSecrets: []
+
+clusterManager:
+  args:
+    clusterdomain: {{ .Values.clusterDomain }}
+    kubeconfig-ttl-hours: 3
+  image:
+    repository: cluster/cluster-manager
+    registry:
+      name: "{{ .Values.containerRegistryURL }}"
+      imagePullSecrets: []
+  extraArgs:
+    disable-metrics: false
+
+templateController:
+  image:
+    repository: cluster/template-controller
+    registry:
+      name: "{{ .Values.containerRegistryURL }}"
+      imagePullSecrets: []
+
+metrics:
+  enabled: true
+
+openpolicyagent:
+  tag: 1.10.1-static
+
+curlImage:
+  name: badouralix/curl-jq@sha256
+  tag: 8ee002ae4452b23a3c70750c5c081e95334cfe9f7968fb4d67a90d4001c29d0b
+  pullPolicy: IfNotPresent
+
+# co-manager M2M client configuration
+credentialsM2M:
+  enabled: true
+  job:
+    terminationGracePeriodSeconds: 90
+    backoffLimit: 15
+    activeDeadlineSeconds: 1200
+    ttlSecondsAfterFinished: 14400
+    retryAttempts: 10
+    retryDelay: 30
+    resources:
+      limits:
+        cpu: "2"
+        memory: 2Gi
+      requests:
+        cpu: 10m
+        memory: 16Mi
+  vault:
+    service: "vault.orch-platform.svc.cluster.local"
+    port: 8200
+    secretPath: "secret/data/co-manager-m2m-client-secret"
+    authPath: "auth/kubernetes"
+  keycloak:
+    service: "platform-keycloak.orch-platform.svc.cluster.local"
+    port: 8080
+    realm: "master"
+    adminSecretName: "platform-keycloak"
+    adminSecretNamespace: "orch-platform"
+    clientId: "co-manager-m2m-client"

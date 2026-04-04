@@ -1,0 +1,26 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+controller:
+  config:
+    # https://wiki.mozilla.org/Security/Server_Side_TLS
+    # The first cipher suite below is approved to be used by BIOS in the EN; it is NOT available in the Golang crypto library.
+    # The remaining three cipher suites are approved for all other clients.
+    ssl-ciphers: "DHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:TLS_AES_256_GCM_SHA384"
+    ssl-protocols: "TLSv1.2 TLSv1.3"
+    limit-req-status-code: "429"
+    limit-conn-status-code: "429"
+  extraArgs:
+    default-ssl-certificate: "orch-boots/tls-boots"
+  service:
+    enableHttp: false
+  resources: null
+  admissionWebhooks:
+    createSecretJob:
+      resources: null
+# -- (string) A base64-encoded Diffie-Hellman parameter.
+# This can be generated with: `openssl dhparam 4096 2> /dev/null | base64`
+## Ref: https://github.com/kubernetes/ingress-nginx/tree/main/docs/examples/customization/ssl-dh-param
+# yamllint disable-line rule:line-length
+dhParam: "LS0tLS1CRUdJTiBESCBQQVJBTUVURVJTLS0tLS0KTUlJQ0NBS0NBZ0VBdE9Pcy9YVUUrQTAvVG1RdVVuVlN1UlNvOEtLOXFmaWFzMUg4VFZkUGZlRDNObDBvLzRLbQpPQkZHNjJPRHN2YjlFMW0zYXhjTHZCbFpKOU0vNGJhUXpuOVh4RG1VcmwweGNId21GZWsvV0xDT3MybGRScXRBCmpaMmhwU3lNbUtud2xWQkFqbWh4eGpGUmR2VmwyMTVQM1BWMkdmOEtlbkd6OFBVRnpGa1FENHRzNWg5Nzgzc0UKMlpFUnJTanFxSEFyVjlNTDJsM2ZBcUhBL1RSTEZXTlpoZ21QSnJhYnBnNXJSa0pxaHM2b254ZnBJUStJNTZORgorYlBtLzBPVzc4d2F1anFMTm80M2tDdHgxdFUrdFFmd1l0eExTNWNIYlJHUkFDem51K0Mzd3NnVXQxRlhzZHFQCk1zNmFicU9iUFZhTTcrR25EUmdGcHBnd0ViLzVteXNtOXNmcThyeWVxbjBNYWdpS0VHb0ZaQzR2Z2NaczhUSTkKU08yWVlMUVZyK21kYnB2ZnR1UUtZYlkxVGhxajlKVE9xZFBNdmNFc0hhdzlMN2hURnVFN0s5dy90QVpFRFVSUQp4SWhVTFBtaHIrdFhua2JTMkZHNHlYZ1Vna1lJRWNETGNFNk1wa0JSK1F5NktTUXRqQUZvTmtBcUFIMlUvNXBxCjI5SDIrbDhIa2pIQmhUS3dxWkd2MCtvWUZaNFBZSHFreWl5dUhHZEYvQ1IzSWdJODBHdS9ha1RFb3BocVBRcm8KU3hkU0JTS1pqVG5mYUZ5QSsrVUZYUjBYZTdiaWtpcTBlTllyanJBNTU5WlBLNmtMVnJrYlAwNGhVczVmYXVqWQpiQ1BFNHJNVXNFZncvQU11a1N5c3V2bGhzb1dhMTZQK1Zlam1PQTJmUXZwMkVOQ05xL2M2TTY4Q0FRST0KLS0tLS1FTkQgREggUEFSQU1FVEVSUy0tLS0tCg=="

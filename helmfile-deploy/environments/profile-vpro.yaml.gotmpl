@@ -1,0 +1,103 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# vPro profile overrides — layered on top of:
+#   defaults-disabled → onprem-eim-settings → onprem-eim-features
+#
+# Reference: orch-configs/profiles/enable-edgeinfra-vpro.yaml
+# This enables Modular vPro Edge Infrastructure Manager to support 100 edge nodes.
+# This file ONLY contains values that DIFFER from the EIM features.
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Releases to DISABLE (enabled in EIM features, not needed for vPro)
+# ═══════════════════════════════════════════════════════════════════════════════
+web-ui-root:
+  enabled: false
+web-ui-infra:
+  enabled: false
+web-ui-admin:
+  enabled: false
+metadata-broker:
+  enabled: false
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Releases to ENABLE (disabled in defaults, needed for vPro)
+# ═══════════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════
+# infra-core overrides (from enable-edgeinfra-vpro.yaml)
+# ═══════════════════════════════════════════════════════════════════════════════
+infra-core:
+  enabled: true
+  eimScenario: vpro
+  skipOSProvisioning: true
+  tenant-config:
+    enabled: false
+  credentials:
+    enabled: true
+  api:
+    enabled: false
+  apiv2:
+    enabled: true
+  exporter:
+    enabled: false
+  inventory:
+    enabled: true
+  tenant-controller:
+    enabled: true
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# infra-managers overrides (from enable-edgeinfra-vpro.yaml)
+# Disable managers not needed for vPro, enable provisioning skip
+# ═══════════════════════════════════════════════════════════════════════════════
+infra-managers:
+  enabled: true
+  disabledProvisioning: true
+  host-manager:
+    enabled: true
+  maintenance-manager:
+    enabled: false
+  telemetry-manager:
+    enabled: false
+  os-resource-manager:
+    enabled: false
+  networking-manager:
+    enabled: false
+  attestationstatus-manager:
+    enabled: false
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# infra-onboarding overrides (from enable-edgeinfra-vpro.yaml)
+# ═══════════════════════════════════════════════════════════════════════════════
+infra-onboarding:
+  enabled: true
+  skipOSProvisioning: true
+  enServiceClients: "platform-manageability-agent"
+  enOutboundClients: " "
+  enMetricsEnabled: "false"
+  enTokenClients: "node-agent,platform-manageability-agent"
+  tinkerbell:
+    enabled: true
+  pxe-server:
+    enabled: false
+  infra-config:
+    enabled: true
+  onboarding-manager:
+    enabled: true
+    service:
+      enableIO: false
+  dkam:
+    enabled: true
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# infra-external overrides (AMT components for vPro)
+# ═══════════════════════════════════════════════════════════════════════════════
+infra-external:
+  enabled: true
+  amt:
+    mps:
+      enabled: true
+    rps:
+      enabled: true
+    dm-manager:
+      enabled: true
