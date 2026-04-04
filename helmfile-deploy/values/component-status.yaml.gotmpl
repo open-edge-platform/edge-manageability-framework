@@ -1,0 +1,171 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Component status service configuration
+
+image:
+  registry: {{ .Values.containerRegistryURL }}
+  repository: common/component-status
+imagePullSecrets:
+{{- if .Values.imagePullSecrets }}
+  {{- toYaml .Values.imagePullSecrets | nindent 2 }}
+{{- else }}
+  []
+{{- end }}
+
+resources: null
+
+# Traefik IngressRoute configuration
+# Priority must be > 30 to override nexus-api-gw's generic /v route (priority 30)
+traefikRoute:
+  enabled: true
+  matchHost: "Host(`api.{{ .Values.clusterDomain }}`)"
+  matchPath: "PathPrefix(`/v1/orchestrator`)"
+  priority: 40
+  namespace: orch-gateway
+  secretName: tls-orch
+  middlewares:
+    - validate-jwt
+    - secure-headers
+{{- if .Values.traefik }}
+  tlsOption: {{ .Values.traefik.tlsOption | default "" | quote }}
+{{- end }}
+
+# Component status configuration
+# This configuration reflects which features are ACTUALLY installed in the orchestrator
+# Detection method - Checks which components are enabled in environment values
+componentStatus:
+  schema-version: "1.0"
+  orchestrator:
+    version: {{ .Values.orchestratorVersion | default "" | quote }}
+    features:
+      # Application Orchestration - Enabled when app-orch profile is loaded
+      # Detection - app-orch-catalog.enabled in environment values
+      application-orchestration:
+        installed: {{ index .Values "app-orch-catalog" "enabled" | default false }}
+
+      # Cluster Orchestration - Enabled when cluster-orch profile is loaded
+      # Detection - cluster-manager/capi-operator/intel-infra-provider enabled in environment values
+      cluster-orchestration:
+        installed: {{ or (index .Values "cluster-manager" "enabled" | default false) (index .Values "capi-operator" "enabled" | default false) (index .Values "intel-infra-provider" "enabled" | default false) }}
+
+        # Cluster management core API and lifecycle operations
+        cluster-management:
+          installed: {{ index .Values "cluster-manager" "enabled" | default false }}
+
+        # CAPI (Cluster API) integration for declarative cluster management
+        capi:
+          installed: {{ index .Values "capi-operator" "enabled" | default false }}
+
+        # Infrastructure provider for Intel platforms
+        intel-provider:
+          installed: {{ index .Values "intel-infra-provider" "enabled" | default false }}
+
+      # Edge Infrastructure Manager - Enabled when edge-infra components are deployed
+      # Detection - infra-core/infra-managers/infra-onboarding/infra-external enabled
+      # Two deployment profiles: vPRO (with AMT/OOB) and OXM (microvisor-based)
+      # Sub-features represent actual user-facing workflows
+      edge-infrastructure-manager:
+        installed: {{ or (index .Values "infra-core" "enabled" | default false) (index .Values "infra-managers" "enabled" | default false) (index .Values "infra-onboarding" "enabled" | default false) (index .Values "infra-external" "enabled" | default false) }}
+
+        # OXM Profile - Microvisor-based edge infrastructure management (on-prem ONLY)
+        # Detection - pxe.enabled is true (set by EMF_ENABLE_PXE env var)
+        # OXM profile is EXCLUSIVELY for on-prem deployments with ORCH_INSTALLER_PROFILE=onprem-oxm
+        oxm-profile:
+          installed: {{ if .Values.pxe }}{{ eq (.Values.pxe.enabled | toString) "true" }}{{ else }}false{{ end }}
+
+        # Day2 - Day 2 operations - maintenance, updates, troubleshooting
+        # Detection - infra-managers is deployed (maintenance-manager is always enabled within it)
+        day2:
+          installed: {{ index .Values "infra-managers" "enabled" | default false }}
+
+        # Onboarding - Device discovery, registration, and enrollment workflow
+        # Detection - infra-onboarding is deployed (onboarding-manager is always enabled within it)
+        # Available in both vPRO and OXM profiles
+        onboarding:
+          installed: {{ index .Values "infra-onboarding" "enabled" | default false }}
+
+        # OOB (Out-of-Band) - vPRO/AMT management capabilities
+        # Detection - infra-external is deployed (amt is always enabled within it)
+        # Only available in vPRO profile, not in OXM (microvisor) profile
+        oob:
+          installed: {{ index .Values "infra-external" "enabled" | default false }}
+
+        # Provisioning - OS provisioning workflow capability
+        # Detection - infra-onboarding is deployed AND skipOSProvisioning is not set to true
+        # skipOSProvisioning flag is set at infra-onboarding level (EMF_SKIP_OS_PROVISIONING)
+        # When skipOSProvisioning=true, provisioning is disabled (vPRO AMT-only workflow without OS provisioning)
+        # Available in both vPRO (standard OS) and OXM (microvisor) profiles, unless explicitly skipped
+        provisioning:
+          installed: {{ if index .Values "infra-onboarding" "enabled" | default false }}{{ $skipProvisioning := index .Values "infra-onboarding" "skipOSProvisioning" | default false }}{{ not $skipProvisioning }}{{ else }}false{{ end }}
+
+      # Orchestrator Observability - Metrics and monitoring for orchestrator platform components
+      # Detection - orchestrator-observability application enabled
+      orchestrator-observability:
+        installed: {{ or (index .Values "orchestrator-observability" "enabled" | default false) (index .Values "orchestrator-dashboards" "enabled" | default false) (index .Values "alerting-monitor" "enabled" | default false) }}
+
+        # Metrics collection and monitoring for orchestrator components
+        monitoring:
+          installed: {{ index .Values "orchestrator-observability" "enabled" | default false }}
+
+        # Pre-built dashboards for orchestrator metrics
+        dashboards:
+          installed: {{ index .Values "orchestrator-dashboards" "enabled" | default false }}
+
+        # Alerting and monitoring rules for orchestrator
+        alerting:
+          installed: {{ index .Values "alerting-monitor" "enabled" | default false }}
+
+      # Edge Node Observability - Metrics and monitoring for edge nodes
+      # Detection - edgenode-observability application enabled
+      edgenode-observability:
+        installed: {{ or (index .Values "edgenode-observability" "enabled" | default false) (index .Values "edgenode-dashboards" "enabled" | default false) }}
+
+        # Metrics collection and monitoring for edge nodes
+        monitoring:
+          installed: {{ index .Values "edgenode-observability" "enabled" | default false }}
+
+        # Pre-built dashboards for edge node metrics
+        dashboards:
+          installed: {{ index .Values "edgenode-dashboards" "enabled" | default false }}
+
+      # Web UI - Enabled when UI components are deployed
+      # Detection - web-ui-* components enabled in environment values
+      # UI sub-features check both the UI component AND the parent feature enablement
+      web-ui:
+        installed: {{ or (index .Values "web-ui-root" "enabled" | default false) (index .Values "web-ui-app-orch" "enabled" | default false) (index .Values "web-ui-cluster-orch" "enabled" | default false) (index .Values "web-ui-infra" "enabled" | default false) (index .Values "web-ui-admin" "enabled" | default false) }}
+        orchestrator-ui-root:
+          installed: {{ index .Values "web-ui-root" "enabled" | default false }}
+        application-orchestration-ui:
+          installed: {{ and (index .Values "web-ui-app-orch" "enabled" | default false) (index .Values "app-orch-catalog" "enabled" | default false) }}
+        cluster-orchestration-ui:
+          installed: {{ and (index .Values "web-ui-cluster-orch" "enabled" | default false) (or (index .Values "cluster-manager" "enabled" | default false) (index .Values "capi-operator" "enabled" | default false) (index .Values "intel-infra-provider" "enabled" | default false)) }}
+        infrastructure-ui:
+          installed: {{ and (index .Values "web-ui-infra" "enabled" | default false) (or (index .Values "infra-core" "enabled" | default false) (index .Values "infra-managers" "enabled" | default false) (index .Values "infra-onboarding" "enabled" | default false) (index .Values "infra-external" "enabled" | default false)) }}
+        admin-ui:
+          installed: {{ index .Values "web-ui-admin" "enabled" | default false }}
+        # Alerts UI - Enabled when observability feature is available
+        alerts-ui:
+          installed: {{ or (index .Values "orchestrator-observability" "enabled" | default false) (index .Values "alerting-monitor" "enabled" | default false) }}
+
+      # Multitenancy - Tenancy services (tenancy-manager, tenancy-api-mapping, tenancy-datamodel)
+      # are always deployed as part of platform, so multitenancy is always enabled
+      # The default-tenant-only sub-feature indicates single-tenant mode (when defaultTenancy profile is loaded)
+      multitenancy:
+        installed: true
+        default-tenant-only:
+          installed: {{ .Values.defaultTenancy | default false }}
+
+      # Kyverno - Policy engine for Kubernetes admission control and governance
+      # Detection - kyverno.enabled in environment values
+      kyverno:
+        installed: {{ index .Values "kyverno" "enabled" | default false }}
+
+        # Kyverno policy engine core
+        policy-engine:
+          installed: {{ index .Values "kyverno" "enabled" | default false }}
+
+        # Pre-defined security and governance policies
+        policies:
+          installed: {{ index .Values "kyverno-extra-policies" "enabled" | default false }}

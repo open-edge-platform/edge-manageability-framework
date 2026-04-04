@@ -1,0 +1,61 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Auth
+global:
+  registry:
+    name: "{{ .Values.containerRegistryURL }}"
+    imagePullSecrets: []
+  auth:
+    enabled: true
+    keycloak:
+      url: "https://keycloak.{{ .Values.clusterDomain }}"
+      client_id: "webui-client"
+      realm: "master"
+  session_timeout: 3600
+  observability:
+    url: "https://observability-ui.{{ .Values.clusterDomain }}"
+
+# Used to configure the Header title
+header:
+  title: "Edge Orchestrator"
+
+versions:
+  orchestrator: {{ .Values.orchestratorVersion | default "" | quote }}
+
+# Ingress
+service:
+  type: ClusterIP
+  traefik:
+    enabled: true
+    namespace: orch-gateway
+    hostname: "Host(`web-ui.{{ .Values.clusterDomain }}`)"
+    baseHostname: "Host(`{{ .Values.clusterDomain }}`)"
+    secretName: {{ .Values.tlsSecret }}
+    options:
+      name: "gateway-tls"
+
+api:
+  catalog: "https://api.{{ .Values.clusterDomain }}"
+  appDeploymentManger: "https://api.{{ .Values.clusterDomain }}"
+  appResourceManger: "https://api.{{ .Values.clusterDomain }}"
+  clusterOrch: "https://api.{{ .Values.clusterDomain }}"
+  infraManager: "https://api.{{ .Values.clusterDomain }}"
+  metadataBroker: "https://api.{{ .Values.clusterDomain }}"
+  alertManager: "https://api.{{ .Values.clusterDomain }}"
+  tenantManager: "https://api.{{ .Values.clusterDomain }}"
+  rps: "https://api.{{ .Values.clusterDomain }}"
+  mps: "https://api.{{ .Values.clusterDomain }}"
+
+# MFE Configuration
+# We use release name "web-ui" for the root chart so proxy_pass works
+mfe:
+  app_orch: {{ .Values | get "web-ui-app-orch.enabled" false }}
+  cluster_orch: {{ .Values | get "web-ui-cluster-orch.enabled" false }}
+  infra: {{ .Values | get "web-ui-infra.enabled" false }}
+  admin: {{ .Values | get "web-ui-admin.enabled" false }}
+  alerts: false
+
+# https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
+traefikApiGroup: "traefik.io/v1alpha1"

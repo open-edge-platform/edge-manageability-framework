@@ -1,0 +1,79 @@
+## Proposed Chart Change: cluster-manager — Controllable Istio Sidecar Wait
+##
+## Problem:
+##   templates/configmap-m2m-credentials.yaml hardcodes wait_for_istio_sidecar()
+##   in main(). The script uses "set -euo pipefail", so when Istio is disabled
+##   the function returns 1 and kills the entire job. The job retries 15 times,
+##   each waiting 60s for a sidecar that will never come.
+##
+## Fix: 3 files need to change
+## ─────────────────────────────────────────────────────────────────────────────
+
+### 1. values.yaml — add istio.enabled under credentialsM2M
+
+--- a/charts/cluster-manager/values.yaml
++++ b/charts/cluster-manager/values.yaml
+@@ credentialsM2M section
+ credentialsM2M:
+   enabled: true
++  istio:
++    enabled: true          # Set false when Istio sidecar injection is disabled
++    sidecarWaitTimeout: 60 # Seconds to wait for sidecar readiness
+   job:
+     terminationGracePeriodSeconds: 90
+     backoffLimit: 15
+
+
+### 2. templates/configmap-m2m-credentials.yaml — make Istio wait conditional
+
+--- a/charts/cluster-manager/templates/configmap-m2m-credentials.yaml
++++ b/charts/cluster-manager/templates/configmap-m2m-credentials.yaml
+@@ in the data.credentials-m2m.sh script, replace the hardcoded values at top:
+
+     # Helm values
+     VAULT_ADDR="http://{{ .Values.credentialsM2M.vault.service }}:{{ .Values.credentialsM2M.vault.port }}"
+     ...existing values...
++    ISTIO_ENABLED="{{ .Values.credentialsM2M.istio.enabled }}"
++    ISTIO_WAIT_TIMEOUT="{{ .Values.credentialsM2M.istio.sidecarWaitTimeout }}"
+
+@@ replace the wait_for_istio_sidecar() function:
+
+     wait_for_istio_sidecar() {
+-        local max_wait=60
++        if [ "$ISTIO_ENABLED" != "true" ]; then
++            log "Istio sidecar injection disabled — skipping wait"
++            return 0
++        fi
++        local max_wait=${ISTIO_WAIT_TIMEOUT:-60}
+         local wait_time=0
+         log "Waiting for Istio sidecar to be ready..."
+         while [ $wait_time -lt $max_wait ]; do
+@@ no other changes to the loop body
+
+
+### 3. templates/job-m2m-credentials.yaml — add sidecar.istio.io/inject annotation
+
+--- a/charts/cluster-manager/templates/job-m2m-credentials.yaml
++++ b/charts/cluster-manager/templates/job-m2m-credentials.yaml
+@@ in spec.template.metadata, add annotations:
+
+   template:
+     metadata:
++      annotations:
++        sidecar.istio.io/inject: "{{ .Values.credentialsM2M.istio.enabled }}"
+       labels:
+         app.kubernetes.io/name: cluster-manager
+
+
+## ─────────────────────────────────────────────────────────────────────────────
+## Helmfile usage (values/cluster-manager.yaml.gotmpl):
+##
+##   credentialsM2M:
+##     enabled: true
+##     istio:
+##       enabled: {{ env "EMF_ENABLE_ISTIO" | default "true" }}
+##       sidecarWaitTimeout: 60
+##
+## This lets helmfile-deploy control Istio behavior per environment without
+## needing post-deploy hooks or ConfigMap patches.
+## ─────────────────────────────────────────────────────────────────────────────

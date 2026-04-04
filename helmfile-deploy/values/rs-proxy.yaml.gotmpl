@@ -1,0 +1,28 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+withReleaseServiceToken: false
+
+proxyTargetRegistry: {{ env "EMF_REGISTRY" | default "registry-rs.edgeorchestration.intel.com" }}
+proxyTargetFiles: {{ env "EMF_FILE_SERVER" | default "files-rs.edgeorchestration.intel.com" }}
+
+refreshInterval: "10m"
+
+externalSecretsApiGroup: external-secrets.io/v1
+
+{{- if env "EMF_HTTPS_PROXY" }}
+env:
+  {{- if env "EMF_HTTPS_PROXY" }}
+  - name: https_proxy
+    value: {{ env "EMF_HTTPS_PROXY" }}
+  {{- end }}
+  {{- if env "EMF_HTTP_PROXY" }}
+  - name: http_proxy
+    value: {{ env "EMF_HTTP_PROXY" }}
+  {{- end }}
+  {{- if env "EMF_NO_PROXY" }}
+  - name: no_proxy
+    value: {{ env "EMF_NO_PROXY" }}
+  {{- end }}
+{{- end }}

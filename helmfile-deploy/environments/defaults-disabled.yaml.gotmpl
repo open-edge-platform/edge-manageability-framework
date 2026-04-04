@@ -1,0 +1,127 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# Default disabled state for all optional releases.
+# Loaded FIRST so that profile/feature files only need to set enabled: true.
+# Without this, helmfile condition: defaults to true for missing values.
+
+# ─── App Orch ────────────────────────────────────────────────────────────────
+app-deployment-crd:
+  enabled: false
+app-deployment-manager:
+  enabled: false
+app-resource-manager:
+  enabled: false
+app-service-proxy:
+  enabled: false
+fleet-rs-secret:
+  enabled: false
+app-orch-catalog:
+  enabled: false
+app-deployment-manager-secret:
+  enabled: false
+harbor-oci:
+  enabled: false
+app-orch-tenant-controller:
+  enabled: false
+fleet-crd:
+  enabled: false
+fleet-controller:
+  enabled: false
+copy-app-gitea-cred-to-fleet:
+  enabled: false
+copy-ca-cert-gitea-to-app:
+  enabled: false
+copy-ca-cert-gitea-to-cluster:
+  enabled: false
+copy-cluster-gitea-cred-to-fleet:
+  enabled: false
+web-ui-app-orch:
+  enabled: false
+
+# ─── Cluster Orch ────────────────────────────────────────────────────────────
+capi-operator-pre:
+  enabled: false
+capi-operator:
+  enabled: false
+cluster-manager:
+  enabled: false
+cluster-connect-gateway:
+  enabled: false
+intel-infra-provider:
+  enabled: false
+capi-providers-config:
+  enabled: false
+web-ui-cluster-orch:
+  enabled: false
+
+# ─── Observability ───────────────────────────────────────────────────────────
+alerting-monitor:
+  enabled: false
+edgenode-dashboards:
+  enabled: false
+edgenode-observability:
+  enabled: false
+orchestrator-dashboards:
+  enabled: false
+orchestrator-observability:
+  enabled: false
+orchestrator-prometheus-agent:
+  enabled: false
+sre-exporter:
+  enabled: false
+observability-tenant-controller:
+  enabled: false
+
+# ─── Kyverno ─────────────────────────────────────────────────────────────────
+kyverno:
+  enabled: false
+kyverno-extra-policies:
+  enabled: false
+kyverno-istio-policy:
+  enabled: false
+kyverno-traefik-policy:
+  enabled: false
+
+# ─── AWS-only ────────────────────────────────────────────────────────────────
+aws-lb:
+  enabled: false
+aws-lb-tgb:
+  enabled: false
+aws-sm-proxy:
+  enabled: false
+aws-sm-get-rs-token:
+  enabled: false
+cluster-autoscaler:
+  enabled: false
+vertical-pod-autoscaler:
+  enabled: false
+secret-wait-azure-ad-creds:
+  enabled: false
+secret-wait-rs-token:
+  enabled: false
+wait-istio-job:
+  enabled: false
+
+# ─── Not used in on-prem ────────────────────────────────────────────────────
+cert-synchronizer:
+  enabled: false
+traefik-boots:
+  enabled: false
+oci-secret:
+  enabled: false
+rs-image-pull-secrets:
+  enabled: false
+copy-rs-token-to-cluster:
+  enabled: false
+token-refresh:
+  enabled: false
+botkube:
+  enabled: false
+ingress-nginx:
+  enabled: false
+tenancy-init:
+  enabled: false
+k8s-metrics-server:
+  enabled: false

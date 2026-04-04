@@ -1,0 +1,127 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+global:
+  registry:
+    name: "{{ .Values.containerRegistryURL }}/"
+    imagePullSecrets: []
+{{- $ic := index .Values "infra-core" | default dict }}
+{{- if hasKey $ic "eimScenario" }}
+eimScenario: {{ $ic.eimScenario }}
+{{- end }}
+import:
+  exporter:
+    enabled: {{ dig "exporter" "enabled" true $ic }}
+  tenant-controller:
+    enabled: {{ dig "tenant-controller" "enabled" true $ic }}
+  tenant-config:
+    enabled: {{ dig "tenant-config" "enabled" false $ic }}
+  credentials:
+    enabled: {{ dig "credentials" "enabled" true $ic }}
+  api:
+    enabled: {{ dig "api" "enabled" true $ic }}
+  apiv2:
+    enabled: {{ dig "apiv2" "enabled" true $ic }}
+  inventory:
+    enabled: {{ dig "inventory" "enabled" true $ic }}
+
+credentials:
+  serviceAccount:
+    name: "orch-svc"
+  params:
+    keycloakUrl: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
+    vaultUrl: "http://vault.orch-platform.svc.cluster.local:8200"
+  curlImage:
+    name: badouralix/curl-jq@sha256
+    tag: 8ee002ae4452b23a3c70750c5c081e95334cfe9f7968fb4d67a90d4001c29d0b
+    pullPolicy: IfNotPresent
+
+api:
+  image:
+    pullPolicy: IfNotPresent
+  serviceArgs:
+    enableAuth: true
+    traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
+    inventoryAddress: "inventory.orch-infra.svc.cluster.local:50051"
+  traefikReverseProxy:
+    # We rely on the multi-tenant gateway.
+    enabled: false
+  # https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
+  traefikApiGroup: "traefik.io/v1alpha1"
+  oidc:
+    name: "keycloak-api"
+    oidc_env_name: "OIDC_SERVER_URL"
+    oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
+    oidc_tls_insecure_skip_verify_env_name: "OIDC_TLS_INSECURE_SKIP_VERIFY"
+    oidc_tls_insecure_skip_verify_value: "true"
+  multiTenancy:
+    enforceMultiTenancy: "true"
+  # Resources: managed by resource-overrides.yaml
+
+apiv2:
+  image:
+    pullPolicy: IfNotPresent
+  serviceArgsProxy:
+    enableAuth: true
+    traceURL: >-
+      orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318
+  serviceArgsGrpc:
+    enableAuth: true
+    inventoryAddress: inventory.orch-infra.svc.cluster.local:50051
+    traceURL: >-
+      orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318
+  traefikReverseProxy:
+    enabled: true
+    tlsOption: "gateway-tls"
+  # https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
+  traefikApiGroup: "traefik.io/v1alpha1"
+  oidc:
+    name: "keycloak-api"
+    oidc_env_name: "OIDC_SERVER_URL"
+    oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
+    oidc_tls_insecure_skip_verify_env_name: "OIDC_TLS_INSECURE_SKIP_VERIFY"
+    oidc_tls_insecure_skip_verify_value: "true"
+  # Resources: managed by resource-overrides.yaml
+  apiv2IngressRoute:
+    apiHostname: api.{{ .Values.clusterDomain }}
+
+inventory:
+  image:
+    pullPolicy: IfNotPresent
+  inventory:
+    traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
+  postgresql:
+    pod:
+      enabled: false
+      image:
+        tag: 16.10-bookworm
+    ssl: false
+    secrets: inventory-local-postgresql
+  # Resources: managed by resource-overrides.yaml
+  serviceAccount:
+    name: "orch-svc"
+
+tenant-controller:
+  managerArgs:
+    inventoryAddress: "inventory.orch-infra.svc.cluster.local:50051"
+    traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
+    skipOSProvisioning: {{ dig "skipOSProvisioning" false $ic }}
+  oidc:
+    oidc_server_url: "http://platform-keycloak.orch-platform.svc.cluster.local/realms/master"
+  # Resources: managed by resource-overrides.yaml
+  serviceAccount:
+    name: "orch-svc"
+  vault:
+    url: "http://vault.orch-platform.svc.cluster.local:8200"
+    role: "orch-svc"
+
+tenant-config:
+  curlImage:
+    name: badouralix/curl-jq@sha256
+    tag: 8ee002ae4452b23a3c70750c5c081e95334cfe9f7968fb4d67a90d4001c29d0b
+    pullPolicy: IfNotPresent
+
+exporter:
+  # Resources: managed by resource-overrides.yaml
