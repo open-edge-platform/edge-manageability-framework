@@ -121,7 +121,7 @@ resource "kubernetes_secret" "clusterorch_gitea_secrets" {
 }
 
 resource "kubernetes_secret" "argocd_gitea_secrets" {
-  for_each = local.argocd_repos
+  for_each = var.install_from_local_gitea ? local.argocd_repos : toset([])
   metadata {
     name      = "gitea-credential-${each.key}"
     namespace = "argocd"
