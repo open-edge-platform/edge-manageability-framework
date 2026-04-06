@@ -103,7 +103,6 @@ export GIT_REPOS
 ORCH_INSTALLER_PROFILE="${ORCH_INSTALLER_PROFILE:-onprem}"
 INSTALL_GITEA="${INSTALL_GITEA:-true}"
 GITEA_IMAGE_REGISTRY="${GITEA_IMAGE_REGISTRY:-docker.io}"
-USE_LOCAL_PACKAGES="${USE_LOCAL_PACKAGES:-false}"
 DEPLOY_VERSION="${DEPLOY_VERSION:-v3.1.0}"
 SKIP_INTERACTIVE="${SKIP_INTERACTIVE:-false}"
 
@@ -173,9 +172,19 @@ update_config_variable() {
 
 wait_for_pods_running() {
   local ns="$1"
+  local retries=3
   log_info "Waiting for all pods to be Ready in namespace $ns..."
-  kubectl wait pod --selector='!job-name' --all --for=condition=Ready \
-    --namespace="$ns" --timeout=600s
+  for ((i = 1; i <= retries; i++)); do
+    # Allow old pods to be cleaned up before listing
+    sleep 5
+    if kubectl wait pod --selector='!job-name' --all --for=condition=Ready \
+        --namespace="$ns" --timeout=600s 2>&1; then
+      return 0
+    fi
+    log_warn "Attempt $i/$retries: some pods were not found (likely deleted during rollout), retrying..."
+  done
+  log_error "Pods in namespace $ns did not become Ready after $retries attempts"
+  return 1
 }
 
 resync_all_apps() {
@@ -515,17 +524,6 @@ apply_cluster_config() {
   if [[ -d "$target_dir" ]]; then
     cp "$cluster_yaml" "$target_dir/${ORCH_INSTALLER_PROFILE}.yaml"
     log_info "Cluster config copied to $target_dir/"
-  fi
-
-  if [[ "$SKIP_INTERACTIVE" != "true" ]]; then
-    while true; do
-      read -rp "Edit values.yaml if required. Ready to proceed? (yes/no): " yn
-      case $yn in
-        [Yy]* ) break;;
-        [Nn]* ) exit 1;;
-        * ) echo "Please answer yes or no.";;
-      esac
-    done
   fi
 
   log_info "Cluster config ready: $cluster_yaml"
@@ -1231,6 +1229,8 @@ migrate_postgres_to_cnpg() {
   log_info "Waiting for postgresql-secrets application..."
   local start_time timeout_s=3600
   start_time=$(date +%s)
+  local resync_interval_1=120
+  local last_resync_1=$start_time
 
   set +e
   while true; do
@@ -1248,6 +1248,15 @@ migrate_postgres_to_cnpg() {
       log_error "Timeout waiting for postgresql-secrets (${timeout_s}s)"
       exit 1
     fi
+
+    # Re-trigger root-app sync periodically
+    local since_resync_1=$((current_time - last_resync_1))
+    if (( since_resync_1 >= resync_interval_1 )); then
+      log_warn "postgresql-secrets still not Synced/Healthy after ${elapsed}s. Re-syncing root-app..."
+      resync_all_apps
+      last_resync_1=$current_time
+    fi
+
     log_info "Waiting for postgresql-secrets (status: ${app_status:-pending}, ${elapsed}s)"
     sleep 5
   done
@@ -1274,23 +1283,67 @@ EOF
 
   # Wait for postgresql-secrets again after root-app sync
   start_time=$(date +%s)
+  local resync_interval=120
+  local last_resync=$start_time
   set +e
   while true; do
-    local app_status
-    app_status=$(kubectl get application postgresql-secrets -n "$apps_ns" \
-      -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || true)
-    if [[ "$app_status" == "Synced Healthy" ]]; then
-      log_info "postgresql-secrets is Synced and Healthy."
-      break
+    # Check if postgresql-secrets application exists at all
+    local app_exists
+    app_exists=$(kubectl get application postgresql-secrets -n "$apps_ns" \
+      --no-headers 2>/dev/null | wc -l)
+
+    local app_status=""
+    if (( app_exists > 0 )); then
+      app_status=$(kubectl get application postgresql-secrets -n "$apps_ns" \
+        -o jsonpath='{.status.sync.status} {.status.health.status}' 2>/dev/null || true)
+      if [[ "$app_status" == "Synced Healthy" ]]; then
+        log_info "postgresql-secrets is Synced and Healthy."
+        break
+      fi
     fi
+
     local current_time elapsed
     current_time=$(date +%s)
     elapsed=$((current_time - start_time))
     if (( elapsed > timeout_s )); then
       log_error "Timeout waiting for postgresql-secrets after resync (${timeout_s}s)"
+      log_error "root-app status: $(kubectl get application root-app -n "$apps_ns" \
+        -o jsonpath='{.status.sync.status} {.status.health.status} phase={.status.operationState.phase}' 2>/dev/null || true)"
       exit 1
     fi
-    sleep 5
+
+    # Re-trigger root-app sync periodically if postgresql-secrets hasn't appeared
+    local since_resync=$((current_time - last_resync))
+    if (( since_resync >= resync_interval )); then
+      if (( app_exists == 0 )); then
+        log_warn "postgresql-secrets app not found after ${elapsed}s. Re-triggering root-app sync..."
+      else
+        log_warn "postgresql-secrets status: ${app_status:-unknown} after ${elapsed}s. Re-triggering root-app sync..."
+      fi
+      local root_phase
+      root_phase=$(kubectl get application root-app -n "$apps_ns" \
+        -o jsonpath='{.status.operationState.phase}' 2>/dev/null || true)
+      log_info "root-app operation phase: ${root_phase:-none}"
+
+      if [[ "$root_phase" != "Running" ]]; then
+        kubectl patch application root-app -n "$apps_ns" --type merge \
+          -p '{"operation":null}' 2>/dev/null || true
+        kubectl patch application root-app -n "$apps_ns" --type json \
+          -p '[{"op": "remove", "path": "/status/operationState"}]' 2>/dev/null || true
+        sleep 5
+        kubectl patch -n "$apps_ns" application root-app \
+          --patch-file /tmp/sync-postgresql-patch.yaml --type merge
+        log_info "root-app sync re-triggered"
+      fi
+      last_resync=$current_time
+    fi
+
+    if (( app_exists == 0 )); then
+      log_info "Waiting for postgresql-secrets app to be created by root-app... (${elapsed}s)"
+    else
+      log_info "Waiting for postgresql-secrets (status: ${app_status:-pending}, ${elapsed}s)"
+    fi
+    sleep 10
   done
   set -e
 
@@ -1365,15 +1418,21 @@ EOF
 restore_mps_rps_secrets() {
   log_info "=== Phase 6a: Restoring MPS/RPS secrets ==="
 
-  if [[ -s mps_secret.yaml ]]; then
-    kubectl apply -f mps_secret.yaml
-    log_info "MPS secret restored"
-  fi
-
-  if [[ -s rps_secret.yaml ]]; then
-    kubectl apply -f rps_secret.yaml
-    log_info "RPS secret restored"
-  fi
+  # Strip cluster-specific metadata (resourceVersion, uid, etc.) to avoid
+  # "the object has been modified" conflicts when the secret was recreated
+  # by ArgoCD between backup and restore.
+  for secret_file in mps_secret.yaml rps_secret.yaml; do
+    if [[ -s "$secret_file" ]]; then
+      yq e '
+        del(.metadata.resourceVersion) |
+        del(.metadata.uid) |
+        del(.metadata.creationTimestamp) |
+        del(.metadata.managedFields) |
+        del(.metadata.annotations["kubectl.kubernetes.io/last-applied-configuration"])
+      ' "$secret_file" | kubectl apply -f -
+      log_info "${secret_file%.yaml} secret restored"
+    fi
+  done
 }
 
 fix_mps_rps_connections() {
@@ -1587,8 +1646,6 @@ Usage:
   $(basename "$0") [options]
 
 Options:
-  -l    Use local packages (skip artifact download)
-  -s    Skip interactive prompts (non-interactive mode)
   -h    Show this help message
 EOF
 }
@@ -1598,13 +1655,11 @@ EOF
 ################################################################################
 
 main() {
-  local help_flag="" local_flag="" skip_flag=""
+  local help_flag=""
 
-  while getopts 'hls' flag; do
+  while getopts 'h' flag; do
     case "${flag}" in
       h) help_flag="true" ;;
-      l) local_flag="true" ;;
-      s) skip_flag="true" ;;
       *) help_flag="true" ;;
     esac
   done
@@ -1612,14 +1667,6 @@ main() {
   if [[ "${help_flag:-}" == "true" ]]; then
     usage
     exit 0
-  fi
-
-  if [[ "${local_flag:-}" == "true" ]]; then
-    USE_LOCAL_PACKAGES="true"
-  fi
-
-  if [[ "${skip_flag:-}" == "true" ]]; then
-    SKIP_INTERACTIVE="true"
   fi
 
   check_prerequisites
