@@ -39,6 +39,9 @@ templateController:
 credentialsM2M:
   enabled: true
 
+  istio:
+    enabled: false
+
   job:
     # job execution settings
     terminationGracePeriodSeconds: 90
