@@ -429,8 +429,6 @@ enum KvmState {
 }
 ```
 
----
-
 #### `infra-core/inventory/api/compute/v1/compute.proto` — new KVM fields on `HostResource`
 
 ```protobuf
@@ -499,6 +497,93 @@ enum KvmState {
 | `kvmSessionStatusIndicator` | 105 | OUTPUT_ONLY | kvm-manager |
 | `kvmSessionStatusTimestamp` | 106 | OUTPUT_ONLY | kvm-manager |
 | `desiredConsentCode` | 107 | OPTIONAL (write-only, not returned on GET) | orch-cli |
+
+---
+
+---
+
+#### New Enums and Fields for SOL
+
+```protobuf
+enum SolStatus {
+  SOL_STATUS_UNSPECIFIED = 0;
+  SOL_STATUS_ACTIVATED   = 1; // SOL feature is currently enabled on the AMT device.
+  SOL_STATUS_DEACTIVATED = 2; // SOL feature is currently disabled on the AMT device.
+}
+
+// SOL session state — the desired and current lifecycle state of a SOL remote session.
+// Used for both desired_sol_state (user-writable) and current_sol_state (sol-manager-set).
+enum SolState {
+  SOL_STATE_UNSPECIFIED      = 0;
+  SOL_STATE_START            = 1; // Desired: operator requests session start.
+                                  // Current: session is active, sol_session_url is valid.
+  SOL_STATE_STOP             = 2; // Desired: operator requests session teardown.
+                                  // Current: session has terminated cleanly.
+  SOL_STATE_AWAITING_CONSENT = 3; // Current only: sol-manager triggered consent on device;
+                                  // waiting for operator to enter the on-screen 6-digit code.
+  SOL_STATE_ERROR            = 4; // Current only: sol-manager encountered an error
+                                  // (AMT not provisioned, MPS failure, or token TTL expired).
+}
+```
+
+---
+
+#### `infra-core/inventory/api/compute/v1/compute.proto` — new SOL fields on `HostResource`
+
+```protobuf
+
+  // SOL feature activation status on the AMT device.
+  // Set by sol-manager RM after reading GET /api/v1/amt/features/{guid}.
+  // Updated whenever sol-manager reconciles a SOL_STATE_START request.
+  SolStatus sol_status = 108 [(ent.field) = {optional: true}];
+
+  // Desired SOL session state. Written by operator via APIv2 (orch-cli --sol start|stop).
+  // Valid write values: SOL_STATE_START, SOL_STATE_STOP.
+  // Consumed by sol-manager RM to drive the session lifecycle.
+  SolState desired_sol_state = 109 [(ent.field) = {optional: true}];
+
+  // Current SOL session state. Set by sol-manager RM only.
+  // Lifecycle: UNSPECIFIED → START → [AWAITING_CONSENT → START] | STOP | ERROR.
+  SolState current_sol_state = 110 [(ent.field) = {optional: true}];
+
+  // WebSocket URL for the active SOL session.
+  // Format: ws://sol-manager:8080/ws/terminal/{session-id}
+  // Populated by sol-manager when current_sol_state transitions to SOL_STATE_START.
+  // Cleared to "" on session end. Used by orch-cli to connect the terminal WebSocket.
+  string sol_session_url = 111 [
+    (ent.field) = {optional: true},
+    (buf.validate.field).string = {max_bytes: 2048},
+    (buf.validate.field).ignore = IGNORE_IF_UNPOPULATED
+  ];
+
+  // Human-readable status message describing the current SOL session state.
+  // Set by sol-manager RM only. Updated atomically with sol_session_status_indicator
+  // and sol_session_status_timestamp.
+  string sol_session_status = 112 [
+    (ent.field) = {optional: true},
+    (buf.validate.field).string = {max_bytes: 1024},
+    (buf.validate.field).ignore = IGNORE_IF_UNPOPULATED
+  ];
+
+  // Indicates the severity/dynamicity of sol_session_status (e.g. IDLE, IN_PROGRESS, ERROR).
+  // Set by sol-manager RM only.
+  status.v1.StatusIndication sol_session_status_indicator = 113 [(ent.field) = {optional: true}];
+
+```
+
+**Field visibility on `HostResource` (SOL):**
+
+| Field | Proto # | Field Behavior | Set by |
+|---|---|---|---|
+| `solStatus` | 108 | OUTPUT_ONLY | sol-manager |
+| `desiredSolState` | 109 | OPTIONAL | orch-cli |
+| `currentSolState` | 110 | OUTPUT_ONLY | sol-manager |
+| `solSessionUrl` | 111 | OUTPUT_ONLY | sol-manager |
+| `solSessionStatus` | 112 | OUTPUT_ONLY | sol-manager |
+| `solSessionStatusIndicator` | 113 | OUTPUT_ONLY | sol-manager |
+
+> **Note:** SOL reuses the existing `desired_consent_code` field (proto #107) for the
+> user-consent flow, since KVM and SOL sessions are mutually exclusive per device.
 
 ---
 
