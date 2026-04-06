@@ -57,6 +57,18 @@ locals {
       certificate_arn = module.ap_tls_cert.cert.arn
     }
   }
+  traefik_listeners = {
+    "https" : {
+      listen          = 443
+      protocol        = "HTTPS"
+      certificate_arn = module.ap_tls_cert.cert.arn
+    },
+    "https" : {
+      listen          = 4433
+      protocol        = "HTTPS"
+      certificate_arn = module.ap_tls_cert.cert.arn
+    }
+  }
   default_target_groups = {
     "default" : {
       listener = "https"
@@ -120,7 +132,7 @@ module "traefik_load_balancer" {
   cluster_name               = var.cluster_name
   subnets                    = local.public_subnet_ids
   ip_allow_list              = local.ip_allow_list
-  listeners                  = local.listeners
+  listeners                  = local.traefik_listeners
   target_groups              = local.traefik_target_groups
   enable_deletion_protection = var.enable_deletion_protection
   egress_cidr_blocks         = local.vpc_cidr_blocks
