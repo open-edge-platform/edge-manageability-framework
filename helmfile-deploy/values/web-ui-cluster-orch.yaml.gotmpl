@@ -9,3 +9,6 @@ global:
   registry:
     name: "{{ .Values.containerRegistryURL }}"
     imagePullSecrets: {{ .Values.imagePullSecrets | toYaml | nindent 6 }}
+  auth:
+    keycloak:
+      url: "https://keycloak.{{ .Values.clusterDomain }}"

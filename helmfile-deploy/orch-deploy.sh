@@ -22,7 +22,7 @@ MAIN_ENV_CONFIG="$SCRIPT_DIR/onprem.env"
 ################################
 # VALIDATION
 ################################
-VALID_PROFILES="onprem onprem-1k onprem-oxm onprem-explicit-proxy aws onprem-vpro onprem-eim onprem-eim-co onprem-eim-co-ao onprem-eim-co-ao-o11y dev dev-minimal bkc"
+VALID_PROFILES="onprem-eim onprem-vpro onprem-eim-co onprem-eim-co-ao onprem-eim-co-o11y onprem-eim-co-ao-o11y o11y"
 
 is_valid_ip() {
   local ip=$1

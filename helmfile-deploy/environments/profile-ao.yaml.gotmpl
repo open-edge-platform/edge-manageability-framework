@@ -1,0 +1,43 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# Profile: App Orchestration
+# Base: onprem-eim-settings + onprem-eim-features (EIM-only) + profile-co
+# This file only overrides what differs from EIM + CO base
+
+# ─── Enable App Orch ────────────────────────────────────────────────────────
+app-deployment-crd:
+  enabled: true
+app-deployment-manager:
+  enabled: true
+app-resource-manager:
+  enabled: true
+app-service-proxy:
+  enabled: true
+fleet-rs-secret:
+  enabled: true
+app-orch-catalog:
+  enabled: true
+app-deployment-manager-secret:
+  enabled: true
+harbor-oci:
+  enabled: true
+app-orch-tenant-controller:
+  enabled: true
+fleet-crd:
+  enabled: true
+fleet-controller:
+  enabled: true
+copy-app-gitea-cred-to-fleet:
+  enabled: true
+copy-ca-cert-gitea-to-app:
+  enabled: true
+copy-ca-cert-gitea-to-cluster:
+  enabled: true
+copy-cluster-gitea-cred-to-fleet:
+  enabled: true
+
+# ─── Enable App Orch UI ─────────────────────────────────────────────────────
+web-ui-app-orch:
+  enabled: true

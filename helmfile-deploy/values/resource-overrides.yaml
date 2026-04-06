@@ -142,3 +142,177 @@ attestationstatus-manager:
     limits:
       cpu: "64"
       memory: "64Gi"
+
+# ── orchestrator-observability subcharts ─────────────────────────────────────
+grafana:
+  resources:
+    requests:
+      cpu: "1m"
+      memory: "1Mi"
+    limits:
+      cpu: "64"
+      memory: "64Gi"
+  sidecar:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+loki:
+  backend:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+  write:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+  read:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+  gateway:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+  chunksCache:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+  resultsCache:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+  minio:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+mimir-distributed:
+  minio:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+  distributor:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+  ingester:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+  querier:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+  query_frontend:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+  compactor:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+  store_gateway:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+  gateway:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+opentelemetry-collector:
+  resources:
+    requests:
+      cpu: "1m"
+      memory: "1Mi"
+    limits:
+      cpu: "64"
+      memory: "64Gi"
+opentelemetry-collector-daemonset:
+  resources:
+    requests:
+      cpu: "1m"
+      memory: "1Mi"
+    limits:
+      cpu: "64"
+      memory: "64Gi"
+
+# ── alerting-monitor subcharts ───────────────────────────────────────────────
+alertmanager:
+  resources:
+    requests:
+      cpu: "1m"
+      memory: "1Mi"
+    limits:
+      cpu: "64"
+      memory: "64Gi"
+  configmapReload:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"

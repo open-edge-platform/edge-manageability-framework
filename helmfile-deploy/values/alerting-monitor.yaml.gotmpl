@@ -2,6 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+# ─── Replicas / HPA (driven from profile-o11y settings) ──────────────────────
+{{- if and .Values.o11y .Values.o11y.alertingMonitor }}
+minReplicas: {{ .Values.o11y.alertingMonitor.minReplicas | default 1 }}
+maxReplicas: {{ .Values.o11y.alertingMonitor.maxReplicas | default 1 }}
+{{- end }}
+
 image:
   registry: {{ .Values.containerRegistryURL }}
 management:
@@ -13,6 +19,11 @@ caSecretKey: ca.crt
 
 initialRules:
   hostAggregationWindowSeconds: 240
+{{- if and .Values.o11y .Values.o11y.alertingMonitor .Values.o11y.alertingMonitor.initialRules }}
+  hostRules: {{ .Values.o11y.alertingMonitor.initialRules.hostRules }}
+  appDeploymentRules: {{ .Values.o11y.alertingMonitor.initialRules.appDeploymentRules }}
+  clusterRules: {{ .Values.o11y.alertingMonitor.initialRules.clusterRules }}
+{{- end }}
 
 openPolicyAgent:
   image:
@@ -28,6 +39,11 @@ istio-proxy:
 traefikApiGroup: "traefik.io/v1alpha1"
 
 alertmanager:
+{{- if and .Values.o11y .Values.o11y.alertingMonitor .Values.o11y.alertingMonitor.alertmanagerReplicas }}
+  replicaCount: {{ .Values.o11y.alertingMonitor.alertmanagerReplicas }}
+{{- else }}
+  replicaCount: 1
+{{- end }}
   configmapReload:
     image:
       tag: v0.89.0
@@ -37,7 +53,7 @@ alertmanager:
 {{- end }}
 
 smtp:
-  initialize: true
+  initialize: {{ .Values.o11y.alertingMonitor.smtpInitialize | default false }}
   configSecret: smtp
 {{- if eq (env "EMF_SMTP_DEV_MODE" | default "true") "true" }}
   userPasswordAuth: false
@@ -53,3 +69,25 @@ smtp:
     key: password
   requireTls: true
 {{- end }}
+
+# ─── Authentication / OIDC ───────────────────────────────────────────────────
+authentication:
+  oidcServer: https://keycloak.{{ .Values.clusterDomain }}:443
+  oidcServerRealm: master
+webUIAddress: "https://web-ui.{{ .Values.clusterDomain }}"
+observabilityUIAddress: "https://observability-ui.{{ .Values.clusterDomain }}"
+
+# ─── Traefik routing ─────────────────────────────────────────────────────────
+traefik:
+  matchRoute: Host(`alerting-monitor.{{ .Values.clusterDomain }}`)
+{{- if .Values.traefik }}
+  tlsOption: {{ .Values.traefik.tlsOption | default "" | quote }}
+{{- end }}
+
+# ─── Database ────────────────────────────────────────────────────────────────
+database:
+  databaseSecret: alerting-{{ .Values.database.type }}-postgresql
+  ssl: {{ .Values.database.ssl }}
+
+# ─── Multi-tenant gateway ────────────────────────────────────────────────────
+multitenantGatewayEnabled: false

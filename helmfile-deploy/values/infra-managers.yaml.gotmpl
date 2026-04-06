@@ -8,13 +8,14 @@ global:
     name: "{{ .Values.containerRegistryURL }}/"
     imagePullSecrets: []
 {{- $im := index .Values "infra-managers" | default dict }}
+{{- $o11yEnabled := dig "enabled" false (index .Values "edgenode-observability" | default dict) }}
 import:
   host-manager:
     enabled: {{ dig "host-manager" "enabled" true $im }}
   maintenance-manager:
     enabled: {{ dig "maintenance-manager" "enabled" true $im }}
   telemetry-manager:
-    enabled: {{ dig "telemetry-manager" "enabled" false $im }}
+    enabled: {{ dig "telemetry-manager" "enabled" $o11yEnabled $im }}
   os-resource-manager:
     enabled: {{ dig "os-resource-manager" "enabled" true $im }}
   networking-manager:

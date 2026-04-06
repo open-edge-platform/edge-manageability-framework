@@ -6,3 +6,14 @@ global:
   registry:
     name: "{{ .Values.containerRegistryURL }}"
     imagePullSecrets: []
+  auth:
+    keycloak:
+      url: "https://keycloak.{{ .Values.clusterDomain }}"
+
+api:
+  clusterOrch: "https://cluster-orch.{{ .Values.clusterDomain }}"
+  metadataBroker: "https://metadata.{{ .Values.clusterDomain }}"
+  alertManager: "https://alerting-monitor.{{ .Values.clusterDomain }}"
+  tenantManager: "https://api.{{ .Values.clusterDomain }}"
+  rps: "https://api.{{ .Values.clusterDomain }}"
+  mps: "https://api.{{ .Values.clusterDomain }}"

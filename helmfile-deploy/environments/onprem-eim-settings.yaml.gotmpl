@@ -145,4 +145,12 @@ pxe:
   subnetAddress: {{ env "EMF_OXM_PXE_SERVER_SUBNET" | quote }}
 {{- end }}
 
+# ─── O11y replica settings ──────────────────────────────────────────────────
+o11y:
+  alertingMonitor:
+    minReplicas: {{ env "EMF_ALERTING_MIN_REPLICAS" | default "1" }}
+    maxReplicas: {{ env "EMF_ALERTING_MAX_REPLICAS" | default "1" }}
+    alertmanagerReplicas: {{ env "EMF_ALERTMANAGER_REPLICAS" | default "1" }}
+    smtpInitialize: {{ env "EMF_SMTP_INITIALIZE" | default "false" }}
+
 
