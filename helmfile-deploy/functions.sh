@@ -62,7 +62,7 @@ metadata:
   name: "$1-postgresql"
   namespace: $1
   annotations:
-    cnpg.io/reload: "false"
+    cnpg.io/reload: "true"
 type: kubernetes.io/basic-auth
 stringData:
   username: "$1-postgresql_user"

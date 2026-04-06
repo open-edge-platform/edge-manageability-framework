@@ -170,3 +170,55 @@ Validation runs on every `install` and `uninstall` action.
 | SMTP address | `EMF_ENABLE_EMAIL=true` but `EMF_SMTP_ADDRESS` not set |
 | SRE password | `EMF_SRE_USERNAME` set but `EMF_SRE_PASSWORD` empty |
 | No-proxy list | `EMF_HTTP_PROXY` set but `EMF_NO_PROXY` empty |
+
+## Troubleshooting
+
+### `secret-wait-tls-orch` / `secret-wait-tls-boots` Failures
+
+**Symptom:**
+```
+UPGRADE FAILED: cannot patch "secret-wait-tls-orch-03d391fbe2" with kind Job:
+  Job.batch is invalid: spec.template.metadata.labels: Invalid value: null:
+  `selector` does not match template `labels`
+```
+
+**Root Cause:** Kubernetes Jobs are **immutable** after creation. When `helm upgrade` runs on a redeployment, it tries to patch the existing completed Job — Kubernetes rejects this because the Job's `spec.template` cannot be modified. The `secret-wait` chart creates a Job that waits for TLS secrets (`tls-orch` in `orch-gateway`, `tls-boots` in `orch-boots`) to exist before downstream releases proceed.
+
+**Automatic Fix:** The deploy script (`orch-deploy.sh`) automatically detects and deletes stale Jobs before each release sync, so reruns should work out of the box.
+
+**Manual Fix (if using helmfile directly):**
+```bash
+# 1. Delete the completed/failed Jobs
+kubectl delete job -n orch-gateway -l app.kubernetes.io/instance=secret-wait-tls-orch --ignore-not-found
+kubectl delete job -n orch-boots -l app.kubernetes.io/instance=secret-wait-tls-boots --ignore-not-found
+
+# Or delete by name pattern:
+kubectl get jobs -n orch-gateway | grep secret-wait-tls-orch | awk '{print $1}' | xargs kubectl delete job -n orch-gateway
+kubectl get jobs -n orch-boots | grep secret-wait-tls-boots | awk '{print $1}' | xargs kubectl delete job -n orch-boots
+
+# 2. Rollback the Helm release to "deployed" state (if stuck in "failed")
+helm history secret-wait-tls-orch -n orch-gateway   # find last "deployed" revision
+helm rollback secret-wait-tls-orch <revision> -n orch-gateway
+
+helm history secret-wait-tls-boots -n orch-boots
+helm rollback secret-wait-tls-boots <revision> -n orch-boots
+
+# 3. Re-sync
+helmfile -e $HELMFILE_ENV -l app=secret-wait-tls-orch sync
+helmfile -e $HELMFILE_ENV -l app=secret-wait-tls-boots sync
+```
+
+### Generic Helm Release Stuck in "failed" State
+
+```bash
+# Check status
+helm list -A -a | grep failed
+
+# If a "deployed" revision exists in history — rollback:
+helm history <release> -n <namespace>
+helm rollback <release> <deployed-revision> -n <namespace>
+
+# If ALL revisions are "failed" — uninstall and let helmfile reinstall:
+helm uninstall <release> -n <namespace>
+helmfile -e $HELMFILE_ENV -l app=<release> sync
+```

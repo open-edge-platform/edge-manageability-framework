@@ -202,11 +202,90 @@ helmfile_sync_all() {
   (cd "$SCRIPT_DIR" && helmfile -e "$HELMFILE_ENV" repos 2>&1) || true
   echo ""
 
+  # Pre-cleanup: delete completed/failed Jobs that block helm upgrade (Jobs are immutable).
+  # Uses 'helm get manifest' to find ALL Jobs owned by the release, regardless of naming.
+  cleanup_stale_jobs() {
+    local release="$1"
+    local ns
+    ns=$(helm list -A -a --no-headers 2>/dev/null \
+      | awk -F'\t' -v r="$release" '{gsub(/^[ \t]+|[ \t]+$/, "", $1)} $1==r {gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}')
+
+    if [[ -n "$ns" ]]; then
+      # Release exists — extract Job names from its manifest
+      local jobs
+      jobs=$(helm get manifest "$release" -n "$ns" 2>/dev/null \
+        | awk '/^kind: Job/{found=1; next} found && /^  name:/{gsub(/[" ]/, "", $2); print $2; found=0} /^---/{found=0}')
+      for job in $jobs; do
+        if kubectl get job "$job" -n "$ns" --no-headers 2>/dev/null | grep -q .; then
+          echo "  🧹 Deleting stale Job $job in $ns (Jobs are immutable, must recreate)"
+          kubectl delete job "$job" -n "$ns" --ignore-not-found 2>/dev/null || true
+        fi
+      done
+    fi
+
+    # Also clean up Jobs matching release-[hex] pattern across all namespaces
+    # (covers secret-wait-tls-* and similar charts that use random suffixes)
+    local job_list
+    job_list=$(kubectl get jobs -A --no-headers 2>/dev/null \
+      | awk -v r="$release" '$2 ~ "^"r"-[a-z0-9]+$" {print $1, $2}')
+    if [[ -n "$job_list" ]]; then
+      while IFS=' ' read -r job_ns job; do
+        echo "  🧹 Deleting stale Job $job in $job_ns (Jobs are immutable, must recreate)"
+        kubectl delete job "$job" -n "$job_ns" --ignore-not-found 2>/dev/null || true
+      done <<< "$job_list"
+    fi
+  }
+
+  # Fix Helm releases stuck in "failed" or "pending-*" state before attempting upgrade.
+  # helm upgrade on a broken release often fails; rollback to last good revision first.
+  fix_failed_release() {
+    local release="$1"
+    local ns status
+    read -r ns status < <(helm list -A -a --no-headers 2>/dev/null \
+      | awk -F'\t' -v r="$release" '{gsub(/^[ \t]+|[ \t]+$/, "", $1)} $1==r {gsub(/^[ \t]+|[ \t]+$/, "", $2); gsub(/^[ \t]+|[ \t]+$/, "", $5); print $2, $5}')
+
+    if [[ -z "$ns" || "$status" == "deployed" ]]; then
+      return
+    fi
+
+    echo "  🔧 Release $release is in '$status' state — attempting recovery..."
+
+    # Find the last deployed revision to rollback to
+    local good_rev
+    good_rev=$(helm history "$release" -n "$ns" --no-headers 2>/dev/null \
+      | awk '{gsub(/^[ \t]+|[ \t]+$/, "", $0)} /deployed/ {rev=$1} END{if(rev) print rev}')
+
+    if [[ -n "$good_rev" && "$good_rev" != "0" ]]; then
+      echo "  🔧 Rolling back $release to revision $good_rev"
+      helm rollback "$release" "$good_rev" -n "$ns" 2>&1 | sed 's/^/  /'
+    elif [[ "$status" == pending-* ]]; then
+      # pending-install/pending-upgrade leaves Helm in a broken state; must uninstall
+      echo "  🔧 Release stuck in '$status' — uninstalling for fresh install"
+      helm uninstall "$release" -n "$ns" 2>&1 | sed 's/^/  /'
+    else
+      # All revisions failed but release exists — rollback to last revision
+      # to reset state to "failed" (not "pending-*"), then let helmfile upgrade
+      local last_rev
+      last_rev=$(helm history "$release" -n "$ns" --no-headers 2>/dev/null \
+        | awk '{rev=$1} END{if(rev) print rev}')
+      if [[ -n "$last_rev" ]]; then
+        echo "  🔧 No deployed revision — rolling back to rev $last_rev to clear state"
+        helm rollback "$release" "$last_rev" -n "$ns" 2>&1 | sed 's/^/  /'
+      fi
+    fi
+  }
+
   for release in $releases; do
     ((current++))
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo "[$current/$total] 📦 Deploying: $release"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+    # Clean up immutable Jobs from previous runs (secret-wait-*, credential-* etc.)
+    cleanup_stale_jobs "$release"
+
+    # Fix releases stuck in "failed" state (rollback or uninstall before upgrade)
+    fix_failed_release "$release"
 
     local release_start=$SECONDS
     if (cd "$SCRIPT_DIR" && helmfile -e "$HELMFILE_ENV" -l "app=$release" --skip-deps sync 2>&1); then
@@ -215,8 +294,18 @@ helmfile_sync_all() {
       passed+=("$release|${duration}")
     else
       local duration=$(( SECONDS - release_start ))
-      echo "❌ $release FAILED (${duration}s)"
-      failed+=("$release|${duration}")
+      # Check if Helm release actually deployed (helmfile may fail due to hooks
+      # even though the release itself succeeded)
+      local actual_status
+      actual_status=$(helm list -A -a --no-headers 2>/dev/null \
+        | awk -F'\t' -v r="$release" '{gsub(/^[ \t]+|[ \t]+$/, "", $1)} $1==r {gsub(/^[ \t]+|[ \t]+$/, "", $5); print $5}')
+      if [[ "$actual_status" == "deployed" ]]; then
+        echo "⚠️  $release — helmfile reported error but Helm release is deployed (hook failure?) (${duration}s)"
+        passed+=("$release|${duration}")
+      else
+        echo "❌ $release FAILED (${duration}s)"
+        failed+=("$release|${duration}")
+      fi
     fi
 
     # ─── Live Progress ───

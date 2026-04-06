@@ -474,6 +474,10 @@ releases:
       - orch-platform/oci-secret
       - postgresql-operator/postgresql-operator
     condition: postgresql-secrets.enabled
+    hooks:
+      - events: ["postsync"]
+        showlogs: true
+        command: "./hooks/sync-db-passwords.sh"
 
 
   #############################################################################
@@ -491,6 +495,10 @@ releases:
     needs:
       - orch-database/postgresql-secrets
     condition: postgresql-cluster.enabled
+    hooks:
+      - events: ["postsync"]
+        showlogs: true
+        command: "./hooks/sync-db-passwords.sh"
 
 
   #############################################################################
@@ -1352,26 +1360,6 @@ releases:
     needs:
       - orch-infra/alerting-monitor
 
-  - name: cluster-manager
-    labels:
-      app: cluster-manager
-    namespace: orch-cluster
-    chart: edge-orch/cluster/charts/cluster-manager
-    version: 2.2.8
-    timeout: 600
-    values:
-      - values/cluster-manager.yaml.gotmpl
-      - values/resource-overrides.yaml
-    condition: cluster-manager.enabled
-    needs:
-      - orch-cluster/cluster-template-crd
-      - capi-operator-system/capi-providers-config
-    hooks:
-      - events: ["postsync"]
-        showlogs: true
-        command: "./hooks/fix-credentials-istio-wait.sh"
-
-
   - name: component-status
     labels:
       app: component-status
@@ -1398,6 +1386,26 @@ releases:
     condition: infra-core.enabled
     needs:
       - orch-infra/alerting-monitor
+
+  - name: cluster-manager
+    labels:
+      app: cluster-manager
+    namespace: orch-cluster
+    chart: edge-orch/cluster/charts/cluster-manager
+    version: 2.2.8
+    wait: false
+    values:
+      - values/cluster-manager.yaml.gotmpl
+      - values/resource-overrides.yaml
+    condition: cluster-manager.enabled
+    needs:
+      - orch-cluster/cluster-template-crd
+      - capi-operator-system/capi-providers-config
+      - orch-infra/infra-core
+    hooks:
+      - events: ["postsync"]
+        showlogs: true
+        command: "./hooks/fix-credentials-istio-wait.sh"
 
 
   - name: metadata-broker
@@ -1605,18 +1613,6 @@ releases:
     needs:
       - orch-cluster/intel-infra-provider
 
-  - name: web-ui
-    labels:
-      app: web-ui
-    namespace: orch-ui
-    chart: edge-orch/orch-ui/charts/orch-ui-root
-    version: 4.0.8
-    values:
-      - values/web-ui-root.yaml.gotmpl
-    condition: web-ui-root.enabled
-    needs:
-      - orch-cluster/intel-infra-provider
-
   - name: web-ui-admin
     labels:
       app: web-ui-admin
@@ -1665,3 +1661,16 @@ releases:
     condition: web-ui-cluster-orch.enabled
     needs:
       - orch-cluster/intel-infra-provider
+
+  - name: web-ui
+    labels:
+      app: web-ui
+    namespace: orch-ui
+    chart: edge-orch/orch-ui/charts/orch-ui-root
+    version: 4.0.8
+    values:
+      - values/web-ui-root.yaml.gotmpl
+    condition: web-ui-root.enabled
+    needs:
+      - orch-ui/web-ui-admin
+      - orch-ui/web-ui-infra
