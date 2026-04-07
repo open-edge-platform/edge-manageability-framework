@@ -78,7 +78,7 @@ install_helm() {
 
   local tmp
   tmp="$(mktemp -d)"
-  trap 'rm -rf "$tmp"' RETURN
+  trap 'rm -rf "${tmp:-}"' RETURN
 
   local installer_url="https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3"
   local installer_path="$tmp/get-helm-3.sh"
