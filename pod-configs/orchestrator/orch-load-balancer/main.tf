@@ -58,7 +58,7 @@ locals {
     }
   }
   traefik_listeners = {
-    "https_443" : {
+    "https" : {
       listen          = 443
       protocol        = "HTTPS"
       certificate_arn = module.ap_tls_cert.cert.arn
