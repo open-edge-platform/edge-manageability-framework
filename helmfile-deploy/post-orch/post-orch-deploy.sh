@@ -6,18 +6,18 @@
 # Uses helmfile with labels for individual chart targeting.
 #
 # Usage:
-#   ./helmfile-deploy.sh install                  # Install all charts
-#   ./helmfile-deploy.sh install traefik           # Install single chart
-#   ./helmfile-deploy.sh uninstall traefik         # Uninstall single chart
-#   ./helmfile-deploy.sh uninstall                 # Uninstall all charts
-#   ./helmfile-deploy.sh list                      # List all charts
-#   ./helmfile-deploy.sh diff                      # Preview changes
-#   ./helmfile-deploy.sh diff traefik              # Preview single chart changes
+#   ./post-orch-deploy.sh install                  # Install all charts
+#   ./post-orch-deploy.sh install traefik           # Install single chart
+#   ./post-orch-deploy.sh uninstall traefik         # Uninstall single chart
+#   ./post-orch-deploy.sh uninstall                 # Uninstall all charts
+#   ./post-orch-deploy.sh list                      # List all charts
+#   ./post-orch-deploy.sh diff                      # Preview changes
+#   ./post-orch-deploy.sh diff traefik              # Preview single chart changes
 
 set -o pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MAIN_ENV_CONFIG="$SCRIPT_DIR/onprem.env"
+MAIN_ENV_CONFIG="$SCRIPT_DIR/post-orch.env"
 
 ################################
 # VALIDATION
@@ -465,11 +465,11 @@ if [[ -f "$MAIN_ENV_CONFIG" ]]; then
   source "$MAIN_ENV_CONFIG"
   set +a
 else
-  echo "❌ Missing onprem.env"
+  echo "❌ Missing post-orch.env"
   exit 1
 fi
 
-# Support inline KEY=VALUE arguments (e.g., ./helmfile-deploy.sh EMF_HELMFILE_ENV=onprem-eim values)
+# Support inline KEY=VALUE arguments (e.g., ./post-orch-deploy.sh EMF_HELMFILE_ENV=onprem-eim values)
 args=()
 for arg in "$@"; do
   if [[ "$arg" =~ ^[A-Z_]+=.+$ ]]; then

@@ -12,6 +12,8 @@ This guide covers the deployment flow, available profiles, configuration, and tr
   - [onprem-eim](#onprem-eim)
   - [onprem-vpro](#onprem-vpro)
   - [onprem-eim-co](#onprem-eim-co)
+  - [onprem-eim-co-o11y](#onprem-eim-co-o11y)
+  - [onprem-eim-co-ao-o11y](#onprem-eim-co-ao-o11y)
   - [Profile Comparison](#profile-comparison)
 - [Configuration](#configuration)
   - [Required Variables](#required-variables)
@@ -34,9 +36,9 @@ This guide covers the deployment flow, available profiles, configuration, and tr
 
 ## Overview
 
-The `helmfile-deploy/` folder contains everything needed to deploy EMF onto a Kubernetes cluster using [Helmfile](https://github.com/helmfile/helmfile). The deployment is driven by a single script (`orch-deploy.sh`) that:
+The `helmfile-deploy/` folder contains everything needed to deploy EMF onto a Kubernetes cluster using [Helmfile](https://github.com/helmfile/helmfile). The deployment is driven by a single script (`post-orch-deploy.sh`) that:
 
-1. Loads configuration from `onprem.env`
+1. Loads configuration from `post-orch.env`
 2. Validates all required settings
 3. Deploys Helm charts one-by-one in dependency order
 4. Automatically recovers from common failure modes on rerun
@@ -56,9 +58,9 @@ Each deployment profile determines **which components** are installed. You choos
 
 ```
 helmfile-deploy/
-├── orch-deploy.sh              # Main deployment script (install/uninstall/diff/list)
-├── orch-setup.sh               # Pre-deployment setup (creates namespaces)
-├── onprem.env                  # Environment variable configuration
+├── post-orch-deploy.sh              # Main deployment script (install/uninstall/diff/list)
+├── post-orch-setup.sh               # Pre-deployment setup (install/uninstall namespaces, secrets, Gitea)
+├── post-orch.env                  # Environment variable configuration
 ├── helmfile.yaml.gotmpl        # Main helmfile template (all 106 release definitions)
 ├── functions.sh                # Shared helper functions
 │
@@ -104,12 +106,12 @@ Includes:
 - **Supporting services**: auth-service, external-secrets, reloader, metadata-broker, tenancy management
 
 ```bash
-EMF_HELMFILE_ENV=onprem-eim ./orch-deploy.sh install
+EMF_HELMFILE_ENV=onprem-eim ./post-orch-deploy.sh install
 ```
 
 ### onprem-vpro
 
-**vPro-focused** — lightweight profile for managing Intel vPro devices (~100 nodes).
+**vPro-focused** — lightweight profile for managing Intel vPro devices.
 
 Deploys: **40 releases** (4 fewer than `onprem-eim`)
 
@@ -123,7 +125,7 @@ And **reconfigures** the infra components for vPro-only scenarios (reduced footp
 - `infra-external`: only AMT services (mps, rps, dm-manager)
 
 ```bash
-EMF_HELMFILE_ENV=onprem-vpro ./orch-deploy.sh install
+EMF_HELMFILE_ENV=onprem-vpro ./post-orch-deploy.sh install
 ```
 
 ### onprem-eim-co
@@ -142,51 +144,63 @@ Compared to `onprem-eim`, this profile **adds**:
 - `web-ui-cluster-orch` — cluster orchestration UI
 
 ```bash
-EMF_HELMFILE_ENV=onprem-eim-co ./orch-deploy.sh install
+EMF_HELMFILE_ENV=onprem-eim-co ./post-orch-deploy.sh install
+```
+
+### onprem-eim-co-o11y
+
+**EIM + Cluster Orchestration + Observability** — adds monitoring and alerting without App Orchestration.
+
+Adds to `onprem-eim-co`:
+- **Observability**: alerting-monitor, edgenode-observability, orchestrator-observability, orchestrator-prometheus-agent, edgenode-dashboards, orchestrator-dashboards, observability-tenant-controller
+
+```bash
+EMF_HELMFILE_ENV=onprem-eim-co-o11y ./post-orch-deploy.sh install
+```
+
+### onprem-eim-co-ao-o11y
+
+**Full stack** — EIM + Cluster Orchestration + App Orchestration + Observability.
+
+This is the most complete profile. It includes everything in `onprem-eim-co` plus:
+
+- **App Orchestration**: app-deployment-manager, app-resource-manager, fleet controller, harbor-oci, app-orch-catalog, app-service-proxy, web-ui-app-orch
+- **Observability**: alerting-monitor, edgenode-observability, orchestrator-observability, orchestrator-prometheus-agent, edgenode-dashboards, orchestrator-dashboards, sre-exporter
+
+```bash
+EMF_HELMFILE_ENV=onprem-eim-co-ao-o11y ./post-orch-deploy.sh install
 ```
 
 ### Profile Comparison
 
-| Component | onprem-eim | onprem-vpro | onprem-eim-co |
-|-----------|:----------:|:-----------:|:-------------:|
-| **Total releases** | 44 | 40 | 54 |
-| Platform (Keycloak, Vault, DB) | ✅ | ✅ | ✅ |
-| Ingress (Traefik, HAProxy) | ✅ | ✅ | ✅ |
-| TLS & Certificates | ✅ | ✅ | ✅ |
-| Edge Infra (inventory, provisioning) | ✅ | ✅ (reduced) | ✅ |
-| AMT/vPro (MPS, RPS) | ✅ | ✅ | ✅ |
-| Tenancy management | ✅ | ✅ | ✅ |
-| Metadata broker | ✅ | ❌ | ✅ |
-| Web UI | ✅ | ❌ | ✅ |
-| Cluster Orchestration (CAPI) | ❌ | ❌ | ✅ |
-| Cluster Orch UI | ❌ | ❌ | ✅ |
+| Component | onprem-eim | onprem-vpro | onprem-eim-co | onprem-eim-co-o11y | onprem-eim-co-ao-o11y |
+|-----------|:----------:|:-----------:|:-------------:|:------------------:|:---------------------:|
+| Platform (Keycloak, Vault, DB) | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Ingress (Traefik, HAProxy) | ✅ | ✅ | ✅ | ✅ | ✅ |
+| TLS & Certificates | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Edge Infra (inventory, provisioning) | ✅ | ✅ (reduced) | ✅ | ✅ | ✅ |
+| AMT/vPro (MPS, RPS) | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Tenancy management | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Web UI | ✅ | ❌ | ✅ | ✅ | ✅ |
+| Cluster Orchestration (CAPI) | ❌ | ❌ | ✅ | ✅ | ✅ |
+| Observability (Prometheus, Grafana) | ❌ | ❌ | ❌ | ✅ | ✅ |
+| App Orchestration (Fleet, Harbor) | ❌ | ❌ | ❌ | ❌ | ✅ |
 
 ### Profile Configuration Layering
 
 Each profile is composed from multiple configuration files applied in order (later files override earlier ones):
 
 ```
-onprem-eim:
-  1. defaults-disabled.yaml.gotmpl     ← All optional components OFF
-  2. onprem-eim-settings.yaml.gotmpl   ← Global settings (registry, storage, DB)
-  3. onprem-eim-features.yaml.gotmpl   ← EIM components ON
-
-onprem-vpro:
-  1. defaults-disabled.yaml.gotmpl
-  2. onprem-eim-settings.yaml.gotmpl
-  3. onprem-eim-features.yaml.gotmpl   ← EIM components ON
-  4. profile-vpro.yaml.gotmpl          ← Disables UI, reduces infra footprint
-
-onprem-eim-co:
-  1. defaults-disabled.yaml.gotmpl
-  2. onprem-eim-settings.yaml.gotmpl
-  3. onprem-eim-features.yaml.gotmpl   ← EIM components ON
-  4. profile-co.yaml.gotmpl            ← Enables CAPI, cluster-manager, etc.
+onprem-eim:            defaults-disabled → settings → eim-features
+onprem-vpro:           defaults-disabled → settings → eim-features → profile-vpro
+onprem-eim-co:         defaults-disabled → settings → eim-features → profile-co
+onprem-eim-co-o11y:    defaults-disabled → settings → eim-features → profile-co → profile-o11y
+onprem-eim-co-ao-o11y: defaults-disabled → settings → eim-features → co + ao + o11y
 ```
 
 ## Configuration
 
-All configuration is controlled through environment variables defined in `onprem.env`.
+All configuration is controlled through environment variables defined in `post-orch.env`.
 
 ### Required Variables
 
@@ -242,44 +256,61 @@ If your environment requires an HTTP proxy:
 
 ### Step 1: Configure Environment
 
-Edit `onprem.env` with values specific to your environment:
+Edit `post-orch.env` with values specific to your environment:
 
 ```bash
 cd helmfile-deploy/
 
 # Edit the configuration file
-vi onprem.env
+vi post-orch.env
 ```
 
 At minimum, update:
 - `EMF_CLUSTER_NAME` and `EMF_CLUSTER_DOMAIN`
 - `EMF_TRAEFIK_IP` and `EMF_HAPROXY_IP` (free IPs in your network for LoadBalancer services)
 - `EMF_HTTP_PROXY` / `EMF_NO_PROXY` (if behind a proxy, otherwise clear them)
-- `EMF_DOCKER_USERNAME` / `EMF_DOCKER_PASSWORD` (if using Docker Hub images)
+- `EMF_DOCKER_USERNAME` / `EMF_DOCKER_PASSWORD` (docker pull limit)
 
 ### Step 2: Run Setup
 
-Create the required Kubernetes namespaces:
+Prepare the cluster for EMF deployment:
 
 ```bash
-./orch-setup.sh
+./post-orch-setup.sh install
 ```
 
-This creates: `orch-boots`, `orch-database`, `orch-platform`, `orch-app`, `orch-cluster`, `orch-infra`, `orch-sre`, `orch-ui`, `orch-secret`, `orch-gateway`, `orch-harbor`, and others.
+This script:
+- Creates all required Kubernetes namespaces
+- Generates and stores initial secrets and passwords
+- Configures Gitea (internal Git server) for chart and configuration storage (only when App Orchestration is enabled)
+
+To tear down the setup (remove namespaces, secrets, and Gitea configuration):
+
+```bash
+./post-orch-setup.sh uninstall
+```
+
+> **Note:** Only run `./post-orch-setup.sh uninstall` **after** you have uninstalled all Helm releases with `./post-orch-deploy.sh uninstall`. Removing namespaces and secrets while releases are still deployed will leave orphaned resources.
 
 ### Step 3: Deploy
 
 Choose your profile and run:
 
 ```bash
-# EIM only (44 releases)
-EMF_HELMFILE_ENV=onprem-eim ./orch-deploy.sh install
+# EIM only
+EMF_HELMFILE_ENV=onprem-eim ./post-orch-deploy.sh install
 
-# vPro only (40 releases)
-EMF_HELMFILE_ENV=onprem-vpro ./orch-deploy.sh install
+# vPro only (headless, reduced footprint)
+EMF_HELMFILE_ENV=onprem-vpro ./post-orch-deploy.sh install
 
-# EIM + Cluster Orchestration (54 releases)
-EMF_HELMFILE_ENV=onprem-eim-co ./orch-deploy.sh install
+# EIM + Cluster Orchestration
+EMF_HELMFILE_ENV=onprem-eim-co ./post-orch-deploy.sh install
+
+# EIM + CO + Observability (no App Orch)
+EMF_HELMFILE_ENV=onprem-eim-co-o11y ./post-orch-deploy.sh install
+
+# Full stack (EIM + CO + App Orch + Observability)
+EMF_HELMFILE_ENV=onprem-eim-co-ao-o11y ./post-orch-deploy.sh install
 ```
 
 The script will:
@@ -292,7 +323,7 @@ The script will:
 You can also pass inline overrides:
 
 ```bash
-EMF_HELMFILE_ENV=onprem-eim EMF_TRAEFIK_IP=10.0.1.50 ./orch-deploy.sh install
+EMF_HELMFILE_ENV=onprem-eim EMF_TRAEFIK_IP=10.0.1.50 ./post-orch-deploy.sh install
 ```
 
 Logs are saved to `logs/<profile>_install_<timestamp>.log`.
@@ -301,10 +332,10 @@ Logs are saved to `logs/<profile>_install_<timestamp>.log`.
 
 ```bash
 # Deploy only traefik
-EMF_HELMFILE_ENV=onprem-eim ./orch-deploy.sh install traefik
+EMF_HELMFILE_ENV=onprem-eim ./post-orch-deploy.sh install traefik
 
 # Deploy only platform-keycloak
-EMF_HELMFILE_ENV=onprem-eim ./orch-deploy.sh install platform-keycloak
+EMF_HELMFILE_ENV=onprem-eim ./post-orch-deploy.sh install platform-keycloak
 ```
 
 ### Preview Changes
@@ -312,24 +343,24 @@ EMF_HELMFILE_ENV=onprem-eim ./orch-deploy.sh install platform-keycloak
 See what would change without applying:
 
 ```bash
-EMF_HELMFILE_ENV=onprem-eim ./orch-deploy.sh diff
-EMF_HELMFILE_ENV=onprem-eim ./orch-deploy.sh diff traefik
+EMF_HELMFILE_ENV=onprem-eim ./post-orch-deploy.sh diff
+EMF_HELMFILE_ENV=onprem-eim ./post-orch-deploy.sh diff traefik
 ```
 
 ### Uninstall
 
 ```bash
 # Uninstall everything (reverse order)
-EMF_HELMFILE_ENV=onprem-eim ./orch-deploy.sh uninstall
+EMF_HELMFILE_ENV=onprem-eim ./post-orch-deploy.sh uninstall
 
 # Uninstall a single chart
-EMF_HELMFILE_ENV=onprem-eim ./orch-deploy.sh uninstall traefik
+EMF_HELMFILE_ENV=onprem-eim ./post-orch-deploy.sh uninstall traefik
 ```
 
 ### List Releases
 
 ```bash
-EMF_HELMFILE_ENV=onprem-eim ./orch-deploy.sh list
+EMF_HELMFILE_ENV=onprem-eim ./post-orch-deploy.sh list
 ```
 
 ## Deployment Flow
@@ -337,15 +368,17 @@ EMF_HELMFILE_ENV=onprem-eim ./orch-deploy.sh list
 The deployment installs charts in a fixed dependency order. Major groups are:
 
 ```
-1. Operators           keycloak-operator, postgresql-operator
-2. Infrastructure      namespace-label, cert-manager, external-secrets
-3. TLS & Ingress       self-signed-cert, platform-autocert, traefik, haproxy
-4. Database            postgresql-cluster, postgresql-secrets
-5. Platform            vault, secrets-config, platform-keycloak, auth-service
-6. Tenancy             tenancy-datamodel, tenancy-manager, nexus-api-gw
-7. Edge Infra          infra-core, infra-managers, infra-external, infra-onboarding
-8. Cluster Orch        capi-operator, cluster-manager, intel-infra-provider (onprem-eim-co only)
-9. Web UI              web-ui-admin, web-ui-infra, web-ui (root proxy)
+ 1. Operators        keycloak-operator, postgresql-operator
+ 2. Infrastructure   namespace-label, cert-manager, external-secrets
+ 3. TLS & Ingress    self-signed-cert, platform-autocert, traefik, haproxy
+ 4. Database         postgresql-cluster, postgresql-secrets
+ 5. Platform         vault, secrets-config, platform-keycloak, auth-service
+ 6. Tenancy          tenancy-datamodel, tenancy-manager, nexus-api-gw
+ 7. Edge Infra       infra-core, infra-managers, infra-external, infra-onboarding
+ 8. Cluster Orch     capi-operator, cluster-manager, intel-infra-provider  (CO profiles)
+ 9. App Orch         fleet-controller, app-deployment-manager, harbor-oci  (AO profiles)
+10. Observability    orchestrator-observability, edgenode-observability     (O11y profiles)
+11. Web UI           web-ui-admin, web-ui-infra, web-ui-cluster-orch, web-ui-app-orch
 ```
 
 Each release is deployed individually with `helmfile sync`. If a release fails, the script continues to the next one and reports all failures in the summary.
@@ -355,7 +388,7 @@ Each release is deployed individually with `helmfile sync`. If a release fails, 
 The deploy script is designed to be **safe to re-run**. Simply run the same command again:
 
 ```bash
-EMF_HELMFILE_ENV=onprem-eim-co ./orch-deploy.sh install
+EMF_HELMFILE_ENV=onprem-eim-co ./post-orch-deploy.sh install
 ```
 
 The script automatically handles common rerun issues:
@@ -371,7 +404,7 @@ The script automatically handles common rerun issues:
 If a specific release keeps failing, you can deploy it individually to see detailed output:
 
 ```bash
-EMF_HELMFILE_ENV=onprem-eim ./orch-deploy.sh install platform-keycloak
+EMF_HELMFILE_ENV=onprem-eim ./post-orch-deploy.sh install platform-keycloak
 ```
 
 ## Troubleshooting
@@ -439,7 +472,7 @@ helm rollback <release> <revision> -n <namespace>
 
 # If no good revision exists, uninstall and re-deploy
 helm uninstall <release> -n <namespace>
-EMF_HELMFILE_ENV=onprem-eim ./orch-deploy.sh install <release>
+EMF_HELMFILE_ENV=onprem-eim ./post-orch-deploy.sh install <release>
 ```
 
 #### Pods not Starting — Check Logs
@@ -468,11 +501,11 @@ ls -lt helmfile-deploy/logs/
 
 ### Using helmfile Directly
 
-For fine-grained control, you can use helmfile directly instead of `orch-deploy.sh`:
+For fine-grained control, you can use helmfile directly instead of `post-orch-deploy.sh`:
 
 ```bash
 # Load environment variables
-set -a; source onprem.env; set +a
+set -a; source post-orch.env; set +a
 
 # Full deployment
 helmfile -e onprem-eim sync
@@ -490,7 +523,7 @@ helmfile -e onprem-eim diff
 helmfile -e onprem-eim destroy
 ```
 
-> **Note:** When using helmfile directly, the automatic Job cleanup, password sync, and failed-release recovery provided by `orch-deploy.sh` are **not** available. You will need to handle these manually on rerun (see Troubleshooting above).
+> **Note:** When using helmfile directly, the automatic Job cleanup, password sync, and failed-release recovery provided by `post-orch-deploy.sh` are **not** available. You will need to handle these manually on rerun (see Troubleshooting above).
 
 ### Inspect Computed Values
 

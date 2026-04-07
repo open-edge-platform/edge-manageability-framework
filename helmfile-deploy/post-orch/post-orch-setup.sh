@@ -3,17 +3,17 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # Pre-deployment configuration: namespaces, secrets, passwords, Gitea
-# Run this before helmfile-deploy.sh, or use post-deploy-orch.sh which calls both.
+# Run this before post-orch-deploy.sh.
 #
 # Usage:
-#   ./pre-deploy-config.sh setup       # Create namespaces, secrets, passwords
-#   ./pre-deploy-config.sh cleanup     # Remove secrets and namespaces
+#   ./post-orch-setup.sh setup       # Create namespaces, secrets, passwords
+#   ./post-orch-setup.sh cleanup     # Remove secrets and namespaces
 
 set -e
 set -o pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MAIN_ENV_CONFIG="$SCRIPT_DIR/onprem.env"
+MAIN_ENV_CONFIG="$SCRIPT_DIR/post-orch.env"
 
 # Import shared functions
 source "$SCRIPT_DIR/functions.sh"
@@ -295,7 +295,7 @@ if [[ -f "$MAIN_ENV_CONFIG" ]]; then
   source "$MAIN_ENV_CONFIG"
   set +a
 else
-  echo "❌ Missing onprem.env"
+  echo "❌ Missing post-orch.env"
   exit 1
 fi
 

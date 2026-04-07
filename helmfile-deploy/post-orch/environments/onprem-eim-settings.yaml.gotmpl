@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # EIM environment — Part 1: Environment & global settings
-# All values driven by onprem.env (sourced by helmfile-deploy.sh)
+# All values driven by post-orch.env (sourced by post-orch-deploy.sh)
 # Feature flags are in onprem-eim-features.yaml.gotmpl
 
 # ─── Registry ────────────────────────────────────────────────────────────────
@@ -103,7 +103,7 @@ traefik:
   enabled: true
   tlsOption: {{ env "EMF_TRAEFIK_TLS_OPTION" | default "gateway-tls" | quote }}
 
-orchestratorVersion: {{ env "EMF_VERSION" | default (readFile "../../VERSION" | trim) | quote }}
+orchestratorVersion: {{ env "EMF_VERSION" | default (readFile "../../../VERSION" | trim) | quote }}
 
 # ─── Vault config ────────────────────────────────────────────────────────────
 vault:
@@ -123,7 +123,7 @@ self-signed-cert:
 orchestratorDeployment:
   targetCluster: {{ env "EMF_TARGET_CLUSTER" | default "onprem" | quote }}
 
-# ─── Proxy (only if EMF_HTTP_PROXY is set in onprem.env) ────────────────────
+# ─── Proxy (only if EMF_HTTP_PROXY is set in post-orch.env) ────────────────────
 {{- if env "EMF_HTTP_PROXY" }}
 proxy:
   httpProxy: {{ env "EMF_HTTP_PROXY" | quote }}

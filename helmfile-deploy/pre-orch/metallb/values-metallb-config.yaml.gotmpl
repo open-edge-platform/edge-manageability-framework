@@ -2,10 +2,10 @@
 ## These defaults will be used by the chart unless overridden by a higher-level values file
 
 metallb-config:
-  # Pass IPs via env vars: TRAEFIK_IP and HAPROXY_IP
-  # Example: TRAEFIK_IP=10.0.0.30 HAPROXY_IP=10.0.0.40 helmfile apply
-  TraefikIP: {{ requiredEnv "TRAEFIK_IP" }}
-  HaproxyIP: {{ requiredEnv "HAPROXY_IP" }}
+  # IPs are set via values-metallb-config-overrides.yaml.gotmpl
+  # which reads from helmfile .Values (EMF_TRAEFIK_IP / EMF_HAPROXY_IP)
+  TraefikIP: {{ .Values.traefikIP }}
+  HaproxyIP: {{ .Values.haproxyIP }}
 serviceNamespaces:
   traefik: orch-gateway
   haproxy: orch-boots
