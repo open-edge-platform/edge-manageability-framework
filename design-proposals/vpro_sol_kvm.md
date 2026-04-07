@@ -315,13 +315,16 @@ a live RFB desktop rendered in the browser.
 
 ```mermaid
 sequenceDiagram
-    participant CLI as "orch-cli"
+    participant Browser as Browser
+    participant CLI as "orch-cli(embeds angular-client)"
+box rgba(11, 164, 230, 1) Orchestrator Components
     participant APIV2 as APIv2
     participant INV as Inventory
     participant DM as "kvm-manager"
     participant MPS as MPS
+end
     participant AMT as "AMT Device"
-    participant Browser as Browser
+    
 
     Note over CLI,INV: 1. Request KVM session
     CLI->>APIV2: PATCH /compute/hosts/:id desiredKvmState=KVM_STATE_START
@@ -391,10 +394,12 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant CLI as "orch-cli"
+box rgba(11, 164, 230, 1) Orchestrator Components
     participant APIV2 as APIv2
     participant INV as Inventory
     participant SM as "sol-manager"
     participant MPS as MPS
+end
     participant AMT as "AMT Device"
 
     Note over CLI,INV: 1. Request SOL session
