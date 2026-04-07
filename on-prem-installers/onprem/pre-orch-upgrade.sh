@@ -995,8 +995,6 @@ kind_upgrade() {
     # --kind-version to get a newer release, the default K8s version
     # may differ.  When we can't determine the target, fall back to
     # keeping the cluster (safe path).
-    local target_version=""
-    target_version=$(kind version -q 2>/dev/null || true)
     # kind doesn't expose the target K8s version directly; use the
     # image tag from "kind create cluster --help" or default images.
     log_info "KIND binary updated. Checking if cluster recreation is needed..."
