@@ -21,12 +21,13 @@ echo "🚀 Starting Cluster Template Generation"
 # Environment setup based on deployment type
 # -----------------------------------------------------------------------------
 if [ "$DEPLOY_TYPE" = "aws" ]; then
+    # shellcheck disable=SC1091
     source "$HOME/.env"
     TEMPLATE_FILE="./cluster_aws.tpl"
     OUTPUT_FILE="${CLUSTER_NAME}.yaml"
 
 elif [ "$DEPLOY_TYPE" = "onprem" ]; then
-    # shellcheck disable=SC1091
+    # shellcheck disable=SC1091,SC1090
     source "${PWD}/${DEPLOY_TYPE}.env"
 
     # Validate ORCH_INSTALLER_PROFILE
@@ -263,64 +264,6 @@ if [ "$DEPLOY_TYPE" = "onprem" ]; then
             exit 1
             ;;
     esac
-
-# -----------------------------------------------------------------------------
-# AWS specific logic
-# -----------------------------------------------------------------------------
-elif [ "$DEPLOY_TYPE" = "aws" ]; then
-    export CLUSTER_SCALE_PROFILE=$(grep -oP '^# Profile: "\K[^"]+' ~/pod-configs/SAVEME/${AWS_ACCOUNT}-${CLUSTER_NAME}-profile.tfvar)
-
-    # O11Y Profile
-    if [ "${DISABLE_O11Y_PROFILE:-false}" = "true" ]; then
-        export O11Y_ENABLE_PROFILE="#- orch-configs/profiles/enable-o11y.yaml"
-        export O11Y_PROFILE="#- orch-configs/profiles/o11y-release.yaml"
-        if [[ "${ORCH_INSTALLER_PROFILE:-}" = "aws-vpro" ]]; then
-            export EIM_NOOBB_PROFILE="#- orch-configs/profiles/eim-noobb.yaml"
-        else
-            export EIM_NOOBB_PROFILE="- orch-configs/profiles/eim-noobb.yaml"
-        fi
-    else
-        export O11Y_ENABLE_PROFILE="- orch-configs/profiles/enable-o11y.yaml"
-        export O11Y_PROFILE="- orch-configs/profiles/o11y-release.yaml"
-        export EIM_NOOBB_PROFILE="#- orch-configs/profiles/eim-noobb.yaml"
-        if [[ "$CLUSTER_SCALE_PROFILE" =~ ^(500en|1ken|10ken)$ ]]; then
-            export O11Y_PROFILE="- orch-configs/profiles/o11y-release-large.yaml"
-        fi
-    fi
-
-    # SRE Profile
-    if [ -n "${SRE_BASIC_AUTH_USERNAME:-}" ] || [ -n "${SRE_BASIC_AUTH_PASSWORD:-}" ] || \
-       [ -n "${SRE_DESTINATION_SECRET_URL:-}" ] || [ -n "${SRE_DESTINATION_CA_SECRET:-}" ]; then
-        export SRE_PROFILE="- orch-configs/profiles/enable-sre.yaml"
-    else
-        export SRE_PROFILE="#- orch-configs/profiles/enable-sre.yaml"
-    fi
-
-    # Email Profile
-    echo "ℹ️ SMTP_URL value is: ${SMTP_URL}"
-    if [ -z "${SMTP_URL:-}" ]; then
-        export EMAIL_PROFILE="#- orch-configs/profiles/alerting-emails.yaml"
-    else
-        if [ "${SMTP_DEV_MODE:-false}" = "true" ]; then
-            export EMAIL_PROFILE="- orch-configs/profiles/alerting-emails-dev.yaml"
-        else
-        export EMAIL_PROFILE="- orch-configs/profiles/alerting-emails.yaml"
-    fi
-    fi
-
-    # AutoCert Profile
-    if [ -z "${AUTO_CERT:-}" ]; then
-        export AUTOCERT_PROFILE="#- orch-configs/profiles/profile-autocert.yaml"
-    else
-        export AUTOCERT_PROFILE="- orch-configs/profiles/profile-autocert.yaml"
-    fi
-
-    # AWS Production Profile
-    if [ "${DISABLE_AWS_PROD_PROFILE:-false}" = "true" ]; then
-        export AWS_PROD_PROFILE="#- orch-configs/profiles/profile-aws-production.yaml"
-    else
-        export AWS_PROD_PROFILE="- orch-configs/profiles/profile-aws-production.yaml"
-    fi
 fi
 
 # -----------------------------------------------------------------------------
@@ -423,7 +366,7 @@ if [[ -n "${PROCEED}" && "${PROCEED}" != "yes" ]]; then
     echo "Press any key to open your editor..."
     echo "=============================================================================="
     echo
-    read -n 1 -s
+    read -r -n 1 -s
     "${EDITOR:-vi}" "$OUTPUT_FILE"
 fi
 
