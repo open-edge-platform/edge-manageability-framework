@@ -56,9 +56,9 @@ Each deployment profile determines **which components** are installed. You choos
 ```
 helmfile-deploy/
 ├── post-orch-deploy.sh              # Main deployment script (install/uninstall/diff/list)
-├── post-orch-setup.sh               # Pre-deployment setup (install/uninstall namespaces, secrets, Gitea)
+├── post-orch-setup.sh               # Pre-deployment setup (install/uninstall namespaces, secrets)
 ├── post-orch.env                  # Environment variable configuration
-├── helmfile.yaml.gotmpl        # Main helmfile template (all 106 release definitions)
+├── helmfile.yaml.gotmpl        # Main helmfile template (all release definitions)
 ├── functions.sh                # Shared helper functions
 │
 ├── environments/               # Profile definitions (which components to enable)
@@ -67,7 +67,7 @@ helmfile-deploy/
 │   ├── onprem-eim-features.yaml.gotmpl     # EIM feature toggles
 │   └── profile-vpro.yaml.gotmpl            # vPro overrides
 │
-├── values/                     # Helm values per chart (130+ files)
+├── values/                     # Helm values per chart
 │   ├── traefik.yaml.gotmpl     # .gotmpl files read EMF_* env vars
 │   ├── kyverno.yaml            # .yaml files are static values
 │   └── ...
@@ -413,34 +413,6 @@ Every deployment creates a timestamped log file:
 ls -lt helmfile-deploy/logs/
 # Example: onprem-eim-co_install_20260406-073828.log
 ```
-
-## Advanced Usage
-
-### Using helmfile Directly
-
-For fine-grained control, you can use helmfile directly instead of `post-orch-deploy.sh`:
-
-```bash
-# Load environment variables
-set -a; source post-orch.env; set +a
-
-# Full deployment
-helmfile -e onprem-eim sync
-
-# Single chart
-helmfile -e onprem-eim -l app=traefik sync
-
-# Multiple charts
-helmfile -e onprem-eim -l app=traefik -l app=platform-keycloak sync
-
-# Preview changes
-helmfile -e onprem-eim diff
-
-# Destroy
-helmfile -e onprem-eim destroy
-```
-
-> **Note:** When using helmfile directly, the automatic Job cleanup, password sync, and failed-release recovery provided by `post-orch-deploy.sh` are **not** available. You will need to handle these manually on rerun (see Troubleshooting above).
 
 ### Inspect Computed Values
 
