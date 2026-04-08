@@ -1,9 +1,0 @@
-cainjector:
-  resources: null
-http_proxy: http://proxy-dmz.intel.com:912
-https_proxy: http://proxy-dmz.intel.com:912
-installCRDs: true
-no_proxy: .caas.intel.com,certificates.intel.com,localhost,127.0.0.0/8,10.0.0.0/8,192.168.0.0/16,172.16.0.0/12,169.254.169.254,.svc,.cluster.local,.default,.internal,.orch-platform,.orch-app,.orch-cluster,.orch-infra,.orch-database,.cattle-system,.orch-secret,.onprem,.espd.infra-host.com,.pid.infra-host.com,.espdqa.infra-host.com
-resources: null
-webhook:
-  resources: null

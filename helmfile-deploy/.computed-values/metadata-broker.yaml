@@ -1,9 +1,0 @@
-global:
-  registry:
-    imagePullSecrets: []
-    name: registry-rs.edgeorchestration.intel.com/edge-orch
-openidc:
-  issuer: http://platform-keycloak.orch-platform.svc/realms/master
-service:
-  traefik:
-    namespace: orch-gateway

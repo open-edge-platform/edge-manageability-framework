@@ -1,8 +1,0 @@
-externalSecretsApiGroup: external-secrets.io/v1
-keyName:
-  - source: tls.crt
-    target: ca.crt
-refreshInterval: 10m
-remoteNamespace: orch-boots
-sourceSecretName: tls-boots
-targetSecretName: boots-ca-cert
