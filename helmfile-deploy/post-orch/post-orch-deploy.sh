@@ -509,11 +509,10 @@ Environment:
                        Valid profiles: onprem-eim, onprem-vpro
 
 Examples:
-  $0 install                             # Install all charts (onprem-eim)
+  $0 install                             # Install all charts (eim/vpro)
   $0 install traefik                     # Install only traefik
   $0 uninstall traefik                   # Uninstall only traefik
   $0 diff vault                          # Preview vault changes
-  $0 install                             # Install with eim/vpro profile
   $0 list                                # List all charts
 EOF
 }

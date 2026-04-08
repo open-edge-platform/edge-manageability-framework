@@ -37,11 +37,12 @@ ensure_prereqs() {
 create_namespaces() {
   echo "📁 Creating namespaces..."
   local ns_list=(
-    onprem orch-boots orch-database orch-platform
-    orch-app orch-cluster orch-infra orch-sre
-    orch-ui orch-secret orch-gateway orch-harbor
+    orch-boots orch-database orch-platform
+    orch-infra
+    orch-ui orch-secret orch-gateway
     cattle-system
   )
+  #namespace not require for eim profile onprem orch-cluster orch-app orch-sre orch-harbor
 
   for ns in "${ns_list[@]}"; do
     kubectl create ns "$ns" --dry-run=client -o yaml | kubectl apply -f -
@@ -102,15 +103,15 @@ EOF
 
 create_passwords() {
   echo "🔐 Creating passwords..."
-  local harbor_password
-  harbor_password=$(openssl rand -hex 50)
+  #local harbor_password
+  #harbor_password=$(openssl rand -hex 50)
   local keycloak_password
   keycloak_password=$(generate_password)
   local postgres_password
   postgres_password=$(generate_password)
 
-  create_harbor_secret orch-harbor "$harbor_password"
-  create_harbor_password orch-harbor "$harbor_password"
+  #create_harbor_secret orch-harbor "$harbor_password"
+  #create_harbor_password orch-harbor "$harbor_password"
   create_keycloak_password orch-platform "$keycloak_password"
   create_postgres_password orch-database "$postgres_password"
   echo "✅ Passwords created"
@@ -307,10 +308,10 @@ ACTION="${1:-setup}"
 
 case "$ACTION" in
   install)
-    install_gitea
+    #install_gitea
     create_namespaces
-    create_sre_secrets
-    create_smtp_secrets
+    #create_sre_secrets
+    #create_smtp_secrets
     create_passwords
     remove_stale_vault_keys
     echo
