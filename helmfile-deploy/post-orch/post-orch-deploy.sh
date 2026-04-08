@@ -22,7 +22,7 @@ MAIN_ENV_CONFIG="$SCRIPT_DIR/post-orch.env"
 ################################
 # VALIDATION
 ################################
-VALID_PROFILES="onprem onprem-eim onprem-vpro onprem-eim-co onprem-eim-co-ao onprem-eim-co-o11y onprem-eim-co-ao-o11y onprem-oxm onprem-explicit-proxy o11y"
+VALID_PROFILES="onprem-eim onprem-vpro"
 
 is_valid_ip() {
   local ip=$1
@@ -91,16 +91,10 @@ validate_config() {
     fi
   fi
 
-  # OXM profile requires PXE variables
-  if [[ "$HELMFILE_ENV" == "onprem-oxm" ]]; then
-    if [[ -z "${EMF_OXM_PXE_SERVER_INT:-}" || -z "${EMF_OXM_PXE_SERVER_IP:-}" || -z "${EMF_OXM_PXE_SERVER_SUBNET:-}" ]]; then
-      echo "❌ OXM profile requires: EMF_OXM_PXE_SERVER_INT, EMF_OXM_PXE_SERVER_IP, EMF_OXM_PXE_SERVER_SUBNET"
-      ((errors++))
-    fi
-  fi
+
 
   # SMTP validation (if email enabled)
-  if [[ "${EMF_ENABLE_EMAIL:-true}" == "true" ]]; then
+  if [[ "${EMF_ENABLE_EMAIL:-false}" == "true" ]]; then
     if [[ -z "${EMF_SMTP_ADDRESS:-}" ]]; then
       echo "⚠️  EMF_ENABLE_EMAIL=true but EMF_SMTP_ADDRESS not set — SMTP secrets will be skipped"
     fi
@@ -480,7 +474,7 @@ for arg in "$@"; do
 done
 set -- "${args[@]}"
 
-HELMFILE_ENV="${EMF_HELMFILE_ENV:-onprem}"
+HELMFILE_ENV="${EMF_HELMFILE_ENV:-onprem-eim}"
 
 # ─── Logging: tee all output to timestamped log file ────────────────────────
 LOG_DIR="$SCRIPT_DIR/logs"
@@ -511,14 +505,15 @@ Actions:
   list                 List all available charts and their status
 
 Environment:
-  EMF_HELMFILE_ENV     Helmfile environment (default: onprem)
+  EMF_HELMFILE_ENV     Helmfile environment (default: onprem-eim)
+                       Valid profiles: onprem-eim, onprem-vpro
 
 Examples:
-  $0 install                             # Install all charts
+  $0 install                             # Install all charts (onprem-eim)
   $0 install traefik                     # Install only traefik
   $0 uninstall traefik                   # Uninstall only traefik
   $0 diff vault                          # Preview vault changes
-  EMF_HELMFILE_ENV=onprem-eim $0 install        # Install with eim profile
+  $0 install                             # Install with eim/vpro profile
   $0 list                                # List all charts
 EOF
 }

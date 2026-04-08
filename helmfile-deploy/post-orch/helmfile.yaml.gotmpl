@@ -23,70 +23,17 @@
 #     helmfile -e onprem list
 
 environments:
-  onprem:
+  onprem-eim:
     values:
       - environments/defaults-disabled.yaml.gotmpl
       - environments/onprem-eim-settings.yaml.gotmpl
       - environments/onprem-eim-features.yaml.gotmpl
-      - environments/onprem-eim-co-ao-o11y.yaml.gotmpl
-  onprem-oxm:
-    values:
-      - environments/defaults-disabled.yaml.gotmpl
-      - environments/defaults-onprem.yaml.gotmpl
-      - environments/onprem-oxm.yaml.gotmpl
-  onprem-explicit-proxy:
-    values:
-      - environments/defaults-disabled.yaml.gotmpl
-      - environments/defaults-onprem.yaml.gotmpl
-      - environments/onprem-explicit-proxy.yaml.gotmpl
   onprem-vpro:
     values:
       - environments/defaults-disabled.yaml.gotmpl
       - environments/onprem-eim-settings.yaml.gotmpl
       - environments/onprem-eim-features.yaml.gotmpl
       - environments/profile-vpro.yaml.gotmpl
-  onprem-eim:
-    values:
-      - environments/defaults-disabled.yaml.gotmpl
-      - environments/onprem-eim-settings.yaml.gotmpl
-      - environments/onprem-eim-features.yaml.gotmpl
-  onprem-eim-co:
-    values:
-      - environments/defaults-disabled.yaml.gotmpl
-      - environments/onprem-eim-settings.yaml.gotmpl
-      - environments/onprem-eim-features.yaml.gotmpl
-      - environments/profile-co.yaml.gotmpl
-  onprem-eim-co-ao:
-    values:
-      - environments/defaults-disabled.yaml.gotmpl
-      - environments/onprem-eim-settings.yaml.gotmpl
-      - environments/onprem-eim-features.yaml.gotmpl
-      - environments/profile-co.yaml.gotmpl
-      - environments/profile-ao.yaml.gotmpl
-
-  onprem-eim-co-o11y:
-    values:
-      - environments/defaults-disabled.yaml.gotmpl
-      - environments/onprem-eim-settings.yaml.gotmpl
-      - environments/onprem-eim-features.yaml.gotmpl
-      - environments/profile-co.yaml.gotmpl
-      - environments/profile-o11y.yaml.gotmpl
-
-  onprem-eim-co-ao-o11y:
-    values:
-      - environments/defaults-disabled.yaml.gotmpl
-      - environments/onprem-eim-settings.yaml.gotmpl
-      - environments/onprem-eim-features.yaml.gotmpl
-      - environments/profile-co.yaml.gotmpl
-      - environments/profile-ao.yaml.gotmpl
-      - environments/profile-o11y.yaml.gotmpl
-
-
-  o11y:
-    values:
-      - environments/profile-o11y.yaml.gotmpl
-
-
 ---
 
 helmDefaults:

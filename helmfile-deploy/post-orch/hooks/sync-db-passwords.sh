@@ -15,8 +15,20 @@
 set -euo pipefail
 
 PGCLUSTER_NS="orch-database"
+
+# Check if any PostgreSQL pods exist (postgresql-cluster may not be deployed yet)
+if ! kubectl get pods -n "$PGCLUSTER_NS" -l cnpg.io/cluster=postgresql-cluster --no-headers 2>/dev/null | grep -q .; then
+  echo "⏭️  No PostgreSQL cluster pods found in $PGCLUSTER_NS — skipping password sync (postgresql-cluster not yet deployed)"
+  exit 0
+fi
+
+# Wait for the primary pod to be ready (it may have just been created by postgresql-cluster)
+echo "⏳ Waiting for PostgreSQL primary pod to be ready..."
+kubectl wait --for=condition=Ready pod -l role=primary -n "$PGCLUSTER_NS" --timeout=120s 2>/dev/null || \
+  kubectl wait --for=condition=Ready pod -l cnpg.io/cluster=postgresql-cluster -n "$PGCLUSTER_NS" --timeout=120s 2>/dev/null || true
+
 PGCLUSTER_POD=$(kubectl get pods -n "$PGCLUSTER_NS" -l role=primary -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || \
-                kubectl get pods -n "$PGCLUSTER_NS" -l cnpg.io/cluster=postgresql-cluster -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+                kubectl get pods -n "$PGCLUSTER_NS" -l cnpg.io/cluster=postgresql-cluster -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
 
 if [[ -z "$PGCLUSTER_POD" ]]; then
   echo "⚠️  No PostgreSQL pod found in $PGCLUSTER_NS — skipping password sync"

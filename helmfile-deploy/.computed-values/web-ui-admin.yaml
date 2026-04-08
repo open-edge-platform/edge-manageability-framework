@@ -1,0 +1,4 @@
+global:
+  registry:
+    imagePullSecrets: []
+    name: registry-rs.edgeorchestration.intel.com/edge-orch

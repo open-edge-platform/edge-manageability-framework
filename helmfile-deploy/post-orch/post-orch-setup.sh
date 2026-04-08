@@ -53,7 +53,7 @@ create_namespaces() {
 # SECRETS
 ################################
 create_smtp_secrets() {
-  if [[ "${EMF_ENABLE_EMAIL:-true}" != "true" ]]; then
+  if [[ "${EMF_ENABLE_EMAIL:-false}" != "true" ]]; then
     echo "Skipping SMTP secrets (email disabled)"
     return
   fi

@@ -1,0 +1,6 @@
+commonName: tinkerbell-haproxy.cluster.onprem
+haproxyIngress:
+  enabled: true
+haproxyIngressRateLimit:
+  connections: 70
+  rps: 500

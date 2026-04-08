@@ -1,0 +1,3 @@
+image:
+  registry: registry-rs.edgeorchestration.intel.com/edge-orch
+  repository: common/tenancy-datamodel
