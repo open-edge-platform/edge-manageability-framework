@@ -21,12 +21,13 @@ echo "🚀 Starting Cluster Template Generation"
 # Environment setup based on deployment type
 # -----------------------------------------------------------------------------
 if [ "$DEPLOY_TYPE" = "aws" ]; then
+    # shellcheck disable=SC1091
     source "$HOME/.env"
     TEMPLATE_FILE="./cluster_aws.tpl"
     OUTPUT_FILE="${CLUSTER_NAME}.yaml"
 
 elif [ "$DEPLOY_TYPE" = "onprem" ]; then
-    # shellcheck disable=SC1091
+    # shellcheck disable=SC1091,SC1090
     source "${PWD}/${DEPLOY_TYPE}.env"
 
     # Validate ORCH_INSTALLER_PROFILE
@@ -268,6 +269,7 @@ if [ "$DEPLOY_TYPE" = "onprem" ]; then
 # AWS specific logic
 # -----------------------------------------------------------------------------
 elif [ "$DEPLOY_TYPE" = "aws" ]; then
+    # shellcheck disable=SC2155
     export CLUSTER_SCALE_PROFILE=$(grep -oP '^# Profile: "\K[^"]+' ~/pod-configs/SAVEME/${AWS_ACCOUNT}-${CLUSTER_NAME}-profile.tfvar)
 
     # O11Y Profile
@@ -423,7 +425,7 @@ if [[ -n "${PROCEED}" && "${PROCEED}" != "yes" ]]; then
     echo "Press any key to open your editor..."
     echo "=============================================================================="
     echo
-    read -n 1 -s
+    read -r -n 1 -s
     "${EDITOR:-vi}" "$OUTPUT_FILE"
 fi
 
