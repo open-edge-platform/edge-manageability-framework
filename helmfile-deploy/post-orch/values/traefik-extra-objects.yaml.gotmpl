@@ -2,6 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+serviceMonitor:
+  enabled: {{ .Values | get "prometheus-crd.enabled" false }}
+
 orchSecretName: {{ .Values.tlsSecret }}
 # internal keycloak JWKS URL should be static but providing a way to modify it here
 keycloakJwksUrl: http://platform-keycloak.orch-platform.svc
