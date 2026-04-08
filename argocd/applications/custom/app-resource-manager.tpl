@@ -40,6 +40,9 @@ traefikReverseProxy:
   tlsOption: {{ .Values.argo.traefik.tlsOption | default "" | quote }}
 {{- end }}
 
+ingressRoute:
+  apiHostname: api.{{ .Values.argo.clusterDomain }}
+
 {{- with .Values.argo.resources.appResourceManager.root }}
 resources:
   {{- toYaml . | nindent 2 }}
