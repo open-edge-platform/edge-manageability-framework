@@ -22,11 +22,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	dockertypes "github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/api/types/registry"
-	docker "github.com/docker/docker/client"
-	"github.com/docker/docker/pkg/archive"
+	archive "github.com/moby/go-archive"
+	"github.com/moby/moby/api/types/registry"
+	docker "github.com/moby/moby/client"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"oras.land/oras-go/v2"
 	"oras.land/oras-go/v2/content/file"
@@ -300,7 +298,7 @@ var _ = Describe("Provisioned registries push test", Label("orchestrator-integra
 				imageBuildResponse, err := dc.ImageBuild(
 					ctx,
 					buildContext,
-					dockertypes.ImageBuildOptions{
+					docker.ImageBuildOptions{
 						Dockerfile: "Dockerfile",
 						Tags:       []string{"docker-push-test-image:latest"},
 						Remove:     true,
@@ -318,11 +316,11 @@ var _ = Describe("Provisioned registries push test", Label("orchestrator-integra
 				regDomain := strings.ToLower(reg.RootURL[strings.LastIndex(reg.RootURL, "//")+2:])
 				remoteImageName := fmt.Sprintf("%s/%s:%s", strings.TrimRight(regDomain, "/"), imageName, imageVer)
 
-				err = dc.ImageTag(ctx, imageName+":"+imageVer, remoteImageName)
+				_, err = dc.ImageTag(ctx, docker.ImageTagOptions{Source: imageName + ":" + imageVer, Target: remoteImageName})
 				Expect(err).ToNot(HaveOccurred(), "tagging docker image %s as %s", imageName+":"+imageVer, remoteImageName)
 
 				Expect(regAuth).ToNot(BeEmpty(), "checking docker login credentials")
-				push, err := dc.ImagePush(ctx, remoteImageName, image.PushOptions{
+				push, err := dc.ImagePush(ctx, remoteImageName, docker.ImagePushOptions{
 					All:          true,
 					RegistryAuth: regAuth,
 				})
@@ -355,13 +353,13 @@ var _ = Describe("Provisioned registries push test", Label("orchestrator-integra
 					"/repositories/"+imageName,
 					reg.Username, reg.AuthToken, http.StatusOK, true)
 
-				remove, err := dc.ImageRemove(ctx, remoteImageName, image.RemoveOptions{
+				remove, err := dc.ImageRemove(ctx, remoteImageName, docker.ImageRemoveOptions{
 					Force: true,
 				})
 				Expect(err).ToNot(HaveOccurred(), "removing image %s from docker", remoteImageName)
 				Expect(remove).To(HaveLen(2), "checking docker remove reply")
-				Expect(remove[0].Untagged).To(Equal(remoteImageName), "checking docker remove reply part 1")
-				Expect(remove[1].Untagged).To(ContainSubstring("sha"), "checking docker remove reply part 2")
+				Expect(remove.Items[0].Untagged).To(Equal(remoteImageName), "checking docker remove reply part 1")
+				Expect(remove.Items[1].Untagged).To(ContainSubstring("sha"), "checking docker remove reply part 2")
 			})
 
 			It("should check that a docker helm chart can be pushed", func() {
