@@ -21,8 +21,8 @@
 
 ──── PROFILES ──────────────────────────────────────────────
 
-  onprem-eim    Full EIM (44 charts) — Web UI + provisioning
-  onprem-vpro   vPro only (40 charts) — no UI, no PXE boot
+  onprem-eim    EIM-Only (43 charts) — Web UI + provisioning
+  onprem-vpro   vPro only (39 charts) — no UI, no PXE boot, skip osprovisioning 
 
 
 ──── INSTALL ───────────────────────────────────────────────
