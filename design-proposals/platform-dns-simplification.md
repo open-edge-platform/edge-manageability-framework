@@ -45,7 +45,7 @@ This creates several problems:
 These subdomains are accessed by operators via web browser or CLI tools.
 
 | Subdomain | Service | Protocol | Notes |
-|-----------|---------|----------|-------|
+| --------- | ------- | -------- | ----- |
 | `web-ui` | Web UI | HTTPS | Main dashboard |
 | `api` | API Gateway (nexus-api-gw) | HTTPS + gRPC | Multiplexed via PathPrefix already |
 | `keycloak` | Authentication | HTTPS | OAuth/OIDC provider |
@@ -69,7 +69,7 @@ These subdomains are accessed by operators via web browser or CLI tools.
 These subdomains are accessed by edge node agents over gRPC or specialized protocols.
 
 | Subdomain | Service | Protocol | Notes |
-|-----------|---------|----------|-------|
+| --------- | ------- | -------- | ----- |
 | `infra-node` | Host Manager | gRPC | |
 | `update-node` | Maintenance Manager | gRPC | |
 | `telemetry-node` | Telemetry Manager | gRPC | |
@@ -97,7 +97,7 @@ Replace all subdomains with path-based routing under a single domain name.
 **User-facing services** become path prefixes:
 
 | Current | Proposed | Complexity |
-|---------|----------|------------|
+| ------- | -------- | ---------- |
 | `web-ui.example.com` | `example.com/` | Straightforward |
 | `api.example.com` | `example.com/api/` | Already uses PathPrefix |
 | `keycloak.example.com` | `example.com/auth/` | Moderate (see below) |
@@ -118,7 +118,7 @@ Replace all subdomains with path-based routing under a single domain name.
 **Edge-node-facing gRPC services** become path prefixes using gRPC's native path routing:
 
 | Current | Proposed |
-|---------|----------|
+| ------- | -------- |
 | `infra-node.example.com` | `example.com` with gRPC service routing |
 | `update-node.example.com` | `example.com` with gRPC service routing |
 | `telemetry-node.example.com` | `example.com` with gRPC service routing |
@@ -218,7 +218,7 @@ eliminates 10+ DNS records and simplifies edge node provisioning.
 ### DNS Records: Before and After
 
 | Scenario | Current | Proposed |
-|----------|---------|----------|
+| -------- | ------- | -------- |
 | Minimal (vPro profile) | ~20 records | 1 record |
 | Full deployment | ~35 records | 1 record |
 | Full deployment with Harbor | ~35 records | 2 records (1 + registry-oci) |
@@ -226,7 +226,7 @@ eliminates 10+ DNS records and simplifies edge node provisioning.
 ### Components Requiring Changes
 
 | Component | Change Required | Effort |
-|-----------|----------------|--------|
+| --------- | --------------- | ------ |
 | Traefik IngressRoute rules | Host() to PathPrefix() | Medium |
 | traefik-extra-objects chart | Rewrite routing rules | Medium |
 | Keycloak realm configuration | Update redirect URIs and paths | Medium |
@@ -312,7 +312,7 @@ templates within a single repository. The changes follow repeatable patterns
 Without automation, this work would require approximately 2-3 engineer-weeks:
 
 | Task | Effort | Notes |
-|------|--------|-------|
+| ---- | ------ | ----- |
 | Traefik routing rules (~15 template files) | 2-3 days | Repetitive Host() to PathPrefix() rewrites |
 | Keycloak realm configuration | 1-2 days | 15+ OAuth clients with redirect URIs to update |
 | infra-config ConfigMap + edge agent configs | 1-2 days | Straightforward but requires cross-repo coordination |
@@ -356,7 +356,7 @@ template files:
   for accuracy.
 
 | Task | Manual | AI-Assisted |
-|------|--------|-------------|
+| ---- | ------ | ----------- |
 | Configuration and template changes | 5-7 days | 1 day (AI) + 1 day (review) |
 | Cross-repo agent changes | 1-2 days | 0.5 days (AI) + 0.5 days (review) |
 | Automated test updates | 1-2 days | 0.5 days (AI) + 0.5 days (review) |
