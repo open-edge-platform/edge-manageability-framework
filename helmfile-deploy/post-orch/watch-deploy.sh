@@ -104,7 +104,7 @@ pct=0
 (( total > 0 )) && pct=$(( done_count * 100 / total ))
 
 echo ""
-echo "  EMF Deployment Status  ($HELMFILE_ENV)  $(date '+%H:%M:%S')  [$MODE]"
+echo "  EMF Deployment Status  ($HELMFILE_ENV)  [$MODE]"
 echo "  ════════════════════════════════════════════════"
 printf "  Progress: %d/%d (%d%%)   ✅ %d  ❌ %d  ⏳ %d\n" \
   "$done_count" "$total" "$pct" "$deployed" "$failed" $(( pending + queued ))

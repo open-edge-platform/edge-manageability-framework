@@ -85,6 +85,7 @@ releases:
       app: keycloak-operator
     namespace: orch-platform
     chart: edge-orch/common/charts/keycloak-operator
+    wait: true
     version: 26.1.2
     values:
       - values/keycloak-operator.yaml
@@ -97,6 +98,7 @@ releases:
       app: postgresql-operator
     namespace: postgresql-operator
     chart: cnpg/cloudnative-pg
+    wait: true
     version: 0.27.1
     values:
       - values/postgresql-operator.yaml
@@ -112,6 +114,7 @@ releases:
       app: namespace-label
     namespace: ns-label
     chart: edge-orch/common/charts/namespace-label
+    wait: true
     version: 26.0.2
     values:
       - values/namespace-label.yaml.gotmpl
@@ -127,6 +130,7 @@ releases:
       app: cert-manager
     namespace: cert-manager
     chart: jetstack/cert-manager
+    wait: true
     version: 1.19.3
     timeout: 300
     values:
@@ -139,6 +143,7 @@ releases:
       app: external-secrets
     namespace: orch-secret
     chart: external-secrets/external-secrets
+    wait: true
     version: 2.0.1
     values:
       - values/external-secrets.yaml
@@ -152,6 +157,7 @@ releases:
       app: istio-base
     namespace: istio-system
     chart: istio/base
+    wait: true
     version: 1.29.1
     values:
       - values/istio-base.yaml
@@ -163,6 +169,7 @@ releases:
       app: k8s-metrics-server
     namespace: kube-system
     chart: edge-orch/common/charts/k8s-metrics-server
+    wait: true
     version: 25.2.1
     values:
       - values/k8s-metrics-server.yaml
@@ -179,6 +186,7 @@ releases:
       app: kyverno
     namespace: kyverno
     chart: kyverno/kyverno
+    wait: true
     version: 3.7.1
     values:
       - values/kyverno.yaml
@@ -194,6 +202,7 @@ releases:
       app: kyverno-extra-policies
     namespace: kyverno
     chart: edge-orch/common/charts/kyverno-extra-policies
+    wait: true
     version: 26.0.0
     values:
       - values/kyverno-extra-policies.yaml
@@ -211,6 +220,7 @@ releases:
       app: istiod
     namespace: istio-system
     chart: istio/istiod
+    wait: true
     version: 1.29.1
     values:
       - values/istiod.yaml.gotmpl
@@ -224,6 +234,7 @@ releases:
       app: reloader
     namespace: orch-platform
     chart: stakater/reloader
+    wait: true
     version: 2.2.3
     values:
       - values/reloader.yaml
@@ -237,6 +248,7 @@ releases:
       app: wait-istio-job
     namespace: ns-label
     chart: edge-orch/common/charts/job-wait
+    wait: true
     version: 26.0.2
     values:
       - values/wait-istio-job.yaml
@@ -254,6 +266,7 @@ releases:
       app: postgresql-secrets
     namespace: orch-database
     chart: edge-orch/common/charts/postgresql-secrets
+    wait: true
     version: 26.0.1
     values:
       - values/postgresql-secrets.yaml.gotmpl
@@ -275,6 +288,7 @@ releases:
       app: postgresql-cluster
     namespace: orch-database
     chart: cnpg/cluster
+    wait: true
     version: 0.6.0
     values:
       - values/postgresql-cluster.yaml.gotmpl
@@ -296,6 +310,7 @@ releases:
       app: istio-policy
     namespace: istio-system
     chart: edge-orch/common/charts/istio-policy
+    wait: true
     version: 26.0.2
     values:
       - values/istio-policy.yaml
@@ -309,6 +324,7 @@ releases:
       app: kiali
     namespace: istio-system
     chart: kiali/kiali-server
+    wait: true
     version: 2.22.0
     values:
       - values/kiali.yaml
@@ -322,6 +338,7 @@ releases:
       app: platform-autocert
     namespace: cert-manager
     chart: edge-orch/common/charts/platform-autocert
+    wait: true
     version: 1.0.2
     values:
       - values/platform-autocert.yaml.gotmpl
@@ -335,8 +352,9 @@ releases:
       app: platform-keycloak
     namespace: orch-platform
     chart: edge-orch/common/charts/keycloak-instance
+    wait: true
     version: 26.1.2
-    timeout: 300
+    timeout: 600
     values:
       - values/platform-keycloak.yaml.gotmpl
       - values/platform-keycloak-realm.yaml.gotmpl
@@ -355,6 +373,7 @@ releases:
       app: vault
     namespace: orch-platform
     chart: hashicorp/vault
+    wait: true
     version: 0.32.0
     values:
       - values/vault.yaml.gotmpl
@@ -368,12 +387,17 @@ releases:
       app: secrets-config
     namespace: orch-platform
     chart: edge-orch/common/charts/secrets-config
+    wait: true
     version: 26.0.2
     values:
       - values/secrets-config.yaml.gotmpl
     condition: secrets-config.enabled
     needs:
       - orch-platform/vault
+    hooks:
+      - events: ["presync"]
+        showlogs: true
+        command: "./hooks/cleanup-vault-keys.sh"
 
 
   - name: self-signed-cert
@@ -381,6 +405,7 @@ releases:
       app: self-signed-cert
     namespace: cert-manager
     chart: edge-orch/common/charts/self-signed-cert
+    wait: true
     version: 26.0.1
     values:
       - values/self-signed-cert.yaml.gotmpl
@@ -398,6 +423,7 @@ releases:
       app: rs-proxy
     namespace: orch-platform
     chart: edge-orch/common/charts/rs-proxy
+    wait: true
     version: 25.2.3
     values:
       - values/rs-proxy.yaml.gotmpl
@@ -412,6 +438,7 @@ releases:
       app: secret-wait-tls-orch
     namespace: orch-gateway
     chart: edge-orch-rs/common/charts/secret-wait
+    wait: true
     version: 26.0.2
     values:
       - values/secret-wait-tls-orch.yaml
@@ -430,6 +457,7 @@ releases:
       app: copy-ca-cert-gateway-to-cattle
     namespace: cattle-system
     chart: edge-orch/common/charts/copy-secret
+    wait: true
     version: 26.0.0
     values:
       - values/copy-ca-cert-gateway-to-cattle.yaml
@@ -443,6 +471,7 @@ releases:
       app: copy-ca-cert-gateway-to-infra
     namespace: orch-infra
     chart: edge-orch/common/charts/copy-secret
+    wait: true
     version: 26.0.0
     values:
       - values/copy-ca-cert-gateway-to-infra.yaml
@@ -456,6 +485,7 @@ releases:
       app: copy-keycloak-admin-to-infra
     namespace: orch-infra
     chart: edge-orch/common/charts/copy-secret
+    wait: true
     version: 26.0.0
     values:
       - values/copy-keycloak-admin-to-infra.yaml
@@ -473,6 +503,7 @@ releases:
       app: traefik-pre
     namespace: orch-gateway
     chart: edge-orch/common/charts/traefik-pre
+    wait: true
     version: 3.0.1
     values:
       - values/traefik-pre.yaml.gotmpl
@@ -490,6 +521,7 @@ releases:
       app: ingress-haproxy
     namespace: orch-boots
     chart: haproxy/kubernetes-ingress
+    wait: true
     version: 1.41.0
     values:
       - values/ingress-haproxy.yaml
@@ -503,6 +535,7 @@ releases:
       app: kyverno-istio-policy
     namespace: kyverno
     chart: edge-orch/common/charts/kyverno-istio-policy
+    wait: true
     version: 26.0.0
     values:
       - values/kyverno-istio-policy.yaml
@@ -516,6 +549,7 @@ releases:
       app: kyverno-traefik-policy
     namespace: kyverno
     chart: edge-orch/common/charts/kyverno-traefik-policy
+    wait: true
     version: 26.0.0
     values:
       - values/kyverno-traefik-policy.yaml
@@ -530,6 +564,7 @@ releases:
       app: traefik
     namespace: orch-gateway
     chart: traefik/traefik
+    wait: true
     version: 39.0.6
     values:
       - values/traefik.yaml.gotmpl
@@ -547,6 +582,7 @@ releases:
       app: haproxy-ingress-pxe-boots
     namespace: orch-boots
     chart: edge-orch/common/charts/haproxy-ingress-pxe-boots
+    wait: true
     version: 1.0.1
     values:
       - values/haproxy-ingress-pxe-boots.yaml.gotmpl
@@ -560,6 +596,7 @@ releases:
       app: tenancy-datamodel
     namespace: orch-iam
     chart: edge-orch/common/charts/tenancy-datamodel
+    wait: true
     version: 26.1.0
     values:
       - values/tenancy-datamodel.yaml.gotmpl
@@ -573,6 +610,7 @@ releases:
       app: tenancy-api-mapping
     namespace: orch-iam
     chart: edge-orch/common/charts/tenancy-api-mapping
+    wait: true
     version: 26.0.15
     values:
       - values/tenancy-api-mapping.yaml.gotmpl
@@ -586,6 +624,7 @@ releases:
       app: tenancy-manager
     namespace: orch-iam
     chart: edge-orch/common/charts/tenancy-manager
+    wait: true
     version: 26.1.0
     values:
       - values/tenancy-manager.yaml.gotmpl
@@ -600,6 +639,7 @@ releases:
       app: nexus-api-gw
     namespace: orch-iam
     chart: edge-orch/common/charts/nexus-api-gw
+    wait: true
     version: 26.1.0
     values:
       - values/nexus-api-gw.yaml.gotmpl
@@ -614,6 +654,7 @@ releases:
       app: traefik-extra-objects
     namespace: orch-gateway
     chart: edge-orch/common/charts/traefik-extra-objects
+    wait: true
     version: 26.0.2
     values:
       - values/traefik-extra-objects.yaml.gotmpl
@@ -631,6 +672,7 @@ releases:
       app: keycloak-tenant-controller
     namespace: orch-gateway
     chart: edge-orch/common/charts/keycloak-tenant-controller
+    wait: true
     version: 26.1.0
     values:
       - values/keycloak-tenant-controller.yaml.gotmpl
@@ -650,6 +692,7 @@ releases:
       app: secret-wait-tls-boots
     namespace: orch-boots
     chart: edge-orch-rs/common/charts/secret-wait
+    wait: true
     version: 26.0.2
     values:
       - values/secret-wait-tls-boots.yaml
@@ -663,6 +706,7 @@ releases:
       app: token-fs
     namespace: orch-secret
     chart: edge-orch/common/charts/token-fs
+    wait: true
     version: 26.1.0
     values:
       - values/token-fs.yaml.gotmpl
@@ -680,6 +724,7 @@ releases:
       app: copy-ca-cert-boots-to-gateway
     namespace: orch-gateway
     chart: edge-orch/common/charts/copy-secret
+    wait: true
     version: 26.0.0
     values:
       - values/copy-ca-cert-boots-to-gateway.yaml
@@ -694,6 +739,7 @@ releases:
       app: copy-ca-cert-boots-to-infra
     namespace: orch-infra
     chart: edge-orch/common/charts/copy-secret
+    wait: true
     version: 26.0.0
     values:
       - values/copy-ca-cert-boots-to-infra.yaml
@@ -712,6 +758,7 @@ releases:
       app: component-status
     namespace: orch-platform
     chart: edge-orch/common/charts/component-status
+    wait: true
     version: 26.1.0
     values:
       - values/component-status.yaml.gotmpl
@@ -726,6 +773,7 @@ releases:
       app: infra-core
     namespace: orch-infra
     chart: edge-orch/infra/charts/infra-core
+    wait: true
     version: 2.19.8
     values:
       - values/infra-core.yaml.gotmpl
@@ -739,6 +787,7 @@ releases:
       app: metadata-broker
     namespace: orch-ui
     chart: edge-orch/orch-ui/charts/orch-metadata-broker
+    wait: true
     version: 1.0.1
     values:
       - values/metadata-broker.yaml.gotmpl
@@ -756,6 +805,7 @@ releases:
       app: auth-service
     namespace: orch-gateway
     chart: edge-orch/common/charts/auth-service
+    wait: true
     version: 26.1.0
     values:
       - values/auth-service.yaml.gotmpl
@@ -774,6 +824,7 @@ releases:
       app: infra-onboarding
     namespace: orch-infra
     chart: edge-orch/infra/charts/infra-onboarding
+    wait: true
     version: 1.35.12
     values:
       - values/infra-onboarding.yaml.gotmpl
@@ -787,6 +838,7 @@ releases:
       app: infra-external
     namespace: orch-infra
     chart: edge-orch/infra/charts/infra-external
+    wait: true
     version: 2.12.12
     values:
       - values/infra-external.yaml.gotmpl
@@ -800,6 +852,7 @@ releases:
       app: infra-managers
     namespace: orch-infra
     chart: edge-orch/infra/charts/infra-managers
+    wait: true
     version: 2.17.3
     values:
       - values/infra-managers.yaml.gotmpl
@@ -818,6 +871,7 @@ releases:
       app: certificate-file-server
     namespace: orch-gateway
     chart: edge-orch/common/charts/certificate-file-server
+    wait: true
     version: 25.2.3
     values:
       - values/certificate-file-server.yaml.gotmpl
@@ -831,6 +885,7 @@ releases:
       app: web-ui-admin
     namespace: orch-ui
     chart: edge-orch/orch-ui/charts/orch-ui-admin
+    wait: true
     version: 4.0.7
     values:
       - values/web-ui-admin.yaml.gotmpl
@@ -843,6 +898,7 @@ releases:
       app: web-ui-infra
     namespace: orch-ui
     chart: edge-orch/orch-ui/charts/orch-ui-infra
+    wait: true
     version: 4.0.4
     values:
       - values/web-ui-infra.yaml.gotmpl
@@ -855,6 +911,7 @@ releases:
       app: web-ui
     namespace: orch-ui
     chart: edge-orch/orch-ui/charts/orch-ui-root
+    wait: true
     version: 4.0.8
     values:
       - values/web-ui-root.yaml.gotmpl

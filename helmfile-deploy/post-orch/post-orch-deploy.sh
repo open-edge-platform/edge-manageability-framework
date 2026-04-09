@@ -229,117 +229,25 @@ helmfile_sync_all() {
     done <<< "$installed_releases"
   fi
 
-  # Count total enabled releases for progress tracking
-  local total_releases
-  total_releases=$(cd "$SCRIPT_DIR" && helmfile -e "$HELMFILE_ENV" list 2>/dev/null \
-    | awk 'NR>1 && $3=="true" {count++} END{print count+0}')
-
   echo ""
-  echo "🚀 Running helmfile sync (parallel deployment — $total_releases releases)..."
+  echo "🚀 Running helmfile sync (parallel deployment)..."
   echo ""
 
   local sync_exit=0
-  local tmplog
-  tmplog=$(mktemp)
-
-  # Run helmfile sync, tee output for live display and capture for progress
-  (cd "$SCRIPT_DIR" && helmfile -e "$HELMFILE_ENV" --skip-deps sync --concurrency 4) 2>&1 | tee "$tmplog" | \
-  awk -v total="$total_releases" '
-    { print }
-    /Upgrading release=/ {
-      match($0, /release=([^,]+)/, m)
-      if (m[1] != "") {
-        current_release = m[1]
-        waiting = 1
-        printf "\n  ━━ 📦 Deploying: %s ━━\n", current_release
-      }
-    }
-    waiting && /has been upgraded|does not exist\. Installing it now\./ {
-      # Mark release as in-progress (installed or upgraded)
-    }
-    waiting && (/^  exit status 1$/ || /FAILED RELEASES:/) {
-      if (waiting) {
-        failed++; done_count++; waiting = 0
-        elapsed = systime() - start
-        printf "  ┌─ Progress: %d/%d  |  ✅ %d  ❌ %d  |  %dm %ds\n", done_count, total, passed, failed, elapsed/60, elapsed%60
-        print "  └──────────────────────────────────────────────────────────"
-      }
-    }
-    /Listing releases matching/ {
-      # helmfile prints this between releases — if we were waiting, previous succeeded
-      if (waiting) {
-        passed++; done_count++; waiting = 0
-        elapsed = systime() - start
-        printf "  ┌─ Progress: %d/%d  |  ✅ %d  ❌ %d  |  %dm %ds\n", done_count, total, passed, failed, elapsed/60, elapsed%60
-        print "  └──────────────────────────────────────────────────────────"
-      }
-    }
-    END {
-      # Final release may not have a trailing "Listing releases" line
-      if (waiting) {
-        passed++; done_count++
-        elapsed = systime() - start
-        printf "  ┌─ Progress: %d/%d  |  ✅ %d  ❌ %d  |  %dm %ds\n", done_count, total, passed, failed, elapsed/60, elapsed%60
-        print "  └──────────────────────────────────────────────────────────"
-      }
-    }
-    BEGIN { start = systime(); passed=0; failed=0; done_count=0; waiting=0 }
-  '
-  sync_exit=${PIPESTATUS[0]}
-  rm -f "$tmplog"
+  (cd "$SCRIPT_DIR" && helmfile -e "$HELMFILE_ENV" --skip-deps sync --concurrency 4) 2>&1
+  sync_exit=$?
 
   local total_duration=$(( SECONDS - start_time ))
-
-  # ─── Summary ─────────────────────────────────────────────────────────────────
   echo ""
   echo "═══════════════════════════════════════════════════════════════"
-  echo "  DEPLOYMENT SUMMARY  (env: $HELMFILE_ENV)"
+  echo "  DEPLOYMENT COMPLETE  (env: $HELMFILE_ENV)"
   echo "  Total time: $(( total_duration / 60 ))m $(( total_duration % 60 ))s"
-  echo "═══════════════════════════════════════════════════════════════"
-  echo ""
-
-  # Show final state of post-orch releases only (exclude pre-orch releases like metallb, openebs)
-  local helmfile_releases
-  helmfile_releases=$(awk '/^releases:/,0 { if (/^  - name:/) print $3 }' "$SCRIPT_DIR/helmfile.yaml.gotmpl" | sort -u)
-
-  local deployed=0 failed_count=0
-  local failed_releases=()
-  while IFS=$'\t' read -r name ns _ _ status _; do
-    name=$(echo "$name" | xargs)
-    status=$(echo "$status" | xargs)
-    # Skip releases not managed by this helmfile
-    if ! echo "$helmfile_releases" | grep -qx "$name"; then
-      continue
-    fi
-    if [[ "$status" == "deployed" ]]; then
-      ((deployed++))
-    elif [[ -n "$name" ]]; then
-      ((failed_count++))
-      failed_releases+=("$name")
-    fi
-  done < <(helm list -A -a --no-headers 2>/dev/null)
-
-  echo "  Deployed: $deployed  |  Failed/Pending: $failed_count"
-
-  if (( failed_count > 0 )); then
-    echo ""
-    echo "❌ Failed releases:"
-    for r in "${failed_releases[@]}"; do
-      echo "   ✗ $r"
-      echo "     Retry: helmfile -e $HELMFILE_ENV -l app=$r sync"
-    done
-  fi
-
-  echo "═══════════════════════════════════════════════════════════════"
-
   if (( sync_exit != 0 )); then
-    echo ""
-    echo "⚠️  helmfile sync exited with code $sync_exit — some releases may have failed"
-    echo "   See failed releases above for individual retry commands"
+    echo "  ⚠️  helmfile sync exited with code $sync_exit"
   else
-    echo ""
-    echo "✅ All charts installed successfully"
+    echo "  ✅ All charts installed successfully"
   fi
+  echo "═══════════════════════════════════════════════════════════════"
 }
 
 helmfile_destroy_all() {
