@@ -325,7 +325,7 @@ end
     participant AMT as "AMT Device"
     
 
-    Note over CLI,INV: 1. Request KVM session
+    Note over CLI,INV: 1. Request KVM session (orch-cli --kvm start)
     CLI->>APIV2: PATCH /compute/hosts/:id desiredKvmState=KVM_STATE_START
     APIV2->>INV: UPDATE desired_kvm_state=KVM_STATE_START
     APIV2-->>CLI: 200 OK
@@ -387,12 +387,12 @@ end
     MPS-->>AMT: Input delivered
 
     Note over Browser,AMT: 8. KVM session teardown
-    Note over Browser,CLI: Two equivalent stop triggers — both converge on the same downstream flow
+    Note over Browser,CLI: Triggered by: orch-cli --kvm stop OR browser tab close
     alt Browser-initiated stop (tab closes or clicks Stop button in UI)
     Browser-xCLI: WebSocket /ws/kvm disconnected (tab close or POST /api/disconnect)
-    CLI->>CLI: browser gone / disconnect request
-    else orch-cli initiated stop (orch-cli --kvm stop)
-    CLI->>CLI: operator runs --kvm stop; signals local HTTP server to close
+    Note over CLI: browser gone, closes MPS relay
+    else orch-cli --kvm stop
+    Note over CLI: --kvm stop signals local HTTP server to close MPS relay
     end
     CLI-xMPS: Close wss://mps-wss.domain.com/relay/... (WebSocket close frame)
     MPS-xAMT: MPS relay terminates — AMT KVM channel closes
