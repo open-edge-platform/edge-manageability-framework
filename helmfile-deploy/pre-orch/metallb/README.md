@@ -1,8 +1,14 @@
+<!-- SPDX-FileCopyrightText: 2026 Intel Corporation -->
+<!--                                                          -->
+<!-- SPDX-License-Identifier: Apache-2.0                      -->
+
 # MetalLB Deployment
 
-Standalone helmfile for deploying MetalLB load balancer and IP address pool configuration for EMF on-prem.
+Standalone helmfile for deploying MetalLB load balancer
+and IP address pool configuration for EMF on-prem.
 
 Deploys MetalLB v0.15.2 with two IPAddressPools:
+
 - `TRAEFIK_IP` — assigned to Traefik in `orch-gateway`
 - `HAPROXY_IP` — assigned to HAProxy in `orch-boots`
 
