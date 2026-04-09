@@ -2,23 +2,20 @@
 
 # SPDX-License-Identifier: Apache-2.0
 #
-# Pre-deployment configuration: namespaces, secrets, passwords, Gitea
+# Pre-deployment configuration: namespaces, secrets, passwords
 # Run this before post-orch-deploy.sh.
 #
 # Usage:
-#   ./post-orch-setup.sh setup       # Create namespaces, secrets, passwords
-#   ./post-orch-setup.sh cleanup     # Remove secrets and namespaces
+#   ./pre-orch-config.sh install     # Create namespaces, secrets, passwords
+#   ./pre-orch-config.sh uninstall   # Remove secrets and namespaces
 
 set -e
 set -o pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MAIN_ENV_CONFIG="$SCRIPT_DIR/post-orch.env"
 
-# Import shared functions
+# Import shared functions (generate_password, create_keycloak_password, create_postgres_password)
 source "$SCRIPT_DIR/functions.sh"
-
-
 
 ################################
 # PREREQUISITES
@@ -58,6 +55,7 @@ create_passwords() {
   keycloak_password=$(generate_password)
   local postgres_password
   postgres_password=$(generate_password)
+  
 
   create_keycloak_password orch-platform "$keycloak_password"
   create_postgres_password orch-database "$postgres_password"
@@ -129,15 +127,6 @@ cleanup_all() {
 ################################
 # MAIN
 ################################
-if [[ -f "$MAIN_ENV_CONFIG" ]]; then
-  set -a
-  source "$MAIN_ENV_CONFIG"
-  set +a
-else
-  echo "❌ Missing post-orch.env"
-  exit 1
-fi
-
 export KUBECONFIG="${KUBECONFIG:-/home/${SUDO_USER:-$USER}/.kube/config}"
 
 ensure_prereqs

@@ -235,7 +235,7 @@ helmfile_sync_all() {
     | awk 'NR>1 && $3=="true" {count++} END{print count+0}')
 
   echo ""
-  echo "🚀 Running helmfile sync (parallel DAG deployment — $total_releases releases)..."
+  echo "🚀 Running helmfile sync (parallel deployment — $total_releases releases)..."
   echo ""
 
   local sync_exit=0
