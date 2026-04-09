@@ -1,7 +1,13 @@
+<!-- SPDX-FileCopyrightText: 2026 Intel Corporation -->
+<!--                                                          -->
+<!-- SPDX-License-Identifier: Apache-2.0                      -->
+
 # Helmfile Deployment Guide
 
-Helmfile-based deployment for the Edge Manageability Framework (EMF).
-This guide covers the deployment flow, available profiles, configuration, and troubleshooting for on-premises installations.
+Helmfile-based deployment for the Edge Manageability
+Framework (EMF). This guide covers the deployment flow,
+available profiles, configuration, and troubleshooting
+for on-premises installations.
 
 ## Table of Contents
 
@@ -27,77 +33,89 @@ This guide covers the deployment flow, available profiles, configuration, and tr
 - [Deployment Flow](#deployment-flow)
 - [Re-running After Failure](#re-running-after-failure)
 - [Troubleshooting](#troubleshooting)
-- [Advanced Usage](#advanced-usage)
 
 ---
 
 ## Overview
 
-The `helmfile-deploy/` folder contains everything needed to deploy EMF onto a Kubernetes cluster using [Helmfile](https://github.com/helmfile/helmfile). The deployment is driven by a single script (`post-orch-deploy.sh`) that:
+The `helmfile-deploy/` folder contains everything needed
+to deploy EMF onto a Kubernetes cluster using
+[Helmfile](https://github.com/helmfile/helmfile).
+The deployment is driven by a single script
+(`post-orch-deploy.sh`) that:
 
 1. Loads configuration from `post-orch.env`
 2. Validates all required settings
-3. Deploys Helm charts one-by-one in dependency order
-4. Automatically recovers from common failure modes on rerun
+3. Deploys Helm charts in dependency order
+4. Automatically recovers from common failure modes
 
-Each deployment profile determines **which components** are installed. You choose a profile based on what features you need (Edge Infrastructure Management only, vPro management, Cluster Orchestration, etc.).
+Each deployment profile determines **which components**
+are installed. You choose a profile based on what features
+you need (Edge Infrastructure Management only, vPro
+management, Cluster Orchestration, etc.).
 
 ## Prerequisites
 
 | Tool | Version | Purpose |
 |------|---------|---------|
-| [helmfile](https://github.com/helmfile/helmfile) | v0.150+ | Declarative Helm chart management |
-| [helm](https://helm.sh/) | v3.12+ | Kubernetes package manager |
-| [helm-diff](https://github.com/databus23/helm-diff) | latest | Preview changes before applying |
-| kubectl | matching cluster | Kubernetes CLI (configured for target cluster) |
+| helmfile | v0.150+ | Declarative Helm management |
+| helm | v3.12+ | Kubernetes package manager |
+| helm-diff | latest | Preview changes |
+| kubectl | matching | Kubernetes CLI |
 
 ## Folder Structure
 
-```
+```text
 helmfile-deploy/
-├── post-orch-deploy.sh              # Main deployment script (install/uninstall/diff/list)
-├── post-orch-setup.sh               # Pre-deployment setup (install/uninstall namespaces, secrets)
-├── post-orch.env                  # Environment variable configuration
-├── helmfile.yaml.gotmpl        # Main helmfile template (all release definitions)
-├── functions.sh                # Shared helper functions
+├── post-orch-deploy.sh        # Main script
+├── post-orch-setup.sh         # Pre-deployment setup
+├── post-orch.env              # Environment config
+├── helmfile.yaml.gotmpl       # Release definitions
+├── functions.sh               # Shared helpers
 │
-├── environments/               # Profile definitions (which components to enable)
-│   ├── defaults-disabled.yaml.gotmpl       # Base: all optional components disabled
-│   ├── onprem-eim-settings.yaml.gotmpl     # Global settings (registry, storage, DB)
-│   ├── onprem-eim-features.yaml.gotmpl     # EIM feature toggles
-│   └── profile-vpro.yaml.gotmpl            # vPro overrides
+├── environments/              # Profiles
+│   ├── defaults-disabled.yaml.gotmpl
+│   ├── onprem-eim-settings.yaml.gotmpl
+│   ├── onprem-eim-features.yaml.gotmpl
+│   └── profile-vpro.yaml.gotmpl
 │
-├── values/                     # Helm values per chart
-│   ├── traefik.yaml.gotmpl     # .gotmpl files read EMF_* env vars
-│   ├── kyverno.yaml            # .yaml files are static values
+├── values/                    # Helm values
+│   ├── traefik.yaml.gotmpl
+│   ├── kyverno.yaml
 │   └── ...
 │
-├── hooks/                      # Lifecycle hooks
-│   ├── sync-db-passwords.sh    # Post-sync: syncs DB passwords after upgrade
-│   ├── create-tls-autocert.sh  # TLS certificate automation
-│   └── helmfile.yaml           # Hook definitions
+├── hooks/                     # Lifecycle hooks
+│   ├── sync-db-passwords.sh
+│   ├── create-tls-autocert.sh
+│   └── cleanup-vault-keys.sh
 │
-├── logs/                       # Deployment logs (auto-created)
-├── docs/                       # Additional documentation
-└── .computed-values/           # Resolved helmfile values (auto-generated)
+├── logs/                      # Auto-created
+├── docs/                      # Documentation
+└── .computed-values/          # Auto-generated
 ```
 
 ## Deployment Profiles
 
-EMF uses a layered profile system. Each profile builds on the EIM base and adds additional components.
+EMF uses a layered profile system. Each profile builds
+on the EIM base and adds additional components.
 
 ### onprem-eim
 
-**Edge Infrastructure Management** — the base on-premises profile.
+**Edge Infrastructure Management** — the base profile.
 
 Deploys: **44 releases**
 
 Includes:
-- **Platform services**: Keycloak (auth), Vault (secrets), PostgreSQL (database), Traefik (ingress), cert-manager (TLS)
-- **Edge Infrastructure**: inventory, host-manager, onboarding-manager, tinkerbell (provisioning), networking-manager, maintenance-manager, and more
-- **AMT/vPro support**: MPS, RPS, DM-Manager (device management)
-- **Web UI**: admin panel, infrastructure management UI
-- **Supporting services**: auth-service, external-secrets, reloader, metadata-broker, tenancy management
+
+- **Platform**: Keycloak, Vault, PostgreSQL,
+  Traefik, cert-manager
+- **Edge Infra**: inventory, host-manager,
+  onboarding-manager, tinkerbell, networking-manager,
+  maintenance-manager
+- **AMT/vPro**: MPS, RPS, DM-Manager
+- **Web UI**: admin panel, infrastructure UI
+- **Supporting**: auth-service, external-secrets,
+  reloader, metadata-broker, tenancy management
 
 ```bash
 EMF_HELMFILE_ENV=onprem-eim ./post-orch-deploy.sh install
@@ -105,19 +123,24 @@ EMF_HELMFILE_ENV=onprem-eim ./post-orch-deploy.sh install
 
 ### onprem-vpro
 
-**vPro-focused** — lightweight profile for managing Intel vPro devices. Skips OS provisioning.
+**vPro-focused** — lightweight profile for managing
+Intel vPro devices. Skips OS provisioning.
 
 Deploys: **40 releases** (4 fewer than `onprem-eim`)
 
 Compared to `onprem-eim`, this profile **removes**:
-- `web-ui`, `web-ui-admin`, `web-ui-infra` (no browser UI)
+
+- `web-ui`, `web-ui-admin`, `web-ui-infra`
 - `metadata-broker`
 - OS provisioning (tinkerbell, PXE boot services)
 
-And **reconfigures** the infra components for vPro-only scenarios (reduced footprint):
-- `infra-core`: only credentials, apiv2, inventory, tenant-controller
+And **reconfigures** infra for vPro-only scenarios:
+
+- `infra-core`: only credentials, apiv2, inventory,
+  tenant-controller
 - `infra-managers`: only host-manager
-- `infra-external`: only AMT services (mps, rps, dm-manager)
+- `infra-external`: only AMT services (mps, rps,
+  dm-manager)
 
 ```bash
 EMF_HELMFILE_ENV=onprem-vpro ./post-orch-deploy.sh install
@@ -125,57 +148,66 @@ EMF_HELMFILE_ENV=onprem-vpro ./post-orch-deploy.sh install
 
 ### Profile Comparison
 
-Both profiles share the same platform (Keycloak, Vault, DB), ingress (Traefik, HAProxy), TLS, AMT/vPro (MPS, RPS), and tenancy services. Key differences:
+Both profiles share the same platform (Keycloak, Vault,
+DB), ingress (Traefik, HAProxy), TLS, AMT/vPro (MPS,
+RPS), and tenancy services. Key differences:
 
-- **onprem-vpro** has no Web UI (`web-ui`, `web-ui-admin`, `web-ui-infra` removed)
-- **onprem-vpro** skips OS provisioning (tinkerbell, PXE boot services disabled)
-- **onprem-vpro** uses a reduced Edge Infra footprint (only inventory, credentials, host-manager, AMT services)
+- **onprem-vpro** has no Web UI
+- **onprem-vpro** skips OS provisioning
+- **onprem-vpro** uses reduced Edge Infra footprint
 
 ### Profile Configuration Layering
 
-Each profile is composed from multiple configuration files applied in order (later files override earlier ones):
+Each profile is composed from multiple configuration
+files applied in order (later files override earlier):
 
-```
-onprem-eim:            defaults-disabled → settings → eim-features
-onprem-vpro:           defaults-disabled → settings → eim-features → profile-vpro
+```text
+onprem-eim:  defaults-disabled -> settings -> features
+onprem-vpro: defaults-disabled -> settings -> features
+             -> profile-vpro
 ```
 
 ## Configuration
 
-All configuration is controlled through environment variables defined in `post-orch.env`.
+All configuration is controlled through environment
+variables defined in `post-orch.env`.
 
 ### Required Variables
 
 These **must** be set before deployment:
 
 | Variable | Example | Description |
-|----------|---------|-------------|
-| `EMF_CLUSTER_NAME` | `onprem` | Name of the Kubernetes cluster |
-| `EMF_CLUSTER_DOMAIN` | `cluster.onprem` | Base domain for all services |
-| `EMF_REGISTRY` | `registry-rs.edgeorchestration.intel.com` | Container/chart registry |
-| `EMF_TRAEFIK_IP` | `192.168.99.30` | Static IP for Traefik load balancer |
-| `EMF_HAPROXY_IP` | `192.168.99.40` | Static IP for HAProxy load balancer |
-| `EMF_STORAGE_CLASS` | `openebs-hostpath` | Kubernetes storage class |
+|---|---|---|
+| `EMF_CLUSTER_NAME` | `onprem` | Cluster name |
+| `EMF_CLUSTER_DOMAIN` | `cluster.onprem` | Base domain |
+| `EMF_REGISTRY` | `registry-rs...` | Chart registry |
+| `EMF_TRAEFIK_IP` | `192.168.99.30` | Traefik LB IP |
+| `EMF_HAPROXY_IP` | `192.168.99.40` | HAProxy LB IP |
+| `EMF_STORAGE_CLASS` | `openebs-hostpath` | Storage class |
 
 ### Feature Toggles
 
 Enable or disable optional features in `post-orch.env`:
 
-- `EMF_ENABLE_ISTIO` — Istio service mesh + Kiali dashboard (default: `false`)
-- `EMF_ENABLE_KYVERNO` — Kyverno policy engine (default: `false`)
+- `EMF_ENABLE_ISTIO` — Istio service mesh + Kiali
+  (default: `false`)
+- `EMF_ENABLE_KYVERNO` — Kyverno policy engine
+  (default: `false`)
 
 ### Registry
 
-`EMF_REGISTRY` is the single variable from which all chart, container, and OCI registry URLs are derived.
+`EMF_REGISTRY` is the single variable from which all
+chart, container, and OCI registry URLs are derived.
 
 ### Proxy Settings
 
-If your environment requires an HTTP proxy, set the following in `post-orch.env`:
+If your environment requires an HTTP proxy, set the
+following in `post-orch.env`:
 
 - `EMF_HTTP_PROXY` — HTTP proxy URL
 - `EMF_HTTPS_PROXY` — HTTPS proxy URL
 - `EMF_NO_PROXY` — Comma-separated bypass list
-- `EMF_EN_HTTP_PROXY` — Edge node HTTP proxy (can differ from orchestrator)
+- `EMF_EN_HTTP_PROXY` — Edge node HTTP proxy
 - `EMF_EN_HTTPS_PROXY` — Edge node HTTPS proxy
 - `EMF_EN_NO_PROXY` — Edge node proxy bypass list
 
@@ -183,13 +215,15 @@ If your environment requires an HTTP proxy, set the following in `post-orch.env`
 
 Set the deployment profile in `post-orch.env`:
 
-- `EMF_HELMFILE_ENV` — Deployment profile (default: `onprem-eim`). Options: `onprem-eim`, `onprem-vpro`
+- `EMF_HELMFILE_ENV` — Profile name
+  (default: `onprem-eim`).
+  Options: `onprem-eim`, `onprem-vpro`
 
 ## Deployment
 
 ### Step 1: Configure Environment
 
-Edit `post-orch.env` with values specific to your environment:
+Edit `post-orch.env` with your environment values:
 
 ```bash
 cd helmfile-deploy/
@@ -199,10 +233,13 @@ vi post-orch.env
 ```
 
 At minimum, update:
+
 - `EMF_CLUSTER_NAME` and `EMF_CLUSTER_DOMAIN`
-- `EMF_TRAEFIK_IP` and `EMF_HAPROXY_IP` (free IPs in your network for LoadBalancer services)
-- `EMF_HTTP_PROXY` / `EMF_NO_PROXY` (if behind a proxy, otherwise clear them)
-- `EMF_DOCKER_USERNAME` / `EMF_DOCKER_PASSWORD` (docker pull limit)
+- `EMF_TRAEFIK_IP` and `EMF_HAPROXY_IP`
+  (free IPs for LoadBalancer services)
+- `EMF_HTTP_PROXY` / `EMF_NO_PROXY`
+  (if behind a proxy, otherwise clear them)
+- `EMF_DOCKER_USERNAME` / `EMF_DOCKER_PASSWORD`
 
 ### Step 2: Run Setup
 
@@ -213,32 +250,37 @@ Prepare the cluster for EMF deployment:
 ```
 
 This script:
+
 - Creates all required Kubernetes namespaces
 - Generates and stores initial secrets and passwords
-- Configures Gitea (internal Git server) for chart and configuration storage (only when App Orchestration is enabled)
+- Configures Gitea for chart/config storage
+  (only when App Orchestration is enabled)
 
-To tear down the setup (remove namespaces, secrets, and Gitea configuration):
+To tear down the setup:
 
 ```bash
 ./post-orch-setup.sh uninstall
 ```
 
-> **Note:** Only run `./post-orch-setup.sh uninstall` **after** you have uninstalled all Helm releases with `./post-orch-deploy.sh uninstall`. Removing namespaces and secrets while releases are still deployed will leave orphaned resources.
+> **Note:** Only run `uninstall` **after** you have
+> uninstalled all Helm releases with
+> `./post-orch-deploy.sh uninstall`.
 
 ### Step 3: Deploy
 
-Set `EMF_HELMFILE_ENV` in `post-orch.env` to your desired profile, then run:
+Set `EMF_HELMFILE_ENV` in `post-orch.env` to your
+desired profile, then run:
 
 ```bash
 ./post-orch-deploy.sh install
 ```
 
 The script will:
-1. Validate your configuration (errors abort, warnings are shown)
+
+1. Validate your configuration
 2. Add all Helm repositories
 3. Deploy each release in dependency order
-4. Show live progress: `[15/44] 📦 Deploying: platform-keycloak`
-5. Print a summary with pass/fail counts and per-release timings
+4. Print a summary with pass/fail status
 
 You can also pass inline overrides:
 
@@ -246,7 +288,8 @@ You can also pass inline overrides:
 EMF_TRAEFIK_IP=10.0.1.50 ./post-orch-deploy.sh install
 ```
 
-Logs are saved to `logs/<profile>_install_<timestamp>.log`.
+Logs are saved to
+`logs/<profile>_install_<timestamp>.log`.
 
 ### Deploying a Single Chart
 
@@ -285,24 +328,27 @@ See what would change without applying:
 
 ## Deployment Flow
 
-The deployment installs charts in a fixed dependency order. Major groups are:
+The deployment installs charts in dependency order.
+Major groups are:
 
-```
- 1. Operators        keycloak-operator, postgresql-operator
- 2. Infrastructure   namespace-label, cert-manager, external-secrets
- 3. TLS & Ingress    self-signed-cert, platform-autocert, traefik, haproxy
- 4. Database         postgresql-cluster, postgresql-secrets
- 5. Platform         vault, secrets-config, platform-keycloak, auth-service
- 6. Tenancy          tenancy-datamodel, tenancy-manager, nexus-api-gw
- 7. Edge Infra       infra-core, infra-managers, infra-external, infra-onboarding
- 8. Web UI           web-ui-admin, web-ui-infra (onprem-eim only)
+```text
+ 1. Operators      keycloak-operator, postgresql-operator
+ 2. Infra          namespace-label, cert-manager
+ 3. TLS & Ingress  self-signed-cert, traefik, haproxy
+ 4. Database       postgresql-cluster, postgresql-secrets
+ 5. Platform       vault, secrets-config, keycloak
+ 6. Tenancy        tenancy-datamodel, tenancy-manager
+ 7. Edge Infra     infra-core, infra-managers
+ 8. Web UI         web-ui-admin, web-ui-infra
 ```
 
-Each release is deployed individually with `helmfile sync`. If a release fails, the script continues to the next one and reports all failures in the summary.
+Each release is deployed individually with
+`helmfile sync`. If a release fails, the script
+continues and reports all failures in the summary.
 
 ## Re-running After Failure
 
-The deploy script is designed to be **safe to re-run**. Simply run the same command again:
+The deploy script is **safe to re-run**:
 
 ```bash
 ./post-orch-deploy.sh install
@@ -311,14 +357,14 @@ The deploy script is designed to be **safe to re-run**. Simply run the same comm
 The script automatically handles common rerun issues:
 
 | Issue | Automatic Fix |
-|-------|--------------|
-| Kubernetes Jobs are immutable (can't be patched on upgrade) | Deletes all stale Jobs before each release sync |
-| Helm release stuck in `failed` or `pending-*` state | Rolls back to last good revision or uninstalls for fresh install |
-| PostgreSQL password mismatch after password regeneration | Post-sync hook syncs K8s secret passwords into PostgreSQL |
-| Derived connection-string secrets out of sync | Hook updates `mps`/`rps` secrets and restarts their deployments |
-| Helmfile hook failure mistaken as release failure | Checks actual Helm release status to detect false positives |
+|---|---|
+| Jobs are immutable | Deletes stale Jobs first |
+| Helm stuck in `failed` | Rolls back or reinstalls |
+| DB password mismatch | Hook syncs passwords |
+| Connection-string stale | Hook updates secrets |
 
-If a specific release keeps failing, you can deploy it individually to see detailed output:
+If a specific release keeps failing, deploy it
+individually to see detailed output:
 
 ```bash
 ./post-orch-deploy.sh install platform-keycloak
@@ -329,13 +375,13 @@ If a specific release keeps failing, you can deploy it individually to see detai
 ### Check Deployment Status
 
 ```bash
-# List all Helm releases and their status
+# List all Helm releases
 helm list -A -a
 
 # Check for failed releases
 helm list -A -a | grep -E "failed|pending"
 
-# Check pod status in a specific namespace
+# Check pod status
 kubectl get pods -n orch-platform
 kubectl get pods -n orch-infra
 kubectl get pods -n orch-database
@@ -343,40 +389,57 @@ kubectl get pods -n orch-database
 
 ### Common Issues
 
-#### Jobs Fail with "spec.template: field is immutable"
+#### Jobs Fail: "spec.template is immutable"
 
-**Cause:** Kubernetes Jobs cannot be modified after creation. On rerun, Helm tries to patch the existing Job.
+**Cause:** Kubernetes Jobs cannot be modified after
+creation. On rerun, Helm tries to patch the existing Job.
 
-**Fix:** The deploy script handles this automatically. If using helmfile directly, delete the Job manually:
+**Fix:** The deploy script handles this automatically.
+If using helmfile directly, delete the Job manually:
 
 ```bash
 kubectl get jobs -n <namespace>
 kubectl delete job <job-name> -n <namespace>
 ```
 
-#### PostgreSQL Password Authentication Failed (28P01)
+#### PostgreSQL Password Auth Failed (28P01)
 
-**Cause:** The `postgresql-secrets` chart generates new random passwords on every `helm upgrade`, but PostgreSQL still has the old passwords.
+**Cause:** `postgresql-secrets` generates new random
+passwords on every `helm upgrade`, but PostgreSQL still
+has the old passwords.
 
-**Fix:** The deploy script's post-sync hook handles this automatically. For manual fix:
+**Fix:** The post-sync hook handles this automatically.
+For manual fix:
 
 ```bash
-PG_POD=$(kubectl get pods -n orch-database -l cnpg.io/cluster=postgresql-cluster \
+PG_POD=$(kubectl get pods -n orch-database \
+  -l cnpg.io/cluster=postgresql-cluster \
   -o jsonpath='{.items[0].metadata.name}')
 
-for secret in $(kubectl get secrets -n orch-database \
+for secret in $(kubectl get secrets \
+  -n orch-database \
   -l managed-by=edge-manageability-framework \
   --field-selector type=kubernetes.io/basic-auth \
-  -o jsonpath='{range .items[*]}{.metadata.name}{" "}{end}'); do
-
-  user=$(kubectl get secret "$secret" -n orch-database -o jsonpath='{.data.username}' | base64 -d)
-  pass=$(kubectl get secret "$secret" -n orch-database -o jsonpath='{.data.password}' | base64 -d)
-  kubectl exec -n orch-database "$PG_POD" -c postgres -- \
-    psql -U postgres -c "ALTER ROLE \"$user\" WITH PASSWORD '$pass';"
+  -o jsonpath='{range .items[*]}{.metadata.name}{" "}{end}')
+do
+  user=$(kubectl get secret "$secret" \
+    -n orch-database \
+    -o jsonpath='{.data.username}' | base64 -d)
+  pass=$(kubectl get secret "$secret" \
+    -n orch-database \
+    -o jsonpath='{.data.password}' | base64 -d)
+  kubectl exec -n orch-database "$PG_POD" \
+    -c postgres -- \
+    psql -U postgres \
+    -c "ALTER ROLE \"$user\" WITH PASSWORD '$pass';"
 done
 ```
 
-Then restart affected pods (e.g., `kubectl delete pod platform-keycloak-0 -n orch-platform`).
+Then restart affected pods:
+
+```bash
+kubectl delete pod platform-keycloak-0 -n orch-platform
+```
 
 #### Helm Release Stuck in "failed" State
 
@@ -387,7 +450,7 @@ helm history <release> -n <namespace>
 # Rollback to it
 helm rollback <release> <revision> -n <namespace>
 
-# If no good revision exists, uninstall and re-deploy
+# If no good revision, uninstall and re-deploy
 helm uninstall <release> -n <namespace>
 ./post-orch-deploy.sh install <release>
 ```
@@ -402,7 +465,8 @@ kubectl describe pod <pod-name> -n <namespace>
 kubectl logs <pod-name> -n <namespace> --tail=50
 
 # Check previous container logs (if restarting)
-kubectl logs <pod-name> -n <namespace> --previous --tail=50
+kubectl logs <pod-name> -n <namespace> \
+  --previous --tail=50
 ```
 
 ### View Deployment Logs
@@ -411,10 +475,9 @@ Every deployment creates a timestamped log file:
 
 ```bash
 ls -lt helmfile-deploy/logs/
-# Example: onprem-eim-co_install_20260406-073828.log
 ```
 
 ### Inspect Computed Values
 
-After a deployment, the resolved Helm values are saved to `.computed-values/`
-
+After a deployment, the resolved Helm values are saved
+to `.computed-values/`.

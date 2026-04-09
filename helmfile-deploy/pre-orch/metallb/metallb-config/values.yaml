@@ -1,3 +1,8 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+#
 ## values.yaml - default overrides for metallb-config chart
 ## These defaults will be used by the chart unless overridden by a higher-level values file
 
