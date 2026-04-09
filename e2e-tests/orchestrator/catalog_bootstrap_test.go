@@ -357,7 +357,7 @@ var _ = Describe("Provisioned registries push test", Label("orchestrator-integra
 					Force: true,
 				})
 				Expect(err).ToNot(HaveOccurred(), "removing image %s from docker", remoteImageName)
-				Expect(remove).To(HaveLen(2), "checking docker remove reply")
+				Expect(remove.Items).To(HaveLen(2), "checking docker remove reply")
 				Expect(remove.Items[0].Untagged).To(Equal(remoteImageName), "checking docker remove reply part 1")
 				Expect(remove.Items[1].Untagged).To(ContainSubstring("sha"), "checking docker remove reply part 2")
 			})
