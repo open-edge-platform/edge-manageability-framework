@@ -31,7 +31,7 @@ Replace the Nexus CRD/etcd data model with five Postgres tables managed by
 the Ent ORM framework (same pattern as `infra-core/inventory/`):
 
 | Table | Purpose |
-|---|---|
+| --- | --- |
 | `orgs` | Organization with soft-delete (`deleted_at`) |
 | `folders` | Org→Folder hierarchy (one "default" folder per org, no CRUD API) |
 | `projects` | Folder→Project with soft-delete |
@@ -84,7 +84,7 @@ dependency and no Ent schema dependency.
 All seven tenant controllers are refactored:
 
 | Controller | Canonical ID | Events |
-|---|---|---|
+| --- | --- | --- |
 | app-orch | `app-orch-tenant-controller` | project |
 | keycloak | `keycloak-tenant-controller` | **org + project** |
 | infra-core | `infra-tenant-controller` | project |
@@ -152,7 +152,7 @@ migrations run).
 ## Affected Components and Teams
 
 | Component | Repository | Change |
-|---|---|---|
+| --- | --- | --- |
 | tenancy-manager | `orch-utils` | Full rewrite (Nexus → HTTP server + Ent) |
 | keycloak-tenant-controller | `orch-utils` | Replace Nexus SDK with shared library |
 | app-orch-tenant-controller | `app-orch-tenant-controller` | Replace Nexus SDK with shared library |
