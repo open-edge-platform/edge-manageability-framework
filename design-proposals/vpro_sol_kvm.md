@@ -404,6 +404,9 @@ end
     DM->>INV: CLEAR kvm_session_url=""
     DM->>INV: UPDATE kvm_session_status="KVM session stopped"
     DM->>INV: UPDATE kvm_session_status_indicator=STATUS_INDICATION_IDLE
+    Note over CLI,INV: 9. Verify session closed (orch-cli get host)
+    CLI->>APIV2: GET /compute/hosts/:id
+    APIV2-->>CLI: currentKvmState=KVM_STATE_STOP kvmSessionUrl="" kvmSessionStatus="KVM session stopped"
 ```
 
 ---
