@@ -26,27 +26,23 @@ All settings are in [`pre-orch.env`](pre-orch.env). CLI flags override env value
 | `MAX_PODS` | `500` | Kubelet max pods |
 | `INSTALL_OPENEBS` | `true` | Install OpenEBS LocalPV |
 | `INSTALL_METALLB` | `true` | Install MetalLB |
-| `INSTALL_PRE_CONFIG` | `true` | Run pre-orch-config (namespaces, secrets) |
 | `LOCALPV_VERSION` | `4.3.0` | OpenEBS LocalPV chart version |
 | `EMF_TRAEFIK_IP` | — | Traefik LoadBalancer IP (required for MetalLB) |
 | `EMF_HAPROXY_IP` | — | HAProxy LoadBalancer IP (required for MetalLB) |
 
 ## Skipping Components During Install
 
-Use `--no-openebs`, `--no-metallb`, and/or `--no-pre-config` to skip components during cluster setup:
+Use `--no-openebs` and/or `--no-metallb` to skip components during cluster setup:
 
 ```bash
-# Install cluster only (no OpenEBS, no MetalLB, no pre-config)
-./pre-orch.sh k3s install --no-openebs --no-metallb --no-pre-config
+# Install cluster only (no OpenEBS, no MetalLB)
+./pre-orch.sh k3s install --no-openebs --no-metallb
 
 # Install cluster + OpenEBS only (no MetalLB)
-./pre-orch.sh k3s install --no-metallb --no-pre-config
+./pre-orch.sh k3s install --no-metallb
 
 # Install cluster + MetalLB only (no OpenEBS)
-./pre-orch.sh k3s install --no-openebs --no-pre-config
-
-# Install everything including pre-config (default)
-./pre-orch.sh k3s install
+./pre-orch.sh k3s install --no-openebs
 ```
 
 ## Installing / Uninstalling Components via Helmfile
@@ -82,23 +78,10 @@ helmfile -f helmfile.yaml.gotmpl -l app=openebs-localpv destroy
 
 ```
 pre-orch/
-├── pre-orch.sh              # Main installer script (cluster + storage + LB)
-├── pre-orch-config.sh       # Pre-deploy config (namespaces, secrets, vault)
+├── pre-orch.sh              # Main installer script
 ├── pre-orch.env             # Configuration file
-├── functions.sh             # Shared helper functions
 ├── helmfile.yaml.gotmpl     # Combined helmfile (OpenEBS + MetalLB)
 ├── README.md
 ├── openebs-localpv/         # OpenEBS LocalPV values
 └── metallb/                 # MetalLB values + local config chart
-```
-
-## Pre-Deploy Configuration (pre-orch-config.sh)
-
-Creates namespaces, Keycloak/Postgres secrets, and validates vault keys.
-Runs automatically at the end of `pre-orch.sh install` (controlled by `INSTALL_PRE_CONFIG`).
-Can also be run standalone:
-
-```bash
-./pre-orch-config.sh install      # Create namespaces and secrets
-./pre-orch-config.sh uninstall    # Remove secrets and namespaces
 ```

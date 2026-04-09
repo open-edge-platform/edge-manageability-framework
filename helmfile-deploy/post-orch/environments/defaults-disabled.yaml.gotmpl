@@ -6,16 +6,74 @@
 # Loaded FIRST so that profile/feature files only need to set enabled: true.
 # Without this, helmfile condition: defaults to true for missing values.
 
-# ─── Istio ───────────────────────────────────────────────────────────────────
-istio-base:
+# ─── App Orch ────────────────────────────────────────────────────────────────
+app-deployment-crd:
   enabled: false
-istio-policy:
+app-deployment-manager:
   enabled: false
-istiod:
+app-resource-manager:
   enabled: false
-kiali:
+app-service-proxy:
   enabled: false
-wait-istio-job:
+fleet-rs-secret:
+  enabled: false
+app-orch-catalog:
+  enabled: false
+app-deployment-manager-secret:
+  enabled: false
+harbor-oci:
+  enabled: false
+app-orch-tenant-controller:
+  enabled: false
+fleet-crd:
+  enabled: false
+fleet-controller:
+  enabled: false
+copy-app-gitea-cred-to-fleet:
+  enabled: false
+copy-ca-cert-gitea-to-app:
+  enabled: false
+copy-ca-cert-gitea-to-cluster:
+  enabled: false
+copy-cluster-gitea-cred-to-fleet:
+  enabled: false
+web-ui-app-orch:
+  enabled: false
+
+# ─── Cluster Orch ────────────────────────────────────────────────────────────
+capi-operator-pre:
+  enabled: false
+capi-operator:
+  enabled: false
+cluster-manager:
+  enabled: false
+cluster-connect-gateway:
+  enabled: false
+intel-infra-provider:
+  enabled: false
+capi-providers-config:
+  enabled: false
+web-ui-cluster-orch:
+  enabled: false
+
+# ─── Observability ───────────────────────────────────────────────────────────
+alerting-monitor:
+  enabled: false
+edgenode-dashboards:
+  enabled: false
+edgenode-observability:
+  enabled: false
+orchestrator-dashboards:
+  enabled: false
+orchestrator-observability:
+  enabled: false
+orchestrator-prometheus-agent:
+  enabled: false
+sre-exporter:
+  enabled: false
+observability-tenant-controller:
+  enabled: false
+prometheus-crd:
   enabled: false
 
 # ─── Kyverno ─────────────────────────────────────────────────────────────────
@@ -26,35 +84,6 @@ kyverno-extra-policies:
 kyverno-istio-policy:
   enabled: false
 kyverno-traefik-policy:
-  enabled: false
-
-# ─── Misc ────────────────────────────────────────────────────────────────────
-k8s-metrics-server:
-  enabled: false
-
-# ─── Stubs for component-status template references ──────────────────────────
-app-orch-catalog:
-  enabled: false
-cluster-manager:
-  enabled: false
-
-intel-infra-provider:
-  enabled: false
-orchestrator-observability:
-  enabled: false
-orchestrator-dashboards:
-  enabled: false
-alerting-monitor:
-  enabled: false
-edgenode-observability:
-  enabled: false
-edgenode-dashboards:
-  enabled: false
-web-ui-app-orch:
-  enabled: false
-web-ui-cluster-orch:
-  enabled: false
-capi-operator:
   enabled: false
 
 # ─── AWS-only ────────────────────────────────────────────────────────────────
@@ -73,6 +102,8 @@ vertical-pod-autoscaler:
 secret-wait-azure-ad-creds:
   enabled: false
 secret-wait-rs-token:
+  enabled: false
+wait-istio-job:
   enabled: false
 
 # ─── Not used in on-prem ────────────────────────────────────────────────────
@@ -93,4 +124,6 @@ botkube:
 ingress-nginx:
   enabled: false
 tenancy-init:
+  enabled: false
+k8s-metrics-server:
   enabled: false

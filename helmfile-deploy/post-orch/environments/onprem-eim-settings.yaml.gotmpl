@@ -59,6 +59,8 @@ database:
   type: {{ env "EMF_DB_TYPE" | default "local" | quote }}
   ssl: {{ env "EMF_DB_SSL" | default "false" }}
   databases:
+    - namespace: orch-app
+      name: app-orch-catalog
     - namespace: orch-platform
       name: platform-keycloak
     - namespace: orch-platform
@@ -84,8 +86,6 @@ istio-policy:
 istiod:
   enabled: {{ env "EMF_ENABLE_ISTIO" | default "false" }}
 kiali:
-  enabled: {{ env "EMF_ENABLE_ISTIO" | default "false" }}
-wait-istio-job:
   enabled: {{ env "EMF_ENABLE_ISTIO" | default "false" }}
 
 # ─── Kyverno ─────────────────────────────────────────────────────────────────
@@ -152,4 +152,5 @@ o11y:
     maxReplicas: {{ env "EMF_ALERTING_MAX_REPLICAS" | default "1" }}
     alertmanagerReplicas: {{ env "EMF_ALERTMANAGER_REPLICAS" | default "1" }}
     smtpInitialize: {{ env "EMF_SMTP_INITIALIZE" | default "false" }}
+
 

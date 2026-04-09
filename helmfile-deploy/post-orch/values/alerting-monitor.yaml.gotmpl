@@ -1,0 +1,93 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# ─── Replicas / HPA (driven from profile-o11y settings) ──────────────────────
+{{- if and .Values.o11y .Values.o11y.alertingMonitor }}
+minReplicas: {{ .Values.o11y.alertingMonitor.minReplicas | default 1 }}
+maxReplicas: {{ .Values.o11y.alertingMonitor.maxReplicas | default 1 }}
+{{- end }}
+
+image:
+  registry: {{ .Values.containerRegistryURL }}
+management:
+  registry: {{ .Values.containerRegistryURL }}
+imagePullSecrets: []
+
+caSecretName: gateway-ca-cert
+caSecretKey: ca.crt
+
+initialRules:
+  hostAggregationWindowSeconds: 240
+{{- if and .Values.o11y .Values.o11y.alertingMonitor .Values.o11y.alertingMonitor.initialRules }}
+  hostRules: {{ .Values.o11y.alertingMonitor.initialRules.hostRules }}
+  appDeploymentRules: {{ .Values.o11y.alertingMonitor.initialRules.appDeploymentRules }}
+  clusterRules: {{ .Values.o11y.alertingMonitor.initialRules.clusterRules }}
+{{- end }}
+
+openPolicyAgent:
+  image:
+    tag: 1.10.1-static
+  config:
+    profile: "compressed"
+
+istio-proxy:
+  securityContext:
+    readOnlyRootFilesystem: true
+
+# https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
+traefikApiGroup: "traefik.io/v1alpha1"
+
+alertmanager:
+{{- if and .Values.o11y .Values.o11y.alertingMonitor .Values.o11y.alertingMonitor.alertmanagerReplicas }}
+  replicaCount: {{ .Values.o11y.alertingMonitor.alertmanagerReplicas }}
+{{- else }}
+  replicaCount: 1
+{{- end }}
+  configmapReload:
+    image:
+      tag: v0.89.0
+{{- if eq (env "EMF_SMTP_DEV_MODE" | default "true") "true" }}
+  config:
+    groupInterval: 1m
+{{- end }}
+
+smtp:
+  initialize: {{ .Values.o11y.alertingMonitor.smtpInitialize | default false }}
+  configSecret: smtp
+{{- if eq (env "EMF_SMTP_DEV_MODE" | default "true") "true" }}
+  userPasswordAuth: false
+  passwordSecret:
+    name: smtp-auth
+    key: password
+  requireTls: false
+  insecureSkipVerify: true
+{{- else }}
+  userPasswordAuth: true
+  passwordSecret:
+    name: smtp-auth
+    key: password
+  requireTls: true
+{{- end }}
+
+# ─── Authentication / OIDC ───────────────────────────────────────────────────
+authentication:
+  oidcServer: https://keycloak.{{ .Values.clusterDomain }}:443
+  oidcServerRealm: master
+webUIAddress: "https://web-ui.{{ .Values.clusterDomain }}"
+observabilityUIAddress: "https://observability-ui.{{ .Values.clusterDomain }}"
+
+# ─── Traefik routing ─────────────────────────────────────────────────────────
+traefik:
+  matchRoute: Host(`alerting-monitor.{{ .Values.clusterDomain }}`)
+{{- if .Values.traefik }}
+  tlsOption: {{ .Values.traefik.tlsOption | default "" | quote }}
+{{- end }}
+
+# ─── Database ────────────────────────────────────────────────────────────────
+database:
+  databaseSecret: alerting-{{ .Values.database.type }}-postgresql
+  ssl: {{ .Values.database.ssl }}
+
+# ─── Multi-tenant gateway ────────────────────────────────────────────────────
+multitenantGatewayEnabled: false

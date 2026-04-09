@@ -1,0 +1,41 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# From argocd/applications/configs/cluster-connect-gateway.yaml
+# + argocd/applications/custom/cluster-connect-gateway.tpl
+
+fullnameOverride: cluster-connect-gateway
+
+gateway:
+  externalUrl: "wss://connect-gateway.{{ .Values.clusterDomain }}:443"
+  ingress:
+    enabled: true
+    hostname: "connect-gateway.{{ .Values.clusterDomain }}"
+    namespace: orch-gateway
+  oidc:
+    enabled: true
+  metrics:
+    serviceMonitor:
+      enabled: true
+
+agent:
+  tlsMode: system-store
+
+controller:
+  privateCA:
+    enabled: true
+  metrics:
+    serviceMonitor:
+      enabled: true
+
+security:
+  agent:
+    authMode: "jwt"
+
+# https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
+traefikApiGroup: "traefik.io/v1alpha1"
+
+openpolicyagent:
+  enabled: true
+  tag: 1.10.1-static
