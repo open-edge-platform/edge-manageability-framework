@@ -224,8 +224,7 @@ helmfile_destroy_all() {
   installed_map=$(helm list -A --no-headers 2>/dev/null | awk '{print $1, $2}')
   if [[ -z "$installed_map" ]]; then
     echo "ℹ️  No helm releases found — nothing to uninstall"
-    return 0
-  fi
+  else
   # Get release names from helmfile.yaml.gotmpl in definition order, then reverse
   local all_helmfile_releases
   all_helmfile_releases=$(awk '/^releases:/{found=1} found && /^  - name: /{print $NF}' "$SCRIPT_DIR/helmfile.yaml.gotmpl")
@@ -236,8 +235,7 @@ helmfile_destroy_all() {
     | tac)
   if [[ -z "$releases" ]]; then
     echo "ℹ️  No helmfile-managed releases are currently installed"
-    return 0
-  fi
+  else
   local total
   total=$(echo "$releases" | wc -l)
   local current=0
@@ -270,6 +268,29 @@ helmfile_destroy_all() {
   fi
   echo "═══════════════════════════════════════════════════════════════"
   echo ""
+  fi # end releases loop
+  fi # end installed_map check
+
+  # Clean up orphaned secrets created by operators/controllers (not managed by Helm)
+  echo "🧹 Cleaning up orphaned secrets (operator/controller-created)..."
+  local orphan_secrets=(
+    "orch-gateway:tls-orch"
+    "orch-gateway:tls-traefik"
+    "orch-platform:tls-rs-proxy"
+    "orch-boots:tls-boots"
+    "orch-boots:ingress-haproxy-kubernetes-ingress-default-cert"
+    "orch-platform:vault-keys"
+    "cert-manager:cert-manager-webhook-ca"
+  )
+  for entry in "${orphan_secrets[@]}"; do
+    local ns="${entry%%:*}"
+    local name="${entry##*:}"
+    if kubectl get secret "$name" -n "$ns" --no-headers 2>/dev/null | grep -q .; then
+      kubectl delete secret "$name" -n "$ns" --ignore-not-found 2>/dev/null || true
+      echo "  🗑️  $ns/$name"
+    fi
+  done
+
   echo "✅ All charts uninstalled"
 }
 helmfile_diff_chart() {
