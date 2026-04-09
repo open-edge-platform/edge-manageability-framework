@@ -1,0 +1,53 @@
+════════════════════════════════════════════════════════════════
+  EMF DEPLOY — QUICK REFERENCE
+  Branch: sunil-helmfile-v1
+  Commit: cdddcdd7841c41bcdb482b2109a5350a0cfd4d3f
+════════════════════════════════════════════════════════════════
+
+──── BEFORE YOU START: EDIT THESE ──────────────────────────
+
+  1. pre-orch.env   (helmfile-deploy/pre-orch/pre-orch.env)
+  2. post-orch.env  (helmfile-deploy/post-orch/post-orch.env)
+
+  UPDATE IN BOTH FILES:
+    EMF_TRAEFIK_IP=<your-free-IP>       # e.g. 192.168.99.30
+    EMF_HAPROXY_IP=<your-free-IP>       # e.g. 192.168.99.40
+
+  UPDATE IN post-orch.env ONLY:
+    EMF_HELMFILE_ENV=onprem-eim         # or onprem-vpro
+    EMF_DOCKER_USERNAME=<dockerhub-user>
+    EMF_DOCKER_PASSWORD=<dockerhub-pass>
+
+
+──── PROFILES ──────────────────────────────────────────────
+
+  onprem-eim    Full EIM (44 charts) — Web UI + provisioning
+  onprem-vpro   vPro only (40 charts) — no UI, no PXE boot
+
+
+──── INSTALL ───────────────────────────────────────────────
+
+  Step 1: Pre-orch (ONE TIME ONLY — sets up K3s cluster)
+    cd helmfile-deploy/pre-orch  && ./pre-orch.sh install
+
+    This creates:
+      - K3s cluster
+      - OpenEBS LocalPV (storage)
+      - MetalLB (load balancer IPs)
+      - Namespaces (orch-platform, orch-infra, orch-database, etc.)
+      - PostgreSQL secrets (DB credentials)
+      - Keycloak secrets (admin credentials)
+
+  Step 2: Post-orch (can re-run anytime — idempotent)
+    cd helmfile-deploy/post-orch && ./post-orch-deploy.sh install
+
+
+──── UNINSTALL ─────────────────────────────────────────────
+
+  Post-orch only (can install/uninstall multiple times):
+    cd helmfile-deploy/post-orch && ./post-orch-deploy.sh uninstall
+
+  Pre-orch (destroys K3s cluster — only if starting over):
+    cd helmfile-deploy/pre-orch  && ./pre-orch.sh uninstall
+
+════════════════════════════════════════════════════════════════
