@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Intel Corporation
+// SPDX-FileCopyrightText: 2026 Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -20,15 +20,15 @@ require (
 	github.com/moby/moby/client v0.4.0
 	github.com/onsi/ginkgo/v2 v2.28.1
 	github.com/onsi/gomega v1.39.1
-	github.com/open-edge-platform/app-orch-deployment/app-deployment-manager/api/nbi/v2 v2.4.3
-	github.com/open-edge-platform/cluster-manager/v2 v2.2.9
-	github.com/open-edge-platform/infra-core/apiv2/v2 v2.10.0
-	github.com/open-edge-platform/infra-managers/attestationstatus v0.9.2
-	github.com/open-edge-platform/infra-managers/host v1.25.4
-	github.com/open-edge-platform/infra-managers/maintenance v1.25.2
-	github.com/open-edge-platform/infra-managers/telemetry v1.25.2
-	github.com/open-edge-platform/infra-onboarding/onboarding-manager v1.39.10
-	github.com/open-edge-platform/orch-library/go v0.6.4-0.20260211092341-cfad67ad247d
+	github.com/open-edge-platform/app-orch-deployment/app-deployment-manager/api/nbi/v2 v2.3.21
+	github.com/open-edge-platform/cluster-manager/v2 v2.1.17
+	github.com/open-edge-platform/infra-core/apiv2/v2 v2.0.0-20250523082429-138b179945c5
+	github.com/open-edge-platform/infra-managers/attestationstatus v0.4.0
+	github.com/open-edge-platform/infra-managers/host v1.21.1
+	github.com/open-edge-platform/infra-managers/maintenance v1.21.1
+	github.com/open-edge-platform/infra-managers/telemetry v1.21.1
+	github.com/open-edge-platform/infra-onboarding/onboarding-manager v1.34.4
+	github.com/open-edge-platform/orch-library/go v0.6.3
 	github.com/open-edge-platform/orch-utils/tenancy-datamodel v1.2.3-0.20251126155507-e0d9404fa1d7
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/rs/zerolog v1.35.0
@@ -78,7 +78,7 @@ require (
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.1 // indirect
-	github.com/getkin/kin-openapi v0.134.0 // indirect
+	github.com/getkin/kin-openapi v0.135.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/jsonpointer v0.22.5 // indirect
