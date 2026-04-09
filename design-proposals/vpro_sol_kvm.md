@@ -387,26 +387,19 @@ end
     MPS-->>AMT: Input delivered
 
     Note over Browser,AMT: 8. KVM session teardown
-    Note over Browser,CLI: Triggered by: orch-cli --kvm stop OR browser tab close
-    alt Browser-initiated stop (tab closes or clicks Stop button in UI)
-    Browser-xCLI: WebSocket /ws/kvm disconnected (tab close or POST /api/disconnect)
-    Note over CLI: browser gone, closes MPS relay
+    alt Browser-initiated stop
+    Browser->>CLI: /ws/kvm closed (tab close or POST /api/disconnect)
     else orch-cli --kvm stop
-    Note over CLI: --kvm stop signals local HTTP server to close MPS relay
+    CLI->>CLI: --kvm stop received
     end
-    CLI-xMPS: Close wss://mps-wss.domain.com/relay/... (WebSocket close frame)
-    MPS-xAMT: MPS relay terminates — AMT KVM channel closes
-    CLI->>APIV2: PATCH /compute/hosts/:id desiredKvmState=KVM_STATE_STOP
+    CLI->>MPS: close ws relay
+    MPS->>AMT: ws channel closes
+    CLI->>APIV2: PATCH desiredKvmState=KVM_STATE_STOP
     APIV2->>INV: UPDATE desired_kvm_state=KVM_STATE_STOP
-    APIV2-->>CLI: 200 OK
-    Note over DM,INV: kvm-manager reconciler wakes on desired=STOP
-    DM->>INV: UPDATE current_kvm_state=KVM_STATE_STOP
-    DM->>INV: CLEAR kvm_session_url=""
-    DM->>INV: UPDATE kvm_session_status="KVM session stopped"
-    DM->>INV: UPDATE kvm_session_status_indicator=STATUS_INDICATION_IDLE
-    Note over CLI,INV: 9. Verify session closed (orch-cli get host)
-    CLI->>APIV2: GET /compute/hosts/:id
-    APIV2-->>CLI: currentKvmState=KVM_STATE_STOP kvmSessionUrl="" kvmSessionStatus="KVM session stopped"
+    Note over DM,INV: kvm-manager: clears state, URL, status
+    Note over CLI,INV: 9. Verify session closed
+    CLI->>APIV2: GET verify KVM_STATE_STOP
+    APIV2-->>CLI: currentKvmState=KVM_STATE_STOP
 ```
 
 ---
