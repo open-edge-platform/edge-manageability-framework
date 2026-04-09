@@ -59,8 +59,6 @@ database:
   type: {{ env "EMF_DB_TYPE" | default "local" | quote }}
   ssl: {{ env "EMF_DB_SSL" | default "false" }}
   databases:
-    - namespace: orch-app
-      name: app-orch-catalog
     - namespace: orch-platform
       name: platform-keycloak
     - namespace: orch-platform

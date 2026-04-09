@@ -2,5 +2,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+# Disable serviceMonitor if Prometheus Operator CRDs are not installed
 serviceMonitor:
   enabled: false
+
+# Disable namespaces not used in EIM/vPro profiles
+authorizationPolicy:
+  orch-app:
+    enabled: false
+  orch-cluster:
+    enabled: false
+  orch-sre:
+    enabled: false
+  orch-harbor:
+    enabled: false

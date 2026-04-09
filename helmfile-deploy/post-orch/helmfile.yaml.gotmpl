@@ -305,7 +305,7 @@ releases:
       app: istio-policy
     namespace: istio-system
     chart: edge-orch/common/charts/istio-policy
-    version: 26.0.0
+    version: 26.0.2
     values:
       - values/istio-policy.yaml
     needs:
@@ -393,7 +393,7 @@ releases:
       app: self-signed-cert
     namespace: cert-manager
     chart: edge-orch/common/charts/self-signed-cert
-    version: 4.0.11
+    version: 26.0.1
     values:
       - values/self-signed-cert.yaml.gotmpl
     needs:

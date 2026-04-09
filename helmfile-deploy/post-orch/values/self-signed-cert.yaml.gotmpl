@@ -6,3 +6,12 @@ generateOrchCert: {{ .Values | getOrNil "self-signed-cert.generateOrchCert" | de
 
 clusterDomain: {{ .Values.clusterDomain | default "" | quote }}
 certDomain: {{ .Values.clusterDomain | default "" | quote }}
+
+# Disable namespaces not used in EIM/vPro profiles
+namespaces:
+  orch-harbor:
+    enabled: false
+  orch-app:
+    enabled: false
+  orch-cluster:
+    enabled: false
