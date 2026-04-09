@@ -271,7 +271,7 @@ var _ = Describe("Provisioned registries push test", Label("orchestrator-integra
 				Expect(err).ToNot(HaveOccurred(), "checking Registry %s", reg)
 				regAuth = base64.URLEncoding.EncodeToString(encodedJSON)
 
-				dc, err := docker.NewClientWithOpts(docker.FromEnv, docker.WithAPIVersionNegotiation())
+				dc, err := docker.New(docker.FromEnv)
 				Expect(err).ToNot(HaveOccurred(), "new docker client")
 				defer dc.Close() //nolint:errcheck
 
