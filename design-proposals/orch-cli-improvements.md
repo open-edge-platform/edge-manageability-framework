@@ -1,4 +1,4 @@
-# Design: Orch-CLI output refactoring and usability improvements
+# Design: Orch-CLI optimizations and output refactoring
 
 Author(s): Damian Kopyto
 Last updated: 09/04/2026
@@ -15,6 +15,7 @@ The following are the improvements we would like to achieve to improve the usabi
 - YAML and JSON format outputs
 - Single host creation without the bulk import
 - Simplified input provision to easy the evaluation of the product
+- Do not change the functionality of the existing CLI
 
 ### Table formatting and custom outputs
 
