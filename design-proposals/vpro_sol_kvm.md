@@ -32,7 +32,7 @@ Requirements: KVM is only available on Intel vPro® Enterprise platforms.
 It is generally not available on "Standard Manageability" or "Entry" versions of AMT.
 
 | Feature | Serial Over LAN (SOL) | Remote KVM |
-|---|---|---|
+| --- | --- | --- |
 | Interface | Text-based (Terminal) | Graphical (GUI) |
 | Bandwidth | Very Low | Moderate to High |
 | BIOS Access | Yes (Text-based mode) | Yes (Full Graphical) |
@@ -76,7 +76,7 @@ KVM works even if:
 4. Network Ports and Firewall
 
   | Purpose | Port |
-  |-------|-------------|
+  | --- | --- |
   | 'AMT WS‑MAN (HTTP)' | 16992 |
   | 'AMT WS‑MAN (HTTPS)' | 16993 |
   | 'KVM / SOL (non‑TLS)' | 16994 |
@@ -84,7 +84,8 @@ KVM works even if:
 
 ### Proposed Architecture
 
-<img width="2320" height="1282" alt="image" src="https://github.com/user-attachments/assets/4809c85e-29bb-442a-a129-475c2bea06d7" />
+<img width="2320" height="1282" alt="image"
+  src="https://github.com/user-attachments/assets/4809c85e-29bb-442a-a129-475c2bea06d7" />
 
 **Authentication Requirements**:
 
@@ -288,7 +289,7 @@ wss://mps-wss.<domain>/relay/webrelay.ashx?token=<token>&host=<guid>
 **Query parameters:**
 
 | Parameter | Value | Description |
-|---|---|---|
+| --- | --- | --- |
 | `token` | redirect token | Short-lived token from `/authorize/redirection` |
 | `host` | device GUID | AMT device identifier |
 | `port` | `16994` | KVM redirection port |
@@ -384,6 +385,25 @@ end
     Browser->>CLI: PointerEvent / KeyEvent
     CLI->>MPS: Forward input
     MPS-->>AMT: Input delivered
+
+    Note over Browser,AMT: 8. KVM session teardown
+    Note over Browser,CLI: Two equivalent stop triggers — both converge on the same downstream flow
+    alt Browser-initiated stop (tab closes or clicks Stop button in UI)
+    Browser-xCLI: WebSocket /ws/kvm disconnected (tab close or POST /api/disconnect)
+    CLI->>CLI: browser gone / disconnect request
+    else orch-cli initiated stop (orch-cli --kvm stop)
+    CLI->>CLI: operator runs --kvm stop; signals local HTTP server to close
+    end
+    CLI-xMPS: Close wss://mps-wss.domain.com/relay/... (WebSocket close frame)
+    MPS-xAMT: MPS relay terminates — AMT KVM channel closes
+    CLI->>APIV2: PATCH /compute/hosts/:id desiredKvmState=KVM_STATE_STOP
+    APIV2->>INV: UPDATE desired_kvm_state=KVM_STATE_STOP
+    APIV2-->>CLI: 200 OK
+    Note over DM,INV: kvm-manager reconciler wakes on desired=STOP
+    DM->>INV: UPDATE current_kvm_state=KVM_STATE_STOP
+    DM->>INV: CLEAR kvm_session_url=""
+    DM->>INV: UPDATE kvm_session_status="KVM session stopped"
+    DM->>INV: UPDATE kvm_session_status_indicator=STATUS_INDICATION_IDLE
 ```
 
 ---
@@ -539,7 +559,7 @@ enum KvmState {
 **Field visibility on `HostResource`:**
 
 | Field | Proto # | Field Behavior | Set by |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `kvmStatus` | 88 | OUTPUT_ONLY | kvm-manager |
 | `desiredKvmState` | 101 | OPTIONAL | orch-cli |
 | `currentKvmState` | 102 | OUTPUT_ONLY | kvm-manager |
@@ -625,7 +645,7 @@ enum SolState {
 **Field visibility on `HostResource` (SOL):**
 
 | Field | Proto # | Field Behavior | Set by |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `solStatus` | 108 | OUTPUT_ONLY | sol-manager |
 | `desiredSolState` | 109 | OPTIONAL | orch-cli |
 | `currentSolState` | 110 | OUTPUT_ONLY | sol-manager |
@@ -655,7 +675,7 @@ enum SolState {
 > an unintentional power command.
 
 | `desired_kvm_state` | `current_kvm_state` | Who writes | Meaning |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | — | `KVM_STATE_UNSPECIFIED` | — | No KVM session active or requested |
 | `KVM_STATE_START` | unchanged | orch-cli via APIv2 | Operator requests session start (`--kvm start`) |
 | `KVM_STATE_START` | `KVM_STATE_AWAITING_CONSENT` | kvm-manager | Device has consent policy; kvm-manager triggered on-screen code display |
@@ -667,7 +687,7 @@ enum SolState {
 **Transition rules:**
 
 | From (`current_kvm_state`) | To (`current_kvm_state`) | Trigger | Who |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | UNSPECIFIED / STOP / ERROR | — (desired=START set) | `orch-cli --kvm start` | orch-cli |
 | — (desired=START) | AWAITING_CONSENT | Device `userConsent` policy is enabled | kvm-manager |
 | AWAITING_CONSENT | START (active) | Consent code validated by MPS | kvm-manager |
@@ -682,7 +702,7 @@ enum SolState {
 ### Component Responsibilities
 
 | Component | Responsibility |
-|---|---|
+| --- | --- |
 | **infra-core/inventory** | Persist desired/current KVM state and all session fields as defined in the proto above |
 | **infra-core/apiv2** | Expose `PATCH`/`GET` for KVM fields on `HostResource`; enforce `OPTIONAL`/`OUTPUT_ONLY` field-behavior visibility |
 | **infra-external/kvm-manager** | New dedicated KVM Resource Manager (RM) — sole caller of all MPS REST APIs for KVM; writes relay token URL and state back to Inventory; coordinates user-consent flow |
@@ -696,7 +716,7 @@ kvm-manager is the **sole caller** of MPS REST APIs for KVM operations.
 sol-manager is the **sole caller** of MPS REST APIs for SOL operations.
 
 | Step | MPS Call | Purpose |
-|---|---|---|
+| --- | --- | --- |
 | Pre-condition | `GET /api/v1/amt/features/{guid}` | Verify KVM enabled; read `userConsent` policy |
 | Consent trigger | `GET /api/v1/amt/userConsentCode/{guid}` | Cause device to display 6-digit code on physical screen |
 | Consent submit | `POST /api/v1/amt/userConsentCode/{guid}` | Validate operator-entered code; grant consent |
@@ -708,7 +728,7 @@ When `--kvm start` is invoked, orch-cli starts a local HTTP server on a random
 OS-assigned port (`net.Listen("tcp", ":0")`):
 
 | Route | Method | Handler |
-|---|---|---|
+| --- | --- | --- |
 | `/` | GET | Serve embedded Angular app (`//go:embed static/*`) |
 | `/api/connect` | POST | Open WS to MPS; perform AMT Redirect handshake; return 200 when RFB ready |
 | `/api/status` | GET | Return session state: `connecting` / `active` / `error` / `disconnected` |
@@ -724,6 +744,7 @@ kvm_session_url (in Inventory):  wss://mps-wss.<domain>/relay/webrelay.ashx?toke
                                 Browser never sees this URL
                                 Browser only knows: ws://localhost:57432/ws/kvm
 ```
+
 #### Angular Embedded in orch-cli
 
 The Angular KVM viewer is embedded into the orch-cli binary at compile time:
@@ -743,7 +764,8 @@ Build pipeline:
 var staticFiles embed.FS
 ```
 
-The browser launch URL carries only the hostId query parameter — no credentials, no relay URL:
+The browser launch URL carries only the hostId query parameter — no credentials,
+no relay URL:
 
 ```text
 xdg-open "http://localhost:57432/?hostId=<host-resource-id>"
@@ -752,7 +774,9 @@ xdg-open "http://localhost:57432/?hostId=<host-resource-id>"
 ---
 
 ### orch-cli Commands
+
 #### KVM
+
 ##### 1. Start KVM Session
 
 ```bash
@@ -760,6 +784,7 @@ orch-cli set host <host-resource-id> --project <project-name> \
   --api-endpoint "https://api.${CLUSTER}" \
   --kvm start
 ```
+
 **Flow:**
 
 1. Sends `PATCH /compute/hosts/{id}` with `desiredKvmState = KVM_STATE_START`
@@ -776,7 +801,20 @@ orch-cli set host <host-resource-id> --project <project-name> \
 KVM session active.
 Opening viewer at http://localhost:57432/
 ```
+
 #### 2. Stop KVM Session
+
+A KVM session can be stopped by **either** the browser UI or `orch-cli`.
+Both paths converge on the same teardown sequence.
+
+**Trigger A — Browser-initiated stop:**
+
+- Operator closes the browser tab, or clicks a **Stop** button in the Angular viewer
+- Angular calls `POST /api/disconnect` (or the `/ws/kvm` WebSocket closes)
+- orch-cli detects the disconnect, closes the MPS relay WebSocket, then sends the
+  PATCH below
+
+**Trigger B — orch-cli command:**
 
 ```bash
 orch-cli set host <host-resource-id> --project <project-name> \
@@ -784,11 +822,21 @@ orch-cli set host <host-resource-id> --project <project-name> \
   --kvm stop
 ```
 
-**Output:**
+**Common teardown flow (both triggers):**
+
+1. orch-cli closes `wss://mps-wss.<domain>/relay/...` (WebSocket close frame)
+2. MPS relay terminates → AMT KVM channel closes on the device
+3. orch-cli sends `PATCH /compute/hosts/{id}` with `desiredKvmState = KVM_STATE_STOP`
+4. kvm-manager reconciler wakes, clears `current_kvm_state`, `kvm_session_url`,
+   and sets status to idle
+
+**Output (orch-cli):**
 
 ```text
 KVM session stopped for host: <host-resource-id>
 ```
+
+**Output (browser):** Angular viewer shows disconnected state.
 
 #### 3. Check KVM Status
 
@@ -807,7 +855,9 @@ KVM Info:
 ```
 
 ---
+
 #### SOL
-##### 1. Start KVM Session
+
+##### 1. Start SOL Session
 
 ## Architecture Open (if applicable)
