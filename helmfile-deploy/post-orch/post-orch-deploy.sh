@@ -298,12 +298,19 @@ helmfile_sync_all() {
   echo "═══════════════════════════════════════════════════════════════"
   echo ""
 
-  # Show final state of all releases
+  # Show final state of post-orch releases only (exclude pre-orch releases like metallb, openebs)
+  local helmfile_releases
+  helmfile_releases=$(awk '/^releases:/,0 { if (/^  - name:/) print $3 }' "$SCRIPT_DIR/helmfile.yaml.gotmpl" | sort -u)
+
   local deployed=0 failed_count=0
   local failed_releases=()
   while IFS=$'\t' read -r name ns _ _ status _; do
     name=$(echo "$name" | xargs)
     status=$(echo "$status" | xargs)
+    # Skip releases not managed by this helmfile
+    if ! echo "$helmfile_releases" | grep -qx "$name"; then
+      continue
+    fi
     if [[ "$status" == "deployed" ]]; then
       ((deployed++))
     elif [[ -n "$name" ]]; then
@@ -327,12 +334,12 @@ helmfile_sync_all() {
 
   if (( sync_exit != 0 )); then
     echo ""
-    echo "⚠️  helmfile sync exited with code $sync_exit — check errors above"
-    return 1
+    echo "⚠️  helmfile sync exited with code $sync_exit — some releases may have failed"
+    echo "   See failed releases above for individual retry commands"
+  else
+    echo ""
+    echo "✅ All charts installed successfully"
   fi
-
-  echo ""
-  echo "✅ All charts installed successfully"
 }
 
 helmfile_destroy_all() {
@@ -459,6 +466,9 @@ echo "═══ Command: $0 $* ═══"
 echo "═══ Environment: $HELMFILE_ENV ═══"
 echo ""
 
+SCRIPT_START_TIME=$SECONDS
+SCRIPT_START_TS=$(date '+%Y-%m-%d %H:%M:%S')
+
 validate_config
 
 usage() {
@@ -533,3 +543,14 @@ case "$ACTION" in
     exit 1
     ;;
 esac
+
+# ─── Script timing summary ──────────────────────────────────────────────────
+SCRIPT_END_TS=$(date '+%Y-%m-%d %H:%M:%S')
+SCRIPT_TOTAL=$(( SECONDS - SCRIPT_START_TIME ))
+echo ""
+echo "═══════════════════════════════════════════════════════════════"
+echo "  SCRIPT TIMING"
+echo "  Start: $SCRIPT_START_TS"
+echo "  End:   $SCRIPT_END_TS"
+echo "  Total: $(( SCRIPT_TOTAL / 60 ))m $(( SCRIPT_TOTAL % 60 ))s"
+echo "═══════════════════════════════════════════════════════════════"

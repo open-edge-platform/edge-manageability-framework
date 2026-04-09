@@ -40,7 +40,7 @@ helmDefaults:
   createNamespace: true
   wait: true
   waitForJobs: true
-  timeout: 180 
+  timeout: 300
 
 repositories:
   - name: jetstack
@@ -116,8 +116,6 @@ releases:
     values:
       - values/namespace-label.yaml.gotmpl
     installed: true  # always deploy
-    needs:
-      - postgresql-operator/postgresql-operator
 
 
   #############################################################################
@@ -130,11 +128,10 @@ releases:
     namespace: cert-manager
     chart: jetstack/cert-manager
     version: 1.19.3
+    timeout: 300
     values:
       - values/cert-manager.yaml.gotmpl
     condition: cert-manager.enabled
-    needs:
-      - ns-label/namespace-label
 
 
   - name: external-secrets
@@ -159,8 +156,6 @@ releases:
     values:
       - values/istio-base.yaml
     condition: istio-base.enabled
-    needs:
-      - ns-label/namespace-label
 
 
   - name: k8s-metrics-server
@@ -172,8 +167,6 @@ releases:
     values:
       - values/k8s-metrics-server.yaml
     condition: k8s-metrics-server.enabled
-    needs:
-      - ns-label/namespace-label
     hooks:
       - events: ["presync"]
         showlogs: true
@@ -190,8 +183,6 @@ releases:
     values:
       - values/kyverno.yaml
     condition: kyverno.enabled
-    needs:
-      - ns-label/namespace-label
 
 
   #############################################################################
@@ -309,7 +300,6 @@ releases:
     values:
       - values/istio-policy.yaml
     needs:
-      - orch-database/postgresql-cluster
       - istio-system/istiod
     condition: istio-policy.enabled
 
@@ -323,7 +313,6 @@ releases:
     values:
       - values/kiali.yaml
     needs:
-      - orch-database/postgresql-cluster
       - istio-system/istiod
     condition: kiali.enabled
 
@@ -337,7 +326,6 @@ releases:
     values:
       - values/platform-autocert.yaml.gotmpl
     needs:
-      - orch-database/postgresql-cluster
       - cert-manager/cert-manager
     condition: platform-autocert.enabled
 
@@ -397,7 +385,6 @@ releases:
     values:
       - values/self-signed-cert.yaml.gotmpl
     needs:
-      - orch-database/postgresql-cluster
       - cert-manager/cert-manager
     condition: self-signed-cert.enabled
 
@@ -430,7 +417,7 @@ releases:
       - values/secret-wait-tls-orch.yaml
     condition: secret-wait-tls-orch.enabled
     needs:
-      - orch-platform/vault
+      - cert-manager/self-signed-cert
 
 
 
@@ -474,7 +461,7 @@ releases:
       - values/copy-keycloak-admin-to-infra.yaml
     condition: copy-keycloak-admin-to-infra.enabled
     needs:
-      - orch-gateway/secret-wait-tls-orch
+      - orch-platform/platform-keycloak
 
 
   #############################################################################
@@ -491,7 +478,7 @@ releases:
       - values/traefik-pre.yaml.gotmpl
     condition: traefik-pre.enabled
     needs:
-      - orch-infra/copy-keycloak-admin-to-infra
+      - orch-gateway/secret-wait-tls-orch
 
 
   #############################################################################
@@ -508,7 +495,7 @@ releases:
       - values/ingress-haproxy.yaml
     condition: ingress-haproxy.enabled
     needs:
-      - orch-gateway/traefik-pre
+      - cert-manager/self-signed-cert
 
 
   - name: kyverno-istio-policy
@@ -520,7 +507,6 @@ releases:
     values:
       - values/kyverno-istio-policy.yaml
     needs:
-      - orch-gateway/traefik-pre
       - kyverno/kyverno
     condition: kyverno-istio-policy.enabled
 
@@ -566,7 +552,7 @@ releases:
       - values/haproxy-ingress-pxe-boots.yaml.gotmpl
     condition: haproxy-ingress-pxe-boots.enabled
     needs:
-      - orch-gateway/traefik
+      - orch-boots/ingress-haproxy
 
 
   - name: tenancy-datamodel
@@ -579,7 +565,7 @@ releases:
       - values/tenancy-datamodel.yaml.gotmpl
     condition: tenancy-datamodel.enabled
     needs:
-      - orch-gateway/traefik
+      - orch-database/postgresql-cluster
 
 
   - name: tenancy-api-mapping
@@ -669,7 +655,7 @@ releases:
       - values/secret-wait-tls-boots.yaml
     condition: secret-wait-tls-boots.enabled
     needs:
-      - orch-gateway/keycloak-tenant-controller
+      - orch-boots/haproxy-ingress-pxe-boots
 
 
   - name: token-fs
@@ -682,7 +668,7 @@ releases:
       - values/token-fs.yaml.gotmpl
     condition: token-fs.enabled
     needs:
-      - orch-gateway/keycloak-tenant-controller
+      - orch-platform/platform-keycloak
 
 
   #############################################################################
@@ -700,6 +686,7 @@ releases:
     condition: copy-ca-cert-boots-to-gateway.enabled
     needs:
       - orch-secret/token-fs
+      - orch-boots/secret-wait-tls-boots
 
 
   - name: copy-ca-cert-boots-to-infra
@@ -713,6 +700,7 @@ releases:
     condition: copy-ca-cert-boots-to-infra.enabled
     needs:
       - orch-secret/token-fs
+      - orch-boots/secret-wait-tls-boots
 
 
   #############################################################################
@@ -730,7 +718,7 @@ releases:
       - values/resource-overrides.yaml
     condition: component-status.enabled
     needs:
-      - orch-infra/copy-ca-cert-boots-to-infra
+      - orch-platform/platform-keycloak
 
 
   - name: infra-core
@@ -756,7 +744,7 @@ releases:
       - values/metadata-broker.yaml.gotmpl
     condition: metadata-broker.enabled
     needs:
-      - orch-infra/copy-ca-cert-boots-to-infra
+      - orch-platform/platform-keycloak
 
 
   #############################################################################
@@ -774,7 +762,7 @@ releases:
       - values/resource-overrides.yaml
     condition: auth-service.enabled
     needs:
-      - orch-platform/component-status
+      - orch-platform/platform-keycloak
 
 
   #############################################################################

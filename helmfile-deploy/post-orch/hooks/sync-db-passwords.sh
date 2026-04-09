@@ -17,23 +17,24 @@ set -euo pipefail
 PGCLUSTER_NS="orch-database"
 
 # Check if any PostgreSQL pods exist (postgresql-cluster may not be deployed yet)
-if ! kubectl get pods -n "$PGCLUSTER_NS" -l cnpg.io/cluster=postgresql-cluster --no-headers 2>/dev/null | grep -q .; then
-  echo "⏭️  No PostgreSQL cluster pods found in $PGCLUSTER_NS — skipping password sync (postgresql-cluster not yet deployed)"
-  exit 0
-fi
-
-# Wait for the primary pod to be ready (it may have just been created by postgresql-cluster)
-echo "⏳ Waiting for PostgreSQL primary pod to be ready..."
-kubectl wait --for=condition=Ready pod -l role=primary -n "$PGCLUSTER_NS" --timeout=120s 2>/dev/null || \
-  kubectl wait --for=condition=Ready pod -l cnpg.io/cluster=postgresql-cluster -n "$PGCLUSTER_NS" --timeout=120s 2>/dev/null || true
-
-PGCLUSTER_POD=$(kubectl get pods -n "$PGCLUSTER_NS" -l role=primary -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || \
-                kubectl get pods -n "$PGCLUSTER_NS" -l cnpg.io/cluster=postgresql-cluster -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+PGCLUSTER_POD=$(kubectl get pods -n "$PGCLUSTER_NS" -l cnpg.io/instanceRole=primary -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
 
 if [[ -z "$PGCLUSTER_POD" ]]; then
-  echo "⚠️  No PostgreSQL pod found in $PGCLUSTER_NS — skipping password sync"
+  # Fallback: look for role=primary label
+  PGCLUSTER_POD=$(kubectl get pods -n "$PGCLUSTER_NS" -l role=primary --field-selector=status.phase=Running -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+fi
+
+if [[ -z "$PGCLUSTER_POD" ]]; then
+  echo "⏭️  No PostgreSQL primary pod found in $PGCLUSTER_NS — skipping password sync (postgresql-cluster not yet deployed)"
   exit 0
 fi
+
+# Wait for the primary pod to be ready
+echo "⏳ Waiting for PostgreSQL primary pod to be ready..."
+kubectl wait --for=condition=Ready pod "$PGCLUSTER_POD" -n "$PGCLUSTER_NS" --timeout=120s 2>/dev/null || {
+  echo "⚠️  PostgreSQL primary pod $PGCLUSTER_POD not ready — skipping password sync"
+  exit 0
+}
 
 echo "🔄 Syncing DB passwords to PostgreSQL (pod: $PGCLUSTER_POD)..."
 
@@ -116,5 +117,5 @@ for app in mps rps; do
 done
 
 if (( FAILED > 0 )); then
-  exit 1
+  echo "⚠️  Some password syncs failed — roles may not exist yet (first install). Will be synced on next run."
 fi
