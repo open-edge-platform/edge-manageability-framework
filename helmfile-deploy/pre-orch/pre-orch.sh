@@ -46,6 +46,7 @@ MAX_PODS="${MAX_PODS:-500}"
 # Pre-orch components (helmfile-based)
 INSTALL_OPENEBS="${INSTALL_OPENEBS:-true}"
 INSTALL_METALLB="${INSTALL_METALLB:-true}"
+INSTALL_PRE_CONFIG="${INSTALL_PRE_CONFIG:-true}"
 
 ################################
 # Helpers
@@ -345,6 +346,16 @@ install_pre_orch_components() {
     echo "✅ MetalLB installed"
   else
     echo "⏭️  Skipping MetalLB (--no-metallb)"
+  fi
+
+  if [[ "${INSTALL_PRE_CONFIG}" == "true" ]]; then
+    echo "🚀 Running pre-orch-config (namespaces, secrets, passwords)..."
+    "${script_dir}/pre-orch-config.sh" install || {
+      echo "❌ pre-orch-config install failed"
+      exit 1
+    }
+  else
+    echo "⏭️  Skipping pre-orch-config (--no-pre-config)"
   fi
 }
 
@@ -843,6 +854,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --no-metallb)
       INSTALL_METALLB="false"
+      shift
+      ;;
+    --no-pre-config)
+      INSTALL_PRE_CONFIG="false"
       shift
       ;;
 
