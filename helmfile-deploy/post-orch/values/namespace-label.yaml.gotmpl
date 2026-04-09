@@ -9,25 +9,13 @@ namespaces:
   - name: "orch-iam"
     labels:
       istio-injection: {{ if eq (.Values.istio.enabled | toString) "true" }}enabled{{ else }}disabled{{ end }}
-  - name: "orch-app"
-    labels:
-      istio-injection: {{ if eq (.Values.istio.enabled | toString) "true" }}enabled{{ else }}disabled{{ end }}
-  - name: "orch-cluster"
-    labels:
-      istio-injection: {{ if eq (.Values.istio.enabled | toString) "true" }}enabled{{ else }}disabled{{ end }}
   - name: "orch-ui"
     labels:
       istio-injection: {{ if eq (.Values.istio.enabled | toString) "true" }}enabled{{ else }}disabled{{ end }}
   - name: "orch-platform"
     labels:
       istio-injection: {{ if eq (.Values.istio.enabled | toString) "true" }}enabled{{ else }}disabled{{ end }}
-  - name: "orch-harbor"
-    labels:
-      istio-injection: {{ if eq (.Values.istio.enabled | toString) "true" }}enabled{{ else }}disabled{{ end }}
   - name: "orch-gateway"
-    labels:
-      istio-injection: {{ if eq (.Values.istio.enabled | toString) "true" }}enabled{{ else }}disabled{{ end }}
-  - name: "orch-sre"
     labels:
       istio-injection: {{ if eq (.Values.istio.enabled | toString) "true" }}enabled{{ else }}disabled{{ end }}
   - name: "orch-database"
@@ -39,8 +27,4 @@ namespaces:
   - name: orch-secret
     labels:
       istio-injection: {{ if eq (.Values.istio.enabled | toString) "true" }}enabled{{ else }}disabled{{ end }}
-  - name: "fleet-default"
-    labels:
-      app.edge-orchestrator.intel.com/fleet-rs-secret: "true"
-  - name: "capi-variables"
 resources: null
