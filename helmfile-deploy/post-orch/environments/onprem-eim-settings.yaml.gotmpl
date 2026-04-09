@@ -87,6 +87,8 @@ istiod:
   enabled: {{ env "EMF_ENABLE_ISTIO" | default "false" }}
 kiali:
   enabled: {{ env "EMF_ENABLE_ISTIO" | default "false" }}
+wait-istio-job:
+  enabled: {{ env "EMF_ENABLE_ISTIO" | default "false" }}
 
 # ─── Kyverno ─────────────────────────────────────────────────────────────────
 kyverno:
@@ -152,5 +154,4 @@ o11y:
     maxReplicas: {{ env "EMF_ALERTING_MAX_REPLICAS" | default "1" }}
     alertmanagerReplicas: {{ env "EMF_ALERTMANAGER_REPLICAS" | default "1" }}
     smtpInitialize: {{ env "EMF_SMTP_INITIALIZE" | default "false" }}
-
 
