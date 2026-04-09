@@ -84,9 +84,7 @@ KVM works even if:
 
 ### Proposed Architecture
 
-<img
-  width="2443" height="1390" alt="image"
-  src="https://github.com/user-attachments/assets/6b780075-1cfa-41d9-af33-7eb67636ee1b" />
+<img width="2320" height="1282" alt="image" src="https://github.com/user-attachments/assets/4809c85e-29bb-442a-a129-475c2bea06d7" />
 
 **Authentication Requirements**:
 
@@ -336,6 +334,7 @@ end
     DM->>MPS: GET /api/v1/amt/features/:guid
     MPS-->>DM: kvmEnabled=true userConsent=kvm
 
+    alt is Activation Mode = CCM
     Note over DM,CLI: 3. Consent flow - CCM only, skipped in ACM
     DM->>MPS: GET /api/v1/amt/userConsentCode/:guid
     MPS-->>AMT: Display 6-digit code on screen
@@ -355,7 +354,7 @@ end
     MPS-->>AMT: Validate code
     AMT-->>MPS: Consent granted
     MPS-->>DM: 200 OK
-
+    end
     Note over DM,INV: 4. Obtain redirect token and write session URL
     DM->>MPS: GET /api/v1/authorize/redirection/:guid
     MPS-->>DM: token=short-lived-token
@@ -421,6 +420,7 @@ end
     CLI->>APIV2: GET /compute/hosts/:id poll every 2s
     APIV2-->>CLI: currentSolState=SOL_STATE_AWAITING_CONSENT
 
+    alt is Activation Mode = CCM
     Note over CLI: Operator reads 6-digit code from device screen
     CLI->>APIV2: PATCH /compute/hosts/:id desiredConsentCode=NNNNNN
     APIV2->>INV: UPDATE desired_consent_code=NNNNNN
@@ -431,6 +431,7 @@ end
     MPS-->>AMT: Validate code
     AMT-->>MPS: Consent granted
     MPS-->>SM: 200 OK
+    end
 
     Note over SM,INV: 4. Obtain redirect token, open MPS relay, start SOL protocol
     SM->>MPS: GET /api/v1/authorize/redirection/:guid
@@ -751,8 +752,8 @@ xdg-open "http://localhost:57432/?hostId=<host-resource-id>"
 ---
 
 ### orch-cli Commands
-
-#### 1. Start KVM Session
+#### KVM
+##### 1. Start KVM Session
 
 ```bash
 orch-cli set host <host-resource-id> --project <project-name> \
@@ -806,6 +807,7 @@ KVM Info:
 ```
 
 ---
-
+#### SOL
+##### 1. Start KVM Session
 
 ## Architecture Open (if applicable)
