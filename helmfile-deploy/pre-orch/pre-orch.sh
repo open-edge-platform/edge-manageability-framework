@@ -11,11 +11,62 @@ export PATH="/usr/local/bin:${PATH}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# ─── Timing helpers ──────────────────────────────────────────────────────────
+SCRIPT_START_TIME=$SECONDS
+SCRIPT_START_TS=$(date '+%Y-%m-%d %H:%M:%S')
+declare -a STEP_NAMES=()
+declare -a STEP_DURATIONS=()
+
+step_start() {
+  _STEP_NAME="$1"
+  _STEP_START=$SECONDS
+  echo ""
+  echo "⏱️  [$_STEP_NAME] started at $(date '+%H:%M:%S')"
+}
+
+step_done() {
+  local dur=$(( SECONDS - _STEP_START ))
+  STEP_NAMES+=("$_STEP_NAME")
+  STEP_DURATIONS+=($dur)
+  echo "⏱️  [$_STEP_NAME] completed in $(( dur / 60 ))m $(( dur % 60 ))s"
+}
+
+print_timing_summary() {
+  local total=$(( SECONDS - SCRIPT_START_TIME ))
+  local end_ts
+  end_ts=$(date '+%Y-%m-%d %H:%M:%S')
+  echo ""
+  echo "═══════════════════════════════════════════════════════════════"
+  echo "  PRE-ORCH TIMING SUMMARY"
+  echo "═══════════════════════════════════════════════════════════════"
+  for i in "${!STEP_NAMES[@]}"; do
+    local d=${STEP_DURATIONS[$i]}
+    printf "  %-35s %dm %ds\n" "${STEP_NAMES[$i]}" $(( d / 60 )) $(( d % 60 ))
+  done
+  echo "  ─────────────────────────────────────────────────────────────"
+  echo "  Start: $SCRIPT_START_TS"
+  echo "  End:   $end_ts"
+  printf "  Total: %dm %ds\n" $(( total / 60 )) $(( total % 60 ))
+  echo "═══════════════════════════════════════════════════════════════"
+}
+
+trap print_timing_summary EXIT
+
 # Source config file if present
 if [[ -f "${SCRIPT_DIR}/pre-orch.env" ]]; then
   # shellcheck disable=SC1091
   set -a; source "${SCRIPT_DIR}/pre-orch.env"; set +a
 fi
+
+# ─── Logging: tee all output to timestamped log file ────────────────────────
+LOG_DIR="$SCRIPT_DIR/logs"
+mkdir -p "$LOG_DIR"
+LOG_TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
+LOG_FILE="$LOG_DIR/pre-orch_${LOG_TIMESTAMP}.log"
+exec > >(tee -a "$LOG_FILE") 2>&1
+echo "═══ Log started: $(date -Iseconds) ═══"
+echo "═══ Command: $0 $* ═══"
+echo ""
 
 ################################
 # Defaults / Configuration
@@ -322,17 +373,20 @@ install_pre_orch_components() {
   echo "✅ All system pods are ready"
 
   if [[ "${INSTALL_OPENEBS}" == "true" ]]; then
+    step_start "OpenEBS LocalPV"
     echo "🚀 Installing OpenEBS LocalPV via helmfile..."
     (cd "${script_dir}" && helmfile -f helmfile.yaml.gotmpl -l app=openebs-localpv apply --skip-diff-on-install 2>&1) || {
       echo "❌ OpenEBS LocalPV install failed"
       exit 1
     }
     echo "✅ OpenEBS LocalPV installed"
+    step_done
   else
     echo "⏭️  Skipping OpenEBS LocalPV (--no-openebs)"
   fi
 
   if [[ "${INSTALL_METALLB}" == "true" ]]; then
+    step_start "MetalLB"
     echo "🚀 Installing MetalLB via helmfile..."
     (cd "${script_dir}" && helmfile -f helmfile.yaml.gotmpl -l app=metallb apply --skip-diff-on-install 2>&1) || {
       echo "❌ MetalLB install failed"
@@ -344,16 +398,19 @@ install_pre_orch_components() {
       exit 1
     }
     echo "✅ MetalLB installed"
+    step_done
   else
     echo "⏭️  Skipping MetalLB (--no-metallb)"
   fi
 
   if [[ "${INSTALL_PRE_CONFIG}" == "true" ]]; then
+    step_start "pre-orch-config"
     echo "🚀 Running pre-orch-config (namespaces, secrets, passwords)..."
     "${script_dir}/pre-orch-config.sh" install || {
       echo "❌ pre-orch-config install failed"
       exit 1
     }
+    step_done
   else
     echo "⏭️  Skipping pre-orch-config (--no-pre-config)"
   fi
@@ -449,12 +506,14 @@ kind_install() {
 
   create_kind_config "${kind_config}"
 
+  step_start "KIND cluster create"
   kind create cluster --name "${KIND_CLUSTER_NAME}" --config "${kind_config}"
 
   echo "✅ Cluster created"
   kubectl cluster-info --context "${context}"
 
   wait_for_k8s_ready "${context}"
+  step_done
   install_pre_orch_components
 }
 
@@ -521,6 +580,7 @@ k3s_install() {
   if systemctl is-active --quiet k3s.service 2>/dev/null; then
     echo "⚠️  k3s.service is already active; reusing it"
   else
+    step_start "K3s install"
     echo "👉 Installing K3s (${K3S_VERSION})..."
     curl -sfL https://get.k3s.io | sudo INSTALL_K3S_VERSION="${K3S_VERSION}" sh -s - server \
       --write-kubeconfig-mode=0644 \
@@ -538,6 +598,7 @@ k3s_install() {
   k3s_setup_kubeconfig /etc/rancher/k3s/k3s.yaml
 
   wait_for_k8s_ready
+  step_done
   install_pre_orch_components
 }
 
@@ -728,6 +789,7 @@ rke2_install() {
   rke2_write_coredns_chart_config
   rke2_configure_registries
 
+  step_start "RKE2 install"
   echo "👉 Enabling and starting rke2-server.service..."
   sudo systemctl enable --now rke2-server.service
 
@@ -744,6 +806,7 @@ rke2_install() {
   sudo systemctl restart rke2-server.service
 
   wait_for_k8s_ready
+  step_done
   install_pre_orch_components
 }
 
