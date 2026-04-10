@@ -856,4 +856,67 @@ KVM Info:
 
 ##### 1. Start SOL Session
 
+```bash
+orch-cli set host <host-resource-id> --project <project-name> \
+  --api-endpoint "https://api.${CLUSTER}" \
+  --sol start
+```
+
+**Flow:**
+
+1. Sends `PATCH /compute/hosts/{id}` with `desiredSolState = SOL_STATE_START`
+2. Polls `GET /compute/hosts/{id}` every 2 s (timeout 60 s)
+3. If `currentSolState = SOL_STATE_AWAITING_CONSENT` is detected, prompts the operator
+   for the 6-digit code shown on the device screen; submits it via `PATCH` (`desiredConsentCode`)
+   and resumes polling
+4. Once `currentSolState = SOL_STATE_START`, reads `solSessionUrl` from the response
+5. Launches `wssh3` to connect to the returned WebSocket URL for an interactive terminal session
+
+**Output:**
+
+```text
+SOL session active.
+Connecting to ws://sol-manager:8080/ws/terminal/<session-id> ...
+Connected. Interactive terminal ready.
+```
+
+##### 2. Stop SOL Session
+
+```bash
+orch-cli set host <host-resource-id> --project <project-name> \
+  --api-endpoint "https://api.${CLUSTER}" \
+  --sol stop
+```
+
+**Flow:**
+
+1. orch-cli closes the `wssh3` WebSocket connection to sol-manager
+2. Sends `PATCH /compute/hosts/{id}` with `desiredSolState = SOL_STATE_STOP`
+3. sol-manager reconciler wakes, tears down the MPS relay and SOL channel,
+   clears `current_sol_state`, `sol_session_url`, and sets status to idle
+
+**Output:**
+
+```text
+SOL session stopped for host: <host-resource-id>
+```
+
+##### 3. Check SOL Status
+
+```bash
+orch-cli get host <host-resource-id> --project <project-name> \
+  --api-endpoint "https://api.${CLUSTER}"
+```
+
+**Output (SOL section):**
+
+```text
+SOL Info:
+
+-   SOL State:    SOL_STATE_START
+-   SOL Status:   SOL session active
+```
+
+---
+
 ## Architecture Open (if applicable)
