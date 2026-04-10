@@ -202,33 +202,93 @@ helmfile_sync_all() {
   sync_exit=$?
   local total_duration=$(( SECONDS - start_time ))
 
-  # Count failed helm releases after sync
-  local failed_releases=""
-  local failed_count=0
-  failed_releases=$(helm list -A -a --no-headers 2>/dev/null \
-    | awk '{gsub(/^[ \t]+|[ \t]+$/, "", $5); if ($5 == "failed") print $1}')
-  if [[ -n "$failed_releases" ]]; then
-    failed_count=$(echo "$failed_releases" | wc -l)
-  fi
+  # ─── Build per-chart summary from helm list ────────────────────────────────
+  local deployed_list="" failed_list="" pending_list="" notinstalled_list=""
+  local deployed_count=0 failed_count=0 pending_count=0 notinstalled_count=0
 
+  # Get all enabled releases from helmfile
+  local enabled_releases
+  enabled_releases=$(cd "$SCRIPT_DIR" && helmfile -e "$HELMFILE_ENV" list 2>/dev/null \
+    | awk 'NR>1 && $3=="true" {print $1}' | sort)
+
+  # Build lookup: release -> "status namespace"
+  # Note: helm list UPDATED column has spaces (e.g. "2026-04-10 12:00:00 +0000 UTC")
+  # so we find STATUS as the field right after "UTC"
+  declare -A helm_status_map helm_ns_map
+  while read -r name ns status; do
+    [[ -z "$name" ]] && continue
+    helm_status_map["$name"]="$status"
+    helm_ns_map["$name"]="$ns"
+  done < <(helm list -A -a --no-headers 2>/dev/null \
+    | awk '{for(i=1;i<=NF;i++) if($i=="UTC"){print $1, $2, $(i+1); break}}')
+
+  while read -r release; do
+    [[ -z "$release" ]] && continue
+    local st="${helm_status_map[$release]:-}"
+    local ns="${helm_ns_map[$release]:-}"
+    case "$st" in
+      deployed)
+        ((deployed_count++))
+        deployed_list+="  ✅  $release ($ns)"$'\n'
+        ;;
+      failed)
+        ((failed_count++))
+        failed_list+="  ❌  $release ($ns)"$'\n'
+        ;;
+      pending-*)
+        ((pending_count++))
+        pending_list+="  ⏳  $release ($ns) [$st]"$'\n'
+        ;;
+      *)
+        ((notinstalled_count++))
+        notinstalled_list+="  ⚪  $release"$'\n'
+        ;;
+    esac
+  done <<< "$enabled_releases"
+
+  local total_enabled=$(( deployed_count + failed_count + pending_count + notinstalled_count ))
   local MAX_TOLERATED_FAILURES=2
 
   echo ""
   echo "═══════════════════════════════════════════════════════════════"
-  echo "  DEPLOYMENT COMPLETE  (env: $HELMFILE_ENV)"
+  echo "  DEPLOYMENT SUMMARY  (env: $HELMFILE_ENV)"
+  echo "═══════════════════════════════════════════════════════════════"
   echo "  Total time: $(( total_duration / 60 ))m $(( total_duration % 60 ))s"
-  if (( failed_count > 0 )); then
-    echo "  ⚠️  $failed_count chart(s) in failed state:"
-    echo "$failed_releases" | sed 's/^/      - /'
+  echo ""
+  printf "  ✅ Deployed: %-4d  ❌ Failed: %-4d  ⏳ Pending: %-4d  ⚪ Not installed: %d\n" \
+    "$deployed_count" "$failed_count" "$pending_count" "$notinstalled_count"
+  printf "  Total enabled releases: %d\n" "$total_enabled"
+  echo ""
+
+  if [[ -n "$failed_list" ]]; then
+    echo "  FAILED:"
+    echo -n "$failed_list"
+    echo ""
   fi
-  if (( failed_count >= 3 )); then
+  if [[ -n "$pending_list" ]]; then
+    echo "  PENDING:"
+    echo -n "$pending_list"
+    echo ""
+  fi
+  if [[ -n "$notinstalled_list" ]]; then
+    echo "  NOT INSTALLED:"
+    echo -n "$notinstalled_list"
+    echo ""
+  fi
+  if [[ -n "$deployed_list" ]]; then
+    echo "  DEPLOYED:"
+    echo -n "$deployed_list"
+    echo ""
+  fi
+
+  if (( failed_count == 0 && pending_count == 0 && notinstalled_count == 0 )); then
+    echo "  ✅ ALL $total_enabled RELEASES DEPLOYED SUCCESSFULLY"
+  elif (( failed_count >= 3 )); then
     echo "  ❌ $failed_count charts failed (threshold: $MAX_TOLERATED_FAILURES) — aborting"
   elif (( sync_exit != 0 && failed_count > 0 )); then
-    echo "  ⚠️  helmfile sync had errors but only $failed_count chart(s) failed — continuing (threshold: $MAX_TOLERATED_FAILURES)"
+    echo "  ⚠️  helmfile sync had errors but only $failed_count chart(s) failed — continuing"
   elif (( sync_exit != 0 )); then
     echo "  ⚠️  helmfile sync exited with code $sync_exit but no releases in failed state"
-  else
-    echo "  ✅ All charts installed successfully"
   fi
   echo "═══════════════════════════════════════════════════════════════"
 
@@ -441,3 +501,4 @@ echo "  Start: $SCRIPT_START_TS"
 echo "  End:   $SCRIPT_END_TS"
 echo "  Total: $(( SCRIPT_TOTAL / 60 ))m $(( SCRIPT_TOTAL % 60 ))s"
 echo "═══════════════════════════════════════════════════════════════"
+
