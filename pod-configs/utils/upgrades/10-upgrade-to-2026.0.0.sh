@@ -81,6 +81,53 @@ get_eks_node_ami() {
     get_eksnode_ami $EKS_VERSION
 }
 
+# Returns the subnet IDs (comma-separated) for the AZ that the observability node
+# group's EBS PVs were created in. This ensures the replacement node lands in the
+# same AZ as its volumes after an EKS upgrade.
+# Falls back to empty string if no PVs exist yet (fresh install path).
+get_obs_subnet_ids() {
+    local pv_az
+    pv_az=$(kubectl get pv -o json 2>/dev/null \
+        | jq -r '
+            .items[]
+            | select(
+                (.spec.claimRef.name // "") | test("edgenode-observability-mimir|loki-write")
+              )
+            | .spec.nodeAffinity.required.nodeSelectorTerms[0].matchExpressions[]?
+            | select(.key == "topology.kubernetes.io/zone")
+            | .values[0]
+          ' \
+        | sort -u | head -1)
+
+    [[ -z "$pv_az" ]] && return 0
+
+    # Use only subnets already registered with the EKS cluster — these are
+    # guaranteed to be correctly configured for EKS nodes.  Querying all VPC
+    # subnets in the AZ can return subnets (e.g. public subnets without
+    # auto-assign public IP) that EKS will reject with CREATE_FAILED.
+    local cluster_subnets
+    cluster_subnets=$(aws eks describe-cluster --name "$ENV_NAME" --region "$AWS_REGION" \
+        --query 'cluster.resourcesVpcConfig.subnetIds' --output text 2>/dev/null \
+        | tr '\t' '\n')
+
+    [[ -z "$cluster_subnets" ]] && return 0
+
+    # Filter the cluster's own subnets to those in the target AZ.
+    local subnet_id az_of_subnet
+    while IFS= read -r subnet_id; do
+        [[ -z "$subnet_id" ]] && continue
+        az_of_subnet=$(aws ec2 describe-subnets \
+            --region "$AWS_REGION" \
+            --subnet-ids "$subnet_id" \
+            --query 'Subnets[0].AvailabilityZone' \
+            --output text 2>/dev/null)
+        if [[ "$az_of_subnet" == "$pv_az" ]]; then
+            echo "$subnet_id"
+            return 0
+        fi
+    done <<< "$cluster_subnets"
+}
+
 
 get_aurora_ins_azs() {
     aurora_azs=($1)
@@ -138,30 +185,52 @@ cluster_variable() {
     VOL_SIZE=$(echo $OUT | awk '{print $1}')
     VOL_TYPE=$(echo $OUT | awk '{print $2}')
 
-    LT_ID_OBS=$(aws eks describe-nodegroup \
+    # Only read the observability node group launch template when it is ACTIVE.
+    # A CREATE_FAILED node group (left behind by a failed terraform apply) returns
+    # null launch template fields which would corrupt the generated tfvar.  The
+    # node will be deleted below in setup_cas so terraform can recreate it cleanly.
+    OBS_STATUS=$(aws eks describe-nodegroup \
       --cluster-name $ENV_NAME \
       --nodegroup-name observability \
       --region $AWS_REGION \
-      --query 'nodegroup.launchTemplate.id' \
-      --output text)
-    
-    LT_VERSION_OBS=$(aws eks describe-nodegroup \
-      --cluster-name $ENV_NAME \
-      --nodegroup-name observability \
-      --region $AWS_REGION \
-      --query 'nodegroup.launchTemplate.version' \
-      --output text)
-    
-    OUT_OBS=$(aws ec2 describe-launch-template-versions \
-      --launch-template-id $LT_ID_OBS \
-      --versions $LT_VERSION_OBS \
-      --region $AWS_REGION \
-      --query 'LaunchTemplateVersions[0].LaunchTemplateData.[InstanceType,BlockDeviceMappings[0].Ebs.VolumeSize,BlockDeviceMappings[0].Ebs.VolumeType]' \
-      --output text)
-    
-    INSTANCE_TYPE_OBS=$(echo $OUT_OBS | awk '{print $1}')
-    VOL_SIZE_OBS=$(echo $OUT_OBS | awk '{print $2}')
-    VOL_TYPE_OBS=$(echo $OUT_OBS | awk '{print $3}')
+      --query 'nodegroup.status' \
+      --output text 2>/dev/null || echo "NOT_FOUND")
+
+    if [[ "$OBS_STATUS" == "ACTIVE" ]]; then
+        LT_ID_OBS=$(aws eks describe-nodegroup \
+          --cluster-name $ENV_NAME \
+          --nodegroup-name observability \
+          --region $AWS_REGION \
+          --query 'nodegroup.launchTemplate.id' \
+          --output text)
+        LT_VERSION_OBS=$(aws eks describe-nodegroup \
+          --cluster-name $ENV_NAME \
+          --nodegroup-name observability \
+          --region $AWS_REGION \
+          --query 'nodegroup.launchTemplate.version' \
+          --output text)
+        OUT_OBS=$(aws ec2 describe-launch-template-versions \
+          --launch-template-id $LT_ID_OBS \
+          --versions $LT_VERSION_OBS \
+          --region $AWS_REGION \
+          --query 'LaunchTemplateVersions[0].LaunchTemplateData.[InstanceType,BlockDeviceMappings[0].Ebs.VolumeSize,BlockDeviceMappings[0].Ebs.VolumeType]' \
+          --output text)
+        INSTANCE_TYPE_OBS=$(echo $OUT_OBS | awk '{print $1}')
+        VOL_SIZE_OBS=$(echo $OUT_OBS | awk '{print $2}')
+        VOL_TYPE_OBS=$(echo $OUT_OBS | awk '{print $3}')
+        OBS_DES=$(aws eks describe-nodegroup \
+          --cluster-name $ENV_NAME \
+          --nodegroup-name observability \
+          --region $AWS_REGION \
+          --query 'nodegroup.scalingConfig.desiredSize' \
+          --output text 2>/dev/null || echo "1")
+    else
+        echo "[INFO] observability node group is '$OBS_STATUS' — using default instance/volume values in tfvar" >&2
+        INSTANCE_TYPE_OBS="t3.2xlarge"
+        VOL_SIZE_OBS=20
+        VOL_TYPE_OBS="gp3"
+        OBS_DES=1
+    fi
 
     FULLCHAIN="fullchain-${AWS_ACCOUNT}-${ENV_NAME}.pem"
     CHAIN="chain-${AWS_ACCOUNT}-${ENV_NAME}.pem"
@@ -169,6 +238,20 @@ cluster_variable() {
     tls_cert_content=$(cat ${SAVE_DIR}/${FULLCHAIN})
     ca_cert_content=$(cat ${SAVE_DIR}/${CHAIN})
     tls_key_content=$(cat ${SAVE_DIR}/${PRIVKEY})
+
+    # Look up the AZ of existing observability EBS PVs so the replacement node
+    # is pinned to the same AZ, preventing volume attachment failures post-upgrade.
+    local obs_subnet_ids_line=""
+    local obs_subnets
+    obs_subnets=$(get_obs_subnet_ids)
+    if [[ -n "$obs_subnets" ]]; then
+        # Convert comma-separated subnet IDs to HCL list: ["subnet-a","subnet-b"]
+        local obs_subnets_hcl
+        obs_subnets_hcl=$(echo "$obs_subnets" | tr ',' '\n' | sed 's/.*/"&"/' | paste -sd ',' -)
+        obs_subnet_ids_line="        subnet_ids = [${obs_subnets_hcl}]"
+        echo "[INFO] Pinning observability node group to subnets: $obs_subnets (AZ of existing EBS PVs)" >&2
+    fi
+
     cat <<EOF
 vpc_terraform_backend_bucket       = "$BUCKET_NAME"
 vpc_terraform_backend_key          = "${VPC_TERRAFORM_BACKEND_KEY}"
@@ -242,6 +325,7 @@ eks_additional_node_groups         ={
         instance_type = "$INSTANCE_TYPE_OBS"
         volume_size = "$VOL_SIZE_OBS"
         volume_type = "$VOL_TYPE_OBS"
+${obs_subnet_ids_line}
     }
 }
 
@@ -318,22 +402,44 @@ aws eks update-nodegroup-config \
   --region $AWS_REGION \
   --scaling-config minSize=1,maxSize=5,desiredSize=3
 
-echo "Fetching current  desired size for observability..."
+echo "Checking observability node group status before scaling..."
 
-OBS_DES=$(aws eks describe-nodegroup \
+OBS_NG_STATUS=$(aws eks describe-nodegroup \
   --cluster-name $ENV_NAME \
   --nodegroup-name observability \
   --region $AWS_REGION \
-  --query 'nodegroup.scalingConfig.desiredSize' \
-  --output text)
+  --query 'nodegroup.status' \
+  --output text 2>/dev/null || echo "NOT_FOUND")
 
-echo "Updating observability: min=0, max=1, desired=$OBS_DES"
-
-aws eks update-nodegroup-config \
-  --cluster-name $ENV_NAME \
-  --nodegroup-name observability \
-  --region $AWS_REGION \
-  --scaling-config minSize=0,maxSize=1,desiredSize=$OBS_DES
+if [[ "$OBS_NG_STATUS" == "CREATE_FAILED" ]]; then
+    echo "[INFO] observability node group is in CREATE_FAILED — deleting so terraform can recreate it with correct subnet."
+    aws eks delete-nodegroup \
+      --cluster-name $ENV_NAME \
+      --nodegroup-name observability \
+      --region $AWS_REGION
+    echo "[INFO] Waiting for observability node group deletion to complete..."
+    aws eks wait nodegroup-deleted \
+      --cluster-name $ENV_NAME \
+      --nodegroup-name observability \
+      --region $AWS_REGION
+    echo "[INFO] observability node group deleted. Skipping scaling config update."
+elif [[ "$OBS_NG_STATUS" == "ACTIVE" ]]; then
+    echo "Fetching current desired size for observability..."
+    OBS_DES=$(aws eks describe-nodegroup \
+      --cluster-name $ENV_NAME \
+      --nodegroup-name observability \
+      --region $AWS_REGION \
+      --query 'nodegroup.scalingConfig.desiredSize' \
+      --output text)
+    echo "Updating observability: min=0, max=1, desired=$OBS_DES"
+    aws eks update-nodegroup-config \
+      --cluster-name $ENV_NAME \
+      --nodegroup-name observability \
+      --region $AWS_REGION \
+      --scaling-config minSize=0,maxSize=1,desiredSize=$OBS_DES
+else
+    echo "[INFO] observability node group is '$OBS_NG_STATUS' — skipping scaling config update."
+fi
 
 POLICY_NAME="CASControllerPolicy-${CLUSTER_NAME}"
 

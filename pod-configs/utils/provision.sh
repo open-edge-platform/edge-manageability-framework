@@ -902,6 +902,53 @@ get_aurora_ins_azs() {
     echo $aurora_ins_azs
 }
 
+# Returns a comma-separated list of subnet IDs in the AZ where existing EBS PVs
+# reside, so the observability node group can be pinned to that AZ during upgrade.
+# Outputs nothing (empty) when there are no PVs or the AZ cannot be determined,
+# which means no pinning is needed (e.g. fresh install).
+get_obs_subnet_ids() {
+    local pv_az
+    pv_az=$(kubectl get pv -o json 2>/dev/null \
+        | jq -r '
+            .items[]
+            | select(
+                (.spec.claimRef.name // "") | test("edgenode-observability-mimir|loki-write")
+              )
+            | .spec.nodeAffinity.required.nodeSelectorTerms[0].matchExpressions[]?
+            | select(.key == "topology.kubernetes.io/zone")
+            | .values[0]
+          ' \
+        | sort -u | head -1)
+
+    [[ -z "$pv_az" ]] && return 0
+
+    # Use only subnets already registered with the EKS cluster — these are
+    # guaranteed to be correctly configured for EKS nodes.  Querying all VPC
+    # subnets in the AZ can return subnets (e.g. public subnets without
+    # auto-assign public IP) that EKS will reject with CREATE_FAILED.
+    local cluster_subnets
+    cluster_subnets=$(aws eks describe-cluster --name "$ENV_NAME" --region "$AWS_REGION" \
+        --query 'cluster.resourcesVpcConfig.subnetIds' --output text 2>/dev/null \
+        | tr '\t' '\n')
+
+    [[ -z "$cluster_subnets" ]] && return 0
+
+    # Filter the cluster's own subnets to those in the target AZ.
+    local subnet_id az_of_subnet
+    while IFS= read -r subnet_id; do
+        [[ -z "$subnet_id" ]] && continue
+        az_of_subnet=$(aws ec2 describe-subnets \
+            --region "$AWS_REGION" \
+            --subnet-ids "$subnet_id" \
+            --query 'Subnets[0].AvailabilityZone' \
+            --output text 2>/dev/null)
+        if [[ "$az_of_subnet" == "$pv_az" ]]; then
+            echo "$subnet_id"
+            return 0
+        fi
+    done <<< "$cluster_subnets"
+}
+
 cluster_variable() {
     s=$(get_azs)
     azs=($s)
@@ -1037,7 +1084,19 @@ action_cluster() {
         echo "eks_node_instance_type=\"${EKS_NODE_TYPE}\"" >> $tfvar_override
     fi
 
-    if [[ "$OVERRIDE_EKS_O11Y_SIZE" == "true" ]] || [[ "$OVERRIDE_EKS_O11Y_NODE_TYPE" == "true" ]]; then
+    # Determine if we need to pin the observability node group to a specific AZ.
+    # This is required during upgrade when existing EBS PVs are already bound to an AZ
+    # and the new node group must land in the same AZ to be able to attach those volumes.
+    local obs_subnet_ids obs_subnet_ids_line=""
+    obs_subnet_ids=$(get_obs_subnet_ids || true)
+    if [[ -n "$obs_subnet_ids" ]]; then
+        local obs_subnets_hcl
+        obs_subnets_hcl=$(echo "$obs_subnet_ids" | tr ',' '\n' | sed 's/.*/ "&"/' | paste -sd ',' -)
+        obs_subnet_ids_line="        subnet_ids = [${obs_subnets_hcl}]"
+        echo "[INFO] Pinning observability node group to subnets: $obs_subnet_ids (AZ of existing EBS PVs)" >&2
+    fi
+
+    if [[ "$OVERRIDE_EKS_O11Y_SIZE" == "true" ]] || [[ "$OVERRIDE_EKS_O11Y_NODE_TYPE" == "true" ]] || [[ -n "$obs_subnet_ids" ]]; then
         cat <<EOF >> $tfvar_override
 eks_additional_node_groups={
     "observability": {
@@ -1056,6 +1115,7 @@ eks_additional_node_groups={
         instance_type = "$EKS_O11Y_NODE_TYPE"
         volume_size = 20
         volume_type = "gp3"
+${obs_subnet_ids_line}
     }
 }
 EOF
