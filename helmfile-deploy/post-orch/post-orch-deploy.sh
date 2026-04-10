@@ -211,20 +211,16 @@ helmfile_sync_all() {
   enabled_releases=$(cd "$SCRIPT_DIR" && helmfile -e "$HELMFILE_ENV" list 2>/dev/null \
     | awk 'NR>1 && $3=="true" {print $1}' | sort)
 
-  # Build lookup: release -> "status namespace revision updated"
-  declare -A helm_status_map helm_ns_map helm_rev_map helm_updated_map
-  while IFS=$'\t' read -r name ns _ rev updated status _; do
-    name=$(echo "$name" | xargs)
-    ns=$(echo "$ns" | xargs)
-    status=$(echo "$status" | xargs)
-    rev=$(echo "$rev" | xargs)
-    updated=$(echo "$updated" | xargs)
+  # Build lookup: release -> "status namespace"
+  # Note: helm list UPDATED column has spaces (e.g. "2026-04-10 12:00:00 +0000 UTC")
+  # so we find STATUS as the field right after "UTC"
+  declare -A helm_status_map helm_ns_map
+  while read -r name ns status; do
     [[ -z "$name" ]] && continue
     helm_status_map["$name"]="$status"
     helm_ns_map["$name"]="$ns"
-    helm_rev_map["$name"]="$rev"
-    helm_updated_map["$name"]="$updated"
-  done < <(helm list -A -a --no-headers 2>/dev/null)
+  done < <(helm list -A -a --no-headers 2>/dev/null \
+    | awk '{for(i=1;i<=NF;i++) if($i=="UTC"){print $1, $2, $(i+1); break}}')
 
   while read -r release; do
     [[ -z "$release" ]] && continue
@@ -505,3 +501,4 @@ echo "  Start: $SCRIPT_START_TS"
 echo "  End:   $SCRIPT_END_TS"
 echo "  Total: $(( SCRIPT_TOTAL / 60 ))m $(( SCRIPT_TOTAL % 60 ))s"
 echo "═══════════════════════════════════════════════════════════════"
+
