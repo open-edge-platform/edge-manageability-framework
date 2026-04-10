@@ -103,6 +103,16 @@ traefik:
   enabled: true
   tlsOption: {{ env "EMF_TRAEFIK_TLS_OPTION" | default "gateway-tls" | quote }}
 
+# ─── Single-IP mode ─────────────────────────────────────────────────────────
+# When EMF_ORCH_IP is set, all LoadBalancer services share one IP on different ports.
+# Traefik: 443, HAProxy: 9443
+singleIpMode: {{ if env "EMF_ORCH_IP" }}true{{ else }}false{{ end }}
+haproxyPort: {{ if env "EMF_ORCH_IP" }}9443{{ else }}443{{ end }}
+
+# Single-IP routes: Traefik IngressRoute for tinkerbell-haproxy on :443
+single-ip-routes:
+  enabled: {{ if env "EMF_ORCH_IP" }}true{{ else }}false{{ end }}
+
 orchestratorVersion: {{ env "EMF_VERSION" | default (readFile "../../../VERSION" | trim) | quote }}
 
 # ─── Vault config ────────────────────────────────────────────────────────────

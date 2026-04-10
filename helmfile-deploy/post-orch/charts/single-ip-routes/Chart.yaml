@@ -1,0 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+apiVersion: v2
+name: single-ip-routes
+description: Traefik IngressRoutes for single-IP mode (HAProxy paths via Traefik on :443)
+version: 1.0.0

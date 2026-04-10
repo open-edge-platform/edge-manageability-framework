@@ -573,7 +573,7 @@ releases:
     wait: true
     version: 1.41.0
     values:
-      - values/ingress-haproxy.yaml
+      - values/ingress-haproxy.yaml.gotmpl
     condition: ingress-haproxy.enabled
     needs:
       - orch-gateway/traefik-pre
@@ -677,6 +677,21 @@ releases:
     needs:
       - orch-boots/ingress-haproxy
       - orch-gateway/traefik
+
+
+  - name: single-ip-routes
+    labels:
+      app: single-ip-routes
+      wave: "1200"
+    namespace: orch-gateway
+    chart: ./charts/single-ip-routes
+    wait: true
+    values:
+      - values/single-ip-routes.yaml.gotmpl
+    condition: single-ip-routes.enabled
+    needs:
+      - orch-gateway/traefik
+      - orch-gateway/traefik-extra-objects
 
 
   #############################################################################

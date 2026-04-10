@@ -387,6 +387,16 @@ install_pre_orch_components() {
 
   if [[ "${INSTALL_METALLB}" == "true" ]]; then
     step_start "MetalLB"
+    # Validate IP configuration
+    if [[ -n "${EMF_ORCH_IP:-}" ]]; then
+      echo "✅ Single-IP mode: all services will share ${EMF_ORCH_IP}"
+      echo "   Traefik port: 443, HAProxy port: 9443"
+      export EMF_TRAEFIK_IP="${EMF_ORCH_IP}"
+      export EMF_HAPROXY_IP="${EMF_ORCH_IP}"
+    elif [[ -z "${EMF_TRAEFIK_IP:-}" || -z "${EMF_HAPROXY_IP:-}" ]]; then
+      echo "❌ Either EMF_ORCH_IP (single-IP) or both EMF_TRAEFIK_IP and EMF_HAPROXY_IP must be set"
+      exit 1
+    fi
     echo "🚀 Installing MetalLB via helmfile..."
     (cd "${script_dir}" && helmfile -f helmfile.yaml.gotmpl -l app=metallb apply --skip-diff-on-install 2>&1) || {
       echo "❌ MetalLB install failed"

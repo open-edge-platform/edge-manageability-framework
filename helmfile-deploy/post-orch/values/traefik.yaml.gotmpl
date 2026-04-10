@@ -64,6 +64,11 @@ deployment:
 
 service:
   type: LoadBalancer
+{{- if eq (.Values.singleIpMode | toString) "true" }}
+  annotations:
+    metallb.universe.tf/address-pool: orch-pool
+    metallb.universe.tf/allow-shared-ip: orch-services
+{{- end }}
 
 ports:
 {{- if .Values | getOrNil "squid-proxy.enabled" }}

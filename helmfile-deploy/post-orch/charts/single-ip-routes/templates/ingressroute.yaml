@@ -1,0 +1,39 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# Traefik Middleware + IngressRoute for single-IP mode.
+# Routes tinkerbell-haproxy.{{ .Values.clusterDomain }}:443 through Traefik
+# to the tinkerbell nginx backend, with /tink-stack prefix stripping.
+---
+apiVersion: {{ .Values.traefikApiGroup }}
+kind: Middleware
+metadata:
+  name: tink-stack-stripprefix
+  namespace: {{ .Release.Namespace }}
+spec:
+  stripPrefix:
+    prefixes:
+      - /tink-stack
+---
+apiVersion: {{ .Values.traefikApiGroup }}
+kind: IngressRoute
+metadata:
+  name: tinkerbell-haproxy-via-traefik
+  namespace: {{ .Release.Namespace }}
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - kind: Rule
+      match: Host(`tinkerbell-haproxy.{{ .Values.clusterDomain }}`) && PathPrefix(`/tink-stack`)
+      priority: 20
+      middlewares:
+        - name: tink-stack-stripprefix
+      services:
+        - name: tinkerbell
+          namespace: orch-infra
+          port: 8080
+          scheme: http
+  tls:
+    secretName: {{ .Values.tlsSecret }}

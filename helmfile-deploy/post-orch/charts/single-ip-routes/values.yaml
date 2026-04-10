@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# Single-IP mode: route tinkerbell-haproxy traffic through Traefik on :443
+# so edge nodes and operators don't need to specify :9443.
+#
+# In multi-IP mode this chart is disabled (condition: singleIpMode).
+
+clusterDomain: cluster.onprem
+tlsSecret: tls-orch
+traefikApiGroup: traefik.io/v1alpha1
