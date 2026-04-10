@@ -201,16 +201,40 @@ helmfile_sync_all() {
   (cd "$SCRIPT_DIR" && helmfile -e "$HELMFILE_ENV" --skip-deps sync --concurrency 4) 2>&1
   sync_exit=$?
   local total_duration=$(( SECONDS - start_time ))
+
+  # Count failed helm releases after sync
+  local failed_releases=""
+  local failed_count=0
+  failed_releases=$(helm list -A -a --no-headers 2>/dev/null \
+    | awk '{gsub(/^[ \t]+|[ \t]+$/, "", $5); if ($5 == "failed") print $1}')
+  if [[ -n "$failed_releases" ]]; then
+    failed_count=$(echo "$failed_releases" | wc -l)
+  fi
+
+  local MAX_TOLERATED_FAILURES=2
+
   echo ""
   echo "═══════════════════════════════════════════════════════════════"
   echo "  DEPLOYMENT COMPLETE  (env: $HELMFILE_ENV)"
   echo "  Total time: $(( total_duration / 60 ))m $(( total_duration % 60 ))s"
-  if (( sync_exit != 0 )); then
-    echo "  ⚠️  helmfile sync exited with code $sync_exit"
+  if (( failed_count > 0 )); then
+    echo "  ⚠️  $failed_count chart(s) in failed state:"
+    echo "$failed_releases" | sed 's/^/      - /'
+  fi
+  if (( failed_count >= 3 )); then
+    echo "  ❌ $failed_count charts failed (threshold: $MAX_TOLERATED_FAILURES) — aborting"
+  elif (( sync_exit != 0 && failed_count > 0 )); then
+    echo "  ⚠️  helmfile sync had errors but only $failed_count chart(s) failed — continuing (threshold: $MAX_TOLERATED_FAILURES)"
+  elif (( sync_exit != 0 )); then
+    echo "  ⚠️  helmfile sync exited with code $sync_exit but no releases in failed state"
   else
     echo "  ✅ All charts installed successfully"
   fi
   echo "═══════════════════════════════════════════════════════════════"
+
+  if (( failed_count >= 3 )); then
+    exit 1
+  fi
 }
 helmfile_destroy_all() {
   echo "🗑️  Uninstalling all charts (env: $HELMFILE_ENV)"
