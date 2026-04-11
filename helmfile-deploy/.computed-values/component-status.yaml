@@ -1,0 +1,217 @@
+api:
+  resources:
+    limits:
+      cpu: "64"
+      memory: 64Gi
+    requests:
+      cpu: 1m
+      memory: 1Mi
+apiv2:
+  resources:
+    limits:
+      cpu: "64"
+      memory: 64Gi
+    requests:
+      cpu: 1m
+      memory: 1Mi
+attestationstatus-manager:
+  resources:
+    limits:
+      cpu: "64"
+      memory: 64Gi
+    requests:
+      cpu: 1m
+      memory: 1Mi
+componentStatus:
+  orchestrator:
+    features:
+      application-orchestration:
+        installed: false
+      cluster-orchestration:
+        capi:
+          installed: false
+        cluster-management:
+          installed: false
+        installed: false
+        intel-provider:
+          installed: false
+      edge-infrastructure-manager:
+        day2:
+          installed: true
+        installed: true
+        onboarding:
+          installed: true
+        oob:
+          installed: true
+        oxm-profile:
+          installed: false
+        provisioning:
+          installed: true
+      edgenode-observability:
+        dashboards:
+          installed: false
+        installed: false
+        monitoring:
+          installed: false
+      kyverno:
+        installed: false
+        policies:
+          installed: false
+        policy-engine:
+          installed: false
+      multitenancy:
+        default-tenant-only:
+          installed: false
+        installed: true
+      orchestrator-observability:
+        alerting:
+          installed: false
+        dashboards:
+          installed: false
+        installed: false
+        monitoring:
+          installed: false
+      web-ui:
+        admin-ui:
+          installed: true
+        alerts-ui:
+          installed: false
+        application-orchestration-ui:
+          installed: false
+        cluster-orchestration-ui:
+          installed: false
+        infrastructure-ui:
+          installed: true
+        installed: true
+        orchestrator-ui-root:
+          installed: true
+    version: 2026.1.0-dev
+  schema-version: "1.0"
+credentialsM2M:
+  job:
+    resources:
+      limits:
+        cpu: "64"
+        memory: 64Gi
+      requests:
+        cpu: 1m
+        memory: 1Mi
+dkam:
+  resources:
+    limits:
+      cpu: "64"
+      memory: 64Gi
+    requests:
+      cpu: 1m
+      memory: 1Mi
+exporter:
+  resources:
+    limits:
+      cpu: "64"
+      memory: 64Gi
+    requests:
+      cpu: 1m
+      memory: 1Mi
+host-manager:
+  resources:
+    limits:
+      cpu: "64"
+      memory: 64Gi
+    requests:
+      cpu: 1m
+      memory: 1Mi
+image:
+  registry: registry-rs.edgeorchestration.intel.com/edge-orch
+  repository: common/component-status
+imagePullSecrets: []
+inventory:
+  resources:
+    limits:
+      cpu: "64"
+      memory: 64Gi
+    requests:
+      cpu: 1m
+      memory: 1Mi
+maintenance-manager:
+  resources:
+    limits:
+      cpu: "64"
+      memory: 64Gi
+    requests:
+      cpu: 1m
+      memory: 1Mi
+networking-manager:
+  resources:
+    limits:
+      cpu: "64"
+      memory: 64Gi
+    requests:
+      cpu: 1m
+      memory: 1Mi
+onboarding-manager:
+  resources:
+    limits:
+      cpu: "64"
+      memory: 64Gi
+    requests:
+      cpu: 1m
+      memory: 1Mi
+os-resource-manager:
+  resources:
+    limits:
+      cpu: "64"
+      memory: 64Gi
+    requests:
+      cpu: 1m
+      memory: 1Mi
+pxe-server:
+  resources:
+    limits:
+      cpu: "64"
+      memory: 64Gi
+    requests:
+      cpu: 1m
+      memory: 1Mi
+resources:
+  limits:
+    cpu: "64"
+    memory: 64Gi
+  requests:
+    cpu: 1m
+    memory: 1Mi
+telemetry-manager:
+  resources:
+    limits:
+      cpu: "64"
+      memory: 64Gi
+    requests:
+      cpu: 1m
+      memory: 1Mi
+tenant-controller:
+  resources:
+    limits:
+      cpu: "64"
+      memory: 64Gi
+    requests:
+      cpu: 1m
+      memory: 1Mi
+tinkerbell:
+  stack:
+    resources:
+      limits:
+        cpu: "64"
+        memory: 64Gi
+      requests:
+        cpu: 200m
+        memory: 256Mi
+traefikRoute:
+  enabled: true
+  matchHost: Host(`api.orch-10-114-181-164.espdqa.infra-host.com`)
+  matchPath: PathPrefix(`/v1/orchestrator`)
+  middlewares:
+    - validate-jwt
+    - secure-headers
+  namespace: orch-gateway
+  priority: 40
+  secretName: tls-orch
+  tlsOption: gateway-tls

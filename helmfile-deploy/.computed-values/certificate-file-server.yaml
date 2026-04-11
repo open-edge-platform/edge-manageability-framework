@@ -1,0 +1,141 @@
+api:
+  resources:
+    limits:
+      cpu: "64"
+      memory: 64Gi
+    requests:
+      cpu: 1m
+      memory: 1Mi
+apiv2:
+  resources:
+    limits:
+      cpu: "64"
+      memory: 64Gi
+    requests:
+      cpu: 1m
+      memory: 1Mi
+attestationstatus-manager:
+  resources:
+    limits:
+      cpu: "64"
+      memory: 64Gi
+    requests:
+      cpu: 1m
+      memory: 1Mi
+credentialsM2M:
+  job:
+    resources:
+      limits:
+        cpu: "64"
+        memory: 64Gi
+      requests:
+        cpu: 1m
+        memory: 1Mi
+dkam:
+  resources:
+    limits:
+      cpu: "64"
+      memory: 64Gi
+    requests:
+      cpu: 1m
+      memory: 1Mi
+exporter:
+  resources:
+    limits:
+      cpu: "64"
+      memory: 64Gi
+    requests:
+      cpu: 1m
+      memory: 1Mi
+host-manager:
+  resources:
+    limits:
+      cpu: "64"
+      memory: 64Gi
+    requests:
+      cpu: 1m
+      memory: 1Mi
+inventory:
+  resources:
+    limits:
+      cpu: "64"
+      memory: 64Gi
+    requests:
+      cpu: 1m
+      memory: 1Mi
+maintenance-manager:
+  resources:
+    limits:
+      cpu: "64"
+      memory: 64Gi
+    requests:
+      cpu: 1m
+      memory: 1Mi
+networking-manager:
+  resources:
+    limits:
+      cpu: "64"
+      memory: 64Gi
+    requests:
+      cpu: 1m
+      memory: 1Mi
+onboarding-manager:
+  resources:
+    limits:
+      cpu: "64"
+      memory: 64Gi
+    requests:
+      cpu: 1m
+      memory: 1Mi
+orchSecretName: tls-orch
+os-resource-manager:
+  resources:
+    limits:
+      cpu: "64"
+      memory: 64Gi
+    requests:
+      cpu: 1m
+      memory: 1Mi
+pxe-server:
+  resources:
+    limits:
+      cpu: "64"
+      memory: 64Gi
+    requests:
+      cpu: 1m
+      memory: 1Mi
+resources:
+  limits:
+    cpu: "64"
+    memory: 64Gi
+  requests:
+    cpu: 1m
+    memory: 1Mi
+rootMatchHost: Host(`orch-10-114-181-164.espdqa.infra-host.com`)
+telemetry-manager:
+  resources:
+    limits:
+      cpu: "64"
+      memory: 64Gi
+    requests:
+      cpu: 1m
+      memory: 1Mi
+tenant-controller:
+  resources:
+    limits:
+      cpu: "64"
+      memory: 64Gi
+    requests:
+      cpu: 1m
+      memory: 1Mi
+tinkerbell:
+  stack:
+    resources:
+      limits:
+        cpu: "64"
+        memory: 64Gi
+      requests:
+        cpu: 200m
+        memory: 256Mi
+tlsOption: gateway-tls
+traefikApiGroup: traefik.io/v1alpha1

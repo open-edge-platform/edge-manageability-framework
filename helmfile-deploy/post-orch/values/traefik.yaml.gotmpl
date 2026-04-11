@@ -117,3 +117,39 @@ securityContext:
   readOnlyRootFilesystem: true
   seccompProfile:
     type: RuntimeDefault
+
+# ─── Extra Traefik objects ───────────────────────────────────────────────────
+{{- if eq (.Values.singleIpMode | toString) "true" }}
+extraObjects:
+  # Single-IP mode: route tinkerbell-haproxy through Traefik on :443
+  - apiVersion: traefik.io/v1alpha1
+    kind: Middleware
+    metadata:
+      name: tink-stack-stripprefix
+      namespace: orch-gateway
+    spec:
+      stripPrefix:
+        prefixes:
+          - /tink-stack
+  - apiVersion: traefik.io/v1alpha1
+    kind: IngressRoute
+    metadata:
+      name: tinkerbell-haproxy-via-traefik
+      namespace: orch-gateway
+    spec:
+      entryPoints:
+        - websecure
+      routes:
+        - kind: Rule
+          match: Host(`tinkerbell-haproxy.{{ .Values.clusterDomain }}`) && PathPrefix(`/tink-stack`)
+          priority: 20
+          middlewares:
+            - name: tink-stack-stripprefix
+          services:
+            - name: tinkerbell
+              namespace: orch-infra
+              port: 8080
+              scheme: http
+      tls:
+        secretName: {{ .Values.tlsSecret }}
+{{- end }}

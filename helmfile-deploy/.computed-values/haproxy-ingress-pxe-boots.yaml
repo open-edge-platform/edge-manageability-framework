@@ -1,0 +1,6 @@
+commonName: tinkerbell-haproxy.orch-10-114-181-164.espdqa.infra-host.com
+haproxyIngress:
+  enabled: true
+haproxyIngressRateLimit:
+  connections: 70
+  rps: 500

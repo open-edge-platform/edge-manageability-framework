@@ -1,0 +1,171 @@
+═══ Log started: 2026-04-11T04:35:30-07:00 ═══
+═══ Command: ./pre-orch.sh install ═══
+
+🔍 Checking dependencies...
+✅ All dependencies ready
+
+⏱️  [K3s install] started at 04:35:30
+👉 Installing K3s (v1.34.3+k3s1)...
+[INFO]  Using v1.34.3+k3s1 as release
+[INFO]  Downloading hash https://github.com/k3s-io/k3s/releases/download/v1.34.3%2Bk3s1/sha256sum-amd64.txt
+[INFO]  Downloading binary https://github.com/k3s-io/k3s/releases/download/v1.34.3%2Bk3s1/k3s
+[INFO]  Verifying binary download
+[INFO]  Installing k3s to /usr/local/bin/k3s
+[INFO]  Skipping installation of SELinux RPM
+[INFO]  Skipping /usr/local/bin/kubectl symlink to k3s, already exists
+[INFO]  Creating /usr/local/bin/crictl symlink to k3s
+[INFO]  Skipping /usr/local/bin/ctr symlink to k3s, command exists in PATH at /bin/ctr
+[INFO]  Creating killall script /usr/local/bin/k3s-killall.sh
+[INFO]  Creating uninstall script /usr/local/bin/k3s-uninstall.sh
+[INFO]  env: Creating environment file /etc/systemd/system/k3s.service.env
+[INFO]  systemd: Creating service file /etc/systemd/system/k3s.service
+[INFO]  systemd: Enabling k3s unit
+Created symlink /etc/systemd/system/multi-user.target.wants/k3s.service → /etc/systemd/system/k3s.service.
+[INFO]  systemd: Starting k3s
+👉 Restarting k3s.service to apply /etc/rancher/k3s/registries.yaml...
+👉 Setting up kubeconfig (~/.kube/config)...
+👉 Waiting for Kubernetes API to be reachable...
+✅ API server is ready
+👉 Waiting for at least one node to register (timeout: 300s)...
+✅ Node registered
+👉 Waiting for all nodes to be Ready (timeout: 300s)...
+node/sunil-test-k3s condition met
+✅ All nodes are Ready
+⏱️  [K3s install] completed in 0m 22s
+👉 Waiting for all system pods to be ready (timeout: 300s)...
+✅ All system pods are ready
+
+⏱️  [OpenEBS LocalPV] started at 04:35:52
+🚀 Installing OpenEBS LocalPV via helmfile...
+Adding repo openebs-localpv https://openebs.github.io/dynamic-localpv-provisioner
+"openebs-localpv" has been added to your repositories
+
+Adding repo metallb https://metallb.github.io/metallb
+"metallb" has been added to your repositories
+
+Listing releases matching ^openebs-localpv$
+Upgrading release=openebs-localpv, chart=openebs-localpv/localpv-provisioner, namespace=openebs-system
+Release "openebs-localpv" does not exist. Installing it now.
+NAME: openebs-localpv
+LAST DEPLOYED: Sat Apr 11 04:35:53 2026
+NAMESPACE: openebs-system
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+NOTES:
+The OpenEBS Dynamic LocalPV Provisioner has been installed.
+Check its status by running:
+$ kubectl get pods -n openebs-system
+
+Get started with the Dynamic LocalPV Provisioner Quickstart guide at:
+https://github.com/openebs/dynamic-localpv-provisioner/blob/develop/docs/quickstart.md
+
+For more information, visit our Slack at https://kubernetes.slack.com/messages/openebs or view 
+the OpenEBS documentation online at https://openebs.io/docs
+
+Listing releases matching ^openebs-localpv$
+openebs-localpv	openebs-system	1       	2026-04-11 04:35:53.498159242 -0700 PDT	deployed	localpv-provisioner-4.3.0	4.3.0      
+
+
+UPDATED RELEASES:
+NAME              NAMESPACE        CHART                                 VERSION   DURATION
+openebs-localpv   openebs-system   openebs-localpv/localpv-provisioner   4.3.0           9s
+
+✅ OpenEBS LocalPV installed
+⏱️  [OpenEBS LocalPV] completed in 0m 9s
+
+⏱️  [MetalLB] started at 04:36:01
+✅ Single-IP mode: all services will share 10.114.181.164
+   Traefik port: 443, HAProxy port: 9443
+🚀 Installing MetalLB via helmfile...
+Adding repo openebs-localpv https://openebs.github.io/dynamic-localpv-provisioner
+"openebs-localpv" has been added to your repositories
+
+Adding repo metallb https://metallb.github.io/metallb
+"metallb" has been added to your repositories
+
+Listing releases matching ^metallb$
+Upgrading release=metallb, chart=metallb/metallb, namespace=metallb-system
+Release "metallb" does not exist. Installing it now.
+NAME: metallb
+LAST DEPLOYED: Sat Apr 11 04:36:02 2026
+NAMESPACE: metallb-system
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+NOTES:
+MetalLB is now running in the cluster.
+
+Now you can configure it via its CRs. Please refer to the metallb official docs
+on how to use the CRs.
+
+Listing releases matching ^metallb$
+metallb	metallb-system	1       	2026-04-11 04:36:02.909216334 -0700 PDT	deployed	metallb-0.15.2	v0.15.2    
+
+
+UPDATED RELEASES:
+NAME      NAMESPACE        CHART             VERSION   DURATION
+metallb   metallb-system   metallb/metallb   0.15.2         17s
+
+🚀 Installing MetalLB config via helmfile...
+Adding repo openebs-localpv https://openebs.github.io/dynamic-localpv-provisioner
+"openebs-localpv" has been added to your repositories
+
+Adding repo metallb https://metallb.github.io/metallb
+"metallb" has been added to your repositories
+
+Building dependency release=metallb-config, chart=metallb/metallb-config
+Listing releases matching ^metallb-config$
+Upgrading release=metallb-config, chart=metallb/metallb-config, namespace=metallb-system
+Release "metallb-config" does not exist. Installing it now.
+NAME: metallb-config
+LAST DEPLOYED: Sat Apr 11 04:36:19 2026
+NAMESPACE: metallb-system
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+
+Listing releases matching ^metallb-config$
+metallb-config	metallb-system	1       	2026-04-11 04:36:19.705962187 -0700 PDT	deployed	metallb-config-26.0.1	26.0.1     
+
+
+UPDATED RELEASES:
+NAME             NAMESPACE        CHART                    VERSION   DURATION
+metallb-config   metallb-system   metallb/metallb-config   26.0.1          0s
+
+✅ MetalLB installed
+⏱️  [MetalLB] completed in 0m 19s
+
+⏱️  [pre-orch-config] started at 04:36:20
+🚀 Running pre-orch-config (namespaces, secrets, passwords)...
+📁 Creating namespaces...
+namespace/orch-boots created
+namespace/orch-database created
+namespace/orch-platform created
+namespace/orch-infra created
+namespace/orch-iam created
+namespace/orch-ui created
+namespace/orch-secret created
+namespace/orch-gateway created
+namespace/cattle-system created
+✅ Namespaces created
+🔐 Creating passwords...
+secret/platform-keycloak created
+secret/orch-database-postgresql created
+✅ Passwords created
+
+✅ Pre-deploy configuration complete
+⏱️  [pre-orch-config] completed in 0m 1s
+
+═══════════════════════════════════════════════════════════════
+  PRE-ORCH TIMING SUMMARY
+═══════════════════════════════════════════════════════════════
+  K3s install                         0m 22s
+  OpenEBS LocalPV                     0m 9s
+  MetalLB                             0m 19s
+  pre-orch-config                     0m 1s
+  ─────────────────────────────────────────────────────────────
+  Start: 2026-04-11 04:35:30
+  End:   2026-04-11 04:36:21
+  Total: 0m 51s
+═══════════════════════════════════════════════════════════════

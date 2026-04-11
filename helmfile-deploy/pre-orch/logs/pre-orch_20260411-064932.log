@@ -1,0 +1,559 @@
+═══ Log started: 2026-04-11T06:49:32-07:00 ═══
+═══ Command: ./pre-orch.sh uninstall ═══
+
+👉 Uninstalling K3s...
++ id -u
++ [ 0 -eq 0 ]
++ K3S_DATA_DIR=/var/lib/rancher/k3s
++ /usr/local/bin/k3s-killall.sh
++ [ -s /etc/systemd/system/k3s.service ]
++ basename /etc/systemd/system/k3s.service
++ systemctl stop k3s.service
++ [ -x /etc/init.d/k3s* ]
++ killtree 1001325 1001906 1002049 1002221 1002805 1362028 1362461 1366665 1367167 1367198 1367214 1367607 1367646 1367695 1379022 1381460 1389371 1389395 1394079 1394125 1396197 1396386 1396644 1396727 1397050 1402820 1405130 1406802 1408359 1411236 1411369 1411708 1411799 1411854 1411920 1411958 1433426 1434807 1434899 1434919 1434957 1434970 1435582 1435785 1436319 1436687 1437331 1438135 1438904 1439044 1439972 1440105 1441701 1442538 1450474 1450568 1450625 1452743
++ kill -9 1001325 1001355 1001531 1001906 1001935 1002362 1002049 1002079 1002494 1002221 1002254 1002669 1002805 1002835 1002925 1362028 1362062 1362110 1362461 1362492 1362545 1366665 1366694 1366742 1367167 1367259 1367377 1367198 1367267 1367413 1367214 1367274 1367394 1367607 1367708 1367820 1367646 1367715 1367827 1367695 1367743 1367834 1379022 1379058 1383638 1383756 1381460 1381491 1381671 1381887 1381888 1381889 1381890 1381892 1381893 1381894 1381895 1384205 1384236 1384238 1384239 1384240 1392783 1392791 1567682 1567683 2161950 2180671 1389371 1389435 1389504 1389395 1389442 1390202 1390247 1390248 1394079 1394213 1394354 1394125 1394221 1394361 1396197 1396248 1396621 1396843 1396386 1396534 1396829 1397068 1396644 1396699 1397017 1397181 1397182 1397205 1397225 1397206 1397208 1399431 1442971 1397209 1397309 1396727 1396800 1397095 1397223 1397226 1397253 1397268 1397254 1397255 1399437 1442972 1397257 1397347 1397050 1397107 1397404 1402820 1402865 1403901 1405130 1405234 1405880 1406802 1406831 1407604 1407640 1408359 1408421 1408724 1411236 1411267 1411398 1411369 1411406 1411814 1412150 1411708 1411833 1429936 1411799 1411881 1429820 1411854 1411897 1412205 1426475 1411920 1412020 1425643 1411958 1412034 1412282 1433426 1433457 1433510 1434807 1434883 1435138 1434899 1435032 1435221 1434919 1435055 1435256 1434957 1435040 1435234 1434970 1435048 1435237 1435582 1435669 1436220 1435785 1435960 1436613 1436319 1436401 1436832 1436687 1436787 1437106 1437331 1437389 1447216 1438135 1438207 1438516 1438904 1439008 1439202 1439044 1439122 1439245 1439972 1440001 1440146 1440105 1440154 1440217 1441701 1441772 1441969 1441998 1441999 1442000 1442001 1442002 1442003 1442004 1442005 1442006 1442007 1442008 1442009 1442010 1442011 1442012 1442013 1442538 1442575 1442802 1501855 1510381 1515007 1450474 1450578 1450742 1450568 1450606 1450831 1450964 1450965 1450966 1450967 1450968 1450970 1450971 1450972 1450973 1450974 1450975 1450976 1450979 1450980 1450981 1450982 1450625 1450665 1450818 1450944 1450945 1450946 1450947 1450948 1450950 1450951 1450952 1450953 1450954 1450955 1450956 1450957 1450958 1450959 1450960 1452743 1452820 1453075 1453227 1453229 1453230 1453231 1453232 1453233 1453234 1453235 1453236 1453237 1453238 1453239 1453240 1453243 1453244 1453245
++ do_unmount_and_remove /run/k3s
++ set +x
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/fae7067c5c3588ece9e7760bf5f464faa7cff6a9b33b711107d5875df3ed8171/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/fab89c19ca5cac29d1fc3b7ade979876f47327cb3dbcf571e7bd627e56776395/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/f88d60ea0b6c5d1bc8fad342e0e801ec3c731494ed803f5bdf0f57cfb3c3562d/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/f2d12a4cb87046b74e0549f04cd844cded27efefde253b4048c70055016f7350/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/f1d40999c9b6dda34448ac5f553b55fc68f49c66b54001947d447aae527dd369/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/f16cf1c18c7a4c268f15dfa8b04a9c6a1e1123a9c96b8a3c8bf8519c71088147/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/efc56494e2bbbb9ded96b501e39bcdb082f7f47be6ef511ee2a34eeb4a02861b/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/ee4b689fe018d73d58c824e9482bb40a074d43d0971028ebe547639e8a21708d/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/ec2c4fa7134ef22ac9a15a0586c9072154faae449ecd62dfa3ea1bf8c46afd8b/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/ea4875149669e58f70f1c17809341e79cffd8795eae82b594bf85e41cdbb949e/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/e6d89528f1117ef9138d811b2844294c8925082aed52871b814bc0ef9422994d/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/e60dbd4a797cd5e5bc8627cf6d5b84139a177c0c363978e2a126a5a4345f1e99/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/df9be1d4890a9f39e1e805e97e06aab181834115d74258a8d4c350d82d1bc4bb/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/d700527f981642f838b79322166a5e45eade6842251c97c0313c80bbbed8da73/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/ce028f95f64b3434c5a5352200ef3b3b3ede7eec143658b90623eed53d0b65b9/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/c513cb54d3e5055f404f3b8a5ed4eae75cc6f6bd48c0446fcb0def771149787f/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/c407f7157d69bf70508d04f47b39f0a7d889aeb7c0417e6ec196ff68f900b32e/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/c1f4c4136cd1b47c6ca79a59f68ba4bab932de81e456238df9361007f7902a19/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/c1f27d4e1c96fb5f97da795ed3ff8bc5f99b795442f5707127854ebb9429d2a8/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/c16b92599888fa53dc1455f0edcaf8bc598550b7904943d0a961c1984aa07f37/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/c11b6f41de243ef9a487c2687422be8758cf83e8ee3d7193a9fd22e7560a232b/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/bfc0577ec94aae954944ed527873c2c0ef2a57eea5147fe71d1ceaf3dff0570a/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/be095c4c9c6b46365eeff9023567cfd009e1b7860c60a17461057d4eb0db4824/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/bd77a9e33ccc25333a8d1698589d5e04124436bb6690cd6c9ae1f7100a691289/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/bc1299f9faee85e78ea16f5a58c4157ffd04ba9c971386aeff61aebbea529260/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/bbe565024f52da2c87343b5aa1c4b62af2aea35ec5c4f1afad7119a23f6d939a/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/ba17865eb53e956a085ce2a53d96d3a455b08433be88155c79b3b4077bc463b5/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/b79ba7e368f2d9ad17fb8f02516db7d319b8e8c6b1343aa1b14af6c0c4a3ea71/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/b5e3fbf074c764f6f116342a5791f153a7392b80fccca7038ae0dc23f7fc821f/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/b46cf2c5cdd29748d0535811a4e96c95807f233056890dff48cfa1042c42868e/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/b05ff528243c9aa7f147054de0b7d98844556732119b3e34c2b5cf9fd6c2cc00/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/afe84d1973ed9cff730eeb11bc7b896c27845deae14831da98fb7b2b9978a613/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/af459a5e62594d5ad43ab716322772ed5187755de2e41d1891736cce02717190/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/abf1f099c87a680065ac58082366b56e6e8beb87e51220f3d789193b8dd959f4/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/a8a0ccfb4a3a4417ceefa79bd249b311c6ff8bde34d1fed0797bd03fcee10986/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/a7d5ba2805bc657ba491ff24264c0642480d4bc90b07a1475b20c204498ab339/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/a64cc99e4699f5e77ac846296f8c1b41f285ad9b3e3bd23248f181413ec0d953/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/a627fb01d7bc9b754731069bd9fd216fc689187a1659e66866beabeb9258972b/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/a3840aab6fcd0fd9e69e5d252bca9583bb716169580f34498fa3a22b95eb1b21/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/a2f7f59e15edf06a814aa7506cbd203454e599c7c41c0d3b485dad148da17da2/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/a2f5555e91be95e8480835a8fc0c71f534b5cd0570ec8fc3c0efb80109c76fa5/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/a2d65324da1cc038f2dca695507480ec7713e86f79ee4356c6185891f6a4587b/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/a204302819f5f55850e332cfbac439d7d70f3fd497e0b22e62713a00bf06c6d4/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/a1fcb8b329d848f64928c4420c445c1cc8b6988b7a8189a8be9ca6f35f91e874/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/a126817314751070ffac3d52c074b04ee7b724e316979063e23f87e09a0c0b1c/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/9d5af35632721570773626563e25356c6a540d57c63ae81b5d22dfac64bc5591/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/967e51dbfe12d103d7cf3bf1785af86c3f74a91eabe9744d0b059ee2c46de9fd/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/964782413a77c97dbdea38d73236288110d0483a0dbe03ce9eb402dcbb473419/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/8b1d79cf6de4b897c4304b80b3f02d1e3bd0a8da40f90ce9a971bd1f84920018/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/885e7d1bf81949d3fee7cfbd5fa801a1da635d9a38151d5e1693fc69845cb54b/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/8666c95fb7e170cac3dad817e76e828aa25281678826372053db676fa6de43de/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/85740f95245237bf418044fb96cb84c5d74a01aa0a1ed27312384d0a358f7556/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/835194c7ab6f18d3b60b6e3409c9b1cd072bc2f020c69ba4edb7471926ea03a5/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/8036ccac6f71cb6eb4fa005d38c3cc94cb8c1614c8ca767f79e9bfd0f80e790e/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/7e51726d8540de7f9e83b6002e237f36043315603861fb041ff6ef27ba8b12d0/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/7b2cb0a519c862706e5b049806ec7072dc50534f4aaf7d596f8efae1fa7a3249/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/7ab1cba981630ecf7978e7aa8e234a6fff6f5ed278d1af743bf2fd9d850fe693/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/77b0c6a30caf58b1aa0d27ceefff0d96078fe9234730cb25e45744c5b2e5a5be/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/72ce559a8fa7eca3a47534f5e274c8b3ac395d243645297f2b1e434db1e81d41/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/71ab6abfa72ad1fcd7f73684ab9a0bf4907f7df2632557d6cd661e2bbb76924a/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/6ab4d65bfb41070959c26923496c04269149cf03d3118a26a87b43e313a3584b/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/66a006249c053a894dd18b677a781f705b4d1b1fadd838847f7a63ab2e522513/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/65c00a3187fd8bd10fd74cb4390633567a3f145aa66c493a7a8f9d3d7efd9683/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/63cd3604ba1011e69c0f0fdfa48e588636822683197ddc0e6f52bd662dda4b3d/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/61af11f5800520971cb0d61e0d8408f13521f69d48d2894cbeb17ff94c7f0cfe/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/60c8651f110a35c02ae0edb6264a36eb892a486ecde388206d0ab9b2b6e3247f/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/5f638fd78940e67be7b0a8d2071d6c384eae29e235f6070883c8b05dd0a246db/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/5df818c1b4b612b799d016d23b7cc1bac7b5ccd3d9ba38a1c19c349fbf5cba44/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/5d2411c9a377c18916b1350b2aa2788c770e27701891799848dfd41395158828/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/5bda9094f0d8ba8c8472d6474e6b6b0dc3c295e78c202350087a441ee453efbe/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/59c87acd58c879d7b8629d76585e14eb8a43352107e2c6c94ec950f722d3e541/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/59b7f71203676f4e25f4b1be13c1c15c63066563e88b604500b274ba1dfd9c33/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/5328845a085ac4f69903a9ff0ad9006b6cdccbd050c44e9d0b28cbcf55bcc013/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/52ed72ef753ed5690658358619a36dacdfd87b5c54f0de657ce1e725bd392f96/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/5298d2f1d603cd1db9f5926ee96484845d594458cdb33c372095489af0f397ac/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/51e22025cece3cb3bb903d0ac1cd649491ae6962c857d4484ce73b75eda71e32/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/4fe8a80c1e07a122cac35e28f29fea3d73b77b0c841cd88a5bd78626178b2727/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/4f8a13a5c4f0e7d4bbc26774e023064811c5962517b722f7ad30d809c17d5a3a/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/4bf4a09026218055fcce9cfa808830fc0a4d77ee2177b2daeeaa03e759f6aa92/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/4b09140cca8c76977f9223bd5812a54cb748ca8fe8c1ad939f12420908b82b66/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/49bf630463e16336de496deb4314e8cbb186df4f8e1a1b7dc1b42c0be7fa1b3d/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/48449efa536dd64c2b4fc799b090b364c8f82620bebf36e9422045466e5d9730/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/46593302a96b82db66ffe1a7b699e925c4dbf30ccbd90c9d5e1fc91860378c07/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/4204f5098eafaa2b120d1ec71104e92b011c54e6d5ce73a6a2469db0142e04d7/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/3f09ae58f0417741c8349f30c90c1999d57323a81101165588845a12aff91a3a/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/3e749e1a0600502b099c5439d459993dff7ce834c99a75c878e5c7810c16b8b1/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/3d3a8b660f03bd40257e28722d89e52a25cb78cc63fe8eebf8d8b99aa7e24dfa/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/3cbed228e7bb81115553774c4030dded89759d900ca248e1e00e0f9927fceb62/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/39ea20df49b4b439e9320cc706f12a75bb3e1f2c960bc9d76404ab62f0cd3b3b/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/392863720c607d43776f7be655396ff138382d80a1cb58af002e3fccc108b0f0/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/364c9ee5e8d951ac2c5786d18ad9ac70859981dce9c8059c51e539128d39a9d8/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/32eb2949b0e2ef16b5bfcdfa9ce94dbb94b2d574c70535da7a207b855205fa08/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/32d66b537831938aa89b36c3c28860b07f3ab480301f64c4d1dd18016f3acb39/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/2eae919b536ac66f1a8a433a6f0ef88c2541fbe20a3556094a81158b6962eb64/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/2ba9290eabefbcd8c9d16c03d8ca2123f7d581e9e72d226970951d273c533d49/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/28bc2ec1c4d24f0432e71f29c2bcee0a9def853a91922320e6dc4d74ea370ea0/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/2710b6acdad44e616c601468d6d4c9534b531d8b127425c42d441219cf79f116/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/24372a87025efb4a17b59017bb63d1ce6668ce9ab61638b07649f405a5aa5fd7/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/23ccace0dd33dde86d02ff9cf830900a6c747d51b3ea6d5351b4bdfd90857591/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/237bb99e35621df4be83222aa8e4ada42c5d333946751bdc1263a506fb4011ed/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/22c43cf1a990450c46a433f321af151c5e62b05dd21fe65afc7dc84190fe19ff/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/1f10096b72341eb2b03a4b3a719b350efee0d69f5a98de66b3cebe87ec708260/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/1e4678d4144f3ad7a8960db65e51a17107b0629eb2e733951f499db5e4c93b65/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/1c69ddae5778b3d60a8dc723a7cfbb5e8d578e525a07d99c7bef8d9447a5da95/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/1b8b0e322c9cbf8ec3dd828bba854830805738005df98b2f7a866e131312c1ec/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/1a58065506c723c564c8773c0a8d9beb0e7a12674a5b485ea2cb8b64339223e9/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/19aa6353edecc54476ed78c4ffdaa3621f03f50a47da412c4f793281a80502c2/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/16fd389ba21651ab5a691bff7c24e0801d3b31020c7fa72e1571cf714a6cd46e/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/15a537619397c1a98a149a8e0d80b91973e21b71181222f9d01f118c33be8df9/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/147f2d99355424141a7121f6ac9c10fbec5a139a0aea72fd4ec6a25323be8ea3/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/12f0c1a1a7ded037c4c1a6446eed23f575bbf9eb4638cf1a537ba61a9406a924/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/10c56a9e00172a97ee01ea99e95f6f5b6d33be607bc7be4305d415b27c6ad382/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/10c0f034b0d85d3bc3d0633e86f62d73667de8cf3ad65a23d12f9ffbe2070789/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/0c567869cef92f637ef9650df2eadd9cc95c6cdf3ef3bba73aa9fcd4f6305c2e/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/0610ba14f77719cb3f43dcd049d97d71c71fa52e54c0da725eb8181c62a13735/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/052e7f832dbe60c93af3659b5650c8250fa778aea6b5c206f2d80eedbc116646/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/0191377249bbaed730a80864029e7782a4b154b427d600482b25866802f56b6e/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/00f555774f6133737903f3c66830edb8270f3b02966bd7260891e8dd4f35eecf/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/00e30606bf836c183a0d586bfdcbb6f948ce343af85008fbee4ec39a6070fe31/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/0061f271d552b6906bc907f8f4c0e79f5bbc242ea880ebfec45bb73ffa014049/rootfs
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/fae7067c5c3588ece9e7760bf5f464faa7cff6a9b33b711107d5875df3ed8171/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/fab89c19ca5cac29d1fc3b7ade979876f47327cb3dbcf571e7bd627e56776395/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/f88d60ea0b6c5d1bc8fad342e0e801ec3c731494ed803f5bdf0f57cfb3c3562d/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/ee4b689fe018d73d58c824e9482bb40a074d43d0971028ebe547639e8a21708d/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/d700527f981642f838b79322166a5e45eade6842251c97c0313c80bbbed8da73/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/ce028f95f64b3434c5a5352200ef3b3b3ede7eec143658b90623eed53d0b65b9/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/c1f27d4e1c96fb5f97da795ed3ff8bc5f99b795442f5707127854ebb9429d2a8/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/c16b92599888fa53dc1455f0edcaf8bc598550b7904943d0a961c1984aa07f37/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/be095c4c9c6b46365eeff9023567cfd009e1b7860c60a17461057d4eb0db4824/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/bd77a9e33ccc25333a8d1698589d5e04124436bb6690cd6c9ae1f7100a691289/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/bc1299f9faee85e78ea16f5a58c4157ffd04ba9c971386aeff61aebbea529260/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/ba17865eb53e956a085ce2a53d96d3a455b08433be88155c79b3b4077bc463b5/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/b79ba7e368f2d9ad17fb8f02516db7d319b8e8c6b1343aa1b14af6c0c4a3ea71/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/b5e3fbf074c764f6f116342a5791f153a7392b80fccca7038ae0dc23f7fc821f/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/b46cf2c5cdd29748d0535811a4e96c95807f233056890dff48cfa1042c42868e/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/afe84d1973ed9cff730eeb11bc7b896c27845deae14831da98fb7b2b9978a613/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/af459a5e62594d5ad43ab716322772ed5187755de2e41d1891736cce02717190/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/abf1f099c87a680065ac58082366b56e6e8beb87e51220f3d789193b8dd959f4/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/a64cc99e4699f5e77ac846296f8c1b41f285ad9b3e3bd23248f181413ec0d953/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/a627fb01d7bc9b754731069bd9fd216fc689187a1659e66866beabeb9258972b/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/a3840aab6fcd0fd9e69e5d252bca9583bb716169580f34498fa3a22b95eb1b21/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/a204302819f5f55850e332cfbac439d7d70f3fd497e0b22e62713a00bf06c6d4/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/a126817314751070ffac3d52c074b04ee7b724e316979063e23f87e09a0c0b1c/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/9d5af35632721570773626563e25356c6a540d57c63ae81b5d22dfac64bc5591/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/967e51dbfe12d103d7cf3bf1785af86c3f74a91eabe9744d0b059ee2c46de9fd/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/964782413a77c97dbdea38d73236288110d0483a0dbe03ce9eb402dcbb473419/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/885e7d1bf81949d3fee7cfbd5fa801a1da635d9a38151d5e1693fc69845cb54b/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/8666c95fb7e170cac3dad817e76e828aa25281678826372053db676fa6de43de/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/85740f95245237bf418044fb96cb84c5d74a01aa0a1ed27312384d0a358f7556/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/835194c7ab6f18d3b60b6e3409c9b1cd072bc2f020c69ba4edb7471926ea03a5/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/7b2cb0a519c862706e5b049806ec7072dc50534f4aaf7d596f8efae1fa7a3249/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/61af11f5800520971cb0d61e0d8408f13521f69d48d2894cbeb17ff94c7f0cfe/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/60c8651f110a35c02ae0edb6264a36eb892a486ecde388206d0ab9b2b6e3247f/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/5f638fd78940e67be7b0a8d2071d6c384eae29e235f6070883c8b05dd0a246db/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/5bda9094f0d8ba8c8472d6474e6b6b0dc3c295e78c202350087a441ee453efbe/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/59b7f71203676f4e25f4b1be13c1c15c63066563e88b604500b274ba1dfd9c33/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/5328845a085ac4f69903a9ff0ad9006b6cdccbd050c44e9d0b28cbcf55bcc013/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/52ed72ef753ed5690658358619a36dacdfd87b5c54f0de657ce1e725bd392f96/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/51e22025cece3cb3bb903d0ac1cd649491ae6962c857d4484ce73b75eda71e32/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/4bf4a09026218055fcce9cfa808830fc0a4d77ee2177b2daeeaa03e759f6aa92/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/49bf630463e16336de496deb4314e8cbb186df4f8e1a1b7dc1b42c0be7fa1b3d/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/3f09ae58f0417741c8349f30c90c1999d57323a81101165588845a12aff91a3a/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/3e749e1a0600502b099c5439d459993dff7ce834c99a75c878e5c7810c16b8b1/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/3d3a8b660f03bd40257e28722d89e52a25cb78cc63fe8eebf8d8b99aa7e24dfa/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/39ea20df49b4b439e9320cc706f12a75bb3e1f2c960bc9d76404ab62f0cd3b3b/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/392863720c607d43776f7be655396ff138382d80a1cb58af002e3fccc108b0f0/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/32eb2949b0e2ef16b5bfcdfa9ce94dbb94b2d574c70535da7a207b855205fa08/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/2ba9290eabefbcd8c9d16c03d8ca2123f7d581e9e72d226970951d273c533d49/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/28bc2ec1c4d24f0432e71f29c2bcee0a9def853a91922320e6dc4d74ea370ea0/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/2710b6acdad44e616c601468d6d4c9534b531d8b127425c42d441219cf79f116/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/1e4678d4144f3ad7a8960db65e51a17107b0629eb2e733951f499db5e4c93b65/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/1b8b0e322c9cbf8ec3dd828bba854830805738005df98b2f7a866e131312c1ec/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/1a58065506c723c564c8773c0a8d9beb0e7a12674a5b485ea2cb8b64339223e9/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/15a537619397c1a98a149a8e0d80b91973e21b71181222f9d01f118c33be8df9/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/10c56a9e00172a97ee01ea99e95f6f5b6d33be607bc7be4305d415b27c6ad382/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/0610ba14f77719cb3f43dcd049d97d71c71fa52e54c0da725eb8181c62a13735/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/0191377249bbaed730a80864029e7782a4b154b427d600482b25866802f56b6e/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/0061f271d552b6906bc907f8f4c0e79f5bbc242ea880ebfec45bb73ffa014049/shm
++ do_unmount_and_remove /var/lib/kubelet/pods
++ set +x
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/fed58cef-ed54-4481-8909-ec9070214824/volumes/kubernetes.io~projected/kube-api-access-ss88r
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/fed58cef-ed54-4481-8909-ec9070214824/volumes/kubernetes.io~local-volume/pvc-84634541-a03f-4e3e-b1bc-51207b6130d6
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/fed58cef-ed54-4481-8909-ec9070214824/volumes/kubernetes.io~empty-dir/shm
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/fe967afd-ec68-4240-8242-83b73871cb3f/volumes/kubernetes.io~projected/kube-api-access-dngnx
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/fcaade7e-7d97-4a54-85a9-b95df737b613/volumes/kubernetes.io~projected/kube-api-access-lfsdv
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/f7a82c85-2c60-46ee-ad90-e5879ab37509/volume-subpaths/runtime-config/admin/1
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/f7a82c85-2c60-46ee-ad90-e5879ab37509/volume-subpaths/nginx-config/admin/0
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/f7a82c85-2c60-46ee-ad90-e5879ab37509/volumes/kubernetes.io~projected/kube-api-access-4j8hj
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/ef66a02b-8811-4029-b680-65ca25f974a3/volumes/kubernetes.io~secret/orch-ca-cert
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/ef66a02b-8811-4029-b680-65ca25f974a3/volumes/kubernetes.io~secret/boots-ca-cert
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/ef66a02b-8811-4029-b680-65ca25f974a3/volumes/kubernetes.io~projected/kube-api-access-kw4d5
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/ef66a02b-8811-4029-b680-65ca25f974a3/volumes/kubernetes.io~local-volume/pvc-e9d0baf7-430c-43db-a220-a14a3078f1a7
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/ef254efb-fd0d-4bb0-9e0c-a58279b99670/volumes/kubernetes.io~projected/kube-api-access-2p8qd
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/e403ce55-e929-4cad-b739-d93847f2e190/volumes/kubernetes.io~projected/kube-api-access-jgbqq
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/e3bc808f-b756-4a9d-9f44-4adc5863035a/volumes/kubernetes.io~projected/kube-api-access-fb4kh
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/df58cee3-5e35-465a-b963-7c941dfef0ee/volumes/kubernetes.io~projected/kube-api-access-djt8j
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/dc969e01-aa0a-40bf-b1c1-0e04f2a1e258/volume-subpaths/runtime-config/root/1
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/dc969e01-aa0a-40bf-b1c1-0e04f2a1e258/volume-subpaths/nginx-config/root/0
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/dc969e01-aa0a-40bf-b1c1-0e04f2a1e258/volumes/kubernetes.io~projected/kube-api-access-kjlrl
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/d4dbdf60-f802-4abe-b31f-a0460f4735a5/volumes/kubernetes.io~secret/webhook-certificates
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/d4dbdf60-f802-4abe-b31f-a0460f4735a5/volumes/kubernetes.io~projected/kube-api-access-6dss6
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/d3ed2033-2e3a-43cb-9284-0cc764a05763/volumes/kubernetes.io~projected/kube-api-access-zcltj
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/cfb1b7df-413f-4b51-b2aa-2c0e6ef73569/volumes/kubernetes.io~projected/kube-api-access-j8zvr
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/cf0d2d32-09ab-47c9-8b08-0f793db885a7/volumes/kubernetes.io~secret/secret-volume
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/cf0d2d32-09ab-47c9-8b08-0f793db885a7/volumes/kubernetes.io~projected/kube-api-access-94bqj
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/cf04da96-c622-4c7f-83ff-38691a5c2f72/volumes/kubernetes.io~secret/config
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/cf04da96-c622-4c7f-83ff-38691a5c2f72/volumes/kubernetes.io~secret/certs-https
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/cf04da96-c622-4c7f-83ff-38691a5c2f72/volumes/kubernetes.io~projected/kube-api-access-lt6kc
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/caef79ad-cc11-465e-a3f1-530ec4c53ec7/volumes/kubernetes.io~projected/kube-api-access-q8cxl
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/ca568346-2e9a-4b14-992e-033306ee993f/volumes/kubernetes.io~projected/kube-api-access-2g2dr
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/c9dc5da4-ca60-473d-86e1-3295665bd160/volumes/kubernetes.io~secret/secret-volume
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/c9dc5da4-ca60-473d-86e1-3295665bd160/volumes/kubernetes.io~secret/boots-ca-cert
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/c9dc5da4-ca60-473d-86e1-3295665bd160/volumes/kubernetes.io~projected/kube-api-access-tmcmx
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/c7501752-2314-48d5-8b5c-8dbf5626456a/volumes/kubernetes.io~projected/kube-api-access-xfcst
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/c1c3fac4-2257-4ee7-aaad-782b13b26626/volumes/kubernetes.io~projected/kube-api-access-pbdnx
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/bad369ff-7c8d-496c-8088-ef6ac840480f/volumes/kubernetes.io~projected/kube-api-access-4kct5
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/b96b2059-af94-452a-a2b0-79762728e6aa/volumes/kubernetes.io~projected/kube-api-access-lfwgs
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/b826d33e-0b17-44c0-9c98-2d4a8fc0b09c/volumes/kubernetes.io~projected/kube-api-access-st2hl
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/b5b8c7d7-31c0-438c-9fc7-d78fa06f781f/volumes/kubernetes.io~projected/kube-api-access-x89q8
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/b57451d6-1c98-40f5-8949-cc3c5ee9d743/volume-subpaths/tmp/kubernetes-ingress-controller/1
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/b57451d6-1c98-40f5-8949-cc3c5ee9d743/volume-subpaths/tmp/kubernetes-ingress-controller/0
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/b57451d6-1c98-40f5-8949-cc3c5ee9d743/volumes/kubernetes.io~projected/kube-api-access-j2g24
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/b57451d6-1c98-40f5-8949-cc3c5ee9d743/volumes/kubernetes.io~empty-dir/tmp
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/b2c6821c-82e9-4200-bf2d-97a98bd27d88/volumes/kubernetes.io~projected/kube-api-access-p8nqz
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/a8f96927-3c88-42e9-a0cc-46d1fa086830/volumes/kubernetes.io~projected/kube-api-access-27thn
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/9f0c68ab-28f3-4d01-b20f-a84e6a2d7a95/volumes/kubernetes.io~projected/kube-api-access-kglmw
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/9ce37b2c-0bda-4bc7-b291-edfa22cb3cde/volumes/kubernetes.io~projected/kube-api-access-pszpk
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/9cc8802e-8873-46d0-8e68-e10e9d28116d/volumes/kubernetes.io~projected/kube-api-access-7khh7
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/9bd5744f-2df8-4575-9a95-4c37d6556c7c/volumes/kubernetes.io~projected/kube-api-access-89r2w
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/993b647c-fcf5-42ca-8d0a-648ba577e5d7/volume-subpaths/tmp/kubernetes-ingress-controller/1
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/993b647c-fcf5-42ca-8d0a-648ba577e5d7/volume-subpaths/tmp/kubernetes-ingress-controller/0
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/993b647c-fcf5-42ca-8d0a-648ba577e5d7/volumes/kubernetes.io~projected/kube-api-access-44m97
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/993b647c-fcf5-42ca-8d0a-648ba577e5d7/volumes/kubernetes.io~empty-dir/tmp
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/9830f2fd-4623-465e-bfd6-40b16d6de8f5/volumes/kubernetes.io~secret/data
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/9830f2fd-4623-465e-bfd6-40b16d6de8f5/volumes/kubernetes.io~projected/kube-api-access-sgm69
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/961d8bf7-5371-4fd1-a4ea-37ff60e53d47/volumes/kubernetes.io~projected/kube-api-access-fgjq2
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/9619a8f2-39ad-4850-a7e2-410f827280ae/volumes/kubernetes.io~secret/config
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/9619a8f2-39ad-4850-a7e2-410f827280ae/volumes/kubernetes.io~projected/kube-api-access-jklz2
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/9619a8f2-39ad-4850-a7e2-410f827280ae/volumes/kubernetes.io~projected/certificates
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/93f97dbb-4c81-486c-a8cf-49fc10668d4c/volume-subpaths/runtime-config/infra/1
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/93f97dbb-4c81-486c-a8cf-49fc10668d4c/volume-subpaths/nginx-config/infra/0
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/93f97dbb-4c81-486c-a8cf-49fc10668d4c/volumes/kubernetes.io~projected/kube-api-access-mzrlx
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/9183a19a-15e2-456d-ba5a-ea8fce9cc9aa/volumes/kubernetes.io~projected/kube-api-access-dcgvt
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/8dcb59ff-80fc-449b-97b0-e15e46342eed/volumes/kubernetes.io~projected/kube-api-access-4q6zd
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/856bdd34-6f3d-4886-875f-c87f987085e4/volumes/kubernetes.io~projected/kube-api-access-qg9hb
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/8306054f-ae5b-4142-b39c-3407b33c7142/volumes/kubernetes.io~projected/kube-api-access-d6pmv
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/7ee87ade-0b38-438b-b397-40051c14041d/volumes/kubernetes.io~secret/certs
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/7ee87ade-0b38-438b-b397-40051c14041d/volumes/kubernetes.io~projected/kube-api-access-sdb7v
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/7a509d56-a642-4177-a2b0-f8006493ea35/volumes/kubernetes.io~projected/kube-api-access-rkhwl
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/756daf3a-a6a4-4380-b59e-afff39b4a8ed/volumes/kubernetes.io~projected/kube-api-access-765vz
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/68c38121-f289-4106-b0cc-c4476e173307/volumes/kubernetes.io~projected/kube-api-access-xql49
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/684b7fad-75f6-4eb1-9f13-4e8b8eb57aef/volumes/kubernetes.io~secret/memberlist
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/684b7fad-75f6-4eb1-9f13-4e8b8eb57aef/volumes/kubernetes.io~projected/kube-api-access-q6vqp
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/60f19ba7-a01a-44f0-9eb0-13db36a0be08/volumes/kubernetes.io~projected/kube-api-access-xdgjv
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/56749f9b-b114-4dfd-8add-2bf42d907748/volumes/kubernetes.io~secret/orch-ca-cert
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/56749f9b-b114-4dfd-8add-2bf42d907748/volumes/kubernetes.io~projected/kube-api-access-s68v2
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/30bc74bf-cef7-48e5-bbb1-581509c5a9a1/volumes/kubernetes.io~secret/cert
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/30bc74bf-cef7-48e5-bbb1-581509c5a9a1/volumes/kubernetes.io~projected/kube-api-access-zxbwx
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/2c68fdb5-7d00-4aa6-8c0e-6bff9f07cc00/volumes/kubernetes.io~projected/kube-api-access-kl8l2
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/267d3006-8b4b-4988-ab08-abe4671f45e7/volumes/kubernetes.io~secret/config
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/267d3006-8b4b-4988-ab08-abe4671f45e7/volumes/kubernetes.io~projected/kube-api-access-gz5nz
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/233b4102-42e4-45a3-aa9d-18b194ab414e/volumes/kubernetes.io~projected/kube-api-access-vwfdq
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/20b25d4c-52e8-455a-872b-d3fdca21de65/volumes/kubernetes.io~projected/kube-api-access-k56hw
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/1d9efa1b-3cb0-47c2-b986-1ad8f30a6371/volumes/kubernetes.io~projected/kube-api-access-qcmnv
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/1d9efa1b-3cb0-47c2-b986-1ad8f30a6371/volumes/kubernetes.io~local-volume/pvc-e9d0baf7-430c-43db-a220-a14a3078f1a7
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/0f386266-b817-479a-98d0-a7502e67d4f6/volumes/kubernetes.io~projected/kube-api-access-5cd4g
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/0cb1bc92-55d1-4d8d-8d8d-51134787a5f7/volumes/kubernetes.io~projected/kube-api-access-hlc9r
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/061c4e80-c97c-474e-902a-365afea41e4b/volume-subpaths/ktc-credentials/ktc-creds-cntr/0
+sh -c 'umount -f "$0" && rm -rf "$0"' /var/lib/kubelet/pods/061c4e80-c97c-474e-902a-365afea41e4b/volumes/kubernetes.io~projected/kube-api-access-nws62
++ do_unmount_and_remove /var/lib/kubelet/plugins
++ set +x
++ do_unmount_and_remove /run/netns/cni-
++ set +x
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-f4527d8f-7c8a-62db-4b56-a8bc30bba0cf
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-eb5aaf67-6b5b-5b63-2c7b-f034cedeed88
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-e94a676b-72f2-82b3-5748-8074606672df
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-e7f39a69-d8e1-458e-ba27-f04cd6cc3e29
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-e170f3b9-1fd1-165f-02fe-06c07fad65ce
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-de9392fb-2523-7a62-8664-e5983892555c
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-ddc87282-a244-e621-5d6c-7f41f949c4a6
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-d6826a03-432e-adab-5566-fe2eed38949c
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-caa5d68a-1c40-6bac-5275-ba2e737a2d94
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-bf28acc9-e119-cf0a-f2dd-a950463227bb
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-bc949a84-379f-e6c9-8677-10d5fc9c376e
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-bad44b7e-28c8-224c-33e3-61be89b2276d
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-b7696f70-1181-434e-5f46-54d98db81c99
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-b526cd06-7909-fdf4-5ec1-2c0d683be9b1
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-b07a142e-6127-a6bf-60a4-ce54aed758a3
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-ac047131-9f86-135a-5cbb-4e3b681a30df
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-a203c117-b434-5111-3cf8-cf539f301e39
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-98ad463a-4d21-8db8-09e1-4c453cfe035d
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-983b0d25-e98b-d919-4ccd-a2647417f068
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-929de210-15d1-f204-82f9-1c225cd6c231
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-87340a4e-bc43-de76-939c-b2e82ab74e05
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-83273d20-e226-d9de-f72a-674e069b303b
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-823bee2b-d9bd-02bd-0864-00eb4bbff796
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-8030f4f2-f8cb-dab3-fd87-d5e6a187a85b
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-7e8474f9-4044-a948-a52d-77d295b04dd7
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-7cf3cb35-9677-8054-771a-6e2430d658e1
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-7620c86a-a8f5-88fe-bbef-01db9179a348
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-70f02e97-03aa-956d-a24e-864c41074020
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-70e317d5-73a0-e2b3-8808-5c6e236a0557
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-6d6e84a5-3489-f629-27cf-fb130f508d2f
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-623411ee-8f52-228f-99d4-698b15275174
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-5d5fa644-ede9-6aa3-eb17-a1dd36333c1d
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-5d13aebb-ee2f-ae7c-ac42-8891358c99fa
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-56b960ff-ab41-1d09-e668-44195d1bbaa5
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-50a9ef06-68dc-8575-63d4-668ff71f45e1
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-505a6470-8f9e-e4aa-58b9-30077742c60a
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-4ca29f82-083e-c10b-c5c1-acf63bf011c3
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-4c5e26bb-3bef-8cc0-4ee3-3a82ccec061e
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-45b752f1-41cb-a8a9-4f4d-ab7981166408
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-37a63a61-6d00-799b-0bf4-72b5187f437b
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-36bfd341-4d3b-93e8-0a46-94c1543e2774
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-2f732887-b152-643b-9007-0e2d58167cbd
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-2eab9fe9-90dc-9bdb-83b9-3fd291dcad9c
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-2a0a4bbe-32ee-2bc9-11b1-80f87239bb52
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-23ec45e5-dfaf-9454-11a6-c52a9e1bdb1a
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-23191285-a607-0676-6e91-cea2c8d41bb6
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-1e98e2e7-176f-c114-f6ce-522ca73529ec
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-1e756719-0aaa-cf26-57d2-e1f443e9953a
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-18360392-d616-43e4-e440-a75ccf3e49be
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-141ef90e-7a94-d066-f996-3dd9b4397c00
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-1299c013-6134-72ef-87ab-5b3489363cfc
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-10382238-3d23-5d42-983b-abbff0cb73e1
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-08ff5945-3783-d404-e448-e1b20b245922
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-0402625f-7d4b-8fc1-1ae9-7108444a5009
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-019b508a-daf7-5049-189f-ca6328633795
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-0115785b-948d-1605-ea9c-ef46655bd7cc
+sh -c 'umount -f "$0" && rm -rf "$0"' /run/netns/cni-00503010-c842-138d-425b-10a081d00532
++ ip netns show
++ grep cni-
++ xargs -r -t -n 1 ip netns delete
++ remove_interfaces
++ + ip link show
+grep master cni0
++ read ignore iface ignore
++ iface=vethcf325a46
++ [ -z vethcf325a46 ]
++ ip link delete vethcf325a46
++ read ignore iface ignore
++ iface=veth762c6e48
++ [ -z veth762c6e48 ]
++ ip link delete veth762c6e48
++ read ignore iface ignore
++ iface=veth7a3b5d77
++ [ -z veth7a3b5d77 ]
++ ip link delete veth7a3b5d77
++ read ignore iface ignore
++ iface=vethb2c41410
++ [ -z vethb2c41410 ]
++ ip link delete vethb2c41410
+Cannot find device "vethb2c41410"
++ read ignore iface ignore
++ iface=veth4509adbb
++ [ -z veth4509adbb ]
++ ip link delete veth4509adbb
+Cannot find device "veth4509adbb"
++ read ignore iface ignore
++ iface=vethfb4b8031
++ [ -z vethfb4b8031 ]
++ ip link delete vethfb4b8031
+Cannot find device "vethfb4b8031"
++ read ignore iface ignore
++ iface=veth4e8ddae1
++ [ -z veth4e8ddae1 ]
++ ip link delete veth4e8ddae1
+Cannot find device "veth4e8ddae1"
++ read ignore iface ignore
++ iface=veth68795256
++ [ -z veth68795256 ]
++ ip link delete veth68795256
+Cannot find device "veth68795256"
++ read ignore iface ignore
++ iface=vetha7b0df46
++ [ -z vetha7b0df46 ]
++ ip link delete vetha7b0df46
+Cannot find device "vetha7b0df46"
++ read ignore iface ignore
++ iface=veth95a0eb17
++ [ -z veth95a0eb17 ]
++ ip link delete veth95a0eb17
+Cannot find device "veth95a0eb17"
++ read ignore iface ignore
++ iface=veth5b9dc98f
++ [ -z veth5b9dc98f ]
++ ip link delete veth5b9dc98f
+Cannot find device "veth5b9dc98f"
++ read ignore iface ignore
++ iface=veth1a1d8d7d
++ [ -z veth1a1d8d7d ]
++ ip link delete veth1a1d8d7d
+Cannot find device "veth1a1d8d7d"
++ read ignore iface ignore
++ iface=veth95a11091
++ [ -z veth95a11091 ]
++ ip link delete veth95a11091
+Cannot find device "veth95a11091"
++ read ignore iface ignore
++ iface=vethd02a3adc
++ [ -z vethd02a3adc ]
++ ip link delete vethd02a3adc
+Cannot find device "vethd02a3adc"
++ read ignore iface ignore
++ iface=veth9d11628b
++ [ -z veth9d11628b ]
++ ip link delete veth9d11628b
+Cannot find device "veth9d11628b"
++ read ignore iface ignore
++ iface=veth4eed6e7e
++ [ -z veth4eed6e7e ]
++ ip link delete veth4eed6e7e
+Cannot find device "veth4eed6e7e"
++ read ignore iface ignore
++ iface=vetha52d9231
++ [ -z vetha52d9231 ]
++ ip link delete vetha52d9231
+Cannot find device "vetha52d9231"
++ read ignore iface ignore
++ iface=vethb28a5d92
++ [ -z vethb28a5d92 ]
++ ip link delete vethb28a5d92
+Cannot find device "vethb28a5d92"
++ read ignore iface ignore
++ iface=veth298fd4f9
++ [ -z veth298fd4f9 ]
++ ip link delete veth298fd4f9
+Cannot find device "veth298fd4f9"
++ read ignore iface ignore
++ iface=veth371faf6f
++ [ -z veth371faf6f ]
++ ip link delete veth371faf6f
+Cannot find device "veth371faf6f"
++ read ignore iface ignore
++ iface=veth849e84b1
++ [ -z veth849e84b1 ]
++ ip link delete veth849e84b1
+Cannot find device "veth849e84b1"
++ read ignore iface ignore
++ iface=veth6671a257
++ [ -z veth6671a257 ]
++ ip link delete veth6671a257
+Cannot find device "veth6671a257"
++ read ignore iface ignore
++ iface=vetha9d420ba
++ [ -z vetha9d420ba ]
++ ip link delete vetha9d420ba
+Cannot find device "vetha9d420ba"
++ read ignore iface ignore
++ iface=veth1934e6ff
++ [ -z veth1934e6ff ]
++ ip link delete veth1934e6ff
+Cannot find device "veth1934e6ff"
++ read ignore iface ignore
++ iface=veth70ad8bdc
++ [ -z veth70ad8bdc ]
++ ip link delete veth70ad8bdc
+Cannot find device "veth70ad8bdc"
++ read ignore iface ignore
++ iface=vethaece3cd4
++ [ -z vethaece3cd4 ]
++ ip link delete vethaece3cd4
+Cannot find device "vethaece3cd4"
++ read ignore iface ignore
++ iface=vethf630e2b1
++ [ -z vethf630e2b1 ]
++ ip link delete vethf630e2b1
+Cannot find device "vethf630e2b1"
++ read ignore iface ignore
++ iface=veth3c12925f
++ [ -z veth3c12925f ]
++ ip link delete veth3c12925f
+Cannot find device "veth3c12925f"
++ read ignore iface ignore
++ iface=veth427e7968
++ [ -z veth427e7968 ]
++ ip link delete veth427e7968
+Cannot find device "veth427e7968"
++ read ignore iface ignore
++ ip link delete cni0
++ ip link delete flannel.1
++ ip link delete flannel-v6.1
+Cannot find device "flannel-v6.1"
++ ip link delete kube-ipvs0
+Cannot find device "kube-ipvs0"
++ ip link delete flannel-wg
+Cannot find device "flannel-wg"
++ ip link delete flannel-wg-v6
+Cannot find device "flannel-wg-v6"
++ command -v tailscale
++ [ -n  ]
++ rm -rf /var/lib/cni/
++ iptables-save
++ grep -v KUBE-
++ grep -v CNI-
++ grep -iv flannel
++ iptables-restore
++ ip6tables-save
++ grep -v KUBE-
++ grep -v CNI-
++ grep -iv flannel
++ ip6tables-restore
++ command -v systemctl
+/bin/systemctl
++ systemctl disable k3s
+Removed "/etc/systemd/system/multi-user.target.wants/k3s.service".
++ systemctl reset-failed k3s
+Failed to reset failed state of unit k3s.service: Unit k3s.service not loaded.
++ systemctl daemon-reload
++ command -v rc-update
++ rm -f /etc/systemd/system/k3s.service
++ rm -f /etc/systemd/system/k3s.service.env
++ trap remove_uninstall EXIT
++ [ -L /usr/local/bin/kubectl ]
++ [ -L /usr/local/bin/crictl ]
++ rm -f /usr/local/bin/crictl
++ [ -L /usr/local/bin/ctr ]
++ rm -rf /etc/rancher/k3s
++ rm -rf /run/k3s
++ rm -rf /run/flannel
++ clean_mounted_directory /var/lib/rancher/k3s
++ grep -q  /var/lib/rancher/k3s /proc/mounts
++ rm -rf /var/lib/rancher/k3s
++ return 0
++ rm -rf /var/lib/kubelet
++ rm -f /usr/local/bin/k3s
++ rm -f /usr/local/bin/k3s-killall.sh
++ type yum
++ type rpm-ostree
++ type zypper
++ remove_uninstall
++ rm -f /usr/local/bin/k3s-uninstall.sh
+✅ K3s uninstall complete
+Note: kubeconfig at /home/seu/.kube/config was not removed.
+
+═══════════════════════════════════════════════════════════════
+  PRE-ORCH TIMING SUMMARY
+═══════════════════════════════════════════════════════════════
+  ─────────────────────────────────────────────────────────────
+  Start: 2026-04-11 06:49:32
+  End:   2026-04-11 06:49:45
+  Total: 0m 13s
+═══════════════════════════════════════════════════════════════

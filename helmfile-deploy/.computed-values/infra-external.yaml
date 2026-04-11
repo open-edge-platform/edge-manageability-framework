@@ -1,0 +1,124 @@
+amt:
+  dm-manager:
+    curlImage:
+      name: badouralix/curl-jq@sha256
+      pullPolicy: IfNotPresent
+      tag: 8ee002ae4452b23a3c70750c5c081e95334cfe9f7968fb4d67a90d4001c29d0b
+    env:
+      oidc:
+        oidc_server_url: http://platform-keycloak.orch-platform.svc/realms/master
+        oidc_tls_insecure_skip_verify_value: "true"
+    params:
+      password: ""
+    serviceArgs:
+      passwordPolicy: static
+    traefikApiGroup: traefik.io/v1alpha1
+    traefikReverseProxy:
+      enabled: true
+      gatewayNamespace: orch-gateway
+      secretName: tls-orch
+      tlsOption: gateway-tls
+  mps:
+    curlImage:
+      name: badouralix/curl-jq@sha256
+      pullPolicy: IfNotPresent
+      tag: 8ee002ae4452b23a3c70750c5c081e95334cfe9f7968fb4d67a90d4001c29d0b
+    postgresql:
+      image:
+        tag: 16.10-bookworm
+    traefikApiGroup: traefik.io/v1alpha1
+    traefikReverseProxy:
+      enabled: true
+      gatewayNamespace: orch-gateway
+      secretName: tls-orch
+      tlsOption: gateway-tls
+  rps:
+    postgresql:
+      image:
+        tag: 16.10-bookworm
+    traefikApiGroup: traefik.io/v1alpha1
+    traefikReverseProxy:
+      enabled: true
+      gatewayNamespace: orch-gateway
+      secretName: tls-orch
+      tlsOption: gateway-tls
+global:
+  registry:
+    imagePullSecrets: []
+    name: registry-rs.edgeorchestration.intel.com/edge-orch/
+import:
+  amt:
+    enabled: true
+loca-credentials:
+  curlImage:
+    name: badouralix/curl-jq@sha256
+    pullPolicy: IfNotPresent
+    tag: 8ee002ae4452b23a3c70750c5c081e95334cfe9f7968fb4d67a90d4001c29d0b
+  params:
+    keycloakUrl: http://platform-keycloak.orch-platform.svc.cluster.local:8080
+    vaultUrl: http://vault.orch-platform.svc.cluster.local:8200
+  serviceAccount:
+    name: orch-svc
+loca-manager:
+  env:
+    keycloakUrl: http://platform-keycloak.orch-platform.svc.cluster.local:8080
+    vaultRole: orch-svc
+    vaultUrl: http://vault.orch-platform.svc.cluster.local:8200
+  multiTenancy:
+    enforceMultiTenancy: true
+  resources: null
+  serviceAccount:
+    name: orch-svc
+  serviceArgs:
+    inventoryAddress: inventory.orch-infra.svc.cluster.local:50051
+    traceURL: orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318
+loca-metadata-manager:
+  env:
+    vaultRole: orch-svc
+    vaultUrl: http://vault.orch-platform.svc.cluster.local:8200
+  multiTenancy:
+    enforceMultiTenancy: true
+  resources: null
+  serviceAccount:
+    name: orch-svc
+  serviceArgs:
+    inventoryAddress: inventory.orch-infra.svc.cluster.local:50051
+    traceURL: orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318
+loca-templates-manager:
+  resources: null
+  serviceAccount:
+    name: orch-svc
+  serviceArgs:
+    inventoryAddress: inventory.orch-infra.svc.cluster.local:50051
+    traceURL: orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318
+  ubuntu_repos_certificates:
+    - |
+      -----BEGIN CERTIFICATE-----
+      MIIE/zCCA+egAwIBAgISA1YYMk9tNlWtii3VhmtNbQp1MA0GCSqGSIb3DQEBCwUA
+      MDMxCzAJBgNVBAYTAlVTMRYwFAYDVQQKEw1MZXQncyBFbmNyeXB0MQwwCgYDVQQD
+      EwNSMTAwHhcNMjUwMzExMjMyMDA2WhcNMjUwNjA5MjMyMDA1WjAiMSAwHgYDVQQD
+      ExdvbGQtcmVsZWFzZXMudWJ1bnR1LmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEP
+      ADCCAQoCggEBAL5bU9Q9Cf6KDe4+qaUhxzteYw9VpHHajyv3RtW1L44HYcrY23Fm
+      Wl+B3NcKebgxeCmIUHPjeT22O185A+W2kCShFK46DXJLy9w/95dC6Vni+MVNolcN
+      5Lf0jdONgMDdo+32zjII1n6iyo0p7wkBjMsGABFJoqTJAaMq5mwy9nF/sPIqdmaT
+      q1YwBP3OeRZJ8YCvcundLS9HDkhal5+6/NFD57csm4bwbrccOpdarF0ebvy2cruk
+      Zj677mBPENQjHQ6xoYKV4XiW1xsJ32Mn4ktBZuMlEpyuPKCj5d7xeFYobxOwZ1iE
+      gV7CplBMIzXPzQ0bqocCqzWZfBrfRLAYZbMCAwEAAaOCAhwwggIYMA4GA1UdDwEB
+      /wQEAwIFoDAdBgNVHSUEFjAUBggrBgEFBQcDAQYIKwYBBQUHAwIwDAYDVR0TAQH/
+      BAIwADAdBgNVHQ4EFgQUJLJ8LKXFCuG8Uj+ME5ecw1M7tQYwHwYDVR0jBBgwFoAU
+      u7zDR6XkvKnGw6RyDBCNojXhyOgwVwYIKwYBBQUHAQEESzBJMCIGCCsGAQUFBzAB
+      hhZodHRwOi8vcjEwLm8ubGVuY3Iub3JnMCMGCCsGAQUFBzAChhdodHRwOi8vcjEw
+      LmkubGVuY3Iub3JnLzAiBgNVHREEGzAZghdvbGQtcmVsZWFzZXMudWJ1bnR1LmNv
+      bTATBgNVHSAEDDAKMAgGBmeBDAECATCCAQUGCisGAQQB1nkCBAIEgfYEgfMA8QB2
+      AKLjCuRF772tm3447Udnd1PXgluElNcrXhssxLlQpEfnAAABlYe3tcEAAAQDAEcw
+      RQIhAIB+Jcn3caERYoGN2pSv+s9M3jPJDoZ3JsbjCI8LIZwbAiBENMuiEGpWiAfn
+      pKpPPLNmrjfiuuGraeB0C3iDmltTRgB3AHMgIg8IFor588SmiwqyappKAO71d4WK
+      CE0FANSlQkRZAAABlYe3rjMAAAQDAEgwRgIhAK3HBjCK/Wyg8wn9vczPPFhCnYoG
+      XypWziVOEdD4zWxEAiEAqc7As4gy1yS50cK5fqFlIiQ0U7C8jEb9UmmfRgK2kcMw
+      DQYJKoZIhvcNAQELBQADggEBABhekTrH56X/E8iRdBBkHtmO7XvenVrCoVYPLdk7
+      j2TFAB5JjatPB/wzcQnexvCngoOj0zE8xxqGx2JePNrxk2SzTWOfA1yXDWyVYsRd
+      CYaykg6ZKxaoiV61UAgcEJUEzUstM9KRHbjDoy/ZMsemMpFdp38Q6AeoJS08jf1e
+      sFvo2jqgMiPoKPLmnIzdoCKf0+WtHOJt6BBoAOxLAxrUnCtDfQvR1OFm3AkdUTeO
+      fI1XhwcNnCvXV8xEVvPGupc44+4dKmHJfAiY+bQgH0Fcco/YxfZswcLPDKTxPXF/
+      StRo1ZACCL0Bl98yeFMBJYu9s4zfaS9C8/1bd1jTxXk5+xU=
+      -----END CERTIFICATE-----

@@ -28,12 +28,14 @@ environments:
       - environments/defaults-disabled.yaml.gotmpl
       - environments/onprem-eim-settings.yaml.gotmpl
       - environments/onprem-eim-features.yaml.gotmpl
+      - environments/profile-coder.yaml.gotmpl
   onprem-vpro:
     values:
       - environments/defaults-disabled.yaml.gotmpl
       - environments/onprem-eim-settings.yaml.gotmpl
       - environments/onprem-eim-features.yaml.gotmpl
       - environments/profile-vpro.yaml.gotmpl
+      - environments/profile-coder.yaml.gotmpl
 ---
 
 helmDefaults:
@@ -485,6 +487,7 @@ releases:
     condition: secret-wait-tls-orch.enabled
     needs:
       - orch-platform/secrets-config
+      - cert-manager/self-signed-cert
 
 
   #############################################################################
@@ -679,21 +682,6 @@ releases:
       - orch-gateway/traefik
 
 
-  - name: single-ip-routes
-    labels:
-      app: single-ip-routes
-      wave: "1200"
-    namespace: orch-gateway
-    chart: ./charts/single-ip-routes
-    wait: true
-    values:
-      - values/single-ip-routes.yaml.gotmpl
-    condition: single-ip-routes.enabled
-    needs:
-      - orch-gateway/traefik
-      - orch-gateway/traefik-extra-objects
-
-
   #############################################################################
   # Wave 1210 — Tenancy API + Manager (needs all of Wave 1200)
   #############################################################################
@@ -791,6 +779,7 @@ releases:
     condition: secret-wait-tls-boots.enabled
     needs:
       - orch-gateway/keycloak-tenant-controller
+      - orch-boots/haproxy-ingress-pxe-boots
 
 
   - name: token-fs

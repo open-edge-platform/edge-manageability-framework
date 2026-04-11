@@ -1,0 +1,35 @@
+clusterOrchNodeMatchHost: Host(`cluster-orch-node.orch-10-114-181-164.espdqa.infra-host.com`)
+connectCSPs:
+  - https://keycloak.orch-10-114-181-164.espdqa.infra-host.com
+  - wss://vnc.orch-10-114-181-164.espdqa.infra-host.com
+  - https://app-service-proxy.orch-10-114-181-164.espdqa.infra-host.com
+  - https://app-orch.orch-10-114-181-164.espdqa.infra-host.com
+  - https://api.orch-10-114-181-164.espdqa.infra-host.com
+  - https://cluster-orch.orch-10-114-181-164.espdqa.infra-host.com
+  - https://metadata.orch-10-114-181-164.espdqa.infra-host.com
+  - https://alerting-monitor.orch-10-114-181-164.espdqa.infra-host.com
+connectCSPsAppOrch:
+  - https://keycloak.orch-10-114-181-164.espdqa.infra-host.com
+cors:
+  allowedOrigins:
+    - https://orch-10-114-181-164.espdqa.infra-host.com
+    - https://web-ui.orch-10-114-181-164.espdqa.infra-host.com
+  enabled: true
+fleetMatchHost: Host(`fleet.orch-10-114-181-164.espdqa.infra-host.com`)
+giteaMatchHost: Host(`gitea.orch-10-114-181-164.espdqa.infra-host.com`)
+harborOciMatchHost: Host(`registry-oci.orch-10-114-181-164.espdqa.infra-host.com`)
+keycloakJwksPath: /realms/master/protocol/openid-connect/certs
+keycloakJwksUrl: http://platform-keycloak.orch-platform.svc
+keycloakMatchHost: Host(`keycloak.orch-10-114-181-164.espdqa.infra-host.com`)
+keycloakServicePort: 8080
+logsNodeMatchHost: Host(`logs-node.orch-10-114-181-164.espdqa.infra-host.com`)
+metricsNodeMatchHost: Host(`metrics-node.orch-10-114-181-164.espdqa.infra-host.com`)
+observabilityAdminMatchHost: Host(`observability-admin.orch-10-114-181-164.espdqa.infra-host.com`)
+observabilityMatchHost: Host(`observability-ui.orch-10-114-181-164.espdqa.infra-host.com`)
+orchSecretName: tls-orch
+rootMatchHost: Host(`orch-10-114-181-164.espdqa.infra-host.com`)
+scriptSources:
+  - https://app-service-proxy.orch-10-114-181-164.espdqa.infra-host.com
+tlsOption: gateway-tls
+traefikApiGroup: traefik.io/v1alpha1
+vaultMatchHost: Host(`vault.orch-10-114-181-164.espdqa.infra-host.com`)

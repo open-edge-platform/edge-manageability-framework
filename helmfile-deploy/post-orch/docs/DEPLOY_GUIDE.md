@@ -77,7 +77,8 @@ helmfile-deploy/
 │   ├── defaults-disabled.yaml.gotmpl
 │   ├── onprem-eim-settings.yaml.gotmpl
 │   ├── onprem-eim-features.yaml.gotmpl
-│   └── profile-vpro.yaml.gotmpl
+│   ├── profile-vpro.yaml.gotmpl
+│   └── profile-coder.yaml.gotmpl
 │
 ├── values/                    # Helm values
 │   ├── traefik.yaml.gotmpl
@@ -163,6 +164,7 @@ files applied in order (later files override earlier):
 
 ```text
 onprem-eim:  defaults-disabled -> settings -> features
+             -> profile-coder (if EMF_ENABLE_CODER=true)
 onprem-vpro: defaults-disabled -> settings -> features
              -> profile-vpro
 ```
@@ -179,11 +181,15 @@ These **must** be set before deployment:
 | Variable | Example | Description |
 |---|---|---|
 | `EMF_CLUSTER_NAME` | `onprem` | Cluster name |
-| `EMF_CLUSTER_DOMAIN` | `cluster.onprem` | Base domain |
+| `EMF_CLUSTER_DOMAIN` | `cluster.onprem` | Base domain for all services |
 | `EMF_REGISTRY` | `registry-rs...` | Chart registry |
 | `EMF_TRAEFIK_IP` | `192.168.99.30` | Traefik LB IP |
 | `EMF_HAPROXY_IP` | `192.168.99.40` | HAProxy LB IP |
 | `EMF_STORAGE_CLASS` | `openebs-hostpath` | Storage class |
+
+> **Single-IP mode:** Set `EMF_ORCH_IP` instead of
+> separate Traefik/HAProxy IPs. See
+> [Single-IP Mode](#single-ip-mode) below.
 
 ### Feature Toggles
 
