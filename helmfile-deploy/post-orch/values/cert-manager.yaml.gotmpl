@@ -1,0 +1,24 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+installCRDs: true
+resources: null
+cainjector:
+  resources: null
+webhook:
+  resources: null
+startupapicheck:
+  timeout: 5m
+
+{{- if .Values.proxy }}
+{{- if .Values.proxy.httpProxy }}
+http_proxy: {{ .Values.proxy.httpProxy | quote }}
+{{- end }}
+{{- if .Values.proxy.httpsProxy }}
+https_proxy: {{ .Values.proxy.httpsProxy | quote }}
+{{- end }}
+{{- if .Values.proxy.noProxy }}
+no_proxy: {{ .Values.proxy.noProxy | quote }}
+{{- end }}
+{{- end }}

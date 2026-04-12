@@ -1,0 +1,21 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+#
+## values.yaml - default overrides for metallb-config chart
+## These defaults will be used by the chart unless overridden by a higher-level values file
+
+metallb-config:
+  # IPs may be provided as plain IPs (will be converted to /32 by the template)
+  # or as full CIDRs (e.g. 192.168.99.30/32).
+  TraefikIP: 192.168.99.30
+  HaproxyIP: 192.168.99.40
+serviceNamespaces:
+  traefik: orch-gateway
+  haproxy: orch-boots
+# Single-IP mode: when true, creates a single shared 'orch-pool' instead of
+# separate traefik/haproxy pools. Services share the IP on different ports.
+singleIpMode: false
+# Optional: override the namespace used in manifests (defaults to release namespace)
+namespace: "metallb-system"

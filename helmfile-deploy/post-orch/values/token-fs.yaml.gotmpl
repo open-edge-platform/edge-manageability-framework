@@ -1,0 +1,15 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+image:
+  registry: {{ .Values.containerRegistryURL }}
+  repository: common/token-fs
+
+releaseMatchHost: "Host(`release.{{ .Values.clusterDomain }}`)"
+emptyReleaseServiceToken: "true"
+
+tlsOption: "gateway-tls"
+
+# https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
+traefikApiGroup: "traefik.io/v1alpha1"

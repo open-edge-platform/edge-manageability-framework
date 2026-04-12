@@ -1,0 +1,28 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# Standalone helmfile for OpenEBS LocalPV deployment
+#
+# Usage:
+#   Install:   helmfile apply
+#   Uninstall: helmfile destroy
+#   Template:  helmfile template
+#   Diff:      helmfile diff
+
+repositories:
+  - name: openebs-localpv
+    url: https://openebs.github.io/dynamic-localpv-provisioner
+
+releases:
+  - name: openebs-localpv
+    labels:
+      app: openebs-localpv
+    namespace: openebs-system
+    chart: openebs-localpv/localpv-provisioner
+    version: {{ env "LOCALPV_VERSION" | default "4.3.0" }}
+    values:
+      - values-openebs-localpv.yaml
+    createNamespace: true
+    wait: true
+    timeout: 600
