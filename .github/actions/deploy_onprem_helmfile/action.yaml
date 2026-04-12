@@ -90,6 +90,8 @@ runs:
       run: |
         echo "Verifying pre-orch components are ready..."
         kubectl get nodes -o wide
+        echo "Waiting for all pods to be ready..."
+        kubectl wait --for=condition=Ready pods --all -A --timeout=120s || true
         kubectl get pods -A
 
     # ── Post-Orch Deploy ─────────────────────────────────────────────────────
