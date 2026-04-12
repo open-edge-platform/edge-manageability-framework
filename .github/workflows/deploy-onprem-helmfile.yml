@@ -1,0 +1,48 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: Deploy On-Prem (Helmfile)
+
+on:
+  workflow_dispatch:
+    inputs:
+      orch_profile:
+        description: "Profile: onprem-eim or onprem-vpro"
+        default: "onprem-eim"
+        type: choice
+        options:
+          - onprem-eim
+          - onprem-vpro
+
+  pull_request:
+    branches:
+      - "*"
+    types:
+      - opened
+      - synchronize
+      - reopened
+    paths:
+      - 'helmfile-deploy/**'
+      - '.github/actions/deploy_onprem_helmfile/**'
+      - '.github/workflows/deploy-onprem-helmfile.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-onprem-helmfile:
+    runs-on: ubuntu-24.04-16core-64GB
+    timeout-minutes: 20
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Deploy on-prem orchestrator (helmfile)
+        uses: ./.github/actions/deploy_onprem_helmfile
+        with:
+          orch_profile: ${{ inputs.orch_profile || 'onprem-eim' }}
+          docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
+          docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
