@@ -164,7 +164,7 @@ files applied in order (later files override earlier):
 
 ```text
 onprem-eim:  defaults-disabled -> settings -> features
-             -> profile-coder (if EMF_ENABLE_CODER=true)
+             -> profile-coder
 onprem-vpro: defaults-disabled -> settings -> features
              -> profile-vpro
 ```
@@ -180,16 +180,19 @@ These **must** be set before deployment:
 
 | Variable | Example | Description |
 |---|---|---|
-| `EMF_CLUSTER_NAME` | `onprem` | Cluster name |
 | `EMF_CLUSTER_DOMAIN` | `cluster.onprem` | Base domain for all services |
 | `EMF_REGISTRY` | `registry-rs...` | Chart registry |
 | `EMF_TRAEFIK_IP` | `192.168.99.30` | Traefik LB IP |
 | `EMF_HAPROXY_IP` | `192.168.99.40` | HAProxy LB IP |
 | `EMF_STORAGE_CLASS` | `openebs-hostpath` | Storage class |
 
-> **Single-IP mode:** Set `EMF_ORCH_IP` instead of
-> separate Traefik/HAProxy IPs. See
-> [Single-IP Mode](#single-ip-mode) below.
+> **Multi-IP mode (default):** Set `EMF_TRAEFIK_IP` and
+> `EMF_HAPROXY_IP` to separate free IPs on your network.
+> Both services listen on `:443`.
+>
+> **Single-IP mode:** Set `EMF_ORCH_IP` instead to share
+> one IP for all services. Traefik listens on `:443` and
+> HAProxy shifts to `:9443` to avoid port conflicts.
 
 ### Feature Toggles
 
@@ -240,7 +243,7 @@ vi post-orch.env
 
 At minimum, update:
 
-- `EMF_CLUSTER_NAME` and `EMF_CLUSTER_DOMAIN`
+- `EMF_CLUSTER_DOMAIN`
 - `EMF_TRAEFIK_IP` and `EMF_HAPROXY_IP`
   (free IPs for LoadBalancer services)
 - `EMF_HTTP_PROXY` / `EMF_NO_PROXY`

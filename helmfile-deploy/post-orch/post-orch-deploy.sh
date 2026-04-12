@@ -45,11 +45,7 @@ validate_config() {
     echo "   Valid profiles: $VALID_PROFILES"
     ((errors++))
   fi
-  # Required: cluster name and domain
-  if [[ -z "${EMF_CLUSTER_NAME:-}" ]]; then
-    echo "❌ EMF_CLUSTER_NAME is required"
-    ((errors++))
-  fi
+  # Required: cluster domain
   if [[ -z "${EMF_CLUSTER_DOMAIN:-}" ]]; then
     echo "❌ EMF_CLUSTER_DOMAIN is required"
     ((errors++))
@@ -59,34 +55,31 @@ validate_config() {
     echo "❌ EMF_REGISTRY is required"
     ((errors++))
   fi
-  # Validate IPs for on-prem profiles (LoadBalancer)
-  if [[ "${EMF_SERVICE_TYPE:-}" == "LoadBalancer" ]]; then
-    if [[ -n "${EMF_TRAEFIK_IP:-}" ]]; then
-      if ! is_valid_ip "$EMF_TRAEFIK_IP"; then
-        echo "❌ Invalid Traefik IP: $EMF_TRAEFIK_IP"
-        ((errors++))
-      fi
+  # Validate IPs
+  # Single-IP mode: EMF_ORCH_IP overrides both Traefik and HAProxy IPs
+  if [[ -n "${EMF_ORCH_IP:-}" ]]; then
+    if ! is_valid_ip "$EMF_ORCH_IP"; then
+      echo "❌ Invalid EMF_ORCH_IP: $EMF_ORCH_IP"
+      ((errors++))
     else
-      echo "⚠️  EMF_TRAEFIK_IP not set (required for LoadBalancer service type)"
+      export EMF_TRAEFIK_IP="$EMF_ORCH_IP"
+      export EMF_HAPROXY_IP="$EMF_ORCH_IP"
+      echo "ℹ️  Single-IP mode: EMF_TRAEFIK_IP and EMF_HAPROXY_IP set to $EMF_ORCH_IP"
     fi
-    if [[ -n "${EMF_HAPROXY_IP:-}" ]]; then
-      if ! is_valid_ip "$EMF_HAPROXY_IP"; then
-        echo "❌ Invalid HAProxy IP: $EMF_HAPROXY_IP"
-        ((errors++))
-      fi
-    else
-      echo "⚠️  EMF_HAPROXY_IP not set (required for LoadBalancer service type)"
+  else
+    echo "ℹ️  Multi-IP mode: Traefik=${EMF_TRAEFIK_IP:-<not set>}, HAProxy=${EMF_HAPROXY_IP:-<not set>}"
+  fi
+  if [[ -n "${EMF_TRAEFIK_IP:-}" ]]; then
+    if ! is_valid_ip "$EMF_TRAEFIK_IP"; then
+      echo "❌ Invalid Traefik IP: $EMF_TRAEFIK_IP"
+      ((errors++))
     fi
   fi
-  # SMTP validation (if email enabled)
-  if [[ "${EMF_ENABLE_EMAIL:-false}" == "true" ]]; then
-    if [[ -z "${EMF_SMTP_ADDRESS:-}" ]]; then
-      echo "⚠️  EMF_ENABLE_EMAIL=true but EMF_SMTP_ADDRESS not set — SMTP secrets will be skipped"
+  if [[ -n "${EMF_HAPROXY_IP:-}" ]]; then
+    if ! is_valid_ip "$EMF_HAPROXY_IP"; then
+      echo "❌ Invalid HAProxy IP: $EMF_HAPROXY_IP"
+      ((errors++))
     fi
-  fi
-  # SRE validation
-  if [[ -n "${EMF_SRE_USERNAME:-}" && -z "${EMF_SRE_PASSWORD:-}" ]]; then
-    echo "⚠️  EMF_SRE_USERNAME is set but EMF_SRE_PASSWORD is empty"
   fi
   # Proxy: warn if http set but no_proxy missing
   if [[ -n "${EMF_HTTP_PROXY:-}" && -z "${EMF_NO_PROXY:-}" ]]; then
@@ -284,16 +277,24 @@ helmfile_sync_all() {
 
   if (( failed_count == 0 && pending_count == 0 && notinstalled_count == 0 )); then
     echo "  ✅ ALL $total_enabled RELEASES DEPLOYED SUCCESSFULLY"
-  elif (( failed_count >= 3 )); then
-    echo "  ❌ $failed_count charts failed (threshold: $MAX_TOLERATED_FAILURES) — aborting"
-  elif (( sync_exit != 0 && failed_count > 0 )); then
-    echo "  ⚠️  helmfile sync had errors but only $failed_count chart(s) failed — continuing"
-  elif (( sync_exit != 0 )); then
-    echo "  ⚠️  helmfile sync exited with code $sync_exit but no releases in failed state"
+  else
+    if (( failed_count > 0 )); then
+      echo "  ❌ $failed_count chart(s) failed"
+    fi
+    if (( pending_count > 0 )); then
+      echo "  ⚠️  $pending_count chart(s) still pending"
+    fi
+    if (( notinstalled_count > 0 )); then
+      echo "  ⚠️  $notinstalled_count chart(s) not installed"
+    fi
+    if (( sync_exit != 0 )); then
+      echo "  ❌ helmfile sync exited with code $sync_exit"
+    fi
+    echo "  ❌ DEPLOYMENT FAILED"
   fi
   echo "═══════════════════════════════════════════════════════════════"
 
-  if (( failed_count >= 3 )); then
+  if (( failed_count > 0 || pending_count > 0 || notinstalled_count > 0 || sync_exit != 0 )); then
     exit 1
   fi
 }
