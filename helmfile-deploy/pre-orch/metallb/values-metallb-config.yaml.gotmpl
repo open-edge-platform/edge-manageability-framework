@@ -7,13 +7,13 @@
 ## These defaults will be used by the chart unless overridden by a higher-level values file
 
 metallb-config:
-  # IPs are set via values-metallb-config-overrides.yaml.gotmpl
-  # which reads from helmfile .Values (EMF_TRAEFIK_IP / EMF_HAPROXY_IP)
+  # IPs are set via helmfile .Values (EMF_TRAEFIK_IP / EMF_HAPROXY_IP / EMF_ORCH_IP)
   TraefikIP: {{ .Values.traefikIP }}
   HaproxyIP: {{ .Values.haproxyIP }}
 serviceNamespaces:
   traefik: orch-gateway
   haproxy: orch-boots
+singleIpMode: {{ .Values.singleIpMode }}
 # Optional: override the namespace used in manifests (defaults to release namespace)
 namespace: ""
 # When true, create simple HAProxy deployment + LoadBalancer Service in the

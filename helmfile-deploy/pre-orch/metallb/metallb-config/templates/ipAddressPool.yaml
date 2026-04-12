@@ -2,12 +2,33 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 ---
+{{- $ns := default .Release.Namespace .Values.namespace }}
+{{- $singleIP := .Values.singleIpMode | default false }}
 
+{{- if $singleIP }}
+# ── Single-IP mode: one shared pool for all services ──────────────────────
+{{- $ip := required "metallb-config.TraefikIP (or TraefikIP) must be set" (default .Values.TraefikIP (index .Values "metallb-config" "TraefikIP")) }}
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: orch-pool
+  namespace: {{ $ns }}
+spec:
+  addresses:
+  {{- if contains "/" $ip }}
+  - "{{ $ip }}"
+  {{- else }}
+  - "{{ $ip }}/32"
+  {{- end }}
+  autoAssign: false
+  avoidBuggyIPs: true
+
+{{- else }}
+# ── Multi-IP mode: separate pools per service ─────────────────────────────
 apiVersion: metallb.io/v1beta1
 kind: IPAddressPool
 metadata:
   name: traefik
-  {{- $ns := default .Release.Namespace .Values.namespace }}
   namespace: {{ $ns }}
 spec:
   addresses:
@@ -29,7 +50,6 @@ apiVersion: metallb.io/v1beta1
 kind: IPAddressPool
 metadata:
   name: haproxy-controller
-  {{- $ns := default .Release.Namespace .Values.namespace }}
   namespace: {{ $ns }}
 spec:
   addresses:
@@ -45,3 +65,4 @@ spec:
     priority: 1
     namespaces:
       - {{ default "orch-boots" .Values.serviceNamespaces.haproxy }}
+{{- end }}

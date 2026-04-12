@@ -28,12 +28,14 @@ environments:
       - environments/defaults-disabled.yaml.gotmpl
       - environments/onprem-eim-settings.yaml.gotmpl
       - environments/onprem-eim-features.yaml.gotmpl
+      - environments/profile-coder.yaml.gotmpl
   onprem-vpro:
     values:
       - environments/defaults-disabled.yaml.gotmpl
       - environments/onprem-eim-settings.yaml.gotmpl
       - environments/onprem-eim-features.yaml.gotmpl
       - environments/profile-vpro.yaml.gotmpl
+      - environments/profile-coder.yaml.gotmpl
 ---
 
 helmDefaults:
@@ -485,6 +487,7 @@ releases:
     condition: secret-wait-tls-orch.enabled
     needs:
       - orch-platform/secrets-config
+      - cert-manager/self-signed-cert
 
 
   #############################################################################
@@ -573,7 +576,7 @@ releases:
     wait: true
     version: 1.41.0
     values:
-      - values/ingress-haproxy.yaml
+      - values/ingress-haproxy.yaml.gotmpl
     condition: ingress-haproxy.enabled
     needs:
       - orch-gateway/traefik-pre
@@ -776,6 +779,7 @@ releases:
     condition: secret-wait-tls-boots.enabled
     needs:
       - orch-gateway/keycloak-tenant-controller
+      - orch-boots/haproxy-ingress-pxe-boots
 
 
   - name: token-fs

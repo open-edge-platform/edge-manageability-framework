@@ -67,7 +67,7 @@ tinkerbell:
     gatewayNamespace: orch-gateway
     enabled: &traefikRP true
     tinkServerDnsname: "tinkerbell-server.{{ $domain }}"
-    nginxDnsname: &nginxDns "tinkerbell-haproxy.{{ $domain }}"
+    nginxDnsname: &nginxDns "tinkerbell-haproxy.{{ $domain }}{{ if ne (.Values.haproxyPort | default "443" | toString) "443" }}:{{ .Values.haproxyPort }}{{ end }}"
   traefikApiGroup: "traefik.io/v1alpha1"
 
   # ── Nginx CDN stack (resources via resource-overrides.yaml) ──────────────
@@ -226,7 +226,7 @@ infra-config:
 
     # ── Internal service endpoints ───────────────────────────────────────────
     cdnSvc: {{ .Values.releaseService.fileServer }}
-    provisioningSvc: tinkerbell-haproxy.{{ $domain }}
+    provisioningSvc: tinkerbell-haproxy.{{ $domain }}{{ if ne (.Values.haproxyPort | default "443" | toString) "443" }}:{{ .Values.haproxyPort }}{{ end }}
     tinkerSvc: tinkerbell-server.{{ $domain }}
     omSvc: onboarding-node.{{ $domain }}
     omStreamSvc: onboarding-stream.{{ $domain }}

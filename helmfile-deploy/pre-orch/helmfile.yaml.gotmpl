@@ -14,8 +14,9 @@
 environments:
   default:
     values:
-      - traefikIP: {{ requiredEnv "EMF_TRAEFIK_IP" }}
-        haproxyIP: {{ requiredEnv "EMF_HAPROXY_IP" }}
+      - traefikIP: {{ env "EMF_ORCH_IP" | default (env "EMF_TRAEFIK_IP") }}
+        haproxyIP: {{ env "EMF_ORCH_IP" | default (env "EMF_HAPROXY_IP") }}
+        singleIpMode: {{ if env "EMF_ORCH_IP" }}true{{ else }}false{{ end }}
         localpvVersion: {{ env "LOCALPV_VERSION" | default "4.3.0" }}
 
 ---

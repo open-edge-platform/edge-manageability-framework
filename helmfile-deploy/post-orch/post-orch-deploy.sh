@@ -146,7 +146,8 @@ helmfile_sync_all() {
   # so helmfile sync doesn't fail on immutable resources or stuck releases.
   echo "🔧 Pre-flight cleanup..."
   local installed_releases
-  installed_releases=$(helm list -A -a --no-headers 2>/dev/null | awk -F'\t' '{gsub(/^[ \t]+|[ \t]+$/, "", $1); gsub(/^[ \t]+|[ \t]+$/, "", $2); gsub(/^[ \t]+|[ \t]+$/, "", $5); print $1, $2, $5}')
+  installed_releases=$(helm list -A -a --no-headers 2>/dev/null \
+    | awk '{for(i=1;i<=NF;i++) if($i ~ /^[A-Z]{2,5}$/ && $(i-1) ~ /^[+-][0-9]{4}$/){print $1, $2, $(i+1); break}}')
   if [[ -n "$installed_releases" ]]; then
     while read -r release ns status; do
       [[ -z "$release" ]] && continue
@@ -212,15 +213,15 @@ helmfile_sync_all() {
     | awk 'NR>1 && $3=="true" {print $1}' | sort)
 
   # Build lookup: release -> "status namespace"
-  # Note: helm list UPDATED column has spaces (e.g. "2026-04-10 12:00:00 +0000 UTC")
-  # so we find STATUS as the field right after "UTC"
+  # Note: helm list UPDATED column has spaces (e.g. "2026-04-10 12:00:00 +0530 IST")
+  # The timezone token (UTC/IST/PST/etc.) separates the timestamp from the status field.
   declare -A helm_status_map helm_ns_map
   while read -r name ns status; do
     [[ -z "$name" ]] && continue
     helm_status_map["$name"]="$status"
     helm_ns_map["$name"]="$ns"
   done < <(helm list -A -a --no-headers 2>/dev/null \
-    | awk '{for(i=1;i<=NF;i++) if($i=="UTC"){print $1, $2, $(i+1); break}}')
+    | awk '{for(i=1;i<=NF;i++) if($i ~ /^[A-Z]{2,5}$/ && $(i-1) ~ /^[+-][0-9]{4}$/){print $1, $2, $(i+1); break}}')
 
   while read -r release; do
     [[ -z "$release" ]] && continue
