@@ -18,7 +18,6 @@ releaseService:
   fileServer: {{ $registryHost | replace "registry-rs" "files-rs" | quote }}
 
 # ─── Cluster ─────────────────────────────────────────────────────────────────
-clusterName: {{ requiredEnv "EMF_CLUSTER_NAME" | quote }}
 clusterDomain: {{ requiredEnv "EMF_CLUSTER_DOMAIN" | quote }}
 
 # ─── TLS ─────────────────────────────────────────────────────────────────────
