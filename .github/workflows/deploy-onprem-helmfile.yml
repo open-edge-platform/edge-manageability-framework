@@ -105,7 +105,7 @@ jobs:
           # xsltproc needed by libvirt terraform provider for domain XML customization
           sudo apt-get install -y xsltproc
 
-      - name: Wait for DKAM certs readiness
+      - name: Wait for DKAM Full_server.crt and signed_ipxe.efi readiness
         shell: bash
         run: |
           source helmfile-deploy/pre-orch/functions.sh
