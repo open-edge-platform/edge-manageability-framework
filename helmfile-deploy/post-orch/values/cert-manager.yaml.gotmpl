@@ -11,7 +11,7 @@ webhook:
 startupapicheck:
   timeout: 5m
 
-{{- if .Values.proxy }}
+{{- if hasKey .Values "proxy" }}
 {{- if .Values.proxy.httpProxy }}
 http_proxy: {{ .Values.proxy.httpProxy | quote }}
 {{- end }}

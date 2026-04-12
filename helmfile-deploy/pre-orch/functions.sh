@@ -172,3 +172,52 @@ update_config_variable() {
         fi
     fi
 }
+
+check_and_download_dkam_certs() {
+    local cluster_domain="${1:-cluster.onprem}"
+    local timeout_minutes=10
+    local interval=30
+    local max_attempts=$(( timeout_minutes * 60 / interval ))
+    echo "[INFO] Checking DKAM certificates readiness for ${cluster_domain} (timeout: ${timeout_minutes}m)..."
+
+    rm -f /tmp/Full_server.crt /tmp/signed_ipxe.efi 2>/dev/null || true
+
+    local attempt=1
+    local success=false
+
+    while (( attempt <= max_attempts )); do
+        echo "[Attempt ${attempt}/${max_attempts}] Checking DKAM certificate availability..."
+
+        if wget "https://tinkerbell-haproxy.${cluster_domain}/tink-stack/keys/Full_server.crt" \
+            --no-check-certificate --no-proxy -q -O /tmp/Full_server.crt 2>/dev/null; then
+            echo "[OK] Full_server.crt downloaded successfully"
+
+            if wget --ca-certificate=/tmp/Full_server.crt \
+                "https://tinkerbell-haproxy.${cluster_domain}/tink-stack/signed_ipxe.efi" \
+                -q -O /tmp/signed_ipxe.efi 2>/dev/null; then
+                echo "[OK] signed_ipxe.efi downloaded successfully"
+                success=true
+                break
+            else
+                echo "[WARN] Failed to download signed_ipxe.efi, retrying..."
+                rm -f /tmp/Full_server.crt /tmp/signed_ipxe.efi 2>/dev/null || true
+            fi
+        else
+            echo "[WARN] Full_server.crt not available yet, waiting..."
+        fi
+
+        if (( attempt < max_attempts )); then
+            echo "[INFO] Waiting ${interval} seconds before next attempt..."
+            sleep ${interval}
+        fi
+        ((attempt++))
+    done
+
+    if [[ "$success" == "true" ]]; then
+        echo "[SUCCESS] DKAM certificates are ready and downloaded"
+        return 0
+    else
+        echo "[FAIL] DKAM certificates not available after ${timeout_minutes} minutes"
+        return 1
+    fi
+}
