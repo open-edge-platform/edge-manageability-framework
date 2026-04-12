@@ -56,7 +56,7 @@ jobs:
           cd ci/ven
           ./libvirt-setup.sh
 
-      - name: Deploy on-prem orchestrator (helmfile) - EIM
+      - name: Deploy on-prem orchestrator (helmfile pre-orch + post-orch) - EIM
         uses: ./.github/actions/deploy_onprem_helmfile
         with:
           orch_profile: onprem-eim
@@ -196,7 +196,7 @@ jobs:
           cd ci/ven
           ./libvirt-setup.sh
 
-      - name: Deploy on-prem orchestrator (helmfile) - vPro
+      - name: Deploy on-prem orchestrator (helmfile pre-orch + post-orch) - vPro
         uses: ./.github/actions/deploy_onprem_helmfile
         with:
           orch_profile: onprem-vpro
