@@ -14,6 +14,15 @@
 {{- $mode     := dig "dkamMode" "prod" $io }}
 {{- $sc       := .Values.storageClass }}
 {{- $domain   := .Values.clusterDomain }}
+{{- $proxy    := dig "proxy" (dict) .Values }}
+{{- $httpProxy     := dig "httpProxy" "" $proxy }}
+{{- $httpsProxy    := dig "httpsProxy" "" $proxy }}
+{{- $noProxy       := dig "noProxy" "" $proxy }}
+{{- $enHttpProxy   := dig "enHttpProxy" "" $proxy }}
+{{- $enHttpsProxy  := dig "enHttpsProxy" "" $proxy }}
+{{- $enFtpProxy    := dig "enFtpProxy" "" $proxy }}
+{{- $enSocksProxy  := dig "enSocksProxy" "" $proxy }}
+{{- $enNoProxy     := dig "enNoProxy" "" $proxy }}
 
 # ═════════════════════════════════════════════════════════════════════════════
 # Global
@@ -94,12 +103,12 @@ tinkerbell:
     enabled: false
     {{- end }}
     additionalKernelArgs:
-      - "http_proxy={{ .Values.proxy.enHttpProxy }}"
-      - "https_proxy={{ .Values.proxy.enHttpsProxy }}"
-      - "no_proxy={{ .Values.proxy.enNoProxy }}"
-      - "HTTP_PROXY={{ .Values.proxy.enHttpProxy }}"
-      - "HTTPS_PROXY={{ .Values.proxy.enHttpsProxy }}"
-      - "NO_PROXY={{ .Values.proxy.enNoProxy }}"
+      - "http_proxy={{ $enHttpProxy }}"
+      - "https_proxy={{ $enHttpsProxy }}"
+      - "no_proxy={{ $enNoProxy }}"
+      - "HTTP_PROXY={{ $enHttpProxy }}"
+      - "HTTPS_PROXY={{ $enHttpsProxy }}"
+      - "NO_PROXY={{ $enNoProxy }}"
       - "DEBUG=false"
       - "TIMEOUT=120s"
       - "syslog_host=127.0.0.1"
@@ -184,9 +193,9 @@ dkam:
       oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
     mode: {{ $mode | quote }}
   proxies:
-    http_proxy: {{ .Values.proxy.httpProxy }}
-    https_proxy: {{ .Values.proxy.httpsProxy }}
-    no_proxy: {{ .Values.proxy.noProxy }}
+    http_proxy: {{ $httpProxy }}
+    https_proxy: {{ $httpsProxy }}
+    no_proxy: {{ $noProxy }}
   # Resources: managed by resource-overrides.yaml
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -199,11 +208,11 @@ infra-config:
     embImageUrl: files-edge-orch/repository/microvisor/uos/emb_uos_x86_64_20251113.tar.gz
 
     # ── Edge-node proxy settings ─────────────────────────────────────────────
-    enProxyHTTP: {{ .Values.proxy.enHttpProxy }}
-    enProxyHTTPS: {{ .Values.proxy.enHttpsProxy }}
-    enProxyFTP: {{ .Values.proxy.enFtpProxy }}
-    enProxySocks: {{ .Values.proxy.enSocksProxy }}
-    enProxyNoProxy: {{ .Values.proxy.enNoProxy }}
+    enProxyHTTP: {{ $enHttpProxy }}
+    enProxyHTTPS: {{ $enHttpsProxy }}
+    enProxyFTP: {{ $enFtpProxy }}
+    enProxySocks: {{ $enSocksProxy }}
+    enProxyNoProxy: {{ $enNoProxy }}
 
     # ── Orchestrator service endpoints ───────────────────────────────────────
     orchInfra: infra-node.{{ $domain }}:443
