@@ -31,7 +31,7 @@ the entire boot process, including BIOS and OS loading.
 Requirements: KVM is only available on Intel vPro® Enterprise platforms.
 It is generally not available on "Standard Manageability" or "Entry" versions of AMT.
 
-| Feature | Serial Over LAN (SOL) | Remote KVM |
+| Feature | Serial Over LAN (SOL) on ISM/AMT | Remote KVM on AMT |
 | --- | --- | --- |
 | Interface | Text-based (Terminal) | Graphical (GUI) |
 | Bandwidth | Very Low | Moderate to High |
@@ -70,9 +70,9 @@ KVM works even if:
 
 ### Hardware & OS Prerequisites
 
-1. Intel® vPro‑enabled CPU (Core i5/i7/i9 vPro or Xeon)
+1. Intel® vPro‑enabled CPU (Core i5/i7/i9 vPro)
 2. Intel® AMT firmware enabled
-3. Device reachable via network
+3. Device reachable via network(Ethernet based connect is the current focus. WiFi is part of roadmap planned for future releases)
 4. Network Ports and Firewall
 
   | Purpose | Port |
@@ -86,13 +86,6 @@ KVM works even if:
 
 <img width="2320" height="1282" alt="image"
   src="https://github.com/user-attachments/assets/4809c85e-29bb-442a-a129-475c2bea06d7" />
-
-**Authentication Requirements**:
-
-- Keycloak JWT token obtained via `orch-cli login` and stored for
-  subsequent commands
-- User must belong to tenant that owns the project
-- User must have appropriate RBAC permissions for host management
 
 ## Implementation Design
 
@@ -770,7 +763,12 @@ xdg-open "http://localhost:57432/?hostId=<host-resource-id>"
 ---
 
 ### orch-cli Commands
+**Authentication Requirements**:
 
+- Keycloak JWT token obtained via `orch-cli login` and stored for
+  subsequent commands
+- User must belong to tenant that owns the project
+- User must have appropriate RBAC permissions for host management
 #### KVM
 
 ##### 1. Start KVM Session
