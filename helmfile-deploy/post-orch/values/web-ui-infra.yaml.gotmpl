@@ -1,0 +1,55 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Auth
+global:
+  registry:
+    name: "{{ .Values.containerRegistryURL }}"
+    imagePullSecrets: []
+  auth:
+    enabled: true
+    keycloak:
+      url: "https://keycloak.{{ .Values.clusterDomain }}"
+      client_id: "webui-client"
+      realm: "master"
+  session_timeout: 3600
+  observability:
+    url: "https://observability-ui.{{ .Values.clusterDomain }}"
+
+# Used to configure the Header title
+header:
+  title: "Edge Infrastructure Manager"
+
+versions:
+  orchestrator: {{ .Values.orchestratorVersion | default "" | quote }}
+
+# Ingress — disabled. The root chart (web-ui-root) handles all Traefik routing
+# and internally proxies /mfe/infrastructure/* to web-ui-infra via cluster DNS.
+# Enabling traefik here creates a conflicting IngressRoute at the same priority,
+# causing Traefik to serve web-ui-infra's HTML fallback instead of the root's nginx proxy.
+service:
+  type: ClusterIP
+  traefik:
+    enabled: false
+
+api:
+  catalog: "https://api.{{ .Values.clusterDomain }}"
+  appDeploymentManger: "https://api.{{ .Values.clusterDomain }}"
+  appResourceManger: "https://api.{{ .Values.clusterDomain }}"
+  clusterOrch: "https://api.{{ .Values.clusterDomain }}"
+  infraManager: "https://api.{{ .Values.clusterDomain }}"
+  metadataBroker: "https://api.{{ .Values.clusterDomain }}"
+  alertManager: "https://alerting-monitor.{{ .Values.clusterDomain }}"
+  tenantManager: "https://api.{{ .Values.clusterDomain }}"
+  rps: "https://api.{{ .Values.clusterDomain }}"
+  mps: "https://api.{{ .Values.clusterDomain }}"
+
+# Disable nginx rewrites. The chart defaults use {{ .Release.Name }}-infra which produces
+# web-ui-infra-infra in helmfile (ArgoCD avoids this via releaseName: web-ui).
+# The root chart handles MFE proxy routing; this chart serves content at / directly.
+nginx:
+  rewrites: []
+
+# https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
+traefikApiGroup: "traefik.io/v1alpha1"

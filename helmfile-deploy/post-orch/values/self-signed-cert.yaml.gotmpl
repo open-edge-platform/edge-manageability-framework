@@ -1,0 +1,22 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+#
+# Values for self-signed-cert
+
+{{- if .Values | getOrNil "self-signed-cert" }}
+generateOrchCert: {{ .Values | getOrNil "self-signed-cert.generateOrchCert" | default false }}
+{{- end }}
+
+clusterDomain: {{ .Values.clusterDomain | default "" | quote }}
+certDomain: {{ .Values.clusterDomain | default "" | quote }}
+
+# Disable namespaces not used in EIM/vPro profiles
+namespaces:
+  orch-harbor:
+    enabled: false
+  orch-app:
+    enabled: false
+  orch-cluster:
+    enabled: false

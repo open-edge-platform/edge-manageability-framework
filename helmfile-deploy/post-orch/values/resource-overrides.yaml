@@ -1,0 +1,318 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Single resource override file for all releases.
+# Sets resources to null (removes limits) so CPU-heavy tasks are not throttled.
+# Helm ignores unknown top-level keys, so this file can be safely applied to
+# every release — each chart picks up only the keys it recognizes.
+
+# ── Standalone charts (root-level resources) ─────────────────────────────────
+resources:
+  requests:
+    cpu: "1m"
+    memory: "1Mi"
+  limits:
+    cpu: "64"
+    memory: "64Gi"
+
+# ── infra-onboarding subcharts ───────────────────────────────────────────────
+dkam:
+  resources:
+    requests:
+      cpu: "1m"
+      memory: "1Mi"
+    limits:
+      cpu: "64"
+      memory: "64Gi"
+onboarding-manager:
+  resources:
+    requests:
+      cpu: "1m"
+      memory: "1Mi"
+    limits:
+      cpu: "64"
+      memory: "64Gi"
+pxe-server:
+  resources:
+    requests:
+      cpu: "1m"
+      memory: "1Mi"
+    limits:
+      cpu: "64"
+      memory: "64Gi"
+tinkerbell:
+  stack:
+    resources:
+      requests:
+        cpu: "200m"
+        memory: "256Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+
+# ── infra-core subcharts ─────────────────────────────────────────────────────
+api:
+  resources:
+    requests:
+      cpu: "1m"
+      memory: "1Mi"
+    limits:
+      cpu: "64"
+      memory: "64Gi"
+apiv2:
+  resources:
+    requests:
+      cpu: "1m"
+      memory: "1Mi"
+    limits:
+      cpu: "64"
+      memory: "64Gi"
+exporter:
+  resources:
+    requests:
+      cpu: "1m"
+      memory: "1Mi"
+    limits:
+      cpu: "64"
+      memory: "64Gi"
+inventory:
+  resources:
+    requests:
+      cpu: "1m"
+      memory: "1Mi"
+    limits:
+      cpu: "64"
+      memory: "64Gi"
+tenant-controller:
+  resources:
+    requests:
+      cpu: "1m"
+      memory: "1Mi"
+    limits:
+      cpu: "64"
+      memory: "64Gi"
+
+# ── infra-managers subcharts ─────────────────────────────────────────────────
+host-manager:
+  resources:
+    requests:
+      cpu: "1m"
+      memory: "1Mi"
+    limits:
+      cpu: "64"
+      memory: "64Gi"
+maintenance-manager:
+  resources:
+    requests:
+      cpu: "1m"
+      memory: "1Mi"
+    limits:
+      cpu: "64"
+      memory: "64Gi"
+telemetry-manager:
+  resources:
+    requests:
+      cpu: "1m"
+      memory: "1Mi"
+    limits:
+      cpu: "64"
+      memory: "64Gi"
+os-resource-manager:
+  resources:
+    requests:
+      cpu: "1m"
+      memory: "1Mi"
+    limits:
+      cpu: "64"
+      memory: "64Gi"
+networking-manager:
+  resources:
+    requests:
+      cpu: "1m"
+      memory: "1Mi"
+    limits:
+      cpu: "64"
+      memory: "64Gi"
+attestationstatus-manager:
+  resources:
+    requests:
+      cpu: "1m"
+      memory: "1Mi"
+    limits:
+      cpu: "64"
+      memory: "64Gi"
+
+# ── orchestrator-observability subcharts ─────────────────────────────────────
+grafana:
+  resources:
+    requests:
+      cpu: "1m"
+      memory: "1Mi"
+    limits:
+      cpu: "64"
+      memory: "64Gi"
+  sidecar:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+loki:
+  backend:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+  write:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+  read:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+  gateway:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+  chunksCache:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+  resultsCache:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+  minio:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+mimir-distributed:
+  minio:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+  distributor:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+  ingester:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+  querier:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+  query_frontend:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+  compactor:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+  store_gateway:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+  gateway:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+opentelemetry-collector:
+  resources:
+    requests:
+      cpu: "1m"
+      memory: "1Mi"
+    limits:
+      cpu: "64"
+      memory: "64Gi"
+opentelemetry-collector-daemonset:
+  resources:
+    requests:
+      cpu: "1m"
+      memory: "1Mi"
+    limits:
+      cpu: "64"
+      memory: "64Gi"
+
+# ── alerting-monitor subcharts ───────────────────────────────────────────────
+alertmanager:
+  resources:
+    requests:
+      cpu: "1m"
+      memory: "1Mi"
+    limits:
+      cpu: "64"
+      memory: "64Gi"
+  configmapReload:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"

@@ -1,0 +1,14 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+#
+controller:
+  podAnnotations:
+    sidecar.istio.io/inject: "false"
+
+speaker:
+  podAnnotations:
+    sidecar.istio.io/inject: "false"
+  frr:
+    enabled: false
