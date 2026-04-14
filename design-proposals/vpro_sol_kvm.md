@@ -118,7 +118,6 @@ integrates with the EMF stack.
 ```
 
 **Response** — `GET /compute/hosts/{resourceId}` (KVM fields):
-
 ```json
 {
   "kvmStatus": "KVM_STATUS_ACTIVATED",
