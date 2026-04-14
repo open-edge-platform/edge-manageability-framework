@@ -56,7 +56,6 @@ var argoNamespaces = []string{
 
 var EMFRepos = []string{
 	"https://github.com/open-edge-platform/edge-manageability-framework",
-	"https://github.com/open-edge-platform/orch-utils",
 }
 
 // Public GitHub repositories can be useful for specific development workflows.
