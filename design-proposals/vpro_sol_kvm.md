@@ -84,7 +84,6 @@ KVM works even if:
   | 'KVM / SOL (non‑TLS)' | 16994 |
   | 'KVM / SOL (TLS)' | 16995 |
 
-
 ### Proposed Architecture
 
 <img width="2320" height="1282" alt="image"
@@ -121,6 +120,7 @@ integrates with the EMF stack.
 ```
 
 **Response** — `GET /compute/hosts/{resourceId}` (KVM fields):
+
 ```json
 {
   "kvmStatus": "KVM_STATUS_ACTIVATED",
