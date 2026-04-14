@@ -72,7 +72,9 @@ KVM works even if:
 
 1. Intel® vPro‑enabled CPU (Core i5/i7/i9 vPro)
 2. Intel® AMT firmware enabled
-3. Device reachable via network(Ethernet based connect is the current focus. WiFi is part of roadmap planned for future releases)
+3. Device reachable via network.
+  Ethernet-based connectivity is the current focus.
+  Wi-Fi is part of the roadmap planned for future releases.
 4. Network Ports and Firewall
 
   | Purpose | Port |
@@ -81,6 +83,7 @@ KVM works even if:
   | 'AMT WS‑MAN (HTTPS)' | 16993 |
   | 'KVM / SOL (non‑TLS)' | 16994 |
   | 'KVM / SOL (TLS)' | 16995 |
+
 
 ### Proposed Architecture
 
