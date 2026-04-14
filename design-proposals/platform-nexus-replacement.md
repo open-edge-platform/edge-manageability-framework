@@ -114,17 +114,37 @@ tenancy endpoints:
   assumes Traefik has already validated -- it always verifies the JWT itself.
   This defense-in-depth protects against direct ClusterIP access,
   port-forwarding, and misconfigured IngressRoutes.
-- **RBAC:** Authorization rules are implemented in Go middleware (not OPA),
-  matching the current Rego policy for the six tenancy roles:
+- **RBAC:** Authorization rules are implemented in Go middleware rather than
+  an OPA sidecar. The other services (app-deployment-api, app-resource-manager,
+  app-orch-catalog, infra-core) use OPA sidecars successfully because their
+  authorization is a binary allow/deny gate: the rest-proxy resolves the
+  project name to a UUID, injects an `ActiveProjectID` header, and OPA checks
+  whether the JWT contains the required role (e.g., `{projectUID}_ao-rw`).
+  All context OPA needs is available in request headers before the service
+  is reached.
+
+  The Tenant Manager's authorization does not fit this model for two reasons:
+
+  1. **Query-scoped filtering:** `GET /v1/projects` must return only projects
+     in orgs the caller has access to. The middleware extracts org UUIDs from
+     JWT role patterns (`{orgUUID}_project-read-role`) and uses them to scope
+     the database query (WHERE clause). This is a result-set filter, not a
+     binary gate -- OPA cannot filter query results.
+  2. **Database-dependent evaluation:** For `GET /v1/projects/{name}`, the
+     middleware must look up which org owns the project (a database query)
+     before it can determine whether the caller has the required org-scoped
+     role. Unlike the other services, where `ActiveProjectID` is resolved
+     by the rest-proxy before OPA sees the request, the Tenant Manager
+     owns the data that authorization depends on -- there is no upstream
+     component to pre-resolve it.
+
+  The six tenancy roles enforced are:
   - Org endpoints: `org-read-role`, `org-write-role`, `org-delete-role`
     (global roles)
   - Project endpoints: `{orgId}_project-read-role`,
     `{orgId}_project-write-role`, `{orgId}_project-delete-role` (org-scoped)
   - Project read fallback: `{orgId}_{projectId}_member-role` grants read
     access
-- **Org scoping:** The auth middleware extracts org UUIDs from JWT roles and
-  scopes all project queries to the caller's orgs. This replaces the
-  nexus-api-gw's cache-based org/project resolution.
 - **Internal endpoints** (`/v1/events`, `/v1/status`) are ClusterIP-only and
   unauthenticated.
 
