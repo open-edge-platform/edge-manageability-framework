@@ -27,6 +27,9 @@ operator:
 
 # Disable operator trace export to localhost:4317 to avoid repeated warning logs
 # while preserving upstream-required environment variables.
+{{- $argoValues := get .Values "argo" | default dict }}
+{{- $keycloakOperatorValues := get $argoValues "keycloakOperator" | default dict }}
+{{- $relatedImage := get $keycloakOperatorValues "relatedImage" | default "" }}
 operator:
   container:
     env:
@@ -35,7 +38,11 @@ operator:
           fieldRef:
             fieldPath: metadata.namespace
       - name: RELATED_IMAGE_KEYCLOAK
-        value: {{ dig "argo" "keycloakOperator" "relatedImage" "quay.io/keycloak/keycloak:26.6.0" .Values | quote }}
+{{- if $relatedImage }}
+        value: {{ $relatedImage | quote }}
+{{- else }}
+        value: '{{ "{{ .Values.operator.relatedImage.keycloak }}" }}'
+{{- end }}
       - name: QUARKUS_OPERATOR_SDK_CONTROLLERS_KEYCLOAKREALMIMPORTCONTROLLER_NAMESPACES
         value: JOSDK_WATCH_CURRENT
       - name: QUARKUS_OPERATOR_SDK_CONTROLLERS_KEYCLOAKCONTROLLER_NAMESPACES
