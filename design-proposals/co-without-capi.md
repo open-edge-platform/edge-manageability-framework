@@ -107,7 +107,7 @@ Modify the infrastructure manager service to handle cluster information:
 - When the `node-agent` makes its regular gRPC call to the infrastructure manager service with
 system information, include the `ClusterInfo` object containing the kubeconfig as a blob.
 
-```
+```protobuf
 message SystemInfo {
   HWInfo hw_info = 1;
 
@@ -128,7 +128,7 @@ information update mechanism
 - These steps will be accomplished by leveraging the `HostResource` structure that contains a
 metadata field
 
-```
+```protobuf
 // A Host resource.
 message HostResource {
   // OTHER METHODS
@@ -144,7 +144,6 @@ message HostResource {
 
 }
 ```
-
 
 ### Phase 3: CLI Integration
 
