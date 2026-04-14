@@ -763,12 +763,14 @@ xdg-open "http://localhost:57432/?hostId=<host-resource-id>"
 ---
 
 ### orch-cli Commands
+
 **Authentication Requirements**:
 
 - Keycloak JWT token obtained via `orch-cli login` and stored for
   subsequent commands
 - User must belong to tenant that owns the project
 - User must have appropriate RBAC permissions for host management
+  
 #### KVM
 
 ##### 1. Start KVM Session
