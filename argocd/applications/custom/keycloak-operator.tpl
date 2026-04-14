@@ -35,7 +35,7 @@ operator:
           fieldRef:
             fieldPath: metadata.namespace
       - name: RELATED_IMAGE_KEYCLOAK
-        value: {{ .Values.argo.keycloakOperator.relatedImage | default "quay.io/keycloak/keycloak:26.6.0" | quote }}
+        value: {{ dig "argo" "keycloakOperator" "relatedImage" "quay.io/keycloak/keycloak:26.6.0" .Values | quote }}
       - name: QUARKUS_OPERATOR_SDK_CONTROLLERS_KEYCLOAKREALMIMPORTCONTROLLER_NAMESPACES
         value: JOSDK_WATCH_CURRENT
       - name: QUARKUS_OPERATOR_SDK_CONTROLLERS_KEYCLOAKCONTROLLER_NAMESPACES
