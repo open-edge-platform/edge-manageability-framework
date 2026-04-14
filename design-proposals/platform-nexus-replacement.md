@@ -2,7 +2,7 @@
 
 Author(s): Scott Baker
 
-Last updated: 4/9/26
+Last updated: 4/13/26
 
 ## Abstract
 
@@ -74,7 +74,10 @@ The tenancy-manager is rewritten as a standalone HTTP server that:
 - Exposes internal endpoints for controller event polling and status reporting
 - Derives resource status from the `controller_statuses` table against a
   Helm-managed config of registered controllers
-- Bootstraps default org/project on first startup (absorbing `tenancy-init`)
+- Optionally bootstraps default org/project on first startup (absorbing
+  `tenancy-init`). Bootstrap is skipped when `default_org_name` and
+  `default_project_name` are empty, allowing org/project creation to be
+  driven entirely by the deploy script or external tooling
 
 Controllers interact exclusively via the REST API -- they have no database
 dependency and no Ent schema dependency.
@@ -98,11 +101,50 @@ shared library (`orch-library/go/pkg/tenancy/`) that implements the
 replay-then-poll lifecycle. Business logic (provisioning, cleanup) is
 unchanged.
 
+### Authentication and Authorization
+
+The Tenant Manager absorbs the RBAC responsibilities of the nexus-api-gw for
+tenancy endpoints:
+
+- **JWT validation:** The Tenant Manager validates JWT signatures on every
+  request using `orch-library/go/pkg/auth.JwtAuthenticator.ParseAndValidate()`,
+  which verifies against Keycloak JWKS. This is the authoritative validation.
+  Traefik's `validate-jwt` middleware (Kyverno-enforced on all IngressRoutes)
+  provides an additional layer at the ingress, but the Tenant Manager never
+  assumes Traefik has already validated -- it always verifies the JWT itself.
+  This defense-in-depth protects against direct ClusterIP access,
+  port-forwarding, and misconfigured IngressRoutes.
+- **RBAC:** Authorization rules are implemented in Go middleware (not OPA),
+  matching the current Rego policy for the six tenancy roles:
+  - Org endpoints: `org-read-role`, `org-write-role`, `org-delete-role`
+    (global roles)
+  - Project endpoints: `{orgId}_project-read-role`,
+    `{orgId}_project-write-role`, `{orgId}_project-delete-role` (org-scoped)
+  - Project read fallback: `{orgId}_{projectId}_member-role` grants read
+    access
+- **Org scoping:** The auth middleware extracts org UUIDs from JWT roles and
+  scopes all project queries to the caller's orgs. This replaces the
+  nexus-api-gw's cache-based org/project resolution.
+- **Internal endpoints** (`/v1/events`, `/v1/status`) are ClusterIP-only and
+  unauthenticated.
+
 ### API Exposure
 
 The Tenant Manager gets a Traefik IngressRoute for external CRUD endpoints.
+The IngressRoute must include the `validate-jwt` middleware (Kyverno-enforced).
 Internal event/status endpoints are ClusterIP-only. The orch-library project
 context middleware is updated to resolve project UUIDs via the Tenant Manager.
+
+Four services have rest-proxy sidecars that resolve project names to UUIDs.
+Each must be configured to point at the Tenant Manager instead of the old
+nexus-api-gw:
+
+| Service | Flag |
+| --- | --- |
+| app-deployment-api | `-nexus-api-url` |
+| app-resource-manager | `-nexus-api-url` |
+| apiv2 (infra-core) | `-nexusAPIURL` |
+| app-orch-catalog | `-project-service-url` |
 
 ### Components Removed
 
@@ -182,6 +224,19 @@ is available.
 1. **Existing data migration:** Live deployments have tenancy state in etcd
    CRDs. A one-time migration tool or procedure is needed to seed the Postgres
    tables from the existing CRDs before cutting over.
-2. **Nexus API gateway removal scope:** The nexus-api-gw also serves as an API
-   remapper for non-tenancy services. Its full removal depends on the separate
-   API remapper migration and is out of scope for this proposal.
+2. **Nexus API gateway catch-all route:** The nexus-api-gw has a Traefik
+   IngressRoute with `PathPrefix('/v')` that catches ALL `/v*` API paths not
+   matched by a more specific IngressRoute. In the replacement, the
+   nexus-api-gw can no longer resolve projects (it still reads the old nexus
+   datamodel), so any path that falls through returns **403**. The
+   nexus-api-gw also performed **path remapping** between external paths (what
+   the UI calls) and internal service paths. For example, the UI calls
+   `/v1/projects/{project}/summary/deployments_status` but the service expects
+   `/v1/projects/{project}/appdeployment/summary/deployments_status`. These
+   unmapped paths require new Traefik IngressRoutes with `ReplacePathRegex`
+   middleware. Full nexus-api-gw removal depends on mapping all affected paths
+   and is out of scope for this proposal.
+3. **Inconsistent rest-proxy flag names:** The four services with project
+   resolver URLs each use a different flag name (`-nexus-api-url`,
+   `-nexusAPIURL`, `-project-service-url`). A future cleanup should
+   standardize on a single flag name across all rest-proxy sidecars.
