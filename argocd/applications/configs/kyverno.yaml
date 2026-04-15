@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025 Intel Corporation
+# SPDX-FileCopyrightText: 2026 Intel Corporation
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -57,3 +57,12 @@ features:
   policyExceptions:
     enabled: true
     namespace: 'kyverno'
+
+# Using dummy labels workaround as explained in https://github.com/kyverno/kyverno/issues/15116
+# to address migration issues related to missing labels in kyverno-api deployment.
+# This is a temporary solution and should be removed once the underlying issue is resolved in Kyverno.
+kyverno-api:
+  annotations:
+    meta.helm.sh/release-name: kyverno
+  labels:
+    app.kubernetes.io/managed-by: Helm

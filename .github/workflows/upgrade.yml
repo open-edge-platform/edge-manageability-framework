@@ -27,14 +27,14 @@ jobs:
     runs-on: ubuntu-24.04-16core-64GB
     steps:
       - name: Checkout ${{ matrix.version-tags }}
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           ref: refs/tags/${{ matrix.version-tags }}
           persist-credentials: false
 
       - name: Setup asdf and install dependencies
         id: install-deps
-        uses: open-edge-platform/orch-utils/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
+        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@b6610539eb98ed7bd5903e6629e48c1da39d883b
 
       - name: Deploy Orchestrator ${{ matrix.version-tags }}
         env:
@@ -53,7 +53,7 @@ jobs:
         run: mage -v deploy:waitUntilComplete
 
       - name: Checkout Code Under Test
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           persist-credentials: false
 

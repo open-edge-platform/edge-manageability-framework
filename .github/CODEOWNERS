@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025 Intel Corporation
+# SPDX-FileCopyrightText: 2026 Intel Corporation
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -7,10 +7,10 @@
 # someone opens a pull request.
 
 # Everything requires Platform team review by default
-* @johnoloughlin @garyloug @palade @rranjan3 @krishnajs @scottmbaker @damiankopyto @cjnolan @SushilLakra @soniabha-intc @guptagunjan @sys-orch-approve @ram-srini @shankarsrinivas1 @sunil-parida @vigneshintel
+* @johnoloughlin @garyloug @palade @rranjan3 @krishnajs @scottmbaker @damiankopyto @cjnolan @SushilLakra @soniabha-intc @guptagunjan @sys-orch-approve @ram-srini @shankarsrinivas1 @sunil-parida
 
 # CI files
-.github/ @adimoft @daveroge @shanedonohue @manilk1x @johnoloughlin @garyloug @palade @rranjan3 @krishnajs @scottmbaker @damiankopyto @cjnolan @SushilLakra @soniabha-intc @guptagunjan @sys-orch-approve @ram-srini @shankarsrinivas1 @sunil-parida @vigneshintel
+.github/ @adimoft @daveroge @shanedonohue @manilk1x @johnoloughlin @garyloug @palade @rranjan3 @krishnajs @scottmbaker @damiankopyto @cjnolan @SushilLakra @soniabha-intc @guptagunjan @sys-orch-approve @ram-srini @shankarsrinivas1 @sunil-parida
 
 # Dependabot is used to manage dependencies in this repository. It is configured to automatically open pull requests to
 # update dependencies when new versions are available. The following files are managed by Dependabot and do not require

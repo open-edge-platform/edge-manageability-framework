@@ -31,7 +31,7 @@ Additionally, some of the Makefiles in component repos require the following
 dependencies to run properly:
 
 - Open Policy Agent (`opa` cli tool) v0.69.0 (or possibly later) for infra-core repo
-- golangci-lint (v1.64.8 or later)
+- golangci-lint (v2.11.4 or later)
 - go-junit-report (v2.1.0 or later)
 - oapi-codegen (v1.12.0 or later)
 - protoc-gen-doc (1.5.1 or later)

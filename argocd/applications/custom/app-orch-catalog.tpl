@@ -24,6 +24,8 @@ traefikReverseProxy:
 {{- if .Values.argo.traefik }}
   tlsOption: {{ .Values.argo.traefik.tlsOption | default "" | quote }}
 {{- end }}
+ingressRoute:
+  apiHostname: api.{{ .Values.argo.clusterDomain }}
 openidc:
   external: "https://keycloak.{{ .Values.argo.clusterDomain }}/realms/master"
 {{- if .Values.argo.catalog.storageClass }}
