@@ -17,7 +17,7 @@ this (zoom in to read):
 ```mermaid
 flowchart LR
 
-A[client] -->|over internet| loadbalancer(loadbalancer)
+client[client] -->|over internet| loadbalancer(loadbalancer)
 loadbalancer -->|SNI, jwt validation, security| traefik{traefik}
 traefik -->|jwt creation| keycloak[keycloak]
 traefik -->|MPS RPS AMT VPRO| infra-external[infra-external]
@@ -25,17 +25,28 @@ traefik -->|Infrastructure Manager, e.g., inventory.| infra-core[infra-core]
 traefik -->|GUI| web-ui[web-ui]
 traefik -->|certs| traefik-extra-objects[traefik-extra-objects]
 traefik -->|certs-management| cert-manager[cert-manager]
-cert-manager --> |copy ca secret| copy-ca-cert-gateway-to-infra[copy-ca-cert-gateway-to-infra]
+traefik -->|some components needed| infra-onboarding[infra-onboarding]
+cert-manager --> |copy ca secret between namespaces| copy-ca-cert-gateway-to-infra[copy-ca-cert-gateway-to-infra]
+cert-manager --> |self-signed-cert| self-signed-cert[self-signed-cert]
+copy-ca-cert-gateway-to-infra --> |secret-wait-tls-orch| secret-wait-tls-orch[secret-wait-tls-orch]
 keycloak -->|project tenant required for jwt| nexus[nexus]
-keycloak -->|storage| postgres[postgres]
+keycloak -->|storage| postgres[postgresql-cluster]
 keycloak -->|deploy keycloak| keycloak-operator[keycloak-operator]
+subgraph nexus["nexus"]
+  direction TB
+  tenancy-datamodel["tenancy-datamodel"]
+  tenancy-api-mapping["tenancy-api-mapping"]
+  tenancy-manager["tenancy-manager"]
+  nexus-api-gw["nexus-api-gw"]
+end
+
 nexus -->|links project to roles in keycloak| ktc[keycloak tenant controller]
 ktc -->|single tenant| tenancy-init[tenancy-init]
-infra-external -->|storage| postgres[postgres]
+infra-external -->|storage| postgres[postgresql-cluster]
 infra-external -->|secret management| vault[vault]
 infra-external -->|refresh vault token| reloader
 reloader --> vault[vault]
-vault -->|storage| postgres[postgres]
+vault -->|storage| postgres[postgresql-cluster]
 vault -->|vault accounts, enable k8 auth| secrets-config[secrets-config]
 postgres -->|postgres secrets, database details copied into app containers| postgres-secrets[postgres-secrets]
 postgres -->|deploy postgres| postgres-operator[postgres-operator]
