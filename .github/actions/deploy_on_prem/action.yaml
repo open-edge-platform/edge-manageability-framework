@@ -7,7 +7,7 @@ inputs:
   orch_version:
     required: false
     description: "Orchestrator version to deploy"
-    default: "main"
+    default: '${{ github.sha }}'
   orch_profile:
     required: false
     description: "Orchestrator profile to deploy"
@@ -31,7 +31,7 @@ runs:
 
     - name: Setup asdf and install dependencies
       id: install-deps
-      uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
+      uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@b6610539eb98ed7bd5903e6629e48c1da39d883b
 
     - name: Check Oras
       run: |
@@ -57,7 +57,7 @@ runs:
         TF_VAR_docker_username: ${{ inputs.docker_username }}
         TF_VAR_docker_password: ${{ inputs.docker_password }}
         KUBECONFIG: ${{ github.workspace }}/terraform/orchestrator/files/kubeconfig
-        TF_VAR_deploy_repo_branch: ${{ github.sha }}
+        TF_VAR_deploy_repo_branch: ${{ inputs.orch_version }}
       shell: bash
       run: mage deploy:onPrem
 

@@ -34,7 +34,7 @@ jobs:
 
       - name: Setup asdf and install dependencies
         id: install-deps
-        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
+        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@b6610539eb98ed7bd5903e6629e48c1da39d883b
 
       - name: Deploy Orchestrator ${{ matrix.version-tags }}
         env:

@@ -31,8 +31,8 @@ the entire boot process, including BIOS and OS loading.
 Requirements: KVM is only available on Intel vPro® Enterprise platforms.
 It is generally not available on "Standard Manageability" or "Entry" versions of AMT.
 
-| Feature | Serial Over LAN (SOL) | Remote KVM |
-|---|---|---|
+| Feature | Serial Over LAN (SOL) on ISM/AMT | Remote KVM on AMT |
+| --- | --- | --- |
 | Interface | Text-based (Terminal) | Graphical (GUI) |
 | Bandwidth | Very Low | Moderate to High |
 | BIOS Access | Yes (Text-based mode) | Yes (Full Graphical) |
@@ -70,13 +70,15 @@ KVM works even if:
 
 ### Hardware & OS Prerequisites
 
-1. Intel® vPro‑enabled CPU (Core i5/i7/i9 vPro or Xeon)
+1. Intel® vPro‑enabled CPU (Core i5/i7/i9 vPro)
 2. Intel® AMT firmware enabled
-3. Device reachable via network
+3. Device reachable via network.
+  Ethernet-based connectivity is the current focus.
+  Wi-Fi is part of the roadmap planned for future releases.
 4. Network Ports and Firewall
 
   | Purpose | Port |
-  |-------|-------------|
+  | --- | --- |
   | 'AMT WS‑MAN (HTTP)' | 16992 |
   | 'AMT WS‑MAN (HTTPS)' | 16993 |
   | 'KVM / SOL (non‑TLS)' | 16994 |
@@ -84,36 +86,13 @@ KVM works even if:
 
 ### Proposed Architecture
 
-<img
-  width="2443" height="1390" alt="image"
-  src="https://github.com/user-attachments/assets/6b780075-1cfa-41d9-af33-7eb67636ee1b" />
-
-### Component Architecture
-
-The KVM operation involves the following EMF components:
-
-- **infra-core/apiv2**: REST API layer that handles host resource PATCH
-  requests with SOL and KVM state changes
-- **infra-core/inventory**: PostgreSQL database storing host resources
-  including SOL and KVM state fields
-- **infra-external/kvm-manager**:
-- **infra-external/sol-manager**:
-- **mps**: Management Presence Server that generates KVM authorization
-  tokens and provides WebSocket endpoints
-- **rps**: Remote Provisioning Server that enables KVM during device
-  activation
-
-**Authentication Requirements**:
-
-- Keycloak JWT token obtained via `orch-cli login` and stored for
-  subsequent commands
-- User must belong to tenant that owns the project
-- User must have appropriate RBAC permissions for host management
+<img width="2320" height="1282" alt="image"
+  src="https://github.com/user-attachments/assets/4809c85e-29bb-442a-a129-475c2bea06d7" />
 
 ## Implementation Design
 
-This section describes the finalized design for KVM, based on the PoC implementation in
-`edge-manageability-framework/kvm-poc`. The design primarily focuses on how the KVM functionality
+This section describes the finalized design for KVM and SOL, based on the PoC implementation in
+`edge-manageability-framework/kvm-poc`. The design primarily focuses on how the KVM and SOL functionality
 integrates with the EMF stack.
 
 ---
@@ -156,6 +135,44 @@ integrates with the EMF stack.
 
 > `kvmSessionUrl` is populated only when `currentKvmState = KVM_STATE_START`. It is an
 > internal signal used by orch-cli — not surfaced to the browser.
+
+---
+
+#### APIv2 — Host Resource SOL Endpoint
+
+**API Endpoint**: `PATCH /compute/hosts/{resourceId}`
+
+**Request Body** (to start SOL session):
+
+```json
+{
+  "desiredSolState": "SOL_STATE_START"
+}
+```
+
+**Request Body** (to stop SOL session):
+
+```json
+{
+  "desiredSolState": "SOL_STATE_STOP"
+}
+```
+
+**Response** — `GET /compute/hosts/{resourceId}` (SOL fields):
+
+```json
+{
+  "solStatus": "SOL_STATUS_ACTIVATED",
+  "desiredSolState": "SOL_STATE_START",
+  "currentSolState": "SOL_STATE_START",
+  "solSessionUrl": "wss://mps-wss.<domain>/relay/webrelay.ashx?token=<token>&host=<guid>&port=16994&tls=0&mode=sol",
+  "solSessionStatus": "SOL session active",
+  "solSessionStatusIndicator": "STATUS_INDICATION_IDLE",
+}
+```
+
+> `solSessionUrl` is populated only when `currentSolState = SOL_STATE_START`. It points to
+> the sol-manager WebSocket endpoint that orch-cli connects to for the interactive terminal.
 
 ---
 
@@ -267,7 +284,7 @@ wss://mps-wss.<domain>/relay/webrelay.ashx?token=<token>&host=<guid>
 **Query parameters:**
 
 | Parameter | Value | Description |
-|---|---|---|
+| --- | --- | --- |
 | `token` | redirect token | Short-lived token from `/authorize/redirection` |
 | `host` | device GUID | AMT device identifier |
 | `port` | `16994` | KVM redirection port |
@@ -292,15 +309,18 @@ a live RFB desktop rendered in the browser.
 
 ```mermaid
 sequenceDiagram
-    participant CLI as "orch-cli"
+    participant Browser as Browser
+    participant CLI as "orch-cli(embeds angular-client)"
+box rgba(11, 164, 230, 1) Orchestrator Components
     participant APIV2 as APIv2
     participant INV as Inventory
     participant DM as "kvm-manager"
     participant MPS as MPS
+end
     participant AMT as "AMT Device"
-    participant Browser as Browser
+    
 
-    Note over CLI,INV: 1. Request KVM session
+    Note over CLI,INV: 1. Request KVM session (orch-cli --kvm start)
     CLI->>APIV2: PATCH /compute/hosts/:id desiredKvmState=KVM_STATE_START
     APIV2->>INV: UPDATE desired_kvm_state=KVM_STATE_START
     APIV2-->>CLI: 200 OK
@@ -310,6 +330,7 @@ sequenceDiagram
     DM->>MPS: GET /api/v1/amt/features/:guid
     MPS-->>DM: kvmEnabled=true userConsent=kvm
 
+    alt is Activation Mode = CCM
     Note over DM,CLI: 3. Consent flow - CCM only, skipped in ACM
     DM->>MPS: GET /api/v1/amt/userConsentCode/:guid
     MPS-->>AMT: Display 6-digit code on screen
@@ -329,7 +350,7 @@ sequenceDiagram
     MPS-->>AMT: Validate code
     AMT-->>MPS: Consent granted
     MPS-->>DM: 200 OK
-
+    end
     Note over DM,INV: 4. Obtain redirect token and write session URL
     DM->>MPS: GET /api/v1/authorize/redirection/:guid
     MPS-->>DM: token=short-lived-token
@@ -359,11 +380,90 @@ sequenceDiagram
     Browser->>CLI: PointerEvent / KeyEvent
     CLI->>MPS: Forward input
     MPS-->>AMT: Input delivered
+
+    Note over Browser,AMT: 8. KVM session teardown
+    alt Browser-initiated stop
+    Browser->>CLI: /ws/kvm closed (tab close or POST /api/disconnect)
+    else orch-cli --kvm stop
+    CLI->>CLI: --kvm stop received
+    end
+    CLI->>MPS: close ws relay
+    MPS->>AMT: ws channel closes
+    CLI->>APIV2: PATCH desiredKvmState=KVM_STATE_STOP
+    APIV2->>INV: UPDATE desired_kvm_state=KVM_STATE_STOP
+    Note over DM,INV: kvm-manager: clears state, URL, status
+    Note over CLI,INV: 9. Verify session closed
+    CLI->>APIV2: GET verify KVM_STATE_STOP
+    APIV2-->>CLI: currentKvmState=KVM_STATE_STOP
 ```
 
 ---
 
 ### SOL Operational Flow
+
+```mermaid
+sequenceDiagram
+    participant CLI as "orch-cli"
+box rgba(11, 164, 230, 1) Orchestrator Components
+    participant APIV2 as APIv2
+    participant INV as Inventory
+    participant SM as "sol-manager"
+    participant MPS as MPS
+end
+    participant AMT as "AMT Device"
+
+    Note over CLI,INV: 1. Request SOL session
+    CLI->>APIV2: PATCH /compute/hosts/:id desiredSolState=SOL_STATE_START
+    APIV2->>INV: UPDATE desired_sol_state=SOL_STATE_START
+    APIV2-->>CLI: 200 OK
+
+    Note over SM,INV: 2. sol-manager reconciler wakes
+    SM->>INV: Watch for desired state change
+    SM->>MPS: GET /api/v1/amt/features/:guid
+    MPS-->>SM: solEnabled=true userConsent=sol
+
+    Note over SM,CLI: 3. Consent flow — CCM only, skipped in ACM
+    SM->>MPS: GET /api/v1/amt/userConsentCode/:guid
+    MPS-->>AMT: Display 6-digit code on screen
+    MPS-->>SM: 200 OK
+    SM->>INV: UPDATE current_sol_state=SOL_STATE_AWAITING_CONSENT
+
+    CLI->>APIV2: GET /compute/hosts/:id poll every 2s
+    APIV2-->>CLI: currentSolState=SOL_STATE_AWAITING_CONSENT
+
+    alt is Activation Mode = CCM
+    Note over CLI: Operator reads 6-digit code from device screen
+    CLI->>APIV2: PATCH /compute/hosts/:id desiredConsentCode=NNNNNN
+    APIV2->>INV: UPDATE desired_consent_code=NNNNNN
+
+    SM->>INV: READ desired_consent_code
+    INV-->>SM: NNNNNN
+    SM->>MPS: POST /api/v1/amt/userConsentCode/:guid consentCode=NNNNNN
+    MPS-->>AMT: Validate code
+    AMT-->>MPS: Consent granted
+    MPS-->>SM: 200 OK
+    end
+
+    Note over SM,INV: 4. Obtain redirect token, open MPS relay, start SOL protocol
+    SM->>MPS: GET /api/v1/authorize/redirection/:guid
+    MPS-->>SM: token=short-lived-token
+    SM->>MPS: Open WebSocket to MPS relay endpoint
+    Note over SM,MPS: AMT Redirect handshake + Digest Auth + SOL settings
+    MPS-->>AMT: SOL channel established
+    AMT-->>MPS: SOL session active
+    SM->>INV: UPDATE current_sol_state=SOL_STATE_START
+    SM->>INV: UPDATE sol_session_url=ws://sol-manager:8080/ws/terminal/{session-id}
+
+    Note over CLI: 5. orch-cli detects SOL_STATE_START 
+    CLI->>APIV2: GET /compute/hosts/:id poll
+    APIV2-->>CLI: currentSolState=SOL_STATE_START solSessionUrl=ws-url
+
+    Note over CLI: 6. Connect terminal websocket utility
+    CLI->>CLI: Connect wssh3 / websocat to sol_session_url
+    Note over CLI,AMT: Interactive text terminal — keystrokes and display data relayed via sol-manager
+```
+
+---
 
 ### Proto Schema Changes
 
@@ -390,8 +490,6 @@ enum KvmState {
                                   // (AMT not provisioned, MPS failure, or token TTL expired).
 }
 ```
-
----
 
 #### `infra-core/inventory/api/compute/v1/compute.proto` — new KVM fields on `HostResource`
 
@@ -452,7 +550,7 @@ enum KvmState {
 **Field visibility on `HostResource`:**
 
 | Field | Proto # | Field Behavior | Set by |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `kvmStatus` | 88 | OUTPUT_ONLY | kvm-manager |
 | `desiredKvmState` | 101 | OPTIONAL | orch-cli |
 | `currentKvmState` | 102 | OUTPUT_ONLY | kvm-manager |
@@ -461,6 +559,93 @@ enum KvmState {
 | `kvmSessionStatusIndicator` | 105 | OUTPUT_ONLY | kvm-manager |
 | `kvmSessionStatusTimestamp` | 106 | OUTPUT_ONLY | kvm-manager |
 | `desiredConsentCode` | 107 | OPTIONAL (write-only, not returned on GET) | orch-cli |
+
+---
+
+---
+
+#### New Enums and Fields for SOL
+
+```protobuf
+enum SolStatus {
+  SOL_STATUS_UNSPECIFIED = 0;
+  SOL_STATUS_ACTIVATED   = 1; // SOL feature is currently enabled on the AMT device.
+  SOL_STATUS_DEACTIVATED = 2; // SOL feature is currently disabled on the AMT device.
+}
+
+// SOL session state — the desired and current lifecycle state of a SOL remote session.
+// Used for both desired_sol_state (user-writable) and current_sol_state (sol-manager-set).
+enum SolState {
+  SOL_STATE_UNSPECIFIED      = 0;
+  SOL_STATE_START            = 1; // Desired: operator requests session start.
+                                  // Current: session is active, sol_session_url is valid.
+  SOL_STATE_STOP             = 2; // Desired: operator requests session teardown.
+                                  // Current: session has terminated cleanly.
+  SOL_STATE_AWAITING_CONSENT = 3; // Current only: sol-manager triggered consent on device;
+                                  // waiting for operator to enter the on-screen 6-digit code.
+  SOL_STATE_ERROR            = 4; // Current only: sol-manager encountered an error
+                                  // (AMT not provisioned, MPS failure, or token TTL expired).
+}
+```
+
+---
+
+#### `infra-core/inventory/api/compute/v1/compute.proto` — new SOL fields on `HostResource`
+
+```protobuf
+
+  // SOL feature activation status on the AMT device.
+  // Set by sol-manager RM after reading GET /api/v1/amt/features/{guid}.
+  // Updated whenever sol-manager reconciles a SOL_STATE_START request.
+  SolStatus sol_status = 108 [(ent.field) = {optional: true}];
+
+  // Desired SOL session state. Written by operator via APIv2 (orch-cli --sol start|stop).
+  // Valid write values: SOL_STATE_START, SOL_STATE_STOP.
+  // Consumed by sol-manager RM to drive the session lifecycle.
+  SolState desired_sol_state = 109 [(ent.field) = {optional: true}];
+
+  // Current SOL session state. Set by sol-manager RM only.
+  // Lifecycle: UNSPECIFIED → START → [AWAITING_CONSENT → START] | STOP | ERROR.
+  SolState current_sol_state = 110 [(ent.field) = {optional: true}];
+
+  // WebSocket URL for the active SOL session.
+  // Format: ws://sol-manager:8080/ws/terminal/{session-id}
+  // Populated by sol-manager when current_sol_state transitions to SOL_STATE_START.
+  // Cleared to "" on session end. Used by orch-cli to connect the terminal WebSocket.
+  string sol_session_url = 111 [
+    (ent.field) = {optional: true},
+    (buf.validate.field).string = {max_bytes: 2048},
+    (buf.validate.field).ignore = IGNORE_IF_UNPOPULATED
+  ];
+
+  // Human-readable status message describing the current SOL session state.
+  // Set by sol-manager RM only. Updated atomically with sol_session_status_indicator
+  // and sol_session_status_timestamp.
+  string sol_session_status = 112 [
+    (ent.field) = {optional: true},
+    (buf.validate.field).string = {max_bytes: 1024},
+    (buf.validate.field).ignore = IGNORE_IF_UNPOPULATED
+  ];
+
+  // Indicates the severity/dynamicity of sol_session_status (e.g. IDLE, IN_PROGRESS, ERROR).
+  // Set by sol-manager RM only.
+  status.v1.StatusIndication sol_session_status_indicator = 113 [(ent.field) = {optional: true}];
+
+```
+
+**Field visibility on `HostResource` (SOL):**
+
+| Field | Proto # | Field Behavior | Set by |
+| --- | --- | --- | --- |
+| `solStatus` | 108 | OUTPUT_ONLY | sol-manager |
+| `desiredSolState` | 109 | OPTIONAL | orch-cli |
+| `currentSolState` | 110 | OUTPUT_ONLY | sol-manager |
+| `solSessionUrl` | 111 | OUTPUT_ONLY | sol-manager |
+| `solSessionStatus` | 112 | OUTPUT_ONLY | sol-manager |
+| `solSessionStatusIndicator` | 113 | OUTPUT_ONLY | sol-manager |
+
+> **Note:** SOL reuses the existing `desired_consent_code` field (proto #107) for the
+> user-consent flow, since KVM and SOL sessions are mutually exclusive per device.
 
 ---
 
@@ -481,7 +666,7 @@ enum KvmState {
 > an unintentional power command.
 
 | `desired_kvm_state` | `current_kvm_state` | Who writes | Meaning |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | — | `KVM_STATE_UNSPECIFIED` | — | No KVM session active or requested |
 | `KVM_STATE_START` | unchanged | orch-cli via APIv2 | Operator requests session start (`--kvm start`) |
 | `KVM_STATE_START` | `KVM_STATE_AWAITING_CONSENT` | kvm-manager | Device has consent policy; kvm-manager triggered on-screen code display |
@@ -493,7 +678,7 @@ enum KvmState {
 **Transition rules:**
 
 | From (`current_kvm_state`) | To (`current_kvm_state`) | Trigger | Who |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | UNSPECIFIED / STOP / ERROR | — (desired=START set) | `orch-cli --kvm start` | orch-cli |
 | — (desired=START) | AWAITING_CONSENT | Device `userConsent` policy is enabled | kvm-manager |
 | AWAITING_CONSENT | START (active) | Consent code validated by MPS | kvm-manager |
@@ -508,19 +693,21 @@ enum KvmState {
 ### Component Responsibilities
 
 | Component | Responsibility |
-|---|---|
+| --- | --- |
 | **infra-core/inventory** | Persist desired/current KVM state and all session fields as defined in the proto above |
 | **infra-core/apiv2** | Expose `PATCH`/`GET` for KVM fields on `HostResource`; enforce `OPTIONAL`/`OUTPUT_ONLY` field-behavior visibility |
 | **infra-external/kvm-manager** | New dedicated KVM Resource Manager (RM) — sole caller of all MPS REST APIs for KVM; writes relay token URL and state back to Inventory; coordinates user-consent flow |
+| **infra-external/sol-manager** | New dedicated SOL Resource Manager (RM) — sole caller of all MPS REST APIs for SOL; writes relay token URL and state back to Inventory; coordinates user-consent flow |
 | **orch-cli** | Reads `kvm_session_url` from Inventory; starts local HTTP proxy server; embeds and serves Angular KVM viewer; performs AMT Redirect handshake using Vault credentials; coordinates consent code prompt with operator |
 | **Angular KVM viewer** | Renders RFB canvas; encodes mouse/keyboard input and relays via orch-cli WebSocket proxy |
 
-#### kvm-manager: MPS REST Calls
+#### kvm-manager/ sol-Manager : MPS REST Calls
 
 kvm-manager is the **sole caller** of MPS REST APIs for KVM operations.
+sol-manager is the **sole caller** of MPS REST APIs for SOL operations.
 
 | Step | MPS Call | Purpose |
-|---|---|---|
+| --- | --- | --- |
 | Pre-condition | `GET /api/v1/amt/features/{guid}` | Verify KVM enabled; read `userConsent` policy |
 | Consent trigger | `GET /api/v1/amt/userConsentCode/{guid}` | Cause device to display 6-digit code on physical screen |
 | Consent submit | `POST /api/v1/amt/userConsentCode/{guid}` | Validate operator-entered code; grant consent |
@@ -532,7 +719,7 @@ When `--kvm start` is invoked, orch-cli starts a local HTTP server on a random
 OS-assigned port (`net.Listen("tcp", ":0")`):
 
 | Route | Method | Handler |
-|---|---|---|
+| --- | --- | --- |
 | `/` | GET | Serve embedded Angular app (`//go:embed static/*`) |
 | `/api/connect` | POST | Open WS to MPS; perform AMT Redirect handshake; return 200 when RFB ready |
 | `/api/status` | GET | Return session state: `connecting` / `active` / `error` / `disconnected` |
@@ -568,7 +755,8 @@ Build pipeline:
 var staticFiles embed.FS
 ```
 
-The browser launch URL carries only the hostId query parameter — no credentials, no relay URL:
+The browser launch URL carries only the hostId query parameter — no credentials,
+no relay URL:
 
 ```text
 xdg-open "http://localhost:57432/?hostId=<host-resource-id>"
@@ -578,7 +766,16 @@ xdg-open "http://localhost:57432/?hostId=<host-resource-id>"
 
 ### orch-cli Commands
 
-#### 1. Start KVM Session
+**Authentication Requirements**:
+
+- Keycloak JWT token obtained via `orch-cli login` and stored for
+  subsequent commands
+- User must belong to tenant that owns the project
+- User must have appropriate RBAC permissions for host management
+  
+#### KVM
+
+##### 1. Start KVM Session
 
 ```bash
 orch-cli set host <host-resource-id> --project <project-name> \
@@ -605,17 +802,39 @@ Opening viewer at http://localhost:57432/
 
 #### 2. Stop KVM Session
 
+A KVM session can be stopped by **either** the browser UI or `orch-cli`.
+Both paths converge on the same teardown sequence.
+
+**Trigger A — Browser-initiated stop:**
+
+- Operator closes the browser tab, or clicks a **Stop** button in the Angular viewer
+- Angular calls `POST /api/disconnect` (or the `/ws/kvm` WebSocket closes)
+- orch-cli detects the disconnect, closes the MPS relay WebSocket, then sends the
+  PATCH below
+
+**Trigger B — orch-cli command:**
+
 ```bash
 orch-cli set host <host-resource-id> --project <project-name> \
   --api-endpoint "https://api.${CLUSTER}" \
   --kvm stop
 ```
 
-**Output:**
+**Common teardown flow (both triggers):**
+
+1. orch-cli closes `wss://mps-wss.<domain>/relay/...` (WebSocket close frame)
+2. MPS relay terminates → AMT KVM channel closes on the device
+3. orch-cli sends `PATCH /compute/hosts/{id}` with `desiredKvmState = KVM_STATE_STOP`
+4. kvm-manager reconciler wakes, clears `current_kvm_state`, `kvm_session_url`,
+   and sets status to idle
+
+**Output (orch-cli):**
 
 ```text
 KVM session stopped for host: <host-resource-id>
 ```
+
+**Output (browser):** Angular viewer shows disconnected state.
 
 #### 3. Check KVM Status
 
@@ -635,14 +854,71 @@ KVM Info:
 
 ---
 
-### SOL Operational Flow
+#### SOL
+
+##### 1. Start SOL Session
+
+```bash
+orch-cli set host <host-resource-id> --project <project-name> \
+  --api-endpoint "https://api.${CLUSTER}" \
+  --sol start
+```
+
+**Flow:**
+
+1. Sends `PATCH /compute/hosts/{id}` with `desiredSolState = SOL_STATE_START`
+2. Polls `GET /compute/hosts/{id}` every 2 s (timeout 60 s)
+3. If `currentSolState = SOL_STATE_AWAITING_CONSENT` is detected, prompts the operator
+   for the 6-digit code shown on the device screen; submits it via `PATCH` (`desiredConsentCode`)
+   and resumes polling
+4. Once `currentSolState = SOL_STATE_START`, reads `solSessionUrl` from the response
+5. Launches `wssh3` to connect to the returned WebSocket URL for an interactive terminal session
+
+**Output:**
+
+```text
+SOL session active.
+Connecting to ws://sol-manager:8080/ws/terminal/<session-id> ...
+Connected. Interactive terminal ready.
+```
+
+##### 2. Stop SOL Session
+
+```bash
+orch-cli set host <host-resource-id> --project <project-name> \
+  --api-endpoint "https://api.${CLUSTER}" \
+  --sol stop
+```
+
+**Flow:**
+
+1. orch-cli closes the `wssh3` WebSocket connection to sol-manager
+2. Sends `PATCH /compute/hosts/{id}` with `desiredSolState = SOL_STATE_STOP`
+3. sol-manager reconciler wakes, tears down the MPS relay and SOL channel,
+   clears `current_sol_state`, `sol_session_url`, and sets status to idle
+
+**Output:**
+
+```text
+SOL session stopped for host: <host-resource-id>
+```
+
+##### 3. Check SOL Status
+
+```bash
+orch-cli get host <host-resource-id> --project <project-name> \
+  --api-endpoint "https://api.${CLUSTER}"
+```
+
+**Output (SOL section):**
+
+```text
+SOL Info:
+
+-   SOL State:    SOL_STATE_START
+-   SOL Status:   SOL session active
+```
 
 ---
-
-### Security Considerations
-
-## Affected components
-
-## Test plan
 
 ## Architecture Open (if applicable)
