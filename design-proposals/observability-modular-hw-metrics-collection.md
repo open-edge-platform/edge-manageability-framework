@@ -148,8 +148,8 @@ for the collector service to send metrics to.
   can be used.
 - **iGPU Utilization and Performance Metrics**: To retrieve iGPU metrics on the edge node, the XPU System Management
   Interface package needs to be installed on the edge node along with the intel-level-zero-gpu package. Using these packages
-  with the script currently used for dGPU metrics in the POA metrics service will allow it to also retrieve iGPU metrics, such
-  as VRAM utilization.
+  with the script currently used for dGPU metrics in the POA metrics service will allow it to also retrieve iGPU metrics,
+  such as VRAM utilization.
 - **Cache Utilization and Performance Metrics**: The primary collector for this will be the [intel_rdt collector](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/intel_rdt)
   in Telegraf, which uses [Intel Resource Director Technology](https://github.com/intel/intel-cmt-cat) to report the
   utilization of the L3 cache. As well as this collector, the intel_pmu collector above also provides some cache performance
@@ -268,10 +268,13 @@ the [Prometheus documentation](https://prometheus.io/docs/prometheus/latest/quer
 The CLI commands will look like the following:
 
 - Query metric value at current timestamp:
+
   ```bash
   orch-cli get metric <metric-name> --hostname <hostname>
   ```
+
   - Output from Mimir:
+
     ```text
     {
       "status": "success",
@@ -289,12 +292,16 @@ The CLI commands will look like the following:
       }
     }
     ```
+
 - Query metric value at specified timestamp:
+
   ```bash
   orch-cli get metric <metric-name> --hostname <hostname>\
     --timestamp <timestamp>
   ```
+
   - Output from Mimir:
+
     ```text
     {
       "status": "success",
@@ -312,36 +319,16 @@ The CLI commands will look like the following:
       }
     }
     ```
+
 - Retrieve range of metrics over set period of time ending at current timestamp:
+
   ```bash
   orch-cli get metric <metric-name> --hostname <hostname> \
     --range --duration <time-in-seconds>
   ```
+
   - Output from Mimir:
-  ```text
-  {
-    "status": "success",
-    "data": {
-      "resultType": "<one of matrix/vector/scalar/string>",
-      "result": [
-        {
-          "metric": {
-            "__name__": "<metric-name>",
-            ... additional metric labels ...
-          },
-          "values": ["<metric-values>"]
-        }
-      ]
-    }
-  }
-  ```
-- Retrieve range of metrics between two specified timestamps:
-  ```bash
-  orch-cli get metric <metric-name> --hostname <hostname> \
-    --range --start-time <start-timestamp> \
-    --end-time <end-timestamp>
-  ```
-  - Output from Mimir:
+
     ```text
     {
       "status": "success",
@@ -359,12 +346,44 @@ The CLI commands will look like the following:
       }
     }
     ```
+
+- Retrieve range of metrics between two specified timestamps:
+
+  ```bash
+  orch-cli get metric <metric-name> --hostname <hostname> \
+    --range --start-time <start-timestamp> \
+    --end-time <end-timestamp>
+  ```
+
+  - Output from Mimir:
+
+    ```text
+    {
+      "status": "success",
+      "data": {
+        "resultType": "<one of matrix/vector/scalar/string>",
+        "result": [
+          {
+            "metric": {
+              "__name__": "<metric-name>",
+              ... additional metric labels ...
+            },
+            "values": ["<metric-values>"]
+          }
+        ]
+      }
+    }
+    ```
+
 - Determine the average metric value over set period of time ending at current timestamp:
+
   ```bash
   orch-cli get metric <metric-name> --hostname <hostname> \
     --average --duration <time-in-seconds>
   ```
+
   - Output from Mimir:
+
     ```text
     {
       "status": "success",
@@ -382,36 +401,17 @@ The CLI commands will look like the following:
       }
     }
     ```
+
 - Determine the average metric value between two specified timestamps:
+
   ```bash
   orch-cli get metric <metric-name> --hostname <hostname> \
     --average --start-time <start-timestamp> \
     --end-time <end-timestamp>
   ```
+
   - Output from Mimir:
-  ```text
-  {
-    "status": "success",
-    "data": {
-      "resultType": "<one of matrix/vector/scalar/string>",
-      "result": [
-        {
-          "metric": {
-            "__name__": "<metric-name>",
-            ... additional metric labels ...
-          },
-          "value": "<metric-value>"
-        }
-      ]
-    }
-  }
-  ```
-- Calculate the sum of the metric over set period of time ending at current timestamp:
-  ```bash
-  orch-cli get metric <metric-name> --hostname <hostname> \
-    --sum --duration <time-in-seconds>
-  ```
-  - Output from Mimir:
+
     ```text
     {
       "status": "success",
@@ -429,13 +429,44 @@ The CLI commands will look like the following:
       }
     }
     ```
+
+- Calculate the sum of the metric over set period of time ending at current timestamp:
+
+  ```bash
+  orch-cli get metric <metric-name> --hostname <hostname> \
+    --sum --duration <time-in-seconds>
+  ```
+
+  - Output from Mimir:
+
+    ```text
+    {
+      "status": "success",
+      "data": {
+        "resultType": "<one of matrix/vector/scalar/string>",
+        "result": [
+          {
+            "metric": {
+              "__name__": "<metric-name>",
+              ... additional metric labels ...
+            },
+            "value": "<metric-value>"
+          }
+        ]
+      }
+    }
+    ```
+
 - Calculate the sum of the metric between two specified timestamps:
+
   ```bash
   orch-cli get metric <metric-name> --hostname <hostname> \
     --sum --start-time <start-timestamp> \
     --end-time <end-timestamp>
   ```
+
   - Output from Mimir:
+
     ```text
     {
       "status": "success",
