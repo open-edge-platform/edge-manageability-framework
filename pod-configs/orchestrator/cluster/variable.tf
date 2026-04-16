@@ -262,6 +262,7 @@ variable "eks_additional_node_groups" {
     instance_type : string
     volume_size : number
     volume_type : string
+    subnet_ids : optional(list(string), null) # pin to specific subnets/AZ to match existing EBS PV affinity
   }))
   default = {
     "observability" : {

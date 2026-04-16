@@ -325,7 +325,7 @@ resource "aws_eks_node_group" "additional_node_group" {
   cluster_name         = aws_eks_cluster.eks_cluster.name
   node_group_name      = each.key
   node_role_arn        = aws_iam_role.eks_nodes.arn
-  subnet_ids           = var.subnets
+  subnet_ids           = each.value.subnet_ids != null ? each.value.subnet_ids : var.subnets
   force_update_version = true
   timeouts {
     update = "90m"
