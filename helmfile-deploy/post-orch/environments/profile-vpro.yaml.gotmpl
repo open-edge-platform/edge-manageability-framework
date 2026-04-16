@@ -20,7 +20,14 @@ web-ui-admin:
   enabled: false
 metadata-broker:
   enabled: false
-
+ingress-haproxy:
+  enabled: false
+haproxy-ingress-pxe-boots:
+  enabled: false
+certificate-file-server:
+  enabled: false
+secret-wait-tls-boots:
+  enabled: false
 # ═══════════════════════════════════════════════════════════════════════════════
 # Releases to ENABLE (disabled in defaults, needed for vPro)
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -77,7 +84,7 @@ infra-onboarding:
   enMetricsEnabled: "false"
   enTokenClients: "node-agent,platform-manageability-agent"
   tinkerbell:
-    enabled: true
+    enabled: false
   pxe-server:
     enabled: false
   infra-config:
@@ -87,7 +94,7 @@ infra-onboarding:
     service:
       enableIO: false
   dkam:
-    enabled: true
+    enabled: false
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # infra-external overrides (AMT components for vPro)
