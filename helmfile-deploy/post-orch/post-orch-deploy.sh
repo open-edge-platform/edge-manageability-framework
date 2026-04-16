@@ -9,6 +9,7 @@
 #   ./post-orch-deploy.sh install traefik           # Install single chart
 #   ./post-orch-deploy.sh uninstall traefik         # Uninstall single chart
 #   ./post-orch-deploy.sh uninstall                 # Uninstall all charts
+#   ./post-orch-deploy.sh upgrade                   # Upgrade all charts + restore DB
 #   ./post-orch-deploy.sh list                      # List all charts
 #   ./post-orch-deploy.sh diff                      # Preview changes
 #   ./post-orch-deploy.sh diff traefik              # Preview single chart changes
@@ -392,6 +393,168 @@ helmfile_list() {
   helmfile_cmd list
 }
 ################################
+# UPGRADE
+################################
+HELMFILE_DEPLOY_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+UPGRADE_BACKUP_DIR="$HELMFILE_DEPLOY_DIR/upgrade-backup"
+POSTGRES_NAMESPACE="orch-database"
+POSTGRES_USERNAME="postgres"
+
+_upgrade_get_postgres_pod() {
+  kubectl get pods -n "$POSTGRES_NAMESPACE" \
+    -l cnpg.io/cluster=postgresql-cluster,cnpg.io/instanceRole=primary \
+    -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "postgresql-cluster-1"
+}
+
+_upgrade_wait_postgres_ready() {
+  echo "⏳ Waiting for PostgreSQL to be ready..."
+  local deadline=$(( SECONDS + 300 ))
+  while true; do
+    local pod
+    pod=$(_upgrade_get_postgres_pod)
+    local phase
+    phase=$(kubectl get pod "$pod" -n "$POSTGRES_NAMESPACE" -o jsonpath='{.status.phase}' 2>/dev/null || true)
+    if [[ "$phase" == "Running" ]]; then
+      # Check if the container is actually ready
+      local ready
+      ready=$(kubectl get pod "$pod" -n "$POSTGRES_NAMESPACE" -o jsonpath='{.status.containerStatuses[0].ready}' 2>/dev/null || true)
+      if [[ "$ready" == "true" ]]; then
+        echo "✅ PostgreSQL pod $pod is ready"
+        return 0
+      fi
+    fi
+    if (( SECONDS >= deadline )); then
+      echo "❌ Timed out waiting for PostgreSQL to be ready"
+      kubectl get pods -n "$POSTGRES_NAMESPACE" || true
+      return 1
+    fi
+    sleep 5
+  done
+}
+
+_upgrade_restore_postgres() {
+  local backup_file="${UPGRADE_BACKUP_DIR}/${POSTGRES_NAMESPACE}_backup.sql"
+
+  if [[ ! -f "$backup_file" ]]; then
+    echo "⚠️  No PostgreSQL backup found at $backup_file — skipping restore"
+    return 0
+  fi
+
+  echo "🔄 Restoring PostgreSQL from backup..."
+
+  local pod
+  pod=$(_upgrade_get_postgres_pod)
+  local remote_path="/var/lib/postgresql/data/${POSTGRES_NAMESPACE}_backup.sql"
+
+  # Copy backup to pod
+  kubectl cp "$backup_file" "$POSTGRES_NAMESPACE/$pod:$remote_path" -c postgres
+
+  # Get password from secret
+  local pgpassword
+  pgpassword=$(kubectl get secret -n "$POSTGRES_NAMESPACE" orch-database-postgresql \
+    -o jsonpath='{.data.password}' 2>/dev/null | base64 -d 2>/dev/null)
+
+  if [[ -z "$pgpassword" ]]; then
+    echo "❌ Cannot retrieve PostgreSQL password from secret orch-database-postgresql"
+    echo "   Ensure the secret exists in namespace $POSTGRES_NAMESPACE"
+    return 1
+  fi
+
+  # Restore using credentials
+  if kubectl exec -n "$POSTGRES_NAMESPACE" "$pod" -c postgres -- \
+    env PGPASSWORD="$pgpassword" psql -U "$POSTGRES_USERNAME" -f "$remote_path" 2>&1; then
+    echo "✅ PostgreSQL restore completed"
+  else
+    echo "❌ PostgreSQL restore failed — check logs above"
+    return 1
+  fi
+}
+
+_upgrade_restore_secrets() {
+  echo "🔄 Restoring backed-up secrets..."
+
+  # Restore PostgreSQL superuser secret
+  if [[ -f "${UPGRADE_BACKUP_DIR}/postgres_secret.yaml" ]]; then
+    kubectl apply -f "${UPGRADE_BACKUP_DIR}/postgres_secret.yaml" 2>/dev/null || true
+    echo "  ✅ PostgreSQL superuser secret restored"
+  fi
+
+  # Restore MPS/RPS secrets
+  for name in mps rps; do
+    if [[ -f "${UPGRADE_BACKUP_DIR}/${name}_secret.yaml" ]]; then
+      kubectl apply -f "${UPGRADE_BACKUP_DIR}/${name}_secret.yaml" 2>/dev/null || true
+      echo "  ✅ $name secret restored"
+    fi
+  done
+}
+
+helmfile_upgrade_all() {
+  echo "🔄 Starting upgrade (env: $HELMFILE_ENV)"
+  echo ""
+
+  # Step 1: Validate backup directory exists
+  if [[ ! -d "$UPGRADE_BACKUP_DIR" ]]; then
+    echo "❌ Backup directory not found: $UPGRADE_BACKUP_DIR"
+    echo "   Run pre-orch-backup.sh first to create backups."
+    exit 1
+  fi
+  echo "✅ Backup directory found: $UPGRADE_BACKUP_DIR"
+  ls -la "$UPGRADE_BACKUP_DIR/"
+  echo ""
+
+  # Step 2: Restore secrets before helm sync (ensures existing passwords are preserved)
+  _upgrade_restore_secrets
+  echo ""
+
+  # Step 3: Deploy/upgrade all charts via helmfile sync (same as install — idempotent)
+  # Run in subshell so that helmfile_sync_all's exit 1 doesn't kill the upgrade flow.
+  echo "🚀 Step 3: Running helmfile sync for upgrade..."
+  local sync_failed=0
+  ( helmfile_sync_all ) || sync_failed=$?
+
+  if (( sync_failed != 0 )); then
+    echo "⚠️  helmfile sync had failures (exit code: $sync_failed) — continuing to DB restore"
+  fi
+  echo ""
+
+  # Step 3.5: Clean stale Keycloak JGroups JDBC_PING entries
+  # During rolling updates, the old pod's cluster registration may remain in the
+  # jgroups_ping table, causing the new pod's health check to report DOWN.
+  echo "🧹 Step 3.5: Cleaning stale Keycloak JGroups cluster entries..."
+  local kc_db="orch-platform-platform-keycloak"
+  local pg_pod
+  pg_pod=$(_upgrade_get_postgres_pod)
+  if kubectl exec -n "$POSTGRES_NAMESPACE" "$pg_pod" -c postgres -- \
+    psql -U "$POSTGRES_USERNAME" -d "$kc_db" -c "DELETE FROM jgroups_ping;" 2>/dev/null; then
+    echo "  ✅ Stale JGroups entries purged — Keycloak will re-register on startup"
+  else
+    echo "  ⚠️  Could not clean JGroups entries (table may not exist yet) — skipping"
+  fi
+  echo ""
+
+  # Step 4: Wait for PostgreSQL and restore data
+  if [[ -f "${UPGRADE_BACKUP_DIR}/${POSTGRES_NAMESPACE}_backup.sql" ]]; then
+    echo "🚀 Step 4: Restoring PostgreSQL data..."
+    _upgrade_wait_postgres_ready
+    _upgrade_restore_postgres
+  else
+    echo "⏭️  Step 4: No PostgreSQL backup found, skipping restore"
+  fi
+
+  echo ""
+  echo "═══════════════════════════════════════════════════════════════"
+  echo "  UPGRADE COMPLETE  (env: $HELMFILE_ENV)"
+  echo "═══════════════════════════════════════════════════════════════"
+  echo "  Backup dir:  $UPGRADE_BACKUP_DIR"
+  echo "  Charts:      $(if (( sync_failed == 0 )); then echo "All deployed successfully"; else echo "Deployed with $sync_failed error(s) — review above"; fi)"
+  echo "  PostgreSQL:  $(if [[ -f "${UPGRADE_BACKUP_DIR}/${POSTGRES_NAMESPACE}_backup.sql" ]]; then echo "Restored from backup"; else echo "No restore needed"; fi)"
+  echo "═══════════════════════════════════════════════════════════════"
+
+  if (( sync_failed != 0 )); then
+    exit 1
+  fi
+}
+################################
 # MAIN
 ################################
 if [[ -f "$MAIN_ENV_CONFIG" ]]; then
@@ -434,6 +597,7 @@ Actions:
   install <chart>      Install a single chart (e.g., traefik, vault, harbor)
   uninstall            Uninstall all charts (helmfile destroy)
   uninstall <chart>    Uninstall a single chart
+  upgrade              Upgrade all charts + restore PostgreSQL from backup
   diff                 Preview changes for all charts
   diff <chart>         Preview changes for a single chart
   values               Dump computed values for all releases
@@ -446,6 +610,7 @@ Examples:
   $0 install                             # Install all charts (eim/vpro)
   $0 install traefik                     # Install only traefik
   $0 uninstall traefik                   # Uninstall only traefik
+  $0 upgrade                             # Upgrade + restore DB from backup
   $0 diff vault                          # Preview vault changes
   $0 list                                # List all charts
 EOF
@@ -466,6 +631,9 @@ case "$ACTION" in
     else
       helmfile_destroy_all
     fi
+    ;;
+  upgrade)
+    helmfile_upgrade_all
     ;;
   diff)
     if [[ -n "$CHART_NAME" ]]; then
