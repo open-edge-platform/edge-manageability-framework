@@ -1,25 +1,36 @@
-# Design Proposal: Silicon Hardware Metrics Collection for Modular Observability
+# Design Proposal: Silicon Hardware Metrics Collection for Observability as a Service
 
 Author(s): Christopher Nolan
 
-Last Updated: 2026-03-30
+Last Updated: 2026-04-16
 
 ## Abstract
 
-Within the Edge Manageability Framework (EMF) stack, there is a Edge Node Observability pipeline that is used
-to collect hardware telemetry, specifically metrics and logs, from edge nodes. This pipeline consists of an agent,
-the Platform Manageability Agent (POA), on the edge node that collects, batches and forwards telemetry from the
-edge node to the Orchestrator. On the Orchestrator, the pipeline consists of a number of services that process
-and store the metrics received from the connected edge node agents. Currently, this workflow only retrieves only
-basic hardware metrics for CPU, memory, disk, etc., and has not been configured to be deployed separately of
-other modular workflows or the full EMF deployment stack. This proposal outlines how this pipeline can be
-modified to collect additional, silicon specific hardware metrics from GPU, PMU, NPU, etc., as well as how it can be
-deployed as a modular workflow similar to the [Out-Of-band Device Management](./vpro-eim-modular-decomposition.md)
-workflow added in the 2026.0 release.
+Within the Edge Manageability Framework (EMF) stack, there is an Observability as a Service (ObaaS) pipeline
+that is integrated for reporting metrics and logs from edge nodes. The pipeline consists of an agent, the
+Platform Observability Agent (POA), installed onto an edge node. This agent collects logs and metrics from
+the edge node system and forwards them to the orchestrator. On the orchestrator, the metrics and logs are
+processed, labelled and stored for later querying.
+
+There are currently two limitations with the ObaaS implementation; first it only retrieves basic hardware metrics
+from the edge node, such as CPU, memory and disk. Secondly, in order to be able to use the ObaaS pipeline, the
+full EMF stack is required to be deployed, even though the ObaaS pipeline does not interact with the rest of
+the stack when running. Also, in order to view the metrics retrieved from edge nodes, a Grafana dashboard must
+be used, with no current option to query metrics directly using the Command Line Interface (CLI) application
+available in the orchestrator.
+
+This proposal outlines changes address both of these limitations with the current ObaaS implementation. In the
+POA configuration, it will be extended to include implementations to allow for the gathering of the additional
+silicon metrics from GPU, PMU, NPU, etc., on the edge node when these are available. For the deployment of the
+ObaaS pipeline, the current implementation, which uses open-source components, will be updated to allow it to
+be deployed as its own standalone pipeline, separate from the EMF stack. This will allow for ObaaS to be
+run independently in different use cases, for example alongside the
+[Out-of-Band Device Management](./vpro-eim-modular-decomposition.md) workflow added in the 2026.0 release or as
+part of a cluster deployed in a standalone edge node environment.
 
 ## Background
 
-As outlined above, the current Edge Node Observability pipeline contains two parts: the POA on the Edge Node and the
+As outlined above, the current ObaaS pipeline contains two parts: the POA on the Edge Node and the
 orchestrator services that handle the processing and storage of the telemetry from the edge node. Both make use of
 standard open-source telemetry collectors to retrieve, process and store the telemetry data.
 
@@ -34,7 +45,7 @@ The POA is made up of four services:
   agent services to confirm that they are still active on the system. It is also a [Fluent Bit service](https://docs.fluentbit.io/manual)
   that uses a configuration file provided by the agent.
 3. **platform-observability-metrics**: This is a [Telegraf based service](https://github.com/influxdata/telegraf)
-  that runs a set of configured metrics collectors specified by the configuraion file provided by the agent. These
+  that runs a set of configured metrics collectors specified by the configuration file provided by the agent. These
   collectors gather the required hardware based metrics requested by the agent.
 4. **platform-observability-collector**: This is an [OpenTelemetry Collector service](https://github.com/open-telemetry/opentelemetry-collector)
   that batches all of the metrics and logs received from the other three services, applies the required
@@ -44,9 +55,9 @@ For more details on the POA and the individual services it installs on the edge 
 [developer guide](https://docs.openedgeplatform.intel.com/edge-manage-docs/dev/developer_guide/agents/arch/platform_observability.html#)
 for the agent.
 
-### Edge Node Observability Pipeline
+### ObaaS Pipeline
 
-In the Orchestrator, the Edge Node Observability pipeline also uses open source components to process and store
+In the orchestrator, the ObaaS pipeline also uses open source components to process and store
 metrics from the connected edge nodes. The services it runs includes:
 
 1. [OpenTelemetry Collector](https://github.com/open-telemetry/opentelemetry-collector) which has been configured
@@ -58,16 +69,15 @@ metrics from the connected edge nodes. The services it runs includes:
    is used with the [edgenode-dashboards](https://github.com/open-edge-platform/o11y-charts/tree/main/charts/edgenode-dashboards)
    to provide a default set of edge node metrics dashboards configured for use with the edge node POA.
 
-For more details on the POA and the individual services it installs on the edge node, please see the
-[developer guide](https://docs.openedgeplatform.intel.com/edge-manage-docs/dev/developer_guide/observability/arch/orchestrator/edgenode-observability.html)
-for the agent.
+For more details on these services, please see the [developer guide](https://docs.openedgeplatform.intel.com/edge-manage-docs/dev/developer_guide/observability/arch/orchestrator/edgenode-observability.html).
 
 ## Proposal
 
 To support collection of additional HW metrics from GPU, PMU, cache utilization, etc., the current POA implementation
 will be expanded to include new metrics collectors for these HW components. Also, modifications will be made to
 the Edge Node Observability pipeline deployment in the orchestrator to allow it to be deployable as a standalone
-pipeline without requiring other components from the EMF stack.
+pipeline without requiring the deployment of other components such as edge infrastructure manager (EIM), cluster or
+app orchestration from the EMF stack.
 
 ### Scope
 
@@ -83,8 +93,21 @@ pipeline without requiring other components from the EMF stack.
 
 #### Metric Collectors
 
-On the edge node, the POA metrics service currently provides a number of metrics by default as well as some that are
-configured but disabled by default. For this workflow, there are also additional metrics to be added.
+On the edge node, the POA metrics service currently provides a number of metrics by default on install. It also
+includes configurations for collecting other metrics from the edge node, however these are disabled by default.
+This is due to the resource utilization needed by the metrics service, and the agent as a whole, to collect and
+forward larger amounts of metrics. As additional metric collectors are added to this service, such utilization
+will need to be considered when determining what metrics should be collected when the agent is run. To avoid
+the agent utilizing to many resources, a default configuration will be run on start up that gathers basic
+metrics. In order to gather additional metrics, the the metrics service configuration can be modified to enable
+additional metrics collectors at the cost of increasing the reousrce utilization after the service is restarted
+to enable the new configuration.
+
+Since the POA package is a Debian package, it can be directly installed onto an environment and will run as a
+system service in the OS environment. Once the ObaaS pipeline is separated from the EMF stack, the agent can
+be installed in environments using standard Debian package installation commands. If running in a standalone
+environment, when the agent package is installed, the only requirement will be to provide the local endpoint
+for the collector service to send metrics to.
 
 ##### Configured and Enabled Metrics
 
@@ -125,13 +148,15 @@ configured but disabled by default. For this workflow, there are also additional
   can be used.
 - **iGPU Utilization and Performance Metrics**: To retrieve iGPU metrics on the edge node, the XPU System Management
   Interface package needs to be installed on the edge node along with the intel-level-zero-gpu package. Using these packages
-  with the script currently used for dGPU metrics in the POA metrics service will allow it to also retrieve iGPU metrics.
+  with the script currently used for dGPU metrics in the POA metrics service will allow it to also retrieve iGPU metrics, such
+  as VRAM utilization.
 - **Cache Utilization and Performance Metrics**: The primary collector for this will be the [intel_rdt collector](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/intel_rdt)
   in Telegraf, which uses [Intel Resource Director Technology](https://github.com/intel/intel-cmt-cat) to report the
   utilization of the L3 cache. As well as this collector, the intel_pmu collector above also provides some cache performance
   metrics as does the [intel_pmt collector](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/intel_pmt)
   in Telegraf when used with newer Intel processors.
 - **BIOS Metrics**: For other BIOS settings, dmidecode can be run using the Telegraf exec collector to gather these.
+- **NPU Utilization and Performance Metrics**: This will require a new collector to retrieve these metrics.
 - **VPU Utilization and Performance Metrics**: This will require a new collector to retrieve metrics from any
   VPUs on an edge node.
 
@@ -140,19 +165,11 @@ for the service.
 
 #### Workflow Design
 
-For the pipeline, the pipeline will remain as it currently is when deploying the full EMF stack, however the
-modular workflow will not deploy the Grafana UI and dashboards when it is deployed without the full stack.
-Instead the Orchestrator Command Line Interface (CLI) tool will be extended to provide commands for a user
-to run to query the Mimir backend for metrics.
-
-The CLI will receive a command containing the metric to be queried for, the edge node to be checked as well as
-any time range required by user. If a time range is not provided, then the CLI should use a default time range,
-such as the last 5 minutes. The CLI should also support retrieving both averages and sums for metrics over set time
-periods.
-
-Within the CLI, it should convert the received query into the PromQL format needed for querying Mimir
-and then send the PromQL query to the Mimir API. When the CLI receives the metrics back from Mimir,
-it should convert it into a easy read format before returning it to the user.
+For the ObaaS pipeline components outlined above, these will remain as is once the deployment is separated from
+the EMF stack, with the exception of the Grafana UI and dashboards. Instead of using these components, the
+CLI will be extended to provide new commands to allow for querying metrics directly from Mimir. Since the
+current ObaaS pipeline has been tested in both cloud and OnPrem deployment environments, the modular ObaaS
+implementation should continue to work for both environments as well.
 
 ```mermaid
 sequenceDiagram
