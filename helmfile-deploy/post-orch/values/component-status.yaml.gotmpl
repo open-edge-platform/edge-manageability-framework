@@ -155,7 +155,7 @@ componentStatus:
       multitenancy:
         installed: true
         default-tenant-only:
-          installed: {{ .Values.defaultTenancy | default false }}
+          installed: {{ index .Values "tenancy-init" "enabled" | default false }}
 
       # Kyverno - Policy engine for Kubernetes admission control and governance
       # Detection - kyverno.enabled in environment values
