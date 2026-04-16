@@ -87,7 +87,7 @@ releases:
     namespace: orch-platform
     chart: edge-orch/common/charts/keycloak-operator
     wait: true
-    version: 26.1.2
+    version: 26.1.3
     values:
       - values/keycloak-operator.yaml
     condition: keycloak-operator.enabled
@@ -386,7 +386,7 @@ releases:
     namespace: orch-platform
     chart: edge-orch/common/charts/keycloak-instance
     wait: true
-    version: 26.1.2
+    version: 26.1.3
     timeout: 600
     values:
       - values/platform-keycloak.yaml.gotmpl
