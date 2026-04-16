@@ -116,7 +116,7 @@ releases:
       wave: "90"
     namespace: ns-label
     chart: edge-orch/common/charts/namespace-label
-    wait: true
+    wait: false
     version: 26.0.2
     values:
       - values/namespace-label.yaml.gotmpl
@@ -429,9 +429,7 @@ releases:
       - values/self-signed-cert.yaml.gotmpl
     condition: self-signed-cert.enabled
     needs:
-      - orch-database/postgresql-cluster
       - cert-manager/platform-autocert
-      - orch-platform/platform-keycloak
 
   - name: secrets-config
     labels:
@@ -586,7 +584,7 @@ releases:
       wave: "1100"
     namespace: kyverno
     chart: edge-orch/common/charts/kyverno-istio-policy
-    wait: true
+    wait: false
     version: 26.0.0
     values:
       - values/kyverno-istio-policy.yaml
@@ -601,7 +599,7 @@ releases:
       wave: "1100"
     namespace: kyverno
     chart: edge-orch/common/charts/kyverno-traefik-policy
-    wait: true
+    wait: false
     version: 26.0.0
     values:
       - values/kyverno-traefik-policy.yaml
@@ -643,8 +641,6 @@ releases:
     condition: haproxy-ingress-pxe-boots.enabled
     needs:
       - orch-boots/ingress-haproxy
-      - kyverno/kyverno-istio-policy
-      - kyverno/kyverno-traefik-policy
       - orch-gateway/traefik
 
 
@@ -660,7 +656,6 @@ releases:
       - values/tenancy-datamodel.yaml.gotmpl
     condition: tenancy-datamodel.enabled
     needs:
-      - orch-boots/ingress-haproxy
       - orch-gateway/traefik
 
 
@@ -670,13 +665,12 @@ releases:
       wave: "1200"
     namespace: orch-gateway
     chart: edge-orch/common/charts/traefik-extra-objects
-    wait: true
+    wait: false
     version: 26.0.2
     values:
       - values/traefik-extra-objects.yaml.gotmpl
     condition: traefik-extra-objects.enabled
     needs:
-      - orch-boots/ingress-haproxy
       - orch-gateway/traefik
 
 
@@ -696,7 +690,6 @@ releases:
       - values/tenancy-api-mapping.yaml.gotmpl
     condition: tenancy-api-mapping.enabled
     needs:
-      - orch-boots/haproxy-ingress-pxe-boots
       - orch-iam/tenancy-datamodel
       - orch-gateway/traefik-extra-objects
 
@@ -714,7 +707,6 @@ releases:
       - values/resource-overrides.yaml
     condition: tenancy-manager.enabled
     needs:
-      - orch-boots/haproxy-ingress-pxe-boots
       - orch-iam/tenancy-datamodel
       - orch-gateway/traefik-extra-objects
 
@@ -812,7 +804,6 @@ releases:
     condition: copy-ca-cert-boots-to-gateway.enabled
     needs:
       - orch-boots/secret-wait-tls-boots
-      - orch-secret/token-fs
 
 
   - name: copy-ca-cert-boots-to-infra
@@ -828,7 +819,6 @@ releases:
     condition: copy-ca-cert-boots-to-infra.enabled
     needs:
       - orch-boots/secret-wait-tls-boots
-      - orch-secret/token-fs
 
 
   #############################################################################
@@ -891,7 +881,7 @@ releases:
   - name: auth-service
     labels:
       app: auth-service
-      wave: "2005"
+      wave: "2000"
     namespace: orch-gateway
     chart: edge-orch/common/charts/auth-service
     wait: true
@@ -901,9 +891,8 @@ releases:
       - values/resource-overrides.yaml
     condition: auth-service.enabled
     needs:
-      - orch-platform/component-status
-      - orch-infra/infra-core
-      - orch-ui/metadata-broker
+      - orch-gateway/copy-ca-cert-boots-to-gateway
+      - orch-infra/copy-ca-cert-boots-to-infra
 
 
   #############################################################################
