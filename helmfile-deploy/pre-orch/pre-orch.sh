@@ -372,45 +372,32 @@ install_pre_orch_components() {
   done
   echo "✅ All system pods are ready"
 
-  if [[ "${INSTALL_OPENEBS}" == "true" ]]; then
-    step_start "OpenEBS LocalPV"
-    echo "🚀 Installing OpenEBS LocalPV via helmfile..."
-    (cd "${script_dir}" && helmfile -f helmfile.yaml.gotmpl -l app=openebs-localpv apply --skip-diff-on-install 2>&1) || {
-      echo "❌ OpenEBS LocalPV install failed"
-      exit 1
-    }
-    echo "✅ OpenEBS LocalPV installed"
-    step_done
-  else
-    echo "⏭️  Skipping OpenEBS LocalPV (--no-openebs)"
-  fi
+  # ─── Install OpenEBS and MetalLB in parallel via helmfile ────────────────
+  if [[ "${INSTALL_OPENEBS}" == "true" || "${INSTALL_METALLB}" == "true" ]]; then
+    step_start "OpenEBS + MetalLB"
 
-  if [[ "${INSTALL_METALLB}" == "true" ]]; then
-    step_start "MetalLB"
-    # Validate IP configuration
-    if [[ -n "${EMF_ORCH_IP:-}" ]]; then
-      echo "✅ Single-IP mode: all services will share ${EMF_ORCH_IP}"
-      echo "   Traefik port: 443, HAProxy port: 9443"
-      export EMF_TRAEFIK_IP="${EMF_ORCH_IP}"
-      export EMF_HAPROXY_IP="${EMF_ORCH_IP}"
-    elif [[ -z "${EMF_TRAEFIK_IP:-}" || -z "${EMF_HAPROXY_IP:-}" ]]; then
-      echo "❌ Either EMF_ORCH_IP (single-IP) or both EMF_TRAEFIK_IP and EMF_HAPROXY_IP must be set"
-      exit 1
+    if [[ "${INSTALL_METALLB}" == "true" ]]; then
+      # Validate IP configuration
+      if [[ -n "${EMF_ORCH_IP:-}" ]]; then
+        echo "✅ Single-IP mode: all services will share ${EMF_ORCH_IP}"
+        echo "   Traefik port: 443, HAProxy port: 9443"
+        export EMF_TRAEFIK_IP="${EMF_ORCH_IP}"
+        export EMF_HAPROXY_IP="${EMF_ORCH_IP}"
+      elif [[ -z "${EMF_TRAEFIK_IP:-}" || -z "${EMF_HAPROXY_IP:-}" ]]; then
+        echo "❌ Either EMF_ORCH_IP (single-IP) or both EMF_TRAEFIK_IP and EMF_HAPROXY_IP must be set"
+        exit 1
+      fi
     fi
-    echo "🚀 Installing MetalLB via helmfile..."
-    (cd "${script_dir}" && helmfile -f helmfile.yaml.gotmpl -l app=metallb apply --skip-diff-on-install 2>&1) || {
-      echo "❌ MetalLB install failed"
+
+    echo "🚀 Installing via helmfile (OpenEBS=${INSTALL_OPENEBS}, MetalLB=${INSTALL_METALLB})..."
+    (cd "${script_dir}" && helmfile -f helmfile.yaml.gotmpl apply --skip-diff-on-install --concurrency 3 2>&1) || {
+      echo "❌ helmfile apply failed"
       exit 1
     }
-    echo "🚀 Installing MetalLB config via helmfile..."
-    (cd "${script_dir}" && helmfile -f helmfile.yaml.gotmpl -l app=metallb-config apply --skip-diff-on-install 2>&1) || {
-      echo "❌ MetalLB config install failed"
-      exit 1
-    }
-    echo "✅ MetalLB installed"
+    echo "✅ Pre-orch components installed"
     step_done
   else
-    echo "⏭️  Skipping MetalLB (--no-metallb)"
+    echo "⏭️  Skipping OpenEBS and MetalLB (both disabled)"
   fi
 
   if [[ "${INSTALL_PRE_CONFIG}" == "true" ]]; then
