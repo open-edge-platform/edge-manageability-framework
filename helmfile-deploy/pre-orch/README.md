@@ -7,6 +7,16 @@
 Sets up a Kubernetes cluster (KIND, K3s, or RKE2) and optionally installs
 **OpenEBS LocalPV** and **MetalLB** via helmfile.
 
+## Running on Coder (Single IP)
+
+When deploying on a Coder workspace, set all IPs to the Coder host IP in `pre-orch.env`:
+
+```bash
+EMF_ORCH_IP=<coder-host-ip>
+EMF_TRAEFIK_IP=<coder-host-ip>
+EMF_HAPROXY_IP=<coder-host-ip>
+```
+
 ## Quick Start
 
 ```bash

@@ -267,7 +267,7 @@ install_dependencies() {
 usage() {
   cat >&2 <<EOF
 Usage:
-  $(basename "$0") [kind|k3s|rke2] [install|uninstall] [options]
+  $(basename "$0") [kind|k3s|rke2] [install|uninstall|upgrade] [options]
 
   Provider and action can also be set via PROVIDER and ACTION in pre-orch.env.
   CLI arguments override config file values.
@@ -298,6 +298,7 @@ Examples:
   $(basename "$0") install                             # Uses PROVIDER from pre-orch.env
   $(basename "$0") k3s install
   $(basename "$0") kind install
+  $(basename "$0") k3s upgrade                          # Upgrade pre-orch components
   $(basename "$0") k3s install --no-metallb
   $(basename "$0") k3s install --no-openebs --no-metallb
   $(basename "$0") rke2 install --docker-username user --docker-password pass
@@ -372,52 +373,43 @@ install_pre_orch_components() {
   done
   echo "✅ All system pods are ready"
 
-  if [[ "${INSTALL_OPENEBS}" == "true" ]]; then
-    step_start "OpenEBS LocalPV"
-    echo "🚀 Installing OpenEBS LocalPV via helmfile..."
-    (cd "${script_dir}" && helmfile -f helmfile.yaml.gotmpl -l app=openebs-localpv apply --skip-diff-on-install 2>&1) || {
-      echo "❌ OpenEBS LocalPV install failed"
-      exit 1
-    }
-    echo "✅ OpenEBS LocalPV installed"
-    step_done
-  else
-    echo "⏭️  Skipping OpenEBS LocalPV (--no-openebs)"
-  fi
+  # ─── Install OpenEBS and MetalLB in parallel via helmfile ────────────────
+  if [[ "${INSTALL_OPENEBS}" == "true" || "${INSTALL_METALLB}" == "true" ]]; then
+    step_start "OpenEBS + MetalLB"
 
-  if [[ "${INSTALL_METALLB}" == "true" ]]; then
-    step_start "MetalLB"
-    # Validate IP configuration
-    if [[ -n "${EMF_ORCH_IP:-}" ]]; then
-      echo "✅ Single-IP mode: all services will share ${EMF_ORCH_IP}"
-      echo "   Traefik port: 443, HAProxy port: 9443"
-      export EMF_TRAEFIK_IP="${EMF_ORCH_IP}"
-      export EMF_HAPROXY_IP="${EMF_ORCH_IP}"
-    elif [[ -z "${EMF_TRAEFIK_IP:-}" || -z "${EMF_HAPROXY_IP:-}" ]]; then
-      echo "❌ Either EMF_ORCH_IP (single-IP) or both EMF_TRAEFIK_IP and EMF_HAPROXY_IP must be set"
-      exit 1
+    if [[ "${INSTALL_METALLB}" == "true" ]]; then
+      # Validate IP configuration
+      if [[ -n "${EMF_ORCH_IP:-}" ]]; then
+        echo "✅ Single-IP mode: all services will share ${EMF_ORCH_IP}"
+        echo "   Traefik port: 443, HAProxy port: 9443"
+        export EMF_TRAEFIK_IP="${EMF_ORCH_IP}"
+        export EMF_HAPROXY_IP="${EMF_ORCH_IP}"
+      elif [[ -z "${EMF_TRAEFIK_IP:-}" || -z "${EMF_HAPROXY_IP:-}" ]]; then
+        echo "❌ Either EMF_ORCH_IP (single-IP) or both EMF_TRAEFIK_IP and EMF_HAPROXY_IP must be set"
+        exit 1
+      fi
     fi
-    echo "🚀 Installing MetalLB via helmfile..."
-    (cd "${script_dir}" && helmfile -f helmfile.yaml.gotmpl -l app=metallb apply --skip-diff-on-install 2>&1) || {
-      echo "❌ MetalLB install failed"
+
+    echo "🚀 Installing via helmfile (OpenEBS=${INSTALL_OPENEBS}, MetalLB=${INSTALL_METALLB})..."
+    (cd "${script_dir}" && helmfile -f helmfile.yaml.gotmpl apply --skip-diff-on-install --concurrency 3 2>&1) || {
+      echo "❌ helmfile apply failed"
       exit 1
     }
-    echo "🚀 Installing MetalLB config via helmfile..."
-    (cd "${script_dir}" && helmfile -f helmfile.yaml.gotmpl -l app=metallb-config apply --skip-diff-on-install 2>&1) || {
-      echo "❌ MetalLB config install failed"
-      exit 1
-    }
-    echo "✅ MetalLB installed"
+    echo "✅ Pre-orch components installed"
     step_done
   else
-    echo "⏭️  Skipping MetalLB (--no-metallb)"
+    echo "⏭️  Skipping OpenEBS and MetalLB (both disabled)"
   fi
 
   if [[ "${INSTALL_PRE_CONFIG}" == "true" ]]; then
+    local config_action="install"
+    if [[ "${ACTION:-install}" == "upgrade" ]]; then
+      config_action="upgrade"
+    fi
     step_start "pre-orch-config"
-    echo "🚀 Running pre-orch-config (namespaces, secrets, passwords)..."
-    "${script_dir}/pre-orch-config.sh" install || {
-      echo "❌ pre-orch-config install failed"
+    echo "🚀 Running pre-orch-config ($config_action)..."
+    "${script_dir}/pre-orch-config.sh" "$config_action" || {
+      echo "❌ pre-orch-config $config_action failed"
       exit 1
     }
     step_done
@@ -842,7 +834,7 @@ rke2_uninstall() {
 ################################
 
 if [[ $# -lt 1 ]]; then
-  echo "❌ Action required: install or uninstall"
+  echo "❌ Action required: install, uninstall, or upgrade"
   usage
   exit 1
 fi
@@ -850,11 +842,11 @@ fi
 ACTION="${1}"
 shift
 
-if [[ "${ACTION}" != "install" && "${ACTION}" != "uninstall" ]]; then
+if [[ "${ACTION}" != "install" && "${ACTION}" != "uninstall" && "${ACTION}" != "upgrade" ]]; then
   # First arg might be provider, second must be action
   PROVIDER="${ACTION}"
   if [[ $# -lt 1 ]]; then
-    echo "❌ Action required: install or uninstall"
+    echo "❌ Action required: install, uninstall, or upgrade"
     usage
     exit 1
   fi
@@ -862,13 +854,13 @@ if [[ "${ACTION}" != "install" && "${ACTION}" != "uninstall" ]]; then
   shift
 fi
 
-if [[ "${ACTION}" != "install" && "${ACTION}" != "uninstall" ]]; then
-  echo "❌ Invalid action: ${ACTION}. Must be 'install' or 'uninstall'"
+if [[ "${ACTION}" != "install" && "${ACTION}" != "uninstall" && "${ACTION}" != "upgrade" ]]; then
+  echo "❌ Invalid action: ${ACTION}. Must be 'install', 'uninstall', or 'upgrade'"
   usage
   exit 1
 fi
 
-if [[ -z "${PROVIDER:-}" ]]; then
+if [[ "${ACTION}" != "upgrade" && -z "${PROVIDER:-}" ]]; then
   echo "❌ Provider required: set PROVIDER in pre-orch.env or pass as argument"
   usage
   exit 1
@@ -942,32 +934,39 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-case "${PROVIDER}" in
-  kind)
-    case "${ACTION}" in
-      install) kind_install ;;
-      uninstall) kind_uninstall ;;
-      *) usage; exit 1 ;;
-    esac
-    ;;
-  k3s)
-    case "${ACTION}" in
-      install) k3s_install ;;
-      uninstall) k3s_uninstall ;;
-      *) usage; exit 1 ;;
-    esac
-    ;;
-  rke2)
-    case "${ACTION}" in
-      install) rke2_install ;;
-      uninstall) rke2_uninstall ;;
-      *) usage; exit 1 ;;
-    esac
-    ;;
-  *)
-    echo "❌ Unknown provider: ${PROVIDER}"
-    usage
-    exit 1
-    ;;
-
-esac
+# For upgrade: skip cluster creation, just re-apply pre-orch components (idempotent)
+if [[ "${ACTION}" == "upgrade" ]]; then
+  echo "🔄 Upgrade mode: re-applying pre-orch components..."
+  install_dependencies
+  wait_for_k8s_ready
+  install_pre_orch_components
+else
+  case "${PROVIDER}" in
+    kind)
+      case "${ACTION}" in
+        install) kind_install ;;
+        uninstall) kind_uninstall ;;
+        *) usage; exit 1 ;;
+      esac
+      ;;
+    k3s)
+      case "${ACTION}" in
+        install) k3s_install ;;
+        uninstall) k3s_uninstall ;;
+        *) usage; exit 1 ;;
+      esac
+      ;;
+    rke2)
+      case "${ACTION}" in
+        install) rke2_install ;;
+        uninstall) rke2_uninstall ;;
+        *) usage; exit 1 ;;
+      esac
+      ;;
+    *)
+      echo "❌ Unknown provider: ${PROVIDER}"
+      usage
+      exit 1
+      ;;
+  esac
+fi

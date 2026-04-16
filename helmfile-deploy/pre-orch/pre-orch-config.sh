@@ -6,6 +6,7 @@
 # Run this before post-orch-deploy.sh.
 # Usage:
 #   ./pre-orch-config.sh install     # Create namespaces, secrets, passwords
+#   ./pre-orch-config.sh upgrade     # Create namespaces, skip passwords (preserve existing)
 #   ./pre-orch-config.sh uninstall   # Remove secrets and namespaces
 set -e
 set -o pipefail
@@ -116,11 +117,18 @@ case "$ACTION" in
     echo
     echo "✅ Pre-deploy configuration complete"
     ;;
+  upgrade)
+    create_namespaces
+    # Skip create_passwords — preserve existing passwords from the old cluster
+    remove_stale_vault_keys
+    echo
+    echo "✅ Pre-deploy configuration complete (upgrade — passwords preserved)"
+    ;;
   uninstall)
     cleanup_all
     ;;
   *)
-    echo "Usage: $0 [install|uninstall]"
+    echo "Usage: $0 [install|upgrade|uninstall]"
     exit 1
     ;;
 esac
