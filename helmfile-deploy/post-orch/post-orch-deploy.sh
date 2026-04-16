@@ -192,7 +192,7 @@ helmfile_sync_all() {
   echo "🚀 Running helmfile sync (parallel deployment)..."
   echo ""
   local sync_exit=0
-  (cd "$SCRIPT_DIR" && helmfile -e "$HELMFILE_ENV" --skip-deps sync --concurrency 4) 2>&1
+  (cd "$SCRIPT_DIR" && helmfile -e "$HELMFILE_ENV" --skip-deps sync --concurrency 8) 2>&1
   sync_exit=$?
   local total_duration=$(( SECONDS - start_time ))
 
