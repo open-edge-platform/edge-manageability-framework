@@ -241,6 +241,219 @@ sequenceDiagram
   end
 ```
 
+#### CLI Commands
+
+For ObaaS, the CLI will be expanded to include new commands for retrieving metrics from Mimir. These will
+exist under their own `metric` setting in CLI and will cover the following use cases:
+
+- Query metric value at current timestamp.
+- Query metric value at specified timestamp.
+- Retrieve range of metrics over set period of time ending at current timestamp.
+- Retrieve range of metrics between two specified timestamps.
+- Determine the average metric value over set period of time ending at current timestamp.
+- Determine the average metric value between two specified timestamps.
+- Calculate the sum of the metric over set period of time ending at current timestamp.
+- Calculate the sum of the metric between two specified timestamps.
+
+Each use case will require the metric name to be specified along with the hostname of the edge node to be
+queried as well as an query specific flag to be included.
+
+Within the CLI, it should convert the received query into the PromQL format needed for querying Mimir
+and then send the PromQL query to the Mimir API. When the CLI receives the metrics back from Mimir,
+it should convert it into a easy read format before returning it to the user. If there are no metrics
+found in Mimir, then an empty result will be returned but if there are partial results over a range
+it will provide those partial results. For more details on how to create and use PromQL queries, see
+the [Prometheus documentation](https://prometheus.io/docs/prometheus/latest/querying/basics/).
+
+The CLI commands will look like the following:
+
+- Query metric value at current timestamp:
+  ```bash
+  orch-cli get metric <metric-name> --hostname <hostname>
+  ```
+  - Output from Mimir:
+    ```text
+    {
+      "status": "success",
+      "data": {
+        "resultType": "<one of matrix/vector/scalar/string>",
+        "result": [
+          {
+            "metric": {
+              "__name__": "<metric-name>",
+              .. additional metric labels ...
+            },
+            "value": "<metric-value>"
+          }
+        ]
+      }
+    }
+    ```
+- Query metric value at specified timestamp:
+  ```bash
+  orch-cli get metric <metric-name> --hostname <hostname>\
+    --timestamp <timestamp>
+  ```
+  - Output from Mimir:
+    ```text
+    {
+      "status": "success",
+      "data": {
+        "resultType": "<one of matrix/vector/scalar/string>",
+        "result": [
+          {
+            "metric": {
+              "__name__": "<metric-name>",
+              ... additional metric labels ...
+            },
+            "value": "<metric-value>"
+          }
+        ]
+      }
+    }
+    ```
+- Retrieve range of metrics over set period of time ending at current timestamp:
+  ```bash
+  orch-cli get metric <metric-name> --hostname <hostname> \
+    --range --duration <time-in-seconds>
+  ```
+  - Output from Mimir:
+  ```text
+  {
+    "status": "success",
+    "data": {
+      "resultType": "<one of matrix/vector/scalar/string>",
+      "result": [
+        {
+          "metric": {
+            "__name__": "<metric-name>",
+            ... additional metric labels ...
+          },
+          "values": ["<metric-values>"]
+        }
+      ]
+    }
+  }
+  ```
+- Retrieve range of metrics between two specified timestamps:
+  ```bash
+  orch-cli get metric <metric-name> --hostname <hostname> \
+    --range --start-time <start-timestamp> \
+    --end-time <end-timestamp>
+  ```
+  - Output from Mimir:
+    ```text
+    {
+      "status": "success",
+      "data": {
+        "resultType": "<one of matrix/vector/scalar/string>",
+        "result": [
+          {
+            "metric": {
+              "__name__": "<metric-name>",
+              ... additional metric labels ...
+            },
+            "values": ["<metric-values>"]
+          }
+        ]
+      }
+    }
+    ```
+- Determine the average metric value over set period of time ending at current timestamp:
+  ```bash
+  orch-cli get metric <metric-name> --hostname <hostname> \
+    --average --duration <time-in-seconds>
+  ```
+  - Output from Mimir:
+    ```text
+    {
+      "status": "success",
+      "data": {
+        "resultType": "<one of matrix/vector/scalar/string>",
+        "result": [
+          {
+            "metric": {
+              "__name__": "<metric-name>",
+              ... additional metric labels ...
+            },
+            "value": "<metric-value>"
+          }
+        ]
+      }
+    }
+    ```
+- Determine the average metric value between two specified timestamps:
+  ```bash
+  orch-cli get metric <metric-name> --hostname <hostname> \
+    --average --start-time <start-timestamp> \
+    --end-time <end-timestamp>
+  ```
+  - Output from Mimir:
+  ```text
+  {
+    "status": "success",
+    "data": {
+      "resultType": "<one of matrix/vector/scalar/string>",
+      "result": [
+        {
+          "metric": {
+            "__name__": "<metric-name>",
+            ... additional metric labels ...
+          },
+          "value": "<metric-value>"
+        }
+      ]
+    }
+  }
+  ```
+- Calculate the sum of the metric over set period of time ending at current timestamp:
+  ```bash
+  orch-cli get metric <metric-name> --hostname <hostname> \
+    --sum --duration <time-in-seconds>
+  ```
+  - Output from Mimir:
+    ```text
+    {
+      "status": "success",
+      "data": {
+        "resultType": "<one of matrix/vector/scalar/string>",
+        "result": [
+          {
+            "metric": {
+              "__name__": "<metric-name>",
+              ... additional metric labels ...
+            },
+            "value": "<metric-value>"
+          }
+        ]
+      }
+    }
+    ```
+- Calculate the sum of the metric between two specified timestamps:
+  ```bash
+  orch-cli get metric <metric-name> --hostname <hostname> \
+    --sum --start-time <start-timestamp> \
+    --end-time <end-timestamp>
+  ```
+  - Output from Mimir:
+    ```text
+    {
+      "status": "success",
+      "data": {
+        "resultType": "<one of matrix/vector/scalar/string>",
+        "result": [
+          {
+            "metric": {
+              "__name__": "<metric-name>",
+              ... additional metric labels ...
+            },
+            "value": "<metric-value>"
+          }
+        ]
+      }
+    }
+    ```
+
 ## Implementation Plan
 
 - Hardware Metrics Collection.
