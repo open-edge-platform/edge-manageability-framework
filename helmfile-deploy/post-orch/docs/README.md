@@ -174,6 +174,16 @@ onprem-vpro: defaults-disabled -> settings -> features
 All configuration is controlled through environment
 variables defined in `post-orch.env`.
 
+### Running on Coder (Single IP)
+
+When deploying on a Coder workspace, set all IPs to the Coder host IP in `post-orch.env`:
+
+```bash
+EMF_ORCH_IP=<coder-host-ip>
+EMF_TRAEFIK_IP=<coder-host-ip>
+EMF_HAPROXY_IP=<coder-host-ip>
+```
+
 ### Required Variables
 
 These **must** be set before deployment:
