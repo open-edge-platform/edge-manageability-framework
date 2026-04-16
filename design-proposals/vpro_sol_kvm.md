@@ -1,4 +1,3 @@
-<!-- markdownlint-disable MD013 -->
 # Design Proposal: SOL and Remote KVM Operations via orch-cli
 
 Author(s): Edge Infrastructure Manager Team
