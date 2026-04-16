@@ -1,8 +1,9 @@
+<!-- markdownlint-disable MD013 -->
 # Design Proposal: SOL and Remote KVM Operations via orch-cli
 
 Author(s): Edge Infrastructure Manager Team
 
-Last updated: 03/27/2026
+Last updated: 04/16/2026
 
 ## Abstract
 
@@ -298,7 +299,8 @@ Sec-WebSocket-Protocol: <redirect_token>
 
 The relay endpoint is accessed by orch-cli (not kvm-manager) after reading
 `kvm_session_url` from Inventory. orch-cli performs the AMT Redirect protocol
-handshake over this connection using the AMT admin password from Vault.
+handshake over this connection using the AMT password supplied via the `AMT_PASSWORD`
+environment variable.
 
 ---
 
@@ -366,7 +368,7 @@ end
     Note over Browser,CLI: 6. Browser connects and launches KVM session
     Browser->>CLI: POST /api/connect
     CLI->>MPS: Open WebSocket to MPS relay endpoint
-    Note over CLI,MPS: AMT Redirect handshake, password stays in orch-cli
+    Note over CLI,MPS: AMT Redirect handshake using AMT_PASSWORD env var (ACM) or no password (CCM)
     MPS-->>AMT: Relay channel open
     AMT-->>MPS: RFB begins
     CLI-->>Browser: 200 OK
@@ -448,7 +450,7 @@ end
     SM->>MPS: GET /api/v1/authorize/redirection/:guid
     MPS-->>SM: token=short-lived-token
     SM->>MPS: Open WebSocket to MPS relay endpoint
-    Note over SM,MPS: AMT Redirect handshake + Digest Auth + SOL settings
+    Note over SM,MPS: AMT Redirect handshake + Digest Auth using AMT_PASSWORD env var (ACM)
     MPS-->>AMT: SOL channel established
     AMT-->>MPS: SOL session active
     SM->>INV: UPDATE current_sol_state=SOL_STATE_START
@@ -698,7 +700,7 @@ enum SolState {
 | **infra-core/apiv2** | Expose `PATCH`/`GET` for KVM fields on `HostResource`; enforce `OPTIONAL`/`OUTPUT_ONLY` field-behavior visibility |
 | **infra-external/kvm-manager** | New dedicated KVM Resource Manager (RM) — sole caller of all MPS REST APIs for KVM; writes relay token URL and state back to Inventory; coordinates user-consent flow |
 | **infra-external/sol-manager** | New dedicated SOL Resource Manager (RM) — sole caller of all MPS REST APIs for SOL; writes relay token URL and state back to Inventory; coordinates user-consent flow |
-| **orch-cli** | Reads `kvm_session_url` from Inventory; starts local HTTP proxy server; embeds and serves Angular KVM viewer; performs AMT Redirect handshake using Vault credentials; coordinates consent code prompt with operator |
+| **orch-cli** | Reads `kvm_session_url` from Inventory; starts local HTTP proxy server; embeds and serves Angular KVM viewer; performs AMT Redirect handshake using `AMT_PASSWORD` environment variable for digest auth (ACM mode); coordinates consent code prompt with operator |
 | **Angular KVM viewer** | Renders RFB canvas; encodes mouse/keyboard input and relays via orch-cli WebSocket proxy |
 
 #### kvm-manager/ sol-Manager : MPS REST Calls
@@ -764,6 +766,28 @@ xdg-open "http://localhost:57432/?hostId=<host-resource-id>"
 
 ---
 
+### AMT Password in orch-cli
+
+orch-cli is responsible for the full AMT Redirect protocol handshake (including digest
+authentication). There is currently no mechanism for orch-cli to retrieve the password from
+Vault at runtime; the password is supplied via the `AMT_PASSWORD` environment variable.
+
+**During KVM start (ACM mode):**
+
+```bash
+export AMT_PASSWORD=<amt-password>
+orch-cli set host <host-id> --session-state start   # KVM
+```
+
+**During SOL start (ACM mode):**
+
+```bash
+export AMT_PASSWORD=<amt-password>
+orch-cli set host <host-id> --session-state start   # SOL
+```
+
+---
+
 ### orch-cli Commands
 
 **Authentication Requirements**:
@@ -778,6 +802,14 @@ xdg-open "http://localhost:57432/?hostId=<host-resource-id>"
 ##### 1. Start KVM Session
 
 ```bash
+# ACM mode: provide the AMT password
+export AMT_PASSWORD=<AMT password>
+orch-cli set host <host-resource-id> --project <project-name> \
+  --api-endpoint "https://api.${CLUSTER}" \
+  --kvm start
+
+# CCM mode: no password required
+unset AMT_PASSWORD
 orch-cli set host <host-resource-id> --project <project-name> \
   --api-endpoint "https://api.${CLUSTER}" \
   --kvm start
@@ -859,6 +891,14 @@ KVM Info:
 ##### 1. Start SOL Session
 
 ```bash
+# ACM mode: provide the AMT
+export AMT_PASSWORD=<amt-password>
+orch-cli set host <host-resource-id> --project <project-name> \
+  --api-endpoint "https://api.${CLUSTER}" \
+  --sol start
+
+# CCM mode: no password required
+unset AMT_PASSWORD
 orch-cli set host <host-resource-id> --project <project-name> \
   --api-endpoint "https://api.${CLUSTER}" \
   --sol start
