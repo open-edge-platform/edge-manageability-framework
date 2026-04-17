@@ -1,0 +1,8 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+image:
+  registry: {{ .Values.containerRegistryURL }}
+  repository: common/tenancy-init
+imagePullSecrets: {{ .Values.imagePullSecrets | toYaml | nindent 2 }}
