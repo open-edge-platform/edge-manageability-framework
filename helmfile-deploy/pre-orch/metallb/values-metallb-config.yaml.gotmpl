@@ -1,0 +1,32 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+#
+## values.yaml - default overrides for metallb-config chart
+## These defaults will be used by the chart unless overridden by a higher-level values file
+
+metallb-config:
+  # IPs are set via helmfile .Values (EMF_TRAEFIK_IP / EMF_HAPROXY_IP / EMF_ORCH_IP)
+  TraefikIP: {{ .Values.traefikIP }}
+  HaproxyIP: {{ .Values.haproxyIP }}
+serviceNamespaces:
+  traefik: orch-gateway
+  haproxy: orch-boots
+singleIpMode: {{ .Values.singleIpMode }}
+# Optional: override the namespace used in manifests (defaults to release namespace)
+namespace: ""
+# When true, create simple HAProxy deployment + LoadBalancer Service in the
+# configured `serviceNamespaces` so MetalLB can allocate the configured IPs.
+createTestServices: false
+testService:
+  haproxy:
+    deploymentName: ingress-haproxy
+    serviceName: ingress-haproxy-kubernetes-ingress
+    image: haproxy:2.8
+    replicas: 1
+  traefik:
+    deploymentName: traefik
+    serviceName: traefik
+    image: traefik:v2.10
+    replicas: 1

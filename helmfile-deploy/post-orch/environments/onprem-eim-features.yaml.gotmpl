@@ -1,0 +1,133 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# EIM-only environment — Part 2: Feature flags (component on/off)
+# Settings are in onprem-eim-settings.yaml.gotmpl
+# Disabled defaults are in defaults-disabled.yaml.gotmpl
+#
+# This file only lists releases that are ENABLED for EIM profile,
+# plus controlled variables (env-var driven settings).
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Enabled releases
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ─── Platform ────────────────────────────────────────────────────────────────
+auth-service:
+  enabled: true
+cert-manager:
+  enabled: true
+certificate-file-server:
+  enabled: true
+component-status:
+  enabled: true
+copy-ca-cert-boots-to-gateway:
+  enabled: true
+copy-ca-cert-boots-to-infra:
+  enabled: true
+copy-ca-cert-gateway-to-cattle:
+  enabled: true
+copy-ca-cert-gateway-to-infra:
+  enabled: true
+external-secrets:
+  enabled: true
+ingress-haproxy:
+  enabled: true
+keycloak-operator:
+  enabled: true
+metadata-broker:
+  enabled: true
+haproxy-ingress-pxe-boots:
+  enabled: true
+platform-autocert:
+  enabled: true
+platform-keycloak:
+  enabled: true
+reloader:
+  enabled: true
+rs-proxy:
+  enabled: true
+secrets-config:
+  enabled: true
+secret-wait-tls-orch:
+  enabled: true
+secret-wait-tls-boots:
+  enabled: true
+traefik-extra-objects:
+  enabled: true
+traefik-pre:
+  enabled: true
+token-fs:
+  enabled: true
+
+# ─── Database operators ──────────────────────────────────────────────────────
+postgresql-operator:
+  enabled: true
+postgresql-cluster:
+  enabled: true
+postgresql-secrets:
+  enabled: true
+
+# ─── Edge Infra ──────────────────────────────────────────────────────────────
+infra-core:
+  enabled: true
+infra-managers:
+  enabled: true
+infra-external:
+  enabled: true
+copy-keycloak-admin-to-infra:
+  enabled: true
+
+# ─── UI (EIM subset) ────────────────────────────────────────────────────────
+web-ui-root:
+  enabled: true
+web-ui-infra:
+  enabled: true
+web-ui-admin:
+  enabled: true
+
+# ─── Audit ───────────────────────────────────────────────────────────────────
+audit:
+  enabled: true
+
+# ─── Tenancy ─────────────────────────────────────────────────────────────────
+tenancy-datamodel:
+  enabled: true
+tenancy-manager:
+  enabled: true
+tenancy-api-mapping:
+  enabled: true
+nexus-api-gw:
+  enabled: true
+keycloak-tenant-controller:
+  enabled: true
+
+# ─── Misc ────────────────────────────────────────────────────────────────────
+namespace-label:
+  enabled: true
+squid-proxy:
+  enabled: {{ env "EMF_ENABLE_SQUID" | default "false" }}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Controlled variables (env-var driven)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ─── Infra onboarding overrides ─────────────────────────────────────────────
+infra-onboarding:
+  enabled: true
+  skipOSProvisioning: {{ env "EMF_SKIP_OS_PROVISIONING" | default "false" }}
+  disableCoProfile: true
+  disableO11yProfile: true
+
+# ─── Tenancy mode ────────────────────────────────────────────────────────────
+tenancy-init:
+  enabled: {{ env "EMF_DEFAULT_TENANCY" | default "false" }}
+
+# ─── CORS ────────────────────────────────────────────────────────────────────
+cors:
+  enabled: {{ env "EMF_CORS_ENABLED" | default "true" }}
+
+# ─── UI settings ─────────────────────────────────────────────────────────────
+ui:
+  ingressInfraUi: {{ env "EMF_UI_INGRESS_INFRA" | default "false" }}

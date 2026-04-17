@@ -1,0 +1,79 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# Pre-orchestrator helmfile: deploys OpenEBS LocalPV and MetalLB
+#
+# Usage:
+#   Install all:          helmfile apply
+#   Uninstall all:        helmfile destroy
+#   Single chart:         helmfile -l app=openebs-localpv apply
+#                         helmfile -l app=metallb apply
+#                         helmfile -l app=metallb-config apply
+
+environments:
+  default:
+    values:
+      - traefikIP: {{ env "EMF_ORCH_IP" | default (env "EMF_TRAEFIK_IP") }}
+        haproxyIP: {{ env "EMF_ORCH_IP" | default (env "EMF_HAPROXY_IP") }}
+        singleIpMode: {{ if env "EMF_ORCH_IP" }}true{{ else }}false{{ end }}
+        localpvVersion: {{ env "LOCALPV_VERSION" | default "4.3.0" }}
+        openebs:
+          enabled: {{ env "INSTALL_OPENEBS" | default "true" }}
+        metallb:
+          enabled: {{ env "INSTALL_METALLB" | default "true" }}
+
+---
+
+helmDefaults:
+  createNamespace: true
+  wait: true
+  timeout: 300
+
+repositories:
+  - name: openebs-localpv
+    url: https://openebs.github.io/dynamic-localpv-provisioner
+  - name: metallb
+    url: https://metallb.github.io/metallb
+
+releases:
+  #############################################################################
+  # OpenEBS LocalPV
+  #############################################################################
+  - name: openebs-localpv
+    labels:
+      app: openebs-localpv
+    namespace: openebs-system
+    chart: openebs-localpv/localpv-provisioner
+    version: {{ .Values.localpvVersion }}
+    values:
+      - openebs-localpv/values-openebs-localpv.yaml
+    condition: openebs.enabled
+
+  #############################################################################
+  # MetalLB controller + speaker
+  #############################################################################
+  - name: metallb
+    labels:
+      app: metallb
+    namespace: metallb-system
+    chart: metallb/metallb
+    version: "0.15.2"
+    values:
+      - metallb/values-metallb.yaml
+    condition: metallb.enabled
+
+  #############################################################################
+  # MetalLB IP address pool + L2 advertisement config
+  #############################################################################
+  - name: metallb-config
+    labels:
+      app: metallb-config
+    namespace: metallb-system
+    chart: metallb/metallb-config
+    values:
+      - metallb/values-metallb-config.yaml.gotmpl
+    needs:
+      - metallb-system/metallb
+    condition: metallb.enabled
+    disableValidation: true

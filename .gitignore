@@ -63,6 +63,10 @@ tls.key
 package.zip
 SAVEME
 SAVEME.*
+
+# Logs and computed values in any subfolder
+**/logs/
+**/.computed-values/
 sshuttle.pid
 
 # On-prem directories with build artifacts

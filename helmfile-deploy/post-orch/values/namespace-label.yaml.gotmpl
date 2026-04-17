@@ -1,0 +1,30 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+namespaces:
+  - name: "orch-infra"
+    labels:
+      istio-injection: {{ if eq (.Values.istio.enabled | toString) "true" }}enabled{{ else }}disabled{{ end }}
+  - name: "orch-iam"
+    labels:
+      istio-injection: {{ if eq (.Values.istio.enabled | toString) "true" }}enabled{{ else }}disabled{{ end }}
+  - name: "orch-ui"
+    labels:
+      istio-injection: {{ if eq (.Values.istio.enabled | toString) "true" }}enabled{{ else }}disabled{{ end }}
+  - name: "orch-platform"
+    labels:
+      istio-injection: {{ if eq (.Values.istio.enabled | toString) "true" }}enabled{{ else }}disabled{{ end }}
+  - name: "orch-gateway"
+    labels:
+      istio-injection: {{ if eq (.Values.istio.enabled | toString) "true" }}enabled{{ else }}disabled{{ end }}
+  - name: "orch-database"
+    labels:
+      istio-injection: {{ if eq (.Values.istio.enabled | toString) "true" }}enabled{{ else }}disabled{{ end }}
+  - name: orch-boots
+    labels:
+      istio-injection: {{ if eq (.Values.istio.enabled | toString) "true" }}enabled{{ else }}disabled{{ end }}
+  - name: orch-secret
+    labels:
+      istio-injection: {{ if eq (.Values.istio.enabled | toString) "true" }}enabled{{ else }}disabled{{ end }}
+resources: null

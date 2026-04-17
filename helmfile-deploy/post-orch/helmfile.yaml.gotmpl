@@ -1,0 +1,1046 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# Helmfile-based deployment for Edge Manageability Framework
+# Replaces ArgoCD-based deployment with direct helm chart releases
+#
+# Usage:
+#   Full deployment:
+#     helmfile -e onprem sync
+#     helmfile -e onprem-eim sync
+#     helmfile -e aws sync
+#
+#   Individual chart install/uninstall:
+#     helmfile -e onprem -l app=traefik sync        # install single chart
+#     helmfile -e onprem -l app=traefik destroy      # uninstall single chart
+#     helmfile -e onprem -l app=traefik diff         # preview changes
+#
+#   Multiple charts:
+#     helmfile -e onprem -l "app=traefik" -l "app=haproxy" sync
+#
+#   List available releases:
+#     helmfile -e onprem list
+
+environments:
+  onprem-eim:
+    values:
+      - environments/defaults-disabled.yaml.gotmpl
+      - environments/onprem-eim-settings.yaml.gotmpl
+      - environments/onprem-eim-features.yaml.gotmpl
+  onprem-vpro:
+    values:
+      - environments/defaults-disabled.yaml.gotmpl
+      - environments/onprem-eim-settings.yaml.gotmpl
+      - environments/onprem-eim-features.yaml.gotmpl
+      - environments/profile-vpro.yaml.gotmpl
+---
+
+helmDefaults:
+  createNamespace: true
+  wait: true
+  waitForJobs: true
+  timeout: 300
+
+repositories:
+  - name: jetstack
+    url: https://charts.jetstack.io
+  - name: hashicorp
+    url: https://helm.releases.hashicorp.com
+  - name: traefik
+    url: https://helm.traefik.io/traefik
+  - name: external-secrets
+    url: https://charts.external-secrets.io
+  - name: haproxy
+    url: https://haproxytech.github.io/helm-charts
+{{- if eq (env "EMF_ENABLE_ISTIO" | default "false") "true" }}
+  - name: istio
+    url: https://istio-release.storage.googleapis.com/charts
+  - name: kiali
+    url: https://kiali.org/helm-charts
+{{- end }}
+{{- if eq (env "EMF_ENABLE_KYVERNO" | default "false") "true" }}
+  - name: kyverno
+    url: https://kyverno.github.io/kyverno
+{{- end }}
+  - name: stakater
+    url: https://stakater.github.io/stakater-charts
+  - name: cnpg
+    oci: true
+    url: ghcr.io/cloudnative-pg/charts
+  - name: edge-orch
+    oci: true
+    url: {{ env "EMF_REGISTRY" | default "registry-rs.edgeorchestration.intel.com" }}/edge-orch
+  - name: edge-orch-rs
+    oci: true
+    url: {{ env "EMF_REGISTRY" | default "registry-rs.edgeorchestration.intel.com" }}/edge-orch
+
+releases:
+  #############################################################################
+  # Wave 1 — Operators (no dependencies, run in parallel)
+  #############################################################################
+
+  - name: keycloak-operator
+    labels:
+      app: keycloak-operator
+      wave: "1"
+    namespace: orch-platform
+    chart: edge-orch/common/charts/keycloak-operator
+    wait: true
+    version: 26.1.3
+    values:
+      - values/keycloak-operator.yaml
+    condition: keycloak-operator.enabled
+
+
+  - name: postgresql-operator
+    labels:
+      app: postgresql-operator
+      wave: "1"
+    namespace: postgresql-operator
+    chart: cnpg/cloudnative-pg
+    wait: true
+    version: 0.27.1
+    values:
+      - values/postgresql-operator.yaml
+    condition: postgresql-operator.enabled
+
+
+  #############################################################################
+  # Wave 90 — Namespace labels (needs all of Wave 1)
+  #############################################################################
+
+  - name: namespace-label
+    labels:
+      app: namespace-label
+      wave: "90"
+    namespace: ns-label
+    chart: edge-orch/common/charts/namespace-label
+    wait: true
+    version: 26.0.2
+    values:
+      - values/namespace-label.yaml.gotmpl
+    installed: true  # always deploy
+    needs:
+      - orch-platform/keycloak-operator
+      - postgresql-operator/postgresql-operator
+
+
+  #############################################################################
+  # Wave 100 — Core infra (needs all of Wave 90, run in parallel)
+  #############################################################################
+
+  - name: cert-manager
+    labels:
+      app: cert-manager
+      wave: "100"
+    namespace: cert-manager
+    chart: jetstack/cert-manager
+    wait: true
+    version: 1.19.3
+    timeout: 300
+    values:
+      - values/cert-manager.yaml.gotmpl
+    condition: cert-manager.enabled
+    needs:
+      - ns-label/namespace-label
+      
+
+
+  - name: external-secrets
+    labels:
+      app: external-secrets
+      wave: "100"
+    namespace: orch-secret
+    chart: external-secrets/external-secrets
+    wait: true
+    version: 2.0.1
+    values:
+      - values/external-secrets.yaml
+    condition: external-secrets.enabled
+    needs:
+      - ns-label/namespace-label
+
+
+  - name: istio-base
+    labels:
+      app: istio-base
+      wave: "100"
+    namespace: istio-system
+    chart: istio/base
+    wait: true
+    version: 1.29.1
+    values:
+      - values/istio-base.yaml
+    condition: istio-base.enabled
+    needs:
+      - ns-label/namespace-label
+
+
+  - name: k8s-metrics-server
+    labels:
+      app: k8s-metrics-server
+      wave: "100"
+    namespace: kube-system
+    chart: edge-orch/common/charts/k8s-metrics-server
+    wait: true
+    version: 25.2.1
+    values:
+      - values/k8s-metrics-server.yaml
+    condition: k8s-metrics-server.enabled
+    needs:
+      - ns-label/namespace-label
+    hooks:
+      - events: ["presync"]
+        showlogs: true
+        command: "./hooks/adopt-metrics-server.sh"
+
+
+  - name: kyverno
+    labels:
+      app: kyverno
+      wave: "100"
+    namespace: kyverno
+    chart: kyverno/kyverno
+    wait: true
+    version: 3.7.1
+    values:
+      - values/kyverno.yaml
+    condition: kyverno.enabled
+    needs:
+      - ns-label/namespace-label
+
+
+  #############################################################################
+  # Wave 105 — Kyverno policies (needs all of Wave 100)
+  #############################################################################
+
+  - name: kyverno-extra-policies
+    labels:
+      app: kyverno-extra-policies
+      wave: "105"
+    namespace: kyverno
+    chart: edge-orch/common/charts/kyverno-extra-policies
+    wait: true
+    version: 26.0.0
+    values:
+      - values/kyverno-extra-policies.yaml
+    condition: kyverno-extra-policies.enabled
+    needs:
+      - cert-manager/cert-manager
+
+
+  #############################################################################
+  # Wave 110 — Istio control plane + Reloader (needs all of Wave 105)
+  #############################################################################
+
+  - name: istiod
+    labels:
+      app: istiod
+      wave: "110"
+    namespace: istio-system
+    chart: istio/istiod
+    wait: true
+    version: 1.29.1
+    values:
+      - values/istiod.yaml.gotmpl
+    needs:
+      - istio-system/istio-base
+    condition: istiod.enabled    
+
+
+  - name: reloader
+    labels:
+      app: reloader
+      wave: "110"
+    namespace: orch-platform
+    chart: stakater/reloader
+    wait: true
+    version: 2.2.3
+    values:
+      - values/reloader.yaml
+    condition: reloader.enabled
+    needs:
+      - ns-label/namespace-label
+
+
+  #############################################################################
+  # Wave 115 — Wait for Istio (needs all of Wave 110)
+  #############################################################################
+
+  - name: wait-istio-job
+    labels:
+      app: wait-istio-job
+      wave: "115"
+    namespace: ns-label
+    chart: edge-orch/common/charts/job-wait
+    wait: true
+    version: 26.0.2
+    values:
+      - values/wait-istio-job.yaml
+    condition: wait-istio-job.enabled
+    needs:
+      - istio-system/istiod
+      - orch-platform/reloader
+
+
+  #############################################################################
+  # Wave 130 — PostgreSQL secrets (needs all of Wave 115)
+  #############################################################################
+
+  - name: postgresql-secrets
+    labels:
+      app: postgresql-secrets
+      wave: "130"
+    namespace: orch-database
+    chart: edge-orch/common/charts/postgresql-secrets
+    wait: true
+    version: 26.0.1
+    values:
+      - values/postgresql-secrets.yaml.gotmpl
+    condition: postgresql-secrets.enabled
+    needs:
+      - ns-label/wait-istio-job
+    hooks:
+      - events: ["postsync"]
+        showlogs: true
+        command: "./hooks/sync-db-passwords.sh"
+
+
+  #############################################################################
+  # Wave 140 — PostgreSQL cluster (needs all of Wave 130)
+  #############################################################################
+
+  - name: postgresql-cluster
+    labels:
+      app: postgresql-cluster
+      wave: "140"
+    namespace: orch-database
+    chart: cnpg/cluster
+    wait: true
+    version: 0.6.0
+    values:
+      - values/postgresql-cluster.yaml.gotmpl
+    condition: postgresql-cluster.enabled
+    needs:
+      - orch-database/postgresql-secrets
+    hooks:
+      - events: ["postsync"]
+        showlogs: true
+        command: "./hooks/sync-db-passwords.sh"
+
+
+  #############################################################################
+  # Wave 150 — Keycloak, Istio policy, certs (needs all of Wave 140)
+  #############################################################################
+
+  - name: istio-policy
+    labels:
+      app: istio-policy
+      wave: "150"
+    namespace: istio-system
+    chart: edge-orch/common/charts/istio-policy
+    wait: true
+    version: 26.0.2
+    values:
+      - values/istio-policy.yaml
+    condition: istio-policy.enabled
+    needs:
+      - orch-database/postgresql-cluster
+
+
+  - name: kiali
+    labels:
+      app: kiali
+      wave: "150"
+    namespace: istio-system
+    chart: kiali/kiali-server
+    wait: true
+    version: 2.22.0
+    values:
+      - values/kiali.yaml
+    condition: kiali.enabled
+    needs:
+      - orch-database/postgresql-cluster
+
+
+  - name: platform-autocert
+    labels:
+      app: platform-autocert
+      wave: "150"
+    namespace: cert-manager
+    chart: edge-orch/common/charts/platform-autocert
+    wait: true
+    version: 1.0.2
+    values:
+      - values/platform-autocert.yaml.gotmpl
+    condition: platform-autocert.enabled
+    needs:
+      - orch-database/postgresql-cluster
+
+
+  - name: platform-keycloak
+    labels:
+      app: platform-keycloak
+      wave: "150"
+    namespace: orch-platform
+    chart: edge-orch/common/charts/keycloak-instance
+    wait: true
+    version: 26.1.3
+    timeout: 600
+    values:
+      - values/platform-keycloak.yaml.gotmpl
+      - values/platform-keycloak-realm.yaml.gotmpl
+    condition: platform-keycloak.enabled
+    needs:
+      - orch-database/postgresql-cluster
+
+
+  #############################################################################
+  # Wave 160 — Vault + self-signed cert (needs all of Wave 150)
+  #############################################################################
+
+  - name: vault
+    labels:
+      app: vault
+      wave: "160"
+    namespace: orch-platform
+    chart: hashicorp/vault
+    wait: true
+    version: 0.32.0
+    values:
+      - values/vault.yaml.gotmpl
+    condition: vault.enabled
+    needs:
+      - orch-database/postgresql-cluster
+      - cert-manager/platform-autocert
+      - orch-platform/platform-keycloak
+
+
+  - name: self-signed-cert
+    labels:
+      app: self-signed-cert
+      wave: "160"
+    namespace: cert-manager
+    chart: edge-orch/common/charts/self-signed-cert
+    wait: true
+    version: 26.0.1 
+    values:
+      - values/self-signed-cert.yaml.gotmpl
+    condition: self-signed-cert.enabled
+    needs:
+      - orch-database/postgresql-cluster
+      - cert-manager/platform-autocert
+      - orch-platform/platform-keycloak
+
+  - name: secrets-config
+    labels:
+      app: secrets-config
+      wave: "165"
+    namespace: orch-platform
+    chart: edge-orch/common/charts/secrets-config
+    wait: true
+    version: 26.0.2
+    values:
+      - values/secrets-config.yaml.gotmpl
+    condition: secrets-config.enabled
+    needs:
+      - orch-platform/vault
+    hooks:
+      - events: ["presync"]
+        showlogs: true
+        command: "./hooks/cleanup-vault-keys.sh"
+
+
+  #############################################################################
+  # Wave 170 — RS proxy + TLS wait (needs all of Wave 165)
+  #############################################################################
+
+  - name: rs-proxy
+    labels:
+      app: rs-proxy
+      wave: "170"
+    namespace: orch-platform
+    chart: edge-orch/common/charts/rs-proxy
+    wait: true
+    version: 25.2.3
+    values:
+      - values/rs-proxy.yaml.gotmpl
+      - values/resource-overrides.yaml
+    condition: rs-proxy.enabled
+    needs:
+      - orch-platform/secrets-config
+
+
+  - name: secret-wait-tls-orch
+    labels:
+      app: secret-wait-tls-orch
+      wave: "170"
+    namespace: orch-gateway
+    chart: edge-orch-rs/common/charts/secret-wait
+    wait: true
+    version: 26.0.2
+    values:
+      - values/secret-wait-tls-orch.yaml
+    condition: secret-wait-tls-orch.enabled
+    needs:
+      - orch-platform/secrets-config
+      - cert-manager/self-signed-cert
+
+
+  #############################################################################
+  # Wave 180 — Copy secrets (needs all of Wave 170)
+  #############################################################################
+
+  - name: copy-ca-cert-gateway-to-cattle
+    labels:
+      app: copy-ca-cert-gateway-to-cattle
+      wave: "180"
+    namespace: cattle-system
+    chart: edge-orch/common/charts/copy-secret
+    wait: true
+    version: 26.0.0
+    values:
+      - values/copy-ca-cert-gateway-to-cattle.yaml
+    condition: copy-ca-cert-gateway-to-cattle.enabled
+    needs:
+      - orch-platform/rs-proxy
+      - orch-gateway/secret-wait-tls-orch
+
+
+  - name: copy-ca-cert-gateway-to-infra
+    labels:
+      app: copy-ca-cert-gateway-to-infra
+      wave: "180"
+    namespace: orch-infra
+    chart: edge-orch/common/charts/copy-secret
+    wait: true
+    version: 26.0.0
+    values:
+      - values/copy-ca-cert-gateway-to-infra.yaml
+    condition: copy-ca-cert-gateway-to-infra.enabled
+    needs:
+      - orch-platform/rs-proxy
+      - orch-gateway/secret-wait-tls-orch
+
+
+  - name: copy-keycloak-admin-to-infra
+    labels:
+      app: copy-keycloak-admin-to-infra
+      wave: "180"
+    namespace: orch-infra
+    chart: edge-orch/common/charts/copy-secret
+    wait: true
+    version: 26.0.0
+    values:
+      - values/copy-keycloak-admin-to-infra.yaml
+    condition: copy-keycloak-admin-to-infra.enabled
+    needs:
+      - orch-platform/rs-proxy
+      - orch-gateway/secret-wait-tls-orch
+
+
+  #############################################################################
+  # Wave 1000 — Traefik pre-config (needs all of Wave 180)
+  #############################################################################
+
+  - name: traefik-pre
+    labels:
+      app: traefik-pre
+      wave: "1000"
+    namespace: orch-gateway
+    chart: edge-orch/common/charts/traefik-pre
+    wait: true
+    version: 3.0.1
+    values:
+      - values/traefik-pre.yaml.gotmpl
+    condition: traefik-pre.enabled
+    needs:
+      - cattle-system/copy-ca-cert-gateway-to-cattle
+      - orch-infra/copy-ca-cert-gateway-to-infra
+      - orch-infra/copy-keycloak-admin-to-infra
+
+
+  #############################################################################
+  # Wave 1100 — Traefik + HAProxy + Kyverno policies (needs all of Wave 1000)
+  #############################################################################
+
+  - name: ingress-haproxy
+    labels:
+      app: ingress-haproxy
+      wave: "1100"
+    namespace: orch-boots
+    chart: haproxy/kubernetes-ingress
+    wait: true
+    version: 1.41.0
+    values:
+      - values/ingress-haproxy.yaml.gotmpl
+    condition: ingress-haproxy.enabled
+    needs:
+      - orch-gateway/traefik-pre
+
+
+  - name: kyverno-istio-policy
+    labels:
+      app: kyverno-istio-policy
+      wave: "1100"
+    namespace: kyverno
+    chart: edge-orch/common/charts/kyverno-istio-policy
+    wait: true
+    version: 26.0.0
+    values:
+      - values/kyverno-istio-policy.yaml
+    condition: kyverno-istio-policy.enabled
+    needs:
+      - orch-gateway/traefik-pre
+
+
+  - name: kyverno-traefik-policy
+    labels:
+      app: kyverno-traefik-policy
+      wave: "1100"
+    namespace: kyverno
+    chart: edge-orch/common/charts/kyverno-traefik-policy
+    wait: true
+    version: 26.0.0
+    values:
+      - values/kyverno-traefik-policy.yaml
+    condition: kyverno-traefik-policy.enabled
+    needs:
+      - orch-gateway/traefik-pre
+
+
+  - name: traefik
+    labels:
+      app: traefik
+      wave: "1100"
+    namespace: orch-gateway
+    chart: traefik/traefik
+    wait: true
+    version: 39.0.6
+    values:
+      - values/traefik.yaml.gotmpl
+    condition: traefik.enabled
+    needs:
+      - orch-gateway/traefik-pre
+
+
+  #############################################################################
+  # Wave 1200 — HAProxy boots, tenancy datamodel, traefik objects
+  #            (needs all of Wave 1100)
+  #############################################################################
+
+  - name: haproxy-ingress-pxe-boots
+    labels:
+      app: haproxy-ingress-pxe-boots
+      wave: "1200"
+    namespace: orch-boots
+    chart: edge-orch/common/charts/haproxy-ingress-pxe-boots
+    wait: true
+    version: 1.0.1
+    values:
+      - values/haproxy-ingress-pxe-boots.yaml.gotmpl
+    condition: haproxy-ingress-pxe-boots.enabled
+    needs:
+      - orch-boots/ingress-haproxy
+      - kyverno/kyverno-istio-policy
+      - kyverno/kyverno-traefik-policy
+      - orch-gateway/traefik
+
+
+  - name: tenancy-datamodel
+    labels:
+      app: tenancy-datamodel
+      wave: "1200"
+    namespace: orch-iam
+    chart: edge-orch/common/charts/tenancy-datamodel
+    wait: true
+    version: 26.1.0
+    values:
+      - values/tenancy-datamodel.yaml.gotmpl
+    condition: tenancy-datamodel.enabled
+    needs:
+      - orch-boots/ingress-haproxy
+      - orch-gateway/traefik
+
+
+  - name: traefik-extra-objects
+    labels:
+      app: traefik-extra-objects
+      wave: "1200"
+    namespace: orch-gateway
+    chart: edge-orch/common/charts/traefik-extra-objects
+    wait: true
+    version: 26.0.2
+    values:
+      - values/traefik-extra-objects.yaml.gotmpl
+    condition: traefik-extra-objects.enabled
+    needs:
+      - orch-boots/ingress-haproxy
+      - orch-gateway/traefik
+
+
+  #############################################################################
+  # Wave 1210 — Tenancy API + Manager (needs all of Wave 1200)
+  #############################################################################
+
+  - name: tenancy-api-mapping
+    labels:
+      app: tenancy-api-mapping
+      wave: "1210"
+    namespace: orch-iam
+    chart: edge-orch/common/charts/tenancy-api-mapping
+    wait: true
+    version: 26.0.15
+    values:
+      - values/tenancy-api-mapping.yaml.gotmpl
+    condition: tenancy-api-mapping.enabled
+    needs:
+      - orch-boots/haproxy-ingress-pxe-boots
+      - orch-iam/tenancy-datamodel
+      - orch-gateway/traefik-extra-objects
+
+
+  - name: tenancy-manager
+    labels:
+      app: tenancy-manager
+      wave: "1210"
+    namespace: orch-iam
+    chart: edge-orch/common/charts/tenancy-manager
+    wait: true
+    version: 26.1.0
+    values:
+      - values/tenancy-manager.yaml.gotmpl
+      - values/resource-overrides.yaml
+    condition: tenancy-manager.enabled
+    needs:
+      - orch-boots/haproxy-ingress-pxe-boots
+      - orch-iam/tenancy-datamodel
+      - orch-gateway/traefik-extra-objects
+
+
+  #############################################################################
+  # Wave 1220 — Nexus API GW (needs all of Wave 1210)
+  #############################################################################
+
+  - name: nexus-api-gw
+    labels:
+      app: nexus-api-gw
+      wave: "1220"
+    namespace: orch-iam
+    chart: edge-orch/common/charts/nexus-api-gw
+    wait: true
+    version: 26.1.0
+    values:
+      - values/nexus-api-gw.yaml.gotmpl
+      - values/resource-overrides.yaml
+    condition: nexus-api-gw.enabled
+    needs:
+      - orch-iam/tenancy-api-mapping
+      - orch-iam/tenancy-manager
+
+
+  #############################################################################
+  # Wave 1250 — Keycloak tenant controller (needs all of Wave 1220)
+  #############################################################################
+
+  - name: keycloak-tenant-controller
+    labels:
+      app: keycloak-tenant-controller
+      wave: "1250"
+    namespace: orch-gateway
+    chart: edge-orch/common/charts/keycloak-tenant-controller
+    wait: true
+    version: 26.1.0
+    values:
+      - values/keycloak-tenant-controller.yaml.gotmpl
+      - values/resource-overrides.yaml
+    condition: keycloak-tenant-controller.enabled
+    needs:
+      - orch-iam/nexus-api-gw
+
+
+  #############################################################################
+  # Wave 1300 — TLS boots wait + token-fs + tenancy-init (needs Wave 1250)
+  #############################################################################
+
+  - name: tenancy-init
+    labels:
+      app: tenancy-init
+      wave: "1300"
+    namespace: orch-iam
+    chart: edge-orch/common/charts/tenancy-init
+    wait: true
+    waitForJobs: true
+    version: 26.1.0
+    values:
+      - values/tenancy-init.yaml.gotmpl
+    condition: tenancy-init.enabled
+    needs:
+      - orch-gateway/keycloak-tenant-controller
+
+  - name: secret-wait-tls-boots
+    labels:
+      app: secret-wait-tls-boots
+      wave: "1300"
+    namespace: orch-boots
+    chart: edge-orch-rs/common/charts/secret-wait
+    wait: true
+    version: 26.0.2
+    values:
+      - values/secret-wait-tls-boots.yaml
+    condition: secret-wait-tls-boots.enabled
+    needs:
+      - orch-gateway/keycloak-tenant-controller
+      - orch-boots/haproxy-ingress-pxe-boots
+
+
+  - name: token-fs
+    labels:
+      app: token-fs
+      wave: "1300"
+    namespace: orch-secret
+    chart: edge-orch/common/charts/token-fs
+    wait: true
+    version: 26.1.0
+    values:
+      - values/token-fs.yaml.gotmpl
+    condition: token-fs.enabled
+    needs:
+      - orch-gateway/keycloak-tenant-controller
+
+
+  #############################################################################
+  # Wave 1400 — Copy boot certs (needs all of Wave 1300)
+  #############################################################################
+
+  - name: copy-ca-cert-boots-to-gateway
+    labels:
+      app: copy-ca-cert-boots-to-gateway
+      wave: "1400"
+    namespace: orch-gateway
+    chart: edge-orch/common/charts/copy-secret
+    wait: true
+    version: 26.0.0
+    values:
+      - values/copy-ca-cert-boots-to-gateway.yaml
+    condition: copy-ca-cert-boots-to-gateway.enabled
+    needs:
+      - orch-boots/secret-wait-tls-boots
+      - orch-secret/token-fs
+
+
+  - name: copy-ca-cert-boots-to-infra
+    labels:
+      app: copy-ca-cert-boots-to-infra
+      wave: "1400"
+    namespace: orch-infra
+    chart: edge-orch/common/charts/copy-secret
+    wait: true
+    version: 26.0.0
+    values:
+      - values/copy-ca-cert-boots-to-infra.yaml
+    condition: copy-ca-cert-boots-to-infra.enabled
+    needs:
+      - orch-boots/secret-wait-tls-boots
+      - orch-secret/token-fs
+
+
+  #############################################################################
+  # Wave 2000 — Core services (needs all of Wave 1400)
+  #############################################################################
+
+  - name: component-status
+    labels:
+      app: component-status
+      wave: "2000"
+    namespace: orch-platform
+    chart: edge-orch/common/charts/component-status
+    wait: true
+    version: 26.1.0
+    values:
+      - values/component-status.yaml.gotmpl
+      - values/resource-overrides.yaml
+    condition: component-status.enabled
+    needs:
+      - orch-gateway/copy-ca-cert-boots-to-gateway
+      - orch-infra/copy-ca-cert-boots-to-infra
+
+
+  - name: infra-core
+    labels:
+      app: infra-core
+      wave: "2000"
+    namespace: orch-infra
+    chart: edge-orch/infra/charts/infra-core
+    wait: true
+    version: 2.19.8
+    values:
+      - values/infra-core.yaml.gotmpl
+      - values/resource-overrides.yaml
+    condition: infra-core.enabled
+    needs:
+      - orch-gateway/copy-ca-cert-boots-to-gateway
+      - orch-infra/copy-ca-cert-boots-to-infra
+
+  - name: metadata-broker
+    labels:
+      app: metadata-broker
+      wave: "2000"
+    namespace: orch-ui
+    chart: edge-orch/orch-ui/charts/orch-metadata-broker
+    wait: true
+    version: 1.0.1
+    values:
+      - values/metadata-broker.yaml.gotmpl
+    condition: metadata-broker.enabled
+    needs:
+      - orch-gateway/copy-ca-cert-boots-to-gateway
+      - orch-infra/copy-ca-cert-boots-to-infra
+
+
+  #############################################################################
+  # Wave 2005 — Auth service (needs all of Wave 2000)
+  #############################################################################
+
+  - name: auth-service
+    labels:
+      app: auth-service
+      wave: "2005"
+    namespace: orch-gateway
+    chart: edge-orch/common/charts/auth-service
+    wait: true
+    version: 26.1.0
+    values:
+      - values/auth-service.yaml.gotmpl
+      - values/resource-overrides.yaml
+    condition: auth-service.enabled
+    needs:
+      - orch-platform/component-status
+      - orch-infra/infra-core
+      - orch-ui/metadata-broker
+
+
+  #############################################################################
+  # Wave 2100 — Infra services (needs all of Wave 2005)
+  #############################################################################
+
+  - name: infra-onboarding
+    labels:
+      app: infra-onboarding
+      wave: "2100"
+    namespace: orch-infra
+    chart: edge-orch/infra/charts/infra-onboarding
+    wait: true
+    version: 1.35.12
+    values:
+      - values/infra-onboarding.yaml.gotmpl
+      - values/resource-overrides.yaml
+    condition: infra-onboarding.enabled
+    needs:
+      - orch-gateway/auth-service
+
+  - name: infra-external
+    labels:
+      app: infra-external
+      wave: "2100"
+    namespace: orch-infra
+    chart: edge-orch/infra/charts/infra-external
+    wait: true
+    version: 2.12.12
+    values:
+      - values/infra-external.yaml.gotmpl
+    condition: infra-external.enabled
+    needs:
+      - orch-gateway/auth-service
+
+
+  - name: infra-managers
+    labels:
+      app: infra-managers
+      wave: "2100"
+    namespace: orch-infra
+    chart: edge-orch/infra/charts/infra-managers
+    wait: true
+    version: 2.17.3
+    values:
+      - values/infra-managers.yaml.gotmpl
+      - values/resource-overrides.yaml
+    condition: infra-managers.enabled
+    needs:
+      - orch-gateway/auth-service
+
+
+  #############################################################################
+  # Wave 3000 — UI + cert file server (needs all of Wave 2100)
+  #############################################################################
+
+  - name: certificate-file-server
+    labels:
+      app: certificate-file-server
+      wave: "3000"
+    namespace: orch-gateway
+    chart: edge-orch/common/charts/certificate-file-server
+    wait: true
+    version: 25.2.3
+    values:
+      - values/certificate-file-server.yaml.gotmpl
+      - values/resource-overrides.yaml
+    condition: certificate-file-server.enabled
+    needs:
+      - orch-infra/infra-onboarding
+      - orch-infra/infra-external
+      - orch-infra/infra-managers
+
+  - name: web-ui-admin
+    labels:
+      app: web-ui-admin
+      wave: "3000"
+    namespace: orch-ui
+    chart: edge-orch/orch-ui/charts/orch-ui-admin
+    wait: true
+    version: 4.0.7
+    values:
+      - values/web-ui-admin.yaml.gotmpl
+    condition: web-ui-admin.enabled
+    needs:
+      - orch-infra/infra-onboarding
+      - orch-infra/infra-external
+      - orch-infra/infra-managers
+
+  - name: web-ui-infra
+    labels:
+      app: web-ui-infra
+      wave: "3000"
+    namespace: orch-ui
+    chart: edge-orch/orch-ui/charts/orch-ui-infra
+    wait: true
+    version: 4.0.4
+    values:
+      - values/web-ui-infra.yaml.gotmpl
+    condition: web-ui-infra.enabled
+    needs:
+      - orch-infra/infra-onboarding
+      - orch-infra/infra-external
+      - orch-infra/infra-managers
+
+
+  #############################################################################
+  # Wave 3010 — Root UI (needs all of Wave 3000)
+  #############################################################################
+
+  - name: web-ui
+    labels:
+      app: web-ui
+      wave: "3010"
+    namespace: orch-ui
+    chart: edge-orch/orch-ui/charts/orch-ui-root
+    wait: true
+    version: 4.0.8
+    values:
+      - values/web-ui-root.yaml.gotmpl
+    condition: web-ui-root.enabled
+    needs:
+      - orch-gateway/certificate-file-server
+      - orch-ui/web-ui-admin
+      - orch-ui/web-ui-infra

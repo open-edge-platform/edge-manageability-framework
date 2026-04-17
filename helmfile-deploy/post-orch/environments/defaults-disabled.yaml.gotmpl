@@ -1,0 +1,96 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# Default disabled state for all optional releases.
+# Loaded FIRST so that profile/feature files only need to set enabled: true.
+# Without this, helmfile condition: defaults to true for missing values.
+
+# ─── Istio ───────────────────────────────────────────────────────────────────
+istio-base:
+  enabled: false
+istio-policy:
+  enabled: false
+istiod:
+  enabled: false
+kiali:
+  enabled: false
+wait-istio-job:
+  enabled: false
+
+# ─── Kyverno ─────────────────────────────────────────────────────────────────
+kyverno:
+  enabled: false
+kyverno-extra-policies:
+  enabled: false
+kyverno-istio-policy:
+  enabled: false
+kyverno-traefik-policy:
+  enabled: false
+
+# ─── Misc ────────────────────────────────────────────────────────────────────
+k8s-metrics-server:
+  enabled: false
+
+# ─── Stubs for component-status template references ──────────────────────────
+app-orch-catalog:
+  enabled: false
+cluster-manager:
+  enabled: false
+
+intel-infra-provider:
+  enabled: false
+orchestrator-observability:
+  enabled: false
+orchestrator-dashboards:
+  enabled: false
+alerting-monitor:
+  enabled: false
+edgenode-observability:
+  enabled: false
+edgenode-dashboards:
+  enabled: false
+web-ui-app-orch:
+  enabled: false
+web-ui-cluster-orch:
+  enabled: false
+capi-operator:
+  enabled: false
+
+# ─── AWS-only ────────────────────────────────────────────────────────────────
+aws-lb:
+  enabled: false
+aws-lb-tgb:
+  enabled: false
+aws-sm-proxy:
+  enabled: false
+aws-sm-get-rs-token:
+  enabled: false
+cluster-autoscaler:
+  enabled: false
+vertical-pod-autoscaler:
+  enabled: false
+secret-wait-azure-ad-creds:
+  enabled: false
+secret-wait-rs-token:
+  enabled: false
+
+# ─── Not used in on-prem ────────────────────────────────────────────────────
+cert-synchronizer:
+  enabled: false
+traefik-boots:
+  enabled: false
+oci-secret:
+  enabled: false
+rs-image-pull-secrets:
+  enabled: false
+copy-rs-token-to-cluster:
+  enabled: false
+token-refresh:
+  enabled: false
+botkube:
+  enabled: false
+ingress-nginx:
+  enabled: false
+tenancy-init:
+  enabled: false

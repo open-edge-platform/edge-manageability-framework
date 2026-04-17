@@ -1,0 +1,13 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+#
+# Values for haproxy-ingress-pxe-boots
+
+commonName: tinkerbell-haproxy.{{ .Values.clusterDomain }}
+haproxyIngress:
+  enabled: true
+haproxyIngressRateLimit:
+  rps: 500
+  connections: 70

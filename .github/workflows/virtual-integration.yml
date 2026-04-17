@@ -5,24 +5,25 @@
 name: Virtual Integration
 
 on:
-  # Allow manually triggering the workflow
-  workflow_dispatch: {}
-  # Run on all commits that are pushed to all branches
-  push:
-    branches:
-      - main
-      - main-pass-validation
-
-  # Trigger workflow on PRs to all branches
-  pull_request:
-    branches:
-      - "*"
-    types:
-      - opened
-      - synchronize
-      - reopened
-  # Trigger workflow when enqueued to a merge group
-  merge_group:
+  # TEMP DISABLED — re-enable by uncommenting the triggers below
+  # workflow_dispatch: {}
+  # push:
+  #   branches:
+  #     - main
+  #     - main-pass-validation
+  # pull_request:
+  #   branches:
+  #     - "*"
+  #   types:
+  #     - opened
+  #     - synchronize
+  #     - reopened
+  # merge_group:
+  workflow_dispatch:
+    inputs:
+      _placeholder:
+        description: "TEMP DISABLED — do not run"
+        required: false
 
 # For PRs → use the PR number as the group (forces only 1 run active)
 # For branches → use the full ref (unique per branch) so runs don't cancel each other

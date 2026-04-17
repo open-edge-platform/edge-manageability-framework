@@ -1,0 +1,10 @@
+# SPDX-FileCopyrightText: 2025 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+---
+
+apiVersion: v1
+appVersion: "26.0.1"
+description: A Helm chart for metallb config.
+name: metallb-config
+version: 26.0.1
