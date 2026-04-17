@@ -55,6 +55,22 @@ runs:
         libvirt_network_name = "default"
         EOF
 
+    - name: Ensure libvirt pool exists
+      shell: bash
+      env:
+        LIBVIRT_DEFAULT_URI: 'qemu:///system'
+      run: |
+        if ! virsh pool-info default > /dev/null 2>&1; then
+          echo "Creating libvirt pool: default"
+          virsh pool-define-as default dir --target /var/lib/libvirt/images
+          virsh pool-build default
+          virsh pool-start default
+          virsh pool-autostart default
+        else
+          echo "Libvirt pool 'default' already exists."
+          virsh pool-info default
+        fi
+
     - name: Terraform Init
       shell: bash
       working-directory: ${{ runner.temp }}/virtual-edge-node/gen-vm
