@@ -97,8 +97,9 @@ runs:
       shell: bash
       run: |
         echo "Waiting for VM SSH to be ready (cloud-init + reboot)..."
+        sleep 60
         for i in $(seq 1 30); do
-          if sshpass -p "user" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o PasswordAuthentication=yes -o PubkeyAuthentication=no user@${VM_IP} "echo ready" 2>/dev/null; then
+          if sshpass -p "user" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o PreferredAuthentications=password -o PubkeyAuthentication=no user@${VM_IP} "echo ready" 2>/dev/null; then
             echo "VM is ready!"
             break
           fi
@@ -109,13 +110,15 @@ runs:
     - name: Login to VM and check filesystem
       shell: bash
       run: |
-        sshpass -p "user" ssh -o StrictHostKeyChecking=no -o PasswordAuthentication=yes -o PubkeyAuthentication=no user@${VM_IP} "ls -lrt; cat /proc/cpuinfo"
+        sshpass -p "user" ssh -o StrictHostKeyChecking=no -o PreferredAuthentications=password -o PubkeyAuthentication=no user@${VM_IP} "ls -lrt; cat /proc/cpuinfo"
 
     - name: Print VM console logs
       if: always()
       shell: bash
       run: |
-        echo "=== VM Console Logs ==="
-        sudo cat /var/log/libvirt/qemu/vpro-ubuntu-vm-console.log || true
         echo "=== libvirt qemu log files ==="
         sudo ls -lrt /var/log/libvirt/qemu/ || true
+        echo "=== VM QEMU Log ==="
+        sudo cat /var/log/libvirt/qemu/vpro-ubuntu-vm.log || true
+        echo "=== SSH debug ==="
+        sshpass -p "user" ssh -v -o StrictHostKeyChecking=no -o PreferredAuthentications=password -o PubkeyAuthentication=no user@${VM_IP} "echo test" 2>&1 || true
