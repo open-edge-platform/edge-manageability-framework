@@ -388,61 +388,61 @@ resource "null_resource" "exec_installer" {
   provisioner "remote-exec" {
     inline = [
       "set -o errexit",
-      "bash -c 'cd /home/ubuntu; source onprem.env; ./onprem_installer.sh --yes --trace ${var.use_local_build_artifact ? "--skip-download" : ""} -- --yes --trace | tee ./install_output.log; exit $${PIPESTATUS[0]}'",
+        "echo 'Starting on-prem installer...'",
     ]
     when = create
   }
 }
 
-resource "null_resource" "wait_for_kubeconfig" {
+# resource "null_resource" "wait_for_kubeconfig" {
 
-  // Disable this resource if auto-install is disabled
-  count = var.enable_auto_install ? 1 : 0
+#   // Disable this resource if auto-install is disabled
+#   count = var.enable_auto_install ? 1 : 0
 
-  depends_on = [
-    null_resource.exec_installer
-  ]
+#   depends_on = [
+#     null_resource.exec_installer
+#   ]
 
-  connection {
-    type     = "ssh"
-    host     = local.vmnet_ip0
-    port     = var.vm_ssh_port
-    user     = var.vm_ssh_user
-    password = var.vm_ssh_password
-  }
+#   connection {
+#     type     = "ssh"
+#     host     = local.vmnet_ip0
+#     port     = var.vm_ssh_port
+#     user     = var.vm_ssh_user
+#     password = var.vm_ssh_password
+#   }
 
-  provisioner "remote-exec" {
-    inline = [
-      "until test -f /home/${var.vm_ssh_user}/.kube/config; do sleep 15; done", // This takes ~10 minutes - patience!
-      "echo 'KUBECONFIG file exists!'",
-    ]
-    when = create
-  }
-}
+#   provisioner "remote-exec" {
+#     inline = [
+#       "until test -f /home/${var.vm_ssh_user}/.kube/config; do sleep 15; done", // This takes ~10 minutes - patience!
+#       "echo 'KUBECONFIG file exists!'",
+#     ]
+#     when = create
+#   }
+# }
 
-resource "null_resource" "copy_kubeconfig" {
+# resource "null_resource" "copy_kubeconfig" {
 
-  // Disable this resource if auto-install is disabled
-  count = var.enable_auto_install ? 1 : 0
+#   // Disable this resource if auto-install is disabled
+#   count = var.enable_auto_install ? 1 : 0
 
-  depends_on = [
-    null_resource.wait_for_kubeconfig
-  ]
+#   depends_on = [
+#     null_resource.wait_for_kubeconfig
+#   ]
 
-  provisioner "local-exec" {
-    command = "rm ${path.module}/files/kubeconfig || true"
-    when    = create
-  }
+#   provisioner "local-exec" {
+#     command = "rm ${path.module}/files/kubeconfig || true"
+#     when    = create
+#   }
 
-  provisioner "local-exec" {
-    command = "SSH_PASSWORD='${var.vm_ssh_password}' ${path.module}/scripts/sshpass.bash scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -P 22 ${var.vm_ssh_user}@${local.vmnet_ip0}:/home/${var.vm_ssh_user}/.kube/config ${path.module}/files/kubeconfig"
-    when    = create
-  }
+#   provisioner "local-exec" {
+#     command = "SSH_PASSWORD='${var.vm_ssh_password}' ${path.module}/scripts/sshpass.bash scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -P 22 ${var.vm_ssh_user}@${local.vmnet_ip0}:/home/${var.vm_ssh_user}/.kube/config ${path.module}/files/kubeconfig"
+#     when    = create
+#   }
 
-  provisioner "local-exec" {
-    // Set the cluster URL to the VM's IP address so that kubectl can remotely connect to the cluster. Disable TLS
-    // verification because the server name dialed does not match the certificate.
-    command = "KUBECONFIG=${path.module}/files/kubeconfig kubectl config set-cluster default --server=https://${local.vmnet_ip0}:6443 --insecure-skip-tls-verify=true"
-    when    = create
-  }
-}
+#   provisioner "local-exec" {
+#     // Set the cluster URL to the VM's IP address so that kubectl can remotely connect to the cluster. Disable TLS
+#     // verification because the server name dialed does not match the certificate.
+#     command = "KUBECONFIG=${path.module}/files/kubeconfig kubectl config set-cluster default --server=https://${local.vmnet_ip0}:6443 --insecure-skip-tls-verify=true"
+#     when    = create
+#   }
+# }
