@@ -460,7 +460,7 @@ end
     APIV2-->>CLI: currentSolState=SOL_STATE_START solSessionUrl=ws-url
 
     Note over CLI: 6. Connect terminal websocket utility
-    CLI->>CLI: Connect wssh3 / websocat to sol_session_url
+    CLI->>CLI: Connect gorilla / websocket to sol_session_url
     Note over CLI,AMT: Interactive text terminal — keystrokes and display data relayed via sol-manager
 ```
 
