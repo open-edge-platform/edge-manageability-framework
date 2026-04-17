@@ -41,7 +41,7 @@ runs:
     - name: Generate terraform.tfvars
       shell: bash
       run: |
-        cat > ${{ runner.temp }}/virtual-edge-node/gen-vm/terraform.tfvars <<EOF
+        cat > ${{ runner.temp }}/virtual-edge-node/pico/modules/create-clean-vm/terraform.tfvars <<EOF
         vm_name   = "vpro-ubuntu-vm"
         cpu_cores = 2
         memory    = 4096
@@ -73,17 +73,17 @@ runs:
 
     - name: Terraform Init
       shell: bash
-      working-directory: ${{ runner.temp }}/virtual-edge-node/gen-vm
+      working-directory: ${{ runner.temp }}/virtual-edge-node/pico/modules/create-clean-vm
       run: terraform init
 
     - name: Terraform Apply
       shell: bash
-      working-directory: ${{ runner.temp }}/virtual-edge-node/gen-vm
+      working-directory: ${{ runner.temp }}/virtual-edge-node/pico/modules/create-clean-vm
       run: terraform apply --var-file=terraform.tfvars -auto-approve
 
     - name: Show VM details
       shell: bash
-      working-directory: ${{ runner.temp }}/virtual-edge-node/gen-vm
+      working-directory: ${{ runner.temp }}/virtual-edge-node/pico/modules/create-clean-vm
       run: |
         echo "VM created successfully!"
         terraform output
@@ -110,4 +110,4 @@ runs:
     - name: Login to VM and check filesystem
       shell: bash
       run: |
-        sshpass -p "user" ssh -o StrictHostKeyChecking=no user@${VM_IP} "ls -lrt"
+        sshpass -p "user" ssh -o StrictHostKeyChecking=no user@${VM_IP} "ls -lrt; cat /proc/cpuinfo"
