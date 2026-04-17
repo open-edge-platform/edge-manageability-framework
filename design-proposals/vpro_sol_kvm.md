@@ -387,7 +387,6 @@ end
     Browser->>CLI: /ws/kvm closed (tab close or POST /api/disconnect)
     else orch-cli --kvm stop
     CLI->>CLI: --kvm stop received
-    end
     CLI->>MPS: close ws relay
     MPS->>AMT: ws channel closes
     CLI->>APIV2: PATCH desiredKvmState=KVM_STATE_STOP
@@ -396,6 +395,7 @@ end
     Note over CLI,INV: 9. Verify session closed
     CLI->>APIV2: GET verify KVM_STATE_STOP
     APIV2-->>CLI: currentKvmState=KVM_STATE_STOP
+    end
 ```
 
 ---
