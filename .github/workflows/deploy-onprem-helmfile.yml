@@ -200,12 +200,12 @@ jobs:
           cd ci/ven
           ./libvirt-setup.sh
 
-      - name: Deploy on-prem orchestrator (helmfile pre-orch + post-orch) - vPro
-        uses: ./.github/actions/deploy_onprem_helmfile
-        with:
-          orch_profile: onprem-vpro
-          docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
-          docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
+ #     - name: Deploy on-prem orchestrator (helmfile pre-orch + post-orch) - vPro
+ #       uses: ./.github/actions/deploy_onprem_helmfile
+ #       with:
+ #        orch_profile: onprem-vpro
+ #         docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
+ #         docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
 
       - name: Create Clean Ubuntu VM
         uses: ./.github/actions/create_clean_vm
