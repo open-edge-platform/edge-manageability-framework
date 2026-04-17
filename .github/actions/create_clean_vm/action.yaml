@@ -98,12 +98,12 @@ runs:
       run: |
         echo "Waiting for VM SSH to be ready (cloud-init + reboot)..."
         sleep 60
-        for i in $(seq 1 30); do
+        for i in $(seq 1 15); do
           if sshpass -p "user" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o PreferredAuthentications=password -o PubkeyAuthentication=no user@${VM_IP} "echo ready" 2>/dev/null; then
             echo "VM is ready!"
             break
           fi
-          echo "Attempt $i/30 - waiting 10s..."
+          echo "Attempt $i/15 - waiting 10s..."
           sleep 10
         done
 
