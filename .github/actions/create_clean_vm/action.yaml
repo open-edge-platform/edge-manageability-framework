@@ -36,7 +36,7 @@ runs:
       shell: bash
       run: |
         echo "Cloning virtual-edge-node (branch: ubuntu-vm)..."
-        git clone --branch main https://github.com/open-edge-platform/virtual-edge-node.git ${{ runner.temp }}/virtual-edge-node
+        git clone --branch ubuntu-vm https://github.com/open-edge-platform/virtual-edge-node.git ${{ runner.temp }}/virtual-edge-node
 
     - name: Generate terraform.tfvars
       shell: bash
@@ -120,5 +120,7 @@ runs:
         sudo ls -lrt /var/log/libvirt/qemu/ || true
         echo "=== VM QEMU Log ==="
         sudo cat /var/log/libvirt/qemu/vpro-ubuntu-vm.log || true
+        echo "=== VM Console Log ==="
+        sudo cat /var/log/libvirt/qemu/vpro-ubuntu-vm-console.log || true
         echo "=== SSH debug ==="
         sshpass -p "user" ssh -v -o StrictHostKeyChecking=no -o PreferredAuthentications=password -o PubkeyAuthentication=no user@${VM_IP} "echo test" 2>&1 || true
