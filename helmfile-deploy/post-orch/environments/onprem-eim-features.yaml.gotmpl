@@ -121,7 +121,8 @@ infra-onboarding:
   disableO11yProfile: true
 
 # ─── Tenancy mode ────────────────────────────────────────────────────────────
-defaultTenancy: {{ env "EMF_DEFAULT_TENANCY" | default "false" }}
+tenancy-init:
+  enabled: {{ env "EMF_DEFAULT_TENANCY" | default "false" }}
 
 # ─── CORS ────────────────────────────────────────────────────────────────────
 cors:
