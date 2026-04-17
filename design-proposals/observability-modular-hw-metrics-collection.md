@@ -89,6 +89,22 @@ app orchestration from the EMF stack.
 - Modularization changes outlined below are designed to work with all use cases outlined in the
   [Modular Decomposition documentation](./eim-modular-decomposition.md).
 
+
+### Hardware & OS Prerequsites
+
+1. Any supported EN system with at least 1G free memory for services.
+1. Ubuntu OS 24.04 LTS.
+1. k3s cluster deployed (either on edge node or in orchestrator).
+1. Minimum persistent storage for cluster, based on current defaults:
+    1. OnPrem: 42G storage for Mimir and 16G for Loki.
+    1. Cloud: 132G storage for Mimir and 80G for Loki.
+1. Ports between CLI and Mimir will be through the API Gateway as currently used.
+1. Port 443 is currently used between edge node and ObaaS when using Traefik gateway.
+
+> Note: The storage sizes here are based on the current defaults set in the deployment profiles which expect multiple
+edge nodes to be sharing a single ObaaS pipeline. For smaller deployments, these sizes can be reduced based on the
+amount and frequency of metrics being collected and stored.
+
 ### Design
 
 #### Metric Collectors
@@ -490,25 +506,29 @@ The CLI commands will look like the following:
 - Hardware Metrics Collection.
   - Identify the new hardware metrics collectors to be added to the current edge node metrics service.
   - Extend the current GPU metrics script to also collect iGPU metrics using the Telegraf exec plugin.
-  - Develop a new collector to retrieve VPU metrics.
+  - Develop a new collector to retrieve NPU metrics.
   - Add additional Telegraf plugins to metrics service configuration.
   - Test deployment of updated metrics sevice on edge node and check the metrics being retrieved.
+  - Test impact on network and edge node performance when new metrics collectors enabled.
   - Update documentation for the edge node observability agent.
-- Modular observability workflow.
-  - Identify the services needed for a modular observability workflow.
-  - Modify the deployment profiles to include an observability only modular workflow.
-  - Test the deployment of the new modular workflow.
+- ObaaS workflow.
+  - Identify the services currently used to support ObaaS.
+  - Modify the current deployment configurations to support an option to deploy just ObaaS.
+  - Test the deployment of the new ObaaS workflow.
   - Test deployment with the updated edge node observability agent.
   - Extend Orchestrator CLI to retrieve metrics from the observability pipeline.
   - Test the updated CLI with the modular observability pipeline and confirm that new metrics can be retrieved.
-  - Provide documentation on how to install the modular observability workflow.
+  - Test the impact on the performance of the pipeline when the new metrics collectors are enabled.
+  - Provide documentation on how to install the ObaaS workflow.
   - Extend Orchestrator CLI documentation with new commands for metrics querying.
 
 ## Opens
 
 - Grafana dashboards will not be used in modular flow, instead metrics will be retreived using the CLI. Do
   we still require the dashboards to be maintained?
-- Investigate the current support in CLI for retrieving metrics from Mimir
+  - Continue manitenance for now.
+- Investigate the current support in CLI for retrieving metrics from Mimir.
+  - No current support for metrics reporting in CLI.
 - Not included in this proposal is the telemetry management pipeline that runs parallel to the observability
   pipeline and can be used to configure what metrics an edge node reports after it has been deployed without
   requiring a full redeployment or access to the edge node. For modular deployments, should this also be included
