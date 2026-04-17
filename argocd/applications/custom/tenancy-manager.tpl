@@ -5,6 +5,7 @@
 image:
   registry: {{.Values.argo.containerRegistryURL }}
   repository: common/tenancy-manager
+  tag: "nexus-replacement-20260417"
 imagePullSecrets:
   {{- with .Values.argo.imagePullSecrets }}
     {{- toYaml . | nindent 2 }}
@@ -14,3 +15,5 @@ imagePullSecrets:
 resources:
   {{- toYaml . | nindent 4 }}
 {{- end }}
+postgres:
+  secrets: iam-tenancy-local-postgresql
