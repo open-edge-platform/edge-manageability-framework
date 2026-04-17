@@ -208,7 +208,7 @@ jobs:
           docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
 
       - name: Create Clean Ubuntu VM
-        uses: ./.github/actions/crate_clean_vm
+        uses: ./.github/actions/create_clean_vm
 
       - name: Collect diagnostics
         if: always()
