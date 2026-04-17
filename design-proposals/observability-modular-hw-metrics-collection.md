@@ -89,17 +89,16 @@ app orchestration from the EMF stack.
 - Modularization changes outlined below are designed to work with all use cases outlined in the
   [Modular Decomposition documentation](./eim-modular-decomposition.md).
 
-
 ### Hardware & OS Prerequsites
 
 1. Any supported EN system with at least 1G free memory for services.
-1. Ubuntu OS 24.04 LTS.
-1. k3s cluster deployed (either on edge node or in orchestrator).
-1. Minimum persistent storage for cluster, based on current defaults:
+2. Ubuntu OS 24.04 LTS.
+3. k3s cluster deployed (either on edge node or in orchestrator).
+4. Minimum persistent storage for cluster, based on current defaults:
     1. OnPrem: 42G storage for Mimir and 16G for Loki.
-    1. Cloud: 132G storage for Mimir and 80G for Loki.
-1. Ports between CLI and Mimir will be through the API Gateway as currently used.
-1. Port 443 is currently used between edge node and ObaaS when using Traefik gateway.
+    2. Cloud: 132G storage for Mimir and 80G for Loki.
+5. Ports between CLI and Mimir will be through the API Gateway as currently used.
+6. Port 443 is currently used between edge node and ObaaS when using Traefik gateway.
 
 > Note: The storage sizes here are based on the current defaults set in the deployment profiles which expect multiple
 edge nodes to be sharing a single ObaaS pipeline. For smaller deployments, these sizes can be reduced based on the
