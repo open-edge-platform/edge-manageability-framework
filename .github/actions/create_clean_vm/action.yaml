@@ -15,9 +15,9 @@ runs:
     - name: Install dependencies
       shell: bash
       run: |
-        echo "Installing mkisofs..."
+        echo "Installing dependencies..."
         sudo apt-get update -qq
-        sudo apt-get install -y -qq mkisofs
+        sudo apt-get install -y -qq mkisofs sshpass xsltproc jq
 
     - name: Install Terraform
       shell: bash
@@ -95,9 +95,9 @@ runs:
     - name: Wait for VM to be ready
       shell: bash
       run: |
-        echo "Waiting for VM SSH to be ready..."
+        echo "Waiting for VM SSH to be ready (cloud-init + reboot)..."
         for i in $(seq 1 30); do
-          if sshpass -p "user" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 user@${VM_IP} "echo ready" 2>/dev/null; then
+          if sshpass -p "user" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o PasswordAuthentication=yes -o PubkeyAuthentication=no user@${VM_IP} "echo ready" 2>/dev/null; then
             echo "VM is ready!"
             break
           fi
@@ -108,4 +108,4 @@ runs:
     - name: Login to VM and check filesystem
       shell: bash
       run: |
-        sshpass -p "user" ssh -o StrictHostKeyChecking=no user@${VM_IP} "ls -lrt; cat /proc/cpuinfo"
+        sshpass -p "user" ssh -o StrictHostKeyChecking=no -o PasswordAuthentication=yes -o PubkeyAuthentication=no user@${VM_IP} "ls -lrt; cat /proc/cpuinfo"
