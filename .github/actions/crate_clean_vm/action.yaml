@@ -74,6 +74,9 @@ runs:
         VM_IP=$(terraform output -json vm_ip | jq -r '.[0]')
         echo "VM_IP=${VM_IP}" >> $GITHUB_ENV
         echo "VM IP address: ${VM_IP}"
+        VM_SERIAL=$(terraform output -raw vm_serial)
+        echo "VM_SERIAL=${VM_SERIAL}" >> $GITHUB_ENV
+        echo "VM Serial: ${VM_SERIAL}"
 
     - name: Wait for VM to be ready
       shell: bash
