@@ -41,7 +41,7 @@ runs:
     - name: Generate terraform.tfvars
       shell: bash
       run: |
-        cat > ${{ runner.temp }}/virtual-edge-node/pico/modules/create-clean-vm/terraform.tfvars <<EOF
+        cat > ${{ runner.temp }}/virtual-edge-node/pico/modules/create-clean-vm/terraform.tfvars <<-EOF
         vm_name   = "vpro-ubuntu-vm"
         cpu_cores = 2
         memory    = 4096
@@ -51,6 +51,7 @@ runs:
         ssh_enabled      = true
         libvirt_pool_name    = "default"
         libvirt_network_name = "default"
+        vm_console           = "file"
         EOF
 
     - name: Ensure libvirt pool exists
@@ -109,3 +110,12 @@ runs:
       shell: bash
       run: |
         sshpass -p "user" ssh -o StrictHostKeyChecking=no -o PasswordAuthentication=yes -o PubkeyAuthentication=no user@${VM_IP} "ls -lrt; cat /proc/cpuinfo"
+
+    - name: Print VM console logs
+      if: always()
+      shell: bash
+      run: |
+        echo "=== VM Console Logs ==="
+        sudo cat /var/log/libvirt/qemu/vpro-ubuntu-vm-console.log || true
+        echo "=== libvirt qemu log files ==="
+        sudo ls -lrt /var/log/libvirt/qemu/ || true
