@@ -112,15 +112,15 @@ runs:
       run: |
         sshpass -p "user" ssh -o StrictHostKeyChecking=no -o PreferredAuthentications=password -o PubkeyAuthentication=no user@${VM_IP} "ls -lrt; cat /proc/cpuinfo"
 
-    - name: Print VM console logs
-      if: always()
-      shell: bash
-      run: |
-        echo "=== libvirt qemu log files ==="
-        sudo ls -lrt /var/log/libvirt/qemu/ || true
-        echo "=== VM QEMU Log ==="
-        sudo cat /var/log/libvirt/qemu/vpro-ubuntu-vm.log || true
-        echo "=== VM Console Log ==="
-        sudo cat /var/log/libvirt/qemu/vpro-ubuntu-vm-console.log || true
-        echo "=== SSH debug ==="
-        sshpass -p "user" ssh -v -o StrictHostKeyChecking=no -o PreferredAuthentications=password -o PubkeyAuthentication=no user@${VM_IP} "echo test" 2>&1 || true
+    # - name: Print VM console logs
+    #   if: always()
+    #   shell: bash
+    #   run: |
+    #     echo "=== libvirt qemu log files ==="
+    #     sudo ls -lrt /var/log/libvirt/qemu/ || true
+    #     echo "=== VM QEMU Log ==="
+    #     sudo cat /var/log/libvirt/qemu/vpro-ubuntu-vm.log || true
+    #     echo "=== VM Console Log ==="
+    #     sudo cat /var/log/libvirt/qemu/vpro-ubuntu-vm-console.log || true
+    #     echo "=== SSH debug ==="
+    #     sshpass -p "user" ssh -v -o StrictHostKeyChecking=no -o PreferredAuthentications=password -o PubkeyAuthentication=no user@${VM_IP} "echo test" 2>&1 || true
