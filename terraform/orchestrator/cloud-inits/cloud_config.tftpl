@@ -22,6 +22,14 @@ ntp:
     - ${ntp_server}
 %{ endif ~}
 apt:
+%{ if apt_mirror_country != "" ~}
+  primary:
+    - arches: [amd64, i386]
+      uri: http://${apt_mirror_country}.archive.ubuntu.com/ubuntu/
+  security:
+    - arches: [amd64, i386]
+      uri: http://${apt_mirror_country}.archive.ubuntu.com/ubuntu/
+%{ endif ~}
 %{ if http_proxy != "" ~}
   http_proxy: ${http_proxy}
 %{ endif ~}

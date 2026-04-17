@@ -14,6 +14,7 @@ resource "local_file" "cloud_init_user_data_file" {
       no_proxy            = var.no_proxy,
       ca_certs            = [for ca_cert_paths in var.ca_certificates : indent(6, file(ca_cert_paths))], // Read CA certs into a list
       enable_auto_install = var.enable_auto_install,
+      apt_mirror_country  = var.apt_mirror_country,
     },
   )
   filename = "${path.module}/files/user_data.cfg"
