@@ -46,11 +46,9 @@ runs:
         cpu_cores = 2
         memory    = 4096
         disk_size = 40
-
         default_user     = "user"
         default_password = "user"
         ssh_enabled      = true
-
         libvirt_pool_name    = "default"
         libvirt_network_name = "default"
         EOF
