@@ -121,8 +121,10 @@ amt:
         webport: # Define a new name for the other port
           name: "mps-wss.{{ .Values.argo.clusterDomain }}" # Define the name for the new port
   {{- if .Values.argo.traefik }}
-    tlsOption: {{ .Values.argo.traefik.tlsOption | default "" | quote }}
+      tlsOption: {{ .Values.argo.traefik.tlsOption | default "" | quote }}
   {{- end }}
+    mpsIngressRoute:
+      mpsHostname: api.{{ .Values.argo.clusterDomain }}
 
   rps:
     postgresql:
@@ -135,5 +137,7 @@ amt:
         webport: # Define a new name for the other port
           name: "rps-wss.{{ .Values.argo.clusterDomain }}" # Define the name for the new port
   {{- if .Values.argo.traefik }}
-    tlsOption: {{ .Values.argo.traefik.tlsOption | default "" | quote }}
+      tlsOption: {{ .Values.argo.traefik.tlsOption | default "" | quote }}
   {{- end }}
+    rpsIngressRoute:
+      rpsHostname: api.{{ .Values.argo.clusterDomain }}
