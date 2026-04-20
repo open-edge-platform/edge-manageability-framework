@@ -140,6 +140,12 @@ variable "ca_certificates" {
   default     = []
 }
 
+variable "apt_mirror_country" {
+  type        = string
+  description = "Country code for Ubuntu apt mirrors (e.g., 'us', 'de', 'uk'). Uses country-specific mirrors for faster package downloads."
+  default     = "us"
+}
+
 variable "install_docker" {
   type        = bool
   description = "Whether to install Docker on the VM."
