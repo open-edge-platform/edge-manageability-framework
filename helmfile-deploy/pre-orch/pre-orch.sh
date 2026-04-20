@@ -588,6 +588,7 @@ k3s_install() {
       --write-kubeconfig-mode=0644 \
       --disable traefik \
       --disable local-storage \
+      --disable servicelb \
       --kubelet-arg=max-pods=${MAX_PODS}
   fi
 
