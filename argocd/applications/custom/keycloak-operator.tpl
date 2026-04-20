@@ -25,6 +25,26 @@ operator:
   image: {{ .Values.argo.keycloakOperator.image | quote }}
 {{- end }}
 
+# Disable operator trace export to localhost:4317 to avoid repeated warning logs
+# while preserving upstream-required environment variables.
+operator:
+  container:
+    env:
+      - name: KUBERNETES_NAMESPACE
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.namespace
+      - name: RELATED_IMAGE_KEYCLOAK
+        value: '{{ "{{ .Values.operator.relatedImage.keycloak }}" }}'
+      - name: QUARKUS_OPERATOR_SDK_CONTROLLERS_KEYCLOAKREALMIMPORTCONTROLLER_NAMESPACES
+        value: JOSDK_WATCH_CURRENT
+      - name: QUARKUS_OPERATOR_SDK_CONTROLLERS_KEYCLOAKCONTROLLER_NAMESPACES
+        value: JOSDK_WATCH_CURRENT
+      # Runtime key to disable OTel SDK and stop OTLP export warnings.
+      # QUARKUS_OTEL_TRACES_EXPORTER is a build-time property and is not effective here.
+      - name: QUARKUS_OTEL_SDK_DISABLED
+        value: "true"
+
 # Override operator imagePullSecrets if specified
 {{- if and .Values.argo .Values.argo.keycloakOperator .Values.argo.keycloakOperator.imagePullSecrets }}
 imagePullSecrets:

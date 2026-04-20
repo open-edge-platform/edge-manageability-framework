@@ -158,7 +158,7 @@ jobs:
           git config --global url."https://${{ secrets.SYS_EMF_GH_TOKEN }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Setup asdf and install dependencies
-        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
+        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@b6610539eb98ed7bd5903e6629e48c1da39d883b
 
       - name: Run lint
         run: mage -v lint:markdown
@@ -179,7 +179,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup asdf and install dependencies
-        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
+        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@b6610539eb98ed7bd5903e6629e48c1da39d883b
 
       - name: Run lint
         working-directory: on-prem-installers
@@ -201,7 +201,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup asdf and install dependencies
-        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
+        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@b6610539eb98ed7bd5903e6629e48c1da39d883b
 
       - name: Run lint
         run: mage lint:terraform
@@ -225,7 +225,7 @@ jobs:
         run: echo "ASDF_YAMLLINT_PIP_PACKAGES=pyyaml" >> $GITHUB_ENV
 
       - name: Setup asdf and install dependencies
-        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]  
+        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@b6610539eb98ed7bd5903e6629e48c1da39d883b  
       - name: Run lint
         run: mage lint:yaml
 
@@ -245,7 +245,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup asdf and install dependencies
-        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
+        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@b6610539eb98ed7bd5903e6629e48c1da39d883b
 
       - name: Run lint
         run: mage lint:helm
@@ -272,7 +272,7 @@ jobs:
           git config --global url."https://${{ secrets.SYS_EMF_GH_TOKEN }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Setup asdf and install dependencies
-        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
+        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@b6610539eb98ed7bd5903e6629e48c1da39d883b
 
       - name: Run lint
         run: mage lint:golang
@@ -305,7 +305,7 @@ jobs:
           git config --global url."https://${{ secrets.SYS_EMF_GH_TOKEN }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Setup asdf and install dependencies
-        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
+        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@b6610539eb98ed7bd5903e6629e48c1da39d883b
 
       - name: Run lint
         run: |
@@ -364,7 +364,7 @@ jobs:
           git config --global url."https://${{ secrets.SYS_EMF_GH_TOKEN }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Setup asdf and install dependencies
-        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
+        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@b6610539eb98ed7bd5903e6629e48c1da39d883b
 
       - name: Get version tag
         id: get_version_tag
