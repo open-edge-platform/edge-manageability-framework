@@ -4,6 +4,10 @@
 
 name: Deploy On-Prem (Helmfile)
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 on:
   workflow_dispatch:
     inputs:
@@ -22,10 +26,6 @@ on:
       - opened
       - synchronize
       - reopened
-    paths:
-      - 'helmfile-deploy/**'
-      - '.github/actions/deploy_onprem_helmfile/**'
-      - '.github/workflows/deploy-onprem-helmfile.yml'
 
 permissions:
   contents: read
@@ -202,6 +202,9 @@ jobs:
           orch_profile: onprem-vpro
           docker_username: ${{ secrets.SYS_DOCKERHUB_USERNAME }}
           docker_password: ${{ secrets.SYS_DOCKERHUB_RO }}
+
+      - name: Create Clean Ubuntu VM
+        uses: ./.github/actions/create_clean_vm
 
       - name: Collect diagnostics
         if: always()

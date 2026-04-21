@@ -69,7 +69,7 @@ sudo systemctl daemon-reload
 sudo apt-get install -y qemu qemu-kvm libvirt-dev
 
 # Install additional tools
-sudo apt-get install -y libvirt-daemon-system libvirt-clients pesign virt-manager ovmf expect minicom socat xterm efitools
+sudo apt-get install -y libvirt-daemon-system libvirt-clients pesign virt-manager ovmf expect minicom socat xterm efitools xsltproc
 
 sudo systemctl start libvirtd
 sudo systemctl enable libvirtd

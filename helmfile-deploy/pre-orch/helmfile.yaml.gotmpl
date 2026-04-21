@@ -18,8 +18,17 @@ environments:
         haproxyIP: {{ env "EMF_ORCH_IP" | default (env "EMF_HAPROXY_IP") }}
         singleIpMode: {{ if env "EMF_ORCH_IP" }}true{{ else }}false{{ end }}
         localpvVersion: {{ env "LOCALPV_VERSION" | default "4.3.0" }}
+        openebs:
+          enabled: {{ env "INSTALL_OPENEBS" | default "true" }}
+        metallb:
+          enabled: {{ env "INSTALL_METALLB" | default "true" }}
 
 ---
+
+helmDefaults:
+  createNamespace: true
+  wait: true
+  timeout: 300
 
 repositories:
   - name: openebs-localpv
@@ -39,9 +48,7 @@ releases:
     version: {{ .Values.localpvVersion }}
     values:
       - openebs-localpv/values-openebs-localpv.yaml
-    createNamespace: true
-    wait: true
-    timeout: 300
+    condition: openebs.enabled
 
   #############################################################################
   # MetalLB controller + speaker
@@ -54,9 +61,7 @@ releases:
     version: "0.15.2"
     values:
       - metallb/values-metallb.yaml
-    createNamespace: true
-    wait: true
-    timeout: 300
+    condition: metallb.enabled
 
   #############################################################################
   # MetalLB IP address pool + L2 advertisement config
@@ -70,6 +75,5 @@ releases:
       - metallb/values-metallb-config.yaml.gotmpl
     needs:
       - metallb-system/metallb
-    wait: true
-    timeout: 300
+    condition: metallb.enabled
     disableValidation: true

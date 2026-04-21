@@ -1,0 +1,126 @@
+# SPDX-FileCopyrightText: (C) 2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+name: "Create Clean Ubuntu VM"
+description: "Creates a clean Ubuntu VM using Terraform and libvirt from the virtual-edge-node repository"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set environment variables
+      shell: bash
+      run: |
+        echo "LIBVIRT_DEFAULT_URI=qemu:///system" >> $GITHUB_ENV
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        echo "Installing dependencies..."
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq mkisofs sshpass xsltproc jq
+
+    - name: Install Terraform
+      shell: bash
+      run: |
+        if ! command -v terraform &> /dev/null; then
+          echo "Installing Terraform..."
+          wget -qO- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list > /dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq terraform
+        else
+          echo "Terraform already installed: $(terraform --version | head -1)"
+        fi
+
+    - name: Clone virtual-edge-node repository
+      shell: bash
+      run: |
+        echo "Cloning virtual-edge-node (branch: ubuntu-vm)..."
+        git clone --branch main https://github.com/open-edge-platform/virtual-edge-node.git ${{ runner.temp }}/virtual-edge-node
+
+    - name: Generate terraform.tfvars
+      shell: bash
+      run: |
+        cat > ${{ runner.temp }}/virtual-edge-node/pico/modules/create-clean-vm/terraform.tfvars <<-EOF
+        vm_name   = "vpro-ubuntu-vm"
+        cpu_cores = 2
+        memory    = 4096
+        disk_size = 40
+        default_user     = "user"
+        default_password = "user"
+        ssh_enabled      = true
+        libvirt_pool_name    = "default"
+        libvirt_network_name = "default"
+        vm_console           = "file"
+        EOF
+
+    - name: Ensure libvirt pool exists
+      shell: bash
+      env:
+        LIBVIRT_DEFAULT_URI: 'qemu:///system'
+      run: |
+        if ! virsh pool-info default > /dev/null 2>&1; then
+          echo "Creating libvirt pool: default"
+          virsh pool-define-as default dir --target /var/lib/libvirt/images
+          virsh pool-build default
+          virsh pool-start default
+          virsh pool-autostart default
+        else
+          echo "Libvirt pool 'default' already exists."
+          virsh pool-info default
+        fi
+
+    - name: Terraform Init
+      shell: bash
+      working-directory: ${{ runner.temp }}/virtual-edge-node/pico/modules/create-clean-vm
+      run: terraform init
+
+    - name: Terraform Apply
+      shell: bash
+      working-directory: ${{ runner.temp }}/virtual-edge-node/pico/modules/create-clean-vm
+      run: terraform apply --var-file=terraform.tfvars -auto-approve
+
+    - name: Show VM details
+      shell: bash
+      working-directory: ${{ runner.temp }}/virtual-edge-node/pico/modules/create-clean-vm
+      run: |
+        echo "VM created successfully!"
+        terraform output
+        VM_IP=$(terraform output -json vm_ip | jq -r '.[0]')
+        echo "VM_IP=${VM_IP}" >> $GITHUB_ENV
+        echo "VM IP address: ${VM_IP}"
+        VM_SERIAL=$(terraform output -raw vm_serial)
+        echo "VM_SERIAL=${VM_SERIAL}" >> $GITHUB_ENV
+        echo "VM Serial: ${VM_SERIAL}"
+
+    - name: Wait for VM to be ready
+      shell: bash
+      run: |
+        echo "Waiting for VM SSH to be ready (cloud-init + reboot)..."
+        #sleep 60
+        for i in $(seq 1 30); do
+          if sshpass -p "user" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o PreferredAuthentications=password -o PubkeyAuthentication=no user@${VM_IP} "echo ready" 2>/dev/null; then
+            echo "VM is ready!"
+            break
+          fi
+          echo "Attempt $i/30 - waiting 10s..."
+          sleep 10
+        done
+
+    - name: Login to VM and check filesystem
+      shell: bash
+      run: |
+        sshpass -p "user" ssh -o StrictHostKeyChecking=no -o PreferredAuthentications=password -o PubkeyAuthentication=no user@${VM_IP} "ls -lrt; cat /proc/cpuinfo"
+
+    # - name: Print VM console logs
+    #   if: always()
+    #   shell: bash
+    #   run: |
+    #     echo "=== libvirt qemu log files ==="
+    #     sudo ls -lrt /var/log/libvirt/qemu/ || true
+    #     echo "=== VM QEMU Log ==="
+    #     sudo cat /var/log/libvirt/qemu/vpro-ubuntu-vm.log || true
+    #     echo "=== VM Console Log ==="
+    #     sudo cat /var/log/libvirt/qemu/vpro-ubuntu-vm-console.log || true
+    #     echo "=== SSH debug ==="
+    #     sshpass -p "user" ssh -v -o StrictHostKeyChecking=no -o PreferredAuthentications=password -o PubkeyAuthentication=no user@${VM_IP} "echo test" 2>&1 || true

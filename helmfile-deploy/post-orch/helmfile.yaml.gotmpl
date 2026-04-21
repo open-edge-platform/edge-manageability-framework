@@ -87,7 +87,7 @@ releases:
     namespace: orch-platform
     chart: edge-orch/common/charts/keycloak-operator
     wait: true
-    version: 26.1.2
+    version: 26.1.3
     values:
       - values/keycloak-operator.yaml
     condition: keycloak-operator.enabled
@@ -386,7 +386,7 @@ releases:
     namespace: orch-platform
     chart: edge-orch/common/charts/keycloak-instance
     wait: true
-    version: 26.1.2
+    version: 26.1.3
     timeout: 600
     values:
       - values/platform-keycloak.yaml.gotmpl
@@ -761,8 +761,23 @@ releases:
 
 
   #############################################################################
-  # Wave 1300 — TLS boots wait + token-fs (needs all of Wave 1250)
+  # Wave 1300 — TLS boots wait + token-fs + tenancy-init (needs Wave 1250)
   #############################################################################
+
+  - name: tenancy-init
+    labels:
+      app: tenancy-init
+      wave: "1300"
+    namespace: orch-iam
+    chart: edge-orch/common/charts/tenancy-init
+    wait: true
+    waitForJobs: true
+    version: 26.1.0
+    values:
+      - values/tenancy-init.yaml.gotmpl
+    condition: tenancy-init.enabled
+    needs:
+      - orch-gateway/keycloak-tenant-controller
 
   - name: secret-wait-tls-boots
     labels:
@@ -984,7 +999,7 @@ releases:
     namespace: orch-ui
     chart: edge-orch/orch-ui/charts/orch-ui-admin
     wait: true
-    version: 4.0.7
+    version: 4.0.9
     values:
       - values/web-ui-admin.yaml.gotmpl
     condition: web-ui-admin.enabled
@@ -1000,7 +1015,7 @@ releases:
     namespace: orch-ui
     chart: edge-orch/orch-ui/charts/orch-ui-infra
     wait: true
-    version: 4.0.4
+    version: 4.0.6
     values:
       - values/web-ui-infra.yaml.gotmpl
     condition: web-ui-infra.enabled
@@ -1021,7 +1036,7 @@ releases:
     namespace: orch-ui
     chart: edge-orch/orch-ui/charts/orch-ui-root
     wait: true
-    version: 4.0.8
+    version: 4.0.12
     values:
       - values/web-ui-root.yaml.gotmpl
     condition: web-ui-root.enabled

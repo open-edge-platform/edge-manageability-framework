@@ -1,9 +1,0 @@
-# SPDX-FileCopyrightText: 2025 Intel Corporation
-#
-# SPDX-License-Identifier: Apache-2.0
-
-argo:
-  infra-managers:
-    autoProvision:
-      enabled: true
-      defaultProfile: ubuntu-22.04-lts-generic
