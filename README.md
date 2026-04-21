@@ -30,17 +30,24 @@ flowchart LR
     subgraph Orch["Edge Orchestrator"]
         direction TB
         A["Web-UI / CLI"]
-        B["EIM Profile | vPro Profile"]
-        C["Edge Infrastructure Manager"]
-        D["Platform Services"]
-        A --> B --> C --> D
+        B["EIM Profile"]
+        C["vPro Profile"]
+        D["Edge Infrastructure Manager"]
+        E["Intel AMT / vPro Manager"]
+        F["Platform Services"]
+        A --> B & C
+        B --> D
+        C --> E
+        D & E --> F
     end
 
     subgraph Edge["Edge Nodes"]
         direction TB
-        E["OS / Packages / Agents"]
-        F["Hardware"]
-        E --> F
+        G["Intel vPro Devices"]
+        H["Non-vPro Devices"]
+        I["OS / Agents"]
+        J["Hardware"]
+        G & H --> I --> J
     end
 
     Orch -->|"Onboard / Provision / Manage"| Edge
