@@ -26,49 +26,67 @@ including edge nodes (i.e. hosts). Two deployment profiles are supported:
 management, and **vPro** for lightweight Intel AMT-based remote management.
 
 ```mermaid
-flowchart LR
+flowchart TB
 
-    subgraph EIM["EIM Profile"]
+    subgraph EO["Edge Orchestrator"]
         direction TB
-        UI1[Web-UI / CLI]
-        IM1["Edge Infrastructure Manager<br/>(Onboarding, Provisioning,<br/>Inventory, Lifecycle Mgmt)"]
-        PS1["Platform Services<br/>(IAM, Secrets, API Gateway,<br/>Certs)"]
-        UI1 --> IM1 --> PS1
+
+        subgraph Access["Access Layer"]
+            direction LR
+            WebUI["Web-UI<br/>(EIM only)"]
+            CLI["CLI"]
+        end
+
+        subgraph Profiles["Deployment Profiles"]
+            direction LR
+            EIM["EIM Profile<br/>(Full Infrastructure Mgmt)"]
+            VPRO["vPro Profile<br/>(AMT Management)"]
+        end
+
+        subgraph Infra["Edge Infrastructure Manager"]
+            direction LR
+            Onboard["Onboarding &<br/>Provisioning"]
+            Inventory["Inventory &<br/>Lifecycle Mgmt"]
+            AMT["Intel AMT /<br/>vPro Mgmt"]
+        end
+
+        subgraph Platform["Platform Services"]
+            direction LR
+            IAM["Identity &<br/>Access Mgmt"]
+            Secrets["Secrets &<br/>Certs Mgmt"]
+            Gateway["API Gateway"]
+        end
+
+        Access --> Profiles --> Infra --> Platform
     end
 
-    subgraph EN1["Edge Nodes"]
-        direction TB
+    subgraph EN1["Edge Nodes (EIM)"]
+        direction LR
         E1["Node 1"]
         E2["Node 2"]
         E3["Node 3"]
     end
 
-    EIM -->|"Manages"| EN1
-
-    subgraph VPRO["vPro Profile"]
-        direction TB
-        CLI2[CLI only]
-        IM2["Intel AMT / vPro<br/>Management"]
-        PS2["Platform Services<br/>(IAM, Secrets, API Gateway,<br/>Certs)"]
-        CLI2 --> IM2 --> PS2
-    end
-
-    subgraph EN2["Edge Nodes"]
-        direction TB
+    subgraph EN2["Edge Nodes (vPro)"]
+        direction LR
         V1["Node 1<br/>(Intel® vPro®)"]
         V2["Node 2<br/>(Intel® vPro®)"]
     end
 
-    VPRO -->|"Manages"| EN2
+    EO -->|"Manages"| EN1
+    EO -->|"Manages"| EN2
 
     classDef blue fill:#d0e4ff,color:#000,stroke:#4a90d9
     classDef green fill:#d4edda,color:#000,stroke:#5cb85c
     classDef lightblue fill:#e0f7fa,color:#000,stroke:#4dd0e1
     classDef grey fill:#f5f5f5,stroke:#bbb,stroke-width:1.5px
+    classDef orange fill:#fff3cd,color:#000,stroke:#f0ad4e
 
-    class EIM,VPRO grey
-    class UI1,CLI2,PS1,PS2 blue
-    class IM1,IM2 green
+    class EO,Access,Profiles,Infra,Platform grey
+    class WebUI,CLI blue
+    class EIM,VPRO orange
+    class Onboard,Inventory,AMT green
+    class IAM,Secrets,Gateway blue
     class EN1,EN2 grey
     class E1,E2,E3,V1,V2 lightblue
 ```
