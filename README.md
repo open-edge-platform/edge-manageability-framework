@@ -27,68 +27,30 @@ management, and **vPro** for lightweight Intel AMT-based remote management.
 
 ```mermaid
 flowchart TB
-
     subgraph EO["Edge Orchestrator"]
         direction TB
-
-        subgraph Access["Access Layer"]
-            direction LR
-            WebUI["Web-UI<br/>(EIM only)"]
-            CLI["CLI"]
-        end
-
-        subgraph Profiles["Deployment Profiles"]
-            direction LR
-            EIM["EIM Profile<br/>(Full Infrastructure Mgmt)"]
-            VPRO["vPro Profile<br/>(AMT Management)"]
-        end
-
-        subgraph Infra["Edge Infrastructure Manager"]
-            direction LR
-            Onboard["Onboarding &<br/>Provisioning"]
-            Inventory["Inventory &<br/>Lifecycle Mgmt"]
-            AMT["Intel AMT /<br/>vPro Mgmt"]
-        end
-
-        subgraph Platform["Platform Services"]
-            direction LR
-            IAM["Identity &<br/>Access Mgmt"]
-            Secrets["Secrets &<br/>Certs Mgmt"]
-            Gateway["API Gateway"]
-        end
-
-        Access --> Profiles --> Infra --> Platform
+        Access["Web-UI (EIM only) / CLI"]
+        Infra["Edge Infrastructure Manager"]
+        Platform["Platform Services (IAM, Secrets, API Gateway)"]
+        Access --> Infra --> Platform
     end
 
-    subgraph EN1["Edge Nodes (EIM)"]
-        direction LR
-        E1["Node 1"]
-        E2["Node 2"]
-        E3["Node 3"]
-    end
+    EIM["EIM Profile"] -->|"Full Infra Mgmt +<br/>OS Provisioning"| EN1["Edge Nodes"]
+    VPRO["vPro Profile"] -->|"AMT Remote Mgmt<br/>(no UI, no OS provisioning)"| EN2["Edge Nodes (Intel® vPro®)"]
 
-    subgraph EN2["Edge Nodes (vPro)"]
-        direction LR
-        V1["Node 1<br/>(Intel® vPro®)"]
-        V2["Node 2<br/>(Intel® vPro®)"]
-    end
-
-    EO -->|"Manages"| EN1
-    EO -->|"Manages"| EN2
+    EO --- EIM
+    EO --- VPRO
 
     classDef blue fill:#d0e4ff,color:#000,stroke:#4a90d9
     classDef green fill:#d4edda,color:#000,stroke:#5cb85c
     classDef lightblue fill:#e0f7fa,color:#000,stroke:#4dd0e1
-    classDef grey fill:#f5f5f5,stroke:#bbb,stroke-width:1.5px
-    classDef orange fill:#fff3cd,color:#000,stroke:#f0ad4e
+    classDef grey fill:#f5f5f5,stroke:#bbb
 
-    class EO,Access,Profiles,Infra,Platform grey
-    class WebUI,CLI blue
-    class EIM,VPRO orange
-    class Onboard,Inventory,AMT green
-    class IAM,Secrets,Gateway blue
-    class EN1,EN2 grey
-    class E1,E2,E3,V1,V2 lightblue
+    class EO grey
+    class Access,Platform blue
+    class Infra green
+    class EIM,VPRO blue
+    class EN1,EN2 lightblue
 ```
 
 ### Key Components
