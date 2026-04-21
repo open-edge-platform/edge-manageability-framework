@@ -9,7 +9,9 @@ Welcome to the Edge Manageability Framework, a comprehensive solution designed
 to streamline and enhance the deployment and management of edge infrastructure.
 This framework provides robust solutions for hardware onboarding, provisioning,
 inventory management, and secure lifecycle management of edge nodes at scale,
-with built-in support for Intel vPro and AMT-based remote management.
+with built-in support for Intel vPro and AMT-based remote management. The EIM
+profile supports Zero Touch Provisioning (ZTP) for automated OS deployment,
+while the vPro profile focuses on lightweight AMT-based remote management.
 
 ## Primary Product: Edge Orchestrator
 
@@ -28,26 +30,29 @@ management, and **vPro** for lightweight Intel AMT-based remote management.
 ```mermaid
 flowchart LR
     subgraph Orch["Edge Orchestrator"]
-        direction TB
-        A["Web-UI / CLI"]
-        B["EIM Profile"]
-        C["vPro Profile"]
-        D["Edge Infrastructure Manager"]
-        E["Intel AMT / vPro Manager"]
-        F["Platform Services"]
-        A --> B & C
-        B --> D
-        C --> E
-        D & E --> F
+        direction BT
+        L1["HW / VM"]
+        L2["OS"]
+        L3["Kubernetes"]
+        L4["Platform Services"]
+        L5a["EIM Profile"]
+        L5b["vPro Profile"]
+        L6["Edge Infrastructure Manager\nDKAM / Tinkerbell / PXE / AMT\n(EIM only)"]
+        L7["ZTP / Auto OS Provisioning\n(EIM only)"]
+        L8["Web-UI (EIM only) / CLI"]
+        L1 --> L2 --> L3 --> L4
+        L4 --> L5a & L5b
+        L5a --> L6 --> L7 --> L8
+        L5b --> L8
     end
 
     subgraph Edge["Edge Nodes"]
         direction TB
-        G["Intel vPro Devices"]
-        H["Non-vPro Devices"]
-        I["OS / Agents"]
-        J["Hardware"]
-        G & H --> I --> J
+        H["Intel vPro Devices"]
+        I["Non-vPro Devices"]
+        J["OS / Agents"]
+        K["Hardware"]
+        H & I --> J --> K
     end
 
     Orch -->|"Onboard / Provision / Manage"| Edge
@@ -61,7 +66,10 @@ deployable on-premises:
 
 - [Edge Infrastructure Manager](https://docs.openedgeplatform.intel.com/edge-manage-docs/main/developer_guide/infra_manager/index.html):
 Policy-based secure life cycle management of a fleet of edge nodes/devices at scale, spread across distributed
-locations allowing onboarding, provisioning, inventory management, upgrades and more.
+locations allowing onboarding, provisioning, inventory management, upgrades and more. The EIM profile supports
+Zero Touch Provisioning (ZTP) for automated OS deployment and configuration of edge nodes without manual
+intervention, including AMT-based device onboarding. The vPro profile provides Intel AMT-based remote
+management without auto OS provisioning.
 - [UI](https://github.com/open-edge-platform/orch-ui): The web user interface for the Edge Orchestrator, allowing the
 user to manage most of the features of the product in an intuitive, visual, manner without having to trigger a series
 of APIs individually.
