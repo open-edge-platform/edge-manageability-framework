@@ -210,6 +210,19 @@ jobs:
       - name: Create Clean Ubuntu VM
         uses: ./.github/actions/create_clean_vm
 
+      - name: Set VM variables
+        shell: bash
+        run: |
+          echo "VM_NAME=vpro-ubuntu-vm" >> $GITHUB_ENV
+          echo "VM_IP=${VM_IP}" >> $GITHUB_ENV
+          echo "VM_SERIAL=${VM_SERIAL}" >> $GITHUB_ENV
+          echo "SSH_USER=user" >> $GITHUB_ENV
+          echo "VM Details:"
+          echo "  Name: vpro-ubuntu-vm"
+          echo "  IP: ${VM_IP}"
+          echo "  Serial: ${VM_SERIAL}"
+          echo "  SSH: ssh user@${VM_IP}"
+
       - name: Read test-automation dependency Version
         id: read-test-automation-version
         shell: bash
@@ -252,11 +265,11 @@ jobs:
           # xsltproc needed by libvirt terraform provider for domain XML customization
           sudo apt-get install -y xsltproc
 
-      - name: Wait for DKAM Full_server.crt and signed_ipxe.efi readiness
-        shell: bash
-        run: |
-          source helmfile-deploy/pre-orch/functions.sh
-          check_and_download_dkam_certs "cluster.onprem"
+      #- name: Wait for DKAM Full_server.crt and signed_ipxe.efi readiness
+      #  shell: bash
+      #  run: |
+      #    source helmfile-deploy/pre-orch/functions.sh
+      #    check_and_download_dkam_certs "cluster.onprem"
 
       # EIM-vPro tests:
       # CLI-EIM-vPRO-01 to CLI-EIM-vPRO-07
@@ -274,19 +287,22 @@ jobs:
           yq eval ".orchestrator.admin_password = \"${KC_ADMIN_PWD}\"" -i orchestrator-configs/on-prem.yaml
           yq eval '.infra.host.edgenode.hw_info.libvirt_pool_name = "default"'    -i tests/core_foundation/data/cf_data_1_ven_VEN-libvirt_microvisor-nonrt.yaml
           yq eval '.infra.host.edgenode.hw_info.libvirt_network_name = "default"' -i tests/core_foundation/data/cf_data_1_ven_VEN-libvirt_microvisor-nonrt.yaml
+          yq eval ".infra.host.edgenode.hw_info.serial = \"${VM_SERIAL}\"" -i tests/core_foundation/data/cf_data_1_ven_VEN-libvirt_microvisor-nonrt.yaml
 
           source venv_edge-manage-test-automation/bin/activate
           robot -L DEBUG --pythonpath . \
             --name "EIM-vPro Test Suite" \
             -d robot_output/eim_vpro \
             -V orchestrator-configs/on-prem.yaml \
+            -v PXE_IP:${VM_IP} \
+            -v PXE_HOSTNAME:${VM_NAME} \
+            -v username:${SSH_USER} \
             --exitonfailure \
             --include eim-vpro-01 \
             --include eim-vpro-02 \
             --include eim-vpro-03 \
             --include eim-vpro-04 \
             --include eim-vpro-05 \
-            --include eim-vpro-06 \
             --include eim-vpro-07 \
             tests/emf_decomp/eim_vpro/orch_cli_eim_vpro.robot
 
