@@ -26,16 +26,24 @@ including edge nodes (i.e. hosts). Two deployment profiles are supported:
 management, and **vPro** for lightweight Intel AMT-based remote management.
 
 ```mermaid
-flowchart TB
-    A["Web-UI / CLI"] --> B["Edge Orchestrator"]
-    B --> C["EIM Profile"]
-    B --> D["vPro Profile"]
-    C --> E["Edge Infrastructure Manager"]
-    D --> F["Intel AMT / vPro Manager"]
-    E --> G["Platform Services"]
-    F --> G
-    C -->|"OS Provisioning +\nFull Lifecycle Mgmt"| H["Edge Nodes"]
-    D -->|"AMT Remote Mgmt\n(no UI, no OS provisioning)"| I["Edge Nodes\n(Intel vPro)"]
+flowchart LR
+    subgraph Orch["Edge Orchestrator"]
+        direction TB
+        A["Web-UI / CLI"]
+        B["EIM Profile | vPro Profile"]
+        C["Edge Infrastructure Manager"]
+        D["Platform Services"]
+        A --> B --> C --> D
+    end
+
+    subgraph Edge["Edge Nodes"]
+        direction TB
+        E["OS / Packages / Agents"]
+        F["Hardware"]
+        E --> F
+    end
+
+    Orch -->|"Onboard / Provision / Manage"| Edge
 ```
 
 ### Key Components
