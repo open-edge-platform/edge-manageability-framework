@@ -26,66 +26,44 @@ including edge nodes (i.e. hosts). Two deployment profiles are supported:
 management, and **vPro** for lightweight Intel AMT-based remote management.
 
 ```mermaid
-flowchart TD
+flowchart LR
 
-    subgraph EO["Edge Orchestrator (On-Prem)"]
+    subgraph EIM["EIM Profile"]
         direction TB
-        WebUI[Web-UI / CLI]
-
-        subgraph Profiles[" "]
-            direction LR
-            EIM["EIM Profile<br/>(Full Infrastructure<br>Management)"]
-            VPRO["vPro Profile<br/>(Lightweight AMT<br>Management)"]
-        end
-
-        subgraph InfraMgmt["Edge Infrastructure Manager"]
-            direction LR
-            Onboard["Onboarding &<br>Provisioning"]
-            Inventory["Inventory &<br>Lifecycle Mgmt"]
-            AMT["Intel AMT /<br>vPro Mgmt"]
-        end
-
-        Platform["Platform Services<br/>(Identity & Access Mgmt, Secrets Mgmt,<br/>API Gateway, Certificate Mgmt)"]
-
-        INFRA["Helmfile Deployment<br/>(K3s / KIND / RKE2)"]
+        UI1[Web-UI / CLI]
+        IM1["Edge Infrastructure Manager<br/>(Onboarding, Provisioning,<br/>Inventory, Lifecycle Mgmt)"]
+        PS1["Platform Services<br/>(IAM, Secrets, API Gateway,<br/>Certs)"]
+        UI1 --> IM1 --> PS1
     end
 
-    %% EDGE SITES
-    subgraph Sites["Edge Sites"]
-        direction LR
-        SF["Edge Nodes<br>(San Francisco)"]
-        ATL["Edge Nodes<br>(Atlanta)"]
-        NYC["Edge Nodes<br>(New York City)"]
-    end
-
-    subgraph EdgeNode["Edge Node"]
+    subgraph VPRO["vPro Profile"]
         direction TB
-        OS[Edge Node OS, Packages, Agents]
-        HW["Edge Node Hardware<br/>(Intel® Xeon® processor, Intel® Core™ processor,<br/>Intel® vPro®)"]
-        OS ~~~ HW
+        CLI2[CLI only]
+        IM2["Intel AMT / vPro<br/>Management"]
+        PS2["Platform Services<br/>(IAM, Secrets, API Gateway,<br/>Certs)"]
+        CLI2 --> IM2 --> PS2
     end
 
-    %% Connections
-    WebUI ~~~ Profiles
-    Profiles ~~~ InfraMgmt
-    InfraMgmt ~~~ Platform
-    Platform ~~~ INFRA
+    subgraph EN["Edge Nodes"]
+        direction TB
+        N1["Node 1<br/>(Intel® vPro®)"]
+        N2["Node 2"]
+        N3["Node 3"]
+    end
 
-    EO -->|"Manages"| Sites
-    EO -->|"Onboards &<br>Provisions"| EdgeNode
+    EIM -->|"Manages"| EN
+    VPRO -->|"Manages"| EN
 
-    %% Styling
-    classDef grey fill:#eeeeee,stroke:#666,stroke-width:1.5px
     classDef blue fill:#1f4fbf,color:#fff,stroke:#1f4fbf
-    classDef lightblue fill:#1fb6d9,color:#000,stroke:#1fb6d9
     classDef green fill:#2d7d46,color:#fff,stroke:#2d7d46
+    classDef lightblue fill:#1fb6d9,color:#000,stroke:#1fb6d9
+    classDef grey fill:#eeeeee,stroke:#666,stroke-width:1.5px
 
-    class EO,Profiles,InfraMgmt,Sites grey
-    class WebUI,Platform,INFRA blue
-    class EIM,VPRO green
-    class Onboard,Inventory,AMT blue
-    class SF,ATL,NYC,OS,HW lightblue
-    class EdgeNode grey
+    class EIM,VPRO grey
+    class UI1,CLI2,PS1,PS2 blue
+    class IM1,IM2 green
+    class EN grey
+    class N1,N2,N3 lightblue
 ```
 
 ### Key Components
