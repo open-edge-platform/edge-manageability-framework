@@ -236,7 +236,7 @@ jobs:
         with:
           repository: open-edge-platform/edge-manage-test-automation
           path: edge-manage-test-automation
-          ref: ${{ steps.read-test-automation-version.outputs.version }}
+          ref: main  # or specify the branch that has emf_decomp tests
           submodules: 'recursive'
           token: ${{ secrets.SYS_EMF_GH_TOKEN }}
           persist-credentials: false
