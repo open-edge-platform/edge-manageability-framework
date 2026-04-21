@@ -6,26 +6,24 @@
 ## Overview
 
 Welcome to the Edge Manageability Framework, a comprehensive solution designed
-to streamline and enhance the deployment and management of infrastructure and
-applications at the edge. This framework leverages cutting-edge technologies to
-provide robust solutions for hardware onboarding, secure workload deployment,
-and cluster lifecycle management, all centered around Kubernetes-based
-application deployment for edge computing.
+to streamline and enhance the deployment and management of edge infrastructure.
+This framework provides robust solutions for hardware onboarding, provisioning,
+inventory management, and secure lifecycle management of edge nodes at scale,
+with built-in support for Intel vPro and AMT-based remote management.
 
 ## Primary Product: Edge Orchestrator
 
 At the center of Edge Manageability Framework is Edge Orchestrator, the primary
-solution to manage edge environments efficiently and securely. It encompasses a
-range of features that cater to the unique demands of edge computing, ensuring
-seamless integration and operation across diverse hardware and software
-landscapes. Edge Orchestrator is designed to be the central hub for managing
-edge infrastructure and edge application deployments at scale across
-geographically distributed edge sites. It offers automated application
-deployment based on customer-defined configuration & criteria, multitenancy and
-identity & access management for tenants, observability & alerting capabilities,
-dashboards for quick views of status & issue identification, and management of
-all software deployments & infrastructure components including edge nodes (i.e.
-hosts) and clusters.
+solution to manage edge infrastructure efficiently and securely. It encompasses
+a range of features that cater to the unique demands of edge computing, ensuring
+seamless integration and operation across diverse hardware landscapes. Edge
+Orchestrator is designed to be the central hub for managing edge infrastructure
+at scale across geographically distributed edge sites. It offers multitenancy
+and identity & access management for tenants, dashboards for quick views of
+status & issue identification, and management of all infrastructure components
+including edge nodes (i.e. hosts). Two deployment profiles are supported:
+**Edge Infrastructure Management (EIM)** for full infrastructure lifecycle
+management, and **vPro** for lightweight Intel AMT-based remote management.
 
 ```mermaid
 flowchart TD
