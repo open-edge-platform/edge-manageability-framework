@@ -26,31 +26,57 @@ including edge nodes (i.e. hosts). Two deployment profiles are supported:
 management, and **vPro** for lightweight Intel AMT-based remote management.
 
 ```mermaid
-flowchart TB
-    subgraph EO["Edge Orchestrator"]
-        direction TB
-        Access["Web-UI (EIM only) / CLI"]
-        Infra["Edge Infrastructure Manager"]
-        Platform["Platform Services (IAM, Secrets, API Gateway)"]
-        Access --> Infra --> Platform
+block-beta
+    columns 3
+
+    block:header:3
+        columns 3
+        space title["Edge Orchestrator Architecture"] space
     end
 
-    EIM["EIM Profile"] -->|"Full Infra Mgmt +<br/>OS Provisioning"| EN1["Edge Nodes"]
-    VPRO["vPro Profile"] -->|"AMT Remote Mgmt<br/>(no UI, no OS provisioning)"| EN2["Edge Nodes (Intel® vPro®)"]
+    block:access:3
+        columns 2
+        WebUI["Web-UI\n(EIM only)"]
+        CLI["CLI"]
+    end
 
-    EO --- EIM
-    EO --- VPRO
+    block:profiles:3
+        columns 2
+        EIM["EIM Profile\nFull Infrastructure Mgmt\n+ OS Provisioning"]
+        VPRO["vPro Profile\nAMT Remote Mgmt\nNo UI / No OS Provisioning"]
+    end
 
-    classDef blue fill:#d0e4ff,color:#000,stroke:#4a90d9
-    classDef green fill:#d4edda,color:#000,stroke:#5cb85c
-    classDef lightblue fill:#e0f7fa,color:#000,stroke:#4dd0e1
-    classDef grey fill:#f5f5f5,stroke:#bbb
+    block:infra:3
+        columns 1
+        IM["Edge Infrastructure Manager\nOnboarding · Provisioning · Inventory · Lifecycle · AMT/vPro"]
+    end
 
-    class EO grey
-    class Access,Platform blue
-    class Infra green
-    class EIM,VPRO blue
-    class EN1,EN2 lightblue
+    block:platform:3
+        columns 1
+        PS["Platform Services\nIAM · Secrets · Certificates · API Gateway · Ingress"]
+    end
+
+    block:nodes:3
+        columns 2
+        EN1["Edge Nodes\n(EIM managed)"]
+        EN2["Edge Nodes\n(Intel® vPro® managed)"]
+    end
+
+    style header fill:none,stroke:none
+    style title fill:none,stroke:none,font-size:16px
+    style access fill:#e8f4fd,stroke:#4a90d9
+    style profiles fill:#fff3cd,stroke:#f0ad4e
+    style infra fill:#d4edda,stroke:#5cb85c
+    style platform fill:#d0e4ff,stroke:#4a90d9
+    style nodes fill:#e0f7fa,stroke:#4dd0e1
+    style WebUI fill:#d0e4ff,stroke:#4a90d9
+    style CLI fill:#d0e4ff,stroke:#4a90d9
+    style EIM fill:#fff3cd,stroke:#f0ad4e
+    style VPRO fill:#fff3cd,stroke:#f0ad4e
+    style IM fill:#d4edda,stroke:#5cb85c
+    style PS fill:#d0e4ff,stroke:#4a90d9
+    style EN1 fill:#e0f7fa,stroke:#4dd0e1
+    style EN2 fill:#e0f7fa,stroke:#4dd0e1
 ```
 
 ### Key Components
