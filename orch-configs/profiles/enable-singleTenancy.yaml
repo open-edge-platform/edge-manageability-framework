@@ -1,9 +1,0 @@
-# SPDX-FileCopyrightText: 2025 Intel Corporation
-#
-# SPDX-License-Identifier: Apache-2.0
-
-# Enables Single Tenancy by creating a default tenant
-
-argo:
-  enabled:
-    defaultTenancy: true

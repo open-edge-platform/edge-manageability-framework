@@ -1,9 +1,0 @@
-# SPDX-FileCopyrightText: 2025 Intel Corporation
-#
-# SPDX-License-Identifier: Apache-2.0
-
-# Intentionally blank. There are no base settings overrides.
-
-speaker:
-  frr:
-    enabled: false
