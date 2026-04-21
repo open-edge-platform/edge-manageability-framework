@@ -26,57 +26,16 @@ including edge nodes (i.e. hosts). Two deployment profiles are supported:
 management, and **vPro** for lightweight Intel AMT-based remote management.
 
 ```mermaid
-block-beta
-    columns 3
-
-    block:header:3
-        columns 3
-        space title["Edge Orchestrator Architecture"] space
-    end
-
-    block:access:3
-        columns 2
-        WebUI["Web-UI\n(EIM only)"]
-        CLI["CLI"]
-    end
-
-    block:profiles:3
-        columns 2
-        EIM["EIM Profile\nFull Infrastructure Mgmt\n+ OS Provisioning"]
-        VPRO["vPro Profile\nAMT Remote Mgmt\nNo UI / No OS Provisioning"]
-    end
-
-    block:infra:3
-        columns 1
-        IM["Edge Infrastructure Manager\nOnboarding · Provisioning · Inventory · Lifecycle · AMT/vPro"]
-    end
-
-    block:platform:3
-        columns 1
-        PS["Platform Services\nIAM · Secrets · Certificates · API Gateway · Ingress"]
-    end
-
-    block:nodes:3
-        columns 2
-        EN1["Edge Nodes\n(EIM managed)"]
-        EN2["Edge Nodes\n(Intel® vPro® managed)"]
-    end
-
-    style header fill:none,stroke:none
-    style title fill:none,stroke:none,font-size:16px
-    style access fill:#e8f4fd,stroke:#4a90d9
-    style profiles fill:#fff3cd,stroke:#f0ad4e
-    style infra fill:#d4edda,stroke:#5cb85c
-    style platform fill:#d0e4ff,stroke:#4a90d9
-    style nodes fill:#e0f7fa,stroke:#4dd0e1
-    style WebUI fill:#d0e4ff,stroke:#4a90d9
-    style CLI fill:#d0e4ff,stroke:#4a90d9
-    style EIM fill:#fff3cd,stroke:#f0ad4e
-    style VPRO fill:#fff3cd,stroke:#f0ad4e
-    style IM fill:#d4edda,stroke:#5cb85c
-    style PS fill:#d0e4ff,stroke:#4a90d9
-    style EN1 fill:#e0f7fa,stroke:#4dd0e1
-    style EN2 fill:#e0f7fa,stroke:#4dd0e1
+flowchart TB
+    A["Web-UI / CLI"] --> B["Edge Orchestrator"]
+    B --> C["EIM Profile"]
+    B --> D["vPro Profile"]
+    C --> E["Edge Infrastructure Manager"]
+    D --> F["Intel AMT / vPro Manager"]
+    E --> G["Platform Services"]
+    F --> G
+    C -->|"OS Provisioning +\nFull Lifecycle Mgmt"| H["Edge Nodes"]
+    D -->|"AMT Remote Mgmt\n(no UI, no OS provisioning)"| I["Edge Nodes\n(Intel vPro)"]
 ```
 
 ### Key Components
