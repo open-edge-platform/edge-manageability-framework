@@ -36,6 +36,15 @@ flowchart LR
         UI1 --> IM1 --> PS1
     end
 
+    subgraph EN1["Edge Nodes"]
+        direction TB
+        E1["Node 1"]
+        E2["Node 2"]
+        E3["Node 3"]
+    end
+
+    EIM -->|"Manages"| EN1
+
     subgraph VPRO["vPro Profile"]
         direction TB
         CLI2[CLI only]
@@ -44,26 +53,24 @@ flowchart LR
         CLI2 --> IM2 --> PS2
     end
 
-    subgraph EN["Edge Nodes"]
+    subgraph EN2["Edge Nodes"]
         direction TB
-        N1["Node 1<br/>(Intel® vPro®)"]
-        N2["Node 2"]
-        N3["Node 3"]
+        V1["Node 1<br/>(Intel® vPro®)"]
+        V2["Node 2<br/>(Intel® vPro®)"]
     end
 
-    EIM -->|"Manages"| EN
-    VPRO -->|"Manages"| EN
+    VPRO -->|"Manages"| EN2
 
-    classDef blue fill:#1f4fbf,color:#fff,stroke:#1f4fbf
-    classDef green fill:#2d7d46,color:#fff,stroke:#2d7d46
-    classDef lightblue fill:#1fb6d9,color:#000,stroke:#1fb6d9
-    classDef grey fill:#eeeeee,stroke:#666,stroke-width:1.5px
+    classDef blue fill:#d0e4ff,color:#000,stroke:#4a90d9
+    classDef green fill:#d4edda,color:#000,stroke:#5cb85c
+    classDef lightblue fill:#e0f7fa,color:#000,stroke:#4dd0e1
+    classDef grey fill:#f5f5f5,stroke:#bbb,stroke-width:1.5px
 
     class EIM,VPRO grey
     class UI1,CLI2,PS1,PS2 blue
     class IM1,IM2 green
-    class EN grey
-    class N1,N2,N3 lightblue
+    class EN1,EN2 grey
+    class E1,E2,E3,V1,V2 lightblue
 ```
 
 ### Key Components
