@@ -254,6 +254,7 @@ jobs:
 
           # Install tools and Python venv
           make asdf-install
+          make orch-cli
           make venv_edge-manage-test-automation
 
           # Install terraform for Pico VEN provisioning (skip tflint)
