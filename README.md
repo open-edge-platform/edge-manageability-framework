@@ -28,85 +28,64 @@ management, and **vPro** for lightweight Intel AMT-based remote management.
 ```mermaid
 flowchart TD
 
-    %% LEFT: Cloud
-    subgraph Cloud[" "]
-    direction LR
-    APPS@{ shape: cloud, label: "Apps"  } ~~~
-    Infra@{ shape: cloud, label: "Infra"  }
+    subgraph EO["Edge Orchestrator (On-Prem)"]
+        direction TB
+        WebUI[Web-UI / CLI]
+
+        subgraph Profiles[" "]
+            direction LR
+            EIM["EIM Profile<br/>(Full Infrastructure<br>Management)"]
+            VPRO["vPro Profile<br/>(Lightweight AMT<br>Management)"]
+        end
+
+        subgraph InfraMgmt["Edge Infrastructure Manager"]
+            direction LR
+            Onboard["Onboarding &<br>Provisioning"]
+            Inventory["Inventory &<br>Lifecycle Mgmt"]
+            AMT["Intel AMT /<br>vPro Mgmt"]
+        end
+
+        Platform["Platform Services<br/>(Identity & Access Mgmt, Secrets Mgmt,<br/>API Gateway, Certificate Mgmt)"]
+
+        INFRA["Helmfile Deployment<br/>(K3s / KIND / RKE2)"]
     end
 
     %% EDGE SITES
-    SF["Edge Nodes at Customer Site<br>(San Francisco)"]
-    ATL["Edge Nodes at Customer Site<br>(Atlanta)"]
-    NYC["Edge Nodes at Customer Site<br>(New York City)"]
-
-    Cloud -.-> SF
-    Cloud -.-> ATL
-    Cloud -.-> NYC
-
-    %% RIGHT SIDE
-    subgraph EO["Edge Orchestrator"]
-        direction TB
-        subgraph Orch[" "]
-        direction TB
-        WebUI[Web-UI]
-
-        subgraph OrchestrationLayer[" "]
-            direction LR
-            InfraMgmt["Edge Infrastructure<br>Management"] 
-        end
-
-        Platform["Foundational Platform Services<br/>(Identity and Access Mgmt, Secrets Mgmt,<br/>API Gateway, etc.)"]
-
-        INFRA[On-Prem Datacenter]
-end
-        %% EDGE NODE
-
-        subgraph EdgeNode["Edge Node"]
-            direction TB
-            subgraph AppsRow[" "]
-                direction LR
-                CA1[Customer Apps] ~~~
-                CA2[Customer Apps] ~~~
-                CA3[Customer Apps]
-            end
-
-            K8s[Kubernetes* Cluster]
-            OS[Edge Node OS, Packages, Agents]
-            HW["Edge Node Hardware<br/>(Intel® Xeon® processor, Intel® Core™ processor)"]
-
-            %% Invisible ordering inside Edge Node
-            AppsRow ~~~ K8s
-            K8s ~~~ OS
-            OS ~~~ HW
-        end
-        %% Invisible ordering inside EO
-        WebUI ~~~ Orch
-        Orch ~~~ Platform
-        Platform ~~~ INFRA
-        INFRA ~~~ EdgeNode
+    subgraph Sites["Edge Sites"]
+        direction LR
+        SF["Edge Nodes<br>(San Francisco)"]
+        ATL["Edge Nodes<br>(Atlanta)"]
+        NYC["Edge Nodes<br>(New York City)"]
     end
 
+    subgraph EdgeNode["Edge Node"]
+        direction TB
+        OS[Edge Node OS, Packages, Agents]
+        HW["Edge Node Hardware<br/>(Intel® Xeon® processor, Intel® Core™ processor,<br/>Intel® vPro®)"]
+        OS ~~~ HW
+    end
 
-    Cloud -.-> |"Cloud-based<br>Orchestration"|EO
+    %% Connections
+    WebUI ~~~ Profiles
+    Profiles ~~~ InfraMgmt
+    InfraMgmt ~~~ Platform
+    Platform ~~~ INFRA
 
+    EO -->|"Manages"| Sites
+    EO -->|"Onboards &<br>Provisions"| EdgeNode
 
     %% Styling
     classDef grey fill:#eeeeee,stroke:#666,stroke-width:1.5px
-    classDef blue fill:#1f4fbf,color:#fff,stroke:#1f4fbf;
-    classDef lightblue fill:#1fb6d9,color:#000,stroke:#1fb6d9;
-    classDef transparent fill:#00000000,stroke-width:0px;
+    classDef blue fill:#1f4fbf,color:#fff,stroke:#1f4fbf
+    classDef lightblue fill:#1fb6d9,color:#000,stroke:#1fb6d9
+    classDef green fill:#2d7d46,color:#fff,stroke:#2d7d46
 
-    class EO,EdgeNode,AppsRow,Orch,OrchestrationLayer, grey;
-    class WebUI,InfraMgmt,Platform,INFRA blue;
-    class CA1,CA2,CA3,K8s,OS,HW lightblue;
-    class Cloud transparent;
-
-    %% Define the style for big nodes
-    classDef bigNode font-size:30px,stroke-width:2px,padding:10px;
-    
-    %% Apply the style
-    class APPS,Infra bigNode;
+    class EO,Profiles,InfraMgmt,Sites grey
+    class WebUI,Platform,INFRA blue
+    class EIM,VPRO green
+    class Onboard,Inventory,AMT blue
+    class SF,ATL,NYC,OS,HW lightblue
+    class EdgeNode grey
 ```
 
 ### Key Components
