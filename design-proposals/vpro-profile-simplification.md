@@ -19,17 +19,18 @@ flowchart LR
 
 client[client] -->|over internet| loadbalancer(loadbalancer)
 loadbalancer -->|SNI, jwt validation, security| traefik{traefik}
+traefik --> |enable jwt plugin| traefik-pre[traefik-pre]
 traefik -->|jwt creation| keycloak[keycloak]
+traefik -->|certs-management| cert-manager[cert-manager]
+traefik -->|certs| traefik-extra-objects[traefik-extra-objects]
 traefik -->|MPS RPS AMT VPRO| infra-external[infra-external]
 traefik -->|Infrastructure Manager, e.g., inventory.| infra-core[infra-core]
 traefik -->|GUI| web-ui[web-ui]
 traefik --> |needed for orch-cli| component-status[component-status]
-traefik -->|certs| traefik-extra-objects[traefik-extra-objects]
-traefik -->|certs-management| cert-manager[cert-manager]
 traefik -->|some components needed| infra-onboarding[infra-onboarding]
-cert-manager --> |config to ca secret to infra namespace| copy-ca-cert-gateway-to-infra[copy-ca-cert-gateway-to-infra]
+cert-manager --> |config to copy ca secret to infra namespace| copy-ca-cert-gateway-to-infra[copy-ca-cert-gateway-to-infra]
 copy-ca-cert-gateway-to-infra --> |controller that copies secrets between namespaces| external-secrets[external-secrets]
-cert-manager --> |self-signed-cert| self-signed-cert[self-signed-cert]
+cert-manager --> |config for self-signed-cert| self-signed-cert[self-signed-cert]
 copy-ca-cert-gateway-to-infra --> |secret-wait-tls-orch| secret-wait-tls-orch[secret-wait-tls-orch]
 keycloak -->|project tenant required for jwt| nexus[nexus]
 keycloak -->|storage| postgres[postgresql-cluster]
