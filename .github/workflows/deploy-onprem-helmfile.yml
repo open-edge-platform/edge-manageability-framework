@@ -217,6 +217,7 @@ jobs:
           echo "VM_IP=${VM_IP}" >> $GITHUB_ENV
           echo "VM_SERIAL=${VM_SERIAL}" >> $GITHUB_ENV
           echo "SSH_USER=user" >> $GITHUB_ENV
+          echo "SSH_PASSWORD=user" >> $GITHUB_ENV
           echo "VM Details:"
           echo "  Name: vpro-ubuntu-vm"
           echo "  IP: ${VM_IP}"
@@ -236,7 +237,7 @@ jobs:
         with:
           repository: open-edge-platform/edge-manage-test-automation
           path: edge-manage-test-automation
-          ref: main  # or specify the branch that has emf_decomp tests
+          ref: shruti/vip
           submodules: 'recursive'
           token: ${{ secrets.SYS_EMF_GH_TOKEN }}
           persist-credentials: false
@@ -298,6 +299,7 @@ jobs:
             -v PXE_IP:${VM_IP} \
             -v PXE_HOSTNAME:${VM_NAME} \
             -v username:${SSH_USER} \
+            -v password:${SSH_PASSWORD} \
             --exitonfailure \
             --include eim-vpro-01 \
             --include eim-vpro-02 \
