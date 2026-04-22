@@ -14,7 +14,7 @@ The following are the improvements we would like to achieve to improve the usabi
 - Consolidated and optimized output table formatter for all resource outputs
 - YAML and JSON format outputs
 - Single host creation without the bulk import
-- Simplified input provision to easy the evaluation of the product
+- Simplified input provision to improve the evaluation of the product
 - Do not change the functionality of the existing CLI
 
 ### Table formatting and custom outputs
