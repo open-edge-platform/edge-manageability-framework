@@ -46,7 +46,7 @@ create_passwords() {
   keycloak_password=$(generate_password)
   local postgres_password
   postgres_password=$(generate_password)
-  
+
   create_keycloak_password orch-platform "$keycloak_password"
   create_postgres_password orch-database "$postgres_password"
   echo "✅ Passwords created"
