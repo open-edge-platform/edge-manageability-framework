@@ -260,7 +260,7 @@ updates:
     directory: "/"
     schedule:
       interval: daily
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 15
     commit-message:
       prefix: "Github Actions"
     reviewers:
