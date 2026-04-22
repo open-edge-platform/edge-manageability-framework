@@ -23,130 +23,221 @@ updates:
     reviewers:
       - "dmytroye"
 
-  # Terraform (split per directory)
+  # Terraform
   - package-ecosystem: "terraform"
     directory: "/terraform/edge-network"
-    ignore: &terraform-ignore
+    ignore:
       - dependency-name: "*"
         update-types:
           - "version-update:semver-major"
           - "version-update:semver-minor"
-    schedule: &terraform-schedule
-      interval: "monthly"
-    commit-message: &terraform-commit
+    schedule:
+      interval: monthly
+    commit-message:
       prefix: "terraform"
-    reviewers: &terraform-reviewers
+    reviewers:
       - "dmytroye"
 
   - package-ecosystem: "terraform"
     directory: "/terraform/orchestrator"
-    ignore: *terraform-ignore
-    schedule: *terraform-schedule
-    commit-message: *terraform-commit
-    reviewers: *terraform-reviewers
-
-  - package-ecosystem: "terraform"
-    directory: "/terraform/edge-storage-pool"
-    ignore: *terraform-ignore
-    schedule: *terraform-schedule
-    commit-message: *terraform-commit
-    reviewers: *terraform-reviewers
-
-  - package-ecosystem: "terraform"
-    directory: "/pod-configs/orchestrator/cluster"
-    ignore: *terraform-ignore
-    schedule: *terraform-schedule
-    commit-message: *terraform-commit
-    reviewers: *terraform-reviewers
-
-  - package-ecosystem: "terraform"
-    directory: "/pod-configs/orchestrator/orch-load-balancer"
-    ignore: *terraform-ignore
-    schedule: *terraform-schedule
-    commit-message: *terraform-commit
-    reviewers: *terraform-reviewers
-
-  - package-ecosystem: "terraform"
-    directory: "/pod-configs/orchestrator/orch-route53"
-    ignore: *terraform-ignore
-    schedule: *terraform-schedule
-    commit-message: *terraform-commit
-    reviewers: *terraform-reviewers
-
-  - package-ecosystem: "terraform"
-    directory: "/pod-configs/orchestrator/pull-through-cache-proxy"
-    ignore: *terraform-ignore
-    schedule: *terraform-schedule
-    commit-message: *terraform-commit
-    reviewers: *terraform-reviewers
-
-  - package-ecosystem: "terraform"
-    directory: "/pod-configs/module/lb-target-group-attachment"
-    ignore: *terraform-ignore
-    schedule: *terraform-schedule
-    commit-message: *terraform-commit
-    reviewers: *terraform-reviewers
-
-  - package-ecosystem: "terraform"
-    directory: "/pod-configs/module/application-load-balancer"
-    ignore: *terraform-ignore
-    schedule: *terraform-schedule
-    commit-message: *terraform-commit
-    reviewers: *terraform-reviewers
-
-  - package-ecosystem: "terraform"
-    directory: "/pod-configs/module/load-balancer"
-    ignore: *terraform-ignore
-    schedule: *terraform-schedule
-    commit-message: *terraform-commit
-    reviewers: *terraform-reviewers
-
-  - package-ecosystem: "terraform"
-    directory: "/pod-configs/buckets"
-    ignore: *terraform-ignore
-    schedule: *terraform-schedule
-    commit-message: *terraform-commit
-    reviewers: *terraform-reviewers
-
-  # Helm (split per directory)
-  - package-ecosystem: "helm"
-    directory: "/argocd-internal/applications"
-    ignore: &helm-ignore
+    ignore:
       - dependency-name: "*"
         update-types:
           - "version-update:semver-major"
           - "version-update:semver-minor"
-    schedule: &helm-schedule
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "terraform"
+    reviewers:
+      - "dmytroye"
+
+  - package-ecosystem: "terraform"
+    directory: "/terraform/edge-storage-pool"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "terraform"
+    reviewers:
+      - "dmytroye"
+
+  - package-ecosystem: "terraform"
+    directory: "/pod-configs/orchestrator/cluster"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "terraform"
+    reviewers:
+      - "dmytroye"
+
+  - package-ecosystem: "terraform"
+    directory: "/pod-configs/orchestrator/orch-load-balancer"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "terraform"
+    reviewers:
+      - "dmytroye"
+
+  - package-ecosystem: "terraform"
+    directory: "/pod-configs/orchestrator/orch-route53"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "terraform"
+    reviewers:
+      - "dmytroye"
+
+  - package-ecosystem: "terraform"
+    directory: "/pod-configs/orchestrator/pull-through-cache-proxy"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "terraform"
+    reviewers:
+      - "dmytroye"
+
+  - package-ecosystem: "terraform"
+    directory: "/pod-configs/module/lb-target-group-attachment"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "terraform"
+    reviewers:
+      - "dmytroye"
+
+  - package-ecosystem: "terraform"
+    directory: "/pod-configs/module/application-load-balancer"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "terraform"
+    reviewers:
+      - "dmytroye"
+
+  - package-ecosystem: "terraform"
+    directory: "/pod-configs/module/load-balancer"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "terraform"
+    reviewers:
+      - "dmytroye"
+
+  - package-ecosystem: "terraform"
+    directory: "/pod-configs/buckets"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "terraform"
+    reviewers:
+      - "dmytroye"
+
+  # Helm
+  - package-ecosystem: "helm"
+    directory: "/argocd-internal/applications"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+    schedule:
       interval: daily
     open-pull-requests-limit: 5
-    commit-message: &helm-commit
+    commit-message:
       prefix: "Helm"
-    reviewers: &helm-reviewers
+    reviewers:
       - "dmytroye"
 
   - package-ecosystem: "helm"
     directory: "/argocd-internal/root-app"
-    ignore: *helm-ignore
-    schedule: *helm-schedule
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+    schedule:
+      interval: daily
     open-pull-requests-limit: 5
-    commit-message: *helm-commit
-    reviewers: *helm-reviewers
+    commit-message:
+      prefix: "Helm"
+    reviewers:
+      - "dmytroye"
 
   - package-ecosystem: "helm"
     directory: "/argocd/applications"
-    ignore: *helm-ignore
-    schedule: *helm-schedule
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+    schedule:
+      interval: daily
     open-pull-requests-limit: 5
-    commit-message: *helm-commit
-    reviewers: *helm-reviewers
+    commit-message:
+      prefix: "Helm"
+    reviewers:
+      - "dmytroye"
 
   - package-ecosystem: "helm"
     directory: "/argocd/root-app"
-    ignore: *helm-ignore
-    schedule: *helm-schedule
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+    schedule:
+      interval: daily
     open-pull-requests-limit: 5
-    commit-message: *helm-commit
-    reviewers: *helm-reviewers
+    commit-message:
+      prefix: "Helm"
+    reviewers:
+      - "dmytroye"
 
   # Docker
   - package-ecosystem: "docker"
