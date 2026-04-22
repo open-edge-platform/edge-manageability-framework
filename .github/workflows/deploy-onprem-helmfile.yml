@@ -254,7 +254,7 @@ jobs:
           #echo ". $HOME/.asdf/asdf.sh" >> "$HOME/.bashrc"
 
           # Install tools and Python venv
-          make asdf-install
+          # make asdf-install
           make orch-cli
           make venv_edge-manage-test-automation
 
@@ -274,7 +274,12 @@ jobs:
       #    check_and_download_dkam_certs "cluster.onprem"
 
       # EIM-vPro tests:
-      
+      # EIM-vPro-01: Assess Tenancy Management
+      # CLI-EIM-vPRO-02: Configure Orchestrator CLI
+      # CLI_EIM-vPRO-03: Create Login session to run CLI commands
+      # CLI-EIM-vPRO-04: Verify Orch deployment for EIM-vPRO profile
+      # CLI-EIM-vPRO-05: Register Host
+      # CLI-EIM-vPRO-07: Install Agents on Edge Node via script
       - name: Run Tests eim-vpro-01 to eim-vpro-07
         id: robot-tests
         timeout-minutes: 20
