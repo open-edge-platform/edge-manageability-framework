@@ -1,14 +1,15 @@
-# SPDX-FileCopyrightText: 2025 Intel Corporation
+# SPDX-FileCopyrightText: 2026 Intel Corporation
 #
 # SPDX-License-Identifier: Apache-2.0
+---
 
 version: 2
 enable-beta-ecosystems: true
+
 updates:
-  # Enable version updates for Go modules
+  # Go modules
   - package-ecosystem: "gomod"
     directory: "/"
-    # Only update patch versions to reduce the chance of regressions getting introduced
     ignore:
       - dependency-name: "*"
         update-types:
@@ -22,59 +23,134 @@ updates:
     reviewers:
       - "dmytroye"
 
-  # Enable version updates for Terraform
+  # Terraform (split per directory)
   - package-ecosystem: "terraform"
-    directories:
-      - "/terraform/edge-network"
-      - "/terraform/orchestrator"
-      - "/terraform/edge-storage-pool"
-      - "/pod-configs/orchestrator/cluster"
-      - "/pod-configs/orchestrator/orch-load-balancer"
-      - "/pod-configs/orchestrator/orch-route53"
-      - "/pod-configs/orchestrator/pull-through-cache-proxy"
-      - "/pod-configs/module/lb-target-group-attachment"
-      - "/pod-configs/module/application-load-balancer"
-      - "/pod-configs/module/load-balancer"
-      - "/pod-configs/buckets"
-    # Only update patch versions to reduce the chance of regressions getting introduced
-    ignore:
+    directory: "/terraform/edge-network"
+    ignore: &terraform-ignore
       - dependency-name: "*"
         update-types:
           - "version-update:semver-major"
           - "version-update:semver-minor"
-    schedule:
+    schedule: &terraform-schedule
       interval: "monthly"
-    commit-message:
+    commit-message: &terraform-commit
       prefix: "terraform"
-    reviewers:
+    reviewers: &terraform-reviewers
       - "dmytroye"
 
-  # Enable version updates for Helm
+  - package-ecosystem: "terraform"
+    directory: "/terraform/orchestrator"
+    ignore: *terraform-ignore
+    schedule: *terraform-schedule
+    commit-message: *terraform-commit
+    reviewers: *terraform-reviewers
+
+  - package-ecosystem: "terraform"
+    directory: "/terraform/edge-storage-pool"
+    ignore: *terraform-ignore
+    schedule: *terraform-schedule
+    commit-message: *terraform-commit
+    reviewers: *terraform-reviewers
+
+  - package-ecosystem: "terraform"
+    directory: "/pod-configs/orchestrator/cluster"
+    ignore: *terraform-ignore
+    schedule: *terraform-schedule
+    commit-message: *terraform-commit
+    reviewers: *terraform-reviewers
+
+  - package-ecosystem: "terraform"
+    directory: "/pod-configs/orchestrator/orch-load-balancer"
+    ignore: *terraform-ignore
+    schedule: *terraform-schedule
+    commit-message: *terraform-commit
+    reviewers: *terraform-reviewers
+
+  - package-ecosystem: "terraform"
+    directory: "/pod-configs/orchestrator/orch-route53"
+    ignore: *terraform-ignore
+    schedule: *terraform-schedule
+    commit-message: *terraform-commit
+    reviewers: *terraform-reviewers
+
+  - package-ecosystem: "terraform"
+    directory: "/pod-configs/orchestrator/pull-through-cache-proxy"
+    ignore: *terraform-ignore
+    schedule: *terraform-schedule
+    commit-message: *terraform-commit
+    reviewers: *terraform-reviewers
+
+  - package-ecosystem: "terraform"
+    directory: "/pod-configs/module/lb-target-group-attachment"
+    ignore: *terraform-ignore
+    schedule: *terraform-schedule
+    commit-message: *terraform-commit
+    reviewers: *terraform-reviewers
+
+  - package-ecosystem: "terraform"
+    directory: "/pod-configs/module/application-load-balancer"
+    ignore: *terraform-ignore
+    schedule: *terraform-schedule
+    commit-message: *terraform-commit
+    reviewers: *terraform-reviewers
+
+  - package-ecosystem: "terraform"
+    directory: "/pod-configs/module/load-balancer"
+    ignore: *terraform-ignore
+    schedule: *terraform-schedule
+    commit-message: *terraform-commit
+    reviewers: *terraform-reviewers
+
+  - package-ecosystem: "terraform"
+    directory: "/pod-configs/buckets"
+    ignore: *terraform-ignore
+    schedule: *terraform-schedule
+    commit-message: *terraform-commit
+    reviewers: *terraform-reviewers
+
+  # Helm (split per directory)
   - package-ecosystem: "helm"
-    directories:
-      - "/argocd-internal/applications"
-      - "/argocd-internal/root-app"
-      - "/argocd/applications"
-      - "/argocd/root-app"
-    # Only update patch versions to reduce the chance of regressions getting introduced
-    ignore:
+    directory: "/argocd-internal/applications"
+    ignore: &helm-ignore
       - dependency-name: "*"
         update-types:
           - "version-update:semver-major"
           - "version-update:semver-minor"
-    schedule:
+    schedule: &helm-schedule
       interval: daily
     open-pull-requests-limit: 5
-    commit-message:
+    commit-message: &helm-commit
       prefix: "Helm"
-    reviewers:
+    reviewers: &helm-reviewers
       - "dmytroye"
 
-  # Enable version updates for Docker
+  - package-ecosystem: "helm"
+    directory: "/argocd-internal/root-app"
+    ignore: *helm-ignore
+    schedule: *helm-schedule
+    open-pull-requests-limit: 5
+    commit-message: *helm-commit
+    reviewers: *helm-reviewers
+
+  - package-ecosystem: "helm"
+    directory: "/argocd/applications"
+    ignore: *helm-ignore
+    schedule: *helm-schedule
+    open-pull-requests-limit: 5
+    commit-message: *helm-commit
+    reviewers: *helm-reviewers
+
+  - package-ecosystem: "helm"
+    directory: "/argocd/root-app"
+    ignore: *helm-ignore
+    schedule: *helm-schedule
+    open-pull-requests-limit: 5
+    commit-message: *helm-commit
+    reviewers: *helm-reviewers
+
+  # Docker
   - package-ecosystem: "docker"
-    directories:
-      - "/installer"
-    # Only update patch versions to reduce the chance of regressions getting introduced
+    directory: "/installer"
     ignore:
       - dependency-name: "*"
         update-types:
@@ -88,10 +164,9 @@ updates:
     reviewers:
       - "dmytroye"
 
-  # Enable version updates for GitHub Actions
+  # GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
-    # Only update patch versions to reduce the chance of regressions getting introduced
     ignore:
       - dependency-name: "*"
         update-types:
