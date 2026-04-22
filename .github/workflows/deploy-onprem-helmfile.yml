@@ -289,7 +289,6 @@ jobs:
           LIBVIRT_DEFAULT_URI: 'qemu:///system'
         shell: bash
         run: |
-          . "$HOME/.asdf/asdf.sh"
           KC_ADMIN_PWD=$(kubectl -n orch-platform get secrets platform-keycloak -o jsonpath='{.data.admin-password}' | base64 -d)
           yq eval ".orchestrator.admin_password = \"${KC_ADMIN_PWD}\"" -i orchestrator-configs/on-prem.yaml
           yq eval '.infra.host.edgenode.hw_info.libvirt_pool_name = "default"'    -i tests/emf_decomp/data/cf_data_sample.yaml
