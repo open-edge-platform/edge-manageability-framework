@@ -48,7 +48,7 @@ end_time=$(date -u +%s%N)
 echo "starttime:$start_time endtime:$end_time"
 
 echo "Stop Port forwarding if already enabled"
-kill $(lsof -t -i :8087) 2>/dev/null || true
+lsof -t -i :8087 | xargs -r kill 2>/dev/null || true
 
 kubectl port-forward -n orch-infra svc/edgenode-observability-loki-gateway 8087:80 >/dev/null 2>&1 &
 echo "Port forwarding enabled"
@@ -77,5 +77,5 @@ curl -s -G "http://${EN_LOKI_URL}/loki/api/v1/query_range" \
   | jq -r '.data.result[]?.values[]? | .[]' > uOS_caddy.log
 cat uOS_caddy.log || true
 
-kill $(lsof -t -i :8087) 2>/dev/null || true
+lsof -t -i :8087 | xargs -r kill 2>/dev/null || true
 echo "Port forwarding stopped"
