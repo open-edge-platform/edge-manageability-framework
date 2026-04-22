@@ -1,14 +1,15 @@
-# SPDX-FileCopyrightText: 2025 Intel Corporation
+# SPDX-FileCopyrightText: 2026 Intel Corporation
 #
 # SPDX-License-Identifier: Apache-2.0
+---
 
 version: 2
 enable-beta-ecosystems: true
+
 updates:
-  # Enable version updates for Go modules
+  # Go modules
   - package-ecosystem: "gomod"
     directory: "/"
-    # Only update patch versions to reduce the chance of regressions getting introduced
     ignore:
       - dependency-name: "*"
         update-types:
@@ -22,41 +23,164 @@ updates:
     reviewers:
       - "dmytroye"
 
-  # Enable version updates for Terraform
+  # Terraform
   - package-ecosystem: "terraform"
-    directories:
-      - "/terraform/edge-network"
-      - "/terraform/orchestrator"
-      - "/terraform/edge-storage-pool"
-      - "/pod-configs/orchestrator/cluster"
-      - "/pod-configs/orchestrator/orch-load-balancer"
-      - "/pod-configs/orchestrator/orch-route53"
-      - "/pod-configs/orchestrator/pull-through-cache-proxy"
-      - "/pod-configs/module/lb-target-group-attachment"
-      - "/pod-configs/module/application-load-balancer"
-      - "/pod-configs/module/load-balancer"
-      - "/pod-configs/buckets"
-    # Only update patch versions to reduce the chance of regressions getting introduced
+    directory: "/terraform/edge-network"
     ignore:
       - dependency-name: "*"
         update-types:
           - "version-update:semver-major"
           - "version-update:semver-minor"
     schedule:
-      interval: "monthly"
+      interval: monthly
     commit-message:
       prefix: "terraform"
     reviewers:
       - "dmytroye"
 
-  # Enable version updates for Helm
+  - package-ecosystem: "terraform"
+    directory: "/terraform/orchestrator"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "terraform"
+    reviewers:
+      - "dmytroye"
+
+  - package-ecosystem: "terraform"
+    directory: "/terraform/edge-storage-pool"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "terraform"
+    reviewers:
+      - "dmytroye"
+
+  - package-ecosystem: "terraform"
+    directory: "/pod-configs/orchestrator/cluster"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "terraform"
+    reviewers:
+      - "dmytroye"
+
+  - package-ecosystem: "terraform"
+    directory: "/pod-configs/orchestrator/orch-load-balancer"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "terraform"
+    reviewers:
+      - "dmytroye"
+
+  - package-ecosystem: "terraform"
+    directory: "/pod-configs/orchestrator/orch-route53"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "terraform"
+    reviewers:
+      - "dmytroye"
+
+  - package-ecosystem: "terraform"
+    directory: "/pod-configs/orchestrator/pull-through-cache-proxy"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "terraform"
+    reviewers:
+      - "dmytroye"
+
+  - package-ecosystem: "terraform"
+    directory: "/pod-configs/module/lb-target-group-attachment"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "terraform"
+    reviewers:
+      - "dmytroye"
+
+  - package-ecosystem: "terraform"
+    directory: "/pod-configs/module/application-load-balancer"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "terraform"
+    reviewers:
+      - "dmytroye"
+
+  - package-ecosystem: "terraform"
+    directory: "/pod-configs/module/load-balancer"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "terraform"
+    reviewers:
+      - "dmytroye"
+
+  - package-ecosystem: "terraform"
+    directory: "/pod-configs/buckets"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "terraform"
+    reviewers:
+      - "dmytroye"
+
+  # Helm
   - package-ecosystem: "helm"
-    directories:
-      - "/argocd-internal/applications"
-      - "/argocd-internal/root-app"
-      - "/argocd/applications"
-      - "/argocd/root-app"
-    # Only update patch versions to reduce the chance of regressions getting introduced
+    directory: "/argocd-internal/applications"
     ignore:
       - dependency-name: "*"
         update-types:
@@ -70,11 +194,54 @@ updates:
     reviewers:
       - "dmytroye"
 
-  # Enable version updates for Docker
+  - package-ecosystem: "helm"
+    directory: "/argocd-internal/root-app"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "Helm"
+    reviewers:
+      - "dmytroye"
+
+  - package-ecosystem: "helm"
+    directory: "/argocd/applications"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "Helm"
+    reviewers:
+      - "dmytroye"
+
+  - package-ecosystem: "helm"
+    directory: "/argocd/root-app"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "Helm"
+    reviewers:
+      - "dmytroye"
+
+  # Docker
   - package-ecosystem: "docker"
-    directories:
-      - "/installer"
-    # Only update patch versions to reduce the chance of regressions getting introduced
+    directory: "/installer"
     ignore:
       - dependency-name: "*"
         update-types:
@@ -88,10 +255,9 @@ updates:
     reviewers:
       - "dmytroye"
 
-  # Enable version updates for GitHub Actions
+  # GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
-    # Only update patch versions to reduce the chance of regressions getting introduced
     ignore:
       - dependency-name: "*"
         update-types:
