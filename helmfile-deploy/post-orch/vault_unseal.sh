@@ -80,7 +80,7 @@ vault_unseal() {
   fi
 
   echo "Vault unsealed successfully."
-   
+
   token=$(echo "$secret_json" | jq -r '.root_token?' 2>/dev/null)
   if [[ -z "$token" ]]; then
     echo "Error: Failed to retrieve Vault root token. 'root_token' field may be missing or malformed in secret 'vault-keys'."

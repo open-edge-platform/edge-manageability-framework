@@ -27,7 +27,7 @@ step_start() {
 step_done() {
   local dur=$(( SECONDS - _STEP_START ))
   STEP_NAMES+=("$_STEP_NAME")
-  STEP_DURATIONS+=($dur)
+  STEP_DURATIONS+=("$dur")
   echo "⏱️  [$_STEP_NAME] completed in $(( dur / 60 ))m $(( dur % 60 ))s"
 }
 
