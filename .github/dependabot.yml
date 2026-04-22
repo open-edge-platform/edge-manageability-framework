@@ -258,11 +258,6 @@ updates:
   # GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
-    ignore:
-      - dependency-name: "*"
-        update-types:
-          - "version-update:semver-major"
-          - "version-update:semver-minor"
     schedule:
       interval: daily
     open-pull-requests-limit: 5
