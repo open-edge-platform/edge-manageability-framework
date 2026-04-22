@@ -249,9 +249,9 @@ jobs:
           git submodule update --init --recursive
 
           # Install asdf
-          git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.14.1
-          . "$HOME/.asdf/asdf.sh"
-          echo ". $HOME/.asdf/asdf.sh" >> "$HOME/.bashrc"
+          #git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.14.1
+          #. "$HOME/.asdf/asdf.sh"
+          #echo ". $HOME/.asdf/asdf.sh" >> "$HOME/.bashrc"
 
           # Install tools and Python venv
           make asdf-install
@@ -259,13 +259,13 @@ jobs:
           make venv_edge-manage-test-automation
 
           # Install terraform for Pico VEN provisioning (skip tflint)
-          pushd repos/ven/pico
-          asdf plugin add terraform || true
-          asdf install terraform
-          popd
+          #pushd repos/ven/pico
+          #asdf plugin add terraform || true
+          #asdf install terraform
+          #popd
 
           # xsltproc needed by libvirt terraform provider for domain XML customization
-          sudo apt-get install -y xsltproc
+          #sudo apt-get install -y xsltproc
 
       #- name: Wait for DKAM Full_server.crt and signed_ipxe.efi readiness
       #  shell: bash
@@ -274,7 +274,7 @@ jobs:
       #    check_and_download_dkam_certs "cluster.onprem"
 
       # EIM-vPro tests:
-      # CLI-EIM-vPRO-01 to CLI-EIM-vPRO-07
+      
       - name: Run Tests eim-vpro-01 to eim-vpro-07
         id: robot-tests
         timeout-minutes: 20
@@ -287,9 +287,9 @@ jobs:
           . "$HOME/.asdf/asdf.sh"
           KC_ADMIN_PWD=$(kubectl -n orch-platform get secrets platform-keycloak -o jsonpath='{.data.admin-password}' | base64 -d)
           yq eval ".orchestrator.admin_password = \"${KC_ADMIN_PWD}\"" -i orchestrator-configs/on-prem.yaml
-          yq eval '.infra.host.edgenode.hw_info.libvirt_pool_name = "default"'    -i tests/core_foundation/data/cf_data_1_ven_VEN-libvirt_microvisor-nonrt.yaml
-          yq eval '.infra.host.edgenode.hw_info.libvirt_network_name = "default"' -i tests/core_foundation/data/cf_data_1_ven_VEN-libvirt_microvisor-nonrt.yaml
-          yq eval ".infra.host.edgenode.hw_info.serial = \"${VM_SERIAL}\"" -i tests/core_foundation/data/cf_data_1_ven_VEN-libvirt_microvisor-nonrt.yaml
+          yq eval '.infra.host.edgenode.hw_info.libvirt_pool_name = "default"'    -i tests/emf_decomp/data/cf_data_sample.yaml
+          yq eval '.infra.host.edgenode.hw_info.libvirt_network_name = "default"' -i tests/emf_decomp/data/cf_data_sample.yaml
+          yq eval ".infra.host.edgenode.hw_info.serial = \"${VM_SERIAL}\"" -i tests/emf_decomp/data/cf_data_sample.yaml
 
           source venv_edge-manage-test-automation/bin/activate
           robot -L DEBUG --pythonpath . \
