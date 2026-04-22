@@ -81,7 +81,7 @@ jobs:
 
       - name: Discover Changed Files
         id: check-files
-        uses: open-edge-platform/orch-ci/discover-changed-files@d40dfda9598df896aa20cb1dc2c950d6444e8fa7  # 2026.0.8 # zizmor: ignore[unpinned-uses]
+        uses: open-edge-platform/orch-ci/discover-changed-files@a95228137803b756aae327668c115db235802982  # 2026.0.8 # zizmor: ignore[unpinned-uses]
         with:
           project_folder: "."
 
@@ -157,7 +157,7 @@ jobs:
           git config --global url."https://${{ secrets.SYS_EMF_GH_TOKEN }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Setup asdf and install dependencies
-        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@b6610539eb98ed7bd5903e6629e48c1da39d883b
+        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@e9699415365464e48917e1e197b28ed2bc40dad4
 
       - name: Run lint
         run: mage -v lint:markdown
@@ -178,7 +178,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup asdf and install dependencies
-        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@b6610539eb98ed7bd5903e6629e48c1da39d883b
+        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@e9699415365464e48917e1e197b28ed2bc40dad4
 
       - name: Run lint
         working-directory: on-prem-installers
@@ -200,7 +200,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup asdf and install dependencies
-        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@b6610539eb98ed7bd5903e6629e48c1da39d883b
+        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@e9699415365464e48917e1e197b28ed2bc40dad4
 
       - name: Run lint
         run: mage lint:terraform
@@ -224,7 +224,7 @@ jobs:
         run: echo "ASDF_YAMLLINT_PIP_PACKAGES=pyyaml" >> $GITHUB_ENV
 
       - name: Setup asdf and install dependencies
-        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@b6610539eb98ed7bd5903e6629e48c1da39d883b  
+        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@e9699415365464e48917e1e197b28ed2bc40dad4  
       - name: Run lint
         run: mage lint:yaml
 
@@ -244,7 +244,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup asdf and install dependencies
-        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@b6610539eb98ed7bd5903e6629e48c1da39d883b
+        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@e9699415365464e48917e1e197b28ed2bc40dad4
 
       - name: Run lint
         run: mage lint:helm
@@ -271,7 +271,7 @@ jobs:
           git config --global url."https://${{ secrets.SYS_EMF_GH_TOKEN }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Setup asdf and install dependencies
-        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@b6610539eb98ed7bd5903e6629e48c1da39d883b
+        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@e9699415365464e48917e1e197b28ed2bc40dad4
 
       - name: Run lint
         run: mage lint:golang
@@ -304,7 +304,7 @@ jobs:
           git config --global url."https://${{ secrets.SYS_EMF_GH_TOKEN }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Setup asdf and install dependencies
-        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@b6610539eb98ed7bd5903e6629e48c1da39d883b
+        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@e9699415365464e48917e1e197b28ed2bc40dad4
 
       - name: Run lint
         run: |
@@ -363,7 +363,7 @@ jobs:
           git config --global url."https://${{ secrets.SYS_EMF_GH_TOKEN }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Setup asdf and install dependencies
-        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@b6610539eb98ed7bd5903e6629e48c1da39d883b
+        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@e9699415365464e48917e1e197b28ed2bc40dad4
 
       - name: Get version tag
         id: get_version_tag
