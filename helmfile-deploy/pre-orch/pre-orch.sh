@@ -601,7 +601,7 @@ k3s_install() {
   k3s_setup_kubeconfig /etc/rancher/k3s/k3s.yaml
 
   wait_for_k8s_ready
-  step_done
+  [[ -n "${_STEP_START:-}" ]] && step_done
   install_pre_orch_components
 }
 
