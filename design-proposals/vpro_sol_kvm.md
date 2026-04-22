@@ -338,30 +338,31 @@ end
     MPS-->>DM: 200 OK
     DM->>INV: UPDATE current_kvm_state=KVM_STATE_AWAITING_CONSENT
 
-    CLI->>APIV2: GET /compute/hosts/:id poll every 2s
     APIV2-->>CLI: currentKvmState=KVM_STATE_AWAITING_CONSENT
+    CLI->>CLI: GET input from USER : Reads the Consent Code to IT via phone/chat
 
-    Note over CLI: Operator reads 6-digit code from device screen
-    CLI->>APIV2: PATCH /compute/hosts/:id desiredConsentCode=NNNNNN
-    APIV2->>INV: UPDATE desired_consent_code=NNNNNN
-
-    DM->>INV: READ desired_consent_code
-    INV-->>DM: NNNNNN
-    DM->>MPS: POST /api/v1/amt/userConsentCode/:guid consentCode=NNNNNN
+    Note over CLI: Operator enters 6-digit Consent Code
+  
+    CLI->>MPS: POST /api/v1/amt/userConsentCode/:guid consentCode=NNNNNN
     MPS-->>AMT: Validate code
     AMT-->>MPS: Consent granted
-    MPS-->>DM: 200 OK
+    MPS-->>CLI: 200 OK
+    CLI->>APIV2: PATCH /compute/hosts/:id desiredKvmState=KVM_CONSENT_RECEIVED
     end
-    Note over DM,INV: 4. Obtain redirect token and write session URL
-    DM->>MPS: GET /api/v1/authorize/redirection/:guid
-    MPS-->>DM: token=short-lived-token
+
+    Note over CLI,MPS: 4. Obtain redirect token and write session URL
+    CLI->>MPS: GET /api/v1/authorize/redirection/:guid
+    MPS-->>CLI: token=short-lived-token
+    DM->>INV: Watch for desired state change
+    CLI->>APIV2: PATCH /compute/hosts/:id desiredKvmState=KVM_REDIRECTION_RECEIVED
+    APIV2->>INV: UPDATE desired_kvm_state=KVM_REDIRECTION_RECEIVED
     DM->>INV: UPDATE current_kvm_state=KVM_STATE_START
-    DM->>INV: UPDATE kvm_session_url with relay URL
+  
 
     Note over CLI: 5. orch-cli detects KVM_STATE_START and starts local proxy
     CLI->>APIV2: GET /compute/hosts/:id poll
-    APIV2-->>CLI: currentKvmState=KVM_STATE_START kvmSessionUrl=relay-url
-    CLI->>CLI: Start local HTTP server on random port
+    APIV2-->>CLI: currentKvmState=KVM_STATE_START 
+    CLI->>CLI: Start local HTTP server on random port kvmSessionUrl=relay-url
     CLI->>Browser: Open browser at localhost
 
     Note over Browser,CLI: 6. Browser connects and launches KVM session
