@@ -22,7 +22,7 @@ loadbalancer -->|SNI, jwt validation, security| traefik{traefik}
 traefik --> |enable jwt plugin| traefik-pre[traefik-pre]
 traefik -->|jwt creation| keycloak[keycloak]
 traefik -->|certs-management| cert-manager[cert-manager]
-traefik -->|certs| traefik-extra-objects[traefik-extra-objects]
+traefik -->|settings for tls, and rate limits| traefik-extra-objects[traefik-extra-objects]
 traefik -->|MPS RPS AMT VPRO| infra-external[infra-external]
 traefik -->|Infrastructure Manager, e.g., inventory.| infra-core[infra-core]
 traefik -->|GUI| web-ui[web-ui]
