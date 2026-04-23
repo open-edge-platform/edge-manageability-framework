@@ -18,16 +18,25 @@ resources:
 postgres:
   secrets: iam-tenancy-local-postgresql
 
-# nexus-replacement: override registered controllers to match what is
-# actually deployed. Remove app-orch-tenant-controller and
-# app-deployment-manager (not deployed in nexus-replacement).
-# Use "tenant-controller" (the appName set in infra-core tenant-controller)
-# instead of "infra-tenant-controller".
+# Override registered project controllers to fix the infra-tenant-controller
+# name mismatch: the infra-core tenant-controller registers itself as
+# "tenant-controller" (see appName in tenancy-hook.go), not
+# "infra-tenant-controller" as was historically listed.
+#
+# App-orch controllers (app-orch-tenant-controller, app-deployment-manager)
+# are conditionally included only when app-orch is enabled in the deployment
+# profile (argo.enabled.app-orch-tenant-controller = true). This keeps the
+# registered controller list accurate so projects don't get stuck waiting
+# for controllers that are not deployed.
 tenancyManager:
   controllers:
     org:
       - keycloak-tenant-controller
     project:
+      {{- if (index .Values.argo.enabled "app-orch-tenant-controller") }}
+      - app-orch-tenant-controller
+      - app-deployment-manager
+      {{- end }}
       - keycloak-tenant-controller
       - tenant-controller
       - cluster-manager
