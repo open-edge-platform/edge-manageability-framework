@@ -242,7 +242,6 @@ helmfile_sync_all() {
   done <<< "$enabled_releases"
 
   local total_enabled=$(( deployed_count + failed_count + pending_count + notinstalled_count ))
-  local MAX_TOLERATED_FAILURES=2
 
   echo ""
   echo "═══════════════════════════════════════════════════════════════"
@@ -559,6 +558,7 @@ helmfile_upgrade_all() {
 ################################
 if [[ -f "$MAIN_ENV_CONFIG" ]]; then
   set -a
+  # shellcheck source=/dev/null
   source "$MAIN_ENV_CONFIG"
   set +a
 else
@@ -569,7 +569,7 @@ fi
 args=()
 for arg in "$@"; do
   if [[ "$arg" =~ ^[A-Z_]+=.+$ ]]; then
-    export "$arg"
+    declare -x "${arg?}"
   else
     args+=("$arg")
   fi

@@ -27,7 +27,7 @@ step_start() {
 step_done() {
   local dur=$(( SECONDS - _STEP_START ))
   STEP_NAMES+=("$_STEP_NAME")
-  STEP_DURATIONS+=($dur)
+  STEP_DURATIONS+=("$dur")
   echo "⏱️  [$_STEP_NAME] completed in $(( dur / 60 ))m $(( dur % 60 ))s"
 }
 
@@ -601,7 +601,7 @@ k3s_install() {
   k3s_setup_kubeconfig /etc/rancher/k3s/k3s.yaml
 
   wait_for_k8s_ready
-  step_done
+  [[ -n "${_STEP_START:-}" ]] && step_done
   install_pre_orch_components
 }
 

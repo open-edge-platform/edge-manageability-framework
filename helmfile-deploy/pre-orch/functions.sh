@@ -86,13 +86,13 @@ generate_password() {
     uppercase=$(tr -dc 'A-Z' < /dev/urandom | head -c 1)
     digit=$(tr -dc '0-9' < /dev/urandom | head -c 1)
     special=$(tr -dc '!@#$%^&*()_+{}|:<>?' < /dev/urandom | head -c 1)
-    
+
     # Generate additional random characters to fill the rest of the password
     remaining=$(tr -dc 'a-zA-Z0-9!@#$%^&*()_+{}|:<>?' < /dev/urandom | head -c 21)
-    
+
     # Combine all parts and shuffle them to create the final password
     password=$(echo "$lowercase$uppercase$digit$special$remaining" | fold -w1 | shuf | tr -d '\n')
-    
+
     echo "$password"
 }
 
@@ -161,7 +161,7 @@ update_config_variable() {
     local config_file="$1"
     local var_name="$2"
     local var_value="$3"
-    
+
     if [[ -n "${var_value:-}" ]]; then
         if grep -q "^export ${var_name}=" "$config_file"; then
             # Update existing line
