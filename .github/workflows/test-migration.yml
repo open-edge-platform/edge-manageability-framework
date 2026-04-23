@@ -42,7 +42,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684  # v4.2.3
+      - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
         if: github.event_name != 'merge_group'
         with:
           path: |
@@ -53,7 +53,7 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: Setup asdf and install dependencies
-        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
+        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@e9699415365464e48917e1e197b28ed2bc40dad4
 
       - name: Run test
         run: mage test:ChartsAvailableOnReleaseService
@@ -70,7 +70,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684  # v4.2.3
+      - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
         if: github.event_name != 'merge_group'
         with:
           path: |
@@ -81,7 +81,7 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: Setup asdf and install dependencies
-        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@main  # zizmor: ignore[unpinned-uses]
+        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@e9699415365464e48917e1e197b28ed2bc40dad4
 
       - name: Inject default commonName for nginx-ingress-pxe-boots
         run: |
