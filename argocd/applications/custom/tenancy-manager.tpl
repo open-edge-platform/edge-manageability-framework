@@ -29,9 +29,8 @@ postgres:
 # registered controller list accurate so projects don't get stuck waiting
 # for controllers that are not deployed.
 #
-# Note: the chart on the nexus-replacement branch uses .Values.config.*
-# (not .Values.tenancyManager.*) for configuration.
-config:
+# Note: the chart uses .Values.tenancyManager.* for controller configuration.
+tenancyManager:
   controllers:
     org:
       - keycloak-tenant-controller
