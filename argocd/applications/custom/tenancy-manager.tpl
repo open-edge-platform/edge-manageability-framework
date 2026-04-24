@@ -15,8 +15,12 @@ imagePullSecrets:
 resources:
   {{- toYaml . | nindent 4 }}
 {{- end }}
-postgres:
-  secrets: iam-tenancy-local-postgresql
+postgresql:
+  existingSecret: "iam-tenancy-local-postgresql"
+  existingSecretPasswordKey: "PGPASSWORD"
+  host: "postgresql-cluster-rw.orch-database"
+  database: "orch-iam-iam-tenancy"
+  username: "orch-iam-iam-tenancy_user"
 
 # Override registered project controllers to fix the infra-tenant-controller
 # name mismatch: the infra-core tenant-controller registers itself as
