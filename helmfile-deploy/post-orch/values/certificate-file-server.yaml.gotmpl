@@ -9,3 +9,138 @@ resources: null
 
 # https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
 traefikApiGroup: "traefik.io/v1alpha1"
+
+{{- if eq .Environment.Name "onprem-vpro" }}
+# Disable boots-ca-cert secret mount for vPro (no boots infrastructure)
+secretName: ""
+{{- end }}
+
+{{- if eq .Environment.Name "onprem-vpro" }}
+# ─── Shorthand variables (vPro only) ────────────────────────────────────────
+{{- $io       := index .Values "infra-onboarding" | default dict }}
+{{- $skipOS   := dig "skipOSProvisioning" false $io }}
+{{- $metrics  := dig "enableMetrics" false $io }}
+{{- $tracing  := dig "enableTracing" false $io }}
+{{- $mode     := dig "dkamMode" "prod" $io }}
+{{- $sc       := .Values.storageClass }}
+{{- $domain   := .Values.clusterDomain }}
+{{- $proxy    := dig "proxy" (dict) .Values }}
+{{- $httpProxy     := dig "httpProxy" "" $proxy }}
+{{- $httpsProxy    := dig "httpsProxy" "" $proxy }}
+{{- $noProxy       := dig "noProxy" "" $proxy }}
+{{- $enHttpProxy   := dig "enHttpProxy" "" $proxy }}
+{{- $enHttpsProxy  := dig "enHttpsProxy" "" $proxy }}
+{{- $enFtpProxy    := dig "enFtpProxy" "" $proxy }}
+{{- $enSocksProxy  := dig "enSocksProxy" "" $proxy }}
+{{- $enNoProxy     := dig "enNoProxy" "" $proxy }}
+
+infraConfig:
+    # ── Agent versions ───────────────────────────────────────────────────────
+    enAgentManifestTag: "1.5.8"
+    embImageUrl: files-edge-orch/repository/microvisor/uos/emb_uos_x86_64_20251113.tar.gz
+
+    # ── Edge-node proxy settings ─────────────────────────────────────────────
+    enProxyHTTP: {{ $enHttpProxy }}
+    enProxyHTTPS: {{ $enHttpsProxy }}
+    enProxyFTP: {{ $enFtpProxy }}
+    enProxySocks: {{ $enSocksProxy }}
+    enProxyNoProxy: {{ $enNoProxy }}
+
+    # ── Orchestrator service endpoints ───────────────────────────────────────
+    orchInfra: infra-node.{{ $domain }}:443
+    orchCluster: cluster-orch-node.{{ $domain }}:443
+    orchUpdate: update-node.{{ $domain }}:443
+    orchRelease: release.{{ $domain }}
+    orchPlatformObsLogs: logs-node.{{ $domain }}:443
+    orchPlatformObsMetrics: metrics-node.{{ $domain }}:443
+    orchKeycloak: keycloak.{{ $domain }}:443
+    orchTelemetry: telemetry-node.{{ $domain }}:443
+    orchAttestationStatus: attest-node.{{ $domain }}:443
+    orchRegistry: {{ .Values.releaseService.ociRegistry }}:9443
+    orchFileServer: {{ .Values.releaseService.fileServer }}:60444
+    # TODO: Revisit the below routes — limit exposure and switch to MT GW endpoints
+    orchMPSHost: mps.{{ $domain }}:4433
+    orchMPSWHost: mps-wss.{{ $domain }}:443
+    orchRPSHost: rps.{{ $domain }}:443
+    orchRPSWHost: rps-wss.{{ $domain }}:443
+    orchDeviceManager: device-manager-node.{{ $domain }}:443
+
+    # ── Internal service endpoints ───────────────────────────────────────────
+    cdnSvc: {{ .Values.releaseService.fileServer }}
+    provisioningSvc: tinkerbell-haproxy.{{ $domain }}{{ if ne (.Values.haproxyPort | default "443" | toString) "443" }}:{{ .Values.haproxyPort }}{{ end }}
+    tinkerSvc: tinkerbell-server.{{ $domain }}
+    omSvc: onboarding-node.{{ $domain }}
+    omStreamSvc: onboarding-stream.{{ $domain }}
+
+    # ── Agent client lists (overridable per profile) ─────────────────────────
+    rsType: {{ dig "rsType" "no-auth" $io | quote }}
+    enServiceClients: {{ dig "enServiceClients" "hardware-discovery-agent,cluster-agent,platform-manageability-agent,platform-update-agent,platform-telemetry-agent" $io | quote }}
+    enOutboundClients: {{ dig "enOutboundClients" "platform-observability-collector,platform-observability-health-check,platform-observability-logging,platform-observability-metrics" $io | quote }}
+    enMetricsEnabled: {{ dig "enMetricsEnabled" "true" $io | quote }}
+    enTokenClients: {{ dig "enTokenClients" "node-agent,hd-agent,cluster-agent,platform-update-agent,platform-observability-agent,platform-telemetry-agent,prometheus,connect-agent,attestation-manager,platform-manageability-agent" $io | quote }}
+
+    # ── Registry and package repository settings ─────────────────────────────
+    registryService: {{ .Values.releaseService.ociRegistry }}
+    enDebianPackagesRepo: {{ dig "enDebianPackagesRepo" "edge-orch/en/deb" $io | quote }}
+    enFilesRsRoot: {{ dig "enFilesRsRoot" "files-edge-orch" $io | quote }}
+    enManifestRepo: {{ dig "enManifestRepo" "edge-orch/en/files/ena-manifest" $io | quote }}
+    orchAptSrcProxyPort: {{ dig "orchAptSrcProxyPort" "60444" $io | quote }}
+
+    # ── Profile toggles ─────────────────────────────────────────────────────
+    disableCoProfile: {{ dig "disableCoProfile" false $io }}
+    disableO11yProfile: {{ dig "disableO11yProfile" false $io }}
+    skipOSProvisioning: {{ $skipOS }}
+    extraHosts: {{ dig "dkamExtraHost" "" $io | quote }}
+
+    # ── Network settings ─────────────────────────────────────────────────────
+    netIp: {{ dig "netIp" "dynamic" $io | quote }}
+    ntpServer: {{ dig "ntpServer" "ntp1.server.org,ntp2.server.org" $io | quote }}
+    {{- $nameServers := dig "nameServers" list $io }}
+    {{- if $nameServers }}
+    nameServers:
+      {{- toYaml $nameServers | nindent 6 }}
+    {{- else }}
+    nameServers: []
+    {{- end }}
+
+    # ── Kernel / system tuning ───────────────────────────────────────────────
+    systemConfigFsInotifyMaxUserInstances: {{ dig "systemConfigFsInotifyMaxUserInstances" "8192" $io | quote }}
+    systemConfigVmOverCommitMemory: {{ dig "systemConfigVmOverCommitMemory" "1" $io | quote }}
+    systemConfigKernelPanicOnOops: {{ dig "systemConfigKernelPanicOnOops" "1" $io | quote }}
+    systemConfigKernelPanic: {{ dig "systemConfigKernelPanic" "10" $io | quote }}
+
+    # ── Firewall rules ───────────────────────────────────────────────────────
+    firewallReqAllow: |-
+      [{
+        "sourceIp": "{{ $domain }}",
+        "ports": "6443,10250",
+        "ipVer": "ipv4",
+        "protocol": "tcp"
+      }]
+    {{- $fwAllow := dig "firewallCfgAllow" list $io }}
+    {{- if $fwAllow }}
+    firewallCfgAllow:
+      {{- toYaml $fwAllow | nindent 6 }}
+    {{- else }}
+    firewallCfgAllow: |-
+      [{
+        "sourceIp": "",
+        "ports": "2379,2380,6443,9345,10250,5473",
+        "ipVer": "",
+        "protocol": "tcp"
+      },
+      {
+        "sourceIp": "",
+        "ports": "7946",
+        "ipVer": "",
+        "protocol": ""
+      },
+      {
+        "sourceIp": "",
+        "ports": "123",
+        "ipVer": "",
+        "protocol": "udp"
+      }]
+    {{- end }}
+{{- end }}
+
