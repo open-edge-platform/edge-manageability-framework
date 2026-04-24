@@ -144,7 +144,7 @@ releases:
     condition: cert-manager.enabled
     needs:
       - ns-label/namespace-label
-      
+
 
 
   - name: external-secrets
@@ -246,7 +246,7 @@ releases:
       - values/istiod.yaml.gotmpl
     needs:
       - istio-system/istio-base
-    condition: istiod.enabled    
+    condition: istiod.enabled
 
 
   - name: reloader
@@ -424,7 +424,7 @@ releases:
     namespace: cert-manager
     chart: edge-orch/common/charts/self-signed-cert
     wait: true
-    version: 26.0.1 
+    version: 26.0.1
     values:
       - values/self-signed-cert.yaml.gotmpl
     condition: self-signed-cert.enabled
