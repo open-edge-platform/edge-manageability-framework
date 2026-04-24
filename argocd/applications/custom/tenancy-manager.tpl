@@ -31,6 +31,7 @@ postgres:
 #
 # Note: the chart uses .Values.tenancyManager.* for controller configuration.
 tenancyManager:
+  oidcServerURL: "http://platform-keycloak.orch-platform.svc:8080/realms/master"
   controllers:
     org:
       - keycloak-tenant-controller
