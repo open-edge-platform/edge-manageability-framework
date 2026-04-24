@@ -21,7 +21,7 @@ spec:
   sources:
     - repoURL: https://github.com/open-edge-platform/orch-utils
       path: charts/tenancy-manager
-      targetRevision: nexus-replacement
+      targetRevision: utils_nexus_replacement
       helm:
         releaseName: {{$appName}}
         valuesObject:
