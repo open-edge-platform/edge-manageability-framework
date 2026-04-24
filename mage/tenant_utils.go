@@ -117,12 +117,24 @@ func tmEnsurePortForward() (string, func()) {
 }
 
 // tmGetAdminToken obtains a Keycloak JWT for the Keycloak admin user via
-// system-client. The admin user has global org-write-role / project-write-role
-// which is sufficient for all tenancy-manager REST operations.
+// system-client. Always reads the password from the platform-keycloak k8s
+// secret so that a stale ORCH_DEFAULT_PASSWORD env var is never used.
 func tmGetAdminToken() (string, error) {
-	adminPass, err := GetDefaultOrchPassword()
+	out, err := exec.Command(
+		"kubectl", "get", "secret", "platform-keycloak",
+		"-n", "orch-platform",
+		"-o", "jsonpath={.data.admin-password}",
+	).CombinedOutput()
 	if err != nil {
-		return "", fmt.Errorf("failed to get admin password: %w", err)
+		return "", fmt.Errorf("failed to read KC admin password from secret: %w\noutput: %s", err, out)
+	}
+	decoded, err := base64.StdEncoding.DecodeString(strings.TrimSpace(string(out)))
+	if err != nil {
+		return "", fmt.Errorf("failed to decode KC admin password: %w", err)
+	}
+	adminPass := strings.TrimSpace(string(decoded))
+	if adminPass == "" {
+		return "", fmt.Errorf("empty KC admin password from platform-keycloak secret")
 	}
 	keycloakBase := "https://keycloak." + serviceDomainWithPort
 	formData := url.Values{
