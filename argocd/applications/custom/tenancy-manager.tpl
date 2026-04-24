@@ -28,7 +28,10 @@ postgres:
 # profile (argo.enabled.app-orch-tenant-controller = true). This keeps the
 # registered controller list accurate so projects don't get stuck waiting
 # for controllers that are not deployed.
-tenancyManager:
+#
+# Note: the chart on the nexus-replacement branch uses .Values.config.*
+# (not .Values.tenancyManager.*) for configuration.
+config:
   controllers:
     org:
       - keycloak-tenant-controller
