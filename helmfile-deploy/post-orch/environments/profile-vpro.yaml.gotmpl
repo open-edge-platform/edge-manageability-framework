@@ -25,7 +25,9 @@ ingress-haproxy:
 haproxy-ingress-pxe-boots:
   enabled: false
 certificate-file-server:
-  enabled: false
+  enabled: true
+  # Disable boots-ca-cert dependency for vPro (boots infrastructure disabled)
+  secretName: ""
 secret-wait-tls-boots:
   enabled: false
 copy-ca-cert-boots-to-gateway:
