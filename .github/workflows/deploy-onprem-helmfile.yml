@@ -206,6 +206,117 @@ jobs:
       - name: Create Clean Ubuntu VM
         uses: ./.github/actions/create_clean_vm
 
+      - name: Set VM variables
+        shell: bash
+        run: |
+          echo "VM_NAME=vpro-ubuntu-vm" >> $GITHUB_ENV
+          echo "VM_IP=${VM_IP}" >> $GITHUB_ENV
+          echo "VM_SERIAL=${VM_SERIAL}" >> $GITHUB_ENV
+          echo "SSH_USER=user" >> $GITHUB_ENV
+          echo "SSH_PASSWORD=user" >> $GITHUB_ENV
+          echo "VM Details:"
+          echo "  Name: vpro-ubuntu-vm"
+          echo "  IP: ${VM_IP}"
+          echo "  Serial: ${VM_SERIAL}"
+          echo "  SSH: ssh user@${VM_IP}"
+
+      - name: Read test-automation dependency Version
+        id: read-test-automation-version
+        shell: bash
+        run: |
+          version=$(yq '.test-automation.version' ${{ github.workspace }}/.test-dependencies.yaml | tr -d '\n' | xargs)
+          echo "test-automation version: $version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout edge-manage-test-automation repository with submodules
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          repository: open-edge-platform/edge-manage-test-automation
+          path: edge-manage-test-automation
+          ref: shruti/vip
+          submodules: 'recursive'
+          token: ${{ secrets.SYS_EMF_GH_TOKEN }}
+          persist-credentials: false
+
+      - name: Setup test dependencies
+        working-directory: edge-manage-test-automation
+        shell: bash
+        run: |
+          git submodule update --init --recursive
+
+          # Install asdf
+          #git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.14.1
+          #. "$HOME/.asdf/asdf.sh"
+          #echo ". $HOME/.asdf/asdf.sh" >> "$HOME/.bashrc"
+
+          # Install tools and Python venv
+          # make asdf-install
+          make orch-cli
+          make venv_edge-manage-test-automation
+
+          # Install terraform for Pico VEN provisioning (skip tflint)
+          #pushd repos/ven/pico
+          #asdf plugin add terraform || true
+          #asdf install terraform
+          #popd
+
+          # xsltproc needed by libvirt terraform provider for domain XML customization
+          #sudo apt-get install -y xsltproc
+
+      #- name: Wait for DKAM Full_server.crt and signed_ipxe.efi readiness
+      #  shell: bash
+      #  run: |
+      #    source helmfile-deploy/pre-orch/functions.sh
+      #    check_and_download_dkam_certs "cluster.onprem"
+
+      # EIM-vPro tests:
+      # EIM-vPro-01: Assess Tenancy Management
+      # CLI-EIM-vPRO-02: Configure Orchestrator CLI
+      # CLI_EIM-vPRO-03: Create Login session to run CLI commands
+      # CLI-EIM-vPRO-04: Verify Orch deployment for EIM-vPRO profile
+      # CLI-EIM-vPRO-05: Register Host
+      # CLI-EIM-vPRO-07: Install Agents on Edge Node via script
+      - name: Run Tests eim-vpro-01 to eim-vpro-07
+        id: robot-tests
+        timeout-minutes: 20
+        working-directory: edge-manage-test-automation
+        env:
+          REQUESTS_CA_BUNDLE: /usr/local/share/ca-certificates/orch-ca.crt
+          LIBVIRT_DEFAULT_URI: 'qemu:///system'
+        shell: bash
+        run: |
+          KC_ADMIN_PWD=$(kubectl -n orch-platform get secrets platform-keycloak -o jsonpath='{.data.admin-password}' | base64 -d)
+          yq eval ".orchestrator.admin_password = \"${KC_ADMIN_PWD}\"" -i orchestrator-configs/on-prem.yaml
+          yq eval '.infra.host.edgenode.hw_info.libvirt_pool_name = "default"'    -i tests/emf_decomp/data/cf_data_sample.yaml
+          yq eval '.infra.host.edgenode.hw_info.libvirt_network_name = "default"' -i tests/emf_decomp/data/cf_data_sample.yaml
+          yq eval ".infra.host.edgenode.hw_info.serial = \"${VM_SERIAL}\"" -i tests/emf_decomp/data/cf_data_sample.yaml
+
+          source venv_edge-manage-test-automation/bin/activate
+          robot -L DEBUG --pythonpath . \
+            --name "EIM-vPro Test Suite" \
+            -d robot_output/eim_vpro \
+            -V orchestrator-configs/on-prem.yaml \
+            -v PXE_IP:${VM_IP} \
+            -v PXE_HOSTNAME:${VM_NAME} \
+            -v username:${SSH_USER} \
+            -v password:${SSH_PASSWORD} \
+            --exitonfailure \
+            --include eim-vpro-01 \
+            --include eim-vpro-02 \
+            --include eim-vpro-03 \
+            --include eim-vpro-04 \
+            --include eim-vpro-05 \
+            --include eim-vpro-07 \
+            tests/emf_decomp/eim_vpro/orch_cli_eim_vpro.robot
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: on-prem-vpro-${{ github.event_name }}-${{ github.event.number }}-robot-report
+          path: |
+            edge-manage-test-automation/robot_output/**/*
+
       - name: Collect diagnostics
         if: always()
         uses: ./.github/actions/collect_diagnostics_helmfile
