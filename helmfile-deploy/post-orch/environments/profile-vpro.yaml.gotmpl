@@ -20,7 +20,30 @@ web-ui-admin:
   enabled: false
 metadata-broker:
   enabled: false
-
+ingress-haproxy:
+  enabled: false
+haproxy-ingress-pxe-boots:
+  enabled: false
+certificate-file-server:
+  enabled: false
+secret-wait-tls-boots:
+  enabled: false
+copy-ca-cert-boots-to-gateway:
+  enabled: false
+copy-ca-cert-boots-to-infra:
+  enabled: false
+auth-service:
+  enabled: false
+namespace-labe:
+  enabled: false
+platform-autocert:
+  enabled: false
+copy-ca-cert-gateway-to-cattle:
+  enabled: false
+token-fs:
+  enabled: false
+infra-managers:
+  enabled: false
 # ═══════════════════════════════════════════════════════════════════════════════
 # Releases to ENABLE (disabled in defaults, needed for vPro)
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -47,26 +70,6 @@ infra-core:
     enabled: true
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# infra-managers overrides (from enable-edgeinfra-vpro.yaml)
-# Disable managers not needed for vPro, enable provisioning skip
-# ═══════════════════════════════════════════════════════════════════════════════
-infra-managers:
-  enabled: true
-  disabledProvisioning: true
-  host-manager:
-    enabled: true
-  maintenance-manager:
-    enabled: false
-  telemetry-manager:
-    enabled: false
-  os-resource-manager:
-    enabled: false
-  networking-manager:
-    enabled: false
-  attestationstatus-manager:
-    enabled: false
-
-# ═══════════════════════════════════════════════════════════════════════════════
 # infra-onboarding overrides (from enable-edgeinfra-vpro.yaml)
 # ═══════════════════════════════════════════════════════════════════════════════
 infra-onboarding:
@@ -77,7 +80,7 @@ infra-onboarding:
   enMetricsEnabled: "false"
   enTokenClients: "node-agent,platform-manageability-agent"
   tinkerbell:
-    enabled: true
+    enabled: false
   pxe-server:
     enabled: false
   infra-config:
@@ -87,7 +90,7 @@ infra-onboarding:
     service:
       enableIO: false
   dkam:
-    enabled: true
+    enabled: false
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # infra-external overrides (AMT components for vPro)
