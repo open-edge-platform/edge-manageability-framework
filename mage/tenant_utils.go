@@ -5,20 +5,12 @@
 package mage
 
 import (
-	"bytes"
 	"context"
-	"crypto/tls"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
-	"io"
-	"net"
-	"net/http"
-	"net/url"
 	"os"
 	"os/exec"
 	"strings"
-	"time"
 
 	"github.com/Nerzal/gocloak/v13"
 	"github.com/bitfield/script"
@@ -73,385 +65,111 @@ func (TenantUtils) CreateDefaultMtSetup(ctx context.Context) error {
 	return nil
 }
 
-// ─── Tenancy-Manager REST helpers ────────────────────────────────────────────
-
-// tmHTTPClient skips TLS certificate verification for dev/kind environments.
-var tmHTTPClient = &http.Client{ //nolint:gosec
-	Transport: &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec
-	},
-}
-
-// tmEnsurePortForward checks whether port 18080 is already reachable on
-// localhost; if not it starts a kubectl port-forward to the tenancy-manager
-// service. Returns the local endpoint URL and a cleanup func to stop the
-// port-forward (no-op if one was already running).
-func tmEnsurePortForward() (string, func()) {
-	port := 18080
-	addr := fmt.Sprintf("localhost:%d", port)
-	if conn, err := net.DialTimeout("tcp", addr, time.Second); err == nil {
-		conn.Close()
-		return fmt.Sprintf("http://localhost:%d", port), func() {}
-	}
-	cmd := exec.Command("kubectl", "-n", "orch-iam", "port-forward",
-		"svc/tenancy-manager", fmt.Sprintf("%d:8080", port))
-	cmd.Stdout = io.Discard
-	cmd.Stderr = io.Discard
-	if err := cmd.Start(); err != nil {
-		fmt.Printf("warning: failed to start port-forward to tenancy-manager: %v\n", err)
-		return fmt.Sprintf("http://localhost:%d", port), func() {}
-	}
-	// Poll until the port accepts connections (up to 4 s).
-	for i := 0; i < 20; i++ {
-		time.Sleep(200 * time.Millisecond)
-		if conn, err := net.DialTimeout("tcp", addr, 200*time.Millisecond); err == nil {
-			conn.Close()
-			break
-		}
-	}
-	return fmt.Sprintf("http://localhost:%d", port), func() {
-		if cmd.Process != nil {
-			_ = cmd.Process.Kill()
-		}
-	}
-}
-
-// tmGetAdminToken obtains a Keycloak JWT for the Keycloak admin user via
-// system-client. Always reads the password from the platform-keycloak k8s
-// secret so that a stale ORCH_DEFAULT_PASSWORD env var is never used.
-func tmGetAdminToken() (string, error) {
-	out, err := exec.Command(
-		"kubectl", "get", "secret", "platform-keycloak",
-		"-n", "orch-platform",
-		"-o", "jsonpath={.data.admin-password}",
-	).CombinedOutput()
-	if err != nil {
-		return "", fmt.Errorf("failed to read KC admin password from secret: %w\noutput: %s", err, out)
-	}
-	decoded, err := base64.StdEncoding.DecodeString(strings.TrimSpace(string(out)))
-	if err != nil {
-		return "", fmt.Errorf("failed to decode KC admin password: %w", err)
-	}
-	adminPass := strings.TrimSpace(string(decoded))
-	if adminPass == "" {
-		return "", fmt.Errorf("empty KC admin password from platform-keycloak secret")
-	}
-	keycloakBase := "https://keycloak." + serviceDomainWithPort
-	formData := url.Values{
-		"client_id":  {"system-client"},
-		"username":   {"admin"},
-		"password":   {adminPass},
-		"grant_type": {"password"},
-		"scope":      {"openid"},
-	}
-	resp, err := tmHTTPClient.PostForm(
-		keycloakBase+"/realms/master/protocol/openid-connect/token",
-		formData,
-	)
-	if err != nil {
-		return "", fmt.Errorf("KC token request failed: %w", err)
-	}
-	defer resp.Body.Close()
-	var result struct {
-		AccessToken string `json:"access_token"`
-		Error       string `json:"error"`
-		ErrorDesc   string `json:"error_description"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return "", fmt.Errorf("failed to decode KC token response: %w", err)
-	}
-	if result.Error != "" {
-		return "", fmt.Errorf("KC token error: %s: %s", result.Error, result.ErrorDesc)
-	}
-	return result.AccessToken, nil
-}
-
-// tmRequest sends an authenticated HTTP request to the tenancy-manager REST API.
-func tmRequest(method, endpoint, path, token string, body interface{}) ([]byte, int, error) {
-	var bodyReader io.Reader
-	if body != nil {
-		b, err := json.Marshal(body)
-		if err != nil {
-			return nil, 0, fmt.Errorf("json marshal: %w", err)
-		}
-		bodyReader = bytes.NewReader(b)
-	}
-	req, err := http.NewRequest(method, endpoint+path, bodyReader)
-	if err != nil {
-		return nil, 0, err
-	}
-	req.Header.Set("Authorization", "Bearer "+token)
-	if body != nil {
-		req.Header.Set("Content-Type", "application/json")
-	}
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, 0, err
-	}
-	defer resp.Body.Close()
-	respBody, err := io.ReadAll(resp.Body)
-	return respBody, resp.StatusCode, err
-}
-
-// tmOrgStatusDetail holds the status fields returned by the TM REST API for orgs.
-type tmOrgStatusDetail struct {
-	StatusIndicator string `json:"statusIndicator"`
-	UID             string `json:"uID"`
-	Message         string `json:"message"`
-}
-
-// tmProjectStatusDetail holds the status fields returned by the TM REST API for projects.
-type tmProjectStatusDetail struct {
-	StatusIndicator string `json:"statusIndicator"`
-	UID             string `json:"uID"`
-	Message         string `json:"message"`
-}
-
-// tmOrgResp is used to decode TM REST API responses for orgs.
-type tmOrgResp struct {
-	Name   string `json:"name"`
-	Status struct {
-		OrgStatus tmOrgStatusDetail `json:"orgStatus"`
-	} `json:"status"`
-}
-
-// tmProjectResp is used to decode TM REST API responses for projects.
-type tmProjectResp struct {
-	Name   string `json:"name"`
-	Status struct {
-		ProjectStatus tmProjectStatusDetail `json:"projectStatus"`
-	} `json:"status"`
-}
-
-// ─── Org operations ──────────────────────────────────────────────────────────
-
-// CreateOrg creates an Org via the tenancy-manager REST API and waits until
-// all controllers report IDLE: mage tenantUtils:createOrg <org-name>
+// CreateOrg creates an Org in the system: mage tenantUtils:createOrg <org-name>
 func (TenantUtils) CreateOrg(ctx context.Context, org string) error {
-	endpoint, cleanup := tmEnsurePortForward()
-	defer cleanup()
-
-	token, err := tmGetAdminToken()
+	client, err := newTenancyRESTClient(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get admin token: %w", err)
+		return fmt.Errorf("\nerror creating org (%s). Error: %w", org, err)
 	}
-
-	// Check if org already exists.
-	orgUID, err := tmGetOrgUID(endpoint, token, org)
-	if err != nil {
-		return fmt.Errorf("failed to check existing org: %w", err)
-	}
-	if orgUID != "" {
-		fmt.Printf("Org (%s) already present with UID (%s)\n", org, orgUID)
+	if uid, _ := lookupOrgUID(ctx, client, org); uid != "" {
+		fmt.Printf("Org (%s) already present with UID (%s)\n", org, uid)
 		return nil
 	}
-
 	fmt.Printf("Creating Org (%s)\n", org)
-	body := map[string]interface{}{
-		"spec": map[string]string{"description": org},
+	if err := client.CreateOrg(ctx, org, org); err != nil {
+		return fmt.Errorf("\nerror creating org (%s). Error: %w", org, err)
 	}
-	respBody, code, err := tmRequest(http.MethodPut, endpoint, "/v1/orgs/"+org, token, body)
+	orgUUID, err := client.waitUntilOrgIdle(ctx, org)
 	if err != nil {
-		return fmt.Errorf("PUT /v1/orgs/%s failed: %w", org, err)
+		return fmt.Errorf("wait for org %s to go active failed with error %w", org, err)
 	}
-	if code != http.StatusOK && code != http.StatusCreated {
-		return fmt.Errorf("PUT /v1/orgs/%s: HTTP %d: %s", org, code, string(respBody))
-	}
-
-	orgUID, err = waitUntilOrgCreation(ctx, endpoint, token, org)
-	if err != nil {
-		return fmt.Errorf("wait for org %s to go active failed: %w", org, err)
-	}
-	fmt.Printf("\nOrg (%s) has UID: %s\n", org, orgUID)
+	fmt.Printf("\nOrg (%s) has UID: %s\n", org, orgUUID)
 	return nil
 }
 
-// tmGetOrgUID returns the UID of an org by name, or "" if not found.
-func tmGetOrgUID(endpoint, token, orgName string) (string, error) {
-	respBody, code, err := tmRequest(http.MethodGet, endpoint, "/v1/orgs/"+orgName, token, nil)
-	if err != nil {
-		return "", err
-	}
-	if code == http.StatusNotFound {
-		return "", nil
-	}
-	if code != http.StatusOK {
-		return "", fmt.Errorf("GET /v1/orgs/%s: HTTP %d: %s", orgName, code, string(respBody))
-	}
-	var resp tmOrgResp
-	if err := json.Unmarshal(respBody, &resp); err != nil {
-		return "", fmt.Errorf("decode org response: %w", err)
-	}
-	return resp.Status.OrgStatus.UID, nil
-}
-
-// getOrgId returns the UID of an org by name, or "" if not found.
-// Uses the tenancy-manager REST API.
-func getOrgId(_ context.Context, orgName string) (string, error) {
-	endpoint, cleanup := tmEnsurePortForward()
-	defer cleanup()
-	token, err := tmGetAdminToken()
-	if err != nil {
-		return "", fmt.Errorf("failed to get admin token: %w", err)
-	}
-	return tmGetOrgUID(endpoint, token, orgName)
-}
-
-// waitUntilOrgCreation polls the tenancy-manager until the org status is IDLE.
-// Returns the org UID.
-func waitUntilOrgCreation(ctx context.Context, endpoint, token, orgName string) (string, error) {
-	fmt.Println("\nwaiting until org creation is completed")
-	timeout := time.After(5 * time.Minute)
-	ticker := time.NewTicker(10 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			respBody, code, err := tmRequest(http.MethodGet, endpoint, "/v1/orgs/"+orgName, token, nil)
-			if err != nil || code != http.StatusOK {
-				fmt.Printf("  polling org %s: HTTP %d\n", orgName, code)
-				continue
-			}
-			var resp tmOrgResp
-			if err := json.Unmarshal(respBody, &resp); err != nil {
-				continue
-			}
-			s := resp.Status.OrgStatus
-			fmt.Printf("  org %s status: %s (%s)\n", orgName, s.StatusIndicator, s.Message)
-			if strings.Contains(s.StatusIndicator, "IDLE") {
-				return s.UID, nil
-			}
-		case <-timeout:
-			return "", fmt.Errorf("org %s creation timed out", orgName)
-		case <-ctx.Done():
-			return "", ctx.Err()
-		}
-	}
-}
-
-// DeleteOrg deletes an Org via the tenancy-manager REST API.
+// DeleteOrg deletes an Org in the system
 func (TenantUtils) DeleteOrg(ctx context.Context, org string) error {
-	endpoint, cleanup := tmEnsurePortForward()
-	defer cleanup()
-	token, err := tmGetAdminToken()
+	client, err := newTenancyRESTClient(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get admin token: %w", err)
+		return fmt.Errorf("\nerror deleting org (%s). Error: %w", org, err)
 	}
-
-	orgUID, err := tmGetOrgUID(endpoint, token, org)
-	if err != nil {
-		return fmt.Errorf("failed to check org: %w", err)
-	}
-	if orgUID == "" {
-		fmt.Printf("Org (%s) not present to delete. Skipping delete\n", org)
+	if uid, _ := lookupOrgUID(ctx, client, org); uid == "" {
+		fmt.Printf("Org (%s) not present to delete. Skipping delete \n", org)
 		return nil
 	}
-
-	respBody, code, err := tmRequest(http.MethodDelete, endpoint, "/v1/orgs/"+org, token, nil)
-	if err != nil {
-		return fmt.Errorf("DELETE /v1/orgs/%s: %w", org, err)
+	if err := client.DeleteOrg(ctx, org); err != nil {
+		return fmt.Errorf("\nerror deleting org (%s). Error: %w", org, err)
 	}
-	if code != http.StatusOK && code != http.StatusNoContent && code != http.StatusAccepted {
-		return fmt.Errorf("DELETE /v1/orgs/%s: HTTP %d: %s", org, code, string(respBody))
+	if err := client.waitUntilOrgGone(ctx, org); err != nil {
+		return err
 	}
-
-	// Poll until the org is gone.
-	timeout := time.After(5 * time.Minute)
-	ticker := time.NewTicker(10 * time.Second)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ticker.C:
-			_, code, _ := tmRequest(http.MethodGet, endpoint, "/v1/orgs/"+org, token, nil)
-			if code == http.StatusNotFound {
-				fmt.Println("org deleted successfully")
-				return nil
-			}
-		case <-timeout:
-			return fmt.Errorf("org %s deletion timed out", org)
-		case <-ctx.Done():
-			return ctx.Err()
-		}
-	}
+	fmt.Println("org not found, deleted successfully")
+	return nil
 }
 
-// DeleteProject deletes a Project via the tenancy-manager REST API.
+// DeleteProject deletes a Project in the system
 func (TenantUtils) DeleteProject(ctx context.Context, org, project string) error {
-	endpoint, cleanup := tmEnsurePortForward()
-	defer cleanup()
-	token, err := tmGetAdminToken()
+	client, err := newTenancyRESTClient(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get admin token: %w", err)
+		return fmt.Errorf("\nerror deleting project (%s). Error: %w", project, err)
 	}
-
-	projectUID, err := tmGetProjectUID(endpoint, token, org, project)
-	if err != nil {
-		return fmt.Errorf("failed to check project: %w", err)
-	}
-	if projectUID == "" {
-		fmt.Printf("Project (%s) not present to delete. Skipping delete\n", project)
+	if uid, _ := lookupProjectUID(ctx, client, project); uid == "" {
+		fmt.Printf("Project (%s) not present to delete. Skipping delete \n", project)
 		return nil
 	}
 	fmt.Printf("Deleting Project (%s)\n", project)
-
-	path := fmt.Sprintf("/v1/projects/%s?org=%s", project, org)
-	respBody, code, err := tmRequest(http.MethodDelete, endpoint, path, token, nil)
-	if err != nil {
-		return fmt.Errorf("DELETE /v1/projects/%s: %w", project, err)
+	if err := client.DeleteProject(ctx, project); err != nil {
+		return fmt.Errorf("\nerror deleting project (%s). Error: %w", project, err)
 	}
-	if code != http.StatusOK && code != http.StatusNoContent && code != http.StatusAccepted {
-		return fmt.Errorf("DELETE /v1/projects/%s: HTTP %d: %s", project, code, string(respBody))
-	}
-
-	timeout := time.After(5 * time.Minute)
-	ticker := time.NewTicker(10 * time.Second)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ticker.C:
-			uid, _ := tmGetProjectUID(endpoint, token, org, project)
-			if uid == "" {
-				return nil
-			}
-		case <-timeout:
-			return fmt.Errorf("project %s deletion timed out", project)
-		case <-ctx.Done():
-			return ctx.Err()
-		}
-	}
+	return client.waitUntilProjectGone(ctx, project)
 }
 
-// GetOrg gets the Org status from the tenancy-manager REST API:
-// mage tenantUtils:getOrg <org-name>
-func (TenantUtils) GetOrg(ctx context.Context, orgName string) error {
-	endpoint, cleanup := tmEnsurePortForward()
-	defer cleanup()
-	token, err := tmGetAdminToken()
-	if err != nil {
-		return fmt.Errorf("failed to get admin token: %w", err)
+// lookupOrgUID returns the org UID, or "" with errTenancyNotFound when absent.
+func lookupOrgUID(ctx context.Context, client *tenancyRESTClient, orgName string) (string, error) {
+	org, err := client.GetOrg(ctx, orgName)
+	if isTenancyNotFound(err) {
+		return "", err
 	}
+	if err != nil {
+		return "", fmt.Errorf("\nerror checking if the org (%s) already present: Error: %w", orgName, err)
+	}
+	return org.Status.OrgStatus.UID, nil
+}
 
-	respBody, code, err := tmRequest(http.MethodGet, endpoint, "/v1/orgs/"+orgName, token, nil)
+func getOrgId(ctx context.Context, orgName string) (string, error) {
+	client, err := newTenancyRESTClient(ctx)
 	if err != nil {
-		return fmt.Errorf("GET /v1/orgs/%s: %w", orgName, err)
+		return "", fmt.Errorf("\nerror checking if the org (%s) already present. Error: %w", orgName, err)
 	}
-	if code == http.StatusNotFound {
+	uid, err := lookupOrgUID(ctx, client, orgName)
+	if isTenancyNotFound(err) {
 		fmt.Printf("org %s does not exist.\n", orgName)
-		return nil
+		return "", nil
 	}
-	if code != http.StatusOK {
-		return fmt.Errorf("GET /v1/orgs/%s: HTTP %d: %s", orgName, code, string(respBody))
+	return uid, err
+}
+
+// GetOrg gets the Org in the system: mage tenantUtils:getOrg <org-name>
+func (TenantUtils) GetOrg(ctx context.Context, orgName string) error {
+	client, err := newTenancyRESTClient(ctx)
+	if err != nil {
+		return fmt.Errorf("\nerror retrieving the org (%s). Error: %w", orgName, err)
 	}
-	var resp tmOrgResp
-	if err := json.Unmarshal(respBody, &resp); err != nil {
-		return fmt.Errorf("decode org response: %w", err)
+	org, err := client.GetOrg(ctx, orgName)
+	if isTenancyNotFound(err) {
+		return err
 	}
-	s := resp.Status.OrgStatus
-	if strings.HasPrefix(s.Message, "Waiting for watchers") && strings.HasSuffix(s.Message, "to be deleted") {
-		return fmt.Errorf("\norg (%s) is waiting for watchers to be deleted: %s", orgName, s.Message)
+	if err != nil {
+		return fmt.Errorf("\nerror retrieving the org (%s). Error: %w", orgName, err)
 	}
-	fmt.Printf("\nOrg status: %s, message: %s, UID: %s\n", s.StatusIndicator, s.Message, s.UID)
+	orgStatus := org.Status.OrgStatus
+	if strings.HasPrefix(orgStatus.Message, "Waiting for watchers") && strings.HasSuffix(orgStatus.Message, "to be deleted") {
+		return fmt.Errorf("\norg (%s) is waiting for watchers to be deleted with status message '%s'", orgName, orgStatus.Message)
+	}
+	if orgStatus.StatusIndicator != statusIndicationIdle {
+		return fmt.Errorf("\norg (%s) status indicator is %s, message: %s", orgName, orgStatus.StatusIndicator, orgStatus.Message)
+	}
+	fmt.Printf("\nOrg status message - %s, Org status - %s\n", orgStatus.Message, orgStatus.StatusIndicator)
 	return nil
 }
 
@@ -566,7 +284,7 @@ func GetDefaultOrchPassword() (string, error) {
 	}
 
 	// check for at least one special character
-	if !strings.ContainsAny(pass, "!@#$%%^&*()_+-=[]{}|;:,.<>?") {
+	if !strings.ContainsAny(pass, "!@#$%^&*()_+-=[]{}|;:,.<>?") {
 		return "", fmt.Errorf("password does not contain a special character")
 	}
 
@@ -625,182 +343,102 @@ func KeycloakLogin(ctx context.Context) (*gocloak.GoCloak, *gocloak.JWT, error) 
 	return client, jwtToken, nil
 }
 
-// ─── Project operations ───────────────────────────────────────────────────────
-
-// CreateProjectInOrg creates a Project via the tenancy-manager REST API and
-// waits until all controllers report IDLE:
-// mage tenantUtils:createProjectInOrg <org-name> <project-name>
+// CreateProjectInOrg creates a Project in a given Org: mage tenantUtils:createProjectInOrg <org-name> <project-name>
 func (TenantUtils) CreateProjectInOrg(ctx context.Context, orgName string, projectName string) error {
-	endpoint, cleanup := tmEnsurePortForward()
-	defer cleanup()
-	token, err := tmGetAdminToken()
+	client, err := newTenancyRESTClient(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get admin token: %w", err)
+		return fmt.Errorf("\nerror creating project (%s). Error: %w", projectName, err)
 	}
-
-	// Check if project already exists.
-	projectUID, err := tmGetProjectUID(endpoint, token, orgName, projectName)
-	if err != nil {
-		return fmt.Errorf("failed to check existing project: %w", err)
+	if _, err := lookupOrgUID(ctx, client, orgName); err != nil {
+		if isTenancyNotFound(err) {
+			fmt.Printf("Org (%s) not found. Please create an org first\n", orgName)
+			return nil
+		}
+		return fmt.Errorf("\nerror creating project (%s). Error: %w", projectName, err)
 	}
-	if projectUID != "" {
-		fmt.Printf("Project (%s) already present with UID (%s)\n", projectName, projectUID)
-		return nil
-	}
-
 	fmt.Printf("Creating Project (%s)\n", projectName)
-	body := map[string]interface{}{
-		"spec": map[string]string{"description": projectName},
+	if err := client.CreateProject(ctx, projectName, projectName); err != nil {
+		return fmt.Errorf("\nerror creating project (%s). Error: %w", projectName, err)
 	}
-	path := fmt.Sprintf("/v1/projects/%s?org=%s", projectName, orgName)
-	respBody, code, err := tmRequest(http.MethodPut, endpoint, path, token, body)
+	projectUUID, err := client.waitUntilProjectIdle(ctx, projectName)
 	if err != nil {
-		return fmt.Errorf("PUT /v1/projects/%s: %w", projectName, err)
+		return fmt.Errorf("wait for project %s to go active failed with error %w", projectName, err)
 	}
-	if code != http.StatusOK && code != http.StatusCreated {
-		return fmt.Errorf("PUT /v1/projects/%s: HTTP %d: %s", projectName, code, string(respBody))
-	}
-
-	projectUID, err = waitUntilProjectCreation(ctx, endpoint, token, orgName, projectName)
-	if err != nil {
-		return fmt.Errorf("wait for project %s to go active failed: %w", projectName, err)
-	}
-	fmt.Printf("\nProject (%s) has UID: %s\n", projectName, projectUID)
+	fmt.Printf("\nProject (%s) has UID: %s\n", projectName, projectUUID)
 	return nil
 }
 
-// tmGetProjectUID returns the UID of a project by name within the given org,
-// or "" if not found.
-func tmGetProjectUID(endpoint, token, orgName, projectName string) (string, error) {
-	path := fmt.Sprintf("/v1/projects/%s?org=%s", projectName, orgName)
-	respBody, code, err := tmRequest(http.MethodGet, endpoint, path, token, nil)
+func (TenantUtils) WaitUntilProjectReady(ctx context.Context, orgName, projectName string) (string, error) {
+	client, err := newTenancyRESTClient(ctx)
+	if err != nil {
+		return "", fmt.Errorf("\nerror creating tenancy REST client (%s). Error: %w", projectName, err)
+	}
+	return client.waitUntilProjectIdle(ctx, projectName)
+}
+
+func (TenantUtils) WaitUntilProjectWatchersReady(ctx context.Context, orgName, projectName string) (string, error) {
+	// In the new tenancy-manager REST architecture, the project's STATUS_INDICATION_IDLE
+	// is reported only after all controllers have completed their work, so a separate
+	// active-watcher poll is no longer required.
+	client, err := newTenancyRESTClient(ctx)
+	if err != nil {
+		return "", fmt.Errorf("\nerror creating tenancy REST client (%s). Error: %w", projectName, err)
+	}
+	if _, err := client.waitUntilProjectIdle(ctx, projectName); err != nil {
+		return "", err
+	}
+	return "all watchers ready and in idle state", nil
+}
+
+// GetProject gets the Project in the system: mage tenantUtils:getProject <org-name> <project-name>
+func (TenantUtils) GetProject(ctx context.Context, orgName, projectName string) error {
+	client, err := newTenancyRESTClient(ctx)
+	if err != nil {
+		return fmt.Errorf("\nerror retrieving the project (%s). Error: %w", projectName, err)
+	}
+	proj, err := client.GetProject(ctx, projectName)
+	if isTenancyNotFound(err) {
+		return err
+	}
+	if err != nil {
+		return fmt.Errorf("\nerror retrieving the project (%s). Error: %w", projectName, err)
+	}
+	projectStatus := proj.Status.ProjectStatus
+	if strings.Contains(projectStatus.Message, "Waiting for watchers") {
+		return fmt.Errorf("\nproject (%s) status message is set to %s", projectName, projectStatus.Message)
+	}
+	fmt.Printf("\nproject status message - %s, project status - %s\n", projectStatus.Message, projectStatus.StatusIndicator)
+	println("projectId: ", projectStatus.UID)
+	return nil
+}
+
+// lookupProjectUID returns the project UID, or "" with errTenancyNotFound when absent.
+func lookupProjectUID(ctx context.Context, client *tenancyRESTClient, projectName string) (string, error) {
+	proj, err := client.GetProject(ctx, projectName)
+	if isTenancyNotFound(err) {
+		return "", err
+	}
 	if err != nil {
 		return "", err
 	}
-	if code == http.StatusNotFound {
+	return proj.Status.ProjectStatus.UID, nil
+}
+
+func GetProjectId(ctx context.Context, orgName, projectName string) (string, error) {
+	client, err := newTenancyRESTClient(ctx)
+	if err != nil {
+		return "", fmt.Errorf("\nerror retrieving the project (%s). Error: %w", projectName, err)
+	}
+	uid, err := lookupProjectUID(ctx, client, projectName)
+	if isTenancyNotFound(err) {
+		fmt.Printf("project %s does not exist.\n", projectName)
 		return "", nil
 	}
-	if code != http.StatusOK {
-		return "", fmt.Errorf("GET /v1/projects/%s: HTTP %d: %s", projectName, code, string(respBody))
-	}
-	var resp tmProjectResp
-	if err := json.Unmarshal(respBody, &resp); err != nil {
-		return "", fmt.Errorf("decode project response: %w", err)
-	}
-	return resp.Status.ProjectStatus.UID, nil
-}
-
-// waitUntilProjectCreation polls the tenancy-manager until the project status
-// is IDLE. Returns the project UID.
-func waitUntilProjectCreation(ctx context.Context, endpoint, token, orgName, projectName string) (string, error) {
-	fmt.Println("\nwaiting until project creation is completed")
-	timeout := time.After(5 * time.Minute)
-	ticker := time.NewTicker(10 * time.Second)
-	defer ticker.Stop()
-
-	path := fmt.Sprintf("/v1/projects/%s?org=%s", projectName, orgName)
-	for {
-		select {
-		case <-ticker.C:
-			respBody, code, err := tmRequest(http.MethodGet, endpoint, path, token, nil)
-			if err != nil || code != http.StatusOK {
-				fmt.Printf("  polling project %s: HTTP %d\n", projectName, code)
-				continue
-			}
-			var resp tmProjectResp
-			if err := json.Unmarshal(respBody, &resp); err != nil {
-				continue
-			}
-			s := resp.Status.ProjectStatus
-			fmt.Printf("  project %s status: %s (%s)\n", projectName, s.StatusIndicator, s.Message)
-			if strings.Contains(s.StatusIndicator, "IDLE") {
-				return s.UID, nil
-			}
-		case <-timeout:
-			return "", fmt.Errorf("project %s creation timed out", projectName)
-		case <-ctx.Done():
-			return "", ctx.Err()
-		}
-	}
-}
-
-// WaitUntilProjectReady waits for a project to reach IDLE status:
-// mage tenantUtils:waitUntilProjectReady <org-name> <project-name>
-func (TenantUtils) WaitUntilProjectReady(ctx context.Context, orgName, projectName string) (string, error) {
-	endpoint, cleanup := tmEnsurePortForward()
-	defer cleanup()
-	token, err := tmGetAdminToken()
 	if err != nil {
-		return "", fmt.Errorf("failed to get admin token: %w", err)
+		return "", fmt.Errorf("\nerror retrieving the project (%s). Error: %w", projectName, err)
 	}
-	return waitUntilProjectCreation(ctx, endpoint, token, orgName, projectName)
-}
-
-// WaitUntilProjectWatchersReady waits for a project to reach IDLE status
-// (all controller watchers processed):
-// mage tenantUtils:waitUntilProjectWatchersReady <org-name> <project-name>
-func (TenantUtils) WaitUntilProjectWatchersReady(ctx context.Context, orgName, projectName string) (string, error) {
-	endpoint, cleanup := tmEnsurePortForward()
-	defer cleanup()
-	token, err := tmGetAdminToken()
-	if err != nil {
-		return "", fmt.Errorf("failed to get admin token: %w", err)
-	}
-	uid, err := waitUntilProjectCreation(ctx, endpoint, token, orgName, projectName)
-	if err != nil {
-		return "", err
-	}
-	fmt.Println("all watchers ready and in idle state")
 	return uid, nil
 }
-
-// GetProject gets the Project status from the tenancy-manager REST API:
-// mage tenantUtils:getProject <org-name> <project-name>
-func (TenantUtils) GetProject(ctx context.Context, orgName, projectName string) error {
-	endpoint, cleanup := tmEnsurePortForward()
-	defer cleanup()
-	token, err := tmGetAdminToken()
-	if err != nil {
-		return fmt.Errorf("failed to get admin token: %w", err)
-	}
-
-	path := fmt.Sprintf("/v1/projects/%s?org=%s", projectName, orgName)
-	respBody, code, err := tmRequest(http.MethodGet, endpoint, path, token, nil)
-	if err != nil {
-		return fmt.Errorf("GET /v1/projects/%s: %w", projectName, err)
-	}
-	if code == http.StatusNotFound {
-		fmt.Printf("project %s does not exist.\n", projectName)
-		return nil
-	}
-	if code != http.StatusOK {
-		return fmt.Errorf("GET /v1/projects/%s: HTTP %d: %s", projectName, code, string(respBody))
-	}
-	var resp tmProjectResp
-	if err := json.Unmarshal(respBody, &resp); err != nil {
-		return fmt.Errorf("decode project response: %w", err)
-	}
-	s := resp.Status.ProjectStatus
-	if strings.Contains(s.Message, "Waiting for watchers") {
-		return fmt.Errorf("\nproject (%s) status message is set to %s", projectName, s.Message)
-	}
-	fmt.Printf("\nproject status: %s, message: %s, UID: %s\n", s.StatusIndicator, s.Message, s.UID)
-	return nil
-}
-
-// GetProjectId gets the UID of a Project by name:
-// mage tenantUtils:getProjectId <org-name> <project-name>
-func GetProjectId(ctx context.Context, orgName, projectName string) (string, error) {
-	endpoint, cleanup := tmEnsurePortForward()
-	defer cleanup()
-	token, err := tmGetAdminToken()
-	if err != nil {
-		return "", fmt.Errorf("failed to get admin token: %w", err)
-	}
-	return tmGetProjectUID(endpoint, token, orgName, projectName)
-}
-
-// ─── Keycloak user creation helpers ──────────────────────────────────────────
 
 // CreateEdgeInfraUsers creates Edge Infra Manager users in a given Project:
 // mage tenantUtils:createEdgeInfraUser <org-name> <project-name> <edge-infra-user-prefix>
@@ -834,9 +472,6 @@ func (TenantUtils) CreateEdgeInfraUsers(ctx context.Context, orgName, projectNam
 		if err != nil {
 			return fmt.Errorf("error adding member role to user %s. Error: %w", user, err)
 		}
-		if err = addProjectServiceRoles(ctx, client, token, KeycloakRealm, projectId, userId); err != nil {
-			return fmt.Errorf("error adding service roles to user %s. Error: %w", user, err)
-		}
 	}
 
 	// Create EN agent user
@@ -855,9 +490,6 @@ func (TenantUtils) CreateEdgeInfraUsers(ctx context.Context, orgName, projectNam
 		err = addProjectMemberRole(ctx, client, token, KeycloakRealm, orgId, projectId, userId)
 		if err != nil {
 			return fmt.Errorf("error adding member role to user %s. Error: %w", user, err)
-		}
-		if err = addProjectServiceRoles(ctx, client, token, KeycloakRealm, projectId, userId); err != nil {
-			return fmt.Errorf("error adding service roles to user %s. Error: %w", user, err)
 		}
 	}
 
@@ -878,9 +510,6 @@ func (TenantUtils) CreateEdgeInfraUsers(ctx context.Context, orgName, projectNam
 		if err != nil {
 			return fmt.Errorf("error adding member role to user %s. Error: %w", user, err)
 		}
-		if err = addProjectServiceRoles(ctx, client, token, KeycloakRealm, projectId, userId); err != nil {
-			return fmt.Errorf("error adding service roles to user %s. Error: %w", user, err)
-		}
 	}
 
 	// Create Edge Infra Manager NB API user with service-admin which is needed for observability-admin access
@@ -899,9 +528,6 @@ func (TenantUtils) CreateEdgeInfraUsers(ctx context.Context, orgName, projectNam
 		err = addProjectMemberRole(ctx, client, token, KeycloakRealm, orgId, projectId, userId)
 		if err != nil {
 			return fmt.Errorf("error adding member role to user %s. Error: %w", user, err)
-		}
-		if err = addProjectServiceRoles(ctx, client, token, KeycloakRealm, projectId, userId); err != nil {
-			return fmt.Errorf("error adding service roles to user %s. Error: %w", user, err)
 		}
 	}
 
@@ -939,9 +565,6 @@ func (TenantUtils) CreateClusterOrchUsers(ctx context.Context, orgName, projectN
 		if err != nil {
 			return fmt.Errorf("error adding member role to user %s. Error: %w", user, err)
 		}
-		if err = addProjectServiceRoles(ctx, client, token, KeycloakRealm, projectId, userId); err != nil {
-			return fmt.Errorf("error adding service roles to user %s. Error: %w", user, err)
-		}
 	}
 
 	// Create Edge Manager user
@@ -960,9 +583,6 @@ func (TenantUtils) CreateClusterOrchUsers(ctx context.Context, orgName, projectN
 		err = addProjectMemberRole(ctx, client, token, KeycloakRealm, orgId, projectId, userId)
 		if err != nil {
 			return fmt.Errorf("error adding member role to user %s. Error: %w", user, err)
-		}
-		if err = addProjectServiceRoles(ctx, client, token, KeycloakRealm, projectId, userId); err != nil {
-			return fmt.Errorf("error adding service roles to user %s. Error: %w", user, err)
 		}
 	}
 
@@ -1125,44 +745,6 @@ func addProjectMemberRole(ctx context.Context, client *gocloak.GoCloak, token *g
 		return err
 	}
 	fmt.Printf("added member roles to the user %s\n", userId)
-	return nil
-}
-
-// addProjectServiceRoles assigns project-scoped service roles to a user so
-// that alerting-monitor (OPA: {projectId}_alrt-r) and cluster-manager
-// (Activeprojectid header check) authorize requests correctly.
-// Roles are created by the Keycloak Tenant Controller when the project is
-// provisioned; this function assigns them to each user that needs API access.
-// A missing role is treated as a warning (not a fatal error) because some
-// roles are optional depending on which components are deployed.
-func addProjectServiceRoles(ctx context.Context, client *gocloak.GoCloak, token *gocloak.JWT, realm, projectId, userId string) error {
-	serviceRoleSuffixes := []string{
-		"alrt-r", "alrt-rw",
-		"cl-r", "cl-rw",
-		"cl-tpl-r", "cl-tpl-rw",
-	}
-
-	var roles []gocloak.Role
-	for _, suffix := range serviceRoleSuffixes {
-		roleName := fmt.Sprintf("%s_%s", projectId, suffix)
-		role, err := getRealmRole(ctx, client, token, realm, roleName)
-		if err != nil {
-			// Role may not exist if the component is disabled; skip silently.
-			fmt.Printf("warning: realm role %q not found, skipping: %v\n", roleName, err)
-			continue
-		}
-		roles = append(roles, *role)
-	}
-
-	if len(roles) == 0 {
-		fmt.Printf("warning: no project service roles found for project %s — KTC may not have created them yet\n", projectId)
-		return nil
-	}
-
-	if err := client.AddRealmRoleToUser(ctx, token.AccessToken, realm, userId, roles); err != nil {
-		return fmt.Errorf("adding service roles to user %s: %w", userId, err)
-	}
-	fmt.Printf("added project service roles to user (project: %s)\n", projectId)
 	return nil
 }
 

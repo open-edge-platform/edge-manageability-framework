@@ -151,8 +151,8 @@ componentStatus:
         # Alerts UI - Enable when observability feature available at orchestrator level
         alerts-ui:
           installed: {{ or (index .Values.argo.enabled "orchestrator-observability") (index .Values.argo.enabled "alerting-monitor") | default false }}
-      # Multitenancy - Tenancy services (tenancy-manager, tenancy-api-mapping, tenancy-datamodel)
-      # are always deployed as part of root-app, so multitenancy is always enabled
+      # Multitenancy - tenancy-manager is always deployed as part of root-app,
+      # so multitenancy is always enabled
       # The default-tenant-only sub-feature indicates single-tenant mode (when defaultTenancy profile is loaded)
       multitenancy:
         installed: true
