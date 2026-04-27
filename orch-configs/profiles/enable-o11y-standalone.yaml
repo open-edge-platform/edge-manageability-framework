@@ -1,0 +1,185 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Includes Observability
+# Use either this or enable full
+
+# Enables Edge Node Only Observability pipeline.
+
+argo:
+  enabled:
+    alerting-monitor: false
+    edgenode-dashboards: false
+    edgenode-observability: true
+    orchestrator-dashboards: false
+    orchestrator-observability: false
+    orchestrator-prometheus-agent: false
+  o11y:
+    import:
+      grafana:
+        enabled: false
+      alertmanager:
+        enabled: false
+    edgeNode:
+      loki:
+        write:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        read:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        gateway:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        backend:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        memcachedExporter:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        chunksCache:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        resultsCache:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        sidecar:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+      mimir:
+        resources:
+          requests:
+            cpu: "1m"
+            memory: "1Mi"
+          limits:
+            cpu: "64"
+            memory: "64Gi"
+        distributor:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        storeGateway:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        ingester:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        compactor:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        querier:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        query_frontend:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        query:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        ruler:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        minio:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+        gateway:
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "1Mi"
+            limits:
+              cpu: "64"
+              memory: "64Gi"
+      opentelemetryCollector:
+        resources:
+          requests:
+            cpu: "1m"
+            memory: "1Mi"
+          limits:
+            cpu: "64"
+            memory: "64Gi"

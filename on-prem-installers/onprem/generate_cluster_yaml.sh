@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# SPDX-FileCopyrightText: 2025 Intel Corporation
+# SPDX-FileCopyrightText: 2026 Intel Corporation
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -31,7 +31,7 @@ elif [ "$DEPLOY_TYPE" = "onprem" ]; then
     source "${PWD}/${DEPLOY_TYPE}.env"
 
     # Validate ORCH_INSTALLER_PROFILE
-    if [[ "$ORCH_INSTALLER_PROFILE" =~ ^(onprem|onprem-oxm|onprem-vpro)$ ]]; then
+    if [[ "$ORCH_INSTALLER_PROFILE" =~ ^(onprem|onprem-oxm|onprem-vpro|onprem-o11y)$ ]]; then
         TEMPLATE_FILE="./cluster_onprem.tpl"
         OUTPUT_FILE="${ORCH_INSTALLER_PROFILE}.yaml"
 
@@ -82,6 +82,20 @@ if [[ "${ORCH_INSTALLER_PROFILE:-}" == "onprem-vpro" || "${ORCH_INSTALLER_PROFIL
   export EMAIL_PROFILE='#- orch-configs/profiles/alerting-emails.yaml'
   export PLATFORM_PROFILE='- orch-configs/profiles/enable-platform-vpro.yaml'
   export EDGEINFRA_PROFILE='- orch-configs/profiles/enable-edgeinfra-vpro.yaml'
+fi
+
+if [[ "${ORCH_INSTALLER_PROFILE:-}" == "onprem-o11y" || "${ORCH_INSTALLER_PROFILE:-}" == "aws-o11y" ]]; then
+  export DISABLE_AO_PROFILE=true
+  export DISABLE_CO_PROFILE=true
+  export DISABLE_O11Y_PROFILE=false
+  export DISABLE_KYVERNO_PROFILE=true
+  export DISABLE_UI_PROFILE=true
+  export SRE_TLS_ENABLED=false
+  export SINGLE_TENANCY_PROFILE=false
+  export EMAIL_PROFILE='#- orch-configs/profiles/alerting-emails.yaml'
+  export PLATFORM_PROFILE='- orch-configs/profiles/enable-platform-o11y.yaml'
+  export O11Y_PROFILE='- orch-configs/profiles/o11y-standalone-onprem.yaml'
+  export EDGEINFRA_PROFILE='#- orch-configs/profiles/enable-edgeinfra.yaml'
 fi
 
 # -----------------------------------------------------------------------------
