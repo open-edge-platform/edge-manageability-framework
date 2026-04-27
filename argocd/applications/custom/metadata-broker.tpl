@@ -26,4 +26,4 @@ opaResources:
   {{- toYaml . | nindent 2}}
 {{- end }}
 image:
-  tag: "nexus-replacement-20260424"
+  tag: "nexus-replacement-20260427"
