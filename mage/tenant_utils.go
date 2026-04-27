@@ -834,6 +834,9 @@ func (TenantUtils) CreateEdgeInfraUsers(ctx context.Context, orgName, projectNam
 		if err != nil {
 			return fmt.Errorf("error adding member role to user %s. Error: %w", user, err)
 		}
+		if err = addProjectServiceRoles(ctx, client, token, KeycloakRealm, projectId, userId); err != nil {
+			return fmt.Errorf("error adding service roles to user %s. Error: %w", user, err)
+		}
 	}
 
 	// Create EN agent user
@@ -852,6 +855,9 @@ func (TenantUtils) CreateEdgeInfraUsers(ctx context.Context, orgName, projectNam
 		err = addProjectMemberRole(ctx, client, token, KeycloakRealm, orgId, projectId, userId)
 		if err != nil {
 			return fmt.Errorf("error adding member role to user %s. Error: %w", user, err)
+		}
+		if err = addProjectServiceRoles(ctx, client, token, KeycloakRealm, projectId, userId); err != nil {
+			return fmt.Errorf("error adding service roles to user %s. Error: %w", user, err)
 		}
 	}
 
@@ -872,6 +878,9 @@ func (TenantUtils) CreateEdgeInfraUsers(ctx context.Context, orgName, projectNam
 		if err != nil {
 			return fmt.Errorf("error adding member role to user %s. Error: %w", user, err)
 		}
+		if err = addProjectServiceRoles(ctx, client, token, KeycloakRealm, projectId, userId); err != nil {
+			return fmt.Errorf("error adding service roles to user %s. Error: %w", user, err)
+		}
 	}
 
 	// Create Edge Infra Manager NB API user with service-admin which is needed for observability-admin access
@@ -890,6 +899,9 @@ func (TenantUtils) CreateEdgeInfraUsers(ctx context.Context, orgName, projectNam
 		err = addProjectMemberRole(ctx, client, token, KeycloakRealm, orgId, projectId, userId)
 		if err != nil {
 			return fmt.Errorf("error adding member role to user %s. Error: %w", user, err)
+		}
+		if err = addProjectServiceRoles(ctx, client, token, KeycloakRealm, projectId, userId); err != nil {
+			return fmt.Errorf("error adding service roles to user %s. Error: %w", user, err)
 		}
 	}
 
@@ -927,6 +939,9 @@ func (TenantUtils) CreateClusterOrchUsers(ctx context.Context, orgName, projectN
 		if err != nil {
 			return fmt.Errorf("error adding member role to user %s. Error: %w", user, err)
 		}
+		if err = addProjectServiceRoles(ctx, client, token, KeycloakRealm, projectId, userId); err != nil {
+			return fmt.Errorf("error adding service roles to user %s. Error: %w", user, err)
+		}
 	}
 
 	// Create Edge Manager user
@@ -945,6 +960,9 @@ func (TenantUtils) CreateClusterOrchUsers(ctx context.Context, orgName, projectN
 		err = addProjectMemberRole(ctx, client, token, KeycloakRealm, orgId, projectId, userId)
 		if err != nil {
 			return fmt.Errorf("error adding member role to user %s. Error: %w", user, err)
+		}
+		if err = addProjectServiceRoles(ctx, client, token, KeycloakRealm, projectId, userId); err != nil {
+			return fmt.Errorf("error adding service roles to user %s. Error: %w", user, err)
 		}
 	}
 
@@ -1107,6 +1125,44 @@ func addProjectMemberRole(ctx context.Context, client *gocloak.GoCloak, token *g
 		return err
 	}
 	fmt.Printf("added member roles to the user %s\n", userId)
+	return nil
+}
+
+// addProjectServiceRoles assigns project-scoped service roles to a user so
+// that alerting-monitor (OPA: {projectId}_alrt-r) and cluster-manager
+// (Activeprojectid header check) authorize requests correctly.
+// Roles are created by the Keycloak Tenant Controller when the project is
+// provisioned; this function assigns them to each user that needs API access.
+// A missing role is treated as a warning (not a fatal error) because some
+// roles are optional depending on which components are deployed.
+func addProjectServiceRoles(ctx context.Context, client *gocloak.GoCloak, token *gocloak.JWT, realm, projectId, userId string) error {
+	serviceRoleSuffixes := []string{
+		"alrt-r", "alrt-rw",
+		"cl-r", "cl-rw",
+		"cl-tpl-r", "cl-tpl-rw",
+	}
+
+	var roles []gocloak.Role
+	for _, suffix := range serviceRoleSuffixes {
+		roleName := fmt.Sprintf("%s_%s", projectId, suffix)
+		role, err := getRealmRole(ctx, client, token, realm, roleName)
+		if err != nil {
+			// Role may not exist if the component is disabled; skip silently.
+			fmt.Printf("warning: realm role %q not found, skipping: %v\n", roleName, err)
+			continue
+		}
+		roles = append(roles, *role)
+	}
+
+	if len(roles) == 0 {
+		fmt.Printf("warning: no project service roles found for project %s — KTC may not have created them yet\n", projectId)
+		return nil
+	}
+
+	if err := client.AddRealmRoleToUser(ctx, token.AccessToken, realm, userId, roles); err != nil {
+		return fmt.Errorf("adding service roles to user %s: %w", userId, err)
+	}
+	fmt.Printf("added project service roles to user (project: %s)\n", projectId)
 	return nil
 }
 
