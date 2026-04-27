@@ -29,8 +29,6 @@ import (
 	"github.com/open-edge-platform/edge-manageability-framework/internal/retry"
 	util "github.com/open-edge-platform/edge-manageability-framework/mage"
 	invapi "github.com/open-edge-platform/infra-core/apiv2/v2/pkg/api/v2"
-	baseorginfrahostcomv1 "github.com/open-edge-platform/orch-utils/tenancy-datamodel/build/apis/org.edge-orchestrator.intel.com/v1"
-	baseprojectinfrahostcomv1 "github.com/open-edge-platform/orch-utils/tenancy-datamodel/build/apis/project.edge-orchestrator.intel.com/v1"
 )
 
 const outputFile = "../../jwt.txt"
@@ -62,15 +60,45 @@ type Role struct {
 }
 
 type Orgs struct {
-	Name   string                                `json:"name,omitempty" yaml:"name,omitempty"`
-	Spec   *baseorginfrahostcomv1.OrgSpec        `json:"spec,omitempty" yaml:"spec,omitempty"`
-	Status *baseorginfrahostcomv1.OrgNexusStatus `json:"status,omitempty" yaml:"status,omitempty"`
+	Name   string          `json:"name,omitempty" yaml:"name,omitempty"`
+	Spec   *OrgSpec        `json:"spec,omitempty" yaml:"spec,omitempty"`
+	Status *OrgNexusStatus `json:"status,omitempty" yaml:"status,omitempty"`
 }
 
 type Projects struct {
-	Name   string                                        `json:"name,omitempty" yaml:"name,omitempty"`
-	Spec   *baseprojectinfrahostcomv1.ProjectSpec        `json:"spec,omitempty" yaml:"spec,omitempty"`
-	Status *baseprojectinfrahostcomv1.ProjectNexusStatus `json:"status,omitempty" yaml:"status,omitempty"`
+	Name   string              `json:"name,omitempty" yaml:"name,omitempty"`
+	Spec   *ProjectSpec        `json:"spec,omitempty" yaml:"spec,omitempty"`
+	Status *ProjectNexusStatus `json:"status,omitempty" yaml:"status,omitempty"`
+}
+
+// OrgSpec / OrgNexusStatus / ProjectSpec / ProjectNexusStatus mirror the JSON shape
+// returned by the tenancy-manager REST API (replacing the removed tenancy-datamodel SDK).
+type OrgSpec struct {
+	Description string `json:"description,omitempty"`
+}
+
+type OrgStatusInner struct {
+	StatusIndicator string `json:"statusIndicator,omitempty"`
+	Message         string `json:"message,omitempty"`
+	UID             string `json:"UID,omitempty"`
+}
+
+type OrgNexusStatus struct {
+	OrgStatus OrgStatusInner `json:"orgStatus,omitempty"`
+}
+
+type ProjectSpec struct {
+	Description string `json:"description,omitempty"`
+}
+
+type ProjectStatusInner struct {
+	StatusIndicator string `json:"statusIndicator,omitempty"`
+	Message         string `json:"message,omitempty"`
+	UID             string `json:"UID,omitempty"`
+}
+
+type ProjectNexusStatus struct {
+	ProjectStatus ProjectStatusInner `json:"projectStatus,omitempty"`
 }
 
 // serviceDomain is a package-level variable initialized during startup.

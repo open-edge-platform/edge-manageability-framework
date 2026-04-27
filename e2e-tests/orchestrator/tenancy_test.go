@@ -14,7 +14,6 @@ import (
 	"time"
 
 	invapi "github.com/open-edge-platform/infra-core/apiv2/v2/pkg/api/v2"
-	projectv1 "github.com/open-edge-platform/orch-utils/tenancy-datamodel/build/apis/project.edge-orchestrator.intel.com/v1"
 
 	"github.com/bitfield/script"
 	. "github.com/onsi/ginkgo/v2"
@@ -476,8 +475,8 @@ var _ = Describe("Tenancy integration test", Label(tenancy), func() {
 				}
 				hasMsg := strings.HasPrefix(project.Status.ProjectStatus.Message, "Waiting for watchers") &&
 					strings.HasSuffix(project.Status.ProjectStatus.Message, "to be deleted")
-				if project.Status.ProjectStatus.StatusIndicator == projectv1.StatusIndicationInProgress ||
-					project.Status.ProjectStatus.StatusIndicator == projectv1.StatusIndicationError {
+				if project.Status.ProjectStatus.StatusIndicator == "STATUS_INDICATION_IN_PROGRESS" ||
+					project.Status.ProjectStatus.StatusIndicator == "STATUS_INDICATION_ERROR" {
 					if hasMsg {
 						return fmt.Errorf("failed to delete project with status message '%s'", project.Status.ProjectStatus.Message)
 					}
