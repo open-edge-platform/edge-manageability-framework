@@ -111,11 +111,9 @@ jobs:
           source helmfile-deploy/pre-orch/functions.sh
           check_and_download_dkam_certs "cluster.onprem"
 
-      # Golden Suite — Core Foundation tests:
-      # CF-1: Assess Tenancy Management
-      # CF-2: Verify Tenancy Isolation
-      # CF-3: Provision EN (VEN onboarding)
-      - name: Run Golden Suite Robot Framework Tests (VEN)
+      # EIM Only tests::
+      # From tenancy confihuration to Node Onboarding
+      - name: Run EIM Only workflow Tests (VEN)
         id: robot-tests
         timeout-minutes: 10
         working-directory: edge-manage-test-automation
@@ -127,19 +125,17 @@ jobs:
           . "$HOME/.asdf/asdf.sh"
           KC_ADMIN_PWD=$(kubectl -n orch-platform get secrets platform-keycloak -o jsonpath='{.data.admin-password}' | base64 -d)
           yq eval ".orchestrator.admin_password = \"${KC_ADMIN_PWD}\"" -i orchestrator-configs/on-prem.yaml
-          yq eval '.infra.host.edgenode.hw_info.libvirt_pool_name = "default"'    -i tests/core_foundation/data/cf_data_1_ven_VEN-libvirt_microvisor-nonrt.yaml
-          yq eval '.infra.host.edgenode.hw_info.libvirt_network_name = "default"' -i tests/core_foundation/data/cf_data_1_ven_VEN-libvirt_microvisor-nonrt.yaml
+          yq eval '.infra.host.edgenode.hw_info.libvirt_pool_name = "default"'    -i tests/emf_decomp/data/cf_data_sample.yaml
+          yq eval '.infra.host.edgenode.hw_info.libvirt_network_name = "default"' -i tests/emf_decomp/data/cf_data_sample.yaml
 
           source venv_edge-manage-test-automation/bin/activate
           robot -L DEBUG --pythonpath . \
-            --name "Golden Suite: Core Foundation" \
-            -d robot_output/core_foundation \
+            --name "EIM Only WF" \
+            -d robot_output/eim_only \
             -V orchestrator-configs/on-prem.yaml \
             --exitonfailure \
-            --include cf1 \
-            --include cf2 \
-            --include cf3 \
-            tests/core_foundation/core_foundation.robot
+            --include vip \
+            tests/emf_decomp/eim/orch_cli_eim_workflow.robot
 
       - name: Upload test artifacts
         if: always()
@@ -244,30 +240,8 @@ jobs:
         run: |
           git submodule update --init --recursive
 
-          # Install asdf
-          #git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.14.1
-          #. "$HOME/.asdf/asdf.sh"
-          #echo ". $HOME/.asdf/asdf.sh" >> "$HOME/.bashrc"
-
-          # Install tools and Python venv
-          # make asdf-install
           make orch-cli
           make venv_edge-manage-test-automation
-
-          # Install terraform for Pico VEN provisioning (skip tflint)
-          #pushd repos/ven/pico
-          #asdf plugin add terraform || true
-          #asdf install terraform
-          #popd
-
-          # xsltproc needed by libvirt terraform provider for domain XML customization
-          #sudo apt-get install -y xsltproc
-
-      #- name: Wait for DKAM Full_server.crt and signed_ipxe.efi readiness
-      #  shell: bash
-      #  run: |
-      #    source helmfile-deploy/pre-orch/functions.sh
-      #    check_and_download_dkam_certs "cluster.onprem"
 
       # EIM-vPro tests:
       # EIM-vPro-01: Assess Tenancy Management
@@ -275,8 +249,8 @@ jobs:
       # CLI_EIM-vPRO-03: Create Login session to run CLI commands
       # CLI-EIM-vPRO-04: Verify Orch deployment for EIM-vPRO profile
       # CLI-EIM-vPRO-05: Register Host
-      # CLI-EIM-vPRO-07: Install Agents on Edge Node via script
-      - name: Run Tests eim-vpro-01 to eim-vpro-07
+      # CLI-EIM-vPRO-07-A: Install Agents on Ubuntu VM for VIP via script
+      - name: Run Tests eim-vpro VIP workflow (01-05, 07-A)
         id: robot-tests
         timeout-minutes: 20
         working-directory: edge-manage-test-automation
@@ -306,7 +280,7 @@ jobs:
             --include eim-vpro-03 \
             --include eim-vpro-04 \
             --include eim-vpro-05 \
-            --include eim-vpro-07 \
+            --include eim-vpro-07-a \
             tests/emf_decomp/eim_vpro/orch_cli_eim_vpro.robot
 
       - name: Upload test artifacts
