@@ -12,7 +12,7 @@ core:
   name: cluster-api
   namespace: capi-system
   spec:
-    version: v1.10.7
+    version: v1.11.5
     configSecret:
       namespace: capi-variables
       name: capi-variables
@@ -45,130 +45,27 @@ bootstrap:
     - name: k3s
       namespace: capk-system
       spec:
-        version: v0.3.0
+        version: v0.3.1
         fetchConfig:
-          url: "https://github.com/k3s-io/cluster-api-k3s/releases/v0.3.0/bootstrap-components.yaml"
+          url: "https://github.com/k3s-io/cluster-api-k3s/releases/v0.3.1/bootstrap-components.yaml"
         configSecret:
           namespace: capi-variables
           name: capi-variables
         additionalManifests:
           name: bootstrap-k3s-additional-manifest
           namespace: capk-system
-        manifestPatches:
-          - |
-            apiVersion: apps/v1
-            kind: Deployment
-            metadata:
-              name: capi-k3s-bootstrap-controller-manager
-              namespace: capk-system
-            spec:
-              template:
-                spec:
-                  containers:
-                  - name: manager
-                    image: ghcr.io/k3s-io/cluster-api-k3s/bootstrap-controller:v0.3.0
-                    command: ["/manager"]
-                    args:
-                      - --metrics-addr=127.0.0.1:8080
-                      - --enable-leader-election
-                    ports:
-                      - containerPort: 9443
-                        name: webhook-server
-                        protocol: TCP
-                    securityContext:
-                      allowPrivilegeEscalation: false
-                      capabilities:
-                        drop:
-                          - ALL
-                      runAsNonRoot: true
-                      seccompProfile:
-                        type: RuntimeDefault
-                    volumeMounts:
-                      - mountPath: /tmp/k8s-webhook-server/serving-certs
-                        name: cert
-                        readOnly: true
-                  - name: kube-rbac-proxy
-                    image: quay.io/brancz/kube-rbac-proxy:v0.21.0
-                    args:
-                      - --secure-listen-address=0.0.0.0:8443
-                      - --upstream=http://127.0.0.1:8080/
-                      - --v=10
-                    ports:
-                      - containerPort: 8443
-                        name: https
-                        protocol: TCP
-                    securityContext:
-                      allowPrivilegeEscalation: false
-                      capabilities:
-                        drop:
-                          - ALL
-                      runAsNonRoot: true
-                      seccompProfile:
-                        type: RuntimeDefault
 
 controlplane:
   providers:
     - name: k3s
       namespace: capk-system
       spec:
-        version: v0.3.0
+        version: v0.3.1
         fetchConfig:
-          url: "https://github.com/k3s-io/cluster-api-k3s/releases/v0.3.0/control-plane-components.yaml"
+          url: "https://github.com/k3s-io/cluster-api-k3s/releases/v0.3.1/control-plane-components.yaml"
         configSecret:
           namespace: capi-variables
           name: capi-variables
         additionalManifests:
           name: controlplane-k3s-additional-manifest
           namespace: capk-system
-        manifestPatches:
-          - |
-            apiVersion: apps/v1
-            kind: Deployment
-            metadata:
-              name: capi-k3s-control-plane-controller-manager
-              namespace: capk-system
-            spec:
-              template:
-                spec:
-                  containers:
-                  - name: manager
-                    image: ghcr.io/k3s-io/cluster-api-k3s/controlplane-controller:v0.3.0
-                    command: ["/manager"]
-                    args:
-                      - --metrics-addr=127.0.0.1:8080
-                      - --enable-leader-election
-                    ports:
-                      - containerPort: 9443
-                        name: webhook-server
-                        protocol: TCP
-                    securityContext:
-                      allowPrivilegeEscalation: false
-                      capabilities:
-                        drop:
-                          - ALL
-                      runAsNonRoot: true
-                      seccompProfile:
-                        type: RuntimeDefault
-                    volumeMounts:
-                      - mountPath: /tmp/k8s-webhook-server/serving-certs
-                        name: cert
-                        readOnly: true
-                  - name: kube-rbac-proxy
-                    image: quay.io/brancz/kube-rbac-proxy:v0.21.0
-                    args:
-                      - --secure-listen-address=0.0.0.0:8443
-                      - --upstream=http://127.0.0.1:8080/
-                      - --v=10
-                    ports:
-                      - containerPort: 8443
-                        name: https
-                        protocol: TCP
-                    securityContext:
-                      allowPrivilegeEscalation: false
-                      capabilities:
-                        drop:
-                          - ALL
-                      runAsNonRoot: true
-                      seccompProfile:
-                        type: RuntimeDefault
-
