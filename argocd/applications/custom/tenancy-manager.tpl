@@ -22,16 +22,11 @@ postgresql:
   database: "orch-iam-iam-tenancy"
   username: "orch-iam-iam-tenancy_user"
 
-# Override registered project controllers to fix the infra-tenant-controller
-# name mismatch: the infra-core tenant-controller registers itself as
-# "tenant-controller" (see appName in tenancy-hook.go), not
-# "infra-tenant-controller" as was historically listed.
-#
-# App-orch controllers (app-orch-tenant-controller, app-deployment-manager)
-# are conditionally included only when app-orch is enabled in the deployment
-# profile (argo.enabled.app-orch-tenant-controller = true). This keeps the
-# registered controller list accurate so projects don't get stuck waiting
-# for controllers that are not deployed.
+# Registered controllers list. App-orch controllers (app-orch-tenant-controller,
+# app-deployment-manager) are conditionally included only when app-orch is
+# enabled in the deployment profile (argo.enabled.app-orch-tenant-controller).
+# This keeps the registered controller list accurate so projects don't get
+# stuck waiting for controllers that are not deployed.
 #
 # Note: the chart uses .Values.tenancyManager.* for controller configuration.
 tenancyManager:
@@ -47,7 +42,7 @@ tenancyManager:
       - app-deployment-manager
       {{- end }}
       - keycloak-tenant-controller
-      - tenant-controller
+      - infra-tenant-controller
       - cluster-manager
       - observability-tenant-controller
       - metadata-broker
