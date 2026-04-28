@@ -8,7 +8,7 @@ root:
   clusterValues:
 {{- if .Values.enableVproProfile }}
     - orch-configs/profiles/enable-platform-vpro.yaml
-{{ - else if .Values.enableO11yProfile }}
+{{- else if .Values.enableO11yProfile }}
     - orch-configs/profiles/enable-platform-o11y.yaml
 {{- else }}
     - orch-configs/profiles/enable-platform.yaml
