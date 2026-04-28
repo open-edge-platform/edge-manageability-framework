@@ -12,16 +12,16 @@ argo:
     alerting-monitor: false
     edgenode-dashboards: false
     edgenode-observability: true
+    edgenode-observability-standalone: true
     orchestrator-dashboards: false
     orchestrator-observability: false
     orchestrator-prometheus-agent: false
   o11y:
-    import:
+    edgeNode:
       grafana:
         enabled: false
       alertmanager:
         enabled: false
-    edgeNode:
       loki:
         write:
           resources:
