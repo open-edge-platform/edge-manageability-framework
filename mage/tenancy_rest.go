@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -156,10 +157,22 @@ func (c *tenancyRESTClient) DeleteOrg(ctx context.Context, name string) error {
 	return fmt.Errorf("delete org %s: status %d: %s", name, resp.StatusCode, string(b))
 }
 
-// CreateProject PUTs /v1/projects/{name}.
-func (c *tenancyRESTClient) CreateProject(ctx context.Context, name, description string) error {
+// projectPath builds /v1/projects/{name} with an optional ?org=<org> query.
+// The admin user the mage client authenticates as has access to all orgs;
+// without ?org tenancy-manager cannot disambiguate which org the project
+// belongs to and returns 400 ("org must be specified for project creation").
+func projectPath(name, org string) string {
+	p := "/v1/projects/" + name
+	if org != "" {
+		p += "?org=" + url.QueryEscape(org)
+	}
+	return p
+}
+
+// CreateProject PUTs /v1/projects/{name}?org=<org>.
+func (c *tenancyRESTClient) CreateProject(ctx context.Context, org, name, description string) error {
 	body, _ := json.Marshal(map[string]string{"description": description})
-	resp, err := c.do(ctx, http.MethodPut, "/v1/projects/"+name, body)
+	resp, err := c.do(ctx, http.MethodPut, projectPath(name, org), body)
 	if err != nil {
 		return err
 	}
@@ -172,8 +185,8 @@ func (c *tenancyRESTClient) CreateProject(ctx context.Context, name, description
 }
 
 // GetProject returns the parsed status block.
-func (c *tenancyRESTClient) GetProject(ctx context.Context, name string) (*projectStatusBlock, error) {
-	resp, err := c.do(ctx, http.MethodGet, "/v1/projects/"+name, nil)
+func (c *tenancyRESTClient) GetProject(ctx context.Context, org, name string) (*projectStatusBlock, error) {
+	resp, err := c.do(ctx, http.MethodGet, projectPath(name, org), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -193,8 +206,8 @@ func (c *tenancyRESTClient) GetProject(ctx context.Context, name string) (*proje
 }
 
 // DeleteProject DELETEs /v1/projects/{name}. 404 is treated as success.
-func (c *tenancyRESTClient) DeleteProject(ctx context.Context, name string) error {
-	resp, err := c.do(ctx, http.MethodDelete, "/v1/projects/"+name, nil)
+func (c *tenancyRESTClient) DeleteProject(ctx context.Context, org, name string) error {
+	resp, err := c.do(ctx, http.MethodDelete, projectPath(name, org), nil)
 	if err != nil {
 		return err
 	}
@@ -232,12 +245,12 @@ func (c *tenancyRESTClient) waitUntilOrgIdle(ctx context.Context, name string) (
 
 // waitUntilProjectIdle polls GET /v1/projects/{name} until StatusIndicator is IDLE.
 // Returns the project UID.
-func (c *tenancyRESTClient) waitUntilProjectIdle(ctx context.Context, name string) (string, error) {
+func (c *tenancyRESTClient) waitUntilProjectIdle(ctx context.Context, org, name string) (string, error) {
 	deadline := time.After(5 * time.Minute)
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 	for {
-		proj, err := c.GetProject(ctx, name)
+		proj, err := c.GetProject(ctx, org, name)
 		if err != nil && !isTenancyNotFound(err) {
 			return "", err
 		}
@@ -281,12 +294,12 @@ func (c *tenancyRESTClient) waitUntilOrgGone(ctx context.Context, name string) e
 }
 
 // waitUntilProjectGone polls GET /v1/projects/{name} until 404.
-func (c *tenancyRESTClient) waitUntilProjectGone(ctx context.Context, name string) error {
+func (c *tenancyRESTClient) waitUntilProjectGone(ctx context.Context, org, name string) error {
 	deadline := time.After(5 * time.Minute)
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 	for {
-		_, err := c.GetProject(ctx, name)
+		_, err := c.GetProject(ctx, org, name)
 		if isTenancyNotFound(err) {
 			return nil
 		}
