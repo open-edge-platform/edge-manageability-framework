@@ -118,10 +118,10 @@ func (TenantUtils) DeleteProject(ctx context.Context, org, project string) error
 		return nil
 	}
 	fmt.Printf("Deleting Project (%s)\n", project)
-	if err := client.DeleteProject(ctx, project); err != nil {
+	if err := client.DeleteProject(ctx, org, project); err != nil {
 		return fmt.Errorf("\nerror deleting project (%s). Error: %w", project, err)
 	}
-	return client.waitUntilProjectGone(ctx, project)
+	return client.waitUntilProjectGone(ctx, org, project)
 }
 
 // lookupOrgUID returns the org UID, or "" with errTenancyNotFound when absent.
@@ -357,10 +357,10 @@ func (TenantUtils) CreateProjectInOrg(ctx context.Context, orgName string, proje
 		return fmt.Errorf("\nerror creating project (%s). Error: %w", projectName, err)
 	}
 	fmt.Printf("Creating Project (%s)\n", projectName)
-	if err := client.CreateProject(ctx, projectName, projectName); err != nil {
+	if err := client.CreateProject(ctx, orgName, projectName, projectName); err != nil {
 		return fmt.Errorf("\nerror creating project (%s). Error: %w", projectName, err)
 	}
-	projectUUID, err := client.waitUntilProjectIdle(ctx, projectName)
+	projectUUID, err := client.waitUntilProjectIdle(ctx, orgName, projectName)
 	if err != nil {
 		return fmt.Errorf("wait for project %s to go active failed with error %w", projectName, err)
 	}
@@ -373,7 +373,7 @@ func (TenantUtils) WaitUntilProjectReady(ctx context.Context, orgName, projectNa
 	if err != nil {
 		return "", fmt.Errorf("\nerror creating tenancy REST client (%s). Error: %w", projectName, err)
 	}
-	return client.waitUntilProjectIdle(ctx, projectName)
+	return client.waitUntilProjectIdle(ctx, orgName, projectName)
 }
 
 func (TenantUtils) WaitUntilProjectWatchersReady(ctx context.Context, orgName, projectName string) (string, error) {
@@ -384,7 +384,7 @@ func (TenantUtils) WaitUntilProjectWatchersReady(ctx context.Context, orgName, p
 	if err != nil {
 		return "", fmt.Errorf("\nerror creating tenancy REST client (%s). Error: %w", projectName, err)
 	}
-	if _, err := client.waitUntilProjectIdle(ctx, projectName); err != nil {
+	if _, err := client.waitUntilProjectIdle(ctx, orgName, projectName); err != nil {
 		return "", err
 	}
 	return "all watchers ready and in idle state", nil
@@ -396,7 +396,7 @@ func (TenantUtils) GetProject(ctx context.Context, orgName, projectName string) 
 	if err != nil {
 		return fmt.Errorf("\nerror retrieving the project (%s). Error: %w", projectName, err)
 	}
-	proj, err := client.GetProject(ctx, projectName)
+	proj, err := client.GetProject(ctx, orgName, projectName)
 	if isTenancyNotFound(err) {
 		return err
 	}
@@ -414,7 +414,7 @@ func (TenantUtils) GetProject(ctx context.Context, orgName, projectName string) 
 
 // lookupProjectUID returns the project UID, or "" with errTenancyNotFound when absent.
 func lookupProjectUID(ctx context.Context, client *tenancyRESTClient, projectName string) (string, error) {
-	proj, err := client.GetProject(ctx, projectName)
+	proj, err := client.GetProject(ctx, "", projectName)
 	if isTenancyNotFound(err) {
 		return "", err
 	}
