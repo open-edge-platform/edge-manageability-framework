@@ -338,30 +338,31 @@ end
     MPS-->>DM: 200 OK
     DM->>INV: UPDATE current_kvm_state=KVM_STATE_AWAITING_CONSENT
 
-    CLI->>APIV2: GET /compute/hosts/:id poll every 2s
     APIV2-->>CLI: currentKvmState=KVM_STATE_AWAITING_CONSENT
+    CLI->>CLI: GET input from USER : Reads the Consent Code to IT via phone/chat
 
-    Note over CLI: Operator reads 6-digit code from device screen
-    CLI->>APIV2: PATCH /compute/hosts/:id desiredConsentCode=NNNNNN
-    APIV2->>INV: UPDATE desired_consent_code=NNNNNN
-
-    DM->>INV: READ desired_consent_code
-    INV-->>DM: NNNNNN
-    DM->>MPS: POST /api/v1/amt/userConsentCode/:guid consentCode=NNNNNN
+    Note over CLI: Operator enters 6-digit Consent Code
+  
+    CLI->>MPS: POST /api/v1/amt/userConsentCode/:guid consentCode=NNNNNN
     MPS-->>AMT: Validate code
     AMT-->>MPS: Consent granted
-    MPS-->>DM: 200 OK
+    MPS-->>CLI: 200 OK
+    CLI->>APIV2: PATCH /compute/hosts/:id desiredKvmState=KVM_CONSENT_RECEIVED
     end
-    Note over DM,INV: 4. Obtain redirect token and write session URL
-    DM->>MPS: GET /api/v1/authorize/redirection/:guid
-    MPS-->>DM: token=short-lived-token
+
+    Note over CLI,MPS: 4. Obtain redirect token and write session URL
+    CLI->>MPS: GET /api/v1/authorize/redirection/:guid
+    MPS-->>CLI: token=short-lived-token
+    DM->>INV: Watch for desired state change
+    CLI->>APIV2: PATCH /compute/hosts/:id desiredKvmState=KVM_REDIRECTION_RECEIVED
+    APIV2->>INV: UPDATE desired_kvm_state=KVM_REDIRECTION_RECEIVED
     DM->>INV: UPDATE current_kvm_state=KVM_STATE_START
-    DM->>INV: UPDATE kvm_session_url with relay URL
+  
 
     Note over CLI: 5. orch-cli detects KVM_STATE_START and starts local proxy
     CLI->>APIV2: GET /compute/hosts/:id poll
-    APIV2-->>CLI: currentKvmState=KVM_STATE_START kvmSessionUrl=relay-url
-    CLI->>CLI: Start local HTTP server on random port
+    APIV2-->>CLI: currentKvmState=KVM_STATE_START 
+    CLI->>CLI: Start local HTTP server on random port kvmSessionUrl=relay-url
     CLI->>Browser: Open browser at localhost
 
     Note over Browser,CLI: 6. Browser connects and launches KVM session
@@ -433,27 +434,25 @@ end
     APIV2-->>CLI: currentSolState=SOL_STATE_AWAITING_CONSENT
 
     alt is Activation Mode = CCM
-    Note over CLI: Operator reads 6-digit code from device screen
-    CLI->>APIV2: PATCH /compute/hosts/:id desiredConsentCode=NNNNNN
-    APIV2->>INV: UPDATE desired_consent_code=NNNNNN
-
-    SM->>INV: READ desired_consent_code
-    INV-->>SM: NNNNNN
-    SM->>MPS: POST /api/v1/amt/userConsentCode/:guid consentCode=NNNNNN
+    Note over CLI: GET input from USER : Reads the Consent Code to IT via phone/chat
+    CLI->>MPS: POST /api/v1/amt/userConsentCode/:guid consentCode=NNNNNN
     MPS-->>AMT: Validate code
     AMT-->>MPS: Consent granted
-    MPS-->>SM: 200 OK
+    MPS-->>CLI: 200 OK
+    CLI->>APIV2: PATCH /compute/hosts/:id desiredSolState=SOL_STATE_CONSENT_RECEIVED
+    APIV2->>INV: UPDATE desired_sol_state=SOL_STATE_CONSENT_RECEIVED
     end
 
-    Note over SM,INV: 4. Obtain redirect token, open MPS relay, start SOL protocol
-    SM->>MPS: GET /api/v1/authorize/redirection/:guid
-    MPS-->>SM: token=short-lived-token
-    SM->>MPS: Open WebSocket to MPS relay endpoint
-    Note over SM,MPS: AMT Redirect handshake + Digest Auth using AMT_PASSWORD env var (ACM)
+    Note over CLI,INV: 4. Obtain redirect token, open MPS relay, start SOL protocol
+    CLI->>MPS: GET /api/v1/authorize/redirection/:guid
+    MPS-->>CLI: token=short-lived-token
+    CLI->>MPS: Open WebSocket to MPS relay endpoint
+    Note over CLI,MPS: AMT Redirect handshake + Digest Auth using AMT_PASSWORD env var (ACM)
     MPS-->>AMT: SOL channel established
     AMT-->>MPS: SOL session active
     SM->>INV: UPDATE current_sol_state=SOL_STATE_START
     SM->>INV: UPDATE sol_session_url=ws://sol-manager:8080/ws/terminal/{session-id}
+    DM->>INV: Watch for desired state change
 
     Note over CLI: 5. orch-cli detects SOL_STATE_START 
     CLI->>APIV2: GET /compute/hosts/:id poll
