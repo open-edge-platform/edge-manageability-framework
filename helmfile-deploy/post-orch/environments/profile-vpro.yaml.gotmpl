@@ -45,7 +45,10 @@ copy-ca-cert-gateway-to-cattle:
 token-fs:
   enabled: false
 infra-managers:
-  enabled: false
+  enabled: true
+  disabledProvisioning: true
+  host-manager:
+    enabled: true
 # ═══════════════════════════════════════════════════════════════════════════════
 # Releases to ENABLE (disabled in defaults, needed for vPro)
 # ═══════════════════════════════════════════════════════════════════════════════
