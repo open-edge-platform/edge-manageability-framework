@@ -3,13 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Frontend configuration (Grafana UI)
-{{- if and .Values.argo.o11y .Values.argo.o11y.edgeNode .Values.argo.o11y.edgeNode.grafana }}
-{{- if not .Values.argo.o11y.edgeNode.grafana.enabled }}
-import:
-  grafana:
-    enabled: false
-{{- end }}
-{{- end }}
 grafana:
   imagePullSecrets:
   {{- with .Values.argo.imagePullSecrets }}
@@ -735,6 +728,7 @@ opentelemetry-collector:
           {{- end }}
           {{- if and (index .Values.argo.enabled "multitenant_gateway") (index .Values.argo.enabled "alerting-monitor") (index .Values.argo.enabled "edgenode-observability") }}
           - prometheus/observability-tenant-controller
-          {{- else if and (index .Values.argo.enabled "multitenant_gateway") (index .Values.argo.enabled "edgenode-observability-standalone") }}
+          {{- end }}
+          {{- if and (index .Values.argo.enabled "multitenant_gateway") (index .Values.argo.enabled "edgenode-observability-standalone") }}
           - prometheus/observability-tenant-controller
           {{- end }}
