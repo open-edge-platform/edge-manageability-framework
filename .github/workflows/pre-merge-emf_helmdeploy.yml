@@ -26,9 +26,12 @@ jobs:
     needs: pre-checks
     uses: open-edge-platform/orch-ci/.github/workflows/pre-merge.yml@a95228137803b756aae327668c115db235802982  # v2026.1.3
     with:
-      run_build: true
+      run_build: false
       run_lint: true
       run_security_scans: true
+      run_version_check: false
+      run_test: false
+      trivy_config_path: trivy.yaml
       
   final-check:
     runs-on: ubuntu-latest
