@@ -116,9 +116,9 @@ jobs:
       - name: Generate SSH RSA key pair
         shell: bash
         run: |
-          ssh-keygen -t rsa -b 4096 -f "${HOME}/.ssh/id_rsa" -N "" -q
-          chmod 600 "${HOME}/.ssh/id_rsa"
-          chmod 644 "${HOME}/.ssh/id_rsa.pub"
+          ssh-keygen -t ecdsa -b 521 -C "p_host_manager" -f "${HOME}/.ssh/id_ecdsa"
+          chmod 600 "${HOME}/.ssh/id_ecdsa"
+          chmod 644 "${HOME}/.ssh/id_ecdsa.pub"
 
       # EIM Only tests::
       # From tenancy confihuration to Node Onboarding
@@ -142,7 +142,7 @@ jobs:
             --name "EIM Only WF" \
             -d robot_output/eim_only \
             -V orchestrator-configs/on-prem.yaml \
-            -v PATH_TO_REMOTE_USER_PUB_KEY:${HOME}/.ssh/id_rsa.pub \
+            -v PATH_TO_REMOTE_USER_PUB_KEY:${HOME}/.ssh/id_ecdsa.pub \
             --exitonfailure \
             --include vip \
             tests/emf_decomp/eim/orch_cli_eim_workflow.robot
