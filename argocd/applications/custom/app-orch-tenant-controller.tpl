@@ -8,7 +8,7 @@ global:
   registry:
     name: {{ .Values.argo.containerRegistryURL }}
 image:
-  tag: "nexus-replacement-20260428-0546"
+  tag: "nexus-replacement-20260430-0546"
   registry:
     name: {{ .Values.argo.containerRegistryURL }}
 
