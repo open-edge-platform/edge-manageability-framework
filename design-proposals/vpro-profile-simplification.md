@@ -125,7 +125,6 @@ Complications
   this range. For this reason, having a load-balancer is a functional requirement for
   any deployment outside of development environments.
 
-
 Recommendation is to move it to the pre-installer.
 
 ### Remove Traefik
@@ -175,8 +174,6 @@ Complications
   - limit-request-size - limits HTTP request body size
   - replace-domain - rewrites internal domain references to external. (Development-only?)
   - rewrite-webui-csp-resp-header - rewrites Content-Security-Policy (Development-only?)
-
-
 
 ### Remove Reloader Job
 
