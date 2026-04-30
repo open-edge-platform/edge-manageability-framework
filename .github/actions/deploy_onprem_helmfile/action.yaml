@@ -29,6 +29,13 @@ runs:
         ref: ${{ inputs.orch_version }}
         persist-credentials: false
 
+    - name: Print system info
+      shell: bash
+      run: |
+        echo "CPU Cores: $(nproc)"
+        echo "Total Memory: $(grep MemTotal /proc/meminfo | awk '{print $2/1024/1024 " GB"}')"
+        echo "Total Disk: $(df -h --total | grep total | awk '{print $2}')"
+    
     # ── Detect Host IP ────────────────────────────────────────────────────────
 
     - name: Detect host IP
