@@ -358,6 +358,7 @@ integration with event log collection, conditional KVM/boot-mode triggers.
 | 11 | Automated remote diagnostics | Augmentation | Medium | High | Integrated workflow for unresponsive hosts, high demo value |
 
 **Categories:**
+
 - **EOM Gap** — DMT exposes a per-device capability that EOM does not surface.
 - **DMT Augmentation** — value that goes beyond what DMT provides at any scale
   (fleet targeting, scheduling, reconciliation, alerting).
