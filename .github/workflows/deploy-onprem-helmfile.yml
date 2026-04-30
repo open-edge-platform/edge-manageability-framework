@@ -135,6 +135,7 @@ jobs:
             --name "EIM Only WF" \
             -d robot_output/eim_only \
             -V orchestrator-configs/on-prem.yaml \
+            -v PATH_TO_REMOTE_USER_PUB_KEY:${HOME}/.ssh/id_rsa \
             --exitonfailure \
             --include vip \
             tests/emf_decomp/eim/orch_cli_eim_workflow.robot
