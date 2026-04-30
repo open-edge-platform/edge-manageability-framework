@@ -6,7 +6,7 @@
 {{- $namespace      := "orch-platform" }}
 {{- $syncWave       := "2005" }}
 ---
-{{- if and (index .Values.argo.enabled "multitenant_gateway") (index .Values.argo.enabled "alerting-monitor") (index .Values.argo.enabled "edgenode-observability") }}
+{{- if or (and (index .Values.argo.enabled "multitenant_gateway") (index .Values.argo.enabled "alerting-monitor") (index .Values.argo.enabled "edgenode-observability")) (and (index .Values.argo.enabled "multitenant_gateway") (index .Values.argo.enabled "edgenode-observability-standalone")) }}
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
