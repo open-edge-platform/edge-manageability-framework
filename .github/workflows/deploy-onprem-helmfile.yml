@@ -77,7 +77,7 @@ jobs:
         with:
           repository: open-edge-platform/edge-manage-test-automation
           path: edge-manage-test-automation
-          ref: ${{ steps.read-test-automation-version.outputs.version }}
+          ref: main
           submodules: 'recursive'
           token: ${{ secrets.SYS_EMF_GH_TOKEN }}
           persist-credentials: false
@@ -95,6 +95,7 @@ jobs:
 
           # Install tools and Python venv
           make asdf-install
+          make orch-cli
           make venv_edge-manage-test-automation
 
           # Install terraform for Pico VEN provisioning (skip tflint)
@@ -273,8 +274,8 @@ jobs:
             -V orchestrator-configs/on-prem.yaml \
             -v PXE_IP:${VM_IP} \
             -v PXE_HOSTNAME:${VM_NAME} \
-            -v username:${SSH_USER} \
-            -v password:${SSH_PASSWORD} \
+            -v NODE_SSH_USER:${SSH_USER} \
+            -v NODE_SSH_PASSWORD:${SSH_PASSWORD} \
             --exitonfailure \
             --include eim-vpro-01 \
             --include eim-vpro-02 \
