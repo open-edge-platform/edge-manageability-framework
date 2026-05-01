@@ -49,6 +49,16 @@ infra-managers:
   disabledProvisioning: true
   host-manager:
     enabled: true
+  maintenance-manager:
+      enabled: false
+  telemetry-manager:
+    enabled: false
+  os-resource-manager:
+    enabled: false
+  networking-manager:
+    enabled: false
+  attestationstatus-manager:
+    enabled: false
 # ═══════════════════════════════════════════════════════════════════════════════
 # Releases to ENABLE (disabled in defaults, needed for vPro)
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -109,3 +119,11 @@ infra-external:
       enabled: true
     dm-manager:
       enabled: true
+  loca-manager:
+    enabled: false
+  loca-metadata-manager:
+    enabled: false
+  loca-credentials:
+    enabled: false
+  loca-templates-manager:
+    enabled: false
