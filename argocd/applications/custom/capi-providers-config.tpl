@@ -45,9 +45,9 @@ bootstrap:
     - name: k3s
       namespace: capk-system
       spec:
-        version: v0.3.1
+        version: v100.0.0-dt
         fetchConfig:
-          url: "https://github.com/k3s-io/cluster-api-k3s/releases/v0.3.1/bootstrap-components.yaml"
+          url: "https://gist.githubusercontent.com/richardcase/d85564c8a8a62615b5e75fd98711dd22/raw/4eb2b29d785d4fdfbd22223517bc14482d0ba2ed/bootstrap-components.yaml"
         configSecret:
           namespace: capi-variables
           name: capi-variables
@@ -60,9 +60,9 @@ controlplane:
     - name: k3s
       namespace: capk-system
       spec:
-        version: v0.3.1
+        version: v100.0.0-dt
         fetchConfig:
-          url: "https://github.com/k3s-io/cluster-api-k3s/releases/v0.3.1/control-plane-components.yaml"
+          url: "https://gist.githubusercontent.com/richardcase/d85564c8a8a62615b5e75fd98711dd22/raw/81cbe33ddbda98c625ff1b6e7dd286b821487889/control-plane-components.yaml"
         configSecret:
           namespace: capi-variables
           name: capi-variables
