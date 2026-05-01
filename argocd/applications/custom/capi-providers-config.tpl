@@ -41,31 +41,9 @@ core:
       namespace: capi-system
 
 bootstrap:
-  providers:
-    - name: k3s
-      namespace: capk-system
-      spec:
-        version: v100.0.0-dt
-        fetchConfig:
-          url: "https://gist.githubusercontent.com/richardcase/d85564c8a8a62615b5e75fd98711dd22/raw/4eb2b29d785d4fdfbd22223517bc14482d0ba2ed/bootstrap-components.yaml"
-        configSecret:
-          namespace: capi-variables
-          name: capi-variables
-        additionalManifests:
-          name: bootstrap-k3s-additional-manifest
-          namespace: capk-system
+  # k3s providers are installed by the Argo app capi-k3s-manifests.
+  # cluster-api-operator currently rejects gist URLs for fetchConfig.
+  providers: []
 
 controlplane:
-  providers:
-    - name: k3s
-      namespace: capk-system
-      spec:
-        version: v100.0.0-dt
-        fetchConfig:
-          url: "https://gist.githubusercontent.com/richardcase/d85564c8a8a62615b5e75fd98711dd22/raw/81cbe33ddbda98c625ff1b6e7dd286b821487889/control-plane-components.yaml"
-        configSecret:
-          namespace: capi-variables
-          name: capi-variables
-        additionalManifests:
-          name: controlplane-k3s-additional-manifest
-          namespace: capk-system
+  providers: []

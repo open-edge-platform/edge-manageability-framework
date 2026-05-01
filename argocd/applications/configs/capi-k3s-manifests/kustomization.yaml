@@ -1,0 +1,131 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Force provider components into the same namespace used by EMF.
+namespace: capk-system
+
+resources:
+  - https://gist.githubusercontent.com/richardcase/d85564c8a8a62615b5e75fd98711dd22/raw/4eb2b29d785d4fdfbd22223517bc14482d0ba2ed/bootstrap-components.yaml
+  - https://gist.githubusercontent.com/richardcase/d85564c8a8a62615b5e75fd98711dd22/raw/81cbe33ddbda98c625ff1b6e7dd286b821487889/control-plane-components.yaml
+
+patches:
+  - target:
+      kind: Namespace
+      name: capi-k3s-bootstrap-system
+    patch: |-
+      $patch: delete
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: capi-k3s-bootstrap-system
+  - target:
+      kind: Namespace
+      name: capi-k3s-control-plane-system
+    patch: |-
+      $patch: delete
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: capi-k3s-control-plane-system
+  - target:
+      kind: CustomResourceDefinition
+      name: kthreesconfigs.bootstrap.cluster.x-k8s.io
+    patch: |-
+      apiVersion: apiextensions.k8s.io/v1
+      kind: CustomResourceDefinition
+      metadata:
+        name: kthreesconfigs.bootstrap.cluster.x-k8s.io
+        annotations:
+          cert-manager.io/inject-ca-from: capk-system/capi-k3s-bootstrap-serving-cert
+  - target:
+      kind: CustomResourceDefinition
+      name: kthreesconfigtemplates.bootstrap.cluster.x-k8s.io
+    patch: |-
+      apiVersion: apiextensions.k8s.io/v1
+      kind: CustomResourceDefinition
+      metadata:
+        name: kthreesconfigtemplates.bootstrap.cluster.x-k8s.io
+        annotations:
+          cert-manager.io/inject-ca-from: capk-system/capi-k3s-bootstrap-serving-cert
+  - target:
+      kind: CustomResourceDefinition
+      name: kthreescontrolplanes.controlplane.cluster.x-k8s.io
+    patch: |-
+      apiVersion: apiextensions.k8s.io/v1
+      kind: CustomResourceDefinition
+      metadata:
+        name: kthreescontrolplanes.controlplane.cluster.x-k8s.io
+        annotations:
+          cert-manager.io/inject-ca-from: capk-system/capi-k3s-control-plane-serving-cert
+  - target:
+      kind: MutatingWebhookConfiguration
+      name: capi-k3s-bootstrap-mutating-webhook-configuration
+    patch: |-
+      apiVersion: admissionregistration.k8s.io/v1
+      kind: MutatingWebhookConfiguration
+      metadata:
+        name: capi-k3s-bootstrap-mutating-webhook-configuration
+        annotations:
+          cert-manager.io/inject-ca-from: capk-system/capi-k3s-bootstrap-serving-cert
+  - target:
+      kind: MutatingWebhookConfiguration
+      name: capi-k3s-control-plane-mutating-webhook-configuration
+    patch: |-
+      apiVersion: admissionregistration.k8s.io/v1
+      kind: MutatingWebhookConfiguration
+      metadata:
+        name: capi-k3s-control-plane-mutating-webhook-configuration
+        annotations:
+          cert-manager.io/inject-ca-from: capk-system/capi-k3s-control-plane-serving-cert
+  - target:
+      kind: ValidatingWebhookConfiguration
+      name: capi-k3s-bootstrap-validating-webhook-configuration
+    patch: |-
+      apiVersion: admissionregistration.k8s.io/v1
+      kind: ValidatingWebhookConfiguration
+      metadata:
+        name: capi-k3s-bootstrap-validating-webhook-configuration
+        annotations:
+          cert-manager.io/inject-ca-from: capk-system/capi-k3s-bootstrap-serving-cert
+  - target:
+      kind: ValidatingWebhookConfiguration
+      name: capi-k3s-control-plane-validating-webhook-configuration
+    patch: |-
+      apiVersion: admissionregistration.k8s.io/v1
+      kind: ValidatingWebhookConfiguration
+      metadata:
+        name: capi-k3s-control-plane-validating-webhook-configuration
+        annotations:
+          cert-manager.io/inject-ca-from: capk-system/capi-k3s-control-plane-serving-cert
+  - target:
+      kind: Certificate
+      name: capi-k3s-bootstrap-serving-cert
+    patch: |-
+      apiVersion: cert-manager.io/v1
+      kind: Certificate
+      metadata:
+        name: capi-k3s-bootstrap-serving-cert
+        namespace: capk-system
+      spec:
+        dnsNames:
+          - capi-k3s-bootstrap-webhook-service
+          - capi-k3s-bootstrap-webhook-service.capk-system.svc
+          - capi-k3s-bootstrap-webhook-service.capk-system.svc.cluster.local
+  - target:
+      kind: Certificate
+      name: capi-k3s-control-plane-serving-cert
+    patch: |-
+      apiVersion: cert-manager.io/v1
+      kind: Certificate
+      metadata:
+        name: capi-k3s-control-plane-serving-cert
+        namespace: capk-system
+      spec:
+        dnsNames:
+          - capi-k3s-control-plane-webhook-service
+          - capi-k3s-control-plane-webhook-service.capk-system.svc
+          - capi-k3s-control-plane-webhook-service.capk-system.svc.cluster.local
