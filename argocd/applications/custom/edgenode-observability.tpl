@@ -729,3 +729,6 @@ opentelemetry-collector:
           {{- if and (index .Values.argo.enabled "multitenant_gateway") (index .Values.argo.enabled "alerting-monitor") (index .Values.argo.enabled "edgenode-observability") }}
           - prometheus/observability-tenant-controller
           {{- end }}
+          {{- if and (index .Values.argo.enabled "multitenant_gateway") (index .Values.argo.enabled "edgenode-observability-standalone") }}
+          - prometheus/observability-tenant-controller
+          {{- end }}

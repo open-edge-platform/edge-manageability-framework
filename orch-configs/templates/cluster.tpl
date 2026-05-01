@@ -8,6 +8,8 @@ root:
   clusterValues:
 {{- if .Values.enableVproProfile }}
     - orch-configs/profiles/enable-platform-vpro.yaml
+{{- else if .Values.enableO11yProfile }}
+    - orch-configs/profiles/enable-platform-o11y.yaml
 {{- else }}
     - orch-configs/profiles/enable-platform.yaml
 {{- end }}
@@ -16,6 +18,8 @@ root:
 {{- end }}
 {{- if .Values.enableObservability }}
     - orch-configs/profiles/enable-o11y.yaml
+{{- else if .Values.enableO11yProfile }}
+    - orch-configs/profiles/enable-o11y-standalone.yaml
 {{- end }}
 {{- if .Values.enableAuditLogging }}
     - orch-configs/profiles/enable-audit.yaml
@@ -66,7 +70,7 @@ root:
 {{- if .Values.enableDefaultTraefikRateLimit }}
     - orch-configs/profiles/default-traefik-rate-limit.yaml
 {{- end }}
-{{- if and (not .Values.enableObservability) (not .Values.enableVproProfile) }}
+{{- if and (not .Values.enableObservability) (not .Values.enableVproProfile) (not .Values.enableO11yProfile) }}
     - orch-configs/profiles/eim-noobb.yaml
 {{- end }}
 
