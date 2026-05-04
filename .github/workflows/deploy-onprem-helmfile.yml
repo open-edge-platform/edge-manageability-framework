@@ -34,13 +34,8 @@ permissions:
 jobs:
   deploy-onprem-eim:
     name: Deploy On-Prem EIM
-<<<<<<< shruti/vip_vpro
-    runs-on: ubuntu-24.04-16core-64GB
-    timeout-minutes: 30
-=======
     runs-on: ubuntu-24.04-8core-32GB
-    timeout-minutes: 20
->>>>>>> EMF_HELMDEPLOY_2026_01
+    timeout-minutes: 30
     env:
       KUBECONFIG: /etc/rancher/k3s/k3s.yaml
     steps:
