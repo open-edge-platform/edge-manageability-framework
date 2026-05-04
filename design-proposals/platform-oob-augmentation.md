@@ -2,7 +2,7 @@
 
 Author(s): Scott Baker
 
-Last updated: 2026-04-30
+Last updated: 2026-05-04
 
 ## Abstract
 
@@ -16,10 +16,11 @@ full Intel AMT product landscape.
 
 Intel offers several ways to consume AMT/vPro manageability:
 
-- **Intel EMA** (Endpoint Management Assistant) — self-hosted AMT management
-  console for enterprise IT. Full AMT surface: bulk power, KVM, boot
-  orchestration, certificate management, AMT feature configuration, hardware
-  inventory. Targets corporate endpoint fleets (laptops, desktops).
+- **Intel EMA** (Endpoint Management Assistant) — self-hosted, proprietary AMT
+  management console. Full AMT surface: bulk power, KVM, boot orchestration,
+  certificate management, AMT feature configuration, hardware inventory.
+  Targets corporate endpoint fleets (laptops, desktops). Latest version 1.14.5.0
+  (December 2025).
 - **Intel Endpoint Cloud Services** (ECS) — Intel-hosted AMT backend APIs for
   ISV/UEM integration (Intune, Workspace ONE, RMM tools). Same AMT capabilities
   as EMA, exposed as APIs for partners to embed.
@@ -30,35 +31,95 @@ Intel offers several ways to consume AMT/vPro manageability:
   for building custom AMT backends. Execution layer only; no fleet orchestration,
   scheduling, or multi-tenant lifecycle.
 
-EMA, ECS, and Fleet Services all target enterprise endpoint management. EOM
-targets a different environment: edge infrastructure — cell towers, retail,
-factory floors, remote sites — where AMT is one capability within a broader
-platform that also manages OS, clusters, and workloads.
+### EMA and ECS Limitations
+
+We use EMA as the primary comparison point because it is the most capable and
+complete AMT management product Intel offers — it represents the high-water mark
+for what fleet-scale AMT management looks like today. ECS is relevant because it
+is the cloud-hosted path that UEM vendors (Workspace ONE, Intune) integrate for
+AMT capabilities. Both share the same fundamental constraint.
+
+**Intel EMA:**
+- **Windows-only.** The EMA agent runs exclusively on Windows 10/11. The EMA
+  server requires Windows Server 2019/2022. There is no Linux support — not for
+  managed endpoints, not for the management server. Linux support has been
+  mentioned as a long-term roadmap item with no committed timeline.
+- **Proprietary and closed-source.** EMA cannot be extended, embedded, or
+  customized. It is a standalone console, not a platform component.
+- **Single-tenant.** EMA serves one enterprise at a time. It has no multi-tenant
+  isolation model.
+- **Imperative model.** EMA operates on a request-response basis. There is no
+  desired-state reconciliation or automatic convergence.
+
+**Intel Endpoint Cloud Services (ECS):**
+- **Windows-only.** Intel's own documentation states: "Intel ECS does not
+  currently support Linux operating systems." The endpoint agent/driver is
+  available for Windows only. Partner integrations (Workspace ONE chip-to-cloud,
+  Intune) target Windows Intel vPro PCs exclusively.
+- **Proprietary, Intel-hosted SaaS.** ECS is not downloadable or self-hostable.
+  It is a multi-tenant Intel cloud service consumed via partner APIs. It is not
+  available directly to end customers — only through ISV/OEM integrations.
+- **Not a standalone product.** ECS has no UI, no CLI, no direct operator
+  interface. It is a backend that UEM vendors embed. You cannot "use ECS" without
+  a compatible management platform (Workspace ONE, Intune, etc.).
+- **No versioning or release transparency.** Intel does not publish version
+  numbers, release dates, or changelogs for ECS. It is treated as an opaque
+  cloud service.
+
+**The common constraint:** Neither EMA nor ECS supports Linux endpoints. Intel's
+own guidance for "Intel vPro management on Linux" points away from both products
+and toward DMT or EMA's future roadmap. Today, there is no Intel-supported
+fleet-scale AMT management solution for Linux.
+
+Edge infrastructure runs Linux. Cell towers, retail gateways, factory
+controllers, autonomous systems — the vast majority are Linux-based. Neither EMA
+nor ECS can manage them.
+
+**EOM fills this gap: it is the fleet-scale AMT management platform for Linux
+edge infrastructure, built cloud-native on open-source DMT.**
 
 ### Where EOM Adds Value
 
-EOM should not duplicate capabilities that EMA, ECS, or Fleet Services already
-provide as standalone AMT management. Instead, EOM's value comes from:
+EOM is to Linux edge infrastructure what EMA is to Windows enterprise endpoints —
+but built on fundamentally different architecture:
 
-1. **Edge-platform integration** — OOB capabilities woven into the same inventory,
+1. **Linux-native.** EOM manages Linux edge nodes. EMA cannot. This is not a
+   feature gap — it is a platform gap. The entire edge infrastructure market is
+   unreachable by EMA.
+2. **Open source and cloud-native.** EOM runs on Kubernetes, built on open-source
+   DMT. EMA is proprietary Windows Server software. Organizations that won't
+   deploy Windows Server in their edge management stack cannot use EMA.
+3. **Edge-platform integration** — OOB capabilities woven into the same inventory,
    CLI, API, and observability stack that operators already use for OS and workload
    management. No separate AMT console.
-2. **Desired-state reconciliation** — declare intent, system converges. EMA and
-   Fleet Services are largely imperative.
-3. **Multi-tenant isolation** — EOM is built for multi-tenant edge deployments.
+4. **Desired-state reconciliation** — declare intent, system converges. EMA is
+   imperative.
+5. **Multi-tenant isolation** — EOM is built for multi-tenant edge deployments.
    EMA serves one enterprise at a time.
-4. **Capabilities that don't exist in any Intel AMT product** — scheduling tied
+6. **Capabilities that don't exist in any Intel AMT product** — scheduling tied
    to the edge platform's schedule framework, observability-stack integration,
    natural language via MCP, automated diagnostics workflows.
 
-This proposal identifies opportunities in two categories:
+### Opportunity Categories
 
-- **EOM Gap** — DMT capabilities that EOM does not yet surface, where EMA or
-  ECS already provide equivalent functionality. These are catch-up items: they
-  close parity gaps but do not differentiate EOM.
-- **DMT Augmentation** — new value that goes beyond what any Intel AMT product
-  provides, leveraging EOM's edge-platform integration, reconciliation model, or
-  observability infrastructure.
+Because EMA cannot manage Linux endpoints, capabilities that EMA provides for
+Windows do not exist for the Linux edge world. Within the Intel AMT ecosystem,
+every capability in this proposal is novel for Linux edge infrastructure — no
+Intel AMT product serves this market today.
+
+For clarity, we still categorize opportunities relative to the broader Intel AMT
+landscape:
+
+- **Gap** — DMT capabilities that EOM does not yet surface. EMA provides
+  equivalent functionality for Windows endpoints, but no solution exists for
+  Linux. These are not "catch-up" items — they are greenfield for EOM's target
+  market.
+- **Augmentation** — new value that goes beyond what any Intel AMT product
+  provides on any platform, leveraging EOM's edge-platform integration,
+  reconciliation model, or observability infrastructure.
+- **Gap + Augmentation** — EOM both surfaces a DMT capability and adds value
+  beyond what existing products offer (e.g., fleet-scale event log aggregation
+  with observability-stack integration).
 
 Each opportunity is grounded in what DMT provides today, what EOM infrastructure
 exists to support it, and what new work is required.
@@ -67,7 +128,7 @@ exists to support it, and what new work is required.
 
 ### 1. Bulk Power Operations ✅
 
-**Gap:** Power actions are per-device only. No bulk power-off/on/cycle.
+**Gap + Augmentation:** Power actions are per-device only. No bulk power-off/on/cycle.
 
 **DMT surface:** MPS POST `/power/action/:guid` — per-device.
 
@@ -80,13 +141,13 @@ The reconciliation engine already handles execution, retries, and status. This i
 the lowest-effort, highest-impact opportunity — it uses only existing server-side
 code.
 
-**Status:** Plan written in PLAN-BULK-POWER.md.
+**Status:** Implemented for 2026.1.
 
 ---
 
 ### 2. Scheduled Power Operations
 
-**Gap:** No way to schedule power actions for a future time or on a recurring basis.
+**Augmentation:** No way to schedule power actions for a future time or on a recurring basis.
 
 **DMT surface:** MPS provides AMT alarm clock management
 (IPS_AlarmClockOccurrence) for hardware-level wake timers, but these are per-device
@@ -114,7 +175,7 @@ host power state patching.
 
 ### 3. AMT Event Log Monitoring and Alerting
 
-**Gap:** EOM does not expose AMT event logs.
+**Gap + Augmentation:** EOM does not expose AMT event logs.
 
 **DMT surface:** MPS GET `/log/event/:guid` returns hardware event log entries —
 watchdog state changes, authentication failures, boot failures, firmware progress
@@ -152,19 +213,27 @@ Loki push integration.
 
 ---
 
-### 4. Certificate Lifecycle Management
+### 4. Certificate Inventory and Bulk Deployment
 
-**Gap:** EOM does not manage AMT TLS or 802.1X certificates.
+**Gap:** EOM does not manage AMT TLS or 802.1X certificates. EMA provides this
+for Windows endpoints; no solution exists for Linux edge nodes.
 
-**DMT surface:** MPS provides full certificate CRUD — list, add, delete
-certificates on a device. This covers TLS client certificates, trusted root CAs,
-and 802.1X wireless/wired credential contexts.
+**DMT surface:** MPS provides certificate CRUD — list, add, delete certificates
+on a device. This covers TLS client certificates, trusted root CAs, and 802.1X
+wireless/wired credential contexts.
 
 **EOM infrastructure:** None for certificates specifically. But the desired-state
 model and reconciliation pattern could apply here.
 
-**Opportunity:** At fleet scale, certificate management becomes a real operational
-burden:
+**Scope:** This proposal covers inventory, expiration visibility, and bulk
+deployment of certificates. It does not address issuance, key generation/storage,
+renewal automation, revocation (CRL/OCSP), or certificate authority integration —
+those are orthogonal concerns owned by the organization's PKI infrastructure.
+EOM's role is operational visibility and fleet-scale distribution, not acting as
+a certificate authority.
+
+**Opportunity:** At fleet scale, certificate operational burden is about
+visibility and deployment:
 
 - **Expiration tracking.** Query certificate expiry dates across the fleet and
   alert before certificates expire. A single expired TLS cert can silently break
@@ -173,9 +242,10 @@ burden:
   example, when rotating the MPS TLS certificate.
 - **Certificate inventory.** "Which devices still have the old CA cert?"
 
-This is indisputable value: DMT can manage certs one device at a time, but
-tracking expiry and pushing updates across hundreds of devices is manual and
-error-prone without fleet-level orchestration.
+No AMT certificate management exists for Linux edge nodes. EOM's approach
+integrates with the edge platform's inventory and observability stack —
+expiration alerts via Grafana, cert state queryable alongside power and AMT
+state in the same API.
 
 **New work:** Certificate inventory model (or extension of host resource),
 collection service, expiration alerting, bulk deployment workflow.
@@ -185,11 +255,12 @@ collection service, expiration alerting, bulk deployment workflow.
 ### 5. Boot Orchestration
 
 **Gap:** EOM does not expose boot options beyond what the power action implicitly
-uses.
+uses. EMA provides remote boot/IDE-R for Windows endpoints; no equivalent exists
+for Linux edge nodes.
 
 **DMT surface:** MPS supports a wide range of boot targets: HTTPS boot (with URL
-and credentials), PXE boot, IDE-R CD/floppy, BIOS setup, diagnostic mode, secure
-erase, WinRE, PBA. It also exposes boot capabilities per device (what the hardware
+and credentials), PXE boot, IDE-R CD/floppy, BIOS setup, diagnostic mode, and
+secure erase. It also exposes boot capabilities per device (what the hardware
 supports) and available boot sources.
 
 **EOM infrastructure:** The device controller already sets boot configuration as
@@ -215,10 +286,16 @@ flags, capability query integration.
 
 ### 6. Power Policies and Guardrails
 
-**Gap:** No guardrails on power operations. Any authorized operator can power off
-any host.
+**Gap + Augmentation:** No guardrails on power operations. Any authorized operator
+can power off any host.
 
 **DMT surface:** No policy layer — MPS executes whatever it receives.
+
+**Existing Intel AMT coverage:** EMA and ECS configure AMT hardware-level power
+profiles (S0/S3/S5 reachability, AC power behavior) for Windows endpoints. These
+control what the firmware does, not what operators are allowed to do. No Intel AMT
+product on any platform provides operational guardrails (metadata-based protection
+rules, approval workflows).
 
 **EOM infrastructure:** The `PowerCommandPolicy` enum (IMMEDIATE/ORDERED) exists
 in the proto but is not implemented. OS update policies exist as a pattern. Metadata
@@ -236,8 +313,13 @@ on hosts can serve as policy selectors.
 This is particularly valuable for bulk power operations — the more hosts an
 operator can affect with one command, the more important guardrails become.
 
-**New work:** Policy resource definition, policy evaluation in the device
-controller or CLI, metadata-based policy selectors.
+**Enforcement:** Policy evaluation must happen server-side in the device
+controller to be a real guardrail — CLI-only enforcement is bypassable through
+the API or other clients. The CLI may additionally surface policy warnings for
+operator convenience, but the device controller is the enforcement point.
+
+**New work:** Policy resource definition, server-side policy evaluation in the
+device controller, metadata-based policy selectors.
 
 ---
 
@@ -245,7 +327,8 @@ controller or CLI, metadata-based policy selectors.
 
 **Gap:** EOM's hardware inventory comes from the OS level (HDA via ipmitool) and
 AMT feature detection (PMA via rpc amtinfo). It does not query the full AMT
-hardware information.
+hardware information. EMA reads AMT hardware classes for Windows endpoints; no
+equivalent exists for Linux edge nodes.
 
 **DMT surface:** MPS GET `/hardwareInfo/:guid` returns firmware-level hardware
 data: BIOS vendor and version, CPU details, memory configuration, storage devices,
@@ -270,7 +353,9 @@ resource or related model, CLI/API exposure.
 ### 8. AMT Feature Configuration at Scale
 
 **Gap:** EOM does not manage AMT feature flags (KVM enabled, SOL enabled, user
-consent mode, etc.).
+consent mode, etc.). EMA provides this as a core function for Windows endpoints;
+no equivalent exists for Linux edge nodes. EOM's differentiator is desired-state
+drift detection and reconciliation.
 
 **DMT surface:** MPS GET/POST `/features/:guid` — query and set which AMT features
 are enabled, and what user consent policy is in effect (None, KVM-only, All).
@@ -294,8 +379,9 @@ device controller, CLI/API exposure.
 
 ### 9. OS Power Saving State Management
 
-**Gap:** MPS supports transitioning devices between full power and OS power saving
-modes (action codes 500/501), but EOM does not expose this capability.
+**Gap + Augmentation:** MPS supports transitioning devices between full power and
+OS power saving modes (action codes 500/501), but EOM does not expose this
+capability. Neither EMA, ECS, nor Fleet Services expose this either.
 
 **DMT surface:** MPS handles OS power saving state transitions with validation
 (checks current state before acting, handles UNKNOWN and UNSUPPORTED states).
@@ -318,10 +404,12 @@ CLI/API exposure.
 
 ### 10. Natural Language Query and Action via MCP
 
-**Gap:** Operators must know CLI syntax, filter expressions, and valid power state
-values to manage the fleet. The learning curve is steep and error-prone.
+**Augmentation:** Operators must know CLI syntax, filter expressions, and valid
+power state values to manage the fleet. The learning curve is steep and
+error-prone.
 
-**DMT surface:** Not applicable — DMT has no natural language interface.
+**Existing Intel AMT coverage:** No Intel AMT product on any platform has a
+natural language interface.
 
 **EOM infrastructure:** EOM already exposes a structured API with AIP-160 filter
 expressions, host metadata, power states, AMT states, and site/region hierarchy.
@@ -352,13 +440,15 @@ patch, power action, AMT state queries). Confirmation flow for destructive actio
 
 ### 11. Automated Remote Diagnostics
 
-**Gap:** When a host is unresponsive, an operator must manually check power state,
-pull event logs, start a KVM session, and optionally boot to BIOS or diagnostic
-mode — each as separate actions across different CLI commands or API calls.
+**Augmentation:** When a host is unresponsive, an operator must manually check
+power state, pull event logs, start a KVM session, and optionally boot to BIOS
+or diagnostic mode — each as separate actions across different CLI commands or
+API calls.
 
-**DMT surface:** MPS provides the individual pieces: power state query, event log
-retrieval, KVM session start, boot to BIOS/diagnostic mode. But these are all
-independent per-device API calls with no orchestration.
+**Existing Intel AMT coverage:** EMA enables manual diagnostic workflows for
+Windows endpoints (KVM, boot to BIOS, file transfer). No Intel AMT product
+provides automated diagnostics on any platform, and no solution exists for
+Linux edge nodes.
 
 **EOM infrastructure:** Power state and KVM/SOL session state in inventory, event
 log collection (idea #3), boot target selection via MPS.
@@ -376,6 +466,10 @@ This turns EOM from a bag of individual OOB APIs into an integrated diagnostic
 tool. The value is strongest for remote and edge locations where physical access
 is expensive or impossible — exactly EOM's target environment.
 
+**Dependencies:** Requires event log collection (#3) to be implemented first —
+without it, step 2 of the workflow has no data source. The effort estimate
+assumes #3 is already in place.
+
 **New work:** Diagnostic workflow orchestration (CLI command or API operation),
 integration with event log collection, conditional KVM/boot-mode triggers.
 
@@ -383,34 +477,38 @@ integration with event log collection, conditional KVM/boot-mode triggers.
 
 ### Prioritization
 
-| # | Opportunity | Category | Existing Intel AMT Coverage | Effort | Value |
+| # | Opportunity | Category | Existing Coverage (Windows only) | Effort | Value |
 |---|---|---|---|---|---|
-| 1 | ✅ Bulk power operations | Augmentation | EMA: native. ECS: via API. Fleet Services: via Intune. | Low | High |
-| 2 | Scheduled power operations | Augmentation | EMA: no native scheduling (API + external). ECS/Fleet Services: via UEM. | Medium | High |
-| 3 | Event log monitoring | Gap + Augmentation | EMA: receives events, no aggregation. ECS: API only. Fleet Services: no. | Medium | High |
-| 4 | Certificate lifecycle | Gap | EMA: core function. ECS: API for integrators. Fleet Services: abstracted. | Medium | Medium |
+| 1 | ✅ Bulk power operations | Gap + Augmentation | EMA: native. ECS: via API. Fleet Services: via Intune. | Low | High |
+| 2 | Scheduled power operations | Augmentation | None have native scheduling; EMA relies on external tools. | Medium | High |
+| 3 | Event log monitoring | Gap + Augmentation | EMA: receives events, no fleet aggregation. ECS: API only. Fleet Services: no. | Medium | High |
+| 4 | Certificate inventory & deployment | Gap | EMA: core function. ECS: API for integrators. Fleet Services: abstracted. | Medium | Medium |
 | 5 | Boot orchestration | Gap | EMA: remote boot/IDE-R. ECS: API. Fleet Services: not exposed. | Medium | Medium |
-| 6 | Power policies | Augmentation | EMA: AMT power profiles. ECS: API. Fleet Services: behind the scenes. | Medium | Medium |
+| 6 | Power policies | Gap + Augmentation | EMA: AMT power profiles (hardware-level). No operational guardrails in any product. | Medium | Medium |
 | 7 | Hardware inventory via AMT | Gap | EMA: reads AMT HW classes. ECS: API. Fleet Services: via UEM. | Low | Low |
 | 8 | AMT feature config at scale | Gap | EMA: core function. ECS: API. Fleet Services: automated. | Medium | Low |
 | 9 | OS power saving state | Gap + Augmentation | None of the three expose this. | Low | Low |
 | 10 | Natural language via MCP | Augmentation | None of the three have this. | Medium | High |
-| 11 | Automated remote diagnostics | Augmentation | EMA: manual workflows. ECS: API hooks. Fleet Services: workflow-level. | Medium | High |
+| 11 | Automated remote diagnostics (requires #3) | Augmentation | EMA: manual workflows. ECS: API hooks. Fleet Services: workflow-level. | Medium | High |
 
 **Categories:**
-- **EOM Gap** — DMT capability that EOM does not yet surface. EMA or ECS may
-  already provide equivalent functionality; these are parity items, not
-  differentiators.
-- **Augmentation** — value that goes beyond what any Intel AMT product provides,
-  leveraging EOM's edge-platform integration, reconciliation model, or
-  observability infrastructure.
+- **Gap** — DMT capability that EOM does not yet surface. EMA provides equivalent
+  functionality for Windows endpoints, but no solution exists for Linux edge
+  infrastructure. These are greenfield for EOM's target market.
+- **Augmentation** — value that goes beyond what any Intel AMT product provides
+  on any platform, leveraging EOM's edge-platform integration, reconciliation
+  model, or observability infrastructure.
+- **Gap + Augmentation** — EOM both surfaces a DMT capability and adds value
+  beyond what existing products offer (e.g., bulk power with desired-state
+  reconciliation, event logs with Loki/Grafana integration).
 
-**Key takeaway:** The highest-value opportunities are those where EOM adds
-capability that no Intel AMT product provides: scheduled power via the platform's
-schedule framework (#2), observability-stack integration (#3), natural language
-via MCP (#10), and automated diagnostics (#11). Gap items (#4, #5, #7, #8) close
-parity with EMA but do not differentiate — they should be prioritized only where
-edge operators have a concrete need that isn't met by using EMA alongside EOM.
+**Key takeaway:** Because EMA is Windows-only, no Intel AMT product serves the
+Linux edge market today. The "Existing Coverage" column shows what EMA provides
+for Windows endpoints; none of it is available for Linux edge nodes. The
+highest-impact opportunities combine this greenfield positioning with
+architectural advantages unique to EOM: desired-state reconciliation (#1, #6,
+#8), platform-native scheduling (#2), observability-stack integration (#3, #4),
+and capabilities that don't exist on any platform (#10, #11).
 
 ### Rejected Ideas
 
@@ -428,8 +526,7 @@ control regardless of whether the underlying device uses AMT, Redfish, or IPMI.
 HDA already detects IPMI, and real edge deployments have mixed hardware. Rejected
 because EOM is specifically an Intel AMT/vPro management product built on DMT —
 adding Redfish and IPMI execution would broaden the scope significantly, require
-new protocol client libraries, and dilute the vPro value proposition. Rejected
-as this is outside the scope of EOM.
+new protocol client libraries, and dilute the vPro value proposition.
 
 ## Implementation Plan
 
@@ -441,11 +538,11 @@ implemented for 2026.1.
 - Event log monitoring (#3) depends on validating Loki push integration from
   within the DM-Manager or a standalone collector. Need to confirm Loki is
   accessible from the orch-infra namespace.
-- Certificate lifecycle (#4) requires understanding how AMT cert expiry dates
+- Certificate inventory (#4) requires understanding how AMT cert expiry dates
   are exposed through the MPS certificate API — specifically whether expiry is
   returned in the existing GET response or requires parsing the cert blob.
-- Power policies (#6) need design input on whether enforcement belongs in the
-  device controller (server-side) or the CLI (client-side). Server-side is
-  stronger but higher effort.
+- Power policies (#6) need a design for the policy resource schema and
+  evaluation hooks in the reconciliation path (enforcement will be
+  server-side in the device controller).
 - Natural language via MCP (#10) requires deciding which LLM provider to
   integrate with and how to handle authentication for the MCP server.
