@@ -35,7 +35,7 @@ jobs:
   deploy-onprem-eim:
     name: Deploy On-Prem EIM
     runs-on: ubuntu-24.04-16core-64GB
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       KUBECONFIG: /etc/rancher/k3s/k3s.yaml
     steps:
@@ -180,7 +180,7 @@ jobs:
   deploy-onprem-vpro:
     name: Deploy On-Prem vPro
     runs-on: ubuntu-24.04-4core-16GB
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       KUBECONFIG: /etc/rancher/k3s/k3s.yaml
     steps:
