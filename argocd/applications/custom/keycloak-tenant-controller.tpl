@@ -6,7 +6,7 @@ namespace: orch-platform
 image:
   registry: {{.Values.argo.containerRegistryURL }}
   repository: common/keycloak-tenant-controller
-  tag: "nexus-replacement-20260430-0546"
+  tag: "nexus-replacement-20260504-0546"
 proxy:
   httpProxy: {{.Values.argo.proxy.httpProxy}}
   httpsProxy: {{.Values.argo.proxy.httpsProxy}}
