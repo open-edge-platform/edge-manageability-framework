@@ -982,7 +982,7 @@ releases:
     namespace: orch-gateway
     chart: edge-orch/common/charts/certificate-file-server
     wait: true
-    version: 25.2.3
+    version: 26.0.1
     values:
       - values/certificate-file-server.yaml.gotmpl
       - values/resource-overrides.yaml
@@ -999,7 +999,7 @@ releases:
     namespace: orch-ui
     chart: edge-orch/orch-ui/charts/orch-ui-admin
     wait: true
-    version: 4.0.9
+    version: 4.0.10
     values:
       - values/web-ui-admin.yaml.gotmpl
     condition: web-ui-admin.enabled
