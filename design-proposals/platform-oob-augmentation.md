@@ -7,18 +7,58 @@ Last updated: 2026-04-30
 ## Abstract
 
 Edge Out-of-band Manager (EOM) uses DMT (Device Management Toolkit) as its AMT
-execution layer. DMT exposes a rich per-device AMT surface through MPS: power
-control, KVM, SOL, IDE-R, audit logs, event logs, alarm clocks, certificates,
-hardware info, boot options, network configuration, and general settings. Most of
-this surface is consumed directly by callers one device at a time.
+execution layer and is embedded in EMF's edge infrastructure platform — alongside
+OS lifecycle, cluster orchestration, and workload deployment. This proposal
+identifies opportunities to extend EOM's OOB capabilities, positioned against the
+full Intel AMT product landscape.
 
-EOM's value proposition is to take that per-device surface and make it operational
-at fleet scale — with automation, state tracking, and operator workflows. This
-proposal identifies opportunities in two categories:
+### Intel AMT Product Landscape
 
-- **EOM Gap** — DMT capabilities that EOM does not yet expose to operators.
-- **DMT Augmentation** — new value that goes beyond what DMT provides at any
-  scale, such as fleet targeting, scheduling, reconciliation, and alerting.
+Intel offers several ways to consume AMT/vPro manageability:
+
+- **Intel EMA** (Endpoint Management Assistant) — self-hosted AMT management
+  console for enterprise IT. Full AMT surface: bulk power, KVM, boot
+  orchestration, certificate management, AMT feature configuration, hardware
+  inventory. Targets corporate endpoint fleets (laptops, desktops).
+- **Intel Endpoint Cloud Services** (ECS) — Intel-hosted AMT backend APIs for
+  ISV/UEM integration (Intune, Workspace ONE, RMM tools). Same AMT capabilities
+  as EMA, exposed as APIs for partners to embed.
+- **Intel vPro Fleet Services** — Intel-delivered SaaS for IT admins, primarily
+  through Intune. Abstracts AMT activation and basic remote power/KVM. Simplest
+  consumption model.
+- **DMT** (Device Management Toolkit) — open-source microservices (MPS, RPS, RPC)
+  for building custom AMT backends. Execution layer only; no fleet orchestration,
+  scheduling, or multi-tenant lifecycle.
+
+EMA, ECS, and Fleet Services all target enterprise endpoint management. EOM
+targets a different environment: edge infrastructure — cell towers, retail,
+factory floors, remote sites — where AMT is one capability within a broader
+platform that also manages OS, clusters, and workloads.
+
+### Where EOM Adds Value
+
+EOM should not duplicate capabilities that EMA, ECS, or Fleet Services already
+provide as standalone AMT management. Instead, EOM's value comes from:
+
+1. **Edge-platform integration** — OOB capabilities woven into the same inventory,
+   CLI, API, and observability stack that operators already use for OS and workload
+   management. No separate AMT console.
+2. **Desired-state reconciliation** — declare intent, system converges. EMA and
+   Fleet Services are largely imperative.
+3. **Multi-tenant isolation** — EOM is built for multi-tenant edge deployments.
+   EMA serves one enterprise at a time.
+4. **Capabilities that don't exist in any Intel AMT product** — scheduling tied
+   to the edge platform's schedule framework, observability-stack integration,
+   natural language via MCP, automated diagnostics workflows.
+
+This proposal identifies opportunities in two categories:
+
+- **EOM Gap** — DMT capabilities that EOM does not yet surface, where EMA or
+  ECS already provide equivalent functionality. These are catch-up items: they
+  close parity gaps but do not differentiate EOM.
+- **DMT Augmentation** — new value that goes beyond what any Intel AMT product
+  provides, leveraging EOM's edge-platform integration, reconciliation model, or
+  observability infrastructure.
 
 Each opportunity is grounded in what DMT provides today, what EOM infrastructure
 exists to support it, and what new work is required.
@@ -343,36 +383,34 @@ integration with event log collection, conditional KVM/boot-mode triggers.
 
 ### Prioritization
 
-| # | Opportunity | Category | Effort | Value | Key Argument |
+| # | Opportunity | Category | Existing Intel AMT Coverage | Effort | Value |
 |---|---|---|---|---|---|
-| 1 | ✅ Bulk power operations | Augmentation | Low | High | CLI-only change, reconciliation exists |
-| 2 | Scheduled power operations | Augmentation | Medium | High | Schedule framework exists, add power action |
-| 3 | Event log monitoring | Gap + Augmentation | Medium | High | Proactive ops, data exists in AMT |
-| 4 | Certificate lifecycle | Gap + Augmentation | Medium | High | Fleet cert expiry is a real operational pain |
-| 5 | Boot orchestration | Gap + Augmentation | Medium | Medium | Enables reimaging/reprovisioning workflows |
-| 6 | Power policies | Augmentation | Medium | Medium | Essential guardrail for bulk operations |
-| 7 | Hardware inventory enrichment | Gap + Augmentation | Low | Medium | Data exists, collection is straightforward |
-| 8 | AMT feature configuration | Gap + Augmentation | Medium | Medium | Consistency enforcement, drift detection |
-| 9 | OS power saving state | Gap + Augmentation | Low | Low | Energy management, niche use case |
-| 10 | Natural language via MCP | Augmentation | Medium | High | Eliminates CLI learning curve, composes with all other features |
-| 11 | Automated remote diagnostics | Augmentation | Medium | High | Integrated workflow for unresponsive hosts, high demo value |
+| 1 | ✅ Bulk power operations | Augmentation | EMA: native. ECS: via API. Fleet Services: via Intune. | Low | High |
+| 2 | Scheduled power operations | Augmentation | EMA: no native scheduling (API + external). ECS/Fleet Services: via UEM. | Medium | High |
+| 3 | Event log monitoring | Gap + Augmentation | EMA: receives events, no aggregation. ECS: API only. Fleet Services: no. | Medium | High |
+| 4 | Certificate lifecycle | Gap | EMA: core function. ECS: API for integrators. Fleet Services: abstracted. | Medium | Medium |
+| 5 | Boot orchestration | Gap | EMA: remote boot/IDE-R. ECS: API. Fleet Services: not exposed. | Medium | Medium |
+| 6 | Power policies | Augmentation | EMA: AMT power profiles. ECS: API. Fleet Services: behind the scenes. | Medium | Medium |
+| 7 | Hardware inventory via AMT | Gap | EMA: reads AMT HW classes. ECS: API. Fleet Services: via UEM. | Low | Low |
+| 8 | AMT feature config at scale | Gap | EMA: core function. ECS: API. Fleet Services: automated. | Medium | Low |
+| 9 | OS power saving state | Gap + Augmentation | None of the three expose this. | Low | Low |
+| 10 | Natural language via MCP | Augmentation | None of the three have this. | Medium | High |
+| 11 | Automated remote diagnostics | Augmentation | EMA: manual workflows. ECS: API hooks. Fleet Services: workflow-level. | Medium | High |
 
 **Categories:**
+- **EOM Gap** — DMT capability that EOM does not yet surface. EMA or ECS may
+  already provide equivalent functionality; these are parity items, not
+  differentiators.
+- **Augmentation** — value that goes beyond what any Intel AMT product provides,
+  leveraging EOM's edge-platform integration, reconciliation model, or
+  observability infrastructure.
 
-- **EOM Gap** — DMT exposes a per-device capability that EOM does not surface.
-- **DMT Augmentation** — value that goes beyond what DMT provides at any scale
-  (fleet targeting, scheduling, reconciliation, alerting).
-
-Most ideas are both: an underlying gap (DMT capability not surfaced) plus
-augmentation (fleet-scale automation on top). Ideas #1, #2, #6, #10, and #11 are
-pure augmentation — DMT doesn't have those capabilities at any scale either.
-
-The strongest opportunities are those where **the data or capability already exists
-in AMT firmware, DMT exposes it per-device, and EOM adds fleet-scale automation**
-that would be impractical to replicate manually. Certificate lifecycle, scheduled
-power operations, and event log monitoring are the clearest examples of
-indisputable value — they solve problems that literally cannot be solved by calling
-DMT APIs one device at a time.
+**Key takeaway:** The highest-value opportunities are those where EOM adds
+capability that no Intel AMT product provides: scheduled power via the platform's
+schedule framework (#2), observability-stack integration (#3), natural language
+via MCP (#10), and automated diagnostics (#11). Gap items (#4, #5, #7, #8) close
+parity with EMA but do not differentiate — they should be prioritized only where
+edge operators have a concrete need that isn't met by using EMA alongside EOM.
 
 ### Rejected Ideas
 
