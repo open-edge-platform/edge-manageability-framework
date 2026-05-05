@@ -98,7 +98,7 @@ inventory:
 
 tenant-controller:
   image:
-    tag: "nexus-replacement-20260504-0546"
+    tag: "nexus-replacement-20260504"
   managerArgs:
     enableTracing: {{ index .Values.argo "infra-core" "enableTracing" | default false }}
     skipOSProvisioning: {{ index .Values.argo "infra-core" "skipOSProvisioning" | default false }}

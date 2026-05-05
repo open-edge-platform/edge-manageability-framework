@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 image:
-  tag: "nexus-replacement-20260504-0546"
+  tag: "nexus-replacement-20260504"
   registry: {{ .Values.argo.containerRegistryURL }}
 
 imagePullSecrets:
