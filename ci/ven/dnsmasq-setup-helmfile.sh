@@ -46,50 +46,39 @@ echo "Using host IP: $ip_address for all DNS entries"
 
 function setup_dns() {
     sudo apt update -y
-
-    # Capture upstream DNS BEFORE stopping systemd-resolved.
-    # Fall back to Azure's in-VNet resolver (168.63.129.16) which is always
-    # reachable from any Azure-hosted GitHub runner.
-    resolvectl status || true
-    dns_server_ip=$(resolvectl status 2>/dev/null \
-        | awk '/Current DNS Server/ {print $4; exit}')
-    if [ -z "$dns_server_ip" ]; then
-        dns_server_ip=$(awk '/^nameserver/ {print $2; exit}' /etc/resolv.conf)
-    fi
-    if [ -z "$dns_server_ip" ]; then
-        dns_server_ip="168.63.129.16"
-    fi
-    echo "Using upstream DNS: $dns_server_ip"
-
+    resolvectl status
+    dns_server_ip=$(resolvectl status | awk '/Current DNS Server/ {print $4}')
     sudo apt install -y dnsmasq
     sudo systemctl disable systemd-resolved
     sudo systemctl stop systemd-resolved
 
+    # Backup the original dnsmasq configuration file
     echo "Backing up the original dnsmasq configuration..."
     sudo cp /etc/dnsmasq.conf /etc/dnsmasq.conf.bak
 
+    # Get the current hostname
     current_hostname=$(hostname)
     echo "Adding hostname '$current_hostname' to /etc/hosts..."
     echo "$ip_address $current_hostname" | sudo tee -a /etc/hosts > /dev/null
 
+    # Unlink and recreate /etc/resolv.conf
     echo "Configuring /etc/resolv.conf..."
-    sudo unlink /etc/resolv.conf || true
+    sudo unlink /etc/resolv.conf
     cat <<EOL | sudo tee /etc/resolv.conf
 nameserver 127.0.0.1
 options trust-ad
 EOL
 
+    # Configure dnsmasq
     echo "Configuring dnsmasq..."
     cat <<EOL | sudo tee /etc/dnsmasq.conf
 interface=$interface_name
-interface=lo
-interface=virbr0
-bind-dynamic
+bind-interfaces
 log-queries
 log-facility=/var/log/dnsmasq.log
 dhcp-option=interface:$interface_name,option:dns-server,$ip_address
+server=$ip_address
 server=$dns_server_ip
-server=168.63.129.16
 server=8.8.8.8
 EOL
 }
