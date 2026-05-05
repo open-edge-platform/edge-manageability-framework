@@ -61,11 +61,12 @@ EOL
     echo "Configuring dnsmasq..."
     cat <<EOL | sudo tee /etc/dnsmasq.conf
 interface=$interface_name
-bind-interfaces
+interface=lo
+interface=virbr0
+bind-dynamic
 log-queries
 log-facility=/var/log/dnsmasq.log
 dhcp-option=interface:$interface_name,option:dns-server,$ip_address
-server=$ip_address
 server=$dns_server_ip
 server=8.8.8.8
 EOL
