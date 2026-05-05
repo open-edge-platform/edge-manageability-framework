@@ -81,13 +81,16 @@ argo:
   # service will be accessible via `web-ui.orchestrator.io`. Not to be confused with the K8s cluster domain.
   clusterDomain: {{ .Values.clusterDomain }}
 
-{{- if or (not .Values.enableAppOrch) (not (or .Values.enableUi .Values.enableUiDev)) }}
+{{- if or (not .Values.enableAppOrch) (not .Values.enableClusterOrch) (not (or .Values.enableUi .Values.enableUiDev)) }}
   enabled:
 {{- if not .Values.enableAppOrch }}
     copy-app-gitea-cred-to-fleet: false
     copy-ca-cert-gitea-to-app: false
     copy-ca-cert-gitea-to-cluster: false
     copy-cluster-gitea-cred-to-fleet: false
+{{- end }}
+{{- if not .Values.enableClusterOrch }}
+    copy-ca-cert-gateway-to-cattle: false
 {{- end }}
 {{- if not (or .Values.enableUi .Values.enableUiDev) }}
     web-ui-root: false
