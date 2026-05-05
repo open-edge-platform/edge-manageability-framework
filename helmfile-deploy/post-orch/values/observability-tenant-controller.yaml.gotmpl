@@ -1,0 +1,14 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+image:
+  registry: {{ .Values.containerRegistryURL }}
+
+{{- if .Values.imagePullSecrets }}
+imagePullSecrets:
+  {{- toYaml . | nindent 2 }}
+{{- else }}
+imagePullSecrets: []
+{{- end }}

@@ -32,4 +32,12 @@ certManager:
   dns01RecursiveNameserversOnly: true
   dns01RecursiveNameservers: "https://dns.google/dns-query"
 
+# ─── Optional Observability settings ────────────────────────────────────────
+edgenode-observability:
+  enabled: false
+edgenode-dashboards:
+  enabled: false
+observability-tenant-controller:
+  enabled: false
+
 {{- end }}

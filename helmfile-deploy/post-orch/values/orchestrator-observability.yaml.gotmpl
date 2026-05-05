@@ -1,0 +1,145 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+grafana:
+  {{- if .Values.imagePullSecrets }}
+  imagePullSecrets:
+    {{- toYaml . | nindent 4 }}
+  {{- else }}
+  imagePullSecrets: []
+  {{- end }}
+  grafana-proxy:
+    registry: {{ .Values.containerRegistryURL }}
+    # Resources: managed by resource-overrides.yaml
+  # Resources: managed by resource-overrides.yaml
+  grafana.ini:
+    server:
+      root_url: https://observability-admin.{{ .Values.clusterDomain }}
+    auth:
+      signout_redirect_url: https://keycloak.{{ .Values.clusterDomain }}/realms/master/protocol/openid-connect/logout?redirect_uri=https%3A%2F%2Fweb-ui.{{ .Values.argo.clusterDomain }}
+    auth.generic_oauth:
+      auth_url: https://keycloak.{{ .Values.clusterDomain }}/realms/master/protocol/openid-connect/auth
+
+loki:
+  loki:
+    storage:
+      s3:
+        endpoint: orchestrator-observability-minio: 9000
+    compactor:
+      retention_enabled: true
+  minio:
+    image:
+      tag: RELEASE.2025-09-07T16-13-09Z
+    mcImage:
+      tag: RELEASE.2025-08-13T08-35-41Z
+
+mimir-distributed:
+  minio:
+    image:
+      tag: RELEASE.2025-09-07T16-13-09Z
+    mcImage:
+      tag: RELEASE.2025-08-13T08-35-41Z
+    deploymentUpdate:
+      type: Recreate
+    makeBucketJob:
+      exitCommand: ""
+    makeUserJob:
+      exitCommand: ""
+    makePolicyJob:
+      exitCommand: ""
+  query_scheduler:
+    enabled: true
+  # Continue using classic architecture (disable ingest storage)
+  # https://grafana.com/docs/helm-charts/mimir-distributed/latest/migration-guides/migrate-helm-chart-5.x-to-6.0/#continue-using-classic-architecture-disable-ingest-storage
+  kafka:
+    enabled: false
+  mimir:
+    structuedConfig:
+      ingest_storage:
+        enabled: false
+        kafka:
+          address: null
+          topic: null
+          auto_create_topic_default_partitiions: null
+      distributor:
+        remote_timeout: null
+      ingester:
+        push_grpc_method_enabled: true
+  gateway:
+    ingress:
+      enabled: false
+    # Buffer settings to handle large headers/cookies
+    nginx:
+      config:
+        serverSnippet: |
+          client_header_buffer_size 64k;
+          large_client_header_buffers 64 128k;
+
+opentelemetry-collector:
+  alternateConfig:
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: ${env:MY_POD_IP}:4317
+          http:
+            endpoint: ${env:MY_POD_IP}:4318
+            include_metadata: true
+    processors:
+      # Used for Tempo to sample 50% of traces, based on TraceID
+      probablistic_sampler:
+        sampling_percentage: 50
+    service:
+      telemetry:
+        metrics:
+          level: detailed
+          readers:
+            - pull:
+                exporter:
+                  prometheus:
+                    host: ${env:MY_POD_IP}
+                    port: 8888
+                    without_type_suffix: true
+                    without_units: true
+
+opentelemetry-collector-daemonset:
+  alternateConfig:
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: ${env:MY_POD_IP}:4317
+          http:
+            endpoint: ${env:MY_POD_IP}:4318
+            include_metadata: true
+      prometheus:
+        config:
+          scrape_configs:
+            - job_name: opentelemetry-collector
+              scrape_interval: 10s
+              static_configs:
+                - targets:
+                    - ${env:MY_POD_IP}:8888
+      service:
+        telemetry:
+          metrics:
+            level: detailed
+            readers:
+              - pull:
+                  exporter:
+                    prometheus:
+                      host: ${env:MY_POD_IP}
+                      port: 8888
+                      without_type_suffix: true
+                      without_units: true
+
+import:
+  tempo:
+    enabled: {{ dig "enabled" true (index .Values "tempo" | default dict) }}
+
+tempo:
+  storage:
+    traces:
+      backend: s3
