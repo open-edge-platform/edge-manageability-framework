@@ -34,7 +34,7 @@ permissions:
 jobs:
   deploy-onprem-eim:
     name: Deploy On-Prem EIM
-    runs-on: ubuntu-24.04-16core-64GB
+    runs-on: ubuntu-24.04-8core-32GB
     timeout-minutes: 20
     env:
       KUBECONFIG: /etc/rancher/k3s/k3s.yaml
