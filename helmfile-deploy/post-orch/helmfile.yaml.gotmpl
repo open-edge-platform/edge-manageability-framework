@@ -691,7 +691,7 @@ releases:
     namespace: orch-iam
     chart: edge-orch/common/charts/tenancy-api-mapping
     wait: true
-    version: 26.0.15
+    version: 26.1.3
     values:
       - values/tenancy-api-mapping.yaml.gotmpl
     condition: tenancy-api-mapping.enabled
@@ -730,7 +730,7 @@ releases:
     namespace: orch-iam
     chart: edge-orch/common/charts/nexus-api-gw
     wait: true
-    version: 26.1.0
+    version: 26.1.2
     values:
       - values/nexus-api-gw.yaml.gotmpl
       - values/resource-overrides.yaml
@@ -947,7 +947,7 @@ releases:
     namespace: orch-infra
     chart: edge-orch/infra/charts/infra-external
     wait: true
-    version: 2.12.12
+    version: 2.14.3
     values:
       - values/infra-external.yaml.gotmpl
     condition: infra-external.enabled
