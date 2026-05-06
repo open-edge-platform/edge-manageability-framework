@@ -1,0 +1,54 @@
+---
+# SPDX-FileCopyrightText: (C) 2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+name: Pre-Merge-EMF-Helmdeploy CI Pipeline
+
+on:
+  pull_request:
+    branches:
+      - EMF_HELMDEPLOY_2026_01
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pre-checks:
+    runs-on: 'ubuntu-latest'
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          persist-credentials: false
+      - name: "Verify Branch Name"
+        uses: open-edge-platform/orch-ci/verify-branch-name@a95228137803b756aae327668c115db235802982  # v2026.1.3
+  pre-merge-pipeline:
+    needs: pre-checks
+    uses: open-edge-platform/orch-ci/.github/workflows/pre-merge.yml@a95228137803b756aae327668c115db235802982  # v2026.1.3
+    with:
+      run_build: false
+      run_lint: false
+      run_security_scans: true
+      run_version_check: false
+      run_test: false
+      trivy_config_path: trivy.yaml
+      
+  final-check:
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    needs: [pre-merge-pipeline]
+    env:
+      RESULT: ${{ needs.pre-merge-pipeline.result }}
+    steps:
+      - name: Final Status Check
+        run: |
+          pre_merge_pipeline_result="${RESULT}"
+
+          echo "Pre-merge pipeline result: $pre_merge_pipeline_result"
+
+          if [ "$pre_merge_pipeline_result" == "success" ] || [ "$pre_merge_pipeline_result" == "skipped" ]; then
+            echo "Pre-merge check passed successfully."
+          else
+            echo "Pre-merge checks failed. PR can't get merged"
+            exit 1
+          fi

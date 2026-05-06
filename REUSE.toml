@@ -1,0 +1,21 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+version = 1
+
+[[annotations]]
+path = [
+  "**/go.sum",
+  "**/*.md",
+  "**/*.json",
+  "**/*.svg", "**/*.png",
+  "**/*.txt",
+  "**/VERSION",
+  "**/.tool-versions",
+  "**/tool-versions",
+  ".github/ISSUE_TEMPLATE/*",
+  ".gitleaksignore",
+]
+SPDX-FileCopyrightText = "2025 Intel Corporation"
+SPDX-License-Identifier = "Apache-2.0"
