@@ -113,7 +113,7 @@ jobs:
           source helmfile-deploy/pre-orch/functions.sh
           check_and_download_dkam_certs "cluster.onprem"
 
-      - name: Generate SSH RSA key pair
+      - name: Generate SSH ECDSA key pair
         shell: bash
         run: |
           ssh-keygen -t ecdsa -b 521 -C "p_host_manager" -f "${HOME}/.ssh/id_ecdsa"
@@ -121,7 +121,7 @@ jobs:
           chmod 644 "${HOME}/.ssh/id_ecdsa.pub"
 
       # EIM Only tests::
-      # From tenancy confihuration to Node Onboarding
+      # From tenancy configuration to Node Onboarding
       - name: Run EIM Only workflow Tests (VEN)
         id: robot-tests
         timeout-minutes: 10
@@ -285,12 +285,7 @@ jobs:
             -v NODE_SSH_USER:${SSH_USER} \
             -v NODE_SSH_PASSWORD:${SSH_PASSWORD} \
             --exitonfailure \
-            --include eim-vpro-01 \
-            --include eim-vpro-02 \
-            --include eim-vpro-03 \
-            --include eim-vpro-04 \
-            --include eim-vpro-05 \
-            --include eim-vpro-07-a \
+            --include vip \
             tests/emf_decomp/eim_vpro/orch_cli_eim_vpro.robot
 
       - name: Upload test artifacts
