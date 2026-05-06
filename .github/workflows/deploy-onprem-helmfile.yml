@@ -109,7 +109,7 @@ jobs:
       - name: Wait for DKAM Full_server.crt and signed_ipxe.efi readiness
         shell: bash
         run: |
-          source helmfile-deploy/pre-orch/functions.sh
+          source pre-orch/functions.sh
           check_and_download_dkam_certs "cluster.onprem"
 
       # Golden Suite — Core Foundation tests:
