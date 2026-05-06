@@ -4,7 +4,7 @@
 
 # OpenEBS LocalPV Deployment
 
-Standalone helmfile for deploying OpenEBS LocalPV dynamic provisioner for EMF on-prem.
+Standalone helmfile for deploying OpenEBS LocalPV dynamic provisioner for EOM on-prem.
 
 Deploys OpenEBS LocalPV v4.3.0 with:
 

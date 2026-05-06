@@ -5,7 +5,7 @@
 # MetalLB Deployment
 
 Standalone helmfile for deploying MetalLB load balancer
-and IP address pool configuration for EMF on-prem.
+and IP address pool configuration for EOM on-prem.
 
 Deploys MetalLB v0.15.2 with two IPAddressPools:
 
