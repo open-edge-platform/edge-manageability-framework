@@ -11,7 +11,7 @@ clusterManager:
     kubeconfig-ttl-hours: 3
   image:
     repository: cluster/cluster-manager
-    tag: "nexus-replacement-20260505"
+    tag: "nexus-replacement-20260506"
     registry:
       name: {{ .Values.argo.containerRegistryURL }}
       imagePullSecrets:

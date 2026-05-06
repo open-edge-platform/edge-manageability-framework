@@ -20,7 +20,7 @@ image:
 
 adm:
   image:
-    tag: "nexus-replacement-20260505"
+    tag: "nexus-replacement-20260506"
   extraEnv:
     - name: TENANT_MANAGER_URL
       value: "http://tenancy-manager.orch-iam.svc:8080"
@@ -46,7 +46,7 @@ adm:
 
 gateway:
   image:
-    tag: "nexus-replacement-20260505"
+    tag: "nexus-replacement-20260506"
   serviceArgs:
     nexus-api-url: "http://tenancy-manager.orch-iam.svc:8080"
   deployment:
