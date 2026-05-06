@@ -3,4 +3,4 @@
 # SPDX-License-Identifier: Apache-2.0
 
 test-automation:
-  version: copilot/fix-hip-pipeline-network-issue
+  version: 0.4.4
