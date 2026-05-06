@@ -41,19 +41,15 @@ case "${UBUNTU_VERSION}" in
 esac
 
 LIBVIRT_PKGS=(
-  libvirt-dev
   libvirt-daemon-system
   libvirt-clients
-  pesign
-  virt-manager
+  libvirt-dev
   ovmf
-  expect
-  minicom
-  socat
-  xterm
+  pesign
   efitools
   xsltproc
-  libxslt1-dev
+  socat
+  expect
 )
 
 # ── Install ───────────────────────────────────────────────────────────────────
