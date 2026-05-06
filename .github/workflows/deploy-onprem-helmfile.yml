@@ -139,7 +139,7 @@ jobs:
 
           source venv_edge-manage-test-automation/bin/activate
           robot -L DEBUG --pythonpath . \
-            --name "EIM Only WF" \
+            --name "EIM" \
             -d robot_output/eim_only \
             -V orchestrator-configs/on-prem.yaml \
             -v PATH_TO_REMOTE_USER_PUB_KEY:${HOME}/.ssh/id_ecdsa.pub \
@@ -277,7 +277,7 @@ jobs:
 
           source venv_edge-manage-test-automation/bin/activate
           robot -L DEBUG --pythonpath . \
-            --name "EIM-vPro Test Suite" \
+            --name "EIM-vPRO" \
             -d robot_output/eim_vpro \
             -V orchestrator-configs/on-prem.yaml \
             -v PXE_IP:${VM_IP} \
