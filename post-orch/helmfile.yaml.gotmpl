@@ -65,6 +65,8 @@ repositories:
 {{- end }}
   - name: stakater
     url: https://stakater.github.io/stakater-charts
+  - name: prometheus
+    url: https://prometheus-community.github.io/helm-charts
   - name: cnpg
     oci: true
     url: ghcr.io/cloudnative-pg/charts
@@ -541,7 +543,7 @@ releases:
 
 
   #############################################################################
-  # Wave 1000 — Traefik pre-config (needs all of Wave 180)
+  # Wave 1000 — Traefik pre-config + Observability (needs all of Wave 180)
   #############################################################################
 
   - name: traefik-pre
@@ -559,6 +561,93 @@ releases:
       - cattle-system/copy-ca-cert-gateway-to-cattle
       - orch-infra/copy-ca-cert-gateway-to-infra
       - orch-infra/copy-keycloak-admin-to-infra
+
+
+  - name: edgenode-observability
+    labels:
+      app: edgenode-observability
+      wave: "1000"
+    namespace: orch-infra
+    chart: edge-orch/o11y/charts/edgenode-observability
+    wait: true
+    version: 0.10.21
+    values:
+      - values/edgenode-observability.yaml.gotmpl
+      - values/resource-overrides.yaml
+    condition: edgenode-observability.enabled
+    needs:
+      - cattle-system/copy-ca-cert-gateway-to-cattle
+      - orch-infra/copy-ca-cert-gateway-to-infra
+      - orch-infra/copy-keycloak-admin-to-infra
+
+
+  - name: edgenode-dashboards
+    labels:
+      app: edgenode-dashboards
+      wave: "1000"
+    namespace: orch-infra
+    chart: edge-orch/o11y/charts/edgenode-dashboards
+    wait: true
+    version: 0.3.10
+    condition: edgenode-dashboards.enabled
+    needs:
+      - cattle-system/copy-ca-cert-gateway-to-cattle
+      - orch-infra/copy-ca-cert-gateway-to-infra
+      - orch-infra/copy-keycloak-admin-to-infra
+      - orch-infra/edgenode-observability
+
+
+  - name: orchestrator-observability
+    labels:
+      app: orchestrator-observability
+      wave: "1000"
+    namespace: orch-infra
+    chart: edge-orch/o11y/charts/orchestrator-observability
+    wait: true
+    version: 0.5.18
+    values:
+      - values/orchestrator-observability.yaml.gotmpl
+      - values/resource-overrides.yaml
+    condition: orchestrator-observability.enabled
+    needs:
+      - cattle-system/copy-ca-cert-gateway-to-cattle
+      - orch-infra/copy-ca-cert-gateway-to-infra
+      - orch-infra/copy-keycloak-admin-to-infra
+
+
+  - name: orchestator-dashboards
+    labels:
+      app: orchestator-dashboards
+      wave: "1000"
+    namespace: orch-platform
+    chart: edge-orch/o11y/charts/orchestrator-dashboards
+    wait: true
+    version: 0.3.2
+    condition: orchestrator-dashboard.enabled
+    needs:
+      - cattle-system/copy-ca-cert-gateway-to-cattle
+      - orch-infra/copy-ca-cert-gateway-to-infra
+      - orch-infra/copy-keycloak-admin-to-infra
+      - orch-platform/orchestrator-observability
+
+
+  - name: orchestrator-prometheus-agent
+    labels:
+      app: orchestrator-prometheus-agent
+      wave: "1000"
+    namespace: orch-platform
+    chart: prometheus/kube-prometheus-stack
+    wait: true
+    version: 79.7.1
+    values:
+      - values/orchestrator-prometheus-agent.yaml.gotmpl
+      - values/resource-overrides.yaml
+    condition: orchestrator-prometheus-agent.enabled
+    needs:
+      - cattle-system/copy-ca-cert-gateway-to-cattle
+      - orch-infra/copy-ca-cert-gateway-to-infra
+      - orch-infra/copy-keycloak-admin-to-infra
+      - orch-platform/orchestrator-observability
 
 
   #############################################################################
@@ -900,7 +989,7 @@ releases:
 
 
   #############################################################################
-  # Wave 2005 — Auth service (needs all of Wave 2000)
+  # Wave 2005 — Auth service + o11y tenant controller (needs all of Wave 2000)
   #############################################################################
 
   - name: auth-service
@@ -919,6 +1008,25 @@ releases:
       - orch-platform/component-status
       - orch-infra/infra-core
       - orch-ui/metadata-broker
+
+
+  - name: observability-tenant-controller
+    labels:
+      app: observability-tenant-controller
+      wave: "2005"
+    namespace: orch-platform
+    chart: edge-orch/o11y/charts/observability-tenant-controller
+    wait: true
+    version: 0.7.1
+    values:
+      - values/observability-tenant-controller.yaml
+      - values/resource-overrides.yaml
+    condition: observability-tenant-controller.enabled
+    needs:
+      - cattle-system/copy-ca-cert-gateway-to-cattle
+      - orch-infra/copy-ca-cert-gateway-to-infra
+      - orch-infra/copy-keycloak-admin-to-infra
+      - orch-platform/orchestrator-observability
 
 
   #############################################################################
