@@ -601,7 +601,7 @@ releases:
     labels:
       app: orchestrator-observability
       wave: "1000"
-    namespace: orch-infra
+    namespace: orch-platform
     chart: edge-orch/o11y/charts/orchestrator-observability
     wait: true
     version: 0.5.18
@@ -615,15 +615,15 @@ releases:
       - orch-infra/copy-keycloak-admin-to-infra
 
 
-  - name: orchestator-dashboards
+  - name: orchestrator-dashboards
     labels:
-      app: orchestator-dashboards
+      app: orchestrator-dashboards
       wave: "1000"
     namespace: orch-platform
     chart: edge-orch/o11y/charts/orchestrator-dashboards
     wait: true
     version: 0.3.2
-    condition: orchestrator-dashboard.enabled
+    condition: orchestrator-dashboards.enabled
     needs:
       - cattle-system/copy-ca-cert-gateway-to-cattle
       - orch-infra/copy-ca-cert-gateway-to-infra
@@ -1026,7 +1026,6 @@ releases:
       - cattle-system/copy-ca-cert-gateway-to-cattle
       - orch-infra/copy-ca-cert-gateway-to-infra
       - orch-infra/copy-keycloak-admin-to-infra
-      - orch-platform/orchestrator-observability
 
 
   #############################################################################
