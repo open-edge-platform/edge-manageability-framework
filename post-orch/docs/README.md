@@ -4,8 +4,8 @@
 
 # Helmfile Deployment Guide
 
-Helmfile-based deployment for the Edge Manageability
-Framework (EMF). This guide covers the deployment flow,
+Helmfile-based deployment for Intel Edge Out-of-Band
+Manageability (EOM). This guide covers the deployment flow,
 available profiles, configuration, and troubleshooting
 for on-premises installations.
 
@@ -38,8 +38,8 @@ for on-premises installations.
 
 ## Overview
 
-The `helmfile-deploy/` folder contains everything needed
-to deploy EMF onto a Kubernetes cluster using
+The `post-orch/` folder contains everything needed
+to deploy EOM onto a Kubernetes cluster using
 [Helmfile](https://github.com/helmfile/helmfile).
 The deployment is driven by a single script
 (`post-orch-deploy.sh`) that:
@@ -66,7 +66,7 @@ management, Cluster Orchestration, etc.).
 ## Folder Structure
 
 ```text
-helmfile-deploy/
+post-orch/
 ├── post-orch-deploy.sh        # Main script
 ├── post-orch-setup.sh         # Pre-deployment setup
 ├── post-orch.env              # Environment config
@@ -97,7 +97,7 @@ helmfile-deploy/
 
 ## Deployment Profiles
 
-EMF uses a layered profile system. Each profile builds
+EOM uses a layered profile system. Each profile builds
 on the EIM base and adds additional components.
 
 ### onprem-eim
@@ -245,7 +245,7 @@ Set the deployment profile in `post-orch.env`:
 Edit `post-orch.env` with your environment values:
 
 ```bash
-cd helmfile-deploy/
+cd post-orch/
 
 # Edit the configuration file
 vi post-orch.env
@@ -262,7 +262,7 @@ At minimum, update:
 
 ### Step 2: Run Setup
 
-Prepare the cluster for EMF deployment:
+Prepare the cluster for EOM deployment:
 
 ```bash
 ./post-orch-setup.sh install
@@ -437,7 +437,7 @@ PG_POD=$(kubectl get pods -n orch-database \
 
 for secret in $(kubectl get secrets \
   -n orch-database \
-  -l managed-by=edge-manageability-framework \
+  -l managed-by=edge-out-of-band-manageability \
   --field-selector type=kubernetes.io/basic-auth \
   -o jsonpath='{range .items[*]}{.metadata.name}{" "}{end}')
 do
@@ -493,7 +493,7 @@ kubectl logs <pod-name> -n <namespace> \
 Every deployment creates a timestamped log file:
 
 ```bash
-ls -lt helmfile-deploy/logs/
+ls -lt post-orch/logs/
 ```
 
 ### Inspect Computed Values
