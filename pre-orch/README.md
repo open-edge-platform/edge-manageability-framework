@@ -71,7 +71,7 @@ them later using the helmfile directly. First source the env file, then run
 from the `pre-orch/` directory:
 
 ```bash
-cd helmfile-deploy/pre-orch
+cd pre-orch
 source pre-orch.env
 ```
 

@@ -5,7 +5,7 @@
 # MetalLB Deployment
 
 Standalone helmfile for deploying MetalLB load balancer
-and IP address pool configuration for EMF on-prem.
+and IP address pool configuration for EOM on-prem.
 
 Deploys MetalLB v0.15.2 with two IPAddressPools:
 
@@ -15,7 +15,7 @@ Deploys MetalLB v0.15.2 with two IPAddressPools:
 ## Usage
 
 ```bash
-cd helmfile-deploy/metallb
+cd pre-orch/metallb
 
 # Install
 TRAEFIK_IP=192.168.99.30 HAPROXY_IP=192.168.99.40 helmfile apply

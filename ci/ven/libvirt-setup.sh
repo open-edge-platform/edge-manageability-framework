@@ -1,118 +1,122 @@
 #!/bin/bash
-# SPDX-FileCopyrightText: (C) 2025 Intel Corporation
+# SPDX-FileCopyrightText: (C) 2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
+#
+# Installs and configures libvirt + QEMU/KVM on the GitHub Actions runner
+# so that VEN (virtual edge node) VMs can be booted via libvirt.
+#
+# Supports Ubuntu 22.04 (jammy) and 24.04 (noble).
 
-# Check virtualization environment
+set -euxo pipefail
+
+# ── Detect environment ────────────────────────────────────────────────────────
 if command -v systemd-detect-virt &>/dev/null; then
-  env_type=$(systemd-detect-virt)
+  env_type=$(systemd-detect-virt || true)
   if [ "$env_type" == "none" ]; then
-    echo "Bare Metal continuing install"
+    echo "Bare metal — continuing install"
   else
-    echo "Running in a VM: $env_type"
+    echo "Running in a VM: $env_type (nested virt required)"
   fi
-else
-  echo "systemd-detect-virt not found. Install or try another method."
 fi
 
-# Update package list
+# Source /etc/os-release to detect Ubuntu version
+# shellcheck disable=SC1091
+. /etc/os-release
+UBUNTU_VERSION="${VERSION_ID:-}"
+echo "Detected Ubuntu version: ${UBUNTU_VERSION}"
+
+# ── Pick the right package set per Ubuntu version ─────────────────────────────
+# Ubuntu 24.04 (Noble) dropped the 'qemu' meta-package; use qemu-system-x86 etc.
+case "${UBUNTU_VERSION}" in
+  "24.04")
+    QEMU_PKGS=(qemu-system-x86 qemu-system-common qemu-utils qemu-kvm)
+    ;;
+  "22.04")
+    QEMU_PKGS=(qemu qemu-kvm)
+    ;;
+  *)
+    echo "Unsupported Ubuntu version: ${UBUNTU_VERSION}" >&2
+    exit 1
+    ;;
+esac
+
+LIBVIRT_PKGS=(
+  libvirt-daemon-system
+  libvirt-clients
+  libvirt-dev
+  ovmf
+  pesign
+  efitools
+  xsltproc
+  socat
+  expect
+)
+
+# ── Install ───────────────────────────────────────────────────────────────────
 sudo apt-get update
 sudo apt-get install -y ca-certificates curl
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+  "${QEMU_PKGS[@]}" \
+  "${LIBVIRT_PKGS[@]}"
 
-# TODO: Detect Ubuntu 22.04 or 24.04 and install packages accordingly
-
-# Install virtualization packages
-sudo apt-get install -y qemu qemu-kvm libvirt-dev libvirt-daemon-system libvirt-clients pesign virt-manager ovmf expect minicom socat xterm efitools xsltproc libxslt1-dev
-
-# Start and enable libvirtd service
-sudo systemctl start libvirtd
-sudo systemctl enable libvirtd
-sleep 3
-
-# Add user to virtualization groups
-sudo usermod -aG libvirt "$USER"
-sudo usermod -aG kvm "$USER"
-
-# Backup and configure libvirtd
-sudo cp /etc/libvirt/libvirtd.conf /etc/libvirt/libvirtd.conf.bak
-
-# Update libvirtd configuration
-sudo sed -i 's/^#unix_sock_group = "libvirt"/unix_sock_group = "libvirt"/' /etc/libvirt/libvirtd.conf
-sudo sed -i 's/^#unix_sock_group = "libvirt"/unix_sock_group = "libvirt"/' /etc/libvirt/libvirtd.conf
-
-#TODO detect ubuntu 22.04 or 24.04
-# based on that install softwares
-
-# Install specific packages
-sudo apt-get install -y qemu qemu-kvm libvirt-dev
-
-# Install additional tools
-sudo apt-get install -y libvirt-daemon-system libvirt-clients pesign virt-manager ovmf expect minicom socat xterm efitools
-
-sudo systemctl start libvirtd
-sudo systemctl enable libvirtd
-sleep 3
-sudo usermod -aG libvirt "$USER"
-sudo usermod -aG kvm "$USER"
-
-# Backup the original configuration file
-sudo cp /etc/libvirt/libvirtd.conf /etc/libvirt/libvirtd.conf.bak
-
-# Update the configuration file
-sudo sed -i 's/^#unix_sock_group = "libvirt"/unix_sock_group = "libvirt"/' /etc/libvirt/libvirtd.conf
-# Reload the systemd daemon to apply the changes
-sudo systemctl daemon-reload
-
-#TODO detect ubuntu 22.04 or 24.04
-# based on that install softwares
-
-# Install specific packages
-sudo apt-get install -y qemu qemu-kvm libvirt-dev
-
-# Install additional tools
-sudo apt-get install -y libvirt-daemon-system libvirt-clients pesign virt-manager ovmf expect minicom socat xterm efitools xsltproc
-
-sudo systemctl start libvirtd
-sudo systemctl enable libvirtd
-sleep 3
-sudo usermod -aG libvirt "$USER"
-sudo usermod -aG kvm "$USER"
-
-# Backup the original configuration file
-sudo cp /etc/libvirt/libvirtd.conf /etc/libvirt/libvirtd.conf.bak
-
-# Update the configuration file
-sudo sed -i 's/^#unix_sock_group = "libvirt"/unix_sock_group = "libvirt"/' /etc/libvirt/libvirtd.conf
-sudo sed -i 's/^#unix_sock_rw_perms = "0770"/unix_sock_rw_perms = "0770"/' /etc/libvirt/libvirtd.conf
-
-# Ensure the settings are present in the file if they were not commented out
-grep -q '^unix_sock_group = "libvirt"' /etc/libvirt/libvirtd.conf || echo 'unix_sock_group = "libvirt"' | sudo tee -a /etc/libvirt/libvirtd.conf
-grep -q '^unix_sock_rw_perms = "0770"' /etc/libvirt/libvirtd.conf || echo 'unix_sock_rw_perms = "0770"' | sudo tee -a /etc/libvirt/libvirtd.conf
-
-sudo systemctl restart libvirtd
-# Disable apparmor profiles for libvirt
-sudo ln -sf /etc/apparmor.d/usr.sbin.libvirtd /etc/apparmor.d/disable/
-sudo ln -sf /etc/apparmor.d/usr.lib.libvirt.virt-aa-helper /etc/apparmor.d/disable/
-sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.libvirtd
-sudo apparmor_parser -R /etc/apparmor.d/usr.lib.libvirt.virt-aa-helper
-
-sudo systemctl restart libvirtd
-sleep 2
-sudo systemctl reload apparmor
-sleep 2
-# Verify installations and display versions
-echo "Installed applications and their versions:"
-dpkg -l | grep -E 'qemu|libvirt-daemon-system|ebtables|libguestfs-tools|libxslt-dev|libxml2-dev'
-
-# Check KVM support
-echo "Checking KVM support..."
-if kvm-ok; then
-    echo "KVM acceleration is supported on this system."
-else
-    echo "KVM acceleration is not supported or not enabled. Please check your BIOS/UEFI settings."
+# ── Configure libvirtd ────────────────────────────────────────────────────────
+# Backup once (don't clobber an existing .bak on re-runs)
+if [ ! -f /etc/libvirt/libvirtd.conf.bak ]; then
+  sudo cp /etc/libvirt/libvirtd.conf /etc/libvirt/libvirtd.conf.bak
 fi
-sudo chmod 666 /var/run/libvirt/libvirt-sock || true
+
+# Uncomment unix_sock_group / unix_sock_rw_perms if present, append if not
+sudo sed -i 's/^#\s*unix_sock_group\s*=\s*"libvirt"/unix_sock_group = "libvirt"/' /etc/libvirt/libvirtd.conf
+sudo sed -i 's/^#\s*unix_sock_rw_perms\s*=\s*"0770"/unix_sock_rw_perms = "0770"/' /etc/libvirt/libvirtd.conf
+grep -q '^unix_sock_group = "libvirt"'  /etc/libvirt/libvirtd.conf || \
+  echo 'unix_sock_group = "libvirt"'  | sudo tee -a /etc/libvirt/libvirtd.conf
+grep -q '^unix_sock_rw_perms = "0770"' /etc/libvirt/libvirtd.conf || \
+  echo 'unix_sock_rw_perms = "0770"' | sudo tee -a /etc/libvirt/libvirtd.conf
+
+# ── Add current user to libvirt/kvm groups ────────────────────────────────────
+sudo usermod -aG libvirt "$USER"
+sudo usermod -aG kvm     "$USER"
+
+# ── Enable + start the libvirt daemon ────────────────────────────────────────
+sudo systemctl daemon-reload
+sudo systemctl enable --now libvirtd.service
+sleep 3
+
+# ── Disable AppArmor profiles that interfere with libvirt VM launches ────────
+if [ -f /etc/apparmor.d/usr.sbin.libvirtd ]; then
+  sudo ln -sf /etc/apparmor.d/usr.sbin.libvirtd /etc/apparmor.d/disable/
+  sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.libvirtd || true
+fi
+if [ -f /etc/apparmor.d/usr.lib.libvirt.virt-aa-helper ]; then
+  sudo ln -sf /etc/apparmor.d/usr.lib.libvirt.virt-aa-helper /etc/apparmor.d/disable/
+  sudo apparmor_parser -R /etc/apparmor.d/usr.lib.libvirt.virt-aa-helper || true
+fi
+sudo systemctl reload apparmor || true
+
+# ── Restart libvirtd to pick up config + apparmor changes ────────────────────
+sudo systemctl restart libvirtd.service
+sleep 2
+
+# Loosen socket perms for CI convenience (best-effort)
+sudo chmod 666 /var/run/libvirt/libvirt-sock    || true
 sudo chmod 666 /var/run/libvirt/libvirt-sock-ro || true
-# Restart libvirtd to refresh socket
-sudo systemctl restart libvirtd || true
-virsh list --all
-virsh pool-list --all
+
+# ── Verification (these MUST succeed; pipefail will catch failures) ──────────
+echo "Installed virtualization packages:"
+dpkg -l | grep -E 'qemu|libvirt-daemon-system|libvirt-clients|ovmf|xsltproc' || true
+
+echo "Checking KVM support..."
+if ! kvm-ok; then
+  echo "❌ KVM acceleration is NOT available on this runner. VEN cannot boot." >&2
+  exit 1
+fi
+
+echo "libvirtd status:"
+sudo systemctl --no-pager --full status libvirtd.service
+
+echo "Existing domains / pools / networks:"
+sudo virsh list --all
+sudo virsh pool-list --all
+sudo virsh net-list --all
+
+echo "✅ libvirt setup completed successfully on Ubuntu ${UBUNTU_VERSION}"
