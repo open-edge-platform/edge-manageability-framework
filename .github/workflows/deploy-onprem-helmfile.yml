@@ -35,7 +35,7 @@ jobs:
   deploy-onprem-eim:
     name: Deploy On-Prem EIM
     runs-on: ubuntu-24.04-8core-32GB
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       KUBECONFIG: /etc/rancher/k3s/k3s.yaml
     steps:
@@ -95,6 +95,7 @@ jobs:
 
           # Install tools and Python venv
           make asdf-install
+          make orch-cli
           make venv_edge-manage-test-automation
 
           # Install terraform for Pico VEN provisioning (skip tflint)
@@ -112,11 +113,16 @@ jobs:
           source pre-orch/functions.sh
           check_and_download_dkam_certs "cluster.onprem"
 
-      # Golden Suite — Core Foundation tests:
-      # CF-1: Assess Tenancy Management
-      # CF-2: Verify Tenancy Isolation
-      # CF-3: Provision EN (VEN onboarding)
-      - name: Run Golden Suite Robot Framework Tests (VEN)
+      - name: Generate SSH ECDSA key pair
+        shell: bash
+        run: |
+          ssh-keygen -t ecdsa -b 521 -C "p_host_manager" -f "${HOME}/.ssh/id_ecdsa"
+          chmod 600 "${HOME}/.ssh/id_ecdsa"
+          chmod 644 "${HOME}/.ssh/id_ecdsa.pub"
+
+      # EIM Only tests::
+      # From tenancy configuration to Node Onboarding
+      - name: Run EIM Only workflow Tests (VEN)
         id: robot-tests
         timeout-minutes: 10
         working-directory: edge-manage-test-automation
@@ -128,19 +134,18 @@ jobs:
           . "$HOME/.asdf/asdf.sh"
           KC_ADMIN_PWD=$(kubectl -n orch-platform get secrets platform-keycloak -o jsonpath='{.data.admin-password}' | base64 -d)
           yq eval ".orchestrator.admin_password = \"${KC_ADMIN_PWD}\"" -i orchestrator-configs/on-prem.yaml
-          yq eval '.infra.host.edgenode.hw_info.libvirt_pool_name = "default"'    -i tests/core_foundation/data/cf_data_1_ven_VEN-libvirt_microvisor-nonrt.yaml
-          yq eval '.infra.host.edgenode.hw_info.libvirt_network_name = "default"' -i tests/core_foundation/data/cf_data_1_ven_VEN-libvirt_microvisor-nonrt.yaml
+          yq eval '.infra.host.edgenode.hw_info.libvirt_pool_name = "default"'    -i tests/emf_decomp/data/cf_data_sample.yaml
+          yq eval '.infra.host.edgenode.hw_info.libvirt_network_name = "default"' -i tests/emf_decomp/data/cf_data_sample.yaml
 
           source venv_edge-manage-test-automation/bin/activate
           robot -L DEBUG --pythonpath . \
-            --name "Golden Suite: Core Foundation" \
-            -d robot_output/core_foundation \
+            --name "EIM" \
+            -d robot_output/eim_only \
             -V orchestrator-configs/on-prem.yaml \
+            -v PATH_TO_REMOTE_USER_PUB_KEY:${HOME}/.ssh/id_ecdsa.pub \
             --exitonfailure \
-            --include cf1 \
-            --include cf2 \
-            --include cf3 \
-            tests/core_foundation/core_foundation.robot
+            --include vip \
+            tests/emf_decomp/eim/orch_cli_eim_workflow.robot
 
       - name: Upload test artifacts
         if: always()
@@ -175,7 +180,7 @@ jobs:
   deploy-onprem-vpro:
     name: Deploy On-Prem vPro
     runs-on: ubuntu-24.04-4core-16GB
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       KUBECONFIG: /etc/rancher/k3s/k3s.yaml
     steps:
@@ -206,6 +211,90 @@ jobs:
 
       - name: Create Clean Ubuntu VM
         uses: ./.github/actions/create_clean_vm
+
+      - name: Set VM variables
+        shell: bash
+        run: |
+          echo "VM_NAME=vpro-ubuntu-vm" >> $GITHUB_ENV
+          echo "VM_IP=${VM_IP}" >> $GITHUB_ENV
+          echo "VM_SERIAL=${VM_SERIAL}" >> $GITHUB_ENV
+          echo "SSH_USER=user" >> $GITHUB_ENV
+          echo "SSH_PASSWORD=user" >> $GITHUB_ENV
+          echo "VM Details:"
+          echo "  Name: vpro-ubuntu-vm"
+          echo "  IP: ${VM_IP}"
+          echo "  Serial: ${VM_SERIAL}"
+          echo "  SSH: ssh user@${VM_IP}"
+
+      - name: Read test-automation dependency Version
+        id: read-test-automation-version
+        shell: bash
+        run: |
+          version=$(yq '.test-automation.version' ${{ github.workspace }}/.test-dependencies.yaml | tr -d '\n' | xargs)
+          echo "test-automation version: $version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout edge-manage-test-automation repository with submodules
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          repository: open-edge-platform/edge-manage-test-automation
+          path: edge-manage-test-automation
+          ref: ${{ steps.read-test-automation-version.outputs.version }}
+          submodules: 'recursive'
+          token: ${{ secrets.SYS_EMF_GH_TOKEN }}
+          persist-credentials: false
+
+      - name: Setup test dependencies
+        working-directory: edge-manage-test-automation
+        shell: bash
+        run: |
+          git submodule update --init --recursive
+
+          make orch-cli
+          make venv_edge-manage-test-automation
+
+      # EIM-vPro tests:
+      # EIM-vPro-01: Assess Tenancy Management
+      # CLI-EIM-vPRO-02: Configure Orchestrator CLI
+      # CLI_EIM-vPRO-03: Create Login session to run CLI commands
+      # CLI-EIM-vPRO-04: Verify Orch deployment for EIM-vPRO profile
+      # CLI-EIM-vPRO-05: Register Host
+      # CLI-EIM-vPRO-07-A: Install Agents on Ubuntu VM for VIP via script
+      - name: Run Tests eim-vpro VIP workflow (01-05, 07-A)
+        id: robot-tests
+        timeout-minutes: 20
+        working-directory: edge-manage-test-automation
+        env:
+          REQUESTS_CA_BUNDLE: /usr/local/share/ca-certificates/orch-ca.crt
+          LIBVIRT_DEFAULT_URI: 'qemu:///system'
+        shell: bash
+        run: |
+          KC_ADMIN_PWD=$(kubectl -n orch-platform get secrets platform-keycloak -o jsonpath='{.data.admin-password}' | base64 -d)
+          yq eval ".orchestrator.admin_password = \"${KC_ADMIN_PWD}\"" -i orchestrator-configs/on-prem.yaml
+          yq eval '.infra.host.edgenode.hw_info.libvirt_pool_name = "default"'    -i tests/emf_decomp/data/cf_data_sample.yaml
+          yq eval '.infra.host.edgenode.hw_info.libvirt_network_name = "default"' -i tests/emf_decomp/data/cf_data_sample.yaml
+          yq eval ".infra.host.edgenode.hw_info.serial = \"${VM_SERIAL}\"" -i tests/emf_decomp/data/cf_data_sample.yaml
+
+          source venv_edge-manage-test-automation/bin/activate
+          robot -L DEBUG --pythonpath . \
+            --name "EIM-vPRO" \
+            -d robot_output/eim_vpro \
+            -V orchestrator-configs/on-prem.yaml \
+            -v PXE_IP:${VM_IP} \
+            -v PXE_HOSTNAME:${VM_NAME} \
+            -v NODE_SSH_USER:${SSH_USER} \
+            -v NODE_SSH_PASSWORD:${SSH_PASSWORD} \
+            --exitonfailure \
+            --include vip \
+            tests/emf_decomp/eim_vpro/orch_cli_eim_vpro.robot
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: on-prem-vpro-${{ github.event_name }}-${{ github.event.number }}-robot-report
+          path: |
+            edge-manage-test-automation/robot_output/**/*
 
       - name: Collect diagnostics
         if: always()
