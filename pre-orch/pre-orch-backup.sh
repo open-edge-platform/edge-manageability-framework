@@ -7,7 +7,7 @@
 # Pre-upgrade backup for Edge Orchestrator (helmfile-based deployment).
 # Creates backups of all critical data before running the upgrade.
 #
-# Backup artifacts are written to helmfile-deploy/upgrade-backup/ so they
+# Backup artifacts are written to pre-orch/upgrade-backup/ so they
 # can be consumed by post-orch-deploy.sh upgrade.
 #
 # Usage:
@@ -281,7 +281,7 @@ Usage:
 Options:
   -h    Show this help
 
-Backup artifacts (saved to helmfile-deploy/upgrade-backup/):
+Backup artifacts (saved to pre-orch/upgrade-backup/):
   postgres_secret.yaml            PostgreSQL superuser K8s secret
   ${POSTGRES_NAMESPACE}_backup.sql  Full PostgreSQL database dump
   postgres-secrets-password.txt   Base64-encoded service passwords
