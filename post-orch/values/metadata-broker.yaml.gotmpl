@@ -13,3 +13,8 @@ openidc:
 service:
   traefik:
     namespace: "orch-gateway"
+
+{{- if env "NEXUS_REPLACEMENT_TAG" }}
+image:
+  tag: "{{ env "NEXUS_REPLACEMENT_TAG" }}"
+{{- end }}

@@ -669,9 +669,13 @@ releases:
       app: traefik-extra-objects
       wave: "1200"
     namespace: orch-gateway
+    {{- if eq (env "NEXUS_REPLACEMENT" | default "") "true" }}
+    chart: {{ requiredEnv "ORCH_UTILS_PATH" }}/charts/traefik-extra-objects
+    {{- else }}
     chart: edge-orch/common/charts/traefik-extra-objects
-    wait: true
     version: 26.0.2
+    {{- end }}
+    wait: true
     values:
       - values/traefik-extra-objects.yaml.gotmpl
     condition: traefik-extra-objects.enabled
@@ -706,17 +710,23 @@ releases:
       app: tenancy-manager
       wave: "1210"
     namespace: orch-iam
+    {{- if eq (env "NEXUS_REPLACEMENT" | default "") "true" }}
+    chart: {{ requiredEnv "ORCH_UTILS_PATH" }}/charts/tenancy-manager
+    {{- else }}
     chart: edge-orch/common/charts/tenancy-manager
-    wait: true
     version: 26.1.0
+    {{- end }}
+    wait: true
     values:
       - values/tenancy-manager.yaml.gotmpl
       - values/resource-overrides.yaml
     condition: tenancy-manager.enabled
     needs:
       - orch-boots/haproxy-ingress-pxe-boots
-      - orch-iam/tenancy-datamodel
       - orch-gateway/traefik-extra-objects
+      {{- if ne (env "NEXUS_REPLACEMENT" | default "") "true" }}
+      - orch-iam/tenancy-datamodel
+      {{- end }}
 
 
   #############################################################################
@@ -728,16 +738,22 @@ releases:
       app: nexus-api-gw
       wave: "1220"
     namespace: orch-iam
+    {{- if eq (env "NEXUS_REPLACEMENT" | default "") "true" }}
+    chart: {{ requiredEnv "ORCH_UTILS_PATH" }}/charts/nexus-api-gw
+    {{- else }}
     chart: edge-orch/common/charts/nexus-api-gw
-    wait: true
     version: 26.1.0
+    {{- end }}
+    wait: true
     values:
       - values/nexus-api-gw.yaml.gotmpl
       - values/resource-overrides.yaml
     condition: nexus-api-gw.enabled
     needs:
-      - orch-iam/tenancy-api-mapping
       - orch-iam/tenancy-manager
+      {{- if ne (env "NEXUS_REPLACEMENT" | default "") "true" }}
+      - orch-iam/tenancy-api-mapping
+      {{- end }}
 
 
   #############################################################################
@@ -749,9 +765,13 @@ releases:
       app: keycloak-tenant-controller
       wave: "1250"
     namespace: orch-gateway
+    {{- if eq (env "NEXUS_REPLACEMENT" | default "") "true" }}
+    chart: {{ requiredEnv "ORCH_UTILS_PATH" }}/charts/keycloak-tenant-controller
+    {{- else }}
     chart: edge-orch/common/charts/keycloak-tenant-controller
-    wait: true
     version: 26.1.0
+    {{- end }}
+    wait: true
     values:
       - values/keycloak-tenant-controller.yaml.gotmpl
       - values/resource-overrides.yaml

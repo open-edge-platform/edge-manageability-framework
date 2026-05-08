@@ -5,6 +5,48 @@
 image:
   registry: {{ .Values.containerRegistryURL }}
   repository: common/tenancy-manager
+  {{- if env "NEXUS_REPLACEMENT_TAG" }}
+  tag: "{{ env "NEXUS_REPLACEMENT_TAG" }}"
+  {{- end }}
 imagePullSecrets: []
 
 resources: null
+
+{{- if eq (env "NEXUS_REPLACEMENT" | default "") "true" }}
+# ─── Nexus Replacement: Postgres-backed tenancy-manager ──────────────────────
+# The new tenancy-manager (orch-utils@utils_nexus_replacement, chart v26.1.3+)
+# stores tenancy state in Postgres via Ent and exposes a REST API.
+# These postgres credentials match the secret created by post-orch/pre-orch-config.sh
+# and the orch-iam-iam-tenancy database created by postgresql-secrets.
+postgresql:
+  existingSecret: "iam-tenancy-local-postgresql"
+  existingSecretPasswordKey: "PGPASSWORD"
+  host: "postgresql-cluster-rw.orch-database"
+  database: "orch-iam-iam-tenancy"
+  username: "orch-iam-iam-tenancy_user"
+
+# Registered controllers list. Conditionally include controllers based on which
+# profile components are deployed; this prevents projects from getting stuck
+# waiting for controllers that are not actually running.
+tenancyManager:
+  oidcServerURL: "http://platform-keycloak.orch-platform.svc:8080/realms/master"
+  defaultOrgName: ""
+  defaultProjectName: ""
+  controllers:
+    org:
+      - keycloak-tenant-controller
+    project:
+      {{- if (.Values | get "app-orch-tenant-controller.enabled" false) }}
+      - app-orch-tenant-controller
+      - app-deployment-manager
+      {{- end }}
+      - keycloak-tenant-controller
+      - infra-tenant-controller
+      {{- if (.Values | get "cluster-manager.enabled" false) }}
+      - cluster-manager
+      {{- end }}
+      {{- if and (.Values | get "alerting-monitor.enabled" false) (.Values | get "edgenode-observability.enabled" false) }}
+      - observability-tenant-controller
+      {{- end }}
+      - metadata-broker
+{{- end }}

@@ -5,6 +5,9 @@
 image:
   registry: {{ .Values.containerRegistryURL }}
   repository: common/keycloak-tenant-controller
+  {{- if env "NEXUS_REPLACEMENT_TAG" }}
+  tag: "{{ env "NEXUS_REPLACEMENT_TAG" }}"
+  {{- end }}
 imagePullSecrets: []
 
 resources: null

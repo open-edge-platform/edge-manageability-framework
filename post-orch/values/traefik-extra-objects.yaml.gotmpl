@@ -24,6 +24,13 @@ clusterOrchNodeMatchHost: Host(`cluster-orch-node.{{ .Values.clusterDomain }}`)
 logsNodeMatchHost: Host(`logs-node.{{ .Values.clusterDomain }}`)
 metricsNodeMatchHost: Host(`metrics-node.{{ .Values.clusterDomain }}`)
 giteaMatchHost: Host(`gitea.{{ .Values.clusterDomain }}`)
+{{- if eq (env "NEXUS_REPLACEMENT" | default "") "true" }}
+# Nexus replacement: enable the api.* host route + tenancy-manager IngressRoutes
+# rendered by orch-utils@utils_nexus_replacement charts/traefik-extra-objects.
+apiMatchHost: Host(`api.{{ .Values.clusterDomain }}`)
+nexusReplacement:
+  enabled: true
+{{- end }}
 
 # CSP connect-src for UI
 connectCSPs:

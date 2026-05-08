@@ -92,12 +92,16 @@ audit:
   enabled: true
 
 # ─── Tenancy ─────────────────────────────────────────────────────────────────
+# When NEXUS_REPLACEMENT=true, the legacy tenancy-datamodel and tenancy-api-mapping
+# charts are obsoleted: the new tenancy-manager (Postgres + Ent backed REST service
+# from open-edge-platform/orch-utils@utils_nexus_replacement) embeds the data model
+# and API mapping. Toggling them here keeps a clean release set in both modes.
 tenancy-datamodel:
-  enabled: true
+  enabled: {{ if eq (env "NEXUS_REPLACEMENT" | default "") "true" }}false{{ else }}true{{ end }}
 tenancy-manager:
   enabled: true
 tenancy-api-mapping:
-  enabled: true
+  enabled: {{ if eq (env "NEXUS_REPLACEMENT" | default "") "true" }}false{{ else }}true{{ end }}
 nexus-api-gw:
   enabled: true
 keycloak-tenant-controller:
