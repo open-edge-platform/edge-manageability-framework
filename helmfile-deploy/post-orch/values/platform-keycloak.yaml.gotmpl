@@ -12,6 +12,48 @@ namespace: orch-platform
 
 # Database connection via additionalOptions (read from the postgresql-secrets secret)
 keycloak:
+  podTemplate:
+    initContainers:
+      - name: keycloak-builder
+        image: 'quay.io/keycloak/keycloak:26.6.0'
+        imagePullPolicy: IfNotPresent
+        command:
+          - /bin/bash
+        args:
+          - -c
+          - |
+            set -e
+            /opt/keycloak/bin/kc.sh build \
+              --db=postgres \
+              --health-enabled=true \
+              --metrics-enabled=true \
+              --http-relative-path=/auth/
+
+            mkdir -p /shared/keycloak
+            cp -r /opt/keycloak/* /shared/keycloak/
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+          limits:
+            cpu: 1500m
+            memory: 1Gi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
+          capabilities:
+            drop:
+              - ALL
+          seccompProfile:
+            type: RuntimeDefault
+        volumeMounts:
+          - name: shared-keycloak
+            mountPath: /shared/keycloak
+          - name: tmp
+            mountPath: /tmp
   database:
     usernameSecret:
       name: {{ $dbSecretName }}
@@ -35,7 +77,7 @@ keycloak:
     - name: hostname-strict
       value: "false"
     - name: http-relative-path
-      value: "/"
+      value: "/auth/"
     - name: http-enabled
       value: "true"
     - name: db-url-properties
@@ -50,6 +92,8 @@ keycloak:
       value: INFO
     - name: log-console-output
       value: json
+m2mSecretsExtractor:
+  keycloak_url: http://platform-keycloak.orch-platform.svc.cluster.local:8080/auth
 
 # Keycloak Config CLI job configuration
 keycloakConfigCli:
@@ -142,7 +186,7 @@ keycloakConfigCli:
 
       env:
         - name: KEYCLOAK_URL
-          value: "http://platform-keycloak.orch-platform.svc.cluster.local/"
+          value: "http://platform-keycloak.orch-platform.svc.cluster.local:8080/auth/"
         - name: KEYCLOAK_USER
           valueFrom:
             secretKeyRef:
