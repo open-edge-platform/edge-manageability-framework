@@ -213,6 +213,19 @@ releases:
       - ns-label/namespace-label
 
 
+  - name: prometheus-crd
+    labels:
+      app: promtheus-crd
+      wave: "100"
+    namespace: orch-platform
+    chart: prometheus/prometheus-operator-crds
+    wait: true
+    version: 24.0.1
+    condition: edgenode-observability.enabled
+    needs:
+      - ns-label/namespace-label
+
+
   #############################################################################
   # Wave 105 — Kyverno policies (needs all of Wave 100)
   #############################################################################
@@ -579,6 +592,7 @@ releases:
       - cattle-system/copy-ca-cert-gateway-to-cattle
       - orch-infra/copy-ca-cert-gateway-to-infra
       - orch-infra/copy-keycloak-admin-to-infra
+      - orch-platform/prometheus-crd
 
 
   - name: edgenode-dashboards
@@ -591,9 +605,6 @@ releases:
     version: 0.3.10
     condition: edgenode-dashboards.enabled
     needs:
-      - cattle-system/copy-ca-cert-gateway-to-cattle
-      - orch-infra/copy-ca-cert-gateway-to-infra
-      - orch-infra/copy-keycloak-admin-to-infra
       - orch-infra/edgenode-observability
 
 
@@ -613,6 +624,7 @@ releases:
       - cattle-system/copy-ca-cert-gateway-to-cattle
       - orch-infra/copy-ca-cert-gateway-to-infra
       - orch-infra/copy-keycloak-admin-to-infra
+      - orch-platform/prometheus-crd
 
 
   - name: orchestrator-dashboards
@@ -625,9 +637,6 @@ releases:
     version: 0.3.2
     condition: orchestrator-dashboards.enabled
     needs:
-      - cattle-system/copy-ca-cert-gateway-to-cattle
-      - orch-infra/copy-ca-cert-gateway-to-infra
-      - orch-infra/copy-keycloak-admin-to-infra
       - orch-platform/orchestrator-observability
 
 
@@ -644,9 +653,6 @@ releases:
       - values/resource-overrides.yaml
     condition: orchestrator-prometheus-agent.enabled
     needs:
-      - cattle-system/copy-ca-cert-gateway-to-cattle
-      - orch-infra/copy-ca-cert-gateway-to-infra
-      - orch-infra/copy-keycloak-admin-to-infra
       - orch-platform/orchestrator-observability
 
 
@@ -952,9 +958,6 @@ releases:
       - values/resource-overrides.yaml
     condition: alerting-monitor.enabled
     needs:
-      - cattle-system/copy-ca-cert-gateway-to-cattle
-      - orch-infra/copy-ca-cert-gateway-to-infra
-      - orch-infra/copy-keycloak-admin-to-infra
       - orch-infra/edgenode-observability
 
 
@@ -1046,9 +1049,7 @@ releases:
       - values/resource-overrides.yaml
     condition: observability-tenant-controller.enabled
     needs:
-      - cattle-system/copy-ca-cert-gateway-to-cattle
-      - orch-infra/copy-ca-cert-gateway-to-infra
-      - orch-infra/copy-keycloak-admin-to-infra
+      - orch-infra/edgenode-observability
 
 
   #############################################################################
