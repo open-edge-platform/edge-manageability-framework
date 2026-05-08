@@ -6,12 +6,12 @@
 grafana:
   {{- if .Values.imagePullSecrets }}
   imagePullSecrets:
-    {{- toYaml . | nident 4 }}
+    {{- toYaml . | nindent 4 }}
   {{- else }}
   imagePullSecrets: []
   {{- end }}
   grafana-proxy:
-    registry: {{. Values.containerRegistryURL }}
+    registry: {{ .Values.containerRegistryURL }}
     # Resources: managed by resource-overrides.yaml
   # Resources: managed by resource-overrides.yaml
   grafana.ini:
@@ -105,16 +105,19 @@ opentelemetry-collector:
         metrics:
           receivers:
           - otlp
-          {{- if index .Values.enabled "infra-core" }}
+          {{- $ic := index .Values "infra-core" | default dict }}
+          {{- if eq ($ic.enabled | toString) "true" }}
           - prometheus/infra-exporter
           {{- end }}
-          {{- if index .Values.enabled "app-deployment-manager" }}
-          - prometheus/adm-status
-          {{- end }}
-          {{- if and (index .Values.enabled "multitenant_gateway") (index .Values.enabled "alerting-monitor") (index .Values.enabled "edgenode-observability") }}
+          # add prometheus/adm-status for app-deployment-manager
+          {{- $am := index .Values "alerting-monitor" | default dict }}
+          {{- $eo := index .Values "edgenode-observability" | default dict }}
+          # add check for multitenant_gateway
+          {{- if and (eq ($am.enabled | toString) "true") (eq ($eo.enabled | toString) "true") }}
           - prometheus/observability-tenant-controller
           {{- end }}
-          {{- if and (index .Values.enabled "multitenant_gateway") (index .Values.enabled "observability-tenant-controller") }}
+          {{- $otc := index .Values "observability-tenant-controller" | default dict }}
+          {{- if eq ($otc.enabled | toString) "true" }}
           - prometheus/observability-tenant-controller
           {{- end }}
   # Resources: managed by resource-overrides.yaml

@@ -936,6 +936,29 @@ releases:
 
 
   #############################################################################
+  # Wave 1900 — alerting-monitor (needs all of Wave 1400)
+  #############################################################################
+
+  - name: alerting-monitor
+    labels:
+      app: alerting-monitor
+      wave: "1900"
+    namespace: orch-infra
+    chart: edge-orch/o11y/charts/alerting-monitor
+    wait: true
+    version: 1.7.7
+    values:
+      - values/alerting-monitor.yaml.gotmpl
+      - values/resource-overrides.yaml
+    condition: alerting-monitor.enabled
+    needs:
+      - cattle-system/copy-ca-cert-gateway-to-cattle
+      - orch-infra/copy-ca-cert-gateway-to-infra
+      - orch-infra/copy-keycloak-admin-to-infra
+      - orch-infra/edgenode-observability
+
+
+  #############################################################################
   # Wave 2000 — Core services (needs all of Wave 1400)
   #############################################################################
 
@@ -1019,7 +1042,7 @@ releases:
     wait: true
     version: 0.7.1
     values:
-      - values/observability-tenant-controller.yaml
+      - values/observability-tenant-controller.yaml.gotmpl
       - values/resource-overrides.yaml
     condition: observability-tenant-controller.enabled
     needs:
