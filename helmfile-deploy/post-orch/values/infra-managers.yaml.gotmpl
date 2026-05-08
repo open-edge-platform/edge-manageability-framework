@@ -38,7 +38,7 @@ host-manager:
       grpc:
         name: Host(`infra-node.{{ .Values.clusterDomain }}`)
   oidc:
-    oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
+    oidc_server_url: "http://platform-keycloak.orch-platform.svc/auth/realms/master"
   multiTenancy:
     enforceMultiTenancy: "true"
   # Resources: managed by resource-overrides.yaml
@@ -61,7 +61,7 @@ maintenance-manager:
       grpc:
         name: Host(`update-node.{{ .Values.clusterDomain }}`)
   oidc:
-    oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
+    oidc_server_url: "http://platform-keycloak.orch-platform.svc/auth/realms/master"
   telemetryMgrArgs:
     enableVal: false  # disable telemetry profile validation
   multiTenancy:
@@ -94,7 +94,7 @@ telemetry-manager:
       grpc:
         name: Host(`telemetry-node.{{ .Values.clusterDomain }}`)
   oidc:
-    oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
+    oidc_server_url: "http://platform-keycloak.orch-platform.svc/auth/realms/master"
   multiTenancy:
     enforceMultiTenancy: "true"
   # Resources: managed by resource-overrides.yaml
@@ -136,7 +136,7 @@ attestationstatus-manager:
       grpc:
         name: Host(`attest-node.{{ .Values.clusterDomain }}`)
   oidc:
-    oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
+    oidc_server_url: "http://platform-keycloak.orch-platform.svc/auth/realms/master"
   multiTenancy:
     enforceMultiTenancy: "true"
   # Resources: managed by resource-overrides.yaml

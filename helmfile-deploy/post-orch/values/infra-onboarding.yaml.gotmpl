@@ -154,7 +154,7 @@ onboarding-manager:
   env:
     tinkerActionsVersion: "1.20.2"
     oidc:
-      oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
+      oidc_server_url: "http://platform-keycloak.orch-platform.svc/auth/realms/master"
       clients:
         bypass: [cdn-boots]
     vaultUrl: "http://vault.orch-platform.svc.cluster.local:8200"
@@ -190,7 +190,7 @@ dkam:
   env:
     rs_proxy_address: "rs-proxy.orch-platform.svc.cluster.local:8081/"
     oidc:
-      oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
+      oidc_server_url: "http://platform-keycloak.orch-platform.svc/auth/realms/master"
     mode: {{ $mode | quote }}
   proxies:
     http_proxy: {{ $httpProxy }}
