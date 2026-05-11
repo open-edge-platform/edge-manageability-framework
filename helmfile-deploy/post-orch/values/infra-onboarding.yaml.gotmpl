@@ -159,7 +159,7 @@ onboarding-manager:
         bypass: [cdn-boots]
     vaultUrl: "http://vault.orch-platform.svc.cluster.local:8200"
     vaultRole: "orch-svc"
-    keycloakUrl: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
+    keycloakUrl: "http://platform-keycloak.orch-platform.svc.cluster.local:8080/auth"
     mode: {{ $mode | quote }}
     userName: {{ dig "userName" "user" $io | quote }}
     passWord: {{ dig "passWord" "user" $io | quote }}
@@ -221,7 +221,7 @@ infra-config:
     orchRelease: release.{{ $domain }}
     orchPlatformObsLogs: logs-node.{{ $domain }}:443
     orchPlatformObsMetrics: metrics-node.{{ $domain }}:443
-    orchKeycloak: keycloak.{{ $domain }}:443
+    orchKeycloak: keycloak.{{ $domain }}:443/auth
     orchTelemetry: telemetry-node.{{ $domain }}:443
     orchAttestationStatus: attest-node.{{ $domain }}:443
     orchRegistry: {{ .Values.releaseService.ociRegistry }}:9443

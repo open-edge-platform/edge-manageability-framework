@@ -31,7 +31,7 @@ credentials:
   serviceAccount:
     name: "orch-svc"
   params:
-    keycloakUrl: "http://platform-keycloak.orch-platform.svc.cluster.local:8080"
+    keycloakUrl: "http://platform-keycloak.orch-platform.svc.cluster.local:8080/auth"
     vaultUrl: "http://vault.orch-platform.svc.cluster.local:8200"
   curlImage:
     name: badouralix/curl-jq@sha256
@@ -109,7 +109,7 @@ tenant-controller:
     traceURL: "orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318"
     skipOSProvisioning: {{ dig "skipOSProvisioning" false $ic }}
   oidc:
-    oidc_server_url: "http://platform-keycloak.orch-platform.svc.cluster.local/realms/master"
+    oidc_server_url: "http://platform-keycloak.orch-platform.svc.cluster.local/auth/realms/master"
   # Resources: managed by resource-overrides.yaml
   serviceAccount:
     name: "orch-svc"
