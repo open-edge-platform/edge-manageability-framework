@@ -23,7 +23,7 @@ resources: null
 # IMPORTANT: The regex must match ONLY the tenancy-manager's own routes:
 #   /v1/orgs, /v1/orgs/{name}, /v1/orgs/{name}/status
 #   /v1/projects, /v1/projects/{name}, /v1/projects/{name}/status
-# Project-scoped paths like /v1/projects/{name}/compute/* must fall through
+# Project-scoped paths like "/v1/projects/{name}/compute/*" must fall through
 # to nexus-api-gw which proxies to the appropriate backend service.
 ingress:
   enabled: true
