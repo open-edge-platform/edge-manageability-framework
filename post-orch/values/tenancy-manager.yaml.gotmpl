@@ -12,6 +12,36 @@ imagePullSecrets: []
 
 resources: null
 
+# ─── IngressRoute on websecure with Host + TLS + priority ─────────────────────
+# Default chart values land on `entryPoints: [web]` with no Host match, which
+# is unreachable externally (all external API traffic uses websecure). Without
+# this override, https://api.<domain>/v1/(orgs|projects) falls through to
+# nexus-api-gw's catch-all (priority 30) which cannot resolve projects in
+# nexus-replacement mode (no Nexus CRDs) and returns 400 "Unable to determine
+# the organizations".
+#
+# IMPORTANT: The regex must match ONLY the tenancy-manager's own routes:
+#   /v1/orgs, /v1/orgs/{name}, /v1/orgs/{name}/status
+#   /v1/projects, /v1/projects/{name}, /v1/projects/{name}/status
+# Project-scoped paths like /v1/projects/{name}/compute/* must fall through
+# to nexus-api-gw which proxies to the appropriate backend service.
+ingress:
+  enabled: true
+  entryPoints:
+    - websecure
+  pathMatch: "Host(`api.{{ .Values.clusterDomain }}`) && PathRegexp(`^/v1/(orgs|projects)(/[^/]+(/status)?)?/?$`)"
+  priority: 100
+  middlewares:
+    - name: validate-jwt
+      namespace: orch-gateway
+    - name: secure-headers
+      namespace: orch-gateway
+  tls:
+    options:
+      name: gateway-tls
+      namespace: orch-gateway
+    secretName: {{ .Values.tlsSecret }}
+
 {{- if eq (env "NEXUS_REPLACEMENT" | default "") "true" }}
 # ─── Nexus Replacement: Postgres-backed tenancy-manager ──────────────────────
 # The new tenancy-manager (orch-utils@utils_nexus_replacement, chart v26.1.3+)

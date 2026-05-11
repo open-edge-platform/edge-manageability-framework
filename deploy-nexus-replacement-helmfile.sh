@@ -410,8 +410,11 @@ run_mt_setup() {
     local kc_base="https://keycloak.${ORCH_DOMAIN}"
     local tm_token
     tm_token=$(curl -sk -X POST "${kc_base}/realms/master/protocol/openid-connect/token" \
-        -d client_id=system-client -d username=admin -d "password=${admin_password}" \
-        -d grant_type=password -d scope=openid \
+        --data-urlencode "client_id=system-client" \
+        --data-urlencode "username=admin" \
+        --data-urlencode "password=${admin_password}" \
+        --data-urlencode "grant_type=password" \
+        --data-urlencode "scope=openid" \
         | grep -oP '"access_token"\s*:\s*"\K[^"]+')
     [[ -n "${tm_token}" ]] || die "Failed to acquire KC bearer token"
 
@@ -495,8 +498,11 @@ run_mt_setup() {
     local kc_url="http://localhost:${kc_pf_port}"
     local kc_token
     kc_token=$(curl -s -X POST "${kc_url}/realms/master/protocol/openid-connect/token" \
-        -d client_id=admin-cli -d username=admin -d "password=${admin_password}" \
-        -d grant_type=password | grep -oP '"access_token"\s*:\s*"\K[^"]+')
+        --data-urlencode "client_id=admin-cli" \
+        --data-urlencode "username=admin" \
+        --data-urlencode "password=${admin_password}" \
+        --data-urlencode "grant_type=password" \
+        | grep -oP '"access_token"\s*:\s*"\K[^"]+')
     if [[ -z "${kc_token}" ]]; then
         warn "Failed to get Keycloak admin token — skipping realm role assignment"
     else
