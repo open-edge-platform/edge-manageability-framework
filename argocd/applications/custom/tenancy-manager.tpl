@@ -5,7 +5,7 @@
 image:
   registry: {{.Values.argo.containerRegistryURL }}
   repository: common/tenancy-manager
-  tag: "nexus-replacement-20260508"
+  tag: "nexus-replacement-20260511"
 imagePullSecrets:
   {{- with .Values.argo.imagePullSecrets }}
     {{- toYaml . | nindent 2 }}
