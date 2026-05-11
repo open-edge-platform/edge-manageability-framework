@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 #
-# Helmfile-based deployment for Edge Manageability Framework
+# Helmfile-based deployment for Intel Edge Out-of-Band Manageability
 # Replaces ArgoCD-based deployment with direct helm chart releases
 #
 # Usage:
@@ -691,7 +691,7 @@ releases:
     namespace: orch-iam
     chart: edge-orch/common/charts/tenancy-api-mapping
     wait: true
-    version: 26.0.15
+    version: 26.1.1
     values:
       - values/tenancy-api-mapping.yaml.gotmpl
     condition: tenancy-api-mapping.enabled
@@ -874,7 +874,7 @@ releases:
     namespace: orch-infra
     chart: edge-orch/infra/charts/infra-core
     wait: true
-    version: 2.19.8
+    version: 2.20.1
     values:
       - values/infra-core.yaml.gotmpl
       - values/resource-overrides.yaml
@@ -947,7 +947,7 @@ releases:
     namespace: orch-infra
     chart: edge-orch/infra/charts/infra-external
     wait: true
-    version: 2.12.12
+    version: 2.14.2
     values:
       - values/infra-external.yaml.gotmpl
     condition: infra-external.enabled
@@ -982,7 +982,7 @@ releases:
     namespace: orch-gateway
     chart: edge-orch/common/charts/certificate-file-server
     wait: true
-    version: 26.0.1
+    version: 26.0.2
     values:
       - values/certificate-file-server.yaml.gotmpl
       - values/resource-overrides.yaml

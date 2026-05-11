@@ -210,13 +210,19 @@ install_kubectl() {
 }
 
 install_helmfile() {
+  local desired_version="v1.5.0"
   if cmd_exists helmfile; then
-    return 0
+    local current_version
+    current_version="$(helmfile --version 2>/dev/null | grep -oP 'v[\d.]+')" || true
+    if [[ "$current_version" == "$desired_version" ]]; then
+      return 0
+    fi
+    echo "👉 helmfile found ($current_version) but need $desired_version; upgrading..."
+  else
+    echo "👉 helmfile not found; installing helmfile ${desired_version}..."
   fi
 
   require_cmd curl
-
-  echo "👉 helmfile not found; installing latest helmfile..."
 
   local os arch
   os="$(uname -s | tr '[:upper:]' '[:lower:]')"
@@ -226,8 +232,7 @@ install_helmfile() {
     aarch64|arm64) arch="arm64" ;;
   esac
 
-  local version
-  version="$(curl -fsSL https://api.github.com/repos/helmfile/helmfile/releases/latest | grep '"tag_name"' | cut -d '"' -f 4)"
+  local version="$desired_version"
 
   local tarball="helmfile_${version#v}_${os}_${arch}.tar.gz"
   local url="https://github.com/helmfile/helmfile/releases/download/${version}/${tarball}"
