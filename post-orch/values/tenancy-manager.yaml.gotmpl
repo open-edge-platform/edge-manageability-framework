@@ -78,5 +78,7 @@ tenancyManager:
       {{- if and (.Values | get "alerting-monitor.enabled" false) (.Values | get "edgenode-observability.enabled" false) }}
       - observability-tenant-controller
       {{- end }}
+      {{- if (.Values | get "metadata-broker.enabled" false) }}
       - metadata-broker
+      {{- end }}
 {{- end }}

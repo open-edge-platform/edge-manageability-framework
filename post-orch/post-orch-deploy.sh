@@ -100,7 +100,7 @@ dump_computed_values() {
   echo "📄 Dumping computed values to $VALUES_OUTPUT_DIR"
   rm -rf "$VALUES_OUTPUT_DIR"
   mkdir -p "$VALUES_OUTPUT_DIR"
-  (cd "$SCRIPT_DIR" && helmfile -f helmfile.yaml.gotmpl -e "$HELMFILE_ENV" write-values \
+  (cd "$SCRIPT_DIR" && helmfile -e "$HELMFILE_ENV" write-values \
     --output-file-template "$VALUES_OUTPUT_DIR/{{ .Release.Name }}.yaml" 2>&1) || {
     echo "⚠️  Failed to dump computed values (non-fatal, continuing)"
   }
@@ -115,7 +115,7 @@ dump_computed_values() {
 helmfile_cmd() {
   local action="$1"
   shift
-  (cd "$SCRIPT_DIR" && helmfile -f helmfile.yaml.gotmpl -e "$HELMFILE_ENV" "$@" "$action")
+  (cd "$SCRIPT_DIR" && helmfile -e "$HELMFILE_ENV" "$@" "$action")
 }
 helmfile_sync_chart() {
   local chart="$1"
@@ -193,7 +193,7 @@ helmfile_sync_all() {
   echo "🚀 Running helmfile sync (parallel deployment)..."
   echo ""
   local sync_exit=0
-  (cd "$SCRIPT_DIR" && helmfile -f helmfile.yaml.gotmpl -e "$HELMFILE_ENV" sync --skip-deps --concurrency 4) 2>&1
+  (cd "$SCRIPT_DIR" && helmfile -e "$HELMFILE_ENV" --skip-deps sync --concurrency 4) 2>&1
   sync_exit=$?
   local total_duration=$(( SECONDS - start_time ))
 
@@ -203,7 +203,7 @@ helmfile_sync_all() {
 
   # Get all enabled releases from helmfile
   local enabled_releases
-  enabled_releases=$(cd "$SCRIPT_DIR" && helmfile -f helmfile.yaml.gotmpl -e "$HELMFILE_ENV" list 2>/dev/null \
+  enabled_releases=$(cd "$SCRIPT_DIR" && helmfile -e "$HELMFILE_ENV" list 2>/dev/null \
     | awk 'NR>1 && $3=="true" {print $1}' | sort)
 
   # Build lookup: release -> "status namespace"
@@ -646,7 +646,7 @@ case "$ACTION" in
     if [[ -n "$CHART_NAME" ]]; then
       echo "📄 Dumping computed values for: $CHART_NAME"
       mkdir -p "$VALUES_OUTPUT_DIR"
-      (cd "$SCRIPT_DIR" && helmfile -f helmfile.yaml.gotmpl -e "$HELMFILE_ENV" -l "app=$CHART_NAME" write-values \
+      (cd "$SCRIPT_DIR" && helmfile -e "$HELMFILE_ENV" -l "app=$CHART_NAME" write-values \
         --output-file-template "$VALUES_OUTPUT_DIR/{{ .Release.Name }}.yaml" 2>&1)
       echo "✅ Values written to $VALUES_OUTPUT_DIR/$CHART_NAME.yaml"
     else

@@ -1,7 +1,7 @@
 #!/bin/bash
 # deploy-nexus-replacement-helmfile.sh — Build, deploy, and verify the nexus
 # replacement on a HELMFILE-based orchestrator (k3s + helmfile flow under
-# gnjn-helmfile-wks/edge-manageability-framework/{pre-orch,post-orch}).
+# /edge-manageability-framework/{pre-orch,post-orch}).
 #
 # Scope: onprem-eim profile only.  This script does NOT build or deploy
 # App-Orch (AO), Cluster-Orch (CO), or Observability (O11Y) components because
@@ -32,9 +32,17 @@ set -o pipefail
 # Configuration
 # ──────────────────────────────────────────────────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="${SCRIPT_DIR}"
-
-HELMFILE_EMF_DIR="${HELMFILE_EMF_DIR:-${REPO_ROOT}/gnjn-helmfile-wks/edge-manageability-framework}"
+# If the script is executed from inside the edge-manageability-framework clone
+# (a second copy lives there for convenience), treat its parent as REPO_ROOT
+# so the sibling repos already present at /home/seu/* are reused instead of
+# being re-cloned as untracked children of the EMF working tree.
+if [[ "$(basename "${SCRIPT_DIR}")" == "edge-manageability-framework" ]]; then
+    REPO_ROOT="${REPO_ROOT:-$(dirname "${SCRIPT_DIR}")}"
+    HELMFILE_EMF_DIR="${HELMFILE_EMF_DIR:-${SCRIPT_DIR}}"
+else
+    REPO_ROOT="${REPO_ROOT:-${SCRIPT_DIR}}"
+    HELMFILE_EMF_DIR="${HELMFILE_EMF_DIR:-${REPO_ROOT}/edge-manageability-framework}"
+fi
 PRE_ORCH_DIR="${HELMFILE_EMF_DIR}/pre-orch"
 POST_ORCH_DIR="${HELMFILE_EMF_DIR}/post-orch"
 
@@ -44,7 +52,7 @@ ORCH_METADATA_BROKER_PATH="${ORCH_METADATA_BROKER_PATH:-${REPO_ROOT}/orch-metada
 ORCH_CLI_PATH="${ORCH_CLI_PATH:-${REPO_ROOT}/orch-cli}"
 
 CUSTOM_TAG="${CUSTOM_TAG:-nexus-replacement-$(date +%Y%m%d)}"
-HELMFILE_ENV="${HELMFILE_ENV:-onprem-eim}"
+HELMFILE_ENV="${HELMFILE_ENV:-onprem-vpro}"
 
 TM_SERVICE_NAME="tenancy-manager"
 TM_NAMESPACE="orch-iam"
@@ -337,7 +345,8 @@ run_post_orch() {
 
     load_images_k3s
 
-    ( cd "${POST_ORCH_DIR}" && ./post-orch-deploy.sh install )
+    log "Invoking post-orch-deploy.sh with EMF_HELMFILE_ENV=${EMF_HELMFILE_ENV}"
+    ( cd "${POST_ORCH_DIR}" && EMF_HELMFILE_ENV=onprem-vpro ./post-orch-deploy.sh install )
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -345,7 +354,8 @@ run_post_orch() {
 # ──────────────────────────────────────────────────────────────────────────────
 run_uninstall() {
     step "Uninstalling current helmfile deployment"
-    ( cd "${POST_ORCH_DIR}" && ./post-orch-deploy.sh uninstall ) || warn "post-orch uninstall returned non-zero"
+    export EMF_HELMFILE_ENV="${HELMFILE_ENV}"
+    ( cd "${POST_ORCH_DIR}" && EMF_HELMFILE_ENV="${EMF_HELMFILE_ENV}" ./post-orch-deploy.sh uninstall ) || warn "post-orch uninstall returned non-zero"
 
     log "Removing residual orch-* namespaces..."
     local ns_list=( orch-iam orch-platform orch-gateway orch-infra orch-ui orch-secret \
@@ -559,8 +569,14 @@ verify_helmfile() {
     local failed=0
 
     log "Checking helm releases..."
+    # Releases that are always expected.
     local releases=( tenancy-manager keycloak-tenant-controller nexus-api-gw \
-                     traefik-extra-objects auth-service metadata-broker infra-core )
+                     traefik-extra-objects infra-core )
+    # auth-service and metadata-broker are only enabled in the EIM profile;
+    # the vPro profile explicitly disables them.
+    if [[ "${HELMFILE_ENV}" == "onprem-eim" ]]; then
+        releases+=( auth-service metadata-broker )
+    fi
     for r in "${releases[@]}"; do
         local status
         status=$(helm list -A -f "^${r}\$" --no-headers 2>/dev/null | awk '{print $8}' | head -1)
@@ -577,8 +593,10 @@ verify_helmfile() {
         "orch-iam|tenancy-manager|deployment|tenancy-manager"
         "orch-platform|keycloak-tenant-controller-set|statefulset|keycloak-tenant-controller-pod"
         "orch-infra|tenant-controller|deployment|tenant-controller"
-        "orch-gateway|auth-service|deployment|auth-service"
     )
+    if [[ "${HELMFILE_ENV}" == "onprem-eim" ]]; then
+        checks+=( "orch-gateway|auth-service|deployment|auth-service" )
+    fi
     for entry in "${checks[@]}"; do
         IFS='|' read -r ns name kind container <<< "${entry}"
         local img
@@ -681,7 +699,7 @@ Steps:
 
 Environment variables:
   CUSTOM_TAG          Image tag (default: nexus-replacement-YYYYMMDD)
-  HELMFILE_ENV        Helmfile environment (default: onprem-eim)
+  HELMFILE_ENV        Helmfile environment (default: onprem-vpro)
   HELMFILE_EMF_DIR    Helmfile EMF clone (default: ${HELMFILE_EMF_DIR})
   ORCH_UTILS_PATH     orch-utils clone (default: ${ORCH_UTILS_PATH})
   INFRA_CORE_PATH     infra-core clone (default: ${INFRA_CORE_PATH})
