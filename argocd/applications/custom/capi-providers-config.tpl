@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025 Intel Corporation
+# SPDX-FileCopyrightText: 2026 Intel Corporation
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -45,9 +45,9 @@ bootstrap:
     - name: k3s
       namespace: capk-system
       spec:
-        version: v0.3.1
+        version: v0.4.0
         fetchConfig:
-          url: "https://github.com/k3s-io/cluster-api-k3s/releases/v0.3.1/bootstrap-components.yaml"
+          url: "https://github.com/k3s-io/cluster-api-k3s/releases/v0.4.0/bootstrap-components.yaml"
         configSecret:
           namespace: capi-variables
           name: capi-variables
@@ -60,9 +60,9 @@ controlplane:
     - name: k3s
       namespace: capk-system
       spec:
-        version: v0.3.1
+        version: v0.4.0
         fetchConfig:
-          url: "https://github.com/k3s-io/cluster-api-k3s/releases/v0.3.1/control-plane-components.yaml"
+          url: "https://github.com/k3s-io/cluster-api-k3s/releases/v0.4.0/control-plane-components.yaml"
         configSecret:
           namespace: capi-variables
           name: capi-variables
