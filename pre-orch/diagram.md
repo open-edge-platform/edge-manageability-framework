@@ -50,55 +50,65 @@ graph TD
     %% Service Mesh
     ISTIOD["istiod"]
 
-    %% ─── External Access Flow (numbered) ────────────────────────
-    USER -->|"1. :443 HTTPS"| TRAEFIK
-    USER -->|"1. :80 HTTP"| TRAEFIK
-    USER -->|"1. :443/:80/:8080 PXE"| HAPROXY
+    %% ─── 0. MetalLB assigns IPs ────────────────────────────────
     METALLB -.->|"0. assigns IP"| TRAEFIK
     METALLB -.->|"0. assigns IP"| HAPROXY
 
-    %% ─── Traefik routes to services ────────────────────────────
-    TRAEFIK -->|"2. forward-auth"| AUTH
-    TRAEFIK -->|"2. /ui"| UI_ROOT
-    TRAEFIK -->|"2. /api"| NEXUS_GW
-    TRAEFIK -->|"2. /cert"| CERT_FS
+    %% ─── 1. External user entry points ─────────────────────────
+    USER -->|"1. :443/:80 HTTPS"| TRAEFIK
+    USER -->|"1. :443/:80/:8080 PXE"| HAPROXY
 
-    %% ─── HAProxy routes ────────────────────────────────────────
-    HAPROXY -->|"2. PXE boot"| ONB_MGR
-    HAPROXY -->|"2. edge connect"| CLUSTER_GW
+    %% ─── 2. Traefik routes to services ─────────────────────────
+    TRAEFIK -->|"2a. forward-auth"| AUTH
+    TRAEFIK -->|"2b. /ui"| UI_ROOT
+    TRAEFIK -->|"2c. /api"| NEXUS_GW
+    TRAEFIK -->|"2d. /cert"| CERT_FS
 
-    %% ─── Auth & Identity dependencies ──────────────────────────
+    %% ─── 2. HAProxy routes to edge services ────────────────────
+    HAPROXY -->|"2e. PXE boot"| ONB_MGR
+    HAPROXY -->|"2f. edge connect"| CLUSTER_GW
+
+    %% ─── 3. Auth & Identity ────────────────────────────────────
     AUTH -->|"3. validate token"| KEYCLOAK
-    KC_TENANT -->|"3."| KEYCLOAK
+    KC_TENANT -->|"3. provision realm"| KEYCLOAK
     KEYCLOAK -->|"4. query/store"| PG
 
-    %% ─── API Gateway flow ──────────────────────────────────────
-    NEXUS_GW -->|"3. route"| TEN_API
-    NEXUS_GW -->|"3. route"| TEN_MGR
-    TEN_API -->|"4. auth"| KEYCLOAK
-    TEN_MGR -->|"4. auth"| KEYCLOAK
-    TEN_MGR -->|"4. persist"| PG
+    %% ─── 3. API Gateway routes ─────────────────────────────────
+    NEXUS_GW -->|"3a. route tenant API"| TEN_API
+    NEXUS_GW -->|"3b. route tenant mgmt"| TEN_MGR
+    TEN_API -->|"4. validate tenant"| KEYCLOAK
+    TEN_MGR -->|"4. validate tenant"| KEYCLOAK
+    TEN_MGR -->|"4. persist tenant"| PG
 
-    %% ─── Infra pod-to-pod ──────────────────────────────────────
-    HOST_MGR -->|"5. persist"| PG
-    FLEET_MGR -->|"5. persist"| PG
+    %% ─── 3-5. Onboarding path ──────────────────────────────────
     ONB_MGR -->|"3. lookup host"| PG
-    ONB_MGR -->|"4. get keys"| VAULT
-    DKAM -->|"4. store keys"| VAULT
-    MAINT_MGR -->|"5. persist"| PG
-    UPDATE_MGR -->|"5. persist"| PG
-    CLUSTER_GW -->|"5. heartbeat"| HOST_MGR
+    ONB_MGR -->|"3. validate onboard token"| KEYCLOAK
+    ONB_MGR -->|"4. trigger key gen"| DKAM
+    DKAM -->|"4. store device keys"| VAULT
+    ONB_MGR -->|"5. update host state"| HOST_MGR
 
-    %% ─── UI dependencies ───────────────────────────────────────
-    UI_ROOT -->|"3."| UI_ADMIN
-    UI_ROOT -->|"3."| UI_INFRA
-    UI_ADMIN -->|"4."| META_BROKER
-    UI_INFRA -->|"4."| META_BROKER
-    META_BROKER -->|"5."| NEXUS_GW
+    %% ─── 5. Infra services ─────────────────────────────────────
+    HOST_MGR -->|"5. persist host"| PG
+    HOST_MGR -->|"5. service auth"| KEYCLOAK
+    FLEET_MGR -->|"5. persist fleet"| PG
+    FLEET_MGR -->|"5. service auth"| KEYCLOAK
+    MAINT_MGR -->|"5. persist jobs"| PG
+    MAINT_MGR -->|"5. service auth"| KEYCLOAK
+    UPDATE_MGR -->|"5. persist updates"| PG
+    UPDATE_MGR -->|"5. service auth"| KEYCLOAK
+    CLUSTER_GW -->|"5. heartbeat"| HOST_MGR
+    CLUSTER_GW -->|"5. validate edge token"| KEYCLOAK
+
+    %% ─── 3-5. UI path ──────────────────────────────────────────
+    UI_ROOT -->|"3. load micro-frontend"| UI_ADMIN
+    UI_ROOT -->|"3. load micro-frontend"| UI_INFRA
+    UI_ADMIN -->|"4. fetch data"| META_BROKER
+    UI_INFRA -->|"4. fetch data"| META_BROKER
+    META_BROKER -->|"5. call API"| NEXUS_GW
 
     %% ─── Secrets / Token flow ──────────────────────────────────
-    TOKEN_FS -->|"3. read secrets"| VAULT
-    CERT_FS -->|"3. get certs"| VAULT
+    TOKEN_FS -->|"read secrets"| VAULT
+    CERT_FS -->|"get certs"| VAULT
 
     %% ─── Service Mesh sidecar injection ────────────────────────
     ISTIOD -.->|"sidecar inject"| AUTH
