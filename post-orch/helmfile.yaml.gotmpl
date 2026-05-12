@@ -781,23 +781,11 @@ releases:
 
 
   #############################################################################
-  # Wave 1300 — TLS boots wait + token-fs + tenancy-init (needs Wave 1250)
+  # Wave 1300 — TLS boots wait + token-fs
+  #
+  # Default org/project bootstrap is performed by the tenancy-manager Pod
+  # itself (controlled by EMF_DEFAULT_TENANCY → tenancy-manager.bootstrap.enabled)
   #############################################################################
-
-  - name: tenancy-init
-    labels:
-      app: tenancy-init
-      wave: "1300"
-    namespace: orch-iam
-    chart: edge-orch/common/charts/tenancy-init
-    wait: true
-    waitForJobs: true
-    version: 26.1.0
-    values:
-      - values/tenancy-init.yaml.gotmpl
-    condition: tenancy-init.enabled
-    needs:
-      - orch-gateway/keycloak-tenant-controller
 
   - name: secret-wait-tls-boots
     labels:

@@ -167,7 +167,8 @@ ensure_repos() {
         local dir="${entry%%|*}" remote="${entry##*|}" path="${REPO_ROOT}/${dir}"
         if [[ ! -d "${path}" ]]; then
             log "Cloning ${remote} → ${dir}..."
-            git clone "https://github.com/${remote}" "${path}"
+            git clone "https://github.com/${remote}" "${path}" \
+                || { warn "${dir}: clone failed — will retry in build_orch_cli"; had_error=1; }
         else
             log "${dir}: present, pulling latest..."
             git -C "${path}" pull --ff-only 2>/dev/null || warn "${dir}: pull failed"
@@ -268,8 +269,14 @@ build_orch_cli() {
         log "orch-cli already built at ${ORCH_CLI}"
         return 0
     fi
+    if [[ ! -d "${ORCH_CLI_PATH}" ]]; then
+        log "Cloning orch-cli into ${ORCH_CLI_PATH}..."
+        git clone https://github.com/open-edge-platform/orch-cli "${ORCH_CLI_PATH}" \
+            || die "Failed to clone orch-cli — check network/proxy"
+    fi
     log "Building orch-cli..."
-    ( cd "${ORCH_CLI_PATH}" && make build )
+    ( cd "${ORCH_CLI_PATH}" && make build ) || die "orch-cli build failed"
+    [[ -x "${ORCH_CLI}" ]] || die "orch-cli build did not produce ${ORCH_CLI}"
     log "orch-cli built"
 }
 
@@ -378,6 +385,24 @@ run_uninstall() {
 # ──────────────────────────────────────────────────────────────────────────────
 # Step 6: MT setup — org/project/users via orch-cli + Keycloak Admin API
 # ──────────────────────────────────────────────────────────────────────────────
+install_orch_ca() {
+    # Trust the cluster's Traefik CA so orch-cli (and curl) can talk TLS
+    # to keycloak / api / web endpoints without --insecure.
+    log "Installing orch-ca.crt into system trust store..."
+    local tmp_crt
+    tmp_crt="$(mktemp --suffix=.crt)"
+    kubectl -n orch-gateway get secret tls-orch \
+        -o jsonpath='{.data.tls\.crt}' | base64 -d > "${tmp_crt}" \
+        || die "Failed to read tls-orch secret from orch-gateway"
+    [[ -s "${tmp_crt}" ]] || die "tls-orch certificate is empty"
+    sudo cp -f "${tmp_crt}" /usr/local/share/ca-certificates/orch-ca.crt \
+        || die "Failed to copy CA cert (need passwordless sudo)"
+    sudo update-ca-certificates -f >/dev/null \
+        || die "update-ca-certificates failed"
+    rm -f "${tmp_crt}"
+    log "  orch CA trusted system-wide"
+}
+
 run_mt_setup() {
     local org="test-org"
     local project="test-project"
@@ -399,6 +424,8 @@ run_mt_setup() {
     fi
     [[ -n "${ORCH_DOMAIN}" ]] || die "Cannot determine orchestrator domain — set ORCH_DOMAIN and re-run"
     log "Using ORCH_DOMAIN=${ORCH_DOMAIN}"
+
+    install_orch_ca
 
     "${cli}" config set api-endpoint "https://api.${ORCH_DOMAIN}"
 
@@ -616,6 +643,37 @@ verify_helmfile() {
     else
         warn "tenancy-manager Service missing in ${TM_NAMESPACE}"
         failed=1
+    fi
+
+    log "Checking tenancy-manager bootstrap (default org/project)..."
+    local bootstrap_expected="${EMF_DEFAULT_TENANCY:-false}"
+    local pg_pod="postgresql-cluster-1"
+    if kubectl -n orch-database get pod "${pg_pod}" &>/dev/null; then
+        local org_count proj_count
+        org_count=$(kubectl -n orch-database exec "${pg_pod}" -c postgres -- \
+            psql -U postgres -d orch-iam-iam-tenancy -tAc \
+            "SELECT count(*) FROM orgs WHERE name='default';" 2>/dev/null | tr -d '[:space:]')
+        proj_count=$(kubectl -n orch-database exec "${pg_pod}" -c postgres -- \
+            psql -U postgres -d orch-iam-iam-tenancy -tAc \
+            "SELECT count(*) FROM projects WHERE name='default';" 2>/dev/null | tr -d '[:space:]')
+        if [[ "${bootstrap_expected}" == "true" ]]; then
+            if [[ "${org_count}" == "1" && "${proj_count}" == "1" ]]; then
+                log "  default org+project bootstrapped by tenancy-manager"
+            else
+                warn "  bootstrap missing (orgs='${org_count}', projects='${proj_count}') \
+— check EMF_DEFAULT_TENANCY and tenancy-manager logs"
+                failed=1
+            fi
+        else
+            log "  EMF_DEFAULT_TENANCY=false — bootstrap intentionally skipped (orgs='${org_count}', projects='${proj_count}')"
+        fi
+    else
+        if [[ "${bootstrap_expected}" == "true" ]]; then
+            warn "postgresql-cluster-1 pod missing in orch-database — cannot verify bootstrap"
+            failed=1
+        else
+            log "  EMF_DEFAULT_TENANCY=false — skipping bootstrap probe"
+        fi
     fi
 
     log "Checking apiv2 nexusAPIURL..."

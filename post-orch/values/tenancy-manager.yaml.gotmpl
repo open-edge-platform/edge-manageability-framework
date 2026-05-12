@@ -60,8 +60,15 @@ postgresql:
 # waiting for controllers that are not actually running.
 tenancyManager:
   oidcServerURL: "http://platform-keycloak.orch-platform.svc:8080/realms/master"
-  defaultOrgName: ""
+  # Bootstrap default org/project on first startup
+  # Empty values disable the bootstrap; idempotent on subsequent restarts.
+  {{- if (.Values | get "tenancy-manager.bootstrap.enabled" false) }}
+  defaultOrgName:     {{ .Values | get "tenancy-manager.bootstrap.orgName"     "default" | quote }}
+  defaultProjectName: {{ .Values | get "tenancy-manager.bootstrap.projectName" "default" | quote }}
+  {{- else }}
+  defaultOrgName:     ""
   defaultProjectName: ""
+  {{- end }}
   controllers:
     org:
       - keycloak-tenant-controller

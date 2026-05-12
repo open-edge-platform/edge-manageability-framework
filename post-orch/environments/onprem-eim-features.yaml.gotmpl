@@ -100,6 +100,12 @@ tenancy-datamodel:
   enabled: {{ if eq (env "NEXUS_REPLACEMENT" | default "") "true" }}false{{ else }}true{{ end }}
 tenancy-manager:
   enabled: true
+  # When EMF_DEFAULT_TENANCY=true the tenancy-manager Pod creates a default org
+  # and project on first startup (Bootstrap path in orch-utils/tenancy-manager).
+  bootstrap:
+    enabled:     {{ env "EMF_DEFAULT_TENANCY" | default "false" }}
+    orgName:     "default"
+    projectName: "default"
 tenancy-api-mapping:
   enabled: {{ if eq (env "NEXUS_REPLACEMENT" | default "") "true" }}false{{ else }}true{{ end }}
 nexus-api-gw:
@@ -124,9 +130,6 @@ infra-onboarding:
   disableCoProfile: true
   disableO11yProfile: true
 
-# ─── Tenancy mode ────────────────────────────────────────────────────────────
-tenancy-init:
-  enabled: {{ env "EMF_DEFAULT_TENANCY" | default "false" }}
 
 # ─── CORS ────────────────────────────────────────────────────────────────────
 cors:
