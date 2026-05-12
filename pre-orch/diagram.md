@@ -2,119 +2,65 @@
 
 ```mermaid
 graph TD
-    %% External User Access
     USER["External User"]
-
-    %% MetalLB Load Balancer
-    METALLB["metallb-controller<br/>metallb-speaker"]
-
-    %% Traefik Ingress - Main HTTPS entry
-    TRAEFIK["traefik<br/>LB IP: 192.168.99.30<br/>:443 HTTPS / :80 HTTP"]
-
-    %% HAProxy Ingress - PXE boot entry
-    HAPROXY["haproxy-ingress<br/>LB IP: 192.168.99.40<br/>:80 :443 :8080"]
-
-    %% Auth & Identity
+    TRAEFIK["traefik<br/>192.168.99.30 :443/:80"]
+    HAPROXY["haproxy-ingress<br/>192.168.99.40 :443/:80/:8080"]
     AUTH["auth-service"]
     KEYCLOAK["keycloak-0"]
-    KC_TENANT["keycloak-tenant-controller"]
-
-    %% Tenancy / IAM
     NEXUS_GW["nexus-api-gw"]
-    TEN_API["tenancy-api-mapping"]
-    TEN_MGR["tenancy-manager"]
-
-    %% Database
     PG["postgresql-cluster"]
-
-    %% Secrets & Certs
     VAULT["vault-0"]
-    TOKEN_FS["token-fs"]
     CERT_FS["certificate-file-server"]
-
-    %% Infra Services
     HOST_MGR["host-manager"]
     FLEET_MGR["fleet-manager"]
     ONB_MGR["onboarding-manager"]
     DKAM["dkam"]
-    MAINT_MGR["maintenance-manager"]
-    UPDATE_MGR["update-manager"]
     CLUSTER_GW["cluster-connect-gateway"]
-
-    %% UI
     UI_ROOT["orch-ui-root"]
-    UI_ADMIN["orch-ui-admin"]
-    UI_INFRA["orch-ui-infra"]
     META_BROKER["metadata-broker"]
 
-    %% Service Mesh
-    ISTIOD["istiod"]
+    %% External access
+    USER -->|":443 HTTPS"| TRAEFIK
+    USER -->|":8080 PXE"| HAPROXY
 
-    %% ─── 0. MetalLB assigns IPs ────────────────────────────────
-    METALLB -.->|"0. assigns IP"| TRAEFIK
-    METALLB -.->|"0. assigns IP"| HAPROXY
+    %% Traefik routes
+    TRAEFIK --> AUTH
+    TRAEFIK --> UI_ROOT
+    TRAEFIK --> NEXUS_GW
+    TRAEFIK --> CERT_FS
 
-    %% ─── 1. External user entry points ─────────────────────────
-    USER -->|"1. :443/:80 HTTPS"| TRAEFIK
-    USER -->|"1. :443/:80/:8080 PXE"| HAPROXY
+    %% HAProxy routes
+    HAPROXY --> ONB_MGR
+    HAPROXY --> CLUSTER_GW
 
-    %% ─── 2. Traefik routes to services ─────────────────────────
-    TRAEFIK -->|"2a. forward-auth"| AUTH
-    TRAEFIK -->|"2b. /ui"| UI_ROOT
-    TRAEFIK -->|"2c. /api"| NEXUS_GW
-    TRAEFIK -->|"2d. /cert"| CERT_FS
+    %% Auth
+    AUTH --> KEYCLOAK
+    KEYCLOAK --> PG
 
-    %% ─── 2. HAProxy routes to edge services ────────────────────
-    HAPROXY -->|"2e. PXE boot"| ONB_MGR
-    HAPROXY -->|"2f. edge connect"| CLUSTER_GW
+    %% API
+    NEXUS_GW --> KEYCLOAK
 
-    %% ─── 3. Auth & Identity ────────────────────────────────────
-    AUTH -->|"3. validate token"| KEYCLOAK
-    KC_TENANT -->|"3. provision realm"| KEYCLOAK
-    KEYCLOAK -->|"4. query/store"| PG
+    %% UI
+    UI_ROOT --> META_BROKER
+    META_BROKER --> NEXUS_GW
 
-    %% ─── 3. API Gateway routes ─────────────────────────────────
-    NEXUS_GW -->|"3a. route tenant API"| TEN_API
-    NEXUS_GW -->|"3b. route tenant mgmt"| TEN_MGR
-    TEN_API -->|"4. validate tenant"| KEYCLOAK
-    TEN_MGR -->|"4. validate tenant"| KEYCLOAK
-    TEN_MGR -->|"4. persist tenant"| PG
+    %% Onboarding
+    ONB_MGR --> KEYCLOAK
+    ONB_MGR --> PG
+    ONB_MGR --> DKAM
+    DKAM --> VAULT
+    ONB_MGR --> HOST_MGR
 
-    %% ─── 3-5. Onboarding path ──────────────────────────────────
-    ONB_MGR -->|"3. lookup host"| PG
-    ONB_MGR -->|"3. validate onboard token"| KEYCLOAK
-    ONB_MGR -->|"4. trigger key gen"| DKAM
-    DKAM -->|"4. store device keys"| VAULT
-    ONB_MGR -->|"5. update host state"| HOST_MGR
-
-    %% ─── 5. Infra services ─────────────────────────────────────
-    HOST_MGR -->|"5. persist host"| PG
-    HOST_MGR -->|"5. service auth"| KEYCLOAK
-    FLEET_MGR -->|"5. persist fleet"| PG
-    FLEET_MGR -->|"5. service auth"| KEYCLOAK
-    MAINT_MGR -->|"5. persist jobs"| PG
-    MAINT_MGR -->|"5. service auth"| KEYCLOAK
-    UPDATE_MGR -->|"5. persist updates"| PG
-    UPDATE_MGR -->|"5. service auth"| KEYCLOAK
-    CLUSTER_GW -->|"5. heartbeat"| HOST_MGR
-    CLUSTER_GW -->|"5. validate edge token"| KEYCLOAK
-
-    %% ─── 3-5. UI path ──────────────────────────────────────────
-    UI_ROOT -->|"3. load micro-frontend"| UI_ADMIN
-    UI_ROOT -->|"3. load micro-frontend"| UI_INFRA
-    UI_ADMIN -->|"4. fetch data"| META_BROKER
-    UI_INFRA -->|"4. fetch data"| META_BROKER
-    META_BROKER -->|"5. call API"| NEXUS_GW
+    %% Infra
+    HOST_MGR --> PG
+    FLEET_MGR --> PG
+    CLUSTER_GW --> HOST_MGR
+    CERT_FS --> VAULT
+```
 
     %% ─── Secrets / Token flow ──────────────────────────────────
     TOKEN_FS -->|"read secrets"| VAULT
     CERT_FS -->|"get certs"| VAULT
-
-    %% ─── Service Mesh sidecar injection ────────────────────────
-    ISTIOD -.->|"sidecar inject"| AUTH
-    ISTIOD -.->|"sidecar inject"| HOST_MGR
-    ISTIOD -.->|"sidecar inject"| FLEET_MGR
-    ISTIOD -.->|"sidecar inject"| ONB_MGR
 ```
 
 ---
