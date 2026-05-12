@@ -132,10 +132,6 @@ opentelemetry-collector:
           {{- if and (eq ($am.enabled | toString) "true") (eq ($eo.enabled | toString) "true") }}
           - prometheus/observability-tenant-controller
           {{- end }}
-          {{- $otc := index .Values "observability-tenant-controller" | default dict }}
-          {{- if eq ($otc.enabled | toString) "true" }}
-          - prometheus/observability-tenant-controller
-          {{- end }}
   # Resources: managed by resource-overrides.yaml
   image:
     repository: {{ .Values.containerRegistryURL }}/o11y/orch-otelcol
