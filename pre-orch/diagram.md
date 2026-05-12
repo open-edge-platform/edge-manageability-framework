@@ -25,7 +25,7 @@ graph TD
     TEN_MGR["tenancy-manager"]
 
     %% Database
-    PG["postgresql-cluster-1<br/>postgresql-cluster-2"]
+    PG["postgresql-cluster"]
 
     %% Secrets & Certs
     VAULT["vault-0"]
