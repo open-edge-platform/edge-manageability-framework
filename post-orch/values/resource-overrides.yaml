@@ -265,7 +265,7 @@ mimir-distributed:
       limits:
         cpu: "64"
         memory: "64Gi"
-  storeGateway:
+  store_gateway:
     resources:
       requests:
         cpu: "1m"
