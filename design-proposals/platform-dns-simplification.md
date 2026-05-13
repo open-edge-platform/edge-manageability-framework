@@ -78,8 +78,8 @@ These subdomains are accessed by edge node agents over gRPC or specialized proto
 | `onboarding-node` | Onboarding Manager | gRPC | |
 | `onboarding-stream` | Onboarding Stream | gRPC | |
 | `device-manager-node` | Device Manager | gRPC | |
-| `logs-node` | Log Collector | HTTPS | |
-| `metrics-node` | Metrics Collector | HTTPS | |
+| `logs-node` | Loki Gateway (log ingestion) | HTTPS | OTLP HTTP `/v1/logs` |
+| `metrics-node` | Mimir Gateway (metrics ingestion) | HTTPS | Prometheus-compatible API |
 | `release` | Release Service | HTTPS | Package distribution |
 | `tinkerbell-server` | Tinkerbell | HTTPS | Provisioning |
 | `tinkerbell-haproxy` | Tinkerbell LB | HTTPS | PXE boot |
@@ -103,8 +103,8 @@ Replace all subdomains with path-based routing under a single domain name.
 | `keycloak.example.com` | `example.com/auth/` | Moderate (see below) |
 | `vault.example.com` | `example.com/vault/` | Straightforward |
 | `registry-oci.example.com` | `example.com/registry/` | Complex (see below) |
-| `observability-ui.example.com` | `example.com/grafana/` | Straightforward - Grafana supports root_url |
-| `observability-admin.example.com` | `example.com/grafana-admin/` | Straightforward |
+| `observability-ui.example.com` | `example.com/observability-edgenode/` | Straightforward - Grafana supports root_url |
+| `observability-admin.example.com` | `example.com/observability-orchestrator/` | Straightforward |
 | `alerting-monitor.example.com` | `example.com/alerts/` | Straightforward |
 | `gitea.example.com` | `example.com/gitea/` | Straightforward - Gitea supports ROOT_URL |
 | `app-orch.example.com` | `example.com/app-orch/` | Straightforward |
@@ -127,6 +127,20 @@ Replace all subdomains with path-based routing under a single domain name.
 gRPC requests already include a service path (`/package.ServiceName/MethodName`) in every
 request. Traefik can route on these paths without needing separate hostnames, provided the
 gRPC service names are unique (they are).
+
+**Edge-node-facing HTTPS services** become path prefixes:
+
+| Current | Proposed | Complexity |
+| ------- | -------- | ---------- |
+| `logs-node.example.com` | `example.com/logs/` | Straightforward - routes to Loki Gateway |
+| `metrics-node.example.com` | `example.com/metrics/` | Straightforward - routes to Mimir Gateway |
+| `release.example.com` | `example.com/release/` | Straightforward |
+| `tinkerbell-server.example.com` | `example.com/tinkerbell/` | Straightforward |
+
+Note: `logs-node` and `metrics-node` are HTTPS endpoints, not gRPC. They route
+to different backends (Loki Gateway and Mimir Gateway respectively) and cannot be
+combined into a single `/telemetry` path without adding a sub-path routing layer.
+Two separate path prefixes is the simpler approach.
 
 **AMT services** (MPS/RPS) are a special case discussed below.
 
@@ -186,7 +200,7 @@ remaining AMT endpoints are standard protocols:
 
 **Verdict:** Viable. No complexity here.
 
-#### gRPC Services - Straightforward but Requires Agent Changes
+#### gRPC Services - Straightforward, No Agent Code Changes
 
 All gRPC services (infra-node, update-node, telemetry-node, attest-node,
 cluster-orch-node, onboarding-node, onboarding-stream, device-manager-node, rps)
@@ -198,13 +212,19 @@ there are no path collisions.
 
 The change requires updating the `infra-config` ConfigMap
 (`infra-onboarding.tpl`) that tells edge nodes which hostnames to connect to.
-Instead of 10+ hostnames, edge nodes would receive a single hostname with
-different gRPC service paths. The edge node agents must be updated to connect to
-the new single hostname.
+Instead of 10+ hostnames, edge nodes would receive a single hostname. No agent
+code changes are required — agents receive their service URLs from infra-config
+during onboarding, which the installer's `postinst` script writes into each
+agent's configuration file. The gRPC client code is hostname-agnostic; it
+constructs the same protobuf RPC calls regardless of what hostname it connects
+to. Changing the infra-config values is sufficient for the new hostname to flow
+through to all agents automatically.
 
-**Verdict:** Viable. Requires coordinated changes to edge node agent configuration
-and the infra-config ConfigMap. This is the highest-impact simplification since it
-eliminates 10+ DNS records and simplifies edge node provisioning.
+**Verdict:** Viable. Requires updating the infra-config ConfigMap and the Traefik
+IngressRoute rules in each manager's Helm chart (switching `Host()` to
+`PathPrefix()` on the gRPC service path). This is the highest-impact
+simplification since it eliminates 10+ DNS records and simplifies edge node
+provisioning.
 
 ### What Does NOT Change
 
@@ -231,7 +251,6 @@ eliminates 10+ DNS records and simplifies edge node provisioning.
 | traefik-extra-objects chart | Rewrite routing rules | Medium |
 | Keycloak realm configuration | Update redirect URIs and paths | Medium |
 | Edge node agent configs (infra-config) | Single hostname instead of many | Low |
-| Edge node agents (8+ agents) | Connect to new hostname | Medium |
 | Web UI | Update API endpoint URLs | Low |
 | CORS configuration | Simplifies (single origin) | Low |
 | CSP headers | Simplifies (single origin) | Low |
